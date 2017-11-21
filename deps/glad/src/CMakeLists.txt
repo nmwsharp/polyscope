@@ -6,5 +6,4 @@ add_library(
     glad.c
     )
 
-    
-target_include_directories(glad PRIVATE "../include")
+target_include_directories(glad PRIVATE "../include")    

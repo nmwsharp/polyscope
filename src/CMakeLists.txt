@@ -6,8 +6,8 @@ if (CMAKE_BINARY_DIR STREQUAL CMAKE_SOURCE_DIR)
 endif()
 
 # Collect all .cpp files in the subdirectories
-file(GLOB_RECURSE SRCS *.cpp)
-file(GLOB_RECURSE HEADS *.h *.hpp *.ipp)
+file(GLOB SRCS *.cpp)
+file(GLOB_RECURSE HEADS ../include *.h *.hpp *.ipp)
 
 # Create a single library for the project
 add_library(
@@ -16,10 +16,22 @@ add_library(
         ${HEADS}
         )
 
+# Include settings
+target_include_directories(polyscope PUBLIC "../include")
+target_include_directories(polyscope PUBLIC "../deps/glfw/include")
+target_include_directories(polyscope PRIVATE "../deps/glad/include")
+target_include_directories(polyscope PRIVATE "../deps/glad/include")
+target_include_directories(polyscope PUBLIC "../deps/imgui/imgui")
+        
 # Link settings
-target_link_libraries(polyscope ${GLFW_LIBRARIES})
+target_link_libraries(polyscope imgui glfw ${GLFW_LIBRARIES})
 
 if(APPLE)
+    find_library(cocoa_library Cocoa)
+    find_library(opengl_library OpenGL)
+    find_library(corevideo_library CoreVideo)
+    find_library(iokit_library IOKit)
+    target_link_libraries(polyscope ${cocoa_library} ${opengl_library} ${corevideo_library} ${iokit_library})
 else()
     target_link_libraries(polyscope glad)
 endif()

@@ -44,10 +44,14 @@ else()
   message( FATAL_ERROR "Unrecognized compiler [${CMAKE_CXX_COMPILER_ID}]" )
 endif()
 
-### Add things for this project
-add_subdirectory(src)
-target_include_directories(polyscope PUBLIC "include")
-
 ### Do anything needed for dependencies and bring their stuff in to scope
 add_subdirectory(deps)
 
+### Add things for this project
+add_subdirectory(src)
+
+### Build the demo viewer application
+option(BUILD_POLYSCOPE_VIEWER "Build the viewer demo app." ON)
+if(BUILD_POLYSCOPE_VIEWER)
+    add_subdirectory(src/viewer-app)
+endif()
