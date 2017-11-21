@@ -1,12 +1,15 @@
 #include "polyscope/polyscope.h"
 
+#include <iostream>
+
+
 #include "polyscope/gl_utils.h"
 
 #ifdef _WIN32
-#undef APIENTRY
-#define GLFW_EXPOSE_NATIVE_WIN32
-#define GLFW_EXPOSE_NATIVE_WGL
-#include <GLFW/glfw3native.h>
+    #undef APIENTRY
+    #define GLFW_EXPOSE_NATIVE_WIN32
+    #define GLFW_EXPOSE_NATIVE_WGL
+    #include <GLFW/glfw3native.h>
 #endif
 
 #include <imgui.h>
@@ -433,6 +436,11 @@ void ImGui_ImplGlfwGL3_NewFrame()
     ImGui::NewFrame();
 }
 
+// Small callback function for GLFW errors
+void error_print_callback(int error, const char* description) {
+    std::cerr << "GLFW emitted error: " << description << std::endl;
+}
+
 } // private namespace
 
 
@@ -446,17 +454,18 @@ void init() {
     }
 
     // === Initialize glfw
-    glfwSetErrorCallback(error_callback);
-    if (!glfwInit())
-        return 1;
+    glfwSetErrorCallback(error_print_callback);
+    if (!glfwInit()) {
+        throw std::runtime_error(options::printPrefix + "ERROR: Failed to initialize glfw");
+    }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-    GLFWwindow* window = glfwCreateWindow(1280, 720, options::programName, NULL, NULL);
-    glfwMakeContextCurrent(window);
+    g_Window = glfwCreateWindow(1280, 720, options::programName.c_str(), NULL, NULL);
+    glfwMakeContextCurrent(g_Window);
     glfwSwapInterval(1); // Enable vsync
 
     // === Initialize openGL
@@ -477,7 +486,7 @@ void init() {
 
 
     // Set up ImGUI glfw bindings
-    ImGui_ImplGlfwGL3_Init(window, true);
+    ImGui_ImplGlfwGL3_Init(g_Window, true);
 
     state::initialized = true;
 }
@@ -489,7 +498,7 @@ void show() {
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // Main loop
-    while (!glfwWindowShouldClose(window))
+    while (!glfwWindowShouldClose(g_Window))
     {
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
@@ -527,12 +536,12 @@ void show() {
 
         // Rendering
         int display_w, display_h;
-        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glfwGetFramebufferSize(g_Window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui::Render();
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(g_Window);
     }
 
 

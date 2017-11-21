@@ -1,10 +1,12 @@
-#include <gl_utils.h>
-#include <shaders/common.h>
+#include <polyscope/gl_utils.h>
+#include <polyscope/shaders/common.h>
 
 #include <stdexcept>
+#include <iostream>
 
 using std::cout; using std::endl;
 
+/*
 GLuint GLProgram::commonShaderHandle = 0;
 
 GLProgram::GLProgram(const VertShader* vShader, const FragShader* fShader, DrawMode dm) 
@@ -901,7 +903,7 @@ void GLProgram::draw() {
     checkGLError();
 }
 
-
+*/
 
 // Helper function to print compile logs
 void printShaderInfoLog(GLuint shaderHandle) {

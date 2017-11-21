@@ -1,6 +1,7 @@
 #pragma once
 
 #include "polyscope/options.h"
+#include "polyscope/gl_utils.h"
 
 namespace polyscope {
 
@@ -12,8 +13,6 @@ namespace polyscope {
     // Give control to the polyscope GUI. Blocks until the user returns control via the GUI,
     // possibly by exiting the window.
     void show();
-
-
 
 
     // === Global variables ===

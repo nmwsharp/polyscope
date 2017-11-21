@@ -1,21 +1,14 @@
-cmake_minimum_required(VERSION 2.8.9)
+cmake_minimum_required(VERSION 3.1)
 
 project(polyscope)
 
 ### Policy settings
 cmake_policy(SET CMP0054 NEW)   # don't implicitly dereference inside if()
 
-
 ### Configure output locations
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-### Do anything needed for dependencies and bring their stuff in to scope
-add_subdirectory(deps)
-
-### Includes from this project
-include_directories(include)
 
 ### Compiler options
 set( CMAKE_EXPORT_COMPILE_COMMANDS 1 ) # Emit a compile flags file to support completion engines 
@@ -51,5 +44,10 @@ else()
   message( FATAL_ERROR "Unrecognized compiler [${CMAKE_CXX_COMPILER_ID}]" )
 endif()
 
-
+### Add things for this project
 add_subdirectory(src)
+target_include_directories(polyscope PUBLIC "include")
+
+### Do anything needed for dependencies and bring their stuff in to scope
+add_subdirectory(deps)
+

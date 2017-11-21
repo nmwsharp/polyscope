@@ -10,12 +10,14 @@
 #include <string>
 #include <vector>
 
-#include <shaders.h>
-#include <vector2.h>
-#include <vector3.h>
-#include <utilities.h>
-#include <colors.h>
-#include <colormaps.h>
+#include "shaders.h"
+// #include <vector2.h>
+// #include <vector3.h>
+// #include <utilities.h>
+// #include <colors.h>
+// #include <colormaps.h>
+
+/*
 
 // The drawing modes available
 enum class DrawMode {Points, LinesAdjacency, Triangles, TrianglesAdjacency, Patches, IndexedTriangles, Lines, IndexedLines, IndexedLineStrip, IndexedLinesAdjacency, IndexedLineStripAdjacency};
@@ -155,7 +157,7 @@ class GLProgram {
         static GLuint commonShaderHandle; // functions accessible to all shaders
 };
 
-
+*/
 
 // Utility functions
 void printShaderInfoLog(GLuint shaderHandle);
