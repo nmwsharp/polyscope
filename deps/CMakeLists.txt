@@ -11,3 +11,7 @@ add_subdirectory(glfw)
 
 ## Imgui
 add_subdirectory(imgui)
+
+## Geometry Central
+add_subdirectory(geometry-central)
+set(GEOMETRY_CENTRAL_INCLUDE_DIRS ${GEOMETRY_CENTRAL_INCLUDE_DIRS} PARENT_SCOPE)

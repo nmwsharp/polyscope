@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "shaders.h"
-// #include <vector2.h>
+#include "geometrycentral/vector2.h"
 // #include <vector3.h>
 // #include <utilities.h>
 // #include <colors.h>

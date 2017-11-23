@@ -3,8 +3,8 @@
 
 namespace polyscope {
 
+
 void PointCloud::draw() {
-    
 }
 
 void PointCloud::drawPick() {

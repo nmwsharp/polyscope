@@ -21,10 +21,11 @@ target_include_directories(polyscope PUBLIC "../include")
 target_include_directories(polyscope PUBLIC "../deps/glfw/include")
 target_include_directories(polyscope PRIVATE "../deps/glad/include")
 target_include_directories(polyscope PRIVATE "../deps/glad/include")
+target_include_directories(polyscope PUBLIC ${GEOMETRY_CENTRAL_INCLUDE_DIRS})
 target_include_directories(polyscope PUBLIC "../deps/imgui/imgui")
         
 # Link settings
-target_link_libraries(polyscope imgui glfw ${GLFW_LIBRARIES})
+target_link_libraries(polyscope imgui glfw ${GLFW_LIBRARIES} geometry-central)
 
 if(APPLE)
     find_library(cocoa_library Cocoa)
