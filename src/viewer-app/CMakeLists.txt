@@ -12,5 +12,4 @@ add_executable(
         )
 
 # Link settings
-message("polyscope val = ${polyscope}" )
 target_link_libraries(polyscopeviewer polyscope)

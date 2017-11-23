@@ -13,5 +13,3 @@ add_library(
         ${SRCS}
         ${HEADS}
         )
-
-message("imgui = ${imgui}")
