@@ -416,7 +416,7 @@ void ImGui_ImplGlfwGL3_NewFrame()
     }
     else
     {
-        io.MousePos = ImVec2(-FLT_MAX,-FLT_MAX);
+        io.MousePos = ImVec2(-std::numeric_limits<float>::max(),-std::numeric_limits<float>::max()); // tweaked by nice from FLT_MAX
     }
 
     for (int i = 0; i < 3; i++)
@@ -497,11 +497,14 @@ void init() {
     // - Read 'extra_fonts/README.txt' for more instructions and details.
     // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
     ImGuiIO& io = ImGui::GetIO();
+    ImFontConfig config;
+    config.OversampleH = 5;
+    config.OversampleV = 5;
     // io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("../deps/imgui/imgui/extra_fonts/Roboto-Medium.ttf", 16.0f);
-    io.Fonts->AddFontFromFileTTF("../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f);
-    //io.Fonts->AddFontFromFileTTF("../deps/imgui/imgui/extra_fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../deps/imgui/imgui/extra_fonts/ProggyTiny.ttf", 10.0f);
+    // io.Fonts->AddFontFromFileTTF("../deps/imgui/imgui/extra_fonts/Roboto-Medium.ttf", 16.0f);
+    io.Fonts->AddFontFromFileTTF("../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
+    // io.Fonts->AddFontFromFileTTF("../deps/imgui/imgui/extra_fonts/DroidSans.ttf", 16.0f);
+    // io.Fonts->AddFontFromFileTTF("../deps/imgui/imgui/extra_fonts/ProggyTiny.ttf", 16.0f);
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != NULL);
 
