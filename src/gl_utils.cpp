@@ -1,5 +1,5 @@
-#include <polyscope/gl_utils.h>
-#include <polyscope/shaders/common.h>
+#include <polyscope/gl/gl_utils.h>
+#include <polyscope/gl/shaders/common.h>
 
 #include <stdexcept>
 #include <iostream>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "polyscope/options.h"
-#include "polyscope/gl_utils.h"
+#include "polyscope/gl/gl_utils.h"
 
 namespace polyscope {
 

@@ -10,14 +10,16 @@
 #include <string>
 #include <vector>
 
-#include "shaders.h"
-#include "geometrycentral/vector2.h"
-// #include <vector3.h>
-// #include <utilities.h>
-// #include <colors.h>
-// #include <colormaps.h>
+#include "polyscope/gl/shaders.h"
+#include "polyscope/gl/colors.h"
+#include "polyscope/gl/colormaps.h"
 
-/*
+#include "geometrycentral/vector2.h"
+#include "geometrycentral/vector3.h"
+#include "geometrycentral/utilities.h"
+
+namespace polyscope {
+namespace gl {
 
 // The drawing modes available
 enum class DrawMode {Points, LinesAdjacency, Triangles, TrianglesAdjacency, Patches, IndexedTriangles, Lines, IndexedLines, IndexedLineStrip, IndexedLinesAdjacency, IndexedLineStripAdjacency};
@@ -157,9 +159,11 @@ class GLProgram {
         static GLuint commonShaderHandle; // functions accessible to all shaders
 };
 
-*/
 
 // Utility functions
 void printShaderInfoLog(GLuint shaderHandle);
 void printProgramInfoLog(GLuint handle);
 void checkGLError(bool fatal = false);
+
+} // namespace gl 
+} // namespace polyscope
