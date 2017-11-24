@@ -36,22 +36,24 @@ float fresnel( vec3 N, vec3 E ) {
    return pow( sqrt( 1. - NE*NE ), sharpness );
 }
 
-vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 light, vec3 eye )
+vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye )
 {
-   float s = getSurfaceShininess();
-   vec3 bgColor = getBackgroundColor();
-
    vec3 one = vec3( 1., 1., 1. );
 
+   float s = getSurfaceShininess();
+//    vec3 bgColor = getBackgroundColor();
+   vec3 bgColor = one;
+
    vec3 N = normalize( normal );
-   vec3 L = normalize( light - position );
+   vec3 Lpos = lightC + vec3(1, 1, 1) * lightD;
+   vec3 L = normalize( Lpos - position );
    vec3 E = normalize( eye - position );
 
    vec4 result;
    result.rgb = 0.05*color +
                 0.9*diffuse(N,L)*color +
                 0.2*specular(N,L,E,s)*one +
-                .75*fresnel(N,E)*bgColor;
+                .5*fresnel(N,E)*bgColor;
    result.a = 1.0;
 
    return result;
@@ -63,25 +65,25 @@ vec3 gammaCorrect( vec3 colorLinear )
    return pow(colorLinear, vec3(1.0/screenGamma));
 }
 
-vec4 lightSurface( vec3 position, vec3 normal, vec3 light, vec3 eye )
-{
-   vec3 color = getSurfaceColor();
-   vec4 result = lightSurface( position, normal, color, light, eye );
-   //result.rgb = gammaCorrect( result.rgb );
-   return result;
-}
+// vec4 lightSurface( vec3 position, vec3 normal, vec3 light, vec3 eye )
+// {
+//    vec3 color = getSurfaceColor();
+//    vec4 result = lightSurface( position, normal, color, light, eye );
+//    //result.rgb = gammaCorrect( result.rgb );
+//    return result;
+// }
 
-vec4 highlightSurface( vec3 position, vec3 normal, vec3 color, vec3 light, vec3 eye ) {
+// vec4 highlightSurface( vec3 position, vec3 normal, vec3 color, vec3 light, vec3 eye ) {
 
-   vec4 result = lightSurface( position, normal, color, light, eye );
-   result.rgb *= .5;
-   return result;
-}
+//    vec4 result = lightSurface( position, normal, color, light, eye );
+//    result.rgb *= .5;
+//    return result;
+// }
 
-vec4 highlightSurface( vec3 position, vec3 normal, vec3 light, vec3 eye ) {
-   vec3 color = getSurfaceColor();
-   return highlightSurface( position, normal, color, light, eye );
-}
+// vec4 highlightSurface( vec3 position, vec3 normal, vec3 light, vec3 eye ) {
+//    vec3 color = getSurfaceColor();
+//    return highlightSurface( position, normal, color, light, eye );
+// }
 
 float getEdgeFactor(vec3 UVW) {
    // // uniform width lines

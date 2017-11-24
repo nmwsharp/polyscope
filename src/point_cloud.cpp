@@ -31,10 +31,16 @@ void PointCloud::draw() {
   Vector3 eyePos = view::getCameraWorldPosition();
   program->setUniform("u_eye", eyePos);
 
-  Vector3 lightPos = view::getLightWorldPosition();
-  program->setUniform("u_light", lightPos);
+  // Vector3 lightPos = view::getLightWorldPosition();center
+  program->setUniform("u_lightC", state::center);
+  program->setUniform("u_lightD", 2*state::lengthScale);
   
-  program->setUniform("u_pointRadius", 0.01 * state::lengthScale);
+  program->setUniform("u_camZ", view::cameraDirection);
+  program->setUniform("u_camUp", view::upDirection);
+  Vector3 leftHand = unit(cross(view::cameraDirection, view::upDirection));
+  program->setUniform("u_camRight", -leftHand); 
+  
+  program->setUniform("u_pointRadius", 0.001 * state::lengthScale);
 
   program->draw();
 }
@@ -43,21 +49,18 @@ void PointCloud::drawPick() {}
 
 void PointCloud::prepare() {
   // Create the GL program
-  program = new gl::GLProgram(&PASSTHRU_SPHERE_VERT_SHADER, &SPHERE_GEOM_SHADER,
+  // program = new gl::GLProgram(&PASSTHRU_SPHERE_VERT_SHADER, &SPHERE_GEOM_SHADER,
+  //                             &SHINY_SPHERE_FRAG_SHADER, gl::DrawMode::Points);
+  program = new gl::GLProgram(&PASSTHRU_SPHERE_VERT_SHADER, &SPHERE_GEOM_BILLBOARD_SHADER,
                               &SHINY_SPHERE_FRAG_SHADER, gl::DrawMode::Points);
 
   // Constant color
   std::vector<Vector3> colorData(points.size());
   std::fill(colorData.begin(), colorData.end(), gl::RGB_ORANGE);
 
-  // Constant size
-  // std::vector<double> sizeData(points.size());
-  // std::fill(sizeData.begin(), sizeData.end(), .01 * state::lengthScale);
-
   // Store data in buffers
   program->setAttribute("a_position", points);
   program->setAttribute("a_color", colorData);
-  // program->setAttribute("a_pointRadius", sizeData);
 }
 
 void PointCloud::teardown() {
