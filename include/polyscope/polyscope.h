@@ -28,8 +28,14 @@ extern bool initialized;
 extern std::unordered_set<std::string> allStructureNames;
 extern std::map<std::string, PointCloud*> pointClouds;
 
-// representative length scale for the structures being visualized
+// representative length scale for all registered structures
 extern double lengthScale;
+
+// axis-alligned bounding box for all registered structures
+extern std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox;
+
+// representative center for all registered structures
+extern Vector3 center;
 
 }  // namespace state
 
@@ -45,7 +51,8 @@ void removeStructure(std::string name);
 // De-register all structures, of any type. Also removes any quantities associated with the structure
 void removeAllStructures();
 
-void computeLengthScale();
+// Recompute state::lengthScale, boundingBox, and center from all registered structures 
+void updateStructureExtents();
 
 // === Errors
 void error(std::string message);

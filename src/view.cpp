@@ -76,9 +76,23 @@ void processMouseScroll(double scrollAmount, bool scrollClipPlane) {
   }
 }
 
+void resetCameraToDefault() {
+
+    double dist = 1.0;
+    lookAtPoint = state::center;
+    Vector3 cameraSpaceTranslate{0, 0, 0};
+    Vector3 cameraDirection{0, 0, 1};
+    Vector3 upDirection{0, 1, 0};
+    double fov = 65.0;
+    double nearClipRatio = 0.01;
+    double farClipRatio = 20.0;
+
+}
+
 glm::mat4 getViewMatrix() {
   // Map from world coordinates to camera coordinates
-  glm::vec3 eye(cameraDirection.x, cameraDirection.y, cameraDirection.z);
+  Vector3 scaledEye = cameraDirection * state::lengthScale;
+  glm::vec3 eye(scaledEye.x, scaledEye.y, scaledEye.z);
   glm::vec3 center(lookAtPoint.x, lookAtPoint.y, lookAtPoint.z);
   glm::vec3 up(upDirection.x, upDirection.y, upDirection.z);
   glm::mat4 rotateToCameraCoordinates = glm::lookAt(center + eye, center, up);
@@ -89,7 +103,7 @@ glm::mat4 getViewMatrix() {
   glm::mat4 translateCamera =
       glm::translate(glm::mat4(1.0),
                      glm::vec3(-cameraSpaceTranslate.x, -cameraSpaceTranslate.y,
-                               -dist - cameraSpaceTranslate.z));
+                               -dist*state::lengthScale - cameraSpaceTranslate.z));
 
   // Compose the operations together
   glm::mat4 view = translateCamera * rotateToCameraCoordinates;
@@ -116,18 +130,32 @@ Vector3 getCameraWorldPosition() {
 }
 
 Vector3 getLightWorldPosition() {
+
   // The light is over the right shoulder of the camera
   Vector3 leftHand = unit(cross(cameraDirection, upDirection));
-  Vector3 lightPos =
-      lookAtPoint + 10 * (dist + state::lengthScale) * cameraDirection;
-  lightPos = lightPos.rotate_around(upDirection, 3.14159 / 8);
-  lightPos = lightPos.rotate_around(leftHand, 3.14159 / 8);
 
-  // Add a vertical component to the light so that when the
-  // camera is at the horizon, the shadow doesn't shoot off to infinity
-  lightPos = (lightPos + Vector3{0., 20., 0.}) / 2.;
+  Vector3 cameraVec = cameraDirection * state::lengthScale +
+                      cameraSpaceTranslate.x * leftHand + 
+                      cameraSpaceTranslate.y * upDirection + 
+                      (dist*state::lengthScale + cameraSpaceTranslate.z) * cameraDirection;
 
-  return lightPos;
+  Vector3 lightVec = cameraVec * 5;                    
+  lightVec = lightVec.rotate_around(upDirection, PI / 8);
+  lightVec = lightVec.rotate_around(-leftHand, PI / 8);
+  return state::center + lightVec;
+
+  // The light is over the right shoulder of the camera
+//   Vector3 leftHand = unit(cross(cameraDirection, upDirection));
+//   Vector3 lightPos =
+//       lookAtPoint + 10 * (dist * state::lengthScale) * cameraDirection;
+//   lightPos = lightPos.rotate_around(upDirection, 3.14159 / 8);
+//   lightPos = lightPos.rotate_around(leftHand, 3.14159 / 8);
+
+//   // Add a vertical component to the light so that when the
+//   // camera is at the horizon, the shadow doesn't shoot off to infinity
+//   lightPos = (lightPos + Vector3{0., 20., 0.}) / 2.;
+
+//   return lightPos;
 }
 
 }  // namespace view

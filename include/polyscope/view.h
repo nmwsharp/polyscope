@@ -31,14 +31,17 @@ namespace view {
     extern std::array<float, 4> bgColor; 
 
     // === View methods
+
+    void processMouseDrag(Vector2 deltaDrag, bool isRotating);
+    void processMouseScroll(double scrollAmount, bool scrollClipPlane);
+    void setWindowSize(int width, int height);
+    void resetCameraToDefault();
+    
     glm::mat4 getViewMatrix();
     glm::mat4 getPerspectiveMatrix();
     Vector3 getCameraWorldPosition();
     Vector3 getLightWorldPosition();
 
-    void processMouseDrag(Vector2 deltaDrag, bool isRotating);
-    void processMouseScroll(double scrollAmount, bool scrollClipPlane);
-    void setWindowSize(int width, int height);
     
 
 } // namespace view    

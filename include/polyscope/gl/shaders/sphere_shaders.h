@@ -13,20 +13,16 @@ static const VertShader PASSTHRU_SPHERE_VERT_SHADER = {
     {
         {"a_position", GLData::Vector3Float},
         {"a_color", GLData::Vector3Float},
-        {"a_pointRadius", GLData::Float},
     },
 
     // source
     GLSL(150,
         in vec3 a_position;
         in vec3 a_color;
-        in float a_pointRadius;
         out vec3 Color;
-        out float pointRadius;
         void main()
         {
             Color = a_color;
-            pointRadius = a_pointRadius;
             gl_Position = vec4(a_position,1.0);
         }
     )
@@ -39,6 +35,7 @@ static const GeomShader SPHERE_GEOM_SHADER = {
     {
         {"u_viewMatrix", GLData::Matrix44Float},
         {"u_projMatrix", GLData::Matrix44Float},
+        {"u_pointRadius", GLData::Float},
     }, 
 
     // attributes
@@ -50,9 +47,9 @@ static const GeomShader SPHERE_GEOM_SHADER = {
         layout(points) in;
         layout(triangle_strip, max_vertices=100) out;
         in vec3 Color[];
-        in float pointRadius[];
         uniform mat4 u_viewMatrix;
         uniform mat4 u_projMatrix;
+        uniform float u_pointRadius;
         out vec3 colorToFrag;
         out vec3 worldNormalToFrag;
         out vec3 worldPosToFrag;
@@ -83,7 +80,7 @@ static const GeomShader SPHERE_GEOM_SHADER = {
                     float xLower = cosPhiLower * cosTheta;
                     float yLower = cosPhiLower * sinTheta;
                     float zLower = zLower;
-                    vec4 worldPosLower = gl_in[0].gl_Position + vec4(xLower, yLower, zLower, 0) * pointRadius[0];
+                    vec4 worldPosLower = gl_in[0].gl_Position + vec4(xLower, yLower, zLower, 0) * u_pointRadius;
                     gl_Position = PV * worldPosLower;
                     worldPosToFrag = worldPosLower.xyz;
                     worldNormalToFrag = vec3(xLower, yLower, zLower);
@@ -94,7 +91,7 @@ static const GeomShader SPHERE_GEOM_SHADER = {
                     float xUpper = cosPhiUpper * cosTheta;
                     float yUpper = cosPhiUpper * sinTheta;
                     float zUpper = zUpper;
-                    vec4 worldPosUpper = gl_in[0].gl_Position + vec4(xUpper, yUpper, zUpper, 0) * pointRadius[0];
+                    vec4 worldPosUpper = gl_in[0].gl_Position + vec4(xUpper, yUpper, zUpper, 0) * u_pointRadius;
                     gl_Position = PV * worldPosUpper;
                     worldPosToFrag = worldPosUpper.xyz;
                     worldNormalToFrag = vec3(xUpper, yUpper, zUpper);

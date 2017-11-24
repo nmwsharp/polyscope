@@ -24,6 +24,8 @@ bool initialized = false;
 std::unordered_set<std::string> allStructureNames;
 std::map<std::string, PointCloud*> pointClouds;
 double lengthScale = 1.0;
+std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox;
+Vector3 center{0,0,0};
 
 }  // namespace state
 
@@ -174,8 +176,8 @@ void buildStructureGui() {
 }  // anonymous namespace
 
 void show() {
-  bool show_test_window = true;
-  bool show_another_window = false;
+
+  view::resetCameraToDefault();
 
   // Main loop
   while (!glfwWindowShouldClose(imguirender::mainWindow)) {
@@ -238,7 +240,7 @@ void registerPointCloud(std::string name, const std::vector<Vector3>& points) {
   state::pointClouds[name] = new PointCloud(name, points);
   state::allStructureNames.insert(name);
 
-  computeLengthScale();
+  updateStructureExtents();
 }
 
 void removeStructure(std::string name) {
@@ -246,7 +248,7 @@ void removeStructure(std::string name) {
     delete state::pointClouds[name];
     state::pointClouds.erase(name);
     state::allStructureNames.erase(name);
-    computeLengthScale();
+    updateStructureExtents();
     return;
   }
 
@@ -257,27 +259,36 @@ void removeAllStructures() {
   for (auto x : state::pointClouds) delete x.second;
   state::pointClouds.clear();
   state::allStructureNames.clear();
-  computeLengthScale();
+  updateStructureExtents();
 }
 
-void computeLengthScale() {
+void updateStructureExtents() {
   // Default to 1.0;
   if (state::allStructureNames.size() == 0) {
     state::lengthScale = 1.0;
     return;
   }
 
-  // Compute as the max of all structures
+  // Compute length scale and bbox as the max of all structures
   state::lengthScale = 0.0;
+  Vector3 minBbox = Vector3{1,1,1}*std::numeric_limits<double>::infinity();
+  Vector3 maxBbox = -Vector3{1,1,1}*std::numeric_limits<double>::infinity();
   for (auto x : state::pointClouds) {
     state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
+    auto bbox = x.second->boundingBox();
+    minBbox = geometrycentral::componentwiseMin(minBbox, std::get<0>(bbox));
+    maxBbox = geometrycentral::componentwiseMax(maxBbox, std::get<1>(bbox));
   } 
-
   if(state::lengthScale == 0) state::lengthScale = 1.0;
+  if(!minBbox.isFinite() || !maxBbox.isFinite()) {
+    minBbox = -Vector3{1,1,1};
+    maxBbox = Vector3{1,1,1};
+  }
+  std::get<0>(state::boundingBox) = minBbox;
+  std::get<1>(state::boundingBox) = maxBbox;
 
-  // state::lengthScale = .3; 
-  // state::lengthScale = 1.099; 
-  std::cout << "scale = " << state::lengthScale << std::endl;
+  // Center is center of bounding box
+  state::center = 0.5 * (minBbox + maxBbox);
 }
 
 void error(std::string message) {

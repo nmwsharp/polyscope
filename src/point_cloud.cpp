@@ -33,6 +33,8 @@ void PointCloud::draw() {
 
   Vector3 lightPos = view::getLightWorldPosition();
   program->setUniform("u_light", lightPos);
+  
+  program->setUniform("u_pointRadius", 0.01 * state::lengthScale);
 
   program->draw();
 }
@@ -49,13 +51,13 @@ void PointCloud::prepare() {
   std::fill(colorData.begin(), colorData.end(), gl::RGB_ORANGE);
 
   // Constant size
-  std::vector<double> sizeData(points.size());
-  std::fill(sizeData.begin(), sizeData.end(), .01 * state::lengthScale);
+  // std::vector<double> sizeData(points.size());
+  // std::fill(sizeData.begin(), sizeData.end(), .01 * state::lengthScale);
 
   // Store data in buffers
   program->setAttribute("a_position", points);
   program->setAttribute("a_color", colorData);
-  program->setAttribute("a_pointRadius", sizeData);
+  // program->setAttribute("a_pointRadius", sizeData);
 }
 
 void PointCloud::teardown() {
