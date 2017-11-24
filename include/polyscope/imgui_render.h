@@ -7,8 +7,12 @@
 #include <glad/glad.h>
 #endif
 
+// This class is MOSTLY the opengl3 example from the imgui repo, however it also
+// has a few tweaks for polyscope. For instance, some of the io event callback
+// code is here, while the rest is in polyscope.cpp
+
 namespace polyscope {
-namespace imgui {
+namespace imguirender {
 
 // === Global state
 
@@ -22,5 +26,5 @@ extern double time;
 bool ImGui_ImplGlfwGL3_Init(GLFWwindow* window, bool install_callbacks);
 void ImGui_ImplGlfwGL3_NewFrame();
 
-}  // namespace imgui
+}  // namespace imguirender
 }  // namespace polyscope

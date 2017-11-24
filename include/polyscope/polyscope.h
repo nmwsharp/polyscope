@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include <map>
 #include <unordered_set>
 
 #include "polyscope/gl/gl_utils.h"
@@ -26,7 +26,7 @@ extern bool initialized;
 
 // lists of all structures in polyscope
 extern std::unordered_set<std::string> allStructureNames;
-extern std::unordered_map<std::string, PointCloud*> pointClouds;
+extern std::map<std::string, PointCloud*> pointClouds;
 
 // representative length scale for the structures being visualized
 extern double lengthScale;

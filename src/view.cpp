@@ -18,26 +18,20 @@ int bufferHeight = -1;
 double fov = 65.0;
 double nearClipRatio = 0.01;
 double farClipRatio = 20.0;
+std::array<float, 4> bgColor{{.7, .7, .7, 1.0}};
 
-void mouseDragEvent(double oldX, double oldY, double newX, double newY,
-                    bool isRotating) {
-  if (oldX == newX && oldY == newY) {
+void processMouseDrag(Vector2 deltaDrag, bool isRotating) {
+  if (norm(deltaDrag) == 0) {
     return;
   }
 
   // Convert to [-1,1] screen coordinates
-  oldX = oldX * 2 - 1.0;
-  oldY = -(oldY * 2 - 1.0);
-  newX = newX * 2 - 1.0;
-  newY = -(newY * 2 - 1.0);
-
-  double delX = newX - oldX;
-  double delY = newY - oldY;
+  //   deltaDrag = deltaDrag * 2 - Vector2{1.0,1.0};
 
   // Process a rotation
   if (isRotating) {
-    double delTheta = -delX * PI;
-    double delPhi = delY * PI;
+    double delTheta = -deltaDrag.x * PI;
+    double delPhi = deltaDrag.y * PI;
 
     Vector3 leftDirection = cross(upDirection, cameraDirection);
 
@@ -54,27 +48,31 @@ void mouseDragEvent(double oldX, double oldY, double newX, double newY,
   // Process a translation
   else {
     double movementScale = state::lengthScale * 0.3;
-    cameraSpaceTranslate -= movementScale * Vector3{delX, delY, 0};
+    cameraSpaceTranslate -=
+        movementScale * Vector3{deltaDrag.x, deltaDrag.y, 0};
   }
 }
 
-void mouseScrollEvent(double scrollAmount, bool scrollClipPlane) {
+void processMouseScroll(double scrollAmount, bool scrollClipPlane) {
   // Adjust the near clipping plane
   if (scrollClipPlane) {
-    if (scrollAmount > 0) {
-      nearClipRatio -= 0.03 * nearClipRatio;
-    } else {
-      nearClipRatio += 0.03 * nearClipRatio;
-    }
+    nearClipRatio += .03 * scrollAmount * nearClipRatio;
+    // if (scrollAmount > 0) {
+    //   nearClipRatio -= 0.03 * nearClipRatio;
+    // } else {
+    //   nearClipRatio += 0.03 * nearClipRatio;
+    // }
 
   }
   // Translate the camera forwards and backwards
   else {
-    if (scrollAmount > 0) {
-      dist -= 0.03 * state::lengthScale;
-    } else {
-      dist += 0.03 * state::lengthScale;
-    }
+    // dist += .03 * scrollAmount * state::lengthScale;
+    dist += .03 * scrollAmount;
+    // if (scrollAmount > 0) {
+    //   dist -= 0.03 * state::lengthScale;
+    // } else {
+    //   dist += 0.03 * state::lengthScale;
+    // }
   }
 }
 
@@ -104,7 +102,7 @@ glm::mat4 getPerspectiveMatrix() {
   double farClip = farClipRatio * state::lengthScale;
   double nearClip = nearClipRatio * state::lengthScale;
   double fovRad = glm::radians(fov);
-  double aspectRatio = (float) bufferWidth / bufferHeight;
+  double aspectRatio = (float)bufferWidth / bufferHeight;
 
   return glm::perspective(fovRad, aspectRatio, nearClip, farClip);
 }

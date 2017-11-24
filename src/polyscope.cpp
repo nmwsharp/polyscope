@@ -22,7 +22,7 @@ namespace state {
 
 bool initialized = false;
 std::unordered_set<std::string> allStructureNames;
-std::unordered_map<std::string, PointCloud*> pointClouds;
+std::map<std::string, PointCloud*> pointClouds;
 double lengthScale = 1.0;
 
 }  // namespace state
@@ -61,9 +61,9 @@ void init() {
 #if __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  imgui::mainWindow =
+  imguirender::mainWindow =
       glfwCreateWindow(1280, 720, options::programName.c_str(), NULL, NULL);
-  glfwMakeContextCurrent(imgui::mainWindow);
+  glfwMakeContextCurrent(imguirender::mainWindow);
   glfwSwapInterval(1);  // Enable vsync
 
   // === Initialize openGL
@@ -86,7 +86,7 @@ void init() {
 #endif
 
   // Set up ImGUI glfw bindings
-  imgui::ImGui_ImplGlfwGL3_Init(imgui::mainWindow, true);
+  imguirender::ImGui_ImplGlfwGL3_Init(imguirender::mainWindow, true);
 
   ImGuiIO& io = ImGui::GetIO();
   ImFontConfig config;
@@ -104,15 +104,71 @@ void init() {
 
 namespace {
 
+void processMouseEvents() {
+
+  ImGuiIO& io = ImGui::GetIO();
+  if (!io.WantCaptureMouse) {
+
+    // Handle drags
+    if(io.MouseDown[0]) {
+
+      Vector2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
+      view::processMouseDrag(dragDelta, !io.KeyShift);
+
+    }
+
+  }
+}
+
 void drawStructures() {
-    
   glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS); 
+  glDepthFunc(GL_LESS);
 
   for (auto x : state::pointClouds) {
     x.second->draw();
   }
+}
 
+void buildPolyscopeGui() {
+
+  // Create window
+  static bool showPolyscopeWindow = true;
+  ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
+  ImGui::Begin("Polyscope", &showPolyscopeWindow, ImGuiWindowFlags_AlwaysAutoResize);
+
+
+  ImGui::ColorEdit3("background color", (float*)&view::bgColor,
+                    ImGuiColorEditFlags_NoInputs);
+  ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
+              ImGui::GetIO().Framerate);
+
+
+  ImGui::End();
+}
+
+void buildStructureGui() {
+
+  // Create window
+  static bool showStructureWindow = true;
+  ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
+  ImGui::Begin("Structures", &showStructureWindow);
+  // ImGui::Begin("Structures", &showStructureWindow, ImGuiWindowFlags_AlwaysAutoResize);
+
+  ImGui::SetNextTreeNodeOpen(0 > 0, ImGuiCond_FirstUseEver);
+  if (ImGui::CollapsingHeader(("Surface Meshes (" + std::to_string(0) + ")").c_str())) {
+    ImGui::Text("hi mom");
+  }
+
+  // Draw point clouds 
+  ImGui::SetNextTreeNodeOpen(state::pointClouds.size() > 0, ImGuiCond_FirstUseEver);
+  if (ImGui::CollapsingHeader(("Point Clouds (" + std::to_string(state::pointClouds.size()) + ")").c_str())) {
+    for (auto x : state::pointClouds) {
+      x.second->drawUI();
+    }
+  }
+
+
+  ImGui::End();
 }
 
 }  // anonymous namespace
@@ -120,10 +176,9 @@ void drawStructures() {
 void show() {
   bool show_test_window = true;
   bool show_another_window = false;
-  ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
   // Main loop
-  while (!glfwWindowShouldClose(imgui::mainWindow)) {
+  while (!glfwWindowShouldClose(imguirender::mainWindow)) {
     // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to
     // tell if dear imgui wants to use your inputs.
     // - When io.WantCaptureMouse is true, do not dispatch mouse input data to
@@ -134,41 +189,23 @@ void show() {
     // flags.
 
     // Update the width and heigh
-    glfwMakeContextCurrent(imgui::mainWindow);
-    glfwGetWindowSize(imgui::mainWindow, &view::windowWidth, &view::windowHeight);
-    glfwGetFramebufferSize(imgui::mainWindow, &view::bufferWidth, &view::bufferHeight);
+    glfwMakeContextCurrent(imguirender::mainWindow);
+    glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth,
+                      &view::windowHeight);
+    glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth,
+                           &view::bufferHeight);
 
     glfwPollEvents();
-    imgui::ImGui_ImplGlfwGL3_NewFrame();
+    imguirender::ImGui_ImplGlfwGL3_NewFrame();
 
-    // 1. Show a simple window.
-    // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in
-    // a window automatically called "Debug".
-    {
-      static float f = 0.0f;
-      ImGui::Text("Hello, world!");
-      ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-      ImGui::ColorEdit3("clear color", (float*)&clear_color);
-      if (ImGui::Button("Test Window")) show_test_window ^= 1;
-      if (ImGui::Button("Another Window")) show_another_window ^= 1;
-      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                  1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-    }
+    processMouseEvents();
 
-    // 2. Show another simple window. In most cases you will use an explicit
-    // Begin/End pair to name the window.
-    if (show_another_window) {
-      ImGui::Begin("Another Window", &show_another_window);
-      ImGui::Text("Hello from another window!");
-      ImGui::End();
-    }
+    // Build the GUI components
+    buildPolyscopeGui();
+    buildStructureGui();
 
-    // 3. Show the ImGui test window. Most of the sample code is in
-    // ImGui::ShowTestWindow().
-    if (show_test_window) {
-      ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
-      ImGui::ShowTestWindow(&show_test_window);
-    }
+    // Process UI events
+
 
     // TODO handle picking if needed
 
@@ -176,8 +213,9 @@ void show() {
 
     // Clear out the gui
     glViewport(0, 0, view::bufferWidth, view::bufferHeight);
-    glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-    glClearDepth( 1. );
+    glClearColor(view::bgColor[0], view::bgColor[1], view::bgColor[2],
+                 view::bgColor[3]);
+    glClearDepth(1.);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     // Draw structures in the scene
@@ -186,8 +224,7 @@ void show() {
     // Draw the GUI
     ImGui::Render();
 
-
-    glfwSwapBuffers(imgui::mainWindow);
+    glfwSwapBuffers(imguirender::mainWindow);
   }
 }
 
@@ -234,7 +271,13 @@ void computeLengthScale() {
   state::lengthScale = 0.0;
   for (auto x : state::pointClouds) {
     state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
-  }
+  } 
+
+  if(state::lengthScale == 0) state::lengthScale = 1.0;
+
+  // state::lengthScale = .3; 
+  // state::lengthScale = 1.099; 
+  std::cout << "scale = " << state::lengthScale << std::endl;
 }
 
 void error(std::string message) {

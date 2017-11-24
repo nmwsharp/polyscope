@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     // Create a point cloud
     std::vector<Vector3> points;
     for(size_t i = 0; i < 300; i++) {
-        points.push_back(Vector3{unitRand(), unitRand(), unitRand()});
+        points.push_back(2*Vector3{unitRand()-.5, unitRand()-.5, unitRand()-.5});
     }
 
     // Load the point cloud in to polyscope

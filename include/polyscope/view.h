@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "polyscope/gl/gl_utils.h"
 
 // GLM for view matrices
@@ -26,6 +28,7 @@ namespace view {
     extern double fov;
     extern double nearClipRatio;
     extern double farClipRatio;
+    extern std::array<float, 4> bgColor; 
 
     // === View methods
     glm::mat4 getViewMatrix();
@@ -33,8 +36,8 @@ namespace view {
     Vector3 getCameraWorldPosition();
     Vector3 getLightWorldPosition();
 
-    void mouseDragEvent(double oldX, double oldY, double newX, double newY, bool isRotating);
-    void mouseScrollEvent(double scrollAmount, bool scrollClipPlane);
+    void processMouseDrag(Vector2 deltaDrag, bool isRotating);
+    void processMouseScroll(double scrollAmount, bool scrollClipPlane);
     void setWindowSize(int width, int height);
     
 

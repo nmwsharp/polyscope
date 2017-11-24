@@ -1,5 +1,6 @@
 #include "polyscope/imgui_render.h"
 
+#include <iostream>
 #include <limits>
 
 #ifdef __APPLE__
@@ -17,11 +18,12 @@
 #endif
 
 #include "imgui.h"
+#include "polyscope/polyscope.h"
 
 // === ImGUI glfw bindings
 // Basically copied from example
 namespace polyscope {
-namespace imgui {
+namespace imguirender {
 
 // Data
 GLFWwindow* mainWindow = NULL;
@@ -193,13 +195,41 @@ static void ImGui_ImplGlfwGL3_SetClipboardText(void* user_data,
 
 void ImGui_ImplGlfwGL3_MouseButtonCallback(GLFWwindow*, int button, int action,
                                            int /*mods*/) {
-  if (action == GLFW_PRESS && button >= 0 && button < 3)
+  if (action == GLFW_PRESS && button >= 0 && button < 3) {
     g_MouseJustPressed[button] = true;
+
+    ImGuiIO& io = ImGui::GetIO();
+    if (!io.WantCaptureMouse) {
+      // Do polyscope tuff
+    }
+  }
 }
 
-void ImGui_ImplGlfwGL3_ScrollCallback(GLFWwindow*, double /*xoffset*/,
+void ImGui_ImplGlfwGL3_ScrollCallback(GLFWwindow*, double xoffset,
                                       double yoffset) {
   g_MouseWheel += (float)yoffset;  // Use fractional mouse wheel.
+
+      ImGuiIO& io = ImGui::GetIO();
+  if (!io.WantCaptureMouse) {
+    // Do ployscope stuff
+
+    // On some setups, shift flips the scroll direction, so take the max
+    // scrolling in any direction
+    double maxScroll = xoffset;
+    if (std::abs(yoffset) > std::abs(xoffset)) {
+      maxScroll = yoffset;
+    }
+
+    // Pass camera commands to the camera
+    if (maxScroll != 0.0) {
+      int leftShiftState = glfwGetKey(mainWindow, GLFW_KEY_LEFT_SHIFT);
+      int rightShiftState = glfwGetKey(mainWindow, GLFW_KEY_RIGHT_SHIFT);
+      bool scrollClipPlane =
+          (leftShiftState == GLFW_PRESS || rightShiftState == GLFW_PRESS);
+
+      view::processMouseScroll(maxScroll, scrollClipPlane);
+    }
+  }
 }
 
 void ImGui_ImplGlfwGL3_KeyCallback(GLFWwindow*, int key, int, int action,
@@ -216,6 +246,11 @@ void ImGui_ImplGlfwGL3_KeyCallback(GLFWwindow*, int key, int, int action,
   io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
   io.KeySuper =
       io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
+
+  // Quit polyscope on escape key
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    glfwSetWindowShouldClose(mainWindow, true);
+  }
 }
 
 void ImGui_ImplGlfwGL3_CharCallback(GLFWwindow*, unsigned int c) {
@@ -483,5 +518,5 @@ void ImGui_ImplGlfwGL3_NewFrame() {
   ImGui::NewFrame();
 }
 
-} // namespace imgui
-} // namespace polyscope
+}  // namespace imguirender
+}  // namespace polyscope
