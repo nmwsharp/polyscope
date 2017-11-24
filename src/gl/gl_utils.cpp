@@ -6,7 +6,9 @@
 
 using std::cout; using std::endl;
 
-/*
+namespace polyscope {
+namespace gl {
+
 GLuint GLProgram::commonShaderHandle = 0;
 
 GLProgram::GLProgram(const VertShader* vShader, const FragShader* fShader, DrawMode dm) 
@@ -903,8 +905,6 @@ void GLProgram::draw() {
     checkGLError();
 }
 
-*/
-
 // Helper function to print compile logs
 void printShaderInfoLog(GLuint shaderHandle) {
     int logLen = 0;
@@ -964,3 +964,6 @@ void checkGLError(bool fatal) {
     }
 #endif
 }
+
+} // namespace gl
+} // namespace polyscope

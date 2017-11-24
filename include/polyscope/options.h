@@ -17,5 +17,9 @@ namespace options {
     // A string to prefex all messages printed to stdout
     extern std::string printPrefx;
 
+    // Should errors be exceptions or printed messages?
+    extern bool execptionOnError;
+    
+
 } // namespace options
 } // namespace polyscope

@@ -18,6 +18,8 @@ namespace polyscope {
 namespace state {
 
 bool initialized = false;
+std::unordered_set<std::string> allStructureNames;
+std::unordered_map<std::string, PointCloud*> pointClouds;
 
 }  // namespace state
 
@@ -26,6 +28,7 @@ namespace options {
 std::string programName = "Polyscope";
 int verbosity = 2;
 std::string printPrefix = "Polyscope: ";
+bool exceptionOnError = true;
 
 }  // namespace options
 
@@ -636,6 +639,46 @@ void show() {
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui::Render();
     glfwSwapBuffers(g_Window);
+  }
+}
+
+void registerPointCloud(std::string name, const std::vector<Vector3>& points) {
+
+  // Make sure the name has not already been used  
+  if(state::allStructureNames.find(name) != state::allStructureNames.end()) {
+    error("Structure name " + name + " is already in used");
+  }
+
+  // Add the new point cloud
+  state::pointClouds[name] = new PointCloud(name, points);
+  state::allStructureNames.insert(name);
+}
+
+void removeStructure(std::string name) {
+
+  if(state::pointClouds.find(name) != state::pointClouds.end()) {
+    delete state::pointClouds[name];
+    state::pointClouds.erase(name);
+    state::allStructureNames.erase(name);
+    return;
+  }
+
+  error("No structure named: " + name + " to remove.");
+}
+
+void removeAllStructures() {
+
+  for(auto x : state::pointClouds) delete x.second;
+  state::pointClouds.clear();
+  state::allStructureNames.clear();
+
+}
+
+void error(std::string message) {
+  if(options::exceptionOnError) {
+    throw std::logic_error(options::printPrefix + message);
+  } else {
+    std::cout << options::printPrefix << message << std::endl;
   }
 }
 

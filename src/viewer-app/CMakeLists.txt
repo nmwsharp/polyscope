@@ -8,7 +8,7 @@ endif()
 # Create a single library for the project
 add_executable(
         polyscopeviewer
-        viewer-app.cpp
+        viewer_app.cpp
         )
 
 # Link settings
