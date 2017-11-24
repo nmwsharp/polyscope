@@ -13,6 +13,7 @@
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/colors.h"
 #include "polyscope/gl/colormaps.h"
+#include "polyscope/view.h"
 
 #include "geometrycentral/vector2.h"
 #include "geometrycentral/vector3.h"

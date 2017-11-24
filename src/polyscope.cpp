@@ -10,6 +10,7 @@
 #endif
 
 #include <imgui.h>
+#include "polyscope/view.h"
 
 namespace polyscope {
 
@@ -20,6 +21,7 @@ namespace state {
 bool initialized = false;
 std::unordered_set<std::string> allStructureNames;
 std::unordered_map<std::string, PointCloud*> pointClouds;
+double lengthScale = 1.0;
 
 }  // namespace state
 
@@ -568,11 +570,11 @@ void init() {
   ImFontConfig config;
   config.OversampleH = 5;
   config.OversampleV = 5;
-  // io.Fonts->AddFontDefault();
+  io.Fonts->AddFontDefault();
   // io.Fonts->AddFontFromFileTTF("../deps/imgui/imgui/extra_fonts/Roboto-Medium.ttf",
   // 16.0f);
-  io.Fonts->AddFontFromFileTTF(
-      "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
+  // io.Fonts->AddFontFromFileTTF(
+  //     "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
   // io.Fonts->AddFontFromFileTTF("../deps/imgui/imgui/extra_fonts/DroidSans.ttf",
   // 16.0f);
   // io.Fonts->AddFontFromFileTTF("../deps/imgui/imgui/extra_fonts/ProggyTiny.ttf",
@@ -581,8 +583,26 @@ void init() {
   // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f,
   // NULL, io.Fonts->GetGlyphRangesJapanese());  IM_ASSERT(font != NULL);
 
+  // Initialize common shaders
+  gl::GLProgram::initCommonShaders();
+
   state::initialized = true;
 }
+
+namespace {
+
+void drawStructures() {
+    
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS); 
+
+  for (auto x : state::pointClouds) {
+    x.second->draw();
+  }
+
+}
+
+}  // anonymous namespace
 
 void show() {
   bool show_test_window = true;
@@ -599,6 +619,12 @@ void show() {
     // data to your main application. Generally you may always pass all inputs
     // to dear imgui, and hide them from your application based on those two
     // flags.
+
+    // Update the width and heigh
+    glfwMakeContextCurrent(g_Window);
+    glfwGetWindowSize(g_Window, &view::windowWidth, &view::windowHeight);
+    glfwGetFramebufferSize(g_Window, &view::bufferWidth, &view::bufferHeight);
+
     glfwPollEvents();
     ImGui_ImplGlfwGL3_NewFrame();
 
@@ -631,35 +657,46 @@ void show() {
       ImGui::ShowTestWindow(&show_test_window);
     }
 
-    // Rendering
-    int display_w, display_h;
-    glfwGetFramebufferSize(g_Window, &display_w, &display_h);
-    glViewport(0, 0, display_w, display_h);
+    // TODO handle picking if needed
+
+    // === Rendering
+
+    // Clear out the gui
+    glViewport(0, 0, view::bufferWidth, view::bufferHeight);
     glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClearDepth( 1. );
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+    // Draw structures in the scene
+    drawStructures();
+
+    // Draw the GUI
     ImGui::Render();
+
+
     glfwSwapBuffers(g_Window);
   }
 }
 
 void registerPointCloud(std::string name, const std::vector<Vector3>& points) {
-
-  // Make sure the name has not already been used  
-  if(state::allStructureNames.find(name) != state::allStructureNames.end()) {
+  // Make sure the name has not already been used
+  if (state::allStructureNames.find(name) != state::allStructureNames.end()) {
     error("Structure name " + name + " is already in used");
   }
 
   // Add the new point cloud
   state::pointClouds[name] = new PointCloud(name, points);
   state::allStructureNames.insert(name);
+
+  computeLengthScale();
 }
 
 void removeStructure(std::string name) {
-
-  if(state::pointClouds.find(name) != state::pointClouds.end()) {
+  if (state::pointClouds.find(name) != state::pointClouds.end()) {
     delete state::pointClouds[name];
     state::pointClouds.erase(name);
     state::allStructureNames.erase(name);
+    computeLengthScale();
     return;
   }
 
@@ -667,15 +704,28 @@ void removeStructure(std::string name) {
 }
 
 void removeAllStructures() {
-
-  for(auto x : state::pointClouds) delete x.second;
+  for (auto x : state::pointClouds) delete x.second;
   state::pointClouds.clear();
   state::allStructureNames.clear();
+  computeLengthScale();
+}
 
+void computeLengthScale() {
+  // Default to 1.0;
+  if (state::allStructureNames.size() == 0) {
+    state::lengthScale = 1.0;
+    return;
+  }
+
+  // Compute as the max of all structures
+  state::lengthScale = 0.0;
+  for (auto x : state::pointClouds) {
+    state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
+  }
 }
 
 void error(std::string message) {
-  if(options::exceptionOnError) {
+  if (options::exceptionOnError) {
     throw std::logic_error(options::printPrefix + message);
   } else {
     std::cout << options::printPrefix << message << std::endl;

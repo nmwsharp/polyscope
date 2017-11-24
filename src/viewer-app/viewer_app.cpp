@@ -6,8 +6,6 @@ using namespace geometrycentral;
 
 int main(int argc, char** argv) {
     
-    geometrycentral::HalfedgeMesh* mesh = new geometrycentral::HalfedgeMesh();
-    VertexData<double> vd(mesh);
 
     // Initialize polyscope
     polyscope::init();

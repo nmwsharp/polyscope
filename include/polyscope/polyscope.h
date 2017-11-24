@@ -28,6 +28,9 @@ extern bool initialized;
 extern std::unordered_set<std::string> allStructureNames;
 extern std::unordered_map<std::string, PointCloud*> pointClouds;
 
+// representative length scale for the structures being visualized
+extern double lengthScale;
+
 }  // namespace state
 
 // === Manage structures tracked by polyscope
@@ -42,6 +45,7 @@ void removeStructure(std::string name);
 // De-register all structures, of any type. Also removes any quantities associated with the structure
 void removeAllStructures();
 
+void computeLengthScale();
 
 // === Errors
 void error(std::string message);
