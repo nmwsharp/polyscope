@@ -12,7 +12,7 @@ using namespace geometrycentral;
 namespace polyscope {
 
 PointCloud::PointCloud(std::string name, const std::vector<Vector3>& points_)
-    : Structure(name), points(points_) {
+    : Structure(name, StructureType::PointCloud), points(points_) {
   prepare();
 }
 
@@ -71,9 +71,12 @@ void PointCloud::teardown() {
 
 void PointCloud::drawUI() {
 
+  ImGui::PushID(name.c_str()); // ensure there are no conflicts with identically-named labels
+
   ImGui::TextUnformatted(name.c_str());
   ImGui::Checkbox("Enabled", &enabled);
 
+  ImGui::PopID();
 }
 
 double PointCloud::lengthScale() {

@@ -26,7 +26,10 @@ double lengthScale = 1.0;
 std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox;
 Vector3 center{0, 0, 0};
 
-std::unordered_set<std::string> allStructureNames;
+std::map<StructureType, std::map<std::string, Structure*>> structureCategories{
+    {StructureType::PointCloud, {}},
+    {StructureType::SurfaceMesh, {}},
+};
 std::map<std::string, PointCloud*> pointClouds;
 std::map<std::string, SurfaceMesh*> surfaceMeshes;
 
@@ -153,26 +156,35 @@ void buildStructureGui() {
   // ImGui::Begin("Structures", &showStructureWindow,
   // ImGuiWindowFlags_AlwaysAutoResize);
 
-  ImGui::SetNextTreeNodeOpen(state::surfaceMeshes.size() > 0, ImGuiCond_FirstUseEver);
-  if (ImGui::CollapsingHeader(
-          ("Surface Meshes (" + std::to_string(state::surfaceMeshes.size()) + ")").c_str())) {
-    ImGui::Text("hi mom");
-  }
+  for (auto cat : state::structureCategories) {
+    std::string catName = getStructureTypeName(cat.first);
+    std::map<std::string, Structure*>& structures = cat.second;
 
-  // Draw point clouds
-  ImGui::SetNextTreeNodeOpen(state::pointClouds.size() > 0,
-                             ImGuiCond_FirstUseEver);
-  if (ImGui::CollapsingHeader(
-          ("Point Clouds (" + std::to_string(state::pointClouds.size()) + ")")
-              .c_str())) {
-    for (auto x : state::pointClouds) {
-      x.second->drawUI();
+    ImGui::PushID(catName.c_str()); // ensure there are no conflicts with identically-named labels
+
+    // Build the structure's UI
+    ImGui::SetNextTreeNodeOpen(structures.size() > 0, ImGuiCond_FirstUseEver);
+    if (ImGui::CollapsingHeader(
+            (catName + " (" + std::to_string(structures.size()) + ")")
+                .c_str())) {
+      for (auto x : structures) {
+        x.second->drawUI();
+      }
     }
+
+    ImGui::PopID();
   }
 
   ImGui::End();
 }
 
+void checkStructureNameInUse(std::string name) {
+  for (const auto cat : state::structureCategories) {
+    if (cat.second.find(name) != cat.second.end()) {
+      error("Structure name " + name + " is already in use.");
+    }
+  }
+}
 }  // anonymous namespace
 
 void show() {
@@ -229,27 +241,23 @@ void show() {
 }
 
 void registerPointCloud(std::string name, const std::vector<Vector3>& points) {
-  // Make sure the name has not already been used
-  if (state::allStructureNames.find(name) != state::allStructureNames.end()) {
-    error("Structure name " + name + " is already in used");
-  }
+  checkStructureNameInUse(name);
 
   // Add the new point cloud
   state::pointClouds[name] = new PointCloud(name, points);
-  state::allStructureNames.insert(name);
+  state::structureCategories[StructureType::PointCloud][name] =
+      state::pointClouds[name];
 
   updateStructureExtents();
 }
 
 void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom) {
-  // Make sure the name has not already been used
-  if (state::allStructureNames.find(name) != state::allStructureNames.end()) {
-    error("Structure name " + name + " is already in used");
-  }
+  checkStructureNameInUse(name);
 
   // Add the new point cloud
   state::surfaceMeshes[name] = new SurfaceMesh(name, geom);
-  state::allStructureNames.insert(name);
+  state::structureCategories[StructureType::SurfaceMesh][name] =
+      state::surfaceMeshes[name];
 
   updateStructureExtents();
 }
@@ -259,7 +267,7 @@ void removeStructure(std::string name) {
   if (state::pointClouds.find(name) != state::pointClouds.end()) {
     delete state::pointClouds[name];
     state::pointClouds.erase(name);
-    state::allStructureNames.erase(name);
+    state::structureCategories[StructureType::PointCloud].erase(name);
     updateStructureExtents();
     return;
   }
@@ -268,7 +276,7 @@ void removeStructure(std::string name) {
   if (state::surfaceMeshes.find(name) != state::surfaceMeshes.end()) {
     delete state::surfaceMeshes[name];
     state::surfaceMeshes.erase(name);
-    state::allStructureNames.erase(name);
+    state::structureCategories[StructureType::SurfaceMesh].erase(name);
     updateStructureExtents();
     return;
   }
@@ -281,17 +289,11 @@ void removeAllStructures() {
   for (auto x : state::surfaceMeshes) delete x.second;
   state::pointClouds.clear();
   state::surfaceMeshes.clear();
-  state::allStructureNames.clear();
+  state::structureCategories.clear();
   updateStructureExtents();
 }
 
 void updateStructureExtents() {
-  // Default to 1.0;
-  if (state::allStructureNames.size() == 0) {
-    state::lengthScale = 1.0;
-    return;
-  }
-
   // Compute length scale and bbox as the max of all structures
   state::lengthScale = 0.0;
   Vector3 minBbox = Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();

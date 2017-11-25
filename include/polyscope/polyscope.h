@@ -7,6 +7,7 @@
 #include "polyscope/options.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/structure.h"
 
 namespace polyscope {
 
@@ -25,8 +26,9 @@ namespace state {
 // has polyscope::init() been called?
 extern bool initialized;
 
-// lists of all structures in polyscope
-extern std::unordered_set<std::string> allStructureNames;
+// lists of all structures in polyscope (used to itearte over all structures)
+extern std::map<StructureType, std::map<std::string, Structure*>> structureCategories;
+// also lists all structues, but lists are typed 
 extern std::map<std::string, PointCloud*> pointClouds;
 extern std::map<std::string, SurfaceMesh*> surfaceMeshes;
 

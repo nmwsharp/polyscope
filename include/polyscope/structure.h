@@ -1,15 +1,22 @@
 #pragma once
 
+#include <map>
+#include <string>
+#include <iostream>
+
 #include "geometrycentral/vector3.h"
 
 namespace polyscope {
+
+// Enum of structure types
+enum class StructureType {SurfaceMesh=0, PointCloud};
 
 class Structure {
  public:
   // === Member functions ===
 
   // Base constructor which sets the name
-  Structure(std::string name);
+  Structure(std::string name, StructureType type);
 
   virtual ~Structure() = 0;
 
@@ -37,6 +44,22 @@ class Structure {
 
   // === Member variables ===
   const std::string name;
+  const StructureType type; // useful for printing to GUI
 };
+
+// Make structure type printable
+inline std::string getStructureTypeName(StructureType type){
+  switch(type) {
+    case StructureType::SurfaceMesh:
+       return "Surface Mesh";
+    case StructureType::PointCloud:
+       return "Point Cloud";
+    }
+}
+inline std::ostream& operator<<(std::ostream& out, const StructureType value){
+  return out << getStructureTypeName(value);
+}
+
+
 
 }  // namespace polyscope

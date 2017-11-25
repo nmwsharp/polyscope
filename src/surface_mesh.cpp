@@ -12,7 +12,7 @@ using namespace geometrycentral;
 namespace polyscope {
 
 SurfaceMesh::SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_)
-    : Structure(name) {
+    :  Structure(name, StructureType::SurfaceMesh) {
 
   // Copy the mesh and save the transfer object
   mesh = geometry_->getMesh()->copy(transfer); 
@@ -75,9 +75,12 @@ void SurfaceMesh::teardown() {
 
 void SurfaceMesh::drawUI() {
 
+  ImGui::PushID(name.c_str()); // ensure there are no conflicts with identically-named labels
+
   ImGui::TextUnformatted(name.c_str());
   ImGui::Checkbox("Enabled", &enabled);
 
+  ImGui::PopID();
 }
 
 double SurfaceMesh::lengthScale() {
