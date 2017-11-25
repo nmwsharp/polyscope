@@ -32,8 +32,8 @@ void PointCloud::draw() {
   program->setUniform("u_eye", eyePos);
 
   // Vector3 lightPos = view::getLightWorldPosition();center
-  program->setUniform("u_lightC", state::center);
-  program->setUniform("u_lightD", 2*state::lengthScale);
+  program->setUniform("u_lightCenter", state::center);
+  program->setUniform("u_lightDist", 2*state::lengthScale);
   
   program->setUniform("u_camZ", view::cameraDirection);
   program->setUniform("u_camUp", view::upDirection);

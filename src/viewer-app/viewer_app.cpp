@@ -16,7 +16,8 @@ int main(int argc, char** argv) {
     std::vector<Vector3> points;
     for(size_t i = 0; i < 3000; i++) {
     // for(size_t i = 0; i < 1; i++) {
-        points.push_back(Vector3{10,10,10} + 20*Vector3{unitRand()-.5, unitRand()-.5, unitRand()-.5});
+        // points.push_back(Vector3{10,10,10} + 20*Vector3{unitRand()-.5, unitRand()-.5, unitRand()-.5});
+        points.push_back(3*Vector3{unitRand()-.5, unitRand()-.5, unitRand()-.5});
     }
 
     // Load the point cloud in to polyscope
@@ -24,7 +25,8 @@ int main(int argc, char** argv) {
 
     // Read a mesh
     Geometry<Euclidean>* geom;
-    HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/spot.obj"), geom);
+    HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/sphere_medium.obj"), geom);
+    // HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/armadillo.obj"), geom);
     polyscope::registerSurfaceMesh("mr spot", geom);
 
     // Load the mesh in to polyscope

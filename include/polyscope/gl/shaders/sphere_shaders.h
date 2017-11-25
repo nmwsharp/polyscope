@@ -190,8 +190,8 @@ static const FragShader SHINY_SPHERE_FRAG_SHADER = {
     // uniforms
     {
         {"u_eye", GLData::Vector3Float},
-        {"u_lightC", GLData::Vector3Float},
-        {"u_lightD", GLData::Float},
+        {"u_lightCenter", GLData::Vector3Float},
+        {"u_lightDist", GLData::Float},
         {"u_camRight", GLData::Vector3Float},
         {"u_camUp", GLData::Vector3Float},
         {"u_camZ", GLData::Vector3Float},
@@ -212,8 +212,8 @@ static const FragShader SHINY_SPHERE_FRAG_SHADER = {
     GLSL(150,
         uniform vec3 u_eye;
         // uniform vec3 u_light;
-        uniform vec3 u_lightC;
-        uniform float u_lightD;
+        uniform vec3 u_lightCenter;
+        uniform float u_lightDist;
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
@@ -236,7 +236,7 @@ static const FragShader SHINY_SPHERE_FRAG_SHADER = {
            float zC = sqrt(1.0 - r*r);
            vec3 worldN = (zC * u_camZ + boxCoord.x * u_camRight + boxCoord.y * u_camUp);
 
-           outputF = lightSurface(worldPosToFrag, worldN, colorToFrag, u_lightC, u_lightD, u_eye);
+           outputF = lightSurface(worldPosToFrag, worldN, colorToFrag, u_lightCenter, u_lightDist, u_eye);
         }
     )
 };

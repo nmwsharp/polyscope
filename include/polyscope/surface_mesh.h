@@ -48,7 +48,9 @@ class SurfaceMesh : public Structure {
   geometrycentral::HalfedgeMesh* mesh;
   geometrycentral::Geometry<Euclidean>* geometry;
   geometrycentral::HalfedgeMeshDataTransfer transfer;
-  
+
+  // Visualization settings
+  Vector3 color = gl::RGB_SKYBLUE;  
 
   // Drawing related things
   gl::GLProgram* program = nullptr;

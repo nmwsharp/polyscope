@@ -128,8 +128,10 @@ void drawStructures() {
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
 
-  for (auto x : state::pointClouds) {
-    x.second->draw();
+  for (auto cat : state::structureCategories) {
+    for (auto x : cat.second) {
+      x.second->draw();
+    }
   }
 }
 
@@ -160,7 +162,8 @@ void buildStructureGui() {
     std::string catName = getStructureTypeName(cat.first);
     std::map<std::string, Structure*>& structures = cat.second;
 
-    ImGui::PushID(catName.c_str()); // ensure there are no conflicts with identically-named labels
+    ImGui::PushID(catName.c_str());  // ensure there are no conflicts with
+                                     // identically-named labels
 
     // Build the structure's UI
     ImGui::SetNextTreeNodeOpen(structures.size() > 0, ImGuiCond_FirstUseEver);
@@ -299,18 +302,14 @@ void updateStructureExtents() {
   Vector3 minBbox = Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
   Vector3 maxBbox = -Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
 
-  for (auto x : state::pointClouds) {
-    state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
-    auto bbox = x.second->boundingBox();
-    minBbox = geometrycentral::componentwiseMin(minBbox, std::get<0>(bbox));
-    maxBbox = geometrycentral::componentwiseMax(maxBbox, std::get<1>(bbox));
-  }
-
-  for (auto x : state::surfaceMeshes) {
-    state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
-    auto bbox = x.second->boundingBox();
-    minBbox = geometrycentral::componentwiseMin(minBbox, std::get<0>(bbox));
-    maxBbox = geometrycentral::componentwiseMax(maxBbox, std::get<1>(bbox));
+  for (auto cat : state::structureCategories) {
+    for (auto x : cat.second) {
+      state::lengthScale =
+          std::max(state::lengthScale, x.second->lengthScale());
+      auto bbox = x.second->boundingBox();
+      minBbox = geometrycentral::componentwiseMin(minBbox, std::get<0>(bbox));
+      maxBbox = geometrycentral::componentwiseMax(maxBbox, std::get<1>(bbox));
+    }
   }
 
   if (state::lengthScale == 0) state::lengthScale = 1.0;

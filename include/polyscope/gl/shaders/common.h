@@ -21,8 +21,8 @@ float getSurfaceShininess() { return 12.; }
 vec3 getBackgroundColor() { return RGB_DARKGRAY; }
 
 float diffuse( vec3 N, vec3 L ) {
-   //return max( 0., dot( N, L ));
-   return max( 0.3*dot( -N ,L ), dot( N, L ));  // nsharp: modification to give a little bit more character to surfaces viewed from behind
+   return max( 0., dot( N, L ));
+//    return max( 0.3*dot( -N ,L ), dot( N, L ));  // nsharp: modification to give a little bit more character to surfaces viewed from behind
 }
 
 float specular( vec3 N, vec3 L, vec3 E, float shininess ) {
@@ -49,11 +49,23 @@ vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float li
    vec3 L = normalize( Lpos - position );
    vec3 E = normalize( eye - position );
 
+   // Accumulate diffuse term
+   vec3 LPosUp1 = lightC + vec3(1., 1., 1.) * lightD;
+   vec3 LUp1 = normalize( LPosUp1 - position );
+   vec3 LPosUp2 = lightC + vec3(1., -1., -1.) * lightD;
+   vec3 LUp2 = normalize( LPosUp2 - position );
+   vec3 LPosDown1 = lightC + vec3(-1., 1., -1.) * lightD;
+   vec3 LDown1 = normalize( LPosDown1 - position );
+   vec3 LPosDown2 = lightC + vec3(-1., -1., 1.) * lightD;
+   vec3 LDown2 = normalize( LPosDown2 - position );
+   float diffuseTerm = (diffuse(N, LUp1) + diffuse(N, LUp2) + diffuse(N, LDown1) + diffuse(N, LDown2)) * .7;
+//    float diffuseTerm = max(max(diffuse(N, LUp1), diffuse(N, LUp2)), max(diffuse(N, LDown1), diffuse(N, LDown2)));
+
    vec4 result;
-   result.rgb = 0.05*color +
-                0.9*diffuse(N,L)*color +
-                0.2*specular(N,L,E,s)*one +
-                .5*fresnel(N,E)*bgColor;
+   result.rgb = 0.10*color +
+                0.8*diffuseTerm*color +
+                0.1*specular(N,LUp1,E,s)*one +
+                .15*fresnel(N,E)*bgColor;
    result.a = 1.0;
 
    return result;
