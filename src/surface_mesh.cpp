@@ -36,7 +36,7 @@ void SurfaceMesh::draw() {
   program->setUniform("u_eye", eyePos);
 
   program->setUniform("u_lightCenter", state::center);
-  program->setUniform("u_lightDist", 2*state::lengthScale);
+  program->setUniform("u_lightDist", 5*state::lengthScale);
   program->setUniform("u_color", color);
   
   program->draw();

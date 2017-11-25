@@ -25,6 +25,29 @@ float diffuse( vec3 N, vec3 L ) {
 //    return max( 0.3*dot( -N ,L ), dot( N, L ));  // nsharp: modification to give a little bit more character to surfaces viewed from behind
 }
 
+float orenNayarDiffuse(
+  // from https://github.com/glslify/glsl-diffuse-oren-nayar
+  vec3 lightDirection,
+  vec3 viewDirection,
+  vec3 surfaceNormal,
+  float roughness,
+  float albedo) {
+  
+  float LdotV = dot(lightDirection, viewDirection);
+  float NdotL = dot(lightDirection, surfaceNormal);
+  float NdotV = dot(surfaceNormal, viewDirection);
+
+  float s = LdotV - NdotL * NdotV;
+  float t = mix(1.0, max(NdotL, NdotV), step(0.0, s));
+
+  float sigma2 = roughness * roughness;
+  float A = 1.0 + sigma2 * (albedo / (sigma2 + 0.13) + 0.5 / (sigma2 + 0.33));
+  float B = 0.45 * sigma2 / (sigma2 + 0.09);
+
+  return albedo * max(0.0, NdotL) * (A + B * s / t) / 3.14159;
+}
+
+
 float specular( vec3 N, vec3 L, vec3 E, float shininess ) {
    vec3 R = 2.*dot(L,N)*N - L;
    return pow( max( 0., dot( R, E )), shininess );
@@ -40,31 +63,38 @@ vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float li
 {
    vec3 one = vec3( 1., 1., 1. );
 
+   // Lights
+    vec3 lightP[] = vec3[](
+        vec3(1., 0., 1.),
+        vec3(-.5, .86, 1.),
+        vec3(-.5, -.86, 1.),
+        vec3(-1., 0., -1.),
+        vec3(.5, .86, -1.),
+        vec3(.5, -.86, -1)
+    );
+
    float s = getSurfaceShininess();
 //    vec3 bgColor = getBackgroundColor();
    vec3 bgColor = one;
 
    vec3 N = normalize( normal );
-   vec3 Lpos = lightC + vec3(1, 1, 1) * lightD;
-   vec3 L = normalize( Lpos - position );
    vec3 E = normalize( eye - position );
 
    // Accumulate diffuse term
-   vec3 LPosUp1 = lightC + vec3(1., 1., 1.) * lightD;
-   vec3 LUp1 = normalize( LPosUp1 - position );
-   vec3 LPosUp2 = lightC + vec3(1., -1., -1.) * lightD;
-   vec3 LUp2 = normalize( LPosUp2 - position );
-   vec3 LPosDown1 = lightC + vec3(-1., 1., -1.) * lightD;
-   vec3 LDown1 = normalize( LPosDown1 - position );
-   vec3 LPosDown2 = lightC + vec3(-1., -1., 1.) * lightD;
-   vec3 LDown2 = normalize( LPosDown2 - position );
-   float diffuseTerm = (diffuse(N, LUp1) + diffuse(N, LUp2) + diffuse(N, LDown1) + diffuse(N, LDown2)) * .7;
-//    float diffuseTerm = max(max(diffuse(N, LUp1), diffuse(N, LUp2)), max(diffuse(N, LDown1), diffuse(N, LDown2)));
+   float diffuseTerm = 0;
+   for(int i = 0; i < lightP.length(); i++) {
+    vec3 LPos = lightC + lightP[i] * lightD;
+    vec3 LDir = normalize( LPos - position );
+    diffuseTerm += orenNayarDiffuse(LDir, E, N, .4, 1.0);
+   }
+    
+   vec3 LPos = lightC + lightP[0] * lightD;
+   vec3 LDir = normalize( LPos - position );
 
    vec4 result;
-   result.rgb = 0.10*color +
-                0.8*diffuseTerm*color +
-                0.1*specular(N,LUp1,E,s)*one +
+   result.rgb = 0.2*color +
+                0.7*diffuseTerm*color +
+                0.1*specular(N,LDir,E,s)*one +
                 .15*fresnel(N,E)*bgColor;
    result.a = 1.0;
 

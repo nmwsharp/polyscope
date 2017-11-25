@@ -25,8 +25,9 @@ int main(int argc, char** argv) {
 
     // Read a mesh
     Geometry<Euclidean>* geom;
-    HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/sphere_medium.obj"), geom);
+    // HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/sphere_medium.obj"), geom);
     // HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/armadillo.obj"), geom);
+    HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/soccerball.obj"), geom);
     polyscope::registerSurfaceMesh("mr spot", geom);
 
     // Load the mesh in to polyscope

@@ -954,7 +954,7 @@ void printProgramInfoLog(GLuint handle) {
     glGetProgramInfoLog(handle, logLen, &chars, log);
     printf("Program info log:\n%s\n", log);
     free(log);
-    // exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);
   }
 }
 
