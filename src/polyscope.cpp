@@ -21,11 +21,14 @@ namespace polyscope {
 namespace state {
 
 bool initialized = false;
-std::unordered_set<std::string> allStructureNames;
-std::map<std::string, PointCloud*> pointClouds;
+
 double lengthScale = 1.0;
 std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox;
-Vector3 center{0,0,0};
+Vector3 center{0, 0, 0};
+
+std::unordered_set<std::string> allStructureNames;
+std::map<std::string, PointCloud*> pointClouds;
+std::map<std::string, SurfaceMesh*> surfaceMeshes;
 
 }  // namespace state
 
@@ -94,9 +97,9 @@ void init() {
   ImFontConfig config;
   config.OversampleH = 5;
   config.OversampleV = 5;
-  // io.Fonts->AddFontDefault();
-  io.Fonts->AddFontFromFileTTF(
-      "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
+  io.Fonts->AddFontDefault();
+  // io.Fonts->AddFontFromFileTTF(
+  //     "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
 
   // Initialize common shaders
   gl::GLProgram::initCommonShaders();
@@ -107,18 +110,14 @@ void init() {
 namespace {
 
 void processMouseEvents() {
-
   ImGuiIO& io = ImGui::GetIO();
   if (!io.WantCaptureMouse) {
-
     // Handle drags
-    if(io.MouseDown[0]) {
-
-      Vector2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
+    if (io.MouseDown[0]) {
+      Vector2 dragDelta{io.MouseDelta.x / view::windowWidth,
+                        -io.MouseDelta.y / view::windowHeight};
       view::processMouseDrag(dragDelta, !io.KeyShift);
-
     }
-
   }
 }
 
@@ -132,43 +131,44 @@ void drawStructures() {
 }
 
 void buildPolyscopeGui() {
-
   // Create window
   static bool showPolyscopeWindow = true;
   ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
-  ImGui::Begin("Polyscope", &showPolyscopeWindow, ImGuiWindowFlags_AlwaysAutoResize);
-
+  ImGui::Begin("Polyscope", &showPolyscopeWindow,
+               ImGuiWindowFlags_AlwaysAutoResize);
 
   ImGui::ColorEdit3("background color", (float*)&view::bgColor,
                     ImGuiColorEditFlags_NoInputs);
   ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
               ImGui::GetIO().Framerate);
 
-
   ImGui::End();
 }
 
 void buildStructureGui() {
-
   // Create window
   static bool showStructureWindow = true;
   ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
   ImGui::Begin("Structures", &showStructureWindow);
-  // ImGui::Begin("Structures", &showStructureWindow, ImGuiWindowFlags_AlwaysAutoResize);
+  // ImGui::Begin("Structures", &showStructureWindow,
+  // ImGuiWindowFlags_AlwaysAutoResize);
 
-  ImGui::SetNextTreeNodeOpen(0 > 0, ImGuiCond_FirstUseEver);
-  if (ImGui::CollapsingHeader(("Surface Meshes (" + std::to_string(0) + ")").c_str())) {
+  ImGui::SetNextTreeNodeOpen(state::surfaceMeshes.size() > 0, ImGuiCond_FirstUseEver);
+  if (ImGui::CollapsingHeader(
+          ("Surface Meshes (" + std::to_string(state::surfaceMeshes.size()) + ")").c_str())) {
     ImGui::Text("hi mom");
   }
 
-  // Draw point clouds 
-  ImGui::SetNextTreeNodeOpen(state::pointClouds.size() > 0, ImGuiCond_FirstUseEver);
-  if (ImGui::CollapsingHeader(("Point Clouds (" + std::to_string(state::pointClouds.size()) + ")").c_str())) {
+  // Draw point clouds
+  ImGui::SetNextTreeNodeOpen(state::pointClouds.size() > 0,
+                             ImGuiCond_FirstUseEver);
+  if (ImGui::CollapsingHeader(
+          ("Point Clouds (" + std::to_string(state::pointClouds.size()) + ")")
+              .c_str())) {
     for (auto x : state::pointClouds) {
       x.second->drawUI();
     }
   }
-
 
   ImGui::End();
 }
@@ -176,7 +176,6 @@ void buildStructureGui() {
 }  // anonymous namespace
 
 void show() {
-
   view::resetCameraToDefault();
 
   // Main loop
@@ -207,7 +206,6 @@ void show() {
     buildStructureGui();
 
     // Process UI events
-
 
     // TODO handle picking if needed
 
@@ -243,10 +241,33 @@ void registerPointCloud(std::string name, const std::vector<Vector3>& points) {
   updateStructureExtents();
 }
 
+void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom) {
+  // Make sure the name has not already been used
+  if (state::allStructureNames.find(name) != state::allStructureNames.end()) {
+    error("Structure name " + name + " is already in used");
+  }
+
+  // Add the new point cloud
+  state::surfaceMeshes[name] = new SurfaceMesh(name, geom);
+  state::allStructureNames.insert(name);
+
+  updateStructureExtents();
+}
+
 void removeStructure(std::string name) {
+  // Point cloud
   if (state::pointClouds.find(name) != state::pointClouds.end()) {
     delete state::pointClouds[name];
     state::pointClouds.erase(name);
+    state::allStructureNames.erase(name);
+    updateStructureExtents();
+    return;
+  }
+
+  // Surface mesh
+  if (state::surfaceMeshes.find(name) != state::surfaceMeshes.end()) {
+    delete state::surfaceMeshes[name];
+    state::surfaceMeshes.erase(name);
     state::allStructureNames.erase(name);
     updateStructureExtents();
     return;
@@ -257,7 +278,9 @@ void removeStructure(std::string name) {
 
 void removeAllStructures() {
   for (auto x : state::pointClouds) delete x.second;
+  for (auto x : state::surfaceMeshes) delete x.second;
   state::pointClouds.clear();
+  state::surfaceMeshes.clear();
   state::allStructureNames.clear();
   updateStructureExtents();
 }
@@ -271,18 +294,27 @@ void updateStructureExtents() {
 
   // Compute length scale and bbox as the max of all structures
   state::lengthScale = 0.0;
-  Vector3 minBbox = Vector3{1,1,1}*std::numeric_limits<double>::infinity();
-  Vector3 maxBbox = -Vector3{1,1,1}*std::numeric_limits<double>::infinity();
+  Vector3 minBbox = Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
+  Vector3 maxBbox = -Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
+
   for (auto x : state::pointClouds) {
     state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
     auto bbox = x.second->boundingBox();
     minBbox = geometrycentral::componentwiseMin(minBbox, std::get<0>(bbox));
     maxBbox = geometrycentral::componentwiseMax(maxBbox, std::get<1>(bbox));
-  } 
-  if(state::lengthScale == 0) state::lengthScale = 1.0;
-  if(!minBbox.isFinite() || !maxBbox.isFinite()) {
-    minBbox = -Vector3{1,1,1};
-    maxBbox = Vector3{1,1,1};
+  }
+
+  for (auto x : state::surfaceMeshes) {
+    state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
+    auto bbox = x.second->boundingBox();
+    minBbox = geometrycentral::componentwiseMin(minBbox, std::get<0>(bbox));
+    maxBbox = geometrycentral::componentwiseMax(maxBbox, std::get<1>(bbox));
+  }
+
+  if (state::lengthScale == 0) state::lengthScale = 1.0;
+  if (!minBbox.isFinite() || !maxBbox.isFinite()) {
+    minBbox = -Vector3{1, 1, 1};
+    maxBbox = Vector3{1, 1, 1};
   }
   std::get<0>(state::boundingBox) = minBbox;
   std::get<1>(state::boundingBox) = maxBbox;

@@ -6,6 +6,7 @@
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/options.h"
 #include "polyscope/point_cloud.h"
+#include "polyscope/surface_mesh.h"
 
 namespace polyscope {
 
@@ -27,6 +28,7 @@ extern bool initialized;
 // lists of all structures in polyscope
 extern std::unordered_set<std::string> allStructureNames;
 extern std::map<std::string, PointCloud*> pointClouds;
+extern std::map<std::string, SurfaceMesh*> surfaceMeshes;
 
 // representative length scale for all registered structures
 extern double lengthScale;
@@ -44,6 +46,7 @@ extern Vector3 center;
 // Register a point cloud structure with polyscope
 // `name` is a globally unique identifier for the structure
 void registerPointCloud(std::string name, const std::vector<Vector3>& points);
+void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom);
 
 // De-register a structure, of any type. Also removes any quantities associated with the structure
 void removeStructure(std::string name);

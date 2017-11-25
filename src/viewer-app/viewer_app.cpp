@@ -1,6 +1,8 @@
 #include "polyscope/polyscope.h"
 
 #include "geometrycentral/halfedge_mesh.h"
+#include "geometrycentral/geometry.h"
+#include "geometrycentral/polygon_soup_mesh.h"
 
 using namespace geometrycentral;
 
@@ -20,8 +22,10 @@ int main(int argc, char** argv) {
     // Load the point cloud in to polyscope
     polyscope::registerPointCloud("really great points", points);
 
-
     // Read a mesh
+    Geometry<Euclidean>* geom;
+    HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/spot.obj"), geom);
+    polyscope::registerSurfaceMesh("mr spot", geom);
 
     // Load the mesh in to polyscope
 
