@@ -92,9 +92,9 @@ vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float li
    vec3 LDir = normalize( LPos - position );
 
    vec4 result;
-   result.rgb = 0.2*color +
-                0.7*diffuseTerm*color +
-                0.1*specular(N,LDir,E,s)*one +
+   result.rgb = 0.4*color +
+                0.3*diffuseTerm*color +
+                0.2*specular(N,LDir,E,s)*one +
                 .15*fresnel(N,E)*bgColor;
    result.a = 1.0;
 
