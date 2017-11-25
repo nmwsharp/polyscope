@@ -50,7 +50,7 @@ class SurfaceMesh : public Structure {
   geometrycentral::HalfedgeMeshDataTransfer transfer;
 
   // Visualization settings
-  Vector3 color = gl::RGB_SKYBLUE;  
+  std::array<float, 3> surfaceColor;
 
   // Drawing related things
   gl::GLProgram* program = nullptr;

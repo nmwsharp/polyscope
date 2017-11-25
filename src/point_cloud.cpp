@@ -13,6 +13,9 @@ namespace polyscope {
 
 PointCloud::PointCloud(std::string name, const std::vector<Vector3>& points_)
     : Structure(name, StructureType::PointCloud), points(points_) {
+
+  pointColor = gl::RGB_ORANGE.toFloatArray();
+
   prepare();
 }
 
@@ -31,7 +34,6 @@ void PointCloud::draw() {
   Vector3 eyePos = view::getCameraWorldPosition();
   program->setUniform("u_eye", eyePos);
 
-  // Vector3 lightPos = view::getLightWorldPosition();center
   program->setUniform("u_lightCenter", state::center);
   program->setUniform("u_lightDist", 2*state::lengthScale);
   
@@ -40,7 +42,8 @@ void PointCloud::draw() {
   Vector3 leftHand = unit(cross(view::cameraDirection, view::upDirection));
   program->setUniform("u_camRight", -leftHand); 
   
-  program->setUniform("u_pointRadius", 0.001 * state::lengthScale);
+  program->setUniform("u_pointRadius", pointRadius * state::lengthScale);
+  program->setUniform("u_color", pointColor);
 
   program->draw();
 }
@@ -56,11 +59,9 @@ void PointCloud::prepare() {
 
   // Constant color
   std::vector<Vector3> colorData(points.size());
-  std::fill(colorData.begin(), colorData.end(), gl::RGB_ORANGE);
 
   // Store data in buffers
   program->setAttribute("a_position", points);
-  program->setAttribute("a_color", colorData);
 }
 
 void PointCloud::teardown() {
@@ -75,6 +76,10 @@ void PointCloud::drawUI() {
 
   ImGui::TextUnformatted(name.c_str());
   ImGui::Checkbox("Enabled", &enabled);
+  ImGui::ColorEdit3("Point color", (float*)&pointColor,
+                    ImGuiColorEditFlags_NoInputs);
+
+  ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
 
   ImGui::PopID();
 }

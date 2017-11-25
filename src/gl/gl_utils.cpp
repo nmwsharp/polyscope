@@ -464,6 +464,25 @@ void GLProgram::setUniform(std::string name, Vector3 val) {
                               name);
 }
 
+// Set a vector3 uniform from a float array
+void GLProgram::setUniform(std::string name, std::array<float, 3> val) {
+  glUseProgram(programHandle);
+
+  for (GLUniform& u : uniforms) {
+    if (u.name == name) {
+      if (u.type == GLData::Vector3Float) {
+        glUniform3f(u.location, val[0], val[1], val[2]);
+        u.isSet = true;
+      } else {
+        throw std::invalid_argument("Tried to set GLUniform with wrong type");
+      }
+      return;
+    }
+  }
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " +
+                              name);
+}
+
 // Set a vec4 uniform
 void GLProgram::setUniform(std::string name, float x, float y, float z,
                            float w) {

@@ -53,6 +53,7 @@ class GLProgram {
         void setUniform(std::string name, float* val);
         void setUniform(std::string name, Vector2 val);
         void setUniform(std::string name, Vector3 val);
+        void setUniform(std::string name, std::array<float, 3> val);
         void setUniform(std::string name, float x, float y, float z, float w);
 
         // Attributes

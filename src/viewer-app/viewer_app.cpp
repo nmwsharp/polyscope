@@ -24,11 +24,13 @@ int main(int argc, char** argv) {
     polyscope::registerPointCloud("really great points", points);
 
     // Read a mesh
-    Geometry<Euclidean>* geom;
-    // HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/sphere_medium.obj"), geom);
-    // HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/armadillo.obj"), geom);
-    HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/soccerball.obj"), geom);
-    polyscope::registerSurfaceMesh("mr spot", geom);
+    Geometry<Euclidean>* geom1;
+    Geometry<Euclidean>* geom2;
+    HalfedgeMesh* mesh1 = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/sphere_medium.obj"), geom1);
+    HalfedgeMesh* mesh2 = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/armadillo.obj"), geom2);
+    // HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh("/Users/nsharp/mesh/raptor_orig.obj"), geom);
+    polyscope::registerSurfaceMesh("mr mesh1", geom1);
+    polyscope::registerSurfaceMesh("mr mesh2", geom2);
 
     // Load the mesh in to polyscope
 

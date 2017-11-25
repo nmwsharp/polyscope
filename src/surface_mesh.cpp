@@ -17,6 +17,8 @@ SurfaceMesh::SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_)
   mesh = geometry_->getMesh()->copy(transfer);
   geometry = geometry_->copyUsingTransfer(transfer);
 
+  surfaceColor = gl::RGB_SKYBLUE.toFloatArray();
+
   prepare();
 }
 
@@ -36,9 +38,9 @@ void SurfaceMesh::draw() {
   program->setUniform("u_eye", eyePos);
 
   program->setUniform("u_lightCenter", state::center);
-  program->setUniform("u_lightDist", 5*state::lengthScale);
-  program->setUniform("u_color", color);
-  
+  program->setUniform("u_lightDist", 5 * state::lengthScale);
+  program->setUniform("u_color", surfaceColor);
+
   program->draw();
 }
 
@@ -96,6 +98,8 @@ void SurfaceMesh::drawUI() {
 
   ImGui::TextUnformatted(name.c_str());
   ImGui::Checkbox("Enabled", &enabled);
+  ImGui::ColorEdit3("Surface color", (float*)&surfaceColor,
+                    ImGuiColorEditFlags_NoInputs);
 
   ImGui::PopID();
 }

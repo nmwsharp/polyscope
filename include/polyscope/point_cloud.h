@@ -44,6 +44,10 @@ class PointCloud : public Structure {
   // The points that make up this point cloud
   std::vector<geometrycentral::Vector3> points;
 
+  // Visualization parameters
+  std::array<float, 3> pointColor;
+  float pointRadius = 0.005;
+
   // Drawing related things
   gl::GLProgram* program = nullptr;
 };
