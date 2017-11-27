@@ -97,14 +97,14 @@ int main(int argc, char** argv) {
   }
 
   // Create a point cloud
-  std::vector<Vector3> points;
-  for (size_t i = 0; i < 3000; i++) {
-    // points.push_back(Vector3{10,10,10} + 20*Vector3{unitRand()-.5,
-    // unitRand()-.5, unitRand()-.5});
-    points.push_back(
-        3 * Vector3{unitRand() - .5, unitRand() - .5, unitRand() - .5});
-  }
-  polyscope::registerPointCloud("really great points", points);
+//   std::vector<Vector3> points;
+//   for (size_t i = 0; i < 3000; i++) {
+//     // points.push_back(Vector3{10,10,10} + 20*Vector3{unitRand()-.5,
+//     // unitRand()-.5, unitRand()-.5});
+//     points.push_back(
+//         3 * Vector3{unitRand() - .5, unitRand() - .5, unitRand() - .5});
+//   }
+//   polyscope::registerPointCloud("really great points", points);
 
   // Add a few gui elements
 
