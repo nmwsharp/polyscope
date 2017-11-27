@@ -129,7 +129,7 @@ SurfaceMesh::boundingBox() {
     max = geometrycentral::componentwiseMax(max, geometry->position(v));
   }
 
-  return {min, max};
+  return std::make_tuple(min, max);
 }
 
 }  // namespace polyscope

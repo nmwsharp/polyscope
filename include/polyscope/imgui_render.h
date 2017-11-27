@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #else
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #endif
 
 // This class is MOSTLY the opengl3 example from the imgui repo, however it also

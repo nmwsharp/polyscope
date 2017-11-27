@@ -19,13 +19,12 @@ add_library(
         )
 
 # Include settings
-target_include_directories(polyscope PUBLIC "../include")
-target_include_directories(polyscope PUBLIC "../deps/glfw/include")
-target_include_directories(polyscope PRIVATE "../deps/glad/include")
-target_include_directories(polyscope PRIVATE "../deps/glad/include")
+target_include_directories(polyscope PUBLIC "${CMAKE_SOURCE_DIR}/include")
+target_include_directories(polyscope PUBLIC "${CMAKE_SOURCE_DIR}/deps/glfw/include")
+target_include_directories(polyscope PUBLIC "${CMAKE_SOURCE_DIR}/deps/glad/include")
 target_include_directories(polyscope PUBLIC ${GEOMETRY_CENTRAL_INCLUDE_DIRS})
-target_include_directories(polyscope PUBLIC "../deps/imgui/imgui")
-target_include_directories(polyscope PUBLIC "../deps/args")
+target_include_directories(polyscope PUBLIC "${CMAKE_SOURCE_DIR}/deps/imgui/imgui")
+target_include_directories(polyscope PUBLIC "${CMAKE_SOURCE_DIR}/deps/args")
         
 # Link settings
 target_link_libraries(polyscope imgui glfw ${GLFW_LIBRARIES} geometry-central)

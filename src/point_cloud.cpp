@@ -109,7 +109,7 @@ PointCloud::boundingBox() {
     max = geometrycentral::componentwiseMax(max, p);
   }
 
-  return {min, max};
+  return std::make_tuple(min, max);
 }
 
 }  // namespace polyscope
