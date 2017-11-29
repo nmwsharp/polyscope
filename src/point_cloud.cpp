@@ -14,7 +14,7 @@ namespace polyscope {
 PointCloud::PointCloud(std::string name, const std::vector<Vector3>& points_)
     : Structure(name, StructureType::PointCloud), points(points_) {
 
-  pointColor = gl::RGB_ORANGE.toFloatArray();
+  pointColor = getNextPaletteColor();
 
   prepare();
 }
