@@ -165,10 +165,13 @@ void buildStructureGui() {
 
     // Build the structure's UI
     ImGui::SetNextTreeNodeOpen(structures.size() > 0, ImGuiCond_FirstUseEver);
-    if (ImGui::CollapsingHeader(
-            ("Category: " + catName + " (" + std::to_string(structures.size()) + ")")
-                .c_str())) {
+    if (ImGui::CollapsingHeader(("Category: " + catName + " (" +
+                                 std::to_string(structures.size()) + ")")
+                                    .c_str())) {
       for (auto x : structures) {
+        ImGui::SetNextTreeNodeOpen(
+            structures.size() <= 2,
+            ImGuiCond_FirstUseEver);  // closed by default if more than 2
         x.second->drawUI();
       }
     }
@@ -244,7 +247,6 @@ void show() {
 void registerPointCloud(std::string name, const std::vector<Vector3>& points) {
   checkStructureNameInUse(name);
 
-  // Add the new point cloud
   state::pointClouds[name] = new PointCloud(name, points);
   state::structureCategories[StructureType::PointCloud][name] =
       state::pointClouds[name];
@@ -255,7 +257,6 @@ void registerPointCloud(std::string name, const std::vector<Vector3>& points) {
 void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom) {
   checkStructureNameInUse(name);
 
-  // Add the new point cloud
   state::surfaceMeshes[name] = new SurfaceMesh(name, geom);
   state::structureCategories[StructureType::SurfaceMesh][name] =
       state::surfaceMeshes[name];
@@ -328,6 +329,29 @@ void error(std::string message) {
   } else {
     std::cout << options::printPrefix << message << std::endl;
   }
+}
+
+// Helpers/data for the color palette below
+namespace {
+static int iPaletteColor = -1;
+std::vector<std::array<float, 3>> paletteColors {
+    {{171/255., 71/255., 188/255.}},    // purple
+    {{66/255., 165/255., 245/255.}},    // light blue
+    {{38/255., 166/255., 154/255.}},    // greenish
+    {{255/255., 167/255., 38/255.}},    // orange
+    {{236/255., 40/255., 40/255.}},     // red
+    {{38/255., 198/255., 218/255.}}     // teal
+    };
+}  // anonymous namespace
+std::array<float, 3> getNextPaletteColor() {
+  // -1 means initialization needed
+  if (iPaletteColor == -1) {
+    iPaletteColor = randomInt(0,paletteColors.size()-1);
+  }
+
+  std::array<float, 3> color = paletteColors[iPaletteColor];
+  iPaletteColor = (iPaletteColor + 1) % paletteColors.size();
+  return color;
 }
 
 }  // namespace polyscope

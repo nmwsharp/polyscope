@@ -62,4 +62,9 @@ void updateStructureExtents();
 // === Errors
 void error(std::string message);
 
+// === Utility
+
+// Get the next color from a global color palette
+std::array<float, 3> getNextPaletteColor();
+
 }  // namespace polyscope

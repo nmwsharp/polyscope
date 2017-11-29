@@ -17,7 +17,8 @@ SurfaceMesh::SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_)
   mesh = geometry_->getMesh()->copy(transfer);
   geometry = geometry_->copyUsingTransfer(transfer);
 
-  surfaceColor = gl::RGB_SKYBLUE.toFloatArray();
+  // surfaceColor = gl::RGB_SKYBLUE.toFloatArray();
+  surfaceColor = getNextPaletteColor();
 
   prepare();
 }
@@ -170,32 +171,40 @@ void SurfaceMesh::drawUI() {
   ImGui::PushID(name.c_str());  // ensure there are no conflicts with
                                 // identically-named labels
 
-  ImGui::TextUnformatted(name.c_str());
-  ImGui::Checkbox("Enabled", &enabled);
-  ImGui::ColorEdit3("Surface color", (float*)&surfaceColor,
-                    ImGuiColorEditFlags_NoInputs);
+  if(ImGui::TreeNode(name.c_str())) {
+    // enabled = true;
 
-  { // Flat shading or smooth shading?
-    ImGui::Checkbox("Smooth", &ui_smoothshade);
-    if(ui_smoothshade && shadeStyle == ShadeStyle::FLAT) {
-      shadeStyle = ShadeStyle::SMOOTH; 
-      prepared = false;
+    ImGui::Checkbox("Enabled", &enabled);
+    ImGui::SameLine();
+    ImGui::ColorEdit3("Surface color", (float*)&surfaceColor,
+                      ImGuiColorEditFlags_NoInputs);
+  
+    { // Flat shading or smooth shading?
+      ImGui::Checkbox("Smooth shade", &ui_smoothshade);
+      if(ui_smoothshade && shadeStyle == ShadeStyle::FLAT) {
+        shadeStyle = ShadeStyle::SMOOTH; 
+        prepared = false;
+      }
+      if(!ui_smoothshade && shadeStyle == ShadeStyle::SMOOTH) {
+        shadeStyle = ShadeStyle::FLAT; 
+        prepared = false;
+      }
+      ImGui::SameLine();
     }
-    if(!ui_smoothshade && shadeStyle == ShadeStyle::SMOOTH) {
-      shadeStyle = ShadeStyle::FLAT; 
-      prepared = false;
+  
+    { // Edge width
+      ImGui::Checkbox("Show edges", &showEdges);
+      if(showEdges) {
+        edgeWidth = 0.01;
+      } else {
+        edgeWidth = 0.0;
+      }
     }
+  
+    ImGui::TreePop();
+  } else {
+    // enabled = false;
   }
-
-  { // Edge width
-    ImGui::Checkbox("Edges", &showEdges);
-    if(showEdges) {
-      edgeWidth = 0.01;
-    } else {
-      edgeWidth = 0.0;
-    }
-  }
-
   ImGui::PopID();
 }
 
