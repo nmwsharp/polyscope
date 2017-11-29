@@ -11,6 +11,8 @@
 
 namespace polyscope {
 
+enum class ShadeStyle {FLAT=0, SMOOTH};
+
 class SurfaceMesh : public Structure {
  public:
   // === Member functions ===
@@ -41,6 +43,7 @@ class SurfaceMesh : public Structure {
   boundingBox() override;
 
   bool enabled = true;
+  bool prepared = false;
 
  private:
 
@@ -51,9 +54,19 @@ class SurfaceMesh : public Structure {
 
   // Visualization settings
   std::array<float, 3> surfaceColor;
+  ShadeStyle shadeStyle = ShadeStyle::SMOOTH; 
+
+  // Gui implementation details
+  bool ui_smoothshade;
 
   // Drawing related things
   gl::GLProgram* program = nullptr;
+
+
+  // === Helper functions
+  void fillGeometryBuffersSmooth();
+  void fillGeometryBuffersFlat();
+
 };
 
 }  // namespace polyscope

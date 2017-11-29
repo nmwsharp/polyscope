@@ -6,7 +6,9 @@
 #ifdef __APPLE__
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
+#define PLATFORM_SCROLL_RATE_COEF (1.0)
 #else
+#define PLATFORM_SCROLL_RATE_COEF (3.0)
 #include <glad/glad.h>
 #endif
 
@@ -207,6 +209,10 @@ void ImGui_ImplGlfwGL3_MouseButtonCallback(GLFWwindow*, int button, int action,
 
 void ImGui_ImplGlfwGL3_ScrollCallback(GLFWwindow*, double xoffset,
                                       double yoffset) {
+
+  xoffset *= PLATFORM_SCROLL_RATE_COEF;
+  yoffset *= PLATFORM_SCROLL_RATE_COEF;
+
   g_MouseWheel += (float)yoffset;  // Use fractional mouse wheel.
 
       ImGuiIO& io = ImGui::GetIO();

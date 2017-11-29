@@ -155,8 +155,6 @@ void buildStructureGui() {
   static bool showStructureWindow = true;
   ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
   ImGui::Begin("Structures", &showStructureWindow);
-  // ImGui::Begin("Structures", &showStructureWindow,
-  // ImGuiWindowFlags_AlwaysAutoResize);
 
   for (auto cat : state::structureCategories) {
     std::string catName = getStructureTypeName(cat.first);
@@ -168,7 +166,7 @@ void buildStructureGui() {
     // Build the structure's UI
     ImGui::SetNextTreeNodeOpen(structures.size() > 0, ImGuiCond_FirstUseEver);
     if (ImGui::CollapsingHeader(
-            (catName + " (" + std::to_string(structures.size()) + ")")
+            ("Category: " + catName + " (" + std::to_string(structures.size()) + ")")
                 .c_str())) {
       for (auto x : structures) {
         x.second->drawUI();
