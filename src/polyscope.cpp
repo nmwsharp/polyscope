@@ -100,9 +100,9 @@ void init() {
   ImFontConfig config;
   config.OversampleH = 5;
   config.OversampleV = 5;
-  io.Fonts->AddFontDefault();
-  // io.Fonts->AddFontFromFileTTF(
-  //     "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
+  // io.Fonts->AddFontDefault();
+  io.Fonts->AddFontFromFileTTF(
+      "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
 
   // Initialize common shaders
   gl::GLProgram::initCommonShaders();

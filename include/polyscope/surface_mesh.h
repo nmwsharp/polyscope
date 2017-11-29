@@ -54,7 +54,9 @@ class SurfaceMesh : public Structure {
 
   // Visualization settings
   std::array<float, 3> surfaceColor;
-  ShadeStyle shadeStyle = ShadeStyle::SMOOTH; 
+  ShadeStyle shadeStyle = ShadeStyle::SMOOTH;
+  bool showEdges = false;
+  float edgeWidth = 0.01; // currently can only be set to 0 or nonzero via UI
 
   // Gui implementation details
   bool ui_smoothshade;

@@ -127,7 +127,7 @@ vec3 gammaCorrect( vec3 colorLinear )
 //    return highlightSurface( position, normal, color, light, eye );
 // }
 
-float getEdgeFactor(vec3 UVW) {
+float getEdgeFactor(vec3 UVW, float width) {
    // // uniform width lines
    // const float w = 1.5; // width
    // const float s = 8.; // hardness
@@ -151,7 +151,8 @@ float getEdgeFactor(vec3 UVW) {
    // return max(max(a,b),c);
 
    // variable width lines, but not directly proportional
-   const float w = .015; // width
+  //  const float w = .015; // width
+   float w = width;
    const float s = .4; // hardness
    float da = length(vec2(dFdx(UVW.x),dFdy(UVW.x)));
    float db = length(vec2(dFdx(UVW.y),dFdy(UVW.y)));

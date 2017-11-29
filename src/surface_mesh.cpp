@@ -42,6 +42,7 @@ void SurfaceMesh::draw() {
   program->setUniform("u_lightCenter", state::center);
   program->setUniform("u_lightDist", 5 * state::lengthScale);
   program->setUniform("u_color", surfaceColor);
+  program->setUniform("u_edgeWidth", edgeWidth);
 
   program->draw();
 }
@@ -79,6 +80,7 @@ void SurfaceMesh::fillGeometryBuffersSmooth() {
   
   std::vector<Vector3> positions;
   std::vector<Vector3> normals;
+  std::vector<Vector3> bcoord;
   VertexData<Vector3> vertexNormals;
   geometry->getVertexNormals(vertexNormals);
   for (FacePtr f : mesh->faces()) {
@@ -92,10 +94,13 @@ void SurfaceMesh::fillGeometryBuffersSmooth() {
       if (iP >= 2) {
         positions.push_back(p0);
         normals.push_back(n0);
+        bcoord.push_back(Vector3{1.0, 0.0, 0.0});
         positions.push_back(p1);
         normals.push_back(n1);
+        bcoord.push_back(Vector3{0.0, 1.0, 0.0});
         positions.push_back(p2);
         normals.push_back(n2);
+        bcoord.push_back(Vector3{0.0, 0.0, 1.0});
       }
       p0 = p1;
       p1 = p2;
@@ -108,6 +113,7 @@ void SurfaceMesh::fillGeometryBuffersSmooth() {
   // Store data in buffers
   program->setAttribute("a_position", positions);
   program->setAttribute("a_normal", normals);
+  program->setAttribute("a_barycoord", bcoord);
   
 }
   
@@ -115,6 +121,8 @@ void SurfaceMesh::fillGeometryBuffersFlat() {
   
   std::vector<Vector3> positions;
   std::vector<Vector3> normals;
+  std::vector<Vector3> bcoord;
+  
   FaceData<Vector3> faceNormals;
   geometry->getFaceNormals(faceNormals);
   for (FacePtr f : mesh->faces()) {
@@ -128,10 +136,13 @@ void SurfaceMesh::fillGeometryBuffersFlat() {
       if (iP >= 2) {
         positions.push_back(p0);
         normals.push_back(n0);
+        bcoord.push_back(Vector3{1.0, 0.0, 0.0});
         positions.push_back(p1);
         normals.push_back(n1);
+        bcoord.push_back(Vector3{0.0, 1.0, 0.0});
         positions.push_back(p2);
         normals.push_back(n2);
+        bcoord.push_back(Vector3{0.0, 0.0, 1.0});
       }
       p0 = p1;
       p1 = p2;
@@ -144,6 +155,7 @@ void SurfaceMesh::fillGeometryBuffersFlat() {
   // Store data in buffers
   program->setAttribute("a_position", positions);
   program->setAttribute("a_normal", normals);
+  program->setAttribute("a_barycoord", bcoord);
 
 }
 
@@ -172,6 +184,15 @@ void SurfaceMesh::drawUI() {
     if(!ui_smoothshade && shadeStyle == ShadeStyle::SMOOTH) {
       shadeStyle = ShadeStyle::FLAT; 
       prepared = false;
+    }
+  }
+
+  { // Edge width
+    ImGui::Checkbox("Edges", &showEdges);
+    if(showEdges) {
+      edgeWidth = 0.01;
+    } else {
+      edgeWidth = 0.0;
     }
   }
 
