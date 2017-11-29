@@ -271,6 +271,39 @@ void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value) {
   quantities[name] = q;
 }
 
+void SurfaceMesh::addQuantity(std::string name, FaceData<double>& value) {
+  // Check that the name is unique
+  if (quantities.find(name) != quantities.end()) {
+    error("Quantity name " + name + " is alredy in use");
+    return;
+  }
+
+  SurfaceScalarQuantity* q = new SurfaceScalarFaceQuantity(name, value, this);
+  quantities[name] = q;
+}
+
+void SurfaceMesh::addQuantity(std::string name, EdgeData<double>& value) {
+  // Check that the name is unique
+  if (quantities.find(name) != quantities.end()) {
+    error("Quantity name " + name + " is alredy in use");
+    return;
+  }
+
+  SurfaceScalarQuantity* q = new SurfaceScalarEdgeQuantity(name, value, this);
+  quantities[name] = q;
+}
+
+void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value) {
+  // Check that the name is unique
+  if (quantities.find(name) != quantities.end()) {
+    error("Quantity name " + name + " is alredy in use");
+    return;
+  }
+
+  SurfaceScalarQuantity* q = new SurfaceScalarHalfedgeQuantity(name, value, this);
+  quantities[name] = q;
+}
+
 void SurfaceMesh::setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q) {
   clearActiveSurfaceQuantity();
   activeSurfaceQuantity = q;

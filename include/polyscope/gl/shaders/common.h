@@ -65,12 +65,12 @@ vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float li
 
    // Lights
     vec3 lightP[] = vec3[](
-        vec3(1., 0., 1.),
-        vec3(-.5, .86, 1.),
-        vec3(-.5, -.86, 1.),
-        vec3(-1., 0., -1.),
-        vec3(.5, .86, -1.),
-        vec3(.5, -.86, -1)
+        vec3(1., 1., 0.),
+        vec3(-.5, 1., .86),
+        vec3(-.5, 1., -.86),
+        vec3(-1., -1., 0.),
+        vec3(.5, -1., .86),
+        vec3(.5, -1., -.86)
     );
 
    float s = getSurfaceShininess();

@@ -79,6 +79,9 @@ class SurfaceMesh : public Structure {
 
   // === Quantity-related
   void addQuantity(std::string name, VertexData<double>& value);
+  void addQuantity(std::string name, FaceData<double>& value);
+  void addQuantity(std::string name, EdgeData<double>& value);
+  void addQuantity(std::string name, HalfedgeData<double>& value);
 
   void setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q);
   void clearActiveSurfaceQuantity();

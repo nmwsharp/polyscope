@@ -104,6 +104,8 @@ void init() {
   io.Fonts->AddFontFromFileTTF(
       "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
 
+  // ImGui::StyleColorsLight();
+
   // Initialize common shaders
   gl::GLProgram::initCommonShaders();
 

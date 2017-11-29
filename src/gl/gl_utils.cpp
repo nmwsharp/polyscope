@@ -978,6 +978,7 @@ void printProgramInfoLog(GLuint handle) {
 }
 
 void checkGLError(bool fatal) {
+fatal = true;
 #ifndef NDEBUG
   GLenum err = GL_NO_ERROR;
   while ((err = glGetError()) != GL_NO_ERROR) {

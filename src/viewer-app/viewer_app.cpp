@@ -56,13 +56,24 @@ void processFileOBJ(string filename) {
 
   // Add some scalars
   VertexData<double> val1(mesh);
-  VertexData<double> val2(mesh);
   for(VertexPtr v : mesh->vertices()) {
     val1[v] = geom->position(v).y;
-    val2[v] = geom->position(v).x;
   }
   polyscope::getSurfaceMesh(niceName)->addQuantity("height", val1);
-  polyscope::getSurfaceMesh(niceName)->addQuantity("xPos", val2);
+
+  FaceData<double> fArea(mesh);
+  for(FacePtr f : mesh->faces()) {
+    fArea[f] = geom->area(f);
+  }
+  polyscope::getSurfaceMesh(niceName)->addQuantity("face area", fArea);
+  
+  EdgeData<double> cWeight(mesh);
+  geom->getEdgeCotanWeights(cWeight);
+  polyscope::getSurfaceMesh(niceName)->addQuantity("cotan weight", cWeight);
+  
+  HalfedgeData<double> oAngles(mesh);
+  geom->getHalfedgeAngles(oAngles);
+  polyscope::getSurfaceMesh(niceName)->addQuantity("angles", oAngles);
 
   delete geom;
   delete mesh;
