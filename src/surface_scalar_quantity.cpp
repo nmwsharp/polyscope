@@ -12,17 +12,21 @@ SurfaceScalarQuantity::SurfaceScalarQuantity(std::string name,
                                              SurfaceMesh* mesh_,
                                              std::string definedOn_,
                                              DataType dataType_)
-    : SurfaceQuantityThatDrawsFaces(name, mesh_), dataType(dataType_), definedOn(definedOn_){}
-
-double SurfaceScalarQuantity::mapVal(double x) {
-  return geometrycentral::clamp((x - minVal) / (maxVal - minVal), 0.0, 1.0);
-}
-
-std::string SurfaceScalarQuantity::dataBoundsString() {
-  size_t bSize = 50;
-  char b[bSize];
-  snprintf(b, bSize, "[%6.2e, %6.2e]", minVal, maxVal);
-  return std::string(b);
+    : SurfaceQuantityThatDrawsFaces(name, mesh_),
+      dataType(dataType_),
+      definedOn(definedOn_) {
+  // Set the default colormap based on what kind of data is given
+  switch (dataType) {
+    case DataType::STANDARD:
+      iColorMap = 0;  // viridis
+      break;
+    case DataType::SYMMETRIC:
+      iColorMap = 1;  // coolwarm
+      break;
+    case DataType::MAGNITUDE:
+      iColorMap = 2;  // blues
+      break;
+  }
 }
 
 void SurfaceScalarQuantity::draw() {
@@ -43,8 +47,8 @@ void SurfaceScalarQuantity::drawUI() {
       }
     }
 
-    { // Draw max and min
-      ImGui::TextUnformatted(dataBoundsString().c_str());
+    {  // Draw max and min
+      ImGui::TextUnformatted(mapper.printBounds().c_str());
     }
 
     ImGui::TreePop();
@@ -59,7 +63,6 @@ void SurfaceScalarQuantity::drawUI() {
   }
 }
 
-
 // ========================================================
 // ==========           Vertex Scalar            ==========
 // ========================================================
@@ -72,25 +75,11 @@ SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(
 {
   values = parent->transfer.transfer(values_);
 
-  // Compute max and min of data for mapping
-  minVal = std::numeric_limits<double>::infinity();
-  maxVal = -std::numeric_limits<double>::infinity();
+  std::vector<double> valsVec;
   for (VertexPtr v : parent->mesh->vertices()) {
-    minVal = std::min(minVal, values[v]);
-    maxVal = std::max(maxVal, values[v]);
+    valsVec.push_back(values[v]);
   }
-
-  // Hack to do less ugly things when constants are passed in
-  double maxMag = std::max(std::abs(minVal), std::abs(maxVal));
-  double rangeEPS = 1E-12;
-  if (maxMag < rangeEPS) {
-    maxVal = rangeEPS;
-    minVal = -rangeEPS;
-  } else if ((maxVal - minVal) / maxMag < rangeEPS) {
-    double mid = (minVal + maxVal) / 2.0;
-    maxVal = mid + maxMag * rangeEPS;
-    minVal = mid - maxMag * rangeEPS;
-  }
+  mapper = AffineRemapper<double>(valsVec, dataType);
 }
 
 gl::GLProgram* SurfaceScalarVertexQuantity::createProgram() {
@@ -112,7 +101,7 @@ void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
     double c0, c1;
     size_t iP = 0;
     for (VertexPtr v : f.adjacentVertices()) {
-      double c2 = mapVal(values[v]);
+      double c2 = mapper.map(values[v]);
       if (iP >= 2) {
         colorval.push_back(c0);
         colorval.push_back(c1);
@@ -133,33 +122,20 @@ void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
 // ==========            Face Scalar             ==========
 // ========================================================
 
-SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(
-    std::string name, FaceData<double>& values_, SurfaceMesh* mesh_,
-    DataType dataType_)
+SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name,
+                                                     FaceData<double>& values_,
+                                                     SurfaceMesh* mesh_,
+                                                     DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "face", dataType_)
 
 {
   values = parent->transfer.transfer(values_);
 
-  // Compute max and min of data for mapping
-  minVal = std::numeric_limits<double>::infinity();
-  maxVal = -std::numeric_limits<double>::infinity();
+  std::vector<double> valsVec;
   for (FacePtr f : parent->mesh->faces()) {
-    minVal = std::min(minVal, values[f]);
-    maxVal = std::max(maxVal, values[f]);
+    valsVec.push_back(values[f]);
   }
-
-  // Hack to do less ugly things when constants are passed in
-  double maxMag = std::max(std::abs(minVal), std::abs(maxVal));
-  double rangeEPS = 1E-12;
-  if (maxMag < rangeEPS) {
-    maxVal = rangeEPS;
-    minVal = -rangeEPS;
-  } else if ((maxVal - minVal) / maxMag < rangeEPS) {
-    double mid = (minVal + maxVal) / 2.0;
-    maxVal = mid + maxMag * rangeEPS;
-    minVal = mid - maxMag * rangeEPS;
-  }
+  mapper = AffineRemapper<double>(valsVec, dataType);
 }
 
 gl::GLProgram* SurfaceScalarFaceQuantity::createProgram() {
@@ -181,7 +157,7 @@ void SurfaceScalarFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
     double c0, c1;
     size_t iP = 0;
     for (VertexPtr v : f.adjacentVertices()) {
-      double c2 = mapVal(values[f]);
+      double c2 = mapper.map(values[f]);
       if (iP >= 2) {
         colorval.push_back(c0);
         colorval.push_back(c1);
@@ -198,38 +174,24 @@ void SurfaceScalarFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
   p->setTextureFromColormap("t_colormap", *colormaps[iColorMap]);
 }
 
-
 // ========================================================
 // ==========            Edge Scalar             ==========
 // ========================================================
 
-SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(
-    std::string name, EdgeData<double>& values_, SurfaceMesh* mesh_,
-    DataType dataType_)
+SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name,
+                                                     EdgeData<double>& values_,
+                                                     SurfaceMesh* mesh_,
+                                                     DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "edge", dataType_)
 
 {
   values = parent->transfer.transfer(values_);
 
-  // Compute max and min of data for mapping
-  minVal = std::numeric_limits<double>::infinity();
-  maxVal = -std::numeric_limits<double>::infinity();
+  std::vector<double> valsVec;
   for (EdgePtr e : parent->mesh->edges()) {
-    minVal = std::min(minVal, values[e]);
-    maxVal = std::max(maxVal, values[e]);
+    valsVec.push_back(values[e]);
   }
-
-  // Hack to do less ugly things when constants are passed in
-  double maxMag = std::max(std::abs(minVal), std::abs(maxVal));
-  double rangeEPS = 1E-12;
-  if (maxMag < rangeEPS) {
-    maxVal = rangeEPS;
-    minVal = -rangeEPS;
-  } else if ((maxVal - minVal) / maxMag < rangeEPS) {
-    double mid = (minVal + maxVal) / 2.0;
-    maxVal = mid + maxMag * rangeEPS;
-    minVal = mid - maxMag * rangeEPS;
-  }
+  mapper = AffineRemapper<double>(valsVec, dataType);
 }
 
 gl::GLProgram* SurfaceScalarEdgeQuantity::createProgram() {
@@ -252,7 +214,7 @@ void SurfaceScalarEdgeQuantity::fillColorBuffers(gl::GLProgram* p) {
     size_t iP = 0;
     for (HalfedgePtr he : f.adjacentHalfedges()) {
       VertexPtr v = he.vertex();
-      double c2 = mapVal(values[he.next().edge()]);
+      double c2 = mapper.map(values[he.next().edge()]);
       if (iP >= 2) {
         colorval.push_back(Vector3{c0, c1, c2});
         colorval.push_back(Vector3{c0, c1, c2});
@@ -284,25 +246,11 @@ SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(
 {
   values = parent->transfer.transfer(values_);
 
-  // Compute max and min of data for mapping
-  minVal = std::numeric_limits<double>::infinity();
-  maxVal = -std::numeric_limits<double>::infinity();
+  std::vector<double> valsVec;
   for (HalfedgePtr he : parent->mesh->halfedges()) {
-    minVal = std::min(minVal, values[he]);
-    maxVal = std::max(maxVal, values[he]);
+    valsVec.push_back(values[he]);
   }
-
-  // Hack to do less ugly things when constants are passed in
-  double maxMag = std::max(std::abs(minVal), std::abs(maxVal));
-  double rangeEPS = 1E-12;
-  if (maxMag < rangeEPS) {
-    maxVal = rangeEPS;
-    minVal = -rangeEPS;
-  } else if ((maxVal - minVal) / maxMag < rangeEPS) {
-    double mid = (minVal + maxVal) / 2.0;
-    maxVal = mid + maxMag * rangeEPS;
-    minVal = mid - maxMag * rangeEPS;
-  }
+  mapper = AffineRemapper<double>(valsVec, dataType);
 }
 
 gl::GLProgram* SurfaceScalarHalfedgeQuantity::createProgram() {
@@ -325,7 +273,7 @@ void SurfaceScalarHalfedgeQuantity::fillColorBuffers(gl::GLProgram* p) {
     size_t iP = 0;
     for (HalfedgePtr he : f.adjacentHalfedges()) {
       VertexPtr v = he.vertex();
-      double c2 = mapVal(values[he.next()]);
+      double c2 = mapper.map(values[he.next()]);
       if (iP >= 2) {
         colorval.push_back(Vector3{c0, c1, c2});
         colorval.push_back(Vector3{c0, c1, c2});

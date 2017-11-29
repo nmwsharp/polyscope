@@ -1,5 +1,6 @@
 #pragma once
 
+#include "polyscope/affine_remapper.h"
 #include "polyscope/surface_mesh.h"
 
 namespace polyscope {
@@ -16,9 +17,7 @@ class SurfaceScalarQuantity : public SurfaceQuantityThatDrawsFaces {
   const DataType dataType;
 
   // The map that takes values to [0,1] for drawing
-  double mapVal(double x);
-  double minVal, maxVal;
-  std::string dataBoundsString();
+  AffineRemapper<double> mapper;
 
   // UI internals
   const std::vector<const gl::Colormap*> colormaps = {

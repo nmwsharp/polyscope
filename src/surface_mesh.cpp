@@ -260,47 +260,55 @@ SurfaceQuantityThatDrawsFaces::SurfaceQuantityThatDrawsFaces(std::string name_,
     : SurfaceQuantity(name_, mesh_) {}
 SurfaceQuantity::~SurfaceQuantity() {}
 
-void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value) {
+void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value,
+                              DataType type) {
   // Check that the name is unique
   if (quantities.find(name) != quantities.end()) {
     error("Quantity name " + name + " is alredy in use");
     return;
   }
 
-  SurfaceScalarQuantity* q = new SurfaceScalarVertexQuantity(name, value, this);
+  SurfaceScalarQuantity* q =
+      new SurfaceScalarVertexQuantity(name, value, this, type);
   quantities[name] = q;
 }
 
-void SurfaceMesh::addQuantity(std::string name, FaceData<double>& value) {
+void SurfaceMesh::addQuantity(std::string name, FaceData<double>& value,
+                              DataType type) {
   // Check that the name is unique
   if (quantities.find(name) != quantities.end()) {
     error("Quantity name " + name + " is alredy in use");
     return;
   }
 
-  SurfaceScalarQuantity* q = new SurfaceScalarFaceQuantity(name, value, this);
+  SurfaceScalarQuantity* q =
+      new SurfaceScalarFaceQuantity(name, value, this, type);
   quantities[name] = q;
 }
 
-void SurfaceMesh::addQuantity(std::string name, EdgeData<double>& value) {
+void SurfaceMesh::addQuantity(std::string name, EdgeData<double>& value,
+                              DataType type) {
   // Check that the name is unique
   if (quantities.find(name) != quantities.end()) {
     error("Quantity name " + name + " is alredy in use");
     return;
   }
 
-  SurfaceScalarQuantity* q = new SurfaceScalarEdgeQuantity(name, value, this);
+  SurfaceScalarQuantity* q =
+      new SurfaceScalarEdgeQuantity(name, value, this, type);
   quantities[name] = q;
 }
 
-void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value) {
+void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value,
+                              DataType type) {
   // Check that the name is unique
   if (quantities.find(name) != quantities.end()) {
     error("Quantity name " + name + " is alredy in use");
     return;
   }
 
-  SurfaceScalarQuantity* q = new SurfaceScalarHalfedgeQuantity(name, value, this);
+  SurfaceScalarQuantity* q =
+      new SurfaceScalarHalfedgeQuantity(name, value, this, type);
   quantities[name] = q;
 }
 

@@ -8,11 +8,11 @@
 
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/structure.h"
+#include "polyscope/affine_remapper.h"
 
 namespace polyscope {
 
 enum class ShadeStyle { FLAT = 0, SMOOTH };
-enum class DataType { STANDARD = 0, SYMMETRIC };
 
 // Forward delcare surface mesh
 class SurfaceMesh;
@@ -78,10 +78,10 @@ class SurfaceMesh : public Structure {
   boundingBox() override;
 
   // === Quantity-related
-  void addQuantity(std::string name, VertexData<double>& value);
-  void addQuantity(std::string name, FaceData<double>& value);
-  void addQuantity(std::string name, EdgeData<double>& value);
-  void addQuantity(std::string name, HalfedgeData<double>& value);
+  void addQuantity(std::string name, VertexData<double>& value, DataType type = DataType::STANDARD);
+  void addQuantity(std::string name, FaceData<double>& value, DataType type = DataType::STANDARD);
+  void addQuantity(std::string name, EdgeData<double>& value, DataType type = DataType::STANDARD);
+  void addQuantity(std::string name, HalfedgeData<double>& value, DataType type = DataType::STANDARD);
 
   void setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q);
   void clearActiveSurfaceQuantity();
