@@ -50,6 +50,10 @@ extern Vector3 center;
 void registerPointCloud(std::string name, const std::vector<Vector3>& points);
 void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom);
 
+// Get a reference to a structure that has been registered
+PointCloud* getPointCloud(std::string name);
+SurfaceMesh* getSurfaceMesh(std::string name);
+
 // De-register a structure, of any type. Also removes any quantities associated with the structure
 void removeStructure(std::string name);
 

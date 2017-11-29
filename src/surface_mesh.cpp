@@ -5,6 +5,9 @@
 #include "polyscope/gl/shaders/surface_shaders.h"
 #include "polyscope/polyscope.h"
 
+// Quantities
+#include "polyscope/surface_scalar_quantity.h"
+
 #include "imgui.h"
 
 using namespace geometrycentral;
@@ -23,12 +26,30 @@ SurfaceMesh::SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_)
   prepare();
 }
 
+SurfaceMesh::~SurfaceMesh() {
+  deleteProgram();
+
+  // Delete quantities
+  for (auto x : quantities) {
+    delete x.second;
+  }
+}
+
+void SurfaceMesh::deleteProgram() {
+  if (program != nullptr) {
+    delete program;
+    program = nullptr;
+  }
+}
+
 void SurfaceMesh::draw() {
   if (!enabled) {
     return;
   }
 
-  prepare();
+  if (program == nullptr) {
+    prepare();
+  }
 
   // Set uniforms
   glm::mat4 viewMat = view::getViewMatrix();
@@ -42,43 +63,44 @@ void SurfaceMesh::draw() {
 
   program->setUniform("u_lightCenter", state::center);
   program->setUniform("u_lightDist", 5 * state::lengthScale);
-  program->setUniform("u_color", surfaceColor);
+  program->setUniform("u_basecolor", surfaceColor);
   program->setUniform("u_edgeWidth", edgeWidth);
 
   program->draw();
+
+  // Draw the quantities
+  for (auto x : quantities) {
+    x.second->draw();
+  }
 }
 
 void SurfaceMesh::drawPick() {}
 
 void SurfaceMesh::prepare() {
-
-  // Don't repeatedly prepare
-  if(prepared) {
-    return;
+  // It not quantity is coloring the surface, draw with a default color
+  if (activeSurfaceQuantity == nullptr) {
+    program =
+        new gl::GLProgram(&PLAIN_SURFACE_VERT_SHADER,
+                          &PLAIN_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
   }
-
-  // Clear out the old program, if there is one
-  if (program != nullptr) {
-    delete program;
+  // If some quantity is responsible for coloring the surface, prepare it
+  else {
+    program = activeSurfaceQuantity->createProgram();
   }
-
-  // Create the GL program
-  program =
-      new gl::GLProgram(&PLAIN_SURFACE_VERT_SHADER, &PLAIN_SURFACE_FRAG_SHADER,
-                        gl::DrawMode::Triangles);
 
   // Populate draw buffers
-  if(shadeStyle == ShadeStyle::SMOOTH) {
+  fillGeometryBuffers();
+}
+
+void SurfaceMesh::fillGeometryBuffers() {
+  if (shadeStyle == ShadeStyle::SMOOTH) {
     fillGeometryBuffersSmooth();
   } else if (shadeStyle == ShadeStyle::FLAT) {
     fillGeometryBuffersFlat();
   }
-
-  prepared = true;
 }
-  
+
 void SurfaceMesh::fillGeometryBuffersSmooth() {
-  
   std::vector<Vector3> positions;
   std::vector<Vector3> normals;
   std::vector<Vector3> bcoord;
@@ -115,15 +137,13 @@ void SurfaceMesh::fillGeometryBuffersSmooth() {
   program->setAttribute("a_position", positions);
   program->setAttribute("a_normal", normals);
   program->setAttribute("a_barycoord", bcoord);
-  
 }
-  
+
 void SurfaceMesh::fillGeometryBuffersFlat() {
-  
   std::vector<Vector3> positions;
   std::vector<Vector3> normals;
   std::vector<Vector3> bcoord;
-  
+
   FaceData<Vector3> faceNormals;
   geometry->getFaceNormals(faceNormals);
   for (FacePtr f : mesh->faces()) {
@@ -157,50 +177,47 @@ void SurfaceMesh::fillGeometryBuffersFlat() {
   program->setAttribute("a_position", positions);
   program->setAttribute("a_normal", normals);
   program->setAttribute("a_barycoord", bcoord);
-
-}
-
-void SurfaceMesh::teardown() {
-  if (program != nullptr) {
-    delete program;
-  }
 }
 
 void SurfaceMesh::drawUI() {
-
   ImGui::PushID(name.c_str());  // ensure there are no conflicts with
                                 // identically-named labels
 
-  if(ImGui::TreeNode(name.c_str())) {
+  if (ImGui::TreeNode(name.c_str())) {
     // enabled = true;
 
     ImGui::Checkbox("Enabled", &enabled);
     ImGui::SameLine();
     ImGui::ColorEdit3("Surface color", (float*)&surfaceColor,
                       ImGuiColorEditFlags_NoInputs);
-  
-    { // Flat shading or smooth shading?
+
+    {  // Flat shading or smooth shading?
       ImGui::Checkbox("Smooth shade", &ui_smoothshade);
-      if(ui_smoothshade && shadeStyle == ShadeStyle::FLAT) {
-        shadeStyle = ShadeStyle::SMOOTH; 
-        prepared = false;
+      if (ui_smoothshade && shadeStyle == ShadeStyle::FLAT) {
+        shadeStyle = ShadeStyle::SMOOTH;
+        deleteProgram();
       }
-      if(!ui_smoothshade && shadeStyle == ShadeStyle::SMOOTH) {
-        shadeStyle = ShadeStyle::FLAT; 
-        prepared = false;
+      if (!ui_smoothshade && shadeStyle == ShadeStyle::SMOOTH) {
+        shadeStyle = ShadeStyle::FLAT;
+        deleteProgram();
       }
       ImGui::SameLine();
     }
-  
-    { // Edge width
+
+    {  // Edge width
       ImGui::Checkbox("Show edges", &showEdges);
-      if(showEdges) {
+      if (showEdges) {
         edgeWidth = 0.01;
       } else {
         edgeWidth = 0.0;
       }
     }
-  
+
+    // Draw the quantities
+    for (auto x : quantities) {
+      x.second->drawUI();
+    }
+
     ImGui::TreePop();
   } else {
     // enabled = false;
@@ -234,6 +251,37 @@ SurfaceMesh::boundingBox() {
   }
 
   return std::make_tuple(min, max);
+}
+
+SurfaceQuantity::SurfaceQuantity(std::string name_, SurfaceMesh* mesh_)
+    : name(name_), parent(mesh_) {}
+SurfaceQuantityThatDrawsFaces::SurfaceQuantityThatDrawsFaces(std::string name_,
+                                                             SurfaceMesh* mesh_)
+    : SurfaceQuantity(name_, mesh_) {}
+SurfaceQuantity::~SurfaceQuantity() {}
+
+void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value) {
+  // Check that the name is unique
+  if (quantities.find(name) != quantities.end()) {
+    error("Quantity name " + name + " is alredy in use");
+    return;
+  }
+
+  SurfaceScalarQuantity* q = new SurfaceScalarVertexQuantity(name, value, this);
+  quantities[name] = q;
+}
+
+void SurfaceMesh::setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q) {
+  clearActiveSurfaceQuantity();
+  activeSurfaceQuantity = q;
+}
+
+void SurfaceMesh::clearActiveSurfaceQuantity() {
+  deleteProgram();
+  if (activeSurfaceQuantity != nullptr) {
+    activeSurfaceQuantity->enabled = false;
+    activeSurfaceQuantity = nullptr;
+  }
 }
 
 }  // namespace polyscope

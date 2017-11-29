@@ -15,15 +15,13 @@ class PointCloud : public Structure {
   // Construct a new point cloud structure
   PointCloud(std::string name,
              const std::vector<geometrycentral::Vector3>& points);
+  ~PointCloud();
 
   // Render the the structure on screen
   virtual void draw() override;
 
   // Do setup work related to drawing, including allocating openGL data
   virtual void prepare() override;
-
-  // Undo anything done in prepare(), including deallocating openGL data
-  virtual void teardown() override;
 
   // Build the imgui display
   virtual void drawUI() override;

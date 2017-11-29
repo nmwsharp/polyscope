@@ -19,6 +19,12 @@ PointCloud::PointCloud(std::string name, const std::vector<Vector3>& points_)
   prepare();
 }
 
+PointCloud::~PointCloud() {
+  if (program != nullptr) {
+    delete program;
+  }
+}
+
 void PointCloud::draw() {
   if (!enabled) {
     return;
@@ -62,12 +68,6 @@ void PointCloud::prepare() {
 
   // Store data in buffers
   program->setAttribute("a_position", points);
-}
-
-void PointCloud::teardown() {
-  if (program != nullptr) {
-    delete program;
-  }
 }
 
 void PointCloud::drawUI() {

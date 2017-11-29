@@ -54,6 +54,16 @@ void processFileOBJ(string filename) {
   HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh(filename), geom);
   polyscope::registerSurfaceMesh(niceName, geom);
 
+  // Add some scalars
+  VertexData<double> val1(mesh);
+  VertexData<double> val2(mesh);
+  for(VertexPtr v : mesh->vertices()) {
+    val1[v] = geom->position(v).y;
+    val2[v] = geom->position(v).x;
+  }
+  polyscope::getSurfaceMesh(niceName)->addQuantity("height", val1);
+  polyscope::getSurfaceMesh(niceName)->addQuantity("xPos", val2);
+
   delete geom;
   delete mesh;
 }

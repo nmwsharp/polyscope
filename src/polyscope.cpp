@@ -264,6 +264,23 @@ void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom) {
   updateStructureExtents();
 }
 
+
+PointCloud* getPointCloud(std::string name) {
+  if(state::pointClouds.find(name) == state::pointClouds.end()) {
+    error("No point cloud with name " + name + " registered");
+    return nullptr;
+  }
+  return state::pointClouds[name];
+}
+
+SurfaceMesh* getSurfaceMesh(std::string name) {
+  if(state::surfaceMeshes.find(name) == state::surfaceMeshes.end()) {
+    error("No surface mesh with name " + name + " registered");
+    return nullptr;
+  }
+  return state::surfaceMeshes[name];
+}
+
 void removeStructure(std::string name) {
   // Point cloud
   if (state::pointClouds.find(name) != state::pointClouds.end()) {
