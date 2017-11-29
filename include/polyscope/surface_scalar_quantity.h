@@ -15,6 +15,11 @@ class SurfaceScalarQuantity :  public SurfaceQuantityThatDrawsFaces {
   // The map that takes values to [0,1] for drawing
   double mapVal(double x);
   double minVal, maxVal;
+
+  // UI internals
+  const std::vector<const gl::Colormap*> colormaps = {&gl::CM_VIRIDIS, &gl::CM_COOLWARM, &gl::CM_BLUES};
+  const char* cm_names[3] = {"viridis", "coolwarm", "blues"};
+  int iColorMap = 0;
 };
 
 class SurfaceScalarVertexQuantity : public SurfaceScalarQuantity {
@@ -32,6 +37,7 @@ class SurfaceScalarVertexQuantity : public SurfaceScalarQuantity {
 
   // === Members
   VertexData<double> values;
+
 };
 
 }  // namespace polyscope

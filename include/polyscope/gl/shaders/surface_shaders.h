@@ -151,6 +151,7 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_colormap", 1}
     },
     
     // output location
@@ -163,6 +164,7 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
       uniform float u_lightDist;
       uniform float u_edgeWidth;
       uniform vec3 u_basecolor;
+      uniform sampler1D t_colormap;
       in vec3 Normal;
       in vec3 Position;
       in vec3 Barycoord;
@@ -174,7 +176,8 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
       float getEdgeFactor(vec3 UVW, float width);
 
       vec3 surfaceColor() {
-        return Colorval * vec3(1., 0., 0.) + (1.0 - Colorval) * vec3(0., 1., 0.);
+        // return Colorval * vec3(1., 0., 0.) + (1.0 - Colorval) * vec3(0., 1., 0.);
+        return texture(t_colormap, Colorval).rgb;
       }
 
       vec3 edgeColor(vec3 surfaceColor) {

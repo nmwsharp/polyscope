@@ -23,7 +23,6 @@ SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(
     : SurfaceScalarQuantity(name, mesh_, dataType_)
 
 {
-
   values = parent->transfer.transfer(values_);
 
   // Compute max and min of data for mapping
@@ -48,11 +47,10 @@ SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(
 }
 
 gl::GLProgram* SurfaceScalarVertexQuantity::createProgram() {
-
   // Create the program to draw this quantity
   gl::GLProgram* program = new gl::GLProgram(&VERTCOLOR_SURFACE_VERT_SHADER,
-                                        &VERTCOLOR_SURFACE_FRAG_SHADER,
-                                        gl::DrawMode::Triangles);
+                                             &VERTCOLOR_SURFACE_FRAG_SHADER,
+                                             gl::DrawMode::Triangles);
 
   // Fill color buffers
   fillColorBuffers(program);
@@ -81,19 +79,26 @@ void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
 
   // Store data in buffers
   p->setAttribute("a_colorval", colorval);
+  p->setTextureFromColormap("t_colormap", *colormaps[iColorMap]);
 }
-
 
 void SurfaceScalarVertexQuantity::draw() {
 }  // nothing to do, drawn by surface mesh program
 
-
-
 void SurfaceScalarVertexQuantity::drawUI() {
-
   bool enabledBefore = enabled;
   if (ImGui::TreeNode(name.c_str())) {
     ImGui::Checkbox("Enabled", &enabled);
+  
+    {  // Set colormap
+      ImGui::SameLine();
+      ImGui::PushItemWidth(100);
+      int iColormapBefore = iColorMap;
+      ImGui::Combo("##colormap", &iColorMap, cm_names, IM_ARRAYSIZE(cm_names));
+      if (iColorMap != iColormapBefore && enabled) {
+        parent->deleteProgram();
+      }
+    }
 
     ImGui::TreePop();
   }
@@ -102,9 +107,10 @@ void SurfaceScalarVertexQuantity::drawUI() {
   if (!enabledBefore && enabled) {
     parent->setActiveSurfaceQuantity(this);
   }
-  if(enabledBefore && !enabled) {
+  if (enabledBefore && !enabled) {
     parent->clearActiveSurfaceQuantity();
   }
+
 }
 
 }  // namespace polyscope
