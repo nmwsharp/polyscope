@@ -1,18 +1,40 @@
 #pragma once
 
+#include "geometrycentral/vector3.h"
 
 namespace polyscope {
 
 // Helpers used mainy to treat vectors as fields
 namespace {
+
+// Field "size" used to compare elements for SIGNED bigness
+template <typename T>
+double FIELD_BIGNESS(T x) {
+  return x;
+}
+template <>
+double FIELD_BIGNESS(geometrycentral::Vector3 x) {
+  return geometrycentral::norm(x);
+}
+
+// Multiplicative identity
 template <typename T>
 T FIELD_ONE() {
   return 1;
 }
+template <>
+geometrycentral::Vector3 FIELD_ONE() {
+  return geometrycentral::Vector3{1., 1., 1.};
+}
 
+// Additive identity
 template <typename T>
 T FIELD_ZERO() {
   return 0;
+}
+template <>
+geometrycentral::Vector3 FIELD_ZERO() {
+  return geometrycentral::Vector3::zero();
 }
 };  // namespace
 
@@ -26,7 +48,9 @@ AffineRemapper<T>::AffineRemapper(T offset_, double scale_)
 template <typename T>
 AffineRemapper<T>::AffineRemapper()
     : offset(FIELD_ZERO<T>()),
-      scale(1.0){
+      scale(1.0),
+      minVal(std::numeric_limits<double>::quiet_NaN()),
+      maxVal(std::numeric_limits<double>::quiet_NaN()){
 
       };
 
@@ -38,11 +62,11 @@ AffineRemapper<T>::AffineRemapper(const std::vector<T>& data,
   T minElem;
   maxVal = -std::numeric_limits<double>::infinity();
   for (const T& x : data) {
-    if (x < minVal) {
+    if (FIELD_BIGNESS(x) < minVal) {
       minElem = x;
-      minVal = x;
+      minVal = FIELD_BIGNESS(x);
     }
-    maxVal = std::max(maxVal, x);
+    maxVal = std::max(maxVal, FIELD_BIGNESS(x));
   }
   double maxMag = std::max(std::abs(minVal), std::abs(maxVal));
 
@@ -86,6 +110,16 @@ AffineRemapper<T>::AffineRemapper(double minVal, double maxVal,
     double maxMag = std::max(std::abs(minVal), std::abs(maxVal));
     offset = FIELD_ZERO<T>();
     scale = 1.0 / (maxMag);
+  }
+}
+
+template <typename T>
+void AffineRemapper<T>::setMinMax(const std::vector<T>& data) {
+  minVal = std::numeric_limits<double>::infinity();
+  maxVal = -std::numeric_limits<double>::infinity();
+  for (const T& x : data) {
+    minVal = std::min(minVal, FIELD_BIGNESS(x));
+    maxVal = std::max(maxVal, FIELD_BIGNESS(x));
   }
 }
 

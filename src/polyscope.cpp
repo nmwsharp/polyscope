@@ -358,7 +358,6 @@ std::vector<std::array<float, 3>> paletteColors {
     {{66/255., 165/255., 245/255.}},    // light blue
     {{38/255., 166/255., 154/255.}},    // greenish
     {{255/255., 167/255., 38/255.}},    // orange
-    {{236/255., 40/255., 40/255.}},     // red
     {{38/255., 198/255., 218/255.}}     // teal
     };
 }  // anonymous namespace

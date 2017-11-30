@@ -7,6 +7,7 @@
 
 // Quantities
 #include "polyscope/surface_scalar_quantity.h"
+#include "polyscope/surface_vector_quantity.h"
 
 #include "imgui.h"
 
@@ -309,6 +310,34 @@ void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value,
 
   SurfaceScalarQuantity* q =
       new SurfaceScalarHalfedgeQuantity(name, value, this, type);
+  quantities[name] = q;
+}
+
+void SurfaceMesh::addVectorQuantity(std::string name,
+                                    VertexData<Vector3>& value,
+                                    VectorType vectorType) {
+  // Check that the name is unique
+  if (quantities.find(name) != quantities.end()) {
+    error("Quantity name " + name + " is alredy in use");
+    return;
+  }
+
+  SurfaceVectorQuantity* q =
+      new SurfaceVectorQuantity(name, value, this, vectorType);
+  quantities[name] = q;
+}
+
+void SurfaceMesh::addVectorQuantity(std::string name,
+                                    FaceData<Vector3>& value,
+                                    VectorType vectorType) {
+  // Check that the name is unique
+  if (quantities.find(name) != quantities.end()) {
+    error("Quantity name " + name + " is alredy in use");
+    return;
+  }
+
+  SurfaceVectorQuantity* q =
+      new SurfaceVectorQuantity(name, value, this, vectorType);
   quantities[name] = q;
 }
 

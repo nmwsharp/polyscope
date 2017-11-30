@@ -76,6 +76,7 @@ void PointCloud::drawUI() {
 
   ImGui::TextUnformatted(name.c_str());
   ImGui::Checkbox("Enabled", &enabled);
+  ImGui::SameLine();
   ImGui::ColorEdit3("Point color", (float*)&pointColor,
                     ImGuiColorEditFlags_NoInputs);
 

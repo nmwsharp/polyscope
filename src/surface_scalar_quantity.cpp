@@ -42,6 +42,7 @@ void SurfaceScalarQuantity::drawUI() {
       ImGui::PushItemWidth(100);
       int iColormapBefore = iColorMap;
       ImGui::Combo("##colormap", &iColorMap, cm_names, IM_ARRAYSIZE(cm_names));
+      ImGui::PopItemWidth();
       if (iColorMap != iColormapBefore && enabled) {
         parent->deleteProgram();
       }

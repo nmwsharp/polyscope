@@ -15,6 +15,12 @@ namespace polyscope {
 // MAGNITUDE: [0, inf], zero is special (ie, length of a vector)
 enum class DataType { STANDARD = 0, SYMMETRIC, MAGNITUDE};
 
+// What is the meaningful scale of an R3 vector?
+// Used to scale vector lengths in a meaningful way
+// STANDARD: special meaning
+// AMBIENT: vector represent distances in the ambient space
+enum class VectorType { STANDARD = 0, AMBIENT};
+
 
 // Map data in to the range [0,1]
 template <typename T>
@@ -26,13 +32,14 @@ public:
     AffineRemapper(const std::vector<T>& data, DataType datatype=DataType::STANDARD);
     AffineRemapper(T offset, double scale);
     AffineRemapper(double minVal, double maxVal, DataType datatype=DataType::STANDARD);
-    AffineRemapper();
+    AffineRemapper(); // identity mapper
 
     // Data that defines the map as f(x) = (x - offset) * scale
     T offset;
     double scale, minVal, maxVal;
 
     T map(const T& x);
+    void setMinMax(const std::vector<T>& data); // useful when using identity mapper but want accurate bounds
     std::string printBounds();
 
     // Helpers for logic on templated fields

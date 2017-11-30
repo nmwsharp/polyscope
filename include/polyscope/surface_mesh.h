@@ -82,6 +82,8 @@ class SurfaceMesh : public Structure {
   void addQuantity(std::string name, FaceData<double>& value, DataType type = DataType::STANDARD);
   void addQuantity(std::string name, EdgeData<double>& value, DataType type = DataType::STANDARD);
   void addQuantity(std::string name, HalfedgeData<double>& value, DataType type = DataType::STANDARD);
+  void addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
+  void addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
 
   void setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q);
   void clearActiveSurfaceQuantity();

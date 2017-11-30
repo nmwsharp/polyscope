@@ -77,6 +77,24 @@ void processFileOBJ(string filename) {
   HalfedgeData<double> oAngles(mesh);
   geom->getHalfedgeAngles(oAngles);
   polyscope::getSurfaceMesh(niceName)->addQuantity("angles", oAngles);
+  
+  
+  // Add some vectors
+  VertexData<Vector3> normals(mesh);
+  VertexData<Vector3> toZero(mesh);
+  geom->getVertexNormals(normals);
+  for(VertexPtr v : mesh->vertices()) {
+    normals[v] *= unitRand() * 5000;
+    toZero[v] = -geom->position(v);
+  }
+  polyscope::getSurfaceMesh(niceName)->addVectorQuantity("normals", normals);
+  polyscope::getSurfaceMesh(niceName)->addVectorQuantity("toZero", toZero, polyscope::VectorType::AMBIENT);
+
+  FaceData<Vector3> fNormals(mesh);
+  for(FacePtr f : mesh->faces()) {
+    fNormals[f] = geom->normal(f);
+  }
+  polyscope::getSurfaceMesh(niceName)->addVectorQuantity("face normals", fNormals);
 
   delete geom;
   delete mesh;
@@ -121,14 +139,14 @@ int main(int argc, char** argv) {
   }
 
   // Create a point cloud
-//   std::vector<Vector3> points;
-//   for (size_t i = 0; i < 3000; i++) {
-//     // points.push_back(Vector3{10,10,10} + 20*Vector3{unitRand()-.5,
-//     // unitRand()-.5, unitRand()-.5});
-//     points.push_back(
-//         3 * Vector3{unitRand() - .5, unitRand() - .5, unitRand() - .5});
-//   }
-//   polyscope::registerPointCloud("really great points", points);
+  std::vector<Vector3> points;
+  for (size_t i = 0; i < 3000; i++) {
+    // points.push_back(Vector3{10,10,10} + 20*Vector3{unitRand()-.5,
+    // unitRand()-.5, unitRand()-.5});
+    points.push_back(
+        3 * Vector3{unitRand() - .5, unitRand() - .5, unitRand() - .5});
+  }
+  polyscope::registerPointCloud("really great points", points);
 
   // Add a few gui elements
 
