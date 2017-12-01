@@ -45,8 +45,6 @@ void CameraView::draw() {
     glm::mat4 projMat = view::getPerspectiveMatrix();
     cameraSkeletonProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-    cameraSkeletonProgram->setUniform("u_edgeWidth",
-                                      0.001 * state::lengthScale);
     cameraSkeletonProgram->setUniform("u_wirecolor", gl::RGB_BLACK);
 
     cameraSkeletonProgram->draw();
@@ -69,12 +67,14 @@ void CameraView::prepare() {}
 void CameraView::prepareCameraSkeleton() {
   // Create the GL program
   cameraSkeletonProgram = new gl::GLProgram(
-      &WIREFRAME_VERT_SHADER, &WIREFRAME_FRAG_SHADER, gl::DrawMode::Triangles);
+      &WIREFRAME_VERT_SHADER, &WIREFRAME_FRAG_SHADER, gl::DrawMode::Lines);
 
   // Relevant points in world space
-  glm::vec3 root = -glm::transpose(parameters.R) * parameters.T;
-  glm::vec3 lookDir = glm::normalize(parameters.R * glm::vec3(0.0, 0.0, 1.0));
-  glm::vec3 upDir = -glm::normalize(parameters.R * glm::vec3(0.0, 1.0, 0.0));
+  glm::mat3x3 R = parameters.R.
+  glm::mat3x3 Rt = glm::transpose(parameters.R);
+  glm::vec3 root = -Rt * parameters.T;
+  glm::vec3 lookDir = glm::normalize(Rt * glm::vec3(0.0, 0.0, -1.0));
+  glm::vec3 upDir = glm::normalize(Rt * glm::vec3(0.0, -1.0, 0.0));
   glm::vec3 rightDir = -glm::cross(lookDir, upDir);
 
   float cameraDrawSize = state::lengthScale * 0.1;
@@ -92,35 +92,19 @@ void CameraView::prepareCameraSkeleton() {
 
   // Triangles to draw
   std::vector<Vector3> positions;  // position in space
-  std::vector<Vector3> edgeDists;  // distance to edge opposite this vertex
 
-  // Helper to add triangle with edge dist
-  auto addTriangle = [&](std::array<glm::vec3, 3> points) {
-    for (int i = 0; i < 3; i++) {
-      // Add the points
-      positions.push_back(toV(points[i]));
-
-      // Add edge dist
-      glm::vec3 v1 = points[(i + 2) % 3] - points[(i + 1) % 3];
-      glm::vec3 v2 = points[(i + 0) % 3] - points[(i + 1) % 3];
-      glm::vec3 v1n = glm::normalize(v1);
-      double d = glm::length(v2 - glm::dot(v2, v1n) * v1n);
-      cout << "d = " << d << endl;
-      Vector3 dists{0.0, 0.0, 0.0};
-      dists[i] = d;
-      edgeDists.push_back(dists);
-    }
-  };
-
-  // Add triangles
-  addTriangle({{root, upperLeft, lowerLeft}});
-  addTriangle({{root, upperRight, upperLeft}});
-  addTriangle({{root, lowerRight, upperRight}});
-  addTriangle({{root, lowerLeft, lowerRight}});
+  // Add lines
+  positions.push_back(toV(root)); positions.push_back(toV(upperLeft));
+  positions.push_back(toV(root)); positions.push_back(toV(lowerLeft));
+  positions.push_back(toV(root)); positions.push_back(toV(upperRight));
+  positions.push_back(toV(root)); positions.push_back(toV(lowerRight));
+  positions.push_back(toV(upperLeft)); positions.push_back(toV(upperRight));
+  positions.push_back(toV(upperRight)); positions.push_back(toV(lowerRight));
+  positions.push_back(toV(lowerRight)); positions.push_back(toV(lowerLeft));
+  positions.push_back(toV(lowerLeft)); positions.push_back(toV(upperLeft));
 
   // Store data in buffers
   cameraSkeletonProgram->setAttribute("a_position", positions);
-  cameraSkeletonProgram->setAttribute("a_edgeDists", edgeDists);
 }
 
 void CameraView::drawUI() {

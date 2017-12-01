@@ -11,11 +11,12 @@ namespace polyscope {
 class CameraParameters {
  public:
   CameraParameters();
-
+  
   // Extrinsics
-  glm::vec3 T;    // position of world orgin, in camera coords
-                  // (NOT world location)
-  glm::mat3x3 R;  // rotation from world coords to camera coords
+  // glm::vec3 T;    // position of world orgin, in camera coords
+  //                 // (NOT world location)
+  // glm::mat3x3 R;  // rotation from world coords to camera coords
+  glm::mat4x4 E; // extrinsic transform
   
   // Intrinsics
   // glm::vec2 imageCenter;   // measured in distance, NOT pixels

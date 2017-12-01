@@ -2,7 +2,9 @@
 
 namespace polyscope {
 
+// CameraParameters::CameraParameters()
+//     : T(0.0), R(glm::mat3x3(1.0)), focalLengths(1.0) {}
 CameraParameters::CameraParameters()
-    : T(0.0), R(glm::mat3x3(1.0)), focalLengths(1.0) {}
+    : E(1.0), focalLengths(1.0) {}
 
 }  // namespace polyscope

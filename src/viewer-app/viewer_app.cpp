@@ -7,6 +7,7 @@
 #include "geometrycentral/polygon_soup_mesh.h"
 
 #include "args/args.hxx"
+#include "json/json.hpp"
 
 using namespace geometrycentral;
 using std::cerr;
@@ -100,10 +101,58 @@ void processFileOBJ(string filename) {
   delete mesh;
 }
 
+void processFileJSON(string filename) {
+
+  using namespace nlohmann;
+
+  std::string niceName = guessName(filename);
+
+  // read a JSON camera file
+  std::ifstream inFile(filename);
+  json j;
+  inFile >> j;
+
+  // Read the json file
+  // std::vector<double> tVec = j.at("location").get<std::vector<double>>();
+  // std::vector<double> rotationVec = j.at("rotation").get<std::vector<double>>();
+  
+  std::vector<double> Evec = j.at("extMat").get<std::vector<double>>();
+  std::vector<double> focalVec = j.at("focal_dists").get<std::vector<double>>();
+ 
+  // Copy to parameters
+  polyscope::CameraParameters params;
+  // glm::mat3x3 R;
+  // glm::vec3 t;
+  glm::mat4x4 E;
+  // for(int i = 0; i < 3; i++) {
+  //   t[i] = tVec[i];
+  //   for(int j = 0; j < 3; j++) {
+  //     R[i][j] = rotationVec[3*i + j];
+  //   }
+  // }
+  for(int i = 0; i < 4; i++) {
+    for(int j = 0; j < 4; j++) {
+      E[i][j] = Evec[4*i + j];
+    }
+  }
+  glm::vec2 focalLengths(focalVec[0], focalVec[1]);
+
+  // TODO not right, different conventions
+  // params.T = t;
+  // params.R = R;
+  params.E = E;
+  params.focalLengths = focalLengths;
+
+  polyscope::registerCameraView(niceName, params);
+
+}
+
 void processFile(string filename) {
   // Dispatch to correct varient
   if (endsWith(filename, ".obj")) {
     processFileOBJ(filename);
+  } else if (endsWith(filename, ".json")) {
+    processFileJSON(filename);
   } else {
     cerr << "Unrecognized file type for " << filename << endl;
   }

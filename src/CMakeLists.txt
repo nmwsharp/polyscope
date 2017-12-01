@@ -25,6 +25,7 @@ target_include_directories(polyscope PUBLIC "${CMAKE_SOURCE_DIR}/deps/glad/inclu
 target_include_directories(polyscope PUBLIC ${GEOMETRY_CENTRAL_INCLUDE_DIRS})
 target_include_directories(polyscope PUBLIC "${CMAKE_SOURCE_DIR}/deps/imgui/imgui")
 target_include_directories(polyscope PUBLIC "${CMAKE_SOURCE_DIR}/deps/args")
+target_include_directories(polyscope PUBLIC "${CMAKE_SOURCE_DIR}/deps/json/include")
         
 # Link settings
 target_link_libraries(polyscope imgui glfw ${GLFW_LIBRARIES} geometry-central)
