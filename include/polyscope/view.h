@@ -3,6 +3,7 @@
 #include <array>
 
 #include "polyscope/gl/gl_utils.h"
+#include "polyscope/camera_parameters.h"
 
 // GLM for view matrices
 #include "glm/vec3.hpp"
@@ -35,6 +36,7 @@ namespace view {
     void processMouseDrag(Vector2 deltaDrag, bool isRotating);
     void processMouseScroll(double scrollAmount, bool scrollClipPlane);
     void setWindowSize(int width, int height);
+    void setViewToCamera(const CameraParameters& p);
     void resetCameraToDefault();
     
     glm::mat4 getViewMatrix();
@@ -42,7 +44,7 @@ namespace view {
     Vector3 getCameraWorldPosition();
     Vector3 getLightWorldPosition();
 
-    
+
 
 } // namespace view    
 } // namespace polyscope

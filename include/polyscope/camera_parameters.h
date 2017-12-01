@@ -20,12 +20,12 @@ class CameraParameters {
   glm::vec2 focalLengths;  // measured in distance, NOT pixels
 
   // Get various derived quantities
-  glm::vec3 getT();
-  glm::mat3x3 getR();
-  glm::vec3 getPosition();
-  glm::vec3 getLookDir();
-  glm::vec3 getUpDir();
-  glm::vec3 getRightDir();
+  glm::vec3 getT() const;
+  glm::mat3x3 getR() const;
+  glm::vec3 getPosition() const;
+  glm::vec3 getLookDir() const;
+  glm::vec3 getUpDir() const;
+  glm::vec3 getRightDir() const;
 
 };
 

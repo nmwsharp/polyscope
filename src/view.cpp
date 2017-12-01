@@ -89,6 +89,12 @@ void resetCameraToDefault() {
 
 }
 
+void setViewToCamera(const CameraParameters& p) {
+
+  
+
+}
+
 glm::mat4 getViewMatrix() {
   // Map from world coordinates to camera coordinates
   Vector3 scaledEye = cameraDirection * state::lengthScale;
@@ -144,18 +150,6 @@ Vector3 getLightWorldPosition() {
   lightVec = lightVec.rotate_around(-leftHand, PI / 8);
   return state::center + lightVec;
 
-  // The light is over the right shoulder of the camera
-//   Vector3 leftHand = unit(cross(cameraDirection, upDirection));
-//   Vector3 lightPos =
-//       lookAtPoint + 10 * (dist * state::lengthScale) * cameraDirection;
-//   lightPos = lightPos.rotate_around(upDirection, 3.14159 / 8);
-//   lightPos = lightPos.rotate_around(leftHand, 3.14159 / 8);
-
-//   // Add a vertical component to the light so that when the
-//   // camera is at the horizon, the shadow doesn't shoot off to infinity
-//   lightPos = (lightPos + Vector3{0., 20., 0.}) / 2.;
-
-//   return lightPos;
 }
 
 }  // namespace view
