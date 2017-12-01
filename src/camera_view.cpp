@@ -59,7 +59,7 @@ Vector3 toV(glm::vec3 x) { return Vector3{x.x, x.y, x.z}; }
 }  // namespace
 
 Vector3 CameraView::location() {
-  return toV(-glm::transpose(parameters.R) * parameters.T);
+  return toV(parameters.getPosition());
 }
 
 void CameraView::prepare() {}
@@ -70,12 +70,10 @@ void CameraView::prepareCameraSkeleton() {
       &WIREFRAME_VERT_SHADER, &WIREFRAME_FRAG_SHADER, gl::DrawMode::Lines);
 
   // Relevant points in world space
-  glm::mat3x3 R = parameters.R.
-  glm::mat3x3 Rt = glm::transpose(parameters.R);
-  glm::vec3 root = -Rt * parameters.T;
-  glm::vec3 lookDir = glm::normalize(Rt * glm::vec3(0.0, 0.0, -1.0));
-  glm::vec3 upDir = glm::normalize(Rt * glm::vec3(0.0, -1.0, 0.0));
-  glm::vec3 rightDir = -glm::cross(lookDir, upDir);
+  glm::vec3 root = parameters.getPosition();
+  glm::vec3 lookDir = parameters.getLookDir();
+  glm::vec3 upDir = parameters.getUpDir();
+  glm::vec3 rightDir = parameters.getRightDir();
 
   float cameraDrawSize = state::lengthScale * 0.1;
   float frameDrawWidth = 0.5 / parameters.focalLengths.x * cameraDrawSize;

@@ -12,16 +12,24 @@ class CameraParameters {
  public:
   CameraParameters();
   
-  // Extrinsics
-  // glm::vec3 T;    // position of world orgin, in camera coords
-  //                 // (NOT world location)
-  // glm::mat3x3 R;  // rotation from world coords to camera coords
-  glm::mat4x4 E; // extrinsic transform
+  // Extrinsic transform
+  glm::mat4x4 E;
   
   // Intrinsics
   // glm::vec2 imageCenter;   // measured in distance, NOT pixels
   glm::vec2 focalLengths;  // measured in distance, NOT pixels
 
+  // Get various derived quantities
+  glm::vec3 getT();
+  glm::mat3x3 getR();
+  glm::vec3 getPosition();
+  glm::vec3 getLookDir();
+  glm::vec3 getUpDir();
+  glm::vec3 getRightDir();
+
 };
+
+// Print GLM matrices in nice ways
+void prettyPrint(glm::mat4x4 M);
 
 }  // namespace polyscope

@@ -9,6 +9,9 @@
 #include "args/args.hxx"
 #include "json/json.hpp"
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/string_cast.hpp"
+
 using namespace geometrycentral;
 using std::cerr;
 using std::cout;
@@ -56,11 +59,17 @@ void processFileOBJ(string filename) {
   polyscope::registerSurfaceMesh(niceName, geom);
 
   // Add some scalars
-  VertexData<double> val1(mesh);
+  VertexData<double> valX(mesh);
+  VertexData<double> valY(mesh);
+  VertexData<double> valZ(mesh);
   for(VertexPtr v : mesh->vertices()) {
-    val1[v] = geom->position(v).y;
+    valX[v] = geom->position(v).x;
+    valY[v] = geom->position(v).y;
+    valZ[v] = geom->position(v).z;
   }
-  polyscope::getSurfaceMesh(niceName)->addQuantity("height", val1);
+  polyscope::getSurfaceMesh(niceName)->addQuantity("cX", valX);
+  polyscope::getSurfaceMesh(niceName)->addQuantity("cY", valY);
+  polyscope::getSurfaceMesh(niceName)->addQuantity("cZ", valZ);
 
   FaceData<double> fArea(mesh);
   FaceData<double> zero(mesh);
@@ -69,15 +78,15 @@ void processFileOBJ(string filename) {
     zero[f] = 0;
   }
   polyscope::getSurfaceMesh(niceName)->addQuantity("face area", fArea, polyscope::DataType::MAGNITUDE);
-  polyscope::getSurfaceMesh(niceName)->addQuantity("zero", zero);
+  // polyscope::getSurfaceMesh(niceName)->addQuantity("zero", zero);
   
-  EdgeData<double> cWeight(mesh);
-  geom->getEdgeCotanWeights(cWeight);
-  polyscope::getSurfaceMesh(niceName)->addQuantity("cotan weight", cWeight, polyscope::DataType::SYMMETRIC);
+  // EdgeData<double> cWeight(mesh);
+  // geom->getEdgeCotanWeights(cWeight);
+  // polyscope::getSurfaceMesh(niceName)->addQuantity("cotan weight", cWeight, polyscope::DataType::SYMMETRIC);
   
-  HalfedgeData<double> oAngles(mesh);
-  geom->getHalfedgeAngles(oAngles);
-  polyscope::getSurfaceMesh(niceName)->addQuantity("angles", oAngles);
+  // HalfedgeData<double> oAngles(mesh);
+  // geom->getHalfedgeAngles(oAngles);
+  // polyscope::getSurfaceMesh(niceName)->addQuantity("angles", oAngles);
   
   
   // Add some vectors
@@ -118,32 +127,45 @@ void processFileJSON(string filename) {
   
   std::vector<double> Evec = j.at("extMat").get<std::vector<double>>();
   std::vector<double> focalVec = j.at("focal_dists").get<std::vector<double>>();
- 
+
   // Copy to parameters
   polyscope::CameraParameters params;
-  // glm::mat3x3 R;
-  // glm::vec3 t;
   glm::mat4x4 E;
-  // for(int i = 0; i < 3; i++) {
-  //   t[i] = tVec[i];
-  //   for(int j = 0; j < 3; j++) {
-  //     R[i][j] = rotationVec[3*i + j];
-  //   }
-  // }
   for(int i = 0; i < 4; i++) {
     for(int j = 0; j < 4; j++) {
-      E[i][j] = Evec[4*i + j];
+      E[j][i] = Evec[4*i + j]; // note: this is right because GLM uses [column][row] indexing
+      cout << "i = " << i << " j = " << j << "   val = " << Evec[4*i + j] << endl;
     }
   }
   glm::vec2 focalLengths(focalVec[0], focalVec[1]);
 
-  // TODO not right, different conventions
-  // params.T = t;
-  // params.R = R;
-  params.E = E;
+  // Transform to Y-up coordinates
+  glm::mat4x4 perm(0.0);
+  perm[2][0] = 1.0;
+  perm[0][1] = 1.0;
+  perm[1][2] = 1.0;
+  perm[3][3] = 1.0;
+
+  cout << "Perm: " << endl;
+  polyscope::prettyPrint(perm);
+
+  params.E = E * perm;
   params.focalLengths = focalLengths;
 
   polyscope::registerCameraView(niceName, params);
+
+  cout << "E: " << endl;
+  polyscope::prettyPrint(params.E);
+  
+
+  // cout << "Mat test: " << endl;
+  // glm::vec3 a(1., 2., 3.);
+  // glm::mat3x3 M(0.0);
+  // M[0][1] = 1.0;
+  // glm::vec3 b = M * a;
+  // cout << "  " << " a = " << glm::to_string(a) << endl;
+  // cout << "  " << " M = " << glm::to_string(M) << endl;
+  // cout << "  " << " b = " << glm::to_string(b) << endl;
 
 }
 
@@ -188,18 +210,14 @@ int main(int argc, char** argv) {
   }
 
   // Create a point cloud
-  std::vector<Vector3> points;
-  for (size_t i = 0; i < 3000; i++) {
-    // points.push_back(Vector3{10,10,10} + 20*Vector3{unitRand()-.5,
-    // unitRand()-.5, unitRand()-.5});
-    points.push_back(
-        3 * Vector3{unitRand() - .5, unitRand() - .5, unitRand() - .5});
-  }
-  polyscope::registerPointCloud("really great points", points);
-
-  // Create a camera view
-  polyscope::CameraParameters pTest;
-  polyscope::registerCameraView("testview 1", pTest);
+  // std::vector<Vector3> points;
+  // for (size_t i = 0; i < 3000; i++) {
+  //   // points.push_back(Vector3{10,10,10} + 20*Vector3{unitRand()-.5,
+  //   // unitRand()-.5, unitRand()-.5});
+  //   points.push_back(
+  //       3 * Vector3{unitRand() - .5, unitRand() - .5, unitRand() - .5});
+  // }
+  // polyscope::registerPointCloud("really great points", points);
 
   // Add a few gui elements
 
