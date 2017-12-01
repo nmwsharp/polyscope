@@ -2,23 +2,25 @@
 
 #include "polyscope/gl/colors.h"
 #include "polyscope/gl/shaders.h"
+#include "polyscope/gl/shaders/wireframe_shaders.h"
 #include "polyscope/polyscope.h"
 
 #include "imgui.h"
+
+#include "glm/glm.hpp"
 
 using namespace geometrycentral;
 
 namespace polyscope {
 
-CameraView::CameraView(std::string name, const std::vector<Vector3>& points_)
-    : Structure(name, StructureType::CameraView), points(points_) {
-
-  prepare();
+CameraView::CameraView(std::string name, CameraParameters p_)
+    : Structure(name, StructureType::CameraView), parameters(p_) {
+  prepareCameraSkeleton();
 }
 
 CameraView::~CameraView() {
-  if (program != nullptr) {
-    delete program;
+  if (cameraSkeletonProgram != nullptr) {
+    delete cameraSkeletonProgram;
   }
 }
 
@@ -27,87 +29,126 @@ void CameraView::draw() {
     return;
   }
 
-  // Set uniforms
-  glm::mat4 viewMat = view::getViewMatrix();
-  program->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+  {  // Camera skeleton program
 
-  glm::mat4 projMat = view::getPerspectiveMatrix();
-  program->setUniform("u_projMatrix", glm::value_ptr(projMat));
+    if (cameraSkeletonProgram == nullptr) {
+      prepareCameraSkeleton();
+    }
 
-  Vector3 eyePos = view::getCameraWorldPosition();
-  program->setUniform("u_eye", eyePos);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  program->setUniform("u_lightCenter", state::center);
-  program->setUniform("u_lightDist", 2*state::lengthScale);
-  
-  program->setUniform("u_camZ", view::cameraDirection);
-  program->setUniform("u_camUp", view::upDirection);
-  Vector3 leftHand = unit(cross(view::cameraDirection, view::upDirection));
-  program->setUniform("u_camRight", -leftHand); 
-  
-  program->setUniform("u_pointRadius", pointRadius * state::lengthScale);
-  program->setUniform("u_color", pointColor);
+    // Set uniforms
+    glm::mat4 viewMat = view::getViewMatrix();
+    cameraSkeletonProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
 
-  program->draw();
+    glm::mat4 projMat = view::getPerspectiveMatrix();
+    cameraSkeletonProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
+
+    cameraSkeletonProgram->setUniform("u_edgeWidth",
+                                      0.001 * state::lengthScale);
+    cameraSkeletonProgram->setUniform("u_wirecolor", gl::RGB_BLACK);
+
+    cameraSkeletonProgram->draw();
+  }
 }
 
 void CameraView::drawPick() {}
 
-void CameraView::prepare() {
-  // Create the GL program
-  // program = new gl::GLProgram(&PASSTHRU_SPHERE_VERT_SHADER, &SPHERE_GEOM_SHADER,
-  //                             &SHINY_SPHERE_FRAG_SHADER, gl::DrawMode::Points);
-  program = new gl::GLProgram(&PASSTHRU_SPHERE_VERT_SHADER, &SPHERE_GEOM_BILLBOARD_SHADER,
-                              &SHINY_SPHERE_FRAG_SHADER, gl::DrawMode::Points);
+// Helper function to convert glm::vec3 to Vector3
+namespace {
+Vector3 toV(glm::vec3 x) { return Vector3{x.x, x.y, x.z}; }
+}  // namespace
 
-  // Constant color
-  std::vector<Vector3> colorData(points.size());
+Vector3 CameraView::location() {
+  return toV(-glm::transpose(parameters.R) * parameters.T);
+}
+
+void CameraView::prepare() {}
+
+void CameraView::prepareCameraSkeleton() {
+  // Create the GL program
+  cameraSkeletonProgram = new gl::GLProgram(
+      &WIREFRAME_VERT_SHADER, &WIREFRAME_FRAG_SHADER, gl::DrawMode::Triangles);
+
+  // Relevant points in world space
+  glm::vec3 root = -glm::transpose(parameters.R) * parameters.T;
+  glm::vec3 lookDir = glm::normalize(parameters.R * glm::vec3(0.0, 0.0, 1.0));
+  glm::vec3 upDir = -glm::normalize(parameters.R * glm::vec3(0.0, 1.0, 0.0));
+  glm::vec3 rightDir = -glm::cross(lookDir, upDir);
+
+  float cameraDrawSize = state::lengthScale * 0.1;
+  float frameDrawWidth = 0.5 / parameters.focalLengths.x * cameraDrawSize;
+  float frameDrawHeight = 0.5 / parameters.focalLengths.y * cameraDrawSize;
+
+  glm::vec3 upperLeft = root + cameraDrawSize * lookDir +
+                        upDir * frameDrawHeight - rightDir * frameDrawWidth;
+  glm::vec3 lowerLeft = root + cameraDrawSize * lookDir -
+                        upDir * frameDrawHeight - rightDir * frameDrawWidth;
+  glm::vec3 upperRight = root + cameraDrawSize * lookDir +
+                         upDir * frameDrawHeight + rightDir * frameDrawWidth;
+  glm::vec3 lowerRight = root + cameraDrawSize * lookDir -
+                         upDir * frameDrawHeight + rightDir * frameDrawWidth;
+
+  // Triangles to draw
+  std::vector<Vector3> positions;  // position in space
+  std::vector<Vector3> edgeDists;  // distance to edge opposite this vertex
+
+  // Helper to add triangle with edge dist
+  auto addTriangle = [&](std::array<glm::vec3, 3> points) {
+    for (int i = 0; i < 3; i++) {
+      // Add the points
+      positions.push_back(toV(points[i]));
+
+      // Add edge dist
+      glm::vec3 v1 = points[(i + 2) % 3] - points[(i + 1) % 3];
+      glm::vec3 v2 = points[(i + 0) % 3] - points[(i + 1) % 3];
+      glm::vec3 v1n = glm::normalize(v1);
+      double d = glm::length(v2 - glm::dot(v2, v1n) * v1n);
+      cout << "d = " << d << endl;
+      Vector3 dists{0.0, 0.0, 0.0};
+      dists[i] = d;
+      edgeDists.push_back(dists);
+    }
+  };
+
+  // Add triangles
+  addTriangle({{root, upperLeft, lowerLeft}});
+  addTriangle({{root, upperRight, upperLeft}});
+  addTriangle({{root, lowerRight, upperRight}});
+  addTriangle({{root, lowerLeft, lowerRight}});
 
   // Store data in buffers
-  program->setAttribute("a_position", points);
+  cameraSkeletonProgram->setAttribute("a_position", positions);
+  cameraSkeletonProgram->setAttribute("a_edgeDists", edgeDists);
 }
 
 void CameraView::drawUI() {
-
-  ImGui::PushID(name.c_str()); // ensure there are no conflicts with identically-named labels
+  ImGui::PushID(name.c_str());  // ensure there are no conflicts with
+                                // identically-named labels
 
   ImGui::TextUnformatted(name.c_str());
   ImGui::Checkbox("Enabled", &enabled);
-  ImGui::SameLine();
-  ImGui::ColorEdit3("Point color", (float*)&pointColor,
-                    ImGuiColorEditFlags_NoInputs);
+  // ImGui::SameLine();
+  // ImGui::ColorEdit3("Point color", (float*)&pointColor,
+  //                   ImGuiColorEditFlags_NoInputs);
 
-  ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
+  // ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
 
   ImGui::PopID();
 }
 
 double CameraView::lengthScale() {
+  // Measure length scale as twice the radius from the center of the bounding
+  // box
 
-  // Measure length scale as twice the radius from the center of the bounding box
-  auto bound = boundingBox(); 
-  Vector3 center = 0.5 * (std::get<0>(bound) + std::get<1>(bound));
-
-  double lengthScale = 0.0;
-  for(Vector3& p : points) {
-    lengthScale = std::max(lengthScale, geometrycentral::norm2(p - center));
-  }
-
-  return 2 * std::sqrt(lengthScale);
+  return 0;
 }
 
 std::tuple<geometrycentral::Vector3, geometrycentral::Vector3>
 CameraView::boundingBox() {
-
-  Vector3 min = Vector3{1,1,1}*std::numeric_limits<double>::infinity();
-  Vector3 max = -Vector3{1,1,1}*std::numeric_limits<double>::infinity();
-
-  for(Vector3& p : points) {
-    min = geometrycentral::componentwiseMin(min, p);
-    max = geometrycentral::componentwiseMax(max, p);
-  }
-
-  return std::make_tuple(min, max);
+  Vector3 pos = location();
+  return std::make_tuple(pos, pos);
 }
 
 }  // namespace polyscope

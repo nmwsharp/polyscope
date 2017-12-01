@@ -51,7 +51,7 @@ extern Vector3 center;
 // `name` is a globally unique identifier for the structure
 void registerPointCloud(std::string name, const std::vector<Vector3>& points);
 void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom);
-void registerCameraView(std::string name, ...);
+void registerCameraView(std::string name,  CameraParameters p);
 
 // Get a reference to a structure that has been registered
 PointCloud* getPointCloud(std::string name);

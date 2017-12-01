@@ -6,6 +6,7 @@
 
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/structure.h"
+#include "polyscope/camera_parameters.h"
 
 
 namespace polyscope {
@@ -14,8 +15,8 @@ class CameraView : public Structure {
  public:
   // === Member functions ===
 
-  // Construct a new surface mesh structure
-  CameraView(std::string name, ...);
+  // Construct a new camera view structure
+  CameraView(std::string name, CameraParameters p);
   ~CameraView();
 
   // Render the the structure on screen
@@ -41,19 +42,17 @@ class CameraView : public Structure {
 //   void addQuantity(std::string name, VertexData<double>& value, DataType type = DataType::STANDARD);
 
   // === Helpers
+  void prepareCameraSkeleton();
+  Vector3 location();
 
   // === Member variables ===
   bool enabled = true;
 
   // The camera parameters
-  glm::vec3 location;
-  glm::mat3x3 rotation;
-  glm::vec2 imageCenter;
-  glm::vec2 focalLengths;
-  
+  CameraParameters parameters;
 
   // Drawing related things
-  gl::GLProgram* cameraSkeleton = nullptr;
+  gl::GLProgram* cameraSkeletonProgram = nullptr;
 //   gl::GLProgram* program = nullptr;
 
  private:

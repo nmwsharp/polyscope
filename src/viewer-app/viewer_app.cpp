@@ -148,6 +148,10 @@ int main(int argc, char** argv) {
   }
   polyscope::registerPointCloud("really great points", points);
 
+  // Create a camera view
+  polyscope::CameraParameters pTest;
+  polyscope::registerCameraView("testview 1", pTest);
+
   // Add a few gui elements
 
   // Show the gui

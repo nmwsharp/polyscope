@@ -268,10 +268,10 @@ void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom) {
   updateStructureExtents();
 }
 
-void registerCameraView(std::string name, ...) {
+void registerCameraView(std::string name, CameraParameters p) {
   checkStructureNameInUse(name);
 
-  state::cameraViews[name] = new CameraView(name, ...);
+  state::cameraViews[name] = new CameraView(name, p); 
   state::structureCategories[StructureType::CameraView][name] =
       state::cameraViews[name];
 
@@ -350,13 +350,18 @@ void updateStructureExtents() {
     }
   }
 
-  if (state::lengthScale == 0) state::lengthScale = 1.0;
   if (!minBbox.isFinite() || !maxBbox.isFinite()) {
     minBbox = -Vector3{1, 1, 1};
     maxBbox = Vector3{1, 1, 1};
   }
   std::get<0>(state::boundingBox) = minBbox;
   std::get<1>(state::boundingBox) = maxBbox;
+
+  // If we got a bounding box but not a length scale we can use the size of the box as a scale.
+  // If we got neither, we'll end up with a constant near 1 due to the above correction 
+  if (state::lengthScale == 0) {
+    state::lengthScale = norm(maxBbox - minBbox);
+  }
 
   // Center is center of bounding box
   state::center = 0.5 * (minBbox + maxBbox);
