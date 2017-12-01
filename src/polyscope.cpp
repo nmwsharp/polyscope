@@ -29,9 +29,11 @@ Vector3 center{0, 0, 0};
 std::map<StructureType, std::map<std::string, Structure*>> structureCategories{
     {StructureType::PointCloud, {}},
     {StructureType::SurfaceMesh, {}},
+    {StructureType::CameraView, {}},
 };
 std::map<std::string, PointCloud*> pointClouds;
 std::map<std::string, SurfaceMesh*> surfaceMeshes;
+std::map<std::string, CameraView*> cameraViews;
 
 }  // namespace state
 
@@ -266,6 +268,16 @@ void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom) {
   updateStructureExtents();
 }
 
+void registerCameraView(std::string name, ...) {
+  checkStructureNameInUse(name);
+
+  state::cameraViews[name] = new CameraView(name, ...);
+  state::structureCategories[StructureType::CameraView][name] =
+      state::cameraViews[name];
+
+  updateStructureExtents();
+}
+
 
 PointCloud* getPointCloud(std::string name) {
   if(state::pointClouds.find(name) == state::pointClouds.end()) {
@@ -281,6 +293,14 @@ SurfaceMesh* getSurfaceMesh(std::string name) {
     return nullptr;
   }
   return state::surfaceMeshes[name];
+}
+
+CameraView* getCameraView(std::string name) {
+  if(state::cameraViews.find(name) == state::cameraViews.end()) {
+    error("No camera view with name " + name + " registered");
+    return nullptr;
+  }
+  return state::cameraViews[name];
 }
 
 void removeStructure(std::string name) {

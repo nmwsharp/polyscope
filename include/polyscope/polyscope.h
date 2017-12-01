@@ -7,6 +7,7 @@
 #include "polyscope/options.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/camera_view.h"
 #include "polyscope/structure.h"
 
 namespace polyscope {
@@ -31,6 +32,7 @@ extern std::map<StructureType, std::map<std::string, Structure*>> structureCateg
 // also lists all structues, but lists are typed 
 extern std::map<std::string, PointCloud*> pointClouds;
 extern std::map<std::string, SurfaceMesh*> surfaceMeshes;
+extern std::map<std::string, CameraView*> cameraViews;
 
 // representative length scale for all registered structures
 extern double lengthScale;
@@ -49,10 +51,12 @@ extern Vector3 center;
 // `name` is a globally unique identifier for the structure
 void registerPointCloud(std::string name, const std::vector<Vector3>& points);
 void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom);
+void registerCameraView(std::string name, ...);
 
 // Get a reference to a structure that has been registered
 PointCloud* getPointCloud(std::string name);
 SurfaceMesh* getSurfaceMesh(std::string name);
+CameraView* getCameraView(std::string name);
 
 // De-register a structure, of any type. Also removes any quantities associated with the structure
 void removeStructure(std::string name);
