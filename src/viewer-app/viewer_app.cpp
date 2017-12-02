@@ -134,15 +134,14 @@ void processFileJSON(string filename) {
   for(int i = 0; i < 4; i++) {
     for(int j = 0; j < 4; j++) {
       E[j][i] = Evec[4*i + j]; // note: this is right because GLM uses [column][row] indexing
-      cout << "i = " << i << " j = " << j << "   val = " << Evec[4*i + j] << endl;
     }
   }
-  glm::vec2 focalLengths(focalVec[0], focalVec[1]);
+  glm::vec2 focalLengths(.5*focalVec[0], .5*focalVec[1]); // TODO FIXME really not sure if this .5 is correct
 
   // Transform to Y-up coordinates
   glm::mat4x4 perm(0.0);
-  perm[2][0] = 1.0;
-  perm[0][1] = 1.0;
+  perm[0][0] = 1.0;
+  perm[2][1] = -1.0;
   perm[1][2] = 1.0;
   perm[3][3] = 1.0;
 
@@ -157,16 +156,6 @@ void processFileJSON(string filename) {
   cout << "E: " << endl;
   polyscope::prettyPrint(params.E);
   
-
-  // cout << "Mat test: " << endl;
-  // glm::vec3 a(1., 2., 3.);
-  // glm::mat3x3 M(0.0);
-  // M[0][1] = 1.0;
-  // glm::vec3 b = M * a;
-  // cout << "  " << " a = " << glm::to_string(a) << endl;
-  // cout << "  " << " M = " << glm::to_string(M) << endl;
-  // cout << "  " << " b = " << glm::to_string(b) << endl;
-
 }
 
 void processFile(string filename) {

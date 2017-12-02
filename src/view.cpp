@@ -79,7 +79,7 @@ void resetCameraToDefault() {
 
 void setViewToCamera(const CameraParameters& p) {
   viewMat = p.E;
-  fov = 2 * std::atan(1. / (2. * p.focalLengths.y));
+  fov = glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y)));
   // aspectRatio = p.focalLengths.x / p.focalLengths.y; // TODO should be flipped?
 }
 
