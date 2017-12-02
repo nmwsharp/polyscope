@@ -17,19 +17,17 @@ namespace polyscope {
 namespace view {
 
     // === View state
-    extern double dist;
-    extern Vector3 lookAtPoint;
-    extern Vector3 cameraSpaceTranslate;
-    extern Vector3 cameraDirection;
-    extern Vector3 upDirection;
     extern int bufferWidth;
     extern int bufferHeight;
     extern int windowWidth;
     extern int windowHeight;
-    extern double fov;
+    extern double fov; // in the y direction
+    extern double aspectRatio; 
     extern double nearClipRatio;
     extern double farClipRatio;
     extern std::array<float, 4> bgColor; 
+
+    extern glm::mat4x4 viewMat;
 
     // === View methods
 
@@ -39,10 +37,11 @@ namespace view {
     void setViewToCamera(const CameraParameters& p);
     void resetCameraToDefault();
     
-    glm::mat4 getViewMatrix();
-    glm::mat4 getPerspectiveMatrix();
+    glm::mat4 getCameraViewMatrix();
+    glm::mat4 getCameraPerspectiveMatrix();
     Vector3 getCameraWorldPosition();
-    Vector3 getLightWorldPosition();
+
+    void getCameraFrame(Vector3& lookDir, Vector3& upDir, Vector3& rightDir);
 
 
 

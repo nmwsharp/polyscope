@@ -31,10 +31,10 @@ void PointCloud::draw() {
   }
 
   // Set uniforms
-  glm::mat4 viewMat = view::getViewMatrix();
+  glm::mat4 viewMat = view::getCameraViewMatrix();
   program->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
 
-  glm::mat4 projMat = view::getPerspectiveMatrix();
+  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   program->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
   Vector3 eyePos = view::getCameraWorldPosition();
@@ -42,11 +42,13 @@ void PointCloud::draw() {
 
   program->setUniform("u_lightCenter", state::center);
   program->setUniform("u_lightDist", 2*state::lengthScale);
-  
-  program->setUniform("u_camZ", view::cameraDirection);
-  program->setUniform("u_camUp", view::upDirection);
-  Vector3 leftHand = unit(cross(view::cameraDirection, view::upDirection));
-  program->setUniform("u_camRight", -leftHand); 
+
+  Vector3 lookDir, upDir, rightDir;
+  view::getCameraFrame(lookDir, upDir, rightDir);
+
+  program->setUniform("u_camZ", lookDir);
+  program->setUniform("u_camUp", upDir);
+  program->setUniform("u_camRight", rightDir); 
   
   program->setUniform("u_pointRadius", pointRadius * state::lengthScale);
   program->setUniform("u_color", pointColor);

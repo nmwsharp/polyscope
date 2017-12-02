@@ -39,10 +39,10 @@ void CameraView::draw() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Set uniforms
-    glm::mat4 viewMat = view::getViewMatrix();
+    glm::mat4 viewMat = view::getCameraViewMatrix();
     cameraSkeletonProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
 
-    glm::mat4 projMat = view::getPerspectiveMatrix();
+    glm::mat4 projMat = view::getCameraPerspectiveMatrix();
     cameraSkeletonProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
     cameraSkeletonProgram->setUniform("u_wirecolor", gl::RGB_BLACK);
@@ -99,6 +99,12 @@ void CameraView::prepareCameraSkeleton() {
   positions.push_back(toV(upperLeft)); positions.push_back(toV(upperRight));
   positions.push_back(toV(upperRight)); positions.push_back(toV(lowerRight));
   positions.push_back(toV(lowerRight)); positions.push_back(toV(lowerLeft));
+
+  // Show frame
+  positions.push_back(toV(root)); positions.push_back(toV(root + upDir * cameraDrawSize * 2.f));
+  positions.push_back(toV(root)); positions.push_back(toV(root + rightDir * cameraDrawSize));
+
+  // Debug frame
   positions.push_back(toV(lowerLeft)); positions.push_back(toV(upperLeft));
 
   // Store data in buffers
@@ -111,6 +117,11 @@ void CameraView::drawUI() {
 
   ImGui::TextUnformatted(name.c_str());
   ImGui::Checkbox("Enabled", &enabled);
+
+  if(ImGui::Button("Fly to")) {
+    view::setViewToCamera(parameters);
+  }
+
   // ImGui::SameLine();
   // ImGui::ColorEdit3("Point color", (float*)&pointColor,
   //                   ImGuiColorEditFlags_NoInputs);

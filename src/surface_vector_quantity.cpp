@@ -71,10 +71,10 @@ void SurfaceVectorQuantity::draw() {
   if (program == nullptr) prepare();
 
   // Set uniforms
-  glm::mat4 viewMat = view::getViewMatrix();
+  glm::mat4 viewMat = view::getCameraViewMatrix();
   program->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
 
-  glm::mat4 projMat = view::getPerspectiveMatrix();
+  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   program->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
   Vector3 eyePos = view::getCameraWorldPosition();

@@ -6,50 +6,50 @@ namespace polyscope {
 namespace view {
 
 // Storage for state variables
-double dist = 1.0;
-Vector3 lookAtPoint{0, 0, 0};
-Vector3 cameraSpaceTranslate{0, 0, 0};
-Vector3 cameraDirection{0, 0, 1};
-Vector3 upDirection{0, 1, 0};
 int windowWidth = -1;
 int windowHeight = -1;
 int bufferWidth = -1;
 int bufferHeight = -1;
 double fov = 65.0;
+double aspectRatio = 1.0;
 double nearClipRatio = 0.01;
 double farClipRatio = 20.0;
 std::array<float, 4> bgColor{{.7, .7, .7, 1.0}};
+
+glm::mat4x4 viewMat;
 
 void processMouseDrag(Vector2 deltaDrag, bool isRotating) {
   if (norm(deltaDrag) == 0) {
     return;
   }
 
-  // Convert to [-1,1] screen coordinates
-  //   deltaDrag = deltaDrag * 2 - Vector2{1.0,1.0};
-
   // Process a rotation
   if (isRotating) {
-    double delTheta = -deltaDrag.x * PI;
-    double delPhi = deltaDrag.y * PI;
+    float delTheta = deltaDrag.x * PI;
+    float delPhi = deltaDrag.y * PI;
 
-    Vector3 leftDirection = cross(upDirection, cameraDirection);
+    // Rotation about the vertical axis
+    glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, glm::vec3(0.0, 1.0, 0.0));
+    viewMat = viewMat * thetaCamR;
 
-    // Rotate corresponding to theta
-    // (the 'up' direction would never change, since it's what we're rotating
-    // around)
-    cameraDirection = cameraDirection.rotate_around(upDirection, delTheta);
-
-    // Rotate corresponding to phi
-    cameraDirection = cameraDirection.rotate_around(leftDirection, delPhi);
-    upDirection = upDirection.rotate_around(leftDirection, delPhi);
-
+    // Rotation about the horizontal axis
+    // Get the "right" direction
+    glm::mat3x3 R;
+    for(int i = 0; i < 3; i++) {
+      for(int j = 0; j < 3; j++) {
+        R[i][j] = viewMat[i][j];
+      }
+    }
+    glm::vec3 rotAx = glm::transpose(R) * glm::vec3(-1.0, 0.0, 0.0);
+    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), delPhi, rotAx);
+    viewMat = viewMat * phiCamR;
   }
   // Process a translation
   else {
-    double movementScale = state::lengthScale * 0.3;
-    cameraSpaceTranslate -=
-        movementScale * Vector3{deltaDrag.x, deltaDrag.y, 0};
+
+    float movementScale = state::lengthScale * 0.6;
+    glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), movementScale * glm::vec3(deltaDrag.x,deltaDrag.y,0.0));
+    viewMat = camSpaceT * viewMat;
   }
 }
 
@@ -57,68 +57,38 @@ void processMouseScroll(double scrollAmount, bool scrollClipPlane) {
   // Adjust the near clipping plane
   if (scrollClipPlane) {
     nearClipRatio += .03 * scrollAmount * nearClipRatio;
-    // if (scrollAmount > 0) {
-    //   nearClipRatio -= 0.03 * nearClipRatio;
-    // } else {
-    //   nearClipRatio += 0.03 * nearClipRatio;
-    // }
-
   }
   // Translate the camera forwards and backwards
   else {
-    // dist += .03 * scrollAmount * state::lengthScale;
-    dist += .03 * scrollAmount;
-    // if (scrollAmount > 0) {
-    //   dist -= 0.03 * state::lengthScale;
-    // } else {
-    //   dist += 0.03 * state::lengthScale;
-    // }
+    float movementScale = state::lengthScale * 0.1;
+    glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), movementScale * glm::vec3(0., 0., movementScale * scrollAmount));
+    viewMat = camSpaceT * viewMat;
   }
 }
 
 void resetCameraToDefault() {
 
-    double dist = 1.0;
-    lookAtPoint = state::center;
-    Vector3 cameraSpaceTranslate{0, 0, 0};
-    Vector3 cameraDirection{0, 0, 1};
-    Vector3 upDirection{0, 1, 0};
-    double fov = 65.0;
-    double nearClipRatio = 0.01;
-    double farClipRatio = 20.0;
+    viewMat = glm::mat4x4(1.0);
+    viewMat = viewMat * glm::translate(glm::mat4x4(1.0), glm::vec3(0.0,0.0,state::lengthScale));
 
+    fov = 65.0;
+    // aspectRatio = 1.0;
+    nearClipRatio = 0.01;
+    farClipRatio = 20.0;
 }
 
 void setViewToCamera(const CameraParameters& p) {
-
-  
-
+  viewMat = p.E;
+  fov = 2 * std::atan(1. / (2. * p.focalLengths.y));
+  // aspectRatio = p.focalLengths.x / p.focalLengths.y; // TODO should be flipped?
 }
 
-glm::mat4 getViewMatrix() {
-  // Map from world coordinates to camera coordinates
-  Vector3 scaledEye = cameraDirection * state::lengthScale;
-  glm::vec3 eye(scaledEye.x, scaledEye.y, scaledEye.z);
-  glm::vec3 center(lookAtPoint.x, lookAtPoint.y, lookAtPoint.z);
-  glm::vec3 up(upDirection.x, upDirection.y, upDirection.z);
-  glm::mat4 rotateToCameraCoordinates = glm::lookAt(center + eye, center, up);
-
-  // Translate in camera space
-  // This is used to support the "sliding" in the screen plane by dragging while
-  // holding 'shift'
-  glm::mat4 translateCamera =
-      glm::translate(glm::mat4(1.0),
-                     glm::vec3(-cameraSpaceTranslate.x, -cameraSpaceTranslate.y,
-                               -dist*state::lengthScale - cameraSpaceTranslate.z));
-
-  // Compose the operations together
-  glm::mat4 view = translateCamera * rotateToCameraCoordinates;
-
-  return view;
+glm::mat4 getCameraViewMatrix() {
+  return viewMat;
 }
 
-glm::mat4 getPerspectiveMatrix() {
-  // double farClip = farClipRatio * dist;
+glm::mat4 getCameraPerspectiveMatrix() {
+
   double farClip = farClipRatio * state::lengthScale;
   double nearClip = nearClipRatio * state::lengthScale;
   double fovRad = glm::radians(fov);
@@ -131,25 +101,23 @@ Vector3 getCameraWorldPosition() {
   // return lookAtPoint + cameraDirection * dist;
 
   // This will work no matter how the view matrix is constructed...
-  glm::mat4 invViewMat = inverse(getViewMatrix());
+  glm::mat4 invViewMat = inverse(getCameraViewMatrix());
   return Vector3{invViewMat[3][0], invViewMat[3][1], invViewMat[3][2]};
 }
 
-Vector3 getLightWorldPosition() {
+void getCameraFrame(Vector3& lookDir, Vector3& upDir, Vector3& rightDir) {
 
-  // The light is over the right shoulder of the camera
-  Vector3 leftHand = unit(cross(cameraDirection, upDirection));
+    glm::mat3x3 R;
+    for(int i = 0; i < 3; i++) {
+      for(int j = 0; j < 3; j++) {
+        R[i][j] = viewMat[i][j];
+      }
+    }
+    glm::mat3x3 Rt = glm::transpose(R);
 
-  Vector3 cameraVec = cameraDirection * state::lengthScale +
-                      cameraSpaceTranslate.x * leftHand + 
-                      cameraSpaceTranslate.y * upDirection + 
-                      (dist*state::lengthScale + cameraSpaceTranslate.z) * cameraDirection;
-
-  Vector3 lightVec = cameraVec * 5;                    
-  lightVec = lightVec.rotate_around(upDirection, PI / 8);
-  lightVec = lightVec.rotate_around(-leftHand, PI / 8);
-  return state::center + lightVec;
-
+    lookDir = fromGLM(Rt * glm::vec3(0.0, 0.0, -1.0));
+    upDir = fromGLM(Rt * glm::vec3(0.0, 1.0, 0.0));
+    rightDir = fromGLM(Rt * glm::vec3(1.0, 0.0, 0.0));
 }
 
 }  // namespace view

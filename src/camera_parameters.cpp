@@ -38,7 +38,7 @@ glm::vec3 CameraParameters::getLookDir() const {
 }
 
 glm::vec3 CameraParameters::getUpDir() const {
-  return normalize(transpose(getR()) * vec3(0.0, -1.0, 0.0));
+  return normalize(transpose(getR()) * vec3(0.0, 1.0, 0.0));
 }
 
 glm::vec3 CameraParameters::getRightDir() const {
