@@ -3,6 +3,7 @@ build/
 build_debug/
 
 # Editor and OS things
+imgui.ini
 .DS_Store
 .vscode
 *.swp
