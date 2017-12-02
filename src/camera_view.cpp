@@ -119,7 +119,7 @@ void CameraView::drawUI() {
   ImGui::Checkbox("Enabled", &enabled);
 
   if(ImGui::Button("Fly to")) {
-    view::setViewToCamera(parameters);
+    view::startFlightTo(parameters, .5);
   }
 
   // ImGui::SameLine();

@@ -21,13 +21,20 @@ namespace view {
     extern int bufferHeight;
     extern int windowWidth;
     extern int windowHeight;
-    extern double fov; // in the y direction
-    extern double aspectRatio; 
     extern double nearClipRatio;
     extern double farClipRatio;
     extern std::array<float, 4> bgColor; 
 
+    // Current view camera parameters
     extern glm::mat4x4 viewMat;
+    extern double fov; // in the y direction
+
+    // "Flying" view
+    extern bool midflight;
+    extern float flightStartTime;
+    extern float flightEndTime;
+    extern glm::mat4x4 flightTargetView, flightInitialView;
+    extern float flightTargetFov, flightInitialFov;
 
     // === View methods
 
@@ -42,6 +49,11 @@ namespace view {
     Vector3 getCameraWorldPosition();
 
     void getCameraFrame(Vector3& lookDir, Vector3& upDir, Vector3& rightDir);
+
+    // Flight-related
+    void startFlightTo(const CameraParameters& p, float flightLengthInSeconds);
+    void immediatelyEndFlight();
+    void updateFlight();
 
 
 
