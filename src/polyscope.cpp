@@ -143,11 +143,15 @@ void buildPolyscopeGui() {
   // Create window
   static bool showPolyscopeWindow = true;
   ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
+
   ImGui::Begin("Polyscope", &showPolyscopeWindow,
                ImGuiWindowFlags_AlwaysAutoResize);
 
   ImGui::ColorEdit3("background color", (float*)&view::bgColor,
                     ImGuiColorEditFlags_NoInputs);
+  if(ImGui::Button("Reset view")) {
+    view::flyToDefault();
+  }
   ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
               ImGui::GetIO().Framerate);
 

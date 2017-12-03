@@ -58,9 +58,7 @@ namespace {
 Vector3 toV(glm::vec3 x) { return Vector3{x.x, x.y, x.z}; }
 }  // namespace
 
-Vector3 CameraView::location() {
-  return toV(parameters.getPosition());
-}
+Vector3 CameraView::location() { return toV(parameters.getPosition()); }
 
 void CameraView::prepare() {}
 
@@ -92,43 +90,47 @@ void CameraView::prepareCameraSkeleton() {
   std::vector<Vector3> positions;  // position in space
 
   // Add lines
-  positions.push_back(toV(root)); positions.push_back(toV(upperLeft));
-  positions.push_back(toV(root)); positions.push_back(toV(lowerLeft));
-  positions.push_back(toV(root)); positions.push_back(toV(upperRight));
-  positions.push_back(toV(root)); positions.push_back(toV(lowerRight));
-  positions.push_back(toV(upperLeft)); positions.push_back(toV(upperRight));
-  positions.push_back(toV(upperRight)); positions.push_back(toV(lowerRight));
-  positions.push_back(toV(lowerRight)); positions.push_back(toV(lowerLeft));
+  positions.push_back(toV(root));
+  positions.push_back(toV(upperLeft));
+  positions.push_back(toV(root));
+  positions.push_back(toV(lowerLeft));
+  positions.push_back(toV(root));
+  positions.push_back(toV(upperRight));
+  positions.push_back(toV(root));
+  positions.push_back(toV(lowerRight));
+  positions.push_back(toV(upperLeft));
+  positions.push_back(toV(upperRight));
+  positions.push_back(toV(upperRight));
+  positions.push_back(toV(lowerRight));
+  positions.push_back(toV(lowerRight));
+  positions.push_back(toV(lowerLeft));
 
   // Show frame
-  positions.push_back(toV(root)); positions.push_back(toV(root + upDir * cameraDrawSize * 2.f));
-  positions.push_back(toV(root)); positions.push_back(toV(root + rightDir * cameraDrawSize));
+  positions.push_back(toV(root));
+  positions.push_back(toV(root + upDir * cameraDrawSize * 2.f));
+  positions.push_back(toV(root));
+  positions.push_back(toV(root + rightDir * cameraDrawSize));
 
   // Debug frame
-  positions.push_back(toV(lowerLeft)); positions.push_back(toV(upperLeft));
+  positions.push_back(toV(lowerLeft));
+  positions.push_back(toV(upperLeft));
 
   // Store data in buffers
   cameraSkeletonProgram->setAttribute("a_position", positions);
 }
 
 void CameraView::drawUI() {
-  ImGui::PushID(name.c_str());  // ensure there are no conflicts with
-                                // identically-named labels
+  
+  if (ImGui::TreeNode(name.c_str())) {
+    ImGui::Checkbox("Enabled", &enabled);
+    ImGui::SameLine();
 
-  ImGui::TextUnformatted(name.c_str());
-  ImGui::Checkbox("Enabled", &enabled);
+    if (ImGui::Button("Fly to")) {
+      view::startFlightTo(parameters, .3);
+    }
 
-  if(ImGui::Button("Fly to")) {
-    view::startFlightTo(parameters, .5);
+    ImGui::TreePop();
   }
-
-  // ImGui::SameLine();
-  // ImGui::ColorEdit3("Point color", (float*)&pointColor,
-  //                   ImGuiColorEditFlags_NoInputs);
-
-  // ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
-
-  ImGui::PopID();
 }
 
 double CameraView::lengthScale() {

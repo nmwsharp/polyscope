@@ -22,7 +22,8 @@ glm::mat4x4 viewMat;
 bool midflight = false;
 float flightStartTime = -1;
 float flightEndTime = -1;
-glm::mat4x4 flightTargetView, flightInitialView;
+glm::dualquat flightTargetViewR, flightInitialViewR;
+glm::vec3 flightTargetViewT, flightInitialViewT;
 float flightTargetFov, flightInitialFov;
 
 void processMouseDrag(Vector2 deltaDrag, bool isRotating) {
@@ -51,6 +52,8 @@ void processMouseDrag(Vector2 deltaDrag, bool isRotating) {
     glm::vec3 rotAx = glm::transpose(R) * glm::vec3(-1.0, 0.0, 0.0);
     glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), delPhi, rotAx);
     viewMat = viewMat * phiCamR;
+
+    immediatelyEndFlight();
   }
   // Process a translation
   else {
@@ -59,6 +62,8 @@ void processMouseDrag(Vector2 deltaDrag, bool isRotating) {
         glm::mat4x4(1.0),
         movementScale * glm::vec3(deltaDrag.x, deltaDrag.y, 0.0));
     viewMat = camSpaceT * viewMat;
+
+    immediatelyEndFlight();
   }
 }
 
@@ -74,18 +79,43 @@ void processMouseScroll(double scrollAmount, bool scrollClipPlane) {
         glm::mat4x4(1.0),
         movementScale * glm::vec3(0., 0., movementScale * scrollAmount));
     viewMat = camSpaceT * viewMat;
+
+    immediatelyEndFlight();
   }
 }
 
 void resetCameraToDefault() {
+  
+  // WARNING: Duplicated here and in flyToDefault()
+
   viewMat = glm::mat4x4(1.0);
+  viewMat[0][0] = -1.;
+  viewMat[2][2] = -1.;
   viewMat = viewMat * glm::translate(glm::mat4x4(1.0),
                                      glm::vec3(0.0, 0.0, state::lengthScale));
 
   fov = 65.0;
-  // aspectRatio = 1.0;
   nearClipRatio = 0.01;
   farClipRatio = 20.0;
+}
+
+
+void flyToDefault() {
+
+  // WARNING: Duplicated here and in resetCameraToDefault()
+
+  glm::mat4x4 T(1.0);
+  T[0][0] = -1.;
+  T[2][2] = -1.;
+  T= T* glm::translate(glm::mat4x4(1.0),
+                                     glm::vec3(0.0, 0.0, state::lengthScale));
+
+  
+  float Tfov = 65.0;
+  nearClipRatio = 0.01;
+  farClipRatio = 20.0;
+
+  startFlightTo(T, Tfov, .25);
 }
 
 void setViewToCamera(const CameraParameters& p) {
@@ -113,8 +143,6 @@ glm::mat4 getCameraPerspectiveMatrix() {
 }
 
 Vector3 getCameraWorldPosition() {
-  // return lookAtPoint + cameraDirection * dist;
-
   // This will work no matter how the view matrix is constructed...
   glm::mat4 invViewMat = inverse(getCameraViewMatrix());
   return Vector3{invViewMat[3][0], invViewMat[3][1], invViewMat[3][2]};
@@ -135,16 +163,31 @@ void getCameraFrame(Vector3& lookDir, Vector3& upDir, Vector3& rightDir) {
 }
 
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds) {
+  startFlightTo(p.E, glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y))),
+                flightLengthInSeconds);
+}
 
+void startFlightTo(const glm::mat4& T, float targetFov,
+                   float flightLengthInSeconds) {
   flightStartTime = ImGui::GetTime();
   flightEndTime = ImGui::GetTime() + flightLengthInSeconds;
 
-  flightInitialView = getCameraViewMatrix();
+  // Initial parameters
+  glm::mat3x4 Rstart;
+  glm::vec3 Tstart;
+  splitTransform(getCameraViewMatrix(), Rstart, Tstart);
+  flightInitialViewR = glm::dualquat_cast(Rstart);
+  flightInitialViewT = Tstart;
   flightInitialFov = fov;
 
-  flightTargetView = p.E;
-  flightTargetFov = glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y)));
-  
+  // Final parameters
+  glm::mat3x4 Rend;
+  glm::vec3 Tend;
+  splitTransform(T, Rend, Tend);
+  flightTargetViewR = glm::dualquat_cast(Rend);
+  flightTargetViewT = Tend;
+  flightTargetFov = targetFov;
+
   midflight = true;
 }
 
@@ -155,18 +198,50 @@ void updateFlight() {
     if (ImGui::GetTime() > flightEndTime) {
       // Flight is over, ensure we end exactly at target location
       midflight = false;
-      viewMat = flightTargetView;
+      viewMat = buildTransform(glm::mat3x4_cast(flightTargetViewR),
+                               flightTargetViewT);
       fov = flightTargetFov;
     } else {
       // normalized time for spline on [0,1]
       float t = (ImGui::GetTime() - flightStartTime) /
                 (flightEndTime - flightStartTime);
 
-      // linear spline for now
-      viewMat = (1.0f - t) * flightInitialView + t * flightTargetView;
+      float tSmooth = glm::smoothstep(0.f, 1.f, t);
+
+      // linear spline
+      glm::dualquat interpR =
+          glm::lerp(flightInitialViewR, flightTargetViewR, tSmooth);
+
+      glm::vec3 interpT =
+          glm::mix(flightInitialViewT, flightTargetViewT, tSmooth);
+
+      viewMat = buildTransform(glm::mat3x4_cast(interpR), interpT);
+
+      // linear spline
       fov = (1.0f - t) * flightInitialFov + t * flightTargetFov;
     }
   }
+}
+
+void splitTransform(const glm::mat4& trans, glm::mat3x4& R, glm::vec3& T) {
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 4; j++) {
+      R[i][j] = trans[i][j];
+    }
+    T[i] = trans[3][i];
+  }
+}
+
+glm::mat4 buildTransform(const glm::mat3x4& R, const glm::vec3& T) {
+  glm::mat4 trans(1.0);
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 4; j++) {
+      trans[i][j] = R[i][j];
+    }
+    trans[3][i] = T[i];
+  }
+
+  return trans;
 }
 
 }  // namespace view

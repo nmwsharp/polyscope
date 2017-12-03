@@ -2,60 +2,67 @@
 
 #include <array>
 
-#include "polyscope/gl/gl_utils.h"
 #include "polyscope/camera_parameters.h"
+#include "polyscope/gl/gl_utils.h"
 
 // GLM for view matrices
+#include "glm/gtc/constants.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
+#include "glm/mat4x4.hpp"
 #include "glm/vec3.hpp"
 #include "glm/vec4.hpp"
-#include "glm/mat4x4.hpp"
-#include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtc/constants.hpp"
-#include "glm/gtc/type_ptr.hpp"
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/dual_quaternion.hpp"
+#include "glm/gtx/norm.hpp"  // necessary for dual_quaternion below
+#undef GLM_ENABLE_EXPERIMENTAL
 
 namespace polyscope {
 namespace view {
 
-    // === View state
-    extern int bufferWidth;
-    extern int bufferHeight;
-    extern int windowWidth;
-    extern int windowHeight;
-    extern double nearClipRatio;
-    extern double farClipRatio;
-    extern std::array<float, 4> bgColor; 
+// === View state
+extern int bufferWidth;
+extern int bufferHeight;
+extern int windowWidth;
+extern int windowHeight;
+extern double nearClipRatio;
+extern double farClipRatio;
+extern std::array<float, 4> bgColor;
 
-    // Current view camera parameters
-    extern glm::mat4x4 viewMat;
-    extern double fov; // in the y direction
+// Current view camera parameters
+extern glm::mat4x4 viewMat;
+extern double fov;  // in the y direction
 
-    // "Flying" view
-    extern bool midflight;
-    extern float flightStartTime;
-    extern float flightEndTime;
-    extern glm::mat4x4 flightTargetView, flightInitialView;
-    extern float flightTargetFov, flightInitialFov;
+// "Flying" view
+extern bool midflight;
+extern float flightStartTime;
+extern float flightEndTime;
+extern glm::dualquat flightTargetViewR, flightInitialViewR;
+extern glm::vec3 flightTargetViewT, flightInitialViewT;
+extern float flightTargetFov, flightInitialFov;
 
-    // === View methods
+// === View methods
 
-    void processMouseDrag(Vector2 deltaDrag, bool isRotating);
-    void processMouseScroll(double scrollAmount, bool scrollClipPlane);
-    void setWindowSize(int width, int height);
-    void setViewToCamera(const CameraParameters& p);
-    void resetCameraToDefault();
-    
-    glm::mat4 getCameraViewMatrix();
-    glm::mat4 getCameraPerspectiveMatrix();
-    Vector3 getCameraWorldPosition();
+void processMouseDrag(Vector2 deltaDrag, bool isRotating);
+void processMouseScroll(double scrollAmount, bool scrollClipPlane);
+void setWindowSize(int width, int height);
+void setViewToCamera(const CameraParameters& p);
+void resetCameraToDefault();
+void flyToDefault();
 
-    void getCameraFrame(Vector3& lookDir, Vector3& upDir, Vector3& rightDir);
+glm::mat4 getCameraViewMatrix();
+glm::mat4 getCameraPerspectiveMatrix();
+Vector3 getCameraWorldPosition();
 
-    // Flight-related
-    void startFlightTo(const CameraParameters& p, float flightLengthInSeconds);
-    void immediatelyEndFlight();
-    void updateFlight();
+void getCameraFrame(Vector3& lookDir, Vector3& upDir, Vector3& rightDir);
 
+// Flight-related
+void startFlightTo(const CameraParameters& p, float flightLengthInSeconds=.25);
+void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeconds=.25);
+void immediatelyEndFlight();
+void splitTransform(const glm::mat4& trans, glm::mat3x4& R, glm::vec3& T);
+glm::mat4 buildTransform(const glm::mat3x4& R, const glm::vec3& T);
+void updateFlight();
 
-
-} // namespace view    
-} // namespace polyscope
+}  // namespace view
+}  // namespace polyscope
