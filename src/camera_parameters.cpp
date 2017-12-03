@@ -13,7 +13,8 @@ using namespace glm;
 
 // CameraParameters::CameraParameters()
 //     : T(0.0), R(glm::mat3x3(1.0)), focalLengths(1.0) {}
-CameraParameters::CameraParameters() : E(1.0), focalLengths(1.0) {}
+// CameraParameters::CameraParameters() : E(1.0), focalLengths(1.0) {}
+CameraParameters::CameraParameters() : E(1.0), fov(60.) {}
 
 glm::vec3 CameraParameters::getT() const {
   return vec3(E[3][0],E[3][1],E[3][2]);

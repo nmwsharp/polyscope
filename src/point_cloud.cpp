@@ -72,6 +72,8 @@ void PointCloud::prepare() {
   program->setAttribute("a_position", points);
 }
 
+void PointCloud::drawSharedStructureUI() {}
+
 void PointCloud::drawUI() {
 
   ImGui::PushID(name.c_str()); // ensure there are no conflicts with identically-named labels

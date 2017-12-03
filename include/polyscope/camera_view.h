@@ -40,6 +40,7 @@ class CameraView : public Structure {
 
   // Build the imgui display
   virtual void drawUI() override;
+  virtual void drawSharedStructureUI() override;
 
   // Render for picking
   virtual void drawPick() override;
@@ -86,7 +87,7 @@ class CameraView : public Structure {
   gl::GLProgram* cameraSkeletonProgram = nullptr;
   Image* activeImage = nullptr;
   gl::GLProgram* imageViewProgram = nullptr;
-  float imageTransparency = 1.0;
+  static float globalImageTransparency;
   
 
 };

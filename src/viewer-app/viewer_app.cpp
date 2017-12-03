@@ -130,7 +130,8 @@ void processFileJSON(string filename) {
   // std::vector<double> rotationVec = j.at("rotation").get<std::vector<double>>();
   
   std::vector<double> Evec = j.at("extMat").get<std::vector<double>>();
-  std::vector<double> focalVec = j.at("focal_dists").get<std::vector<double>>();
+  // std::vector<double> focalVec = j.at("focal_dists").get<std::vector<double>>();
+  double fov = j.at("fov").get<double>();
 
   // Copy to parameters
   polyscope::CameraParameters params;
@@ -140,7 +141,8 @@ void processFileJSON(string filename) {
       E[j][i] = Evec[4*i + j]; // note: this is right because GLM uses [column][row] indexing
     }
   }
-  glm::vec2 focalLengths(.5*focalVec[0], .5*focalVec[1]); // TODO FIXME really not sure if this .5 is correct
+  // glm::vec2 focalLengths(.5*focalVec[0], .5*focalVec[1]); // TODO FIXME really not sure if this .5 is correct
+  params.fov = fov;
 
   // Transform to Y-up coordinates
   glm::mat4x4 perm(0.0);
@@ -153,7 +155,7 @@ void processFileJSON(string filename) {
   // polyscope::prettyPrint(perm);
 
   params.E = E * perm;
-  params.focalLengths = focalLengths;
+  // params.focalLengths = focalLengths;
 
   polyscope::registerCameraView(niceName, params);
 

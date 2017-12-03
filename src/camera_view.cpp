@@ -16,6 +16,9 @@ using namespace geometrycentral;
 
 namespace polyscope {
 
+// Initialize static member
+float CameraView::globalImageTransparency = 1.0;
+
 CameraView::CameraView(std::string name, CameraParameters p_)
     : Structure(name, StructureType::CameraView), parameters(p_) {
   prepareCameraSkeleton();
@@ -77,7 +80,7 @@ void CameraView::drawImageView() {
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   imageViewProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
   
-  imageViewProgram->setUniform("u_transparency", imageTransparency);
+  imageViewProgram->setUniform("u_transparency", globalImageTransparency);
 
   imageViewProgram->draw();
 }
@@ -141,8 +144,10 @@ void CameraView::getCameraPoints(Vector3& rootV,
   glm::vec3 rightDir = parameters.getRightDir();
 
   float cameraDrawSize = state::lengthScale * 0.1;
-  float frameDrawWidth = 0.5 / parameters.focalLengths.x * cameraDrawSize;
-  float frameDrawHeight = 0.5 / parameters.focalLengths.y * cameraDrawSize;
+  // float frameDrawWidth = 0.5 / parameters.focalLengths.x * cameraDrawSize;
+  // float frameDrawHeight = 0.5 / parameters.focalLengths.y * cameraDrawSize;
+  float frameDrawWidth = std::tan(glm::radians(parameters.fov/2.f)) * cameraDrawSize;
+  float frameDrawHeight = std::tan(glm::radians(parameters.fov/2.f)) * cameraDrawSize;
 
   glm::vec3 upperLeft = root + cameraDrawSize * lookDir +
                         upDir * frameDrawHeight - rightDir * frameDrawWidth;
@@ -164,6 +169,10 @@ void CameraView::getCameraPoints(Vector3& rootV,
   dirFrame[2] = toV(rightDir);
 }
 
+void CameraView::drawSharedStructureUI() {
+    ImGui::SliderFloat("Opaque", &globalImageTransparency, 0.0, 1.0, "%.2f");
+}
+
 void CameraView::drawUI() {
   if (ImGui::TreeNode(name.c_str())) {
     ImGui::Checkbox("Enabled", &enabled);
@@ -171,10 +180,6 @@ void CameraView::drawUI() {
 
     if (ImGui::Button("Fly to")) {
       view::startFlightTo(parameters, .3);
-    }
-
-    if(activeImage != nullptr) { 
-      ImGui::SliderFloat("Opaque", &imageTransparency, 0.0, 1.0, "%.2f");
     }
 
     ImGui::TreePop();

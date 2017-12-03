@@ -120,7 +120,8 @@ void flyToDefault() {
 
 void setViewToCamera(const CameraParameters& p) {
   viewMat = p.E;
-  fov = glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y)));
+  // fov = glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y)));
+  fov = p.fov;
   // aspectRatio = p.focalLengths.x / p.focalLengths.y; // TODO should be
   // flipped?
 }
@@ -163,8 +164,9 @@ void getCameraFrame(Vector3& lookDir, Vector3& upDir, Vector3& rightDir) {
 }
 
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds) {
-  startFlightTo(p.E, glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y))),
-                flightLengthInSeconds);
+  // startFlightTo(p.E, glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y))),
+  //               flightLengthInSeconds);
+  startFlightTo(p.E, p.fov, flightLengthInSeconds);
 }
 
 void startFlightTo(const glm::mat4& T, float targetFov,

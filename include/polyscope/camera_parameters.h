@@ -17,7 +17,8 @@ class CameraParameters {
   
   // Intrinsics
   // glm::vec2 imageCenter;   // measured in distance, NOT pixels
-  glm::vec2 focalLengths;  // measured in distance, NOT pixels
+  // glm::vec2 focalLengths;  // measured in distance, NOT pixels
+  float fov; // in degrees
 
   // Get various derived quantities
   glm::vec3 getT() const;

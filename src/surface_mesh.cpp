@@ -180,6 +180,10 @@ void SurfaceMesh::fillGeometryBuffersFlat() {
   program->setAttribute("a_barycoord", bcoord);
 }
 
+void SurfaceMesh::drawSharedStructureUI() {
+  
+}
+
 void SurfaceMesh::drawUI() {
   ImGui::PushID(name.c_str());  // ensure there are no conflicts with
                                 // identically-named labels
