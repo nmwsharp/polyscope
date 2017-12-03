@@ -708,7 +708,6 @@ void GLProgram::setTexture1D(std::string name, unsigned char* texData,
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-    glUniform1i(t.location, t.index);
     t.isSet = true;
     return;
   }
@@ -717,9 +716,8 @@ void GLProgram::setTexture1D(std::string name, unsigned char* texData,
 }
 
 void GLProgram::setTexture2D(std::string name, unsigned char* texData,
-                             unsigned int width, unsigned int height) {
-  throw std::invalid_argument("This code hasn't been testded yet.");
-
+                             unsigned int width, unsigned int height,
+                             bool useMipMap) {
   // Find the right texture
   for (GLTexture& t : textures) {
     if (t.name != name) continue;
@@ -743,10 +741,17 @@ void GLProgram::setTexture2D(std::string name, unsigned char* texData,
     // Set policies
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glUniform1i(t.location, t.index);
+    // Use mip maps
+    if (useMipMap) {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                      GL_LINEAR_MIPMAP_LINEAR);
+      glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    }
+
     t.isSet = true;
     return;
   }
@@ -790,7 +795,6 @@ void GLProgram::setTextureFromColormap(std::string name, Colormap colormap) {
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-    glUniform1i(t.location, t.index);
     t.isSet = true;
     return;
   }
@@ -891,11 +895,32 @@ void GLProgram::initCommonShaders() {
   printShaderInfoLog(commonShaderHandle);
 }
 
+void GLProgram::activateTextures() {
+  for (GLTexture& t : textures) {
+    // Point the uniform at this texture
+    glUniform1i(t.location, t.index);
+
+    // Bind to the texture buffer
+    GLenum targetType;
+    switch (t.dim) {
+      case 1:
+        targetType = GL_TEXTURE_1D;
+        break;
+      case 2:
+        targetType = GL_TEXTURE_2D;
+        break;
+    }
+    glBindTexture(targetType, t.bufferLoc);
+  }
+}
+
 void GLProgram::draw() {
   validateData();
 
   glUseProgram(programHandle);
   glBindVertexArray(vaoHandle);
+
+  activateTextures();
 
   switch (drawMode) {
     case DrawMode::Points:
@@ -978,7 +1003,7 @@ void printProgramInfoLog(GLuint handle) {
 }
 
 void checkGLError(bool fatal) {
-fatal = true;
+  fatal = true;
 #ifndef NDEBUG
   GLenum err = GL_NO_ERROR;
   while ((err = glGetError()) != GL_NO_ERROR) {

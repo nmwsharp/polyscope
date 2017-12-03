@@ -11,6 +11,19 @@
 
 namespace polyscope {
 
+// Lightweight class to hold RGB image data
+class Image {
+
+public:
+  Image(std::string name, unsigned char* data, size_t width, size_t height);
+  ~Image();
+
+  std::string name;
+  size_t width, height;
+  unsigned char* data;
+
+};
+
 class CameraView : public Structure {
  public:
   // === Member functions ===
@@ -39,11 +52,22 @@ class CameraView : public Structure {
   boundingBox() override;
 
   // === Quantity-related
-//   void addQuantity(std::string name, VertexData<double>& value, DataType type = DataType::STANDARD);
+  // Add an image with RGB components
+  void setActiveImage(std::string name);
+  void clearActiveImage();
+  void addImage(std::string name, unsigned char* I, size_t width, size_t height);
 
   // === Helpers
   void prepareCameraSkeleton();
+
+  // Get the points that describe the "skeleton" in world space. Frame is CCW, starting with upper right.
+  // dirFrame is {lookDir, upDir, rightDir}
+  void getCameraPoints(Vector3& root, std::array<Vector3, 4>& framePoints, std::array<Vector3, 3>& dirFrame);
   Vector3 location();
+
+  
+  void drawWireframe();
+  void drawImageView();
 
   // === Member variables ===
   bool enabled = true;
@@ -51,12 +75,19 @@ class CameraView : public Structure {
   // The camera parameters
   CameraParameters parameters;
 
-  // Drawing related things
-  gl::GLProgram* cameraSkeletonProgram = nullptr;
 //   gl::GLProgram* program = nullptr;
 
  private:
+
   // Quantities
+  std::map<std::string, Image*> images;
+  
+  // Drawing related things
+  gl::GLProgram* cameraSkeletonProgram = nullptr;
+  Image* activeImage = nullptr;
+  gl::GLProgram* imageViewProgram = nullptr;
+  float imageTransparency = 1.0;
+  
 
 };
 

@@ -69,7 +69,7 @@ class GLProgram {
 
         // Textures
         void setTexture1D(std::string name, unsigned char* texData, unsigned int length);
-        void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height);
+        void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height, bool useMipMap = false);
         void setTextureFromColormap(std::string name, Colormap colormap);
 
 
@@ -148,6 +148,7 @@ class GLProgram {
 
         // Drawing related
         void validateData();
+        void activateTextures();
 
         // GL pointers for various useful things
         GLuint programHandle = 0;

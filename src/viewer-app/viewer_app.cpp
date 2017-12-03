@@ -12,6 +12,10 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/string_cast.hpp"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+
 using namespace geometrycentral;
 using std::cerr;
 using std::cout;
@@ -145,17 +149,35 @@ void processFileJSON(string filename) {
   perm[1][2] = 1.0;
   perm[3][3] = 1.0;
 
-  cout << "Perm: " << endl;
-  polyscope::prettyPrint(perm);
+  // cout << "Perm: " << endl;
+  // polyscope::prettyPrint(perm);
 
   params.E = E * perm;
   params.focalLengths = focalLengths;
 
   polyscope::registerCameraView(niceName, params);
 
-  cout << "E: " << endl;
-  polyscope::prettyPrint(params.E);
+  // cout << "E: " << endl;
+  // polyscope::prettyPrint(params.E);
+
+
+  // Try to load am image right next to the camera
+  std::string imageFilename = filename;
+  size_t f = imageFilename.find(".json");
+  imageFilename.replace(f, std::string(".json").length(), ".png");
   
+  std::ifstream inFileIm(imageFilename);
+  if(!inFileIm) {
+    cout << "Did not auto-detect image at " << imageFilename << endl;
+  } else {
+
+    int x,y,n;
+    unsigned char *data = stbi_load(imageFilename.c_str(), &x, &y, &n, 3);
+
+    cout << "Loading " << imageFilename << endl;
+    polyscope::getCameraView(niceName)->addImage(niceName+"_rgb", data, x, y);
+  }
+
 }
 
 void processFile(string filename) {
