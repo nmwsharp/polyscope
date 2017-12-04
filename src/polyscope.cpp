@@ -51,6 +51,11 @@ void error_print_callback(int error, const char* description) {
   std::cerr << "GLFW emitted error: " << description << std::endl;
 }
 
+// Forward declare compressed binary font functions
+unsigned int getCousineRegularCompressedSize();
+const unsigned int* getCousineRegularCompressedData();
+
+
 // === Core global functions
 
 void init() {
@@ -103,9 +108,11 @@ void init() {
   config.OversampleH = 5;
   config.OversampleV = 5;
   // io.Fonts->AddFontDefault();
-  io.Fonts->AddFontFromFileTTF(
-      "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
-
+  // io.Fonts->AddFontFromFileTTF(
+  //     "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
+  ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(
+      getCousineRegularCompressedData(), getCousineRegularCompressedSize(), 15.0f,
+      &config);
   // ImGui::StyleColorsLight();
 
   // Initialize common shaders
@@ -149,7 +156,7 @@ void buildPolyscopeGui() {
 
   ImGui::ColorEdit3("background color", (float*)&view::bgColor,
                     ImGuiColorEditFlags_NoInputs);
-  if(ImGui::Button("Reset view")) {
+  if (ImGui::Button("Reset view")) {
     view::flyToDefault();
   }
   ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
@@ -176,7 +183,6 @@ void buildStructureGui() {
     if (ImGui::CollapsingHeader(("Category: " + catName + " (" +
                                  std::to_string(structures.size()) + ")")
                                     .c_str())) {
-
       // Draw shared GUI elements for all instances of the structure
       structures.begin()->second->drawSharedStructureUI();
 
@@ -279,16 +285,15 @@ void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom) {
 void registerCameraView(std::string name, CameraParameters p) {
   checkStructureNameInUse(name);
 
-  state::cameraViews[name] = new CameraView(name, p); 
+  state::cameraViews[name] = new CameraView(name, p);
   state::structureCategories[StructureType::CameraView][name] =
       state::cameraViews[name];
 
   updateStructureExtents();
 }
 
-
 PointCloud* getPointCloud(std::string name) {
-  if(state::pointClouds.find(name) == state::pointClouds.end()) {
+  if (state::pointClouds.find(name) == state::pointClouds.end()) {
     error("No point cloud with name " + name + " registered");
     return nullptr;
   }
@@ -296,7 +301,7 @@ PointCloud* getPointCloud(std::string name) {
 }
 
 SurfaceMesh* getSurfaceMesh(std::string name) {
-  if(state::surfaceMeshes.find(name) == state::surfaceMeshes.end()) {
+  if (state::surfaceMeshes.find(name) == state::surfaceMeshes.end()) {
     error("No surface mesh with name " + name + " registered");
     return nullptr;
   }
@@ -304,7 +309,7 @@ SurfaceMesh* getSurfaceMesh(std::string name) {
 }
 
 CameraView* getCameraView(std::string name) {
-  if(state::cameraViews.find(name) == state::cameraViews.end()) {
+  if (state::cameraViews.find(name) == state::cameraViews.end()) {
     error("No camera view with name " + name + " registered");
     return nullptr;
   }
@@ -365,8 +370,9 @@ void updateStructureExtents() {
   std::get<0>(state::boundingBox) = minBbox;
   std::get<1>(state::boundingBox) = maxBbox;
 
-  // If we got a bounding box but not a length scale we can use the size of the box as a scale.
-  // If we got neither, we'll end up with a constant near 1 due to the above correction 
+  // If we got a bounding box but not a length scale we can use the size of the
+  // box as a scale. If we got neither, we'll end up with a constant near 1 due
+  // to the above correction
   if (state::lengthScale == 0) {
     state::lengthScale = norm(maxBbox - minBbox);
   }
@@ -386,18 +392,18 @@ void error(std::string message) {
 // Helpers/data for the color palette below
 namespace {
 static int iPaletteColor = -1;
-std::vector<std::array<float, 3>> paletteColors {
-    {{171/255., 71/255., 188/255.}},    // purple
-    {{66/255., 165/255., 245/255.}},    // light blue
-    {{38/255., 166/255., 154/255.}},    // greenish
-    {{255/255., 167/255., 38/255.}},    // orange
-    {{38/255., 198/255., 218/255.}}     // teal
-    };
+std::vector<std::array<float, 3>> paletteColors{
+    {{171 / 255., 71 / 255., 188 / 255.}},  // purple
+    {{66 / 255., 165 / 255., 245 / 255.}},  // light blue
+    {{38 / 255., 166 / 255., 154 / 255.}},  // greenish
+    {{255 / 255., 167 / 255., 38 / 255.}},  // orange
+    {{38 / 255., 198 / 255., 218 / 255.}}   // teal
+};
 }  // anonymous namespace
 std::array<float, 3> getNextPaletteColor() {
   // -1 means initialization needed
   if (iPaletteColor == -1) {
-    iPaletteColor = randomInt(0,paletteColors.size()-1);
+    iPaletteColor = randomInt(0, paletteColors.size() - 1);
   }
 
   std::array<float, 3> color = paletteColors[iPaletteColor];
