@@ -184,7 +184,9 @@ void buildStructureGui() {
                                  std::to_string(structures.size()) + ")")
                                     .c_str())) {
       // Draw shared GUI elements for all instances of the structure
-      structures.begin()->second->drawSharedStructureUI();
+      if(structures.size() > 0) { 
+        structures.begin()->second->drawSharedStructureUI();
+      }
 
       for (auto x : structures) {
         ImGui::SetNextTreeNodeOpen(
