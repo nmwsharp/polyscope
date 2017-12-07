@@ -22,32 +22,6 @@ using std::cout;
 using std::endl;
 using std::string;
 
-// Hack to guess the basename. Certainly does not work in all case,
-// but we can just fall back on returning the full filename.
-std::string guessName(std::string fullname) {
-  size_t startInd = 0;
-  for (std::string sep : {"/", "\\"}) {
-    size_t pos = fullname.rfind(sep);
-    if (pos != std::string::npos) {
-      startInd = std::max(startInd, pos+1);
-    }
-  }
-
-  size_t endInd = fullname.size();
-  for (std::string sep : {"."}) {
-    size_t pos = fullname.rfind(sep);
-    if (pos != std::string::npos) {
-      endInd = std::min(endInd, pos);
-    }
-  }
-
-  if (startInd >= endInd) {
-    return fullname;
-  }
-
-  std::string niceName = fullname.substr(startInd, endInd - startInd);
-  return niceName;
-}
 
 bool endsWith(const std::string& str, const std::string& suffix) {
   return str.size() >= suffix.size() &&
@@ -56,7 +30,7 @@ bool endsWith(const std::string& str, const std::string& suffix) {
 
 void processFileOBJ(string filename) {
   // Get a nice name for the file
-  std::string niceName = guessName(filename);
+  std::string niceName = polyscope::utilities::guessNiceNameFromPath(filename);
 
   Geometry<Euclidean>* geom;
   HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh(filename), geom);
@@ -118,7 +92,7 @@ void processFileJSON(string filename) {
 
   using namespace nlohmann;
 
-  std::string niceName = guessName(filename);
+  std::string niceName = polyscope::utilities::guessNiceNameFromPath(filename);
 
   // read a JSON camera file
   std::ifstream inFile(filename);

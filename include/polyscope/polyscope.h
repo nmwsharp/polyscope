@@ -9,6 +9,7 @@
 #include "polyscope/surface_mesh.h"
 #include "polyscope/camera_view.h"
 #include "polyscope/structure.h"
+#include "polyscope/utilities.h"
 
 namespace polyscope {
 
