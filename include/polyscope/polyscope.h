@@ -44,6 +44,9 @@ extern std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBo
 // representative center for all registered structures
 extern Vector3 center;
 
+// A callback function used to render a "user" gui
+extern std::function<void()> userCallback;
+
 }  // namespace state
 
 // === Manage structures tracked by polyscope

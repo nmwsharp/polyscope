@@ -35,6 +35,8 @@ std::map<std::string, PointCloud*> pointClouds;
 std::map<std::string, SurfaceMesh*> surfaceMeshes;
 std::map<std::string, CameraView*> cameraViews;
 
+std::function<void()> userCallback;
+
 }  // namespace state
 
 namespace options {
@@ -202,6 +204,14 @@ void buildStructureGui() {
   ImGui::End();
 }
 
+void buildUserGui() {
+  if(state::userCallback) {
+    ImGui::PushID("user_callback");
+    state::userCallback();
+    ImGui::PopID();
+  }
+}
+
 void checkStructureNameInUse(std::string name) {
   for (const auto cat : state::structureCategories) {
     if (cat.second.find(name) != cat.second.end()) {
@@ -240,6 +250,7 @@ void show() {
     // Build the GUI components
     buildPolyscopeGui();
     buildStructureGui();
+    buildUserGui();
 
     // Process UI events
 
