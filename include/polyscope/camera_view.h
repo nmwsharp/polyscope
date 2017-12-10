@@ -86,6 +86,7 @@ class CameraView : public Structure {
   Image* activeImage = nullptr;
   gl::GLProgram* imageViewProgram = nullptr;
   static float globalImageTransparency;
+  float cameraSkeletonScale; // the lengthscale cameras were first drawn with
   
 
 };

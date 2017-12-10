@@ -66,7 +66,7 @@ void CameraView::drawWireframe() {
 }
 
 void CameraView::drawImageView() {
-  if (imageViewProgram == nullptr) {
+  if (imageViewProgram == nullptr || globalImageTransparency == 0.0) {
     return;
   }
 
@@ -102,7 +102,8 @@ void CameraView::prepareCameraSkeleton() {
       &WIREFRAME_VERT_SHADER, &WIREFRAME_FRAG_SHADER, gl::DrawMode::Lines);
 
   // Relevant points in world space
-  float cameraDrawSize = state::lengthScale * 0.1;
+  cameraSkeletonScale = state::lengthScale;
+  float cameraDrawSize = state::lengthScale * 0.02;
   Vector3 root, lookDir, upDir, rightDir;
   std::array<Vector3, 4> framePoints;
   std::array<Vector3, 3> dirFrame;
@@ -143,7 +144,7 @@ void CameraView::getCameraPoints(Vector3& rootV,
   glm::vec3 upDir = parameters.getUpDir();
   glm::vec3 rightDir = parameters.getRightDir();
 
-  float cameraDrawSize = state::lengthScale * 0.1;
+  float cameraDrawSize = cameraSkeletonScale * 0.1;
   // float frameDrawWidth = 0.5 / parameters.focalLengths.x * cameraDrawSize;
   // float frameDrawHeight = 0.5 / parameters.focalLengths.y * cameraDrawSize;
   float frameDrawWidth =
