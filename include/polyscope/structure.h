@@ -9,7 +9,7 @@
 namespace polyscope {
 
 // Enum of structure types
-enum class StructureType {SurfaceMesh=0, PointCloud, CameraView};
+enum class StructureType {SurfaceMesh=0, PointCloud, CameraView, RaySet};
 
 class Structure {
  public:
@@ -54,6 +54,8 @@ inline std::string getStructureTypeName(StructureType type){
        return "Point Cloud";
     case StructureType::CameraView:
        return "Camera View";
+    case StructureType::RaySet:
+       return "Ray Set";
     }
 }
 inline std::ostream& operator<<(std::ostream& out, const StructureType value){

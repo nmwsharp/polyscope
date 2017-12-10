@@ -30,10 +30,12 @@ std::map<StructureType, std::map<std::string, Structure*>> structureCategories{
     {StructureType::PointCloud, {}},
     {StructureType::SurfaceMesh, {}},
     {StructureType::CameraView, {}},
+    {StructureType::RaySet, {}},
 };
 std::map<std::string, PointCloud*> pointClouds;
 std::map<std::string, SurfaceMesh*> surfaceMeshes;
 std::map<std::string, CameraView*> cameraViews;
+std::map<std::string, RaySet*> raySets;
 
 std::function<void()> userCallback;
 
@@ -56,7 +58,6 @@ void error_print_callback(int error, const char* description) {
 // Forward declare compressed binary font functions
 unsigned int getCousineRegularCompressedSize();
 const unsigned int* getCousineRegularCompressedData();
-
 
 // === Core global functions
 
@@ -113,8 +114,8 @@ void init() {
   // io.Fonts->AddFontFromFileTTF(
   //     "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
   ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(
-      getCousineRegularCompressedData(), getCousineRegularCompressedSize(), 15.0f,
-      &config);
+      getCousineRegularCompressedData(), getCousineRegularCompressedSize(),
+      15.0f, &config);
   // ImGui::StyleColorsLight();
 
   // Initialize common shaders
@@ -186,7 +187,7 @@ void buildStructureGui() {
                                  std::to_string(structures.size()) + ")")
                                     .c_str())) {
       // Draw shared GUI elements for all instances of the structure
-      if(structures.size() > 0) { 
+      if (structures.size() > 0) {
         structures.begin()->second->drawSharedStructureUI();
       }
 
@@ -205,7 +206,7 @@ void buildStructureGui() {
 }
 
 void buildUserGui() {
-  if(state::userCallback) {
+  if (state::userCallback) {
     ImGui::PushID("user_callback");
     state::userCallback();
     ImGui::PopID();
@@ -248,6 +249,7 @@ void show() {
     processMouseEvents();
 
     // Build the GUI components
+    // ImGui::ShowTestWindow();
     buildPolyscopeGui();
     buildStructureGui();
     buildUserGui();
@@ -305,6 +307,17 @@ void registerCameraView(std::string name, CameraParameters p) {
   updateStructureExtents();
 }
 
+void registerRaySet(std::string name,
+                    const std::vector<std::vector<RayPoint>>& r) {
+  checkStructureNameInUse(name);
+
+  state::raySets[name] = new RaySet(name, r);
+  state::structureCategories[StructureType::RaySet][name] =
+      state::raySets[name];
+
+  updateStructureExtents();
+}
+
 PointCloud* getPointCloud(std::string name) {
   if (state::pointClouds.find(name) == state::pointClouds.end()) {
     error("No point cloud with name " + name + " registered");
@@ -327,6 +340,14 @@ CameraView* getCameraView(std::string name) {
     return nullptr;
   }
   return state::cameraViews[name];
+}
+
+RaySet* getRaySet(std::string name) {
+  if (state::raySets.find(name) == state::raySets.end()) {
+    error("No ray set with name " + name + " registered");
+    return nullptr;
+  }
+  return state::raySets[name];
 }
 
 void removeStructure(std::string name) {

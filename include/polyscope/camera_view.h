@@ -76,8 +76,6 @@ class CameraView : public Structure {
   // The camera parameters
   CameraParameters parameters;
 
-//   gl::GLProgram* program = nullptr;
-
  private:
 
   // Quantities

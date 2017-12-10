@@ -79,7 +79,7 @@ void CameraView::drawImageView() {
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   imageViewProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
-  
+
   imageViewProgram->setUniform("u_transparency", globalImageTransparency);
 
   imageViewProgram->draw();
@@ -146,8 +146,10 @@ void CameraView::getCameraPoints(Vector3& rootV,
   float cameraDrawSize = state::lengthScale * 0.1;
   // float frameDrawWidth = 0.5 / parameters.focalLengths.x * cameraDrawSize;
   // float frameDrawHeight = 0.5 / parameters.focalLengths.y * cameraDrawSize;
-  float frameDrawWidth = std::tan(glm::radians(parameters.fov/2.f)) * cameraDrawSize;
-  float frameDrawHeight = std::tan(glm::radians(parameters.fov/2.f)) * cameraDrawSize;
+  float frameDrawWidth =
+      std::tan(glm::radians(parameters.fov / 2.f)) * cameraDrawSize;
+  float frameDrawHeight =
+      std::tan(glm::radians(parameters.fov / 2.f)) * cameraDrawSize;
 
   glm::vec3 upperLeft = root + cameraDrawSize * lookDir +
                         upDir * frameDrawHeight - rightDir * frameDrawWidth;
@@ -170,7 +172,7 @@ void CameraView::getCameraPoints(Vector3& rootV,
 }
 
 void CameraView::drawSharedStructureUI() {
-    ImGui::SliderFloat("Opaque", &globalImageTransparency, 0.0, 1.0, "%.2f");
+  ImGui::SliderFloat("Opaque", &globalImageTransparency, 0.0, 1.0, "%.2f");
 }
 
 void CameraView::drawUI() {
@@ -180,6 +182,36 @@ void CameraView::drawUI() {
 
     if (ImGui::Button("Fly to")) {
       view::startFlightTo(parameters, .3);
+    }
+
+    { // Pick an image to show
+
+      // Find the current image
+      int currImage = 0;  // none
+      int i = 1;
+      std::vector<const char*> nameStrings;
+      const char* noneStr = "None";
+      nameStrings.push_back(noneStr);
+      for (auto& kv : images) {
+        nameStrings.push_back(kv.first.c_str());
+        if (kv.second == activeImage) {
+          currImage = i;
+        }
+        i++;
+      }
+
+      // Draw the GUI element
+      int newInd = currImage;
+      ImGui::ListBox("", &newInd, &nameStrings[0], nameStrings.size());
+
+      // Update the image if requested
+      if(newInd != currImage){ 
+        if(newInd == 0) {
+          clearActiveImage();
+        } else {
+          setActiveImage(nameStrings[newInd]);
+        }
+      }
     }
 
     ImGui::TreePop();
@@ -197,7 +229,7 @@ void CameraView::addImage(std::string name, unsigned char* I, size_t width,
   images[name] = i;
 
   // Make first image active
-  if(images.size() == 1) {
+  if (images.size() == 1) {
     setActiveImage(name);
   }
 }
@@ -223,7 +255,8 @@ void CameraView::setActiveImage(std::string name) {
                         &PROJECTEDIMAGE_FRAG_SHADER, gl::DrawMode::Triangles);
 
   // Push the texture to the buffer
-  imageViewProgram->setTexture2D("t_image", im->data, im->width, im->height, true);
+  imageViewProgram->setTexture2D("t_image", im->data, im->width, im->height,
+                                 true);
 
   // The frame on which we will draw
 
@@ -255,6 +288,7 @@ void CameraView::setActiveImage(std::string name) {
 void CameraView::clearActiveImage() {
   if (imageViewProgram != nullptr) {
     delete imageViewProgram;
+    imageViewProgram = nullptr;
   }
   activeImage = nullptr;
 }

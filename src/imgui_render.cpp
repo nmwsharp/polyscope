@@ -8,7 +8,7 @@
 #include <GLFW/glfw3.h>
 #define PLATFORM_SCROLL_RATE_COEF (1.0)
 #else
-#define PLATFORM_SCROLL_RATE_COEF (3.0)
+#define PLATFORM_SCROLL_RATE_COEF (1.0)
 #include <glad/glad.h>
 #endif
 
