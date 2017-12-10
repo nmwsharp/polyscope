@@ -55,10 +55,10 @@ extern std::function<void()> userCallback;
 
 // Register a point cloud structure with polyscope
 // `name` is a globally unique identifier for the structure
-void registerPointCloud(std::string name, const std::vector<Vector3>& points);
-void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom);
-void registerCameraView(std::string name,  CameraParameters p);
-void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& r);
+void registerPointCloud(std::string name, const std::vector<Vector3>& points, bool replaceIfPresent=true);
+void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom, bool replaceIfPresent=true);
+void registerCameraView(std::string name,  CameraParameters p, bool replaceIfPresent=true);
+void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& r, bool replaceIfPresent=true);
 
 // Get a reference to a structure that has been registered
 PointCloud* getPointCloud(std::string name);

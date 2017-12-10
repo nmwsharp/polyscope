@@ -213,12 +213,17 @@ void buildUserGui() {
   }
 }
 
-void checkStructureNameInUse(std::string name) {
+bool checkStructureNameInUse(std::string name, bool throwError = true) {
   for (const auto cat : state::structureCategories) {
     if (cat.second.find(name) != cat.second.end()) {
-      error("Structure name " + name + " is already in use.");
+      if (throwError) {
+        error("Structure name " + name + " is already in use.");
+      }
+      return true;
     }
   }
+
+  return false;
 }
 }  // anonymous namespace
 
@@ -277,8 +282,12 @@ void show() {
   }
 }
 
-void registerPointCloud(std::string name, const std::vector<Vector3>& points) {
-  checkStructureNameInUse(name);
+void registerPointCloud(std::string name, const std::vector<Vector3>& points,
+                        bool replaceIfPresent) {
+  bool inUse = checkStructureNameInUse(name, !replaceIfPresent);
+  if (inUse) {
+    removeStructure(name);
+  }
 
   state::pointClouds[name] = new PointCloud(name, points);
   state::structureCategories[StructureType::PointCloud][name] =
@@ -287,8 +296,12 @@ void registerPointCloud(std::string name, const std::vector<Vector3>& points) {
   updateStructureExtents();
 }
 
-void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom) {
-  checkStructureNameInUse(name);
+void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom,
+                         bool replaceIfPresent) {
+  bool inUse = checkStructureNameInUse(name, !replaceIfPresent);
+  if (inUse) {
+    removeStructure(name);
+  }
 
   state::surfaceMeshes[name] = new SurfaceMesh(name, geom);
   state::structureCategories[StructureType::SurfaceMesh][name] =
@@ -297,8 +310,12 @@ void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom) {
   updateStructureExtents();
 }
 
-void registerCameraView(std::string name, CameraParameters p) {
-  checkStructureNameInUse(name);
+void registerCameraView(std::string name, CameraParameters p,
+                        bool replaceIfPresent) {
+  bool inUse = checkStructureNameInUse(name, !replaceIfPresent);
+  if (inUse) {
+    removeStructure(name);
+  }
 
   state::cameraViews[name] = new CameraView(name, p);
   state::structureCategories[StructureType::CameraView][name] =
@@ -308,8 +325,12 @@ void registerCameraView(std::string name, CameraParameters p) {
 }
 
 void registerRaySet(std::string name,
-                    const std::vector<std::vector<RayPoint>>& r) {
-  checkStructureNameInUse(name);
+                    const std::vector<std::vector<RayPoint>>& r,
+                    bool replaceIfPresent) {
+  bool inUse = checkStructureNameInUse(name, !replaceIfPresent);
+  if (inUse) {
+    removeStructure(name);
+  }
 
   state::raySets[name] = new RaySet(name, r);
   state::structureCategories[StructureType::RaySet][name] =

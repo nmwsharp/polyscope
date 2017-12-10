@@ -103,7 +103,6 @@ void CameraView::prepareCameraSkeleton() {
 
   // Relevant points in world space
   cameraSkeletonScale = state::lengthScale;
-  float cameraDrawSize = state::lengthScale * 0.02;
   Vector3 root, lookDir, upDir, rightDir;
   std::array<Vector3, 4> framePoints;
   std::array<Vector3, 3> dirFrame;
@@ -126,12 +125,6 @@ void CameraView::prepareCameraSkeleton() {
     positions.push_back(framePoints[(i + 1) % 4]);
   }
 
-  // Show coordinate frame
-  // positions.push_back(root);
-  // positions.push_back(root + upDir * cameraDrawSize * 2.f);
-  // positions.push_back(root);
-  // positions.push_back(root + rightDir * cameraDrawSize);
-
   // Store data in buffers
   cameraSkeletonProgram->setAttribute("a_position", positions);
 }
@@ -144,9 +137,7 @@ void CameraView::getCameraPoints(Vector3& rootV,
   glm::vec3 upDir = parameters.getUpDir();
   glm::vec3 rightDir = parameters.getRightDir();
 
-  float cameraDrawSize = cameraSkeletonScale * 0.1;
-  // float frameDrawWidth = 0.5 / parameters.focalLengths.x * cameraDrawSize;
-  // float frameDrawHeight = 0.5 / parameters.focalLengths.y * cameraDrawSize;
+  float cameraDrawSize = cameraSkeletonScale * 0.01;
   float frameDrawWidth =
       std::tan(glm::radians(parameters.fov / 2.f)) * cameraDrawSize;
   float frameDrawHeight =
@@ -222,8 +213,10 @@ void CameraView::drawUI() {
 void CameraView::addImage(std::string name, unsigned char* I, size_t width,
                           size_t height) {
   if (images.find(name) != images.end()) {
-    error("Image name " + name + " is alredy in use");
-    return;
+    // error("Image name " + name + " is already in use");
+    // return;
+    delete images[name];
+    images.erase(name);
   }
 
   Image* i = new Image(name, I, width, height);

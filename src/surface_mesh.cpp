@@ -180,9 +180,7 @@ void SurfaceMesh::fillGeometryBuffersFlat() {
   program->setAttribute("a_barycoord", bcoord);
 }
 
-void SurfaceMesh::drawSharedStructureUI() {
-  
-}
+void SurfaceMesh::drawSharedStructureUI() {}
 
 void SurfaceMesh::drawUI() {
   ImGui::PushID(name.c_str());  // ensure there are no conflicts with
@@ -267,10 +265,9 @@ SurfaceQuantity::~SurfaceQuantity() {}
 
 void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value,
                               DataType type) {
-  // Check that the name is unique
+  // Delete old if in use
   if (quantities.find(name) != quantities.end()) {
-    error("Quantity name " + name + " is alredy in use");
-    return;
+    removeQuantity(name);
   }
 
   SurfaceScalarQuantity* q =
@@ -280,10 +277,9 @@ void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value,
 
 void SurfaceMesh::addQuantity(std::string name, FaceData<double>& value,
                               DataType type) {
-  // Check that the name is unique
+  // Delete old if in use
   if (quantities.find(name) != quantities.end()) {
-    error("Quantity name " + name + " is alredy in use");
-    return;
+    removeQuantity(name);
   }
 
   SurfaceScalarQuantity* q =
@@ -293,10 +289,9 @@ void SurfaceMesh::addQuantity(std::string name, FaceData<double>& value,
 
 void SurfaceMesh::addQuantity(std::string name, EdgeData<double>& value,
                               DataType type) {
-  // Check that the name is unique
+  // Delete old if in use
   if (quantities.find(name) != quantities.end()) {
-    error("Quantity name " + name + " is alredy in use");
-    return;
+    removeQuantity(name);
   }
 
   SurfaceScalarQuantity* q =
@@ -306,10 +301,9 @@ void SurfaceMesh::addQuantity(std::string name, EdgeData<double>& value,
 
 void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value,
                               DataType type) {
-  // Check that the name is unique
+  // Delete old if in use
   if (quantities.find(name) != quantities.end()) {
-    error("Quantity name " + name + " is alredy in use");
-    return;
+    removeQuantity(name);
   }
 
   SurfaceScalarQuantity* q =
@@ -320,10 +314,9 @@ void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value,
 void SurfaceMesh::addVectorQuantity(std::string name,
                                     VertexData<Vector3>& value,
                                     VectorType vectorType) {
-  // Check that the name is unique
+  // Delete old if in use
   if (quantities.find(name) != quantities.end()) {
-    error("Quantity name " + name + " is alredy in use");
-    return;
+    removeQuantity(name);
   }
 
   SurfaceVectorQuantity* q =
@@ -331,18 +324,29 @@ void SurfaceMesh::addVectorQuantity(std::string name,
   quantities[name] = q;
 }
 
-void SurfaceMesh::addVectorQuantity(std::string name,
-                                    FaceData<Vector3>& value,
+void SurfaceMesh::addVectorQuantity(std::string name, FaceData<Vector3>& value,
                                     VectorType vectorType) {
-  // Check that the name is unique
+  // Delete old if in use
   if (quantities.find(name) != quantities.end()) {
-    error("Quantity name " + name + " is alredy in use");
-    return;
+    removeQuantity(name);
   }
 
   SurfaceVectorQuantity* q =
       new SurfaceVectorQuantity(name, value, this, vectorType);
   quantities[name] = q;
+}
+
+void SurfaceMesh::removeQuantity(std::string name) {
+  if (quantities.find(name) != quantities.end()) {
+    removeQuantity(name);
+  }
+
+  SurfaceQuantity* q = quantities[name];
+  quantities.erase(name);
+  if (activeSurfaceQuantity == q) {
+    clearActiveSurfaceQuantity();
+  }
+  delete q;
 }
 
 void SurfaceMesh::setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q) {
