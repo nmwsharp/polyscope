@@ -41,7 +41,7 @@ void RaySet::draw() {
   program->setUniform("u_timeMax", timeMax);
   float t = glm::mod(ImGui::GetTime() * speedFactor * 2, timeMax);
   program->setUniform("u_time", t);
-  float streakWidth = streakLengthFactor * state::lengthScale;
+  float streakWidth = 0.3 * streakLengthFactor * state::lengthScale;
   program->setUniform("u_streakWidth", streakWidth);
   
   
