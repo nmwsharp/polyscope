@@ -366,7 +366,7 @@ void SurfaceMesh::addVectorQuantity(std::string name, FaceData<Vector3>& value,
 
 void SurfaceMesh::removeQuantity(std::string name) {
   if (quantities.find(name) != quantities.end()) {
-    removeQuantity(name);
+    return;
   }
 
   SurfaceQuantity* q = quantities[name];
