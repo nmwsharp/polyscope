@@ -382,13 +382,31 @@ void removeStructure(std::string name) {
   }
 
   // Surface mesh
-  if (state::surfaceMeshes.find(name) != state::surfaceMeshes.end()) {
+   if (state::surfaceMeshes.find(name) != state::surfaceMeshes.end()) {
     delete state::surfaceMeshes[name];
     state::surfaceMeshes.erase(name);
     state::structureCategories[StructureType::SurfaceMesh].erase(name);
     updateStructureExtents();
     return;
-  }
+   }
+
+   // Camera view
+   if (state::cameraViews.find(name) != state::cameraViews.end()) {
+     delete state::cameraViews[name];
+      state::cameraViews.erase(name);
+      state::structureCategories[StructureType::CameraView].erase(name);
+      updateStructureExtents();
+      return;
+   }
+
+  // Ray set
+   if (state::raySets.find(name) != state::raySets.end()) {
+     delete state::raySets[name];
+     state::raySets.erase(name);
+     state::structureCategories[StructureType::RaySet].erase(name);
+     updateStructureExtents();
+     return;
+   }
 
   error("No structure named: " + name + " to remove.");
 }
