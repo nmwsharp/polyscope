@@ -83,12 +83,15 @@ class SurfaceMesh : public Structure {
   void addQuantity(std::string name, FaceData<double>& value, DataType type = DataType::STANDARD);
   void addQuantity(std::string name, EdgeData<double>& value, DataType type = DataType::STANDARD);
   void addQuantity(std::string name, HalfedgeData<double>& value, DataType type = DataType::STANDARD);
+  void addColorQuantity(std::string name, VertexData<Vector3>& value);
   void addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
   void addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
 
   void removeQuantity(std::string name);
   void setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q);
   void clearActiveSurfaceQuantity();
+
+  void updateGeometryPositions(Geometry<Euclidean>* newGeometry);
 
   // === Helpers
   void deleteProgram();
@@ -119,7 +122,7 @@ class SurfaceMesh : public Structure {
                 // overwrites `program` with its own shaders
 
   // Gui implementation details
-  bool ui_smoothshade;
+  bool ui_smoothshade = true;
 
   // === Helper functions
   void fillGeometryBuffersSmooth();

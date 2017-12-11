@@ -57,6 +57,7 @@ class CameraView : public Structure {
   void setActiveImage(std::string name);
   void clearActiveImage();
   void addImage(std::string name, unsigned char* I, size_t width, size_t height);
+  void removeImage(std::string name, bool errorIfNotPresent=false);
 
   // === Helpers
   void prepareCameraSkeleton();

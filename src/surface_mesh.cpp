@@ -8,6 +8,7 @@
 // Quantities
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
+#include "polyscope/surface_color_quantity.h"
 
 #include "imgui.h"
 
@@ -255,6 +256,21 @@ SurfaceMesh::boundingBox() {
 
   return std::make_tuple(min, max);
 }
+  
+void SurfaceMesh::updateGeometryPositions(Geometry<Euclidean>* newGeometry) {
+
+  VertexData<Vector3> newPositions;
+  newGeometry->getVertexPositions(newPositions);
+
+  VertexData<Vector3> myNewPositions = transfer.transfer(newPositions);
+  for(VertexPtr v : mesh->vertices()) { 
+    geometry->position(v) = myNewPositions[v];
+  }
+
+  // Rebuild any necessary quantities
+  deleteProgram();
+  prepare();
+}
 
 SurfaceQuantity::SurfaceQuantity(std::string name_, SurfaceMesh* mesh_)
     : name(name_), parent(mesh_) {}
@@ -309,6 +325,18 @@ void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value,
   SurfaceScalarQuantity* q =
       new SurfaceScalarHalfedgeQuantity(name, value, this, type);
   quantities[name] = q;
+}
+  
+void SurfaceMesh::addColorQuantity(std::string name, VertexData<Vector3>& value) {
+
+  if (quantities.find(name) != quantities.end()) {
+    removeQuantity(name);
+  }
+
+  SurfaceColorQuantity* q =
+      new SurfaceColorVertexQuantity(name, value, this);
+  quantities[name] = q;
+
 }
 
 void SurfaceMesh::addVectorQuantity(std::string name,

@@ -227,6 +227,25 @@ void CameraView::addImage(std::string name, unsigned char* I, size_t width,
     setActiveImage(name);
   }
 }
+  
+void CameraView::removeImage(std::string name, bool errorIfNotPresent) {
+  
+  if (images.find(name) == images.end()) {
+    if(errorIfNotPresent) {
+      error("Tried to remove image which does not exist.");
+    }
+    return;
+  }
+
+  Image* im = images[name];
+
+  if(im == activeImage) {
+    clearActiveImage();
+  }
+
+  images.erase(name);
+  delete im;
+}
 
 void CameraView::setActiveImage(std::string name) {
   if (images.find(name) == images.end()) {
