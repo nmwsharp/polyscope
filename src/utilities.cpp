@@ -1,5 +1,9 @@
 #include "polyscope/utilities.h"
 
+#include <cmath>
+#include <vector>
+
+
 namespace polyscope {
 namespace utilities {
 
@@ -28,5 +32,64 @@ std::string guessNiceNameFromPath(std::string fullname) {
   return niceName;
 }
 
-}  // namespace utilities
-}  // namespace polyscope
+std::string prettyPrintCount(size_t count) {
+
+  /*
+  // Pretty print test
+  size_t num = 0;
+  size_t mult = 1;
+  for(int i = 0; i < 18; i++) {
+    cout << num <<  " --> |" << polyscope::utilities::prettyPrintCount(num) << "|" <<  endl;
+    mult *= 10;
+    num += mult * randomInt(0,9);
+  }
+  */
+
+  int nDigits = 1;
+  if (count > 0) {
+    nDigits = 1 + std::floor(std::log10(count));
+  }
+
+  // Print small values exactly
+  if (nDigits <= 4) {
+    return std::to_string(count);
+  }
+
+  std::vector<std::string> postFixes = {"", "K", "M", "B", "T"};
+  size_t iPostfix = 0;
+  size_t iPow = 0;
+  double countD = count;
+
+  while (nDigits > 3) {
+    count /= 1000;
+    countD /= 1000;
+    iPostfix++;
+    iPow += 3;
+    nDigits -= 3;
+  }
+
+  // Get a postfix, either as a predefined character or scientific notation
+  std::string postfix;
+  if (iPostfix < postFixes.size()) {
+    postfix = postFixes[iPostfix];
+  } else {
+    postfix = "*10^" + std::to_string(iPow);
+  }
+
+  // Build the actual string
+  char buf[50];
+  if (nDigits == 1) {
+    snprintf(buf, 50, "%2.2f%s", countD, postfix.c_str());
+    return std::string(buf);
+  } else if (nDigits == 2) {
+    snprintf(buf, 50, "%2.1f%s", countD, postfix.c_str());
+    return std::string(buf);
+  } else /*(nDigits == 3) */ {
+    snprintf(buf, 50, "%2.0f%s", countD, postfix.c_str());
+    return std::string(buf);
+  }
+
+} // namespace utilities
+
+} // namespace utilities
+} // namespace polyscope
