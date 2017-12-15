@@ -49,6 +49,9 @@ extern Vector3 center;
 // A callback function used to render a "user" gui
 extern std::function<void()> userCallback;
 
+// The current screenshot index for automatically numbered screenshots
+extern size_t screenshotInd;
+
 }  // namespace state
 
 // === Manage structures tracked by polyscope
@@ -79,6 +82,11 @@ void updateStructureExtents();
 void error(std::string message);
 
 // === Utility
+
+// Take screenshots of the current view
+void screenshot(std::string filename);
+void screenshot();
+void saveImage(std::string name, unsigned char* buffer, int w, int h, int channels);
 
 // Get the next color from a global color palette
 std::array<float, 3> getNextPaletteColor();

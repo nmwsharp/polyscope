@@ -38,8 +38,9 @@ std::map<std::string, CameraView*> cameraViews;
 std::map<std::string, RaySet*> raySets;
 
 std::function<void()> userCallback;
+size_t screenshotInd = 0;
 
-}  // namespace state
+} // namespace state
 
 namespace options {
 
@@ -48,7 +49,7 @@ int verbosity = 2;
 std::string printPrefix = "Polyscope: ";
 bool exceptionOnError = true;
 
-}  // namespace options
+} // namespace options
 
 // Small callback function for GLFW errors
 void error_print_callback(int error, const char* description) {
@@ -69,8 +70,7 @@ void init() {
   // === Initialize glfw
   glfwSetErrorCallback(error_print_callback);
   if (!glfwInit()) {
-    throw std::runtime_error(options::printPrefix +
-                             "ERROR: Failed to initialize glfw");
+    throw std::runtime_error(options::printPrefix + "ERROR: Failed to initialize glfw");
   }
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -79,23 +79,19 @@ void init() {
 #if __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  imguirender::mainWindow =
-      glfwCreateWindow(1280, 720, options::programName.c_str(), NULL, NULL);
+  imguirender::mainWindow = glfwCreateWindow(1280, 720, options::programName.c_str(), NULL, NULL);
   glfwMakeContextCurrent(imguirender::mainWindow);
-  glfwSwapInterval(1);  // Enable vsync
+  glfwSwapInterval(1); // Enable vsync
 
   // === Initialize openGL
   // Load openGL functions (using GLAD)
 #ifndef __APPLE__
   if (!gladLoadGL()) {
-    throw std::runtime_error(options::printPrefix +
-                             "ERROR: Failed to load openGL using GLAD");
+    throw std::runtime_error(options::printPrefix + "ERROR: Failed to load openGL using GLAD");
   }
 #endif
   if (options::verbosity > 0) {
-    std::cout << options::printPrefix
-              << "Loaded openGL version: " << glGetString(GL_VERSION)
-              << std::endl;
+    std::cout << options::printPrefix << "Loaded openGL version: " << glGetString(GL_VERSION) << std::endl;
   }
 
 #ifdef __APPLE__
@@ -113,9 +109,8 @@ void init() {
   // io.Fonts->AddFontDefault();
   // io.Fonts->AddFontFromFileTTF(
   //     "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
-  ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(
-      getCousineRegularCompressedData(), getCousineRegularCompressedSize(),
-      15.0f, &config);
+  ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(getCousineRegularCompressedData(),
+                                                          getCousineRegularCompressedSize(), 15.0f, &config);
   // ImGui::StyleColorsLight();
 
   // Initialize common shaders
@@ -131,8 +126,7 @@ void processMouseEvents() {
   if (!io.WantCaptureMouse) {
     // Handle drags
     if (io.MouseDown[0]) {
-      Vector2 dragDelta{io.MouseDelta.x / view::windowWidth,
-                        -io.MouseDelta.y / view::windowHeight};
+      Vector2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
       view::processMouseDrag(dragDelta, !io.KeyShift);
     }
   }
@@ -154,16 +148,16 @@ void buildPolyscopeGui() {
   static bool showPolyscopeWindow = true;
   ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
 
-  ImGui::Begin("Polyscope", &showPolyscopeWindow,
-               ImGuiWindowFlags_AlwaysAutoResize);
+  ImGui::Begin("Polyscope", &showPolyscopeWindow, ImGuiWindowFlags_AlwaysAutoResize);
 
-  ImGui::ColorEdit3("background color", (float*)&view::bgColor,
-                    ImGuiColorEditFlags_NoInputs);
+  ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
   if (ImGui::Button("Reset view")) {
     view::flyToDefault();
   }
-  ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
-              ImGui::GetIO().Framerate);
+  if (ImGui::Button("Screenshot")) {
+    screenshot();
+  }
+  ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
   ImGui::End();
 }
@@ -178,23 +172,20 @@ void buildStructureGui() {
     std::string catName = getStructureTypeName(cat.first);
     std::map<std::string, Structure*>& structures = cat.second;
 
-    ImGui::PushID(catName.c_str());  // ensure there are no conflicts with
-                                     // identically-named labels
+    ImGui::PushID(catName.c_str()); // ensure there are no conflicts with
+                                    // identically-named labels
 
     // Build the structure's UI
     ImGui::SetNextTreeNodeOpen(structures.size() > 0, ImGuiCond_FirstUseEver);
-    if (ImGui::CollapsingHeader(("Category: " + catName + " (" +
-                                 std::to_string(structures.size()) + ")")
-                                    .c_str())) {
+    if (ImGui::CollapsingHeader(("Category: " + catName + " (" + std::to_string(structures.size()) + ")").c_str())) {
       // Draw shared GUI elements for all instances of the structure
       if (structures.size() > 0) {
         structures.begin()->second->drawSharedStructureUI();
       }
 
       for (auto x : structures) {
-        ImGui::SetNextTreeNodeOpen(
-            structures.size() <= 2,
-            ImGuiCond_FirstUseEver);  // closed by default if more than 2
+        ImGui::SetNextTreeNodeOpen(structures.size() <= 2,
+                                   ImGuiCond_FirstUseEver); // closed by default if more than 2
         x.second->drawUI();
       }
     }
@@ -225,7 +216,27 @@ bool checkStructureNameInUse(std::string name, bool throwError = true) {
 
   return false;
 }
-}  // anonymous namespace
+
+void draw(bool withUI = true) {
+
+  // Clear out the gui
+  glViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  glClearColor(view::bgColor[0], view::bgColor[1], view::bgColor[2], view::bgColor[3]);
+  glClearDepth(1.);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+  // Draw structures in the scene
+  drawStructures();
+
+  // Draw the GUI
+  if (withUI) {
+    ImGui::Render();
+  }
+
+  glfwSwapBuffers(imguirender::mainWindow);
+}
+
+} // anonymous namespace
 
 void show() {
   view::resetCameraToDefault();
@@ -243,10 +254,8 @@ void show() {
 
     // Update the width and heigh
     glfwMakeContextCurrent(imguirender::mainWindow);
-    glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth,
-                      &view::windowHeight);
-    glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth,
-                           &view::bufferHeight);
+    glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
+    glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
 
     glfwPollEvents();
     imguirender::ImGui_ImplGlfwGL3_NewFrame();
@@ -264,77 +273,54 @@ void show() {
     // TODO handle picking if needed
 
     // === Rendering
-
-    // Clear out the gui
-    glViewport(0, 0, view::bufferWidth, view::bufferHeight);
-    glClearColor(view::bgColor[0], view::bgColor[1], view::bgColor[2],
-                 view::bgColor[3]);
-    glClearDepth(1.);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-    // Draw structures in the scene
-    drawStructures();
-
-    // Draw the GUI
-    ImGui::Render();
-
-    glfwSwapBuffers(imguirender::mainWindow);
+    draw();
   }
 }
 
-void registerPointCloud(std::string name, const std::vector<Vector3>& points,
-                        bool replaceIfPresent) {
+void registerPointCloud(std::string name, const std::vector<Vector3>& points, bool replaceIfPresent) {
   bool inUse = checkStructureNameInUse(name, !replaceIfPresent);
   if (inUse) {
     removeStructure(name);
   }
 
   state::pointClouds[name] = new PointCloud(name, points);
-  state::structureCategories[StructureType::PointCloud][name] =
-      state::pointClouds[name];
+  state::structureCategories[StructureType::PointCloud][name] = state::pointClouds[name];
 
   updateStructureExtents();
 }
 
-void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom,
-                         bool replaceIfPresent) {
+void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom, bool replaceIfPresent) {
   bool inUse = checkStructureNameInUse(name, !replaceIfPresent);
   if (inUse) {
     removeStructure(name);
   }
 
   state::surfaceMeshes[name] = new SurfaceMesh(name, geom);
-  state::structureCategories[StructureType::SurfaceMesh][name] =
-      state::surfaceMeshes[name];
+  state::structureCategories[StructureType::SurfaceMesh][name] = state::surfaceMeshes[name];
 
   updateStructureExtents();
 }
 
-void registerCameraView(std::string name, CameraParameters p,
-                        bool replaceIfPresent) {
+void registerCameraView(std::string name, CameraParameters p, bool replaceIfPresent) {
   bool inUse = checkStructureNameInUse(name, !replaceIfPresent);
   if (inUse) {
     removeStructure(name);
   }
 
   state::cameraViews[name] = new CameraView(name, p);
-  state::structureCategories[StructureType::CameraView][name] =
-      state::cameraViews[name];
+  state::structureCategories[StructureType::CameraView][name] = state::cameraViews[name];
 
   updateStructureExtents();
 }
 
-void registerRaySet(std::string name,
-                    const std::vector<std::vector<RayPoint>>& r,
-                    bool replaceIfPresent) {
+void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& r, bool replaceIfPresent) {
   bool inUse = checkStructureNameInUse(name, !replaceIfPresent);
   if (inUse) {
     removeStructure(name);
   }
 
   state::raySets[name] = new RaySet(name, r);
-  state::structureCategories[StructureType::RaySet][name] =
-      state::raySets[name];
+  state::structureCategories[StructureType::RaySet][name] = state::raySets[name];
 
   updateStructureExtents();
 }
@@ -382,31 +368,31 @@ void removeStructure(std::string name) {
   }
 
   // Surface mesh
-   if (state::surfaceMeshes.find(name) != state::surfaceMeshes.end()) {
+  if (state::surfaceMeshes.find(name) != state::surfaceMeshes.end()) {
     delete state::surfaceMeshes[name];
     state::surfaceMeshes.erase(name);
     state::structureCategories[StructureType::SurfaceMesh].erase(name);
     updateStructureExtents();
     return;
-   }
+  }
 
-   // Camera view
-   if (state::cameraViews.find(name) != state::cameraViews.end()) {
-     delete state::cameraViews[name];
-      state::cameraViews.erase(name);
-      state::structureCategories[StructureType::CameraView].erase(name);
-      updateStructureExtents();
-      return;
-   }
+  // Camera view
+  if (state::cameraViews.find(name) != state::cameraViews.end()) {
+    delete state::cameraViews[name];
+    state::cameraViews.erase(name);
+    state::structureCategories[StructureType::CameraView].erase(name);
+    updateStructureExtents();
+    return;
+  }
 
   // Ray set
-   if (state::raySets.find(name) != state::raySets.end()) {
-     delete state::raySets[name];
-     state::raySets.erase(name);
-     state::structureCategories[StructureType::RaySet].erase(name);
-     updateStructureExtents();
-     return;
-   }
+  if (state::raySets.find(name) != state::raySets.end()) {
+    delete state::raySets[name];
+    state::raySets.erase(name);
+    state::structureCategories[StructureType::RaySet].erase(name);
+    updateStructureExtents();
+    return;
+  }
 
   error("No structure named: " + name + " to remove.");
 }
@@ -428,8 +414,7 @@ void updateStructureExtents() {
 
   for (auto cat : state::structureCategories) {
     for (auto x : cat.second) {
-      state::lengthScale =
-          std::max(state::lengthScale, x.second->lengthScale());
+      state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
       auto bbox = x.second->boundingBox();
       minBbox = geometrycentral::componentwiseMin(minBbox, std::get<0>(bbox));
       maxBbox = geometrycentral::componentwiseMax(maxBbox, std::get<1>(bbox));
@@ -462,17 +447,46 @@ void error(std::string message) {
   }
 }
 
+void screenshot(std::string filename) {
+
+  // Make sure we render first
+  draw(false);
+
+  GLint viewport[4];
+  glGetIntegerv(GL_VIEWPORT, viewport);
+  int w = viewport[2];
+  int h = viewport[3];
+
+
+  unsigned char* buff = new unsigned char[w*h*3];
+  glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, buff);
+  saveImage(filename, buff, w, h, 3);
+
+  delete[] buff;
+}
+
+void screenshot() {
+
+  char buff[50];
+  snprintf(buff, 50, "screenshot_%06zu.png", state::screenshotInd);
+  std::string defaultName(buff);
+
+  screenshot(defaultName);
+
+  state::screenshotInd++;
+}
+
 // Helpers/data for the color palette below
 namespace {
 static int iPaletteColor = -1;
 std::vector<std::array<float, 3>> paletteColors{
-    {{171 / 255., 71 / 255., 188 / 255.}},  // purple
-    {{66 / 255., 165 / 255., 245 / 255.}},  // light blue
-    {{38 / 255., 166 / 255., 154 / 255.}},  // greenish
-    {{255 / 255., 167 / 255., 38 / 255.}},  // orange
-    {{38 / 255., 198 / 255., 218 / 255.}}   // teal
+    {{171 / 255., 71 / 255., 188 / 255.}}, // purple
+    {{66 / 255., 165 / 255., 245 / 255.}}, // light blue
+    {{38 / 255., 166 / 255., 154 / 255.}}, // greenish
+    {{255 / 255., 167 / 255., 38 / 255.}}, // orange
+    {{38 / 255., 198 / 255., 218 / 255.}}  // teal
 };
-}  // anonymous namespace
+} // anonymous namespace
 std::array<float, 3> getNextPaletteColor() {
   // -1 means initialization needed
   if (iPaletteColor == -1) {
@@ -484,4 +498,4 @@ std::array<float, 3> getNextPaletteColor() {
   return color;
 }
 
-}  // namespace polyscope
+} // namespace polyscope
