@@ -458,7 +458,8 @@ void screenshot(std::string filename) {
   int h = viewport[3];
 
 
-  unsigned char* buff = new unsigned char[w*h*3];
+  size_t buffSize = w*h*3;
+  unsigned char* buff = new unsigned char[buffSize];
   glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, buff);
   saveImage(filename, buff, w, h, 3);
 
