@@ -12,6 +12,7 @@
 #include "imgui.h"
 #include "polyscope/imgui_render.h"
 
+#include "polyscope/pick.h"
 #include "polyscope/view.h"
 
 namespace polyscope {
@@ -48,6 +49,7 @@ std::string programName = "Polyscope";
 int verbosity = 2;
 std::string printPrefix = "Polyscope: ";
 bool exceptionOnError = true;
+bool debugDrawPickBuffer = false;
 
 } // namespace options
 
@@ -59,6 +61,40 @@ void error_print_callback(int error, const char* description) {
 // Forward declare compressed binary font functions
 unsigned int getCousineRegularCompressedSize();
 const unsigned int* getCousineRegularCompressedData();
+
+// Helper to manage pick buffer
+namespace {
+
+// Pick buffer state
+GLuint pickFramebuffer, rboPickDepth, rboPickColor, currPickBufferWidth, currPickBufferHeight;
+
+void allocatePickRenderbuffers() {
+
+  glGenRenderbuffers(1, &rboPickDepth);
+  glBindRenderbuffer(GL_RENDERBUFFER, rboPickDepth);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, view::bufferWidth, view::bufferHeight);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboPickDepth);
+
+  glGenRenderbuffers(1, &rboPickColor);
+  glBindRenderbuffer(GL_RENDERBUFFER, rboPickColor);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, view::bufferWidth, view::bufferHeight);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rboPickColor);
+
+  currPickBufferWidth = view::bufferWidth;
+  currPickBufferHeight = view::bufferHeight;
+}
+
+void initPickBuffer() {
+
+  // Create the new buffer
+  glGenFramebuffers(1, &pickFramebuffer);
+
+  // Bind to the new buffer
+  glBindFramebuffer(GL_FRAMEBUFFER, pickFramebuffer);
+
+  allocatePickRenderbuffers();
+}
+}; // namespace
 
 // === Core global functions
 
@@ -99,6 +135,11 @@ void init() {
   glfwPollEvents();
 #endif
 
+  // Update the width and heigh
+  glfwMakeContextCurrent(imguirender::mainWindow);
+  glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
+  glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
+
   // Set up ImGUI glfw bindings
   imguirender::ImGui_ImplGlfwGL3_Init(imguirender::mainWindow, true);
 
@@ -116,18 +157,92 @@ void init() {
   // Initialize common shaders
   gl::GLProgram::initCommonShaders();
 
+  // Initialize pick buffer
+  initPickBuffer();
+
   state::initialized = true;
 }
 
 namespace {
 
+
+void evaluatePickQuery(int xPos, int yPos) {
+
+  glBindFramebuffer(GL_FRAMEBUFFER, pickFramebuffer);
+
+  if ((int)currPickBufferWidth != view::bufferWidth || (int)currPickBufferHeight != view::bufferHeight) {
+    // Delete the existing renderbuffers
+    GLuint rBuffers[2] = {rboPickDepth, rboPickColor};
+    glDeleteRenderbuffers(2, rBuffers);
+
+    // Allocate some new one
+    allocatePickRenderbuffers();
+  }
+
+  // Set the draw buffer
+  GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
+  glDrawBuffers(1, buffers);
+
+  // Clear the pick buffer
+  glViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  glClearColor(0.0, 0.0, 0.0, 0.0);
+  glClearDepth(1.);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+  // Render pick buffer
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  for (auto cat : state::structureCategories) {
+    for (auto x : cat.second) {
+      x.second->drawPick();
+    }
+  }
+  glFlush();
+  glFinish();
+
+  // Read from the pick buffer
+  float result[4];
+  glReadPixels(xPos, view::bufferHeight - yPos, 1, 1, GL_RGBA, GL_FLOAT, &result);
+  gl::checkGLError(true);
+
+
+  size_t ind = pick::vecToInd(geometrycentral::Vector3{result[0], result[1], result[2]});
+
+  if(ind == 0) {
+    std::cout << "no selection" << std::endl;
+  } else {
+    std::cout << "picked = " << ind << std::endl;
+  }
+}
+
+
+float dragDistSinceLastRelease = 0.0;
+
 void processMouseEvents() {
   ImGuiIO& io = ImGui::GetIO();
   if (!io.WantCaptureMouse) {
+
     // Handle drags
-    if (io.MouseDown[0]) {
+    if (ImGui::IsMouseDragging(0)) {
       Vector2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
       view::processMouseDrag(dragDelta, !io.KeyShift);
+
+      dragDistSinceLastRelease += std::abs(dragDelta.x);
+      dragDistSinceLastRelease += std::abs(dragDelta.y);
+    }
+    // Handle picks
+    else {
+
+      if (ImGui::IsMouseReleased(0)) {
+
+        ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
+        if (dragDistSinceLastRelease < .01) {
+          ImVec2 p = ImGui::GetMousePos();
+          evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+        }
+
+        dragDistSinceLastRelease = 0.0;
+      }
     }
   }
 }
@@ -138,7 +253,15 @@ void drawStructures() {
 
   for (auto cat : state::structureCategories) {
     for (auto x : cat.second) {
-      x.second->draw();
+
+      // Draw the pick buffer for debugging purposes
+      if (options::debugDrawPickBuffer) {
+        x.second->drawPick();
+      }
+      // The normal case
+      else {
+        x.second->draw();
+      }
     }
   }
 }
@@ -158,6 +281,13 @@ void buildPolyscopeGui() {
     screenshot();
   }
   ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+  // == Debugging-related options
+  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  if (ImGui::TreeNode("debug")) {
+    ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
+    ImGui::TreePop();
+  }
 
   ImGui::End();
 }
@@ -219,6 +349,9 @@ bool checkStructureNameInUse(std::string name, bool throwError = true) {
 
 void draw(bool withUI = true) {
 
+  // Ensure the default framebuffer is bound
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
   // Clear out the gui
   glViewport(0, 0, view::bufferWidth, view::bufferHeight);
   glClearColor(view::bgColor[0], view::bgColor[1], view::bgColor[2], view::bgColor[3]);
@@ -260,6 +393,7 @@ void show() {
     glfwPollEvents();
     imguirender::ImGui_ImplGlfwGL3_NewFrame();
 
+    pick::resetPick();
     processMouseEvents();
 
     // Build the GUI components
@@ -458,7 +592,7 @@ void screenshot(std::string filename) {
   int h = viewport[3];
 
 
-  size_t buffSize = w*h*3;
+  size_t buffSize = w * h * 3;
   unsigned char* buff = new unsigned char[buffSize];
   glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, buff);
   saveImage(filename, buff, w, h, 3);

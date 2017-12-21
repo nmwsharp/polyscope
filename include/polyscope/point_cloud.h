@@ -22,6 +22,7 @@ class PointCloud : public Structure {
 
   // Do setup work related to drawing, including allocating openGL data
   virtual void prepare() override;
+  virtual void preparePick() override;
 
   // Build the imgui display
   virtual void drawUI() override;
@@ -49,6 +50,10 @@ class PointCloud : public Structure {
 
   // Drawing related things
   gl::GLProgram* program = nullptr;
+  gl::GLProgram* pickProgram = nullptr;
+
+  // Helpers
+  void setPointCloudBillboardUniforms(gl::GLProgram* p, bool withLight);
 };
 
 }  // namespace polyscope

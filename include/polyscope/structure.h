@@ -25,6 +25,7 @@ class Structure {
 
   // Do setup work related to drawing, including allocating openGL data
   virtual void prepare() = 0;
+  virtual void preparePick() = 0;
 
   // Build the imgui display
   virtual void drawUI() = 0;

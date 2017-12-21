@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/colors.h"
@@ -65,6 +66,8 @@ class GLProgram {
         void setAttribute(std::string name, const std::vector<double> &data, bool update = false,
                           int offset = 0, int size = -1);
         void setAttribute(std::string name, const std::vector<int> &data, bool update = false,
+                          int offset = 0, int size = -1);
+        void setAttribute(std::string name, const std::vector<uint32_t> &data, bool update = false,
                           int offset = 0, int size = -1);
 
         // Textures

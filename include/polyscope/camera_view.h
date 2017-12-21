@@ -37,6 +37,7 @@ class CameraView : public Structure {
 
   // Do setup work related to drawing, including allocating openGL data
   virtual void prepare() override;
+  virtual void preparePick() override;
 
   // Build the imgui display
   virtual void drawUI() override;

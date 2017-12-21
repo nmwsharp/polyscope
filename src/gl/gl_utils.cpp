@@ -293,6 +293,9 @@ void GLProgram::createBuffers() {
       case GLData::Int:
         glVertexAttribPointer(a.location, 1, GL_INT, 0, 0, 0);
         break;
+      case GLData::UInt:
+        glVertexAttribPointer(a.location, 1, GL_UNSIGNED_INT, 0, 0, 0);
+        break;
       case GLData::Vector2Float:
         glVertexAttribPointer(a.location, 2, GL_FLOAT, 0, 0, 0);
         break;
@@ -671,6 +674,50 @@ void GLProgram::setAttribute(std::string name, const std::vector<int>& data,
             " with wrong type. Actual type: " +
             std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
             std::to_string(static_cast<int>(GLData::Int)));
+      }
+      return;
+    }
+  }
+
+  throw std::invalid_argument("No attribute with name " + name);
+}
+
+void GLProgram::setAttribute(std::string name, const std::vector<uint32_t>& data,
+                             bool update, int offset, int size) {
+  // FIXME I've seen strange bugs when using int's in shaders. Need to figure
+  // out it it's my shaders or something wrong with this function
+
+  // Convert data to GL_UINT (probably does nothing)
+  std::vector<GLuint> intData(data.size());
+  for (unsigned int i = 0; i < data.size(); i++) {
+    intData[i] = static_cast<GLuint>(data[i]);
+  }
+
+  for (GLAttribute& a : attributes) {
+    if (a.name == name) {
+      if (a.type == GLData::UInt) {
+        glBindVertexArray(vaoHandle);
+        glBindBuffer(GL_ARRAY_BUFFER, a.VBOLoc);
+        if (update) {
+          // TODO: Allow modifications to non-contiguous memory
+          offset *= sizeof(GLuint);
+          if (size == -1)
+            size = a.dataSize * sizeof(GLuint);
+          else
+            size *= sizeof(GLuint);
+
+          glBufferSubData(GL_ARRAY_BUFFER, offset, size, &intData[0]);
+        } else {
+          glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLuint),
+                       &intData[0], GL_STATIC_DRAW);
+          a.dataSize = data.size();
+        }
+      } else {
+        throw std::invalid_argument(
+            "Tried to set GLAttribute named " + name +
+            " with wrong type. Actual type: " +
+            std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
+            std::to_string(static_cast<int>(GLData::UInt)));
       }
       return;
     }

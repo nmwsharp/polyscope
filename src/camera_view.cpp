@@ -96,6 +96,8 @@ Vector3 CameraView::location() { return toV(parameters.getPosition()); }
 
 void CameraView::prepare() {}
 
+void CameraView::preparePick() {}
+
 void CameraView::prepareCameraSkeleton() {
   // Create the GL program
   cameraSkeletonProgram = new gl::GLProgram(

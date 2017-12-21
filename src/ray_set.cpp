@@ -132,6 +132,8 @@ void RaySet::prepare() {
   viewIntervalFactor = clamp(maxReasonableViewRays / (.5 * points.size()), 0.0, 1.0); 
 }
 
+void RaySet::preparePick() {}
+
 void RaySet::drawSharedStructureUI() {}
 
 void RaySet::drawUI() {

@@ -94,6 +94,9 @@ void SurfaceMesh::prepare() {
   fillGeometryBuffers();
 }
 
+void SurfaceMesh::preparePick() {
+}
+
 void SurfaceMesh::fillGeometryBuffers() {
   if (shadeStyle == ShadeStyle::SMOOTH) {
     fillGeometryBuffersSmooth();

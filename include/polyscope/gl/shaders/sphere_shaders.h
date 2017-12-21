@@ -309,3 +309,56 @@ static const FragShader SHINY_SPHERE_COLORED_FRAG_SHADER = {
     )
 };
 
+
+static const FragShader PLAIN_SPHERE_COLORED_FRAG_SHADER = {
+    
+    // uniforms
+    {
+        {"u_camRight", GLData::Vector3Float},
+        {"u_camUp", GLData::Vector3Float},
+        {"u_camZ", GLData::Vector3Float},
+    }, 
+
+    // attributes
+    {
+    },
+    
+    // textures 
+    {
+    },
+    
+    // output location
+    "outputF",
+ 
+    // source
+    GLSL(150,
+        uniform vec3 u_eye;
+        // uniform vec3 u_light;
+        uniform vec3 u_lightCenter;
+        uniform float u_lightDist;
+        uniform vec3 u_camRight;
+        uniform vec3 u_camUp;
+        uniform vec3 u_camZ;
+        in vec3 colorToFrag;
+        in vec3 worldPosToFrag;
+        in vec2 boxCoord;
+        out vec4 outputF;
+
+        // Forward declarations of methods from <shaders/common.h>
+        // vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 light, vec3 eye );
+        vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
+
+        void main()
+        {
+
+           float r = sqrt(boxCoord.x*boxCoord.x + boxCoord.y*boxCoord.y);
+           if(r > 1.0) {
+               discard;
+           }
+
+           outputF = vec4(colorToFrag, 1.0);
+        }
+    )
+};
+
+
