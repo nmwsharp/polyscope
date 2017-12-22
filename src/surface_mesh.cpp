@@ -3,16 +3,19 @@
 #include "polyscope/gl/colors.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/surface_shaders.h"
+#include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 
 // Quantities
+#include "polyscope/surface_color_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
-#include "polyscope/surface_color_quantity.h"
 
 #include "imgui.h"
 
 using namespace geometrycentral;
+using std::cout;
+using std::endl;
 
 namespace polyscope {
 
@@ -26,6 +29,7 @@ SurfaceMesh::SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_)
   surfaceColor = getNextPaletteColor();
 
   prepare();
+  preparePick();
 }
 
 SurfaceMesh::~SurfaceMesh() {
@@ -76,14 +80,25 @@ void SurfaceMesh::draw() {
   }
 }
 
-void SurfaceMesh::drawPick() {}
+void SurfaceMesh::drawPick() {
+  if (!enabled) {
+    return;
+  }
+
+  // Set uniforms
+  glm::mat4 viewMat = view::getCameraViewMatrix();
+  pickProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+
+  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
+  pickProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
+
+  pickProgram->draw();
+}
 
 void SurfaceMesh::prepare() {
   // It not quantity is coloring the surface, draw with a default color
   if (activeSurfaceQuantity == nullptr) {
-    program =
-        new gl::GLProgram(&PLAIN_SURFACE_VERT_SHADER,
-                          &PLAIN_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
+    program = new gl::GLProgram(&PLAIN_SURFACE_VERT_SHADER, &PLAIN_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
   }
   // If some quantity is responsible for coloring the surface, prepare it
   else {
@@ -95,6 +110,75 @@ void SurfaceMesh::prepare() {
 }
 
 void SurfaceMesh::preparePick() {
+
+  if (!mesh->isSimplicial()) {
+    // TODO. This should be entirely possible by adding some logic to avoid drawing pick colors for virtual
+    // triangulation edges, but hasn't been implemented yet.
+    error("Don't know how to pick from non-triangle mesh");
+  }
+
+  // Create a new program
+  pickProgram = new gl::GLProgram(&PICK_SURFACE_VERT_SHADER, &PICK_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
+
+  // Get element indices
+  size_t totalPickElements = mesh->nVertices() + mesh->nFaces() + mesh->nEdges() + mesh->nHalfedges();
+  size_t pickStart = pick::requestPickBufferRange(this, totalPickElements);
+  facePickIndStart = mesh->nVertices();
+  edgePickIndStart = facePickIndStart + mesh->nFaces();
+  halfedgePickIndStart = edgePickIndStart + mesh->nEdges();
+
+  // Fill buffers
+  std::vector<Vector3> positions;
+  std::vector<Vector3> bcoord;
+  std::vector<std::array<Vector3, 3>> vertexColors, edgeColors, halfedgeColors;
+  std::vector<Vector3> faceColor;
+
+  // Use natural indices
+  VertexData<size_t> vInd = mesh->getVertexIndices() + pickStart;
+  FaceData<size_t> fInd = mesh->getFaceIndices() + facePickIndStart;
+  EdgeData<size_t> eInd = mesh->getEdgeIndices() + edgePickIndStart;
+  HalfedgeData<size_t> heInd = mesh->getHalfedgeIndices() + halfedgePickIndStart;
+
+  for (FacePtr f : mesh->faces()) {
+
+    // Build all quantities
+    std::array<Vector3, 3> vColor, eColor, heColor;
+    size_t i = 0;
+    for (HalfedgePtr he : f.adjacentHalfedges()) {
+
+      VertexPtr v = he.vertex();
+      EdgePtr e = he.edge();
+
+      // Want just one copy of positions and face color, so we can build it in the usual way
+      positions.push_back(geometry->position(v));
+      faceColor.push_back(pick::indToVec(fInd[f]));
+
+      vColor[i] = pick::indToVec(vInd[v]);
+      eColor[i] = pick::indToVec(eInd[e]);
+      heColor[i] = pick::indToVec(heInd[he]);
+      i++;
+    }
+
+    // Push three copies of the values needed at each vertex
+    for (int j = 0; j < 3; j++) {
+      vertexColors.push_back(vColor);
+      edgeColors.push_back(eColor);
+      halfedgeColors.push_back(heColor);
+    }
+
+    // Just one copy of barycoords needed
+    bcoord.push_back(Vector3{1.0, 0.0, 0.0});
+    bcoord.push_back(Vector3{0.0, 1.0, 0.0});
+    bcoord.push_back(Vector3{0.0, 0.0, 1.0});
+  }
+
+  // Store data in buffers
+  pickProgram->setAttribute("a_position", positions);
+  pickProgram->setAttribute("a_barycoord", bcoord);
+  pickProgram->setAttribute<Vector3, 3>("a_vertexColors", vertexColors);
+  pickProgram->setAttribute<Vector3, 3>("a_edgeColors", edgeColors);
+  pickProgram->setAttribute<Vector3, 3>("a_halfedgeColors", halfedgeColors);
+  pickProgram->setAttribute("a_faceColor", faceColor);
 }
 
 void SurfaceMesh::fillGeometryBuffers() {
@@ -189,18 +273,17 @@ void SurfaceMesh::drawSharedStructureUI() {}
 void SurfaceMesh::drawPickUI(size_t localPickID) {}
 
 void SurfaceMesh::drawUI() {
-  ImGui::PushID(name.c_str());  // ensure there are no conflicts with
-                                // identically-named labels
+  ImGui::PushID(name.c_str()); // ensure there are no conflicts with
+                               // identically-named labels
 
   if (ImGui::TreeNode(name.c_str())) {
     // enabled = true;
 
     ImGui::Checkbox("Enabled", &enabled);
     ImGui::SameLine();
-    ImGui::ColorEdit3("Surface color", (float*)&surfaceColor,
-                      ImGuiColorEditFlags_NoInputs);
+    ImGui::ColorEdit3("Surface color", (float*)&surfaceColor, ImGuiColorEditFlags_NoInputs);
 
-    {  // Flat shading or smooth shading?
+    { // Flat shading or smooth shading?
       ImGui::Checkbox("Smooth shade", &ui_smoothshade);
       if (ui_smoothshade && shadeStyle == ShadeStyle::FLAT) {
         shadeStyle = ShadeStyle::SMOOTH;
@@ -213,7 +296,7 @@ void SurfaceMesh::drawUI() {
       ImGui::SameLine();
     }
 
-    {  // Edge width
+    { // Edge width
       ImGui::Checkbox("Show edges", &showEdges);
       if (showEdges) {
         edgeWidth = 0.01;
@@ -242,15 +325,13 @@ double SurfaceMesh::lengthScale() {
 
   double lengthScale = 0.0;
   for (VertexPtr v : mesh->vertices()) {
-    lengthScale = std::max(
-        lengthScale, geometrycentral::norm2(geometry->position(v) - center));
+    lengthScale = std::max(lengthScale, geometrycentral::norm2(geometry->position(v) - center));
   }
 
   return 2 * std::sqrt(lengthScale);
 }
 
-std::tuple<geometrycentral::Vector3, geometrycentral::Vector3>
-SurfaceMesh::boundingBox() {
+std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> SurfaceMesh::boundingBox() {
   Vector3 min = Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
   Vector3 max = -Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
 
@@ -261,14 +342,14 @@ SurfaceMesh::boundingBox() {
 
   return std::make_tuple(min, max);
 }
-  
+
 void SurfaceMesh::updateGeometryPositions(Geometry<Euclidean>* newGeometry) {
 
   VertexData<Vector3> newPositions;
   newGeometry->getVertexPositions(newPositions);
 
   VertexData<Vector3> myNewPositions = transfer.transfer(newPositions);
-  for(VertexPtr v : mesh->vertices()) { 
+  for (VertexPtr v : mesh->vertices()) {
     geometry->position(v) = myNewPositions[v];
   }
 
@@ -277,15 +358,12 @@ void SurfaceMesh::updateGeometryPositions(Geometry<Euclidean>* newGeometry) {
   prepare();
 }
 
-SurfaceQuantity::SurfaceQuantity(std::string name_, SurfaceMesh* mesh_)
-    : name(name_), parent(mesh_) {}
-SurfaceQuantityThatDrawsFaces::SurfaceQuantityThatDrawsFaces(std::string name_,
-                                                             SurfaceMesh* mesh_)
+SurfaceQuantity::SurfaceQuantity(std::string name_, SurfaceMesh* mesh_) : name(name_), parent(mesh_) {}
+SurfaceQuantityThatDrawsFaces::SurfaceQuantityThatDrawsFaces(std::string name_, SurfaceMesh* mesh_)
     : SurfaceQuantity(name_, mesh_) {}
 SurfaceQuantity::~SurfaceQuantity() {}
 
-void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value,
-                              DataType type) {
+void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value, DataType type) {
   // Delete old if in use
   bool wasEnabled = false;
   if (quantities.find(name) != quantities.end()) {
@@ -293,19 +371,17 @@ void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value,
     removeQuantity(name);
   }
 
-  SurfaceScalarQuantity* q =
-      new SurfaceScalarVertexQuantity(name, value, this, type);
+  SurfaceScalarQuantity* q = new SurfaceScalarVertexQuantity(name, value, this, type);
   quantities[name] = q;
-  
-  // Re-enable the quantity if we're replacing an enabled quantity 
-  if(wasEnabled) {
+
+  // Re-enable the quantity if we're replacing an enabled quantity
+  if (wasEnabled) {
     q->enabled = true;
     setActiveSurfaceQuantity(q);
   }
 }
 
-void SurfaceMesh::addQuantity(std::string name, FaceData<double>& value,
-                              DataType type) {
+void SurfaceMesh::addQuantity(std::string name, FaceData<double>& value, DataType type) {
   // Delete old if in use
   bool wasEnabled = false;
   if (quantities.find(name) != quantities.end()) {
@@ -313,19 +389,17 @@ void SurfaceMesh::addQuantity(std::string name, FaceData<double>& value,
     removeQuantity(name);
   }
 
-  SurfaceScalarQuantity* q =
-      new SurfaceScalarFaceQuantity(name, value, this, type);
+  SurfaceScalarQuantity* q = new SurfaceScalarFaceQuantity(name, value, this, type);
   quantities[name] = q;
-  
-  // Re-enable the quantity if we're replacing an enabled quantity 
-  if(wasEnabled) {
+
+  // Re-enable the quantity if we're replacing an enabled quantity
+  if (wasEnabled) {
     q->enabled = true;
     setActiveSurfaceQuantity(q);
   }
 }
 
-void SurfaceMesh::addQuantity(std::string name, EdgeData<double>& value,
-                              DataType type) {
+void SurfaceMesh::addQuantity(std::string name, EdgeData<double>& value, DataType type) {
   // Delete old if in use
   bool wasEnabled = false;
   if (quantities.find(name) != quantities.end()) {
@@ -333,19 +407,17 @@ void SurfaceMesh::addQuantity(std::string name, EdgeData<double>& value,
     removeQuantity(name);
   }
 
-  SurfaceScalarQuantity* q =
-      new SurfaceScalarEdgeQuantity(name, value, this, type);
+  SurfaceScalarQuantity* q = new SurfaceScalarEdgeQuantity(name, value, this, type);
   quantities[name] = q;
-  
-  // Re-enable the quantity if we're replacing an enabled quantity 
-  if(wasEnabled) {
+
+  // Re-enable the quantity if we're replacing an enabled quantity
+  if (wasEnabled) {
     q->enabled = true;
     setActiveSurfaceQuantity(q);
   }
 }
 
-void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value,
-                              DataType type) {
+void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value, DataType type) {
   // Delete old if in use
   bool wasEnabled = false;
   if (quantities.find(name) != quantities.end()) {
@@ -353,17 +425,16 @@ void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value,
     removeQuantity(name);
   }
 
-  SurfaceScalarQuantity* q =
-      new SurfaceScalarHalfedgeQuantity(name, value, this, type);
+  SurfaceScalarQuantity* q = new SurfaceScalarHalfedgeQuantity(name, value, this, type);
   quantities[name] = q;
 
-  // Re-enable the quantity if we're replacing an enabled quantity 
-  if(wasEnabled) {
+  // Re-enable the quantity if we're replacing an enabled quantity
+  if (wasEnabled) {
     q->enabled = true;
     setActiveSurfaceQuantity(q);
   }
 }
-  
+
 void SurfaceMesh::addColorQuantity(std::string name, VertexData<Vector3>& value) {
 
   bool wasEnabled = false;
@@ -372,39 +443,33 @@ void SurfaceMesh::addColorQuantity(std::string name, VertexData<Vector3>& value)
     removeQuantity(name);
   }
 
-  SurfaceColorQuantity* q =
-      new SurfaceColorVertexQuantity(name, value, this);
+  SurfaceColorQuantity* q = new SurfaceColorVertexQuantity(name, value, this);
   quantities[name] = q;
 
-  // Re-enable the quantity if we're replacing an enabled quantity 
-  if(wasEnabled) {
+  // Re-enable the quantity if we're replacing an enabled quantity
+  if (wasEnabled) {
     q->enabled = true;
     setActiveSurfaceQuantity(q);
   }
 }
 
-void SurfaceMesh::addVectorQuantity(std::string name,
-                                    VertexData<Vector3>& value,
-                                    VectorType vectorType) {
+void SurfaceMesh::addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType) {
   // Delete old if in use
   if (quantities.find(name) != quantities.end()) {
     removeQuantity(name);
   }
 
-  SurfaceVectorQuantity* q =
-      new SurfaceVectorQuantity(name, value, this, vectorType);
+  SurfaceVectorQuantity* q = new SurfaceVectorQuantity(name, value, this, vectorType);
   quantities[name] = q;
 }
 
-void SurfaceMesh::addVectorQuantity(std::string name, FaceData<Vector3>& value,
-                                    VectorType vectorType) {
+void SurfaceMesh::addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType) {
   // Delete old if in use
   if (quantities.find(name) != quantities.end()) {
     removeQuantity(name);
   }
 
-  SurfaceVectorQuantity* q =
-      new SurfaceVectorQuantity(name, value, this, vectorType);
+  SurfaceVectorQuantity* q = new SurfaceVectorQuantity(name, value, this, vectorType);
   quantities[name] = q;
 }
 
@@ -434,4 +499,4 @@ void SurfaceMesh::clearActiveSurfaceQuantity() {
   }
 }
 
-}  // namespace polyscope
+} // namespace polyscope

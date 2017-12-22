@@ -100,7 +100,7 @@ void PointCloud::preparePick() {
 
   // Create a new pick program
   safeDelete(pickProgram);
-  pickProgram = new gl::GLProgram(&PASSTHRU_SPHERE_COLORED_VERT_SHADER, &SPHERE_GEOM_COLORED_BILLBOARD_SHADER,
+  pickProgram = new gl::GLProgram(&PASSTHRU_SPHERE_COLORED_VERT_SHADER, &SPHERE_GEOM_PLAIN_COLORED_BILLBOARD_SHADER,
                                   &PLAIN_SPHERE_COLORED_FRAG_SHADER, gl::DrawMode::Points);
 
   // Fill an index buffer

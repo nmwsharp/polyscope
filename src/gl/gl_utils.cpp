@@ -12,34 +12,26 @@ namespace gl {
 
 GLuint GLProgram::commonShaderHandle = 0;
 
-GLProgram::GLProgram(const VertShader* vShader, const FragShader* fShader,
-                     DrawMode dm)
+GLProgram::GLProgram(const VertShader* vShader, const FragShader* fShader, DrawMode dm)
     : GLProgram(vShader, nullptr, nullptr, nullptr, fShader, dm, 0) {}
 
-GLProgram::GLProgram(const VertShader* vShader, const GeomShader* gShader,
-                     const FragShader* fShader, DrawMode dm)
+GLProgram::GLProgram(const VertShader* vShader, const GeomShader* gShader, const FragShader* fShader, DrawMode dm)
     : GLProgram(vShader, nullptr, nullptr, gShader, fShader, dm, 0) {}
 
-GLProgram::GLProgram(const VertShader* vShader, const TessShader* tShader,
+GLProgram::GLProgram(const VertShader* vShader, const TessShader* tShader, const FragShader* fShader, DrawMode dm,
+                     int patchVertices)
+    : GLProgram(vShader, tShader, nullptr, nullptr, fShader, dm, patchVertices) {}
+
+GLProgram::GLProgram(const VertShader* vShader, const EvalShader* eShader, const FragShader* fShader, DrawMode dm,
+                     int patchVertices)
+    : GLProgram(vShader, nullptr, eShader, nullptr, fShader, dm, patchVertices) {}
+
+GLProgram::GLProgram(const VertShader* vShader, const TessShader* tShader, const EvalShader* eShader,
                      const FragShader* fShader, DrawMode dm, int patchVertices)
-    : GLProgram(vShader, tShader, nullptr, nullptr, fShader, dm,
-                patchVertices) {}
+    : GLProgram(vShader, tShader, eShader, nullptr, fShader, dm, patchVertices) {}
 
-GLProgram::GLProgram(const VertShader* vShader, const EvalShader* eShader,
-                     const FragShader* fShader, DrawMode dm, int patchVertices)
-    : GLProgram(vShader, nullptr, eShader, nullptr, fShader, dm,
-                patchVertices) {}
-
-GLProgram::GLProgram(const VertShader* vShader, const TessShader* tShader,
-                     const EvalShader* eShader, const FragShader* fShader,
-                     DrawMode dm, int patchVertices)
-    : GLProgram(vShader, tShader, eShader, nullptr, fShader, dm,
-                patchVertices) {}
-
-GLProgram::GLProgram(const VertShader* vShader, const TessShader* tShader,
-                     const EvalShader* eShader, const GeomShader* gShader,
-                     const FragShader* fShader, DrawMode dm,
-                     int patchVertices) {
+GLProgram::GLProgram(const VertShader* vShader, const TessShader* tShader, const EvalShader* eShader,
+                     const GeomShader* gShader, const FragShader* fShader, DrawMode dm, int patchVertices) {
   vertShader = vShader;
   tessShader = tShader;
   evalShader = eShader;
@@ -49,17 +41,15 @@ GLProgram::GLProgram(const VertShader* vShader, const TessShader* tShader,
   GLint maxPatchVertices;
   glGetIntegerv(GL_MAX_PATCH_VERTICES, &maxPatchVertices);
   if (patchVertices > maxPatchVertices) {
-    throw std::invalid_argument(
-        "Requested number of patch vertices (" + std::to_string(patchVertices) +
-        ") is greater than the number supported by the tessellator (" +
-        std::to_string(maxPatchVertices));
+    throw std::invalid_argument("Requested number of patch vertices (" + std::to_string(patchVertices) +
+                                ") is greater than the number supported by the tessellator (" +
+                                std::to_string(maxPatchVertices));
   }
 
   nPatchVertices = patchVertices;
 
   drawMode = dm;
-  if (dm == DrawMode::IndexedLines || dm == DrawMode::IndexedLineStrip ||
-      dm == DrawMode::IndexedLineStripAdjacency ||
+  if (dm == DrawMode::IndexedLines || dm == DrawMode::IndexedLineStrip || dm == DrawMode::IndexedLineStripAdjacency ||
       dm == DrawMode::IndexedTriangles) {
     useIndex = true;
   }
@@ -144,8 +134,7 @@ void GLProgram::addUniqueAttribute(ShaderAttribute newAttribute) {
       return;
     }
   }
-  attributes.push_back(
-      GLAttribute{newAttribute.name, newAttribute.type, 777, 777, -1});
+  attributes.push_back(GLAttribute{newAttribute.name, newAttribute.type, 777, 777, -1, newAttribute.arrayCount});
 }
 
 void GLProgram::addUniqueUniform(ShaderUniform newUniform) {
@@ -163,8 +152,7 @@ void GLProgram::addUniqueTexture(ShaderTexture newTexture) {
       return;
     }
   }
-  textures.push_back(
-      GLTexture{newTexture.name, newTexture.dim, 777, 777, 777, false});
+  textures.push_back(GLTexture{newTexture.name, newTexture.dim, 777, 777, 777, false});
 }
 
 void GLProgram::deleteAttributeBuffer(GLAttribute attribute) {
@@ -173,9 +161,7 @@ void GLProgram::deleteAttributeBuffer(GLAttribute attribute) {
   glDeleteBuffers(1, &attribute.VBOLoc);
 }
 
-void GLProgram::freeTexture(GLTexture t) {
-  glDeleteTextures(1, &(t.bufferLoc));
-}
+void GLProgram::freeTexture(GLTexture t) { glDeleteTextures(1, &(t.bufferLoc)); }
 
 void GLProgram::compileGLProgram() {
   // Compile the vertex shader
@@ -283,29 +269,42 @@ void GLProgram::createBuffers() {
   for (GLAttribute& a : attributes) {
     glGenBuffers(1, &a.VBOLoc);
     glBindBuffer(GL_ARRAY_BUFFER, a.VBOLoc);
-    glEnableVertexAttribArray(a.location);
 
     // Choose the correct type for the buffer
-    switch (a.type) {
+    cout << "array count = " << a.arrayCount << endl;
+    cout << "location = " << a.location << endl;
+    cout << "VBO loc = " << a.VBOLoc << endl;
+    for (int iArrInd = 0; iArrInd < a.arrayCount; iArrInd++) {
+
+      glEnableVertexAttribArray(a.location + iArrInd);
+
+      switch (a.type) {
       case GLData::Float:
-        glVertexAttribPointer(a.location, 1, GL_FLOAT, 0, 0, 0);
+        glVertexAttribPointer(a.location + iArrInd, 1, GL_FLOAT, GL_FALSE, sizeof(float) * 1 * a.arrayCount,
+                              reinterpret_cast<void*>(sizeof(float) * 1 * iArrInd));
         break;
       case GLData::Int:
-        glVertexAttribPointer(a.location, 1, GL_INT, 0, 0, 0);
+        glVertexAttribPointer(a.location + iArrInd, 1, GL_INT, GL_FALSE, sizeof(int) * 1 * a.arrayCount,
+                              reinterpret_cast<void*>(sizeof(int) * 1 * iArrInd));
         break;
       case GLData::UInt:
-        glVertexAttribPointer(a.location, 1, GL_UNSIGNED_INT, 0, 0, 0);
+        glVertexAttribPointer(a.location + iArrInd, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(uint32_t) * 1 * a.arrayCount,
+                              reinterpret_cast<void*>(sizeof(uint32_t) * 1 * iArrInd));
         break;
       case GLData::Vector2Float:
-        glVertexAttribPointer(a.location, 2, GL_FLOAT, 0, 0, 0);
+        glVertexAttribPointer(a.location + iArrInd, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2 * a.arrayCount,
+                              reinterpret_cast<void*>(sizeof(float) * 2 * iArrInd));
         break;
       case GLData::Vector3Float:
-        glVertexAttribPointer(a.location, 3, GL_FLOAT, 0, 0, 0);
+        glVertexAttribPointer(a.location + iArrInd, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3 * a.arrayCount,
+                              reinterpret_cast<void*>(sizeof(float) * 3 * iArrInd));
         break;
       default:
         throw std::invalid_argument("Unrecognized GLAttribute type");
         break;
+      }
     }
+    // checkGLError();
   }
 
   // Create an index buffer, if we're using one
@@ -320,10 +319,9 @@ void GLProgram::createBuffers() {
   GLint nAvailTextureUnits;
   glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &nAvailTextureUnits);
   if ((int)textures.size() > nAvailTextureUnits) {
-    throw std::invalid_argument(
-        "Attempted to load more textures than the number of available texture "
-        "units (" +
-        std::to_string(nAvailTextureUnits) + ").");
+    throw std::invalid_argument("Attempted to load more textures than the number of available texture "
+                                "units (" +
+                                std::to_string(nAvailTextureUnits) + ").");
   }
 
   // Create texture buffers for each
@@ -349,8 +347,7 @@ void GLProgram::setUniform(std::string name, int val) {
       return;
     }
   }
-  throw std::invalid_argument("Tried to set nonexistent uniform with name " +
-                              name);
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
 // Set an unsigned integer
@@ -368,8 +365,7 @@ void GLProgram::setUniform(std::string name, unsigned int val) {
       return;
     }
   }
-  throw std::invalid_argument("Tried to set nonexistent uniform with name " +
-                              name);
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
 // Set a float
@@ -387,8 +383,7 @@ void GLProgram::setUniform(std::string name, float val) {
       return;
     }
   }
-  throw std::invalid_argument("Tried to set nonexistent uniform with name " +
-                              name);
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
 // Set a double --- WARNING casts down to float
@@ -406,8 +401,7 @@ void GLProgram::setUniform(std::string name, double val) {
       return;
     }
   }
-  throw std::invalid_argument("Tried to set nonexistent uniform with name " +
-                              name);
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
 // Set a 4x4 uniform matrix
@@ -425,8 +419,7 @@ void GLProgram::setUniform(std::string name, float* val) {
       return;
     }
   }
-  throw std::invalid_argument("Tried to set nonexistent uniform with name " +
-                              name);
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
 // Set a vector2 uniform
@@ -444,8 +437,7 @@ void GLProgram::setUniform(std::string name, Vector2 val) {
       return;
     }
   }
-  throw std::invalid_argument("Tried to set nonexistent uniform with name " +
-                              name);
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
 // Set a vector3 uniform
@@ -463,8 +455,7 @@ void GLProgram::setUniform(std::string name, Vector3 val) {
       return;
     }
   }
-  throw std::invalid_argument("Tried to set nonexistent uniform with name " +
-                              name);
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
 // Set a vector3 uniform from a float array
@@ -482,13 +473,11 @@ void GLProgram::setUniform(std::string name, std::array<float, 3> val) {
       return;
     }
   }
-  throw std::invalid_argument("Tried to set nonexistent uniform with name " +
-                              name);
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
 // Set a vec4 uniform
-void GLProgram::setUniform(std::string name, float x, float y, float z,
-                           float w) {
+void GLProgram::setUniform(std::string name, float x, float y, float z, float w) {
   glUseProgram(programHandle);
 
   for (GLUniform& u : uniforms) {
@@ -502,12 +491,10 @@ void GLProgram::setUniform(std::string name, float x, float y, float z,
       return;
     }
   }
-  throw std::invalid_argument("Tried to set nonexistent uniform with name " +
-                              name);
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
-void GLProgram::setAttribute(std::string name, const std::vector<Vector2>& data,
-                             bool update, int offset, int size) {
+void GLProgram::setAttribute(std::string name, const std::vector<Vector2>& data, bool update, int offset, int size) {
   // Reshape the vector
   // Right now, the data is probably laid out in this form already... but let's
   // not be overly clever and just reshape it.
@@ -532,27 +519,22 @@ void GLProgram::setAttribute(std::string name, const std::vector<Vector2>& data,
 
           glBufferSubData(GL_ARRAY_BUFFER, offset, size, &rawData[0]);
         } else {
-          glBufferData(GL_ARRAY_BUFFER, 2 * data.size() * sizeof(float),
-                       &rawData[0], GL_STATIC_DRAW);
+          glBufferData(GL_ARRAY_BUFFER, 2 * data.size() * sizeof(float), &rawData[0], GL_STATIC_DRAW);
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument(
-            "Tried to set GLAttribute named " + name +
-            " with wrong type. Actual type: " +
-            std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
-            std::to_string(static_cast<int>(GLData::Vector2Float)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name +
+                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
+                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::Vector2Float)));
       }
       return;
     }
   }
 
-  throw std::invalid_argument("Tried to set nonexistent attribute with name " +
-                              name);
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLProgram::setAttribute(std::string name, const std::vector<Vector3>& data,
-                             bool update, int offset, int size) {
+void GLProgram::setAttribute(std::string name, const std::vector<Vector3>& data, bool update, int offset, int size) {
   // Reshape the vector
   // Right now, the data is probably laid out in this form already... but let's
   // not be overly clever and just reshape it.
@@ -578,27 +560,22 @@ void GLProgram::setAttribute(std::string name, const std::vector<Vector3>& data,
 
           glBufferSubData(GL_ARRAY_BUFFER, offset, size, &rawData[0]);
         } else {
-          glBufferData(GL_ARRAY_BUFFER, 3 * data.size() * sizeof(float),
-                       &rawData[0], GL_STATIC_DRAW);
+          glBufferData(GL_ARRAY_BUFFER, 3 * data.size() * sizeof(float), &rawData[0], GL_STATIC_DRAW);
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument(
-            "Tried to set GLAttribute named " + name +
-            " with wrong type. Actual type: " +
-            std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
-            std::to_string(static_cast<int>(GLData::Vector3Float)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name +
+                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
+                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::Vector3Float)));
       }
       return;
     }
   }
 
-  throw std::invalid_argument("Tried to set nonexistent attribute with name " +
-                              name);
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLProgram::setAttribute(std::string name, const std::vector<double>& data,
-                             bool update, int offset, int size) {
+void GLProgram::setAttribute(std::string name, const std::vector<double>& data, bool update, int offset, int size) {
   // Convert input data to floats
   std::vector<float> floatData(data.size());
   for (unsigned int i = 0; i < data.size(); i++) {
@@ -620,16 +597,13 @@ void GLProgram::setAttribute(std::string name, const std::vector<double>& data,
 
           glBufferSubData(GL_ARRAY_BUFFER, offset, size, &floatData[0]);
         } else {
-          glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float),
-                       &floatData[0], GL_STATIC_DRAW);
+          glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &floatData[0], GL_STATIC_DRAW);
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument(
-            "Tried to set GLAttribute named " + name +
-            " with wrong type. Actual type: " +
-            std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
-            std::to_string(static_cast<float>(GLData::Float)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name +
+                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
+                                    "  Attempted type: " + std::to_string(static_cast<float>(GLData::Float)));
       }
       return;
     }
@@ -638,8 +612,7 @@ void GLProgram::setAttribute(std::string name, const std::vector<double>& data,
   throw std::invalid_argument("No attribute with name " + name);
 }
 
-void GLProgram::setAttribute(std::string name, const std::vector<int>& data,
-                             bool update, int offset, int size) {
+void GLProgram::setAttribute(std::string name, const std::vector<int>& data, bool update, int offset, int size) {
   // FIXME I've seen strange bugs when using int's in shaders. Need to figure
   // out it it's my shaders or something wrong with this function
 
@@ -664,16 +637,13 @@ void GLProgram::setAttribute(std::string name, const std::vector<int>& data,
 
           glBufferSubData(GL_ARRAY_BUFFER, offset, size, &intData[0]);
         } else {
-          glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLint),
-                       &intData[0], GL_STATIC_DRAW);
+          glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLint), &intData[0], GL_STATIC_DRAW);
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument(
-            "Tried to set GLAttribute named " + name +
-            " with wrong type. Actual type: " +
-            std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
-            std::to_string(static_cast<int>(GLData::Int)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name +
+                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
+                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::Int)));
       }
       return;
     }
@@ -682,8 +652,7 @@ void GLProgram::setAttribute(std::string name, const std::vector<int>& data,
   throw std::invalid_argument("No attribute with name " + name);
 }
 
-void GLProgram::setAttribute(std::string name, const std::vector<uint32_t>& data,
-                             bool update, int offset, int size) {
+void GLProgram::setAttribute(std::string name, const std::vector<uint32_t>& data, bool update, int offset, int size) {
   // FIXME I've seen strange bugs when using int's in shaders. Need to figure
   // out it it's my shaders or something wrong with this function
 
@@ -708,16 +677,13 @@ void GLProgram::setAttribute(std::string name, const std::vector<uint32_t>& data
 
           glBufferSubData(GL_ARRAY_BUFFER, offset, size, &intData[0]);
         } else {
-          glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLuint),
-                       &intData[0], GL_STATIC_DRAW);
+          glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLuint), &intData[0], GL_STATIC_DRAW);
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument(
-            "Tried to set GLAttribute named " + name +
-            " with wrong type. Actual type: " +
-            std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
-            std::to_string(static_cast<int>(GLData::UInt)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name +
+                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
+                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::UInt)));
       }
       return;
     }
@@ -726,8 +692,7 @@ void GLProgram::setAttribute(std::string name, const std::vector<uint32_t>& data
   throw std::invalid_argument("No attribute with name " + name);
 }
 
-void GLProgram::setTexture1D(std::string name, unsigned char* texData,
-                             unsigned int length) {
+void GLProgram::setTexture1D(std::string name, unsigned char* texData, unsigned int length) {
   throw std::invalid_argument("This code hasn't been testded yet.");
 
   // Find the right texture
@@ -741,14 +706,11 @@ void GLProgram::setTexture1D(std::string name, unsigned char* texData,
     glActiveTexture(GL_TEXTURE0 + t.index);
 
     if (t.dim != 1) {
-      throw std::invalid_argument(
-          "Tried to use texture with mismatched dimension " +
-          std::to_string(t.dim));
+      throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
     }
 
     glBindTexture(GL_TEXTURE_1D, t.bufferLoc);
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, length, 0, GL_RGB, GL_UNSIGNED_BYTE,
-                 texData);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, length, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
 
     // Set policies
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -762,8 +724,7 @@ void GLProgram::setTexture1D(std::string name, unsigned char* texData,
   throw std::invalid_argument("No texture with name " + name);
 }
 
-void GLProgram::setTexture2D(std::string name, unsigned char* texData,
-                             unsigned int width, unsigned int height,
+void GLProgram::setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                              bool useMipMap) {
   // Find the right texture
   for (GLTexture& t : textures) {
@@ -776,14 +737,11 @@ void GLProgram::setTexture2D(std::string name, unsigned char* texData,
     glActiveTexture(GL_TEXTURE0 + t.index);
 
     if (t.dim != 2) {
-      throw std::invalid_argument(
-          "Tried to use texture with mismatched dimension " +
-          std::to_string(t.dim));
+      throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
     }
 
     glBindTexture(GL_TEXTURE_2D, t.bufferLoc);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
-                 GL_UNSIGNED_BYTE, texData);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
 
     // Set policies
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -792,8 +750,7 @@ void GLProgram::setTexture2D(std::string name, unsigned char* texData,
 
     // Use mip maps
     if (useMipMap) {
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                      GL_LINEAR_MIPMAP_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
       glGenerateMipmap(GL_TEXTURE_2D);
     } else {
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -818,9 +775,7 @@ void GLProgram::setTextureFromColormap(std::string name, Colormap colormap) {
     glActiveTexture(GL_TEXTURE0 + t.index);
 
     if (t.dim != 1) {
-      throw std::invalid_argument(
-          "Tried to use texture with mismatched dimension " +
-          std::to_string(t.dim));
+      throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
     }
 
     glBindTexture(GL_TEXTURE_1D, t.bufferLoc);
@@ -834,8 +789,7 @@ void GLProgram::setTextureFromColormap(std::string name, Colormap colormap) {
       colorBuffer[3 * i + 2] = static_cast<float>(colormap.values[i].z);
     }
 
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, colormap.values.size(), 0, GL_RGB,
-                 GL_FLOAT, &(colorBuffer[0]));
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, colormap.values.size(), 0, GL_RGB, GL_FLOAT, &(colorBuffer[0]));
 
     // Set policies
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -851,9 +805,8 @@ void GLProgram::setTextureFromColormap(std::string name, Colormap colormap) {
 
 void GLProgram::setIndex(std::vector<uint3> indices) {
   if (!useIndex) {
-    throw std::invalid_argument(
-        "Tried to setIndex() when program drawMode does not use indexed "
-        "drawing");
+    throw std::invalid_argument("Tried to setIndex() when program drawMode does not use indexed "
+                                "drawing");
   }
 
   // Reshape the vector
@@ -868,9 +821,7 @@ void GLProgram::setIndex(std::vector<uint3> indices) {
   }
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-               3 * indices.size() * sizeof(unsigned int), rawData,
-               GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3 * indices.size() * sizeof(unsigned int), rawData, GL_STATIC_DRAW);
 
   delete[] rawData;
 }
@@ -879,14 +830,12 @@ void GLProgram::setIndex(std::vector<unsigned int> indices) {
   // (This version is typically used for indexed lines)
 
   if (!useIndex) {
-    throw std::invalid_argument(
-        "Tried to setIndex() when program drawMode does not use indexed "
-        "drawing");
+    throw std::invalid_argument("Tried to setIndex() when program drawMode does not use indexed "
+                                "drawing");
   }
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int),
-               &indices[0], GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
   indexSize = indices.size();
 }
 
@@ -905,14 +854,13 @@ void GLProgram::validateData() {
     if (a.dataSize < 0) {
       throw std::invalid_argument("Attribute " + a.name + " has not been set");
     }
-    if (attributeSize == -1) {  // first one we've seen
-      attributeSize = a.dataSize;
-    } else {  // not the first one we've seen
-      if (a.dataSize != attributeSize) {
-        throw std::invalid_argument(
-            "Attributes have inconsistent size. One attribute has size " +
-            std::to_string(attributeSize) + " and " + a.name + " has size " +
-            std::to_string(a.dataSize));
+    if (attributeSize == -1) { // first one we've seen
+      attributeSize = a.dataSize / a.arrayCount;
+    } else { // not the first one we've seen
+      if (a.dataSize / a.arrayCount != attributeSize) {
+        throw std::invalid_argument("Attributes have inconsistent size. One attribute has size " +
+                                    std::to_string(attributeSize) + " and " + a.name + " has size " +
+                                    std::to_string(a.dataSize));
       }
     }
   }
@@ -950,12 +898,12 @@ void GLProgram::activateTextures() {
     // Bind to the texture buffer
     GLenum targetType;
     switch (t.dim) {
-      case 1:
-        targetType = GL_TEXTURE_1D;
-        break;
-      case 2:
-        targetType = GL_TEXTURE_2D;
-        break;
+    case 1:
+      targetType = GL_TEXTURE_1D;
+      break;
+    case 2:
+      targetType = GL_TEXTURE_2D;
+      break;
     }
     glBindTexture(targetType, t.bufferLoc);
   }
@@ -970,46 +918,45 @@ void GLProgram::draw() {
   activateTextures();
 
   switch (drawMode) {
-    case DrawMode::Points:
-      glDrawArrays(GL_POINTS, 0, drawDataLength);
-      break;
-    case DrawMode::Triangles:
-      glDrawArrays(GL_TRIANGLES, 0, drawDataLength);
-      break;
-    case DrawMode::Lines:
-      glDrawArrays(GL_LINES, 0, drawDataLength);
-      break;
-    case DrawMode::TrianglesAdjacency:
-      glDrawArrays(GL_TRIANGLES_ADJACENCY, 0, drawDataLength);
-      break;
-    case DrawMode::Patches:
-      glPatchParameteri(GL_PATCH_VERTICES, nPatchVertices);
-      glDrawArrays(GL_PATCHES, 0, drawDataLength);
-      break;
-    case DrawMode::LinesAdjacency:
-      glDrawArrays(GL_LINES_ADJACENCY, 0, drawDataLength);
-      break;
-    case DrawMode::IndexedLines:
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-      glDrawElements(GL_LINES, drawDataLength, GL_UNSIGNED_INT, 0);
-      break;
-    case DrawMode::IndexedLineStrip:
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-      glDrawElements(GL_LINE_STRIP, drawDataLength, GL_UNSIGNED_INT, 0);
-      break;
-    case DrawMode::IndexedLinesAdjacency:
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-      glDrawElements(GL_LINES_ADJACENCY, drawDataLength, GL_UNSIGNED_INT, 0);
-      break;
-    case DrawMode::IndexedLineStripAdjacency:
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-      glDrawElements(GL_LINE_STRIP_ADJACENCY, drawDataLength, GL_UNSIGNED_INT,
-                     0);
-      break;
-    case DrawMode::IndexedTriangles:
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-      glDrawElements(GL_TRIANGLES, drawDataLength, GL_UNSIGNED_INT, 0);
-      break;
+  case DrawMode::Points:
+    glDrawArrays(GL_POINTS, 0, drawDataLength);
+    break;
+  case DrawMode::Triangles:
+    glDrawArrays(GL_TRIANGLES, 0, drawDataLength);
+    break;
+  case DrawMode::Lines:
+    glDrawArrays(GL_LINES, 0, drawDataLength);
+    break;
+  case DrawMode::TrianglesAdjacency:
+    glDrawArrays(GL_TRIANGLES_ADJACENCY, 0, drawDataLength);
+    break;
+  case DrawMode::Patches:
+    glPatchParameteri(GL_PATCH_VERTICES, nPatchVertices);
+    glDrawArrays(GL_PATCHES, 0, drawDataLength);
+    break;
+  case DrawMode::LinesAdjacency:
+    glDrawArrays(GL_LINES_ADJACENCY, 0, drawDataLength);
+    break;
+  case DrawMode::IndexedLines:
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+    glDrawElements(GL_LINES, drawDataLength, GL_UNSIGNED_INT, 0);
+    break;
+  case DrawMode::IndexedLineStrip:
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+    glDrawElements(GL_LINE_STRIP, drawDataLength, GL_UNSIGNED_INT, 0);
+    break;
+  case DrawMode::IndexedLinesAdjacency:
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+    glDrawElements(GL_LINES_ADJACENCY, drawDataLength, GL_UNSIGNED_INT, 0);
+    break;
+  case DrawMode::IndexedLineStripAdjacency:
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+    glDrawElements(GL_LINE_STRIP_ADJACENCY, drawDataLength, GL_UNSIGNED_INT, 0);
+    break;
+  case DrawMode::IndexedTriangles:
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+    glDrawElements(GL_TRIANGLES, drawDataLength, GL_UNSIGNED_INT, 0);
+    break;
   }
 
   checkGLError();
@@ -1023,8 +970,8 @@ void printShaderInfoLog(GLuint shaderHandle) {
 
   glGetShaderiv(shaderHandle, GL_INFO_LOG_LENGTH, &logLen);
 
-  if (logLen > 1) {  // for some reason we often get logs of length 1 with no
-                     // visible characters
+  if (logLen > 1) { // for some reason we often get logs of length 1 with no
+                    // visible characters
     log = (char*)malloc(logLen);
     glGetShaderInfoLog(shaderHandle, logLen, &chars, log);
     printf("Shader info log:\n%s\n", log);
@@ -1039,8 +986,8 @@ void printProgramInfoLog(GLuint handle) {
 
   glGetProgramiv(handle, GL_INFO_LOG_LENGTH, &logLen);
 
-  if (logLen > 1) {  // for some reason we often get logs of length 1 with no
-                     // visible characters
+  if (logLen > 1) { // for some reason we often get logs of length 1 with no
+                    // visible characters
     log = (char*)malloc(logLen);
     glGetProgramInfoLog(handle, logLen, &chars, log);
     printf("Program info log:\n%s\n", log);
@@ -1056,25 +1003,25 @@ void checkGLError(bool fatal) {
   while ((err = glGetError()) != GL_NO_ERROR) {
     std::cerr << "OpenGL Error!  Type: ";
     switch (err) {
-      case GL_NO_ERROR:
-        std::cerr << "No error";
-        break;
-      case GL_INVALID_ENUM:
-        std::cerr << "Invalid enum";
-        break;
-      case GL_INVALID_VALUE:
-        std::cerr << "Invalid value";
-        break;
-      case GL_INVALID_OPERATION:
-        std::cerr << "Invalid operation";
-        break;
-      // case GL_STACK_OVERFLOW:    std::cerr << "Stack overflow"; break;
-      // case GL_STACK_UNDERFLOW:   std::cerr << "Stack underflow"; break;
-      case GL_OUT_OF_MEMORY:
-        std::cerr << "Out of memory";
-        break;
-      default:
-        std::cerr << "Unknown error";
+    case GL_NO_ERROR:
+      std::cerr << "No error";
+      break;
+    case GL_INVALID_ENUM:
+      std::cerr << "Invalid enum";
+      break;
+    case GL_INVALID_VALUE:
+      std::cerr << "Invalid value";
+      break;
+    case GL_INVALID_OPERATION:
+      std::cerr << "Invalid operation";
+      break;
+    // case GL_STACK_OVERFLOW:    std::cerr << "Stack overflow"; break;
+    // case GL_STACK_UNDERFLOW:   std::cerr << "Stack underflow"; break;
+    case GL_OUT_OF_MEMORY:
+      std::cerr << "Out of memory";
+      break;
+    default:
+      std::cerr << "Unknown error";
     }
     std::cerr << std::endl;
 
@@ -1085,5 +1032,5 @@ void checkGLError(bool fatal) {
 #endif
 }
 
-}  // namespace gl
-}  // namespace polyscope
+} // namespace gl
+} // namespace polyscope

@@ -68,7 +68,7 @@ static const GeomShader SPHERE_GEOM_BILLBOARD_SHADER = {
     // source
     GLSL(150,
         layout(points) in;
-        layout(triangle_strip, max_vertices=100) out;
+        layout(triangle_strip, max_vertices=4) out;
         uniform mat4 u_viewMatrix;
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
@@ -138,7 +138,7 @@ static const GeomShader SPHERE_GEOM_COLORED_BILLBOARD_SHADER = {
     // source
     GLSL(150,
         layout(points) in;
-        layout(triangle_strip, max_vertices=100) out;
+        layout(triangle_strip, max_vertices=4) out;
         in vec3 Color[];
         uniform mat4 u_viewMatrix;
         uniform mat4 u_projMatrix;
@@ -193,6 +193,77 @@ static const GeomShader SPHERE_GEOM_COLORED_BILLBOARD_SHADER = {
         }
     )
 };
+
+static const GeomShader SPHERE_GEOM_PLAIN_COLORED_BILLBOARD_SHADER = {
+    
+    // uniforms
+    {
+        {"u_viewMatrix", GLData::Matrix44Float},
+        {"u_projMatrix", GLData::Matrix44Float},
+        {"u_pointRadius", GLData::Float},
+        {"u_camRight", GLData::Vector3Float},
+        {"u_camUp", GLData::Vector3Float},
+        {"u_camZ", GLData::Vector3Float},
+    }, 
+
+    // attributes
+    {
+    },
+
+    // source
+    GLSL(150,
+        layout(points) in;
+        layout(triangle_strip, max_vertices=4) out;
+        in vec3 Color[];
+        uniform mat4 u_viewMatrix;
+        uniform mat4 u_projMatrix;
+        uniform float u_pointRadius;
+        uniform vec3 u_camRight;
+        uniform vec3 u_camUp;
+        uniform vec3 u_camZ;
+        out vec3 colorToFrag;
+        out vec2 boxCoord;
+        void main()   {
+            mat4 PV = u_projMatrix * u_viewMatrix;
+
+            { // Lower left
+                vec4 worldPos = gl_in[0].gl_Position + vec4((-u_camUp - u_camRight) * u_pointRadius, 0.);
+                gl_Position = PV * worldPos;
+                colorToFrag = Color[0];
+                boxCoord = vec2(-1.,-1.);
+                EmitVertex();
+            }
+            
+            { // Lower right
+                vec4 worldPos = gl_in[0].gl_Position + vec4((-u_camUp + u_camRight) * u_pointRadius, 0.);
+                gl_Position = PV * worldPos;
+                colorToFrag = Color[0];
+                boxCoord = vec2(1.,-1.);
+                EmitVertex();
+            }
+            
+            { // Upper left
+                vec4 worldPos = gl_in[0].gl_Position + vec4((u_camUp - u_camRight) * u_pointRadius, 0.);
+                gl_Position = PV * worldPos;
+                colorToFrag = Color[0];
+                boxCoord = vec2(-1.,1.);
+                EmitVertex();
+            }
+            
+            { // Upper right
+                vec4 worldPos = gl_in[0].gl_Position + vec4((u_camUp + u_camRight) * u_pointRadius, 0.);
+                gl_Position = PV * worldPos;
+                colorToFrag = Color[0];
+                boxCoord = vec2(1.,1.);
+                EmitVertex();
+            }
+    
+            EndPrimitive();
+
+        }
+    )
+};
+
 
 
 static const FragShader SHINY_SPHERE_FRAG_SHADER = {

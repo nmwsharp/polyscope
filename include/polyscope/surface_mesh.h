@@ -109,6 +109,7 @@ class SurfaceMesh : public Structure {
 
   // Drawing related things
   gl::GLProgram* program = nullptr;
+  gl::GLProgram* pickProgram = nullptr;
 
  private:
   // Quantities
@@ -122,6 +123,12 @@ class SurfaceMesh : public Structure {
   SurfaceQuantityThatDrawsFaces* activeSurfaceQuantity =
       nullptr;  // a quantity that is respondible for drawing on the surface and
                 // overwrites `program` with its own shaders
+
+
+  // Picking-related
+  // Order of indexing: vertices, faces, edges, halfedges
+  // Within each set, uses the implicit ordering from the mesh data structure
+  size_t facePickIndStart, edgePickIndStart, halfedgePickIndStart;
 
   // Gui implementation details
   bool ui_smoothshade = true;

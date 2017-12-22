@@ -402,3 +402,124 @@ static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
 
     )
 };
+
+static const VertShader PICK_SURFACE_VERT_SHADER =  {
+    
+    // uniforms
+    {
+       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_projMatrix", GLData::Matrix44Float},
+    },
+
+    // attributes
+    {
+        {"a_position", GLData::Vector3Float},
+        {"a_barycoord", GLData::Vector3Float},
+        {"a_vertexColors", GLData::Vector3Float, 3},
+        {"a_edgeColors", GLData::Vector3Float, 3},
+        {"a_halfedgeColors", GLData::Vector3Float, 3},
+        {"a_faceColor", GLData::Vector3Float},
+    },
+
+    // source
+    GLSL(150,
+      uniform mat4 u_viewMatrix;
+      uniform mat4 u_projMatrix;
+
+      in vec3 a_position;
+      in vec3 a_barycoord;
+
+      in vec3 a_vertexColors[3];
+      in vec3 a_edgeColors[3];
+      in vec3 a_halfedgeColors[3];
+      in vec3 a_faceColor;
+
+      out vec3 Barycoord;
+      
+      flat out vec3 vertexColors[3];
+      flat out vec3 edgeColors[3];
+      flat out vec3 halfedgeColors[3];
+      flat out vec3 faceColor;
+
+      void main()
+      {
+          Barycoord = a_barycoord;
+
+          for(int i = 0; i < 3; i++) {
+              vertexColors[i] = a_vertexColors[i];
+              edgeColors[i] = a_edgeColors[i];
+              halfedgeColors[i] = a_halfedgeColors[i];
+          }
+          faceColor = a_faceColor;
+          
+          gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position, 1.);
+      }
+    )
+};
+
+static const FragShader PICK_SURFACE_FRAG_SHADER = {
+    
+    // uniforms
+    {
+    }, 
+
+    // attributes
+    {
+    },
+    
+    // textures 
+    {
+    },
+    
+    // output location
+    "outputF",
+    
+    // source 
+    GLSL(150,
+
+      in vec3 Barycoord;
+      
+      flat in vec3 vertexColors[3];
+      flat in vec3 edgeColors[3];
+      flat in vec3 halfedgeColors[3];
+      flat in vec3 faceColor;
+
+      out vec4 outputF;
+
+
+      void main()
+      {
+
+          // Parameters defining the pick shape (in barycentric 0-1 units)
+          float vertRadius = 0.2;
+          float edgeRadius = 0.1;
+          float halfedgeRadius = 0.2;
+
+          // Test vertices
+          for(int i = 0; i < 3; i++) {
+              if(Barycoord[i] > 1.0-vertRadius) {
+                outputF = vec4(vertexColors[i], 1.0);
+                return;
+              }
+          }
+
+          // Test edges and halfedges
+          for(int i = 0; i < 3; i++) {
+              float eDist = Barycoord[(i+2)%3];
+              if(eDist < edgeRadius) {
+                outputF = vec4(halfedgeColors[i], 1.0);
+                return;
+              }
+              if(eDist < halfedgeRadius) {
+                outputF = vec4(edgeColors[i], 1.0);
+                return;
+              }
+          }
+
+
+          // If neither of the above, fall back on the face
+          outputF = vec4(faceColor, 1.0);
+      }
+
+    )
+};
