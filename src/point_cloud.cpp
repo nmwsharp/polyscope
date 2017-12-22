@@ -9,6 +9,7 @@
 #include "imgui.h"
 
 using namespace geometrycentral;
+using std::cout; using std::endl;
 
 namespace polyscope {
 
@@ -104,10 +105,8 @@ void PointCloud::preparePick() {
 
   // Fill an index buffer
   std::vector<Vector3> pickColors;
-  for(size_t i = pickStart; i < pickStart + pickCount; i++) {
-    std::cout << "ind = " << i << std::endl;
+  for (size_t i = pickStart; i < pickStart + pickCount; i++) {
     Vector3 val = pick::indToVec(i);
-    printf("%20.15lf %20.15lf %20.15lf\n", val.x, val.y, val.z);
     pickColors.push_back(pick::indToVec(i));
   }
 
@@ -131,6 +130,16 @@ void PointCloud::drawUI() {
   ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
 
   ImGui::PopID();
+
+  // Draw pick UI
+  size_t pickInd;
+  if (pick::getCurrentPickElement(pickInd) == this) {
+    ImGui::Begin("Selected point", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+    ImGui::TextUnformatted("stuff");
+
+    ImGui::End();
+  }
 }
 
 double PointCloud::lengthScale() {

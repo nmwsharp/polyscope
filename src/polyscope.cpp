@@ -208,10 +208,10 @@ void evaluatePickQuery(int xPos, int yPos) {
 
   size_t ind = pick::vecToInd(geometrycentral::Vector3{result[0], result[1], result[2]});
 
-  if(ind == 0) {
-    std::cout << "no selection" << std::endl;
+  if (ind == 0) {
+    pick::resetPick();
   } else {
-    std::cout << "picked = " << ind << std::endl;
+    pick::setCurrentPickElement(ind, ImGui::GetIO().MouseDoubleClicked[0]);
   }
 }
 
@@ -393,7 +393,6 @@ void show() {
     glfwPollEvents();
     imguirender::ImGui_ImplGlfwGL3_NewFrame();
 
-    pick::resetPick();
     processMouseEvents();
 
     // Build the GUI components
