@@ -28,6 +28,12 @@ void resetPick() {
   currPickStructure = nullptr;
 }
 
+void clearPickIfStructureSelected(Structure* s) {
+  if(haveSelection && currPickStructure == s) {
+    resetPick();
+  }
+}
+
 Structure* getCurrentPickElement(size_t& localInd) {
 
   // Check if anything is selected at all
@@ -63,6 +69,7 @@ void setCurrentPickElement(size_t newPickInd, bool wasDoubleClick) {
   currPickStructure = nullptr;
   return;
 }
+
 
 size_t requestPickBufferRange(Structure* requestingStructure, size_t count) {
 

@@ -136,6 +136,8 @@ void RaySet::preparePick() {}
 
 void RaySet::drawSharedStructureUI() {}
 
+void RaySet::drawPickUI(size_t localPickID) {}
+
 void RaySet::drawUI() {
   if (ImGui::TreeNode(name.c_str())) {
     ImGui::Checkbox("Enabled", &enabled);

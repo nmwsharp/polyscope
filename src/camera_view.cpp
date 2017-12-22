@@ -169,6 +169,8 @@ void CameraView::drawSharedStructureUI() {
   ImGui::SliderFloat("Opaque", &globalImageTransparency, 0.0, 1.0, "%.2f");
 }
 
+void CameraView::drawPickUI(size_t localPickID) {}
+
 void CameraView::drawUI() {
   if (ImGui::TreeNode(name.c_str())) {
     ImGui::Checkbox("Enabled", &enabled);

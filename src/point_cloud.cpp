@@ -118,6 +118,16 @@ void PointCloud::preparePick() {
 
 void PointCloud::drawSharedStructureUI() {}
 
+void PointCloud::drawPickUI(size_t localPickID) {
+
+  ImGui::TextUnformatted(("#" + std::to_string(localPickID) + "  ").c_str());
+  ImGui::SameLine();
+  std::stringstream buffer;
+  buffer << points[localPickID];
+  ImGui::TextUnformatted(buffer.str().c_str());
+
+}
+
 void PointCloud::drawUI() {
 
   ImGui::PushID(name.c_str()); // ensure there are no conflicts with identically-named labels
@@ -131,15 +141,6 @@ void PointCloud::drawUI() {
 
   ImGui::PopID();
 
-  // Draw pick UI
-  size_t pickInd;
-  if (pick::getCurrentPickElement(pickInd) == this) {
-    ImGui::Begin("Selected point", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
-    ImGui::TextUnformatted("stuff");
-
-    ImGui::End();
-  }
 }
 
 double PointCloud::lengthScale() {

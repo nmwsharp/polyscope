@@ -334,6 +334,21 @@ void buildUserGui() {
   }
 }
 
+void buildPickGui() {
+  if (pick::haveSelection) {
+    ImGui::Begin("Selection", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    size_t pickInd;
+    Structure* structure = pick::getCurrentPickElement(pickInd);
+
+    ImGui::TextUnformatted((getStructureTypeName(structure->type) + ": " + structure->name).c_str());
+    ImGui::Separator();
+    structure->drawPickUI(pickInd);
+
+    ImGui::End();
+  }
+}
+} // namespace
+
 bool checkStructureNameInUse(std::string name, bool throwError = true) {
   for (const auto cat : state::structureCategories) {
     if (cat.second.find(name) != cat.second.end()) {
@@ -369,7 +384,6 @@ void draw(bool withUI = true) {
   glfwSwapBuffers(imguirender::mainWindow);
 }
 
-} // anonymous namespace
 
 void show() {
   view::resetCameraToDefault();
@@ -396,10 +410,11 @@ void show() {
     processMouseEvents();
 
     // Build the GUI components
-    // ImGui::ShowTestWindow();
+    ImGui::ShowTestWindow();
     buildPolyscopeGui();
     buildStructureGui();
     buildUserGui();
+    buildPickGui();
 
     // Process UI events
 
@@ -493,6 +508,7 @@ RaySet* getRaySet(std::string name) {
 void removeStructure(std::string name) {
   // Point cloud
   if (state::pointClouds.find(name) != state::pointClouds.end()) {
+    pick::clearPickIfStructureSelected(state::pointClouds.find(name)->second);
     delete state::pointClouds[name];
     state::pointClouds.erase(name);
     state::structureCategories[StructureType::PointCloud].erase(name);
@@ -502,6 +518,7 @@ void removeStructure(std::string name) {
 
   // Surface mesh
   if (state::surfaceMeshes.find(name) != state::surfaceMeshes.end()) {
+    pick::clearPickIfStructureSelected(state::surfaceMeshes.find(name)->second);
     delete state::surfaceMeshes[name];
     state::surfaceMeshes.erase(name);
     state::structureCategories[StructureType::SurfaceMesh].erase(name);
@@ -511,6 +528,7 @@ void removeStructure(std::string name) {
 
   // Camera view
   if (state::cameraViews.find(name) != state::cameraViews.end()) {
+    pick::clearPickIfStructureSelected(state::cameraViews.find(name)->second);
     delete state::cameraViews[name];
     state::cameraViews.erase(name);
     state::structureCategories[StructureType::CameraView].erase(name);
@@ -520,6 +538,7 @@ void removeStructure(std::string name) {
 
   // Ray set
   if (state::raySets.find(name) != state::raySets.end()) {
+    pick::clearPickIfStructureSelected(state::raySets.find(name)->second);
     delete state::raySets[name];
     state::raySets.erase(name);
     state::structureCategories[StructureType::RaySet].erase(name);
@@ -537,6 +556,7 @@ void removeAllStructures() {
   state::surfaceMeshes.clear();
   state::structureCategories.clear();
   updateStructureExtents();
+  pick::resetPick();
 }
 
 void updateStructureExtents() {

@@ -29,6 +29,7 @@ class Structure {
 
   // Build the imgui display
   virtual void drawUI() = 0;
+  virtual void drawPickUI(size_t localPickID) = 0;
   virtual void drawSharedStructureUI() = 0;
 
   // Render for picking

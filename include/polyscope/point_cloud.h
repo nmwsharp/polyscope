@@ -26,6 +26,7 @@ class PointCloud : public Structure {
 
   // Build the imgui display
   virtual void drawUI() override;
+  virtual void drawPickUI(size_t localPickID) override;
   virtual void drawSharedStructureUI() override;
 
   // Render for picking

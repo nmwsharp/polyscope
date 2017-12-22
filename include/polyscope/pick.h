@@ -26,6 +26,9 @@ Structure* getCurrentPickElement(size_t& localInd);
 
 void setCurrentPickElement(size_t pickInd, bool wasDoubleClick);
 
+// If something from this structure is selected, clear the selection (useful if a structure is being deleted)
+void clearPickIfStructureSelected(Structure* s);
+
 // Clear out picking related data
 void resetPick();
 

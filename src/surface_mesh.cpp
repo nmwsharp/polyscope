@@ -186,6 +186,8 @@ void SurfaceMesh::fillGeometryBuffersFlat() {
 
 void SurfaceMesh::drawSharedStructureUI() {}
 
+void SurfaceMesh::drawPickUI(size_t localPickID) {}
+
 void SurfaceMesh::drawUI() {
   ImGui::PushID(name.c_str());  // ensure there are no conflicts with
                                 // identically-named labels
