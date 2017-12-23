@@ -13,7 +13,8 @@ namespace pick {
 // The currently selected index from the pick buffer, if one is selected.
 extern size_t currPickInd;
 extern bool haveSelection;
-extern bool pickWasDoubleClick;
+extern bool pickWasDoubleClick; // note: structures may act on this and set it to false afterwards to ensure action only
+                                // happens once
 
 // Request 'count' contiguous indices for drawing a pick buffer. The return value is the start of the range.
 size_t requestPickBufferRange(Structure* requestingStructure, size_t count);

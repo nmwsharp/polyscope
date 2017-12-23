@@ -24,6 +24,7 @@ float CameraView::globalImageTransparency = 1.0;
 CameraView::CameraView(std::string name, CameraParameters p_)
     : Structure(name, StructureType::CameraView), parameters(p_) {
   prepareCameraSkeleton();
+  preparePick();
 }
 
 CameraView::~CameraView() {
@@ -217,6 +218,7 @@ void CameraView::drawPickUI(size_t localPickID) {
   // Fly to on a double click
   if (pick::pickWasDoubleClick) {
     view::startFlightTo(parameters, .3);
+    pick::pickWasDoubleClick = false; // consume the double click
   }
 
   ImGui::TextUnformatted(("Camera " + name).c_str());

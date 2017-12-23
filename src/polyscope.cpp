@@ -165,8 +165,18 @@ void init() {
 
 namespace {
 
+// Keep track of whether or not the last click was a double click.
+// ImGUI normally provides this for us, but we want to know about the RELEASE of a double click, while im ImGUI the flag
+// is only set for the down press. Use this variable to pass it forward.
+bool lastClickWasDouble = false;
 
 void evaluatePickQuery(int xPos, int yPos) {
+
+  // Be sure not to pick outside of buffer
+  if(xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
+    return;
+  }
+
 
   glBindFramebuffer(GL_FRAMEBUFFER, pickFramebuffer);
 
@@ -211,7 +221,7 @@ void evaluatePickQuery(int xPos, int yPos) {
   if (ind == 0) {
     pick::resetPick();
   } else {
-    pick::setCurrentPickElement(ind, ImGui::GetIO().MouseDoubleClicked[0]);
+    pick::setCurrentPickElement(ind, lastClickWasDouble);
   }
 }
 
@@ -220,6 +230,11 @@ float dragDistSinceLastRelease = 0.0;
 
 void processMouseEvents() {
   ImGuiIO& io = ImGui::GetIO();
+
+  if(ImGui::IsMouseClicked(0)) {
+    lastClickWasDouble = ImGui::IsMouseDoubleClicked(0);
+  }
+
   if (!io.WantCaptureMouse) {
 
     // Handle drags

@@ -13,9 +13,9 @@ int windowHeight = -1;
 int bufferWidth = -1;
 int bufferHeight = -1;
 double fov = 65.0;
-double nearClipRatio = 0.01;
+double nearClipRatio = 0.005;
 double farClipRatio = 20.0;
-std::array<float, 4> bgColor{{.7, .7, .7, 1.0}};
+std::array<float, 4> bgColor{{.8, .8, .8, 1.0}};
 
 glm::mat4x4 viewMat;
 
@@ -95,7 +95,7 @@ void resetCameraToDefault() {
                                      glm::vec3(0.0, 0.0, state::lengthScale));
 
   fov = 65.0;
-  nearClipRatio = 0.01;
+  nearClipRatio = 0.005;
   farClipRatio = 20.0;
 }
 
@@ -112,7 +112,7 @@ void flyToDefault() {
 
   
   float Tfov = 65.0;
-  nearClipRatio = 0.01;
+  nearClipRatio = 0.005;
   farClipRatio = 20.0;
 
   startFlightTo(T, Tfov, .25);

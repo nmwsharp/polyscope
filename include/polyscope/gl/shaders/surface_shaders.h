@@ -537,7 +537,7 @@ static const VertShader FACECOLOR_PLAIN_SURFACE_VERT_SHADER =  {
     // attributes
     {
         {"a_position", GLData::Vector3Float},
-        {"a_colorval", GLData::Vector3Float},
+        {"a_color", GLData::Vector3Float},
     },
 
     // source
@@ -545,12 +545,12 @@ static const VertShader FACECOLOR_PLAIN_SURFACE_VERT_SHADER =  {
       uniform mat4 u_viewMatrix;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
-      in vec3 a_colorval;
+      in vec3 a_color;
       flat out vec3 Colorval;
 
       void main()
       {
-          Colorval = a_colorval;
+          Colorval = a_color;
           gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position,1.);
       }
     )
@@ -580,7 +580,7 @@ static const FragShader FACECOLOR_PLAIN_SURFACE_FRAG_SHADER = {
 
       void main()
       {
-        outputF = Colorval;
+        outputF = vec4(Colorval,1.0);
       }
 
     )
