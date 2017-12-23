@@ -134,10 +134,10 @@ void SurfaceMesh::preparePick() {
   std::vector<Vector3> faceColor;
 
   // Use natural indices
-  VertexData<size_t> vInd = mesh->getVertexIndices() + pickStart;
-  FaceData<size_t> fInd = mesh->getFaceIndices() + facePickIndStart;
-  EdgeData<size_t> eInd = mesh->getEdgeIndices() + edgePickIndStart;
-  HalfedgeData<size_t> heInd = mesh->getHalfedgeIndices() + halfedgePickIndStart;
+  vInd = mesh->getVertexIndices();
+  fInd = mesh->getFaceIndices();
+  eInd = mesh->getEdgeIndices();
+  heInd = mesh->getHalfedgeIndices();
 
   for (FacePtr f : mesh->faces()) {
 
@@ -151,11 +151,11 @@ void SurfaceMesh::preparePick() {
 
       // Want just one copy of positions and face color, so we can build it in the usual way
       positions.push_back(geometry->position(v));
-      faceColor.push_back(pick::indToVec(fInd[f]));
+      faceColor.push_back(pick::indToVec(fInd[f] + facePickIndStart));
 
-      vColor[i] = pick::indToVec(vInd[v]);
-      eColor[i] = pick::indToVec(eInd[e]);
-      heColor[i] = pick::indToVec(heInd[he]);
+      vColor[i] = pick::indToVec(vInd[v] + pickStart);
+      eColor[i] = pick::indToVec(eInd[e] + edgePickIndStart);
+      heColor[i] = pick::indToVec(heInd[he] + halfedgePickIndStart);
       i++;
     }
 
@@ -270,7 +270,98 @@ void SurfaceMesh::fillGeometryBuffersFlat() {
 
 void SurfaceMesh::drawSharedStructureUI() {}
 
-void SurfaceMesh::drawPickUI(size_t localPickID) {}
+
+void SurfaceMesh::drawPickUI(size_t localPickID) {
+
+  // Selection type
+  if (localPickID < facePickIndStart) {
+    buildVertexInfoGui(mesh->vertex(localPickID));
+  } else if (localPickID < edgePickIndStart) {
+    buildFaceInfoGui(mesh->face(localPickID - facePickIndStart));
+  } else if (localPickID < halfedgePickIndStart) {
+    buildEdgeInfoGui(mesh->edge(localPickID - edgePickIndStart));
+  } else {
+    buildHalfedgeInfoGui(mesh->halfedge(localPickID - halfedgePickIndStart));
+  }
+}
+
+
+void SurfaceMesh::buildVertexInfoGui(VertexPtr v) {
+  ImGui::TextUnformatted(("Vertex #" + std::to_string(vInd[v])).c_str());
+
+  std::stringstream buffer;
+  buffer << geometry->position(v);
+  ImGui::TextUnformatted(("Position: " + buffer.str()).c_str());
+
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::Indent(20.);
+
+  // Build GUI to show the quantities
+  ImGui::Columns(2);
+  ImGui::SetColumnWidth(0,  ImGui::GetWindowWidth()/3);
+  for (auto x : quantities) {
+    x.second->buildInfoGUI(v);
+  }
+
+  ImGui::Indent(-20.);
+}
+
+void SurfaceMesh::buildFaceInfoGui(FacePtr f) {
+  ImGui::TextUnformatted(("Face #" + std::to_string(fInd[f])).c_str());
+
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::Indent(20.);
+
+  // Build GUI to show the quantities
+  ImGui::Columns(2);
+  ImGui::SetColumnWidth(0,  ImGui::GetWindowWidth()/3);
+  for (auto x : quantities) {
+    x.second->buildInfoGUI(f);
+  }
+
+  ImGui::Indent(-20.);
+}
+
+void SurfaceMesh::buildEdgeInfoGui(EdgePtr e) {
+  ImGui::TextUnformatted(("Edge #" + std::to_string(eInd[e])).c_str());
+
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::Indent(20.);
+
+  // Build GUI to show the quantities
+  ImGui::Columns(2);
+  ImGui::SetColumnWidth(0,  ImGui::GetWindowWidth()/3);
+  for (auto x : quantities) {
+    x.second->buildInfoGUI(e);
+  }
+
+  ImGui::Indent(-20.);
+}
+
+void SurfaceMesh::buildHalfedgeInfoGui(HalfedgePtr he) {
+  ImGui::TextUnformatted(("Halfedge #" + std::to_string(heInd[he])).c_str());
+
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::Indent(20.);
+
+  // Build GUI to show the quantities
+  ImGui::Columns(2);
+  ImGui::SetColumnWidth(0,  ImGui::GetWindowWidth()/3);
+  for (auto x : quantities) {
+    x.second->buildInfoGUI(he);
+  }
+
+  ImGui::Indent(-20.);
+}
+
 
 void SurfaceMesh::drawUI() {
   ImGui::PushID(name.c_str()); // ensure there are no conflicts with
@@ -453,13 +544,31 @@ void SurfaceMesh::addColorQuantity(std::string name, VertexData<Vector3>& value)
   }
 }
 
+void SurfaceMesh::addColorQuantity(std::string name, FaceData<Vector3>& value) {
+
+  bool wasEnabled = false;
+  if (quantities.find(name) != quantities.end()) {
+    wasEnabled = quantities[name]->enabled;
+    removeQuantity(name);
+  }
+
+  SurfaceColorQuantity* q = new SurfaceColorFaceQuantity(name, value, this);
+  quantities[name] = q;
+
+  // Re-enable the quantity if we're replacing an enabled quantity
+  if (wasEnabled) {
+    q->enabled = true;
+    setActiveSurfaceQuantity(q);
+  }
+}
+
 void SurfaceMesh::addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType) {
   // Delete old if in use
   if (quantities.find(name) != quantities.end()) {
     removeQuantity(name);
   }
 
-  SurfaceVectorQuantity* q = new SurfaceVectorQuantity(name, value, this, vectorType);
+  SurfaceVectorQuantity* q = new SurfaceVertexVectorQuantity(name, value, this, vectorType);
   quantities[name] = q;
 }
 
@@ -469,7 +578,7 @@ void SurfaceMesh::addVectorQuantity(std::string name, FaceData<Vector3>& value, 
     removeQuantity(name);
   }
 
-  SurfaceVectorQuantity* q = new SurfaceVectorQuantity(name, value, this, vectorType);
+  SurfaceVectorQuantity* q = new SurfaceFaceVectorQuantity(name, value, this, vectorType);
   quantities[name] = q;
 }
 
@@ -498,5 +607,10 @@ void SurfaceMesh::clearActiveSurfaceQuantity() {
     activeSurfaceQuantity = nullptr;
   }
 }
+
+void SurfaceQuantity::buildInfoGUI(VertexPtr v) {}
+void SurfaceQuantity::buildInfoGUI(FacePtr f) {}
+void SurfaceQuantity::buildInfoGUI(EdgePtr e) {}
+void SurfaceQuantity::buildInfoGUI(HalfedgePtr he) {}
 
 } // namespace polyscope

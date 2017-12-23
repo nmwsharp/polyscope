@@ -271,9 +271,6 @@ void GLProgram::createBuffers() {
     glBindBuffer(GL_ARRAY_BUFFER, a.VBOLoc);
 
     // Choose the correct type for the buffer
-    cout << "array count = " << a.arrayCount << endl;
-    cout << "location = " << a.location << endl;
-    cout << "VBO loc = " << a.VBOLoc << endl;
     for (int iArrInd = 0; iArrInd < a.arrayCount; iArrInd++) {
 
       glEnableVertexAttribArray(a.location + iArrInd);

@@ -6,9 +6,8 @@
 namespace polyscope {
 
 class SurfaceScalarQuantity : public SurfaceQuantityThatDrawsFaces {
- public:
-  SurfaceScalarQuantity(std::string name, SurfaceMesh* mesh_,
-                        std::string definedOn, DataType dataType);
+public:
+  SurfaceScalarQuantity(std::string name, SurfaceMesh* mesh_, std::string definedOn, DataType dataType);
 
   virtual void draw() override;
   virtual void drawUI() override;
@@ -20,8 +19,7 @@ class SurfaceScalarQuantity : public SurfaceQuantityThatDrawsFaces {
   AffineRemapper<double> mapper;
 
   // UI internals
-  const std::vector<const gl::Colormap*> colormaps = {
-      &gl::CM_VIRIDIS, &gl::CM_COOLWARM, &gl::CM_BLUES};
+  const std::vector<const gl::Colormap*> colormaps = {&gl::CM_VIRIDIS, &gl::CM_COOLWARM, &gl::CM_BLUES};
   const char* cm_names[3] = {"viridis", "coolwarm", "blues"};
   int iColorMap = 0;
   const std::string definedOn;
@@ -32,15 +30,16 @@ class SurfaceScalarQuantity : public SurfaceQuantityThatDrawsFaces {
 // ========================================================
 
 class SurfaceScalarVertexQuantity : public SurfaceScalarQuantity {
- public:
-  SurfaceScalarVertexQuantity(std::string name, VertexData<double>& values_,
-                              SurfaceMesh* mesh_,
+public:
+  SurfaceScalarVertexQuantity(std::string name, VertexData<double>& values_, SurfaceMesh* mesh_,
                               DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceScalarVertexQuantity();
 
   virtual gl::GLProgram* createProgram() override;
 
   void fillColorBuffers(gl::GLProgram* p);
+
+  void buildInfoGUI(VertexPtr v) override;
 
   // === Members
   VertexData<double> values;
@@ -51,15 +50,16 @@ class SurfaceScalarVertexQuantity : public SurfaceScalarQuantity {
 // ========================================================
 
 class SurfaceScalarFaceQuantity : public SurfaceScalarQuantity {
- public:
-  SurfaceScalarFaceQuantity(std::string name, FaceData<double>& values_,
-                            SurfaceMesh* mesh_,
+public:
+  SurfaceScalarFaceQuantity(std::string name, FaceData<double>& values_, SurfaceMesh* mesh_,
                             DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceScalarVertexQuantity();
 
   virtual gl::GLProgram* createProgram() override;
 
   void fillColorBuffers(gl::GLProgram* p);
+
+  void buildInfoGUI(FacePtr f) override;
 
   // === Members
   FaceData<double> values;
@@ -70,15 +70,17 @@ class SurfaceScalarFaceQuantity : public SurfaceScalarQuantity {
 // ========================================================
 
 class SurfaceScalarEdgeQuantity : public SurfaceScalarQuantity {
- public:
-  SurfaceScalarEdgeQuantity(std::string name, EdgeData<double>& values_,
-                            SurfaceMesh* mesh_,
+public:
+  SurfaceScalarEdgeQuantity(std::string name, EdgeData<double>& values_, SurfaceMesh* mesh_,
                             DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceScalarVertexQuantity();
 
   virtual gl::GLProgram* createProgram() override;
 
   void fillColorBuffers(gl::GLProgram* p);
+
+  void buildInfoGUI(EdgePtr e) override;
+
 
   // === Members
   EdgeData<double> values;
@@ -89,9 +91,8 @@ class SurfaceScalarEdgeQuantity : public SurfaceScalarQuantity {
 // ========================================================
 
 class SurfaceScalarHalfedgeQuantity : public SurfaceScalarQuantity {
- public:
-  SurfaceScalarHalfedgeQuantity(std::string name, HalfedgeData<double>& values_,
-                                SurfaceMesh* mesh_,
+public:
+  SurfaceScalarHalfedgeQuantity(std::string name, HalfedgeData<double>& values_, SurfaceMesh* mesh_,
                                 DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceScalarVertexQuantity();
 
@@ -99,8 +100,10 @@ class SurfaceScalarHalfedgeQuantity : public SurfaceScalarQuantity {
 
   void fillColorBuffers(gl::GLProgram* p);
 
+  void buildInfoGUI(HalfedgePtr he) override;
+
   // === Members
   HalfedgeData<double> values;
 };
 
-}  // namespace polyscope
+} // namespace polyscope

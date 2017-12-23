@@ -6,20 +6,22 @@
 #include "geometrycentral/halfedge_mesh.h"
 #include "geometrycentral/vector3.h"
 
+#include "polyscope/affine_remapper.h"
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/structure.h"
-#include "polyscope/affine_remapper.h"
 
 namespace polyscope {
 
 enum class ShadeStyle { FLAT = 0, SMOOTH };
+enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE };
+
 
 // Forward delcare surface mesh
 class SurfaceMesh;
 
 // Data defined on a surface mesh
 class SurfaceQuantity {
- public:
+public:
   // Base constructor which sets the name
   SurfaceQuantity(std::string name, SurfaceMesh* mesh);
   virtual ~SurfaceQuantity() = 0;
@@ -32,17 +34,25 @@ class SurfaceQuantity {
   // Draw the ImGUI ui elements
   virtual void drawUI() = 0;
 
+  // Build GUI info about this element
+  virtual void buildInfoGUI(VertexPtr v);
+  ;
+  virtual void buildInfoGUI(FacePtr f);
+  virtual void buildInfoGUI(EdgePtr e);
+  virtual void buildInfoGUI(HalfedgePtr he);
+
   // === Member variables ===
   const std::string name;
   SurfaceMesh* const parent;
 
-  bool enabled = false;  // should be set by enable() and disable()
+  bool enabled = false; // should be set by enable() and disable()
+
 };
 
 // Specific subclass indicating that a quantity can create a program to draw on
 // the surface
 class SurfaceQuantityThatDrawsFaces : public SurfaceQuantity {
- public:
+public:
   SurfaceQuantityThatDrawsFaces(std::string name, SurfaceMesh* mesh);
   // Create a program to be used for drawing the surface
   // CALLER is responsible for deallocating
@@ -51,7 +61,7 @@ class SurfaceQuantityThatDrawsFaces : public SurfaceQuantity {
 
 
 class SurfaceMesh : public Structure {
- public:
+public:
   // === Member functions ===
 
   // Construct a new surface mesh structure
@@ -77,8 +87,7 @@ class SurfaceMesh : public Structure {
   virtual double lengthScale() override;
 
   // Axis-aligned bounding box for the structure
-  virtual std::tuple<geometrycentral::Vector3, geometrycentral::Vector3>
-  boundingBox() override;
+  virtual std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox() override;
 
   // === Quantity-related
   void addQuantity(std::string name, VertexData<double>& value, DataType type = DataType::STANDARD);
@@ -86,6 +95,7 @@ class SurfaceMesh : public Structure {
   void addQuantity(std::string name, EdgeData<double>& value, DataType type = DataType::STANDARD);
   void addQuantity(std::string name, HalfedgeData<double>& value, DataType type = DataType::STANDARD);
   void addColorQuantity(std::string name, VertexData<Vector3>& value);
+  void addColorQuantity(std::string name, FaceData<Vector3>& value);
   void addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
   void addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
 
@@ -111,7 +121,7 @@ class SurfaceMesh : public Structure {
   gl::GLProgram* program = nullptr;
   gl::GLProgram* pickProgram = nullptr;
 
- private:
+private:
   // Quantities
   std::map<std::string, SurfaceQuantity*> quantities;
 
@@ -119,16 +129,24 @@ class SurfaceMesh : public Structure {
   std::array<float, 3> surfaceColor;
   ShadeStyle shadeStyle = ShadeStyle::SMOOTH;
   bool showEdges = false;
-  float edgeWidth = 0.0;  // currently can only be set to 0 or nonzero via UI
+  float edgeWidth = 0.0; // currently can only be set to 0 or nonzero via UI
   SurfaceQuantityThatDrawsFaces* activeSurfaceQuantity =
-      nullptr;  // a quantity that is respondible for drawing on the surface and
-                // overwrites `program` with its own shaders
+      nullptr; // a quantity that is respondible for drawing on the surface and
+               // overwrites `program` with its own shaders
 
 
   // Picking-related
   // Order of indexing: vertices, faces, edges, halfedges
   // Within each set, uses the implicit ordering from the mesh data structure
   size_t facePickIndStart, edgePickIndStart, halfedgePickIndStart;
+  VertexData<size_t> vInd;
+  FaceData<size_t> fInd;
+  EdgeData<size_t> eInd;
+  HalfedgeData<size_t> heInd;
+  void buildVertexInfoGui(VertexPtr v);
+  void buildFaceInfoGui(FacePtr f);
+  void buildEdgeInfoGui(EdgePtr e);
+  void buildHalfedgeInfoGui(HalfedgePtr he);
 
   // Gui implementation details
   bool ui_smoothshade = true;
@@ -138,4 +156,21 @@ class SurfaceMesh : public Structure {
   void fillGeometryBuffersFlat();
 };
 
-}  // namespace polyscope
+// Make mesh element type printable
+inline std::string getMeshElementTypeName(MeshElement type){
+  switch(type) {
+    case MeshElement::VERTEX:
+       return "vertex";
+    case MeshElement::FACE:
+       return "face";
+    case MeshElement::EDGE:
+       return "edge";
+    case MeshElement::HALFEDGE:
+       return "halfedge";
+    }
+}
+inline std::ostream& operator<<(std::ostream& out, const MeshElement value){
+  return out << getMeshElementTypeName(value);
+}
+
+} // namespace polyscope

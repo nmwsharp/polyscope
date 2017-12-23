@@ -95,6 +95,7 @@ gl::GLProgram* SurfaceScalarVertexQuantity::createProgram() {
   return program;
 }
 
+
 void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
   std::vector<double> colorval;
   for (FacePtr f : parent->mesh->faces()) {
@@ -117,6 +118,13 @@ void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
   // Store data in buffers
   p->setAttribute("a_colorval", colorval);
   p->setTextureFromColormap("t_colormap", *colormaps[iColorMap]);
+}
+
+void SurfaceScalarVertexQuantity::buildInfoGUI(VertexPtr v) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  ImGui::Text("%g", values[v]);
+  ImGui::NextColumn();
 }
 
 // ========================================================
@@ -174,6 +182,14 @@ void SurfaceScalarFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
   p->setAttribute("a_colorval", colorval);
   p->setTextureFromColormap("t_colormap", *colormaps[iColorMap]);
 }
+
+void SurfaceScalarFaceQuantity::buildInfoGUI(FacePtr f) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  ImGui::Text("%g", values[f]);
+  ImGui::NextColumn();
+}
+
 
 // ========================================================
 // ==========            Edge Scalar             ==========
@@ -235,6 +251,13 @@ void SurfaceScalarEdgeQuantity::fillColorBuffers(gl::GLProgram* p) {
   p->setTextureFromColormap("t_colormap", *colormaps[iColorMap]);
 }
 
+void SurfaceScalarEdgeQuantity::buildInfoGUI(EdgePtr e) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  ImGui::Text("%g", values[e]);
+  ImGui::NextColumn();
+}
+
 // ========================================================
 // ==========          Halfedge Scalar           ==========
 // ========================================================
@@ -292,6 +315,13 @@ void SurfaceScalarHalfedgeQuantity::fillColorBuffers(gl::GLProgram* p) {
   // Store data in buffers
   p->setAttribute("a_colorvals", colorval);
   p->setTextureFromColormap("t_colormap", *colormaps[iColorMap]);
+}
+
+void SurfaceScalarHalfedgeQuantity::buildInfoGUI(HalfedgePtr he) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  ImGui::Text("%g", values[he]);
+  ImGui::NextColumn();
 }
 
 }  // namespace polyscope

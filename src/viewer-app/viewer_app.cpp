@@ -40,31 +40,38 @@ void processFileOBJ(string filename) {
   VertexData<double> valX(mesh);
   VertexData<double> valY(mesh);
   VertexData<double> valZ(mesh);
+  VertexData<Vector3> randColor(mesh);
   for(VertexPtr v : mesh->vertices()) {
     valX[v] = geom->position(v).x;
     valY[v] = geom->position(v).y;
     valZ[v] = geom->position(v).z;
+
+    randColor[v] = Vector3{unitRand(), unitRand(), unitRand()};
   }
-  polyscope::getSurfaceMesh(niceName)->addQuantity("cX", valX);
+  polyscope::getSurfaceMesh(niceName)->addQuantity("cX_really_really_stupid_long_name_how_dumb", valX);
   polyscope::getSurfaceMesh(niceName)->addQuantity("cY", valY);
   polyscope::getSurfaceMesh(niceName)->addQuantity("cZ", valZ);
+  polyscope::getSurfaceMesh(niceName)->addColorQuantity("vColor", randColor);
 
   FaceData<double> fArea(mesh);
   FaceData<double> zero(mesh);
+  FaceData<Vector3> fColor(mesh);
   for(FacePtr f : mesh->faces()) {
     fArea[f] = geom->area(f);
     zero[f] = 0;
+    fColor[f] = Vector3{unitRand(), unitRand(), unitRand()};
   }
   polyscope::getSurfaceMesh(niceName)->addQuantity("face area", fArea, polyscope::DataType::MAGNITUDE);
-  // polyscope::getSurfaceMesh(niceName)->addQuantity("zero", zero);
+  polyscope::getSurfaceMesh(niceName)->addQuantity("zero", zero);
+  polyscope::getSurfaceMesh(niceName)->addColorQuantity("fColor", fColor);
   
-  // EdgeData<double> cWeight(mesh);
-  // geom->getEdgeCotanWeights(cWeight);
-  // polyscope::getSurfaceMesh(niceName)->addQuantity("cotan weight", cWeight, polyscope::DataType::SYMMETRIC);
+  EdgeData<double> cWeight(mesh);
+  geom->getEdgeCotanWeights(cWeight);
+  polyscope::getSurfaceMesh(niceName)->addQuantity("cotan weight", cWeight, polyscope::DataType::SYMMETRIC);
   
-  // HalfedgeData<double> oAngles(mesh);
-  // geom->getHalfedgeAngles(oAngles);
-  // polyscope::getSurfaceMesh(niceName)->addQuantity("angles", oAngles);
+  HalfedgeData<double> oAngles(mesh);
+  geom->getHalfedgeAngles(oAngles);
+  polyscope::getSurfaceMesh(niceName)->addQuantity("angles", oAngles);
   
   
   // Add some vectors
@@ -75,7 +82,7 @@ void processFileOBJ(string filename) {
     normals[v] *= unitRand() * 5000;
     toZero[v] = -geom->position(v);
   }
-  polyscope::getSurfaceMesh(niceName)->addVectorQuantity("normals", normals);
+  polyscope::getSurfaceMesh(niceName)->addVectorQuantity("rand length normals", normals);
   polyscope::getSurfaceMesh(niceName)->addVectorQuantity("toZero", toZero, polyscope::VectorType::AMBIENT);
 
   FaceData<Vector3> fNormals(mesh);

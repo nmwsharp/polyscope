@@ -8,43 +8,15 @@
 
 namespace polyscope {
 
-SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name,
-                                             VertexData<Vector3>& vectors_,
-                                             SurfaceMesh* mesh_,
-                                             VectorType vectorType_)
+SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh* mesh_, MeshElement definedOn_, VectorType vectorType_)
 
-    : SurfaceQuantity(name, mesh_),
-      vectorType(vectorType_),
-      definedOn("vertex") {
+    : SurfaceQuantity(name, mesh_), vectorType(vectorType_), definedOn(definedOn_) {
 
   // Copy the vectors
-  VertexData<Vector3> tVectors = parent->transfer.transfer(vectors_);
-  for (VertexPtr v : parent->mesh->vertices()) {
-    vectorRoots.push_back(parent->geometry->position(v));
-    vectors.push_back(tVectors[v]);
-  }
 
   finishConstructing();
 }
 
-SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name,
-                                             FaceData<Vector3>& vectors_,
-                                             SurfaceMesh* mesh_,
-                                             VectorType vectorType_)
-
-    : SurfaceQuantity(name, mesh_),
-      vectorType(vectorType_),
-      definedOn("face") {
-
-  // Copy the vectors
-  FaceData<Vector3> tVectors = parent->transfer.transfer(vectors_);
-  for (FacePtr f : parent->mesh->faces()) {
-    vectorRoots.push_back(parent->geometry->barycenter(f));
-    vectors.push_back(tVectors[f]);
-  }
-
-  finishConstructing();
-}
 
 void SurfaceVectorQuantity::finishConstructing() {
 
@@ -95,8 +67,8 @@ void SurfaceVectorQuantity::draw() {
 }
 
 void SurfaceVectorQuantity::prepare() {
-  program = new gl::GLProgram(&PASSTHRU_VECTOR_VERT_SHADER, &VECTOR_GEOM_SHADER,
-                              &SHINY_VECTOR_FRAG_SHADER, gl::DrawMode::Points);
+  program = new gl::GLProgram(&PASSTHRU_VECTOR_VERT_SHADER, &VECTOR_GEOM_SHADER, &SHINY_VECTOR_FRAG_SHADER,
+                              gl::DrawMode::Points);
 
   // Fill buffers
   std::vector<Vector3> mappedVectors;
@@ -109,11 +81,12 @@ void SurfaceVectorQuantity::prepare() {
 }
 
 void SurfaceVectorQuantity::drawUI() {
-  if (ImGui::TreeNode((name + " (" + definedOn + " vector)").c_str())) {
+
+
+  if (ImGui::TreeNode((name + " (" + getMeshElementTypeName(definedOn) + " vector)").c_str())) {
     ImGui::Checkbox("Enabled", &enabled);
     ImGui::SameLine();
-    ImGui::ColorEdit3("Color", (float*)&vectorColor,
-                      ImGuiColorEditFlags_NoInputs);
+    ImGui::ColorEdit3("Color", (float*)&vectorColor, ImGuiColorEditFlags_NoInputs);
 
     // Only get to set length for non-ambient vectors
     if (vectorType != VectorType::AMBIENT) {
@@ -122,7 +95,7 @@ void SurfaceVectorQuantity::drawUI() {
 
     ImGui::SliderFloat("Radius", &radiusMult, 0.0, .1, "%.5f", 3.);
 
-    {  // Draw max and min magnitude
+    { // Draw max and min magnitude
       ImGui::TextUnformatted(mapper.printBounds().c_str());
     }
 
@@ -130,4 +103,72 @@ void SurfaceVectorQuantity::drawUI() {
   }
 }
 
-}  // namespace polyscope
+
+// ========================================================
+// ==========           Vertex Vector            ==========
+// ========================================================
+
+SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, VertexData<Vector3>& vectors_,
+                                                         SurfaceMesh* mesh_, VectorType vectorType_)
+
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_) {
+
+  vectorField = parent->transfer.transfer(vectors_);
+  for (VertexPtr v : parent->mesh->vertices()) {
+    vectorRoots.push_back(parent->geometry->position(v));
+    vectors.push_back(vectorField[v]);
+  }
+
+  finishConstructing();
+}
+
+void SurfaceVertexVectorQuantity::buildInfoGUI(VertexPtr v) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+
+  std::stringstream buffer;
+  buffer << vectorField[v];
+  ImGui::TextUnformatted(buffer.str().c_str());
+
+  ImGui::NextColumn();
+  ImGui::NextColumn();
+  ImGui::Text("magnitude: %g", norm(vectorField[v]));
+  ImGui::NextColumn();
+}
+
+
+// ========================================================
+// ==========            Face Vector             ==========
+// ========================================================
+
+SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, FaceData<Vector3>& vectors_, SurfaceMesh* mesh_,
+                                                     VectorType vectorType_)
+    : SurfaceVectorQuantity(name, mesh_,MeshElement::FACE,  vectorType_) {
+
+  // Copy the vectors
+  vectorField = parent->transfer.transfer(vectors_);
+  for (FacePtr f : parent->mesh->faces()) {
+    vectorRoots.push_back(parent->geometry->barycenter(f));
+    vectors.push_back(vectorField[f]);
+  }
+
+  finishConstructing();
+}
+
+void SurfaceFaceVectorQuantity::buildInfoGUI(FacePtr f) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+
+  std::stringstream buffer;
+  buffer << vectorField[f];
+  ImGui::TextUnformatted(buffer.str().c_str());
+
+  ImGui::NextColumn();
+  ImGui::NextColumn();
+  ImGui::Text("magnitude: %g", norm(vectorField[f]));
+  ImGui::NextColumn();
+}
+
+
+
+} // namespace polyscope

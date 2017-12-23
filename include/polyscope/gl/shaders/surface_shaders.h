@@ -507,17 +507,17 @@ static const FragShader PICK_SURFACE_FRAG_SHADER = {
           for(int i = 0; i < 3; i++) {
               float eDist = Barycoord[(i+2)%3];
               if(eDist < edgeRadius) {
-                outputF = vec4(halfedgeColors[i], 1.0);
+                outputF = vec4(edgeColors[i], 1.0);
                 return;
               }
               if(eDist < halfedgeRadius) {
-                outputF = vec4(edgeColors[i], 1.0);
+                outputF = vec4(halfedgeColors[i], 1.0);
                 return;
               }
           }
 
 
-          // If neither of the above, fall back on the face
+          // If none of the above, fall back on the face
           outputF = vec4(faceColor, 1.0);
       }
 

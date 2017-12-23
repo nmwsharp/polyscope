@@ -336,7 +336,7 @@ void buildUserGui() {
 
 void buildPickGui() {
   if (pick::haveSelection) {
-    ImGui::Begin("Selection", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("Selection", nullptr);
     size_t pickInd;
     Structure* structure = pick::getCurrentPickElement(pickInd);
 

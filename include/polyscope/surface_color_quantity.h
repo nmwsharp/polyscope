@@ -6,9 +6,8 @@
 namespace polyscope {
 
 class SurfaceColorQuantity : public SurfaceQuantityThatDrawsFaces {
- public:
-  SurfaceColorQuantity(std::string name, SurfaceMesh* mesh_,
-                        std::string definedOn);
+public:
+  SurfaceColorQuantity(std::string name, SurfaceMesh* mesh_, std::string definedOn);
 
   virtual void draw() override;
   virtual void drawUI() override;
@@ -22,39 +21,40 @@ class SurfaceColorQuantity : public SurfaceQuantityThatDrawsFaces {
 // ========================================================
 
 class SurfaceColorVertexQuantity : public SurfaceColorQuantity {
- public:
-  SurfaceColorVertexQuantity(std::string name, VertexData<Vector3>& values_,
-                              SurfaceMesh* mesh_);
+public:
+  SurfaceColorVertexQuantity(std::string name, VertexData<Vector3>& values_, SurfaceMesh* mesh_);
   //   ~SurfaceScalarVertexQuantity();
 
   virtual gl::GLProgram* createProgram() override;
 
   void fillColorBuffers(gl::GLProgram* p);
+
+  void buildInfoGUI(VertexPtr v) override;
 
   // === Members
   VertexData<Vector3> values;
 };
 
-/*
 // ========================================================
 // ==========            Face Scalar             ==========
 // ========================================================
 
-class SurfaceScalarFaceQuantity : public SurfaceColorQuantity {
- public:
-  SurfaceScalarFaceQuantity(std::string name, FaceData<double>& values_,
-                            SurfaceMesh* mesh_,
-                            DataType dataType_ = DataType::STANDARD);
+class SurfaceColorFaceQuantity : public SurfaceColorQuantity {
+public:
+  SurfaceColorFaceQuantity(std::string name, FaceData<Vector3>& values_, SurfaceMesh* mesh_);
   //   ~SurfaceScalarVertexQuantity();
 
   virtual gl::GLProgram* createProgram() override;
 
   void fillColorBuffers(gl::GLProgram* p);
 
+  void buildInfoGUI(FacePtr f) override;
+
   // === Members
-  FaceData<double> values;
+  FaceData<Vector3> values;
 };
 
+/*
 // ========================================================
 // ==========            Edge Scalar             ==========
 // ========================================================
@@ -94,4 +94,4 @@ class SurfaceScalarHalfedgeQuantity : public SurfaceColorQuantity {
 };
 */
 
-}  // namespace polyscope
+} // namespace polyscope

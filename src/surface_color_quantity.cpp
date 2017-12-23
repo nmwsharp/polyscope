@@ -8,15 +8,10 @@
 
 namespace polyscope {
 
-SurfaceColorQuantity::SurfaceColorQuantity(std::string name,
-                                             SurfaceMesh* mesh_,
-                                             std::string definedOn_)
-    : SurfaceQuantityThatDrawsFaces(name, mesh_),
-      definedOn(definedOn_) {
-}
+SurfaceColorQuantity::SurfaceColorQuantity(std::string name, SurfaceMesh* mesh_, std::string definedOn_)
+    : SurfaceQuantityThatDrawsFaces(name, mesh_), definedOn(definedOn_) {}
 
-void SurfaceColorQuantity::draw() {
-}  // nothing to do, drawn by surface mesh program
+void SurfaceColorQuantity::draw() {} // nothing to do, drawn by surface mesh program
 
 void SurfaceColorQuantity::drawUI() {
   bool enabledBefore = enabled;
@@ -39,8 +34,8 @@ void SurfaceColorQuantity::drawUI() {
 // ==========           Vertex Color            ==========
 // ========================================================
 
-SurfaceColorVertexQuantity::SurfaceColorVertexQuantity(
-    std::string name, VertexData<Vector3>& values_, SurfaceMesh* mesh_)
+SurfaceColorVertexQuantity::SurfaceColorVertexQuantity(std::string name, VertexData<Vector3>& values_,
+                                                       SurfaceMesh* mesh_)
     : SurfaceColorQuantity(name, mesh_, "vertex")
 
 {
@@ -49,9 +44,8 @@ SurfaceColorVertexQuantity::SurfaceColorVertexQuantity(
 
 gl::GLProgram* SurfaceColorVertexQuantity::createProgram() {
   // Create the program to draw this quantity
-  gl::GLProgram* program = new gl::GLProgram(&VERTCOLOR3_SURFACE_VERT_SHADER,
-                                             &VERTCOLOR3_SURFACE_FRAG_SHADER,
-                                             gl::DrawMode::Triangles);
+  gl::GLProgram* program =
+      new gl::GLProgram(&VERTCOLOR3_SURFACE_VERT_SHADER, &VERTCOLOR3_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
 
   // Fill color buffers
   fillColorBuffers(program);
@@ -82,32 +76,36 @@ void SurfaceColorVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
   p->setAttribute("a_colorval", colorval);
 }
 
-/*
+void SurfaceColorVertexQuantity::buildInfoGUI(VertexPtr v) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+
+  std::array<float, 3> tempColor = values[v].toFloatArray();
+  ImGui::ColorEdit3("", &tempColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
+  ImGui::SameLine();
+  std::stringstream buffer;
+  buffer << values[v];
+  ImGui::TextUnformatted(buffer.str().c_str());
+  ImGui::NextColumn();
+}
+
+
 // ========================================================
 // ==========            Face Scalar             ==========
 // ========================================================
 
-SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name,
-                                                     FaceData<double>& values_,
-                                                     SurfaceMesh* mesh_,
-                                                     DataType dataType_)
-    : SurfaceScalarQuantity(name, mesh_, "face", dataType_)
+SurfaceColorFaceQuantity::SurfaceColorFaceQuantity(std::string name, FaceData<Vector3>& values_,
+                                                       SurfaceMesh* mesh_)
+    : SurfaceColorQuantity(name, mesh_, "face")
 
 {
   values = parent->transfer.transfer(values_);
-
-  std::vector<double> valsVec;
-  for (FacePtr f : parent->mesh->faces()) {
-    valsVec.push_back(values[f]);
-  }
-  mapper = AffineRemapper<double>(valsVec, dataType);
 }
 
-gl::GLProgram* SurfaceScalarFaceQuantity::createProgram() {
+gl::GLProgram* SurfaceColorFaceQuantity::createProgram() {
   // Create the program to draw this quantity
-  gl::GLProgram* program = new gl::GLProgram(&VERTCOLOR_SURFACE_VERT_SHADER,
-                                             &VERTCOLOR_SURFACE_FRAG_SHADER,
-                                             gl::DrawMode::Triangles);
+  gl::GLProgram* program =
+      new gl::GLProgram(&VERTCOLOR3_SURFACE_VERT_SHADER, &VERTCOLOR3_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
 
   // Fill color buffers
   fillColorBuffers(program);
@@ -115,14 +113,14 @@ gl::GLProgram* SurfaceScalarFaceQuantity::createProgram() {
   return program;
 }
 
-void SurfaceScalarFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
-  std::vector<double> colorval;
+void SurfaceColorFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
+  std::vector<Vector3> colorval;
   for (FacePtr f : parent->mesh->faces()) {
     // Implicitly triangulate
-    double c0, c1;
+    Vector3 c0, c1;
     size_t iP = 0;
     for (VertexPtr v : f.adjacentVertices()) {
-      double c2 = mapper.map(values[f]);
+      Vector3 c2 = values[f];
       if (iP >= 2) {
         colorval.push_back(c0);
         colorval.push_back(c1);
@@ -136,9 +134,22 @@ void SurfaceScalarFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
 
   // Store data in buffers
   p->setAttribute("a_colorval", colorval);
-  p->setTextureFromColormap("t_colormap", *colormaps[iColorMap]);
 }
 
+void SurfaceColorFaceQuantity::buildInfoGUI(FacePtr f) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+
+  std::array<float, 3> tempColor = values[f].toFloatArray();
+  ImGui::ColorEdit3("", &tempColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
+  ImGui::SameLine();
+  std::stringstream buffer;
+  buffer << values[f];
+  ImGui::TextUnformatted(buffer.str().c_str());
+  ImGui::NextColumn();
+}
+
+/*
 // ========================================================
 // ==========            Edge Scalar             ==========
 // ========================================================
@@ -259,4 +270,4 @@ void SurfaceScalarHalfedgeQuantity::fillColorBuffers(gl::GLProgram* p) {
 }
 */
 
-}  // namespace polyscope
+} // namespace polyscope

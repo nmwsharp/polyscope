@@ -33,8 +33,8 @@ void clearPickIfStructureSelected(Structure* s);
 void resetPick();
 
 // Constant for bit-bashing functions below
-// const int bitsForPickPacking = 22;
-const int bitsForPickPacking = 7; // useful for testing
+const int bitsForPickPacking = 22;
+// const int bitsForPickPacking = 7; // useful for testing
 
 // Convert indices to color and back
 inline geometrycentral::Vector3 indToVec(size_t ind) {
