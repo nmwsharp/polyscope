@@ -86,6 +86,7 @@ class CameraView : public Structure {
   
   // Drawing related things
   gl::GLProgram* cameraSkeletonProgram = nullptr;
+  gl::GLProgram* pickProgram = nullptr;
   Image* activeImage = nullptr;
   gl::GLProgram* imageViewProgram = nullptr;
   static float globalImageTransparency;

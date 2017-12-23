@@ -523,3 +523,65 @@ static const FragShader PICK_SURFACE_FRAG_SHADER = {
 
     )
 };
+
+
+
+static const VertShader FACECOLOR_PLAIN_SURFACE_VERT_SHADER =  {
+    
+    // uniforms
+    {
+       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_projMatrix", GLData::Matrix44Float},
+    },
+
+    // attributes
+    {
+        {"a_position", GLData::Vector3Float},
+        {"a_colorval", GLData::Vector3Float},
+    },
+
+    // source
+    GLSL(150,
+      uniform mat4 u_viewMatrix;
+      uniform mat4 u_projMatrix;
+      in vec3 a_position;
+      in vec3 a_colorval;
+      flat out vec3 Colorval;
+
+      void main()
+      {
+          Colorval = a_colorval;
+          gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position,1.);
+      }
+    )
+};
+
+static const FragShader FACECOLOR_PLAIN_SURFACE_FRAG_SHADER = {
+    
+    // uniforms
+    {
+    }, 
+
+    // attributes
+    {
+    },
+    
+    // textures 
+    {
+    },
+    
+    // output location
+    "outputF",
+    
+    // source 
+    GLSL(150,
+      flat in vec3 Colorval;
+      out vec4 outputF;
+
+      void main()
+      {
+        outputF = Colorval;
+      }
+
+    )
+};

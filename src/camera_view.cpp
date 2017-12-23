@@ -5,7 +5,9 @@
 #include "polyscope/gl/colors.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/image_shaders.h"
+#include "polyscope/gl/shaders/surface_shaders.h"
 #include "polyscope/gl/shaders/wireframe_shaders.h"
+#include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 
 #include "imgui.h"
@@ -85,23 +87,73 @@ void CameraView::drawImageView() {
   imageViewProgram->draw();
 }
 
-void CameraView::drawPick() {}
+void CameraView::drawPick() {
+
+  glDisable(GL_CULL_FACE);
+
+  // Set uniforms
+  glm::mat4 viewMat = view::getCameraViewMatrix();
+  pickProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+
+  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
+  pickProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
+
+  pickProgram->draw();
+}
 
 // Helper function to convert glm::vec3 to Vector3
 namespace {
 Vector3 toV(glm::vec3 x) { return Vector3{x.x, x.y, x.z}; }
-}  // namespace
+} // namespace
 
 Vector3 CameraView::location() { return toV(parameters.getPosition()); }
 
 void CameraView::prepare() {}
 
-void CameraView::preparePick() {}
+void CameraView::preparePick() {
+
+  // Request pick index
+  size_t pickInd = pick::requestPickBufferRange(this, 1);
+  Vector3 indColor = pick::indToVec(pickInd);
+
+  // Create a new pick program
+  safeDelete(pickProgram);
+  pickProgram = new gl::GLProgram(&FACECOLOR_PLAIN_SURFACE_VERT_SHADER, &FACECOLOR_PLAIN_SURFACE_FRAG_SHADER,
+                                  gl::DrawMode::Triangles);
+
+  // Fill an index buffer
+  std::vector<Vector3> pickColors;
+  std::vector<Vector3> positions;
+
+  auto addTriangle = [&](Vector3 p1, Vector3 p2, Vector3 p3) {
+    positions.push_back(p1);
+    positions.push_back(p2);
+    positions.push_back(p3);
+    pickColors.push_back(indColor);
+    pickColors.push_back(indColor);
+    pickColors.push_back(indColor);
+  };
+
+  // = Build the camera skeleton
+
+  // Get relevant camera vectors
+  Vector3 root, lookDir, upDir, rightDir;
+  std::array<Vector3, 4> framePoints;
+  std::array<Vector3, 3> dirFrame;
+  getCameraPoints(root, framePoints, dirFrame);
+
+  for(int i = 0; i < 4; i++) {
+    addTriangle(root, framePoints[i], framePoints[(i+1)%4]);
+  }
+
+  // Store data in buffers
+  pickProgram->setAttribute("a_position", positions);
+  pickProgram->setAttribute("a_color", pickColors);
+}
 
 void CameraView::prepareCameraSkeleton() {
   // Create the GL program
-  cameraSkeletonProgram = new gl::GLProgram(
-      &WIREFRAME_VERT_SHADER, &WIREFRAME_FRAG_SHADER, gl::DrawMode::Lines);
+  cameraSkeletonProgram = new gl::GLProgram(&WIREFRAME_VERT_SHADER, &WIREFRAME_FRAG_SHADER, gl::DrawMode::Lines);
 
   // Relevant points in world space
   cameraSkeletonScale = state::lengthScale;
@@ -114,7 +166,7 @@ void CameraView::prepareCameraSkeleton() {
   rightDir = dirFrame[2];
 
   // Triangles to draw
-  std::vector<Vector3> positions;  // position in space
+  std::vector<Vector3> positions; // position in space
 
   // Add lines
   for (int i = 0; i < 4; i++) {
@@ -131,8 +183,7 @@ void CameraView::prepareCameraSkeleton() {
   cameraSkeletonProgram->setAttribute("a_position", positions);
 }
 
-void CameraView::getCameraPoints(Vector3& rootV,
-                                 std::array<Vector3, 4>& framePoints,
+void CameraView::getCameraPoints(Vector3& rootV, std::array<Vector3, 4>& framePoints,
                                  std::array<Vector3, 3>& dirFrame) {
   glm::vec3 root = parameters.getPosition();
   glm::vec3 lookDir = parameters.getLookDir();
@@ -140,19 +191,13 @@ void CameraView::getCameraPoints(Vector3& rootV,
   glm::vec3 rightDir = parameters.getRightDir();
 
   float cameraDrawSize = cameraSkeletonScale * 0.01;
-  float frameDrawWidth =
-      std::tan(glm::radians(parameters.fov / 2.f)) * cameraDrawSize;
-  float frameDrawHeight =
-      std::tan(glm::radians(parameters.fov / 2.f)) * cameraDrawSize;
+  float frameDrawWidth = std::tan(glm::radians(parameters.fov / 2.f)) * cameraDrawSize;
+  float frameDrawHeight = std::tan(glm::radians(parameters.fov / 2.f)) * cameraDrawSize;
 
-  glm::vec3 upperLeft = root + cameraDrawSize * lookDir +
-                        upDir * frameDrawHeight - rightDir * frameDrawWidth;
-  glm::vec3 lowerLeft = root + cameraDrawSize * lookDir -
-                        upDir * frameDrawHeight - rightDir * frameDrawWidth;
-  glm::vec3 upperRight = root + cameraDrawSize * lookDir +
-                         upDir * frameDrawHeight + rightDir * frameDrawWidth;
-  glm::vec3 lowerRight = root + cameraDrawSize * lookDir -
-                         upDir * frameDrawHeight + rightDir * frameDrawWidth;
+  glm::vec3 upperLeft = root + cameraDrawSize * lookDir + upDir * frameDrawHeight - rightDir * frameDrawWidth;
+  glm::vec3 lowerLeft = root + cameraDrawSize * lookDir - upDir * frameDrawHeight - rightDir * frameDrawWidth;
+  glm::vec3 upperRight = root + cameraDrawSize * lookDir + upDir * frameDrawHeight + rightDir * frameDrawWidth;
+  glm::vec3 lowerRight = root + cameraDrawSize * lookDir - upDir * frameDrawHeight + rightDir * frameDrawWidth;
 
   rootV = toV(root);
   framePoints[0] = toV(upperRight);
@@ -165,11 +210,17 @@ void CameraView::getCameraPoints(Vector3& rootV,
   dirFrame[2] = toV(rightDir);
 }
 
-void CameraView::drawSharedStructureUI() {
-  ImGui::SliderFloat("Opaque", &globalImageTransparency, 0.0, 1.0, "%.2f");
-}
+void CameraView::drawSharedStructureUI() { ImGui::SliderFloat("Opaque", &globalImageTransparency, 0.0, 1.0, "%.2f"); }
 
-void CameraView::drawPickUI(size_t localPickID) {}
+void CameraView::drawPickUI(size_t localPickID) {
+
+  // Fly to on a double click
+  if (pick::pickWasDoubleClick) {
+    view::startFlightTo(parameters, .3);
+  }
+
+  ImGui::TextUnformatted(("Camera " + name).c_str());
+}
 
 void CameraView::drawUI() {
   if (ImGui::TreeNode(name.c_str())) {
@@ -183,7 +234,7 @@ void CameraView::drawUI() {
     { // Pick an image to show
 
       // Find the current image
-      int currImage = 0;  // none
+      int currImage = 0; // none
       int i = 1;
       std::vector<const char*> nameStrings;
       const char* noneStr = "None";
@@ -201,8 +252,8 @@ void CameraView::drawUI() {
       ImGui::ListBox("", &newInd, &nameStrings[0], nameStrings.size());
 
       // Update the image if requested
-      if(newInd != currImage){ 
-        if(newInd == 0) {
+      if (newInd != currImage) {
+        if (newInd == 0) {
           clearActiveImage();
         } else {
           setActiveImage(nameStrings[newInd]);
@@ -214,8 +265,7 @@ void CameraView::drawUI() {
   }
 }
 
-void CameraView::addImage(std::string name, unsigned char* I, size_t width,
-                          size_t height) {
+void CameraView::addImage(std::string name, unsigned char* I, size_t width, size_t height) {
   if (images.find(name) != images.end()) {
     // error("Image name " + name + " is already in use");
     // return;
@@ -231,11 +281,11 @@ void CameraView::addImage(std::string name, unsigned char* I, size_t width,
     setActiveImage(name);
   }
 }
-  
+
 void CameraView::removeImage(std::string name, bool errorIfNotPresent) {
-  
+
   if (images.find(name) == images.end()) {
-    if(errorIfNotPresent) {
+    if (errorIfNotPresent) {
       error("Tried to remove image which does not exist.");
     }
     return;
@@ -243,7 +293,7 @@ void CameraView::removeImage(std::string name, bool errorIfNotPresent) {
 
   Image* im = images[name];
 
-  if(im == activeImage) {
+  if (im == activeImage) {
     clearActiveImage();
   }
 
@@ -268,12 +318,10 @@ void CameraView::setActiveImage(std::string name) {
 
   // Create the new program
   imageViewProgram =
-      new gl::GLProgram(&PROJECTEDIMAGE_VERT_SHADER,
-                        &PROJECTEDIMAGE_FRAG_SHADER, gl::DrawMode::Triangles);
+      new gl::GLProgram(&PROJECTEDIMAGE_VERT_SHADER, &PROJECTEDIMAGE_FRAG_SHADER, gl::DrawMode::Triangles);
 
   // Push the texture to the buffer
-  imageViewProgram->setTexture2D("t_image", im->data, im->width, im->height,
-                                 true);
+  imageViewProgram->setTexture2D("t_image", im->data, im->width, im->height, true);
 
   // The frame on which we will draw
 
@@ -282,8 +330,7 @@ void CameraView::setActiveImage(std::string name) {
   std::array<Vector3, 4> framePoints;
   std::array<Vector3, 3> dirFrame;
   getCameraPoints(root, framePoints, dirFrame);
-  std::array<Vector2, 4> frameCoords = {
-      {Vector2{1, 0}, Vector2{0, 0}, Vector2{0, 1}, Vector2{1, 1}}};
+  std::array<Vector2, 4> frameCoords = {{Vector2{1, 0}, Vector2{0, 0}, Vector2{0, 1}, Vector2{1, 1}}};
 
   // The two triangles which compose the frame
   std::vector<std::array<int, 3>> tris = {{{0, 1, 3}}, {{1, 2, 3}}};
@@ -312,14 +359,12 @@ void CameraView::clearActiveImage() {
 
 double CameraView::lengthScale() { return 0; }
 
-std::tuple<geometrycentral::Vector3, geometrycentral::Vector3>
-CameraView::boundingBox() {
+std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> CameraView::boundingBox() {
   Vector3 pos = location();
   return std::make_tuple(pos, pos);
 }
 
-Image::Image(std::string name_, unsigned char* data_, size_t width_,
-             size_t height_)
+Image::Image(std::string name_, unsigned char* data_, size_t width_, size_t height_)
     : name(name_), width(width_), height(height_) {
   size_t aSize = width * height * 3;
   data = new unsigned char[width * height * 3];
@@ -328,4 +373,4 @@ Image::Image(std::string name_, unsigned char* data_, size_t width_,
 
 Image::~Image() { delete[] data; }
 
-}  // namespace polyscope
+} // namespace polyscope
