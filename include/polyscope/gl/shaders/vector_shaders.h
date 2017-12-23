@@ -48,7 +48,7 @@ static const GeomShader VECTOR_GEOM_SHADER = {
     // source
     GLSL(150,
         layout(points) in;
-        layout(triangle_strip, max_vertices=100) out;
+        layout(triangle_strip, max_vertices=40) out;
         in vec3 vector[];
         uniform mat4 u_viewMatrix;
         uniform mat4 u_projMatrix;

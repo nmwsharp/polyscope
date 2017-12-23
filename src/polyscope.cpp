@@ -425,7 +425,7 @@ void show() {
     processMouseEvents();
 
     // Build the GUI components
-    ImGui::ShowTestWindow();
+    // ImGui::ShowTestWindow();
     buildPolyscopeGui();
     buildStructureGui();
     buildUserGui();
