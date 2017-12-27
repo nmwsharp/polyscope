@@ -43,8 +43,12 @@ extern float flightTargetFov, flightInitialFov;
 
 // === View methods
 
-void processMouseDrag(Vector2 deltaDrag, bool isRotating);
-void processMouseScroll(double scrollAmount, bool scrollClipPlane);
+void processTranslate(Vector2 delta);
+void processRotate(float delTheta, float delPhi);
+
+void processClipPlaneShift(double amount);
+void processZoom(double amount);
+
 void setWindowSize(int width, int height);
 void setViewToCamera(const CameraParameters& p);
 void resetCameraToDefault();

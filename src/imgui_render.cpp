@@ -233,7 +233,11 @@ void ImGui_ImplGlfwGL3_ScrollCallback(GLFWwindow*, double xoffset,
       bool scrollClipPlane =
           (leftShiftState == GLFW_PRESS || rightShiftState == GLFW_PRESS);
 
-      view::processMouseScroll(maxScroll, scrollClipPlane);
+      if(scrollClipPlane) {
+        view::processClipPlaneShift(maxScroll);
+      } else {
+        view::processZoom(maxScroll);
+      }
     }
   }
 }

@@ -173,7 +173,7 @@ bool lastClickWasDouble = false;
 void evaluatePickQuery(int xPos, int yPos) {
 
   // Be sure not to pick outside of buffer
-  if(xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
+  if (xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
     return;
   }
 
@@ -231,7 +231,7 @@ float dragDistSinceLastRelease = 0.0;
 void processMouseEvents() {
   ImGuiIO& io = ImGui::GetIO();
 
-  if(ImGui::IsMouseClicked(0)) {
+  if (ImGui::IsMouseClicked(0)) {
     lastClickWasDouble = ImGui::IsMouseDoubleClicked(0);
   }
 
@@ -240,7 +240,17 @@ void processMouseEvents() {
     // Handle drags
     if (ImGui::IsMouseDragging(0)) {
       Vector2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
-      view::processMouseDrag(dragDelta, !io.KeyShift);
+      bool isDragZoom = io.KeyShift && io.KeyCtrl;
+      bool isRotate = !io.KeyShift;
+      if (isDragZoom) {
+        view::processZoom(dragDelta.y*5);
+      } else {
+        if (isRotate) {
+          view::processRotate(dragDelta.x, dragDelta.y);
+        } else {
+          view::processTranslate(dragDelta);
+        }
+      }
 
       dragDistSinceLastRelease += std::abs(dragDelta.x);
       dragDistSinceLastRelease += std::abs(dragDelta.y);
