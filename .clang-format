@@ -4,6 +4,7 @@ AlignOperands: 'true'
 AllowShortBlocksOnASingleLine: 'false'
 AllowShortIfStatementsOnASingleLine: 'true'
 AllowShortLoopsOnASingleLine: 'true'
+AlwaysBreakTemplateDeclarations: 'true'
 BinPackParameters: 'true'
 BreakBeforeBraces: Attach
 ColumnLimit: '120'
