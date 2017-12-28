@@ -8,7 +8,8 @@
 
 namespace polyscope {
 
-SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh* mesh_, MeshElement definedOn_, VectorType vectorType_)
+SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh* mesh_, MeshElement definedOn_,
+                                             VectorType vectorType_)
 
     : SurfaceQuantity(name, mesh_), vectorType(vectorType_), definedOn(definedOn_) {
 
@@ -143,7 +144,7 @@ void SurfaceVertexVectorQuantity::buildInfoGUI(VertexPtr v) {
 
 SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, FaceData<Vector3>& vectors_, SurfaceMesh* mesh_,
                                                      VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_,MeshElement::FACE,  vectorType_) {
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_) {
 
   // Copy the vectors
   vectorField = parent->transfer.transfer(vectors_);
@@ -169,6 +170,54 @@ void SurfaceFaceVectorQuantity::buildInfoGUI(FacePtr f) {
   ImGui::NextColumn();
 }
 
+// ========================================================
+// ==========        Intrinsic Face Vector       ==========
+// ========================================================
+
+
+SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::string name, FaceData<Complex>& vectors_,
+                                                                       SurfaceMesh* mesh_, int nSym_,
+                                                                       VectorType vectorType_)
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), nSym(nSym_) {
+
+  GeometryCache<Euclidean>& gc = parent->geometry->cache;
+  gc.faceBasisQ.require();
+
+  double rotAngle = 2.0 * PI / nSym;
+  Complex rot = std::exp(IM_I * rotAngle);
+
+  // Copy the vectors
+  vectorField = parent->transfer.transfer(vectors_);
+  for (FacePtr f : parent->mesh->faces()) {
+
+    Complex angle = std::pow(vectorField[f], 1.0 / nSym);
+
+    for (int iRot = 0; iRot < nSym; iRot++) {
+      vectorRoots.push_back(parent->geometry->barycenter(f));
+
+      Vector3 v = gc.faceBasis[f][0] * angle.real() + gc.faceBasis[f][1] * angle.imag();
+      vectors.push_back(v);
+
+      angle *= rot;
+    }
+  }
+
+  finishConstructing();
+}
+
+void SurfaceFaceIntrinsicVectorQuantity::buildInfoGUI(FacePtr f) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+
+  std::stringstream buffer;
+  buffer << vectorField[f];
+  ImGui::TextUnformatted(buffer.str().c_str());
+
+  ImGui::NextColumn();
+  ImGui::NextColumn();
+  ImGui::Text("magnitude: %g", norm(vectorField[f]));
+  ImGui::NextColumn();
+}
 
 
 } // namespace polyscope

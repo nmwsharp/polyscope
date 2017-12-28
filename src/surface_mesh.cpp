@@ -582,6 +582,16 @@ void SurfaceMesh::addVectorQuantity(std::string name, FaceData<Vector3>& value, 
   quantities[name] = q;
 }
 
+void SurfaceMesh::addVectorQuantity(std::string name, FaceData<Complex>& value, int nSym, VectorType vectorType) {
+  // Delete old if in use
+  if (quantities.find(name) != quantities.end()) {
+    removeQuantity(name);
+  }
+
+  SurfaceVectorQuantity* q = new SurfaceFaceIntrinsicVectorQuantity(name, value, this, nSym, vectorType);
+  quantities[name] = q;
+}
+
 void SurfaceMesh::removeQuantity(std::string name) {
   if (quantities.find(name) == quantities.end()) {
     return;

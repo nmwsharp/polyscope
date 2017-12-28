@@ -17,7 +17,7 @@ enum class DataType { STANDARD = 0, SYMMETRIC, MAGNITUDE};
 
 // What is the meaningful scale of an R3 vector?
 // Used to scale vector lengths in a meaningful way
-// STANDARD: special meaning
+// STANDARD: no special meaning
 // AMBIENT: vector represent distances in the ambient space
 enum class VectorType { STANDARD = 0, AMBIENT};
 

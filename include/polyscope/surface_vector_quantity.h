@@ -42,7 +42,7 @@ public:
                               VectorType vectorType_ = VectorType::STANDARD);
 
   VertexData<Vector3> vectorField;
-  
+
   void buildInfoGUI(VertexPtr v) override;
 };
 
@@ -53,7 +53,18 @@ public:
                             VectorType vectorType_ = VectorType::STANDARD);
 
   FaceData<Vector3> vectorField;
-  
+
+  void buildInfoGUI(FacePtr f) override;
+};
+
+class SurfaceFaceIntrinsicVectorQuantity : public SurfaceVectorQuantity {
+public:
+  SurfaceFaceIntrinsicVectorQuantity(std::string name, FaceData<Complex>& vectors_, SurfaceMesh* mesh_,
+                            int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
+
+  FaceData<Complex> vectorField;
+  int nSym;
+
   void buildInfoGUI(FacePtr f) override;
 };
 

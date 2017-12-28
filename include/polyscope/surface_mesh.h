@@ -98,6 +98,7 @@ public:
   void addColorQuantity(std::string name, FaceData<Vector3>& value);
   void addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
   void addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
+  void addVectorQuantity(std::string name, FaceData<Complex>& value, int nSym=1, VectorType vectorType = VectorType::STANDARD);
 
   void removeQuantity(std::string name);
   void setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q);
