@@ -15,6 +15,9 @@
 #include "polyscope/pick.h"
 #include "polyscope/view.h"
 
+using std::cout;
+using std::endl;
+
 namespace polyscope {
 
 // === Declare storage global members
@@ -243,7 +246,7 @@ void processMouseEvents() {
       bool isDragZoom = io.KeyShift && io.KeyCtrl;
       bool isRotate = !io.KeyShift;
       if (isDragZoom) {
-        view::processZoom(dragDelta.y*5);
+        view::processZoom(dragDelta.y * 5);
       } else {
         if (isRotate) {
           view::processRotate(dragDelta.x, dragDelta.y);
@@ -389,14 +392,33 @@ bool checkStructureNameInUse(std::string name, bool throwError = true) {
 
 void draw(bool withUI = true) {
 
+  // Update buffer and context
+  glfwMakeContextCurrent(imguirender::mainWindow);
+  glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
+  glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
+
+  if (withUI) {
+    imguirender::ImGui_ImplGlfwGL3_NewFrame();
+  }
+
   // Ensure the default framebuffer is bound
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  // Clear out the gui
+  // Clear out the view
   glViewport(0, 0, view::bufferWidth, view::bufferHeight);
   glClearColor(view::bgColor[0], view::bgColor[1], view::bgColor[2], view::bgColor[3]);
   glClearDepth(1.);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+  if (withUI) {
+    // Build the GUI components
+    // ImGui::ShowTestWindow();
+    buildPolyscopeGui();
+    buildStructureGui();
+    buildUserGui();
+    buildPickGui();
+  }
+
 
   // Draw structures in the scene
   drawStructures();
@@ -405,8 +427,6 @@ void draw(bool withUI = true) {
   if (withUI) {
     ImGui::Render();
   }
-
-  glfwSwapBuffers(imguirender::mainWindow);
 }
 
 
@@ -429,24 +449,14 @@ void show() {
     glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
     glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
 
+    // Process UI events
     glfwPollEvents();
-    imguirender::ImGui_ImplGlfwGL3_NewFrame();
-
     processMouseEvents();
 
-    // Build the GUI components
-    // ImGui::ShowTestWindow();
-    buildPolyscopeGui();
-    buildStructureGui();
-    buildUserGui();
-    buildPickGui();
 
-    // Process UI events
-
-    // TODO handle picking if needed
-
-    // === Rendering
+    // Rendering
     draw();
+    glfwSwapBuffers(imguirender::mainWindow);
   }
 }
 
@@ -630,18 +640,36 @@ void screenshot(std::string filename) {
   // Make sure we render first
   draw(false);
 
+  // Get buffer size
   GLint viewport[4];
   glGetIntegerv(GL_VIEWPORT, viewport);
   int w = viewport[2];
   int h = viewport[3];
 
-
-  size_t buffSize = w * h * 3;
+  // Read from openGL
+  size_t buffSize = w * h * 4;
   unsigned char* buff = new unsigned char[buffSize];
-  glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, buff);
-  saveImage(filename, buff, w, h, 3);
+  glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buff);
+
+  // Strip alpha channel and flip
+  // (openGL gave errors when trying to read without alpha)
+  size_t noAlphaBuffSize = w * h * 3;
+  unsigned char* noAlphaBuff = new unsigned char[noAlphaBuffSize];
+  for (int j = 0; j < h; j++) {
+    for (int i = 0; i < w; i++) {
+      int ind = i + j*w;
+      int flipInd = i + (h - j - 1)*w;
+      noAlphaBuff[3 * flipInd + 0] = buff[4 * ind + 0];
+      noAlphaBuff[3 * flipInd + 1] = buff[4 * ind + 1];
+      noAlphaBuff[3 * flipInd + 2] = buff[4 * ind + 2];
+    }
+  }
+
+  // Save to file
+  saveImage(filename, noAlphaBuff, w, h, 3);
 
   delete[] buff;
+  delete[] noAlphaBuff;
 }
 
 void screenshot() {
