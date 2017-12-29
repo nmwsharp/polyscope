@@ -4,8 +4,8 @@
 #define GLFW_INCLUDE_GLCOREARB
 #include "GLFW/glfw3.h"
 #else
-#include "GLFW/glfw3.h"
 #include "glad/glad.h"
+#include "GLFW/glfw3.h"
 #endif
 
 #include <array>
