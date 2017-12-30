@@ -3,13 +3,13 @@
 #include <map>
 #include <unordered_set>
 
+#include "polyscope/camera_view.h"
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/options.h"
 #include "polyscope/point_cloud.h"
-#include "polyscope/surface_mesh.h"
-#include "polyscope/camera_view.h"
 #include "polyscope/ray_set.h"
 #include "polyscope/structure.h"
+#include "polyscope/surface_mesh.h"
 #include "polyscope/utilities.h"
 
 namespace polyscope {
@@ -31,7 +31,7 @@ extern bool initialized;
 
 // lists of all structures in polyscope (used to itearte over all structures)
 extern std::map<StructureType, std::map<std::string, Structure*>> structureCategories;
-// also lists all structues, but lists are typed 
+// also lists all structues, but lists are typed
 extern std::map<std::string, PointCloud*> pointClouds;
 extern std::map<std::string, SurfaceMesh*> surfaceMeshes;
 extern std::map<std::string, CameraView*> cameraViews;
@@ -52,16 +52,16 @@ extern std::function<void()> userCallback;
 // The current screenshot index for automatically numbered screenshots
 extern size_t screenshotInd;
 
-}  // namespace state
+} // namespace state
 
 // === Manage structures tracked by polyscope
 
 // Register a point cloud structure with polyscope
 // `name` is a globally unique identifier for the structure
-void registerPointCloud(std::string name, const std::vector<Vector3>& points, bool replaceIfPresent=true);
-void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom, bool replaceIfPresent=true);
-void registerCameraView(std::string name,  CameraParameters p, bool replaceIfPresent=true);
-void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& r, bool replaceIfPresent=true);
+void registerPointCloud(std::string name, const std::vector<Vector3>& points, bool replaceIfPresent = true);
+void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom, bool replaceIfPresent = true);
+void registerCameraView(std::string name, CameraParameters p, bool replaceIfPresent = true);
+void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& r, bool replaceIfPresent = true);
 
 // Get a reference to a structure that has been registered
 PointCloud* getPointCloud(std::string name);
@@ -75,7 +75,7 @@ void removeStructure(std::string name);
 // De-register all structures, of any type. Also removes any quantities associated with the structure
 void removeAllStructures();
 
-// Recompute state::lengthScale, boundingBox, and center from all registered structures 
+// Recompute state::lengthScale, boundingBox, and center from all registered structures
 void updateStructureExtents();
 
 // === Errors
@@ -84,11 +84,11 @@ void error(std::string message);
 // === Utility
 
 // Take screenshots of the current view
-void screenshot(std::string filename);
-void screenshot();
+void screenshot(std::string filename, bool transparentBG = true);
+void screenshot(bool transparentBG = true);
 void saveImage(std::string name, unsigned char* buffer, int w, int h, int channels);
 
 // Get the next color from a global color palette
 std::array<float, 3> getNextPaletteColor();
 
-}  // namespace polyscope
+} // namespace polyscope

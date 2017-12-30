@@ -306,7 +306,7 @@ void buildPolyscopeGui() {
     view::flyToDefault();
   }
   if (ImGui::Button("Screenshot")) {
-    screenshot();
+    screenshot(false);
   }
   ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
@@ -406,7 +406,8 @@ void draw(bool withUI = true) {
 
   // Clear out the view
   glViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  glClearColor(view::bgColor[0], view::bgColor[1], view::bgColor[2], view::bgColor[3]);
+  // glClearColor(view::bgColor[0], view::bgColor[1], view::bgColor[2], view::bgColor[3]);
+  glClearColor(view::bgColor[0], view::bgColor[1], view::bgColor[2], 0);
   glClearDepth(1.);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -635,7 +636,7 @@ void error(std::string message) {
   }
 }
 
-void screenshot(std::string filename) {
+void screenshot(std::string filename, bool transparentBG) {
 
   // Make sure we render first
   draw(false);
@@ -651,34 +652,58 @@ void screenshot(std::string filename) {
   unsigned char* buff = new unsigned char[buffSize];
   glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buff);
 
-  // Strip alpha channel and flip
-  // (openGL gave errors when trying to read without alpha)
-  size_t noAlphaBuffSize = w * h * 3;
-  unsigned char* noAlphaBuff = new unsigned char[noAlphaBuffSize];
-  for (int j = 0; j < h; j++) {
-    for (int i = 0; i < w; i++) {
-      int ind = i + j*w;
-      int flipInd = i + (h - j - 1)*w;
-      noAlphaBuff[3 * flipInd + 0] = buff[4 * ind + 0];
-      noAlphaBuff[3 * flipInd + 1] = buff[4 * ind + 1];
-      noAlphaBuff[3 * flipInd + 2] = buff[4 * ind + 2];
+  // Just flip
+  if (transparentBG) {
+
+    size_t flipBuffSize = w * h * 4;
+    unsigned char* flipBuff = new unsigned char[flipBuffSize];
+    for (int j = 0; j < h; j++) {
+      for (int i = 0; i < w; i++) {
+        int ind = i + j * w;
+        int flipInd = i + (h - j - 1) * w;
+        flipBuff[4 * flipInd + 0] = buff[4 * ind + 0];
+        flipBuff[4 * flipInd + 1] = buff[4 * ind + 1];
+        flipBuff[4 * flipInd + 2] = buff[4 * ind + 2];
+        flipBuff[4 * flipInd + 3] = buff[4 * ind + 3];
+      }
     }
+
+    // Save to file
+    saveImage(filename, flipBuff, w, h, 4);
+
+    delete[] flipBuff;
+  } 
+  // Strip alpha channel and flip
+  else {
+
+    size_t noAlphaBuffSize = w * h * 3;
+    unsigned char* noAlphaBuff = new unsigned char[noAlphaBuffSize];
+    for (int j = 0; j < h; j++) {
+      for (int i = 0; i < w; i++) {
+        int ind = i + j * w;
+        int flipInd = i + (h - j - 1) * w;
+        noAlphaBuff[3 * flipInd + 0] = buff[4 * ind + 0];
+        noAlphaBuff[3 * flipInd + 1] = buff[4 * ind + 1];
+        noAlphaBuff[3 * flipInd + 2] = buff[4 * ind + 2];
+      }
+    }
+
+    // Save to file
+    saveImage(filename, noAlphaBuff, w, h, 3);
+
+    delete[] noAlphaBuff;
   }
 
-  // Save to file
-  saveImage(filename, noAlphaBuff, w, h, 3);
-
   delete[] buff;
-  delete[] noAlphaBuff;
 }
 
-void screenshot() {
+void screenshot(bool transparentBG) {
 
   char buff[50];
   snprintf(buff, 50, "screenshot_%06zu.png", state::screenshotInd);
   std::string defaultName(buff);
 
-  screenshot(defaultName);
+  screenshot(defaultName, transparentBG);
 
   state::screenshotInd++;
 }
