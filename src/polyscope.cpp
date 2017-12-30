@@ -306,7 +306,7 @@ void buildPolyscopeGui() {
     view::flyToDefault();
   }
   if (ImGui::Button("Screenshot")) {
-    screenshot(false);
+    screenshot(true);
   }
   ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
