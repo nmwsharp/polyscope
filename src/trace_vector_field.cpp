@@ -356,10 +356,10 @@ std::vector<std::vector<std::array<Vector3, 2>>> traceField(Geometry<Euclidean>*
 
 
   // == Trace the lines
+  cout << "Tracing lines through vector field... " << endl;
   std::vector<std::vector<std::array<Vector3, 2>>> lineList;
   for (size_t i = 0; i < nLines; i++) {
 
-    cout << "Tracing line " << i << endl;
 
     // Get the next starting face
     FacePtr startFace = faceQueue.back();
@@ -377,6 +377,7 @@ std::vector<std::vector<std::array<Vector3, 2>>> traceField(Geometry<Euclidean>*
     // Trace
     lineList.push_back(tracer.traceLine(FacePoint{startFace, randPoint}, randomDir));
   }
+  cout << "    ... done tracing field." << endl;
 
 
   return lineList;

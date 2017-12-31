@@ -300,7 +300,7 @@ void SurfaceMesh::buildVertexInfoGui(VertexPtr v) {
 
   // Build GUI to show the quantities
   ImGui::Columns(2);
-  ImGui::SetColumnWidth(0,  ImGui::GetWindowWidth()/3);
+  ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto x : quantities) {
     x.second->buildInfoGUI(v);
   }
@@ -318,7 +318,7 @@ void SurfaceMesh::buildFaceInfoGui(FacePtr f) {
 
   // Build GUI to show the quantities
   ImGui::Columns(2);
-  ImGui::SetColumnWidth(0,  ImGui::GetWindowWidth()/3);
+  ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto x : quantities) {
     x.second->buildInfoGUI(f);
   }
@@ -336,7 +336,7 @@ void SurfaceMesh::buildEdgeInfoGui(EdgePtr e) {
 
   // Build GUI to show the quantities
   ImGui::Columns(2);
-  ImGui::SetColumnWidth(0,  ImGui::GetWindowWidth()/3);
+  ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto x : quantities) {
     x.second->buildInfoGUI(e);
   }
@@ -354,7 +354,7 @@ void SurfaceMesh::buildHalfedgeInfoGui(HalfedgePtr he) {
 
   // Build GUI to show the quantities
   ImGui::Columns(2);
-  ImGui::SetColumnWidth(0,  ImGui::GetWindowWidth()/3);
+  ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto x : quantities) {
     x.second->buildInfoGUI(he);
   }
@@ -369,6 +369,29 @@ void SurfaceMesh::drawUI() {
 
   if (ImGui::TreeNode(name.c_str())) {
     // enabled = true;
+
+    // Print stats
+    // TODO wrong for multiple connected components
+    long long int nVerts = static_cast<long long int>(mesh->nVertices());
+    long long int nConnComp = static_cast<long long int>(mesh->nConnectedComponents());
+    bool hasBoundary = mesh->nBoundaryLoops() > 0;
+    if (nConnComp > 1) {
+      if (hasBoundary) {
+        ImGui::Text("# verts: %lld  # components: %lld", nVerts, nConnComp);
+        ImGui::Text("# boundary: %lu", static_cast<unsigned long>(mesh->nBoundaryLoops()));
+      } else {
+        ImGui::Text("# verts: %lld  # components: %lld", nVerts, nConnComp);
+      }
+    } else {
+      if (hasBoundary) {
+        ImGui::Text("# verts: %lld  # boundary: %lu", nVerts, static_cast<unsigned long>(mesh->nBoundaryLoops()));
+      } else {
+        long long int eulerCharacteristic = mesh->nVertices() - mesh->nEdges() + mesh->nFaces();
+        long long int genus = (2 - eulerCharacteristic) / 2;
+        ImGui::Text("# verts: %lld  genus: %lld", nVerts, genus);
+      }
+    }
+
 
     ImGui::Checkbox("Enabled", &enabled);
     ImGui::SameLine();

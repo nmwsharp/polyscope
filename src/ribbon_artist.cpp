@@ -109,8 +109,7 @@ void RibbonArtist::draw() {
 
 
   program->setUniform("u_ribbonWidth", ribbonWidth * state::lengthScale);
-  program->setUniform("u_depthOffset", 1e-3); // TODO
-  // program->setUniform("u_depthOffset", 0.f); // TODO
+  program->setUniform("u_depthOffset", 1e-4);
 
   // Draw
   glEnable(GL_BLEND);
