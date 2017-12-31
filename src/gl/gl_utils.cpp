@@ -54,6 +54,10 @@ GLProgram::GLProgram(const VertShader* vShader, const TessShader* tShader, const
     useIndex = true;
   }
 
+  if (dm == DrawMode::IndexedLineStripAdjacency) {
+    usePrimitiveRestart = true;
+  }
+
   // Collect attributes and uniforms from all of the shaders
 
   // Vertex shader
@@ -831,6 +835,18 @@ void GLProgram::setIndex(std::vector<unsigned int> indices) {
                                 "drawing");
   }
 
+  // Catch some cases where we forget to specify the restart index.
+  // It would be nice to do a more complete check involving the data buffer, but this is simple
+  // and catches most mistakes.
+  if (usePrimitiveRestart && !primitiveRestartIndexSet) {
+    GLuint bigThresh = static_cast<GLuint>(-1) / 2;
+    for (unsigned int x : indices) {
+      if (x > bigThresh) {
+        throw std::invalid_argument("An unusual index was passed, but setPrimitiveRestartIndex() has not been called.");
+      }
+    }
+  }
+
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
   indexSize = indices.size();
@@ -887,6 +903,14 @@ void GLProgram::initCommonShaders() {
   printShaderInfoLog(commonShaderHandle);
 }
 
+void GLProgram::setPrimitiveRestartIndex(GLuint restartIndex_) {
+  if (!usePrimitiveRestart) {
+    throw std::runtime_error("setPrimitiveRestartIndex() called, but draw mode does not support restart indices.");
+  }
+  restartIndex = restartIndex_;
+  primitiveRestartIndexSet = true;
+}
+
 void GLProgram::activateTextures() {
   for (GLTexture& t : textures) {
     // Point the uniform at this texture
@@ -911,6 +935,11 @@ void GLProgram::draw() {
 
   glUseProgram(programHandle);
   glBindVertexArray(vaoHandle);
+
+  if (usePrimitiveRestart) {
+    glEnable(GL_PRIMITIVE_RESTART);
+    glPrimitiveRestartIndex(restartIndex);
+  }
 
   activateTextures();
 
@@ -954,6 +983,10 @@ void GLProgram::draw() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
     glDrawElements(GL_TRIANGLES, drawDataLength, GL_UNSIGNED_INT, 0);
     break;
+  }
+
+  if (usePrimitiveRestart) {
+    glDisable(GL_PRIMITIVE_RESTART);
   }
 
   checkGLError();

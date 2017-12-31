@@ -5,6 +5,7 @@
 #include "GLFW/glfw3.h"
 #else
 #include "glad/glad.h"
+// glad must come first
 #include "GLFW/glfw3.h"
 #endif
 
@@ -102,6 +103,7 @@ public:
   // Indices
   void setIndex(std::vector<uint3> indices);
   void setIndex(std::vector<unsigned int> indices);
+  void setPrimitiveRestartIndex(GLuint restartIndex);
 
   // Call once to initialize GLSL code used by multiple shaders
   static void initCommonShaders();
@@ -157,6 +159,9 @@ private:
   // Does this program use indexed drawing?
   bool useIndex = false;
   long int indexSize = -1;
+  bool usePrimitiveRestart = false;
+  bool primitiveRestartIndexSet = false;
+  GLuint restartIndex = -1;
 
   // Tessellation parameters
   GLint nPatchVertices;
