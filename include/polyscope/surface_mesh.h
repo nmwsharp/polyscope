@@ -36,7 +36,6 @@ public:
 
   // Build GUI info about this element
   virtual void buildInfoGUI(VertexPtr v);
-  ;
   virtual void buildInfoGUI(FacePtr f);
   virtual void buildInfoGUI(EdgePtr e);
   virtual void buildInfoGUI(HalfedgePtr he);
@@ -46,7 +45,6 @@ public:
   SurfaceMesh* const parent;
 
   bool enabled = false; // should be set by enable() and disable()
-
 };
 
 // Specific subclass indicating that a quantity can create a program to draw on
@@ -98,7 +96,8 @@ public:
   void addColorQuantity(std::string name, FaceData<Vector3>& value);
   void addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
   void addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
-  void addVectorQuantity(std::string name, FaceData<Complex>& value, int nSym=1, VectorType vectorType = VectorType::STANDARD);
+  void addVectorQuantity(std::string name, FaceData<Complex>& value, int nSym = 1,
+                         VectorType vectorType = VectorType::STANDARD);
 
   void removeQuantity(std::string name);
   void setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q);
@@ -158,19 +157,19 @@ private:
 };
 
 // Make mesh element type printable
-inline std::string getMeshElementTypeName(MeshElement type){
-  switch(type) {
-    case MeshElement::VERTEX:
-       return "vertex";
-    case MeshElement::FACE:
-       return "face";
-    case MeshElement::EDGE:
-       return "edge";
-    case MeshElement::HALFEDGE:
-       return "halfedge";
-    }
+inline std::string getMeshElementTypeName(MeshElement type) {
+  switch (type) {
+  case MeshElement::VERTEX:
+    return "vertex";
+  case MeshElement::FACE:
+    return "face";
+  case MeshElement::EDGE:
+    return "edge";
+  case MeshElement::HALFEDGE:
+    return "halfedge";
+  }
 }
-inline std::ostream& operator<<(std::ostream& out, const MeshElement value){
+inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
   return out << getMeshElementTypeName(value);
 }
 

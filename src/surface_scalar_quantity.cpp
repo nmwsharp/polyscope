@@ -8,36 +8,31 @@
 
 namespace polyscope {
 
-SurfaceScalarQuantity::SurfaceScalarQuantity(std::string name,
-                                             SurfaceMesh* mesh_,
-                                             std::string definedOn_,
+SurfaceScalarQuantity::SurfaceScalarQuantity(std::string name, SurfaceMesh* mesh_, std::string definedOn_,
                                              DataType dataType_)
-    : SurfaceQuantityThatDrawsFaces(name, mesh_),
-      dataType(dataType_),
-      definedOn(definedOn_) {
+    : SurfaceQuantityThatDrawsFaces(name, mesh_), dataType(dataType_), definedOn(definedOn_) {
   // Set the default colormap based on what kind of data is given
   switch (dataType) {
-    case DataType::STANDARD:
-      iColorMap = 0;  // viridis
-      break;
-    case DataType::SYMMETRIC:
-      iColorMap = 1;  // coolwarm
-      break;
-    case DataType::MAGNITUDE:
-      iColorMap = 2;  // blues
-      break;
+  case DataType::STANDARD:
+    iColorMap = 0; // viridis
+    break;
+  case DataType::SYMMETRIC:
+    iColorMap = 1; // coolwarm
+    break;
+  case DataType::MAGNITUDE:
+    iColorMap = 2; // blues
+    break;
   }
 }
 
-void SurfaceScalarQuantity::draw() {
-}  // nothing to do, drawn by surface mesh program
+void SurfaceScalarQuantity::draw() {} // nothing to do, drawn by surface mesh program
 
 void SurfaceScalarQuantity::drawUI() {
   bool enabledBefore = enabled;
   if (ImGui::TreeNode((name + " (" + definedOn + " scalar)").c_str())) {
     ImGui::Checkbox("Enabled", &enabled);
 
-    {  // Set colormap
+    { // Set colormap
       ImGui::SameLine();
       ImGui::PushItemWidth(100);
       int iColormapBefore = iColorMap;
@@ -48,7 +43,7 @@ void SurfaceScalarQuantity::drawUI() {
       }
     }
 
-    {  // Draw max and min
+    { // Draw max and min
       ImGui::TextUnformatted(mapper.printBounds().c_str());
     }
 
@@ -68,9 +63,8 @@ void SurfaceScalarQuantity::drawUI() {
 // ==========           Vertex Scalar            ==========
 // ========================================================
 
-SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(
-    std::string name, VertexData<double>& values_, SurfaceMesh* mesh_,
-    DataType dataType_)
+SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(std::string name, VertexData<double>& values_,
+                                                         SurfaceMesh* mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "vertex", dataType_)
 
 {
@@ -85,9 +79,8 @@ SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(
 
 gl::GLProgram* SurfaceScalarVertexQuantity::createProgram() {
   // Create the program to draw this quantity
-  gl::GLProgram* program = new gl::GLProgram(&VERTCOLOR_SURFACE_VERT_SHADER,
-                                             &VERTCOLOR_SURFACE_FRAG_SHADER,
-                                             gl::DrawMode::Triangles);
+  gl::GLProgram* program =
+      new gl::GLProgram(&VERTCOLOR_SURFACE_VERT_SHADER, &VERTCOLOR_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
 
   // Fill color buffers
   fillColorBuffers(program);
@@ -131,9 +124,7 @@ void SurfaceScalarVertexQuantity::buildInfoGUI(VertexPtr v) {
 // ==========            Face Scalar             ==========
 // ========================================================
 
-SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name,
-                                                     FaceData<double>& values_,
-                                                     SurfaceMesh* mesh_,
+SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name, FaceData<double>& values_, SurfaceMesh* mesh_,
                                                      DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "face", dataType_)
 
@@ -149,9 +140,8 @@ SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name,
 
 gl::GLProgram* SurfaceScalarFaceQuantity::createProgram() {
   // Create the program to draw this quantity
-  gl::GLProgram* program = new gl::GLProgram(&VERTCOLOR_SURFACE_VERT_SHADER,
-                                             &VERTCOLOR_SURFACE_FRAG_SHADER,
-                                             gl::DrawMode::Triangles);
+  gl::GLProgram* program =
+      new gl::GLProgram(&VERTCOLOR_SURFACE_VERT_SHADER, &VERTCOLOR_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
 
   // Fill color buffers
   fillColorBuffers(program);
@@ -195,9 +185,7 @@ void SurfaceScalarFaceQuantity::buildInfoGUI(FacePtr f) {
 // ==========            Edge Scalar             ==========
 // ========================================================
 
-SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name,
-                                                     EdgeData<double>& values_,
-                                                     SurfaceMesh* mesh_,
+SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name, EdgeData<double>& values_, SurfaceMesh* mesh_,
                                                      DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "edge", dataType_)
 
@@ -213,8 +201,7 @@ SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name,
 
 gl::GLProgram* SurfaceScalarEdgeQuantity::createProgram() {
   // Create the program to draw this quantity
-  gl::GLProgram* program = new gl::GLProgram(&HALFEDGECOLOR_SURFACE_VERT_SHADER,
-                                             &HALFEDGECOLOR_SURFACE_FRAG_SHADER,
+  gl::GLProgram* program = new gl::GLProgram(&HALFEDGECOLOR_SURFACE_VERT_SHADER, &HALFEDGECOLOR_SURFACE_FRAG_SHADER,
                                              gl::DrawMode::Triangles);
 
   // Fill color buffers
@@ -262,9 +249,8 @@ void SurfaceScalarEdgeQuantity::buildInfoGUI(EdgePtr e) {
 // ==========          Halfedge Scalar           ==========
 // ========================================================
 
-SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(
-    std::string name, HalfedgeData<double>& values_, SurfaceMesh* mesh_,
-    DataType dataType_)
+SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(std::string name, HalfedgeData<double>& values_,
+                                                             SurfaceMesh* mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "halfedge", dataType_)
 
 {
@@ -279,8 +265,7 @@ SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(
 
 gl::GLProgram* SurfaceScalarHalfedgeQuantity::createProgram() {
   // Create the program to draw this quantity
-  gl::GLProgram* program = new gl::GLProgram(&HALFEDGECOLOR_SURFACE_VERT_SHADER,
-                                             &HALFEDGECOLOR_SURFACE_FRAG_SHADER,
+  gl::GLProgram* program = new gl::GLProgram(&HALFEDGECOLOR_SURFACE_VERT_SHADER, &HALFEDGECOLOR_SURFACE_FRAG_SHADER,
                                              gl::DrawMode::Triangles);
 
   // Fill color buffers
@@ -324,4 +309,4 @@ void SurfaceScalarHalfedgeQuantity::buildInfoGUI(HalfedgePtr he) {
   ImGui::NextColumn();
 }
 
-}  // namespace polyscope
+} // namespace polyscope

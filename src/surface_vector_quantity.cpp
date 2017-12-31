@@ -3,6 +3,7 @@
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/vector_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/trace_vector_field.h"
 
 #include "imgui.h"
 
@@ -18,6 +19,10 @@ SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh* mesh
   finishConstructing();
 }
 
+SurfaceVectorQuantity::~SurfaceVectorQuantity() {
+  safeDelete(program);
+  safeDelete(ribbonArtist);
+}
 
 void SurfaceVectorQuantity::finishConstructing() {
 
@@ -39,7 +44,7 @@ void SurfaceVectorQuantity::finishConstructing() {
 }
 
 void SurfaceVectorQuantity::draw() {
-  if (!enabled) return;
+  if (!enabled || ribbonEnabled) return;
 
   if (program == nullptr) prepare();
 
@@ -100,9 +105,13 @@ void SurfaceVectorQuantity::drawUI() {
       ImGui::TextUnformatted(mapper.printBounds().c_str());
     }
 
+    drawSubUI();
+
     ImGui::TreePop();
   }
 }
+
+void SurfaceVectorQuantity::drawSubUI() {}
 
 
 // ========================================================
@@ -217,6 +226,33 @@ void SurfaceFaceIntrinsicVectorQuantity::buildInfoGUI(FacePtr f) {
   ImGui::NextColumn();
   ImGui::Text("magnitude: %g", norm(vectorField[f]));
   ImGui::NextColumn();
+}
+
+void SurfaceFaceIntrinsicVectorQuantity::draw() {
+  SurfaceVectorQuantity::draw();
+
+  if (ribbonEnabled) {
+
+    // Make sure we have a ribbon artist
+    if (ribbonArtist == nullptr) {
+
+      // Warning: expensive... Creates noticeable UI lag
+      ribbonArtist = new RibbonArtist(traceField(parent->geometry, vectorField, nSym, 2500));
+    }
+
+
+    if (enabled) {
+      ribbonArtist->draw();
+    }
+  }
+}
+
+void SurfaceFaceIntrinsicVectorQuantity::drawSubUI() {
+
+  ImGui::Checkbox("Draw ribbon", &ribbonEnabled);
+  if (ribbonEnabled && ribbonArtist != nullptr) {
+    ribbonArtist->buildParametersGUI();
+  }
 }
 
 

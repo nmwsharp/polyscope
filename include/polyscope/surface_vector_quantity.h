@@ -1,6 +1,7 @@
 #pragma once
 
 #include "polyscope/affine_remapper.h"
+#include "polyscope/ribbon_artist.h"
 #include "polyscope/surface_mesh.h"
 
 namespace polyscope {
@@ -12,9 +13,13 @@ public:
   SurfaceVectorQuantity(std::string name, SurfaceMesh* mesh_, MeshElement definedOn_,
                         VectorType vectorType_ = VectorType::STANDARD);
 
+  virtual ~SurfaceVectorQuantity() override;
 
   virtual void draw() override;
   virtual void drawUI() override;
+
+  // Allow children to append to the UI
+  virtual void drawSubUI();
 
   // Do work shared between all constructors
   void finishConstructing();
@@ -27,6 +32,10 @@ public:
   float radiusMult; // radius is this fraction of lengthScale
   std::array<float, 3> vectorColor;
   MeshElement definedOn;
+
+  // A ribbon viz that is appropriate for some fields
+  RibbonArtist* ribbonArtist = nullptr;
+  bool ribbonEnabled = false;
 
   // The map that takes values to [0,1] for drawing
   AffineRemapper<Vector3> mapper;
@@ -43,7 +52,7 @@ public:
 
   VertexData<Vector3> vectorField;
 
-  void buildInfoGUI(VertexPtr v) override;
+  virtual void buildInfoGUI(VertexPtr v) override;
 };
 
 
@@ -54,16 +63,20 @@ public:
 
   FaceData<Vector3> vectorField;
 
-  void buildInfoGUI(FacePtr f) override;
+  virtual void buildInfoGUI(FacePtr f) override;
 };
 
 class SurfaceFaceIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceFaceIntrinsicVectorQuantity(std::string name, FaceData<Complex>& vectors_, SurfaceMesh* mesh_,
-                            int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
+  SurfaceFaceIntrinsicVectorQuantity(std::string name, FaceData<Complex>& vectors_, SurfaceMesh* mesh_, int nSym = 1,
+                                     VectorType vectorType_ = VectorType::STANDARD);
 
   FaceData<Complex> vectorField;
   int nSym;
+
+  virtual void draw() override;
+
+  void drawSubUI() override;
 
   void buildInfoGUI(FacePtr f) override;
 };

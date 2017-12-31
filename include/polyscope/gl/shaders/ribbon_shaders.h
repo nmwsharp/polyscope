@@ -1,0 +1,195 @@
+#pragma once
+
+
+// NOTE: You probably don't want to include this directly... see shaders.h
+
+
+static const VertShader RIBBON_VERT_SHADER = {
+    // uniforms
+    {
+    }, 
+
+    // attributes
+    {
+        {"a_position", GLData::Vector3Float},
+        {"a_color", GLData::Vector3Float},
+        {"a_normal", GLData::Vector3Float},
+    },
+
+    // source
+    GLSL(150,
+        in vec3 a_position;
+        in vec3 a_color;
+        in vec3 a_normal;
+        out vec3 Color;
+        out vec3 Normal;
+        void main()
+        {
+            Color = a_color;
+            Normal = a_normal;
+            gl_Position = vec4(a_position,1.0);
+        }
+    )
+};
+
+
+static const GeomShader RIBBON_GEOM_SHADER = {
+    
+    // uniforms
+    {
+        {"u_viewMatrix", GLData::Matrix44Float},
+        {"u_projMatrix", GLData::Matrix44Float},
+        {"u_ribbonWidth", GLData::Float},
+        {"u_depthOffset", GLData::Float},
+    }, 
+
+    // attributes
+    {
+    },
+
+    // source
+    GLSL(150,
+        layout(lines_adjacency) in;
+        layout(triangle_strip, max_vertices=20) out;
+        in vec3 Color[];
+        in vec3 Normal[];
+        uniform mat4 u_viewMatrix;
+        uniform mat4 u_projMatrix;
+        uniform float u_ribbonWidth;
+        uniform float u_depthOffset;
+        out vec3 colorToFrag;
+        out vec3 worldNormalToFrag;
+        out vec3 worldPosToFrag;
+        out float intensityToFrag;
+        void main()   {
+            mat4 PV = u_projMatrix * u_viewMatrix;
+            const float PI = 3.14159265358;
+
+            vec3 pos0 = gl_in[0].gl_Position.xyz;
+            vec3 pos1 = gl_in[1].gl_Position.xyz;
+            vec3 pos2 = gl_in[2].gl_Position.xyz;
+            vec3 pos3 = gl_in[3].gl_Position.xyz;
+            vec3 dir = normalize(pos2 - pos1);
+            vec3 prevDir = normalize(pos1 - pos0);
+            vec3 nextDir = normalize(pos3 - pos2);
+            vec3 sideVec0 = normalize(cross(normalize(dir + prevDir), Normal[1]));
+            vec3 sideVec1 = normalize(cross(normalize(dir + nextDir), Normal[2]));
+
+            // The points on the front and back sides of the ribbon
+            vec4 pStartLeft = vec4(pos1 + sideVec0 * u_ribbonWidth, 1);
+            vec4 pStartMid = vec4(pos1, 1);
+            vec4 pStartRight = vec4(pos1 - sideVec0 * u_ribbonWidth, 1);
+            vec4 pEndLeft = vec4(pos2 + sideVec1 * u_ribbonWidth, 1);
+            vec4 pEndMid = vec4(pos2, 1);
+            vec4 pEndRight = vec4(pos2 - sideVec1 * u_ribbonWidth, 1);
+
+            // First triangle
+            gl_Position = PV * pStartRight;
+            gl_Position.z -= u_depthOffset;
+            worldPosToFrag = pStartRight.xyz;
+            worldNormalToFrag = Normal[1];
+            colorToFrag = Color[1];
+            intensityToFrag = 0.0;
+            EmitVertex();
+            
+            gl_Position = PV * pEndRight;
+            gl_Position.z -= u_depthOffset;
+            worldPosToFrag = pEndRight.xyz;
+            worldNormalToFrag = Normal[2];
+            colorToFrag = Color[2];
+            intensityToFrag = 0.0;
+            EmitVertex();
+            
+            gl_Position = PV * pStartMid;
+            gl_Position.z -= u_depthOffset;
+            worldPosToFrag = pStartMid.xyz;
+            worldNormalToFrag = Normal[1];
+            colorToFrag = Color[1];
+            intensityToFrag = 1.0;
+            EmitVertex();
+
+            // Second triangle
+            gl_Position = PV * pEndMid;
+            gl_Position.z -= u_depthOffset;
+            worldPosToFrag = pEndMid.xyz;
+            worldNormalToFrag = Normal[2];
+            colorToFrag = Color[2];
+            intensityToFrag = 1.0;
+            EmitVertex();
+
+            // Third triangle
+            gl_Position = PV * pStartLeft;
+            gl_Position.z -= u_depthOffset;
+            worldPosToFrag = pStartLeft.xyz;
+            worldNormalToFrag = Normal[1];
+            colorToFrag = Color[1];
+            intensityToFrag = 0.0;
+            EmitVertex();
+
+            // Fourth triangle
+            gl_Position = PV * pEndLeft;
+            gl_Position.z -= u_depthOffset;
+            worldPosToFrag = pEndLeft.xyz;
+            worldNormalToFrag = Normal[2];
+            colorToFrag = Color[2];
+            intensityToFrag = 0.0;
+            EmitVertex();
+
+            EndPrimitive();
+        }
+
+    )
+};
+
+
+
+static const FragShader RIBBON_FRAG_SHADER = {
+    
+    // uniforms
+    {
+        {"u_eye", GLData::Vector3Float},
+        {"u_lightCenter", GLData::Vector3Float},
+        {"u_lightDist", GLData::Float},
+    }, 
+
+    // attributes
+    {
+    },
+    
+    // textures 
+    {
+    },
+    
+    // output location
+    "outputF",
+ 
+    // source
+    GLSL(150,
+        uniform vec3 u_eye;
+        uniform vec3 u_lightCenter;
+        uniform float u_lightDist;
+        in vec3 colorToFrag;
+        in vec3 worldNormalToFrag;
+        in vec3 worldPosToFrag;
+        in float intensityToFrag;
+        out vec4 outputF;
+
+        // Forward declarations of methods from <shaders/common.h>
+        vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
+
+        void main()
+        {
+           outputF = lightSurface(worldPosToFrag, worldNormalToFrag, colorToFrag, u_lightCenter, u_lightDist, u_eye);
+
+           // Compute a fade factor to set the transparency
+           // Basically amounts to antialiasing in screen space when lines are relatively large on screen
+           float screenFadeLen = 2.5;
+           float dF = length(vec2(dFdx(intensityToFrag),dFdy(intensityToFrag)));
+           float thresh = min(dF * screenFadeLen, 0.2);
+           float fadeFactor = smoothstep(0, thresh, intensityToFrag);
+
+           outputF.a = fadeFactor;
+        }
+    )
+};
+

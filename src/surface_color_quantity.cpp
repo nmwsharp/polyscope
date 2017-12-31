@@ -94,8 +94,7 @@ void SurfaceColorVertexQuantity::buildInfoGUI(VertexPtr v) {
 // ==========            Face Scalar             ==========
 // ========================================================
 
-SurfaceColorFaceQuantity::SurfaceColorFaceQuantity(std::string name, FaceData<Vector3>& values_,
-                                                       SurfaceMesh* mesh_)
+SurfaceColorFaceQuantity::SurfaceColorFaceQuantity(std::string name, FaceData<Vector3>& values_, SurfaceMesh* mesh_)
     : SurfaceColorQuantity(name, mesh_, "face")
 
 {
