@@ -510,6 +510,14 @@ void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& 
 }
 
 PointCloud* getPointCloud(std::string name) {
+  // Special automatic case, return any
+  if (name == "") {
+    if (state::pointClouds.size() != 1) {
+      error("Cannot use automatic structure get unless exactly one structure of that type registered");
+      return nullptr;
+    }
+    return state::pointClouds.begin()->second;
+  }
   if (state::pointClouds.find(name) == state::pointClouds.end()) {
     error("No point cloud with name " + name + " registered");
     return nullptr;
@@ -518,6 +526,14 @@ PointCloud* getPointCloud(std::string name) {
 }
 
 SurfaceMesh* getSurfaceMesh(std::string name) {
+  // Special automatic case, return any
+  if (name == "") {
+    if (state::surfaceMeshes.size() != 1) {
+      error("Cannot use automatic structure get unless exactly one structure of that type registered");
+      return nullptr;
+    }
+    return state::surfaceMeshes.begin()->second;
+  }
   if (state::surfaceMeshes.find(name) == state::surfaceMeshes.end()) {
     error("No surface mesh with name " + name + " registered");
     return nullptr;
@@ -526,6 +542,14 @@ SurfaceMesh* getSurfaceMesh(std::string name) {
 }
 
 CameraView* getCameraView(std::string name) {
+  // Special automatic case, return any
+  if (name == "") {
+    if (state::cameraViews.size() != 1) {
+      error("Cannot use automatic structure get unless exactly one structure of that type registered");
+      return nullptr;
+    }
+    return state::cameraViews.begin()->second;
+  }
   if (state::cameraViews.find(name) == state::cameraViews.end()) {
     error("No camera view with name " + name + " registered");
     return nullptr;
@@ -534,6 +558,14 @@ CameraView* getCameraView(std::string name) {
 }
 
 RaySet* getRaySet(std::string name) {
+  // Special automatic case, return any
+  if (name == "") {
+    if (state::raySets.size() != 1) {
+      error("Cannot use automatic structure get unless exactly one structure of that type registered");
+      return nullptr;
+    }
+    return state::raySets.begin()->second;
+  }
   if (state::raySets.find(name) == state::raySets.end()) {
     error("No ray set with name " + name + " registered");
     return nullptr;
@@ -672,7 +704,7 @@ void screenshot(std::string filename, bool transparentBG) {
     saveImage(filename, flipBuff, w, h, 4);
 
     delete[] flipBuff;
-  } 
+  }
   // Strip alpha channel and flip
   else {
 

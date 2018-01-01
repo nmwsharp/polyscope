@@ -94,6 +94,8 @@ public:
   void addQuantity(std::string name, HalfedgeData<double>& value, DataType type = DataType::STANDARD);
   void addColorQuantity(std::string name, VertexData<Vector3>& value);
   void addColorQuantity(std::string name, FaceData<Vector3>& value);
+  void addIndexQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values);
+  void addIndexQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values);
   void addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
   void addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
   void addVectorQuantity(std::string name, FaceData<Complex>& value, int nSym = 1,

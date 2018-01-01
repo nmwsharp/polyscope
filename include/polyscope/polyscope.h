@@ -64,10 +64,12 @@ void registerCameraView(std::string name, CameraParameters p, bool replaceIfPres
 void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& r, bool replaceIfPresent = true);
 
 // Get a reference to a structure that has been registered
-PointCloud* getPointCloud(std::string name);
-SurfaceMesh* getSurfaceMesh(std::string name);
-CameraView* getCameraView(std::string name);
-RaySet* getRaySet(std::string name);
+// The default version with name="" arbitrarily returns any mesh. This is useful as a shorthand when only using a single
+// structure.
+PointCloud* getPointCloud(std::string name = "");
+SurfaceMesh* getSurfaceMesh(std::string name = "");
+CameraView* getCameraView(std::string name = "");
+RaySet* getRaySet(std::string name = "");
 
 // De-register a structure, of any type. Also removes any quantities associated with the structure
 void removeStructure(std::string name);

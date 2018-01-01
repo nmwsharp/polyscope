@@ -8,6 +8,7 @@
 
 // Quantities
 #include "polyscope/surface_color_quantity.h"
+#include "polyscope/surface_index_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
 
@@ -583,6 +584,23 @@ void SurfaceMesh::addColorQuantity(std::string name, FaceData<Vector3>& value) {
     q->enabled = true;
     setActiveSurfaceQuantity(q);
   }
+}
+
+void SurfaceMesh::addIndexQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values) {
+  // Delete old if in use
+  if (quantities.find(name) != quantities.end()) {
+    removeQuantity(name);
+  }
+  SurfaceIndexQuantity* q = new SurfaceIndexVertexQuantity(name, values, this);
+  quantities[name] = q;
+}
+void SurfaceMesh::addIndexQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values) {
+  // Delete old if in use
+  if (quantities.find(name) != quantities.end()) {
+    removeQuantity(name);
+  }
+  SurfaceIndexQuantity* q = new SurfaceIndexFaceQuantity(name, values, this);
+  quantities[name] = q;
 }
 
 void SurfaceMesh::addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType) {
