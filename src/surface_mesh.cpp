@@ -10,6 +10,7 @@
 #include "polyscope/surface_color_quantity.h"
 #include "polyscope/surface_index_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
+#include "polyscope/surface_subset_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
 
 #include "imgui.h"
@@ -123,10 +124,17 @@ void SurfaceMesh::preparePick() {
 
   // Get element indices
   size_t totalPickElements = mesh->nVertices() + mesh->nFaces() + mesh->nEdges() + mesh->nHalfedges();
-  size_t pickStart = pick::requestPickBufferRange(this, totalPickElements);
+
+  // In "local" indices, indexing elements only within this mesh, used for reading later
   facePickIndStart = mesh->nVertices();
   edgePickIndStart = facePickIndStart + mesh->nFaces();
   halfedgePickIndStart = edgePickIndStart + mesh->nEdges();
+
+  // In "global" indices, indexing all elements in the scene, used to fill buffers for drawing here
+  size_t pickStart = pick::requestPickBufferRange(this, totalPickElements);
+  size_t faceGlobalPickIndStart = pickStart + mesh->nVertices();
+  size_t edgeGlobalPickIndStart = faceGlobalPickIndStart + mesh->nFaces();
+  size_t halfedgeGlobalPickIndStart = edgeGlobalPickIndStart + mesh->nEdges();
 
   // Fill buffers
   std::vector<Vector3> positions;
@@ -152,11 +160,11 @@ void SurfaceMesh::preparePick() {
 
       // Want just one copy of positions and face color, so we can build it in the usual way
       positions.push_back(geometry->position(v));
-      faceColor.push_back(pick::indToVec(fInd[f] + facePickIndStart));
+      faceColor.push_back(pick::indToVec(fInd[f] + faceGlobalPickIndStart));
 
       vColor[i] = pick::indToVec(vInd[v] + pickStart);
-      eColor[i] = pick::indToVec(eInd[e] + edgePickIndStart);
-      heColor[i] = pick::indToVec(heInd[he] + halfedgePickIndStart);
+      eColor[i] = pick::indToVec(eInd[e] + edgeGlobalPickIndStart);
+      heColor[i] = pick::indToVec(heInd[he] + halfedgeGlobalPickIndStart);
       i++;
     }
 
@@ -600,6 +608,16 @@ void SurfaceMesh::addIndexQuantity(std::string name, std::vector<std::pair<FaceP
     removeQuantity(name);
   }
   SurfaceIndexQuantity* q = new SurfaceIndexFaceQuantity(name, values, this);
+  quantities[name] = q;
+}
+
+
+void SurfaceMesh::addSubsetQuantity(std::string name, EdgeData<char>& subset) {
+  // Delete old if in use
+  if (quantities.find(name) != quantities.end()) {
+    removeQuantity(name);
+  }
+  SurfaceEdgeSubsetQuantity* q = new SurfaceEdgeSubsetQuantity(name, subset, this);
   quantities[name] = q;
 }
 

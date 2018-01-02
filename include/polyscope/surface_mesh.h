@@ -88,14 +88,25 @@ public:
   virtual std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox() override;
 
   // === Quantity-related
+
+  // Scalars
   void addQuantity(std::string name, VertexData<double>& value, DataType type = DataType::STANDARD);
   void addQuantity(std::string name, FaceData<double>& value, DataType type = DataType::STANDARD);
   void addQuantity(std::string name, EdgeData<double>& value, DataType type = DataType::STANDARD);
   void addQuantity(std::string name, HalfedgeData<double>& value, DataType type = DataType::STANDARD);
+
+  // Colors
   void addColorQuantity(std::string name, VertexData<Vector3>& value);
   void addColorQuantity(std::string name, FaceData<Vector3>& value);
+
+  // Indices
   void addIndexQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values);
   void addIndexQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values);
+
+  // Subsets
+  void addSubsetQuantity(std::string name, EdgeData<char>& subset);
+
+  // Vectors
   void addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
   void addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
   void addVectorQuantity(std::string name, FaceData<Complex>& value, int nSym = 1,
@@ -140,6 +151,7 @@ private:
   // Picking-related
   // Order of indexing: vertices, faces, edges, halfedges
   // Within each set, uses the implicit ordering from the mesh data structure
+  // Thest starts are LOCAL indices, indexing elements only with the mesh
   size_t facePickIndStart, edgePickIndStart, halfedgePickIndStart;
   VertexData<size_t> vInd;
   FaceData<size_t> fInd;

@@ -21,7 +21,7 @@ size_t requestPickBufferRange(Structure* requestingStructure, size_t count);
 
 // Get the currently pick index, and the structure that index is mapped to.
 // Index is returned in "local" indices for that structure, such that '0' corresponds to the start of the range that was
-// retned by requestPickBufferRange().
+// returned by requestPickBufferRange().
 // If nothing is selected, returns nullptr and max_int.
 Structure* getCurrentPickElement(size_t& localInd);
 
@@ -34,8 +34,10 @@ void clearPickIfStructureSelected(Structure* s);
 void resetPick();
 
 // Constant for bit-bashing functions below
-const int bitsForPickPacking = 22;
-// const int bitsForPickPacking = 7; // useful for testing
+const int bitsForPickPacking =
+    22; // single-precision floats always have at least 22 bits of integer mantissa, and 22*3
+        // > 64, so we can safely store 64 bit integer quantities like size_t usually is in a vec3
+// const int bitsForPickPacking = 7; // useful for testing, makes pick coloring visually distingushable
 
 // Convert indices to color and back
 inline geometrycentral::Vector3 indToVec(size_t ind) {
