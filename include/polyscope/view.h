@@ -46,6 +46,9 @@ extern float flightTargetFov, flightInitialFov;
 void processTranslate(Vector2 delta);
 void processRotate(float delTheta, float delPhi);
 
+// Arcball roatation. startP and endP should be in [-1,1]
+void processRotateArcball(Vector2 startP, Vector2 endP);
+
 void processClipPlaneShift(double amount);
 void processZoom(double amount);
 

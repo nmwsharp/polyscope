@@ -36,24 +36,64 @@ void processRotate(float delTheta, float delPhi) {
   delTheta *= PI;
   delPhi *= PI;
 
+  // Get frame
+  Vector3 lookDir, upDir, rightDir;
+  getCameraFrame(lookDir, upDir, rightDir);
+  glm::vec3 upGLM(upDir.x, upDir.y, upDir.z);
+  glm::vec3 rightGLM(rightDir.x, rightDir.y, rightDir.z);
+
   // Rotation about the vertical axis
-  glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, glm::vec3(0.0, 1.0, 0.0));
+  glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, upGLM);
   viewMat = viewMat * thetaCamR;
 
   // Rotation about the horizontal axis
-  // Get the "right" direction
-  glm::mat3x3 R;
+  glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, rightGLM);
+  viewMat = viewMat * phiCamR;
+
+  immediatelyEndFlight();
+}
+
+void processRotateArcball(Vector2 startP, Vector2 endP) {
+
+  if (endP == startP) {
+    return;
+  }
+
+  // Map inputs to unit sphere
+  auto toSphere = [](Vector2 v) {
+    double x = clamp(v.x, -1.0, 1.0);
+    double y = clamp(v.y, -1.0, 1.0);
+    double mag = x * x + y * y;
+    if (mag <= 1.0) {
+      return Vector3{x, y, -std::sqrt(1.0 - mag)};
+    } else {
+      return unit(Vector3{x, y, 0.0});
+    }
+  };
+  Vector3 sphereStart = toSphere(startP);
+  Vector3 sphereEnd = toSphere(endP);
+
+  Vector3 rotAxis = -cross(sphereStart, sphereEnd);
+  double rotMag = std::acos(clamp(dot(sphereStart, sphereEnd), -1.0, 1.0));
+  
+  glm::mat4 cameraRotate = glm::rotate(glm::mat4x4(1.0), (float)rotMag, glm::vec3(rotAxis.x, rotAxis.y, rotAxis.z));
+
+  // Get current camera rotation
+  glm::mat4x4 R;
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
       R[i][j] = viewMat[i][j];
     }
   }
-  glm::vec3 rotAx = glm::transpose(R) * glm::vec3(-1.0, 0.0, 0.0);
-  glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), delPhi, rotAx);
-  viewMat = viewMat * phiCamR;
+  R[3][3] = 1.0;
+  
+  glm::mat4 update = glm::inverse(R) * cameraRotate * R;
+
+  viewMat = viewMat * update;
 
   immediatelyEndFlight();
 }
+
 void processTranslate(Vector2 delta) {
   if (norm(delta) == 0) {
     return;

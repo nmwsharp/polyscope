@@ -246,10 +246,19 @@ void processMouseEvents() {
       bool isDragZoom = io.KeyShift && io.KeyCtrl;
       bool isRotate = !io.KeyShift;
       if (isDragZoom) {
-        view::processZoom(dragDelta.y * 5);
+        view::processZoom(dragDelta.y * 5); 
       } else {
         if (isRotate) {
           view::processRotate(dragDelta.x, dragDelta.y);
+
+
+          /* Mediocre arcball
+          Vector2 currPos{io.MousePos.x / view::windowWidth, (view::windowHeight - io.MousePos.y) / view::windowHeight};
+          currPos = (currPos * 2.0) - Vector2{1.0, 1.0};
+          if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
+            view::processRotateArcball(currPos - 2.0 * dragDelta, currPos);
+          }
+          */
         } else {
           view::processTranslate(dragDelta);
         }
