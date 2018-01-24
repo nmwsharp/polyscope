@@ -34,9 +34,9 @@ void clearPickIfStructureSelected(Structure* s);
 void resetPick();
 
 // Constant for bit-bashing functions below
-const int bitsForPickPacking =
-    22; // single-precision floats always have at least 22 bits of integer mantissa, and 22*3
-        // > 64, so we can safely store 64 bit integer quantities like size_t usually is in a vec3
+// single-precision floats always have at least 22 bits of integer mantissa, and 22*3 > 64, so we can safely store 64
+// bit integer quantities like size_t usually is in a vec3
+const int bitsForPickPacking = 22;
 // const int bitsForPickPacking = 7; // useful for testing, makes pick coloring visually distingushable
 
 // Convert indices to color and back

@@ -21,8 +21,11 @@ using std::endl;
 
 namespace polyscope {
 
+// Initialize statics
+const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
+
 SurfaceMesh::SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_)
-    : Structure(name, StructureType::SurfaceMesh) {
+    : Structure(name, SurfaceMesh::structureTypeName) {
   // Copy the mesh and save the transfer object
   mesh = geometry_->getMesh()->copy(transfer);
   geometry = geometry_->copyUsingTransfer(transfer);

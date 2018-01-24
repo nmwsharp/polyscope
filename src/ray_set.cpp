@@ -11,8 +11,11 @@ using namespace geometrycentral;
 
 namespace polyscope {
 
+// Initialize static
+const std::string RaySet::structureTypeName = "Ray Set";
+
 RaySet::RaySet(std::string name, const std::vector<std::vector<RayPoint>>& r_)
-    : Structure(name, StructureType::RaySet), rayPaths(r_) {
+    : Structure(name, RaySet::structureTypeName), rayPaths(r_) {
   rayColor = getNextPaletteColor();
 
   prepare();

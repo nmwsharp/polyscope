@@ -73,6 +73,8 @@ class CameraView : public Structure {
   void drawWireframe();
   void drawImageView();
 
+  static const std::string structureTypeName;
+
   // === Member variables ===
   bool enabled = true;
 

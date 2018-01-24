@@ -19,10 +19,11 @@ using namespace geometrycentral;
 namespace polyscope {
 
 // Initialize static member
+const std::string CameraView::structureTypeName = "Camera View";
 float CameraView::globalImageTransparency = 1.0;
 
 CameraView::CameraView(std::string name, CameraParameters p_)
-    : Structure(name, StructureType::CameraView), parameters(p_) {
+    : Structure(name, structureTypeName), parameters(p_) {
   prepareCameraSkeleton();
   preparePick();
 }

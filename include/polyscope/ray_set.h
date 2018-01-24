@@ -51,6 +51,8 @@ class RaySet : public Structure {
 
   bool enabled = false;
 
+  static const std::string structureTypeName;
+
  private:
   // The ray paths in the set
   std::vector<std::vector<RayPoint>> rayPaths;

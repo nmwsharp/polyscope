@@ -134,6 +134,8 @@ public:
   gl::GLProgram* program = nullptr;
   gl::GLProgram* pickProgram = nullptr;
 
+  static const std::string structureTypeName;
+
 private:
   // Quantities
   std::map<std::string, SurfaceQuantity*> quantities;

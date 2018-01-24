@@ -40,6 +40,7 @@ class PointCloud : public Structure {
   boundingBox() override;
 
   bool enabled = true;
+  static const std::string structureTypeName;
 
  private:
   // The points that make up this point cloud

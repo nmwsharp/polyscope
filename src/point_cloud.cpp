@@ -13,8 +13,11 @@ using std::cout; using std::endl;
 
 namespace polyscope {
 
+// Initialize statics
+const std::string PointCloud::structureTypeName = "Point Cloud";
+
 PointCloud::PointCloud(std::string name, const std::vector<Vector3>& points_)
-    : Structure(name, StructureType::PointCloud), points(points_) {
+    : Structure(name, structureTypeName), points(points_) {
 
   pointColor = getNextPaletteColor();
 

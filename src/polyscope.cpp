@@ -30,16 +30,7 @@ double lengthScale = 1.0;
 std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox;
 Vector3 center{0, 0, 0};
 
-std::map<StructureType, std::map<std::string, Structure*>> structureCategories{
-    {StructureType::PointCloud, {}},
-    {StructureType::SurfaceMesh, {}},
-    {StructureType::CameraView, {}},
-    {StructureType::RaySet, {}},
-};
-std::map<std::string, PointCloud*> pointClouds;
-std::map<std::string, SurfaceMesh*> surfaceMeshes;
-std::map<std::string, CameraView*> cameraViews;
-std::map<std::string, RaySet*> raySets;
+std::map<std::string, std::map<std::string, Structure*>> structures;
 
 std::function<void()> userCallback;
 size_t screenshotInd = 0;
@@ -106,6 +97,7 @@ void init() {
     throw std::logic_error(options::printPrefix + "Initialize called twice");
   }
 
+
   // === Initialize glfw
   glfwSetErrorCallback(error_print_callback);
   if (!glfwInit()) {
@@ -163,6 +155,12 @@ void init() {
   // Initialize pick buffer
   initPickBuffer();
 
+  // Initialize with default maps so they show up in UI and user knows they exist
+  state::structures[PointCloud::structureTypeName] = {};
+  state::structures[SurfaceMesh::structureTypeName] = {};
+  state::structures[CameraView::structureTypeName] = {};
+  state::structures[RaySet::structureTypeName] = {};
+
   state::initialized = true;
 }
 
@@ -205,7 +203,7 @@ void evaluatePickQuery(int xPos, int yPos) {
   // Render pick buffer
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
-  for (auto cat : state::structureCategories) {
+  for (auto cat : state::structures) {
     for (auto x : cat.second) {
       x.second->drawPick();
     }
@@ -288,16 +286,16 @@ void drawStructures() {
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
 
-  for (auto cat : state::structureCategories) {
-    for (auto x : cat.second) {
+  for (auto catMap : state::structures) {
+    for (auto s : catMap.second) {
 
       // Draw the pick buffer for debugging purposes
       if (options::debugDrawPickBuffer) {
-        x.second->drawPick();
+        s.second->drawPick();
       }
       // The normal case
       else {
-        x.second->draw();
+        s.second->draw();
       }
     }
   }
@@ -335,24 +333,25 @@ void buildStructureGui() {
   ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
   ImGui::Begin("Structures", &showStructureWindow);
 
-  for (auto cat : state::structureCategories) {
-    std::string catName = getStructureTypeName(cat.first);
-    std::map<std::string, Structure*>& structures = cat.second;
+  for (auto catMapEntry : state::structures) {
+    std::string catName = catMapEntry.first;
+    
+    std::map<std::string, Structure*>& structureMap = catMapEntry.second;
 
     ImGui::PushID(catName.c_str()); // ensure there are no conflicts with
                                     // identically-named labels
 
     // Build the structure's UI
-    ImGui::SetNextTreeNodeOpen(structures.size() > 0, ImGuiCond_FirstUseEver);
-    if (ImGui::CollapsingHeader(("Category: " + catName + " (" + std::to_string(structures.size()) + ")").c_str())) {
+    ImGui::SetNextTreeNodeOpen(structureMap.size() > 0, ImGuiCond_FirstUseEver);
+    if (ImGui::CollapsingHeader(("Category: " + catName + " (" + std::to_string(structureMap.size()) + ")").c_str())) {
       // Draw shared GUI elements for all instances of the structure
-      if (structures.size() > 0) {
-        structures.begin()->second->drawSharedStructureUI();
+      if (structureMap.size() > 0) {
+        structureMap.begin()->second->drawSharedStructureUI();
       }
 
-      for (auto x : structures) {
-        ImGui::SetNextTreeNodeOpen(structures.size() <= 2,
-                                   ImGuiCond_FirstUseEver); // closed by default if more than 2
+      for (auto x : structureMap) {
+        ImGui::SetNextTreeNodeOpen(structureMap.size() <= 8,
+                                   ImGuiCond_FirstUseEver); // closed by default if more than 8
         x.second->drawUI();
       }
     }
@@ -377,7 +376,7 @@ void buildPickGui() {
     size_t pickInd;
     Structure* structure = pick::getCurrentPickElement(pickInd);
 
-    ImGui::TextUnformatted((getStructureTypeName(structure->type) + ": " + structure->name).c_str());
+    ImGui::TextUnformatted((structure->type + ": " + structure->name).c_str());
     ImGui::Separator();
     structure->drawPickUI(pickInd);
 
@@ -385,19 +384,6 @@ void buildPickGui() {
   }
 }
 } // namespace
-
-bool checkStructureNameInUse(std::string name, bool throwError = true) {
-  for (const auto cat : state::structureCategories) {
-    if (cat.second.find(name) != cat.second.end()) {
-      if (throwError) {
-        error("Structure name " + name + " is already in use.");
-      }
-      return true;
-    }
-  }
-
-  return false;
-}
 
 void draw(bool withUI = true) {
 
@@ -470,169 +456,175 @@ void show() {
   }
 }
 
-void registerPointCloud(std::string name, const std::vector<Vector3>& points, bool replaceIfPresent) {
-  bool inUse = checkStructureNameInUse(name, !replaceIfPresent);
-  if (inUse) {
-    removeStructure(name);
+bool registerStructure(Structure* s, bool replaceIfPresent) {
+
+  // Make sure a map for the type exists
+  if(state::structures.find(s->type) == state::structures.end()) {
+    state::structures[s->type] = std::map<std::string, Structure*>();
+  }
+  std::map<std::string,Structure*>& sMap = state::structures[s->type];
+
+  // Check if the structure name is in use
+  bool inUse = sMap.find(s->name) != sMap.end();
+  if(inUse) {
+    if(replaceIfPresent) {
+      removeStructure(s->name);
+    } else {
+      polyscope::error("Attempted to register structure with name " + s->name +
+                       ", but a structure with that name already exists");
+      return false;
+    }
   }
 
-  state::pointClouds[name] = new PointCloud(name, points);
-  state::structureCategories[StructureType::PointCloud][name] = state::pointClouds[name];
-
+  // Add the new structure
+  sMap[s->name] = s;
   updateStructureExtents();
+
+  return true;
+}
+
+void registerPointCloud(std::string name, const std::vector<Vector3>& points, bool replaceIfPresent) {
+  PointCloud* s = new PointCloud(name, points);
+  bool success = registerStructure(s);
+  if(!success) delete s;
 }
 
 void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom, bool replaceIfPresent) {
-  bool inUse = checkStructureNameInUse(name, !replaceIfPresent);
-  if (inUse) {
-    removeStructure(name);
-  }
-
-  state::surfaceMeshes[name] = new SurfaceMesh(name, geom);
-  state::structureCategories[StructureType::SurfaceMesh][name] = state::surfaceMeshes[name];
-
-  updateStructureExtents();
+  SurfaceMesh* s = new SurfaceMesh(name, geom);
+  bool success = registerStructure(s);
+  if(!success) delete s;
 }
 
 void registerCameraView(std::string name, CameraParameters p, bool replaceIfPresent) {
-  bool inUse = checkStructureNameInUse(name, !replaceIfPresent);
-  if (inUse) {
-    removeStructure(name);
-  }
-
-  state::cameraViews[name] = new CameraView(name, p);
-  state::structureCategories[StructureType::CameraView][name] = state::cameraViews[name];
-
-  updateStructureExtents();
+  CameraView* s = new CameraView(name, p);
+  bool success = registerStructure(s);
+  if(!success) delete s;
 }
 
 void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& r, bool replaceIfPresent) {
-  bool inUse = checkStructureNameInUse(name, !replaceIfPresent);
-  if (inUse) {
-    removeStructure(name);
-  }
-
-  state::raySets[name] = new RaySet(name, r);
-  state::structureCategories[StructureType::RaySet][name] = state::raySets[name];
-
-  updateStructureExtents();
+  RaySet* s = new RaySet(name, r);
+  bool success = registerStructure(s);
+  if(!success) delete s;
 }
 
-PointCloud* getPointCloud(std::string name) {
-  // Special automatic case, return any
-  if (name == "") {
-    if (state::pointClouds.size() != 1) {
-      error("Cannot use automatic structure get unless exactly one structure of that type registered");
-      return nullptr;
-    }
-    return state::pointClouds.begin()->second;
-  }
-  if (state::pointClouds.find(name) == state::pointClouds.end()) {
-    error("No point cloud with name " + name + " registered");
+Structure* getStructure(std::string type, std::string name) {
+
+  // If there are no structures of that type it is an automatic fail
+  if(state::structures.find(type) == state::structures.end()) {
+    error("No structures of type " + type + " registered");
     return nullptr;
   }
-  return state::pointClouds[name];
+  std::map<std::string,Structure*>& sMap = state::structures[type];
+
+  // Special automatic case, return any
+  if (name == "") {
+    if (sMap.size() != 1) {
+      error("Cannot use automatic structure get with empty name unless there is exactly one structure of that type "
+            "registered");
+      return nullptr;
+    }
+    return sMap.begin()->second;
+  }
+
+  // General case
+  if (sMap.find(name) == sMap.end()) {
+    error("No structure of type " + type + " with name " + name + " registered");
+    return nullptr;
+  }
+  return sMap[name];
+}
+
+
+PointCloud* getPointCloud(std::string name) {
+  return dynamic_cast<PointCloud*>(getStructure(PointCloud::structureTypeName, name));
 }
 
 SurfaceMesh* getSurfaceMesh(std::string name) {
-  // Special automatic case, return any
-  if (name == "") {
-    if (state::surfaceMeshes.size() != 1) {
-      error("Cannot use automatic structure get unless exactly one structure of that type registered");
-      return nullptr;
-    }
-    return state::surfaceMeshes.begin()->second;
-  }
-  if (state::surfaceMeshes.find(name) == state::surfaceMeshes.end()) {
-    error("No surface mesh with name " + name + " registered");
-    return nullptr;
-  }
-  return state::surfaceMeshes[name];
+  return dynamic_cast<SurfaceMesh*>(getStructure(SurfaceMesh::structureTypeName, name));
 }
 
 CameraView* getCameraView(std::string name) {
-  // Special automatic case, return any
-  if (name == "") {
-    if (state::cameraViews.size() != 1) {
-      error("Cannot use automatic structure get unless exactly one structure of that type registered");
-      return nullptr;
-    }
-    return state::cameraViews.begin()->second;
-  }
-  if (state::cameraViews.find(name) == state::cameraViews.end()) {
-    error("No camera view with name " + name + " registered");
-    return nullptr;
-  }
-  return state::cameraViews[name];
+  return dynamic_cast<CameraView*>(getStructure(CameraView::structureTypeName, name));
 }
 
 RaySet* getRaySet(std::string name) {
-  // Special automatic case, return any
-  if (name == "") {
-    if (state::raySets.size() != 1) {
-      error("Cannot use automatic structure get unless exactly one structure of that type registered");
-      return nullptr;
+  return dynamic_cast<RaySet*>(getStructure(RaySet::structureTypeName, name));
+}
+
+void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
+ 
+  // If there are no structures of that type it is an automatic fail
+  if(state::structures.find(type) == state::structures.end()) {
+    if(errorIfAbsent) {
+      error("No structures of type " + type + " registered");
     }
-    return state::raySets.begin()->second;
+    return;
   }
-  if (state::raySets.find(name) == state::raySets.end()) {
-    error("No ray set with name " + name + " registered");
-    return nullptr;
+  std::map<std::string,Structure*>& sMap = state::structures[type];
+ 
+  // Check if structure exists
+  if(sMap.find(name) == sMap.end()) {
+    if(errorIfAbsent) {
+      error("No structure of type " + type + " and name " + name + " registered");
+    }
+    return;
   }
-  return state::raySets[name];
+
+  // Structure exists, remove it
+  Structure* s = sMap[name];
+  pick::clearPickIfStructureSelected(s);
+  sMap.erase(s->name);
+  delete s;
+  updateStructureExtents();
+  return;
 }
 
 void removeStructure(std::string name) {
-  // Point cloud
-  if (state::pointClouds.find(name) != state::pointClouds.end()) {
-    pick::clearPickIfStructureSelected(state::pointClouds.find(name)->second);
-    delete state::pointClouds[name];
-    state::pointClouds.erase(name);
-    state::structureCategories[StructureType::PointCloud].erase(name);
-    updateStructureExtents();
+
+  // Check if we can find exactly one structure matching the name
+  Structure* targetStruct = nullptr;
+  for(auto typeMap : state::structures) {
+    for(auto entry : typeMap.second) {
+
+      // Found a matching structure
+      if(entry.first == name) {
+        if(targetStruct == nullptr) {
+          targetStruct = entry.second;
+        } else {
+          error("Cannot use automatic structure remove with empty name unless there is exactly one structure of that "
+                "type registered. Found two structures of different types with that name: " +
+                targetStruct->type + " and " + typeMap.first + ".");
+          return;
+        }
+      }
+    }
+  }
+
+  // Error if none found.
+  if(targetStruct == nullptr) {
+    error("No structure named: " + name + " to remove.");
     return;
   }
 
-  // Surface mesh
-  if (state::surfaceMeshes.find(name) != state::surfaceMeshes.end()) {
-    pick::clearPickIfStructureSelected(state::surfaceMeshes.find(name)->second);
-    delete state::surfaceMeshes[name];
-    state::surfaceMeshes.erase(name);
-    state::structureCategories[StructureType::SurfaceMesh].erase(name);
-    updateStructureExtents();
-    return;
-  }
-
-  // Camera view
-  if (state::cameraViews.find(name) != state::cameraViews.end()) {
-    pick::clearPickIfStructureSelected(state::cameraViews.find(name)->second);
-    delete state::cameraViews[name];
-    state::cameraViews.erase(name);
-    state::structureCategories[StructureType::CameraView].erase(name);
-    updateStructureExtents();
-    return;
-  }
-
-  // Ray set
-  if (state::raySets.find(name) != state::raySets.end()) {
-    pick::clearPickIfStructureSelected(state::raySets.find(name)->second);
-    delete state::raySets[name];
-    state::raySets.erase(name);
-    state::structureCategories[StructureType::RaySet].erase(name);
-    updateStructureExtents();
-    return;
-  }
-
-  error("No structure named: " + name + " to remove.");
+  removeStructure(targetStruct->type, targetStruct->name);
 }
 
 void removeAllStructures() {
-  for (auto x : state::pointClouds) delete x.second;
-  for (auto x : state::surfaceMeshes) delete x.second;
-  state::pointClouds.clear();
-  state::surfaceMeshes.clear();
-  state::structureCategories.clear();
-  updateStructureExtents();
+
+  for(auto typeMap : state::structures) {
+    
+    // dodge iterator invalidation
+    std::vector<std::string> names;
+    for(auto entry : typeMap.second) {
+      names.push_back(entry.first);
+    }
+
+    // remove all
+    for(auto name : names) {
+      removeStructure(typeMap.first, name);
+    }
+  }
+
   pick::resetPick();
 }
 
@@ -642,7 +634,7 @@ void updateStructureExtents() {
   Vector3 minBbox = Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
   Vector3 maxBbox = -Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
 
-  for (auto cat : state::structureCategories) {
+  for (auto cat : state::structures) {
     for (auto x : cat.second) {
       state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
       auto bbox = x.second->boundingBox();

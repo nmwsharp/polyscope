@@ -2,7 +2,7 @@
 
 namespace polyscope {
 
-Structure::Structure(std::string name_, StructureType type_) : name(name_), type(type_) {}
+Structure::Structure(std::string name_, std::string type_) : name(name_), type(type_) {}
 
 Structure::~Structure(){};
 
