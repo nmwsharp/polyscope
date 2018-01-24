@@ -42,7 +42,7 @@ namespace options {
 std::string programName = "Polyscope";
 int verbosity = 2;
 std::string printPrefix = "Polyscope: ";
-bool exceptionOnError = true;
+bool errorsThrowExceptions = false;
 bool debugDrawPickBuffer = false;
 
 } // namespace options
@@ -268,7 +268,7 @@ void processMouseEvents() {
     // Handle picks
     else {
 
-      if (ImGui::IsMouseReleased(0)) {
+      if (!messageIsBlockingScreen() && ImGui::IsMouseReleased(0)) {
 
         ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
         if (dragDistSinceLastRelease < .01) {
@@ -408,11 +408,12 @@ void draw(bool withUI = true) {
 
   if (withUI) {
     // Build the GUI components
-    // ImGui::ShowTestWindow();
+    ImGui::ShowDemoWindow();
     buildPolyscopeGui();
     buildStructureGui();
     buildUserGui();
     buildPickGui();
+    buildMessagesUI();
   }
 
 
@@ -425,35 +426,52 @@ void draw(bool withUI = true) {
   }
 }
 
+void mainLoopIteration() {
+    
+  // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to
+  // tell if dear imgui wants to use your inputs.
+  // - When io.WantCaptureMouse is true, do not dispatch mouse input data to
+  // your main application.
+  // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input
+  // data to your main application. Generally you may always pass all inputs
+  // to dear imgui, and hide them from your application based on those two
+  // flags.
 
-void show() {
+  // Update the width and heigh
+  glfwMakeContextCurrent(imguirender::mainWindow);
+  glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
+  glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
+
+  // Process UI events
+  glfwPollEvents();
+  processMouseEvents();
+
+
+  // Rendering
+  draw();
+  glfwSwapBuffers(imguirender::mainWindow);
+
+}
+
+void show(bool shutdownAfter) {
   view::resetCameraToDefault();
 
   // Main loop
   while (!glfwWindowShouldClose(imguirender::mainWindow)) {
-    // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to
-    // tell if dear imgui wants to use your inputs.
-    // - When io.WantCaptureMouse is true, do not dispatch mouse input data to
-    // your main application.
-    // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input
-    // data to your main application. Generally you may always pass all inputs
-    // to dear imgui, and hide them from your application based on those two
-    // flags.
-
-    // Update the width and heigh
-    glfwMakeContextCurrent(imguirender::mainWindow);
-    glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
-    glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
-
-    // Process UI events
-    glfwPollEvents();
-    processMouseEvents();
-
-
-    // Rendering
-    draw();
-    glfwSwapBuffers(imguirender::mainWindow);
+    mainLoopIteration();
   }
+
+  if(shutdownAfter) {
+    shutdown();
+  }
+}
+
+void shutdown(int exitCode) {
+
+  // TODO should we make an effort to destruct everything here?
+
+  ImGui::Shutdown();
+  std::exit(exitCode);
 }
 
 bool registerStructure(Structure* s, bool replaceIfPresent) {
@@ -659,14 +677,6 @@ void updateStructureExtents() {
 
   // Center is center of bounding box
   state::center = 0.5 * (minBbox + maxBbox);
-}
-
-void error(std::string message) {
-  if (options::exceptionOnError) {
-    throw std::logic_error(options::printPrefix + message);
-  } else {
-    std::cout << options::printPrefix << message << std::endl;
-  }
 }
 
 void screenshot(std::string filename, bool transparentBG) {

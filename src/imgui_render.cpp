@@ -258,9 +258,9 @@ void ImGui_ImplGlfwGL3_KeyCallback(GLFWwindow*, int key, int, int action,
       io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
 
   // Quit polyscope on escape key
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-    glfwSetWindowShouldClose(mainWindow, true);
-  }
+  //if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    //glfwSetWindowShouldClose(mainWindow, true);
+  //}
 }
 
 void ImGui_ImplGlfwGL3_CharCallback(GLFWwindow*, unsigned int c) {

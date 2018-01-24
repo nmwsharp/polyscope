@@ -15,10 +15,10 @@ namespace options {
     extern int verbosity;
 
     // A string to prefex all messages printed to stdout
-    extern std::string printPrefx;
+    extern std::string printPrefix;
 
-    // Should errors be exceptions or printed messages?
-    extern bool execptionOnError;
+    // Should errors throw exceptions, or just display?
+    extern bool errorsThrowExceptions;
     
 
 } // namespace options

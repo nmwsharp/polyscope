@@ -11,6 +11,7 @@
 #include "polyscope/structure.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/utilities.h"
+#include "polyscope/messages.h"
 
 namespace polyscope {
 
@@ -21,7 +22,10 @@ void init();
 
 // Give control to the polyscope GUI. Blocks until the user returns control via
 // the GUI, possibly by exiting the window.
-void show();
+void show(bool shutdownAfter=true);
+
+// Do shutdown work and quit. Usually called at end of main loop, can be called in other situations due to errors (etc)
+void shutdown(int exitCode = 0);
 
 // === Global variables ===
 namespace state {
@@ -78,10 +82,11 @@ void removeAllStructures();
 // Recompute state::lengthScale, boundingBox, and center from all registered structures
 void updateStructureExtents();
 
-// === Errors
-void error(std::string message);
-
 // === Utility
+
+// Execute one iteration of the main loop
+// Exposed so that some weird flow (eg, errors) can re-enter the main loop when appropriate. Be careful!
+void mainLoopIteration();
 
 // Take screenshots of the current view
 void screenshot(std::string filename, bool transparentBG = true);
