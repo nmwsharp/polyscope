@@ -7,6 +7,7 @@ imgui.ini
 .DS_Store
 .vscode
 *.swp
+tags
 
 # Prerequisites
 *.d
