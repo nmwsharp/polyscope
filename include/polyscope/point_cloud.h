@@ -5,6 +5,7 @@
 #include "geometrycentral/vector3.h"
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/structure.h"
+#include "polyscope/color_management.h"
 
 namespace polyscope {
 
@@ -47,7 +48,9 @@ class PointCloud : public Structure {
   std::vector<geometrycentral::Vector3> points;
 
   // Visualization parameters
-  std::array<float, 3> pointColor;
+  Color3f baseColor;
+  Color3f pointColor;
+  SubColorManager colorManager;
   float pointRadius = 0.005;
 
   // Drawing related things

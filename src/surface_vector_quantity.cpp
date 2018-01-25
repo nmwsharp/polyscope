@@ -14,9 +14,7 @@ SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh* mesh
 
     : SurfaceQuantity(name, mesh_), vectorType(vectorType_), definedOn(definedOn_) {
 
-  // Copy the vectors
-
-  finishConstructing();
+  // Don't forget to call finishConstructing() in children classes!
 }
 
 SurfaceVectorQuantity::~SurfaceVectorQuantity() {
@@ -40,7 +38,7 @@ void SurfaceVectorQuantity::finishConstructing() {
     lengthMult = 1.0;
   }
   radiusMult = .0005;
-  vectorColor = getNextPaletteColor();
+  vectorColor = parent->colorManager.getNextSubColor(name);
 }
 
 void SurfaceVectorQuantity::draw() {

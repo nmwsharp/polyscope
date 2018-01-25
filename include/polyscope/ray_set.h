@@ -5,6 +5,7 @@
 #include "geometrycentral/vector3.h"
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/structure.h"
+#include "polyscope/color_management.h"
 
 namespace polyscope {
 
@@ -58,7 +59,9 @@ class RaySet : public Structure {
   std::vector<std::vector<RayPoint>> rayPaths;
 
   // Visualization parameters
-  std::array<float, 3> rayColor;
+  Color3f rayColor;
+  Color3f baseColor;
+  SubColorManager colorManager;
   float viewIntervalFactor = 1.0;
   float streakLengthFactor = 0.05;
   float speedFactor = .5;

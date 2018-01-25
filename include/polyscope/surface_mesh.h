@@ -9,6 +9,7 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/structure.h"
+#include "polyscope/color_management.h"
 
 namespace polyscope {
 
@@ -139,13 +140,15 @@ public:
   gl::GLProgram* pickProgram = nullptr;
 
   static const std::string structureTypeName;
+  SubColorManager colorManager;
 
 private:
   // Quantities
   std::map<std::string, SurfaceQuantity*> quantities;
 
   // Visualization settings
-  std::array<float, 3> surfaceColor;
+  Color3f baseColor;
+  Color3f surfaceColor;
   ShadeStyle shadeStyle = ShadeStyle::SMOOTH;
   bool showEdges = false;
   float edgeWidth = 0.0; // currently can only be set to 0 or nonzero via UI

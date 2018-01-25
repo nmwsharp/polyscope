@@ -30,8 +30,10 @@ SurfaceMesh::SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_)
   mesh = geometry_->getMesh()->copy(transfer);
   geometry = geometry_->copyUsingTransfer(transfer);
 
-  // surfaceColor = gl::RGB_SKYBLUE.toFloatArray();
-  surfaceColor = getNextPaletteColor();
+  // Colors
+  baseColor = getNextStructureColor();
+  surfaceColor = baseColor;
+  colorManager = SubColorManager(baseColor);
 
   prepare();
   preparePick();

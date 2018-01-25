@@ -19,7 +19,9 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 PointCloud::PointCloud(std::string name, const std::vector<Vector3>& points_)
     : Structure(name, structureTypeName), points(points_) {
 
-  pointColor = getNextPaletteColor();
+  baseColor = getNextStructureColor();
+  pointColor = baseColor;
+  colorManager = SubColorManager(baseColor);
 
   prepare();
   preparePick();

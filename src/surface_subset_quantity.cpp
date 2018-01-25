@@ -39,7 +39,7 @@ SurfaceEdgeSubsetQuantity::SurfaceEdgeSubsetQuantity(std::string name, EdgeData<
   program->setAttribute("a_position_tip", pTip);
 
   // initialize the color to something nice
-  color = getNextPaletteColor();
+  color = parent->colorManager.getNextSubColor(name);
 }
 
 SurfaceEdgeSubsetQuantity::~SurfaceEdgeSubsetQuantity() { safeDelete(program); }

@@ -15,7 +15,7 @@ int bufferHeight = -1;
 double fov = 65.0;
 double nearClipRatio = 0.005;
 double farClipRatio = 20.0;
-std::array<float, 4> bgColor{{.8, .8, .8, 1.0}};
+std::array<float, 4> bgColor{{.88, .88, .88, 1.0}};
 
 glm::mat4x4 viewMat;
 

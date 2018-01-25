@@ -93,7 +93,4 @@ void screenshot(std::string filename, bool transparentBG = true);
 void screenshot(bool transparentBG = true);
 void saveImage(std::string name, unsigned char* buffer, int w, int h, int channels);
 
-// Get the next color from a global color palette
-std::array<float, 3> getNextPaletteColor();
-
 } // namespace polyscope

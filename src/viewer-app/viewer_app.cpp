@@ -24,8 +24,7 @@ using std::string;
 
 
 bool endsWith(const std::string& str, const std::string& suffix) {
-  return str.size() >= suffix.size() &&
-         str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+  return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
 void processFileOBJ(string filename) {
@@ -41,7 +40,7 @@ void processFileOBJ(string filename) {
   VertexData<double> valY(mesh);
   VertexData<double> valZ(mesh);
   VertexData<Vector3> randColor(mesh);
-  for(VertexPtr v : mesh->vertices()) {
+  for (VertexPtr v : mesh->vertices()) {
     valX[v] = geom->position(v).x;
     valY[v] = geom->position(v).y;
     valZ[v] = geom->position(v).z;
@@ -56,7 +55,7 @@ void processFileOBJ(string filename) {
   FaceData<double> fArea(mesh);
   FaceData<double> zero(mesh);
   FaceData<Vector3> fColor(mesh);
-  for(FacePtr f : mesh->faces()) {
+  for (FacePtr f : mesh->faces()) {
     fArea[f] = geom->area(f);
     zero[f] = 0;
     fColor[f] = Vector3{unitRand(), unitRand(), unitRand()};
@@ -64,33 +63,34 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addQuantity("face area", fArea, polyscope::DataType::MAGNITUDE);
   polyscope::getSurfaceMesh(niceName)->addQuantity("zero", zero);
   polyscope::getSurfaceMesh(niceName)->addColorQuantity("fColor", fColor);
-  
+
   EdgeData<double> cWeight(mesh);
   geom->getEdgeCotanWeights(cWeight);
   polyscope::getSurfaceMesh(niceName)->addQuantity("cotan weight", cWeight, polyscope::DataType::SYMMETRIC);
-  
+
   HalfedgeData<double> oAngles(mesh);
   geom->getHalfedgeAngles(oAngles);
   polyscope::getSurfaceMesh(niceName)->addQuantity("angles", oAngles);
- 
+
   // Test error
-  //polyscope::error("Resistance is futile, welcome to the borg borg borg.");
-  //polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we share this crisis in a way which looks right while properly wrapping text in some form or other?");
-  //polyscope::terminatingError("and that was all");
- 
+  // polyscope::error("Resistance is futile, welcome to the borg borg borg.");
+  // polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we
+  // share this crisis in a way which looks right while properly wrapping text in some form or other?");
+  // polyscope::terminatingError("and that was all");
+
   // Test warning
-  //polyscope::warning("Something went slightly wrong", "it was bad");
-  //polyscope::warning("Smoething else went slightly wrong", "it was also bad");
-  //polyscope::warning("Something went slightly wrong", "it was still bad");
-  //for(int i = 0; i < 5000; i++) {
-    //polyscope::warning("Some problems come in groups");
+  // polyscope::warning("Something went slightly wrong", "it was bad");
+  // polyscope::warning("Smoething else went slightly wrong", "it was also bad");
+  // polyscope::warning("Something went slightly wrong", "it was still bad");
+  // for(int i = 0; i < 5000; i++) {
+  // polyscope::warning("Some problems come in groups");
   //}
 
   // Add some vectors
   VertexData<Vector3> normals(mesh);
   VertexData<Vector3> toZero(mesh);
   geom->getVertexNormals(normals);
-  for(VertexPtr v : mesh->vertices()) {
+  for (VertexPtr v : mesh->vertices()) {
     normals[v] *= unitRand() * 5000;
     toZero[v] = -geom->position(v);
   }
@@ -98,7 +98,7 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addVectorQuantity("toZero", toZero, polyscope::VectorType::AMBIENT);
 
   FaceData<Vector3> fNormals(mesh);
-  for(FacePtr f : mesh->faces()) {
+  for (FacePtr f : mesh->faces()) {
     fNormals[f] = geom->normal(f);
   }
   polyscope::getSurfaceMesh(niceName)->addVectorQuantity("face normals", fNormals);
@@ -121,7 +121,7 @@ void processFileJSON(string filename) {
   // Read the json file
   // std::vector<double> tVec = j.at("location").get<std::vector<double>>();
   // std::vector<double> rotationVec = j.at("rotation").get<std::vector<double>>();
-  
+
   std::vector<double> Evec = j.at("extMat").get<std::vector<double>>();
   // std::vector<double> focalVec = j.at("focal_dists").get<std::vector<double>>();
   double fov = j.at("fov").get<double>();
@@ -129,9 +129,9 @@ void processFileJSON(string filename) {
   // Copy to parameters
   polyscope::CameraParameters params;
   glm::mat4x4 E;
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
-      E[j][i] = Evec[4*i + j]; // note: this is right because GLM uses [column][row] indexing
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      E[j][i] = Evec[4 * i + j]; // note: this is right because GLM uses [column][row] indexing
     }
   }
   // glm::vec2 focalLengths(.5*focalVec[0], .5*focalVec[1]); // TODO FIXME really not sure if this .5 is correct
@@ -160,19 +160,18 @@ void processFileJSON(string filename) {
   std::string imageFilename = filename;
   size_t f = imageFilename.find(".json");
   imageFilename.replace(f, std::string(".json").length(), ".png");
-  
+
   std::ifstream inFileIm(imageFilename);
-  if(!inFileIm) {
+  if (!inFileIm) {
     cout << "Did not auto-detect image at " << imageFilename << endl;
   } else {
 
-    int x,y,n;
-    unsigned char *data = stbi_load(imageFilename.c_str(), &x, &y, &n, 3);
+    int x, y, n;
+    unsigned char* data = stbi_load(imageFilename.c_str(), &x, &y, &n, 3);
 
     cout << "Loading " << imageFilename << endl;
-    polyscope::getCameraView(niceName)->addImage(niceName+"_rgb", data, x, y);
+    polyscope::getCameraView(niceName)->addImage(niceName + "_rgb", data, x, y);
   }
-
 }
 
 void processFile(string filename) {
@@ -188,12 +187,10 @@ void processFile(string filename) {
 
 int main(int argc, char** argv) {
   // Configure the argument parser
-  args::ArgumentParser parser(
-      "A general purpose viewer for geometric data, built on Polyscope.\nBy "
-      "Nick Sharp (nsharp@cs.cmu.edu)",
-      "");
-  args::PositionalList<string> files(parser, "files",
-                                     "One or more files to visualize");
+  args::ArgumentParser parser("A general purpose viewer for geometric data, built on Polyscope.\nBy "
+                              "Nick Sharp (nsharp@cs.cmu.edu)",
+                              "");
+  args::PositionalList<string> files(parser, "files", "One or more files to visualize");
 
   // Parse args
   try {
@@ -216,14 +213,15 @@ int main(int argc, char** argv) {
   }
 
   // Create a point cloud
-  std::vector<Vector3> points;
-  for (size_t i = 0; i < 3000; i++) {
-    // points.push_back(Vector3{10,10,10} + 20*Vector3{unitRand()-.5,
-    // unitRand()-.5, unitRand()-.5});
-    points.push_back(
-        3 * Vector3{unitRand() - .5, unitRand() - .5, unitRand() - .5});
+  for (int j = 0; j < 10; j++) {
+    std::vector<Vector3> points;
+    for (size_t i = 0; i < 50; i++) {
+      // points.push_back(Vector3{10,10,10} + 20*Vector3{unitRand()-.5,
+      // unitRand()-.5, unitRand()-.5});
+      points.push_back(3 * Vector3{unitRand() - .5, unitRand() - .5, unitRand() - .5});
+    }
+    polyscope::registerPointCloud("really great points" + std::to_string(j), points);
   }
-  polyscope::registerPointCloud("really great points", points);
 
   // Add a few gui elements
 
