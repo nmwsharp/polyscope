@@ -88,6 +88,10 @@ public:
   virtual std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox() override;
 
   // === Quantity-related
+  
+  // general form
+  void addSurfaceQuantity(SurfaceQuantity* quantity);
+  void addSurfaceQuantity(SurfaceQuantityThatDrawsFaces* quantity);
 
   // Scalars
   void addQuantity(std::string name, VertexData<double>& value, DataType type = DataType::STANDARD);
@@ -99,9 +103,9 @@ public:
   void addColorQuantity(std::string name, VertexData<Vector3>& value);
   void addColorQuantity(std::string name, FaceData<Vector3>& value);
 
-  // Indices
-  void addIndexQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values);
-  void addIndexQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values);
+  // Counts/Singularities/Indices
+  void addCountQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values);
+  void addCountQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values);
 
   // Subsets
   void addSubsetQuantity(std::string name, EdgeData<char>& subset);

@@ -489,7 +489,24 @@ SurfaceQuantityThatDrawsFaces::SurfaceQuantityThatDrawsFaces(std::string name_, 
     : SurfaceQuantity(name_, mesh_) {}
 SurfaceQuantity::~SurfaceQuantity() {}
 
-void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value, DataType type) {
+void SurfaceMesh::addSurfaceQuantity(SurfaceQuantity* quantity) {
+  // Delete old if in use
+  bool wasEnabled = false;
+  if (quantities.find(quantity->name) != quantities.end()) {
+    wasEnabled = quantities[name]->enabled;
+    removeQuantity(name);
+  }
+
+  // Store
+  quantities[name] = quantity;
+
+  // Re-enable the quantity if we're replacing an enabled quantity
+  if (wasEnabled) {
+    quantity->enabled = true;
+  }
+}
+
+void SurfaceMesh::addSurfaceQuantity(SurfaceQuantityThatDrawsFaces* quantity) {
   // Delete old if in use
   bool wasEnabled = false;
   if (quantities.find(name) != quantities.end()) {
@@ -497,161 +514,74 @@ void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value, DataT
     removeQuantity(name);
   }
 
-  SurfaceScalarQuantity* q = new SurfaceScalarVertexQuantity(name, value, this, type);
-  quantities[name] = q;
+  // Store
+  quantities[name] = quantity;
 
   // Re-enable the quantity if we're replacing an enabled quantity
   if (wasEnabled) {
-    q->enabled = true;
-    setActiveSurfaceQuantity(q);
+    quantity->enabled = true;
+    setActiveSurfaceQuantity(quantity);
   }
+}
+
+void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value, DataType type) {
+  SurfaceScalarQuantity* q = new SurfaceScalarVertexQuantity(name, value, this, type);
+  addSurfaceQuantity(q);
 }
 
 void SurfaceMesh::addQuantity(std::string name, FaceData<double>& value, DataType type) {
-  // Delete old if in use
-  bool wasEnabled = false;
-  if (quantities.find(name) != quantities.end()) {
-    wasEnabled = quantities[name]->enabled;
-    removeQuantity(name);
-  }
-
   SurfaceScalarQuantity* q = new SurfaceScalarFaceQuantity(name, value, this, type);
-  quantities[name] = q;
-
-  // Re-enable the quantity if we're replacing an enabled quantity
-  if (wasEnabled) {
-    q->enabled = true;
-    setActiveSurfaceQuantity(q);
-  }
+  addSurfaceQuantity(q);
 }
 
 void SurfaceMesh::addQuantity(std::string name, EdgeData<double>& value, DataType type) {
-  // Delete old if in use
-  bool wasEnabled = false;
-  if (quantities.find(name) != quantities.end()) {
-    wasEnabled = quantities[name]->enabled;
-    removeQuantity(name);
-  }
-
   SurfaceScalarQuantity* q = new SurfaceScalarEdgeQuantity(name, value, this, type);
-  quantities[name] = q;
-
-  // Re-enable the quantity if we're replacing an enabled quantity
-  if (wasEnabled) {
-    q->enabled = true;
-    setActiveSurfaceQuantity(q);
-  }
+  addSurfaceQuantity(q);
 }
 
 void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value, DataType type) {
-  // Delete old if in use
-  bool wasEnabled = false;
-  if (quantities.find(name) != quantities.end()) {
-    wasEnabled = quantities[name]->enabled;
-    removeQuantity(name);
-  }
-
   SurfaceScalarQuantity* q = new SurfaceScalarHalfedgeQuantity(name, value, this, type);
-  quantities[name] = q;
-
-  // Re-enable the quantity if we're replacing an enabled quantity
-  if (wasEnabled) {
-    q->enabled = true;
-    setActiveSurfaceQuantity(q);
-  }
+  addSurfaceQuantity(q);
 }
 
 void SurfaceMesh::addColorQuantity(std::string name, VertexData<Vector3>& value) {
-
-  bool wasEnabled = false;
-  if (quantities.find(name) != quantities.end()) {
-    wasEnabled = quantities[name]->enabled;
-    removeQuantity(name);
-  }
-
   SurfaceColorQuantity* q = new SurfaceColorVertexQuantity(name, value, this);
-  quantities[name] = q;
-
-  // Re-enable the quantity if we're replacing an enabled quantity
-  if (wasEnabled) {
-    q->enabled = true;
-    setActiveSurfaceQuantity(q);
-  }
+  addSurfaceQuantity(q);
 }
 
 void SurfaceMesh::addColorQuantity(std::string name, FaceData<Vector3>& value) {
-
-  bool wasEnabled = false;
-  if (quantities.find(name) != quantities.end()) {
-    wasEnabled = quantities[name]->enabled;
-    removeQuantity(name);
-  }
-
   SurfaceColorQuantity* q = new SurfaceColorFaceQuantity(name, value, this);
-  quantities[name] = q;
-
-  // Re-enable the quantity if we're replacing an enabled quantity
-  if (wasEnabled) {
-    q->enabled = true;
-    setActiveSurfaceQuantity(q);
-  }
+  addSurfaceQuantity(q);
 }
 
-void SurfaceMesh::addIndexQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values) {
-  // Delete old if in use
-  if (quantities.find(name) != quantities.end()) {
-    removeQuantity(name);
-  }
-  SurfaceIndexQuantity* q = new SurfaceIndexVertexQuantity(name, values, this);
-  quantities[name] = q;
-}
-void SurfaceMesh::addIndexQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values) {
-  // Delete old if in use
-  if (quantities.find(name) != quantities.end()) {
-    removeQuantity(name);
-  }
-  SurfaceIndexQuantity* q = new SurfaceIndexFaceQuantity(name, values, this);
-  quantities[name] = q;
+void SurfaceMesh::addCountQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values) {
+  SurfaceCountQuantity* q = new SurfaceCountVertexQuantity(name, values, this);
+  addSurfaceQuantity(q);
 }
 
+void SurfaceMesh::addCountQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values) {
+  SurfaceCountQuantity* q = new SurfaceCountFaceQuantity(name, values, this);
+  addSurfaceQuantity(q);
+}
 
 void SurfaceMesh::addSubsetQuantity(std::string name, EdgeData<char>& subset) {
-  // Delete old if in use
-  if (quantities.find(name) != quantities.end()) {
-    removeQuantity(name);
-  }
   SurfaceEdgeSubsetQuantity* q = new SurfaceEdgeSubsetQuantity(name, subset, this);
-  quantities[name] = q;
+  addSurfaceQuantity(q);
 }
 
 void SurfaceMesh::addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType) {
-  // Delete old if in use
-  if (quantities.find(name) != quantities.end()) {
-    removeQuantity(name);
-  }
-
   SurfaceVectorQuantity* q = new SurfaceVertexVectorQuantity(name, value, this, vectorType);
-  quantities[name] = q;
+  addSurfaceQuantity(q);
 }
 
 void SurfaceMesh::addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType) {
-  // Delete old if in use
-  if (quantities.find(name) != quantities.end()) {
-    removeQuantity(name);
-  }
-
   SurfaceVectorQuantity* q = new SurfaceFaceVectorQuantity(name, value, this, vectorType);
-  quantities[name] = q;
+  addSurfaceQuantity(q);
 }
 
 void SurfaceMesh::addVectorQuantity(std::string name, FaceData<Complex>& value, int nSym, VectorType vectorType) {
-  // Delete old if in use
-  if (quantities.find(name) != quantities.end()) {
-    removeQuantity(name);
-  }
-
   SurfaceVectorQuantity* q = new SurfaceFaceIntrinsicVectorQuantity(name, value, this, nSym, vectorType);
-  quantities[name] = q;
+  addSurfaceQuantity(q);
 }
 
 void SurfaceMesh::removeQuantity(std::string name) {

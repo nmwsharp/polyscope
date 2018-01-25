@@ -11,10 +11,10 @@ using std::endl;
 
 namespace polyscope {
 
-SurfaceIndexQuantity::SurfaceIndexQuantity(std::string name, SurfaceMesh* mesh_, std::string definedOn_)
+SurfaceCountQuantity::SurfaceCountQuantity(std::string name, SurfaceMesh* mesh_, std::string definedOn_)
     : SurfaceQuantity(name, mesh_), definedOn(definedOn_) {}
 
-void SurfaceIndexQuantity::prepare() {
+void SurfaceCountQuantity::prepare() {
 
   safeDelete(program);
   program = new gl::GLProgram(&PASSTHRU_SPHERE_COLORED_VERT_SHADER, &SPHERE_GEOM_COLORED_BILLBOARD_SHADER, &SHINY_SPHERE_COLORED_FRAG_SHADER,
@@ -36,7 +36,7 @@ void SurfaceIndexQuantity::prepare() {
   std::vector<Vector3> color;
   for (auto& e : entries) {
     pos.push_back(e.first);
-    color.push_back(cm.getValue(e.second/maxIndMag + 0.5));
+    color.push_back(cm.getValue(0.5 * e.second / maxIndMag + 0.5));
   }
 
   // Store data in buffers
@@ -44,7 +44,7 @@ void SurfaceIndexQuantity::prepare() {
   program->setAttribute("a_color", color);
 }
 
-void SurfaceIndexQuantity::setPointCloudBillboardUniforms(gl::GLProgram* p, bool withLight) {
+void SurfaceCountQuantity::setPointCloudBillboardUniforms(gl::GLProgram* p, bool withLight) {
 
   glm::mat4 viewMat = view::getCameraViewMatrix();
   p->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
@@ -70,7 +70,7 @@ void SurfaceIndexQuantity::setPointCloudBillboardUniforms(gl::GLProgram* p, bool
   p->setUniform("u_pointRadius", pointRadius * state::lengthScale);
 }
 
-void SurfaceIndexQuantity::draw() {
+void SurfaceCountQuantity::draw() {
   if (enabled) {
     setPointCloudBillboardUniforms(program, true);
 
@@ -83,7 +83,7 @@ void SurfaceIndexQuantity::draw() {
   }
 }
 
-void SurfaceIndexQuantity::drawUI() {
+void SurfaceCountQuantity::drawUI() {
   if (ImGui::TreeNode((name + " (" + definedOn + " index)").c_str())) {
     ImGui::Checkbox("Enabled", &enabled);
     ImGui::Text("Sum: %d", sum);
@@ -93,13 +93,13 @@ void SurfaceIndexQuantity::drawUI() {
 }
 
 // ========================================================
-// ==========           Vertex Index            ==========
+// ==========           Vertex Count            ==========
 // ========================================================
 
-SurfaceIndexVertexQuantity::SurfaceIndexVertexQuantity(std::string name,
+SurfaceCountVertexQuantity::SurfaceCountVertexQuantity(std::string name,
                                                        std::vector<std::pair<VertexPtr, int>>& values_,
                                                        SurfaceMesh* mesh_)
-    : SurfaceIndexQuantity(name, mesh_, "vertex")
+    : SurfaceCountQuantity(name, mesh_, "vertex")
 
 {
   values = VertexData<int>(parent->mesh, NO_INDEX); 
@@ -111,7 +111,7 @@ SurfaceIndexVertexQuantity::SurfaceIndexVertexQuantity(std::string name,
   prepare();
 }
 
-void SurfaceIndexVertexQuantity::buildInfoGUI(VertexPtr v) {
+void SurfaceCountVertexQuantity::buildInfoGUI(VertexPtr v) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
   if(values[v] == NO_INDEX) {
@@ -123,12 +123,12 @@ void SurfaceIndexVertexQuantity::buildInfoGUI(VertexPtr v) {
 }
 
 // ========================================================
-// ==========            Face Index             ==========
+// ==========            Face Count             ==========
 // ========================================================
 
-SurfaceIndexFaceQuantity::SurfaceIndexFaceQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values_,
+SurfaceCountFaceQuantity::SurfaceCountFaceQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values_,
                                                    SurfaceMesh* mesh_)
-    : SurfaceIndexQuantity(name, mesh_, "face") {
+    : SurfaceCountQuantity(name, mesh_, "face") {
 
   values = FaceData<int>(parent->mesh, NO_INDEX);
   for (auto& x : values_) {
@@ -139,7 +139,7 @@ SurfaceIndexFaceQuantity::SurfaceIndexFaceQuantity(std::string name, std::vector
   prepare();
 }
 
-void SurfaceIndexFaceQuantity::buildInfoGUI(FacePtr f) {
+void SurfaceCountFaceQuantity::buildInfoGUI(FacePtr f) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
   if(values[f] == NO_INDEX) {

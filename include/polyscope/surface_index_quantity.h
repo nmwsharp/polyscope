@@ -5,9 +5,9 @@
 
 namespace polyscope {
 
-class SurfaceIndexQuantity : public SurfaceQuantity {
+class SurfaceCountQuantity : public SurfaceQuantity {
 public:
-  SurfaceIndexQuantity(std::string name, SurfaceMesh* mesh_, std::string definedOn);
+  SurfaceCountQuantity(std::string name, SurfaceMesh* mesh_, std::string definedOn);
 
   virtual void draw() override;
   virtual void drawUI() override;
@@ -31,13 +31,13 @@ private:
 };
 
 // ========================================================
-// ==========           Vertex Index             ==========
+// ==========           Vertex Count             ==========
 // ========================================================
 
-class SurfaceIndexVertexQuantity : public SurfaceIndexQuantity {
+class SurfaceCountVertexQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceIndexVertexQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values_, SurfaceMesh* mesh_);
-  //   ~SurfaceIndexVertexQuantity();
+  SurfaceCountVertexQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values_, SurfaceMesh* mesh_);
+  //   ~SurfaceCountVertexQuantity();
 
   void buildInfoGUI(VertexPtr v) override;
 
@@ -46,13 +46,13 @@ public:
 };
 
 // ========================================================
-// ==========            Face Index             ==========
+// ==========            Face Count             ==========
 // ========================================================
 
-class SurfaceIndexFaceQuantity : public SurfaceIndexQuantity {
+class SurfaceCountFaceQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceIndexFaceQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values_, SurfaceMesh* mesh_);
-  //   ~SurfaceIndexVertexQuantity();
+  SurfaceCountFaceQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values_, SurfaceMesh* mesh_);
+  //   ~SurfaceCountVertexQuantity();
 
   void buildInfoGUI(FacePtr f) override;
 
