@@ -493,12 +493,12 @@ void SurfaceMesh::addSurfaceQuantity(SurfaceQuantity* quantity) {
   // Delete old if in use
   bool wasEnabled = false;
   if (quantities.find(quantity->name) != quantities.end()) {
-    wasEnabled = quantities[name]->enabled;
-    removeQuantity(name);
+    wasEnabled = quantities[quantity->name]->enabled;
+    removeQuantity(quantity->name);
   }
 
   // Store
-  quantities[name] = quantity;
+  quantities[quantity->name] = quantity;
 
   // Re-enable the quantity if we're replacing an enabled quantity
   if (wasEnabled) {
@@ -509,13 +509,13 @@ void SurfaceMesh::addSurfaceQuantity(SurfaceQuantity* quantity) {
 void SurfaceMesh::addSurfaceQuantity(SurfaceQuantityThatDrawsFaces* quantity) {
   // Delete old if in use
   bool wasEnabled = false;
-  if (quantities.find(name) != quantities.end()) {
-    wasEnabled = quantities[name]->enabled;
-    removeQuantity(name);
+  if (quantities.find(quantity->name) != quantities.end()) {
+    wasEnabled = quantities[quantity->name]->enabled;
+    removeQuantity(quantity->name);
   }
 
   // Store
-  quantities[name] = quantity;
+  quantities[quantity->name] = quantity;
 
   // Re-enable the quantity if we're replacing an enabled quantity
   if (wasEnabled) {
