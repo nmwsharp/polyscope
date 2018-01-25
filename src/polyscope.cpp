@@ -1,6 +1,8 @@
 #include "polyscope/polyscope.h"
 
+#include <chrono>
 #include <iostream>
+#include <thread>
 
 #ifdef _WIN32
 #undef APIENTRY
@@ -14,6 +16,7 @@
 
 #include "polyscope/pick.h"
 #include "polyscope/view.h"
+
 
 using std::cout;
 using std::endl;
@@ -44,6 +47,7 @@ int verbosity = 2;
 std::string printPrefix = "Polyscope: ";
 bool errorsThrowExceptions = false;
 bool debugDrawPickBuffer = false;
+int maxFPS = 60;
 
 } // namespace options
 
@@ -92,60 +96,59 @@ void initPickBuffer() {
 void setStyle() {
 
   // Style
-  ImGuiStyle* style = &ImGui::GetStyle(); 
+  ImGuiStyle* style = &ImGui::GetStyle();
   style->WindowRounding = 1;
   style->FrameRounding = 1;
   style->FramePadding.y = 4;
   style->ScrollbarRounding = 1;
   style->ScrollbarSize = 20;
 
-  
+
   // Colors
   ImVec4* colors = style->Colors;
-  colors[ImGuiCol_Text]                   = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-  colors[ImGuiCol_TextDisabled]           = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
-  colors[ImGuiCol_WindowBg]               = ImVec4(0.00f, 0.00f, 0.00f, 0.70f);
-  colors[ImGuiCol_ChildBg]                = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-  colors[ImGuiCol_PopupBg]                = ImVec4(0.11f, 0.11f, 0.14f, 0.92f);
-  colors[ImGuiCol_Border]                 = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
-  colors[ImGuiCol_BorderShadow]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-  colors[ImGuiCol_FrameBg]                = ImVec4(0.63f, 0.63f, 0.63f, 0.39f);
-  colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.47f, 0.69f, 0.59f, 0.40f);
-  colors[ImGuiCol_FrameBgActive]          = ImVec4(0.41f, 0.64f, 0.53f, 0.69f);
-  colors[ImGuiCol_TitleBg]                = ImVec4(0.27f, 0.54f, 0.42f, 0.83f);
-  colors[ImGuiCol_TitleBgActive]          = ImVec4(0.32f, 0.63f, 0.49f, 0.87f);
-  colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(0.40f, 0.80f, 0.62f, 0.20f);
-  colors[ImGuiCol_MenuBarBg]              = ImVec4(0.40f, 0.55f, 0.48f, 0.80f);
-  colors[ImGuiCol_ScrollbarBg]            = ImVec4(0.63f, 0.63f, 0.63f, 0.39f);
-  colors[ImGuiCol_ScrollbarGrab]          = ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
-  colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(0.40f, 0.80f, 0.62f, 0.40f);
-  colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4(0.39f, 0.80f, 0.61f, 0.60f);
-  colors[ImGuiCol_CheckMark]              = ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
-  colors[ImGuiCol_SliderGrab]             = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
-  colors[ImGuiCol_SliderGrabActive]       = ImVec4(0.39f, 0.80f, 0.61f, 0.60f);
-  colors[ImGuiCol_Button]                 = ImVec4(0.35f, 0.61f, 0.49f, 0.62f);
-  colors[ImGuiCol_ButtonHovered]          = ImVec4(0.40f, 0.71f, 0.57f, 0.79f);
-  colors[ImGuiCol_ButtonActive]           = ImVec4(0.46f, 0.80f, 0.64f, 1.00f);
-  colors[ImGuiCol_Header]                 = ImVec4(0.40f, 0.90f, 0.67f, 0.45f);
-  colors[ImGuiCol_HeaderHovered]          = ImVec4(0.45f, 0.90f, 0.69f, 0.80f);
-  colors[ImGuiCol_HeaderActive]           = ImVec4(0.53f, 0.87f, 0.71f, 0.80f);
-  colors[ImGuiCol_Separator]              = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-  colors[ImGuiCol_SeparatorHovered]       = ImVec4(0.60f, 0.70f, 0.66f, 1.00f);
-  colors[ImGuiCol_SeparatorActive]        = ImVec4(0.70f, 0.90f, 0.81f, 1.00f);
-  colors[ImGuiCol_ResizeGrip]             = ImVec4(1.00f, 1.00f, 1.00f, 0.16f);
-  colors[ImGuiCol_ResizeGripHovered]      = ImVec4(0.78f, 1.00f, 0.90f, 0.60f);
-  colors[ImGuiCol_ResizeGripActive]       = ImVec4(0.78f, 1.00f, 0.90f, 0.90f);
-  colors[ImGuiCol_CloseButton]            = ImVec4(1.00f, 1.00f, 1.00f, 0.50f);
-  colors[ImGuiCol_CloseButtonHovered]     = ImVec4(0.70f, 0.70f, 0.70f, 0.60f);
-  colors[ImGuiCol_CloseButtonActive]      = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
-  colors[ImGuiCol_PlotLines]              = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-  colors[ImGuiCol_PlotLinesHovered]       = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-  colors[ImGuiCol_PlotHistogram]          = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-  colors[ImGuiCol_PlotHistogramHovered]   = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
-  colors[ImGuiCol_TextSelectedBg]         = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
-  colors[ImGuiCol_ModalWindowDarkening]   = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
-  colors[ImGuiCol_DragDropTarget]         = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
-
+  colors[ImGuiCol_Text] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+  colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+  colors[ImGuiCol_WindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.70f);
+  colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+  colors[ImGuiCol_PopupBg] = ImVec4(0.11f, 0.11f, 0.14f, 0.92f);
+  colors[ImGuiCol_Border] = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
+  colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+  colors[ImGuiCol_FrameBg] = ImVec4(0.63f, 0.63f, 0.63f, 0.39f);
+  colors[ImGuiCol_FrameBgHovered] = ImVec4(0.47f, 0.69f, 0.59f, 0.40f);
+  colors[ImGuiCol_FrameBgActive] = ImVec4(0.41f, 0.64f, 0.53f, 0.69f);
+  colors[ImGuiCol_TitleBg] = ImVec4(0.27f, 0.54f, 0.42f, 0.83f);
+  colors[ImGuiCol_TitleBgActive] = ImVec4(0.32f, 0.63f, 0.49f, 0.87f);
+  colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.40f, 0.80f, 0.62f, 0.20f);
+  colors[ImGuiCol_MenuBarBg] = ImVec4(0.40f, 0.55f, 0.48f, 0.80f);
+  colors[ImGuiCol_ScrollbarBg] = ImVec4(0.63f, 0.63f, 0.63f, 0.39f);
+  colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
+  colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.40f, 0.80f, 0.62f, 0.40f);
+  colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.39f, 0.80f, 0.61f, 0.60f);
+  colors[ImGuiCol_CheckMark] = ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
+  colors[ImGuiCol_SliderGrab] = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
+  colors[ImGuiCol_SliderGrabActive] = ImVec4(0.39f, 0.80f, 0.61f, 0.60f);
+  colors[ImGuiCol_Button] = ImVec4(0.35f, 0.61f, 0.49f, 0.62f);
+  colors[ImGuiCol_ButtonHovered] = ImVec4(0.40f, 0.71f, 0.57f, 0.79f);
+  colors[ImGuiCol_ButtonActive] = ImVec4(0.46f, 0.80f, 0.64f, 1.00f);
+  colors[ImGuiCol_Header] = ImVec4(0.40f, 0.90f, 0.67f, 0.45f);
+  colors[ImGuiCol_HeaderHovered] = ImVec4(0.45f, 0.90f, 0.69f, 0.80f);
+  colors[ImGuiCol_HeaderActive] = ImVec4(0.53f, 0.87f, 0.71f, 0.80f);
+  colors[ImGuiCol_Separator] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+  colors[ImGuiCol_SeparatorHovered] = ImVec4(0.60f, 0.70f, 0.66f, 1.00f);
+  colors[ImGuiCol_SeparatorActive] = ImVec4(0.70f, 0.90f, 0.81f, 1.00f);
+  colors[ImGuiCol_ResizeGrip] = ImVec4(1.00f, 1.00f, 1.00f, 0.16f);
+  colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.78f, 1.00f, 0.90f, 0.60f);
+  colors[ImGuiCol_ResizeGripActive] = ImVec4(0.78f, 1.00f, 0.90f, 0.90f);
+  colors[ImGuiCol_CloseButton] = ImVec4(1.00f, 1.00f, 1.00f, 0.50f);
+  colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.70f, 0.70f, 0.70f, 0.60f);
+  colors[ImGuiCol_CloseButtonActive] = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
+  colors[ImGuiCol_PlotLines] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+  colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+  colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+  colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+  colors[ImGuiCol_TextSelectedBg] = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
+  colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
+  colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
 }
 
 }; // namespace
@@ -305,7 +308,7 @@ void processMouseEvents() {
       bool isDragZoom = io.KeyShift && io.KeyCtrl;
       bool isRotate = !io.KeyShift;
       if (isDragZoom) {
-        view::processZoom(dragDelta.y * 5); 
+        view::processZoom(dragDelta.y * 5);
       } else {
         if (isRotate) {
           view::processRotate(dragDelta.x, dragDelta.y);
@@ -377,6 +380,7 @@ void buildPolyscopeGui() {
     screenshot(true);
   }
   ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+  // cout << "fps = " << ImGui::GetIO().Framerate << endl;
 
   // == Debugging-related options
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
@@ -396,7 +400,7 @@ void buildStructureGui() {
 
   for (auto catMapEntry : state::structures) {
     std::string catName = catMapEntry.first;
-    
+
     std::map<std::string, Structure*>& structureMap = catMapEntry.second;
 
     ImGui::PushID(catName.c_str()); // ensure there are no conflicts with
@@ -445,6 +449,8 @@ void buildPickGui() {
   }
 }
 
+auto lastMainLoopIterTime = std::chrono::steady_clock::now();
+
 } // namespace
 
 void draw(bool withUI = true) {
@@ -470,7 +476,7 @@ void draw(bool withUI = true) {
 
   if (withUI) {
     // Build the GUI components
-    ImGui::ShowDemoWindow();
+    //ImGui::ShowDemoWindow();
     buildPolyscopeGui();
     buildStructureGui();
     buildUserGui();
@@ -489,15 +495,20 @@ void draw(bool withUI = true) {
 }
 
 void mainLoopIteration() {
-    
-  // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to
-  // tell if dear imgui wants to use your inputs.
-  // - When io.WantCaptureMouse is true, do not dispatch mouse input data to
-  // your main application.
-  // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input
-  // data to your main application. Generally you may always pass all inputs
-  // to dear imgui, and hide them from your application based on those two
-  // flags.
+
+  // The windowing system will let this busy-loop in some situations, unfortunately. Make sure that doesn't happen.
+  if (options::maxFPS != -1) {
+    auto currTime = std::chrono::steady_clock::now();
+    long microsecPerLoop = 1000000 / options::maxFPS;
+    microsecPerLoop = 95 * microsecPerLoop / 100; // give a little slack so we actually hit target fps
+    while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() < microsecPerLoop) {
+      std::chrono::milliseconds timespan(1);
+      std::this_thread::sleep_for(timespan);
+      currTime = std::chrono::steady_clock::now();
+    }
+  }
+  lastMainLoopIterTime = std::chrono::steady_clock::now();
+
 
   // Update the width and heigh
   glfwMakeContextCurrent(imguirender::mainWindow);
@@ -512,7 +523,6 @@ void mainLoopIteration() {
   // Rendering
   draw();
   glfwSwapBuffers(imguirender::mainWindow);
-
 }
 
 void show(bool shutdownAfter) {
@@ -523,7 +533,7 @@ void show(bool shutdownAfter) {
     mainLoopIteration();
   }
 
-  if(shutdownAfter) {
+  if (shutdownAfter) {
     shutdown();
   }
 }
@@ -539,15 +549,15 @@ void shutdown(int exitCode) {
 bool registerStructure(Structure* s, bool replaceIfPresent) {
 
   // Make sure a map for the type exists
-  if(state::structures.find(s->type) == state::structures.end()) {
+  if (state::structures.find(s->type) == state::structures.end()) {
     state::structures[s->type] = std::map<std::string, Structure*>();
   }
-  std::map<std::string,Structure*>& sMap = state::structures[s->type];
+  std::map<std::string, Structure*>& sMap = state::structures[s->type];
 
   // Check if the structure name is in use
   bool inUse = sMap.find(s->name) != sMap.end();
-  if(inUse) {
-    if(replaceIfPresent) {
+  if (inUse) {
+    if (replaceIfPresent) {
       removeStructure(s->name);
     } else {
       polyscope::error("Attempted to register structure with name " + s->name +
@@ -566,35 +576,35 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
 void registerPointCloud(std::string name, const std::vector<Vector3>& points, bool replaceIfPresent) {
   PointCloud* s = new PointCloud(name, points);
   bool success = registerStructure(s);
-  if(!success) delete s;
+  if (!success) delete s;
 }
 
 void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom, bool replaceIfPresent) {
   SurfaceMesh* s = new SurfaceMesh(name, geom);
   bool success = registerStructure(s);
-  if(!success) delete s;
+  if (!success) delete s;
 }
 
 void registerCameraView(std::string name, CameraParameters p, bool replaceIfPresent) {
   CameraView* s = new CameraView(name, p);
   bool success = registerStructure(s);
-  if(!success) delete s;
+  if (!success) delete s;
 }
 
 void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& r, bool replaceIfPresent) {
   RaySet* s = new RaySet(name, r);
   bool success = registerStructure(s);
-  if(!success) delete s;
+  if (!success) delete s;
 }
 
 Structure* getStructure(std::string type, std::string name) {
 
   // If there are no structures of that type it is an automatic fail
-  if(state::structures.find(type) == state::structures.end()) {
+  if (state::structures.find(type) == state::structures.end()) {
     error("No structures of type " + type + " registered");
     return nullptr;
   }
-  std::map<std::string,Structure*>& sMap = state::structures[type];
+  std::map<std::string, Structure*>& sMap = state::structures[type];
 
   // Special automatic case, return any
   if (name == "") {
@@ -627,24 +637,22 @@ CameraView* getCameraView(std::string name) {
   return dynamic_cast<CameraView*>(getStructure(CameraView::structureTypeName, name));
 }
 
-RaySet* getRaySet(std::string name) {
-  return dynamic_cast<RaySet*>(getStructure(RaySet::structureTypeName, name));
-}
+RaySet* getRaySet(std::string name) { return dynamic_cast<RaySet*>(getStructure(RaySet::structureTypeName, name)); }
 
 void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
- 
+
   // If there are no structures of that type it is an automatic fail
-  if(state::structures.find(type) == state::structures.end()) {
-    if(errorIfAbsent) {
+  if (state::structures.find(type) == state::structures.end()) {
+    if (errorIfAbsent) {
       error("No structures of type " + type + " registered");
     }
     return;
   }
-  std::map<std::string,Structure*>& sMap = state::structures[type];
- 
+  std::map<std::string, Structure*>& sMap = state::structures[type];
+
   // Check if structure exists
-  if(sMap.find(name) == sMap.end()) {
-    if(errorIfAbsent) {
+  if (sMap.find(name) == sMap.end()) {
+    if (errorIfAbsent) {
       error("No structure of type " + type + " and name " + name + " registered");
     }
     return;
@@ -663,12 +671,12 @@ void removeStructure(std::string name) {
 
   // Check if we can find exactly one structure matching the name
   Structure* targetStruct = nullptr;
-  for(auto typeMap : state::structures) {
-    for(auto entry : typeMap.second) {
+  for (auto typeMap : state::structures) {
+    for (auto entry : typeMap.second) {
 
       // Found a matching structure
-      if(entry.first == name) {
-        if(targetStruct == nullptr) {
+      if (entry.first == name) {
+        if (targetStruct == nullptr) {
           targetStruct = entry.second;
         } else {
           error("Cannot use automatic structure remove with empty name unless there is exactly one structure of that "
@@ -681,7 +689,7 @@ void removeStructure(std::string name) {
   }
 
   // Error if none found.
-  if(targetStruct == nullptr) {
+  if (targetStruct == nullptr) {
     error("No structure named: " + name + " to remove.");
     return;
   }
@@ -691,16 +699,16 @@ void removeStructure(std::string name) {
 
 void removeAllStructures() {
 
-  for(auto typeMap : state::structures) {
-    
+  for (auto typeMap : state::structures) {
+
     // dodge iterator invalidation
     std::vector<std::string> names;
-    for(auto entry : typeMap.second) {
+    for (auto entry : typeMap.second) {
       names.push_back(entry.first);
     }
 
     // remove all
-    for(auto name : names) {
+    for (auto name : names) {
       removeStructure(typeMap.first, name);
     }
   }

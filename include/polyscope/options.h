@@ -19,6 +19,9 @@ namespace options {
 
     // Should errors throw exceptions, or just display?
     extern bool errorsThrowExceptions;
+
+    // Don't let the main loop run at more than this speed. (-1 disables)
+    extern int maxFPS;
     
 
 } // namespace options

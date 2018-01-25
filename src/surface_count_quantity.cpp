@@ -1,4 +1,4 @@
-#include "polyscope/surface_index_quantity.h"
+#include "polyscope/surface_count_quantity.h"
 
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/sphere_shaders.h"
@@ -84,7 +84,7 @@ void SurfaceCountQuantity::draw() {
 }
 
 void SurfaceCountQuantity::drawUI() {
-  if (ImGui::TreeNode((name + " (" + definedOn + " index)").c_str())) {
+  if (ImGui::TreeNode((name + " (" + definedOn + " count)").c_str())) {
     ImGui::Checkbox("Enabled", &enabled);
     ImGui::Text("Sum: %d", sum);
     ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);

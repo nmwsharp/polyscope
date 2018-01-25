@@ -8,7 +8,7 @@
 
 // Quantities
 #include "polyscope/surface_color_quantity.h"
-#include "polyscope/surface_index_quantity.h"
+#include "polyscope/surface_count_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_subset_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
