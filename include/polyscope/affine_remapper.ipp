@@ -36,27 +36,61 @@ template <>
 geometrycentral::Vector3 FIELD_ZERO() {
   return geometrycentral::Vector3::zero();
 }
-};  // namespace
+}; // namespace
+
+
+template <typename T>
+std::pair<double, double> robustMinMax(const std::vector<T>& data) {
+
+  if (data.size() == 0) {
+    return std::make_pair(-1.0, 1.0);
+  }
+
+  // Compute max and min of data for mapping
+  double minVal = std::numeric_limits<double>::infinity();
+  double maxVal = -std::numeric_limits<double>::infinity();
+  bool anyFinite = false;
+  for (const T& x : data) {
+    if (std::isfinite(FIELD_BIGNESS(x))) {
+      minVal = std::min(minVal, FIELD_BIGNESS(x));
+      maxVal = std::max(maxVal, FIELD_BIGNESS(x));
+      anyFinite = true;
+    }
+  }
+  if(!anyFinite) {
+    return std::make_pair(-1.0, 1.0);
+  }
+  double maxMag = std::max(std::abs(minVal), std::abs(maxVal));
+
+  // Hack to do less ugly things when constants (or near-constant) are passed in
+  double rangeEPS = 1E-12;
+  if (maxMag < rangeEPS) {
+    maxVal = rangeEPS;
+    minVal = -rangeEPS;
+  } else if ((maxVal - minVal) / maxMag < rangeEPS) {
+    double mid = (minVal + maxVal) / 2.0;
+    maxVal = mid + maxMag * rangeEPS;
+    minVal = mid - maxMag * rangeEPS;
+  }
+
+  return std::make_pair(minVal, maxVal);
+}
 
 template <typename T>
 AffineRemapper<T>::AffineRemapper(T offset_, double scale_)
-    : offset(offset_),
-      scale(scale){
+    : offset(offset_), scale(scale){
 
-      };
+                       };
 
 template <typename T>
 AffineRemapper<T>::AffineRemapper()
-    : offset(FIELD_ZERO<T>()),
-      scale(1.0),
-      minVal(std::numeric_limits<double>::quiet_NaN()),
+    : offset(FIELD_ZERO<T>()), scale(1.0), minVal(std::numeric_limits<double>::quiet_NaN()),
       maxVal(std::numeric_limits<double>::quiet_NaN()){
 
       };
 
 template <typename T>
-AffineRemapper<T>::AffineRemapper(const std::vector<T>& data,
-                                  DataType datatype) {
+AffineRemapper<T>::AffineRemapper(const std::vector<T>& data, DataType datatype) {
   // Compute max and min of data for mapping
   minVal = std::numeric_limits<double>::infinity();
   T minElem;
@@ -97,8 +131,7 @@ AffineRemapper<T>::AffineRemapper(const std::vector<T>& data,
 }
 
 template <typename T>
-AffineRemapper<T>::AffineRemapper(double minVal, double maxVal,
-                                  DataType datatype) {
+AffineRemapper<T>::AffineRemapper(double minVal, double maxVal, DataType datatype) {
   if (datatype == DataType::STANDARD) {
     offset = minVal * FIELD_ONE<T>();
     scale = 1.0 / (maxVal - minVal);
@@ -136,4 +169,4 @@ std::string AffineRemapper<T>::printBounds() {
   return std::string(b);
 }
 
-};  // namespace polyscope
+}; // namespace polyscope

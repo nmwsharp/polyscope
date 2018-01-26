@@ -764,12 +764,12 @@ void GLProgram::setTexture2D(std::string name, unsigned char* texData, unsigned 
   throw std::invalid_argument("No texture with name " + name);
 }
 
-void GLProgram::setTextureFromColormap(std::string name, Colormap colormap) {
+void GLProgram::setTextureFromColormap(std::string name, Colormap colormap, bool allowUpdate) {
   // Find the right texture
   for (GLTexture& t : textures) {
     if (t.name != name) continue;
 
-    if (t.isSet) {
+    if (t.isSet && !allowUpdate) {
       throw std::invalid_argument("Attempted to set texture twice");
     }
 

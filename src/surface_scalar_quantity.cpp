@@ -38,8 +38,9 @@ void SurfaceScalarQuantity::drawUI() {
       int iColormapBefore = iColorMap;
       ImGui::Combo("##colormap", &iColorMap, cm_names, IM_ARRAYSIZE(cm_names));
       ImGui::PopItemWidth();
-      if (iColorMap != iColormapBefore && enabled) {
+      if (iColorMap != iColormapBefore) {
         parent->deleteProgram();
+        hist.updateColormap(colormaps[iColorMap]);
       }
     }
 
@@ -79,6 +80,7 @@ SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(std::string name, Verte
   }
   mapper = AffineRemapper<double>(valsVec, dataType);
 
+  hist.updateColormap(colormaps[iColorMap]);
   hist.buildHistogram(valsVec);
 }
 
@@ -142,6 +144,7 @@ SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name, FaceData<
   }
   mapper = AffineRemapper<double>(valsVec, dataType);
   
+  hist.updateColormap(colormaps[iColorMap]);
   hist.buildHistogram(valsVec);
 }
 
@@ -205,6 +208,7 @@ SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name, EdgeData<
   }
   mapper = AffineRemapper<double>(valsVec, dataType);
   
+  hist.updateColormap(colormaps[iColorMap]);
   hist.buildHistogram(valsVec);
 }
 
@@ -270,7 +274,8 @@ SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(std::string name, H
     valsVec.push_back(values[he]);
   }
   mapper = AffineRemapper<double>(valsVec, dataType);
-  
+ 
+  hist.updateColormap(colormaps[iColorMap]);
   hist.buildHistogram(valsVec);
 }
 

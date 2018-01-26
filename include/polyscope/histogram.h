@@ -13,8 +13,11 @@ public:
   Histogram();
   Histogram(std::vector<double>& values);
   Histogram(std::vector<double>& values, const std::vector<double>& weights);
-  void buildHistogram(std::vector<double>& values, const std::vector<double>& weights = {});
+
   ~Histogram();
+
+  void buildHistogram(std::vector<double>& values, const std::vector<double>& weights = {});
+  void updateColormap(const gl::Colormap* newColormap);
 
   void buildUI();
 
@@ -22,7 +25,7 @@ private:
   // = Helpers
 
   // Manage the actual histogram
-  void fillBuffers(bool useWeighted);
+  void fillBuffers();
   void smoothCurve(std::vector<double>& yVals);
   size_t histBinCount = 200;
   std::vector<double> weightedHistCurveY;       // size of buckets
@@ -31,6 +34,7 @@ private:
   double minVal;
   double maxVal;
   bool hasWeighted = false;
+  bool useWeighted = false;
 
 
   // Render to texture
@@ -39,6 +43,7 @@ private:
   GLuint texDim = 600;
   GLuint framebufferInd, textureInd;
   gl::GLProgram* program = nullptr;
+  const gl::Colormap* colormap = &gl::CM_CONST_RED;
 };
 
 

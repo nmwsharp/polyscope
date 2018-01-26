@@ -1,6 +1,7 @@
 #include "polyscope/histogram.h"
 
 #include "polyscope/gl/shaders/histogram_shaders.h"
+#include "polyscope/affine_remapper.h"
 
 #include "imgui.h"
 
@@ -14,7 +15,7 @@ namespace polyscope {
 
 Histogram::Histogram() {
   prepare();
-  fillBuffers(false);
+  fillBuffers();
 }
 
 Histogram::Histogram(std::vector<double>& values) {
@@ -32,6 +33,7 @@ Histogram::~Histogram() { safeDelete(program); }
 void Histogram::buildHistogram(std::vector<double>& values, const std::vector<double>& weights) {
 
   hasWeighted = weights.size() > 0;
+  useWeighted = hasWeighted;
 
   // Build weighed and unweighted arrays of values
   size_t N = values.size();
@@ -48,8 +50,10 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
 
   // == Build histogram
   std::sort(values.begin(), values.end());
-  minVal = values.front();
-  maxVal = values.back();
+
+  std::pair<double,double> minmax = robustMinMax(values);
+  minVal = minmax.first;
+  maxVal = minmax.second;
 
   // linspace coords
   double range = maxVal - minVal;
@@ -110,7 +114,7 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
   }
 
 
-  fillBuffers(hasWeighted);
+  fillBuffers();
 }
 
 void Histogram::smoothCurve(std::vector<double>& yVals) {
@@ -146,7 +150,12 @@ void Histogram::smoothCurve(std::vector<double>& yVals) {
   yVals = smoothedVals;
 }
 
-void Histogram::fillBuffers(bool useWeighted) {
+void Histogram::updateColormap(const gl::Colormap* newColormap) {
+  colormap = newColormap;
+  fillBuffers(); 
+}
+
+void Histogram::fillBuffers() {
 
   std::vector<double>& histCurveY = useWeighted ? weightedHistCurveY : unweightedHistCurveY;
 
@@ -186,6 +195,7 @@ void Histogram::fillBuffers(bool useWeighted) {
   coords.push_back(Vector2{0.5 * (histCurveX.back()[0] + histCurveX.back()[1]), histCurveY.back()});
 
   program->setAttribute("a_coord", coords);
+  program->setTextureFromColormap("t_colormap", *colormap, true);
 }
 
 void Histogram::prepare() {
@@ -200,7 +210,7 @@ void Histogram::prepare() {
   glBindTexture(GL_TEXTURE_2D, textureInd);
 
   // Configure setttings
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texDim, texDim, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texDim, texDim, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // TODO FIXME not good!
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <utility>
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -21,6 +22,8 @@ enum class DataType { STANDARD = 0, SYMMETRIC, MAGNITUDE};
 // AMBIENT: vector represent distances in the ambient space
 enum class VectorType { STANDARD = 0, AMBIENT};
 
+template <typename T>
+std::pair<double,double> robustMinMax(const std::vector<T>& data);
 
 // Map data in to the range [0,1]
 template <typename T>

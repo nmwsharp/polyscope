@@ -97,7 +97,7 @@ public:
   void setTexture1D(std::string name, unsigned char* texData, unsigned int length);
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                     bool useMipMap = false);
-  void setTextureFromColormap(std::string name, Colormap colormap);
+  void setTextureFromColormap(std::string name, Colormap colormap, bool allowUpdate=false);
 
 
   // Indices

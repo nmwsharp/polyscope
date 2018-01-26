@@ -15,12 +15,12 @@ static const VertShader HISTOGRAM_VERT_SHADER =  {
     GLSL(150,
       in vec2 a_coord;
       
-      out vec2 coord;
+      out float t;
 
       void main()
       {
+          t = a_coord.x;
           vec2 scaledCoord = vec2(a_coord.x, a_coord.y * .85);
-          coord = scaledCoord;
           gl_Position = vec4(2.*scaledCoord - vec2(1.0, 1.0),0.,1.);
       }
     )
@@ -38,7 +38,7 @@ static const FragShader HISTORGRAM_FRAG_SHADER = {
     
     // textures 
     {
-        //{"t_image", 2}
+        {"t_colormap", 1}
     },
     
     // output location
@@ -46,26 +46,16 @@ static const FragShader HISTORGRAM_FRAG_SHADER = {
     
     // source 
     GLSL(330,
-      in vec2 coord;
+      in float t;
 
-      //uniform sampler2D t_image;
+      uniform sampler1D t_colormap;
 
       layout(location = 0) out vec4 outputF;
 
 
       void main()
       {
-        //// Test if below curve
-        ////float tSmooth = tRange;
-        //float tSmooth = smoothstep(0.f, 1.f, tRange);
-        //float curveValHere = mix(curveVals.x, curveVals.y, tRange);
-        //if(coord.y > curveValHere) {
-          //discard;
-        //} 
-
-        // If below curve, color in
-        //outputF = vec4(texture(t_image, tCoord).rgb, u_transparency);
-        outputF = vec4(0.5, 0.5, 0.5, 0.5);
+        outputF = vec4(texture(t_colormap, t).rgb, 1.0);
       }
     )
 };
