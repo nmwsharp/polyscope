@@ -12,12 +12,17 @@ public:
 
   virtual void draw() override;
   virtual void drawUI() override;
+  virtual void setProgramValues(gl::GLProgram* program) override;
 
   // === Members
   const DataType dataType;
 
-  // The map that takes values to [0,1] for drawing
-  AffineRemapper<double> mapper;
+protected:
+
+  // Affine data maps and limits
+  void resetVizRange();
+  float vizRangeLow, vizRangeHigh;
+  float dataRangeHigh, dataRangeLow;
   Histogram hist;
 
   // UI internals

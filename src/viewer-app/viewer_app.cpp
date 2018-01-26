@@ -39,11 +39,13 @@ void processFileOBJ(string filename) {
   VertexData<double> valX(mesh);
   VertexData<double> valY(mesh);
   VertexData<double> valZ(mesh);
+  VertexData<double> valMag(mesh);
   VertexData<Vector3> randColor(mesh);
   for (VertexPtr v : mesh->vertices()) {
-    valX[v] = geom->position(v).x;
+    valX[v] = geom->position(v).x/10000;
     valY[v] = geom->position(v).y;
     valZ[v] = geom->position(v).z;
+    valMag[v] = norm(geom->position(v));
 
     randColor[v] = Vector3{unitRand(), unitRand(), unitRand()};
   }
@@ -51,6 +53,8 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addQuantity("cY", valY);
   polyscope::getSurfaceMesh(niceName)->addQuantity("cZ", valZ);
   polyscope::getSurfaceMesh(niceName)->addColorQuantity("vColor", randColor);
+  polyscope::getSurfaceMesh(niceName)->addQuantity("cY_sym", valY, polyscope::DataType::SYMMETRIC);
+  polyscope::getSurfaceMesh(niceName)->addQuantity("cNorm", valMag, polyscope::DataType::MAGNITUDE);
 
   FaceData<double> fArea(mesh);
   FaceData<double> zero(mesh);

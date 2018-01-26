@@ -34,7 +34,7 @@ public:
 
   // Draw the ImGUI ui elements
   virtual void drawUI() = 0;
-
+  
   // Build GUI info about this element
   virtual void buildInfoGUI(VertexPtr v);
   virtual void buildInfoGUI(FacePtr f);
@@ -56,6 +56,10 @@ public:
   // Create a program to be used for drawing the surface
   // CALLER is responsible for deallocating
   virtual gl::GLProgram* createProgram() = 0;
+  
+  // Do any per-frame work on the program handed out by create-frame
+  virtual void setProgramValues(gl::GLProgram* program);
+
 };
 
 

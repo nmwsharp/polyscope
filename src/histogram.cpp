@@ -1,7 +1,7 @@
 #include "polyscope/histogram.h"
 
-#include "polyscope/gl/shaders/histogram_shaders.h"
 #include "polyscope/affine_remapper.h"
+#include "polyscope/gl/shaders/histogram_shaders.h"
 
 #include "imgui.h"
 
@@ -51,9 +51,11 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
   // == Build histogram
   std::sort(values.begin(), values.end());
 
-  std::pair<double,double> minmax = robustMinMax(values);
+  std::pair<double, double> minmax = robustMinMax(values);
   minVal = minmax.first;
   maxVal = minmax.second;
+  colormapRangeMin = minVal;
+  colormapRangeMax = maxVal;
 
   // linspace coords
   double range = maxVal - minVal;
@@ -121,18 +123,18 @@ void Histogram::smoothCurve(std::vector<double>& yVals) {
 
   auto smoothFunc = [&](double x1, double x2) {
     // Tent
-    //double radius = 0.1;
-    //double val = (radius - std::abs(x1 - x2)) / radius;
-    //return std::max(val, 0.0);
- 
+    // double radius = 0.1;
+    // double val = (radius - std::abs(x1 - x2)) / radius;
+    // return std::max(val, 0.0);
+
     // Gaussian
     double widthFactor = 1000;
     double dist = (x1 - x2);
-    return std::exp(-dist*dist*widthFactor);
+    return std::exp(-dist * dist * widthFactor);
 
     // None
-    //if(x1 == x2) return 1.0;
-    //return 0.0;
+    // if(x1 == x2) return 1.0;
+    // return 0.0;
   };
 
   std::vector<double> smoothedVals(yVals.size());
@@ -152,7 +154,7 @@ void Histogram::smoothCurve(std::vector<double>& yVals) {
 
 void Histogram::updateColormap(const gl::Colormap* newColormap) {
   colormap = newColormap;
-  fillBuffers(); 
+  fillBuffers();
 }
 
 void Histogram::fillBuffers() {
@@ -211,8 +213,8 @@ void Histogram::prepare() {
 
   // Configure setttings
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texDim, texDim, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // TODO FIXME not good!
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -234,7 +236,6 @@ void Histogram::renderToTexture() {
 
   // Bind to the texture buffer
   glBindFramebuffer(GL_FRAMEBUFFER, framebufferInd);
-  // cout << "binding to framebuffer ind " << framebufferInd << endl;
 
   // Bind to the new texture so we can do things
   glBindTexture(GL_TEXTURE_2D, textureInd);
@@ -244,15 +245,18 @@ void Histogram::renderToTexture() {
 
   // Make sure we render to the whole buffer
   glViewport(0, 0, texDim, texDim);
-  glClearColor(0.0, 0.2, 0.2, 0.0);
+  glClearColor(0.0, 0.0, 0.0, 0.2);
   glClear(GL_COLOR_BUFFER_BIT);
 
   // Set uniforms
 
+  // Colormap range (remapped to the 0-1 coords we use)
+  program->setUniform("u_cmapRangeMin", (colormapRangeMin - minVal) / (maxVal - minVal));
+  program->setUniform("u_cmapRangeMax", (colormapRangeMax - minVal) / (maxVal - minVal));
+
 
   // Draw
   program->draw();
-  // cout << "drawed" << endl;
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -260,7 +264,14 @@ void Histogram::renderToTexture() {
 
 void Histogram::buildUI() {
   renderToTexture();
-  ImGui::Image(reinterpret_cast<void*>((size_t)textureInd) /* yes, really. */, ImVec2(300, 100), ImVec2(0, 1),
+
+  // Compute size for image
+  float aspect = 3.0;
+  float w = .8 * ImGui::GetWindowContentRegionWidth();
+  float h = w / aspect;
+
+  // Render image
+  ImGui::Image(reinterpret_cast<void*>((size_t)textureInd) /* yes, really. */, ImVec2(w, h), ImVec2(0, 1),
                ImVec2(1, 0));
 }
 

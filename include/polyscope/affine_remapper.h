@@ -23,7 +23,7 @@ enum class DataType { STANDARD = 0, SYMMETRIC, MAGNITUDE};
 enum class VectorType { STANDARD = 0, AMBIENT};
 
 template <typename T>
-std::pair<double,double> robustMinMax(const std::vector<T>& data);
+std::pair<double,double> robustMinMax(const std::vector<T>& data, double rangeEPS=1e-12);
 
 // Map data in to the range [0,1]
 template <typename T>

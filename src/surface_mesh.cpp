@@ -79,6 +79,12 @@ void SurfaceMesh::draw() {
   program->setUniform("u_basecolor", surfaceColor);
   program->setUniform("u_edgeWidth", edgeWidth);
 
+  // If the current program came from a quantity, allow the quantity to do any necessary per-frame work (like setting
+  // uniforms)
+  if (activeSurfaceQuantity != nullptr) {
+    activeSurfaceQuantity->setProgramValues(program);
+  }
+
   program->draw();
 
   // Draw the quantities
@@ -616,5 +622,7 @@ void SurfaceQuantity::buildInfoGUI(VertexPtr v) {}
 void SurfaceQuantity::buildInfoGUI(FacePtr f) {}
 void SurfaceQuantity::buildInfoGUI(EdgePtr e) {}
 void SurfaceQuantity::buildInfoGUI(HalfedgePtr he) {}
+
+void SurfaceQuantityThatDrawsFaces::setProgramValues(gl::GLProgram* program) {}
 
 } // namespace polyscope

@@ -477,7 +477,7 @@ void draw(bool withUI = true) {
 
   // Build the GUI components
   if (withUI) {
-    //ImGui::ShowDemoWindow();
+    ImGui::ShowDemoWindow();
     buildPolyscopeGui();
     buildStructureGui();
     buildUserGui();

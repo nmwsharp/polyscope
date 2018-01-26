@@ -40,7 +40,7 @@ geometrycentral::Vector3 FIELD_ZERO() {
 
 
 template <typename T>
-std::pair<double, double> robustMinMax(const std::vector<T>& data) {
+std::pair<double, double> robustMinMax(const std::vector<T>& data, double rangeEPS) {
 
   if (data.size() == 0) {
     return std::make_pair(-1.0, 1.0);
@@ -63,7 +63,6 @@ std::pair<double, double> robustMinMax(const std::vector<T>& data) {
   double maxMag = std::max(std::abs(minVal), std::abs(maxVal));
 
   // Hack to do less ugly things when constants (or near-constant) are passed in
-  double rangeEPS = 1E-12;
   if (maxMag < rangeEPS) {
     maxVal = rangeEPS;
     minVal = -rangeEPS;

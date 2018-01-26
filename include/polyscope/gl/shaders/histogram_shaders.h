@@ -30,6 +30,8 @@ static const FragShader HISTORGRAM_FRAG_SHADER = {
     
     // uniforms
     {
+      {"u_cmapRangeMin", GLData::Float},
+      {"u_cmapRangeMax", GLData::Float}
     }, 
 
     // attributes
@@ -49,13 +51,17 @@ static const FragShader HISTORGRAM_FRAG_SHADER = {
       in float t;
 
       uniform sampler1D t_colormap;
+      uniform float u_cmapRangeMin;
+      uniform float u_cmapRangeMax;
 
       layout(location = 0) out vec4 outputF;
 
 
       void main()
       {
-        outputF = vec4(texture(t_colormap, t).rgb, 1.0);
+        float mapT = (t - u_cmapRangeMin) / (u_cmapRangeMax - u_cmapRangeMin); 
+        mapT = clamp(mapT, 0.f, 1.f);
+        outputF = vec4(texture(t_colormap, mapT).rgb, 1.0);
       }
     )
 };
