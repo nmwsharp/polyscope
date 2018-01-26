@@ -2,6 +2,7 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/histogram.h"
 
 namespace polyscope {
 
@@ -17,6 +18,7 @@ public:
 
   // The map that takes values to [0,1] for drawing
   AffineRemapper<double> mapper;
+  Histogram hist;
 
   // UI internals
   const std::vector<const gl::Colormap*> colormaps = {&gl::CM_VIRIDIS, &gl::CM_COOLWARM, &gl::CM_BLUES};

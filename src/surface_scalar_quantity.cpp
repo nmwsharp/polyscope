@@ -25,7 +25,7 @@ SurfaceScalarQuantity::SurfaceScalarQuantity(std::string name, SurfaceMesh* mesh
   }
 }
 
-void SurfaceScalarQuantity::draw() {} // nothing to do, drawn by surface mesh program
+void SurfaceScalarQuantity::draw() {}
 
 void SurfaceScalarQuantity::drawUI() {
   bool enabledBefore = enabled;
@@ -46,6 +46,9 @@ void SurfaceScalarQuantity::drawUI() {
     { // Draw max and min
       ImGui::TextUnformatted(mapper.printBounds().c_str());
     }
+
+    //std::cout << "building hist for " << name << std::endl;
+    hist.buildUI();
 
     ImGui::TreePop();
   }
@@ -75,6 +78,8 @@ SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(std::string name, Verte
     valsVec.push_back(values[v]);
   }
   mapper = AffineRemapper<double>(valsVec, dataType);
+
+  hist.buildHistogram(valsVec);
 }
 
 gl::GLProgram* SurfaceScalarVertexQuantity::createProgram() {
@@ -136,6 +141,8 @@ SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name, FaceData<
     valsVec.push_back(values[f]);
   }
   mapper = AffineRemapper<double>(valsVec, dataType);
+  
+  hist.buildHistogram(valsVec);
 }
 
 gl::GLProgram* SurfaceScalarFaceQuantity::createProgram() {
@@ -197,6 +204,8 @@ SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name, EdgeData<
     valsVec.push_back(values[e]);
   }
   mapper = AffineRemapper<double>(valsVec, dataType);
+  
+  hist.buildHistogram(valsVec);
 }
 
 gl::GLProgram* SurfaceScalarEdgeQuantity::createProgram() {
@@ -261,6 +270,8 @@ SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(std::string name, H
     valsVec.push_back(values[he]);
   }
   mapper = AffineRemapper<double>(valsVec, dataType);
+  
+  hist.buildHistogram(valsVec);
 }
 
 gl::GLProgram* SurfaceScalarHalfedgeQuantity::createProgram() {
