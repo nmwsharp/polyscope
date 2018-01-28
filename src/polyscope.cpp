@@ -1,8 +1,8 @@
 #include "polyscope/polyscope.h"
 
 #include <chrono>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <thread>
 
 #ifdef _WIN32
@@ -160,28 +160,34 @@ const std::string prefsFilename = ".polyscope.ini";
 
 void readPrefsFile() {
 
-  std::ifstream inStream(prefsFilename);
-  if(inStream) {
-    
-    json prefsJSON;
-    inStream >> prefsJSON;
+  try {
 
-    // Set values
-    if(prefsJSON.count("windowWidth") > 0) {
-      view::windowWidth = prefsJSON["windowWidth"];    
-    }
-    if(prefsJSON.count("windowHeight") > 0) {
-      view::windowHeight = prefsJSON["windowHeight"];    
-    }
-    if(prefsJSON.count("windowPosX") > 0) {
-      view::initWindowPosX = prefsJSON["windowPosX"];    
-    }
-    if(prefsJSON.count("windowPosY") > 0) {
-      view::initWindowPosY = prefsJSON["windowPosY"];
+    std::ifstream inStream(prefsFilename);
+    if (inStream) {
+
+      json prefsJSON;
+      inStream >> prefsJSON;
+
+      // Set values
+      if (prefsJSON.count("windowWidth") > 0) {
+        view::windowWidth = prefsJSON["windowWidth"];
+      }
+      if (prefsJSON.count("windowHeight") > 0) {
+        view::windowHeight = prefsJSON["windowHeight"];
+      }
+      if (prefsJSON.count("windowPosX") > 0) {
+        view::initWindowPosX = prefsJSON["windowPosX"];
+      }
+      if (prefsJSON.count("windowPosY") > 0) {
+        view::initWindowPosY = prefsJSON["windowPosY"];
+      }
     }
 
   }
-
+  // We never really care if something goes wrong while loading preferences, so eat all exceptions
+  catch (...) {
+    polyscope::warning("Parsing of prefs file failed");
+  }
 }
 
 void writePrefsFile() {
@@ -191,8 +197,10 @@ void writePrefsFile() {
 
   // Build json object
   json prefsJSON = {
-      {"windowWidth", view::windowWidth}, {"windowHeight", view::windowHeight},
-      {"windowPosX", view::initWindowPosX}, {"windowPosY", view::initWindowPosY},
+      {"windowWidth", view::windowWidth},
+      {"windowHeight", view::windowHeight},
+      {"windowPosX", view::initWindowPosX},
+      {"windowPosY", view::initWindowPosY},
   };
 
   // Write out json object
@@ -599,7 +607,7 @@ void show(bool shutdownAfter) {
 void shutdown(int exitCode) {
 
   // TODO should we make an effort to destruct everything here?
-  if(options::usePrefsFile) {
+  if (options::usePrefsFile) {
     writePrefsFile();
   }
 
