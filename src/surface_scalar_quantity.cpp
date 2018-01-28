@@ -69,8 +69,10 @@ void SurfaceScalarQuantity::drawUI() {
       }
     }
 
-    { // Draw max and min
-      // ImGui::TextUnformatted(mapper.printBounds().c_str());
+    // Reset button
+    ImGui::SameLine();
+    if (ImGui::Button("Reset")) {
+      resetVizRange();
     }
 
     // Draw the histogram of values
@@ -81,13 +83,13 @@ void SurfaceScalarQuantity::drawUI() {
     // Data range
     // Note: %g specifies are generally nicer than %e, but here we don't acutally have a choice. ImGui (for somewhat
     // valid reasons) links the resolution of the slider to the decimal width of the formatted number. When %g formats a
-    // number with few decimal places, sliders can break. There is no way to set a mimum number of decimal places with
+    // number with few decimal places, sliders can break. There is no way to set a minimum number of decimal places with
     // %g, unfortunately.
     {
       switch (dataType) {
       case DataType::STANDARD:
-        ImGui::DragFloatRange2("##range_standard", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100.,
-                               dataRangeLow, dataRangeHigh, "Min: %.3e", "Max: %.3e");
+        ImGui::DragFloatRange2("", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100., dataRangeLow,
+                               dataRangeHigh, "Min: %.3e", "Max: %.3e");
         break;
       case DataType::SYMMETRIC: {
         float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
@@ -97,7 +99,6 @@ void SurfaceScalarQuantity::drawUI() {
       case DataType::MAGNITUDE: {
         ImGui::DragFloatRange2("##range_mag", &vizRangeLow, &vizRangeHigh, vizRangeHigh / 100., 0.0, dataRangeHigh,
                                "Min: %.3e", "Max: %.3e");
-        std::cout << "dataRangeHigh = " << dataRangeHigh << std::endl;
       } break;
       }
     }
@@ -126,12 +127,14 @@ SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(std::string name, Verte
   values = parent->transfer.transfer(values_);
 
   std::vector<double> valsVec;
+  std::vector<double> weightsVec;
   for (VertexPtr v : parent->mesh->vertices()) {
     valsVec.push_back(values[v]);
+    weightsVec.push_back(parent->geometry->dualArea(v));
   }
 
   hist.updateColormap(colormaps[iColorMap]);
-  hist.buildHistogram(valsVec);
+  hist.buildHistogram(valsVec, weightsVec);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
   resetVizRange();
@@ -192,12 +195,14 @@ SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name, FaceData<
   values = parent->transfer.transfer(values_);
 
   std::vector<double> valsVec;
+  std::vector<double> weightsVec;
   for (FacePtr f : parent->mesh->faces()) {
     valsVec.push_back(values[f]);
+    weightsVec.push_back(parent->geometry->area(f));
   }
 
   hist.updateColormap(colormaps[iColorMap]);
-  hist.buildHistogram(valsVec);
+  hist.buildHistogram(valsVec, weightsVec);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
   resetVizRange();
@@ -258,12 +263,18 @@ SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name, EdgeData<
   values = parent->transfer.transfer(values_);
 
   std::vector<double> valsVec;
+  std::vector<double> weightsVec;
   for (EdgePtr e : parent->mesh->edges()) {
     valsVec.push_back(values[e]);
+    double area = parent->geometry->area(e.halfedge().face()) / 3.0;
+    if (!e.isBoundary()) {
+      area += parent->geometry->area(e.halfedge().twin().face()) / 3.0;
+    }
+    weightsVec.push_back(area);
   }
 
   hist.updateColormap(colormaps[iColorMap]);
-  hist.buildHistogram(valsVec);
+  hist.buildHistogram(valsVec, weightsVec);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
   resetVizRange();
@@ -327,12 +338,17 @@ SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(std::string name, H
   values = parent->transfer.transfer(values_);
 
   std::vector<double> valsVec;
+  std::vector<double> weightsVec;
   for (HalfedgePtr he : parent->mesh->halfedges()) {
     valsVec.push_back(values[he]);
+    double area = 0;
+    if (he.isReal()) {
+      area += parent->geometry->area(he.face()) / 3.0;
+    }
   }
 
   hist.updateColormap(colormaps[iColorMap]);
-  hist.buildHistogram(valsVec);
+  hist.buildHistogram(valsVec, weightsVec);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
   resetVizRange();

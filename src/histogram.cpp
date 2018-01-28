@@ -42,14 +42,20 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
   }
 
   double totalWeight = 0;
+  std::vector<std::pair<double, double>> weightedValues;
   if (hasWeighted) {
     for (size_t i = 0; i < N; i++) {
       totalWeight += weights[i];
+      weightedValues.push_back(std::make_pair(values[i], weights[i]));
+    }
+  } else {
+    for (size_t i = 0; i < N; i++) {
+      weightedValues.push_back(std::make_pair(values[i], 1.0));
     }
   }
 
   // == Build histogram
-  std::sort(values.begin(), values.end());
+  std::sort(weightedValues.begin(), weightedValues.end());
 
   std::pair<double, double> minmax = robustMinMax(values);
   minVal = minmax.first;
@@ -60,34 +66,35 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
   // linspace coords
   double range = maxVal - minVal;
   double inc = range / histBinCount;
-  std::vector<double> sumLessThan(histBinCount, 0.0);
+  std::vector<double> sumBin(histBinCount, 0.0);
+  std::vector<double> sumBinWeighted(histBinCount, 0.0);
 
   // cumulative sum of values
   size_t jBin = 0;
   size_t jData = 0;
   double binUpperLim = minVal + inc;
-  while (jBin < histBinCount && jData < values.size()) {
-    if (values[jData] < binUpperLim) {
-      sumLessThan[jBin] += 1;
+  while (jBin < histBinCount && jData < N) {
+    if (weightedValues[jData].first < binUpperLim) {
+      sumBin[jBin] += 1;
+      sumBinWeighted[jBin] += weightedValues[jData].second;
       jData++;
     } else {
       jBin++;
       binUpperLim += inc;
-      if (jBin < histBinCount) {
-        sumLessThan[jBin] = sumLessThan[jBin - 1];
-      }
     }
   }
 
   // build histogram coords
   histCurveX.resize(histBinCount);
   unweightedHistCurveY.resize(histBinCount);
-  double prevSum = 0.0;
+  weightedHistCurveY.resize(histBinCount);
+  double prevSumU = 0.0;
+  double prevSumW = 0.0;
   double prevXEnd = minVal;
   for (size_t iBin = 0; iBin < histBinCount; iBin++) {
     // y value
-    unweightedHistCurveY[iBin] = sumLessThan[iBin] - prevSum;
-    prevSum = sumLessThan[iBin];
+    unweightedHistCurveY[iBin] = sumBin[iBin];
+    weightedHistCurveY[iBin] = sumBinWeighted[iBin];
 
     // x value
     double xEnd = prevXEnd + inc;
@@ -96,22 +103,26 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
   }
 
   { // Rescale curves to [0,1] in both dimensions
-    double maxHeight = *std::max_element(unweightedHistCurveY.begin(), unweightedHistCurveY.end());
+    double maxHeightU = *std::max_element(unweightedHistCurveY.begin(), unweightedHistCurveY.end());
+    double maxHeightW = *std::max_element(weightedHistCurveY.begin(), weightedHistCurveY.end());
     for (size_t i = 0; i < histBinCount; i++) {
       histCurveX[i][0] = (histCurveX[i][0] - minVal) / range;
       histCurveX[i][1] = (histCurveX[i][1] - minVal) / range;
-      unweightedHistCurveY[i] /= maxHeight;
+      unweightedHistCurveY[i] /= maxHeightU;
+      weightedHistCurveY[i] /= maxHeightW;
     }
   }
 
   // Smooth
   smoothCurve(unweightedHistCurveY);
-  // smoothCurve(weightedHistCurveY);
+  smoothCurve(weightedHistCurveY);
 
   { // Rescale Y again after smoothing
-    double maxHeight = *std::max_element(unweightedHistCurveY.begin(), unweightedHistCurveY.end());
+    double maxHeightU = *std::max_element(unweightedHistCurveY.begin(), unweightedHistCurveY.end());
+    double maxHeightW = *std::max_element(weightedHistCurveY.begin(), weightedHistCurveY.end());
     for (size_t i = 0; i < histBinCount; i++) {
-      unweightedHistCurveY[i] /= maxHeight;
+      unweightedHistCurveY[i] /= maxHeightU;
+      weightedHistCurveY[i] /= maxHeightW;
     }
   }
 
@@ -267,12 +278,43 @@ void Histogram::buildUI() {
 
   // Compute size for image
   float aspect = 3.0;
-  float w = .8 * ImGui::GetWindowContentRegionWidth();
+  float w = .8 * ImGui::GetWindowWidth();
   float h = w / aspect;
 
   // Render image
   ImGui::Image(reinterpret_cast<void*>((size_t)textureInd) /* yes, really. */, ImVec2(w, h), ImVec2(0, 1),
                ImVec2(1, 0));
+
+  // Draw a cursor popup on mouseover
+  if (ImGui::IsItemHovered()) {
+
+    // Get mouse x coodinate within image
+    float mouseX = ImGui::GetMousePos().x - ImGui::GetCursorScreenPos().x - ImGui::GetScrollX();
+    double mouseT = mouseX / w;
+    double val = minVal + mouseT * (maxVal - minVal);
+
+    ImGui::SetTooltip("%g", val);
+
+    // Draw line
+    ImVec2 imageUpperLeft(ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y);
+    ImVec2 lineStart(imageUpperLeft.x + mouseX, imageUpperLeft.y - h - 3);
+    ImVec2 lineEnd(imageUpperLeft.x + mouseX, imageUpperLeft.y - 4);
+    ImGui::GetWindowDrawList()->AddLine(lineStart, lineEnd,
+                                        ImGui::ColorConvertFloat4ToU32(ImVec4(254 / 255., 221 / 255., 66 / 255., 1.0)));
+  }
+
+  // Right-click combobox to select weighted/unweighted
+  if (hasWeighted && ImGui::BeginPopupContextItem("select type")) {
+    //int index = useWeighted ? 1 : 0;
+    //bool oldUseWeighted = useWeighted;
+    //ImGui::Combo("Weighted", &index, "Enabled\0Disabled\0\0");
+    //useWeighted = index == 1; 
+    //if(useWeighted != oldUseWeighted) {
+      //fillBuffers();
+    //}
+    ImGui::Checkbox("Weighted", &useWeighted);
+    ImGui::EndPopup();
+  }
 }
 
 

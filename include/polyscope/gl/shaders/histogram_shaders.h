@@ -60,8 +60,16 @@ static const FragShader HISTORGRAM_FRAG_SHADER = {
       void main()
       {
         float mapT = (t - u_cmapRangeMin) / (u_cmapRangeMax - u_cmapRangeMin); 
-        mapT = clamp(mapT, 0.f, 1.f);
-        outputF = vec4(texture(t_colormap, mapT).rgb, 1.0);
+        float clampMapT = clamp(mapT, 0.f, 1.f);
+
+        // Darken when outside range
+        float darkFactor = 1.0;
+        if(clampMapT != mapT) {
+          darkFactor = 0.6;
+        }
+
+
+        outputF = vec4(darkFactor*texture(t_colormap, clampMapT).rgb, 1.0);
       }
     )
 };
