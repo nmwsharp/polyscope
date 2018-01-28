@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <fstream>
 #include <thread>
 
 #ifdef _WIN32
@@ -16,6 +17,9 @@
 
 #include "polyscope/pick.h"
 #include "polyscope/view.h"
+
+#include "json/json.hpp"
+using json = nlohmann::json;
 
 
 using std::cout;
@@ -48,6 +52,7 @@ std::string printPrefix = "Polyscope: ";
 bool errorsThrowExceptions = false;
 bool debugDrawPickBuffer = false;
 int maxFPS = 60;
+bool usePrefsFile = true;
 
 } // namespace options
 
@@ -151,6 +156,50 @@ void setStyle() {
   colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
 }
 
+const std::string prefsFilename = ".polyscope.ini";
+
+void readPrefsFile() {
+
+  std::ifstream inStream(prefsFilename);
+  if(inStream) {
+    
+    json prefsJSON;
+    inStream >> prefsJSON;
+
+    // Set values
+    if(prefsJSON.count("windowWidth") > 0) {
+      view::windowWidth = prefsJSON["windowWidth"];    
+    }
+    if(prefsJSON.count("windowHeight") > 0) {
+      view::windowHeight = prefsJSON["windowHeight"];    
+    }
+    if(prefsJSON.count("windowPosX") > 0) {
+      view::initWindowPosX = prefsJSON["windowPosX"];    
+    }
+    if(prefsJSON.count("windowPosY") > 0) {
+      view::initWindowPosY = prefsJSON["windowPosY"];
+    }
+
+  }
+
+}
+
+void writePrefsFile() {
+
+  // Update values as needed
+  glfwGetWindowPos(imguirender::mainWindow, &view::initWindowPosX, &view::initWindowPosY);
+
+  // Build json object
+  json prefsJSON = {
+      {"windowWidth", view::windowWidth}, {"windowHeight", view::windowHeight},
+      {"windowPosX", view::initWindowPosX}, {"windowPosY", view::initWindowPosY},
+  };
+
+  // Write out json object
+  std::ofstream o(prefsFilename);
+  o << std::setw(4) << prefsJSON << std::endl;
+}
+
 }; // namespace
 
 // === Core global functions
@@ -160,6 +209,9 @@ void init() {
     throw std::logic_error(options::printPrefix + "Initialize called twice");
   }
 
+  if (options::usePrefsFile) {
+    readPrefsFile();
+  }
 
   // === Initialize glfw
   glfwSetErrorCallback(error_print_callback);
@@ -173,12 +225,14 @@ void init() {
 #if __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  imguirender::mainWindow = glfwCreateWindow(1280, 720, options::programName.c_str(), NULL, NULL);
+  imguirender::mainWindow =
+      glfwCreateWindow(view::windowWidth, view::windowHeight, options::programName.c_str(), NULL, NULL);
   glfwMakeContextCurrent(imguirender::mainWindow);
   glfwSwapInterval(1); // Enable vsync
+  glfwSetWindowPos(imguirender::mainWindow, view::initWindowPosX, view::initWindowPosY);
 
-  // === Initialize openGL
-  // Load openGL functions (using GLAD)
+// === Initialize openGL
+// Load openGL functions (using GLAD)
 #ifndef __APPLE__
   if (!gladLoadGL()) {
     throw std::runtime_error(options::printPrefix + "ERROR: Failed to load openGL using GLAD");
@@ -472,14 +526,14 @@ void draw(bool withUI = true) {
 
   // Build the GUI components
   if (withUI) {
-    //ImGui::ShowDemoWindow();
+    // ImGui::ShowDemoWindow();
     buildPolyscopeGui();
     buildStructureGui();
     buildUserGui();
     buildPickGui();
     buildMessagesUI();
   }
-  
+
   // Draw structures in the scene
   drawStructures();
 
@@ -505,7 +559,8 @@ void mainLoopIteration() {
     auto currTime = std::chrono::steady_clock::now();
     long microsecPerLoop = 1000000 / options::maxFPS;
     microsecPerLoop = 95 * microsecPerLoop / 100; // give a little slack so we actually hit target fps
-    while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() < microsecPerLoop) {
+    while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
+           microsecPerLoop) {
       std::chrono::milliseconds timespan(1);
       std::this_thread::sleep_for(timespan);
       currTime = std::chrono::steady_clock::now();
@@ -544,6 +599,9 @@ void show(bool shutdownAfter) {
 void shutdown(int exitCode) {
 
   // TODO should we make an effort to destruct everything here?
+  if(options::usePrefsFile) {
+    writePrefsFile();
+  }
 
   ImGui::Shutdown();
   std::exit(exitCode);

@@ -25,6 +25,8 @@ extern int bufferWidth;
 extern int bufferHeight;
 extern int windowWidth;
 extern int windowHeight;
+extern int initWindowPosX;
+extern int initWindowPosY;
 extern double nearClipRatio;
 extern double farClipRatio;
 extern std::array<float, 4> bgColor;

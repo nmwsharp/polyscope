@@ -8,10 +8,12 @@ namespace polyscope {
 namespace view {
 
 // Storage for state variables
-int windowWidth = -1;
-int windowHeight = -1;
+int windowWidth = 1280;
+int windowHeight = 720;
 int bufferWidth = -1;
 int bufferHeight = -1;
+int initWindowPosX = 20;
+int initWindowPosY = 20;
 double fov = 65.0;
 double nearClipRatio = 0.005;
 double farClipRatio = 20.0;

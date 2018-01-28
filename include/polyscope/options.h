@@ -22,7 +22,9 @@ namespace options {
 
     // Don't let the main loop run at more than this speed. (-1 disables)
     extern int maxFPS;
-    
+
+    // Read preferences (window size, etc) from startup file, write to same file on exit
+    extern bool usePrefsFile;
 
 } // namespace options
 } // namespace polyscope
