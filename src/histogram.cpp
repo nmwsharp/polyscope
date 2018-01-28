@@ -2,6 +2,7 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/gl/shaders/histogram_shaders.h"
+#include "polyscope/polyscope.h"
 
 #include "imgui.h"
 
@@ -28,7 +29,11 @@ Histogram::Histogram(std::vector<double>& values, const std::vector<double>& wei
   buildHistogram(values, weights);
 }
 
-Histogram::~Histogram() { safeDelete(program); }
+Histogram::~Histogram() {
+  if (prepared) {
+    unprepare();
+  }
+}
 
 void Histogram::buildHistogram(std::vector<double>& values, const std::vector<double>& weights) {
 
@@ -63,74 +68,85 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
   colormapRangeMin = minVal;
   colormapRangeMax = maxVal;
 
-  // linspace coords
-  double range = maxVal - minVal;
-  double inc = range / histBinCount;
-  std::vector<double> sumBin(histBinCount, 0.0);
-  std::vector<double> sumBinWeighted(histBinCount, 0.0);
+  // Helper to build the four histogram variants
+  auto buildCurve = [&](size_t binCount, bool weighted, bool smooth, std::vector<std::array<double, 2>>& curveX,
+                        std::vector<double>& curveY) {
 
-  // cumulative sum of values
-  size_t jBin = 0;
-  size_t jData = 0;
-  double binUpperLim = minVal + inc;
-  while (jBin < histBinCount && jData < N) {
-    if (weightedValues[jData].first < binUpperLim) {
-      sumBin[jBin] += 1;
-      sumBinWeighted[jBin] += weightedValues[jData].second;
-      jData++;
-    } else {
-      jBin++;
-      binUpperLim += inc;
+    // linspace coords
+    double range = maxVal - minVal;
+    double inc = range / binCount;
+    std::vector<double> sumBin(binCount, 0.0);
+
+    // count values in buckets
+    size_t jBin = 0;
+    size_t jData = 0;
+    double binUpperLim = minVal + inc;
+    while (jBin < binCount && jData < N) {
+      if (weightedValues[jData].first < binUpperLim) {
+        if (weighted) {
+          sumBin[jBin] += weightedValues[jData].second;
+        } else {
+          sumBin[jBin] += 1;
+        }
+        jData++;
+      } else {
+        jBin++;
+        binUpperLim += inc;
+      }
     }
-  }
 
-  // build histogram coords
-  histCurveX.resize(histBinCount);
-  unweightedHistCurveY.resize(histBinCount);
-  weightedHistCurveY.resize(histBinCount);
-  double prevSumU = 0.0;
-  double prevSumW = 0.0;
-  double prevXEnd = minVal;
-  for (size_t iBin = 0; iBin < histBinCount; iBin++) {
-    // y value
-    unweightedHistCurveY[iBin] = sumBin[iBin];
-    weightedHistCurveY[iBin] = sumBinWeighted[iBin];
 
-    // x value
-    double xEnd = prevXEnd + inc;
-    histCurveX[iBin] = {{prevXEnd, xEnd}};
-    prevXEnd = xEnd;
-  }
+    // build histogram coords
+    curveX = std::vector<std::array<double, 2>>(binCount);
+    curveY = std::vector<double>(binCount);
+    double prevSumU = 0.0;
+    double prevSumW = 0.0;
+    double prevXEnd = minVal;
+    for (size_t iBin = 0; iBin < binCount; iBin++) {
+      // y value
+      curveY[iBin] = sumBin[iBin];
 
-  { // Rescale curves to [0,1] in both dimensions
-    double maxHeightU = *std::max_element(unweightedHistCurveY.begin(), unweightedHistCurveY.end());
-    double maxHeightW = *std::max_element(weightedHistCurveY.begin(), weightedHistCurveY.end());
-    for (size_t i = 0; i < histBinCount; i++) {
-      histCurveX[i][0] = (histCurveX[i][0] - minVal) / range;
-      histCurveX[i][1] = (histCurveX[i][1] - minVal) / range;
-      unweightedHistCurveY[i] /= maxHeightU;
-      weightedHistCurveY[i] /= maxHeightW;
+      // x value
+      double xEnd = prevXEnd + inc;
+      curveX[iBin] = {{prevXEnd, xEnd}};
+      prevXEnd = xEnd;
     }
-  }
 
-  // Smooth
-  smoothCurve(unweightedHistCurveY);
-  smoothCurve(weightedHistCurveY);
-
-  { // Rescale Y again after smoothing
-    double maxHeightU = *std::max_element(unweightedHistCurveY.begin(), unweightedHistCurveY.end());
-    double maxHeightW = *std::max_element(weightedHistCurveY.begin(), weightedHistCurveY.end());
-    for (size_t i = 0; i < histBinCount; i++) {
-      unweightedHistCurveY[i] /= maxHeightU;
-      weightedHistCurveY[i] /= maxHeightW;
+    { // Rescale curves to [0,1] in both dimensions
+      double maxHeight = *std::max_element(curveY.begin(), curveY.end());
+      for (size_t i = 0; i < binCount; i++) {
+        curveX[i][0] = (curveX[i][0] - minVal) / range;
+        curveX[i][1] = (curveX[i][1] - minVal) / range;
+        curveY[i] /= maxHeight;
+      }
     }
+
+    if (smooth) {
+      smoothCurve(curveX, curveY);
+
+      { // Rescale again after smoothing
+        double maxHeight = *std::max_element(curveY.begin(), curveY.end());
+        for (size_t i = 0; i < binCount; i++) {
+          curveY[i] /= maxHeight;
+        }
+      }
+    }
+
+  };
+
+  // Build the four variants of the curve
+  buildCurve(rawHistBinCount, false, false, rawHistCurveX, unweightedRawHistCurveY);
+  buildCurve(smoothedHistBinCount, false, true, smoothedHistCurveX, unweightedSmoothedHistCurveY);
+  if(hasWeighted) {
+    buildCurve(rawHistBinCount, true, false, rawHistCurveX, weightedRawHistCurveY);
+    buildCurve(smoothedHistBinCount, true, true, smoothedHistCurveX, weightedSmoothedHistCurveY);
   }
 
 
   fillBuffers();
 }
 
-void Histogram::smoothCurve(std::vector<double>& yVals) {
+void Histogram::smoothCurve(std::vector<std::array<double, 2>>& xVals, std::vector<double>& yVals) {
 
   auto smoothFunc = [&](double x1, double x2) {
     // Tent
@@ -150,10 +166,10 @@ void Histogram::smoothCurve(std::vector<double>& yVals) {
 
   std::vector<double> smoothedVals(yVals.size());
   for (size_t i = 0; i < yVals.size(); i++) {
-    double bucketCi = 0.5 * (histCurveX[i][0] + histCurveX[i][1]);
+    double bucketCi = 0.5 * (xVals[i][0] + xVals[i][1]);
     double sum = 0.0;
     for (size_t j = 0; j < yVals.size(); j++) {
-      double bucketCj = 0.5 * (histCurveX[j][0] + histCurveX[j][1]);
+      double bucketCj = 0.5 * (xVals[j][0] + xVals[j][1]);
       double weight = smoothFunc(bucketCi, bucketCj);
       sum += weight * yVals[j];
     }
@@ -170,7 +186,27 @@ void Histogram::updateColormap(const gl::Colormap* newColormap) {
 
 void Histogram::fillBuffers() {
 
-  std::vector<double>& histCurveY = useWeighted ? weightedHistCurveY : unweightedHistCurveY;
+  // Fill from proper curve depending on current settings
+  // (does unecessary copy as written)
+  std::vector<double> histCurveY;
+  std::vector<std::array<double, 2>> histCurveX;
+  bool smoothBins = false; // draw trapezoids rather than rectangles
+  if (useSmoothed) {
+    if (useWeighted) {
+      histCurveY = weightedSmoothedHistCurveY;
+    } else {
+      histCurveY = unweightedSmoothedHistCurveY;
+    }
+    histCurveX = smoothedHistCurveX;
+    smoothBins = true;
+  } else {
+    if (useWeighted) {
+      histCurveY = weightedRawHistCurveY;
+    } else {
+      histCurveY = unweightedRawHistCurveY;
+    }
+    histCurveX = rawHistCurveX;
+  }
 
   // Push to buffer
   std::vector<Vector2> coords;
@@ -181,37 +217,48 @@ void Histogram::fillBuffers() {
   }
 
   // Extra first triangle
-  coords.push_back(Vector2{0.0, 0.0});
-  coords.push_back(Vector2{0.5 * (histCurveX[0][0] + histCurveX[0][1]), 0.0});
-  coords.push_back(Vector2{0.5 * (histCurveX[0][0] + histCurveX[0][1]), histCurveY[0]});
+  for (size_t i = 0; i < histCurveX.size(); i++) {
 
+    double leftX = histCurveX[i][0];
+    double rightX = histCurveX[i][1];
 
-  for (size_t i = 0; i < histCurveX.size() - 1; i++) {
-
-    double leftX = 0.5 * (histCurveX[i][0] + histCurveX[i][1]);
-    double rightX = 0.5 * (histCurveX[i + 1][0] + histCurveX[i + 1][1]);
+    double leftY = histCurveY[i];
+    double rightY = histCurveY[i];
+    if (smoothBins) {
+      if (i > 0) {
+        leftY = 0.5 * (histCurveY[i - 1] + histCurveY[i]);
+      }
+      if (i < histCurveX.size() - 1) {
+        rightY = 0.5 * (histCurveY[i] + histCurveY[i + 1]);
+      }
+    }
 
     // = Lower triangle (lower left, lower right, upper left)
     coords.push_back(Vector2{leftX, 0.0});
     coords.push_back(Vector2{rightX, 0.0});
-    coords.push_back(Vector2{leftX, histCurveY[i]});
+    coords.push_back(Vector2{leftX, leftY});
 
     // = Upper triangle (lower right, upper right, upper left)
     coords.push_back(Vector2{rightX, 0.0});
-    coords.push_back(Vector2{rightX, histCurveY[i + 1]});
-    coords.push_back(Vector2{leftX, histCurveY[i]});
+    coords.push_back(Vector2{rightX, rightY});
+    coords.push_back(Vector2{leftX, leftY});
   }
-
-  // Extra last triangle
-  coords.push_back(Vector2{0.5 * (histCurveX.back()[0] + histCurveX.back()[1]), 0.0});
-  coords.push_back(Vector2{1.0, 0.0});
-  coords.push_back(Vector2{0.5 * (histCurveX.back()[0] + histCurveX.back()[1]), histCurveY.back()});
 
   program->setAttribute("a_coord", coords);
   program->setTextureFromColormap("t_colormap", *colormap, true);
+
+
+  // Update current buffer settings
+  currBufferWeighted = useWeighted;
+  currBufferSmoothed = useSmoothed;
 }
 
 void Histogram::prepare() {
+
+  if (prepared) {
+    unprepare();
+  }
+
   // Generate a framebuffer to hold our texture
   glGenFramebuffers(1, &framebufferInd);
   glBindFramebuffer(GL_FRAMEBUFFER, framebufferInd);
@@ -240,16 +287,29 @@ void Histogram::prepare() {
 
   // Create the program
   program = new gl::GLProgram(&HISTOGRAM_VERT_SHADER, &HISTORGRAM_FRAG_SHADER, gl::DrawMode::Triangles);
+
+  prepared = true;
 }
 
+void Histogram::unprepare() {
+  safeDelete(program);
+  glDeleteTextures(1, &textureInd);
+  glDeleteFramebuffers(1, &framebufferInd);
+}
 
 void Histogram::renderToTexture() {
+
+  // Refill buffer if needed
+  if (currBufferWeighted != useWeighted || currBufferSmoothed != useSmoothed) {
+    fillBuffers();
+  }
 
   // Bind to the texture buffer
   glBindFramebuffer(GL_FRAMEBUFFER, framebufferInd);
 
   // Bind to the new texture so we can do things
   glBindTexture(GL_TEXTURE_2D, textureInd);
+
 
   GLenum drawBuffers[1] = {GL_COLOR_ATTACHMENT0};
   glDrawBuffers(1, drawBuffers);
@@ -269,16 +329,19 @@ void Histogram::renderToTexture() {
   // Draw
   program->draw();
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  bindDefaultBuffer();
 }
 
 
-void Histogram::buildUI() {
+void Histogram::buildUI(float width) {
   renderToTexture();
 
   // Compute size for image
   float aspect = 3.0;
-  float w = .8 * ImGui::GetWindowWidth();
+  float w = width;
+  if (w == -1.0) {
+    w = .8 * ImGui::GetWindowWidth();
+  }
   float h = w / aspect;
 
   // Render image
@@ -304,15 +367,11 @@ void Histogram::buildUI() {
   }
 
   // Right-click combobox to select weighted/unweighted
-  if (hasWeighted && ImGui::BeginPopupContextItem("select type")) {
-    //int index = useWeighted ? 1 : 0;
-    //bool oldUseWeighted = useWeighted;
-    //ImGui::Combo("Weighted", &index, "Enabled\0Disabled\0\0");
-    //useWeighted = index == 1; 
-    //if(useWeighted != oldUseWeighted) {
-      //fillBuffers();
-    //}
-    ImGui::Checkbox("Weighted", &useWeighted);
+  if (ImGui::BeginPopupContextItem("select type")) {
+    if(hasWeighted) {
+      ImGui::Checkbox("Weighted", &useWeighted);
+    }
+    ImGui::Checkbox("Smoothed", &useSmoothed);
     ImGui::EndPopup();
   }
 }

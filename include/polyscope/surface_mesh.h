@@ -97,6 +97,7 @@ public:
   // general form
   void addSurfaceQuantity(SurfaceQuantity* quantity);
   void addSurfaceQuantity(SurfaceQuantityThatDrawsFaces* quantity);
+  SurfaceQuantity* getSurfaceQuantity(std::string name, bool errorIfAbsent=true);
 
   // Scalars
   void addQuantity(std::string name, VertexData<double>& value, DataType type = DataType::STANDARD);

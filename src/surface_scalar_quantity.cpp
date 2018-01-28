@@ -266,11 +266,7 @@ SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name, EdgeData<
   std::vector<double> weightsVec;
   for (EdgePtr e : parent->mesh->edges()) {
     valsVec.push_back(values[e]);
-    double area = parent->geometry->area(e.halfedge().face()) / 3.0;
-    if (!e.isBoundary()) {
-      area += parent->geometry->area(e.halfedge().twin().face()) / 3.0;
-    }
-    weightsVec.push_back(area);
+    weightsVec.push_back(parent->geometry->length(e));
   }
 
   hist.updateColormap(colormaps[iColorMap]);
@@ -341,10 +337,7 @@ SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(std::string name, H
   std::vector<double> weightsVec;
   for (HalfedgePtr he : parent->mesh->halfedges()) {
     valsVec.push_back(values[he]);
-    double area = 0;
-    if (he.isReal()) {
-      area += parent->geometry->area(he.face()) / 3.0;
-    }
+    weightsVec.push_back(parent->geometry->length(he.edge()));
   }
 
   hist.updateColormap(colormaps[iColorMap]);

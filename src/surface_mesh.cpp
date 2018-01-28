@@ -532,6 +532,19 @@ void SurfaceMesh::addSurfaceQuantity(SurfaceQuantityThatDrawsFaces* quantity) {
   }
 }
 
+SurfaceQuantity* SurfaceMesh::getSurfaceQuantity(std::string name, bool errorIfAbsent) {
+  // Check if exists
+  if (quantities.find(name) == quantities.end()) {
+    if(errorIfAbsent) {
+      polyscope::error("No quantity named " + name + " registered");
+    } 
+    return nullptr;
+  }
+
+  return quantities[name];
+}
+
+
 void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value, DataType type) {
   SurfaceScalarQuantity* q = new SurfaceScalarVertexQuantity(name, value, this, type);
   addSurfaceQuantity(q);
@@ -608,6 +621,7 @@ void SurfaceMesh::removeQuantity(std::string name) {
 void SurfaceMesh::setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q) {
   clearActiveSurfaceQuantity();
   activeSurfaceQuantity = q;
+  q->enabled = true;
 }
 
 void SurfaceMesh::clearActiveSurfaceQuantity() {

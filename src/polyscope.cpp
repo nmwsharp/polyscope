@@ -451,7 +451,6 @@ void buildPickGui() {
 
 auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 
-} // namespace
 
 void draw(bool withUI = true) {
 
@@ -460,40 +459,43 @@ void draw(bool withUI = true) {
   glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
   glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
 
-
-  // Ensure the default framebuffer is bound
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  glClearColor(view::bgColor[0], view::bgColor[1], view::bgColor[2], 0);
-  glClearDepth(1.);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-  
   if (withUI) {
     imguirender::ImGui_ImplGlfwGL3_NewFrame();
   }
 
-  // Draw structures in the scene
-  drawStructures();
+  bindDefaultBuffer();
+
+  // Ensure the default framebuffer is bound
+  glClearColor(view::bgColor[0], view::bgColor[1], view::bgColor[2], 0);
+  glClearDepth(1.);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
   // Build the GUI components
   if (withUI) {
-    ImGui::ShowDemoWindow();
+    //ImGui::ShowDemoWindow();
     buildPolyscopeGui();
     buildStructureGui();
     buildUserGui();
     buildPickGui();
     buildMessagesUI();
   }
-
+  
+  // Draw structures in the scene
+  drawStructures();
 
   // Draw the GUI
   if (withUI) {
-    //cout << "about to render imgui" << endl;
     ImGui::Render();
-    //cout << "rendered imgui" << endl;
-    //gl::checkGLError();
-    //cout << "checked gl error" << endl;
+    gl::checkGLError();
   }
+}
+
+} // namespace
+
+
+void bindDefaultBuffer() {
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glViewport(0, 0, view::bufferWidth, view::bufferHeight);
 }
 
 void mainLoopIteration() {
@@ -520,7 +522,6 @@ void mainLoopIteration() {
   // Process UI events
   glfwPollEvents();
   processMouseEvents();
-
 
   // Rendering
   draw();
