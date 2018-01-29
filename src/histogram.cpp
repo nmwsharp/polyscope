@@ -46,22 +46,7 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
     throw std::logic_error("values and weights are not same size");
   }
 
-  double totalWeight = 0;
-  std::vector<std::pair<double, double>> weightedValues;
-  if (hasWeighted) {
-    for (size_t i = 0; i < N; i++) {
-      totalWeight += weights[i];
-      weightedValues.push_back(std::make_pair(values[i], weights[i]));
-    }
-  } else {
-    for (size_t i = 0; i < N; i++) {
-      weightedValues.push_back(std::make_pair(values[i], 1.0));
-    }
-  }
-
   // == Build histogram
-  std::sort(weightedValues.begin(), weightedValues.end());
-
   std::pair<double, double> minmax = robustMinMax(values);
   minVal = minmax.first;
   maxVal = minmax.second;
@@ -78,20 +63,19 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
     std::vector<double> sumBin(binCount, 0.0);
 
     // count values in buckets
-    size_t jBin = 0;
-    size_t jData = 0;
-    double binUpperLim = minVal + inc;
-    while (jBin < binCount && jData < N) {
-      if (weightedValues[jData].first < binUpperLim) {
+    for (size_t iData = 0; iData < N; iData++) {
+
+      double iBinf = binCount * (values[iData] - minVal) / range;
+      size_t iBin = std::floor(clamp(iBinf, 0.0, (double)binCount - 1));
+
+      // NaN values and finite values near the bottom of float range lead to craziness, so only increment bins if we got
+      // something reasonable
+      if (iBin < binCount) {
         if (weighted) {
-          sumBin[jBin] += weightedValues[jData].second;
+          sumBin[iBin] += weights[iData];
         } else {
-          sumBin[jBin] += 1;
+          sumBin[iBin] += 1.0;
         }
-        jData++;
-      } else {
-        jBin++;
-        binUpperLim += inc;
       }
     }
 
@@ -137,7 +121,7 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
   // Build the four variants of the curve
   buildCurve(rawHistBinCount, false, false, rawHistCurveX, unweightedRawHistCurveY);
   buildCurve(smoothedHistBinCount, false, true, smoothedHistCurveX, unweightedSmoothedHistCurveY);
-  if(hasWeighted) {
+  if (hasWeighted) {
     buildCurve(rawHistBinCount, true, false, rawHistCurveX, weightedRawHistCurveY);
     buildCurve(smoothedHistBinCount, true, true, smoothedHistCurveX, weightedSmoothedHistCurveY);
   }
@@ -368,7 +352,7 @@ void Histogram::buildUI(float width) {
 
   // Right-click combobox to select weighted/unweighted
   if (ImGui::BeginPopupContextItem("select type")) {
-    if(hasWeighted) {
+    if (hasWeighted) {
       ImGui::Checkbox("Weighted", &useWeighted);
     }
     ImGui::Checkbox("Smoothed", &useSmoothed);
