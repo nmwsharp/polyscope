@@ -9,6 +9,7 @@
 // Quantities
 #include "polyscope/surface_color_quantity.h"
 #include "polyscope/surface_count_quantity.h"
+#include "polyscope/surface_distance_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_subset_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
@@ -535,9 +536,9 @@ void SurfaceMesh::addSurfaceQuantity(SurfaceQuantityThatDrawsFaces* quantity) {
 SurfaceQuantity* SurfaceMesh::getSurfaceQuantity(std::string name, bool errorIfAbsent) {
   // Check if exists
   if (quantities.find(name) == quantities.end()) {
-    if(errorIfAbsent) {
+    if (errorIfAbsent) {
       polyscope::error("No quantity named " + name + " registered");
-    } 
+    }
     return nullptr;
   }
 
@@ -562,6 +563,16 @@ void SurfaceMesh::addQuantity(std::string name, EdgeData<double>& value, DataTyp
 
 void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value, DataType type) {
   SurfaceScalarQuantity* q = new SurfaceScalarHalfedgeQuantity(name, value, this, type);
+  addSurfaceQuantity(q);
+}
+
+void SurfaceMesh::addDistanceQuantity(std::string name, VertexData<double>& distances) {
+  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, distances, this, false);
+  addSurfaceQuantity(q);
+}
+
+void SurfaceMesh::addSignedDistanceQuantity(std::string name, VertexData<double>& distances) {
+  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, distances, this, true);
   addSurfaceQuantity(q);
 }
 

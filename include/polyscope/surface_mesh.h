@@ -105,6 +105,10 @@ public:
   void addQuantity(std::string name, EdgeData<double>& value, DataType type = DataType::STANDARD);
   void addQuantity(std::string name, HalfedgeData<double>& value, DataType type = DataType::STANDARD);
 
+  // Distance
+  void addDistanceQuantity(std::string name, VertexData<double>& distances);
+  void addSignedDistanceQuantity(std::string name, VertexData<double>& distances);
+
   // Colors
   void addColorQuantity(std::string name, VertexData<Vector3>& value);
   void addColorQuantity(std::string name, FaceData<Vector3>& value);

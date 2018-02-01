@@ -279,6 +279,7 @@ void Histogram::unprepare() {
   safeDelete(program);
   glDeleteTextures(1, &textureInd);
   glDeleteFramebuffers(1, &framebufferInd);
+  prepared = false;
 }
 
 void Histogram::renderToTexture() {

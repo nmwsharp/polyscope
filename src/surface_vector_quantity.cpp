@@ -188,7 +188,7 @@ SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::stri
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), nSym(nSym_) {
 
   GeometryCache<Euclidean>& gc = parent->geometry->cache;
-  gc.faceBasisQ.require();
+  gc.requireFaceBases();
 
   double rotAngle = 2.0 * PI / nSym;
   Complex rot = std::exp(IM_I * rotAngle);
@@ -202,7 +202,7 @@ SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::stri
     for (int iRot = 0; iRot < nSym; iRot++) {
       vectorRoots.push_back(parent->geometry->barycenter(f));
 
-      Vector3 v = gc.faceBasis[f][0] * angle.real() + gc.faceBasis[f][1] * angle.imag();
+      Vector3 v = gc.faceBases[f][0] * angle.real() + gc.faceBases[f][1] * angle.imag();
       vectors.push_back(v);
 
       angle *= rot;
