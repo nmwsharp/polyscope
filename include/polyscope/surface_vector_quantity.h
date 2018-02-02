@@ -7,7 +7,7 @@
 namespace polyscope {
 
 // Represents a general vector field associated with a surface mesh, including
-// R3 fields in the ambient space and (TODO) R2 fields embedded in the surface
+// R3 fields in the ambient space and R2 fields embedded in the surface
 class SurfaceVectorQuantity : public SurfaceQuantity {
 public:
   SurfaceVectorQuantity(std::string name, SurfaceMesh* mesh_, MeshElement definedOn_,
@@ -79,6 +79,21 @@ public:
   void drawSubUI() override;
 
   void buildInfoGUI(FacePtr f) override;
+};
+
+class SurfaceOneFormIntrinsicVectorQuantity : public SurfaceVectorQuantity {
+public:
+  SurfaceOneFormIntrinsicVectorQuantity(std::string name, EdgeData<double>& oneForm_, SurfaceMesh* mesh_,
+                                        VectorType vectorType_ = VectorType::STANDARD);
+
+  EdgeData<double> oneForm;
+  FaceData<Complex> mappedVectorField;
+
+  virtual void draw() override;
+
+  void drawSubUI() override;
+
+  void buildInfoGUI(EdgePtr e) override;
 };
 
 } // namespace polyscope

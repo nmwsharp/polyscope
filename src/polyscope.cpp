@@ -53,6 +53,7 @@ bool errorsThrowExceptions = false;
 bool debugDrawPickBuffer = false;
 int maxFPS = 60;
 bool usePrefsFile = true;
+bool initializeWithDefaultStructures = true;
 
 } // namespace options
 
@@ -282,10 +283,12 @@ void init() {
   initPickBuffer();
 
   // Initialize with default maps so they show up in UI and user knows they exist
-  state::structures[PointCloud::structureTypeName] = {};
-  state::structures[SurfaceMesh::structureTypeName] = {};
-  state::structures[CameraView::structureTypeName] = {};
-  state::structures[RaySet::structureTypeName] = {};
+  if (options::initializeWithDefaultStructures) {
+    state::structures[PointCloud::structureTypeName] = {};
+    state::structures[SurfaceMesh::structureTypeName] = {};
+    state::structures[CameraView::structureTypeName] = {};
+    state::structures[RaySet::structureTypeName] = {};
+  }
 
   state::initialized = true;
 }
@@ -303,8 +306,6 @@ void evaluatePickQuery(int xPos, int yPos) {
   if (xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
     return;
   }
-
-
   glBindFramebuffer(GL_FRAMEBUFFER, pickFramebuffer);
 
   if ((int)currPickBufferWidth != view::bufferWidth || (int)currPickBufferHeight != view::bufferHeight) {
@@ -574,8 +575,9 @@ void mainLoopIteration() {
     microsecPerLoop = 95 * microsecPerLoop / 100; // give a little slack so we actually hit target fps
     while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
            microsecPerLoop) {
-      std::chrono::milliseconds timespan(1);
-      std::this_thread::sleep_for(timespan);
+      // std::chrono::milliseconds timespan(1);
+      // std::this_thread::sleep_for(timespan);
+      std::this_thread::yield();
       currTime = std::chrono::steady_clock::now();
     }
   }

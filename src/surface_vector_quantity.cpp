@@ -7,6 +7,8 @@
 
 #include "imgui.h"
 
+#include "Eigen/Dense"
+
 namespace polyscope {
 
 SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh* mesh_, MeshElement definedOn_,
@@ -253,5 +255,85 @@ void SurfaceFaceIntrinsicVectorQuantity::drawSubUI() {
   }
 }
 
+// ========================================================
+// ==========        Intrinsic One Form          ==========
+// ========================================================
+
+
+SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(
+    std::string name, EdgeData<double>& oneForm_, SurfaceMesh* mesh_, VectorType vectorType_)
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_) {
+
+  GeometryCache<Euclidean>& gc = parent->geometry->cache;
+  gc.requireFaceBases();
+  gc.requireHalfedgeVectors();
+
+  // Copy the vectors
+  oneForm = parent->transfer.transfer(oneForm_);
+  mappedVectorField = FaceData<Complex>(parent->mesh);
+  for (FacePtr f : parent->mesh->faces()) {
+
+    // Find the best-approximating vector field in each face
+    Eigen::Matrix<double, 3, 2> vectorMat;
+    Eigen::Vector3d rhsVec;
+    unsigned int i = 0;
+    for (HalfedgePtr he : f.adjacentHalfedges()) {
+      double signVal = (he == he.edge().halfedge()) ? 1.0 : -1.0;
+      vectorMat(i,0) = dot(gc.halfedgeVectors[he], gc.faceBases[f][0]);
+      vectorMat(i,1) = dot(gc.halfedgeVectors[he], gc.faceBases[f][1]);
+      rhsVec[i] = oneForm[he.edge()] * signVal;
+      i++;
+    }
+    auto solver = vectorMat.colPivHouseholderQr();
+    Eigen::Vector2d x = solver.solve(rhsVec);
+    Complex approxVec{x[0], x[1]};
+
+    mappedVectorField[f] = approxVec;
+
+
+    // Fill out data for the little arrows
+    vectorRoots.push_back(parent->geometry->barycenter(f));
+    Vector3 v = gc.faceBases[f][0] * approxVec.real() + gc.faceBases[f][1] * approxVec.imag();
+    vectors.push_back(v);
+  }
+
+  finishConstructing();
+}
+
+void SurfaceOneFormIntrinsicVectorQuantity::buildInfoGUI(EdgePtr e) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+
+  ImGui::Text("%g", oneForm[e]);
+
+  ImGui::NextColumn();
+}
+
+void SurfaceOneFormIntrinsicVectorQuantity::draw() {
+  SurfaceVectorQuantity::draw();
+
+  if (ribbonEnabled) {
+
+    // Make sure we have a ribbon artist
+    if (ribbonArtist == nullptr) {
+
+      // Warning: expensive... Creates noticeable UI lag
+      ribbonArtist = new RibbonArtist(traceField(parent->geometry, mappedVectorField, 1, 2500));
+    }
+
+
+    if (enabled) {
+      ribbonArtist->draw();
+    }
+  }
+}
+
+void SurfaceOneFormIntrinsicVectorQuantity::drawSubUI() {
+
+  ImGui::Checkbox("Draw ribbon", &ribbonEnabled);
+  if (ribbonEnabled && ribbonArtist != nullptr) {
+    ribbonArtist->buildParametersGUI();
+  }
+}
 
 } // namespace polyscope

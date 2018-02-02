@@ -61,11 +61,11 @@ void SurfaceScalarQuantity::drawUI() {
       ImGui::SameLine();
       ImGui::PushItemWidth(100);
       int iColormapBefore = iColorMap;
-      ImGui::Combo("##colormap", &iColorMap, cm_names, IM_ARRAYSIZE(cm_names));
+      ImGui::Combo("##colormap", &iColorMap, gl::quantitativeColormapNames, IM_ARRAYSIZE(gl::quantitativeColormapNames));
       ImGui::PopItemWidth();
       if (iColorMap != iColormapBefore) {
         parent->deleteProgram();
-        hist.updateColormap(colormaps[iColorMap]);
+        hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
       }
     }
 
@@ -133,7 +133,7 @@ SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(std::string name, Verte
     weightsVec.push_back(parent->geometry->dualArea(v));
   }
 
-  hist.updateColormap(colormaps[iColorMap]);
+  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
   hist.buildHistogram(valsVec, weightsVec);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
@@ -173,7 +173,7 @@ void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
 
   // Store data in buffers
   p->setAttribute("a_colorval", colorval);
-  p->setTextureFromColormap("t_colormap", *colormaps[iColorMap]);
+  p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
 }
 
 void SurfaceScalarVertexQuantity::buildInfoGUI(VertexPtr v) {
@@ -201,7 +201,7 @@ SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name, FaceData<
     weightsVec.push_back(parent->geometry->area(f));
   }
 
-  hist.updateColormap(colormaps[iColorMap]);
+  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
   hist.buildHistogram(valsVec, weightsVec);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
@@ -240,7 +240,7 @@ void SurfaceScalarFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
 
   // Store data in buffers
   p->setAttribute("a_colorval", colorval);
-  p->setTextureFromColormap("t_colormap", *colormaps[iColorMap]);
+  p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
 }
 
 void SurfaceScalarFaceQuantity::buildInfoGUI(FacePtr f) {
@@ -269,7 +269,7 @@ SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name, EdgeData<
     weightsVec.push_back(parent->geometry->length(e));
   }
 
-  hist.updateColormap(colormaps[iColorMap]);
+  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
   hist.buildHistogram(valsVec, weightsVec);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
@@ -312,7 +312,7 @@ void SurfaceScalarEdgeQuantity::fillColorBuffers(gl::GLProgram* p) {
 
   // Store data in buffers
   p->setAttribute("a_colorvals", colorval);
-  p->setTextureFromColormap("t_colormap", *colormaps[iColorMap]);
+  p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
 }
 
 void SurfaceScalarEdgeQuantity::buildInfoGUI(EdgePtr e) {
@@ -340,7 +340,7 @@ SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(std::string name, H
     weightsVec.push_back(parent->geometry->length(he.edge()));
   }
 
-  hist.updateColormap(colormaps[iColorMap]);
+  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
   hist.buildHistogram(valsVec, weightsVec);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
@@ -383,7 +383,7 @@ void SurfaceScalarHalfedgeQuantity::fillColorBuffers(gl::GLProgram* p) {
 
   // Store data in buffers
   p->setAttribute("a_colorvals", colorval);
-  p->setTextureFromColormap("t_colormap", *colormaps[iColorMap]);
+  p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
 }
 
 void SurfaceScalarHalfedgeQuantity::buildInfoGUI(HalfedgePtr he) {

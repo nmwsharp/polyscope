@@ -591,6 +591,11 @@ void SurfaceMesh::addCountQuantity(std::string name, std::vector<std::pair<Verte
   addSurfaceQuantity(q);
 }
 
+void SurfaceMesh::addIsolatedVertexQuantity(std::string name, std::vector<std::pair<VertexPtr, double>>& values) {
+  SurfaceCountQuantity* q = new SurfaceIsolatedScalarVertexQuantity(name, values, this);
+  addSurfaceQuantity(q);
+}
+
 void SurfaceMesh::addCountQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values) {
   SurfaceCountQuantity* q = new SurfaceCountFaceQuantity(name, values, this);
   addSurfaceQuantity(q);

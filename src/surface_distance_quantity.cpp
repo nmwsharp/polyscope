@@ -1,6 +1,7 @@
 #include "polyscope/surface_distance_quantity.h"
 
 #include "polyscope/gl/shaders.h"
+#include "polyscope/gl/colormap_sets.h"
 #include "polyscope/gl/shaders/distance_shaders.h"
 #include "polyscope/polyscope.h"
 
@@ -28,7 +29,7 @@ SurfaceDistanceQuantity::SurfaceDistanceQuantity(std::string name, VertexData<do
     valsVec.push_back(distances[v]);
     weightsVec.push_back(parent->geometry->dualArea(v));
   }
-  hist.updateColormap(colormaps[iColorMap]);
+  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
   hist.buildHistogram(valsVec, weightsVec);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
@@ -76,11 +77,11 @@ void SurfaceDistanceQuantity::drawUI() {
       ImGui::SameLine();
       ImGui::PushItemWidth(100);
       int iColormapBefore = iColorMap;
-      ImGui::Combo("##colormap", &iColorMap, cm_names, IM_ARRAYSIZE(cm_names));
+      ImGui::Combo("##colormap", &iColorMap, gl::quantitativeColormapNames, IM_ARRAYSIZE(gl::quantitativeColormapNames));
       ImGui::PopItemWidth();
       if (iColorMap != iColormapBefore) {
         parent->deleteProgram();
-        hist.updateColormap(colormaps[iColorMap]);
+        hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
       }
     }
 
@@ -91,7 +92,7 @@ void SurfaceDistanceQuantity::drawUI() {
     }
 
     // Modulo stripey width
-    ImGui::DragFloat("Stripe Length", &modLen, .01, 0.0001, 1.0, "%.4f", 2.0);
+    ImGui::DragFloat("Stripe Length", &modLen, .001, 0.0001, 1.0, "%.4f", 2.0);
 
     // Draw the histogram of values
     hist.colormapRangeMin = vizRangeLow;
@@ -149,7 +150,7 @@ void SurfaceDistanceQuantity::fillColorBuffers(gl::GLProgram* p) {
 
   // Store data in buffers
   p->setAttribute("a_colorval", colorval);
-  p->setTextureFromColormap("t_colormap", *colormaps[iColorMap]);
+  p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
 }
 
 void SurfaceDistanceQuantity::buildInfoGUI(VertexPtr v) {

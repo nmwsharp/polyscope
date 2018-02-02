@@ -32,8 +32,6 @@ protected:
   float modLen = 0.02;
 
   // UI internals
-  const std::vector<const gl::Colormap*> colormaps = {&gl::CM_VIRIDIS, &gl::CM_COOLWARM, &gl::CM_BLUES};
-  const char* cm_names[3] = {"viridis", "coolwarm", "blues"};
   int iColorMap = 0;
 };
 

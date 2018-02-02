@@ -3,6 +3,7 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/histogram.h"
+#include "polyscope/gl/colormap_sets.h"
 
 namespace polyscope {
 
@@ -26,8 +27,6 @@ protected:
   Histogram hist;
 
   // UI internals
-  const std::vector<const gl::Colormap*> colormaps = {&gl::CM_VIRIDIS, &gl::CM_COOLWARM, &gl::CM_BLUES};
-  const char* cm_names[3] = {"viridis", "coolwarm", "blues"};
   int iColorMap = 0;
   const std::string definedOn;
 };

@@ -113,9 +113,10 @@ public:
   void addColorQuantity(std::string name, VertexData<Vector3>& value);
   void addColorQuantity(std::string name, FaceData<Vector3>& value);
 
-  // Counts/Singularities/Indices
+  // Counts/Singularities/Indices/Values on isolated vertices
   void addCountQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values);
   void addCountQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values);
+  void addIsolatedVertexQuantity(std::string name, std::vector<std::pair<VertexPtr, double>>& values);
 
   // Subsets
   void addSubsetQuantity(std::string name, EdgeData<char>& subset);

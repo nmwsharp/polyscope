@@ -25,6 +25,9 @@ namespace options {
 
     // Read preferences (window size, etc) from startup file, write to same file on exit
     extern bool usePrefsFile;
+    
+    // Show empty structure types from startup
+    extern bool initializeWithDefaultStructures;
 
 } // namespace options
 } // namespace polyscope
