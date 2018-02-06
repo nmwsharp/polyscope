@@ -261,20 +261,8 @@ void init() {
   glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
   glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
 
-  // Set up ImGUI glfw bindings
-  imguirender::ImGui_ImplGlfwGL3_Init(imguirender::mainWindow, true);
-
-  ImGuiIO& io = ImGui::GetIO();
-  ImFontConfig config;
-  config.OversampleH = 5;
-  config.OversampleV = 5;
-  // io.Fonts->AddFontDefault();
-  // io.Fonts->AddFontFromFileTTF(
-  //     "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
-  ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(getCousineRegularCompressedData(),
-                                                          getCousineRegularCompressedSize(), 15.0f, &config);
-  // ImGui::StyleColorsLight();
-  setStyle();
+  // Initialie ImGUI
+  initializeImGUIContext();
 
   // Initialize common shaders
   gl::GLProgram::initCommonShaders();
@@ -291,6 +279,24 @@ void init() {
   }
 
   state::initialized = true;
+}
+
+void initializeImGUIContext() {
+
+  // Set up ImGUI glfw bindings
+  imguirender::ImGui_ImplGlfwGL3_Init(imguirender::mainWindow, true);
+
+  ImGuiIO& io = ImGui::GetIO();
+  ImFontConfig config;
+  config.OversampleH = 5;
+  config.OversampleV = 5;
+  // io.Fonts->AddFontDefault();
+  // io.Fonts->AddFontFromFileTTF(
+  //     "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
+  ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(getCousineRegularCompressedData(),
+                                                          getCousineRegularCompressedSize(), 15.0f, &config);
+  // ImGui::StyleColorsLight();
+  setStyle();
 }
 
 namespace {
@@ -512,8 +518,9 @@ void buildPickGui() {
   }
 }
 
+namespace {
 auto lastMainLoopIterTime = std::chrono::steady_clock::now();
-
+}
 
 void draw(bool withUI = true) {
 
