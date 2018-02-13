@@ -23,6 +23,32 @@ static const VertShader PASSTHRU_SPHERE_VERT_SHADER = {
     )
 };
 
+static const VertShader PASSTHRU_SPHERE_VALUE_VERT_SHADER = {
+    // uniforms
+    {
+    }, 
+
+    // attributes
+    {
+        {"a_position", GLData::Vector3Float},
+        {"a_value", GLData::Float},
+    },
+
+    // source
+    GLSL(150,
+        in vec3 a_position;
+        in float a_value;
+        out float value;
+
+        void main()
+        {
+            gl_Position = vec4(a_position,1.0);
+            value = a_value;
+        }
+    )
+};
+
+
 static const VertShader PASSTHRU_SPHERE_COLORED_VERT_SHADER = {
     // uniforms
     {
@@ -264,9 +290,89 @@ static const GeomShader SPHERE_GEOM_PLAIN_COLORED_BILLBOARD_SHADER = {
     )
 };
 
+static const GeomShader COLORMAP_SPHERE_EXPLICIT_GEOM_SHADER = {
+    
+    // uniforms
+    {
+        {"u_viewMatrix", GLData::Matrix44Float},
+        {"u_projMatrix", GLData::Matrix44Float},
+        {"u_pointRadius", GLData::Float},
+    }, 
+
+    // attributes
+    {
+    },
+
+    // source
+    GLSL(150,
+        layout(points) in;
+        layout(triangle_strip, max_vertices=100) out;
+        in float value[];
+        uniform mat4 u_viewMatrix;
+        uniform mat4 u_projMatrix;
+        uniform float u_pointRadius;
+        out float valueToFrag;
+        out vec3 worldNormalToFrag;
+        out vec3 worldPosToFrag;
+        void main()   {
+            mat4 PV = u_projMatrix * u_viewMatrix;
+            const int nPhi = 5;
+            const int nTheta = 7;
+            const float PI = 3.14159265358;
+            const float delPhi = PI / (nPhi + 1);
+            const float delTheta = 2*PI / nTheta;
+
+            for (int iPhi = 0; iPhi <= nPhi; iPhi++) {
+
+                float phiLower = - PI / 2.0 + (iPhi) * delPhi;
+                float phiUpper = - PI / 2.0 + (iPhi+1) * delPhi;
+                float cosPhiLower = cos(phiLower);
+                float cosPhiUpper = cos(phiUpper);
+                float zLower = sin(phiLower);
+                float zUpper = sin(phiUpper);
+
+                for (int iTheta = 0; iTheta <= nTheta; iTheta++) { /* duplicate first/last point to complete strip */
+
+                    float theta = delTheta * iTheta;
+                    float cosTheta = cos(theta);
+                    float sinTheta = sin(theta);
+
+                    // Lower point
+                    float xLower = cosPhiLower * cosTheta;
+                    float yLower = cosPhiLower * sinTheta;
+                    float zLower = zLower;
+                    vec4 worldPosLower = gl_in[0].gl_Position + vec4(xLower, yLower, zLower, 0) * u_pointRadius;
+                    gl_Position = PV * worldPosLower;
+                    worldPosToFrag = worldPosLower.xyz;
+                    worldNormalToFrag = vec3(xLower, yLower, zLower);
+                    valueToFrag = value[0];
+                    EmitVertex();
+
+                    // Upper point
+                    float xUpper = cosPhiUpper * cosTheta;
+                    float yUpper = cosPhiUpper * sinTheta;
+                    float zUpper = zUpper;
+                    vec4 worldPosUpper = gl_in[0].gl_Position + vec4(xUpper, yUpper, zUpper, 0) * u_pointRadius;
+                    gl_Position = PV * worldPosUpper;
+                    worldPosToFrag = worldPosUpper.xyz;
+                    worldNormalToFrag = vec3(xUpper, yUpper, zUpper);
+                    valueToFrag = value[0];
+                    EmitVertex();
+
+                }
+
+                EndPrimitive();
+            }
+
+        }
+    )
+};
 
 
-static const FragShader SHINY_SPHERE_FRAG_SHADER = {
+
+
+
+static const FragShader SHINY_SPHERE_BILLBOARD_FRAG_SHADER = {
     
     // uniforms
     {
@@ -324,7 +430,7 @@ static const FragShader SHINY_SPHERE_FRAG_SHADER = {
 };
 
 
-static const FragShader SHINY_SPHERE_COLORED_FRAG_SHADER = {
+static const FragShader SHINY_SPHERE_COLORED_BILLBOARD_FRAG_SHADER = {
     
     // uniforms
     {
@@ -381,7 +487,7 @@ static const FragShader SHINY_SPHERE_COLORED_FRAG_SHADER = {
 };
 
 
-static const FragShader PLAIN_SPHERE_COLORED_FRAG_SHADER = {
+static const FragShader PLAIN_SPHERE_COLORED_BILLBOARD_FRAG_SHADER = {
     
     // uniforms
     {
@@ -404,7 +510,6 @@ static const FragShader PLAIN_SPHERE_COLORED_FRAG_SHADER = {
     // source
     GLSL(150,
         uniform vec3 u_eye;
-        // uniform vec3 u_light;
         uniform vec3 u_lightCenter;
         uniform float u_lightDist;
         uniform vec3 u_camRight;
@@ -432,4 +537,58 @@ static const FragShader PLAIN_SPHERE_COLORED_FRAG_SHADER = {
     )
 };
 
+static const FragShader COLORMAP_SPHERE_EXPLICIT_FRAG_SHADER = {
+    
+    // uniforms
+    {
+        {"u_eye", GLData::Vector3Float},
+        {"u_lightCenter", GLData::Vector3Float},
+        {"u_lightDist", GLData::Float},
+        {"u_rangeLow", GLData::Float},
+        {"u_rangeHigh", GLData::Float},
+    }, 
+
+    // attributes
+    {
+    },
+    
+    // textures 
+    {
+        {"t_colormap", 1}
+    },
+    
+    // output location
+    "outputF",
+ 
+    // source
+    GLSL(150,
+        uniform vec3 u_eye;
+        uniform vec3 u_lightCenter;
+        uniform float u_lightDist;
+        uniform float u_rangeLow;
+        uniform float u_rangeHigh;
+        uniform sampler1D t_colormap;
+        in float valueToFrag;
+        in vec3 worldNormalToFrag;
+        in vec3 worldPosToFrag;
+        out vec4 outputF;
+
+        // Forward declarations of methods from <shaders/common.h>
+        // vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 light, vec3 eye );
+        vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
+      
+        vec3 surfaceColor() {
+          float t = (valueToFrag - u_rangeLow) / (u_rangeHigh - u_rangeLow);
+          t = clamp(t, 0.f, 1.f);
+          return texture(t_colormap, t).rgb;
+        }
+
+        void main()
+        {
+          // Sample color from map
+          vec3 color = surfaceColor();
+          outputF = lightSurface(worldPosToFrag, worldNormalToFrag, color, u_lightCenter, u_lightDist, u_eye);
+        }
+    )
+};
 

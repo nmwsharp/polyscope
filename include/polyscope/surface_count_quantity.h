@@ -3,11 +3,13 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/surface_mesh.h"
 
+#include <map>
+
 namespace polyscope {
 
 class SurfaceCountQuantity : public SurfaceQuantity {
 public:
-  SurfaceCountQuantity(std::string name, SurfaceMesh* mesh_, std::string definedOn);
+  SurfaceCountQuantity(std::string name, SurfaceMesh* mesh_, std::string descriptiveType_);
 
   virtual void draw() override;
   virtual void drawUI() override;
@@ -16,18 +18,20 @@ public:
   // The map that takes values to [0,1] for drawing
   AffineRemapper<double> mapper;
 
-  std::vector<std::pair<Vector3, int>> entries;
+  std::vector<std::pair<Vector3, double>> entries;
 
   const int NO_INDEX = std::numeric_limits<int>::min();
   gl::GLProgram* program = nullptr;
   int sum;
 
   // UI internals
-  const std::string definedOn;
+  const std::string descriptiveType; // ("vertex count", etc)
 
-private:
-  void setPointCloudBillboardUniforms(gl::GLProgram* p, bool withLight);
+protected:
+  void setUniforms(gl::GLProgram* p);
   float pointRadius = 0.012;
+  float vizRangeLow, vizRangeHigh, dataRangeLow, dataRangeHigh;
+  int iColorMap;
 };
 
 // ========================================================
@@ -42,7 +46,24 @@ public:
   void buildInfoGUI(VertexPtr v) override;
 
   // === Members
-  VertexData<int> values;
+  std::map<VertexPtr, int> values;
+};
+
+// ========================================================
+// ==========      Vertex Isolated Scalar        ==========
+// ========================================================
+
+class SurfaceIsolatedScalarVertexQuantity : public SurfaceCountQuantity {
+public:
+  SurfaceIsolatedScalarVertexQuantity(std::string name, std::vector<std::pair<VertexPtr, double>>& values_,
+                                      SurfaceMesh* mesh_);
+  //   ~SurfaceCountVertexQuantity();
+
+  void drawUI() override;
+  void buildInfoGUI(VertexPtr v) override;
+
+  // === Members
+  std::map<VertexPtr, double> values;
 };
 
 // ========================================================
@@ -57,7 +78,7 @@ public:
   void buildInfoGUI(FacePtr f) override;
 
   // === Members
-  FaceData<int> values;
+  std::map<FacePtr, int> values;
 };
 
 

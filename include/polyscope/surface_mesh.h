@@ -105,13 +105,18 @@ public:
   void addQuantity(std::string name, EdgeData<double>& value, DataType type = DataType::STANDARD);
   void addQuantity(std::string name, HalfedgeData<double>& value, DataType type = DataType::STANDARD);
 
+  // Distance
+  void addDistanceQuantity(std::string name, VertexData<double>& distances);
+  void addSignedDistanceQuantity(std::string name, VertexData<double>& distances);
+
   // Colors
   void addColorQuantity(std::string name, VertexData<Vector3>& value);
   void addColorQuantity(std::string name, FaceData<Vector3>& value);
 
-  // Counts/Singularities/Indices
+  // Counts/Singularities/Indices/Values on isolated vertices
   void addCountQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values);
   void addCountQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values);
+  void addIsolatedVertexQuantity(std::string name, std::vector<std::pair<VertexPtr, double>>& values);
 
   // Subsets
   void addSubsetQuantity(std::string name, EdgeData<char>& subset);

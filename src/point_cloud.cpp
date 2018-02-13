@@ -87,9 +87,7 @@ void PointCloud::drawPick() {
 
 void PointCloud::prepare() {
   // Create the GL program
-  // program = new gl::GLProgram(&PASSTHRU_SPHERE_VERT_SHADER, &SPHERE_GEOM_SHADER,
-  //                             &SHINY_SPHERE_FRAG_SHADER, gl::DrawMode::Points);
-  program = new gl::GLProgram(&PASSTHRU_SPHERE_VERT_SHADER, &SPHERE_GEOM_BILLBOARD_SHADER, &SHINY_SPHERE_FRAG_SHADER,
+  program = new gl::GLProgram(&PASSTHRU_SPHERE_VERT_SHADER, &SPHERE_GEOM_BILLBOARD_SHADER, &SHINY_SPHERE_BILLBOARD_FRAG_SHADER,
                               gl::DrawMode::Points);
 
 
@@ -106,7 +104,7 @@ void PointCloud::preparePick() {
   // Create a new pick program
   safeDelete(pickProgram);
   pickProgram = new gl::GLProgram(&PASSTHRU_SPHERE_COLORED_VERT_SHADER, &SPHERE_GEOM_PLAIN_COLORED_BILLBOARD_SHADER,
-                                  &PLAIN_SPHERE_COLORED_FRAG_SHADER, gl::DrawMode::Points);
+                                  &PLAIN_SPHERE_COLORED_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points);
 
   // Fill an index buffer
   std::vector<Vector3> pickColors;

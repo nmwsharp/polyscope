@@ -81,4 +81,19 @@ public:
   void buildInfoGUI(FacePtr f) override;
 };
 
+class SurfaceOneFormIntrinsicVectorQuantity : public SurfaceVectorQuantity {
+public:
+  SurfaceOneFormIntrinsicVectorQuantity(std::string name, EdgeData<double>& oneForm_, SurfaceMesh* mesh_,
+                                        VectorType vectorType_ = VectorType::STANDARD);
+
+  EdgeData<double> oneForm;
+  FaceData<Complex> mappedVectorField;
+
+  virtual void draw() override;
+
+  void drawSubUI() override;
+
+  void buildInfoGUI(EdgePtr e) override;
+};
+
 } // namespace polyscope

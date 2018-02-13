@@ -88,6 +88,7 @@ void updateStructureExtents();
 // Exposed so that some weird flow (eg, errors) can re-enter the main loop when appropriate. Be careful!
 void mainLoopIteration();
 void bindDefaultBuffer();
+void initializeImGUIContext();
 
 // Take screenshots of the current view
 void screenshot(std::string filename, bool transparentBG = true);

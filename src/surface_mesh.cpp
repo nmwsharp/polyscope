@@ -9,6 +9,7 @@
 // Quantities
 #include "polyscope/surface_color_quantity.h"
 #include "polyscope/surface_count_quantity.h"
+#include "polyscope/surface_distance_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_subset_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
@@ -535,9 +536,9 @@ void SurfaceMesh::addSurfaceQuantity(SurfaceQuantityThatDrawsFaces* quantity) {
 SurfaceQuantity* SurfaceMesh::getSurfaceQuantity(std::string name, bool errorIfAbsent) {
   // Check if exists
   if (quantities.find(name) == quantities.end()) {
-    if(errorIfAbsent) {
+    if (errorIfAbsent) {
       polyscope::error("No quantity named " + name + " registered");
-    } 
+    }
     return nullptr;
   }
 
@@ -565,6 +566,16 @@ void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value, Dat
   addSurfaceQuantity(q);
 }
 
+void SurfaceMesh::addDistanceQuantity(std::string name, VertexData<double>& distances) {
+  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, distances, this, false);
+  addSurfaceQuantity(q);
+}
+
+void SurfaceMesh::addSignedDistanceQuantity(std::string name, VertexData<double>& distances) {
+  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, distances, this, true);
+  addSurfaceQuantity(q);
+}
+
 void SurfaceMesh::addColorQuantity(std::string name, VertexData<Vector3>& value) {
   SurfaceColorQuantity* q = new SurfaceColorVertexQuantity(name, value, this);
   addSurfaceQuantity(q);
@@ -577,6 +588,11 @@ void SurfaceMesh::addColorQuantity(std::string name, FaceData<Vector3>& value) {
 
 void SurfaceMesh::addCountQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values) {
   SurfaceCountQuantity* q = new SurfaceCountVertexQuantity(name, values, this);
+  addSurfaceQuantity(q);
+}
+
+void SurfaceMesh::addIsolatedVertexQuantity(std::string name, std::vector<std::pair<VertexPtr, double>>& values) {
+  SurfaceCountQuantity* q = new SurfaceIsolatedScalarVertexQuantity(name, values, this);
   addSurfaceQuantity(q);
 }
 

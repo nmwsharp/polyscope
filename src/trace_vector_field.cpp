@@ -131,9 +131,9 @@ public:
     }
 
     // Cache geometry quantities
-    gc->faceBasisQ.require();
-    gc->faceNormalsQ.require();
-    gc->faceAreasQ.require();
+    gc->requireFaceBases();
+    gc->requireFaceNormals();
+    gc->requireFaceAreas();
 
     vert1InFaceBasis = FaceData<Vector2>(mesh);
     vert2InFaceBasis = FaceData<Vector2>(mesh);
@@ -143,8 +143,8 @@ public:
       totalArea += gc->faceAreas[f];
 
       // Face basis
-      Vector3 X = gc->faceBasis[f][0];
-      Vector3 Y = gc->faceBasis[f][1];
+      Vector3 X = gc->faceBases[f][0];
+      Vector3 Y = gc->faceBases[f][1];
 
       // Find each of the vertices as a point in the basis
       // The first vertex is implicitly at (0,0)
@@ -260,7 +260,7 @@ public:
         tRay = lengthRemaining;
         Vector2 endingPos = pointPos + tRay * traceDir;
         Vector3 endingPosR3 = geometry->position(currPoint.f.halfedge().vertex()) +
-                              endingPos.x * gc->faceBasis[currPoint.f][0] + endingPos.y * gc->faceBasis[currPoint.f][1];
+                              endingPos.x * gc->faceBases[currPoint.f][0] + endingPos.y * gc->faceBases[currPoint.f][1];
         points.push_back({{endingPosR3, gc->faceNormals[currPoint.f]}});
         break;
       }
@@ -286,8 +286,8 @@ public:
 
 
       // Find a direction of travel in the new face
-      currDir = rotateToTangentBasis(traceDir, gc->faceBasis[currPoint.f][0], gc->faceBasis[currPoint.f][1],
-                                     gc->faceBasis[nextFace][0], gc->faceBasis[nextFace][1]);
+      currDir = rotateToTangentBasis(traceDir, gc->faceBases[currPoint.f][0], gc->faceBases[currPoint.f][1],
+                                     gc->faceBases[nextFace][0], gc->faceBases[nextFace][1]);
 
       // Find barycentric coordinates in the new face
       int iHe = halfedgeIndex(crossingHalfedge, nextFace);
@@ -316,7 +316,7 @@ std::vector<std::vector<std::array<Vector3, 2>>> traceField(Geometry<Euclidean>*
   // Preliminaries
   HalfedgeMesh* mesh = geometry->getMesh();
   GeometryCache<Euclidean>& gc = geometry->cache;
-  gc.faceAreasQ.require();
+  gc.requireFaceAreas();
 
   // Create a tracer
   FieldTracer tracer(geometry, field, nSym);

@@ -53,6 +53,7 @@ bool errorsThrowExceptions = false;
 bool debugDrawPickBuffer = false;
 int maxFPS = 60;
 bool usePrefsFile = true;
+bool initializeWithDefaultStructures = true;
 
 } // namespace options
 
@@ -260,6 +261,28 @@ void init() {
   glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
   glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
 
+  // Initialie ImGUI
+  initializeImGUIContext();
+
+  // Initialize common shaders
+  gl::GLProgram::initCommonShaders();
+
+  // Initialize pick buffer
+  initPickBuffer();
+
+  // Initialize with default maps so they show up in UI and user knows they exist
+  if (options::initializeWithDefaultStructures) {
+    state::structures[PointCloud::structureTypeName] = {};
+    state::structures[SurfaceMesh::structureTypeName] = {};
+    state::structures[CameraView::structureTypeName] = {};
+    state::structures[RaySet::structureTypeName] = {};
+  }
+
+  state::initialized = true;
+}
+
+void initializeImGUIContext() {
+
   // Set up ImGUI glfw bindings
   imguirender::ImGui_ImplGlfwGL3_Init(imguirender::mainWindow, true);
 
@@ -274,20 +297,6 @@ void init() {
                                                           getCousineRegularCompressedSize(), 15.0f, &config);
   // ImGui::StyleColorsLight();
   setStyle();
-
-  // Initialize common shaders
-  gl::GLProgram::initCommonShaders();
-
-  // Initialize pick buffer
-  initPickBuffer();
-
-  // Initialize with default maps so they show up in UI and user knows they exist
-  state::structures[PointCloud::structureTypeName] = {};
-  state::structures[SurfaceMesh::structureTypeName] = {};
-  state::structures[CameraView::structureTypeName] = {};
-  state::structures[RaySet::structureTypeName] = {};
-
-  state::initialized = true;
 }
 
 namespace {
@@ -303,8 +312,6 @@ void evaluatePickQuery(int xPos, int yPos) {
   if (xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
     return;
   }
-
-
   glBindFramebuffer(GL_FRAMEBUFFER, pickFramebuffer);
 
   if ((int)currPickBufferWidth != view::bufferWidth || (int)currPickBufferHeight != view::bufferHeight) {
@@ -511,8 +518,9 @@ void buildPickGui() {
   }
 }
 
+namespace {
 auto lastMainLoopIterTime = std::chrono::steady_clock::now();
-
+}
 
 void draw(bool withUI = true) {
 
@@ -535,9 +543,14 @@ void draw(bool withUI = true) {
   // Build the GUI components
   if (withUI) {
     // ImGui::ShowDemoWindow();
+
+    // Note: It is important to build the user GUI first, because it is likely that callbacks there will modify
+    // polyscope data. If we do these modifications happen later in the render cycle, they might invalidate data which
+    // is necessary when ImGui::Render() happens below.
+    buildUserGui();
+
     buildPolyscopeGui();
     buildStructureGui();
-    buildUserGui();
     buildPickGui();
     buildMessagesUI();
   }
@@ -569,8 +582,9 @@ void mainLoopIteration() {
     microsecPerLoop = 95 * microsecPerLoop / 100; // give a little slack so we actually hit target fps
     while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
            microsecPerLoop) {
-      std::chrono::milliseconds timespan(1);
-      std::this_thread::sleep_for(timespan);
+      // std::chrono::milliseconds timespan(1);
+      // std::this_thread::sleep_for(timespan);
+      std::this_thread::yield();
       currTime = std::chrono::steady_clock::now();
     }
   }

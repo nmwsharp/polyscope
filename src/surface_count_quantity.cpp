@@ -1,5 +1,7 @@
 #include "polyscope/surface_count_quantity.h"
 
+#include "polyscope/affine_remapper.h"
+#include "polyscope/gl/colormap_sets.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/polyscope.h"
@@ -11,82 +13,91 @@ using std::endl;
 
 namespace polyscope {
 
-SurfaceCountQuantity::SurfaceCountQuantity(std::string name, SurfaceMesh* mesh_, std::string definedOn_)
-    : SurfaceQuantity(name, mesh_), definedOn(definedOn_) {}
+SurfaceCountQuantity::SurfaceCountQuantity(std::string name, SurfaceMesh* mesh_, std::string descriptiveType_)
+    : SurfaceQuantity(name, mesh_), descriptiveType(descriptiveType_) {}
 
 void SurfaceCountQuantity::prepare() {
 
   safeDelete(program);
-  program = new gl::GLProgram(&PASSTHRU_SPHERE_COLORED_VERT_SHADER, &SPHERE_GEOM_COLORED_BILLBOARD_SHADER, &SHINY_SPHERE_COLORED_FRAG_SHADER,
-                              gl::DrawMode::Points);
+  program = new gl::GLProgram(&PASSTHRU_SPHERE_VALUE_VERT_SHADER, &COLORMAP_SPHERE_EXPLICIT_GEOM_SHADER,
+                              &COLORMAP_SPHERE_EXPLICIT_FRAG_SHADER, gl::DrawMode::Points);
 
   // Color limits
-  // TODO use AffineRemapper and colormap textures
-  double maxIndMag = 0;
   sum = 0;
+  std::vector<double> allValues;
   for (auto& e : entries) {
-    maxIndMag = std::max(maxIndMag, (double)std::abs(e.second));
     sum += e.second;
+    allValues.push_back(e.second);
   }
-
-  const gl::Colormap& cm = gl::CM_COOLWARM;
+  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(allValues);
+  vizRangeLow = dataRangeLow;
+  vizRangeHigh = dataRangeHigh;
 
   // Fill buffers
   std::vector<Vector3> pos;
-  std::vector<Vector3> color;
+  std::vector<double> value;
   for (auto& e : entries) {
     pos.push_back(e.first);
-    color.push_back(cm.getValue(0.5 * e.second / maxIndMag + 0.5));
+    value.push_back(e.second);
   }
+
+  // Set the initial colormap to coolwarm
+  iColorMap = 1;
 
   // Store data in buffers
   program->setAttribute("a_position", pos);
-  program->setAttribute("a_color", color);
+  program->setAttribute("a_value", value);
+
+  program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap]);
 }
 
-void SurfaceCountQuantity::setPointCloudBillboardUniforms(gl::GLProgram* p, bool withLight) {
+void SurfaceCountQuantity::setUniforms(gl::GLProgram* p) {
 
   glm::mat4 viewMat = view::getCameraViewMatrix();
-  p->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+  program->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-  p->setUniform("u_projMatrix", glm::value_ptr(projMat));
+  program->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-  if (withLight) {
-    Vector3 eyePos = view::getCameraWorldPosition();
-    p->setUniform("u_eye", eyePos);
+  Vector3 eyePos = view::getCameraWorldPosition();
+  program->setUniform("u_eye", eyePos);
 
-    p->setUniform("u_lightCenter", state::center);
-    p->setUniform("u_lightDist", 2 * state::lengthScale);
-  }
+  program->setUniform("u_lightCenter", state::center);
+  program->setUniform("u_lightDist", 5 * state::lengthScale);
 
-  Vector3 lookDir, upDir, rightDir;
-  view::getCameraFrame(lookDir, upDir, rightDir);
-
-  p->setUniform("u_camZ", lookDir);
-  p->setUniform("u_camUp", upDir);
-  p->setUniform("u_camRight", rightDir);
 
   p->setUniform("u_pointRadius", pointRadius * state::lengthScale);
+
+  program->setUniform("u_rangeLow", vizRangeLow);
+  program->setUniform("u_rangeHigh", vizRangeHigh);
 }
 
 void SurfaceCountQuantity::draw() {
   if (enabled) {
-    setPointCloudBillboardUniforms(program, true);
-
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(-1.0, -1e3);
-
+    setUniforms(program);
     program->draw();
-    
-    glDisable(GL_POLYGON_OFFSET_FILL);
   }
 }
 
 void SurfaceCountQuantity::drawUI() {
-  if (ImGui::TreeNode((name + " (" + definedOn + " count)").c_str())) {
+  if (ImGui::TreeNode((name + " (" + descriptiveType + ")").c_str())) {
     ImGui::Checkbox("Enabled", &enabled);
+
+    { // Set colormap
+      ImGui::SameLine();
+      ImGui::PushItemWidth(100);
+      int iColorMapBefore = iColorMap;
+      ImGui::Combo("##colormap", &iColorMap, gl::allColormapNames, IM_ARRAYSIZE(gl::allColormapNames));
+      ImGui::PopItemWidth();
+      if (iColorMap != iColorMapBefore) {
+        program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap], true);
+      }
+    }
     ImGui::Text("Sum: %d", sum);
+    
+    ImGui::DragFloatRange2("Color Range", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100., dataRangeLow,
+                             dataRangeHigh, "Min: %.3e", "Max: %.3e");
+
     ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
     ImGui::TreePop();
   }
@@ -99,10 +110,9 @@ void SurfaceCountQuantity::drawUI() {
 SurfaceCountVertexQuantity::SurfaceCountVertexQuantity(std::string name,
                                                        std::vector<std::pair<VertexPtr, int>>& values_,
                                                        SurfaceMesh* mesh_)
-    : SurfaceCountQuantity(name, mesh_, "vertex")
+    : SurfaceCountQuantity(name, mesh_, "vertex count")
 
 {
-  values = VertexData<int>(parent->mesh, NO_INDEX); 
   for (auto& x : values_) {
     VertexPtr newV = parent->transfer.vMap[x.first];
     entries.push_back(std::make_pair(parent->geometry->position(newV), x.second));
@@ -114,10 +124,61 @@ SurfaceCountVertexQuantity::SurfaceCountVertexQuantity(std::string name,
 void SurfaceCountVertexQuantity::buildInfoGUI(VertexPtr v) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  if(values[v] == NO_INDEX) {
+  if (values.find(v) == values.end()) {
     ImGui::TextUnformatted("-");
   } else {
     ImGui::Text("%+d", values[v]);
+  }
+  ImGui::NextColumn();
+}
+
+// ========================================================
+// ==========      Vertex Isolated Scalar        ==========
+// ========================================================
+
+SurfaceIsolatedScalarVertexQuantity::SurfaceIsolatedScalarVertexQuantity(
+    std::string name, std::vector<std::pair<VertexPtr, double>>& values_, SurfaceMesh* mesh_)
+    : SurfaceCountQuantity(name, mesh_, "isolated vertex scalar")
+
+{
+  for (auto& x : values_) {
+    VertexPtr newV = parent->transfer.vMap[x.first];
+    entries.push_back(std::make_pair(parent->geometry->position(newV), x.second));
+    values[newV] = x.second;
+  }
+  prepare();
+}
+
+void SurfaceIsolatedScalarVertexQuantity::drawUI() {
+  if (ImGui::TreeNode((name + " (" + descriptiveType + ")").c_str())) {
+    ImGui::Checkbox("Enabled", &enabled);
+
+    { // Set colormap
+      ImGui::SameLine();
+      ImGui::PushItemWidth(100);
+      int iColorMapBefore = iColorMap;
+      ImGui::Combo("##colormap", &iColorMap, gl::allColormapNames, IM_ARRAYSIZE(gl::allColormapNames));
+      ImGui::PopItemWidth();
+      if (iColorMap != iColorMapBefore) {
+        program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap], true);
+      }
+    }
+        
+    ImGui::DragFloatRange2("Color Range", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100., dataRangeLow,
+                             dataRangeHigh, "Min: %.3e", "Max: %.3e");
+
+    ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
+    ImGui::TreePop();
+  }
+}
+
+void SurfaceIsolatedScalarVertexQuantity::buildInfoGUI(VertexPtr v) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  if (values.find(v) == values.end()) {
+    ImGui::TextUnformatted("-");
+  } else {
+    ImGui::Text("%g", values[v]);
   }
   ImGui::NextColumn();
 }
@@ -128,9 +189,8 @@ void SurfaceCountVertexQuantity::buildInfoGUI(VertexPtr v) {
 
 SurfaceCountFaceQuantity::SurfaceCountFaceQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values_,
                                                    SurfaceMesh* mesh_)
-    : SurfaceCountQuantity(name, mesh_, "face") {
+    : SurfaceCountQuantity(name, mesh_, "face count") {
 
-  values = FaceData<int>(parent->mesh, NO_INDEX);
   for (auto& x : values_) {
     FacePtr newF = parent->transfer.fMap[x.first];
     entries.push_back(std::make_pair(parent->geometry->barycenter(newF), x.second));
@@ -142,7 +202,7 @@ SurfaceCountFaceQuantity::SurfaceCountFaceQuantity(std::string name, std::vector
 void SurfaceCountFaceQuantity::buildInfoGUI(FacePtr f) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  if(values[f] == NO_INDEX) {
+  if (values.find(f) == values.end()) {
     ImGui::TextUnformatted("-");
   } else {
     ImGui::Text("%+d", values[f]);
