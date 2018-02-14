@@ -1,9 +1,12 @@
 [submodule "deps/glfw"]
 	path = deps/glfw
   url = https://github.com/glfw/glfw.git
+	branch = master
 [submodule "deps/imgui/imgui"]
 	path = deps/imgui/imgui
 	url = https://github.com/ocornut/imgui.git
+	branch = master
 [submodule "deps/geometry-central"]
 	path = deps/geometry-central
 	url = https://github.com/nmwsharp/geometry-central.git
+	branch = master
