@@ -180,7 +180,9 @@ public:
     return p.baryWeights[1] * vert1InFaceBasis[p.f] + p.baryWeights[2] * vert2InFaceBasis[p.f];
   }
 
-  std::vector<std::array<Vector3, 2>> traceLine(FacePoint startPoint, Vector2 startDir) {
+  // Trace a single line through the field
+  // traceSign should be 1.0 or -1.0, useful for tracing lines backwards through field
+  std::vector<std::array<Vector3, 2>> traceLine(FacePoint startPoint, Vector2 startDir, double traceSign=1.0) {
 
     // Accumulate the result here
     std::vector<std::array<Vector3, 2>> points;
@@ -216,11 +218,11 @@ public:
       double deltaRot = 2.0 * PI / nSym;
       for (int iSym = 0; iSym < nSym; iSym++) {
 
-        double alignScore = dot(faceDir, currDir);
+        double alignScore = dot(traceSign * faceDir, currDir);
 
         if (alignScore > bestAlign) {
           bestAlign = alignScore;
-          traceDir = faceDir;
+          traceDir = traceSign * faceDir;
         }
 
         faceDir = faceDir.rotate(deltaRot);
@@ -356,7 +358,7 @@ std::vector<std::vector<std::array<Vector3, 2>>> traceField(Geometry<Euclidean>*
 
 
   // == Trace the lines
-  cout << "Tracing lines through vector field... " << endl;
+  //cout << "Tracing lines through vector field... " << endl;
   std::vector<std::vector<std::array<Vector3, 2>>> lineList;
   for (size_t i = 0; i < nLines; i++) {
 
@@ -366,18 +368,22 @@ std::vector<std::vector<std::array<Vector3, 2>>> traceField(Geometry<Euclidean>*
     faceQueue.pop_back();
 
     // Generate a random point in the face
-    Vector3 randPoint{randomReal(0.02, 0.98), randomReal(0.02, 0.98), randomReal(0.02, 0.98)};
-    randPoint = unitSum(randPoint);
+    double r1 = unitRand();
+    double r2 = unitRand();
+    Vector3 randPoint{1.0 - std::sqrt(r1), std::sqrt(r1) * (1.0 - r2),
+                      r2 * std::sqrt(r1)};                         // uniform sampling in triangle
+    randPoint = unitSum(10000 * randPoint + Vector3{1, 1, 1} / 3); // pull slightly towards center
+    double traceSign = unitRand() > 0.5 ? 1.0 : -1.0; // trace half of lines backwards through field, avoids conentration near areas of convergence
 
     // Generate a random direction
     // (the tracing code snaps the velocity to the best-fitting direction, this just serves the role of picking
     // a random direction in symmetric fields)
-    Vector2 randomDir = unit(Vector2{unitRand(), unitRand()});
+    Vector2 randomDir = unit(Vector2{unitRand() - .5, unitRand() - .5});
 
     // Trace
-    lineList.push_back(tracer.traceLine(FacePoint{startFace, randPoint}, randomDir));
+    lineList.push_back(tracer.traceLine(FacePoint{startFace, randPoint}, randomDir, traceSign));
   }
-  cout << "    ... done tracing field." << endl;
+  //cout << "    ... done tracing field." << endl;
 
 
   return lineList;
