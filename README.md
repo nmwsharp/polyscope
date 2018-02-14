@@ -11,6 +11,7 @@ The following structures and quantities are supported (or *planned*):
   - Vector fields (extrinsic or embedded in the surface, symmetric, etc)
   - Distance functions
   - Subsets of mesh elements
+  - *Parameterizations*
 - Point clouds
   - *Scalar functions*
   - *Vector functions*
