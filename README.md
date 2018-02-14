@@ -22,7 +22,7 @@ The following structures and quantities are supported (or *planned*):
 - *Volume meshes*
 - *Octrees*
  
-When any of these structures and quantities are registered, Polyscope displays them in an interactive 3D scene, handling boilerplate concerns such as toggling the display of various data, colormaping data and editing maps, providing "picking" support to click in the scene and display numerical quantities, and generating histograms of scalar values.
+When any of these structures and quantities are registered, Polyscope displays them in an interactive 3D scene, handling boilerplate concerns such as toggling the display of various data, colormapping data and editing maps, providing "picking" support to click in the scene and display numerical quantities, and generating histograms of scalar values.
 
 A simple workflow for visualizing data in Polyscope looks like:
 ```C++
