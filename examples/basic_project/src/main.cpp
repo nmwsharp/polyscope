@@ -89,6 +89,11 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  // Make sure a mesh name was given
+  if(args::get(inFileName) == "") {
+    std::cerr << "Please specify .obj file as argument" << std::endl;
+  }
+
   // Initialize polyscope
   polyscope::init();
 
