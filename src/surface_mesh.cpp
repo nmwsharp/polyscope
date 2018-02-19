@@ -621,6 +621,11 @@ void SurfaceMesh::addVectorQuantity(std::string name, FaceData<Complex>& value, 
   addSurfaceQuantity(q);
 }
 
+void SurfaceMesh::addVectorQuantity(std::string name, EdgeData<double>& value) {
+  SurfaceVectorQuantity* q = new SurfaceOneFormIntrinsicVectorQuantity(name, value, this);
+  addSurfaceQuantity(q);
+}
+
 void SurfaceMesh::removeQuantity(std::string name) {
   if (quantities.find(name) == quantities.end()) {
     return;

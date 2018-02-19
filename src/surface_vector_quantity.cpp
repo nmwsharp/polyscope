@@ -9,6 +9,11 @@
 
 #include "Eigen/Dense"
 
+#include <complex>
+
+using std::cout;
+using std::endl;
+
 namespace polyscope {
 
 SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh* mesh_, MeshElement definedOn_,
@@ -224,7 +229,7 @@ void SurfaceFaceIntrinsicVectorQuantity::buildInfoGUI(FacePtr f) {
 
   ImGui::NextColumn();
   ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", norm(vectorField[f]));
+  ImGui::Text("magnitude: %g", std::abs(vectorField[f]));
   ImGui::NextColumn();
 }
 
@@ -260,34 +265,39 @@ void SurfaceFaceIntrinsicVectorQuantity::drawSubUI() {
 // ========================================================
 
 
-SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(
-    std::string name, EdgeData<double>& oneForm_, SurfaceMesh* mesh_, VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_) {
+SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std::string name,
+                                                                             EdgeData<double>& oneForm_,
+                                                                             SurfaceMesh* mesh_)
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, VectorType::STANDARD) {
 
   GeometryCache<Euclidean>& gc = parent->geometry->cache;
   gc.requireFaceBases();
+  gc.requireFaceAreas();
   gc.requireHalfedgeVectors();
+  gc.requireFaceNormals();
 
   // Copy the vectors
   oneForm = parent->transfer.transfer(oneForm_);
   mappedVectorField = FaceData<Complex>(parent->mesh);
   for (FacePtr f : parent->mesh->faces()) {
 
-    // Find the best-approximating vector field in each face
-    Eigen::Matrix<double, 3, 2> vectorMat;
-    Eigen::Vector3d rhsVec;
-    unsigned int i = 0;
+    // Whitney interpolation at center
+    std::array<double, 3> formValues;
+    std::array<Vector3, 3> vecValues;
+    int i = 0;
     for (HalfedgePtr he : f.adjacentHalfedges()) {
       double signVal = (he == he.edge().halfedge()) ? 1.0 : -1.0;
-      vectorMat(i,0) = dot(gc.halfedgeVectors[he], gc.faceBases[f][0]);
-      vectorMat(i,1) = dot(gc.halfedgeVectors[he], gc.faceBases[f][1]);
-      rhsVec[i] = oneForm[he.edge()] * signVal;
+      formValues[i] = oneForm[he.edge()] * signVal;
+      vecValues[i] = gc.halfedgeVectors[he].rotate_around(gc.faceNormals[f], PI / 2.0);
       i++;
     }
-    auto solver = vectorMat.colPivHouseholderQr();
-    Eigen::Vector2d x = solver.solve(rhsVec);
-    Complex approxVec{x[0], x[1]};
+    Vector3 result = Vector3::zero();
+    for (int j = 0; j < 3; j++) {
+      result += (formValues[(j + 1) % 3] - formValues[(j + 2) % 3]) * vecValues[j];
+    }
+    result /= 6 * gc.faceAreas[f];
 
+    Complex approxVec{dot(result, gc.faceBases[f][0]), dot(result, gc.faceBases[f][1])};
     mappedVectorField[f] = approxVec;
 
 
@@ -309,6 +319,20 @@ void SurfaceOneFormIntrinsicVectorQuantity::buildInfoGUI(EdgePtr e) {
   ImGui::NextColumn();
 }
 
+void SurfaceOneFormIntrinsicVectorQuantity::buildInfoGUI(FacePtr f) {
+  ImGui::TextUnformatted((name + "(remapped)").c_str());
+  ImGui::NextColumn();
+
+  std::stringstream buffer;
+  buffer << mappedVectorField[f];
+  ImGui::TextUnformatted(buffer.str().c_str());
+
+  ImGui::NextColumn();
+  ImGui::NextColumn();
+  ImGui::Text("magnitude: %g", std::abs(mappedVectorField[f]));
+  ImGui::NextColumn();
+}
+
 void SurfaceOneFormIntrinsicVectorQuantity::draw() {
   SurfaceVectorQuantity::draw();
 
@@ -318,7 +342,11 @@ void SurfaceOneFormIntrinsicVectorQuantity::draw() {
     if (ribbonArtist == nullptr) {
 
       // Warning: expensive... Creates noticeable UI lag
-      ribbonArtist = new RibbonArtist(traceField(parent->geometry, mappedVectorField, 1, 2500));
+      FaceData<Complex> unitMappedField(parent->mesh);
+      for (FacePtr f : parent->mesh->faces()) {
+        unitMappedField[f] = mappedVectorField[f] / std::abs(mappedVectorField[f]);
+      }
+      ribbonArtist = new RibbonArtist(traceField(parent->geometry, unitMappedField, 1, 5000));
     }
 
 
