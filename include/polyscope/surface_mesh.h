@@ -126,6 +126,7 @@ public:
   void addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
   void addVectorQuantity(std::string name, FaceData<Complex>& value, int nSym = 1,
                          VectorType vectorType = VectorType::STANDARD);
+  void addVectorQuantity(std::string name, EdgeData<double>& value);
 
   void removeQuantity(std::string name);
   void setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q);
