@@ -2,26 +2,53 @@
 
 This is a basic project using Polyscope showing how to set up the build system and use git submodules.
 
+## Download and build
+
+### Short version
+"I'm in a hurry and I like running code from strangers on the internet."
+
+
+**(Option 1)** This downloads and builds the example, leaving you in a new git repository:
 ```
-// Download the files in this directory and unpack
-curl -LJO https://github.com/nmwsharp/polyscope/examples/basic_project/these_files.tgz
+curl -LJO https://github.com/nmwsharp/polyscope/raw/master/examples/basic_project/these_files.tgz && tar -xzvf these_files.tgz && rm these_files.tgz && git init . && cd deps && git submodule add -b master https://github.com/nmwsharp/polyscope && git submodule update --remote && cd .. && git submodule update --init --recursive && mkdir build && cd build && cmake .. && make -j3 && cd ..
+```
+run `rm -rf .git` to avoid avoid leaving a git repo behind, but DO NOT do so in an existing repo, it can destroy local updates
+
+**(Option 2)** This downloads and builds the example in an existing git repository (ie, if you just created and cloned a new repo on github):
+```
+curl -LJO https://github.com/nmwsharp/polyscope/raw/master/examples/basic_project/these_files.tgz && tar -xzvf these_files.tgz && rm these_files.tgz && git init . && cd deps && git submodule add -b master https://github.com/nmwsharp/polyscope && git submodule update --remote && cd .. && git submodule update --init --recursive && mkdir build && cd build && cmake .. && make -j3 && cd ..
+```
+
+### Long version
+Download the files to the current directory and unpack
+```
+curl -LJO https://github.com/nmwsharp/polyscope/raw/master/examples/basic_project/these_files.tgz
 tar -xzvf these_files.tgz
 rm these_files.tgz
+```
 
-// Make some directories
-mkdir deps && mkdir build
-
-// Initialize a git repo (skip this if you're already in a repo)
+Initialize a git repo (skip this if you're already in a repo)
+```
 git init .
+```
 
-// Check out polyscope as a git submodule
+Check out polyscope and its dependencies via a git submodules
+```
 cd deps
 git submodule add -b master https://github.com/nmwsharp/polyscope
 git submodule update --remote
 cd ..
 git submodule update --init --recursive
-
-// Build
-cd build && cmake .. && make -j3
-
 ```
+
+Compile the code
+```
+mkdir build && cd build && cmake .. && make -j3 && cd ..
+```
+
+Run the example
+```
+./build/bin/polyscope_basic_demo /path/to/your/mesh.obj
+```
+
+Note: run `rm -rf .git` to avoid avoid leaving a git repository behind, but DO NOT do so in an existing repository, it can destroy local updates.
