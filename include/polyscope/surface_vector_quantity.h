@@ -81,6 +81,21 @@ public:
   void buildInfoGUI(FacePtr f) override;
 };
 
+class SurfaceVertexIntrinsicVectorQuantity : public SurfaceVectorQuantity {
+public:
+  SurfaceVertexIntrinsicVectorQuantity(std::string name, VertexData<Complex>& vectors_, SurfaceMesh* mesh_,
+                                       int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
+
+  VertexData<Complex> vectorField;
+  int nSym;
+
+  virtual void draw() override;
+
+  void drawSubUI() override;
+
+  void buildInfoGUI(VertexPtr v) override;
+};
+
 class SurfaceOneFormIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
   SurfaceOneFormIntrinsicVectorQuantity(std::string name, EdgeData<double>& oneForm_, SurfaceMesh* mesh_);

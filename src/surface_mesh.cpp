@@ -621,6 +621,11 @@ void SurfaceMesh::addVectorQuantity(std::string name, FaceData<Complex>& value, 
   addSurfaceQuantity(q);
 }
 
+void SurfaceMesh::addVectorQuantity(std::string name, VertexData<Complex>& value, int nSym, VectorType vectorType) {
+  SurfaceVectorQuantity* q = new SurfaceVertexIntrinsicVectorQuantity(name, value, this, nSym, vectorType);
+  addSurfaceQuantity(q);
+}
+
 void SurfaceMesh::addVectorQuantity(std::string name, EdgeData<double>& value) {
   SurfaceVectorQuantity* q = new SurfaceOneFormIntrinsicVectorQuantity(name, value, this);
   addSurfaceQuantity(q);

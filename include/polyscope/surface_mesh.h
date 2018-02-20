@@ -7,9 +7,9 @@
 #include "geometrycentral/vector3.h"
 
 #include "polyscope/affine_remapper.h"
+#include "polyscope/color_management.h"
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/structure.h"
-#include "polyscope/color_management.h"
 
 namespace polyscope {
 
@@ -34,7 +34,7 @@ public:
 
   // Draw the ImGUI ui elements
   virtual void drawUI() = 0;
-  
+
   // Build GUI info about this element
   virtual void buildInfoGUI(VertexPtr v);
   virtual void buildInfoGUI(FacePtr f);
@@ -56,10 +56,9 @@ public:
   // Create a program to be used for drawing the surface
   // CALLER is responsible for deallocating
   virtual gl::GLProgram* createProgram() = 0;
-  
+
   // Do any per-frame work on the program handed out by create-frame
   virtual void setProgramValues(gl::GLProgram* program);
-
 };
 
 
@@ -93,11 +92,11 @@ public:
   virtual std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox() override;
 
   // === Quantity-related
-  
+
   // general form
   void addSurfaceQuantity(SurfaceQuantity* quantity);
   void addSurfaceQuantity(SurfaceQuantityThatDrawsFaces* quantity);
-  SurfaceQuantity* getSurfaceQuantity(std::string name, bool errorIfAbsent=true);
+  SurfaceQuantity* getSurfaceQuantity(std::string name, bool errorIfAbsent = true);
 
   // Scalars
   void addQuantity(std::string name, VertexData<double>& value, DataType type = DataType::STANDARD);
@@ -125,6 +124,8 @@ public:
   void addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
   void addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
   void addVectorQuantity(std::string name, FaceData<Complex>& value, int nSym = 1,
+                         VectorType vectorType = VectorType::STANDARD);
+  void addVectorQuantity(std::string name, VertexData<Complex>& value, int nSym = 1,
                          VectorType vectorType = VectorType::STANDARD);
   void addVectorQuantity(std::string name, EdgeData<double>& value);
 

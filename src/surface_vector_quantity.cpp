@@ -260,6 +260,98 @@ void SurfaceFaceIntrinsicVectorQuantity::drawSubUI() {
   }
 }
 
+
+// ========================================================
+// ==========       Intrinsic Vertex Vector      ==========
+// ========================================================
+
+
+SurfaceVertexIntrinsicVectorQuantity::SurfaceVertexIntrinsicVectorQuantity(std::string name,
+                                                                           VertexData<Complex>& vectors_,
+                                                                           SurfaceMesh* mesh_, int nSym_,
+                                                                           VectorType vectorType_)
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), nSym(nSym_) {
+
+  GeometryCache<Euclidean>& gc = parent->geometry->cache;
+  gc.requireVertexBases();
+
+  double rotAngle = 2.0 * PI / nSym;
+  Complex rot = std::exp(IM_I * rotAngle);
+
+  // Copy the vectors
+  vectorField = parent->transfer.transfer(vectors_);
+  for (VertexPtr v : parent->mesh->vertices()) {
+
+    Complex angle = std::pow(vectorField[v], 1.0 / nSym);
+
+    for (int iRot = 0; iRot < nSym; iRot++) {
+      vectorRoots.push_back(parent->geometry->position(v));
+
+      Vector3 vec = gc.vertexBases[v][0] * angle.real() + gc.vertexBases[v][1] * angle.imag();
+      vectors.push_back(vec);
+
+      angle *= rot;
+    }
+  }
+
+  finishConstructing();
+}
+
+void SurfaceVertexIntrinsicVectorQuantity::buildInfoGUI(VertexPtr v) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+
+  std::stringstream buffer;
+  buffer << vectorField[v];
+  ImGui::TextUnformatted(buffer.str().c_str());
+
+  ImGui::NextColumn();
+  ImGui::NextColumn();
+  ImGui::Text("magnitude: %g", std::abs(vectorField[v]));
+  ImGui::NextColumn();
+}
+
+void SurfaceVertexIntrinsicVectorQuantity::draw() {
+  SurfaceVectorQuantity::draw();
+
+  if (ribbonEnabled) {
+
+    // Make sure we have a ribbon artist
+    if (ribbonArtist == nullptr) {
+
+      // Remap to center of each face
+      GeometryCache<Euclidean>& gc = parent->geometry->cache;
+      gc.requireVertexFaceTransportCoefs();
+      FaceData<Complex> unitFaceVecs(parent->mesh);
+      for (FacePtr f : parent->mesh->faces()) {
+
+        Complex sum{0.0, 0.0};
+        for (HalfedgePtr he : f.adjacentHalfedges()) {
+          Complex valInFace = std::pow(gc.vertexFaceTransportCoefs[he], nSym) * vectorField[he.vertex()];
+          sum += valInFace;
+        }
+        unitFaceVecs[f] = unit(sum);
+      }
+
+      // Warning: expensive... Creates noticeable UI lag
+      ribbonArtist = new RibbonArtist(traceField(parent->geometry, unitFaceVecs, nSym, 2500));
+    }
+
+
+    if (enabled) {
+      ribbonArtist->draw();
+    }
+  }
+}
+
+void SurfaceVertexIntrinsicVectorQuantity::drawSubUI() {
+
+  ImGui::Checkbox("Draw ribbon", &ribbonEnabled);
+  if (ribbonEnabled && ribbonArtist != nullptr) {
+    ribbonArtist->buildParametersGUI();
+  }
+}
+
 // ========================================================
 // ==========        Intrinsic One Form          ==========
 // ========================================================
