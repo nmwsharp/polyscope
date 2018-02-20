@@ -17,17 +17,20 @@ namespace options {
     // A string to prefex all messages printed to stdout
     extern std::string printPrefix;
 
-    // Should errors throw exceptions, or just display?
+    // Should errors throw exceptions, or just display? (default false)
     extern bool errorsThrowExceptions;
 
-    // Don't let the main loop run at more than this speed. (-1 disables)
+    // Don't let the main loop run at more than this speed. (-1 disables) (default: 60)
     extern int maxFPS;
 
-    // Read preferences (window size, etc) from startup file, write to same file on exit
+    // Read preferences (window size, etc) from startup file, write to same file on exit (default: true)
     extern bool usePrefsFile;
     
-    // Show empty structure types from startup
+    // Show empty structure types from startup (default: true)
     extern bool initializeWithDefaultStructures;
+    
+    // Automatically center structures upon registration (default: false)
+    extern bool autocenterStructures;
 
 } // namespace options
 } // namespace polyscope

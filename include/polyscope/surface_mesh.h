@@ -132,6 +132,7 @@ public:
   void removeQuantity(std::string name);
   void setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q);
   void clearActiveSurfaceQuantity();
+  void removeAllQuantities();
 
   void updateGeometryPositions(Geometry<Euclidean>* newGeometry);
 
@@ -154,6 +155,9 @@ public:
   static const std::string structureTypeName;
   SubColorManager colorManager;
 
+  // Scene transform
+  glm::mat4 objectTransform = glm::mat4(1.0);
+
 private:
   // Quantities
   std::map<std::string, SurfaceQuantity*> quantities;
@@ -168,6 +172,11 @@ private:
       nullptr; // a quantity that is respondible for drawing on the surface and
                // overwrites `program` with its own shaders
 
+
+  // Manipulate transform
+  void resetTransform();
+  void centerBoundingBox();
+  glm::mat4 getModelView();
 
   // Picking-related
   // Order of indexing: vertices, faces, edges, halfedges

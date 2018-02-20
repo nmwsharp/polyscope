@@ -38,6 +38,10 @@ SurfaceMesh::SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_)
 
   prepare();
   preparePick();
+
+  if(options::autocenterStructures) {
+    centerBoundingBox();
+  }
 }
 
 SurfaceMesh::~SurfaceMesh() {
@@ -66,7 +70,7 @@ void SurfaceMesh::draw() {
   }
 
   // Set uniforms
-  glm::mat4 viewMat = view::getCameraViewMatrix();
+  glm::mat4 viewMat = getModelView();
   program->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
@@ -416,10 +420,32 @@ void SurfaceMesh::drawUI() {
 
     ImGui::Checkbox("Enabled", &enabled);
     ImGui::SameLine();
-    ImGui::ColorEdit3("Surface color", (float*)&surfaceColor, ImGuiColorEditFlags_NoInputs);
+
+    // Options popup
+    if (ImGui::Button("Options")) {
+      ImGui::OpenPopup("OptionsPopup");
+    }
+    if (ImGui::BeginPopup("OptionsPopup")) {
+
+      // Transform
+      if (ImGui::BeginMenu("Transform")) {
+        if (ImGui::MenuItem("Center")) centerBoundingBox();
+        if (ImGui::MenuItem("Reset")) resetTransform();
+        ImGui::EndMenu();
+      }
+
+      // Quantities
+      if (ImGui::MenuItem("Clear Quantities")) removeAllQuantities();
+
+
+      ImGui::EndPopup();
+    }
+
+    ImGui::ColorEdit3("Color", (float*)&surfaceColor, ImGuiColorEditFlags_NoInputs);
+    ImGui::SameLine();
 
     { // Flat shading or smooth shading?
-      ImGui::Checkbox("Smooth shade", &ui_smoothshade);
+      ImGui::Checkbox("Smooth", &ui_smoothshade);
       if (ui_smoothshade && shadeStyle == ShadeStyle::FLAT) {
         shadeStyle = ShadeStyle::SMOOTH;
         deleteProgram();
@@ -432,7 +458,7 @@ void SurfaceMesh::drawUI() {
     }
 
     { // Edge width
-      ImGui::Checkbox("Show edges", &showEdges);
+      ImGui::Checkbox("Edges", &showEdges);
       if (showEdges) {
         edgeWidth = 0.01;
       } else {
@@ -446,8 +472,6 @@ void SurfaceMesh::drawUI() {
     }
 
     ImGui::TreePop();
-  } else {
-    // enabled = false;
   }
   ImGui::PopID();
 }
@@ -474,6 +498,10 @@ std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> SurfaceMesh::boun
     min = geometrycentral::componentwiseMin(min, geometry->position(v));
     max = geometrycentral::componentwiseMax(max, geometry->position(v));
   }
+
+  // Respect object transform
+  min = fromGLM(glm::vec3(objectTransform * glm::vec4(min.x, min.y, min.z, 1.0)));
+  max = fromGLM(glm::vec3(objectTransform * glm::vec4(max.x, max.y, max.z, 1.0)));
 
   return std::make_tuple(min, max);
 }
@@ -644,6 +672,12 @@ void SurfaceMesh::removeQuantity(std::string name) {
   delete q;
 }
 
+void SurfaceMesh::removeAllQuantities() {
+  while (quantities.size() > 0) {
+    removeQuantity(quantities.begin()->first);
+  }
+}
+
 void SurfaceMesh::setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q) {
   clearActiveSurfaceQuantity();
   activeSurfaceQuantity = q;
@@ -658,10 +692,27 @@ void SurfaceMesh::clearActiveSurfaceQuantity() {
   }
 }
 
+
+void SurfaceMesh::resetTransform() {
+  objectTransform = glm::mat4(1.0);
+  updateStructureExtents();
+}
+
+void SurfaceMesh::centerBoundingBox() {
+  std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> bbox = boundingBox();
+  Vector3 center = (std::get<1>(bbox) + std::get<0>(bbox)) / 2.0;
+  glm::mat4x4 newTrans = glm::translate(glm::mat4x4(1.0), -glm::vec3(center.x, center.y, center.z));
+  objectTransform = newTrans;
+  updateStructureExtents();
+}
+
+glm::mat4 SurfaceMesh::getModelView() { return view::getCameraViewMatrix() * objectTransform; }
+
 void SurfaceQuantity::buildInfoGUI(VertexPtr v) {}
 void SurfaceQuantity::buildInfoGUI(FacePtr f) {}
 void SurfaceQuantity::buildInfoGUI(EdgePtr e) {}
 void SurfaceQuantity::buildInfoGUI(HalfedgePtr he) {}
+
 
 void SurfaceQuantityThatDrawsFaces::setProgramValues(gl::GLProgram* program) {}
 

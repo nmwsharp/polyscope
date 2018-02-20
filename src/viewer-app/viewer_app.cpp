@@ -211,6 +211,9 @@ int main(int argc, char** argv) {
     std::cerr << parser;
     return 1;
   }
+  
+  // Options
+  polyscope::options::autocenterStructures = true;
 
   // Initialize polyscope
   polyscope::init();

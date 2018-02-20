@@ -9,7 +9,8 @@
 #include "imgui.h"
 
 using namespace geometrycentral;
-using std::cout; using std::endl;
+using std::cout;
+using std::endl;
 
 namespace polyscope {
 
@@ -87,8 +88,8 @@ void PointCloud::drawPick() {
 
 void PointCloud::prepare() {
   // Create the GL program
-  program = new gl::GLProgram(&PASSTHRU_SPHERE_VERT_SHADER, &SPHERE_GEOM_BILLBOARD_SHADER, &SHINY_SPHERE_BILLBOARD_FRAG_SHADER,
-                              gl::DrawMode::Points);
+  program = new gl::GLProgram(&PASSTHRU_SPHERE_VERT_SHADER, &SPHERE_GEOM_BILLBOARD_SHADER,
+                              &SHINY_SPHERE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points);
 
 
   // Store data in buffers
@@ -128,22 +129,22 @@ void PointCloud::drawPickUI(size_t localPickID) {
   std::stringstream buffer;
   buffer << points[localPickID];
   ImGui::TextUnformatted(buffer.str().c_str());
-
 }
 
 void PointCloud::drawUI() {
 
   ImGui::PushID(name.c_str()); // ensure there are no conflicts with identically-named labels
 
-  ImGui::TextUnformatted(name.c_str());
-  ImGui::Checkbox("Enabled", &enabled);
-  ImGui::SameLine();
-  ImGui::ColorEdit3("Point color", (float*)&pointColor, ImGuiColorEditFlags_NoInputs);
+  if (ImGui::TreeNode(name.c_str())) {
+    ImGui::Checkbox("Enabled", &enabled);
+    ImGui::SameLine();
+    ImGui::ColorEdit3("Point color", (float*)&pointColor, ImGuiColorEditFlags_NoInputs);
 
-  ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
+    ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
 
+    ImGui::TreePop();
+  }
   ImGui::PopID();
-
 }
 
 double PointCloud::lengthScale() {
