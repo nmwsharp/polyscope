@@ -702,7 +702,7 @@ void SurfaceMesh::centerBoundingBox() {
   std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> bbox = boundingBox();
   Vector3 center = (std::get<1>(bbox) + std::get<0>(bbox)) / 2.0;
   glm::mat4x4 newTrans = glm::translate(glm::mat4x4(1.0), -glm::vec3(center.x, center.y, center.z));
-  objectTransform = newTrans;
+  objectTransform = objectTransform * newTrans;
   updateStructureExtents();
 }
 

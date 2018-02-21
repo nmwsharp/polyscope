@@ -543,7 +543,7 @@ void draw(bool withUI = true) {
 
   // Build the GUI components
   if (withUI) {
-     ImGui::ShowDemoWindow();
+     //ImGui::ShowDemoWindow();
 
     // Note: It is important to build the user GUI first, because it is likely that callbacks there will modify
     // polyscope data. If we do these modifications happen later in the render cycle, they might invalidate data which
