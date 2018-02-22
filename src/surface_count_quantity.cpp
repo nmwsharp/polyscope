@@ -53,7 +53,7 @@ void SurfaceCountQuantity::prepare() {
 
 void SurfaceCountQuantity::setUniforms(gl::GLProgram* p) {
 
-  glm::mat4 viewMat = view::getCameraViewMatrix();
+  glm::mat4 viewMat = parent->getModelView();
   program->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();

@@ -157,6 +157,9 @@ public:
 
   // Scene transform
   glm::mat4 objectTransform = glm::mat4(1.0);
+  void resetTransform();
+  void centerBoundingBox();
+  glm::mat4 getModelView();
 
 private:
   // Quantities
@@ -172,11 +175,6 @@ private:
       nullptr; // a quantity that is respondible for drawing on the surface and
                // overwrites `program` with its own shaders
 
-
-  // Manipulate transform
-  void resetTransform();
-  void centerBoundingBox();
-  glm::mat4 getModelView();
 
   // Picking-related
   // Order of indexing: vertices, faces, edges, halfedges
