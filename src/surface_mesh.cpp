@@ -484,7 +484,9 @@ double SurfaceMesh::lengthScale() {
 
   double lengthScale = 0.0;
   for (VertexPtr v : mesh->vertices()) {
-    lengthScale = std::max(lengthScale, geometrycentral::norm2(geometry->position(v) - center));
+    Vector3 p = geometry->position(v);
+    Vector3 transPos = fromGLM(glm::vec3(objectTransform * glm::vec4(p.x, p.y, p.z, 1.0)));
+    lengthScale = std::max(lengthScale, geometrycentral::norm2(transPos - center));
   }
 
   return 2 * std::sqrt(lengthScale);

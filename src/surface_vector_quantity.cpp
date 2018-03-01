@@ -247,6 +247,10 @@ void SurfaceFaceIntrinsicVectorQuantity::draw() {
 
 
     if (enabled) {
+
+      // Update transform matrix from parent
+      ribbonArtist->objectTransform = parent->objectTransform;
+
       ribbonArtist->draw();
     }
   }
@@ -339,6 +343,10 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
 
 
     if (enabled) {
+
+      // Update transform matrix from parent
+      ribbonArtist->objectTransform = parent->objectTransform;
+
       ribbonArtist->draw();
     }
   }
@@ -380,7 +388,7 @@ SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std
     for (HalfedgePtr he : f.adjacentHalfedges()) {
       double signVal = (he == he.edge().halfedge()) ? 1.0 : -1.0;
       formValues[i] = oneForm[he.edge()] * signVal;
-      vecValues[i] = gc.halfedgeVectors[he].rotate_around(gc.faceNormals[f], PI / 2.0);
+      vecValues[i] = cross(gc.halfedgeVectors[he], gc.faceNormals[f]);
       i++;
     }
     Vector3 result = Vector3::zero();
@@ -443,6 +451,9 @@ void SurfaceOneFormIntrinsicVectorQuantity::draw() {
 
 
     if (enabled) {
+      // Update transform matrix from parent
+      ribbonArtist->objectTransform = parent->objectTransform;
+
       ribbonArtist->draw();
     }
   }

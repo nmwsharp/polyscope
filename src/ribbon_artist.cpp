@@ -1,5 +1,6 @@
 #include "polyscope/ribbon_artist.h"
 
+#include "polyscope/gl/colormap_sets.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/ribbon_shaders.h"
 #include "polyscope/polyscope.h"
@@ -11,8 +12,15 @@ using std::endl;
 
 namespace polyscope {
 
-RibbonArtist::RibbonArtist(const std::vector<std::vector<std::array<Vector3, 2>>>& ribbons,
-                           double normalOffsetFraction) {
+RibbonArtist::RibbonArtist(const std::vector<std::vector<std::array<Vector3, 2>>>& ribbons_,
+                           double normalOffsetFraction_)
+    : ribbons(ribbons_), normalOffsetFraction(normalOffsetFraction_) {}
+
+RibbonArtist::~RibbonArtist() { deleteProgram(); }
+
+void RibbonArtist::deleteProgram() { safeDelete(program); }
+
+void RibbonArtist::createProgram() {
 
   // Create the program
   program = new gl::GLProgram(&RIBBON_VERT_SHADER, &RIBBON_GEOM_SHADER, &RIBBON_FRAG_SHADER,
@@ -51,7 +59,7 @@ RibbonArtist::RibbonArtist(const std::vector<std::vector<std::array<Vector3, 2>>
     }
 
     // Sample a color for this line
-    Vector3 lineColor = gl::CM_SPECTRAL.getValue(unitRand());
+    Vector3 lineColor = gl::allColormaps[iColorMap]->getValue(unitRand());
 
     // Add a false point at the beginning (so it's not a special case for the geometry shader)
     double EPS = 0.01;
@@ -94,9 +102,13 @@ void RibbonArtist::draw() {
     return;
   }
 
+  if (!program) {
+    createProgram();
+  }
+
   // Set uniforms
-  glm::mat4 viewMat = view::getCameraViewMatrix();
-  program->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+  glm::mat4 modelviewMat = view::getCameraViewMatrix() * objectTransform;
+  program->setUniform("u_viewMatrix", glm::value_ptr(modelviewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   program->setUniform("u_projMatrix", glm::value_ptr(projMat));
@@ -126,6 +138,13 @@ void RibbonArtist::draw() {
 
 
 void RibbonArtist::buildParametersGUI() {
+
+  int iColormapBefore = iColorMap;
+  ImGui::Combo("##colormap", &iColorMap, gl::allColormapNames, IM_ARRAYSIZE(gl::allColormapNames));
+  if (iColorMap != iColormapBefore) {
+    deleteProgram();
+  }
+
   ImGui::SliderFloat("Ribbon width", &ribbonWidth, 0.0, .1, "%.5f", 3.);
 }
 

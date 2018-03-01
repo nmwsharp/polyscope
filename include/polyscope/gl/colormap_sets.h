@@ -21,7 +21,8 @@ static const std::vector<const Colormap*> allColormaps {
   &CM_REDS,
   &CM_SPECTRAL, 
   &CM_RAINBOW, 
-  &CM_CONST_RED
+  &CM_CONST_RED,
+  &CM_PHASE
 };
 static const char* allColormapNames[] = {
   "viridis", 
@@ -32,6 +33,7 @@ static const char* allColormapNames[] = {
   "spectral", 
   "rainbow", 
   "constant red",
+  "phase",
 };
 
 

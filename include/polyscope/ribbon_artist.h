@@ -13,7 +13,7 @@ public:
   // the normal direction.
   RibbonArtist(const std::vector<std::vector<std::array<geometrycentral::Vector3, 2>>>& ribbons,
                double normalOffsetFraction = 1e-4);
-
+  ~RibbonArtist();
 
   void draw();
   void buildParametersGUI();
@@ -21,8 +21,21 @@ public:
   float ribbonWidth = -1;
   bool enabled = true;
 
+
+  glm::mat4 objectTransform = glm::mat4(1.0);
+
 private:
+
+  // Data
+  std::vector<std::vector<std::array<geometrycentral::Vector3, 2>>> ribbons;
+  double normalOffsetFraction;
+
   gl::GLProgram* program = nullptr;
+
+  void createProgram();
+  void deleteProgram();
+  
+  int iColorMap = 5; // spectral
 };
 
 
