@@ -5,11 +5,12 @@ if (CMAKE_BINARY_DIR STREQUAL CMAKE_SOURCE_DIR)
     message(FATAL_ERROR "Source and build directories cannot be the same. Go use the /build directory.")
 endif()
 
+
 # Create a single library for the project
 add_executable(
-        polyscopeviewer
-        viewer_app.cpp
+        polyscopedemo
+        demo_app.cpp
         )
 
 # Link settings
-target_link_libraries(polyscopeviewer polyscope)
+target_link_libraries(polyscopedemo polyscope)

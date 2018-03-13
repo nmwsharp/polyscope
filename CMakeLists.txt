@@ -59,9 +59,14 @@ add_subdirectory(deps)
 add_subdirectory(src)
 
 ### Build the demo viewer application
-option(BUILD_POLYSCOPE_VIEWER "Build the viewer demo app." ON)
+option(BUILD_POLYSCOPE_VIEWER "Build the viewer app." ON)
 if(BUILD_POLYSCOPE_VIEWER)
     add_subdirectory(src/viewer-app)
+endif()
+
+option(BUILD_POLYSCOPE_DEMO "Build the demo app." ON)
+if(BUILD_POLYSCOPE_DEMO)
+    add_subdirectory(src/demo-app)
 endif()
 
 ### Pass relevant variables to parent projects
