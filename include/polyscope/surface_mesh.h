@@ -165,6 +165,10 @@ public:
   void centerBoundingBox();
   glm::mat4 getModelView();
 
+  // Picking helpers
+  // One of these will be non-null on return
+  void getPickedElement(size_t localPickID, VertexPtr& vOut, FacePtr& fOut, EdgePtr& eOut, HalfedgePtr& heOut);
+
 private:
   // Quantities
   std::map<std::string, SurfaceQuantity*> quantities;

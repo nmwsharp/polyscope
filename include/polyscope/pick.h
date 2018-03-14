@@ -13,6 +13,7 @@ namespace pick {
 // The currently selected index from the pick buffer, if one is selected.
 extern size_t currPickInd;
 extern bool haveSelection;
+extern bool alwaysEvaluatePick;
 extern bool pickWasDoubleClick; // note: structures may act on this and set it to false afterwards to ensure action only
                                 // happens once
 
@@ -24,6 +25,8 @@ size_t requestPickBufferRange(Structure* requestingStructure, size_t count);
 // returned by requestPickBufferRange().
 // If nothing is selected, returns nullptr and max_int.
 Structure* getCurrentPickElement(size_t& localInd);
+
+void evaluatePickQuery(int xPos, int yPos);
 
 void setCurrentPickElement(size_t pickInd, bool wasDoubleClick);
 

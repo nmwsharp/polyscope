@@ -2,6 +2,7 @@
 
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/surface_shaders.h"
+#include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 
 #include "imgui.h"
@@ -17,8 +18,6 @@ SurfaceSelectionQuantity::SurfaceSelectionQuantity(std::string name, SurfaceMesh
 }
 
 void SurfaceSelectionQuantity::draw() {}
-
-
 
 
 void SurfaceSelectionQuantity::drawUI() {
@@ -106,8 +105,8 @@ void SurfaceSelectionVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
 void SurfaceSelectionVertexQuantity::setProgramValues(gl::GLProgram* program) {
 
   // Update membership buffer, if needed
-  if(membershipStale) {
-  
+  if (membershipStale) {
+
     std::vector<double> colorval;
     colorval.reserve(parent->mesh->nHalfedges());
     for (FacePtr f : parent->mesh->faces()) {
@@ -128,19 +127,24 @@ void SurfaceSelectionVertexQuantity::setProgramValues(gl::GLProgram* program) {
     }
     program->setAttribute("a_colorval", colorval, true); // update buffer
 
-  
+
     membershipStale = false;
   }
 }
 
 void SurfaceSelectionVertexQuantity::userEdit() {
 
+  // Make sure we can see what we're editing
+  enabled = true;
+  parent->setActiveSurfaceQuantity(this);
+
   // Create a new context
   ImGuiContext* oldContext = ImGui::GetCurrentContext();
   ImGuiContext* newContext = ImGui::CreateContext();
   ImGui::SetCurrentContext(newContext);
   initializeImGUIContext();
-
+  bool oldAlwaysPick = pick::alwaysEvaluatePick;
+  pick::alwaysEvaluatePick = true;
 
   // Register the callback which creates the UI and does the hard work
   focusedPopupUI = std::bind(&SurfaceSelectionVertexQuantity::userEditCallback, this);
@@ -151,6 +155,7 @@ void SurfaceSelectionVertexQuantity::userEdit() {
   }
 
   // Restore the old context
+  pick::alwaysEvaluatePick = oldAlwaysPick;
   ImGui::SetCurrentContext(oldContext);
   ImGui::DestroyContext(newContext);
 }
@@ -161,6 +166,50 @@ void SurfaceSelectionVertexQuantity::userEditCallback() {
   ImGui::Begin("Edit Vertex Selection", &showWindow);
 
   // Toggle what mouse does
+  ImGui::Combo("with click", &mouseMemberAction, "add\0subtract\0\0");
+
+  // Process mouse selection if the ctrl key is held, the mouse is pressed, and the mouse isn't on the ImGui window
+  ImGuiIO& io = ImGui::GetIO();
+  if (io.KeyCtrl && !io.WantCaptureMouse && ImGui::IsMouseDown(0)) {
+    // ImVec2 p = ImGui::GetMousePos();
+    // io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+
+    // Check if the pick landed on a mesh element
+    size_t localInd;
+    Structure* pickedStruc = pick::getCurrentPickElement(localInd);
+    if (pickedStruc == parent) {
+
+      // Find the nearest vertex (in screen space) to the selected element
+      std::vector<VertexPtr> candidateVertices;
+      VertexPtr vOut;
+      FacePtr fOut;
+      EdgePtr eOut;
+      HalfedgePtr heOut;
+      parent->getPickedElement(localInd, vOut, fOut, eOut, heOut);
+
+      if (vOut != VertexPtr()) {
+        candidateVertices.push_back(vOut);
+      }
+      if (fOut != FacePtr()) {
+        for (VertexPtr v : fOut.adjacentVertices()) {
+          candidateVertices.push_back(v);
+        }
+      }
+      if (eOut != EdgePtr()) {
+        candidateVertices.push_back(eOut.halfedge().vertex());
+        candidateVertices.push_back(eOut.halfedge().twin().vertex());
+      }
+      if (heOut != HalfedgePtr()) {
+        candidateVertices.push_back(heOut.vertex());
+        candidateVertices.push_back(heOut.twin().vertex());
+      }
+
+      for (VertexPtr v : candidateVertices) {
+        membership[v] = mouseMemberAction == 0;
+        membershipStale = true;
+      }
+    }
+  }
 
 
   // Grow the selection
@@ -169,10 +218,8 @@ void SurfaceSelectionVertexQuantity::userEditCallback() {
     for (VertexPtr v : parent->mesh->vertices()) {
       if (membership[v]) {
         newMembership[v] = true;
-      }
-      for (VertexPtr n : v.adjacentVertices()) {
-        if (membership[n]) {
-          newMembership[v] = true;
+        for (VertexPtr n : v.adjacentVertices()) {
+          newMembership[n] = true;
         }
       }
     }
@@ -187,10 +234,8 @@ void SurfaceSelectionVertexQuantity::userEditCallback() {
     for (VertexPtr v : parent->mesh->vertices()) {
       if (!membership[v]) {
         newMembership[v] = false;
-      }
-      for (VertexPtr n : v.adjacentVertices()) {
-        if (!membership[n]) {
-          newMembership[v] = false;
+        for (VertexPtr n : v.adjacentVertices()) {
+          newMembership[n] = false;
         }
       }
     }
@@ -198,7 +243,7 @@ void SurfaceSelectionVertexQuantity::userEditCallback() {
     membershipStale = true;
   }
 
-  // Select all  
+  // Select all
   if (ImGui::Button("Select all")) {
     for (VertexPtr v : parent->mesh->vertices()) {
       membership[v] = true;
@@ -217,10 +262,18 @@ void SurfaceSelectionVertexQuantity::userEditCallback() {
 
 
   // Stop editing
+  // (style makes yellow button)
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1. / 7.0f, 0.6f, 0.6f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1. / 7.0f, 0.7f, 0.7f));
+  ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1. / 7.0f, 0.8f, 0.8f));
   if (ImGui::Button("Done")) {
     focusedPopupUI = nullptr;
     membershipStale = true;
   }
+  ImGui::PopStyleColor(3);
 
   ImGui::End();
 }
@@ -230,6 +283,10 @@ void SurfaceSelectionVertexQuantity::buildInfoGUI(VertexPtr v) {
   ImGui::NextColumn();
   ImGui::Text("%s", membership[v] ? "true" : "false");
   ImGui::NextColumn();
+}
+  
+VertexData<char> SurfaceSelectionVertexQuantity::getSelectionOnInputMesh() {
+  return parent->transfer.transferBack(membership);
 }
 
 /*

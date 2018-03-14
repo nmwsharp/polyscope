@@ -308,6 +308,9 @@ namespace {
 // ImGUI normally provides this for us, but we want to know about the RELEASE of a double click, while im ImGUI the flag
 // is only set for the down press. Use this variable to pass it forward.
 bool lastClickWasDouble = false;
+}
+
+namespace pick {
 
 void evaluatePickQuery(int xPos, int yPos) {
 
@@ -361,12 +364,19 @@ void evaluatePickQuery(int xPos, int yPos) {
     pick::setCurrentPickElement(ind, lastClickWasDouble);
   }
 }
+}
 
+namespace {
 
 float dragDistSinceLastRelease = 0.0;
 
 void processMouseEvents() {
   ImGuiIO& io = ImGui::GetIO();
+
+  bool shouldEvaluatePick = pick::alwaysEvaluatePick;
+  if(pick::alwaysEvaluatePick) {
+    pick::resetPick();
+  }
 
   if (ImGui::IsMouseClicked(0)) {
     lastClickWasDouble = ImGui::IsMouseDoubleClicked(0);
@@ -410,13 +420,17 @@ void processMouseEvents() {
 
         ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
         if (dragDistSinceLastRelease < .01) {
-          ImVec2 p = ImGui::GetMousePos();
-          evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+          shouldEvaluatePick = true;
         }
 
         dragDistSinceLastRelease = 0.0;
       }
     }
+  }
+
+  if (shouldEvaluatePick) {
+    ImVec2 p = ImGui::GetMousePos();
+    pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
   }
 }
 
@@ -547,7 +561,7 @@ void draw(bool withUI = true) {
 
   // Build the GUI components
   if (withUI) {
-    //ImGui::ShowDemoWindow();
+    ImGui::ShowDemoWindow();
 
     // The common case, rendering UI and structures
     if (!focusedPopupUI) {
@@ -561,8 +575,8 @@ void draw(bool withUI = true) {
       buildStructureGui();
       buildPickGui();
 
-    } 
-    // If there is a popup UI active, only draw that 
+    }
+    // If there is a popup UI active, only draw that
     else {
       focusedPopupUI();
     }

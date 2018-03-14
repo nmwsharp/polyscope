@@ -44,10 +44,15 @@ public:
 
   // === Members
   VertexData<char> membership; // 1 if in, 0 otherwise
+  VertexData<char> getSelectionOnInputMesh(); // transfer the data back to the mesh that was passed in
+
 
 private:
+
+  // User membership editing
   void userEditCallback();
   bool membershipStale = false;
+  int mouseMemberAction = 0;
 };
 
 /*

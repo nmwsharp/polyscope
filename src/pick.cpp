@@ -15,6 +15,7 @@ size_t currLocalPickInd = 0;
 Structure* currPickStructure = nullptr;
 bool haveSelection = false;
 bool pickWasDoubleClick = false;
+bool alwaysEvaluatePick = false;
 
 // The next pick index that a structure can use to identify its elements
 // (get it by calling request pickBufferRange())

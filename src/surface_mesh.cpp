@@ -310,6 +310,24 @@ void SurfaceMesh::drawPickUI(size_t localPickID) {
     buildHalfedgeInfoGui(mesh->halfedge(localPickID - halfedgePickIndStart));
   }
 }
+  
+void SurfaceMesh::getPickedElement(size_t localPickID, VertexPtr& vOut, FacePtr& fOut, EdgePtr& eOut, HalfedgePtr& heOut) {
+
+  vOut = VertexPtr();
+  fOut = FacePtr();
+  eOut = EdgePtr();
+  heOut = HalfedgePtr();
+
+  if (localPickID < facePickIndStart) {
+    vOut = mesh->vertex(localPickID);
+  } else if (localPickID < edgePickIndStart) {
+    fOut = mesh->face(localPickID - facePickIndStart);
+  } else if (localPickID < halfedgePickIndStart) {
+    eOut = mesh->edge(localPickID - edgePickIndStart);
+  } else {
+    heOut = mesh->halfedge(localPickID - halfedgePickIndStart);
+  }
+}
 
 
 void SurfaceMesh::buildVertexInfoGui(VertexPtr v) {
