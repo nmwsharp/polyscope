@@ -44,6 +44,8 @@ size_t screenshotInd = 0;
 
 } // namespace state
 
+std::function<void()> focusedPopupUI;
+
 namespace options {
 
 std::string programName = "Polyscope";
@@ -373,7 +375,9 @@ void processMouseEvents() {
   if (!io.WantCaptureMouse) {
 
     // Handle drags
-    if (ImGui::IsMouseDragging(0)) {
+    if (ImGui::IsMouseDragging(0) &&
+        !(io.KeyCtrl && !io.KeyShift)) { // if ctrl is pressed but shift is not, don't process a drag
+
       Vector2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
       bool isDragZoom = io.KeyShift && io.KeyCtrl;
       bool isRotate = !io.KeyShift;
@@ -543,16 +547,27 @@ void draw(bool withUI = true) {
 
   // Build the GUI components
   if (withUI) {
-     //ImGui::ShowDemoWindow();
+    //ImGui::ShowDemoWindow();
 
-    // Note: It is important to build the user GUI first, because it is likely that callbacks there will modify
-    // polyscope data. If we do these modifications happen later in the render cycle, they might invalidate data which
-    // is necessary when ImGui::Render() happens below.
-    buildUserGui();
+    // The common case, rendering UI and structures
+    if (!focusedPopupUI) {
 
-    buildPolyscopeGui();
-    buildStructureGui();
-    buildPickGui();
+      // Note: It is important to build the user GUI first, because it is likely that callbacks there will modify
+      // polyscope data. If we do these modifications happen later in the render cycle, they might invalidate data which
+      // is necessary when ImGui::Render() happens below.
+      buildUserGui();
+
+      buildPolyscopeGui();
+      buildStructureGui();
+      buildPickGui();
+
+    } 
+    // If there is a popup UI active, only draw that 
+    else {
+      focusedPopupUI();
+    }
+
+
     buildMessagesUI();
   }
 

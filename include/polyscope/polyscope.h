@@ -5,13 +5,13 @@
 
 #include "polyscope/camera_view.h"
 #include "polyscope/gl/gl_utils.h"
+#include "polyscope/messages.h"
 #include "polyscope/options.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/ray_set.h"
 #include "polyscope/structure.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/utilities.h"
-#include "polyscope/messages.h"
 
 namespace polyscope {
 
@@ -22,7 +22,7 @@ void init();
 
 // Give control to the polyscope GUI. Blocks until the user returns control via
 // the GUI, possibly by exiting the window.
-void show(bool shutdownAfter=true);
+void show(bool shutdownAfter = true);
 
 // Do shutdown work and quit. Usually called at end of main loop, can be called in other situations due to errors (etc)
 void shutdown(int exitCode = 0);
@@ -39,7 +39,7 @@ extern std::map<std::string, std::map<std::string, Structure*>> structures;
 // representative length scale for all registered structures
 extern double lengthScale;
 
-// axis-alligned bounding box for all registered structures
+// axis-aligned bounding box for all registered structures
 extern std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox;
 
 // representative center for all registered structures
@@ -81,6 +81,14 @@ void removeAllStructures();
 
 // Recompute state::lengthScale, boundingBox, and center from all registered structures
 void updateStructureExtents();
+
+// === Handle interrupts and popups
+
+// A callback function currently drawing a focused popup GUI
+// If this is non-null, then we should not draw or respect any IMGUI elements except those drawn within this function.
+// Note that there is currently no notion of recursive popups, so the programmer should be careful about invoking
+// another popup within this function.
+extern std::function<void()> focusedPopupUI;
 
 // === Utility
 

@@ -120,6 +120,10 @@ public:
   // Subsets
   void addSubsetQuantity(std::string name, EdgeData<char>& subset);
 
+  // Selections
+  void addVertexSelectionQuantity(std::string name, VertexData<char>& initialMembership);
+
+
   // Vectors
   void addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
   void addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);

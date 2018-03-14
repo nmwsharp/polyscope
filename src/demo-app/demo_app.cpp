@@ -86,7 +86,7 @@ void processFileOBJ(string filename) {
   //polyscope::terminatingError("and that was all");
 
   // Test warning
-  //polyscope::warning("Something went slightly wrong", "it was bad");
+  polyscope::warning("Something went slightly wrong", "it was bad");
   //polyscope::warning("Smoething else went slightly wrong", "it was also bad");
   //polyscope::warning("Something went slightly wrong", "it was still bad");
   //for (int i = 0; i < 5000; i++) {
@@ -109,6 +109,16 @@ void processFileOBJ(string filename) {
     fNormals[f] = geom->normal(f);
   }
   polyscope::getSurfaceMesh(niceName)->addVectorQuantity("face normals", fNormals);
+
+
+  // Add a selection quantity
+  VertexData<char> vSelection(mesh, false);
+  for (VertexPtr v : mesh->vertices()) {
+    if(unitRand() < 0.05) {
+      vSelection[v] = true;
+    }
+  }
+  polyscope::getSurfaceMesh(niceName)->addVertexSelectionQuantity("v select", vSelection);
 
   delete geom;
   delete mesh;

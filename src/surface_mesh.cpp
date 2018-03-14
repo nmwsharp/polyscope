@@ -11,6 +11,7 @@
 #include "polyscope/surface_count_quantity.h"
 #include "polyscope/surface_distance_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
+#include "polyscope/surface_selection_quantity.h"
 #include "polyscope/surface_subset_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
 
@@ -39,7 +40,7 @@ SurfaceMesh::SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_)
   prepare();
   preparePick();
 
-  if(options::autocenterStructures) {
+  if (options::autocenterStructures) {
     centerBoundingBox();
   }
 }
@@ -104,7 +105,7 @@ void SurfaceMesh::drawPick() {
   }
 
   // Set uniforms
-  glm::mat4 viewMat = view::getCameraViewMatrix();
+  glm::mat4 viewMat = getModelView();
   pickProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
@@ -633,6 +634,11 @@ void SurfaceMesh::addCountQuantity(std::string name, std::vector<std::pair<FaceP
 
 void SurfaceMesh::addSubsetQuantity(std::string name, EdgeData<char>& subset) {
   SurfaceEdgeSubsetQuantity* q = new SurfaceEdgeSubsetQuantity(name, subset, this);
+  addSurfaceQuantity(q);
+}
+
+void SurfaceMesh::addVertexSelectionQuantity(std::string name, VertexData<char>& initialMembership) {
+  SurfaceSelectionVertexQuantity* q = new SurfaceSelectionVertexQuantity(name, initialMembership, this);
   addSurfaceQuantity(q);
 }
 

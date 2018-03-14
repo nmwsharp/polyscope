@@ -35,6 +35,13 @@ static const char* allColormapNames[] = {
   "constant red",
   "phase",
 };
+inline int getColormapIndex_all(std::string name) {
+  for(int i = 0; i < (int)allColormaps.size(); i++) {
+    if(std::string(allColormapNames[i]) == name) return i;
+  }
+
+  throw std::logic_error("no colormap with name " + name);
+}
 
 
 // All quantitative colormaps

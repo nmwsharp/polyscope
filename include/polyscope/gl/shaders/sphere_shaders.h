@@ -247,7 +247,7 @@ static const GeomShader SPHERE_GEOM_PLAIN_COLORED_BILLBOARD_SHADER = {
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
-        out vec3 colorToFrag;
+        flat out vec3 colorToFrag;
         out vec2 boxCoord;
         void main()   {
             mat4 PV = u_projMatrix * u_viewMatrix;
@@ -515,7 +515,7 @@ static const FragShader PLAIN_SPHERE_COLORED_BILLBOARD_FRAG_SHADER = {
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
-        in vec3 colorToFrag;
+        flat in vec3 colorToFrag;
         in vec3 worldPosToFrag;
         in vec2 boxCoord;
         out vec4 outputF;
