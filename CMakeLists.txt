@@ -5,6 +5,9 @@ project(polyscope)
 ### Policy settings
 cmake_policy(SET CMP0054 NEW)   # don't implicitly dereference inside if()
 
+### Check if running as subproject or standalone
+get_directory_property(HAVE_PARENT PARENT_DIRECTORY)
+
 ### Configure output locations
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -70,7 +73,7 @@ if(BUILD_POLYSCOPE_DEMO)
 endif()
 
 ### Pass relevant variables to parent projects
-if(HAVE_SUITESPARSE)
+if(HAVE_PARENT AND HAVE_SUITESPARSE)
     SET(HAVE_SUITESPARSE TRUE PARENT_SCOPE)
 endif()
 
