@@ -36,8 +36,10 @@ void SurfaceSelectionQuantity::drawUI() {
       }
     }
 
-    if (ImGui::Button("Edit")) {
-      userEdit();
+    if(allowEditingFromDefaultUI) {
+      if (ImGui::Button("Edit")) {
+        userEdit();
+      }
     }
 
     ImGui::TreePop();

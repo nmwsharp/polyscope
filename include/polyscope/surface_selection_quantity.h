@@ -16,6 +16,7 @@ public:
   virtual void userEdit() = 0;
 
   // === Members
+  bool allowEditingFromDefaultUI = true;
 
 protected:
 

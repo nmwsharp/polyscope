@@ -561,7 +561,7 @@ void draw(bool withUI = true) {
 
   // Build the GUI components
   if (withUI) {
-    ImGui::ShowDemoWindow();
+    //ImGui::ShowDemoWindow();
 
     // The common case, rendering UI and structures
     if (!focusedPopupUI) {
