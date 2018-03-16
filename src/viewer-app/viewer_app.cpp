@@ -52,7 +52,7 @@ void processFilePLY(string filename) {
   std::string niceName = polyscope::utilities::guessNiceNameFromPath(filename);
 
   // Initialize a PLY reader
-  PlyHalfedgeMeshReader reader(filename, true);
+  PlyHalfedgeMeshData reader(filename, true);
     
   Geometry<Euclidean>* geom = reader.getMesh();
   HalfedgeMesh* mesh = geom->getMesh();
