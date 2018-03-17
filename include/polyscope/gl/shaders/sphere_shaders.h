@@ -317,7 +317,7 @@ static const GeomShader COLORMAP_SPHERE_EXPLICIT_GEOM_SHADER = {
         void main()   {
             mat4 PV = u_projMatrix * u_viewMatrix;
             const int nPhi = 5;
-            const int nTheta = 7;
+            const int nTheta = 6;
             const float PI = 3.14159265358;
             const float delPhi = PI / (nPhi + 1);
             const float delTheta = 2*PI / nTheta;
