@@ -726,7 +726,7 @@ void GLProgram::setTexture1D(std::string name, unsigned char* texData, unsigned 
 }
 
 void GLProgram::setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
-                             bool useMipMap) {
+                             bool withAlpha, bool useMipMap) {
   // Find the right texture
   for (GLTexture& t : textures) {
     if (t.name != name) continue;
@@ -742,7 +742,11 @@ void GLProgram::setTexture2D(std::string name, unsigned char* texData, unsigned 
     }
 
     glBindTexture(GL_TEXTURE_2D, t.bufferLoc);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
+    if (withAlpha) {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texData);
+    } else {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
+    }
 
     // Set policies
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
