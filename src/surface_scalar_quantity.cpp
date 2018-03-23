@@ -335,7 +335,7 @@ SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(std::string name, H
 
   std::vector<double> valsVec;
   std::vector<double> weightsVec;
-  for (HalfedgePtr he : parent->mesh->halfedges()) {
+  for (HalfedgePtr he : parent->mesh->allHalfedges()) {
     valsVec.push_back(values[he]);
     weightsVec.push_back(parent->geometry->length(he.edge()));
   }
