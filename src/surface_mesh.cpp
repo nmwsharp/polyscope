@@ -29,6 +29,10 @@ const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
 SurfaceMesh::SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_)
     : Structure(name, SurfaceMesh::structureTypeName) {
+
+  originalMesh = geometry_->getMesh();
+  originalGeometry = geometry;
+
   // Copy the mesh and save the transfer object
   mesh = geometry_->getMesh()->copy(transfer);
   geometry = geometry_->copyUsingTransfer(transfer);

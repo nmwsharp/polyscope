@@ -148,10 +148,14 @@ public:
   // === Member variables ===
   bool enabled = true;
 
-  // The mesh
+  // The mesh (this is a copy of what was passed in)
   geometrycentral::HalfedgeMesh* mesh;
   geometrycentral::Geometry<Euclidean>* geometry;
   geometrycentral::HalfedgeMeshDataTransfer transfer;
+ 
+  // The original mesh and geometry that were passed in
+  geometrycentral::HalfedgeMesh* originalMesh;
+  geometrycentral::Geometry<Euclidean>* originalGeometry;
 
   // Drawing related things
   gl::GLProgram* program = nullptr;

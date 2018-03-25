@@ -165,6 +165,8 @@ void SurfaceInputCurveQuantity::userEditCallback() {
 }
 
 
-MeshEmbeddedCurve SurfaceInputCurveQuantity::getCurve() { return curve; }
+MeshEmbeddedCurve SurfaceInputCurveQuantity::getCurve() {
+  return curve.copy(parent->transfer, parent->originalGeometry);
+}
 
 } // namespace polyscope
