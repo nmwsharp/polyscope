@@ -10,6 +10,7 @@
 #include "polyscope/surface_color_quantity.h"
 #include "polyscope/surface_count_quantity.h"
 #include "polyscope/surface_distance_quantity.h"
+#include "polyscope/surface_input_curve_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_selection_quantity.h"
 #include "polyscope/surface_subset_quantity.h"
@@ -310,8 +311,9 @@ void SurfaceMesh::drawPickUI(size_t localPickID) {
     buildHalfedgeInfoGui(mesh->allHalfedge(localPickID - halfedgePickIndStart));
   }
 }
-  
-void SurfaceMesh::getPickedElement(size_t localPickID, VertexPtr& vOut, FacePtr& fOut, EdgePtr& eOut, HalfedgePtr& heOut) {
+
+void SurfaceMesh::getPickedElement(size_t localPickID, VertexPtr& vOut, FacePtr& fOut, EdgePtr& eOut,
+                                   HalfedgePtr& heOut) {
 
   vOut = VertexPtr();
   fOut = FacePtr();
@@ -327,6 +329,109 @@ void SurfaceMesh::getPickedElement(size_t localPickID, VertexPtr& vOut, FacePtr&
   } else {
     heOut = mesh->allHalfedge(localPickID - halfedgePickIndStart);
   }
+}
+
+
+Vector2 SurfaceMesh::projectToScreenSpace(Vector3 coord) {
+
+  glm::mat4 viewMat = getModelView();
+  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
+  glm::vec4 coord4(coord.x, coord.y, coord.z, 1.0);
+  glm::vec4 screenPoint = projMat * viewMat * coord4;
+
+  return Vector2{screenPoint.x, screenPoint.y} / screenPoint.w;
+}
+
+bool SurfaceMesh::screenSpaceTriangleTest(FacePtr f, Vector2 testCoords, Vector3& bCoordOut) {
+
+  // Get points in screen space
+  Vector2 p0 = projectToScreenSpace(geometry->position(f.halfedge().vertex()));
+  Vector2 p1 = projectToScreenSpace(geometry->position(f.halfedge().next().vertex()));
+  Vector2 p2 = projectToScreenSpace(geometry->position(f.halfedge().next().next().vertex()));
+
+  // Make sure triangle is positively oriented
+  if (cross(p1 - p0, p2 - p0).z < 0) {
+    cout << "triangle not positively oriented" << endl;
+    return false;
+  }
+
+  // Test the point
+  Vector2 v0 = p1 - p0;
+  Vector2 v1 = p2 - p0;
+  Vector2 vT = testCoords - p0;
+
+  double dot00 = dot(v0, v0);
+  double dot01 = dot(v0, v1);
+  double dot0T = dot(v0, vT);
+  double dot11 = dot(v1, v1);
+  double dot1T = dot(v1, vT);
+
+  double denom = 1 / (dot00 * dot11 - dot01 * dot01);
+  double v = (dot11 * dot0T - dot01 * dot1T) * denom;
+  double w = (dot00 * dot1T - dot01 * dot0T) * denom;
+
+  // Check if point is in triangle
+  bool inTri = (v >= 0) && (w >= 0) && (v + w < 1);
+  if (!inTri) {
+    return false;
+  }
+
+  bCoordOut = Vector3{1.0 - v - w, v, w};
+  return true;
+}
+
+
+void SurfaceMesh::getPickedFacePoint(FacePtr& fOut, Vector3& baryCoordOut) {
+
+  // Get the most recent pick data
+  size_t localInd;
+  Structure* pickStruct = pick::getCurrentPickElement(localInd);
+  if (pickStruct != this) {
+    fOut = FacePtr();
+    return;
+  }
+
+  // Build a list of all faces we might need to check
+  std::vector<FacePtr> facesToCheck;
+  if (localInd < facePickIndStart) {
+    VertexPtr v = mesh->vertex(localInd);
+    for (FacePtr f : v.adjacentFaces()) {
+      facesToCheck.push_back(f);
+    }
+  } else if (localInd < edgePickIndStart) {
+    FacePtr f = mesh->face(localInd - facePickIndStart);
+    facesToCheck.push_back(f);
+  } else if (localInd < halfedgePickIndStart) {
+    EdgePtr e = mesh->edge(localInd - edgePickIndStart);
+    facesToCheck.push_back(e.halfedge().face());
+    if (!e.isBoundary()) {
+      facesToCheck.push_back(e.halfedge().twin().face());
+    }
+  } else {
+    HalfedgePtr he = mesh->allHalfedge(localInd - halfedgePickIndStart);
+    facesToCheck.push_back(he.face());
+    if (he.twin().isReal()) {
+      facesToCheck.push_back(he.twin().face());
+    }
+  }
+
+  // Get the coordinates of the mouse (in its CURRENT position)
+  ImVec2 p = ImGui::GetMousePos();
+  ImGuiIO& io = ImGui::GetIO();
+  Vector2 mouseCoords{(2.0 * p.x) / view::windowWidth - 1.0, (2.0 * p.y) / view::windowHeight - 1.0};
+  mouseCoords.y *= -1;
+
+  // Test all candidate faces
+  for (FacePtr f : facesToCheck) {
+    bool hitTri = screenSpaceTriangleTest(f, mouseCoords, baryCoordOut);
+    if (hitTri) {
+      fOut = f;
+      return;
+    }
+  }
+
+  // None found, no intersection
+  fOut = FacePtr();
 }
 
 
@@ -657,6 +762,11 @@ void SurfaceMesh::addSubsetQuantity(std::string name, EdgeData<char>& subset) {
 
 void SurfaceMesh::addVertexSelectionQuantity(std::string name, VertexData<char>& initialMembership) {
   SurfaceSelectionVertexQuantity* q = new SurfaceSelectionVertexQuantity(name, initialMembership, this);
+  addSurfaceQuantity(q);
+}
+
+void SurfaceMesh::addInputCurveQuantity(std::string name) {
+  SurfaceInputCurveQuantity* q = new SurfaceInputCurveQuantity(name, this);
   addSurfaceQuantity(q);
 }
 

@@ -110,6 +110,7 @@ void processFileOBJ(string filename) {
   }
   polyscope::getSurfaceMesh(niceName)->addVectorQuantity("face normals", fNormals);
 
+  // === Input quantities
 
   // Add a selection quantity
   VertexData<char> vSelection(mesh, false);
@@ -119,6 +120,9 @@ void processFileOBJ(string filename) {
     }
   }
   polyscope::getSurfaceMesh(niceName)->addVertexSelectionQuantity("v select", vSelection);
+
+  // Curve quantity
+  polyscope::getSurfaceMesh(niceName)->addInputCurveQuantity("input curve");
 
   delete geom;
   delete mesh;

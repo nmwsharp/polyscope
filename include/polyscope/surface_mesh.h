@@ -122,6 +122,7 @@ public:
 
   // Selections
   void addVertexSelectionQuantity(std::string name, VertexData<char>& initialMembership);
+  void addInputCurveQuantity(std::string name);
 
 
   // Vectors
@@ -168,6 +169,10 @@ public:
   // Picking helpers
   // One of these will be non-null on return
   void getPickedElement(size_t localPickID, VertexPtr& vOut, FacePtr& fOut, EdgePtr& eOut, HalfedgePtr& heOut);
+  // Returns the face ands coordinates in that face of the last pick. fOut == FacePtr() if not in any face. Note that
+  // you may needed to update the pick data, beacuse this uses mouse coordinates from the current state but possibly old
+  // pick lookup results.
+  void getPickedFacePoint(FacePtr& fOut, Vector3& baryCoordOut);
 
 private:
   // Quantities
@@ -204,6 +209,8 @@ private:
   // === Helper functions
   void fillGeometryBuffersSmooth();
   void fillGeometryBuffersFlat();
+  Vector2 projectToScreenSpace(Vector3 coord); 
+  bool screenSpaceTriangleTest(FacePtr f, Vector2 testCoords, Vector3& bCoordOut); 
 };
 
 // Make mesh element type printable

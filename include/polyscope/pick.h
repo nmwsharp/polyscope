@@ -14,6 +14,7 @@ namespace pick {
 extern size_t currPickInd;
 extern bool haveSelection;
 extern bool alwaysEvaluatePick;
+extern bool pickIsFromThisFrame;
 extern bool pickWasDoubleClick; // note: structures may act on this and set it to false afterwards to ensure action only
                                 // happens once
 
