@@ -56,7 +56,7 @@ void SurfaceInputCurveQuantity::fillBuffers() {
 
   std::vector<Vector3> pTail, pTip;
 
-  for (CurveSegment& c : curve.getCurveSegements()) {
+  for (CurveSegment& c : curve.getCurveSegments()) {
     pTail.push_back(c.startPosition);
     pTip.push_back(c.endPosition);
   }

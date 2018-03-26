@@ -31,7 +31,7 @@ SurfaceMesh::SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_)
     : Structure(name, SurfaceMesh::structureTypeName) {
 
   originalMesh = geometry_->getMesh();
-  originalGeometry = geometry;
+  originalGeometry = geometry_;
 
   // Copy the mesh and save the transfer object
   mesh = geometry_->getMesh()->copy(transfer);
