@@ -116,7 +116,17 @@ void SurfaceInputCurveQuantity::userEdit() {
 void SurfaceInputCurveQuantity::userEditCallback() {
 
   static bool showWindow = true;
-  ImGui::Begin("Edit Curve", &showWindow);
+  ImGui::SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
+  ImGui::Begin(("Edit Curve [name: " + name + "]").c_str(), &showWindow);
+
+  ImGui::PushItemWidth(300);
+
+  // Tell em what's up
+  ImGui::TextWrapped("This mode allows you to input a surface curve, which is defined to be a connected sequence of "
+                     "straight lines within faces. The curve may be a closed loop, or may be open with two endpoints "
+                     "in the middle of a face. No limitations are imposed on self-intersection.\n\n");
+  ImGui::TextWrapped("Hold CTRL and left click on the surface to draw the curve. Nothing will happen unless the clicked "
+                    "point is adjacent to the previous endpoint. The `Close Curve` button will close the curve if both endpoints are in the same face.");
 
   // Process mouse selection if the ctrl key is held, the mouse is pressed, and the mouse isn't on the ImGui window
   ImGuiIO& io = ImGui::GetIO();
@@ -140,6 +150,20 @@ void SurfaceInputCurveQuantity::userEditCallback() {
     bufferStale = true;
   }
 
+  // Close
+  if (ImGui::Button("Close curve")) {
+    if (curve.isClosed()) {
+      polyscope::error("Curve is already closed.");
+    } else {
+      try {
+        curve.closeCurve();
+        bufferStale = true;
+      } catch (std::runtime_error e) {
+        polyscope::error("Error closing curve. Are both endpoints in same face?");
+      }
+    }
+  }
+
 
   // Clear
   if (ImGui::Button("Clear")) {
@@ -160,6 +184,8 @@ void SurfaceInputCurveQuantity::userEditCallback() {
     focusedPopupUI = nullptr;
   }
   ImGui::PopStyleColor(3);
+  
+  ImGui::PopItemWidth();
 
   ImGui::End();
 }
