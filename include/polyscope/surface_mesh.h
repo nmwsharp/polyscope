@@ -57,7 +57,7 @@ public:
   // CALLER is responsible for deallocating
   virtual gl::GLProgram* createProgram() = 0;
 
-  // Do any per-frame work on the program handed out by create-frame
+  // Do any per-frame work on the program handed out by createProgram
   virtual void setProgramValues(gl::GLProgram* program);
 };
 
@@ -152,14 +152,10 @@ public:
   geometrycentral::HalfedgeMesh* mesh;
   geometrycentral::Geometry<Euclidean>* geometry;
   geometrycentral::HalfedgeMeshDataTransfer transfer;
- 
+
   // The original mesh and geometry that were passed in
   geometrycentral::HalfedgeMesh* originalMesh;
   geometrycentral::Geometry<Euclidean>* originalGeometry;
-
-  // Drawing related things
-  gl::GLProgram* program = nullptr;
-  gl::GLProgram* pickProgram = nullptr;
 
   static const std::string structureTypeName;
   SubColorManager colorManager;
@@ -187,10 +183,11 @@ private:
   Color3f surfaceColor;
   ShadeStyle shadeStyle = ShadeStyle::SMOOTH;
   bool showEdges = false;
-  float edgeWidth = 0.0; // currently can only be set to 0 or nonzero via UI
-  SurfaceQuantityThatDrawsFaces* activeSurfaceQuantity =
-      nullptr; // a quantity that is respondible for drawing on the surface and
-               // overwrites `program` with its own shaders
+  float edgeWidth = 0.0;
+
+  SurfaceQuantityThatDrawsFaces* activeSurfaceQuantity = nullptr; // a quantity that is respondible for drawing on the
+                                                                  // surface and overwrites `program` with its own
+                                                                  // shaders
 
 
   // Picking-related
@@ -209,12 +206,17 @@ private:
 
   // Gui implementation details
   bool ui_smoothshade = true;
+  
+  // Drawing related things
+  gl::GLProgram* program = nullptr;
+  gl::GLProgram* pickProgram = nullptr;
+
 
   // === Helper functions
   void fillGeometryBuffersSmooth();
   void fillGeometryBuffersFlat();
-  Vector2 projectToScreenSpace(Vector3 coord); 
-  bool screenSpaceTriangleTest(FacePtr f, Vector2 testCoords, Vector3& bCoordOut); 
+  Vector2 projectToScreenSpace(Vector3 coord);
+  bool screenSpaceTriangleTest(FacePtr f, Vector2 testCoords, Vector3& bCoordOut);
 };
 
 // Make mesh element type printable

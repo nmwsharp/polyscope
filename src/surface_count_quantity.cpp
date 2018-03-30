@@ -19,8 +19,8 @@ SurfaceCountQuantity::SurfaceCountQuantity(std::string name, SurfaceMesh* mesh_,
 void SurfaceCountQuantity::prepare() {
 
   safeDelete(program);
-  program = new gl::GLProgram(&PASSTHRU_SPHERE_VALUE_VERT_SHADER, &COLORMAP_SPHERE_EXPLICIT_GEOM_SHADER,
-                              &COLORMAP_SPHERE_EXPLICIT_FRAG_SHADER, gl::DrawMode::Points);
+  program = new gl::GLProgram(&SPHERE_VALUE_VERT_SHADER, &SPHERE_VALUE_GEOM_SHADER,
+                              &SPHERE_VALUE_FRAG_SHADER, gl::DrawMode::Points);
 
   // Color limits
   sum = 0;
@@ -67,6 +67,7 @@ void SurfaceCountQuantity::setUniforms(gl::GLProgram* p) {
 
 
   p->setUniform("u_pointRadius", pointRadius * state::lengthScale);
+  p->setUniform("u_baseColor", Vector3{0.0, 0.0, 0.0});
 
   program->setUniform("u_rangeLow", vizRangeLow);
   program->setUniform("u_rangeHigh", vizRangeHigh);

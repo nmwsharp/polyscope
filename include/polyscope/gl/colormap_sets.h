@@ -59,6 +59,12 @@ static const char* quantitativeColormapNames[] = {
   "blues",
   "reds"
 };
+inline int getColormapIndex_quantitative(std::string name) {
+  for(int i = 0; i < (int)quantitativeColormaps.size(); i++) {
+    if(std::string(quantitativeColormapNames[i]) == name) return i;
+  }
+  throw std::logic_error("no colormap with name " + name);
+}
 
 
 // Quantitative colormaps which diverge away from the center

@@ -55,8 +55,8 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addColorQuantity("vColor", randColor);
   polyscope::getSurfaceMesh(niceName)->addQuantity("cY_sym", valY, polyscope::DataType::SYMMETRIC);
   polyscope::getSurfaceMesh(niceName)->addQuantity("cNorm", valMag, polyscope::DataType::MAGNITUDE);
-  //polyscope::getSurfaceMesh(niceName)->setActiveSurfaceQuantity(
-      //dynamic_cast<polyscope::SurfaceQuantityThatDrawsFaces*>(polyscope::getSurfaceMesh(niceName)->getSurfaceQuantity("cZ")));
+  // polyscope::getSurfaceMesh(niceName)->setActiveSurfaceQuantity(
+  // dynamic_cast<polyscope::SurfaceQuantityThatDrawsFaces*>(polyscope::getSurfaceMesh(niceName)->getSurfaceQuantity("cZ")));
 
   FaceData<double> fArea(mesh);
   FaceData<double> zero(mesh);
@@ -80,17 +80,17 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addQuantity("zangles", oAngles);
 
   // Test error
-  //polyscope::error("Resistance is futile, welcome to the borg borg borg.");
-  //polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we "
-                   //"share this crisis in a way which looks right while properly wrapping text in some form or other?");
-  //polyscope::terminatingError("and that was all");
+  // polyscope::error("Resistance is futile, welcome to the borg borg borg.");
+  // polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we
+  // " "share this crisis in a way which looks right while properly wrapping text in some form or other?");
+  // polyscope::terminatingError("and that was all");
 
   // Test warning
   polyscope::warning("Something went slightly wrong", "it was bad");
-  //polyscope::warning("Smoething else went slightly wrong", "it was also bad");
-  //polyscope::warning("Something went slightly wrong", "it was still bad");
-  //for (int i = 0; i < 5000; i++) {
-    //polyscope::warning("Some problems come in groups");
+  // polyscope::warning("Smoething else went slightly wrong", "it was also bad");
+  // polyscope::warning("Something went slightly wrong", "it was still bad");
+  // for (int i = 0; i < 5000; i++) {
+  // polyscope::warning("Some problems come in groups");
   //}
 
   // Add some vectors
@@ -109,13 +109,27 @@ void processFileOBJ(string filename) {
     fNormals[f] = geom->normal(f);
   }
   polyscope::getSurfaceMesh(niceName)->addVectorQuantity("face normals", fNormals);
+  
+  // Add count quantities
+  std::vector<std::pair<VertexPtr, int>> vCount;
+  std::vector<std::pair<VertexPtr, double>> vVal;
+  for(VertexPtr v : mesh->vertices()) {
+    if(unitRand() > 0.8) {
+      vCount.push_back(std::make_pair(v, 2));
+    }
+    if(unitRand() > 0.8) {
+      vVal.push_back(std::make_pair(v, unitRand()));
+    }
+  }
+  polyscope::getSurfaceMesh(niceName)->addCountQuantity("sample count", vCount);
+  polyscope::getSurfaceMesh(niceName)->addIsolatedVertexQuantity("sample isolated", vVal);
 
   // === Input quantities
 
   // Add a selection quantity
   VertexData<char> vSelection(mesh, false);
   for (VertexPtr v : mesh->vertices()) {
-    if(unitRand() < 0.05) {
+    if (unitRand() < 0.05) {
       vSelection[v] = true;
     }
   }
@@ -126,6 +140,19 @@ void processFileOBJ(string filename) {
 
   delete geom;
   delete mesh;
+}
+
+void addDataToPointCloud(string pointCloudName, const std::vector<Vector3>& points) {
+
+
+  std::vector<double> xC(points.size());
+  for(size_t i = 0; i < points.size(); i++) {
+    xC[i] = points[i].x; 
+  }
+
+  polyscope::getPointCloud(pointCloudName)->addScalarQuantity("xC", xC);
+
+
 }
 
 void processFileJSON(string filename) {
@@ -225,7 +252,7 @@ int main(int argc, char** argv) {
     std::cerr << parser;
     return 1;
   }
-  
+
   // Options
   polyscope::options::autocenterStructures = true;
 
@@ -245,6 +272,7 @@ int main(int argc, char** argv) {
       points.push_back(3 * Vector3{unitRand() - .5, unitRand() - .5, unitRand() - .5});
     }
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
+    addDataToPointCloud("really great points" + std::to_string(j), points);
   }
 
   // Add a few gui elements
