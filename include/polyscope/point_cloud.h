@@ -22,7 +22,7 @@ public:
   // Draw the quantity on the surface Note: for many quantities (like scalars)
   // this does nothing, because drawing happens in the mesh draw(). However
   // others (ie vectors) need to be drawn.
-  virtual void draw() = 0;
+  virtual void draw();
 
   // Draw the ImGUI ui elements
   virtual void drawUI() = 0;
@@ -91,20 +91,16 @@ public:
   // Scalars
   void addScalarQuantity(std::string name, const std::vector<double>& value, DataType type = DataType::STANDARD);
 
-  // Distance
-  // void addDistanceQuantity(std::string name, const std::vector<double>& distances);
-  // void addSignedDistanceQuantity(std::string name, const std::vector<double>& distances);
-
   // Colors
-  // void addColorQuantity(std::string name, const std::vector<Vector3>& value);
+  void addColorQuantity(std::string name, const std::vector<Vector3>& value);
 
   // Subsets
   // void addSubsetQuantity(std::string name, const std::vector<char>& subsetIndicators);
   // void addSubsetQuantity(std::string name, const std::vector<size_t>& subsetIndices);
 
   // Vectors
-  // void addVectorQuantity(std::string name, const std::vector<Vector3>& value,
-  // VectorType vectorType = VectorType::STANDARD);
+  //void addVectorQuantity(std::string name, const std::vector<Vector3>& value,
+                         //VectorType vectorType = VectorType::STANDARD);
 
 
   // Removal, etc
@@ -120,10 +116,10 @@ public:
   std::vector<geometrycentral::Vector3> points;
 
   // Small utilities
-  void deleteProgram(); 
+  void deleteProgram();
 
-  void setUseBillboardSpheres(bool newValue); 
-  bool requestsBillboardSpheres() const; 
+  void setUseBillboardSpheres(bool newValue);
+  bool requestsBillboardSpheres() const;
 
 private:
   // Quantities

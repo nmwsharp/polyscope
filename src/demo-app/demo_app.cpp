@@ -146,11 +146,14 @@ void addDataToPointCloud(string pointCloudName, const std::vector<Vector3>& poin
 
 
   std::vector<double> xC(points.size());
+  std::vector<Vector3> randColor(points.size());
   for(size_t i = 0; i < points.size(); i++) {
     xC[i] = points[i].x; 
+    randColor[i] = Vector3{unitRand(), unitRand(), unitRand()};
   }
 
   polyscope::getPointCloud(pointCloudName)->addScalarQuantity("xC", xC);
+  polyscope::getPointCloud(pointCloudName)->addColorQuantity("random color", randColor);
 
 
 }

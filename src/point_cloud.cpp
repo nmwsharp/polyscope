@@ -7,6 +7,7 @@
 #include "polyscope/polyscope.h"
 
 #include "polyscope/point_cloud_scalar_quantity.h"
+#include "polyscope/point_cloud_color_quantity.h"
 
 #include "imgui.h"
 
@@ -318,6 +319,11 @@ void PointCloud::addScalarQuantity(std::string name, const std::vector<double>& 
   addQuantity(q);
 }
 
+void PointCloud::addColorQuantity(std::string name, const std::vector<Vector3>& value) {
+  PointCloudQuantityThatDrawsPoints* q = new PointCloudColorQuantity(name, value, this);
+  addQuantity(q);
+}
+
 void PointCloud::removeQuantity(std::string name) {
 
   if (quantities.find(name) == quantities.end()) {
@@ -353,7 +359,7 @@ void PointCloud::removeAllQuantities() {
 }
 
 void PointCloudQuantity::buildInfoGUI(size_t pointInd) {}
-
+void PointCloudQuantity::draw() {}
 void PointCloudQuantityThatDrawsPoints::setProgramValues(gl::GLProgram* program) {}
 bool PointCloudQuantityThatDrawsPoints::wantsBillboardUniforms() { return true; }
 

@@ -37,7 +37,6 @@ protected:
 
   // UI internals
   int iColorMap = 0;
-  const std::string definedOn;
 };
 
 
