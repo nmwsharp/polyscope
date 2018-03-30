@@ -99,8 +99,8 @@ public:
   // void addSubsetQuantity(std::string name, const std::vector<size_t>& subsetIndices);
 
   // Vectors
-  //void addVectorQuantity(std::string name, const std::vector<Vector3>& value,
-                         //VectorType vectorType = VectorType::STANDARD);
+  void addVectorQuantity(std::string name, const std::vector<Vector3>& value,
+                         VectorType vectorType = VectorType::STANDARD);
 
 
   // Removal, etc
@@ -109,11 +109,13 @@ public:
   void clearActiveQuantity();
   void removeAllQuantities();
 
-  bool enabled = true;
-  static const std::string structureTypeName;
-
   // The points that make up this point cloud
   std::vector<geometrycentral::Vector3> points;
+  
+  // Misc data
+  bool enabled = true;
+  SubColorManager colorManager;
+  static const std::string structureTypeName;
 
   // Small utilities
   void deleteProgram();
@@ -126,9 +128,8 @@ private:
   std::map<std::string, PointCloudQuantity*> quantities;
 
   // Visualization parameters
-  Color3f baseColor;
+  Color3f initialBaseColor;
   Color3f pointColor;
-  SubColorManager colorManager;
   float pointRadius = 0.005;
   bool useBillboardSpheres = false;
 

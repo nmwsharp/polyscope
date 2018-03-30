@@ -8,6 +8,7 @@
 
 #include "polyscope/point_cloud_scalar_quantity.h"
 #include "polyscope/point_cloud_color_quantity.h"
+#include "polyscope/point_cloud_vector_quantity.h"
 
 #include "imgui.h"
 
@@ -23,9 +24,9 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 PointCloud::PointCloud(std::string name, const std::vector<Vector3>& points_)
     : Structure(name, structureTypeName), points(points_) {
 
-  baseColor = getNextStructureColor();
-  pointColor = baseColor;
-  colorManager = SubColorManager(baseColor);
+  initialBaseColor = getNextStructureColor();
+  pointColor = initialBaseColor;
+  colorManager = SubColorManager(initialBaseColor);
 
   prepare();
   preparePick();
@@ -321,6 +322,11 @@ void PointCloud::addScalarQuantity(std::string name, const std::vector<double>& 
 
 void PointCloud::addColorQuantity(std::string name, const std::vector<Vector3>& value) {
   PointCloudQuantityThatDrawsPoints* q = new PointCloudColorQuantity(name, value, this);
+  addQuantity(q);
+}
+
+void PointCloud::addVectorQuantity(std::string name, const std::vector<Vector3>& vectors, VectorType vectorType) {
+  PointCloudQuantity* q = new PointCloudVectorQuantity(name, vectors, this, vectorType);
   addQuantity(q);
 }
 

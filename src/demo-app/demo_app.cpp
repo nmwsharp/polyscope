@@ -109,15 +109,15 @@ void processFileOBJ(string filename) {
     fNormals[f] = geom->normal(f);
   }
   polyscope::getSurfaceMesh(niceName)->addVectorQuantity("face normals", fNormals);
-  
+
   // Add count quantities
   std::vector<std::pair<VertexPtr, int>> vCount;
   std::vector<std::pair<VertexPtr, double>> vVal;
-  for(VertexPtr v : mesh->vertices()) {
-    if(unitRand() > 0.8) {
+  for (VertexPtr v : mesh->vertices()) {
+    if (unitRand() > 0.8) {
       vCount.push_back(std::make_pair(v, 2));
     }
-    if(unitRand() > 0.8) {
+    if (unitRand() > 0.8) {
       vVal.push_back(std::make_pair(v, unitRand()));
     }
   }
@@ -145,17 +145,29 @@ void processFileOBJ(string filename) {
 void addDataToPointCloud(string pointCloudName, const std::vector<Vector3>& points) {
 
 
+  // Add some scalar quantities
   std::vector<double> xC(points.size());
   std::vector<Vector3> randColor(points.size());
-  for(size_t i = 0; i < points.size(); i++) {
-    xC[i] = points[i].x; 
+  for (size_t i = 0; i < points.size(); i++) {
+    xC[i] = points[i].x;
     randColor[i] = Vector3{unitRand(), unitRand(), unitRand()};
   }
-
   polyscope::getPointCloud(pointCloudName)->addScalarQuantity("xC", xC);
   polyscope::getPointCloud(pointCloudName)->addColorQuantity("random color", randColor);
 
 
+  // Add some vector quantities
+  std::vector<Vector3> randVec(points.size());
+  std::vector<Vector3> centerNormalVec(points.size());
+  std::vector<Vector3> toZeroVec(points.size());
+  for (size_t i = 0; i < points.size(); i++) {
+    randVec[i] = 10 * unitRand() * Vector3{unitRand(), unitRand(), unitRand()};
+    centerNormalVec[i] = unit(points[i]);
+    toZeroVec[i] = -points[i];
+  }
+  polyscope::getPointCloud(pointCloudName)->addVectorQuantity("random vector", randVec);
+  polyscope::getPointCloud(pointCloudName)->addVectorQuantity("unit 'normal' vector", centerNormalVec);
+  polyscope::getPointCloud(pointCloudName)->addVectorQuantity("to zero", toZeroVec, polyscope::VectorType::AMBIENT);
 }
 
 void processFileJSON(string filename) {
