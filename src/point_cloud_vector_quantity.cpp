@@ -19,6 +19,11 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
 
     : PointCloudQuantity(name, pointCloud_), vectorType(vectorType_), vectors(vectors_) {
 
+  if (vectors.size() != parent->points.size()) {
+    polyscope::error("Point cloud vector quantity " + name + " does not have same number of values (" +
+                     std::to_string(vectors.size()) + ") as point cloud size (" +
+                     std::to_string(parent->points.size()) + ")");
+  }
 
   // Create a mapper (default mapper is identity)
   if (vectorType == VectorType::AMBIENT) {

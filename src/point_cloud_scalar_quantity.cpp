@@ -14,6 +14,12 @@ PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::
     : PointCloudQuantityThatDrawsPoints(name, pointCloud_), dataType(dataType_)
 
 {
+  if (values_.size() != parent->points.size()) {
+    polyscope::error("Point cloud scalar quantity " + name + " does not have same number of values (" +
+                     std::to_string(values_.size()) + ") as point cloud size (" +
+                     std::to_string(parent->points.size()) + ")");
+  }
+
   // Set the default colormap based on what kind of data is given
   switch (dataType) {
   case DataType::STANDARD:

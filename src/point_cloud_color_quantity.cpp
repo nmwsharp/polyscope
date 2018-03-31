@@ -15,6 +15,12 @@ PointCloudColorQuantity::PointCloudColorQuantity(std::string name, const std::ve
 
 {
 
+  if (values_.size() != parent->points.size()) {
+    polyscope::error("Point cloud color quantity " + name + " does not have same number of values (" +
+                     std::to_string(values_.size()) + ") as point cloud size (" +
+                     std::to_string(parent->points.size()) + ")");
+  }
+
   // Copy the raw data
   values = values_;
 }
