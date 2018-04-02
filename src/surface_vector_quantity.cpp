@@ -1,5 +1,6 @@
 #include "polyscope/surface_vector_quantity.h"
 
+#include "polyscope/file_helpers.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/vector_shaders.h"
 #include "polyscope/polyscope.h"
@@ -98,6 +99,19 @@ void SurfaceVectorQuantity::drawUI() {
     ImGui::Checkbox("Enabled", &enabled);
     ImGui::SameLine();
     ImGui::ColorEdit3("Color", (float*)&vectorColor, ImGuiColorEditFlags_NoInputs);
+    ImGui::SameLine();
+
+
+
+    // === Options popup
+    if (ImGui::Button("Options")) {
+      ImGui::OpenPopup("OptionsPopup");
+    }
+    if (ImGui::BeginPopup("OptionsPopup")) {
+      if (ImGui::MenuItem("Write to file")) writeToFile();
+      ImGui::EndPopup();
+    }
+
 
     // Only get to set length for non-ambient vectors
     if (vectorType != VectorType::AMBIENT) {
@@ -117,6 +131,18 @@ void SurfaceVectorQuantity::drawUI() {
 }
 
 void SurfaceVectorQuantity::drawSubUI() {}
+
+void SurfaceVectorQuantity::writeToFile(std::string filename) {
+
+  if (filename == "") {
+    filename = promptForFilename();
+    if (filename == "") {
+      return;
+    }
+  }
+
+  cout << "Writing to file " << filename << endl;
+}
 
 
 // ========================================================

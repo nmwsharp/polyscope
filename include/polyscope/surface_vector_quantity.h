@@ -40,6 +40,8 @@ public:
   // The map that takes values to [0,1] for drawing
   AffineRemapper<Vector3> mapper;
 
+  void writeToFile(std::string filename = "");
+
   // GL things
   void prepare();
   gl::GLProgram* program = nullptr;
