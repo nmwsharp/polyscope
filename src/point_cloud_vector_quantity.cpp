@@ -1,5 +1,6 @@
 #include "polyscope/point_cloud_vector_quantity.h"
 
+#include "polyscope/file_helpers.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/vector_shaders.h"
 #include "polyscope/polyscope.h"
@@ -7,6 +8,9 @@
 #include "imgui.h"
 
 #include "Eigen/Dense"
+
+#include <fstream>
+#include <iostream>
 
 
 using std::cout;
@@ -95,6 +99,16 @@ void PointCloudVectorQuantity::drawUI() {
     ImGui::Checkbox("Enabled", &enabled);
     ImGui::SameLine();
     ImGui::ColorEdit3("Color", (float*)&vectorColor, ImGuiColorEditFlags_NoInputs);
+    ImGui::SameLine();
+
+    // === Options popup
+    if (ImGui::Button("Options")) {
+      ImGui::OpenPopup("OptionsPopup");
+    }
+    if (ImGui::BeginPopup("OptionsPopup")) {
+      if (ImGui::MenuItem("Write to file")) writeToFile();
+      ImGui::EndPopup();
+    }
 
     // Only get to set length for non-ambient vectors
     if (vectorType != VectorType::AMBIENT) {
@@ -123,6 +137,31 @@ void PointCloudVectorQuantity::buildInfoGUI(size_t ind) {
   ImGui::NextColumn();
   ImGui::Text("magnitude: %g", norm(vectors[ind]));
   ImGui::NextColumn();
+}
+
+void PointCloudVectorQuantity::writeToFile(std::string filename) {
+
+  if (filename == "") {
+    filename = promptForFilename();
+    if (filename == "") {
+      return;
+    }
+  }
+
+  cout << "Writing surface vector quantity " << name << " to file " << filename << endl;
+
+  std::ofstream outFile(filename);
+  outFile << "#Vectors written by polyscope from Point Cloud Vector Quantity " << name << endl;
+  outFile << "#displayradius " << (radiusMult * state::lengthScale) << endl;
+  outFile << "#displaylength " << (lengthMult * state::lengthScale) << endl;
+
+  for (size_t i = 0; i < vectors.size(); i++) {
+    if (norm(vectors[i]) > 0) {
+      outFile << parent->points[i] << " " << vectors[i] << endl;
+    }
+  }
+
+  outFile.close();
 }
 
 

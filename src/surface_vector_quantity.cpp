@@ -11,6 +11,8 @@
 #include "Eigen/Dense"
 
 #include <complex>
+#include <fstream>
+#include <iostream>
 
 using std::cout;
 using std::endl;
@@ -102,7 +104,6 @@ void SurfaceVectorQuantity::drawUI() {
     ImGui::SameLine();
 
 
-
     // === Options popup
     if (ImGui::Button("Options")) {
       ImGui::OpenPopup("OptionsPopup");
@@ -141,7 +142,20 @@ void SurfaceVectorQuantity::writeToFile(std::string filename) {
     }
   }
 
-  cout << "Writing to file " << filename << endl;
+  cout << "Writing surface vector quantity " << name << " to file " << filename << endl;
+
+  std::ofstream outFile(filename);
+  outFile << "#Vectors written by polyscope from Surface Vector Quantity " << name << endl;
+  outFile << "#displayradius " << (radiusMult * state::lengthScale) << endl;
+  outFile << "#displaylength " << (lengthMult * state::lengthScale) << endl;
+
+  for (size_t i = 0; i < vectors.size(); i++) {
+    if (norm(vectors[i]) > 0) {
+      outFile << vectorRoots[i] << " " << vectors[i] << endl;
+    }
+  }
+
+  outFile.close();
 }
 
 

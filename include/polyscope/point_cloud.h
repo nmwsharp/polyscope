@@ -119,6 +119,7 @@ public:
 
   // Small utilities
   void deleteProgram();
+  void writePointsToFile(std::string filename = "");
 
   void setUseBillboardSpheres(bool newValue);
   bool requestsBillboardSpheres() const;

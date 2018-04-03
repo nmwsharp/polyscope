@@ -1,16 +1,20 @@
 #include "polyscope/point_cloud.h"
 
+#include "polyscope/file_helpers.h"
 #include "polyscope/gl/colors.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 
-#include "polyscope/point_cloud_scalar_quantity.h"
 #include "polyscope/point_cloud_color_quantity.h"
+#include "polyscope/point_cloud_scalar_quantity.h"
 #include "polyscope/point_cloud_vector_quantity.h"
 
 #include "imgui.h"
+
+#include <fstream>
+#include <iostream>
 
 using namespace geometrycentral;
 using std::cout;
@@ -214,6 +218,7 @@ void PointCloud::drawUI() {
       if (ImGui::MenuItem("Use billboard spheres", NULL, &useBillboardSpheres))
         setUseBillboardSpheres(useBillboardSpheres);
       if (ImGui::MenuItem("Clear Quantities")) removeAllQuantities();
+      if (ImGui::MenuItem("Write points to file")) writePointsToFile();
 
 
       ImGui::EndPopup();
@@ -362,6 +367,28 @@ void PointCloud::removeAllQuantities() {
   while (quantities.size() > 0) {
     removeQuantity(quantities.begin()->first);
   }
+}
+
+void PointCloud::writePointsToFile(std::string filename) {
+
+  if (filename == "") {
+    filename = promptForFilename();
+    if (filename == "") {
+      return;
+    }
+  }
+
+  cout << "Writing point cloud " << name << " to file " << filename << endl;
+
+  std::ofstream outFile(filename);
+  outFile << "#Polyscope point cloud " << name << endl;
+  outFile << "#displayradius " << (pointRadius * state::lengthScale) << endl;
+
+  for (size_t i = 0; i < points.size(); i++) {
+    outFile << points[i] << endl;
+  }
+
+  outFile.close();
 }
 
 void PointCloudQuantity::buildInfoGUI(size_t pointInd) {}

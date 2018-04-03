@@ -9,10 +9,11 @@ namespace {
 
 void filenamePromptCallback(char* buff, size_t len) {
 
-  ImGui::Begin("Enter filename", ImGuiWindowFlags_AlwaysAutoResize);
+  static bool windowOpen = true;
+  ImGui::Begin("Enter filename", &windowOpen, ImGuiWindowFlags_AlwaysAutoResize);
 
   ImGui::PushItemWidth(500);
-  ImGui::InputText("Filename:", buff, len);
+  ImGui::InputText("##filename", buff, len);
 
   if (ImGui::Button("Ok")) {
     focusedPopupUI = nullptr;
@@ -28,12 +29,12 @@ void filenamePromptCallback(char* buff, size_t len) {
   ImGui::PopItemWidth();
   ImGui::End();
 }
-}
+} // namespace
 
 
 std::string promptForFilename() {
 
-   using namespace std::placeholders;
+  using namespace std::placeholders;
 
   // Create a new context
   ImGuiContext* oldContext = ImGui::GetCurrentContext();
@@ -42,9 +43,9 @@ std::string promptForFilename() {
   initializeImGUIContext();
 
   // Register the callback which creates the UI and does the hard work
-  //char textBuff[1024];
+  // char textBuff[1024];
   char* textBuff = new char[1024];
-  sprintf(textBuff, "enter name");
+  sprintf(textBuff, "out");
   auto func = std::bind(filenamePromptCallback, textBuff, 1024);
   focusedPopupUI = func;
 
@@ -52,7 +53,7 @@ std::string promptForFilename() {
   while (focusedPopupUI) {
     mainLoopIteration();
   }
-  
+
   std::string stringOut(textBuff);
 
   // Restore the old context
@@ -61,4 +62,4 @@ std::string promptForFilename() {
 
   return stringOut;
 }
-}
+} // namespace polyscope
