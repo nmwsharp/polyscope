@@ -1,10 +1,15 @@
 #include "polyscope/surface_scalar_quantity.h"
 
+#include "geometrycentral/meshio.h"
+#include "polyscope/file_helpers.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/surface_shaders.h"
 #include "polyscope/polyscope.h"
 
 #include "imgui.h"
+
+using std::cout;
+using std::endl;
 
 namespace polyscope {
 
@@ -26,6 +31,10 @@ SurfaceScalarQuantity::SurfaceScalarQuantity(std::string name, SurfaceMesh* mesh
 }
 
 void SurfaceScalarQuantity::draw() {}
+
+void SurfaceScalarQuantity::writeToFile(std::string filename) {
+  polyscope::warning("Writing to file not yet implemented for this datatype");
+}
 
 
 // Update range uniforms
@@ -56,23 +65,33 @@ void SurfaceScalarQuantity::drawUI() {
   bool enabledBefore = enabled;
   if (ImGui::TreeNode((name + " (" + definedOn + " scalar)").c_str())) {
     ImGui::Checkbox("Enabled", &enabled);
+    ImGui::SameLine();
+
+
+    // == Options popup
+    if (ImGui::Button("Options")) {
+      ImGui::OpenPopup("OptionsPopup");
+    }
+    if (ImGui::BeginPopup("OptionsPopup")) {
+
+      if (ImGui::MenuItem("Write to file")) writeToFile();
+      if (ImGui::MenuItem("Reset colormap range")) resetVizRange();
+
+      ImGui::EndPopup();
+    }
+
 
     { // Set colormap
       ImGui::SameLine();
       ImGui::PushItemWidth(100);
       int iColormapBefore = iColorMap;
-      ImGui::Combo("##colormap", &iColorMap, gl::quantitativeColormapNames, IM_ARRAYSIZE(gl::quantitativeColormapNames));
+      ImGui::Combo("##colormap", &iColorMap, gl::quantitativeColormapNames,
+                   IM_ARRAYSIZE(gl::quantitativeColormapNames));
       ImGui::PopItemWidth();
       if (iColorMap != iColormapBefore) {
         parent->deleteProgram();
         hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
       }
-    }
-
-    // Reset button
-    ImGui::SameLine();
-    if (ImGui::Button("Reset")) {
-      resetVizRange();
     }
 
     // Draw the histogram of values
@@ -174,6 +193,28 @@ void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
   // Store data in buffers
   p->setAttribute("a_colorval", colorval);
   p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+}
+
+void SurfaceScalarVertexQuantity::writeToFile(std::string filename) {
+
+  if (filename == "") {
+    filename = promptForFilename();
+    if (filename == "") {
+      return;
+    }
+  }
+
+  // For now, just always write scalar to U texture coordinate
+
+  cout << "Writing vertex value to file " << filename << " in U coordinate of texture map" << endl;
+
+  HalfedgeMesh* mesh = parent->mesh;
+  CornerData<Vector2> scalarVal(mesh, Vector2{0.0, 0.0});
+  for (HalfedgePtr he : mesh->realHalfedges()) {
+    scalarVal[he.corner()].x = values[he.next().next().vertex()];
+  }
+
+  WavefrontOBJ::write(filename, *parent->geometry, scalarVal);
 }
 
 void SurfaceScalarVertexQuantity::buildInfoGUI(VertexPtr v) {

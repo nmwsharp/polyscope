@@ -14,6 +14,7 @@ public:
   virtual void draw() override;
   virtual void drawUI() override;
   virtual void setProgramValues(gl::GLProgram* program) override;
+  virtual void writeToFile(std::string filename = "");
 
   // === Members
   const DataType dataType;
@@ -46,6 +47,7 @@ public:
   void fillColorBuffers(gl::GLProgram* p);
 
   void buildInfoGUI(VertexPtr v) override;
+  virtual void writeToFile(std::string filename = "") override;
 
   // === Members
   VertexData<double> values;
