@@ -457,7 +457,7 @@ bool ImGui_ImplGlfwGL3_Init(GLFWwindow* window, bool install_callbacks) {
 
 void ImGui_ImplGlfwGL3_Shutdown() {
   ImGui_ImplGlfwGL3_InvalidateDeviceObjects();
-  ImGui::Shutdown();
+  //ImGui::Shutdown();
 }
 
 void ImGui_ImplGlfwGL3_NewFrame() {
@@ -484,7 +484,7 @@ void ImGui_ImplGlfwGL3_NewFrame() {
   // (we already got mouse wheel, keyboard keys & characters from glfw callbacks
   // polled in glfwPollEvents())
   if (glfwGetWindowAttrib(mainWindow, GLFW_FOCUSED)) {
-    if (io.WantMoveMouse) {
+    if (io.WantSetMousePos) {
       glfwSetCursorPos(mainWindow, (double)io.MousePos.x,
                        (double)io.MousePos.y);  // Set mouse position if
                                                 // requested by io.WantMoveMouse
