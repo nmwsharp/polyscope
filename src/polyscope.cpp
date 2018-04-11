@@ -75,6 +75,9 @@ namespace {
 // Pick buffer state
 GLuint pickFramebuffer, rboPickDepth, rboPickColor, currPickBufferWidth, currPickBufferHeight;
 
+// Font atlas pointer
+ImFontAtlas* globalFontAtlas = nullptr;
+
 void allocatePickRenderbuffers() {
 
   glGenRenderbuffers(1, &rboPickDepth);
@@ -281,6 +284,11 @@ void init() {
   state::initialized = true;
 }
 
+
+ImFontAtlas* getGlobalFontAtlas() {
+  return globalFontAtlas;
+}
+
 void initializeImGUIContext() {
 
   ImGui::CreateContext();
@@ -299,6 +307,8 @@ void initializeImGUIContext() {
                                                           getCousineRegularCompressedSize(), 15.0f, &config);
   // ImGui::StyleColorsLight();
   setStyle();
+
+  globalFontAtlas = io.Fonts;
 }
 
 namespace {

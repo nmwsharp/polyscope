@@ -93,7 +93,7 @@ void SurfaceInputCurveQuantity::userEdit() {
 
   // Create a new context
   ImGuiContext* oldContext = ImGui::GetCurrentContext();
-  ImGuiContext* newContext = ImGui::CreateContext();
+  ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
   ImGui::SetCurrentContext(newContext);
   initializeImGUIContext();
   bool oldAlwaysPick = pick::alwaysEvaluatePick;
