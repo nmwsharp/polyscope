@@ -40,7 +40,7 @@ void error(std::string message) {
 
   // Create a new context
   ImGuiContext* oldContext = ImGui::GetCurrentContext();
-  ImGuiContext* newContext = ImGui::CreateContext();
+  ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
   ImGui::SetCurrentContext(newContext);
   initializeImGUIContext();
 
@@ -67,7 +67,7 @@ void terminatingError(std::string message) {
 
   // Create a new context
   ImGuiContext* oldContext = ImGui::GetCurrentContext();
-  ImGuiContext* newContext = ImGui::CreateContext();
+  ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
   ImGui::SetCurrentContext(newContext);
   initializeImGUIContext();
 

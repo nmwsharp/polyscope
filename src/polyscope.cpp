@@ -75,6 +75,9 @@ namespace {
 // Pick buffer state
 GLuint pickFramebuffer, rboPickDepth, rboPickColor, currPickBufferWidth, currPickBufferHeight;
 
+// Font atlas pointer
+ImFontAtlas* globalFontAtlas = nullptr;
+
 void allocatePickRenderbuffers() {
 
   glGenRenderbuffers(1, &rboPickDepth);
@@ -148,9 +151,6 @@ void setStyle() {
   colors[ImGuiCol_ResizeGrip] = ImVec4(1.00f, 1.00f, 1.00f, 0.16f);
   colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.78f, 1.00f, 0.90f, 0.60f);
   colors[ImGuiCol_ResizeGripActive] = ImVec4(0.78f, 1.00f, 0.90f, 0.90f);
-  colors[ImGuiCol_CloseButton] = ImVec4(1.00f, 1.00f, 1.00f, 0.50f);
-  colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.70f, 0.70f, 0.70f, 0.60f);
-  colors[ImGuiCol_CloseButtonActive] = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
   colors[ImGuiCol_PlotLines] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
   colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
   colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
@@ -284,7 +284,14 @@ void init() {
   state::initialized = true;
 }
 
+
+ImFontAtlas* getGlobalFontAtlas() {
+  return globalFontAtlas;
+}
+
 void initializeImGUIContext() {
+
+  ImGui::CreateContext();
 
   // Set up ImGUI glfw bindings
   imguirender::ImGui_ImplGlfwGL3_Init(imguirender::mainWindow, true);
@@ -300,6 +307,8 @@ void initializeImGUIContext() {
                                                           getCousineRegularCompressedSize(), 15.0f, &config);
   // ImGui::StyleColorsLight();
   setStyle();
+
+  globalFontAtlas = io.Fonts;
 }
 
 namespace {
@@ -655,7 +664,7 @@ void shutdown(int exitCode) {
     writePrefsFile();
   }
 
-  ImGui::Shutdown();
+  ImGui::DestroyContext();
   std::exit(exitCode);
 }
 

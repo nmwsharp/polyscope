@@ -13,6 +13,8 @@
 #include "polyscope/surface_mesh.h"
 #include "polyscope/utilities.h"
 
+#include "imgui.h"
+
 namespace polyscope {
 
 // Initialize polyscope, including windowing system and openGL. Should be
@@ -102,5 +104,8 @@ void initializeImGUIContext();
 void screenshot(std::string filename, bool transparentBG = true);
 void screenshot(bool transparentBG = true);
 void saveImage(std::string name, unsigned char* buffer, int w, int h, int channels);
+
+// Share a font atlas for multiple uses (mainly with imgui)
+ImFontAtlas* getGlobalFontAtlas();
 
 } // namespace polyscope
