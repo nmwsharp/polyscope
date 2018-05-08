@@ -139,6 +139,11 @@ public:
   void clearActiveSurfaceQuantity();
   void removeAllQuantities();
 
+  // === Make a one-time selection
+  geometrycentral::VertexPtr selectVertex();
+
+  // === Mutate
+  
   void updateGeometryPositions(Geometry<Euclidean>* newGeometry);
 
   // === Helpers

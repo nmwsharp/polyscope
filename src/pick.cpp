@@ -16,6 +16,7 @@ Structure* currPickStructure = nullptr;
 bool haveSelection = false;
 bool pickWasDoubleClick = false;
 bool alwaysEvaluatePick = false;
+bool pickIsFromThisFrame = false;
 
 // The next pick index that a structure can use to identify its elements
 // (get it by calling request pickBufferRange())
@@ -27,6 +28,7 @@ void resetPick() {
   pickWasDoubleClick = false;
   currLocalPickInd = 0;
   currPickStructure = nullptr;
+  pickIsFromThisFrame = false;
 }
 
 void clearPickIfStructureSelected(Structure* s) {
@@ -68,6 +70,7 @@ void setCurrentPickElement(size_t newPickInd, bool wasDoubleClick) {
   error("Pick index does not correspond to any allocated range.");
   currLocalPickInd = std::numeric_limits<size_t>::max();
   currPickStructure = nullptr;
+  pickIsFromThisFrame = true;
   return;
 }
 

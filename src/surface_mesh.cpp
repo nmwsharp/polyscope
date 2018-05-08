@@ -636,6 +636,77 @@ std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> SurfaceMesh::boun
   return std::make_tuple(min, max);
 }
 
+VertexPtr SurfaceMesh::selectVertex() {
+
+  // Make sure we can see edges
+  edgeWidth = 0.01;
+  enabled = true;
+
+  // Create a new context
+  ImGuiContext* oldContext = ImGui::GetCurrentContext();
+  ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
+  ImGui::SetCurrentContext(newContext);
+  initializeImGUIContext();
+  bool oldAlwaysPick = pick::alwaysEvaluatePick;
+  pick::alwaysEvaluatePick = true;
+  VertexPtr returnVert;
+
+  // Register the callback which creates the UI and does the hard work
+  // focusedPopupUI = std::bind(&SurfaceInputCurveQuantity::userEditCallback, this);
+  focusedPopupUI = [&]() {
+    { // Create a window with instruction and a close button.
+      static bool showWindow = true;
+      ImGui::SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
+      ImGui::Begin(("Edit Curve [name: " + name + "]").c_str(), &showWindow);
+
+      ImGui::PushItemWidth(300);
+      ImGui::TextUnformatted("Select a vertex");
+
+      if (ImGui::Button("Abort")) {
+        focusedPopupUI = nullptr;
+      }
+    }
+
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.KeyCtrl && !io.WantCaptureMouse && ImGui::IsMouseDown(0)) {
+      cout << "checking pick" << endl;
+      if (pick::pickIsFromThisFrame) {
+        cout << "from this frame" << endl;
+        size_t pickInd;
+        Structure* pickS = pick::getCurrentPickElement(pickInd);
+
+        if (pickS == this) {
+          cout << "this" << endl;
+          VertexPtr v;
+          EdgePtr e;
+          FacePtr f;
+          HalfedgePtr he;
+          getPickedElement(pickInd, v, f, e, he);
+
+          if (v != VertexPtr()) {
+            cout << "vertex" << endl;
+            returnVert = v;
+            focusedPopupUI = nullptr;
+          }
+        }
+      }
+    }
+  };
+
+
+  // Re-enter main loop
+  while (focusedPopupUI) {
+    mainLoopIteration();
+  }
+
+  // Restore the old context
+  pick::alwaysEvaluatePick = oldAlwaysPick;
+  ImGui::SetCurrentContext(oldContext);
+  ImGui::DestroyContext(newContext);
+
+  return returnVert;
+}
+
 void SurfaceMesh::updateGeometryPositions(Geometry<Euclidean>* newGeometry) {
 
   VertexData<Vector3> newPositions;
