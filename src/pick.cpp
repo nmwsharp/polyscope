@@ -50,6 +50,8 @@ Structure* getCurrentPickElement(size_t& localInd) {
 }
 
 void setCurrentPickElement(size_t newPickInd, bool wasDoubleClick) {
+  
+  pickIsFromThisFrame = true;
 
   // Loop through the ranges that we have allocated to find the one correpsonding to this structure.
   for (const auto& x : structureRanges) {
@@ -70,7 +72,6 @@ void setCurrentPickElement(size_t newPickInd, bool wasDoubleClick) {
   error("Pick index does not correspond to any allocated range.");
   currLocalPickInd = std::numeric_limits<size_t>::max();
   currPickStructure = nullptr;
-  pickIsFromThisFrame = true;
   return;
 }
 

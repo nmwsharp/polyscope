@@ -647,12 +647,9 @@ VertexPtr SurfaceMesh::selectVertex() {
   ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
   ImGui::SetCurrentContext(newContext);
   initializeImGUIContext();
-  bool oldAlwaysPick = pick::alwaysEvaluatePick;
-  pick::alwaysEvaluatePick = true;
   VertexPtr returnVert;
 
   // Register the callback which creates the UI and does the hard work
-  // focusedPopupUI = std::bind(&SurfaceInputCurveQuantity::userEditCallback, this);
   focusedPopupUI = [&]() {
     { // Create a window with instruction and a close button.
       static bool showWindow = true;
@@ -660,7 +657,7 @@ VertexPtr SurfaceMesh::selectVertex() {
       ImGui::Begin(("Edit Curve [name: " + name + "]").c_str(), &showWindow);
 
       ImGui::PushItemWidth(300);
-      ImGui::TextUnformatted("Select a vertex");
+      ImGui::TextUnformatted("Hold ctrl and left-click to select a vertex");
 
       if (ImGui::Button("Abort")) {
         focusedPopupUI = nullptr;
@@ -668,15 +665,12 @@ VertexPtr SurfaceMesh::selectVertex() {
     }
 
     ImGuiIO& io = ImGui::GetIO();
-    if (io.KeyCtrl && !io.WantCaptureMouse && ImGui::IsMouseDown(0)) {
-      cout << "checking pick" << endl;
+    if (io.KeyCtrl && !io.WantCaptureMouse && ImGui::IsMouseClicked(0)) {
       if (pick::pickIsFromThisFrame) {
-        cout << "from this frame" << endl;
         size_t pickInd;
         Structure* pickS = pick::getCurrentPickElement(pickInd);
 
         if (pickS == this) {
-          cout << "this" << endl;
           VertexPtr v;
           EdgePtr e;
           FacePtr f;
@@ -684,13 +678,14 @@ VertexPtr SurfaceMesh::selectVertex() {
           getPickedElement(pickInd, v, f, e, he);
 
           if (v != VertexPtr()) {
-            cout << "vertex" << endl;
             returnVert = v;
             focusedPopupUI = nullptr;
           }
         }
       }
     }
+
+    ImGui::End();
   };
 
 
@@ -700,11 +695,12 @@ VertexPtr SurfaceMesh::selectVertex() {
   }
 
   // Restore the old context
-  pick::alwaysEvaluatePick = oldAlwaysPick;
   ImGui::SetCurrentContext(oldContext);
   ImGui::DestroyContext(newContext);
 
-  return returnVert;
+  if(returnVert == VertexPtr()) return returnVert;
+
+  return transfer.vMapBack[returnVert];
 }
 
 void SurfaceMesh::updateGeometryPositions(Geometry<Euclidean>* newGeometry) {
