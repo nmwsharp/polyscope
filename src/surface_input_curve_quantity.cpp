@@ -195,4 +195,9 @@ MeshEmbeddedCurve SurfaceInputCurveQuantity::getCurve() {
   return curve.copy(parent->transfer, parent->originalGeometry);
 }
 
+void SurfaceInputCurveQuantity::setCurve(MeshEmbeddedCurve& newCurve) {
+  curve = newCurve.copyBack(parent->transfer, parent->geometry);
+  bufferStale = true;
+}
+
 } // namespace polyscope
