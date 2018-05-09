@@ -210,8 +210,8 @@ void SurfaceScalarVertexQuantity::writeToFile(std::string filename) {
 
   HalfedgeMesh* mesh = parent->mesh;
   CornerData<Vector2> scalarVal(mesh, Vector2{0.0, 0.0});
-  for (HalfedgePtr he : mesh->realHalfedges()) {
-    scalarVal[he.corner()].x = values[he.next().next().vertex()];
+  for (CornerPtr c : mesh->corners()) {
+    scalarVal[c].x = values[c.vertex()];
   }
 
   WavefrontOBJ::write(filename, *parent->geometry, scalarVal);
