@@ -648,17 +648,31 @@ VertexPtr SurfaceMesh::selectVertex() {
   ImGui::SetCurrentContext(newContext);
   initializeImGUIContext();
   VertexPtr returnVert;
+  int iV = 0;
 
   // Register the callback which creates the UI and does the hard work
   focusedPopupUI = [&]() {
     { // Create a window with instruction and a close button.
       static bool showWindow = true;
       ImGui::SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
-      ImGui::Begin(("Edit Curve [name: " + name + "]").c_str(), &showWindow);
+      ImGui::Begin("Select vertex", &showWindow);
 
       ImGui::PushItemWidth(300);
       ImGui::TextUnformatted("Hold ctrl and left-click to select a vertex");
+      ImGui::Separator();
 
+      // Pick by number
+      ImGui::PushItemWidth(300);
+      ImGui::InputInt("index", &iV);
+      if (ImGui::Button("Select by index")) {
+        if (iV >= 0 && (size_t)iV < mesh->nVertices()) {
+          returnVert = mesh->vertex(iV);
+          focusedPopupUI = nullptr;
+        }
+      }
+      ImGui::PopItemWidth();
+
+      ImGui::Separator();
       if (ImGui::Button("Abort")) {
         focusedPopupUI = nullptr;
       }
@@ -698,10 +712,93 @@ VertexPtr SurfaceMesh::selectVertex() {
   ImGui::SetCurrentContext(oldContext);
   ImGui::DestroyContext(newContext);
 
-  if(returnVert == VertexPtr()) return returnVert;
+  if (returnVert == VertexPtr()) return returnVert;
 
   return transfer.vMapBack[returnVert];
 }
+
+
+FacePtr SurfaceMesh::selectFace() {
+
+  // Make sure we can see edges
+  edgeWidth = 0.01;
+  enabled = true;
+
+  // Create a new context
+  ImGuiContext* oldContext = ImGui::GetCurrentContext();
+  ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
+  ImGui::SetCurrentContext(newContext);
+  initializeImGUIContext();
+  FacePtr returnFace;
+  int iF = 0;
+
+  // Register the callback which creates the UI and does the hard work
+  focusedPopupUI = [&]() {
+    { // Create a window with instruction and a close button.
+      static bool showWindow = true;
+      ImGui::SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
+      ImGui::Begin("Select face", &showWindow);
+
+      ImGui::PushItemWidth(300);
+      ImGui::TextUnformatted("Hold ctrl and left-click to select a face");
+      ImGui::Separator();
+
+      // Pick by number
+      ImGui::PushItemWidth(300);
+      ImGui::InputInt("index", &iF);
+      if (ImGui::Button("Select by index")) {
+        if (iF >= 0 && (size_t)iF < mesh->nFaces()) {
+          returnFace = mesh->face(iF);
+          focusedPopupUI = nullptr;
+        }
+      }
+      ImGui::PopItemWidth();
+
+      ImGui::Separator();
+      if (ImGui::Button("Abort")) {
+        focusedPopupUI = nullptr;
+      }
+    }
+
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.KeyCtrl && !io.WantCaptureMouse && ImGui::IsMouseClicked(0)) {
+      if (pick::pickIsFromThisFrame) {
+        size_t pickInd;
+        Structure* pickS = pick::getCurrentPickElement(pickInd);
+
+        if (pickS == this) {
+          VertexPtr v;
+          EdgePtr e;
+          FacePtr f;
+          HalfedgePtr he;
+          getPickedElement(pickInd, v, f, e, he);
+
+          if (f != FacePtr()) {
+            returnFace = f;
+            focusedPopupUI = nullptr;
+          }
+        }
+      }
+    }
+
+    ImGui::End();
+  };
+
+
+  // Re-enter main loop
+  while (focusedPopupUI) {
+    mainLoopIteration();
+  }
+
+  // Restore the old context
+  ImGui::SetCurrentContext(oldContext);
+  ImGui::DestroyContext(newContext);
+
+  if (returnFace == FacePtr()) return returnFace;
+
+  return transfer.fMapBack[returnFace];
+}
+
 
 void SurfaceMesh::updateGeometryPositions(Geometry<Euclidean>* newGeometry) {
 

@@ -4,9 +4,13 @@
 #include "polyscope/gl/shaders/cylinder_shaders.h"
 #include "polyscope/gl/shaders/surface_shaders.h"
 #include "polyscope/pick.h"
+#include "polyscope/file_helpers.h"
 #include "polyscope/polyscope.h"
 
 #include "imgui.h"
+
+#include <fstream>
+#include <iostream>
 
 using namespace geometrycentral;
 
@@ -72,6 +76,19 @@ void SurfaceInputCurveQuantity::drawUI() {
   if (ImGui::TreeNode((name + " (surface curve)").c_str())) {
     ImGui::Checkbox("Enabled", &enabled);
     ImGui::SameLine();
+
+    // == Options popup
+    if (ImGui::Button("Options")) {
+      ImGui::OpenPopup("OptionsPopup");
+    }
+    if (ImGui::BeginPopup("OptionsPopup")) {
+
+      if (ImGui::MenuItem("Write to file")) writeToFile();
+
+      ImGui::EndPopup();
+    }
+    ImGui::SameLine();
+
     ImGui::ColorEdit3("Color", (float*)&curveColor, ImGuiColorEditFlags_NoInputs);
     ImGui::SliderFloat("Radius", &radiusParam, 0.0, .1, "%.5f", 3.);
 
@@ -125,8 +142,10 @@ void SurfaceInputCurveQuantity::userEditCallback() {
   ImGui::TextWrapped("This mode allows you to input a surface curve, which is defined to be a connected sequence of "
                      "straight lines within faces. The curve may be a closed loop, or may be open with two endpoints "
                      "in the middle of a face. No limitations are imposed on self-intersection.\n\n");
-  ImGui::TextWrapped("Hold CTRL and left click on the surface to draw the curve. Nothing will happen unless the clicked "
-                    "point is adjacent to the previous endpoint. The `Close Curve` button will close the curve if both endpoints are in the same face.");
+  ImGui::TextWrapped(
+      "Hold CTRL and left click on the surface to draw the curve. Nothing will happen unless the clicked "
+      "point is adjacent to the previous endpoint. The `Close Curve` button will close the curve if both endpoints are "
+      "in the same face.");
 
   // Process mouse selection if the ctrl key is held, the mouse is pressed, and the mouse isn't on the ImGui window
   ImGuiIO& io = ImGui::GetIO();
@@ -184,7 +203,7 @@ void SurfaceInputCurveQuantity::userEditCallback() {
     focusedPopupUI = nullptr;
   }
   ImGui::PopStyleColor(3);
-  
+
   ImGui::PopItemWidth();
 
   ImGui::End();
@@ -198,6 +217,54 @@ MeshEmbeddedCurve SurfaceInputCurveQuantity::getCurve() {
 void SurfaceInputCurveQuantity::setCurve(MeshEmbeddedCurve& newCurve) {
   curve = newCurve.copyBack(parent->transfer, parent->geometry);
   bufferStale = true;
+}
+
+
+void SurfaceInputCurveQuantity::writeToFile(std::string filename) {
+
+  if (filename == "") {
+    filename = promptForFilename();
+    if (filename == "") {
+      return;
+    }
+  }
+
+  cout << "Writing curve " << name << " to file " << filename << endl;
+  std::vector<CurveSegment> segments = curve.getCurveSegments();
+
+  std::ofstream outFile(filename);
+
+  // Write positions and record indices
+  std::vector<std::pair<size_t, size_t>> segInds;
+  if (curve.isClosed()) {
+    outFile << "# points: " << segments.size() << endl;
+
+    size_t i = 0;
+    for (CurveSegment& s : segments) {
+      outFile << s.startPosition << endl;
+      segInds.push_back(std::make_pair(i, (i + 1) % segments.size()));
+      i++;
+    }
+
+  } else {
+    outFile << "# points: " << (segments.size() + 1) << endl;
+
+    size_t i = 0;
+    for (CurveSegment& s : segments) {
+      outFile << s.startPosition << endl;
+      segInds.push_back(std::make_pair(i, i + 1));
+      i++;
+    }
+    outFile << segments.back().endPosition << endl;
+  }
+
+  // Write indices
+  outFile << "# lines: " << segInds.size() << endl;
+  for (auto s : segInds) {
+    outFile << s.first << "," << s.second << endl;
+  }
+
+  outFile.close();
 }
 
 } // namespace polyscope

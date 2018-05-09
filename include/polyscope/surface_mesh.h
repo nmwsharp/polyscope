@@ -141,6 +141,7 @@ public:
 
   // === Make a one-time selection
   geometrycentral::VertexPtr selectVertex();
+  geometrycentral::FacePtr selectFace();
 
   // === Mutate
   

@@ -20,6 +20,8 @@ public:
 
   void fillBuffers();
 
+  void writeToFile(std::string filename = "");
+
   geometrycentral::MeshEmbeddedCurve getCurve();
   void setCurve(geometrycentral::MeshEmbeddedCurve& newCurve);
 
