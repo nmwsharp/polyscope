@@ -1,6 +1,7 @@
 #include "polyscope/surface_scalar_quantity.h"
 
 #include "geometrycentral/meshio.h"
+
 #include "polyscope/file_helpers.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/surface_shaders.h"

@@ -1,11 +1,17 @@
 #include "polyscope/surface_distance_quantity.h"
 
-#include "polyscope/gl/shaders.h"
+#include "geometrycentral/meshio.h"
+
+#include "polyscope/file_helpers.h"
 #include "polyscope/gl/colormap_sets.h"
+#include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/distance_shaders.h"
 #include "polyscope/polyscope.h"
 
 #include "imgui.h"
+
+using std::cout;
+using std::endl;
 
 namespace polyscope {
 
@@ -77,7 +83,8 @@ void SurfaceDistanceQuantity::drawUI() {
       ImGui::SameLine();
       ImGui::PushItemWidth(100);
       int iColormapBefore = iColorMap;
-      ImGui::Combo("##colormap", &iColorMap, gl::quantitativeColormapNames, IM_ARRAYSIZE(gl::quantitativeColormapNames));
+      ImGui::Combo("##colormap", &iColorMap, gl::quantitativeColormapNames,
+                   IM_ARRAYSIZE(gl::quantitativeColormapNames));
       ImGui::PopItemWidth();
       if (iColorMap != iColormapBefore) {
         parent->deleteProgram();
@@ -85,10 +92,17 @@ void SurfaceDistanceQuantity::drawUI() {
       }
     }
 
-    // Reset button
+    // == Options popup
     ImGui::SameLine();
-    if (ImGui::Button("Reset")) {
-      resetVizRange();
+    if (ImGui::Button("Options")) {
+      ImGui::OpenPopup("OptionsPopup");
+    }
+    if (ImGui::BeginPopup("OptionsPopup")) {
+
+      if (ImGui::MenuItem("Write to file")) writeToFile();
+      if (ImGui::MenuItem("Reset colormap range")) resetVizRange();
+
+      ImGui::EndPopup();
     }
 
     // Modulo stripey width
@@ -159,5 +173,27 @@ void SurfaceDistanceQuantity::buildInfoGUI(VertexPtr v) {
   ImGui::Text("%g", distances[v]);
   ImGui::NextColumn();
 }
+
+
+void SurfaceDistanceQuantity::writeToFile(std::string filename) {
+
+  if (filename == "") {
+    filename = promptForFilename();
+    if (filename == "") {
+      return;
+    }
+  }
+
+  cout << "Writing distance function to file " << filename << " in U coordinate of texture map" << endl;
+
+  HalfedgeMesh* mesh = parent->mesh;
+  CornerData<Vector2> scalarVal(mesh, Vector2{0.0, 0.0});
+  for (CornerPtr c : mesh->corners()) {
+    scalarVal[c].x = distances[c.vertex()];
+  }
+
+  WavefrontOBJ::write(filename, *parent->geometry, scalarVal);
+}
+
 
 } // namespace polyscope

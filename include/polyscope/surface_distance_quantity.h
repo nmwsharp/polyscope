@@ -17,6 +17,8 @@ public:
 
   void buildInfoGUI(VertexPtr v) override;
   void fillColorBuffers(gl::GLProgram* p);
+  
+  void writeToFile(std::string filename = "");
 
 
   // === Members
