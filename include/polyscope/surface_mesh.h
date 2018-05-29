@@ -1,14 +1,12 @@
 #pragma once
 
+#include <memory>
 #include <vector>
-
-#include "geometrycentral/geometry.h"
-#include "geometrycentral/halfedge_mesh.h"
-#include "geometrycentral/vector3.h"
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
 #include "polyscope/gl/gl_utils.h"
+#include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
 
 namespace polyscope {
@@ -36,10 +34,10 @@ public:
   virtual void drawUI() = 0;
 
   // Build GUI info about this element
-  virtual void buildInfoGUI(VertexPtr v);
-  virtual void buildInfoGUI(FacePtr f);
-  virtual void buildInfoGUI(EdgePtr e);
-  virtual void buildInfoGUI(HalfedgePtr he);
+  virtual void buildVertexInfoGUI(size_t vInd);
+  virtual void buildFaceInfoGUI(size_t fInd);
+  virtual void buildEdgeInfoGUI(size_t eInd);
+  virtual void buildHalfedgeInfoGUI(size_t heInd);
 
   // === Member variables ===
   const std::string name;
@@ -67,7 +65,8 @@ public:
   // === Member functions ===
 
   // Construct a new surface mesh structure
-  SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_);
+  SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions_,
+              const std::vector<std::vector<size_t>>& faceIndices);
   ~SurfaceMesh();
 
   // Render the the structure on screen
@@ -89,50 +88,65 @@ public:
   virtual double lengthScale() override;
 
   // Axis-aligned bounding box for the structure
-  virtual std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox() override;
+  virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
 
   // === Quantity-related
 
   // general form
-  void addSurfaceQuantity(SurfaceQuantity* quantity);
-  void addSurfaceQuantity(SurfaceQuantityThatDrawsFaces* quantity);
-  SurfaceQuantity* getSurfaceQuantity(std::string name, bool errorIfAbsent = true);
+  void addSurfaceQuantity(std::shared_ptr<SurfaceQuantity> quantity);
+  std::shared_ptr<SurfaceQuantity> getSurfaceQuantity(std::string name, bool errorIfAbsent = true);
 
-  // Scalars
-  void addQuantity(std::string name, VertexData<double>& value, DataType type = DataType::STANDARD);
-  void addQuantity(std::string name, FaceData<double>& value, DataType type = DataType::STANDARD);
-  void addQuantity(std::string name, EdgeData<double>& value, DataType type = DataType::STANDARD);
-  void addQuantity(std::string name, HalfedgeData<double>& value, DataType type = DataType::STANDARD);
+  // Scalars (expect double arrays)
+  template <class T>
+  void addVertexScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
+  template <class T>
+  void addFaceScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
+  template <class T>
+  void addEdgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
+  template <class T>
+  void addHalfedgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
 
-  // Distance
-  void addDistanceQuantity(std::string name, VertexData<double>& distances);
-  void addSignedDistanceQuantity(std::string name, VertexData<double>& distances);
+  // Distance (expect double array)
+  template <class T>
+  void addDistanceQuantity(std::string name, const T& data);
+  template <class T>
+  void addSignedDistanceQuantity(std::string name, const T& data);
 
-  // Colors
-  void addColorQuantity(std::string name, VertexData<Vector3>& value);
-  void addColorQuantity(std::string name, FaceData<Vector3>& value);
+  // Colors (expect glm::vec3 array)
+  template <class T>
+  void addVertexColorQuantity(std::string name, const T& data);
+  template <class T>
+  void addFaceColorQuantity(std::string name, const T& data);
 
-  // Counts/Singularities/Indices/Values on isolated vertices
-  void addCountQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values);
-  void addCountQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values);
-  void addIsolatedVertexQuantity(std::string name, std::vector<std::pair<VertexPtr, double>>& values);
+  // Counts/Values on isolated vertices (expect index/value pairs)
+  void addVertexCountQuantity(std::string name, std::vector<std::pair<size_t, int>>& values);
+  void addFaceCountQuantity(std::string name, std::vector<std::pair<size_t, int>>& values);
+  void addIsolatedVertexScalarQuantity(std::string name, std::vector<std::pair<size_t, double>>& values);
 
-  // Subsets
-  void addSubsetQuantity(std::string name, EdgeData<char>& subset);
+  // Subsets (expect char array)
+  template <class T>
+  void addSubsetQuantity(std::string name, const T& subset);
 
-  // Selections
-  void addVertexSelectionQuantity(std::string name, VertexData<char>& initialMembership);
-  void addInputCurveQuantity(std::string name);
+  // Vectors (expect vector array, inner type must be indexable with correct dimension)
+  template <class T>
+  void addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
+  template <class T>
+  void addFaceVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
+  template <class T>
+  void addFaceVectorQuantity(std::string name, const T& vectors, int nSym = 1,
+                             VectorType vectorType = VectorType::STANDARD);
+  template <class T>
+  void addVertexVectorQuantity(std::string name, const T& vectors, int nSym = 1,
+                               VectorType vectorType = VectorType::STANDARD);
+  template <class T>
+  void addOneFormIntrinsicVectorQuantity(std::string name, const T& data); // expects scalar
 
 
-  // Vectors
-  void addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
-  void addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType = VectorType::STANDARD);
-  void addVectorQuantity(std::string name, FaceData<Complex>& value, int nSym = 1,
-                         VectorType vectorType = VectorType::STANDARD);
-  void addVectorQuantity(std::string name, VertexData<Complex>& value, int nSym = 1,
-                         VectorType vectorType = VectorType::STANDARD);
-  void addVectorQuantity(std::string name, EdgeData<double>& value);
+  // I/O Selections
+  template <class T>
+  void addVertexSelectionQuantity(std::string name, const T& initialMembership);
+  //void addInputCurveQuantity(std::string name);
+
 
   void removeQuantity(std::string name);
   void setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q);
@@ -140,12 +154,12 @@ public:
   void removeAllQuantities();
 
   // === Make a one-time selection
-  geometrycentral::VertexPtr selectVertex();
-  geometrycentral::FacePtr selectFace();
+  size_t selectVertex();
+  size_t selectFace();
 
   // === Mutate
-  
-  void updateGeometryPositions(Geometry<Euclidean>* newGeometry);
+
+  void updateGeometryPositions(const std::vector<glm::vec3>& newPositions);
 
   // === Helpers
   void deleteProgram();
@@ -154,14 +168,10 @@ public:
   // === Member variables ===
   bool enabled = true;
 
-  // The mesh (this is a copy of what was passed in)
-  geometrycentral::HalfedgeMesh* mesh;
-  geometrycentral::Geometry<Euclidean>* geometry;
-  geometrycentral::HalfedgeMeshDataTransfer transfer;
-
-  // The original mesh and geometry that were passed in
-  geometrycentral::HalfedgeMesh* originalMesh;
-  geometrycentral::Geometry<Euclidean>* originalGeometry;
+  // The mesh!
+  std::vector<glm::vec3> vertexPositions;
+  std::vector<std::vector<size_t>> faceIndices;
+  size_t nVertices, nFaces, nEdges, nHalfedges, nInteriorHalfedges;
 
   static const std::string structureTypeName;
   SubColorManager colorManager;
@@ -174,15 +184,16 @@ public:
 
   // Picking helpers
   // One of these will be non-null on return
-  void getPickedElement(size_t localPickID, VertexPtr& vOut, FacePtr& fOut, EdgePtr& eOut, HalfedgePtr& heOut);
+  // void getPickedElement(size_t localPickID, size_t& vOut, size_t& fOut, size_t& eOut, size_t& heOut);
+
   // Returns the face ands coordinates in that face of the last pick. fOut == FacePtr() if not in any face. Note that
   // you may needed to update the pick data, beacuse this uses mouse coordinates from the current state but possibly old
   // pick lookup results.
-  void getPickedFacePoint(FacePtr& fOut, Vector3& baryCoordOut);
+  // void getPickedFacePoint(FacePtr& fOut, glm::vec3& baryCoordOut);
 
 private:
   // Quantities
-  std::map<std::string, SurfaceQuantity*> quantities;
+  std::map<std::string, std::shared_ptr<SurfaceQuantity>> quantities;
 
   // Visualization settings
   Color3f baseColor;
@@ -201,18 +212,14 @@ private:
   // Within each set, uses the implicit ordering from the mesh data structure
   // Thest starts are LOCAL indices, indexing elements only with the mesh
   size_t facePickIndStart, edgePickIndStart, halfedgePickIndStart;
-  VertexData<size_t> vInd;
-  FaceData<size_t> fInd;
-  EdgeData<size_t> eInd;
-  HalfedgeData<size_t> heInd;
-  void buildVertexInfoGui(VertexPtr v);
-  void buildFaceInfoGui(FacePtr f);
-  void buildEdgeInfoGui(EdgePtr e);
-  void buildHalfedgeInfoGui(HalfedgePtr he);
+  void buildVertexInfoGui(size_t vInd);
+  void buildFaceInfoGui(size_t fInd);
+  void buildEdgeInfoGui(size_t eInd);
+  void buildHalfedgeInfoGui(size_t heInd);
 
   // Gui implementation details
   bool ui_smoothshade = true;
-  
+
   // Drawing related things
   gl::GLProgram* program = nullptr;
   gl::GLProgram* pickProgram = nullptr;
@@ -221,8 +228,8 @@ private:
   // === Helper functions
   void fillGeometryBuffersSmooth();
   void fillGeometryBuffersFlat();
-  Vector2 projectToScreenSpace(Vector3 coord);
-  bool screenSpaceTriangleTest(FacePtr f, Vector2 testCoords, Vector3& bCoordOut);
+  glm::vec2 projectToScreenSpace(glm::vec3 coord);
+  bool screenSpaceTriangleTest(size_t fInd, glm::vec2 testCoords, glm::vec3& bCoordOut);
 };
 
 // Make mesh element type printable
@@ -242,4 +249,7 @@ inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
   return out << getMeshElementTypeName(value);
 }
 
-} // namespace polyscope
+}
+
+
+

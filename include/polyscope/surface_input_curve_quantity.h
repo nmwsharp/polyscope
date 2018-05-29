@@ -5,8 +5,6 @@
 #include "polyscope/histogram.h"
 #include "polyscope/surface_mesh.h"
 
-#include "geometrycentral/mesh_embedded_curve.h"
-
 namespace polyscope {
 
 class SurfaceInputCurveQuantity : public SurfaceQuantity {

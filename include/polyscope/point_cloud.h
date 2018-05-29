@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "geometrycentral/vector3.h"
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
 #include "polyscope/gl/gl_utils.h"
@@ -56,7 +55,7 @@ public:
   // === Member functions ===
 
   // Construct a new point cloud structure
-  PointCloud(std::string name, const std::vector<geometrycentral::Vector3>& points);
+  PointCloud(std::string name, const std::vector<glm::vec3>& points);
   ~PointCloud();
 
   // Render the the structure on screen
@@ -78,7 +77,7 @@ public:
   virtual double lengthScale() override;
 
   // Axis-aligned bounding box for the structure
-  virtual std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox() override;
+  virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
 
 
   // === Quantities
@@ -92,14 +91,14 @@ public:
   void addScalarQuantity(std::string name, const std::vector<double>& value, DataType type = DataType::STANDARD);
 
   // Colors
-  void addColorQuantity(std::string name, const std::vector<Vector3>& value);
+  void addColorQuantity(std::string name, const std::vector<glm::vec3>& value);
 
   // Subsets
   // void addSubsetQuantity(std::string name, const std::vector<char>& subsetIndicators);
   // void addSubsetQuantity(std::string name, const std::vector<size_t>& subsetIndices);
 
   // Vectors
-  void addVectorQuantity(std::string name, const std::vector<Vector3>& value,
+  void addVectorQuantity(std::string name, const std::vector<glm::vec3>& value,
                          VectorType vectorType = VectorType::STANDARD);
 
 
@@ -110,7 +109,7 @@ public:
   void removeAllQuantities();
 
   // The points that make up this point cloud
-  std::vector<geometrycentral::Vector3> points;
+  std::vector<glm::vec3> points;
   
   // Misc data
   bool enabled = true;

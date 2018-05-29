@@ -18,7 +18,7 @@ public:
   // The map that takes values to [0,1] for drawing
   AffineRemapper<double> mapper;
 
-  std::vector<std::pair<Vector3, double>> entries;
+  std::vector<std::pair<glm::vec3, double>> entries;
 
   const int NO_INDEX = std::numeric_limits<int>::min();
   gl::GLProgram* program = nullptr;
@@ -40,13 +40,13 @@ protected:
 
 class SurfaceCountVertexQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceCountVertexQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values_, SurfaceMesh* mesh_);
+  SurfaceCountVertexQuantity(std::string name, std::vector<std::pair<size_t, int>>& values_, SurfaceMesh* mesh_);
   //   ~SurfaceCountVertexQuantity();
 
-  void buildInfoGUI(VertexPtr v) override;
+  void buildVertexInfoGUI(size_t vInd) override;
 
   // === Members
-  std::map<VertexPtr, int> values;
+  std::map<size_t, int> values;
 };
 
 // ========================================================
@@ -55,15 +55,15 @@ public:
 
 class SurfaceIsolatedScalarVertexQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceIsolatedScalarVertexQuantity(std::string name, std::vector<std::pair<VertexPtr, double>>& values_,
+  SurfaceIsolatedScalarVertexQuantity(std::string name, std::vector<std::pair<size_t, double>>& values_,
                                       SurfaceMesh* mesh_);
   //   ~SurfaceCountVertexQuantity();
 
   void drawUI() override;
-  void buildInfoGUI(VertexPtr v) override;
+  void buildVertexInfoGUI(size_t vInd) override;
 
   // === Members
-  std::map<VertexPtr, double> values;
+  std::map<size_t, double> values;
 };
 
 // ========================================================
@@ -72,13 +72,13 @@ public:
 
 class SurfaceCountFaceQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceCountFaceQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values_, SurfaceMesh* mesh_);
+  SurfaceCountFaceQuantity(std::string name, std::vector<std::pair<size_t, int>>& values_, SurfaceMesh* mesh_);
   //   ~SurfaceCountVertexQuantity();
 
-  void buildInfoGUI(FacePtr f) override;
+  void buildFaceInfoGUI(size_t f) override;
 
   // === Members
-  std::map<FacePtr, int> values;
+  std::map<size_t, int> values;
 };
 
 

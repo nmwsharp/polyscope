@@ -2,9 +2,7 @@
 
 #include <vector>
 
-#include "geometrycentral/vector3.h"
-
-using namespace geometrycentral;
+#include "polyscope/color_management.h"
 
 namespace polyscope {
 namespace gl {
@@ -45,11 +43,11 @@ namespace gl {
 struct Colormap {
 
     std::string name;
-    std::vector<Vector3> values;
+    std::vector<Color3f> values;
 
     // Samples "val" from the colormap, where val is clamped to [0,1].
     // Returns a vector3 of rgb values, each from [0,1]
-    Vector3 getValue(double val) const;
+    Color3f getValue(double val) const;
 };
 
 

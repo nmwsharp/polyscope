@@ -31,22 +31,20 @@ protected:
 
 class SurfaceSelectionVertexQuantity : public SurfaceSelectionQuantity {
 public:
-  SurfaceSelectionVertexQuantity(std::string name, VertexData<char>& membership_, SurfaceMesh* mesh_);
+  SurfaceSelectionVertexQuantity(std::string name, std::vector<char>& membership_, SurfaceMesh* mesh_);
   //   ~SurfaceSelectionVertexQuantity();
 
   virtual gl::GLProgram* createProgram() override;
 
   void fillColorBuffers(gl::GLProgram* p);
 
-  void buildInfoGUI(VertexPtr v) override;
+  void buildVertexInfoGUI(size_t vInd) override;
 
   void userEdit() override;
   virtual void setProgramValues(gl::GLProgram* program) override;
 
   // === Members
-  VertexData<char> membership; // 1 if in, 0 otherwise
-  VertexData<char> getSelectionOnInputMesh(); // transfer the data back to the mesh that was passed in
-
+  std::vector<char> membership; // 1 if in, 0 otherwise
 
 private:
 
@@ -55,6 +53,15 @@ private:
   bool membershipStale = false;
   int mouseMemberAction = 0;
 };
+
+template <class T>
+void SurfaceMesh::addVertexSelectionQuantity(std::string name, const T& initialMembership) {
+  std::shared_ptr<SurfaceSelectionVertexQuantity> q = std::make_shared<SurfaceSelectionVertexQuantity>(
+      name, standardizeArray<char, T>(initialMembership, nVertices, "vertex selection quantity " + name), this);
+  SurfaceSelectionVertexQuantity* q = new SurfaceSelectionVertexQuantity(name, initialMembership, this);
+  addSurfaceQuantity(q);
+}
+
 
 /*
 // ========================================================

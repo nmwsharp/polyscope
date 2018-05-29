@@ -19,10 +19,6 @@
 #include "polyscope/gl/shaders.h"
 #include "polyscope/view.h"
 
-#include "geometrycentral/utilities.h"
-#include "geometrycentral/vector2.h"
-#include "geometrycentral/vector3.h"
-
 namespace polyscope {
 namespace gl {
 
@@ -70,15 +66,15 @@ public:
   void setUniform(std::string name, float val);
   void setUniform(std::string name, double val); // WARNING casts down to float
   void setUniform(std::string name, float* val);
-  void setUniform(std::string name, Vector2 val);
-  void setUniform(std::string name, Vector3 val);
+  void setUniform(std::string name, glm::vec2 val);
+  void setUniform(std::string name, glm::vec3 val);
   void setUniform(std::string name, std::array<float, 3> val);
   void setUniform(std::string name, float x, float y, float z, float w);
 
   // = Attributes
-  void setAttribute(std::string name, const std::vector<Vector2>& data, bool update = false, int offset = 0,
+  void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0,
                     int size = -1);
-  void setAttribute(std::string name, const std::vector<Vector3>& data, bool update = false, int offset = 0,
+  void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0,
                     int size = -1);
   void setAttribute(std::string name, const std::vector<double>& data, bool update = false, int offset = 0,
                     int size = -1);
@@ -101,8 +97,8 @@ public:
 
 
   // Indices
-  void setIndex(std::vector<uint3> indices);
-  void setIndex(std::vector<unsigned int> indices);
+  void setIndex(std::vector<std::array<unsigned int, 3>>& indices);
+  void setIndex(std::vector<unsigned int>& indices);
   void setPrimitiveRestartIndex(GLuint restartIndex);
 
   // Call once to initialize GLSL code used by multiple shaders

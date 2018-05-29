@@ -42,10 +42,10 @@ extern std::map<std::string, std::map<std::string, Structure*>> structures;
 extern double lengthScale;
 
 // axis-aligned bounding box for all registered structures
-extern std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox;
+extern std::tuple<glm::vec3, glm::vec3> boundingBox;
 
 // representative center for all registered structures
-extern Vector3 center;
+extern glm::vec3 center;
 
 // A callback function used to render a "user" gui
 extern std::function<void()> userCallback;
@@ -60,8 +60,9 @@ extern size_t screenshotInd;
 // Register a structure with polyscope
 // `name` is a globally unique identifier for the structure
 bool registerStructure(Structure* structure, bool replaceIfPresent = true);
-void registerPointCloud(std::string name, const std::vector<Vector3>& points, bool replaceIfPresent = true);
-void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom, bool replaceIfPresent = true);
+void registerPointCloud(std::string name, const std::vector<glm::vec3>& points, bool replaceIfPresent = true);
+void registerSurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
+                         const std::vector<std::vector<size_t>>& faceIndices, bool replaceIfPresent = true);
 void registerCameraView(std::string name, CameraParameters p, bool replaceIfPresent = true);
 void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& r, bool replaceIfPresent = true);
 

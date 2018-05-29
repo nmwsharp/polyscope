@@ -38,7 +38,7 @@ protected:
 
 class SurfaceScalarVertexQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceScalarVertexQuantity(std::string name, VertexData<double>& values_, SurfaceMesh* mesh_,
+  SurfaceScalarVertexQuantity(std::string name, std::vector<double>& values_, SurfaceMesh* mesh_,
                               DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceScalarVertexQuantity();
 
@@ -46,12 +46,19 @@ public:
 
   void fillColorBuffers(gl::GLProgram* p);
 
-  void buildInfoGUI(VertexPtr v) override;
+  void buildVertexInfoGUI(size_t vInd) override;
   virtual void writeToFile(std::string filename = "") override;
 
   // === Members
-  VertexData<double> values;
+  std::vector<double> values;
 };
+
+template <class T>
+void SurfaceMesh::addVertexScalarQuantity(std::string name, const T& data, DataType type) {
+  std::shared_ptr<SurfaceScalarQuantity> q = std::make_shared<SurfaceScalarVertexQuantity>(
+      name, standardizeArray<double, T>(data, nVertices, "vertex scalar quantity " + name), this, type);
+  addSurfaceQuantity(q);
+}
 
 // ========================================================
 // ==========            Face Scalar             ==========
@@ -59,7 +66,7 @@ public:
 
 class SurfaceScalarFaceQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceScalarFaceQuantity(std::string name, FaceData<double>& values_, SurfaceMesh* mesh_,
+  SurfaceScalarFaceQuantity(std::string name, std::vector<double>& values_, SurfaceMesh* mesh_,
                             DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceScalarVertexQuantity();
 
@@ -67,11 +74,18 @@ public:
 
   void fillColorBuffers(gl::GLProgram* p);
 
-  void buildInfoGUI(FacePtr f) override;
+  void buildFaceInfoGUI(size_t fInd) override;
 
   // === Members
-  FaceData<double> values;
+  std::vector<double> values;
 };
+
+template <class T>
+void SurfaceMesh::addFaceScalarQuantity(std::string name, const T& data, DataType type) {
+  std::shared_ptr<SurfaceScalarQuantity> q = std::make_shared<SurfaceScalarFaceQuantity>(
+      name, standardizeArray<double, T>(data, nFaces, "face scalar quantity " + name), this, type);
+  addSurfaceQuantity(q);
+}
 
 // ========================================================
 // ==========            Edge Scalar             ==========
@@ -79,7 +93,7 @@ public:
 
 class SurfaceScalarEdgeQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceScalarEdgeQuantity(std::string name, EdgeData<double>& values_, SurfaceMesh* mesh_,
+  SurfaceScalarEdgeQuantity(std::string name, std::vector<double>& values_, SurfaceMesh* mesh_,
                             DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceScalarVertexQuantity();
 
@@ -87,12 +101,19 @@ public:
 
   void fillColorBuffers(gl::GLProgram* p);
 
-  void buildInfoGUI(EdgePtr e) override;
+  void buildEdgeInfoGUI(size_t edgeInd) override;
 
 
   // === Members
-  EdgeData<double> values;
+  std::vector<double> values;
 };
+
+template <class T>
+void SurfaceMesh::addEdgeScalarQuantity(std::string name, const T& data, DataType type) {
+  std::shared_ptr<SurfaceScalarQuantity> q = std::make_shared<SurfaceScalarEdgeQuantity>(
+      name, standardizeArray<double, T>(data, nEdges, "edge scalar quantity " + name), this, type);
+  addSurfaceQuantity(q);
+}
 
 // ========================================================
 // ==========          Halfedge Scalar           ==========
@@ -100,7 +121,7 @@ public:
 
 class SurfaceScalarHalfedgeQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceScalarHalfedgeQuantity(std::string name, HalfedgeData<double>& values_, SurfaceMesh* mesh_,
+  SurfaceScalarHalfedgeQuantity(std::string name, std::vector<double>& values_, SurfaceMesh* mesh_,
                                 DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceScalarVertexQuantity();
 
@@ -108,10 +129,17 @@ public:
 
   void fillColorBuffers(gl::GLProgram* p);
 
-  void buildInfoGUI(HalfedgePtr he) override;
+  void buildHalfedgeInfoGUI(size_t heInd) override;
 
   // === Members
-  HalfedgeData<double> values;
+  std::vector<double> values;
 };
+
+template <class T>
+void SurfaceMesh::addHalfedgeScalarQuantity(std::string name, const T& data, DataType type) {
+  std::shared_ptr<SurfaceScalarQuantity> q = std::make_shared<SurfaceScalarHalfedgeQuantity>(
+      name, standardizeArray<double, T>(data, nHalfedges, "halfedge scalar quantity " + name), this, type);
+  addSurfaceQuantity(q);
+}
 
 } // namespace polyscope

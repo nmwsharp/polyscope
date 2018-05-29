@@ -6,16 +6,6 @@
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 
-// Quantities
-#include "polyscope/surface_color_quantity.h"
-#include "polyscope/surface_count_quantity.h"
-#include "polyscope/surface_distance_quantity.h"
-#include "polyscope/surface_input_curve_quantity.h"
-#include "polyscope/surface_scalar_quantity.h"
-#include "polyscope/surface_selection_quantity.h"
-#include "polyscope/surface_subset_quantity.h"
-#include "polyscope/surface_vector_quantity.h"
-
 #include "imgui.h"
 
 using namespace geometrycentral;
@@ -837,23 +827,6 @@ void SurfaceMesh::addSurfaceQuantity(SurfaceQuantity* quantity) {
   }
 }
 
-void SurfaceMesh::addSurfaceQuantity(SurfaceQuantityThatDrawsFaces* quantity) {
-  // Delete old if in use
-  bool wasEnabled = false;
-  if (quantities.find(quantity->name) != quantities.end()) {
-    wasEnabled = quantities[quantity->name]->enabled;
-    removeQuantity(quantity->name);
-  }
-
-  // Store
-  quantities[quantity->name] = quantity;
-
-  // Re-enable the quantity if we're replacing an enabled quantity
-  if (wasEnabled) {
-    quantity->enabled = true;
-    setActiveSurfaceQuantity(quantity);
-  }
-}
 
 SurfaceQuantity* SurfaceMesh::getSurfaceQuantity(std::string name, bool errorIfAbsent) {
   // Check if exists
@@ -868,100 +841,28 @@ SurfaceQuantity* SurfaceMesh::getSurfaceQuantity(std::string name, bool errorIfA
 }
 
 
-void SurfaceMesh::addQuantity(std::string name, VertexData<double>& value, DataType type) {
-  SurfaceScalarQuantity* q = new SurfaceScalarVertexQuantity(name, value, this, type);
-  addSurfaceQuantity(q);
-}
 
-void SurfaceMesh::addQuantity(std::string name, FaceData<double>& value, DataType type) {
-  SurfaceScalarQuantity* q = new SurfaceScalarFaceQuantity(name, value, this, type);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addQuantity(std::string name, EdgeData<double>& value, DataType type) {
-  SurfaceScalarQuantity* q = new SurfaceScalarEdgeQuantity(name, value, this, type);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addQuantity(std::string name, HalfedgeData<double>& value, DataType type) {
-  SurfaceScalarQuantity* q = new SurfaceScalarHalfedgeQuantity(name, value, this, type);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addDistanceQuantity(std::string name, VertexData<double>& distances) {
-  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, distances, this, false);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addSignedDistanceQuantity(std::string name, VertexData<double>& distances) {
-  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, distances, this, true);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addColorQuantity(std::string name, VertexData<Vector3>& value) {
-  SurfaceColorQuantity* q = new SurfaceColorVertexQuantity(name, value, this);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addColorQuantity(std::string name, FaceData<Vector3>& value) {
-  SurfaceColorQuantity* q = new SurfaceColorFaceQuantity(name, value, this);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addCountQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values) {
+void SurfaceMesh::addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values) {
   SurfaceCountQuantity* q = new SurfaceCountVertexQuantity(name, values, this);
   addSurfaceQuantity(q);
 }
 
-void SurfaceMesh::addIsolatedVertexQuantity(std::string name, std::vector<std::pair<VertexPtr, double>>& values) {
-  SurfaceCountQuantity* q = new SurfaceIsolatedScalarVertexQuantity(name, values, this);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addCountQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values) {
+void SurfaceMesh::addFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values) {
   SurfaceCountQuantity* q = new SurfaceCountFaceQuantity(name, values, this);
   addSurfaceQuantity(q);
 }
 
-void SurfaceMesh::addSubsetQuantity(std::string name, EdgeData<char>& subset) {
-  SurfaceEdgeSubsetQuantity* q = new SurfaceEdgeSubsetQuantity(name, subset, this);
+void SurfaceMesh::addIsolatedVertexScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>>& values) {
+  SurfaceCountQuantity* q = new SurfaceIsolatedScalarVertexQuantity(name, values, this);
   addSurfaceQuantity(q);
 }
 
-void SurfaceMesh::addVertexSelectionQuantity(std::string name, VertexData<char>& initialMembership) {
-  SurfaceSelectionVertexQuantity* q = new SurfaceSelectionVertexQuantity(name, initialMembership, this);
-  addSurfaceQuantity(q);
-}
 
-void SurfaceMesh::addInputCurveQuantity(std::string name) {
-  SurfaceInputCurveQuantity* q = new SurfaceInputCurveQuantity(name, this);
-  addSurfaceQuantity(q);
-}
+//void SurfaceMesh::addInputCurveQuantity(std::string name) {
+  //SurfaceInputCurveQuantity* q = new SurfaceInputCurveQuantity(name, this);
+  //addSurfaceQuantity(q);
+//}
 
-void SurfaceMesh::addVectorQuantity(std::string name, VertexData<Vector3>& value, VectorType vectorType) {
-  SurfaceVectorQuantity* q = new SurfaceVertexVectorQuantity(name, value, this, vectorType);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addVectorQuantity(std::string name, FaceData<Vector3>& value, VectorType vectorType) {
-  SurfaceVectorQuantity* q = new SurfaceFaceVectorQuantity(name, value, this, vectorType);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addVectorQuantity(std::string name, FaceData<Complex>& value, int nSym, VectorType vectorType) {
-  SurfaceVectorQuantity* q = new SurfaceFaceIntrinsicVectorQuantity(name, value, this, nSym, vectorType);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addVectorQuantity(std::string name, VertexData<Complex>& value, int nSym, VectorType vectorType) {
-  SurfaceVectorQuantity* q = new SurfaceVertexIntrinsicVectorQuantity(name, value, this, nSym, vectorType);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addVectorQuantity(std::string name, EdgeData<double>& value) {
-  SurfaceVectorQuantity* q = new SurfaceOneFormIntrinsicVectorQuantity(name, value, this);
-  addSurfaceQuantity(q);
-}
 
 void SurfaceMesh::removeQuantity(std::string name) {
   if (quantities.find(name) == quantities.end()) {

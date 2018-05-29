@@ -4,8 +4,6 @@
 #include <string>
 #include <iostream>
 
-#include "geometrycentral/vector3.h"
-
 namespace polyscope {
 
 
@@ -49,7 +47,7 @@ class Structure {
   virtual double lengthScale() = 0;
 
   // Axis-aligned bounding box for the structure
-  virtual std::tuple<geometrycentral::Vector3, geometrycentral::Vector3>
+  virtual std::tuple<glm::vec3, glm::vec3>
   boundingBox() = 0;
 
   // === Member variables ===

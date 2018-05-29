@@ -1,6 +1,6 @@
 #pragma once
 
-#include "geometrycentral/vector3.h"
+#include "glm/glm.hpp"
 
 namespace polyscope {
 
@@ -13,8 +13,8 @@ double FIELD_BIGNESS(T x) {
   return x;
 }
 template <>
-double FIELD_BIGNESS(geometrycentral::Vector3 x) {
-  return geometrycentral::norm(x);
+double FIELD_BIGNESS(glm::vec3 x) {
+  return glm::length(x);
 }
 
 // Multiplicative identity
@@ -23,8 +23,8 @@ T FIELD_ONE() {
   return 1;
 }
 template <>
-geometrycentral::Vector3 FIELD_ONE() {
-  return geometrycentral::Vector3{1., 1., 1.};
+glm::vec3 FIELD_ONE() {
+  return glm::vec3{1., 1., 1.};
 }
 
 // Additive identity
@@ -33,8 +33,8 @@ T FIELD_ZERO() {
   return 0;
 }
 template <>
-geometrycentral::Vector3 FIELD_ZERO() {
-  return geometrycentral::Vector3::zero();
+glm::vec3 FIELD_ZERO() {
+  return glm::vec3{0., 0., 0.};
 }
 }; // namespace
 

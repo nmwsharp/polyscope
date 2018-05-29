@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "geometrycentral/vector3.h"
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/structure.h"
 #include "polyscope/color_management.h"
@@ -10,10 +9,10 @@
 namespace polyscope {
 
 struct RayPoint {
-  RayPoint(geometrycentral::Vector3 v_, bool isInf = false)
+  RayPoint(glm::vec3 v_, bool isInf = false)
       : v(v_), isInfiniteDirection(isInf) {}
 
-  geometrycentral::Vector3 v;
+  glm::vec3 v;
 
   // if true, rather than being a point on a path this is a direction, along
   // which the ray heads to infinity
@@ -47,7 +46,7 @@ class RaySet : public Structure {
   virtual double lengthScale() override;
 
   // Axis-aligned bounding box for the structure
-  virtual std::tuple<geometrycentral::Vector3, geometrycentral::Vector3>
+  virtual std::tuple<glm::vec3, glm::vec3>
   boundingBox() override;
 
   bool enabled = false;

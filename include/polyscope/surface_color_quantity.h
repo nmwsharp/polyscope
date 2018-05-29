@@ -22,76 +22,52 @@ public:
 
 class SurfaceColorVertexQuantity : public SurfaceColorQuantity {
 public:
-  SurfaceColorVertexQuantity(std::string name, VertexData<Vector3>& values_, SurfaceMesh* mesh_);
+  SurfaceColorVertexQuantity(std::string name, std::vector<glm::vec3>& values_, SurfaceMesh* mesh_);
   //   ~SurfaceScalarVertexQuantity();
 
   virtual gl::GLProgram* createProgram() override;
 
   void fillColorBuffers(gl::GLProgram* p);
 
-  void buildInfoGUI(VertexPtr v) override;
+  void buildVertexInfoGUI(size_t vInd) override;
 
   // === Members
-  VertexData<Vector3> values;
+  std::vector<glm::vec3> values;
 };
 
+template <class T>
+void SurfaceMesh::addVertexColorQuantity(std::string name, const T& colors) {
+  std::shared_ptr<SurfaceColorQuantity> q = std::make_shared<SurfaceColorVertexQuantity>(
+      name, standardizeArray<glm::vec3, T>(colors, nVertices, "vertex color quantity " + name), this);
+  addSurfaceQuantity(q);
+}
+
 // ========================================================
-// ==========            Face Scalar             ==========
+// ==========             Face Color             ==========
 // ========================================================
 
 class SurfaceColorFaceQuantity : public SurfaceColorQuantity {
 public:
-  SurfaceColorFaceQuantity(std::string name, FaceData<Vector3>& values_, SurfaceMesh* mesh_);
+  SurfaceColorFaceQuantity(std::string name, std::vector<glm::vec3>& values_, SurfaceMesh* mesh_);
   //   ~SurfaceScalarVertexQuantity();
 
   virtual gl::GLProgram* createProgram() override;
 
   void fillColorBuffers(gl::GLProgram* p);
 
-  void buildInfoGUI(FacePtr f) override;
+  void buildFaceInfoGUI(size_t fInd) override;
 
   // === Members
-  FaceData<Vector3> values;
+  std::vector<glm::vec3> values;
 };
 
-/*
-// ========================================================
-// ==========            Edge Scalar             ==========
-// ========================================================
+template <class T>
+void SurfaceMesh::addFaceColorQuantity(std::string name, const T& colors) {
+  std::shared_ptr<SurfaceColorQuantity> q = std::make_shared<SurfaceColorFaceQuantity>(
+      name, standardizeArray<glm::vec3, T>(colors, nFaces, "face color quantity " + name), this);
+  addSurfaceQuantity(q);
+}
 
-class SurfaceScalarEdgeQuantity : public SurfaceColorQuantity {
- public:
-  SurfaceScalarEdgeQuantity(std::string name, EdgeData<double>& values_,
-                            SurfaceMesh* mesh_,
-                            DataType dataType_ = DataType::STANDARD);
-  //   ~SurfaceScalarVertexQuantity();
 
-  virtual gl::GLProgram* createProgram() override;
-
-  void fillColorBuffers(gl::GLProgram* p);
-
-  // === Members
-  EdgeData<double> values;
-};
-
-// ========================================================
-// ==========          Halfedge Scalar           ==========
-// ========================================================
-
-class SurfaceScalarHalfedgeQuantity : public SurfaceColorQuantity {
- public:
-  SurfaceScalarHalfedgeQuantity(std::string name, HalfedgeData<double>& values_,
-                                SurfaceMesh* mesh_,
-                                DataType dataType_ = DataType::STANDARD);
-  //   ~SurfaceScalarVertexQuantity();
-
-  virtual gl::GLProgram* createProgram() override;
-
-  void fillColorBuffers(gl::GLProgram* p);
-
-  // === Members
-  HalfedgeData<double> values;
-};
-*/
 
 } // namespace polyscope

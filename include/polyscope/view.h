@@ -45,11 +45,11 @@ extern float flightTargetFov, flightInitialFov;
 
 // === View methods
 
-void processTranslate(Vector2 delta);
+void processTranslate(glm::vec2 delta);
 void processRotate(float delTheta, float delPhi);
 
 // Arcball roatation. startP and endP should be in [-1,1]
-void processRotateArcball(Vector2 startP, Vector2 endP);
+void processRotateArcball(glm::vec2 startP, glm::vec2 endP);
 
 void processClipPlaneShift(double amount);
 void processZoom(double amount);
@@ -61,9 +61,9 @@ void flyToDefault();
 
 glm::mat4 getCameraViewMatrix();
 glm::mat4 getCameraPerspectiveMatrix();
-Vector3 getCameraWorldPosition();
+glm::vec3 getCameraWorldPosition();
 
-void getCameraFrame(Vector3& lookDir, Vector3& upDir, Vector3& rightDir);
+void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
 
 // Flight-related
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds=.25);
