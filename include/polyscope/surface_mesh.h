@@ -59,14 +59,22 @@ public:
   virtual void setProgramValues(gl::GLProgram* program);
 };
 
+// Triangulation of a (possibly polygonal) face
+// Elements that don't come from the original mesh (eg, interior edges) denoted with INVALID_IND.
+struct TriangulationFace {
+  size_t faceInd;
+  std::array<size_t, 3> vertexInds;
+  std::array<size_t, 3> edgeInds;
+  std::array<size_t, 3> halfedgeInds;
+};
+
 
 class SurfaceMesh : public Structure {
 public:
   // === Member functions ===
 
   // Construct a new surface mesh structure
-  SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions_,
-              const std::vector<std::vector<size_t>>& faceIndices);
+  SurfaceMesh(std::string name, std::vector<glm::vec3> vertexPositions_, std::vector<std::vector<size_t>> faceIndices_);
   ~SurfaceMesh();
 
   // Render the the structure on screen
@@ -145,7 +153,7 @@ public:
   // I/O Selections
   template <class T>
   void addVertexSelectionQuantity(std::string name, const T& initialMembership);
-  //void addInputCurveQuantity(std::string name);
+  // void addInputCurveQuantity(std::string name);
 
 
   void removeQuantity(std::string name);
@@ -159,7 +167,7 @@ public:
 
   // === Mutate
 
-  void updateGeometryPositions(const std::vector<glm::vec3>& newPositions);
+  void updateVertexPositions(const std::vector<glm::vec3>& newPositions);
 
   // === Helpers
   void deleteProgram();
@@ -171,7 +179,14 @@ public:
   // The mesh!
   std::vector<glm::vec3> vertexPositions;
   std::vector<std::vector<size_t>> faceIndices;
-  size_t nVertices, nFaces, nEdges, nHalfedges, nInteriorHalfedges;
+  size_t nVertices, nFaces, nEdges, nHalfedges; // halfedges is "interior" only
+  std::vector<std::vector<size_t>> edgeInd, halfedgeInd;
+  std::vector<TriangulationFace> triangulation;
+
+  // Basic mesh management
+  size_t edgeTailVertex(size_t iEdge);
+  size_t edgeTipVertex(size_t iEdge);
+
 
   static const std::string structureTypeName;
   SubColorManager colorManager;
@@ -226,6 +241,7 @@ private:
 
 
   // === Helper functions
+  void initializeMeshData();
   void fillGeometryBuffersSmooth();
   void fillGeometryBuffersFlat();
   glm::vec2 projectToScreenSpace(glm::vec3 coord);
@@ -248,8 +264,5 @@ inline std::string getMeshElementTypeName(MeshElement type) {
 inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
   return out << getMeshElementTypeName(value);
 }
-
 }
-
-
 

@@ -34,8 +34,8 @@ namespace state {
 bool initialized = false;
 
 double lengthScale = 1.0;
-std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox;
-Vector3 center{0, 0, 0};
+std::tuple<glm::vec3, glm::vec3> boundingBox;
+glm::vec3 center{0, 0, 0};
 
 std::map<std::string, std::map<std::string, Structure*>> structures;
 
@@ -285,9 +285,7 @@ void init() {
 }
 
 
-ImFontAtlas* getGlobalFontAtlas() {
-  return globalFontAtlas;
-}
+ImFontAtlas* getGlobalFontAtlas() { return globalFontAtlas; }
 
 void initializeImGUIContext() {
 
@@ -365,7 +363,7 @@ void evaluatePickQuery(int xPos, int yPos) {
   gl::checkGLError(true);
 
 
-  size_t ind = pick::vecToInd(geometrycentral::Vector3{result[0], result[1], result[2]});
+  size_t ind = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
 
   if (ind == 0) {
     pick::resetPick();
@@ -383,7 +381,7 @@ void processMouseEvents() {
   ImGuiIO& io = ImGui::GetIO();
 
   bool shouldEvaluatePick = pick::alwaysEvaluatePick;
-  if(pick::alwaysEvaluatePick) {
+  if (pick::alwaysEvaluatePick) {
     pick::resetPick();
   }
 
@@ -397,7 +395,7 @@ void processMouseEvents() {
     if (ImGui::IsMouseDragging(0) &&
         !(io.KeyCtrl && !io.KeyShift)) { // if ctrl is pressed but shift is not, don't process a drag
 
-      Vector2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
+      glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
       bool isDragZoom = io.KeyShift && io.KeyCtrl;
       bool isRotate = !io.KeyShift;
       if (isDragZoom) {
@@ -408,8 +406,9 @@ void processMouseEvents() {
 
 
           /* Mediocre arcball
-          Vector2 currPos{io.MousePos.x / view::windowWidth, (view::windowHeight - io.MousePos.y) / view::windowHeight};
-          currPos = (currPos * 2.0) - Vector2{1.0, 1.0};
+          glm::vec2 currPos{io.MousePos.x / view::windowWidth, (view::windowHeight - io.MousePos.y) /
+          view::windowHeight};
+          currPos = (currPos * 2.0) - glm::vec2{1.0, 1.0};
           if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
             view::processRotateArcball(currPos - 2.0 * dragDelta, currPos);
           }
@@ -570,7 +569,7 @@ void draw(bool withUI = true) {
 
   // Build the GUI components
   if (withUI) {
-    //ImGui::ShowDemoWindow();
+    // ImGui::ShowDemoWindow();
 
     // The common case, rendering UI and structures
     if (!focusedPopupUI) {
@@ -695,14 +694,15 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
   return true;
 }
 
-void registerPointCloud(std::string name, const std::vector<Vector3>& points, bool replaceIfPresent) {
+void registerPointCloud(std::string name, const std::vector<glm::vec3>& points, bool replaceIfPresent) {
   PointCloud* s = new PointCloud(name, points);
   bool success = registerStructure(s);
   if (!success) delete s;
 }
 
-void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom, bool replaceIfPresent) {
-  SurfaceMesh* s = new SurfaceMesh(name, geom);
+void registerSurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
+                         const std::vector<std::vector<size_t>>& faceIndices, bool replaceIfPresent) {
+  SurfaceMesh* s = new SurfaceMesh(name, vertexPositions, faceIndices);
   bool success = registerStructure(s);
   if (!success) delete s;
 }
@@ -841,21 +841,21 @@ void removeAllStructures() {
 void updateStructureExtents() {
   // Compute length scale and bbox as the max of all structures
   state::lengthScale = 0.0;
-  Vector3 minBbox = Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
-  Vector3 maxBbox = -Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
+  glm::vec3 minBbox = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
+  glm::vec3 maxBbox = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
 
   for (auto cat : state::structures) {
     for (auto x : cat.second) {
       state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
       auto bbox = x.second->boundingBox();
-      minBbox = geometrycentral::componentwiseMin(minBbox, std::get<0>(bbox));
-      maxBbox = geometrycentral::componentwiseMax(maxBbox, std::get<1>(bbox));
+      minBbox = componentwiseMin(minBbox, std::get<0>(bbox));
+      maxBbox = componentwiseMax(maxBbox, std::get<1>(bbox));
     }
   }
 
-  if (!minBbox.isFinite() || !maxBbox.isFinite()) {
-    minBbox = -Vector3{1, 1, 1};
-    maxBbox = Vector3{1, 1, 1};
+  if (!isFinite(minBbox) || !isFinite(maxBbox)) {
+    minBbox = -glm::vec3{1, 1, 1};
+    maxBbox = glm::vec3{1, 1, 1};
   }
   std::get<0>(state::boundingBox) = minBbox;
   std::get<1>(state::boundingBox) = maxBbox;
@@ -864,11 +864,11 @@ void updateStructureExtents() {
   // box as a scale. If we got neither, we'll end up with a constant near 1 due
   // to the above correction
   if (state::lengthScale == 0) {
-    state::lengthScale = norm(maxBbox - minBbox);
+    state::lengthScale = glm::length(maxBbox - minBbox);
   }
 
   // Center is center of bounding box
-  state::center = 0.5 * (minBbox + maxBbox);
+  state::center = 0.5f * (minBbox + maxBbox);
 }
 
 void screenshot(std::string filename, bool transparentBG) {

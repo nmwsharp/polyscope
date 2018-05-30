@@ -2,8 +2,6 @@
 
 #include "polyscope/structure.h"
 
-#include "geometrycentral/vector3.h"
-
 #include <cstdint>
 
 namespace polyscope {
@@ -44,7 +42,7 @@ const int bitsForPickPacking = 22;
 // const int bitsForPickPacking = 7; // useful for testing, makes pick coloring visually distingushable
 
 // Convert indices to color and back
-inline geometrycentral::Vector3 indToVec(size_t ind) {
+inline glm::vec3 indToVec(size_t ind) {
 
   // Can comfortably fit a 22 bit integer exactly in a single precision float
   size_t factor = 1 << bitsForPickPacking;
@@ -57,10 +55,10 @@ inline geometrycentral::Vector3 indToVec(size_t ind) {
   ind = ind >> bitsForPickPacking;
   size_t high = ind;
 
-  return geometrycentral::Vector3{static_cast<double>(low) / factorF, static_cast<double>(med) / factorF,
+  return glm::vec3{static_cast<double>(low) / factorF, static_cast<double>(med) / factorF,
                                   static_cast<double>(high) / factorF};
 }
-inline size_t vecToInd(geometrycentral::Vector3 vec) {
+inline size_t vecToInd(glm::vec3 vec) {
 
   size_t factor = 1 << bitsForPickPacking;
   double factorF = factor;

@@ -3,6 +3,7 @@
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/cylinder_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/utilities.h"
 
 #include "imgui.h"
 
@@ -11,13 +12,11 @@ using std::endl;
 
 namespace polyscope {
 
-SurfaceEdgeSubsetQuantity::SurfaceEdgeSubsetQuantity(std::string name, EdgeData<char>& edgeSubset_, SurfaceMesh* mesh_)
-    : SurfaceQuantity(name, mesh_)
+SurfaceEdgeSubsetQuantity::SurfaceEdgeSubsetQuantity(std::string name, std::vector<char> edgeSubset_,
+                                                     SurfaceMesh* mesh_)
+    : SurfaceQuantity(name, mesh_), edgeSubset(std::move(edgeSubset_))
 
 {
-
-  // Transfer data
-  edgeSubset = parent->transfer.transfer(edgeSubset_);
 
   // Create the program
   safeDelete(program);
@@ -26,11 +25,11 @@ SurfaceEdgeSubsetQuantity::SurfaceEdgeSubsetQuantity(std::string name, EdgeData<
 
   // Fill buffers
   count = 0;
-  std::vector<Vector3> pTail, pTip;
-  for (EdgePtr e : parent->mesh->edges()) {
-    if (edgeSubset[e]) {
-      pTail.push_back(parent->geometry->position(e.halfedge().vertex()));
-      pTip.push_back(parent->geometry->position(e.halfedge().twin().vertex()));
+  std::vector<glm::vec3> pTail, pTip;
+  for (size_t iE = 0; iE < parent->nEdges; iE++) {
+    if (edgeSubset[iE]) {
+      pTail.push_back(parent->vertexPositions[parent->edgeTailVertex(iE)]);
+      pTip.push_back(parent->vertexPositions[parent->edgeTipVertex(iE)]);
       count++;
     }
   }
@@ -55,7 +54,7 @@ void SurfaceEdgeSubsetQuantity::draw() {
     glm::mat4 projMat = view::getCameraPerspectiveMatrix();
     program->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-    Vector3 eyePos = view::getCameraWorldPosition();
+    glm::vec3 eyePos = view::getCameraWorldPosition();
     program->setUniform("u_eye", eyePos);
 
     program->setUniform("u_lightCenter", state::center);
@@ -80,10 +79,10 @@ void SurfaceEdgeSubsetQuantity::drawUI() {
   }
 }
 
-void SurfaceEdgeSubsetQuantity::buildInfoGUI(EdgePtr e) {
+void SurfaceEdgeSubsetQuantity::buildEdgeInfoGUI(size_t eInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  if (edgeSubset[e]) {
+  if (edgeSubset[eInd]) {
     ImGui::TextUnformatted("yes");
   } else {
     ImGui::TextUnformatted("no");

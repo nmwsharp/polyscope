@@ -10,7 +10,7 @@ namespace polyscope {
 
 class SurfaceEdgeSubsetQuantity : public SurfaceQuantity {
 public:
-  SurfaceEdgeSubsetQuantity(std::string name, std::vector<char>& edgeSubset, SurfaceMesh* mesh_);
+  SurfaceEdgeSubsetQuantity(std::string name, std::vector<char> edgeSubset, SurfaceMesh* mesh_);
   ~SurfaceEdgeSubsetQuantity();
 
   virtual void draw() override;

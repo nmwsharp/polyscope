@@ -8,7 +8,6 @@
 
 #include "imgui.h"
 
-using namespace geometrycentral;
 using std::cout;
 using std::endl;
 
@@ -17,15 +16,13 @@ namespace polyscope {
 // Initialize statics
 const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
-SurfaceMesh::SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_)
-    : Structure(name, SurfaceMesh::structureTypeName) {
+SurfaceMesh::SurfaceMesh(std::string name, std::vector<glm::vec3> vertexPositions_,
+                         std::vector<std::vector<size_t>> faceIndices_)
+    : Structure(name, SurfaceMesh::structureTypeName), vertexPositions(std::move(vertexPositions_)),
+      faceIndices(std::move(faceIndices_)) {
 
-  originalMesh = geometry_->getMesh();
-  originalGeometry = geometry_;
-
-  // Copy the mesh and save the transfer object
-  mesh = geometry_->getMesh()->copy(transfer);
-  geometry = geometry_->copyUsingTransfer(transfer);
+  // Prepare mesh datastructures
+  initializeMeshData();
 
   // Colors
   baseColor = getNextStructureColor();
@@ -40,13 +37,41 @@ SurfaceMesh::SurfaceMesh(std::string name, Geometry<Euclidean>* geometry_)
   }
 }
 
-SurfaceMesh::~SurfaceMesh() {
-  deleteProgram();
+SurfaceMesh::~SurfaceMesh() { deleteProgram(); }
 
-  // Delete quantities
-  for (auto x : quantities) {
-    delete x.second;
+void SurfaceMesh::initializeMeshData() {
+
+  nFaces = faceIndices.size();
+  nVertices = vertexPositions.size();
+
+  // == Index edges and halfedges
+  {
+    auto canonicallize = [](size_t ind1, size_t ind2) {
+      if (ind1 < ind2) return std::make_pair<size_t, size_t>(ind1, ind2);
+      return std::make_pair<size_t, size_t>(ind2, ind1);
+    };
+    std::unordered_map<std::pair<size_t, size_t>, size_t> edgeIndex;
+
+    nHalfedges = 0;
+    nEdges = 0;
+    faceEdgeIndex.clear();
+    faceHalfedgeIndex.clear();
+
+    for(size_t iF = 0; iF < nFaces; iF++) {
+      std::vector<size_t>& adjcentVertInds = faceIndices[iF];
+
+
+    }
   }
+
+
+  // == Build the triangulation
+
+  // == Compute geometric quantities
+
+  // face normals
+
+  // angle-weighted vertex normals
 }
 
 void SurfaceMesh::deleteProgram() {
@@ -72,7 +97,7 @@ void SurfaceMesh::draw() {
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   program->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-  Vector3 eyePos = view::getCameraWorldPosition();
+  glm::vec3 eyePos = view::getCameraWorldPosition();
   program->setUniform("u_eye", eyePos);
 
   program->setUniform("u_lightCenter", state::center);
@@ -125,45 +150,32 @@ void SurfaceMesh::prepare() {
 
 void SurfaceMesh::preparePick() {
 
-  if (!mesh->isSimplicial()) {
-    // TODO. This should be entirely possible by adding some logic to avoid drawing pick colors for virtual
-    // triangulation edges, but hasn't been implemented yet.
-    error("Don't know how to pick from non-triangle mesh");
-  }
-
   // Create a new program
   pickProgram = new gl::GLProgram(&PICK_SURFACE_VERT_SHADER, &PICK_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
 
   // Get element indices
-  size_t totalPickElements = mesh->nVertices() + mesh->nFaces() + mesh->nEdges() + mesh->nHalfedges();
+  size_t totalPickElements = nVertices + nFaces + nEdges + nHalfedges;
 
   // In "local" indices, indexing elements only within this mesh, used for reading later
-  facePickIndStart = mesh->nVertices();
-  edgePickIndStart = facePickIndStart + mesh->nFaces();
-  halfedgePickIndStart = edgePickIndStart + mesh->nEdges();
+  facePickIndStart = nVertices;
+  edgePickIndStart = facePickIndStart + nFaces;
+  halfedgePickIndStart = edgePickIndStart + nEdges;
 
   // In "global" indices, indexing all elements in the scene, used to fill buffers for drawing here
   size_t pickStart = pick::requestPickBufferRange(this, totalPickElements);
-  size_t faceGlobalPickIndStart = pickStart + mesh->nVertices();
-  size_t edgeGlobalPickIndStart = faceGlobalPickIndStart + mesh->nFaces();
-  size_t halfedgeGlobalPickIndStart = edgeGlobalPickIndStart + mesh->nEdges();
+  size_t faceGlobalPickIndStart = pickStart + nVertices;
+  size_t edgeGlobalPickIndStart = faceGlobalPickIndStart + nFaces;
+  size_t halfedgeGlobalPickIndStart = edgeGlobalPickIndStart + nEdges;
 
   // Fill buffers
-  std::vector<Vector3> positions;
-  std::vector<Vector3> bcoord;
-  std::vector<std::array<Vector3, 3>> vertexColors, edgeColors, halfedgeColors;
-  std::vector<Vector3> faceColor;
-
-  // Use natural indices
-  vInd = mesh->getVertexIndices();
-  fInd = mesh->getFaceIndices();
-  eInd = mesh->getEdgeIndices();
-  heInd = mesh->getHalfedgeIndices();
-
-  for (FacePtr f : mesh->faces()) {
+  std::vector<glm::vec3> positions;
+  std::vector<glm::vec3> bcoord;
+  std::vector<std::array<glm::vec3, 3>> vertexColors, edgeColors, halfedgeColors;
+  std::vector<glm::vec3> faceColor;
+  for (size_t fInd = 0; fInd < nFaces; fInd++) {
 
     // Build all quantities
-    std::array<Vector3, 3> vColor, eColor, heColor;
+    std::array<glm::vec3, 3> vColor, eColor, heColor;
     size_t i = 0;
     for (HalfedgePtr he : f.adjacentHalfedges()) {
 
@@ -188,17 +200,17 @@ void SurfaceMesh::preparePick() {
     }
 
     // Just one copy of barycoords needed
-    bcoord.push_back(Vector3{1.0, 0.0, 0.0});
-    bcoord.push_back(Vector3{0.0, 1.0, 0.0});
-    bcoord.push_back(Vector3{0.0, 0.0, 1.0});
+    bcoord.push_back(glm::vec3{1.0, 0.0, 0.0});
+    bcoord.push_back(glm::vec3{0.0, 1.0, 0.0});
+    bcoord.push_back(glm::vec3{0.0, 0.0, 1.0});
   }
 
   // Store data in buffers
   pickProgram->setAttribute("a_position", positions);
   pickProgram->setAttribute("a_barycoord", bcoord);
-  pickProgram->setAttribute<Vector3, 3>("a_vertexColors", vertexColors);
-  pickProgram->setAttribute<Vector3, 3>("a_edgeColors", edgeColors);
-  pickProgram->setAttribute<Vector3, 3>("a_halfedgeColors", halfedgeColors);
+  pickProgram->setAttribute<glm::vec3, 3>("a_vertexColors", vertexColors);
+  pickProgram->setAttribute<glm::vec3, 3>("a_edgeColors", edgeColors);
+  pickProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", halfedgeColors);
   pickProgram->setAttribute("a_faceColor", faceColor);
 }
 
@@ -211,29 +223,29 @@ void SurfaceMesh::fillGeometryBuffers() {
 }
 
 void SurfaceMesh::fillGeometryBuffersSmooth() {
-  std::vector<Vector3> positions;
-  std::vector<Vector3> normals;
-  std::vector<Vector3> bcoord;
-  VertexData<Vector3> vertexNormals;
+  std::vector<glm::vec3> positions;
+  std::vector<glm::vec3> normals;
+  std::vector<glm::vec3> bcoord;
+  VertexData<glm::vec3> vertexNormals;
   geometry->getVertexNormals(vertexNormals);
   for (FacePtr f : mesh->faces()) {
     // Implicitly triangulate
-    Vector3 p0, p1;
-    Vector3 n0, n1;
+    glm::vec3 p0, p1;
+    glm::vec3 n0, n1;
     size_t iP = 0;
     for (VertexPtr v : f.adjacentVertices()) {
-      Vector3 p2 = geometry->position(v);
-      Vector3 n2 = vertexNormals[v];
+      glm::vec3 p2 = geometry->position(v);
+      glm::vec3 n2 = vertexNormals[v];
       if (iP >= 2) {
         positions.push_back(p0);
         normals.push_back(n0);
-        bcoord.push_back(Vector3{1.0, 0.0, 0.0});
+        bcoord.push_back(glm::vec3{1.0, 0.0, 0.0});
         positions.push_back(p1);
         normals.push_back(n1);
-        bcoord.push_back(Vector3{0.0, 1.0, 0.0});
+        bcoord.push_back(glm::vec3{0.0, 1.0, 0.0});
         positions.push_back(p2);
         normals.push_back(n2);
-        bcoord.push_back(Vector3{0.0, 0.0, 1.0});
+        bcoord.push_back(glm::vec3{0.0, 0.0, 1.0});
       }
       p0 = p1;
       p1 = p2;
@@ -250,30 +262,30 @@ void SurfaceMesh::fillGeometryBuffersSmooth() {
 }
 
 void SurfaceMesh::fillGeometryBuffersFlat() {
-  std::vector<Vector3> positions;
-  std::vector<Vector3> normals;
-  std::vector<Vector3> bcoord;
+  std::vector<glm::vec3> positions;
+  std::vector<glm::vec3> normals;
+  std::vector<glm::vec3> bcoord;
 
-  FaceData<Vector3> faceNormals;
+  FaceData<glm::vec3> faceNormals;
   geometry->getFaceNormals(faceNormals);
   for (FacePtr f : mesh->faces()) {
     // Implicitly triangulate
-    Vector3 p0, p1;
-    Vector3 n0, n1;
+    glm::vec3 p0, p1;
+    glm::vec3 n0, n1;
     size_t iP = 0;
     for (VertexPtr v : f.adjacentVertices()) {
-      Vector3 p2 = geometry->position(v);
-      Vector3 n2 = faceNormals[f];
+      glm::vec3 p2 = geometry->position(v);
+      glm::vec3 n2 = faceNormals[f];
       if (iP >= 2) {
         positions.push_back(p0);
         normals.push_back(n0);
-        bcoord.push_back(Vector3{1.0, 0.0, 0.0});
+        bcoord.push_back(glm::vec3{1.0, 0.0, 0.0});
         positions.push_back(p1);
         normals.push_back(n1);
-        bcoord.push_back(Vector3{0.0, 1.0, 0.0});
+        bcoord.push_back(glm::vec3{0.0, 1.0, 0.0});
         positions.push_back(p2);
         normals.push_back(n2);
-        bcoord.push_back(Vector3{0.0, 0.0, 1.0});
+        bcoord.push_back(glm::vec3{0.0, 0.0, 1.0});
       }
       p0 = p1;
       p1 = p2;
@@ -326,7 +338,7 @@ void SurfaceMesh::getPickedElement(size_t localPickID, VertexPtr& vOut, FacePtr&
 }
 
 
-Vector2 SurfaceMesh::projectToScreenSpace(Vector3 coord) {
+Vector2 SurfaceMesh::projectToScreenSpace(glm::vec3 coord) {
 
   glm::mat4 viewMat = getModelView();
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
@@ -336,7 +348,7 @@ Vector2 SurfaceMesh::projectToScreenSpace(Vector3 coord) {
   return Vector2{screenPoint.x, screenPoint.y} / screenPoint.w;
 }
 
-bool SurfaceMesh::screenSpaceTriangleTest(FacePtr f, Vector2 testCoords, Vector3& bCoordOut) {
+bool SurfaceMesh::screenSpaceTriangleTest(FacePtr f, Vector2 testCoords, glm::vec3& bCoordOut) {
 
   // Get points in screen space
   Vector2 p0 = projectToScreenSpace(geometry->position(f.halfedge().vertex()));
@@ -370,12 +382,12 @@ bool SurfaceMesh::screenSpaceTriangleTest(FacePtr f, Vector2 testCoords, Vector3
     return false;
   }
 
-  bCoordOut = Vector3{1.0 - v - w, v, w};
+  bCoordOut = glm::vec3{1.0 - v - w, v, w};
   return true;
 }
 
 
-void SurfaceMesh::getPickedFacePoint(FacePtr& fOut, Vector3& baryCoordOut) {
+void SurfaceMesh::getPickedFacePoint(FacePtr& fOut, glm::vec3& baryCoordOut) {
 
   // Get the most recent pick data
   size_t localInd;
@@ -598,21 +610,21 @@ double SurfaceMesh::lengthScale() {
   // Measure length scale as twice the radius from the center of the bounding
   // box
   auto bound = boundingBox();
-  Vector3 center = 0.5 * (std::get<0>(bound) + std::get<1>(bound));
+  glm::vec3 center = 0.5 * (std::get<0>(bound) + std::get<1>(bound));
 
   double lengthScale = 0.0;
   for (VertexPtr v : mesh->vertices()) {
-    Vector3 p = geometry->position(v);
-    Vector3 transPos = fromGLM(glm::vec3(objectTransform * glm::vec4(p.x, p.y, p.z, 1.0)));
+    glm::vec3 p = geometry->position(v);
+    glm::vec3 transPos = fromGLM(glm::vec3(objectTransform * glm::vec4(p.x, p.y, p.z, 1.0)));
     lengthScale = std::max(lengthScale, geometrycentral::norm2(transPos - center));
   }
 
   return 2 * std::sqrt(lengthScale);
 }
 
-std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> SurfaceMesh::boundingBox() {
-  Vector3 min = Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
-  Vector3 max = -Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
+std::tuple<geometrycentral::glm::vec3, geometrycentral::glm::vec3> SurfaceMesh::boundingBox() {
+  glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<double>::infinity();
+  glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<double>::infinity();
 
   for (VertexPtr v : mesh->vertices()) {
     min = geometrycentral::componentwiseMin(min, geometry->position(v));
@@ -792,10 +804,10 @@ FacePtr SurfaceMesh::selectFace() {
 
 void SurfaceMesh::updateGeometryPositions(Geometry<Euclidean>* newGeometry) {
 
-  VertexData<Vector3> newPositions;
+  VertexData<glm::vec3> newPositions;
   newGeometry->getVertexPositions(newPositions);
 
-  VertexData<Vector3> myNewPositions = transfer.transfer(newPositions);
+  VertexData<glm::vec3> myNewPositions = transfer.transfer(newPositions);
   for (VertexPtr v : mesh->vertices()) {
     geometry->position(v) = myNewPositions[v];
   }
@@ -841,7 +853,6 @@ SurfaceQuantity* SurfaceMesh::getSurfaceQuantity(std::string name, bool errorIfA
 }
 
 
-
 void SurfaceMesh::addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values) {
   SurfaceCountQuantity* q = new SurfaceCountVertexQuantity(name, values, this);
   addSurfaceQuantity(q);
@@ -852,15 +863,16 @@ void SurfaceMesh::addFaceCountQuantity(std::string name, const std::vector<std::
   addSurfaceQuantity(q);
 }
 
-void SurfaceMesh::addIsolatedVertexScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>>& values) {
+void SurfaceMesh::addIsolatedVertexScalarQuantity(std::string name,
+                                                  const std::vector<std::pair<size_t, double>>& values) {
   SurfaceCountQuantity* q = new SurfaceIsolatedScalarVertexQuantity(name, values, this);
   addSurfaceQuantity(q);
 }
 
 
-//void SurfaceMesh::addInputCurveQuantity(std::string name) {
-  //SurfaceInputCurveQuantity* q = new SurfaceInputCurveQuantity(name, this);
-  //addSurfaceQuantity(q);
+// void SurfaceMesh::addInputCurveQuantity(std::string name) {
+// SurfaceInputCurveQuantity* q = new SurfaceInputCurveQuantity(name, this);
+// addSurfaceQuantity(q);
 //}
 
 
@@ -904,8 +916,8 @@ void SurfaceMesh::resetTransform() {
 }
 
 void SurfaceMesh::centerBoundingBox() {
-  std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> bbox = boundingBox();
-  Vector3 center = (std::get<1>(bbox) + std::get<0>(bbox)) / 2.0;
+  std::tuple<geometrycentral::glm::vec3, geometrycentral::glm::vec3> bbox = boundingBox();
+  glm::vec3 center = (std::get<1>(bbox) + std::get<0>(bbox)) / 2.0;
   glm::mat4x4 newTrans = glm::translate(glm::mat4x4(1.0), -glm::vec3(center.x, center.y, center.z));
   objectTransform = objectTransform * newTrans;
   updateStructureExtents();

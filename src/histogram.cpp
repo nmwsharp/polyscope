@@ -66,7 +66,7 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
     for (size_t iData = 0; iData < N; iData++) {
 
       double iBinf = binCount * (values[iData] - minVal) / range;
-      size_t iBin = std::floor(clamp(iBinf, 0.0, (double)binCount - 1));
+      size_t iBin = std::floor(glm::clamp(iBinf, 0.0, (double)binCount - 1));
 
       // NaN values and finite values near the bottom of float range lead to craziness, so only increment bins if we got
       // something reasonable
@@ -193,7 +193,7 @@ void Histogram::fillBuffers() {
   }
 
   // Push to buffer
-  std::vector<Vector2> coords;
+  std::vector<glm::vec2> coords;
 
   if (histCurveY.size() == 0) {
     program->setAttribute("a_coord", coords);
@@ -218,14 +218,14 @@ void Histogram::fillBuffers() {
     }
 
     // = Lower triangle (lower left, lower right, upper left)
-    coords.push_back(Vector2{leftX, 0.0});
-    coords.push_back(Vector2{rightX, 0.0});
-    coords.push_back(Vector2{leftX, leftY});
+    coords.push_back(glm::vec2{leftX, 0.0});
+    coords.push_back(glm::vec2{rightX, 0.0});
+    coords.push_back(glm::vec2{leftX, leftY});
 
     // = Upper triangle (lower right, upper right, upper left)
-    coords.push_back(Vector2{rightX, 0.0});
-    coords.push_back(Vector2{rightX, rightY});
-    coords.push_back(Vector2{leftX, leftY});
+    coords.push_back(glm::vec2{rightX, 0.0});
+    coords.push_back(glm::vec2{rightX, rightY});
+    coords.push_back(glm::vec2{leftX, leftY});
   }
 
   program->setAttribute("a_coord", coords);
