@@ -14,8 +14,6 @@
 
 #include "glm/glm.hpp"
 
-using namespace geometrycentral;
-
 namespace polyscope {
 
 // Initialize static member

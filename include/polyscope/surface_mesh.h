@@ -66,6 +66,7 @@ struct TriangulationFace {
   std::array<size_t, 3> vertexInds;
   std::array<size_t, 3> edgeInds;
   std::array<size_t, 3> halfedgeInds;
+  std::array<size_t, 3> neighborFaceInds; // on the triangulation
 };
 
 
@@ -176,16 +177,40 @@ public:
   // === Member variables ===
   bool enabled = true;
 
-  // The mesh!
+  // == The mesh! ==
+
+  // Vertex positions in R3
   std::vector<glm::vec3> vertexPositions;
+
+  // Vertices that make up each face counter-clockwise, 0-indexed in to vertexPositions.
   std::vector<std::vector<size_t>> faceIndices;
+
+  // Element counts
   size_t nVertices, nFaces, nEdges, nHalfedges; // halfedges is "interior" only
-  std::vector<std::vector<size_t>> edgeInd, halfedgeInd;
+
+  // For each face, the indices of the adjacent edges. Indexed such that edge i comes between vertex i and i+1.
+  std::vector<std::vector<size_t>> faceEdgeIndex;
+
+  // For each face, the indices of the adjacent halfedges. Indexed such that edge i comes between vertex i and i+1.
+  std::vector<std::vector<size_t>> faceHalfedgeIndex;
+
+  // For each face, data about the neighboring face. Indexed such that edge i comes between vertex i and i+1.
+  // Pair is (index of neighboring face, index of the shared edge in the neighboring face). Not well-defined at a
+  // nonmanifold edge.
+  std::vector<std::vector<std::pair<size_t, size_t>>> neighborFaceAndIndex;
+
+  // A triangulation of the mesh.
   std::vector<TriangulationFace> triangulation;
 
-  // Basic mesh management
+  // Helpers to get data from the mesh representaiton above
   size_t edgeTailVertex(size_t iEdge);
   size_t edgeTipVertex(size_t iEdge);
+
+  // Some geometric data on the mesh
+  std::vector<glm::vec3> faceNormals;
+  std::vector<glm::vec3> vertexNormals;
+  std::vector<double> faceAreas;
+  std::vector<double> vertexAreas;
 
 
   static const std::string structureTypeName;
@@ -241,7 +266,13 @@ private:
 
 
   // === Helper functions
+ 
+  // Initialization work
   void initializeMeshData();
+  void initializeMeshIndices();
+  void initializeMeshTriangulation();
+  void initializeMeshGeometry();
+
   void fillGeometryBuffersSmooth();
   void fillGeometryBuffersFlat();
   glm::vec2 projectToScreenSpace(glm::vec3 coord);
@@ -264,5 +295,5 @@ inline std::string getMeshElementTypeName(MeshElement type) {
 inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
   return out << getMeshElementTypeName(value);
 }
-}
+} // namespace polyscope
 

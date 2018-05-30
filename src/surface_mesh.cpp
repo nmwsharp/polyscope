@@ -41,37 +41,250 @@ SurfaceMesh::~SurfaceMesh() { deleteProgram(); }
 
 void SurfaceMesh::initializeMeshData() {
 
+  // TODO add more error checking on input
+
+  initializeMeshIndices();
+  initializeMeshTriangulation();
+  initializeMeshGeometry();
+}
+
+// == Index edges and halfedges and build adjacency info
+void SurfaceMesh::initializeMeshIndices() {
+
   nFaces = faceIndices.size();
   nVertices = vertexPositions.size();
-
-  // == Index edges and halfedges
-  {
-    auto canonicallize = [](size_t ind1, size_t ind2) {
-      if (ind1 < ind2) return std::make_pair<size_t, size_t>(ind1, ind2);
-      return std::make_pair<size_t, size_t>(ind2, ind1);
-    };
-    std::unordered_map<std::pair<size_t, size_t>, size_t> edgeIndex;
-
-    nHalfedges = 0;
-    nEdges = 0;
-    faceEdgeIndex.clear();
-    faceHalfedgeIndex.clear();
-
-    for(size_t iF = 0; iF < nFaces; iF++) {
-      std::vector<size_t>& adjcentVertInds = faceIndices[iF];
+  bool meshIsManifold = true;
 
 
+  // Map of (halfedgeTail, halfedgeTip) --> (faceIndex, halfedgeIndexInFace)
+  std::unordered_map<std::pair<size_t, size_t>, std::pair<size_t, size_t>> faceAndLocalIndForHalfedge;
+
+  auto defaultHalfedgeLookup = [&](std::pair<size_t, size_t> key) {
+    auto it = faceForHalfedge.find(key);
+    if (it == faceForHalfedge.end()) {
+      return std::make_pair<size_t, size_t>(INVALID_IND, INVALID_IND);
+    }
+    return it->second;
+  };
+
+  nHalfedges = 0;
+  nEdges = 0;
+  faceEdgeIndex.clear();
+  faceEdgeIndex.resize(nFaces);
+  faceHalfedgeIndex.clear();
+  faceHalfedgeIndex.resize(nFaces);
+  neighborFaceAndIndex.clear();
+  neighborFaceAndIndex.resize(nFaces);
+
+  // Loop over all faces
+  for (size_t iF = 0; iF < nFaces; iF++) {
+    std::vector<size_t>& adjacentVertInds = faceIndices[iF];
+    size_t nSides = adjacentVertInds.size();
+
+    if (nSides < 3) {
+      polyscope::error("Surface mesh " + name + " has face with < 3 sides");
+    }
+
+    faceHalfedgeIndex[iF].resize(nSides);
+    faceEdgeIndex[iF].resize(nSides);
+    neighborFaceAndIndex[iF].resize(nSides);
+
+    // Loop over all sides of this face
+    for (size_t jEdge = 0; jEdge < nSides; jEdge++) {
+      bool edgeIsManifold = true;
+      neighborFaces[iF][jEdge] = std::make_pair<size_t, size_t>(INVALID_IND, INVALID_IND); // default value
+
+      // Indices of adjacent vertices
+      size_t tailVertInd = adjacentVertInds[jEdge];
+      size_t tipVertInd = adjacentVertInds[(jEdge + 1) % nSides];
+
+      // = Index halfedges
+      faceHalfedgeIndex[iF][jEdge] = nHalfedges++;
+
+      // = Index edges
+      std::pair<size_t, size_t> thisHalfedgeKey = std::make_pair<size_t, size_t>(tailVertInd, tipVertInd);
+      std::pair<size_t, size_t> oppHalfedgeKey = std::make_pair<size_t, size_t>(tipVertInd, tailVertInd);
+
+      // Check if we've already seen this halfedge before (detects nonmanifoldness)
+      size_t prevThisHalfedgeFace = defaultFindFaceForHalfedge(thisHalfedgeKey).first;
+      if (prevThisHalfedgeFace == INVALID_IND) {
+        faceForHalfedge[thisHalfedgeKey] = std::make_pair<size_t, size_t>(iF, jEdge);
+      } else {
+        // Note that the mesh is nonmanifold (and keep the initial value)
+        meshIsManifold = false;
+        edgeIsManifold = false;
+      }
+
+      // Find the neighboring face (if we've already processed one)
+      std::pair<size_t, size_t> oppFaceIndPair = defaultFindFaceForHalfedge(oppHalfedgeKey);
+      size_t oppHalfedgeFace = oppFaceIndPair.first;
+      size_t oppHalfedgeIndInFace = oppFaceIndPair.second;
+      if (oppHalfedgeFace == INVALID_IND) {
+        // We haven't seen this edge before, create a new entry
+        faceEdgeIndex[iF][jEdge] = nEdges++;
+      } else {
+        // We have seen this edge before, get the edge entry from the other face
+        size_t edgeInd = faceEdgeIndex[oppHalfedgeFace][oppHalfedgeIndInFace];
+        faceEdgeIndex[iF][jEdge] = edgeInd;
+
+        // Set both neighbors while we're at it
+        if (edgeIsManifold) {
+          neighborFaceAndIndex[iF][jEdge] = oppFaceIndPair;
+          neighborFaceAndIndex[oppHalfedgeFace][oppHalfedgeIndInFace] = std::make_pair<size_t, size_t>(iF, jEdge);
+        }
+      }
+    }
+  }
+}
+
+
+// == Build the triangulation
+void SurfaceMesh::initializeMeshTriangulation() {
+
+  triangulation.clear();
+
+  // Make a first pass, indexing the triangulated face incident on each halfedge
+  std::vector<std::vector<size_t>> heTriangulatedFaceIndex(nFaces);
+  size_t nTriangulatedFaces = 0;
+  for (size_t iF = 0; iF < nFaces; iF++) {
+    std::vector<size_t>& adjacentVertInds = faceIndices[iF];
+    size_t nSides = adjacentVertInds.size();
+    heTriangulatedFaceIndex[iF].resize(nSides);
+
+    // Label the sides
+    heTriangulatedFaceIndex[iF][0] = nTriangulatedFaces;
+    heTriangulatedFaceIndex[iF].back() = nTriangulatedFaces + (nSides - 2);
+    for (size_t jE = 1; jE < nSides - 1; jE++) {
+      heTriangulatedFaceIndex[iF][jE] = nTriangulatedFaces + jE - 1;
+    }
+
+    nTriangulatedFaces += nSides - 2;
+  }
+
+  // Generate the triangulation (a fan rooted at the base vertex for the triangle)
+  triangulation.resize(nTriangulatedFaces);
+  size_t iTriangulatedFace = 0;
+  for (size_t iF = 0; iF < nFaces; iF++) {
+
+    for (size_t jE = 1; jE < nSides - 1; jE++) {
+
+      // Get a reference to the triangulation face
+      TriangulationFace& currFace = triangulation[iTriangulatedFace];
+
+      // Set vertex indices for triangulation
+      currFace.vertexInds[0] = faceIndices[iF][0];
+      currFace.vertexInds[1] = faceIndices[iF][jE];
+      currFace.vertexInds[2] = faceIndices[iF][jE + 1];
+
+
+      bool isFirstTriangle = (jE == 1);
+      bool isLastTriangle = (jE == nSides - 2);
+
+      // Set first edge quantites
+      if (isFirstTriangle) {
+        currFace.edgeInds[0] = faceEdgeIndex[iF][0];
+        currFace.halfedgeInds[0] = faceHalfedgeIndex[iF][0];
+        if (neighborFaceAndIndex[iF][0].first == INVALID_IND) {
+          currFace.neighborFaceInds[0] = INVALID_IND;
+        } else {
+          currFace.neighborFaceInds[0] =
+              heTriangulatedFaceIndex[neighborFaceAndIndex[iF][0].first][neighborFaceAndIndex[iF][0].second];
+        }
+      } else {
+        currFace.edgeInds[0] = INVALID_IND;
+        currFace.halfedgeInds[0] = INVALID_IND;
+        currFace.neighborFaceInds[0] = INVALID_IND;
+      }
+
+      // Set middle edge quantities
+      currFace.edgeInds[1] = faceEdgeIndex[iF][jE];
+      currFace.halfedgeInds[1] = faceHalfedgeIndex[iF][jE];
+      if (neighborFaceAndIndex[iF][jE].first == INVALID_IND) {
+        currFace.neighborFaceInds[1] = INVALID_IND;
+      } else {
+        currFace.neighborFaceInds[1] =
+            heTriangulatedFaceIndex[neighborFaceAndIndex[iF][jE].first][neighborFaceAndIndex[iF][jE].second];
+      }
+
+      // Set last edge quantites
+      if (isFirstTriangle) {
+        size_t lastInd = nSides - 1;
+        currFace.edgeInds[2] = faceEdgeIndex[iF][lastInd];
+        currFace.halfedgeInds[2] = faceHalfedgeIndex[iF][lastInd];
+        if (neighborFaceAndIndex[iF][lastInd].first == INVALID_IND) {
+          currFace.neighborFaceInds[2] = INVALID_IND;
+        } else {
+          currFace.neighborFaceInds[2] = heTriangulatedFaceIndex[neighborFaceAndIndex[iF][lastInd].first]
+                                                                [neighborFaceAndIndex[iF][lastInd].second];
+        }
+      } else {
+        currFace.edgeInds[2] = INVALID_IND;
+        currFace.halfedgeInds[2] = INVALID_IND;
+        currFace.neighborFaceInds[2] = INVALID_IND;
+      }
+
+
+      iTriangulatedFace++;
+    }
+  }
+}
+
+void SurfaceMesh::initializeMeshGeometry() {
+
+  // == Compute geometric quantities
+  faceNormals.resize(nFaces);
+  faceAreas.resize(nFaces);
+  vertexAreas.resize(nVertices);
+  std::fill(vertexAreas.begin(), vertexAreas.end(), 0.0);
+
+  vertexNormals.resize(nVertices);
+  std::fill(vertexNormals.begin(), vertexNormals.end(), glm::vec3{0., 0., 0.});
+
+  // Loop over faces to compute most quantities
+  for (size_t iF = 0; iF < nFaces; iF++) {
+    std::vector<size_t>& adjacentVertInds = faceIndices[iF];
+    size_t nSides = adjacentVertices.size();
+
+    double areaSum = 0;
+    glm::vec3 normalSum{0., 0., 0.};
+    for (size_t jE = 2; jE < nSides; jE++) {
+      // (implicit fan triangulation)
+      size_t v0 = adjacentVertInds[0];
+      size_t v1 = adjacentVertInds[jE - 1];
+      size_t v2 = adjacentVertInds[jE];
+
+      glm::vec3 vec01 = vertexPositions[v1] - vertexPositions[v0];
+      glm::vec3 vec02 = vertexPositions[v2] - vertexPositions[v0];
+      glm::vec3 areaNormal = glm::cross(v01, v02);
+
+      double area = 0.5 * glm::length(areaNormal);
+      areaSum += area;
+      normalSum += areaNormal;
+    }
+
+    faceAreas[iF] = areaSum;
+    faceNormals[iF] = glm::normalize(normalSum);
+
+    for (size_t jV = 0; jV < nSides; jV++) {
+      size_t v = adjacentVertInds[jV];
+      size_t vPrev = adjacentVertInds[(jV + nSides - 1) % nSides];
+      size_t vNext = adjacentVertInds[(jV + 1) % nSides];
+
+      // Assign area to vertices evenly
+      vertexAreas[v] += areaSum / 3.0;
+
+      // Angle-weighted vertex normals
+      glm::vec3 vecPrev = glm::normalize(vertexPositions[vPrev] - vertexPositions[v]);
+      glm::vec3 vecNext = glm::normalize(vertexPositions[vNext] - vertexPositions[v]);
+      double angle = std::acos(clamp(glm::dot(vecPrev, vecNext), -1.0, 1.0));
+      vertexNormals[v] += angle * faceNormals[iF];
     }
   }
 
-
-  // == Build the triangulation
-
-  // == Compute geometric quantities
-
-  // face normals
-
-  // angle-weighted vertex normals
+  // Normalize vertex normals
+  for (size_t iV = 0; iV < nVertices; iV++) {
+    vertexNormals[iV] = glm::normalize(vertexNormals[iV]);
+  }
 }
 
 void SurfaceMesh::deleteProgram() {
