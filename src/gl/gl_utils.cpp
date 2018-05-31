@@ -535,6 +535,47 @@ void GLProgram::setAttribute(std::string name, const std::vector<Vector2>& data,
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
+void GLProgram::setAttribute(std::string name, const std::vector<Color3f>& data, bool update, int offset, int size) {
+  // Reshape the vector
+  // Right now, the data is probably laid out in this form already... but let's
+  // not be overly clever and just reshape it.
+  std::vector<float> rawData(3 * data.size());
+  for (unsigned int i = 0; i < data.size(); i++) {
+    rawData[3 * i + 0] = static_cast<float>(data[i].x);
+    rawData[3 * i + 1] = static_cast<float>(data[i].y);
+    rawData[3 * i + 2] = static_cast<float>(data[i].z);
+  }
+
+  for (GLAttribute& a : attributes) {
+    if (a.name == name) {
+      if (a.type == GLData::Vector3Float) {
+        glBindVertexArray(vaoHandle);
+        glBindBuffer(GL_ARRAY_BUFFER, a.VBOLoc);
+        if (update) {
+          // TODO: Allow modifications to non-contiguous memory
+          offset *= 3 * sizeof(float);
+          if (size == -1)
+            size = 3 * a.dataSize * sizeof(float);
+          else
+            size *= 3 * sizeof(float);
+
+          glBufferSubData(GL_ARRAY_BUFFER, offset, size, &rawData[0]);
+        } else {
+          glBufferData(GL_ARRAY_BUFFER, 3 * data.size() * sizeof(float), &rawData[0], GL_STATIC_DRAW);
+          a.dataSize = data.size();
+        }
+      } else {
+        throw std::invalid_argument("Tried to set GLAttribute named " + name +
+                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
+                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::Vector3Float)));
+      }
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
 void GLProgram::setAttribute(std::string name, const std::vector<Vector3>& data, bool update, int offset, int size) {
   // Reshape the vector
   // Right now, the data is probably laid out in this form already... but let's

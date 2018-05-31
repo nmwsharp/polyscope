@@ -7,8 +7,6 @@
 
 #include "imgui.h"
 
-using namespace geometrycentral;
-
 namespace polyscope {
 
 // Initialize static
@@ -69,7 +67,7 @@ void RaySet::prepare() {
                               gl::DrawMode::Lines);
 
   // Attributes to fill
-  std::vector<Vector3> points;
+  std::vector<glm::vec3> points;
   std::vector<double> times;
   std::vector<double> offsets;
 
@@ -80,7 +78,7 @@ void RaySet::prepare() {
     }
 
     // Generate a random offset on [0,1]
-    double offset = unitRand();
+    double offset = randomUnit();
     double currT = 0;
 
     // Validate
@@ -93,8 +91,8 @@ void RaySet::prepare() {
       const RayPoint& pCurr = path[iP];
       const RayPoint& pNext = path[iP + 1];
 
-      Vector3 pStart = pCurr.v;
-      Vector3 pEnd = pNext.v;
+      glm::vec3 pStart = pCurr.v;
+      glm::vec3 pEnd = pNext.v;
 
       // Special case for infinite rays
       if (pNext.isInfiniteDirection) {
@@ -102,7 +100,7 @@ void RaySet::prepare() {
           // Special case for ending in an infinite ray
           // Shooot off in to distance
           // TODO do somethign better (this won't update as lengthscale is changed, which is bad)
-          pEnd = pStart + 20 * state::lengthScale * pNext.v;
+          pEnd = pStart + 20.f * (float)state::lengthScale * pNext.v;
 
         } else {
           // Validate
@@ -112,7 +110,7 @@ void RaySet::prepare() {
       }
 
       // General case: another point in the path
-      double len = norm(pStart - pEnd);
+      double len = glm::length(pStart - pEnd);
 
       // First point
       points.push_back(pStart);
@@ -135,7 +133,7 @@ void RaySet::prepare() {
 
   // Set a reasonable default value for the default view factor
   float maxReasonableViewRays = 10000;
-  viewIntervalFactor = clamp(maxReasonableViewRays / (.5 * points.size()), 0.0, 1.0); 
+  viewIntervalFactor = glm::clamp(maxReasonableViewRays / (.5 * points.size()), 0.0, 1.0); 
 }
 
 void RaySet::preparePick() {}
@@ -163,14 +161,14 @@ double RaySet::lengthScale() {
   // Measure length scale as twice the radius from the center of the bounding
   // box
   auto bound = boundingBox();
-  Vector3 center = 0.5 * (std::get<0>(bound) + std::get<1>(bound));
+  glm::vec3 center = 0.5f * (std::get<0>(bound) + std::get<1>(bound));
 
   double lengthScale = 0.0;
   for (const auto& path : rayPaths) {
     for (const RayPoint& p : path) {
       if (!p.isInfiniteDirection) {
         lengthScale =
-            std::max(lengthScale, geometrycentral::norm2(p.v - center));
+            std::max(lengthScale, (double)glm::length2(p.v - center));
       }
     }
   }
@@ -178,16 +176,16 @@ double RaySet::lengthScale() {
   return 2 * std::sqrt(lengthScale);
 }
 
-std::tuple<geometrycentral::Vector3, geometrycentral::Vector3>
+std::tuple<glm::vec3, glm::vec3>
 RaySet::boundingBox() {
-  Vector3 min = Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
-  Vector3 max = -Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
+  glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
+  glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
 
   for (const auto& path : rayPaths) {
     for (const RayPoint& p : path) {
       if (!p.isInfiniteDirection) {
-        min = geometrycentral::componentwiseMin(min, p.v);
-        max = geometrycentral::componentwiseMax(max, p.v);
+        min = componentwiseMin(min, p.v);
+        max = componentwiseMax(max, p.v);
       }
     }
   }

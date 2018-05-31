@@ -101,12 +101,7 @@ void CameraView::drawPick() {
   pickProgram->draw();
 }
 
-// Helper function to convert glm::vec3 to Vector3
-namespace {
-Vector3 toV(glm::vec3 x) { return Vector3{x.x, x.y, x.z}; }
-} // namespace
-
-Vector3 CameraView::location() { return toV(parameters.getPosition()); }
+glm::vec3 CameraView::location() { return parameters.getPosition(); }
 
 void CameraView::prepare() {}
 
@@ -114,7 +109,7 @@ void CameraView::preparePick() {
 
   // Request pick index
   size_t pickInd = pick::requestPickBufferRange(this, 1);
-  Vector3 indColor = pick::indToVec(pickInd);
+  glm::vec3 indColor = pick::indToVec(pickInd);
 
   // Create a new pick program
   safeDelete(pickProgram);
@@ -122,10 +117,10 @@ void CameraView::preparePick() {
                                   gl::DrawMode::Triangles);
 
   // Fill an index buffer
-  std::vector<Vector3> pickColors;
-  std::vector<Vector3> positions;
+  std::vector<glm::vec3> pickColors;
+  std::vector<glm::vec3> positions;
 
-  auto addTriangle = [&](Vector3 p1, Vector3 p2, Vector3 p3) {
+  auto addTriangle = [&](glm::vec3 p1, glm::vec3 p2, glm::vec3 p3) {
     positions.push_back(p1);
     positions.push_back(p2);
     positions.push_back(p3);
@@ -137,9 +132,9 @@ void CameraView::preparePick() {
   // = Build the camera skeleton
 
   // Get relevant camera vectors
-  Vector3 root, lookDir, upDir, rightDir;
-  std::array<Vector3, 4> framePoints;
-  std::array<Vector3, 3> dirFrame;
+  glm::vec3 root, lookDir, upDir, rightDir;
+  std::array<glm::vec3, 4> framePoints;
+  std::array<glm::vec3, 3> dirFrame;
   getCameraPoints(root, framePoints, dirFrame);
 
   for(int i = 0; i < 4; i++) {
@@ -157,16 +152,16 @@ void CameraView::prepareCameraSkeleton() {
 
   // Relevant points in world space
   cameraSkeletonScale = state::lengthScale;
-  Vector3 root, lookDir, upDir, rightDir;
-  std::array<Vector3, 4> framePoints;
-  std::array<Vector3, 3> dirFrame;
+  glm::vec3 root, lookDir, upDir, rightDir;
+  std::array<glm::vec3, 4> framePoints;
+  std::array<glm::vec3, 3> dirFrame;
   getCameraPoints(root, framePoints, dirFrame);
   lookDir = dirFrame[0];
   upDir = dirFrame[1];
   rightDir = dirFrame[2];
 
   // Triangles to draw
-  std::vector<Vector3> positions; // position in space
+  std::vector<glm::vec3> positions; // position in space
 
   // Add lines
   for (int i = 0; i < 4; i++) {
@@ -183,8 +178,8 @@ void CameraView::prepareCameraSkeleton() {
   cameraSkeletonProgram->setAttribute("a_position", positions);
 }
 
-void CameraView::getCameraPoints(Vector3& rootV, std::array<Vector3, 4>& framePoints,
-                                 std::array<Vector3, 3>& dirFrame) {
+void CameraView::getCameraPoints(glm::vec3& rootV, std::array<glm::vec3, 4>& framePoints,
+                                 std::array<glm::vec3, 3>& dirFrame) {
   glm::vec3 root = parameters.getPosition();
   glm::vec3 lookDir = parameters.getLookDir();
   glm::vec3 upDir = parameters.getUpDir();
@@ -199,15 +194,15 @@ void CameraView::getCameraPoints(Vector3& rootV, std::array<Vector3, 4>& framePo
   glm::vec3 upperRight = root + cameraDrawSize * lookDir + upDir * frameDrawHeight + rightDir * frameDrawWidth;
   glm::vec3 lowerRight = root + cameraDrawSize * lookDir - upDir * frameDrawHeight + rightDir * frameDrawWidth;
 
-  rootV = toV(root);
-  framePoints[0] = toV(upperRight);
-  framePoints[1] = toV(upperLeft);
-  framePoints[2] = toV(lowerLeft);
-  framePoints[3] = toV(lowerRight);
+  rootV = root;
+  framePoints[0] = upperRight;
+  framePoints[1] = upperLeft;
+  framePoints[2] = lowerLeft;
+  framePoints[3] = lowerRight;
 
-  dirFrame[0] = toV(lookDir);
-  dirFrame[1] = toV(upDir);
-  dirFrame[2] = toV(rightDir);
+  dirFrame[0] = lookDir;
+  dirFrame[1] = upDir;
+  dirFrame[2] = rightDir;
 }
 
 void CameraView::drawSharedStructureUI() { ImGui::SliderFloat("Opaque", &globalImageTransparency, 0.0, 1.0, "%.2f"); }
@@ -327,18 +322,18 @@ void CameraView::setActiveImage(std::string name) {
   // The frame on which we will draw
 
   // Get properties of the frame
-  Vector3 root;
-  std::array<Vector3, 4> framePoints;
-  std::array<Vector3, 3> dirFrame;
+  glm::vec3 root;
+  std::array<glm::vec3, 4> framePoints;
+  std::array<glm::vec3, 3> dirFrame;
   getCameraPoints(root, framePoints, dirFrame);
-  std::array<Vector2, 4> frameCoords = {{Vector2{1, 0}, Vector2{0, 0}, Vector2{0, 1}, Vector2{1, 1}}};
+  std::array<glm::vec2, 4> frameCoords = {{glm::vec2{1, 0}, glm::vec2{0, 0}, glm::vec2{0, 1}, glm::vec2{1, 1}}};
 
   // The two triangles which compose the frame
   std::vector<std::array<int, 3>> tris = {{{0, 1, 3}}, {{1, 2, 3}}};
 
   // Build position and texture coord buffers
-  std::vector<Vector3> positions;
-  std::vector<Vector2> tCoords;
+  std::vector<glm::vec3> positions;
+  std::vector<glm::vec2> tCoords;
   for (auto t : tris) {
     for (int ind : t) {
       positions.push_back(framePoints[ind]);
@@ -360,8 +355,8 @@ void CameraView::clearActiveImage() {
 
 double CameraView::lengthScale() { return 0; }
 
-std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> CameraView::boundingBox() {
-  Vector3 pos = location();
+std::tuple<glm::vec3, glm::vec3> CameraView::boundingBox() {
+  glm::vec3 pos = location();
   return std::make_tuple(pos, pos);
 }
 

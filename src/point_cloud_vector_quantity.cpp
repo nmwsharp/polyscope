@@ -7,8 +7,6 @@
 
 #include "imgui.h"
 
-#include "Eigen/Dense"
-
 #include <fstream>
 #include <iostream>
 
@@ -18,7 +16,7 @@ using std::endl;
 
 namespace polyscope {
 
-PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector<Vector3> vectors_,
+PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                    PointCloud* pointCloud_, VectorType vectorType_)
 
     : PointCloudQuantity(name, pointCloud_), vectorType(vectorType_), vectors(vectors_) {
@@ -33,7 +31,7 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
   if (vectorType == VectorType::AMBIENT) {
     mapper.setMinMax(vectors);
   } else {
-    mapper = AffineRemapper<Vector3>(vectors, DataType::MAGNITUDE);
+    mapper = AffineRemapper<glm::vec3>(vectors, DataType::MAGNITUDE);
   }
 
   // Default viz settings
@@ -61,7 +59,7 @@ void PointCloudVectorQuantity::draw() {
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   program->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-  Vector3 eyePos = view::getCameraWorldPosition();
+  glm::vec3 eyePos = view::getCameraWorldPosition();
   program->setUniform("u_eye", eyePos);
 
   program->setUniform("u_lightCenter", state::center);
@@ -83,8 +81,8 @@ void PointCloudVectorQuantity::prepare() {
                               gl::DrawMode::Points);
 
   // Fill buffers
-  std::vector<Vector3> mappedVectors;
-  for (Vector3 v : vectors) {
+  std::vector<glm::vec3> mappedVectors;
+  for (glm::vec3 v : vectors) {
     mappedVectors.push_back(mapper.map(v));
   }
 
@@ -135,7 +133,7 @@ void PointCloudVectorQuantity::buildInfoGUI(size_t ind) {
 
   ImGui::NextColumn();
   ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", norm(vectors[ind]));
+  ImGui::Text("magnitude: %g", glm::length(vectors[ind]));
   ImGui::NextColumn();
 }
 
@@ -156,7 +154,7 @@ void PointCloudVectorQuantity::writeToFile(std::string filename) {
   outFile << "#displaylength " << (lengthMult * state::lengthScale) << endl;
 
   for (size_t i = 0; i < vectors.size(); i++) {
-    if (norm(vectors[i]) > 0) {
+    if (glm::length2(vectors[i]) > 0) {
       outFile << parent->points[i] << " " << vectors[i] << endl;
     }
   }

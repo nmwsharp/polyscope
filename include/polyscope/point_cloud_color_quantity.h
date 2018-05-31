@@ -11,7 +11,7 @@ namespace polyscope {
 
 class PointCloudColorQuantity : public PointCloudQuantityThatDrawsPoints {
 public:
-  PointCloudColorQuantity(std::string name, const std::vector<Vector3>& values, PointCloud* pointCloud_);
+  PointCloudColorQuantity(std::string name, const std::vector<glm::vec3>& values, PointCloud* pointCloud_);
 
   virtual void drawUI() override;
   virtual bool wantsBillboardUniforms() override;
@@ -22,7 +22,7 @@ public:
   void buildInfoGUI(size_t ind) override;
 
   // === Members
-  std::vector<Vector3> values;
+  std::vector<glm::vec3> values;
 };
 
 

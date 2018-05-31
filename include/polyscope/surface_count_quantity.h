@@ -40,7 +40,7 @@ protected:
 
 class SurfaceCountVertexQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceCountVertexQuantity(std::string name, std::vector<std::pair<size_t, int>>& values_, SurfaceMesh* mesh_);
+  SurfaceCountVertexQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values_, SurfaceMesh* mesh_);
   //   ~SurfaceCountVertexQuantity();
 
   void buildVertexInfoGUI(size_t vInd) override;
@@ -55,7 +55,7 @@ public:
 
 class SurfaceIsolatedScalarVertexQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceIsolatedScalarVertexQuantity(std::string name, std::vector<std::pair<size_t, double>>& values_,
+  SurfaceIsolatedScalarVertexQuantity(std::string name, const std::vector<std::pair<size_t, double>>& values_,
                                       SurfaceMesh* mesh_);
   //   ~SurfaceCountVertexQuantity();
 
@@ -72,7 +72,7 @@ public:
 
 class SurfaceCountFaceQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceCountFaceQuantity(std::string name, std::vector<std::pair<size_t, int>>& values_, SurfaceMesh* mesh_);
+  SurfaceCountFaceQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values_, SurfaceMesh* mesh_);
   //   ~SurfaceCountVertexQuantity();
 
   void buildFaceInfoGUI(size_t f) override;

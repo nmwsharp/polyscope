@@ -76,6 +76,8 @@ public:
                     int size = -1);
   void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0,
                     int size = -1);
+  void setAttribute(std::string name, const std::vector<Color3f>& data, bool update = false, int offset = 0,
+                    int size = -1);
   void setAttribute(std::string name, const std::vector<double>& data, bool update = false, int offset = 0,
                     int size = -1);
   void setAttribute(std::string name, const std::vector<int>& data, bool update = false, int offset = 0, int size = -1);

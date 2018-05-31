@@ -4,6 +4,8 @@
 #include <string>
 #include <iostream>
 
+#include "glm/glm.hpp"
+
 namespace polyscope {
 
 

@@ -34,7 +34,7 @@ void SurfaceColorQuantity::drawUI() {
 // ==========           Vertex Color            ==========
 // ========================================================
 
-SurfaceColorVertexQuantity::SurfaceColorVertexQuantity(std::string name, VertexData<Vector3>& values_,
+SurfaceColorVertexQuantity::SurfaceColorVertexQuantity(std::string name, VertexData<glm::vec3>& values_,
                                                        SurfaceMesh* mesh_)
     : SurfaceColorQuantity(name, mesh_, "vertex")
 
@@ -54,13 +54,13 @@ gl::GLProgram* SurfaceColorVertexQuantity::createProgram() {
 }
 
 void SurfaceColorVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
-  std::vector<Vector3> colorval;
+  std::vector<glm::vec3> colorval;
   for (FacePtr f : parent->mesh->faces()) {
     // Implicitly triangulate
-    Vector3 c0, c1;
+    glm::vec3 c0, c1;
     size_t iP = 0;
     for (VertexPtr v : f.adjacentVertices()) {
-      Vector3 c2 = values[v];
+      glm::vec3 c2 = values[v];
       if (iP >= 2) {
         colorval.push_back(c0);
         colorval.push_back(c1);
@@ -94,7 +94,7 @@ void SurfaceColorVertexQuantity::buildInfoGUI(VertexPtr v) {
 // ==========            Face Scalar             ==========
 // ========================================================
 
-SurfaceColorFaceQuantity::SurfaceColorFaceQuantity(std::string name, FaceData<Vector3>& values_, SurfaceMesh* mesh_)
+SurfaceColorFaceQuantity::SurfaceColorFaceQuantity(std::string name, FaceData<glm::vec3>& values_, SurfaceMesh* mesh_)
     : SurfaceColorQuantity(name, mesh_, "face")
 
 {
@@ -113,13 +113,13 @@ gl::GLProgram* SurfaceColorFaceQuantity::createProgram() {
 }
 
 void SurfaceColorFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
-  std::vector<Vector3> colorval;
+  std::vector<glm::vec3> colorval;
   for (FacePtr f : parent->mesh->faces()) {
     // Implicitly triangulate
-    Vector3 c0, c1;
+    glm::vec3 c0, c1;
     size_t iP = 0;
     for (VertexPtr v : f.adjacentVertices()) {
-      Vector3 c2 = values[f];
+      glm::vec3 c2 = values[f];
       if (iP >= 2) {
         colorval.push_back(c0);
         colorval.push_back(c1);
@@ -182,7 +182,7 @@ gl::GLProgram* SurfaceScalarEdgeQuantity::createProgram() {
 }
 
 void SurfaceScalarEdgeQuantity::fillColorBuffers(gl::GLProgram* p) {
-  std::vector<Vector3> colorval;
+  std::vector<glm::vec3> colorval;
   for (FacePtr f : parent->mesh->faces()) {
     // Implicitly triangulate
     double c0, c1;
@@ -191,9 +191,9 @@ void SurfaceScalarEdgeQuantity::fillColorBuffers(gl::GLProgram* p) {
       VertexPtr v = he.vertex();
       double c2 = mapper.map(values[he.next().edge()]);
       if (iP >= 2) {
-        colorval.push_back(Vector3{c0, c1, c2});
-        colorval.push_back(Vector3{c0, c1, c2});
-        colorval.push_back(Vector3{c0, c1, c2});
+        colorval.push_back(glm::vec3{c0, c1, c2});
+        colorval.push_back(glm::vec3{c0, c1, c2});
+        colorval.push_back(glm::vec3{c0, c1, c2});
       }
       if (iP > 2) {
         error("Edge quantities not correct for non-triangular meshes");
@@ -241,7 +241,7 @@ gl::GLProgram* SurfaceScalarHalfedgeQuantity::createProgram() {
 }
 
 void SurfaceScalarHalfedgeQuantity::fillColorBuffers(gl::GLProgram* p) {
-  std::vector<Vector3> colorval;
+  std::vector<glm::vec3> colorval;
   for (FacePtr f : parent->mesh->faces()) {
     // Implicitly triangulate
     double c0, c1;
@@ -250,9 +250,9 @@ void SurfaceScalarHalfedgeQuantity::fillColorBuffers(gl::GLProgram* p) {
       VertexPtr v = he.vertex();
       double c2 = mapper.map(values[he.next()]);
       if (iP >= 2) {
-        colorval.push_back(Vector3{c0, c1, c2});
-        colorval.push_back(Vector3{c0, c1, c2});
-        colorval.push_back(Vector3{c0, c1, c2});
+        colorval.push_back(glm::vec3{c0, c1, c2});
+        colorval.push_back(glm::vec3{c0, c1, c2});
+        colorval.push_back(glm::vec3{c0, c1, c2});
       }
       if (iP > 2) {
         error("Edge quantities not correct for non-triangular meshes");

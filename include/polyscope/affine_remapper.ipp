@@ -7,15 +7,17 @@ namespace polyscope {
 // Helpers used mainy to treat vectors as fields
 namespace {
 
+
 // Field "size" used to compare elements for SIGNED bigness
 template <typename T>
-double FIELD_BIGNESS(T x) {
+typename FIELD_MAG<T>::type FIELD_BIGNESS(T x) {
   return x;
 }
 template <>
-double FIELD_BIGNESS(glm::vec3 x) {
+typename FIELD_MAG<glm::vec3>::type FIELD_BIGNESS(glm::vec3 x) {
   return glm::length(x);
 }
+
 
 // Multiplicative identity
 template <typename T>
@@ -40,15 +42,16 @@ glm::vec3 FIELD_ZERO() {
 
 
 template <typename T>
-std::pair<double, double> robustMinMax(const std::vector<T>& data, double rangeEPS) {
+std::pair<typename FIELD_MAG<T>::type, typename FIELD_MAG<T>::type> robustMinMax(const std::vector<T>& data,
+                                                                                 typename FIELD_MAG<T>::type rangeEPS) {
 
   if (data.size() == 0) {
     return std::make_pair(-1.0, 1.0);
   }
 
   // Compute max and min of data for mapping
-  double minVal = std::numeric_limits<double>::infinity();
-  double maxVal = -std::numeric_limits<double>::infinity();
+  typename FIELD_MAG<T>::type minVal = std::numeric_limits<typename FIELD_MAG<T>::type>::infinity();
+  typename FIELD_MAG<T>::type maxVal = -std::numeric_limits<typename FIELD_MAG<T>::type>::infinity();
   bool anyFinite = false;
   for (const T& x : data) {
     if (std::isfinite(FIELD_BIGNESS(x))) {
@@ -57,17 +60,17 @@ std::pair<double, double> robustMinMax(const std::vector<T>& data, double rangeE
       anyFinite = true;
     }
   }
-  if(!anyFinite) {
+  if (!anyFinite) {
     return std::make_pair(-1.0, 1.0);
   }
-  double maxMag = std::max(std::abs(minVal), std::abs(maxVal));
+  typename FIELD_MAG<T>::type maxMag = std::max(std::abs(minVal), std::abs(maxVal));
 
   // Hack to do less ugly things when constants (or near-constant) are passed in
   if (maxMag < rangeEPS) {
     maxVal = rangeEPS;
     minVal = -rangeEPS;
   } else if ((maxVal - minVal) / maxMag < rangeEPS) {
-    double mid = (minVal + maxVal) / 2.0;
+    typename FIELD_MAG<T>::type mid = (minVal + maxVal) / 2.0;
     maxVal = mid + maxMag * rangeEPS;
     minVal = mid - maxMag * rangeEPS;
   }
@@ -76,24 +79,24 @@ std::pair<double, double> robustMinMax(const std::vector<T>& data, double rangeE
 }
 
 template <typename T>
-AffineRemapper<T>::AffineRemapper(T offset_, double scale_)
+AffineRemapper<T>::AffineRemapper(T offset_, typename FIELD_MAG<T>::type scale_)
     : offset(offset_), scale(scale){
 
                        };
 
 template <typename T>
 AffineRemapper<T>::AffineRemapper()
-    : offset(FIELD_ZERO<T>()), scale(1.0), minVal(std::numeric_limits<double>::quiet_NaN()),
-      maxVal(std::numeric_limits<double>::quiet_NaN()){
+    : offset(FIELD_ZERO<T>()), scale(1.0), minVal(std::numeric_limits<typename FIELD_MAG<T>::type>::quiet_NaN()),
+      maxVal(std::numeric_limits<typename FIELD_MAG<T>::type>::quiet_NaN()){
 
       };
 
 template <typename T>
 AffineRemapper<T>::AffineRemapper(const std::vector<T>& data, DataType datatype) {
   // Compute max and min of data for mapping
-  minVal = std::numeric_limits<double>::infinity();
+  minVal = std::numeric_limits<typename FIELD_MAG<T>::type>::infinity();
   T minElem;
-  maxVal = -std::numeric_limits<double>::infinity();
+  maxVal = -std::numeric_limits<typename FIELD_MAG<T>::type>::infinity();
   for (const T& x : data) {
     if (FIELD_BIGNESS(x) < minVal) {
       minElem = x;
@@ -101,16 +104,16 @@ AffineRemapper<T>::AffineRemapper(const std::vector<T>& data, DataType datatype)
     }
     maxVal = std::max(maxVal, FIELD_BIGNESS(x));
   }
-  double maxMag = std::max(std::abs(minVal), std::abs(maxVal));
+  typename FIELD_MAG<T>::type maxMag = std::max(std::abs(minVal), std::abs(maxVal));
 
   // Hack to do less ugly things when constants (or near-constant) are passed in
-  double rangeEPS = 1E-12;
+  typename FIELD_MAG<T>::type rangeEPS = 1E-12;
   if (maxMag < rangeEPS) {
     maxVal = rangeEPS;
     minVal = -rangeEPS;
     minElem = minVal * FIELD_ONE<T>();
   } else if ((maxVal - minVal) / maxMag < rangeEPS) {
-    double mid = (minVal + maxVal) / 2.0;
+    typename FIELD_MAG<T>::type mid = (minVal + maxVal) / 2.0;
     maxVal = mid + maxMag * rangeEPS;
     minVal = mid - maxMag * rangeEPS;
     minElem = minVal * FIELD_ONE<T>();
@@ -130,16 +133,17 @@ AffineRemapper<T>::AffineRemapper(const std::vector<T>& data, DataType datatype)
 }
 
 template <typename T>
-AffineRemapper<T>::AffineRemapper(double minVal, double maxVal, DataType datatype) {
+AffineRemapper<T>::AffineRemapper(typename FIELD_MAG<T>::type minVal, typename FIELD_MAG<T>::type maxVal,
+                                  DataType datatype) {
   if (datatype == DataType::STANDARD) {
     offset = minVal * FIELD_ONE<T>();
     scale = 1.0 / (maxVal - minVal);
   } else if (datatype == DataType::SYMMETRIC) {
-    double maxMag = std::max(std::abs(minVal), std::abs(maxVal));
+    typename FIELD_MAG<T>::type maxMag = std::max(std::abs(minVal), std::abs(maxVal));
     offset = -FIELD_ONE<T>() * maxMag;
     scale = 1.0 / (2 * maxMag);
   } else if (datatype == DataType::MAGNITUDE) {
-    double maxMag = std::max(std::abs(minVal), std::abs(maxVal));
+    typename FIELD_MAG<T>::type maxMag = std::max(std::abs(minVal), std::abs(maxVal));
     offset = FIELD_ZERO<T>();
     scale = 1.0 / (maxMag);
   }
@@ -147,8 +151,8 @@ AffineRemapper<T>::AffineRemapper(double minVal, double maxVal, DataType datatyp
 
 template <typename T>
 void AffineRemapper<T>::setMinMax(const std::vector<T>& data) {
-  minVal = std::numeric_limits<double>::infinity();
-  maxVal = -std::numeric_limits<double>::infinity();
+  minVal = std::numeric_limits<typename FIELD_MAG<T>::type>::infinity();
+  maxVal = -std::numeric_limits<typename FIELD_MAG<T>::type>::infinity();
   for (const T& x : data) {
     minVal = std::min(minVal, FIELD_BIGNESS(x));
     maxVal = std::max(maxVal, FIELD_BIGNESS(x));

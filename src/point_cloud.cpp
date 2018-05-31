@@ -16,7 +16,6 @@
 #include <fstream>
 #include <iostream>
 
-using namespace geometrycentral;
 using std::cout;
 using std::endl;
 
@@ -25,7 +24,7 @@ namespace polyscope {
 // Initialize statics
 const std::string PointCloud::structureTypeName = "Point Cloud";
 
-PointCloud::PointCloud(std::string name, const std::vector<Vector3>& points_)
+PointCloud::PointCloud(std::string name, const std::vector<glm::vec3>& points_)
     : Structure(name, structureTypeName), points(points_) {
 
   initialBaseColor = getNextStructureColor();
@@ -58,14 +57,14 @@ void PointCloud::setPointCloudUniforms(gl::GLProgram* p, bool withLight, bool wi
   p->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
   if (withLight) {
-    Vector3 eyePos = view::getCameraWorldPosition();
+    glm::vec3 eyePos = view::getCameraWorldPosition();
     p->setUniform("u_eye", eyePos);
 
     p->setUniform("u_lightCenter", state::center);
     p->setUniform("u_lightDist", 2 * state::lengthScale);
   }
 
-  Vector3 lookDir, upDir, rightDir;
+  glm::vec3 lookDir, upDir, rightDir;
   view::getCameraFrame(lookDir, upDir, rightDir);
 
   if (withBillboard) {
@@ -149,9 +148,9 @@ void PointCloud::preparePick() {
                                   &SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points);
 
   // Fill an index buffer
-  std::vector<Vector3> pickColors;
+  std::vector<glm::vec3> pickColors;
   for (size_t i = pickStart; i < pickStart + pickCount; i++) {
-    Vector3 val = pick::indToVec(i);
+    glm::vec3 val = pick::indToVec(i);
     pickColors.push_back(pick::indToVec(i));
   }
 
@@ -174,9 +173,7 @@ void PointCloud::drawPickUI(size_t localPickID) {
 
   ImGui::TextUnformatted(("#" + std::to_string(localPickID) + "  ").c_str());
   ImGui::SameLine();
-  std::stringstream buffer;
-  buffer << points[localPickID];
-  ImGui::TextUnformatted(buffer.str().c_str());
+  ImGui::TextUnformatted(to_string(points[localPickID]).c_str());
 
   ImGui::Spacing();
   ImGui::Spacing();
@@ -240,24 +237,24 @@ double PointCloud::lengthScale() {
 
   // Measure length scale as twice the radius from the center of the bounding box
   auto bound = boundingBox();
-  Vector3 center = 0.5 * (std::get<0>(bound) + std::get<1>(bound));
+  glm::vec3 center = 0.5f * (std::get<0>(bound) + std::get<1>(bound));
 
   double lengthScale = 0.0;
-  for (Vector3& p : points) {
-    lengthScale = std::max(lengthScale, geometrycentral::norm2(p - center));
+  for (glm::vec3& p : points) {
+    lengthScale = std::max(lengthScale, (double)glm::length2(p - center));
   }
 
   return 2 * std::sqrt(lengthScale);
 }
 
-std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> PointCloud::boundingBox() {
+std::tuple<glm::vec3, glm::vec3> PointCloud::boundingBox() {
 
-  Vector3 min = Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
-  Vector3 max = -Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
+  glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
+  glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
 
-  for (Vector3& p : points) {
-    min = geometrycentral::componentwiseMin(min, p);
-    max = geometrycentral::componentwiseMax(max, p);
+  for (glm::vec3& p : points) {
+    min = componentwiseMin(min, p);
+    max = componentwiseMax(max, p);
   }
 
   return std::make_tuple(min, max);
@@ -325,12 +322,12 @@ void PointCloud::addScalarQuantity(std::string name, const std::vector<double>& 
   addQuantity(q);
 }
 
-void PointCloud::addColorQuantity(std::string name, const std::vector<Vector3>& value) {
+void PointCloud::addColorQuantity(std::string name, const std::vector<glm::vec3>& value) {
   PointCloudQuantityThatDrawsPoints* q = new PointCloudColorQuantity(name, value, this);
   addQuantity(q);
 }
 
-void PointCloud::addVectorQuantity(std::string name, const std::vector<Vector3>& vectors, VectorType vectorType) {
+void PointCloud::addVectorQuantity(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType) {
   PointCloudQuantity* q = new PointCloudVectorQuantity(name, vectors, this, vectorType);
   addQuantity(q);
 }

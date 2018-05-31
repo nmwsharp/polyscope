@@ -128,9 +128,9 @@ public:
   void addFaceColorQuantity(std::string name, const T& data);
 
   // Counts/Values on isolated vertices (expect index/value pairs)
-  void addVertexCountQuantity(std::string name, std::vector<std::pair<size_t, int>>& values);
-  void addFaceCountQuantity(std::string name, std::vector<std::pair<size_t, int>>& values);
-  void addIsolatedVertexScalarQuantity(std::string name, std::vector<std::pair<size_t, double>>& values);
+  void addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values);
+  void addFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values);
+  void addIsolatedVertexScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>>& values);
 
   // Subsets (expect char array)
   template <class T>
@@ -158,13 +158,13 @@ public:
 
 
   void removeQuantity(std::string name);
-  void setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q);
+  void setActiveSurfaceQuantity(std::shared_ptr<SurfaceQuantityThatDrawsFaces> q);
   void clearActiveSurfaceQuantity();
   void removeAllQuantities();
 
   // === Make a one-time selection
-  size_t selectVertex();
-  size_t selectFace();
+  // size_t selectVertex();
+  // size_t selectFace();
 
   // === Mutate
 
@@ -201,6 +201,7 @@ public:
 
   // A triangulation of the mesh.
   std::vector<TriangulationFace> triangulation;
+  size_t nTriangulationFaces;
 
   // Helpers to get data from the mesh representaiton above
   size_t edgeTailVertex(size_t iEdge);
@@ -242,9 +243,10 @@ private:
   bool showEdges = false;
   float edgeWidth = 0.0;
 
-  SurfaceQuantityThatDrawsFaces* activeSurfaceQuantity = nullptr; // a quantity that is respondible for drawing on the
-                                                                  // surface and overwrites `program` with its own
-                                                                  // shaders
+  std::shared_ptr<SurfaceQuantityThatDrawsFaces> activeSurfaceQuantity =
+      nullptr; // a quantity that is respondible for drawing on the
+               // surface and overwrites `program` with its own
+               // shaders
 
 
   // Picking-related
@@ -266,7 +268,7 @@ private:
 
 
   // === Helper functions
- 
+
   // Initialization work
   void initializeMeshData();
   void initializeMeshIndices();
@@ -276,7 +278,7 @@ private:
   void fillGeometryBuffersSmooth();
   void fillGeometryBuffersFlat();
   glm::vec2 projectToScreenSpace(glm::vec3 coord);
-  bool screenSpaceTriangleTest(size_t fInd, glm::vec2 testCoords, glm::vec3& bCoordOut);
+  // bool screenSpaceTriangleTest(size_t fInd, glm::vec2 testCoords, glm::vec3& bCoordOut);
 };
 
 // Make mesh element type printable
