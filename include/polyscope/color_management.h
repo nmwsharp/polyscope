@@ -1,8 +1,13 @@
 #pragma once
 
+#include "polyscope/utilities.h"
+
 #include <array>
+#include <iomanip>
 #include <map>
+#include <sstream>
 #include <string>
+
 
 // Helpers for management colors (but not colorschemes)
 
@@ -32,5 +37,21 @@ public:
 private:
   std::map<std::string, int> assignedColors;
 };
+
+
+// Print colors
+inline std::ostream& operator<<(std::ostream& output, const Color3f& c) {
+  output << std::setprecision(std::numeric_limits<float>::max_digits10);
+  output << "<" << c[0] << ", " << c[1] << ", " << c[2] << ">";
+  return output;
+}
+
+inline std::string to_string(const Color3f& c) {
+  std::stringstream buffer;
+  buffer << c;
+  return buffer.str();
+}
+
+inline std::string to_string_short(const Color3f& c) { return str_printf("<%1.3f, %1.3f, %1.3f>", c[0], c[1], c[2]); }
 
 } // namespace polyscope

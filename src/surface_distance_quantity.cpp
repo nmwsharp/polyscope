@@ -1,7 +1,5 @@
 #include "polyscope/surface_distance_quantity.h"
 
-#include "geometrycentral/meshio.h"
-
 #include "polyscope/file_helpers.h"
 #include "polyscope/gl/colormap_sets.h"
 #include "polyscope/gl/shaders.h"
@@ -15,11 +13,9 @@ using std::endl;
 
 namespace polyscope {
 
-SurfaceDistanceQuantity::SurfaceDistanceQuantity(std::string name, VertexData<double>& distances_, SurfaceMesh* mesh_,
+SurfaceDistanceQuantity::SurfaceDistanceQuantity(std::string name, std::vector<double> distances_, SurfaceMesh* mesh_,
                                                  bool signedDist_)
-    : SurfaceQuantityThatDrawsFaces(name, mesh_), signedDist(signedDist_) {
-
-  distances = parent->transfer.transfer(distances_);
+    : SurfaceQuantityThatDrawsFaces(name, mesh_), distances(std::move(distances_)), signedDist(signedDist_) {
 
   // Set default colormap
   if (signedDist) {
@@ -31,9 +27,9 @@ SurfaceDistanceQuantity::SurfaceDistanceQuantity(std::string name, VertexData<do
   // Build the histogram
   std::vector<double> valsVec;
   std::vector<double> weightsVec;
-  for (VertexPtr v : parent->mesh->vertices()) {
-    valsVec.push_back(distances[v]);
-    weightsVec.push_back(parent->geometry->dualArea(v));
+  for(size_t vInd = 0; vInd < parent->nVertices; vInd++) {
+    valsVec.push_back(distances[vInd]);
+    weightsVec.push_back(parent->vertexAreas[vInd]);
   }
   hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
   hist.buildHistogram(valsVec, weightsVec);
@@ -145,37 +141,33 @@ void SurfaceDistanceQuantity::drawUI() {
 
 void SurfaceDistanceQuantity::fillColorBuffers(gl::GLProgram* p) {
   std::vector<double> colorval;
-  for (FacePtr f : parent->mesh->faces()) {
-    // Implicitly triangulate
-    double c0, c1;
-    size_t iP = 0;
-    for (VertexPtr v : f.adjacentVertices()) {
-      double c2 = distances[v];
-      if (iP >= 2) {
-        colorval.push_back(c0);
-        colorval.push_back(c1);
-        colorval.push_back(c2);
-      }
-      c0 = c1;
-      c1 = c2;
-      iP++;
+  colorval.reserve(3 * parent->nTriangulationFaces);
+  for (TriangulationFace& face : parent->triangulation) {
+    for(size_t i = 0; i < 3; i++) {
+      size_t vInd = face.vertexInds[i];
+      colorval.push_back(distances[vInd]); 
     }
   }
+
 
   // Store data in buffers
   p->setAttribute("a_colorval", colorval);
   p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
 }
 
-void SurfaceDistanceQuantity::buildInfoGUI(VertexPtr v) {
+void SurfaceDistanceQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", distances[v]);
+  ImGui::Text("%g", distances[vInd]);
   ImGui::NextColumn();
 }
 
 
 void SurfaceDistanceQuantity::writeToFile(std::string filename) {
+
+  throw std::runtime_error("NOT IMPLEMENTED");
+
+  /* TODO
 
   if (filename == "") {
     filename = promptForFilename();
@@ -193,6 +185,7 @@ void SurfaceDistanceQuantity::writeToFile(std::string filename) {
   }
 
   WavefrontOBJ::write(filename, *parent->geometry, scalarVal);
+  */
 }
 
 

@@ -241,7 +241,9 @@ void SurfaceMesh::initializeMeshGeometry() {
 
   // == Compute geometric quantities
   faceNormals.resize(nFaces);
+  faceCenters.resize(nFaces);
   faceAreas.resize(nFaces);
+  edgeLengths.resize(nEdges);
   vertexAreas.resize(nVertices);
   std::fill(vertexAreas.begin(), vertexAreas.end(), 0.0);
 
@@ -255,6 +257,7 @@ void SurfaceMesh::initializeMeshGeometry() {
 
     double areaSum = 0;
     glm::vec3 normalSum{0., 0., 0.};
+    glm::vec3 centerSum{0., 0., 0.};
     for (size_t jE = 2; jE < nSides; jE++) {
       // (implicit fan triangulation)
       size_t v0 = adjacentVertInds[0];
@@ -268,10 +271,12 @@ void SurfaceMesh::initializeMeshGeometry() {
       double area = 0.5 * glm::length(areaNormal);
       areaSum += area;
       normalSum += areaNormal;
+      centerSum += vertexPositions[v0];
     }
 
     faceAreas[iF] = areaSum;
     faceNormals[iF] = glm::normalize(normalSum);
+    faceCenters[iF] = centerSum / (float)nSides;
 
     for (size_t jV = 0; jV < nSides; jV++) {
       size_t v = adjacentVertInds[jV];
@@ -286,6 +291,11 @@ void SurfaceMesh::initializeMeshGeometry() {
       glm::vec3 vecNext = glm::normalize(vertexPositions[vNext] - vertexPositions[v]);
       double angle = std::acos(glm::clamp(glm::dot(vecPrev, vecNext), -1.0f, 1.0f));
       vertexNormals[v] += (float)angle * faceNormals[iF];
+
+      // Edge lengths
+      double eLen = glm::length(vertexPositions[vNext] - vertexPositions[v]);
+      size_t eInd = faceEdgeIndex[iF][jV];
+      edgeLengths[eInd] = eLen;
     }
   }
 
@@ -293,6 +303,7 @@ void SurfaceMesh::initializeMeshGeometry() {
   for (size_t iV = 0; iV < nVertices; iV++) {
     vertexNormals[iV] = glm::normalize(vertexNormals[iV]);
   }
+
 }
 
 void SurfaceMesh::deleteProgram() {
@@ -1059,7 +1070,7 @@ void SurfaceMesh::addSurfaceQuantity(std::shared_ptr<SurfaceQuantity> quantity) 
   // Delete old if in use
   bool wasEnabled = false;
   if (quantities.find(quantity->name) != quantities.end()) {
-    wasEnabled = quantities[quantity->name]->enabled;
+    wasEnabled = quantities[quantity->name]->isEnabled();
     removeQuantity(quantity->name);
   }
 
@@ -1068,7 +1079,7 @@ void SurfaceMesh::addSurfaceQuantity(std::shared_ptr<SurfaceQuantity> quantity) 
 
   // Re-enable the quantity if we're replacing an enabled quantity
   if (wasEnabled) {
-    quantity->enabled = true;
+    quantity->enable();
   }
 }
 
@@ -1116,7 +1127,7 @@ void SurfaceMesh::removeQuantity(std::string name) {
 
   std::shared_ptr<SurfaceQuantity> q = quantities[name];
   quantities.erase(name);
-  if (activeSurfaceQuantity == q) {
+  if (activeSurfaceQuantity == q.get()) {
     clearActiveSurfaceQuantity();
   }
 }
@@ -1127,16 +1138,16 @@ void SurfaceMesh::removeAllQuantities() {
   }
 }
 
-void SurfaceMesh::setActiveSurfaceQuantity(std::shared_ptr<SurfaceQuantityThatDrawsFaces> q) {
+void SurfaceMesh::setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q) {
   clearActiveSurfaceQuantity();
   activeSurfaceQuantity = q;
-  q->enabled = true;
+  q->enable();
 }
 
 void SurfaceMesh::clearActiveSurfaceQuantity() {
   deleteProgram();
   if (activeSurfaceQuantity != nullptr) {
-    activeSurfaceQuantity->enabled = false;
+    activeSurfaceQuantity->disable();
     activeSurfaceQuantity = nullptr;
   }
 }
@@ -1162,7 +1173,28 @@ void SurfaceQuantity::buildFaceInfoGUI(size_t fInd) {}
 void SurfaceQuantity::buildEdgeInfoGUI(size_t eInd) {}
 void SurfaceQuantity::buildHalfedgeInfoGUI(size_t heInd) {}
 
+bool SurfaceQuantity::isEnabled() { return enabled; }
+
+void SurfaceQuantity::enable() { enabled = true; }
+void SurfaceQuantity::disable() { enabled = false; }
+void SurfaceQuantity::setEnabled(bool newEnabled) {
+  if (enabled == false && newEnabled == true) {
+    enable();
+  } else if (enabled == true && newEnabled == false) {
+    disable();
+  }
+}
 
 void SurfaceQuantityThatDrawsFaces::setProgramValues(gl::GLProgram* program) {}
+
+void SurfaceQuantityThatDrawsFaces::enable() {
+  enabled = true;
+  parent->setActiveSurfaceQuantity(this);
+}
+
+void SurfaceQuantityThatDrawsFaces::disable() {
+  enabled = false;
+  parent->clearActiveSurfaceQuantity();
+}
 
 } // namespace polyscope

@@ -39,10 +39,16 @@ public:
   virtual void buildEdgeInfoGUI(size_t eInd);
   virtual void buildHalfedgeInfoGUI(size_t heInd);
 
+  virtual void enable();
+  virtual void disable();
+  bool isEnabled();
+  void setEnabled(bool newEnabled);
+
   // === Member variables ===
   const std::string name;
   SurfaceMesh* const parent;
 
+protected:
   bool enabled = false; // should be set by enable() and disable()
 };
 
@@ -57,6 +63,9 @@ public:
 
   // Do any per-frame work on the program handed out by createProgram
   virtual void setProgramValues(gl::GLProgram* program);
+
+  virtual void enable();
+  virtual void disable();
 };
 
 // Triangulation of a (possibly polygonal) face
@@ -158,7 +167,7 @@ public:
 
 
   void removeQuantity(std::string name);
-  void setActiveSurfaceQuantity(std::shared_ptr<SurfaceQuantityThatDrawsFaces> q);
+  void setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q);
   void clearActiveSurfaceQuantity();
   void removeAllQuantities();
 
@@ -210,8 +219,10 @@ public:
   // Some geometric data on the mesh
   std::vector<glm::vec3> faceNormals;
   std::vector<glm::vec3> vertexNormals;
+  std::vector<glm::vec3> faceCenters;
   std::vector<double> faceAreas;
   std::vector<double> vertexAreas;
+  std::vector<double> edgeLengths;
 
 
   static const std::string structureTypeName;
@@ -243,10 +254,9 @@ private:
   bool showEdges = false;
   float edgeWidth = 0.0;
 
-  std::shared_ptr<SurfaceQuantityThatDrawsFaces> activeSurfaceQuantity =
-      nullptr; // a quantity that is respondible for drawing on the
-               // surface and overwrites `program` with its own
-               // shaders
+  SurfaceQuantityThatDrawsFaces* activeSurfaceQuantity = nullptr; // a quantity that is respondible for drawing on the
+                                                                  // surface and overwrites `program` with its own
+                                                                  // shaders
 
 
   // Picking-related

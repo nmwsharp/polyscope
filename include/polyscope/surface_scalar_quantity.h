@@ -38,7 +38,7 @@ protected:
 
 class SurfaceScalarVertexQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceScalarVertexQuantity(std::string name, std::vector<double>& values_, SurfaceMesh* mesh_,
+  SurfaceScalarVertexQuantity(std::string name, std::vector<double> values_, SurfaceMesh* mesh_,
                               DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceScalarVertexQuantity();
 
@@ -66,7 +66,7 @@ void SurfaceMesh::addVertexScalarQuantity(std::string name, const T& data, DataT
 
 class SurfaceScalarFaceQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceScalarFaceQuantity(std::string name, std::vector<double>& values_, SurfaceMesh* mesh_,
+  SurfaceScalarFaceQuantity(std::string name, std::vector<double> values_, SurfaceMesh* mesh_,
                             DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceScalarVertexQuantity();
 
@@ -93,7 +93,7 @@ void SurfaceMesh::addFaceScalarQuantity(std::string name, const T& data, DataTyp
 
 class SurfaceScalarEdgeQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceScalarEdgeQuantity(std::string name, std::vector<double>& values_, SurfaceMesh* mesh_,
+  SurfaceScalarEdgeQuantity(std::string name, std::vector<double> values_, SurfaceMesh* mesh_,
                             DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceScalarVertexQuantity();
 
@@ -121,7 +121,7 @@ void SurfaceMesh::addEdgeScalarQuantity(std::string name, const T& data, DataTyp
 
 class SurfaceScalarHalfedgeQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceScalarHalfedgeQuantity(std::string name, std::vector<double>& values_, SurfaceMesh* mesh_,
+  SurfaceScalarHalfedgeQuantity(std::string name, std::vector<double> values_, SurfaceMesh* mesh_,
                                 DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceScalarVertexQuantity();
 

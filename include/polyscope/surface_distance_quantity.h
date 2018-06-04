@@ -8,7 +8,7 @@ namespace polyscope {
 
 class SurfaceDistanceQuantity : public SurfaceQuantityThatDrawsFaces {
 public:
-  SurfaceDistanceQuantity(std::string name, std::vector<double>& values_, SurfaceMesh* mesh_, bool signedDist = false);
+  SurfaceDistanceQuantity(std::string name, std::vector<double> values_, SurfaceMesh* mesh_, bool signedDist = false);
 
   void draw() override;
   void drawUI() override;

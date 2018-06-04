@@ -14,19 +14,14 @@ SurfaceColorQuantity::SurfaceColorQuantity(std::string name, SurfaceMesh* mesh_,
 void SurfaceColorQuantity::draw() {} // nothing to do, drawn by surface mesh program
 
 void SurfaceColorQuantity::drawUI() {
-  bool enabledBefore = enabled;
   if (ImGui::TreeNode((name + " (" + definedOn + " Color)").c_str())) {
-    ImGui::Checkbox("Enabled", &enabled);
+
+    bool currEnabled = enabled;
+    if (ImGui::Checkbox("Enabled", &currEnabled)) {
+      setEnabled(currEnabled);
+    }
 
     ImGui::TreePop();
-  }
-
-  // Enforce exclusivity of enabled surface quantities
-  if (!enabledBefore && enabled) {
-    parent->setActiveSurfaceQuantity(this);
-  }
-  if (enabledBefore && !enabled) {
-    parent->clearActiveSurfaceQuantity();
   }
 }
 
@@ -34,13 +29,11 @@ void SurfaceColorQuantity::drawUI() {
 // ==========           Vertex Color            ==========
 // ========================================================
 
-SurfaceColorVertexQuantity::SurfaceColorVertexQuantity(std::string name, VertexData<glm::vec3>& values_,
+SurfaceColorVertexQuantity::SurfaceColorVertexQuantity(std::string name, std::vector<Color3f> values_,
                                                        SurfaceMesh* mesh_)
-    : SurfaceColorQuantity(name, mesh_, "vertex")
+    : SurfaceColorQuantity(name, mesh_, "vertex"), values(std::move(values_))
 
-{
-  values = parent->transfer.transfer(values_);
-}
+{}
 
 gl::GLProgram* SurfaceColorVertexQuantity::createProgram() {
   // Create the program to draw this quantity
@@ -54,21 +47,13 @@ gl::GLProgram* SurfaceColorVertexQuantity::createProgram() {
 }
 
 void SurfaceColorVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
-  std::vector<glm::vec3> colorval;
-  for (FacePtr f : parent->mesh->faces()) {
-    // Implicitly triangulate
-    glm::vec3 c0, c1;
-    size_t iP = 0;
-    for (VertexPtr v : f.adjacentVertices()) {
-      glm::vec3 c2 = values[v];
-      if (iP >= 2) {
-        colorval.push_back(c0);
-        colorval.push_back(c1);
-        colorval.push_back(c2);
-      }
-      c0 = c1;
-      c1 = c2;
-      iP++;
+  std::vector<Color3f> colorval;
+  colorval.resize(3 * parent->nTriangulationFaces);
+
+  for (const TriangulationFace& face : parent->triangulation) {
+    for (size_t i = 0; i < 3; i++) {
+      size_t vInd = face.vertexInds[i];
+      colorval.push_back(values[vInd]);
     }
   }
 
@@ -76,16 +61,15 @@ void SurfaceColorVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
   p->setAttribute("a_colorval", colorval);
 }
 
-void SurfaceColorVertexQuantity::buildInfoGUI(VertexPtr v) {
+void SurfaceColorVertexQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
-  std::array<float, 3> tempColor = values[v].toFloatArray();
+  Color3f tempColor = values[vInd];
   ImGui::ColorEdit3("", &tempColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
   ImGui::SameLine();
-  std::stringstream buffer;
-  buffer << values[v];
-  ImGui::TextUnformatted(buffer.str().c_str());
+  std::string colorStr = to_string_short(tempColor);
+  ImGui::TextUnformatted(colorStr.c_str());
   ImGui::NextColumn();
 }
 
@@ -94,12 +78,10 @@ void SurfaceColorVertexQuantity::buildInfoGUI(VertexPtr v) {
 // ==========            Face Scalar             ==========
 // ========================================================
 
-SurfaceColorFaceQuantity::SurfaceColorFaceQuantity(std::string name, FaceData<glm::vec3>& values_, SurfaceMesh* mesh_)
-    : SurfaceColorQuantity(name, mesh_, "face")
+SurfaceColorFaceQuantity::SurfaceColorFaceQuantity(std::string name, std::vector<Color3f> values_, SurfaceMesh* mesh_)
+    : SurfaceColorQuantity(name, mesh_, "face"), values(std::move(values_))
 
-{
-  values = parent->transfer.transfer(values_);
-}
+{}
 
 gl::GLProgram* SurfaceColorFaceQuantity::createProgram() {
   // Create the program to draw this quantity
@@ -113,21 +95,13 @@ gl::GLProgram* SurfaceColorFaceQuantity::createProgram() {
 }
 
 void SurfaceColorFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
-  std::vector<glm::vec3> colorval;
-  for (FacePtr f : parent->mesh->faces()) {
-    // Implicitly triangulate
-    glm::vec3 c0, c1;
-    size_t iP = 0;
-    for (VertexPtr v : f.adjacentVertices()) {
-      glm::vec3 c2 = values[f];
-      if (iP >= 2) {
-        colorval.push_back(c0);
-        colorval.push_back(c1);
-        colorval.push_back(c2);
-      }
-      c0 = c1;
-      c1 = c2;
-      iP++;
+  std::vector<Color3f> colorval;
+  colorval.resize(3 * parent->nTriangulationFaces);
+
+  for (const TriangulationFace& face : parent->triangulation) {
+    size_t fInd = face.faceInd;
+    for (size_t i = 0; i < 3; i++) {
+      colorval.push_back(values[fInd]);
     }
   }
 
@@ -135,15 +109,15 @@ void SurfaceColorFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
   p->setAttribute("a_colorval", colorval);
 }
 
-void SurfaceColorFaceQuantity::buildInfoGUI(FacePtr f) {
+void SurfaceColorFaceQuantity::buildFaceInfoGUI(size_t fInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
-  std::array<float, 3> tempColor = values[f].toFloatArray();
+  Color3f tempColor = values[fInd];
   ImGui::ColorEdit3("", &tempColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
   ImGui::SameLine();
   std::stringstream buffer;
-  buffer << values[f];
+  buffer << values[fInd];
   ImGui::TextUnformatted(buffer.str().c_str());
   ImGui::NextColumn();
 }
