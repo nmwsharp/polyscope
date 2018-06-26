@@ -135,12 +135,6 @@ void SurfaceMesh::prepare() {
 
 void SurfaceMesh::preparePick() {
 
-  if (!mesh->isSimplicial()) {
-    // TODO. This should be entirely possible by adding some logic to avoid drawing pick colors for virtual
-    // triangulation edges, but hasn't been implemented yet.
-    error("Don't know how to pick from non-triangle mesh");
-  }
-
   // Create a new program
   pickProgram = new gl::GLProgram(&PICK_SURFACE_VERT_SHADER, &PICK_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
 
@@ -172,35 +166,79 @@ void SurfaceMesh::preparePick() {
 
   for (FacePtr f : mesh->faces()) {
 
-    // Build all quantities
-    std::array<Vector3, 3> vColor, eColor, heColor;
-    size_t i = 0;
-    for (HalfedgePtr he : f.adjacentHalfedges()) {
+    VertexPtr baseVert = f.halfedge().vertex();
 
-      VertexPtr v = he.vertex();
-      EdgePtr e = he.edge();
+    // Triangulate faces
+    HalfedgePtr prevHe = f.halfedge();
+    HalfedgePtr oppositeHe = f.halfedge().next();
 
-      // Want just one copy of positions and face color, so we can build it in the usual way
-      positions.push_back(geometry->position(v));
-      faceColor.push_back(pick::indToVec(fInd[f] + faceGlobalPickIndStart));
+    do {
 
-      vColor[i] = pick::indToVec(vInd[v] + pickStart);
-      eColor[i] = pick::indToVec(eInd[e] + edgeGlobalPickIndStart);
-      heColor[i] = pick::indToVec(heInd[he] + halfedgeGlobalPickIndStart);
-      i++;
-    }
+      // Test if this the first or last triangle in the triangulation
+      // (otherwise, edges are artificial and shouldn't have pick indices)
+      bool isFirst = prevHe == f.halfedge();
+      bool isLast = oppositeHe.next().next() == f.halfedge();
 
-    // Push three copies of the values needed at each vertex
-    for (int j = 0; j < 3; j++) {
-      vertexColors.push_back(vColor);
-      edgeColors.push_back(eColor);
-      halfedgeColors.push_back(heColor);
-    }
+      // Build all quantities
+      std::array<Vector3, 3> vColor, eColor, heColor;
 
-    // Just one copy of barycoords needed
-    bcoord.push_back(Vector3{1.0, 0.0, 0.0});
-    bcoord.push_back(Vector3{0.0, 1.0, 0.0});
-    bcoord.push_back(Vector3{0.0, 0.0, 1.0});
+      // Positions
+      positions.push_back(geometry->position(baseVert));
+      positions.push_back(geometry->position(oppositeHe.vertex()));
+      positions.push_back(geometry->position(oppositeHe.next().vertex()));
+
+      // Face index color
+      Vector3 faceIndColor = pick::indToVec(fInd[f] + faceGlobalPickIndStart);
+      faceColor.push_back(faceIndColor);
+      faceColor.push_back(faceIndColor);
+      faceColor.push_back(faceIndColor);
+
+      // Vertex index colors
+      vColor[0] = pick::indToVec(vInd[baseVert] + pickStart);
+      vColor[1] = pick::indToVec(vInd[oppositeHe.vertex()] + pickStart);
+      vColor[2] = pick::indToVec(vInd[oppositeHe.twin().vertex()] + pickStart);
+
+      // Edge index color
+      if (isFirst) {
+        eColor[0] = pick::indToVec(eInd[prevHe.edge()] + edgeGlobalPickIndStart);
+      } else {
+        eColor[0] = faceIndColor;
+      }
+      eColor[1] = pick::indToVec(eInd[oppositeHe.edge()] + edgeGlobalPickIndStart);
+      if (isLast) {
+        eColor[2] = pick::indToVec(eInd[oppositeHe.next().edge()] + edgeGlobalPickIndStart);
+      } else {
+        eColor[2] = faceIndColor;
+      }
+
+      // Halfedge index color
+      if (isFirst) {
+        heColor[0] = pick::indToVec(heInd[prevHe] + halfedgeGlobalPickIndStart);
+      } else {
+        heColor[0] = faceIndColor;
+      }
+      heColor[1] = pick::indToVec(heInd[oppositeHe] + halfedgeGlobalPickIndStart);
+      if (isLast) {
+        heColor[2] = pick::indToVec(heInd[oppositeHe.next()] + halfedgeGlobalPickIndStart);
+      } else {
+        heColor[2] = faceIndColor;
+      }
+
+      // Push three copies of the values needed at each vertex
+      for (int j = 0; j < 3; j++) {
+        vertexColors.push_back(vColor);
+        edgeColors.push_back(eColor);
+        halfedgeColors.push_back(heColor);
+      }
+
+      // Barycoords
+      bcoord.push_back(Vector3{1.0, 0.0, 0.0});
+      bcoord.push_back(Vector3{0.0, 1.0, 0.0});
+      bcoord.push_back(Vector3{0.0, 0.0, 1.0});
+
+      prevHe = prevHe.next();
+      oppositeHe = oppositeHe.next();
+    } while (oppositeHe.next() != f.halfedge());
   }
 
   // Store data in buffers
@@ -226,38 +264,44 @@ void SurfaceMesh::fillGeometryBuffersSmooth() {
   std::vector<Vector3> bcoord;
   VertexData<Vector3> vertexNormals;
   geometry->getVertexNormals(vertexNormals);
+
+  // Implicitly triangulate
   for (FacePtr f : mesh->faces()) {
-    // Implicitly triangulate
-    Vector3 p0, p1;
-    Vector3 n0, n1;
-    size_t iP = 0;
-    for (VertexPtr v : f.adjacentVertices()) {
-      Vector3 p2 = geometry->position(v);
-      Vector3 n2 = vertexNormals[v];
-      if (iP >= 2) {
-        positions.push_back(p0);
-        normals.push_back(n0);
-        bcoord.push_back(Vector3{1.0, 0.0, 0.0});
-        positions.push_back(p1);
-        normals.push_back(n1);
-        bcoord.push_back(Vector3{0.0, 1.0, 0.0});
-        positions.push_back(p2);
-        normals.push_back(n2);
-        bcoord.push_back(Vector3{0.0, 0.0, 1.0});
-      }
-      p0 = p1;
-      p1 = p2;
-      n0 = n1;
-      n1 = n2;
-      iP++;
-    }
+
+    VertexPtr baseVert = f.halfedge().vertex();
+    HalfedgePtr prevHe = f.halfedge();
+    HalfedgePtr oppositeHe = f.halfedge().next();
+
+    do {
+
+      // Build all quantities
+      std::array<Vector3, 3> vColor, eColor, heColor;
+
+      // Positions
+      positions.push_back(geometry->position(baseVert));
+      positions.push_back(geometry->position(oppositeHe.vertex()));
+      positions.push_back(geometry->position(oppositeHe.next().vertex()));
+
+      // Normals
+      normals.push_back(vertexNormals[baseVert]);
+      normals.push_back(vertexNormals[oppositeHe.vertex()]);
+      normals.push_back(vertexNormals[oppositeHe.next().vertex()]);
+
+      // Barycoords
+      bcoord.push_back(Vector3{1.0, 0.0, 0.0});
+      bcoord.push_back(Vector3{0.0, 1.0, 0.0});
+      bcoord.push_back(Vector3{0.0, 0.0, 1.0});
+
+      prevHe = prevHe.next();
+      oppositeHe = oppositeHe.next();
+    } while (oppositeHe.next() != f.halfedge());
   }
 
   // Store data in buffers
   program->setAttribute("a_position", positions);
   program->setAttribute("a_normal", normals);
   program->setAttribute("a_barycoord", bcoord);
-}
+} // namespace polyscope
 
 void SurfaceMesh::fillGeometryBuffersFlat() {
   std::vector<Vector3> positions;
@@ -266,31 +310,38 @@ void SurfaceMesh::fillGeometryBuffersFlat() {
 
   FaceData<Vector3> faceNormals;
   geometry->getFaceNormals(faceNormals);
+  
+  // Implicitly triangulate
   for (FacePtr f : mesh->faces()) {
-    // Implicitly triangulate
-    Vector3 p0, p1;
-    Vector3 n0, n1;
-    size_t iP = 0;
-    for (VertexPtr v : f.adjacentVertices()) {
-      Vector3 p2 = geometry->position(v);
-      Vector3 n2 = faceNormals[f];
-      if (iP >= 2) {
-        positions.push_back(p0);
-        normals.push_back(n0);
-        bcoord.push_back(Vector3{1.0, 0.0, 0.0});
-        positions.push_back(p1);
-        normals.push_back(n1);
-        bcoord.push_back(Vector3{0.0, 1.0, 0.0});
-        positions.push_back(p2);
-        normals.push_back(n2);
-        bcoord.push_back(Vector3{0.0, 0.0, 1.0});
-      }
-      p0 = p1;
-      p1 = p2;
-      n0 = n1;
-      n1 = n2;
-      iP++;
-    }
+
+    VertexPtr baseVert = f.halfedge().vertex();
+    HalfedgePtr prevHe = f.halfedge();
+    HalfedgePtr oppositeHe = f.halfedge().next();
+
+    do {
+
+      // Build all quantities
+      std::array<Vector3, 3> vColor, eColor, heColor;
+
+      // Positions
+      positions.push_back(geometry->position(baseVert));
+      positions.push_back(geometry->position(oppositeHe.vertex()));
+      positions.push_back(geometry->position(oppositeHe.next().vertex()));
+
+      // Normals
+      Vector3 faceNormal = faceNormals[f];
+      normals.push_back(faceNormal);
+      normals.push_back(faceNormal);
+      normals.push_back(faceNormal);
+
+      // Barycoords
+      bcoord.push_back(Vector3{1.0, 0.0, 0.0});
+      bcoord.push_back(Vector3{0.0, 1.0, 0.0});
+      bcoord.push_back(Vector3{0.0, 0.0, 1.0});
+
+      prevHe = prevHe.next();
+      oppositeHe = oppositeHe.next();
+    } while (oppositeHe.next() != f.halfedge());
   }
 
   // Store data in buffers
