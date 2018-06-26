@@ -40,14 +40,14 @@ protected:
 template <class T>
 void SurfaceMesh::addDistanceQuantity(std::string name, const T& distances) {
   std::shared_ptr<SurfaceDistanceQuantity> q = std::make_shared<SurfaceDistanceQuantity>(
-      name, standardizeArray<double, T>(distances, nVertices, "distance quantity " + name), this, false);
+      name, standardizeArray<double, T>(distances, triMesh.nVertices(), "distance quantity " + name), this, false);
   addSurfaceQuantity(q);
 }
 
 template <class T>
 void SurfaceMesh::addSignedDistanceQuantity(std::string name, const T& distances) {
   std::shared_ptr<SurfaceDistanceQuantity> q = std::make_shared<SurfaceDistanceQuantity>(
-      name, standardizeArray<double, T>(distances, nVertices, "signed distance quantity " + name), this, true);
+      name, standardizeArray<double, T>(distances, triMesh.nVertices(), "signed distance quantity " + name), this, true);
   addSurfaceQuantity(q);
 }
 

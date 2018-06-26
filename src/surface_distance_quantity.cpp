@@ -27,9 +27,9 @@ SurfaceDistanceQuantity::SurfaceDistanceQuantity(std::string name, std::vector<d
   // Build the histogram
   std::vector<double> valsVec;
   std::vector<double> weightsVec;
-  for(size_t vInd = 0; vInd < parent->nVertices; vInd++) {
+  for(size_t vInd = 0; vInd < parent->triMesh.nVertices(); vInd++) {
     valsVec.push_back(distances[vInd]);
-    weightsVec.push_back(parent->vertexAreas[vInd]);
+    weightsVec.push_back(parent->triMesh.vertices[vInd].area());
   }
   hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
   hist.buildHistogram(valsVec, weightsVec);
@@ -141,10 +141,10 @@ void SurfaceDistanceQuantity::drawUI() {
 
 void SurfaceDistanceQuantity::fillColorBuffers(gl::GLProgram* p) {
   std::vector<double> colorval;
-  colorval.reserve(3 * parent->nTriangulationFaces);
-  for (TriangulationFace& face : parent->triangulation) {
+  colorval.reserve(3 * parent->triMesh.nFaces());
+  for (HalfedgeMesh::Face& face : parent->triMesh.faces) {
     for(size_t i = 0; i < 3; i++) {
-      size_t vInd = face.vertexInds[i];
+      size_t vInd = face.triangleVertices()[i]->index();
       colorval.push_back(distances[vInd]); 
     }
   }

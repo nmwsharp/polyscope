@@ -52,10 +52,6 @@ void HalfedgeMesh::cache_nConnectedComponents() {
 }
 
 
-// Counts the total number of faces in a triangulation of this mesh,
-// corresponding to the triangulation given by Face::triangulate().
-size_t HalfedgeMesh::nFacesTriangulation() const { return _nFacesTriangulation; }
-
 int HalfedgeMesh::eulerCharacteristic() const {
   // be sure to do intermediate arithmetic with large, signed integers
   return static_cast<int>(static_cast<long long int>(nVertices()) - static_cast<long long int>(nEdges()) +
@@ -93,8 +89,64 @@ size_t halfedgeLookup(const std::vector<size_t>& compressedList, size_t target, 
 }
 } // namespace
 
-HalfedgeMesh::HalfedgeMesh(const std::vector<glm::vec3>& vertexPositions,
-                           const std::vector<std::vector<size_t>>& faceInds) {
+HalfedgeMesh::HalfedgeMesh(const std::vector<glm::vec3> vertexPositions,
+                           const std::vector<std::vector<size_t>> faceInds, bool triangulate) {
+
+
+  // == Optionally triangulate
+  // For each face and halfedge, track the index of the original face (or halfedge) that it came from. For halfedges,
+  // newly created halfedges are indicated by INVALID_IND
+  std::vector<size_t> origFaceInd;
+  std::vector<std::vector<size_t>> origHalfedgeInd;
+  nOrigFaces_ = faceInds.size();
+  if (triangulate) {
+
+    std::vector<std::vector<size_t>> triangulatedFaces;
+    size_t iHe = 0;
+
+    // Iterate through the input polygons
+    for (size_t iOrigFace = 0; iOrigFace < faceInds.size(); iOrigFace++) {
+
+      // Fan-triangulate each polygon
+      const std::vector<size_t>& origFace = faceInds[iOrigFace];
+      for (size_t jE = 2; jE < origFace.size(); jE++) {
+        size_t v0 = origFace[0];
+        size_t v1 = origFace[jE - 1];
+        size_t v2 = origFace[jE];
+
+        // Add a new triangle
+        triangulatedFaces.push_back({v0, v1, v2});
+
+        // Track the original face indices and original halfedge indices
+        origFaceInd.push_back(iOrigFace);
+        origHalfedgeInd.push_back({iHe, iHe + jE - 1, iHe + jE});
+      }
+
+      iHe += origFace.size();
+    }
+
+    nOrigHalfedges_ = iHe;
+  }
+  // Not triangulating; push identity maps to preserve original indices
+  else {
+
+    // Identity face index
+    origFaceInd.resize(faceInds.size());
+    for (size_t i = 0; i < origFaceInd.size(); i++) {
+      origFaceInd[i] = i;
+    }
+
+    // Identity halfedge index
+    origHalfedgeInd = faceInds;
+    size_t iHe = 0;
+    for (std::vector<size_t>& vec : origHalfedgeInd) {
+      for (size_t& ind : vec) {
+        ind = iHe++;
+      }
+    }
+    nOrigHalfedges_ = iHe;
+  }
+
 
   /*   High-level outline of this algorithm:
    *
@@ -369,6 +421,64 @@ HalfedgeMesh::HalfedgeMesh(const std::vector<glm::vec3>& vertexPositions,
     vertices[iV].position_ = vertexPositions[iV];
   }
 
+  // === 4. Set indices
+  for (size_t iV = 0; iV < nVertices(); iV++) {
+    vertices[iV].index_ = iV;
+  }
+
+  // Zero out edge indices to set below
+  for (size_t iE = 0; iE < nEdges(); iE++) {
+    edges[iE].index_ = INVALID_IND;
+  }
+
+  size_t currEdgeInd = 0;
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    faces[iF].index_ = origFaceInd[iF];
+
+    Halfedge* currHe = &faces[iF].halfedge();
+    std::vector<size_t>& origPolyHalfedgeInds = origHalfedgeInd[iF];
+    for (size_t ind : origPolyHalfedgeInds) {
+      currHe->index_ = ind;
+      Edge& edge = currHe->edge();
+
+      // If this edge was not induced by triangulation, and we haven't indexed the edge yet, then index it
+      if (ind != INVALID_IND && edge.index_ == INVALID_IND) {
+        edge.index_ = currEdgeInd++;
+      }
+
+      currHe = &currHe->next();
+    }
+  }
+  nOrigEdges_ = currEdgeInd;
+
+
+  // Count face sides, cache triangle vertices
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    Face& face = faces[iF];
+
+    face.nSides_ = 0;
+    Halfedge* currHe = &face.halfedge();
+    Halfedge* firstHe = &face.halfedge();
+    do {
+      if (face.nSides_ < 3) {
+        face.triangleVertices_[face.nSides_] = &currHe->vertex();
+      }
+      face.nSides_++;
+      currHe = &currHe->next();
+    } while (currHe != firstHe);
+  }
+
+  // Count vertex degree
+  for (size_t iV = 0; iV < nVertices(); iV++) {
+    Vertex& vertex = vertices[iV];
+    vertex.degree_ = 0;
+    Halfedge* currHe = &vertex.halfedge();
+    Halfedge* firstHe = &vertex.halfedge();
+    do {
+      vertex.degree_++;
+      currHe = &currHe->twin().next();
+    } while (currHe != firstHe);
+  }
 
   // Print some nice statistics
   std::cout << "Constructed halfedge mesh with: " << std::endl;
@@ -387,7 +497,84 @@ HalfedgeMesh::HalfedgeMesh(const std::vector<glm::vec3>& vertexPositions,
 
 void HalfedgeMesh::cacheGeometry() {
 
+  // TODO special logic for triangulated meshes
 
+  // == Zero out quantities that will accumulate
+  for (size_t iV = 0; iV < nVertices(); iV++) {
+    vertices[iV].area_ = 0.0;
+  }
+
+  // Loop over faces to compute most quantities
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    Face& face = faces[iF];
+    size_t nSides = face.nSides();
+
+    // = First pass, compute average quantities for the face
+    double areaSum = 0;
+    glm::vec3 normalSum{0., 0., 0.};
+    glm::vec3 centerSum{0., 0., 0.};
+    Vertex *vert0, *vert1, *vert2;
+    {
+      Halfedge* currHe = &face.halfedge();
+      for (size_t jE = 0; jE < nSides; jE++) {
+
+        vert0 = vert1;
+        vert1 = vert2;
+        vert2 = &currHe->vertex();
+
+        if (jE >= 2) {
+          // (implicit fan triangulation)
+          glm::vec3 vec01 = vert1->position() - vert0->position();
+          glm::vec3 vec02 = vert2->position() - vert0->position();
+          glm::vec3 areaNormal = glm::cross(vec01, vec02);
+
+          double area = 0.5 * glm::length(areaNormal);
+          areaSum += area;
+          normalSum += areaNormal;
+        }
+        centerSum += vert2->position();
+
+        currHe = &currHe->next();
+      }
+
+      face.area_ = areaSum;
+      face.normal_ = glm::normalize(normalSum);
+      face.center_ = centerSum / (float)nSides;
+    }
+
+    { // = Second pass, distribute average quantities to vertices
+      Halfedge* currHe = &face.halfedge();
+      Vertex *vPrev, *v, *vNext;
+      for (size_t jV = 0; jV <= nSides; jV++) {
+
+        vPrev = v;
+        v = vNext;
+        vNext = &currHe->vertex();
+
+        if (jV > 0) {
+          // Assign area to vertices evenly
+          v->area_ += face.area() / nSides;
+
+          // Angle-weighted vertex normals
+          glm::vec3 vecPrev = glm::normalize(vPrev->position() - v->position());
+          glm::vec3 vecNext = glm::normalize(vNext->position() - v->position());
+          double angle = std::acos(glm::clamp(glm::dot(vecPrev, vecNext), -1.0f, 1.0f));
+          v->normal_ += (float)angle * face.normal();
+
+          // Edge lengths
+          double eLen = glm::length(currHe->vertex().position() - currHe->twin().vertex().position());
+          currHe->edge().length_ = eLen;
+        }
+
+        currHe = &currHe->next();
+      }
+    }
+  }
+
+  // Normalize vertex normals
+  for (size_t iV = 0; iV < nVertices(); iV++) {
+    vertices[iV].normal_ = glm::normalize(vertices[iV].normal_);
+  }
 }
 
 } // namespace polyscope

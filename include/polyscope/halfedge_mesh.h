@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <array>
 
 #include <polyscope/utilities.h>
 
@@ -22,8 +23,9 @@ public:
     friend class HalfedgeMesh;
 
   public:
-    inline size_t index() { return index_; }
-    inline bool isReal() { return isReal_; }
+    // Note: if mesh came from triangulation, refers to original mesh
+    inline size_t index() const { return index_; }
+    inline bool isReal() const { return isReal_; }
     inline Halfedge& twin() { return *twin_; }
     inline Halfedge& next() { return *next_; }
     inline Vertex& vertex() { return *vertex_; }
@@ -47,14 +49,14 @@ public:
     friend class HalfedgeMesh;
 
   public:
-    inline size_t index() { return index_; }
+    inline size_t index() const { return index_; }
     inline Halfedge& halfedge() { return *halfedge_; }
-    inline bool isBoundary() { return isBoundary_; }
-    inline size_t degree() { return degree_; }
+    inline bool isBoundary() const { return isBoundary_; }
+    inline size_t degree() const { return degree_; }
 
-    inline glm::vec3 position() { return position_; }
-    inline glm::vec3 normal() { return normal_; }
-    inline double area() { return area_; }
+    inline glm::vec3 position() const { return position_; }
+    inline glm::vec3 normal() const { return normal_; }
+    inline double area() const { return area_; }
 
   private:
     // Connectivity
@@ -73,13 +75,18 @@ public:
     friend class HalfedgeMesh;
 
   public:
-    inline size_t index() { return index_; }
+    // Note: if mesh came from triangulation, refers to original mesh
+    inline size_t index() const { return index_; }
     inline Halfedge& halfedge() { return *halfedge_; }
-    inline size_t nSides() { return nSides_; }
-    inline bool isReal() { return isReal_; }
+    inline size_t nSides() const { return nSides_; }
+    inline bool isReal() const { return isReal_; }
 
-    inline glm::vec3 normal() { return normal_; }
-    inline double area() { return area_; }
+    // Common-case helper. Only meaningul if face is triangular.
+    inline std::array<Vertex*, 3> triangleVertices() const { return triangleVertices_; }
+
+    inline glm::vec3 normal() const { return normal_; }
+    inline glm::vec3 center() const { return center_; }
+    inline double area() const { return area_; }
 
 
   private:
@@ -88,9 +95,11 @@ public:
     Halfedge* halfedge_;
     size_t nSides_;
     bool isReal_;
+    std::array<Vertex*, 3> triangleVertices_;
 
     // Geometry
     glm::vec3 normal_;
+    glm::vec3 center_;
     double area_;
   };
 
@@ -99,10 +108,11 @@ public:
     friend class HalfedgeMesh;
 
   public:
-    inline size_t index() { return index_; }
+    // Note: if mesh came from triangulation, refers to original mesh
+    inline size_t index() const { return index_; }
     inline Halfedge& halfedge() { return *halfedge_; }
-    inline bool isBoundary() { return isBoundary_; }
-    inline double length() { return length_; }
+    inline bool isBoundary() const { return isBoundary_; }
+    inline double length() const { return length_; }
 
   private:
     // Connectivity
@@ -115,23 +125,25 @@ public:
   };
 
   HalfedgeMesh();
-  HalfedgeMesh(const std::vector<glm::vec3>& vertexPositions, const std::vector<std::vector<size_t>>& faceInds);
+  HalfedgeMesh(const std::vector<glm::vec3> vertexPositions, const std::vector<std::vector<size_t>> faceInds,
+               bool triangulate = false);
 
 
   // Number of mesh elements of each type
-  size_t nHalfedges() const;
-  size_t nVertices() const;
-  size_t nEdges() const;
-  size_t nFaces() const;
-  size_t nBoundaryLoops() const;
-  size_t nImaginaryHalfedges() const;
+  size_t nHalfedges() const { return halfedges.size(); }
+  size_t nVertices() const { return vertices.size(); }
+  size_t nEdges() const { return edges.size(); }
+  size_t nFaces() const { return faces.size(); }
+  size_t nBoundaryLoops() const { return boundaryLoops.size(); }
+  size_t nImaginaryHalfedges() const; // TODO
+
+  // If this mesh is a triangulation of the input, the number of elements in the original input mesh.
+  size_t nOrigFaces() const;
+  size_t nOrigEdges() const;
+  size_t nOrigHalfedges() const;
 
   // Utility functions
-  bool isTriangular() const;          // returns true if and only if all faces are triangles
-  size_t nFacesTriangulation() const; // returns the number of triangles in the
-                                      // triangulation determined by
-                                      // Face::triangulate()
-
+  bool isTriangular() const;
   int eulerCharacteristic() const;
   size_t nConnectedComponents() const;
 
@@ -163,6 +175,7 @@ private:
   size_t _nFacesTriangulation;
   size_t _longestBoundaryLoop;
   size_t _nConnectedComponents;
+  size_t nOrigFaces_, nOrigEdges_, nOrigHalfedges_;
 };
 
 } // namespace polyscope

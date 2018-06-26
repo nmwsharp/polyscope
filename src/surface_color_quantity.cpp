@@ -48,11 +48,11 @@ gl::GLProgram* SurfaceColorVertexQuantity::createProgram() {
 
 void SurfaceColorVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
   std::vector<Color3f> colorval;
-  colorval.resize(3 * parent->nTriangulationFaces);
+  colorval.resize(3 * parent->triMesh.nFaces());
 
-  for (const TriangulationFace& face : parent->triangulation) {
-    for (size_t i = 0; i < 3; i++) {
-      size_t vInd = face.vertexInds[i];
+  for (const HalfedgeMesh::Face& face : parent->triMesh.faces) {
+    for(size_t i = 0; i < 3; i++) {
+      size_t vInd = face.triangleVertices()[i]->index();
       colorval.push_back(values[vInd]);
     }
   }
@@ -96,10 +96,10 @@ gl::GLProgram* SurfaceColorFaceQuantity::createProgram() {
 
 void SurfaceColorFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
   std::vector<Color3f> colorval;
-  colorval.resize(3 * parent->nTriangulationFaces);
+  colorval.resize(3 * parent->triMesh.nFaces());
 
-  for (const TriangulationFace& face : parent->triangulation) {
-    size_t fInd = face.faceInd;
+  for (const HalfedgeMesh::Face& face : parent->triMesh.faces) {
+    size_t fInd = face.index();
     for (size_t i = 0; i < 3; i++) {
       colorval.push_back(values[fInd]);
     }

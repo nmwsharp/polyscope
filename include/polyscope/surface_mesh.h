@@ -8,6 +8,7 @@
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
+#include "polyscope/halfedge_mesh.h"
 
 namespace polyscope {
 
@@ -189,41 +190,7 @@ public:
   // == The mesh! ==
 
   // Vertex positions in R3
-  std::vector<glm::vec3> vertexPositions;
-
-  // Vertices that make up each face counter-clockwise, 0-indexed in to vertexPositions.
-  std::vector<std::vector<size_t>> faceIndices;
-
-  // Element counts
-  size_t nVertices, nFaces, nEdges, nHalfedges; // halfedges is "interior" only
-
-  // For each face, the indices of the adjacent edges. Indexed such that edge i comes between vertex i and i+1.
-  std::vector<std::vector<size_t>> faceEdgeIndex;
-
-  // For each face, the indices of the adjacent halfedges. Indexed such that edge i comes between vertex i and i+1.
-  std::vector<std::vector<size_t>> faceHalfedgeIndex;
-
-  // For each face, data about the neighboring face. Indexed such that edge i comes between vertex i and i+1.
-  // Pair is (index of neighboring face, index of the shared edge in the neighboring face). Not well-defined at a
-  // nonmanifold edge.
-  std::vector<std::vector<std::pair<size_t, size_t>>> neighborFaceAndIndex;
-
-  // A triangulation of the mesh.
-  std::vector<TriangulationFace> triangulation;
-  size_t nTriangulationFaces;
-
-  // Helpers to get data from the mesh representaiton above
-  size_t edgeTailVertex(size_t iEdge);
-  size_t edgeTipVertex(size_t iEdge);
-
-  // Some geometric data on the mesh
-  std::vector<glm::vec3> faceNormals;
-  std::vector<glm::vec3> vertexNormals;
-  std::vector<glm::vec3> faceCenters;
-  std::vector<double> faceAreas;
-  std::vector<double> vertexAreas;
-  std::vector<double> edgeLengths;
-
+  HalfedgeMesh triMesh;
 
   static const std::string structureTypeName;
   SubColorManager colorManager;
@@ -280,10 +247,7 @@ private:
   // === Helper functions
 
   // Initialization work
-  void initializeMeshData();
-  void initializeMeshIndices();
   void initializeMeshTriangulation();
-  void initializeMeshGeometry();
 
   void fillGeometryBuffersSmooth();
   void fillGeometryBuffersFlat();
