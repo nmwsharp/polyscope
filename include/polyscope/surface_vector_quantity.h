@@ -85,10 +85,10 @@ void SurfaceMesh::addFaceVectorQuantity(std::string name, const T& vectors, Vect
 
 class SurfaceFaceIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2>& vectors_, SurfaceMesh* mesh_,
+  SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<Complex>& vectors_, SurfaceMesh* mesh_,
                                      int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
 
-  std::vector<glm::vec2> vectorField;
+  std::vector<Complex> vectorField;
   int nSym;
 
   virtual void draw() override;
@@ -102,7 +102,7 @@ public:
 template <class T>
 void SurfaceMesh::addFaceIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym, VectorType vectorType) {
   std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceFaceIntrinsicVectorQuantity>(
-      name, standardizeVectorArray<glm::vec3, T, 2>(vectors, nFaces(), "face intrinsic vector quantity " + name), this,
+      name, standardizeVectorArray<Complex, T, 2>(vectors, nFaces(), "face intrinsic vector quantity " + name), this,
       nSym, vectorType);
   addSurfaceQuantity(q);
 }
@@ -110,10 +110,10 @@ void SurfaceMesh::addFaceIntrinsicVectorQuantity(std::string name, const T& vect
 
 class SurfaceVertexIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceVertexIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2>& vectors_, SurfaceMesh* mesh_,
+  SurfaceVertexIntrinsicVectorQuantity(std::string name, std::vector<Complex>& vectors_, SurfaceMesh* mesh_,
                                        int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
 
-  std::vector<glm::vec2> vectorField;
+  std::vector<Complex> vectorField;
   int nSym;
 
   virtual void draw() override;
@@ -138,7 +138,7 @@ public:
   SurfaceOneFormIntrinsicVectorQuantity(std::string name, std::vector<double>& oneForm_, SurfaceMesh* mesh_);
 
   std::vector<double> oneForm;
-  std::vector<glm::vec2> mappedVectorField;
+  std::vector<Complex> mappedVectorField;
 
   virtual void draw() override;
 

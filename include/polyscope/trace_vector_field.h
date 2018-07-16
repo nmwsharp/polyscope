@@ -10,6 +10,7 @@ namespace polyscope {
 // Settings 0 for nLines results in an automatically computed value
 std::vector<std::vector<std::array<glm::vec3, 2>>>
 traceField(HalfedgeMesh& mesh,
-           const std::vector<std::complex<double>>& field, int nSym = 1, size_t nLines = 0);
+           const std::vector<Complex>& field, int nSym = 1, size_t nLines = 0);
+
 
 } // namespace polyscope

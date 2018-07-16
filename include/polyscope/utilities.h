@@ -1,5 +1,6 @@
 #pragma once
 
+#include <complex>
 #include <cstdio>
 #include <iomanip>
 #include <iostream>
@@ -68,6 +69,7 @@ inline std::string to_string(const glm::vec3& v) {
   buffer << v;
   return buffer.str();
 }
+inline std::string to_string_short(const glm::vec3& v) { return str_printf("<%1.3f, %1.3f, %1.3f>", v[0], v[1], v[2]); }
 
 // === Index management
 const size_t INVALID_IND = std::numeric_limits<size_t>::max();
@@ -102,5 +104,12 @@ inline double randomNormal(double mean = 0.0, double stddev = 1.0) {
   std::normal_distribution<double> dist{mean, stddev};
   return dist(util_mersenne_twister);
 }
+
+
+// === Math utilities
+const double PI = 3.14159265358979323;
+
+typedef std::complex<double> Complex;
+
 
 } // namespace polyscope

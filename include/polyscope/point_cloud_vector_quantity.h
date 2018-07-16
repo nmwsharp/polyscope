@@ -22,7 +22,7 @@ public:
   std::vector<glm::vec3> vectors;
   float lengthMult; // longest vector will be this fraction of lengthScale (if not ambient)
   float radiusMult; // radius is this fraction of lengthScale
-  std::array<float, 3> vectorColor;
+  Color3f vectorColor;
 
 
   // The map that takes values to [0,1] for drawing

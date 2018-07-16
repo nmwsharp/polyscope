@@ -18,7 +18,7 @@ namespace {
 
 // Clamp to [0,1]
 float unitClamp(float x) { return std::max(0.0f, std::min(1.0f, x)); }
-Color3f unitClamp(Color3f x) { return {{unitClamp(x[0]), unitClamp(x[1]), unitClamp(x[2])}}; }
+Color3f unitClamp(Color3f x) { return {unitClamp(x[0]), unitClamp(x[1]), unitClamp(x[2])}; }
 
 // Used to sample colors. Samples a series of most-distant values from a range [0,1]
 // offset from a starting value 'start' and wrapped around. index=0 returns start
@@ -63,7 +63,7 @@ Color3f HSVtoRGB(Color3f hsv) {
 Color3f indexOffsetHue(Color3f baseColor, int index) {
   Color3f baseHSV = RGBtoHSV(baseColor);
   float newHue = getIndexedDistinctValue(baseHSV[0], index);
-  Color3f outHSV = {{newHue, baseHSV[1], baseHSV[2]}};
+  Color3f outHSV = {newHue, baseHSV[1], baseHSV[2]};
   return HSVtoRGB(outHSV);
 }
 
@@ -74,7 +74,7 @@ int iStructureColor = 0;
 Color3f getNextStructureColor() { return indexOffsetHue(structureBaseColorRGB, iStructureColor++); }
 
 
-SubColorManager::SubColorManager() : baseColor({{0.0, 0.0, 0.0}}) {}
+SubColorManager::SubColorManager() : baseColor({0.0, 0.0, 0.0}) {}
 SubColorManager::SubColorManager(Color3f baseColorRGB) : baseColor(baseColorRGB) {}
 
 Color3f SubColorManager::getNextSubColor(std::string key) {

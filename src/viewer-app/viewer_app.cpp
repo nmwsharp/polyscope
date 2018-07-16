@@ -2,11 +2,6 @@
 
 #include <iostream>
 
-#include "geometrycentral/geometry.h"
-#include "geometrycentral/halfedge_mesh.h"
-#include "geometrycentral/polygon_soup_mesh.h"
-#include "geometrycentral/ply_wrapper.h"
-
 #include "args/args.hxx"
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -16,7 +11,6 @@
 #include "stb_image.h"
 
 
-using namespace geometrycentral;
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -32,7 +26,7 @@ void processFileOBJ(string filename) {
   cout << "Reading obj file " << filename << endl;
 
   // Get a nice name for the file
-  std::string niceName = polyscope::utilities::guessNiceNameFromPath(filename);
+  std::string niceName = polyscope::guessNiceNameFromPath(filename);
 
   Geometry<Euclidean>* geom;
   HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh(filename), geom);
@@ -49,7 +43,7 @@ void processFilePLY(string filename) {
   cout << "Reading ply file " << filename << endl;
 
   // Get a nice name for the file
-  std::string niceName = polyscope::utilities::guessNiceNameFromPath(filename);
+  std::string niceName = polyscope::guessNiceNameFromPath(filename);
 
   // Initialize a PLY reader
   PlyHalfedgeMeshData reader(filename, true);

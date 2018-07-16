@@ -1,7 +1,5 @@
 #include "polyscope/trace_vector_field.h"
 
-using namespace geometrycentral;
-
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -9,6 +7,7 @@ using std::endl;
 namespace polyscope {
 
 // Helpers for tracing
+/* TODO
 namespace {
 
 struct PointNormal {
@@ -310,10 +309,13 @@ public:
 
 }; // namespace
 
+*/
 
-std::vector<std::vector<std::array<Vector3, 2>>> traceField(Geometry<Euclidean>* geometry,
-                                                            const FaceData<Complex>& field, int nSym, size_t nLines) {
 
+std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(HalfedgeMesh& mesh,
+                                                            const std::vector<Complex>& field, int nSym, size_t nLines) {
+
+  /*
 
   // Preliminaries
   HalfedgeMesh* mesh = geometry->getMesh();
@@ -385,7 +387,9 @@ std::vector<std::vector<std::array<Vector3, 2>>> traceField(Geometry<Euclidean>*
   }
   //cout << "    ... done tracing field." << endl;
 
+  */
 
+  std::vector<std::vector<std::array<glm::vec3, 2>>> lineList;
   return lineList;
 }
 

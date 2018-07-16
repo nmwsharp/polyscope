@@ -39,44 +39,42 @@ void processRotate(float delTheta, float delPhi) {
   delPhi *= PI;
 
   // Get frame
-  Vector3 lookDir, upDir, rightDir;
+  glm::vec3 lookDir, upDir, rightDir;
   getCameraFrame(lookDir, upDir, rightDir);
-  glm::vec3 upGLM(upDir.x, upDir.y, upDir.z);
-  glm::vec3 rightGLM(rightDir.x, rightDir.y, rightDir.z);
 
   // Rotation about the vertical axis
-  glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, upGLM);
+  glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, upDir);
   viewMat = viewMat * thetaCamR;
 
   // Rotation about the horizontal axis
-  glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, rightGLM);
+  glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, rightDir);
   viewMat = viewMat * phiCamR;
 
   immediatelyEndFlight();
 }
 
-void processRotateArcball(Vector2 startP, Vector2 endP) {
+void processRotateArcball(glm::vec2 startP, glm::vec2 endP) {
 
   if (endP == startP) {
     return;
   }
 
   // Map inputs to unit sphere
-  auto toSphere = [](Vector2 v) {
-    double x = clamp(v.x, -1.0, 1.0);
-    double y = clamp(v.y, -1.0, 1.0);
+  auto toSphere = [](glm::vec2 v) {
+    double x = glm::clamp(v.x, -1.0f, 1.0f);
+    double y = glm::clamp(v.y, -1.0f, 1.0f);
     double mag = x * x + y * y;
     if (mag <= 1.0) {
-      return Vector3{x, y, -std::sqrt(1.0 - mag)};
+      return glm::vec3{x, y, -std::sqrt(1.0 - mag)};
     } else {
-      return unit(Vector3{x, y, 0.0});
+      return glm::normalize(glm::vec3{x, y, 0.0});
     }
   };
-  Vector3 sphereStart = toSphere(startP);
-  Vector3 sphereEnd = toSphere(endP);
+  glm::vec3 sphereStart = toSphere(startP);
+  glm::vec3 sphereEnd = toSphere(endP);
 
-  Vector3 rotAxis = -cross(sphereStart, sphereEnd);
-  double rotMag = std::acos(clamp(dot(sphereStart, sphereEnd), -1.0, 1.0));
+  glm::vec3 rotAxis = -cross(sphereStart, sphereEnd);
+  double rotMag = std::acos(glm::clamp(dot(sphereStart, sphereEnd), -1.0f, 1.0f));
   
   glm::mat4 cameraRotate = glm::rotate(glm::mat4x4(1.0), (float)rotMag, glm::vec3(rotAxis.x, rotAxis.y, rotAxis.z));
 
@@ -96,8 +94,8 @@ void processRotateArcball(Vector2 startP, Vector2 endP) {
   immediatelyEndFlight();
 }
 
-void processTranslate(Vector2 delta) {
-  if (norm(delta) == 0) {
+void processTranslate(glm::vec2 delta) {
+  if (glm::length(delta) == 0) {
     return;
   }
   // Process a translation
@@ -179,13 +177,13 @@ glm::mat4 getCameraPerspectiveMatrix() {
   return glm::perspective(fovRad, aspectRatio, nearClip, farClip);
 }
 
-Vector3 getCameraWorldPosition() {
+glm::vec3 getCameraWorldPosition() {
   // This will work no matter how the view matrix is constructed...
   glm::mat4 invViewMat = inverse(getCameraViewMatrix());
-  return Vector3{invViewMat[3][0], invViewMat[3][1], invViewMat[3][2]};
+  return glm::vec3{invViewMat[3][0], invViewMat[3][1], invViewMat[3][2]};
 }
 
-void getCameraFrame(Vector3& lookDir, Vector3& upDir, Vector3& rightDir) {
+void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir) {
   glm::mat3x3 R;
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
@@ -194,9 +192,9 @@ void getCameraFrame(Vector3& lookDir, Vector3& upDir, Vector3& rightDir) {
   }
   glm::mat3x3 Rt = glm::transpose(R);
 
-  lookDir = fromGLM(Rt * glm::vec3(0.0, 0.0, -1.0));
-  upDir = fromGLM(Rt * glm::vec3(0.0, 1.0, 0.0));
-  rightDir = fromGLM(Rt * glm::vec3(1.0, 0.0, 0.0));
+  lookDir = Rt * glm::vec3(0.0, 0.0, -1.0);
+  upDir = Rt * glm::vec3(0.0, 1.0, 0.0);
+  rightDir = Rt * glm::vec3(1.0, 0.0, 0.0);
 }
 
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds) {

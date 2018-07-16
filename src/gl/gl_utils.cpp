@@ -424,7 +424,7 @@ void GLProgram::setUniform(std::string name, float* val) {
 }
 
 // Set a vector2 uniform
-void GLProgram::setUniform(std::string name, Vector2 val) {
+void GLProgram::setUniform(std::string name, glm::vec2 val) {
   glUseProgram(programHandle);
 
   for (GLUniform& u : uniforms) {
@@ -442,7 +442,7 @@ void GLProgram::setUniform(std::string name, Vector2 val) {
 }
 
 // Set a vector3 uniform
-void GLProgram::setUniform(std::string name, Vector3 val) {
+void GLProgram::setUniform(std::string name, glm::vec3 val) {
   glUseProgram(programHandle);
 
   for (GLUniform& u : uniforms) {
@@ -495,7 +495,7 @@ void GLProgram::setUniform(std::string name, float x, float y, float z, float w)
   throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
-void GLProgram::setAttribute(std::string name, const std::vector<Vector2>& data, bool update, int offset, int size) {
+void GLProgram::setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update, int offset, int size) {
   // Reshape the vector
   // Right now, the data is probably laid out in this form already... but let's
   // not be overly clever and just reshape it.
@@ -535,48 +535,7 @@ void GLProgram::setAttribute(std::string name, const std::vector<Vector2>& data,
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLProgram::setAttribute(std::string name, const std::vector<Color3f>& data, bool update, int offset, int size) {
-  // Reshape the vector
-  // Right now, the data is probably laid out in this form already... but let's
-  // not be overly clever and just reshape it.
-  std::vector<float> rawData(3 * data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
-    rawData[3 * i + 0] = static_cast<float>(data[i].x);
-    rawData[3 * i + 1] = static_cast<float>(data[i].y);
-    rawData[3 * i + 2] = static_cast<float>(data[i].z);
-  }
-
-  for (GLAttribute& a : attributes) {
-    if (a.name == name) {
-      if (a.type == GLData::Vector3Float) {
-        glBindVertexArray(vaoHandle);
-        glBindBuffer(GL_ARRAY_BUFFER, a.VBOLoc);
-        if (update) {
-          // TODO: Allow modifications to non-contiguous memory
-          offset *= 3 * sizeof(float);
-          if (size == -1)
-            size = 3 * a.dataSize * sizeof(float);
-          else
-            size *= 3 * sizeof(float);
-
-          glBufferSubData(GL_ARRAY_BUFFER, offset, size, &rawData[0]);
-        } else {
-          glBufferData(GL_ARRAY_BUFFER, 3 * data.size() * sizeof(float), &rawData[0], GL_STATIC_DRAW);
-          a.dataSize = data.size();
-        }
-      } else {
-        throw std::invalid_argument("Tried to set GLAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::Vector3Float)));
-      }
-      return;
-    }
-  }
-
-  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
-}
-
-void GLProgram::setAttribute(std::string name, const std::vector<Vector3>& data, bool update, int offset, int size) {
+void GLProgram::setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update, int offset, int size) {
   // Reshape the vector
   // Right now, the data is probably laid out in this form already... but let's
   // not be overly clever and just reshape it.
@@ -830,9 +789,9 @@ void GLProgram::setTextureFromColormap(std::string name, Colormap colormap, bool
     unsigned int dataLength = colormap.values.size() * 3;
     std::vector<float> colorBuffer(dataLength);
     for (unsigned int i = 0; i < colormap.values.size(); i++) {
-      colorBuffer[3 * i + 0] = static_cast<float>(colormap.values[i].x);
-      colorBuffer[3 * i + 1] = static_cast<float>(colormap.values[i].y);
-      colorBuffer[3 * i + 2] = static_cast<float>(colormap.values[i].z);
+      colorBuffer[3 * i + 0] = static_cast<float>(colormap.values[i][0]);
+      colorBuffer[3 * i + 1] = static_cast<float>(colormap.values[i][1]);
+      colorBuffer[3 * i + 2] = static_cast<float>(colormap.values[i][2]);
     }
 
     glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, colormap.values.size(), 0, GL_RGB, GL_FLOAT, &(colorBuffer[0]));
@@ -849,7 +808,7 @@ void GLProgram::setTextureFromColormap(std::string name, Colormap colormap, bool
   throw std::invalid_argument("No texture with name " + name);
 }
 
-void GLProgram::setIndex(std::vector<uint3> indices) {
+void GLProgram::setIndex(std::vector<std::array<unsigned int, 3>>& indices) {
   if (!useIndex) {
     throw std::invalid_argument("Tried to setIndex() when program drawMode does not use indexed "
                                 "drawing");
@@ -861,9 +820,9 @@ void GLProgram::setIndex(std::vector<uint3> indices) {
   unsigned int* rawData = new unsigned int[3 * indices.size()];
   indexSize = 3 * indices.size();
   for (unsigned int i = 0; i < indices.size(); i++) {
-    rawData[3 * i + 0] = static_cast<float>(indices[i].first);
-    rawData[3 * i + 1] = static_cast<float>(indices[i].second);
-    rawData[3 * i + 2] = static_cast<float>(indices[i].third);
+    rawData[3 * i + 0] = static_cast<float>(indices[i][0]);
+    rawData[3 * i + 1] = static_cast<float>(indices[i][1]);
+    rawData[3 * i + 2] = static_cast<float>(indices[i][2]);
   }
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
@@ -872,7 +831,7 @@ void GLProgram::setIndex(std::vector<uint3> indices) {
   delete[] rawData;
 }
 
-void GLProgram::setIndex(std::vector<unsigned int> indices) {
+void GLProgram::setIndex(std::vector<unsigned int>& indices) {
   // (This version is typically used for indexed lines)
 
   if (!useIndex) {
