@@ -879,6 +879,7 @@ void SurfaceMesh::removeAllQuantities() {
 }
 
 void SurfaceMesh::setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q) {
+  if(activeSurfaceQuantity == q) return;
   clearActiveSurfaceQuantity();
   activeSurfaceQuantity = q;
   q->enable();
@@ -887,8 +888,10 @@ void SurfaceMesh::setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q) {
 void SurfaceMesh::clearActiveSurfaceQuantity() {
   deleteProgram();
   if (activeSurfaceQuantity != nullptr) {
-    activeSurfaceQuantity->disable();
+    SurfaceQuantityThatDrawsFaces* oldActiveQuantity = activeSurfaceQuantity;
     activeSurfaceQuantity = nullptr;
+    // do this after setting to nullptr in case disable() implementation recurses
+    oldActiveQuantity->disable();
   }
 }
 

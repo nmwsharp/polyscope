@@ -89,8 +89,8 @@ public:
   SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<Complex> vectors_, SurfaceMesh* mesh_, int nSym = 1,
                                      VectorType vectorType_ = VectorType::STANDARD);
 
-  std::vector<Complex> vectorField;
   int nSym;
+  std::vector<Complex> vectorField;
 
   virtual void draw() override;
 
@@ -114,8 +114,8 @@ public:
   SurfaceVertexIntrinsicVectorQuantity(std::string name, std::vector<Complex> vectors_, SurfaceMesh* mesh_,
                                        int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
 
-  std::vector<Complex> vectorField;
   int nSym;
+  std::vector<Complex> vectorField;
 
   virtual void draw() override;
 

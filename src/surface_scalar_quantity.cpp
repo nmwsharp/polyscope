@@ -180,6 +180,7 @@ void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
     for (size_t i = 0; i < 3; i++) {
       size_t vInd = currHe->vertex().index();
       colorval.push_back(values[vInd]);
+      currHe = &currHe->next();
     }
   }
 

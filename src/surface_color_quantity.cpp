@@ -48,7 +48,7 @@ gl::GLProgram* SurfaceColorVertexQuantity::createProgram() {
 
 void SurfaceColorVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
   std::vector<Color3f> colorval;
-  colorval.resize(3 * parent->triMesh.nFaces());
+  colorval.reserve(3 * parent->triMesh.nFaces());
 
   for (const HalfedgeMesh::Face& face : parent->triMesh.faces) {
     for(size_t i = 0; i < 3; i++) {
@@ -75,7 +75,7 @@ void SurfaceColorVertexQuantity::buildVertexInfoGUI(size_t vInd) {
 
 
 // ========================================================
-// ==========            Face Scalar             ==========
+// ==========            Face Color              ==========
 // ========================================================
 
 SurfaceColorFaceQuantity::SurfaceColorFaceQuantity(std::string name, std::vector<Color3f> values_, SurfaceMesh* mesh_)
@@ -96,7 +96,7 @@ gl::GLProgram* SurfaceColorFaceQuantity::createProgram() {
 
 void SurfaceColorFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
   std::vector<Color3f> colorval;
-  colorval.resize(3 * parent->triMesh.nFaces());
+  colorval.reserve(3 * parent->triMesh.nFaces());
 
   for (const HalfedgeMesh::Face& face : parent->triMesh.faces) {
     size_t fInd = face.index();

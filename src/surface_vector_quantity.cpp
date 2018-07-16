@@ -164,7 +164,7 @@ void SurfaceVectorQuantity::writeToFile(std::string filename) {
 SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                          SurfaceMesh* mesh_, VectorType vectorType_)
 
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_) {
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), vectorField(vectors_) {
 
   size_t i = 0;
   for (HalfedgeMesh::Vertex& v : parent->mesh.vertices) {
@@ -197,7 +197,7 @@ void SurfaceVertexVectorQuantity::buildVertexInfoGUI(size_t iV) {
 
 SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh* mesh_,
                                                      VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_) {
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), vectorField(vectors_) {
 
   // Copy the vectors
   size_t i = 0;
@@ -232,7 +232,7 @@ void SurfaceFaceVectorQuantity::buildFaceInfoGUI(size_t iF) {
 SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<Complex> vectors_,
                                                                        SurfaceMesh* mesh_, int nSym_,
                                                                        VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), nSym(nSym_) {
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), nSym(nSym_), vectorField(vectors_) {
 
   // TODO
   //GeometryCache<Euclidean>& gc = parent->geometry->cache;
@@ -315,7 +315,7 @@ SurfaceVertexIntrinsicVectorQuantity::SurfaceVertexIntrinsicVectorQuantity(std::
                                                                            std::vector<Complex> vectors_,
                                                                            SurfaceMesh* mesh_, int nSym_,
                                                                            VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), nSym(nSym_) {
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), nSym(nSym_), vectorField(vectors_) {
 
   // TODO
   //GeometryCache<Euclidean>& gc = parent->geometry->cache;
@@ -411,7 +411,7 @@ void SurfaceVertexIntrinsicVectorQuantity::drawSubUI() {
 SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std::string name,
                                                                              std::vector<double> oneForm_,
                                                                              SurfaceMesh* mesh_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, VectorType::STANDARD) {
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, VectorType::STANDARD), oneForm(oneForm_) {
 
   // TODO
   //GeometryCache<Euclidean>& gc = parent->geometry->cache;

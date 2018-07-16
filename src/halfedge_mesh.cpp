@@ -544,11 +544,11 @@ void HalfedgeMesh::cacheGeometry() {
     { // = Second pass, distribute average quantities to vertices
       Halfedge* currHe = &face.halfedge();
       Vertex *vPrev, *v, *vNext;
+      v = &currHe->vertex();
       for (size_t jV = 0; jV <= nSides; jV++) {
 
-        vPrev = v;
-        v = vNext;
-        vNext = &currHe->vertex();
+        v = &currHe->vertex();
+        vNext = &currHe->twin().vertex();
 
         if (jV > 0) {
           // Assign area to vertices evenly
@@ -565,6 +565,7 @@ void HalfedgeMesh::cacheGeometry() {
           currHe->edge().length_ = eLen;
         }
 
+        vPrev = v;
         currHe = &currHe->next();
       }
     }
