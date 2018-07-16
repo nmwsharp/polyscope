@@ -1,10 +1,8 @@
 #include "polyscope/polyscope.h"
 
-#include <iostream>
+#include "polyscope/surface_mesh_io.h"
 
-#include "geometrycentral/geometry.h"
-#include "geometrycentral/halfedge_mesh.h"
-#include "geometrycentral/polygon_soup_mesh.h"
+#include <iostream>
 
 #include "args/args.hxx"
 #include "json/json.hpp"
@@ -16,7 +14,6 @@
 #include "stb_image.h"
 
 
-using namespace geometrycentral;
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -29,55 +26,77 @@ bool endsWith(const std::string& str, const std::string& suffix) {
 
 void processFileOBJ(string filename) {
   // Get a nice name for the file
-  std::string niceName = polyscope::utilities::guessNiceNameFromPath(filename);
+  std::string niceName = polyscope::guessNiceNameFromPath(filename);
 
-  Geometry<Euclidean>* geom;
-  HalfedgeMesh* mesh = new HalfedgeMesh(PolygonSoupMesh(filename), geom);
-  polyscope::registerSurfaceMesh(niceName, geom);
-
-  // Add some scalars
-  VertexData<double> valX(mesh);
-  VertexData<double> valY(mesh);
-  VertexData<double> valZ(mesh);
-  VertexData<double> valMag(mesh);
-  VertexData<Vector3> randColor(mesh);
-  for (VertexPtr v : mesh->vertices()) {
-    valX[v] = geom->position(v).x / 10000;
-    valY[v] = geom->position(v).y;
-    valZ[v] = geom->position(v).z;
-    valMag[v] = norm(geom->position(v));
-
-    randColor[v] = Vector3{unitRand(), unitRand(), unitRand()};
+  // Load mesh and polygon soup data
+  std::vector<std::array<double, 3>> vertexPositions;
+  std::vector<std::vector<size_t>> faceIndices;
+  polyscope::loadPolygonSoup_OBJ(filename, vertexPositions, faceIndices);
+  std::vector<glm::vec3> vertexPositionsGLM;
+  for (std::array<double, 3> p : vertexPositions) {
+    vertexPositionsGLM.push_back({p[0], p[1], p[2]});
   }
-  polyscope::getSurfaceMesh(niceName)->addQuantity("cX_really_really_stupid_long_name_how_dumb", valX);
-  polyscope::getSurfaceMesh(niceName)->addQuantity("cY", valY);
-  polyscope::getSurfaceMesh(niceName)->addQuantity("cZ", valZ);
-  polyscope::getSurfaceMesh(niceName)->addColorQuantity("vColor", randColor);
-  polyscope::getSurfaceMesh(niceName)->addQuantity("cY_sym", valY, polyscope::DataType::SYMMETRIC);
-  polyscope::getSurfaceMesh(niceName)->addQuantity("cNorm", valMag, polyscope::DataType::MAGNITUDE);
-  // polyscope::getSurfaceMesh(niceName)->setActiveSurfaceQuantity(
-  // dynamic_cast<polyscope::SurfaceQuantityThatDrawsFaces*>(polyscope::getSurfaceMesh(niceName)->getSurfaceQuantity("cZ")));
+  polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
 
-  FaceData<double> fArea(mesh);
-  FaceData<double> zero(mesh);
-  FaceData<Vector3> fColor(mesh);
-  for (FacePtr f : mesh->faces()) {
-    fArea[f] = geom->area(f);
-    zero[f] = 0;
-    fColor[f] = Vector3{unitRand(), unitRand(), unitRand()};
+  // Useful data
+  size_t nVertices = vertexPositions.size();
+  size_t nFaces = faceIndices.size();
+
+  // Add some vertex scalars
+  std::vector<double> valX(nVertices);
+  std::vector<double> valY(nVertices);
+  std::vector<double> valZ(nVertices);
+  std::vector<double> valMag(nVertices);
+  std::vector<std::array<double, 3>> randColor(nVertices);
+  for (size_t iV = 0; iV < nVertices; iV++) {
+    valX[iV] = vertexPositionsGLM[iV].x / 10000;
+    valY[iV] = vertexPositionsGLM[iV].y;
+    valZ[iV] = vertexPositionsGLM[iV].z;
+    valMag[iV] = glm::length(vertexPositionsGLM[iV]);
+
+    randColor[iV] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
   }
-  polyscope::getSurfaceMesh(niceName)->addQuantity("face area", fArea, polyscope::DataType::MAGNITUDE);
-  polyscope::getSurfaceMesh(niceName)->addQuantity("zero", zero);
-  polyscope::getSurfaceMesh(niceName)->addColorQuantity("fColor", fColor);
+  polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cX_really_really_stupid_long_name_how_dumb", valX);
+  polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cY", valY);
+  polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cZ", valZ);
+  polyscope::getSurfaceMesh(niceName)->addVertexColorQuantity("vColor", randColor);
+  polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cY_sym", valY, polyscope::DataType::SYMMETRIC);
+  polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cNorm", valMag, polyscope::DataType::MAGNITUDE);
 
-  EdgeData<double> cWeight(mesh);
-  geom->getEdgeCotanWeights(cWeight);
-  polyscope::getSurfaceMesh(niceName)->addQuantity("cotan weight", cWeight, polyscope::DataType::SYMMETRIC);
 
-  HalfedgeData<double> oAngles(mesh);
-  geom->getHalfedgeAngles(oAngles);
-  polyscope::getSurfaceMesh(niceName)->addQuantity("angles", oAngles);
-  polyscope::getSurfaceMesh(niceName)->addQuantity("zangles", oAngles);
+  // Add some face scalars
+  std::vector<double> fArea(nFaces);
+  std::vector<double> zero(nFaces);
+  std::vector<std::array<double, 3>> fColor(nFaces);
+  for (size_t iF = 0; iF < nFaces; iF++) {
+    std::vector<size_t>& face = faceIndices[iF];
+
+    // Compute something like area
+    double area = 0;
+    for (size_t iV = 1; iV < face.size() - 1; iV++) {
+      glm::vec3 p0 = vertexPositionsGLM[face[0]];
+      glm::vec3 p1 = vertexPositionsGLM[face[iV]];
+      glm::vec3 p2 = vertexPositionsGLM[face[iV + 1]];
+      area += 0.5f * glm::length(glm::cross(p1 - p0, p2 - p0));
+    }
+    fArea[iF] = area;
+
+    zero[iF] = 0;
+    fColor[iF] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
+  }
+  polyscope::getSurfaceMesh(niceName)->addFaceScalarQuantity("face area", fArea, polyscope::DataType::MAGNITUDE);
+  polyscope::getSurfaceMesh(niceName)->addFaceScalarQuantity("zero", zero);
+  polyscope::getSurfaceMesh(niceName)->addFaceColorQuantity("fColor", fColor);
+
+  // TODO show some edge and halfedge quantites
+  // EdgeData<double> cWeight(mesh);
+  // geom->getEdgeCotanWeights(cWeight);
+  // polyscope::getSurfaceMesh(niceName)->addQuantity("cotan weight", cWeight, polyscope::DataType::SYMMETRIC);
+
+  // HalfedgeData<double> oAngles(mesh);
+  // geom->getHalfedgeAngles(oAngles);
+  // polyscope::getSurfaceMesh(niceName)->addQuantity("angles", oAngles);
+  // polyscope::getSurfaceMesh(niceName)->addQuantity("zangles", oAngles);
 
   // Test error
   // polyscope::error("Resistance is futile, welcome to the borg borg borg.");
@@ -93,76 +112,97 @@ void processFileOBJ(string filename) {
   // polyscope::warning("Some problems come in groups");
   //}
 
-  // Add some vectors
-  VertexData<Vector3> normals(mesh);
-  VertexData<Vector3> toZero(mesh);
-  geom->getVertexNormals(normals);
-  for (VertexPtr v : mesh->vertices()) {
-    normals[v] *= unitRand() * 5000;
-    toZero[v] = -geom->position(v);
-  }
-  polyscope::getSurfaceMesh(niceName)->addVectorQuantity("rand length normals", normals);
-  polyscope::getSurfaceMesh(niceName)->addVectorQuantity("toZero", toZero, polyscope::VectorType::AMBIENT);
+  // === Add some vectors
 
-  FaceData<Vector3> fNormals(mesh);
-  for (FacePtr f : mesh->faces()) {
-    fNormals[f] = geom->normal(f);
+  // Face & vertex normals
+  std::vector<glm::vec3> fNormals(nFaces);
+  std::vector<glm::vec3> vNormals(nVertices, glm::vec3{0., 0., 0.});
+  for (size_t iF = 0; iF < nFaces; iF++) {
+    std::vector<size_t>& face = faceIndices[iF];
+
+    // Compute something like a normal
+    glm::vec3 N = {0., 0., 0.};
+    for (size_t iV = 1; iV < face.size() - 1; iV++) {
+      glm::vec3 p0 = vertexPositionsGLM[face[0]];
+      glm::vec3 p1 = vertexPositionsGLM[face[iV]];
+      glm::vec3 p2 = vertexPositionsGLM[face[iV + 1]];
+      N += glm::cross(p1 - p0, p2 - p0);
+    }
+    N = glm::normalize(N);
+    fNormals[iF] = N;
+
+    // Accumulate at vertices
+    for (size_t iV = 0; iV < face.size(); iV++) {
+      vNormals[face[iV]] += N;
+    }
   }
-  polyscope::getSurfaceMesh(niceName)->addVectorQuantity("face normals", fNormals);
+  polyscope::getSurfaceMesh(niceName)->addFaceVectorQuantity("face normals", fNormals);
+
+
+  std::vector<glm::vec3> vNormalsRand(nVertices, glm::vec3{0., 0., 0.});
+  std::vector<glm::vec3> toZero(nVertices, glm::vec3{0., 0., 0.});
+  for (size_t iV = 0; iV < nVertices; iV++) {
+    vNormals[iV] = glm::normalize(vNormals[iV]);
+    vNormalsRand[iV] = vNormals[iV] * (float)polyscope::randomUnit() * 5000.f;
+    toZero[iV] = -vertexPositionsGLM[iV];
+  }
+  polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("area vertex normals", vNormals);
+  polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("rand length normals", vNormalsRand);
+  polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("toZero", toZero, polyscope::VectorType::AMBIENT);
+
 
   // Add count quantities
-  std::vector<std::pair<VertexPtr, int>> vCount;
-  std::vector<std::pair<VertexPtr, double>> vVal;
-  for (VertexPtr v : mesh->vertices()) {
-    if (unitRand() > 0.8) {
-      vCount.push_back(std::make_pair(v, 2));
+  std::vector<std::pair<size_t, int>> vCount;
+  std::vector<std::pair<size_t, double>> vVal;
+  for (size_t iV = 0; iV < nVertices; iV++) {
+    if (polyscope::randomUnit() > 0.8) {
+      vCount.push_back(std::make_pair(iV, 2));
     }
-    if (unitRand() > 0.8) {
-      vVal.push_back(std::make_pair(v, unitRand()));
+    if (polyscope::randomUnit() > 0.8) {
+      vVal.push_back(std::make_pair(iV, polyscope::randomUnit()));
     }
   }
-  polyscope::getSurfaceMesh(niceName)->addCountQuantity("sample count", vCount);
-  polyscope::getSurfaceMesh(niceName)->addIsolatedVertexQuantity("sample isolated", vVal);
+  polyscope::getSurfaceMesh(niceName)->addVertexCountQuantity("sample count", vCount);
+  polyscope::getSurfaceMesh(niceName)->addIsolatedVertexScalarQuantity("sample isolated", vVal);
 
   // === Input quantities
+  // TODO restore
 
-  // Add a selection quantity
-  VertexData<char> vSelection(mesh, false);
-  for (VertexPtr v : mesh->vertices()) {
-    if (unitRand() < 0.05) {
-      vSelection[v] = true;
-    }
-  }
-  polyscope::getSurfaceMesh(niceName)->addVertexSelectionQuantity("v select", vSelection);
+  //// Add a selection quantity
+  // VertexData<char> vSelection(mesh, false);
+  // for (VertexPtr v : mesh->vertices()) {
+  // if (randomUnit() < 0.05) {
+  // vSelection[v] = true;
+  //}
+  //}
+  // polyscope::getSurfaceMesh(niceName)->addVertexSelectionQuantity("v select", vSelection);
 
-  // Curve quantity
-  polyscope::getSurfaceMesh(niceName)->addInputCurveQuantity("input curve");
-
-  delete geom;
-  delete mesh;
+  //// Curve quantity
+  // polyscope::getSurfaceMesh(niceName)->addInputCurveQuantity("input curve");
 }
 
-void addDataToPointCloud(string pointCloudName, const std::vector<Vector3>& points) {
+void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& points) {
 
 
   // Add some scalar quantities
   std::vector<double> xC(points.size());
-  std::vector<Vector3> randColor(points.size());
+  std::vector<std::array<double, 3>> randColor(points.size());
   for (size_t i = 0; i < points.size(); i++) {
     xC[i] = points[i].x;
-    randColor[i] = Vector3{unitRand(), unitRand(), unitRand()};
+    randColor[i] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
   }
   polyscope::getPointCloud(pointCloudName)->addScalarQuantity("xC", xC);
   polyscope::getPointCloud(pointCloudName)->addColorQuantity("random color", randColor);
 
 
   // Add some vector quantities
-  std::vector<Vector3> randVec(points.size());
-  std::vector<Vector3> centerNormalVec(points.size());
-  std::vector<Vector3> toZeroVec(points.size());
+  std::vector<glm::vec3> randVec(points.size());
+  std::vector<glm::vec3> centerNormalVec(points.size());
+  std::vector<glm::vec3> toZeroVec(points.size());
   for (size_t i = 0; i < points.size(); i++) {
-    randVec[i] = 10 * unitRand() * Vector3{unitRand(), unitRand(), unitRand()};
-    centerNormalVec[i] = unit(points[i]);
+    randVec[i] = (float)(10. * polyscope::randomUnit()) *
+                 glm::vec3{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()};
+    centerNormalVec[i] = glm::normalize(points[i]);
     toZeroVec[i] = -points[i];
   }
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("random vector", randVec);
@@ -171,10 +211,10 @@ void addDataToPointCloud(string pointCloudName, const std::vector<Vector3>& poin
 }
 
 void processFileJSON(string filename) {
-
+  /* TODO add this back in at some point?
   using namespace nlohmann;
 
-  std::string niceName = polyscope::utilities::guessNiceNameFromPath(filename);
+  std::string niceName = polyscope::guessNiceNameFromPath(filename);
 
   // read a JSON camera file
   std::ifstream inFile(filename);
@@ -235,6 +275,7 @@ void processFileJSON(string filename) {
     cout << "Loading " << imageFilename << endl;
     polyscope::getCameraView(niceName)->addImage(niceName + "_rgb", data, x, y);
   }
+  */
 }
 
 void processFile(string filename) {
@@ -280,11 +321,11 @@ int main(int argc, char** argv) {
 
   // Create a point cloud
   for (int j = 0; j < 2; j++) {
-    std::vector<Vector3> points;
+    std::vector<glm::vec3> points;
     for (size_t i = 0; i < 50; i++) {
-      // points.push_back(Vector3{10,10,10} + 20*Vector3{unitRand()-.5,
-      // unitRand()-.5, unitRand()-.5});
-      points.push_back(3 * Vector3{unitRand() - .5, unitRand() - .5, unitRand() - .5});
+      // points.push_back(glm::vec3{10,10,10} + 20*glm::vec3{randomUnit()-.5,
+      // randomUnit()-.5, randomUnit()-.5});
+      points.push_back(3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
     }
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
     addDataToPointCloud("really great points" + std::to_string(j), points);

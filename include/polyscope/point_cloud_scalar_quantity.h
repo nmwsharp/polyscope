@@ -40,4 +40,12 @@ protected:
 };
 
 
+template <class T>
+void PointCloud::addScalarQuantity(std::string name, const T& data, DataType type) {
+  PointCloudQuantityThatDrawsPoints* q = new PointCloudScalarQuantity(
+      name, standardizeArray<double, T>(data, nPoints(), "point cloud scalar quantity " + name), this, type);
+  addQuantity(q);
+}
+
+
 } // namespace polyscope

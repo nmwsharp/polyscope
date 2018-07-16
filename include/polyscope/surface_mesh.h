@@ -10,6 +10,8 @@
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
 
+// Note: additional quantity includes at bottom
+
 namespace polyscope {
 
 enum class ShadeStyle { FLAT = 0, SMOOTH };
@@ -153,10 +155,10 @@ public:
   void addFaceVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
   template <class T>
   void addFaceIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym = 1,
-                             VectorType vectorType = VectorType::STANDARD);
+                                      VectorType vectorType = VectorType::STANDARD);
   template <class T>
   void addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym = 1,
-                               VectorType vectorType = VectorType::STANDARD);
+                                        VectorType vectorType = VectorType::STANDARD);
   template <class T>
   void addOneFormIntrinsicVectorQuantity(std::string name, const T& data); // expects scalar
 
@@ -285,3 +287,12 @@ inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
 }
 } // namespace polyscope
 
+
+// Additional includes for quantities
+#include "polyscope/surface_color_quantity.h"
+#include "polyscope/surface_count_quantity.h"
+#include "polyscope/surface_distance_quantity.h"
+#include "polyscope/surface_scalar_quantity.h"
+#include "polyscope/surface_selection_quantity.h"
+#include "polyscope/surface_subset_quantity.h"
+#include "polyscope/surface_vector_quantity.h"

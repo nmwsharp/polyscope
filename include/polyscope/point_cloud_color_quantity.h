@@ -26,4 +26,11 @@ public:
 };
 
 
+template <class T>
+void PointCloud::addColorQuantity(std::string name, const T& colors) {
+  PointCloudQuantityThatDrawsPoints* q = new PointCloudColorQuantity(
+      name, standardizeVectorArray<glm::vec3, T, 3>(colors, nPoints(), "point cloud color quantity " + name), this);
+  addQuantity(q);
+}
+
 } // namespace polyscope

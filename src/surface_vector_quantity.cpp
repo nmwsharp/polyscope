@@ -161,7 +161,7 @@ void SurfaceVectorQuantity::writeToFile(std::string filename) {
 // ==========           Vertex Vector            ==========
 // ========================================================
 
-SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3>& vectors_,
+SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                          SurfaceMesh* mesh_, VectorType vectorType_)
 
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_) {
@@ -195,7 +195,7 @@ void SurfaceVertexVectorQuantity::buildVertexInfoGUI(size_t iV) {
 // ==========            Face Vector             ==========
 // ========================================================
 
-SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3>& vectors_, SurfaceMesh* mesh_,
+SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh* mesh_,
                                                      VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_) {
 
@@ -229,7 +229,7 @@ void SurfaceFaceVectorQuantity::buildFaceInfoGUI(size_t iF) {
 // ========================================================
 
 
-SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<Complex>& vectors_,
+SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<Complex> vectors_,
                                                                        SurfaceMesh* mesh_, int nSym_,
                                                                        VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), nSym(nSym_) {
@@ -312,7 +312,7 @@ void SurfaceFaceIntrinsicVectorQuantity::drawSubUI() {
 
 
 SurfaceVertexIntrinsicVectorQuantity::SurfaceVertexIntrinsicVectorQuantity(std::string name,
-                                                                           std::vector<Complex>& vectors_,
+                                                                           std::vector<Complex> vectors_,
                                                                            SurfaceMesh* mesh_, int nSym_,
                                                                            VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), nSym(nSym_) {
@@ -409,7 +409,7 @@ void SurfaceVertexIntrinsicVectorQuantity::drawSubUI() {
 
 
 SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std::string name,
-                                                                             std::vector<double>& oneForm_,
+                                                                             std::vector<double> oneForm_,
                                                                              SurfaceMesh* mesh_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, VectorType::STANDARD) {
 

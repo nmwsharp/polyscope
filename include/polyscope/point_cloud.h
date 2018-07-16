@@ -5,7 +5,10 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
 #include "polyscope/gl/gl_utils.h"
+#include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
+
+// Note extra quantity includes at bottom
 
 namespace polyscope {
 
@@ -88,21 +91,24 @@ public:
   PointCloudQuantity* getQuantity(std::string name, bool errorIfAbsent = true);
 
   // Scalars
-  void addScalarQuantity(std::string name, const std::vector<double>& value, DataType type = DataType::STANDARD);
+  template <class T>
+  void addScalarQuantity(std::string name, const T& values, DataType type = DataType::STANDARD);
 
   // Colors
-  void addColorQuantity(std::string name, const std::vector<glm::vec3>& value);
+  template <class T>
+  void addColorQuantity(std::string name, const T& values);
 
   // Subsets
   // void addSubsetQuantity(std::string name, const std::vector<char>& subsetIndicators);
   // void addSubsetQuantity(std::string name, const std::vector<size_t>& subsetIndices);
 
   // Vectors
-  void addVectorQuantity(std::string name, const std::vector<glm::vec3>& value,
-                         VectorType vectorType = VectorType::STANDARD);
+  template <class T>
+  void addVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
 
 
   // Removal, etc
+  // TODO use shared pointers like SurfaceMesh
   void removeQuantity(std::string name);
   void setActiveQuantity(PointCloudQuantityThatDrawsPoints* q);
   void clearActiveQuantity();
@@ -110,7 +116,8 @@ public:
 
   // The points that make up this point cloud
   std::vector<glm::vec3> points;
-  
+  size_t nPoints() const { return points.size(); }
+
   // Misc data
   bool enabled = true;
   SubColorManager colorManager;
@@ -146,3 +153,10 @@ private:
 };
 
 } // namespace polyscope
+
+
+// Quantity includes
+#include "polyscope/point_cloud_color_quantity.h"
+#include "polyscope/point_cloud_scalar_quantity.h"
+#include "polyscope/point_cloud_vector_quantity.h"
+

@@ -24,8 +24,6 @@ enum class DataType { STANDARD = 0, SYMMETRIC, MAGNITUDE };
 // AMBIENT: vector represent distances in the ambient space
 enum class VectorType { STANDARD = 0, AMBIENT };
 
-template <typename T>
-std::pair<double, double> robustMinMax(const std::vector<T>& data, double rangeEPS = 1e-12);
 
 // Field magnitude type
 template <class P>
@@ -36,6 +34,11 @@ template <>
 struct FIELD_MAG<glm::vec3> {
   typedef float type;
 };
+
+
+template <typename T>
+std::pair<typename FIELD_MAG<T>::type, typename FIELD_MAG<T>::type>
+robustMinMax(const std::vector<T>& data, typename FIELD_MAG<T>::type rangeEPS = 1e-12);
 
 
 // Map data in to the range [0,1]

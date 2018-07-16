@@ -1,6 +1,6 @@
 #pragma once
 
-#include "polyscope/surface_mesh.h"
+#include "polyscope/gl/gl_utils.h"
 
 
 namespace polyscope {

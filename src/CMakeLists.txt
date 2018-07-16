@@ -30,7 +30,7 @@ target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../deps
 target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../deps/happly")
         
 # Link settings
-target_link_libraries(polyscope imgui glfw ${GLFW_LIBRARIES} geometry-central)
+target_link_libraries(polyscope imgui glfw ${GLFW_LIBRARIES})
 
 if(APPLE)
     find_library(cocoa_library Cocoa)

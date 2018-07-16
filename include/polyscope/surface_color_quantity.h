@@ -38,7 +38,7 @@ public:
 template <class T>
 void SurfaceMesh::addVertexColorQuantity(std::string name, const T& colors) {
   std::shared_ptr<SurfaceColorQuantity> q = std::make_shared<SurfaceColorVertexQuantity>(
-      name, standardizeArray<glm::vec3, T>(colors, triMesh.nVertices(), "vertex color quantity " + name), this);
+      name, standardizeVectorArray<glm::vec3, T, 3>(colors, triMesh.nVertices(), "vertex color quantity " + name), this);
   addSurfaceQuantity(q);
 }
 
@@ -64,7 +64,7 @@ public:
 template <class T>
 void SurfaceMesh::addFaceColorQuantity(std::string name, const T& colors) {
   std::shared_ptr<SurfaceColorQuantity> q = std::make_shared<SurfaceColorFaceQuantity>(
-      name, standardizeArray<glm::vec3, T>(colors, triMesh.nFaces(), "face color quantity " + name), this);
+      name, standardizeVectorArray<glm::vec3, T, 3>(colors, triMesh.nFaces(), "face color quantity " + name), this);
   addSurfaceQuantity(q);
 }
 

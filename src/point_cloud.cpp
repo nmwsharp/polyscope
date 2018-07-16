@@ -317,21 +317,6 @@ PointCloudQuantity* PointCloud::getQuantity(std::string name, bool errorIfAbsent
   return quantities[name];
 }
 
-void PointCloud::addScalarQuantity(std::string name, const std::vector<double>& value, DataType type) {
-  PointCloudQuantityThatDrawsPoints* q = new PointCloudScalarQuantity(name, value, this, type);
-  addQuantity(q);
-}
-
-void PointCloud::addColorQuantity(std::string name, const std::vector<glm::vec3>& value) {
-  PointCloudQuantityThatDrawsPoints* q = new PointCloudColorQuantity(name, value, this);
-  addQuantity(q);
-}
-
-void PointCloud::addVectorQuantity(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType) {
-  PointCloudQuantity* q = new PointCloudVectorQuantity(name, vectors, this, vectorType);
-  addQuantity(q);
-}
-
 void PointCloud::removeQuantity(std::string name) {
 
   if (quantities.find(name) == quantities.end()) {

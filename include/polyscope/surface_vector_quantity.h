@@ -49,7 +49,7 @@ public:
 
 class SurfaceVertexVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3>& vectors_, SurfaceMesh* mesh_,
+  SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh* mesh_,
                               VectorType vectorType_ = VectorType::STANDARD);
 
   std::vector<glm::vec3> vectorField;
@@ -67,7 +67,7 @@ void SurfaceMesh::addVertexVectorQuantity(std::string name, const T& vectors, Ve
 
 class SurfaceFaceVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3>& vectors_, SurfaceMesh* mesh_,
+  SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh* mesh_,
                             VectorType vectorType_ = VectorType::STANDARD);
 
   std::vector<glm::vec3> vectorField;
@@ -78,15 +78,16 @@ public:
 template <class T>
 void SurfaceMesh::addFaceVectorQuantity(std::string name, const T& vectors, VectorType vectorType) {
   std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceFaceVectorQuantity>(
-      name, standardizeVectorArray<glm::vec3, T, 3>(vectors, nFaces(), "face vector quantity " + name), this, vectorType);
+      name, standardizeVectorArray<glm::vec3, T, 3>(vectors, nFaces(), "face vector quantity " + name), this,
+      vectorType);
   addSurfaceQuantity(q);
 }
 
 
 class SurfaceFaceIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<Complex>& vectors_, SurfaceMesh* mesh_,
-                                     int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
+  SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<Complex> vectors_, SurfaceMesh* mesh_, int nSym = 1,
+                                     VectorType vectorType_ = VectorType::STANDARD);
 
   std::vector<Complex> vectorField;
   int nSym;
@@ -110,7 +111,7 @@ void SurfaceMesh::addFaceIntrinsicVectorQuantity(std::string name, const T& vect
 
 class SurfaceVertexIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceVertexIntrinsicVectorQuantity(std::string name, std::vector<Complex>& vectors_, SurfaceMesh* mesh_,
+  SurfaceVertexIntrinsicVectorQuantity(std::string name, std::vector<Complex> vectors_, SurfaceMesh* mesh_,
                                        int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
 
   std::vector<Complex> vectorField;
@@ -127,15 +128,15 @@ template <class T>
 void SurfaceMesh::addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym,
                                                    VectorType vectorType) {
   std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceVertexIntrinsicVectorQuantity>(
-      name, standardizeVectorArray<glm::vec3, T, 2>(vectors, nFaces(), "vertex intrinsic vector quantity " + name), this,
-      nSym, vectorType);
+      name, standardizeVectorArray<glm::vec3, T, 2>(vectors, nFaces(), "vertex intrinsic vector quantity " + name),
+      this, nSym, vectorType);
   addSurfaceQuantity(q);
 }
 
 
 class SurfaceOneFormIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceOneFormIntrinsicVectorQuantity(std::string name, std::vector<double>& oneForm_, SurfaceMesh* mesh_);
+  SurfaceOneFormIntrinsicVectorQuantity(std::string name, std::vector<double> oneForm_, SurfaceMesh* mesh_);
 
   std::vector<double> oneForm;
   std::vector<Complex> mappedVectorField;

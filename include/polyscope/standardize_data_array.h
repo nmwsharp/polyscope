@@ -1,7 +1,8 @@
 #pragma once
 
-#include <vector>
 #include <complex>
+#include <type_traits>
+#include <vector>
 
 namespace polyscope {
 
@@ -24,12 +25,12 @@ std::vector<D> standardizeArray(const T& inputData, size_t expectedSize, std::st
 }
 
 // Convert between various low dimensional vector types
-template <class T, int N>
-double accessVectorLikeValue(T& inVal, size_t ind) {
+template <class T, class D, int N>
+inline D accessVectorLikeValue(T& inVal, size_t ind) {
   return inVal[ind];
 }
 template <>
-double accessVectorLikeValue<std::complex<double>, 2>(std::complex<double>& inVal, size_t ind) {
+inline double accessVectorLikeValue<std::complex<double>, double, 2>(std::complex<double>& inVal, size_t ind) {
   if (ind == 0) {
     return inVal.real();
   } else if (ind == 1) {
@@ -49,9 +50,10 @@ std::vector<D> standardizeVectorArray(const T& inputData, size_t expectedSize, s
 
   // Copy data
   std::vector<D> dataOut(expectedSize);
+  typedef typename std::remove_reference<decltype(dataOut[0][0])>::type OutScalarT;
   for (size_t i = 0; i < expectedSize; i++) {
     for (size_t j = 0; j < N; j++) {
-      dataOut[i][j] = accessVectorLikeValue<T, N>(inputData[i], j);
+      dataOut[i][j] = accessVectorLikeValue<decltype(inputData[0]), OutScalarT, N>(inputData[i], j);
     }
   }
 

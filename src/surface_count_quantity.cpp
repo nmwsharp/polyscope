@@ -29,6 +29,8 @@ void SurfaceCountQuantity::prepare() {
     sum += e.second;
     allValues.push_back(e.second);
   }
+
+  robustMinMax(allValues);
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(allValues);
   vizRangeLow = dataRangeLow;
   vizRangeHigh = dataRangeHigh;

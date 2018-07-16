@@ -118,7 +118,7 @@ void loadPolygonSoup(std::string filename, std::vector<std::array<double, 3>>& v
 
   // Check if file exists
   std::ifstream testStream(filename);
-  if(!testStream) {
+  if (!testStream) {
     error("Could not load polygon soup; file does not exist: " + filename);
     return;
   }
@@ -143,6 +143,4 @@ void loadPolygonSoup(std::string filename, std::vector<std::array<double, 3>>& v
     error("Could not detect file type to load mesh from " + filename);
   }
 }
-
-
 }

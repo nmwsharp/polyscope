@@ -21,8 +21,6 @@ namespace polyscope {
 // times, but require O(n) computation to determine.
 void HalfedgeMesh::cacheInfo() {
   cache_isSimplicial();
-  cache_nFacesTriangulation();
-  cache_longestBoundaryLoop();
   cache_nConnectedComponents();
 }
 
@@ -62,7 +60,7 @@ int HalfedgeMesh::eulerCharacteristic() const {
 
 size_t HalfedgeMesh::nConnectedComponents() const { return _nConnectedComponents; }
 
-HalfedgeMesh::HalfedgeMesh() : _isSimplicial(true), _nFacesTriangulation(0), _longestBoundaryLoop(0) {}
+HalfedgeMesh::HalfedgeMesh() : _isSimplicial(true) {}
 
 // Helpers for below
 namespace {

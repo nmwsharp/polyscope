@@ -27,13 +27,21 @@ public:
 
   // The map that takes values to [0,1] for drawing
   AffineRemapper<glm::vec3> mapper;
-  
+
   void writeToFile(std::string filename = "");
 
   // GL things
   void prepare();
   gl::GLProgram* program = nullptr;
 };
+
+template <class T>
+void PointCloud::addVectorQuantity(std::string name, const T& vectors, VectorType vectorType) {
+  PointCloudQuantity* q = new PointCloudVectorQuantity(
+      name, standardizeVectorArray<glm::vec3, T, 3>(vectors, nPoints(), "point cloud vector quantity " + name), this,
+      vectorType);
+  addQuantity(q);
+}
 
 
 } // namespace polyscope

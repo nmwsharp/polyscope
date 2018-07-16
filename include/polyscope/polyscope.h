@@ -59,6 +59,7 @@ extern size_t screenshotInd;
 
 // Register a structure with polyscope
 // `name` is a globally unique identifier for the structure
+// TODO use the data adaptors here
 bool registerStructure(Structure* structure, bool replaceIfPresent = true);
 void registerPointCloud(std::string name, const std::vector<glm::vec3>& points, bool replaceIfPresent = true);
 void registerSurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,

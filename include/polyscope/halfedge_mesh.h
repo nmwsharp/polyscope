@@ -147,9 +147,9 @@ public:
   size_t nImaginaryHalfedges() const; // TODO
 
   // If this mesh is a triangulation of the input, the number of elements in the original input mesh.
-  size_t nOrigFaces() const;
-  size_t nOrigEdges() const;
-  size_t nOrigHalfedges() const;
+  size_t nOrigFaces() const { return nOrigFaces_; }
+  size_t nOrigEdges() const { return nOrigEdges_; }
+  size_t nOrigHalfedges() const { return nOrigHalfedges_; }
 
   // Utility functions
   bool isTriangular() const;
@@ -178,12 +178,8 @@ private:
   void cacheInfo();
   void cacheGeometry();
   void cache_isSimplicial();
-  void cache_nFacesTriangulation();
-  void cache_longestBoundaryLoop();
   void cache_nConnectedComponents();
   bool _isSimplicial;
-  size_t _nFacesTriangulation;
-  size_t _longestBoundaryLoop;
   size_t _nConnectedComponents;
   size_t nOrigFaces_, nOrigEdges_, nOrigHalfedges_;
 };
