@@ -10,6 +10,7 @@
 #include <unordered_set>
 
 #include "polyscope/disjoint_sets.h"
+#include "polyscope/messages.h"
 
 using std::cout;
 using std::endl;
@@ -575,6 +576,20 @@ void HalfedgeMesh::cacheGeometry() {
   for (size_t iV = 0; iV < nVertices(); iV++) {
     vertices[iV].normal_ = glm::normalize(vertices[iV].normal_);
   }
+}
+
+void HalfedgeMesh::updateVertexPositions(const std::vector<glm::vec3>& newPositions) {
+
+  if (newPositions.size() != nVertices()) {
+    error("Attempted to update vertex positions with list whose size (" + std::to_string(newPositions.size()) +
+          ") does not match number of vertices(" + std::to_string(nVertices()) + ")");
+  }
+
+  for (size_t i = 0; i < newPositions.size(); i++) {
+    vertices[i].position_ = newPositions[i];
+  }
+
+  cacheGeometry();
 }
 
 } // namespace polyscope

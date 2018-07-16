@@ -6,9 +6,9 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
 #include "polyscope/gl/gl_utils.h"
+#include "polyscope/halfedge_mesh.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
-#include "polyscope/halfedge_mesh.h"
 
 namespace polyscope {
 
@@ -152,10 +152,10 @@ public:
   template <class T>
   void addFaceVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
   template <class T>
-  void addFaceVectorQuantity(std::string name, const T& vectors, int nSym = 1,
+  void addFaceIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym = 1,
                              VectorType vectorType = VectorType::STANDARD);
   template <class T>
-  void addVertexVectorQuantity(std::string name, const T& vectors, int nSym = 1,
+  void addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym = 1,
                                VectorType vectorType = VectorType::STANDARD);
   template <class T>
   void addOneFormIntrinsicVectorQuantity(std::string name, const T& data); // expects scalar
@@ -177,19 +177,31 @@ public:
   // size_t selectFace();
 
   // === Mutate
-
   void updateVertexPositions(const std::vector<glm::vec3>& newPositions);
 
   // === Helpers
   void deleteProgram();
   void fillGeometryBuffers();
 
+  size_t nHalfedges() const { return mesh.nHalfedges(); }
+  size_t nVertices() const { return mesh.nVertices(); }
+  size_t nEdges() const { return mesh.nEdges(); }
+  size_t nTriangulationEdges() const { return triMesh.nEdges(); }
+  size_t nFaces() const { return mesh.nFaces(); }
+  size_t nTriangulationFaces() const { return triMesh.nFaces(); }
+  size_t nBoundaryLoops() const { return triMesh.nBoundaryLoops(); }
+  size_t nImaginaryHalfedges() const { return mesh.nImaginaryHalfedges(); }
+  size_t nTriangulationImaginaryHalfedges() const { return triMesh.nImaginaryHalfedges(); }
+
   // === Member variables ===
   bool enabled = true;
 
-  // == The mesh! ==
+  // The mesh (possibly polgonal), as passed in by the user.
+  HalfedgeMesh mesh;
 
-  // Vertex positions in R3
+  // A halfedge mesh, which is a triangulation of the input mesh.
+  // Relationships to the original mesh are tracked internally.
+  // Yes, keeping an entirely duplicated copy of the mesh is wasteful, but doing so simplifies logic all over the place.
   HalfedgeMesh triMesh;
 
   static const std::string structureTypeName;

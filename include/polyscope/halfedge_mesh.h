@@ -1,20 +1,26 @@
 #pragma once
 
-#include <vector>
 #include <array>
+#include <vector>
 
 #include <polyscope/utilities.h>
 
 namespace polyscope {
 
-// A HalfedgeMesh encodes the connectivity---but not the geometry---of a
-// manifold surface, possibly with boundary.
 
-
+// A quick and dirty halfedge mesh datastructure, with some additional functionality useful for visualization tasks in
+// Polyscope. Properly speaking, a halfedge mesh should track only the _connectivity_ of a mesh; however, this
+// datastructure further includes some geometric data, indexing logic, etc.
+//
+// Each element (Vertex/Face/Edge/Halfedge) has an _index_ associated with it, corresponding to the canonical
+// indexing scheme on the mesh initially passed in by the user. Note that (for instance), if Polyscope triangulates the
+// mesh, newly introduced edges have index == INVALID_IND, as they correspond to nothing in the user's world.
 class HalfedgeMesh {
+
 public:
   // === Mesh members ===
 
+  // Forward declarations
   class Vertex;
   class Edge;
   class Face;
@@ -25,12 +31,14 @@ public:
   public:
     // Note: if mesh came from triangulation, refers to original mesh
     inline size_t index() const { return index_; }
+    inline bool hasValidIndex() const { return index_ != INVALID_IND; }
     inline bool isReal() const { return isReal_; }
     inline Halfedge& twin() { return *twin_; }
     inline Halfedge& next() { return *next_; }
     inline Vertex& vertex() { return *vertex_; }
     inline Face& face() { return *face_; }
     inline Edge& edge() { return *edge_; }
+
 
   private:
     // Connectivity
@@ -110,6 +118,7 @@ public:
   public:
     // Note: if mesh came from triangulation, refers to original mesh
     inline size_t index() const { return index_; }
+    inline bool hasValidIndex() const { return index_ != INVALID_IND; }
     inline Halfedge& halfedge() { return *halfedge_; }
     inline bool isBoundary() const { return isBoundary_; }
     inline double length() const { return length_; }
@@ -146,6 +155,7 @@ public:
   bool isTriangular() const;
   int eulerCharacteristic() const;
   size_t nConnectedComponents() const;
+  void updateVertexPositions(const std::vector<glm::vec3>& newPositions);
 
   // The contiguous chunks of memory which hold the actual structs.
   // Don't modify them after construction.

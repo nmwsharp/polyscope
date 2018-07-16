@@ -26,10 +26,11 @@ SurfaceEdgeSubsetQuantity::SurfaceEdgeSubsetQuantity(std::string name, std::vect
   // Fill buffers
   count = 0;
   std::vector<glm::vec3> pTail, pTip;
-  for (size_t iE = 0; iE < parent->nEdges; iE++) {
+  for (size_t iE = 0; iE < parent->nEdges(); iE++) {
     if (edgeSubset[iE]) {
-      pTail.push_back(parent->vertexPositions[parent->edgeTailVertex(iE)]);
-      pTip.push_back(parent->vertexPositions[parent->edgeTipVertex(iE)]);
+      HalfedgeMesh::Edge& edge = parent->mesh.edges[iE];
+      pTail.push_back(edge.halfedge().vertex().position());
+      pTip.push_back(edge.halfedge().twin().vertex().position());
       count++;
     }
   }

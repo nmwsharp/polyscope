@@ -8,8 +8,6 @@
 
 #include "imgui.h"
 
-#include "Eigen/Dense"
-
 #include <complex>
 #include <fstream>
 #include <iostream>
@@ -38,7 +36,7 @@ void SurfaceVectorQuantity::finishConstructing() {
   if (vectorType == VectorType::AMBIENT) {
     mapper.setMinMax(vectors);
   } else {
-    mapper = AffineRemapper<Vector3>(vectors, DataType::MAGNITUDE);
+    mapper = AffineRemapper<glm::vec3>(vectors, DataType::MAGNITUDE);
   }
 
   // Default viz settings
@@ -63,7 +61,7 @@ void SurfaceVectorQuantity::draw() {
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   program->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-  Vector3 eyePos = view::getCameraWorldPosition();
+  glm::vec3 eyePos = view::getCameraWorldPosition();
   program->setUniform("u_eye", eyePos);
 
   program->setUniform("u_lightCenter", state::center);
@@ -85,8 +83,8 @@ void SurfaceVectorQuantity::prepare() {
                               gl::DrawMode::Points);
 
   // Fill buffers
-  std::vector<Vector3> mappedVectors;
-  for (Vector3 v : vectors) {
+  std::vector<glm::vec3> mappedVectors;
+  for (glm::vec3& v : vectors) {
     mappedVectors.push_back(mapper.map(v));
   }
 
@@ -150,7 +148,7 @@ void SurfaceVectorQuantity::writeToFile(std::string filename) {
   outFile << "#displaylength " << (lengthMult * state::lengthScale) << endl;
 
   for (size_t i = 0; i < vectors.size(); i++) {
-    if (norm(vectors[i]) > 0) {
+    if (glm::length(vectors[i]) > 0) {
       outFile << vectorRoots[i] << " " << vectors[i] << endl;
     }
   }
@@ -163,7 +161,7 @@ void SurfaceVectorQuantity::writeToFile(std::string filename) {
 // ==========           Vertex Vector            ==========
 // ========================================================
 
-SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, VertexData<Vector3>& vectors_,
+SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, VertexData<glm::vec3>& vectors_,
                                                          SurfaceMesh* mesh_, VectorType vectorType_)
 
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_) {

@@ -30,7 +30,7 @@ private:
 template <class T>
 void SurfaceMesh::addSubsetQuantity(std::string name, const T& subset) {
   std::shared_ptr<SurfaceEdgeSubsetQuantity> q = std::make_shared<SurfaceEdgeSubsetQuantity>(
-      name, standardizeArray<glm::vec3, T>(subset, nEdges, "edge subset quantity " + name), this);
+      name, standardizeArray<glm::vec3, T>(subset, nEdges(), "edge subset quantity " + name), this);
   addSurfaceQuantity(q);
 }
 

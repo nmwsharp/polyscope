@@ -1,9 +1,9 @@
 #pragma once
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/surface_mesh.h"
-#include "polyscope/histogram.h"
 #include "polyscope/gl/colormap_sets.h"
+#include "polyscope/histogram.h"
+#include "polyscope/surface_mesh.h"
 
 namespace polyscope {
 
@@ -20,7 +20,6 @@ public:
   const DataType dataType;
 
 protected:
-
   // Affine data maps and limits
   void resetVizRange();
   float vizRangeLow, vizRangeHigh;
@@ -56,7 +55,7 @@ public:
 template <class T>
 void SurfaceMesh::addVertexScalarQuantity(std::string name, const T& data, DataType type) {
   std::shared_ptr<SurfaceScalarQuantity> q = std::make_shared<SurfaceScalarVertexQuantity>(
-      name, standardizeArray<double, T>(data, nVertices, "vertex scalar quantity " + name), this, type);
+      name, standardizeArray<double, T>(data, nVertices(), "vertex scalar quantity " + name), this, type);
   addSurfaceQuantity(q);
 }
 
@@ -83,7 +82,7 @@ public:
 template <class T>
 void SurfaceMesh::addFaceScalarQuantity(std::string name, const T& data, DataType type) {
   std::shared_ptr<SurfaceScalarQuantity> q = std::make_shared<SurfaceScalarFaceQuantity>(
-      name, standardizeArray<double, T>(data, nFaces, "face scalar quantity " + name), this, type);
+      name, standardizeArray<double, T>(data, nFaces(), "face scalar quantity " + name), this, type);
   addSurfaceQuantity(q);
 }
 
@@ -111,7 +110,7 @@ public:
 template <class T>
 void SurfaceMesh::addEdgeScalarQuantity(std::string name, const T& data, DataType type) {
   std::shared_ptr<SurfaceScalarQuantity> q = std::make_shared<SurfaceScalarEdgeQuantity>(
-      name, standardizeArray<double, T>(data, nEdges, "edge scalar quantity " + name), this, type);
+      name, standardizeArray<double, T>(data, nEdges(), "edge scalar quantity " + name), this, type);
   addSurfaceQuantity(q);
 }
 
@@ -138,7 +137,7 @@ public:
 template <class T>
 void SurfaceMesh::addHalfedgeScalarQuantity(std::string name, const T& data, DataType type) {
   std::shared_ptr<SurfaceScalarQuantity> q = std::make_shared<SurfaceScalarHalfedgeQuantity>(
-      name, standardizeArray<double, T>(data, nHalfedges, "halfedge scalar quantity " + name), this, type);
+      name, standardizeArray<double, T>(data, nHalfedges(), "halfedge scalar quantity " + name), this, type);
   addSurfaceQuantity(q);
 }
 

@@ -23,7 +23,8 @@ const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
 SurfaceMesh::SurfaceMesh(std::string name, std::vector<glm::vec3> vertexPositions_,
                          std::vector<std::vector<size_t>> faceIndices_)
-    : Structure(name, SurfaceMesh::structureTypeName), triMesh(vertexPositions_, faceIndices_, true) {
+    : Structure(name, SurfaceMesh::structureTypeName), mesh(vertexPositions_, faceIndices_, false),
+      triMesh(vertexPositions_, faceIndices_, true) {
 
   // Colors
   baseColor = getNextStructureColor();
@@ -120,7 +121,8 @@ void SurfaceMesh::preparePick() {
   pickProgram = new gl::GLProgram(&PICK_SURFACE_VERT_SHADER, &PICK_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
 
   // Get element indices
-  size_t totalPickElements = triMesh.nVertices() + triMesh.nOrigFaces() + triMesh.nOrigEdges() + triMesh.nOrigHalfedges();
+  size_t totalPickElements =
+      triMesh.nVertices() + triMesh.nOrigFaces() + triMesh.nOrigEdges() + triMesh.nOrigHalfedges();
 
   // In "local" indices, indexing elements only within this triMesh, used for reading later
   facePickIndStart = triMesh.nVertices();
@@ -157,33 +159,32 @@ void SurfaceMesh::preparePick() {
     HalfedgeMesh::Halfedge* currHe = &face.halfedge();
     for (size_t i = 0; i < 3; i++) {
       size_t heInd = currHe->index();
-      size_t vInd = 
-      size_t eInd = face.edgeInds[i];
+      size_t vInd = currHe->vertex().index();
+      size_t eInd = currHe->edge().index();
 
       // Want just one copy of positions and face color, so we can build it in the usual way
-      positions.push_back(vertexPositions[vInd]);
+      positions.push_back(currHe->vertex().position());
       faceColor.push_back(fColor);
-
 
       // Vertex index color
       vColor[i] = pick::indToVec(vInd + pickStart);
 
       // Edge index color
-      if (eInd == INVALID_IND) {
+      if (currHe->edge().hasValidIndex()) {
+        eColor[i] = pick::indToVec(eInd + edgeGlobalPickIndStart);
+      } else {
         // If this is a fake edge induced by triangulation, use the face's color instead
         eColor[i] = fColor;
-      } else {
-        eColor[i] = pick::indToVec(eInd + edgeGlobalPickIndStart);
       }
 
       // Halfedge index color
-      if (heInd == INVALID_IND) {
+      if (currHe->hasValidIndex()) {
+        heColor[i] = pick::indToVec(heInd + halfedgeGlobalPickIndStart);
+      } else {
         // If this is a fake edge induced by triangulation, use the face's color instead
         heColor[i] = fColor;
-      } else {
-        heColor[i] = pick::indToVec(heInd + halfedgeGlobalPickIndStart);
       }
-    
+
       currHe = &currHe->next();
     }
 
@@ -223,22 +224,25 @@ void SurfaceMesh::fillGeometryBuffersSmooth() {
   std::vector<glm::vec3> bcoord;
 
   // Reserve space
-  positions.reserve(3 * nTriangulationFaces);
-  normals.reserve(3 * nTriangulationFaces);
-  bcoord.reserve(3 * nTriangulationFaces);
+  positions.reserve(3 * triMesh.nFaces());
+  normals.reserve(3 * triMesh.nFaces());
+  bcoord.reserve(3 * triMesh.nFaces());
 
-  for (TriangulationFace& face : triangulation) {
+  for (HalfedgeMesh::Face& face : triMesh.faces) {
 
+    HalfedgeMesh::Halfedge* currHe = &face.halfedge();
     for (size_t i = 0; i < 3; i++) {
 
-      glm::vec3 vertexPos = vertexPositions[face.vertexInds[i]];
-      glm::vec3 vertexNormal = vertexNormals[face.vertexInds[i]];
+      glm::vec3 vertexPos = currHe->vertex().position();
+      glm::vec3 vertexNormal = currHe->vertex().normal();
       glm::vec3 coord{0., 0., 0.};
       coord[i] = 1.0;
 
       positions.push_back(vertexPos);
       normals.push_back(vertexNormal);
       bcoord.push_back(coord);
+
+      currHe = &currHe->next();
     }
   }
 
@@ -254,17 +258,17 @@ void SurfaceMesh::fillGeometryBuffersFlat() {
   std::vector<glm::vec3> bcoord;
 
   // Reserve space
-  positions.reserve(3 * nTriangulationFaces);
-  normals.reserve(3 * nTriangulationFaces);
-  bcoord.reserve(3 * nTriangulationFaces);
+  positions.reserve(3 * triMesh.nFaces());
+  normals.reserve(3 * triMesh.nFaces());
+  bcoord.reserve(3 * triMesh.nFaces());
 
-  for (TriangulationFace& face : triangulation) {
+  for (HalfedgeMesh::Face& face : triMesh.faces) {
+    glm::vec3 faceNormal = face.normal();
 
-    glm::vec3 faceNormal = faceNormals[face.faceInd];
-
+    HalfedgeMesh::Halfedge* currHe = &face.halfedge();
     for (size_t i = 0; i < 3; i++) {
 
-      glm::vec3 vertexPos = vertexPositions[face.vertexInds[i]];
+      glm::vec3 vertexPos = currHe->vertex().position();
       glm::vec3 coord{0., 0., 0.};
       coord[i] = 1.0;
 
@@ -426,7 +430,7 @@ void SurfaceMesh::buildVertexInfoGui(size_t vInd) {
   ImGui::TextUnformatted(("Vertex #" + std::to_string(vInd)).c_str());
 
   std::stringstream buffer;
-  buffer << vertexPositions[vInd];
+  buffer << triMesh.vertices[vInd].position();
   ImGui::TextUnformatted(("Position: " + buffer.str()).c_str());
 
   ImGui::Spacing();
@@ -597,8 +601,8 @@ double SurfaceMesh::lengthScale() {
   glm::vec3 center = 0.5f * (std::get<0>(bound) + std::get<1>(bound));
 
   double lengthScale = 0.0;
-  for (size_t iV = 0; iV < nVertices; iV++) {
-    glm::vec3 p = vertexPositions[iV];
+  for (HalfedgeMesh::Vertex& vert : triMesh.vertices) {
+    glm::vec3 p = vert.position();
     glm::vec3 transPos = glm::vec3(objectTransform * glm::vec4(p.x, p.y, p.z, 1.0));
     lengthScale = std::max(lengthScale, (double)glm::length2(transPos - center));
   }
@@ -610,8 +614,8 @@ std::tuple<glm::vec3, glm::vec3> SurfaceMesh::boundingBox() {
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
 
-  for (size_t iV = 0; iV < nVertices; iV++) {
-    glm::vec3 p = vertexPositions[iV];
+  for (HalfedgeMesh::Vertex& vert : triMesh.vertices) {
+    glm::vec3 p = vert.position();
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
@@ -790,10 +794,9 @@ FacePtr SurfaceMesh::selectFace() {
 
 void SurfaceMesh::updateVertexPositions(const std::vector<glm::vec3>& newPositions) {
 
-  vertexPositions = newPositions;
+  triMesh.updateVertexPositions(newPositions);
 
   // Rebuild any necessary quantities
-  initializeMeshGeometry();
   deleteProgram();
   prepare();
 }

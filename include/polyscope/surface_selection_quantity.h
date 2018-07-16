@@ -1,9 +1,9 @@
 #pragma once
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/surface_mesh.h"
-#include "polyscope/histogram.h"
 #include "polyscope/gl/colormap_sets.h"
+#include "polyscope/histogram.h"
+#include "polyscope/surface_mesh.h"
 
 namespace polyscope {
 
@@ -19,7 +19,6 @@ public:
   bool allowEditingFromDefaultUI = true;
 
 protected:
-
   // UI internals
   int iColorMap = 0;
   const std::string definedOn;
@@ -31,7 +30,8 @@ protected:
 
 class SurfaceSelectionVertexQuantity : public SurfaceSelectionQuantity {
 public:
-  SurfaceSelectionVertexQuantity(std::string name, std::vector<char>& membership_, SurfaceMesh* mesh_);
+  SurfaceSelectionVertexQuantity(std::string name, SurfaceMesh* mesh_);
+  SurfaceSelectionVertexQuantity(std::string name, std::vector<char>& initialMembership_, SurfaceMesh* mesh_);
   //   ~SurfaceSelectionVertexQuantity();
 
   virtual gl::GLProgram* createProgram() override;
@@ -47,7 +47,6 @@ public:
   std::vector<char> membership; // 1 if in, 0 otherwise
 
 private:
-
   // User membership editing
   void userEditCallback();
   bool membershipStale = false;
@@ -57,8 +56,7 @@ private:
 template <class T>
 void SurfaceMesh::addVertexSelectionQuantity(std::string name, const T& initialMembership) {
   std::shared_ptr<SurfaceSelectionVertexQuantity> q = std::make_shared<SurfaceSelectionVertexQuantity>(
-      name, standardizeArray<char, T>(initialMembership, nVertices, "vertex selection quantity " + name), this);
-  SurfaceSelectionVertexQuantity* q = new SurfaceSelectionVertexQuantity(name, initialMembership, this);
+      name, standardizeArray<char, T>(initialMembership, nVertices(), "vertex selection quantity " + name), this);
   addSurfaceQuantity(q);
 }
 

@@ -145,9 +145,10 @@ SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(std::string name, std::
 
   std::vector<double> valsVec;
   std::vector<double> weightsVec;
-  for (size_t iV = 0; iV < parent->nVertices; iV++) {
+  for (size_t iV = 0; iV < parent->nVertices(); iV++) {
+    HalfedgeMesh::Vertex& vert = parent->triMesh.vertices[iV];
     valsVec.push_back(values[iV]);
-    weightsVec.push_back(parent->vertexAreas[iV]);
+    weightsVec.push_back(vert.area());
   }
 
   hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
@@ -171,11 +172,13 @@ gl::GLProgram* SurfaceScalarVertexQuantity::createProgram() {
 
 void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
   std::vector<double> colorval;
-  colorval.reserve(3 * parent->nTriangulationFaces);
+  colorval.reserve(3 * parent->nTriangulationFaces());
 
-  for (TriangulationFace& face : parent->triangulation) {
+  for (HalfedgeMesh::Face& face : parent->triMesh.faces) {
+
+    HalfedgeMesh::Halfedge* currHe = &face.halfedge();
     for (size_t i = 0; i < 3; i++) {
-      size_t vInd = face.vertexInds[i];
+      size_t vInd = currHe->vertex().index();
       colorval.push_back(values[vInd]);
     }
   }
@@ -230,9 +233,10 @@ SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name, std::vect
 
   std::vector<double> valsVec;
   std::vector<double> weightsVec;
-  for (size_t fInd = 0; fInd < parent->nFaces; fInd++) {
+  for (size_t fInd = 0; fInd < parent->nFaces(); fInd++) {
+    HalfedgeMesh::Face& face = parent->mesh.faces[fInd];
     valsVec.push_back(values[fInd]);
-    weightsVec.push_back(parent->faceAreas[fInd]);
+    weightsVec.push_back(face.area());
   }
 
   hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
@@ -255,11 +259,12 @@ gl::GLProgram* SurfaceScalarFaceQuantity::createProgram() {
 
 void SurfaceScalarFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
   std::vector<double> colorval;
-  colorval.reserve(3 * parent->nTriangulationFaces);
+  colorval.reserve(3 * parent->nTriangulationFaces());
 
-  for (TriangulationFace& face : parent->triangulation) {
-    size_t fInd = face.faceInd;
+  for (HalfedgeMesh::Face& face : parent->triMesh.faces) {
+
     for (size_t i = 0; i < 3; i++) {
+      size_t fInd = face.index();
       colorval.push_back(values[fInd]);
     }
   }
@@ -289,9 +294,10 @@ SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name, std::vect
 
   std::vector<double> valsVec;
   std::vector<double> weightsVec;
-  for (size_t eInd = 0; eInd < parent->nEdges; eInd++) {
+  for (size_t eInd = 0; eInd < parent->nEdges(); eInd++) {
     valsVec.push_back(values[eInd]);
-    weightsVec.push_back(parent->edgeLengths[eInd]);
+    HalfedgeMesh::Edge& edge = parent->mesh.edges[eInd];
+    weightsVec.push_back(edge.length());
   }
 
   hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
@@ -314,33 +320,40 @@ gl::GLProgram* SurfaceScalarEdgeQuantity::createProgram() {
 
 void SurfaceScalarEdgeQuantity::fillColorBuffers(gl::GLProgram* p) {
   std::vector<glm::vec3> colorval;
-  colorval.reserve(3 * parent->nTriangulationFaces);
+  colorval.reserve(3 * parent->nTriangulationFaces());
 
   // TODO this still doesn't look too great on polygon meshes... perhaps compute an average value per edge?
 
-  for (TriangulationFace& face : parent->triangulation) {
-
-    // Compute an average color to use for invalid faces
+  // First, compute an average value per-face
+  std::vector<double> avgFaceValues(parent->nFaces(), 0.0);
+  for (HalfedgeMesh::Face& face : parent->mesh.faces) {
+    HalfedgeMesh::Halfedge* currHe = &face.halfedge();
+    HalfedgeMesh::Halfedge* firstHe = &face.halfedge();
     double avgVal = 0.0;
-    double avgValCount = 0.0;
-    for (size_t i = 0; i < 3; i++) {
-      size_t eInd = face.edgeInds[i];
-      if (eInd != INVALID_IND) {
-        avgVal += values[eInd];
-        avgValCount++;
-      }
-    }
-    avgVal /= avgValCount;
+    do {
+      avgVal += values[currHe->edge().index()];
+      currHe = &currHe->next();
+    } while (currHe != firstHe);
+    avgVal /= face.nSides();
+
+    avgFaceValues[face.index()] = avgVal;
+  }
+
+  // Second, fill buffers as usual, but at edges introduced by triangulation substitute the average value.
+  for (HalfedgeMesh::Face& face : parent->triMesh.faces) {
 
     // Build a vector of the average or default colors for each edge
     glm::vec3 combinedValues;
+    HalfedgeMesh::Halfedge* he = &face.halfedge();
     for (size_t i = 0; i < 3; i++) {
-      size_t eInd = face.edgeInds[i];
-      if (eInd == INVALID_IND) {
-        combinedValues[i] = avgVal;
-      } else {
+      if (he->edge().hasValidIndex()) {
+        size_t eInd = he->edge().index();
         combinedValues[i] = values[eInd];
+      } else {
+        combinedValues[i] = avgFaceValues[face.index()];
       }
+
+      he = &he->next();
     }
 
 
@@ -370,12 +383,13 @@ SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(std::string name, s
     : SurfaceScalarQuantity(name, mesh_, "halfedge", dataType_)
 
 {
-  
+
   std::vector<double> valsVec;
   std::vector<double> weightsVec;
-  for(size_t iHe = 0; iHe < parent->nHalfedges; iHe++) {
+  for (size_t iHe = 0; iHe < parent->nHalfedges(); iHe++) {
     valsVec.push_back(values[iHe]);
-    weightsVec.push_back(parent->edgeLengths[iHe]);
+    HalfedgeMesh::Halfedge& he = parent->mesh.halfedges[iHe];
+    weightsVec.push_back(he.edge().length());
   }
 
   hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
@@ -397,37 +411,57 @@ gl::GLProgram* SurfaceScalarHalfedgeQuantity::createProgram() {
 }
 
 void SurfaceScalarHalfedgeQuantity::fillColorBuffers(gl::GLProgram* p) {
-  std::vector<Vector3> colorval;
-  for (FacePtr f : parent->mesh->faces()) {
-    // Implicitly triangulate
-    double c0, c1;
-    size_t iP = 0;
-    for (HalfedgePtr he : f.adjacentHalfedges()) {
-      VertexPtr v = he.vertex();
-      double c2 = values[he.next()];
-      if (iP >= 2) {
-        colorval.push_back(Vector3{c0, c1, c2});
-        colorval.push_back(Vector3{c0, c1, c2});
-        colorval.push_back(Vector3{c0, c1, c2});
+  std::vector<glm::vec3> colorval;
+  colorval.reserve(3 * parent->nTriangulationFaces());
+
+  // First, compute an average value per-face
+  std::vector<double> avgFaceValues(parent->nFaces(), 0.0);
+  for (HalfedgeMesh::Face& face : parent->mesh.faces) {
+    HalfedgeMesh::Halfedge* currHe = &face.halfedge();
+    HalfedgeMesh::Halfedge* firstHe = &face.halfedge();
+    double avgVal = 0.0;
+    do {
+      avgVal += values[currHe->index()];
+      currHe = &currHe->next();
+    } while (currHe != firstHe);
+    avgVal /= face.nSides();
+
+    avgFaceValues[face.index()] = avgVal;
+  }
+
+  // Second, fill buffers as usual, but at edges introduced by triangulation substitute the average value.
+  for (HalfedgeMesh::Face& face : parent->triMesh.faces) {
+
+    // Build a vector of the average or default colors for each edge
+    glm::vec3 combinedValues;
+    HalfedgeMesh::Halfedge* he = &face.halfedge();
+    for (size_t i = 0; i < 3; i++) {
+      if (he->hasValidIndex()) {
+        size_t heInd = he->index();
+        combinedValues[i] = values[heInd];
+      } else {
+        combinedValues[i] = avgFaceValues[face.index()];
       }
-      if (iP > 2) {
-        error("Edge quantities not correct for non-triangular meshes");
-      }
-      c0 = c1;
-      c1 = c2;
-      iP++;
+
+      he = &he->next();
+    }
+
+
+    for (size_t i = 0; i < 3; i++) {
+      colorval.push_back(combinedValues);
     }
   }
+
 
   // Store data in buffers
   p->setAttribute("a_colorvals", colorval);
   p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
 }
 
-void SurfaceScalarHalfedgeQuantity::buildInfoGUI(HalfedgePtr he) {
+void SurfaceScalarHalfedgeQuantity::buildHalfedgeInfoGUI(size_t heInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", values[he]);
+  ImGui::Text("%g", values[heInd]);
   ImGui::NextColumn();
 }
 
