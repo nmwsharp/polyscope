@@ -13,7 +13,8 @@
 #endif
 
 #include "imgui.h"
-#include "polyscope/imgui_render.h"
+#include "polyscope/imgui_impl_glfw.h"
+#include "polyscope/imgui_impl_opengl3.h"
 
 #include "polyscope/pick.h"
 #include "polyscope/view.h"
@@ -71,6 +72,9 @@ const unsigned int* getCousineRegularCompressedData();
 
 // Helpers
 namespace {
+
+// GLFW window
+GLFWwindow* mainWindow = nullptr;
 
 // Pick buffer state
 GLuint pickFramebuffer, rboPickDepth, rboPickColor, currPickBufferWidth, currPickBufferHeight;
@@ -197,7 +201,7 @@ void readPrefsFile() {
 void writePrefsFile() {
 
   // Update values as needed
-  glfwGetWindowPos(imguirender::mainWindow, &view::initWindowPosX, &view::initWindowPosY);
+  glfwGetWindowPos(mainWindow, &view::initWindowPosX, &view::initWindowPosY);
 
   // Build json object
   json prefsJSON = {
@@ -231,17 +235,20 @@ void init() {
     throw std::runtime_error(options::printPrefix + "ERROR: Failed to initialize glfw");
   }
 
+  // OpenGL version things
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  imguirender::mainWindow =
-      glfwCreateWindow(view::windowWidth, view::windowHeight, options::programName.c_str(), NULL, NULL);
-  glfwMakeContextCurrent(imguirender::mainWindow);
+
+
+  // Create the window with context
+  mainWindow = glfwCreateWindow(view::windowWidth, view::windowHeight, options::programName.c_str(), NULL, NULL);
+  glfwMakeContextCurrent(mainWindow);
   glfwSwapInterval(1); // Enable vsync
-  glfwSetWindowPos(imguirender::mainWindow, view::initWindowPosX, view::initWindowPosY);
+  glfwSetWindowPos(mainWindow, view::initWindowPosX, view::initWindowPosY);
 
 // === Initialize openGL
 // Load openGL functions (using GLAD)
@@ -260,11 +267,12 @@ void init() {
 #endif
 
   // Update the width and heigh
-  glfwMakeContextCurrent(imguirender::mainWindow);
-  glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
-  glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
+  glfwMakeContextCurrent(mainWindow);
+  glfwGetWindowSize(mainWindow, &view::windowWidth, &view::windowHeight);
+  glfwGetFramebufferSize(mainWindow, &view::bufferWidth, &view::bufferHeight);
 
   // Initialie ImGUI
+  IMGUI_CHECKVERSION();
   initializeImGUIContext();
 
   // Initialize common shaders
@@ -292,7 +300,9 @@ void initializeImGUIContext() {
   ImGui::CreateContext();
 
   // Set up ImGUI glfw bindings
-  imguirender::ImGui_ImplGlfwGL3_Init(imguirender::mainWindow, true);
+  ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
+  const char* glsl_version = "#version 150";
+  ImGui_ImplOpenGL3_Init(glsl_version);
 
   ImGuiIO& io = ImGui::GetIO();
   ImFontConfig config;
@@ -379,6 +389,32 @@ float dragDistSinceLastRelease = 0.0;
 
 void processMouseEvents() {
   ImGuiIO& io = ImGui::GetIO();
+
+  // Handle scroll events for 3D view
+  if (!io.WantCaptureMouse) {
+    double xoffset = io.MouseWheelH;
+    double yoffset = io.MouseWheel;
+
+    // On some setups, shift flips the scroll direction, so take the max
+    // scrolling in any direction
+    double maxScroll = xoffset;
+    if (std::abs(yoffset) > std::abs(xoffset)) {
+      maxScroll = yoffset;
+    }
+
+    // Pass camera commands to the camera
+    if (maxScroll != 0.0) {
+      int leftShiftState = glfwGetKey(mainWindow, GLFW_KEY_LEFT_SHIFT);
+      int rightShiftState = glfwGetKey(mainWindow, GLFW_KEY_RIGHT_SHIFT);
+      bool scrollClipPlane = (leftShiftState == GLFW_PRESS || rightShiftState == GLFW_PRESS);
+
+      if (scrollClipPlane) {
+        view::processClipPlaneShift(maxScroll);
+      } else {
+        view::processZoom(maxScroll);
+      }
+    }
+  }
 
   bool shouldEvaluatePick = pick::alwaysEvaluatePick;
   if (pick::alwaysEvaluatePick) {
@@ -552,12 +588,15 @@ auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 void draw(bool withUI = true) {
 
   // Update buffer and context
-  glfwMakeContextCurrent(imguirender::mainWindow);
-  glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
-  glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
+  glfwMakeContextCurrent(mainWindow);
+  glfwGetWindowSize(mainWindow, &view::windowWidth, &view::windowHeight);
+  glfwGetFramebufferSize(mainWindow, &view::bufferWidth, &view::bufferHeight);
 
   if (withUI) {
-    imguirender::ImGui_ImplGlfwGL3_NewFrame();
+    // New IMGUI frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
   }
 
   bindDefaultBuffer();
@@ -599,6 +638,7 @@ void draw(bool withUI = true) {
   // Draw the GUI
   if (withUI) {
     ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     gl::checkGLError();
   }
 }
@@ -630,9 +670,9 @@ void mainLoopIteration() {
 
 
   // Update the width and heigh
-  glfwMakeContextCurrent(imguirender::mainWindow);
-  glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
-  glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
+  glfwMakeContextCurrent(mainWindow);
+  glfwGetWindowSize(mainWindow, &view::windowWidth, &view::windowHeight);
+  glfwGetFramebufferSize(mainWindow, &view::bufferWidth, &view::bufferHeight);
 
   // Process UI events
   glfwPollEvents();
@@ -640,14 +680,14 @@ void mainLoopIteration() {
 
   // Rendering
   draw();
-  glfwSwapBuffers(imguirender::mainWindow);
+  glfwSwapBuffers(mainWindow);
 }
 
 void show(bool shutdownAfter) {
   view::resetCameraToDefault();
 
   // Main loop
-  while (!glfwWindowShouldClose(imguirender::mainWindow)) {
+  while (!glfwWindowShouldClose(mainWindow)) {
     mainLoopIteration();
   }
 
@@ -663,7 +703,11 @@ void shutdown(int exitCode) {
     writePrefsFile();
   }
 
+  // ImGui shutdown things
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
+
   std::exit(exitCode);
 }
 
