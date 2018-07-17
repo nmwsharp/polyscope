@@ -37,9 +37,11 @@ public:
 
 template <class T>
 void PointCloud::addVectorQuantity(std::string name, const T& vectors, VectorType vectorType) {
-  PointCloudQuantity* q = new PointCloudVectorQuantity(
-      name, standardizeVectorArray<glm::vec3, T, 3>(vectors, nPoints(), "point cloud vector quantity " + name), this,
-      vectorType);
+
+  validateSize(vectors, nPoints(), "point cloud vector quantity " + name);
+
+  PointCloudQuantity* q =
+      new PointCloudVectorQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(vectors), this, vectorType);
   addQuantity(q);
 }
 

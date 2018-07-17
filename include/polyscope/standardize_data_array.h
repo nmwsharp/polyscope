@@ -6,18 +6,58 @@
 
 namespace polyscope {
 
-// Convert an array of scalar types
-template <class D, class T>
-std::vector<D> standardizeArray(const T& inputData, size_t expectedSize, std::string errorName = "") {
-  // Validate size
-  if (inputData.size() != expectedSize) {
-    throw std::runtime_error("Cannnot process array " + errorName + ". Expected size " + std::to_string(expectedSize) +
-                             " but has size " + std::to_string(inputData.size()));
+// Check that a data array has the expected size
+template <class T>
+void validateSize(const T& inputData, std::vector<size_t> expectedSizes, std::string errorName = "") {
+
+  // No-op if no sizes given
+  if (expectedSizes.size() == 0) {
+    return;
   }
 
+  // Simpler error if only one size
+  if (expectedSizes.size() == 1) {
+    if (inputData.size() != expectedSizes[0]) {
+      error("Size validation failed on data array " + errorName + ". Expected size " +
+            std::to_string(expectedSizes[0]) + " but has size " + std::to_string(inputData.size()));
+    }
+  }
+  // General case
+  else {
+
+    // Return success if any sizes match
+    for (size_t possibleSize : expectedSizes) {
+      if (inputData.size() == possibleSize) {
+        return;
+      }
+    }
+
+    // Build a useful error message
+    std::string sizesStr = "{";
+    for (size_t possibleSize : expectedSizes) {
+      sizesStr += std::to_string(possibleSize) + ",";
+    }
+    sizesStr += "}";
+
+    error("Size validation failed on data array " + errorName + ". Expected size in " + sizesStr + " but has size " +
+          std::to_string(inputData.size()));
+  }
+}
+
+// Pass through to general version
+template <class T>
+void validateSize(const T& inputData, size_t expectedSize, std::string errorName = "") {
+  validateSize<T>(inputData, std::vector<size_t>{expectedSize}, errorName);
+}
+
+
+// Convert an array of scalar types
+template <class D, class T>
+std::vector<D> standardizeArray(const T& inputData) {
+
   // Copy data
-  std::vector<D> dataOut(expectedSize);
-  for (size_t i = 0; i < expectedSize; i++) {
+  std::vector<D> dataOut(inputData.size());
+  for (size_t i = 0; i < inputData.size(); i++) {
     dataOut[i] = inputData[i];
   }
 
@@ -41,17 +81,12 @@ inline double accessVectorLikeValue<std::complex<double>, double, 2>(std::comple
 
 // Convert an array of low-dimensional vector types
 template <class D, class T, int N>
-std::vector<D> standardizeVectorArray(const T& inputData, size_t expectedSize, std::string errorName = "") {
-  // Validate size
-  if (inputData.size() != expectedSize) {
-    throw std::runtime_error("Cannnot process array " + errorName + ". Expected size " + std::to_string(expectedSize) +
-                             " but has size " + std::to_string(inputData.size()));
-  }
+std::vector<D> standardizeVectorArray(const T& inputData) {
 
   // Copy data
-  std::vector<D> dataOut(expectedSize);
+  std::vector<D> dataOut(inputData.size());
   typedef typename std::remove_reference<decltype(dataOut[0][0])>::type OutScalarT;
-  for (size_t i = 0; i < expectedSize; i++) {
+  for (size_t i = 0; i < inputData.size(); i++) {
     for (size_t j = 0; j < N; j++) {
       dataOut[i][j] = accessVectorLikeValue<decltype(inputData[0]), OutScalarT, N>(inputData[i], j);
     }

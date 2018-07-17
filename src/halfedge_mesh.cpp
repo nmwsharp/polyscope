@@ -89,7 +89,7 @@ size_t halfedgeLookup(const std::vector<size_t>& compressedList, size_t target, 
 } // namespace
 
 HalfedgeMesh::HalfedgeMesh(const std::vector<glm::vec3> vertexPositions,
-                           const std::vector<std::vector<size_t>> faceInds, bool triangulate) {
+                           const std::vector<std::vector<size_t>> inputFaceInds, bool triangulate) {
 
 
   // == Optionally triangulate
@@ -97,28 +97,34 @@ HalfedgeMesh::HalfedgeMesh(const std::vector<glm::vec3> vertexPositions,
   // newly created halfedges are indicated by INVALID_IND
   std::vector<size_t> origFaceInd;
   std::vector<std::vector<size_t>> origHalfedgeInd;
-  nOrigFaces_ = faceInds.size();
+  nOrigFaces_ = inputFaceInds.size();
+  std::vector<std::vector<size_t>> faceInds;
   if (triangulate) {
 
-    std::vector<std::vector<size_t>> triangulatedFaces;
     size_t iHe = 0;
 
     // Iterate through the input polygons
-    for (size_t iOrigFace = 0; iOrigFace < faceInds.size(); iOrigFace++) {
+    for (size_t iOrigFace = 0; iOrigFace < inputFaceInds.size(); iOrigFace++) {
 
       // Fan-triangulate each polygon
-      const std::vector<size_t>& origFace = faceInds[iOrigFace];
+      const std::vector<size_t>& origFace = inputFaceInds[iOrigFace];
       for (size_t jE = 2; jE < origFace.size(); jE++) {
         size_t v0 = origFace[0];
         size_t v1 = origFace[jE - 1];
         size_t v2 = origFace[jE];
 
         // Add a new triangle
-        triangulatedFaces.push_back({v0, v1, v2});
+        faceInds.push_back({v0, v1, v2});
 
         // Track the original face indices and original halfedge indices
         origFaceInd.push_back(iOrigFace);
-        origHalfedgeInd.push_back({iHe, iHe + jE - 1, iHe + jE});
+
+        // Halfedge indices
+        size_t ind0 = (jE == 2) ? iHe : INVALID_IND;                        // invalid if induced by triangulation
+        size_t ind1 = iHe + jE - 1;                                         // always valid
+        size_t ind2 = (jE + 1 == origFace.size()) ? iHe + jE : INVALID_IND; // invalid if induced by triangulation
+
+        origHalfedgeInd.push_back({ind0, ind1, ind2});
       }
 
       iHe += origFace.size();
@@ -128,6 +134,7 @@ HalfedgeMesh::HalfedgeMesh(const std::vector<glm::vec3> vertexPositions,
   }
   // Not triangulating; push identity maps to preserve original indices
   else {
+    faceInds = inputFaceInds;
 
     // Identity face index
     origFaceInd.resize(faceInds.size());
@@ -239,12 +246,12 @@ HalfedgeMesh::HalfedgeMesh(const std::vector<glm::vec3> vertexPositions,
   nPairedEdges /= 2;
 
   size_t nTotalEdges = nPairedEdges + nUnpairedEdges;
-  nRealHalfedges = 2 * nPairedEdges + nUnpairedEdges;
+  nRealHalfedges_ = 2 * nPairedEdges + nUnpairedEdges;
   size_t nImaginaryHalfedges = nUnpairedEdges;
   size_t nRealFaces = faceInds.size();
 
   // Allocate space
-  halfedges.resize(nRealHalfedges + nImaginaryHalfedges);
+  halfedges.resize(nRealHalfedges_ + nImaginaryHalfedges);
   vertices.resize(vertexPositions.size());
   edges.resize(nTotalEdges);
   faces.resize(nRealFaces);
@@ -323,7 +330,7 @@ HalfedgeMesh::HalfedgeMesh(const std::vector<glm::vec3> vertexPositions,
   // them
   size_t nBoundaryLoops = 0;
   std::set<Halfedge*> walkedHalfedges;
-  for (size_t iHe = 0; iHe < nHalfedges(); iHe++) {
+  for (size_t iHe = 0; iHe < nRealHalfedges_; iHe++) {
     if (halfedges[iHe].twin_ == nullptr && walkedHalfedges.find(&halfedges[iHe]) == walkedHalfedges.end()) {
       nBoundaryLoops++;
       Halfedge* currHe = &halfedges[iHe];
@@ -367,7 +374,7 @@ HalfedgeMesh::HalfedgeMesh(const std::vector<glm::vec3> vertexPositions,
       bool finished = false;
       while (!finished) {
         // Create a new, imaginary halfedge
-        Halfedge& newHe = halfedges[nRealHalfedges + iImaginaryHalfedge];
+        Halfedge& newHe = halfedges[nRealHalfedges_ + iImaginaryHalfedge];
         boundaryLoop.halfedge_ = &newHe;
         iImaginaryHalfedge++;
 

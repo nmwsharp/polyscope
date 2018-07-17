@@ -275,6 +275,8 @@ void SurfaceMesh::fillGeometryBuffersFlat() {
       positions.push_back(vertexPos);
       normals.push_back(faceNormal);
       bcoord.push_back(coord);
+      
+      currHe = &currHe->next();
     }
   }
 

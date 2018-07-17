@@ -599,7 +599,7 @@ static const GeomShader SPHERE_COLOR_GEOM_SHADER = {
 
 
 
-
+// TODO do something clever with gl_FragDepth
 static const FragShader SPHERE_BILLBOARD_FRAG_SHADER = {
     
     // uniforms

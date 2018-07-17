@@ -59,9 +59,11 @@ public:
 
 template <class T>
 void SurfaceMesh::addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType) {
+
+  validateSize(vectors, nVertices(), "vertex vector quantity " + name);
+
   std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceVertexVectorQuantity>(
-      name, standardizeVectorArray<glm::vec3, T, 3>(vectors, nVertices(), "vertex vector quantity " + name), this,
-      vectorType);
+      name, standardizeVectorArray<glm::vec3, T, 3>(vectors), this, vectorType);
   addSurfaceQuantity(q);
 }
 
@@ -77,9 +79,11 @@ public:
 
 template <class T>
 void SurfaceMesh::addFaceVectorQuantity(std::string name, const T& vectors, VectorType vectorType) {
+
+  validateSize(vectors, nFaces(), "face vector quantity " + name);
+
   std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceFaceVectorQuantity>(
-      name, standardizeVectorArray<glm::vec3, T, 3>(vectors, nFaces(), "face vector quantity " + name), this,
-      vectorType);
+      name, standardizeVectorArray<glm::vec3, T, 3>(vectors), this, vectorType);
   addSurfaceQuantity(q);
 }
 
@@ -102,9 +106,11 @@ public:
 
 template <class T>
 void SurfaceMesh::addFaceIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym, VectorType vectorType) {
+
+  validateSize(vectors, nFaces(), "face intrinsic vector quantity " + name);
+
   std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceFaceIntrinsicVectorQuantity>(
-      name, standardizeVectorArray<Complex, T, 2>(vectors, nFaces(), "face intrinsic vector quantity " + name), this,
-      nSym, vectorType);
+      name, standardizeVectorArray<Complex, T, 2>(vectors), this, nSym, vectorType);
   addSurfaceQuantity(q);
 }
 
@@ -127,9 +133,11 @@ public:
 template <class T>
 void SurfaceMesh::addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym,
                                                    VectorType vectorType) {
+
+  validateSize(vectors, nVertices(), "vertex intrinsic vector quantity " + name);
+
   std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceVertexIntrinsicVectorQuantity>(
-      name, standardizeVectorArray<glm::vec3, T, 2>(vectors, nFaces(), "vertex intrinsic vector quantity " + name),
-      this, nSym, vectorType);
+      name, standardizeVectorArray<glm::vec3, T, 2>(vectors), this, nSym, vectorType);
   addSurfaceQuantity(q);
 }
 
@@ -151,8 +159,11 @@ public:
 
 template <class T>
 void SurfaceMesh::addOneFormIntrinsicVectorQuantity(std::string name, const T& data) {
-  std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceOneFormIntrinsicVectorQuantity>(
-      name, standardizeArray<double, T>(data, nEdges(), "one form intrinsic vector quantity " + name), this);
+
+  validateSize(data , nEdges(), "one form intrinsic vector quantity " + name);
+
+  std::shared_ptr<SurfaceVectorQuantity> q =
+      std::make_shared<SurfaceOneFormIntrinsicVectorQuantity>(name, standardizeArray<double, T>(data), this);
   addSurfaceQuantity(q);
 }
 

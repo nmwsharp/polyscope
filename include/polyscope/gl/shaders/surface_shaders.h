@@ -493,8 +493,17 @@ static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
       vec3 surfaceColor() {
 
         // Blend by distance from edges
-        vec3 eDist = (1.0 - Barycoord) / 2.0;
-        float val = eDist.x * Colorval.x + eDist.y * Colorval.y +  eDist.z * Colorval.z;
+        //vec3 eDist = (1.0 - Barycoord) / 2.0;
+        //float val = eDist.x * Colorval.x + eDist.y * Colorval.y +  eDist.z * Colorval.z;
+
+        float val = Colorval.y;
+        if(Barycoord.y < Barycoord.x && Barycoord.y < Barycoord.z) {
+          val = Colorval.z;
+        }
+        if(Barycoord.z < Barycoord.x && Barycoord.z < Barycoord.y) {
+          val = Colorval.x;
+        }
+
         float t = (val - u_rangeLow) / (u_rangeHigh - u_rangeLow);
         t = clamp(t, 0.f, 1.f);
         return texture(t_colormap, t).rgb;

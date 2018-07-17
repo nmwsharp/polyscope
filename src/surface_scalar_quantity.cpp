@@ -357,7 +357,6 @@ void SurfaceScalarEdgeQuantity::fillColorBuffers(gl::GLProgram* p) {
       he = &he->next();
     }
 
-
     for (size_t i = 0; i < 3; i++) {
       colorval.push_back(combinedValues);
     }
@@ -381,13 +380,13 @@ void SurfaceScalarEdgeQuantity::buildEdgeInfoGUI(size_t eInd) {
 
 SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(std::string name, std::vector<double> values_,
                                                              SurfaceMesh* mesh_, DataType dataType_)
-    : SurfaceScalarQuantity(name, mesh_, "halfedge", dataType_)
+    : SurfaceScalarQuantity(name, mesh_, "halfedge", dataType_), values(std::move(values_))
 
 {
 
   std::vector<double> valsVec;
   std::vector<double> weightsVec;
-  for (size_t iHe = 0; iHe < parent->nHalfedges(); iHe++) {
+  for (size_t iHe = 0; iHe < values.size(); iHe++) {
     valsVec.push_back(values[iHe]);
     HalfedgeMesh::Halfedge& he = parent->mesh.halfedges[iHe];
     weightsVec.push_back(he.edge().length());

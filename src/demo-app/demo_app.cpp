@@ -1,8 +1,11 @@
 #include "polyscope/polyscope.h"
 
+#include "polyscope/combining_hash_functions.h"
 #include "polyscope/surface_mesh_io.h"
 
 #include <iostream>
+#include <unordered_set>
+#include <utility>
 
 #include "args/args.hxx"
 #include "json/json.hpp"
@@ -98,6 +101,35 @@ void processFileOBJ(string filename) {
   // polyscope::getSurfaceMesh(niceName)->addQuantity("angles", oAngles);
   // polyscope::getSurfaceMesh(niceName)->addQuantity("zangles", oAngles);
 
+  // Edge length
+  std::vector<double> eLen;
+  std::vector<double> heLen;
+  std::unordered_set<std::pair<size_t, size_t>, polyscope::hash_combine::hash<std::pair<size_t, size_t>>> seenEdges;
+  for (size_t iF = 0; iF < nFaces; iF++) {
+    std::vector<size_t>& face = faceIndices[iF];
+
+    for (size_t iV = 0; iV < face.size(); iV++) {
+      size_t i0 = face[iV];
+      size_t i1 = face[(iV + 1) % face.size()];
+      glm::vec3 p0 = vertexPositionsGLM[i0];
+      glm::vec3 p1 = vertexPositionsGLM[i1];
+      double len = glm::length(p0 - p1);
+
+      size_t iMin = std::min(i0, i1);
+      size_t iMax = std::max(i0, i1);
+
+      auto p = std::make_pair(iMin, iMax);
+      if (seenEdges.find(p) == seenEdges.end()) {
+        eLen.push_back(len);
+        seenEdges.insert(p);
+      } 
+      heLen.push_back(len);
+    }
+  }
+  polyscope::getSurfaceMesh(niceName)->addEdgeScalarQuantity("edge length", eLen);
+  polyscope::getSurfaceMesh(niceName)->addHalfedgeScalarQuantity("halfedge length", heLen);
+
+
   // Test error
   // polyscope::error("Resistance is futile, welcome to the borg borg borg.");
   // polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we
@@ -106,6 +138,7 @@ void processFileOBJ(string filename) {
 
   // Test warning
   polyscope::warning("Something went slightly wrong", "it was bad");
+
   // polyscope::warning("Smoething else went slightly wrong", "it was also bad");
   // polyscope::warning("Something went slightly wrong", "it was still bad");
   // for (int i = 0; i < 5000; i++) {
@@ -325,7 +358,8 @@ int main(int argc, char** argv) {
     for (size_t i = 0; i < 50; i++) {
       // points.push_back(glm::vec3{10,10,10} + 20*glm::vec3{randomUnit()-.5,
       // randomUnit()-.5, randomUnit()-.5});
-      points.push_back(3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
+      points.push_back(
+          3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
     }
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
     addDataToPointCloud("really great points" + std::to_string(j), points);

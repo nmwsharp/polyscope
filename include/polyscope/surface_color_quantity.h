@@ -37,8 +37,11 @@ public:
 
 template <class T>
 void SurfaceMesh::addVertexColorQuantity(std::string name, const T& colors) {
-  std::shared_ptr<SurfaceColorQuantity> q = std::make_shared<SurfaceColorVertexQuantity>(
-      name, standardizeVectorArray<glm::vec3, T, 3>(colors, triMesh.nVertices(), "vertex color quantity " + name), this);
+
+  validateSize<T>(colors, nVertices(), "vertex color quantity " + name);
+
+  std::shared_ptr<SurfaceColorQuantity> q =
+      std::make_shared<SurfaceColorVertexQuantity>(name, standardizeVectorArray<glm::vec3, T, 3>(colors), this);
   addSurfaceQuantity(q);
 }
 
@@ -63,11 +66,13 @@ public:
 
 template <class T>
 void SurfaceMesh::addFaceColorQuantity(std::string name, const T& colors) {
-  std::shared_ptr<SurfaceColorQuantity> q = std::make_shared<SurfaceColorFaceQuantity>(
-      name, standardizeVectorArray<glm::vec3, T, 3>(colors, triMesh.nFaces(), "face color quantity " + name), this);
+
+  validateSize<T>(colors, nFaces(), "face color quantity " + name);
+
+  std::shared_ptr<SurfaceColorQuantity> q =
+      std::make_shared<SurfaceColorFaceQuantity>(name, standardizeVectorArray<glm::vec3, T, 3>(colors), this);
   addSurfaceQuantity(q);
 }
-
 
 
 } // namespace polyscope

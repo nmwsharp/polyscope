@@ -8,6 +8,8 @@
 // See https://stackoverflow.com/questions/7110301/generic-hash-for-tuples-in-unordered-map-unordered-set
 // and elsewhere
 
+// Use with something like:
+// std::unordered_set<std::pair<size_t, size_t>, polyscope::hash_combine::hash<std::pair<size_t, size_t>>> seenEdges;
 
 namespace polyscope {
 namespace hash_combine {

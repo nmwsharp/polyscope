@@ -144,7 +144,8 @@ public:
   size_t nEdges() const { return edges.size(); }
   size_t nFaces() const { return faces.size(); }
   size_t nBoundaryLoops() const { return boundaryLoops.size(); }
-  size_t nImaginaryHalfedges() const; // TODO
+  size_t nImaginaryHalfedges() const { return halfedges.size() - nRealHalfedges(); }
+  size_t nRealHalfedges() const { return nRealHalfedges_; }
 
   // If this mesh is a triangulation of the input, the number of elements in the original input mesh.
   size_t nOrigFaces() const { return nOrigFaces_; }
@@ -159,7 +160,6 @@ public:
 
   // The contiguous chunks of memory which hold the actual structs.
   // Don't modify them after construction.
-  size_t nRealHalfedges;
   std::vector<Halfedge> halfedges; // first real, then imaginary
   std::vector<Vertex> vertices;
   std::vector<Edge> edges;
@@ -182,6 +182,7 @@ private:
   bool _isSimplicial;
   size_t _nConnectedComponents;
   size_t nOrigFaces_, nOrigEdges_, nOrigHalfedges_;
+  size_t nRealHalfedges_;
 };
 
 } // namespace polyscope
