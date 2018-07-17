@@ -10,6 +10,216 @@ using std::endl;
 namespace polyscope {
 namespace gl {
 
+// =============================================================
+// ==================== Texture buffer =========================
+// =============================================================
+GLTexturebuffer::GLTexturebuffer(unsigned int sizeX_, unsigned int sizeY_) : sizeX(sizeX_), sizeY(sizeY_) {
+  // TODO for now, always an image texture
+  glGenTextures(1, &handle);
+  glBindTexture(GL_TEXTURE_2D, handle);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, sizeX, sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+}
+
+GLTexturebuffer::~GLTexturebuffer() { glDeleteTextures(1, &handle); }
+
+void GLTexturebuffer::setFilterMode(FilterMode newMode) {
+
+  glBindTexture(GL_TEXTURE_2D, handle);
+
+  switch (newMode) {
+  case FilterMode::Nearest:
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    break;
+  case FilterMode::Linear:
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    break;
+  }
+}
+
+// =============================================================
+// ===================== Render buffer =========================
+// =============================================================
+GLRenderbuffer::GLRenderbuffer(RenderbufferType type_, unsigned int sizeX_, unsigned int sizeY_)
+    : type(type_), sizeX(sizeX_), sizeY(sizeY_) {
+
+  glGenRenderbuffers(1, &handle);
+  glBindRenderbuffer(GL_RENDERBUFFER, handle);
+
+  switch (type) {
+  case RenderbufferType::ColorAlpha:
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, sizeX, sizeY);
+    break;
+  case RenderbufferType::Color:
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, sizeX, sizeY);
+    break;
+  case RenderbufferType::Depth:
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, sizeX, sizeY);
+    break;
+  case RenderbufferType::Float4:
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, sizeX, sizeY);
+    break;
+  }
+}
+
+GLRenderbuffer::~GLRenderbuffer() { glDeleteRenderbuffers(1, &handle); }
+
+
+// =============================================================
+// ===================== Framebuffer ===========================
+// =============================================================
+
+GLFramebuffer::GLFramebuffer() {
+  glGenFramebuffers(1, &handle);
+  glBindFramebuffer(GL_FRAMEBUFFER, handle);
+};
+
+GLFramebuffer::~GLFramebuffer() { glDeleteFramebuffers(1, &handle); }
+
+void GLFramebuffer::bindToColorRenderbuffer(GLRenderbuffer* renderBuffer) {
+  glBindFramebuffer(GL_FRAMEBUFFER, handle);
+
+  // Sanity checks
+  if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
+  if (colorTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, renderBuffer->getHandle());
+  colorRenderBuffer = renderBuffer;
+
+  GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+  glDrawBuffers(1, DrawBuffers);
+}
+
+void GLFramebuffer::bindToDepthRenderbuffer(GLRenderbuffer* renderBuffer) {
+  glBindFramebuffer(GL_FRAMEBUFFER, handle);
+
+  // Sanity checks
+  if (depthRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
+  if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderBuffer->getHandle());
+  depthRenderBuffer = renderBuffer;
+}
+
+void GLFramebuffer::bindToColorTexturebuffer(GLTexturebuffer* textureBuffer) {
+  glBindFramebuffer(GL_FRAMEBUFFER, handle);
+
+  // Sanity checks
+  if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
+  if (colorTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+
+  glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureBuffer->getHandle(), 0);
+  colorTextureBuffer = textureBuffer;
+
+  GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+  glDrawBuffers(1, DrawBuffers);
+}
+
+void GLFramebuffer::bindToDepthTexturebuffer(GLTexturebuffer* textureBuffer) {
+  glBindFramebuffer(GL_FRAMEBUFFER, handle);
+
+  // Sanity checks
+  if (depthRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
+  if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+
+  glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureBuffer->getHandle(), 0);
+  depthTextureBuffer = textureBuffer;
+}
+
+void GLFramebuffer::bindForRendering() {
+  glBindFramebuffer(GL_FRAMEBUFFER, handle);
+
+  // Check if the frame buffer is okay
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    throw std::runtime_error("OpenGL error occurred: framebuffer not complete!");
+  }
+
+  // Set the viewport
+  if (!viewportSet)
+    throw std::runtime_error(
+        "OpenGL error: viewport not set for framebuffer object. Call GLFramebuffer::setViewport()");
+  glViewport(viewportX, viewportY, viewportSizeX, viewportSizeY);
+
+  // Enable depth testing
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+
+  checkGLError();
+}
+
+void GLFramebuffer::resizeRenderbuffers(unsigned int newXSize, unsigned int newYSize) {
+
+  // Resize color buffer
+  if (colorRenderBuffer != nullptr &&
+      (colorRenderBuffer->getSizeX() != newXSize || colorRenderBuffer->getSizeY() != newYSize)) {
+    // Make a new buffer
+    GLRenderbuffer* newBuff = new GLRenderbuffer(colorRenderBuffer->getType(), newXSize, newYSize);
+
+    // Delete the old buffer
+    GLuint h = colorRenderBuffer->getHandle();
+    glDeleteRenderbuffers(1, &h);
+    safeDelete(colorRenderBuffer);
+
+    // Register new buffer
+    bindToColorRenderbuffer(newBuff);
+  }
+
+  // Resize depth buffer
+  if (depthRenderBuffer != nullptr &&
+      (depthRenderBuffer->getSizeX() != newXSize || depthRenderBuffer->getSizeY() != newYSize)) {
+
+    // Make a new buffer
+    GLRenderbuffer* newBuff = new GLRenderbuffer(depthRenderBuffer->getType(), newXSize, newYSize);
+
+    // Delete the old buffer
+    GLuint h = depthRenderBuffer->getHandle();
+    glDeleteRenderbuffers(1, &h);
+    safeDelete(depthRenderBuffer);
+
+    // Register new buffer
+    bindToDepthRenderbuffer(newBuff);
+  }
+}
+
+void GLFramebuffer::setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
+  viewportSet = true;
+  viewportX = startX;
+  viewportY = startY;
+  viewportSizeX = sizeX;
+  viewportSizeY = sizeY;
+}
+
+void GLFramebuffer::clear() {
+  bindForRendering();
+  glClearColor(clearColor[0], clearColor[1], clearColor[2], 0.0);
+  glClearDepth(1.);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+}
+
+std::array<float, 4> GLFramebuffer::readFloat4(int xPos, int yPos) {
+
+  if (colorRenderBuffer == nullptr || colorRenderBuffer->getType() != RenderbufferType::Float4) {
+    throw std::runtime_error("OpenGL error: buffer is not of right type to pick from");
+  }
+
+  glFlush();
+  glFinish();
+
+  // Read from the pick buffer
+  std::array<float, 4> result;
+  glReadPixels(xPos, yPos, 1, 1, GL_RGBA, GL_FLOAT, &result);
+  gl::checkGLError(true);
+
+  return result;
+}
+
+// =============================================================
+// ==================  Shader Program  =========================
+// =============================================================
+
 GLuint GLProgram::commonShaderHandle = 0;
 
 GLProgram::GLProgram(const VertShader* vShader, const FragShader* fShader, DrawMode dm)
@@ -524,9 +734,9 @@ void GLProgram::setAttribute(std::string name, const std::vector<glm::vec2>& dat
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::Vector2Float)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name + " with wrong type. Actual type: " +
+                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
+                                    std::to_string(static_cast<int>(GLData::Vector2Float)));
       }
       return;
     }
@@ -565,9 +775,9 @@ void GLProgram::setAttribute(std::string name, const std::vector<glm::vec3>& dat
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::Vector3Float)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name + " with wrong type. Actual type: " +
+                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
+                                    std::to_string(static_cast<int>(GLData::Vector3Float)));
       }
       return;
     }
@@ -602,9 +812,9 @@ void GLProgram::setAttribute(std::string name, const std::vector<double>& data, 
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<float>(GLData::Float)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name + " with wrong type. Actual type: " +
+                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
+                                    std::to_string(static_cast<float>(GLData::Float)));
       }
       return;
     }
@@ -642,9 +852,9 @@ void GLProgram::setAttribute(std::string name, const std::vector<int>& data, boo
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::Int)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name + " with wrong type. Actual type: " +
+                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
+                                    std::to_string(static_cast<int>(GLData::Int)));
       }
       return;
     }
@@ -682,9 +892,9 @@ void GLProgram::setAttribute(std::string name, const std::vector<uint32_t>& data
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::UInt)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name + " with wrong type. Actual type: " +
+                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
+                                    std::to_string(static_cast<int>(GLData::UInt)));
       }
       return;
     }

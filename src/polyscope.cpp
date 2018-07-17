@@ -77,37 +77,29 @@ namespace {
 GLFWwindow* mainWindow = nullptr;
 
 // Pick buffer state
-GLuint pickFramebuffer, rboPickDepth, rboPickColor, currPickBufferWidth, currPickBufferHeight;
+gl::GLFramebuffer* pickFrameBuffer = nullptr;
 
 // Font atlas pointer
 ImFontAtlas* globalFontAtlas = nullptr;
 
-void allocatePickRenderbuffers() {
+void allocateBuffers() {
+  using namespace gl;
 
-  glGenRenderbuffers(1, &rboPickDepth);
-  glBindRenderbuffer(GL_RENDERBUFFER, rboPickDepth);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, view::bufferWidth, view::bufferHeight);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboPickDepth);
+  GLRenderbuffer* pickColorBuffer = new GLRenderbuffer(RenderbufferType::Float4, view::bufferWidth, view::bufferHeight);
+  GLRenderbuffer* pickDepthBuffer = new GLRenderbuffer(RenderbufferType::Depth, view::bufferWidth, view::bufferHeight);
 
-  glGenRenderbuffers(1, &rboPickColor);
-  glBindRenderbuffer(GL_RENDERBUFFER, rboPickColor);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, view::bufferWidth, view::bufferHeight);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rboPickColor);
-
-  currPickBufferWidth = view::bufferWidth;
-  currPickBufferHeight = view::bufferHeight;
+  pickFrameBuffer = new GLFramebuffer();
+  pickFrameBuffer->bindToColorRenderbuffer(pickColorBuffer);
+  pickFrameBuffer->bindToDepthRenderbuffer(pickDepthBuffer);
 }
 
-void initPickBuffer() {
+void deleteBuffers() {
 
-  // Create the new buffer
-  glGenFramebuffers(1, &pickFramebuffer);
-
-  // Bind to the new buffer
-  glBindFramebuffer(GL_FRAMEBUFFER, pickFramebuffer);
-
-  allocatePickRenderbuffers();
+  delete pickFrameBuffer->getColorRenderBuffer();
+  delete pickFrameBuffer->getDepthRenderBuffer();
+  delete pickFrameBuffer;
 }
+
 
 void setStyle() {
 
@@ -279,7 +271,7 @@ void init() {
   gl::GLProgram::initCommonShaders();
 
   // Initialize pick buffer
-  initPickBuffer();
+  allocateBuffers();
 
   // Initialize with default maps so they show up in UI and user knows they exist
   if (options::initializeWithDefaultStructures) {
@@ -335,44 +327,23 @@ void evaluatePickQuery(int xPos, int yPos) {
   if (xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
     return;
   }
-  glBindFramebuffer(GL_FRAMEBUFFER, pickFramebuffer);
 
-  if ((int)currPickBufferWidth != view::bufferWidth || (int)currPickBufferHeight != view::bufferHeight) {
-    // Delete the existing renderbuffers
-    GLuint rBuffers[2] = {rboPickDepth, rboPickColor};
-    glDeleteRenderbuffers(2, rBuffers);
-
-    // Allocate some new one
-    allocatePickRenderbuffers();
-  }
-
-  // Set the draw buffer
-  GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
-  glDrawBuffers(1, buffers);
-
-  // Clear the pick buffer
-  glViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  glClearColor(0.0, 0.0, 0.0, 0.0);
-  glClearDepth(1.);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+  pickFrameBuffer->resizeRenderbuffers(view::bufferWidth, view::bufferHeight);
+  pickFrameBuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  pickFrameBuffer->bindForRendering();
+  pickFrameBuffer->clear();
 
   // Render pick buffer
-  glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
   for (auto cat : state::structures) {
     for (auto x : cat.second) {
       x.second->drawPick();
     }
   }
-  glFlush();
-  glFinish();
-
-  // Read from the pick buffer
-  float result[4];
-  glReadPixels(xPos, view::bufferHeight - yPos, 1, 1, GL_RGBA, GL_FLOAT, &result);
   gl::checkGLError(true);
-
-
+  
+  // Read from the pick buffer
+  std::array<float,4> result = pickFrameBuffer->readFloat4(xPos, view::bufferHeight - yPos);
+  gl::checkGLError(true);
   size_t ind = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
 
   if (ind == 0) {

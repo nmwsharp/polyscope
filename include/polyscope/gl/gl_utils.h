@@ -37,7 +37,95 @@ enum class DrawMode {
   IndexedLineStripAdjacency
 };
 
-// Class to encapsulate a program
+// Encapsulate a texture
+enum class FilterMode { Nearest, Linear };
+class GLTexturebuffer {
+public:
+  GLTexturebuffer(unsigned int sizeX_, unsigned int sizeY_);
+  ~GLTexturebuffer();
+
+  void setFilterMode(FilterMode newMode);
+
+  GLuint getHandle() const { return handle; }
+  unsigned int getSizeX() const { return sizeX; }
+  unsigned int getSizeY() const { return sizeY; }
+
+private:
+  GLuint handle;
+  unsigned int sizeX, sizeY;
+};
+
+// Encapsulate a renderbuffer
+enum class RenderbufferType { Color, ColorAlpha, Depth, Float4 };
+class GLRenderbuffer {
+public:
+  GLRenderbuffer(RenderbufferType type, unsigned int sizeX_, unsigned int sizeY_);
+  ~GLRenderbuffer();
+
+  GLuint getHandle() const { return handle; }
+  RenderbufferType getType() const { return type; }
+  unsigned int getSizeX() const { return sizeX; }
+  unsigned int getSizeY() const { return sizeY; }
+
+private:
+  GLuint handle;
+  RenderbufferType type;
+  unsigned int sizeX, sizeY;
+};
+
+
+// Encapsulate a framebuffer
+class GLFramebuffer {
+
+public:
+  GLFramebuffer();
+  ~GLFramebuffer();
+
+  // Bind to this framebuffer so subsequent draw calls will go to it
+  void bindForRendering();
+
+  // Clear to redraw
+  void clear();
+
+  // Bind to textures/renderbuffers for output
+  void bindToColorRenderbuffer(GLRenderbuffer* renderBuffer);
+  void bindToDepthRenderbuffer(GLRenderbuffer* renderBuffer);
+  void bindToColorTexturebuffer(GLTexturebuffer* textureBuffer);
+  void bindToDepthTexturebuffer(GLTexturebuffer* textureBuffer);
+
+  // Specify the viewport coordinates and clearcolor
+  void setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
+  Color3f clearColor{0.0, 0.0, 0.0};
+
+  // Resizes renderbuffers if different from current size. Does not touch any textures.
+  void resizeRenderbuffers(unsigned int newXSize, unsigned int newYSize);
+
+  // Getters
+  GLuint getHandle() const { return handle; }
+  GLRenderbuffer* getColorRenderBuffer() const { return colorRenderBuffer; }
+  GLRenderbuffer* getDepthRenderBuffer() const { return depthRenderBuffer; }
+  GLTexturebuffer* getColorTextureBuffer() const { return colorTextureBuffer; }
+  GLTexturebuffer* getDepthTextureBuffer() const { return depthTextureBuffer; }
+
+  // Query pixel
+  std::array<float, 4> readFloat4(int xPos, int yPos);
+
+private:
+  GLuint handle;
+
+  // Will have a renderbuffer, a texturebuffer, or neither for each of depth and color.
+  GLRenderbuffer* colorRenderBuffer = nullptr;
+  GLTexturebuffer* colorTextureBuffer = nullptr;
+  GLRenderbuffer* depthRenderBuffer = nullptr;
+  GLTexturebuffer* depthTextureBuffer = nullptr;
+
+  // Viewport
+  bool viewportSet = false;
+  GLint viewportX, viewportY;
+  GLsizei viewportSizeX, viewportSizeY;
+};
+
+// Encapsulate a shader program
 class GLProgram {
 
 public:
