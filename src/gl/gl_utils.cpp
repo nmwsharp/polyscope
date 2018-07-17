@@ -14,10 +14,10 @@ namespace gl {
 // ==================== Texture buffer =========================
 // =============================================================
 GLTexturebuffer::GLTexturebuffer(unsigned int sizeX_, unsigned int sizeY_) : sizeX(sizeX_), sizeY(sizeY_) {
-  // TODO for now, always an image texture
+  // TODO for now, always an rgba texture
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_2D, handle);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, sizeX, sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sizeX, sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 }
@@ -38,6 +38,9 @@ void GLTexturebuffer::setFilterMode(FilterMode newMode) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     break;
   }
+  
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
 // =============================================================
@@ -194,7 +197,7 @@ void GLFramebuffer::setViewport(int startX, int startY, unsigned int sizeX, unsi
 
 void GLFramebuffer::clear() {
   bindForRendering();
-  glClearColor(clearColor[0], clearColor[1], clearColor[2], 0.0);
+  glClearColor(clearColor[0], clearColor[1], clearColor[2], clearAlpha);
   glClearDepth(1.);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }

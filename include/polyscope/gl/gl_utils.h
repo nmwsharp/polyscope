@@ -96,6 +96,7 @@ public:
   // Specify the viewport coordinates and clearcolor
   void setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
   Color3f clearColor{0.0, 0.0, 0.0};
+  float clearAlpha = 0.0;
 
   // Resizes renderbuffers if different from current size. Does not touch any textures.
   void resizeRenderbuffers(unsigned int newXSize, unsigned int newYSize);

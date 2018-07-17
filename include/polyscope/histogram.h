@@ -55,8 +55,10 @@ private:
   void prepare();
   bool prepared = false;
   void unprepare();
+
   GLuint texDim = 600;
-  GLuint framebufferInd, textureInd;
+  gl::GLTexturebuffer* texturebuffer = nullptr;
+  gl::GLFramebuffer* framebuffer = nullptr;
   gl::GLProgram* program = nullptr;
   const gl::Colormap* colormap = &gl::CM_CONST_RED;
 };
