@@ -41,18 +41,28 @@ enum class DrawMode {
 enum class FilterMode { Nearest, Linear };
 class GLTexturebuffer {
 public:
-  GLTexturebuffer(unsigned int sizeX_, unsigned int sizeY_);
+  // create a 1D texture from data
+  GLTexturebuffer(GLint format, unsigned int size1D, unsigned char* data);
+  GLTexturebuffer(GLint format, unsigned int size1D, float* data);
+
+  // create a 2D texture from data
+  GLTexturebuffer(GLint format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data=nullptr);
+
   ~GLTexturebuffer();
 
   void setFilterMode(FilterMode newMode);
+  void bind();
 
   GLuint getHandle() const { return handle; }
   unsigned int getSizeX() const { return sizeX; }
   unsigned int getSizeY() const { return sizeY; }
+  int getDimension() const { return dim; }
 
 private:
   GLuint handle;
+  GLint format;
   unsigned int sizeX, sizeY;
+  int dim;
 };
 
 // Encapsulate a renderbuffer
@@ -62,6 +72,7 @@ public:
   GLRenderbuffer(RenderbufferType type, unsigned int sizeX_, unsigned int sizeY_);
   ~GLRenderbuffer();
 
+  void bind();
   GLuint getHandle() const { return handle; }
   RenderbufferType getType() const { return type; }
   unsigned int getSizeX() const { return sizeX; }
@@ -183,6 +194,7 @@ public:
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                     bool withAlpha = true, bool useMipMap = false);
   void setTextureFromColormap(std::string name, Colormap colormap, bool allowUpdate = false);
+  void setTextureFromBuffer(std::string name, GLTexturebuffer* textureBuffer);
 
 
   // Indices
@@ -214,11 +226,12 @@ private:
   };
   struct GLTexture {
     std::string name;
-    unsigned int dim;
+    int dim;
     GLuint location;
-    GLuint bufferLoc;
+    GLTexturebuffer* textureBuffer;
     unsigned int index;
     bool isSet;
+    bool managedByProgram; // should the program delete the texture when its done?
   };
 
 

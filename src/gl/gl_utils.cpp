@@ -13,13 +13,40 @@ namespace gl {
 // =============================================================
 // ==================== Texture buffer =========================
 // =============================================================
-GLTexturebuffer::GLTexturebuffer(unsigned int sizeX_, unsigned int sizeY_) : sizeX(sizeX_), sizeY(sizeY_) {
-  // TODO for now, always an rgba texture
+
+// create a 1D texture from data
+GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int size1D, unsigned char* data)
+    : format(format_), sizeX(size1D), dim(1) {
+
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_2D, handle);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sizeX, sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+  glTexImage1D(GL_TEXTURE_1D, 0, format, size1D, 0, format, GL_UNSIGNED_BYTE, data);
+  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+  setFilterMode(FilterMode::Linear);
+}
+GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int size1D, float* data)
+    : format(format_), sizeX(size1D), dim(1) {
+  glGenTextures(1, &handle);
+  glBindTexture(GL_TEXTURE_2D, handle);
+  glTexImage1D(GL_TEXTURE_1D, 0, format, size1D, 0, format, GL_FLOAT, data);
+
+  setFilterMode(FilterMode::Linear);
+}
+
+// create a 2D texture from data
+GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data)
+    : format(format_), sizeX(sizeX_), sizeY(sizeY_), dim(2) {
+
+  glGenTextures(1, &handle);
+  glBindTexture(GL_TEXTURE_2D, handle);
+  glTexImage2D(GL_TEXTURE_2D, 0, format, sizeX, sizeY, 0, format, GL_UNSIGNED_BYTE, data);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+  setFilterMode(FilterMode::Linear);
 }
 
 GLTexturebuffer::~GLTexturebuffer() { glDeleteTextures(1, &handle); }
@@ -28,19 +55,43 @@ void GLTexturebuffer::setFilterMode(FilterMode newMode) {
 
   glBindTexture(GL_TEXTURE_2D, handle);
 
-  switch (newMode) {
-  case FilterMode::Nearest:
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    break;
-  case FilterMode::Linear:
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    break;
+  if (dim == 1) {
+    switch (newMode) {
+    case FilterMode::Nearest:
+      glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      break;
+    case FilterMode::Linear:
+      glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      break;
+    }
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   }
-  
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  if (dim == 2) {
+
+    switch (newMode) {
+    case FilterMode::Nearest:
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      break;
+    case FilterMode::Linear:
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      break;
+    }
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  }
+}
+
+void GLTexturebuffer::bind() {
+  if (dim == 1) {
+    glBindTexture(GL_TEXTURE_1D, handle);
+  }
+  if (dim == 2) {
+    glBindTexture(GL_TEXTURE_2D, handle);
+  }
 }
 
 // =============================================================
@@ -70,6 +121,8 @@ GLRenderbuffer::GLRenderbuffer(RenderbufferType type_, unsigned int sizeX_, unsi
 
 GLRenderbuffer::~GLRenderbuffer() { glDeleteRenderbuffers(1, &handle); }
 
+void GLRenderbuffer::bind() { glBindRenderbuffer(GL_RENDERBUFFER, handle); }
+
 
 // =============================================================
 // ===================== Framebuffer ===========================
@@ -83,6 +136,7 @@ GLFramebuffer::GLFramebuffer() {
 GLFramebuffer::~GLFramebuffer() { glDeleteFramebuffers(1, &handle); }
 
 void GLFramebuffer::bindToColorRenderbuffer(GLRenderbuffer* renderBuffer) {
+  renderBuffer->bind();
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
 
   // Sanity checks
@@ -97,6 +151,7 @@ void GLFramebuffer::bindToColorRenderbuffer(GLRenderbuffer* renderBuffer) {
 }
 
 void GLFramebuffer::bindToDepthRenderbuffer(GLRenderbuffer* renderBuffer) {
+  renderBuffer->bind();
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
 
   // Sanity checks
@@ -108,6 +163,7 @@ void GLFramebuffer::bindToDepthRenderbuffer(GLRenderbuffer* renderBuffer) {
 }
 
 void GLFramebuffer::bindToColorTexturebuffer(GLTexturebuffer* textureBuffer) {
+  textureBuffer->bind();
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
 
   // Sanity checks
@@ -122,6 +178,7 @@ void GLFramebuffer::bindToColorTexturebuffer(GLTexturebuffer* textureBuffer) {
 }
 
 void GLFramebuffer::bindToDepthTexturebuffer(GLTexturebuffer* textureBuffer) {
+  textureBuffer->bind();
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
 
   // Sanity checks
@@ -149,6 +206,10 @@ void GLFramebuffer::bindForRendering() {
   // Enable depth testing
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
+
+  // Enable blending
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   checkGLError();
 }
@@ -199,7 +260,7 @@ void GLFramebuffer::clear() {
   bindForRendering();
   glClearColor(clearColor[0], clearColor[1], clearColor[2], clearAlpha);
   glClearDepth(1.);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 std::array<float, 4> GLFramebuffer::readFloat4(int xPos, int yPos) {
@@ -369,7 +430,7 @@ void GLProgram::addUniqueTexture(ShaderTexture newTexture) {
       return;
     }
   }
-  textures.push_back(GLTexture{newTexture.name, newTexture.dim, 777, 777, 777, false});
+  textures.push_back(GLTexture{newTexture.name, newTexture.dim, 777, nullptr, 777, false, false});
 }
 
 void GLProgram::deleteAttributeBuffer(GLAttribute attribute) {
@@ -378,7 +439,11 @@ void GLProgram::deleteAttributeBuffer(GLAttribute attribute) {
   glDeleteBuffers(1, &attribute.VBOLoc);
 }
 
-void GLProgram::freeTexture(GLTexture t) { glDeleteTextures(1, &(t.bufferLoc)); }
+void GLProgram::freeTexture(GLTexture t) {
+  if (t.managedByProgram) {
+    delete t.textureBuffer;
+  }
+}
 
 void GLProgram::compileGLProgram() {
   // Compile the vertex shader
@@ -538,10 +603,9 @@ void GLProgram::createBuffers() {
                                 std::to_string(nAvailTextureUnits) + ").");
   }
 
-  // Create texture buffers for each
+  // Set indices sequentially
   for (unsigned int iTexture = 0; iTexture < textures.size(); iTexture++) {
     GLTexture& t = textures[iTexture];
-    glGenTextures(1, &(t.bufferLoc));
     t.index = iTexture;
   }
 }
@@ -917,19 +981,19 @@ void GLProgram::setTexture1D(std::string name, unsigned char* texData, unsigned 
       throw std::invalid_argument("Attempted to set texture twice");
     }
 
-    glActiveTexture(GL_TEXTURE0 + t.index);
-
     if (t.dim != 1) {
       throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
     }
 
-    glBindTexture(GL_TEXTURE_1D, t.bufferLoc);
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, length, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
+    // Create a new texture object
+    t.textureBuffer = new GLTexturebuffer(GL_RGB, length, texData);
+    t.managedByProgram = true;
+
 
     // Set policies
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    // glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    // glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
     t.isSet = true;
     return;
@@ -940,6 +1004,8 @@ void GLProgram::setTexture1D(std::string name, unsigned char* texData, unsigned 
 
 void GLProgram::setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                              bool withAlpha, bool useMipMap) {
+
+
   // Find the right texture
   for (GLTexture& t : textures) {
     if (t.name != name) continue;
@@ -948,31 +1014,51 @@ void GLProgram::setTexture2D(std::string name, unsigned char* texData, unsigned 
       throw std::invalid_argument("Attempted to set texture twice");
     }
 
-    glActiveTexture(GL_TEXTURE0 + t.index);
-
     if (t.dim != 2) {
       throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
     }
 
-    glBindTexture(GL_TEXTURE_2D, t.bufferLoc);
     if (withAlpha) {
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texData);
+      t.textureBuffer = new GLTexturebuffer(GL_RGBA, width, height, texData);
     } else {
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, texData);
+      t.textureBuffer = new GLTexturebuffer(GL_RGB, width, height, texData);
+    }
+    t.managedByProgram = true;
+
+
+    //// Set policies
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    //// Use mip maps
+    // if (useMipMap) {
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    // glGenerateMipmap(GL_TEXTURE_2D);
+    //} else {
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //}
+
+    t.isSet = true;
+    return;
+  }
+
+  throw std::invalid_argument("No texture with name " + name);
+}
+
+void GLProgram::setTextureFromBuffer(std::string name, GLTexturebuffer* textureBuffer) {
+  glUseProgram(programHandle);
+
+  // Find the right texture
+  for (GLTexture& t : textures) {
+    if (t.name != name) continue;
+
+    if (t.dim != (int)textureBuffer->getDimension()) {
+      throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
     }
 
-    // Set policies
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    // Use mip maps
-    if (useMipMap) {
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-      glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    }
+    t.textureBuffer = textureBuffer;
+    t.managedByProgram = false;
 
     t.isSet = true;
     return;
@@ -982,6 +1068,8 @@ void GLProgram::setTexture2D(std::string name, unsigned char* texData, unsigned 
 }
 
 void GLProgram::setTextureFromColormap(std::string name, Colormap colormap, bool allowUpdate) {
+  // TODO switch to global shared buffers from colormap
+
   // Find the right texture
   for (GLTexture& t : textures) {
     if (t.name != name) continue;
@@ -990,13 +1078,9 @@ void GLProgram::setTextureFromColormap(std::string name, Colormap colormap, bool
       throw std::invalid_argument("Attempted to set texture twice");
     }
 
-    glActiveTexture(GL_TEXTURE0 + t.index);
-
     if (t.dim != 1) {
       throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
     }
-
-    glBindTexture(GL_TEXTURE_1D, t.bufferLoc);
 
     // Fill a buffer with the data
     unsigned int dataLength = colormap.values.size() * 3;
@@ -1007,12 +1091,9 @@ void GLProgram::setTextureFromColormap(std::string name, Colormap colormap, bool
       colorBuffer[3 * i + 2] = static_cast<float>(colormap.values[i][2]);
     }
 
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, colormap.values.size(), 0, GL_RGB, GL_FLOAT, &(colorBuffer[0]));
-
-    // Set policies
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    // glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, colormap.values.size(), 0, GL_RGB, GL_FLOAT, &(colorBuffer[0]));
+    t.textureBuffer = new GLTexturebuffer(GL_RGB, colormap.values.size(), &(colorBuffer[0]));
+    t.managedByProgram = true;
 
     t.isSet = true;
     return;
@@ -1131,7 +1212,6 @@ void GLProgram::setPrimitiveRestartIndex(GLuint restartIndex_) {
 void GLProgram::activateTextures() {
   for (GLTexture& t : textures) {
     // Point the uniform at this texture
-    glUniform1i(t.location, t.index);
 
     // Bind to the texture buffer
     GLenum targetType;
@@ -1143,7 +1223,10 @@ void GLProgram::activateTextures() {
       targetType = GL_TEXTURE_2D;
       break;
     }
-    glBindTexture(targetType, t.bufferLoc);
+
+    glActiveTexture(GL_TEXTURE0 + t.index);
+    t.textureBuffer->bind();
+    glUniform1i(t.location, t.index);
   }
 }
 

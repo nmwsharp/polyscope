@@ -16,6 +16,7 @@
 #include "polyscope/imgui_impl_glfw.h"
 #include "polyscope/imgui_impl_opengl3.h"
 
+#include "polyscope/gl/shaders/texture_draw_shaders.h"
 #include "polyscope/pick.h"
 #include "polyscope/view.h"
 
@@ -76,28 +77,66 @@ namespace {
 // GLFW window
 GLFWwindow* mainWindow = nullptr;
 
-// Pick buffer state
-gl::GLFramebuffer* pickFrameBuffer = nullptr;
+// Main buffers for rendering
+gl::GLTexturebuffer* sceneColorTexture = nullptr;
+gl::GLFramebuffer* sceneFramebuffer = nullptr; // the main 3D scene
+gl::GLFramebuffer* pickFramebuffer = nullptr;
+gl::GLProgram* sceneToScreenProgram = nullptr;
 
 // Font atlas pointer
 ImFontAtlas* globalFontAtlas = nullptr;
 
-void allocateBuffers() {
+// Called once on init
+void allocateGlobalBuffersAndPrograms() {
   using namespace gl;
 
-  GLRenderbuffer* pickColorBuffer = new GLRenderbuffer(RenderbufferType::Float4, view::bufferWidth, view::bufferHeight);
-  GLRenderbuffer* pickDepthBuffer = new GLRenderbuffer(RenderbufferType::Depth, view::bufferWidth, view::bufferHeight);
+  { // Scene buffer
+    sceneColorTexture = new GLTexturebuffer(GL_RGBA, view::bufferWidth, view::bufferHeight);
+    GLRenderbuffer* sceneDepthBuffer =
+        new GLRenderbuffer(RenderbufferType::Depth, view::bufferWidth, view::bufferHeight);
 
-  pickFrameBuffer = new GLFramebuffer();
-  pickFrameBuffer->bindToColorRenderbuffer(pickColorBuffer);
-  pickFrameBuffer->bindToDepthRenderbuffer(pickDepthBuffer);
+    sceneFramebuffer = new GLFramebuffer();
+    sceneFramebuffer->bindToColorTexturebuffer(sceneColorTexture);
+    sceneFramebuffer->bindToDepthRenderbuffer(sceneDepthBuffer);
+  }
+
+  { // Pick buffer
+    GLRenderbuffer* pickColorBuffer =
+        new GLRenderbuffer(RenderbufferType::Float4, view::bufferWidth, view::bufferHeight);
+    GLRenderbuffer* pickDepthBuffer =
+        new GLRenderbuffer(RenderbufferType::Depth, view::bufferWidth, view::bufferHeight);
+
+    pickFramebuffer = new GLFramebuffer();
+    pickFramebuffer->bindToColorRenderbuffer(pickColorBuffer);
+    pickFramebuffer->bindToDepthRenderbuffer(pickDepthBuffer);
+  }
+
+  { // Simple program which draws scene texture to screen
+    sceneToScreenProgram =
+        new gl::GLProgram(&TEXTURE_DRAW_VERT_SHADER, &TEXTURE_DRAW_FRAG_SHADER, gl::DrawMode::Triangles);
+    std::vector<glm::vec3> coords = {{-1.0f, -1.0f, 0.0f}, {1.0f, -1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f},
+                                     {-1.0f, 1.0f, 0.0f},  {1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}};
+
+    std::vector<glm::vec2> tcoords = {{0.0f, 1.0f}, {1.0f, 1.0f}, {0.0f, 0.0f},
+                                      {0.0f, 1.0f},  {1.0f, 1.0f}, {1.0f, 0.0f}};
+
+    sceneToScreenProgram->setAttribute("a_position", coords);
+    sceneToScreenProgram->setAttribute("a_tcoord", tcoords);
+  }
 }
 
-void deleteBuffers() {
+// Called once on closing
+void deleteGlobalBuffersAndPrograms() {
 
-  delete pickFrameBuffer->getColorRenderBuffer();
-  delete pickFrameBuffer->getDepthRenderBuffer();
-  delete pickFrameBuffer;
+  // Scene
+  delete sceneColorTexture;
+  delete pickFramebuffer->getDepthRenderBuffer();
+  delete pickFramebuffer;
+
+  // Pick
+  delete pickFramebuffer->getColorRenderBuffer();
+  delete pickFramebuffer->getDepthRenderBuffer();
+  delete pickFramebuffer;
 }
 
 
@@ -271,7 +310,7 @@ void init() {
   gl::GLProgram::initCommonShaders();
 
   // Initialize pick buffer
-  allocateBuffers();
+  allocateGlobalBuffersAndPrograms();
 
   // Initialize with default maps so they show up in UI and user knows they exist
   if (options::initializeWithDefaultStructures) {
@@ -328,10 +367,10 @@ void evaluatePickQuery(int xPos, int yPos) {
     return;
   }
 
-  pickFrameBuffer->resizeRenderbuffers(view::bufferWidth, view::bufferHeight);
-  pickFrameBuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  pickFrameBuffer->bindForRendering();
-  pickFrameBuffer->clear();
+  pickFramebuffer->resizeRenderbuffers(view::bufferWidth, view::bufferHeight);
+  pickFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  pickFramebuffer->bindForRendering();
+  pickFramebuffer->clear();
 
   // Render pick buffer
   for (auto cat : state::structures) {
@@ -340,9 +379,9 @@ void evaluatePickQuery(int xPos, int yPos) {
     }
   }
   gl::checkGLError(true);
-  
+
   // Read from the pick buffer
-  std::array<float,4> result = pickFrameBuffer->readFloat4(xPos, view::bufferHeight - yPos);
+  std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, view::bufferHeight - yPos);
   gl::checkGLError(true);
   size_t ind = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
 
@@ -450,8 +489,17 @@ void processMouseEvents() {
 }
 
 void drawStructures() {
-  glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
+
+  cout << "drawing structures to texture" << endl;
+
+  // Activate the texture that we draw to
+  // sceneFramebuffer->resizeRenderbuffers(view::bufferWidth, view::bufferHeight);
+  sceneFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  sceneColorTexture->bind();
+  sceneFramebuffer->bindForRendering();
+  sceneFramebuffer->clearColor = {0.8, 0.0, 0.0};
+  sceneFramebuffer->clear();
+  //bindDefaultBuffer();
 
   for (auto catMap : state::structures) {
     for (auto s : catMap.second) {
@@ -466,6 +514,21 @@ void drawStructures() {
       }
     }
   }
+  
+  
+  cout << "done drawing structures to texture" << endl;
+}
+
+void renderSceneToScreen() {
+
+  // Bind to the view framebuffer
+  bindDefaultBuffer();
+
+  // Set the texture uniform
+  sceneToScreenProgram->setTextureFromBuffer("t_image", sceneColorTexture);
+
+  // Draw
+  sceneToScreenProgram->draw();
 }
 
 void buildPolyscopeGui() {
@@ -604,7 +667,10 @@ void draw(bool withUI = true) {
   }
 
   // Draw structures in the scene
-  drawStructures();
+  if (true) {
+    drawStructures();
+  }
+  renderSceneToScreen();
 
   // Draw the GUI
   if (withUI) {
@@ -618,8 +684,14 @@ void draw(bool withUI = true) {
 
 
 void bindDefaultBuffer() {
+  cout << "binding default buffer" << endl;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 }
 
 void mainLoopIteration() {
@@ -673,6 +745,8 @@ void shutdown(int exitCode) {
   if (options::usePrefsFile) {
     writePrefsFile();
   }
+
+  deleteGlobalBuffersAndPrograms();
 
   // ImGui shutdown things
   ImGui_ImplOpenGL3_Shutdown();

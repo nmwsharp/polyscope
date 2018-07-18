@@ -54,7 +54,6 @@ private:
   void renderToTexture();
   void prepare();
   bool prepared = false;
-  void unprepare();
 
   GLuint texDim = 600;
   gl::GLTexturebuffer* texturebuffer = nullptr;

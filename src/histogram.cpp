@@ -240,7 +240,7 @@ void Histogram::fillBuffers() {
 void Histogram::prepare() {
   
   framebuffer = new gl::GLFramebuffer();
-  texturebuffer = new gl::GLTexturebuffer(texDim, texDim);
+  texturebuffer = new gl::GLTexturebuffer(GL_RGBA, texDim, texDim);
   framebuffer->bindToColorTexturebuffer(texturebuffer);
 
   // Create the program

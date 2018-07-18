@@ -26,7 +26,7 @@ struct ShaderAttribute {
 };
 struct ShaderTexture {
   const std::string name;
-  const unsigned int dim;
+  const int dim;
 };
 
 
