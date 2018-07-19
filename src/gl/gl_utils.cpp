@@ -19,18 +19,15 @@ GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int size1D, unsigned ch
     : format(format_), sizeX(size1D), dim(1) {
 
   glGenTextures(1, &handle);
-  glBindTexture(GL_TEXTURE_2D, handle);
+  glBindTexture(GL_TEXTURE_1D, handle);
   glTexImage1D(GL_TEXTURE_1D, 0, format, size1D, 0, format, GL_UNSIGNED_BYTE, data);
-  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
   setFilterMode(FilterMode::Linear);
 }
 GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int size1D, float* data)
     : format(format_), sizeX(size1D), dim(1) {
   glGenTextures(1, &handle);
-  glBindTexture(GL_TEXTURE_2D, handle);
+  glBindTexture(GL_TEXTURE_1D, handle);
   glTexImage1D(GL_TEXTURE_1D, 0, format, size1D, 0, format, GL_FLOAT, data);
 
   setFilterMode(FilterMode::Linear);
@@ -51,9 +48,36 @@ GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int sizeX_, unsigned in
 
 GLTexturebuffer::~GLTexturebuffer() { glDeleteTextures(1, &handle); }
 
+void GLTexturebuffer::resize(unsigned int newLen) {
+  bind();
+
+  sizeX = newLen;
+
+  if (dim == 1) {
+    glTexImage1D(GL_TEXTURE_1D, 0, format, sizeX, 0, format, GL_UNSIGNED_BYTE, 0);
+  }
+  if (dim == 2) {
+    throw std::runtime_error("OpenGL error: called 1D resize on 2D texture");
+  }
+}
+
+void GLTexturebuffer::resize(unsigned int newX, unsigned int newY) {
+  bind();
+
+  sizeX = newX;
+  sizeY = newY;
+
+  if (dim == 1) {
+    throw std::runtime_error("OpenGL error: called 2D resize on 1D texture");
+  }
+  if (dim == 2) {
+    glTexImage2D(GL_TEXTURE_2D, 0, format, sizeX, sizeY, 0, format, GL_UNSIGNED_BYTE, 0);
+  }
+}
+
 void GLTexturebuffer::setFilterMode(FilterMode newMode) {
 
-  glBindTexture(GL_TEXTURE_2D, handle);
+  bind();
 
   if (dim == 1) {
     switch (newMode) {
@@ -214,7 +238,7 @@ void GLFramebuffer::bindForRendering() {
   checkGLError();
 }
 
-void GLFramebuffer::resizeRenderbuffers(unsigned int newXSize, unsigned int newYSize) {
+void GLFramebuffer::resizeBuffers(unsigned int newXSize, unsigned int newYSize) {
 
   // Resize color buffer
   if (colorRenderBuffer != nullptr &&
@@ -229,6 +253,12 @@ void GLFramebuffer::resizeRenderbuffers(unsigned int newXSize, unsigned int newY
 
     // Register new buffer
     bindToColorRenderbuffer(newBuff);
+  }
+  
+  // Resize color texture
+  if (colorTextureBuffer!= nullptr &&
+      (colorTextureBuffer->getSizeX() != newXSize || colorTextureBuffer->getSizeY() != newYSize)) {
+    colorTextureBuffer->resize(newXSize, newYSize);
   }
 
   // Resize depth buffer
@@ -245,6 +275,12 @@ void GLFramebuffer::resizeRenderbuffers(unsigned int newXSize, unsigned int newY
 
     // Register new buffer
     bindToDepthRenderbuffer(newBuff);
+  }
+  
+  // Resize depth texture
+  if (depthTextureBuffer!= nullptr &&
+      (depthTextureBuffer->getSizeX() != newXSize || depthTextureBuffer->getSizeY() != newYSize)) {
+    depthTextureBuffer->resize(newXSize, newYSize);
   }
 }
 

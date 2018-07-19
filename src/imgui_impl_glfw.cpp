@@ -29,6 +29,7 @@
 
 #include "imgui.h"
 #include "polyscope/imgui_impl_glfw.h"
+#include "polyscope/polyscope.h"
 
 
 #ifdef __APPLE__
@@ -55,6 +56,8 @@
 #define GLFW_HAS_WINDOW_ALPHA       (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ glfwSetWindowOpacity
 #define GLFW_HAS_PER_MONITOR_DPI    (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3300) // 3.3+ glfwGetMonitorContentScale
 #define GLFW_HAS_VULKAN             (GLFW_VERSION_MAJOR * 1000 + GLFW_VERSION_MINOR * 100 >= 3200) // 3.2+ glfwCreateWindowSurface
+
+namespace polyscope {
 
 // Data
 enum GlfwClientApi
@@ -94,6 +97,8 @@ void ImGui_ImplGlfw_ScrollCallback(GLFWwindow*, double xoffset, double yoffset)
 
 void ImGui_ImplGlfw_KeyCallback(GLFWwindow*, int key, int, int action, int mods)
 {
+    requestRedraw();    
+
     ImGuiIO& io = ImGui::GetIO();
     if (action == GLFW_PRESS)
         io.KeysDown[key] = true;
@@ -302,4 +307,5 @@ void ImGui_ImplGlfw_NewFrame()
         else
             io.BackendFlags &= ~ImGuiBackendFlags_HasGamepad;
     }
+}
 }

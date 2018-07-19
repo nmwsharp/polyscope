@@ -53,6 +53,10 @@ public:
   void setFilterMode(FilterMode newMode);
   void bind();
 
+  // Resize the underlying buffer (contents are lost)
+  void resize(unsigned int newLen);
+  void resize(unsigned int newX, unsigned int newY);
+
   GLuint getHandle() const { return handle; }
   unsigned int getSizeX() const { return sizeX; }
   unsigned int getSizeY() const { return sizeY; }
@@ -109,8 +113,8 @@ public:
   Color3f clearColor{0.0, 0.0, 0.0};
   float clearAlpha = 0.0;
 
-  // Resizes renderbuffers if different from current size. Does not touch any textures.
-  void resizeRenderbuffers(unsigned int newXSize, unsigned int newYSize);
+  // Resizes textures and renderbuffers if different from current size.
+  void resizeBuffers(unsigned int newXSize, unsigned int newYSize);
 
   // Getters
   GLuint getHandle() const { return handle; }

@@ -257,9 +257,11 @@ void Histogram::renderToTexture() {
     fillBuffers();
   }
 
+  framebuffer->clearColor = {0.0, 0.0, 0.0};
   framebuffer->clearAlpha = 0.2;
   framebuffer->setViewport(0, 0, texDim, texDim);
   framebuffer->bindForRendering();
+  framebuffer->clear();
 
   // = Set uniforms
 

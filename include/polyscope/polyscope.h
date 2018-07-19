@@ -86,7 +86,13 @@ void removeAllStructures();
 // Recompute state::lengthScale, boundingBox, and center from all registered structures
 void updateStructureExtents();
 
-// === Handle interrupts and popups
+// === Handle draw flow, interrupts, and popups
+
+// Request that the 3D scene be redrawn for the next frame. Should be called anytime something changes in the scene.
+void requestRedraw();
+
+// Has a redraw been requested for the next frame?
+bool redrawRequested();
 
 // A callback function currently drawing a focused popup GUI
 // If this is non-null, then we should not draw or respect any IMGUI elements except those drawn within this function.

@@ -59,6 +59,7 @@ int maxFPS = 60;
 bool usePrefsFile = true;
 bool initializeWithDefaultStructures = true;
 bool autocenterStructures = false;
+bool alwaysRedraw = false;
 
 } // namespace options
 
@@ -85,6 +86,8 @@ gl::GLProgram* sceneToScreenProgram = nullptr;
 
 // Font atlas pointer
 ImFontAtlas* globalFontAtlas = nullptr;
+
+bool redrawNextFrame = true;
 
 // Called once on init
 void allocateGlobalBuffersAndPrograms() {
@@ -117,11 +120,7 @@ void allocateGlobalBuffersAndPrograms() {
     std::vector<glm::vec3> coords = {{-1.0f, -1.0f, 0.0f}, {1.0f, -1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f},
                                      {-1.0f, 1.0f, 0.0f},  {1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}};
 
-    std::vector<glm::vec2> tcoords = {{0.0f, 1.0f}, {1.0f, 1.0f}, {0.0f, 0.0f},
-                                      {0.0f, 1.0f},  {1.0f, 1.0f}, {1.0f, 0.0f}};
-
     sceneToScreenProgram->setAttribute("a_position", coords);
-    sceneToScreenProgram->setAttribute("a_tcoord", tcoords);
   }
 }
 
@@ -323,6 +322,8 @@ void init() {
   state::initialized = true;
 }
 
+void requestRedraw() { redrawNextFrame = true; }
+bool redrawRequested() { return redrawNextFrame; }
 
 ImFontAtlas* getGlobalFontAtlas() { return globalFontAtlas; }
 
@@ -367,7 +368,7 @@ void evaluatePickQuery(int xPos, int yPos) {
     return;
   }
 
-  pickFramebuffer->resizeRenderbuffers(view::bufferWidth, view::bufferHeight);
+  pickFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
   pickFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
   pickFramebuffer->bindForRendering();
   pickFramebuffer->clear();
@@ -400,28 +401,39 @@ float dragDistSinceLastRelease = 0.0;
 void processMouseEvents() {
   ImGuiIO& io = ImGui::GetIO();
 
+
+  // If any mouse button is pressed, trigger a redraw
+  if (ImGui::IsAnyMouseDown()) {
+    requestRedraw();
+  }
+
+
   // Handle scroll events for 3D view
   if (!io.WantCaptureMouse) {
     double xoffset = io.MouseWheelH;
     double yoffset = io.MouseWheel;
 
-    // On some setups, shift flips the scroll direction, so take the max
-    // scrolling in any direction
-    double maxScroll = xoffset;
-    if (std::abs(yoffset) > std::abs(xoffset)) {
-      maxScroll = yoffset;
-    }
+    if (xoffset != 0 || yoffset != 0) {
+      requestRedraw();
 
-    // Pass camera commands to the camera
-    if (maxScroll != 0.0) {
-      int leftShiftState = glfwGetKey(mainWindow, GLFW_KEY_LEFT_SHIFT);
-      int rightShiftState = glfwGetKey(mainWindow, GLFW_KEY_RIGHT_SHIFT);
-      bool scrollClipPlane = (leftShiftState == GLFW_PRESS || rightShiftState == GLFW_PRESS);
+      // On some setups, shift flips the scroll direction, so take the max
+      // scrolling in any direction
+      double maxScroll = xoffset;
+      if (std::abs(yoffset) > std::abs(xoffset)) {
+        maxScroll = yoffset;
+      }
 
-      if (scrollClipPlane) {
-        view::processClipPlaneShift(maxScroll);
-      } else {
-        view::processZoom(maxScroll);
+      // Pass camera commands to the camera
+      if (maxScroll != 0.0) {
+        int leftShiftState = glfwGetKey(mainWindow, GLFW_KEY_LEFT_SHIFT);
+        int rightShiftState = glfwGetKey(mainWindow, GLFW_KEY_RIGHT_SHIFT);
+        bool scrollClipPlane = (leftShiftState == GLFW_PRESS || rightShiftState == GLFW_PRESS);
+
+        if (scrollClipPlane) {
+          view::processClipPlaneShift(maxScroll);
+        } else {
+          view::processZoom(maxScroll);
+        }
       }
     }
   }
@@ -440,6 +452,7 @@ void processMouseEvents() {
     // Handle drags
     if (ImGui::IsMouseDragging(0) &&
         !(io.KeyCtrl && !io.KeyShift)) { // if ctrl is pressed but shift is not, don't process a drag
+      requestRedraw();
 
       glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
       bool isDragZoom = io.KeyShift && io.KeyCtrl;
@@ -490,16 +503,13 @@ void processMouseEvents() {
 
 void drawStructures() {
 
-  cout << "drawing structures to texture" << endl;
-
   // Activate the texture that we draw to
-  // sceneFramebuffer->resizeRenderbuffers(view::bufferWidth, view::bufferHeight);
+  sceneFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
   sceneFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
   sceneColorTexture->bind();
   sceneFramebuffer->bindForRendering();
-  sceneFramebuffer->clearColor = {0.8, 0.0, 0.0};
+  sceneFramebuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
   sceneFramebuffer->clear();
-  //bindDefaultBuffer();
 
   for (auto catMap : state::structures) {
     for (auto s : catMap.second) {
@@ -514,9 +524,6 @@ void drawStructures() {
       }
     }
   }
-  
-  
-  cout << "done drawing structures to texture" << endl;
 }
 
 void renderSceneToScreen() {
@@ -623,8 +630,6 @@ void draw(bool withUI = true) {
 
   // Update buffer and context
   glfwMakeContextCurrent(mainWindow);
-  glfwGetWindowSize(mainWindow, &view::windowWidth, &view::windowHeight);
-  glfwGetFramebufferSize(mainWindow, &view::bufferWidth, &view::bufferHeight);
 
   if (withUI) {
     // New IMGUI frame
@@ -667,8 +672,9 @@ void draw(bool withUI = true) {
   }
 
   // Draw structures in the scene
-  if (true) {
+  if (redrawNextFrame || options::alwaysRedraw) {
     drawStructures();
+    redrawNextFrame = false;
   }
   renderSceneToScreen();
 
@@ -684,14 +690,12 @@ void draw(bool withUI = true) {
 
 
 void bindDefaultBuffer() {
-  cout << "binding default buffer" << endl;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glViewport(0, 0, view::bufferWidth, view::bufferHeight);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 }
 
 void mainLoopIteration() {
@@ -714,8 +718,18 @@ void mainLoopIteration() {
 
   // Update the width and heigh
   glfwMakeContextCurrent(mainWindow);
-  glfwGetWindowSize(mainWindow, &view::windowWidth, &view::windowHeight);
-  glfwGetFramebufferSize(mainWindow, &view::bufferWidth, &view::bufferHeight);
+  int newBufferWidth, newBufferHeight, newWindowWidth, newWindowHeight;
+  glfwGetFramebufferSize(mainWindow, &newBufferWidth, &newBufferHeight);
+  glfwGetWindowSize(mainWindow, &newWindowWidth, &newWindowHeight);
+  if (newBufferWidth != view::bufferWidth || newBufferHeight != view::bufferHeight ||
+      newWindowHeight != view::windowHeight || newWindowWidth != view::windowWidth) {
+    // Basically a resize callback
+    requestRedraw();
+    view::bufferWidth = newBufferWidth;
+    view::bufferHeight = newBufferHeight;
+    view::windowWidth = newWindowWidth;
+    view::windowHeight = newWindowHeight;
+  }
 
   // Process UI events
   glfwPollEvents();
@@ -779,6 +793,7 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
   // Add the new structure
   sMap[s->name] = s;
   updateStructureExtents();
+  requestRedraw();
 
   return true;
 }
@@ -906,6 +921,7 @@ void removeStructure(std::string name) {
   }
 
   removeStructure(targetStruct->type, targetStruct->name);
+  requestRedraw();
 }
 
 void removeAllStructures() {
@@ -924,6 +940,7 @@ void removeAllStructures() {
     }
   }
 
+  requestRedraw();
   pick::resetPick();
 }
 
@@ -963,6 +980,8 @@ void updateStructureExtents() {
 void screenshot(std::string filename, bool transparentBG) {
 
   // Make sure we render first
+  // TODO needs to be updated?
+  requestRedraw();
   draw(false);
 
   // Get buffer size
