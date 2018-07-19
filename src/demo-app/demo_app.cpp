@@ -122,7 +122,7 @@ void processFileOBJ(string filename) {
       if (seenEdges.find(p) == seenEdges.end()) {
         eLen.push_back(len);
         seenEdges.insert(p);
-      } 
+      }
       heLen.push_back(len);
     }
   }
@@ -131,10 +131,10 @@ void processFileOBJ(string filename) {
 
 
   // Test error
-  // polyscope::error("Resistance is futile, welcome to the borg borg borg.");
-  // polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we
-  // " "share this crisis in a way which looks right while properly wrapping text in some form or other?");
-  // polyscope::terminatingError("and that was all");
+  polyscope::error("Resistance is futile, welcome to the borg borg borg.");
+  polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we "
+                   "share this crisis in a way which looks right while properly wrapping text in some form or other?");
+   polyscope::terminatingError("and that was all");
 
   // Test warning
   polyscope::warning("Something went slightly wrong", "it was bad");
@@ -322,6 +322,10 @@ void processFile(string filename) {
   }
 }
 
+void callback() {
+  //polyscope::error("hi mom");
+}
+
 int main(int argc, char** argv) {
   // Configure the argument parser
   args::ArgumentParser parser("A simple demo of Polyscope.\nBy "
@@ -366,6 +370,7 @@ int main(int argc, char** argv) {
   }
 
   // Add a few gui elements
+  polyscope::state::userCallback = callback;
 
   // Show the gui
   polyscope::show();

@@ -144,25 +144,15 @@ void SurfaceSelectionVertexQuantity::userEdit() {
   parent->setActiveSurfaceQuantity(this);
 
   // Create a new context
-  ImGuiContext* oldContext = ImGui::GetCurrentContext();
-  ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
-  ImGui::SetCurrentContext(newContext);
-  initializeImGUIContext();
   bool oldAlwaysPick = pick::alwaysEvaluatePick;
   pick::alwaysEvaluatePick = true;
 
   // Register the callback which creates the UI and does the hard work
-  focusedPopupUI = std::bind(&SurfaceSelectionVertexQuantity::userEditCallback, this);
+  auto focusedPopupUI = std::bind(&SurfaceSelectionVertexQuantity::userEditCallback, this);
+  pushContext(focusedPopupUI);
 
-  // Re-enter main loop
-  while (focusedPopupUI) {
-    mainLoopIteration();
-  }
-
-  // Restore the old context
+  // Restore the old state
   pick::alwaysEvaluatePick = oldAlwaysPick;
-  ImGui::SetCurrentContext(oldContext);
-  ImGui::DestroyContext(newContext);
 }
 
 void SurfaceSelectionVertexQuantity::userEditCallback() {
@@ -283,7 +273,7 @@ void SurfaceSelectionVertexQuantity::userEditCallback() {
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1. / 7.0f, 0.7f, 0.7f));
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1. / 7.0f, 0.8f, 0.8f));
   if (ImGui::Button("Done")) {
-    focusedPopupUI = nullptr;
+    popContext();
     membershipStale = true;
   }
   ImGui::PopStyleColor(3);

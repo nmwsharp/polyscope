@@ -46,8 +46,6 @@ size_t screenshotInd = 0;
 
 } // namespace state
 
-std::function<void()> focusedPopupUI;
-
 namespace options {
 
 std::string programName = "Polyscope";
@@ -63,6 +61,7 @@ bool alwaysRedraw = false;
 
 } // namespace options
 
+
 // Small callback function for GLFW errors
 void error_print_callback(int error, const char* description) {
   std::cerr << "GLFW emitted error: " << description << std::endl;
@@ -74,6 +73,17 @@ const unsigned int* getCousineRegularCompressedData();
 
 // Helpers
 namespace {
+
+// === Implement the context stack
+
+// The context stack should _always_ have at least one context in it. The lowest context is the one created at
+// initialization.
+struct ContextEntry {
+  ImGuiContext* context;
+  std::function<void()> callback;
+};
+std::vector<ContextEntry> contextStack;
+
 
 // GLFW window
 GLFWwindow* mainWindow = nullptr;
@@ -129,8 +139,8 @@ void deleteGlobalBuffersAndPrograms() {
 
   // Scene
   delete sceneColorTexture;
-  delete pickFramebuffer->getDepthRenderBuffer();
-  delete pickFramebuffer;
+  delete sceneFramebuffer->getDepthRenderBuffer();
+  delete sceneFramebuffer;
 
   // Pick
   delete pickFramebuffer->getColorRenderBuffer();
@@ -140,7 +150,7 @@ void deleteGlobalBuffersAndPrograms() {
 
 
 void setStyle() {
-
+ 
   // Style
   ImGuiStyle* style = &ImGui::GetStyle();
   style->WindowRounding = 1;
@@ -304,6 +314,7 @@ void init() {
   // Initialie ImGUI
   IMGUI_CHECKVERSION();
   initializeImGUIContext();
+  contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr});
 
   // Initialize common shaders
   gl::GLProgram::initCommonShaders();
@@ -320,6 +331,32 @@ void init() {
   }
 
   state::initialized = true;
+}
+
+void pushContext(std::function<void()> callbackFunction) {
+
+  // Create a new context and push it on to the stack
+  ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
+  ImGui::SetCurrentContext(newContext);
+  setStyle();
+  contextStack.push_back(ContextEntry{newContext, callbackFunction});
+
+  // Re-enter main loop until the context has been popped
+  size_t currentContextStackSize = contextStack.size();
+  while (contextStack.size() >= currentContextStackSize) {
+    mainLoopIteration();
+  }
+  
+  ImGui::DestroyContext(newContext);
+  ImGui::SetCurrentContext(contextStack.back().context);
+}
+
+
+void popContext() {
+  if (contextStack.size() == 1) {
+    error("Called popContext() too many times");
+  }
+  contextStack.pop_back();
 }
 
 void requestRedraw() { redrawNextFrame = true; }
@@ -340,9 +377,6 @@ void initializeImGUIContext() {
   ImFontConfig config;
   config.OversampleH = 5;
   config.OversampleV = 5;
-  // io.Fonts->AddFontDefault();
-  // io.Fonts->AddFontFromFileTTF(
-  //     "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
   ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(getCousineRegularCompressedData(),
                                                           getCousineRegularCompressedSize(), 15.0f, &config);
   // ImGui::StyleColorsLight();
@@ -483,15 +517,12 @@ void processMouseEvents() {
     // Handle picks
     else {
 
-      if (!messageIsBlockingScreen() && ImGui::IsMouseReleased(0)) {
-
-        ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
-        if (dragDistSinceLastRelease < .01) {
-          shouldEvaluatePick = true;
-        }
-
-        dragDistSinceLastRelease = 0.0;
+      ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
+      if (dragDistSinceLastRelease < .01) {
+        shouldEvaluatePick = true;
       }
+
+      dragDistSinceLastRelease = 0.0;
     }
   }
 
@@ -650,7 +681,7 @@ void draw(bool withUI = true) {
     // ImGui::ShowDemoWindow();
 
     // The common case, rendering UI and structures
-    if (!focusedPopupUI) {
+    if (contextStack.size() == 1) {
 
       // Note: It is important to build the user GUI first, because it is likely that callbacks there will modify
       // polyscope data. If we do these modifications happen later in the render cycle, they might invalidate data which
@@ -664,11 +695,9 @@ void draw(bool withUI = true) {
     }
     // If there is a popup UI active, only draw that
     else {
-      focusedPopupUI();
+      (contextStack.back().callback)();
     }
 
-
-    buildMessagesUI();
   }
 
   // Draw structures in the scene
@@ -734,6 +763,7 @@ void mainLoopIteration() {
   // Process UI events
   glfwPollEvents();
   processMouseEvents();
+  showDelayedWarnings();
 
   // Rendering
   draw();

@@ -98,7 +98,9 @@ bool redrawRequested();
 // If this is non-null, then we should not draw or respect any IMGUI elements except those drawn within this function.
 // Note that there is currently no notion of recursive popups, so the programmer should be careful about invoking
 // another popup within this function.
-extern std::function<void()> focusedPopupUI;
+//extern std::function<void()> focusedPopupUI;
+void pushContext(std::function<void()> callbackFunction);
+void popContext();
 
 // === Utility
 
