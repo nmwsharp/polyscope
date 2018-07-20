@@ -1,8 +1,8 @@
 #pragma once
 
+#include <iostream>
 #include <map>
 #include <string>
-#include <iostream>
 
 #include "glm/glm.hpp"
 
@@ -19,7 +19,7 @@ namespace polyscope {
 // user to utilize and access custom structures with little code.
 
 class Structure {
- public:
+public:
   // === Member functions ===
 
   // Base constructor which sets the name
@@ -37,7 +37,7 @@ class Structure {
   // = Build the imgui display
   // Draw the actual UI
   virtual void drawUI() = 0;
-  // Draw any UI elements 
+  // Draw any UI elements
   virtual void drawSharedStructureUI() = 0;
   // Draw pick UI elements when index localPickID is selected
   virtual void drawPickUI(size_t localPickID) = 0;
@@ -49,13 +49,20 @@ class Structure {
   virtual double lengthScale() = 0;
 
   // Axis-aligned bounding box for the structure
-  virtual std::tuple<glm::vec3, glm::vec3>
-  boundingBox() = 0;
+  virtual std::tuple<glm::vec3, glm::vec3> boundingBox() = 0;
+
 
   // === Member variables ===
   const std::string name; // should be unique amongst registered structures with this type
-  const std::string type; // must be a consistent name for all instances of a derived subclass 
+  const std::string type; // must be a consistent name for all instances of a derived subclass
+
+  // Scene transform
+  glm::mat4 objectTransform = glm::mat4(1.0);
+  void centerBoundingBox();
+  void resetTransform();
+  glm::mat4 getModelView();
+
 };
 
 
-}  // namespace polyscope
+} // namespace polyscope

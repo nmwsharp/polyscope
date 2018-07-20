@@ -897,22 +897,6 @@ void SurfaceMesh::clearActiveSurfaceQuantity() {
   }
 }
 
-
-void SurfaceMesh::resetTransform() {
-  objectTransform = glm::mat4(1.0);
-  updateStructureExtents();
-}
-
-void SurfaceMesh::centerBoundingBox() {
-  std::tuple<glm::vec3, glm::vec3> bbox = boundingBox();
-  glm::vec3 center = (std::get<1>(bbox) + std::get<0>(bbox)) / 2.0f;
-  glm::mat4x4 newTrans = glm::translate(glm::mat4x4(1.0), -glm::vec3(center.x, center.y, center.z));
-  objectTransform = objectTransform * newTrans;
-  updateStructureExtents();
-}
-
-glm::mat4 SurfaceMesh::getModelView() { return view::getCameraViewMatrix() * objectTransform; }
-
 void SurfaceQuantity::buildVertexInfoGUI(size_t vInd) {}
 void SurfaceQuantity::buildFaceInfoGUI(size_t fInd) {}
 void SurfaceQuantity::buildEdgeInfoGUI(size_t eInd) {}

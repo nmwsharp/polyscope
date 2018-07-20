@@ -209,11 +209,6 @@ public:
   static const std::string structureTypeName;
   SubColorManager colorManager;
 
-  // Scene transform
-  glm::mat4 objectTransform = glm::mat4(1.0);
-  void resetTransform();
-  void centerBoundingBox();
-  glm::mat4 getModelView();
 
   // Picking helpers
   // One of these will be non-null on return
