@@ -15,7 +15,7 @@ int main(int argc, char** argv)
 {
   if (argc < 3) {
     fprintf(stderr, "USAGE: %s {sym} {rsrc}\n\n"
-        "  Creates {sym}.c from the contents of {rsrc}\n",
+        "  Creates {sym}.cpp from the contents of {rsrc}\n",
         argv[0]);
     return EXIT_FAILURE;
   }
@@ -24,11 +24,11 @@ int main(int argc, char** argv)
   FILE* in = open_or_exit(argv[2], "r");
 
   char symfile[256];
-  snprintf(symfile, sizeof(symfile), "%s.c", sym);
+  snprintf(symfile, sizeof(symfile), "%s.cpp", sym);
 
   FILE* out = open_or_exit(symfile,"w");
   fprintf(out, "#include <stdlib.h>\n");
-  fprintf(out, "const char %s[] = {\n", sym);
+  fprintf(out, "const unsigned char %s[] = {\n", sym);
 
   unsigned char buf[256];
   size_t nread = 0;

@@ -1,6 +1,7 @@
 #include "polyscope/surface_vector_quantity.h"
 
 #include "polyscope/file_helpers.h"
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/vector_shaders.h"
 #include "polyscope/polyscope.h"
@@ -61,11 +62,6 @@ void SurfaceVectorQuantity::draw() {
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   program->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-  glm::vec3 eyePos = view::getCameraWorldPosition();
-  program->setUniform("u_eye", eyePos);
-
-  program->setUniform("u_lightCenter", state::center);
-  program->setUniform("u_lightDist", 5 * state::lengthScale);
   program->setUniform("u_radius", radiusMult * state::lengthScale);
   program->setUniform("u_color", vectorColor);
 
@@ -90,6 +86,8 @@ void SurfaceVectorQuantity::prepare() {
 
   program->setAttribute("a_vector", mappedVectors);
   program->setAttribute("a_position", vectorRoots);
+
+  setMaterialForProgram(program, "wax");
 }
 
 void SurfaceVectorQuantity::drawUI() {
@@ -195,8 +193,8 @@ void SurfaceVertexVectorQuantity::buildVertexInfoGUI(size_t iV) {
 // ==========            Face Vector             ==========
 // ========================================================
 
-SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh* mesh_,
-                                                     VectorType vectorType_)
+SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
+                                                     SurfaceMesh* mesh_, VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), vectorField(vectors_) {
 
   // Copy the vectors
@@ -235,26 +233,26 @@ SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::stri
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), nSym(nSym_), vectorField(vectors_) {
 
   // TODO
-  //GeometryCache<Euclidean>& gc = parent->geometry->cache;
-  //gc.requireFaceBases();
+  // GeometryCache<Euclidean>& gc = parent->geometry->cache;
+  // gc.requireFaceBases();
 
-  //double rotAngle = 2.0 * PI / nSym;
-  //Complex rot = std::exp(IM_I * rotAngle);
+  // double rotAngle = 2.0 * PI / nSym;
+  // Complex rot = std::exp(IM_I * rotAngle);
 
   //// Copy the vectors
-  //vectorField = parent->transfer.transfer(vectors_);
-  //for (FacePtr f : parent->mesh->faces()) {
+  // vectorField = parent->transfer.transfer(vectors_);
+  // for (FacePtr f : parent->mesh->faces()) {
 
-    //Complex angle = std::pow(vectorField[f], 1.0 / nSym);
+  // Complex angle = std::pow(vectorField[f], 1.0 / nSym);
 
-    //for (int iRot = 0; iRot < nSym; iRot++) {
-      //vectorRoots.push_back(parent->geometry->barycenter(f));
+  // for (int iRot = 0; iRot < nSym; iRot++) {
+  // vectorRoots.push_back(parent->geometry->barycenter(f));
 
-      //Vector3 v = gc.faceBases[f][0] * angle.real() + gc.faceBases[f][1] * angle.imag();
-      //vectors.push_back(v);
+  // Vector3 v = gc.faceBases[f][0] * angle.real() + gc.faceBases[f][1] * angle.imag();
+  // vectors.push_back(v);
 
-      //angle *= rot;
-    //}
+  // angle *= rot;
+  //}
   //}
 
   finishConstructing();
@@ -283,16 +281,16 @@ void SurfaceFaceIntrinsicVectorQuantity::draw() {
     if (ribbonArtist == nullptr) {
 
       // Warning: expensive... Creates noticeable UI lag
-      //ribbonArtist = new RibbonArtist(traceField(parent->geometry, vectorField, nSym, 2500));
+      // ribbonArtist = new RibbonArtist(traceField(parent->geometry, vectorField, nSym, 2500));
     }
 
 
     if (enabled) {
 
       // Update transform matrix from parent
-      //ribbonArtist->objectTransform = parent->objectTransform;
+      // ribbonArtist->objectTransform = parent->objectTransform;
 
-      //ribbonArtist->draw();
+      // ribbonArtist->draw();
     }
   }
 }
@@ -318,29 +316,29 @@ SurfaceVertexIntrinsicVectorQuantity::SurfaceVertexIntrinsicVectorQuantity(std::
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), nSym(nSym_), vectorField(vectors_) {
 
   // TODO
-  //GeometryCache<Euclidean>& gc = parent->geometry->cache;
-  //gc.requireVertexBases();
+  // GeometryCache<Euclidean>& gc = parent->geometry->cache;
+  // gc.requireVertexBases();
 
-  //double rotAngle = 2.0 * PI / nSym;
-  //Complex rot = std::exp(IM_I * rotAngle);
+  // double rotAngle = 2.0 * PI / nSym;
+  // Complex rot = std::exp(IM_I * rotAngle);
 
   //// Copy the vectors
-  //vectorField = parent->transfer.transfer(vectors_);
-  //for (VertexPtr v : parent->mesh->vertices()) {
+  // vectorField = parent->transfer.transfer(vectors_);
+  // for (VertexPtr v : parent->mesh->vertices()) {
 
-    //Complex angle = std::pow(vectorField[v], 1.0 / nSym);
+  // Complex angle = std::pow(vectorField[v], 1.0 / nSym);
 
-    //for (int iRot = 0; iRot < nSym; iRot++) {
-      //vectorRoots.push_back(parent->geometry->position(v));
+  // for (int iRot = 0; iRot < nSym; iRot++) {
+  // vectorRoots.push_back(parent->geometry->position(v));
 
-      //Vector3 vec = gc.vertexBases[v][0] * angle.real() + gc.vertexBases[v][1] * angle.imag();
-      //vectors.push_back(vec);
+  // Vector3 vec = gc.vertexBases[v][0] * angle.real() + gc.vertexBases[v][1] * angle.imag();
+  // vectors.push_back(vec);
 
-      //angle *= rot;
-    //}
+  // angle *= rot;
+  //}
   //}
 
-  //finishConstructing();
+  // finishConstructing();
 }
 
 void SurfaceVertexIntrinsicVectorQuantity::buildVertexInfoGUI(size_t iV) {
@@ -367,30 +365,30 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
 
       // TODO
       //// Remap to center of each face
-      //GeometryCache<Euclidean>& gc = parent->geometry->cache;
-      //gc.requireVertexFaceTransportCoefs();
-      //FaceData<Complex> unitFaceVecs(parent->mesh);
-      //for (FacePtr f : parent->mesh->faces()) {
+      // GeometryCache<Euclidean>& gc = parent->geometry->cache;
+      // gc.requireVertexFaceTransportCoefs();
+      // FaceData<Complex> unitFaceVecs(parent->mesh);
+      // for (FacePtr f : parent->mesh->faces()) {
 
-        //Complex sum{0.0, 0.0};
-        //for (HalfedgePtr he : f.adjacentHalfedges()) {
-          //Complex valInFace = std::pow(gc.vertexFaceTransportCoefs[he], nSym) * vectorField[he.vertex()];
-          //sum += valInFace;
-        //}
-        //unitFaceVecs[f] = unit(sum);
+      // Complex sum{0.0, 0.0};
+      // for (HalfedgePtr he : f.adjacentHalfedges()) {
+      // Complex valInFace = std::pow(gc.vertexFaceTransportCoefs[he], nSym) * vectorField[he.vertex()];
+      // sum += valInFace;
+      //}
+      // unitFaceVecs[f] = unit(sum);
       //}
 
       //// Warning: expensive... Creates noticeable UI lag
-      //ribbonArtist = new RibbonArtist(traceField(parent->geometry, unitFaceVecs, nSym, 2500));
+      // ribbonArtist = new RibbonArtist(traceField(parent->geometry, unitFaceVecs, nSym, 2500));
     }
 
 
     if (enabled) {
 
       // Update transform matrix from parent
-      //ribbonArtist->objectTransform = parent->objectTransform;
+      // ribbonArtist->objectTransform = parent->objectTransform;
 
-      //ribbonArtist->draw();
+      // ribbonArtist->draw();
     }
   }
 }
@@ -414,44 +412,44 @@ SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, VectorType::STANDARD), oneForm(oneForm_) {
 
   // TODO
-  //GeometryCache<Euclidean>& gc = parent->geometry->cache;
-  //gc.requireFaceBases();
-  //gc.requireFaceAreas();
-  //gc.requireHalfedgeVectors();
-  //gc.requireFaceNormals();
+  // GeometryCache<Euclidean>& gc = parent->geometry->cache;
+  // gc.requireFaceBases();
+  // gc.requireFaceAreas();
+  // gc.requireHalfedgeVectors();
+  // gc.requireFaceNormals();
 
   //// Copy the vectors
-  //oneForm = parent->transfer.transfer(oneForm_);
-  //mappedVectorField = FaceData<Complex>(parent->mesh);
-  //for (FacePtr f : parent->mesh->faces()) {
+  // oneForm = parent->transfer.transfer(oneForm_);
+  // mappedVectorField = FaceData<Complex>(parent->mesh);
+  // for (FacePtr f : parent->mesh->faces()) {
 
-    //// Whitney interpolation at center
-    //std::array<double, 3> formValues;
-    //std::array<Vector3, 3> vecValues;
-    //int i = 0;
-    //for (HalfedgePtr he : f.adjacentHalfedges()) {
-      //double signVal = (he == he.edge().halfedge()) ? 1.0 : -1.0;
-      //formValues[i] = oneForm[he.edge()] * signVal;
-      //vecValues[i] = cross(gc.halfedgeVectors[he], gc.faceNormals[f]);
-      //i++;
-    //}
-    //Vector3 result = Vector3::zero();
-    //for (int j = 0; j < 3; j++) {
-      //result += (formValues[(j + 1) % 3] - formValues[(j + 2) % 3]) * vecValues[j];
-    //}
-    //result /= 6 * gc.faceAreas[f];
+  //// Whitney interpolation at center
+  // std::array<double, 3> formValues;
+  // std::array<Vector3, 3> vecValues;
+  // int i = 0;
+  // for (HalfedgePtr he : f.adjacentHalfedges()) {
+  // double signVal = (he == he.edge().halfedge()) ? 1.0 : -1.0;
+  // formValues[i] = oneForm[he.edge()] * signVal;
+  // vecValues[i] = cross(gc.halfedgeVectors[he], gc.faceNormals[f]);
+  // i++;
+  //}
+  // Vector3 result = Vector3::zero();
+  // for (int j = 0; j < 3; j++) {
+  // result += (formValues[(j + 1) % 3] - formValues[(j + 2) % 3]) * vecValues[j];
+  //}
+  // result /= 6 * gc.faceAreas[f];
 
-    //Complex approxVec{dot(result, gc.faceBases[f][0]), dot(result, gc.faceBases[f][1])};
-    //mappedVectorField[f] = approxVec;
+  // Complex approxVec{dot(result, gc.faceBases[f][0]), dot(result, gc.faceBases[f][1])};
+  // mappedVectorField[f] = approxVec;
 
 
-    //// Fill out data for the little arrows
-    //vectorRoots.push_back(parent->geometry->barycenter(f));
-    //Vector3 v = gc.faceBases[f][0] * approxVec.real() + gc.faceBases[f][1] * approxVec.imag();
-    //vectors.push_back(v);
+  //// Fill out data for the little arrows
+  // vectorRoots.push_back(parent->geometry->barycenter(f));
+  // Vector3 v = gc.faceBases[f][0] * approxVec.real() + gc.faceBases[f][1] * approxVec.imag();
+  // vectors.push_back(v);
   //}
 
-  //finishConstructing();
+  // finishConstructing();
 }
 
 void SurfaceOneFormIntrinsicVectorQuantity::buildEdgeInfoGUI(size_t iE) {
@@ -487,19 +485,19 @@ void SurfaceOneFormIntrinsicVectorQuantity::draw() {
 
       // Warning: expensive... Creates noticeable UI lag
       // TODO
-      //FaceData<Complex> unitMappedField(parent->mesh);
-      //for (FacePtr f : parent->mesh->faces()) {
-        //unitMappedField[f] = mappedVectorField[f] / std::abs(mappedVectorField[f]);
+      // FaceData<Complex> unitMappedField(parent->mesh);
+      // for (FacePtr f : parent->mesh->faces()) {
+      // unitMappedField[f] = mappedVectorField[f] / std::abs(mappedVectorField[f]);
       //}
-      //ribbonArtist = new RibbonArtist(traceField(parent->geometry, unitMappedField, 1, 5000));
+      // ribbonArtist = new RibbonArtist(traceField(parent->geometry, unitMappedField, 1, 5000));
     }
 
 
     if (enabled) {
       // Update transform matrix from parent
-      //ribbonArtist->objectTransform = parent->objectTransform;
+      // ribbonArtist->objectTransform = parent->objectTransform;
 
-      //ribbonArtist->draw();
+      // ribbonArtist->draw();
     }
   }
 }

@@ -2,6 +2,7 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/gl/colormap_sets.h"
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/polyscope.h"
@@ -19,8 +20,8 @@ SurfaceCountQuantity::SurfaceCountQuantity(std::string name, SurfaceMesh* mesh_,
 void SurfaceCountQuantity::prepare() {
 
   safeDelete(program);
-  program = new gl::GLProgram(&SPHERE_VALUE_VERT_SHADER, &SPHERE_VALUE_GEOM_SHADER, &SPHERE_VALUE_FRAG_SHADER,
-                              gl::DrawMode::Points);
+  program = new gl::GLProgram(&SPHERE_VALUE_VERT_SHADER, &SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
+                              &SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points);
 
   // Color limits
   sum = 0;
@@ -49,8 +50,9 @@ void SurfaceCountQuantity::prepare() {
   // Store data in buffers
   program->setAttribute("a_position", pos);
   program->setAttribute("a_value", value);
-
-  program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap]);
+        
+  program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap], true);
+  setMaterialForProgram(program, "wax");
 }
 
 void SurfaceCountQuantity::setUniforms(gl::GLProgram* p) {
@@ -61,12 +63,11 @@ void SurfaceCountQuantity::setUniforms(gl::GLProgram* p) {
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   program->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-  glm::vec3 eyePos = view::getCameraWorldPosition();
-  program->setUniform("u_eye", eyePos);
-
-  program->setUniform("u_lightCenter", state::center);
-  program->setUniform("u_lightDist", 5 * state::lengthScale);
-
+  glm::vec3 lookDir, upDir, rightDir;
+  view::getCameraFrame(lookDir, upDir, rightDir);
+  p->setUniform("u_camZ", lookDir);
+  p->setUniform("u_camUp", upDir);
+  p->setUniform("u_camRight", rightDir);
 
   p->setUniform("u_pointRadius", pointRadius * state::lengthScale);
   p->setUniform("u_baseColor", glm::vec3{0.0, 0.0, 0.0});
@@ -115,8 +116,8 @@ SurfaceCountVertexQuantity::SurfaceCountVertexQuantity(std::string name, std::ve
     : SurfaceCountQuantity(name, mesh_, "vertex count")
 
 {
-  
-  for(auto& t : values_) {
+
+  for (auto& t : values_) {
     values[t.first] = t.second;
     entries.push_back(std::make_pair(parent->triMesh.vertices[t.first].position(), t.second));
   }
@@ -146,7 +147,7 @@ SurfaceIsolatedScalarVertexQuantity::SurfaceIsolatedScalarVertexQuantity(std::st
 
 {
 
-  for(auto& t : values_) {
+  for (auto& t : values_) {
     values[t.first] = t.second;
     entries.push_back(std::make_pair(parent->triMesh.vertices[t.first].position(), t.second));
   }
@@ -196,7 +197,7 @@ SurfaceCountFaceQuantity::SurfaceCountFaceQuantity(std::string name, std::vector
                                                    SurfaceMesh* mesh_)
     : SurfaceCountQuantity(name, mesh_, "face count") {
 
-  for(auto& t : values_) {
+  for (auto& t : values_) {
     values[t.first] = t.second;
     entries.push_back(std::make_pair(parent->triMesh.faces[t.first].center(), t.second));
   }

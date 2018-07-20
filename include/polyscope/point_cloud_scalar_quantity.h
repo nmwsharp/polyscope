@@ -17,7 +17,6 @@ public:
   virtual void draw() override;
   virtual void drawUI() override;
   virtual void setProgramValues(gl::GLProgram* program) override;
-  virtual bool wantsBillboardUniforms() override;
 
   virtual gl::GLProgram* createProgram() override;
 

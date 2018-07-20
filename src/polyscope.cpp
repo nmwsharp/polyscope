@@ -766,6 +766,7 @@ void mainLoopIteration() {
   // Process UI events
   glfwPollEvents();
   processMouseEvents();
+  view::updateFlight();
   showDelayedWarnings();
 
   // Rendering

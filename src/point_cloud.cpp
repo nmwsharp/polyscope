@@ -2,6 +2,7 @@
 
 #include "polyscope/file_helpers.h"
 #include "polyscope/gl/colors.h"
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/pick.h"
@@ -48,7 +49,7 @@ void PointCloud::deleteProgram() { safeDelete(program); }
 
 
 // Helper to set uniforms
-void PointCloud::setPointCloudUniforms(gl::GLProgram* p, bool withLight, bool withBillboard) {
+void PointCloud::setPointCloudUniforms(gl::GLProgram* p, bool withLight) {
 
   glm::mat4 viewMat = view::getCameraViewMatrix();
   p->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
@@ -56,22 +57,11 @@ void PointCloud::setPointCloudUniforms(gl::GLProgram* p, bool withLight, bool wi
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   p->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-  if (withLight) {
-    glm::vec3 eyePos = view::getCameraWorldPosition();
-    p->setUniform("u_eye", eyePos);
-
-    p->setUniform("u_lightCenter", state::center);
-    p->setUniform("u_lightDist", 2 * state::lengthScale);
-  }
-
   glm::vec3 lookDir, upDir, rightDir;
   view::getCameraFrame(lookDir, upDir, rightDir);
-
-  if (withBillboard) {
-    p->setUniform("u_camZ", lookDir);
-    p->setUniform("u_camUp", upDir);
-    p->setUniform("u_camRight", rightDir);
-  }
+  p->setUniform("u_camZ", lookDir);
+  p->setUniform("u_camUp", upDir);
+  p->setUniform("u_camRight", rightDir);
 
   p->setUniform("u_pointRadius", pointRadius * state::lengthScale);
   p->setUniform("u_baseColor", pointColor);
@@ -90,9 +80,9 @@ void PointCloud::draw() {
   // If the current program came from a quantity, allow the quantity to do any necessary per-frame work (like setting
   // uniforms)
   if (activePointQuantity == nullptr) {
-    setPointCloudUniforms(program, true, useBillboardSpheres);
+    setPointCloudUniforms(program, true);
   } else {
-    setPointCloudUniforms(program, true, activePointQuantity->wantsBillboardUniforms());
+    setPointCloudUniforms(program, true);
     activePointQuantity->setProgramValues(program);
   }
 
@@ -111,7 +101,7 @@ void PointCloud::drawPick() {
   }
 
   // Set uniforms
-  setPointCloudUniforms(pickProgram, false, true);
+  setPointCloudUniforms(pickProgram, false);
 
   pickProgram->draw();
 }
@@ -120,17 +110,15 @@ void PointCloud::prepare() {
 
   // It not quantity is coloring the points, draw with a default color
   if (activePointQuantity == nullptr) {
-    if (useBillboardSpheres) {
-      program = new gl::GLProgram(&SPHERE_VERT_SHADER, &SPHERE_BILLBOARD_GEOM_SHADER, &SPHERE_BILLBOARD_FRAG_SHADER,
-                                  gl::DrawMode::Points);
-    } else {
-      program = new gl::GLProgram(&SPHERE_VERT_SHADER, &SPHERE_GEOM_SHADER, &SPHERE_FRAG_SHADER, gl::DrawMode::Points);
-    }
+    program = new gl::GLProgram(&SPHERE_VERT_SHADER, &SPHERE_BILLBOARD_GEOM_SHADER, &SPHERE_BILLBOARD_FRAG_SHADER,
+                                gl::DrawMode::Points);
   }
   // If some quantity is responsible for coloring the points, prepare it
   else {
     program = activePointQuantity->createProgram();
   }
+
+  setMaterialForProgram(program, "wax");
 
   // Fill out the geometry data for the program
   program->setAttribute("a_position", points);
@@ -159,13 +147,6 @@ void PointCloud::preparePick() {
   pickProgram->setAttribute("a_position", points);
   pickProgram->setAttribute("a_color", pickColors);
 }
-
-void PointCloud::setUseBillboardSpheres(bool newValue) {
-  useBillboardSpheres = newValue;
-  deleteProgram();
-}
-
-bool PointCloud::requestsBillboardSpheres() const { return useBillboardSpheres; }
 
 void PointCloud::drawSharedStructureUI() {}
 
@@ -212,8 +193,6 @@ void PointCloud::drawUI() {
     if (ImGui::BeginPopup("OptionsPopup")) {
 
       // Quantities
-      if (ImGui::MenuItem("Use billboard spheres", NULL, &useBillboardSpheres))
-        setUseBillboardSpheres(useBillboardSpheres);
       if (ImGui::MenuItem("Clear Quantities")) removeAllQuantities();
       if (ImGui::MenuItem("Write points to file")) writePointsToFile();
 
@@ -376,7 +355,6 @@ void PointCloud::writePointsToFile(std::string filename) {
 void PointCloudQuantity::buildInfoGUI(size_t pointInd) {}
 void PointCloudQuantity::draw() {}
 void PointCloudQuantityThatDrawsPoints::setProgramValues(gl::GLProgram* program) {}
-bool PointCloudQuantityThatDrawsPoints::wantsBillboardUniforms() { return true; }
 
 
 } // namespace polyscope

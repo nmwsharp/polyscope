@@ -1,5 +1,6 @@
 #include "polyscope/surface_subset_quantity.h"
 
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/cylinder_shaders.h"
 #include "polyscope/polyscope.h"
@@ -38,6 +39,8 @@ SurfaceEdgeSubsetQuantity::SurfaceEdgeSubsetQuantity(std::string name, std::vect
   program->setAttribute("a_position_tail", pTail);
   program->setAttribute("a_position_tip", pTip);
 
+  setMaterialForProgram(program, "wax");
+
   // initialize the color to something nice
   color = parent->colorManager.getNextSubColor(name);
 }
@@ -55,11 +58,6 @@ void SurfaceEdgeSubsetQuantity::draw() {
     glm::mat4 projMat = view::getCameraPerspectiveMatrix();
     program->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-    glm::vec3 eyePos = view::getCameraWorldPosition();
-    program->setUniform("u_eye", eyePos);
-
-    program->setUniform("u_lightCenter", state::center);
-    program->setUniform("u_lightDist", 5 * state::lengthScale);
     program->setUniform("u_radius", radius * state::lengthScale);
     program->setUniform("u_color", color);
 

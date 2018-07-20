@@ -53,7 +53,7 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
         uniform mat4 u_projMatrix;
         uniform float u_radius;
         out vec3 worldPosToFrag;
-        out vec3 worldNormalToFrag;
+        out vec3 cameraNormal;
 
         void main()   {
             mat4 PV = u_projMatrix * u_viewMatrix;
@@ -90,7 +90,7 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
                     vec4 worldPos = vec4(rootP + norm0 * u_radius, 1.);
                     gl_Position = PV * worldPos;
                     worldPosToFrag = worldPos.xyz;
-                    worldNormalToFrag = norm0;
+                    cameraNormal = mat3(u_viewMatrix) * norm0;
                     EmitVertex();
                 }
                 
@@ -98,7 +98,7 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
                     vec4 worldPos = vec4(rootP + norm1 * u_radius, 1.);
                     gl_Position = PV * worldPos;
                     worldPosToFrag = worldPos.xyz;
-                    worldNormalToFrag = norm1;
+                    cameraNormal = mat3(u_viewMatrix) * norm1;
                     EmitVertex();
                 }
                 
@@ -106,7 +106,7 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
                     vec4 worldPos = vec4(capP + norm0 * u_radius, 1.);
                     gl_Position = PV * worldPos;
                     worldPosToFrag = worldPos.xyz;
-                    worldNormalToFrag = norm0;
+                    cameraNormal = mat3(u_viewMatrix) * norm0;
                     EmitVertex();
                 }
                 
@@ -114,7 +114,7 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
                     vec4 worldPos = vec4(capP + norm1 * u_radius, 1.);
                     gl_Position = PV * worldPos;
                     worldPosToFrag = worldPos.xyz;
-                    worldNormalToFrag = norm1;
+                    cameraNormal = mat3(u_viewMatrix) * norm1;
                     EmitVertex();
                 }
         
@@ -132,9 +132,6 @@ static const FragShader SHINY_CYLINDER_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
         {"u_color", GLData::Vector3Float},
     }, 
 
@@ -144,6 +141,9 @@ static const FragShader SHINY_CYLINDER_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_mat_r", 2},
+        {"t_mat_g", 2},
+        {"t_mat_b", 2},
     },
     
     // output location
@@ -151,21 +151,20 @@ static const FragShader SHINY_CYLINDER_FRAG_SHADER = {
  
     // source
     GLSL(150,
-        uniform vec3 u_eye;
-        uniform vec3 u_lightCenter;
-        uniform float u_lightDist;
         uniform vec3 u_color;
+        uniform sampler2D t_mat_r;
+        uniform sampler2D t_mat_g;
+        uniform sampler2D t_mat_b;
         in vec3 worldPosToFrag;
-        in vec3 worldNormalToFrag;
+        in vec3 cameraNormal;
         out vec4 outputF;
 
         // Forward declarations of methods from <shaders/common.h>
-        // vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 light, vec3 eye );
-        vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
+        vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
 
         void main()
         {
-           outputF = lightSurface(worldPosToFrag, worldNormalToFrag, u_color, u_lightCenter, u_lightDist, u_eye);
+           outputF = lightSurfaceMat(cameraNormal, u_color, t_mat_r, t_mat_g, t_mat_b);
         }
     )
 };

@@ -49,7 +49,6 @@ public:
 
   // Do any per-frame work on the program handed out by createProgram
   virtual void setProgramValues(gl::GLProgram* program);
-  virtual bool wantsBillboardUniforms();
 };
 
 
@@ -127,9 +126,6 @@ public:
   void deleteProgram();
   void writePointsToFile(std::string filename = "");
 
-  void setUseBillboardSpheres(bool newValue);
-  bool requestsBillboardSpheres() const;
-
 private:
   // Quantities
   std::map<std::string, PointCloudQuantity*> quantities;
@@ -138,7 +134,6 @@ private:
   Color3f initialBaseColor;
   Color3f pointColor;
   float pointRadius = 0.005;
-  bool useBillboardSpheres = false;
 
   // Drawing related things
   gl::GLProgram* program = nullptr;
@@ -149,7 +144,7 @@ private:
                                                                     // its own shaders
 
   // Helpers
-  void setPointCloudUniforms(gl::GLProgram* p, bool withLight, bool withBillboard);
+  void setPointCloudUniforms(gl::GLProgram* p, bool withLight);
 };
 
 } // namespace polyscope

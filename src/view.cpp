@@ -50,6 +50,7 @@ void processRotate(float delTheta, float delPhi) {
   glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, rightDir);
   viewMat = viewMat * phiCamR;
 
+  requestRedraw();
   immediatelyEndFlight();
 }
 
@@ -75,7 +76,7 @@ void processRotateArcball(glm::vec2 startP, glm::vec2 endP) {
 
   glm::vec3 rotAxis = -cross(sphereStart, sphereEnd);
   double rotMag = std::acos(glm::clamp(dot(sphereStart, sphereEnd), -1.0f, 1.0f));
-  
+
   glm::mat4 cameraRotate = glm::rotate(glm::mat4x4(1.0), (float)rotMag, glm::vec3(rotAxis.x, rotAxis.y, rotAxis.z));
 
   // Get current camera rotation
@@ -86,11 +87,12 @@ void processRotateArcball(glm::vec2 startP, glm::vec2 endP) {
     }
   }
   R[3][3] = 1.0;
-  
+
   glm::mat4 update = glm::inverse(R) * cameraRotate * R;
 
   viewMat = viewMat * update;
 
+  requestRedraw();
   immediatelyEndFlight();
 }
 
@@ -103,21 +105,27 @@ void processTranslate(glm::vec2 delta) {
   glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), movementScale * glm::vec3(delta.x, delta.y, 0.0));
   viewMat = camSpaceT * viewMat;
 
+  requestRedraw();
   immediatelyEndFlight();
 }
 
 void processClipPlaneShift(double amount) {
+  if (amount == 0.0) return;
   // Adjust the near clipping plane
   nearClipRatio += .03 * amount * nearClipRatio;
+  requestRedraw();
 }
 
 void processZoom(double amount) {
+  if (amount == 0.0) return;
+
   // Translate the camera forwards and backwards
   float movementScale = state::lengthScale * 0.1;
   glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), glm::vec3(0., 0., movementScale * amount));
   viewMat = camSpaceT * viewMat;
 
   immediatelyEndFlight();
+  requestRedraw();
 }
 
 void resetCameraToDefault() {
@@ -132,6 +140,8 @@ void resetCameraToDefault() {
   fov = 65.0;
   nearClipRatio = 0.005;
   farClipRatio = 20.0;
+
+  requestRedraw();
 }
 
 
@@ -251,6 +261,7 @@ void updateFlight() {
       // linear spline
       fov = (1.0f - t) * flightInitialFov + t * flightTargetFov;
     }
+    requestRedraw();
   }
 }
 

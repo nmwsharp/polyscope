@@ -138,22 +138,14 @@ void PointCloudScalarQuantity::drawUI() {
 gl::GLProgram* PointCloudScalarQuantity::createProgram() {
   // Create the program to draw this quantity
 
-  gl::GLProgram* program;
-  if (parent->requestsBillboardSpheres()) {
-    program = new gl::GLProgram(&SPHERE_VALUE_VERT_SHADER, &SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
-                                &SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points);
-  } else {
-    program = new gl::GLProgram(&SPHERE_VALUE_VERT_SHADER, &SPHERE_VALUE_GEOM_SHADER, &SPHERE_VALUE_FRAG_SHADER,
-                                gl::DrawMode::Points);
-  }
+  gl::GLProgram* program = new gl::GLProgram(&SPHERE_VALUE_VERT_SHADER, &SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
+                                             &SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points);
 
   // Fill color buffers
   fillColorBuffers(program);
 
   return program;
 }
-
-bool PointCloudScalarQuantity::wantsBillboardUniforms() { return parent->requestsBillboardSpheres(); }
 
 void PointCloudScalarQuantity::fillColorBuffers(gl::GLProgram* p) {
   // Store data in buffers

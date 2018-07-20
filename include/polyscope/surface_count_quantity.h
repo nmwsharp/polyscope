@@ -29,7 +29,7 @@ public:
 
 protected:
   void setUniforms(gl::GLProgram* p);
-  float pointRadius = 0.012;
+  float pointRadius = 0.003;
   float vizRangeLow, vizRangeHigh, dataRangeLow, dataRangeHigh;
   int iColorMap;
 };

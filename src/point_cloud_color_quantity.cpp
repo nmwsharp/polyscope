@@ -47,22 +47,14 @@ void PointCloudColorQuantity::drawUI() {
 gl::GLProgram* PointCloudColorQuantity::createProgram() {
   // Create the program to draw this quantity
 
-  gl::GLProgram* program;
-  if (parent->requestsBillboardSpheres()) {
-    program = new gl::GLProgram(&SPHERE_COLOR_VERT_SHADER, &SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                &SPHERE_COLOR_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points);
-  } else {
-    program = new gl::GLProgram(&SPHERE_COLOR_VERT_SHADER, &SPHERE_COLOR_GEOM_SHADER, &SPHERE_COLOR_FRAG_SHADER,
-                                gl::DrawMode::Points);
-  }
+  gl::GLProgram* program = new gl::GLProgram(&SPHERE_COLOR_VERT_SHADER, &SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
+                                             &SPHERE_COLOR_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points);
 
   // Fill color buffers
   fillColorBuffers(program);
 
   return program;
 }
-
-bool PointCloudColorQuantity::wantsBillboardUniforms() { return parent->requestsBillboardSpheres(); }
 
 void PointCloudColorQuantity::fillColorBuffers(gl::GLProgram* p) {
   // Store data in buffers

@@ -67,11 +67,6 @@ void SurfaceMesh::draw() {
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   program->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-  glm::vec3 eyePos = view::getCameraWorldPosition();
-  program->setUniform("u_eye", eyePos);
-
-  program->setUniform("u_lightCenter", state::center);
-  program->setUniform("u_lightDist", 5 * state::lengthScale);
   program->setUniform("u_basecolor", surfaceColor);
   program->setUniform("u_edgeWidth", edgeWidth);
 
@@ -114,7 +109,7 @@ void SurfaceMesh::prepare() {
     program = activeSurfaceQuantity->createProgram();
   }
 
-  program->setTextureFromBuffer("t_mat", gl::getMaterialTexture("wax"));
+  setMaterialForProgram(program, "wax");
 
   // Populate draw buffers
   fillGeometryBuffers();

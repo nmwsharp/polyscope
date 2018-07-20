@@ -14,7 +14,6 @@ public:
   PointCloudColorQuantity(std::string name, const std::vector<glm::vec3>& values, PointCloud* pointCloud_);
 
   virtual void drawUI() override;
-  virtual bool wantsBillboardUniforms() override;
 
   virtual gl::GLProgram* createProgram() override;
 
