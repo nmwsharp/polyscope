@@ -336,7 +336,6 @@ static const FragShader SPHERE_BILLBOARD_FRAG_SHADER = {
         in vec3 worldPosToFrag;
         in vec2 boxCoord;
         out vec4 outputF;
-        out float gl_FragDepth;
 
         // Forward declarations of methods from <shaders/common.h>
         vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
