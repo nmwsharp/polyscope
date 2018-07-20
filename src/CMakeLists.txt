@@ -7,7 +7,7 @@ endif()
 
 # Collect all .cpp files in the subdirectories
 file(GLOB SRCS *.cpp)
-file(GLOB_RECURSE GL_SRCS gl/*.cpp)
+file(GLOB_RECURSE GL_SRCS gl/*.cpp gl/*.c)
 file(GLOB_RECURSE HEADS ../include/*.h ../include/*.hpp ../include/*.ipp)
 
 # Create a single library for the project

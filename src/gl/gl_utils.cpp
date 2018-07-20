@@ -17,6 +17,7 @@ namespace gl {
 // create a 1D texture from data
 GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int size1D, unsigned char* data)
     : format(format_), sizeX(size1D), dim(1) {
+  if(size1D > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
 
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_1D, handle);
@@ -26,6 +27,8 @@ GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int size1D, unsigned ch
 }
 GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int size1D, float* data)
     : format(format_), sizeX(size1D), dim(1) {
+  if(size1D > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
+
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_1D, handle);
   glTexImage1D(GL_TEXTURE_1D, 0, format, size1D, 0, format, GL_FLOAT, data);
@@ -36,6 +39,7 @@ GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int size1D, float* data
 // create a 2D texture from data
 GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data)
     : format(format_), sizeX(sizeX_), sizeY(sizeY_), dim(2) {
+  if(sizeX > (1 << 22) || sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
 
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_2D, handle);
@@ -123,6 +127,7 @@ void GLTexturebuffer::bind() {
 // =============================================================
 GLRenderbuffer::GLRenderbuffer(RenderbufferType type_, unsigned int sizeX_, unsigned int sizeY_)
     : type(type_), sizeX(sizeX_), sizeY(sizeY_) {
+  if(sizeX > (1 << 22) || sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid renderbuffer dimensions");
 
   glGenRenderbuffers(1, &handle);
   glBindRenderbuffer(GL_RENDERBUFFER, handle);
@@ -222,9 +227,10 @@ void GLFramebuffer::bindForRendering() {
   }
 
   // Set the viewport
-  if (!viewportSet)
+  if (!viewportSet) {
     throw std::runtime_error(
         "OpenGL error: viewport not set for framebuffer object. Call GLFramebuffer::setViewport()");
+  }
   glViewport(viewportX, viewportY, viewportSizeX, viewportSizeY);
 
   // Enable depth testing
@@ -254,9 +260,9 @@ void GLFramebuffer::resizeBuffers(unsigned int newXSize, unsigned int newYSize) 
     // Register new buffer
     bindToColorRenderbuffer(newBuff);
   }
-  
+
   // Resize color texture
-  if (colorTextureBuffer!= nullptr &&
+  if (colorTextureBuffer != nullptr &&
       (colorTextureBuffer->getSizeX() != newXSize || colorTextureBuffer->getSizeY() != newYSize)) {
     colorTextureBuffer->resize(newXSize, newYSize);
   }
@@ -276,9 +282,9 @@ void GLFramebuffer::resizeBuffers(unsigned int newXSize, unsigned int newYSize) 
     // Register new buffer
     bindToDepthRenderbuffer(newBuff);
   }
-  
+
   // Resize depth texture
-  if (depthTextureBuffer!= nullptr &&
+  if (depthTextureBuffer != nullptr &&
       (depthTextureBuffer->getSizeX() != newXSize || depthTextureBuffer->getSizeY() != newYSize)) {
     depthTextureBuffer->resize(newXSize, newYSize);
   }

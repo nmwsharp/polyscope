@@ -56,7 +56,7 @@ inline glm::vec3 indToVec(size_t ind) {
   size_t high = ind;
 
   return glm::vec3{static_cast<double>(low) / factorF, static_cast<double>(med) / factorF,
-                                  static_cast<double>(high) / factorF};
+                   static_cast<double>(high) / factorF};
 }
 inline size_t vecToInd(glm::vec3 vec) {
 
@@ -69,7 +69,10 @@ inline size_t vecToInd(glm::vec3 vec) {
 
   // Debug check
   if (low != (factorF * vec.x) || med != (factorF * vec.y) || high != (factorF * vec.z)) {
-    throw std::logic_error("Float to index conversion failed, bad value in float.");
+    // throw std::logic_error("Float to index conversion failed, bad value in float.");
+    // occasionally we get weird data back in unusually cases like clicking right on border or multiple monitors...
+    // maybe one day we can debug it.
+    return 0;
   }
 
   size_t ind = (high << (2 * bitsForPickPacking)) + (med << bitsForPickPacking) + low;

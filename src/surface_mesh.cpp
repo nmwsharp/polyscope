@@ -4,9 +4,12 @@
 #include "polyscope/gl/colors.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/surface_shaders.h"
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_count_quantity.h"
+
+#include "stb_image.h"
 
 #include "imgui.h"
 
@@ -110,6 +113,8 @@ void SurfaceMesh::prepare() {
   else {
     program = activeSurfaceQuantity->createProgram();
   }
+
+  program->setTextureFromBuffer("t_mat", gl::getMaterialTexture("wax"));
 
   // Populate draw buffers
   fillGeometryBuffers();
@@ -275,7 +280,7 @@ void SurfaceMesh::fillGeometryBuffersFlat() {
       positions.push_back(vertexPos);
       normals.push_back(faceNormal);
       bcoord.push_back(coord);
-      
+
       currHe = &currHe->next();
     }
   }
@@ -881,7 +886,7 @@ void SurfaceMesh::removeAllQuantities() {
 }
 
 void SurfaceMesh::setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q) {
-  if(activeSurfaceQuantity == q) return;
+  if (activeSurfaceQuantity == q) return;
   clearActiveSurfaceQuantity();
   activeSurfaceQuantity = q;
   q->enable();

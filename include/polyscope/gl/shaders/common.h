@@ -65,6 +65,40 @@ vec3 gammaCorrect( vec3 colorLinear )
    return pow(colorLinear, vec3(1.0/screenGamma));
 }
 
+vec3 undoGammaCorrect( vec3 colorLinear )
+{
+   const float screenGamma = 2.2;
+   return pow(colorLinear, vec3(screenGamma));
+}
+      
+vec3 rgb2hsv(vec3 c)
+{
+    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    vec4 p = c.g < c.b ? vec4(c.bg, K.wz) : vec4(c.gb, K.xy);
+    vec4 q = c.r < p.x ? vec4(p.xyw, c.r) : vec4(c.r, p.yzx);
+
+    float d = q.x - min(q.w, q.y);
+    float e = 1.0e-10;
+    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+
+vec3 hsv2rgb(vec3 c)
+{
+    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+vec3 transferColor(vec3 brightnessSourceRGB, vec3 colorSourceRGB) {
+  vec3 sampleValHSV = rgb2hsv(brightnessSourceRGB);
+  vec3 inColorHSV = rgb2hsv(colorSourceRGB);
+  //vec3 sampleValColorHSV = vec3(inColorHSV.x, inColorHSV.y, sampleValHSV.z);
+  //vec3 sampleValColorRGB = hsv2rgb(sampleValColorHSV);
+  vec3 sampleValColorRGB = colorSourceRGB * 0.5 * (sampleValHSV.z + inColorHSV.z);
+  return sampleValColorRGB;
+}
+
 vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye )
 {
    vec3 one = vec3( 1., 1., 1. );

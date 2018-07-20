@@ -17,8 +17,11 @@
 #include "polyscope/imgui_impl_opengl3.h"
 
 #include "polyscope/gl/shaders/texture_draw_shaders.h"
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/pick.h"
 #include "polyscope/view.h"
+
+#include "stb_image.h"
 
 #include "json/json.hpp"
 using json = nlohmann::json;
@@ -150,7 +153,7 @@ void deleteGlobalBuffersAndPrograms() {
 
 
 void setStyle() {
- 
+
   // Style
   ImGuiStyle* style = &ImGui::GetStyle();
   style->WindowRounding = 1;
@@ -316,8 +319,9 @@ void init() {
   initializeImGUIContext();
   contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr});
 
-  // Initialize common shaders
+  // Initialize gl data
   gl::GLProgram::initCommonShaders();
+  gl::loadMaterialTextures();
 
   // Initialize pick buffer
   allocateGlobalBuffersAndPrograms();
@@ -346,7 +350,7 @@ void pushContext(std::function<void()> callbackFunction) {
   while (contextStack.size() >= currentContextStackSize) {
     mainLoopIteration();
   }
-  
+
   ImGui::DestroyContext(newContext);
   ImGui::SetCurrentContext(contextStack.back().context);
 }
@@ -516,13 +520,14 @@ void processMouseEvents() {
     }
     // Handle picks
     else {
+      if (ImGui::IsMouseReleased(0)) {
+        ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
+        if (dragDistSinceLastRelease < .01) {
+          shouldEvaluatePick = true;
+        }
 
-      ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
-      if (dragDistSinceLastRelease < .01) {
-        shouldEvaluatePick = true;
+        dragDistSinceLastRelease = 0.0;
       }
-
-      dragDistSinceLastRelease = 0.0;
     }
   }
 
@@ -537,7 +542,6 @@ void drawStructures() {
   // Activate the texture that we draw to
   sceneFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
   sceneFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  sceneColorTexture->bind();
   sceneFramebuffer->bindForRendering();
   sceneFramebuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
   sceneFramebuffer->clear();
@@ -697,7 +701,6 @@ void draw(bool withUI = true) {
     else {
       (contextStack.back().callback)();
     }
-
   }
 
   // Draw structures in the scene
@@ -791,6 +794,7 @@ void shutdown(int exitCode) {
   }
 
   deleteGlobalBuffersAndPrograms();
+  gl::unloadMaterialTextures();
 
   // ImGui shutdown things
   ImGui_ImplOpenGL3_Shutdown();

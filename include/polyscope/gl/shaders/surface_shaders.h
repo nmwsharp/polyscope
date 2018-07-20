@@ -29,7 +29,8 @@ static const VertShader PLAIN_SURFACE_VERT_SHADER =  {
       void main()
       {
           Position = a_position;
-          Normal = a_normal;
+          //Normal = a_normal;
+          Normal = mat3(u_viewMatrix) * a_normal;
           Barycoord = a_barycoord;
           gl_Position = u_projMatrix * u_viewMatrix * vec4(Position,1.);
       }
@@ -53,6 +54,7 @@ static const FragShader PLAIN_SURFACE_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_mat", 2}
     },
     
     // output location
@@ -65,6 +67,7 @@ static const FragShader PLAIN_SURFACE_FRAG_SHADER = {
       uniform float u_lightDist;
       uniform float u_edgeWidth;
       uniform vec3 u_basecolor;
+      uniform sampler2D t_mat;
       in vec3 Normal;
       in vec3 Position;
       in vec3 Barycoord;
@@ -73,6 +76,16 @@ static const FragShader PLAIN_SURFACE_FRAG_SHADER = {
       // Forward declarations of methods from <shaders/common.h>
       vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
       float getEdgeFactor(vec3 UVW, float width);
+      vec3 transferColor(vec3 brightnessSourceRGB, vec3 colorSourceRGB);
+
+      
+      vec4 lightSurface2(vec3 normal, vec3 color) {
+        normal.y = -normal.y;
+        vec2 matUV = normal.xy/2.0 + vec2(.5, .5);
+        vec3 sampleVal = texture(t_mat, matUV).rgb;
+
+        return vec4(transferColor(sampleVal, color), 1.0);
+      }
 
       vec3 edgeColor(vec3 surfaceColor) {
 
@@ -86,7 +99,8 @@ static const FragShader PLAIN_SURFACE_FRAG_SHADER = {
       void main()
       {
         vec3 color = edgeColor(u_basecolor);
-        outputF = lightSurface(Position, Normal, color, u_lightCenter, u_lightDist, u_eye);
+        outputF = .001 * lightSurface(Position, Normal, color, u_lightCenter, u_lightDist, u_eye) + 
+          lightSurface2(Normal, color);
       }
 
     )
@@ -126,7 +140,8 @@ static const VertShader VERTCOLOR_SURFACE_VERT_SHADER =  {
       void main()
       {
           Position = a_position;
-          Normal = a_normal;
+          //Normal = a_normal;
+          Normal = mat3(u_viewMatrix) * a_normal;
           Barycoord = a_barycoord;
           Colorval = a_colorval;
           gl_Position = u_projMatrix * u_viewMatrix * vec4(Position,1.);
@@ -153,6 +168,7 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_mat", 2},
         {"t_colormap", 1}
     },
     
@@ -169,6 +185,7 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
       uniform float u_rangeHigh;
       uniform vec3 u_basecolor;
       uniform sampler1D t_colormap;
+      uniform sampler2D t_mat;
       in vec3 Normal;
       in vec3 Position;
       in vec3 Barycoord;
@@ -178,6 +195,7 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
       // Forward declarations of methods from <shaders/common.h>
       vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
       float getEdgeFactor(vec3 UVW, float width);
+      vec3 transferColor(vec3 brightnessSourceRGB, vec3 colorSourceRGB);
 
       vec3 surfaceColor() {
         float t = (Colorval - u_rangeLow) / (u_rangeHigh - u_rangeLow);
@@ -191,10 +209,21 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
           return eFactor * edgeColor + (1.0 - eFactor) * surfaceColor;
       }
 
+      vec4 lightSurface2(vec3 normal, vec3 color) {
+        normal.y = -normal.y;
+        vec2 matUV = normal.xy/2.0 + vec2(.5, .5);
+        vec3 sampleVal = texture(t_mat, matUV).rgb;
+
+        return vec4(transferColor(sampleVal, color), 1.0);
+      }
+
+
       void main()
       {
         vec3 color = edgeColor(surfaceColor());
-        outputF = lightSurface(Position, Normal, color, u_lightCenter, u_lightDist, u_eye);
+        //outputF = lightSurface(Position, Normal, color, u_lightCenter, u_lightDist, u_eye);
+        outputF = .001 * lightSurface(Position, Normal, color, u_lightCenter, u_lightDist, u_eye) + 
+          lightSurface2(Normal, color);
       }
 
     )

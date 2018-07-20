@@ -131,13 +131,13 @@ void processFileOBJ(string filename) {
 
 
   // Test error
-  polyscope::error("Resistance is futile, welcome to the borg borg borg.");
-  polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we "
-                   "share this crisis in a way which looks right while properly wrapping text in some form or other?");
-   polyscope::terminatingError("and that was all");
+  //polyscope::error("Resistance is futile, welcome to the borg borg borg.");
+  //polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we "
+                   //"share this crisis in a way which looks right while properly wrapping text in some form or other?");
+   //polyscope::terminatingError("and that was all");
 
   // Test warning
-  polyscope::warning("Something went slightly wrong", "it was bad");
+  //polyscope::warning("Something went slightly wrong", "it was bad");
 
   // polyscope::warning("Smoething else went slightly wrong", "it was also bad");
   // polyscope::warning("Something went slightly wrong", "it was still bad");
