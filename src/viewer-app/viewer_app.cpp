@@ -107,7 +107,6 @@ int main(int argc, char** argv) {
   }
 
   // Options
-  polyscope::options::autocenterStructures = true;
 
   // Initialize polyscope
   polyscope::init();

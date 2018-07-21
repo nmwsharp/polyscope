@@ -51,8 +51,8 @@ void PointCloud::deleteProgram() { safeDelete(program); }
 // Helper to set uniforms
 void PointCloud::setPointCloudUniforms(gl::GLProgram* p, bool withLight) {
 
-  glm::mat4 viewMat = view::getCameraViewMatrix();
-  p->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+  glm::mat4 viewMat = getModelView();
+  p->setUniform("u_modelView", glm::value_ptr(viewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   p->setUniform("u_projMatrix", glm::value_ptr(projMat));
@@ -231,7 +231,8 @@ std::tuple<glm::vec3, glm::vec3> PointCloud::boundingBox() {
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
 
-  for (glm::vec3& p : points) {
+  for (glm::vec3& rawP : points) {
+    glm::vec3 p = glm::vec3(objectTransform * glm::vec4(rawP, 1.0));
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }

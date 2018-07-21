@@ -35,7 +35,7 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_viewMatrix", GLData::Matrix44Float},
+        {"u_modelView", GLData::Matrix44Float},
         {"u_projMatrix", GLData::Matrix44Float},
         {"u_radius", GLData::Float},
     }, 
@@ -49,14 +49,14 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
         layout(points) in;
         layout(triangle_strip, max_vertices=32) out;
         in vec3 position_tip[];
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_radius;
         out vec3 worldPosToFrag;
         out vec3 cameraNormal;
 
         void main()   {
-            mat4 PV = u_projMatrix * u_viewMatrix;
+            mat4 PV = u_projMatrix * u_modelView;
 
             const int nTheta = 8;
             const float PI = 3.14159;
@@ -90,7 +90,7 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
                     vec4 worldPos = vec4(rootP + norm0 * u_radius, 1.);
                     gl_Position = PV * worldPos;
                     worldPosToFrag = worldPos.xyz;
-                    cameraNormal = mat3(u_viewMatrix) * norm0;
+                    cameraNormal = mat3(u_modelView) * norm0;
                     EmitVertex();
                 }
                 
@@ -98,7 +98,7 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
                     vec4 worldPos = vec4(rootP + norm1 * u_radius, 1.);
                     gl_Position = PV * worldPos;
                     worldPosToFrag = worldPos.xyz;
-                    cameraNormal = mat3(u_viewMatrix) * norm1;
+                    cameraNormal = mat3(u_modelView) * norm1;
                     EmitVertex();
                 }
                 
@@ -106,7 +106,7 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
                     vec4 worldPos = vec4(capP + norm0 * u_radius, 1.);
                     gl_Position = PV * worldPos;
                     worldPosToFrag = worldPos.xyz;
-                    cameraNormal = mat3(u_viewMatrix) * norm0;
+                    cameraNormal = mat3(u_modelView) * norm0;
                     EmitVertex();
                 }
                 
@@ -114,7 +114,7 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
                     vec4 worldPos = vec4(capP + norm1 * u_radius, 1.);
                     gl_Position = PV * worldPos;
                     worldPosToFrag = worldPos.xyz;
-                    cameraNormal = mat3(u_viewMatrix) * norm1;
+                    cameraNormal = mat3(u_modelView) * norm1;
                     EmitVertex();
                 }
         

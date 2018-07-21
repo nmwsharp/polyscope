@@ -29,9 +29,6 @@ namespace options {
     // Show empty structure types from startup (default: true)
     extern bool initializeWithDefaultStructures;
     
-    // Automatically center structures upon registration (default: false)
-    extern bool autocenterStructures;
-    
     // Should we redraw every frame, even if not requested? (defualt: false)
     extern bool alwaysRedraw;
 

@@ -14,9 +14,12 @@ int bufferWidth = -1;
 int bufferHeight = -1;
 int initWindowPosX = 20;
 int initWindowPosY = 20;
-double fov = 65.0;
-double nearClipRatio = 0.005;
-double farClipRatio = 20.0;
+const double defaultNearClipRatio = 0.005;
+const double defaultFarClipRatio = 20.0;
+const double defaultFov = 65.;
+double fov = defaultFov;
+double nearClipRatio = defaultNearClipRatio;
+double farClipRatio = defaultFarClipRatio;
 std::array<float, 4> bgColor{{.88, .88, .88, 1.0}};
 
 glm::mat4x4 viewMat;
@@ -42,6 +45,9 @@ void processRotate(float delTheta, float delPhi) {
   glm::vec3 lookDir, upDir, rightDir;
   getCameraFrame(lookDir, upDir, rightDir);
 
+  // Translate to center
+  viewMat = glm::translate(viewMat, state::center);
+
   // Rotation about the vertical axis
   glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, upDir);
   viewMat = viewMat * thetaCamR;
@@ -49,6 +55,9 @@ void processRotate(float delTheta, float delPhi) {
   // Rotation about the horizontal axis
   glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, rightDir);
   viewMat = viewMat * phiCamR;
+  
+  // Undo centering
+  viewMat = glm::translate(viewMat, -state::center);
 
   requestRedraw();
   immediatelyEndFlight();
@@ -137,13 +146,12 @@ void resetCameraToDefault() {
   viewMat[2][2] = -1.;
   viewMat = viewMat * glm::translate(glm::mat4x4(1.0), glm::vec3(0.0, 0.0, state::lengthScale));
 
-  fov = 65.0;
-  nearClipRatio = 0.005;
-  farClipRatio = 20.0;
+  fov = defaultFov;
+  nearClipRatio = defaultNearClipRatio;
+  farClipRatio = defaultFarClipRatio;
 
   requestRedraw();
 }
-
 
 void flyToDefault() {
 
@@ -155,12 +163,49 @@ void flyToDefault() {
   T = T * glm::translate(glm::mat4x4(1.0), glm::vec3(0.0, 0.0, state::lengthScale));
 
 
-  float Tfov = 65.0;
-  nearClipRatio = 0.005;
-  farClipRatio = 20.0;
+  float Tfov = defaultFov;
+  nearClipRatio = defaultNearClipRatio;
+  farClipRatio = defaultFarClipRatio;
 
   startFlightTo(T, Tfov, .25);
 }
+
+glm::mat4 computeHomeView() {
+
+  glm::mat4x4 T(1.0);
+  T[0][0] = -1.;
+  T[2][2] = -1.;
+  T = T * glm::translate(glm::mat4x4(1.0), -state::center + glm::vec3(0.0, 0.0, state::lengthScale));
+
+  return T;
+}
+
+void resetCameraToHomeView() {
+
+  // WARNING: Duplicated here and in flyToHomeView()
+
+  viewMat = computeHomeView();
+
+  fov = defaultFov;
+  nearClipRatio = defaultNearClipRatio;
+  farClipRatio = defaultFarClipRatio;
+
+  requestRedraw();
+}
+
+void flyToHomeView() {
+
+  // WARNING: Duplicated here and in resetCameraToHomeView()
+
+  glm::mat4x4 T = computeHomeView();
+
+  float Tfov = defaultFov;
+  nearClipRatio = defaultNearClipRatio;
+  farClipRatio = defaultFarClipRatio;
+
+  startFlightTo(T, Tfov, .25);
+}
+
 
 void setViewToCamera(const CameraParameters& p) {
   viewMat = p.E;

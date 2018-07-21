@@ -35,7 +35,7 @@ static const GeomShader VECTOR_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_viewMatrix", GLData::Matrix44Float},
+        {"u_modelView", GLData::Matrix44Float},
         {"u_projMatrix", GLData::Matrix44Float},
         {"u_lengthMult", GLData::Float},
         {"u_radius", GLData::Float},
@@ -50,14 +50,14 @@ static const GeomShader VECTOR_GEOM_SHADER = {
         layout(points) in;
         layout(triangle_strip, max_vertices=40) out;
         in vec3 vector[];
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_lengthMult;
         uniform float u_radius;
         out vec3 cameraNormal;
 
         void main()   {
-            mat4 PV = u_projMatrix * u_viewMatrix;
+            mat4 PV = u_projMatrix * u_modelView;
 
             const int nTheta = 8;
             const float PI = 3.14159;
@@ -90,28 +90,28 @@ static const GeomShader VECTOR_GEOM_SHADER = {
                 { // Lower left
                     vec4 worldPos = vec4(rootP + norm0 * u_radius, 1.);
                     gl_Position = PV * worldPos;
-                    cameraNormal = mat3(u_viewMatrix) * norm0;
+                    cameraNormal = mat3(u_modelView) * norm0;
                     EmitVertex();
                 }
                 
                 { // Lower right
                     vec4 worldPos = vec4(rootP + norm1 * u_radius, 1.);
                     gl_Position = PV * worldPos;
-                    cameraNormal = mat3(u_viewMatrix) * norm1;
+                    cameraNormal = mat3(u_modelView) * norm1;
                     EmitVertex();
                 }
                 
                 { // Upper left
                     vec4 worldPos = vec4(capP + norm0 * u_radius, 1.);
                     gl_Position = PV * worldPos;
-                    cameraNormal = mat3(u_viewMatrix) * norm0;
+                    cameraNormal = mat3(u_modelView) * norm0;
                     EmitVertex();
                 }
                 
                 { // Upper right
                     vec4 worldPos = vec4(capP + norm1 * u_radius, 1.);
                     gl_Position = PV * worldPos;
-                    cameraNormal = mat3(u_viewMatrix) * norm1;
+                    cameraNormal = mat3(u_modelView) * norm1;
                     EmitVertex();
                 }
                 
@@ -119,7 +119,7 @@ static const GeomShader VECTOR_GEOM_SHADER = {
                     vec3 tipNormal = normalize(norm0 + norm1);
                     vec4 worldPos = vec4(tipP, 1.);
                     gl_Position = PV * worldPos;
-                    cameraNormal = mat3(u_viewMatrix) * tipNormal;
+                    cameraNormal = mat3(u_modelView) * tipNormal;
                     EmitVertex();
                 }
         

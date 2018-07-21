@@ -79,7 +79,7 @@ static const GeomShader SPHERE_BILLBOARD_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_viewMatrix", GLData::Matrix44Float},
+        {"u_modelView", GLData::Matrix44Float},
         {"u_projMatrix", GLData::Matrix44Float},
         {"u_pointRadius", GLData::Float},
         {"u_camRight", GLData::Vector3Float},
@@ -95,7 +95,7 @@ static const GeomShader SPHERE_BILLBOARD_GEOM_SHADER = {
     GLSL(150,
         layout(points) in;
         layout(triangle_strip, max_vertices=4) out;
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
         uniform vec3 u_camRight;
@@ -104,7 +104,7 @@ static const GeomShader SPHERE_BILLBOARD_GEOM_SHADER = {
         out vec3 worldPosToFrag;
         out vec2 boxCoord;
         void main()   {
-            mat4 PV = u_projMatrix * u_viewMatrix;
+            mat4 PV = u_projMatrix * u_modelView;
 
             { // Lower left
                 vec4 worldPos = gl_in[0].gl_Position + vec4((-u_camUp - u_camRight) * u_pointRadius, 0.);
@@ -148,7 +148,7 @@ static const GeomShader SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_viewMatrix", GLData::Matrix44Float},
+        {"u_modelView", GLData::Matrix44Float},
         {"u_projMatrix", GLData::Matrix44Float},
         {"u_pointRadius", GLData::Float},
         {"u_camRight", GLData::Vector3Float},
@@ -165,7 +165,7 @@ static const GeomShader SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
         layout(points) in;
         layout(triangle_strip, max_vertices=4) out;
         in float value[];
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
         uniform vec3 u_camRight;
@@ -175,7 +175,7 @@ static const GeomShader SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
         out vec3 worldPosToFrag;
         out vec2 boxCoord;
         void main()   {
-            mat4 PV = u_projMatrix * u_viewMatrix;
+            mat4 PV = u_projMatrix * u_modelView;
 
             { // Lower left
                 vec4 worldPos = gl_in[0].gl_Position + vec4((-u_camUp - u_camRight) * u_pointRadius, 0.);
@@ -223,7 +223,7 @@ static const GeomShader SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_viewMatrix", GLData::Matrix44Float},
+        {"u_modelView", GLData::Matrix44Float},
         {"u_projMatrix", GLData::Matrix44Float},
         {"u_pointRadius", GLData::Float},
         {"u_camRight", GLData::Vector3Float},
@@ -240,7 +240,7 @@ static const GeomShader SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
         layout(points) in;
         layout(triangle_strip, max_vertices=4) out;
         in vec3 Color[];
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
         uniform vec3 u_camRight;
@@ -250,7 +250,7 @@ static const GeomShader SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
         out vec3 worldPosToFrag;
         out vec2 boxCoord;
         void main()   {
-            mat4 PV = u_projMatrix * u_viewMatrix;
+            mat4 PV = u_projMatrix * u_modelView;
 
             { // Lower left
                 vec4 worldPos = gl_in[0].gl_Position + vec4((-u_camUp - u_camRight) * u_pointRadius, 0.);
@@ -327,7 +327,7 @@ static const FragShader SPHERE_BILLBOARD_FRAG_SHADER = {
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
         uniform vec3 u_baseColor;
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
         uniform sampler2D t_mat_r;
@@ -353,13 +353,13 @@ static const FragShader SPHERE_BILLBOARD_FRAG_SHADER = {
            vec3 worldN = (zC * u_camZ + boxCoord.x * u_camRight + boxCoord.y * u_camUp);
 
            // Lighting
-           vec3 Normal = mat3(u_viewMatrix) * worldN;
+           vec3 Normal = mat3(u_modelView) * worldN;
            outputF = lightSurfaceMat(Normal, u_baseColor, t_mat_r, t_mat_g, t_mat_b);
 
            // Set depth (expensive!)
            vec3 zOffset = -zC * u_camZ * u_pointRadius;
            vec3 realWorldPos = worldPosToFrag + zOffset;
-           vec4 clipPos = u_projMatrix * u_viewMatrix * vec4(realWorldPos, 1.0);
+           vec4 clipPos = u_projMatrix * u_modelView * vec4(realWorldPos, 1.0);
            float ndcDepth = clipPos.z / clipPos.w;
            gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
         }
@@ -398,7 +398,7 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
         uniform float u_rangeLow;
@@ -434,13 +434,13 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
            vec3 worldN = (zC * u_camZ + boxCoord.x * u_camRight + boxCoord.y * u_camUp);
 
            // Lighting
-           vec3 Normal = mat3(u_viewMatrix) * worldN;
+           vec3 Normal = mat3(u_modelView) * worldN;
            outputF = lightSurfaceMat(Normal, surfaceColor(), t_mat_r, t_mat_g, t_mat_b);
            
            // Set depth (expensive!)
            vec3 zOffset = -zC * u_camZ * u_pointRadius;
            vec3 realWorldPos = worldPosToFrag + zOffset;
-           vec4 clipPos = u_projMatrix * u_viewMatrix * vec4(realWorldPos, 1.0);
+           vec4 clipPos = u_projMatrix * u_modelView * vec4(realWorldPos, 1.0);
            float ndcDepth = clipPos.z / clipPos.w;
            gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
         }
@@ -478,7 +478,7 @@ static const FragShader SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
         uniform vec3 u_baseColor;
@@ -505,13 +505,13 @@ static const FragShader SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
            vec3 worldN = (zC * u_camZ + boxCoord.x * u_camRight + boxCoord.y * u_camUp);
            
            // Lighting
-           vec3 Normal = mat3(u_viewMatrix) * worldN;
+           vec3 Normal = mat3(u_modelView) * worldN;
            outputF = lightSurfaceMat(Normal, colorToFrag, t_mat_r, t_mat_g, t_mat_b);
            
            // Set depth (expensive!)
            vec3 zOffset = -zC * u_camZ * u_pointRadius;
            vec3 realWorldPos = worldPosToFrag + zOffset;
-           vec4 clipPos = u_projMatrix * u_viewMatrix * vec4(realWorldPos, 1.0);
+           vec4 clipPos = u_projMatrix * u_modelView * vec4(realWorldPos, 1.0);
            float ndcDepth = clipPos.z / clipPos.w;
            gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
         }

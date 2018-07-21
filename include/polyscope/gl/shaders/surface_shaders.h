@@ -4,7 +4,7 @@ static const VertShader PLAIN_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -17,7 +17,7 @@ static const VertShader PLAIN_SURFACE_VERT_SHADER =  {
 
     // source
     GLSL(150,
-      uniform mat4 u_viewMatrix;
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
@@ -27,9 +27,9 @@ static const VertShader PLAIN_SURFACE_VERT_SHADER =  {
 
       void main()
       {
-          Normal = mat3(u_viewMatrix) * a_normal;
+          Normal = mat3(u_modelView) * a_normal;
           Barycoord = a_barycoord;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };
@@ -92,7 +92,7 @@ static const VertShader VERTCOLOR_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -106,7 +106,7 @@ static const VertShader VERTCOLOR_SURFACE_VERT_SHADER =  {
 
     // source
     GLSL(150,
-      uniform mat4 u_viewMatrix;
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
@@ -119,10 +119,10 @@ static const VertShader VERTCOLOR_SURFACE_VERT_SHADER =  {
       void main()
       {
           //Normal = a_normal;
-          Normal = mat3(u_viewMatrix) * a_normal;
+          Normal = mat3(u_modelView) * a_normal;
           Barycoord = a_barycoord;
           Colorval = a_colorval;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };
@@ -197,7 +197,7 @@ static const VertShader VERTBINARY_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -211,7 +211,7 @@ static const VertShader VERTBINARY_SURFACE_VERT_SHADER =  {
 
     // source
     GLSL(150,
-      uniform mat4 u_viewMatrix;
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
@@ -223,10 +223,10 @@ static const VertShader VERTBINARY_SURFACE_VERT_SHADER =  {
 
       void main()
       {
-          Normal = mat3(u_viewMatrix) * a_normal;
+          Normal = mat3(u_modelView) * a_normal;
           Barycoord = a_barycoord;
           Colorval = a_colorval;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };
@@ -298,7 +298,7 @@ static const VertShader VERTCOLOR3_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -312,7 +312,7 @@ static const VertShader VERTCOLOR3_SURFACE_VERT_SHADER =  {
 
     // source
     GLSL(150,
-      uniform mat4 u_viewMatrix;
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
@@ -324,10 +324,10 @@ static const VertShader VERTCOLOR3_SURFACE_VERT_SHADER =  {
 
       void main()
       {
-          Normal = mat3(u_viewMatrix) * a_normal;
+          Normal = mat3(u_modelView) * a_normal;
           Barycoord = a_barycoord;
           Colorval = a_colorval;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };
@@ -393,9 +393,9 @@ static const VertShader HALFEDGECOLOR_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -409,7 +409,7 @@ static const VertShader HALFEDGECOLOR_SURFACE_VERT_SHADER =  {
 
     // source
     GLSL(150,
-      uniform mat4 u_viewMatrix;
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
@@ -421,10 +421,10 @@ static const VertShader HALFEDGECOLOR_SURFACE_VERT_SHADER =  {
 
       void main()
       {
-          Normal = mat3(u_viewMatrix) * a_normal;
+          Normal = mat3(u_modelView) * a_normal;
           Barycoord = a_barycoord;
           Colorval = a_colorvals;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };
@@ -514,7 +514,7 @@ static const VertShader PICK_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -530,7 +530,7 @@ static const VertShader PICK_SURFACE_VERT_SHADER =  {
 
     // source
     GLSL(150,
-      uniform mat4 u_viewMatrix;
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
 
       in vec3 a_position;
@@ -559,7 +559,7 @@ static const VertShader PICK_SURFACE_VERT_SHADER =  {
           }
           faceColor = a_faceColor;
           
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position, 1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position, 1.);
       }
     )
 };
@@ -637,7 +637,7 @@ static const VertShader FACECOLOR_PLAIN_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -649,7 +649,7 @@ static const VertShader FACECOLOR_PLAIN_SURFACE_VERT_SHADER =  {
 
     // source
     GLSL(150,
-      uniform mat4 u_viewMatrix;
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_color;
@@ -658,7 +658,7 @@ static const VertShader FACECOLOR_PLAIN_SURFACE_VERT_SHADER =  {
       void main()
       {
           Colorval = a_color;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };

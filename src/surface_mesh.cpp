@@ -2,9 +2,9 @@
 
 #include "polyscope/combining_hash_functions.h"
 #include "polyscope/gl/colors.h"
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/surface_shaders.h"
-#include "polyscope/gl/materials/materials.h"
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_count_quantity.h"
@@ -36,10 +36,6 @@ SurfaceMesh::SurfaceMesh(std::string name, std::vector<glm::vec3> vertexPosition
 
   prepare();
   preparePick();
-
-  if (options::autocenterStructures) {
-    centerBoundingBox();
-  }
 }
 
 SurfaceMesh::~SurfaceMesh() { deleteProgram(); }
@@ -62,7 +58,7 @@ void SurfaceMesh::draw() {
 
   // Set uniforms
   glm::mat4 viewMat = getModelView();
-  program->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+  program->setUniform("u_modelView", glm::value_ptr(viewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   program->setUniform("u_projMatrix", glm::value_ptr(projMat));
@@ -91,7 +87,7 @@ void SurfaceMesh::drawPick() {
 
   // Set uniforms
   glm::mat4 viewMat = getModelView();
-  pickProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+  pickProgram->setUniform("u_modelView", glm::value_ptr(viewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   pickProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
@@ -617,14 +613,14 @@ std::tuple<glm::vec3, glm::vec3> SurfaceMesh::boundingBox() {
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
 
   for (HalfedgeMesh::Vertex& vert : triMesh.vertices) {
-    glm::vec3 p = vert.position();
+    glm::vec3 p = glm::vec3(objectTransform * glm::vec4(vert.position(), 1.0));
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
 
   // Respect object transform
-  min = glm::vec3(objectTransform * glm::vec4(min.x, min.y, min.z, 1.0));
-  max = glm::vec3(objectTransform * glm::vec4(max.x, max.y, max.z, 1.0));
+  min = glm::vec3(glm::vec4(min.x, min.y, min.z, 1.0));
+  max = glm::vec3(glm::vec4(max.x, max.y, max.z, 1.0));
 
   return std::make_tuple(min, max);
 }

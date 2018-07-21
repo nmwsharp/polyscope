@@ -53,7 +53,7 @@ void SurfaceEdgeSubsetQuantity::draw() {
 
     // Set uniforms
     glm::mat4 viewMat = parent->getModelView();
-    program->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+    program->setUniform("u_modelView", glm::value_ptr(viewMat));
 
     glm::mat4 projMat = view::getCameraPerspectiveMatrix();
     program->setUniform("u_projMatrix", glm::value_ptr(projMat));

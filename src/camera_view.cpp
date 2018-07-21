@@ -57,7 +57,7 @@ void CameraView::drawWireframe() {
 
   // Set uniforms
   glm::mat4 viewMat = view::getCameraViewMatrix();
-  cameraSkeletonProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+  cameraSkeletonProgram->setUniform("u_modelView", glm::value_ptr(viewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   cameraSkeletonProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
@@ -77,7 +77,7 @@ void CameraView::drawImageView() {
 
   // Set uniforms
   glm::mat4 viewMat = view::getCameraViewMatrix();
-  imageViewProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+  imageViewProgram->setUniform("u_modelView", glm::value_ptr(viewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   imageViewProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
@@ -93,7 +93,7 @@ void CameraView::drawPick() {
 
   // Set uniforms
   glm::mat4 viewMat = view::getCameraViewMatrix();
-  pickProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+  pickProgram->setUniform("u_modelView", glm::value_ptr(viewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   pickProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));

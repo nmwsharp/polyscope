@@ -4,7 +4,7 @@ static const VertShader VERT_DIST_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -18,7 +18,7 @@ static const VertShader VERT_DIST_SURFACE_VERT_SHADER =  {
 
     // source
     GLSL(150,
-      uniform mat4 u_viewMatrix;
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
@@ -35,7 +35,7 @@ static const VertShader VERT_DIST_SURFACE_VERT_SHADER =  {
           Normal = a_normal;
           Barycoord = a_barycoord;
           Colorval = a_colorval;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(Position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(Position,1.);
       }
     )
 };

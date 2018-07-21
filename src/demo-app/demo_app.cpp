@@ -37,7 +37,7 @@ void processFileOBJ(string filename) {
   polyscope::loadPolygonSoup_OBJ(filename, vertexPositions, faceIndices);
   std::vector<glm::vec3> vertexPositionsGLM;
   for (std::array<double, 3> p : vertexPositions) {
-    vertexPositionsGLM.push_back({p[0], p[1], p[2]});
+    vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]} + glm::vec3{10, 10, 10});
   }
   polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
 
@@ -347,7 +347,7 @@ int main(int argc, char** argv) {
   }
 
   // Options
-  polyscope::options::autocenterStructures = true;
+  //polyscope::options::autocenterStructures = true;
 
   // Initialize polyscope
   polyscope::init();
@@ -359,11 +359,11 @@ int main(int argc, char** argv) {
   // Create a point cloud
   for (int j = 0; j < 2; j++) {
     std::vector<glm::vec3> points;
-    for (size_t i = 0; i < 5000; i++) {
+    for (size_t i = 0; i < 3; i++) {
       // points.push_back(glm::vec3{10,10,10} + 20*glm::vec3{randomUnit()-.5,
       // randomUnit()-.5, randomUnit()-.5});
       points.push_back(
-          3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
+          3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5} + glm::vec3{10, 10, 10});
     }
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
     addDataToPointCloud("really great points" + std::to_string(j), points);

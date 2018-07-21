@@ -4,7 +4,7 @@ static const VertShader WIREFRAME_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -15,13 +15,13 @@ static const VertShader WIREFRAME_VERT_SHADER =  {
 
     // source
     GLSL(150,
-      uniform mat4 u_viewMatrix;
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
 
       void main()
       {
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };

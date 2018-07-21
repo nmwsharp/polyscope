@@ -582,7 +582,8 @@ void buildPolyscopeGui() {
 
   ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
   if (ImGui::Button("Reset view")) {
-    view::flyToDefault();
+    view::flyToHomeView();
+    //view::flyToDefault();
   }
   if (ImGui::Button("Screenshot")) {
     screenshot(true);
@@ -776,6 +777,7 @@ void mainLoopIteration() {
 
 void show(bool shutdownAfter) {
   view::resetCameraToDefault();
+  view::flyToHomeView();
 
   // Main loop
   while (!glfwWindowShouldClose(mainWindow)) {

@@ -37,7 +37,7 @@ static const GeomShader RIBBON_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_viewMatrix", GLData::Matrix44Float},
+        {"u_modelView", GLData::Matrix44Float},
         {"u_projMatrix", GLData::Matrix44Float},
         {"u_ribbonWidth", GLData::Float},
         {"u_depthOffset", GLData::Float},
@@ -53,7 +53,7 @@ static const GeomShader RIBBON_GEOM_SHADER = {
         layout(triangle_strip, max_vertices=20) out;
         in vec3 Color[];
         in vec3 Normal[];
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_ribbonWidth;
         uniform float u_depthOffset;
@@ -62,7 +62,7 @@ static const GeomShader RIBBON_GEOM_SHADER = {
         out vec3 worldPosToFrag;
         out float intensityToFrag;
         void main()   {
-            mat4 PV = u_projMatrix * u_viewMatrix;
+            mat4 PV = u_projMatrix * u_modelView;
             const float PI = 3.14159265358;
 
             vec3 pos0 = gl_in[0].gl_Position.xyz;

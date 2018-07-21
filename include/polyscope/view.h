@@ -43,6 +43,11 @@ extern glm::dualquat flightTargetViewR, flightInitialViewR;
 extern glm::vec3 flightTargetViewT, flightInitialViewT;
 extern float flightTargetFov, flightInitialFov;
 
+// Default values
+extern const double defaultNearClipRatio;
+extern const double defaultFarClipRatio;
+extern const double defaultFov;
+
 // === View methods
 
 void processTranslate(glm::vec2 delta);
@@ -56,8 +61,15 @@ void processZoom(double amount);
 
 void setWindowSize(int width, int height);
 void setViewToCamera(const CameraParameters& p);
+
+// The "default" view simply looks at the origin
 void resetCameraToDefault();
 void flyToDefault();
+
+// The "home" view looks at the center of the scenes bounding box.
+glm::mat4 computeHomeView();
+void resetCameraToHomeView();
+void flyToHomeView();
 
 glm::mat4 getCameraViewMatrix();
 glm::mat4 getCameraPerspectiveMatrix();

@@ -4,7 +4,7 @@
 static const VertShader RAY_VERT_SHADER = {
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     }, 
 
@@ -21,7 +21,7 @@ static const VertShader RAY_VERT_SHADER = {
         in float a_tp;
         in float a_offset;
       
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
 
         out float tp;
@@ -29,7 +29,7 @@ static const VertShader RAY_VERT_SHADER = {
 
         void main()
         {
-            gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position,1.);
+            gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
             tp = a_tp;
             offset = a_offset;
         }
