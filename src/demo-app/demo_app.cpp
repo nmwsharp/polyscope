@@ -360,7 +360,7 @@ int main(int argc, char** argv) {
   // Create a point cloud
   for (int j = 0; j < 2; j++) {
     std::vector<glm::vec3> points;
-    for (size_t i = 0; i < 3; i++) {
+    for (size_t i = 0; i < 3000; i++) {
       // points.push_back(glm::vec3{10,10,10} + 20*glm::vec3{randomUnit()-.5,
       // randomUnit()-.5, randomUnit()-.5});
       points.push_back(

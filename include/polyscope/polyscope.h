@@ -108,6 +108,7 @@ void popContext();
 void mainLoopIteration();
 void bindDefaultBuffer();
 void initializeImGUIContext();
+void drawStructures();
 
 // Take screenshots of the current view
 void screenshot(std::string filename, bool transparentBG = true);

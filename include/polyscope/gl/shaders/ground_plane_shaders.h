@@ -39,6 +39,7 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
     {
       {"u_lengthScale", GLData::Float},
       {"u_centerXZ", GLData::Vector2Float},
+      {"u_viewportDim", GLData::Vector2Float},
     }, 
 
     // attributes
@@ -48,6 +49,7 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
     // textures 
     {
         {"t_ground", 2},
+        {"t_mirrorImage", 2},
     },
     
     // output location
@@ -57,9 +59,11 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
     GLSL(150,
 
       uniform sampler2D t_ground;
+      uniform sampler2D t_mirrorImage;
       uniform mat4 u_viewMatrix;
       uniform float u_lengthScale;
       uniform vec2 u_centerXZ;
+      uniform vec2 u_viewportDim;
       in vec3 Normal;
       in vec4 PositionWorldHomog;
       out vec4 outputF;
@@ -68,6 +72,20 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
       float orenNayarDiffuse( vec3 lightDirection, vec3 viewDirection, vec3 surfaceNormal, float roughness, float albedo);
       float specular( vec3 N, vec3 L, vec3 E, float shininess );
       float getEdgeFactor(vec2 UV);
+
+      vec4 blurMirrorSample() {
+        //vec2 screenCoords = vec2(gl_FragCoord.x / u_viewportDim.x, gl_FragCoord.y / u_viewportDim.y);
+        vec2 screenCoords = vec2(gl_FragCoord.x, gl_FragCoord.y);
+
+        vec4 mirrorImage =
+          texture(t_mirrorImage, screenCoords / u_viewportDim) * .6 + 
+          texture(t_mirrorImage, (screenCoords + vec2(+1.0, +1.0)) / u_viewportDim) * .1 + 
+          texture(t_mirrorImage, (screenCoords + vec2(+1.0, -1.0)) / u_viewportDim) * .1 + 
+          texture(t_mirrorImage, (screenCoords + vec2(-1.0, +1.0)) / u_viewportDim) * .1 + 
+          texture(t_mirrorImage, (screenCoords + vec2(-1.0, -1.0)) / u_viewportDim) * .1;
+
+        return mirrorImage;
+      }
 
       void main()
       {
@@ -78,12 +96,20 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
         float modDist = min(min(mod(coordXZ.x, 1.0), mod(coordXZ.y, 1.0)), min(mod(-coordXZ.x, 1.0), mod(-coordXZ.y, 1.0)));
         float stripeBlendFac = smoothstep(0.005, .01, modDist);
         vec4 baseColor = mix(texture(t_ground, coordXZ), vec4(.88, .88, .88, 1.), .6); 
-        vec4 color = mix( vec4(baseColor.xyz * .2, 1.0), baseColor, stripeBlendFac);
+        vec4 groundColor = mix( vec4(baseColor.xyz * .2, 1.0), baseColor, stripeBlendFac);
+
+        // Mirror image
+        //vec2 screenCoords = vec2(gl_FragCoord.x / u_viewportDim.x, gl_FragCoord.y / u_viewportDim.y);
+        //vec4 mirrorImage = texture(t_mirrorImage, screenCoords);
+        vec4 mirrorImage = blurMirrorSample();
+
+        // Ground color
+        vec3 color3 = mix(groundColor.rgb, mirrorImage.rgb * mirrorImage.w, .2 * mirrorImage.w);
 
         // Fade off far away
         float distFromCenter = length(coordXZ);
         float fadeFactor = 1.0 - smoothstep(8.0, 8.5, distFromCenter);
-        color.w *= fadeFactor;
+        vec4 color = vec4(color3, fadeFactor);
       
         // Lighting stuff
         vec4 posCameraSpace4 = u_viewMatrix * PositionWorldHomog;

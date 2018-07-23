@@ -433,6 +433,26 @@ void evaluatePickQuery(int xPos, int yPos) {
 }
 }
 
+void drawStructures() {
+
+  // Draw all off the structures registered with polyscope
+
+  for (auto catMap : state::structures) {
+    for (auto s : catMap.second) {
+
+      // Draw the pick buffer for debugging purposes
+      if (options::debugDrawPickBuffer) {
+        s.second->drawPick();
+      }
+      // The normal case
+      else {
+        s.second->draw();
+      }
+    }
+  }
+}
+
+
 namespace {
 
 float dragDistSinceLastRelease = 0.0;
@@ -538,8 +558,8 @@ void processMouseEvents() {
   }
 }
 
-void drawStructures() {
-
+void renderScene() {
+  
   // Activate the texture that we draw to
   sceneFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
   sceneFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
@@ -547,19 +567,7 @@ void drawStructures() {
   sceneFramebuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
   sceneFramebuffer->clear();
 
-  for (auto catMap : state::structures) {
-    for (auto s : catMap.second) {
-
-      // Draw the pick buffer for debugging purposes
-      if (options::debugDrawPickBuffer) {
-        s.second->drawPick();
-      }
-      // The normal case
-      else {
-        s.second->draw();
-      }
-    }
-  }
+  drawStructures();
 
   // Draw the ground plane
   drawGroundPlane(); 
@@ -587,13 +595,11 @@ void buildPolyscopeGui() {
   ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
   if (ImGui::Button("Reset view")) {
     view::flyToHomeView();
-    // view::flyToDefault();
   }
   if (ImGui::Button("Screenshot")) {
     screenshot(true);
   }
   ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-  // cout << "fps = " << ImGui::GetIO().Framerate << endl;
   
   // == Ground plane options
   buildGroundPlaneGui();
@@ -713,7 +719,7 @@ void draw(bool withUI = true) {
 
   // Draw structures in the scene
   if (redrawNextFrame || options::alwaysRedraw) {
-    drawStructures();
+    renderScene();
     redrawNextFrame = false;
   }
   renderSceneToScreen();
