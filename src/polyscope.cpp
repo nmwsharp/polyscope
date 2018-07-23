@@ -16,8 +16,9 @@
 #include "polyscope/imgui_impl_glfw.h"
 #include "polyscope/imgui_impl_opengl3.h"
 
-#include "polyscope/gl/shaders/texture_draw_shaders.h"
 #include "polyscope/gl/materials/materials.h"
+#include "polyscope/gl/shaders/texture_draw_shaders.h"
+#include "polyscope/ground_plane.h"
 #include "polyscope/pick.h"
 #include "polyscope/view.h"
 
@@ -559,6 +560,9 @@ void drawStructures() {
       }
     }
   }
+
+  // Draw the ground plane
+  drawGroundPlane(); 
 }
 
 void renderSceneToScreen() {
@@ -583,7 +587,7 @@ void buildPolyscopeGui() {
   ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
   if (ImGui::Button("Reset view")) {
     view::flyToHomeView();
-    //view::flyToDefault();
+    // view::flyToDefault();
   }
   if (ImGui::Button("Screenshot")) {
     screenshot(true);
@@ -798,6 +802,7 @@ void shutdown(int exitCode) {
 
   deleteGlobalBuffersAndPrograms();
   gl::unloadMaterialTextures();
+  deleteGroundPlaneResources();
 
   // ImGui shutdown things
   ImGui_ImplOpenGL3_Shutdown();

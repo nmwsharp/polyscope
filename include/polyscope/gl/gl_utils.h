@@ -180,6 +180,8 @@ public:
                     int size = -1);
   void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0,
                     int size = -1);
+  void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0,
+                    int size = -1);
   void setAttribute(std::string name, const std::vector<double>& data, bool update = false, int offset = 0,
                     int size = -1);
   void setAttribute(std::string name, const std::vector<int>& data, bool update = false, int offset = 0, int size = -1);
@@ -196,7 +198,7 @@ public:
   // Textures
   void setTexture1D(std::string name, unsigned char* texData, unsigned int length);
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
-                    bool withAlpha = true, bool useMipMap = false);
+                    bool withAlpha = true, bool useMipMap = false, bool repeat=false);
   void setTextureFromColormap(std::string name, Colormap colormap, bool allowUpdate = false);
   void setTextureFromBuffer(std::string name, GLTexturebuffer* textureBuffer);
 

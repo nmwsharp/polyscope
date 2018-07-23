@@ -17,7 +17,7 @@ namespace gl {
 // create a 1D texture from data
 GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int size1D, unsigned char* data)
     : format(format_), sizeX(size1D), dim(1) {
-  if(size1D > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
+  if (size1D > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
 
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_1D, handle);
@@ -27,7 +27,7 @@ GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int size1D, unsigned ch
 }
 GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int size1D, float* data)
     : format(format_), sizeX(size1D), dim(1) {
-  if(size1D > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
+  if (size1D > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
 
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_1D, handle);
@@ -39,7 +39,7 @@ GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int size1D, float* data
 // create a 2D texture from data
 GLTexturebuffer::GLTexturebuffer(GLint format_, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data)
     : format(format_), sizeX(sizeX_), sizeY(sizeY_), dim(2) {
-  if(sizeX > (1 << 22) || sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
+  if (sizeX > (1 << 22) || sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
 
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_2D, handle);
@@ -127,7 +127,7 @@ void GLTexturebuffer::bind() {
 // =============================================================
 GLRenderbuffer::GLRenderbuffer(RenderbufferType type_, unsigned int sizeX_, unsigned int sizeY_)
     : type(type_), sizeX(sizeX_), sizeY(sizeY_) {
-  if(sizeX > (1 << 22) || sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid renderbuffer dimensions");
+  if (sizeX > (1 << 22) || sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid renderbuffer dimensions");
 
   glGenRenderbuffers(1, &handle);
   glBindRenderbuffer(GL_RENDERBUFFER, handle);
@@ -620,6 +620,10 @@ void GLProgram::createBuffers() {
         glVertexAttribPointer(a.location + iArrInd, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3 * a.arrayCount,
                               reinterpret_cast<void*>(sizeof(float) * 3 * iArrInd));
         break;
+      case GLData::Vector4Float:
+        glVertexAttribPointer(a.location + iArrInd, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * a.arrayCount,
+                              reinterpret_cast<void*>(sizeof(float) * 4 * iArrInd));
+        break;
       default:
         throw std::invalid_argument("Unrecognized GLAttribute type");
         break;
@@ -895,6 +899,48 @@ void GLProgram::setAttribute(std::string name, const std::vector<glm::vec3>& dat
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
+void GLProgram::setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update, int offset, int size) {
+  // Reshape the vector
+  // Right now, the data is probably laid out in this form already... but let's
+  // not be overly clever and just reshape it.
+  std::vector<float> rawData(4 * data.size());
+  for (unsigned int i = 0; i < data.size(); i++) {
+    rawData[4 * i + 0] = static_cast<float>(data[i].x);
+    rawData[4 * i + 1] = static_cast<float>(data[i].y);
+    rawData[4 * i + 2] = static_cast<float>(data[i].z);
+    rawData[4 * i + 3] = static_cast<float>(data[i].w);
+  }
+
+  for (GLAttribute& a : attributes) {
+    if (a.name == name) {
+      if (a.type == GLData::Vector4Float) {
+        glBindVertexArray(vaoHandle);
+        glBindBuffer(GL_ARRAY_BUFFER, a.VBOLoc);
+        if (update) {
+          // TODO: Allow modifications to non-contiguous memory
+          offset *= 4 * sizeof(float);
+          if (size == -1)
+            size = 4 * a.dataSize * sizeof(float);
+          else
+            size *= 4 * sizeof(float);
+
+          glBufferSubData(GL_ARRAY_BUFFER, offset, size, &rawData[0]);
+        } else {
+          glBufferData(GL_ARRAY_BUFFER, 4 * data.size() * sizeof(float), &rawData[0], GL_STATIC_DRAW);
+          a.dataSize = data.size();
+        }
+      } else {
+        throw std::invalid_argument("Tried to set GLAttribute named " + name + " with wrong type. Actual type: " +
+                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
+                                    std::to_string(static_cast<int>(GLData::Vector4Float)));
+      }
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
 void GLProgram::setAttribute(std::string name, const std::vector<double>& data, bool update, int offset, int size) {
   // Convert input data to floats
   std::vector<float> floatData(data.size());
@@ -1045,7 +1091,7 @@ void GLProgram::setTexture1D(std::string name, unsigned char* texData, unsigned 
 }
 
 void GLProgram::setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
-                             bool withAlpha, bool useMipMap) {
+                             bool withAlpha, bool useMipMap, bool repeat) {
 
 
   // Find the right texture
@@ -1068,18 +1114,23 @@ void GLProgram::setTexture2D(std::string name, unsigned char* texData, unsigned 
     t.managedByProgram = true;
 
 
-    //// Set policies
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // Set policies
+    if (repeat) {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    } else {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    //// Use mip maps
-    // if (useMipMap) {
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    // glGenerateMipmap(GL_TEXTURE_2D);
-    //} else {
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    //}
+    // Use mip maps
+    if (useMipMap) {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+      glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    }
 
     t.isSet = true;
     return;
