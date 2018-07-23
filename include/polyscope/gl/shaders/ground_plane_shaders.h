@@ -6,6 +6,7 @@ static const VertShader GROUND_PLANE_VERT_SHADER =  {
     {
        {"u_viewMatrix", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
+       {"u_groundHeight", GLData::Float},
     },
 
     // attributes
@@ -17,15 +18,17 @@ static const VertShader GROUND_PLANE_VERT_SHADER =  {
     GLSL(150,
       uniform mat4 u_viewMatrix;
       uniform mat4 u_projMatrix;
+      uniform float u_groundHeight;
       in vec4 a_position;
       out vec3 Normal;
       out vec4 PositionWorldHomog;
 
       void main()
       {
+          vec4 adjustedPosition = a_position + vec4(0., u_groundHeight * a_position.w, 0., 0.);
           Normal = mat3(u_viewMatrix) * vec3(0., 1., 0.);
-          gl_Position = u_projMatrix * u_viewMatrix * a_position;
-          PositionWorldHomog = a_position;
+          gl_Position = u_projMatrix * u_viewMatrix * adjustedPosition;
+          PositionWorldHomog = adjustedPosition;
       }
     )
 };
@@ -34,6 +37,8 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
     
     // uniforms
     {
+      {"u_lengthScale", GLData::Float},
+      {"u_centerXZ", GLData::Vector2Float},
     }, 
 
     // attributes
@@ -42,9 +47,6 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
     
     // textures 
     {
-        {"t_mat_r", 2},
-        {"t_mat_g", 2},
-        {"t_mat_b", 2},
         {"t_ground", 2},
     },
     
@@ -54,23 +56,50 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
     // source 
     GLSL(150,
 
-      uniform sampler2D t_mat_r;
-      uniform sampler2D t_mat_g;
-      uniform sampler2D t_mat_b;
       uniform sampler2D t_ground;
+      uniform mat4 u_viewMatrix;
+      uniform float u_lengthScale;
+      uniform vec2 u_centerXZ;
       in vec3 Normal;
       in vec4 PositionWorldHomog;
       out vec4 outputF;
 
       vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
+      float orenNayarDiffuse( vec3 lightDirection, vec3 viewDirection, vec3 surfaceNormal, float roughness, float albedo);
+      float specular( vec3 N, vec3 L, vec3 E, float shininess );
+      float getEdgeFactor(vec2 UV);
 
       void main()
       {
-        vec2 coordXZ = PositionWorldHomog.xz / PositionWorldHomog.w;
-        coordXZ /= 10;
-        vec4 color = texture(t_ground, coordXZ);
-        //vec4 colorMod = vec4(mod(coordXZ.x, 1.0), mod(coordXZ.y, 1.0), 0.0, 1.0);
-        outputF = lightSurfaceMat(Normal, color.xyz, t_mat_r, t_mat_g, t_mat_b);
+        vec2 coordXZ = PositionWorldHomog.xz / PositionWorldHomog.w - u_centerXZ;
+        coordXZ /= u_lengthScale * .5;
+
+        // Checker stripes
+        float modDist = min(min(mod(coordXZ.x, 1.0), mod(coordXZ.y, 1.0)), min(mod(-coordXZ.x, 1.0), mod(-coordXZ.y, 1.0)));
+        float stripeBlendFac = smoothstep(0.005, .01, modDist);
+        vec4 baseColor = mix(texture(t_ground, coordXZ), vec4(.88, .88, .88, 1.), .6); 
+        vec4 color = mix( vec4(baseColor.xyz * .2, 1.0), baseColor, stripeBlendFac);
+
+        // Fade off far away
+        float distFromCenter = length(coordXZ);
+        float fadeFactor = 1.0 - smoothstep(8.0, 8.5, distFromCenter);
+        color.w *= fadeFactor;
+      
+        // Lighting stuff
+        vec4 posCameraSpace4 = u_viewMatrix * PositionWorldHomog;
+        vec3 posCameraSpace = posCameraSpace4.xyz / posCameraSpace4.w;
+        vec3 normalCameraSpace = mat3(u_viewMatrix) * vec3(0., 1., 0.);
+        vec3 eyeCameraSpace = vec3(0., 0., 0.);
+        vec3 lightPosCameraSpace = vec3(5., 5., -5.) * u_lengthScale;
+        vec3 lightDir = normalize(lightPosCameraSpace - posCameraSpace);
+        vec3 eyeDir = normalize(eyeCameraSpace - posCameraSpace);
+
+        float coloredBrightness = 1.2 *orenNayarDiffuse(lightDir, eyeDir, normalCameraSpace, .2, 1.0) + .5;
+        float whiteBrightness = .25 * specular(normalCameraSpace, lightDir, eyeDir, 12.);
+
+        vec4 lightColor = vec4(color.xyz * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness, color.w);
+        
+        outputF = lightColor;
       }
 
     )

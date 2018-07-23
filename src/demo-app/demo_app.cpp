@@ -38,6 +38,7 @@ void processFileOBJ(string filename) {
   std::vector<glm::vec3> vertexPositionsGLM;
   for (std::array<double, 3> p : vertexPositions) {
     vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]} + glm::vec3{10, 10, 10});
+    //vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]});
   }
   polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
 
@@ -364,6 +365,7 @@ int main(int argc, char** argv) {
       // randomUnit()-.5, randomUnit()-.5});
       points.push_back(
           3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5} + glm::vec3{10, 10, 10});
+          //3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
     }
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
     addDataToPointCloud("really great points" + std::to_string(j), points);

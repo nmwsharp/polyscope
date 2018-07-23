@@ -594,6 +594,9 @@ void buildPolyscopeGui() {
   }
   ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
   // cout << "fps = " << ImGui::GetIO().Framerate << endl;
+  
+  // == Ground plane options
+  buildGroundPlaneGui();
 
   // == Debugging-related options
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
