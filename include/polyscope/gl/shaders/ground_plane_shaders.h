@@ -67,18 +67,18 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
 
       float orenNayarDiffuse( vec3 lightDirection, vec3 viewDirection, vec3 surfaceNormal, float roughness, float albedo);
       float specular( vec3 N, vec3 L, vec3 E, float shininess );
-      float getEdgeFactor(vec2 UV);
+      vec3 gammaCorrect( vec3 colorLinear );
 
       vec4 blurMirrorSample() {
         //vec2 screenCoords = vec2(gl_FragCoord.x / u_viewportDim.x, gl_FragCoord.y / u_viewportDim.y);
         vec2 screenCoords = vec2(gl_FragCoord.x, gl_FragCoord.y);
 
         vec4 mirrorImage =
-          texture(t_mirrorImage, screenCoords / u_viewportDim) * .6 + 
-          texture(t_mirrorImage, (screenCoords + vec2(+1.0, +1.0)) / u_viewportDim) * .1 + 
-          texture(t_mirrorImage, (screenCoords + vec2(+1.0, -1.0)) / u_viewportDim) * .1 + 
-          texture(t_mirrorImage, (screenCoords + vec2(-1.0, +1.0)) / u_viewportDim) * .1 + 
-          texture(t_mirrorImage, (screenCoords + vec2(-1.0, -1.0)) / u_viewportDim) * .1;
+          texture(t_mirrorImage, screenCoords / u_viewportDim) * .4 + 
+          texture(t_mirrorImage, (screenCoords + vec2(+1.0, +1.0)) / u_viewportDim) * .15 + 
+          texture(t_mirrorImage, (screenCoords + vec2(+1.0, -1.0)) / u_viewportDim) * .15 + 
+          texture(t_mirrorImage, (screenCoords + vec2(-1.0, +1.0)) / u_viewportDim) * .15 + 
+          texture(t_mirrorImage, (screenCoords + vec2(-1.0, -1.0)) / u_viewportDim) * .15;
 
         return mirrorImage;
       }
@@ -116,10 +116,14 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
         vec3 lightDir = normalize(lightPosCameraSpace - posCameraSpace);
         vec3 eyeDir = normalize(eyeCameraSpace - posCameraSpace);
 
-        float coloredBrightness = 1.2 *orenNayarDiffuse(lightDir, eyeDir, normalCameraSpace, .2, 1.0) + .5;
+        //float coloredBrightness = 1.2 *orenNayarDiffuse(lightDir, eyeDir, normalCameraSpace, .1, 1.0) + .3;
+        // NOTE: parameters swapped from comments.. which is correct?
+        float coloredBrightness = 1.2 *orenNayarDiffuse(eyeDir, lightDir, normalCameraSpace, .05, 1.0) + .3;
         float whiteBrightness = .25 * specular(normalCameraSpace, lightDir, eyeDir, 12.);
+        //float coloredBrightness = 1.25 *orenNayarDiffuse(lightDir, eyeDir, normalCameraSpace, .1, 1.0) + .0;
+        //float whiteBrightness = .5 * specular(normalCameraSpace, lightDir, eyeDir, 12.);
 
-        vec4 lightColor = vec4(color.xyz * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness, color.w);
+        vec4 lightColor = vec4(gammaCorrect(color.xyz * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness), color.w);
         
         outputF = lightColor;
       }
