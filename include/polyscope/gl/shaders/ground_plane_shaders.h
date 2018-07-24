@@ -20,13 +20,11 @@ static const VertShader GROUND_PLANE_VERT_SHADER =  {
       uniform mat4 u_projMatrix;
       uniform float u_groundHeight;
       in vec4 a_position;
-      out vec3 Normal;
       out vec4 PositionWorldHomog;
 
       void main()
       {
           vec4 adjustedPosition = a_position + vec4(0., u_groundHeight * a_position.w, 0., 0.);
-          Normal = mat3(u_viewMatrix) * vec3(0., 1., 0.);
           gl_Position = u_projMatrix * u_viewMatrix * adjustedPosition;
           PositionWorldHomog = adjustedPosition;
       }
@@ -64,11 +62,9 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
       uniform float u_lengthScale;
       uniform vec2 u_centerXZ;
       uniform vec2 u_viewportDim;
-      in vec3 Normal;
       in vec4 PositionWorldHomog;
       out vec4 outputF;
 
-      vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
       float orenNayarDiffuse( vec3 lightDirection, vec3 viewDirection, vec3 surfaceNormal, float roughness, float albedo);
       float specular( vec3 N, vec3 L, vec3 E, float shininess );
       float getEdgeFactor(vec2 UV);
