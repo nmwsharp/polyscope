@@ -327,14 +327,6 @@ void init() {
   // Initialize pick buffer
   allocateGlobalBuffersAndPrograms();
 
-  // Initialize with default maps so they show up in UI and user knows they exist
-  if (options::initializeWithDefaultStructures) {
-    state::structures[PointCloud::structureTypeName] = {};
-    state::structures[SurfaceMesh::structureTypeName] = {};
-    state::structures[CameraView::structureTypeName] = {};
-    state::structures[RaySet::structureTypeName] = {};
-  }
-
   state::initialized = true;
 }
 
@@ -849,31 +841,6 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
   return true;
 }
 
-void registerPointCloud(std::string name, const std::vector<glm::vec3>& points, bool replaceIfPresent) {
-  PointCloud* s = new PointCloud(name, points);
-  bool success = registerStructure(s);
-  if (!success) delete s;
-}
-
-void registerSurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
-                         const std::vector<std::vector<size_t>>& faceIndices, bool replaceIfPresent) {
-  SurfaceMesh* s = new SurfaceMesh(name, vertexPositions, faceIndices);
-  bool success = registerStructure(s);
-  if (!success) delete s;
-}
-
-void registerCameraView(std::string name, CameraParameters p, bool replaceIfPresent) {
-  CameraView* s = new CameraView(name, p);
-  bool success = registerStructure(s);
-  if (!success) delete s;
-}
-
-void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& r, bool replaceIfPresent) {
-  RaySet* s = new RaySet(name, r);
-  bool success = registerStructure(s);
-  if (!success) delete s;
-}
-
 Structure* getStructure(std::string type, std::string name) {
 
   // If there are no structures of that type it is an automatic fail
@@ -902,19 +869,7 @@ Structure* getStructure(std::string type, std::string name) {
 }
 
 
-PointCloud* getPointCloud(std::string name) {
-  return dynamic_cast<PointCloud*>(getStructure(PointCloud::structureTypeName, name));
-}
 
-SurfaceMesh* getSurfaceMesh(std::string name) {
-  return dynamic_cast<SurfaceMesh*>(getStructure(SurfaceMesh::structureTypeName, name));
-}
-
-CameraView* getCameraView(std::string name) {
-  return dynamic_cast<CameraView*>(getStructure(CameraView::structureTypeName, name));
-}
-
-RaySet* getRaySet(std::string name) { return dynamic_cast<RaySet*>(getStructure(RaySet::structureTypeName, name)); }
 
 void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
 

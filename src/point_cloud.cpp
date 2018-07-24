@@ -25,17 +25,6 @@ namespace polyscope {
 // Initialize statics
 const std::string PointCloud::structureTypeName = "Point Cloud";
 
-PointCloud::PointCloud(std::string name, const std::vector<glm::vec3>& points_)
-    : Structure(name, structureTypeName), points(points_) {
-
-  initialBaseColor = getNextStructureColor();
-  pointColor = initialBaseColor;
-  colorManager = SubColorManager(initialBaseColor);
-
-  prepare();
-  preparePick();
-}
-
 PointCloud::~PointCloud() {
   deleteProgram();
 

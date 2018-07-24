@@ -4,6 +4,7 @@
 
 #include "polyscope/camera_parameters.h"
 #include "polyscope/gl/gl_utils.h"
+#include "polyscope/polyscope.h"
 #include "polyscope/structure.h"
 
 
@@ -89,4 +90,18 @@ private:
   static float globalImageTransparency;
   float cameraSkeletonScale; // the lengthscale cameras were first drawn with
 };
+
+
+// Shorthand to add a camera view to polyscope
+inline void registerCameraView(std::string name, CameraParameters p, bool replaceIfPresent = true) {
+  CameraView* s = new CameraView(name, p);
+  bool success = registerStructure(s);
+  if (!success) delete s;
 }
+
+// Shorthand to get a camera view from polyscope
+inline CameraView* getCameraView(std::string name = "") {
+  return dynamic_cast<CameraView*>(getStructure(CameraView::structureTypeName, name));
+}
+
+} // namespace polyscope

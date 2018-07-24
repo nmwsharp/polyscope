@@ -26,9 +26,6 @@ namespace options {
     // Read preferences (window size, etc) from startup file, write to same file on exit (default: true)
     extern bool usePrefsFile;
     
-    // Show empty structure types from startup (default: true)
-    extern bool initializeWithDefaultStructures;
-    
     // Should we redraw every frame, even if not requested? (defualt: false)
     extern bool alwaysRedraw;
 

@@ -7,6 +7,7 @@
 #include "polyscope/color_management.h"
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/halfedge_mesh.h"
+#include "polyscope/polyscope.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
 
@@ -87,7 +88,11 @@ public:
   // === Member functions ===
 
   // Construct a new surface mesh structure
-  SurfaceMesh(std::string name, std::vector<glm::vec3> vertexPositions_, std::vector<std::vector<size_t>> faceIndices_);
+  template <class V, class F>
+  SurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices);
+  // SurfaceMesh(std::string name, std::vector<glm::vec3> vertexPositions_, std::vector<std::vector<size_t>>
+  // faceIndices_);
+
   ~SurfaceMesh();
 
   // Render the the structure on screen
@@ -114,6 +119,7 @@ public:
   // === Quantity-related
 
   // general form
+  void addSurfaceQuantity(SurfaceQuantity* quantity); // will be deleted internally when appropriate
   void addSurfaceQuantity(std::shared_ptr<SurfaceQuantity> quantity);
   std::shared_ptr<SurfaceQuantity> getSurfaceQuantity(std::string name, bool errorIfAbsent = true);
 
@@ -264,6 +270,40 @@ private:
   // bool screenSpaceTriangleTest(size_t fInd, glm::vec2 testCoords, glm::vec3& bCoordOut);
 };
 
+
+// Shorthand to add a mesh to polyscope
+template <class V, class F>
+void registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
+                         bool replaceIfPresent = true) {
+  SurfaceMesh* s = new SurfaceMesh(name, vertexPositions, faceIndices);
+  bool success = registerStructure(s);
+  if (!success) delete s;
+}
+
+
+// Shorthand to get a mesh from polyscope
+inline SurfaceMesh* getSurfaceMesh(std::string name = "") {
+  return dynamic_cast<SurfaceMesh*>(getStructure(SurfaceMesh::structureTypeName, name));
+}
+
+
+// Implementation of templated constructor
+template <class V, class F>
+SurfaceMesh::SurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices)
+    : Structure(name, SurfaceMesh::structureTypeName), mesh(standardizeVectorArray<glm::vec3, V, 3>(vertexPositions),
+                                                            standardizeNestedList<size_t, F>(faceIndices), false),
+      triMesh(standardizeVectorArray<glm::vec3, V, 3>(vertexPositions), standardizeNestedList<size_t, F>(faceIndices),
+              true) {
+
+  // Colors
+  baseColor = getNextStructureColor();
+  surfaceColor = baseColor;
+  colorManager = SubColorManager(baseColor);
+
+  prepare();
+  preparePick();
+}
+
 // Make mesh element type printable
 inline std::string getMeshElementTypeName(MeshElement type) {
   switch (type) {
@@ -280,6 +320,7 @@ inline std::string getMeshElementTypeName(MeshElement type) {
 inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
   return out << getMeshElementTypeName(value);
 }
+
 } // namespace polyscope
 
 

@@ -1,4 +1,4 @@
-#include "polyscope/point_cloud.h"
+#include "polyscope/ray_set.h"
 
 #include "polyscope/gl/colors.h"
 #include "polyscope/gl/shaders.h"
@@ -47,8 +47,7 @@ void RaySet::draw() {
   program->setUniform("u_time", t);
   float streakWidth = 0.3 * streakLengthFactor * state::lengthScale;
   program->setUniform("u_streakWidth", streakWidth);
-  
-  
+
 
   program->setUniform("u_color", rayColor);
 
@@ -63,8 +62,7 @@ void RaySet::prepare() {
   // std::shuffle(rayPaths.begin(), rayPaths.end());
 
   // Create the GL program
-  program = new gl::GLProgram(&RAY_VERT_SHADER, &RAY_GEOM_SHADER, &RAY_FRAG_SHADER,
-                              gl::DrawMode::Lines);
+  program = new gl::GLProgram(&RAY_VERT_SHADER, &RAY_GEOM_SHADER, &RAY_FRAG_SHADER, gl::DrawMode::Lines);
 
   // Attributes to fill
   std::vector<glm::vec3> points;
@@ -133,7 +131,7 @@ void RaySet::prepare() {
 
   // Set a reasonable default value for the default view factor
   float maxReasonableViewRays = 10000;
-  viewIntervalFactor = glm::clamp(maxReasonableViewRays / (.5 * points.size()), 0.0, 1.0); 
+  viewIntervalFactor = glm::clamp(maxReasonableViewRays / (.5 * points.size()), 0.0, 1.0);
 }
 
 void RaySet::preparePick() {}
@@ -146,9 +144,8 @@ void RaySet::drawUI() {
   if (ImGui::TreeNode(name.c_str())) {
     ImGui::Checkbox("Enabled", &enabled);
     ImGui::SameLine();
-    ImGui::ColorEdit3("Ray color", (float*)&rayColor,
-                      ImGuiColorEditFlags_NoInputs);
-  
+    ImGui::ColorEdit3("Ray color", (float*)&rayColor, ImGuiColorEditFlags_NoInputs);
+
     ImGui::SliderFloat("Prune fraction", &viewIntervalFactor, 0.0, 1.0, "%.5f", 3.);
     ImGui::SliderFloat("Speed", &speedFactor, 0.0, 1., "%.3f", 3);
     ImGui::SliderFloat("Streak length", &streakLengthFactor, 0.0, .1, "%.5f", 3.);
@@ -167,8 +164,7 @@ double RaySet::lengthScale() {
   for (const auto& path : rayPaths) {
     for (const RayPoint& p : path) {
       if (!p.isInfiniteDirection) {
-        lengthScale =
-            std::max(lengthScale, (double)glm::length2(p.v - center));
+        lengthScale = std::max(lengthScale, (double)glm::length2(p.v - center));
       }
     }
   }
@@ -176,8 +172,7 @@ double RaySet::lengthScale() {
   return 2 * std::sqrt(lengthScale);
 }
 
-std::tuple<glm::vec3, glm::vec3>
-RaySet::boundingBox() {
+std::tuple<glm::vec3, glm::vec3> RaySet::boundingBox() {
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
 
@@ -193,4 +188,4 @@ RaySet::boundingBox() {
   return std::make_tuple(min, max);
 }
 
-}  // namespace polyscope
+} // namespace polyscope

@@ -5,6 +5,7 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
 #include "polyscope/gl/gl_utils.h"
+#include "polyscope/polyscope.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
 
@@ -57,7 +58,8 @@ public:
   // === Member functions ===
 
   // Construct a new point cloud structure
-  PointCloud(std::string name, const std::vector<glm::vec3>& points);
+  template <class T>
+  PointCloud(std::string name, const T& points);
   ~PointCloud();
 
   // Render the the structure on screen
@@ -146,6 +148,36 @@ private:
   // Helpers
   void setPointCloudUniforms(gl::GLProgram* p, bool withLight);
 };
+
+
+// Implementation of templated constructor
+template <class T>
+PointCloud::PointCloud(std::string name, const T& points_)
+    : Structure(name, structureTypeName), points(standardizeVectorArray<glm::vec3, T, 3>(points_)) {
+
+  initialBaseColor = getNextStructureColor();
+  pointColor = initialBaseColor;
+  colorManager = SubColorManager(initialBaseColor);
+
+  prepare();
+  preparePick();
+}
+
+
+// Shorthand to add a point cloud to polyscope
+template <class T>
+void registerPointCloud(std::string name, const T& points, bool replaceIfPresent = true) {
+  PointCloud* s = new PointCloud(name, points);
+  bool success = registerStructure(s);
+  if (!success) delete s;
+}
+
+
+// Shorthand to get a point cloud from polyscope
+inline PointCloud* getPointCloud(std::string name = "") {
+  return dynamic_cast<PointCloud*>(getStructure(PointCloud::structureTypeName, name));
+}
+
 
 } // namespace polyscope
 

@@ -2,6 +2,8 @@
 
 #include "polyscope/combining_hash_functions.h"
 #include "polyscope/surface_mesh_io.h"
+#include "polyscope/surface_mesh.h"
+#include "polyscope/point_cloud.h"
 
 #include <iostream>
 #include <unordered_set>
@@ -13,7 +15,6 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/string_cast.hpp"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 

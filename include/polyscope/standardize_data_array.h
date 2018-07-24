@@ -65,21 +65,19 @@ std::vector<D> standardizeArray(const T& inputData) {
 }
 
 // Convert between various low dimensional vector types
-template <class T, class D, int N>
+template <class T, class D>
 inline D accessVectorLikeValue(T& inVal, size_t ind) {
   return inVal[ind];
 }
+
+// Template overload to access the two elements of std::complex
 template <>
-inline double accessVectorLikeValue<std::complex<double>, double, 2>(std::complex<double>& inVal, size_t ind) {
-  if (ind == 0) {
-    return inVal.real();
-  } else if (ind == 1) {
-    return inVal.imag();
-  }
-  return -1.0;
+inline double accessVectorLikeValue<std::complex<double>, double>(std::complex<double>& inVal, size_t ind) {
+  return reinterpret_cast<double(&)[2]>(inVal)[ind]; // guaranteed to work by the standard
 }
 
-// Convert an array of low-dimensional vector types
+// Convert an array of low-dimensional vector types. Outer type must support size() method. Inner type dimensions are
+// not checked, and must match expected inner dimension N.
 template <class D, class T, int N>
 std::vector<D> standardizeVectorArray(const T& inputData) {
 
@@ -88,10 +86,29 @@ std::vector<D> standardizeVectorArray(const T& inputData) {
   typedef typename std::remove_reference<decltype(dataOut[0][0])>::type OutScalarT;
   for (size_t i = 0; i < inputData.size(); i++) {
     for (size_t j = 0; j < N; j++) {
-      dataOut[i][j] = accessVectorLikeValue<decltype(inputData[0]), OutScalarT, N>(inputData[i], j);
+      dataOut[i][j] = accessVectorLikeValue<decltype(inputData[0]), OutScalarT>(inputData[i], j);
     }
   }
 
   return dataOut;
 }
+
+// Convert a nested array where the inner types have variable length. Inner and outer types must support a size()
+// method. Always returns a std::vector<std::vector<D>>
+template <class D, class T>
+std::vector<std::vector<D>> standardizeNestedList(const T& inputData) {
+
+  // Copy data
+  std::vector<std::vector<D>> dataOut(inputData.size());
+  for (size_t i = 0; i < inputData.size(); i++) {
+    size_t N = inputData[i].size();
+    dataOut[i].resize(N);
+    for (size_t j = 0; j < N; j++) {
+      dataOut[i][j] = accessVectorLikeValue<decltype(inputData[0]), D>(inputData[i], j);
+    }
+  }
+
+  return dataOut;
 }
+
+} // namespace polyscope

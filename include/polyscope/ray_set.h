@@ -2,15 +2,15 @@
 
 #include <vector>
 
-#include "polyscope/gl/gl_utils.h"
-#include "polyscope/structure.h"
 #include "polyscope/color_management.h"
+#include "polyscope/gl/gl_utils.h"
+#include "polyscope/polyscope.h"
+#include "polyscope/structure.h"
 
 namespace polyscope {
 
 struct RayPoint {
-  RayPoint(glm::vec3 v_, bool isInf = false)
-      : v(v_), isInfiniteDirection(isInf) {}
+  RayPoint(glm::vec3 v_, bool isInf = false) : v(v_), isInfiniteDirection(isInf) {}
 
   glm::vec3 v;
 
@@ -20,7 +20,7 @@ struct RayPoint {
 };
 
 class RaySet : public Structure {
- public:
+public:
   // === Member functions ===
 
   // Construct a new point cloud structure
@@ -46,14 +46,13 @@ class RaySet : public Structure {
   virtual double lengthScale() override;
 
   // Axis-aligned bounding box for the structure
-  virtual std::tuple<glm::vec3, glm::vec3>
-  boundingBox() override;
+  virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
 
   bool enabled = false;
 
   static const std::string structureTypeName;
 
- private:
+private:
   // The ray paths in the set
   std::vector<std::vector<RayPoint>> rayPaths;
 
@@ -69,4 +68,15 @@ class RaySet : public Structure {
   gl::GLProgram* program = nullptr;
 };
 
-}  // namespace polyscope
+
+inline void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& r, bool replaceIfPresent) {
+  RaySet* s = new RaySet(name, r);
+  bool success = registerStructure(s);
+  if (!success) delete s;
+}
+
+inline RaySet* getRaySet(std::string name) {
+  return dynamic_cast<RaySet*>(getStructure(RaySet::structureTypeName, name));
+}
+
+} // namespace polyscope

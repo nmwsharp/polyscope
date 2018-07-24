@@ -3,14 +3,10 @@
 #include <map>
 #include <unordered_set>
 
-#include "polyscope/camera_view.h"
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/messages.h"
 #include "polyscope/options.h"
-#include "polyscope/point_cloud.h"
-#include "polyscope/ray_set.h"
 #include "polyscope/structure.h"
-#include "polyscope/surface_mesh.h"
 #include "polyscope/utilities.h"
 
 #include "imgui.h"
@@ -59,22 +55,12 @@ extern size_t screenshotInd;
 
 // Register a structure with polyscope
 // `name` is a globally unique identifier for the structure
-// TODO use the data adaptors here
 bool registerStructure(Structure* structure, bool replaceIfPresent = true);
-void registerPointCloud(std::string name, const std::vector<glm::vec3>& points, bool replaceIfPresent = true);
-void registerSurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
-                         const std::vector<std::vector<size_t>>& faceIndices, bool replaceIfPresent = true);
-void registerCameraView(std::string name, CameraParameters p, bool replaceIfPresent = true);
-void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& r, bool replaceIfPresent = true);
 
 // Get a reference to a structure that has been registered
 // The default version with name="" arbitrarily returns any structure of that type. This is useful as a shorthand when
 // only using a single structure.
 Structure* getStructure(std::string type, std::string name = "");
-PointCloud* getPointCloud(std::string name = "");
-SurfaceMesh* getSurfaceMesh(std::string name = "");
-CameraView* getCameraView(std::string name = "");
-RaySet* getRaySet(std::string name = "");
 
 // De-register a structure, of any type. Also removes any quantities associated with the structure
 void removeStructure(std::string type, std::string name, bool errorIfAbsent = true);

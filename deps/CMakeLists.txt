@@ -14,3 +14,5 @@ add_subdirectory(imgui)
 
 ## Argparse
 
+## STB stuff
+add_subdirectory(stb)

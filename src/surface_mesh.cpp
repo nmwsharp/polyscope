@@ -24,19 +24,6 @@ namespace polyscope {
 // Initialize statics
 const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
-SurfaceMesh::SurfaceMesh(std::string name, std::vector<glm::vec3> vertexPositions_,
-                         std::vector<std::vector<size_t>> faceIndices_)
-    : Structure(name, SurfaceMesh::structureTypeName), mesh(vertexPositions_, faceIndices_, false),
-      triMesh(vertexPositions_, faceIndices_, true) {
-
-  // Colors
-  baseColor = getNextStructureColor();
-  surfaceColor = baseColor;
-  colorManager = SubColorManager(baseColor);
-
-  prepare();
-  preparePick();
-}
 
 SurfaceMesh::~SurfaceMesh() { deleteProgram(); }
 
@@ -803,6 +790,12 @@ SurfaceQuantity::SurfaceQuantity(std::string name_, SurfaceMesh* mesh_) : name(n
 SurfaceQuantityThatDrawsFaces::SurfaceQuantityThatDrawsFaces(std::string name_, SurfaceMesh* mesh_)
     : SurfaceQuantity(name_, mesh_) {}
 SurfaceQuantity::~SurfaceQuantity() {}
+
+void SurfaceMesh::addSurfaceQuantity(SurfaceQuantity* quantity) {
+  std::shared_ptr<SurfaceQuantity> ptr;
+  ptr.reset(quantity);
+  addSurfaceQuantity(ptr);
+}
 
 void SurfaceMesh::addSurfaceQuantity(std::shared_ptr<SurfaceQuantity> quantity) {
   // Delete old if in use
