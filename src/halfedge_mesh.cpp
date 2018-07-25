@@ -487,12 +487,12 @@ HalfedgeMesh::HalfedgeMesh(const std::vector<glm::vec3> vertexPositions,
   }
 
   // Print some nice statistics
-  std::cout << "Constructed halfedge mesh with: " << std::endl;
-  std::cout << "    # verts =  " << nVertices() << std::endl;
-  std::cout << "    # edges =  " << nEdges() << std::endl;
-  std::cout << "    # faces =  " << nFaces() << std::endl;
-  std::cout << "    # halfedges =  " << nHalfedges() << std::endl;
-  std::cout << "      and " << nBoundaryLoops << " boundary components. " << std::endl;
+  // std::cout << "Constructed halfedge mesh with: " << std::endl;
+  // std::cout << "    # verts =  " << nVertices() << std::endl;
+  // std::cout << "    # edges =  " << nEdges() << std::endl;
+  // std::cout << "    # faces =  " << nFaces() << std::endl;
+  // std::cout << "    # halfedges =  " << nHalfedges() << std::endl;
+  // std::cout << "      and " << nBoundaryLoops << " boundary components. " << std::endl;
 
   // Compute some basic information about the mesh
   cacheInfo();

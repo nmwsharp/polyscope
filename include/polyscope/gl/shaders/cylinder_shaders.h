@@ -52,7 +52,6 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
         uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_radius;
-        out vec3 worldPosToFrag;
         out vec3 cameraNormal;
 
         void main()   {
@@ -89,7 +88,6 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
                 { // Lower left
                     vec4 worldPos = vec4(rootP + norm0 * u_radius, 1.);
                     gl_Position = PV * worldPos;
-                    worldPosToFrag = worldPos.xyz;
                     cameraNormal = mat3(u_modelView) * norm0;
                     EmitVertex();
                 }
@@ -97,7 +95,6 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
                 { // Lower right
                     vec4 worldPos = vec4(rootP + norm1 * u_radius, 1.);
                     gl_Position = PV * worldPos;
-                    worldPosToFrag = worldPos.xyz;
                     cameraNormal = mat3(u_modelView) * norm1;
                     EmitVertex();
                 }
@@ -105,7 +102,6 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
                 { // Upper left
                     vec4 worldPos = vec4(capP + norm0 * u_radius, 1.);
                     gl_Position = PV * worldPos;
-                    worldPosToFrag = worldPos.xyz;
                     cameraNormal = mat3(u_modelView) * norm0;
                     EmitVertex();
                 }
@@ -113,7 +109,6 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
                 { // Upper right
                     vec4 worldPos = vec4(capP + norm1 * u_radius, 1.);
                     gl_Position = PV * worldPos;
-                    worldPosToFrag = worldPos.xyz;
                     cameraNormal = mat3(u_modelView) * norm1;
                     EmitVertex();
                 }
@@ -155,7 +150,6 @@ static const FragShader SHINY_CYLINDER_FRAG_SHADER = {
         uniform sampler2D t_mat_r;
         uniform sampler2D t_mat_g;
         uniform sampler2D t_mat_b;
-        in vec3 worldPosToFrag;
         in vec3 cameraNormal;
         out vec4 outputF;
 
