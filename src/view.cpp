@@ -167,7 +167,7 @@ void flyToDefault() {
   nearClipRatio = defaultNearClipRatio;
   farClipRatio = defaultFarClipRatio;
 
-  startFlightTo(T, Tfov, .25);
+  startFlightTo(T, Tfov, .4);
 }
 
 glm::mat4 computeHomeView() {
@@ -203,7 +203,7 @@ void flyToHomeView() {
   nearClipRatio = defaultNearClipRatio;
   farClipRatio = defaultFarClipRatio;
 
-  startFlightTo(T, Tfov, .25);
+  startFlightTo(T, Tfov, .4);
 }
 
 

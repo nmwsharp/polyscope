@@ -1,7 +1,6 @@
 #include "polyscope/polyscope.h"
-
-
 #include "polyscope/surface_mesh_io.h"
+#include "polyscope/surface_mesh.h"
 
 #include <iostream>
 

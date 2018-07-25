@@ -16,9 +16,9 @@
 #include "polyscope/imgui_impl_glfw.h"
 #include "polyscope/imgui_impl_opengl3.h"
 
+#include "polyscope/gl/ground_plane.h"
 #include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders/texture_draw_shaders.h"
-#include "polyscope/ground_plane.h"
 #include "polyscope/pick.h"
 #include "polyscope/view.h"
 
@@ -551,7 +551,7 @@ void processMouseEvents() {
 }
 
 void renderScene() {
-  
+
   // Activate the texture that we draw to
   sceneFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
   sceneFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
@@ -562,7 +562,7 @@ void renderScene() {
   drawStructures();
 
   // Draw the ground plane
-  drawGroundPlane(); 
+  gl::drawGroundPlane();
 }
 
 void renderSceneToScreen() {
@@ -592,9 +592,9 @@ void buildPolyscopeGui() {
     screenshot(true);
   }
   ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-  
+
   // == Ground plane options
-  buildGroundPlaneGui();
+  gl::buildGroundPlaneGui();
 
   // == Debugging-related options
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
@@ -803,7 +803,7 @@ void shutdown(int exitCode) {
 
   deleteGlobalBuffersAndPrograms();
   gl::unloadMaterialTextures();
-  deleteGroundPlaneResources();
+  gl::deleteGroundPlaneResources();
 
   // ImGui shutdown things
   ImGui_ImplOpenGL3_Shutdown();
@@ -867,8 +867,6 @@ Structure* getStructure(std::string type, std::string name) {
   }
   return sMap[name];
 }
-
-
 
 
 void removeStructure(std::string type, std::string name, bool errorIfAbsent) {

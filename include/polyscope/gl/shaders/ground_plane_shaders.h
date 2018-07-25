@@ -91,7 +91,7 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
         // Checker stripes
         float modDist = min(min(mod(coordXZ.x, 1.0), mod(coordXZ.y, 1.0)), min(mod(-coordXZ.x, 1.0), mod(-coordXZ.y, 1.0)));
         float stripeBlendFac = smoothstep(0.005, .01, modDist);
-        vec4 baseColor = mix(texture(t_ground, coordXZ), vec4(.88, .88, .88, 1.), .6); 
+        vec4 baseColor = mix(texture(t_ground, coordXZ), vec4(.88, .88, .88, 1.), .4); 
         vec4 groundColor = mix( vec4(baseColor.xyz * .2, 1.0), baseColor, stripeBlendFac);
 
         // Mirror image

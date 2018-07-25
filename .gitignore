@@ -8,6 +8,7 @@ imgui.ini
 .vscode
 *.swp
 tags
+*.blend1
 
 # Prerequisites
 *.d
