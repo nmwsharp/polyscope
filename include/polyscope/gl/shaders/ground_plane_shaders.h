@@ -72,7 +72,6 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
       vec3 gammaCorrect( vec3 colorLinear );
 
       vec4 blurMirrorSample() {
-        //vec2 screenCoords = vec2(gl_FragCoord.x / u_viewportDim.x, gl_FragCoord.y / u_viewportDim.y);
         vec2 screenCoords = vec2(gl_FragCoord.x, gl_FragCoord.y);
 
         vec4 mirrorImage =
@@ -116,22 +115,15 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
         // Fade off far away
         float distFromCenter = length(coordXZ);
         float distFadeFactor = 1.0 - smoothstep(8.0, 8.5, distFromCenter);
-        //float viewFromBelowFadeFactor = smoothstep(-.3, -.2, normalCameraSpace.z);
-        //float viewFromBelowFadeFactor = smoothstep(-.1, 0., dot(normalCameraSpace, eyeDir));
         float viewFromBelowFadeFactor = smoothstep(-.1, 0., u_cameraHeight / u_lengthScale);
         float fadeFactor = min(distFadeFactor, viewFromBelowFadeFactor);
         vec4 color = vec4(color3, fadeFactor);
       
-
-        //float coloredBrightness = 1.2 *orenNayarDiffuse(lightDir, eyeDir, normalCameraSpace, .1, 1.0) + .3;
         // NOTE: parameters swapped from comments.. which is correct?
         float coloredBrightness = 1.2 *orenNayarDiffuse(eyeDir, lightDir, normalCameraSpace, .05, 1.0) + .3;
         float whiteBrightness = .25 * specular(normalCameraSpace, lightDir, eyeDir, 12.);
-        //float coloredBrightness = 1.25 *orenNayarDiffuse(lightDir, eyeDir, normalCameraSpace, .1, 1.0) + .0;
-        //float whiteBrightness = .5 * specular(normalCameraSpace, lightDir, eyeDir, 12.);
 
         vec4 lightColor = vec4(gammaCorrect(color.xyz * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness), color.w);
-        
         outputF = lightColor;
       }
 

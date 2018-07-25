@@ -150,16 +150,8 @@ void drawGroundPlane() {
   groundPlaneProgram->setUniform("u_lengthScale", state::lengthScale);
   groundPlaneProgram->setUniform("u_groundHeight", groundHeight);
 
-
-  // Enable backface culling
-  //glEnable(GL_CULL_FACE);
-  //glCullFace(GL_BACK);
-
   groundPlaneProgram->draw();
 
-
-  // Disable culling afterwards, so we don't confuse ourselves
-  //glDisable(GL_CULL_FACE);
 }
 
 void buildGroundPlaneGui() {
