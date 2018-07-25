@@ -143,20 +143,23 @@ void drawGroundPlane() {
 
   glm::vec2 centerXZ{state::center.x, state::center.z};
   groundPlaneProgram->setUniform("u_centerXZ", centerXZ);
+ 
+  float camHeight = view::getCameraWorldPosition().y - bboxBottom;
+  groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
 
   groundPlaneProgram->setUniform("u_lengthScale", state::lengthScale);
   groundPlaneProgram->setUniform("u_groundHeight", groundHeight);
 
 
   // Enable backface culling
-  glEnable(GL_CULL_FACE);
-  glCullFace(GL_BACK);
+  //glEnable(GL_CULL_FACE);
+  //glCullFace(GL_BACK);
 
   groundPlaneProgram->draw();
 
 
   // Disable culling afterwards, so we don't confuse ourselves
-  glDisable(GL_CULL_FACE);
+  //glDisable(GL_CULL_FACE);
 }
 
 void buildGroundPlaneGui() {

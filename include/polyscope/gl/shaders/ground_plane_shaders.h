@@ -38,6 +38,7 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
       {"u_lengthScale", GLData::Float},
       {"u_centerXZ", GLData::Vector2Float},
       {"u_viewportDim", GLData::Vector2Float},
+      {"u_cameraHeight", GLData::Float},
     }, 
 
     // attributes
@@ -62,6 +63,7 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
       uniform float u_lengthScale;
       uniform vec2 u_centerXZ;
       uniform vec2 u_viewportDim;
+      uniform float u_cameraHeight;
       in vec4 PositionWorldHomog;
       out vec4 outputF;
 
@@ -102,11 +104,6 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
         // Ground color
         vec3 color3 = mix(groundColor.rgb, mirrorImage.rgb * mirrorImage.w, .2 * mirrorImage.w);
 
-        // Fade off far away
-        float distFromCenter = length(coordXZ);
-        float fadeFactor = 1.0 - smoothstep(8.0, 8.5, distFromCenter);
-        vec4 color = vec4(color3, fadeFactor);
-      
         // Lighting stuff
         vec4 posCameraSpace4 = u_viewMatrix * PositionWorldHomog;
         vec3 posCameraSpace = posCameraSpace4.xyz / posCameraSpace4.w;
@@ -115,6 +112,16 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
         vec3 lightPosCameraSpace = vec3(5., 5., -5.) * u_lengthScale;
         vec3 lightDir = normalize(lightPosCameraSpace - posCameraSpace);
         vec3 eyeDir = normalize(eyeCameraSpace - posCameraSpace);
+        
+        // Fade off far away
+        float distFromCenter = length(coordXZ);
+        float distFadeFactor = 1.0 - smoothstep(8.0, 8.5, distFromCenter);
+        //float viewFromBelowFadeFactor = smoothstep(-.3, -.2, normalCameraSpace.z);
+        //float viewFromBelowFadeFactor = smoothstep(-.1, 0., dot(normalCameraSpace, eyeDir));
+        float viewFromBelowFadeFactor = smoothstep(-.1, 0., u_cameraHeight / u_lengthScale);
+        float fadeFactor = min(distFadeFactor, viewFromBelowFadeFactor);
+        vec4 color = vec4(color3, fadeFactor);
+      
 
         //float coloredBrightness = 1.2 *orenNayarDiffuse(lightDir, eyeDir, normalCameraSpace, .1, 1.0) + .3;
         // NOTE: parameters swapped from comments.. which is correct?
