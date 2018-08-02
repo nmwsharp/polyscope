@@ -172,6 +172,7 @@ public:
   void setUniform(std::string name, float* val);
   void setUniform(std::string name, glm::vec2 val);
   void setUniform(std::string name, glm::vec3 val);
+  void setUniform(std::string name, glm::vec4 val);
   void setUniform(std::string name, std::array<float, 3> val);
   void setUniform(std::string name, float x, float y, float z, float w);
 
