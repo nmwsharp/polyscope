@@ -69,7 +69,7 @@ void setCurrentPickElement(size_t newPickInd, bool wasDoubleClick) {
     }
   }
 
-  error("Pick index does not correspond to any allocated range.");
+  error("Pick index " + std::to_string(newPickInd) + " does not correspond to any allocated range.");
   currLocalPickInd = std::numeric_limits<size_t>::max();
   currPickStructure = nullptr;
   return;
