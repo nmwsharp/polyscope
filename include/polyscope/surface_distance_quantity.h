@@ -17,7 +17,7 @@ public:
 
   void buildVertexInfoGUI(size_t v) override;
   void fillColorBuffers(gl::GLProgram* p);
-  
+
   void writeToFile(std::string filename = "");
 
 
@@ -39,15 +39,19 @@ protected:
 
 template <class T>
 void SurfaceMesh::addDistanceQuantity(std::string name, const T& distances) {
-  std::shared_ptr<SurfaceDistanceQuantity> q = std::make_shared<SurfaceDistanceQuantity>(
-      name, standardizeArray<double, T>(distances, triMesh.nVertices(), "distance quantity " + name), this, false);
+  validateSize(distances, nVertices(), "distance quantity" + name);
+
+  std::shared_ptr<SurfaceDistanceQuantity> q =
+      std::make_shared<SurfaceDistanceQuantity>(name, standardizeArray<double, T>(distances), this, false);
   addSurfaceQuantity(q);
 }
 
 template <class T>
 void SurfaceMesh::addSignedDistanceQuantity(std::string name, const T& distances) {
-  std::shared_ptr<SurfaceDistanceQuantity> q = std::make_shared<SurfaceDistanceQuantity>(
-      name, standardizeArray<double, T>(distances, triMesh.nVertices(), "signed distance quantity " + name), this, true);
+  validateSize(distances, nVertices(), "signed distance quantity" + name);
+
+  std::shared_ptr<SurfaceDistanceQuantity> q =
+      std::make_shared<SurfaceDistanceQuantity>(name, standardizeArray<double, T>(distances), this, true);
   addSurfaceQuantity(q);
 }
 

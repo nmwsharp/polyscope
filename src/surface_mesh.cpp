@@ -548,14 +548,12 @@ void SurfaceMesh::drawUI() {
     ImGui::SameLine();
 
     { // Flat shading or smooth shading?
-      ImGui::Checkbox("Smooth", &ui_smoothshade);
-      if (ui_smoothshade && shadeStyle == ShadeStyle::FLAT) {
-        shadeStyle = ShadeStyle::SMOOTH;
-        deleteProgram();
-      }
-      if (!ui_smoothshade && shadeStyle == ShadeStyle::SMOOTH) {
-        shadeStyle = ShadeStyle::FLAT;
-        deleteProgram();
+      if(ImGui::Checkbox("Smooth", &ui_smoothshade)) {
+        if(ui_smoothshade) {
+          setShadeStyle(ShadeStyle::SMOOTH);
+        } else {
+          setShadeStyle(ShadeStyle::FLAT);
+        }
       }
       ImGui::SameLine();
     }
@@ -577,6 +575,12 @@ void SurfaceMesh::drawUI() {
     ImGui::TreePop();
   }
   ImGui::PopID();
+}
+  
+void SurfaceMesh::setShadeStyle(ShadeStyle newShadeStyle) {
+  ui_smoothshade = (newShadeStyle == ShadeStyle::SMOOTH);
+  shadeStyle = newShadeStyle;
+  deleteProgram();
 }
 
 double SurfaceMesh::lengthScale() {

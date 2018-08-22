@@ -32,7 +32,7 @@ static const VertShader VERT_DIST_SURFACE_VERT_SHADER =  {
       void main()
       {
           Position = a_position;
-          Normal = a_normal;
+          Normal = mat3(u_modelView) * a_normal;
           Barycoord = a_barycoord;
           Colorval = a_colorval;
           gl_Position = u_projMatrix * u_modelView * vec4(Position,1.);
@@ -44,10 +44,7 @@ static const FragShader VERT_DIST_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
         {"u_basecolor", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
         {"u_edgeWidth", GLData::Float},
         {"u_rangeLow", GLData::Float},
         {"u_rangeHigh", GLData::Float},
@@ -60,6 +57,9 @@ static const FragShader VERT_DIST_SURFACE_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_mat_r", 2},
+        {"t_mat_g", 2},
+        {"t_mat_b", 2},
         {"t_colormap", 1}
     },
     
@@ -68,15 +68,15 @@ static const FragShader VERT_DIST_SURFACE_FRAG_SHADER = {
     
     // source 
     GLSL(150,
-      uniform vec3 u_eye;
-      uniform vec3 u_lightCenter;
-      uniform float u_lightDist;
       uniform float u_edgeWidth;
       uniform float u_rangeLow;
       uniform float u_rangeHigh;
       uniform float u_modLen;
       uniform vec3 u_basecolor;
       uniform sampler1D t_colormap;
+      uniform sampler2D t_mat_r;
+      uniform sampler2D t_mat_g;
+      uniform sampler2D t_mat_b;
       in vec3 Normal;
       in vec3 Position;
       in vec3 Barycoord;
@@ -84,7 +84,7 @@ static const FragShader VERT_DIST_SURFACE_FRAG_SHADER = {
       out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
-      vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
+      vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
       float getEdgeFactor(vec3 UVW, float width);
 
       vec3 surfaceColor() {
@@ -109,7 +109,7 @@ static const FragShader VERT_DIST_SURFACE_FRAG_SHADER = {
           color *= 0.7;
         }
 
-        outputF = lightSurface(Position, Normal, color, u_lightCenter, u_lightDist, u_eye);
+        outputF = lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b);
       }
 
     )

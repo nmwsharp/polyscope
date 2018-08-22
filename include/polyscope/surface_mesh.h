@@ -190,6 +190,7 @@ public:
   // === Helpers
   void deleteProgram();
   void fillGeometryBuffers();
+  void setShadeStyle(ShadeStyle newShadeStyle);
 
   size_t nHalfedges() const { return mesh.nHalfedges(); }
   size_t nVertices() const { return mesh.nVertices(); }
