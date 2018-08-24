@@ -14,6 +14,7 @@ int bufferWidth = -1;
 int bufferHeight = -1;
 int initWindowPosX = 20;
 int initWindowPosY = 20;
+NavigateStyle style = NavigateStyle::Turntable;
 const double defaultNearClipRatio = 0.005;
 const double defaultFarClipRatio = 20.0;
 const double defaultFov = 65.;
@@ -32,32 +33,94 @@ glm::vec3 flightTargetViewT, flightInitialViewT;
 float flightTargetFov, flightInitialFov;
 
 
-void processRotate(float delTheta, float delPhi) {
-  if (delTheta == 0 && delPhi == 0) {
+void processRotate(glm::vec2 startP, glm::vec2 endP) {
+
+  if (startP == endP) {
     return;
   }
-
-  // Scaling
-  delTheta *= PI;
-  delPhi *= PI;
 
   // Get frame
   glm::vec3 lookDir, upDir, rightDir;
   getCameraFrame(lookDir, upDir, rightDir);
 
-  // Translate to center
-  viewMat = glm::translate(viewMat, state::center);
+  switch (style) {
+  case NavigateStyle::Turntable: {
 
-  // Rotation about the vertical axis
-  glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, upDir);
-  viewMat = viewMat * thetaCamR;
+    glm::vec2 dragDelta = endP - startP;
+    float delTheta = 2.0 * dragDelta.x;
+    float delPhi = 2.0 * dragDelta.y;
 
-  // Rotation about the horizontal axis
-  glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, rightDir);
-  viewMat = viewMat * phiCamR;
-  
-  // Undo centering
-  viewMat = glm::translate(viewMat, -state::center);
+    // Translate to center
+    viewMat = glm::translate(viewMat, state::center);
+
+    // Rotation about the horizontal axis
+    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, rightDir);
+    viewMat = viewMat * phiCamR;
+
+    // Rotation about the vertical axis
+    glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, glm::vec3(0., 1., 0.));
+    viewMat = viewMat * thetaCamR;
+
+    // Undo centering
+    viewMat = glm::translate(viewMat, -state::center);
+    break;
+  }
+  case NavigateStyle::Free: {
+    glm::vec2 dragDelta = endP - startP;
+    float delTheta = 2.0 * dragDelta.x;
+    float delPhi = 2.0 * dragDelta.y;
+
+    // Translate to center
+    viewMat = glm::translate(viewMat, state::center);
+
+    // Rotation about the vertical axis
+    glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, upDir);
+    viewMat = viewMat * thetaCamR;
+
+    // Rotation about the horizontal axis
+    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, rightDir);
+    viewMat = viewMat * phiCamR;
+
+    // Undo centering
+    viewMat = glm::translate(viewMat, -state::center);
+    break;
+  }
+  case NavigateStyle::Arcball: {
+    // Map inputs to unit sphere
+    auto toSphere = [](glm::vec2 v) {
+      double x = glm::clamp(v.x, -1.0f, 1.0f);
+      double y = glm::clamp(v.y, -1.0f, 1.0f);
+      double mag = x * x + y * y;
+      if (mag <= 1.0) {
+        return glm::vec3{x, y, -std::sqrt(1.0 - mag)};
+      } else {
+        return glm::normalize(glm::vec3{x, y, 0.0});
+      }
+    };
+    glm::vec3 sphereStart = toSphere(startP);
+    glm::vec3 sphereEnd = toSphere(endP);
+
+    glm::vec3 rotAxis = -cross(sphereStart, sphereEnd);
+    double rotMag = std::acos(glm::clamp(dot(sphereStart, sphereEnd), -1.0f, 1.0f));
+
+    glm::mat4 cameraRotate = glm::rotate(glm::mat4x4(1.0), (float)rotMag, glm::vec3(rotAxis.x, rotAxis.y, rotAxis.z));
+
+    // Get current camera rotation
+    glm::mat4x4 R;
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        R[i][j] = viewMat[i][j];
+      }
+    }
+    R[3][3] = 1.0;
+
+    glm::mat4 update = glm::inverse(R) * cameraRotate * R;
+
+    viewMat = viewMat * update;
+    break;
+  }
+  }
+
 
   requestRedraw();
   immediatelyEndFlight();
@@ -69,37 +132,6 @@ void processRotateArcball(glm::vec2 startP, glm::vec2 endP) {
     return;
   }
 
-  // Map inputs to unit sphere
-  auto toSphere = [](glm::vec2 v) {
-    double x = glm::clamp(v.x, -1.0f, 1.0f);
-    double y = glm::clamp(v.y, -1.0f, 1.0f);
-    double mag = x * x + y * y;
-    if (mag <= 1.0) {
-      return glm::vec3{x, y, -std::sqrt(1.0 - mag)};
-    } else {
-      return glm::normalize(glm::vec3{x, y, 0.0});
-    }
-  };
-  glm::vec3 sphereStart = toSphere(startP);
-  glm::vec3 sphereEnd = toSphere(endP);
-
-  glm::vec3 rotAxis = -cross(sphereStart, sphereEnd);
-  double rotMag = std::acos(glm::clamp(dot(sphereStart, sphereEnd), -1.0f, 1.0f));
-
-  glm::mat4 cameraRotate = glm::rotate(glm::mat4x4(1.0), (float)rotMag, glm::vec3(rotAxis.x, rotAxis.y, rotAxis.z));
-
-  // Get current camera rotation
-  glm::mat4x4 R;
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
-      R[i][j] = viewMat[i][j];
-    }
-  }
-  R[3][3] = 1.0;
-
-  glm::mat4 update = glm::inverse(R) * cameraRotate * R;
-
-  viewMat = viewMat * update;
 
   requestRedraw();
   immediatelyEndFlight();

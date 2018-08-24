@@ -512,17 +512,12 @@ void processMouseEvents() {
         view::processZoom(dragDelta.y * 5);
       } else {
         if (isRotate) {
-          view::processRotate(dragDelta.x, dragDelta.y);
-
-
-          /* Mediocre arcball
-          glm::vec2 currPos{io.MousePos.x / view::windowWidth, (view::windowHeight - io.MousePos.y) /
-          view::windowHeight};
-          currPos = (currPos * 2.0) - glm::vec2{1.0, 1.0};
+          glm::vec2 currPos{io.MousePos.x / view::windowWidth,
+                            (view::windowHeight - io.MousePos.y) / view::windowHeight};
+          currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
           if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
-            view::processRotateArcball(currPos - 2.0 * dragDelta, currPos);
+            view::processRotate(currPos - 2.0f * dragDelta, currPos);
           }
-          */
         } else {
           view::processTranslate(dragDelta);
         }
@@ -588,9 +583,32 @@ void buildPolyscopeGui() {
   if (ImGui::Button("Reset view")) {
     view::flyToHomeView();
   }
+  ImGui::SameLine();
   if (ImGui::Button("Screenshot")) {
     screenshot(true);
   }
+  ImGui::PushItemWidth(150);
+  static std::string viewStyleName = "Turntable";
+  if (ImGui::BeginCombo("##View Style", viewStyleName.c_str())) {
+    if (ImGui::Selectable("Turntable", view::style == view::NavigateStyle::Turntable)) {
+      view::style = view::NavigateStyle::Turntable;
+      view::flyToHomeView();
+      ImGui::SetItemDefaultFocus();
+      viewStyleName = "Turntable";
+    }
+    if (ImGui::Selectable("Free", view::style == view::NavigateStyle::Free)) {
+      view::style = view::NavigateStyle::Free;
+      ImGui::SetItemDefaultFocus();
+      viewStyleName = "Free";
+    }
+    if (ImGui::Selectable("Arcblob", view::style == view::NavigateStyle::Arcball)) {
+      view::style = view::NavigateStyle::Arcball;
+      ImGui::SetItemDefaultFocus();
+      viewStyleName = "Arcblob";
+    }
+    ImGui::EndCombo();
+  }
+  ImGui::PopItemWidth();
   ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
   // == Ground plane options
