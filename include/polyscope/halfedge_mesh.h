@@ -39,6 +39,7 @@ public:
     inline Face& face() { return *face_; }
     inline Edge& edge() { return *edge_; }
 
+    inline glm::vec3 vector() { return twin().vertex().position() - vertex().position(); }
 
   private:
     // Connectivity

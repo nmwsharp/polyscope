@@ -90,11 +90,11 @@ void SurfaceMesh::addFaceVectorQuantity(std::string name, const T& vectors, Vect
 
 class SurfaceFaceIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<Complex> vectors_, SurfaceMesh* mesh_, int nSym = 1,
+  SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh* mesh_, int nSym = 1,
                                      VectorType vectorType_ = VectorType::STANDARD);
 
   int nSym;
-  std::vector<Complex> vectorField;
+  std::vector<glm::vec2> vectorField;
 
   virtual void draw() override;
 
@@ -110,18 +110,18 @@ void SurfaceMesh::addFaceIntrinsicVectorQuantity(std::string name, const T& vect
   validateSize(vectors, nFaces(), "face intrinsic vector quantity " + name);
 
   std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceFaceIntrinsicVectorQuantity>(
-      name, standardizeVectorArray<Complex, T, 2>(vectors), this, nSym, vectorType);
+      name, standardizeVectorArray<glm::vec2, T, 2>(vectors), this, nSym, vectorType);
   addSurfaceQuantity(q);
 }
 
 
 class SurfaceVertexIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceVertexIntrinsicVectorQuantity(std::string name, std::vector<Complex> vectors_, SurfaceMesh* mesh_,
+  SurfaceVertexIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh* mesh_,
                                        int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
 
   int nSym;
-  std::vector<Complex> vectorField;
+  std::vector<glm::vec2> vectorField;
 
   virtual void draw() override;
 
@@ -137,7 +137,7 @@ void SurfaceMesh::addVertexIntrinsicVectorQuantity(std::string name, const T& ve
   validateSize(vectors, nVertices(), "vertex intrinsic vector quantity " + name);
 
   std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceVertexIntrinsicVectorQuantity>(
-      name, standardizeVectorArray<glm::vec3, T, 2>(vectors), this, nSym, vectorType);
+      name, standardizeVectorArray<glm::vec2, T, 2>(vectors), this, nSym, vectorType);
   addSurfaceQuantity(q);
 }
 
@@ -147,7 +147,7 @@ public:
   SurfaceOneFormIntrinsicVectorQuantity(std::string name, std::vector<double> oneForm_, SurfaceMesh* mesh_);
 
   std::vector<double> oneForm;
-  std::vector<Complex> mappedVectorField;
+  std::vector<glm::vec2> mappedVectorField;
 
   virtual void draw() override;
 

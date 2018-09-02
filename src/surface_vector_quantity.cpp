@@ -227,12 +227,14 @@ void SurfaceFaceVectorQuantity::buildFaceInfoGUI(size_t iF) {
 // ========================================================
 
 
-SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<Complex> vectors_,
+SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::string name,
+                                                                       std::vector<glm::vec2> vectors_,
                                                                        SurfaceMesh* mesh_, int nSym_,
                                                                        VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), nSym(nSym_), vectorField(vectors_) {
 
   // TODO
+  throw std::runtime_error("needs to be reimplemented");
   // GeometryCache<Euclidean>& gc = parent->geometry->cache;
   // gc.requireFaceBases();
 
@@ -263,12 +265,12 @@ void SurfaceFaceIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
   ImGui::NextColumn();
 
   std::stringstream buffer;
-  buffer << vectorField[iF];
+  buffer << "<" << vectorField[iF].x << "," << vectorField[iF].y << ">";
   ImGui::TextUnformatted(buffer.str().c_str());
 
   ImGui::NextColumn();
   ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", std::abs(vectorField[iF]));
+  ImGui::Text("magnitude: %g", glm::length(vectorField[iF]));
   ImGui::NextColumn();
 }
 
@@ -310,35 +312,39 @@ void SurfaceFaceIntrinsicVectorQuantity::drawSubUI() {
 
 
 SurfaceVertexIntrinsicVectorQuantity::SurfaceVertexIntrinsicVectorQuantity(std::string name,
-                                                                           std::vector<Complex> vectors_,
+                                                                           std::vector<glm::vec2> vectors_,
                                                                            SurfaceMesh* mesh_, int nSym_,
                                                                            VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), nSym(nSym_), vectorField(vectors_) {
 
-  // TODO
-  // GeometryCache<Euclidean>& gc = parent->geometry->cache;
-  // gc.requireVertexBases();
+  double rotAngle = 2.0 * PI / nSym;
+  Complex rot = std::exp(Complex(0, 1) * rotAngle);
 
-  // double rotAngle = 2.0 * PI / nSym;
-  // Complex rot = std::exp(IM_I * rotAngle);
+  // Copy the vectors
+  for (HalfedgeMesh::Vertex& v : parent->mesh.vertices) {
 
-  //// Copy the vectors
-  // vectorField = parent->transfer.transfer(vectors_);
-  // for (VertexPtr v : parent->mesh->vertices()) {
+    // For now, the tangent plane is orthogonal to the normal, with the x-axis along vertex.halfedge()
+    // TODO generalize this
+    glm::vec3 normal = v.normal();
+    glm::vec3 heVec = glm::normalize(v.halfedge().vector());
+    heVec = heVec - normal * glm::dot(heVec, normal); // project to tangent plane
+    glm::vec3 basisX = heVec;
+    glm::vec3 basisY = -glm::cross(heVec, normal);
 
-  // Complex angle = std::pow(vectorField[v], 1.0 / nSym);
+    glm::vec2 vec = vectorField[v.index()];
+    Complex angle = std::pow(Complex(vec.x, vec.y), 1.0 / nSym);
 
-  // for (int iRot = 0; iRot < nSym; iRot++) {
-  // vectorRoots.push_back(parent->geometry->position(v));
+    for (int iRot = 0; iRot < nSym; iRot++) {
+      vectorRoots.push_back(v.position());
 
-  // Vector3 vec = gc.vertexBases[v][0] * angle.real() + gc.vertexBases[v][1] * angle.imag();
-  // vectors.push_back(vec);
+      glm::vec3 vec = basisX * (float)angle.real() + basisY * (float)angle.imag();
+      vectors.push_back(vec);
 
-  // angle *= rot;
-  //}
-  //}
+      angle *= rot;
+    }
+  }
 
-  // finishConstructing();
+  finishConstructing();
 }
 
 void SurfaceVertexIntrinsicVectorQuantity::buildVertexInfoGUI(size_t iV) {
@@ -346,12 +352,12 @@ void SurfaceVertexIntrinsicVectorQuantity::buildVertexInfoGUI(size_t iV) {
   ImGui::NextColumn();
 
   std::stringstream buffer;
-  buffer << vectorField[iV];
+  buffer << "<" << vectorField[iV].x << "," << vectorField[iV].y << ">";
   ImGui::TextUnformatted(buffer.str().c_str());
 
   ImGui::NextColumn();
   ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", std::abs(vectorField[iV]));
+  ImGui::Text("magnitude: %g", glm::length(vectorField[iV]));
   ImGui::NextColumn();
 }
 
@@ -364,6 +370,7 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
     if (ribbonArtist == nullptr) {
 
       // TODO
+      throw std::runtime_error("needs to be reimplemented");
       //// Remap to center of each face
       // GeometryCache<Euclidean>& gc = parent->geometry->cache;
       // gc.requireVertexFaceTransportCoefs();
@@ -411,6 +418,7 @@ SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std
                                                                              SurfaceMesh* mesh_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, VectorType::STANDARD), oneForm(oneForm_) {
 
+  throw std::runtime_error("needs to be reimplemented");
   // TODO
   // GeometryCache<Euclidean>& gc = parent->geometry->cache;
   // gc.requireFaceBases();
@@ -466,12 +474,12 @@ void SurfaceOneFormIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
   ImGui::NextColumn();
 
   std::stringstream buffer;
-  buffer << mappedVectorField[iF];
+  buffer << "<" << mappedVectorField[iF].x << "," << mappedVectorField[iF].y << ">";
   ImGui::TextUnformatted(buffer.str().c_str());
 
   ImGui::NextColumn();
   ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", std::abs(mappedVectorField[iF]));
+  ImGui::Text("magnitude: %g", glm::length(mappedVectorField[iF]));
   ImGui::NextColumn();
 }
 

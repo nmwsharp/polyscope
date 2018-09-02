@@ -69,11 +69,19 @@ template <class T, class D>
 inline D accessVectorLikeValue(T& inVal, size_t ind) {
   return inVal[ind];
 }
+template <class T, class D>
+inline D accessVectorLikeValue(const T& inVal, size_t ind) {
+  return inVal[ind];
+}
 
 // Template overload to access the two elements of std::complex
 template <>
 inline double accessVectorLikeValue<std::complex<double>, double>(std::complex<double>& inVal, size_t ind) {
   return reinterpret_cast<double(&)[2]>(inVal)[ind]; // guaranteed to work by the standard
+}
+template <>
+inline float accessVectorLikeValue<const std::complex<double>, float>(const std::complex<double>& inVal, size_t ind) {
+  return reinterpret_cast<const double(&)[2]>(inVal)[ind]; // guaranteed to work by the standard
 }
 
 // Convert an array of low-dimensional vector types. Outer type must support size() method. Inner type dimensions are
@@ -86,7 +94,7 @@ std::vector<D> standardizeVectorArray(const T& inputData) {
   typedef typename std::remove_reference<decltype(dataOut[0][0])>::type OutScalarT;
   for (size_t i = 0; i < inputData.size(); i++) {
     for (size_t j = 0; j < N; j++) {
-      dataOut[i][j] = accessVectorLikeValue<decltype(inputData[0]), OutScalarT>(inputData[i], j);
+      dataOut[i][j] = accessVectorLikeValue<typename std::remove_reference<decltype(inputData[0])>::type, OutScalarT>(inputData[i], j);
     }
   }
 
