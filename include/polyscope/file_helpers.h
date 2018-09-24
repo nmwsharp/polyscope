@@ -5,7 +5,6 @@
 
 namespace polyscope {
 
-  std::string promptForFilename();
-
+std::string promptForFilename(std::string filename = "out");
 }
 

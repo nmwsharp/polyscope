@@ -32,14 +32,14 @@ void filenamePromptCallback(char* buff, size_t len) {
 } // namespace
 
 
-std::string promptForFilename() {
+std::string promptForFilename(std::string initName) {
 
   using namespace std::placeholders;
 
   // Register the callback which creates the UI and does the hard work
-  char* textBuff = new char[1024];
-  sprintf(textBuff, "out");
-  auto func = std::bind(filenamePromptCallback, textBuff, 1024);
+  char* textBuff = new char[2048];
+  sprintf(textBuff, "%s", initName.c_str());
+  auto func = std::bind(filenamePromptCallback, textBuff, 2048);
   pushContext(func);
 
   std::string stringOut(textBuff);
