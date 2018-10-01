@@ -30,6 +30,7 @@ extern int windowHeight;
 extern int initWindowPosX;
 extern int initWindowPosY;
 extern NavigateStyle style;
+extern double moveScale;
 extern double nearClipRatio;
 extern double farClipRatio;
 extern std::array<float, 4> bgColor;

@@ -15,6 +15,7 @@ int bufferHeight = -1;
 int initWindowPosX = 20;
 int initWindowPosY = 20;
 NavigateStyle style = NavigateStyle::Turntable;
+double moveScale = 1.0;
 const double defaultNearClipRatio = 0.005;
 const double defaultFarClipRatio = 20.0;
 const double defaultFov = 65.;
@@ -47,8 +48,8 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
   case NavigateStyle::Turntable: {
 
     glm::vec2 dragDelta = endP - startP;
-    float delTheta = 2.0 * dragDelta.x;
-    float delPhi = 2.0 * dragDelta.y;
+    float delTheta = 2.0 * dragDelta.x * moveScale;
+    float delPhi = 2.0 * dragDelta.y * moveScale;
 
     // Translate to center
     viewMat = glm::translate(viewMat, state::center);
@@ -67,8 +68,8 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
   }
   case NavigateStyle::Free: {
     glm::vec2 dragDelta = endP - startP;
-    float delTheta = 2.0 * dragDelta.x;
-    float delPhi = 2.0 * dragDelta.y;
+    float delTheta = 2.0 * dragDelta.x * moveScale;
+    float delPhi = 2.0 * dragDelta.y * moveScale;
 
     // Translate to center
     viewMat = glm::translate(viewMat, state::center);
@@ -101,7 +102,7 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
     glm::vec3 sphereEnd = toSphere(endP);
 
     glm::vec3 rotAxis = -cross(sphereStart, sphereEnd);
-    double rotMag = std::acos(glm::clamp(dot(sphereStart, sphereEnd), -1.0f, 1.0f));
+    double rotMag = std::acos(glm::clamp(dot(sphereStart, sphereEnd), -1.0f, 1.0f) * moveScale);
 
     glm::mat4 cameraRotate = glm::rotate(glm::mat4x4(1.0), (float)rotMag, glm::vec3(rotAxis.x, rotAxis.y, rotAxis.z));
 
@@ -142,7 +143,7 @@ void processTranslate(glm::vec2 delta) {
     return;
   }
   // Process a translation
-  float movementScale = state::lengthScale * 0.6;
+  float movementScale = state::lengthScale * 0.6 * moveScale;
   glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), movementScale * glm::vec3(delta.x, delta.y, 0.0));
   viewMat = camSpaceT * viewMat;
 
@@ -161,7 +162,7 @@ void processZoom(double amount) {
   if (amount == 0.0) return;
 
   // Translate the camera forwards and backwards
-  float movementScale = state::lengthScale * 0.1;
+  float movementScale = state::lengthScale * 0.1 * moveScale;
   glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), glm::vec3(0., 0., movementScale * amount));
   viewMat = camSpaceT * viewMat;
 

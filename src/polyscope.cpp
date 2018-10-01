@@ -609,6 +609,9 @@ void buildPolyscopeGui() {
     ImGui::EndCombo();
   }
   ImGui::PopItemWidth();
+  float moveScaleF = view::moveScale;
+  ImGui::SliderFloat("Move Speed", &moveScaleF, 0.0, 1.0, "%.5f", 3.);
+  view::moveScale = moveScaleF;
   ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
   // == Ground plane options
