@@ -555,16 +555,19 @@ void SurfaceMesh::drawUI() {
           setShadeStyle(ShadeStyle::FLAT);
         }
       }
-      ImGui::SameLine();
     }
 
     { // Edge width
-      ImGui::Checkbox("Edges", &showEdges);
-      if (showEdges) {
-        edgeWidth = 0.01;
-      } else {
-        edgeWidth = 0.0;
-      }
+      //ImGui::SameLine();
+      //ImGui::Checkbox("Edges", &showEdges);
+      //if (showEdges) {
+        //edgeWidth = 0.01;
+      //} else {
+        //edgeWidth = 0.0;
+      //}
+      ImGui::PushItemWidth(150);
+      ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0, .01, "%.5f", 2.);
+      ImGui::PopItemWidth();
     }
 
     // Draw the quantities
