@@ -94,7 +94,8 @@ void drawGroundPlane() {
   // Location for ground plane
   double bboxBottom = std::get<0>(state::boundingBox).y;
   double bboxHeight = std::get<1>(state::boundingBox).y - std::get<0>(state::boundingBox).y;
-  double groundHeight = bboxBottom - groundPlaneHeightFactor * bboxHeight;
+  double heightEPS = state::lengthScale * 1e-4;
+  double groundHeight = bboxBottom - groundPlaneHeightFactor * bboxHeight - heightEPS;
 
   // Implement the mirror effect
   {
