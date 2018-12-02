@@ -80,9 +80,12 @@ size_t requestPickBufferRange(Structure* requestingStructure, size_t count) {
 
   // Check if we can satisfy the request
   size_t maxPickInd = std::numeric_limits<size_t>::max();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshift-count-overflow"
   if (bitsForPickPacking < 22) {
-    maxPickInd = 1 << (bitsForPickPacking * 3);
+    maxPickInd = 1ULL << (bitsForPickPacking * 3);
   }
+#pragma GCC diagnostic pop
 
 
   if (count > maxPickInd || maxPickInd - count < nextPickBufferInd) {
