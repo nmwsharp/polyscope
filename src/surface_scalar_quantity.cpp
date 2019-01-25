@@ -177,6 +177,7 @@ void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
   for (FacePtr f : parent->mesh->faces()) {
     // Implicitly triangulate
     double c0, c1;
+    c0 = values[f.halfedge().vertex()];
     size_t iP = 0;
     for (VertexPtr v : f.adjacentVertices()) {
       double c2 = values[v];
@@ -185,7 +186,6 @@ void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
         colorval.push_back(c1);
         colorval.push_back(c2);
       }
-      c0 = c1;
       c1 = c2;
       iP++;
     }
@@ -344,7 +344,7 @@ void SurfaceScalarEdgeQuantity::fillColorBuffers(gl::GLProgram* p) {
         colorval.push_back(Vector3{c0, c1, c2});
       }
       if (iP > 2) {
-        error("Edge quantities not correct for non-triangular meshes");
+        warning("Edge quantities not correct for non-triangular meshes");
       }
       c0 = c1;
       c1 = c2;
@@ -415,7 +415,7 @@ void SurfaceScalarHalfedgeQuantity::fillColorBuffers(gl::GLProgram* p) {
         colorval.push_back(Vector3{c0, c1, c2});
       }
       if (iP > 2) {
-        error("Edge quantities not correct for non-triangular meshes");
+        warning("Edge quantities not correct for non-triangular meshes");
       }
       c0 = c1;
       c1 = c2;

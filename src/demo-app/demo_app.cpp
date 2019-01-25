@@ -135,8 +135,8 @@ void processFileOBJ(string filename) {
   }
   polyscope::getSurfaceMesh(niceName)->addVertexSelectionQuantity("v select", vSelection);
 
-  // Curve quantity
-  polyscope::getSurfaceMesh(niceName)->addInputCurveQuantity("input curve");
+  //// Curve quantity
+  //polyscope::getSurfaceMesh(niceName)->addInputCurveQuantity("input curve");
 
   delete geom;
   delete mesh;
