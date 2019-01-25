@@ -81,6 +81,8 @@ public:
   void drawSubUI() override;
 
   void buildInfoGUI(FacePtr f) override;
+  
+  void writeTracelinesToFile(std::string filename = "");
 };
 
 class SurfaceVertexIntrinsicVectorQuantity : public SurfaceVectorQuantity {
@@ -96,6 +98,8 @@ public:
   void drawSubUI() override;
 
   void buildInfoGUI(VertexPtr v) override;
+  
+  void writeTracelinesToFile(std::string filename = "");
 };
 
 class SurfaceOneFormIntrinsicVectorQuantity : public SurfaceVectorQuantity {
