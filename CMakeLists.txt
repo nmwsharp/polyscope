@@ -49,6 +49,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
 
   add_definitions(/D "_CRT_SECURE_NO_WARNINGS")
+  add_definitions(/D "_USE_MATH_DEFINES")
   add_definitions (-DNOMINMAX)
 else()
   # unrecognized

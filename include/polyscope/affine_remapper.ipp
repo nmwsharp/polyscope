@@ -162,7 +162,7 @@ inline T AffineRemapper<T>::map(const T& x) {
 
 template <typename T>
 std::string AffineRemapper<T>::printBounds() {
-  size_t bSize = 50;
+  const size_t bSize = 50;
   char b[bSize];
   snprintf(b, bSize, "[%6.2e, %6.2e]", minVal, maxVal);
   return std::string(b);

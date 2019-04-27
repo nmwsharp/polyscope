@@ -196,6 +196,7 @@ void Histogram::fillBuffers() {
   std::vector<Vector2> coords;
 
   if (histCurveY.size() == 0) {
+    coords.push_back(Vector2{0.0, 0.0});
     program->setAttribute("a_coord", coords);
     return;
   }

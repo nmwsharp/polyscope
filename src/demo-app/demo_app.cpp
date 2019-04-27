@@ -282,8 +282,6 @@ int main(int argc, char** argv) {
   for (int j = 0; j < 2; j++) {
     std::vector<Vector3> points;
     for (size_t i = 0; i < 50; i++) {
-      // points.push_back(Vector3{10,10,10} + 20*Vector3{unitRand()-.5,
-      // unitRand()-.5, unitRand()-.5});
       points.push_back(3 * Vector3{unitRand() - .5, unitRand() - .5, unitRand() - .5});
     }
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
