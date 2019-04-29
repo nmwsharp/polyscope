@@ -9,7 +9,7 @@ endif()
 # Create a single library for the project
 add_executable(
         polyscopedemo
-        demo_app.cpp
+        CAT-Flattening.cpp
         )
 
 # Link settings
