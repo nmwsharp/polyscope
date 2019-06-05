@@ -237,6 +237,7 @@ inline std::string getMeshElementTypeName(MeshElement type) {
   case MeshElement::HALFEDGE:
     return "halfedge";
   }
+  return "ERROR";
 }
 inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
   return out << getMeshElementTypeName(value);

@@ -27,6 +27,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STR
   if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     SET(BASE_CXX_FLAGS "${BASE_CXX_FLAGS} -ferror-limit=5 -fcolor-diagnostics")
   endif()
+  # gcc-specific things
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    SET(DISABLED_WARNINGS "${DISABLED_WARNINGS}  -Wno-int-in-bool-context  -Wno-unused-but-set-variable -Wno-format-zero-length -Wno-shift-count-overflow")
+  endif()
 
 
   SET(CMAKE_CXX_FLAGS "${BASE_CXX_FLAGS} ${DISABLED_WARNINGS}")

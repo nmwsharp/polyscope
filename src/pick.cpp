@@ -32,7 +32,7 @@ void resetPick() {
 }
 
 void clearPickIfStructureSelected(Structure* s) {
-  if(haveSelection && currPickStructure == s) {
+  if (haveSelection && currPickStructure == s) {
     resetPick();
   }
 }
@@ -50,7 +50,7 @@ Structure* getCurrentPickElement(size_t& localInd) {
 }
 
 void setCurrentPickElement(size_t newPickInd, bool wasDoubleClick) {
-  
+
   pickIsFromThisFrame = true;
 
   // Loop through the ranges that we have allocated to find the one correpsonding to this structure.
@@ -81,7 +81,8 @@ size_t requestPickBufferRange(Structure* requestingStructure, size_t count) {
   // Check if we can satisfy the request
   size_t maxPickInd = std::numeric_limits<size_t>::max();
   if (bitsForPickPacking < 22) {
-    maxPickInd = 1 << (bitsForPickPacking * 3);
+    // TODO this triggers a GCC error I can't explain about shifts... Seems to work though? Figure it out.
+    maxPickInd = 1ULL << (bitsForPickPacking * 3);
   }
 
 
