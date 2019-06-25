@@ -46,15 +46,14 @@ glm::vec3 center{0, 0, 0};
 std::map<std::string, std::map<std::string, Structure*>> structures;
 
 std::function<void()> userCallback;
-size_t screenshotInd = 0;
 
 } // namespace state
 
 namespace options {
 
 std::string programName = "Polyscope";
-int verbosity = 2;
-std::string printPrefix = "Polyscope: ";
+int verbosity = 1;
+std::string printPrefix = "[polyscope] ";
 bool errorsThrowExceptions = false;
 bool debugDrawPickBuffer = false;
 int maxFPS = 60;
@@ -388,7 +387,7 @@ namespace {
 // ImGUI normally provides this for us, but we want to know about the RELEASE of a double click, while im ImGUI the flag
 // is only set for the down press. Use this variable to pass it forward.
 bool lastClickWasDouble = false;
-}
+} // namespace
 
 namespace pick {
 
@@ -423,7 +422,7 @@ void evaluatePickQuery(int xPos, int yPos) {
     pick::setCurrentPickElement(ind, lastClickWasDouble);
   }
 }
-}
+} // namespace pick
 
 void drawStructures() {
 
@@ -684,11 +683,11 @@ void buildPickGui() {
   }
 }
 
-namespace {
 auto lastMainLoopIterTime = std::chrono::steady_clock::now();
-}
 
-void draw(bool withUI = true) {
+} // namespace
+
+void draw(bool withUI) {
 
   // Update buffer and context
   glfwMakeContextCurrent(mainWindow);
@@ -745,8 +744,6 @@ void draw(bool withUI = true) {
   }
 }
 
-} // namespace
-
 
 void bindDefaultBuffer() {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -763,7 +760,7 @@ void mainLoopIteration() {
   if (options::maxFPS != -1) {
     auto currTime = std::chrono::steady_clock::now();
     long microsecPerLoop = 1000000 / options::maxFPS;
-    microsecPerLoop = 95 * microsecPerLoop / 100; // give a little slack so we actually hit target fps
+    microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
     while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
            microsecPerLoop) {
       // std::chrono::milliseconds timespan(1);
@@ -801,7 +798,7 @@ void mainLoopIteration() {
   glfwSwapBuffers(mainWindow);
 }
 
-void show(bool shutdownAfter) {
+void show() {
   view::resetCameraToDefault();
   view::flyToHomeView();
 
@@ -809,13 +806,9 @@ void show(bool shutdownAfter) {
   while (!glfwWindowShouldClose(mainWindow)) {
     mainLoopIteration();
   }
- 
+
   if (options::usePrefsFile) {
     writePrefsFile();
-  }
-
-  if (shutdownAfter) {
-    shutdown();
   }
 }
 
@@ -1006,78 +999,5 @@ void updateStructureExtents() {
   state::center = 0.5f * (minBbox + maxBbox);
 }
 
-void screenshot(std::string filename, bool transparentBG) {
-
-  // Make sure we render first
-  // TODO needs to be updated?
-  requestRedraw();
-  draw(false);
-
-  // Get buffer size
-  GLint viewport[4];
-  glGetIntegerv(GL_VIEWPORT, viewport);
-  int w = viewport[2];
-  int h = viewport[3];
-
-  // Read from openGL
-  size_t buffSize = w * h * 4;
-  unsigned char* buff = new unsigned char[buffSize];
-  glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buff);
-
-  // Just flip
-  if (transparentBG) {
-
-    size_t flipBuffSize = w * h * 4;
-    unsigned char* flipBuff = new unsigned char[flipBuffSize];
-    for (int j = 0; j < h; j++) {
-      for (int i = 0; i < w; i++) {
-        int ind = i + j * w;
-        int flipInd = i + (h - j - 1) * w;
-        flipBuff[4 * flipInd + 0] = buff[4 * ind + 0];
-        flipBuff[4 * flipInd + 1] = buff[4 * ind + 1];
-        flipBuff[4 * flipInd + 2] = buff[4 * ind + 2];
-        flipBuff[4 * flipInd + 3] = buff[4 * ind + 3];
-      }
-    }
-
-    // Save to file
-    saveImage(filename, flipBuff, w, h, 4);
-
-    delete[] flipBuff;
-  }
-  // Strip alpha channel and flip
-  else {
-
-    size_t noAlphaBuffSize = w * h * 3;
-    unsigned char* noAlphaBuff = new unsigned char[noAlphaBuffSize];
-    for (int j = 0; j < h; j++) {
-      for (int i = 0; i < w; i++) {
-        int ind = i + j * w;
-        int flipInd = i + (h - j - 1) * w;
-        noAlphaBuff[3 * flipInd + 0] = buff[4 * ind + 0];
-        noAlphaBuff[3 * flipInd + 1] = buff[4 * ind + 1];
-        noAlphaBuff[3 * flipInd + 2] = buff[4 * ind + 2];
-      }
-    }
-
-    // Save to file
-    saveImage(filename, noAlphaBuff, w, h, 3);
-
-    delete[] noAlphaBuff;
-  }
-
-  delete[] buff;
-}
-
-void screenshot(bool transparentBG) {
-
-  char buff[50];
-  snprintf(buff, 50, "screenshot_%06zu.png", state::screenshotInd);
-  std::string defaultName(buff);
-
-  screenshot(defaultName, transparentBG);
-
-  state::screenshotInd++;
-}
 
 } // namespace polyscope

@@ -7,6 +7,7 @@
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/messages.h"
 #include "polyscope/options.h"
+#include "polyscope/screenshot.h"
 #include "polyscope/structure.h"
 #include "polyscope/utilities.h"
 
@@ -21,9 +22,9 @@ void init();
 
 // Give control to the polyscope GUI. Blocks until the user returns control via
 // the GUI, possibly by exiting the window.
-void show(bool shutdownAfter = true);
+void show();
 
-// Do shutdown work and quit. Usually called at end of main loop, can be called in other situations due to errors (etc)
+// Do shutdown work and quit the entire program. Can be called in other situations due to errors (etc)
 void shutdown(int exitCode = 0);
 
 // === Global variables ===
@@ -46,9 +47,6 @@ extern glm::vec3 center;
 
 // A callback function used to render a "user" gui
 extern std::function<void()> userCallback;
-
-// The current screenshot index for automatically numbered screenshots
-extern size_t screenshotInd;
 
 } // namespace state
 
@@ -75,6 +73,9 @@ void updateStructureExtents();
 
 // === Handle draw flow, interrupts, and popups
 
+// Actually render to the framebuffer.
+void draw(bool withUI = true);
+
 // Request that the 3D scene be redrawn for the next frame. Should be called anytime something changes in the scene.
 void requestRedraw();
 
@@ -83,8 +84,6 @@ bool redrawRequested();
 
 // A callback function currently drawing a focused popup GUI
 // If this is non-null, then we should not draw or respect any IMGUI elements except those drawn within this function.
-// Note that there is currently no notion of recursive popups, so the programmer should be careful about invoking
-// another popup within this function.
 void pushContext(std::function<void()> callbackFunction);
 void popContext();
 
@@ -96,11 +95,6 @@ void mainLoopIteration();
 void bindDefaultBuffer();
 void initializeImGUIContext();
 void drawStructures();
-
-// Take screenshots of the current view
-void screenshot(std::string filename, bool transparentBG = true);
-void screenshot(bool transparentBG = true);
-void saveImage(std::string name, unsigned char* buffer, int w, int h, int channels);
 
 // Share a font atlas for multiple uses (mainly with imgui)
 ImFontAtlas* getGlobalFontAtlas();
