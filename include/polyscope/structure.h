@@ -18,6 +18,7 @@ namespace polyscope {
 // type). These two properties are not great polymorphic design, but they seem to be the lowest-effort way to allow a
 // user to utilize and access custom structures with little code.
 
+template <typename S> // template on the derived type
 class Structure {
 public:
   // === Member functions ===
@@ -30,15 +31,15 @@ public:
   // Render the the structure on screen
   virtual void draw() = 0;
 
-  // = Do setup work related to drawing, including allocating openGL data
-  virtual void prepare() = 0;
-  virtual void preparePick() = 0;
-
   // = Build the imgui display
-  // Draw the actual UI
-  virtual void drawUI() = 0;
+
+  // Draw the ImGUI ui elements
+  void drawUI();
+  virtual void drawCustomUI() = 0; // overridden by childen to add custom UI data
+
   // Draw any UI elements
   virtual void drawSharedStructureUI() = 0;
+
   // Draw pick UI elements when index localPickID is selected
   virtual void drawPickUI(size_t localPickID) = 0;
 
@@ -51,10 +52,9 @@ public:
   // Axis-aligned bounding box for the structure
   virtual std::tuple<glm::vec3, glm::vec3> boundingBox() = 0;
 
-
-  // === Member variables ===
-  const std::string name; // should be unique amongst registered structures with this type
-  const std::string type; // must be a consistent name for all instances of a derived subclass
+  // Identifying data
+  const std::string name;             // should be unique amongst registered structures with this type
+  virtual std::string typeName() = 0; // a name which identifies the type, like "point cloud"
 
   // Scene transform
   glm::mat4 objectTransform = glm::mat4(1.0);
@@ -62,6 +62,16 @@ public:
   void resetTransform();
   glm::mat4 getModelView();
 
+  // Manage quantities
+  setDominantQuantity(Quantity<S>* q);
+  void clearDominantQuantity();
+
+protected:
+  // Quantities
+  std::map<std::string, std::unique_ptr<Quantity<S>>> quantities;
+  Quantity<S>* dominantQuantity = nullptr; // if non-null, a special quantity of which only one can be drawn for
+                                           // the structure. handles common case of a surface color, e.g. color of
+                                           // a mesh or point cloud the dominant quantity must always be enabled
 };
 
 

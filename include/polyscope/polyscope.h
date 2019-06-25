@@ -2,6 +2,7 @@
 
 #include <map>
 #include <unordered_set>
+#include <functional>
 
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/messages.h"

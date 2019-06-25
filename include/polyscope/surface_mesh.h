@@ -22,43 +22,19 @@ enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE };
 // Forward delcare surface mesh
 class SurfaceMesh;
 
-// Data defined on a surface mesh
-class SurfaceQuantity {
+// Interface defining extra things that surface quantity needs to know how to do
+class SurfaceQuantityInterface {
 public:
-  // Base constructor which sets the name
-  SurfaceQuantity(std::string name, SurfaceMesh* mesh);
-  virtual ~SurfaceQuantity() = 0;
-
-  // Draw the quantity on the surface Note: for many quantities (like scalars)
-  // this does nothing, because drawing happens in the mesh draw(). However
-  // others (ie vectors) need to be drawn.
-  virtual void draw() = 0;
-
-  // Draw the ImGUI ui elements
-  virtual void drawUI() = 0;
-
   // Build GUI info about this element
   virtual void buildVertexInfoGUI(size_t vInd);
   virtual void buildFaceInfoGUI(size_t fInd);
   virtual void buildEdgeInfoGUI(size_t eInd);
   virtual void buildHalfedgeInfoGUI(size_t heInd);
-
-  virtual void enable();
-  virtual void disable();
-  bool isEnabled();
-  void setEnabled(bool newEnabled);
-
-  // === Member variables ===
-  const std::string name;
-  SurfaceMesh* const parent;
-
-protected:
-  bool enabled = false; // should be set by enable() and disable()
 };
 
 // Specific subclass indicating that a quantity can create a program to draw on
 // the surface
-class SurfaceQuantityThatDrawsFaces : public SurfaceQuantity {
+class SurfaceQuantityThatDrawsFaces : public Quantity<SurfaceMesh>, public SurfaceQuantityInterface {
 public:
   SurfaceQuantityThatDrawsFaces(std::string name, SurfaceMesh* mesh);
   // Create a program to be used for drawing the surface

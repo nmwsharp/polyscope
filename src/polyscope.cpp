@@ -809,6 +809,10 @@ void show(bool shutdownAfter) {
   while (!glfwWindowShouldClose(mainWindow)) {
     mainLoopIteration();
   }
+ 
+  if (options::usePrefsFile) {
+    writePrefsFile();
+  }
 
   if (shutdownAfter) {
     shutdown();
