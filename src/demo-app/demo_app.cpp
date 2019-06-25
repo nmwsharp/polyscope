@@ -1,9 +1,9 @@
 #include "polyscope/polyscope.h"
 
 #include "polyscope/combining_hash_functions.h"
-#include "polyscope/surface_mesh_io.h"
-#include "polyscope/surface_mesh.h"
 #include "polyscope/point_cloud.h"
+#include "polyscope/surface_mesh.h"
+#include "polyscope/surface_mesh_io.h"
 
 #include <iostream>
 #include <unordered_set>
@@ -39,7 +39,7 @@ void processFileOBJ(string filename) {
   std::vector<glm::vec3> vertexPositionsGLM;
   for (std::array<double, 3> p : vertexPositions) {
     vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]} + glm::vec3{10, 10, 10});
-    //vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]});
+    // vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]});
   }
   polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
 
@@ -133,18 +133,18 @@ void processFileOBJ(string filename) {
 
 
   // Test error
-  //polyscope::error("Resistance is futile, welcome to the borg borg borg.");
-  //polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we "
-                   //"share this crisis in a way which looks right while properly wrapping text in some form or other?");
-   //polyscope::terminatingError("and that was all");
+  // polyscope::error("Resistance is futile.");
+  // polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we
+  // " "share this crisis in a way which looks right while properly wrapping text in some form or other?");
+  // polyscope::terminatingError("and that was all");
 
   // Test warning
-  //polyscope::warning("Something went slightly wrong", "it was bad");
+  // polyscope::warning("Something went slightly wrong", "it was bad");
 
   // polyscope::warning("Smoething else went slightly wrong", "it was also bad");
   // polyscope::warning("Something went slightly wrong", "it was still bad");
   // for (int i = 0; i < 5000; i++) {
-  // polyscope::warning("Some problems come in groups");
+  // polyscope::warning("Some problems come in groups", "detail = " + std::to_string(i));
   //}
 
   // === Add some vectors
@@ -325,7 +325,7 @@ void processFile(string filename) {
 }
 
 void callback() {
-  //polyscope::error("hi mom");
+  // polyscope::error("hi mom");
 }
 
 int main(int argc, char** argv) {
@@ -349,7 +349,10 @@ int main(int argc, char** argv) {
   }
 
   // Options
-  //polyscope::options::autocenterStructures = true;
+  // polyscope::options::autocenterStructures = true;
+  polyscope::view::windowWidth = 600;
+  polyscope::view::windowHeight = 800;
+
 
   // Initialize polyscope
   polyscope::init();
@@ -358,6 +361,7 @@ int main(int argc, char** argv) {
     processFile(s);
   }
 
+  /*
   // Create a point cloud
   for (int j = 0; j < 2; j++) {
     std::vector<glm::vec3> points;
@@ -365,12 +369,14 @@ int main(int argc, char** argv) {
       // points.push_back(glm::vec3{10,10,10} + 20*glm::vec3{randomUnit()-.5,
       // randomUnit()-.5, randomUnit()-.5});
       points.push_back(
-          3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5} + glm::vec3{10, 10, 10});
-          //3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
+          3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5} +
+          glm::vec3{10, 10, 10});
+      // 3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
     }
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
     addDataToPointCloud("really great points" + std::to_string(j), points);
   }
+  */
 
   // Add a few gui elements
   polyscope::state::userCallback = callback;

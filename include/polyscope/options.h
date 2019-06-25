@@ -26,7 +26,7 @@ namespace options {
     // Read preferences (window size, etc) from startup file, write to same file on exit (default: true)
     extern bool usePrefsFile;
     
-    // Should we redraw every frame, even if not requested? (defualt: false)
+    // Should we redraw every frame, even if not requested? (default: false)
     extern bool alwaysRedraw;
 
 } // namespace options
