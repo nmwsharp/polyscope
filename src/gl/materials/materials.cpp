@@ -55,12 +55,12 @@ void unloadMaterialTextures() {
   }
 }
 
-void setMaterialForProgram(GLProgram* program, std::string name) {
+void setMaterialForProgram(GLProgram& program, std::string name) {
   BasisMaterial material = getMaterialTexture(name);
 
-  program->setTextureFromBuffer("t_mat_r", material.textureBuffers[0]);
-  program->setTextureFromBuffer("t_mat_g", material.textureBuffers[1]);
-  program->setTextureFromBuffer("t_mat_b", material.textureBuffers[2]);
+  program.setTextureFromBuffer("t_mat_r", material.textureBuffers[0]);
+  program.setTextureFromBuffer("t_mat_g", material.textureBuffers[1]);
+  program.setTextureFromBuffer("t_mat_b", material.textureBuffers[2]);
 }
 
 }

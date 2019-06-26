@@ -31,22 +31,13 @@ public:
   virtual void buildInfoGUI(size_t pointInd);
 };
 
-// Specific subclass indicating that a quantity can create a program to draw on the points themselves
+// Specific subclass indicating that a quantity will create a program to draw on the points themselves
 class PointCloudQuantityThatDrawsPoints : public PointCloudQuantity {
 
 public:
   PointCloudQuantityThatDrawsPoints(std::string name, PointCloud& pointCloud);
-  
-  // Draw the quantity on the surface Note: for many quantities (like scalars)
-  // this does nothing, because drawing happens in the mesh draw(). However
-  // others (ie vectors) need to be drawn.
-  virtual void draw() override;
 
-  // Build GUI info about a point
-  virtual void buildInfoGUI(size_t pointInd);
-
-protected: 
-
+protected:
   std::unique_ptr<gl::GLProgram> pointProgram;
 };
 
@@ -79,6 +70,7 @@ public:
   // Axis-aligned bounding box for the structure
   virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
 
+  virtual std::string typeName() override;
 
   // === Quantities
 
@@ -99,14 +91,6 @@ public:
   // Vectors
   template <class T>
   void addVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
-
-
-  // Removal, etc
-  // TODO use shared pointers like SurfaceMesh
-  void removeQuantity(std::string name);
-  void setActiveQuantity(PointCloudQuantityThatDrawsPoints* q);
-  void clearActiveQuantity();
-  void removeAllQuantities();
 
   // The points that make up this point cloud
   std::vector<glm::vec3> points;
@@ -145,14 +129,11 @@ private:
 // Implementation of templated constructor
 template <class T>
 PointCloud::PointCloud(std::string name, const T& points_)
-    : Structure(name, structureTypeName), points(standardizeVectorArray<glm::vec3, T, 3>(points_)) {
+    : QuantityStructure<PointCloud>(name), points(standardizeVectorArray<glm::vec3, T, 3>(points_)) {
 
   initialBaseColor = getNextStructureColor();
   pointColor = initialBaseColor;
   colorManager = SubColorManager(initialBaseColor);
-
-  prepare();
-  preparePick();
 }
 
 

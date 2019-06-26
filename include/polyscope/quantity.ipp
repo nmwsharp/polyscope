@@ -27,6 +27,8 @@ void Quantity<S>::drawUI() {
   }
 }
 
+template <typename S>
+void Quantity<S>::drawCustomUI() {}
 
 template <typename S>
 bool Quantity<S>::isEnabled() {

@@ -2,8 +2,8 @@
 
 #include "polyscope/combining_hash_functions.h"
 #include "polyscope/point_cloud.h"
-#include "polyscope/surface_mesh.h"
-#include "polyscope/surface_mesh_io.h"
+//#include "polyscope/surface_mesh.h"
+//#include "polyscope/surface_mesh_io.h"
 
 #include <iostream>
 #include <unordered_set>
@@ -28,6 +28,7 @@ bool endsWith(const std::string& str, const std::string& suffix) {
   return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
+/*
 void processFileOBJ(string filename) {
   // Get a nice name for the file
   std::string niceName = polyscope::guessNiceNameFromPath(filename);
@@ -215,6 +216,7 @@ void processFileOBJ(string filename) {
   //// Curve quantity
   // polyscope::getSurfaceMesh(niceName)->addInputCurveQuantity("input curve");
 }
+*/
 
 void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& points) {
 
@@ -316,7 +318,7 @@ void processFileJSON(string filename) {
 void processFile(string filename) {
   // Dispatch to correct varient
   if (endsWith(filename, ".obj")) {
-    processFileOBJ(filename);
+    // processFileOBJ(filename);
   } else if (endsWith(filename, ".json")) {
     processFileJSON(filename);
   } else {
@@ -361,7 +363,6 @@ int main(int argc, char** argv) {
     processFile(s);
   }
 
-  /*
   // Create a point cloud
   for (int j = 0; j < 2; j++) {
     std::vector<glm::vec3> points;
@@ -376,7 +377,6 @@ int main(int argc, char** argv) {
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
     addDataToPointCloud("really great points" + std::to_string(j), points);
   }
-  */
 
   // Add a few gui elements
   polyscope::state::userCallback = callback;

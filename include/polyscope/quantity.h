@@ -18,9 +18,9 @@ public:
   virtual void draw() = 0;
 
   // Draw the ImGUI ui elements
-  virtual void drawUI(); // draws the tree node and enabled checkbox common to almost all quantities, and calls
-                         // drawCustomUI() below. Can still be overidden in case something else is wanted.
-  virtual void drawCustomUI() = 0; // overridden by children to add custom data to UI
+  virtual void drawUI();       // draws the tree node and enabled checkbox common to almost all quantities, and calls
+                               // drawCustomUI() below. Can still be overidden in case something else is wanted.
+  virtual void drawCustomUI(); // overridden by children to add custom data to UI
 
   // Enable and disable the quantity
   bool isEnabled();

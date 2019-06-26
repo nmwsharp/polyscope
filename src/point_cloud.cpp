@@ -185,6 +185,8 @@ std::tuple<glm::vec3, glm::vec3> PointCloud::boundingBox() {
   return std::make_tuple(min, max);
 }
 
+std::string PointCloud::typeName() { return structureTypeName; }
+
 // === Quantities
 
 PointCloudQuantity::PointCloudQuantity(std::string name_, PointCloud& pointCloud_, bool dominates_)

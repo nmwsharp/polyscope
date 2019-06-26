@@ -20,7 +20,7 @@ void QuantityStructure<S>::addQuantity(Quantity<S>* q, bool allowReplacement) {
 
     if (allowReplacement) {
       // delete it
-      existingQuantityWasEnabled = quantities.find(q->name)->isEnabled();
+      existingQuantityWasEnabled = quantities.find(q->name)->second->isEnabled();
       removeQuantity(q->name);
     } else {
       // throw an error
