@@ -25,8 +25,6 @@ namespace polyscope {
 // Initialize statics
 const std::string PointCloud::structureTypeName = "Point Cloud";
 
-PointCloud::~PointCloud() {}
-
 // Helper to set uniforms
 void PointCloud::setPointCloudUniforms(gl::GLProgram& p) {
   p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
@@ -119,7 +117,7 @@ void PointCloud::preparePick() {
   pickProgram->setAttribute("a_color", pickColors);
 }
 
-void PointCloud::drawPickUI(size_t localPickID) {
+void PointCloud::buildPickUI(size_t localPickID) {
 
   ImGui::TextUnformatted(("#" + std::to_string(localPickID) + "  ").c_str());
   ImGui::SameLine();
@@ -140,14 +138,14 @@ void PointCloud::drawPickUI(size_t localPickID) {
   ImGui::Indent(-20.);
 }
 
-void PointCloud::drawCustomUI() {
+void PointCloud::buildCustomUI() {
   ImGui::Text("# points: %lld", static_cast<long long int>(points.size()));
   ImGui::SameLine();
   ImGui::ColorEdit3("Point color", (float*)&pointColor, ImGuiColorEditFlags_NoInputs);
   ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
 }
 
-void PointCloud::drawCustomOptionsUI() {
+void PointCloud::buildCustomOptionsUI() {
   if (ImGui::MenuItem("Write points to file")) writePointsToFile();
 }
 
@@ -188,7 +186,6 @@ PointCloudQuantity::PointCloudQuantity(std::string name_, PointCloud& pointCloud
     : Quantity<PointCloud>(name_, pointCloud_, dominates_) {}
 PointCloudQuantityThatDrawsPoints::PointCloudQuantityThatDrawsPoints(std::string name_, PointCloud& pointCloud_)
     : PointCloudQuantity(name_, pointCloud_, true) {}
-PointCloudQuantity::~PointCloudQuantity() {}
 
 
 void PointCloud::writePointsToFile(std::string filename) {

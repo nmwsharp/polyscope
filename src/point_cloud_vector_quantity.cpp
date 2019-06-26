@@ -150,5 +150,6 @@ void PointCloudVectorQuantity::writeToFile(std::string filename) {
 }
 
 std::string PointCloudVectorQuantity::niceName() { return name + " (vector)"; }
+void PointCloudVectorQuantity::invalidate() { program.reset(); }
 
 } // namespace polyscope

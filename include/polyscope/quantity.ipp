@@ -61,4 +61,7 @@ std::string Quantity<S>::niceName() {
   return name;
 }
 
+template <typename S>
+void Quantity<S>::invalidate() {}
+
 } // namespace polyscope

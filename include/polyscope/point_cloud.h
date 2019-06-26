@@ -20,7 +20,6 @@ class PointCloudQuantity : public Quantity<PointCloud> {
 public:
   // Base constructor which sets the name
   PointCloudQuantity(std::string name, PointCloud& pointCloud, bool dominates = false);
-  virtual ~PointCloudQuantity() = 0;
 
   // Build GUI info about a point
   virtual void buildInfoGUI(size_t pointInd);
@@ -44,17 +43,16 @@ public:
   // Construct a new point cloud structure
   template <class T>
   PointCloud(std::string name, const T& points);
-  ~PointCloud();
 
   // === Overloads
 
+  // Build the imgui display
+  virtual void buildCustomUI() override;
+  virtual void buildCustomOptionsUI() override;
+  virtual void buildPickUI(size_t localPickID) override;
+
   // Render the the structure on screen
   virtual void draw() override;
-
-  // Build the imgui display
-  virtual void drawCustomUI() override;
-  virtual void drawCustomOptionsUI() override;
-  virtual void drawPickUI(size_t localPickID) override;
 
   // Render for picking
   virtual void drawPick() override;
@@ -68,8 +66,6 @@ public:
   virtual std::string typeName() override;
 
   // === Quantities
-
-  PointCloudQuantity* getQuantity(std::string name, bool errorIfAbsent = true);
 
   // Scalars
   template <class T>

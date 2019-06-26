@@ -83,8 +83,8 @@ void QuantityStructure<S>::clearDominantQuantity() {
 
 
 template <typename S>
-void QuantityStructure<S>::drawQuantitiesUI() {
-  // Draw the quantities
+void QuantityStructure<S>::buildQuantitiesUI() {
+  // Build the quantities
   for (auto& x : quantities) {
     x.second->buildUI();
   }

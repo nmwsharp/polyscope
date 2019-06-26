@@ -7,9 +7,6 @@
 #include "polyscope/gl/shaders/surface_shaders.h"
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
-#include "polyscope/surface_count_quantity.h"
-
-#include "stb_image.h"
 
 #include "imgui.h"
 
@@ -24,45 +21,28 @@ namespace polyscope {
 // Initialize statics
 const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
-
-SurfaceMesh::~SurfaceMesh() { deleteProgram(); }
-
-void SurfaceMesh::deleteProgram() {
-  if (program != nullptr) {
-    delete program;
-    program = nullptr;
-  }
-}
-
 void SurfaceMesh::draw() {
   if (!enabled) {
     return;
   }
 
-  if (program == nullptr) {
-    prepare();
+  // If no quantity is drawing the surface, we should draw it
+  if (dominantQuantity == nullptr) {
+
+    if (program == nullptr) {
+      prepare();
+    }
+
+    // Set uniforms
+    setTransformUniforms(*program);
+    setMeshUniforms(*program);
+    program->setUniform("u_basecolor", surfaceColor);
+
+    program->draw();
   }
-
-  // Set uniforms
-  glm::mat4 viewMat = getModelView();
-  program->setUniform("u_modelView", glm::value_ptr(viewMat));
-
-  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-  program->setUniform("u_projMatrix", glm::value_ptr(projMat));
-
-  program->setUniform("u_basecolor", surfaceColor);
-  program->setUniform("u_edgeWidth", edgeWidth);
-
-  // If the current program came from a quantity, allow the quantity to do any necessary per-frame work (like setting
-  // uniforms)
-  if (activeSurfaceQuantity != nullptr) {
-    activeSurfaceQuantity->setProgramValues(program);
-  }
-
-  program->draw();
 
   // Draw the quantities
-  for (auto x : quantities) {
+  for (auto& x : quantities) {
     x.second->draw();
   }
 }
@@ -73,35 +53,24 @@ void SurfaceMesh::drawPick() {
   }
 
   // Set uniforms
-  glm::mat4 viewMat = getModelView();
-  pickProgram->setUniform("u_modelView", glm::value_ptr(viewMat));
-
-  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-  pickProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
+  setTransformUniforms(*pickProgram);
 
   pickProgram->draw();
 }
 
 void SurfaceMesh::prepare() {
-  // It not quantity is coloring the surface, draw with a default color
-  if (activeSurfaceQuantity == nullptr) {
-    program = new gl::GLProgram(&PLAIN_SURFACE_VERT_SHADER, &PLAIN_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
-  }
-  // If some quantity is responsible for coloring the surface, prepare it
-  else {
-    program = activeSurfaceQuantity->createProgram();
-  }
-
-  setMaterialForProgram(program, "wax");
+  program.reset(new gl::GLProgram(&PLAIN_SURFACE_VERT_SHADER, &PLAIN_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
 
   // Populate draw buffers
-  fillGeometryBuffers();
+  fillGeometryBuffers(*program);
+
+  setMaterialForProgram(*program, "wax");
 }
 
 void SurfaceMesh::preparePick() {
 
   // Create a new program
-  pickProgram = new gl::GLProgram(&PICK_SURFACE_VERT_SHADER, &PICK_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
+  pickProgram.reset(new gl::GLProgram(&PICK_SURFACE_VERT_SHADER, &PICK_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
 
   // Get element indices
   size_t totalPickElements =
@@ -193,15 +162,15 @@ void SurfaceMesh::preparePick() {
   pickProgram->setAttribute("a_faceColor", faceColor);
 }
 
-void SurfaceMesh::fillGeometryBuffers() {
+void SurfaceMesh::fillGeometryBuffers(gl::GLProgram& p) {
   if (shadeStyle == ShadeStyle::SMOOTH) {
-    fillGeometryBuffersSmooth();
+    fillGeometryBuffersSmooth(p);
   } else if (shadeStyle == ShadeStyle::FLAT) {
-    fillGeometryBuffersFlat();
+    fillGeometryBuffersFlat(p);
   }
 }
 
-void SurfaceMesh::fillGeometryBuffersSmooth() {
+void SurfaceMesh::fillGeometryBuffersSmooth(gl::GLProgram& p) {
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
@@ -230,12 +199,12 @@ void SurfaceMesh::fillGeometryBuffersSmooth() {
   }
 
   // Store data in buffers
-  program->setAttribute("a_position", positions);
-  program->setAttribute("a_normal", normals);
-  program->setAttribute("a_barycoord", bcoord);
+  p.setAttribute("a_position", positions);
+  p.setAttribute("a_normal", normals);
+  p.setAttribute("a_barycoord", bcoord);
 }
 
-void SurfaceMesh::fillGeometryBuffersFlat() {
+void SurfaceMesh::fillGeometryBuffersFlat(gl::GLProgram& p) {
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
@@ -264,15 +233,15 @@ void SurfaceMesh::fillGeometryBuffersFlat() {
   }
 
   // Store data in buffers
-  program->setAttribute("a_position", positions);
-  program->setAttribute("a_normal", normals);
-  program->setAttribute("a_barycoord", bcoord);
+  p.setAttribute("a_position", positions);
+  p.setAttribute("a_normal", normals);
+  p.setAttribute("a_barycoord", bcoord);
 }
 
-void SurfaceMesh::drawSharedStructureUI() {}
+void SurfaceMesh::setMeshUniforms(gl::GLProgram& p) { program->setUniform("u_edgeWidth", edgeWidth); }
 
 
-void SurfaceMesh::drawPickUI(size_t localPickID) {
+void SurfaceMesh::buildPickUI(size_t localPickID) {
 
   // Selection type
   if (localPickID < facePickIndStart) {
@@ -426,7 +395,7 @@ void SurfaceMesh::buildVertexInfoGui(size_t vInd) {
   // Build GUI to show the quantities
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
-  for (auto x : quantities) {
+  for (auto& x : quantities) {
     x.second->buildVertexInfoGUI(vInd);
   }
 
@@ -444,7 +413,7 @@ void SurfaceMesh::buildFaceInfoGui(size_t fInd) {
   // Build GUI to show the quantities
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
-  for (auto x : quantities) {
+  for (auto& x : quantities) {
     x.second->buildFaceInfoGUI(fInd);
   }
 
@@ -462,7 +431,7 @@ void SurfaceMesh::buildEdgeInfoGui(size_t eInd) {
   // Build GUI to show the quantities
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
-  for (auto x : quantities) {
+  for (auto& x : quantities) {
     x.second->buildEdgeInfoGUI(eInd);
   }
 
@@ -480,7 +449,7 @@ void SurfaceMesh::buildHalfedgeInfoGui(size_t heInd) {
   // Build GUI to show the quantities
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
-  for (auto x : quantities) {
+  for (auto& x : quantities) {
     x.second->buildHalfedgeInfoGUI(heInd);
   }
 
@@ -488,71 +457,61 @@ void SurfaceMesh::buildHalfedgeInfoGui(size_t heInd) {
 }
 
 
-void SurfaceMesh::drawUI() {
-  ImGui::PushID(name.c_str()); // ensure there are no conflicts with
-                               // identically-named labels
+void SurfaceMesh::buildCustomUI() {
 
-  if (ImGui::TreeNode(name.c_str())) {
-    // enabled = true;
-
-    // Print stats
-    // TODO add support back for connected components, boundary, etc
-    // TODO wrong for multiple connected components
-    /*
-    long long int nVerts = static_cast<long long int>(nVertices);
-    long long int nConnComp = static_cast<long long int>(mesh->nConnectedComponents());
-    bool hasBoundary = mesh->nBoundaryLoops() > 0;
-    if (nConnComp > 1) {
-      if (hasBoundary) {
-        ImGui::Text("# verts: %lld  # components: %lld", nVerts, nConnComp);
-        ImGui::Text("# boundary: %lu", static_cast<unsigned long>(mesh->nBoundaryLoops()));
-      } else {
-        ImGui::Text("# verts: %lld  # components: %lld", nVerts, nConnComp);
-      }
+  // Print stats
+  // TODO add support back for connected components, boundary, etc
+  // TODO wrong for multiple connected components
+  /*
+  long long int nVerts = static_cast<long long int>(nVertices);
+  long long int nConnComp = static_cast<long long int>(mesh->nConnectedComponents());
+  bool hasBoundary = mesh->nBoundaryLoops() > 0;
+  if (nConnComp > 1) {
+    if (hasBoundary) {
+      ImGui::Text("# verts: %lld  # components: %lld", nVerts, nConnComp);
+      ImGui::Text("# boundary: %lu", static_cast<unsigned long>(mesh->nBoundaryLoops()));
     } else {
-      if (hasBoundary) {
-        ImGui::Text("# verts: %lld  # boundary: %lu", nVerts, static_cast<unsigned long>(mesh->nBoundaryLoops()));
+      ImGui::Text("# verts: %lld  # components: %lld", nVerts, nConnComp);
+    }
+  } else {
+    if (hasBoundary) {
+      ImGui::Text("# verts: %lld  # boundary: %lu", nVerts, static_cast<unsigned long>(mesh->nBoundaryLoops()));
+    } else {
+      long long int eulerCharacteristic = nVertices - nEdges + nFaces;
+      long long int genus = (2 - eulerCharacteristic) / 2;
+      ImGui::Text("# verts: %lld  genus: %lld", nVerts, genus);
+    }
+  }
+  */
+
+  ImGui::ColorEdit3("Color", (float*)&surfaceColor, ImGuiColorEditFlags_NoInputs);
+  ImGui::SameLine();
+
+  { // Flat shading or smooth shading?
+    if (ImGui::Checkbox("Smooth", &ui_smoothshade)) {
+      if (ui_smoothshade) {
+        setShadeStyle(ShadeStyle::SMOOTH);
       } else {
-        long long int eulerCharacteristic = nVertices - nEdges + nFaces;
-        long long int genus = (2 - eulerCharacteristic) / 2;
-        ImGui::Text("# verts: %lld  genus: %lld", nVerts, genus);
+        setShadeStyle(ShadeStyle::FLAT);
       }
     }
-    */
+  }
 
+  { // Edge width
+    ImGui::PushItemWidth(150);
+    ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0, .01, "%.5f", 2.);
+    ImGui::PopItemWidth();
+  }
+}
 
-    ImGui::ColorEdit3("Color", (float*)&surfaceColor, ImGuiColorEditFlags_NoInputs);
-    ImGui::SameLine();
-
-    { // Flat shading or smooth shading?
-      if(ImGui::Checkbox("Smooth", &ui_smoothshade)) {
-        if(ui_smoothshade) {
-          setShadeStyle(ShadeStyle::SMOOTH);
-        } else {
-          setShadeStyle(ShadeStyle::FLAT);
-        }
-      }
-    }
-
-    { // Edge width
-      //ImGui::SameLine();
-      //ImGui::Checkbox("Edges", &showEdges);
-      //if (showEdges) {
-        //edgeWidth = 0.01;
-      //} else {
-        //edgeWidth = 0.0;
-      //}
-      ImGui::PushItemWidth(150);
-      ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0, .01, "%.5f", 2.);
-      ImGui::PopItemWidth();
-    }
+void SurfaceMesh::buildCustomOptionsUI() {
 
 }
-  
+
 void SurfaceMesh::setShadeStyle(ShadeStyle newShadeStyle) {
   ui_smoothshade = (newShadeStyle == ShadeStyle::SMOOTH);
   shadeStyle = newShadeStyle;
-  deleteProgram();
+  program.reset();
 }
 
 double SurfaceMesh::lengthScale() {
@@ -586,6 +545,10 @@ std::tuple<glm::vec3, glm::vec3> SurfaceMesh::boundingBox() {
   max = glm::vec3(glm::vec4(max.x, max.y, max.z, 1.0));
 
   return std::make_tuple(min, max);
+}
+
+std::string SurfaceMesh::typeName() {
+  return structureTypeName; 
 }
 
 /* TODO resurrect
@@ -758,97 +721,14 @@ void SurfaceMesh::updateVertexPositions(const std::vector<glm::vec3>& newPositio
   triMesh.updateVertexPositions(newPositions);
 
   // Rebuild any necessary quantities
-  deleteProgram();
-  prepare();
-}
-
-SurfaceQuantity::SurfaceQuantity(std::string name_, SurfaceMesh* mesh_) : name(name_), parent(mesh_) {}
-SurfaceQuantityThatDrawsFaces::SurfaceQuantityThatDrawsFaces(std::string name_, SurfaceMesh* mesh_)
-    : SurfaceQuantity(name_, mesh_) {}
-SurfaceQuantity::~SurfaceQuantity() {}
-
-void SurfaceMesh::addSurfaceQuantity(SurfaceQuantity* quantity) {
-  std::shared_ptr<SurfaceQuantity> ptr;
-  ptr.reset(quantity);
-  addSurfaceQuantity(ptr);
-}
-
-void SurfaceMesh::addSurfaceQuantity(std::shared_ptr<SurfaceQuantity> quantity) {
-  // Delete old if in use
-  bool wasEnabled = false;
-  if (quantities.find(quantity->name) != quantities.end()) {
-    wasEnabled = quantities[quantity->name]->isEnabled();
-    removeQuantity(quantity->name);
-  }
-
-  // Store
-  quantities[quantity->name] = quantity;
-
-  // Re-enable the quantity if we're replacing an enabled quantity
-  if (wasEnabled) {
-    quantity->enable();
-  }
+  program.reset();
+  pickProgram.reset();
 }
 
 
-std::shared_ptr<SurfaceQuantity> SurfaceMesh::getSurfaceQuantity(std::string name, bool errorIfAbsent) {
-  // Check if exists
-  if (quantities.find(name) == quantities.end()) {
-    if (errorIfAbsent) {
-      polyscope::error("No quantity named " + name + " registered");
-    }
-    return nullptr;
-  }
-
-  return quantities[name];
-}
-
-
-void SurfaceMesh::addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values) {
-  std::shared_ptr<SurfaceCountQuantity> q = std::make_shared<SurfaceCountVertexQuantity>(name, values, this);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values) {
-  std::shared_ptr<SurfaceCountQuantity> q = std::make_shared<SurfaceCountFaceQuantity>(name, values, this);
-  addSurfaceQuantity(q);
-}
-
-void SurfaceMesh::addIsolatedVertexScalarQuantity(std::string name,
-                                                  const std::vector<std::pair<size_t, double>>& values) {
-  std::shared_ptr<SurfaceCountQuantity> q = std::make_shared<SurfaceIsolatedScalarVertexQuantity>(name, values, this);
-  addSurfaceQuantity(q);
-}
-
-
-
-void SurfaceQuantity::buildVertexInfoGUI(size_t vInd) {}
-void SurfaceQuantity::buildFaceInfoGUI(size_t fInd) {}
-void SurfaceQuantity::buildEdgeInfoGUI(size_t eInd) {}
-void SurfaceQuantity::buildHalfedgeInfoGUI(size_t heInd) {}
-
-bool SurfaceQuantity::isEnabled() { return enabled; }
-
-void SurfaceQuantity::enable() { enabled = true; }
-void SurfaceQuantity::disable() { enabled = false; }
-void SurfaceQuantity::setEnabled(bool newEnabled) {
-  if (enabled == false && newEnabled == true) {
-    enable();
-  } else if (enabled == true && newEnabled == false) {
-    disable();
-  }
-}
-
-void SurfaceQuantityThatDrawsFaces::setProgramValues(gl::GLProgram* program) {}
-
-void SurfaceQuantityThatDrawsFaces::enable() {
-  enabled = true;
-  parent->setActiveSurfaceQuantity(this);
-}
-
-void SurfaceQuantityThatDrawsFaces::disable() {
-  enabled = false;
-  parent->clearActiveSurfaceQuantity();
-}
+void Quantity<SurfaceMesh>::buildVertexInfoGUI(size_t vInd) {}
+void Quantity<SurfaceMesh>::buildFaceInfoGUI(size_t fInd) {}
+void Quantity<SurfaceMesh>::buildEdgeInfoGUI(size_t eInd) {}
+void Quantity<SurfaceMesh>::buildHalfedgeInfoGUI(size_t heInd) {}
 
 } // namespace polyscope

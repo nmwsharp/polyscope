@@ -645,13 +645,13 @@ void buildStructureGui() {
     if (ImGui::CollapsingHeader(("Category: " + catName + " (" + std::to_string(structureMap.size()) + ")").c_str())) {
       // Draw shared GUI elements for all instances of the structure
       if (structureMap.size() > 0) {
-        structureMap.begin()->second->drawSharedStructureUI();
+        structureMap.begin()->second->buildSharedStructureUI();
       }
 
       for (auto x : structureMap) {
         ImGui::SetNextTreeNodeOpen(structureMap.size() <= 8,
                                    ImGuiCond_FirstUseEver); // closed by default if more than 8
-        x.second->drawUI();
+        x.second->buildUI();
       }
     }
 
@@ -677,7 +677,7 @@ void buildPickGui() {
 
     ImGui::TextUnformatted((structure->typeName() + ": " + structure->name).c_str());
     ImGui::Separator();
-    structure->drawPickUI(pickInd);
+    structure->buildPickUI(pickInd);
 
     ImGui::End();
   }

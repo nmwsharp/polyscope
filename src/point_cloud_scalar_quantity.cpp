@@ -152,5 +152,6 @@ void PointCloudScalarQuantity::buildPickUI(size_t ind) {
 }
 
 std::string PointCloudScalarQuantity::niceName() { return name + " (scalar)"; }
+void PointCloudScalarQuantity::invalidate() { pointProgram.reset(); }
 
 } // namespace polyscope

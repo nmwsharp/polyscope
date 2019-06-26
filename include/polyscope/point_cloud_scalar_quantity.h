@@ -18,7 +18,9 @@ public:
   virtual void buildCustomUI() override;
 
   void buildPickUI(size_t ind) override;
+
   virtual std::string niceName() override;
+  virtual void invalidate() override;
 
   // === Members
   std::vector<double> values;

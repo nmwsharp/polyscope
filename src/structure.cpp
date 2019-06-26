@@ -17,7 +17,7 @@ void Structure::setEnabled(bool newEnabled) {
 
 bool Structure::isEnabled() { return enabled; };
 
-void Structure::drawUI() {
+void Structure::buildUI() {
 
   ImGui::PushID(name.c_str()); // ensure there are no conflicts with
                                // identically-named labels
@@ -44,25 +44,25 @@ void Structure::drawUI() {
       }
 
       // Do any structure-specific stuff here
-      this->drawCustomOptionsUI();
+      this->buildCustomOptionsUI();
 
       ImGui::EndPopup();
     }
 
     // Do any structure-specific stuff here
-    this->drawCustomUI();
+    this->buildCustomUI();
 
-    // Draw quantities list, in the common case of a QuantityStructure
-    this->drawQuantitiesUI();
+    // Build quantities list, in the common case of a QuantityStructure
+    this->buildQuantitiesUI();
 
     ImGui::TreePop();
   }
   ImGui::PopID();
 }
 
-void Structure::drawQuantitiesUI() {}
+void Structure::buildQuantitiesUI() {}
 
-void Structure::drawSharedStructureUI() {}
+void Structure::buildSharedStructureUI() {}
 
 void Structure::resetTransform() {
   objectTransform = glm::mat4(1.0);

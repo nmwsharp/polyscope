@@ -33,6 +33,9 @@ public:
   // return "value (scalar)"
   virtual std::string niceName();
 
+  // Re-do any setup work (called, e.g., if vertex positions are updated)
+  virtual void invalidate();
+
 
   // === Member variables ===
   S& parent;              // the parent structure with which this quantity is associated

@@ -50,13 +50,13 @@ SET(SRCS
   point_cloud_vector_quantity.cpp
 
   # Surface
-  #surface_mesh.cpp
-  #halfedge_mesh.cpp
+  surface_mesh.cpp
+  halfedge_mesh.cpp
+  surface_mesh_io.cpp
   #surface_color_quantity.cpp
   #surface_count_quantity.cpp
   #surface_distance_quantity.cpp
-  #surface_input_curve_quantity.cpp_
-  #surface_mesh_io.cpp
+  #surface_input_curve_quantity.cpp
   #surface_scalar_quantity.cpp
   #surface_selection_quantity.cpp
   #surface_subset_quantity.cpp

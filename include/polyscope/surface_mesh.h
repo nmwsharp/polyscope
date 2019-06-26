@@ -22,9 +22,34 @@ enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE };
 // Forward delcare surface mesh
 class SurfaceMesh;
 
-// Interface defining extra things that surface quantity needs to know how to do
-class SurfaceQuantityInterface {
+// Specialize Quantity<SurfaceMesh> to add a few extra functions
+
+template <>
+class Quantity<SurfaceMesh> {
 public:
+  
+  // [begin boring copy of  everything in quantity.h, because C++ is lame]
+  Quantity(std::string name, SurfaceMesh& parentStructure, bool dominates = false);
+  virtual ~Quantity();
+  virtual void draw();
+  virtual void buildUI();       
+  virtual void buildCustomUI();
+  virtual void buildPickUI(size_t localPickInd); 
+  bool isEnabled();
+  virtual void setEnabled(bool newEnabled);
+  virtual std::string niceName();
+  virtual void invalidate();
+  SurfaceMesh& parent;              
+  const std::string name;
+protected:
+  bool enabled = false;
+  const bool dominates = false;
+  // [end boring copy]
+
+
+  // == Add a few extra methods
+public:
+
   // Build GUI info about this element
   virtual void buildVertexInfoGUI(size_t vInd);
   virtual void buildFaceInfoGUI(size_t fInd);
@@ -32,21 +57,6 @@ public:
   virtual void buildHalfedgeInfoGUI(size_t heInd);
 };
 
-// Specific subclass indicating that a quantity can create a program to draw on
-// the surface
-class SurfaceQuantityThatDrawsFaces : public Quantity<SurfaceMesh>, public SurfaceQuantityInterface {
-public:
-  SurfaceQuantityThatDrawsFaces(std::string name, SurfaceMesh* mesh);
-  // Create a program to be used for drawing the surface
-  // CALLER is responsible for deallocating
-  virtual gl::GLProgram* createProgram() = 0;
-
-  // Do any per-frame work on the program handed out by createProgram
-  virtual void setProgramValues(gl::GLProgram* program);
-
-  virtual void enable();
-  virtual void disable();
-};
 
 // Triangulation of a (possibly polygonal) face
 // Elements that don't come from the original mesh (eg, interior edges) denoted with INVALID_IND.
@@ -59,29 +69,21 @@ struct TriangulationFace {
 };
 
 
-class SurfaceMesh : public Structure {
+class SurfaceMesh : public QuantityStructure<SurfaceMesh> {
 public:
   // === Member functions ===
 
   // Construct a new surface mesh structure
   template <class V, class F>
   SurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices);
-  // SurfaceMesh(std::string name, std::vector<glm::vec3> vertexPositions_, std::vector<std::vector<size_t>>
-  // faceIndices_);
 
-  ~SurfaceMesh();
+  // Build the imgui display
+  virtual void buildCustomUI() override;
+  virtual void buildCustomOptionsUI() override;
+  virtual void buildPickUI(size_t localPickID) override;
 
   // Render the the structure on screen
   virtual void draw() override;
-
-  // Do setup work related to drawing, including allocating openGL data
-  virtual void prepare() override;
-  virtual void preparePick() override;
-
-  // Build the imgui display
-  virtual void drawUI() override;
-  virtual void drawPickUI(size_t localPickID) override;
-  virtual void drawSharedStructureUI() override;
 
   // Render for picking
   virtual void drawPick() override;
@@ -92,12 +94,9 @@ public:
   // Axis-aligned bounding box for the structure
   virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
 
-  // === Quantity-related
+  virtual std::string typeName() override;
 
-  // general form
-  void addSurfaceQuantity(SurfaceQuantity* quantity); // will be deleted internally when appropriate
-  void addSurfaceQuantity(std::shared_ptr<SurfaceQuantity> quantity);
-  std::shared_ptr<SurfaceQuantity> getSurfaceQuantity(std::string name, bool errorIfAbsent = true);
+  // === Quantity-related
 
   // Scalars (expect double arrays)
   template <class T>
@@ -151,10 +150,6 @@ public:
   // void addInputCurveQuantity(std::string name);
 
 
-  void removeQuantity(std::string name);
-  void setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q);
-  void clearActiveSurfaceQuantity();
-
   // === Make a one-time selection
   // size_t selectVertex();
   // size_t selectFace();
@@ -163,8 +158,8 @@ public:
   void updateVertexPositions(const std::vector<glm::vec3>& newPositions);
 
   // === Helpers
-  void deleteProgram();
-  void fillGeometryBuffers();
+  void fillGeometryBuffers(gl::GLProgram& p);
+  void setMeshUniforms(gl::GLProgram& p);
   void setShadeStyle(ShadeStyle newShadeStyle);
 
   size_t nHalfedges() const { return mesh.nHalfedges(); }
@@ -178,7 +173,6 @@ public:
   size_t nTriangulationImaginaryHalfedges() const { return triMesh.nImaginaryHalfedges(); }
 
   // === Member variables ===
-  bool enabled = true;
 
   // The mesh (possibly polgonal), as passed in by the user.
   HalfedgeMesh mesh;
@@ -202,9 +196,6 @@ public:
   // void getPickedFacePoint(FacePtr& fOut, glm::vec3& baryCoordOut);
 
 private:
-  // Quantities
-  std::map<std::string, std::shared_ptr<SurfaceQuantity>> quantities;
-
   // Visualization settings
   Color3f baseColor;
   Color3f surfaceColor;
@@ -212,10 +203,9 @@ private:
   bool showEdges = false;
   float edgeWidth = 0.0;
 
-  SurfaceQuantityThatDrawsFaces* activeSurfaceQuantity = nullptr; // a quantity that is respondible for drawing on the
-                                                                  // surface and overwrites `program` with its own
-                                                                  // shaders
-
+  // Do setup work related to drawing, including allocating openGL data
+  void prepare();
+  void preparePick();
 
   // Picking-related
   // Order of indexing: vertices, faces, edges, halfedges
@@ -231,20 +221,22 @@ private:
   bool ui_smoothshade = true;
 
   // Drawing related things
-  gl::GLProgram* program = nullptr;
-  gl::GLProgram* pickProgram = nullptr;
-
+  std::unique_ptr<gl::GLProgram> program;
+  std::unique_ptr<gl::GLProgram> pickProgram;
 
   // === Helper functions
 
   // Initialization work
   void initializeMeshTriangulation();
 
-  void fillGeometryBuffersSmooth();
-  void fillGeometryBuffersFlat();
+  void fillGeometryBuffersSmooth(gl::GLProgram& p);
+  void fillGeometryBuffersFlat(gl::GLProgram& p);
   glm::vec2 projectToScreenSpace(glm::vec3 coord);
   // bool screenSpaceTriangleTest(size_t fInd, glm::vec2 testCoords, glm::vec3& bCoordOut);
 };
+
+
+// ==== Implementations of template functions
 
 
 // Shorthand to add a mesh to polyscope
@@ -266,8 +258,8 @@ inline SurfaceMesh* getSurfaceMesh(std::string name = "") {
 // Implementation of templated constructor
 template <class V, class F>
 SurfaceMesh::SurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices)
-    : Structure(name, SurfaceMesh::structureTypeName), mesh(standardizeVectorArray<glm::vec3, V, 3>(vertexPositions),
-                                                            standardizeNestedList<size_t, F>(faceIndices), false),
+    : QuantityStructure<SurfaceMesh>(name), mesh(standardizeVectorArray<glm::vec3, V, 3>(vertexPositions),
+                                                 standardizeNestedList<size_t, F>(faceIndices), false),
       triMesh(standardizeVectorArray<glm::vec3, V, 3>(vertexPositions), standardizeNestedList<size_t, F>(faceIndices),
               true) {
 
@@ -301,7 +293,8 @@ inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
 } // namespace polyscope
 
 
-// Additional includes for quantities
+// Alllll the quantities
+/*
 #include "polyscope/surface_color_quantity.h"
 #include "polyscope/surface_count_quantity.h"
 #include "polyscope/surface_distance_quantity.h"
@@ -309,3 +302,4 @@ inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
 #include "polyscope/surface_selection_quantity.h"
 #include "polyscope/surface_subset_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
+*/
