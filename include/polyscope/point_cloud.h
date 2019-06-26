@@ -22,11 +22,6 @@ public:
   PointCloudQuantity(std::string name, PointCloud& pointCloud, bool dominates = false);
   virtual ~PointCloudQuantity() = 0;
 
-  // Draw the quantity on the surface Note: for many quantities (like scalars)
-  // this does nothing, because drawing happens in the mesh draw(). However
-  // others (ie vectors) need to be drawn.
-  virtual void draw() override;
-
   // Build GUI info about a point
   virtual void buildInfoGUI(size_t pointInd);
 };
@@ -103,11 +98,9 @@ public:
   // Small utilities
   void deleteProgram();
   void writePointsToFile(std::string filename = "");
+  void setPointCloudUniforms(gl::GLProgram& p);
 
 private:
-  // Quantities
-  std::map<std::string, PointCloudQuantity*> quantities;
-
   // Visualization parameters
   Color3f initialBaseColor;
   Color3f pointColor;
@@ -122,7 +115,6 @@ private:
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
   void preparePick();
-  void setPointCloudUniforms(gl::GLProgram& p);
 };
 
 

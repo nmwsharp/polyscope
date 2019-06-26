@@ -15,12 +15,13 @@ public:
   virtual ~Quantity();
 
   // Draw the quantity.
-  virtual void draw() = 0;
+  virtual void draw();
 
   // Draw the ImGUI ui elements
-  virtual void drawUI();       // draws the tree node and enabled checkbox common to almost all quantities, and calls
-                               // drawCustomUI() below. Can still be overidden in case something else is wanted.
-  virtual void drawCustomUI(); // overridden by children to add custom data to UI
+  virtual void buildUI();       // draws the tree node and enabled checkbox common to almost all quantities, and calls
+                                // drawCustomUI() below. Can still be overidden in case something else is wanted.
+  virtual void buildCustomUI(); // overridden by children to add custom data to UI
+  virtual void buildPickUI(size_t localPickInd); // overridden by children to add custom fields to pick menu
 
   // Enable and disable the quantity
   bool isEnabled();

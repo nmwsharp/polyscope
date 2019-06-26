@@ -1,5 +1,6 @@
 #include "polyscope/point_cloud_color_quantity.h"
 
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/polyscope.h"
@@ -33,12 +34,13 @@ void PointCloudColorQuantity::draw() {
     createPointProgram();
   }
 
+  parent.setTransformUniforms(*pointProgram);
+  parent.setPointCloudUniforms(*pointProgram);
+
   pointProgram->draw();
 }
 
-std::string PointCloudColorQuantity::niceName() {
-  return name + " (color)";
-}
+std::string PointCloudColorQuantity::niceName() { return name + " (color)"; }
 
 
 void PointCloudColorQuantity::createPointProgram() {
@@ -46,12 +48,15 @@ void PointCloudColorQuantity::createPointProgram() {
   pointProgram.reset(new gl::GLProgram(&SPHERE_COLOR_VERT_SHADER, &SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
                                        &SPHERE_COLOR_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
 
-  // Fill color buffers
+  // Fill buffers
+  pointProgram->setAttribute("a_position", parent.points);
   pointProgram->setAttribute("a_color", values);
+
+  setMaterialForProgram(*pointProgram, "wax");
 }
 
 
-void PointCloudColorQuantity::buildInfoGUI(size_t ind) {
+void PointCloudColorQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
   ImGui::Text("%g, %g, %g", values[ind].x, values[ind].y, values[ind].z);

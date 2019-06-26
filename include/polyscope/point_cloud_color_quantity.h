@@ -15,7 +15,7 @@ public:
 
   virtual void draw() override;
 
-  void buildInfoGUI(size_t ind) override;
+  void buildPickUI(size_t ind) override;
 
   virtual std::string niceName() override;
 

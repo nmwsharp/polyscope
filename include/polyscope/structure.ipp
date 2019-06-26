@@ -86,7 +86,7 @@ template <typename S>
 void QuantityStructure<S>::drawQuantitiesUI() {
   // Draw the quantities
   for (auto& x : quantities) {
-    x.second->drawUI();
+    x.second->buildUI();
   }
 }
 

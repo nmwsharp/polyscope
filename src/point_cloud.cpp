@@ -29,21 +29,14 @@ PointCloud::~PointCloud() {}
 
 // Helper to set uniforms
 void PointCloud::setPointCloudUniforms(gl::GLProgram& p) {
-
-  glm::mat4 viewMat = getModelView();
-  p.setUniform("u_modelView", glm::value_ptr(viewMat));
-
-  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-  p.setUniform("u_projMatrix", glm::value_ptr(projMat));
+  p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
+  p.setUniform("u_baseColor", pointColor);
 
   glm::vec3 lookDir, upDir, rightDir;
   view::getCameraFrame(lookDir, upDir, rightDir);
   p.setUniform("u_camZ", lookDir);
   p.setUniform("u_camUp", upDir);
   p.setUniform("u_camRight", rightDir);
-
-  p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
-  p.setUniform("u_baseColor", pointColor);
 }
 
 void PointCloud::draw() {
@@ -60,6 +53,7 @@ void PointCloud::draw() {
     }
 
     // Set program uniforms
+    setTransformUniforms(*program);
     setPointCloudUniforms(*program);
 
     // Draw the actual point cloud
@@ -67,7 +61,7 @@ void PointCloud::draw() {
   }
 
   // Draw the quantities
-  for (auto x : quantities) {
+  for (auto& x : quantities) {
     x.second->draw();
   }
 }
@@ -83,6 +77,7 @@ void PointCloud::drawPick() {
   }
 
   // Set uniforms
+  setTransformUniforms(*pickProgram);
   setPointCloudUniforms(*pickProgram);
 
   pickProgram->draw();
@@ -138,8 +133,8 @@ void PointCloud::drawPickUI(size_t localPickID) {
   // Build GUI to show the quantities
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
-  for (auto x : quantities) {
-    x.second->buildInfoGUI(localPickID);
+  for (auto& x : quantities) {
+    x.second->buildPickUI(localPickID);
   }
 
   ImGui::Indent(-20.);
@@ -219,7 +214,6 @@ void PointCloud::writePointsToFile(std::string filename) {
 }
 
 void PointCloudQuantity::buildInfoGUI(size_t pointInd) {}
-void PointCloudQuantity::draw() {}
 
 
 } // namespace polyscope

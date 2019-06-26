@@ -15,9 +15,9 @@ public:
                            DataType dataType);
 
   virtual void draw() override;
-  virtual void drawCustomUI() override;
+  virtual void buildCustomUI() override;
 
-  void buildInfoGUI(size_t ind) override;
+  void buildPickUI(size_t ind) override;
   virtual std::string niceName() override;
 
   // === Members

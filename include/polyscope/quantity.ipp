@@ -10,7 +10,10 @@ template <typename S>
 Quantity<S>::~Quantity(){};
 
 template <typename S>
-void Quantity<S>::drawUI() {
+void Quantity<S>::draw() {}
+
+template <typename S>
+void Quantity<S>::buildUI() {
 
   if (ImGui::TreeNode(name.c_str())) {
 
@@ -18,17 +21,19 @@ void Quantity<S>::drawUI() {
     bool enabledLocal = enabled;
     ImGui::Checkbox("Enabled", &enabledLocal);
     setEnabled(enabledLocal);
-    ImGui::SameLine();
 
     // Call custom UI
-    this->drawCustomUI();
+    this->buildCustomUI();
 
     ImGui::TreePop();
   }
 }
 
 template <typename S>
-void Quantity<S>::drawCustomUI() {}
+void Quantity<S>::buildCustomUI() {}
+
+template <typename S>
+void Quantity<S>::buildPickUI(size_t localPickInd) {}
 
 template <typename S>
 bool Quantity<S>::isEnabled() {
@@ -39,6 +44,8 @@ template <typename S>
 void Quantity<S>::setEnabled(bool newEnabled) {
   if (newEnabled == enabled) return;
 
+  enabled = newEnabled;
+
   // Dominating quantities need to update themselves as their parent's dominating quantity
   if (dominates) {
     if (newEnabled == true) {
@@ -47,8 +54,6 @@ void Quantity<S>::setEnabled(bool newEnabled) {
       parent.clearDominantQuantity();
     }
   }
-
-  enabled = newEnabled;
 }
 
 template <typename S>

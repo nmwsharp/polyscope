@@ -1,6 +1,7 @@
 #pragma once
 
 #include "polyscope/quantity.h"
+#include "polyscope/gl/gl_utils.h"
 
 #include "glm/glm.hpp"
 
@@ -67,6 +68,7 @@ public:
   glm::mat4 getModelView();
   void centerBoundingBox();
   void resetTransform();
+  void setTransformUniforms(gl::GLProgram& p);
 
 protected:
   // = State

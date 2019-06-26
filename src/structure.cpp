@@ -12,7 +12,7 @@ Structure::~Structure(){};
 
 void Structure::setEnabled(bool newEnabled) {
   if (newEnabled == enabled) return;
-  newEnabled = enabled;
+  enabled = newEnabled;
 };
 
 bool Structure::isEnabled() { return enabled; };
@@ -78,5 +78,13 @@ void Structure::centerBoundingBox() {
 }
 
 glm::mat4 Structure::getModelView() { return view::getCameraViewMatrix() * objectTransform; }
+
+void Structure::setTransformUniforms(gl::GLProgram& p) {
+  glm::mat4 viewMat = getModelView();
+  p.setUniform("u_modelView", glm::value_ptr(viewMat));
+
+  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
+  p.setUniform("u_projMatrix", glm::value_ptr(projMat));
+}
 
 } // namespace polyscope

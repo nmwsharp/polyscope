@@ -12,9 +12,8 @@ public:
                            VectorType vectorType_ = VectorType::STANDARD);
 
   virtual void draw() override;
-  virtual void drawCustomUI() override;
-
-  virtual void buildInfoGUI(size_t ind) override;
+  virtual void buildCustomUI() override;
+  virtual void buildPickUI(size_t ind) override;
   virtual std::string niceName() override;
 
   // === Members

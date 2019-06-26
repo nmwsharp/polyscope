@@ -1,5 +1,6 @@
 #include "polyscope/point_cloud_scalar_quantity.h"
 
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/polyscope.h"
@@ -52,6 +53,8 @@ void PointCloudScalarQuantity::draw() {
   }
 
   // Set uniforms
+  parent.setTransformUniforms(*pointProgram);
+  parent.setPointCloudUniforms(*pointProgram);
   pointProgram->setUniform("u_rangeLow", vizRangeLow);
   pointProgram->setUniform("u_rangeHigh", vizRangeHigh);
 
@@ -76,7 +79,8 @@ void PointCloudScalarQuantity::resetVizRange() {
   }
 }
 
-void PointCloudScalarQuantity::drawCustomUI() {
+void PointCloudScalarQuantity::buildCustomUI() {
+  ImGui::SameLine();
 
   { // Set colormap
     ImGui::SameLine();
@@ -132,12 +136,15 @@ void PointCloudScalarQuantity::createPointProgram() {
   pointProgram.reset(new gl::GLProgram(&SPHERE_VALUE_VERT_SHADER, &SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
                                        &SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
 
-  // Fill color buffers
+  // Fill buffers
+  pointProgram->setAttribute("a_position", parent.points);
   pointProgram->setAttribute("a_value", values);
   pointProgram->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+
+  setMaterialForProgram(*pointProgram, "wax");
 }
 
-void PointCloudScalarQuantity::buildInfoGUI(size_t ind) {
+void PointCloudScalarQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
   ImGui::Text("%g", values[ind]);

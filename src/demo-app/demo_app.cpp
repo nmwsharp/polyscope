@@ -230,6 +230,7 @@ void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& po
   }
   polyscope::getPointCloud(pointCloudName)->addScalarQuantity("xC", xC);
   polyscope::getPointCloud(pointCloudName)->addColorQuantity("random color", randColor);
+  polyscope::getPointCloud(pointCloudName)->addColorQuantity("random color2", randColor);
 
 
   // Add some vector quantities
@@ -352,8 +353,8 @@ int main(int argc, char** argv) {
 
   // Options
   // polyscope::options::autocenterStructures = true;
-  polyscope::view::windowWidth = 600;
-  polyscope::view::windowHeight = 800;
+  // polyscope::view::windowWidth = 600;
+  // polyscope::view::windowHeight = 800;
 
 
   // Initialize polyscope
@@ -370,8 +371,7 @@ int main(int argc, char** argv) {
       // points.push_back(glm::vec3{10,10,10} + 20*glm::vec3{randomUnit()-.5,
       // randomUnit()-.5, randomUnit()-.5});
       points.push_back(
-          3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5} +
-          glm::vec3{10, 10, 10});
+          3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
       // 3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
     }
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);

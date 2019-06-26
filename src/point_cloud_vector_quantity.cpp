@@ -1,6 +1,7 @@
 #include "polyscope/point_cloud_vector_quantity.h"
 
 #include "polyscope/file_helpers.h"
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/vector_shaders.h"
 #include "polyscope/polyscope.h"
@@ -52,17 +53,8 @@ void PointCloudVectorQuantity::draw() {
   }
 
   // Set uniforms
-  glm::mat4 viewMat = parent.getModelView();
-  program->setUniform("u_modelView", glm::value_ptr(viewMat));
+  parent.setTransformUniforms(*program);
 
-  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-  program->setUniform("u_projMatrix", glm::value_ptr(projMat));
-
-  glm::vec3 eyePos = view::getCameraWorldPosition();
-  program->setUniform("u_eye", eyePos);
-
-  program->setUniform("u_lightCenter", state::center);
-  program->setUniform("u_lightDist", 5 * state::lengthScale);
   program->setUniform("u_radius", radiusMult * state::lengthScale);
   program->setUniform("u_color", vectorColor);
 
@@ -87,9 +79,13 @@ void PointCloudVectorQuantity::createProgram() {
 
   program->setAttribute("a_vector", mappedVectors);
   program->setAttribute("a_position", parent.points);
+
+  setMaterialForProgram(*program, "wax");
 }
 
-void PointCloudVectorQuantity::drawCustomUI() {
+void PointCloudVectorQuantity::buildCustomUI() {
+  ImGui::SameLine();
+
   ImGui::ColorEdit3("Color", (float*)&vectorColor, ImGuiColorEditFlags_NoInputs);
   ImGui::SameLine();
 
@@ -114,7 +110,7 @@ void PointCloudVectorQuantity::drawCustomUI() {
   }
 }
 
-void PointCloudVectorQuantity::buildInfoGUI(size_t ind) {
+void PointCloudVectorQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
