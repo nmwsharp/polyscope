@@ -68,7 +68,7 @@ void removeStructure(std::string name);
 // De-register all structures, of any type. Also removes any quantities associated with the structure
 void removeAllStructures();
 
-// Recompute state::lengthScale, boundingBox, and center from all registered structures
+// Recompute the global state::lengthScale, boundingBox, and center by looping over registered structures
 void updateStructureExtents();
 
 // === Handle draw flow, interrupts, and popups

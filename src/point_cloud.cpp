@@ -25,35 +25,25 @@ namespace polyscope {
 // Initialize statics
 const std::string PointCloud::structureTypeName = "Point Cloud";
 
-PointCloud::~PointCloud() {
-  deleteProgram();
-
-  // Delete quantities
-  for (auto x : quantities) {
-    delete x.second;
-  }
-}
-
-void PointCloud::deleteProgram() { safeDelete(program); }
-
+PointCloud::~PointCloud() {}
 
 // Helper to set uniforms
-void PointCloud::setPointCloudUniforms(gl::GLProgram* p, bool withLight) {
+void PointCloud::setPointCloudUniforms(gl::GLProgram& p) {
 
   glm::mat4 viewMat = getModelView();
-  p->setUniform("u_modelView", glm::value_ptr(viewMat));
+  p.setUniform("u_modelView", glm::value_ptr(viewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-  p->setUniform("u_projMatrix", glm::value_ptr(projMat));
+  p.setUniform("u_projMatrix", glm::value_ptr(projMat));
 
   glm::vec3 lookDir, upDir, rightDir;
   view::getCameraFrame(lookDir, upDir, rightDir);
-  p->setUniform("u_camZ", lookDir);
-  p->setUniform("u_camUp", upDir);
-  p->setUniform("u_camRight", rightDir);
+  p.setUniform("u_camZ", lookDir);
+  p.setUniform("u_camUp", upDir);
+  p.setUniform("u_camRight", rightDir);
 
-  p->setUniform("u_pointRadius", pointRadius * state::lengthScale);
-  p->setUniform("u_baseColor", pointColor);
+  p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
+  p.setUniform("u_baseColor", pointColor);
 }
 
 void PointCloud::draw() {
@@ -61,21 +51,20 @@ void PointCloud::draw() {
     return;
   }
 
-  if (program == nullptr) {
-    prepare();
+  // If there is no dominant quantity, then this class is responsible for drawing points
+  if (dominantQuantity == nullptr) {
+
+    // Ensure we have prepared buffers
+    if (program == nullptr) {
+      prepare();
+    }
+
+    // Set program uniforms
+    setPointCloudUniforms(*program);
+
+    // Draw the actual point cloud
+    program->draw();
   }
-
-
-  // If the current program came from a quantity, allow the quantity to do any necessary per-frame work (like setting
-  // uniforms)
-  if (activePointQuantity == nullptr) {
-    setPointCloudUniforms(program, true);
-  } else {
-    setPointCloudUniforms(program, true);
-    activePointQuantity->setProgramValues(program);
-  }
-
-  program->draw();
 
   // Draw the quantities
   for (auto x : quantities) {
@@ -84,13 +73,17 @@ void PointCloud::draw() {
 }
 
 void PointCloud::drawPick() {
-
   if (!enabled) {
     return;
   }
 
+  // Ensure we have prepared buffers
+  if (pickProgram == nullptr) {
+    preparePick();
+  }
+
   // Set uniforms
-  setPointCloudUniforms(pickProgram, false);
+  setPointCloudUniforms(*pickProgram);
 
   pickProgram->draw();
 }
@@ -98,16 +91,11 @@ void PointCloud::drawPick() {
 void PointCloud::prepare() {
 
   // It not quantity is coloring the points, draw with a default color
-  if (activePointQuantity == nullptr) {
-    program = new gl::GLProgram(&SPHERE_VERT_SHADER, &SPHERE_BILLBOARD_GEOM_SHADER, &SPHERE_BILLBOARD_FRAG_SHADER,
-                                gl::DrawMode::Points);
+  if (dominantQuantity == nullptr) {
+    program.reset(new gl::GLProgram(&SPHERE_VERT_SHADER, &SPHERE_BILLBOARD_GEOM_SHADER, &SPHERE_BILLBOARD_FRAG_SHADER,
+                                    gl::DrawMode::Points));
   }
-  // If some quantity is responsible for coloring the points, prepare it
-  else {
-    program = activePointQuantity->createProgram();
-  }
-
-  setMaterialForProgram(program, "wax");
+  setMaterialForProgram(*program, "wax");
 
   // Fill out the geometry data for the program
   program->setAttribute("a_position", points);
@@ -120,9 +108,8 @@ void PointCloud::preparePick() {
   size_t pickStart = pick::requestPickBufferRange(this, pickCount);
 
   // Create a new pick program
-  safeDelete(pickProgram);
-  pickProgram = new gl::GLProgram(&SPHERE_COLOR_VERT_SHADER, &SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                  &SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points);
+  pickProgram.reset(new gl::GLProgram(&SPHERE_COLOR_VERT_SHADER, &SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
+                                      &SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
 
   // Fill an index buffer
   std::vector<glm::vec3> pickColors;
@@ -136,8 +123,6 @@ void PointCloud::preparePick() {
   pickProgram->setAttribute("a_position", points);
   pickProgram->setAttribute("a_color", pickColors);
 }
-
-void PointCloud::drawSharedStructureUI() {}
 
 void PointCloud::drawPickUI(size_t localPickID) {
 
@@ -160,48 +145,19 @@ void PointCloud::drawPickUI(size_t localPickID) {
   ImGui::Indent(-20.);
 }
 
-void PointCloud::drawUI() {
+void PointCloud::drawCustomUI() {
+  ImGui::Text("# points: %lld", static_cast<long long int>(points.size()));
+  ImGui::SameLine();
+  ImGui::ColorEdit3("Point color", (float*)&pointColor, ImGuiColorEditFlags_NoInputs);
+  ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
+}
 
-  ImGui::PushID(name.c_str()); // ensure there are no conflicts with identically-named labels
-
-  if (ImGui::TreeNode(name.c_str())) {
-
-    // Print stats
-    ImGui::Text("# points: %lld", static_cast<long long int>(points.size()));
-
-
-    ImGui::Checkbox("Enabled", &enabled);
-    ImGui::SameLine();
-    ImGui::ColorEdit3("Point color", (float*)&pointColor, ImGuiColorEditFlags_NoInputs);
-    ImGui::SameLine();
-
-    // Options popup
-    if (ImGui::Button("Options")) {
-      ImGui::OpenPopup("OptionsPopup");
-    }
-    if (ImGui::BeginPopup("OptionsPopup")) {
-
-      // Quantities
-      if (ImGui::MenuItem("Clear Quantities")) removeAllQuantities();
-      if (ImGui::MenuItem("Write points to file")) writePointsToFile();
-
-
-      ImGui::EndPopup();
-    }
-
-    ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
-
-    // Build the quantity UIs
-    for (auto x : quantities) {
-      x.second->drawUI();
-    }
-
-    ImGui::TreePop();
-  }
-  ImGui::PopID();
+void PointCloud::drawCustomOptionsUI() {
+  if (ImGui::MenuItem("Write points to file")) writePointsToFile();
 }
 
 double PointCloud::lengthScale() {
+  // TODO cache
 
   // Measure length scale as twice the radius from the center of the bounding box
   auto bound = boundingBox();
@@ -231,94 +187,12 @@ std::tuple<glm::vec3, glm::vec3> PointCloud::boundingBox() {
 
 // === Quantities
 
-PointCloudQuantity::PointCloudQuantity(std::string name_, PointCloud* pointCloud_) : name(name_), parent(pointCloud_) {}
-PointCloudQuantityThatDrawsPoints::PointCloudQuantityThatDrawsPoints(std::string name_, PointCloud* pointCloud_)
-    : PointCloudQuantity(name_, pointCloud_) {}
+PointCloudQuantity::PointCloudQuantity(std::string name_, PointCloud& pointCloud_, bool dominates_)
+    : Quantity<PointCloud>(name_, pointCloud_, dominates_) {}
+PointCloudQuantityThatDrawsPoints::PointCloudQuantityThatDrawsPoints(std::string name_, PointCloud& pointCloud_)
+    : PointCloudQuantity(name_, pointCloud_, true) {}
 PointCloudQuantity::~PointCloudQuantity() {}
 
-void PointCloud::addQuantity(PointCloudQuantity* quantity) {
-
-  // Delete old if in use
-  bool wasEnabled = false;
-  if (quantities.find(quantity->name) != quantities.end()) {
-    wasEnabled = quantities[quantity->name]->enabled;
-    removeQuantity(quantity->name);
-  }
-
-  // Store
-  quantities[quantity->name] = quantity;
-
-  // Re-enable the quantity if we're replacing an enabled quantity
-  if (wasEnabled) {
-    quantity->enabled = true;
-  }
-}
-
-void PointCloud::addQuantity(PointCloudQuantityThatDrawsPoints* quantity) {
-
-  // Delete old if in use
-  bool wasEnabled = false;
-  if (quantities.find(quantity->name) != quantities.end()) {
-    wasEnabled = quantities[quantity->name]->enabled;
-    removeQuantity(quantity->name);
-  }
-
-  // Store
-  quantities[quantity->name] = quantity;
-
-  // Re-enable the quantity if we're replacing an enabled quantity
-  if (wasEnabled) {
-    quantity->enabled = true;
-    setActiveQuantity(quantity);
-  }
-}
-
-PointCloudQuantity* PointCloud::getQuantity(std::string name, bool errorIfAbsent) {
-
-  // Check if exists
-  if (quantities.find(name) == quantities.end()) {
-    if (errorIfAbsent) {
-      polyscope::error("No quantity named " + name + " registered");
-    }
-    return nullptr;
-  }
-
-  return quantities[name];
-}
-
-void PointCloud::removeQuantity(std::string name) {
-
-  if (quantities.find(name) == quantities.end()) {
-    return;
-  }
-
-  PointCloudQuantity* q = quantities[name];
-  quantities.erase(name);
-  if (activePointQuantity == q) {
-    clearActiveQuantity();
-  }
-  delete q;
-}
-
-void PointCloud::setActiveQuantity(PointCloudQuantityThatDrawsPoints* q) {
-  clearActiveQuantity();
-  activePointQuantity = q;
-  q->enabled = true;
-}
-
-void PointCloud::clearActiveQuantity() {
-  deleteProgram();
-  if (activePointQuantity != nullptr) {
-    activePointQuantity->enabled = false;
-    activePointQuantity = nullptr;
-  }
-}
-
-void PointCloud::removeAllQuantities() {
-  while (quantities.size() > 0) {
-    removeQuantity(quantities.begin()->first);
-  }
-}
 
 void PointCloud::writePointsToFile(std::string filename) {
 
@@ -344,7 +218,6 @@ void PointCloud::writePointsToFile(std::string filename) {
 
 void PointCloudQuantity::buildInfoGUI(size_t pointInd) {}
 void PointCloudQuantity::draw() {}
-void PointCloudQuantityThatDrawsPoints::setProgramValues(gl::GLProgram* program) {}
 
 
 } // namespace polyscope

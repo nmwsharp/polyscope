@@ -675,7 +675,7 @@ void buildPickGui() {
     size_t pickInd;
     Structure* structure = pick::getCurrentPickElement(pickInd);
 
-    ImGui::TextUnformatted((structure->type + ": " + structure->name).c_str());
+    ImGui::TextUnformatted((structure->typeName() + ": " + structure->name).c_str());
     ImGui::Separator();
     structure->drawPickUI(pickInd);
 
@@ -834,10 +834,11 @@ void shutdown(int exitCode) {
 bool registerStructure(Structure* s, bool replaceIfPresent) {
 
   // Make sure a map for the type exists
-  if (state::structures.find(s->type) == state::structures.end()) {
-    state::structures[s->type] = std::map<std::string, Structure*>();
+  std::string typeName = s->typeName();
+  if (state::structures.find(typeName) == state::structures.end()) {
+    state::structures[typeName] = std::map<std::string, Structure*>();
   }
-  std::map<std::string, Structure*>& sMap = state::structures[s->type];
+  std::map<std::string, Structure*>& sMap = state::structures[typeName];
 
   // Check if the structure name is in use
   bool inUse = sMap.find(s->name) != sMap.end();
@@ -929,7 +930,7 @@ void removeStructure(std::string name) {
         } else {
           error("Cannot use automatic structure remove with empty name unless there is exactly one structure of that "
                 "type registered. Found two structures of different types with that name: " +
-                targetStruct->type + " and " + typeMap.first + ".");
+                targetStruct->typeName() + " and " + typeMap.first + ".");
           return;
         }
       }
@@ -942,7 +943,7 @@ void removeStructure(std::string name) {
     return;
   }
 
-  removeStructure(targetStruct->type, targetStruct->name);
+  removeStructure(targetStruct->typeName(), targetStruct->name);
   requestRedraw();
 }
 

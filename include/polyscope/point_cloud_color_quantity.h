@@ -11,17 +11,19 @@ namespace polyscope {
 
 class PointCloudColorQuantity : public PointCloudQuantityThatDrawsPoints {
 public:
-  PointCloudColorQuantity(std::string name, const std::vector<glm::vec3>& values, PointCloud* pointCloud_);
+  PointCloudColorQuantity(std::string name, const std::vector<glm::vec3>& values, PointCloud& pointCloud_);
 
-  virtual void drawUI() override;
+  virtual void draw() override;
 
-  virtual gl::GLProgram* createProgram() override;
-
-  void fillColorBuffers(gl::GLProgram* p);
   void buildInfoGUI(size_t ind) override;
+
+  virtual std::string niceName() override;
 
   // === Members
   std::vector<glm::vec3> values;
+
+protected:
+  void createPointProgram();
 };
 
 
@@ -31,8 +33,8 @@ void PointCloud::addColorQuantity(std::string name, const T& colors) {
   validateSize(colors, nPoints(), "point cloud color quantity " + name);
 
   PointCloudQuantityThatDrawsPoints* q =
-      new PointCloudColorQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(colors), this);
-  addQuantity(q);
+      new PointCloudColorQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(colors), *this);
+  this->addQuantity(q);
 }
 
 } // namespace polyscope

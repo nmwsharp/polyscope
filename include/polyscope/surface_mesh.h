@@ -154,7 +154,6 @@ public:
   void removeQuantity(std::string name);
   void setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q);
   void clearActiveSurfaceQuantity();
-  void removeAllQuantities();
 
   // === Make a one-time selection
   // size_t selectVertex();

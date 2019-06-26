@@ -10,14 +10,14 @@ namespace polyscope {
 
 
 PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::vector<double>& values_,
-                                                   PointCloud* pointCloud_, DataType dataType_)
+                                                   PointCloud& pointCloud_, DataType dataType_)
     : PointCloudQuantityThatDrawsPoints(name, pointCloud_), dataType(dataType_)
 
 {
-  if (values_.size() != parent->points.size()) {
+  if (values_.size() != parent.points.size()) {
     polyscope::error("Point cloud scalar quantity " + name + " does not have same number of values (" +
-                     std::to_string(values_.size()) + ") as point cloud size (" +
-                     std::to_string(parent->points.size()) + ")");
+                     std::to_string(values_.size()) + ") as point cloud size (" + std::to_string(parent.points.size()) +
+                     ")");
   }
 
   // Set the default colormap based on what kind of data is given
@@ -43,13 +43,19 @@ PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::
   resetVizRange();
 }
 
-void PointCloudScalarQuantity::draw() {}
+void PointCloudScalarQuantity::draw() {
+  if (!enabled) return;
 
+  // Make the program if we don't have one already
+  if (pointProgram == nullptr) {
+    createPointProgram();
+  }
 
-// Update range uniforms
-void PointCloudScalarQuantity::setProgramValues(gl::GLProgram* program) {
-  program->setUniform("u_rangeLow", vizRangeLow);
-  program->setUniform("u_rangeHigh", vizRangeHigh);
+  // Set uniforms
+  pointProgram->setUniform("u_rangeLow", vizRangeLow);
+  pointProgram->setUniform("u_rangeHigh", vizRangeHigh);
+
+  pointProgram->draw();
 }
 
 void PointCloudScalarQuantity::resetVizRange() {
@@ -70,87 +76,65 @@ void PointCloudScalarQuantity::resetVizRange() {
   }
 }
 
-void PointCloudScalarQuantity::drawUI() {
-  bool enabledBefore = enabled;
-  if (ImGui::TreeNode((name + " (scalar)").c_str())) {
-    ImGui::Checkbox("Enabled", &enabled);
+void PointCloudScalarQuantity::drawCustomUI() {
 
-    { // Set colormap
-      ImGui::SameLine();
-      ImGui::PushItemWidth(100);
-      int iColormapBefore = iColorMap;
-      ImGui::Combo("##colormap", &iColorMap, gl::quantitativeColormapNames,
-                   IM_ARRAYSIZE(gl::quantitativeColormapNames));
-      ImGui::PopItemWidth();
-      if (iColorMap != iColormapBefore) {
-        parent->deleteProgram();
-        hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
-      }
-    }
-
-    // Reset button
+  { // Set colormap
     ImGui::SameLine();
-    if (ImGui::Button("Reset")) {
-      resetVizRange();
+    ImGui::PushItemWidth(100);
+    int iColormapBefore = iColorMap;
+    ImGui::Combo("##colormap", &iColorMap, gl::quantitativeColormapNames, IM_ARRAYSIZE(gl::quantitativeColormapNames));
+    ImGui::PopItemWidth();
+    if (iColorMap != iColormapBefore) {
+      pointProgram.reset();
+      hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
     }
-
-    // Draw the histogram of values
-    hist.colormapRangeMin = vizRangeLow;
-    hist.colormapRangeMax = vizRangeHigh;
-    hist.buildUI();
-
-    // Data range
-    // Note: %g specifies are generally nicer than %e, but here we don't acutally have a choice. ImGui (for somewhat
-    // valid reasons) links the resolution of the slider to the decimal width of the formatted number. When %g formats a
-    // number with few decimal places, sliders can break. There is no way to set a minimum number of decimal places with
-    // %g, unfortunately.
-    {
-      switch (dataType) {
-      case DataType::STANDARD:
-        ImGui::DragFloatRange2("", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100., dataRangeLow,
-                               dataRangeHigh, "Min: %.3e", "Max: %.3e");
-        break;
-      case DataType::SYMMETRIC: {
-        float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
-        ImGui::DragFloatRange2("##range_symmetric", &vizRangeLow, &vizRangeHigh, absRange / 100., -absRange, absRange,
-                               "Min: %.3e", "Max: %.3e");
-      } break;
-      case DataType::MAGNITUDE: {
-        ImGui::DragFloatRange2("##range_mag", &vizRangeLow, &vizRangeHigh, vizRangeHigh / 100., 0.0, dataRangeHigh,
-                               "Min: %.3e", "Max: %.3e");
-      } break;
-      }
-    }
-
-    ImGui::TreePop();
   }
 
-  // Enforce exclusivity of enabled surface quantities
-  if (!enabledBefore && enabled) {
-    parent->setActiveQuantity(this);
+  // Reset button
+  ImGui::SameLine();
+  if (ImGui::Button("Reset")) {
+    resetVizRange();
   }
-  if (enabledBefore && !enabled) {
-    parent->clearActiveQuantity();
+
+  // Draw the histogram of values
+  hist.colormapRangeMin = vizRangeLow;
+  hist.colormapRangeMax = vizRangeHigh;
+  hist.buildUI();
+
+  // Data range
+  // Note: %g specifiers are generally nicer than %e, but here we don't acutally have a choice. ImGui (for somewhat
+  // valid reasons) links the resolution of the slider to the decimal width of the formatted number. When %g formats a
+  // number with few decimal places, sliders can break. There is no way to set a minimum number of decimal places with
+  // %g, unfortunately.
+  {
+    switch (dataType) {
+    case DataType::STANDARD:
+      ImGui::DragFloatRange2("", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100., dataRangeLow,
+                             dataRangeHigh, "Min: %.3e", "Max: %.3e");
+      break;
+    case DataType::SYMMETRIC: {
+      float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
+      ImGui::DragFloatRange2("##range_symmetric", &vizRangeLow, &vizRangeHigh, absRange / 100., -absRange, absRange,
+                             "Min: %.3e", "Max: %.3e");
+    } break;
+    case DataType::MAGNITUDE: {
+      ImGui::DragFloatRange2("##range_mag", &vizRangeLow, &vizRangeHigh, vizRangeHigh / 100., 0.0, dataRangeHigh,
+                             "Min: %.3e", "Max: %.3e");
+    } break;
+    }
   }
 }
 
 
-gl::GLProgram* PointCloudScalarQuantity::createProgram() {
+void PointCloudScalarQuantity::createPointProgram() {
   // Create the program to draw this quantity
 
-  gl::GLProgram* program = new gl::GLProgram(&SPHERE_VALUE_VERT_SHADER, &SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
-                                             &SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points);
+  pointProgram.reset(new gl::GLProgram(&SPHERE_VALUE_VERT_SHADER, &SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
+                                       &SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
 
   // Fill color buffers
-  fillColorBuffers(program);
-
-  return program;
-}
-
-void PointCloudScalarQuantity::fillColorBuffers(gl::GLProgram* p) {
-  // Store data in buffers
-  p->setAttribute("a_value", values);
-  p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+  pointProgram->setAttribute("a_value", values);
+  pointProgram->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
 }
 
 void PointCloudScalarQuantity::buildInfoGUI(size_t ind) {
@@ -159,5 +143,7 @@ void PointCloudScalarQuantity::buildInfoGUI(size_t ind) {
   ImGui::Text("%g", values[ind]);
   ImGui::NextColumn();
 }
+
+std::string PointCloudScalarQuantity::niceName() { return name + " (scalar)"; }
 
 } // namespace polyscope

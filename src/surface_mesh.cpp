@@ -521,29 +521,6 @@ void SurfaceMesh::drawUI() {
     */
 
 
-    ImGui::Checkbox("Enabled", &enabled);
-    ImGui::SameLine();
-
-    // Options popup
-    if (ImGui::Button("Options")) {
-      ImGui::OpenPopup("OptionsPopup");
-    }
-    if (ImGui::BeginPopup("OptionsPopup")) {
-
-      // Transform
-      if (ImGui::BeginMenu("Transform")) {
-        if (ImGui::MenuItem("Center")) centerBoundingBox();
-        if (ImGui::MenuItem("Reset")) resetTransform();
-        ImGui::EndMenu();
-      }
-
-      // Quantities
-      if (ImGui::MenuItem("Clear Quantities")) removeAllQuantities();
-
-
-      ImGui::EndPopup();
-    }
-
     ImGui::ColorEdit3("Color", (float*)&surfaceColor, ImGuiColorEditFlags_NoInputs);
     ImGui::SameLine();
 
@@ -570,14 +547,6 @@ void SurfaceMesh::drawUI() {
       ImGui::PopItemWidth();
     }
 
-    // Draw the quantities
-    for (auto x : quantities) {
-      x.second->drawUI();
-    }
-
-    ImGui::TreePop();
-  }
-  ImGui::PopID();
 }
   
 void SurfaceMesh::setShadeStyle(ShadeStyle newShadeStyle) {
@@ -852,46 +821,6 @@ void SurfaceMesh::addIsolatedVertexScalarQuantity(std::string name,
 }
 
 
-// void SurfaceMesh::addInputCurveQuantity(std::string name) {
-// SurfaceInputCurveQuantity* q = new SurfaceInputCurveQuantity(name, this);
-// addSurfaceQuantity(q);
-//}
-
-
-void SurfaceMesh::removeQuantity(std::string name) {
-  if (quantities.find(name) == quantities.end()) {
-    return;
-  }
-
-  std::shared_ptr<SurfaceQuantity> q = quantities[name];
-  quantities.erase(name);
-  if (activeSurfaceQuantity == q.get()) {
-    clearActiveSurfaceQuantity();
-  }
-}
-
-void SurfaceMesh::removeAllQuantities() {
-  while (quantities.size() > 0) {
-    removeQuantity(quantities.begin()->first);
-  }
-}
-
-void SurfaceMesh::setActiveSurfaceQuantity(SurfaceQuantityThatDrawsFaces* q) {
-  if (activeSurfaceQuantity == q) return;
-  clearActiveSurfaceQuantity();
-  activeSurfaceQuantity = q;
-  q->enable();
-}
-
-void SurfaceMesh::clearActiveSurfaceQuantity() {
-  deleteProgram();
-  if (activeSurfaceQuantity != nullptr) {
-    SurfaceQuantityThatDrawsFaces* oldActiveQuantity = activeSurfaceQuantity;
-    activeSurfaceQuantity = nullptr;
-    // do this after setting to nullptr in case disable() implementation recurses
-    oldActiveQuantity->disable();
-  }
-}
 
 void SurfaceQuantity::buildVertexInfoGUI(size_t vInd) {}
 void SurfaceQuantity::buildFaceInfoGUI(size_t fInd) {}

@@ -16,44 +16,42 @@ namespace polyscope {
 // Forward declare point cloud
 class PointCloud;
 
-class PointCloudQuantity {
+class PointCloudQuantity : public Quantity<PointCloud> {
 public:
   // Base constructor which sets the name
-  PointCloudQuantity(std::string name, PointCloud* pointCloud);
+  PointCloudQuantity(std::string name, PointCloud& pointCloud, bool dominates = false);
   virtual ~PointCloudQuantity() = 0;
 
   // Draw the quantity on the surface Note: for many quantities (like scalars)
   // this does nothing, because drawing happens in the mesh draw(). However
   // others (ie vectors) need to be drawn.
-  virtual void draw();
-
-  // Draw the ImGUI ui elements
-  virtual void drawUI() = 0;
+  virtual void draw() override;
 
   // Build GUI info about a point
   virtual void buildInfoGUI(size_t pointInd);
-
-  // === Member variables ===
-  const std::string name;
-  PointCloud* const parent;
-
-  bool enabled = false; // should be set by enable() and disable()
 };
 
 // Specific subclass indicating that a quantity can create a program to draw on the points themselves
 class PointCloudQuantityThatDrawsPoints : public PointCloudQuantity {
-public:
-  PointCloudQuantityThatDrawsPoints(std::string name, PointCloud* pointCloud);
-  // Create a program to be used for drawing the points
-  // CALLER is responsible for deallocating
-  virtual gl::GLProgram* createProgram() = 0;
 
-  // Do any per-frame work on the program handed out by createProgram
-  virtual void setProgramValues(gl::GLProgram* program);
+public:
+  PointCloudQuantityThatDrawsPoints(std::string name, PointCloud& pointCloud);
+  
+  // Draw the quantity on the surface Note: for many quantities (like scalars)
+  // this does nothing, because drawing happens in the mesh draw(). However
+  // others (ie vectors) need to be drawn.
+  virtual void draw() override;
+
+  // Build GUI info about a point
+  virtual void buildInfoGUI(size_t pointInd);
+
+protected: 
+
+  std::unique_ptr<gl::GLProgram> pointProgram;
 };
 
 
-class PointCloud : public Structure {
+class PointCloud : public QuantityStructure<PointCloud> {
 public:
   // === Member functions ===
 
@@ -62,17 +60,15 @@ public:
   PointCloud(std::string name, const T& points);
   ~PointCloud();
 
+  // === Overloads
+
   // Render the the structure on screen
   virtual void draw() override;
 
-  // Do setup work related to drawing, including allocating openGL data
-  virtual void prepare() override;
-  virtual void preparePick() override;
-
   // Build the imgui display
-  virtual void drawUI() override;
+  virtual void drawCustomUI() override;
+  virtual void drawCustomOptionsUI() override;
   virtual void drawPickUI(size_t localPickID) override;
-  virtual void drawSharedStructureUI() override;
 
   // Render for picking
   virtual void drawPick() override;
@@ -86,9 +82,6 @@ public:
 
   // === Quantities
 
-  // general form
-  void addQuantity(PointCloudQuantity* quantity);
-  void addQuantity(PointCloudQuantityThatDrawsPoints* quantity);
   PointCloudQuantity* getQuantity(std::string name, bool errorIfAbsent = true);
 
   // Scalars
@@ -120,7 +113,6 @@ public:
   size_t nPoints() const { return points.size(); }
 
   // Misc data
-  bool enabled = true;
   SubColorManager colorManager;
   static const std::string structureTypeName;
 
@@ -138,15 +130,15 @@ private:
   float pointRadius = 0.005;
 
   // Drawing related things
-  gl::GLProgram* program = nullptr;
-  gl::GLProgram* pickProgram = nullptr;
+  // if nullptr, prepare() (resp. preparePick()) needs to be called
+  std::unique_ptr<gl::GLProgram> program;
+  std::unique_ptr<gl::GLProgram> pickProgram;
 
-  PointCloudQuantityThatDrawsPoints* activePointQuantity = nullptr; // a quantity that is respondible for drawing on the
-                                                                    // points themselves and overwrites `program` with
-                                                                    // its own shaders
-
-  // Helpers
-  void setPointCloudUniforms(gl::GLProgram* p, bool withLight);
+  // === Helpers
+  // Do setup work related to drawing, including allocating openGL data
+  void prepare();
+  void preparePick();
+  void setPointCloudUniforms(gl::GLProgram& p);
 };
 
 

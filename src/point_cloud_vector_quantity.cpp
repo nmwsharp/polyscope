@@ -17,14 +17,14 @@ using std::endl;
 namespace polyscope {
 
 PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
-                                                   PointCloud* pointCloud_, VectorType vectorType_)
+                                                   PointCloud& pointCloud_, VectorType vectorType_)
 
     : PointCloudQuantity(name, pointCloud_), vectorType(vectorType_), vectors(vectors_) {
 
-  if (vectors.size() != parent->points.size()) {
+  if (vectors.size() != parent.points.size()) {
     polyscope::error("Point cloud vector quantity " + name + " does not have same number of values (" +
-                     std::to_string(vectors.size()) + ") as point cloud size (" +
-                     std::to_string(parent->points.size()) + ")");
+                     std::to_string(vectors.size()) + ") as point cloud size (" + std::to_string(parent.points.size()) +
+                     ")");
   }
 
   // Create a mapper (default mapper is identity)
@@ -41,19 +41,18 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
     lengthMult = 1.0;
   }
   radiusMult = .0005;
-  vectorColor = parent->colorManager.getNextSubColor(name);
+  vectorColor = parent.colorManager.getNextSubColor(name);
 }
-
-PointCloudVectorQuantity::~PointCloudVectorQuantity() { safeDelete(program); }
-
 
 void PointCloudVectorQuantity::draw() {
   if (!enabled) return;
 
-  if (program == nullptr) prepare();
+  if (program == nullptr) {
+    createProgram();
+  }
 
   // Set uniforms
-  glm::mat4 viewMat = parent->getModelView();
+  glm::mat4 viewMat = parent.getModelView();
   program->setUniform("u_modelView", glm::value_ptr(viewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
@@ -76,9 +75,9 @@ void PointCloudVectorQuantity::draw() {
   program->draw();
 }
 
-void PointCloudVectorQuantity::prepare() {
-  program = new gl::GLProgram(&PASSTHRU_VECTOR_VERT_SHADER, &VECTOR_GEOM_SHADER, &SHINY_VECTOR_FRAG_SHADER,
-                              gl::DrawMode::Points);
+void PointCloudVectorQuantity::createProgram() {
+  program.reset(new gl::GLProgram(&PASSTHRU_VECTOR_VERT_SHADER, &VECTOR_GEOM_SHADER, &SHINY_VECTOR_FRAG_SHADER,
+                                  gl::DrawMode::Points));
 
   // Fill buffers
   std::vector<glm::vec3> mappedVectors;
@@ -87,39 +86,31 @@ void PointCloudVectorQuantity::prepare() {
   }
 
   program->setAttribute("a_vector", mappedVectors);
-  program->setAttribute("a_position", parent->points);
+  program->setAttribute("a_position", parent.points);
 }
 
-void PointCloudVectorQuantity::drawUI() {
+void PointCloudVectorQuantity::drawCustomUI() {
+  ImGui::ColorEdit3("Color", (float*)&vectorColor, ImGuiColorEditFlags_NoInputs);
+  ImGui::SameLine();
 
+  // === Options popup
+  if (ImGui::Button("Options")) {
+    ImGui::OpenPopup("OptionsPopup");
+  }
+  if (ImGui::BeginPopup("OptionsPopup")) {
+    if (ImGui::MenuItem("Write to file")) writeToFile();
+    ImGui::EndPopup();
+  }
 
-  if (ImGui::TreeNode((name + " (vector)").c_str())) {
-    ImGui::Checkbox("Enabled", &enabled);
-    ImGui::SameLine();
-    ImGui::ColorEdit3("Color", (float*)&vectorColor, ImGuiColorEditFlags_NoInputs);
-    ImGui::SameLine();
+  // Only get to set length for non-ambient vectors
+  if (vectorType != VectorType::AMBIENT) {
+    ImGui::SliderFloat("Length", &lengthMult, 0.0, .1, "%.5f", 3.);
+  }
 
-    // === Options popup
-    if (ImGui::Button("Options")) {
-      ImGui::OpenPopup("OptionsPopup");
-    }
-    if (ImGui::BeginPopup("OptionsPopup")) {
-      if (ImGui::MenuItem("Write to file")) writeToFile();
-      ImGui::EndPopup();
-    }
+  ImGui::SliderFloat("Radius", &radiusMult, 0.0, .1, "%.5f", 3.);
 
-    // Only get to set length for non-ambient vectors
-    if (vectorType != VectorType::AMBIENT) {
-      ImGui::SliderFloat("Length", &lengthMult, 0.0, .1, "%.5f", 3.);
-    }
-
-    ImGui::SliderFloat("Radius", &radiusMult, 0.0, .1, "%.5f", 3.);
-
-    { // Draw max and min magnitude
-      ImGui::TextUnformatted(mapper.printBounds().c_str());
-    }
-
-    ImGui::TreePop();
+  { // Draw max and min magnitude
+    ImGui::TextUnformatted(mapper.printBounds().c_str());
   }
 }
 
@@ -155,12 +146,13 @@ void PointCloudVectorQuantity::writeToFile(std::string filename) {
 
   for (size_t i = 0; i < vectors.size(); i++) {
     if (glm::length2(vectors[i]) > 0) {
-      outFile << parent->points[i] << " " << vectors[i] << endl;
+      outFile << parent.points[i] << " " << vectors[i] << endl;
     }
   }
 
   outFile.close();
 }
 
+std::string PointCloudVectorQuantity::niceName() { return name + " (vector)"; }
 
 } // namespace polyscope

@@ -31,7 +31,7 @@ inline int getMaterialIndex(std::string name) {
 
 inline BasisMaterial getMaterialTexture(std::string name) { return materialTextures[getMaterialIndex(name)]; }
 
-void setMaterialForProgram(GLProgram* program, std::string name);
+void setMaterialForProgram(GLProgram& program, std::string name);
 
 // The arrays that hold the actual data. Stored as constants in translations units in gl/materials/
 extern const std::vector<std::vector<unsigned char>> bindata_mat_wax;

@@ -1,10 +1,14 @@
 #pragma once
 
-#include <iostream>
-#include <map>
-#include <string>
+#include "polyscope/quantity.h"
 
 #include "glm/glm.hpp"
+
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+
 
 namespace polyscope {
 
@@ -18,14 +22,11 @@ namespace polyscope {
 // type). These two properties are not great polymorphic design, but they seem to be the lowest-effort way to allow a
 // user to utilize and access custom structures with little code.
 
-template <typename S> // template on the derived type
+
 class Structure {
+
 public:
-  // === Member functions ===
-
-  // Base constructor which sets the name
-  Structure(std::string name, std::string type);
-
+  Structure(std::string name);
   virtual ~Structure() = 0;
 
   // Render the the structure on screen
@@ -35,10 +36,12 @@ public:
 
   // Draw the ImGUI ui elements
   void drawUI();
-  virtual void drawCustomUI() = 0; // overridden by childen to add custom UI data
+  virtual void drawCustomUI() = 0;        // overridden by childen to add custom UI data
+  virtual void drawQuantitiesUI();        // draw quantities, if they exist. Overridden by QuantityStructure.
+  virtual void drawCustomOptionsUI() = 0; // overridden by childen to add to the options menu
 
   // Draw any UI elements
-  virtual void drawSharedStructureUI() = 0;
+  virtual void drawSharedStructureUI();
 
   // Draw pick UI elements when index localPickID is selected
   virtual void drawPickUI(size_t localPickID) = 0;
@@ -46,33 +49,65 @@ public:
   // Render to pick buffer
   virtual void drawPick() = 0;
 
-  // A characteristic length for the structure
-  virtual double lengthScale() = 0;
+  // = Identifying data
+  const std::string name; // should be unique amongst registered structures with this type
 
-  // Axis-aligned bounding box for the structure
-  virtual std::tuple<glm::vec3, glm::vec3> boundingBox() = 0;
 
-  // Identifying data
-  const std::string name;             // should be unique amongst registered structures with this type
-  virtual std::string typeName() = 0; // a name which identifies the type, like "point cloud"
+  // = Length and bounding box (returned in object coordinates)
+  virtual std::tuple<glm::vec3, glm::vec3> boundingBox() = 0; // get axis-aligned bounding box
+  virtual double lengthScale() = 0;                           // get characteristic length
 
-  // Scene transform
+  // = Basic state
+  virtual void setEnabled(bool newEnabled);
+  bool isEnabled();
+  virtual std::string typeName() = 0;
+
+  // = Scene transform
   glm::mat4 objectTransform = glm::mat4(1.0);
+  glm::mat4 getModelView();
   void centerBoundingBox();
   void resetTransform();
-  glm::mat4 getModelView();
 
-  // Manage quantities
-  setDominantQuantity(Quantity<S>* q);
+protected:
+  // = State
+  bool enabled = true;
+};
+
+
+// Can also manage quantities
+
+template <typename S> // template on the derived type
+class QuantityStructure : public Structure {
+public:
+  // === Member functions ===
+
+  // Base constructor which sets the name
+  QuantityStructure(std::string name);
+  virtual ~QuantityStructure() = 0;
+
+  virtual void drawQuantitiesUI() override;
+
+  // = Manage quantities
+
+  // Note: takes ownership of pointer after it is passed in
+  void addQuantity(Quantity<S>* q, bool allowReplacement = false);
+
+  Quantity<S>* getQuantity(std::string name);
+  void removeQuantity(std::string name);
+  void removeAllQuantities();
+
+  void setDominantQuantity(Quantity<S>* q);
   void clearDominantQuantity();
 
 protected:
-  // Quantities
+  // = Quantities
   std::map<std::string, std::unique_ptr<Quantity<S>>> quantities;
-  Quantity<S>* dominantQuantity = nullptr; // if non-null, a special quantity of which only one can be drawn for
-                                           // the structure. handles common case of a surface color, e.g. color of
-                                           // a mesh or point cloud the dominant quantity must always be enabled
+  Quantity<S>* dominantQuantity = nullptr; // If non-null, a special quantity of which only one can be drawn for
+                                           // the structure. Handles common case of a surface color, e.g. color of
+                                           // a mesh or point cloud The dominant quantity must always be enabled
 };
 
 
 } // namespace polyscope
+
+#include "polyscope/structure.ipp"

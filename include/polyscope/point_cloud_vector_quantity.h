@@ -8,14 +8,14 @@ namespace polyscope {
 // Represents a general vector field associated with a point cloud
 class PointCloudVectorQuantity : public PointCloudQuantity {
 public:
-  PointCloudVectorQuantity(std::string name, std::vector<glm::vec3> vectors, PointCloud* pointCloud_,
+  PointCloudVectorQuantity(std::string name, std::vector<glm::vec3> vectors, PointCloud& pointCloud_,
                            VectorType vectorType_ = VectorType::STANDARD);
 
-  virtual ~PointCloudVectorQuantity() override;
-
   virtual void draw() override;
-  virtual void drawUI() override;
+  virtual void drawCustomUI() override;
+
   virtual void buildInfoGUI(size_t ind) override;
+  virtual std::string niceName() override;
 
   // === Members
   const VectorType vectorType;
@@ -30,9 +30,8 @@ public:
 
   void writeToFile(std::string filename = "");
 
-  // GL things
-  void prepare();
-  gl::GLProgram* program = nullptr;
+  void createProgram();
+  std::unique_ptr<gl::GLProgram> program;
 };
 
 template <class T>
@@ -41,7 +40,7 @@ void PointCloud::addVectorQuantity(std::string name, const T& vectors, VectorTyp
   validateSize(vectors, nPoints(), "point cloud vector quantity " + name);
 
   PointCloudQuantity* q =
-      new PointCloudVectorQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(vectors), this, vectorType);
+      new PointCloudVectorQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(vectors), *this, vectorType);
   addQuantity(q);
 }
 
