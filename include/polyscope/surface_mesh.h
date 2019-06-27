@@ -230,11 +230,15 @@ private:
 
 // Shorthand to add a mesh to polyscope
 template <class V, class F>
-void registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
-                         bool replaceIfPresent = true) {
+SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
+                                 bool replaceIfPresent = true) {
   SurfaceMesh* s = new SurfaceMesh(name, vertexPositions, faceIndices);
   bool success = registerStructure(s);
-  if (!success) delete s;
+  if (!success) {
+    safeDelete(s);
+  }
+
+  return s;
 }
 
 
@@ -289,6 +293,6 @@ inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
 /*
-#include "polyscope/surface_subset_quantity.h"
 #include "polyscope/surface_selection_quantity.h"
+#include "polyscope/surface_subset_quantity.h"
 */

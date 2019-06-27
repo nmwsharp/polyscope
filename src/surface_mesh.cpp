@@ -51,6 +51,10 @@ void SurfaceMesh::drawPick() {
     return;
   }
 
+  if(pickProgram == nullptr) {
+    preparePick();
+  }
+
   // Set uniforms
   setTransformUniforms(*pickProgram);
 
