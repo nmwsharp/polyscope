@@ -20,7 +20,6 @@ public:
   void buildPickUI(size_t ind) override;
 
   virtual std::string niceName() override;
-  virtual void invalidate() override;
 
   // === Members
   std::vector<double> values;

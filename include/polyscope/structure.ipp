@@ -12,7 +12,7 @@ template <typename S>
 QuantityStructure<S>::~QuantityStructure(){};
 
 template <typename S>
-void QuantityStructure<S>::addQuantity(Quantity<S>* q, bool allowReplacement) {
+void QuantityStructure<S>::addQuantity(QuantityType* q, bool allowReplacement) {
 
   // Look for an existing quantity with this name
   bool existingQuantityWasEnabled = false;
@@ -24,13 +24,13 @@ void QuantityStructure<S>::addQuantity(Quantity<S>* q, bool allowReplacement) {
       removeQuantity(q->name);
     } else {
       // throw an error
-      error("existing quantity with name: " + q->name + ". true addQuantity(.., allowReplacement=true) to replace");
+      error("Tried to add quantity with name: [" + q->name + "], but a quantity with that name already exists on the structure [" + name + "]. Use the allowReplacement option like addQuantity(..., true) to replace.");
       return;
     }
   }
 
   // Add the new quantity
-  quantities[q->name] = std::unique_ptr<Quantity<S>>(q);
+  quantities[q->name] = std::unique_ptr<QuantityType>(q);
 
   // Re-enable the quantity if we're replacing an enabled quantity
   if (existingQuantityWasEnabled) {
@@ -40,7 +40,7 @@ void QuantityStructure<S>::addQuantity(Quantity<S>* q, bool allowReplacement) {
 
 
 template <typename S>
-Quantity<S>* QuantityStructure<S>::getQuantity(std::string name) {
+typename QuantityStructure<S>::QuantityType* QuantityStructure<S>::getQuantity(std::string name) {
   if (quantities.find(name) == quantities.end()) {
     return nullptr;
   }
@@ -53,7 +53,7 @@ void QuantityStructure<S>::removeQuantity(std::string name) {
   }
 
   // If this is the active quantity, clear it
-  Quantity<S>& q = *quantities[name];
+  QuantityType& q = *quantities[name];
   if (dominantQuantity == &q) {
     clearDominantQuantity();
   }
@@ -70,7 +70,7 @@ void QuantityStructure<S>::removeAllQuantities() {
 }
 
 template <typename S>
-void QuantityStructure<S>::setDominantQuantity(Quantity<S>* q) {
+void QuantityStructure<S>::setDominantQuantity(QuantityType* q) {
   // Dominant quantity must be enabled
   q->setEnabled(true);
   dominantQuantity = q;

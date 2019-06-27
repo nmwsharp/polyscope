@@ -36,7 +36,6 @@ void SurfaceMesh::draw() {
     // Set uniforms
     setTransformUniforms(*program);
     setMeshUniforms(*program);
-    program->setUniform("u_basecolor", surfaceColor);
 
     program->draw();
   }
@@ -238,7 +237,10 @@ void SurfaceMesh::fillGeometryBuffersFlat(gl::GLProgram& p) {
   p.setAttribute("a_barycoord", bcoord);
 }
 
-void SurfaceMesh::setMeshUniforms(gl::GLProgram& p) { program->setUniform("u_edgeWidth", edgeWidth); }
+void SurfaceMesh::setMeshUniforms(gl::GLProgram& p) {
+  p.setUniform("u_basecolor", surfaceColor); // unused for some, but set in all
+  p.setUniform("u_edgeWidth", edgeWidth);
+}
 
 
 void SurfaceMesh::buildPickUI(size_t localPickID) {
@@ -504,14 +506,21 @@ void SurfaceMesh::buildCustomUI() {
   }
 }
 
-void SurfaceMesh::buildCustomOptionsUI() {
-
-}
+void SurfaceMesh::buildCustomOptionsUI() {}
 
 void SurfaceMesh::setShadeStyle(ShadeStyle newShadeStyle) {
   ui_smoothshade = (newShadeStyle == ShadeStyle::SMOOTH);
   shadeStyle = newShadeStyle;
+  geometryChanged();
+}
+
+void SurfaceMesh::geometryChanged() {
   program.reset();
+  pickProgram.reset();
+
+  for(auto& q : quantities) {
+    q.second->geometryChanged();
+  }
 }
 
 double SurfaceMesh::lengthScale() {
@@ -547,9 +556,7 @@ std::tuple<glm::vec3, glm::vec3> SurfaceMesh::boundingBox() {
   return std::make_tuple(min, max);
 }
 
-std::string SurfaceMesh::typeName() {
-  return structureTypeName; 
-}
+std::string SurfaceMesh::typeName() { return structureTypeName; }
 
 /* TODO resurrect
 VertexPtr SurfaceMesh::selectVertex() {
@@ -717,18 +724,18 @@ FacePtr SurfaceMesh::selectFace() {
 */
 
 void SurfaceMesh::updateVertexPositions(const std::vector<glm::vec3>& newPositions) {
-
   triMesh.updateVertexPositions(newPositions);
 
   // Rebuild any necessary quantities
-  program.reset();
-  pickProgram.reset();
+  geometryChanged();
 }
 
-
-void Quantity<SurfaceMesh>::buildVertexInfoGUI(size_t vInd) {}
-void Quantity<SurfaceMesh>::buildFaceInfoGUI(size_t fInd) {}
-void Quantity<SurfaceMesh>::buildEdgeInfoGUI(size_t eInd) {}
-void Quantity<SurfaceMesh>::buildHalfedgeInfoGUI(size_t heInd) {}
+SurfaceMeshQuantity::SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates)
+    : Quantity<SurfaceMesh>(name, parentStructure, dominates) {}
+void SurfaceMeshQuantity::geometryChanged() {}
+void SurfaceMeshQuantity::buildVertexInfoGUI(size_t vInd) {}
+void SurfaceMeshQuantity::buildFaceInfoGUI(size_t fInd) {}
+void SurfaceMeshQuantity::buildEdgeInfoGUI(size_t eInd) {}
+void SurfaceMeshQuantity::buildHalfedgeInfoGUI(size_t heInd) {}
 
 } // namespace polyscope

@@ -5,15 +5,22 @@
 
 namespace polyscope {
 
-class SurfaceColorQuantity : public SurfaceQuantityThatDrawsFaces {
+class SurfaceColorQuantity : public SurfaceMeshQuantity {
 public:
-  SurfaceColorQuantity(std::string name, SurfaceMesh* mesh_, std::string definedOn);
+  SurfaceColorQuantity(std::string name, SurfaceMesh& mesh_, std::string definedOn);
 
   virtual void draw() override;
-  virtual void drawUI() override;
+  virtual std::string niceName() override;
 
+  virtual void geometryChanged() override;
+
+protected:
   // UI internals
   const std::string definedOn;
+  std::unique_ptr<gl::GLProgram> program;
+
+  // Helpers
+  virtual void createProgram() = 0;
 };
 
 // ========================================================
@@ -22,12 +29,10 @@ public:
 
 class SurfaceColorVertexQuantity : public SurfaceColorQuantity {
 public:
-  SurfaceColorVertexQuantity(std::string name, std::vector<Color3f> values_, SurfaceMesh* mesh_);
-  //   ~SurfaceScalarVertexQuantity();
+  SurfaceColorVertexQuantity(std::string name, std::vector<Color3f> values_, SurfaceMesh& mesh_);
 
-  virtual gl::GLProgram* createProgram() override;
-
-  void fillColorBuffers(gl::GLProgram* p);
+  virtual void createProgram() override;
+  void fillColorBuffers(gl::GLProgram& p);
 
   void buildVertexInfoGUI(size_t vInd) override;
 
@@ -40,9 +45,8 @@ void SurfaceMesh::addVertexColorQuantity(std::string name, const T& colors) {
 
   validateSize<T>(colors, nVertices(), "vertex color quantity " + name);
 
-  std::shared_ptr<SurfaceColorQuantity> q =
-      std::make_shared<SurfaceColorVertexQuantity>(name, standardizeVectorArray<glm::vec3, T, 3>(colors), this);
-  addSurfaceQuantity(q);
+  SurfaceColorQuantity* q = new SurfaceColorVertexQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(colors), *this);
+  addQuantity(q);
 }
 
 // ========================================================
@@ -51,12 +55,10 @@ void SurfaceMesh::addVertexColorQuantity(std::string name, const T& colors) {
 
 class SurfaceColorFaceQuantity : public SurfaceColorQuantity {
 public:
-  SurfaceColorFaceQuantity(std::string name, std::vector<Color3f> values_, SurfaceMesh* mesh_);
-  //   ~SurfaceScalarVertexQuantity();
+  SurfaceColorFaceQuantity(std::string name, std::vector<Color3f> values_, SurfaceMesh& mesh_);
 
-  virtual gl::GLProgram* createProgram() override;
-
-  void fillColorBuffers(gl::GLProgram* p);
+  virtual void createProgram() override;
+  void fillColorBuffers(gl::GLProgram& p);
 
   void buildFaceInfoGUI(size_t fInd) override;
 
@@ -69,9 +71,8 @@ void SurfaceMesh::addFaceColorQuantity(std::string name, const T& colors) {
 
   validateSize<T>(colors, nFaces(), "face color quantity " + name);
 
-  std::shared_ptr<SurfaceColorQuantity> q =
-      std::make_shared<SurfaceColorFaceQuantity>(name, standardizeVectorArray<glm::vec3, T, 3>(colors), this);
-  addSurfaceQuantity(q);
+  SurfaceColorQuantity* q = new SurfaceColorFaceQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(colors), *this);
+  addQuantity(q);
 }
 
 

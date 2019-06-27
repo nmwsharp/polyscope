@@ -25,17 +25,15 @@ static const VertShader VERT_DIST_SURFACE_VERT_SHADER =  {
       in vec3 a_barycoord;
       in float a_colorval;
       out vec3 Normal;
-      out vec3 Position;
       out vec3 Barycoord;
       out float Colorval;
 
       void main()
       {
-          Position = a_position;
           Normal = mat3(u_modelView) * a_normal;
           Barycoord = a_barycoord;
           Colorval = a_colorval;
-          gl_Position = u_projMatrix * u_modelView * vec4(Position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };
@@ -78,7 +76,6 @@ static const FragShader VERT_DIST_SURFACE_FRAG_SHADER = {
       uniform sampler2D t_mat_g;
       uniform sampler2D t_mat_b;
       in vec3 Normal;
-      in vec3 Position;
       in vec3 Barycoord;
       in float Colorval;
       out vec4 outputF;

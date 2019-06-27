@@ -47,7 +47,6 @@ void processFileOBJ(string filename) {
   size_t nVertices = vertexPositions.size();
   size_t nFaces = faceIndices.size();
 
-  /*
   // Add some vertex scalars
   std::vector<double> valX(nVertices);
   std::vector<double> valY(nVertices);
@@ -68,6 +67,10 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addVertexColorQuantity("vColor", randColor);
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cY_sym", valY, polyscope::DataType::SYMMETRIC);
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cNorm", valMag, polyscope::DataType::MAGNITUDE);
+  
+  polyscope::getSurfaceMesh(niceName)->addVertexDistanceQuantity("cY_dist", valY);
+  polyscope::getSurfaceMesh(niceName)->addVertexSignedDistanceQuantity("cY_signeddist", valY);
+  
 
 
   // Add some face scalars
@@ -93,16 +96,7 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addFaceScalarQuantity("face area", fArea, polyscope::DataType::MAGNITUDE);
   polyscope::getSurfaceMesh(niceName)->addFaceScalarQuantity("zero", zero);
   polyscope::getSurfaceMesh(niceName)->addFaceColorQuantity("fColor", fColor);
-
-  // TODO show some edge and halfedge quantites
-  // EdgeData<double> cWeight(mesh);
-  // geom->getEdgeCotanWeights(cWeight);
-  // polyscope::getSurfaceMesh(niceName)->addQuantity("cotan weight", cWeight, polyscope::DataType::SYMMETRIC);
-
-  // HalfedgeData<double> oAngles(mesh);
-  // geom->getHalfedgeAngles(oAngles);
-  // polyscope::getSurfaceMesh(niceName)->addQuantity("angles", oAngles);
-  // polyscope::getSurfaceMesh(niceName)->addQuantity("zangles", oAngles);
+  
 
   // Edge length
   std::vector<double> eLen;
@@ -132,6 +126,7 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addEdgeScalarQuantity("edge length", eLen);
   polyscope::getSurfaceMesh(niceName)->addHalfedgeScalarQuantity("halfedge length", heLen);
 
+  /*
 
   // Test error
   // polyscope::error("Resistance is futile.");

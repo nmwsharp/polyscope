@@ -22,39 +22,25 @@ enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE };
 // Forward delcare surface mesh
 class SurfaceMesh;
 
-// Specialize Quantity<SurfaceMesh> to add a few extra functions
-
-template <>
-class Quantity<SurfaceMesh> {
+// Extend Quantity<SurfaceMesh> to add a few extra functions
+class SurfaceMeshQuantity : public Quantity<SurfaceMesh> {
 public:
-  
-  // [begin boring copy of  everything in quantity.h, because C++ is lame]
-  Quantity(std::string name, SurfaceMesh& parentStructure, bool dominates = false);
-  virtual ~Quantity();
-  virtual void draw();
-  virtual void buildUI();       
-  virtual void buildCustomUI();
-  virtual void buildPickUI(size_t localPickInd); 
-  bool isEnabled();
-  virtual void setEnabled(bool newEnabled);
-  virtual std::string niceName();
-  virtual void invalidate();
-  SurfaceMesh& parent;              
-  const std::string name;
-protected:
-  bool enabled = false;
-  const bool dominates = false;
-  // [end boring copy]
+  SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates = false);
 
-
-  // == Add a few extra methods
 public:
+  // Notify that the geometry has changed
+  virtual void geometryChanged();
 
   // Build GUI info about this element
   virtual void buildVertexInfoGUI(size_t vInd);
   virtual void buildFaceInfoGUI(size_t fInd);
   virtual void buildEdgeInfoGUI(size_t eInd);
   virtual void buildHalfedgeInfoGUI(size_t heInd);
+};
+
+template <> // Specialize the quantity type
+struct QuantityTypeHelper<SurfaceMesh> {
+  typedef SurfaceMeshQuantity type;
 };
 
 
@@ -71,6 +57,8 @@ struct TriangulationFace {
 
 class SurfaceMesh : public QuantityStructure<SurfaceMesh> {
 public:
+  typedef SurfaceMeshQuantity QuantityType;
+
   // === Member functions ===
 
   // Construct a new surface mesh structure
@@ -110,9 +98,9 @@ public:
 
   // Distance (expect double array)
   template <class T>
-  void addDistanceQuantity(std::string name, const T& data);
+  void addVertexDistanceQuantity(std::string name, const T& data);
   template <class T>
-  void addSignedDistanceQuantity(std::string name, const T& data);
+  void addVertexSignedDistanceQuantity(std::string name, const T& data);
 
   // Colors (expect glm::vec3 array)
   template <class T>
@@ -206,6 +194,7 @@ private:
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
   void preparePick();
+  void geometryChanged(); // call whenever geometry changed
 
   // Picking-related
   // Order of indexing: vertices, faces, edges, halfedges
@@ -294,11 +283,11 @@ inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
 
 
 // Alllll the quantities
-/*
 #include "polyscope/surface_color_quantity.h"
-#include "polyscope/surface_count_quantity.h"
-#include "polyscope/surface_distance_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
+#include "polyscope/surface_distance_quantity.h"
+/*
+#include "polyscope/surface_count_quantity.h"
 #include "polyscope/surface_selection_quantity.h"
 #include "polyscope/surface_subset_quantity.h"
 #include "polyscope/surface_vector_quantity.h"

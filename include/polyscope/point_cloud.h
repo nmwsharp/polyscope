@@ -36,6 +36,11 @@ protected:
 };
 
 
+template <> // Specialize the quantity type
+struct QuantityTypeHelper<PointCloud> {
+  typedef PointCloudQuantity type;
+};
+
 class PointCloud : public QuantityStructure<PointCloud> {
 public:
   // === Member functions ===

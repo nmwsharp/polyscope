@@ -41,8 +41,6 @@ void PointCloudColorQuantity::draw() {
 }
 
 std::string PointCloudColorQuantity::niceName() { return name + " (color)"; }
-void PointCloudColorQuantity::invalidate() { pointProgram.reset(); }
-
 
 void PointCloudColorQuantity::createPointProgram() {
   // Create the program to draw this quantity
