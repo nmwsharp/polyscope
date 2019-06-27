@@ -8,21 +8,17 @@ namespace polyscope {
 
 // Represents a general vector field associated with a surface mesh, including
 // R3 fields in the ambient space and R2 fields embedded in the surface
-class SurfaceVectorQuantity : public SurfaceQuantity {
+class SurfaceVectorQuantity : public SurfaceMeshQuantity {
 public:
-  SurfaceVectorQuantity(std::string name, SurfaceMesh* mesh_, MeshElement definedOn_,
+  SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh_, MeshElement definedOn_,
                         VectorType vectorType_ = VectorType::STANDARD);
 
-  virtual ~SurfaceVectorQuantity() override;
 
   virtual void draw() override;
-  virtual void drawUI() override;
+  virtual void buildCustomUI() override;
 
   // Allow children to append to the UI
   virtual void drawSubUI();
-
-  // Do work shared between all constructors
-  void finishConstructing();
 
   // === Members
   const VectorType vectorType;
@@ -34,7 +30,7 @@ public:
   MeshElement definedOn;
 
   // A ribbon viz that is appropriate for some fields
-  RibbonArtist* ribbonArtist = nullptr;
+  std::unique_ptr<RibbonArtist> ribbonArtist;
   bool ribbonEnabled = false;
 
   // The map that takes values to [0,1] for drawing
@@ -43,17 +39,22 @@ public:
   void writeToFile(std::string filename = "");
 
   // GL things
-  void prepare();
-  gl::GLProgram* program = nullptr;
+  void prepareProgram();
+  std::unique_ptr<gl::GLProgram> program;
+
+protected:
+  // Set up the mapper for vectors
+  void prepareVectorMapper();
 };
 
 class SurfaceVertexVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh* mesh_,
+  SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh& mesh_,
                               VectorType vectorType_ = VectorType::STANDARD);
 
   std::vector<glm::vec3> vectorField;
 
+  virtual std::string niceName() override;
   virtual void buildVertexInfoGUI(size_t vInd) override;
 };
 
@@ -62,18 +63,19 @@ void SurfaceMesh::addVertexVectorQuantity(std::string name, const T& vectors, Ve
 
   validateSize(vectors, nVertices(), "vertex vector quantity " + name);
 
-  std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceVertexVectorQuantity>(
-      name, standardizeVectorArray<glm::vec3, T, 3>(vectors), this, vectorType);
-  addSurfaceQuantity(q);
+  SurfaceVectorQuantity* q =
+      new SurfaceVertexVectorQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(vectors), *this, vectorType);
+  addQuantity(q);
 }
 
 class SurfaceFaceVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh* mesh_,
+  SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh& mesh_,
                             VectorType vectorType_ = VectorType::STANDARD);
 
   std::vector<glm::vec3> vectorField;
 
+  virtual std::string niceName() override;
   virtual void buildFaceInfoGUI(size_t fInd) override;
 };
 
@@ -82,16 +84,16 @@ void SurfaceMesh::addFaceVectorQuantity(std::string name, const T& vectors, Vect
 
   validateSize(vectors, nFaces(), "face vector quantity " + name);
 
-  std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceFaceVectorQuantity>(
-      name, standardizeVectorArray<glm::vec3, T, 3>(vectors), this, vectorType);
-  addSurfaceQuantity(q);
+  SurfaceVectorQuantity* q =
+      new SurfaceFaceVectorQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(vectors), *this, vectorType);
+  addQuantity(q);
 }
 
 
 class SurfaceFaceIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh* mesh_, int nSym = 1,
-                                     VectorType vectorType_ = VectorType::STANDARD);
+  SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_,
+                                     int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
 
   int nSym;
   std::vector<glm::vec2> vectorField;
@@ -100,6 +102,7 @@ public:
 
   void drawSubUI() override;
 
+  virtual std::string niceName() override;
   void buildFaceInfoGUI(size_t fInd) override;
 };
 
@@ -109,15 +112,15 @@ void SurfaceMesh::addFaceIntrinsicVectorQuantity(std::string name, const T& vect
 
   validateSize(vectors, nFaces(), "face intrinsic vector quantity " + name);
 
-  std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceFaceIntrinsicVectorQuantity>(
-      name, standardizeVectorArray<glm::vec2, T, 2>(vectors), this, nSym, vectorType);
-  addSurfaceQuantity(q);
+  SurfaceVectorQuantity* q = new SurfaceFaceIntrinsicVectorQuantity(
+      name, standardizeVectorArray<glm::vec2, T, 2>(vectors), *this, nSym, vectorType);
+  addQuantity(q);
 }
 
 
 class SurfaceVertexIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceVertexIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh* mesh_,
+  SurfaceVertexIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_,
                                        int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
 
   int nSym;
@@ -127,6 +130,7 @@ public:
 
   void drawSubUI() override;
 
+  virtual std::string niceName() override;
   void buildVertexInfoGUI(size_t vInd) override;
 };
 
@@ -136,15 +140,15 @@ void SurfaceMesh::addVertexIntrinsicVectorQuantity(std::string name, const T& ve
 
   validateSize(vectors, nVertices(), "vertex intrinsic vector quantity " + name);
 
-  std::shared_ptr<SurfaceVectorQuantity> q = std::make_shared<SurfaceVertexIntrinsicVectorQuantity>(
-      name, standardizeVectorArray<glm::vec2, T, 2>(vectors), this, nSym, vectorType);
-  addSurfaceQuantity(q);
+  SurfaceVectorQuantity* q = new SurfaceVertexIntrinsicVectorQuantity(
+      name, standardizeVectorArray<glm::vec2, T, 2>(vectors), *this, nSym, vectorType);
+  addQuantity(q);
 }
 
 
 class SurfaceOneFormIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceOneFormIntrinsicVectorQuantity(std::string name, std::vector<double> oneForm_, SurfaceMesh* mesh_);
+  SurfaceOneFormIntrinsicVectorQuantity(std::string name, std::vector<double> oneForm_, SurfaceMesh& mesh_);
 
   std::vector<double> oneForm;
   std::vector<glm::vec2> mappedVectorField;
@@ -153,6 +157,7 @@ public:
 
   void drawSubUI() override;
 
+  virtual std::string niceName() override;
   void buildEdgeInfoGUI(size_t eInd) override;
   void buildFaceInfoGUI(size_t fInd) override;
 };
@@ -160,11 +165,10 @@ public:
 template <class T>
 void SurfaceMesh::addOneFormIntrinsicVectorQuantity(std::string name, const T& data) {
 
-  validateSize(data , nEdges(), "one form intrinsic vector quantity " + name);
+  validateSize(data, nEdges(), "one form intrinsic vector quantity " + name);
 
-  std::shared_ptr<SurfaceVectorQuantity> q =
-      std::make_shared<SurfaceOneFormIntrinsicVectorQuantity>(name, standardizeArray<double, T>(data), this);
-  addSurfaceQuantity(q);
+  SurfaceVectorQuantity* q = new SurfaceOneFormIntrinsicVectorQuantity(name, standardizeArray<double, T>(data), *this);
+  addQuantity(q);
 }
 
 } // namespace polyscope

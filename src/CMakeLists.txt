@@ -56,17 +56,14 @@ SET(SRCS
   surface_scalar_quantity.cpp
   surface_color_quantity.cpp
   surface_distance_quantity.cpp
-  #surface_vector_quantity.cpp
-  #surface_count_quantity.cpp
+  surface_vector_quantity.cpp
+  surface_count_quantity.cpp
   #surface_subset_quantity.cpp
   #surface_selection_quantity.cpp
   #surface_input_curve_quantity.cpp
 
   # Camera view
   #camera_view.cpp
-
-  # Ray set
-  #ray_set.cpp
 )
 
 

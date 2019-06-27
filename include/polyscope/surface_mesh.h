@@ -86,7 +86,7 @@ public:
 
   // === Quantity-related
 
-  // Scalars (expect double arrays)
+  // = Scalars (expect double arrays)
   template <class T>
   void addVertexScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
   template <class T>
@@ -96,28 +96,28 @@ public:
   template <class T>
   void addHalfedgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
 
-  // Distance (expect double array)
+  // = Distance (expect double array)
   template <class T>
   void addVertexDistanceQuantity(std::string name, const T& data);
   template <class T>
   void addVertexSignedDistanceQuantity(std::string name, const T& data);
 
-  // Colors (expect glm::vec3 array)
+  // = Colors (expect glm::vec3 array)
   template <class T>
   void addVertexColorQuantity(std::string name, const T& data);
   template <class T>
   void addFaceColorQuantity(std::string name, const T& data);
 
-  // Counts/Values on isolated vertices (expect index/value pairs)
+  // = Counts/Values on isolated vertices (expect index/value pairs)
   void addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values);
   void addFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values);
   void addIsolatedVertexScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>>& values);
 
-  // Subsets (expect char array)
+  // = Subsets (expect char array)
   template <class T>
   void addSubsetQuantity(std::string name, const T& subset);
 
-  // Vectors (expect vector array, inner type must be indexable with correct dimension)
+  // = Vectors (expect vector array, inner type must be indexable with correct dimension)
   template <class T>
   void addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
   template <class T>
@@ -132,7 +132,7 @@ public:
   void addOneFormIntrinsicVectorQuantity(std::string name, const T& data); // expects scalar
 
 
-  // I/O Selections
+  // = I/O Selections
   template <class T>
   void addVertexSelectionQuantity(std::string name, const T& initialMembership);
   // void addInputCurveQuantity(std::string name);
@@ -284,11 +284,11 @@ inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
 
 // Alllll the quantities
 #include "polyscope/surface_color_quantity.h"
-#include "polyscope/surface_scalar_quantity.h"
-#include "polyscope/surface_distance_quantity.h"
-/*
 #include "polyscope/surface_count_quantity.h"
-#include "polyscope/surface_selection_quantity.h"
-#include "polyscope/surface_subset_quantity.h"
+#include "polyscope/surface_distance_quantity.h"
+#include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
+/*
+#include "polyscope/surface_subset_quantity.h"
+#include "polyscope/surface_selection_quantity.h"
 */

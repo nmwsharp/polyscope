@@ -14,14 +14,13 @@ using std::endl;
 
 namespace polyscope {
 
-SurfaceCountQuantity::SurfaceCountQuantity(std::string name, SurfaceMesh* mesh_, std::string descriptiveType_)
-    : SurfaceQuantity(name, mesh_), descriptiveType(descriptiveType_) {}
+SurfaceCountQuantity::SurfaceCountQuantity(std::string name, SurfaceMesh& mesh_, std::string descriptiveType_)
+    : SurfaceMeshQuantity(name, mesh_), descriptiveType(descriptiveType_) {}
 
-void SurfaceCountQuantity::prepare() {
+void SurfaceCountQuantity::createProgram() {
 
-  safeDelete(program);
-  program = new gl::GLProgram(&SPHERE_VALUE_VERT_SHADER, &SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
-                              &SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points);
+  program.reset(new gl::GLProgram(&SPHERE_VALUE_VERT_SHADER, &SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
+                                  &SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
 
   // Color limits
   sum = 0;
@@ -50,79 +49,75 @@ void SurfaceCountQuantity::prepare() {
   // Store data in buffers
   program->setAttribute("a_position", pos);
   program->setAttribute("a_value", value);
-        
+
   program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap], true);
-  setMaterialForProgram(program, "wax");
+  setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceCountQuantity::setUniforms(gl::GLProgram* p) {
-
-  glm::mat4 viewMat = parent->getModelView();
-  program->setUniform("u_modelView", glm::value_ptr(viewMat));
-
-  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-  program->setUniform("u_projMatrix", glm::value_ptr(projMat));
-
+void SurfaceCountQuantity::setUniforms(gl::GLProgram& p) {
   glm::vec3 lookDir, upDir, rightDir;
   view::getCameraFrame(lookDir, upDir, rightDir);
-  p->setUniform("u_camZ", lookDir);
-  p->setUniform("u_camUp", upDir);
-  p->setUniform("u_camRight", rightDir);
+  p.setUniform("u_camZ", lookDir);
+  p.setUniform("u_camUp", upDir);
+  p.setUniform("u_camRight", rightDir);
 
-  p->setUniform("u_pointRadius", pointRadius * state::lengthScale);
-  p->setUniform("u_baseColor", glm::vec3{0.0, 0.0, 0.0});
+  p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
+  p.setUniform("u_baseColor", glm::vec3{0.0, 0.0, 0.0});
 
   program->setUniform("u_rangeLow", vizRangeLow);
   program->setUniform("u_rangeHigh", vizRangeHigh);
 }
 
 void SurfaceCountQuantity::draw() {
-  if (enabled) {
-    setUniforms(program);
-    program->draw();
+  if (!enabled) return;
+
+  if (program == nullptr) {
+    createProgram();
   }
+
+  // Set uniforms
+  setUniforms(*program);
+  parent.setTransformUniforms(*program);
+
+  program->draw();
 }
 
-void SurfaceCountQuantity::drawUI() {
-  if (ImGui::TreeNode((name + " (" + descriptiveType + ")").c_str())) {
-    ImGui::Checkbox("Enabled", &enabled);
+void SurfaceCountQuantity::buildCustomUI() {
 
-    { // Set colormap
-      ImGui::SameLine();
-      ImGui::PushItemWidth(100);
-      int iColorMapBefore = iColorMap;
-      ImGui::Combo("##colormap", &iColorMap, gl::allColormapNames, IM_ARRAYSIZE(gl::allColormapNames));
-      ImGui::PopItemWidth();
-      if (iColorMap != iColorMapBefore) {
-        program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap], true);
-      }
+  { // Set colormap
+    ImGui::SameLine();
+    ImGui::PushItemWidth(100);
+    int iColorMapBefore = iColorMap;
+    ImGui::Combo("##colormap", &iColorMap, gl::allColormapNames, IM_ARRAYSIZE(gl::allColormapNames));
+    ImGui::PopItemWidth();
+    if (iColorMap != iColorMapBefore) {
+      program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap], true);
     }
-    ImGui::Text("Sum: %d", sum);
-
-    ImGui::DragFloatRange2("Color Range", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100.,
-                           dataRangeLow, dataRangeHigh, "Min: %.3e", "Max: %.3e");
-
-    ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
-    ImGui::TreePop();
   }
+  ImGui::Text("Sum: %d", sum);
+
+  ImGui::DragFloatRange2("Color Range", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100.,
+                         dataRangeLow, dataRangeHigh, "Min: %.3e", "Max: %.3e");
+
+  ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
 }
+
+std::string SurfaceCountQuantity::niceName() { return name + " (" + descriptiveType + ")"; }
 
 // ========================================================
 // ==========           Vertex Count            ==========
 // ========================================================
 
 SurfaceCountVertexQuantity::SurfaceCountVertexQuantity(std::string name, std::vector<std::pair<size_t, int>> values_,
-                                                       SurfaceMesh* mesh_)
+                                                       SurfaceMesh& mesh_)
     : SurfaceCountQuantity(name, mesh_, "vertex count")
 
 {
 
   for (auto& t : values_) {
     values[t.first] = t.second;
-    entries.push_back(std::make_pair(parent->triMesh.vertices[t.first].position(), t.second));
+    entries.push_back(std::make_pair(parent.triMesh.vertices[t.first].position(), t.second));
   }
-
-  prepare();
 }
 
 void SurfaceCountVertexQuantity::buildVertexInfoGUI(size_t vInd) {
@@ -142,39 +137,14 @@ void SurfaceCountVertexQuantity::buildVertexInfoGUI(size_t vInd) {
 
 SurfaceIsolatedScalarVertexQuantity::SurfaceIsolatedScalarVertexQuantity(std::string name,
                                                                          std::vector<std::pair<size_t, double>> values_,
-                                                                         SurfaceMesh* mesh_)
+                                                                         SurfaceMesh& mesh_)
     : SurfaceCountQuantity(name, mesh_, "isolated vertex scalar")
 
 {
 
   for (auto& t : values_) {
     values[t.first] = t.second;
-    entries.push_back(std::make_pair(parent->triMesh.vertices[t.first].position(), t.second));
-  }
-
-  prepare();
-}
-
-void SurfaceIsolatedScalarVertexQuantity::drawUI() {
-  if (ImGui::TreeNode((name + " (" + descriptiveType + ")").c_str())) {
-    ImGui::Checkbox("Enabled", &enabled);
-
-    { // Set colormap
-      ImGui::SameLine();
-      ImGui::PushItemWidth(100);
-      int iColorMapBefore = iColorMap;
-      ImGui::Combo("##colormap", &iColorMap, gl::allColormapNames, IM_ARRAYSIZE(gl::allColormapNames));
-      ImGui::PopItemWidth();
-      if (iColorMap != iColorMapBefore) {
-        program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap], true);
-      }
-    }
-
-    ImGui::DragFloatRange2("Color Range", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100.,
-                           dataRangeLow, dataRangeHigh, "Min: %.3e", "Max: %.3e");
-
-    ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
-    ImGui::TreePop();
+    entries.push_back(std::make_pair(parent.triMesh.vertices[t.first].position(), t.second));
   }
 }
 
@@ -194,14 +164,13 @@ void SurfaceIsolatedScalarVertexQuantity::buildVertexInfoGUI(size_t vInd) {
 // ========================================================
 
 SurfaceCountFaceQuantity::SurfaceCountFaceQuantity(std::string name, std::vector<std::pair<size_t, int>> values_,
-                                                   SurfaceMesh* mesh_)
+                                                   SurfaceMesh& mesh_)
     : SurfaceCountQuantity(name, mesh_, "face count") {
 
   for (auto& t : values_) {
     values[t.first] = t.second;
-    entries.push_back(std::make_pair(parent->triMesh.faces[t.first].center(), t.second));
+    entries.push_back(std::make_pair(parent.triMesh.faces[t.first].center(), t.second));
   }
-  prepare();
 }
 
 void SurfaceCountFaceQuantity::buildFaceInfoGUI(size_t fInd) {

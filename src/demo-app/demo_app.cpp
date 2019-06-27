@@ -126,7 +126,6 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addEdgeScalarQuantity("edge length", eLen);
   polyscope::getSurfaceMesh(niceName)->addHalfedgeScalarQuantity("halfedge length", heLen);
 
-  /*
 
   // Test error
   // polyscope::error("Resistance is futile.");
@@ -195,6 +194,8 @@ void processFileOBJ(string filename) {
   }
   polyscope::getSurfaceMesh(niceName)->addVertexCountQuantity("sample count", vCount);
   polyscope::getSurfaceMesh(niceName)->addIsolatedVertexScalarQuantity("sample isolated", vVal);
+  
+  /*
 
   // === Input quantities
   // TODO restore
