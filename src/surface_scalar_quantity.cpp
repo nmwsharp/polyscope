@@ -327,10 +327,10 @@ void SurfaceScalarEdgeQuantity::fillColorBuffers(gl::GLProgram& p) {
       glm::vec3 combinedValues = {avgVal, values[parent.edgeIndices[iF][j]], avgVal};
 
       if (j == 1) {
-        combinedValues[0] = values[parent.edgeIndices[iF][0]];
+        combinedValues.x = values[parent.edgeIndices[iF][0]];
       }
       if (j + 2 == D) {
-        combinedValues[2] = values[parent.edgeIndices[iF].back()];
+        combinedValues.z = values[parent.edgeIndices[iF].back()];
       }
 
       for (size_t i = 0; i < 3; i++) {

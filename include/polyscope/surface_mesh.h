@@ -235,13 +235,15 @@ private:
   // Visualization settings
   Color3f baseColor;
   Color3f surfaceColor;
-  ShadeStyle shadeStyle = ShadeStyle::SMOOTH;
+  Color3f edgeColor{0., 0., 0.};
+  ShadeStyle shadeStyle = ShadeStyle::FLAT;
   bool showEdges = false;
   float edgeWidth = 0.0;
 
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
   void preparePick();
+  void prepareWireframe();
   void geometryChanged(); // call whenever geometry changed
 
   // Picking-related
@@ -255,11 +257,11 @@ private:
   void buildHalfedgeInfoGui(size_t heInd);
 
   // Gui implementation details
-  bool ui_smoothshade = true;
 
   // Drawing related things
   std::unique_ptr<gl::GLProgram> program;
   std::unique_ptr<gl::GLProgram> pickProgram;
+  std::unique_ptr<gl::GLProgram> wireframeProgram;
 
   // === Helper functions
 
@@ -268,6 +270,7 @@ private:
 
   void fillGeometryBuffersSmooth(gl::GLProgram& p);
   void fillGeometryBuffersFlat(gl::GLProgram& p);
+  void fillGeometryBuffersWireframe(gl::GLProgram& p);
   glm::vec2 projectToScreenSpace(glm::vec3 coord);
   // bool screenSpaceTriangleTest(size_t fInd, glm::vec2 testCoords, glm::vec3& bCoordOut);
 };

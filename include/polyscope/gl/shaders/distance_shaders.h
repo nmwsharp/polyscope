@@ -43,7 +43,6 @@ static const FragShader VERT_DIST_SURFACE_FRAG_SHADER = {
     // uniforms
     {
         {"u_basecolor", GLData::Vector3Float},
-        {"u_edgeWidth", GLData::Float},
         {"u_rangeLow", GLData::Float},
         {"u_rangeHigh", GLData::Float},
         {"u_modLen", GLData::Float},
@@ -66,7 +65,6 @@ static const FragShader VERT_DIST_SURFACE_FRAG_SHADER = {
     
     // source 
     GLSL(150,
-      uniform float u_edgeWidth;
       uniform float u_rangeLow;
       uniform float u_rangeHigh;
       uniform float u_modLen;
@@ -82,7 +80,6 @@ static const FragShader VERT_DIST_SURFACE_FRAG_SHADER = {
 
       // Forward declarations of methods from <shaders/common.h>
       vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
-      float getEdgeFactor(vec3 UVW, float width);
 
       vec3 surfaceColor() {
         float t = (Colorval - u_rangeLow) / (u_rangeHigh - u_rangeLow);
@@ -90,15 +87,9 @@ static const FragShader VERT_DIST_SURFACE_FRAG_SHADER = {
         return texture(t_colormap, t).rgb;
       }
 
-      vec3 edgeColor(vec3 surfaceColor) {
-          vec3 edgeColor = vec3(0.0, 0.0, 0.0);
-          float eFactor = getEdgeFactor(Barycoord, u_edgeWidth);
-          return eFactor * edgeColor + (1.0 - eFactor) * surfaceColor;
-      }
-
       void main()
       {
-        vec3 color = edgeColor(surfaceColor());
+        vec3 color = surfaceColor();
 
         // Apply the stripy modulo effect
         float modVal = mod(Colorval, 2.0 * u_modLen);

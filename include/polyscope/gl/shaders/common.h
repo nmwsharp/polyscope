@@ -152,39 +152,9 @@ vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat
 // }
 
 float getEdgeFactor(vec3 UVW, float width) {
-   // // uniform width lines
-   // const float w = 1.5; // width
-   // const float s = 8.; // hardness
-   // float da = length(vec2(dFdx(UVW.x),dFdy(UVW.x)));
-   // float db = length(vec2(dFdx(UVW.y),dFdy(UVW.y)));
-   // float dc = length(vec2(dFdx(UVW.z),dFdy(UVW.z)));
-   // float a = (UVW.x/(w*da)); a = pow(2., -2.*pow(a,s));
-   // float b = (UVW.y/(w*db)); b = pow(2., -2.*pow(b,s));
-   // float c = (UVW.z/(w*dc)); c = pow(2., -2.*pow(c,s));
-   // return max(max(a,b),c);
-   
-   // // variable width lines
-   // const float w = .03; // width
-   // const float s = .085; // hardness
-   // float da = length(vec2(dFdx(UVW.x),dFdy(UVW.x)));
-   // float db = length(vec2(dFdx(UVW.y),dFdy(UVW.y)));
-   // float dc = length(vec2(dFdx(UVW.z),dFdy(UVW.z)));
-   // float a = UVW.x/w; a = pow( 2., -2.*pow(a,s/da) );
-   // float b = UVW.y/w; b = pow( 2., -2.*pow(b,s/db) );
-   // float c = UVW.z/w; c = pow( 2., -2.*pow(c,s/dc) );
-   // return max(max(a,b),c);
-
-   // variable width lines, but not directly proportional
-  //  const float w = .015; // width
-   float w = width;
-   const float s = .4; // hardness
-   float da = length(vec2(dFdx(UVW.x),dFdy(UVW.x)));
-   float db = length(vec2(dFdx(UVW.y),dFdy(UVW.y)));
-   float dc = length(vec2(dFdx(UVW.z),dFdy(UVW.z)));
-   float a = UVW.x/(10.*sqrt(da)*w); a = pow( 2., -2.*pow(a,s/sqrt(da)) );
-   float b = UVW.y/(10.*sqrt(db)*w); b = pow( 2., -2.*pow(b,s/sqrt(db)) );
-   float c = UVW.z/(10.*sqrt(dc)*w); c = pow( 2., -2.*pow(c,s/sqrt(dc)) );
-   return max(max(a,b),c);
+    vec3 fac = fwidth(UVW);
+    vec3 a3 = smoothstep(vec3(0.0), fac*width, UVW);
+    return 1.0 - min(min(a3.x, a3.y), a3.z);
 }
 
 float getEdgeFactor(vec2 UV)

@@ -5,6 +5,7 @@
 #include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/surface_shaders.h"
+#include "polyscope/gl/shaders/wireframe_shaders.h"
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 
@@ -47,7 +48,8 @@ void SurfaceMesh::computeCounts() {
       auto it = edgeInds.find(edgeKey);
       size_t edgeInd = 0;
       if (it == edgeInds.end()) {
-        edgeInds.insert(it, {edgeKey, nEdgesCount});
+        edgeInd = nEdgesCount;
+        edgeInds.insert(it, {edgeKey, edgeInd});
         nEdgesCount++;
       } else {
         edgeInd = it->second;
@@ -218,6 +220,7 @@ void SurfaceMesh::draw() {
     return;
   }
 
+
   // If no quantity is drawing the surface, we should draw it
   if (dominantQuantity == nullptr) {
 
@@ -235,6 +238,28 @@ void SurfaceMesh::draw() {
   // Draw the quantities
   for (auto& x : quantities) {
     x.second->draw();
+  }
+
+  // Draw the wireframe
+  if (edgeWidth > 0) {
+    if (wireframeProgram == nullptr) {
+      prepareWireframe();
+    }
+
+    // Set uniforms
+    setTransformUniforms(*wireframeProgram);
+    wireframeProgram->setUniform("u_edgeWidth", edgeWidth);
+    wireframeProgram->setUniform("u_edgeColor", edgeColor);
+
+    glDepthFunc(GL_LEQUAL); // Make sure wireframe wins depth tests
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO,
+                        GL_ONE); // slightly weird blend function: ensures alpha is set by whatever was drawn before,
+                                 // rather than the wireframe
+
+    wireframeProgram->draw();
+
+    glDepthFunc(GL_LESS); // return to normal
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   }
 }
 
@@ -260,6 +285,16 @@ void SurfaceMesh::prepare() {
   fillGeometryBuffers(*program);
 
   setMaterialForProgram(*program, "wax");
+}
+
+void SurfaceMesh::prepareWireframe() {
+  wireframeProgram.reset(
+      new gl::GLProgram(&SURFACE_WIREFRAME_VERT_SHADER, &SURFACE_WIREFRAME_FRAG_SHADER, gl::DrawMode::Triangles));
+
+  // Populate draw buffers
+  fillGeometryBuffersWireframe(*wireframeProgram);
+
+  setMaterialForProgram(*wireframeProgram, "wax");
 }
 
 void SurfaceMesh::preparePick() {
@@ -460,9 +495,66 @@ void SurfaceMesh::fillGeometryBuffersFlat(gl::GLProgram& p) {
   p.setAttribute("a_barycoord", bcoord);
 }
 
+void SurfaceMesh::fillGeometryBuffersWireframe(gl::GLProgram& p) {
+  std::vector<glm::vec3> positions;
+  std::vector<glm::vec3> normals;
+  std::vector<glm::vec3> bcoord;
+  std::vector<glm::vec3> edgeReal;
+
+  positions.reserve(3 * nFacesTriangulation());
+  normals.reserve(3 * nFacesTriangulation());
+  bcoord.reserve(3 * nFacesTriangulation());
+  edgeReal.reserve(3 * nFacesTriangulation());
+
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    auto& face = faces[iF];
+    size_t D = face.size();
+    glm::vec3 faceN = faceNormals[iF];
+
+    // implicitly triangulate from root
+    size_t vRoot = face[0];
+    glm::vec3 pRoot = vertices[vRoot];
+    for (size_t j = 1; (j + 1) < D; j++) {
+      size_t vB = face[j];
+      glm::vec3 pB = vertices[vB];
+      size_t vC = face[(j + 1) % D];
+      glm::vec3 pC = vertices[vC];
+
+      positions.push_back(pRoot);
+      positions.push_back(pB);
+      positions.push_back(pC);
+
+      normals.push_back(faceN);
+      normals.push_back(faceN);
+      normals.push_back(faceN);
+
+      bcoord.push_back(glm::vec3{1., 0., 0.});
+      bcoord.push_back(glm::vec3{0., 1., 0.});
+      bcoord.push_back(glm::vec3{0., 0., 1.});
+
+      glm::vec3 edgeRealV{0., 1., 0.};
+      if (j == 1) {
+        edgeRealV.x = 1.;
+      }
+      if (j + 2 == D) {
+        edgeRealV.z = 1.;
+      }
+      edgeReal.push_back(edgeRealV);
+      edgeReal.push_back(edgeRealV);
+      edgeReal.push_back(edgeRealV);
+    }
+  }
+
+
+  // Store data in buffers
+  p.setAttribute("a_position", positions);
+  p.setAttribute("a_normal", normals);
+  p.setAttribute("a_barycoord", bcoord);
+  p.setAttribute("a_edgeReal", edgeReal);
+}
+
 void SurfaceMesh::setMeshUniforms(gl::GLProgram& p) {
   p.setUniform("u_basecolor", surfaceColor); // unused for some, but set in all
-  p.setUniform("u_edgeWidth", edgeWidth);
 }
 
 
@@ -702,34 +794,15 @@ void SurfaceMesh::buildHalfedgeInfoGui(size_t heInd) {
 void SurfaceMesh::buildCustomUI() {
 
   // Print stats
-  // TODO add support back for connected components, boundary, etc
-  // TODO wrong for multiple connected components
-  /*
-  long long int nVerts = static_cast<long long int>(nVertices);
-  long long int nConnComp = static_cast<long long int>(mesh->nConnectedComponents());
-  bool hasBoundary = mesh->nBoundaryLoops() > 0;
-  if (nConnComp > 1) {
-    if (hasBoundary) {
-      ImGui::Text("# verts: %lld  # components: %lld", nVerts, nConnComp);
-      ImGui::Text("# boundary: %lu", static_cast<unsigned long>(mesh->nBoundaryLoops()));
-    } else {
-      ImGui::Text("# verts: %lld  # components: %lld", nVerts, nConnComp);
-    }
-  } else {
-    if (hasBoundary) {
-      ImGui::Text("# verts: %lld  # boundary: %lu", nVerts, static_cast<unsigned long>(mesh->nBoundaryLoops()));
-    } else {
-      long long int eulerCharacteristic = nVertices - nEdges + nFaces;
-      long long int genus = (2 - eulerCharacteristic) / 2;
-      ImGui::Text("# verts: %lld  genus: %lld", nVerts, genus);
-    }
-  }
-  */
+  long long int nVertsL = static_cast<long long int>(nVertices());
+  long long int nFacesL = static_cast<long long int>(nFaces());
+  ImGui::Text("#verts: %lld  #faces: %lld", nVertsL, nFacesL);
 
   ImGui::ColorEdit3("Color", (float*)&surfaceColor, ImGuiColorEditFlags_NoInputs);
   ImGui::SameLine();
 
   { // Flat shading or smooth shading?
+    bool ui_smoothshade = shadeStyle == ShadeStyle::SMOOTH;
     if (ImGui::Checkbox("Smooth", &ui_smoothshade)) {
       if (ui_smoothshade) {
         setShadeStyle(ShadeStyle::SMOOTH);
@@ -740,8 +813,10 @@ void SurfaceMesh::buildCustomUI() {
   }
 
   { // Edge width
-    ImGui::PushItemWidth(150);
-    ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0, .01, "%.5f", 2.);
+    ImGui::PushItemWidth(100);
+    ImGui::ColorEdit3("Edge Color", (float*)&edgeColor, ImGuiColorEditFlags_NoInputs);
+    ImGui::SameLine();
+    ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0, 1., "%.5f", 2.);
     ImGui::PopItemWidth();
   }
 }
@@ -749,7 +824,6 @@ void SurfaceMesh::buildCustomUI() {
 void SurfaceMesh::buildCustomOptionsUI() {}
 
 void SurfaceMesh::setShadeStyle(ShadeStyle newShadeStyle) {
-  ui_smoothshade = (newShadeStyle == ShadeStyle::SMOOTH);
   shadeStyle = newShadeStyle;
   geometryChanged();
 }

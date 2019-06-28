@@ -39,7 +39,6 @@ static const FragShader PLAIN_SURFACE_FRAG_SHADER = {
     // uniforms
     {
         {"u_basecolor", GLData::Vector3Float},
-        {"u_edgeWidth", GLData::Float},
     }, 
 
     // attributes
@@ -58,7 +57,6 @@ static const FragShader PLAIN_SURFACE_FRAG_SHADER = {
     
     // source 
     GLSL(150,
-      uniform float u_edgeWidth;
       uniform vec3 u_basecolor;
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
@@ -68,18 +66,11 @@ static const FragShader PLAIN_SURFACE_FRAG_SHADER = {
       out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
-      float getEdgeFactor(vec3 UVW, float width);
       vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
-
-      vec3 edgeColor(vec3 surfaceColor) {
-          vec3 edgeColor = vec3(0.0, 0.0, 0.0);
-          float eFactor = getEdgeFactor(Barycoord, u_edgeWidth);
-          return eFactor * edgeColor + (1.0 - eFactor) * surfaceColor;
-      }
 
       void main()
       {
-        vec3 color = edgeColor(u_basecolor);
+        vec3 color = u_basecolor;
         outputF = lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b);
       }
 
@@ -132,7 +123,6 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
     // uniforms
     {
         {"u_basecolor", GLData::Vector3Float},
-        {"u_edgeWidth", GLData::Float},
         {"u_rangeLow", GLData::Float},
         {"u_rangeHigh", GLData::Float},
     }, 
@@ -154,7 +144,6 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
     
     // source 
     GLSL(150,
-      uniform float u_edgeWidth;
       uniform float u_rangeLow;
       uniform float u_rangeHigh;
       uniform vec3 u_basecolor;
@@ -177,15 +166,9 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
         return texture(t_colormap, t).rgb;
       }
 
-      vec3 edgeColor(vec3 surfaceColor) {
-          vec3 edgeColor = vec3(0.0, 0.0, 0.0);
-          float eFactor = getEdgeFactor(Barycoord, u_edgeWidth);
-          return eFactor * edgeColor + (1.0 - eFactor) * surfaceColor;
-      }
-
       void main()
       {
-        vec3 color = edgeColor(surfaceColor());
+        vec3 color = surfaceColor();
         outputF = lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b);
       }
 
@@ -236,7 +219,6 @@ static const FragShader VERTBINARY_SURFACE_FRAG_SHADER = {
     // uniforms
     {
         {"u_basecolor", GLData::Vector3Float},
-        {"u_edgeWidth", GLData::Float},
     }, 
 
     // attributes
@@ -256,7 +238,6 @@ static const FragShader VERTBINARY_SURFACE_FRAG_SHADER = {
     
     // source 
     GLSL(150,
-      uniform float u_edgeWidth;
       uniform vec3 u_basecolor;
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
@@ -279,15 +260,9 @@ static const FragShader VERTBINARY_SURFACE_FRAG_SHADER = {
         return texture(t_colormap, t).rgb;
       }
 
-      vec3 edgeColor(vec3 surfaceColor) {
-          vec3 edgeColor = vec3(0.0, 0.0, 0.0);
-          float eFactor = getEdgeFactor(Barycoord, u_edgeWidth);
-          return eFactor * edgeColor + (1.0 - eFactor) * surfaceColor;
-      }
-
       void main()
       {
-        vec3 color = edgeColor(surfaceColor());
+        vec3 color = surfaceColor();
         outputF = lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b);
       }
 
@@ -337,7 +312,6 @@ static const FragShader VERTCOLOR3_SURFACE_FRAG_SHADER = {
     // uniforms
     {
         {"u_basecolor", GLData::Vector3Float},
-        {"u_edgeWidth", GLData::Float},
     }, 
 
     // attributes
@@ -356,7 +330,6 @@ static const FragShader VERTCOLOR3_SURFACE_FRAG_SHADER = {
     
     // source 
     GLSL(150,
-      uniform float u_edgeWidth;
       uniform vec3 u_basecolor;
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
@@ -370,18 +343,9 @@ static const FragShader VERTCOLOR3_SURFACE_FRAG_SHADER = {
       vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
       float getEdgeFactor(vec3 UVW, float width);
 
-      vec3 edgeColor(vec3 surfaceColor) {
-
-          vec3 edgeColor = vec3(0.0, 0.0, 0.0);
-
-          float eFactor = getEdgeFactor(Barycoord, u_edgeWidth);
-
-          return eFactor * edgeColor + (1.0 - eFactor) * surfaceColor;
-      }
-
       void main()
       {
-        vec3 color = edgeColor(Colorval);
+        vec3 color = Colorval;
         outputF = lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b);
       }
 
@@ -434,7 +398,6 @@ static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     // uniforms
     {
         {"u_basecolor", GLData::Vector3Float},
-        {"u_edgeWidth", GLData::Float},
         {"u_rangeLow", GLData::Float},
         {"u_rangeHigh", GLData::Float},
     }, 
@@ -456,7 +419,6 @@ static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     
     // source 
     GLSL(150,
-      uniform float u_edgeWidth;
       uniform float u_rangeLow;
       uniform float u_rangeHigh;
       uniform vec3 u_basecolor;
@@ -466,7 +428,7 @@ static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
       uniform sampler1D t_colormap;
       in vec3 Normal;
       in vec3 Barycoord;
-      in vec3 Colorval; // holds the value at the edge OPPOSITE vertex i
+      in vec3 Colorval; // holds the value at edge i --> i+1
       out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
@@ -492,18 +454,9 @@ static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
         return texture(t_colormap, t).rgb;
       }
 
-      vec3 edgeColor(vec3 surfaceColor) {
-
-          vec3 edgeColor = vec3(0.0, 0.0, 0.0);
-
-          float eFactor = getEdgeFactor(Barycoord, u_edgeWidth);
-
-          return eFactor * edgeColor + (1.0 - eFactor) * surfaceColor;
-      }
-
       void main()
       {
-        vec3 color = edgeColor(surfaceColor());
+        vec3 color = surfaceColor();
         outputF = lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b);
       }
 
