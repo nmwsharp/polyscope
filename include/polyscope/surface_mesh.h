@@ -81,7 +81,6 @@ public:
 
   // Axis-aligned bounding box for the structure
   virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
-
   virtual std::string typeName() override;
 
   // === Quantity-related
@@ -145,6 +144,38 @@ public:
   // === Mutate
   void updateVertexPositions(const std::vector<glm::vec3>& newPositions);
 
+
+  // === Indexing conventions
+
+  // Permutation arrays. Empty == default ordering
+  std::vector<size_t> vertexPerm;
+  std::vector<size_t> facePerm;
+  std::vector<size_t> edgePerm;
+  std::vector<size_t> halfedgePerm;
+  std::vector<size_t> cornerPerm;
+
+  // Set permutations
+  template <class T>
+  void setVertexPermutation(const T& perm);
+  template <class T>
+  void setFacePermutation(const T& perm);
+  template <class T>
+  void setEdgePermutation(const T& perm);
+  template <class T>
+  void setHalfedgePermutation(const T& perm);
+  template <class T>
+  void setCornerPermutation(const T& perm);
+  template <class T>
+  void setAllPermutations(const std::array<T, 5>& perms);
+
+  // Get the expected data length, either using the default convention or a permutation as above
+  size_t vertexDataSize;
+  size_t faceDataSize;
+  size_t edgeDataSize;
+  size_t halfedgeDataSize;
+  size_t cornerDataSize;
+
+
   // === Helpers
   void fillGeometryBuffers(gl::GLProgram& p);
   void setMeshUniforms(gl::GLProgram& p);
@@ -155,6 +186,7 @@ public:
   size_t nEdges() const { return mesh.nEdges(); }
   size_t nTriangulationEdges() const { return triMesh.nEdges(); }
   size_t nFaces() const { return mesh.nFaces(); }
+  size_t nCorners() const { return mesh.nHalfedges(); /* TODO double check */ }
   size_t nTriangulationFaces() const { return triMesh.nFaces(); }
   size_t nBoundaryLoops() const { return triMesh.nBoundaryLoops(); }
   size_t nImaginaryHalfedges() const { return mesh.nImaginaryHalfedges(); }
@@ -241,6 +273,20 @@ SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, con
   return s;
 }
 
+// Shorthand to add a mesh to polyscope while also setting permutations
+template <class V, class F, class P>
+SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
+                                 const std::array<P, 5>& perms, bool replaceIfPresent = true) {
+
+  SurfaceMesh* s = registerSurfaceMesh(name, vertexPositions, faceIndices, replaceIfPresent);
+
+  if (s) {
+    s->setAllPermutations(perms);
+  }
+
+  return s;
+}
+
 
 // Shorthand to get a mesh from polyscope
 inline SurfaceMesh* getSurfaceMesh(std::string name = "") {
@@ -285,6 +331,7 @@ inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
 
 } // namespace polyscope
 
+#include "polyscope/surface_mesh.ipp"
 
 // Alllll the quantities
 #include "polyscope/surface_color_quantity.h"
