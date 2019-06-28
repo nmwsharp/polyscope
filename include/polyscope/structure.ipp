@@ -24,7 +24,9 @@ void QuantityStructure<S>::addQuantity(QuantityType* q, bool allowReplacement) {
       removeQuantity(q->name);
     } else {
       // throw an error
-      error("Tried to add quantity with name: [" + q->name + "], but a quantity with that name already exists on the structure [" + name + "]. Use the allowReplacement option like addQuantity(..., true) to replace.");
+      error("Tried to add quantity with name: [" + q->name +
+            "], but a quantity with that name already exists on the structure [" + name +
+            "]. Use the allowReplacement option like addQuantity(..., true) to replace.");
       return;
     }
   }
@@ -71,8 +73,22 @@ void QuantityStructure<S>::removeAllQuantities() {
 
 template <typename S>
 void QuantityStructure<S>::setDominantQuantity(QuantityType* q) {
+  if (!q->dominates) {
+    error("tried to set dominant quantity with quantity that has dominates=false");
+    return;
+  }
+
   // Dominant quantity must be enabled
   q->setEnabled(true);
+
+  // All other dominating quantities will be disabled
+  for (auto& qp : quantities) {
+    QuantityType* qOther = qp.second.get();
+    if (qOther->dominates && qOther->isEnabled() && qOther != q) {
+      qOther->setEnabled(false);
+    }
+  }
+  
   dominantQuantity = q;
 }
 

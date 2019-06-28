@@ -8,7 +8,7 @@ namespace polyscope {
 // ==========            Edge Subset             ==========
 // ========================================================
 
-class SurfaceEdgeSubsetQuantity : public SurfaceQuantity {
+class SurfaceEdgeSubsetQuantity : public SurfaceMeshQuantity {
 public:
   SurfaceEdgeSubsetQuantity(std::string name, std::vector<char> edgeSubset, SurfaceMesh* mesh_);
   ~SurfaceEdgeSubsetQuantity();
@@ -28,12 +28,14 @@ private:
 };
 
 template <class T>
-void SurfaceMesh::addSubsetQuantity(std::string name, const T& subset) {
+void SurfaceMesh::addEdgeSubsetQuantity(std::string name, const T& subset) {
+
+  validateSize(subset, edgeDataSize, "edge subset quantity " + name);
+
   std::shared_ptr<SurfaceEdgeSubsetQuantity> q = std::make_shared<SurfaceEdgeSubsetQuantity>(
-      name, standardizeArray<char, T>(subset), this);
+      name, applyPermutation(standardizeArray<char, T>(subset), edgePerm), this);
   addSurfaceQuantity(q);
 }
-
 
 
 } // namespace polyscope

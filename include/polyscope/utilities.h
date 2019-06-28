@@ -74,6 +74,19 @@ inline std::string to_string_short(const glm::vec3& v) { return str_printf("<%1.
 // === Index management
 const size_t INVALID_IND = std::numeric_limits<size_t>::max();
 
+template <typename T>
+std::vector<T> applyPermutation(const std::vector<T>& input, const std::vector<size_t>& perm) {
+  // TODO figure out if there's a copy to be avoided here
+  if(perm.size() == 0) {
+    return input;
+  }
+  std::vector<T> result(perm.size());
+  for(size_t i = 0; i < perm.size(); i++) {
+    result[i] = input[perm[i]];
+  }
+  return result;
+}
+
 
 // === Random number generation
 extern std::random_device util_random_device;

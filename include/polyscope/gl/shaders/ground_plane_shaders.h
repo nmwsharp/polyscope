@@ -115,7 +115,7 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
         // Fade off far away
         float distFromCenter = length(coordXZ);
         float distFadeFactor = 1.0 - smoothstep(8.0, 8.5, distFromCenter);
-        float viewFromBelowFadeFactor = smoothstep(-.1, 0., u_cameraHeight / u_lengthScale);
+        float viewFromBelowFadeFactor = smoothstep(0, .1, u_cameraHeight / u_lengthScale);
         float fadeFactor = min(distFadeFactor, viewFromBelowFadeFactor);
         vec4 color = vec4(color3, fadeFactor);
       

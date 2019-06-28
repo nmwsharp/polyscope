@@ -113,8 +113,8 @@ public:
   void addIsolatedVertexScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>>& values);
 
   // = Subsets (expect char array)
-  template <class T>
-  void addSubsetQuantity(std::string name, const T& subset);
+  //template <class T>
+  //void addEdgeSubsetQuantity(std::string name, const T& subset);
 
   // = Vectors (expect vector array, inner type must be indexable with correct dimension)
   template <class T>
@@ -156,17 +156,17 @@ public:
 
   // Set permutations
   template <class T>
-  void setVertexPermutation(const T& perm);
+  void setVertexPermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
-  void setFacePermutation(const T& perm);
+  void setFacePermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
-  void setEdgePermutation(const T& perm);
+  void setEdgePermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
-  void setHalfedgePermutation(const T& perm);
+  void setHalfedgePermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
-  void setCornerPermutation(const T& perm);
+  void setCornerPermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
-  void setAllPermutations(const std::array<T, 5>& perms);
+  void setAllPermutations(const std::array<std::pair<T, size_t>, 5>& perms);
 
   // Get the expected data length, either using the default convention or a permutation as above
   size_t vertexDataSize;
@@ -276,7 +276,7 @@ SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, con
 // Shorthand to add a mesh to polyscope while also setting permutations
 template <class V, class F, class P>
 SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
-                                 const std::array<P, 5>& perms, bool replaceIfPresent = true) {
+                                 const std::array<std::pair<P,size_t>, 5>& perms, bool replaceIfPresent = true) {
 
   SurfaceMesh* s = registerSurfaceMesh(name, vertexPositions, faceIndices, replaceIfPresent);
 
@@ -301,6 +301,13 @@ SurfaceMesh::SurfaceMesh(std::string name, const V& vertexPositions, const F& fa
                                                  standardizeNestedList<size_t, F>(faceIndices), false),
       triMesh(standardizeVectorArray<glm::vec3, V, 3>(vertexPositions), standardizeNestedList<size_t, F>(faceIndices),
               true) {
+
+  // Default data sizes
+  vertexDataSize = nVertices();
+  faceDataSize = nFaces();
+  edgeDataSize = nEdges();
+  halfedgeDataSize = nHalfedges();
+  cornerDataSize = nCorners();
 
   // Colors
   baseColor = getNextStructureColor();

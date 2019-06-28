@@ -114,6 +114,27 @@ SurfaceCountVertexQuantity::SurfaceCountVertexQuantity(std::string name, std::ve
 
 {
 
+  // Apply permutation if needed
+  if (parent.vertexPerm.size() > 0) {
+
+    // Build a temporary map to invert
+    std::map<size_t, int> m;
+    for (auto& t : values_) {
+      m[t.first] = t.second;
+    }
+
+    // Invert
+    std::vector<std::pair<size_t, int>> newValues;
+    for (size_t iP = 0; iP < parent.nVertices(); iP++) {
+      if (m.find(parent.vertexPerm[iP]) != m.end()) {
+        newValues.emplace_back(iP, m[parent.vertexPerm[iP]]);
+      }
+    }
+
+    values_ = newValues;
+  }
+
+
   for (auto& t : values_) {
     values[t.first] = t.second;
     entries.push_back(std::make_pair(parent.triMesh.vertices[t.first].position(), t.second));
@@ -142,6 +163,26 @@ SurfaceIsolatedScalarVertexQuantity::SurfaceIsolatedScalarVertexQuantity(std::st
 
 {
 
+  // Apply permutation if needed
+  if (parent.vertexPerm.size() > 0) {
+
+    // Build a temporary map to invert
+    std::map<size_t, double> m;
+    for (auto& t : values_) {
+      m[t.first] = t.second;
+    }
+
+    // Invert
+    std::vector<std::pair<size_t, double>> newValues;
+    for (size_t iP = 0; iP < parent.nVertices(); iP++) {
+      if (m.find(parent.vertexPerm[iP]) != m.end()) {
+        newValues.emplace_back(iP, m[parent.vertexPerm[iP]]);
+      }
+    }
+
+    values_ = newValues;
+  }
+
   for (auto& t : values_) {
     values[t.first] = t.second;
     entries.push_back(std::make_pair(parent.triMesh.vertices[t.first].position(), t.second));
@@ -166,6 +207,26 @@ void SurfaceIsolatedScalarVertexQuantity::buildVertexInfoGUI(size_t vInd) {
 SurfaceCountFaceQuantity::SurfaceCountFaceQuantity(std::string name, std::vector<std::pair<size_t, int>> values_,
                                                    SurfaceMesh& mesh_)
     : SurfaceCountQuantity(name, mesh_, "face count") {
+
+  // Apply permutation if needed
+  if (parent.facePerm.size() > 0) {
+
+    // Build a temporary map to invert
+    std::map<size_t, int> m;
+    for (auto& t : values_) {
+      m[t.first] = t.second;
+    }
+
+    // Invert
+    std::vector<std::pair<size_t, int>> newValues;
+    for (size_t iP = 0; iP < parent.nFaces(); iP++) {
+      if (m.find(parent.facePerm[iP]) != m.end()) {
+        newValues.emplace_back(iP, m[parent.facePerm[iP]]);
+      }
+    }
+
+    values_ = newValues;
+  }
 
   for (auto& t : values_) {
     values[t.first] = t.second;

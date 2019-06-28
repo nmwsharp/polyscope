@@ -37,10 +37,9 @@ public:
   S& parent;              // the parent structure with which this quantity is associated
   const std::string name; // a name for this quantity, which must be unique amongst quantities on `parent`
 
-protected:
   // Is this quantity currently being displayed?
   bool enabled = false; // should be set by setEnabled()
-  const bool dominates = false;
+  bool dominates = false;
 };
 
 

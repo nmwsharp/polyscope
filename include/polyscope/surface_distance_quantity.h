@@ -44,17 +44,19 @@ protected:
 
 template <class T>
 void SurfaceMesh::addVertexDistanceQuantity(std::string name, const T& distances) {
-  validateSize(distances, nVertices(), "distance quantity" + name);
+  validateSize(distances, vertexDataSize, "distance quantity " + name);
 
-  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, standardizeArray<double, T>(distances), *this, false);
+  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(
+      name, applyPermutation(standardizeArray<double, T>(distances), vertexPerm), *this, false);
   addQuantity(q);
 }
 
 template <class T>
 void SurfaceMesh::addVertexSignedDistanceQuantity(std::string name, const T& distances) {
-  validateSize(distances, nVertices(), "signed distance quantity" + name);
+  validateSize(distances, vertexDataSize, "signed distance quantity " + name);
 
-  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, standardizeArray<double, T>(distances), *this, true);
+  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(
+      name, applyPermutation(standardizeArray<double, T>(distances), vertexPerm), *this, true);
   addQuantity(q);
 }
 

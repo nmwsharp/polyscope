@@ -43,9 +43,10 @@ public:
 template <class T>
 void SurfaceMesh::addVertexColorQuantity(std::string name, const T& colors) {
 
-  validateSize<T>(colors, nVertices(), "vertex color quantity " + name);
+  validateSize<T>(colors, vertexDataSize, "vertex color quantity " + name);
 
-  SurfaceColorQuantity* q = new SurfaceColorVertexQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(colors), *this);
+  SurfaceColorQuantity* q = new SurfaceColorVertexQuantity(
+      name, applyPermutation(standardizeVectorArray<glm::vec3, T, 3>(colors), vertexPerm), *this);
   addQuantity(q);
 }
 
@@ -69,9 +70,10 @@ public:
 template <class T>
 void SurfaceMesh::addFaceColorQuantity(std::string name, const T& colors) {
 
-  validateSize<T>(colors, nFaces(), "face color quantity " + name);
+  validateSize<T>(colors, faceDataSize, "face color quantity " + name);
 
-  SurfaceColorQuantity* q = new SurfaceColorFaceQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(colors), *this);
+  SurfaceColorQuantity* q = new SurfaceColorFaceQuantity(
+      name, applyPermutation(standardizeVectorArray<glm::vec3, T, 3>(colors), facePerm), *this);
   addQuantity(q);
 }
 

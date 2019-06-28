@@ -79,7 +79,6 @@ struct QuantityTypeHelper {
 template <typename S> // template on the derived type
 class QuantityStructure : public Structure {
 public:
-
   // Nicer name for the quantity type of this structure
   typedef typename QuantityTypeHelper<S>::type QuantityType;
 
@@ -103,13 +102,11 @@ public:
   void setDominantQuantity(QuantityType* q);
   void clearDominantQuantity();
 
-protected:
   // = Quantities
   std::map<std::string, std::unique_ptr<QuantityType>> quantities;
-  QuantityType* dominantQuantity =
-      nullptr; // If non-null, a special quantity of which only one can be drawn for
-               // the structure. Handles common case of a surface color, e.g. color of
-               // a mesh or point cloud The dominant quantity must always be enabled
+  QuantityType* dominantQuantity = nullptr; // If non-null, a special quantity of which only one can be drawn for
+                                            // the structure. Handles common case of a surface color, e.g. color of
+                                            // a mesh or point cloud The dominant quantity must always be enabled
 };
 
 

@@ -22,7 +22,6 @@ public:
   const DataType dataType;
 
 protected:
-
   // Affine data maps and limits
   void resetVizRange();
   float vizRangeLow, vizRangeHigh;
@@ -62,9 +61,10 @@ public:
 template <class T>
 void SurfaceMesh::addVertexScalarQuantity(std::string name, const T& data, DataType type) {
 
-  validateSize(data, nVertices(), "vertex scalar quantity " + name);
+  validateSize(data, vertexDataSize, "vertex scalar quantity " + name);
 
-  SurfaceScalarQuantity* q = new SurfaceScalarVertexQuantity(name, standardizeArray<double, T>(data), *this, type);
+  SurfaceScalarQuantity* q = new SurfaceScalarVertexQuantity(
+      name, applyPermutation(standardizeArray<double, T>(data), vertexPerm), *this, type);
   addQuantity(q);
 }
 
@@ -90,9 +90,10 @@ public:
 template <class T>
 void SurfaceMesh::addFaceScalarQuantity(std::string name, const T& data, DataType type) {
 
-  validateSize(data, nFaces(), "face scalar quantity " + name);
+  validateSize(data, faceDataSize, "face scalar quantity " + name);
 
-  SurfaceScalarQuantity* q = new SurfaceScalarFaceQuantity(name, standardizeArray<double, T>(data), *this, type);
+  SurfaceScalarQuantity* q =
+      new SurfaceScalarFaceQuantity(name, applyPermutation(standardizeArray<double, T>(data), facePerm), *this, type);
   addQuantity(q);
 }
 
@@ -120,9 +121,10 @@ public:
 template <class T>
 void SurfaceMesh::addEdgeScalarQuantity(std::string name, const T& data, DataType type) {
 
-  validateSize(data, nEdges(), "edge scalar quantity " + name);
+  validateSize(data, edgeDataSize, "edge scalar quantity " + name);
 
-  SurfaceScalarQuantity* q = new SurfaceScalarEdgeQuantity(name, standardizeArray<double, T>(data), *this, type);
+  SurfaceScalarQuantity* q =
+      new SurfaceScalarEdgeQuantity(name, applyPermutation(standardizeArray<double, T>(data), edgePerm), *this, type);
   addQuantity(q);
 }
 
@@ -149,9 +151,10 @@ public:
 template <class T>
 void SurfaceMesh::addHalfedgeScalarQuantity(std::string name, const T& data, DataType type) {
 
-  validateSize(data, {nHalfedges(), mesh.nRealHalfedges()}, "halfedge scalar quantity " + name);
+  validateSize(data, halfedgeDataSize, "halfedge scalar quantity " + name);
 
-  SurfaceScalarQuantity* q = new SurfaceScalarHalfedgeQuantity(name, standardizeArray<double, T>(data), *this, type);
+  SurfaceScalarQuantity* q = new SurfaceScalarHalfedgeQuantity(
+      name, applyPermutation(standardizeArray<double, T>(data), halfedgePerm), *this, type);
   addQuantity(q);
 }
 

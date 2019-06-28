@@ -6,6 +6,8 @@
 
 namespace polyscope {
 
+// ==== Common base class
+
 // Represents a general vector field associated with a surface mesh, including
 // R3 fields in the ambient space and R2 fields embedded in the surface
 class SurfaceVectorQuantity : public SurfaceMeshQuantity {
@@ -47,6 +49,9 @@ protected:
   void prepareVectorMapper();
 };
 
+
+// ==== R3 vectors at vertices
+
 class SurfaceVertexVectorQuantity : public SurfaceVectorQuantity {
 public:
   SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh& mesh_,
@@ -61,12 +66,15 @@ public:
 template <class T>
 void SurfaceMesh::addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType) {
 
-  validateSize(vectors, nVertices(), "vertex vector quantity " + name);
+  validateSize(vectors, vertexDataSize, "vertex vector quantity " + name);
 
-  SurfaceVectorQuantity* q =
-      new SurfaceVertexVectorQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(vectors), *this, vectorType);
+  SurfaceVectorQuantity* q = new SurfaceVertexVectorQuantity(
+      name, applyPermutation(standardizeVectorArray<glm::vec3, T, 3>(vectors), vertexPerm), *this, vectorType);
   addQuantity(q);
 }
+
+
+// ==== R3 vectors at faces
 
 class SurfaceFaceVectorQuantity : public SurfaceVectorQuantity {
 public:
@@ -82,13 +90,15 @@ public:
 template <class T>
 void SurfaceMesh::addFaceVectorQuantity(std::string name, const T& vectors, VectorType vectorType) {
 
-  validateSize(vectors, nFaces(), "face vector quantity " + name);
+  validateSize(vectors, faceDataSize, "face vector quantity " + name);
 
-  SurfaceVectorQuantity* q =
-      new SurfaceFaceVectorQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(vectors), *this, vectorType);
+  SurfaceVectorQuantity* q = new SurfaceFaceVectorQuantity(
+      name, applyPermutation(standardizeVectorArray<glm::vec3, T, 3>(vectors), facePerm), *this, vectorType);
   addQuantity(q);
 }
 
+
+// ==== Intrinsic vectors at faces
 
 class SurfaceFaceIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
@@ -110,13 +120,15 @@ public:
 template <class T>
 void SurfaceMesh::addFaceIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym, VectorType vectorType) {
 
-  validateSize(vectors, nFaces(), "face intrinsic vector quantity " + name);
+  validateSize(vectors, faceDataSize, "face intrinsic vector quantity " + name);
 
   SurfaceVectorQuantity* q = new SurfaceFaceIntrinsicVectorQuantity(
-      name, standardizeVectorArray<glm::vec2, T, 2>(vectors), *this, nSym, vectorType);
+      name, applyPermutation(standardizeVectorArray<glm::vec2, T, 2>(vectors), facePerm), *this, nSym, vectorType);
   addQuantity(q);
 }
 
+
+// ==== Intrinsic vectors at vertices
 
 class SurfaceVertexIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
@@ -138,13 +150,15 @@ template <class T>
 void SurfaceMesh::addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym,
                                                    VectorType vectorType) {
 
-  validateSize(vectors, nVertices(), "vertex intrinsic vector quantity " + name);
+  validateSize(vectors, vertexDataSize, "vertex intrinsic vector quantity " + name);
 
   SurfaceVectorQuantity* q = new SurfaceVertexIntrinsicVectorQuantity(
-      name, standardizeVectorArray<glm::vec2, T, 2>(vectors), *this, nSym, vectorType);
+      name, applyPermutation(standardizeVectorArray<glm::vec2, T, 2>(vectors), vertexPerm), *this, nSym, vectorType);
   addQuantity(q);
 }
 
+
+// ==== Intrinsic one form on edges
 
 class SurfaceOneFormIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
@@ -165,9 +179,10 @@ public:
 template <class T>
 void SurfaceMesh::addOneFormIntrinsicVectorQuantity(std::string name, const T& data) {
 
-  validateSize(data, nEdges(), "one form intrinsic vector quantity " + name);
+  validateSize(data, edgeDataSize, "one form intrinsic vector quantity " + name);
 
-  SurfaceVectorQuantity* q = new SurfaceOneFormIntrinsicVectorQuantity(name, standardizeArray<double, T>(data), *this);
+  SurfaceVectorQuantity* q = new SurfaceOneFormIntrinsicVectorQuantity(
+      name, applyPermutation(standardizeArray<double, T>(data), edgePerm), *this);
   addQuantity(q);
 }
 
