@@ -137,7 +137,7 @@ SurfaceCountVertexQuantity::SurfaceCountVertexQuantity(std::string name, std::ve
 
   for (auto& t : values_) {
     values[t.first] = t.second;
-    entries.push_back(std::make_pair(parent.triMesh.vertices[t.first].position(), t.second));
+    entries.push_back(std::make_pair(parent.vertices[t.first], t.second));
   }
 }
 
@@ -185,7 +185,7 @@ SurfaceIsolatedScalarVertexQuantity::SurfaceIsolatedScalarVertexQuantity(std::st
 
   for (auto& t : values_) {
     values[t.first] = t.second;
-    entries.push_back(std::make_pair(parent.triMesh.vertices[t.first].position(), t.second));
+    entries.push_back(std::make_pair(parent.vertices[t.first], t.second));
   }
 }
 
@@ -230,7 +230,16 @@ SurfaceCountFaceQuantity::SurfaceCountFaceQuantity(std::string name, std::vector
 
   for (auto& t : values_) {
     values[t.first] = t.second;
-    entries.push_back(std::make_pair(parent.triMesh.faces[t.first].center(), t.second));
+
+    size_t iF = t.first;
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+    glm::vec3 faceCenter = glm::vec3{0., 0., 0.};
+    for (size_t j = 0; j < D; j++) {
+      faceCenter += parent.vertices[face[j]];
+    }
+
+    entries.push_back(std::make_pair(faceCenter, t.second));
   }
 }
 

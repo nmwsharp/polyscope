@@ -16,7 +16,7 @@
 namespace polyscope {
 
 enum class ShadeStyle { FLAT = 0, SMOOTH };
-enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE };
+enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE, CORNER };
 
 
 // Forward delcare surface mesh
@@ -44,16 +44,7 @@ struct QuantityTypeHelper<SurfaceMesh> {
 };
 
 
-// Triangulation of a (possibly polygonal) face
-// Elements that don't come from the original mesh (eg, interior edges) denoted with INVALID_IND.
-struct TriangulationFace {
-  size_t faceInd;
-  std::array<size_t, 3> vertexInds;
-  std::array<size_t, 3> edgeInds;
-  std::array<size_t, 3> halfedgeInds;
-  std::array<size_t, 3> neighborFaceInds; // on the triangulation
-};
-
+// === The grand surface mesh class
 
 class SurfaceMesh : public QuantityStructure<SurfaceMesh> {
 public:
@@ -113,8 +104,8 @@ public:
   void addIsolatedVertexScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>>& values);
 
   // = Subsets (expect char array)
-  //template <class T>
-  //void addEdgeSubsetQuantity(std::string name, const T& subset);
+  // template <class T>
+  // void addEdgeSubsetQuantity(std::string name, const T& subset);
 
   // = Vectors (expect vector array, inner type must be indexable with correct dimension)
   template <class T>
@@ -181,30 +172,55 @@ public:
   void setMeshUniforms(gl::GLProgram& p);
   void setShadeStyle(ShadeStyle newShadeStyle);
 
-  size_t nHalfedges() const { return mesh.nHalfedges(); }
-  size_t nVertices() const { return mesh.nVertices(); }
-  size_t nEdges() const { return mesh.nEdges(); }
-  size_t nTriangulationEdges() const { return triMesh.nEdges(); }
-  size_t nFaces() const { return mesh.nFaces(); }
-  size_t nCorners() const { return mesh.nHalfedges(); /* TODO double check */ }
-  size_t nTriangulationFaces() const { return triMesh.nFaces(); }
-  size_t nBoundaryLoops() const { return triMesh.nBoundaryLoops(); }
-  size_t nImaginaryHalfedges() const { return mesh.nImaginaryHalfedges(); }
-  size_t nTriangulationImaginaryHalfedges() const { return triMesh.nImaginaryHalfedges(); }
+
+  // === Manage the mesh itself
+
+  // Core data
+  std::vector<glm::vec3> vertices;
+  std::vector<std::vector<size_t>> faces;
+
+  // Derived indices
+  std::vector<std::vector<size_t>> edgeIndices;
+  std::vector<std::vector<size_t>> halfedgeIndices;
+
+  // Counts
+  size_t nVertices() const { return vertices.size(); }
+  size_t nFaces() const { return faces.size(); }
+
+  size_t nFacesTriangulationCount = 0;
+  size_t nFacesTriangulation() const { return faces.size(); }
+
+  size_t nEdgesCount = 0;
+  size_t nEdges() const { return nEdgesCount; }
+
+  size_t nCornersCount = 0; // = nHalfedges = sum face degree
+  size_t nCorners() const { return nCornersCount; }
+  size_t nHalfedges() const { return nCornersCount; }
+
+  // Derived geometric quantities
+  std::vector<glm::vec3> faceNormals;
+  std::vector<glm::vec3> vertexNormals;
+  std::vector<double> faceAreas;
+  std::vector<double> vertexAreas;
+  std::vector<double> edgeLengths;
+
+  std::vector<std::array<glm::vec3, 2>> faceTangentSpaces;
+  std::vector<std::array<glm::vec3, 2>> vertexTangentSpaces;
+
+
+  // = Mesh helpers
+  void computeCounts();       // call to populate counts and indices
+  void computeGeometryData(); // call to populate normals/areas/lengths
+
+  // if there are no tangent spaces, builds the default ones
+  void ensureHaveFaceTangentSpaces();
+  void ensureHaveVertexTangentSpaces();
+
+  // TODO templated functions to set tangent spaces
 
   // === Member variables ===
-
-  // The mesh (possibly polgonal), as passed in by the user.
-  HalfedgeMesh mesh;
-
-  // A halfedge mesh, which is a triangulation of the input mesh.
-  // Relationships to the original mesh are tracked internally.
-  // Yes, keeping an entirely duplicated copy of the mesh is wasteful, but doing so simplifies logic all over the place.
-  HalfedgeMesh triMesh;
-
   static const std::string structureTypeName;
   SubColorManager colorManager;
-
 
   // Picking helpers
   // One of these will be non-null on return
@@ -276,7 +292,7 @@ SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, con
 // Shorthand to add a mesh to polyscope while also setting permutations
 template <class V, class F, class P>
 SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
-                                 const std::array<std::pair<P,size_t>, 5>& perms, bool replaceIfPresent = true) {
+                                 const std::array<std::pair<P, size_t>, 5>& perms, bool replaceIfPresent = true) {
 
   SurfaceMesh* s = registerSurfaceMesh(name, vertexPositions, faceIndices, replaceIfPresent);
 
@@ -297,17 +313,11 @@ inline SurfaceMesh* getSurfaceMesh(std::string name = "") {
 // Implementation of templated constructor
 template <class V, class F>
 SurfaceMesh::SurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices)
-    : QuantityStructure<SurfaceMesh>(name), mesh(standardizeVectorArray<glm::vec3, V, 3>(vertexPositions),
-                                                 standardizeNestedList<size_t, F>(faceIndices), false),
-      triMesh(standardizeVectorArray<glm::vec3, V, 3>(vertexPositions), standardizeNestedList<size_t, F>(faceIndices),
-              true) {
+    : QuantityStructure<SurfaceMesh>(name), vertices(standardizeVectorArray<glm::vec3, V, 3>(vertexPositions)),
+      faces(standardizeNestedList<size_t, F>(faceIndices)) {
 
-  // Default data sizes
-  vertexDataSize = nVertices();
-  faceDataSize = nFaces();
-  edgeDataSize = nEdges();
-  halfedgeDataSize = nHalfedges();
-  cornerDataSize = nCorners();
+  computeCounts();
+  computeGeometryData();
 
   // Colors
   baseColor = getNextStructureColor();
@@ -329,6 +339,8 @@ inline std::string getMeshElementTypeName(MeshElement type) {
     return "edge";
   case MeshElement::HALFEDGE:
     return "halfedge";
+  case MeshElement::CORNER:
+    return "corner";
   }
   throw std::runtime_error("broken");
 }

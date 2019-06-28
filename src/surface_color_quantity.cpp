@@ -50,12 +50,21 @@ void SurfaceColorVertexQuantity::createProgram() {
 
 void SurfaceColorVertexQuantity::fillColorBuffers(gl::GLProgram& p) {
   std::vector<Color3f> colorval;
-  colorval.reserve(3 * parent.triMesh.nFaces());
+  colorval.reserve(3 * parent.nFacesTriangulation());
 
-  for (const HalfedgeMesh::Face& face : parent.triMesh.faces) {
-    for (size_t i = 0; i < 3; i++) {
-      size_t vInd = face.triangleVertices()[i]->index();
-      colorval.push_back(values[vInd]);
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+
+    // implicitly triangulate from root
+    size_t vRoot = face[0];
+    for (size_t j = 1; (j + 1) < D; j++) {
+      size_t vB = face[j];
+      size_t vC = face[(j + 1) % D];
+
+      colorval.push_back(values[vRoot]);
+      colorval.push_back(values[vB]);
+      colorval.push_back(values[vC]);
     }
   }
 
@@ -102,14 +111,17 @@ void SurfaceColorFaceQuantity::createProgram() {
 
 void SurfaceColorFaceQuantity::fillColorBuffers(gl::GLProgram& p) {
   std::vector<Color3f> colorval;
-  colorval.reserve(3 * parent.triMesh.nFaces());
+  colorval.reserve(3 * parent.nFacesTriangulation());
 
-  for (const HalfedgeMesh::Face& face : parent.triMesh.faces) {
-    size_t fInd = face.index();
-    for (size_t i = 0; i < 3; i++) {
-      colorval.push_back(values[fInd]);
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+    size_t triDegree = std::max(0, static_cast<int>(D) - 2);
+    for (size_t j = 0; j < 3 * triDegree; j++) {
+      colorval.push_back(values[iF]);
     }
   }
+
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);

@@ -21,6 +21,198 @@ namespace polyscope {
 // Initialize statics
 const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
+void SurfaceMesh::computeCounts() {
+
+  nFacesTriangulationCount = 0;
+  nCornersCount = 0;
+  nEdgesCount = 0;
+  edgeIndices.resize(nFaces());
+  halfedgeIndices.resize(nFaces());
+  std::unordered_map<std::pair<size_t, size_t>, size_t, polyscope::hash_combine::hash<std::pair<size_t, size_t>>>
+      edgeInds;
+  size_t iF = 0;
+  for (auto& face : faces) {
+    if (face.size() < 3) {
+      warning(name + " has face with degree < 3!");
+    }
+    nFacesTriangulationCount += std::max(static_cast<int>(face.size()) - 2, 0);
+    edgeIndices[iF].resize(face.size());
+    halfedgeIndices[iF].resize(face.size());
+
+    for (size_t i = 0; i < face.size(); i++) {
+      size_t vA = face[i];
+      size_t vB = face[(i + 1) % face.size()];
+
+      std::pair<size_t, size_t> edgeKey(std::min(vA, vB), std::max(vA, vB));
+      auto it = edgeInds.find(edgeKey);
+      size_t edgeInd = 0;
+      if (it == edgeInds.end()) {
+        edgeInds.insert(it, {edgeKey, nEdgesCount});
+        nEdgesCount++;
+      } else {
+        edgeInd = it->second;
+      }
+
+      edgeIndices[iF][i] = edgeInd;
+      halfedgeIndices[iF][i] = nCornersCount++;
+    }
+
+    iF++;
+  }
+
+  // Default data sizes
+  vertexDataSize = nVertices();
+  faceDataSize = nFaces();
+  edgeDataSize = nEdges();
+  halfedgeDataSize = nHalfedges();
+  cornerDataSize = nCorners();
+}
+
+void SurfaceMesh::computeGeometryData() {
+  const glm::vec3 zero{0., 0., 0.};
+
+  // Reset face-valued
+  faceNormals.resize(nFaces());
+  faceAreas.resize(nFaces());
+
+  // Reset vertex-valued
+  vertexNormals.resize(nVertices());
+  std::fill(vertexNormals.begin(), vertexNormals.end(), zero);
+  vertexAreas.resize(nVertices());
+  std::fill(vertexAreas.begin(), vertexAreas.end(), 0);
+
+  // Reset edge-valued
+  edgeLengths.resize(nEdges());
+
+  // Loop over faces to compute face-valued quantities
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    auto& face = faces[iF];
+    size_t D = face.size();
+
+    glm::vec3 fN = zero;
+    double fA = 0;
+    // if (face.size() == 3) {
+    if (true) {
+      glm::vec3 pA = vertices[face[0]];
+      glm::vec3 pB = vertices[face[1]];
+      glm::vec3 pC = vertices[face[2]];
+
+      fN = glm::cross(pB - pA, pC - pA);
+      fA = 0.5 * glm::length(fN);
+    } else if (face.size() > 3) {
+
+      glm::vec3 pRoot = vertices[face[0]];
+      for (size_t j = 0; j < D; j++) {
+        glm::vec3 pA = vertices[face[j]];
+        glm::vec3 pB = vertices[face[(j + 1) % D]];
+        glm::vec3 pC = vertices[face[(j + 2) % D]];
+
+        fN += glm::cross(pC - pB, pA - pB);
+
+        // _some_ definition of area for a non-triangular face
+        if (j != 0 && j != (D - 1)) {
+          fA += 0.5 * glm::length(glm::cross(pA - pRoot, pB - pRoot));
+        }
+      }
+    }
+
+    // Set face values
+    fN = glm::normalize(fN);
+    faceNormals[iF] = fN;
+    faceAreas[iF] = fA;
+
+    // Update incident vertices
+    for (size_t j = 0; j < D; j++) {
+      glm::vec3 pA = vertices[face[j]];
+      glm::vec3 pB = vertices[face[(j + 1) % D]];
+      glm::vec3 pC = vertices[face[(j + 2) % D]];
+
+      vertexAreas[face[j]] += fA / D;
+
+      // Corner angle for weighting normals
+      double dot = glm::dot(glm::normalize(pB - pA), glm::normalize(pC - pA));
+      float angle = std::acos(glm::clamp(-1., 1., dot));
+      glm::vec3 normalContrib = angle * fN;
+
+      if (std::isfinite(normalContrib.x) && std::isfinite(normalContrib.y) && std::isfinite(normalContrib.z)) {
+        vertexNormals[face[(j + 1) % D]] += normalContrib;
+      }
+
+      // Compute edge lengths while we're at it
+      edgeLengths[edgeIndices[iF][j]] = glm::length(pA - pB);
+    }
+  }
+
+
+  // Normalize vertex normals
+  for (auto& vec : vertexNormals) {
+    double L = glm::length(vec);
+    if (L > 0) {
+      vec /= L;
+    }
+  }
+}
+
+
+void SurfaceMesh::ensureHaveFaceTangentSpaces() {
+  if (faceTangentSpaces.size() > 0) return;
+
+  faceTangentSpaces.resize(nFaces());
+
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    auto& face = faces[iF];
+    size_t D = face.size();
+    if (D < 2) continue;
+
+    glm::vec3 pA = vertices[face[0]];
+    glm::vec3 pB = vertices[face[1]];
+    glm::vec3 N = faceNormals[iF];
+
+    glm::vec3 basisX = pB - pA;
+    basisX = basisX - N * glm::dot(N, basisX);
+
+    glm::vec3 basisY = -glm::cross(basisX, N);
+
+    faceTangentSpaces[iF][0] = basisX;
+    faceTangentSpaces[iF][1] = basisY;
+  }
+}
+
+void SurfaceMesh::ensureHaveVertexTangentSpaces() {
+  if (vertexTangentSpaces.size() > 0) return;
+
+  vertexTangentSpaces.resize(nVertices());
+  std::vector<char> hasTangent(nVertices(), false);
+
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    auto& face = faces[iF];
+    size_t D = face.size();
+    if (D < 2) continue;
+
+    for (size_t j = 0; j < D; j++) {
+
+      size_t vA = face[j];
+      size_t vB = face[(j + 1) % D];
+
+      if (hasTangent[vA]) continue;
+
+      glm::vec3 pA = vertices[vA];
+      glm::vec3 pB = vertices[vB];
+      glm::vec3 N = vertexNormals[vA];
+
+      glm::vec3 basisX = pB - pA;
+      basisX = basisX - N * glm::dot(N, basisX);
+
+      glm::vec3 basisY = -glm::cross(basisX, N);
+
+      vertexTangentSpaces[vA][0] = basisX;
+      vertexTangentSpaces[vA][1] = basisY;
+
+      hasTangent[vA] = true;
+    }
+  }
+}
+
 void SurfaceMesh::draw() {
   if (!enabled) {
     return;
@@ -51,7 +243,7 @@ void SurfaceMesh::drawPick() {
     return;
   }
 
-  if(pickProgram == nullptr) {
+  if (pickProgram == nullptr) {
     preparePick();
   }
 
@@ -76,19 +268,18 @@ void SurfaceMesh::preparePick() {
   pickProgram.reset(new gl::GLProgram(&PICK_SURFACE_VERT_SHADER, &PICK_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
 
   // Get element indices
-  size_t totalPickElements =
-      triMesh.nVertices() + triMesh.nOrigFaces() + triMesh.nOrigEdges() + triMesh.nOrigHalfedges();
+  size_t totalPickElements = nVertices() + nFaces() + nEdges() + nHalfedges();
 
   // In "local" indices, indexing elements only within this triMesh, used for reading later
-  facePickIndStart = triMesh.nVertices();
-  edgePickIndStart = facePickIndStart + triMesh.nOrigFaces();
-  halfedgePickIndStart = edgePickIndStart + triMesh.nOrigEdges();
+  facePickIndStart = nVertices();
+  edgePickIndStart = facePickIndStart + nFaces();
+  halfedgePickIndStart = edgePickIndStart + nEdges();
 
   // In "global" indices, indexing all elements in the scene, used to fill buffers for drawing here
   size_t pickStart = pick::requestPickBufferRange(this, totalPickElements);
-  size_t faceGlobalPickIndStart = pickStart + triMesh.nVertices();
-  size_t edgeGlobalPickIndStart = faceGlobalPickIndStart + triMesh.nOrigFaces();
-  size_t halfedgeGlobalPickIndStart = edgeGlobalPickIndStart + triMesh.nOrigEdges();
+  size_t faceGlobalPickIndStart = pickStart + nVertices();
+  size_t edgeGlobalPickIndStart = faceGlobalPickIndStart + nFaces();
+  size_t halfedgeGlobalPickIndStart = edgeGlobalPickIndStart + nEdges();
 
   // == Fill buffers
   std::vector<glm::vec3> positions;
@@ -97,63 +288,72 @@ void SurfaceMesh::preparePick() {
   std::vector<glm::vec3> faceColor;
 
   // Reserve space
-  positions.reserve(3 * triMesh.nFaces());
-  bcoord.reserve(3 * triMesh.nFaces());
-  vertexColors.reserve(3 * triMesh.nFaces());
-  edgeColors.reserve(3 * triMesh.nFaces());
-  halfedgeColors.reserve(3 * triMesh.nFaces());
-  faceColor.reserve(3 * triMesh.nFaces());
+  positions.reserve(3 * nFacesTriangulation());
+  bcoord.reserve(3 * nFacesTriangulation());
+  vertexColors.reserve(3 * nFacesTriangulation());
+  edgeColors.reserve(3 * nFacesTriangulation());
+  halfedgeColors.reserve(3 * nFacesTriangulation());
+  faceColor.reserve(3 * nFacesTriangulation());
 
-  // Loop through triangulation to fill buffers
-  for (HalfedgeMesh::Face& face : triMesh.faces) {
+  // Build all quantities in each face
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    auto& face = faces[iF];
+    size_t D = face.size();
 
-    glm::vec3 fColor = pick::indToVec(face.index() + faceGlobalPickIndStart);
+    // implicitly triangulate from root
+    size_t vRoot = face[0];
+    glm::vec3 pRoot = vertices[vRoot];
+    for (size_t j = 1; (j + 1) < D; j++) {
+      size_t vB = face[j];
+      glm::vec3 pB = vertices[vB];
+      size_t vC = face[(j + 1) % D];
+      glm::vec3 pC = vertices[vC];
 
-    // Build all quantities
-    std::array<glm::vec3, 3> vColor, eColor, heColor;
-    HalfedgeMesh::Halfedge* currHe = &face.halfedge();
-    for (size_t i = 0; i < 3; i++) {
-      size_t heInd = currHe->index();
-      size_t vInd = currHe->vertex().index();
-      size_t eInd = currHe->edge().index();
+      glm::vec3 fColor = pick::indToVec(iF + faceGlobalPickIndStart);
+      std::array<size_t, 3> vertexInds = {vRoot, vB, vC};
 
-      // Want just one copy of positions and face color, so we can build it in the usual way
-      positions.push_back(currHe->vertex().position());
-      faceColor.push_back(fColor);
+      positions.push_back(pRoot);
+      positions.push_back(pB);
+      positions.push_back(pC);
 
-      // Vertex index color
-      vColor[i] = pick::indToVec(vInd + pickStart);
+      // Build all quantities
+      std::array<glm::vec3, 3> vColor;
 
-      // Edge index color
-      if (currHe->edge().hasValidIndex()) {
-        eColor[i] = pick::indToVec(eInd + edgeGlobalPickIndStart);
-      } else {
-        // If this is a fake edge induced by triangulation, use the face's color instead
-        eColor[i] = fColor;
+      for (size_t i = 0; i < 3; i++) {
+        // Want just one copy of face color, so we can build it in the usual way
+        faceColor.push_back(fColor);
+
+        // Vertex index color
+        vColor[i] = pick::indToVec(vertexInds[i] + pickStart);
       }
 
-      // Halfedge index color
-      if (currHe->hasValidIndex()) {
-        heColor[i] = pick::indToVec(heInd + halfedgeGlobalPickIndStart);
-      } else {
-        // If this is a fake edge induced by triangulation, use the face's color instead
-        heColor[i] = fColor;
+      std::array<glm::vec3, 3> eColor = {fColor, pick::indToVec(edgeIndices[iF][j] + edgeGlobalPickIndStart), fColor};
+      std::array<glm::vec3, 3> heColor = {fColor, pick::indToVec(halfedgeIndices[iF][j] + halfedgeGlobalPickIndStart),
+                                          fColor};
+
+      // First edge is a real edge
+      if (j == 1) {
+        eColor[0] = pick::indToVec(edgeIndices[iF][0] + edgeGlobalPickIndStart);
+        heColor[0] = pick::indToVec(halfedgeIndices[iF][0] + halfedgeGlobalPickIndStart);
+      }
+      // Last is a real edge
+      if (j + 2 == D) {
+        eColor[2] = pick::indToVec(edgeIndices[iF].back() + edgeGlobalPickIndStart);
+        heColor[2] = pick::indToVec(halfedgeIndices[iF].back() + halfedgeGlobalPickIndStart);
       }
 
-      currHe = &currHe->next();
-    }
+      // Push three copies of the values needed at each vertex
+      for (int j = 0; j < 3; j++) {
+        vertexColors.push_back(vColor);
+        edgeColors.push_back(eColor);
+        halfedgeColors.push_back(heColor);
+      }
 
-    // Push three copies of the values needed at each vertex
-    for (int j = 0; j < 3; j++) {
-      vertexColors.push_back(vColor);
-      edgeColors.push_back(eColor);
-      halfedgeColors.push_back(heColor);
+      // Barycoords
+      bcoord.push_back(glm::vec3{1.0, 0.0, 0.0});
+      bcoord.push_back(glm::vec3{0.0, 1.0, 0.0});
+      bcoord.push_back(glm::vec3{0.0, 0.0, 1.0});
     }
-
-    // Just one copy of barycoords needed
-    bcoord.push_back(glm::vec3{1.0, 0.0, 0.0});
-    bcoord.push_back(glm::vec3{0.0, 1.0, 0.0});
-    bcoord.push_back(glm::vec3{0.0, 0.0, 1.0});
   }
 
   // Store data in buffers
@@ -179,25 +379,34 @@ void SurfaceMesh::fillGeometryBuffersSmooth(gl::GLProgram& p) {
   std::vector<glm::vec3> bcoord;
 
   // Reserve space
-  positions.reserve(3 * triMesh.nFaces());
-  normals.reserve(3 * triMesh.nFaces());
-  bcoord.reserve(3 * triMesh.nFaces());
+  positions.reserve(3 * nFacesTriangulation());
+  normals.reserve(3 * nFacesTriangulation());
+  bcoord.reserve(3 * nFacesTriangulation());
 
-  for (HalfedgeMesh::Face& face : triMesh.faces) {
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    auto& face = faces[iF];
+    size_t D = face.size();
 
-    HalfedgeMesh::Halfedge* currHe = &face.halfedge();
-    for (size_t i = 0; i < 3; i++) {
+    // implicitly triangulate from root
+    size_t vRoot = face[0];
+    glm::vec3 pRoot = vertices[vRoot];
+    for (size_t j = 1; (j + 1) < D; j++) {
+      size_t vB = face[j];
+      glm::vec3 pB = vertices[vB];
+      size_t vC = face[(j + 1) % D];
+      glm::vec3 pC = vertices[vC];
 
-      glm::vec3 vertexPos = currHe->vertex().position();
-      glm::vec3 vertexNormal = currHe->vertex().normal();
-      glm::vec3 coord{0., 0., 0.};
-      coord[i] = 1.0;
+      positions.push_back(pRoot);
+      positions.push_back(pB);
+      positions.push_back(pC);
 
-      positions.push_back(vertexPos);
-      normals.push_back(vertexNormal);
-      bcoord.push_back(coord);
+      normals.push_back(vertexNormals[vRoot]);
+      normals.push_back(vertexNormals[vB]);
+      normals.push_back(vertexNormals[vC]);
 
-      currHe = &currHe->next();
+      bcoord.push_back(glm::vec3{1., 0., 0.});
+      bcoord.push_back(glm::vec3{0., 1., 0.});
+      bcoord.push_back(glm::vec3{0., 0., 1.});
     }
   }
 
@@ -212,28 +421,38 @@ void SurfaceMesh::fillGeometryBuffersFlat(gl::GLProgram& p) {
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
 
-  // Reserve space
-  positions.reserve(3 * triMesh.nFaces());
-  normals.reserve(3 * triMesh.nFaces());
-  bcoord.reserve(3 * triMesh.nFaces());
+  positions.reserve(3 * nFacesTriangulation());
+  normals.reserve(3 * nFacesTriangulation());
+  bcoord.reserve(3 * nFacesTriangulation());
 
-  for (HalfedgeMesh::Face& face : triMesh.faces) {
-    glm::vec3 faceNormal = face.normal();
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    auto& face = faces[iF];
+    size_t D = face.size();
+    glm::vec3 faceN = faceNormals[iF];
 
-    HalfedgeMesh::Halfedge* currHe = &face.halfedge();
-    for (size_t i = 0; i < 3; i++) {
+    // implicitly triangulate from root
+    size_t vRoot = face[0];
+    glm::vec3 pRoot = vertices[vRoot];
+    for (size_t j = 1; (j + 1) < D; j++) {
+      size_t vB = face[j];
+      glm::vec3 pB = vertices[vB];
+      size_t vC = face[(j + 1) % D];
+      glm::vec3 pC = vertices[vC];
 
-      glm::vec3 vertexPos = currHe->vertex().position();
-      glm::vec3 coord{0., 0., 0.};
-      coord[i] = 1.0;
+      positions.push_back(pRoot);
+      positions.push_back(pB);
+      positions.push_back(pC);
 
-      positions.push_back(vertexPos);
-      normals.push_back(faceNormal);
-      bcoord.push_back(coord);
+      normals.push_back(faceN);
+      normals.push_back(faceN);
+      normals.push_back(faceN);
 
-      currHe = &currHe->next();
+      bcoord.push_back(glm::vec3{1., 0., 0.});
+      bcoord.push_back(glm::vec3{0., 1., 0.});
+      bcoord.push_back(glm::vec3{0., 0., 1.});
     }
   }
+
 
   // Store data in buffers
   p.setAttribute("a_position", positions);
@@ -387,10 +606,15 @@ void SurfaceMesh::getPickedFacePoint(FacePtr& fOut, glm::vec3& baryCoordOut) {
 
 
 void SurfaceMesh::buildVertexInfoGui(size_t vInd) {
-  ImGui::TextUnformatted(("Vertex #" + std::to_string(vInd)).c_str());
+
+  size_t displayInd = vInd;
+  if (vertexPerm.size() > 0) {
+    displayInd = vertexPerm[vInd];
+  }
+  ImGui::TextUnformatted(("Vertex #" + std::to_string(displayInd)).c_str());
 
   std::stringstream buffer;
-  buffer << triMesh.vertices[vInd].position();
+  buffer << vertices[vInd];
   ImGui::TextUnformatted(("Position: " + buffer.str()).c_str());
 
   ImGui::Spacing();
@@ -409,7 +633,11 @@ void SurfaceMesh::buildVertexInfoGui(size_t vInd) {
 }
 
 void SurfaceMesh::buildFaceInfoGui(size_t fInd) {
-  ImGui::TextUnformatted(("Face #" + std::to_string(fInd)).c_str());
+  size_t displayInd = fInd;
+  if (facePerm.size() > 0) {
+    displayInd = facePerm[fInd];
+  }
+  ImGui::TextUnformatted(("Face #" + std::to_string(displayInd)).c_str());
 
   ImGui::Spacing();
   ImGui::Spacing();
@@ -427,7 +655,11 @@ void SurfaceMesh::buildFaceInfoGui(size_t fInd) {
 }
 
 void SurfaceMesh::buildEdgeInfoGui(size_t eInd) {
-  ImGui::TextUnformatted(("Edge #" + std::to_string(eInd)).c_str());
+  size_t displayInd = eInd;
+  if (edgePerm.size() > 0) {
+    displayInd = edgePerm[eInd];
+  }
+  ImGui::TextUnformatted(("Edge #" + std::to_string(displayInd)).c_str());
 
   ImGui::Spacing();
   ImGui::Spacing();
@@ -445,7 +677,11 @@ void SurfaceMesh::buildEdgeInfoGui(size_t eInd) {
 }
 
 void SurfaceMesh::buildHalfedgeInfoGui(size_t heInd) {
-  ImGui::TextUnformatted(("Halfedge #" + std::to_string(heInd)).c_str());
+  size_t displayInd = heInd;
+  if (halfedgePerm.size() > 0) {
+    displayInd = halfedgePerm[heInd];
+  }
+  ImGui::TextUnformatted(("Halfedge #" + std::to_string(displayInd)).c_str());
 
   ImGui::Spacing();
   ImGui::Spacing();
@@ -522,7 +758,9 @@ void SurfaceMesh::geometryChanged() {
   program.reset();
   pickProgram.reset();
 
-  for(auto& q : quantities) {
+  computeGeometryData();
+
+  for (auto& q : quantities) {
     q.second->geometryChanged();
   }
 }
@@ -534,8 +772,7 @@ double SurfaceMesh::lengthScale() {
   glm::vec3 center = 0.5f * (std::get<0>(bound) + std::get<1>(bound));
 
   double lengthScale = 0.0;
-  for (HalfedgeMesh::Vertex& vert : triMesh.vertices) {
-    glm::vec3 p = vert.position();
+  for (glm::vec3 p : vertices) {
     glm::vec3 transPos = glm::vec3(objectTransform * glm::vec4(p.x, p.y, p.z, 1.0));
     lengthScale = std::max(lengthScale, (double)glm::length2(transPos - center));
   }
@@ -547,8 +784,8 @@ std::tuple<glm::vec3, glm::vec3> SurfaceMesh::boundingBox() {
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
 
-  for (HalfedgeMesh::Vertex& vert : triMesh.vertices) {
-    glm::vec3 p = glm::vec3(objectTransform * glm::vec4(vert.position(), 1.0));
+  for (glm::vec3 pOrig : vertices) {
+    glm::vec3 p = glm::vec3(objectTransform * glm::vec4(pOrig, 1.0));
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
@@ -728,7 +965,7 @@ FacePtr SurfaceMesh::selectFace() {
 */
 
 void SurfaceMesh::updateVertexPositions(const std::vector<glm::vec3>& newPositions) {
-  triMesh.updateVertexPositions(newPositions);
+  vertices = newPositions;
 
   // Rebuild any necessary quantities
   geometryChanged();

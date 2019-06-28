@@ -39,6 +39,8 @@ void processFileOBJ(string filename) {
     vertexPositionsGLM.push_back({p[0], p[1], p[2]});
   }
 
+  cout << "done reading obj" << endl;
+
   polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
 
   // TODO texcoords?

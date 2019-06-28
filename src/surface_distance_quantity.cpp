@@ -26,16 +26,10 @@ SurfaceDistanceQuantity::SurfaceDistanceQuantity(std::string name, std::vector<d
   }
 
   // Build the histogram
-  std::vector<double> valsVec;
-  std::vector<double> weightsVec;
-  for (size_t vInd = 0; vInd < parent.triMesh.nVertices(); vInd++) {
-    valsVec.push_back(distances[vInd]);
-    weightsVec.push_back(parent.triMesh.vertices[vInd].area());
-  }
   hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
-  hist.buildHistogram(valsVec, weightsVec);
+  hist.buildHistogram(distances, parent.vertexAreas);
 
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
+  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(distances, 1e-5);
   resetVizRange();
 }
 
@@ -141,11 +135,21 @@ void SurfaceDistanceQuantity::buildCustomUI() {
 
 void SurfaceDistanceQuantity::fillColorBuffers(gl::GLProgram& p) {
   std::vector<double> colorval;
-  colorval.reserve(3 * parent.triMesh.nFaces());
-  for (HalfedgeMesh::Face& face : parent.triMesh.faces) {
-    for (size_t i = 0; i < 3; i++) {
-      size_t vInd = face.triangleVertices()[i]->index();
-      colorval.push_back(distances[vInd]);
+  colorval.reserve(3 * parent.nFacesTriangulation());
+
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+
+    // implicitly triangulate from root
+    size_t vRoot = face[0];
+    for (size_t j = 1; (j + 1) < D; j++) {
+      size_t vB = face[j];
+      size_t vC = face[(j + 1) % D];
+
+      colorval.push_back(distances[vRoot]);
+      colorval.push_back(distances[vB]);
+      colorval.push_back(distances[vC]);
     }
   }
 

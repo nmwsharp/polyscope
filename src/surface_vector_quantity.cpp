@@ -145,11 +145,8 @@ SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, std::
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), vectorField(vectors_) {
 
   size_t i = 0;
-  for (HalfedgeMesh::Vertex& v : parent.mesh.vertices) {
-    vectorRoots.push_back(v.position());
-    vectors.push_back(vectorField[i]);
-    i++;
-  }
+  vectorRoots = parent.vertices;
+  vectors = vectorField;
 
   prepareVectorMapper();
 }
@@ -179,11 +176,16 @@ SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, std::vect
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), vectorField(vectors_) {
 
   // Copy the vectors
-  size_t i = 0;
-  for (HalfedgeMesh::Face& f : parent.mesh.faces) {
-    vectorRoots.push_back(f.center());
-    vectors.push_back(vectorField[i]);
-    i++;
+  vectors = vectorField;
+  vectorRoots.resize(parent.nFaces());
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+    glm::vec3 faceCenter = glm::vec3{0., 0., 0.};
+    for (size_t j = 0; j < D; j++) {
+      faceCenter += parent.vertices[face[j]];
+    }
+    vectorRoots[iF] = faceCenter;
   }
 
   prepareVectorMapper();
@@ -216,29 +218,38 @@ SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::stri
                                                                        VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), nSym(nSym_), vectorField(vectors_) {
 
-  // TODO
-  throw std::runtime_error("needs to be reimplemented");
-  // GeometryCache<Euclidean>& gc = parent.geometry->cache;
-  // gc.requireFaceBases();
+  parent.ensureHaveFaceTangentSpaces();
 
-  // double rotAngle = 2.0 * PI / nSym;
-  // Complex rot = std::exp(IM_I * rotAngle);
+  double rotAngle = 2.0 * PI / nSym;
+  Complex rot = std::exp(Complex(0, 1) * rotAngle);
 
-  //// Copy the vectors
-  // vectorField = parent.transfer.transfer(vectors_);
-  // for (FacePtr f : parent.mesh->faces()) {
+  // Copy the vectors
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
 
-  // Complex angle = std::pow(vectorField[f], 1.0 / nSym);
+    glm::vec3 normal = parent.faceNormals[iF];
+    glm::vec3 basisX = parent.faceTangentSpaces[iF][0];
+    glm::vec3 basisY = parent.faceTangentSpaces[iF][1];
 
-  // for (int iRot = 0; iRot < nSym; iRot++) {
-  // vectorRoots.push_back(parent.geometry->barycenter(f));
+    glm::vec2 vec = vectorField[iF];
+    Complex angle = std::pow(Complex(vec.x, vec.y), 1.0 / nSym);
 
-  // Vector3 v = gc.faceBases[f][0] * angle.real() + gc.faceBases[f][1] * angle.imag();
-  // vectors.push_back(v);
+    // Face center
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+    glm::vec3 faceCenter = glm::vec3{0., 0., 0.};
+    for (size_t j = 0; j < D; j++) {
+      faceCenter += parent.vertices[face[j]];
+    }
 
-  // angle *= rot;
-  //}
-  //}
+    for (int iRot = 0; iRot < nSym; iRot++) {
+      vectorRoots.push_back(faceCenter);
+
+      glm::vec3 vec = basisX * (float)angle.real() + basisY * (float)angle.imag();
+      vectors.push_back(vec);
+
+      angle *= rot;
+    }
+  }
 
   prepareVectorMapper();
 }
@@ -301,25 +312,23 @@ SurfaceVertexIntrinsicVectorQuantity::SurfaceVertexIntrinsicVectorQuantity(std::
                                                                            VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), nSym(nSym_), vectorField(vectors_) {
 
+  parent.ensureHaveVertexTangentSpaces();
+
   double rotAngle = 2.0 * PI / nSym;
   Complex rot = std::exp(Complex(0, 1) * rotAngle);
 
   // Copy the vectors
-  for (HalfedgeMesh::Vertex& v : parent.mesh.vertices) {
+  for (size_t iV = 0; iV < parent.nVertices(); iV++) {
 
-    // For now, the tangent plane is orthogonal to the normal, with the x-axis along vertex.halfedge()
-    // TODO generalize this
-    glm::vec3 normal = v.normal();
-    glm::vec3 heVec = glm::normalize(v.halfedge().vector());
-    heVec = heVec - normal * glm::dot(heVec, normal); // project to tangent plane
-    glm::vec3 basisX = heVec;
-    glm::vec3 basisY = -glm::cross(heVec, normal);
+    glm::vec3 normal = parent.vertexNormals[iV];
+    glm::vec3 basisX = parent.vertexTangentSpaces[iV][0];
+    glm::vec3 basisY = parent.vertexTangentSpaces[iV][1];
 
-    glm::vec2 vec = vectorField[v.index()];
+    glm::vec2 vec = vectorField[iV];
     Complex angle = std::pow(Complex(vec.x, vec.y), 1.0 / nSym);
 
     for (int iRot = 0; iRot < nSym; iRot++) {
-      vectorRoots.push_back(v.position());
+      vectorRoots.push_back(parent.vertices[iV]);
 
       glm::vec3 vec = basisX * (float)angle.real() + basisY * (float)angle.imag();
       vectors.push_back(vec);
