@@ -798,10 +798,16 @@ void SurfaceMesh::buildCustomUI() {
   long long int nFacesL = static_cast<long long int>(nFaces());
   ImGui::Text("#verts: %lld  #faces: %lld", nVertsL, nFacesL);
 
-  ImGui::ColorEdit3("Color", (float*)&surfaceColor, ImGuiColorEditFlags_NoInputs);
-  ImGui::SameLine();
+  { // colors
+    ImGui::ColorEdit3("Color", (float*)&surfaceColor, ImGuiColorEditFlags_NoInputs);
+    ImGui::SameLine();
+    ImGui::PushItemWidth(100);
+    ImGui::ColorEdit3("Edge Color", (float*)&edgeColor, ImGuiColorEditFlags_NoInputs);
+    ImGui::PopItemWidth();
+  }
 
   { // Flat shading or smooth shading?
+    ImGui::SameLine();
     bool ui_smoothshade = shadeStyle == ShadeStyle::SMOOTH;
     if (ImGui::Checkbox("Smooth", &ui_smoothshade)) {
       if (ui_smoothshade) {
@@ -814,8 +820,6 @@ void SurfaceMesh::buildCustomUI() {
 
   { // Edge width
     ImGui::PushItemWidth(100);
-    ImGui::ColorEdit3("Edge Color", (float*)&edgeColor, ImGuiColorEditFlags_NoInputs);
-    ImGui::SameLine();
     ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0, 1., "%.5f", 2.);
     ImGui::PopItemWidth();
   }
