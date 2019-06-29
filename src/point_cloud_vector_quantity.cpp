@@ -42,7 +42,7 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
     lengthMult = 1.0;
   }
   radiusMult = .0005;
-  vectorColor = parent.colorManager.getNextSubColor(name);
+  vectorColor = getNextUniqueColor();
 }
 
 void PointCloudVectorQuantity::draw() {

@@ -220,7 +220,6 @@ public:
 
   // === Member variables ===
   static const std::string structureTypeName;
-  SubColorManager colorManager;
 
   // Picking helpers
   // One of these will be non-null on return
@@ -233,9 +232,9 @@ public:
 
 private:
   // Visualization settings
-  Color3f baseColor;
-  Color3f surfaceColor;
-  Color3f edgeColor{0., 0., 0.};
+  glm::vec3 baseColor;
+  glm::vec3 surfaceColor;
+  glm::vec3 edgeColor{0., 0., 0.};
   ShadeStyle shadeStyle = ShadeStyle::FLAT;
   bool showEdges = false;
   float edgeWidth = 0.0;
@@ -323,9 +322,8 @@ SurfaceMesh::SurfaceMesh(std::string name, const V& vertexPositions, const F& fa
   computeGeometryData();
 
   // Colors
-  baseColor = getNextStructureColor();
+  baseColor = getNextUniqueColor();
   surfaceColor = baseColor;
-  colorManager = SubColorManager(baseColor);
 
   prepare();
   preparePick();

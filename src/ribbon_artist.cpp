@@ -40,7 +40,7 @@ void RibbonArtist::createProgram() {
   // TODO Expensive yet trivially parallelizable
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> normals;
-  std::vector<Color3f> colors;
+  std::vector<glm::vec3> colors;
   std::vector<unsigned int> indices;
   unsigned int nPts = 0;
   for (size_t iLine = 0; iLine < ribbons.size(); iLine++) {
@@ -59,7 +59,7 @@ void RibbonArtist::createProgram() {
     }
 
     // Sample a color for this line
-    Color3f lineColor = gl::allColormaps[iColorMap]->getValue(randomUnit());
+    glm::vec3 lineColor = gl::allColormaps[iColorMap]->getValue(randomUnit());
 
     // Add a false point at the beginning (so it's not a special case for the geometry shader)
     float EPS = 0.01;

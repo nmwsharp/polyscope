@@ -13,30 +13,11 @@
 
 namespace polyscope {
 
-// Utility def for float colors
-typedef glm::vec3 Color3f;
+// Color conversions
+glm::vec3 RGBtoHSV(glm::vec3 rgb);
+glm::vec3 HSVtoRGB(glm::vec3 hsv);
 
-// Stateful helper to color top-level structures
-Color3f getNextStructureColor();
-const Color3f structureBaseColorRGB{60. / 255., 120. / 255., 227. / 255.};
-
-
-// Factory which emits cached collections of colors. Useful for coloring quantities on a structure
-// (all colors managed in RGB)
-class SubColorManager {
-public:
-  SubColorManager();
-  SubColorManager(Color3f baseColorRGB);
-
-  Color3f baseColor;
-
-  // Return a new sub color relative to the base. A new color is generate for each new key, but if the same key is
-  // used again afterward the same color is returned.
-  Color3f getNextSubColor(std::string key);
-
-private:
-  std::map<std::string, int> assignedColors;
-};
-
+// Stateful helper to color things uniquely
+glm::vec3 getNextUniqueColor();
 
 } // namespace polyscope

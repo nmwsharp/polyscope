@@ -46,7 +46,7 @@ public:
   GLTexturebuffer(GLint format, unsigned int size1D, float* data);
 
   // create a 2D texture from data
-  GLTexturebuffer(GLint format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data=nullptr);
+  GLTexturebuffer(GLint format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data = nullptr);
 
   ~GLTexturebuffer();
 
@@ -110,7 +110,7 @@ public:
 
   // Specify the viewport coordinates and clearcolor
   void setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
-  Color3f clearColor{0.0, 0.0, 0.0};
+  glm::vec3 clearColor{0.0, 0.0, 0.0};
   float clearAlpha = 1.0;
 
   // Resizes textures and renderbuffers if different from current size.
@@ -199,7 +199,7 @@ public:
   // Textures
   void setTexture1D(std::string name, unsigned char* texData, unsigned int length);
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
-                    bool withAlpha = true, bool useMipMap = false, bool repeat=false);
+                    bool withAlpha = true, bool useMipMap = false, bool repeat = false);
   void setTextureFromColormap(std::string name, Colormap colormap, bool allowUpdate = false);
   void setTextureFromBuffer(std::string name, GLTexturebuffer* textureBuffer);
 

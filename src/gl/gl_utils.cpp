@@ -865,9 +865,9 @@ void GLProgram::setAttribute(std::string name, const std::vector<glm::vec2>& dat
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLAttribute named " + name + " with wrong type. Actual type: " +
-                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
-                                    std::to_string(static_cast<int>(GLData::Vector2Float)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name +
+                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
+                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::Vector2Float)));
       }
       return;
     }
@@ -906,9 +906,9 @@ void GLProgram::setAttribute(std::string name, const std::vector<glm::vec3>& dat
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLAttribute named " + name + " with wrong type. Actual type: " +
-                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
-                                    std::to_string(static_cast<int>(GLData::Vector3Float)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name +
+                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
+                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::Vector3Float)));
       }
       return;
     }
@@ -948,9 +948,9 @@ void GLProgram::setAttribute(std::string name, const std::vector<glm::vec4>& dat
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLAttribute named " + name + " with wrong type. Actual type: " +
-                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
-                                    std::to_string(static_cast<int>(GLData::Vector4Float)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name +
+                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
+                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::Vector4Float)));
       }
       return;
     }
@@ -985,9 +985,9 @@ void GLProgram::setAttribute(std::string name, const std::vector<double>& data, 
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLAttribute named " + name + " with wrong type. Actual type: " +
-                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
-                                    std::to_string(static_cast<float>(GLData::Float)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name +
+                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
+                                    "  Attempted type: " + std::to_string(static_cast<float>(GLData::Float)));
       }
       return;
     }
@@ -1025,9 +1025,9 @@ void GLProgram::setAttribute(std::string name, const std::vector<int>& data, boo
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLAttribute named " + name + " with wrong type. Actual type: " +
-                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
-                                    std::to_string(static_cast<int>(GLData::Int)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name +
+                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
+                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::Int)));
       }
       return;
     }
@@ -1065,9 +1065,9 @@ void GLProgram::setAttribute(std::string name, const std::vector<uint32_t>& data
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLAttribute named " + name + " with wrong type. Actual type: " +
-                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
-                                    std::to_string(static_cast<int>(GLData::UInt)));
+        throw std::invalid_argument("Tried to set GLAttribute named " + name +
+                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
+                                    "  Attempted type: " + std::to_string(static_cast<int>(GLData::UInt)));
       }
       return;
     }

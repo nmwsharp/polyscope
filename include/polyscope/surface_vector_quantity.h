@@ -28,7 +28,7 @@ public:
   std::vector<glm::vec3> vectors;
   float lengthMult; // longest vector will be this fraction of lengthScale (if not ambient)
   float radiusMult; // radius is this fraction of lengthScale
-  Color3f vectorColor;
+  glm::vec3 vectorColor;
   MeshElement definedOn;
 
   // A ribbon viz that is appropriate for some fields

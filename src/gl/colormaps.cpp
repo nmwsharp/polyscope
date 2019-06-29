@@ -5,7 +5,7 @@
 namespace polyscope {
 namespace gl {
 
-Color3f Colormap::getValue(double val) const {
+glm::vec3 Colormap::getValue(double val) const {
 
   // Return black if the input is NaN or inf
   // alternately, could throw and error here

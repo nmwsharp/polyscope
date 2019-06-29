@@ -600,11 +600,11 @@ void buildPolyscopeGui() {
       ImGui::SetItemDefaultFocus();
       viewStyleName = "Free";
     }
-    if (ImGui::Selectable("Arcblob", view::style == view::NavigateStyle::Arcball)) {
-      view::style = view::NavigateStyle::Arcball;
-      ImGui::SetItemDefaultFocus();
-      viewStyleName = "Arcblob";
-    }
+    //if (ImGui::Selectable("Arcblob", view::style == view::NavigateStyle::Arcball)) {
+      //view::style = view::NavigateStyle::Arcball;
+      //ImGui::SetItemDefaultFocus();
+      //viewStyleName = "Arcblob";
+    //}
     ImGui::EndCombo();
   }
   ImGui::PopItemWidth();
@@ -708,7 +708,7 @@ void draw(bool withUI) {
 
   // Build the GUI components
   if (withUI) {
-    // ImGui::ShowDemoWindow();
+     //ImGui::ShowDemoWindow();
 
     // The common case, rendering UI and structures
     if (contextStack.size() == 1) {
@@ -721,7 +721,6 @@ void draw(bool withUI) {
       buildPolyscopeGui();
       buildStructureGui();
       buildPickGui();
-
     }
     // If there is a popup UI active, only draw that
     else {
@@ -850,6 +849,11 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
                        ", but a structure with that name already exists");
       return false;
     }
+  }
+
+  // Center if desired
+  if(options::autocenterStructures) {
+    s->centerBoundingBox();
   }
 
   // Add the new structure

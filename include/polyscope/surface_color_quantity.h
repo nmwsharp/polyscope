@@ -29,7 +29,7 @@ protected:
 
 class SurfaceColorVertexQuantity : public SurfaceColorQuantity {
 public:
-  SurfaceColorVertexQuantity(std::string name, std::vector<Color3f> values_, SurfaceMesh& mesh_);
+  SurfaceColorVertexQuantity(std::string name, std::vector<glm::vec3> values_, SurfaceMesh& mesh_);
 
   virtual void createProgram() override;
   void fillColorBuffers(gl::GLProgram& p);
@@ -37,7 +37,7 @@ public:
   void buildVertexInfoGUI(size_t vInd) override;
 
   // === Members
-  std::vector<Color3f> values;
+  std::vector<glm::vec3> values;
 };
 
 template <class T>
@@ -56,7 +56,7 @@ void SurfaceMesh::addVertexColorQuantity(std::string name, const T& colors) {
 
 class SurfaceColorFaceQuantity : public SurfaceColorQuantity {
 public:
-  SurfaceColorFaceQuantity(std::string name, std::vector<Color3f> values_, SurfaceMesh& mesh_);
+  SurfaceColorFaceQuantity(std::string name, std::vector<glm::vec3> values_, SurfaceMesh& mesh_);
 
   virtual void createProgram() override;
   void fillColorBuffers(gl::GLProgram& p);
@@ -64,7 +64,7 @@ public:
   void buildFaceInfoGUI(size_t fInd) override;
 
   // === Members
-  std::vector<Color3f> values;
+  std::vector<glm::vec3> values;
 };
 
 template <class T>

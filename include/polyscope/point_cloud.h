@@ -93,7 +93,6 @@ public:
   size_t nPoints() const { return points.size(); }
 
   // Misc data
-  SubColorManager colorManager;
   static const std::string structureTypeName;
 
   // Small utilities
@@ -103,8 +102,8 @@ public:
 
 private:
   // Visualization parameters
-  Color3f initialBaseColor;
-  Color3f pointColor;
+  glm::vec3 initialBaseColor;
+  glm::vec3 pointColor;
   float pointRadius = 0.005;
 
   // Drawing related things
@@ -124,9 +123,8 @@ template <class T>
 PointCloud::PointCloud(std::string name, const T& points_)
     : QuantityStructure<PointCloud>(name), points(standardizeVectorArray<glm::vec3, T, 3>(points_)) {
 
-  initialBaseColor = getNextStructureColor();
+  initialBaseColor = getNextUniqueColor();
   pointColor = initialBaseColor;
-  colorManager = SubColorManager(initialBaseColor);
 }
 
 

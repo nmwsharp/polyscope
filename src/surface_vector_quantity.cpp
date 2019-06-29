@@ -38,7 +38,7 @@ void SurfaceVectorQuantity::prepareVectorMapper() {
     lengthMult = 1.0;
   }
   radiusMult = .0005;
-  vectorColor = parent.colorManager.getNextSubColor(name);
+  vectorColor = getNextUniqueColor();
 }
 
 void SurfaceVectorQuantity::draw() {

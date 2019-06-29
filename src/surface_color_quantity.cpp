@@ -30,7 +30,7 @@ void SurfaceColorQuantity::draw() {
 // ==========           Vertex Color            ==========
 // ========================================================
 
-SurfaceColorVertexQuantity::SurfaceColorVertexQuantity(std::string name, std::vector<Color3f> values_,
+SurfaceColorVertexQuantity::SurfaceColorVertexQuantity(std::string name, std::vector<glm::vec3> values_,
                                                        SurfaceMesh& mesh_)
     : SurfaceColorQuantity(name, mesh_, "vertex"), values(std::move(values_))
 
@@ -49,7 +49,7 @@ void SurfaceColorVertexQuantity::createProgram() {
 }
 
 void SurfaceColorVertexQuantity::fillColorBuffers(gl::GLProgram& p) {
-  std::vector<Color3f> colorval;
+  std::vector<glm::vec3> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
   for (size_t iF = 0; iF < parent.nFaces(); iF++) {
@@ -76,7 +76,7 @@ void SurfaceColorVertexQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
-  Color3f tempColor = values[vInd];
+  glm::vec3 tempColor = values[vInd];
   ImGui::ColorEdit3("", &tempColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
   ImGui::SameLine();
   std::string colorStr = to_string_short(tempColor);
@@ -92,7 +92,7 @@ void SurfaceColorQuantity::geometryChanged() { program.reset(); }
 // ==========            Face Color              ==========
 // ========================================================
 
-SurfaceColorFaceQuantity::SurfaceColorFaceQuantity(std::string name, std::vector<Color3f> values_, SurfaceMesh& mesh_)
+SurfaceColorFaceQuantity::SurfaceColorFaceQuantity(std::string name, std::vector<glm::vec3> values_, SurfaceMesh& mesh_)
     : SurfaceColorQuantity(name, mesh_, "face"), values(std::move(values_))
 
 {}
@@ -110,7 +110,7 @@ void SurfaceColorFaceQuantity::createProgram() {
 }
 
 void SurfaceColorFaceQuantity::fillColorBuffers(gl::GLProgram& p) {
-  std::vector<Color3f> colorval;
+  std::vector<glm::vec3> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
   for (size_t iF = 0; iF < parent.nFaces(); iF++) {
@@ -131,7 +131,7 @@ void SurfaceColorFaceQuantity::buildFaceInfoGUI(size_t fInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
-  Color3f tempColor = values[fInd];
+  glm::vec3 tempColor = values[fInd];
   ImGui::ColorEdit3("", &tempColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
   ImGui::SameLine();
   std::stringstream buffer;

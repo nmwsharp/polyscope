@@ -36,18 +36,17 @@ namespace gl {
 //  Generate more using the generate_colormap_constant.py script in the misc folder of this repo.
 //  Should work on any colormap from http://matplotlib.org/examples/color/colormaps_reference.html
 // 
-//  TODO don't forget to credit them when appropriate...
 
 
 
 struct Colormap {
 
     std::string name;
-    std::vector<Color3f> values;
+    std::vector<glm::vec3> values;
 
     // Samples "val" from the colormap, where val is clamped to [0,1].
     // Returns a vector3 of rgb values, each from [0,1]
-    Color3f getValue(double val) const;
+    glm::vec3 getValue(double val) const;
 };
 
 

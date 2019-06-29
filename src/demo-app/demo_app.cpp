@@ -38,8 +38,7 @@ void processFileOBJ(string filename) {
   polyscope::loadPolygonSoup_OBJ(filename, vertexPositions, faceIndices);
   std::vector<glm::vec3> vertexPositionsGLM;
   for (std::array<double, 3> p : vertexPositions) {
-    vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]} + glm::vec3{10, 10, 10});
-    // vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]});
+    vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]});
   }
   polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
 
@@ -67,10 +66,9 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addVertexColorQuantity("vColor", randColor);
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cY_sym", valY, polyscope::DataType::SYMMETRIC);
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cNorm", valMag, polyscope::DataType::MAGNITUDE);
-  
+
   polyscope::getSurfaceMesh(niceName)->addVertexDistanceQuantity("cY_dist", valY);
   polyscope::getSurfaceMesh(niceName)->addVertexSignedDistanceQuantity("cY_signeddist", valY);
-  
 
 
   // Add some face scalars
@@ -96,7 +94,7 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addFaceScalarQuantity("face area", fArea, polyscope::DataType::MAGNITUDE);
   polyscope::getSurfaceMesh(niceName)->addFaceScalarQuantity("zero", zero);
   polyscope::getSurfaceMesh(niceName)->addFaceColorQuantity("fColor", fColor);
-  
+
 
   // Edge length
   std::vector<double> eLen;
@@ -194,7 +192,7 @@ void processFileOBJ(string filename) {
   }
   polyscope::getSurfaceMesh(niceName)->addVertexCountQuantity("sample count", vCount);
   polyscope::getSurfaceMesh(niceName)->addIsolatedVertexScalarQuantity("sample isolated", vVal);
-  
+
   /*
 
   // === Input quantities
@@ -241,7 +239,7 @@ void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& po
     toZeroVec[i] = -points[i];
   }
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("random vector", randVec);
-  polyscope::getPointCloud(pointCloudName)->addVectorQuantity("unit 'normal' vector", centerNormalVec);
+  // polyscope::getPointCloud(pointCloudName)->addVectorQuantity("unit 'normal' vector", centerNormalVec);
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("to zero", toZeroVec, polyscope::VectorType::AMBIENT);
 }
 
@@ -349,7 +347,7 @@ int main(int argc, char** argv) {
   }
 
   // Options
-  // polyscope::options::autocenterStructures = true;
+  polyscope::options::autocenterStructures = true;
   // polyscope::view::windowWidth = 600;
   // polyscope::view::windowHeight = 800;
 
@@ -362,14 +360,13 @@ int main(int argc, char** argv) {
   }
 
   // Create a point cloud
-  for (int j = 0; j < 2; j++) {
+  for (int j = 0; j < 3; j++) {
     std::vector<glm::vec3> points;
     for (size_t i = 0; i < 3000; i++) {
       // points.push_back(glm::vec3{10,10,10} + 20*glm::vec3{randomUnit()-.5,
       // randomUnit()-.5, randomUnit()-.5});
       points.push_back(
-          3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
-      // 3.f * glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
+          glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
     }
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
     addDataToPointCloud("really great points" + std::to_string(j), points);

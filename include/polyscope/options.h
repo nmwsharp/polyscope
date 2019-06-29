@@ -28,6 +28,9 @@ namespace options {
     
     // Should we redraw every frame, even if not requested? (default: false)
     extern bool alwaysRedraw;
+    
+    // Should we center every structure after it is loaded up (default: false)
+    extern bool autocenterStructures;
 
 } // namespace options
 } // namespace polyscope
