@@ -31,6 +31,9 @@ namespace options {
     
     // Should we center every structure after it is loaded up (default: false)
     extern bool autocenterStructures;
+    
+    // Should the user call back start out with an imgui window context open (default: true)
+    extern bool openImGuiWindowForUserCallback;
 
 } // namespace options
 } // namespace polyscope

@@ -39,6 +39,7 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
       {"u_centerXZ", GLData::Vector2Float},
       {"u_viewportDim", GLData::Vector2Float},
       {"u_cameraHeight", GLData::Float},
+      {"u_groundHeight", GLData::Float}
     }, 
 
     // attributes
@@ -64,6 +65,7 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
       uniform vec2 u_centerXZ;
       uniform vec2 u_viewportDim;
       uniform float u_cameraHeight;
+      uniform float u_groundHeight;
       in vec4 PositionWorldHomog;
       out vec4 outputF;
 
@@ -115,7 +117,7 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
         // Fade off far away
         float distFromCenter = length(coordXZ);
         float distFadeFactor = 1.0 - smoothstep(8.0, 8.5, distFromCenter);
-        float viewFromBelowFadeFactor = smoothstep(0, .1, u_cameraHeight / u_lengthScale);
+        float viewFromBelowFadeFactor = smoothstep(0, .1, (u_cameraHeight - u_groundHeight) / u_lengthScale);
         float fadeFactor = min(distFadeFactor, viewFromBelowFadeFactor);
         vec4 color = vec4(color3, fadeFactor);
       

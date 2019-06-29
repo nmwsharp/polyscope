@@ -59,8 +59,9 @@ bool debugDrawPickBuffer = false;
 int maxFPS = 60;
 bool usePrefsFile = true;
 bool initializeWithDefaultStructures = true;
-bool autocenterStructures = false;
 bool alwaysRedraw = false;
+bool autocenterStructures = false;
+bool openImGuiWindowForUserCallback = true;
 
 } // namespace options
 
@@ -101,6 +102,13 @@ gl::GLProgram* sceneToScreenProgram = nullptr;
 ImFontAtlas* globalFontAtlas = nullptr;
 
 bool redrawNextFrame = true;
+
+// Some state about imgui windows to stack them
+float imguiStackMargin = 10;
+float lastWindowHeightPolyscope = 200;
+float lastWindowHeightUser = 200;
+float leftWindowsWidth = 300;
+float rightWindowsWidth = 500;
 
 // Called once on init
 void allocateGlobalBuffersAndPrograms() {
@@ -177,7 +185,7 @@ void setStyle() {
   colors[ImGuiCol_FrameBgActive] = ImVec4(0.41f, 0.64f, 0.53f, 0.69f);
   colors[ImGuiCol_TitleBg] = ImVec4(0.27f, 0.54f, 0.42f, 0.83f);
   colors[ImGuiCol_TitleBgActive] = ImVec4(0.32f, 0.63f, 0.49f, 0.87f);
-  colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.40f, 0.80f, 0.62f, 0.20f);
+  colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.27f, 0.54f, 0.42f, 0.83f);
   colors[ImGuiCol_MenuBarBg] = ImVec4(0.40f, 0.55f, 0.48f, 0.80f);
   colors[ImGuiCol_ScrollbarBg] = ImVec4(0.63f, 0.63f, 0.63f, 0.39f);
   colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
@@ -375,6 +383,7 @@ void initializeImGUIContext() {
   config.OversampleV = 5;
   ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(getCousineRegularCompressedData(),
                                                           getCousineRegularCompressedSize(), 15.0f, &config);
+  // io.OptResizeWindowsFromEdges = true;
   // ImGui::StyleColorsLight();
   setStyle();
 
@@ -572,11 +581,13 @@ void renderSceneToScreen() {
 }
 
 void buildPolyscopeGui() {
+
   // Create window
   static bool showPolyscopeWindow = true;
-  ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowPos(ImVec2(imguiStackMargin, imguiStackMargin));
+  ImGui::SetNextWindowSize(ImVec2(leftWindowsWidth, 0.));
 
-  ImGui::Begin("Polyscope", &showPolyscopeWindow, ImGuiWindowFlags_AlwaysAutoResize);
+  ImGui::Begin("Polyscope", &showPolyscopeWindow);
 
   ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
   if (ImGui::Button("Reset view")) {
@@ -600,10 +611,10 @@ void buildPolyscopeGui() {
       ImGui::SetItemDefaultFocus();
       viewStyleName = "Free";
     }
-    //if (ImGui::Selectable("Arcblob", view::style == view::NavigateStyle::Arcball)) {
-      //view::style = view::NavigateStyle::Arcball;
-      //ImGui::SetItemDefaultFocus();
-      //viewStyleName = "Arcblob";
+    // if (ImGui::Selectable("Arcblob", view::style == view::NavigateStyle::Arcball)) {
+    // view::style = view::NavigateStyle::Arcball;
+    // ImGui::SetItemDefaultFocus();
+    // viewStyleName = "Arcblob";
     //}
     ImGui::EndCombo();
   }
@@ -623,13 +634,20 @@ void buildPolyscopeGui() {
     ImGui::TreePop();
   }
 
+  lastWindowHeightPolyscope = imguiStackMargin + ImGui::GetWindowHeight();
+  leftWindowsWidth = ImGui::GetWindowWidth();
+
   ImGui::End();
 }
 
 void buildStructureGui() {
   // Create window
   static bool showStructureWindow = true;
-  ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
+
+  ImGui::SetNextWindowPos(ImVec2(imguiStackMargin, lastWindowHeightPolyscope + 2 * imguiStackMargin));
+  ImGui::SetNextWindowSize(
+      ImVec2(leftWindowsWidth, view::windowHeight - lastWindowHeightPolyscope - 3 * imguiStackMargin));
+
   ImGui::Begin("Structures", &showStructureWindow);
 
   for (auto catMapEntry : state::structures) {
@@ -658,19 +676,43 @@ void buildStructureGui() {
     ImGui::PopID();
   }
 
+  leftWindowsWidth = ImGui::GetWindowWidth();
+
   ImGui::End();
 }
 
 void buildUserGui() {
   if (state::userCallback) {
     ImGui::PushID("user_callback");
+
+    if (options::openImGuiWindowForUserCallback) {
+      ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin), imguiStackMargin));
+      ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
+
+      ImGui::Begin("Command UI", nullptr);
+    }
+
     state::userCallback();
+
+    if (options::openImGuiWindowForUserCallback) {
+      rightWindowsWidth = ImGui::GetWindowWidth();
+      lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
+      ImGui::End();
+    }
+
     ImGui::PopID();
+  } else {
+    lastWindowHeightUser = imguiStackMargin;
   }
 }
 
 void buildPickGui() {
   if (pick::haveSelection) {
+
+    ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin),
+                                   2 * imguiStackMargin + lastWindowHeightUser));
+    ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
+
     ImGui::Begin("Selection", nullptr);
     size_t pickInd;
     Structure* structure = pick::getCurrentPickElement(pickInd);
@@ -679,6 +721,7 @@ void buildPickGui() {
     ImGui::Separator();
     structure->buildPickUI(pickInd);
 
+    rightWindowsWidth = ImGui::GetWindowWidth();
     ImGui::End();
   }
 }
@@ -708,7 +751,7 @@ void draw(bool withUI) {
 
   // Build the GUI components
   if (withUI) {
-     //ImGui::ShowDemoWindow();
+    // ImGui::ShowDemoWindow();
 
     // The common case, rendering UI and structures
     if (contextStack.size() == 1) {
@@ -852,7 +895,7 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
   }
 
   // Center if desired
-  if(options::autocenterStructures) {
+  if (options::autocenterStructures) {
     s->centerBoundingBox();
   }
 

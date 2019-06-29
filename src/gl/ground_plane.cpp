@@ -145,7 +145,7 @@ void drawGroundPlane() {
   glm::vec2 centerXZ{state::center.x, state::center.z};
   groundPlaneProgram->setUniform("u_centerXZ", centerXZ);
  
-  float camHeight = view::getCameraWorldPosition().y - bboxBottom;
+  float camHeight = view::getCameraWorldPosition().y;
   groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
 
   groundPlaneProgram->setUniform("u_lengthScale", state::lengthScale);
