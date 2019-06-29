@@ -185,6 +185,7 @@ SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, std::vect
     for (size_t j = 0; j < D; j++) {
       faceCenter += parent.vertices[face[j]];
     }
+    faceCenter /= D;
     vectorRoots[iF] = faceCenter;
   }
 
@@ -362,8 +363,6 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
     // Make sure we have a ribbon artist
     if (ribbonArtist == nullptr) {
 
-      // TODO
-      throw std::runtime_error("needs to be reimplemented");
       //// Remap to center of each face
       // GeometryCache<Euclidean>& gc = parent.geometry->cache;
       // gc.requireVertexFaceTransportCoefs();
@@ -410,49 +409,72 @@ std::string SurfaceVertexIntrinsicVectorQuantity::niceName() { return name + " (
 
 SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std::string name,
                                                                              std::vector<double> oneForm_,
+                                                                             std::vector<char> canonicalOrientation_,
                                                                              SurfaceMesh& mesh_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, VectorType::STANDARD), oneForm(oneForm_) {
 
-  throw std::runtime_error("needs to be reimplemented");
-  // TODO
-  // GeometryCache<Euclidean>& gc = parent.geometry->cache;
-  // gc.requireFaceBases();
-  // gc.requireFaceAreas();
-  // gc.requireHalfedgeVectors();
-  // gc.requireFaceNormals();
+  vectorRoots = std::vector<glm::vec3>(parent.nFaces(), glm::vec3{0., 0., 0.});
+  vectors = std::vector<glm::vec3>(parent.nFaces(), glm::vec3{0., 0., 0.});
+  mappedVectorField = std::vector<glm::vec2>(parent.nFaces(), glm::vec3{0., 0., 0.});
 
-  //// Copy the vectors
-  // oneForm = parent.transfer.transfer(oneForm_);
-  // mappedVectorField = FaceData<Complex>(parent.mesh);
-  // for (FacePtr f : parent.mesh->faces()) {
+  // Remap to faces
+  parent.ensureHaveFaceTangentSpaces();
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
 
-  //// Whitney interpolation at center
-  // std::array<double, 3> formValues;
-  // std::array<Vector3, 3> vecValues;
-  // int i = 0;
-  // for (HalfedgePtr he : f.adjacentHalfedges()) {
-  // double signVal = (he == he.edge().halfedge()) ? 1.0 : -1.0;
-  // formValues[i] = oneForm[he.edge()] * signVal;
-  // vecValues[i] = cross(gc.halfedgeVectors[he], gc.faceNormals[f]);
-  // i++;
-  //}
-  // Vector3 result = Vector3::zero();
-  // for (int j = 0; j < 3; j++) {
-  // result += (formValues[(j + 1) % 3] - formValues[(j + 2) % 3]) * vecValues[j];
-  //}
-  // result /= 6 * gc.faceAreas[f];
+    // sorry, need triangles
+    if (D != 3) {
+      warning("tried to visualize 1-form with non-triangular face");
+      continue;
+    }
 
-  // Complex approxVec{dot(result, gc.faceBases[f][0]), dot(result, gc.faceBases[f][1])};
-  // mappedVectorField[f] = approxVec;
+    // find the face center
+    glm::vec3 faceCenter = glm::vec3{0., 0., 0.};
+    for (size_t j = 0; j < D; j++) {
+      faceCenter += parent.vertices[face[j]];
+    }
+    faceCenter /= D;
+    vectorRoots[iF] = faceCenter;
+
+    std::array<float, 3> formValues;
+    std::array<glm::vec3, 3> vecValues;
+    for (size_t j = 0; j < D; j++) {
+      size_t vA = face[j];
+      size_t vB = face[(j + 1) % D];
+      size_t iE = parent.edgeIndices[iF][j];
+
+      bool isCanonicalOriented;
+      if (parent.vertexPerm.size() > 0) {
+        isCanonicalOriented = ((parent.vertexPerm[vB] > parent.vertexPerm[vA]) != canonicalOrientation_[iE]);
+      } else {
+        isCanonicalOriented = ((vB > vA) != canonicalOrientation_[iE]);
+      }
+      double orientationSign = isCanonicalOriented ? 1. : -1.;
+
+      formValues[j] = orientationSign * oneForm[iE];
+
+      glm::vec3 heVec = parent.vertices[vB] - parent.vertices[vA];
+      vecValues[j] = glm::cross(heVec, parent.faceNormals[iF]);
+    }
 
 
-  //// Fill out data for the little arrows
-  // vectorRoots.push_back(parent.geometry->barycenter(f));
-  // Vector3 v = gc.faceBases[f][0] * approxVec.real() + gc.faceBases[f][1] * approxVec.imag();
-  // vectors.push_back(v);
-  //}
+    // Whitney interpolation at center
+    glm::vec3 result{0., 0., 0.};
+    for (int j = 0; j < 3; j++) {
+      result += (formValues[(j + 1) % 3] - formValues[(j + 2) % 3]) * vecValues[j];
+    }
+    result /= static_cast<float>(6. * parent.faceAreas[iF]);
 
-  // prepareVectorMapper();
+    glm::vec2 approxVec{glm::dot(result, parent.faceTangentSpaces[iF][0]),
+                        glm::dot(result, parent.faceTangentSpaces[iF][1])};
+    mappedVectorField[iF] = approxVec;
+
+    // Fill out data for the little arrows
+    vectors[iF] = result;
+  }
+
+  prepareVectorMapper();
 }
 
 void SurfaceOneFormIntrinsicVectorQuantity::buildEdgeInfoGUI(size_t iE) {

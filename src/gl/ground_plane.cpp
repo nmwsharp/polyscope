@@ -10,8 +10,6 @@
 
 namespace polyscope {
 
-
-
 namespace gl {
 
 // Storage for global options

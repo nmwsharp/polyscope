@@ -1,6 +1,7 @@
 #include "polyscope/polyscope.h"
 
 #include "polyscope/combining_hash_functions.h"
+#include "polyscope/messages.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_io.h"
@@ -323,7 +324,23 @@ void processFile(string filename) {
 }
 
 void callback() {
-  // polyscope::error("hi mom");
+  static int numPoints = 2000;
+  static float param = 3.14;
+
+  ImGui::PushItemWidth(100);
+
+  ImGui::InputInt("num points", &numPoints);
+  ImGui::InputFloat("param value", &param);
+
+  if (ImGui::Button("run subroutine")) {
+    //mySubroutine();
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("hi")) {
+    polyscope::warning("hi");
+  }
+  
+  ImGui::PopItemWidth();
 }
 
 int main(int argc, char** argv) {
@@ -363,8 +380,6 @@ int main(int argc, char** argv) {
   for (int j = 0; j < 3; j++) {
     std::vector<glm::vec3> points;
     for (size_t i = 0; i < 3000; i++) {
-      // points.push_back(glm::vec3{10,10,10} + 20*glm::vec3{randomUnit()-.5,
-      // randomUnit()-.5, randomUnit()-.5});
       points.push_back(
           glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
     }

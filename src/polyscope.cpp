@@ -963,7 +963,11 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
   return;
 }
 
-void removeStructure(std::string name) {
+void removeStructure(Structure* structure, bool errorIfAbsent) {
+  removeStructure(structure->typeName(), structure->name, errorIfAbsent);
+}
+
+void removeStructure(std::string name, bool errorIfAbsent) {
 
   // Check if we can find exactly one structure matching the name
   Structure* targetStruct = nullptr;
@@ -986,11 +990,13 @@ void removeStructure(std::string name) {
 
   // Error if none found.
   if (targetStruct == nullptr) {
-    error("No structure named: " + name + " to remove.");
+    if (errorIfAbsent) {
+      error("No structure named: " + name + " to remove.");
+    }
     return;
   }
 
-  removeStructure(targetStruct->typeName(), targetStruct->name);
+  removeStructure(targetStruct->typeName(), targetStruct->name, errorIfAbsent);
   requestRedraw();
 }
 

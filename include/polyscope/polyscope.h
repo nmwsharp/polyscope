@@ -1,8 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <map>
 #include <unordered_set>
-#include <functional>
 
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/messages.h"
@@ -53,7 +53,7 @@ extern std::function<void()> userCallback;
 // === Manage structures tracked by polyscope
 
 // Register a structure with polyscope
-// `name` is a globally unique identifier for the structure
+// Structure name must be a globally unique identifier for the structure.
 bool registerStructure(Structure* structure, bool replaceIfPresent = true);
 
 // Get a reference to a structure that has been registered
@@ -62,8 +62,9 @@ bool registerStructure(Structure* structure, bool replaceIfPresent = true);
 Structure* getStructure(std::string type, std::string name = "");
 
 // De-register a structure, of any type. Also removes any quantities associated with the structure
+void removeStructure(Structure* structure, bool errorIfAbsent = true);
 void removeStructure(std::string type, std::string name, bool errorIfAbsent = true);
-void removeStructure(std::string name);
+void removeStructure(std::string name, bool errorIfAbsent = true);
 
 // De-register all structures, of any type. Also removes any quantities associated with the structure
 void removeAllStructures();

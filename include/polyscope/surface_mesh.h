@@ -118,8 +118,8 @@ public:
   template <class T>
   void addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym = 1,
                                         VectorType vectorType = VectorType::STANDARD);
-  template <class T>
-  void addOneFormIntrinsicVectorQuantity(std::string name, const T& data); // expects scalar
+  template <class T, class O>
+  void addOneFormIntrinsicVectorQuantity(std::string name, const T& data, const O& orientations);
 
 
   // = I/O Selections
