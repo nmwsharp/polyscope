@@ -1411,8 +1411,8 @@ void printShaderInfoLog(GLuint shaderHandle) {
 
   glGetShaderiv(shaderHandle, GL_INFO_LOG_LENGTH, &logLen);
 
-  if (logLen > 1) { // for some reason we often get logs of length 1 with no
-                    // visible characters
+  if (options::verbosity > 1 && logLen > 1) { // for some reason we often get logs of length 1 with no
+                                              // visible characters
     log = (char*)malloc(logLen);
     glGetShaderInfoLog(shaderHandle, logLen, &chars, log);
     printf("Shader info log:\n%s\n", log);
@@ -1427,8 +1427,8 @@ void printProgramInfoLog(GLuint handle) {
 
   glGetProgramiv(handle, GL_INFO_LOG_LENGTH, &logLen);
 
-  if (logLen > 1) { // for some reason we often get logs of length 1 with no
-                    // visible characters
+  if (options::verbosity > 1 && logLen > 1) { // for some reason we often get logs of length 1 with no
+                                              // visible characters
     log = (char*)malloc(logLen);
     glGetProgramInfoLog(handle, logLen, &chars, log);
     printf("Program info log:\n%s\n", log);

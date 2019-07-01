@@ -241,6 +241,7 @@ SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::stri
     for (size_t j = 0; j < D; j++) {
       faceCenter += parent.vertices[face[j]];
     }
+    faceCenter /= D;
 
     for (int iRot = 0; iRot < nSym; iRot++) {
       vectorRoots.push_back(faceCenter);
