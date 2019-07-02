@@ -46,6 +46,7 @@ typename QuantityStructure<S>::QuantityType* QuantityStructure<S>::getQuantity(s
   if (quantities.find(name) == quantities.end()) {
     return nullptr;
   }
+  return quantities[name];
 }
 
 template <typename S>
