@@ -56,12 +56,14 @@ else()
   message( FATAL_ERROR "Unrecognized compiler [${CMAKE_CXX_COMPILER_ID}]" )
 endif()
 
+# Add polyscope
+add_subdirectory(../../ "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 
 # Create an executable
 add_executable(
-        polyscopeviewer
-        viewer_app.cpp
+        polyscopedemo
+        demo_app.cpp
         )
 
 # Link settings
-target_link_libraries(polyscopeviewer polyscope)
+target_link_libraries(polyscopedemo polyscope)

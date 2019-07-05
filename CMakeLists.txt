@@ -10,16 +10,3 @@ add_subdirectory(deps)
 
 ### Add things for this project
 add_subdirectory(src)
-
-### Build the demo viewer application
-option(BUILD_POLYSCOPE_VIEWER "Build the viewer app." OFF)
-if(BUILD_POLYSCOPE_VIEWER)
-    add_subdirectory(src/viewer-app)
-endif()
-
-option(BUILD_POLYSCOPE_DEMO "Build the demo app." OFF)
-if(BUILD_POLYSCOPE_DEMO)
-    add_subdirectory(src/demo-app)
-endif()
-
-
