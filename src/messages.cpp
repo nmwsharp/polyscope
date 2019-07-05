@@ -198,28 +198,27 @@ void buildWarningUI(std::string warningBaseString, std::string warningDetailStri
   // Window title
   ImGui::PopStyleVar();
 }
-}
+} // namespace
 
 
 void info(std::string message) { cout << options::printPrefix << message << endl; }
 
 void error(std::string message) {
+  std::cout << options::printPrefix << "[ERROR] " << message << std::endl;
 
   auto func = std::bind(buildErrorUI, message, false);
   pushContext(func);
 
-  std::cout << options::printPrefix << "[ERROR] " << message << std::endl;
   if (options::errorsThrowExceptions) {
     throw std::logic_error(options::printPrefix + message);
   }
 }
 
 void terminatingError(std::string message) {
+  std::cout << options::printPrefix << "[ERROR] " << message << std::endl;
 
   auto func = std::bind(buildErrorUI, message, true);
   pushContext(func);
-
-  std::cout << options::printPrefix << "[ERROR] " << message << std::endl;
 
   // Quit the program
   shutdown(-1);
@@ -251,6 +250,14 @@ void showDelayedWarnings() {
   while (warningMessages.size() > 0) {
     showingWarning = true;
     WarningMessage& currMessage = warningMessages.front();
+
+    std::cout << options::printPrefix << "[WARNING] " << currMessage.baseMessage << " --- "
+              << currMessage.detailMessage;
+    if (currMessage.repeatCount > 0) {
+      std::cout << " (and " << currMessage.repeatCount << " similar messages)." << std ::endl;
+    } else {
+      std::cout << std ::endl;
+    }
 
     auto func = std::bind(buildWarningUI, currMessage.baseMessage, currMessage.detailMessage, currMessage.repeatCount);
     pushContext(func);
