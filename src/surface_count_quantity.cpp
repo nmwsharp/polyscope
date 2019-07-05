@@ -64,8 +64,8 @@ void SurfaceCountQuantity::setUniforms(gl::GLProgram& p) {
   p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
   p.setUniform("u_baseColor", glm::vec3{0.0, 0.0, 0.0});
 
-  program->setUniform("u_rangeLow", vizRangeLow);
-  program->setUniform("u_rangeHigh", vizRangeHigh);
+  p.setUniform("u_rangeLow", vizRangeLow);
+  p.setUniform("u_rangeHigh", vizRangeHigh);
 }
 
 void SurfaceCountQuantity::draw() {

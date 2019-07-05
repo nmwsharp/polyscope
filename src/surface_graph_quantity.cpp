@@ -46,13 +46,10 @@ void SurfaceGraphQuantity::draw() {
   setUniforms();
 
   pointProgram->draw();
-  //lineProgram->draw();
+  lineProgram->draw();
 }
 
 void SurfaceGraphQuantity::setUniforms() {
-
-  parent.setTransformUniforms(*pointProgram);
-  parent.setTransformUniforms(*lineProgram);
 
   // Point billboard uniforms
   glm::vec3 lookDir, upDir, rightDir;
@@ -66,13 +63,16 @@ void SurfaceGraphQuantity::setUniforms() {
   lineProgram->setUniform("u_radius", radius * state::lengthScale);
   pointProgram->setUniform("u_baseColor", color);
   lineProgram->setUniform("u_color", color);
+
+  parent.setTransformUniforms(*pointProgram);
+  parent.setTransformUniforms(*lineProgram);
 }
 
 
 void SurfaceGraphQuantity::createPrograms() {
 
   { // Point program
-    pointProgram.reset(new gl::GLProgram(&SPHERE_VERT_SHADER, &SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
+    pointProgram.reset(new gl::GLProgram(&SPHERE_VERT_SHADER, &SPHERE_BILLBOARD_GEOM_SHADER,
                                          &SPHERE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
 
     pointProgram->setAttribute("a_position", nodes);
@@ -103,9 +103,9 @@ void SurfaceGraphQuantity::createPrograms() {
 
 void SurfaceGraphQuantity::buildCustomUI() {
 
+  ImGui::SameLine();
   ImGui::ColorEdit3("Color", (float*)&color, ImGuiColorEditFlags_NoInputs);
-  ImGui::Text("Nodes: %lu", nodes.size());
-  ImGui::Text("Edges: %lu", edges.size());
+  ImGui::Text("Nodes: %lu  Edges: %lu", nodes.size(), edges.size());
   ImGui::SliderFloat("Radius", &radius, 0.0, .1, "%.5f", 3.);
 }
 
