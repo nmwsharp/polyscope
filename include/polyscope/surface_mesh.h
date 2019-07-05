@@ -121,6 +121,9 @@ public:
   template <class T, class O>
   void addOneFormIntrinsicVectorQuantity(std::string name, const T& data, const O& orientations);
 
+  // = Misc quantities
+  template <class P, class E>
+  void addSurfaceGraphQuantity(std::string name, const P& nodes, const E& edges);
 
   // = I/O Selections
   template <class T>
@@ -359,6 +362,7 @@ inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
 #include "polyscope/surface_distance_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
+#include "polyscope/surface_graph_quantity.h"
 /*
 #include "polyscope/surface_selection_quantity.h"
 #include "polyscope/surface_subset_quantity.h"

@@ -1,8 +1,6 @@
 #pragma once
 
 
-// NOTE: You probably don't want to include this directly... see shaders.h
-
 static const VertShader PASSTHRU_CYLINDER_VERT_SHADER = {
     // uniforms
     {
@@ -123,7 +121,7 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
 
 
 
-static const FragShader SHINY_CYLINDER_FRAG_SHADER = {
+static const FragShader CYLINDER_FRAG_SHADER = {
     
     // uniforms
     {

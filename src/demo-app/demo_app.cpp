@@ -194,6 +194,24 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addVertexCountQuantity("sample count", vCount);
   polyscope::getSurfaceMesh(niceName)->addIsolatedVertexScalarQuantity("sample isolated", vVal);
 
+
+  { // Add a surface graph quantity
+
+    std::vector<std::array<size_t, 2>> edges;
+    for (size_t iF = 0; iF < nFaces; iF++) {
+      std::vector<size_t>& face = faceIndices[iF];
+
+      for (size_t iV = 0; iV < face.size(); iV++) {
+        size_t i0 = face[iV];
+        size_t i1 = face[(iV + 1) % face.size()];
+
+        edges.push_back({i0, i1});
+      }
+    }
+
+    polyscope::getSurfaceMesh(niceName)->addSurfaceGraphQuantity("surface graph", vertexPositionsGLM, edges);
+  }
+
   /*
 
   // === Input quantities
@@ -333,13 +351,13 @@ void callback() {
   ImGui::InputFloat("param value", &param);
 
   if (ImGui::Button("run subroutine")) {
-    //mySubroutine();
+    // mySubroutine();
   }
   ImGui::SameLine();
   if (ImGui::Button("hi")) {
     polyscope::warning("hi");
   }
-  
+
   ImGui::PopItemWidth();
 }
 
