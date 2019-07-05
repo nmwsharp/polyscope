@@ -70,6 +70,11 @@ SET(SRCS
 # Create a single library for the project
 add_library(polyscope ${SRCS})
 
+# Required compiler settings
+set_property(TARGET polyscope PROPERTY CXX_STANDARD 11)
+set_property(TARGET polyscope PROPERTY CXX_STANDARD_REQUIRED TRUE)
+
+
 # Include settings
 # TODO audit
 target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
@@ -86,6 +91,10 @@ target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../deps
 target_link_libraries(polyscope imgui glfw ${GLFW_LIBRARIES} stb)
 
 if(APPLE)
+    # Apple is playing hardball and deprecating openGL, we'll see how that goes
+    # Silence warnings about openGL deprecation
+    add_definitions (-DGL_SILENCE_DEPRECATION)  
+
     find_library(cocoa_library Cocoa)
     find_library(opengl_library OpenGL)
     find_library(corevideo_library CoreVideo)
