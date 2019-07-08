@@ -80,7 +80,8 @@ static const FragShader SURFACE_WIREFRAME_FRAG_SHADER = {
       {
 
         vec3 color = u_edgeColor;
-        float alpha = getEdgeFactor(Barycoord*EdgeReal.yzx, u_edgeWidth);
+        vec3 modBary = max(Barycoord, 1.0 - EdgeReal.yzx);
+        float alpha = getEdgeFactor(modBary, u_edgeWidth);
 
         vec4 outputColor = lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b);
         outputColor.w = alpha;
