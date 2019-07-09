@@ -73,33 +73,6 @@ vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat
   return vec4(colorCombined, 1.0);
 }
 
-float getEdgeFactor1(vec3 UVW, float width) {
-
-    // View-dependent width factor
-    vec3 fac = fwidth(UVW);
-    float low = .01;
-    float high = 2.;
-    //fac = clamp(fac, low, high);
-
-    vec3 a = smoothstep(vec3(0.0), fac*width*3., UVW);
-    vec3 dist = a;
-    float e = 1.0 - min(min(dist.x, dist.y), dist.z);
-    return e;
-}
-
-float getEdgeFactor(vec3 UVW, float width) {
-    // The Nick Sharp Edge Function (tm). There are many like it, but this one is mine.
-    float slopeWidth = 1.;
-    
-    vec3 fw = fwidth(UVW);
-    vec3 baryWidth = slopeWidth * fw;
-
-    vec3 end = width*fw;
-    vec3 dist = smoothstep(end - baryWidth, end, UVW);
-
-    float e = 1.0 - min(min(dist.x, dist.y), dist.z);
-    return e;
-}
 
 
 )";
