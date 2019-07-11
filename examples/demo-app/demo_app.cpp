@@ -195,6 +195,53 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addIsolatedVertexScalarQuantity("sample isolated", vVal);
 
 
+  { // Parameterizations
+
+
+    std::vector<std::array<double, 2>> cornerParam;
+    for (size_t iF = 0; iF < nFaces; iF++) {
+      std::vector<size_t>& face = faceIndices[iF];
+      for (size_t iC = 0; iC < face.size(); iC++) {
+        size_t iV = face[iC];
+        std::array<double, 2> p = {{vertexPositionsGLM[iV].x, vertexPositionsGLM[iV].y}};
+        cornerParam.push_back(p);
+      }
+    }
+    polyscope::getSurfaceMesh(niceName)->addParameterizationQuantity("param test", cornerParam);
+
+
+    std::vector<std::array<double, 2>> vertParam;
+    for (size_t iV = 0; iV < nVertices; iV++) {
+      std::array<double, 2> p = {{vertexPositionsGLM[iV].x, vertexPositionsGLM[iV].y}};
+      vertParam.push_back(p);
+    }
+    polyscope::getSurfaceMesh(niceName)->addVertexParameterizationQuantity("param vert test", vertParam);
+
+
+    // local param about vert
+    std::vector<std::array<double, 2>> vertParamLocal;
+    size_t iCenter = nVertices / 2;
+    glm::vec3 cP = vertexPositionsGLM[iCenter];
+    glm::vec3 cN = vNormals[iCenter];
+
+    // make a basis
+    glm::vec3 basisX{0.1234, -0.98823, .33333}; // provably random
+    basisX = basisX - glm::dot(cN, basisX) * cN;
+    basisX = glm::normalize(basisX);
+    glm::vec3 basisY = -glm::cross(basisX, cN);
+
+    for (size_t iV = 0; iV < nVertices; iV++) {
+
+      glm::vec3 vec = vertexPositionsGLM[iV] - cP;
+
+      std::array<double, 2> p = {{glm::dot(basisX, vec), glm::dot(basisY, vec)}};
+      vertParamLocal.push_back(p);
+    }
+
+    polyscope::getSurfaceMesh(niceName)->addLocalParameterizationQuantity("param vert local test", vertParamLocal);
+  }
+
+
   { // Add a surface graph quantity
 
     std::vector<std::array<size_t, 2>> edges;
@@ -262,80 +309,11 @@ void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& po
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("to zero", toZeroVec, polyscope::VectorType::AMBIENT);
 }
 
-void processFileJSON(string filename) {
-  /* TODO add this back in at some point?
-  using namespace nlohmann;
-
-  std::string niceName = polyscope::guessNiceNameFromPath(filename);
-
-  // read a JSON camera file
-  std::ifstream inFile(filename);
-  json j;
-  inFile >> j;
-
-  // Read the json file
-  // std::vector<double> tVec = j.at("location").get<std::vector<double>>();
-  // std::vector<double> rotationVec = j.at("rotation").get<std::vector<double>>();
-
-  std::vector<double> Evec = j.at("extMat").get<std::vector<double>>();
-  // std::vector<double> focalVec = j.at("focal_dists").get<std::vector<double>>();
-  double fov = j.at("fov").get<double>();
-
-  // Copy to parameters
-  polyscope::CameraParameters params;
-  glm::mat4x4 E;
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 4; j++) {
-      E[j][i] = Evec[4 * i + j]; // note: this is right because GLM uses [column][row] indexing
-    }
-  }
-  // glm::vec2 focalLengths(.5*focalVec[0], .5*focalVec[1]); // TODO FIXME really not sure if this .5 is correct
-  params.fov = fov;
-
-  // Transform to Y-up coordinates
-  glm::mat4x4 perm(0.0);
-  perm[0][0] = 1.0;
-  perm[2][1] = -1.0;
-  perm[1][2] = 1.0;
-  perm[3][3] = 1.0;
-
-  // cout << "Perm: " << endl;
-  // polyscope::prettyPrint(perm);
-
-  params.E = E * perm;
-  // params.focalLengths = focalLengths;
-
-  polyscope::registerCameraView(niceName, params);
-
-  // cout << "E: " << endl;
-  // polyscope::prettyPrint(params.E);
-
-
-  // Try to load am image right next to the camera
-  std::string imageFilename = filename;
-  size_t f = imageFilename.find(".json");
-  imageFilename.replace(f, std::string(".json").length(), ".png");
-
-  std::ifstream inFileIm(imageFilename);
-  if (!inFileIm) {
-    cout << "Did not auto-detect image at " << imageFilename << endl;
-  } else {
-
-    int x, y, n;
-    unsigned char* data = stbi_load(imageFilename.c_str(), &x, &y, &n, 3);
-
-    cout << "Loading " << imageFilename << endl;
-    polyscope::getCameraView(niceName)->addImage(niceName + "_rgb", data, x, y);
-  }
-  */
-}
 
 void processFile(string filename) {
   // Dispatch to correct varient
   if (endsWith(filename, ".obj")) {
     processFileOBJ(filename);
-  } else if (endsWith(filename, ".json")) {
-    processFileJSON(filename);
   } else {
     cerr << "Unrecognized file type for " << filename << endl;
   }
@@ -397,7 +375,7 @@ int main(int argc, char** argv) {
   // Create a point cloud
   for (int j = 0; j < 3; j++) {
     std::vector<glm::vec3> points;
-    for (size_t i = 0; i < 300000; i++) {
+    for (size_t i = 0; i < 3000; i++) {
       points.push_back(
           glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
     }

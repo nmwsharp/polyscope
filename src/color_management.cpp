@@ -47,18 +47,6 @@ float getIndexedDistinctValue(float start, int index) {
   return unitClamp(val);
 }
 
-glm::vec3 RGBtoHSV(glm::vec3 rgb) {
-  glm::vec3 hsv;
-  ImGui::ColorConvertRGBtoHSV(rgb[0], rgb[1], rgb[2], hsv[0], hsv[1], hsv[2]);
-  return unitClamp(hsv);
-}
-
-glm::vec3 HSVtoRGB(glm::vec3 hsv) {
-  glm::vec3 rgb;
-  ImGui::ColorConvertHSVtoRGB(hsv[0], hsv[1], hsv[2], rgb[0], rgb[1], rgb[2]);
-  return unitClamp(rgb);
-}
-
 // Get an indexed offset color. Inputs and outputs in RGB
 glm::vec3 indexOffsetHue(glm::vec3 baseColor, int index) {
   glm::vec3 baseHSV = RGBtoHSV(baseColor);
@@ -75,6 +63,18 @@ int iUniqueColor = 0;
 } // namespace
 
 glm::vec3 getNextUniqueColor() { return indexOffsetHue(uniqueColorBase, iUniqueColor++); }
+
+glm::vec3 RGBtoHSV(glm::vec3 rgb) {
+  glm::vec3 hsv;
+  ImGui::ColorConvertRGBtoHSV(rgb[0], rgb[1], rgb[2], hsv[0], hsv[1], hsv[2]);
+  return unitClamp(hsv);
+}
+
+glm::vec3 HSVtoRGB(glm::vec3 hsv) {
+  glm::vec3 rgb;
+  ImGui::ColorConvertHSVtoRGB(hsv[0], hsv[1], hsv[2], rgb[0], rgb[1], rgb[2]);
+  return unitClamp(rgb);
+}
 
 
 } // namespace polyscope

@@ -13,6 +13,7 @@ const glm::vec3 RGB_RED = {0.8, 0., 0.};
 const glm::vec3 RGB_DARKGRAY = { .2, .2, .2 };
 const glm::vec3 RGB_LIGHTGRAY = { .8, .8, .8 };
 const glm::vec3 RGB_DARKRED = { .2, .0, .0 };
+const glm::vec3 RGB_PINK = {249./255., 45./255., 94./255.};
 
 } // namespace gl
 } // namespace polyscope

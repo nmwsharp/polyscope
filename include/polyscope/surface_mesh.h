@@ -18,6 +18,11 @@ namespace polyscope {
 enum class ShadeStyle { FLAT = 0, SMOOTH };
 enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE, CORNER };
 
+// TODO these should really live in parameterization
+enum class ParamCoordsType { UNIT = 0, WORLD };        // UNIT -> [0,1], WORLD -> length-valued
+enum class ParamVizStyle { CHECKER = 0, GRID, LOCAL_CHECK, LOCAL_RAD }; // TODO add "UV" with test UV map
+
+
 
 // Forward delcare surface mesh
 class SurfaceMesh;
@@ -120,6 +125,19 @@ public:
                                         VectorType vectorType = VectorType::STANDARD);
   template <class T, class O>
   void addOneFormIntrinsicVectorQuantity(std::string name, const T& data, const O& orientations);
+
+  // = Parameterizations
+  template <class T>
+  void addParameterizationQuantity(std::string name, const T& coords, ParamCoordsType type = ParamCoordsType::UNIT);
+
+  template <class T>
+  void addVertexParameterizationQuantity(std::string name, const T& coords,
+                                         ParamCoordsType type = ParamCoordsType::UNIT);
+
+  template <class T>
+  void addLocalParameterizationQuantity(std::string name, const T& coords,
+                                        ParamCoordsType type = ParamCoordsType::WORLD);
+
 
   // = Misc quantities
   template <class P, class E>
@@ -228,9 +246,8 @@ public:
   // void getPickedElement(size_t localPickID, size_t& vOut, size_t& fOut, size_t& eOut, size_t& heOut);
 
   // Returns the face ands coordinates in that face of the last pick. fOut == FacePtr() if not in any face. Note that
-  // you may needed to update the pick data, beacuse this uses mouse coordinates from the current state but possibly old
-  // pick lookup results.
-  // void getPickedFacePoint(FacePtr& fOut, glm::vec3& baryCoordOut);
+  // you may needed to update the pick data, beacuse this uses mouse coordinates from the current state but possibly
+  // old pick lookup results. void getPickedFacePoint(FacePtr& fOut, glm::vec3& baryCoordOut);
 
 private:
   // Visualization settings
@@ -356,9 +373,11 @@ inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
 #include "polyscope/surface_color_quantity.h"
 #include "polyscope/surface_count_quantity.h"
 #include "polyscope/surface_distance_quantity.h"
+#include "polyscope/surface_graph_quantity.h"
+#include "polyscope/surface_parameterization_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
-#include "polyscope/surface_graph_quantity.h"
+
 /*
 #include "polyscope/surface_selection_quantity.h"
 #include "polyscope/surface_subset_quantity.h"

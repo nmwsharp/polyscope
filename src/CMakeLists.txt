@@ -59,6 +59,7 @@ SET(SRCS
   surface_vector_quantity.cpp
   surface_count_quantity.cpp
   surface_graph_quantity.cpp
+  surface_parameterization_quantity.cpp
   #surface_subset_quantity.cpp
   #surface_selection_quantity.cpp
   #surface_input_curve_quantity.cpp

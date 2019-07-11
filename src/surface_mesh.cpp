@@ -1069,4 +1069,6 @@ void SurfaceMeshQuantity::buildFaceInfoGUI(size_t fInd) {}
 void SurfaceMeshQuantity::buildEdgeInfoGUI(size_t eInd) {}
 void SurfaceMeshQuantity::buildHalfedgeInfoGUI(size_t heInd) {}
 
+
+
 } // namespace polyscope

@@ -1439,7 +1439,6 @@ void printShaderInfoLog(GLuint shaderHandle) {
     glGetShaderInfoLog(shaderHandle, logLen, &chars, log);
     printf("Shader info log:\n%s\n", log);
     free(log);
-    // exit(EXIT_FAILURE);
   }
 }
 void printProgramInfoLog(GLuint handle) {
@@ -1455,7 +1454,6 @@ void printProgramInfoLog(GLuint handle) {
     glGetProgramInfoLog(handle, logLen, &chars, log);
     printf("Program info log:\n%s\n", log);
     free(log);
-    // exit(EXIT_FAILURE);
   }
 }
 
