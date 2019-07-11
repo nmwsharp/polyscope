@@ -2,6 +2,7 @@
 
 #include "polyscope/combining_hash_functions.h"
 #include "polyscope/gl/colors.h"
+#include "polyscope/gl/gl_utils.h"
 #include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/surface_shaders.h"
@@ -230,7 +231,7 @@ void SurfaceMesh::draw() {
 
     // Set uniforms
     setTransformUniforms(*program);
-    setMeshUniforms(*program);
+    program->setUniform("u_basecolor", surfaceColor); 
 
     program->draw();
   }
@@ -413,10 +414,14 @@ void SurfaceMesh::fillGeometryBuffersSmooth(gl::GLProgram& p) {
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
 
+  bool wantsBary = p.hasAttribute("a_barycoord");
+
   // Reserve space
   positions.reserve(3 * nFacesTriangulation());
   normals.reserve(3 * nFacesTriangulation());
-  bcoord.reserve(3 * nFacesTriangulation());
+  if (wantsBary) {
+    bcoord.reserve(3 * nFacesTriangulation());
+  }
 
   for (size_t iF = 0; iF < nFaces(); iF++) {
     auto& face = faces[iF];
@@ -439,16 +444,20 @@ void SurfaceMesh::fillGeometryBuffersSmooth(gl::GLProgram& p) {
       normals.push_back(vertexNormals[vB]);
       normals.push_back(vertexNormals[vC]);
 
-      bcoord.push_back(glm::vec3{1., 0., 0.});
-      bcoord.push_back(glm::vec3{0., 1., 0.});
-      bcoord.push_back(glm::vec3{0., 0., 1.});
+      if (wantsBary) {
+        bcoord.push_back(glm::vec3{1., 0., 0.});
+        bcoord.push_back(glm::vec3{0., 1., 0.});
+        bcoord.push_back(glm::vec3{0., 0., 1.});
+      }
     }
   }
 
   // Store data in buffers
   p.setAttribute("a_position", positions);
   p.setAttribute("a_normal", normals);
-  p.setAttribute("a_barycoord", bcoord);
+  if (wantsBary) {
+    p.setAttribute("a_barycoord", bcoord);
+  }
 }
 
 void SurfaceMesh::fillGeometryBuffersFlat(gl::GLProgram& p) {
@@ -456,9 +465,13 @@ void SurfaceMesh::fillGeometryBuffersFlat(gl::GLProgram& p) {
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
 
+  bool wantsBary = p.hasAttribute("a_barycoord");
+
   positions.reserve(3 * nFacesTriangulation());
   normals.reserve(3 * nFacesTriangulation());
-  bcoord.reserve(3 * nFacesTriangulation());
+  if (wantsBary) {
+    bcoord.reserve(3 * nFacesTriangulation());
+  }
 
   for (size_t iF = 0; iF < nFaces(); iF++) {
     auto& face = faces[iF];
@@ -482,9 +495,11 @@ void SurfaceMesh::fillGeometryBuffersFlat(gl::GLProgram& p) {
       normals.push_back(faceN);
       normals.push_back(faceN);
 
-      bcoord.push_back(glm::vec3{1., 0., 0.});
-      bcoord.push_back(glm::vec3{0., 1., 0.});
-      bcoord.push_back(glm::vec3{0., 0., 1.});
+      if (wantsBary) {
+        bcoord.push_back(glm::vec3{1., 0., 0.});
+        bcoord.push_back(glm::vec3{0., 1., 0.});
+        bcoord.push_back(glm::vec3{0., 0., 1.});
+      }
     }
   }
 
@@ -492,7 +507,9 @@ void SurfaceMesh::fillGeometryBuffersFlat(gl::GLProgram& p) {
   // Store data in buffers
   p.setAttribute("a_position", positions);
   p.setAttribute("a_normal", normals);
-  p.setAttribute("a_barycoord", bcoord);
+  if (wantsBary) {
+    p.setAttribute("a_barycoord", bcoord);
+  }
 }
 
 void SurfaceMesh::fillGeometryBuffersWireframe(gl::GLProgram& p) {
@@ -552,11 +569,6 @@ void SurfaceMesh::fillGeometryBuffersWireframe(gl::GLProgram& p) {
   p.setAttribute("a_barycoord", bcoord);
   p.setAttribute("a_edgeReal", edgeReal);
 }
-
-void SurfaceMesh::setMeshUniforms(gl::GLProgram& p) {
-  p.setUniform("u_basecolor", surfaceColor); // unused for some, but set in all
-}
-
 
 void SurfaceMesh::buildPickUI(size_t localPickID) {
 

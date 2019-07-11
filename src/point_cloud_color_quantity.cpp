@@ -58,7 +58,12 @@ void PointCloudColorQuantity::createPointProgram() {
 void PointCloudColorQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g, %g, %g", values[ind].x, values[ind].y, values[ind].z);
+
+  glm::vec3 tempColor = values[ind];
+  ImGui::ColorEdit3("", &tempColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
+  ImGui::SameLine();
+  std::string colorStr = to_string_short(tempColor);
+  ImGui::TextUnformatted(colorStr.c_str());
   ImGui::NextColumn();
 }
 

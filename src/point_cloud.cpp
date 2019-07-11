@@ -28,7 +28,6 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 // Helper to set uniforms
 void PointCloud::setPointCloudUniforms(gl::GLProgram& p) {
   p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
-  p.setUniform("u_baseColor", pointColor);
 
   glm::vec3 lookDir, upDir, rightDir;
   view::getCameraFrame(lookDir, upDir, rightDir);
@@ -53,6 +52,7 @@ void PointCloud::draw() {
     // Set program uniforms
     setTransformUniforms(*program);
     setPointCloudUniforms(*program);
+    program->setUniform("u_baseColor", pointColor);
 
     // Draw the actual point cloud
     program->draw();

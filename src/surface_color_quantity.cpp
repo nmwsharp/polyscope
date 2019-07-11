@@ -21,7 +21,6 @@ void SurfaceColorQuantity::draw() {
 
   // Set uniforms
   parent.setTransformUniforms(*program);
-  parent.setMeshUniforms(*program);
 
   program->draw();
 }

@@ -12,7 +12,6 @@ static const VertShader PLAIN_SURFACE_VERT_SHADER =  {
     {
         {"a_position", GLData::Vector3Float},
         {"a_normal", GLData::Vector3Float},
-        {"a_barycoord", GLData::Vector3Float},
     },
 
     // source
@@ -21,14 +20,11 @@ static const VertShader PLAIN_SURFACE_VERT_SHADER =  {
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
-      in vec3 a_barycoord;
       out vec3 Normal;
-      out vec3 Barycoord;
 
       void main()
       {
           Normal = mat3(u_modelView) * a_normal;
-          Barycoord = a_barycoord;
           gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
@@ -62,7 +58,6 @@ static const FragShader PLAIN_SURFACE_FRAG_SHADER = {
       uniform sampler2D t_mat_g;
       uniform sampler2D t_mat_b;
       in vec3 Normal;
-      in vec3 Barycoord;
       out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
@@ -91,7 +86,6 @@ static const VertShader VERTCOLOR_SURFACE_VERT_SHADER =  {
     {
         {"a_position", GLData::Vector3Float},
         {"a_normal", GLData::Vector3Float},
-        {"a_barycoord", GLData::Vector3Float},
         {"a_colorval", GLData::Float},
     },
 
@@ -101,17 +95,14 @@ static const VertShader VERTCOLOR_SURFACE_VERT_SHADER =  {
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
-      in vec3 a_barycoord;
       in float a_colorval;
       out vec3 Normal;
-      out vec3 Barycoord;
       out float Colorval;
 
       void main()
       {
           //Normal = a_normal;
           Normal = mat3(u_modelView) * a_normal;
-          Barycoord = a_barycoord;
           Colorval = a_colorval;
           gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
@@ -122,7 +113,6 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_basecolor", GLData::Vector3Float},
         {"u_rangeLow", GLData::Float},
         {"u_rangeHigh", GLData::Float},
     }, 
@@ -146,13 +136,11 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
     GLSL(150,
       uniform float u_rangeLow;
       uniform float u_rangeHigh;
-      uniform vec3 u_basecolor;
       uniform sampler1D t_colormap;
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
       uniform sampler2D t_mat_b;
       in vec3 Normal;
-      in vec3 Barycoord;
       in float Colorval;
       out vec4 outputF;
 
@@ -188,7 +176,6 @@ static const VertShader VERTBINARY_SURFACE_VERT_SHADER =  {
     {
         {"a_position", GLData::Vector3Float},
         {"a_normal", GLData::Vector3Float},
-        {"a_barycoord", GLData::Vector3Float},
         {"a_colorval", GLData::Float}, // should be 0 or 1
     },
 
@@ -198,16 +185,13 @@ static const VertShader VERTBINARY_SURFACE_VERT_SHADER =  {
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
-      in vec3 a_barycoord;
       in float a_colorval;
       out vec3 Normal;
-      out vec3 Barycoord;
       out float Colorval;
 
       void main()
       {
           Normal = mat3(u_modelView) * a_normal;
-          Barycoord = a_barycoord;
           Colorval = a_colorval;
           gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
@@ -218,7 +202,6 @@ static const FragShader VERTBINARY_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_basecolor", GLData::Vector3Float},
     }, 
 
     // attributes
@@ -238,13 +221,11 @@ static const FragShader VERTBINARY_SURFACE_FRAG_SHADER = {
     
     // source 
     GLSL(150,
-      uniform vec3 u_basecolor;
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
       uniform sampler2D t_mat_b;
       uniform sampler1D t_colormap;
       in vec3 Normal;
-      in vec3 Barycoord;
       in float Colorval;
       out vec4 outputF;
 
@@ -281,7 +262,6 @@ static const VertShader VERTCOLOR3_SURFACE_VERT_SHADER =  {
     {
         {"a_position", GLData::Vector3Float},
         {"a_normal", GLData::Vector3Float},
-        {"a_barycoord", GLData::Vector3Float},
         {"a_colorval", GLData::Vector3Float},
     },
 
@@ -291,16 +271,13 @@ static const VertShader VERTCOLOR3_SURFACE_VERT_SHADER =  {
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
-      in vec3 a_barycoord;
       in vec3 a_colorval;
       out vec3 Normal;
-      out vec3 Barycoord;
       out vec3 Colorval;
 
       void main()
       {
           Normal = mat3(u_modelView) * a_normal;
-          Barycoord = a_barycoord;
           Colorval = a_colorval;
           gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
@@ -311,7 +288,6 @@ static const FragShader VERTCOLOR3_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_basecolor", GLData::Vector3Float},
     }, 
 
     // attributes
@@ -330,12 +306,10 @@ static const FragShader VERTCOLOR3_SURFACE_FRAG_SHADER = {
     
     // source 
     GLSL(150,
-      uniform vec3 u_basecolor;
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
       uniform sampler2D t_mat_b;
       in vec3 Normal;
-      in vec3 Barycoord;
       in vec3 Colorval;
       out vec4 outputF;
 
@@ -397,7 +371,6 @@ static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_basecolor", GLData::Vector3Float},
         {"u_rangeLow", GLData::Float},
         {"u_rangeHigh", GLData::Float},
     }, 
@@ -421,7 +394,6 @@ static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     GLSL(150,
       uniform float u_rangeLow;
       uniform float u_rangeHigh;
-      uniform vec3 u_basecolor;
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
       uniform sampler2D t_mat_b;

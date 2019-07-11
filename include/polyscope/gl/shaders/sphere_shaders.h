@@ -223,12 +223,12 @@ static const GeomShader SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_modelView", GLData::Matrix44Float},
-        {"u_projMatrix", GLData::Matrix44Float},
-        {"u_pointRadius", GLData::Float},
         {"u_camRight", GLData::Vector3Float},
         {"u_camUp", GLData::Vector3Float},
         {"u_camZ", GLData::Vector3Float},
+        {"u_modelView", GLData::Matrix44Float},
+        {"u_projMatrix", GLData::Matrix44Float},
+        {"u_pointRadius", GLData::Float},
     }, 
 
     // attributes
@@ -304,6 +304,11 @@ static const FragShader SPHERE_BILLBOARD_FRAG_SHADER = {
         {"u_camRight", GLData::Vector3Float},
         {"u_camUp", GLData::Vector3Float},
         {"u_camZ", GLData::Vector3Float},
+        {"u_modelView", GLData::Matrix44Float},
+        {"u_projMatrix", GLData::Matrix44Float},
+        {"u_pointRadius", GLData::Float},
+
+
         {"u_baseColor", GLData::Vector3Float},
     }, 
 
@@ -373,9 +378,12 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
         {"u_camRight", GLData::Vector3Float},
         {"u_camUp", GLData::Vector3Float},
         {"u_camZ", GLData::Vector3Float},
+        {"u_modelView", GLData::Matrix44Float},
+        {"u_projMatrix", GLData::Matrix44Float},
+        {"u_pointRadius", GLData::Float},
+
         {"u_rangeLow", GLData::Float},
         {"u_rangeHigh", GLData::Float},
-        {"u_baseColor", GLData::Vector3Float},
     }, 
 
     // attributes
@@ -403,7 +411,6 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
         uniform float u_pointRadius;
         uniform float u_rangeLow;
         uniform float u_rangeHigh;
-        uniform vec3 u_baseColor;
         uniform sampler2D t_mat_r;
         uniform sampler2D t_mat_g;
         uniform sampler2D t_mat_b;
@@ -456,7 +463,9 @@ static const FragShader SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
         {"u_camRight", GLData::Vector3Float},
         {"u_camUp", GLData::Vector3Float},
         {"u_camZ", GLData::Vector3Float},
-        {"u_baseColor", GLData::Vector3Float}, /* unused here */
+        {"u_modelView", GLData::Matrix44Float},
+        {"u_projMatrix", GLData::Matrix44Float},
+        {"u_pointRadius", GLData::Float},
     }, 
 
     // attributes
@@ -481,7 +490,6 @@ static const FragShader SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
         uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
-        uniform vec3 u_baseColor;
         uniform sampler2D t_mat_r;
         uniform sampler2D t_mat_g;
         uniform sampler2D t_mat_b;
@@ -526,7 +534,9 @@ static const FragShader SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
         {"u_camRight", GLData::Vector3Float},
         {"u_camUp", GLData::Vector3Float},
         {"u_camZ", GLData::Vector3Float},
-        {"u_baseColor", GLData::Vector3Float}, /* unused here */
+        {"u_modelView", GLData::Matrix44Float},
+        {"u_projMatrix", GLData::Matrix44Float},
+        {"u_pointRadius", GLData::Float},
     }, 
 
     // attributes
@@ -545,7 +555,9 @@ static const FragShader SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
-        uniform vec3 u_baseColor;
+        uniform mat4 u_modelView;
+        uniform mat4 u_projMatrix;
+        uniform float u_pointRadius;
         flat in vec3 colorToFrag;
         in vec3 worldPosToFrag;
         in vec2 boxCoord;
@@ -556,15 +568,21 @@ static const FragShader SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
         void main()
         {
 
-          // Silence warnings about unused variables
-           worldPosToFrag;
-
+           // Set geometry for billboard
            float r = sqrt(boxCoord.x*boxCoord.x + boxCoord.y*boxCoord.y);
            if(r > 1.0) {
                discard;
            }
-
+           float zC = sqrt(1.0 - r*r);
+           
            outputF = vec4(colorToFrag, 1.0);
+           
+           // Set depth (expensive!)
+           vec3 zOffset = -zC * u_camZ * u_pointRadius;
+           vec3 realWorldPos = worldPosToFrag + zOffset;
+           vec4 clipPos = u_projMatrix * u_modelView * vec4(realWorldPos, 1.0);
+           float ndcDepth = clipPos.z / clipPos.w;
+           gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
         }
     )
 };

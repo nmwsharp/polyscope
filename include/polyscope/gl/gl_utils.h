@@ -165,6 +165,7 @@ public:
   // If update is set to "true", data is updated rather than allocated (must be allocated first)
 
   // Uniforms
+  bool hasUniform(std::string name);
   void setUniform(std::string name, int val);
   void setUniform(std::string name, unsigned int val);
   void setUniform(std::string name, float val);
@@ -177,6 +178,7 @@ public:
   void setUniform(std::string name, float x, float y, float z, float w);
 
   // = Attributes
+  bool hasAttribute(std::string name);
   void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0,
                     int size = -1);
   void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0,
@@ -220,13 +222,13 @@ private:
   struct GLUniform {
     std::string name;
     GLData type;
-    GLuint location;
+    GLint location;
     bool isSet; // has a value been assigned to this uniform?
   };
   struct GLAttribute {
     std::string name;
     GLData type;
-    GLuint location;
+    GLint location;
     GLuint VBOLoc;
     long int dataSize; // the size of the data currently stored in this attribute (-1 if nothing)
     int arrayCount;
@@ -234,7 +236,7 @@ private:
   struct GLTexture {
     std::string name;
     int dim;
-    GLuint location;
+    GLint location;
     GLTexturebuffer* textureBuffer;
     unsigned int index;
     bool isSet;

@@ -22,7 +22,8 @@ void filenamePromptCallback(char* buff, size_t len) {
   ImGui::SameLine();
 
   if (ImGui::Button("Cancel")) {
-    sprintf(buff, "");
+    // sprintf(buff, "");
+    buff[0] = 0; // because apparently gcc this this is clearer than that ^^^?
     popContext();
   }
 

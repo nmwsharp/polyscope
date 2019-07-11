@@ -318,7 +318,6 @@ std::array<float, 4> GLFramebuffer::readFloat4(int xPos, int yPos) {
   // Read from the pick buffer
   std::array<float, 4> result;
   glReadPixels(xPos, yPos, 1, 1, GL_RGBA, GL_FLOAT, &result);
-  gl::checkGLError(true);
 
   return result;
 }
@@ -434,6 +433,7 @@ GLProgram::GLProgram(const VertShader* vShader, const TessShader* tShader, const
   compileGLProgram();
   setDataLocations();
   createBuffers();
+  gl::checkGLError();
 }
 
 GLProgram::~GLProgram() {
@@ -572,16 +572,19 @@ void GLProgram::setDataLocations() {
   // Uniforms
   for (GLUniform& u : uniforms) {
     u.location = glGetUniformLocation(programHandle, u.name.c_str());
+    if (u.location == -1) throw std::runtime_error("failed to get location for uniform " + u.name);
   }
 
   // Attributes
   for (GLAttribute& a : attributes) {
     a.location = glGetAttribLocation(programHandle, a.name.c_str());
+    if (a.location == -1) throw std::runtime_error("failed to get location for attribute " + a.name);
   }
 
   // Textures
   for (GLTexture& t : textures) {
     t.location = glGetUniformLocation(programHandle, t.name.c_str());
+    if (t.location == -1) throw std::runtime_error("failed to get location for texture " + t.name);
   }
 }
 
@@ -630,7 +633,7 @@ void GLProgram::createBuffers() {
         break;
       }
     }
-    // checkGLError();
+    checkGLError();
   }
 
   // Create an index buffer, if we're using one
@@ -655,6 +658,15 @@ void GLProgram::createBuffers() {
     GLTexture& t = textures[iTexture];
     t.index = iTexture;
   }
+}
+
+bool GLProgram::hasUniform(std::string name) {
+  for (GLUniform& u : uniforms) {
+    if (u.name == name) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // Set an integer
@@ -835,6 +847,15 @@ void GLProgram::setUniform(std::string name, float x, float y, float z, float w)
     }
   }
   throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
+}
+
+bool GLProgram::hasAttribute(std::string name) {
+  for (GLAttribute& a : attributes) {
+    if (a.name == name) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void GLProgram::setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update, int offset, int size) {
@@ -1412,7 +1433,7 @@ void printShaderInfoLog(GLuint shaderHandle) {
 
   glGetShaderiv(shaderHandle, GL_INFO_LOG_LENGTH, &logLen);
 
-  if (options::verbosity > 1 && logLen > 1) { // for some reason we often get logs of length 1 with no
+  if (options::verbosity > 0 && logLen > 1) { // for some reason we often get logs of length 1 with no
                                               // visible characters
     log = (char*)malloc(logLen);
     glGetShaderInfoLog(shaderHandle, logLen, &chars, log);
@@ -1428,7 +1449,7 @@ void printProgramInfoLog(GLuint handle) {
 
   glGetProgramiv(handle, GL_INFO_LOG_LENGTH, &logLen);
 
-  if (options::verbosity > 1 && logLen > 1) { // for some reason we often get logs of length 1 with no
+  if (options::verbosity > 0 && logLen > 1) { // for some reason we often get logs of length 1 with no
                                               // visible characters
     log = (char*)malloc(logLen);
     glGetProgramInfoLog(handle, logLen, &chars, log);

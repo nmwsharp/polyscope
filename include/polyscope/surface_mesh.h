@@ -172,7 +172,6 @@ public:
 
   // === Helpers
   void fillGeometryBuffers(gl::GLProgram& p);
-  void setMeshUniforms(gl::GLProgram& p);
   void setShadeStyle(ShadeStyle newShadeStyle);
 
 
@@ -327,9 +326,6 @@ SurfaceMesh::SurfaceMesh(std::string name, const V& vertexPositions, const F& fa
   // Colors
   baseColor = getNextUniqueColor();
   surfaceColor = baseColor;
-
-  prepare();
-  preparePick();
 }
 
 // Make mesh element type printable

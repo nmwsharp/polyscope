@@ -397,7 +397,7 @@ int main(int argc, char** argv) {
   // Create a point cloud
   for (int j = 0; j < 3; j++) {
     std::vector<glm::vec3> points;
-    for (size_t i = 0; i < 3000; i++) {
+    for (size_t i = 0; i < 300000; i++) {
       points.push_back(
           glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
     }

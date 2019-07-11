@@ -39,7 +39,6 @@ void SurfaceScalarQuantity::draw() {
 
   // Set uniforms
   parent.setTransformUniforms(*program);
-  parent.setMeshUniforms(*program);
   setProgramUniforms(*program);
 
   program->draw();
