@@ -49,8 +49,8 @@ void SurfaceDistanceQuantity::draw() {
 
 void SurfaceDistanceQuantity::createProgram() {
   // Create the program to draw this quantity
-  program.reset(
-      new gl::GLProgram(&VERT_DIST_SURFACE_VERT_SHADER, &VERT_DIST_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
+  program.reset(new gl::GLProgram(&gl::VERT_DIST_SURFACE_VERT_SHADER, &gl::VERT_DIST_SURFACE_FRAG_SHADER,
+                                  gl::DrawMode::Triangles));
 
   // Fill color buffers
   fillColorBuffers(*program);

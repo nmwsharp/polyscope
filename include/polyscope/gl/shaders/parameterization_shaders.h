@@ -1,5 +1,10 @@
 #pragma once
 
+#include "polyscope/gl/shaders.h"
+
+namespace polyscope {
+namespace gl {
+
 static const VertShader PARAM_SURFACE_VERT_SHADER =  {
     
     // uniforms
@@ -16,7 +21,7 @@ static const VertShader PARAM_SURFACE_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
@@ -59,7 +64,7 @@ static const FragShader PARAM_CHECKER_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform vec3 u_color1;
       uniform vec3 u_color2;
       uniform float u_modLen;
@@ -127,7 +132,7 @@ static const FragShader PARAM_GRID_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform vec3 u_gridLineColor;
       uniform vec3 u_gridBackgroundColor;
       uniform float u_modLen;
@@ -195,7 +200,7 @@ static const FragShader PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform float u_modLen;
       uniform float u_angle;
 
@@ -263,7 +268,7 @@ static const FragShader PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform float u_modLen;
       uniform float u_angle;
 
@@ -310,3 +315,5 @@ static const FragShader PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER = {
 
     )
 };
+
+}}

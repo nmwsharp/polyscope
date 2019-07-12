@@ -19,8 +19,8 @@ SurfaceCountQuantity::SurfaceCountQuantity(std::string name, SurfaceMesh& mesh_,
 
 void SurfaceCountQuantity::createProgram() {
 
-  program.reset(new gl::GLProgram(&SPHERE_VALUE_VERT_SHADER, &SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
-                                  &SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+  program.reset(new gl::GLProgram(&gl::SPHERE_VALUE_VERT_SHADER, &gl::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
+                                  &gl::SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
 
   // Color limits
   sum = 0;

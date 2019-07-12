@@ -1,5 +1,10 @@
 #pragma once
 
+#include "polyscope/gl/shaders.h"
+
+namespace polyscope {
+namespace gl {
+
 
 static const VertShader PASSTHRU_CYLINDER_VERT_SHADER = {
     // uniforms
@@ -13,7 +18,7 @@ static const VertShader PASSTHRU_CYLINDER_VERT_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in vec3 a_position_tail;
         in vec3 a_position_tip;
 
@@ -43,7 +48,7 @@ static const GeomShader CYLINDER_GEOM_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         layout(points) in;
         layout(triangle_strip, max_vertices=32) out;
         in vec3 position_tip[];
@@ -143,7 +148,7 @@ static const FragShader CYLINDER_FRAG_SHADER = {
     "outputF",
  
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         uniform vec3 u_color;
         uniform sampler2D t_mat_r;
         uniform sampler2D t_mat_g;
@@ -161,3 +166,4 @@ static const FragShader CYLINDER_FRAG_SHADER = {
     )
 };
 
+}}

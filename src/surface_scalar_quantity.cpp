@@ -152,8 +152,8 @@ SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(std::string name, std::
 
 void SurfaceScalarVertexQuantity::createProgram() {
   // Create the program to draw this quantity
-  program.reset(
-      new gl::GLProgram(&VERTCOLOR_SURFACE_VERT_SHADER, &VERTCOLOR_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
+  program.reset(new gl::GLProgram(&gl::VERTCOLOR_SURFACE_VERT_SHADER, &gl::VERTCOLOR_SURFACE_FRAG_SHADER,
+                                  gl::DrawMode::Triangles));
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -239,8 +239,8 @@ SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name, std::vect
 
 void SurfaceScalarFaceQuantity::createProgram() {
   // Create the program to draw this quantity
-  program.reset(
-      new gl::GLProgram(&VERTCOLOR_SURFACE_VERT_SHADER, &VERTCOLOR_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
+  program.reset(new gl::GLProgram(&gl::VERTCOLOR_SURFACE_VERT_SHADER, &gl::VERTCOLOR_SURFACE_FRAG_SHADER,
+                                  gl::DrawMode::Triangles));
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -293,7 +293,7 @@ SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name, std::vect
 
 void SurfaceScalarEdgeQuantity::createProgram() {
   // Create the program to draw this quantity
-  program.reset(new gl::GLProgram(&HALFEDGECOLOR_SURFACE_VERT_SHADER, &HALFEDGECOLOR_SURFACE_FRAG_SHADER,
+  program.reset(new gl::GLProgram(&gl::HALFEDGECOLOR_SURFACE_VERT_SHADER, &gl::HALFEDGECOLOR_SURFACE_FRAG_SHADER,
                                   gl::DrawMode::Triangles));
 
   // Fill color buffers
@@ -380,7 +380,7 @@ SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(std::string name, s
 
 void SurfaceScalarHalfedgeQuantity::createProgram() {
   // Create the program to draw this quantity
-  program.reset(new gl::GLProgram(&HALFEDGECOLOR_SURFACE_VERT_SHADER, &HALFEDGECOLOR_SURFACE_FRAG_SHADER,
+  program.reset(new gl::GLProgram(&gl::HALFEDGECOLOR_SURFACE_VERT_SHADER, &gl::HALFEDGECOLOR_SURFACE_FRAG_SHADER,
                                   gl::DrawMode::Triangles));
 
   // Fill color buffers

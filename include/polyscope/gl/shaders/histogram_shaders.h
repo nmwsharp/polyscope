@@ -1,5 +1,10 @@
 #pragma once
 
+#include "polyscope/gl/shaders.h"
+
+namespace polyscope {
+namespace gl {
+
 static const VertShader HISTOGRAM_VERT_SHADER =  {
     
     // uniforms
@@ -12,7 +17,7 @@ static const VertShader HISTOGRAM_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       in vec2 a_coord;
       
       out float t;
@@ -47,7 +52,7 @@ static const FragShader HISTORGRAM_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(330,
+    POLYSCOPE_GLSL(330,
       in float t;
 
       uniform sampler1D t_colormap;
@@ -73,3 +78,5 @@ static const FragShader HISTORGRAM_FRAG_SHADER = {
       }
     )
 };
+
+}}

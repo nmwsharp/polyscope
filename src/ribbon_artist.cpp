@@ -23,7 +23,7 @@ void RibbonArtist::deleteProgram() { safeDelete(program); }
 void RibbonArtist::createProgram() {
 
   // Create the program
-  program = new gl::GLProgram(&RIBBON_VERT_SHADER, &RIBBON_GEOM_SHADER, &RIBBON_FRAG_SHADER,
+  program = new gl::GLProgram(&gl::RIBBON_VERT_SHADER, &gl::RIBBON_GEOM_SHADER, &gl::RIBBON_FRAG_SHADER,
                               gl::DrawMode::IndexedLineStripAdjacency);
 
   // Set the restart index for the line strip

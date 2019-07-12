@@ -44,8 +44,8 @@ std::string PointCloudColorQuantity::niceName() { return name + " (color)"; }
 
 void PointCloudColorQuantity::createPointProgram() {
   // Create the program to draw this quantity
-  pointProgram.reset(new gl::GLProgram(&SPHERE_COLOR_VERT_SHADER, &SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                       &SPHERE_COLOR_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+  pointProgram.reset(new gl::GLProgram(&gl::SPHERE_COLOR_VERT_SHADER, &gl::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
+                                       &gl::SPHERE_COLOR_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
 
   // Fill buffers
   pointProgram->setAttribute("a_position", parent.points);

@@ -85,8 +85,8 @@ void PointCloud::prepare() {
 
   // It not quantity is coloring the points, draw with a default color
   if (dominantQuantity == nullptr) {
-    program.reset(new gl::GLProgram(&SPHERE_VERT_SHADER, &SPHERE_BILLBOARD_GEOM_SHADER, &SPHERE_BILLBOARD_FRAG_SHADER,
-                                    gl::DrawMode::Points));
+    program.reset(new gl::GLProgram(&gl::SPHERE_VERT_SHADER, &gl::SPHERE_BILLBOARD_GEOM_SHADER,
+                                    &gl::SPHERE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
   }
   setMaterialForProgram(*program, "wax");
 
@@ -101,8 +101,8 @@ void PointCloud::preparePick() {
   size_t pickStart = pick::requestPickBufferRange(this, pickCount);
 
   // Create a new pick program
-  pickProgram.reset(new gl::GLProgram(&SPHERE_COLOR_VERT_SHADER, &SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                      &SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+  pickProgram.reset(new gl::GLProgram(&gl::SPHERE_COLOR_VERT_SHADER, &gl::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
+                                      &gl::SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
 
   // Fill an index buffer
   std::vector<glm::vec3> pickColors;

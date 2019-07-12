@@ -231,7 +231,7 @@ void SurfaceMesh::draw() {
 
     // Set uniforms
     setTransformUniforms(*program);
-    program->setUniform("u_basecolor", surfaceColor); 
+    program->setUniform("u_basecolor", surfaceColor);
 
     program->draw();
   }
@@ -280,7 +280,8 @@ void SurfaceMesh::drawPick() {
 }
 
 void SurfaceMesh::prepare() {
-  program.reset(new gl::GLProgram(&PLAIN_SURFACE_VERT_SHADER, &PLAIN_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
+  program.reset(
+      new gl::GLProgram(&gl::PLAIN_SURFACE_VERT_SHADER, &gl::PLAIN_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
 
   // Populate draw buffers
   fillGeometryBuffers(*program);
@@ -289,8 +290,8 @@ void SurfaceMesh::prepare() {
 }
 
 void SurfaceMesh::prepareWireframe() {
-  wireframeProgram.reset(
-      new gl::GLProgram(&SURFACE_WIREFRAME_VERT_SHADER, &SURFACE_WIREFRAME_FRAG_SHADER, gl::DrawMode::Triangles));
+  wireframeProgram.reset(new gl::GLProgram(&gl::SURFACE_WIREFRAME_VERT_SHADER, &gl::SURFACE_WIREFRAME_FRAG_SHADER,
+                                           gl::DrawMode::Triangles));
 
   // Populate draw buffers
   fillGeometryBuffersWireframe(*wireframeProgram);
@@ -301,7 +302,8 @@ void SurfaceMesh::prepareWireframe() {
 void SurfaceMesh::preparePick() {
 
   // Create a new program
-  pickProgram.reset(new gl::GLProgram(&PICK_SURFACE_VERT_SHADER, &PICK_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
+  pickProgram.reset(
+      new gl::GLProgram(&gl::PICK_SURFACE_VERT_SHADER, &gl::PICK_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
 
   // Get element indices
   size_t totalPickElements = nVertices() + nFaces() + nEdges() + nHalfedges();
@@ -1068,7 +1070,6 @@ void SurfaceMeshQuantity::buildVertexInfoGUI(size_t vInd) {}
 void SurfaceMeshQuantity::buildFaceInfoGUI(size_t fInd) {}
 void SurfaceMeshQuantity::buildEdgeInfoGUI(size_t eInd) {}
 void SurfaceMeshQuantity::buildHalfedgeInfoGUI(size_t heInd) {}
-
 
 
 } // namespace polyscope

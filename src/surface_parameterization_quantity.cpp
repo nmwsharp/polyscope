@@ -55,21 +55,21 @@ void SurfaceParameterizationQuantity::createProgram() {
 
   switch (vizStyle) {
   case ParamVizStyle::CHECKER:
-    program.reset(
-        new gl::GLProgram(&PARAM_SURFACE_VERT_SHADER, &PARAM_CHECKER_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
+    program.reset(new gl::GLProgram(&gl::PARAM_SURFACE_VERT_SHADER, &gl::PARAM_CHECKER_SURFACE_FRAG_SHADER,
+                                    gl::DrawMode::Triangles));
     break;
   case ParamVizStyle::GRID:
-    program.reset(
-        new gl::GLProgram(&PARAM_SURFACE_VERT_SHADER, &PARAM_GRID_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
+    program.reset(new gl::GLProgram(&gl::PARAM_SURFACE_VERT_SHADER, &gl::PARAM_GRID_SURFACE_FRAG_SHADER,
+                                    gl::DrawMode::Triangles));
     break;
   case ParamVizStyle::LOCAL_CHECK:
-    program.reset(new gl::GLProgram(&PARAM_SURFACE_VERT_SHADER, &PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER,
+    program.reset(new gl::GLProgram(&gl::PARAM_SURFACE_VERT_SHADER, &gl::PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER,
                                     gl::DrawMode::Triangles));
     program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap]);
     break;
   case ParamVizStyle::LOCAL_RAD:
-    program.reset(
-        new gl::GLProgram(&PARAM_SURFACE_VERT_SHADER, &PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
+    program.reset(new gl::GLProgram(&gl::PARAM_SURFACE_VERT_SHADER, &gl::PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER,
+                                    gl::DrawMode::Triangles));
     program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap]);
     break;
   }
@@ -141,7 +141,8 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
 
   // Choose viz style
   if (ImGui::BeginCombo("style", styleName(vizStyle).c_str())) {
-    for (ParamVizStyle s : {ParamVizStyle::CHECKER, ParamVizStyle::GRID, ParamVizStyle::LOCAL_CHECK, ParamVizStyle::LOCAL_RAD}) {
+    for (ParamVizStyle s :
+         {ParamVizStyle::CHECKER, ParamVizStyle::GRID, ParamVizStyle::LOCAL_CHECK, ParamVizStyle::LOCAL_RAD}) {
       if (ImGui::Selectable(styleName(s).c_str(), s == vizStyle)) {
         setStyle(s);
       }

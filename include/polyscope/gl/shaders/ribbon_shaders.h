@@ -1,5 +1,10 @@
 #pragma once
 
+#include "polyscope/gl/shaders.h"
+
+namespace polyscope {
+namespace gl {
+
 
 // NOTE: You probably don't want to include this directly... see shaders.h
 
@@ -17,7 +22,7 @@ static const VertShader RIBBON_VERT_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in vec3 a_position;
         in vec3 a_color;
         in vec3 a_normal;
@@ -48,7 +53,7 @@ static const GeomShader RIBBON_GEOM_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         layout(lines_adjacency) in;
         layout(triangle_strip, max_vertices=20) out;
         in vec3 Color[];
@@ -164,7 +169,7 @@ static const FragShader RIBBON_FRAG_SHADER = {
     "outputF",
  
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         uniform vec3 u_eye;
         uniform vec3 u_lightCenter;
         uniform float u_lightDist;
@@ -193,3 +198,4 @@ static const FragShader RIBBON_FRAG_SHADER = {
     )
 };
 
+}}

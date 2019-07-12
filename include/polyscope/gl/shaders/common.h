@@ -1,6 +1,13 @@
-// This file defines common GLSL constants and routines used by
+#pragma once
+
+// This file defines common POLYSCOPE_GLSL constants and routines used by
 // multiple shaders; it is combined at link time with all fragment
 // shaders compiled via the methods in the GLProgram class.
+
+#include "polyscope/gl/shaders.h"
+
+namespace polyscope {
+namespace gl {
 
 const char* shaderCommonSource = R"(
 #version 410
@@ -77,3 +84,4 @@ vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat
 
 )";
 
+}}

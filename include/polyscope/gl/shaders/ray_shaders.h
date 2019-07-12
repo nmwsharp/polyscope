@@ -1,5 +1,10 @@
 #pragma once
 
+#include "polyscope/gl/shaders.h"
+
+namespace polyscope {
+namespace gl {
+
 
 static const VertShader RAY_VERT_SHADER = {
     // uniforms
@@ -16,7 +21,7 @@ static const VertShader RAY_VERT_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in vec3 a_position;
         in float a_tp;
         in float a_offset;
@@ -50,7 +55,7 @@ static const GeomShader RAY_GEOM_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         layout(lines) in;
         layout(line_strip, max_vertices=2) out;
         
@@ -153,7 +158,7 @@ static const FragShader RAY_FRAG_SHADER = {
     "outputF",
  
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in float tp2;
         in float offset2;
     
@@ -190,3 +195,4 @@ static const FragShader RAY_FRAG_SHADER = {
     )
 };
 
+}}

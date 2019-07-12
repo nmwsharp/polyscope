@@ -244,7 +244,7 @@ void Histogram::prepare() {
   framebuffer->bindToColorTexturebuffer(texturebuffer);
 
   // Create the program
-  program = new gl::GLProgram(&HISTOGRAM_VERT_SHADER, &HISTORGRAM_FRAG_SHADER, gl::DrawMode::Triangles);
+  program = new gl::GLProgram(&gl::HISTOGRAM_VERT_SHADER, &gl::HISTORGRAM_FRAG_SHADER, gl::DrawMode::Triangles);
 
   prepared = true;
 }

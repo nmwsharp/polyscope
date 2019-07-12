@@ -1,5 +1,10 @@
 #pragma once
 
+#include "polyscope/gl/shaders.h"
+
+namespace polyscope {
+namespace gl {
+
 static const VertShader TEXTURE_DRAW_VERT_SHADER =  {
     
     // uniforms
@@ -12,7 +17,7 @@ static const VertShader TEXTURE_DRAW_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       in vec3 a_position;
       in vec2 a_tcoord;
       out vec2 tCoord;
@@ -44,7 +49,7 @@ static const FragShader TEXTURE_DRAW_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       in vec2 tCoord;
 
       uniform sampler2D t_image;
@@ -59,3 +64,5 @@ static const FragShader TEXTURE_DRAW_FRAG_SHADER = {
 
     )
 };
+
+}}

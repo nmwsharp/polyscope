@@ -1,7 +1,11 @@
 #pragma once
 
+#include "polyscope/gl/shaders.h"
 
-// NOTE: You probably don't want to include this directly... see shaders.h
+namespace polyscope {
+namespace gl {
+
+// clang-format off
 
 static const VertShader SPHERE_VERT_SHADER = {
     // uniforms
@@ -14,7 +18,7 @@ static const VertShader SPHERE_VERT_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in vec3 a_position;
         void main()
         {
@@ -35,7 +39,7 @@ static const VertShader SPHERE_VALUE_VERT_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in vec3 a_position;
         in float a_value;
         out float value;
@@ -61,7 +65,7 @@ static const VertShader SPHERE_COLOR_VERT_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in vec3 a_position;
         in vec3 a_color;
         out vec3 Color;
@@ -92,7 +96,7 @@ static const GeomShader SPHERE_BILLBOARD_GEOM_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         layout(points) in;
         layout(triangle_strip, max_vertices=4) out;
         uniform mat4 u_modelView;
@@ -161,7 +165,7 @@ static const GeomShader SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         layout(points) in;
         layout(triangle_strip, max_vertices=4) out;
         in float value[];
@@ -236,7 +240,7 @@ static const GeomShader SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         layout(points) in;
         layout(triangle_strip, max_vertices=4) out;
         in vec3 Color[];
@@ -327,7 +331,7 @@ static const FragShader SPHERE_BILLBOARD_FRAG_SHADER = {
     "outputF",
  
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
@@ -402,7 +406,7 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
     "outputF",
  
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
@@ -483,7 +487,7 @@ static const FragShader SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
     "outputF",
  
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
@@ -551,7 +555,7 @@ static const FragShader SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
     "outputF",
  
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
@@ -586,3 +590,8 @@ static const FragShader SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
         }
     )
 };
+
+// clang-format on
+
+} // namespace gl
+} // namespace polyscope

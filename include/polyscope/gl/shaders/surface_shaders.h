@@ -1,5 +1,10 @@
 #pragma once
 
+#include "polyscope/gl/shaders.h"
+
+namespace polyscope {
+namespace gl {
+
 static const VertShader PLAIN_SURFACE_VERT_SHADER =  {
     
     // uniforms
@@ -15,7 +20,7 @@ static const VertShader PLAIN_SURFACE_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
@@ -52,7 +57,7 @@ static const FragShader PLAIN_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform vec3 u_basecolor;
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
@@ -90,7 +95,7 @@ static const VertShader VERTCOLOR_SURFACE_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
@@ -133,7 +138,7 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform float u_rangeLow;
       uniform float u_rangeHigh;
       uniform sampler1D t_colormap;
@@ -180,7 +185,7 @@ static const VertShader VERTBINARY_SURFACE_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
@@ -220,7 +225,7 @@ static const FragShader VERTBINARY_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
       uniform sampler2D t_mat_b;
@@ -266,7 +271,7 @@ static const VertShader VERTCOLOR3_SURFACE_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
@@ -305,7 +310,7 @@ static const FragShader VERTCOLOR3_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
       uniform sampler2D t_mat_b;
@@ -346,7 +351,7 @@ static const VertShader HALFEDGECOLOR_SURFACE_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
@@ -391,7 +396,7 @@ static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform float u_rangeLow;
       uniform float u_rangeHigh;
       uniform sampler2D t_mat_r;
@@ -454,7 +459,7 @@ static const VertShader PICK_SURFACE_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
 
@@ -507,7 +512,7 @@ static const FragShader PICK_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
 
       in vec3 Barycoord;
       
@@ -573,7 +578,7 @@ static const VertShader FACECOLOR_PLAIN_SURFACE_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
@@ -606,7 +611,7 @@ static const FragShader FACECOLOR_PLAIN_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       flat in vec3 Colorval;
       out vec4 outputF;
 
@@ -617,3 +622,5 @@ static const FragShader FACECOLOR_PLAIN_SURFACE_FRAG_SHADER = {
 
     )
 };
+
+}}

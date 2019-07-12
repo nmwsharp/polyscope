@@ -1,5 +1,10 @@
 #pragma once
 
+#include "polyscope/gl/shaders.h"
+
+namespace polyscope {
+namespace gl {
+
 
 // NOTE: You probably don't want to include this directly... see shaders.h
 
@@ -15,7 +20,7 @@ static const VertShader PASSTHRU_VECTOR_VERT_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in vec3 a_position;
         in vec3 a_vector;
 
@@ -46,7 +51,7 @@ static const GeomShader VECTOR_GEOM_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         layout(points) in;
         layout(triangle_strip, max_vertices=40) out;
         in vec3 vector[];
@@ -155,7 +160,7 @@ static const FragShader SHINY_VECTOR_FRAG_SHADER = {
     "outputF",
  
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         uniform vec3 u_color;
         uniform sampler2D t_mat_r;
         uniform sampler2D t_mat_g;
@@ -173,3 +178,5 @@ static const FragShader SHINY_VECTOR_FRAG_SHADER = {
     )
 };
 
+
+}}

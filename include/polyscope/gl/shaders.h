@@ -5,8 +5,10 @@
 #include <vector>
 
 // Make syntax  nicer like this, but we lose line numbers in GL debug output
-#define GLSL(version, shader) "#version " #version "\n" #shader
+#define POLYSCOPE_GLSL(version, shader) "#version " #version "\n" #shader
 
+namespace polyscope {
+namespace gl {
 
 // Enum for openGL data types
 enum class GLData { Vector2Float, Vector3Float, Vector4Float, Matrix44Float, Float, Int, UInt, Index };
@@ -58,3 +60,6 @@ struct FragShader {
   const std::string outputLoc;
   const std::string src;
 };
+
+} // namespace gl
+} // namespace polyscope

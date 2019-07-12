@@ -63,8 +63,8 @@ void SurfaceVectorQuantity::draw() {
 
 void SurfaceVectorQuantity::prepareProgram() {
 
-  program.reset(new gl::GLProgram(&PASSTHRU_VECTOR_VERT_SHADER, &VECTOR_GEOM_SHADER, &SHINY_VECTOR_FRAG_SHADER,
-                                  gl::DrawMode::Points));
+  program.reset(new gl::GLProgram(&gl::PASSTHRU_VECTOR_VERT_SHADER, &gl::VECTOR_GEOM_SHADER,
+                                  &gl::SHINY_VECTOR_FRAG_SHADER, gl::DrawMode::Points));
 
   // Fill buffers
   std::vector<glm::vec3> mappedVectors;

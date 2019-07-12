@@ -72,8 +72,8 @@ void SurfaceGraphQuantity::setUniforms() {
 void SurfaceGraphQuantity::createPrograms() {
 
   { // Point program
-    pointProgram.reset(new gl::GLProgram(&SPHERE_VERT_SHADER, &SPHERE_BILLBOARD_GEOM_SHADER,
-                                         &SPHERE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+    pointProgram.reset(new gl::GLProgram(&gl::SPHERE_VERT_SHADER, &gl::SPHERE_BILLBOARD_GEOM_SHADER,
+                                         &gl::SPHERE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
 
     pointProgram->setAttribute("a_position", nodes);
     setMaterialForProgram(*pointProgram, "wax");
@@ -81,8 +81,8 @@ void SurfaceGraphQuantity::createPrograms() {
 
   { // Line program
 
-    lineProgram.reset(new gl::GLProgram(&PASSTHRU_CYLINDER_VERT_SHADER, &CYLINDER_GEOM_SHADER, &CYLINDER_FRAG_SHADER,
-                                        gl::DrawMode::Points));
+    lineProgram.reset(new gl::GLProgram(&gl::PASSTHRU_CYLINDER_VERT_SHADER, &gl::CYLINDER_GEOM_SHADER,
+                                        &gl::CYLINDER_FRAG_SHADER, gl::DrawMode::Points));
 
     // Build buffers
     std::vector<glm::vec3> edgeStarts, edgeEnds;
