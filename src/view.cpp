@@ -170,6 +170,23 @@ void processZoom(double amount) {
   requestRedraw();
 }
 
+void invalidateView() { viewMat = glm::mat4x4(std::numeric_limits<float>::quiet_NaN()); }
+
+void ensureViewValid() {
+  bool allFinite = true;
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      if (!std::isfinite(viewMat[i][j])) {
+        allFinite = false;
+      }
+    }
+  }
+
+  if (!allFinite) {
+    resetCameraToHomeView();
+  }
+}
+
 void resetCameraToDefault() {
 
   // WARNING: Duplicated here and in flyToDefault()
@@ -208,7 +225,8 @@ glm::mat4 computeHomeView() {
   glm::mat4x4 T(1.0);
   T[0][0] = -1.;
   T[2][2] = -1.;
-  T = T * glm::translate(glm::mat4x4(1.0), -state::center + glm::vec3(0.0, -0.1 * state::lengthScale, state::lengthScale));
+  T = T *
+      glm::translate(glm::mat4x4(1.0), -state::center + glm::vec3(0.0, -0.1 * state::lengthScale, state::lengthScale));
 
   return T;
 }

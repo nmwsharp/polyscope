@@ -63,6 +63,14 @@ void processZoom(double amount);
 void setWindowSize(int width, int height);
 void setViewToCamera(const CameraParameters& p);
 
+// Invlidateing the view
+// The view is invalid if the viewMat has NaN entries.
+// It is set to invalid initially, but we call ensureViewValid() before any renders.
+// This ensures we never try to redner with an invalid view, but also allows the user to
+// set custom views if they wish, without them getting overwritten.
+void invalidateView();
+void ensureViewValid();
+
 // The "default" view simply looks at the origin
 void resetCameraToDefault();
 void flyToDefault();

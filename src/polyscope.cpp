@@ -334,6 +334,10 @@ void init() {
   // Initialize pick buffer
   allocateGlobalBuffersAndPrograms();
 
+  draw(); // TODO this is a terrible fix for a bug where the ground doesn't show up until the SECOND time we draw...
+          // cannot figure out why
+  view::invalidateView();
+
   state::initialized = true;
 }
 
@@ -561,6 +565,9 @@ void renderScene() {
   sceneFramebuffer->bindForRendering();
   sceneFramebuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
   sceneFramebuffer->clear();
+
+  // If a view has never been set, this will set it to the home view
+  view::ensureViewValid();
 
   drawStructures();
 
@@ -798,6 +805,7 @@ void bindDefaultBuffer() {
 
 void mainLoopIteration() {
 
+
   // The windowing system will let this busy-loop in some situations, unfortunately. Make sure that doesn't happen.
   if (options::maxFPS != -1) {
     auto currTime = std::chrono::steady_clock::now();
@@ -814,7 +822,7 @@ void mainLoopIteration() {
   lastMainLoopIterTime = std::chrono::steady_clock::now();
 
 
-  // Update the width and heigh
+  // Update the width and height
   glfwMakeContextCurrent(mainWindow);
   int newBufferWidth, newBufferHeight, newWindowWidth, newWindowHeight;
   glfwGetFramebufferSize(mainWindow, &newBufferWidth, &newBufferHeight);
@@ -841,8 +849,6 @@ void mainLoopIteration() {
 }
 
 void show() {
-  view::resetCameraToDefault();
-  view::flyToHomeView();
 
   // Main loop
   while (!glfwWindowShouldClose(mainWindow)) {
