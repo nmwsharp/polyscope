@@ -20,7 +20,7 @@ public:
   void updateColormap(const gl::Colormap* newColormap);
 
   // Width = -1 means set automatically
-  void buildUI(float width=-1.0);
+  void buildUI(float width = -1.0);
 
   float colormapRangeMin, colormapRangeMax; // in DATA values, not [0,1]
 

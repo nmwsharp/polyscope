@@ -77,4 +77,5 @@ static const FragShader PROJECTEDIMAGE_FRAG_SHADER = {
 
 // clang-format on
 
-}}
+} // namespace gl
+} // namespace polyscope

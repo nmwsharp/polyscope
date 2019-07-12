@@ -22,5 +22,5 @@ extern bool groundPlaneEnabled;
 // Default: 0.0
 extern float groundPlaneHeightFactor;
 
-}
-}
+} // namespace gl
+} // namespace polyscope

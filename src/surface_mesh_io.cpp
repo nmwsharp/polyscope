@@ -51,7 +51,7 @@ Index parseFaceIndex(const std::string& token) {
   // decrement since indices in OBJ files are 1-based
   return Index(indices[0] - 1, indices[1] - 1, indices[2] - 1);
 }
-}
+} // namespace
 
 
 void loadPolygonSoup_OBJ(std::string filename, std::vector<std::array<double, 3>>& vertexPositionsOut,
@@ -143,4 +143,4 @@ void loadPolygonSoup(std::string filename, std::vector<std::array<double, 3>>& v
     error("Could not detect file type to load mesh from " + filename);
   }
 }
-}
+} // namespace polyscope

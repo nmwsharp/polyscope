@@ -4,8 +4,8 @@
 #define GLFW_INCLUDE_GLCOREARB
 #include <GLFW/glfw3.h>
 #else
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glad/glad.h>
 #endif
 
 // This class is MOSTLY the opengl3 example from the imgui repo, however it also
@@ -27,5 +27,5 @@ extern double time;
 bool ImGui_ImplGlfwGL3_Init(GLFWwindow* window, bool install_callbacks);
 void ImGui_ImplGlfwGL3_NewFrame();
 
-}  // namespace imguirender
-}  // namespace polyscope
+} // namespace imguirender
+} // namespace polyscope

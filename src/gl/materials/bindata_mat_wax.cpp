@@ -1,7 +1,10 @@
-#include <vector>
 #include "polyscope/gl/materials/materials.h"
-namespace polyscope { 
-namespace gl { 
+#include <vector>
+namespace polyscope {
+namespace gl {
+
+// clang-format off
+
 const std::vector<std::vector<unsigned char>> bindata_mat_wax = {
 {
 0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 
@@ -4015,4 +4018,7 @@ const std::vector<std::vector<unsigned char>> bindata_mat_wax = {
 0x51, 0x45, 0x14, 0x01, 0xff, 0xd9, 
 },
 };
-}}
+
+// clang-format on
+} // namespace gl
+} // namespace polyscope

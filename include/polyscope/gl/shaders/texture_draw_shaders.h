@@ -69,4 +69,5 @@ static const FragShader TEXTURE_DRAW_FRAG_SHADER = {
 
 // clang-format on
 
-}}
+} // namespace gl
+} // namespace polyscope

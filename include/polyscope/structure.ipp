@@ -89,7 +89,7 @@ void QuantityStructure<S>::setDominantQuantity(QuantityType* q) {
       qOther->setEnabled(false);
     }
   }
-  
+
   dominantQuantity = q;
 }
 

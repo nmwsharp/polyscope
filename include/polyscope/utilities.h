@@ -77,11 +77,11 @@ const size_t INVALID_IND = std::numeric_limits<size_t>::max();
 template <typename T>
 std::vector<T> applyPermutation(const std::vector<T>& input, const std::vector<size_t>& perm) {
   // TODO figure out if there's a copy to be avoided here
-  if(perm.size() == 0) {
+  if (perm.size() == 0) {
     return input;
   }
   std::vector<T> result(perm.size());
-  for(size_t i = 0; i < perm.size(); i++) {
+  for (size_t i = 0; i < perm.size(); i++) {
     result[i] = input[perm[i]];
   }
   return result;

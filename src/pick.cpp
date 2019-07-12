@@ -32,7 +32,7 @@ void resetPick() {
 }
 
 void clearPickIfStructureSelected(Structure* s) {
-  if(haveSelection && currPickStructure == s) {
+  if (haveSelection && currPickStructure == s) {
     resetPick();
   }
 }
@@ -50,7 +50,7 @@ Structure* getCurrentPickElement(size_t& localInd) {
 }
 
 void setCurrentPickElement(size_t newPickInd, bool wasDoubleClick) {
-  
+
   pickIsFromThisFrame = true;
 
   // Loop through the ranges that we have allocated to find the one correpsonding to this structure.

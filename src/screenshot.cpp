@@ -9,7 +9,7 @@
 
 namespace polyscope {
 
-  namespace state {
+namespace state {
 
 // Storage for the screenshot index
 size_t screenshotInd = 0;

@@ -35,5 +35,5 @@ void setMaterialForProgram(GLProgram& program, std::string name);
 
 // The arrays that hold the actual data. Stored as constants in translations units in gl/materials/
 extern const std::vector<std::vector<unsigned char>> bindata_mat_wax;
-}
-}
+} // namespace gl
+} // namespace polyscope

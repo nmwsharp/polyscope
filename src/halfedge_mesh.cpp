@@ -385,7 +385,8 @@ HalfedgeMesh::HalfedgeMesh(const std::vector<glm::vec3> vertexPositions,
         newHe.face_ = &boundaryLoop;
         newHe.edge_ = &currHe->edge();
         newHe.vertex_ = &currHe->next().vertex();
-        currHe->vertex_->halfedge_ = currHe; // ensure that halfedge for boundary vertex is the one that starts the boundary
+        currHe->vertex_->halfedge_ =
+            currHe; // ensure that halfedge for boundary vertex is the one that starts the boundary
 
         // Some pointers need values only visible from the previous iteration of the loop.
         // The first one we process gets missed; handle it at the end outside the loop.

@@ -94,7 +94,8 @@ std::vector<D> standardizeVectorArray(const T& inputData) {
   typedef typename std::remove_reference<decltype(dataOut[0][0])>::type OutScalarT;
   for (size_t i = 0; i < inputData.size(); i++) {
     for (size_t j = 0; j < N; j++) {
-      dataOut[i][j] = accessVectorLikeValue<typename std::remove_reference<decltype(inputData[0])>::type, OutScalarT>(inputData[i], j);
+      dataOut[i][j] = accessVectorLikeValue<typename std::remove_reference<decltype(inputData[0])>::type, OutScalarT>(
+          inputData[i], j);
     }
   }
 

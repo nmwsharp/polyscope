@@ -63,5 +63,5 @@ void setMaterialForProgram(GLProgram& program, std::string name) {
   program.setTextureFromBuffer("t_mat_b", material.textureBuffers[2]);
 }
 
-}
-}
+} // namespace gl
+} // namespace polyscope

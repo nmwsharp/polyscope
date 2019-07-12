@@ -1,6 +1,6 @@
 #include "polyscope/polyscope.h"
-#include "polyscope/surface_mesh_io.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/surface_mesh_io.h"
 
 #include <iostream>
 
@@ -32,10 +32,10 @@ void processFileOBJ(string filename) {
   std::vector<std::array<double, 3>> vertexPositions;
   std::vector<std::vector<size_t>> faceIndices;
   polyscope::loadPolygonSoup_OBJ(filename, vertexPositions, faceIndices);
-  
-  
+
+
   std::vector<glm::vec3> vertexPositionsGLM;
-  for(std::array<double, 3> p : vertexPositions) {
+  for (std::array<double, 3> p : vertexPositions) {
     vertexPositionsGLM.push_back({p[0], p[1], p[2]});
   }
 
@@ -56,18 +56,18 @@ void processFilePLY(string filename) {
   std::vector<std::array<double, 3>> vertexPositions;
   std::vector<std::vector<size_t>> faceIndices;
   polyscope::loadPolygonSoup_PLY(filename, vertexPositions, faceIndices);
-  
+
   std::vector<glm::vec3> vertexPositionsGLM;
-  for(std::array<double, 3> p : vertexPositions) {
+  for (std::array<double, 3> p : vertexPositions) {
     vertexPositionsGLM.push_back({p[0], p[1], p[2]});
   }
 
   polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
 
   // Try to get vertex colors, if present
-  //try {
-    //VertexData<Vector3> color = reader.getVertexColors();
-    //polyscope::getSurfaceMesh(niceName)->addColorQuantity("vertex color", color);
+  // try {
+  // VertexData<Vector3> color = reader.getVertexColors();
+  // polyscope::getSurfaceMesh(niceName)->addColorQuantity("vertex color", color);
   //} catch (...) {
   //};
 

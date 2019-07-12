@@ -2,13 +2,13 @@
 
 #include <iostream>
 
+#include "geometrycentral/direction_fields.h"
 #include "geometrycentral/geometry.h"
 #include "geometrycentral/halfedge_mesh.h"
 #include "geometrycentral/polygon_soup_mesh.h"
-#include "geometrycentral/direction_fields.h"
 
-#include "imgui.h"
 #include "args/args.hxx"
+#include "imgui.h"
 
 using namespace geometrycentral;
 using std::cerr;
@@ -17,11 +17,12 @@ using std::endl;
 using std::string;
 
 // == Program data
-// (in general, such data should probably be stored in a class, or whatever makes sense for your situation -- these globals are just for the sake of a simple example app)
+// (in general, such data should probably be stored in a class, or whatever makes sense for your situation -- these
+// globals are just for the sake of a simple example app)
 Geometry<Euclidean>* geom;
 HalfedgeMesh* mesh;
 
-// Parameters 
+// Parameters
 size_t iGeneratedPoints = 0;
 int nPts = 100;
 float rangeLow = -5.0;
@@ -49,7 +50,7 @@ void myCallback() {
   ImGui::Separator();
 
 
-  // Add points 
+  // Add points
   ImGui::TextUnformatted("Add new points clouds:");
   ImGui::InputInt("# pts", &nPts, 0, 1000000);
   if (ImGui::Button("Add another")) {
@@ -57,7 +58,7 @@ void myCallback() {
     for (int i = 0; i < nPts; i++) {
       points.push_back(3 * Vector3{unitRand() - .5, unitRand() - .5, unitRand() - .5});
     }
-    polyscope::registerPointCloud("generated_points_"+std::to_string(iGeneratedPoints), points);
+    polyscope::registerPointCloud("generated_points_" + std::to_string(iGeneratedPoints), points);
     iGeneratedPoints++;
   }
   ImGui::Separator();
@@ -90,7 +91,7 @@ int main(int argc, char** argv) {
   }
 
   // Make sure a mesh name was given
-  if(args::get(inFileName) == "") {
+  if (args::get(inFileName) == "") {
     std::cerr << "Please specify .obj file as argument" << std::endl;
     return EXIT_FAILURE;
   }
@@ -128,14 +129,14 @@ int main(int argc, char** argv) {
     EdgeData<double> cWeight(mesh);
     geom->getEdgeCotanWeights(cWeight);
     polyscope::getSurfaceMesh()->addQuantity("cotan weight", cWeight, polyscope::DataType::SYMMETRIC);
- 
+
     // Vertex normals
     VertexData<Vector3> normals(mesh);
     geom->getVertexNormals(normals);
     polyscope::getSurfaceMesh()->addVectorQuantity("vertex normals", normals);
 
     // Smoothest 4-symmetric direction field
-    if(mesh->nBoundaryLoops() == 0) { // (haven't implemented for boundary yet...)
+    if (mesh->nBoundaryLoops() == 0) { // (haven't implemented for boundary yet...)
       FaceData<Complex> smoothestField = computeSmoothestFaceDirectionField(geom, 4, true);
       polyscope::getSurfaceMesh()->addVectorQuantity("smoothest 4-field", smoothestField, 4);
     }
@@ -149,7 +150,7 @@ int main(int argc, char** argv) {
   polyscope::registerPointCloud("sample_points", points);
 
 
-  // Register the user callback 
+  // Register the user callback
   polyscope::state::userCallback = myCallback;
 
   // Give control to the polyscope gui

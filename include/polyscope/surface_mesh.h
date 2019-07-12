@@ -19,9 +19,8 @@ enum class ShadeStyle { FLAT = 0, SMOOTH };
 enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE, CORNER };
 
 // TODO these should really live in parameterization
-enum class ParamCoordsType { UNIT = 0, WORLD };        // UNIT -> [0,1], WORLD -> length-valued
+enum class ParamCoordsType { UNIT = 0, WORLD };                         // UNIT -> [0,1], WORLD -> length-valued
 enum class ParamVizStyle { CHECKER = 0, GRID, LOCAL_CHECK, LOCAL_RAD }; // TODO add "UV" with test UV map
-
 
 
 // Forward delcare surface mesh

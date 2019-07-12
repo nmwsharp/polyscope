@@ -78,7 +78,7 @@ void prepareGroundPlane() {
 
   groundPlanePrepared = true;
 }
-};
+}; // namespace
 
 
 void drawGroundPlane() {
@@ -142,7 +142,7 @@ void drawGroundPlane() {
 
   glm::vec2 centerXZ{state::center.x, state::center.z};
   groundPlaneProgram->setUniform("u_centerXZ", centerXZ);
- 
+
   float camHeight = view::getCameraWorldPosition().y;
   groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
 
@@ -150,7 +150,6 @@ void drawGroundPlane() {
   groundPlaneProgram->setUniform("u_groundHeight", groundHeight);
 
   groundPlaneProgram->draw();
-
 }
 
 void buildGroundPlaneGui() {
@@ -176,6 +175,5 @@ void deleteGroundPlaneResources() {
     safeDelete(groundPlaneProgram);
   }
 }
-}
-}
-
+} // namespace gl
+} // namespace polyscope

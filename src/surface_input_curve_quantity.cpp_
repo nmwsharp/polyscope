@@ -1,10 +1,10 @@
 #include "polyscope/surface_input_curve_quantity.h"
 
+#include "polyscope/file_helpers.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/cylinder_shaders.h"
 #include "polyscope/gl/shaders/surface_shaders.h"
 #include "polyscope/pick.h"
-#include "polyscope/file_helpers.h"
 #include "polyscope/polyscope.h"
 
 #include "imgui.h"

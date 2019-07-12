@@ -56,7 +56,6 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
   // Helper to build the four histogram variants
   auto buildCurve = [&](size_t binCount, bool weighted, bool smooth, std::vector<std::array<double, 2>>& curveX,
                         std::vector<double>& curveY) {
-
     // linspace coords
     double range = maxVal - minVal;
     double inc = range / binCount;
@@ -115,7 +114,6 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
         }
       }
     }
-
   };
 
   // Build the four variants of the curve
@@ -238,7 +236,7 @@ void Histogram::fillBuffers() {
 }
 
 void Histogram::prepare() {
-  
+
   framebuffer = new gl::GLFramebuffer();
   texturebuffer = new gl::GLTexturebuffer(GL_RGBA, texDim, texDim);
   framebuffer->bindToColorTexturebuffer(texturebuffer);
@@ -288,8 +286,8 @@ void Histogram::buildUI(float width) {
   float h = w / aspect;
 
   // Render image
-  ImGui::Image(reinterpret_cast<void*>((size_t)texturebuffer->getHandle()) /* yes, really. */, ImVec2(w, h), ImVec2(0, 1),
-               ImVec2(1, 0));
+  ImGui::Image(reinterpret_cast<void*>((size_t)texturebuffer->getHandle()) /* yes, really. */, ImVec2(w, h),
+               ImVec2(0, 1), ImVec2(1, 0));
 
   // Draw a cursor popup on mouseover
   if (ImGui::IsItemHovered()) {

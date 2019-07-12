@@ -20,8 +20,7 @@ namespace polyscope {
 const std::string CameraView::structureTypeName = "Camera View";
 float CameraView::globalImageTransparency = 1.0;
 
-CameraView::CameraView(std::string name, CameraParameters p_)
-    : Structure(name, structureTypeName), parameters(p_) {
+CameraView::CameraView(std::string name, CameraParameters p_) : Structure(name, structureTypeName), parameters(p_) {
   prepareCameraSkeleton();
   preparePick();
 }
@@ -137,8 +136,8 @@ void CameraView::preparePick() {
   std::array<glm::vec3, 3> dirFrame;
   getCameraPoints(root, framePoints, dirFrame);
 
-  for(int i = 0; i < 4; i++) {
-    addTriangle(root, framePoints[i], framePoints[(i+1)%4]);
+  for (int i = 0; i < 4; i++) {
+    addTriangle(root, framePoints[i], framePoints[(i + 1) % 4]);
   }
 
   // Store data in buffers

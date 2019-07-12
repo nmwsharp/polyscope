@@ -62,4 +62,3 @@ void SurfaceMesh::addVertexSignedDistanceQuantity(std::string name, const T& dis
 
 
 } // namespace polyscope
-

@@ -162,7 +162,8 @@ void SurfaceMesh::addVertexIntrinsicVectorQuantity(std::string name, const T& ve
 
 class SurfaceOneFormIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceOneFormIntrinsicVectorQuantity(std::string name, std::vector<double> oneForm_, std::vector<char> orientations_, SurfaceMesh& mesh_);
+  SurfaceOneFormIntrinsicVectorQuantity(std::string name, std::vector<double> oneForm_, std::vector<char> orientations_,
+                                        SurfaceMesh& mesh_);
 
   std::vector<double> oneForm;
   std::vector<glm::vec2> mappedVectorField;
@@ -176,7 +177,8 @@ public:
   void buildFaceInfoGUI(size_t fInd) override;
 };
 
-// Orientations is `true` if the canonical orientation of the edge points from the lower-indexed vertex to the higher-indexed vertex, and `false` otherwise.
+// Orientations is `true` if the canonical orientation of the edge points from the lower-indexed vertex to the
+// higher-indexed vertex, and `false` otherwise.
 template <class T, class O>
 void SurfaceMesh::addOneFormIntrinsicVectorQuantity(std::string name, const T& data, const O& orientations) {
 

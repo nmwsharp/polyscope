@@ -312,8 +312,8 @@ public:
 */
 
 
-std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(HalfedgeMesh& mesh,
-                                                            const std::vector<Complex>& field, int nSym, size_t nLines) {
+std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(HalfedgeMesh& mesh, const std::vector<Complex>& field,
+                                                              int nSym, size_t nLines) {
 
   /*
 
@@ -375,7 +375,8 @@ std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(HalfedgeMesh& mesh
     Vector3 randPoint{1.0 - std::sqrt(r1), std::sqrt(r1) * (1.0 - r2),
                       r2 * std::sqrt(r1)};                         // uniform sampling in triangle
     randPoint = unitSum(10000 * randPoint + Vector3{1, 1, 1} / 3); // pull slightly towards center
-    double traceSign = unitRand() > 0.5 ? 1.0 : -1.0; // trace half of lines backwards through field, avoids conentration near areas of convergence
+    double traceSign = unitRand() > 0.5 ? 1.0 : -1.0; // trace half of lines backwards through field, avoids
+  conentration near areas of convergence
 
     // Generate a random direction
     // (the tracing code snaps the velocity to the best-fitting direction, this just serves the role of picking

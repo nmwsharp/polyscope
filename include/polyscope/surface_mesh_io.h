@@ -13,4 +13,4 @@ void loadPolygonSoup_PLY(std::string filename, std::vector<std::array<double, 3>
 // Load a mesh from a general file, detecting type from filename
 void loadPolygonSoup(std::string filename, std::vector<std::array<double, 3>>& vertexPositionsOut,
                      std::vector<std::vector<size_t>>& faceIndicesOut);
-}
+} // namespace polyscope

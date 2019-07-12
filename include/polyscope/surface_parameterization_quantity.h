@@ -131,4 +131,3 @@ void SurfaceMesh::addLocalParameterizationQuantity(std::string name, const T& co
 
 
 } // namespace polyscope
-

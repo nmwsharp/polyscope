@@ -320,4 +320,5 @@ static const FragShader PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER = {
 
 // clang-format on
 
-}}
+} // namespace gl
+} // namespace polyscope
