@@ -2,6 +2,8 @@
 
 #include "polyscope/gl/shaders.h"
 
+// clang-format off
+
 namespace polyscope {
 namespace gl {
 
@@ -101,4 +103,7 @@ static const FragShader VERT_DIST_SURFACE_FRAG_SHADER = {
     )
 };
 
-}}
+// clang-format on
+
+} // namespace gl
+} // namespace polyscope

@@ -2,6 +2,8 @@
 
 #include "polyscope/gl/shaders.h"
 
+// clang-format off
+
 namespace polyscope {
 namespace gl {
 
@@ -72,5 +74,7 @@ static const FragShader PROJECTEDIMAGE_FRAG_SHADER = {
 
     )
 };
+
+// clang-format on
 
 }}

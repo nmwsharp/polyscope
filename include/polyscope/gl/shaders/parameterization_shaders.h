@@ -5,6 +5,8 @@
 namespace polyscope {
 namespace gl {
 
+// clang-format off
+
 static const VertShader PARAM_SURFACE_VERT_SHADER =  {
     
     // uniforms
@@ -315,5 +317,7 @@ static const FragShader PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER = {
 
     )
 };
+
+// clang-format on
 
 }}

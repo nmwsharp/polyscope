@@ -2,6 +2,8 @@
 
 #include "polyscope/gl/shaders.h"
 
+// clang-format off
+
 namespace polyscope {
 namespace gl {
 
@@ -64,5 +66,7 @@ static const FragShader TEXTURE_DRAW_FRAG_SHADER = {
 
     )
 };
+
+// clang-format on
 
 }}

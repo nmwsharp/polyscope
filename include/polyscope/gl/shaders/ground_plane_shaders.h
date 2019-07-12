@@ -5,6 +5,8 @@
 namespace polyscope {
 namespace gl {
 
+// clang-format off
+
 static const VertShader GROUND_PLANE_VERT_SHADER =  {
     
     // uniforms
@@ -137,4 +139,7 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
     )
 };
 
-}}
+// clang-format on
+
+} // namespace gl
+} // namespace polyscope

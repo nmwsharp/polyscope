@@ -5,9 +5,7 @@
 namespace polyscope {
 namespace gl {
 
-
-// NOTE: You probably don't want to include this directly... see shaders.h
-
+// clang-format off
 
 static const VertShader RIBBON_VERT_SHADER = {
     // uniforms
@@ -198,4 +196,7 @@ static const FragShader RIBBON_FRAG_SHADER = {
     )
 };
 
-}}
+// clang-format on
+
+} // namespace gl
+} // namespace polyscope

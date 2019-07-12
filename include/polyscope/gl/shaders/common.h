@@ -9,6 +9,8 @@
 namespace polyscope {
 namespace gl {
 
+// clang-format off
+
 const char* shaderCommonSource = R"(
 #version 410
 
@@ -84,4 +86,7 @@ vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat
 
 )";
 
-}}
+// clang-format on
+
+} // namespace gl
+} // namespace polyscope
