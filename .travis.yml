@@ -9,7 +9,6 @@ compiler:
   - clang
 
 before_script:
-  - cd test
   - mkdir build
   - cd build
   - cmake ../examples/demo-app/
