@@ -51,7 +51,6 @@ SET(SRCS
 
   # Surface
   surface_mesh.cpp
-  halfedge_mesh.cpp
   surface_mesh_io.cpp
   surface_scalar_quantity.cpp
   surface_color_quantity.cpp
@@ -63,9 +62,6 @@ SET(SRCS
   #surface_subset_quantity.cpp
   #surface_selection_quantity.cpp
   #surface_input_curve_quantity.cpp
-
-  # Camera view
-  #camera_view.cpp
 )
 
 

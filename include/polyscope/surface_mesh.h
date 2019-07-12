@@ -6,7 +6,6 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
 #include "polyscope/gl/gl_utils.h"
-#include "polyscope/halfedge_mesh.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"

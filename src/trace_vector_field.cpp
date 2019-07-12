@@ -1,9 +1,5 @@
 #include "polyscope/trace_vector_field.h"
 
-using std::cerr;
-using std::cout;
-using std::endl;
-
 namespace polyscope {
 
 // Helpers for tracing
@@ -311,87 +307,87 @@ public:
 
 */
 
+/*
 
 std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(HalfedgeMesh& mesh, const std::vector<Complex>& field,
-                                                              int nSym, size_t nLines) {
-
-  /*
-
-  // Preliminaries
-  HalfedgeMesh* mesh = geometry->getMesh();
-  GeometryCache<Euclidean>& gc = geometry->cache;
-  gc.requireFaceAreas();
-
-  // Create a tracer
-  FieldTracer tracer(geometry, field, nSym);
-
-  // Compute a reasonable number of lines if no count was specified
-  if (nLines == 0) {
-    double lineFactor = 10;
-    nLines = static_cast<size_t>(std::ceil(lineFactor * std::sqrt(mesh->nFaces())));
-  }
-
-  // Shuffle the list of faces to get a reasonable distribution of starting points
-  // Build a list of faces to start lines in. Unusually large faces get listed multiple times so we start more lines in
-  // them. This roughly approximates a uniform sampling of the mesh. Small faces get oversampled, but that's much less
-  // visually striking than large faces getting undersampled.
-  std::vector<FacePtr> faceQueue;
-  {
-    double meanArea = tracer.totalArea / mesh->nFaces();
-    for (FacePtr f : mesh->faces()) {
-      faceQueue.push_back(f);
-      double faceArea = gc.faceAreas[f];
-      while (faceArea > meanArea) {
-        faceQueue.push_back(f);
-        faceArea -= meanArea;
-      }
-    }
-
-    // Shuffle the list (if we're tracing fewer lines than the size of the list, we want them to be distributed evenly)
-    auto randomEngine = std::default_random_engine{};
-    std::shuffle(faceQueue.begin(), faceQueue.end(), randomEngine);
-
-    // Make sure the queue of faces to process is long enough by repeating it
-    int iAppend = 0;
-    while (faceQueue.size() < nLines) {
-      faceQueue.push_back(faceQueue[iAppend++]);
-    }
-  }
+                                                            int nSym, size_t nLines) {
 
 
-  // == Trace the lines
-  //cout << "Tracing lines through vector field... " << endl;
-  std::vector<std::vector<std::array<Vector3, 2>>> lineList;
-  for (size_t i = 0; i < nLines; i++) {
+// Preliminaries
+HalfedgeMesh* mesh = geometry->getMesh();
+GeometryCache<Euclidean>& gc = geometry->cache;
+gc.requireFaceAreas();
 
+// Create a tracer
+FieldTracer tracer(geometry, field, nSym);
 
-    // Get the next starting face
-    FacePtr startFace = faceQueue.back();
-    faceQueue.pop_back();
-
-    // Generate a random point in the face
-    double r1 = unitRand();
-    double r2 = unitRand();
-    Vector3 randPoint{1.0 - std::sqrt(r1), std::sqrt(r1) * (1.0 - r2),
-                      r2 * std::sqrt(r1)};                         // uniform sampling in triangle
-    randPoint = unitSum(10000 * randPoint + Vector3{1, 1, 1} / 3); // pull slightly towards center
-    double traceSign = unitRand() > 0.5 ? 1.0 : -1.0; // trace half of lines backwards through field, avoids
-  conentration near areas of convergence
-
-    // Generate a random direction
-    // (the tracing code snaps the velocity to the best-fitting direction, this just serves the role of picking
-    // a random direction in symmetric fields)
-    Vector2 randomDir = unit(Vector2{unitRand() - .5, unitRand() - .5});
-
-    // Trace
-    lineList.push_back(tracer.traceLine(FacePoint{startFace, randPoint}, randomDir, traceSign));
-  }
-  //cout << "    ... done tracing field." << endl;
-
-  */
-
-  std::vector<std::vector<std::array<glm::vec3, 2>>> lineList;
-  return lineList;
+// Compute a reasonable number of lines if no count was specified
+if (nLines == 0) {
+  double lineFactor = 10;
+  nLines = static_cast<size_t>(std::ceil(lineFactor * std::sqrt(mesh->nFaces())));
 }
+
+// Shuffle the list of faces to get a reasonable distribution of starting points
+// Build a list of faces to start lines in. Unusually large faces get listed multiple times so we start more lines in
+// them. This roughly approximates a uniform sampling of the mesh. Small faces get oversampled, but that's much less
+// visually striking than large faces getting undersampled.
+std::vector<FacePtr> faceQueue;
+{
+  double meanArea = tracer.totalArea / mesh->nFaces();
+  for (FacePtr f : mesh->faces()) {
+    faceQueue.push_back(f);
+    double faceArea = gc.faceAreas[f];
+    while (faceArea > meanArea) {
+      faceQueue.push_back(f);
+      faceArea -= meanArea;
+    }
+  }
+
+  // Shuffle the list (if we're tracing fewer lines than the size of the list, we want them to be distributed evenly)
+  auto randomEngine = std::default_random_engine{};
+  std::shuffle(faceQueue.begin(), faceQueue.end(), randomEngine);
+
+  // Make sure the queue of faces to process is long enough by repeating it
+  int iAppend = 0;
+  while (faceQueue.size() < nLines) {
+    faceQueue.push_back(faceQueue[iAppend++]);
+  }
+}
+
+
+// == Trace the lines
+//cout << "Tracing lines through vector field... " << endl;
+std::vector<std::vector<std::array<Vector3, 2>>> lineList;
+for (size_t i = 0; i < nLines; i++) {
+
+
+  // Get the next starting face
+  FacePtr startFace = faceQueue.back();
+  faceQueue.pop_back();
+
+  // Generate a random point in the face
+  double r1 = unitRand();
+  double r2 = unitRand();
+  Vector3 randPoint{1.0 - std::sqrt(r1), std::sqrt(r1) * (1.0 - r2),
+                    r2 * std::sqrt(r1)};                         // uniform sampling in triangle
+  randPoint = unitSum(10000 * randPoint + Vector3{1, 1, 1} / 3); // pull slightly towards center
+  double traceSign = unitRand() > 0.5 ? 1.0 : -1.0; // trace half of lines backwards through field, avoids
+conentration near areas of convergence
+
+  // Generate a random direction
+  // (the tracing code snaps the velocity to the best-fitting direction, this just serves the role of picking
+  // a random direction in symmetric fields)
+  Vector2 randomDir = unit(Vector2{unitRand() - .5, unitRand() - .5});
+
+  // Trace
+  lineList.push_back(tracer.traceLine(FacePoint{startFace, randPoint}, randomDir, traceSign));
+}
+//cout << "    ... done tracing field." << endl;
+
+
+std::vector<std::vector<std::array<glm::vec3, 2>>> lineList;
+return lineList;
+}
+*/
 
 } // namespace polyscope
