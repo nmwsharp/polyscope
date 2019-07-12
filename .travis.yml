@@ -1,0 +1,17 @@
+branches:
+  only:
+  - v02 
+
+language: cpp
+
+compiler:
+  - gcc
+  - clang
+
+before_script:
+  - cd test
+  - mkdir build
+  - cd build
+  - cmake ../examples/demo-app/
+
+script: make
