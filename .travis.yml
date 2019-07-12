@@ -18,7 +18,7 @@ addons:
     - xorg-dev  
 
 before_script:
-  - sudo apt-get install -y xpra xserver-xorg-video-dummy freeglut3-dev
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; sudo apt-get install -y xpra xserver-xorg-video-dummy freeglut3-dev; fi
   - mkdir build
   - cd build
   - cmake ../examples/demo-app/
