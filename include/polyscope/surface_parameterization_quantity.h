@@ -62,7 +62,7 @@ public:
   SurfaceCornerParameterizationQuantity(std::string name, std::vector<glm::vec2> values_, ParamCoordsType type_,
                                         SurfaceMesh& mesh_);
 
-  virtual void buildHalfedgeInfoGUI(size_t heInd);
+  virtual void buildHalfedgeInfoGUI(size_t heInd) override;
   virtual std::string niceName() override;
 
   // === Members
@@ -82,7 +82,7 @@ public:
   SurfaceVertexParameterizationQuantity(std::string name, std::vector<glm::vec2> values_, ParamCoordsType type_,
                                         SurfaceMesh& mesh_);
 
-  virtual void buildVertexInfoGUI(size_t vInd);
+  virtual void buildVertexInfoGUI(size_t vInd) override;
   virtual std::string niceName() override;
 
   // === Members
