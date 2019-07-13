@@ -40,9 +40,9 @@ protected:
 // ==========           Vertex Count             ==========
 // ========================================================
 
-class SurfaceCountVertexQuantity : public SurfaceCountQuantity {
+class SurfaceVertexCountQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceCountVertexQuantity(std::string name, const std::vector<std::pair<size_t, int>> values_, SurfaceMesh& mesh_);
+  SurfaceVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>> values_, SurfaceMesh& mesh_);
 
   void buildVertexInfoGUI(size_t vInd) override;
 
@@ -51,18 +51,13 @@ public:
 };
 
 
-inline void SurfaceMesh::addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values) {
-  SurfaceCountQuantity* q = new SurfaceCountVertexQuantity(name, values, *this);
-  addQuantity(q);
-}
-
 // ========================================================
 // ==========      Vertex Isolated Scalar        ==========
 // ========================================================
 
-class SurfaceIsolatedScalarVertexQuantity : public SurfaceCountQuantity {
+class SurfaceVertexIsolatedScalarQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceIsolatedScalarVertexQuantity(std::string name, const std::vector<std::pair<size_t, double>> values_,
+  SurfaceVertexIsolatedScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>> values_,
                                       SurfaceMesh& mesh_);
 
   void buildVertexInfoGUI(size_t vInd) override;
@@ -71,29 +66,18 @@ public:
   std::map<size_t, double> values;
 };
 
-inline void SurfaceMesh::addIsolatedVertexScalarQuantity(std::string name,
-                                                         const std::vector<std::pair<size_t, double>>& values) {
-  SurfaceIsolatedScalarVertexQuantity* q = new SurfaceIsolatedScalarVertexQuantity(name, values, *this);
-  addQuantity(q);
-}
-
 // ========================================================
 // ==========            Face Count             ==========
 // ========================================================
 
-class SurfaceCountFaceQuantity : public SurfaceCountQuantity {
+class SurfaceFaceCountQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceCountFaceQuantity(std::string name, const std::vector<std::pair<size_t, int>> values_, SurfaceMesh& mesh_);
+  SurfaceFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>> values_, SurfaceMesh& mesh_);
 
   void buildFaceInfoGUI(size_t f) override;
 
   // === Members
   std::map<size_t, int> values;
 };
-
-inline void SurfaceMesh::addFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values) {
-  SurfaceCountQuantity* q = new SurfaceCountFaceQuantity(name, values, *this);
-  addQuantity(q);
-}
 
 } // namespace polyscope

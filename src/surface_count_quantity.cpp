@@ -108,7 +108,7 @@ std::string SurfaceCountQuantity::niceName() { return name + " (" + descriptiveT
 // ==========           Vertex Count            ==========
 // ========================================================
 
-SurfaceCountVertexQuantity::SurfaceCountVertexQuantity(std::string name, std::vector<std::pair<size_t, int>> values_,
+SurfaceVertexCountQuantity::SurfaceVertexCountQuantity(std::string name, std::vector<std::pair<size_t, int>> values_,
                                                        SurfaceMesh& mesh_)
     : SurfaceCountQuantity(name, mesh_, "vertex count")
 
@@ -141,7 +141,7 @@ SurfaceCountVertexQuantity::SurfaceCountVertexQuantity(std::string name, std::ve
   }
 }
 
-void SurfaceCountVertexQuantity::buildVertexInfoGUI(size_t vInd) {
+void SurfaceVertexCountQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
   if (values.find(vInd) == values.end()) {
@@ -156,7 +156,7 @@ void SurfaceCountVertexQuantity::buildVertexInfoGUI(size_t vInd) {
 // ==========      Vertex Isolated Scalar        ==========
 // ========================================================
 
-SurfaceIsolatedScalarVertexQuantity::SurfaceIsolatedScalarVertexQuantity(std::string name,
+SurfaceVertexIsolatedScalarQuantity::SurfaceVertexIsolatedScalarQuantity(std::string name,
                                                                          std::vector<std::pair<size_t, double>> values_,
                                                                          SurfaceMesh& mesh_)
     : SurfaceCountQuantity(name, mesh_, "isolated vertex scalar")
@@ -189,7 +189,7 @@ SurfaceIsolatedScalarVertexQuantity::SurfaceIsolatedScalarVertexQuantity(std::st
   }
 }
 
-void SurfaceIsolatedScalarVertexQuantity::buildVertexInfoGUI(size_t vInd) {
+void SurfaceVertexIsolatedScalarQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
   if (values.find(vInd) == values.end()) {
@@ -204,7 +204,7 @@ void SurfaceIsolatedScalarVertexQuantity::buildVertexInfoGUI(size_t vInd) {
 // ==========            Face Count             ==========
 // ========================================================
 
-SurfaceCountFaceQuantity::SurfaceCountFaceQuantity(std::string name, std::vector<std::pair<size_t, int>> values_,
+SurfaceFaceCountQuantity::SurfaceFaceCountQuantity(std::string name, std::vector<std::pair<size_t, int>> values_,
                                                    SurfaceMesh& mesh_)
     : SurfaceCountQuantity(name, mesh_, "face count") {
 
@@ -243,7 +243,7 @@ SurfaceCountFaceQuantity::SurfaceCountFaceQuantity(std::string name, std::vector
   }
 }
 
-void SurfaceCountFaceQuantity::buildFaceInfoGUI(size_t fInd) {
+void SurfaceFaceCountQuantity::buildFaceInfoGUI(size_t fInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
   if (values.find(fInd) == values.end()) {

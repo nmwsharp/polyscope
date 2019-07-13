@@ -3,8 +3,11 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/histogram.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/surface_parameterization_enums.h"
+
 
 namespace polyscope {
+
 
 // ==============================================================
 // ================  Base Parameterization  =====================
@@ -91,43 +94,5 @@ public:
 protected:
   virtual void fillColorBuffers(gl::GLProgram& p) override;
 };
-
-
-// ==============================================================
-// ===============  Parameterization Adders  ====================
-// ==============================================================
-
-// Standard a parameterization, defined at corners
-template <class T>
-void SurfaceMesh::addParameterizationQuantity(std::string name, const T& coords, ParamCoordsType type) {
-  validateSize(coords, cornerDataSize, "parameterization quantity " + name);
-
-  SurfaceCornerParameterizationQuantity* q = new SurfaceCornerParameterizationQuantity(
-      name, applyPermutation(standardizeVectorArray<glm::vec2, T, 2>(coords), cornerPerm), type, *this);
-  addQuantity(q);
-}
-
-// Parameterization defined at vertices, rather than corners
-template <class T>
-void SurfaceMesh::addVertexParameterizationQuantity(std::string name, const T& coords, ParamCoordsType type) {
-  validateSize(coords, vertexDataSize, "parameterization (at vertices) quantity " + name);
-
-  SurfaceVertexParameterizationQuantity* q = new SurfaceVertexParameterizationQuantity(
-      name, applyPermutation(standardizeVectorArray<glm::vec2, T, 2>(coords), vertexPerm), type, *this);
-  addQuantity(q);
-}
-
-// "local" parameterization defined at vertices. has different presets: type is WORLD and style is LOCAL
-template <class T>
-void SurfaceMesh::addLocalParameterizationQuantity(std::string name, const T& coords, ParamCoordsType type) {
-  validateSize(coords, vertexDataSize, "parameterization (at vertices) quantity " + name);
-
-  SurfaceVertexParameterizationQuantity* q = new SurfaceVertexParameterizationQuantity(
-      name, applyPermutation(standardizeVectorArray<glm::vec2, T, 2>(coords), vertexPerm), type, *this);
-  addQuantity(q);
-
-  q->setStyle(ParamVizStyle::LOCAL_CHECK);
-}
-
 
 } // namespace polyscope

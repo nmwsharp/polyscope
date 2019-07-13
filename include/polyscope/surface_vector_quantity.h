@@ -3,6 +3,7 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/ribbon_artist.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/surface_mesh_enums.h"
 
 namespace polyscope {
 
@@ -63,16 +64,6 @@ public:
   virtual void buildVertexInfoGUI(size_t vInd) override;
 };
 
-template <class T>
-void SurfaceMesh::addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType) {
-
-  validateSize(vectors, vertexDataSize, "vertex vector quantity " + name);
-
-  SurfaceVectorQuantity* q = new SurfaceVertexVectorQuantity(
-      name, applyPermutation(standardizeVectorArray<glm::vec3, T, 3>(vectors), vertexPerm), *this, vectorType);
-  addQuantity(q);
-}
-
 
 // ==== R3 vectors at faces
 
@@ -86,16 +77,6 @@ public:
   virtual std::string niceName() override;
   virtual void buildFaceInfoGUI(size_t fInd) override;
 };
-
-template <class T>
-void SurfaceMesh::addFaceVectorQuantity(std::string name, const T& vectors, VectorType vectorType) {
-
-  validateSize(vectors, faceDataSize, "face vector quantity " + name);
-
-  SurfaceVectorQuantity* q = new SurfaceFaceVectorQuantity(
-      name, applyPermutation(standardizeVectorArray<glm::vec3, T, 3>(vectors), facePerm), *this, vectorType);
-  addQuantity(q);
-}
 
 
 // ==== Intrinsic vectors at faces
@@ -117,17 +98,6 @@ public:
 };
 
 
-template <class T>
-void SurfaceMesh::addFaceIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym, VectorType vectorType) {
-
-  validateSize(vectors, faceDataSize, "face intrinsic vector quantity " + name);
-
-  SurfaceVectorQuantity* q = new SurfaceFaceIntrinsicVectorQuantity(
-      name, applyPermutation(standardizeVectorArray<glm::vec2, T, 2>(vectors), facePerm), *this, nSym, vectorType);
-  addQuantity(q);
-}
-
-
 // ==== Intrinsic vectors at vertices
 
 class SurfaceVertexIntrinsicVectorQuantity : public SurfaceVectorQuantity {
@@ -145,17 +115,6 @@ public:
   virtual std::string niceName() override;
   void buildVertexInfoGUI(size_t vInd) override;
 };
-
-template <class T>
-void SurfaceMesh::addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym,
-                                                   VectorType vectorType) {
-
-  validateSize(vectors, vertexDataSize, "vertex intrinsic vector quantity " + name);
-
-  SurfaceVectorQuantity* q = new SurfaceVertexIntrinsicVectorQuantity(
-      name, applyPermutation(standardizeVectorArray<glm::vec2, T, 2>(vectors), vertexPerm), *this, nSym, vectorType);
-  addQuantity(q);
-}
 
 
 // ==== Intrinsic one form on edges
@@ -176,18 +135,5 @@ public:
   void buildEdgeInfoGUI(size_t eInd) override;
   void buildFaceInfoGUI(size_t fInd) override;
 };
-
-// Orientations is `true` if the canonical orientation of the edge points from the lower-indexed vertex to the
-// higher-indexed vertex, and `false` otherwise.
-template <class T, class O>
-void SurfaceMesh::addOneFormIntrinsicVectorQuantity(std::string name, const T& data, const O& orientations) {
-
-  validateSize(data, edgeDataSize, "one form intrinsic vector quantity " + name);
-
-  SurfaceVectorQuantity* q = new SurfaceOneFormIntrinsicVectorQuantity(
-      name, applyPermutation(standardizeArray<double, T>(data), edgePerm),
-      applyPermutation(standardizeArray<char, O>(orientations), edgePerm), *this);
-  addQuantity(q);
-}
 
 } // namespace polyscope

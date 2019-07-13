@@ -192,7 +192,7 @@ void processFileOBJ(string filename) {
     }
   }
   polyscope::getSurfaceMesh(niceName)->addVertexCountQuantity("sample count", vCount);
-  polyscope::getSurfaceMesh(niceName)->addIsolatedVertexScalarQuantity("sample isolated", vVal);
+  polyscope::getSurfaceMesh(niceName)->addVertexIsolatedScalarQuantity("sample isolated", vVal);
 
 
   { // Parameterizations

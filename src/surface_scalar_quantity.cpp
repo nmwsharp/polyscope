@@ -138,7 +138,7 @@ std::string SurfaceScalarQuantity::niceName() { return name + " (" + definedOn +
 // ==========           Vertex Scalar            ==========
 // ========================================================
 
-SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(std::string name, std::vector<double> values_,
+SurfaceVertexScalarQuantity::SurfaceVertexScalarQuantity(std::string name, std::vector<double> values_,
                                                          SurfaceMesh& mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "vertex", dataType_), values(std::move(values_))
 
@@ -150,7 +150,7 @@ SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(std::string name, std::
   resetVizRange();
 }
 
-void SurfaceScalarVertexQuantity::createProgram() {
+void SurfaceVertexScalarQuantity::createProgram() {
   // Create the program to draw this quantity
   program.reset(new gl::GLProgram(&gl::VERTCOLOR_SURFACE_VERT_SHADER, &gl::VERTCOLOR_SURFACE_FRAG_SHADER,
                                   gl::DrawMode::Triangles));
@@ -163,7 +163,7 @@ void SurfaceScalarVertexQuantity::createProgram() {
 }
 
 
-void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram& p) {
+void SurfaceVertexScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
   std::vector<double> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
@@ -188,7 +188,7 @@ void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram& p) {
   p.setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
 }
 
-void SurfaceScalarVertexQuantity::writeToFile(std::string filename) {
+void SurfaceVertexScalarQuantity::writeToFile(std::string filename) {
 
   throw std::runtime_error("not implemented");
 
@@ -214,7 +214,7 @@ void SurfaceScalarVertexQuantity::writeToFile(std::string filename) {
   */
 }
 
-void SurfaceScalarVertexQuantity::buildVertexInfoGUI(size_t vInd) {
+void SurfaceVertexScalarQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
   ImGui::Text("%g", values[vInd]);
@@ -225,7 +225,7 @@ void SurfaceScalarVertexQuantity::buildVertexInfoGUI(size_t vInd) {
 // ==========            Face Scalar             ==========
 // ========================================================
 
-SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
+SurfaceFaceScalarQuantity::SurfaceFaceScalarQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
                                                      DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "face", dataType_), values(std::move(values_))
 
@@ -237,7 +237,7 @@ SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name, std::vect
   resetVizRange();
 }
 
-void SurfaceScalarFaceQuantity::createProgram() {
+void SurfaceFaceScalarQuantity::createProgram() {
   // Create the program to draw this quantity
   program.reset(new gl::GLProgram(&gl::VERTCOLOR_SURFACE_VERT_SHADER, &gl::VERTCOLOR_SURFACE_FRAG_SHADER,
                                   gl::DrawMode::Triangles));
@@ -249,7 +249,7 @@ void SurfaceScalarFaceQuantity::createProgram() {
   setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceScalarFaceQuantity::fillColorBuffers(gl::GLProgram& p) {
+void SurfaceFaceScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
   std::vector<double> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
@@ -267,7 +267,7 @@ void SurfaceScalarFaceQuantity::fillColorBuffers(gl::GLProgram& p) {
   p.setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
 }
 
-void SurfaceScalarFaceQuantity::buildFaceInfoGUI(size_t fInd) {
+void SurfaceFaceScalarQuantity::buildFaceInfoGUI(size_t fInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
   ImGui::Text("%g", values[fInd]);
@@ -279,7 +279,7 @@ void SurfaceScalarFaceQuantity::buildFaceInfoGUI(size_t fInd) {
 // ==========            Edge Scalar             ==========
 // ========================================================
 
-SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
+SurfaceEdgeScalarQuantity::SurfaceEdgeScalarQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
                                                      DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "edge", dataType_), values(std::move(values_))
 
@@ -291,7 +291,7 @@ SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name, std::vect
   resetVizRange();
 }
 
-void SurfaceScalarEdgeQuantity::createProgram() {
+void SurfaceEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
   program.reset(new gl::GLProgram(&gl::HALFEDGECOLOR_SURFACE_VERT_SHADER, &gl::HALFEDGECOLOR_SURFACE_FRAG_SHADER,
                                   gl::DrawMode::Triangles));
@@ -303,7 +303,7 @@ void SurfaceScalarEdgeQuantity::createProgram() {
   setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceScalarEdgeQuantity::fillColorBuffers(gl::GLProgram& p) {
+void SurfaceEdgeScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
   std::vector<glm::vec3> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
@@ -343,7 +343,7 @@ void SurfaceScalarEdgeQuantity::fillColorBuffers(gl::GLProgram& p) {
   p.setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
 }
 
-void SurfaceScalarEdgeQuantity::buildEdgeInfoGUI(size_t eInd) {
+void SurfaceEdgeScalarQuantity::buildEdgeInfoGUI(size_t eInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
   ImGui::Text("%g", values[eInd]);
@@ -354,7 +354,7 @@ void SurfaceScalarEdgeQuantity::buildEdgeInfoGUI(size_t eInd) {
 // ==========          Halfedge Scalar           ==========
 // ========================================================
 
-SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(std::string name, std::vector<double> values_,
+SurfaceHalfedgeScalarQuantity::SurfaceHalfedgeScalarQuantity(std::string name, std::vector<double> values_,
                                                              SurfaceMesh& mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "halfedge", dataType_), values(std::move(values_))
 
@@ -378,7 +378,7 @@ SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(std::string name, s
   resetVizRange();
 }
 
-void SurfaceScalarHalfedgeQuantity::createProgram() {
+void SurfaceHalfedgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
   program.reset(new gl::GLProgram(&gl::HALFEDGECOLOR_SURFACE_VERT_SHADER, &gl::HALFEDGECOLOR_SURFACE_FRAG_SHADER,
                                   gl::DrawMode::Triangles));
@@ -390,7 +390,7 @@ void SurfaceScalarHalfedgeQuantity::createProgram() {
   setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceScalarHalfedgeQuantity::fillColorBuffers(gl::GLProgram& p) {
+void SurfaceHalfedgeScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
   std::vector<glm::vec3> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
@@ -437,7 +437,7 @@ void SurfaceScalarHalfedgeQuantity::fillColorBuffers(gl::GLProgram& p) {
   p.setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
 }
 
-void SurfaceScalarHalfedgeQuantity::buildHalfedgeInfoGUI(size_t heInd) {
+void SurfaceHalfedgeScalarQuantity::buildHalfedgeInfoGUI(size_t heInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
   ImGui::Text("%g", values[heInd]);

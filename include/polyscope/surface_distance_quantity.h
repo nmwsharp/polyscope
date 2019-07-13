@@ -42,23 +42,4 @@ protected:
   void fillColorBuffers(gl::GLProgram& p);
 };
 
-template <class T>
-void SurfaceMesh::addVertexDistanceQuantity(std::string name, const T& distances) {
-  validateSize(distances, vertexDataSize, "distance quantity " + name);
-
-  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(
-      name, applyPermutation(standardizeArray<double, T>(distances), vertexPerm), *this, false);
-  addQuantity(q);
-}
-
-template <class T>
-void SurfaceMesh::addVertexSignedDistanceQuantity(std::string name, const T& distances) {
-  validateSize(distances, vertexDataSize, "signed distance quantity " + name);
-
-  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(
-      name, applyPermutation(standardizeArray<double, T>(distances), vertexPerm), *this, true);
-  addQuantity(q);
-}
-
-
 } // namespace polyscope

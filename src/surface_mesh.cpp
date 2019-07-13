@@ -1072,4 +1072,176 @@ void SurfaceMeshQuantity::buildEdgeInfoGUI(size_t eInd) {}
 void SurfaceMeshQuantity::buildHalfedgeInfoGUI(size_t heInd) {}
 
 
+// === Quantity adders
+
+
+SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantityImpl(std::string name,
+                                                                    const std::vector<glm::vec3>& colors) {
+  SurfaceVertexColorQuantity* q = new SurfaceVertexColorQuantity(name, applyPermutation(colors, vertexPerm), *this);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantityImpl(std::string name,
+                                                                const std::vector<glm::vec3>& colors) {
+  SurfaceFaceColorQuantity* q = new SurfaceFaceColorQuantity(name, applyPermutation(colors, facePerm), *this);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceVertexCountQuantity* SurfaceMesh::addVertexCountQuantityImpl(std::string name,
+                                                                    const std::vector<std::pair<size_t, int>>& values) {
+
+  SurfaceVertexCountQuantity* q = new SurfaceVertexCountQuantity(name, values, *this);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceVertexIsolatedScalarQuantity*
+SurfaceMesh::addVertexIsolatedScalarQuantityImpl(std::string name,
+                                                 const std::vector<std::pair<size_t, double>>& values) {
+  SurfaceVertexIsolatedScalarQuantity* q = new SurfaceVertexIsolatedScalarQuantity(name, values, *this);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceFaceCountQuantity* SurfaceMesh::addFaceCountQuantityImpl(std::string name,
+                                                                const std::vector<std::pair<size_t, int>>& values) {
+  SurfaceFaceCountQuantity* q = new SurfaceFaceCountQuantity(name, values, *this);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceDistanceQuantity* SurfaceMesh::addVertexDistanceQuantityImpl(std::string name, const std::vector<double>& data) {
+  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, applyPermutation(data, vertexPerm), *this, false);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceDistanceQuantity* SurfaceMesh::addVertexSignedDistanceQuantityImpl(std::string name, const std::vector<double>& data) {
+  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, applyPermutation(data, vertexPerm), *this, true);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantityImpl(std::string name, const std::vector<glm::vec3>& nodes,
+                                                               const std::vector<std::array<size_t, 2>>& edges) {
+  SurfaceGraphQuantity* q = new SurfaceGraphQuantity(name, nodes, edges, *this);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceCornerParameterizationQuantity*
+SurfaceMesh::addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
+                                             ParamCoordsType type) {
+  SurfaceCornerParameterizationQuantity* q =
+      new SurfaceCornerParameterizationQuantity(name, applyPermutation(coords, cornerPerm), type, *this);
+  addQuantity(q);
+
+  return q;
+}
+
+SurfaceVertexParameterizationQuantity*
+SurfaceMesh::addVertexParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
+                                                   ParamCoordsType type) {
+  SurfaceVertexParameterizationQuantity* q =
+      new SurfaceVertexParameterizationQuantity(name, applyPermutation(coords, vertexPerm), type, *this);
+  addQuantity(q);
+
+  return q;
+}
+
+SurfaceVertexParameterizationQuantity*
+SurfaceMesh::addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
+                                                  ParamCoordsType type) {
+  SurfaceVertexParameterizationQuantity* q =
+      new SurfaceVertexParameterizationQuantity(name, applyPermutation(coords, vertexPerm), type, *this);
+  addQuantity(q);
+
+  q->setStyle(ParamVizStyle::LOCAL_CHECK);
+
+  return q;
+}
+
+
+SurfaceVertexScalarQuantity* SurfaceMesh::addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data,
+                                                                      DataType type) {
+  SurfaceVertexScalarQuantity* q =
+      new SurfaceVertexScalarQuantity(name, applyPermutation(data, vertexPerm), *this, type);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceFaceScalarQuantity* SurfaceMesh::addFaceScalarQuantityImpl(std::string name, const std::vector<double>& data,
+                                                                  DataType type) {
+  SurfaceFaceScalarQuantity* q = new SurfaceFaceScalarQuantity(name, applyPermutation(data, facePerm), *this, type);
+  addQuantity(q);
+  return q;
+}
+
+
+SurfaceEdgeScalarQuantity* SurfaceMesh::addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data,
+                                                                  DataType type) {
+  SurfaceEdgeScalarQuantity* q = new SurfaceEdgeScalarQuantity(name, applyPermutation(data, edgePerm), *this, type);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceHalfedgeScalarQuantity*
+SurfaceMesh::addHalfedgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type) {
+  SurfaceHalfedgeScalarQuantity* q =
+      new SurfaceHalfedgeScalarQuantity(name, applyPermutation(data, halfedgePerm), *this, type);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceVertexVectorQuantity* SurfaceMesh::addVertexVectorQuantityImpl(std::string name,
+                                                                      const std::vector<glm::vec3>& vectors,
+                                                                      VectorType vectorType) {
+  SurfaceVertexVectorQuantity* q =
+      new SurfaceVertexVectorQuantity(name, applyPermutation(vectors, vertexPerm), *this, vectorType);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceFaceVectorQuantity*
+SurfaceMesh::addFaceVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType) {
+
+  SurfaceFaceVectorQuantity* q =
+      new SurfaceFaceVectorQuantity(name, applyPermutation(vectors, facePerm), *this, vectorType);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceFaceIntrinsicVectorQuantity*
+SurfaceMesh::addFaceIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym,
+                                                VectorType vectorType) {
+
+  SurfaceFaceIntrinsicVectorQuantity* q =
+      new SurfaceFaceIntrinsicVectorQuantity(name, applyPermutation(vectors, facePerm), *this, nSym, vectorType);
+  addQuantity(q);
+  return q;
+}
+
+
+SurfaceVertexIntrinsicVectorQuantity*
+SurfaceMesh::addVertexIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym,
+                                                  VectorType vectorType) {
+  SurfaceVertexIntrinsicVectorQuantity* q =
+      new SurfaceVertexIntrinsicVectorQuantity(name, applyPermutation(vectors, vertexPerm), *this, nSym, vectorType);
+  addQuantity(q);
+  return q;
+}
+
+// Orientations is `true` if the canonical orientation of the edge points from the lower-indexed vertex to the
+// higher-indexed vertex, and `false` otherwise.
+SurfaceOneFormIntrinsicVectorQuantity*
+SurfaceMesh::addOneFormIntrinsicVectorQuantityImpl(std::string name, const std::vector<double>& data,
+                                                   const std::vector<char>& orientations) {
+  SurfaceOneFormIntrinsicVectorQuantity* q = new SurfaceOneFormIntrinsicVectorQuantity(
+      name, applyPermutation(data, edgePerm), applyPermutation(orientations, edgePerm), *this);
+  addQuantity(q);
+  return q;
+}
+
 } // namespace polyscope

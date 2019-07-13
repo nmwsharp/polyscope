@@ -9,37 +9,44 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
+#include "polyscope/surface_mesh_enums.h"
+#include "polyscope/surface_mesh_quantity.h"
 
-// Note: additional quantity includes at bottom
+// Alllll the quantities
+#include "polyscope/surface_color_quantity.h"
+#include "polyscope/surface_count_quantity.h"
+#include "polyscope/surface_distance_quantity.h"
+#include "polyscope/surface_graph_quantity.h"
+#include "polyscope/surface_parameterization_enums.h"
+#include "polyscope/surface_parameterization_quantity.h"
+#include "polyscope/surface_scalar_quantity.h"
+#include "polyscope/surface_vector_quantity.h"
+//#include "polyscope/surface_selection_quantity.h"
+//#include "polyscope/surface_subset_quantity.h"
+
 
 namespace polyscope {
 
-enum class ShadeStyle { FLAT = 0, SMOOTH };
-enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE, CORNER };
+// Forward declarations for quantities
+class SurfaceVertexColorQuantity;
+class SurfaceFaceColorQuantity;
+class SurfaceVertexCountQuantity;
+class SurfaceVertexIsolatedScalarQuantity;
+class SurfaceFaceCountQuantity;
+class SurfaceDistanceQuantity;
+class SurfaceGraphQuantity;
+class SurfaceCornerParameterizationQuantity;
+class SurfaceVertexParameterizationQuantity;
+class SurfaceVertexScalarQuantity;
+class SurfaceFaceScalarQuantity;
+class SurfaceEdgeScalarQuantity;
+class SurfaceHalfedgeScalarQuantity;
+class SurfaceVertexVectorQuantity;
+class SurfaceFaceVectorQuantity;
+class SurfaceVertexIntrinsicVectorQuantity;
+class SurfaceFaceIntrinsicVectorQuantity;
+class SurfaceOneFormIntrinsicVectorQuantity;
 
-// TODO these should really live in parameterization
-enum class ParamCoordsType { UNIT = 0, WORLD };                         // UNIT -> [0,1], WORLD -> length-valued
-enum class ParamVizStyle { CHECKER = 0, GRID, LOCAL_CHECK, LOCAL_RAD }; // TODO add "UV" with test UV map
-
-
-// Forward delcare surface mesh
-class SurfaceMesh;
-
-// Extend Quantity<SurfaceMesh> to add a few extra functions
-class SurfaceMeshQuantity : public Quantity<SurfaceMesh> {
-public:
-  SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates = false);
-
-public:
-  // Notify that the geometry has changed
-  virtual void geometryChanged();
-
-  // Build GUI info about this element
-  virtual void buildVertexInfoGUI(size_t vInd);
-  virtual void buildFaceInfoGUI(size_t fInd);
-  virtual void buildEdgeInfoGUI(size_t eInd);
-  virtual void buildHalfedgeInfoGUI(size_t heInd);
-};
 
 template <> // Specialize the quantity type
 struct QuantityTypeHelper<SurfaceMesh> {
@@ -79,72 +86,70 @@ public:
 
   // === Quantity-related
 
-  // = Scalars (expect double arrays)
-  template <class T>
-  void addVertexScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
-  template <class T>
-  void addFaceScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
-  template <class T>
-  void addEdgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
-  template <class T>
-  void addHalfedgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
+  // clang-format off
 
-  // = Distance (expect double array)
+  // = Scalars (expect scalar array)
   template <class T>
-  void addVertexDistanceQuantity(std::string name, const T& data);
+  SurfaceVertexScalarQuantity* addVertexScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
   template <class T>
-  void addVertexSignedDistanceQuantity(std::string name, const T& data);
+  SurfaceFaceScalarQuantity* addFaceScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
+  template <class T>
+  SurfaceEdgeScalarQuantity* addEdgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
+  template <class T>
+  SurfaceHalfedgeScalarQuantity* addHalfedgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
 
-  // = Colors (expect glm::vec3 array)
+  // = Distance (expect scalar array)
   template <class T>
-  void addVertexColorQuantity(std::string name, const T& data);
+  SurfaceDistanceQuantity* addVertexDistanceQuantity(std::string name, const T& data);
   template <class T>
-  void addFaceColorQuantity(std::string name, const T& data);
+  SurfaceDistanceQuantity* addVertexSignedDistanceQuantity(std::string name, const T& data);
+
+  // = Colors (expect vec3 array)
+  template <class T>
+  SurfaceVertexColorQuantity* addVertexColorQuantity(std::string name, const T& data);
+  template <class T>
+  SurfaceFaceColorQuantity* addFaceColorQuantity(std::string name, const T& data);
 
   // = Counts/Values on isolated vertices (expect index/value pairs)
-  void addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values);
-  void addFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values);
-  void addIsolatedVertexScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>>& values);
+  SurfaceVertexCountQuantity* addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values);
+  SurfaceFaceCountQuantity* addFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values);
+  SurfaceVertexIsolatedScalarQuantity* addVertexIsolatedScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>>& values);
 
   // = Subsets (expect char array)
   // template <class T>
   // void addEdgeSubsetQuantity(std::string name, const T& subset);
 
-  // = Vectors (expect vector array, inner type must be indexable with correct dimension)
+  // = Vectors (expect vector array, inner type must be indexable with correct dimension (3 for extrinsic, 2 for intrinsic)
   template <class T>
-  void addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
+  SurfaceVertexVectorQuantity* addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
   template <class T>
-  void addFaceVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
+  SurfaceFaceVectorQuantity* addFaceVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
   template <class T>
-  void addFaceIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym = 1,
-                                      VectorType vectorType = VectorType::STANDARD);
+  SurfaceFaceIntrinsicVectorQuantity* addFaceIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym = 1, VectorType vectorType = VectorType::STANDARD);
   template <class T>
-  void addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym = 1,
-                                        VectorType vectorType = VectorType::STANDARD);
+  SurfaceVertexIntrinsicVectorQuantity* addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym = 1, VectorType vectorType = VectorType::STANDARD);
   template <class T, class O>
-  void addOneFormIntrinsicVectorQuantity(std::string name, const T& data, const O& orientations);
+  SurfaceOneFormIntrinsicVectorQuantity* addOneFormIntrinsicVectorQuantity(std::string name, const T& data, const O& orientations);
 
   // = Parameterizations
   template <class T>
-  void addParameterizationQuantity(std::string name, const T& coords, ParamCoordsType type = ParamCoordsType::UNIT);
-
+  SurfaceCornerParameterizationQuantity* addParameterizationQuantity(std::string name, const T& coords, ParamCoordsType type = ParamCoordsType::UNIT);
   template <class T>
-  void addVertexParameterizationQuantity(std::string name, const T& coords,
-                                         ParamCoordsType type = ParamCoordsType::UNIT);
-
+  SurfaceVertexParameterizationQuantity* addVertexParameterizationQuantity(std::string name, const T& coords, ParamCoordsType type = ParamCoordsType::UNIT);
   template <class T>
-  void addLocalParameterizationQuantity(std::string name, const T& coords,
-                                        ParamCoordsType type = ParamCoordsType::WORLD);
+  SurfaceVertexParameterizationQuantity* addLocalParameterizationQuantity(std::string name, const T& coords, ParamCoordsType type = ParamCoordsType::WORLD);
 
 
   // = Misc quantities
   template <class P, class E>
-  void addSurfaceGraphQuantity(std::string name, const P& nodes, const E& edges);
+  SurfaceGraphQuantity* addSurfaceGraphQuantity(std::string name, const P& nodes, const E& edges);
 
   // = I/O Selections
   template <class T>
   void addVertexSelectionQuantity(std::string name, const T& initialMembership);
   // void addInputCurveQuantity(std::string name);
+
+  // clang-format on
 
 
   // === Make a one-time selection
@@ -289,6 +294,34 @@ private:
   void fillGeometryBuffersWireframe(gl::GLProgram& p);
   glm::vec2 projectToScreenSpace(glm::vec3 coord);
   // bool screenSpaceTriangleTest(size_t fInd, glm::vec2 testCoords, glm::vec3& bCoordOut);
+
+
+  // === Quantity adders
+  // clang-format off
+  SurfaceVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
+  SurfaceFaceColorQuantity* addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
+  SurfaceVertexCountQuantity* addVertexCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
+  SurfaceVertexIsolatedScalarQuantity* addVertexIsolatedScalarQuantityImpl(std::string name, const std::vector<std::pair<size_t, double>>& values);
+  SurfaceFaceCountQuantity* addFaceCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
+  SurfaceDistanceQuantity* addVertexDistanceQuantityImpl(std::string name, const std::vector<double>& data);
+  SurfaceDistanceQuantity* addVertexSignedDistanceQuantityImpl(std::string name, const std::vector<double>& data);
+  SurfaceGraphQuantity* addSurfaceGraphQuantityImpl(std::string name, const std::vector<glm::vec3>& nodes, const std::vector<std::array<size_t, 2>>& edges);
+  SurfaceCornerParameterizationQuantity* addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
+  SurfaceVertexParameterizationQuantity* addVertexParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
+  SurfaceVertexParameterizationQuantity* addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
+  SurfaceVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type); 
+  SurfaceFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type); 
+  SurfaceEdgeScalarQuantity* addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type); 
+  SurfaceHalfedgeScalarQuantity* addHalfedgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
+
+  SurfaceVertexVectorQuantity* addVertexVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
+  SurfaceFaceVectorQuantity* addFaceVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
+  SurfaceFaceIntrinsicVectorQuantity* addFaceIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym, VectorType vectorType);
+  SurfaceVertexIntrinsicVectorQuantity* addVertexIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym, VectorType vectorType);
+  SurfaceOneFormIntrinsicVectorQuantity* addOneFormIntrinsicVectorQuantityImpl(std::string name, const std::vector<double>& data, const std::vector<char>& orientations);
+
+
+  // clang-format on
 };
 
 
@@ -367,16 +400,3 @@ inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
 
 #include "polyscope/surface_mesh.ipp"
 
-// Alllll the quantities
-#include "polyscope/surface_color_quantity.h"
-#include "polyscope/surface_count_quantity.h"
-#include "polyscope/surface_distance_quantity.h"
-#include "polyscope/surface_graph_quantity.h"
-#include "polyscope/surface_parameterization_quantity.h"
-#include "polyscope/surface_scalar_quantity.h"
-#include "polyscope/surface_vector_quantity.h"
-
-/*
-#include "polyscope/surface_selection_quantity.h"
-#include "polyscope/surface_subset_quantity.h"
-*/

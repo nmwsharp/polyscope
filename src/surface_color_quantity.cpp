@@ -29,13 +29,13 @@ void SurfaceColorQuantity::draw() {
 // ==========           Vertex Color            ==========
 // ========================================================
 
-SurfaceColorVertexQuantity::SurfaceColorVertexQuantity(std::string name, std::vector<glm::vec3> values_,
+SurfaceVertexColorQuantity::SurfaceVertexColorQuantity(std::string name, std::vector<glm::vec3> values_,
                                                        SurfaceMesh& mesh_)
     : SurfaceColorQuantity(name, mesh_, "vertex"), values(std::move(values_))
 
 {}
 
-void SurfaceColorVertexQuantity::createProgram() {
+void SurfaceVertexColorQuantity::createProgram() {
   // Create the program to draw this quantity
   program.reset(new gl::GLProgram(&gl::VERTCOLOR3_SURFACE_VERT_SHADER, &gl::VERTCOLOR3_SURFACE_FRAG_SHADER,
                                   gl::DrawMode::Triangles));
@@ -47,7 +47,7 @@ void SurfaceColorVertexQuantity::createProgram() {
   setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceColorVertexQuantity::fillColorBuffers(gl::GLProgram& p) {
+void SurfaceVertexColorQuantity::fillColorBuffers(gl::GLProgram& p) {
   std::vector<glm::vec3> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
@@ -71,7 +71,7 @@ void SurfaceColorVertexQuantity::fillColorBuffers(gl::GLProgram& p) {
   p.setAttribute("a_colorval", colorval);
 }
 
-void SurfaceColorVertexQuantity::buildVertexInfoGUI(size_t vInd) {
+void SurfaceVertexColorQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
@@ -91,12 +91,12 @@ void SurfaceColorQuantity::geometryChanged() { program.reset(); }
 // ==========            Face Color              ==========
 // ========================================================
 
-SurfaceColorFaceQuantity::SurfaceColorFaceQuantity(std::string name, std::vector<glm::vec3> values_, SurfaceMesh& mesh_)
+SurfaceFaceColorQuantity::SurfaceFaceColorQuantity(std::string name, std::vector<glm::vec3> values_, SurfaceMesh& mesh_)
     : SurfaceColorQuantity(name, mesh_, "face"), values(std::move(values_))
 
 {}
 
-void SurfaceColorFaceQuantity::createProgram() {
+void SurfaceFaceColorQuantity::createProgram() {
   // Create the program to draw this quantity
   program.reset(new gl::GLProgram(&gl::VERTCOLOR3_SURFACE_VERT_SHADER, &gl::VERTCOLOR3_SURFACE_FRAG_SHADER,
                                   gl::DrawMode::Triangles));
@@ -108,7 +108,7 @@ void SurfaceColorFaceQuantity::createProgram() {
   setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceColorFaceQuantity::fillColorBuffers(gl::GLProgram& p) {
+void SurfaceFaceColorQuantity::fillColorBuffers(gl::GLProgram& p) {
   std::vector<glm::vec3> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
@@ -126,7 +126,7 @@ void SurfaceColorFaceQuantity::fillColorBuffers(gl::GLProgram& p) {
   p.setAttribute("a_colorval", colorval);
 }
 
-void SurfaceColorFaceQuantity::buildFaceInfoGUI(size_t fInd) {
+void SurfaceFaceColorQuantity::buildFaceInfoGUI(size_t fInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 

@@ -29,14 +29,6 @@ private:
   void setUniforms();
 };
 
-template <class P, class E>
-void SurfaceMesh::addSurfaceGraphQuantity(std::string name, const P& nodes, const E& edges) {
-
-  SurfaceGraphQuantity* q = new SurfaceGraphQuantity(name, standardizeVectorArray<glm::vec3, P, 3>(nodes),
-                                                     standardizeVectorArray<std::array<size_t, 2>, E, 2>(edges), *this);
-
-  addQuantity(q);
-}
 
 
 } // namespace polyscope

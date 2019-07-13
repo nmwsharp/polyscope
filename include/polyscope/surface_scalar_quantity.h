@@ -42,9 +42,9 @@ protected:
 // ==========           Vertex Scalar            ==========
 // ========================================================
 
-class SurfaceScalarVertexQuantity : public SurfaceScalarQuantity {
+class SurfaceVertexScalarQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceScalarVertexQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
+  SurfaceVertexScalarQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
                               DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
@@ -58,23 +58,14 @@ public:
   std::vector<double> values;
 };
 
-template <class T>
-void SurfaceMesh::addVertexScalarQuantity(std::string name, const T& data, DataType type) {
-
-  validateSize(data, vertexDataSize, "vertex scalar quantity " + name);
-
-  SurfaceScalarQuantity* q = new SurfaceScalarVertexQuantity(
-      name, applyPermutation(standardizeArray<double, T>(data), vertexPerm), *this, type);
-  addQuantity(q);
-}
 
 // ========================================================
 // ==========            Face Scalar             ==========
 // ========================================================
 
-class SurfaceScalarFaceQuantity : public SurfaceScalarQuantity {
+class SurfaceFaceScalarQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceScalarFaceQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
+  SurfaceFaceScalarQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
                             DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
@@ -87,25 +78,16 @@ public:
   std::vector<double> values;
 };
 
-template <class T>
-void SurfaceMesh::addFaceScalarQuantity(std::string name, const T& data, DataType type) {
-
-  validateSize(data, faceDataSize, "face scalar quantity " + name);
-
-  SurfaceScalarQuantity* q =
-      new SurfaceScalarFaceQuantity(name, applyPermutation(standardizeArray<double, T>(data), facePerm), *this, type);
-  addQuantity(q);
-}
 
 // ========================================================
 // ==========            Edge Scalar             ==========
 // ========================================================
 
-class SurfaceScalarEdgeQuantity : public SurfaceScalarQuantity {
+class SurfaceEdgeScalarQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceScalarEdgeQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
+  SurfaceEdgeScalarQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
                             DataType dataType_ = DataType::STANDARD);
-  //   ~SurfaceScalarVertexQuantity();
+  //   ~SurfaceVertexScalarQuantity();
 
   virtual void createProgram() override;
 
@@ -118,25 +100,15 @@ public:
   std::vector<double> values;
 };
 
-template <class T>
-void SurfaceMesh::addEdgeScalarQuantity(std::string name, const T& data, DataType type) {
-
-  validateSize(data, edgeDataSize, "edge scalar quantity " + name);
-
-  SurfaceScalarQuantity* q =
-      new SurfaceScalarEdgeQuantity(name, applyPermutation(standardizeArray<double, T>(data), edgePerm), *this, type);
-  addQuantity(q);
-}
-
 // ========================================================
 // ==========          Halfedge Scalar           ==========
 // ========================================================
 
-class SurfaceScalarHalfedgeQuantity : public SurfaceScalarQuantity {
+class SurfaceHalfedgeScalarQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceScalarHalfedgeQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
+  SurfaceHalfedgeScalarQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
                                 DataType dataType_ = DataType::STANDARD);
-  //   ~SurfaceScalarVertexQuantity();
+  //   ~SurfaceVertexScalarQuantity();
 
   virtual void createProgram() override;
 
@@ -148,14 +120,5 @@ public:
   std::vector<double> values;
 };
 
-template <class T>
-void SurfaceMesh::addHalfedgeScalarQuantity(std::string name, const T& data, DataType type) {
-
-  validateSize(data, halfedgeDataSize, "halfedge scalar quantity " + name);
-
-  SurfaceScalarQuantity* q = new SurfaceScalarHalfedgeQuantity(
-      name, applyPermutation(standardizeArray<double, T>(data), halfedgePerm), *this, type);
-  addQuantity(q);
-}
 
 } // namespace polyscope
