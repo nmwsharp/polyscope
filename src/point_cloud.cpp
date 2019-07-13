@@ -184,9 +184,6 @@ std::string PointCloud::typeName() { return structureTypeName; }
 
 PointCloudQuantity::PointCloudQuantity(std::string name_, PointCloud& pointCloud_, bool dominates_)
     : Quantity<PointCloud>(name_, pointCloud_, dominates_) {}
-PointCloudQuantityThatDrawsPoints::PointCloudQuantityThatDrawsPoints(std::string name_, PointCloud& pointCloud_)
-    : PointCloudQuantity(name_, pointCloud_, true) {}
-
 
 void PointCloud::writePointsToFile(std::string filename) {
 
@@ -211,6 +208,29 @@ void PointCloud::writePointsToFile(std::string filename) {
 }
 
 void PointCloudQuantity::buildInfoGUI(size_t pointInd) {}
+
+// === Quantity adders
+
+
+PointCloudColorQuantity* PointCloud::addColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors) {
+  PointCloudColorQuantity* q = new PointCloudColorQuantity(name, colors, *this);
+  addQuantity(q);
+  return q;
+}
+
+PointCloudScalarQuantity* PointCloud::addScalarQuantityImpl(std::string name, const std::vector<double>& data,
+                                                            DataType type) {
+  PointCloudScalarQuantity* q = new PointCloudScalarQuantity(name, data, *this, type);
+  addQuantity(q);
+  return q;
+}
+
+PointCloudVectorQuantity* PointCloud::addVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors,
+                                                            VectorType vectorType) {
+  PointCloudVectorQuantity* q = new PointCloudVectorQuantity(name, vectors, *this, vectorType);
+  addQuantity(q);
+  return q;
+}
 
 
 } // namespace polyscope

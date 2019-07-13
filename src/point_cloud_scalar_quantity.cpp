@@ -12,7 +12,7 @@ namespace polyscope {
 
 PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::vector<double>& values_,
                                                    PointCloud& pointCloud_, DataType dataType_)
-    : PointCloudQuantityThatDrawsPoints(name, pointCloud_), dataType(dataType_)
+    : PointCloudQuantity(name, pointCloud_, true), dataType(dataType_)
 
 {
   if (values_.size() != parent.points.size()) {

@@ -4,12 +4,13 @@
 #include "polyscope/gl/colormap_sets.h"
 #include "polyscope/histogram.h"
 #include "polyscope/point_cloud.h"
+#include "polyscope/point_cloud_quantity.h"
 
 #include <vector>
 
 namespace polyscope {
 
-class PointCloudColorQuantity : public PointCloudQuantityThatDrawsPoints {
+class PointCloudColorQuantity : public PointCloudQuantity {
 public:
   PointCloudColorQuantity(std::string name, const std::vector<glm::vec3>& values, PointCloud& pointCloud_);
 
@@ -24,17 +25,8 @@ public:
 
 protected:
   void createPointProgram();
+  std::unique_ptr<gl::GLProgram> pointProgram;
 };
 
-
-template <class T>
-void PointCloud::addColorQuantity(std::string name, const T& colors) {
-
-  validateSize(colors, nPoints(), "point cloud color quantity " + name);
-
-  PointCloudQuantityThatDrawsPoints* q =
-      new PointCloudColorQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(colors), *this);
-  this->addQuantity(q);
-}
 
 } // namespace polyscope

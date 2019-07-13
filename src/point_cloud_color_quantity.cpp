@@ -12,7 +12,7 @@ namespace polyscope {
 
 PointCloudColorQuantity::PointCloudColorQuantity(std::string name, const std::vector<glm::vec3>& values_,
                                                  PointCloud& pointCloud_)
-    : PointCloudQuantityThatDrawsPoints(name, pointCloud_)
+    : PointCloudQuantity(name, pointCloud_, true)
 
 {
 

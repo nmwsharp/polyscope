@@ -1,39 +1,28 @@
 #pragma once
 
-#include <vector>
-
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
 #include "polyscope/gl/gl_utils.h"
+#include "polyscope/point_cloud_quantity.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
 
-// Note extra quantity includes at bottom
+#include "polyscope/point_cloud_color_quantity.h"
+#include "polyscope/point_cloud_scalar_quantity.h"
+#include "polyscope/point_cloud_vector_quantity.h"
+
+#include <vector>
 
 namespace polyscope {
 
 // Forward declare point cloud
 class PointCloud;
 
-class PointCloudQuantity : public Quantity<PointCloud> {
-public:
-  // Base constructor which sets the name
-  PointCloudQuantity(std::string name, PointCloud& pointCloud, bool dominates = false);
-
-  // Build GUI info about a point
-  virtual void buildInfoGUI(size_t pointInd);
-};
-
-// Specific subclass indicating that a quantity will create a program to draw on the points themselves
-class PointCloudQuantityThatDrawsPoints : public PointCloudQuantity {
-
-public:
-  PointCloudQuantityThatDrawsPoints(std::string name, PointCloud& pointCloud);
-
-protected:
-  std::unique_ptr<gl::GLProgram> pointProgram;
-};
+// Forward declare quantity types
+class PointCloudColorQuantity;
+class PointCloudScalarQuantity;
+class PointCloudVectorQuantity;
 
 
 template <> // Specialize the quantity type
@@ -74,19 +63,16 @@ public:
 
   // Scalars
   template <class T>
-  void addScalarQuantity(std::string name, const T& values, DataType type = DataType::STANDARD);
+  PointCloudScalarQuantity* addScalarQuantity(std::string name, const T& values, DataType type = DataType::STANDARD);
 
   // Colors
   template <class T>
-  void addColorQuantity(std::string name, const T& values);
-
-  // Subsets
-  // void addSubsetQuantity(std::string name, const std::vector<char>& subsetIndicators);
-  // void addSubsetQuantity(std::string name, const std::vector<size_t>& subsetIndices);
+  PointCloudColorQuantity* addColorQuantity(std::string name, const T& values);
 
   // Vectors
   template <class T>
-  void addVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
+  PointCloudVectorQuantity* addVectorQuantity(std::string name, const T& vectors,
+                                              VectorType vectorType = VectorType::STANDARD);
 
   // The points that make up this point cloud
   std::vector<glm::vec3> points;
@@ -115,6 +101,13 @@ private:
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
   void preparePick();
+
+
+  // === Quantity adder implementations
+  PointCloudScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
+  PointCloudColorQuantity* addColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
+  PointCloudVectorQuantity* addVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors,
+                                                  VectorType vectorType);
 };
 
 
@@ -145,8 +138,4 @@ inline PointCloud* getPointCloud(std::string name = "") {
 
 } // namespace polyscope
 
-
-// Quantity includes
-#include "polyscope/point_cloud_color_quantity.h"
-#include "polyscope/point_cloud_scalar_quantity.h"
-#include "polyscope/point_cloud_vector_quantity.h"
+#include "polyscope/point_cloud.ipp"

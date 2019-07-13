@@ -33,15 +33,4 @@ public:
   std::unique_ptr<gl::GLProgram> program;
 };
 
-template <class T>
-void PointCloud::addVectorQuantity(std::string name, const T& vectors, VectorType vectorType) {
-
-  validateSize(vectors, nPoints(), "point cloud vector quantity " + name);
-
-  PointCloudQuantity* q =
-      new PointCloudVectorQuantity(name, standardizeVectorArray<glm::vec3, T, 3>(vectors), *this, vectorType);
-  addQuantity(q);
-}
-
-
 } // namespace polyscope

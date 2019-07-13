@@ -9,7 +9,7 @@
 
 namespace polyscope {
 
-class PointCloudScalarQuantity : public PointCloudQuantityThatDrawsPoints {
+class PointCloudScalarQuantity : public PointCloudQuantity {
 public:
   PointCloudScalarQuantity(std::string name, const std::vector<double>& values, PointCloud& pointCloud_,
                            DataType dataType);
@@ -36,18 +36,8 @@ public:
 
 protected:
   void createPointProgram();
+  std::unique_ptr<gl::GLProgram> pointProgram;
 };
-
-
-template <class T>
-void PointCloud::addScalarQuantity(std::string name, const T& data, DataType type) {
-
-  validateSize(data, nPoints(), "point cloud scalar quantity " + name);
-
-  PointCloudQuantityThatDrawsPoints* q =
-      new PointCloudScalarQuantity(name, standardizeArray<double, T>(data), *this, type);
-  addQuantity(q);
-}
 
 
 } // namespace polyscope
