@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-#include "polyscope/gl/colormaps.h"
+#include "polyscope/gl/color_maps.h"
 #include "polyscope/gl/colors.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/view.h"
@@ -202,7 +202,7 @@ public:
   void setTexture1D(std::string name, unsigned char* texData, unsigned int length);
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                     bool withAlpha = true, bool useMipMap = false, bool repeat = false);
-  void setTextureFromColormap(std::string name, Colormap colormap, bool allowUpdate = false);
+  void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false);
   void setTextureFromBuffer(std::string name, GLTexturebuffer* textureBuffer);
 
 

@@ -17,7 +17,7 @@ public:
   ~Histogram();
 
   void buildHistogram(std::vector<double>& values, const std::vector<double>& weights = {});
-  void updateColormap(const gl::Colormap* newColormap);
+  void updateColormap(gl::ColorMapID newColormap);
 
   // Width = -1 means set automatically
   void buildUI(float width = -1.0);
@@ -59,7 +59,7 @@ private:
   gl::GLTexturebuffer* texturebuffer = nullptr;
   gl::GLFramebuffer* framebuffer = nullptr;
   gl::GLProgram* program = nullptr;
-  const gl::Colormap* colormap = &gl::CM_CONST_RED;
+  gl::ColorMapID colormap = gl::ColorMapID::VIRIDIS;
 };
 
 

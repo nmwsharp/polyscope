@@ -33,7 +33,7 @@ private:
   void createProgram();
   void deleteProgram();
 
-  int iColorMap = 5; // spectral
+  gl::ColorMapID cMap = gl::ColorMapID::SPECTRAL;
 };
 
 

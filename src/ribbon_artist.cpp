@@ -1,6 +1,6 @@
 #include "polyscope/ribbon_artist.h"
 
-#include "polyscope/gl/colormap_sets.h"
+#include "polyscope/gl/color_maps.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/ribbon_shaders.h"
 #include "polyscope/polyscope.h"
@@ -59,7 +59,7 @@ void RibbonArtist::createProgram() {
     }
 
     // Sample a color for this line
-    glm::vec3 lineColor = gl::allColormaps[iColorMap]->getValue(randomUnit());
+    glm::vec3 lineColor = gl::getColorMap(cMap).getValue(randomUnit());
 
     // Add a false point at the beginning (so it's not a special case for the geometry shader)
     float EPS = 0.01;
@@ -139,9 +139,7 @@ void RibbonArtist::draw() {
 
 void RibbonArtist::buildParametersGUI() {
 
-  int iColormapBefore = iColorMap;
-  ImGui::Combo("##colormap", &iColorMap, gl::allColormapNames, IM_ARRAYSIZE(gl::allColormapNames));
-  if (iColorMap != iColormapBefore) {
+  if (gl::buildColormapSelector(cMap)) {
     deleteProgram();
   }
 

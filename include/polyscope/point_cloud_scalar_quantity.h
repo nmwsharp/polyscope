@@ -1,7 +1,7 @@
 #pragma once
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/gl/colormap_sets.h"
+#include "polyscope/gl/color_maps.h"
 #include "polyscope/histogram.h"
 #include "polyscope/point_cloud.h"
 
@@ -32,7 +32,7 @@ public:
   Histogram hist;
 
   // UI internals
-  int iColorMap = 0;
+  gl::ColorMapID cMap;
 
 protected:
   void createPointProgram();

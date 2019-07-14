@@ -4,6 +4,20 @@
 
 namespace polyscope {
 
+inline gl::ColorMapID defaultColorMap(DataType type) {
+  switch (type) {
+  case DataType::STANDARD:
+    return gl::ColorMapID::VIRIDIS;
+    break;
+  case DataType::SYMMETRIC:
+    return gl::ColorMapID::COOLWARM;
+  case DataType::MAGNITUDE:
+    return gl::ColorMapID::BLUES;
+    break;
+  }
+  return gl::ColorMapID::VIRIDIS;
+}
+
 // Helpers used mainy to treat vectors as fields
 namespace {
 
@@ -17,7 +31,6 @@ template <>
 typename FIELD_MAG<glm::vec3>::type FIELD_BIGNESS(glm::vec3 x) {
   return glm::length(x);
 }
-
 
 // Multiplicative identity
 template <typename T>

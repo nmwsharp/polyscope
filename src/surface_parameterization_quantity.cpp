@@ -1,7 +1,6 @@
 #include "polyscope/surface_parameterization_quantity.h"
 
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/colormap_sets.h"
 #include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/parameterization_shaders.h"
@@ -23,7 +22,7 @@ SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string nam
     : SurfaceMeshQuantity(name, mesh_, true), coordsType(type_) {
 
   // Set default colormap
-  iColorMap = 8; // phase
+  cMap = gl::ColorMapID::PHASE;
 
   // Set a checker color
   checkColor1 = gl::RGB_PINK;
@@ -65,12 +64,12 @@ void SurfaceParameterizationQuantity::createProgram() {
   case ParamVizStyle::LOCAL_CHECK:
     program.reset(new gl::GLProgram(&gl::PARAM_SURFACE_VERT_SHADER, &gl::PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER,
                                     gl::DrawMode::Triangles));
-    program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap]);
+    program->setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
     break;
   case ParamVizStyle::LOCAL_RAD:
     program.reset(new gl::GLProgram(&gl::PARAM_SURFACE_VERT_SHADER, &gl::PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER,
                                     gl::DrawMode::Triangles));
-    program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap]);
+    program->setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
     break;
   }
 
@@ -176,11 +175,7 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
     ImGui::PopItemWidth();
 
     // Set colormap
-    ImGui::PushItemWidth(100);
-    int iColormapBefore = iColorMap;
-    ImGui::Combo("##colormap", &iColorMap, gl::allColormapNames, IM_ARRAYSIZE(gl::allColormapNames));
-    ImGui::PopItemWidth();
-    if (iColorMap != iColormapBefore) {
+    if(buildColormapSelector(cMap)) {
       program.reset();
     }
   }

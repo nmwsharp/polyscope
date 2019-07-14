@@ -1,7 +1,6 @@
 #include "polyscope/surface_count_quantity.h"
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/gl/colormap_sets.h"
 #include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/sphere_shaders.h"
@@ -22,7 +21,7 @@ void SurfaceCountQuantity::createProgram() {
   program.reset(new gl::GLProgram(&gl::SPHERE_VALUE_VERT_SHADER, &gl::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
                                   &gl::SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
 
-  // Color limits
+  // limits
   sum = 0;
   std::vector<double> allValues;
   for (auto& e : entries) {
@@ -43,14 +42,12 @@ void SurfaceCountQuantity::createProgram() {
     value.push_back(e.second);
   }
 
-  // Set the initial colormap to coolwarm
-  iColorMap = 1;
 
   // Store data in buffers
   program->setAttribute("a_position", pos);
   program->setAttribute("a_value", value);
 
-  program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap], true);
+  program->setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
   setMaterialForProgram(*program, "wax");
 }
 
@@ -84,15 +81,8 @@ void SurfaceCountQuantity::draw() {
 
 void SurfaceCountQuantity::buildCustomUI() {
 
-  { // Set colormap
-    ImGui::SameLine();
-    ImGui::PushItemWidth(100);
-    int iColorMapBefore = iColorMap;
-    ImGui::Combo("##colormap", &iColorMap, gl::allColormapNames, IM_ARRAYSIZE(gl::allColormapNames));
-    ImGui::PopItemWidth();
-    if (iColorMap != iColorMapBefore) {
-      program->setTextureFromColormap("t_colormap", *gl::allColormaps[iColorMap], true);
-    }
+  if (buildColormapSelector(cMap)) {
+      program->setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
   }
   ImGui::Text("Sum: %d", sum);
 

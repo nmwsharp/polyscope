@@ -1,7 +1,6 @@
 #include "polyscope/surface_distance_quantity.h"
 
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/colormap_sets.h"
 #include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/distance_shaders.h"
@@ -20,13 +19,13 @@ SurfaceDistanceQuantity::SurfaceDistanceQuantity(std::string name, std::vector<d
 
   // Set default colormap
   if (signedDist) {
-    iColorMap = 1; // coolwarm
+    cMap = gl::ColorMapID::COOLWARM;
   } else {
-    iColorMap = 0; // viridis
+    cMap = gl::ColorMapID::VIRIDIS;
   }
 
   // Build the histogram
-  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
+  hist.updateColormap(cMap);
   hist.buildHistogram(distances, parent.vertexAreas);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(distances, 1e-5);
@@ -81,15 +80,9 @@ void SurfaceDistanceQuantity::resetVizRange() {
 void SurfaceDistanceQuantity::buildCustomUI() {
   ImGui::SameLine();
 
-  { // Set colormap
-    ImGui::PushItemWidth(100);
-    int iColormapBefore = iColorMap;
-    ImGui::Combo("##colormap", &iColorMap, gl::quantitativeColormapNames, IM_ARRAYSIZE(gl::quantitativeColormapNames));
-    ImGui::PopItemWidth();
-    if (iColorMap != iColormapBefore) {
-      program.reset();
-      hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
-    }
+  if (buildColormapSelector(cMap)) {
+    program.reset();
+    hist.updateColormap(cMap);
   }
 
   // == Options popup
@@ -155,7 +148,7 @@ void SurfaceDistanceQuantity::fillColorBuffers(gl::GLProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
 }
 
 void SurfaceDistanceQuantity::buildVertexInfoGUI(size_t vInd) {

@@ -22,22 +22,12 @@ PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::
   }
 
   // Set the default colormap based on what kind of data is given
-  switch (dataType) {
-  case DataType::STANDARD:
-    iColorMap = gl::getColormapIndex_quantitative("viridis");
-    break;
-  case DataType::SYMMETRIC:
-    iColorMap = gl::getColormapIndex_quantitative("coolwarm");
-    break;
-  case DataType::MAGNITUDE:
-    iColorMap = gl::getColormapIndex_quantitative("blues");
-    break;
-  }
+  cMap = defaultColorMap(dataType);
 
   // Copy the raw data
   values = values_;
 
-  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
+  hist.updateColormap(cMap);
   hist.buildHistogram(values);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
@@ -82,16 +72,9 @@ void PointCloudScalarQuantity::resetVizRange() {
 void PointCloudScalarQuantity::buildCustomUI() {
   ImGui::SameLine();
 
-  { // Set colormap
-    ImGui::SameLine();
-    ImGui::PushItemWidth(100);
-    int iColormapBefore = iColorMap;
-    ImGui::Combo("##colormap", &iColorMap, gl::quantitativeColormapNames, IM_ARRAYSIZE(gl::quantitativeColormapNames));
-    ImGui::PopItemWidth();
-    if (iColorMap != iColormapBefore) {
-      pointProgram.reset();
-      hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
-    }
+  if (buildColormapSelector(cMap)) {
+    pointProgram.reset();
+    hist.updateColormap(cMap);
   }
 
   // Reset button
@@ -139,7 +122,7 @@ void PointCloudScalarQuantity::createPointProgram() {
   // Fill buffers
   pointProgram->setAttribute("a_position", parent.points);
   pointProgram->setAttribute("a_value", values);
-  pointProgram->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+  pointProgram->setTextureFromColormap("t_colormap", getColorMap(cMap));
 
   setMaterialForProgram(*pointProgram, "wax");
 }

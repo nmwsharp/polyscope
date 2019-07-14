@@ -42,8 +42,8 @@ public:
 
   glm::vec3 gridLineColor, gridBackgroundColor; // for GRID (two colors to use)
 
-  int iColorMap = 0;   // for LOCAL (color map index)
-  float localRot = 0.; // for LOCAL (angular shift, in radians)
+  gl::ColorMapID cMap = gl::ColorMapID::PHASE; // for LOCAL (color map index)
+  float localRot = 0.;                         // for LOCAL (angular shift, in radians)
 
 protected:
   ParamVizStyle vizStyle = ParamVizStyle::CHECKER;

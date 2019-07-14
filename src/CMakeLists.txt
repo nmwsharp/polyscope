@@ -24,8 +24,8 @@ SET(SRCS
 
   # Rendering stuff
   gl/gl_utils.cpp
-  gl/colormaps.cpp
   gl/ground_plane.cpp
+  gl/color_maps.cpp
   
   color_management.cpp
 

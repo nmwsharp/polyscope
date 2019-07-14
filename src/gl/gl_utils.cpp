@@ -1200,7 +1200,7 @@ void GLProgram::setTextureFromBuffer(std::string name, GLTexturebuffer* textureB
   throw std::invalid_argument("No texture with name " + name);
 }
 
-void GLProgram::setTextureFromColormap(std::string name, Colormap colormap, bool allowUpdate) {
+void GLProgram::setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate) {
   // TODO switch to global shared buffers from colormap
 
   // Find the right texture

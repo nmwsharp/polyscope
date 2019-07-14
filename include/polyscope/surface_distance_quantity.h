@@ -33,7 +33,7 @@ protected:
   float modLen = 0.02;
 
   // UI internals
-  int iColorMap = 0;
+  gl::ColorMapID cMap;
   std::unique_ptr<gl::GLProgram> program;
 
   // Helpers

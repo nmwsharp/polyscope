@@ -16,18 +16,9 @@ namespace polyscope {
 SurfaceScalarQuantity::SurfaceScalarQuantity(std::string name, SurfaceMesh& mesh_, std::string definedOn_,
                                              DataType dataType_)
     : SurfaceMeshQuantity(name, mesh_, true), dataType(dataType_), definedOn(definedOn_) {
+
   // Set the default colormap based on what kind of data is given
-  switch (dataType) {
-  case DataType::STANDARD:
-    iColorMap = 0; // viridis
-    break;
-  case DataType::SYMMETRIC:
-    iColorMap = 1; // coolwarm
-    break;
-  case DataType::MAGNITUDE:
-    iColorMap = 2; // blues
-    break;
-  }
+  cMap = defaultColorMap(dataType);
 }
 
 void SurfaceScalarQuantity::draw() {
@@ -88,17 +79,9 @@ void SurfaceScalarQuantity::buildCustomUI() {
     ImGui::EndPopup();
   }
 
-
-  { // Set colormap
-    ImGui::SameLine();
-    ImGui::PushItemWidth(100);
-    int iColormapBefore = iColorMap;
-    ImGui::Combo("##colormap", &iColorMap, gl::quantitativeColormapNames, IM_ARRAYSIZE(gl::quantitativeColormapNames));
-    ImGui::PopItemWidth();
-    if (iColorMap != iColormapBefore) {
-      program.reset();
-      hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
-    }
+  if (buildColormapSelector(cMap)) {
+    program.reset();
+    hist.updateColormap(cMap);
   }
 
   // Draw the histogram of values
@@ -143,7 +126,7 @@ SurfaceVertexScalarQuantity::SurfaceVertexScalarQuantity(std::string name, std::
     : SurfaceScalarQuantity(name, mesh_, "vertex", dataType_), values(std::move(values_))
 
 {
-  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
+  hist.updateColormap(cMap);
   hist.buildHistogram(values, parent.vertexAreas);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
@@ -185,7 +168,7 @@ void SurfaceVertexScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
 }
 
 void SurfaceVertexScalarQuantity::writeToFile(std::string filename) {
@@ -230,7 +213,7 @@ SurfaceFaceScalarQuantity::SurfaceFaceScalarQuantity(std::string name, std::vect
     : SurfaceScalarQuantity(name, mesh_, "face", dataType_), values(std::move(values_))
 
 {
-  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
+  hist.updateColormap(cMap);
   hist.buildHistogram(values, parent.faceAreas);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
@@ -264,7 +247,7 @@ void SurfaceFaceScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
 }
 
 void SurfaceFaceScalarQuantity::buildFaceInfoGUI(size_t fInd) {
@@ -284,7 +267,7 @@ SurfaceEdgeScalarQuantity::SurfaceEdgeScalarQuantity(std::string name, std::vect
     : SurfaceScalarQuantity(name, mesh_, "edge", dataType_), values(std::move(values_))
 
 {
-  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
+  hist.updateColormap(cMap);
   hist.buildHistogram(values, parent.edgeLengths);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
@@ -340,7 +323,7 @@ void SurfaceEdgeScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorvals", colorval);
-  p.setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
 }
 
 void SurfaceEdgeScalarQuantity::buildEdgeInfoGUI(size_t eInd) {
@@ -371,7 +354,7 @@ SurfaceHalfedgeScalarQuantity::SurfaceHalfedgeScalarQuantity(std::string name, s
     }
   }
 
-  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
+  hist.updateColormap(cMap);
   hist.buildHistogram(values, weightsVec);
 
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
@@ -434,7 +417,7 @@ void SurfaceHalfedgeScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorvals", colorval);
-  p.setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
 }
 
 void SurfaceHalfedgeScalarQuantity::buildHalfedgeInfoGUI(size_t heInd) {

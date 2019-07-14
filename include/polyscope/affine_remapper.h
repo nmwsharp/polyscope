@@ -1,6 +1,7 @@
 #pragma once
 
 #include "polyscope/utilities.h"
+#include "polyscope/gl/color_maps.h"
 
 #include <algorithm>
 #include <cmath>
@@ -17,6 +18,9 @@ namespace polyscope {
 // SYMMETRIC: [-inf, inf], zero is special (ie, net profit/loss)
 // MAGNITUDE: [0, inf], zero is special (ie, length of a vector)
 enum class DataType { STANDARD = 0, SYMMETRIC, MAGNITUDE };
+
+inline gl::ColorMapID defaultColorMap(DataType type);
+
 
 // What is the meaningful scale of an R3 vector?
 // Used to scale vector lengths in a meaningful way
