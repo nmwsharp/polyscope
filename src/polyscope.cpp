@@ -12,9 +12,10 @@
 #include <GLFW/glfw3native.h>
 #endif
 
+#define IMGUI_IMPL_OPENGL_LOADER_GLAD
 #include "imgui.h"
-#include "polyscope/imgui_impl_glfw.h"
-#include "polyscope/imgui_impl_opengl3.h"
+#include "examples/imgui_impl_glfw.h"
+#include "examples/imgui_impl_opengl3.h"
 
 #include "polyscope/gl/ground_plane.h"
 #include "polyscope/gl/materials/materials.h"
