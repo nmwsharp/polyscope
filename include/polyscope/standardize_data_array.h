@@ -168,8 +168,170 @@ std::vector<S> adaptorF_convertToStdVector(const T& inputData) {
 
 
 // =================================================
-// ============ vector access adapator
+// ============ vector-2 access adapator
 // =================================================
+
+// Adaptor to access the i'th element of a fixed-sized 2D vector
+//
+// The result is a function
+//   template <class S, unsigned int I, class T>
+//   inline S adaptorF_accessVector2Value(const T& inVal);
+// which accesses the vector `inVal` at index `I` and returns a scalar of type `S`.
+//
+//
+// The following hierarchy of strategies will be attempted, with decreasing precedence:
+//   - any user defined function `S adaptorF_custom_accessVector2Value(const T& inputVec, unsigned int ind)`;
+//   - bracketed indices T[0] and T[1]
+//   - members .x and .y
+//   - members .u and .v
+//   - members .real() and .imag()
+
+
+// Highest priority: any user defined function
+template <unsigned int I, class T, class S,
+          typename C1 = typename std::enable_if<
+              std::is_same<decltype((S)adaptorF_custom_accessVector2Value(*(T*)nullptr, 0)), S>::value>::type>
+S adaptorF_accessVector2ValueImpl(PreferenceT<5>, const T& inputVec) {
+  static_assert(I < 2, "bad vector2 access");
+  return adaptorF_custom_accessVector2Value(inputVec, I);
+}
+
+// Next: bracket indices
+template <unsigned int I, class T, class S,
+          typename C1 = typename std::enable_if<std::is_same<decltype((S)(*(T*)nullptr)[0]), S>::value>::type>
+S adaptorF_accessVector2ValueImpl(PreferenceT<4>, const T& inputVec) {
+  static_assert(I < 2, "bad vector2 access");
+  return (S)inputVec[I];
+}
+
+
+// Next: members .x and .y
+template <unsigned int I, class T, class S,
+          typename C1 = typename std::enable_if<std::is_same<decltype((S)(*(T*)nullptr).x), S>::value &&
+                                                std::is_same<decltype((S)(*(T*)nullptr).y), S>::value>::type>
+S adaptorF_accessVector2ValueImpl(PreferenceT<3>, const T& inputVec) {
+  static_assert(I < 2, "bad vector2 access");
+  if (I == 0) {
+    return (S)inputVec.x;
+  } else {
+    return (S)inputVec.y;
+  }
+}
+
+// Next: members .u and .v
+template <unsigned int I, class T, class S,
+          typename C1 = typename std::enable_if<std::is_same<decltype((S)(*(T*)nullptr).u), S>::value &&
+                                                std::is_same<decltype((S)(*(T*)nullptr).v), S>::value>::type>
+S adaptorF_accessVector2ValueImpl(PreferenceT<2>, const T& inputVec) {
+  static_assert(I < 2, "bad vector2 access");
+  if (I == 0) {
+    return (S)inputVec.u;
+  } else {
+    return (S)inputVec.v;
+  }
+}
+
+// Next: members .real() and .imag()
+template <unsigned int I, class T, class S,
+          typename C1 = typename std::enable_if<std::is_same<decltype((S)(*(T*)nullptr).real()), S>::value &&
+                                                std::is_same<decltype((S)(*(T*)nullptr).imag()), S>::value>::type>
+S adaptorF_accessVector2ValueImpl(PreferenceT<1>, const T& inputVec) {
+  static_assert(I < 2, "bad vector2 access");
+  if (I == 0) {
+    return (S)inputVec.real();
+  } else {
+    return (S)inputVec.imag();
+  }
+}
+
+// Fall-through case: no overload found :(
+template <unsigned int I, class T, class S>
+S adaptorF_accessVector2ValueImpl(PreferenceT<0>, const T& inputVec) {
+  static_assert(WillBeFalseT<T>::value, "could not resolve valid accessor for 2D vector-like data");
+  return S();
+}
+
+// General version, which will attempt to substitute in to the variants above
+// Templates:
+//  - S: output scalar type
+//  - I: index at which to access
+//  - T: input length-2 vector-like type
+template <class S, unsigned int I, class T>
+inline S adaptorF_accessVector2Value(const T& inVal) {
+  return adaptorF_accessVector2ValueImpl<I, T, S>(PreferenceT<5>{}, inVal);
+}
+
+
+// =================================================
+// ============ vector-3 access adapator
+// =================================================
+
+// Adaptor to access the i'th element of a fixed-sized 3D vector
+//
+// The result is a function
+//   template <class S, unsigned int I, class T>
+//   inline S adaptorF_accessVector3Value(const T& inVal);
+// which accesses the vector `inVal` at index `I` and returns a scalar of type `S`.
+//
+//
+// The following hierarchy of strategies will be attempted, with decreasing precedence:
+//   - any user defined function `S adaptorF_custom_accessVector3Value(const T& inputVec, unsigned int ind)`;
+//   - bracketed indices T[0], T[1], T[2]
+//   - members .x .y .z
+
+
+// Highest priority: any user defined function
+template <unsigned int I, class T, class S,
+          typename C1 = typename std::enable_if<
+              std::is_same<decltype((S)adaptorF_custom_accessVector3Value(*(T*)nullptr, 0)), S>::value>::type>
+S adaptorF_accessVector3ValueImpl(PreferenceT<3>, const T& inputVec) {
+  static_assert(I < 3, "bad vector3 access");
+  return adaptorF_custom_accessVector3Value(inputVec, I);
+}
+
+// Next: bracket indices
+template <unsigned int I, class T, class S,
+          typename C1 = typename std::enable_if<std::is_same<decltype((S)(*(T*)nullptr)[0]), S>::value>::type>
+S adaptorF_accessVector3ValueImpl(PreferenceT<2>, const T& inputVec) {
+  static_assert(I < 3, "bad vector3 access");
+  return (S)inputVec[I];
+}
+
+
+// Next: members .x .y .z
+template <unsigned int I, class T, class S,
+          typename C1 = typename std::enable_if<std::is_same<decltype((S)(*(T*)nullptr).x), S>::value &&
+                                                std::is_same<decltype((S)(*(T*)nullptr).y), S>::value &&
+                                                std::is_same<decltype((S)(*(T*)nullptr).z), S>::value>::type>
+S adaptorF_accessVector3ValueImpl(PreferenceT<1>, const T& inputVec) {
+  static_assert(I < 3, "bad vector3 access");
+  if (I == 0) {
+    return (S)inputVec.x;
+  } else if (I == 1) {
+    return (S)inputVec.y;
+  } else {
+    return (S)inputVec.z;
+  }
+}
+
+
+// Fall-through case: no overload found :(
+template <unsigned int I, class T, class S>
+S adaptorF_accessVector3ValueImpl(PreferenceT<0>, const T& inputVec) {
+  static_assert(WillBeFalseT<T>::value, "could not resolve valid accessor for 3D vector-like data");
+  return S();
+}
+
+// General version, which will attempt to substitute in to the variants above
+// Templates:
+//  - S: output scalar type
+//  - I: index at which to access
+//  - T: input length-3 vector-like type
+template <class S, unsigned int I, class T>
+inline S adaptorF_accessVector3Value(const T& inVal) {
+  return adaptorF_accessVector3ValueImpl<I, T, S>(PreferenceT<3>{}, inVal);
+}
+
 
 // =================================================
 // ============ array-of-vector access adapator
