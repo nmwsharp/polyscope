@@ -1,6 +1,9 @@
-
 #include "gtest/gtest.h"
 
+
+#include "glm/glm.hpp"
+
+#include <array>
 #include <iostream>
 #include <list>
 #include <string>
@@ -121,6 +124,30 @@ double adaptorF_custom_accessVector3Value(const UserVector3Custom& v, unsigned i
   return -1.;
 }
 
+
+// A array-vector type with double-callable access
+struct UserArrayVectorCallable {
+  std::vector<std::array<double, 3>> vals;
+  size_t size() const { return vals.size(); }
+  double operator()(int i, int j) const { return vals[i][j]; }
+};
+UserArrayVectorCallable userArrayVector_doubleCallable{{{0.1, 0.2, 0.3}}};
+
+// A array-vector type with custom access
+struct UserArrayVectorCustom {
+  std::list<UserVector3XYZ> vals;
+  size_t size() const { return vals.size(); }
+};
+std::vector<std::array<double, 3>> adaptorF_custom_convertArrayOfVectorToStdVector(const UserArrayVectorCustom& inputData) {
+  std::vector<std::array<double, 3>> out;
+  for (auto v : inputData.vals) {
+    out.push_back({v.x, v.y, v.z});
+  }
+  return out;
+}
+UserArrayVectorCustom userArrayVector_custom{{{0.1, 0.2, 0.3}}};
+
+
 } // namespace
 
 
@@ -188,7 +215,7 @@ TEST(ArrayAdaptorTests, adaptor_vector2) {
   // real() imag() access
   EXPECT_EQ((polyscope::adaptorF_accessVector2Value<double, 0>(std::complex<double>{0.1, 0.2})), 0.1);
   EXPECT_EQ((polyscope::adaptorF_accessVector2Value<double, 1>(std::complex<double>{0.1, 0.2})), 0.2);
-  
+
   // custom function access
   EXPECT_EQ((polyscope::adaptorF_accessVector2Value<double, 0>(userVec2_custom)), 0.1);
   EXPECT_EQ((polyscope::adaptorF_accessVector2Value<double, 1>(userVec2_custom)), 0.2);
@@ -208,9 +235,48 @@ TEST(ArrayAdaptorTests, adaptor_vector3) {
   EXPECT_EQ((polyscope::adaptorF_accessVector3Value<double, 1>(userVec3_xyz)), 0.2);
   EXPECT_EQ((polyscope::adaptorF_accessVector3Value<double, 2>(userVec3_xyz)), 0.3);
 
-  
+
   // custom function access
   EXPECT_EQ((polyscope::adaptorF_accessVector3Value<double, 0>(userVec3_custom)), 0.1);
   EXPECT_EQ((polyscope::adaptorF_accessVector3Value<double, 1>(userVec3_custom)), 0.2);
   EXPECT_EQ((polyscope::adaptorF_accessVector3Value<double, 2>(userVec3_custom)), 0.3);
+}
+
+
+// Test that access array of vectors works.
+TEST(ArrayAdaptorTests, adaptor_array_vectors) {
+
+  // bracket-bracket access
+  EXPECT_NEAR(
+      (polyscope::standardizeVectorArray<glm::vec3, 3>(std::vector<std::array<double, 3>>{{0.1, 0.2, 0.3}}))[0][0], 0.1,
+      1e-5);
+
+  // double callable access
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec3, 3>(userArrayVector_doubleCallable))[0][0], 0.1, 1e-5);
+
+  // bracket-vector2 access (xy)
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec2, 2>(std::vector<UserVector2XY>{userVec2_xy}))[0][0], 0.1,
+              1e-5);
+
+  // bracket-vector2 access (uv)
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec2, 2>(std::vector<UserVector2UV>{userVec2_uv}))[0][0], 0.1,
+              1e-5);
+
+  // bracket-vector2 access (real/imag)
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec2, 2>(std::vector<UserVector2UV>{userVec2_uv}))[0][0], 0.1,
+              1e-5);
+
+  // list bracket access
+  std::list<std::array<double, 3>> arr_listdouble{{0.1, 0.2, 0.3}, {0.4, 0.5, 0.6}};
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec3, 3>(arr_listdouble))[0][0], 0.1, 1e-5);
+
+  // bracket-vector3 access
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec3, 3>(std::vector<UserVector3XYZ>{userVec3_xyz}))[0][0], 0.1,
+              1e-5);
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec3, 3>(std::vector<UserVector3XYZ>{userVec3_xyz}))[0][2], 0.3,
+              1e-5);
+
+  // custom function access
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec3, 3>(userArrayVector_custom))[0][0], 0.1, 1e-5);
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec3, 3>(userArrayVector_custom))[0][2], 0.3, 1e-5);
 }
