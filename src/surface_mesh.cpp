@@ -172,9 +172,9 @@ void SurfaceMesh::ensureHaveFaceTangentSpaces() {
     glm::vec3 N = faceNormals[iF];
 
     glm::vec3 basisX = pB - pA;
-    basisX = basisX - N * glm::dot(N, basisX);
+    basisX = glm::normalize(basisX - N * glm::dot(N, basisX));
 
-    glm::vec3 basisY = -glm::cross(basisX, N);
+    glm::vec3 basisY = glm::normalize(-glm::cross(basisX, N));
 
     faceTangentSpaces[iF][0] = basisX;
     faceTangentSpaces[iF][1] = basisY;
