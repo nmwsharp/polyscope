@@ -565,6 +565,7 @@ void renderScene() {
   sceneFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
   sceneFramebuffer->bindForRendering();
   sceneFramebuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
+  sceneFramebuffer->clearAlpha = 0.0;
   sceneFramebuffer->clear();
 
   // If a view has never been set, this will set it to the home view

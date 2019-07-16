@@ -54,7 +54,6 @@ void saveImage(std::string name, unsigned char* buffer, int w, int h, int channe
 void screenshot(std::string filename, bool transparentBG) {
 
   // Make sure we render first
-  // TODO needs to be updated?
   requestRedraw();
   draw(false);
 
@@ -117,7 +116,7 @@ void screenshot(std::string filename, bool transparentBG) {
 void screenshot(bool transparentBG) {
 
   char buff[50];
-  snprintf(buff, 50, "screenshot_%06zu.png", state::screenshotInd);
+  snprintf(buff, 50, "screenshot_%06zu.tga", state::screenshotInd);
   std::string defaultName(buff);
 
   screenshot(defaultName, transparentBG);
