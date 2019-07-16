@@ -382,6 +382,13 @@ inline S adaptorF_accessVector3Value(const T& inVal) {
 
 
 // Highest priority: user-specified function
+
+// Note: this dummy function is defined so the non-dependent name adaptorF_custom_convertArrayOfVectorToStdVector will always resolve to something; some compilers will throw an error if the name doesn't resolve. Because this function has variadic arguments, it will always have lower overload priority than a user defined, non variadic overload
+template <typename... Types> 
+void adaptorF_custom_convertArrayOfVectorToStdVector(Types... args) {
+  // dummy function
+}
+
 template <class O, unsigned int D, class T,
           typename C1 = typename std::enable_if<std::is_same<
               decltype((typename InnerType<O>::type)(adaptorF_custom_convertArrayOfVectorToStdVector(*(T*)nullptr))[0][0]),
