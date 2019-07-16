@@ -138,7 +138,8 @@ struct UserArrayVectorCustom {
   std::list<UserVector3XYZ> vals;
   size_t size() const { return vals.size(); }
 };
-std::vector<std::array<double, 3>> adaptorF_custom_convertArrayOfVectorToStdVector(const UserArrayVectorCustom& inputData) {
+std::vector<std::array<double, 3>>
+adaptorF_custom_convertArrayOfVectorToStdVector(const UserArrayVectorCustom& inputData) {
   std::vector<std::array<double, 3>> out;
   for (auto v : inputData.vals) {
     out.push_back({v.x, v.y, v.z});
@@ -147,9 +148,46 @@ std::vector<std::array<double, 3>> adaptorF_custom_convertArrayOfVectorToStdVect
 }
 UserArrayVectorCustom userArrayVector_custom{{{0.1, 0.2, 0.3}}};
 
+// A wannabe Eigen matrix
+struct FakeMatrix {
+  std::vector<std::array<int, 3>> myData;
+  long long int rows() const { return myData.size(); }
+  long long int cols() const { return 3; }
+  double operator()(int i, int j) const { return myData[i][j]; }
+};
+FakeMatrix fakeMatrix_int{{{1, 2, 3}, {4, 5, 6}}};
+
+
+// Nested list access with paren-vector
+struct UserArrayParenBracketCustom {
+  std::vector<std::vector<int>> myData;
+  size_t size() const { return myData.size(); }
+  std::vector<int> operator()(int i) const { return myData[i]; }
+};
+UserArrayParenBracketCustom userArray_parentBracketCustom{{{1, 2, 3}, {4, 5, 6, 7}}};
+
+// A nested list type with custom access
+struct UserNestedListCustom {
+  std::list<std::vector<int>> vals;
+  size_t size() const { return vals.size(); }
+};
+std::vector<std::vector<int>> adaptorF_custom_convertNestedArrayToStdVector(const UserNestedListCustom& inputData) {
+  std::vector<std::vector<int>> out;
+  for (auto v : inputData.vals) {
+    std::vector<int> inner;
+    for (auto x : v) {
+      inner.push_back(x);
+    }
+    out.push_back(inner);
+  }
+  return out;
+}
+UserNestedListCustom userArray_nestedListCustom{{{1, 2, 3}, {4, 5, 6, 7}}};
 
 } // namespace
 
+
+#define POLYSCOPE_NO_STANDARDIZE_FALLTHROUGH
 
 // This include is intentionally after the definitions above, so it can pick them up
 #include "polyscope/standardize_data_array.h"
@@ -199,6 +237,8 @@ TEST(ArrayAdaptorTests, access_FuncAccess) {
 
 // Test that accessVector2 works.
 TEST(ArrayAdaptorTests, adaptor_vector2) {
+  // Shouldn't compile
+  //EXPECT_EQ((polyscope::adaptorF_accessVector2Value<double, 2>(std::array<double, 2>{0.1, 0.2})), 0.1);
 
   // bracket access
   EXPECT_EQ((polyscope::adaptorF_accessVector2Value<double, 0>(std::array<double, 2>{0.1, 0.2})), 0.1);
@@ -224,6 +264,8 @@ TEST(ArrayAdaptorTests, adaptor_vector2) {
 
 // Test that accessVector3 works.
 TEST(ArrayAdaptorTests, adaptor_vector3) {
+  // Shouldn't compile 
+  //EXPECT_EQ((polyscope::adaptorF_accessVector3Value<double, 3>(std::array<double, 3>{0.1, 0.2, 0.3})), 0.1);
 
   // bracket access
   EXPECT_EQ((polyscope::adaptorF_accessVector3Value<double, 0>(std::array<double, 3>{0.1, 0.2, 0.3})), 0.1);
@@ -279,4 +321,39 @@ TEST(ArrayAdaptorTests, adaptor_array_vectors) {
   // custom function access
   EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec3, 3>(userArrayVector_custom))[0][0], 0.1, 1e-5);
   EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec3, 3>(userArrayVector_custom))[0][2], 0.3, 1e-5);
+  
+  // custom inner type  (bracketed)
+  std::vector<UserVector3Custom> userVec3sArr{userVec3_custom, userVec3_custom};
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec3, 3>(userVec3sArr))[0][0], 0.1, 1e-5);
+  std::vector<UserVector2Custom> userVec2sArr{userVec2_custom, userVec2_custom};
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec2, 2>(userVec2sArr))[0][0], 0.1, 1e-5);
+  
+  // custom inner type  (iterable)
+  std::list<UserVector3Custom> userVec3sList{userVec3_custom, userVec3_custom};
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec3, 3>(userVec3sList))[0][0], 0.1, 1e-5);
+  std::list<UserVector2Custom> userVec2sList{userVec2_custom, userVec2_custom};
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec2, 2>(userVec2sList))[0][0], 0.1, 1e-5);
+}
+
+
+// Test that nested access works
+TEST(ArrayAdaptorTests, adaptor_nested_array) {
+
+  // Test matrix-style access
+  EXPECT_EQ(polyscope::standardizeNestedList<size_t>(fakeMatrix_int)[1][2], 6);
+
+  // Test bracket-bracket access
+  std::vector<std::array<int, 3>> testVecBracket{{1, 2, 3}, {4, 5, 6}};
+  EXPECT_EQ(polyscope::standardizeNestedList<size_t>(testVecBracket)[1][2], 6);
+
+  // Test paren-braket access
+  EXPECT_EQ((polyscope::standardizeNestedList<size_t>(userArray_parentBracketCustom))[1][3], 7);
+
+  // Test iterable-bracket access
+  std::list<std::vector<int>> testVecList{{1, 2, 3}, {4, 5, 6, 7}};
+  EXPECT_EQ(polyscope::standardizeNestedList<size_t>(testVecList)[1][3], 7);
+  
+  
+  // Test user-specified
+  EXPECT_EQ(polyscope::standardizeNestedList<size_t>(userArray_nestedListCustom)[1][3], 7);
 }

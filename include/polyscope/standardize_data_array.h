@@ -75,11 +75,13 @@ size_t adaptorF_sizeImpl(PreferenceT<1>, const T& inputData) {
 
 
 // Fall-through case: no overload found :(
+#ifndef POLYSCOPE_NO_STANDARDIZE_FALLTHROUGH
 template <class T, class S>
 size_t adaptorF_sizeImpl(PreferenceT<0>, const T& inputData) {
   static_assert(WillBeFalseT<T>::value, "could not resolve valid adaptor for size of array-like data");
   return std::vector<S>();
 }
+#endif
 
 
 // General version, which will attempt to substitute in to the variants above
@@ -118,10 +120,12 @@ template <class T, class S,
               std::is_same<decltype((S)adaptorF_custom_convertToStdVector(*(T*)nullptr)[0]), S>::value>::type>
 std::vector<S> adaptorF_convertToStdVectorImpl(PreferenceT<4>, const T& inputData) {
   auto userVec = adaptorF_custom_convertToStdVector(inputData);
+
   // If the user-provided function returns something else, try to convert it to a std::vector<S>.
   // (handles e.g. case where user returns std::vector<float> but we want std::vector<double>)
   // In the case where the user function already returns what we want, this costs us an extra copy...
   // maybe one day we can dive back in to template land to remedy.
+  //
   std::vector<S> out(userVec.size());
   for (size_t i = 0; i < out.size(); i++) {
     out[i] = userVec[i];
@@ -172,15 +176,17 @@ std::vector<S> adaptorF_convertToStdVectorImpl(PreferenceT<1>, const T& inputDat
 
 
 // Fall-through case: no overload found :(
+#ifndef POLYSCOPE_NO_STANDARDIZE_FALLTHROUGH
 template <class T, class S>
 std::vector<S> adaptorF_convertToStdVectorImpl(PreferenceT<0>, const T& inputData) {
   static_assert(WillBeFalseT<T>::value, "could not resolve valid adaptor for accessing array-like data");
   return std::vector<S>();
 }
+#endif
 
 
 // General version, which will attempt to substitute in to the variants above
-template <class T, class S>
+template <class S, class T>
 std::vector<S> adaptorF_convertToStdVector(const T& inputData) {
   return adaptorF_convertToStdVectorImpl<T, S>(PreferenceT<4>{}, inputData);
 }
@@ -264,19 +270,21 @@ S adaptorF_accessVector2ValueImpl(PreferenceT<1>, const T& inputVec) {
 }
 
 // Fall-through case: no overload found :(
+#ifndef POLYSCOPE_NO_STANDARDIZE_FALLTHROUGH
 template <unsigned int I, class T, class S>
 S adaptorF_accessVector2ValueImpl(PreferenceT<0>, const T& inputVec) {
   static_assert(WillBeFalseT<T>::value, "could not resolve valid accessor for 2D vector-like value");
   return S();
 }
+#endif
 
 // General version, which will attempt to substitute in to the variants above
 // Templates:
 //  - S: output scalar type
 //  - I: index at which to access
 //  - T: input length-2 vector-like type
-template <class S, unsigned int I, class T>
-inline S adaptorF_accessVector2Value(const T& inVal) {
+template <class S, unsigned int I, class T,
+          class C1 = typename std::enable_if<I<2>::type> inline S adaptorF_accessVector2Value(const T& inVal) {
   return adaptorF_accessVector2ValueImpl<I, T, S>(PreferenceT<5>{}, inVal);
 }
 
@@ -335,19 +343,21 @@ S adaptorF_accessVector3ValueImpl(PreferenceT<1>, const T& inputVec) {
 
 
 // Fall-through case: no overload found :(
+#ifndef POLYSCOPE_NO_STANDARDIZE_FALLTHROUGH
 template <unsigned int I, class T, class S>
 S adaptorF_accessVector3ValueImpl(PreferenceT<0>, const T& inputVec) {
   static_assert(WillBeFalseT<T>::value, "could not resolve valid accessor for 3D vector-like value");
   return S();
 }
+#endif
 
 // General version, which will attempt to substitute in to the variants above
 // Templates:
 //  - S: output scalar type
 //  - I: index at which to access
 //  - T: input length-3 vector-like type
-template <class S, unsigned int I, class T>
-inline S adaptorF_accessVector3Value(const T& inVal) {
+template <class S, unsigned int I, class T,
+          class C1 = typename std::enable_if<I<3>::type> inline S adaptorF_accessVector3Value(const T& inVal) {
   return adaptorF_accessVector3ValueImpl<I, T, S>(PreferenceT<3>{}, inVal);
 }
 
@@ -374,25 +384,26 @@ inline S adaptorF_accessVector3Value(const T& inVal) {
 //          std::vector<std::array<F, D>> adaptorF_custom_convertArrayOfVectorToStdVector(const YOUR_TYPE& inputData);
 //   - dense callable (parenthesis) access (like T(i,j))
 //   - double bracket access (like T[i][j])
-//   - bracket xyz vector3 unpacking (like T[0].x)
-//   - bracket xy vector2 unpacking (like T[0].x)
-//   - bracket uv vector2 unpacking (like T[0].u)
-//   - bracket real(),imag() vector2 unpacking (like T[0].real())
+//   - outer type bracket accessbile, inner anything convertible to Vector2/3
+//   - outer type iteratble, inner type anything convertible to Vector2/3
 //   - iterable bracket (like for(T val : inputData) { val[0] })
 
 
 // Highest priority: user-specified function
 
-// Note: this dummy function is defined so the non-dependent name adaptorF_custom_convertArrayOfVectorToStdVector will always resolve to something; some compilers will throw an error if the name doesn't resolve. Because this function has variadic arguments, it will always have lower overload priority than a user defined, non variadic overload
-template <typename... Types> 
+// Note: this dummy function is defined so the non-dependent name adaptorF_custom_convertArrayOfVectorToStdVector will
+// always resolve to something; some compilers will throw an error if the name doesn't resolve. Because this function
+// has variadic arguments, it will always have lower overload priority than a user defined, non variadic overload
+template <typename... Types>
 void adaptorF_custom_convertArrayOfVectorToStdVector(Types... args) {
   // dummy function
 }
 
-template <class O, unsigned int D, class T,
-          typename C1 = typename std::enable_if<std::is_same<
-              decltype((typename InnerType<O>::type)(adaptorF_custom_convertArrayOfVectorToStdVector(*(T*)nullptr))[0][0]),
-              typename InnerType<O>::type>::value>::type>
+template <
+    class O, unsigned int D, class T,
+    typename C1 = typename std::enable_if<std::is_same<
+        decltype((typename InnerType<O>::type)(adaptorF_custom_convertArrayOfVectorToStdVector(*(T*)nullptr))[0][0]),
+        typename InnerType<O>::type>::value>::type>
 std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<8>, const T& inputData) {
 
   // should be std::vector<std::array<SCALAR,D>>
@@ -400,7 +411,7 @@ std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<8>, cons
 
   // This results in an extra copy, which isn't reallllly necessary.
 
-  size_t dataSize = adaptorF_size(inputData);
+  size_t dataSize = userArr.size();
   std::vector<O> dataOut(dataSize);
   for (size_t i = 0; i < dataSize; i++) {
     for (size_t j = 0; j < D; j++) {
@@ -443,77 +454,85 @@ std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<6>, cons
   return dataOut;
 }
 
-// Next: bracket-xyz access
-template <
-    class O, unsigned int D, class T,
-    typename C_INNER = typename std::remove_reference<decltype((*(T*)nullptr)[(size_t)0])>::type,
-    typename C_RES = typename InnerType<O>::type,
-    typename C1 = typename std::enable_if<std::is_same<decltype((C_RES)(*(C_INNER*)nullptr).x), C_RES>::value &&
-                                          std::is_same<decltype((C_RES)(*(C_INNER*)nullptr).y), C_RES>::value &&
-                                          std::is_same<decltype((C_RES)(*(C_INNER*)nullptr).z), C_RES>::value>::type>
+// Next: bracketed array of anything adaptable to vector3
+template <class O, unsigned int D, class T,
+          typename C_INNER = typename std::remove_reference<decltype((*(T*)nullptr)[(size_t)0])>::type,
+          typename C_RES = typename InnerType<O>::type,
+          typename C_INNER_SCALAR = decltype(adaptorF_accessVector3Value<C_RES, 0>((*(C_INNER*)nullptr))),
+          typename C1 = typename std::enable_if<D == 3>::type,
+          typename C2 = typename std::enable_if<std::is_same<C_INNER_SCALAR, C_RES>::value>::type>
 
 std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<5>, const T& inputData) {
   size_t dataSize = adaptorF_size(inputData);
   std::vector<O> dataOut(dataSize);
   for (size_t i = 0; i < dataSize; i++) {
-    dataOut[i][0] = (C_RES)inputData[i].x;
-    dataOut[i][1] = (C_RES)inputData[i].y;
-    dataOut[i][2] = (C_RES)inputData[i].z;
+    dataOut[i][0] = adaptorF_accessVector3Value<C_RES, 0>(inputData[i]);
+    dataOut[i][1] = adaptorF_accessVector3Value<C_RES, 1>(inputData[i]);
+    dataOut[i][2] = adaptorF_accessVector3Value<C_RES, 2>(inputData[i]);
   }
   return dataOut;
 }
 
-// Next: bracket-xy access
-template <
-    class O, unsigned int D, class T,
-    typename C_INNER = typename std::remove_reference<decltype((*(T*)nullptr)[(size_t)0])>::type,
-    typename C_RES = typename InnerType<O>::type,
-    typename C1 = typename std::enable_if<std::is_same<decltype((C_RES)(*(C_INNER*)nullptr).x), C_RES>::value &&
-                                          std::is_same<decltype((C_RES)(*(C_INNER*)nullptr).y), C_RES>::value>::type>
+// Next: bracketed array of anything adaptable to vector2
+template <class O, unsigned int D, class T,
+          typename C_INNER = typename std::remove_reference<decltype((*(T*)nullptr)[(size_t)0])>::type,
+          typename C_RES = typename InnerType<O>::type,
+          typename C_INNER_SCALAR = decltype(adaptorF_accessVector2Value<C_RES, 0>((*(C_INNER*)nullptr))),
+          typename C1 = typename std::enable_if<D == 2>::type,
+          typename C2 = typename std::enable_if<std::is_same<C_INNER_SCALAR, C_RES>::value>::type>
 
 std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<4>, const T& inputData) {
   size_t dataSize = adaptorF_size(inputData);
   std::vector<O> dataOut(dataSize);
   for (size_t i = 0; i < dataSize; i++) {
-    dataOut[i][0] = (C_RES)inputData[i].x;
-    dataOut[i][1] = (C_RES)inputData[i].y;
+    dataOut[i][0] = adaptorF_accessVector2Value<C_RES, 0>(inputData[i]);
+    dataOut[i][1] = adaptorF_accessVector2Value<C_RES, 1>(inputData[i]);
   }
   return dataOut;
 }
 
-// Next: bracket-uv access
-template <
-    class O, unsigned int D, class T,
-    typename C_INNER = typename std::remove_reference<decltype((*(T*)nullptr)[(size_t)0])>::type,
-    typename C_RES = typename InnerType<O>::type,
-    typename C1 = typename std::enable_if<std::is_same<decltype((C_RES)(*(C_INNER*)nullptr).u), C_RES>::value &&
-                                          std::is_same<decltype((C_RES)(*(C_INNER*)nullptr).v), C_RES>::value>::type>
+
+// Next: iterable array of anything adaptable to vector3
+template <class O, unsigned int D, class T,
+          typename C_INNER = typename std::remove_reference<decltype(*(*(T*)nullptr).begin())>::type,
+          typename C_INNER_END = typename std::remove_reference<decltype(*(*(T*)nullptr).end())>::type,
+          typename C_RES = typename InnerType<O>::type,
+          typename C_INNER_SCALAR = decltype(adaptorF_accessVector3Value<C_RES, 0>((*(C_INNER*)nullptr))),
+          typename C1 = typename std::enable_if<D == 3>::type,
+          typename C2 = typename std::enable_if<std::is_same<C_INNER_SCALAR, C_RES>::value>::type,
+          typename C3 = typename std::enable_if<std::is_same<C_INNER, C_INNER_END>::value>::type>
 
 std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<3>, const T& inputData) {
   size_t dataSize = adaptorF_size(inputData);
   std::vector<O> dataOut(dataSize);
-  for (size_t i = 0; i < dataSize; i++) {
-    dataOut[i][0] = (C_RES)inputData[i].u;
-    dataOut[i][1] = (C_RES)inputData[i].v;
+  size_t i = 0;
+  for (auto v : inputData) {
+    dataOut[i][0] = adaptorF_accessVector3Value<C_RES, 0>(v);
+    dataOut[i][1] = adaptorF_accessVector3Value<C_RES, 1>(v);
+    dataOut[i][2] = adaptorF_accessVector3Value<C_RES, 2>(v);
+    i++;
   }
   return dataOut;
 }
 
-
-// Next: bracket-real/imag access
+// Next: iterable array of anything adaptable to vector3
 template <class O, unsigned int D, class T,
-          typename C_INNER = typename std::remove_reference<decltype((*(T*)nullptr)[(size_t)0])>::type,
+          typename C_INNER = typename std::remove_reference<decltype(*(*(T*)nullptr).begin())>::type,
+          typename C_INNER_END = typename std::remove_reference<decltype(*(*(T*)nullptr).end())>::type,
           typename C_RES = typename InnerType<O>::type,
-          typename C1 =
-              typename std::enable_if<std::is_same<decltype((C_RES)(*(C_INNER*)nullptr).real()), C_RES>::value &&
-                                      std::is_same<decltype((C_RES)(*(C_INNER*)nullptr).imag()), C_RES>::value>::type>
+          typename C_INNER_SCALAR = decltype(adaptorF_accessVector2Value<C_RES, 0>((*(C_INNER*)nullptr))),
+          typename C1 = typename std::enable_if<D == 2>::type,
+          typename C2 = typename std::enable_if<std::is_same<C_INNER_SCALAR, C_RES>::value>::type,
+          typename C3 = typename std::enable_if<std::is_same<C_INNER, C_INNER_END>::value>::type>
 
 std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<2>, const T& inputData) {
   size_t dataSize = adaptorF_size(inputData);
   std::vector<O> dataOut(dataSize);
-  for (size_t i = 0; i < dataSize; i++) {
-    dataOut[i][0] = (C_RES)inputData[i].real();
-    dataOut[i][1] = (C_RES)inputData[i].imag();
+  size_t i = 0;
+  for (auto v : inputData) {
+    dataOut[i][0] = adaptorF_accessVector2Value<C_RES, 0>(v);
+    dataOut[i][1] = adaptorF_accessVector2Value<C_RES, 1>(v);
+    i++;
   }
   return dataOut;
 }
@@ -540,12 +559,14 @@ std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<1>, cons
 
 
 // Fall-through case: no overload found :(
-// template <class O, unsigned int D, class T>
-// std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<0>, const T& inputData) {
-// static_assert(WillBeFalseT<T>::value,
-//"could not resolve valid adaptor for accessing array-of-vectors-like input data");
-// return std::vector<O>();
-//}
+#ifndef POLYSCOPE_NO_STANDARDIZE_FALLTHROUGH
+template <class O, unsigned int D, class T>
+std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<0>, const T& inputData) {
+  static_assert(WillBeFalseT<T>::value,
+                "could not resolve valid adaptor for accessing array-of-vectors-like input data");
+  return std::vector<O>();
+}
+#endif
 
 
 // General version, which will attempt to substitute in to the variants above
@@ -559,12 +580,173 @@ std::vector<O> adaptorF_convertArrayOfVectorToStdVector(const T& inputData) {
 // ============ nested array access adapator
 // =================================================
 
+// Adaptor to convert an array of arrays to a canonical representation. Here, the array can be "ragged"--not all of
+// the inner arrays need to have the same length (though they certainly may). Possible inputs might be a
+// `std::vector<std::vector<size_t>>`, or an `Eigen::MatrixXd`.
+//
+// The output is a std::vector<std::vector<S>>, where S is an output scalar type also given as a template argument.
+//
+// The result is a function
+//   template <class S, class T>
+//   inline std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVector(const T& inputData);
+//
+//
+// The following hierarchy of strategies will be attempted, with decreasing precedence:
+//   - any user defined function
+//          std::vector<std::vector<S>> adaptorF_custom_convertNestedArrayToStdVector(const YOUR_TYPE& inputData);
+//   - dense callable (parenthesis) access (like T(i,j)), on a type that supports .rows() and .cols()
+//   - double bracket access (like T[i][j]), where the outer and inner array types
+//   - iterable
+
+
+// Highest priority: user-specified function
+
+// Note: this dummy function is defined so the non-dependent name adaptorF_custom_convertArrayOfVectorToStdVector will
+// always resolve to something; some compilers will throw an error if the name doesn't resolve. Because this function
+// has variadic arguments, it will always have lower overload priority than a user defined, non variadic overload.
+template <typename... Types>
+void adaptorF_custom_convertNestedArrayToStdVector(Types... args) {
+  // dummy function
+}
+
+template <class S, class T,
+          typename C1 = typename std::enable_if<std::is_same<
+              decltype((S)(adaptorF_custom_convertNestedArrayToStdVector(*(T*)nullptr))[0][0]), S>::value>::type>
+
+std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<5>, const T& inputData) {
+
+  // should be std::vector<std::vector<USER_SCALAR>>
+  auto userArr = adaptorF_custom_convertNestedArrayToStdVector(inputData);
+
+  // This results in an extra copy, which isn't reallllly necessary
+
+  size_t outerSize = userArr.size();
+  std::vector<std::vector<S>> dataOut(outerSize);
+
+  for (size_t i = 0; i < outerSize; i++) {
+
+    size_t innerSize = userArr[i].size();
+    dataOut[i].resize(innerSize);
+
+    for (size_t j = 0; j < innerSize; j++) {
+      dataOut[i][j] = userArr[i][j];
+    }
+  }
+
+  return dataOut;
+}
+
+
+// Next: any dense callable (parenthesis) access operator
+template <
+    class S, class T,
+    typename C1 = typename std::enable_if<std::is_same<decltype((size_t)(*(T*)nullptr).rows()), size_t>::value>::type,
+    typename C2 = typename std::enable_if<std::is_same<decltype((size_t)(*(T*)nullptr).cols()), size_t>::value>::type,
+    typename C3 =
+        typename std::enable_if<std::is_same<decltype((S)(*(T*)nullptr)((size_t)0, (size_t)0)), S>::value>::type>
+
+std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<4>, const T& inputData) {
+
+  size_t outerSize = (size_t)inputData.rows();
+  size_t innerSize = (size_t)inputData.cols();
+
+  std::vector<std::vector<S>> dataOut(outerSize);
+  for (size_t i = 0; i < outerSize; i++) {
+    dataOut[i].resize(innerSize);
+  }
+
+  for (size_t i = 0; i < outerSize; i++) {
+    for (size_t j = 0; j < innerSize; j++) {
+      dataOut[i][j] = inputData(i, j);
+    }
+  }
+
+  return dataOut;
+}
+
+
+// Next: recusive unpacking with bracket
+template <class S, class T, typename T_INNER = typename std::remove_reference<decltype((*(T*)nullptr)[0])>::type,
+          typename T_INNER_RES =
+              typename std::remove_reference<decltype(adaptorF_convertToStdVector<S>(*(T_INNER*)nullptr)[0])>::type,
+          typename C1 = typename std::enable_if<std::is_same<decltype((S)(*(T_INNER_RES*)nullptr)), S>::value>::type>
+
+std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<3>, const T& inputData) {
+
+  size_t outerSize = adaptorF_size(inputData);
+  std::vector<std::vector<S>> dataOut(outerSize);
+
+  for (size_t i = 0; i < outerSize; i++) {
+    dataOut[i] = adaptorF_convertToStdVector<S>(inputData[i]);
+  }
+
+  return dataOut;
+}
+
+// Next: recusive unpacking with paren
+template <class S, class T, typename T_INNER = typename std::remove_reference<decltype((*(T*)nullptr)(0))>::type,
+          typename T_INNER_RES =
+              typename std::remove_reference<decltype(adaptorF_convertToStdVector<S>(*(T_INNER*)nullptr)[0])>::type,
+          typename C1 = typename std::enable_if<std::is_same<decltype((S)(*(T_INNER_RES*)nullptr)), S>::value>::type>
+
+std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<2>, const T& inputData) {
+
+  size_t outerSize = adaptorF_size(inputData);
+  std::vector<std::vector<S>> dataOut(outerSize);
+
+  for (size_t i = 0; i < outerSize; i++) {
+    dataOut[i] = adaptorF_convertToStdVector<S>(inputData(i));
+  }
+
+  return dataOut;
+}
+
+
+// Next: recusive unpacking with iterable
+template <class S, class T, typename T_INNER = typename std::remove_reference<decltype(*(*(T*)nullptr).begin())>::type,
+          typename T_INNER_END = typename std::remove_reference<decltype(*(*(T*)nullptr).end())>::type,
+          typename T_INNER_RES =
+              typename std::remove_reference<decltype(adaptorF_convertToStdVector<S>(*(T_INNER*)nullptr)[0])>::type,
+          typename C1 = typename std::enable_if<
+              std::is_same<T_INNER, T_INNER_END>::value>::type /* begin() and end() give same types */,
+          typename C2 = typename std::enable_if<std::is_same<decltype((S)(*(T_INNER_RES*)nullptr)), S>::value>::type>
+
+std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<1>, const T& inputData) {
+
+  size_t outerSize = adaptorF_size(inputData);
+  std::vector<std::vector<S>> dataOut(outerSize);
+
+  size_t i = 0;
+  for (const auto& n : inputData) {
+    dataOut[i] = adaptorF_convertToStdVector<S>(n);
+    i++;
+  }
+
+  return dataOut;
+}
+
+// Fall-through case: no overload found :(
+#ifndef POLYSCOPE_NO_STANDARDIZE_FALLTHROUGH
+template <class S, class T>
+std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVector(PreferenceT<0>, const T& inputData) {
+  static_assert(WillBeFalseT<T>::value, "could not resolve valid adaptor for accessing nested-array-like input data");
+  return std::vector<std::vector<S>>();
+}
+#endif
+
+
+// General version, which will attempt to substitute in to the variants above
+template <class S, class T>
+std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVector(const T& inputData) {
+  return adaptorF_convertNestedArrayToStdVectorImpl<S, T>(PreferenceT<5>{}, inputData);
+}
+
 
 // =================================================
 // ============ standardize functions
 // =================================================
 
-// These are utilitiy functions which use the adaptors above to do useful things, like
+// These are utilitiy functions which use the adaptors above to do useful things, with nicer syntax.
 
 // Check that a data array has the expected size
 template <class T>
@@ -615,75 +797,32 @@ void validateSize(const T& inputData, size_t expectedSize, std::string errorName
 // Convert an array of scalar types
 // class D: scalar data type
 // class T: input array type
-// notice: template types here are backwards from the convention in adaptorF_convertToStdVector. This is
-// because it's handy to only specify the output type.
 template <class D, class T>
 std::vector<D> standardizeArray(const T& inputData) {
-  return adaptorF_convertToStdVector<T, D>(inputData);
+  return adaptorF_convertToStdVector<D, T>(inputData);
 }
-
 
 // Convert an array of vector types
 // class T: input array type
-// notice: template types here are backwards from the convention in adaptorF_convertToStdVector. This is
-// because it's handy to only specify the output type.
 template <class O, unsigned int D, class T>
 std::vector<O> standardizeVectorArray(const T& inputData) {
   return adaptorF_convertArrayOfVectorToStdVector<O, D, T>(inputData);
 }
 
-// Convert between various low dimensional vector types
-template <class T, class D>
-inline D accessVectorLikeValue(T& inVal, size_t ind) {
-  return inVal[ind];
-}
-template <class T, class D>
-inline D accessVectorLikeValue(const T& inVal, size_t ind) {
-  return inVal[ind];
-}
-
-// Template overload to access the two elements of std::complex
-template <>
-inline double accessVectorLikeValue<std::complex<double>, double>(std::complex<double>& inVal, size_t ind) {
-  return reinterpret_cast<double(&)[2]>(inVal)[ind]; // guaranteed to work by the standard
-}
-template <>
-inline float accessVectorLikeValue<const std::complex<double>, float>(const std::complex<double>& inVal, size_t ind) {
-  return reinterpret_cast<const double(&)[2]>(inVal)[ind]; // guaranteed to work by the standard
-}
-
 // Convert an array of low-dimensional vector types. Outer type must support size() method. Inner type
 // dimensions are not checked, and must match expected inner dimension N.
-template <class D, class T, int N>
-std::vector<D> standardizeVectorArray(const T& inputData) {
-  // Copy data
-  std::vector<D> dataOut(inputData.size());
-  typedef typename std::remove_reference<decltype(dataOut[0][0])>::type OutScalarT;
-  for (size_t i = 0; i < inputData.size(); i++) {
-    for (size_t j = 0; j < N; j++) {
-      dataOut[i][j] = accessVectorLikeValue<typename std::remove_reference<decltype(inputData[0])>::type, OutScalarT>(
-          inputData[i], j);
-    }
-  }
-
-  return dataOut;
+// class O: inner output type, must be bracked-accessible
+// class T: input data type
+// unsigned int N: inner dimension
+template <class O, class T, unsigned int N>
+std::vector<O> standardizeVectorArray(const T& inputData) {
+  return adaptorF_convertArrayOfVectorToStdVector<O, N, T>(inputData);
 }
 
-// Convert a nested array where the inner types have variable length. Inner and outer types must support
-// a size() method. Always returns a std::vector<std::vector<D>>
-template <class D, class T>
-std::vector<std::vector<D>> standardizeNestedList(const T& inputData) {
-  // Copy data
-  std::vector<std::vector<D>> dataOut(inputData.size());
-  for (size_t i = 0; i < inputData.size(); i++) {
-    size_t N = inputData[i].size();
-    dataOut[i].resize(N);
-    for (size_t j = 0; j < N; j++) {
-      dataOut[i][j] = accessVectorLikeValue<decltype(inputData[0]), D>(inputData[i], j);
-    }
-  }
-
-  return dataOut;
+// Convert a nested array where the inner types have variable length.
+template <class S, class T>
+std::vector<std::vector<S>> standardizeNestedList(const T& inputData) {
+  return adaptorF_convertNestedArrayToStdVector<S>(inputData);
 }
 
 } // namespace polyscope
