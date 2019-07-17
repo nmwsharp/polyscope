@@ -10,6 +10,116 @@
 // This header contains a collection of template functions which enable Polyscope to consume user-defined types, so long
 // as they can be accessed by one of several mechanisms.
 
+
+// clang-format off
+
+// == "How the heck do these work", abridged version:
+//
+// (This is Nick's best attempt to explain these functions, during a glorious 
+// few days in July 2019 when he sorta understood how they work. An actual
+// C++ expert could certainly give a better explanation. Pardon misued 
+// terminology.)
+//
+// These templates abuse C++ to consider many version of a function, and pick 
+// the one which will compile.
+//
+// This isn't really something it seems like the language supports, but 
+// technically you can do it, thanks to a "feature" called SFINAE 
+// (Substitution Failure Is Not An Error). SFINAE is based on a quirk of 
+// how function calls get resolved by the compiler:
+//
+//   (1) The compiler assembles a list of all available functions whose names
+//       match a given function call.
+//
+//   (2) The compiler attempts to substitute types in to the function signatures 
+//       (aka templates, parameters, and return types) from (1). If any of these
+//       substitutions fail, that function is discarded, but processing
+//       continues (this is SFINAE---surprisingly, it's not a compiler error).
+//
+//   (3) 
+//        (a) If no valid function overloads remain, an error is thrown, no
+//            function exists.
+//        (b) If just one overload remains, it is used.
+//        (c) If multiple valid overloads remain, they are ranked, according
+//            to a few rules like preferring not to use variadic functions,
+//            and preferring functions that do not require implicit conversion
+//            of parameters over those that do. If there is a unique highest-
+//            ranked function, it is used. Otherwise, an error is issued about
+//            ambiguous function calls.
+//
+// We utilize SFINAE by ensuring that versions of a function which are not
+// applicable get discarded during step (2). There are a few ways to do this
+// but we'll do it by adding extra template types with default values that
+// fail to resolve. 
+//
+//   Here's a quick example to get the idea across. Suppose we have a 
+//   function `template<class T> f(T x)`, which will invoke `x.doStuff()`. 
+//
+//   We can add an extra template argument to f() to make sure 
+//   x.doStuff() exists.
+//
+//     template<typename T, 
+//          typename C1 = decltype((*(T*)nullptr).doStuff())>
+//     void f(T x) { /* function body */ }
+// 
+//   unpacking this:
+//      - decltype() yields the type that the expression in its interior
+//        would return if it were evaluated (but it won't be evaluated).
+//      - The weird expression (*(T*)nullptr) results in an object of type
+//        T. Obviously it would segfault, but that's fine, it won't get
+//        evaluated, we're just using it to get an expression that includes
+//        and object of type T. Surprisingly, there's no easier way.
+//      - We then invoke .doStuff() on the T we just created; so the
+//        decltype() it's wrapped in can output the return type of 
+//        doStuff().
+//   
+//   If T does have a doStuff() method, C1 will simply hold the return type
+//   of doStuff(). However, if it does not, the expression will be rejected,
+//   and this whole function will be rejected, so another candidate can be
+//   considered. And that's our core trick!
+//
+// There are a few other mechanisms we will make use of below that we
+// should briefly mention:
+//
+//
+// [std::is_same, std::enable_if] Sometimes we don't just need to check 
+// if a function exists, we also care about what it returns. Two helper
+// templates from the stl can be used to get us there.
+//
+//    std::is_same<U,V> has a constant member ::value, which is true if 
+//    the two template arguments are the same type, and false otherwise.
+//
+//    std::enable_if<B> has a member type ::type which is defined if 
+//    the boolean condition B is true, and does not exist otherwise.
+//    (recall, if ::type doesn't exist, it'll halt substitution as
+//    we discussed in (2) above).
+//
+//  Putting these two together we can require that a function doStuff()
+//  return an int with a recipe like
+//
+//     template<typename T, 
+//          typename C1 = typename std::enable_if<
+//            std::is_same<decltype((*(T*)nullptr).doStuff()), int>::value
+//            >::type>
+//     void f(T x) { /* function body */ }
+//
+//
+// [PreferenceT<>] Case (3a) from the list above represents a problem for
+// us. What if more than one of our candidate functions is valid, and 
+// passes the template checks? This would lead to errors about ambiguous
+// function overloads. We need to make sure that when multiple functions 
+// are valid, one is always preferred over all others.
+//
+// Our mechanism to do so will be encluded an extra empty parameter 
+// PreferenceT<N> in every functions argument list, with a distinct 
+// value of N. Our Preference<N> // is implicitly convertible to 
+// PreferenceT<N-1>. So if our initial function call uses 
+// PreferenceT<N_MAX>{}, it will match any of the overloads with lower-
+// numbered PreferenceT<> templates. However, since these lower-numbered
+// functions involve implicit conversions, they will always have a lower
+// priority and not be ambiguous!
+
+
 namespace polyscope {
 
 // == First, define two helper types:
@@ -741,6 +851,7 @@ std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVector(const T& inpu
   return adaptorF_convertNestedArrayToStdVectorImpl<S, T>(PreferenceT<5>{}, inputData);
 }
 
+// clang-format on
 
 // =================================================
 // ============ standardize functions
