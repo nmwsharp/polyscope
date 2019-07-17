@@ -365,7 +365,7 @@ inline SurfaceMesh* getSurfaceMesh(std::string name = "") {
 // Implementation of templated constructor
 template <class V, class F>
 SurfaceMesh::SurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices)
-    : QuantityStructure<SurfaceMesh>(name), vertices(standardizeVectorArray<glm::vec3, V, 3>(vertexPositions)),
+    : QuantityStructure<SurfaceMesh>(name), vertices(standardizeVectorArray<glm::vec3, 3>(vertexPositions)),
       faces(standardizeNestedList<size_t, F>(faceIndices)) {
 
   computeCounts();

@@ -5,7 +5,7 @@ namespace polyscope {
 template <class T>
 PointCloudColorQuantity* PointCloud::addColorQuantity(std::string name, const T& colors) {
   validateSize(colors, nPoints(), "point cloud color quantity " + name);
-  return addColorQuantityImpl(name, standardizeVectorArray<glm::vec3, T, 3>(colors));
+  return addColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(colors));
 }
 
 
@@ -18,7 +18,7 @@ PointCloudScalarQuantity* PointCloud::addScalarQuantity(std::string name, const 
 template <class T>
 PointCloudVectorQuantity* PointCloud::addVectorQuantity(std::string name, const T& vectors, VectorType vectorType) {
   validateSize(vectors, nPoints(), "point cloud vector quantity " + name);
-  return addVectorQuantityImpl(name, standardizeVectorArray<glm::vec3, T, 3>(vectors), vectorType);
+  return addVectorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(vectors), vectorType);
 }
 
 

@@ -114,7 +114,7 @@ private:
 // Implementation of templated constructor
 template <class T>
 PointCloud::PointCloud(std::string name, const T& points_)
-    : QuantityStructure<PointCloud>(name), points(standardizeVectorArray<glm::vec3, T, 3>(points_)) {
+    : QuantityStructure<PointCloud>(name), points(standardizeVectorArray<glm::vec3, 3>(points_)) {
 
   initialBaseColor = getNextUniqueColor();
   pointColor = initialBaseColor;

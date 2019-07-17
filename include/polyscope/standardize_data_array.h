@@ -14,13 +14,16 @@
 
 // == "How the heck do these work", abridged version:
 //
+// Nicholas Sharp (nsharp@cs.cmu.edu)
+//
 // (This is Nick's best attempt to explain these functions, during a glorious 
-// few days in July 2019 when he sorta understood how they work. An actual
-// C++ expert could certainly give a better explanation. Pardon misued 
-// terminology.)
+// few days after writing them in July 2019 when he sorta understood how they 
+// work. An actual C++ expert could certainly give a better explanation. Pardon 
+// misused terminology.)
 //
 // These templates abuse C++ to consider many version of a function, and pick 
-// the one which will compile.
+// the one which will compile. We use technique to heuristically convert 
+// unknown user types to a standard format.
 //
 // This isn't really something it seems like the language supports, but 
 // technically you can do it, thanks to a "feature" called SFINAE 
@@ -47,7 +50,7 @@
 //            ambiguous function calls.
 //
 // We utilize SFINAE by ensuring that versions of a function which are not
-// applicable get discarded during step (2). There are a few ways to do this
+// applicable get discarded during step (2). There are a few ways to do this,
 // but we'll do it by adding extra template types with default values that
 // fail to resolve. 
 //
@@ -93,7 +96,7 @@
 //    (recall, if ::type doesn't exist, it'll halt substitution as
 //    we discussed in (2) above).
 //
-//  Putting these two together we can require that a function doStuff()
+//  Putting these two together we can require that a function x.doStuff()
 //  return an int with a recipe like
 //
 //     template<typename T, 
@@ -109,12 +112,12 @@
 // function overloads. We need to make sure that when multiple functions 
 // are valid, one is always preferred over all others.
 //
-// Our mechanism to do so will be encluded an extra empty parameter 
-// PreferenceT<N> in every functions argument list, with a distinct 
-// value of N. Our Preference<N> // is implicitly convertible to 
-// PreferenceT<N-1>. So if our initial function call uses 
+// Our mechanism to do so will be including an extra dummpy parameter 
+// PreferenceT<N> in every function's argument list, with a distinct 
+// value of N. Our Preference<N> is implicitly convertible to 
+// PreferenceT<N-1> (and so on). So if our initial function call uses 
 // PreferenceT<N_MAX>{}, it will match any of the overloads with lower-
-// numbered PreferenceT<> templates. However, since these lower-numbered
+// numbered PreferenceT<> parameters. However, since these lower-numbered
 // functions involve implicit conversions, they will always have a lower
 // priority and not be ambiguous!
 
@@ -162,7 +165,7 @@ struct InnerType {
 
 // Note: this dummy function is defined so the non-dependent user function name will always resolve to something; 
 // some compilers will throw an error if the name doesn't resolve. 
-void adaptorF_custom_size(void* dont_use) {
+inline void adaptorF_custom_size(void* dont_use) {
   // dummy function
 }
 
@@ -225,7 +228,7 @@ size_t adaptorF_size(const T& inputData) {
 // and S.
 //
 // Note: it might be tempting to instead abstract via a function which which accesses the i'th element of the array,
-// but that would require that array types be random-accessable. By going to a std::vector, we open the door to
+// but that would require that array types be random-accessible. By going to a std::vector, we open the door to
 // non-random-accessible input types like iterables.
 //
 // The following hierarchy of strategies will be attempted, with decreasing precedence:
@@ -237,13 +240,13 @@ size_t adaptorF_size(const T& inputData) {
 
 // Note: this dummy function is defined so the non-dependent user function name will always resolve to something; 
 // some compilers will throw an error if the name doesn't resolve. 
-void adaptorF_custom_convertToStdVector(void* dont_use) {
+inline void adaptorF_custom_convertToStdVector(void* dont_use) {
   // dummy function
 }
 
 // Highest priority: user-specified function
 template <class T, class S,
-  /* condition: user defined function exists and returns something that can be bracked-indexed to get an S */
+  /* condition: user defined function exists and returns something that can be bracket-indexed to get an S */
   typename C1 = typename std::enable_if< std::is_same<decltype((S)adaptorF_custom_convertToStdVector(*(T*)nullptr)[0]), S>::value>::type>
 
 std::vector<S> adaptorF_convertToStdVectorImpl(PreferenceT<4>, const T& inputData) {
@@ -351,7 +354,7 @@ std::vector<S> adaptorF_convertToStdVector(const T& inputData) {
 
 // Note: this dummy function is defined so the non-dependent user function name will always resolve to something; 
 // some compilers will throw an error if the name doesn't resolve. 
-void adaptorF_custom_accessVector2Value(void* dont_use) {
+inline void adaptorF_custom_accessVector2Value(void* dont_use) {
   // dummy function
 }
 
@@ -466,7 +469,7 @@ S adaptorF_accessVector2Value(const T& inVal) {
 
 // Note: this dummy function is defined so the non-dependent user function name will always resolve to something; 
 // some compilers will throw an error if the name doesn't resolve.
-void adaptorF_custom_accessVector3Value(void* dont_use) {
+inline void adaptorF_custom_accessVector3Value(void* dont_use) {
   // dummy function
 }
 
@@ -566,7 +569,7 @@ S adaptorF_accessVector3Value(const T& inVal) {
 
 // Note: this dummy function is defined so the non-dependent user function name will always resolve to something; 
 // some compilers will throw an error if the name doesn't resolve.
-void adaptorF_custom_convertArrayOfVectorToStdVector(void* dont_use) {
+inline void adaptorF_custom_convertArrayOfVectorToStdVector(void* dont_use) {
   // dummy function
 }
 
@@ -634,7 +637,7 @@ std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<6>, cons
 
 // Next: bracketed array of anything adaptable to vector3
 template <class O, unsigned int D, class T,
-    /* helper type: inner type that results from bracked-indexing T */
+    /* helper type: inner type that results from bracket-indexing T */
     typename C_INNER = typename std::remove_reference<decltype((*(T*)nullptr)[(size_t)0])>::type,
     /* helper type: inner type of output O */
     typename C_RES = typename InnerType<O>::type,
@@ -658,7 +661,7 @@ std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<5>, cons
 
 // Next: bracketed array of anything adaptable to vector2
 template <class O, unsigned int D, class T,
-    /* helper type: inner type that results from bracked-indexing T */
+    /* helper type: inner type that results from bracket-indexing T */
     typename C_INNER = typename std::remove_reference<decltype((*(T*)nullptr)[(size_t)0])>::type,
     /* helper type: inner type of output O */
     typename C_RES = typename InnerType<O>::type,
@@ -805,7 +808,7 @@ std::vector<O> adaptorF_convertArrayOfVectorToStdVector(const T& inputData) {
 
 // Note: this dummy function is defined so the non-dependent name adaptorF_custom_convertArrayOfVectorToStdVector will
 // always resolve to something; some compilers will throw an error if the name doesn't resolve.
-void adaptorF_custom_convertNestedArrayToStdVector(void* dont_use) {
+inline void adaptorF_custom_convertNestedArrayToStdVector(void* dont_use) {
   // dummy function
 }
 
@@ -1019,7 +1022,7 @@ std::vector<D> standardizeArray(const T& inputData) {
 }
 
 // Convert an array of vector types
-// class O: output inner vector type to put the result in. Will be bracked-indexed.
+// class O: output inner vector type to put the result in. Will be bracket-indexed.
 //          (Polyscope pretty much always uses glm::vec2/3, std::vector<>, or std::array<>)
 // unsigned int D: dimension of inner vector type
 // class T: input array type
