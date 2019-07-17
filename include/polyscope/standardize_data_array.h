@@ -802,8 +802,9 @@ std::vector<O> adaptorF_convertArrayOfVectorToStdVector(const T& inputData) {
 //   - any user defined function
 //          std::vector<std::vector<S>> adaptorF_custom_convertNestedArrayToStdVector(const YOUR_TYPE& inputData);
 //   - dense callable (parenthesis) access (like T(i,j)), on a type that supports .rows() and .cols()
-//   - double bracket access (like T[i][j]), where the outer and inner array types
-//   - iterable
+//   - recursive unpacking with bracket
+//   - recursive unpacking with parent
+//   - recursive unpacking with iterable
 
 
 // Note: this dummy function is defined so the non-dependent name adaptorF_custom_convertArrayOfVectorToStdVector will

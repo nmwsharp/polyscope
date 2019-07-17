@@ -9,6 +9,9 @@
 #include <string>
 #include <vector>
 
+#define POLYSCOPE_NO_STANDARDIZE_FALLTHROUGH
+
+#include "polyscope/standardize_data_array.h"
 
 using std::cout;
 using std::endl;
@@ -35,7 +38,7 @@ struct UserArray {
 UserArray userArray_sizeFunc{{0.1, 0.2, 0.3, 0.4, 0.5}};
 
 // Size function for custom array
-size_t adaptorF_size(const UserArray& c) { return c.bigness(); }
+size_t adaptorF_custom_size(const UserArray& c) { return c.bigness(); }
 
 
 // == A type that we access with callable (paren)
@@ -58,7 +61,6 @@ UserArrayCallableInt userArray_callableAccessInt{{0.1, 0.2, 0.3, 0.4, 0.5}};
 
 
 // == A type that requires a custom access function
-// (Eigen works this way, but don't want to depend on Eigen)
 struct UserArrayFuncAccess {
   std::vector<double> myData;
   size_t size() const { return myData.size(); }
@@ -187,12 +189,6 @@ UserNestedListCustom userArray_nestedListCustom{{{1, 2, 3}, {4, 5, 6, 7}}};
 } // namespace
 
 
-#define POLYSCOPE_NO_STANDARDIZE_FALLTHROUGH
-
-// This include is intentionally after the definitions above, so it can pick them up
-#include "polyscope/standardize_data_array.h"
-
-
 // Test that validateSize works when the type has a .size() member
 TEST(ArrayAdaptorTests, validateSize_MemberMethod) {
   polyscope::validateSize(arr_vecdouble, 5, "test");
@@ -205,7 +201,9 @@ TEST(ArrayAdaptorTests, validateSize_MemberMethod) {
 
 
 // Test that validateSize works with a custom overload
-TEST(ArrayAdaptorTests, validateSize_Custom) { polyscope::validateSize(userArray_sizeFunc, 5, "test"); }
+TEST(ArrayAdaptorTests, validateSize_Custom) { 
+  polyscope::validateSize(userArray_sizeFunc, 5, "test"); 
+}
 
 
 // Test that standardizeArray works with bracket access
