@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
 #ifdef __APPLE__
@@ -14,14 +15,10 @@
 #include <string>
 #include <vector>
 
-#include "polyscope/gl/colormaps.h"
+#include "polyscope/gl/color_maps.h"
 #include "polyscope/gl/colors.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/view.h"
-
-#include "geometrycentral/utilities.h"
-#include "geometrycentral/vector2.h"
-#include "geometrycentral/vector3.h"
 
 namespace polyscope {
 namespace gl {
@@ -41,7 +38,111 @@ enum class DrawMode {
   IndexedLineStripAdjacency
 };
 
-// Class to encapsulate a program
+// Encapsulate a texture
+enum class FilterMode { Nearest, Linear };
+class GLTexturebuffer {
+public:
+  // create a 1D texture from data
+  GLTexturebuffer(GLint format, unsigned int size1D, unsigned char* data);
+  GLTexturebuffer(GLint format, unsigned int size1D, float* data);
+
+  // create a 2D texture from data
+  GLTexturebuffer(GLint format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data = nullptr);
+
+  ~GLTexturebuffer();
+
+  void setFilterMode(FilterMode newMode);
+  void bind();
+
+  // Resize the underlying buffer (contents are lost)
+  void resize(unsigned int newLen);
+  void resize(unsigned int newX, unsigned int newY);
+
+  GLuint getHandle() const { return handle; }
+  unsigned int getSizeX() const { return sizeX; }
+  unsigned int getSizeY() const { return sizeY; }
+  int getDimension() const { return dim; }
+
+private:
+  GLuint handle;
+  GLint format;
+  unsigned int sizeX, sizeY;
+  int dim;
+};
+
+// Encapsulate a renderbuffer
+enum class RenderbufferType { Color, ColorAlpha, Depth, Float4 };
+class GLRenderbuffer {
+public:
+  GLRenderbuffer(RenderbufferType type, unsigned int sizeX_, unsigned int sizeY_);
+  ~GLRenderbuffer();
+
+  void bind();
+  GLuint getHandle() const { return handle; }
+  RenderbufferType getType() const { return type; }
+  unsigned int getSizeX() const { return sizeX; }
+  unsigned int getSizeY() const { return sizeY; }
+
+private:
+  GLuint handle;
+  RenderbufferType type;
+  unsigned int sizeX, sizeY;
+};
+
+
+// Encapsulate a framebuffer
+class GLFramebuffer {
+
+public:
+  GLFramebuffer();
+  ~GLFramebuffer();
+
+  // Bind to this framebuffer so subsequent draw calls will go to it
+  void bindForRendering();
+
+  // Clear to redraw
+  void clear();
+
+  // Bind to textures/renderbuffers for output
+  void bindToColorRenderbuffer(GLRenderbuffer* renderBuffer);
+  void bindToDepthRenderbuffer(GLRenderbuffer* renderBuffer);
+  void bindToColorTexturebuffer(GLTexturebuffer* textureBuffer);
+  void bindToDepthTexturebuffer(GLTexturebuffer* textureBuffer);
+
+  // Specify the viewport coordinates and clearcolor
+  void setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
+  glm::vec3 clearColor{0.0, 0.0, 0.0};
+  float clearAlpha = 1.0;
+
+  // Resizes textures and renderbuffers if different from current size.
+  void resizeBuffers(unsigned int newXSize, unsigned int newYSize);
+
+  // Getters
+  GLuint getHandle() const { return handle; }
+  GLRenderbuffer* getColorRenderBuffer() const { return colorRenderBuffer; }
+  GLRenderbuffer* getDepthRenderBuffer() const { return depthRenderBuffer; }
+  GLTexturebuffer* getColorTextureBuffer() const { return colorTextureBuffer; }
+  GLTexturebuffer* getDepthTextureBuffer() const { return depthTextureBuffer; }
+
+  // Query pixel
+  std::array<float, 4> readFloat4(int xPos, int yPos);
+
+private:
+  GLuint handle;
+
+  // Will have a renderbuffer, a texturebuffer, or neither for each of depth and color.
+  GLRenderbuffer* colorRenderBuffer = nullptr;
+  GLTexturebuffer* colorTextureBuffer = nullptr;
+  GLRenderbuffer* depthRenderBuffer = nullptr;
+  GLTexturebuffer* depthTextureBuffer = nullptr;
+
+  // Viewport
+  bool viewportSet = false;
+  GLint viewportX, viewportY;
+  GLsizei viewportSizeX, viewportSizeY;
+};
+
+// Encapsulate a shader program
 class GLProgram {
 
 public:
@@ -65,20 +166,25 @@ public:
   // If update is set to "true", data is updated rather than allocated (must be allocated first)
 
   // Uniforms
+  bool hasUniform(std::string name);
   void setUniform(std::string name, int val);
   void setUniform(std::string name, unsigned int val);
   void setUniform(std::string name, float val);
   void setUniform(std::string name, double val); // WARNING casts down to float
   void setUniform(std::string name, float* val);
-  void setUniform(std::string name, Vector2 val);
-  void setUniform(std::string name, Vector3 val);
+  void setUniform(std::string name, glm::vec2 val);
+  void setUniform(std::string name, glm::vec3 val);
+  void setUniform(std::string name, glm::vec4 val);
   void setUniform(std::string name, std::array<float, 3> val);
   void setUniform(std::string name, float x, float y, float z, float w);
 
   // = Attributes
-  void setAttribute(std::string name, const std::vector<Vector2>& data, bool update = false, int offset = 0,
+  bool hasAttribute(std::string name);
+  void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0,
                     int size = -1);
-  void setAttribute(std::string name, const std::vector<Vector3>& data, bool update = false, int offset = 0,
+  void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0,
+                    int size = -1);
+  void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0,
                     int size = -1);
   void setAttribute(std::string name, const std::vector<double>& data, bool update = false, int offset = 0,
                     int size = -1);
@@ -96,13 +202,14 @@ public:
   // Textures
   void setTexture1D(std::string name, unsigned char* texData, unsigned int length);
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
-                    bool withAlpha = true, bool useMipMap = false);
-  void setTextureFromColormap(std::string name, Colormap colormap, bool allowUpdate = false);
+                    bool withAlpha = true, bool useMipMap = false, bool repeat = false);
+  void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false);
+  void setTextureFromBuffer(std::string name, GLTexturebuffer* textureBuffer);
 
 
   // Indices
-  void setIndex(std::vector<uint3> indices);
-  void setIndex(std::vector<unsigned int> indices);
+  void setIndex(std::vector<std::array<unsigned int, 3>>& indices);
+  void setIndex(std::vector<unsigned int>& indices);
   void setPrimitiveRestartIndex(GLuint restartIndex);
 
   // Call once to initialize GLSL code used by multiple shaders
@@ -116,24 +223,25 @@ private:
   struct GLUniform {
     std::string name;
     GLData type;
-    GLuint location;
+    GLint location;
     bool isSet; // has a value been assigned to this uniform?
   };
   struct GLAttribute {
     std::string name;
     GLData type;
-    GLuint location;
+    GLint location;
     GLuint VBOLoc;
     long int dataSize; // the size of the data currently stored in this attribute (-1 if nothing)
     int arrayCount;
   };
   struct GLTexture {
     std::string name;
-    unsigned int dim;
-    GLuint location;
-    GLuint bufferLoc;
+    int dim;
+    GLint location;
+    GLTexturebuffer* textureBuffer;
     unsigned int index;
     bool isSet;
+    bool managedByProgram; // should the program delete the texture when its done?
   };
 
 

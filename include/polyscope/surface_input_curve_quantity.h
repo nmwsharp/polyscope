@@ -1,11 +1,10 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/gl/colormap_sets.h"
 #include "polyscope/histogram.h"
 #include "polyscope/surface_mesh.h"
-
-#include "geometrycentral/mesh_embedded_curve.h"
 
 namespace polyscope {
 

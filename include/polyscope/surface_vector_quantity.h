@@ -1,120 +1,140 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/ribbon_artist.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/surface_mesh_enums.h"
 
 namespace polyscope {
 
+// ==== Common base class
+
 // Represents a general vector field associated with a surface mesh, including
 // R3 fields in the ambient space and R2 fields embedded in the surface
-class SurfaceVectorQuantity : public SurfaceQuantity {
+class SurfaceVectorQuantity : public SurfaceMeshQuantity {
 public:
-  SurfaceVectorQuantity(std::string name, SurfaceMesh* mesh_, MeshElement definedOn_,
+  SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh_, MeshElement definedOn_,
                         VectorType vectorType_ = VectorType::STANDARD);
 
-  virtual ~SurfaceVectorQuantity() override;
 
   virtual void draw() override;
-  virtual void drawUI() override;
+  virtual void buildCustomUI() override;
 
   // Allow children to append to the UI
   virtual void drawSubUI();
 
-  // Do work shared between all constructors
-  void finishConstructing();
-
   // === Members
   const VectorType vectorType;
-  std::vector<Vector3> vectorRoots;
-  std::vector<Vector3> vectors;
+  std::vector<glm::vec3> vectorRoots;
+  std::vector<glm::vec3> vectors;
   float lengthMult; // longest vector will be this fraction of lengthScale (if not ambient)
   float radiusMult; // radius is this fraction of lengthScale
-  std::array<float, 3> vectorColor;
+  glm::vec3 vectorColor;
   MeshElement definedOn;
 
   // A ribbon viz that is appropriate for some fields
-  RibbonArtist* ribbonArtist = nullptr;
+  std::unique_ptr<RibbonArtist> ribbonArtist;
   bool ribbonEnabled = false;
 
   // The map that takes values to [0,1] for drawing
-  AffineRemapper<Vector3> mapper;
+  AffineRemapper<glm::vec3> mapper;
 
   void writeToFile(std::string filename = "");
 
   // GL things
-  void prepare();
-  gl::GLProgram* program = nullptr;
+  void prepareProgram();
+  std::unique_ptr<gl::GLProgram> program;
+
+protected:
+  // Set up the mapper for vectors
+  void prepareVectorMapper();
 };
+
+
+// ==== R3 vectors at vertices
 
 class SurfaceVertexVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceVertexVectorQuantity(std::string name, VertexData<Vector3>& vectors_, SurfaceMesh* mesh_,
+  SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh& mesh_,
                               VectorType vectorType_ = VectorType::STANDARD);
 
-  VertexData<Vector3> vectorField;
+  std::vector<glm::vec3> vectorField;
 
-  virtual void buildInfoGUI(VertexPtr v) override;
+  virtual std::string niceName() override;
+  virtual void buildVertexInfoGUI(size_t vInd) override;
 };
 
+
+// ==== R3 vectors at faces
 
 class SurfaceFaceVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceFaceVectorQuantity(std::string name, FaceData<Vector3>& vectors_, SurfaceMesh* mesh_,
+  SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh& mesh_,
                             VectorType vectorType_ = VectorType::STANDARD);
 
-  FaceData<Vector3> vectorField;
+  std::vector<glm::vec3> vectorField;
 
-  virtual void buildInfoGUI(FacePtr f) override;
+  virtual std::string niceName() override;
+  virtual void buildFaceInfoGUI(size_t fInd) override;
 };
+
+
+// ==== Intrinsic vectors at faces
 
 class SurfaceFaceIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceFaceIntrinsicVectorQuantity(std::string name, FaceData<Complex>& vectors_, SurfaceMesh* mesh_, int nSym = 1,
-                                     VectorType vectorType_ = VectorType::STANDARD);
+  SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_,
+                                     int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
 
-  FaceData<Complex> vectorField;
   int nSym;
+  std::vector<glm::vec2> vectorField;
 
   virtual void draw() override;
 
   void drawSubUI() override;
 
-  void buildInfoGUI(FacePtr f) override;
-  
-  void writeTracelinesToFile(std::string filename = "");
+  virtual std::string niceName() override;
+  void buildFaceInfoGUI(size_t fInd) override;
 };
+
+
+// ==== Intrinsic vectors at vertices
 
 class SurfaceVertexIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceVertexIntrinsicVectorQuantity(std::string name, VertexData<Complex>& vectors_, SurfaceMesh* mesh_,
+  SurfaceVertexIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_,
                                        int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
 
-  VertexData<Complex> vectorField;
   int nSym;
+  std::vector<glm::vec2> vectorField;
 
   virtual void draw() override;
 
   void drawSubUI() override;
 
-  void buildInfoGUI(VertexPtr v) override;
-  
-  void writeTracelinesToFile(std::string filename = "");
+  virtual std::string niceName() override;
+  void buildVertexInfoGUI(size_t vInd) override;
 };
+
+
+// ==== Intrinsic one form on edges
 
 class SurfaceOneFormIntrinsicVectorQuantity : public SurfaceVectorQuantity {
 public:
-  SurfaceOneFormIntrinsicVectorQuantity(std::string name, EdgeData<double>& oneForm_, SurfaceMesh* mesh_);
+  SurfaceOneFormIntrinsicVectorQuantity(std::string name, std::vector<double> oneForm_, std::vector<char> orientations_,
+                                        SurfaceMesh& mesh_);
 
-  EdgeData<double> oneForm;
-  FaceData<Complex> mappedVectorField;
+  std::vector<double> oneForm;
+  std::vector<glm::vec2> mappedVectorField;
 
   virtual void draw() override;
 
   void drawSubUI() override;
 
-  void buildInfoGUI(EdgePtr e) override;
-  void buildInfoGUI(FacePtr f) override;
+  virtual std::string niceName() override;
+  void buildEdgeInfoGUI(size_t eInd) override;
+  void buildFaceInfoGUI(size_t fInd) override;
 };
 
 } // namespace polyscope

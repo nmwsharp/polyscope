@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/polyscope.h"
 
 #include <chrono>
@@ -12,11 +13,18 @@
 #include <GLFW/glfw3native.h>
 #endif
 
+#define IMGUI_IMPL_OPENGL_LOADER_GLAD
 #include "imgui.h"
-#include "polyscope/imgui_render.h"
+#include "examples/imgui_impl_glfw.h"
+#include "examples/imgui_impl_opengl3.h"
 
+#include "polyscope/gl/ground_plane.h"
+#include "polyscope/gl/materials/materials.h"
+#include "polyscope/gl/shaders/texture_draw_shaders.h"
 #include "polyscope/pick.h"
 #include "polyscope/view.h"
+
+#include "stb_image.h"
 
 #include "json/json.hpp"
 using json = nlohmann::json;
@@ -34,31 +42,31 @@ namespace state {
 bool initialized = false;
 
 double lengthScale = 1.0;
-std::tuple<geometrycentral::Vector3, geometrycentral::Vector3> boundingBox;
-Vector3 center{0, 0, 0};
+std::tuple<glm::vec3, glm::vec3> boundingBox;
+glm::vec3 center{0, 0, 0};
 
 std::map<std::string, std::map<std::string, Structure*>> structures;
 
 std::function<void()> userCallback;
-size_t screenshotInd = 0;
 
 } // namespace state
-
-std::function<void()> focusedPopupUI;
 
 namespace options {
 
 std::string programName = "Polyscope";
-int verbosity = 2;
-std::string printPrefix = "Polyscope: ";
+int verbosity = 1;
+std::string printPrefix = "[polyscope] ";
 bool errorsThrowExceptions = false;
 bool debugDrawPickBuffer = false;
 int maxFPS = 60;
 bool usePrefsFile = true;
 bool initializeWithDefaultStructures = true;
+bool alwaysRedraw = false;
 bool autocenterStructures = false;
+bool openImGuiWindowForUserCallback = true;
 
 } // namespace options
+
 
 // Small callback function for GLFW errors
 void error_print_callback(int error, const char* description) {
@@ -72,38 +80,87 @@ const unsigned int* getCousineRegularCompressedData();
 // Helpers
 namespace {
 
-// Pick buffer state
-GLuint pickFramebuffer, rboPickDepth, rboPickColor, currPickBufferWidth, currPickBufferHeight;
+// === Implement the context stack
+
+// The context stack should _always_ have at least one context in it. The lowest context is the one created at
+// initialization.
+struct ContextEntry {
+  ImGuiContext* context;
+  std::function<void()> callback;
+};
+std::vector<ContextEntry> contextStack;
+
+
+// GLFW window
+GLFWwindow* mainWindow = nullptr;
+
+// Main buffers for rendering
+gl::GLTexturebuffer* sceneColorTexture = nullptr;
+gl::GLFramebuffer* sceneFramebuffer = nullptr; // the main 3D scene
+gl::GLFramebuffer* pickFramebuffer = nullptr;
+gl::GLProgram* sceneToScreenProgram = nullptr;
 
 // Font atlas pointer
 ImFontAtlas* globalFontAtlas = nullptr;
 
-void allocatePickRenderbuffers() {
+bool redrawNextFrame = true;
 
-  glGenRenderbuffers(1, &rboPickDepth);
-  glBindRenderbuffer(GL_RENDERBUFFER, rboPickDepth);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, view::bufferWidth, view::bufferHeight);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboPickDepth);
+// Some state about imgui windows to stack them
+float imguiStackMargin = 10;
+float lastWindowHeightPolyscope = 200;
+float lastWindowHeightUser = 200;
+float leftWindowsWidth = 300;
+float rightWindowsWidth = 500;
 
-  glGenRenderbuffers(1, &rboPickColor);
-  glBindRenderbuffer(GL_RENDERBUFFER, rboPickColor);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, view::bufferWidth, view::bufferHeight);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rboPickColor);
+// Called once on init
+void allocateGlobalBuffersAndPrograms() {
+  using namespace gl;
 
-  currPickBufferWidth = view::bufferWidth;
-  currPickBufferHeight = view::bufferHeight;
+  { // Scene buffer
+    sceneColorTexture = new GLTexturebuffer(GL_RGBA, view::bufferWidth, view::bufferHeight);
+    GLRenderbuffer* sceneDepthBuffer =
+        new GLRenderbuffer(RenderbufferType::Depth, view::bufferWidth, view::bufferHeight);
+
+    sceneFramebuffer = new GLFramebuffer();
+    sceneFramebuffer->bindToColorTexturebuffer(sceneColorTexture);
+    sceneFramebuffer->bindToDepthRenderbuffer(sceneDepthBuffer);
+  }
+
+  { // Pick buffer
+    GLRenderbuffer* pickColorBuffer =
+        new GLRenderbuffer(RenderbufferType::Float4, view::bufferWidth, view::bufferHeight);
+    GLRenderbuffer* pickDepthBuffer =
+        new GLRenderbuffer(RenderbufferType::Depth, view::bufferWidth, view::bufferHeight);
+
+    pickFramebuffer = new GLFramebuffer();
+    pickFramebuffer->bindToColorRenderbuffer(pickColorBuffer);
+    pickFramebuffer->bindToDepthRenderbuffer(pickDepthBuffer);
+  }
+
+  { // Simple program which draws scene texture to screen
+    sceneToScreenProgram =
+        new gl::GLProgram(&TEXTURE_DRAW_VERT_SHADER, &TEXTURE_DRAW_FRAG_SHADER, gl::DrawMode::Triangles);
+    std::vector<glm::vec3> coords = {{-1.0f, -1.0f, 0.0f}, {1.0f, -1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f},
+                                     {-1.0f, 1.0f, 0.0f},  {1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}};
+
+    sceneToScreenProgram->setAttribute("a_position", coords);
+  }
 }
 
-void initPickBuffer() {
+// Called once on closing
+void deleteGlobalBuffersAndPrograms() {
 
-  // Create the new buffer
-  glGenFramebuffers(1, &pickFramebuffer);
+  // Scene
+  delete sceneColorTexture;
+  delete sceneFramebuffer->getDepthRenderBuffer();
+  delete sceneFramebuffer;
 
-  // Bind to the new buffer
-  glBindFramebuffer(GL_FRAMEBUFFER, pickFramebuffer);
-
-  allocatePickRenderbuffers();
+  // Pick
+  delete pickFramebuffer->getColorRenderBuffer();
+  delete pickFramebuffer->getDepthRenderBuffer();
+  delete pickFramebuffer;
 }
+
 
 void setStyle() {
 
@@ -130,7 +187,7 @@ void setStyle() {
   colors[ImGuiCol_FrameBgActive] = ImVec4(0.41f, 0.64f, 0.53f, 0.69f);
   colors[ImGuiCol_TitleBg] = ImVec4(0.27f, 0.54f, 0.42f, 0.83f);
   colors[ImGuiCol_TitleBgActive] = ImVec4(0.32f, 0.63f, 0.49f, 0.87f);
-  colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.40f, 0.80f, 0.62f, 0.20f);
+  colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.27f, 0.54f, 0.42f, 0.83f);
   colors[ImGuiCol_MenuBarBg] = ImVec4(0.40f, 0.55f, 0.48f, 0.80f);
   colors[ImGuiCol_ScrollbarBg] = ImVec4(0.63f, 0.63f, 0.63f, 0.39f);
   colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
@@ -197,7 +254,7 @@ void readPrefsFile() {
 void writePrefsFile() {
 
   // Update values as needed
-  glfwGetWindowPos(imguirender::mainWindow, &view::initWindowPosX, &view::initWindowPosY);
+  glfwGetWindowPos(mainWindow, &view::initWindowPosX, &view::initWindowPosY);
 
   // Build json object
   json prefsJSON = {
@@ -231,17 +288,20 @@ void init() {
     throw std::runtime_error(options::printPrefix + "ERROR: Failed to initialize glfw");
   }
 
+  // OpenGL version things
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-  imguirender::mainWindow =
-      glfwCreateWindow(view::windowWidth, view::windowHeight, options::programName.c_str(), NULL, NULL);
-  glfwMakeContextCurrent(imguirender::mainWindow);
+
+
+  // Create the window with context
+  mainWindow = glfwCreateWindow(view::windowWidth, view::windowHeight, options::programName.c_str(), NULL, NULL);
+  glfwMakeContextCurrent(mainWindow);
   glfwSwapInterval(1); // Enable vsync
-  glfwSetWindowPos(imguirender::mainWindow, view::initWindowPosX, view::initWindowPosY);
+  glfwSetWindowPos(mainWindow, view::initWindowPosX, view::initWindowPosY);
 
 // === Initialize openGL
 // Load openGL functions (using GLAD)
@@ -260,51 +320,76 @@ void init() {
 #endif
 
   // Update the width and heigh
-  glfwMakeContextCurrent(imguirender::mainWindow);
-  glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
-  glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
+  glfwMakeContextCurrent(mainWindow);
+  glfwGetWindowSize(mainWindow, &view::windowWidth, &view::windowHeight);
+  glfwGetFramebufferSize(mainWindow, &view::bufferWidth, &view::bufferHeight);
 
   // Initialie ImGUI
+  IMGUI_CHECKVERSION();
   initializeImGUIContext();
+  contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr});
 
-  // Initialize common shaders
+  // Initialize gl data
   gl::GLProgram::initCommonShaders();
+  gl::loadMaterialTextures();
 
   // Initialize pick buffer
-  initPickBuffer();
+  allocateGlobalBuffersAndPrograms();
 
-  // Initialize with default maps so they show up in UI and user knows they exist
-  if (options::initializeWithDefaultStructures) {
-    state::structures[PointCloud::structureTypeName] = {};
-    state::structures[SurfaceMesh::structureTypeName] = {};
-    state::structures[CameraView::structureTypeName] = {};
-    state::structures[RaySet::structureTypeName] = {};
-  }
+  draw(); // TODO this is a terrible fix for a bug where the ground doesn't show up until the SECOND time we draw...
+          // cannot figure out why
+  view::invalidateView();
 
   state::initialized = true;
 }
 
+void pushContext(std::function<void()> callbackFunction) {
 
-ImFontAtlas* getGlobalFontAtlas() {
-  return globalFontAtlas;
+  // Create a new context and push it on to the stack
+  ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
+  ImGui::SetCurrentContext(newContext);
+  setStyle();
+  contextStack.push_back(ContextEntry{newContext, callbackFunction});
+
+  // Re-enter main loop until the context has been popped
+  size_t currentContextStackSize = contextStack.size();
+  while (contextStack.size() >= currentContextStackSize) {
+    mainLoopIteration();
+  }
+
+  ImGui::DestroyContext(newContext);
+  ImGui::SetCurrentContext(contextStack.back().context);
 }
+
+
+void popContext() {
+  if (contextStack.size() == 1) {
+    error("Called popContext() too many times");
+  }
+  contextStack.pop_back();
+}
+
+void requestRedraw() { redrawNextFrame = true; }
+bool redrawRequested() { return redrawNextFrame; }
+
+ImFontAtlas* getGlobalFontAtlas() { return globalFontAtlas; }
 
 void initializeImGUIContext() {
 
   ImGui::CreateContext();
 
   // Set up ImGUI glfw bindings
-  imguirender::ImGui_ImplGlfwGL3_Init(imguirender::mainWindow, true);
+  ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
+  const char* glsl_version = "#version 150";
+  ImGui_ImplOpenGL3_Init(glsl_version);
 
   ImGuiIO& io = ImGui::GetIO();
   ImFontConfig config;
   config.OversampleH = 5;
   config.OversampleV = 5;
-  // io.Fonts->AddFontDefault();
-  // io.Fonts->AddFontFromFileTTF(
-  //     "../deps/imgui/imgui/extra_fonts/Cousine-Regular.ttf", 15.0f, &config);
   ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(getCousineRegularCompressedData(),
                                                           getCousineRegularCompressedSize(), 15.0f, &config);
+  // io.OptResizeWindowsFromEdges = true;
   // ImGui::StyleColorsLight();
   setStyle();
 
@@ -317,7 +402,7 @@ namespace {
 // ImGUI normally provides this for us, but we want to know about the RELEASE of a double click, while im ImGUI the flag
 // is only set for the down press. Use this variable to pass it forward.
 bool lastClickWasDouble = false;
-}
+} // namespace
 
 namespace pick {
 
@@ -327,45 +412,24 @@ void evaluatePickQuery(int xPos, int yPos) {
   if (xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
     return;
   }
-  glBindFramebuffer(GL_FRAMEBUFFER, pickFramebuffer);
 
-  if ((int)currPickBufferWidth != view::bufferWidth || (int)currPickBufferHeight != view::bufferHeight) {
-    // Delete the existing renderbuffers
-    GLuint rBuffers[2] = {rboPickDepth, rboPickColor};
-    glDeleteRenderbuffers(2, rBuffers);
-
-    // Allocate some new one
-    allocatePickRenderbuffers();
-  }
-
-  // Set the draw buffer
-  GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
-  glDrawBuffers(1, buffers);
-
-  // Clear the pick buffer
-  glViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  glClearColor(0.0, 0.0, 0.0, 0.0);
-  glClearDepth(1.);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+  pickFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
+  pickFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  pickFramebuffer->bindForRendering();
+  pickFramebuffer->clear();
 
   // Render pick buffer
-  glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
   for (auto cat : state::structures) {
     for (auto x : cat.second) {
       x.second->drawPick();
     }
   }
-  glFlush();
-  glFinish();
-
-  // Read from the pick buffer
-  float result[4];
-  glReadPixels(xPos, view::bufferHeight - yPos, 1, 1, GL_RGBA, GL_FLOAT, &result);
   gl::checkGLError(true);
 
-
-  size_t ind = pick::vecToInd(geometrycentral::Vector3{result[0], result[1], result[2]});
+  // Read from the pick buffer
+  std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, view::bufferHeight - yPos);
+  gl::checkGLError(true);
+  size_t ind = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
 
   if (ind == 0) {
     pick::resetPick();
@@ -373,79 +437,11 @@ void evaluatePickQuery(int xPos, int yPos) {
     pick::setCurrentPickElement(ind, lastClickWasDouble);
   }
 }
-}
-
-namespace {
-
-float dragDistSinceLastRelease = 0.0;
-
-void processMouseEvents() {
-  ImGuiIO& io = ImGui::GetIO();
-
-  bool shouldEvaluatePick = pick::alwaysEvaluatePick;
-  if(pick::alwaysEvaluatePick) {
-    pick::resetPick();
-  }
-
-  if (ImGui::IsMouseClicked(0)) {
-    lastClickWasDouble = ImGui::IsMouseDoubleClicked(0);
-  }
-
-  if (!io.WantCaptureMouse) {
-
-    // Handle drags
-    if (ImGui::IsMouseDragging(0) &&
-        !(io.KeyCtrl && !io.KeyShift)) { // if ctrl is pressed but shift is not, don't process a drag
-
-      Vector2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
-      bool isDragZoom = io.KeyShift && io.KeyCtrl;
-      bool isRotate = !io.KeyShift;
-      if (isDragZoom) {
-        view::processZoom(dragDelta.y * 5);
-      } else {
-        if (isRotate) {
-          view::processRotate(dragDelta.x, dragDelta.y);
-
-
-          /* Mediocre arcball
-          Vector2 currPos{io.MousePos.x / view::windowWidth, (view::windowHeight - io.MousePos.y) / view::windowHeight};
-          currPos = (currPos * 2.0) - Vector2{1.0, 1.0};
-          if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
-            view::processRotateArcball(currPos - 2.0 * dragDelta, currPos);
-          }
-          */
-        } else {
-          view::processTranslate(dragDelta);
-        }
-      }
-
-      dragDistSinceLastRelease += std::abs(dragDelta.x);
-      dragDistSinceLastRelease += std::abs(dragDelta.y);
-    }
-    // Handle picks
-    else {
-
-      if (!messageIsBlockingScreen() && ImGui::IsMouseReleased(0)) {
-
-        ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
-        if (dragDistSinceLastRelease < .01) {
-          shouldEvaluatePick = true;
-        }
-
-        dragDistSinceLastRelease = 0.0;
-      }
-    }
-  }
-
-  if (shouldEvaluatePick) {
-    ImVec2 p = ImGui::GetMousePos();
-    pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
-  }
-}
+} // namespace pick
 
 void drawStructures() {
-  glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
+
+  // Draw all off the structures registered with polyscope
 
   for (auto catMap : state::structures) {
     for (auto s : catMap.second) {
@@ -462,22 +458,184 @@ void drawStructures() {
   }
 }
 
+
+namespace {
+
+float dragDistSinceLastRelease = 0.0;
+
+void processMouseEvents() {
+  ImGuiIO& io = ImGui::GetIO();
+
+
+  // If any mouse button is pressed, trigger a redraw
+  if (ImGui::IsAnyMouseDown()) {
+    requestRedraw();
+  }
+
+
+  // Handle scroll events for 3D view
+  if (!io.WantCaptureMouse) {
+    double xoffset = io.MouseWheelH;
+    double yoffset = io.MouseWheel;
+
+    if (xoffset != 0 || yoffset != 0) {
+      requestRedraw();
+
+      // On some setups, shift flips the scroll direction, so take the max
+      // scrolling in any direction
+      double maxScroll = xoffset;
+      if (std::abs(yoffset) > std::abs(xoffset)) {
+        maxScroll = yoffset;
+      }
+
+      // Pass camera commands to the camera
+      if (maxScroll != 0.0) {
+        int leftShiftState = glfwGetKey(mainWindow, GLFW_KEY_LEFT_SHIFT);
+        int rightShiftState = glfwGetKey(mainWindow, GLFW_KEY_RIGHT_SHIFT);
+        bool scrollClipPlane = (leftShiftState == GLFW_PRESS || rightShiftState == GLFW_PRESS);
+
+        if (scrollClipPlane) {
+          view::processClipPlaneShift(maxScroll);
+        } else {
+          view::processZoom(maxScroll);
+        }
+      }
+    }
+  }
+
+  bool shouldEvaluatePick = pick::alwaysEvaluatePick;
+  if (pick::alwaysEvaluatePick) {
+    pick::resetPick();
+  }
+
+  if (ImGui::IsMouseClicked(0)) {
+    lastClickWasDouble = ImGui::IsMouseDoubleClicked(0);
+  }
+
+  if (!io.WantCaptureMouse) {
+
+    // Handle drags
+    if (ImGui::IsMouseDragging(0) &&
+        !(io.KeyCtrl && !io.KeyShift)) { // if ctrl is pressed but shift is not, don't process a drag
+      requestRedraw();
+
+      glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
+      bool isDragZoom = io.KeyShift && io.KeyCtrl;
+      bool isRotate = !io.KeyShift;
+      if (isDragZoom) {
+        view::processZoom(dragDelta.y * 5);
+      } else {
+        if (isRotate) {
+          glm::vec2 currPos{io.MousePos.x / view::windowWidth,
+                            (view::windowHeight - io.MousePos.y) / view::windowHeight};
+          currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
+          if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
+            view::processRotate(currPos - 2.0f * dragDelta, currPos);
+          }
+        } else {
+          view::processTranslate(dragDelta);
+        }
+      }
+
+      dragDistSinceLastRelease += std::abs(dragDelta.x);
+      dragDistSinceLastRelease += std::abs(dragDelta.y);
+    }
+    // Handle picks
+    else {
+      if (ImGui::IsMouseReleased(0)) {
+        ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
+        if (dragDistSinceLastRelease < .01) {
+          shouldEvaluatePick = true;
+        }
+
+        dragDistSinceLastRelease = 0.0;
+      }
+    }
+  }
+
+  if (shouldEvaluatePick) {
+    ImVec2 p = ImGui::GetMousePos();
+    pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+  }
+}
+
+void renderScene() {
+
+  // Activate the texture that we draw to
+  sceneFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
+  sceneFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  sceneFramebuffer->bindForRendering();
+  sceneFramebuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
+  sceneFramebuffer->clearAlpha = 0.0;
+  sceneFramebuffer->clear();
+
+  // If a view has never been set, this will set it to the home view
+  view::ensureViewValid();
+
+  drawStructures();
+
+  // Draw the ground plane
+  gl::drawGroundPlane();
+}
+
+void renderSceneToScreen() {
+
+  // Bind to the view framebuffer
+  bindDefaultBuffer();
+
+  // Set the texture uniform
+  sceneToScreenProgram->setTextureFromBuffer("t_image", sceneColorTexture);
+
+  // Draw
+  sceneToScreenProgram->draw();
+}
+
 void buildPolyscopeGui() {
+
   // Create window
   static bool showPolyscopeWindow = true;
-  ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowPos(ImVec2(imguiStackMargin, imguiStackMargin));
+  ImGui::SetNextWindowSize(ImVec2(leftWindowsWidth, 0.));
 
-  ImGui::Begin("Polyscope", &showPolyscopeWindow, ImGuiWindowFlags_AlwaysAutoResize);
+  ImGui::Begin("Polyscope", &showPolyscopeWindow);
 
   ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
   if (ImGui::Button("Reset view")) {
-    view::flyToDefault();
+    view::flyToHomeView();
   }
+  ImGui::SameLine();
   if (ImGui::Button("Screenshot")) {
     screenshot(true);
   }
+  ImGui::PushItemWidth(150);
+  static std::string viewStyleName = "Turntable";
+  if (ImGui::BeginCombo("##View Style", viewStyleName.c_str())) {
+    if (ImGui::Selectable("Turntable", view::style == view::NavigateStyle::Turntable)) {
+      view::style = view::NavigateStyle::Turntable;
+      view::flyToHomeView();
+      ImGui::SetItemDefaultFocus();
+      viewStyleName = "Turntable";
+    }
+    if (ImGui::Selectable("Free", view::style == view::NavigateStyle::Free)) {
+      view::style = view::NavigateStyle::Free;
+      ImGui::SetItemDefaultFocus();
+      viewStyleName = "Free";
+    }
+    // if (ImGui::Selectable("Arcblob", view::style == view::NavigateStyle::Arcball)) {
+    // view::style = view::NavigateStyle::Arcball;
+    // ImGui::SetItemDefaultFocus();
+    // viewStyleName = "Arcblob";
+    //}
+    ImGui::EndCombo();
+  }
+  ImGui::PopItemWidth();
+  float moveScaleF = view::moveScale;
+  ImGui::SliderFloat("Move Speed", &moveScaleF, 0.0, 1.0, "%.5f", 3.);
+  view::moveScale = moveScaleF;
   ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-  // cout << "fps = " << ImGui::GetIO().Framerate << endl;
+
+  // == Ground plane options
+  gl::buildGroundPlaneGui();
 
   // == Debugging-related options
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
@@ -486,13 +644,20 @@ void buildPolyscopeGui() {
     ImGui::TreePop();
   }
 
+  lastWindowHeightPolyscope = imguiStackMargin + ImGui::GetWindowHeight();
+  leftWindowsWidth = ImGui::GetWindowWidth();
+
   ImGui::End();
 }
 
 void buildStructureGui() {
   // Create window
   static bool showStructureWindow = true;
-  ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
+
+  ImGui::SetNextWindowPos(ImVec2(imguiStackMargin, lastWindowHeightPolyscope + 2 * imguiStackMargin));
+  ImGui::SetNextWindowSize(
+      ImVec2(leftWindowsWidth, view::windowHeight - lastWindowHeightPolyscope - 3 * imguiStackMargin));
+
   ImGui::Begin("Structures", &showStructureWindow);
 
   for (auto catMapEntry : state::structures) {
@@ -508,18 +673,20 @@ void buildStructureGui() {
     if (ImGui::CollapsingHeader(("Category: " + catName + " (" + std::to_string(structureMap.size()) + ")").c_str())) {
       // Draw shared GUI elements for all instances of the structure
       if (structureMap.size() > 0) {
-        structureMap.begin()->second->drawSharedStructureUI();
+        structureMap.begin()->second->buildSharedStructureUI();
       }
 
       for (auto x : structureMap) {
         ImGui::SetNextTreeNodeOpen(structureMap.size() <= 8,
                                    ImGuiCond_FirstUseEver); // closed by default if more than 8
-        x.second->drawUI();
+        x.second->buildUI();
       }
     }
 
     ImGui::PopID();
   }
+
+  leftWindowsWidth = ImGui::GetWindowWidth();
 
   ImGui::End();
 }
@@ -527,38 +694,62 @@ void buildStructureGui() {
 void buildUserGui() {
   if (state::userCallback) {
     ImGui::PushID("user_callback");
+
+    if (options::openImGuiWindowForUserCallback) {
+      ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin), imguiStackMargin));
+      ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
+
+      ImGui::Begin("Command UI", nullptr);
+    }
+
     state::userCallback();
+
+    if (options::openImGuiWindowForUserCallback) {
+      rightWindowsWidth = ImGui::GetWindowWidth();
+      lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
+      ImGui::End();
+    }
+
     ImGui::PopID();
+  } else {
+    lastWindowHeightUser = imguiStackMargin;
   }
 }
 
 void buildPickGui() {
   if (pick::haveSelection) {
+
+    ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin),
+                                   2 * imguiStackMargin + lastWindowHeightUser));
+    ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
+
     ImGui::Begin("Selection", nullptr);
     size_t pickInd;
     Structure* structure = pick::getCurrentPickElement(pickInd);
 
-    ImGui::TextUnformatted((structure->type + ": " + structure->name).c_str());
+    ImGui::TextUnformatted((structure->typeName() + ": " + structure->name).c_str());
     ImGui::Separator();
-    structure->drawPickUI(pickInd);
+    structure->buildPickUI(pickInd);
 
+    rightWindowsWidth = ImGui::GetWindowWidth();
     ImGui::End();
   }
 }
 
-namespace {
 auto lastMainLoopIterTime = std::chrono::steady_clock::now();
-}
 
-void draw(bool withUI = true) {
+} // namespace
+
+void draw(bool withUI) {
 
   // Update buffer and context
-  glfwMakeContextCurrent(imguirender::mainWindow);
-  glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
-  glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
+  glfwMakeContextCurrent(mainWindow);
 
   if (withUI) {
-    imguirender::ImGui_ImplGlfwGL3_NewFrame();
+    // New IMGUI frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
   }
 
   bindDefaultBuffer();
@@ -570,10 +761,10 @@ void draw(bool withUI = true) {
 
   // Build the GUI components
   if (withUI) {
-    //ImGui::ShowDemoWindow();
+    // ImGui::ShowDemoWindow();
 
     // The common case, rendering UI and structures
-    if (!focusedPopupUI) {
+    if (contextStack.size() == 1) {
 
       // Note: It is important to build the user GUI first, because it is likely that callbacks there will modify
       // polyscope data. If we do these modifications happen later in the render cycle, they might invalidate data which
@@ -583,42 +774,46 @@ void draw(bool withUI = true) {
       buildPolyscopeGui();
       buildStructureGui();
       buildPickGui();
-
     }
     // If there is a popup UI active, only draw that
     else {
-      focusedPopupUI();
+      (contextStack.back().callback)();
     }
-
-
-    buildMessagesUI();
   }
 
   // Draw structures in the scene
-  drawStructures();
+  if (redrawNextFrame || options::alwaysRedraw) {
+    renderScene();
+    redrawNextFrame = false;
+  }
+  renderSceneToScreen();
 
   // Draw the GUI
   if (withUI) {
     ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     gl::checkGLError();
   }
 }
-
-} // namespace
 
 
 void bindDefaultBuffer() {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void mainLoopIteration() {
+
 
   // The windowing system will let this busy-loop in some situations, unfortunately. Make sure that doesn't happen.
   if (options::maxFPS != -1) {
     auto currTime = std::chrono::steady_clock::now();
     long microsecPerLoop = 1000000 / options::maxFPS;
-    microsecPerLoop = 95 * microsecPerLoop / 100; // give a little slack so we actually hit target fps
+    microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
     while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
            microsecPerLoop) {
       // std::chrono::milliseconds timespan(1);
@@ -630,30 +825,42 @@ void mainLoopIteration() {
   lastMainLoopIterTime = std::chrono::steady_clock::now();
 
 
-  // Update the width and heigh
-  glfwMakeContextCurrent(imguirender::mainWindow);
-  glfwGetWindowSize(imguirender::mainWindow, &view::windowWidth, &view::windowHeight);
-  glfwGetFramebufferSize(imguirender::mainWindow, &view::bufferWidth, &view::bufferHeight);
+  // Update the width and height
+  glfwMakeContextCurrent(mainWindow);
+  int newBufferWidth, newBufferHeight, newWindowWidth, newWindowHeight;
+  glfwGetFramebufferSize(mainWindow, &newBufferWidth, &newBufferHeight);
+  glfwGetWindowSize(mainWindow, &newWindowWidth, &newWindowHeight);
+  if (newBufferWidth != view::bufferWidth || newBufferHeight != view::bufferHeight ||
+      newWindowHeight != view::windowHeight || newWindowWidth != view::windowWidth) {
+    // Basically a resize callback
+    requestRedraw();
+    view::bufferWidth = newBufferWidth;
+    view::bufferHeight = newBufferHeight;
+    view::windowWidth = newWindowWidth;
+    view::windowHeight = newWindowHeight;
+  }
 
   // Process UI events
   glfwPollEvents();
   processMouseEvents();
+  view::updateFlight();
+  showDelayedWarnings();
 
   // Rendering
   draw();
-  glfwSwapBuffers(imguirender::mainWindow);
+  glfwSwapBuffers(mainWindow);
 }
 
-void show(bool shutdownAfter) {
-  view::resetCameraToDefault();
+void show() {
 
   // Main loop
-  while (!glfwWindowShouldClose(imguirender::mainWindow)) {
+  while (!glfwWindowShouldClose(mainWindow)) {
     mainLoopIteration();
   }
+  glfwSetWindowShouldClose(mainWindow, false);
 
-  if (shutdownAfter) {
-    shutdown();
+  if (options::usePrefsFile) {
+    writePrefsFile();
   }
 }
 
@@ -664,17 +871,26 @@ void shutdown(int exitCode) {
     writePrefsFile();
   }
 
+  deleteGlobalBuffersAndPrograms();
+  gl::unloadMaterialTextures();
+  gl::deleteGroundPlaneResources();
+
+  // ImGui shutdown things
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
+
   std::exit(exitCode);
 }
 
 bool registerStructure(Structure* s, bool replaceIfPresent) {
 
   // Make sure a map for the type exists
-  if (state::structures.find(s->type) == state::structures.end()) {
-    state::structures[s->type] = std::map<std::string, Structure*>();
+  std::string typeName = s->typeName();
+  if (state::structures.find(typeName) == state::structures.end()) {
+    state::structures[typeName] = std::map<std::string, Structure*>();
   }
-  std::map<std::string, Structure*>& sMap = state::structures[s->type];
+  std::map<std::string, Structure*>& sMap = state::structures[typeName];
 
   // Check if the structure name is in use
   bool inUse = sMap.find(s->name) != sMap.end();
@@ -688,35 +904,17 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
     }
   }
 
+  // Center if desired
+  if (options::autocenterStructures) {
+    s->centerBoundingBox();
+  }
+
   // Add the new structure
   sMap[s->name] = s;
   updateStructureExtents();
+  requestRedraw();
 
   return true;
-}
-
-void registerPointCloud(std::string name, const std::vector<Vector3>& points, bool replaceIfPresent) {
-  PointCloud* s = new PointCloud(name, points);
-  bool success = registerStructure(s);
-  if (!success) delete s;
-}
-
-void registerSurfaceMesh(std::string name, Geometry<Euclidean>* geom, bool replaceIfPresent) {
-  SurfaceMesh* s = new SurfaceMesh(name, geom);
-  bool success = registerStructure(s);
-  if (!success) delete s;
-}
-
-void registerCameraView(std::string name, CameraParameters p, bool replaceIfPresent) {
-  CameraView* s = new CameraView(name, p);
-  bool success = registerStructure(s);
-  if (!success) delete s;
-}
-
-void registerRaySet(std::string name, const std::vector<std::vector<RayPoint>>& r, bool replaceIfPresent) {
-  RaySet* s = new RaySet(name, r);
-  bool success = registerStructure(s);
-  if (!success) delete s;
 }
 
 Structure* getStructure(std::string type, std::string name) {
@@ -747,20 +945,6 @@ Structure* getStructure(std::string type, std::string name) {
 }
 
 
-PointCloud* getPointCloud(std::string name) {
-  return dynamic_cast<PointCloud*>(getStructure(PointCloud::structureTypeName, name));
-}
-
-SurfaceMesh* getSurfaceMesh(std::string name) {
-  return dynamic_cast<SurfaceMesh*>(getStructure(SurfaceMesh::structureTypeName, name));
-}
-
-CameraView* getCameraView(std::string name) {
-  return dynamic_cast<CameraView*>(getStructure(CameraView::structureTypeName, name));
-}
-
-RaySet* getRaySet(std::string name) { return dynamic_cast<RaySet*>(getStructure(RaySet::structureTypeName, name)); }
-
 void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
 
   // If there are no structures of that type it is an automatic fail
@@ -789,7 +973,11 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
   return;
 }
 
-void removeStructure(std::string name) {
+void removeStructure(Structure* structure, bool errorIfAbsent) {
+  removeStructure(structure->typeName(), structure->name, errorIfAbsent);
+}
+
+void removeStructure(std::string name, bool errorIfAbsent) {
 
   // Check if we can find exactly one structure matching the name
   Structure* targetStruct = nullptr;
@@ -803,7 +991,7 @@ void removeStructure(std::string name) {
         } else {
           error("Cannot use automatic structure remove with empty name unless there is exactly one structure of that "
                 "type registered. Found two structures of different types with that name: " +
-                targetStruct->type + " and " + typeMap.first + ".");
+                targetStruct->typeName() + " and " + typeMap.first + ".");
           return;
         }
       }
@@ -812,11 +1000,14 @@ void removeStructure(std::string name) {
 
   // Error if none found.
   if (targetStruct == nullptr) {
-    error("No structure named: " + name + " to remove.");
+    if (errorIfAbsent) {
+      error("No structure named: " + name + " to remove.");
+    }
     return;
   }
 
-  removeStructure(targetStruct->type, targetStruct->name);
+  removeStructure(targetStruct->typeName(), targetStruct->name, errorIfAbsent);
+  requestRedraw();
 }
 
 void removeAllStructures() {
@@ -835,27 +1026,28 @@ void removeAllStructures() {
     }
   }
 
+  requestRedraw();
   pick::resetPick();
 }
 
 void updateStructureExtents() {
   // Compute length scale and bbox as the max of all structures
   state::lengthScale = 0.0;
-  Vector3 minBbox = Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
-  Vector3 maxBbox = -Vector3{1, 1, 1} * std::numeric_limits<double>::infinity();
+  glm::vec3 minBbox = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
+  glm::vec3 maxBbox = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
 
   for (auto cat : state::structures) {
     for (auto x : cat.second) {
       state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
       auto bbox = x.second->boundingBox();
-      minBbox = geometrycentral::componentwiseMin(minBbox, std::get<0>(bbox));
-      maxBbox = geometrycentral::componentwiseMax(maxBbox, std::get<1>(bbox));
+      minBbox = componentwiseMin(minBbox, std::get<0>(bbox));
+      maxBbox = componentwiseMax(maxBbox, std::get<1>(bbox));
     }
   }
 
-  if (!minBbox.isFinite() || !maxBbox.isFinite()) {
-    minBbox = -Vector3{1, 1, 1};
-    maxBbox = Vector3{1, 1, 1};
+  if (!isFinite(minBbox) || !isFinite(maxBbox)) {
+    minBbox = -glm::vec3{1, 1, 1};
+    maxBbox = glm::vec3{1, 1, 1};
   }
   std::get<0>(state::boundingBox) = minBbox;
   std::get<1>(state::boundingBox) = maxBbox;
@@ -864,83 +1056,12 @@ void updateStructureExtents() {
   // box as a scale. If we got neither, we'll end up with a constant near 1 due
   // to the above correction
   if (state::lengthScale == 0) {
-    state::lengthScale = norm(maxBbox - minBbox);
+    state::lengthScale = glm::length(maxBbox - minBbox);
   }
 
   // Center is center of bounding box
-  state::center = 0.5 * (minBbox + maxBbox);
+  state::center = 0.5f * (minBbox + maxBbox);
 }
 
-void screenshot(std::string filename, bool transparentBG) {
-
-  // Make sure we render first
-  draw(false);
-
-  // Get buffer size
-  GLint viewport[4];
-  glGetIntegerv(GL_VIEWPORT, viewport);
-  int w = viewport[2];
-  int h = viewport[3];
-
-  // Read from openGL
-  size_t buffSize = w * h * 4;
-  unsigned char* buff = new unsigned char[buffSize];
-  glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buff);
-
-  // Just flip
-  if (transparentBG) {
-
-    size_t flipBuffSize = w * h * 4;
-    unsigned char* flipBuff = new unsigned char[flipBuffSize];
-    for (int j = 0; j < h; j++) {
-      for (int i = 0; i < w; i++) {
-        int ind = i + j * w;
-        int flipInd = i + (h - j - 1) * w;
-        flipBuff[4 * flipInd + 0] = buff[4 * ind + 0];
-        flipBuff[4 * flipInd + 1] = buff[4 * ind + 1];
-        flipBuff[4 * flipInd + 2] = buff[4 * ind + 2];
-        flipBuff[4 * flipInd + 3] = buff[4 * ind + 3];
-      }
-    }
-
-    // Save to file
-    saveImage(filename, flipBuff, w, h, 4);
-
-    delete[] flipBuff;
-  }
-  // Strip alpha channel and flip
-  else {
-
-    size_t noAlphaBuffSize = w * h * 3;
-    unsigned char* noAlphaBuff = new unsigned char[noAlphaBuffSize];
-    for (int j = 0; j < h; j++) {
-      for (int i = 0; i < w; i++) {
-        int ind = i + j * w;
-        int flipInd = i + (h - j - 1) * w;
-        noAlphaBuff[3 * flipInd + 0] = buff[4 * ind + 0];
-        noAlphaBuff[3 * flipInd + 1] = buff[4 * ind + 1];
-        noAlphaBuff[3 * flipInd + 2] = buff[4 * ind + 2];
-      }
-    }
-
-    // Save to file
-    saveImage(filename, noAlphaBuff, w, h, 3);
-
-    delete[] noAlphaBuff;
-  }
-
-  delete[] buff;
-}
-
-void screenshot(bool transparentBG) {
-
-  char buff[50];
-  snprintf(buff, 50, "screenshot_%06zu.png", state::screenshotInd);
-  std::string defaultName(buff);
-
-  screenshot(defaultName, transparentBG);
-
-  state::screenshotInd++;
-}
 
 } // namespace polyscope

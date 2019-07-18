@@ -1,0 +1,26 @@
+branches:
+  only:
+  - v02 
+
+language: cpp
+
+os:
+ - linux
+ - osx
+
+compiler:
+  - gcc
+  - clang
+  
+addons:
+  apt:
+    packages:
+    - xorg-dev  
+
+before_script:
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get install -y xpra xserver-xorg-video-dummy freeglut3-dev; fi
+  - mkdir build
+  - cd build
+  - cmake ../examples/demo-app/
+
+script: make

@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/surface_selection_quantity.h"
 
 #include "polyscope/gl/shaders.h"
@@ -36,7 +37,7 @@ void SurfaceSelectionQuantity::drawUI() {
       }
     }
 
-    if(allowEditingFromDefaultUI) {
+    if (allowEditingFromDefaultUI) {
       if (ImGui::Button("Edit")) {
         userEdit();
       }
@@ -59,12 +60,19 @@ void SurfaceSelectionQuantity::drawUI() {
 // ==========           Vertex Selection         ==========
 // ========================================================
 
-SurfaceSelectionVertexQuantity::SurfaceSelectionVertexQuantity(std::string name, VertexData<char>& membership_,
+SurfaceSelectionVertexQuantity::SurfaceSelectionVertexQuantity(std::string name, std::vector<char>& initialMembership_,
                                                                SurfaceMesh* mesh_)
+    : SurfaceSelectionQuantity(name, mesh_, "vertex"), membership(initialMembership_)
+
+{
+  membership.resize(parent->nVertices());
+}
+
+SurfaceSelectionVertexQuantity::SurfaceSelectionVertexQuantity(std::string name, SurfaceMesh* mesh_)
     : SurfaceSelectionQuantity(name, mesh_, "vertex")
 
 {
-  membership = parent->transfer.transfer(membership_);
+  membership = std::vector<char>(parent->nVertices(), false);
 }
 
 gl::GLProgram* SurfaceSelectionVertexQuantity::createProgram() {
@@ -81,22 +89,21 @@ gl::GLProgram* SurfaceSelectionVertexQuantity::createProgram() {
 
 void SurfaceSelectionVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
   std::vector<double> colorval;
-  for (FacePtr f : parent->mesh->faces()) {
-    // Implicitly triangulate
-    double c0, c1;
-    size_t iP = 0;
-    for (VertexPtr v : f.adjacentVertices()) {
-      double c2 = membership[v];
-      if (iP >= 2) {
-        colorval.push_back(c0);
-        colorval.push_back(c1);
-        colorval.push_back(c2);
+  colorval.reserve(3 * parent->nTriangulationFaces());
+
+  for (HalfedgeMesh::Face& face : parent->triMesh.faces) {
+
+    HalfedgeMesh::Halfedge* currHe = &face.halfedge();
+    for (size_t i = 0; i < 3; i++) {
+      size_t vInd = currHe->vertex().index();
+      if (membership[vInd]) {
+        colorval.push_back(1.0);
+      } else {
+        colorval.push_back(0.0);
       }
-      c0 = c1;
-      c1 = c2;
-      iP++;
     }
   }
+
   membershipStale = false;
 
   // Store data in buffers
@@ -110,25 +117,22 @@ void SurfaceSelectionVertexQuantity::setProgramValues(gl::GLProgram* program) {
   if (membershipStale) {
 
     std::vector<double> colorval;
-    colorval.reserve(parent->mesh->nHalfedges());
-    for (FacePtr f : parent->mesh->faces()) {
-      // Implicitly triangulate
-      double c0, c1;
-      size_t iP = 0;
-      for (VertexPtr v : f.adjacentVertices()) {
-        double c2 = membership[v];
-        if (iP >= 2) {
-          colorval.push_back(c0);
-          colorval.push_back(c1);
-          colorval.push_back(c2);
+    colorval.reserve(3 * parent->nTriangulationFaces());
+
+    for (HalfedgeMesh::Face& face : parent->triMesh.faces) {
+
+      HalfedgeMesh::Halfedge* currHe = &face.halfedge();
+      for (size_t i = 0; i < 3; i++) {
+        size_t vInd = currHe->vertex().index();
+        if (membership[vInd]) {
+          colorval.push_back(1.0);
+        } else {
+          colorval.push_back(0.0);
         }
-        c0 = c1;
-        c1 = c2;
-        iP++;
       }
     }
-    program->setAttribute("a_colorval", colorval, true); // update buffer
 
+    program->setAttribute("a_colorval", colorval, true); // update buffer
 
     membershipStale = false;
   }
@@ -141,25 +145,15 @@ void SurfaceSelectionVertexQuantity::userEdit() {
   parent->setActiveSurfaceQuantity(this);
 
   // Create a new context
-  ImGuiContext* oldContext = ImGui::GetCurrentContext();
-  ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
-  ImGui::SetCurrentContext(newContext);
-  initializeImGUIContext();
   bool oldAlwaysPick = pick::alwaysEvaluatePick;
   pick::alwaysEvaluatePick = true;
 
   // Register the callback which creates the UI and does the hard work
-  focusedPopupUI = std::bind(&SurfaceSelectionVertexQuantity::userEditCallback, this);
+  auto focusedPopupUI = std::bind(&SurfaceSelectionVertexQuantity::userEditCallback, this);
+  pushContext(focusedPopupUI);
 
-  // Re-enter main loop
-  while (focusedPopupUI) {
-    mainLoopIteration();
-  }
-
-  // Restore the old context
+  // Restore the old state
   pick::alwaysEvaluatePick = oldAlwaysPick;
-  ImGui::SetCurrentContext(oldContext);
-  ImGui::DestroyContext(newContext);
 }
 
 void SurfaceSelectionVertexQuantity::userEditCallback() {
@@ -181,7 +175,10 @@ void SurfaceSelectionVertexQuantity::userEditCallback() {
     Structure* pickedStruc = pick::getCurrentPickElement(localInd);
     if (pickedStruc == parent) {
 
+      // TODO re-implement me
+
       // Find the nearest vertex (in screen space) to the selected element
+      /*
       std::vector<VertexPtr> candidateVertices;
       VertexPtr vOut;
       FacePtr fOut;
@@ -210,19 +207,24 @@ void SurfaceSelectionVertexQuantity::userEditCallback() {
         membership[v] = mouseMemberAction == 0;
         membershipStale = true;
       }
+      */
     }
   }
 
 
   // Grow the selection
   if (ImGui::Button("Grow selection")) {
-    VertexData<char> newMembership(parent->mesh, false);
-    for (VertexPtr v : parent->mesh->vertices()) {
-      if (membership[v]) {
-        newMembership[v] = true;
-        for (VertexPtr n : v.adjacentVertices()) {
-          newMembership[n] = true;
-        }
+    std::vector<char> newMembership(parent->nVertices(), false);
+    for (HalfedgeMesh::Vertex& vert : parent->mesh.vertices) {
+      if (membership[vert.index()]) {
+        newMembership[vert.index()] = true;
+
+        HalfedgeMesh::Halfedge* currHe = &vert.halfedge();
+        HalfedgeMesh::Halfedge* firstHe = &vert.halfedge();
+        do {
+          newMembership[currHe->twin().vertex().index()] = true;
+          currHe = &currHe->twin().next();
+        } while (currHe != firstHe);
       }
     }
     membership = newMembership;
@@ -232,13 +234,17 @@ void SurfaceSelectionVertexQuantity::userEditCallback() {
 
   // Shrink the selection
   if (ImGui::Button("Shrink selection")) {
-    VertexData<char> newMembership(parent->mesh, true);
-    for (VertexPtr v : parent->mesh->vertices()) {
-      if (!membership[v]) {
-        newMembership[v] = false;
-        for (VertexPtr n : v.adjacentVertices()) {
-          newMembership[n] = false;
-        }
+    std::vector<char> newMembership(parent->nVertices(), true);
+    for (HalfedgeMesh::Vertex& vert : parent->mesh.vertices) {
+      if (membership[vert.index()]) {
+        newMembership[vert.index()] = false;
+
+        HalfedgeMesh::Halfedge* currHe = &vert.halfedge();
+        HalfedgeMesh::Halfedge* firstHe = &vert.halfedge();
+        do {
+          newMembership[currHe->twin().vertex().index()] = false;
+          currHe = &currHe->twin().next();
+        } while (currHe != firstHe);
       }
     }
     membership = newMembership;
@@ -247,18 +253,14 @@ void SurfaceSelectionVertexQuantity::userEditCallback() {
 
   // Select all
   if (ImGui::Button("Select all")) {
-    for (VertexPtr v : parent->mesh->vertices()) {
-      membership[v] = true;
-    }
+    std::fill(membership.begin(), membership.end(), true);
     membershipStale = true;
   }
 
   // Select none
   ImGui::SameLine();
   if (ImGui::Button("Select none")) {
-    for (VertexPtr v : parent->mesh->vertices()) {
-      membership[v] = false;
-    }
+    std::fill(membership.begin(), membership.end(), false);
     membershipStale = true;
   }
 
@@ -272,24 +274,21 @@ void SurfaceSelectionVertexQuantity::userEditCallback() {
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1. / 7.0f, 0.7f, 0.7f));
   ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1. / 7.0f, 0.8f, 0.8f));
   if (ImGui::Button("Done")) {
-    focusedPopupUI = nullptr;
+    popContext();
     membershipStale = true;
   }
   ImGui::PopStyleColor(3);
 
   ImGui::End();
-}
+} // namespace polyscope
 
-void SurfaceSelectionVertexQuantity::buildInfoGUI(VertexPtr v) {
+void SurfaceSelectionVertexQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%s", membership[v] ? "true" : "false");
+  ImGui::Text("%s", membership[vInd] ? "true" : "false");
   ImGui::NextColumn();
 }
-  
-VertexData<char> SurfaceSelectionVertexQuantity::getSelectionOnInputMesh() {
-  return parent->transfer.transferBack(membership);
-}
+
 
 /*
 // ========================================================

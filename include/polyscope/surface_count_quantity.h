@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
 #include "polyscope/affine_remapper.h"
@@ -7,79 +8,77 @@
 
 namespace polyscope {
 
-class SurfaceCountQuantity : public SurfaceQuantity {
+class SurfaceCountQuantity : public SurfaceMeshQuantity {
 public:
-  SurfaceCountQuantity(std::string name, SurfaceMesh* mesh_, std::string descriptiveType_);
+  SurfaceCountQuantity(std::string name, SurfaceMesh& mesh_, std::string descriptiveType_);
 
   virtual void draw() override;
-  virtual void drawUI() override;
-  void prepare();
+  virtual void buildCustomUI() override;
+  virtual std::string niceName() override;
 
   // The map that takes values to [0,1] for drawing
   AffineRemapper<double> mapper;
 
-  std::vector<std::pair<Vector3, double>> entries;
+  std::vector<std::pair<glm::vec3, double>> entries;
 
   const int NO_INDEX = std::numeric_limits<int>::min();
-  gl::GLProgram* program = nullptr;
   int sum;
 
   // UI internals
   const std::string descriptiveType; // ("vertex count", etc)
+  std::unique_ptr<gl::GLProgram> program;
 
 protected:
-  void setUniforms(gl::GLProgram* p);
-  float pointRadius = 0.012;
+  void setUniforms(gl::GLProgram& p);
+  float pointRadius = 0.003;
   float vizRangeLow, vizRangeHigh, dataRangeLow, dataRangeHigh;
-  int iColorMap;
+  gl::ColorMapID cMap = gl::ColorMapID::COOLWARM;
+
+  void createProgram();
 };
 
 // ========================================================
 // ==========           Vertex Count             ==========
 // ========================================================
 
-class SurfaceCountVertexQuantity : public SurfaceCountQuantity {
+class SurfaceVertexCountQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceCountVertexQuantity(std::string name, std::vector<std::pair<VertexPtr, int>>& values_, SurfaceMesh* mesh_);
-  //   ~SurfaceCountVertexQuantity();
+  SurfaceVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>> values_, SurfaceMesh& mesh_);
 
-  void buildInfoGUI(VertexPtr v) override;
+  void buildVertexInfoGUI(size_t vInd) override;
 
   // === Members
-  std::map<VertexPtr, int> values;
+  std::map<size_t, int> values;
 };
+
 
 // ========================================================
 // ==========      Vertex Isolated Scalar        ==========
 // ========================================================
 
-class SurfaceIsolatedScalarVertexQuantity : public SurfaceCountQuantity {
+class SurfaceVertexIsolatedScalarQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceIsolatedScalarVertexQuantity(std::string name, std::vector<std::pair<VertexPtr, double>>& values_,
-                                      SurfaceMesh* mesh_);
-  //   ~SurfaceCountVertexQuantity();
+  SurfaceVertexIsolatedScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>> values_,
+                                      SurfaceMesh& mesh_);
 
-  void drawUI() override;
-  void buildInfoGUI(VertexPtr v) override;
+  void buildVertexInfoGUI(size_t vInd) override;
 
   // === Members
-  std::map<VertexPtr, double> values;
+  std::map<size_t, double> values;
 };
 
 // ========================================================
 // ==========            Face Count             ==========
 // ========================================================
 
-class SurfaceCountFaceQuantity : public SurfaceCountQuantity {
+class SurfaceFaceCountQuantity : public SurfaceCountQuantity {
 public:
-  SurfaceCountFaceQuantity(std::string name, std::vector<std::pair<FacePtr, int>>& values_, SurfaceMesh* mesh_);
-  //   ~SurfaceCountVertexQuantity();
+  SurfaceFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>> values_, SurfaceMesh& mesh_);
 
-  void buildInfoGUI(FacePtr f) override;
+  void buildFaceInfoGUI(size_t f) override;
 
   // === Members
-  std::map<FacePtr, int> values;
+  std::map<size_t, int> values;
 };
-
 
 } // namespace polyscope

@@ -1,10 +1,17 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include "polyscope/gl/shaders.h"
+
+namespace polyscope {
+namespace gl {
+
+// clang-format off
 
 static const VertShader RAY_VERT_SHADER = {
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     }, 
 
@@ -16,12 +23,12 @@ static const VertShader RAY_VERT_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in vec3 a_position;
         in float a_tp;
         in float a_offset;
       
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
 
         out float tp;
@@ -29,7 +36,7 @@ static const VertShader RAY_VERT_SHADER = {
 
         void main()
         {
-            gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position,1.);
+            gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
             tp = a_tp;
             offset = a_offset;
         }
@@ -50,7 +57,7 @@ static const GeomShader RAY_GEOM_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         layout(lines) in;
         layout(line_strip, max_vertices=2) out;
         
@@ -153,7 +160,7 @@ static const FragShader RAY_FRAG_SHADER = {
     "outputF",
  
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in float tp2;
         in float offset2;
     
@@ -190,3 +197,7 @@ static const FragShader RAY_FRAG_SHADER = {
     )
 };
 
+// clang-format on
+
+} // namespace gl
+} // namespace polyscope

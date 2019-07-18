@@ -1,8 +1,8 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/surface_scalar_quantity.h"
 
-#include "geometrycentral/meshio.h"
-
 #include "polyscope/file_helpers.h"
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/surface_shaders.h"
 #include "polyscope/polyscope.h"
@@ -14,24 +14,27 @@ using std::endl;
 
 namespace polyscope {
 
-SurfaceScalarQuantity::SurfaceScalarQuantity(std::string name, SurfaceMesh* mesh_, std::string definedOn_,
+SurfaceScalarQuantity::SurfaceScalarQuantity(std::string name, SurfaceMesh& mesh_, std::string definedOn_,
                                              DataType dataType_)
-    : SurfaceQuantityThatDrawsFaces(name, mesh_), dataType(dataType_), definedOn(definedOn_) {
+    : SurfaceMeshQuantity(name, mesh_, true), dataType(dataType_), definedOn(definedOn_) {
+
   // Set the default colormap based on what kind of data is given
-  switch (dataType) {
-  case DataType::STANDARD:
-    iColorMap = 0; // viridis
-    break;
-  case DataType::SYMMETRIC:
-    iColorMap = 1; // coolwarm
-    break;
-  case DataType::MAGNITUDE:
-    iColorMap = 2; // blues
-    break;
-  }
+  cMap = defaultColorMap(dataType);
 }
 
-void SurfaceScalarQuantity::draw() {}
+void SurfaceScalarQuantity::draw() {
+  if (!enabled) return;
+
+  if (program == nullptr) {
+    createProgram();
+  }
+
+  // Set uniforms
+  parent.setTransformUniforms(*program);
+  setProgramUniforms(*program);
+
+  program->draw();
+}
 
 void SurfaceScalarQuantity::writeToFile(std::string filename) {
   polyscope::warning("Writing to file not yet implemented for this datatype");
@@ -39,9 +42,9 @@ void SurfaceScalarQuantity::writeToFile(std::string filename) {
 
 
 // Update range uniforms
-void SurfaceScalarQuantity::setProgramValues(gl::GLProgram* program) {
-  program->setUniform("u_rangeLow", vizRangeLow);
-  program->setUniform("u_rangeHigh", vizRangeHigh);
+void SurfaceScalarQuantity::setProgramUniforms(gl::GLProgram& program) {
+  program.setUniform("u_rangeLow", vizRangeLow);
+  program.setUniform("u_rangeHigh", vizRangeHigh);
 }
 
 void SurfaceScalarQuantity::resetVizRange() {
@@ -62,142 +65,118 @@ void SurfaceScalarQuantity::resetVizRange() {
   }
 }
 
-void SurfaceScalarQuantity::drawUI() {
-  bool enabledBefore = enabled;
-  if (ImGui::TreeNode((name + " (" + definedOn + " scalar)").c_str())) {
-    ImGui::Checkbox("Enabled", &enabled);
-    ImGui::SameLine();
+void SurfaceScalarQuantity::buildCustomUI() {
+  ImGui::SameLine();
 
+  // == Options popup
+  if (ImGui::Button("Options")) {
+    ImGui::OpenPopup("OptionsPopup");
+  }
+  if (ImGui::BeginPopup("OptionsPopup")) {
 
-    // == Options popup
-    if (ImGui::Button("Options")) {
-      ImGui::OpenPopup("OptionsPopup");
-    }
-    if (ImGui::BeginPopup("OptionsPopup")) {
+    if (ImGui::MenuItem("Write to file")) writeToFile();
+    if (ImGui::MenuItem("Reset colormap range")) resetVizRange();
 
-      if (ImGui::MenuItem("Write to file")) writeToFile();
-      if (ImGui::MenuItem("Reset colormap range")) resetVizRange();
-
-      ImGui::EndPopup();
-    }
-
-
-    { // Set colormap
-      ImGui::SameLine();
-      ImGui::PushItemWidth(100);
-      int iColormapBefore = iColorMap;
-      ImGui::Combo("##colormap", &iColorMap, gl::quantitativeColormapNames,
-                   IM_ARRAYSIZE(gl::quantitativeColormapNames));
-      ImGui::PopItemWidth();
-      if (iColorMap != iColormapBefore) {
-        parent->deleteProgram();
-        hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
-      }
-    }
-
-    // Draw the histogram of values
-    hist.colormapRangeMin = vizRangeLow;
-    hist.colormapRangeMax = vizRangeHigh;
-    hist.buildUI();
-
-    // Data range
-    // Note: %g specifies are generally nicer than %e, but here we don't acutally have a choice. ImGui (for somewhat
-    // valid reasons) links the resolution of the slider to the decimal width of the formatted number. When %g formats a
-    // number with few decimal places, sliders can break. There is no way to set a minimum number of decimal places with
-    // %g, unfortunately.
-    {
-      switch (dataType) {
-      case DataType::STANDARD:
-        ImGui::DragFloatRange2("", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100., dataRangeLow,
-                               dataRangeHigh, "Min: %.3e", "Max: %.3e");
-        break;
-      case DataType::SYMMETRIC: {
-        float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
-        ImGui::DragFloatRange2("##range_symmetric", &vizRangeLow, &vizRangeHigh, absRange / 100., -absRange, absRange,
-                               "Min: %.3e", "Max: %.3e");
-      } break;
-      case DataType::MAGNITUDE: {
-        ImGui::DragFloatRange2("##range_mag", &vizRangeLow, &vizRangeHigh, vizRangeHigh / 100., 0.0, dataRangeHigh,
-                               "Min: %.3e", "Max: %.3e");
-      } break;
-      }
-    }
-
-    ImGui::TreePop();
+    ImGui::EndPopup();
   }
 
-  // Enforce exclusivity of enabled surface quantities
-  if (!enabledBefore && enabled) {
-    parent->setActiveSurfaceQuantity(this);
+  if (buildColormapSelector(cMap)) {
+    program.reset();
+    hist.updateColormap(cMap);
   }
-  if (enabledBefore && !enabled) {
-    parent->clearActiveSurfaceQuantity();
+
+  // Draw the histogram of values
+  hist.colormapRangeMin = vizRangeLow;
+  hist.colormapRangeMax = vizRangeHigh;
+  hist.buildUI();
+
+  // Data range
+  // Note: %g specifies are generally nicer than %e, but here we don't acutally have a choice. ImGui (for somewhat
+  // valid reasons) links the resolution of the slider to the decimal width of the formatted number. When %g formats a
+  // number with few decimal places, sliders can break. There is no way to set a minimum number of decimal places with
+  // %g, unfortunately.
+  {
+    switch (dataType) {
+    case DataType::STANDARD:
+      ImGui::DragFloatRange2("", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100., dataRangeLow,
+                             dataRangeHigh, "Min: %.3e", "Max: %.3e");
+      break;
+    case DataType::SYMMETRIC: {
+      float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
+      ImGui::DragFloatRange2("##range_symmetric", &vizRangeLow, &vizRangeHigh, absRange / 100., -absRange, absRange,
+                             "Min: %.3e", "Max: %.3e");
+    } break;
+    case DataType::MAGNITUDE: {
+      ImGui::DragFloatRange2("##range_mag", &vizRangeLow, &vizRangeHigh, vizRangeHigh / 100., 0.0, dataRangeHigh,
+                             "Min: %.3e", "Max: %.3e");
+    } break;
+    }
   }
 }
+
+void SurfaceScalarQuantity::geometryChanged() { program.reset(); }
+
+std::string SurfaceScalarQuantity::niceName() { return name + " (" + definedOn + " scalar)"; }
 
 // ========================================================
 // ==========           Vertex Scalar            ==========
 // ========================================================
 
-SurfaceScalarVertexQuantity::SurfaceScalarVertexQuantity(std::string name, VertexData<double>& values_,
-                                                         SurfaceMesh* mesh_, DataType dataType_)
-    : SurfaceScalarQuantity(name, mesh_, "vertex", dataType_)
+SurfaceVertexScalarQuantity::SurfaceVertexScalarQuantity(std::string name, std::vector<double> values_,
+                                                         SurfaceMesh& mesh_, DataType dataType_)
+    : SurfaceScalarQuantity(name, mesh_, "vertex", dataType_), values(std::move(values_))
 
 {
-  values = parent->transfer.transfer(values_);
+  hist.updateColormap(cMap);
+  hist.buildHistogram(values, parent.vertexAreas);
 
-  std::vector<double> valsVec;
-  std::vector<double> weightsVec;
-  for (VertexPtr v : parent->mesh->vertices()) {
-    valsVec.push_back(values[v]);
-    weightsVec.push_back(parent->geometry->dualArea(v));
-  }
-
-  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
-  hist.buildHistogram(valsVec, weightsVec);
-
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
+  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
   resetVizRange();
 }
 
-gl::GLProgram* SurfaceScalarVertexQuantity::createProgram() {
+void SurfaceVertexScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  gl::GLProgram* program =
-      new gl::GLProgram(&VERTCOLOR_SURFACE_VERT_SHADER, &VERTCOLOR_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
+  program.reset(new gl::GLProgram(&gl::VERTCOLOR_SURFACE_VERT_SHADER, &gl::VERTCOLOR_SURFACE_FRAG_SHADER,
+                                  gl::DrawMode::Triangles));
 
   // Fill color buffers
-  fillColorBuffers(program);
+  parent.fillGeometryBuffers(*program);
+  fillColorBuffers(*program);
 
-  return program;
+  setMaterialForProgram(*program, "wax");
 }
 
 
-void SurfaceScalarVertexQuantity::fillColorBuffers(gl::GLProgram* p) {
+void SurfaceVertexScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
   std::vector<double> colorval;
-  for (FacePtr f : parent->mesh->faces()) {
-    // Implicitly triangulate
-    double c0, c1;
-    c0 = values[f.halfedge().vertex()];
-    size_t iP = 0;
-    for (VertexPtr v : f.adjacentVertices()) {
-      double c2 = values[v];
-      if (iP >= 2) {
-        colorval.push_back(c0);
-        colorval.push_back(c1);
-        colorval.push_back(c2);
-      }
-      c1 = c2;
-      iP++;
+  colorval.reserve(3 * parent.nFacesTriangulation());
+
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+
+    // implicitly triangulate from root
+    size_t vRoot = face[0];
+    for (size_t j = 1; (j + 1) < D; j++) {
+      size_t vB = face[j];
+      size_t vC = face[(j + 1) % D];
+
+      colorval.push_back(values[vRoot]);
+      colorval.push_back(values[vB]);
+      colorval.push_back(values[vC]);
     }
   }
 
   // Store data in buffers
-  p->setAttribute("a_colorval", colorval);
-  p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+  p.setAttribute("a_colorval", colorval);
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
 }
 
-void SurfaceScalarVertexQuantity::writeToFile(std::string filename) {
+void SurfaceVertexScalarQuantity::writeToFile(std::string filename) {
 
+  throw std::runtime_error("not implemented");
+
+  /* TODO
   if (filename == "") {
     filename = promptForFilename();
     if (filename == "") {
@@ -209,19 +188,20 @@ void SurfaceScalarVertexQuantity::writeToFile(std::string filename) {
 
   cout << "Writing vertex value to file " << filename << " in U coordinate of texture map" << endl;
 
-  HalfedgeMesh* mesh = parent->mesh;
+  HalfedgeMesh* mesh = parent.mesh;
   CornerData<Vector2> scalarVal(mesh, Vector2{0.0, 0.0});
   for (CornerPtr c : mesh->corners()) {
     scalarVal[c].x = values[c.vertex()];
   }
 
-  WavefrontOBJ::write(filename, *parent->geometry, scalarVal);
+  WavefrontOBJ::write(filename, *parent.geometry, scalarVal);
+  */
 }
 
-void SurfaceScalarVertexQuantity::buildInfoGUI(VertexPtr v) {
+void SurfaceVertexScalarQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", values[v]);
+  ImGui::Text("%g", values[vInd]);
   ImGui::NextColumn();
 }
 
@@ -229,66 +209,52 @@ void SurfaceScalarVertexQuantity::buildInfoGUI(VertexPtr v) {
 // ==========            Face Scalar             ==========
 // ========================================================
 
-SurfaceScalarFaceQuantity::SurfaceScalarFaceQuantity(std::string name, FaceData<double>& values_, SurfaceMesh* mesh_,
+SurfaceFaceScalarQuantity::SurfaceFaceScalarQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
                                                      DataType dataType_)
-    : SurfaceScalarQuantity(name, mesh_, "face", dataType_)
+    : SurfaceScalarQuantity(name, mesh_, "face", dataType_), values(std::move(values_))
 
 {
-  values = parent->transfer.transfer(values_);
+  hist.updateColormap(cMap);
+  hist.buildHistogram(values, parent.faceAreas);
 
-  std::vector<double> valsVec;
-  std::vector<double> weightsVec;
-  for (FacePtr f : parent->mesh->faces()) {
-    valsVec.push_back(values[f]);
-    weightsVec.push_back(parent->geometry->area(f));
-  }
-
-  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
-  hist.buildHistogram(valsVec, weightsVec);
-
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
+  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
   resetVizRange();
 }
 
-gl::GLProgram* SurfaceScalarFaceQuantity::createProgram() {
+void SurfaceFaceScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  gl::GLProgram* program =
-      new gl::GLProgram(&VERTCOLOR_SURFACE_VERT_SHADER, &VERTCOLOR_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
+  program.reset(new gl::GLProgram(&gl::VERTCOLOR_SURFACE_VERT_SHADER, &gl::VERTCOLOR_SURFACE_FRAG_SHADER,
+                                  gl::DrawMode::Triangles));
 
   // Fill color buffers
-  fillColorBuffers(program);
+  parent.fillGeometryBuffers(*program);
+  fillColorBuffers(*program);
 
-  return program;
+  setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceScalarFaceQuantity::fillColorBuffers(gl::GLProgram* p) {
+void SurfaceFaceScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
   std::vector<double> colorval;
-  for (FacePtr f : parent->mesh->faces()) {
-    // Implicitly triangulate
-    double c0, c1;
-    size_t iP = 0;
-    for (VertexPtr v : f.adjacentVertices()) {
-      double c2 = values[f];
-      if (iP >= 2) {
-        colorval.push_back(c0);
-        colorval.push_back(c1);
-        colorval.push_back(c2);
-      }
-      c0 = c1;
-      c1 = c2;
-      iP++;
+  colorval.reserve(3 * parent.nFacesTriangulation());
+
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+    size_t triDegree = std::max(0, static_cast<int>(D) - 2);
+    for (size_t j = 0; j < 3 * triDegree; j++) {
+      colorval.push_back(values[iF]);
     }
   }
 
   // Store data in buffers
-  p->setAttribute("a_colorval", colorval);
-  p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+  p.setAttribute("a_colorval", colorval);
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
 }
 
-void SurfaceScalarFaceQuantity::buildInfoGUI(FacePtr f) {
+void SurfaceFaceScalarQuantity::buildFaceInfoGUI(size_t fInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", values[f]);
+  ImGui::Text("%g", values[fInd]);
   ImGui::NextColumn();
 }
 
@@ -297,70 +263,74 @@ void SurfaceScalarFaceQuantity::buildInfoGUI(FacePtr f) {
 // ==========            Edge Scalar             ==========
 // ========================================================
 
-SurfaceScalarEdgeQuantity::SurfaceScalarEdgeQuantity(std::string name, EdgeData<double>& values_, SurfaceMesh* mesh_,
+SurfaceEdgeScalarQuantity::SurfaceEdgeScalarQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
                                                      DataType dataType_)
-    : SurfaceScalarQuantity(name, mesh_, "edge", dataType_)
+    : SurfaceScalarQuantity(name, mesh_, "edge", dataType_), values(std::move(values_))
 
 {
-  values = parent->transfer.transfer(values_);
+  hist.updateColormap(cMap);
+  hist.buildHistogram(values, parent.edgeLengths);
 
-  std::vector<double> valsVec;
-  std::vector<double> weightsVec;
-  for (EdgePtr e : parent->mesh->edges()) {
-    valsVec.push_back(values[e]);
-    weightsVec.push_back(parent->geometry->length(e));
-  }
-
-  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
-  hist.buildHistogram(valsVec, weightsVec);
-
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
+  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
   resetVizRange();
 }
 
-gl::GLProgram* SurfaceScalarEdgeQuantity::createProgram() {
+void SurfaceEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  gl::GLProgram* program = new gl::GLProgram(&HALFEDGECOLOR_SURFACE_VERT_SHADER, &HALFEDGECOLOR_SURFACE_FRAG_SHADER,
-                                             gl::DrawMode::Triangles);
+  program.reset(new gl::GLProgram(&gl::HALFEDGECOLOR_SURFACE_VERT_SHADER, &gl::HALFEDGECOLOR_SURFACE_FRAG_SHADER,
+                                  gl::DrawMode::Triangles));
 
   // Fill color buffers
-  fillColorBuffers(program);
+  parent.fillGeometryBuffers(*program);
+  fillColorBuffers(*program);
 
-  return program;
+  setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceScalarEdgeQuantity::fillColorBuffers(gl::GLProgram* p) {
-  std::vector<Vector3> colorval;
-  for (FacePtr f : parent->mesh->faces()) {
-    // Implicitly triangulate
-    double c0, c1;
-    size_t iP = 0;
-    for (HalfedgePtr he : f.adjacentHalfedges()) {
-      VertexPtr v = he.vertex();
-      double c2 = values[he.next().edge()];
-      if (iP >= 2) {
-        colorval.push_back(Vector3{c0, c1, c2});
-        colorval.push_back(Vector3{c0, c1, c2});
-        colorval.push_back(Vector3{c0, c1, c2});
+void SurfaceEdgeScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
+  std::vector<glm::vec3> colorval;
+  colorval.reserve(3 * parent.nFacesTriangulation());
+
+  // Fill buffers as usual, but at edges introduced by triangulation substitute the average value.
+  // TODO this still doesn't look too great on polygon meshes... perhaps compute an average value per edge?
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+
+    // First, compute an average value for the face
+    double avgVal = 0.0;
+    for (size_t j = 0; j < D; j++) {
+      avgVal += values[parent.edgeIndices[iF][j]];
+    }
+    avgVal /= D;
+
+    // implicitly triangulate from root
+    for (size_t j = 1; (j + 1) < D; j++) {
+
+      glm::vec3 combinedValues = {avgVal, values[parent.edgeIndices[iF][j]], avgVal};
+
+      if (j == 1) {
+        combinedValues.x = values[parent.edgeIndices[iF][0]];
       }
-      if (iP > 2) {
-        warning("Edge quantities not correct for non-triangular meshes");
+      if (j + 2 == D) {
+        combinedValues.z = values[parent.edgeIndices[iF].back()];
       }
-      c0 = c1;
-      c1 = c2;
-      iP++;
+
+      for (size_t i = 0; i < 3; i++) {
+        colorval.push_back(combinedValues);
+      }
     }
   }
 
   // Store data in buffers
-  p->setAttribute("a_colorvals", colorval);
-  p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+  p.setAttribute("a_colorvals", colorval);
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
 }
 
-void SurfaceScalarEdgeQuantity::buildInfoGUI(EdgePtr e) {
+void SurfaceEdgeScalarQuantity::buildEdgeInfoGUI(size_t eInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", values[e]);
+  ImGui::Text("%g", values[eInd]);
   ImGui::NextColumn();
 }
 
@@ -368,70 +338,93 @@ void SurfaceScalarEdgeQuantity::buildInfoGUI(EdgePtr e) {
 // ==========          Halfedge Scalar           ==========
 // ========================================================
 
-SurfaceScalarHalfedgeQuantity::SurfaceScalarHalfedgeQuantity(std::string name, HalfedgeData<double>& values_,
-                                                             SurfaceMesh* mesh_, DataType dataType_)
-    : SurfaceScalarQuantity(name, mesh_, "halfedge", dataType_)
+SurfaceHalfedgeScalarQuantity::SurfaceHalfedgeScalarQuantity(std::string name, std::vector<double> values_,
+                                                             SurfaceMesh& mesh_, DataType dataType_)
+    : SurfaceScalarQuantity(name, mesh_, "halfedge", dataType_), values(std::move(values_))
 
 {
-  values = parent->transfer.transfer(values_);
 
-  std::vector<double> valsVec;
-  std::vector<double> weightsVec;
-  for (HalfedgePtr he : parent->mesh->allHalfedges()) {
-    valsVec.push_back(values[he]);
-    weightsVec.push_back(parent->geometry->length(he.edge()));
-  }
-
-  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
-  hist.buildHistogram(valsVec, weightsVec);
-
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
-  resetVizRange();
-}
-
-gl::GLProgram* SurfaceScalarHalfedgeQuantity::createProgram() {
-  // Create the program to draw this quantity
-  gl::GLProgram* program = new gl::GLProgram(&HALFEDGECOLOR_SURFACE_VERT_SHADER, &HALFEDGECOLOR_SURFACE_FRAG_SHADER,
-                                             gl::DrawMode::Triangles);
-
-  // Fill color buffers
-  fillColorBuffers(program);
-
-  return program;
-}
-
-void SurfaceScalarHalfedgeQuantity::fillColorBuffers(gl::GLProgram* p) {
-  std::vector<Vector3> colorval;
-  for (FacePtr f : parent->mesh->faces()) {
-    // Implicitly triangulate
-    double c0, c1;
-    size_t iP = 0;
-    for (HalfedgePtr he : f.adjacentHalfedges()) {
-      VertexPtr v = he.vertex();
-      double c2 = values[he.next()];
-      if (iP >= 2) {
-        colorval.push_back(Vector3{c0, c1, c2});
-        colorval.push_back(Vector3{c0, c1, c2});
-        colorval.push_back(Vector3{c0, c1, c2});
-      }
-      if (iP > 2) {
-        warning("Edge quantities not correct for non-triangular meshes");
-      }
-      c0 = c1;
-      c1 = c2;
-      iP++;
+  std::vector<double> weightsVec(parent.nHalfedges());
+  size_t iHe = 0;
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+    for (size_t j = 0; j < D; j++) {
+      weightsVec[iHe] = parent.edgeLengths[parent.edgeIndices[iF][j]];
+      iHe++;
     }
   }
 
-  // Store data in buffers
-  p->setAttribute("a_colorvals", colorval);
-  p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+  hist.updateColormap(cMap);
+  hist.buildHistogram(values, weightsVec);
+
+  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
+  resetVizRange();
 }
 
-void SurfaceScalarHalfedgeQuantity::buildInfoGUI(HalfedgePtr he) {
+void SurfaceHalfedgeScalarQuantity::createProgram() {
+  // Create the program to draw this quantity
+  program.reset(new gl::GLProgram(&gl::HALFEDGECOLOR_SURFACE_VERT_SHADER, &gl::HALFEDGECOLOR_SURFACE_FRAG_SHADER,
+                                  gl::DrawMode::Triangles));
+
+  // Fill color buffers
+  parent.fillGeometryBuffers(*program);
+  fillColorBuffers(*program);
+
+  setMaterialForProgram(*program, "wax");
+}
+
+void SurfaceHalfedgeScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
+  std::vector<glm::vec3> colorval;
+  colorval.reserve(3 * parent.nFacesTriangulation());
+
+  // Fill buffers as usual, but at edges introduced by triangulation substitute the average value.
+  // TODO this still doesn't look too great on polygon meshes... perhaps compute an average value per edge?
+  size_t iHe = 0;
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+
+    // First, compute an average value for the face
+    double avgVal = 0.0;
+    for (size_t j = 0; j < D; j++) {
+      avgVal += values[iHe + j];
+    }
+    avgVal /= D;
+
+    // implicitly triangulate from root
+    for (size_t j = 1; (j + 1) < D; j++) {
+      glm::vec3 combinedValues = {avgVal, avgVal, avgVal};
+
+      if (j == 1) {
+        combinedValues[0] = values[iHe];
+        iHe++;
+      }
+
+      combinedValues[1] = values[iHe];
+      iHe++;
+
+      if (j + 2 == D) {
+        combinedValues[2] = values[iHe];
+        iHe++;
+      }
+
+      for (size_t i = 0; i < 3; i++) {
+        colorval.push_back(combinedValues);
+      }
+    }
+  }
+
+
+  // Store data in buffers
+  p.setAttribute("a_colorvals", colorval);
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
+}
+
+void SurfaceHalfedgeScalarQuantity::buildHalfedgeInfoGUI(size_t heInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", values[he]);
+  ImGui::Text("%g", values[heInd]);
   ImGui::NextColumn();
 }
 

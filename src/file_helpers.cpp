@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/file_helpers.h"
 
 #include "imgui.h"
@@ -16,14 +17,15 @@ void filenamePromptCallback(char* buff, size_t len) {
   ImGui::InputText("##filename", buff, len);
 
   if (ImGui::Button("Ok")) {
-    focusedPopupUI = nullptr;
+    popContext();
   }
 
   ImGui::SameLine();
 
   if (ImGui::Button("Cancel")) {
-    sprintf(buff, "");
-    focusedPopupUI = nullptr;
+    // sprintf(buff, "");
+    buff[0] = 0; // because apparently gcc this this is clearer than that ^^^?
+    popContext();
   }
 
   ImGui::PopItemWidth();
@@ -32,33 +34,18 @@ void filenamePromptCallback(char* buff, size_t len) {
 } // namespace
 
 
-std::string promptForFilename() {
+std::string promptForFilename(std::string initName) {
 
   using namespace std::placeholders;
 
-  // Create a new context
-  ImGuiContext* oldContext = ImGui::GetCurrentContext();
-  ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
-  ImGui::SetCurrentContext(newContext);
-  initializeImGUIContext();
-
   // Register the callback which creates the UI and does the hard work
-  // char textBuff[1024];
-  char* textBuff = new char[1024];
-  sprintf(textBuff, "out");
-  auto func = std::bind(filenamePromptCallback, textBuff, 1024);
-  focusedPopupUI = func;
-
-  // Re-enter main loop
-  while (focusedPopupUI) {
-    mainLoopIteration();
-  }
+  char* textBuff = new char[2048];
+  sprintf(textBuff, "%s", initName.c_str());
+  auto func = std::bind(filenamePromptCallback, textBuff, 2048);
+  pushContext(func);
 
   std::string stringOut(textBuff);
-
-  // Restore the old context
-  ImGui::SetCurrentContext(oldContext);
-  ImGui::DestroyContext(newContext);
+  delete[] textBuff;
 
   return stringOut;
 }

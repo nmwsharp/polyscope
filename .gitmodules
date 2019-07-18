@@ -6,7 +6,6 @@
 	path = deps/imgui/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = master
-[submodule "deps/geometry-central"]
-	path = deps/geometry-central
-	url = https://github.com/nmwsharp/geometry-central.git
-	branch = master
+[submodule "deps/happly"]
+	path = deps/happly
+	url = https://github.com/nmwsharp/happly.git

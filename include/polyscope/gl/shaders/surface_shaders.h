@@ -1,10 +1,18 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
+
+#include "polyscope/gl/shaders.h"
+
+namespace polyscope {
+namespace gl {
+
+// clang-format off
 
 static const VertShader PLAIN_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -12,26 +20,20 @@ static const VertShader PLAIN_SURFACE_VERT_SHADER =  {
     {
         {"a_position", GLData::Vector3Float},
         {"a_normal", GLData::Vector3Float},
-        {"a_barycoord", GLData::Vector3Float},
     },
 
     // source
-    GLSL(150,
-      uniform mat4 u_viewMatrix;
+    POLYSCOPE_GLSL(150,
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
-      in vec3 a_barycoord;
       out vec3 Normal;
-      out vec3 Position;
-      out vec3 Barycoord;
 
       void main()
       {
-          Position = a_position;
-          Normal = a_normal;
-          Barycoord = a_barycoord;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(Position,1.);
+          Normal = mat3(u_modelView) * a_normal;
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };
@@ -40,11 +42,7 @@ static const FragShader PLAIN_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
         {"u_basecolor", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
-        {"u_edgeWidth", GLData::Float},
     }, 
 
     // attributes
@@ -53,40 +51,30 @@ static const FragShader PLAIN_SURFACE_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_mat_r", 2},
+        {"t_mat_g", 2},
+        {"t_mat_b", 2},
     },
     
     // output location
     "outputF",
     
     // source 
-    GLSL(150,
-      uniform vec3 u_eye;
-      uniform vec3 u_lightCenter;
-      uniform float u_lightDist;
-      uniform float u_edgeWidth;
+    POLYSCOPE_GLSL(150,
       uniform vec3 u_basecolor;
+      uniform sampler2D t_mat_r;
+      uniform sampler2D t_mat_g;
+      uniform sampler2D t_mat_b;
       in vec3 Normal;
-      in vec3 Position;
-      in vec3 Barycoord;
       out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
-      vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
-      float getEdgeFactor(vec3 UVW, float width);
-
-      vec3 edgeColor(vec3 surfaceColor) {
-
-          vec3 edgeColor = vec3(0.0, 0.0, 0.0);
-
-          float eFactor = getEdgeFactor(Barycoord, u_edgeWidth);
-
-          return eFactor * edgeColor + (1.0 - eFactor) * surfaceColor;
-      }
+      vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
 
       void main()
       {
-        vec3 color = edgeColor(u_basecolor);
-        outputF = lightSurface(Position, Normal, color, u_lightCenter, u_lightDist, u_eye);
+        vec3 color = u_basecolor;
+        outputF = lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b);
       }
 
     )
@@ -98,7 +86,7 @@ static const VertShader VERTCOLOR_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -106,30 +94,25 @@ static const VertShader VERTCOLOR_SURFACE_VERT_SHADER =  {
     {
         {"a_position", GLData::Vector3Float},
         {"a_normal", GLData::Vector3Float},
-        {"a_barycoord", GLData::Vector3Float},
         {"a_colorval", GLData::Float},
     },
 
     // source
-    GLSL(150,
-      uniform mat4 u_viewMatrix;
+    POLYSCOPE_GLSL(150,
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
-      in vec3 a_barycoord;
       in float a_colorval;
       out vec3 Normal;
-      out vec3 Position;
-      out vec3 Barycoord;
       out float Colorval;
 
       void main()
       {
-          Position = a_position;
-          Normal = a_normal;
-          Barycoord = a_barycoord;
+          //Normal = a_normal;
+          Normal = mat3(u_modelView) * a_normal;
           Colorval = a_colorval;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(Position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };
@@ -138,11 +121,6 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
-        {"u_basecolor", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
-        {"u_edgeWidth", GLData::Float},
         {"u_rangeLow", GLData::Float},
         {"u_rangeHigh", GLData::Float},
     }, 
@@ -153,6 +131,9 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_mat_r", 2},
+        {"t_mat_g", 2},
+        {"t_mat_b", 2},
         {"t_colormap", 1}
     },
     
@@ -160,24 +141,20 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
-      uniform vec3 u_eye;
-      uniform vec3 u_lightCenter;
-      uniform float u_lightDist;
-      uniform float u_edgeWidth;
+    POLYSCOPE_GLSL(150,
       uniform float u_rangeLow;
       uniform float u_rangeHigh;
-      uniform vec3 u_basecolor;
       uniform sampler1D t_colormap;
+      uniform sampler2D t_mat_r;
+      uniform sampler2D t_mat_g;
+      uniform sampler2D t_mat_b;
       in vec3 Normal;
-      in vec3 Position;
-      in vec3 Barycoord;
       in float Colorval;
       out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
-      vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
       float getEdgeFactor(vec3 UVW, float width);
+      vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
 
       vec3 surfaceColor() {
         float t = (Colorval - u_rangeLow) / (u_rangeHigh - u_rangeLow);
@@ -185,16 +162,10 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
         return texture(t_colormap, t).rgb;
       }
 
-      vec3 edgeColor(vec3 surfaceColor) {
-          vec3 edgeColor = vec3(0.0, 0.0, 0.0);
-          float eFactor = getEdgeFactor(Barycoord, u_edgeWidth);
-          return eFactor * edgeColor + (1.0 - eFactor) * surfaceColor;
-      }
-
       void main()
       {
-        vec3 color = edgeColor(surfaceColor());
-        outputF = lightSurface(Position, Normal, color, u_lightCenter, u_lightDist, u_eye);
+        vec3 color = surfaceColor();
+        outputF = lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b);
       }
 
     )
@@ -205,7 +176,7 @@ static const VertShader VERTBINARY_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -213,30 +184,24 @@ static const VertShader VERTBINARY_SURFACE_VERT_SHADER =  {
     {
         {"a_position", GLData::Vector3Float},
         {"a_normal", GLData::Vector3Float},
-        {"a_barycoord", GLData::Vector3Float},
         {"a_colorval", GLData::Float}, // should be 0 or 1
     },
 
     // source
-    GLSL(150,
-      uniform mat4 u_viewMatrix;
+    POLYSCOPE_GLSL(150,
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
-      in vec3 a_barycoord;
       in float a_colorval;
       out vec3 Normal;
-      out vec3 Position;
-      out vec3 Barycoord;
       out float Colorval;
 
       void main()
       {
-          Position = a_position;
-          Normal = a_normal;
-          Barycoord = a_barycoord;
+          Normal = mat3(u_modelView) * a_normal;
           Colorval = a_colorval;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(Position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };
@@ -245,11 +210,6 @@ static const FragShader VERTBINARY_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
-        {"u_basecolor", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
-        {"u_edgeWidth", GLData::Float},
     }, 
 
     // attributes
@@ -258,6 +218,9 @@ static const FragShader VERTBINARY_SURFACE_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_mat_r", 2},
+        {"t_mat_g", 2},
+        {"t_mat_b", 2},
         {"t_colormap", 1}
     },
     
@@ -265,21 +228,17 @@ static const FragShader VERTBINARY_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
-      uniform vec3 u_eye;
-      uniform vec3 u_lightCenter;
-      uniform float u_lightDist;
-      uniform float u_edgeWidth;
-      uniform vec3 u_basecolor;
+    POLYSCOPE_GLSL(150,
+      uniform sampler2D t_mat_r;
+      uniform sampler2D t_mat_g;
+      uniform sampler2D t_mat_b;
       uniform sampler1D t_colormap;
       in vec3 Normal;
-      in vec3 Position;
-      in vec3 Barycoord;
       in float Colorval;
       out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
-      vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
+      vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
       float getEdgeFactor(vec3 UVW, float width);
 
       vec3 surfaceColor() {
@@ -290,16 +249,10 @@ static const FragShader VERTBINARY_SURFACE_FRAG_SHADER = {
         return texture(t_colormap, t).rgb;
       }
 
-      vec3 edgeColor(vec3 surfaceColor) {
-          vec3 edgeColor = vec3(0.0, 0.0, 0.0);
-          float eFactor = getEdgeFactor(Barycoord, u_edgeWidth);
-          return eFactor * edgeColor + (1.0 - eFactor) * surfaceColor;
-      }
-
       void main()
       {
-        vec3 color = edgeColor(surfaceColor());
-        outputF = lightSurface(Position, Normal, color, u_lightCenter, u_lightDist, u_eye);
+        vec3 color = surfaceColor();
+        outputF = lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b);
       }
 
     )
@@ -309,7 +262,7 @@ static const VertShader VERTCOLOR3_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -317,30 +270,24 @@ static const VertShader VERTCOLOR3_SURFACE_VERT_SHADER =  {
     {
         {"a_position", GLData::Vector3Float},
         {"a_normal", GLData::Vector3Float},
-        {"a_barycoord", GLData::Vector3Float},
         {"a_colorval", GLData::Vector3Float},
     },
 
     // source
-    GLSL(150,
-      uniform mat4 u_viewMatrix;
+    POLYSCOPE_GLSL(150,
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
-      in vec3 a_barycoord;
       in vec3 a_colorval;
       out vec3 Normal;
-      out vec3 Position;
-      out vec3 Barycoord;
       out vec3 Colorval;
 
       void main()
       {
-          Position = a_position;
-          Normal = a_normal;
-          Barycoord = a_barycoord;
+          Normal = mat3(u_modelView) * a_normal;
           Colorval = a_colorval;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(Position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };
@@ -349,11 +296,6 @@ static const FragShader VERTCOLOR3_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
-        {"u_basecolor", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
-        {"u_edgeWidth", GLData::Float},
     }, 
 
     // attributes
@@ -362,41 +304,31 @@ static const FragShader VERTCOLOR3_SURFACE_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_mat_r", 2},
+        {"t_mat_g", 2},
+        {"t_mat_b", 2},
     },
     
     // output location
     "outputF",
     
     // source 
-    GLSL(150,
-      uniform vec3 u_eye;
-      uniform vec3 u_lightCenter;
-      uniform float u_lightDist;
-      uniform float u_edgeWidth;
-      uniform vec3 u_basecolor;
+    POLYSCOPE_GLSL(150,
+      uniform sampler2D t_mat_r;
+      uniform sampler2D t_mat_g;
+      uniform sampler2D t_mat_b;
       in vec3 Normal;
-      in vec3 Position;
-      in vec3 Barycoord;
       in vec3 Colorval;
       out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
-      vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
+      vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
       float getEdgeFactor(vec3 UVW, float width);
-
-      vec3 edgeColor(vec3 surfaceColor) {
-
-          vec3 edgeColor = vec3(0.0, 0.0, 0.0);
-
-          float eFactor = getEdgeFactor(Barycoord, u_edgeWidth);
-
-          return eFactor * edgeColor + (1.0 - eFactor) * surfaceColor;
-      }
 
       void main()
       {
-        vec3 color = edgeColor(Colorval);
-        outputF = lightSurface(Position, Normal, color, u_lightCenter, u_lightDist, u_eye);
+        vec3 color = Colorval;
+        outputF = lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b);
       }
 
     )
@@ -407,9 +339,9 @@ static const VertShader HALFEDGECOLOR_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -422,25 +354,23 @@ static const VertShader HALFEDGECOLOR_SURFACE_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
-      uniform mat4 u_viewMatrix;
+    POLYSCOPE_GLSL(150,
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
       in vec3 a_barycoord;
       in vec3 a_colorvals;
       out vec3 Normal;
-      out vec3 Position;
       out vec3 Barycoord;
       out vec3 Colorval;
 
       void main()
       {
-          Position = a_position;
-          Normal = a_normal;
+          Normal = mat3(u_modelView) * a_normal;
           Barycoord = a_barycoord;
           Colorval = a_colorvals;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(Position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };
@@ -449,11 +379,6 @@ static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
-        {"u_basecolor", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
-        {"u_edgeWidth", GLData::Float},
         {"u_rangeLow", GLData::Float},
         {"u_rangeHigh", GLData::Float},
     }, 
@@ -464,6 +389,9 @@ static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_mat_r", 2},
+        {"t_mat_g", 2},
+        {"t_mat_b", 2},
         {"t_colormap", 1}
     },
     
@@ -471,48 +399,45 @@ static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
-      uniform vec3 u_eye;
-      uniform vec3 u_lightCenter;
-      uniform float u_lightDist;
-      uniform float u_edgeWidth;
+    POLYSCOPE_GLSL(150,
       uniform float u_rangeLow;
       uniform float u_rangeHigh;
-      uniform vec3 u_basecolor;
+      uniform sampler2D t_mat_r;
+      uniform sampler2D t_mat_g;
+      uniform sampler2D t_mat_b;
       uniform sampler1D t_colormap;
       in vec3 Normal;
-      in vec3 Position;
       in vec3 Barycoord;
-      in vec3 Colorval; // holds the value at the edge OPPOSITE vertex i
+      in vec3 Colorval; // holds the value at edge i --> i+1
       out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
-      vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
+      vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
       float getEdgeFactor(vec3 UVW, float width);
 
       vec3 surfaceColor() {
 
         // Blend by distance from edges
-        vec3 eDist = (1.0 - Barycoord) / 2.0;
-        float val = eDist.x * Colorval.x + eDist.y * Colorval.y +  eDist.z * Colorval.z;
+        //vec3 eDist = (1.0 - Barycoord) / 2.0;
+        //float val = eDist.x * Colorval.x + eDist.y * Colorval.y +  eDist.z * Colorval.z;
+
+        float val = Colorval.y;
+        if(Barycoord.y < Barycoord.x && Barycoord.y < Barycoord.z) {
+          val = Colorval.z;
+        }
+        if(Barycoord.z < Barycoord.x && Barycoord.z < Barycoord.y) {
+          val = Colorval.x;
+        }
+
         float t = (val - u_rangeLow) / (u_rangeHigh - u_rangeLow);
         t = clamp(t, 0.f, 1.f);
         return texture(t_colormap, t).rgb;
       }
 
-      vec3 edgeColor(vec3 surfaceColor) {
-
-          vec3 edgeColor = vec3(0.0, 0.0, 0.0);
-
-          float eFactor = getEdgeFactor(Barycoord, u_edgeWidth);
-
-          return eFactor * edgeColor + (1.0 - eFactor) * surfaceColor;
-      }
-
       void main()
       {
-        vec3 color = edgeColor(surfaceColor());
-        outputF = lightSurface(Position, Normal, color, u_lightCenter, u_lightDist, u_eye);
+        vec3 color = surfaceColor();
+        outputF = lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b);
       }
 
     )
@@ -522,7 +447,7 @@ static const VertShader PICK_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -537,8 +462,8 @@ static const VertShader PICK_SURFACE_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
-      uniform mat4 u_viewMatrix;
+    POLYSCOPE_GLSL(150,
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
 
       in vec3 a_position;
@@ -567,7 +492,7 @@ static const VertShader PICK_SURFACE_VERT_SHADER =  {
           }
           faceColor = a_faceColor;
           
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position, 1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position, 1.);
       }
     )
 };
@@ -590,7 +515,7 @@ static const FragShader PICK_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
 
       in vec3 Barycoord;
       
@@ -645,7 +570,7 @@ static const VertShader FACECOLOR_PLAIN_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -656,8 +581,8 @@ static const VertShader FACECOLOR_PLAIN_SURFACE_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
-      uniform mat4 u_viewMatrix;
+    POLYSCOPE_GLSL(150,
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_color;
@@ -666,7 +591,7 @@ static const VertShader FACECOLOR_PLAIN_SURFACE_VERT_SHADER =  {
       void main()
       {
           Colorval = a_color;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };
@@ -689,7 +614,7 @@ static const FragShader FACECOLOR_PLAIN_SURFACE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       flat in vec3 Colorval;
       out vec4 outputF;
 
@@ -700,3 +625,8 @@ static const FragShader FACECOLOR_PLAIN_SURFACE_FRAG_SHADER = {
 
     )
 };
+
+// clang-format on
+
+} // namespace gl
+} // namespace polyscope

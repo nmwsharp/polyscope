@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/utilities.h"
 
 #include <cmath>
@@ -5,7 +6,10 @@
 
 
 namespace polyscope {
-namespace utilities {
+
+// Globals for random utilities
+std::random_device util_random_device;
+std::mt19937 util_mersenne_twister(util_random_device());
 
 std::string guessNiceNameFromPath(std::string fullname) {
   size_t startInd = 0;
@@ -88,8 +92,6 @@ std::string prettyPrintCount(size_t count) {
     snprintf(buf, 50, "%2.0f%s", countD, postfix.c_str());
     return std::string(buf);
   }
+}
 
-} // namespace utilities
-
-} // namespace utilities
 } // namespace polyscope

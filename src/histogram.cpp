@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/histogram.h"
 
 #include "polyscope/affine_remapper.h"
@@ -30,9 +31,9 @@ Histogram::Histogram(std::vector<double>& values, const std::vector<double>& wei
 }
 
 Histogram::~Histogram() {
-  if (prepared) {
-    unprepare();
-  }
+  delete texturebuffer;
+  delete framebuffer;
+  delete program;
 }
 
 void Histogram::buildHistogram(std::vector<double>& values, const std::vector<double>& weights) {
@@ -56,7 +57,6 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
   // Helper to build the four histogram variants
   auto buildCurve = [&](size_t binCount, bool weighted, bool smooth, std::vector<std::array<double, 2>>& curveX,
                         std::vector<double>& curveY) {
-
     // linspace coords
     double range = maxVal - minVal;
     double inc = range / binCount;
@@ -66,7 +66,7 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
     for (size_t iData = 0; iData < N; iData++) {
 
       double iBinf = binCount * (values[iData] - minVal) / range;
-      size_t iBin = std::floor(clamp(iBinf, 0.0, (double)binCount - 1));
+      size_t iBin = std::floor(glm::clamp(iBinf, 0.0, (double)binCount - 1));
 
       // NaN values and finite values near the bottom of float range lead to craziness, so only increment bins if we got
       // something reasonable
@@ -115,7 +115,6 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
         }
       }
     }
-
   };
 
   // Build the four variants of the curve
@@ -163,7 +162,7 @@ void Histogram::smoothCurve(std::vector<std::array<double, 2>>& xVals, std::vect
   yVals = smoothedVals;
 }
 
-void Histogram::updateColormap(const gl::Colormap* newColormap) {
+void Histogram::updateColormap(gl::ColorMapID newColormap) {
   colormap = newColormap;
   fillBuffers();
 }
@@ -193,7 +192,7 @@ void Histogram::fillBuffers() {
   }
 
   // Push to buffer
-  std::vector<Vector2> coords;
+  std::vector<glm::vec2> coords;
 
   if (histCurveY.size() == 0) {
     program->setAttribute("a_coord", coords);
@@ -218,18 +217,18 @@ void Histogram::fillBuffers() {
     }
 
     // = Lower triangle (lower left, lower right, upper left)
-    coords.push_back(Vector2{leftX, 0.0});
-    coords.push_back(Vector2{rightX, 0.0});
-    coords.push_back(Vector2{leftX, leftY});
+    coords.push_back(glm::vec2{leftX, 0.0});
+    coords.push_back(glm::vec2{rightX, 0.0});
+    coords.push_back(glm::vec2{leftX, leftY});
 
     // = Upper triangle (lower right, upper right, upper left)
-    coords.push_back(Vector2{rightX, 0.0});
-    coords.push_back(Vector2{rightX, rightY});
-    coords.push_back(Vector2{leftX, leftY});
+    coords.push_back(glm::vec2{rightX, 0.0});
+    coords.push_back(glm::vec2{rightX, rightY});
+    coords.push_back(glm::vec2{leftX, leftY});
   }
 
   program->setAttribute("a_coord", coords);
-  program->setTextureFromColormap("t_colormap", *colormap, true);
+  program->setTextureFromColormap("t_colormap", gl::getColorMap(colormap), true);
 
 
   // Update current buffer settings
@@ -239,48 +238,16 @@ void Histogram::fillBuffers() {
 
 void Histogram::prepare() {
 
-  if (prepared) {
-    unprepare();
-  }
-
-  // Generate a framebuffer to hold our texture
-  glGenFramebuffers(1, &framebufferInd);
-  glBindFramebuffer(GL_FRAMEBUFFER, framebufferInd);
-
-  // Create the texture
-  glGenTextures(1, &textureInd);
-
-  // Bind to the new texture so we can set things about it
-  glBindTexture(GL_TEXTURE_2D, textureInd);
-
-  // Configure setttings
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texDim, texDim, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-  // Attach the texture to the framebuffer
-  glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureInd, 0);
-  GLenum drawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-  glDrawBuffers(1, drawBuffers);
-
-  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    throw std::logic_error("Histogram framebuffer problem");
-  }
+  framebuffer = new gl::GLFramebuffer();
+  texturebuffer = new gl::GLTexturebuffer(GL_RGBA, texDim, texDim);
+  framebuffer->bindToColorTexturebuffer(texturebuffer);
 
   // Create the program
-  program = new gl::GLProgram(&HISTOGRAM_VERT_SHADER, &HISTORGRAM_FRAG_SHADER, gl::DrawMode::Triangles);
+  program = new gl::GLProgram(&gl::HISTOGRAM_VERT_SHADER, &gl::HISTORGRAM_FRAG_SHADER, gl::DrawMode::Triangles);
 
   prepared = true;
 }
 
-void Histogram::unprepare() {
-  safeDelete(program);
-  glDeleteTextures(1, &textureInd);
-  glDeleteFramebuffers(1, &framebufferInd);
-  prepared = false;
-}
 
 void Histogram::renderToTexture() {
 
@@ -289,27 +256,17 @@ void Histogram::renderToTexture() {
     fillBuffers();
   }
 
-  // Bind to the texture buffer
-  glBindFramebuffer(GL_FRAMEBUFFER, framebufferInd);
+  framebuffer->clearColor = {0.0, 0.0, 0.0};
+  framebuffer->clearAlpha = 0.2;
+  framebuffer->setViewport(0, 0, texDim, texDim);
+  framebuffer->bindForRendering();
+  framebuffer->clear();
 
-  // Bind to the new texture so we can do things
-  glBindTexture(GL_TEXTURE_2D, textureInd);
-
-
-  GLenum drawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-  glDrawBuffers(1, drawBuffers);
-
-  // Make sure we render to the whole buffer
-  glViewport(0, 0, texDim, texDim);
-  glClearColor(0.0, 0.0, 0.0, 0.2);
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  // Set uniforms
+  // = Set uniforms
 
   // Colormap range (remapped to the 0-1 coords we use)
   program->setUniform("u_cmapRangeMin", (colormapRangeMin - minVal) / (maxVal - minVal));
   program->setUniform("u_cmapRangeMax", (colormapRangeMax - minVal) / (maxVal - minVal));
-
 
   // Draw
   program->draw();
@@ -330,8 +287,8 @@ void Histogram::buildUI(float width) {
   float h = w / aspect;
 
   // Render image
-  ImGui::Image(reinterpret_cast<void*>((size_t)textureInd) /* yes, really. */, ImVec2(w, h), ImVec2(0, 1),
-               ImVec2(1, 0));
+  ImGui::Image(reinterpret_cast<void*>((size_t)texturebuffer->getHandle()) /* yes, really. */, ImVec2(w, h),
+               ImVec2(0, 1), ImVec2(1, 0));
 
   // Draw a cursor popup on mouseover
   if (ImGui::IsItemHovered()) {

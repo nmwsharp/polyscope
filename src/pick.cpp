@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/pick.h"
 
 #include "polyscope/polyscope.h"
@@ -69,7 +70,7 @@ void setCurrentPickElement(size_t newPickInd, bool wasDoubleClick) {
     }
   }
 
-  error("Pick index does not correspond to any allocated range.");
+  error("Pick index " + std::to_string(newPickInd) + " does not correspond to any allocated range.");
   currLocalPickInd = std::numeric_limits<size_t>::max();
   currPickStructure = nullptr;
   return;
@@ -80,10 +81,12 @@ size_t requestPickBufferRange(Structure* requestingStructure, size_t count) {
 
   // Check if we can satisfy the request
   size_t maxPickInd = std::numeric_limits<size_t>::max();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshift-count-overflow"
   if (bitsForPickPacking < 22) {
-    // TODO this triggers a GCC error I can't explain about shifts... Seems to work though? Figure it out.
     maxPickInd = 1ULL << (bitsForPickPacking * 3);
   }
+#pragma GCC diagnostic pop
 
 
   if (count > maxPickInd || maxPickInd - count < nextPickBufferInd) {

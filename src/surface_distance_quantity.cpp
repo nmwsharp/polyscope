@@ -1,9 +1,8 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/surface_distance_quantity.h"
 
-#include "geometrycentral/meshio.h"
-
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/colormap_sets.h"
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/distance_shaders.h"
 #include "polyscope/polyscope.h"
@@ -15,51 +14,57 @@ using std::endl;
 
 namespace polyscope {
 
-SurfaceDistanceQuantity::SurfaceDistanceQuantity(std::string name, VertexData<double>& distances_, SurfaceMesh* mesh_,
+SurfaceDistanceQuantity::SurfaceDistanceQuantity(std::string name, std::vector<double> distances_, SurfaceMesh& mesh_,
                                                  bool signedDist_)
-    : SurfaceQuantityThatDrawsFaces(name, mesh_), signedDist(signedDist_) {
-
-  distances = parent->transfer.transfer(distances_);
+    : SurfaceMeshQuantity(name, mesh_, true), distances(std::move(distances_)), signedDist(signedDist_) {
 
   // Set default colormap
   if (signedDist) {
-    iColorMap = 1; // coolwarm
+    cMap = gl::ColorMapID::COOLWARM;
   } else {
-    iColorMap = 0; // viridis
+    cMap = gl::ColorMapID::VIRIDIS;
   }
 
   // Build the histogram
-  std::vector<double> valsVec;
-  std::vector<double> weightsVec;
-  for (VertexPtr v : parent->mesh->vertices()) {
-    valsVec.push_back(distances[v]);
-    weightsVec.push_back(parent->geometry->dualArea(v));
-  }
-  hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
-  hist.buildHistogram(valsVec, weightsVec);
+  hist.updateColormap(cMap);
+  hist.buildHistogram(distances, parent.vertexAreas);
 
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(valsVec, 1e-5);
+  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(distances, 1e-5);
   resetVizRange();
 }
 
-gl::GLProgram* SurfaceDistanceQuantity::createProgram() {
-  // Create the program to draw this quantity
-  gl::GLProgram* program =
-      new gl::GLProgram(&VERT_DIST_SURFACE_VERT_SHADER, &VERT_DIST_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles);
+void SurfaceDistanceQuantity::draw() {
+  if (!enabled) return;
 
-  // Fill color buffers
-  fillColorBuffers(program);
+  if (program == nullptr) {
+    createProgram();
+  }
 
-  return program;
+  // Set uniforms
+  parent.setTransformUniforms(*program);
+  setProgramUniforms(*program);
+
+  program->draw();
 }
 
-void SurfaceDistanceQuantity::draw() {}
+void SurfaceDistanceQuantity::createProgram() {
+  // Create the program to draw this quantity
+  program.reset(new gl::GLProgram(&gl::VERT_DIST_SURFACE_VERT_SHADER, &gl::VERT_DIST_SURFACE_FRAG_SHADER,
+                                  gl::DrawMode::Triangles));
+
+  // Fill color buffers
+  fillColorBuffers(*program);
+  parent.fillGeometryBuffers(*program);
+
+  setMaterialForProgram(*program, "wax");
+}
+
 
 // Update range uniforms
-void SurfaceDistanceQuantity::setProgramValues(gl::GLProgram* program) {
-  program->setUniform("u_rangeLow", vizRangeLow);
-  program->setUniform("u_rangeHigh", vizRangeHigh);
-  program->setUniform("u_modLen", modLen * state::lengthScale);
+void SurfaceDistanceQuantity::setProgramUniforms(gl::GLProgram& program) {
+  program.setUniform("u_rangeLow", vizRangeLow);
+  program.setUniform("u_rangeHigh", vizRangeHigh);
+  program.setUniform("u_modLen", modLen * state::lengthScale);
 }
 
 void SurfaceDistanceQuantity::resetVizRange() {
@@ -73,109 +78,93 @@ void SurfaceDistanceQuantity::resetVizRange() {
   }
 }
 
-void SurfaceDistanceQuantity::drawUI() {
-  bool enabledBefore = enabled;
-  std::string signedString = signedDist ? "signed distance" : "distance";
-  if (ImGui::TreeNode((name + " (" + signedString + ")").c_str())) {
-    ImGui::Checkbox("Enabled", &enabled);
+void SurfaceDistanceQuantity::buildCustomUI() {
+  ImGui::SameLine();
 
-    { // Set colormap
-      ImGui::SameLine();
-      ImGui::PushItemWidth(100);
-      int iColormapBefore = iColorMap;
-      ImGui::Combo("##colormap", &iColorMap, gl::quantitativeColormapNames,
-                   IM_ARRAYSIZE(gl::quantitativeColormapNames));
-      ImGui::PopItemWidth();
-      if (iColorMap != iColormapBefore) {
-        parent->deleteProgram();
-        hist.updateColormap(gl::quantitativeColormaps[iColorMap]);
-      }
-    }
-
-    // == Options popup
-    ImGui::SameLine();
-    if (ImGui::Button("Options")) {
-      ImGui::OpenPopup("OptionsPopup");
-    }
-    if (ImGui::BeginPopup("OptionsPopup")) {
-
-      if (ImGui::MenuItem("Write to file")) writeToFile();
-      if (ImGui::MenuItem("Reset colormap range")) resetVizRange();
-
-      ImGui::EndPopup();
-    }
-
-    // Modulo stripey width
-    ImGui::DragFloat("Stripe Length", &modLen, .001, 0.0001, 1.0, "%.4f", 2.0);
-
-    // Draw the histogram of values
-    hist.colormapRangeMin = vizRangeLow;
-    hist.colormapRangeMax = vizRangeHigh;
-    hist.buildUI();
-
-    // Data range
-    // Note: %g specifies are generally nicer than %e, but here we don't acutally have a choice. ImGui (for somewhat
-    // valid reasons) links the resolution of the slider to the decimal width of the formatted number. When %g formats a
-    // number with few decimal places, sliders can break. There is no way to set a minimum number of decimal places with
-    // %g, unfortunately.
-    {
-      if (signedDist) {
-        float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
-        ImGui::DragFloatRange2("##range_symmetric", &vizRangeLow, &vizRangeHigh, absRange / 100., -absRange, absRange,
-                               "Min: %.3e", "Max: %.3e");
-      } else {
-        ImGui::DragFloatRange2("##range_mag", &vizRangeLow, &vizRangeHigh, vizRangeHigh / 100., 0.0, dataRangeHigh,
-                               "Min: %.3e", "Max: %.3e");
-      }
-    }
-
-    ImGui::TreePop();
+  if (buildColormapSelector(cMap)) {
+    program.reset();
+    hist.updateColormap(cMap);
   }
 
-  // Enforce exclusivity of enabled surface quantities
-  if (!enabledBefore && enabled) {
-    parent->setActiveSurfaceQuantity(this);
+  // == Options popup
+  ImGui::SameLine();
+  if (ImGui::Button("Options")) {
+    ImGui::OpenPopup("OptionsPopup");
   }
-  if (enabledBefore && !enabled) {
-    parent->clearActiveSurfaceQuantity();
+  if (ImGui::BeginPopup("OptionsPopup")) {
+
+    if (ImGui::MenuItem("Write to file")) writeToFile();
+    if (ImGui::MenuItem("Reset colormap range")) resetVizRange();
+
+    ImGui::EndPopup();
+  }
+
+  // Modulo stripey width
+  ImGui::DragFloat("Stripe Length", &modLen, .001, 0.0001, 1.0, "%.4f", 2.0);
+
+  // Draw the histogram of values
+  hist.colormapRangeMin = vizRangeLow;
+  hist.colormapRangeMax = vizRangeHigh;
+  hist.buildUI();
+
+  // Data range
+  // Note: %g specifies are generally nicer than %e, but here we don't acutally have a choice. ImGui (for somewhat
+  // valid reasons) links the resolution of the slider to the decimal width of the formatted number. When %g formats a
+  // number with few decimal places, sliders can break. There is no way to set a minimum number of decimal places with
+  // %g, unfortunately.
+  {
+    if (signedDist) {
+      float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
+      ImGui::DragFloatRange2("##range_symmetric", &vizRangeLow, &vizRangeHigh, absRange / 100., -absRange, absRange,
+                             "Min: %.3e", "Max: %.3e");
+    } else {
+      ImGui::DragFloatRange2("##range_mag", &vizRangeLow, &vizRangeHigh, vizRangeHigh / 100., 0.0, dataRangeHigh,
+                             "Min: %.3e", "Max: %.3e");
+    }
   }
 
 } // namespace polyscope
 
 
-void SurfaceDistanceQuantity::fillColorBuffers(gl::GLProgram* p) {
+void SurfaceDistanceQuantity::fillColorBuffers(gl::GLProgram& p) {
   std::vector<double> colorval;
-  for (FacePtr f : parent->mesh->faces()) {
-    // Implicitly triangulate
-    double c0, c1;
-    size_t iP = 0;
-    for (VertexPtr v : f.adjacentVertices()) {
-      double c2 = distances[v];
-      if (iP >= 2) {
-        colorval.push_back(c0);
-        colorval.push_back(c1);
-        colorval.push_back(c2);
-      }
-      c0 = c1;
-      c1 = c2;
-      iP++;
+  colorval.reserve(3 * parent.nFacesTriangulation());
+
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+
+    // implicitly triangulate from root
+    size_t vRoot = face[0];
+    for (size_t j = 1; (j + 1) < D; j++) {
+      size_t vB = face[j];
+      size_t vC = face[(j + 1) % D];
+
+      colorval.push_back(distances[vRoot]);
+      colorval.push_back(distances[vB]);
+      colorval.push_back(distances[vC]);
     }
   }
 
+
   // Store data in buffers
-  p->setAttribute("a_colorval", colorval);
-  p->setTextureFromColormap("t_colormap", *gl::quantitativeColormaps[iColorMap]);
+  p.setAttribute("a_colorval", colorval);
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
 }
 
-void SurfaceDistanceQuantity::buildInfoGUI(VertexPtr v) {
+void SurfaceDistanceQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", distances[v]);
+  ImGui::Text("%g", distances[vInd]);
   ImGui::NextColumn();
 }
 
 
 void SurfaceDistanceQuantity::writeToFile(std::string filename) {
+
+  throw std::runtime_error("NOT IMPLEMENTED");
+
+  /* TODO
 
   if (filename == "") {
     filename = promptForFilename();
@@ -193,7 +182,15 @@ void SurfaceDistanceQuantity::writeToFile(std::string filename) {
   }
 
   WavefrontOBJ::write(filename, *parent->geometry, scalarVal);
+  */
 }
 
+
+std::string SurfaceDistanceQuantity::niceName() {
+  std::string signedString = signedDist ? "signed distance" : "distance";
+  return name + " (" + signedString + ")";
+}
+
+void SurfaceDistanceQuantity::geometryChanged() { program.reset(); }
 
 } // namespace polyscope

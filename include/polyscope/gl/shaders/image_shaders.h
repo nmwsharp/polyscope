@@ -1,10 +1,18 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
+
+#include "polyscope/gl/shaders.h"
+
+// clang-format off
+
+namespace polyscope {
+namespace gl {
 
 static const VertShader PROJECTEDIMAGE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", GLData::Matrix44Float},
+       {"u_modelView", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
     },
 
@@ -15,8 +23,8 @@ static const VertShader PROJECTEDIMAGE_VERT_SHADER =  {
     },
 
     // source
-    GLSL(150,
-      uniform mat4 u_viewMatrix;
+    POLYSCOPE_GLSL(150,
+      uniform mat4 u_modelView;
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec2 a_tCoord;
@@ -25,7 +33,7 @@ static const VertShader PROJECTEDIMAGE_VERT_SHADER =  {
       void main()
       {
           tCoord = a_tCoord;
-          gl_Position = u_projMatrix * u_viewMatrix * vec4(a_position,1.);
+          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
       }
     )
 };
@@ -50,7 +58,7 @@ static const FragShader PROJECTEDIMAGE_FRAG_SHADER = {
     "outputF",
     
     // source 
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
       uniform vec3 u_wirecolor;
       in vec2 tCoord;
 
@@ -67,3 +75,8 @@ static const FragShader PROJECTEDIMAGE_FRAG_SHADER = {
 
     )
 };
+
+// clang-format on
+
+} // namespace gl
+} // namespace polyscope

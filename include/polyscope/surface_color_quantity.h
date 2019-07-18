@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
 #include "polyscope/affine_remapper.h"
@@ -5,93 +6,60 @@
 
 namespace polyscope {
 
-class SurfaceColorQuantity : public SurfaceQuantityThatDrawsFaces {
+// forward declaration
+class SurfaceMeshQuantity;
+class SurfaceMesh;
+
+class SurfaceColorQuantity : public SurfaceMeshQuantity {
 public:
-  SurfaceColorQuantity(std::string name, SurfaceMesh* mesh_, std::string definedOn);
+  SurfaceColorQuantity(std::string name, SurfaceMesh& mesh_, std::string definedOn);
 
   virtual void draw() override;
-  virtual void drawUI() override;
+  virtual std::string niceName() override;
 
+  virtual void geometryChanged() override;
+
+protected:
   // UI internals
   const std::string definedOn;
+  std::unique_ptr<gl::GLProgram> program;
+
+  // Helpers
+  virtual void createProgram() = 0;
 };
 
 // ========================================================
 // ==========           Vertex Color             ==========
 // ========================================================
 
-class SurfaceColorVertexQuantity : public SurfaceColorQuantity {
+class SurfaceVertexColorQuantity : public SurfaceColorQuantity {
 public:
-  SurfaceColorVertexQuantity(std::string name, VertexData<Vector3>& values_, SurfaceMesh* mesh_);
-  //   ~SurfaceScalarVertexQuantity();
+  SurfaceVertexColorQuantity(std::string name, std::vector<glm::vec3> values_, SurfaceMesh& mesh_);
 
-  virtual gl::GLProgram* createProgram() override;
+  virtual void createProgram() override;
+  void fillColorBuffers(gl::GLProgram& p);
 
-  void fillColorBuffers(gl::GLProgram* p);
-
-  void buildInfoGUI(VertexPtr v) override;
+  void buildVertexInfoGUI(size_t vInd) override;
 
   // === Members
-  VertexData<Vector3> values;
+  std::vector<glm::vec3> values;
 };
 
 // ========================================================
-// ==========            Face Scalar             ==========
+// ==========             Face Color             ==========
 // ========================================================
 
-class SurfaceColorFaceQuantity : public SurfaceColorQuantity {
+class SurfaceFaceColorQuantity : public SurfaceColorQuantity {
 public:
-  SurfaceColorFaceQuantity(std::string name, FaceData<Vector3>& values_, SurfaceMesh* mesh_);
-  //   ~SurfaceScalarVertexQuantity();
+  SurfaceFaceColorQuantity(std::string name, std::vector<glm::vec3> values_, SurfaceMesh& mesh_);
 
-  virtual gl::GLProgram* createProgram() override;
+  virtual void createProgram() override;
+  void fillColorBuffers(gl::GLProgram& p);
 
-  void fillColorBuffers(gl::GLProgram* p);
-
-  void buildInfoGUI(FacePtr f) override;
+  void buildFaceInfoGUI(size_t fInd) override;
 
   // === Members
-  FaceData<Vector3> values;
+  std::vector<glm::vec3> values;
 };
-
-/*
-// ========================================================
-// ==========            Edge Scalar             ==========
-// ========================================================
-
-class SurfaceScalarEdgeQuantity : public SurfaceColorQuantity {
- public:
-  SurfaceScalarEdgeQuantity(std::string name, EdgeData<double>& values_,
-                            SurfaceMesh* mesh_,
-                            DataType dataType_ = DataType::STANDARD);
-  //   ~SurfaceScalarVertexQuantity();
-
-  virtual gl::GLProgram* createProgram() override;
-
-  void fillColorBuffers(gl::GLProgram* p);
-
-  // === Members
-  EdgeData<double> values;
-};
-
-// ========================================================
-// ==========          Halfedge Scalar           ==========
-// ========================================================
-
-class SurfaceScalarHalfedgeQuantity : public SurfaceColorQuantity {
- public:
-  SurfaceScalarHalfedgeQuantity(std::string name, HalfedgeData<double>& values_,
-                                SurfaceMesh* mesh_,
-                                DataType dataType_ = DataType::STANDARD);
-  //   ~SurfaceScalarVertexQuantity();
-
-  virtual gl::GLProgram* createProgram() override;
-
-  void fillColorBuffers(gl::GLProgram* p);
-
-  // === Members
-  HalfedgeData<double> values;
-};
-*/
 
 } // namespace polyscope

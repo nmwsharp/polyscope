@@ -1,8 +1,7 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
 #include "polyscope/structure.h"
-
-#include "geometrycentral/vector3.h"
 
 #include <cstdint>
 
@@ -44,7 +43,7 @@ const int bitsForPickPacking = 22;
 // const int bitsForPickPacking = 7; // useful for testing, makes pick coloring visually distingushable
 
 // Convert indices to color and back
-inline geometrycentral::Vector3 indToVec(size_t ind) {
+inline glm::vec3 indToVec(size_t ind) {
 
   // Can comfortably fit a 22 bit integer exactly in a single precision float
   size_t factor = 1 << bitsForPickPacking;
@@ -57,10 +56,10 @@ inline geometrycentral::Vector3 indToVec(size_t ind) {
   ind = ind >> bitsForPickPacking;
   size_t high = ind;
 
-  return geometrycentral::Vector3{static_cast<double>(low) / factorF, static_cast<double>(med) / factorF,
-                                  static_cast<double>(high) / factorF};
+  return glm::vec3{static_cast<double>(low) / factorF, static_cast<double>(med) / factorF,
+                   static_cast<double>(high) / factorF};
 }
-inline size_t vecToInd(geometrycentral::Vector3 vec) {
+inline size_t vecToInd(glm::vec3 vec) {
 
   size_t factor = 1 << bitsForPickPacking;
   double factorF = factor;
@@ -71,7 +70,10 @@ inline size_t vecToInd(geometrycentral::Vector3 vec) {
 
   // Debug check
   if (low != (factorF * vec.x) || med != (factorF * vec.y) || high != (factorF * vec.z)) {
-    throw std::logic_error("Float to index conversion failed, bad value in float.");
+    // throw std::logic_error("Float to index conversion failed, bad value in float.");
+    // occasionally we get weird data back in unusually cases like clicking right on border or multiple monitors...
+    // maybe one day we can debug it.
+    return 0;
   }
 
   size_t ind = (high << (2 * bitsForPickPacking)) + (med << bitsForPickPacking) + low;

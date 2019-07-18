@@ -1,6 +1,9 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 // File: 'Cousine-Regular.ttf' (43912 bytes)
 // Exported using binary_to_compressed_c.cpp
 namespace polyscope {
+
+// clang-format off
 
 static const unsigned int CousineRegular_compressed_size = 37630;
 static const unsigned int CousineRegular_compressed_data[37632 / 4] = {
@@ -1574,12 +1577,10 @@ static const unsigned int CousineRegular_compressed_data[37632 / 4] = {
     0x2b0c83df, 0x248976bd, 0x00000000, 0xc42d6fc9, 0x2c56fa05, 0x00009529,
 };
 
-unsigned int getCousineRegularCompressedSize() {
-  return CousineRegular_compressed_size;
-}
+// clang-format on
 
-const unsigned int* getCousineRegularCompressedData() {
-  return CousineRegular_compressed_data;
-}
+unsigned int getCousineRegularCompressedSize() { return CousineRegular_compressed_size; }
 
-}  // namespace polyscope
+const unsigned int* getCousineRegularCompressedData() { return CousineRegular_compressed_data; }
+
+} // namespace polyscope

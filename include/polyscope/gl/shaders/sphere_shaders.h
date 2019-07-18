@@ -1,7 +1,12 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include "polyscope/gl/shaders.h"
 
-// NOTE: You probably don't want to include this directly... see shaders.h
+namespace polyscope {
+namespace gl {
+
+// clang-format off
 
 static const VertShader SPHERE_VERT_SHADER = {
     // uniforms
@@ -14,7 +19,7 @@ static const VertShader SPHERE_VERT_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in vec3 a_position;
         void main()
         {
@@ -35,7 +40,7 @@ static const VertShader SPHERE_VALUE_VERT_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in vec3 a_position;
         in float a_value;
         out float value;
@@ -61,7 +66,7 @@ static const VertShader SPHERE_COLOR_VERT_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in vec3 a_position;
         in vec3 a_color;
         out vec3 Color;
@@ -79,7 +84,7 @@ static const GeomShader SPHERE_BILLBOARD_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_viewMatrix", GLData::Matrix44Float},
+        {"u_modelView", GLData::Matrix44Float},
         {"u_projMatrix", GLData::Matrix44Float},
         {"u_pointRadius", GLData::Float},
         {"u_camRight", GLData::Vector3Float},
@@ -92,10 +97,10 @@ static const GeomShader SPHERE_BILLBOARD_GEOM_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         layout(points) in;
         layout(triangle_strip, max_vertices=4) out;
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
         uniform vec3 u_camRight;
@@ -104,7 +109,7 @@ static const GeomShader SPHERE_BILLBOARD_GEOM_SHADER = {
         out vec3 worldPosToFrag;
         out vec2 boxCoord;
         void main()   {
-            mat4 PV = u_projMatrix * u_viewMatrix;
+            mat4 PV = u_projMatrix * u_modelView;
 
             { // Lower left
                 vec4 worldPos = gl_in[0].gl_Position + vec4((-u_camUp - u_camRight) * u_pointRadius, 0.);
@@ -148,7 +153,7 @@ static const GeomShader SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_viewMatrix", GLData::Matrix44Float},
+        {"u_modelView", GLData::Matrix44Float},
         {"u_projMatrix", GLData::Matrix44Float},
         {"u_pointRadius", GLData::Float},
         {"u_camRight", GLData::Vector3Float},
@@ -161,11 +166,11 @@ static const GeomShader SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         layout(points) in;
         layout(triangle_strip, max_vertices=4) out;
         in float value[];
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
         uniform vec3 u_camRight;
@@ -175,7 +180,7 @@ static const GeomShader SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
         out vec3 worldPosToFrag;
         out vec2 boxCoord;
         void main()   {
-            mat4 PV = u_projMatrix * u_viewMatrix;
+            mat4 PV = u_projMatrix * u_modelView;
 
             { // Lower left
                 vec4 worldPos = gl_in[0].gl_Position + vec4((-u_camUp - u_camRight) * u_pointRadius, 0.);
@@ -223,12 +228,12 @@ static const GeomShader SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_viewMatrix", GLData::Matrix44Float},
-        {"u_projMatrix", GLData::Matrix44Float},
-        {"u_pointRadius", GLData::Float},
         {"u_camRight", GLData::Vector3Float},
         {"u_camUp", GLData::Vector3Float},
         {"u_camZ", GLData::Vector3Float},
+        {"u_modelView", GLData::Matrix44Float},
+        {"u_projMatrix", GLData::Matrix44Float},
+        {"u_pointRadius", GLData::Float},
     }, 
 
     // attributes
@@ -236,11 +241,11 @@ static const GeomShader SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         layout(points) in;
         layout(triangle_strip, max_vertices=4) out;
         in vec3 Color[];
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
         uniform vec3 u_camRight;
@@ -250,7 +255,7 @@ static const GeomShader SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
         out vec3 worldPosToFrag;
         out vec2 boxCoord;
         void main()   {
-            mat4 PV = u_projMatrix * u_viewMatrix;
+            mat4 PV = u_projMatrix * u_modelView;
 
             { // Lower left
                 vec4 worldPos = gl_in[0].gl_Position + vec4((-u_camUp - u_camRight) * u_pointRadius, 0.);
@@ -294,309 +299,6 @@ static const GeomShader SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
     )
 };
 
-//static const GeomShader SPHERE_BILLBOARD_CO_GEOM_SHADER = {
-    
-    //// uniforms
-    //{
-        //{"u_viewMatrix", GLData::Matrix44Float},
-        //{"u_projMatrix", GLData::Matrix44Float},
-        //{"u_pointRadius", GLData::Float},
-        //{"u_camRight", GLData::Vector3Float},
-        //{"u_camUp", GLData::Vector3Float},
-        //{"u_camZ", GLData::Vector3Float},
-    //}, 
-
-    //// attributes
-    //{
-    //},
-
-    //// source
-    //GLSL(150,
-        //layout(points) in;
-        //layout(triangle_strip, max_vertices=4) out;
-        //in vec3 Color[];
-        //uniform mat4 u_viewMatrix;
-        //uniform mat4 u_projMatrix;
-        //uniform float u_pointRadius;
-        //uniform vec3 u_camRight;
-        //uniform vec3 u_camUp;
-        //uniform vec3 u_camZ;
-        //flat out vec3 colorToFrag;
-        //out vec2 boxCoord;
-        //void main()   {
-            //mat4 PV = u_projMatrix * u_viewMatrix;
-
-            //{ // Lower left
-                //vec4 worldPos = gl_in[0].gl_Position + vec4((-u_camUp - u_camRight) * u_pointRadius, 0.);
-                //gl_Position = PV * worldPos;
-                //colorToFrag = Color[0];
-                //boxCoord = vec2(-1.,-1.);
-                //EmitVertex();
-            //}
-            
-            //{ // Lower right
-                //vec4 worldPos = gl_in[0].gl_Position + vec4((-u_camUp + u_camRight) * u_pointRadius, 0.);
-                //gl_Position = PV * worldPos;
-                //colorToFrag = Color[0];
-                //boxCoord = vec2(1.,-1.);
-                //EmitVertex();
-            //}
-            
-            //{ // Upper left
-                //vec4 worldPos = gl_in[0].gl_Position + vec4((u_camUp - u_camRight) * u_pointRadius, 0.);
-                //gl_Position = PV * worldPos;
-                //colorToFrag = Color[0];
-                //boxCoord = vec2(-1.,1.);
-                //EmitVertex();
-            //}
-            
-            //{ // Upper right
-                //vec4 worldPos = gl_in[0].gl_Position + vec4((u_camUp + u_camRight) * u_pointRadius, 0.);
-                //gl_Position = PV * worldPos;
-                //colorToFrag = Color[0];
-                //boxCoord = vec2(1.,1.);
-                //EmitVertex();
-            //}
-    
-            //EndPrimitive();
-
-        //}
-    //)
-//};
-
-static const GeomShader SPHERE_GEOM_SHADER = {
-    
-    // uniforms
-    {
-        {"u_viewMatrix", GLData::Matrix44Float},
-        {"u_projMatrix", GLData::Matrix44Float},
-        {"u_pointRadius", GLData::Float},
-    }, 
-
-    // attributes
-    {
-    },
-
-    // source
-    GLSL(150,
-        layout(points) in;
-        layout(triangle_strip, max_vertices=100) out;
-        uniform mat4 u_viewMatrix;
-        uniform mat4 u_projMatrix;
-        uniform float u_pointRadius;
-        out vec3 worldNormalToFrag;
-        out vec3 worldPosToFrag;
-        void main()   {
-            mat4 PV = u_projMatrix * u_viewMatrix;
-            const int nPhi = 5;
-            const int nTheta = 6;
-            const float PI = 3.14159265358;
-            const float delPhi = PI / (nPhi + 1);
-            const float delTheta = 2*PI / nTheta;
-
-            for (int iPhi = 0; iPhi <= nPhi; iPhi++) {
-
-                float phiLower = - PI / 2.0 + (iPhi) * delPhi;
-                float phiUpper = - PI / 2.0 + (iPhi+1) * delPhi;
-                float cosPhiLower = cos(phiLower);
-                float cosPhiUpper = cos(phiUpper);
-                float zLower = sin(phiLower);
-                float zUpper = sin(phiUpper);
-
-                for (int iTheta = 0; iTheta <= nTheta; iTheta++) { /* duplicate first/last point to complete strip */
-
-                    float theta = delTheta * iTheta;
-                    float cosTheta = cos(theta);
-                    float sinTheta = sin(theta);
-
-                    // Lower point
-                    float xLower = cosPhiLower * cosTheta;
-                    float yLower = cosPhiLower * sinTheta;
-                    float zLower = zLower;
-                    vec4 worldPosLower = gl_in[0].gl_Position + vec4(xLower, yLower, zLower, 0) * u_pointRadius;
-                    gl_Position = PV * worldPosLower;
-                    worldPosToFrag = worldPosLower.xyz;
-                    worldNormalToFrag = vec3(xLower, yLower, zLower);
-                    EmitVertex();
-
-                    // Upper point
-                    float xUpper = cosPhiUpper * cosTheta;
-                    float yUpper = cosPhiUpper * sinTheta;
-                    float zUpper = zUpper;
-                    vec4 worldPosUpper = gl_in[0].gl_Position + vec4(xUpper, yUpper, zUpper, 0) * u_pointRadius;
-                    gl_Position = PV * worldPosUpper;
-                    worldPosToFrag = worldPosUpper.xyz;
-                    worldNormalToFrag = vec3(xUpper, yUpper, zUpper);
-                    EmitVertex();
-
-                }
-
-                EndPrimitive();
-            }
-
-        }
-    )
-};
-
-
-static const GeomShader SPHERE_VALUE_GEOM_SHADER = {
-    
-    // uniforms
-    {
-        {"u_viewMatrix", GLData::Matrix44Float},
-        {"u_projMatrix", GLData::Matrix44Float},
-        {"u_pointRadius", GLData::Float},
-    }, 
-
-    // attributes
-    {
-    },
-
-    // source
-    GLSL(150,
-        layout(points) in;
-        layout(triangle_strip, max_vertices=100) out;
-        in float value[];
-        uniform mat4 u_viewMatrix;
-        uniform mat4 u_projMatrix;
-        uniform float u_pointRadius;
-        out float valueToFrag;
-        out vec3 worldNormalToFrag;
-        out vec3 worldPosToFrag;
-        void main()   {
-            mat4 PV = u_projMatrix * u_viewMatrix;
-            const int nPhi = 5;
-            const int nTheta = 6;
-            const float PI = 3.14159265358;
-            const float delPhi = PI / (nPhi + 1);
-            const float delTheta = 2*PI / nTheta;
-
-            for (int iPhi = 0; iPhi <= nPhi; iPhi++) {
-
-                float phiLower = - PI / 2.0 + (iPhi) * delPhi;
-                float phiUpper = - PI / 2.0 + (iPhi+1) * delPhi;
-                float cosPhiLower = cos(phiLower);
-                float cosPhiUpper = cos(phiUpper);
-                float zLower = sin(phiLower);
-                float zUpper = sin(phiUpper);
-
-                for (int iTheta = 0; iTheta <= nTheta; iTheta++) { /* duplicate first/last point to complete strip */
-
-                    float theta = delTheta * iTheta;
-                    float cosTheta = cos(theta);
-                    float sinTheta = sin(theta);
-
-                    // Lower point
-                    float xLower = cosPhiLower * cosTheta;
-                    float yLower = cosPhiLower * sinTheta;
-                    float zLower = zLower;
-                    vec4 worldPosLower = gl_in[0].gl_Position + vec4(xLower, yLower, zLower, 0) * u_pointRadius;
-                    gl_Position = PV * worldPosLower;
-                    worldPosToFrag = worldPosLower.xyz;
-                    worldNormalToFrag = vec3(xLower, yLower, zLower);
-                    valueToFrag = value[0];
-                    EmitVertex();
-
-                    // Upper point
-                    float xUpper = cosPhiUpper * cosTheta;
-                    float yUpper = cosPhiUpper * sinTheta;
-                    float zUpper = zUpper;
-                    vec4 worldPosUpper = gl_in[0].gl_Position + vec4(xUpper, yUpper, zUpper, 0) * u_pointRadius;
-                    gl_Position = PV * worldPosUpper;
-                    worldPosToFrag = worldPosUpper.xyz;
-                    worldNormalToFrag = vec3(xUpper, yUpper, zUpper);
-                    valueToFrag = value[0];
-                    EmitVertex();
-
-                }
-
-                EndPrimitive();
-            }
-
-        }
-    )
-};
-
-
-static const GeomShader SPHERE_COLOR_GEOM_SHADER = {
-    
-    // uniforms
-    {
-        {"u_viewMatrix", GLData::Matrix44Float},
-        {"u_projMatrix", GLData::Matrix44Float},
-        {"u_pointRadius", GLData::Float},
-    }, 
-
-    // attributes
-    {
-    },
-
-    // source
-    GLSL(150,
-        layout(points) in;
-        layout(triangle_strip, max_vertices=100) out;
-        in vec3 Color[];
-        uniform mat4 u_viewMatrix;
-        uniform mat4 u_projMatrix;
-        uniform float u_pointRadius;
-        flat out vec3 colorToFrag;
-        out vec3 worldNormalToFrag;
-        out vec3 worldPosToFrag;
-        void main()   {
-            mat4 PV = u_projMatrix * u_viewMatrix;
-            const int nPhi = 5;
-            const int nTheta = 6;
-            const float PI = 3.14159265358;
-            const float delPhi = PI / (nPhi + 1);
-            const float delTheta = 2*PI / nTheta;
-
-            for (int iPhi = 0; iPhi <= nPhi; iPhi++) {
-
-                float phiLower = - PI / 2.0 + (iPhi) * delPhi;
-                float phiUpper = - PI / 2.0 + (iPhi+1) * delPhi;
-                float cosPhiLower = cos(phiLower);
-                float cosPhiUpper = cos(phiUpper);
-                float zLower = sin(phiLower);
-                float zUpper = sin(phiUpper);
-
-                for (int iTheta = 0; iTheta <= nTheta; iTheta++) { /* duplicate first/last point to complete strip */
-
-                    float theta = delTheta * iTheta;
-                    float cosTheta = cos(theta);
-                    float sinTheta = sin(theta);
-
-                    // Lower point
-                    float xLower = cosPhiLower * cosTheta;
-                    float yLower = cosPhiLower * sinTheta;
-                    float zLower = zLower;
-                    vec4 worldPosLower = gl_in[0].gl_Position + vec4(xLower, yLower, zLower, 0) * u_pointRadius;
-                    gl_Position = PV * worldPosLower;
-                    worldPosToFrag = worldPosLower.xyz;
-                    worldNormalToFrag = vec3(xLower, yLower, zLower);
-                    colorToFrag = Color[0];
-                    EmitVertex();
-
-                    // Upper point
-                    float xUpper = cosPhiUpper * cosTheta;
-                    float yUpper = cosPhiUpper * sinTheta;
-                    float zUpper = zUpper;
-                    vec4 worldPosUpper = gl_in[0].gl_Position + vec4(xUpper, yUpper, zUpper, 0) * u_pointRadius;
-                    gl_Position = PV * worldPosUpper;
-                    worldPosToFrag = worldPosUpper.xyz;
-                    worldNormalToFrag = vec3(xUpper, yUpper, zUpper);
-                    colorToFrag = Color[0];
-                    EmitVertex();
-
-                }
-
-                EndPrimitive();
-            }
-
-        }
-    )
-};
-
-
 
 
 
@@ -604,12 +306,14 @@ static const FragShader SPHERE_BILLBOARD_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
         {"u_camRight", GLData::Vector3Float},
         {"u_camUp", GLData::Vector3Float},
         {"u_camZ", GLData::Vector3Float},
+        {"u_modelView", GLData::Matrix44Float},
+        {"u_projMatrix", GLData::Matrix44Float},
+        {"u_pointRadius", GLData::Float},
+
+
         {"u_baseColor", GLData::Vector3Float},
     }, 
 
@@ -619,32 +323,38 @@ static const FragShader SPHERE_BILLBOARD_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_mat_r", 2},
+        {"t_mat_g", 2},
+        {"t_mat_b", 2},
     },
     
     // output location
     "outputF",
  
     // source
-    GLSL(150,
-        uniform vec3 u_eye;
-        // uniform vec3 u_light;
-        uniform vec3 u_lightCenter;
-        uniform float u_lightDist;
+    POLYSCOPE_GLSL(150,
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
         uniform vec3 u_baseColor;
+        uniform mat4 u_modelView;
+        uniform mat4 u_projMatrix;
+        uniform float u_pointRadius;
+        uniform sampler2D t_mat_r;
+        uniform sampler2D t_mat_g;
+        uniform sampler2D t_mat_b;
         in vec3 worldPosToFrag;
         in vec2 boxCoord;
         out vec4 outputF;
 
         // Forward declarations of methods from <shaders/common.h>
-        // vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 light, vec3 eye );
-        vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
+        vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
+
 
         void main()
         {
 
+           // Compute geometry on billboard
            float r = sqrt(boxCoord.x*boxCoord.x + boxCoord.y*boxCoord.y);
            if(r > 1.0) {
                discard;
@@ -652,7 +362,16 @@ static const FragShader SPHERE_BILLBOARD_FRAG_SHADER = {
            float zC = sqrt(1.0 - r*r);
            vec3 worldN = (zC * u_camZ + boxCoord.x * u_camRight + boxCoord.y * u_camUp);
 
-           outputF = lightSurface(worldPosToFrag, worldN, u_baseColor, u_lightCenter, u_lightDist, u_eye);
+           // Lighting
+           vec3 Normal = mat3(u_modelView) * worldN;
+           outputF = lightSurfaceMat(Normal, u_baseColor, t_mat_r, t_mat_g, t_mat_b);
+
+           // Set depth (expensive!)
+           vec3 zOffset = -zC * u_camZ * u_pointRadius;
+           vec3 realWorldPos = worldPosToFrag + zOffset;
+           vec4 clipPos = u_projMatrix * u_modelView * vec4(realWorldPos, 1.0);
+           float ndcDepth = clipPos.z / clipPos.w;
+           gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
         }
     )
 };
@@ -661,15 +380,15 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
         {"u_camRight", GLData::Vector3Float},
         {"u_camUp", GLData::Vector3Float},
         {"u_camZ", GLData::Vector3Float},
+        {"u_modelView", GLData::Matrix44Float},
+        {"u_projMatrix", GLData::Matrix44Float},
+        {"u_pointRadius", GLData::Float},
+
         {"u_rangeLow", GLData::Float},
         {"u_rangeHigh", GLData::Float},
-        {"u_baseColor", GLData::Vector3Float},
     }, 
 
     // attributes
@@ -678,6 +397,9 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_mat_r", 2},
+        {"t_mat_g", 2},
+        {"t_mat_b", 2},
         {"t_colormap", 1}
     },
     
@@ -685,17 +407,18 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
     "outputF",
  
     // source
-    GLSL(150,
-        uniform vec3 u_eye;
-        // uniform vec3 u_light;
-        uniform vec3 u_lightCenter;
-        uniform float u_lightDist;
+    POLYSCOPE_GLSL(150,
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
+        uniform mat4 u_modelView;
+        uniform mat4 u_projMatrix;
+        uniform float u_pointRadius;
         uniform float u_rangeLow;
         uniform float u_rangeHigh;
-        uniform vec3 u_baseColor;
+        uniform sampler2D t_mat_r;
+        uniform sampler2D t_mat_g;
+        uniform sampler2D t_mat_b;
         uniform sampler1D t_colormap;
         flat in float valueToFrag;
         in vec3 worldPosToFrag;
@@ -703,8 +426,7 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
         out vec4 outputF;
 
         // Forward declarations of methods from <shaders/common.h>
-        // vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 light, vec3 eye );
-        vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
+        vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
         
         vec3 surfaceColor() {
           float t = (valueToFrag - u_rangeLow) / (u_rangeHigh - u_rangeLow);
@@ -715,6 +437,7 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
         void main()
         {
 
+           // Compute geometry on billboard
            float r = sqrt(boxCoord.x*boxCoord.x + boxCoord.y*boxCoord.y);
            if(r > 1.0) {
                discard;
@@ -722,7 +445,16 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
            float zC = sqrt(1.0 - r*r);
            vec3 worldN = (zC * u_camZ + boxCoord.x * u_camRight + boxCoord.y * u_camUp);
 
-           outputF = lightSurface(worldPosToFrag, worldN, surfaceColor(), u_lightCenter, u_lightDist, u_eye);
+           // Lighting
+           vec3 Normal = mat3(u_modelView) * worldN;
+           outputF = lightSurfaceMat(Normal, surfaceColor(), t_mat_r, t_mat_g, t_mat_b);
+           
+           // Set depth (expensive!)
+           vec3 zOffset = -zC * u_camZ * u_pointRadius;
+           vec3 realWorldPos = worldPosToFrag + zOffset;
+           vec4 clipPos = u_projMatrix * u_modelView * vec4(realWorldPos, 1.0);
+           float ndcDepth = clipPos.z / clipPos.w;
+           gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
         }
     )
 };
@@ -733,13 +465,12 @@ static const FragShader SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
         {"u_camRight", GLData::Vector3Float},
         {"u_camUp", GLData::Vector3Float},
         {"u_camZ", GLData::Vector3Float},
-        {"u_baseColor", GLData::Vector3Float}, /* unused here */
+        {"u_modelView", GLData::Matrix44Float},
+        {"u_projMatrix", GLData::Matrix44Float},
+        {"u_pointRadius", GLData::Float},
     }, 
 
     // attributes
@@ -748,41 +479,54 @@ static const FragShader SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_mat_r", 2},
+        {"t_mat_g", 2},
+        {"t_mat_b", 2},
     },
     
     // output location
     "outputF",
  
     // source
-    GLSL(150,
-        uniform vec3 u_eye;
-        // uniform vec3 u_light;
-        uniform vec3 u_lightCenter;
-        uniform float u_lightDist;
+    POLYSCOPE_GLSL(150,
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
-        uniform vec3 u_baseColor;
+        uniform mat4 u_modelView;
+        uniform mat4 u_projMatrix;
+        uniform float u_pointRadius;
+        uniform sampler2D t_mat_r;
+        uniform sampler2D t_mat_g;
+        uniform sampler2D t_mat_b;
         flat in vec3 colorToFrag;
         in vec3 worldPosToFrag;
         in vec2 boxCoord;
         out vec4 outputF;
 
         // Forward declarations of methods from <shaders/common.h>
-        // vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 light, vec3 eye );
-        vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
+        vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
 
         void main()
         {
-
+  
+           // Set geometry for billboard
            float r = sqrt(boxCoord.x*boxCoord.x + boxCoord.y*boxCoord.y);
            if(r > 1.0) {
                discard;
            }
            float zC = sqrt(1.0 - r*r);
            vec3 worldN = (zC * u_camZ + boxCoord.x * u_camRight + boxCoord.y * u_camUp);
-
-           outputF = lightSurface(worldPosToFrag, worldN, colorToFrag, u_lightCenter, u_lightDist, u_eye);
+           
+           // Lighting
+           vec3 Normal = mat3(u_modelView) * worldN;
+           outputF = lightSurfaceMat(Normal, colorToFrag, t_mat_r, t_mat_g, t_mat_b);
+           
+           // Set depth (expensive!)
+           vec3 zOffset = -zC * u_camZ * u_pointRadius;
+           vec3 realWorldPos = worldPosToFrag + zOffset;
+           vec4 clipPos = u_projMatrix * u_modelView * vec4(realWorldPos, 1.0);
+           float ndcDepth = clipPos.z / clipPos.w;
+           gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
         }
     )
 };
@@ -795,7 +539,9 @@ static const FragShader SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
         {"u_camRight", GLData::Vector3Float},
         {"u_camUp", GLData::Vector3Float},
         {"u_camZ", GLData::Vector3Float},
-        {"u_baseColor", GLData::Vector3Float}, /* unused here */
+        {"u_modelView", GLData::Matrix44Float},
+        {"u_projMatrix", GLData::Matrix44Float},
+        {"u_pointRadius", GLData::Float},
     }, 
 
     // attributes
@@ -810,190 +556,43 @@ static const FragShader SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
     "outputF",
  
     // source
-    GLSL(150,
-        uniform vec3 u_eye;
-        uniform vec3 u_lightCenter;
-        uniform float u_lightDist;
+    POLYSCOPE_GLSL(150,
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
-        uniform vec3 u_baseColor;
+        uniform mat4 u_modelView;
+        uniform mat4 u_projMatrix;
+        uniform float u_pointRadius;
         flat in vec3 colorToFrag;
         in vec3 worldPosToFrag;
         in vec2 boxCoord;
         out vec4 outputF;
 
         // Forward declarations of methods from <shaders/common.h>
-        // vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 light, vec3 eye );
-        vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
 
         void main()
         {
 
-          // Silence warnings about unused variables
-           worldPosToFrag;
-
+           // Set geometry for billboard
            float r = sqrt(boxCoord.x*boxCoord.x + boxCoord.y*boxCoord.y);
            if(r > 1.0) {
                discard;
            }
-
+           float zC = sqrt(1.0 - r*r);
+           
            outputF = vec4(colorToFrag, 1.0);
+           
+           // Set depth (expensive!)
+           vec3 zOffset = -zC * u_camZ * u_pointRadius;
+           vec3 realWorldPos = worldPosToFrag + zOffset;
+           vec4 clipPos = u_projMatrix * u_modelView * vec4(realWorldPos, 1.0);
+           float ndcDepth = clipPos.z / clipPos.w;
+           gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
         }
     )
 };
 
-static const FragShader SPHERE_FRAG_SHADER = {
-    
-    // uniforms
-    {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
-        {"u_baseColor", GLData::Vector3Float},
-    }, 
+// clang-format on
 
-    // attributes
-    {
-    },
-    
-    // textures 
-    {
-    },
-    
-    // output location
-    "outputF",
- 
-    // source
-    GLSL(150,
-        uniform vec3 u_eye;
-        uniform vec3 u_lightCenter;
-        uniform float u_lightDist;
-        uniform vec3 u_baseColor;
-        in vec3 worldNormalToFrag;
-        in vec3 worldPosToFrag;
-        out vec4 outputF;
-
-        // Forward declarations of methods from <shaders/common.h>
-        // vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 light, vec3 eye );
-        vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
-      
-        vec3 surfaceColor() {
-          return u_baseColor;
-        }
-
-        void main()
-        {
-          // Sample color from map
-          vec3 color = surfaceColor();
-          outputF = lightSurface(worldPosToFrag, worldNormalToFrag, color, u_lightCenter, u_lightDist, u_eye);
-        }
-    )
-};
-
-static const FragShader SPHERE_VALUE_FRAG_SHADER = {
-    
-    // uniforms
-    {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
-        {"u_rangeLow", GLData::Float},
-        {"u_rangeHigh", GLData::Float},
-        {"u_baseColor", GLData::Vector3Float},
-    }, 
-
-    // attributes
-    {
-    },
-    
-    // textures 
-    {
-        {"t_colormap", 1}
-    },
-    
-    // output location
-    "outputF",
- 
-    // source
-    GLSL(150,
-        uniform vec3 u_eye;
-        uniform vec3 u_lightCenter;
-        uniform float u_lightDist;
-        uniform float u_rangeLow;
-        uniform float u_rangeHigh;
-        uniform sampler1D t_colormap;
-        uniform vec3 u_baseColor;
-        in float valueToFrag;
-        in vec3 worldNormalToFrag;
-        in vec3 worldPosToFrag;
-        out vec4 outputF;
-
-        // Forward declarations of methods from <shaders/common.h>
-        // vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 light, vec3 eye );
-        vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
-      
-        vec3 surfaceColor() {
-          float t = (valueToFrag - u_rangeLow) / (u_rangeHigh - u_rangeLow);
-          t = clamp(t, 0.f, 1.f);
-          return texture(t_colormap, t).rgb;
-        }
-
-        void main()
-        {
-          // Sample color from map
-          vec3 color = surfaceColor();
-          outputF = lightSurface(worldPosToFrag, worldNormalToFrag, color, u_lightCenter, u_lightDist, u_eye);
-        }
-    )
-};
-
-static const FragShader SPHERE_COLOR_FRAG_SHADER = {
-    
-    // uniforms
-    {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
-        {"u_baseColor", GLData::Vector3Float},
-    }, 
-
-    // attributes
-    {
-    },
-    
-    // textures 
-    {
-    },
-    
-    // output location
-    "outputF",
- 
-    // source
-    GLSL(150,
-        uniform vec3 u_eye;
-        uniform vec3 u_lightCenter;
-        uniform float u_lightDist;
-        uniform vec3 u_baseColor;
-        flat in vec3 colorToFrag;
-        in vec3 worldNormalToFrag;
-        in vec3 worldPosToFrag;
-        out vec4 outputF;
-
-        // Forward declarations of methods from <shaders/common.h>
-        // vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 light, vec3 eye );
-        vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
-      
-        vec3 surfaceColor() {
-          return colorToFrag;
-        }
-
-        void main()
-        {
-          // Sample color from map
-          vec3 color = surfaceColor();
-          outputF = lightSurface(worldPosToFrag, worldNormalToFrag, color, u_lightCenter, u_lightDist, u_eye);
-        }
-    )
-};
-
+} // namespace gl
+} // namespace polyscope

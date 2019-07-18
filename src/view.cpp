@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/view.h"
 
 #include "polyscope/polyscope.h"
@@ -14,10 +15,15 @@ int bufferWidth = -1;
 int bufferHeight = -1;
 int initWindowPosX = 20;
 int initWindowPosY = 20;
-double fov = 65.0;
-double nearClipRatio = 0.005;
-double farClipRatio = 20.0;
-std::array<float, 4> bgColor{{.88, .88, .88, 1.0}};
+NavigateStyle style = NavigateStyle::Turntable;
+double moveScale = 1.0;
+const double defaultNearClipRatio = 0.005;
+const double defaultFarClipRatio = 20.0;
+const double defaultFov = 65.;
+double fov = defaultFov;
+double nearClipRatio = defaultNearClipRatio;
+double farClipRatio = defaultFarClipRatio;
+std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 1.0}};
 
 glm::mat4x4 viewMat;
 
@@ -29,97 +35,157 @@ glm::vec3 flightTargetViewT, flightInitialViewT;
 float flightTargetFov, flightInitialFov;
 
 
-void processRotate(float delTheta, float delPhi) {
-  if (delTheta == 0 && delPhi == 0) {
+void processRotate(glm::vec2 startP, glm::vec2 endP) {
+
+  if (startP == endP) {
     return;
   }
 
-  // Scaling
-  delTheta *= PI;
-  delPhi *= PI;
-
   // Get frame
-  Vector3 lookDir, upDir, rightDir;
+  glm::vec3 lookDir, upDir, rightDir;
   getCameraFrame(lookDir, upDir, rightDir);
-  glm::vec3 upGLM(upDir.x, upDir.y, upDir.z);
-  glm::vec3 rightGLM(rightDir.x, rightDir.y, rightDir.z);
 
-  // Rotation about the vertical axis
-  glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, upGLM);
-  viewMat = viewMat * thetaCamR;
+  switch (style) {
+  case NavigateStyle::Turntable: {
 
-  // Rotation about the horizontal axis
-  glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, rightGLM);
-  viewMat = viewMat * phiCamR;
+    glm::vec2 dragDelta = endP - startP;
+    float delTheta = 2.0 * dragDelta.x * moveScale;
+    float delPhi = 2.0 * dragDelta.y * moveScale;
 
+    // Translate to center
+    viewMat = glm::translate(viewMat, state::center);
+
+    // Rotation about the horizontal axis
+    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, rightDir);
+    viewMat = viewMat * phiCamR;
+
+    // Rotation about the vertical axis
+    glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, glm::vec3(0., 1., 0.));
+    viewMat = viewMat * thetaCamR;
+
+    // Undo centering
+    viewMat = glm::translate(viewMat, -state::center);
+    break;
+  }
+  case NavigateStyle::Free: {
+    glm::vec2 dragDelta = endP - startP;
+    float delTheta = 2.0 * dragDelta.x * moveScale;
+    float delPhi = 2.0 * dragDelta.y * moveScale;
+
+    // Translate to center
+    viewMat = glm::translate(viewMat, state::center);
+
+    // Rotation about the vertical axis
+    glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, upDir);
+    viewMat = viewMat * thetaCamR;
+
+    // Rotation about the horizontal axis
+    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, rightDir);
+    viewMat = viewMat * phiCamR;
+
+    // Undo centering
+    viewMat = glm::translate(viewMat, -state::center);
+    break;
+  }
+  case NavigateStyle::Arcball: {
+    // Map inputs to unit sphere
+    auto toSphere = [](glm::vec2 v) {
+      double x = glm::clamp(v.x, -1.0f, 1.0f);
+      double y = glm::clamp(v.y, -1.0f, 1.0f);
+      double mag = x * x + y * y;
+      if (mag <= 1.0) {
+        return glm::vec3{x, y, -std::sqrt(1.0 - mag)};
+      } else {
+        return glm::normalize(glm::vec3{x, y, 0.0});
+      }
+    };
+    glm::vec3 sphereStart = toSphere(startP);
+    glm::vec3 sphereEnd = toSphere(endP);
+
+    glm::vec3 rotAxis = -cross(sphereStart, sphereEnd);
+    double rotMag = std::acos(glm::clamp(dot(sphereStart, sphereEnd), -1.0f, 1.0f) * moveScale);
+
+    glm::mat4 cameraRotate = glm::rotate(glm::mat4x4(1.0), (float)rotMag, glm::vec3(rotAxis.x, rotAxis.y, rotAxis.z));
+
+    // Get current camera rotation
+    glm::mat4x4 R;
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        R[i][j] = viewMat[i][j];
+      }
+    }
+    R[3][3] = 1.0;
+
+    glm::mat4 update = glm::inverse(R) * cameraRotate * R;
+
+    viewMat = viewMat * update;
+    break;
+  }
+  }
+
+
+  requestRedraw();
   immediatelyEndFlight();
 }
 
-void processRotateArcball(Vector2 startP, Vector2 endP) {
+void processRotateArcball(glm::vec2 startP, glm::vec2 endP) {
 
   if (endP == startP) {
     return;
   }
 
-  // Map inputs to unit sphere
-  auto toSphere = [](Vector2 v) {
-    double x = clamp(v.x, -1.0, 1.0);
-    double y = clamp(v.y, -1.0, 1.0);
-    double mag = x * x + y * y;
-    if (mag <= 1.0) {
-      return Vector3{x, y, -std::sqrt(1.0 - mag)};
-    } else {
-      return unit(Vector3{x, y, 0.0});
-    }
-  };
-  Vector3 sphereStart = toSphere(startP);
-  Vector3 sphereEnd = toSphere(endP);
 
-  Vector3 rotAxis = -cross(sphereStart, sphereEnd);
-  double rotMag = std::acos(clamp(dot(sphereStart, sphereEnd), -1.0, 1.0));
-  
-  glm::mat4 cameraRotate = glm::rotate(glm::mat4x4(1.0), (float)rotMag, glm::vec3(rotAxis.x, rotAxis.y, rotAxis.z));
-
-  // Get current camera rotation
-  glm::mat4x4 R;
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
-      R[i][j] = viewMat[i][j];
-    }
-  }
-  R[3][3] = 1.0;
-  
-  glm::mat4 update = glm::inverse(R) * cameraRotate * R;
-
-  viewMat = viewMat * update;
-
+  requestRedraw();
   immediatelyEndFlight();
 }
 
-void processTranslate(Vector2 delta) {
-  if (norm(delta) == 0) {
+void processTranslate(glm::vec2 delta) {
+  if (glm::length(delta) == 0) {
     return;
   }
   // Process a translation
-  float movementScale = state::lengthScale * 0.6;
+  float movementScale = state::lengthScale * 0.6 * moveScale;
   glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), movementScale * glm::vec3(delta.x, delta.y, 0.0));
   viewMat = camSpaceT * viewMat;
 
+  requestRedraw();
   immediatelyEndFlight();
 }
 
 void processClipPlaneShift(double amount) {
+  if (amount == 0.0) return;
   // Adjust the near clipping plane
   nearClipRatio += .03 * amount * nearClipRatio;
+  requestRedraw();
 }
 
 void processZoom(double amount) {
+  if (amount == 0.0) return;
+
   // Translate the camera forwards and backwards
-  float movementScale = state::lengthScale * 0.1;
+  float movementScale = state::lengthScale * 0.1 * moveScale;
   glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), glm::vec3(0., 0., movementScale * amount));
   viewMat = camSpaceT * viewMat;
 
   immediatelyEndFlight();
+  requestRedraw();
+}
+
+void invalidateView() { viewMat = glm::mat4x4(std::numeric_limits<float>::quiet_NaN()); }
+
+void ensureViewValid() {
+  bool allFinite = true;
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      if (!std::isfinite(viewMat[i][j])) {
+        allFinite = false;
+      }
+    }
+  }
+
+  if (!allFinite) {
+    resetCameraToHomeView();
+  }
 }
 
 void resetCameraToDefault() {
@@ -131,11 +197,12 @@ void resetCameraToDefault() {
   viewMat[2][2] = -1.;
   viewMat = viewMat * glm::translate(glm::mat4x4(1.0), glm::vec3(0.0, 0.0, state::lengthScale));
 
-  fov = 65.0;
-  nearClipRatio = 0.005;
-  farClipRatio = 20.0;
-}
+  fov = defaultFov;
+  nearClipRatio = defaultNearClipRatio;
+  farClipRatio = defaultFarClipRatio;
 
+  requestRedraw();
+}
 
 void flyToDefault() {
 
@@ -147,12 +214,50 @@ void flyToDefault() {
   T = T * glm::translate(glm::mat4x4(1.0), glm::vec3(0.0, 0.0, state::lengthScale));
 
 
-  float Tfov = 65.0;
-  nearClipRatio = 0.005;
-  farClipRatio = 20.0;
+  float Tfov = defaultFov;
+  nearClipRatio = defaultNearClipRatio;
+  farClipRatio = defaultFarClipRatio;
 
-  startFlightTo(T, Tfov, .25);
+  startFlightTo(T, Tfov, .4);
 }
+
+glm::mat4 computeHomeView() {
+
+  glm::mat4x4 T(1.0);
+  T[0][0] = -1.;
+  T[2][2] = -1.;
+  T = T *
+      glm::translate(glm::mat4x4(1.0), -state::center + glm::vec3(0.0, -0.1 * state::lengthScale, state::lengthScale));
+
+  return T;
+}
+
+void resetCameraToHomeView() {
+
+  // WARNING: Duplicated here and in flyToHomeView()
+
+  viewMat = computeHomeView();
+
+  fov = defaultFov;
+  nearClipRatio = defaultNearClipRatio;
+  farClipRatio = defaultFarClipRatio;
+
+  requestRedraw();
+}
+
+void flyToHomeView() {
+
+  // WARNING: Duplicated here and in resetCameraToHomeView()
+
+  glm::mat4x4 T = computeHomeView();
+
+  float Tfov = defaultFov;
+  nearClipRatio = defaultNearClipRatio;
+  farClipRatio = defaultFarClipRatio;
+
+  startFlightTo(T, Tfov, .4);
+}
+
 
 void setViewToCamera(const CameraParameters& p) {
   viewMat = p.E;
@@ -179,13 +284,13 @@ glm::mat4 getCameraPerspectiveMatrix() {
   return glm::perspective(fovRad, aspectRatio, nearClip, farClip);
 }
 
-Vector3 getCameraWorldPosition() {
+glm::vec3 getCameraWorldPosition() {
   // This will work no matter how the view matrix is constructed...
   glm::mat4 invViewMat = inverse(getCameraViewMatrix());
-  return Vector3{invViewMat[3][0], invViewMat[3][1], invViewMat[3][2]};
+  return glm::vec3{invViewMat[3][0], invViewMat[3][1], invViewMat[3][2]};
 }
 
-void getCameraFrame(Vector3& lookDir, Vector3& upDir, Vector3& rightDir) {
+void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir) {
   glm::mat3x3 R;
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
@@ -194,9 +299,9 @@ void getCameraFrame(Vector3& lookDir, Vector3& upDir, Vector3& rightDir) {
   }
   glm::mat3x3 Rt = glm::transpose(R);
 
-  lookDir = fromGLM(Rt * glm::vec3(0.0, 0.0, -1.0));
-  upDir = fromGLM(Rt * glm::vec3(0.0, 1.0, 0.0));
-  rightDir = fromGLM(Rt * glm::vec3(1.0, 0.0, 0.0));
+  lookDir = Rt * glm::vec3(0.0, 0.0, -1.0);
+  upDir = Rt * glm::vec3(0.0, 1.0, 0.0);
+  rightDir = Rt * glm::vec3(1.0, 0.0, 0.0);
 }
 
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds) {
@@ -253,6 +358,7 @@ void updateFlight() {
       // linear spline
       fov = (1.0f - t) * flightInitialFov + t * flightTargetFov;
     }
+    requestRedraw();
   }
 }
 

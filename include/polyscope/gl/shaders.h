@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
 #include <cstdlib>
@@ -5,8 +6,10 @@
 #include <vector>
 
 // Make syntax  nicer like this, but we lose line numbers in GL debug output
-#define GLSL(version, shader) "#version " #version "\n" #shader
+#define POLYSCOPE_GLSL(version, shader) "#version " #version "\n" #shader
 
+namespace polyscope {
+namespace gl {
 
 // Enum for openGL data types
 enum class GLData { Vector2Float, Vector3Float, Vector4Float, Matrix44Float, Float, Int, UInt, Index };
@@ -26,7 +29,7 @@ struct ShaderAttribute {
 };
 struct ShaderTexture {
   const std::string name;
-  const unsigned int dim;
+  const int dim;
 };
 
 
@@ -58,3 +61,6 @@ struct FragShader {
   const std::string outputLoc;
   const std::string src;
 };
+
+} // namespace gl
+} // namespace polyscope

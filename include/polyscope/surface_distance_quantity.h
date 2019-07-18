@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
 #include "polyscope/affine_remapper.h"
@@ -6,23 +7,22 @@
 
 namespace polyscope {
 
-class SurfaceDistanceQuantity : public SurfaceQuantityThatDrawsFaces {
+class SurfaceDistanceQuantity : public SurfaceMeshQuantity {
 public:
-  SurfaceDistanceQuantity(std::string name, VertexData<double>& values_, SurfaceMesh* mesh_, bool signedDist = false);
+  SurfaceDistanceQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_, bool signedDist = false);
 
   void draw() override;
-  void drawUI() override;
-  void setProgramValues(gl::GLProgram* program) override;
-  gl::GLProgram* createProgram() override;
+  virtual void buildCustomUI() override;
 
-  void buildInfoGUI(VertexPtr v) override;
-  void fillColorBuffers(gl::GLProgram* p);
-  
+  virtual std::string niceName() override;
+  virtual void geometryChanged() override;
+
+  void buildVertexInfoGUI(size_t v) override;
+
   void writeToFile(std::string filename = "");
 
-
   // === Members
-  VertexData<double> distances;
+  std::vector<double> distances;
   bool signedDist;
 
 protected:
@@ -34,8 +34,13 @@ protected:
   float modLen = 0.02;
 
   // UI internals
-  int iColorMap = 0;
+  gl::ColorMapID cMap;
+  std::unique_ptr<gl::GLProgram> program;
+
+  // Helpers
+  void createProgram();
+  void setProgramUniforms(gl::GLProgram& program);
+  void fillColorBuffers(gl::GLProgram& p);
 };
 
 } // namespace polyscope
-

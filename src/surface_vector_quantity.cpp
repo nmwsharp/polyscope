@@ -1,14 +1,14 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/surface_vector_quantity.h"
 
 #include "polyscope/file_helpers.h"
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/vector_shaders.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/trace_vector_field.h"
 
 #include "imgui.h"
-
-#include "Eigen/Dense"
 
 #include <complex>
 #include <fstream>
@@ -19,26 +19,17 @@ using std::endl;
 
 namespace polyscope {
 
-SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh* mesh_, MeshElement definedOn_,
+SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh_, MeshElement definedOn_,
                                              VectorType vectorType_)
+    : SurfaceMeshQuantity(name, mesh_), vectorType(vectorType_), definedOn(definedOn_) {}
 
-    : SurfaceQuantity(name, mesh_), vectorType(vectorType_), definedOn(definedOn_) {
-
-  // Don't forget to call finishConstructing() in children classes!
-}
-
-SurfaceVectorQuantity::~SurfaceVectorQuantity() {
-  safeDelete(program);
-  safeDelete(ribbonArtist);
-}
-
-void SurfaceVectorQuantity::finishConstructing() {
+void SurfaceVectorQuantity::prepareVectorMapper() {
 
   // Create a mapper (default mapper is identity)
   if (vectorType == VectorType::AMBIENT) {
     mapper.setMinMax(vectors);
   } else {
-    mapper = AffineRemapper<Vector3>(vectors, DataType::MAGNITUDE);
+    mapper = AffineRemapper<glm::vec3>(vectors, DataType::MAGNITUDE);
   }
 
   // Default viz settings
@@ -48,26 +39,17 @@ void SurfaceVectorQuantity::finishConstructing() {
     lengthMult = 1.0;
   }
   radiusMult = .0005;
-  vectorColor = parent->colorManager.getNextSubColor(name);
+  vectorColor = getNextUniqueColor();
 }
 
 void SurfaceVectorQuantity::draw() {
-  if (!enabled || ribbonEnabled) return;
+  if (!enabled) return;
 
-  if (program == nullptr) prepare();
+  if (program == nullptr) prepareProgram();
 
   // Set uniforms
-  glm::mat4 viewMat = parent->getModelView();
-  program->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+  parent.setTransformUniforms(*program);
 
-  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-  program->setUniform("u_projMatrix", glm::value_ptr(projMat));
-
-  Vector3 eyePos = view::getCameraWorldPosition();
-  program->setUniform("u_eye", eyePos);
-
-  program->setUniform("u_lightCenter", state::center);
-  program->setUniform("u_lightDist", 5 * state::lengthScale);
   program->setUniform("u_radius", radiusMult * state::lengthScale);
   program->setUniform("u_color", vectorColor);
 
@@ -80,55 +62,51 @@ void SurfaceVectorQuantity::draw() {
   program->draw();
 }
 
-void SurfaceVectorQuantity::prepare() {
-  program = new gl::GLProgram(&PASSTHRU_VECTOR_VERT_SHADER, &VECTOR_GEOM_SHADER, &SHINY_VECTOR_FRAG_SHADER,
-                              gl::DrawMode::Points);
+void SurfaceVectorQuantity::prepareProgram() {
+
+  program.reset(new gl::GLProgram(&gl::PASSTHRU_VECTOR_VERT_SHADER, &gl::VECTOR_GEOM_SHADER,
+                                  &gl::SHINY_VECTOR_FRAG_SHADER, gl::DrawMode::Points));
 
   // Fill buffers
-  std::vector<Vector3> mappedVectors;
-  for (Vector3 v : vectors) {
+  std::vector<glm::vec3> mappedVectors;
+  for (glm::vec3& v : vectors) {
     mappedVectors.push_back(mapper.map(v));
   }
 
   program->setAttribute("a_vector", mappedVectors);
   program->setAttribute("a_position", vectorRoots);
+
+  setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceVectorQuantity::drawUI() {
+void SurfaceVectorQuantity::buildCustomUI() {
+  ImGui::SameLine();
+  ImGui::ColorEdit3("Color", (float*)&vectorColor, ImGuiColorEditFlags_NoInputs);
+  ImGui::SameLine();
 
 
-  if (ImGui::TreeNode((name + " (" + getMeshElementTypeName(definedOn) + " vector)").c_str())) {
-    ImGui::Checkbox("Enabled", &enabled);
-    ImGui::SameLine();
-    ImGui::ColorEdit3("Color", (float*)&vectorColor, ImGuiColorEditFlags_NoInputs);
-    ImGui::SameLine();
-
-
-    // === Options popup
-    if (ImGui::Button("Options")) {
-      ImGui::OpenPopup("OptionsPopup");
-    }
-    if (ImGui::BeginPopup("OptionsPopup")) {
-      if (ImGui::MenuItem("Write to file")) writeToFile();
-      ImGui::EndPopup();
-    }
-
-
-    // Only get to set length for non-ambient vectors
-    if (vectorType != VectorType::AMBIENT) {
-      ImGui::SliderFloat("Length", &lengthMult, 0.0, .1, "%.5f", 3.);
-    }
-
-    ImGui::SliderFloat("Radius", &radiusMult, 0.0, .1, "%.5f", 3.);
-
-    { // Draw max and min magnitude
-      ImGui::TextUnformatted(mapper.printBounds().c_str());
-    }
-
-    drawSubUI();
-
-    ImGui::TreePop();
+  // === Options popup
+  if (ImGui::Button("Options")) {
+    ImGui::OpenPopup("OptionsPopup");
   }
+  if (ImGui::BeginPopup("OptionsPopup")) {
+    if (ImGui::MenuItem("Write to file")) writeToFile();
+    ImGui::EndPopup();
+  }
+
+
+  // Only get to set length for non-ambient vectors
+  if (vectorType != VectorType::AMBIENT) {
+    ImGui::SliderFloat("Length", &lengthMult, 0.0, .1, "%.5f", 3.);
+  }
+
+  ImGui::SliderFloat("Radius", &radiusMult, 0.0, .1, "%.5f", 3.);
+
+  { // Draw max and min magnitude
+    ImGui::TextUnformatted(mapper.printBounds().c_str());
+  }
+
+  drawSubUI();
 }
 
 void SurfaceVectorQuantity::drawSubUI() {}
@@ -150,7 +128,7 @@ void SurfaceVectorQuantity::writeToFile(std::string filename) {
   outFile << "#displaylength " << (lengthMult * state::lengthScale) << endl;
 
   for (size_t i = 0; i < vectors.size(); i++) {
-    if (norm(vectors[i]) > 0) {
+    if (glm::length(vectors[i]) > 0) {
       outFile << vectorRoots[i] << " " << vectors[i] << endl;
     }
   }
@@ -158,153 +136,138 @@ void SurfaceVectorQuantity::writeToFile(std::string filename) {
   outFile.close();
 }
 
-
 // ========================================================
 // ==========           Vertex Vector            ==========
 // ========================================================
 
-SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, VertexData<Vector3>& vectors_,
-                                                         SurfaceMesh* mesh_, VectorType vectorType_)
+SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
+                                                         SurfaceMesh& mesh_, VectorType vectorType_)
 
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_) {
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), vectorField(vectors_) {
 
-  vectorField = parent->transfer.transfer(vectors_);
-  for (VertexPtr v : parent->mesh->vertices()) {
-    vectorRoots.push_back(parent->geometry->position(v));
-    vectors.push_back(vectorField[v]);
-  }
+  size_t i = 0;
+  vectorRoots = parent.vertices;
+  vectors = vectorField;
 
-  finishConstructing();
+  prepareVectorMapper();
 }
 
-void SurfaceVertexVectorQuantity::buildInfoGUI(VertexPtr v) {
+void SurfaceVertexVectorQuantity::buildVertexInfoGUI(size_t iV) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
   std::stringstream buffer;
-  buffer << vectorField[v];
+  buffer << vectorField[iV];
   ImGui::TextUnformatted(buffer.str().c_str());
 
   ImGui::NextColumn();
   ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", norm(vectorField[v]));
+  ImGui::Text("magnitude: %g", glm::length(vectorField[iV]));
   ImGui::NextColumn();
 }
 
+std::string SurfaceVertexVectorQuantity::niceName() { return name + " (vertex vector)"; }
 
 // ========================================================
 // ==========            Face Vector             ==========
 // ========================================================
 
-SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, FaceData<Vector3>& vectors_, SurfaceMesh* mesh_,
-                                                     VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_) {
+SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
+                                                     SurfaceMesh& mesh_, VectorType vectorType_)
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), vectorField(vectors_) {
 
   // Copy the vectors
-  vectorField = parent->transfer.transfer(vectors_);
-  for (FacePtr f : parent->mesh->faces()) {
-    vectorRoots.push_back(parent->geometry->barycenter(f));
-    vectors.push_back(vectorField[f]);
+  vectors = vectorField;
+  vectorRoots.resize(parent.nFaces());
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+    glm::vec3 faceCenter = glm::vec3{0., 0., 0.};
+    for (size_t j = 0; j < D; j++) {
+      faceCenter += parent.vertices[face[j]];
+    }
+    faceCenter /= D;
+    vectorRoots[iF] = faceCenter;
   }
 
-  finishConstructing();
+  prepareVectorMapper();
 }
 
-void SurfaceFaceVectorQuantity::buildInfoGUI(FacePtr f) {
+void SurfaceFaceVectorQuantity::buildFaceInfoGUI(size_t iF) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
   std::stringstream buffer;
-  buffer << vectorField[f];
+  buffer << vectorField[iF];
   ImGui::TextUnformatted(buffer.str().c_str());
 
   ImGui::NextColumn();
   ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", norm(vectorField[f]));
+  ImGui::Text("magnitude: %g", glm::length(vectorField[iF]));
   ImGui::NextColumn();
 }
 
-
-// ========================================================
-// ==========        Intrinsic Helper Functions ===========
-// ========================================================
-
-namespace {
-
-void writeToObjFile(std::string filename, std::vector<std::vector<std::array<geometrycentral::Vector3, 2>>>& lines) {
-
-  std::ofstream out(filename);
-  out << std::fixed;
-
-  std::vector<std::vector<size_t>> inds;
-  size_t nP = 0;
-  for (auto l : lines) {
-    inds.push_back(std::vector<size_t>());
-    for (auto p : l) {
-      Vector3 pos = p[0];
-      out << "v " << pos.x << " " << pos.y << " " << pos.z << endl;
-      inds.back().push_back(nP);
-      nP++;
-    }
-  }
-
-  for (auto l : inds) {
-      out << "l";
-    for (size_t ind : l) {
-      out << " " << (ind+1); // convert to 1 based
-    }
-    out << endl;
-  }
-}
-};
-
+std::string SurfaceFaceVectorQuantity::niceName() { return name + " (face vector)"; }
 
 // ========================================================
 // ==========        Intrinsic Face Vector       ==========
 // ========================================================
 
 
-SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::string name, FaceData<Complex>& vectors_,
-                                                                       SurfaceMesh* mesh_, int nSym_,
+SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::string name,
+                                                                       std::vector<glm::vec2> vectors_,
+                                                                       SurfaceMesh& mesh_, int nSym_,
                                                                        VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), nSym(nSym_) {
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), nSym(nSym_), vectorField(vectors_) {
 
-  GeometryCache<Euclidean>& gc = parent->geometry->cache;
-  gc.requireFaceBases();
+  parent.ensureHaveFaceTangentSpaces();
 
   double rotAngle = 2.0 * PI / nSym;
-  Complex rot = std::exp(IM_I * rotAngle);
+  Complex rot = std::exp(Complex(0, 1) * rotAngle);
 
   // Copy the vectors
-  vectorField = parent->transfer.transfer(vectors_);
-  for (FacePtr f : parent->mesh->faces()) {
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
 
-    Complex angle = std::pow(vectorField[f], 1.0 / nSym);
+    glm::vec3 normal = parent.faceNormals[iF];
+    glm::vec3 basisX = parent.faceTangentSpaces[iF][0];
+    glm::vec3 basisY = parent.faceTangentSpaces[iF][1];
+
+    glm::vec2 vec = vectorField[iF];
+    Complex angle = std::pow(Complex(vec.x, vec.y), 1.0 / nSym);
+
+    // Face center
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+    glm::vec3 faceCenter = glm::vec3{0., 0., 0.};
+    for (size_t j = 0; j < D; j++) {
+      faceCenter += parent.vertices[face[j]];
+    }
+    faceCenter /= D;
 
     for (int iRot = 0; iRot < nSym; iRot++) {
-      vectorRoots.push_back(parent->geometry->barycenter(f));
+      vectorRoots.push_back(faceCenter);
 
-      Vector3 v = gc.faceBases[f][0] * angle.real() + gc.faceBases[f][1] * angle.imag();
-      vectors.push_back(v);
+      glm::vec3 vec = basisX * (float)angle.real() + basisY * (float)angle.imag();
+      vectors.push_back(vec);
 
       angle *= rot;
     }
   }
 
-  finishConstructing();
+  prepareVectorMapper();
 }
 
-void SurfaceFaceIntrinsicVectorQuantity::buildInfoGUI(FacePtr f) {
+void SurfaceFaceIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
   std::stringstream buffer;
-  buffer << vectorField[f];
+  buffer << "<" << vectorField[iF].x << "," << vectorField[iF].y << ">";
   ImGui::TextUnformatted(buffer.str().c_str());
 
   ImGui::NextColumn();
   ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", std::abs(vectorField[f]));
+  ImGui::Text("magnitude: %g", glm::length(vectorField[iF]));
   ImGui::NextColumn();
 }
 
@@ -316,16 +279,16 @@ void SurfaceFaceIntrinsicVectorQuantity::draw() {
     // Make sure we have a ribbon artist
     if (ribbonArtist == nullptr) {
       // Warning: expensive... Creates noticeable UI lag
-      ribbonArtist = new RibbonArtist(traceField(parent->geometry, vectorField, nSym, 2500));
+      // ribbonArtist = new RibbonArtist(traceField(parent.geometry, vectorField, nSym, 2500));
     }
 
 
     if (enabled) {
 
       // Update transform matrix from parent
-      ribbonArtist->objectTransform = parent->objectTransform;
+      // ribbonArtist->objectTransform = parent.objectTransform;
 
-      ribbonArtist->draw();
+      // ribbonArtist->draw();
     }
   }
 }
@@ -343,6 +306,7 @@ void SurfaceFaceIntrinsicVectorQuantity::drawSubUI() {
   }
 }
 
+std::string SurfaceFaceIntrinsicVectorQuantity::niceName() { return name + " (face intrinsic vector)"; }
 
 // ========================================================
 // ==========       Intrinsic Vertex Vector      ==========
@@ -350,47 +314,50 @@ void SurfaceFaceIntrinsicVectorQuantity::drawSubUI() {
 
 
 SurfaceVertexIntrinsicVectorQuantity::SurfaceVertexIntrinsicVectorQuantity(std::string name,
-                                                                           VertexData<Complex>& vectors_,
-                                                                           SurfaceMesh* mesh_, int nSym_,
+                                                                           std::vector<glm::vec2> vectors_,
+                                                                           SurfaceMesh& mesh_, int nSym_,
                                                                            VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), nSym(nSym_) {
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), nSym(nSym_), vectorField(vectors_) {
 
-  GeometryCache<Euclidean>& gc = parent->geometry->cache;
-  gc.requireVertexBases();
+  parent.ensureHaveVertexTangentSpaces();
 
   double rotAngle = 2.0 * PI / nSym;
-  Complex rot = std::exp(IM_I * rotAngle);
+  Complex rot = std::exp(Complex(0, 1) * rotAngle);
 
   // Copy the vectors
-  vectorField = parent->transfer.transfer(vectors_);
-  for (VertexPtr v : parent->mesh->vertices()) {
+  for (size_t iV = 0; iV < parent.nVertices(); iV++) {
 
-    Complex angle = std::pow(vectorField[v], 1.0 / nSym);
+    glm::vec3 normal = parent.vertexNormals[iV];
+    glm::vec3 basisX = parent.vertexTangentSpaces[iV][0];
+    glm::vec3 basisY = parent.vertexTangentSpaces[iV][1];
+
+    glm::vec2 vec = vectorField[iV];
+    Complex angle = std::pow(Complex(vec.x, vec.y), 1.0 / nSym);
 
     for (int iRot = 0; iRot < nSym; iRot++) {
-      vectorRoots.push_back(parent->geometry->position(v));
+      vectorRoots.push_back(parent.vertices[iV]);
 
-      Vector3 vec = gc.vertexBases[v][0] * angle.real() + gc.vertexBases[v][1] * angle.imag();
+      glm::vec3 vec = basisX * (float)angle.real() + basisY * (float)angle.imag();
       vectors.push_back(vec);
 
       angle *= rot;
     }
   }
 
-  finishConstructing();
+  prepareVectorMapper();
 }
 
-void SurfaceVertexIntrinsicVectorQuantity::buildInfoGUI(VertexPtr v) {
+void SurfaceVertexIntrinsicVectorQuantity::buildVertexInfoGUI(size_t iV) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
   std::stringstream buffer;
-  buffer << vectorField[v];
+  buffer << "<" << vectorField[iV].x << "," << vectorField[iV].y << ">";
   ImGui::TextUnformatted(buffer.str().c_str());
 
   ImGui::NextColumn();
   ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", std::abs(vectorField[v]));
+  ImGui::Text("magnitude: %g", glm::length(vectorField[iV]));
   ImGui::NextColumn();
 }
 
@@ -402,31 +369,31 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
     // Make sure we have a ribbon artist
     if (ribbonArtist == nullptr) {
 
-      // Remap to center of each face
-      GeometryCache<Euclidean>& gc = parent->geometry->cache;
-      gc.requireVertexFaceTransportCoefs();
-      FaceData<Complex> unitFaceVecs(parent->mesh);
-      for (FacePtr f : parent->mesh->faces()) {
+      //// Remap to center of each face
+      // GeometryCache<Euclidean>& gc = parent.geometry->cache;
+      // gc.requireVertexFaceTransportCoefs();
+      // FaceData<Complex> unitFaceVecs(parent.mesh);
+      // for (FacePtr f : parent.mesh->faces()) {
 
-        Complex sum{0.0, 0.0};
-        for (HalfedgePtr he : f.adjacentHalfedges()) {
-          Complex valInFace = std::pow(gc.vertexFaceTransportCoefs[he], nSym) * vectorField[he.vertex()];
-          sum += valInFace;
-        }
-        unitFaceVecs[f] = unit(sum);
-      }
+      // Complex sum{0.0, 0.0};
+      // for (HalfedgePtr he : f.adjacentHalfedges()) {
+      // Complex valInFace = std::pow(gc.vertexFaceTransportCoefs[he], nSym) * vectorField[he.vertex()];
+      // sum += valInFace;
+      //}
+      // unitFaceVecs[f] = unit(sum);
+      //}
 
-      // Warning: expensive... Creates noticeable UI lag
-      ribbonArtist = new RibbonArtist(traceField(parent->geometry, unitFaceVecs, nSym, 2500));
+      //// Warning: expensive... Creates noticeable UI lag
+      // ribbonArtist = new RibbonArtist(traceField(parent.geometry, unitFaceVecs, nSym, 2500));
     }
 
 
     if (enabled) {
 
       // Update transform matrix from parent
-      ribbonArtist->objectTransform = parent->objectTransform;
+      // ribbonArtist->objectTransform = parent.objectTransform;
 
-      ribbonArtist->draw();
+      // ribbonArtist->draw();
     }
   }
 }
@@ -460,76 +427,103 @@ void SurfaceVertexIntrinsicVectorQuantity::drawSubUI() {
   }
 }
 
+std::string SurfaceVertexIntrinsicVectorQuantity::niceName() { return name + " (vertex intrinsic vector)"; }
+
 // ========================================================
 // ==========        Intrinsic One Form          ==========
 // ========================================================
 
 
 SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std::string name,
-                                                                             EdgeData<double>& oneForm_,
-                                                                             SurfaceMesh* mesh_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, VectorType::STANDARD) {
+                                                                             std::vector<double> oneForm_,
+                                                                             std::vector<char> canonicalOrientation_,
+                                                                             SurfaceMesh& mesh_)
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, VectorType::STANDARD), oneForm(oneForm_) {
 
-  GeometryCache<Euclidean>& gc = parent->geometry->cache;
-  gc.requireFaceBases();
-  gc.requireFaceAreas();
-  gc.requireHalfedgeVectors();
-  gc.requireFaceNormals();
+  vectorRoots = std::vector<glm::vec3>(parent.nFaces(), glm::vec3{0., 0., 0.});
+  vectors = std::vector<glm::vec3>(parent.nFaces(), glm::vec3{0., 0., 0.});
+  mappedVectorField = std::vector<glm::vec2>(parent.nFaces(), glm::vec3{0., 0., 0.});
 
-  // Copy the vectors
-  oneForm = parent->transfer.transfer(oneForm_);
-  mappedVectorField = FaceData<Complex>(parent->mesh);
-  for (FacePtr f : parent->mesh->faces()) {
+  // Remap to faces
+  parent.ensureHaveFaceTangentSpaces();
+  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+    auto& face = parent.faces[iF];
+    size_t D = face.size();
+
+    // sorry, need triangles
+    if (D != 3) {
+      warning("tried to visualize 1-form with non-triangular face");
+      continue;
+    }
+
+    // find the face center
+    glm::vec3 faceCenter = glm::vec3{0., 0., 0.};
+    for (size_t j = 0; j < D; j++) {
+      faceCenter += parent.vertices[face[j]];
+    }
+    faceCenter /= D;
+    vectorRoots[iF] = faceCenter;
+
+    std::array<float, 3> formValues;
+    std::array<glm::vec3, 3> vecValues;
+    for (size_t j = 0; j < D; j++) {
+      size_t vA = face[j];
+      size_t vB = face[(j + 1) % D];
+      size_t iE = parent.edgeIndices[iF][j];
+
+      bool isCanonicalOriented;
+      if (parent.vertexPerm.size() > 0) {
+        isCanonicalOriented = ((parent.vertexPerm[vB] > parent.vertexPerm[vA]) != canonicalOrientation_[iE]);
+      } else {
+        isCanonicalOriented = ((vB > vA) != canonicalOrientation_[iE]);
+      }
+      double orientationSign = isCanonicalOriented ? 1. : -1.;
+
+      formValues[j] = orientationSign * oneForm[iE];
+
+      glm::vec3 heVec = parent.vertices[vB] - parent.vertices[vA];
+      vecValues[j] = glm::cross(heVec, parent.faceNormals[iF]);
+    }
+
 
     // Whitney interpolation at center
-    std::array<double, 3> formValues;
-    std::array<Vector3, 3> vecValues;
-    int i = 0;
-    for (HalfedgePtr he : f.adjacentHalfedges()) {
-      double signVal = (he == he.edge().halfedge()) ? 1.0 : -1.0;
-      formValues[i] = oneForm[he.edge()] * signVal;
-      vecValues[i] = cross(gc.halfedgeVectors[he], gc.faceNormals[f]);
-      i++;
-    }
-    Vector3 result = Vector3::zero();
+    glm::vec3 result{0., 0., 0.};
     for (int j = 0; j < 3; j++) {
       result += (formValues[(j + 1) % 3] - formValues[(j + 2) % 3]) * vecValues[j];
     }
-    result /= 6 * gc.faceAreas[f];
+    result /= static_cast<float>(6. * parent.faceAreas[iF]);
 
-    Complex approxVec{dot(result, gc.faceBases[f][0]), dot(result, gc.faceBases[f][1])};
-    mappedVectorField[f] = approxVec;
-
+    glm::vec2 approxVec{glm::dot(result, parent.faceTangentSpaces[iF][0]),
+                        glm::dot(result, parent.faceTangentSpaces[iF][1])};
+    mappedVectorField[iF] = approxVec;
 
     // Fill out data for the little arrows
-    vectorRoots.push_back(parent->geometry->barycenter(f));
-    Vector3 v = gc.faceBases[f][0] * approxVec.real() + gc.faceBases[f][1] * approxVec.imag();
-    vectors.push_back(v);
+    vectors[iF] = result;
   }
 
-  finishConstructing();
+  prepareVectorMapper();
 }
 
-void SurfaceOneFormIntrinsicVectorQuantity::buildInfoGUI(EdgePtr e) {
+void SurfaceOneFormIntrinsicVectorQuantity::buildEdgeInfoGUI(size_t iE) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
-  ImGui::Text("%g", oneForm[e]);
+  ImGui::Text("%g", oneForm[iE]);
 
   ImGui::NextColumn();
 }
 
-void SurfaceOneFormIntrinsicVectorQuantity::buildInfoGUI(FacePtr f) {
+void SurfaceOneFormIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
   ImGui::TextUnformatted((name + "(remapped)").c_str());
   ImGui::NextColumn();
 
   std::stringstream buffer;
-  buffer << mappedVectorField[f];
+  buffer << "<" << mappedVectorField[iF].x << "," << mappedVectorField[iF].y << ">";
   ImGui::TextUnformatted(buffer.str().c_str());
 
   ImGui::NextColumn();
   ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", std::abs(mappedVectorField[f]));
+  ImGui::Text("magnitude: %g", glm::length(mappedVectorField[iF]));
   ImGui::NextColumn();
 }
 
@@ -542,19 +536,20 @@ void SurfaceOneFormIntrinsicVectorQuantity::draw() {
     if (ribbonArtist == nullptr) {
 
       // Warning: expensive... Creates noticeable UI lag
-      FaceData<Complex> unitMappedField(parent->mesh);
-      for (FacePtr f : parent->mesh->faces()) {
-        unitMappedField[f] = mappedVectorField[f] / std::abs(mappedVectorField[f]);
-      }
-      ribbonArtist = new RibbonArtist(traceField(parent->geometry, unitMappedField, 1, 5000));
+      // TODO
+      // FaceData<Complex> unitMappedField(parent.mesh);
+      // for (FacePtr f : parent.mesh->faces()) {
+      // unitMappedField[f] = mappedVectorField[f] / std::abs(mappedVectorField[f]);
+      //}
+      // ribbonArtist = new RibbonArtist(traceField(parent.geometry, unitMappedField, 1, 5000));
     }
 
 
     if (enabled) {
       // Update transform matrix from parent
-      ribbonArtist->objectTransform = parent->objectTransform;
+      // ribbonArtist->objectTransform = parent.objectTransform;
 
-      ribbonArtist->draw();
+      // ribbonArtist->draw();
     }
   }
 }
@@ -566,5 +561,7 @@ void SurfaceOneFormIntrinsicVectorQuantity::drawSubUI() {
     ribbonArtist->buildParametersGUI();
   }
 }
+
+std::string SurfaceOneFormIntrinsicVectorQuantity::niceName() { return name + " (1-form intrinsic vector)"; }
 
 } // namespace polyscope

@@ -1,28 +1,31 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/gl/colormap_sets.h"
 #include "polyscope/histogram.h"
 #include "polyscope/point_cloud.h"
+#include "polyscope/point_cloud_quantity.h"
 
 #include <vector>
 
 namespace polyscope {
 
-class PointCloudColorQuantity : public PointCloudQuantityThatDrawsPoints {
+class PointCloudColorQuantity : public PointCloudQuantity {
 public:
-  PointCloudColorQuantity(std::string name, const std::vector<Vector3>& values, PointCloud* pointCloud_);
+  PointCloudColorQuantity(std::string name, const std::vector<glm::vec3>& values, PointCloud& pointCloud_);
 
-  virtual void drawUI() override;
-  virtual bool wantsBillboardUniforms() override;
+  virtual void draw() override;
 
-  virtual gl::GLProgram* createProgram() override;
+  void buildPickUI(size_t ind) override;
 
-  void fillColorBuffers(gl::GLProgram* p);
-  void buildInfoGUI(size_t ind) override;
+  virtual std::string niceName() override;
 
   // === Members
-  std::vector<Vector3> values;
+  std::vector<glm::vec3> values;
+
+protected:
+  void createPointProgram();
+  std::unique_ptr<gl::GLProgram> pointProgram;
 };
 
 

@@ -1,6 +1,7 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
-#include "polyscope/surface_mesh.h"
+#include "polyscope/gl/gl_utils.h"
 
 
 namespace polyscope {
@@ -11,8 +12,7 @@ public:
   // Input ribbon is a collection of lines; each line is a list of (position, normal) pairs.
   // - normalOffsetFraction is an offset, relative to polyscope::state::lengthScale, along which ribbons are offset in
   // the normal direction.
-  RibbonArtist(const std::vector<std::vector<std::array<geometrycentral::Vector3, 2>>>& ribbons,
-               double normalOffsetFraction = 1e-4);
+  RibbonArtist(const std::vector<std::vector<std::array<glm::vec3, 2>>>& ribbons, double normalOffsetFraction = 1e-4);
   ~RibbonArtist();
 
   void draw();
@@ -25,17 +25,16 @@ public:
   glm::mat4 objectTransform = glm::mat4(1.0);
 
 private:
-
   // Data
-  std::vector<std::vector<std::array<geometrycentral::Vector3, 2>>> ribbons;
+  std::vector<std::vector<std::array<glm::vec3, 2>>> ribbons;
   double normalOffsetFraction;
 
   gl::GLProgram* program = nullptr;
 
   void createProgram();
   void deleteProgram();
-  
-  int iColorMap = 5; // spectral
+
+  gl::ColorMapID cMap = gl::ColorMapID::SPECTRAL;
 };
 
 

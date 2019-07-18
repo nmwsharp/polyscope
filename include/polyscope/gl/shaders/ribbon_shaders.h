@@ -1,8 +1,12 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include "polyscope/gl/shaders.h"
 
-// NOTE: You probably don't want to include this directly... see shaders.h
+namespace polyscope {
+namespace gl {
 
+// clang-format off
 
 static const VertShader RIBBON_VERT_SHADER = {
     // uniforms
@@ -17,7 +21,7 @@ static const VertShader RIBBON_VERT_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         in vec3 a_position;
         in vec3 a_color;
         in vec3 a_normal;
@@ -37,7 +41,7 @@ static const GeomShader RIBBON_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_viewMatrix", GLData::Matrix44Float},
+        {"u_modelView", GLData::Matrix44Float},
         {"u_projMatrix", GLData::Matrix44Float},
         {"u_ribbonWidth", GLData::Float},
         {"u_depthOffset", GLData::Float},
@@ -48,12 +52,12 @@ static const GeomShader RIBBON_GEOM_SHADER = {
     },
 
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         layout(lines_adjacency) in;
         layout(triangle_strip, max_vertices=20) out;
         in vec3 Color[];
         in vec3 Normal[];
-        uniform mat4 u_viewMatrix;
+        uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_ribbonWidth;
         uniform float u_depthOffset;
@@ -62,7 +66,7 @@ static const GeomShader RIBBON_GEOM_SHADER = {
         out vec3 worldPosToFrag;
         out float intensityToFrag;
         void main()   {
-            mat4 PV = u_projMatrix * u_viewMatrix;
+            mat4 PV = u_projMatrix * u_modelView;
             const float PI = 3.14159265358;
 
             vec3 pos0 = gl_in[0].gl_Position.xyz;
@@ -164,7 +168,7 @@ static const FragShader RIBBON_FRAG_SHADER = {
     "outputF",
  
     // source
-    GLSL(150,
+    POLYSCOPE_GLSL(150,
         uniform vec3 u_eye;
         uniform vec3 u_lightCenter;
         uniform float u_lightDist;
@@ -193,3 +197,7 @@ static const FragShader RIBBON_FRAG_SHADER = {
     )
 };
 
+// clang-format on
+
+} // namespace gl
+} // namespace polyscope
