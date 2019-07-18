@@ -278,6 +278,7 @@ void SurfaceFaceIntrinsicVectorQuantity::draw() {
 
     // Make sure we have a ribbon artist
     if (ribbonArtist == nullptr) {
+
       // Warning: expensive... Creates noticeable UI lag
       // ribbonArtist = new RibbonArtist(traceField(parent.geometry, vectorField, nSym, 2500));
     }
@@ -291,11 +292,6 @@ void SurfaceFaceIntrinsicVectorQuantity::draw() {
       // ribbonArtist->draw();
     }
   }
-}
-
-void SurfaceFaceIntrinsicVectorQuantity::writeTracelinesToFile(std::string filename) {
-  auto lines = traceField(parent->geometry, vectorField, nSym, 2500);
-  writeToObjFile(filename, lines);
 }
 
 void SurfaceFaceIntrinsicVectorQuantity::drawSubUI() {
@@ -396,27 +392,6 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
       // ribbonArtist->draw();
     }
   }
-}
-
-
-void SurfaceVertexIntrinsicVectorQuantity::writeTracelinesToFile(std::string filename) {
-
-  // Remap to center of each face
-  GeometryCache<Euclidean>& gc = parent->geometry->cache;
-  gc.requireVertexFaceTransportCoefs();
-  FaceData<Complex> unitFaceVecs(parent->mesh);
-  for (FacePtr f : parent->mesh->faces()) {
-
-    Complex sum{0.0, 0.0};
-    for (HalfedgePtr he : f.adjacentHalfedges()) {
-      Complex valInFace = std::pow(gc.vertexFaceTransportCoefs[he], nSym) * vectorField[he.vertex()];
-      sum += valInFace;
-    }
-    unitFaceVecs[f] = unit(sum);
-  }
-
-  auto lines = traceField(parent->geometry, unitFaceVecs, nSym, 2500);
-  writeToObjFile(filename, lines);
 }
 
 void SurfaceVertexIntrinsicVectorQuantity::drawSubUI() {
