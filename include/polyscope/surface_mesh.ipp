@@ -151,13 +151,13 @@ inline SurfaceFaceCountQuantity* SurfaceMesh::addFaceCountQuantity(std::string n
 template <class T>
 SurfaceDistanceQuantity* SurfaceMesh::addVertexDistanceQuantity(std::string name, const T& distances) {
   validateSize(distances, vertexDataSize, "distance quantity " + name);
-  return addVertexDistanceQuantityImpl(name, distances);
+  return addVertexDistanceQuantityImpl(name, standardizeArray<double>(distances));
 }
 
 template <class T>
 SurfaceDistanceQuantity* SurfaceMesh::addVertexSignedDistanceQuantity(std::string name, const T& distances) {
   validateSize(distances, vertexDataSize, "signed distance quantity " + name);
-  return addVertexSignedDistanceQuantityImpl(name, distances);
+  return addVertexSignedDistanceQuantityImpl(name, standardizeArray<double>(distances));
 }
 
 
