@@ -36,7 +36,7 @@ If Polyscope contributes to an academic publication, cite it as:
 ```bib
 @misc{polyscope,
   title = {Polyscope},
-  author = {Nicholas Sharp},
+  author = {Nicholas Sharp and the Polyscope contributors},
   note = {www.polyscope.run},
   year = {2019}
 }
