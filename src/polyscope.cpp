@@ -856,6 +856,7 @@ void show() {
   while (!glfwWindowShouldClose(mainWindow)) {
     mainLoopIteration();
   }
+  glfwSetWindowShouldClose(mainWindow, false);
 
   if (options::usePrefsFile) {
     writePrefsFile();
