@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/ribbon_artist.h"
 
 #include "polyscope/gl/color_maps.h"
