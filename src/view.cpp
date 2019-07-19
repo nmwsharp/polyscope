@@ -87,6 +87,10 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
     viewMat = glm::translate(viewMat, -state::center);
     break;
   }
+  case NavigateStyle::Planar: {
+    // Do nothing
+    break;
+  }
   case NavigateStyle::Arcball: {
     // Map inputs to unit sphere
     auto toSphere = [](glm::vec2 v) {

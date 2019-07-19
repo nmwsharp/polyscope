@@ -24,6 +24,20 @@ namespace polyscope {
 // Initialize statics
 const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
+// Implementation of constructor
+SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
+                         const std::vector<std::vector<size_t>>& faceIndices)
+    : QuantityStructure<SurfaceMesh>(name), vertices(vertexPositions), faces(faceIndices) {
+
+  computeCounts();
+  computeGeometryData();
+
+  // Colors
+  baseColor = getNextUniqueColor();
+  surfaceColor = baseColor;
+}
+
+
 void SurfaceMesh::computeCounts() {
 
   nFacesTriangulationCount = 0;
@@ -95,8 +109,7 @@ void SurfaceMesh::computeGeometryData() {
 
     glm::vec3 fN = zero;
     double fA = 0;
-    // if (face.size() == 3) {
-    if (true) {
+    if (face.size() == 3) {
       glm::vec3 pA = vertices[face[0]];
       glm::vec3 pB = vertices[face[1]];
       glm::vec3 pC = vertices[face[2]];
@@ -1119,7 +1132,8 @@ SurfaceDistanceQuantity* SurfaceMesh::addVertexDistanceQuantityImpl(std::string 
   return q;
 }
 
-SurfaceDistanceQuantity* SurfaceMesh::addVertexSignedDistanceQuantityImpl(std::string name, const std::vector<double>& data) {
+SurfaceDistanceQuantity* SurfaceMesh::addVertexSignedDistanceQuantityImpl(std::string name,
+                                                                          const std::vector<double>& data) {
   SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, applyPermutation(data, vertexPerm), *this, true);
   addQuantity(q);
   return q;

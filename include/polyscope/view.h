@@ -21,7 +21,7 @@
 namespace polyscope {
 namespace view {
 
-enum class NavigateStyle { Turntable = 0, Free, Arcball };
+enum class NavigateStyle { Turntable = 0, Free, Planar, Arcball };
 
 // === View state
 extern int bufferWidth;

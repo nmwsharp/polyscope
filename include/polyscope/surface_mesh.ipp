@@ -1,6 +1,78 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 namespace polyscope {
 
+// Shorthand to add a mesh to polyscope
+template <class V, class F>
+SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
+                                 bool replaceIfPresent) {
+  SurfaceMesh* s = new SurfaceMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
+                                   standardizeNestedList<size_t, F>(faceIndices));
+  bool success = registerStructure(s);
+  if (!success) {
+    safeDelete(s);
+  }
+
+  return s;
+}
+template <class V, class F>
+SurfaceMesh* registerSurfaceMesh2D(std::string name, const V& vertexPositions, const F& faceIndices,
+                                   bool replaceIfPresent) {
+
+  std::vector<glm::vec3> positions3D = standardizeVectorArray<glm::vec3, 2>(vertexPositions);
+  for (auto& v : positions3D) {
+    v.z = 0.;
+  }
+
+  SurfaceMesh* s = new SurfaceMesh(name, positions3D, standardizeNestedList<size_t, F>(faceIndices));
+  bool success = registerStructure(s);
+  if (!success) {
+    safeDelete(s);
+  }
+
+  return s;
+}
+
+// Shorthand to add a mesh to polyscope while also setting permutations
+template <class V, class F, class P>
+SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
+                                 const std::array<std::pair<P, size_t>, 5>& perms, bool replaceIfPresent) {
+  SurfaceMesh* s = registerSurfaceMesh(name, vertexPositions, faceIndices, replaceIfPresent);
+
+  if (s) {
+    s->setAllPermutations(perms);
+  }
+
+  return s;
+}
+
+
+// Shorthand to get a mesh from polyscope
+inline SurfaceMesh* getSurfaceMesh(std::string name) {
+  return dynamic_cast<SurfaceMesh*>(getStructure(SurfaceMesh::structureTypeName, name));
+}
+
+
+// Make mesh element type printable
+inline std::string getMeshElementTypeName(MeshElement type) {
+  switch (type) {
+  case MeshElement::VERTEX:
+    return "vertex";
+  case MeshElement::FACE:
+    return "face";
+  case MeshElement::EDGE:
+    return "edge";
+  case MeshElement::HALFEDGE:
+    return "halfedge";
+  case MeshElement::CORNER:
+    return "corner";
+  }
+  throw std::runtime_error("broken");
+}
+inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
+  return out << getMeshElementTypeName(value);
+}
+
+
 template <class T>
 void SurfaceMesh::setVertexPermutation(const T& perm, size_t expectedSize) {
 
@@ -225,12 +297,32 @@ SurfaceVertexVectorQuantity* SurfaceMesh::addVertexVectorQuantity(std::string na
   validateSize(vectors, vertexDataSize, "vertex vector quantity " + name);
   return addVertexVectorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(vectors), vectorType);
 }
+template <class T>
+SurfaceVertexVectorQuantity* SurfaceMesh::addVertexVectorQuantity2D(std::string name, const T& vectors,
+                                                                    VectorType vectorType) {
+  validateSize(vectors, vertexDataSize, "vertex vector quantity " + name);
+  std::vector<glm::vec3> vectors3D = standardizeVectorArray<glm::vec3, 2>(vectors);
+  for (auto& v : vectors3D) {
+    v.z = 0.;
+  }
+  return addVertexVectorQuantityImpl(name, vectors3D, vectorType);
+}
 
 template <class T>
 SurfaceFaceVectorQuantity* SurfaceMesh::addFaceVectorQuantity(std::string name, const T& vectors,
                                                               VectorType vectorType) {
   validateSize(vectors, faceDataSize, "face vector quantity " + name);
   return addFaceVectorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(vectors), vectorType);
+}
+template <class T>
+SurfaceFaceVectorQuantity* SurfaceMesh::addFaceVectorQuantity2D(std::string name, const T& vectors,
+                                                                VectorType vectorType) {
+  validateSize(vectors, faceDataSize, "face vector quantity " + name);
+  std::vector<glm::vec3> vectors3D = standardizeVectorArray<glm::vec3, 2>(vectors);
+  for (auto& v : vectors3D) {
+    v.z = 0.;
+  }
+  return addFaceVectorQuantityImpl(name, vectors3D, vectorType);
 }
 
 template <class T>

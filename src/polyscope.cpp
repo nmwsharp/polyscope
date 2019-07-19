@@ -621,6 +621,12 @@ void buildPolyscopeGui() {
       ImGui::SetItemDefaultFocus();
       viewStyleName = "Free";
     }
+    if (ImGui::Selectable("Planar", view::style == view::NavigateStyle::Planar)) {
+      view::style = view::NavigateStyle::Planar;
+      view::flyToHomeView();
+      ImGui::SetItemDefaultFocus();
+      viewStyleName = "Planar";
+    }
     // if (ImGui::Selectable("Arcblob", view::style == view::NavigateStyle::Arcball)) {
     // view::style = view::NavigateStyle::Arcball;
     // ImGui::SetItemDefaultFocus();

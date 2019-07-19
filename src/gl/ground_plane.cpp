@@ -86,6 +86,9 @@ void drawGroundPlane() {
 
   if (!groundPlaneEnabled) return;
 
+  // don't draw ground in planar mode
+  if (view::style == view::NavigateStyle::Planar) return;
+
   if (!groundPlanePrepared) {
     prepareGroundPlane();
   }

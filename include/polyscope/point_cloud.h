@@ -36,8 +36,7 @@ public:
   // === Member functions ===
 
   // Construct a new point cloud structure
-  template <class T>
-  PointCloud(std::string name, const T& points);
+  PointCloud(std::string name, std::vector<glm::vec3> points);
 
   // === Overloads
 
@@ -74,6 +73,9 @@ public:
   template <class T>
   PointCloudVectorQuantity* addVectorQuantity(std::string name, const T& vectors,
                                               VectorType vectorType = VectorType::STANDARD);
+  template <class T>
+  PointCloudVectorQuantity* addVectorQuantity2D(std::string name, const T& vectors,
+                                                VectorType vectorType = VectorType::STANDARD);
 
   // The points that make up this point cloud
   std::vector<glm::vec3> points;
@@ -112,29 +114,14 @@ private:
 };
 
 
-// Implementation of templated constructor
-template <class T>
-PointCloud::PointCloud(std::string name, const T& points_)
-    : QuantityStructure<PointCloud>(name), points(standardizeVectorArray<glm::vec3, 3>(points_)) {
-
-  initialBaseColor = getNextUniqueColor();
-  pointColor = initialBaseColor;
-}
-
-
 // Shorthand to add a point cloud to polyscope
 template <class T>
-void registerPointCloud(std::string name, const T& points, bool replaceIfPresent = true) {
-  PointCloud* s = new PointCloud(name, points);
-  bool success = registerStructure(s);
-  if (!success) delete s;
-}
-
+void registerPointCloud(std::string name, const T& points, bool replaceIfPresent = true);
+template <class T>
+void registerPointCloud2D(std::string name, const T& points, bool replaceIfPresent = true);
 
 // Shorthand to get a point cloud from polyscope
-inline PointCloud* getPointCloud(std::string name = "") {
-  return dynamic_cast<PointCloud*>(getStructure(PointCloud::structureTypeName, name));
-}
+inline PointCloud* getPointCloud(std::string name = "");
 
 
 } // namespace polyscope

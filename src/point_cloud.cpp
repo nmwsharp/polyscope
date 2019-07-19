@@ -26,6 +26,15 @@ namespace polyscope {
 // Initialize statics
 const std::string PointCloud::structureTypeName = "Point Cloud";
 
+// Constructor
+PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
+    : QuantityStructure<PointCloud>(name), points(std::move(points_)) {
+
+  initialBaseColor = getNextUniqueColor();
+  pointColor = initialBaseColor;
+}
+
+
 // Helper to set uniforms
 void PointCloud::setPointCloudUniforms(gl::GLProgram& p) {
   p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
