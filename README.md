@@ -20,8 +20,8 @@ polyscope::init();
 polyscope::registerSurfaceMesh("my mesh", mesh.vertices, mesh.faces);
 
 // Add a scalar and a vector function to the mesh
-polyscope::getSurfaceMesh("my mesh")->addQuantity("my_scalar", scalarQuantity);
-polyscope::getSurfaceMesh("my mesh")->addQuantity("my_vector", vectorQuantity);
+polyscope::getSurfaceMesh("my mesh")->addVertexScalarQuantity("my_scalar", scalarQuantity);
+polyscope::getSurfaceMesh("my mesh")->addFaceVectorQuantity("my_vector", vectorQuantity);
 
 // Show the gui
 polyscope::show();
