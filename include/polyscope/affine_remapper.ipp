@@ -180,10 +180,10 @@ inline T AffineRemapper<T>::map(const T& x) {
 
 template <typename T>
 std::string AffineRemapper<T>::printBounds() {
-  size_t bSize = 50;
-  char b[bSize];
-  snprintf(b, bSize, "[%6.2e, %6.2e]", minVal, maxVal);
-  return std::string(b);
+  const size_t bSize = 32;
+  std::array<char, bSize> b;
+  snprintf(b.data(), bSize, "[%6.2e, %6.2e]", minVal, maxVal);
+  return std::string(b.data());
 }
 
 }; // namespace polyscope
