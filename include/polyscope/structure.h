@@ -94,7 +94,7 @@ public:
   // = Manage quantities
 
   // Note: takes ownership of pointer after it is passed in
-  void addQuantity(QuantityType* q, bool allowReplacement = false);
+  void addQuantity(QuantityType* q, bool allowReplacement = true);
 
   QuantityType* getQuantity(std::string name);
   void removeQuantity(std::string name);
