@@ -28,12 +28,13 @@ public:
   const std::string descriptiveType; // ("vertex count", etc)
   std::unique_ptr<gl::GLProgram> program;
 
-protected:
-  void setUniforms(gl::GLProgram& p);
   float pointRadius = 0.003;
   float vizRangeLow, vizRangeHigh, dataRangeLow, dataRangeHigh;
   gl::ColorMapID cMap = gl::ColorMapID::COOLWARM;
 
+protected:
+  void initializeLimits();
+  void setUniforms(gl::GLProgram& p);
   void createProgram();
 };
 

@@ -17,10 +17,7 @@ namespace polyscope {
 SurfaceCountQuantity::SurfaceCountQuantity(std::string name, SurfaceMesh& mesh_, std::string descriptiveType_)
     : SurfaceMeshQuantity(name, mesh_), descriptiveType(descriptiveType_) {}
 
-void SurfaceCountQuantity::createProgram() {
-
-  program.reset(new gl::GLProgram(&gl::SPHERE_VALUE_VERT_SHADER, &gl::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
-                                  &gl::SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+void SurfaceCountQuantity::initializeLimits() {
 
   // limits
   sum = 0;
@@ -34,6 +31,13 @@ void SurfaceCountQuantity::createProgram() {
   std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(allValues);
   vizRangeLow = dataRangeLow;
   vizRangeHigh = dataRangeHigh;
+}
+
+void SurfaceCountQuantity::createProgram() {
+
+  program.reset(new gl::GLProgram(&gl::SPHERE_VALUE_VERT_SHADER, &gl::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
+                                  &gl::SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+
 
   // Fill buffers
   std::vector<glm::vec3> pos;
@@ -82,7 +86,7 @@ void SurfaceCountQuantity::draw() {
 void SurfaceCountQuantity::buildCustomUI() {
 
   if (buildColormapSelector(cMap)) {
-      program->setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
+    program->setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
   }
   ImGui::Text("Sum: %d", sum);
 
@@ -129,6 +133,8 @@ SurfaceVertexCountQuantity::SurfaceVertexCountQuantity(std::string name, std::ve
     values[t.first] = t.second;
     entries.push_back(std::make_pair(parent.vertices[t.first], t.second));
   }
+
+  initializeLimits();
 }
 
 void SurfaceVertexCountQuantity::buildVertexInfoGUI(size_t vInd) {
@@ -177,6 +183,8 @@ SurfaceVertexIsolatedScalarQuantity::SurfaceVertexIsolatedScalarQuantity(std::st
     values[t.first] = t.second;
     entries.push_back(std::make_pair(parent.vertices[t.first], t.second));
   }
+
+  initializeLimits();
 }
 
 void SurfaceVertexIsolatedScalarQuantity::buildVertexInfoGUI(size_t vInd) {
@@ -231,6 +239,8 @@ SurfaceFaceCountQuantity::SurfaceFaceCountQuantity(std::string name, std::vector
 
     entries.push_back(std::make_pair(faceCenter, t.second));
   }
+
+  initializeLimits();
 }
 
 void SurfaceFaceCountQuantity::buildFaceInfoGUI(size_t fInd) {
