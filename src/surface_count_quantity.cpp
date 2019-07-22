@@ -86,7 +86,7 @@ void SurfaceCountQuantity::draw() {
 void SurfaceCountQuantity::buildCustomUI() {
 
   if (buildColormapSelector(cMap)) {
-    program->setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
+    program.reset();
   }
   ImGui::Text("Sum: %d", sum);
 
