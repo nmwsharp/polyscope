@@ -1244,4 +1244,47 @@ SurfaceMesh::addOneFormIntrinsicVectorQuantityImpl(std::string name, const std::
   return q;
 }
 
+void SurfaceMesh::setVertexTangentBasisXImpl(const std::vector<glm::vec3>& vectors) {
+
+  std::vector<glm::vec3> inputBasisX = applyPermutation(vectors, vertexPerm);
+  vertexTangentSpaces.resize(nVertices());
+
+  for (size_t iV = 0; iV < nVertices(); iV++) {
+
+    glm::vec3 basisX = inputBasisX[iV];
+    glm::vec3 normal = vertexNormals[iV];
+
+    // Project in to tangent defined by our normals
+    basisX = glm::normalize(basisX - normal * glm::dot(normal, basisX));
+
+    // Let basis Y complete the frame
+    glm::vec3 basisY = glm::cross(normal, basisX);
+
+    vertexTangentSpaces[iV][0] = basisX;
+    vertexTangentSpaces[iV][1] = basisY;
+  }
+}
+
+void SurfaceMesh::setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors) {
+
+  std::vector<glm::vec3> inputBasisX = applyPermutation(vectors, facePerm);
+  faceTangentSpaces.resize(nFaces());
+
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+
+    glm::vec3 basisX = inputBasisX[iF];
+    glm::vec3 normal = faceNormals[iF];
+
+    // Project in to tangent defined by our normals
+    basisX = glm::normalize(basisX - normal * glm::dot(normal, basisX));
+
+    // Let basis Y complete the frame
+    glm::vec3 basisY = glm::cross(normal, basisX);
+
+    faceTangentSpaces[iF][0] = basisX;
+    faceTangentSpaces[iF][1] = basisY;
+  }
+}
+
+
 } // namespace polyscope

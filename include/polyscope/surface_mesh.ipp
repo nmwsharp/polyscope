@@ -351,4 +351,41 @@ SurfaceOneFormIntrinsicVectorQuantity* SurfaceMesh::addOneFormIntrinsicVectorQua
 }
 
 
+template <class T>
+void SurfaceMesh::setVertexTangentBasisX(const T& vectors) {
+  validateSize(vectors, vertexDataSize, "vertex tangent basis X");
+  setVertexTangentBasisXImpl(standardizeVectorArray<glm::vec3, 3>(vectors));
+}
+
+template <class T>
+void SurfaceMesh::setVertexTangentBasisX2D(const T& vectors) {
+  validateSize(vectors, vertexDataSize, "vertex tangent basis X");
+
+  std::vector<glm::vec3> vec3D = standardizeVectorArray<glm::vec3, 2>(vectors);
+  for (glm::vec3& v : vec3D) {
+    v.z = 0.;
+  }
+
+  setVertexTangentBasisXImpl(vec3D);
+}
+
+template <class T>
+void SurfaceMesh::setFaceTangentBasisX(const T& vectors) {
+  validateSize(vectors, faceDataSize, "face tangent basis X");
+  setFaceTangentBasisXImpl(standardizeVectorArray<glm::vec3, 3>(vectors));
+}
+
+template <class T>
+void SurfaceMesh::setFaceTangentBasisX2D(const T& vectors) {
+  validateSize(vectors, faceDataSize, "face tangent basis X");
+
+  std::vector<glm::vec3> vec3D = standardizeVectorArray<glm::vec3, 2>(vectors);
+  for (glm::vec3& v : vec3D) {
+    v.z = 0.;
+  }
+
+  setFaceTangentBasisXImpl(vec3D);
+}
+
+
 } // namespace polyscope

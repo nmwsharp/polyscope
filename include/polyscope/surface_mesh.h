@@ -244,7 +244,22 @@ public:
   void ensureHaveFaceTangentSpaces();
   void ensureHaveVertexTangentSpaces();
 
-  // TODO templated functions to set tangent spaces
+  // Set tangent space coordinates for vertices 
+  template <class T>
+  void setVertexTangentBasisX(const T& vectors);
+  template <class T>
+  void setVertexTangentBasisX2D(const T& vectors);
+  
+  // Set tangent space coordinates for faces
+  template <class T>
+  void setFaceTangentBasisX(const T& vectors);
+  template <class T>
+  void setFaceTangentBasisX2D(const T& vectors);
+
+
+
+  // Set tangent space coordinates for faces
+
 
   // === Member variables ===
   static const std::string structureTypeName;
@@ -255,7 +270,8 @@ public:
 
   // Returns the face ands coordinates in that face of the last pick. fOut == FacePtr() if not in any face. Note that
   // you may needed to update the pick data, beacuse this uses mouse coordinates from the current state but possibly
-  // old pick lookup results. void getPickedFacePoint(FacePtr& fOut, glm::vec3& baryCoordOut);
+  // old pick lookup results. 
+  // void getPickedFacePoint(FacePtr& fOut, glm::vec3& baryCoordOut);
 
 private:
   // Visualization settings
@@ -301,8 +317,10 @@ private:
   // bool screenSpaceTriangleTest(size_t fInd, glm::vec2 testCoords, glm::vec3& bCoordOut);
 
 
-  // === Quantity adders
   // clang-format off
+  
+  // === Quantity adders
+
   SurfaceVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   SurfaceFaceColorQuantity* addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   SurfaceVertexCountQuantity* addVertexCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
@@ -324,7 +342,10 @@ private:
   SurfaceVertexIntrinsicVectorQuantity* addVertexIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym, VectorType vectorType);
   SurfaceOneFormIntrinsicVectorQuantity* addOneFormIntrinsicVectorQuantityImpl(std::string name, const std::vector<double>& data, const std::vector<char>& orientations);
 
+  // === Helper implementations
 
+  void setVertexTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
+  void setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
   // clang-format on
 };
 
