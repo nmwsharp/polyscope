@@ -158,7 +158,7 @@ public:
 
 
   // === Make a one-time selection
-  // size_t selectVertex();
+  long long int selectVertex();
   // size_t selectFace();
 
   // === Mutate

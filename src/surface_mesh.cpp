@@ -905,23 +905,16 @@ std::tuple<glm::vec3, glm::vec3> SurfaceMesh::boundingBox() {
 
 std::string SurfaceMesh::typeName() { return structureTypeName; }
 
-/* TODO resurrect
-VertexPtr SurfaceMesh::selectVertex() {
+long long int SurfaceMesh::selectVertex() {
 
   // Make sure we can see edges
-  edgeWidth = 0.01;
-  enabled = true;
+  edgeWidth = 1.;
+  this->setEnabled(true);
 
-  // Create a new context
-  ImGuiContext* oldContext = ImGui::GetCurrentContext();
-  ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
-  ImGui::SetCurrentContext(newContext);
-  initializeImGUIContext();
-  VertexPtr returnVert;
-  int iV = 0;
+  long long int returnVertInd = -1;
 
   // Register the callback which creates the UI and does the hard work
-  focusedPopupUI = [&]() {
+  auto focusedPopupUI = [&]() {
     { // Create a window with instruction and a close button.
       static bool showWindow = true;
       ImGui::SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
@@ -931,67 +924,59 @@ VertexPtr SurfaceMesh::selectVertex() {
       ImGui::TextUnformatted("Hold ctrl and left-click to select a vertex");
       ImGui::Separator();
 
-      // Pick by number
+      // Choose by number
       ImGui::PushItemWidth(300);
+      int iV = -1;
       ImGui::InputInt("index", &iV);
       if (ImGui::Button("Select by index")) {
-        if (iV >= 0 && (size_t)iV < mesh->nVertices()) {
-          returnVert = mesh->vertex(iV);
-          focusedPopupUI = nullptr;
+        if (iV >= 0 && (size_t)iV < nVertices()) {
+          returnVertInd = iV;
+          popContext();
         }
       }
       ImGui::PopItemWidth();
 
       ImGui::Separator();
       if (ImGui::Button("Abort")) {
-        focusedPopupUI = nullptr;
+        popContext();
       }
     }
 
     ImGuiIO& io = ImGui::GetIO();
     if (io.KeyCtrl && !io.WantCaptureMouse && ImGui::IsMouseClicked(0)) {
       if (pick::pickIsFromThisFrame) {
+
+        ImGuiIO& io = ImGui::GetIO();
+
+        // TODO fix semi-broken picking...
+        // API is a giant mess..
         size_t pickInd;
+        ImVec2 p = ImGui::GetMousePos();
+        pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
         Structure* pickS = pick::getCurrentPickElement(pickInd);
 
         if (pickS == this) {
-          VertexPtr v;
-          EdgePtr e;
-          FacePtr f;
-          HalfedgePtr he;
-          getPickedElement(pickInd, v, f, e, he);
 
-          if (v != VertexPtr()) {
-            returnVert = v;
-            focusedPopupUI = nullptr;
+          if (pickInd < nVertices()) {
+            returnVertInd = pickInd;
+            popContext();
           }
         }
       }
     }
-
-    ImGui::End();
   };
 
+  // Pass control to the context we just created
+  pushContext(focusedPopupUI);
 
-  // Re-enter main loop
-  while (focusedPopupUI) {
-    mainLoopIteration();
-  }
-
-  // Restore the old context
-  ImGui::SetCurrentContext(oldContext);
-  ImGui::DestroyContext(newContext);
-
-  if (returnVert == VertexPtr()) return returnVert;
-
-  return transfer.vMapBack[returnVert];
+  return returnVertInd;
 }
 
-
+/*
 FacePtr SurfaceMesh::selectFace() {
 
   // Make sure we can see edges
-  edgeWidth = 0.01;
+  edgeWidth = 1.;
   enabled = true;
 
   // Create a new context
