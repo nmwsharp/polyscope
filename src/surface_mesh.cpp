@@ -926,7 +926,7 @@ long long int SurfaceMesh::selectVertex() {
 
       // Choose by number
       ImGui::PushItemWidth(300);
-      int iV = -1;
+      static int iV = -1;
       ImGui::InputInt("index", &iV);
       if (ImGui::Button("Select by index")) {
         if (iV >= 0 && (size_t)iV < nVertices()) {
