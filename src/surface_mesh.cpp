@@ -940,6 +940,8 @@ long long int SurfaceMesh::selectVertex() {
       if (ImGui::Button("Abort")) {
         popContext();
       }
+
+      ImGui::End();
     }
 
     ImGuiIO& io = ImGui::GetIO();
