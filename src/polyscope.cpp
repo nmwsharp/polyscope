@@ -14,9 +14,9 @@
 #endif
 
 #define IMGUI_IMPL_OPENGL_LOADER_GLAD
-#include "imgui.h"
 #include "examples/imgui_impl_glfw.h"
 #include "examples/imgui_impl_opengl3.h"
+#include "imgui.h"
 
 #include "polyscope/gl/ground_plane.h"
 #include "polyscope/gl/materials/materials.h"
@@ -215,6 +215,9 @@ void setStyle() {
   colors[ImGuiCol_TextSelectedBg] = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
   colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
   colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+  colors[ImGuiCol_Tab] = ImVec4(0.27f, 0.54f, 0.42f, 0.83f);
+  colors[ImGuiCol_TabHovered] = ImVec4(0.34f, 0.68f, 0.53f, 0.83f);
+  colors[ImGuiCol_TabActive] = ImVec4(0.38f, 0.76f, 0.58f, 0.83f);
 }
 
 const std::string prefsFilename = ".polyscope.ini";
