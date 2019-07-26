@@ -148,6 +148,8 @@ public:
   // = Misc quantities
   template <class P, class E>
   SurfaceGraphQuantity* addSurfaceGraphQuantity(std::string name, const P& nodes, const E& edges);
+  template <class P>
+  SurfaceGraphQuantity* addSurfaceGraphQuantity(std::string name, const std::vector<P>& paths);
 
   // = I/O Selections
   template <class T>
@@ -244,18 +246,17 @@ public:
   void ensureHaveFaceTangentSpaces();
   void ensureHaveVertexTangentSpaces();
 
-  // Set tangent space coordinates for vertices 
+  // Set tangent space coordinates for vertices
   template <class T>
   void setVertexTangentBasisX(const T& vectors);
   template <class T>
   void setVertexTangentBasisX2D(const T& vectors);
-  
+
   // Set tangent space coordinates for faces
   template <class T>
   void setFaceTangentBasisX(const T& vectors);
   template <class T>
   void setFaceTangentBasisX2D(const T& vectors);
-
 
 
   // Set tangent space coordinates for faces
@@ -270,7 +271,7 @@ public:
 
   // Returns the face ands coordinates in that face of the last pick. fOut == FacePtr() if not in any face. Note that
   // you may needed to update the pick data, beacuse this uses mouse coordinates from the current state but possibly
-  // old pick lookup results. 
+  // old pick lookup results.
   // void getPickedFacePoint(FacePtr& fOut, glm::vec3& baryCoordOut);
 
 private:

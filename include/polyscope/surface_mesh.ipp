@@ -241,6 +241,32 @@ SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantity(std::string name, con
 }
 
 
+template <class P>
+SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantity(std::string name, const std::vector<P>& paths) {
+
+  // Convert to vector of paths
+  std::vector<std::vector<glm::vec3>> convertPaths;
+  for (const P& inputP : paths) {
+    convertPaths.emplace_back(standardizeVectorArray<glm::vec3, 3>(inputP));
+  }
+
+  // Build flat list of nodes and edges between them
+  std::vector<glm::vec3> nodes;
+  std::vector<std::array<size_t, 2>> edges;
+  for (auto& p : convertPaths) {
+    for (size_t i = 0; i < p.size(); i++) {
+      size_t N = nodes.size();
+      nodes.push_back(p[i]);
+      if (i > 0) {
+        edges.push_back({N - 1, N});
+      }
+    }
+  }
+
+  return addSurfaceGraphQuantityImpl(name, nodes, edges);
+}
+
+
 // Standard a parameterization, defined at corners
 template <class T>
 SurfaceCornerParameterizationQuantity* SurfaceMesh::addParameterizationQuantity(std::string name, const T& coords,
