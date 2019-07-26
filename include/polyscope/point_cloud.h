@@ -89,11 +89,12 @@ public:
   void writePointsToFile(std::string filename = "");
   void setPointCloudUniforms(gl::GLProgram& p);
 
-private:
   // Visualization parameters
   glm::vec3 initialBaseColor;
   glm::vec3 pointColor;
   float pointRadius = 0.005;
+
+private:
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
@@ -116,9 +117,9 @@ private:
 
 // Shorthand to add a point cloud to polyscope
 template <class T>
-void registerPointCloud(std::string name, const T& points, bool replaceIfPresent = true);
+PointCloud* registerPointCloud(std::string name, const T& points, bool replaceIfPresent = true);
 template <class T>
-void registerPointCloud2D(std::string name, const T& points, bool replaceIfPresent = true);
+PointCloud* registerPointCloud2D(std::string name, const T& points, bool replaceIfPresent = true);
 
 // Shorthand to get a point cloud from polyscope
 inline PointCloud* getPointCloud(std::string name = "");
