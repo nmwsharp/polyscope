@@ -274,14 +274,16 @@ public:
   // old pick lookup results.
   // void getPickedFacePoint(FacePtr& fOut, glm::vec3& baryCoordOut);
 
-private:
   // Visualization settings
   glm::vec3 baseColor;
   glm::vec3 surfaceColor;
   glm::vec3 edgeColor{0., 0., 0.};
-  ShadeStyle shadeStyle = ShadeStyle::FLAT;
-  bool showEdges = false;
   float edgeWidth = 0.0;
+
+private:
+  
+  // Visualization settings
+  ShadeStyle shadeStyle = ShadeStyle::FLAT;
 
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
