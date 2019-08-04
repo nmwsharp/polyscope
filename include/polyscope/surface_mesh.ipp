@@ -240,6 +240,17 @@ SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantity(std::string name, con
                                      standardizeVectorArray<std::array<size_t, 2>, 2>(edges));
 }
 
+template <class P, class E>
+SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantity2D(std::string name, const P& nodes, const E& edges) {
+
+  std::vector<glm::vec3> nodes3D = standardizeVectorArray<glm::vec3, 2>(nodes);
+  for (glm::vec3& v : nodes3D) {
+    v.z = 0.;
+  }
+
+  return addSurfaceGraphQuantityImpl(name, nodes3D, standardizeVectorArray<std::array<size_t, 2>, 2>(edges));
+}
+
 
 template <class P>
 SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantity(std::string name, const std::vector<P>& paths) {
@@ -264,6 +275,22 @@ SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantity(std::string name, con
   }
 
   return addSurfaceGraphQuantityImpl(name, nodes, edges);
+}
+
+template <class P>
+SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantity2D(std::string name, const std::vector<P>& paths) {
+
+  // Convert and call the general version
+  std::vector<std::vector<glm::vec3>> paths3D;
+  for (const P& inputP : paths) {
+    std::vector<glm::vec3> p = standardizeVectorArray<glm::vec3, 2>(inputP);
+    for (glm::vec3& v : p) {
+      v.z = 0.;
+    }
+    paths3D.emplace_back(p);
+  }
+
+  return addSurfaceGraphQuantity(name, paths3D);
 }
 
 

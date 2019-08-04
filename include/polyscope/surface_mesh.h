@@ -148,8 +148,12 @@ public:
   // = Misc quantities
   template <class P, class E>
   SurfaceGraphQuantity* addSurfaceGraphQuantity(std::string name, const P& nodes, const E& edges);
+  template <class P, class E>
+  SurfaceGraphQuantity* addSurfaceGraphQuantity2D(std::string name, const P& nodes, const E& edges);
   template <class P>
   SurfaceGraphQuantity* addSurfaceGraphQuantity(std::string name, const std::vector<P>& paths);
+  template <class P>
+  SurfaceGraphQuantity* addSurfaceGraphQuantity2D(std::string name, const std::vector<P>& paths);
 
   // = I/O Selections
   template <class T>
