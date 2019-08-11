@@ -92,12 +92,13 @@ void PointCloud::drawPick() {
 }
 
 void PointCloud::prepare() {
-
   // It not quantity is coloring the points, draw with a default color
-  if (dominantQuantity == nullptr) {
-    program.reset(new gl::GLProgram(&gl::SPHERE_VERT_SHADER, &gl::SPHERE_BILLBOARD_GEOM_SHADER,
-                                    &gl::SPHERE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+  if (dominantQuantity != nullptr) {
+    return;
   }
+
+  program.reset(new gl::GLProgram(&gl::SPHERE_VERT_SHADER, &gl::SPHERE_BILLBOARD_GEOM_SHADER,
+                                  &gl::SPHERE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
   setMaterialForProgram(*program, "wax");
 
   // Fill out the geometry data for the program
@@ -114,7 +115,7 @@ void PointCloud::preparePick() {
   pickProgram.reset(new gl::GLProgram(&gl::SPHERE_COLOR_VERT_SHADER, &gl::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
                                       &gl::SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
 
-  // Fill an index buffer
+  // Fill color buffer with packed point indices
   std::vector<glm::vec3> pickColors;
   for (size_t i = pickStart; i < pickStart + pickCount; i++) {
     glm::vec3 val = pick::indToVec(i);
@@ -150,9 +151,11 @@ void PointCloud::buildPickUI(size_t localPickID) {
 
 void PointCloud::buildCustomUI() {
   ImGui::Text("# points: %lld", static_cast<long long int>(points.size()));
-  ImGui::SameLine();
   ImGui::ColorEdit3("Point color", (float*)&pointColor, ImGuiColorEditFlags_NoInputs);
-  ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
+  ImGui::SameLine();
+  ImGui::PushItemWidth(100);
+  ImGui::SliderFloat("Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
+  ImGui::PopItemWidth();
 }
 
 void PointCloud::buildCustomOptionsUI() {

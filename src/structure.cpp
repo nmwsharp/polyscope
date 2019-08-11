@@ -61,9 +61,12 @@ void Structure::buildUI() {
   ImGui::PopID();
 }
 
+
 void Structure::buildQuantitiesUI() {}
 
 void Structure::buildSharedStructureUI() {}
+
+void Structure::buildCustomOptionsUI() {}
 
 void Structure::resetTransform() {
   objectTransform = glm::mat4(1.0);

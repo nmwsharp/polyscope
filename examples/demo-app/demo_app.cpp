@@ -1,6 +1,7 @@
 #include "polyscope/polyscope.h"
 
 #include "polyscope/combining_hash_functions.h"
+#include "polyscope/curve_network.h"
 #include "polyscope/messages.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
@@ -27,6 +28,54 @@ using std::string;
 
 bool endsWith(const std::string& str, const std::string& suffix) {
   return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nodes,
+                               std::vector<std::array<size_t, 2>> edges) {
+
+  // Add the curve
+  if (edges.size() > 0) {
+    polyscope::registerCurveNetwork(curveName, nodes, edges);
+  } else {
+    polyscope::registerCurveNetworkLine(curveName, nodes);
+    edges = polyscope::getCurveNetwork(curveName)->edges;
+  }
+
+  // Useful data
+  size_t nNodes = nodes.size();
+  size_t nEdges = edges.size();
+
+  { // Add some node values
+    std::vector<double> valX(nNodes);
+    std::vector<std::array<double, 3>> randColor(nNodes);
+    std::vector<glm::vec3> randVec(nNodes);
+    for (size_t iN = 0; iN < nNodes; iN++) {
+      valX[iN] = nodes[iN].x;
+      randColor[iN] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
+      randVec[iN] = glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5};
+    }
+    polyscope::getCurveNetwork(curveName)->addNodeScalarQuantity("nX", valX);
+    polyscope::getCurveNetwork(curveName)->addNodeColorQuantity("nColor", randColor);
+    polyscope::getCurveNetwork(curveName)->addNodeVectorQuantity("randVecN", randVec);
+  }
+
+  { // Add some edge values
+    std::vector<double> edgeLen(nEdges);
+    std::vector<std::array<double, 3>> randColor(nEdges);
+    std::vector<glm::vec3> randVec(nEdges);
+    for (size_t iE = 0; iE < nEdges; iE++) {
+      auto edge = edges[iE];
+      size_t nA = std::get<0>(edge);
+      size_t nB = std::get<1>(edge);
+
+      edgeLen[iE] = glm::length(nodes[nA] - nodes[nB]);
+      randColor[iE] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
+      randVec[iE] = glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5};
+    }
+    polyscope::getCurveNetwork(curveName)->addEdgeScalarQuantity("edge len", edgeLen, polyscope::DataType::MAGNITUDE);
+    polyscope::getCurveNetwork(curveName)->addEdgeColorQuantity("eColor", randColor);
+    polyscope::getCurveNetwork(curveName)->addEdgeVectorQuantity("randVecE", randVec);
+  }
 }
 
 void processFileOBJ(string filename) {
@@ -259,6 +308,26 @@ void processFileOBJ(string filename) {
     polyscope::getSurfaceMesh(niceName)->addSurfaceGraphQuantity("surface graph", vertexPositionsGLM, edges);
   }
 
+
+  { // Add a curve network from the edges
+    std::vector<std::array<size_t, 2>> edges;
+    for (size_t iF = 0; iF < nFaces; iF++) {
+      std::vector<size_t>& face = faceIndices[iF];
+
+      for (size_t iV = 0; iV < face.size(); iV++) {
+        size_t i0 = face[iV];
+        size_t i1 = face[(iV + 1) % face.size()];
+        if (i0 < i1) {
+          edges.push_back({i0, i1});
+        }
+      }
+    }
+
+    std::string curveName = niceName + " curves";
+    constructDemoCurveNetwork(curveName, vertexPositionsGLM, edges);
+  }
+
+
   /*
 
   // === Input quantities
@@ -360,7 +429,7 @@ int main(int argc, char** argv) {
   }
 
   // Options
-  polyscope::options::autocenterStructures = true;
+  // polyscope::options::autocenterStructures = true;
   // polyscope::view::windowWidth = 600;
   // polyscope::view::windowHeight = 800;
 
@@ -373,7 +442,7 @@ int main(int argc, char** argv) {
   }
 
   // Create a point cloud
-  for (int j = 0; j < 3; j++) {
+  for (int j = 0; j < 1; j++) {
     std::vector<glm::vec3> points;
     for (size_t i = 0; i < 3000; i++) {
       points.push_back(

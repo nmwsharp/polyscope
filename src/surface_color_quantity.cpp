@@ -84,7 +84,7 @@ void SurfaceVertexColorQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::NextColumn();
 }
 
-std::string SurfaceColorQuantity::niceName() { return name + " (" + definedOn + " scalar)"; }
+std::string SurfaceColorQuantity::niceName() { return name + " (" + definedOn + " color)"; }
 
 void SurfaceColorQuantity::geometryChanged() { program.reset(); }
 

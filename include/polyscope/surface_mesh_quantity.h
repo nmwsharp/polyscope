@@ -14,6 +14,7 @@ class SurfaceMesh;
 class SurfaceMeshQuantity : public Quantity<SurfaceMesh> {
 public:
   SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates = false);
+  ~SurfaceMeshQuantity() {};
 
 public:
   // Notify that the geometry has changed

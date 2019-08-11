@@ -6,13 +6,14 @@
 
 namespace polyscope {
 
-// Forward delcare surface mesh
+// Forward delcare point cloud
 class PointCloud;
 
-// Extend Quantity<SurfaceMesh> to add a few extra functions
+// Extend Quantity<PointCloud> to add a few extra functions
 class PointCloudQuantity : public Quantity<PointCloud> {
 public:
   PointCloudQuantity(std::string name, PointCloud& parentStructure, bool dominates = false);
+  virtual ~PointCloudQuantity() {};
 
   // Build GUI info about a point
   virtual void buildInfoGUI(size_t pointInd);

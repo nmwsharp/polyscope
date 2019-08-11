@@ -60,6 +60,12 @@ SET(SRCS
   #surface_subset_quantity.cpp
   #surface_selection_quantity.cpp
   #surface_input_curve_quantity.cpp
+  
+  # Curve network
+  curve_network.cpp
+  curve_network_scalar_quantity.cpp
+  curve_network_color_quantity.cpp
+  curve_network_vector_quantity.cpp
 )
 
 

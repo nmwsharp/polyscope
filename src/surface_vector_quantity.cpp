@@ -120,7 +120,9 @@ void SurfaceVectorQuantity::writeToFile(std::string filename) {
     }
   }
 
-  cout << "Writing surface vector quantity " << name << " to file " << filename << endl;
+  if (options::verbosity > 0) {
+    cout << "Writing surface vector quantity " << name << " to file " << filename << endl;
+  }
 
   std::ofstream outFile(filename);
   outFile << "#Vectors written by polyscope from Surface Vector Quantity " << name << endl;
