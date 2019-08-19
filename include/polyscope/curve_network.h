@@ -116,6 +116,9 @@ public:
   glm::vec3 baseColor;
   float radius = 0.001;
 
+  // === Mutate
+  void updateNodePositions(const std::vector<glm::vec3>& newPositions);
+
 private:
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
