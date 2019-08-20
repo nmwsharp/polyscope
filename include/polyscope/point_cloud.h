@@ -76,6 +76,9 @@ public:
   template <class T>
   PointCloudVectorQuantity* addVectorQuantity2D(std::string name, const T& vectors,
                                                 VectorType vectorType = VectorType::STANDARD);
+  
+  // === Mutate
+  void updatePointPositions(const std::vector<glm::vec3>& newPositions);
 
   // The points that make up this point cloud
   std::vector<glm::vec3> points;

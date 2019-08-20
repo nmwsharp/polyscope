@@ -84,6 +84,10 @@ void PointCloudVectorQuantity::createProgram() {
   setMaterialForProgram(*program, "wax");
 }
 
+void PointCloudVectorQuantity::geometryChanged() {
+  program.reset();
+}
+
 void PointCloudVectorQuantity::buildCustomUI() {
   ImGui::SameLine();
 

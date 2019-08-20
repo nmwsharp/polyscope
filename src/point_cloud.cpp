@@ -191,12 +191,25 @@ std::tuple<glm::vec3, glm::vec3> PointCloud::boundingBox() {
   return std::make_tuple(min, max);
 }
 
+void PointCloud::updatePointPositions(const std::vector<glm::vec3>& newPositions) {
+  points = newPositions;
+
+  program.reset();
+  pickProgram.reset();
+
+  for (auto& q : quantities) {
+    q.second->geometryChanged();
+  }
+}
+
 std::string PointCloud::typeName() { return structureTypeName; }
 
 // === Quantities
 
+// Quantity default methods
 PointCloudQuantity::PointCloudQuantity(std::string name_, PointCloud& pointCloud_, bool dominates_)
     : Quantity<PointCloud>(name_, pointCloud_, dominates_) {}
+
 
 void PointCloud::writePointsToFile(std::string filename) {
 

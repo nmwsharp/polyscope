@@ -55,6 +55,10 @@ void PointCloudColorQuantity::createPointProgram() {
   setMaterialForProgram(*pointProgram, "wax");
 }
 
+void PointCloudColorQuantity::geometryChanged() {
+  pointProgram.reset();
+}
+
 
 void PointCloudColorQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());

@@ -128,6 +128,10 @@ void PointCloudScalarQuantity::createPointProgram() {
   setMaterialForProgram(*pointProgram, "wax");
 }
 
+void PointCloudScalarQuantity::geometryChanged() {
+  pointProgram.reset();
+}
+
 void PointCloudScalarQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
