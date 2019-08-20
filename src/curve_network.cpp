@@ -319,12 +319,13 @@ std::tuple<glm::vec3, glm::vec3> CurveNetwork::boundingBox() {
 
 std::string CurveNetwork::typeName() { return structureTypeName; }
 
-void CurveNetwork::updateNodePositions(const std::vector<glm::vec3>& newPositions)
-{
-	nodes = newPositions;
+void CurveNetwork::updateNodePositions(const std::vector<glm::vec3>& newPositions) {
+  nodes = newPositions;
 
-	nodeProgram.reset();
-	edgeProgram.reset();
+  nodeProgram.reset();
+  edgeProgram.reset();
+  nodePickProgram.reset();
+  edgePickProgram.reset();
 
   for (auto& q : quantities) {
     q.second->geometryChanged();
