@@ -64,8 +64,9 @@ public:
   // === Member functions ===
 
   // Construct a new surface mesh structure
-  SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
-              const std::vector<std::vector<size_t>>& faceIndices);
+  template <class V, class F>
+  SurfaceMesh(std::string name, const V& vertexPositions,
+              const F& faceIndices);
 
   // Build the imgui display
   virtual void buildCustomUI() override;
@@ -168,7 +169,8 @@ public:
   // size_t selectFace();
 
   // === Mutate
-  void updateVertexPositions(const std::vector<glm::vec3>& newPositions);
+  template <class V>
+  void updateVertexPositions(const V& newPositions);
 
 
   // === Indexing conventions
@@ -285,7 +287,7 @@ public:
   float edgeWidth = 0.0;
 
 private:
-  
+
   // Visualization settings
   ShadeStyle shadeStyle = ShadeStyle::FLAT;
 
@@ -325,7 +327,7 @@ private:
 
 
   // clang-format off
-  
+
   // === Quantity adders
 
   SurfaceVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
@@ -339,9 +341,9 @@ private:
   SurfaceCornerParameterizationQuantity* addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
   SurfaceVertexParameterizationQuantity* addVertexParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
   SurfaceVertexParameterizationQuantity* addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
-  SurfaceVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type); 
-  SurfaceFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type); 
-  SurfaceEdgeScalarQuantity* addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type); 
+  SurfaceVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
+  SurfaceFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
+  SurfaceEdgeScalarQuantity* addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   SurfaceHalfedgeScalarQuantity* addHalfedgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   SurfaceVertexVectorQuantity* addVertexVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
   SurfaceFaceVectorQuantity* addFaceVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
@@ -367,6 +369,9 @@ template <class V, class F, class P>
 SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
                                  const std::array<std::pair<P, size_t>, 5>& perms, bool replaceIfPresent = true);
 
+template <class V>
+void updateVertexPositions(const V& newPositions);
+
 // Shorthand to get a mesh from polyscope
 inline SurfaceMesh* getSurfaceMesh(std::string name = "");
 
@@ -374,4 +379,3 @@ inline SurfaceMesh* getSurfaceMesh(std::string name = "");
 } // namespace polyscope
 
 #include "polyscope/surface_mesh.ipp"
-
