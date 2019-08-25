@@ -64,8 +64,8 @@ public:
   // === Member functions ===
 
   // Construct a new surface mesh structure
-  template <class V, class F>
-  SurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices);
+  SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
+              const std::vector<std::vector<size_t>>& faceIndices);
 
   // Build the imgui display
   virtual void buildCustomUI() override;

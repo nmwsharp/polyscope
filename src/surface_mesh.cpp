@@ -24,6 +24,20 @@ namespace polyscope {
 // Initialize statics
 const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
+
+SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
+                         const std::vector<std::vector<size_t>>& faceIndices)
+    : QuantityStructure<SurfaceMesh>(name), vertices(vertexPositions), faces(faceIndices) {
+
+  computeCounts();
+  computeGeometryData();
+
+  // Colors
+  baseColor = getNextUniqueColor();
+  surfaceColor = baseColor;
+}
+
+
 void SurfaceMesh::computeCounts() {
 
   nFacesTriangulationCount = 0;

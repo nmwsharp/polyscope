@@ -64,19 +64,6 @@ void SurfaceMesh::updateVertexPositions2D(const V& newPositions2D) {
   updateVertexPositions(positions3D);
 }
 
-// Implementation of templated constructor
-template <class V, class F>
-SurfaceMesh::SurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices)
-    : QuantityStructure<SurfaceMesh>(name), vertices(standardizeVectorArray<glm::vec3, 3>(vertexPositions)),
-      faces(standardizeNestedList<size_t>(faceIndices)) {
-  computeCounts();
-  computeGeometryData();
-
-  // Colors
-  baseColor = getNextUniqueColor();
-  surfaceColor = baseColor;
-}
-
 // Shorthand to get a mesh from polyscope
 inline SurfaceMesh* getSurfaceMesh(std::string name) {
   return dynamic_cast<SurfaceMesh*>(getStructure(SurfaceMesh::structureTypeName, name));
