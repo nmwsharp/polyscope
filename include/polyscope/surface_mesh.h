@@ -65,8 +65,7 @@ public:
 
   // Construct a new surface mesh structure
   template <class V, class F>
-  SurfaceMesh(std::string name, const V& vertexPositions,
-              const F& faceIndices);
+  SurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices);
 
   // Build the imgui display
   virtual void buildCustomUI() override;
@@ -171,6 +170,8 @@ public:
   // === Mutate
   template <class V>
   void updateVertexPositions(const V& newPositions);
+  template <class V>
+  void updateVertexPositions2D(const V& newPositions2D);
 
 
   // === Indexing conventions
@@ -287,7 +288,6 @@ public:
   float edgeWidth = 0.0;
 
 private:
-
   // Visualization settings
   ShadeStyle shadeStyle = ShadeStyle::FLAT;
 
@@ -300,7 +300,7 @@ private:
   // Picking-related
   // Order of indexing: vertices, faces, edges, halfedges
   // Within each set, uses the implicit ordering from the mesh data structure
-  // Thest starts are LOCAL indices, indexing elements only with the mesh
+  // These starts are LOCAL indices, indexing elements only with the mesh
   size_t facePickIndStart, edgePickIndStart, halfedgePickIndStart;
   void buildVertexInfoGui(size_t vInd);
   void buildFaceInfoGui(size_t fInd);
@@ -369,8 +369,6 @@ template <class V, class F, class P>
 SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
                                  const std::array<std::pair<P, size_t>, 5>& perms, bool replaceIfPresent = true);
 
-template <class V>
-void updateVertexPositions(const V& newPositions);
 
 // Shorthand to get a mesh from polyscope
 inline SurfaceMesh* getSurfaceMesh(std::string name = "");

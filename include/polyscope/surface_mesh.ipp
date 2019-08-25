@@ -53,11 +53,22 @@ void SurfaceMesh::updateVertexPositions(const V& newPositions) {
   geometryChanged();
 }
 
+template <class V>
+void SurfaceMesh::updateVertexPositions2D(const V& newPositions2D) {
+  std::vector<glm::vec3> positions3D = standardizeVectorArray<glm::vec3, 2>(newPositions2D);
+  for (glm::vec3& v : positions3D) {
+    v.z = 0.;
+  }
+
+  // Call the main version
+  updateVertexPositions(positions3D);
+}
+
 // Implementation of templated constructor
 template <class V, class F>
 SurfaceMesh::SurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices)
-    : QuantityStructure<SurfaceMesh>(name), vertices(standardizeVectorArray<glm::vec3, 3>(vertexPositions)), faces(standardizeNestedList<size_t>(faceIndices))
-{
+    : QuantityStructure<SurfaceMesh>(name), vertices(standardizeVectorArray<glm::vec3, 3>(vertexPositions)),
+      faces(standardizeNestedList<size_t>(faceIndices)) {
   computeCounts();
   computeGeometryData();
 

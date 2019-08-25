@@ -24,20 +24,6 @@ namespace polyscope {
 // Initialize statics
 const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
-// // Implementation of constructor
-// SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
-//                          const std::vector<std::vector<size_t>>& faceIndices)
-//     : QuantityStructure<SurfaceMesh>(name), vertices(vertexPositions), faces(faceIndices) {
-//
-//   computeCounts();
-//   computeGeometryData();
-//
-//   // Colors
-//   baseColor = getNextUniqueColor();
-//   surfaceColor = baseColor;
-// }
-
-
 void SurfaceMesh::computeCounts() {
 
   nFacesTriangulationCount = 0;
@@ -862,6 +848,7 @@ void SurfaceMesh::setShadeStyle(ShadeStyle newShadeStyle) {
 
 void SurfaceMesh::geometryChanged() {
   program.reset();
+  wireframeProgram.reset();
   pickProgram.reset();
 
   computeGeometryData();
@@ -872,8 +859,7 @@ void SurfaceMesh::geometryChanged() {
 }
 
 double SurfaceMesh::lengthScale() {
-  // Measure length scale as twice the radius from the center of the bounding
-  // box
+  // Measure length scale as twice the radius from the center of the bounding box
   auto bound = boundingBox();
   glm::vec3 center = 0.5f * (std::get<0>(bound) + std::get<1>(bound));
 
@@ -1056,13 +1042,6 @@ FacePtr SurfaceMesh::selectFace() {
   return transfer.fMapBack[returnFace];
 }
 */
-
-// void SurfaceMesh::updateVertexPositions(const std::vector<glm::vec3>& newPositions) {
-//   vertices = newPositions;
-//
-//   // Rebuild any necessary quantities
-//   geometryChanged();
-// }
 
 SurfaceMeshQuantity::SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates)
     : Quantity<SurfaceMesh>(name, parentStructure, dominates) {}
