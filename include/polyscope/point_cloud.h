@@ -78,7 +78,10 @@ public:
                                                 VectorType vectorType = VectorType::STANDARD);
   
   // === Mutate
-  void updatePointPositions(const std::vector<glm::vec3>& newPositions);
+  template <class V>
+  void updatePointPositions(const V& newPositions);
+  template <class V>
+  void updatePointPositions2D(const V& newPositions);
 
   // The points that make up this point cloud
   std::vector<glm::vec3> points;

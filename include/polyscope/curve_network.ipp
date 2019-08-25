@@ -103,6 +103,32 @@ CurveNetwork* registerCurveNetworkLoop2D(std::string name, const P& nodes) {
 }
 
 
+template <class V>
+void CurveNetwork::updateNodePositions(const V& newPositions) {
+  nodes = standardizeVectorArray<glm::vec3, 3>(newPositions);
+
+  nodeProgram.reset();
+  edgeProgram.reset();
+  nodePickProgram.reset();
+  edgePickProgram.reset();
+
+  for (auto& q : quantities) {
+    q.second->geometryChanged();
+  }
+}
+
+
+template <class V>
+void CurveNetwork::updateNodePositions2D(const V& newPositions2D) {
+  std::vector<glm::vec3> positions3D = standardizeVectorArray<glm::vec3, 2>(newPositions2D);
+  for (glm::vec3& v : positions3D) {
+    v.z = 0.;
+  }
+
+  // Call the main version
+  updateNodePositions(positions3D);
+}
+
 // Shorthand to get a curve network from polyscope
 inline CurveNetwork* getCurveNetwork(std::string name) {
   return dynamic_cast<CurveNetwork*>(getStructure(CurveNetwork::structureTypeName, name));

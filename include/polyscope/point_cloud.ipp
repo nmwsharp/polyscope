@@ -28,6 +28,29 @@ PointCloud* registerPointCloud2D(std::string name, const T& points, bool replace
   return s;
 }
 
+template <class V>
+void PointCloud::updatePointPositions(const V& newPositions) {
+  points = standardizeVectorArray<glm::vec3, 3>(newPositions);
+
+  program.reset();
+  pickProgram.reset();
+
+  for (auto& q : quantities) {
+    q.second->geometryChanged();
+  }
+}
+
+template <class V>
+void PointCloud::updatePointPositions2D(const V& newPositions2D) {
+  std::vector<glm::vec3> positions3D = standardizeVectorArray<glm::vec3, 2>(newPositions2D);
+  for (glm::vec3& v : positions3D) {
+    v.z = 0.;
+  }
+
+  // Call the main version
+  updatePointPositions(positions3D);
+}
+
 
 // Shorthand to get a point cloud from polyscope
 inline PointCloud* getPointCloud(std::string name) {

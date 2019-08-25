@@ -117,7 +117,10 @@ public:
   float radius = 0.001;
 
   // === Mutate
-  void updateNodePositions(const std::vector<glm::vec3>& newPositions);
+  template <class V>
+  void updateNodePositions(const V& newPositions);
+  template <class V>
+  void updateNodePositions2D(const V& newPositions);
 
 private:
   // Drawing related things
