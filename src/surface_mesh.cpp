@@ -24,18 +24,18 @@ namespace polyscope {
 // Initialize statics
 const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
-// Implementation of constructor
-SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
-                         const std::vector<std::vector<size_t>>& faceIndices)
-    : QuantityStructure<SurfaceMesh>(name), vertices(vertexPositions), faces(faceIndices) {
-
-  computeCounts();
-  computeGeometryData();
-
-  // Colors
-  baseColor = getNextUniqueColor();
-  surfaceColor = baseColor;
-}
+// // Implementation of constructor
+// SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
+//                          const std::vector<std::vector<size_t>>& faceIndices)
+//     : QuantityStructure<SurfaceMesh>(name), vertices(vertexPositions), faces(faceIndices) {
+//
+//   computeCounts();
+//   computeGeometryData();
+//
+//   // Colors
+//   baseColor = getNextUniqueColor();
+//   surfaceColor = baseColor;
+// }
 
 
 void SurfaceMesh::computeCounts() {
@@ -1057,12 +1057,12 @@ FacePtr SurfaceMesh::selectFace() {
 }
 */
 
-void SurfaceMesh::updateVertexPositions(const std::vector<glm::vec3>& newPositions) {
-  vertices = newPositions;
-
-  // Rebuild any necessary quantities
-  geometryChanged();
-}
+// void SurfaceMesh::updateVertexPositions(const std::vector<glm::vec3>& newPositions) {
+//   vertices = newPositions;
+//
+//   // Rebuild any necessary quantities
+//   geometryChanged();
+// }
 
 SurfaceMeshQuantity::SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates)
     : Quantity<SurfaceMesh>(name, parentStructure, dominates) {}

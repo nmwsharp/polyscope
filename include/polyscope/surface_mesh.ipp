@@ -45,6 +45,26 @@ SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, con
   return s;
 }
 
+template <class V>
+void SurfaceMesh::updateVertexPositions(const V& newPositions) {
+  vertices = standardizeVectorArray<glm::vec3, 3>(newPositions);
+
+  // Rebuild any necessary quantities
+  geometryChanged();
+}
+
+// Implementation of templated constructor
+template <class V, class F>
+SurfaceMesh::SurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices)
+    : QuantityStructure<SurfaceMesh>(name), vertices(standardizeVectorArray<glm::vec3, 3>(vertexPositions)), faces(standardizeNestedList<size_t>(faceIndices))
+{
+  computeCounts();
+  computeGeometryData();
+
+  // Colors
+  baseColor = getNextUniqueColor();
+  surfaceColor = baseColor;
+}
 
 // Shorthand to get a mesh from polyscope
 inline SurfaceMesh* getSurfaceMesh(std::string name) {
