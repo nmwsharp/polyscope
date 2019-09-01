@@ -18,7 +18,7 @@ bool groundPlaneEnabled = true;
 float groundPlaneHeightFactor = 0.0;
 
 // The concrete texture, stored in a separate binary unit
-extern const std::vector<unsigned char> bindata_concrete_seamless;
+extern std::array<unsigned char, 758403> bindata_concrete_seamless;
 
 // Global variables and helpers for ground plane
 namespace {
