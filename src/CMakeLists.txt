@@ -69,12 +69,88 @@ SET(SRCS
 )
 
 
+SET(INCLUDE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../include/polyscope/")
+SET(HEADERS
+  ${INCLUDE_ROOT}/affine_remapper.h
+  ${INCLUDE_ROOT}/affine_remapper.ipp
+  ${INCLUDE_ROOT}/camera_parameters.h
+  ${INCLUDE_ROOT}/color_management.h
+  ${INCLUDE_ROOT}/combining_hash_functions.h
+  ${INCLUDE_ROOT}/curve_network.h
+  ${INCLUDE_ROOT}/curve_network.ipp
+  ${INCLUDE_ROOT}/curve_network_color_quantity.h
+  ${INCLUDE_ROOT}/curve_network_quantity.h
+  ${INCLUDE_ROOT}/curve_network_scalar_quantity.h
+  ${INCLUDE_ROOT}/curve_network_vector_quantity.h
+  ${INCLUDE_ROOT}/disjoint_sets.h
+  ${INCLUDE_ROOT}/file_helpers.h
+  ${INCLUDE_ROOT}/histogram.h
+  ${INCLUDE_ROOT}/imgui_render.h
+  ${INCLUDE_ROOT}/messages.h
+  ${INCLUDE_ROOT}/options.h
+  ${INCLUDE_ROOT}/pick.h
+  ${INCLUDE_ROOT}/point_cloud.h
+  ${INCLUDE_ROOT}/point_cloud.ipp
+  ${INCLUDE_ROOT}/point_cloud_color_quantity.h
+  ${INCLUDE_ROOT}/point_cloud_quantity.h
+  ${INCLUDE_ROOT}/point_cloud_scalar_quantity.h
+  ${INCLUDE_ROOT}/point_cloud_vector_quantity.h
+  ${INCLUDE_ROOT}/polyscope.h
+  ${INCLUDE_ROOT}/quantity.h
+  ${INCLUDE_ROOT}/quantity.ipp
+  ${INCLUDE_ROOT}/ribbon_artist.h
+  ${INCLUDE_ROOT}/screenshot.h
+  ${INCLUDE_ROOT}/standardize_data_array.h
+  ${INCLUDE_ROOT}/structure.h
+  ${INCLUDE_ROOT}/structure.ipp
+  ${INCLUDE_ROOT}/surface_color_quantity.h
+  ${INCLUDE_ROOT}/surface_count_quantity.h
+  ${INCLUDE_ROOT}/surface_distance_quantity.h
+  ${INCLUDE_ROOT}/surface_graph_quantity.h
+  ${INCLUDE_ROOT}/surface_input_curve_quantity.h
+  ${INCLUDE_ROOT}/surface_mesh.h
+  ${INCLUDE_ROOT}/surface_mesh.ipp
+  ${INCLUDE_ROOT}/surface_mesh_enums.h
+  ${INCLUDE_ROOT}/surface_mesh_io.h
+  ${INCLUDE_ROOT}/surface_mesh_quantity.h
+  ${INCLUDE_ROOT}/surface_parameterization_enums.h
+  ${INCLUDE_ROOT}/surface_parameterization_quantity.h
+  ${INCLUDE_ROOT}/surface_scalar_quantity.h
+  ${INCLUDE_ROOT}/surface_selection_quantity.h
+  ${INCLUDE_ROOT}/surface_subset_quantity.h
+  ${INCLUDE_ROOT}/surface_vector_quantity.h
+  ${INCLUDE_ROOT}/trace_vector_field.h
+  ${INCLUDE_ROOT}/utilities.h
+  ${INCLUDE_ROOT}/view.h
+  ${INCLUDE_ROOT}/gl/colors.h
+  ${INCLUDE_ROOT}/gl/color_maps.h
+  ${INCLUDE_ROOT}/gl/gl_utils.h
+  ${INCLUDE_ROOT}/gl/ground_plane.h
+  ${INCLUDE_ROOT}/gl/shaders.h
+  ${INCLUDE_ROOT}/gl/materials/materials.h
+  ${INCLUDE_ROOT}/gl/shaders/common.h
+  ${INCLUDE_ROOT}/gl/shaders/cylinder_shaders.h
+  ${INCLUDE_ROOT}/gl/shaders/distance_shaders.h
+  ${INCLUDE_ROOT}/gl/shaders/ground_plane_shaders.h
+  ${INCLUDE_ROOT}/gl/shaders/histogram_shaders.h
+  ${INCLUDE_ROOT}/gl/shaders/image_shaders.h
+  ${INCLUDE_ROOT}/gl/shaders/parameterization_shaders.h
+  ${INCLUDE_ROOT}/gl/shaders/ray_shaders.h
+  ${INCLUDE_ROOT}/gl/shaders/ribbon_shaders.h
+  ${INCLUDE_ROOT}/gl/shaders/sphere_shaders.h
+  ${INCLUDE_ROOT}/gl/shaders/surface_shaders.h
+  ${INCLUDE_ROOT}/gl/shaders/texture_draw_shaders.h
+  ${INCLUDE_ROOT}/gl/shaders/vector_shaders.h
+  ${INCLUDE_ROOT}/gl/shaders/wireframe_shaders.h
+)
+
 # Create a single library for the project
-add_library(polyscope ${SRCS})
+add_library(polyscope ${SRCS} ${HEADERS})
 
 # Required compiler settings
 set_property(TARGET polyscope PROPERTY CXX_STANDARD 11)
 set_property(TARGET polyscope PROPERTY CXX_STANDARD_REQUIRED TRUE)
+add_definitions(-DNOMINMAX)
 
 
 # Include settings
