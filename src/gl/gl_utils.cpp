@@ -882,9 +882,10 @@ void GLProgram::setAttribute(std::string name, const std::vector<glm::vec2>& dat
           else
             size *= 2 * sizeof(float);
 
-          glBufferSubData(GL_ARRAY_BUFFER, offset, size, &rawData[0]);
+          glBufferSubData(GL_ARRAY_BUFFER, offset, size, rawData.empty() ? nullptr : &rawData[0]);
         } else {
-          glBufferData(GL_ARRAY_BUFFER, 2 * data.size() * sizeof(float), &rawData[0], GL_STATIC_DRAW);
+          glBufferData(GL_ARRAY_BUFFER, 2 * data.size() * sizeof(float), rawData.empty() ? nullptr : &rawData[0],
+                       GL_STATIC_DRAW);
           a.dataSize = data.size();
         }
       } else {
@@ -923,9 +924,10 @@ void GLProgram::setAttribute(std::string name, const std::vector<glm::vec3>& dat
           else
             size *= 3 * sizeof(float);
 
-          glBufferSubData(GL_ARRAY_BUFFER, offset, size, &rawData[0]);
+          glBufferSubData(GL_ARRAY_BUFFER, offset, size, rawData.empty() ? nullptr : &rawData[0]);
         } else {
-          glBufferData(GL_ARRAY_BUFFER, 3 * data.size() * sizeof(float), &rawData[0], GL_STATIC_DRAW);
+          glBufferData(GL_ARRAY_BUFFER, 3 * data.size() * sizeof(float), rawData.empty() ? nullptr : &rawData[0],
+                       GL_STATIC_DRAW);
           a.dataSize = data.size();
         }
       } else {
@@ -965,9 +967,10 @@ void GLProgram::setAttribute(std::string name, const std::vector<glm::vec4>& dat
           else
             size *= 4 * sizeof(float);
 
-          glBufferSubData(GL_ARRAY_BUFFER, offset, size, &rawData[0]);
+          glBufferSubData(GL_ARRAY_BUFFER, offset, size, rawData.empty() ? nullptr : &rawData[0]);
         } else {
-          glBufferData(GL_ARRAY_BUFFER, 4 * data.size() * sizeof(float), &rawData[0], GL_STATIC_DRAW);
+          glBufferData(GL_ARRAY_BUFFER, 4 * data.size() * sizeof(float), rawData.empty() ? nullptr : &rawData[0],
+                       GL_STATIC_DRAW);
           a.dataSize = data.size();
         }
       } else {
@@ -1002,9 +1005,10 @@ void GLProgram::setAttribute(std::string name, const std::vector<double>& data, 
           else
             size *= sizeof(float);
 
-          glBufferSubData(GL_ARRAY_BUFFER, offset, size, &floatData[0]);
+          glBufferSubData(GL_ARRAY_BUFFER, offset, size, floatData.empty() ? nullptr : &floatData[0]);
         } else {
-          glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &floatData[0], GL_STATIC_DRAW);
+          glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), floatData.empty() ? nullptr : &floatData[0],
+                       GL_STATIC_DRAW);
           a.dataSize = data.size();
         }
       } else {
@@ -1042,9 +1046,10 @@ void GLProgram::setAttribute(std::string name, const std::vector<int>& data, boo
           else
             size *= sizeof(GLint);
 
-          glBufferSubData(GL_ARRAY_BUFFER, offset, size, &intData[0]);
+          glBufferSubData(GL_ARRAY_BUFFER, offset, size, intData.empty() ? nullptr : &intData[0]);
         } else {
-          glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLint), &intData[0], GL_STATIC_DRAW);
+          glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLint), intData.empty() ? nullptr : &intData[0],
+                       GL_STATIC_DRAW);
           a.dataSize = data.size();
         }
       } else {
@@ -1082,9 +1087,10 @@ void GLProgram::setAttribute(std::string name, const std::vector<uint32_t>& data
           else
             size *= sizeof(GLuint);
 
-          glBufferSubData(GL_ARRAY_BUFFER, offset, size, &intData[0]);
+          glBufferSubData(GL_ARRAY_BUFFER, offset, size, intData.empty() ? nullptr : &intData[0]);
         } else {
-          glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLuint), &intData[0], GL_STATIC_DRAW);
+          glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLuint), intData.empty() ? nullptr : &intData[0],
+                       GL_STATIC_DRAW);
           a.dataSize = data.size();
         }
       } else {
