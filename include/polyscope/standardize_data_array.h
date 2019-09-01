@@ -444,7 +444,7 @@ S adaptorF_accessVector2ValueImpl(PreferenceT<0>, const T& inputVec) {
 //  - T: input length-2 vector-like type
 template <class S, unsigned int I, class T,
     /* condition: I must be < 2 */
-    class C1 = typename std::enable_if< I<2 >::type> 
+    class C1 = typename std::enable_if< (I < 2) >::type>
 S adaptorF_accessVector2Value(const T& inVal) {
   return adaptorF_accessVector2ValueImpl<I, T, S>(PreferenceT<5>{}, inVal);
 }
@@ -532,7 +532,7 @@ S adaptorF_accessVector3ValueImpl(PreferenceT<0>, const T& inputVec) {
 //  - T: input length-3 vector-like type
 template <class S, unsigned int I, class T,
     /* condition: I must be < 3 */
-    class C1 = typename std::enable_if< I<3 >::type> 
+    class C1 = typename std::enable_if< (I < 3) >::type>
 
 S adaptorF_accessVector3Value(const T& inVal) {
   return adaptorF_accessVector3ValueImpl<I, T, S>(PreferenceT<3>{}, inVal);
