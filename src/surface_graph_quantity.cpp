@@ -112,5 +112,19 @@ void SurfaceGraphQuantity::buildCustomUI() {
 
 std::string SurfaceGraphQuantity::niceName() { return name; }
 
+SurfaceGraphQuantity* SurfaceGraphQuantity::setRadius(float newVal) {
+  radius = newVal;
+  requestRedraw();
+  return this;
+}
+
+float SurfaceGraphQuantity::getRadius() { return radius; }
+
+SurfaceGraphQuantity* SurfaceGraphQuantity::setColor(glm::vec3 newColor) {
+  color = newColor;
+  requestRedraw();
+  return this;
+}
+glm::vec3 SurfaceGraphQuantity::getColor() { return color; }
 
 } // namespace polyscope

@@ -19,6 +19,14 @@ public:
   std::vector<glm::vec3> nodes;
   std::vector<std::array<size_t, 2>> edges;
 
+  // Setters and getters
+
+  SurfaceGraphQuantity* setRadius(float newVal);
+  float getRadius();
+
+  SurfaceGraphQuantity* setColor(glm::vec3 newColor);
+  glm::vec3 getColor();
+
 private:
   float radius = 0.002;
   glm::vec3 color;

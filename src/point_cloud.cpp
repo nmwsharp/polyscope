@@ -2,7 +2,6 @@
 #include "polyscope/point_cloud.h"
 
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/colors.h"
 #include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/sphere_shaders.h"

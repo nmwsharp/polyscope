@@ -1,7 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/curve_network.h"
 
-#include "polyscope/gl/colors.h"
 #include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/cylinder_shaders.h"

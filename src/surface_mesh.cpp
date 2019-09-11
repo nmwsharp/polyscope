@@ -2,7 +2,6 @@
 #include "polyscope/surface_mesh.h"
 
 #include "polyscope/combining_hash_functions.h"
-#include "polyscope/gl/colors.h"
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"

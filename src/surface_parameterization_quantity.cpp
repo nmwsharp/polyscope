@@ -26,14 +26,14 @@ SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string nam
   cMap = gl::ColorMapID::PHASE;
 
   // Set a checker color
-  checkColor1 = gl::RGB_PINK;
+  checkColor1 = RGB_PINK;
   glm::vec3 checkColor1HSV = RGBtoHSV(checkColor1);
   checkColor1HSV.y *= 0.15; // very light
   checkColor2 = HSVtoRGB(checkColor1HSV);
 
   // set grid color
-  gridLineColor = gl::RGB_WHITE;
-  gridBackgroundColor = gl::RGB_PINK;
+  gridLineColor = RGB_WHITE;
+  gridBackgroundColor = RGB_PINK;
 }
 
 void SurfaceParameterizationQuantity::draw() {
