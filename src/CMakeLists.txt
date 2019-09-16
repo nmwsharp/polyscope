@@ -122,7 +122,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/trace_vector_field.h
   ${INCLUDE_ROOT}/utilities.h
   ${INCLUDE_ROOT}/view.h
-  ${INCLUDE_ROOT}/gl/colors.h
+  ${INCLUDE_ROOT}/colors.h
   ${INCLUDE_ROOT}/gl/color_maps.h
   ${INCLUDE_ROOT}/gl/gl_utils.h
   ${INCLUDE_ROOT}/gl/ground_plane.h
