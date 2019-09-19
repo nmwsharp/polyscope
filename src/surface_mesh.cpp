@@ -50,6 +50,7 @@ void SurfaceMesh::computeCounts() {
   for (auto& face : faces) {
     if (face.size() < 3) {
       warning(name + " has face with degree < 3!");
+      face = {0, 0, 0}; // (just to do _something_ so we don't crash in subsequent code)
     }
     nFacesTriangulationCount += std::max(static_cast<int>(face.size()) - 2, 0);
     edgeIndices[iF].resize(face.size());
@@ -58,6 +59,19 @@ void SurfaceMesh::computeCounts() {
     for (size_t i = 0; i < face.size(); i++) {
       size_t vA = face[i];
       size_t vB = face[(i + 1) % face.size()];
+
+      if (vA >= vertices.size()) {
+        warning(name + " has face with vertex index out of vertices range",
+                "face " + std::to_string(iF) + " has vertex index " + std::to_string(vA));
+
+        // zero out the face index
+        // (just to do _something_ so we don't crash in subsequent code)
+        for (size_t j = 0; j < face.size(); j++) {
+          face[j] = 0;
+        }
+        vA = face[i];
+        vB = face[(i + 1) % face.size()];
+      }
 
       std::pair<size_t, size_t> edgeKey(std::min(vA, vB), std::max(vA, vB));
       auto it = edgeInds.find(edgeKey);
