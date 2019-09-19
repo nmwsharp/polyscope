@@ -170,6 +170,68 @@ void SurfaceMesh::computeGeometryData() {
   }
 }
 
+void SurfaceMesh::ensureHaveManifoldConnectivity() {
+  if (!faceForHalfedge.empty()) return; // already populated
+
+  faceForHalfedge.resize(nHalfedges());
+  twinHalfedge.resize(nHalfedges());
+
+  // Maps from edge (sorted) to all halfedges incident on that edge
+  std::unordered_map<std::pair<size_t, size_t>, std::vector<size_t>, polyscope::hash_combine::hash<std::pair<size_t, size_t>>>
+      edgeInds;
+  
+  // Fill out faceForHalfedge and populate edge lookup map
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    auto& face = faces[iF];
+    size_t D = face.size();
+
+
+    for (size_t j = 0; j < D; j++) {
+      size_t iV = face[j];
+      size_t iVNext = face[(j+1)%D];
+      size_t iHe = halfedgeIndices[iF][j];
+
+      faceForHalfedge[iHe] = iF;
+
+      std::pair<size_t, size_t> edgeKey(std::min(iV, iVNext), std::max(iV, iVNext));
+
+      // Make sure the key is populated
+      auto it = edgeInds.find(edgeKey);
+      if (it == edgeInds.end()) {
+        it = edgeInds.insert(it, {edgeKey, std::vector<size_t>()});
+      }
+
+      // Add this halfedge to the entry
+      it->second.push_back(iHe);
+    }
+  }
+
+  // Second walk through, setting twins
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    auto& face = faces[iF];
+    size_t D = face.size();
+
+    for (size_t j = 0; j < D; j++) {
+      size_t iV = face[j];
+      size_t iVNext = face[(j+1)%D];
+      size_t iHe = halfedgeIndices[iF][j];
+
+      std::pair<size_t, size_t> edgeKey(std::min(iV, iVNext), std::max(iV, iVNext));
+      std::vector<size_t>& edgeHalfedges = edgeInds.find(edgeKey)->second;
+
+      // Pick the first halfedge we find which is not this one
+      size_t myTwin = INVALID_IND;
+      for(size_t t : edgeHalfedges) {
+        if(t != iHe) {
+          myTwin = t;
+          break;
+        }
+      }
+
+      twinHalfedge[iHe] = myTwin;
+    }
+  }
+}
 
 void SurfaceMesh::ensureHaveFaceTangentSpaces() {
   if (faceTangentSpaces.size() > 0) return;
@@ -266,6 +328,7 @@ void SurfaceMesh::draw() {
     wireframeProgram->setUniform("u_edgeWidth", edgeWidth);
     wireframeProgram->setUniform("u_edgeColor", edgeColor);
 
+    glEnable(GL_BLEND);
     glDepthFunc(GL_LEQUAL); // Make sure wireframe wins depth tests
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO,
                         GL_ONE); // slightly weird blend function: ensures alpha is set by whatever was drawn before,

@@ -241,13 +241,22 @@ public:
   std::vector<double> vertexAreas;
   std::vector<double> edgeLengths;
 
+  // Not necessarily populated by default. Call ensureHaveFaceTangentSpaces() etc to be sure they are populated.
   std::vector<std::array<glm::vec3, 2>> faceTangentSpaces;
   std::vector<std::array<glm::vec3, 2>> vertexTangentSpaces;
 
+  // Derived connectivity quantities
+  // Not necessarily populated by default. Call ensureHaveManifoldConnectivity() to be sure they are populated.
+  std::vector<size_t> faceForHalfedge; // for halfedge i, the index of the face it is in
+  // Note that these are only really well-defined on a manifold mesh. On a non-manifold mesh, mesh, they will just
+  // point to _some_ sane entry
+  std::vector<size_t> twinHalfedge; // for halfedge i, the index of a twin halfedge
 
   // = Mesh helpers
   void computeCounts();       // call to populate counts and indices
   void computeGeometryData(); // call to populate normals/areas/lengths
+  void ensureHaveManifoldConnectivity();
+  glm::vec3 faceCenter(size_t iF);
 
   // if there are no tangent spaces, builds the default ones
   void ensureHaveFaceTangentSpaces();

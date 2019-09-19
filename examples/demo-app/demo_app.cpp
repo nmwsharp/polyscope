@@ -90,11 +90,12 @@ void processFileOBJ(string filename) {
   for (std::array<double, 3> p : vertexPositions) {
     vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]});
   }
-  polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
+  auto psMesh = polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
 
   // Useful data
-  size_t nVertices = vertexPositions.size();
-  size_t nFaces = faceIndices.size();
+  size_t nVertices = psMesh->nVertices();
+  size_t nFaces = psMesh->nFaces();
+  size_t nEdges = psMesh->nEdges();
 
   // Add some vertex scalars
   std::vector<double> valX(nVertices);
@@ -227,6 +228,82 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("area vertex normals", vNormals);
   polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("rand length normals", vNormalsRand);
   polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("toZero", toZero, polyscope::VectorType::AMBIENT);
+
+
+  { // Some kind of intrinsic vector field
+
+    // Project this weird swirly field on to the surface (the ABC flow)
+    auto spatialFunc = [&](glm::vec3 p) {
+      float A = 1.;
+      float B = 1.;
+      float C = 1.;
+      float xComp = A * std::sin(p.z) + C * std::cos(p.y);
+      float yComp = B * std::sin(p.x) + A * std::cos(p.z);
+      float zComp = C * std::sin(p.y) + B * std::cos(p.x);
+      return glm::vec3{xComp, yComp, zComp};
+    };
+
+    // At vertices
+    std::vector<glm::vec2> vertexIntrinsicVec(nVertices, glm::vec3{0., 0., 0.});
+    psMesh->ensureHaveVertexTangentSpaces();
+    for (size_t iV = 0; iV < nVertices; iV++) {
+      glm::vec3 pos = psMesh->vertices[iV];
+      glm::vec3 basisX = psMesh->vertexTangentSpaces[iV][0];
+      glm::vec3 basisY = psMesh->vertexTangentSpaces[iV][1];
+
+      glm::vec3 v = spatialFunc(pos);
+      glm::vec2 vTangent{glm::dot(v, basisX), glm::dot(v, basisY)};
+      vertexIntrinsicVec[iV] = vTangent;
+    }
+    psMesh->addVertexIntrinsicVectorQuantity("intrinsic vertex vec", vertexIntrinsicVec);
+
+
+    // At faces
+    std::vector<glm::vec2> faceIntrinsicVec(nFaces, glm::vec3{0., 0., 0.});
+    psMesh->ensureHaveFaceTangentSpaces();
+    for (size_t iF = 0; iF < nFaces; iF++) {
+
+      glm::vec3 pos = psMesh->faceCenter(iF);
+      glm::vec3 basisX = psMesh->faceTangentSpaces[iF][0];
+      glm::vec3 basisY = psMesh->faceTangentSpaces[iF][1];
+
+      glm::vec3 v = spatialFunc(pos);
+      glm::vec2 vTangent{glm::dot(v, basisX), glm::dot(v, basisY)};
+      faceIntrinsicVec[iF] = vTangent;
+    }
+    psMesh->addFaceIntrinsicVectorQuantity("intrinsic face vec", faceIntrinsicVec);
+
+    // 1-form
+    std::vector<double> edgeForm(nEdges, 0.);
+    std::vector<char> edgeOrient(nEdges, false);
+    bool isTriangle = true;
+    psMesh->ensureHaveFaceTangentSpaces();
+    for (size_t iF = 0; iF < nFaces; iF++) {
+      std::vector<size_t>& face = psMesh->faces[iF];
+
+      if (face.size() != 3) {
+        isTriangle = false;
+        break;
+      }
+
+      glm::vec3 pos = psMesh->faceCenter(iF);
+
+      for (size_t j = 0; j < face.size(); j++) {
+
+        size_t vA = face[j];
+        size_t vB = face[(j + 1) % face.size()];
+        size_t iE = psMesh->edgeIndices[iF][j];
+
+        glm::vec3 v = spatialFunc(pos);
+        glm::vec3 edgeVec = psMesh->vertices[vB] - psMesh->vertices[vA];
+        edgeForm[iE] = glm::dot(edgeVec, v);
+        edgeOrient[iE] = (vB > vA);
+      }
+    }
+    if (isTriangle) {
+      psMesh->addOneFormIntrinsicVectorQuantity("intrinsic 1-form", edgeForm, edgeOrient);
+    }
+  }
 
 
   // Add count quantities

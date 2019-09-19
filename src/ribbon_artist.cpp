@@ -2,6 +2,7 @@
 #include "polyscope/ribbon_artist.h"
 
 #include "polyscope/gl/color_maps.h"
+#include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/ribbon_shaders.h"
 #include "polyscope/polyscope.h"
@@ -13,19 +14,18 @@ using std::endl;
 
 namespace polyscope {
 
-RibbonArtist::RibbonArtist(const std::vector<std::vector<std::array<glm::vec3, 2>>>& ribbons_,
+RibbonArtist::RibbonArtist(Structure& parentStructure_,
+                           const std::vector<std::vector<std::array<glm::vec3, 2>>>& ribbons_,
                            double normalOffsetFraction_)
-    : ribbons(ribbons_), normalOffsetFraction(normalOffsetFraction_) {}
+    : parentStructure(parentStructure_), ribbons(ribbons_), normalOffsetFraction(normalOffsetFraction_) {}
 
-RibbonArtist::~RibbonArtist() { deleteProgram(); }
-
-void RibbonArtist::deleteProgram() { safeDelete(program); }
+void RibbonArtist::deleteProgram() { program.reset(); }
 
 void RibbonArtist::createProgram() {
 
   // Create the program
-  program = new gl::GLProgram(&gl::RIBBON_VERT_SHADER, &gl::RIBBON_GEOM_SHADER, &gl::RIBBON_FRAG_SHADER,
-                              gl::DrawMode::IndexedLineStripAdjacency);
+  program.reset(new gl::GLProgram(&gl::RIBBON_VERT_SHADER, &gl::RIBBON_GEOM_SHADER, &gl::RIBBON_FRAG_SHADER,
+                                  gl::DrawMode::IndexedLineStripAdjacency));
 
   // Set the restart index for the line strip
   GLuint restartInd = static_cast<GLuint>(-1);
@@ -94,6 +94,8 @@ void RibbonArtist::createProgram() {
   program->setAttribute("a_normal", normals);
   program->setAttribute("a_color", colors);
   program->setIndex(indices);
+
+  setMaterialForProgram(*program, "wax");
 }
 
 
@@ -108,18 +110,9 @@ void RibbonArtist::draw() {
   }
 
   // Set uniforms
-  glm::mat4 modelviewMat = view::getCameraViewMatrix() * objectTransform;
-  program->setUniform("u_modelView", glm::value_ptr(modelviewMat));
-
-  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-  program->setUniform("u_projMatrix", glm::value_ptr(projMat));
+  parentStructure.setTransformUniforms(*program);
 
   glm::vec3 eyePos = view::getCameraWorldPosition();
-  program->setUniform("u_eye", eyePos);
-
-  program->setUniform("u_lightCenter", state::center);
-  program->setUniform("u_lightDist", 5 * state::lengthScale);
-
 
   program->setUniform("u_ribbonWidth", ribbonWidth * state::lengthScale);
   program->setUniform("u_depthOffset", 1e-4);
@@ -144,7 +137,9 @@ void RibbonArtist::buildParametersGUI() {
     deleteProgram();
   }
 
+  ImGui::PushItemWidth(150);
   ImGui::SliderFloat("Ribbon width", &ribbonWidth, 0.0, .1, "%.5f", 3.);
+  ImGui::PopItemWidth();
 }
 
 

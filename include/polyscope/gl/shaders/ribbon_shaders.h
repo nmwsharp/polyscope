@@ -62,8 +62,7 @@ static const GeomShader RIBBON_GEOM_SHADER = {
         uniform float u_ribbonWidth;
         uniform float u_depthOffset;
         out vec3 colorToFrag;
-        out vec3 worldNormalToFrag;
-        out vec3 worldPosToFrag;
+        out vec3 cameraNormalToFrag;
         out float intensityToFrag;
         void main()   {
             mat4 PV = u_projMatrix * u_modelView;
@@ -90,24 +89,21 @@ static const GeomShader RIBBON_GEOM_SHADER = {
             // First triangle
             gl_Position = PV * pStartRight;
             gl_Position.z -= u_depthOffset;
-            worldPosToFrag = pStartRight.xyz;
-            worldNormalToFrag = Normal[1];
+            cameraNormalToFrag = mat3(u_modelView) * Normal[1];
             colorToFrag = Color[1];
             intensityToFrag = 0.0;
             EmitVertex();
             
             gl_Position = PV * pEndRight;
             gl_Position.z -= u_depthOffset;
-            worldPosToFrag = pEndRight.xyz;
-            worldNormalToFrag = Normal[2];
+            cameraNormalToFrag = mat3(u_modelView) * Normal[2];
             colorToFrag = Color[2];
             intensityToFrag = 0.0;
             EmitVertex();
             
             gl_Position = PV * pStartMid;
             gl_Position.z -= u_depthOffset;
-            worldPosToFrag = pStartMid.xyz;
-            worldNormalToFrag = Normal[1];
+            cameraNormalToFrag = mat3(u_modelView) * Normal[1];
             colorToFrag = Color[1];
             intensityToFrag = 1.0;
             EmitVertex();
@@ -115,8 +111,7 @@ static const GeomShader RIBBON_GEOM_SHADER = {
             // Second triangle
             gl_Position = PV * pEndMid;
             gl_Position.z -= u_depthOffset;
-            worldPosToFrag = pEndMid.xyz;
-            worldNormalToFrag = Normal[2];
+            cameraNormalToFrag = mat3(u_modelView) * Normal[2];
             colorToFrag = Color[2];
             intensityToFrag = 1.0;
             EmitVertex();
@@ -124,8 +119,7 @@ static const GeomShader RIBBON_GEOM_SHADER = {
             // Third triangle
             gl_Position = PV * pStartLeft;
             gl_Position.z -= u_depthOffset;
-            worldPosToFrag = pStartLeft.xyz;
-            worldNormalToFrag = Normal[1];
+            cameraNormalToFrag = mat3(u_modelView) * Normal[1];
             colorToFrag = Color[1];
             intensityToFrag = 0.0;
             EmitVertex();
@@ -133,8 +127,7 @@ static const GeomShader RIBBON_GEOM_SHADER = {
             // Fourth triangle
             gl_Position = PV * pEndLeft;
             gl_Position.z -= u_depthOffset;
-            worldPosToFrag = pEndLeft.xyz;
-            worldNormalToFrag = Normal[2];
+            cameraNormalToFrag = mat3(u_modelView) * Normal[2];
             colorToFrag = Color[2];
             intensityToFrag = 0.0;
             EmitVertex();
@@ -151,9 +144,6 @@ static const FragShader RIBBON_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_eye", GLData::Vector3Float},
-        {"u_lightCenter", GLData::Vector3Float},
-        {"u_lightDist", GLData::Float},
     }, 
 
     // attributes
@@ -162,6 +152,9 @@ static const FragShader RIBBON_FRAG_SHADER = {
     
     // textures 
     {
+        {"t_mat_r", 2},
+        {"t_mat_g", 2},
+        {"t_mat_b", 2},
     },
     
     // output location
@@ -169,21 +162,20 @@ static const FragShader RIBBON_FRAG_SHADER = {
  
     // source
     POLYSCOPE_GLSL(150,
-        uniform vec3 u_eye;
-        uniform vec3 u_lightCenter;
-        uniform float u_lightDist;
+        uniform sampler2D t_mat_r;
+        uniform sampler2D t_mat_g;
+        uniform sampler2D t_mat_b;
         in vec3 colorToFrag;
-        in vec3 worldNormalToFrag;
-        in vec3 worldPosToFrag;
+        in vec3 cameraNormalToFrag;
         in float intensityToFrag;
         out vec4 outputF;
 
         // Forward declarations of methods from <shaders/common.h>
-        vec4 lightSurface( vec3 position, vec3 normal, vec3 color, vec3 lightC, float lightD, vec3 eye );
+        vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
 
         void main()
         {
-           outputF = lightSurface(worldPosToFrag, worldNormalToFrag, colorToFrag, u_lightCenter, u_lightDist, u_eye);
+           outputF = lightSurfaceMat(cameraNormalToFrag, colorToFrag, t_mat_r, t_mat_g, t_mat_b);
 
            // Compute a fade factor to set the transparency
            // Basically amounts to antialiasing in screen space when lines are relatively large on screen

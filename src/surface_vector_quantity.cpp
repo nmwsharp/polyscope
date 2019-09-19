@@ -184,11 +184,7 @@ SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, std::vect
   for (size_t iF = 0; iF < parent.nFaces(); iF++) {
     auto& face = parent.faces[iF];
     size_t D = face.size();
-    glm::vec3 faceCenter = glm::vec3{0., 0., 0.};
-    for (size_t j = 0; j < D; j++) {
-      faceCenter += parent.vertices[face[j]];
-    }
-    faceCenter /= D;
+    glm::vec3 faceCenter = parent.faceCenter(iF);
     vectorRoots[iF] = faceCenter;
   }
 
@@ -240,11 +236,7 @@ SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::stri
     // Face center
     auto& face = parent.faces[iF];
     size_t D = face.size();
-    glm::vec3 faceCenter = glm::vec3{0., 0., 0.};
-    for (size_t j = 0; j < D; j++) {
-      faceCenter += parent.vertices[face[j]];
-    }
-    faceCenter /= D;
+    glm::vec3 faceCenter = parent.faceCenter(iF);
 
     for (int iRot = 0; iRot < nSym; iRot++) {
       vectorRoots.push_back(faceCenter);
@@ -280,18 +272,14 @@ void SurfaceFaceIntrinsicVectorQuantity::draw() {
 
     // Make sure we have a ribbon artist
     if (ribbonArtist == nullptr) {
-
       // Warning: expensive... Creates noticeable UI lag
-      // ribbonArtist = new RibbonArtist(traceField(parent.geometry, vectorField, nSym, 2500));
+      ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, vectorField, nSym, 2500)));
     }
 
-
     if (enabled) {
-
       // Update transform matrix from parent
-      // ribbonArtist->objectTransform = parent.objectTransform;
-
-      // ribbonArtist->draw();
+      ribbonArtist->objectTransform = parent.objectTransform;
+      ribbonArtist->draw();
     }
   }
 }
@@ -367,31 +355,39 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
     // Make sure we have a ribbon artist
     if (ribbonArtist == nullptr) {
 
-      //// Remap to center of each face
-      // GeometryCache<Euclidean>& gc = parent.geometry->cache;
-      // gc.requireVertexFaceTransportCoefs();
-      // FaceData<Complex> unitFaceVecs(parent.mesh);
-      // for (FacePtr f : parent.mesh->faces()) {
+      // Remap to center of each face (extrinsically)
+      parent.ensureHaveFaceTangentSpaces();
+      parent.ensureHaveVertexTangentSpaces();
+      std::vector<glm::vec2> unitFaceVecs(parent.nFaces());
+      for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+        std::vector<size_t>& face = parent.faces[iF];
 
-      // Complex sum{0.0, 0.0};
-      // for (HalfedgePtr he : f.adjacentHalfedges()) {
-      // Complex valInFace = std::pow(gc.vertexFaceTransportCoefs[he], nSym) * vectorField[he.vertex()];
-      // sum += valInFace;
-      //}
-      // unitFaceVecs[f] = unit(sum);
-      //}
+        glm::vec3 faceBasisX = parent.faceTangentSpaces[iF][0];
+        glm::vec3 faceBasisY = parent.faceTangentSpaces[iF][1];
 
-      //// Warning: expensive... Creates noticeable UI lag
-      // ribbonArtist = new RibbonArtist(traceField(parent.geometry, unitFaceVecs, nSym, 2500));
+        glm::vec2 sum{0.0, 0.0};
+        for (size_t iV : face) {
+          glm::vec2 vertVec = vectorField[iV];
+
+          glm::vec3 vertexBasisX = parent.vertexTangentSpaces[iV][0];
+          glm::vec3 vertexBasisY = parent.vertexTangentSpaces[iV][1];
+
+          // Rotate in to the basis of the face
+          glm::vec2 faceVec = rotateToTangentBasis(vertVec, vertexBasisX, vertexBasisY, faceBasisX, faceBasisY);
+          sum += faceVec;
+        }
+        unitFaceVecs[iF] = glm::normalize(sum);
+      }
+
+      // Warning: expensive... Creates noticeable UI lag
+      ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, unitFaceVecs, nSym, 2500)));
     }
 
 
     if (enabled) {
-
       // Update transform matrix from parent
-      // ribbonArtist->objectTransform = parent.objectTransform;
-
-      // ribbonArtist->draw();
+      ribbonArtist->objectTransform = parent.objectTransform;
+      ribbonArtist->draw();
     }
   }
 }
@@ -434,11 +430,7 @@ SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std
     }
 
     // find the face center
-    glm::vec3 faceCenter = glm::vec3{0., 0., 0.};
-    for (size_t j = 0; j < D; j++) {
-      faceCenter += parent.vertices[face[j]];
-    }
-    faceCenter /= D;
+    glm::vec3 faceCenter = parent.faceCenter(iF);
     vectorRoots[iF] = faceCenter;
 
     std::array<float, 3> formValues;
@@ -512,21 +504,19 @@ void SurfaceOneFormIntrinsicVectorQuantity::draw() {
     // Make sure we have a ribbon artist
     if (ribbonArtist == nullptr) {
 
+      std::vector<glm::vec2> unitMappedField(parent.nFaces());
+      for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+        unitMappedField[iF] = glm::normalize(mappedVectorField[iF]);
+      }
       // Warning: expensive... Creates noticeable UI lag
-      // TODO
-      // FaceData<Complex> unitMappedField(parent.mesh);
-      // for (FacePtr f : parent.mesh->faces()) {
-      // unitMappedField[f] = mappedVectorField[f] / std::abs(mappedVectorField[f]);
-      //}
-      // ribbonArtist = new RibbonArtist(traceField(parent.geometry, unitMappedField, 1, 5000));
+      ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, unitMappedField, 1, 2500)));
     }
 
 
     if (enabled) {
       // Update transform matrix from parent
-      // ribbonArtist->objectTransform = parent.objectTransform;
-
-      // ribbonArtist->draw();
+      ribbonArtist->objectTransform = parent.objectTransform;
+      ribbonArtist->draw();
     }
   }
 }

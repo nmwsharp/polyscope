@@ -2,6 +2,7 @@
 #pragma once
 
 #include "polyscope/gl/gl_utils.h"
+#include "polyscope/structure.h"
 
 
 namespace polyscope {
@@ -12,11 +13,13 @@ public:
   // Input ribbon is a collection of lines; each line is a list of (position, normal) pairs.
   // - normalOffsetFraction is an offset, relative to polyscope::state::lengthScale, along which ribbons are offset in
   // the normal direction.
-  RibbonArtist(const std::vector<std::vector<std::array<glm::vec3, 2>>>& ribbons, double normalOffsetFraction = 1e-4);
-  ~RibbonArtist();
+  RibbonArtist(Structure& parentStructure, const std::vector<std::vector<std::array<glm::vec3, 2>>>& ribbons,
+               double normalOffsetFraction = 1e-4);
 
   void draw();
   void buildParametersGUI();
+
+  Structure& parentStructure;
 
   float ribbonWidth = -1;
   bool enabled = true;
@@ -29,7 +32,7 @@ private:
   std::vector<std::vector<std::array<glm::vec3, 2>>> ribbons;
   double normalOffsetFraction;
 
-  gl::GLProgram* program = nullptr;
+  std::unique_ptr<gl::GLProgram> program;
 
   void createProgram();
   void deleteProgram();

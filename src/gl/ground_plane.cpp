@@ -153,6 +153,10 @@ void drawGroundPlane() {
   groundPlaneProgram->setUniform("u_lengthScale", state::lengthScale);
   groundPlaneProgram->setUniform("u_groundHeight", groundHeight);
 
+  glEnable(GL_BLEND);
+  glDepthFunc(GL_LESS); // return to normal
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
   groundPlaneProgram->draw();
 }
 
