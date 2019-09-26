@@ -8,6 +8,7 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
+#include "polyscope/scaled_value.h"
 
 #include "polyscope/point_cloud_color_quantity.h"
 #include "polyscope/point_cloud_scalar_quantity.h"
@@ -98,7 +99,7 @@ public:
   // Visualization parameters
   glm::vec3 initialBaseColor;
   glm::vec3 pointColor;
-  float pointRadius = 0.005;
+  ScaledValue<float> pointRadius = 0.005;
 
 private:
 

@@ -36,7 +36,7 @@ PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
 
 // Helper to set uniforms
 void PointCloud::setPointCloudUniforms(gl::GLProgram& p) {
-  p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
+  p.setUniform("u_pointRadius", pointRadius);
 
   glm::vec3 lookDir, upDir, rightDir;
   view::getCameraFrame(lookDir, upDir, rightDir);
@@ -153,7 +153,7 @@ void PointCloud::buildCustomUI() {
   ImGui::ColorEdit3("Point color", (float*)&pointColor, ImGuiColorEditFlags_NoInputs);
   ImGui::SameLine();
   ImGui::PushItemWidth(100);
-  ImGui::SliderFloat("Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
+  ImGui::SliderFloat("Radius", pointRadius.getValuePtr(), 0.0, .1, "%.5f", 3.);
   ImGui::PopItemWidth();
 }
 

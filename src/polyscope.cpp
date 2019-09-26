@@ -863,6 +863,10 @@ void mainLoopIteration() {
 }
 
 void show() {
+ 
+  if (!state::initialized) {
+    throw std::logic_error(options::printPrefix + "must initialize Polyscope with polyscope::init() before calling polyscope::show().");
+  }
 
   // Main loop
   while (!glfwWindowShouldClose(mainWindow)) {

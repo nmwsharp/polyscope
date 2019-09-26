@@ -99,6 +99,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/quantity.h
   ${INCLUDE_ROOT}/quantity.ipp
   ${INCLUDE_ROOT}/ribbon_artist.h
+  ${INCLUDE_ROOT}/scaled_value.h
   ${INCLUDE_ROOT}/screenshot.h
   ${INCLUDE_ROOT}/standardize_data_array.h
   ${INCLUDE_ROOT}/structure.h
