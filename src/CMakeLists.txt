@@ -21,6 +21,7 @@ SET(SRCS
   file_helpers.cpp
   camera_parameters.cpp
   histogram.cpp
+  persistent_value.cpp
 
   # Rendering stuff
   gl/gl_utils.cpp
@@ -88,6 +89,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/imgui_render.h
   ${INCLUDE_ROOT}/messages.h
   ${INCLUDE_ROOT}/options.h
+  ${INCLUDE_ROOT}/persistent_value.h
   ${INCLUDE_ROOT}/pick.h
   ${INCLUDE_ROOT}/point_cloud.h
   ${INCLUDE_ROOT}/point_cloud.ipp

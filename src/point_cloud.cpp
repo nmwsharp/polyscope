@@ -27,16 +27,14 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 
 // Constructor
 PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
-    : QuantityStructure<PointCloud>(name), points(std::move(points_)) {
-
-  initialBaseColor = getNextUniqueColor();
-  pointColor = initialBaseColor;
+    : QuantityStructure<PointCloud>(name), points(std::move(points_)),
+      pointColor(typeName() + name + "#pointColor", getNextUniqueColor()), pointRadius(typeName() + name + "#pointRadius", relativeValue(0.005)) {
 }
 
 
 // Helper to set uniforms
 void PointCloud::setPointCloudUniforms(gl::GLProgram& p) {
-  p.setUniform("u_pointRadius", pointRadius);
+  p.setUniform("u_pointRadius", pointRadius.get().asAbsolute());
 
   glm::vec3 lookDir, upDir, rightDir;
   view::getCameraFrame(lookDir, upDir, rightDir);
@@ -61,7 +59,7 @@ void PointCloud::draw() {
     // Set program uniforms
     setTransformUniforms(*program);
     setPointCloudUniforms(*program);
-    program->setUniform("u_baseColor", pointColor);
+    program->setUniform("u_baseColor", pointColor.get());
 
     // Draw the actual point cloud
     program->draw();
@@ -150,10 +148,14 @@ void PointCloud::buildPickUI(size_t localPickID) {
 
 void PointCloud::buildCustomUI() {
   ImGui::Text("# points: %lld", static_cast<long long int>(points.size()));
-  ImGui::ColorEdit3("Point color", (float*)&pointColor, ImGuiColorEditFlags_NoInputs);
+  if (ImGui::ColorEdit3("Point color", (float*)&pointColor.get(), ImGuiColorEditFlags_NoInputs)) {
+    pointColor.manuallyChanged();
+  }
   ImGui::SameLine();
   ImGui::PushItemWidth(100);
-  ImGui::SliderFloat("Radius", pointRadius.getValuePtr(), 0.0, .1, "%.5f", 3.);
+  if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+    pointRadius.manuallyChanged();
+  }
   ImGui::PopItemWidth();
 }
 
@@ -213,7 +215,7 @@ void PointCloud::writePointsToFile(std::string filename) {
 
   std::ofstream outFile(filename);
   outFile << "#Polyscope point cloud " << name << endl;
-  outFile << "#displayradius " << (pointRadius * state::lengthScale) << endl;
+  outFile << "#displayradius " << (pointRadius.get().asAbsolute()) << endl;
 
   for (size_t i = 0; i < points.size(); i++) {
     outFile << points[i] << endl;

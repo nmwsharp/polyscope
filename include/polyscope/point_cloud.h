@@ -4,11 +4,12 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
 #include "polyscope/gl/gl_utils.h"
+#include "polyscope/persistent_value.h"
 #include "polyscope/point_cloud_quantity.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/scaled_value.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
-#include "polyscope/scaled_value.h"
 
 #include "polyscope/point_cloud_color_quantity.h"
 #include "polyscope/point_cloud_scalar_quantity.h"
@@ -77,7 +78,7 @@ public:
   template <class T>
   PointCloudVectorQuantity* addVectorQuantity2D(std::string name, const T& vectors,
                                                 VectorType vectorType = VectorType::STANDARD);
-  
+
   // === Mutate
   template <class V>
   void updatePointPositions(const V& newPositions);
@@ -97,12 +98,10 @@ public:
   void setPointCloudUniforms(gl::GLProgram& p);
 
   // Visualization parameters
-  glm::vec3 initialBaseColor;
-  glm::vec3 pointColor;
-  ScaledValue<float> pointRadius = 0.005;
+  PersistentValue<glm::vec3> pointColor;
+  PersistentValue<ScaledValue<float>> pointRadius;
 
 private:
-
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
   std::unique_ptr<gl::GLProgram> program;

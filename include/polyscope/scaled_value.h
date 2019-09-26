@@ -13,7 +13,8 @@ template <typename T>
 class ScaledValue {
 
 public:
-  // Basic constructor
+  // Basic constructors
+  ScaledValue() : isRelative(true), value() {}
   ScaledValue(T value_, bool isRelative_) : isRelative(isRelative_), value(value_) {}
 
   // Copy constructor from scaled value of convertible type
@@ -24,10 +25,10 @@ public:
   static ScaledValue<T> relative(T value_) { return ScaledValue<T>(value_, true); }
   static ScaledValue<T> absolute(T value_) { return ScaledValue<T>(value_, false); }
 
-  // Explicit & implicit getters/conversions (returns value in absolute coordinates always, scaling by length if needed)
-  T get() const { return isRelative ? value * state::lengthScale : value; }
+  // Explicit getter (returns value in absolute coordinates always, scaling by length if needed)
+  T asAbsolute() const { return isRelative ? value * state::lengthScale : value; }
+  // Get a raw pointer to the underlying parameter (useful for e.g. imgui)
   T* getValuePtr() { return &value; }
-  operator T() const { return get(); }
 
   // Explicit setters
   void set(T value_, bool isRelative_ = true) {
@@ -49,8 +50,14 @@ private:
 
 // Create an absolute value of the given type
 template <typename T>
-T absoluteValue(T val) {
+ScaledValue<T> absoluteValue(T val) {
   return ScaledValue<T>::absolute(val);
+}
+
+// Create an absolute value of the given type
+template <typename T>
+ScaledValue<T> relativeValue(T val) {
+  return ScaledValue<T>::relative(val);
 }
 
 
