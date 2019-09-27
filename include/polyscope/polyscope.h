@@ -1,10 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
-#include <functional>
-#include <map>
-#include <unordered_set>
-
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/messages.h"
 #include "polyscope/options.h"
@@ -14,7 +10,15 @@
 
 #include "imgui.h"
 
+#include <functional>
+#include <map>
+#include <unordered_set>
+
+
 namespace polyscope {
+
+// forward declarations
+class Structure;
 
 // Initialize polyscope, including windowing system and openGL. Should be
 // called exactly once at the beginning of a program. If initialization

@@ -23,7 +23,7 @@ public:
   // Width = -1 means set automatically
   void buildUI(float width = -1.0);
 
-  float colormapRangeMin, colormapRangeMax; // in DATA values, not [0,1]
+  std::pair<double, double> colormapRange; // in DATA values, not [0,1]
 
 private:
   // = Helpers
@@ -42,8 +42,7 @@ private:
   std::vector<double> unweightedSmoothedHistCurveY;
   std::vector<std::array<double, 2>> smoothedHistCurveX; // left and right sides of each bucket, in "data" coordinates
   std::vector<std::array<double, 2>> rawHistCurveX;
-  double minVal;
-  double maxVal;
+  std::pair<double, double> dataRange;
   bool hasWeighted = false;
   bool useWeighted = false;
   bool useSmoothed = true;

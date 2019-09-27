@@ -7,7 +7,8 @@ namespace polyscope {
 
 template <typename S>
 Quantity<S>::Quantity(std::string name_, S& parentStructure_, bool dominates_)
-    : parent(parentStructure_), name(name_), dominates(dominates_) {}
+    : parent(parentStructure_), name(name_), enabled(parent.typeName() + "#" + parent.name + "#" + name, false),
+      dominates(dominates_) {}
 
 template <typename S>
 Quantity<S>::~Quantity(){};
@@ -21,7 +22,7 @@ void Quantity<S>::buildUI() {
   if (ImGui::TreeNode(name.c_str())) {
 
     // Enabled checkbox
-    bool enabledLocal = enabled;
+    bool enabledLocal = enabled.get();
     ImGui::Checkbox("Enabled", &enabledLocal);
     setEnabled(enabledLocal);
 
@@ -40,12 +41,15 @@ void Quantity<S>::buildPickUI(size_t localPickInd) {}
 
 template <typename S>
 bool Quantity<S>::isEnabled() {
-  return enabled;
+  return enabled.get();
 }
 
+// forward declaration
+void requestRedraw();
+
 template <typename S>
-void Quantity<S>::setEnabled(bool newEnabled) {
-  if (newEnabled == enabled) return;
+Quantity<S>* Quantity<S>::setEnabled(bool newEnabled) {
+  if (newEnabled == enabled.get()) return this;
 
   enabled = newEnabled;
 
@@ -64,6 +68,12 @@ void Quantity<S>::setEnabled(bool newEnabled) {
       parent.clearDominantQuantity();
     }
   }
+
+  if (isEnabled()) {
+    requestRedraw();
+  }
+
+  return this;
 }
 
 template <typename S>

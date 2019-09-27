@@ -21,7 +21,13 @@ namespace polyscope {
 PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                    PointCloud& pointCloud_, VectorType vectorType_)
 
-    : PointCloudQuantity(name, pointCloud_), vectorType(vectorType_), vectors(vectors_) {
+    : PointCloudQuantity(name, pointCloud_), vectorType(vectorType_), vectors(vectors_),
+      vectorLengthMult(parent.typeName() + "#" + parent.name + "#" + name + "#vectorLengthMult",
+                       vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
+      vectorRadius(parent.typeName() + "#" + parent.name + "#" + name + "#vectorRadius", relativeValue(0.0025)),
+      vectorColor(parent.typeName() + "#" + parent.name + "#" + name + "#vectorColor", getNextUniqueColor())
+
+{
 
   if (vectors.size() != parent.points.size()) {
     polyscope::error("Point cloud vector quantity " + name + " does not have same number of values (" +
@@ -36,18 +42,12 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
     mapper = AffineRemapper<glm::vec3>(vectors, DataType::MAGNITUDE);
   }
 
-  // Default viz settings
-  if (vectorType != VectorType::AMBIENT) {
-    lengthMult = .02;
-  } else {
-    lengthMult = 1.0;
-  }
-  radiusMult = .0005;
+  vectorRadius = .0025;
   vectorColor = getNextUniqueColor();
 }
 
 void PointCloudVectorQuantity::draw() {
-  if (!enabled) return;
+  if (!isEnabled()) return;
 
   if (program == nullptr) {
     createProgram();
@@ -56,13 +56,13 @@ void PointCloudVectorQuantity::draw() {
   // Set uniforms
   parent.setTransformUniforms(*program);
 
-  program->setUniform("u_radius", radiusMult * state::lengthScale);
-  program->setUniform("u_color", vectorColor);
+  program->setUniform("u_radius", vectorRadius.get().asAbsolute());
+  program->setUniform("u_color", vectorColor.get());
 
   if (vectorType == VectorType::AMBIENT) {
     program->setUniform("u_lengthMult", 1.0);
   } else {
-    program->setUniform("u_lengthMult", lengthMult * state::lengthScale);
+    program->setUniform("u_lengthMult", vectorLengthMult.get().asAbsolute());
   }
 
   program->draw();
@@ -84,9 +84,7 @@ void PointCloudVectorQuantity::createProgram() {
   setMaterialForProgram(*program, "wax");
 }
 
-void PointCloudVectorQuantity::geometryChanged() {
-  program.reset();
-}
+void PointCloudVectorQuantity::geometryChanged() { program.reset(); }
 
 void PointCloudVectorQuantity::buildCustomUI() {
   ImGui::SameLine();
@@ -105,10 +103,10 @@ void PointCloudVectorQuantity::buildCustomUI() {
 
   // Only get to set length for non-ambient vectors
   if (vectorType != VectorType::AMBIENT) {
-    ImGui::SliderFloat("Length", &lengthMult, 0.0, .1, "%.5f", 3.);
+    ImGui::SliderFloat("Length", vectorLengthMult.get().getValuePtr(), 0.0, .1, "%.5f", 3.);
   }
 
-  ImGui::SliderFloat("Radius", &radiusMult, 0.0, .1, "%.5f", 3.);
+  ImGui::SliderFloat("Radius", vectorRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.);
 
   { // Draw max and min magnitude
     ImGui::TextUnformatted(mapper.printBounds().c_str());
@@ -142,8 +140,8 @@ void PointCloudVectorQuantity::writeToFile(std::string filename) {
 
   std::ofstream outFile(filename);
   outFile << "#Vectors written by polyscope from Point Cloud Vector Quantity " << name << endl;
-  outFile << "#displayradius " << (radiusMult * state::lengthScale) << endl;
-  outFile << "#displaylength " << (lengthMult * state::lengthScale) << endl;
+  outFile << "#displayradius " << vectorRadius.get().asAbsolute() << endl;
+  outFile << "#displaylength " << vectorLengthMult.get().asAbsolute() << endl;
 
   for (size_t i = 0; i < vectors.size(); i++) {
     if (glm::length2(vectors[i]) > 0) {
@@ -153,6 +151,25 @@ void PointCloudVectorQuantity::writeToFile(std::string filename) {
 
   outFile.close();
 }
+
+PointCloudVectorQuantity* PointCloudVectorQuantity::setVectorLengthScale(double newLength, bool isRelative) {
+  vectorLengthMult = ScaledValue<double>(newLength, isRelative);
+  requestRedraw();
+  return this;
+}
+double PointCloudVectorQuantity::getVectorLengthScale() { return vectorLengthMult.get().asAbsolute(); }
+PointCloudVectorQuantity* PointCloudVectorQuantity::setVectorRadius(double val, bool isRelative) {
+  vectorRadius = ScaledValue<double>(val, isRelative);
+  requestRedraw();
+  return this;
+}
+double PointCloudVectorQuantity::getVectorRadius() { return vectorRadius.get().asAbsolute(); }
+PointCloudVectorQuantity* PointCloudVectorQuantity::setVectorColor(glm::vec3 color) {
+  vectorColor = color;
+  requestRedraw();
+  return this;
+}
+glm::vec3 PointCloudVectorQuantity::getVectorColor() { return vectorColor.get(); }
 
 std::string PointCloudVectorQuantity::niceName() { return name + " (vector)"; }
 

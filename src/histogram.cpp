@@ -48,24 +48,21 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
   }
 
   // == Build histogram
-  std::pair<double, double> minmax = robustMinMax(values);
-  minVal = minmax.first;
-  maxVal = minmax.second;
-  colormapRangeMin = minVal;
-  colormapRangeMax = maxVal;
+  dataRange = robustMinMax(values);
+  colormapRange = dataRange;
 
   // Helper to build the four histogram variants
   auto buildCurve = [&](size_t binCount, bool weighted, bool smooth, std::vector<std::array<double, 2>>& curveX,
                         std::vector<double>& curveY) {
     // linspace coords
-    double range = maxVal - minVal;
+    double range = dataRange.second - dataRange.first;
     double inc = range / binCount;
     std::vector<double> sumBin(binCount, 0.0);
 
     // count values in buckets
     for (size_t iData = 0; iData < N; iData++) {
 
-      double iBinf = binCount * (values[iData] - minVal) / range;
+      double iBinf = binCount * (values[iData] - dataRange.first) / range;
       size_t iBin = std::floor(glm::clamp(iBinf, 0.0, (double)binCount - 1));
 
       // NaN values and finite values near the bottom of float range lead to craziness, so only increment bins if we got
@@ -85,7 +82,7 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
     curveY = std::vector<double>(binCount);
     double prevSumU = 0.0;
     double prevSumW = 0.0;
-    double prevXEnd = minVal;
+    double prevXEnd = dataRange.first;
     for (size_t iBin = 0; iBin < binCount; iBin++) {
       // y value
       curveY[iBin] = sumBin[iBin];
@@ -99,8 +96,8 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
     { // Rescale curves to [0,1] in both dimensions
       double maxHeight = *std::max_element(curveY.begin(), curveY.end());
       for (size_t i = 0; i < binCount; i++) {
-        curveX[i][0] = (curveX[i][0] - minVal) / range;
-        curveX[i][1] = (curveX[i][1] - minVal) / range;
+        curveX[i][0] = (curveX[i][0] - dataRange.first) / range;
+        curveX[i][1] = (curveX[i][1] - dataRange.first) / range;
         curveY[i] /= maxHeight;
       }
     }
@@ -265,8 +262,9 @@ void Histogram::renderToTexture() {
   // = Set uniforms
 
   // Colormap range (remapped to the 0-1 coords we use)
-  program->setUniform("u_cmapRangeMin", (colormapRangeMin - minVal) / (maxVal - minVal));
-  program->setUniform("u_cmapRangeMax", (colormapRangeMax - minVal) / (maxVal - minVal));
+  program->setUniform("u_cmapRangeMin", (colormapRange.first - dataRange.first) / (dataRange.second - dataRange.first));
+  program->setUniform("u_cmapRangeMax",
+                      (colormapRange.second - dataRange.first) / (dataRange.second - dataRange.first));
 
   // Draw
   program->draw();
@@ -296,7 +294,7 @@ void Histogram::buildUI(float width) {
     // Get mouse x coodinate within image
     float mouseX = ImGui::GetMousePos().x - ImGui::GetCursorScreenPos().x - ImGui::GetScrollX();
     double mouseT = mouseX / w;
-    double val = minVal + mouseT * (maxVal - minVal);
+    double val = dataRange.first + mouseT * (dataRange.second - dataRange.first);
 
     ImGui::SetTooltip("%g", val);
 

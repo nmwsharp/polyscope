@@ -28,7 +28,7 @@ PointCloudColorQuantity::PointCloudColorQuantity(std::string name, const std::ve
 }
 
 void PointCloudColorQuantity::draw() {
-  if (!enabled) return;
+  if (!isEnabled()) return;
 
   // Make the program if we don't have one already
   if (pointProgram == nullptr) {

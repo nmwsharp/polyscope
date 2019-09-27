@@ -27,9 +27,9 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 
 // Constructor
 PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
-    : QuantityStructure<PointCloud>(name), points(std::move(points_)),
-      pointColor(typeName() + name + "#pointColor", getNextUniqueColor()), pointRadius(typeName() + name + "#pointRadius", relativeValue(0.005)) {
-}
+    : QuantityStructure<PointCloud>(name, structureTypeName), points(std::move(points_)),
+      pointColor(typeName() + name + "#pointColor", getNextUniqueColor()),
+      pointRadius(typeName() + name + "#pointRadius", relativeValue(0.005)) {}
 
 
 // Helper to set uniforms
@@ -44,7 +44,7 @@ void PointCloud::setPointCloudUniforms(gl::GLProgram& p) {
 }
 
 void PointCloud::draw() {
-  if (!enabled) {
+  if (!isEnabled()) {
     return;
   }
 
@@ -72,7 +72,7 @@ void PointCloud::draw() {
 }
 
 void PointCloud::drawPick() {
-  if (!enabled) {
+  if (!isEnabled()) {
     return;
   }
 
@@ -249,5 +249,18 @@ PointCloudVectorQuantity* PointCloud::addVectorQuantityImpl(std::string name, co
   return q;
 }
 
+PointCloud* PointCloud::setPointColor(glm::vec3 newVal) {
+  pointColor = newVal;
+  polyscope::requestRedraw();
+  return this;
+}
+glm::vec3 PointCloud::getPointColor() { return pointColor.get(); }
+
+PointCloud* PointCloud::setPointRadius(float newVal, bool isRelative) {
+  pointRadius = ScaledValue<float>(newVal, isRelative);
+  polyscope::requestRedraw();
+  return this;
+}
+float PointCloud::getPointRadius() { return pointRadius.get().asAbsolute(); }
 
 } // namespace polyscope

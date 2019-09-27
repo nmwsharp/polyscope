@@ -40,25 +40,18 @@ public:
   // Construct a new point cloud structure
   PointCloud(std::string name, std::vector<glm::vec3> points);
 
-  // === Overloads
+  // === Overrides
 
   // Build the imgui display
   virtual void buildCustomUI() override;
   virtual void buildCustomOptionsUI() override;
   virtual void buildPickUI(size_t localPickID) override;
 
-  // Render the the structure on screen
+  // Standard structure overrides
   virtual void draw() override;
-
-  // Render for picking
   virtual void drawPick() override;
-
-  // A characteristic length for the structure
   virtual double lengthScale() override;
-
-  // Axis-aligned bounding box for the structure
   virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
-
   virtual std::string typeName() override;
 
   // === Quantities
@@ -97,11 +90,22 @@ public:
   void writePointsToFile(std::string filename = "");
   void setPointCloudUniforms(gl::GLProgram& p);
 
-  // Visualization parameters
+  // === Get/set visualization parameters
+  
+  // set the base color of the points
+  PointCloud* setPointColor(glm::vec3 newVal);
+  glm::vec3 getPointColor();
+
+  // set the radius of the points
+  PointCloud* setPointRadius(float newVal, bool isRelative = true);
+  float getPointRadius();
+
+private:
+
+  // === Visualization parameters
   PersistentValue<glm::vec3> pointColor;
   PersistentValue<ScaledValue<float>> pointRadius;
 
-private:
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
   std::unique_ptr<gl::GLProgram> program;

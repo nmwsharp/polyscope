@@ -3,6 +3,7 @@
 
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/quantity.h"
+#include "polyscope/persistent_value.h"
 
 #include "glm/glm.hpp"
 
@@ -28,7 +29,7 @@ namespace polyscope {
 class Structure {
 
 public:
-  Structure(std::string name);
+  Structure(std::string name, std::string subtypeName);
   virtual ~Structure() = 0;
 
   // == Render the the structure on screen
@@ -52,7 +53,7 @@ public:
   virtual double lengthScale() = 0;                           // get characteristic length
 
   // = Basic state
-  virtual void setEnabled(bool newEnabled);
+  virtual Structure* setEnabled(bool newEnabled);
   bool isEnabled();
   virtual std::string typeName() = 0;
 
@@ -65,7 +66,7 @@ public:
 
 protected:
   // = State
-  bool enabled = true;
+  PersistentValue<bool> enabled;
 };
 
 
@@ -86,7 +87,7 @@ public:
   // === Member functions ===
 
   // Base constructor which sets the name
-  QuantityStructure(std::string name);
+  QuantityStructure(std::string name, std::string subtypeName);
   virtual ~QuantityStructure() = 0;
 
   virtual void buildQuantitiesUI() override;

@@ -7,7 +7,7 @@ namespace polyscope {
 // === Derived structure can manage quantities
 
 template <typename S>
-QuantityStructure<S>::QuantityStructure(std::string name_) : Structure(name_) {}
+QuantityStructure<S>::QuantityStructure(std::string name_, std::string subtypeName) : Structure(name_, subtypeName) {}
 
 template <typename S>
 QuantityStructure<S>::~QuantityStructure(){};

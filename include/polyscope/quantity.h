@@ -1,6 +1,8 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include "polyscope/persistent_value.h"
+
 #include <string>
 
 namespace polyscope {
@@ -26,7 +28,7 @@ public:
 
   // Enable and disable the quantity
   bool isEnabled();
-  virtual void setEnabled(bool newEnabled);
+  virtual Quantity<S>* setEnabled(bool newEnabled);
 
   // = Utility
 
@@ -39,7 +41,7 @@ public:
   const std::string name; // a name for this quantity, which must be unique amongst quantities on `parent`
 
   // Is this quantity currently being displayed?
-  bool enabled = false; // should be set by setEnabled()
+  PersistentValue<bool> enabled; // should be set by setEnabled()
   bool dominates = false;
 };
 

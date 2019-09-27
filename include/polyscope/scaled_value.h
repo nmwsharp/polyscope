@@ -1,7 +1,5 @@
 #pragma once
 
-#include "polyscope/polyscope.h"
-
 namespace polyscope {
 
 // Manages a value which is _either_ scaled by `state::lengthScale` (the default), or an absolute value which is not
@@ -9,6 +7,12 @@ namespace polyscope {
 // just return `val`.
 //
 // Since values are assumed to be relative by default, simplying assigning to a ScaledValue will create a relatve value.
+
+// forward declare
+namespace state {
+extern double lengthScale;
+}
+
 template <typename T>
 class ScaledValue {
 

@@ -13,7 +13,8 @@ namespace polyscope {
 
 PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::vector<double>& values_,
                                                    PointCloud& pointCloud_, DataType dataType_)
-    : PointCloudQuantity(name, pointCloud_, true), dataType(dataType_)
+    : PointCloudQuantity(name, pointCloud_, true), dataType(dataType_),
+      cMap(parent.typeName() + "#" + parent.name + "#" + name + "#cmap", defaultColorMap(dataType))
 
 {
   if (values_.size() != parent.points.size()) {
@@ -22,21 +23,18 @@ PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::
                      ")");
   }
 
-  // Set the default colormap based on what kind of data is given
-  cMap = defaultColorMap(dataType);
-
   // Copy the raw data
   values = values_;
 
-  hist.updateColormap(cMap);
+  hist.updateColormap(cMap.get());
   hist.buildHistogram(values);
 
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
-  resetVizRange();
+  dataRange = robustMinMax(values, 1e-5);
+  resetMapRange();
 }
 
 void PointCloudScalarQuantity::draw() {
-  if (!enabled) return;
+  if (!isEnabled()) return;
 
   // Make the program if we don't have one already
   if (pointProgram == nullptr) {
@@ -46,47 +44,46 @@ void PointCloudScalarQuantity::draw() {
   // Set uniforms
   parent.setTransformUniforms(*pointProgram);
   parent.setPointCloudUniforms(*pointProgram);
-  pointProgram->setUniform("u_rangeLow", vizRangeLow);
-  pointProgram->setUniform("u_rangeHigh", vizRangeHigh);
+  pointProgram->setUniform("u_rangeLow", vizRange.first);
+  pointProgram->setUniform("u_rangeHigh", vizRange.second);
 
   pointProgram->draw();
 }
 
-void PointCloudScalarQuantity::resetVizRange() {
+PointCloudScalarQuantity* PointCloudScalarQuantity::resetMapRange() {
   switch (dataType) {
   case DataType::STANDARD:
-    vizRangeLow = dataRangeLow;
-    vizRangeHigh = dataRangeHigh;
+    vizRange = dataRange;
     break;
   case DataType::SYMMETRIC: {
-    float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
-    vizRangeLow = -absRange;
-    vizRangeHigh = absRange;
+    double absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
+    vizRange = std::make_pair(-absRange, absRange);
   } break;
   case DataType::MAGNITUDE:
-    vizRangeLow = 0.0;
-    vizRangeHigh = dataRangeHigh;
+    vizRange = std::make_pair(0., dataRange.second);
     break;
   }
+
+  requestRedraw();
+  return this;
 }
 
 void PointCloudScalarQuantity::buildCustomUI() {
   ImGui::SameLine();
 
-  if (buildColormapSelector(cMap)) {
+  if (buildColormapSelector(cMap.get())) {
     pointProgram.reset();
-    hist.updateColormap(cMap);
+    hist.updateColormap(cMap.get());
   }
 
   // Reset button
   ImGui::SameLine();
   if (ImGui::Button("Reset")) {
-    resetVizRange();
+    resetMapRange();
   }
 
   // Draw the histogram of values
-  hist.colormapRangeMin = vizRangeLow;
-  hist.colormapRangeMax = vizRangeHigh;
+  hist.colormapRange = vizRange;
   hist.buildUI();
 
   // Data range
@@ -97,17 +94,17 @@ void PointCloudScalarQuantity::buildCustomUI() {
   {
     switch (dataType) {
     case DataType::STANDARD:
-      ImGui::DragFloatRange2("", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100., dataRangeLow,
-                             dataRangeHigh, "Min: %.3e", "Max: %.3e");
+      ImGui::DragFloatRange2("", &vizRange.first, &vizRange.second, (dataRange.second - dataRange.first) / 100.,
+                             dataRange.first, dataRange.second, "Min: %.3e", "Max: %.3e");
       break;
     case DataType::SYMMETRIC: {
-      float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
-      ImGui::DragFloatRange2("##range_symmetric", &vizRangeLow, &vizRangeHigh, absRange / 100., -absRange, absRange,
-                             "Min: %.3e", "Max: %.3e");
+      float absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
+      ImGui::DragFloatRange2("##range_symmetric", &vizRange.first, &vizRange.second, absRange / 100., -absRange,
+                             absRange, "Min: %.3e", "Max: %.3e");
     } break;
     case DataType::MAGNITUDE: {
-      ImGui::DragFloatRange2("##range_mag", &vizRangeLow, &vizRangeHigh, vizRangeHigh / 100., 0.0, dataRangeHigh,
-                             "Min: %.3e", "Max: %.3e");
+      ImGui::DragFloatRange2("##range_mag", &vizRange.first, &vizRange.second, vizRange.second / 100., 0.0,
+                             dataRange.second, "Min: %.3e", "Max: %.3e");
     } break;
     }
   }
@@ -123,14 +120,12 @@ void PointCloudScalarQuantity::createPointProgram() {
   // Fill buffers
   pointProgram->setAttribute("a_position", parent.points);
   pointProgram->setAttribute("a_value", values);
-  pointProgram->setTextureFromColormap("t_colormap", getColorMap(cMap));
+  pointProgram->setTextureFromColormap("t_colormap", gl::getColorMap(cMap.get()));
 
   setMaterialForProgram(*pointProgram, "wax");
 }
 
-void PointCloudScalarQuantity::geometryChanged() {
-  pointProgram.reset();
-}
+void PointCloudScalarQuantity::geometryChanged() { pointProgram.reset(); }
 
 void PointCloudScalarQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
@@ -138,6 +133,19 @@ void PointCloudScalarQuantity::buildPickUI(size_t ind) {
   ImGui::Text("%g", values[ind]);
   ImGui::NextColumn();
 }
+
+PointCloudScalarQuantity* PointCloudScalarQuantity::setColorMap(gl::ColorMapID val) {
+  cMap = val;
+  requestRedraw();
+  return this;
+}
+gl::ColorMapID PointCloudScalarQuantity::getColorMap() { return cMap.get(); }
+PointCloudScalarQuantity* PointCloudScalarQuantity::setMapRange(std::pair<double, double> val) {
+  vizRange = val;
+  requestRedraw();
+  return this;
+}
+std::pair<double, double> PointCloudScalarQuantity::getMapRange() { return vizRange; }
 
 std::string PointCloudScalarQuantity::niceName() { return name + " (scalar)"; }
 
