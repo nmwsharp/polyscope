@@ -26,14 +26,15 @@ const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
 SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
                          const std::vector<std::vector<size_t>>& faceIndices)
-    : QuantityStructure<SurfaceMesh>(name), vertices(vertexPositions), faces(faceIndices) {
+    : QuantityStructure<SurfaceMesh>(name, typeName()), vertices(vertexPositions), faces(faceIndices),
+      uniquePrefix(typeName() + "#" + name + "#"), shadeSmooth(uniquePrefix + "shadeSmooth", false),
+      surfaceColor(uniquePrefix + "surfaceColor", getNextUniqueColor()),
+      edgeColor(uniquePrefix + "edgeColor", glm::vec3{0., 0., 0.}), edgeWidth(uniquePrefix + "edgeWidth", 0.)
+
+{
 
   computeCounts();
   computeGeometryData();
-
-  // Colors
-  baseColor = getNextUniqueColor();
-  surfaceColor = baseColor;
 }
 
 
@@ -306,7 +307,7 @@ void SurfaceMesh::ensureHaveVertexTangentSpaces() {
 }
 
 void SurfaceMesh::draw() {
-  if (!enabled) {
+  if (!isEnabled()) {
     return;
   }
 
@@ -320,7 +321,7 @@ void SurfaceMesh::draw() {
 
     // Set uniforms
     setTransformUniforms(*program);
-    program->setUniform("u_basecolor", surfaceColor);
+    program->setUniform("u_basecolor", getSurfaceColor());
 
     program->draw();
   }
@@ -331,15 +332,15 @@ void SurfaceMesh::draw() {
   }
 
   // Draw the wireframe
-  if (edgeWidth > 0) {
+  if (getEdgeWidth() > 0) {
     if (wireframeProgram == nullptr) {
       prepareWireframe();
     }
 
     // Set uniforms
     setTransformUniforms(*wireframeProgram);
-    wireframeProgram->setUniform("u_edgeWidth", edgeWidth);
-    wireframeProgram->setUniform("u_edgeColor", edgeColor);
+    wireframeProgram->setUniform("u_edgeWidth", getEdgeWidth());
+    wireframeProgram->setUniform("u_edgeColor", getEdgeColor());
 
     glEnable(GL_BLEND);
     glDepthFunc(GL_LEQUAL); // Make sure wireframe wins depth tests
@@ -355,7 +356,7 @@ void SurfaceMesh::draw() {
 }
 
 void SurfaceMesh::drawPick() {
-  if (!enabled) {
+  if (!isEnabled()) {
     return;
   }
 
@@ -494,9 +495,9 @@ void SurfaceMesh::preparePick() {
 }
 
 void SurfaceMesh::fillGeometryBuffers(gl::GLProgram& p) {
-  if (shadeStyle == ShadeStyle::SMOOTH) {
+  if (isSmoothShade()) {
     fillGeometryBuffersSmooth(p);
-  } else if (shadeStyle == ShadeStyle::FLAT) {
+  } else {
     fillGeometryBuffersFlat(p);
   }
 }
@@ -903,38 +904,29 @@ void SurfaceMesh::buildCustomUI() {
   ImGui::Text("#verts: %lld  #faces: %lld", nVertsL, nFacesL);
 
   { // colors
-    ImGui::ColorEdit3("Color", (float*)&surfaceColor, ImGuiColorEditFlags_NoInputs);
+    if (ImGui::ColorEdit3("Color", (float*)&surfaceColor.get(), ImGuiColorEditFlags_NoInputs))
+      setSurfaceColor(surfaceColor.get());
     ImGui::SameLine();
     ImGui::PushItemWidth(100);
-    ImGui::ColorEdit3("Edge Color", (float*)&edgeColor, ImGuiColorEditFlags_NoInputs);
+    if (ImGui::ColorEdit3("Edge Color", (float*)&edgeColor.get(), ImGuiColorEditFlags_NoInputs))
+      setEdgeColor(edgeColor.get());
     ImGui::PopItemWidth();
   }
 
   { // Flat shading or smooth shading?
     ImGui::SameLine();
-    bool ui_smoothshade = shadeStyle == ShadeStyle::SMOOTH;
-    if (ImGui::Checkbox("Smooth", &ui_smoothshade)) {
-      if (ui_smoothshade) {
-        setShadeStyle(ShadeStyle::SMOOTH);
-      } else {
-        setShadeStyle(ShadeStyle::FLAT);
-      }
-    }
+    if (ImGui::Checkbox("Smooth", &shadeSmooth.get())) setSmoothShade(shadeSmooth.get());
   }
 
   { // Edge width
     ImGui::PushItemWidth(100);
-    ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0, 1., "%.5f", 2.);
+    if (ImGui::SliderFloat("Edge Width", &edgeWidth.get(), 0.0, 1., "%.5f", 2.)) setEdgeWidth(edgeWidth.get());
     ImGui::PopItemWidth();
   }
 }
 
 void SurfaceMesh::buildCustomOptionsUI() {}
 
-void SurfaceMesh::setShadeStyle(ShadeStyle newShadeStyle) {
-  shadeStyle = newShadeStyle;
-  geometryChanged();
-}
 
 void SurfaceMesh::geometryChanged() {
   program.reset();
@@ -1133,14 +1125,33 @@ FacePtr SurfaceMesh::selectFace() {
 }
 */
 
-SurfaceMeshQuantity::SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates)
-    : Quantity<SurfaceMesh>(name, parentStructure, dominates) {}
-void SurfaceMeshQuantity::geometryChanged() {}
-void SurfaceMeshQuantity::buildVertexInfoGUI(size_t vInd) {}
-void SurfaceMeshQuantity::buildFaceInfoGUI(size_t fInd) {}
-void SurfaceMeshQuantity::buildEdgeInfoGUI(size_t eInd) {}
-void SurfaceMeshQuantity::buildHalfedgeInfoGUI(size_t heInd) {}
+// === Option getters and setters
 
+SurfaceMesh* SurfaceMesh::setSmoothShade(bool isSmooth) {
+  shadeSmooth = isSmooth;
+  geometryChanged();
+  requestRedraw();
+  return this;
+}
+bool SurfaceMesh::isSmoothShade() { return shadeSmooth.get(); }
+SurfaceMesh* SurfaceMesh::setSurfaceColor(glm::vec3 val) {
+  surfaceColor = val;
+  requestRedraw();
+  return this;
+}
+glm::vec3 SurfaceMesh::getSurfaceColor() { return surfaceColor.get(); }
+SurfaceMesh* SurfaceMesh::setEdgeColor(glm::vec3 val) {
+  edgeColor = val;
+  requestRedraw();
+  return this;
+}
+glm::vec3 SurfaceMesh::getEdgeColor() { return edgeColor.get(); }
+SurfaceMesh* SurfaceMesh::setEdgeWidth(double newVal) {
+  edgeWidth = newVal;
+  requestRedraw();
+  return this;
+}
+double SurfaceMesh::getEdgeWidth() { return edgeWidth.get(); }
 
 // === Quantity adders
 
@@ -1357,5 +1368,13 @@ void SurfaceMesh::setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors
   }
 }
 
+
+SurfaceMeshQuantity::SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates)
+    : Quantity<SurfaceMesh>(name, parentStructure, dominates) {}
+void SurfaceMeshQuantity::geometryChanged() {}
+void SurfaceMeshQuantity::buildVertexInfoGUI(size_t vInd) {}
+void SurfaceMeshQuantity::buildFaceInfoGUI(size_t fInd) {}
+void SurfaceMeshQuantity::buildEdgeInfoGUI(size_t eInd) {}
+void SurfaceMeshQuantity::buildHalfedgeInfoGUI(size_t heInd) {}
 
 } // namespace polyscope

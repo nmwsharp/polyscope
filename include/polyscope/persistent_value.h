@@ -2,6 +2,7 @@
 
 #include "polyscope/scaled_value.h"
 
+// So we can cache the types therein
 #include "glm/glm.hpp"
 
 #include <iostream>

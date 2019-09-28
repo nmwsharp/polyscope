@@ -21,7 +21,12 @@ namespace polyscope {
 
 SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh_, MeshElement definedOn_,
                                              VectorType vectorType_)
-    : SurfaceMeshQuantity(name, mesh_), vectorType(vectorType_), definedOn(definedOn_) {}
+    : SurfaceMeshQuantity(name, mesh_), vectorType(vectorType_), definedOn(definedOn_),
+      vectorLengthMult(parent.uniquePrefix + name + "#vectorLengthMult",
+                       vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
+      vectorRadius(parent.uniquePrefix + name + "#vectorRadius", relativeValue(0.0025)),
+      vectorColor(parent.uniquePrefix + "#vectorColor", getNextUniqueColor())
+{}
 
 void SurfaceVectorQuantity::prepareVectorMapper() {
 
@@ -31,15 +36,6 @@ void SurfaceVectorQuantity::prepareVectorMapper() {
   } else {
     mapper = AffineRemapper<glm::vec3>(vectors, DataType::MAGNITUDE);
   }
-
-  // Default viz settings
-  if (vectorType != VectorType::AMBIENT) {
-    lengthMult = .02;
-  } else {
-    lengthMult = 1.0;
-  }
-  radiusMult = .0005;
-  vectorColor = getNextUniqueColor();
 }
 
 void SurfaceVectorQuantity::draw() {
@@ -137,6 +133,25 @@ void SurfaceVectorQuantity::writeToFile(std::string filename) {
 
   outFile.close();
 }
+
+SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorLengthScale(double newLength, bool isRelative) {
+  vectorLengthMult = ScaledValue<double>(newLength, isRelative);
+  requestRedraw();
+  return this;
+}
+double SurfaceVectorQuantity::getVectorLengthScale() { return vectorLengthMult.get().asAbsolute(); }
+SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorRadius(double val, bool isRelative) {
+  vectorRadius = ScaledValue<double>(val, isRelative);
+  requestRedraw();
+  return this;
+}
+double SurfaceVectorQuantity::getVectorRadius() { return vectorRadius.get().asAbsolute(); }
+SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorColor(glm::vec3 color) {
+  vectorColor = color;
+  requestRedraw();
+  return this;
+}
+glm::vec3 SurfaceVectorQuantity::getVectorColor() { return vectorColor.get(); }
 
 // ========================================================
 // ==========           Vertex Vector            ==========

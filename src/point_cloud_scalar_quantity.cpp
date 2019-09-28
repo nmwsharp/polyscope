@@ -71,6 +71,16 @@ PointCloudScalarQuantity* PointCloudScalarQuantity::resetMapRange() {
 void PointCloudScalarQuantity::buildCustomUI() {
   ImGui::SameLine();
 
+  // == Options popup
+  if (ImGui::Button("Options")) {
+    ImGui::OpenPopup("OptionsPopup");
+  }
+  if (ImGui::BeginPopup("OptionsPopup")) {
+
+    if (ImGui::MenuItem("Reset colormap range")) resetMapRange();
+
+    ImGui::EndPopup();
+  }
   if (buildColormapSelector(cMap.get())) {
     pointProgram.reset();
     hist.updateColormap(cMap.get());

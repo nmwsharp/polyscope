@@ -16,25 +16,23 @@ namespace polyscope {
 
 SurfaceDistanceQuantity::SurfaceDistanceQuantity(std::string name, std::vector<double> distances_, SurfaceMesh& mesh_,
                                                  bool signedDist_)
-    : SurfaceMeshQuantity(name, mesh_, true), distances(std::move(distances_)), signedDist(signedDist_) {
+    : SurfaceMeshQuantity(name, mesh_, true), distances(std::move(distances_)), signedDist(signedDist_),
+      stripeSize(parent.uniquePrefix + name + "#stripeSize", relativeValue(0.02)),
+      cMap(parent.uniquePrefix + name + "#cmap", signedDist ? gl::ColorMapID::COOLWARM : gl::ColorMapID::VIRIDIS)
 
-  // Set default colormap
-  if (signedDist) {
-    cMap = gl::ColorMapID::COOLWARM;
-  } else {
-    cMap = gl::ColorMapID::VIRIDIS;
-  }
+
+{
 
   // Build the histogram
-  hist.updateColormap(cMap);
+  hist.updateColormap(cMap.get());
   hist.buildHistogram(distances, parent.vertexAreas);
 
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(distances, 1e-5);
-  resetVizRange();
+  dataRange = robustMinMax(distances, 1e-5);
+  resetMapRange();
 }
 
 void SurfaceDistanceQuantity::draw() {
-  if (!enabled) return;
+  if (!isEnabled()) return;
 
   if (program == nullptr) {
     createProgram();
@@ -62,28 +60,28 @@ void SurfaceDistanceQuantity::createProgram() {
 
 // Update range uniforms
 void SurfaceDistanceQuantity::setProgramUniforms(gl::GLProgram& program) {
-  program.setUniform("u_rangeLow", vizRangeLow);
-  program.setUniform("u_rangeHigh", vizRangeHigh);
-  program.setUniform("u_modLen", modLen * state::lengthScale);
+  program.setUniform("u_rangeLow", vizRange.first);
+  program.setUniform("u_rangeHigh", vizRange.second);
+  program.setUniform("u_modLen", stripeSize.get().asAbsolute());
 }
 
-void SurfaceDistanceQuantity::resetVizRange() {
+SurfaceDistanceQuantity* SurfaceDistanceQuantity::resetMapRange() {
   if (signedDist) {
-    float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
-    vizRangeLow = -absRange;
-    vizRangeHigh = absRange;
+    double absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
+    vizRange = std::make_pair(-absRange, absRange);
   } else {
-    vizRangeLow = 0.0;
-    vizRangeHigh = dataRangeHigh;
+    vizRange = std::make_pair(0., dataRange.second);
   }
+  requestRedraw();
+  return this;
 }
 
 void SurfaceDistanceQuantity::buildCustomUI() {
   ImGui::SameLine();
 
-  if (buildColormapSelector(cMap)) {
+  if (buildColormapSelector(cMap.get())) {
     program.reset();
-    hist.updateColormap(cMap);
+    hist.updateColormap(cMap.get());
   }
 
   // == Options popup
@@ -94,17 +92,18 @@ void SurfaceDistanceQuantity::buildCustomUI() {
   if (ImGui::BeginPopup("OptionsPopup")) {
 
     if (ImGui::MenuItem("Write to file")) writeToFile();
-    if (ImGui::MenuItem("Reset colormap range")) resetVizRange();
+    if (ImGui::MenuItem("Reset colormap range")) resetMapRange();
 
     ImGui::EndPopup();
   }
 
   // Modulo stripey width
-  ImGui::DragFloat("Stripe Length", &modLen, .001, 0.0001, 1.0, "%.4f", 2.0);
+  if (ImGui::DragFloat("Stripe size", stripeSize.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f", 2.0)) {
+    stripeSize.manuallyChanged();
+  }
 
   // Draw the histogram of values
-  hist.colormapRangeMin = vizRangeLow;
-  hist.colormapRangeMax = vizRangeHigh;
+  hist.colormapRange = vizRange;
   hist.buildUI();
 
   // Data range
@@ -114,16 +113,15 @@ void SurfaceDistanceQuantity::buildCustomUI() {
   // %g, unfortunately.
   {
     if (signedDist) {
-      float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
-      ImGui::DragFloatRange2("##range_symmetric", &vizRangeLow, &vizRangeHigh, absRange / 100., -absRange, absRange,
-                             "Min: %.3e", "Max: %.3e");
+      float absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
+      ImGui::DragFloatRange2("##range_symmetric", &vizRange.first, &vizRange.second, absRange / 100., -absRange,
+                             absRange, "Min: %.3e", "Max: %.3e");
     } else {
-      ImGui::DragFloatRange2("##range_mag", &vizRangeLow, &vizRangeHigh, vizRangeHigh / 100., 0.0, dataRangeHigh,
-                             "Min: %.3e", "Max: %.3e");
+      ImGui::DragFloatRange2("##range_mag", &vizRange.first, &vizRange.second, vizRange.second / 100., 0.0,
+                             dataRange.second, "Min: %.3e", "Max: %.3e");
     }
   }
-
-} // namespace polyscope
+}
 
 
 void SurfaceDistanceQuantity::fillColorBuffers(gl::GLProgram& p) {
@@ -149,8 +147,22 @@ void SurfaceDistanceQuantity::fillColorBuffers(gl::GLProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap.get()));
 }
+
+SurfaceDistanceQuantity* SurfaceDistanceQuantity::setColorMap(gl::ColorMapID val) {
+  cMap = val;
+  requestRedraw();
+  return this;
+}
+gl::ColorMapID SurfaceDistanceQuantity::getColorMap() { return cMap.get(); }
+SurfaceDistanceQuantity* SurfaceDistanceQuantity::setMapRange(std::pair<double, double> val) {
+  vizRange = val;
+  requestRedraw();
+  return this;
+}
+std::pair<double, double> SurfaceDistanceQuantity::getMapRange() { return vizRange; }
+
 
 void SurfaceDistanceQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());

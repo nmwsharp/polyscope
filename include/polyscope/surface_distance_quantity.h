@@ -23,18 +23,35 @@ public:
 
   // === Members
   std::vector<double> distances;
-  bool signedDist;
+  const bool signedDist;
+  
+  // === Get/set visualization parameters
+
+  // The color map
+  SurfaceDistanceQuantity* setColorMap(gl::ColorMapID val);
+  gl::ColorMapID getColorMap();
+
+  // Length of isoline stripes
+  SurfaceDistanceQuantity* setStripeSize(double stripeSize, bool isRelative=true);
+  double getStripeSize();
+
+  // Data limits mapped in to colormap
+  SurfaceDistanceQuantity* setMapRange(std::pair<double, double> val);
+  std::pair<double, double> getMapRange();
+  SurfaceDistanceQuantity* resetMapRange(); // reset to full range
 
 protected:
+
+  // === Visualization parameters
+
   // Affine data maps and limits
-  void resetVizRange();
-  float vizRangeLow, vizRangeHigh;
-  float dataRangeHigh, dataRangeLow;
+  std::pair<float, float> vizRange;
+  std::pair<double, double> dataRange;
+  PersistentValue<ScaledValue<float>> stripeSize;
   Histogram hist;
-  float modLen = 0.02;
 
   // UI internals
-  gl::ColorMapID cMap;
+  PersistentValue<gl::ColorMapID> cMap;
   std::unique_ptr<gl::GLProgram> program;
 
   // Helpers

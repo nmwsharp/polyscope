@@ -290,15 +290,33 @@ public:
   // old pick lookup results.
   // void getPickedFacePoint(FacePtr& fOut, glm::vec3& baryCoordOut);
 
-  // Visualization settings
-  glm::vec3 baseColor;
-  glm::vec3 surfaceColor;
-  glm::vec3 edgeColor{0., 0., 0.};
-  float edgeWidth = 0.0;
+  // === Getters and setters for visualization settings
+
+  // Flat or smooth shading
+  SurfaceMesh* setSmoothShade(bool isSmooth);
+  bool isSmoothShade();
+
+  // Color of the mesh
+  SurfaceMesh* setSurfaceColor(glm::vec3 val);
+  glm::vec3 getSurfaceColor();
+
+  // Color of edges
+  SurfaceMesh* setEdgeColor(glm::vec3 val);
+  glm::vec3 getEdgeColor();
+
+  // Width of the edges. Scaled such that 1 is a reasonable weight for visible edges, but values  1 can be used for bigger edges. Use 0. to disable.
+  SurfaceMesh* setEdgeWidth(double newVal);
+  double getEdgeWidth();
+
+  // A unique name for this type + structure
+  const std::string uniquePrefix;
 
 private:
   // Visualization settings
-  ShadeStyle shadeStyle = ShadeStyle::FLAT;
+  PersistentValue<bool> shadeSmooth;
+  PersistentValue<glm::vec3> surfaceColor;
+  PersistentValue<glm::vec3> edgeColor;
+  PersistentValue<float> edgeWidth;
 
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
@@ -322,6 +340,7 @@ private:
   std::unique_ptr<gl::GLProgram> program;
   std::unique_ptr<gl::GLProgram> pickProgram;
   std::unique_ptr<gl::GLProgram> wireframeProgram;
+
 
   // === Helper functions
 

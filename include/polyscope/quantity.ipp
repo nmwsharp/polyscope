@@ -8,7 +8,14 @@ namespace polyscope {
 template <typename S>
 Quantity<S>::Quantity(std::string name_, S& parentStructure_, bool dominates_)
     : parent(parentStructure_), name(name_), enabled(parent.typeName() + "#" + parent.name + "#" + name, false),
-      dominates(dominates_) {}
+      dominates(dominates_) {
+  // Hack: if the quantity pulls enabled=true from the cache, need to make sure the logic from setEnabled(true) happens,
+  // so toggle it real quick
+  if (isEnabled()) {
+    setEnabled(false);
+    setEnabled(true);
+  }
+}
 
 template <typename S>
 Quantity<S>::~Quantity(){};
@@ -19,7 +26,7 @@ void Quantity<S>::draw() {}
 template <typename S>
 void Quantity<S>::buildUI() {
 
-  if (ImGui::TreeNode(name.c_str())) {
+  if (ImGui::TreeNode(niceName().c_str())) {
 
     // Enabled checkbox
     bool enabledLocal = enabled.get();

@@ -16,14 +16,11 @@ namespace polyscope {
 
 SurfaceScalarQuantity::SurfaceScalarQuantity(std::string name, SurfaceMesh& mesh_, std::string definedOn_,
                                              DataType dataType_)
-    : SurfaceMeshQuantity(name, mesh_, true), dataType(dataType_), definedOn(definedOn_) {
-
-  // Set the default colormap based on what kind of data is given
-  cMap = defaultColorMap(dataType);
-}
+    : SurfaceMeshQuantity(name, mesh_, true), dataType(dataType_),
+      cMap(parent.uniquePrefix + name + "#cmap", defaultColorMap(dataType)), definedOn(definedOn_) {}
 
 void SurfaceScalarQuantity::draw() {
-  if (!enabled) return;
+  if (!isEnabled()) return;
 
   if (program == nullptr) {
     createProgram();
@@ -43,26 +40,26 @@ void SurfaceScalarQuantity::writeToFile(std::string filename) {
 
 // Update range uniforms
 void SurfaceScalarQuantity::setProgramUniforms(gl::GLProgram& program) {
-  program.setUniform("u_rangeLow", vizRangeLow);
-  program.setUniform("u_rangeHigh", vizRangeHigh);
+  program.setUniform("u_rangeLow", vizRange.first);
+  program.setUniform("u_rangeHigh", vizRange.second);
 }
 
-void SurfaceScalarQuantity::resetVizRange() {
+SurfaceScalarQuantity* SurfaceScalarQuantity::resetMapRange() {
   switch (dataType) {
   case DataType::STANDARD:
-    vizRangeLow = dataRangeLow;
-    vizRangeHigh = dataRangeHigh;
+    vizRange = dataRange;
     break;
   case DataType::SYMMETRIC: {
-    float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
-    vizRangeLow = -absRange;
-    vizRangeHigh = absRange;
+    double absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
+    vizRange = std::make_pair(-absRange, absRange);
   } break;
   case DataType::MAGNITUDE:
-    vizRangeLow = 0.0;
-    vizRangeHigh = dataRangeHigh;
+    vizRange = std::make_pair(0., dataRange.second);
     break;
   }
+
+  requestRedraw();
+  return this;
 }
 
 void SurfaceScalarQuantity::buildCustomUI() {
@@ -75,19 +72,18 @@ void SurfaceScalarQuantity::buildCustomUI() {
   if (ImGui::BeginPopup("OptionsPopup")) {
 
     if (ImGui::MenuItem("Write to file")) writeToFile();
-    if (ImGui::MenuItem("Reset colormap range")) resetVizRange();
+    if (ImGui::MenuItem("Reset colormap range")) resetMapRange();
 
     ImGui::EndPopup();
   }
 
-  if (buildColormapSelector(cMap)) {
+  if (buildColormapSelector(cMap.get())) {
     program.reset();
-    hist.updateColormap(cMap);
+    hist.updateColormap(cMap.get());
   }
 
   // Draw the histogram of values
-  hist.colormapRangeMin = vizRangeLow;
-  hist.colormapRangeMax = vizRangeHigh;
+  hist.colormapRange = vizRange;
   hist.buildUI();
 
   // Data range
@@ -98,23 +94,36 @@ void SurfaceScalarQuantity::buildCustomUI() {
   {
     switch (dataType) {
     case DataType::STANDARD:
-      ImGui::DragFloatRange2("", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100., dataRangeLow,
-                             dataRangeHigh, "Min: %.3e", "Max: %.3e");
+      ImGui::DragFloatRange2("", &vizRange.first, &vizRange.second, (dataRange.second - dataRange.first) / 100.,
+                             dataRange.first, dataRange.second, "Min: %.3e", "Max: %.3e");
       break;
     case DataType::SYMMETRIC: {
-      float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
-      ImGui::DragFloatRange2("##range_symmetric", &vizRangeLow, &vizRangeHigh, absRange / 100., -absRange, absRange,
-                             "Min: %.3e", "Max: %.3e");
+      float absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
+      ImGui::DragFloatRange2("##range_symmetric", &vizRange.first, &vizRange.second, absRange / 100., -absRange,
+                             absRange, "Min: %.3e", "Max: %.3e");
     } break;
     case DataType::MAGNITUDE: {
-      ImGui::DragFloatRange2("##range_mag", &vizRangeLow, &vizRangeHigh, vizRangeHigh / 100., 0.0, dataRangeHigh,
-                             "Min: %.3e", "Max: %.3e");
+      ImGui::DragFloatRange2("##range_mag", &vizRange.first, &vizRange.second, vizRange.second / 100., 0.0,
+                             dataRange.second, "Min: %.3e", "Max: %.3e");
     } break;
     }
   }
 }
 
 void SurfaceScalarQuantity::geometryChanged() { program.reset(); }
+
+SurfaceScalarQuantity* SurfaceScalarQuantity::setColorMap(gl::ColorMapID val) {
+  cMap = val;
+  requestRedraw();
+  return this;
+}
+gl::ColorMapID SurfaceScalarQuantity::getColorMap() { return cMap.get(); }
+SurfaceScalarQuantity* SurfaceScalarQuantity::setMapRange(std::pair<double, double> val) {
+  vizRange = val;
+  requestRedraw();
+  return this;
+}
+std::pair<double, double> SurfaceScalarQuantity::getMapRange() { return vizRange; }
 
 std::string SurfaceScalarQuantity::niceName() { return name + " (" + definedOn + " scalar)"; }
 
@@ -127,11 +136,11 @@ SurfaceVertexScalarQuantity::SurfaceVertexScalarQuantity(std::string name, std::
     : SurfaceScalarQuantity(name, mesh_, "vertex", dataType_), values(std::move(values_))
 
 {
-  hist.updateColormap(cMap);
+  hist.updateColormap(cMap.get());
   hist.buildHistogram(values, parent.vertexAreas);
 
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
-  resetVizRange();
+  dataRange = robustMinMax(values, 1e-5);
+  resetMapRange();
 }
 
 void SurfaceVertexScalarQuantity::createProgram() {
@@ -169,7 +178,7 @@ void SurfaceVertexScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap.get()));
 }
 
 void SurfaceVertexScalarQuantity::writeToFile(std::string filename) {
@@ -214,11 +223,11 @@ SurfaceFaceScalarQuantity::SurfaceFaceScalarQuantity(std::string name, std::vect
     : SurfaceScalarQuantity(name, mesh_, "face", dataType_), values(std::move(values_))
 
 {
-  hist.updateColormap(cMap);
+  hist.updateColormap(cMap.get());
   hist.buildHistogram(values, parent.faceAreas);
 
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
-  resetVizRange();
+  dataRange = robustMinMax(values, 1e-5);
+  resetMapRange();
 }
 
 void SurfaceFaceScalarQuantity::createProgram() {
@@ -248,7 +257,7 @@ void SurfaceFaceScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap.get()));
 }
 
 void SurfaceFaceScalarQuantity::buildFaceInfoGUI(size_t fInd) {
@@ -268,11 +277,11 @@ SurfaceEdgeScalarQuantity::SurfaceEdgeScalarQuantity(std::string name, std::vect
     : SurfaceScalarQuantity(name, mesh_, "edge", dataType_), values(std::move(values_))
 
 {
-  hist.updateColormap(cMap);
+  hist.updateColormap(cMap.get());
   hist.buildHistogram(values, parent.edgeLengths);
 
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
-  resetVizRange();
+  dataRange = robustMinMax(values, 1e-5);
+  resetMapRange();
 }
 
 void SurfaceEdgeScalarQuantity::createProgram() {
@@ -324,7 +333,7 @@ void SurfaceEdgeScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorvals", colorval);
-  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap.get()));
 }
 
 void SurfaceEdgeScalarQuantity::buildEdgeInfoGUI(size_t eInd) {
@@ -355,11 +364,11 @@ SurfaceHalfedgeScalarQuantity::SurfaceHalfedgeScalarQuantity(std::string name, s
     }
   }
 
-  hist.updateColormap(cMap);
+  hist.updateColormap(cMap.get());
   hist.buildHistogram(values, weightsVec);
 
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
-  resetVizRange();
+  dataRange = robustMinMax(values, 1e-5);
+  resetMapRange();
 }
 
 void SurfaceHalfedgeScalarQuantity::createProgram() {
@@ -418,7 +427,7 @@ void SurfaceHalfedgeScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorvals", colorval);
-  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
+  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap.get()));
 }
 
 void SurfaceHalfedgeScalarQuantity::buildHalfedgeInfoGUI(size_t heInd) {

@@ -21,16 +21,28 @@ public:
 
   // === Members
   const DataType dataType;
+  
+  // === Get/set visualization parameters
+
+  // The color map
+  SurfaceScalarQuantity* setColorMap(gl::ColorMapID val);
+  gl::ColorMapID getColorMap();
+
+  // Data limits mapped in to colormap
+  SurfaceScalarQuantity* setMapRange(std::pair<double, double> val);
+  std::pair<double, double> getMapRange();
+  SurfaceScalarQuantity* resetMapRange(); // reset to full range
 
 protected:
+  // === Visualization parameters
+
   // Affine data maps and limits
-  void resetVizRange();
-  float vizRangeLow, vizRangeHigh;
-  float dataRangeHigh, dataRangeLow;
+  std::pair<float, float> vizRange;
+  std::pair<double, double> dataRange;
   Histogram hist;
 
   // UI internals
-  gl::ColorMapID cMap;
+  PersistentValue<gl::ColorMapID> cMap;
   const std::string definedOn;
   std::unique_ptr<gl::GLProgram> program;
 
