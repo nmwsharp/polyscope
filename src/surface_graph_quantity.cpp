@@ -17,10 +17,9 @@ namespace polyscope {
 
 SurfaceGraphQuantity::SurfaceGraphQuantity(std::string name, std::vector<glm::vec3> nodes_,
                                            std::vector<std::array<size_t, 2>> edges_, SurfaceMesh& mesh_)
-    : SurfaceMeshQuantity(name, mesh_), nodes(std::move(nodes_)), edges(std::move(edges_))
-
+    : SurfaceMeshQuantity(name, mesh_), nodes(std::move(nodes_)), edges(std::move(edges_)),
+      radius(parent.uniquePrefix + "#radius", 0.002), color(parent.uniquePrefix + "#color", getNextUniqueColor())
 {
-
   // Validate that indices are in bounds
   for (auto& p : edges) {
     if (p[0] >= nodes.size()) {
@@ -32,13 +31,10 @@ SurfaceGraphQuantity::SurfaceGraphQuantity(std::string name, std::vector<glm::ve
               "index = " + std::to_string(p[1]) + " but nNodes = " + std::to_string(nodes.size()));
     }
   }
-
-  // initialize the color to something nice
-  color = getNextUniqueColor();
 }
 
 void SurfaceGraphQuantity::draw() {
-  if (!enabled) return;
+  if (!isEnabled()) return;
 
   if (pointProgram == nullptr || lineProgram == nullptr) {
     createPrograms();
@@ -51,19 +47,19 @@ void SurfaceGraphQuantity::draw() {
 }
 
 void SurfaceGraphQuantity::setUniforms() {
-
   // Point billboard uniforms
   glm::vec3 lookDir, upDir, rightDir;
   view::getCameraFrame(lookDir, upDir, rightDir);
   pointProgram->setUniform("u_camZ", lookDir);
+
   pointProgram->setUniform("u_camUp", upDir);
   pointProgram->setUniform("u_camRight", rightDir);
 
   // Radii and colors
-  pointProgram->setUniform("u_pointRadius", radius * state::lengthScale);
-  lineProgram->setUniform("u_radius", radius * state::lengthScale);
-  pointProgram->setUniform("u_baseColor", color);
-  lineProgram->setUniform("u_color", color);
+  pointProgram->setUniform("u_pointRadius", getRadius());
+  lineProgram->setUniform("u_radius", getRadius());
+  pointProgram->setUniform("u_baseColor", getColor());
+  lineProgram->setUniform("u_color", getColor());
 
   parent.setTransformUniforms(*pointProgram);
   parent.setTransformUniforms(*lineProgram);
@@ -71,7 +67,6 @@ void SurfaceGraphQuantity::setUniforms() {
 
 
 void SurfaceGraphQuantity::createPrograms() {
-
   { // Point program
     pointProgram.reset(new gl::GLProgram(&gl::SPHERE_VERT_SHADER, &gl::SPHERE_BILLBOARD_GEOM_SHADER,
                                          &gl::SPHERE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
@@ -103,28 +98,30 @@ void SurfaceGraphQuantity::createPrograms() {
 }
 
 void SurfaceGraphQuantity::buildCustomUI() {
-
   ImGui::SameLine();
-  ImGui::ColorEdit3("Color", (float*)&color, ImGuiColorEditFlags_NoInputs);
+  if (ImGui::ColorEdit3("Color", (float*)&color.get(), ImGuiColorEditFlags_NoInputs)) setColor(getColor());
   ImGui::Text("Nodes: %lu  Edges: %lu", nodes.size(), edges.size());
-  ImGui::SliderFloat("Radius", &radius, 0.0, .1, "%.5f", 3.);
+  if (ImGui::SliderFloat("Radius", radius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+    radius.manuallyChanged();
+    requestRedraw();
+  }
 }
 
 std::string SurfaceGraphQuantity::niceName() { return name; }
 
-SurfaceGraphQuantity* SurfaceGraphQuantity::setRadius(float newVal) {
-  radius = newVal;
+SurfaceGraphQuantity* SurfaceGraphQuantity::setRadius(double newVal, bool isRelative) {
+  radius = ScaledValue<float>(newVal, isRelative);
   requestRedraw();
   return this;
 }
 
-float SurfaceGraphQuantity::getRadius() { return radius; }
+double SurfaceGraphQuantity::getRadius() { return radius.get().asAbsolute(); }
 
 SurfaceGraphQuantity* SurfaceGraphQuantity::setColor(glm::vec3 newColor) {
   color = newColor;
   requestRedraw();
   return this;
 }
-glm::vec3 SurfaceGraphQuantity::getColor() { return color; }
+glm::vec3 SurfaceGraphQuantity::getColor() { return color.get(); }
 
 } // namespace polyscope

@@ -82,6 +82,7 @@ void SurfaceDistanceQuantity::buildCustomUI() {
   if (buildColormapSelector(cMap.get())) {
     program.reset();
     hist.updateColormap(cMap.get());
+    setColorMap(getColorMap());
   }
 
   // == Options popup
@@ -99,7 +100,7 @@ void SurfaceDistanceQuantity::buildCustomUI() {
 
   // Modulo stripey width
   if (ImGui::DragFloat("Stripe size", stripeSize.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f", 2.0)) {
-    stripeSize.manuallyChanged();
+    setStripeSize(getStripeSize());
   }
 
   // Draw the histogram of values

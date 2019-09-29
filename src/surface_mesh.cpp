@@ -191,9 +191,10 @@ void SurfaceMesh::ensureHaveManifoldConnectivity() {
   twinHalfedge.resize(nHalfedges());
 
   // Maps from edge (sorted) to all halfedges incident on that edge
-  std::unordered_map<std::pair<size_t, size_t>, std::vector<size_t>, polyscope::hash_combine::hash<std::pair<size_t, size_t>>>
+  std::unordered_map<std::pair<size_t, size_t>, std::vector<size_t>,
+                     polyscope::hash_combine::hash<std::pair<size_t, size_t>>>
       edgeInds;
-  
+
   // Fill out faceForHalfedge and populate edge lookup map
   for (size_t iF = 0; iF < nFaces(); iF++) {
     auto& face = faces[iF];
@@ -202,7 +203,7 @@ void SurfaceMesh::ensureHaveManifoldConnectivity() {
 
     for (size_t j = 0; j < D; j++) {
       size_t iV = face[j];
-      size_t iVNext = face[(j+1)%D];
+      size_t iVNext = face[(j + 1) % D];
       size_t iHe = halfedgeIndices[iF][j];
 
       faceForHalfedge[iHe] = iF;
@@ -227,7 +228,7 @@ void SurfaceMesh::ensureHaveManifoldConnectivity() {
 
     for (size_t j = 0; j < D; j++) {
       size_t iV = face[j];
-      size_t iVNext = face[(j+1)%D];
+      size_t iVNext = face[(j + 1) % D];
       size_t iHe = halfedgeIndices[iF][j];
 
       std::pair<size_t, size_t> edgeKey(std::min(iV, iVNext), std::max(iV, iVNext));
@@ -235,8 +236,8 @@ void SurfaceMesh::ensureHaveManifoldConnectivity() {
 
       // Pick the first halfedge we find which is not this one
       size_t myTwin = INVALID_IND;
-      for(size_t t : edgeHalfedges) {
-        if(t != iHe) {
+      for (size_t t : edgeHalfedges) {
+        if (t != iHe) {
           myTwin = t;
           break;
         }
@@ -920,7 +921,7 @@ void SurfaceMesh::buildCustomUI() {
 
   { // Edge width
     ImGui::PushItemWidth(100);
-    if (ImGui::SliderFloat("Edge Width", &edgeWidth.get(), 0.0, 1., "%.5f", 2.)) setEdgeWidth(edgeWidth.get());
+    if (ImGui::SliderFloat("Edge Width", &edgeWidth.get(), 0.0, 1., "%.5f", 2.)) setEdgeWidth(getEdgeWidth());
     ImGui::PopItemWidth();
   }
 }
@@ -1216,8 +1217,8 @@ SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantityImpl(std::string name,
 SurfaceCornerParameterizationQuantity*
 SurfaceMesh::addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
                                              ParamCoordsType type) {
-  SurfaceCornerParameterizationQuantity* q =
-      new SurfaceCornerParameterizationQuantity(name, applyPermutation(coords, cornerPerm), type, *this);
+  SurfaceCornerParameterizationQuantity* q = new SurfaceCornerParameterizationQuantity(
+      name, applyPermutation(coords, cornerPerm), type, ParamVizStyle::CHECKER, *this);
   addQuantity(q);
 
   return q;
@@ -1226,8 +1227,8 @@ SurfaceMesh::addParameterizationQuantityImpl(std::string name, const std::vector
 SurfaceVertexParameterizationQuantity*
 SurfaceMesh::addVertexParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
                                                    ParamCoordsType type) {
-  SurfaceVertexParameterizationQuantity* q =
-      new SurfaceVertexParameterizationQuantity(name, applyPermutation(coords, vertexPerm), type, *this);
+  SurfaceVertexParameterizationQuantity* q = new SurfaceVertexParameterizationQuantity(
+      name, applyPermutation(coords, vertexPerm), type, ParamVizStyle::CHECKER, *this);
   addQuantity(q);
 
   return q;
@@ -1236,11 +1237,9 @@ SurfaceMesh::addVertexParameterizationQuantityImpl(std::string name, const std::
 SurfaceVertexParameterizationQuantity*
 SurfaceMesh::addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
                                                   ParamCoordsType type) {
-  SurfaceVertexParameterizationQuantity* q =
-      new SurfaceVertexParameterizationQuantity(name, applyPermutation(coords, vertexPerm), type, *this);
+  SurfaceVertexParameterizationQuantity* q = new SurfaceVertexParameterizationQuantity(
+      name, applyPermutation(coords, vertexPerm), type, ParamVizStyle::LOCAL_CHECK, *this);
   addQuantity(q);
-
-  q->setStyle(ParamVizStyle::LOCAL_CHECK);
 
   return q;
 }

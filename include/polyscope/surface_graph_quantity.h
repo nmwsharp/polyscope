@@ -19,17 +19,17 @@ public:
   std::vector<glm::vec3> nodes;
   std::vector<std::array<size_t, 2>> edges;
 
-  // Setters and getters
-
-  SurfaceGraphQuantity* setRadius(float newVal);
-  float getRadius();
+  // == Option setters and getters
+  SurfaceGraphQuantity* setRadius(double newVal, bool isRelative=true);
+  double getRadius();
 
   SurfaceGraphQuantity* setColor(glm::vec3 newColor);
   glm::vec3 getColor();
 
 private:
-  float radius = 0.002;
-  glm::vec3 color;
+  // === Appearance options
+  PersistentValue<ScaledValue<float>> radius;
+  PersistentValue<glm::vec3> color;
 
   std::unique_ptr<gl::GLProgram> pointProgram;
   std::unique_ptr<gl::GLProgram> lineProgram;
@@ -37,7 +37,6 @@ private:
   void createPrograms();
   void setUniforms();
 };
-
 
 
 } // namespace polyscope

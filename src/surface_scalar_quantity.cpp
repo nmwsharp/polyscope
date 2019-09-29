@@ -80,6 +80,7 @@ void SurfaceScalarQuantity::buildCustomUI() {
   if (buildColormapSelector(cMap.get())) {
     program.reset();
     hist.updateColormap(cMap.get());
+    setColorMap(getColorMap());
   }
 
   // Draw the histogram of values

@@ -89,7 +89,7 @@ void PointCloudVectorQuantity::geometryChanged() { program.reset(); }
 void PointCloudVectorQuantity::buildCustomUI() {
   ImGui::SameLine();
 
-  ImGui::ColorEdit3("Color", (float*)&vectorColor, ImGuiColorEditFlags_NoInputs);
+  if (ImGui::ColorEdit3("Color", &vectorColor.get()[0], ImGuiColorEditFlags_NoInputs)) setVectorColor(getVectorColor());
   ImGui::SameLine();
 
   // === Options popup
@@ -103,10 +103,16 @@ void PointCloudVectorQuantity::buildCustomUI() {
 
   // Only get to set length for non-ambient vectors
   if (vectorType != VectorType::AMBIENT) {
-    ImGui::SliderFloat("Length", vectorLengthMult.get().getValuePtr(), 0.0, .1, "%.5f", 3.);
+    if (ImGui::SliderFloat("Length", vectorLengthMult.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+      vectorLengthMult.manuallyChanged();
+      requestRedraw();
+    }
   }
 
-  ImGui::SliderFloat("Radius", vectorRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.);
+  if (ImGui::SliderFloat("Radius", vectorRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+    vectorRadius.manuallyChanged();
+    requestRedraw();
+  }
 
   { // Draw max and min magnitude
     ImGui::TextUnformatted(mapper.printBounds().c_str());

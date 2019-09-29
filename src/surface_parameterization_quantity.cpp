@@ -19,25 +19,19 @@ namespace polyscope {
 // ==============================================================
 
 SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string name, ParamCoordsType type_,
-                                                                 SurfaceMesh& mesh_)
-    : SurfaceMeshQuantity(name, mesh_, true), coordsType(type_) {
+                                                                 ParamVizStyle style_, SurfaceMesh& mesh_)
+    : SurfaceMeshQuantity(name, mesh_, true), coordsType(type_),
+      checkerSize(parent.uniquePrefix + "#checkerSize", 0.02), vizStyle(parent.uniquePrefix + "#vizStyle", style_),
+      checkColor1(parent.uniquePrefix + "#checkColor1", RGB_PINK),
+      checkColor2(parent.uniquePrefix + "#checkColor2", glm::vec3(.976, .856, .885)),
+      gridLineColor(parent.uniquePrefix + "#gridLineColor", RGB_WHITE),
+      gridBackgroundColor(parent.uniquePrefix + "#gridBackgroundColor", RGB_PINK),
+      cMap(parent.uniquePrefix + "#cMap", gl::ColorMapID::PHASE)
 
-  // Set default colormap
-  cMap = gl::ColorMapID::PHASE;
-
-  // Set a checker color
-  checkColor1 = RGB_PINK;
-  glm::vec3 checkColor1HSV = RGBtoHSV(checkColor1);
-  checkColor1HSV.y *= 0.15; // very light
-  checkColor2 = HSVtoRGB(checkColor1HSV);
-
-  // set grid color
-  gridLineColor = RGB_WHITE;
-  gridBackgroundColor = RGB_PINK;
-}
+{}
 
 void SurfaceParameterizationQuantity::draw() {
-  if (!enabled) return;
+  if (!isEnabled()) return;
 
   if (program == nullptr) {
     createProgram();
@@ -53,7 +47,7 @@ void SurfaceParameterizationQuantity::draw() {
 void SurfaceParameterizationQuantity::createProgram() {
   // Create the program to draw this quantity
 
-  switch (vizStyle) {
+  switch (getStyle()) {
   case ParamVizStyle::CHECKER:
     program.reset(new gl::GLProgram(&gl::PARAM_SURFACE_VERT_SHADER, &gl::PARAM_CHECKER_SURFACE_FRAG_SHADER,
                                     gl::DrawMode::Triangles));
@@ -65,12 +59,12 @@ void SurfaceParameterizationQuantity::createProgram() {
   case ParamVizStyle::LOCAL_CHECK:
     program.reset(new gl::GLProgram(&gl::PARAM_SURFACE_VERT_SHADER, &gl::PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER,
                                     gl::DrawMode::Triangles));
-    program->setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
+    program->setTextureFromColormap("t_colormap", gl::getColorMap(getColorMap()));
     break;
   case ParamVizStyle::LOCAL_RAD:
     program.reset(new gl::GLProgram(&gl::PARAM_SURFACE_VERT_SHADER, &gl::PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER,
                                     gl::DrawMode::Triangles));
-    program->setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
+    program->setTextureFromColormap("t_colormap", gl::getColorMap(getColorMap()));
     break;
   }
 
@@ -88,22 +82,22 @@ void SurfaceParameterizationQuantity::setProgramUniforms(gl::GLProgram& program)
   // Interpretatin of modulo parameter depends on data type
   switch (coordsType) {
   case ParamCoordsType::UNIT:
-    program.setUniform("u_modLen", modLen);
+    program.setUniform("u_modLen", getCheckerSize());
     break;
   case ParamCoordsType::WORLD:
-    program.setUniform("u_modLen", modLen * state::lengthScale);
+    program.setUniform("u_modLen", getCheckerSize() * state::lengthScale);
     break;
   }
 
   // Set other uniforms needed
-  switch (vizStyle) {
+  switch (getStyle()) {
   case ParamVizStyle::CHECKER:
-    program.setUniform("u_color1", checkColor1);
-    program.setUniform("u_color2", checkColor2);
+    program.setUniform("u_color1", getCheckerColors().first);
+    program.setUniform("u_color2", getCheckerColors().second);
     break;
   case ParamVizStyle::GRID:
-    program.setUniform("u_gridLineColor", gridLineColor);
-    program.setUniform("u_gridBackgroundColor", gridBackgroundColor);
+    program.setUniform("u_gridLineColor", getGridColors().first);
+    program.setUniform("u_gridBackgroundColor", getGridColors().second);
     break;
   case ParamVizStyle::LOCAL_CHECK:
   case ParamVizStyle::LOCAL_RAD:
@@ -140,10 +134,10 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
   ImGui::SameLine(); // put it next to enabled
 
   // Choose viz style
-  if (ImGui::BeginCombo("style", styleName(vizStyle).c_str())) {
+  if (ImGui::BeginCombo("style", styleName(getStyle()).c_str())) {
     for (ParamVizStyle s :
          {ParamVizStyle::CHECKER, ParamVizStyle::GRID, ParamVizStyle::LOCAL_CHECK, ParamVizStyle::LOCAL_RAD}) {
-      if (ImGui::Selectable(styleName(s).c_str(), s == vizStyle)) {
+      if (ImGui::Selectable(styleName(s).c_str(), s == getStyle())) {
         setStyle(s);
       }
     }
@@ -152,21 +146,26 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
 
 
   // Modulo stripey width
-  ImGui::DragFloat("period", &modLen, .001, 0.0001, 1.0, "%.4f", 2.0);
+  if (ImGui::DragFloat("period", &checkerSize.get(), .001, 0.0001, 1.0, "%.4f", 2.0)) {
+    setCheckerSize(getCheckerSize());
+  }
 
 
   ImGui::PopItemWidth();
 
-  switch (vizStyle) {
+  switch (getStyle()) {
   case ParamVizStyle::CHECKER:
-    ImGui::ColorEdit3("##colors2", (float*)&checkColor1, ImGuiColorEditFlags_NoInputs);
+    if (ImGui::ColorEdit3("##colors2", (float*)&checkColor1, ImGuiColorEditFlags_NoInputs))
+      setCheckerColors(getCheckerColors());
     ImGui::SameLine();
-    ImGui::ColorEdit3("colors", (float*)&checkColor2, ImGuiColorEditFlags_NoInputs);
+    if (ImGui::ColorEdit3("colors", (float*)&checkColor2, ImGuiColorEditFlags_NoInputs))
+      setCheckerColors(getCheckerColors());
     break;
   case ParamVizStyle::GRID:
-    ImGui::ColorEdit3("base", (float*)&gridBackgroundColor, ImGuiColorEditFlags_NoInputs);
+    if (ImGui::ColorEdit3("base", (float*)&gridBackgroundColor, ImGuiColorEditFlags_NoInputs))
+      setGridColors(getGridColors());
     ImGui::SameLine();
-    ImGui::ColorEdit3("line", (float*)&gridLineColor, ImGuiColorEditFlags_NoInputs);
+    if (ImGui::ColorEdit3("line", (float*)&gridLineColor, ImGuiColorEditFlags_NoInputs)) setGridColors(getGridColors());
     break;
   case ParamVizStyle::LOCAL_CHECK:
   case ParamVizStyle::LOCAL_RAD: {
@@ -176,8 +175,8 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
     ImGui::PopItemWidth();
 
     // Set colormap
-    if(buildColormapSelector(cMap)) {
-      program.reset();
+    if (buildColormapSelector(cMap.get())) {
+      setColorMap(getColorMap());
     }
   }
 
@@ -193,6 +192,49 @@ SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setStyle(Param
   return this;
 }
 
+ParamVizStyle SurfaceParameterizationQuantity::getStyle() { return vizStyle.get(); }
+
+SurfaceParameterizationQuantity*
+SurfaceParameterizationQuantity::setCheckerColors(std::pair<glm::vec3, glm::vec3> colors) {
+  checkColor1 = colors.first;
+  checkColor2 = colors.second;
+  requestRedraw();
+  return this;
+}
+
+std::pair<glm::vec3, glm::vec3> SurfaceParameterizationQuantity::getCheckerColors() {
+  return std::make_pair(checkColor1.get(), checkColor2.get());
+}
+
+SurfaceParameterizationQuantity*
+SurfaceParameterizationQuantity::setGridColors(std::pair<glm::vec3, glm::vec3> colors) {
+  gridLineColor = colors.first;
+  gridBackgroundColor = colors.second;
+  requestRedraw();
+  return this;
+}
+
+std::pair<glm::vec3, glm::vec3> SurfaceParameterizationQuantity::getGridColors() {
+  return std::make_pair(gridLineColor.get(), gridBackgroundColor.get());
+}
+
+SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setCheckerSize(double newVal) {
+  checkerSize = newVal;
+  requestRedraw();
+  return this;
+}
+
+double SurfaceParameterizationQuantity::getCheckerSize() { return checkerSize.get(); }
+
+SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setColorMap(gl::ColorMapID val) {
+  cMap = val;
+  program.reset();
+  requestRedraw();
+  return this;
+}
+
+gl::ColorMapID SurfaceParameterizationQuantity::getColorMap() { return cMap.get(); }
+
 void SurfaceParameterizationQuantity::geometryChanged() { program.reset(); }
 
 // ==============================================================
@@ -202,8 +244,9 @@ void SurfaceParameterizationQuantity::geometryChanged() { program.reset(); }
 
 SurfaceCornerParameterizationQuantity::SurfaceCornerParameterizationQuantity(std::string name,
                                                                              std::vector<glm::vec2> coords_,
-                                                                             ParamCoordsType type_, SurfaceMesh& mesh_)
-    : SurfaceParameterizationQuantity(name, type_, mesh_), coords(std::move(coords_)) {}
+                                                                             ParamCoordsType type_,
+                                                                             ParamVizStyle style_, SurfaceMesh& mesh_)
+    : SurfaceParameterizationQuantity(name, type_, style_, mesh_), coords(std::move(coords_)) {}
 
 std::string SurfaceCornerParameterizationQuantity::niceName() { return name + " (corner parameterization)"; }
 
@@ -251,8 +294,9 @@ void SurfaceCornerParameterizationQuantity::buildHalfedgeInfoGUI(size_t heInd) {
 
 SurfaceVertexParameterizationQuantity::SurfaceVertexParameterizationQuantity(std::string name,
                                                                              std::vector<glm::vec2> coords_,
-                                                                             ParamCoordsType type_, SurfaceMesh& mesh_)
-    : SurfaceParameterizationQuantity(name, type_, mesh_), coords(std::move(coords_)) {}
+                                                                             ParamCoordsType type_,
+                                                                             ParamVizStyle style_, SurfaceMesh& mesh_)
+    : SurfaceParameterizationQuantity(name, type_, style_, mesh_), coords(std::move(coords_)) {}
 
 std::string SurfaceVertexParameterizationQuantity::niceName() { return name + " (vertex parameterization)"; }
 

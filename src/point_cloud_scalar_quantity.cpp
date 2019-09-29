@@ -84,6 +84,7 @@ void PointCloudScalarQuantity::buildCustomUI() {
   if (buildColormapSelector(cMap.get())) {
     pointProgram.reset();
     hist.updateColormap(cMap.get());
+    setColorMap(getColorMap());
   }
 
   // Reset button
