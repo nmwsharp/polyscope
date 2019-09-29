@@ -17,7 +17,7 @@ namespace polyscope {
 SurfaceScalarQuantity::SurfaceScalarQuantity(std::string name, SurfaceMesh& mesh_, std::string definedOn_,
                                              DataType dataType_)
     : SurfaceMeshQuantity(name, mesh_, true), dataType(dataType_),
-      cMap(parent.uniquePrefix + name + "#cmap", defaultColorMap(dataType)), definedOn(definedOn_) {}
+      cMap(uniquePrefix() + name + "#cmap", defaultColorMap(dataType)), definedOn(definedOn_) {}
 
 void SurfaceScalarQuantity::draw() {
   if (!isEnabled()) return;
@@ -79,7 +79,6 @@ void SurfaceScalarQuantity::buildCustomUI() {
 
   if (buildColormapSelector(cMap.get())) {
     program.reset();
-    hist.updateColormap(cMap.get());
     setColorMap(getColorMap());
   }
 
@@ -115,6 +114,7 @@ void SurfaceScalarQuantity::geometryChanged() { program.reset(); }
 
 SurfaceScalarQuantity* SurfaceScalarQuantity::setColorMap(gl::ColorMapID val) {
   cMap = val;
+  hist.updateColormap(cMap.get());
   requestRedraw();
   return this;
 }

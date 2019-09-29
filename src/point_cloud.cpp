@@ -28,8 +28,8 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 // Constructor
 PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
     : QuantityStructure<PointCloud>(name, structureTypeName), points(std::move(points_)),
-      pointColor(typeName() + name + "#pointColor", getNextUniqueColor()),
-      pointRadius(typeName() + name + "#pointRadius", relativeValue(0.005)) {}
+      pointColor(uniquePrefix() + "#pointColor", getNextUniqueColor()),
+      pointRadius(uniquePrefix() + "#pointRadius", relativeValue(0.005)) {}
 
 
 // Helper to set uniforms
@@ -148,13 +148,14 @@ void PointCloud::buildPickUI(size_t localPickID) {
 
 void PointCloud::buildCustomUI() {
   ImGui::Text("# points: %lld", static_cast<long long int>(points.size()));
-  if (ImGui::ColorEdit3("Point color", (float*)&pointColor.get(), ImGuiColorEditFlags_NoInputs)) {
-    pointColor.manuallyChanged();
+  if (ImGui::ColorEdit3("Point color", &pointColor.get()[0], ImGuiColorEditFlags_NoInputs)) {
+    setPointColor(getPointColor());
   }
   ImGui::SameLine();
   ImGui::PushItemWidth(100);
   if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
     pointRadius.manuallyChanged();
+    requestRedraw();
   }
   ImGui::PopItemWidth();
 }
@@ -256,11 +257,11 @@ PointCloud* PointCloud::setPointColor(glm::vec3 newVal) {
 }
 glm::vec3 PointCloud::getPointColor() { return pointColor.get(); }
 
-PointCloud* PointCloud::setPointRadius(float newVal, bool isRelative) {
+PointCloud* PointCloud::setPointRadius(double newVal, bool isRelative) {
   pointRadius = ScaledValue<float>(newVal, isRelative);
   polyscope::requestRedraw();
   return this;
 }
-float PointCloud::getPointRadius() { return pointRadius.get().asAbsolute(); }
+double PointCloud::getPointRadius() { return pointRadius.get().asAbsolute(); }
 
 } // namespace polyscope

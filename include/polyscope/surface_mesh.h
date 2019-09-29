@@ -308,9 +308,6 @@ public:
   SurfaceMesh* setEdgeWidth(double newVal);
   double getEdgeWidth();
 
-  // A unique name for this type + structure
-  const std::string uniquePrefix;
-
 private:
   // Visualization settings
   PersistentValue<bool> shadeSmooth;

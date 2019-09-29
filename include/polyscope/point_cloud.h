@@ -97,8 +97,8 @@ public:
   glm::vec3 getPointColor();
 
   // set the radius of the points
-  PointCloud* setPointRadius(float newVal, bool isRelative = true);
-  float getPointRadius();
+  PointCloud* setPointRadius(double newVal, bool isRelative = true);
+  double getPointRadius();
 
 private:
 

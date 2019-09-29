@@ -88,5 +88,9 @@ std::string Quantity<S>::niceName() {
   return name;
 }
 
+template <typename S>
+std::string Quantity<S>::uniquePrefix() {
+  return parent.uniquePrefix() + name + "#";
+}
 
 } // namespace polyscope

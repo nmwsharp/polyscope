@@ -22,10 +22,10 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
                                                    PointCloud& pointCloud_, VectorType vectorType_)
 
     : PointCloudQuantity(name, pointCloud_), vectorType(vectorType_), vectors(vectors_),
-      vectorLengthMult(parent.typeName() + "#" + parent.name + "#" + name + "#vectorLengthMult",
+      vectorLengthMult(uniquePrefix() + "#vectorLengthMult",
                        vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
-      vectorRadius(parent.typeName() + "#" + parent.name + "#" + name + "#vectorRadius", relativeValue(0.0025)),
-      vectorColor(parent.typeName() + "#" + parent.name + "#" + name + "#vectorColor", getNextUniqueColor())
+      vectorRadius(uniquePrefix() + "#vectorRadius", relativeValue(0.0025)),
+      vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor())
 
 {
 
@@ -41,9 +41,6 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
   } else {
     mapper = AffineRemapper<glm::vec3>(vectors, DataType::MAGNITUDE);
   }
-
-  vectorRadius = .0025;
-  vectorColor = getNextUniqueColor();
 }
 
 void PointCloudVectorQuantity::draw() {

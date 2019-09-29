@@ -19,7 +19,11 @@ using std::endl;
 namespace polyscope {
 
 CurveNetworkVectorQuantity::CurveNetworkVectorQuantity(std::string name, CurveNetwork& network_, VectorType vectorType_)
-    : CurveNetworkQuantity(name, network_), vectorType(vectorType_) {}
+    : CurveNetworkQuantity(name, network_), vectorType(vectorType_),
+      vectorLengthMult(uniquePrefix() + "#vectorLengthMult",
+                       vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
+      vectorRadius(uniquePrefix() + "#vectorRadius", relativeValue(0.0025)),
+      vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()) {}
 
 void CurveNetworkVectorQuantity::prepareVectorMapper() {
 
@@ -29,32 +33,23 @@ void CurveNetworkVectorQuantity::prepareVectorMapper() {
   } else {
     mapper = AffineRemapper<glm::vec3>(vectors, DataType::MAGNITUDE);
   }
-
-  // Default viz settings
-  if (vectorType != VectorType::AMBIENT) {
-    lengthMult = .05;
-  } else {
-    lengthMult = 1.0;
-  }
-  radiusMult = .001;
-  vectorColor = getNextUniqueColor();
 }
 
 void CurveNetworkVectorQuantity::draw() {
-  if (!enabled) return;
+  if (!isEnabled()) return;
 
   if (program == nullptr) prepareProgram();
 
   // Set uniforms
   parent.setTransformUniforms(*program);
 
-  program->setUniform("u_radius", radiusMult * state::lengthScale);
-  program->setUniform("u_color", vectorColor);
+  program->setUniform("u_radius", vectorRadius.get().asAbsolute());
+  program->setUniform("u_color", vectorColor.get());
 
   if (vectorType == VectorType::AMBIENT) {
     program->setUniform("u_lengthMult", 1.0);
   } else {
-    program->setUniform("u_lengthMult", lengthMult * state::lengthScale);
+    program->setUniform("u_lengthMult", vectorLengthMult.get().asAbsolute());
   }
 
   program->draw();
@@ -79,7 +74,7 @@ void CurveNetworkVectorQuantity::prepareProgram() {
 
 void CurveNetworkVectorQuantity::buildCustomUI() {
   ImGui::SameLine();
-  ImGui::ColorEdit3("Color", (float*)&vectorColor, ImGuiColorEditFlags_NoInputs);
+  if (ImGui::ColorEdit3("Color", &vectorColor.get()[0], ImGuiColorEditFlags_NoInputs)) setVectorColor(getVectorColor());
   ImGui::SameLine();
 
 
@@ -92,13 +87,18 @@ void CurveNetworkVectorQuantity::buildCustomUI() {
     ImGui::EndPopup();
   }
 
-
   // Only get to set length for non-ambient vectors
   if (vectorType != VectorType::AMBIENT) {
-    ImGui::SliderFloat("Length", &lengthMult, 0.0, .1, "%.5f", 3.);
+    if (ImGui::SliderFloat("Length", vectorLengthMult.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+      vectorLengthMult.manuallyChanged();
+      requestRedraw();
+    }
   }
 
-  ImGui::SliderFloat("Radius", &radiusMult, 0.0, .1, "%.5f", 3.);
+  if (ImGui::SliderFloat("Radius", vectorRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+    vectorRadius.manuallyChanged();
+    requestRedraw();
+  }
 
   { // Draw max and min magnitude
     ImGui::TextUnformatted(mapper.printBounds().c_str());
@@ -124,8 +124,8 @@ void CurveNetworkVectorQuantity::writeToFile(std::string filename) {
 
   std::ofstream outFile(filename);
   outFile << "#Vectors written by polyscope from Curve Network Vector Quantity " << name << endl;
-  outFile << "#displayradius " << (radiusMult * state::lengthScale) << endl;
-  outFile << "#displaylength " << (lengthMult * state::lengthScale) << endl;
+  outFile << "#displayradius " << vectorRadius.get().asAbsolute() << endl;
+  outFile << "#displaylength " << vectorLengthMult.get().asAbsolute() << endl;
 
   for (size_t i = 0; i < vectors.size(); i++) {
     if (glm::length(vectors[i]) > 0) {
@@ -135,6 +135,27 @@ void CurveNetworkVectorQuantity::writeToFile(std::string filename) {
 
   outFile.close();
 }
+
+CurveNetworkVectorQuantity* CurveNetworkVectorQuantity::setVectorLengthScale(double newLength, bool isRelative) {
+  vectorLengthMult = ScaledValue<double>(newLength, isRelative);
+  requestRedraw();
+  return this;
+}
+double CurveNetworkVectorQuantity::getVectorLengthScale() { return vectorLengthMult.get().asAbsolute(); }
+CurveNetworkVectorQuantity* CurveNetworkVectorQuantity::setVectorRadius(double val, bool isRelative) {
+  vectorRadius = ScaledValue<double>(val, isRelative);
+  requestRedraw();
+  return this;
+}
+double CurveNetworkVectorQuantity::getVectorRadius() { return vectorRadius.get().asAbsolute(); }
+CurveNetworkVectorQuantity* CurveNetworkVectorQuantity::setVectorColor(glm::vec3 color) {
+  vectorColor = color;
+  requestRedraw();
+  return this;
+}
+glm::vec3 CurveNetworkVectorQuantity::getVectorColor() { return vectorColor.get(); }
+
+std::string CurveNetworkEdgeVectorQuantity::niceName() { return name + " (edge vector)"; }
 
 // ========================================================
 // ==========           Node Vector            ==========
@@ -210,7 +231,6 @@ void CurveNetworkEdgeVectorQuantity::buildEdgeInfoGUI(size_t iF) {
   ImGui::NextColumn();
 }
 
-std::string CurveNetworkEdgeVectorQuantity::niceName() { return name + " (edge vector)"; }
 
 void CurveNetworkEdgeVectorQuantity::geometryChanged() {
   vectorRoots.resize(parent.nEdges());

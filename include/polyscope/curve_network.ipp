@@ -115,6 +115,8 @@ void CurveNetwork::updateNodePositions(const V& newPositions) {
   for (auto& q : quantities) {
     q.second->geometryChanged();
   }
+
+  requestRedraw();
 }
 
 

@@ -20,13 +20,12 @@ namespace polyscope {
 
 SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string name, ParamCoordsType type_,
                                                                  ParamVizStyle style_, SurfaceMesh& mesh_)
-    : SurfaceMeshQuantity(name, mesh_, true), coordsType(type_),
-      checkerSize(parent.uniquePrefix + "#checkerSize", 0.02), vizStyle(parent.uniquePrefix + "#vizStyle", style_),
-      checkColor1(parent.uniquePrefix + "#checkColor1", RGB_PINK),
-      checkColor2(parent.uniquePrefix + "#checkColor2", glm::vec3(.976, .856, .885)),
-      gridLineColor(parent.uniquePrefix + "#gridLineColor", RGB_WHITE),
-      gridBackgroundColor(parent.uniquePrefix + "#gridBackgroundColor", RGB_PINK),
-      cMap(parent.uniquePrefix + "#cMap", gl::ColorMapID::PHASE)
+    : SurfaceMeshQuantity(name, mesh_, true), coordsType(type_), checkerSize(uniquePrefix() + "#checkerSize", 0.02),
+      vizStyle(uniquePrefix() + "#vizStyle", style_), checkColor1(uniquePrefix() + "#checkColor1", RGB_PINK),
+      checkColor2(uniquePrefix() + "#checkColor2", glm::vec3(.976, .856, .885)),
+      gridLineColor(uniquePrefix() + "#gridLineColor", RGB_WHITE),
+      gridBackgroundColor(uniquePrefix() + "#gridBackgroundColor", RGB_PINK),
+      cMap(uniquePrefix() + "#cMap", gl::ColorMapID::PHASE)
 
 {}
 
@@ -155,17 +154,18 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
 
   switch (getStyle()) {
   case ParamVizStyle::CHECKER:
-    if (ImGui::ColorEdit3("##colors2", (float*)&checkColor1, ImGuiColorEditFlags_NoInputs))
+    if (ImGui::ColorEdit3("##colors2", &checkColor1.get()[0], ImGuiColorEditFlags_NoInputs))
       setCheckerColors(getCheckerColors());
     ImGui::SameLine();
-    if (ImGui::ColorEdit3("colors", (float*)&checkColor2, ImGuiColorEditFlags_NoInputs))
+    if (ImGui::ColorEdit3("colors", &checkColor2.get()[0], ImGuiColorEditFlags_NoInputs))
       setCheckerColors(getCheckerColors());
     break;
   case ParamVizStyle::GRID:
-    if (ImGui::ColorEdit3("base", (float*)&gridBackgroundColor, ImGuiColorEditFlags_NoInputs))
+    if (ImGui::ColorEdit3("base", &gridBackgroundColor.get()[0], ImGuiColorEditFlags_NoInputs))
       setGridColors(getGridColors());
     ImGui::SameLine();
-    if (ImGui::ColorEdit3("line", (float*)&gridLineColor, ImGuiColorEditFlags_NoInputs)) setGridColors(getGridColors());
+    if (ImGui::ColorEdit3("line", &gridLineColor.get()[0], ImGuiColorEditFlags_NoInputs))
+      setGridColors(getGridColors());
     break;
   case ParamVizStyle::LOCAL_CHECK:
   case ParamVizStyle::LOCAL_RAD: {

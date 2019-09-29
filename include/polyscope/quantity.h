@@ -35,6 +35,7 @@ public:
   // A decorated name for the quantity that will be used in headers. For instance, for surface scalar named "value" we
   // return "value (scalar)"
   virtual std::string niceName();
+  std::string uniquePrefix();
 
   // === Member variables ===
   S& parent;              // the parent structure with which this quantity is associated

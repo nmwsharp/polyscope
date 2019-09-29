@@ -27,9 +27,9 @@ const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
                          const std::vector<std::vector<size_t>>& faceIndices)
     : QuantityStructure<SurfaceMesh>(name, typeName()), vertices(vertexPositions), faces(faceIndices),
-      uniquePrefix(typeName() + "#" + name + "#"), shadeSmooth(uniquePrefix + "shadeSmooth", false),
-      surfaceColor(uniquePrefix + "surfaceColor", getNextUniqueColor()),
-      edgeColor(uniquePrefix + "edgeColor", glm::vec3{0., 0., 0.}), edgeWidth(uniquePrefix + "edgeWidth", 0.)
+      shadeSmooth(uniquePrefix() + "shadeSmooth", false),
+      surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
+      edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), edgeWidth(uniquePrefix() + "edgeWidth", 0.)
 
 {
 
@@ -905,11 +905,11 @@ void SurfaceMesh::buildCustomUI() {
   ImGui::Text("#verts: %lld  #faces: %lld", nVertsL, nFacesL);
 
   { // colors
-    if (ImGui::ColorEdit3("Color", (float*)&surfaceColor.get(), ImGuiColorEditFlags_NoInputs))
+    if (ImGui::ColorEdit3("Color", &surfaceColor.get()[0], ImGuiColorEditFlags_NoInputs))
       setSurfaceColor(surfaceColor.get());
     ImGui::SameLine();
     ImGui::PushItemWidth(100);
-    if (ImGui::ColorEdit3("Edge Color", (float*)&edgeColor.get(), ImGuiColorEditFlags_NoInputs))
+    if (ImGui::ColorEdit3("Edge Color", &edgeColor.get()[0], ImGuiColorEditFlags_NoInputs))
       setEdgeColor(edgeColor.get());
     ImGui::PopItemWidth();
   }
@@ -939,6 +939,8 @@ void SurfaceMesh::geometryChanged() {
   for (auto& q : quantities) {
     q.second->geometryChanged();
   }
+
+  requestRedraw();
 }
 
 double SurfaceMesh::lengthScale() {

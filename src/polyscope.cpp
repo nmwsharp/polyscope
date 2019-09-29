@@ -681,7 +681,7 @@ void buildStructureGui() {
 
     // Build the structure's UI
     ImGui::SetNextTreeNodeOpen(structureMap.size() > 0, ImGuiCond_FirstUseEver);
-    if (ImGui::CollapsingHeader(("Category: " + catName + " (" + std::to_string(structureMap.size()) + ")").c_str())) {
+    if (ImGui::CollapsingHeader((catName + " (" + std::to_string(structureMap.size()) + ")").c_str())) {
       // Draw shared GUI elements for all instances of the structure
       if (structureMap.size() > 0) {
         structureMap.begin()->second->buildSharedStructureUI();

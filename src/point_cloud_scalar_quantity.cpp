@@ -14,7 +14,7 @@ namespace polyscope {
 PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::vector<double>& values_,
                                                    PointCloud& pointCloud_, DataType dataType_)
     : PointCloudQuantity(name, pointCloud_, true), dataType(dataType_),
-      cMap(parent.typeName() + "#" + parent.name + "#" + name + "#cmap", defaultColorMap(dataType))
+      cMap(uniquePrefix() + "#cmap", defaultColorMap(dataType))
 
 {
   if (values_.size() != parent.points.size()) {
@@ -147,6 +147,7 @@ void PointCloudScalarQuantity::buildPickUI(size_t ind) {
 
 PointCloudScalarQuantity* PointCloudScalarQuantity::setColorMap(gl::ColorMapID val) {
   cMap = val;
+  hist.updateColormap(cMap.get());
   requestRedraw();
   return this;
 }

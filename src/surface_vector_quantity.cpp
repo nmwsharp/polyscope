@@ -22,11 +22,11 @@ namespace polyscope {
 SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh_, MeshElement definedOn_,
                                              VectorType vectorType_)
     : SurfaceMeshQuantity(name, mesh_), vectorType(vectorType_),
-      vectorLengthMult(parent.uniquePrefix + name + "#vectorLengthMult",
+      vectorLengthMult(uniquePrefix() + name + "#vectorLengthMult",
                        vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
-      vectorRadius(parent.uniquePrefix + name + "#vectorRadius", relativeValue(0.0025)),
-      vectorColor(parent.uniquePrefix + "#vectorColor", getNextUniqueColor()), definedOn(definedOn_),
-      ribbonEnabled(parent.uniquePrefix + "#ribbonEnabled", false) {}
+      vectorRadius(uniquePrefix() + name + "#vectorRadius", relativeValue(0.0025)),
+      vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()), definedOn(definedOn_),
+      ribbonEnabled(uniquePrefix() + "#ribbonEnabled", false) {}
 
 void SurfaceVectorQuantity::prepareVectorMapper() {
 
@@ -77,7 +77,9 @@ void SurfaceVectorQuantity::prepareProgram() {
 
 void SurfaceVectorQuantity::buildCustomUI() {
   ImGui::SameLine();
-  ImGui::ColorEdit3("Color", (float*)&vectorColor, ImGuiColorEditFlags_NoInputs);
+  if (ImGui::ColorEdit3("Color", &vectorColor.get()[0], ImGuiColorEditFlags_NoInputs)) {
+    setVectorColor(getVectorColor());
+  }
   ImGui::SameLine();
 
 
@@ -158,6 +160,12 @@ SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorColor(glm::vec3 color) {
   return this;
 }
 glm::vec3 SurfaceVectorQuantity::getVectorColor() { return vectorColor.get(); }
+SurfaceVectorQuantity* SurfaceVectorQuantity::setRibbonEnabled(bool val) {
+  ribbonEnabled = val;
+  requestRedraw();
+  return this;
+}
+bool SurfaceVectorQuantity::isRibbonEnabled() { return ribbonEnabled.get(); }
 
 // ========================================================
 // ==========           Vertex Vector            ==========

@@ -25,20 +25,37 @@ public:
   const VectorType vectorType;
   std::vector<glm::vec3> vectorRoots;
   std::vector<glm::vec3> vectors;
-  float lengthMult; // longest vector will be this fraction of lengthScale (if not ambient)
-  float radiusMult; // radius is this fraction of lengthScale
-  glm::vec3 vectorColor;
+
+  // === Option accessors
+
+  //  The vectors will be scaled such that the longest vector is this long
+  CurveNetworkVectorQuantity* setVectorLengthScale(double newLength, bool isRelative = true);
+  double getVectorLengthScale();
+
+  // The radius of the vectors
+  CurveNetworkVectorQuantity* setVectorRadius(double val, bool isRelative = true);
+  double getVectorRadius();
+
+  // The color of the vectors
+  CurveNetworkVectorQuantity* setVectorColor(glm::vec3 color);
+  glm::vec3 getVectorColor();
+
+  void writeToFile(std::string filename = "");
+
+protected:
+
+  // === Visualization options
+  PersistentValue<ScaledValue<float>> vectorLengthMult;
+  PersistentValue<ScaledValue<float>> vectorRadius;
+  PersistentValue<glm::vec3> vectorColor;
 
   // The map that takes values to [0,1] for drawing
   AffineRemapper<glm::vec3> mapper;
-
-  void writeToFile(std::string filename = "");
 
   // GL things
   void prepareProgram();
   std::unique_ptr<gl::GLProgram> program;
 
-protected:
   // Set up the mapper for vectors
   void prepareVectorMapper();
 };

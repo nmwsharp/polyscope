@@ -8,7 +8,7 @@
 namespace polyscope {
 
 Structure::Structure(std::string name_, std::string subtypeName)
-    : name(name_), enabled(subtypeName + "#" + name, true) {}
+    : name(name_), enabled(subtypeName + "#" + name + "#enabled", true) {}
 
 Structure::~Structure(){};
 
@@ -92,5 +92,7 @@ void Structure::setTransformUniforms(gl::GLProgram& p) {
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   p.setUniform("u_projMatrix", glm::value_ptr(projMat));
 }
+
+std::string Structure::uniquePrefix() { return typeName() + "#" + name + "#"; }
 
 } // namespace polyscope

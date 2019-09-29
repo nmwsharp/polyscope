@@ -46,7 +46,7 @@ public:
 
   // = Identifying data
   const std::string name; // should be unique amongst registered structures with this type
-
+  std::string uniquePrefix();
 
   // = Length and bounding box (returned in object coordinates)
   virtual std::tuple<glm::vec3, glm::vec3> boundingBox() = 0; // get axis-aligned bounding box
@@ -63,6 +63,7 @@ public:
   void centerBoundingBox();
   void resetTransform();
   void setTransformUniforms(gl::GLProgram& p);
+
 
 protected:
   // = State

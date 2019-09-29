@@ -17,8 +17,8 @@ namespace polyscope {
 SurfaceDistanceQuantity::SurfaceDistanceQuantity(std::string name, std::vector<double> distances_, SurfaceMesh& mesh_,
                                                  bool signedDist_)
     : SurfaceMeshQuantity(name, mesh_, true), distances(std::move(distances_)), signedDist(signedDist_),
-      stripeSize(parent.uniquePrefix + name + "#stripeSize", relativeValue(0.02)),
-      cMap(parent.uniquePrefix + name + "#cmap", signedDist ? gl::ColorMapID::COOLWARM : gl::ColorMapID::VIRIDIS)
+      stripeSize(uniquePrefix() + name + "#stripeSize", relativeValue(0.02)),
+      cMap(uniquePrefix() + name + "#cmap", signedDist ? gl::ColorMapID::COOLWARM : gl::ColorMapID::VIRIDIS)
 
 
 {
@@ -62,7 +62,7 @@ void SurfaceDistanceQuantity::createProgram() {
 void SurfaceDistanceQuantity::setProgramUniforms(gl::GLProgram& program) {
   program.setUniform("u_rangeLow", vizRange.first);
   program.setUniform("u_rangeHigh", vizRange.second);
-  program.setUniform("u_modLen", stripeSize.get().asAbsolute());
+  program.setUniform("u_modLen", getStripeSize());
 }
 
 SurfaceDistanceQuantity* SurfaceDistanceQuantity::resetMapRange() {
@@ -81,7 +81,6 @@ void SurfaceDistanceQuantity::buildCustomUI() {
 
   if (buildColormapSelector(cMap.get())) {
     program.reset();
-    hist.updateColormap(cMap.get());
     setColorMap(getColorMap());
   }
 
@@ -100,7 +99,8 @@ void SurfaceDistanceQuantity::buildCustomUI() {
 
   // Modulo stripey width
   if (ImGui::DragFloat("Stripe size", stripeSize.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f", 2.0)) {
-    setStripeSize(getStripeSize());
+    stripeSize.manuallyChanged();
+    requestRedraw();
   }
 
   // Draw the histogram of values
@@ -153,6 +153,7 @@ void SurfaceDistanceQuantity::fillColorBuffers(gl::GLProgram& p) {
 
 SurfaceDistanceQuantity* SurfaceDistanceQuantity::setColorMap(gl::ColorMapID val) {
   cMap = val;
+  hist.updateColormap(cMap.get());
   requestRedraw();
   return this;
 }
@@ -163,6 +164,12 @@ SurfaceDistanceQuantity* SurfaceDistanceQuantity::setMapRange(std::pair<double, 
   return this;
 }
 std::pair<double, double> SurfaceDistanceQuantity::getMapRange() { return vizRange; }
+SurfaceDistanceQuantity* SurfaceDistanceQuantity::setStripeSize(double size, bool isRelative) {
+  stripeSize = ScaledValue<float>(size, isRelative);
+  requestRedraw();
+  return this;
+}
+double SurfaceDistanceQuantity::getStripeSize() { return stripeSize.get().asAbsolute(); }
 
 
 void SurfaceDistanceQuantity::buildVertexInfoGUI(size_t vInd) {

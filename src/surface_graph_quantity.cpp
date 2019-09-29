@@ -18,8 +18,7 @@ namespace polyscope {
 SurfaceGraphQuantity::SurfaceGraphQuantity(std::string name, std::vector<glm::vec3> nodes_,
                                            std::vector<std::array<size_t, 2>> edges_, SurfaceMesh& mesh_)
     : SurfaceMeshQuantity(name, mesh_), nodes(std::move(nodes_)), edges(std::move(edges_)),
-      radius(parent.uniquePrefix + "#radius", 0.002), color(parent.uniquePrefix + "#color", getNextUniqueColor())
-{
+      radius(uniquePrefix() + "#radius", 0.002), color(uniquePrefix() + "#color", getNextUniqueColor()) {
   // Validate that indices are in bounds
   for (auto& p : edges) {
     if (p[0] >= nodes.size()) {
@@ -99,7 +98,7 @@ void SurfaceGraphQuantity::createPrograms() {
 
 void SurfaceGraphQuantity::buildCustomUI() {
   ImGui::SameLine();
-  if (ImGui::ColorEdit3("Color", (float*)&color.get(), ImGuiColorEditFlags_NoInputs)) setColor(getColor());
+  if (ImGui::ColorEdit3("Color", &color.get()[0], ImGuiColorEditFlags_NoInputs)) setColor(getColor());
   ImGui::Text("Nodes: %lu  Edges: %lu", nodes.size(), edges.size());
   if (ImGui::SliderFloat("Radius", radius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
     radius.manuallyChanged();
