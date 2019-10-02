@@ -153,6 +153,7 @@ add_library(polyscope ${SRCS} ${HEADERS})
 # Required compiler settings
 set_property(TARGET polyscope PROPERTY CXX_STANDARD 11)
 set_property(TARGET polyscope PROPERTY CXX_STANDARD_REQUIRED TRUE)
+set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 add_definitions(-DNOMINMAX)
 
 

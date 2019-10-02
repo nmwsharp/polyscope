@@ -29,3 +29,5 @@ if(APPLE)
 else()
   add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
 endif()
+
+set_target_properties(imgui PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
