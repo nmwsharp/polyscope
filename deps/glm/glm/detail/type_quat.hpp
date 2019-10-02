@@ -1,15 +1,5 @@
-/// @ref gtc_quaternion
-/// @file glm/gtc/quaternion.hpp
-///
-/// @see core (dependence)
-/// @see gtc_constants (dependence)
-///
-/// @defgroup gtc_quaternion GLM_GTC_quaternion
-/// @ingroup gtc
-///
-/// Include <glm/gtc/quaternion.hpp> to use the features of this extension.
-///
-/// Defines a templated quaternion type and several quaternion operations.
+/// @ref core
+/// @file glm/detail/type_quat.hpp
 
 #pragma once
 
@@ -25,9 +15,6 @@
 
 namespace glm
 {
-	/// @addtogroup gtc_quaternion
-	/// @{
-
 	template<typename T, qualifier Q>
 	struct qua
 	{
@@ -76,6 +63,7 @@ namespace glm
 		// -- Component accesses --
 
 		typedef length_t length_type;
+
 		/// Return the count of components of a quaternion
 		GLM_FUNC_DECL static GLM_CONSTEXPR length_type length(){return 4;}
 
@@ -101,8 +89,8 @@ namespace glm
 
 		/// Explicit conversion operators
 #		if GLM_HAS_EXPLICIT_CONVERSION_OPERATORS
-			GLM_FUNC_DECL explicit operator mat<3, 3, T, Q>();
-			GLM_FUNC_DECL explicit operator mat<4, 4, T, Q>();
+			GLM_FUNC_DECL explicit operator mat<3, 3, T, Q>() const;
+			GLM_FUNC_DECL explicit operator mat<4, 4, T, Q>() const;
 #		endif
 
 		/// Create a quaternion from two normalized axis
@@ -183,8 +171,8 @@ namespace glm
 
 	template<typename T, qualifier Q>
 	GLM_FUNC_DECL GLM_CONSTEXPR bool operator!=(qua<T, Q> const& q1, qua<T, Q> const& q2);
-
-	/// @}
 } //namespace glm
 
+#ifndef GLM_EXTERNAL_TEMPLATE
 #include "type_quat.inl"
+#endif//GLM_EXTERNAL_TEMPLATE
