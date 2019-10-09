@@ -125,4 +125,8 @@ void screenshot(bool transparentBG) {
   state::screenshotInd++;
 }
 
+void resetScreenshotIndex() {
+  state::screenshotInd = 0;
+}
+
 } // namespace polyscope
