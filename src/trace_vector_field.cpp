@@ -145,7 +145,8 @@ public:
     glm::vec2 currDir = startDir;
     size_t nFaces = 0;
     float lengthRemaining = maxLineLength;
-    size_t prevFace, prevPrevFace;
+    size_t prevFace = INVALID_IND;
+	size_t prevPrevFace = INVALID_IND;
     while (lengthRemaining > 0 && currPoint.f != prevPrevFace && nFaces < maxFaceCount) {
 
       nFaces++;
@@ -163,7 +164,7 @@ public:
 
       // Pick the best symmetric direction in the face
       glm::vec2 faceDir = faceVectors[currFace];
-      glm::vec2 traceDir;
+      glm::vec2 traceDir{0., 0.};
       float bestAlign = -std::numeric_limits<float>::infinity();
       float deltaRot = 2.0 * PI / nSym;
       for (int iSym = 0; iSym < nSym; iSym++) {
