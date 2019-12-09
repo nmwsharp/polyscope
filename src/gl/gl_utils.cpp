@@ -220,18 +220,21 @@ void GLFramebuffer::bindToDepthTexturebuffer(GLTexturebuffer* textureBuffer) {
   depthTextureBuffer = textureBuffer;
 }
 
-void GLFramebuffer::bindForRendering() {
+bool GLFramebuffer::bindForRendering() {
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
 
   // Check if the frame buffer is okay
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    throw std::runtime_error("OpenGL error occurred: framebuffer not complete!");
+    // it would be nice to error out here, but it seems that on some platforms this happens even during normal flow. For
+    // instance, on Windows we get an incomplete framebuffer when the application is minimized
+	// see https://github.com/nmwsharp/polyscope/issues/36
+    // throw std::runtime_error("OpenGL error occurred: framebuffer not complete!");
+	return false;
   }
 
   // Set the viewport
   if (!viewportSet) {
-    throw std::runtime_error(
-        "OpenGL error: viewport not set for framebuffer object. Call GLFramebuffer::setViewport()");
+    throw std::runtime_error("OpenGL error: viewport not set for framebuffer object. Call GLFramebuffer::setViewport()");
   }
   glViewport(viewportX, viewportY, viewportSizeX, viewportSizeY);
 
@@ -244,6 +247,8 @@ void GLFramebuffer::bindForRendering() {
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   checkGLError();
+
+  return true;
 }
 
 void GLFramebuffer::resizeBuffers(unsigned int newXSize, unsigned int newYSize) {
@@ -301,7 +306,7 @@ void GLFramebuffer::setViewport(int startX, int startY, unsigned int sizeX, unsi
 }
 
 void GLFramebuffer::clear() {
-  bindForRendering();
+  if (!bindForRendering()) return;
   glClearColor(clearColor[0], clearColor[1], clearColor[2], clearAlpha);
   glClearDepth(1.);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

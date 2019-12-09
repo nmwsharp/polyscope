@@ -98,7 +98,8 @@ public:
   ~GLFramebuffer();
 
   // Bind to this framebuffer so subsequent draw calls will go to it
-  void bindForRendering();
+  // If return is false, binding failed and the framebuffer should not be used.
+  bool bindForRendering();
 
   // Clear to redraw
   void clear();

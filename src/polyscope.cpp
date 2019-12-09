@@ -418,7 +418,7 @@ void evaluatePickQuery(int xPos, int yPos) {
 
   pickFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
   pickFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  pickFramebuffer->bindForRendering();
+  if (!pickFramebuffer->bindForRendering()) return;
   pickFramebuffer->clear();
 
   // Render pick buffer
@@ -567,7 +567,9 @@ void renderScene() {
   // Activate the texture that we draw to
   sceneFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
   sceneFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  sceneFramebuffer->bindForRendering();
+
+  if (!sceneFramebuffer->bindForRendering()) return;
+ 
   sceneFramebuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
   sceneFramebuffer->clearAlpha = 0.0;
   sceneFramebuffer->clear();
