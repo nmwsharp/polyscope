@@ -38,7 +38,7 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
     if (nA >= maxInd || nB >= maxInd) {
       polyscope::error("CurveNetwork [" + name + "] edge " + std::to_string(iE) + " has bad node indices { " +
                        std::to_string(nA) + " , " + std::to_string(nB) + " } but there are " + std::to_string(maxInd) +
-                       " edges.");
+                       " nodes.");
     }
 
     // Increment degree
