@@ -63,6 +63,7 @@ bool usePrefsFile = true;
 bool initializeWithDefaultStructures = true;
 bool alwaysRedraw = false;
 bool autocenterStructures = false;
+bool autoscaleStructures = false;
 bool openImGuiWindowForUserCallback = true;
 
 } // namespace options
@@ -891,9 +892,12 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
     }
   }
 
-  // Center if desired
+  // Center/scale if desired
   if (options::autocenterStructures) {
     s->centerBoundingBox();
+  }
+  if (options::autoscaleStructures) {
+    s->rescaleToUnit();
   }
 
   // Add the new structure

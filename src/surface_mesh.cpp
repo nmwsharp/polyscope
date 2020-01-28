@@ -967,10 +967,6 @@ std::tuple<glm::vec3, glm::vec3> SurfaceMesh::boundingBox() {
     max = componentwiseMax(max, p);
   }
 
-  // Respect object transform
-  min = glm::vec3(glm::vec4(min.x, min.y, min.z, 1.0));
-  max = glm::vec3(glm::vec4(max.x, max.y, max.z, 1.0));
-
   return std::make_tuple(min, max);
 }
 

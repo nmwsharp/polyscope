@@ -299,7 +299,8 @@ double CurveNetwork::lengthScale() {
   glm::vec3 center = 0.5f * (std::get<0>(bound) + std::get<1>(bound));
 
   double lengthScale = 0.0;
-  for (glm::vec3& p : nodes) {
+  for (glm::vec3& rawP : nodes) {
+    glm::vec3 p = glm::vec3(objectTransform * glm::vec4(rawP, 1.0));
     lengthScale = std::max(lengthScale, (double)glm::length2(p - center));
   }
 

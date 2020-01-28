@@ -61,6 +61,7 @@ public:
   glm::mat4 objectTransform = glm::mat4(1.0);
   glm::mat4 getModelView();
   void centerBoundingBox();
+  void rescaleToUnit();
   void resetTransform();
   void setTransformUniforms(gl::GLProgram& p);
 

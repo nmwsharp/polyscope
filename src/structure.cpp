@@ -42,6 +42,7 @@ void Structure::buildUI() {
       // Transform
       if (ImGui::BeginMenu("Transform")) {
         if (ImGui::MenuItem("Center")) centerBoundingBox();
+        if (ImGui::MenuItem("Unit Scale")) rescaleToUnit();
         if (ImGui::MenuItem("Reset")) resetTransform();
         ImGui::EndMenu();
       }
@@ -79,7 +80,15 @@ void Structure::centerBoundingBox() {
   std::tuple<glm::vec3, glm::vec3> bbox = boundingBox();
   glm::vec3 center = (std::get<1>(bbox) + std::get<0>(bbox)) / 2.0f;
   glm::mat4x4 newTrans = glm::translate(glm::mat4x4(1.0), -glm::vec3(center.x, center.y, center.z));
-  objectTransform = objectTransform * newTrans;
+  objectTransform = newTrans * objectTransform;
+  updateStructureExtents();
+}
+
+void Structure::rescaleToUnit() {
+  double currScale = lengthScale();
+  float s = static_cast<float>(1.0 / currScale);
+  glm::mat4x4 newTrans = glm::scale(glm::mat4x4(1.0), glm::vec3{s, s, s});
+  objectTransform = newTrans * objectTransform;
   updateStructureExtents();
 }
 
