@@ -395,12 +395,17 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
         glm::vec2 sum{0.0, 0.0};
         for (size_t iV : face) {
           glm::vec2 vertVec = vectorField[iV];
+          Complex angle = std::pow(Complex(vertVec.x, vertVec.y), 1.0 / nSym);
+          vertVec = glm::vec2{angle.real(), angle.imag()};
+
 
           glm::vec3 vertexBasisX = parent.vertexTangentSpaces[iV][0];
           glm::vec3 vertexBasisY = parent.vertexTangentSpaces[iV][1];
 
           // Rotate in to the basis of the face
           glm::vec2 faceVec = rotateToTangentBasis(vertVec, vertexBasisX, vertexBasisY, faceBasisX, faceBasisY);
+          angle = std::pow(Complex(faceVec.x, faceVec.y), nSym);
+          faceVec = glm::vec2{angle.real(), angle.imag()};
           sum += faceVec;
         }
         unitFaceVecs[iF] = glm::normalize(sum);
