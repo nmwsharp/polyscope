@@ -569,7 +569,7 @@ void renderScene() {
   sceneFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
 
   if (!sceneFramebuffer->bindForRendering()) return;
- 
+
   sceneFramebuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
   sceneFramebuffer->clearAlpha = 0.0;
   sceneFramebuffer->clear();
@@ -612,40 +612,8 @@ void buildPolyscopeGui() {
   if (ImGui::Button("Screenshot")) {
     screenshot(true);
   }
-  ImGui::PushItemWidth(150);
-  static std::string viewStyleName = "Turntable";
-  if (ImGui::BeginCombo("##View Style", viewStyleName.c_str())) {
-    if (ImGui::Selectable("Turntable", view::style == view::NavigateStyle::Turntable)) {
-      view::style = view::NavigateStyle::Turntable;
-      view::flyToHomeView();
-      ImGui::SetItemDefaultFocus();
-      viewStyleName = "Turntable";
-    }
-    if (ImGui::Selectable("Free", view::style == view::NavigateStyle::Free)) {
-      view::style = view::NavigateStyle::Free;
-      ImGui::SetItemDefaultFocus();
-      viewStyleName = "Free";
-    }
-    if (ImGui::Selectable("Planar", view::style == view::NavigateStyle::Planar)) {
-      view::style = view::NavigateStyle::Planar;
-      view::flyToHomeView();
-      ImGui::SetItemDefaultFocus();
-      viewStyleName = "Planar";
-    }
-    // if (ImGui::Selectable("Arcblob", view::style == view::NavigateStyle::Arcball)) {
-    // view::style = view::NavigateStyle::Arcball;
-    // ImGui::SetItemDefaultFocus();
-    // viewStyleName = "Arcblob";
-    //}
-    ImGui::EndCombo();
-  }
-  ImGui::PopItemWidth();
-  float moveScaleF = view::moveScale;
-  ImGui::SliderFloat("Move Speed", &moveScaleF, 0.0, 1.0, "%.5f", 3.);
-  view::moveScale = moveScaleF;
-  ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
-  // == Ground plane options
+  view::buildViewGui();
   gl::buildGroundPlaneGui();
 
   // == Debugging-related options
@@ -654,6 +622,9 @@ void buildPolyscopeGui() {
     ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
     ImGui::TreePop();
   }
+
+  // fps
+  ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
   lastWindowHeightPolyscope = imguiStackMargin + ImGui::GetWindowHeight();
   leftWindowsWidth = ImGui::GetWindowWidth();
@@ -863,9 +834,10 @@ void mainLoopIteration() {
 }
 
 void show() {
- 
+
   if (!state::initialized) {
-    throw std::logic_error(options::printPrefix + "must initialize Polyscope with polyscope::init() before calling polyscope::show().");
+    throw std::logic_error(options::printPrefix +
+                           "must initialize Polyscope with polyscope::init() before calling polyscope::show().");
   }
 
   // Main loop

@@ -16,6 +16,7 @@ int bufferHeight = -1;
 int initWindowPosX = 20;
 int initWindowPosY = 20;
 NavigateStyle style = NavigateStyle::Turntable;
+UpDir upDir = UpDir::YUp;
 double moveScale = 1.0;
 const double defaultNearClipRatio = 0.005;
 const double defaultFarClipRatio = 20.0;
@@ -42,8 +43,8 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
   }
 
   // Get frame
-  glm::vec3 lookDir, upDir, rightDir;
-  getCameraFrame(lookDir, upDir, rightDir);
+  glm::vec3 frameLookDir, frameUpDir, frameRightDir;
+  getCameraFrame(frameLookDir, frameUpDir, frameRightDir);
 
   switch (style) {
   case NavigateStyle::Turntable: {
@@ -56,11 +57,23 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
     viewMat = glm::translate(viewMat, state::center);
 
     // Rotation about the horizontal axis
-    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, rightDir);
+    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, frameRightDir);
     viewMat = viewMat * phiCamR;
 
     // Rotation about the vertical axis
-    glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, glm::vec3(0., 1., 0.));
+    glm::vec3 turntableUp;
+    switch (upDir) {
+    case UpDir::XUp:
+      turntableUp = glm::vec3(1., 0., 0.);
+      break;
+    case UpDir::YUp:
+      turntableUp = glm::vec3(0., 1., 0.);
+      break;
+    case UpDir::ZUp:
+      turntableUp = glm::vec3(0., 0., 1.);
+      break;
+    }
+    glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, turntableUp);
     viewMat = viewMat * thetaCamR;
 
     // Undo centering
@@ -76,11 +89,11 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
     viewMat = glm::translate(viewMat, state::center);
 
     // Rotation about the vertical axis
-    glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, upDir);
+    glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, frameUpDir);
     viewMat = viewMat * thetaCamR;
 
     // Rotation about the horizontal axis
-    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, rightDir);
+    glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, frameRightDir);
     viewMat = viewMat * phiCamR;
 
     // Undo centering
@@ -192,48 +205,34 @@ void ensureViewValid() {
   }
 }
 
-void resetCameraToDefault() {
-
-  // WARNING: Duplicated here and in flyToDefault()
-
-  viewMat = glm::mat4x4(1.0);
-  viewMat[0][0] = -1.;
-  viewMat[2][2] = -1.;
-  viewMat = viewMat * glm::translate(glm::mat4x4(1.0), glm::vec3(0.0, 0.0, state::lengthScale));
-
-  fov = defaultFov;
-  nearClipRatio = defaultNearClipRatio;
-  farClipRatio = defaultFarClipRatio;
-
-  requestRedraw();
-}
-
-void flyToDefault() {
-
-  // WARNING: Duplicated here and in resetCameraToDefault()
-
-  glm::mat4x4 T(1.0);
-  T[0][0] = -1.;
-  T[2][2] = -1.;
-  T = T * glm::translate(glm::mat4x4(1.0), glm::vec3(0.0, 0.0, state::lengthScale));
-
-
-  float Tfov = defaultFov;
-  nearClipRatio = defaultNearClipRatio;
-  farClipRatio = defaultFarClipRatio;
-
-  startFlightTo(T, Tfov, .4);
-}
-
 glm::mat4 computeHomeView() {
 
-  glm::mat4x4 T(1.0);
-  T[0][0] = -1.;
-  T[2][2] = -1.;
-  T = T *
-      glm::translate(glm::mat4x4(1.0), -state::center + glm::vec3(0.0, -0.1 * state::lengthScale, state::lengthScale));
+  glm::mat4x4 R(1.0);
+  glm::vec3 baseUp;
+  switch (upDir) {
+  case UpDir::XUp:
+    baseUp = glm::vec3(1., 0., 0.);
+    R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI / 2), glm::vec3(0., 0., 1.));
+    break;
+  case UpDir::YUp:
+    baseUp = glm::vec3(0., 1., 0.);
+    // this is our camera's default
+    break;
+  case UpDir::ZUp:
+    baseUp = glm::vec3(0., 0., 1.);
+    R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI / 2), glm::vec3(-1., 0., 0.));
+    break;
+  }
 
-  return T;
+  // Rotate around the up axis, since our camera looks down -Z
+  R = glm::rotate(R, static_cast<float>(PI), baseUp);
+  
+  // T = T *
+  // glm::translate(glm::mat4x4(1.0), -state::center + glm::vec3(0.0, -0.1 * state::lengthScale, state::lengthScale));
+  glm::mat4x4 T =
+      glm::translate(glm::mat4x4(1.0), state::center + glm::vec3(0.0, -0.1 * state::lengthScale, -state::lengthScale));
+
+  return T * R;
 }
 
 void resetCameraToHomeView() {
@@ -272,14 +271,10 @@ void setViewToCamera(const CameraParameters& p) {
 }
 
 glm::mat4 getCameraViewMatrix() {
-  updateFlight();
-
   return viewMat;
 }
 
 glm::mat4 getCameraPerspectiveMatrix() {
-  updateFlight();
-
   double farClip = farClipRatio * state::lengthScale;
   double nearClip = nearClipRatio * state::lengthScale;
   double fovRad = glm::radians(fov);
@@ -362,7 +357,7 @@ void updateFlight() {
       // linear spline
       fov = (1.0f - t) * flightInitialFov + t * flightTargetFov;
     }
-    requestRedraw();
+    requestRedraw(); // flight is still happening, draw again next frame
   }
 }
 
@@ -385,6 +380,82 @@ glm::mat4 buildTransform(const glm::mat3x4& R, const glm::vec3& T) {
   }
 
   return trans;
+}
+
+void buildViewGui() {
+
+  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  if (ImGui::TreeNode("view")) {
+
+    // == Camera style
+    ImGui::PushItemWidth(120);
+    static std::string viewStyleName = "Turntable";
+    if (ImGui::BeginCombo("##View Style", viewStyleName.c_str())) {
+      if (ImGui::Selectable("Turntable", view::style == view::NavigateStyle::Turntable)) {
+        view::style = view::NavigateStyle::Turntable;
+        view::flyToHomeView();
+        ImGui::SetItemDefaultFocus();
+        viewStyleName = "Turntable";
+      }
+      if (ImGui::Selectable("Free", view::style == view::NavigateStyle::Free)) {
+        view::style = view::NavigateStyle::Free;
+        ImGui::SetItemDefaultFocus();
+        viewStyleName = "Free";
+      }
+      if (ImGui::Selectable("Planar", view::style == view::NavigateStyle::Planar)) {
+        view::style = view::NavigateStyle::Planar;
+        view::flyToHomeView();
+        ImGui::SetItemDefaultFocus();
+        viewStyleName = "Planar";
+      }
+      // if (ImGui::Selectable("Arcblob", view::style == view::NavigateStyle::Arcball)) {
+      // view::style = view::NavigateStyle::Arcball;
+      // ImGui::SetItemDefaultFocus();
+      // viewStyleName = "Arcblob";
+      //}
+      ImGui::EndCombo();
+    }
+    ImGui::SameLine();
+    ImGui::Text("Camera Style");
+
+
+    // == Up direction
+    ImGui::PushItemWidth(120);
+    static std::string upStyleName = "Y Up";
+    if (ImGui::BeginCombo("##Up Direction", upStyleName.c_str())) {
+      if (ImGui::Selectable("X Up", view::upDir == view::UpDir::XUp)) {
+        view::upDir = view::UpDir::XUp;
+        view::flyToHomeView();
+        ImGui::SetItemDefaultFocus();
+        upStyleName = "X Up";
+      }
+      if (ImGui::Selectable("Y Up", view::upDir == view::UpDir::YUp)) {
+        view::upDir = view::UpDir::YUp;
+        view::flyToHomeView();
+        ImGui::SetItemDefaultFocus();
+        upStyleName = "Y Up";
+      }
+      if (ImGui::Selectable("Z Up", view::upDir == view::UpDir::ZUp)) {
+        view::upDir = view::UpDir::ZUp;
+        view::flyToHomeView();
+        ImGui::SetItemDefaultFocus();
+        upStyleName = "Z Up";
+      }
+      ImGui::EndCombo();
+    }
+    ImGui::SameLine();
+    ImGui::Text("Up Direction");
+
+    float moveScaleF = view::moveScale;
+    ImGui::SliderFloat(" Move Speed", &moveScaleF, 0.0, 1.0, "%.5f", 3.);
+    view::moveScale = moveScaleF;
+
+    ImGui::PopItemWidth();
+
+
+    ImGui::TreePop();
+  }
+
 }
 
 } // namespace view

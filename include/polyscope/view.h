@@ -22,6 +22,7 @@ namespace polyscope {
 namespace view {
 
 enum class NavigateStyle { Turntable = 0, Free, Planar, Arcball };
+enum class UpDir { XUp = 0, YUp, ZUp };
 
 // === View state
 extern int bufferWidth;
@@ -31,6 +32,7 @@ extern int windowHeight;
 extern int initWindowPosX;
 extern int initWindowPosY;
 extern NavigateStyle style;
+extern UpDir upDir;
 extern double moveScale;
 extern double nearClipRatio;
 extern double farClipRatio;
@@ -64,36 +66,38 @@ void processZoom(double amount);
 void setWindowSize(int width, int height);
 void setViewToCamera(const CameraParameters& p);
 
-// Invlidateing the view
+// Invalidating the view:
 // The view is invalid if the viewMat has NaN entries.
 // It is set to invalid initially, but we call ensureViewValid() before any renders.
-// This ensures we never try to redner with an invalid view, but also allows the user to
+// This ensures we never try to render with an invalid view, but also allows the user to
 // set custom views if they wish, without them getting overwritten.
 void invalidateView();
 void ensureViewValid();
-
-// The "default" view simply looks at the origin
-void resetCameraToDefault();
-void flyToDefault();
 
 // The "home" view looks at the center of the scenes bounding box.
 glm::mat4 computeHomeView();
 void resetCameraToHomeView();
 void flyToHomeView();
 
+// Get various camera matrices and data
 glm::mat4 getCameraViewMatrix();
 glm::mat4 getCameraPerspectiveMatrix();
 glm::vec3 getCameraWorldPosition();
-
 void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
 
 // Flight-related
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds = .25);
 void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeconds = .25);
 void immediatelyEndFlight();
+
+// Transformation utilities
 void splitTransform(const glm::mat4& trans, glm::mat3x4& R, glm::vec3& T);
 glm::mat4 buildTransform(const glm::mat3x4& R, const glm::vec3& T);
-void updateFlight();
+
+// Internal helpers. Should probably not be called in user code.
+void buildViewGui();
+void updateFlight(); // Note: uses wall-clock time, so should generally be called exactly once at the beginning of each
+                     // iteration
 
 } // namespace view
 } // namespace polyscope
