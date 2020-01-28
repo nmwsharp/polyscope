@@ -2,8 +2,8 @@
 #pragma once
 
 #include "polyscope/gl/gl_utils.h"
-#include "polyscope/quantity.h"
 #include "polyscope/persistent_value.h"
+#include "polyscope/quantity.h"
 
 #include "glm/glm.hpp"
 
@@ -103,14 +103,14 @@ public:
   void removeQuantity(std::string name);
   void removeAllQuantities();
 
-  void setDominantQuantity(QuantityType* q);
+  void setDominantQuantity(Quantity<S>* q);
   void clearDominantQuantity();
 
   // = Quantities
   std::map<std::string, std::unique_ptr<QuantityType>> quantities;
-  QuantityType* dominantQuantity = nullptr; // If non-null, a special quantity of which only one can be drawn for
-                                            // the structure. Handles common case of a surface color, e.g. color of
-                                            // a mesh or point cloud The dominant quantity must always be enabled
+  Quantity<S>* dominantQuantity = nullptr; // If non-null, a special quantity of which only one can be drawn for
+                                           // the structure. Handles common case of a surface color, e.g. color of
+                                           // a mesh or point cloud. The dominant quantity must always be enabled.
 };
 
 
