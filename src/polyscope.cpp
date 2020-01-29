@@ -410,16 +410,18 @@ bool lastClickWasDouble = false;
 
 namespace pick {
 
-void evaluatePickQuery(int xPos, int yPos) {
+// TODO This lives here rather than in pick.cpp because it has to touch the rendering data which is not available there,
+// but.... this is awkward. Move the implementation of this function if/when the rendering API gets cleaned up.
+std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
 
   // Be sure not to pick outside of buffer
   if (xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
-    return;
+    return {nullptr, 0};
   }
 
   pickFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
   pickFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  if (!pickFramebuffer->bindForRendering()) return;
+  if (!pickFramebuffer->bindForRendering()) return {nullptr, 0};
   pickFramebuffer->clear();
 
   // Render pick buffer
@@ -432,15 +434,12 @@ void evaluatePickQuery(int xPos, int yPos) {
 
   // Read from the pick buffer
   std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, view::bufferHeight - yPos);
-  gl::checkGLError(true);
-  size_t ind = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
+  size_t globalInd = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
 
-  if (ind == 0) {
-    pick::resetPick();
-  } else {
-    pick::setCurrentPickElement(ind, lastClickWasDouble);
-  }
+
+  return pick::globalIndexToLocal(globalInd);
 }
+
 } // namespace pick
 
 void drawStructures() {
@@ -507,11 +506,6 @@ void processInputEvents() {
     }
   }
 
-  bool shouldEvaluatePick = pick::alwaysEvaluatePick;
-  if (pick::alwaysEvaluatePick) {
-    pick::resetPick();
-  }
-
   if (ImGui::IsMouseClicked(0)) {
     lastClickWasDouble = ImGui::IsMouseDoubleClicked(0);
   }
@@ -555,7 +549,9 @@ void processInputEvents() {
       // Don't pick at the end of a long drag
       if (dragDistSinceLastRelease < dragIgnoreThreshold) {
         ImVec2 p = ImGui::GetMousePos();
-        pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+        std::pair<Structure*, size_t> pickResult =
+            pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+        pick::setSelection(pickResult);
       }
 
       // Reset the drag distance after any release
@@ -564,7 +560,7 @@ void processInputEvents() {
     // Clear pick
     if (ImGui::IsMouseReleased(1)) {
       if (dragDistSinceLastRelease < dragIgnoreThreshold) {
-        pick::resetPick();
+        pick::resetSelection();
       }
       dragDistSinceLastRelease = 0.0;
     }
@@ -760,19 +756,18 @@ void buildUserGui() {
 }
 
 void buildPickGui() {
-  if (pick::haveSelection) {
+  if (pick::haveSelection()) {
 
     ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin),
                                    2 * imguiStackMargin + lastWindowHeightUser));
     ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
 
     ImGui::Begin("Selection", nullptr);
-    size_t pickInd;
-    Structure* structure = pick::getCurrentPickElement(pickInd);
+    std::pair<Structure*, size_t> selection = pick::getSelection();
 
-    ImGui::TextUnformatted((structure->typeName() + ": " + structure->name).c_str());
+    ImGui::TextUnformatted((selection.first->typeName() + ": " + selection.first->name).c_str());
     ImGui::Separator();
-    structure->buildPickUI(pickInd);
+    selection.first->buildPickUI(selection.second);
 
     rightWindowsWidth = ImGui::GetWindowWidth();
     ImGui::End();
@@ -1017,7 +1012,7 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
 
   // Structure exists, remove it
   Structure* s = sMap[name];
-  pick::clearPickIfStructureSelected(s);
+  pick::resetSelectionIfStructure(s);
   sMap.erase(s->name);
   delete s;
   updateStructureExtents();
@@ -1078,7 +1073,7 @@ void removeAllStructures() {
   }
 
   requestRedraw();
-  pick::resetPick();
+  pick::resetSelection();
 }
 
 void updateStructureExtents() {

@@ -1013,23 +1013,20 @@ long long int SurfaceMesh::selectVertex() {
 
     ImGuiIO& io = ImGui::GetIO();
     if (io.KeyCtrl && !io.WantCaptureMouse && ImGui::IsMouseClicked(0)) {
-      if (pick::pickIsFromThisFrame) {
 
-        ImGuiIO& io = ImGui::GetIO();
+      ImGuiIO& io = ImGui::GetIO();
 
-        // TODO fix semi-broken picking...
-        // API is a giant mess..
-        size_t pickInd;
-        ImVec2 p = ImGui::GetMousePos();
-        pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
-        Structure* pickS = pick::getCurrentPickElement(pickInd);
+      // API is a giant mess..
+      size_t pickInd;
+      ImVec2 p = ImGui::GetMousePos();
+      std::pair<Structure*, size_t> pickVal =
+          pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
 
-        if (pickS == this) {
+      if (pickVal.first == this) {
 
-          if (pickInd < nVertices()) {
-            returnVertInd = pickInd;
-            popContext();
-          }
+        if (pickVal.second < nVertices()) {
+          returnVertInd = pickVal.second;
+          popContext();
         }
       }
     }
