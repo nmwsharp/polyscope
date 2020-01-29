@@ -224,18 +224,18 @@ glm::mat4 computeHomeView() {
   case UpDir::ZUp:
     baseUp = glm::vec3(0., 0., 1.);
     R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI / 2), glm::vec3(-1., 0., 0.));
+    R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI), glm::vec3(0., 1., 0.)) * R; // follow common convention for "front"
     break;
   }
 
   // Rotate around the up axis, since our camera looks down -Z
   R = glm::rotate(R, static_cast<float>(PI), baseUp);
 
-  // T = T *
-  // glm::translate(glm::mat4x4(1.0), -state::center + glm::vec3(0.0, -0.1 * state::lengthScale, state::lengthScale));
-  glm::mat4x4 T =
-      glm::translate(glm::mat4x4(1.0), state::center + glm::vec3(0.0, -0.1 * state::lengthScale, -1.5 * state::lengthScale));
+  glm::mat4x4 Tobj = glm::translate(glm::mat4x4(1.0), -state::center);
+  glm::mat4x4 Tcam =
+      glm::translate(glm::mat4x4(1.0), glm::vec3(0.0, -0.1 * state::lengthScale, -1.5 * state::lengthScale));
 
-  return T * R;
+  return Tcam * R * Tobj;
 }
 
 void resetCameraToHomeView() {
