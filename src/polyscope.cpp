@@ -516,54 +516,61 @@ void processInputEvents() {
     lastClickWasDouble = ImGui::IsMouseDoubleClicked(0);
   }
 
+  // === Mouse inputs
   if (!io.WantCaptureMouse) {
 
-    // Handle drags
-    if (ImGui::IsMouseDragging(0) &&
-        !(io.KeyCtrl && !io.KeyShift)) { // if ctrl is pressed but shift is not, don't process a drag
-      requestRedraw();
+    // Process drags
+    bool dragLeft = ImGui::IsMouseDragging(0);
+    bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
+    if (dragLeft || dragRight) {
 
       glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
-      bool isDragZoom = io.KeyShift && io.KeyCtrl;
-      bool isRotate = !io.KeyShift;
-      if (isDragZoom) {
-        view::processZoom(dragDelta.y * 5);
-      } else {
-        if (isRotate) {
-          glm::vec2 currPos{io.MousePos.x / view::windowWidth,
-                            (view::windowHeight - io.MousePos.y) / view::windowHeight};
-          currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
-          if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
-            view::processRotate(currPos - 2.0f * dragDelta, currPos);
-          }
-        } else {
-          view::processTranslate(dragDelta);
-        }
-      }
-
       dragDistSinceLastRelease += std::abs(dragDelta.x);
       dragDistSinceLastRelease += std::abs(dragDelta.y);
-    }
-    // Handle picks
-    else {
-      if (ImGui::IsMouseReleased(0)) {
-        ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
-        if (dragDistSinceLastRelease < .01) {
-          shouldEvaluatePick = true;
-        }
 
-        dragDistSinceLastRelease = 0.0;
+      // exactly one of these will be true
+      bool isRotate = dragLeft && !io.KeyShift && !io.KeyCtrl;
+      bool isTranslate = (dragLeft && io.KeyShift && !io.KeyCtrl) || dragRight;
+      bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
+
+      if (isDragZoom) {
+        view::processZoom(dragDelta.y * 5);
+      }
+      if (isRotate) {
+        glm::vec2 currPos{io.MousePos.x / view::windowWidth, (view::windowHeight - io.MousePos.y) / view::windowHeight};
+        currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
+        if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
+          view::processRotate(currPos - 2.0f * dragDelta, currPos);
+        }
+      }
+      if (isTranslate) {
+        view::processTranslate(dragDelta);
       }
     }
+
+    // Click picks
+    float dragIgnoreThreshold = 0.01;
+    if (ImGui::IsMouseReleased(0)) {
+
+      // Don't pick at the end of a long drag
+      if (dragDistSinceLastRelease < dragIgnoreThreshold) {
+        ImVec2 p = ImGui::GetMousePos();
+        pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+      }
+
+      // Reset the drag distance after any release
+      dragDistSinceLastRelease = 0.0;
+    }
+    // Clear pick
+    if (ImGui::IsMouseReleased(1)) {
+      if (dragDistSinceLastRelease < dragIgnoreThreshold) {
+        pick::resetPick();
+      }
+      dragDistSinceLastRelease = 0.0;
+    }
   }
 
-  if (shouldEvaluatePick) {
-    ImVec2 p = ImGui::GetMousePos();
-    pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
-  }
-
-
-  // === Key-press callbacks
+  // === Key-press inputs
   if (!io.WantCaptureKeyboard) {
 
     // ctrl-c
@@ -622,7 +629,6 @@ void buildPolyscopeGui() {
 
   ImGui::Begin("Polyscope", &showPolyscopeWindow);
 
-  ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
   if (ImGui::Button("Reset view")) {
     view::flyToHomeView();
   }
@@ -651,20 +657,29 @@ void buildPolyscopeGui() {
 			ImGui::TextUnformatted("   Menu headers with a '>' can be clicked to collapse and expand.");
 			ImGui::TextUnformatted("   Use [ctrl] + [left click] to manually enter any numeric value");
 			ImGui::TextUnformatted("     via the keyboard.");
+			ImGui::TextUnformatted("   Press [space] to dismiss popup dialogs.");
 		ImGui::TextUnformatted("\nSelection:");			
 			ImGui::TextUnformatted("   Select elements of a structure with [left click]. Data from");
-			ImGui::TextUnformatted("     that element will be shown on the right. Click off the ");
-			ImGui::TextUnformatted("     element to clear the selection.");
+			ImGui::TextUnformatted("     that element will be shown on the right. Use [right click]");
+			ImGui::TextUnformatted("     to clear the selection.");
 		ImGui::End();
     // clang-format on
   }
 
+  // View options tree
   view::buildViewGui();
-  gl::buildGroundPlaneGui();
 
-  // == Debugging-related options
+  // Appearance options tree
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-  if (ImGui::TreeNode("debug")) {
+  if (ImGui::TreeNode("Appearance")) {
+    ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
+    gl::buildGroundPlaneGui();
+    ImGui::TreePop();
+  }
+
+  // Debug options tree
+  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  if (ImGui::TreeNode("Debug")) {
     ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
     ImGui::TreePop();
   }
@@ -789,7 +804,7 @@ void draw(bool withUI) {
 
   // Build the GUI components
   if (withUI) {
-    //ImGui::ShowDemoWindow();
+    // ImGui::ShowDemoWindow();
 
     // The common case, rendering UI and structures
     if (contextStack.size() == 1) {

@@ -210,7 +210,7 @@ void drawGroundPlane() {
 void buildGroundPlaneGui() {
 
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-  if (ImGui::TreeNode("ground plane")) {
+  if (ImGui::TreeNode("Ground Plane")) {
 
     ImGui::Checkbox("Enabled", &groundPlaneEnabled);
 

@@ -23,7 +23,7 @@ UpDir upDir = UpDir::YUp;
 double moveScale = 1.0;
 const double defaultNearClipRatio = 0.005;
 const double defaultFarClipRatio = 20.0;
-const double defaultFov = 65.;
+const double defaultFov = 45.;
 double fov = defaultFov;
 double nearClipRatio = defaultNearClipRatio;
 double farClipRatio = defaultFarClipRatio;
@@ -233,7 +233,7 @@ glm::mat4 computeHomeView() {
   // T = T *
   // glm::translate(glm::mat4x4(1.0), -state::center + glm::vec3(0.0, -0.1 * state::lengthScale, state::lengthScale));
   glm::mat4x4 T =
-      glm::translate(glm::mat4x4(1.0), state::center + glm::vec3(0.0, -0.1 * state::lengthScale, -state::lengthScale));
+      glm::translate(glm::mat4x4(1.0), state::center + glm::vec3(0.0, -0.1 * state::lengthScale, -1.5 * state::lengthScale));
 
   return T * R;
 }
@@ -461,7 +461,7 @@ void setCameraFromJson(std::string jsonData, bool flyTo) {
 void buildViewGui() {
 
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-  if (ImGui::TreeNode("view")) {
+  if (ImGui::TreeNode("View")) {
 
     // == Camera style
     ImGui::PushItemWidth(120);
@@ -522,6 +522,26 @@ void buildViewGui() {
     ImGui::SameLine();
     ImGui::Text("Up Direction");
 
+    // Field of view
+    float fovF = fov;
+    if (ImGui::SliderFloat(" Field of View", &fovF, 5.0, 160.0, "%.2f deg")) {
+      fov = fovF;
+      requestRedraw();
+    };
+
+    // Clip planes
+    float nearClipRatioF = nearClipRatio;
+    float farClipRatioF = farClipRatio;
+    if (ImGui::SliderFloat(" Clip Near", &nearClipRatioF, 0., 10., "%.5f", 3.)) {
+      nearClipRatio = nearClipRatioF;
+      requestRedraw();
+    }
+    if (ImGui::SliderFloat(" Clip Far", &farClipRatioF, 1., 1000., "%.2f", 3.)) {
+      farClipRatio = farClipRatioF;
+      requestRedraw();
+    }
+
+    // Move speed
     float moveScaleF = view::moveScale;
     ImGui::SliderFloat(" Move Speed", &moveScaleF, 0.0, 1.0, "%.5f", 3.);
     view::moveScale = moveScaleF;
