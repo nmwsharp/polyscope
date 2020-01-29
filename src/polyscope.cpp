@@ -566,16 +566,16 @@ void processInputEvents() {
   // === Key-press callbacks
   if (!io.WantCaptureKeyboard) {
 
-		// ctrl-c
+    // ctrl-c
     if (io.KeyCtrl && ImGui::IsKeyPressed(GLFW_KEY_C)) {
       std::string outData = view::getCameraJson();
       ImGui::SetClipboardText(outData.c_str());
     }
 
-		// ctrl-v
+    // ctrl-v
     if (io.KeyCtrl && ImGui::IsKeyPressed(GLFW_KEY_V)) {
       std::string clipboardData = ImGui::GetClipboardText();
-			view::setCameraFromJson(clipboardData, true);
+      view::setCameraFromJson(clipboardData, true);
     }
   }
 }
@@ -629,6 +629,34 @@ void buildPolyscopeGui() {
   ImGui::SameLine();
   if (ImGui::Button("Screenshot")) {
     screenshot(true);
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Controls")) {
+    // do nothing, just want hover state
+  }
+  if (ImGui::IsItemHovered()) {
+
+    ImGui::SetNextWindowPos(ImVec2(2 * imguiStackMargin + leftWindowsWidth, imguiStackMargin));
+    ImGui::SetNextWindowSize(ImVec2(0., 0.));
+
+    // clang-format off
+		ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar);
+		ImGui::TextUnformatted("View Navigation:");			
+			ImGui::TextUnformatted("      Rotate: [left click drag]");
+			ImGui::TextUnformatted("   Translate: [shift] + [left click drag] OR [right click drag]");
+			ImGui::TextUnformatted("        Zoom: [scroll] OR [ctrl] + [shift] + [left click drag]");
+			ImGui::TextUnformatted("   Use [ctrl-c] and [ctrl-v] to save and restore camera poses");
+			ImGui::TextUnformatted("     via the clipboard.");
+		ImGui::TextUnformatted("\nMenu Navigation:");			
+			ImGui::TextUnformatted("   Menu headers with a '>' can be clicked to collapse and expand.");
+			ImGui::TextUnformatted("   Use [ctrl] + [left click] to manually enter any numeric value");
+			ImGui::TextUnformatted("     via the keyboard.");
+		ImGui::TextUnformatted("\nSelection:");			
+			ImGui::TextUnformatted("   Select elements of a structure with [left click]. Data from");
+			ImGui::TextUnformatted("     that element will be shown on the right. Click off the ");
+			ImGui::TextUnformatted("     element to clear the selection.");
+		ImGui::End();
+    // clang-format on
   }
 
   view::buildViewGui();
@@ -761,7 +789,7 @@ void draw(bool withUI) {
 
   // Build the GUI components
   if (withUI) {
-    // ImGui::ShowDemoWindow();
+    //ImGui::ShowDemoWindow();
 
     // The common case, rendering UI and structures
     if (contextStack.size() == 1) {
