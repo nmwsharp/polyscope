@@ -5,6 +5,9 @@
 
 #include "imgui.h"
 
+#include "json/json.hpp"
+using json = nlohmann::json;
+
 namespace polyscope {
 namespace view {
 
@@ -226,7 +229,7 @@ glm::mat4 computeHomeView() {
 
   // Rotate around the up axis, since our camera looks down -Z
   R = glm::rotate(R, static_cast<float>(PI), baseUp);
-  
+
   // T = T *
   // glm::translate(glm::mat4x4(1.0), -state::center + glm::vec3(0.0, -0.1 * state::lengthScale, state::lengthScale));
   glm::mat4x4 T =
@@ -258,7 +261,7 @@ void flyToHomeView() {
   nearClipRatio = defaultNearClipRatio;
   farClipRatio = defaultFarClipRatio;
 
-  startFlightTo(T, Tfov, .4);
+  startFlightTo(T, Tfov);
 }
 
 
@@ -270,9 +273,7 @@ void setViewToCamera(const CameraParameters& p) {
   // flipped?
 }
 
-glm::mat4 getCameraViewMatrix() {
-  return viewMat;
-}
+glm::mat4 getCameraViewMatrix() { return viewMat; }
 
 glm::mat4 getCameraPerspectiveMatrix() {
   double farClip = farClipRatio * state::lengthScale;
@@ -382,6 +383,81 @@ glm::mat4 buildTransform(const glm::mat3x4& R, const glm::vec3& T) {
   return trans;
 }
 
+std::string getCameraJson() {
+
+  // Get the view matrix (note weird glm indexing, glm is [col][row])
+  glm::mat4 viewMat = getCameraViewMatrix();
+  std::array<double, 16> viewMatFlat;
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      viewMatFlat[4 * i + j] = viewMat[j][i];
+    }
+  }
+
+  // Build the json object
+  json j = {
+      {"fov", fov},
+      {"viewMat", viewMatFlat},
+      {"nearClipRatio", nearClipRatio},
+      {"farClipRatio", farClipRatio},
+  };
+
+  std::string outString = j.dump();
+  return outString;
+}
+
+void setCameraFromJson(std::string jsonData, bool flyTo) {
+  // Values will go here
+  glm::mat4 newViewMat;
+  double newFov = -777;
+  double newNearClipRatio = -777;
+  double newFarClipRatio = -777;
+
+  try {
+
+    // Deserialize
+    json j;
+    std::stringstream s(jsonData);
+    s >> j;
+
+    // Read out the data
+    auto matData = j["viewMat"];
+    if (matData.size() != 16) return; // check size
+    auto it = matData.begin();
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        newViewMat[j][i] = *it;
+        it++;
+      }
+    }
+    newFov = j["fov"];
+
+    // Get the clip ratios, but only if present
+    if (j.find("nearClipRatio") != j.end()) {
+      newNearClipRatio = j["nearClipRatio"];
+    }
+    if (j.find("farClipRatio") != j.end()) {
+      newFarClipRatio = j["farClipRatio"];
+    }
+
+  } catch (...) {
+    // If anything goes wrong parsing, just give up
+    return;
+  }
+
+  // Assign the new values
+  if (newNearClipRatio > 0) nearClipRatio = newNearClipRatio;
+  if (newFarClipRatio > 0) farClipRatio = newFarClipRatio;
+
+  if (flyTo) {
+    startFlightTo(newViewMat, fov);
+  } else {
+    viewMat = newViewMat;
+    fov = newFov;
+    requestRedraw();
+  }
+}
+
 void buildViewGui() {
 
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
@@ -455,7 +531,6 @@ void buildViewGui() {
 
     ImGui::TreePop();
   }
-
 }
 
 } // namespace view

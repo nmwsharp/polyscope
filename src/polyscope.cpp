@@ -467,7 +467,7 @@ namespace {
 
 float dragDistSinceLastRelease = 0.0;
 
-void processMouseEvents() {
+void processInputEvents() {
   ImGuiIO& io = ImGui::GetIO();
 
 
@@ -560,6 +560,23 @@ void processMouseEvents() {
   if (shouldEvaluatePick) {
     ImVec2 p = ImGui::GetMousePos();
     pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+  }
+
+
+  // === Key-press callbacks
+  if (!io.WantCaptureKeyboard) {
+
+		// ctrl-c
+    if (io.KeyCtrl && ImGui::IsKeyPressed(GLFW_KEY_C)) {
+      std::string outData = view::getCameraJson();
+      ImGui::SetClipboardText(outData.c_str());
+    }
+
+		// ctrl-v
+    if (io.KeyCtrl && ImGui::IsKeyPressed(GLFW_KEY_V)) {
+      std::string clipboardData = ImGui::GetClipboardText();
+			view::setCameraFromJson(clipboardData, true);
+    }
   }
 }
 
@@ -825,7 +842,7 @@ void mainLoopIteration() {
 
   // Process UI events
   glfwPollEvents();
-  processMouseEvents();
+  processInputEvents();
   view::updateFlight();
   showDelayedWarnings();
 
