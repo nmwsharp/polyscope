@@ -1,7 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/curve_network.h"
 
-#include "polyscope/gl/colors.h"
 #include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/cylinder_shaders.h"
@@ -24,7 +23,10 @@ const std::string CurveNetwork::structureTypeName = "Curve Network";
 
 // Constructor
 CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std::vector<std::array<size_t, 2>> edges_)
-    : QuantityStructure<CurveNetwork>(name), nodes(std::move(nodes_)), edges(std::move(edges_)) {
+    : QuantityStructure<CurveNetwork>(name, typeName()), nodes(std::move(nodes_)), edges(std::move(edges_)),
+      color(uniquePrefix() + "#color", getNextUniqueColor()), radius(uniquePrefix() + "#radius", relativeValue(0.005))
+
+{
 
   nodeDegrees = std::vector<size_t>(nNodes(), 0);
 
@@ -45,14 +47,12 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
     nodeDegrees[nA]++;
     nodeDegrees[nB]++;
   }
-
-  baseColor = getNextUniqueColor();
 }
 
 
 // Helper to set uniforms
 void CurveNetwork::setCurveNetworkNodeUniforms(gl::GLProgram& p) {
-  p.setUniform("u_pointRadius", radius * state::lengthScale);
+  p.setUniform("u_pointRadius", getRadius());
 
   glm::vec3 lookDir, upDir, rightDir;
   view::getCameraFrame(lookDir, upDir, rightDir);
@@ -61,12 +61,10 @@ void CurveNetwork::setCurveNetworkNodeUniforms(gl::GLProgram& p) {
   p.setUniform("u_camRight", rightDir);
 }
 
-void CurveNetwork::setCurveNetworkEdgeUniforms(gl::GLProgram& p) {
-  p.setUniform("u_radius", radius * state::lengthScale);
-}
+void CurveNetwork::setCurveNetworkEdgeUniforms(gl::GLProgram& p) { p.setUniform("u_radius", getRadius()); }
 
 void CurveNetwork::draw() {
-  if (!enabled) {
+  if (!isEnabled()) {
     return;
   }
 
@@ -85,8 +83,8 @@ void CurveNetwork::draw() {
     setCurveNetworkEdgeUniforms(*edgeProgram);
     setCurveNetworkNodeUniforms(*nodeProgram);
 
-    edgeProgram->setUniform("u_color", baseColor);
-    nodeProgram->setUniform("u_baseColor", baseColor);
+    edgeProgram->setUniform("u_color", getColor());
+    nodeProgram->setUniform("u_baseColor", getColor());
 
     // Draw the actual curve network
     edgeProgram->draw();
@@ -100,7 +98,7 @@ void CurveNetwork::draw() {
 }
 
 void CurveNetwork::drawPick() {
-  if (!enabled) {
+  if (!isEnabled()) {
     return;
   }
 
@@ -281,10 +279,15 @@ void CurveNetwork::buildEdgePickUI(size_t edgeInd) {
 
 void CurveNetwork::buildCustomUI() {
   ImGui::Text("nodes: %lld  edges: %lld", static_cast<long long int>(nNodes()), static_cast<long long int>(nEdges()));
-  ImGui::ColorEdit3("Color", (float*)&baseColor, ImGuiColorEditFlags_NoInputs);
+  if (ImGui::ColorEdit3("Color", &color.get()[0], ImGuiColorEditFlags_NoInputs)) {
+    setColor(getColor());
+  }
   ImGui::SameLine();
   ImGui::PushItemWidth(100);
-  ImGui::SliderFloat("Radius", &radius, 0.0, .1, "%.5f", 3.);
+  if (ImGui::SliderFloat("Radius", radius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+    radius.manuallyChanged();
+    requestRedraw();
+  }
   ImGui::PopItemWidth();
 }
 
@@ -296,7 +299,8 @@ double CurveNetwork::lengthScale() {
   glm::vec3 center = 0.5f * (std::get<0>(bound) + std::get<1>(bound));
 
   double lengthScale = 0.0;
-  for (glm::vec3& p : nodes) {
+  for (glm::vec3& rawP : nodes) {
+    glm::vec3 p = glm::vec3(objectTransform * glm::vec4(rawP, 1.0));
     lengthScale = std::max(lengthScale, (double)glm::length2(p - center));
   }
 
@@ -316,6 +320,20 @@ std::tuple<glm::vec3, glm::vec3> CurveNetwork::boundingBox() {
 
   return std::make_tuple(min, max);
 }
+
+CurveNetwork* CurveNetwork::setColor(glm::vec3 newVal) {
+  color = newVal;
+  polyscope::requestRedraw();
+  return this;
+}
+glm::vec3 CurveNetwork::getColor() { return color.get(); }
+
+CurveNetwork* CurveNetwork::setRadius(float newVal, bool isRelative) {
+  radius = ScaledValue<float>(newVal, isRelative);
+  polyscope::requestRedraw();
+  return this;
+}
+float CurveNetwork::getRadius() { return radius.get().asAbsolute(); }
 
 std::string CurveNetwork::typeName() { return structureTypeName; }
 

@@ -63,6 +63,7 @@ bool usePrefsFile = true;
 bool initializeWithDefaultStructures = true;
 bool alwaysRedraw = false;
 bool autocenterStructures = false;
+bool autoscaleStructures = false;
 bool openImGuiWindowForUserCallback = true;
 
 } // namespace options
@@ -409,16 +410,18 @@ bool lastClickWasDouble = false;
 
 namespace pick {
 
-void evaluatePickQuery(int xPos, int yPos) {
+// TODO This lives here rather than in pick.cpp because it has to touch the rendering data which is not available there,
+// but.... this is awkward. Move the implementation of this function if/when the rendering API gets cleaned up.
+std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
 
   // Be sure not to pick outside of buffer
   if (xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
-    return;
+    return {nullptr, 0};
   }
 
   pickFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
   pickFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  if (!pickFramebuffer->bindForRendering()) return;
+  if (!pickFramebuffer->bindForRendering()) return {nullptr, 0};
   pickFramebuffer->clear();
 
   // Render pick buffer
@@ -431,15 +434,12 @@ void evaluatePickQuery(int xPos, int yPos) {
 
   // Read from the pick buffer
   std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, view::bufferHeight - yPos);
-  gl::checkGLError(true);
-  size_t ind = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
+  size_t globalInd = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
 
-  if (ind == 0) {
-    pick::resetPick();
-  } else {
-    pick::setCurrentPickElement(ind, lastClickWasDouble);
-  }
+
+  return pick::globalIndexToLocal(globalInd);
 }
+
 } // namespace pick
 
 void drawStructures() {
@@ -466,7 +466,7 @@ namespace {
 
 float dragDistSinceLastRelease = 0.0;
 
-void processMouseEvents() {
+void processInputEvents() {
   ImGuiIO& io = ImGui::GetIO();
 
 
@@ -506,59 +506,80 @@ void processMouseEvents() {
     }
   }
 
-  bool shouldEvaluatePick = pick::alwaysEvaluatePick;
-  if (pick::alwaysEvaluatePick) {
-    pick::resetPick();
-  }
-
   if (ImGui::IsMouseClicked(0)) {
     lastClickWasDouble = ImGui::IsMouseDoubleClicked(0);
   }
 
+  // === Mouse inputs
   if (!io.WantCaptureMouse) {
 
-    // Handle drags
-    if (ImGui::IsMouseDragging(0) &&
-        !(io.KeyCtrl && !io.KeyShift)) { // if ctrl is pressed but shift is not, don't process a drag
-      requestRedraw();
+    // Process drags
+    bool dragLeft = ImGui::IsMouseDragging(0);
+    bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
+    if (dragLeft || dragRight) {
 
       glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
-      bool isDragZoom = io.KeyShift && io.KeyCtrl;
-      bool isRotate = !io.KeyShift;
-      if (isDragZoom) {
-        view::processZoom(dragDelta.y * 5);
-      } else {
-        if (isRotate) {
-          glm::vec2 currPos{io.MousePos.x / view::windowWidth,
-                            (view::windowHeight - io.MousePos.y) / view::windowHeight};
-          currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
-          if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
-            view::processRotate(currPos - 2.0f * dragDelta, currPos);
-          }
-        } else {
-          view::processTranslate(dragDelta);
-        }
-      }
-
       dragDistSinceLastRelease += std::abs(dragDelta.x);
       dragDistSinceLastRelease += std::abs(dragDelta.y);
-    }
-    // Handle picks
-    else {
-      if (ImGui::IsMouseReleased(0)) {
-        ImVec2 dragDelta = ImGui::GetMouseDragDelta(0);
-        if (dragDistSinceLastRelease < .01) {
-          shouldEvaluatePick = true;
-        }
 
-        dragDistSinceLastRelease = 0.0;
+      // exactly one of these will be true
+      bool isRotate = dragLeft && !io.KeyShift && !io.KeyCtrl;
+      bool isTranslate = (dragLeft && io.KeyShift && !io.KeyCtrl) || dragRight;
+      bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
+
+      if (isDragZoom) {
+        view::processZoom(dragDelta.y * 5);
       }
+      if (isRotate) {
+        glm::vec2 currPos{io.MousePos.x / view::windowWidth, (view::windowHeight - io.MousePos.y) / view::windowHeight};
+        currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
+        if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
+          view::processRotate(currPos - 2.0f * dragDelta, currPos);
+        }
+      }
+      if (isTranslate) {
+        view::processTranslate(dragDelta);
+      }
+    }
+
+    // Click picks
+    float dragIgnoreThreshold = 0.01;
+    if (ImGui::IsMouseReleased(0)) {
+
+      // Don't pick at the end of a long drag
+      if (dragDistSinceLastRelease < dragIgnoreThreshold) {
+        ImVec2 p = ImGui::GetMousePos();
+        std::pair<Structure*, size_t> pickResult =
+            pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+        pick::setSelection(pickResult);
+      }
+
+      // Reset the drag distance after any release
+      dragDistSinceLastRelease = 0.0;
+    }
+    // Clear pick
+    if (ImGui::IsMouseReleased(1)) {
+      if (dragDistSinceLastRelease < dragIgnoreThreshold) {
+        pick::resetSelection();
+      }
+      dragDistSinceLastRelease = 0.0;
     }
   }
 
-  if (shouldEvaluatePick) {
-    ImVec2 p = ImGui::GetMousePos();
-    pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+  // === Key-press inputs
+  if (!io.WantCaptureKeyboard) {
+
+    // ctrl-c
+    if (io.KeyCtrl && ImGui::IsKeyPressed(GLFW_KEY_C)) {
+      std::string outData = view::getCameraJson();
+      ImGui::SetClipboardText(outData.c_str());
+    }
+
+    // ctrl-v
+    if (io.KeyCtrl && ImGui::IsKeyPressed(GLFW_KEY_V)) {
+      std::string clipboardData = ImGui::GetClipboardText();
+      view::setCameraFromJson(clipboardData, true);
+    }
   }
 }
 
@@ -569,7 +590,7 @@ void renderScene() {
   sceneFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
 
   if (!sceneFramebuffer->bindForRendering()) return;
- 
+
   sceneFramebuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
   sceneFramebuffer->clearAlpha = 0.0;
   sceneFramebuffer->clear();
@@ -604,7 +625,6 @@ void buildPolyscopeGui() {
 
   ImGui::Begin("Polyscope", &showPolyscopeWindow);
 
-  ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
   if (ImGui::Button("Reset view")) {
     view::flyToHomeView();
   }
@@ -612,48 +632,56 @@ void buildPolyscopeGui() {
   if (ImGui::Button("Screenshot")) {
     screenshot(true);
   }
-  ImGui::PushItemWidth(150);
-  static std::string viewStyleName = "Turntable";
-  if (ImGui::BeginCombo("##View Style", viewStyleName.c_str())) {
-    if (ImGui::Selectable("Turntable", view::style == view::NavigateStyle::Turntable)) {
-      view::style = view::NavigateStyle::Turntable;
-      view::flyToHomeView();
-      ImGui::SetItemDefaultFocus();
-      viewStyleName = "Turntable";
-    }
-    if (ImGui::Selectable("Free", view::style == view::NavigateStyle::Free)) {
-      view::style = view::NavigateStyle::Free;
-      ImGui::SetItemDefaultFocus();
-      viewStyleName = "Free";
-    }
-    if (ImGui::Selectable("Planar", view::style == view::NavigateStyle::Planar)) {
-      view::style = view::NavigateStyle::Planar;
-      view::flyToHomeView();
-      ImGui::SetItemDefaultFocus();
-      viewStyleName = "Planar";
-    }
-    // if (ImGui::Selectable("Arcblob", view::style == view::NavigateStyle::Arcball)) {
-    // view::style = view::NavigateStyle::Arcball;
-    // ImGui::SetItemDefaultFocus();
-    // viewStyleName = "Arcblob";
-    //}
-    ImGui::EndCombo();
+  ImGui::SameLine();
+  if (ImGui::Button("Controls")) {
+    // do nothing, just want hover state
   }
-  ImGui::PopItemWidth();
-  float moveScaleF = view::moveScale;
-  ImGui::SliderFloat("Move Speed", &moveScaleF, 0.0, 1.0, "%.5f", 3.);
-  view::moveScale = moveScaleF;
-  ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+  if (ImGui::IsItemHovered()) {
 
-  // == Ground plane options
-  gl::buildGroundPlaneGui();
+    ImGui::SetNextWindowPos(ImVec2(2 * imguiStackMargin + leftWindowsWidth, imguiStackMargin));
+    ImGui::SetNextWindowSize(ImVec2(0., 0.));
 
-  // == Debugging-related options
+    // clang-format off
+		ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar);
+		ImGui::TextUnformatted("View Navigation:");			
+			ImGui::TextUnformatted("      Rotate: [left click drag]");
+			ImGui::TextUnformatted("   Translate: [shift] + [left click drag] OR [right click drag]");
+			ImGui::TextUnformatted("        Zoom: [scroll] OR [ctrl] + [shift] + [left click drag]");
+			ImGui::TextUnformatted("   Use [ctrl-c] and [ctrl-v] to save and restore camera poses");
+			ImGui::TextUnformatted("     via the clipboard.");
+		ImGui::TextUnformatted("\nMenu Navigation:");			
+			ImGui::TextUnformatted("   Menu headers with a '>' can be clicked to collapse and expand.");
+			ImGui::TextUnformatted("   Use [ctrl] + [left click] to manually enter any numeric value");
+			ImGui::TextUnformatted("     via the keyboard.");
+			ImGui::TextUnformatted("   Press [space] to dismiss popup dialogs.");
+		ImGui::TextUnformatted("\nSelection:");			
+			ImGui::TextUnformatted("   Select elements of a structure with [left click]. Data from");
+			ImGui::TextUnformatted("     that element will be shown on the right. Use [right click]");
+			ImGui::TextUnformatted("     to clear the selection.");
+		ImGui::End();
+    // clang-format on
+  }
+
+  // View options tree
+  view::buildViewGui();
+
+  // Appearance options tree
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-  if (ImGui::TreeNode("debug")) {
+  if (ImGui::TreeNode("Appearance")) {
+    ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
+    gl::buildGroundPlaneGui();
+    ImGui::TreePop();
+  }
+
+  // Debug options tree
+  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  if (ImGui::TreeNode("Debug")) {
     ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
     ImGui::TreePop();
   }
+
+  // fps
+  ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
   lastWindowHeightPolyscope = imguiStackMargin + ImGui::GetWindowHeight();
   leftWindowsWidth = ImGui::GetWindowWidth();
@@ -681,7 +709,7 @@ void buildStructureGui() {
 
     // Build the structure's UI
     ImGui::SetNextTreeNodeOpen(structureMap.size() > 0, ImGuiCond_FirstUseEver);
-    if (ImGui::CollapsingHeader(("Category: " + catName + " (" + std::to_string(structureMap.size()) + ")").c_str())) {
+    if (ImGui::CollapsingHeader((catName + " (" + std::to_string(structureMap.size()) + ")").c_str())) {
       // Draw shared GUI elements for all instances of the structure
       if (structureMap.size() > 0) {
         structureMap.begin()->second->buildSharedStructureUI();
@@ -728,19 +756,18 @@ void buildUserGui() {
 }
 
 void buildPickGui() {
-  if (pick::haveSelection) {
+  if (pick::haveSelection()) {
 
     ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin),
                                    2 * imguiStackMargin + lastWindowHeightUser));
     ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
 
     ImGui::Begin("Selection", nullptr);
-    size_t pickInd;
-    Structure* structure = pick::getCurrentPickElement(pickInd);
+    std::pair<Structure*, size_t> selection = pick::getSelection();
 
-    ImGui::TextUnformatted((structure->typeName() + ": " + structure->name).c_str());
+    ImGui::TextUnformatted((selection.first->typeName() + ": " + selection.first->name).c_str());
     ImGui::Separator();
-    structure->buildPickUI(pickInd);
+    selection.first->buildPickUI(selection.second);
 
     rightWindowsWidth = ImGui::GetWindowWidth();
     ImGui::End();
@@ -853,7 +880,7 @@ void mainLoopIteration() {
 
   // Process UI events
   glfwPollEvents();
-  processMouseEvents();
+  processInputEvents();
   view::updateFlight();
   showDelayedWarnings();
 
@@ -863,6 +890,11 @@ void mainLoopIteration() {
 }
 
 void show() {
+
+  if (!state::initialized) {
+    throw std::logic_error(options::printPrefix +
+                           "must initialize Polyscope with polyscope::init() before calling polyscope::show().");
+  }
 
   // Main loop
   while (!glfwWindowShouldClose(mainWindow)) {
@@ -915,9 +947,12 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
     }
   }
 
-  // Center if desired
+  // Center/scale if desired
   if (options::autocenterStructures) {
     s->centerBoundingBox();
+  }
+  if (options::autoscaleStructures) {
+    s->rescaleToUnit();
   }
 
   // Add the new structure
@@ -977,7 +1012,7 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
 
   // Structure exists, remove it
   Structure* s = sMap[name];
-  pick::clearPickIfStructureSelected(s);
+  pick::resetSelectionIfStructure(s);
   sMap.erase(s->name);
   delete s;
   updateStructureExtents();
@@ -1038,7 +1073,7 @@ void removeAllStructures() {
   }
 
   requestRedraw();
-  pick::resetPick();
+  pick::resetSelection();
 }
 
 void updateStructureExtents() {

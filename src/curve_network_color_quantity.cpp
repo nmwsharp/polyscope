@@ -15,7 +15,7 @@ CurveNetworkColorQuantity::CurveNetworkColorQuantity(std::string name, CurveNetw
     : CurveNetworkQuantity(name, network_, true), definedOn(definedOn_) {}
 
 void CurveNetworkColorQuantity::draw() {
-  if (!enabled) return;
+  if (!isEnabled()) return;
 
   if (edgeProgram == nullptr || nodeProgram == nullptr) {
     createProgram();

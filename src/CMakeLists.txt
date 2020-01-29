@@ -21,6 +21,7 @@ SET(SRCS
   file_helpers.cpp
   camera_parameters.cpp
   histogram.cpp
+  persistent_value.cpp
 
   # Rendering stuff
   gl/gl_utils.cpp
@@ -88,6 +89,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/imgui_render.h
   ${INCLUDE_ROOT}/messages.h
   ${INCLUDE_ROOT}/options.h
+  ${INCLUDE_ROOT}/persistent_value.h
   ${INCLUDE_ROOT}/pick.h
   ${INCLUDE_ROOT}/point_cloud.h
   ${INCLUDE_ROOT}/point_cloud.ipp
@@ -99,6 +101,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/quantity.h
   ${INCLUDE_ROOT}/quantity.ipp
   ${INCLUDE_ROOT}/ribbon_artist.h
+  ${INCLUDE_ROOT}/scaled_value.h
   ${INCLUDE_ROOT}/screenshot.h
   ${INCLUDE_ROOT}/standardize_data_array.h
   ${INCLUDE_ROOT}/structure.h
@@ -122,7 +125,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/trace_vector_field.h
   ${INCLUDE_ROOT}/utilities.h
   ${INCLUDE_ROOT}/view.h
-  ${INCLUDE_ROOT}/gl/colors.h
+  ${INCLUDE_ROOT}/colors.h
   ${INCLUDE_ROOT}/gl/color_maps.h
   ${INCLUDE_ROOT}/gl/gl_utils.h
   ${INCLUDE_ROOT}/gl/ground_plane.h
@@ -150,6 +153,7 @@ add_library(polyscope ${SRCS} ${HEADERS})
 # Required compiler settings
 set_property(TARGET polyscope PROPERTY CXX_STANDARD 11)
 set_property(TARGET polyscope PROPERTY CXX_STANDARD_REQUIRED TRUE)
+set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 add_definitions(-DNOMINMAX)
 
 

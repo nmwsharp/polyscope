@@ -14,7 +14,7 @@ SurfaceColorQuantity::SurfaceColorQuantity(std::string name, SurfaceMesh& mesh_,
     : SurfaceMeshQuantity(name, mesh_, true), definedOn(definedOn_) {}
 
 void SurfaceColorQuantity::draw() {
-  if (!enabled) return;
+  if (!isEnabled()) return;
 
   if (program == nullptr) {
     createProgram();

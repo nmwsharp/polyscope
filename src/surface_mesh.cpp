@@ -2,7 +2,6 @@
 #include "polyscope/surface_mesh.h"
 
 #include "polyscope/combining_hash_functions.h"
-#include "polyscope/gl/colors.h"
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
@@ -27,14 +26,15 @@ const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
 SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
                          const std::vector<std::vector<size_t>>& faceIndices)
-    : QuantityStructure<SurfaceMesh>(name), vertices(vertexPositions), faces(faceIndices) {
+    : QuantityStructure<SurfaceMesh>(name, typeName()), vertices(vertexPositions), faces(faceIndices),
+      shadeSmooth(uniquePrefix() + "shadeSmooth", false),
+      surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
+      edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), edgeWidth(uniquePrefix() + "edgeWidth", 0.)
+
+{
 
   computeCounts();
   computeGeometryData();
-
-  // Colors
-  baseColor = getNextUniqueColor();
-  surfaceColor = baseColor;
 }
 
 
@@ -51,6 +51,7 @@ void SurfaceMesh::computeCounts() {
   for (auto& face : faces) {
     if (face.size() < 3) {
       warning(name + " has face with degree < 3!");
+      face = {0, 0, 0}; // (just to do _something_ so we don't crash in subsequent code)
     }
     nFacesTriangulationCount += std::max(static_cast<int>(face.size()) - 2, 0);
     edgeIndices[iF].resize(face.size());
@@ -59,6 +60,19 @@ void SurfaceMesh::computeCounts() {
     for (size_t i = 0; i < face.size(); i++) {
       size_t vA = face[i];
       size_t vB = face[(i + 1) % face.size()];
+
+      if (vA >= vertices.size()) {
+        warning(name + " has face with vertex index out of vertices range",
+                "face " + std::to_string(iF) + " has vertex index " + std::to_string(vA));
+
+        // zero out the face index
+        // (just to do _something_ so we don't crash in subsequent code)
+        for (size_t j = 0; j < face.size(); j++) {
+          face[j] = 0;
+        }
+        vA = face[i];
+        vB = face[(i + 1) % face.size()];
+      }
 
       std::pair<size_t, size_t> edgeKey(std::min(vA, vB), std::max(vA, vB));
       auto it = edgeInds.find(edgeKey);
@@ -177,9 +191,10 @@ void SurfaceMesh::ensureHaveManifoldConnectivity() {
   twinHalfedge.resize(nHalfedges());
 
   // Maps from edge (sorted) to all halfedges incident on that edge
-  std::unordered_map<std::pair<size_t, size_t>, std::vector<size_t>, polyscope::hash_combine::hash<std::pair<size_t, size_t>>>
+  std::unordered_map<std::pair<size_t, size_t>, std::vector<size_t>,
+                     polyscope::hash_combine::hash<std::pair<size_t, size_t>>>
       edgeInds;
-  
+
   // Fill out faceForHalfedge and populate edge lookup map
   for (size_t iF = 0; iF < nFaces(); iF++) {
     auto& face = faces[iF];
@@ -188,7 +203,7 @@ void SurfaceMesh::ensureHaveManifoldConnectivity() {
 
     for (size_t j = 0; j < D; j++) {
       size_t iV = face[j];
-      size_t iVNext = face[(j+1)%D];
+      size_t iVNext = face[(j + 1) % D];
       size_t iHe = halfedgeIndices[iF][j];
 
       faceForHalfedge[iHe] = iF;
@@ -213,7 +228,7 @@ void SurfaceMesh::ensureHaveManifoldConnectivity() {
 
     for (size_t j = 0; j < D; j++) {
       size_t iV = face[j];
-      size_t iVNext = face[(j+1)%D];
+      size_t iVNext = face[(j + 1) % D];
       size_t iHe = halfedgeIndices[iF][j];
 
       std::pair<size_t, size_t> edgeKey(std::min(iV, iVNext), std::max(iV, iVNext));
@@ -221,8 +236,8 @@ void SurfaceMesh::ensureHaveManifoldConnectivity() {
 
       // Pick the first halfedge we find which is not this one
       size_t myTwin = INVALID_IND;
-      for(size_t t : edgeHalfedges) {
-        if(t != iHe) {
+      for (size_t t : edgeHalfedges) {
+        if (t != iHe) {
           myTwin = t;
           break;
         }
@@ -293,7 +308,7 @@ void SurfaceMesh::ensureHaveVertexTangentSpaces() {
 }
 
 void SurfaceMesh::draw() {
-  if (!enabled) {
+  if (!isEnabled()) {
     return;
   }
 
@@ -307,7 +322,7 @@ void SurfaceMesh::draw() {
 
     // Set uniforms
     setTransformUniforms(*program);
-    program->setUniform("u_basecolor", surfaceColor);
+    program->setUniform("u_basecolor", getSurfaceColor());
 
     program->draw();
   }
@@ -318,15 +333,15 @@ void SurfaceMesh::draw() {
   }
 
   // Draw the wireframe
-  if (edgeWidth > 0) {
+  if (getEdgeWidth() > 0) {
     if (wireframeProgram == nullptr) {
       prepareWireframe();
     }
 
     // Set uniforms
     setTransformUniforms(*wireframeProgram);
-    wireframeProgram->setUniform("u_edgeWidth", edgeWidth);
-    wireframeProgram->setUniform("u_edgeColor", edgeColor);
+    wireframeProgram->setUniform("u_edgeWidth", getEdgeWidth());
+    wireframeProgram->setUniform("u_edgeColor", getEdgeColor());
 
     glEnable(GL_BLEND);
     glDepthFunc(GL_LEQUAL); // Make sure wireframe wins depth tests
@@ -342,7 +357,7 @@ void SurfaceMesh::draw() {
 }
 
 void SurfaceMesh::drawPick() {
-  if (!enabled) {
+  if (!isEnabled()) {
     return;
   }
 
@@ -481,9 +496,9 @@ void SurfaceMesh::preparePick() {
 }
 
 void SurfaceMesh::fillGeometryBuffers(gl::GLProgram& p) {
-  if (shadeStyle == ShadeStyle::SMOOTH) {
+  if (isSmoothShade()) {
     fillGeometryBuffersSmooth(p);
-  } else if (shadeStyle == ShadeStyle::FLAT) {
+  } else {
     fillGeometryBuffersFlat(p);
   }
 }
@@ -890,38 +905,29 @@ void SurfaceMesh::buildCustomUI() {
   ImGui::Text("#verts: %lld  #faces: %lld", nVertsL, nFacesL);
 
   { // colors
-    ImGui::ColorEdit3("Color", (float*)&surfaceColor, ImGuiColorEditFlags_NoInputs);
+    if (ImGui::ColorEdit3("Color", &surfaceColor.get()[0], ImGuiColorEditFlags_NoInputs))
+      setSurfaceColor(surfaceColor.get());
     ImGui::SameLine();
     ImGui::PushItemWidth(100);
-    ImGui::ColorEdit3("Edge Color", (float*)&edgeColor, ImGuiColorEditFlags_NoInputs);
+    if (ImGui::ColorEdit3("Edge Color", &edgeColor.get()[0], ImGuiColorEditFlags_NoInputs))
+      setEdgeColor(edgeColor.get());
     ImGui::PopItemWidth();
   }
 
   { // Flat shading or smooth shading?
     ImGui::SameLine();
-    bool ui_smoothshade = shadeStyle == ShadeStyle::SMOOTH;
-    if (ImGui::Checkbox("Smooth", &ui_smoothshade)) {
-      if (ui_smoothshade) {
-        setShadeStyle(ShadeStyle::SMOOTH);
-      } else {
-        setShadeStyle(ShadeStyle::FLAT);
-      }
-    }
+    if (ImGui::Checkbox("Smooth", &shadeSmooth.get())) setSmoothShade(shadeSmooth.get());
   }
 
   { // Edge width
     ImGui::PushItemWidth(100);
-    ImGui::SliderFloat("Edge Width", &edgeWidth, 0.0, 1., "%.5f", 2.);
+    if (ImGui::SliderFloat("Edge Width", &edgeWidth.get(), 0.0, 1., "%.5f", 2.)) setEdgeWidth(getEdgeWidth());
     ImGui::PopItemWidth();
   }
 }
 
 void SurfaceMesh::buildCustomOptionsUI() {}
 
-void SurfaceMesh::setShadeStyle(ShadeStyle newShadeStyle) {
-  shadeStyle = newShadeStyle;
-  geometryChanged();
-}
 
 void SurfaceMesh::geometryChanged() {
   program.reset();
@@ -933,6 +939,8 @@ void SurfaceMesh::geometryChanged() {
   for (auto& q : quantities) {
     q.second->geometryChanged();
   }
+
+  requestRedraw();
 }
 
 double SurfaceMesh::lengthScale() {
@@ -958,10 +966,6 @@ std::tuple<glm::vec3, glm::vec3> SurfaceMesh::boundingBox() {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
-
-  // Respect object transform
-  min = glm::vec3(glm::vec4(min.x, min.y, min.z, 1.0));
-  max = glm::vec3(glm::vec4(max.x, max.y, max.z, 1.0));
 
   return std::make_tuple(min, max);
 }
@@ -1009,23 +1013,20 @@ long long int SurfaceMesh::selectVertex() {
 
     ImGuiIO& io = ImGui::GetIO();
     if (io.KeyCtrl && !io.WantCaptureMouse && ImGui::IsMouseClicked(0)) {
-      if (pick::pickIsFromThisFrame) {
 
-        ImGuiIO& io = ImGui::GetIO();
+      ImGuiIO& io = ImGui::GetIO();
 
-        // TODO fix semi-broken picking...
-        // API is a giant mess..
-        size_t pickInd;
-        ImVec2 p = ImGui::GetMousePos();
-        pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
-        Structure* pickS = pick::getCurrentPickElement(pickInd);
+      // API is a giant mess..
+      size_t pickInd;
+      ImVec2 p = ImGui::GetMousePos();
+      std::pair<Structure*, size_t> pickVal =
+          pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
 
-        if (pickS == this) {
+      if (pickVal.first == this) {
 
-          if (pickInd < nVertices()) {
-            returnVertInd = pickInd;
-            popContext();
-          }
+        if (pickVal.second < nVertices()) {
+          returnVertInd = pickVal.second;
+          popContext();
         }
       }
     }
@@ -1120,14 +1121,33 @@ FacePtr SurfaceMesh::selectFace() {
 }
 */
 
-SurfaceMeshQuantity::SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates)
-    : Quantity<SurfaceMesh>(name, parentStructure, dominates) {}
-void SurfaceMeshQuantity::geometryChanged() {}
-void SurfaceMeshQuantity::buildVertexInfoGUI(size_t vInd) {}
-void SurfaceMeshQuantity::buildFaceInfoGUI(size_t fInd) {}
-void SurfaceMeshQuantity::buildEdgeInfoGUI(size_t eInd) {}
-void SurfaceMeshQuantity::buildHalfedgeInfoGUI(size_t heInd) {}
+// === Option getters and setters
 
+SurfaceMesh* SurfaceMesh::setSmoothShade(bool isSmooth) {
+  shadeSmooth = isSmooth;
+  geometryChanged();
+  requestRedraw();
+  return this;
+}
+bool SurfaceMesh::isSmoothShade() { return shadeSmooth.get(); }
+SurfaceMesh* SurfaceMesh::setSurfaceColor(glm::vec3 val) {
+  surfaceColor = val;
+  requestRedraw();
+  return this;
+}
+glm::vec3 SurfaceMesh::getSurfaceColor() { return surfaceColor.get(); }
+SurfaceMesh* SurfaceMesh::setEdgeColor(glm::vec3 val) {
+  edgeColor = val;
+  requestRedraw();
+  return this;
+}
+glm::vec3 SurfaceMesh::getEdgeColor() { return edgeColor.get(); }
+SurfaceMesh* SurfaceMesh::setEdgeWidth(double newVal) {
+  edgeWidth = newVal;
+  requestRedraw();
+  return this;
+}
+double SurfaceMesh::getEdgeWidth() { return edgeWidth.get(); }
 
 // === Quantity adders
 
@@ -1192,8 +1212,8 @@ SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantityImpl(std::string name,
 SurfaceCornerParameterizationQuantity*
 SurfaceMesh::addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
                                              ParamCoordsType type) {
-  SurfaceCornerParameterizationQuantity* q =
-      new SurfaceCornerParameterizationQuantity(name, applyPermutation(coords, cornerPerm), type, *this);
+  SurfaceCornerParameterizationQuantity* q = new SurfaceCornerParameterizationQuantity(
+      name, applyPermutation(coords, cornerPerm), type, ParamVizStyle::CHECKER, *this);
   addQuantity(q);
 
   return q;
@@ -1202,8 +1222,8 @@ SurfaceMesh::addParameterizationQuantityImpl(std::string name, const std::vector
 SurfaceVertexParameterizationQuantity*
 SurfaceMesh::addVertexParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
                                                    ParamCoordsType type) {
-  SurfaceVertexParameterizationQuantity* q =
-      new SurfaceVertexParameterizationQuantity(name, applyPermutation(coords, vertexPerm), type, *this);
+  SurfaceVertexParameterizationQuantity* q = new SurfaceVertexParameterizationQuantity(
+      name, applyPermutation(coords, vertexPerm), type, ParamVizStyle::CHECKER, *this);
   addQuantity(q);
 
   return q;
@@ -1212,11 +1232,9 @@ SurfaceMesh::addVertexParameterizationQuantityImpl(std::string name, const std::
 SurfaceVertexParameterizationQuantity*
 SurfaceMesh::addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
                                                   ParamCoordsType type) {
-  SurfaceVertexParameterizationQuantity* q =
-      new SurfaceVertexParameterizationQuantity(name, applyPermutation(coords, vertexPerm), type, *this);
+  SurfaceVertexParameterizationQuantity* q = new SurfaceVertexParameterizationQuantity(
+      name, applyPermutation(coords, vertexPerm), type, ParamVizStyle::LOCAL_CHECK, *this);
   addQuantity(q);
-
-  q->setStyle(ParamVizStyle::LOCAL_CHECK);
 
   return q;
 }
@@ -1344,5 +1362,13 @@ void SurfaceMesh::setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors
   }
 }
 
+
+SurfaceMeshQuantity::SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates)
+    : Quantity<SurfaceMesh>(name, parentStructure, dominates) {}
+void SurfaceMeshQuantity::geometryChanged() {}
+void SurfaceMeshQuantity::buildVertexInfoGUI(size_t vInd) {}
+void SurfaceMeshQuantity::buildFaceInfoGUI(size_t fInd) {}
+void SurfaceMeshQuantity::buildEdgeInfoGUI(size_t eInd) {}
+void SurfaceMeshQuantity::buildHalfedgeInfoGUI(size_t heInd) {}
 
 } // namespace polyscope

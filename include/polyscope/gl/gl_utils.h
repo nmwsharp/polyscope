@@ -16,7 +16,7 @@
 #include <vector>
 
 #include "polyscope/gl/color_maps.h"
-#include "polyscope/gl/colors.h"
+#include "polyscope/colors.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/view.h"
 

@@ -72,6 +72,7 @@ vec3 undoGammaCorrect( vec3 colorLinear )
       
 
 vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b) {
+  normal = normalize(normal);
   normal.y = -normal.y;
   vec2 matUV = normal.xy/2.0 + vec2(.5, .5);
   

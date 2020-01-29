@@ -153,8 +153,8 @@ namespace glm
 		T const& a);
 
 	/// Compute the rotation between two vectors.
-	/// param orig vector, needs to be normalized
-	/// param dest vector, needs to be normalized
+	/// @param orig vector, needs to be normalized
+	/// @param dest vector, needs to be normalized
 	///
 	/// @see gtx_quaternion
 	template<typename T, qualifier Q>

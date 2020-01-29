@@ -7,3 +7,5 @@ add_library(
     )
 
 target_include_directories(stb PRIVATE "../include")    
+
+set_target_properties(stb PROPERTIES POSITION_INDEPENDENT_CODE TRUE)

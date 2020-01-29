@@ -7,7 +7,7 @@ namespace polyscope {
 // === Derived structure can manage quantities
 
 template <typename S>
-QuantityStructure<S>::QuantityStructure(std::string name_) : Structure(name_) {}
+QuantityStructure<S>::QuantityStructure(std::string name_, std::string subtypeName) : Structure(name_, subtypeName) {}
 
 template <typename S>
 QuantityStructure<S>::~QuantityStructure(){};
@@ -74,7 +74,7 @@ void QuantityStructure<S>::removeAllQuantities() {
 }
 
 template <typename S>
-void QuantityStructure<S>::setDominantQuantity(QuantityType* q) {
+void QuantityStructure<S>::setDominantQuantity(Quantity<S>* q) {
   if (!q->dominates) {
     error("tried to set dominant quantity with quantity that has dominates=false");
     return;

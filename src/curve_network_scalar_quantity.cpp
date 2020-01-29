@@ -17,14 +17,11 @@ namespace polyscope {
 
 CurveNetworkScalarQuantity::CurveNetworkScalarQuantity(std::string name, CurveNetwork& network_, std::string definedOn_,
                                                        DataType dataType_)
-    : CurveNetworkQuantity(name, network_, true), dataType(dataType_), definedOn(definedOn_) {
-
-  // Set the default colormap based on what kind of data is given
-  cMap = defaultColorMap(dataType);
-}
+    : CurveNetworkQuantity(name, network_, true), dataType(dataType_),
+      cMap(uniquePrefix() + name + "#cmap", defaultColorMap(dataType)), definedOn(definedOn_) {}
 
 void CurveNetworkScalarQuantity::draw() {
-  if (!enabled) return;
+  if (!isEnabled()) return;
 
   if (edgeProgram == nullptr || nodeProgram == nullptr) {
     createProgram();
@@ -47,26 +44,26 @@ void CurveNetworkScalarQuantity::draw() {
 
 // Update range uniforms
 void CurveNetworkScalarQuantity::setProgramUniforms(gl::GLProgram& program) {
-  program.setUniform("u_rangeLow", vizRangeLow);
-  program.setUniform("u_rangeHigh", vizRangeHigh);
+  program.setUniform("u_rangeLow", vizRange.first);
+  program.setUniform("u_rangeHigh", vizRange.second);
 }
 
-void CurveNetworkScalarQuantity::resetVizRange() {
+CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::resetMapRange() {
   switch (dataType) {
   case DataType::STANDARD:
-    vizRangeLow = dataRangeLow;
-    vizRangeHigh = dataRangeHigh;
+    vizRange = dataRange;
     break;
   case DataType::SYMMETRIC: {
-    float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
-    vizRangeLow = -absRange;
-    vizRangeHigh = absRange;
+    double absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
+    vizRange = std::make_pair(-absRange, absRange);
   } break;
   case DataType::MAGNITUDE:
-    vizRangeLow = 0.0;
-    vizRangeHigh = dataRangeHigh;
+    vizRange = std::make_pair(0., dataRange.second);
     break;
   }
+
+  requestRedraw();
+  return this;
 }
 
 void CurveNetworkScalarQuantity::buildCustomUI() {
@@ -78,20 +75,19 @@ void CurveNetworkScalarQuantity::buildCustomUI() {
   }
   if (ImGui::BeginPopup("OptionsPopup")) {
 
-    if (ImGui::MenuItem("Reset colormap range")) resetVizRange();
+    if (ImGui::MenuItem("Reset colormap range")) resetMapRange();
 
     ImGui::EndPopup();
   }
 
-  if (buildColormapSelector(cMap)) {
+  if (buildColormapSelector(cMap.get())) {
     nodeProgram.reset();
     edgeProgram.reset();
-    hist.updateColormap(cMap);
+    setColorMap(getColorMap());
   }
 
   // Draw the histogram of values
-  hist.colormapRangeMin = vizRangeLow;
-  hist.colormapRangeMax = vizRangeHigh;
+  hist.colormapRange = vizRange;
   hist.buildUI();
 
   // Data range
@@ -102,17 +98,17 @@ void CurveNetworkScalarQuantity::buildCustomUI() {
   {
     switch (dataType) {
     case DataType::STANDARD:
-      ImGui::DragFloatRange2("", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100., dataRangeLow,
-                             dataRangeHigh, "Min: %.3e", "Max: %.3e");
+      ImGui::DragFloatRange2("", &vizRange.first, &vizRange.second, (dataRange.second - dataRange.first) / 100.,
+                             dataRange.first, dataRange.second, "Min: %.3e", "Max: %.3e");
       break;
     case DataType::SYMMETRIC: {
-      float absRange = std::max(std::abs(dataRangeLow), std::abs(dataRangeHigh));
-      ImGui::DragFloatRange2("##range_symmetric", &vizRangeLow, &vizRangeHigh, absRange / 100., -absRange, absRange,
-                             "Min: %.3e", "Max: %.3e");
+      float absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
+      ImGui::DragFloatRange2("##range_symmetric", &vizRange.first, &vizRange.second, absRange / 100., -absRange,
+                             absRange, "Min: %.3e", "Max: %.3e");
     } break;
     case DataType::MAGNITUDE: {
-      ImGui::DragFloatRange2("##range_mag", &vizRangeLow, &vizRangeHigh, vizRangeHigh / 100., 0.0, dataRangeHigh,
-                             "Min: %.3e", "Max: %.3e");
+      ImGui::DragFloatRange2("##range_mag", &vizRange.first, &vizRange.second, vizRange.second / 100., 0.0,
+                             dataRange.second, "Min: %.3e", "Max: %.3e");
     } break;
     }
   }
@@ -122,6 +118,20 @@ void CurveNetworkScalarQuantity::geometryChanged() {
   nodeProgram.reset();
   edgeProgram.reset();
 }
+
+CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::setColorMap(gl::ColorMapID val) {
+  cMap = val;
+  hist.updateColormap(cMap.get());
+  requestRedraw();
+  return this;
+}
+gl::ColorMapID CurveNetworkScalarQuantity::getColorMap() { return cMap.get(); }
+CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::setMapRange(std::pair<double, double> val) {
+  vizRange = val;
+  requestRedraw();
+  return this;
+}
+std::pair<double, double> CurveNetworkScalarQuantity::getMapRange() { return vizRange; }
 
 std::string CurveNetworkScalarQuantity::niceName() { return name + " (" + definedOn + " scalar)"; }
 
@@ -134,11 +144,11 @@ CurveNetworkNodeScalarQuantity::CurveNetworkNodeScalarQuantity(std::string name,
     : CurveNetworkScalarQuantity(name, network_, "node", dataType_), values(std::move(values_))
 
 {
-  hist.updateColormap(cMap);
+  hist.updateColormap(cMap.get());
   hist.buildHistogram(values);
 
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
-  resetVizRange();
+  dataRange = robustMinMax(values, 1e-5);
+  resetMapRange();
 }
 
 void CurveNetworkNodeScalarQuantity::createProgram() {
@@ -171,8 +181,8 @@ void CurveNetworkNodeScalarQuantity::createProgram() {
     edgeProgram->setAttribute("a_value_tip", valueTip);
   }
 
-  edgeProgram->setTextureFromColormap("t_colormap", getColorMap(cMap));
-  nodeProgram->setTextureFromColormap("t_colormap", getColorMap(cMap));
+  edgeProgram->setTextureFromColormap("t_colormap", gl::getColorMap(getColorMap()));
+  nodeProgram->setTextureFromColormap("t_colormap", gl::getColorMap(getColorMap()));
   setMaterialForProgram(*edgeProgram, "wax");
   setMaterialForProgram(*nodeProgram, "wax");
 }
@@ -195,11 +205,11 @@ CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name,
     : CurveNetworkScalarQuantity(name, network_, "edge", dataType_), values(std::move(values_))
 
 {
-  hist.updateColormap(cMap);
+  hist.updateColormap(getColorMap());
   hist.buildHistogram(values);
 
-  std::tie(dataRangeLow, dataRangeHigh) = robustMinMax(values, 1e-5);
-  resetVizRange();
+  dataRange = robustMinMax(values, 1e-5);
+  resetMapRange();
 }
 
 void CurveNetworkEdgeScalarQuantity::createProgram() {
@@ -235,8 +245,8 @@ void CurveNetworkEdgeScalarQuantity::createProgram() {
     edgeProgram->setAttribute("a_value", values);
   }
 
-  edgeProgram->setTextureFromColormap("t_colormap", getColorMap(cMap));
-  nodeProgram->setTextureFromColormap("t_colormap", getColorMap(cMap));
+  edgeProgram->setTextureFromColormap("t_colormap", gl::getColorMap(getColorMap()));
+  nodeProgram->setTextureFromColormap("t_colormap", gl::getColorMap(getColorMap()));
   setMaterialForProgram(*edgeProgram, "wax");
   setMaterialForProgram(*nodeProgram, "wax");
 }

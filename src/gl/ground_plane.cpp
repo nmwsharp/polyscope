@@ -28,19 +28,33 @@ gl::GLProgram* groundPlaneProgram = nullptr;
 gl::GLTexturebuffer* mirroredSceneColorTexture = nullptr;
 gl::GLFramebuffer* mirroredSceneFramebuffer = nullptr;
 
-void prepareGroundPlane() {
+// cache which direction the ground plane faces
+view::UpDir groundPlaneViewCached = view::UpDir::XUp; // not actually valid, must populate first time
 
-  // The program that draws the ground plane
-  groundPlaneProgram = new gl::GLProgram(&GROUND_PLANE_VERT_SHADER, &GROUND_PLANE_FRAG_SHADER, gl::DrawMode::Triangles);
+void populateGroundPlaneGeometry() {
+
+  int iP = 0;
+  switch (view::upDir) {
+  case view::UpDir::XUp:
+    iP = 0;
+    break;
+  case view::UpDir::YUp:
+    iP = 1;
+    break;
+  case view::UpDir::ZUp:
+    iP = 2;
+    break;
+  }
+
 
   // Geometry of the ground plane, using triangles with vertices at infinity
-  glm::vec4 cVert{0., 0., 0., 1.};
-  glm::vec4 v1{1., 0., 0., 0.};
-  glm::vec4 v2{0., 0., 1., 0.};
-  glm::vec4 v3{-1., 0., 0., 0.};
-  glm::vec4 v4{0., 0., -1., 0.};
-
   // clang-format off
+  glm::vec4 cVert{0., 0., 0., 1.};
+  glm::vec4 v1{0., 0., 0., 0.}; v1[(iP+2)%3] =  1.;
+  glm::vec4 v2{0., 0., 0., 0.}; v2[(iP+1)%3] =  1.;
+  glm::vec4 v3{0., 0., 0., 0.}; v3[(iP+2)%3] = -1.;
+  glm::vec4 v4{0., 0., 0., 0.}; v4[(iP+1)%3] = -1.;
+  
   std::vector<glm::vec4> positions = {
     cVert, v2, v1,
     cVert, v3, v2,
@@ -50,7 +64,15 @@ void prepareGroundPlane() {
   // clang-format on
 
   groundPlaneProgram->setAttribute("a_position", positions);
+  groundPlaneViewCached = view::upDir;
+}
 
+void prepareGroundPlane() {
+
+  // The program that draws the ground plane
+  groundPlaneProgram = new gl::GLProgram(&GROUND_PLANE_VERT_SHADER, &GROUND_PLANE_FRAG_SHADER, gl::DrawMode::Triangles);
+
+  populateGroundPlaneGeometry();
 
   { // Load the ground texture
     int w, h, comp;
@@ -92,10 +114,33 @@ void drawGroundPlane() {
   if (!groundPlanePrepared) {
     prepareGroundPlane();
   }
+  if (view::upDir != groundPlaneViewCached) {
+    populateGroundPlaneGeometry();
+  }
+
+  // Get logical "up" direction to which the ground plane is oriented
+  int iP = 0;
+  switch (view::upDir) {
+  case view::UpDir::XUp:
+    iP = 0;
+    break;
+  case view::UpDir::YUp:
+    iP = 1;
+    break;
+  case view::UpDir::ZUp:
+    iP = 2;
+    break;
+  }
+  glm::vec3 baseUp{0., 0., 0.};
+  glm::vec3 baseForward{0., 0., 0.};
+  glm::vec3 baseRight{0., 0., 0.};
+  baseUp[iP] = 1.;
+  baseForward[(iP + 1) % 3] = 1.;
+  baseRight[(iP + 2) % 3] = 1.;
 
   // Location for ground plane
-  double bboxBottom = std::get<0>(state::boundingBox).y;
-  double bboxHeight = std::get<1>(state::boundingBox).y - std::get<0>(state::boundingBox).y;
+  double bboxBottom = std::get<0>(state::boundingBox)[iP];
+  double bboxHeight = std::get<1>(state::boundingBox)[iP] - std::get<0>(state::boundingBox)[iP];
   double heightEPS = state::lengthScale * 1e-4;
   double groundHeight = bboxBottom - groundPlaneHeightFactor * bboxHeight - heightEPS;
 
@@ -116,9 +161,10 @@ void drawGroundPlane() {
     // Push a reflected view matrix
     glm::mat4 origViewMat = view::viewMat;
 
-    glm::vec3 mirrorN{0., 1., 0.};
+    glm::vec3 mirrorN = baseUp;
     glm::mat3 mirrorMat3 = glm::mat3(1.0) - 2.0f * glm::outerProduct(mirrorN, mirrorN);
-    glm::vec3 tVec{0., -groundHeight, 0.};
+    glm::vec3 tVec{0., 0., 0.};
+    tVec[iP] = -groundHeight;
     glm::mat4 mirrorMat =
         glm::translate(glm::mat4(1.0), -tVec) * glm::mat4(mirrorMat3) * glm::translate(glm::mat4(1.0), tVec);
     view::viewMat = view::viewMat * mirrorMat;
@@ -133,7 +179,6 @@ void drawGroundPlane() {
     glBindFramebuffer(GL_FRAMEBUFFER, drawFboId);
   }
 
-
   // Set uniforms
   glm::mat4 viewMat = view::getCameraViewMatrix();
   groundPlaneProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
@@ -144,10 +189,12 @@ void drawGroundPlane() {
   glm::vec2 viewportDim{view::bufferWidth, view::bufferHeight};
   groundPlaneProgram->setUniform("u_viewportDim", viewportDim);
 
-  glm::vec2 centerXZ{state::center.x, state::center.z};
-  groundPlaneProgram->setUniform("u_centerXZ", centerXZ);
+  groundPlaneProgram->setUniform("u_center", state::center);
+  groundPlaneProgram->setUniform("u_basisX", baseForward);
+  groundPlaneProgram->setUniform("u_basisY", baseRight);
+  groundPlaneProgram->setUniform("u_basisZ", baseUp);
 
-  float camHeight = view::getCameraWorldPosition().y;
+  float camHeight = view::getCameraWorldPosition()[iP];
   groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
 
   groundPlaneProgram->setUniform("u_lengthScale", state::lengthScale);
@@ -163,7 +210,7 @@ void drawGroundPlane() {
 void buildGroundPlaneGui() {
 
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-  if (ImGui::TreeNode("ground plane")) {
+  if (ImGui::TreeNode("Ground Plane")) {
 
     ImGui::Checkbox("Enabled", &groundPlaneEnabled);
 

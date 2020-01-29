@@ -19,17 +19,35 @@ public:
   virtual void geometryChanged() override;
 
   // === Members
+  // Note: these vectors are not the raw vectors passed in by the user, but have been rescaled such that the longest has
+  // length 1 (unless type is VectorType::Ambient)
   const VectorType vectorType;
   std::vector<glm::vec3> vectors;
-  float lengthMult; // longest vector will be this fraction of lengthScale (if not ambient)
-  float radiusMult; // radius is this fraction of lengthScale
-  glm::vec3 vectorColor;
 
+  // === Option accessors
+
+  //  The vectors will be scaled such that the longest vector is this long
+  PointCloudVectorQuantity* setVectorLengthScale(double newLength, bool isRelative = true);
+  double getVectorLengthScale();
+
+  // The radius of the vectors
+  PointCloudVectorQuantity* setVectorRadius(double val, bool isRelative = true);
+  double getVectorRadius();
+
+  // The color of the vectors
+  PointCloudVectorQuantity* setVectorColor(glm::vec3 color);
+  glm::vec3 getVectorColor();
+
+  void writeToFile(std::string filename = "");
+
+private:
+  // === Visualization options
+  PersistentValue<ScaledValue<float>> vectorLengthMult;
+  PersistentValue<ScaledValue<float>> vectorRadius;
+  PersistentValue<glm::vec3> vectorColor;
 
   // The map that takes values to [0,1] for drawing
   AffineRemapper<glm::vec3> mapper;
-
-  void writeToFile(std::string filename = "");
 
   void createProgram();
   std::unique_ptr<gl::GLProgram> program;

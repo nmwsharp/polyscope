@@ -38,6 +38,8 @@ void PointCloud::updatePointPositions(const V& newPositions) {
   for (auto& q : quantities) {
     q.second->geometryChanged();
   }
+
+  requestRedraw();
 }
 
 template <class V>

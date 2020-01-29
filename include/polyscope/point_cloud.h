@@ -4,8 +4,10 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
 #include "polyscope/gl/gl_utils.h"
+#include "polyscope/persistent_value.h"
 #include "polyscope/point_cloud_quantity.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/scaled_value.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
 
@@ -38,25 +40,18 @@ public:
   // Construct a new point cloud structure
   PointCloud(std::string name, std::vector<glm::vec3> points);
 
-  // === Overloads
+  // === Overrides
 
   // Build the imgui display
   virtual void buildCustomUI() override;
   virtual void buildCustomOptionsUI() override;
   virtual void buildPickUI(size_t localPickID) override;
 
-  // Render the the structure on screen
+  // Standard structure overrides
   virtual void draw() override;
-
-  // Render for picking
   virtual void drawPick() override;
-
-  // A characteristic length for the structure
   virtual double lengthScale() override;
-
-  // Axis-aligned bounding box for the structure
   virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
-
   virtual std::string typeName() override;
 
   // === Quantities
@@ -76,7 +71,7 @@ public:
   template <class T>
   PointCloudVectorQuantity* addVectorQuantity2D(std::string name, const T& vectors,
                                                 VectorType vectorType = VectorType::STANDARD);
-  
+
   // === Mutate
   template <class V>
   void updatePointPositions(const V& newPositions);
@@ -95,12 +90,21 @@ public:
   void writePointsToFile(std::string filename = "");
   void setPointCloudUniforms(gl::GLProgram& p);
 
-  // Visualization parameters
-  glm::vec3 initialBaseColor;
-  glm::vec3 pointColor;
-  float pointRadius = 0.005;
+  // === Get/set visualization parameters
+  
+  // set the base color of the points
+  PointCloud* setPointColor(glm::vec3 newVal);
+  glm::vec3 getPointColor();
+
+  // set the radius of the points
+  PointCloud* setPointRadius(double newVal, bool isRelative = true);
+  double getPointRadius();
 
 private:
+
+  // === Visualization parameters
+  PersistentValue<glm::vec3> pointColor;
+  PersistentValue<ScaledValue<float>> pointRadius;
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called

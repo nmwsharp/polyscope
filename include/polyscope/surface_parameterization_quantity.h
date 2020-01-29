@@ -18,7 +18,7 @@ namespace polyscope {
 class SurfaceParameterizationQuantity : public SurfaceMeshQuantity {
 
 public:
-  SurfaceParameterizationQuantity(std::string name, ParamCoordsType type_, SurfaceMesh& mesh_);
+  SurfaceParameterizationQuantity(std::string name, ParamCoordsType type_, ParamVizStyle style, SurfaceMesh& mesh_);
 
   void draw() override;
   virtual void buildCustomUI() override;
@@ -27,7 +27,7 @@ public:
 
 
   // === Members
-  ParamCoordsType coordsType;
+  const ParamCoordsType coordsType;
 
   // The program which does the drawing
   std::unique_ptr<gl::GLProgram> program;
@@ -35,19 +35,38 @@ public:
   // === Viz stuff
   // to keep things simple, has settings for all of the viz styles, even though not all are used at all times
 
+
+  // === Getters and setters for visualization options
+
+  // What visualization scheme to use
   SurfaceParameterizationQuantity* setStyle(ParamVizStyle newStyle);
+  ParamVizStyle getStyle();
 
-  float modLen = .05; // for all, period of the checker / stripes
+  // Colors for checkers
+  SurfaceParameterizationQuantity* setCheckerColors(std::pair<glm::vec3, glm::vec3> colors);
+  std::pair<glm::vec3, glm::vec3> getCheckerColors();
 
-  glm::vec3 checkColor1, checkColor2; // for checker (two colors to use)
+  // Colors for checkers
+  SurfaceParameterizationQuantity* setGridColors(std::pair<glm::vec3, glm::vec3> colors);
+  std::pair<glm::vec3, glm::vec3> getGridColors();
 
-  glm::vec3 gridLineColor, gridBackgroundColor; // for GRID (two colors to use)
+  // The size of checkers / stripes
+  SurfaceParameterizationQuantity* setCheckerSize(double newVal);
+  double getCheckerSize();
 
-  gl::ColorMapID cMap = gl::ColorMapID::PHASE; // for LOCAL (color map index)
-  float localRot = 0.;                         // for LOCAL (angular shift, in radians)
+  // Color map for radial visualization
+  SurfaceParameterizationQuantity* setColorMap(gl::ColorMapID val);
+  gl::ColorMapID getColorMap();
 
 protected:
-  ParamVizStyle vizStyle = ParamVizStyle::CHECKER;
+  // === Visualiztion options
+  PersistentValue<float> checkerSize;
+  PersistentValue<ParamVizStyle> vizStyle;
+  PersistentValue<glm::vec3> checkColor1, checkColor2;           // for checker (two colors to use)
+  PersistentValue<glm::vec3> gridLineColor, gridBackgroundColor; // for GRID (two colors to use)
+
+  PersistentValue<gl::ColorMapID> cMap;
+  float localRot = 0.; // for LOCAL (angular shift, in radians)
 
   // Helpers
   void createProgram();
@@ -64,7 +83,7 @@ class SurfaceCornerParameterizationQuantity : public SurfaceParameterizationQuan
 
 public:
   SurfaceCornerParameterizationQuantity(std::string name, std::vector<glm::vec2> values_, ParamCoordsType type_,
-                                        SurfaceMesh& mesh_);
+                                        ParamVizStyle style, SurfaceMesh& mesh_);
 
   virtual void buildHalfedgeInfoGUI(size_t heInd) override;
   virtual std::string niceName() override;
@@ -84,7 +103,7 @@ protected:
 class SurfaceVertexParameterizationQuantity : public SurfaceParameterizationQuantity {
 public:
   SurfaceVertexParameterizationQuantity(std::string name, std::vector<glm::vec2> values_, ParamCoordsType type_,
-                                        SurfaceMesh& mesh_);
+                                        ParamVizStyle style, SurfaceMesh& mesh_);
 
   virtual void buildVertexInfoGUI(size_t vInd) override;
   virtual std::string niceName() override;

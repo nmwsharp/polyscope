@@ -15,6 +15,7 @@ static const VertShader GROUND_PLANE_VERT_SHADER =  {
        {"u_viewMatrix", GLData::Matrix44Float},
        {"u_projMatrix", GLData::Matrix44Float},
        {"u_groundHeight", GLData::Float},
+        {"u_basisZ", GLData::Vector3Float},
     },
 
     // attributes
@@ -27,12 +28,13 @@ static const VertShader GROUND_PLANE_VERT_SHADER =  {
       uniform mat4 u_viewMatrix;
       uniform mat4 u_projMatrix;
       uniform float u_groundHeight;
+      uniform vec3 u_basisZ;
       in vec4 a_position;
       out vec4 PositionWorldHomog;
 
       void main()
       {
-          vec4 adjustedPosition = a_position + vec4(0., u_groundHeight * a_position.w, 0., 0.);
+          vec4 adjustedPosition = a_position + vec4(u_basisZ, 0.) * u_groundHeight * a_position.w;
           gl_Position = u_projMatrix * u_viewMatrix * adjustedPosition;
           PositionWorldHomog = adjustedPosition;
       }
@@ -44,7 +46,9 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
     // uniforms
     {
       {"u_lengthScale", GLData::Float},
-      {"u_centerXZ", GLData::Vector2Float},
+      {"u_center", GLData::Vector3Float},
+      {"u_basisX", GLData::Vector3Float},
+      {"u_basisY", GLData::Vector3Float},
       {"u_viewportDim", GLData::Vector2Float},
       {"u_cameraHeight", GLData::Float},
       {"u_groundHeight", GLData::Float}
@@ -70,7 +74,9 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
       uniform sampler2D t_mirrorImage;
       uniform mat4 u_viewMatrix;
       uniform float u_lengthScale;
-      uniform vec2 u_centerXZ;
+      uniform vec3 u_center;
+      uniform vec3 u_basisX;
+      uniform vec3 u_basisY;
       uniform vec2 u_viewportDim;
       uniform float u_cameraHeight;
       uniform float u_groundHeight;
@@ -96,13 +102,14 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
 
       void main()
       {
-        vec2 coordXZ = PositionWorldHomog.xz / PositionWorldHomog.w - u_centerXZ;
-        coordXZ /= u_lengthScale * .5;
+        vec3 coord = PositionWorldHomog.xyz / PositionWorldHomog.w - u_center;
+        coord /= u_lengthScale * .5;
+        vec2 coord2D = vec2(dot(u_basisX, coord), dot(u_basisY, coord));
 
         // Checker stripes
-        float modDist = min(min(mod(coordXZ.x, 1.0), mod(coordXZ.y, 1.0)), min(mod(-coordXZ.x, 1.0), mod(-coordXZ.y, 1.0)));
+        float modDist = min(min(mod(coord2D.x, 1.0), mod(coord2D.y, 1.0)), min(mod(-coord2D.x, 1.0), mod(-coord2D.y, 1.0)));
         float stripeBlendFac = smoothstep(0.005, .01, modDist);
-        vec4 baseColor = mix(texture(t_ground, coordXZ), vec4(.88, .88, .88, 1.), .4); 
+        vec4 baseColor = mix(texture(t_ground, coord2D), vec4(.88, .88, .88, 1.), .4); 
         vec4 groundColor = mix( vec4(baseColor.xyz * .2, 1.0), baseColor, stripeBlendFac);
 
         // Mirror image
@@ -123,7 +130,7 @@ static const FragShader GROUND_PLANE_FRAG_SHADER = {
         vec3 eyeDir = normalize(eyeCameraSpace - posCameraSpace);
         
         // Fade off far away
-        float distFromCenter = length(coordXZ);
+        float distFromCenter = length(coord2D);
         float distFadeFactor = 1.0 - smoothstep(8.0, 8.5, distFromCenter);
         float viewFromBelowFadeFactor = smoothstep(0, .1, (u_cameraHeight - u_groundHeight) / u_lengthScale);
         float fadeFactor = min(distFadeFactor, viewFromBelowFadeFactor);

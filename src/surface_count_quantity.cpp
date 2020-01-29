@@ -70,7 +70,7 @@ void SurfaceCountQuantity::setUniforms(gl::GLProgram& p) {
 }
 
 void SurfaceCountQuantity::draw() {
-  if (!enabled) return;
+  if (!isEnabled()) return;
 
   if (program == nullptr) {
     createProgram();

@@ -27,16 +27,29 @@ public:
   std::vector<double> values;
   const DataType dataType;
 
+  // === Get/set visualization parameters
+
+  // The color map
+  PointCloudScalarQuantity* setColorMap(gl::ColorMapID val);
+  gl::ColorMapID getColorMap();
+
+  // Data limits mapped in to colormap
+  PointCloudScalarQuantity* setMapRange(std::pair<double, double> val);
+  std::pair<double, double> getMapRange();
+  PointCloudScalarQuantity* resetMapRange(); // reset to full range
+
+protected:
+  // === Visualization parameters
+
   // Affine data maps and limits
-  void resetVizRange();
-  float vizRangeLow, vizRangeHigh;
-  float dataRangeHigh, dataRangeLow;
+  std::pair<float, float> vizRange;
+  std::pair<double, double> dataRange;
   Histogram hist;
 
   // UI internals
-  gl::ColorMapID cMap;
+  PersistentValue<gl::ColorMapID> cMap;
 
-protected:
+
   void createPointProgram();
   std::unique_ptr<gl::GLProgram> pointProgram;
 };

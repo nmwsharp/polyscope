@@ -7,16 +7,18 @@
 
 namespace polyscope {
 
-Structure::Structure(std::string name_) : name(name_) {}
+Structure::Structure(std::string name_, std::string subtypeName)
+    : name(name_), enabled(subtypeName + "#" + name + "#enabled", true) {}
 
 Structure::~Structure(){};
 
-void Structure::setEnabled(bool newEnabled) {
-  if (newEnabled == enabled) return;
+Structure* Structure::setEnabled(bool newEnabled) {
+  if (newEnabled == isEnabled()) return this;
   enabled = newEnabled;
+  return this;
 };
 
-bool Structure::isEnabled() { return enabled; };
+bool Structure::isEnabled() { return enabled.get(); };
 
 void Structure::buildUI() {
 
@@ -26,7 +28,7 @@ void Structure::buildUI() {
 
   if (ImGui::TreeNode(name.c_str())) {
 
-    bool currEnabled = enabled;
+    bool currEnabled = isEnabled();
     ImGui::Checkbox("Enabled", &currEnabled);
     setEnabled(currEnabled);
     ImGui::SameLine();
@@ -40,6 +42,7 @@ void Structure::buildUI() {
       // Transform
       if (ImGui::BeginMenu("Transform")) {
         if (ImGui::MenuItem("Center")) centerBoundingBox();
+        if (ImGui::MenuItem("Unit Scale")) rescaleToUnit();
         if (ImGui::MenuItem("Reset")) resetTransform();
         ImGui::EndMenu();
       }
@@ -77,7 +80,15 @@ void Structure::centerBoundingBox() {
   std::tuple<glm::vec3, glm::vec3> bbox = boundingBox();
   glm::vec3 center = (std::get<1>(bbox) + std::get<0>(bbox)) / 2.0f;
   glm::mat4x4 newTrans = glm::translate(glm::mat4x4(1.0), -glm::vec3(center.x, center.y, center.z));
-  objectTransform = objectTransform * newTrans;
+  objectTransform = newTrans * objectTransform;
+  updateStructureExtents();
+}
+
+void Structure::rescaleToUnit() {
+  double currScale = lengthScale();
+  float s = static_cast<float>(1.0 / currScale);
+  glm::mat4x4 newTrans = glm::scale(glm::mat4x4(1.0), glm::vec3{s, s, s});
+  objectTransform = newTrans * objectTransform;
   updateStructureExtents();
 }
 
@@ -90,5 +101,7 @@ void Structure::setTransformUniforms(gl::GLProgram& p) {
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   p.setUniform("u_projMatrix", glm::value_ptr(projMat));
 }
+
+std::string Structure::uniquePrefix() { return typeName() + "#" + name + "#"; }
 
 } // namespace polyscope

@@ -4,81 +4,47 @@
 #include "polyscope/structure.h"
 
 #include <cstdint>
+#include <utility>
 
 namespace polyscope {
 namespace pick {
 
 
-// The currently selected index from the pick buffer, if one is selected.
-extern size_t currPickInd;
-extern bool haveSelection;
-extern bool alwaysEvaluatePick;
-extern bool pickIsFromThisFrame;
-extern bool pickWasDoubleClick; // note: structures may act on this and set it to false afterwards to ensure action only
-                                // happens once
-
+// == Set up picking
+// Called by a structure to figure out what data it should render to the pick buffer.
 // Request 'count' contiguous indices for drawing a pick buffer. The return value is the start of the range.
 size_t requestPickBufferRange(Structure* requestingStructure, size_t count);
 
-// Get the currently pick index, and the structure that index is mapped to.
-// Index is returned in "local" indices for that structure, such that '0' corresponds to the start of the range that was
-// returned by requestPickBufferRange().
-// If nothing is selected, returns nullptr and max_int.
-Structure* getCurrentPickElement(size_t& localInd);
 
-void evaluatePickQuery(int xPos, int yPos);
+// == Main query
+// Get the structure which was clicked on (nullptr if none), and the pick ID in local indices for that structure (such
+// that 0 is the first index as returned from requestPickBufferRange())
+std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos);
 
-void setCurrentPickElement(size_t pickInd, bool wasDoubleClick);
 
-// If something from this structure is selected, clear the selection (useful if a structure is being deleted)
-void clearPickIfStructureSelected(Structure* s);
+// == Stateful picking: track and update a current selection
 
-// Clear out picking related data
-void resetPick();
+// Get/Set the "selected" item, if there is one (output has same meaning as evaluatePickQuery());
+std::pair<Structure*, size_t> getSelection();
+void setSelection(std::pair<Structure*, size_t> newPick);
+void resetSelection();
+bool haveSelection();
+void resetSelectionIfStructure(Structure* s); // If something from this structure is selected, clear the selection
+                                              // (useful if a structure is being deleted)
 
-// Constant for bit-bashing functions below
-// single-precision floats always have at least 22 bits of integer mantissa, and 22*3 > 64, so we can safely store 64
-// bit integer quantities like size_t usually is in a vec3
-const int bitsForPickPacking = 22;
-// const int bitsForPickPacking = 7; // useful for testing, makes pick coloring visually distingushable
 
-// Convert indices to color and back
-inline glm::vec3 indToVec(size_t ind) {
+// == Helpers
 
-  // Can comfortably fit a 22 bit integer exactly in a single precision float
-  size_t factor = 1 << bitsForPickPacking;
-  size_t mask = factor - 1;
-  double factorF = factor;
+// Convert between global pick indexing for the whole program, and local per-structure pick indexing
+std::pair<Structure*, size_t> globalIndexToLocal(size_t globalInd);
+size_t localIndexToGlobal(std::pair<Structure*, size_t> localPick);
 
-  size_t low = ind & mask;
-  ind = ind >> bitsForPickPacking;
-  size_t med = ind & mask;
-  ind = ind >> bitsForPickPacking;
-  size_t high = ind;
-
-  return glm::vec3{static_cast<double>(low) / factorF, static_cast<double>(med) / factorF,
-                   static_cast<double>(high) / factorF};
-}
-inline size_t vecToInd(glm::vec3 vec) {
-
-  size_t factor = 1 << bitsForPickPacking;
-  double factorF = factor;
-
-  size_t low = static_cast<size_t>(factorF * vec.x);
-  size_t med = static_cast<size_t>(factorF * vec.y);
-  size_t high = static_cast<size_t>(factorF * vec.z);
-
-  // Debug check
-  if (low != (factorF * vec.x) || med != (factorF * vec.y) || high != (factorF * vec.z)) {
-    // throw std::logic_error("Float to index conversion failed, bad value in float.");
-    // occasionally we get weird data back in unusually cases like clicking right on border or multiple monitors...
-    // maybe one day we can debug it.
-    return 0;
-  }
-
-  size_t ind = (high << (2 * bitsForPickPacking)) + (med << bitsForPickPacking) + low;
-  return ind;
-}
+// Convert indices to float3 color and back
+// Structures will want to use these to fill their pick buffers
+inline glm::vec3 indToVec(size_t globalInd);
+inline size_t vecToInd(glm::vec3 vec);
 
 } // namespace pick
 } // namespace polyscope
+
+#include "polyscope/pick.ipp"

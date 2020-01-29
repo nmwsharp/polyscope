@@ -2,6 +2,7 @@
 #pragma once
 
 #include "polyscope/gl/gl_utils.h"
+#include "polyscope/persistent_value.h"
 #include "polyscope/quantity.h"
 
 #include "glm/glm.hpp"
@@ -28,7 +29,7 @@ namespace polyscope {
 class Structure {
 
 public:
-  Structure(std::string name);
+  Structure(std::string name, std::string subtypeName);
   virtual ~Structure() = 0;
 
   // == Render the the structure on screen
@@ -45,14 +46,14 @@ public:
 
   // = Identifying data
   const std::string name; // should be unique amongst registered structures with this type
-
+  std::string uniquePrefix();
 
   // = Length and bounding box (returned in object coordinates)
   virtual std::tuple<glm::vec3, glm::vec3> boundingBox() = 0; // get axis-aligned bounding box
   virtual double lengthScale() = 0;                           // get characteristic length
 
   // = Basic state
-  virtual void setEnabled(bool newEnabled);
+  virtual Structure* setEnabled(bool newEnabled);
   bool isEnabled();
   virtual std::string typeName() = 0;
 
@@ -60,12 +61,14 @@ public:
   glm::mat4 objectTransform = glm::mat4(1.0);
   glm::mat4 getModelView();
   void centerBoundingBox();
+  void rescaleToUnit();
   void resetTransform();
   void setTransformUniforms(gl::GLProgram& p);
 
+
 protected:
   // = State
-  bool enabled = true;
+  PersistentValue<bool> enabled;
 };
 
 
@@ -86,7 +89,7 @@ public:
   // === Member functions ===
 
   // Base constructor which sets the name
-  QuantityStructure(std::string name);
+  QuantityStructure(std::string name, std::string subtypeName);
   virtual ~QuantityStructure() = 0;
 
   virtual void buildQuantitiesUI() override;
@@ -100,14 +103,14 @@ public:
   void removeQuantity(std::string name);
   void removeAllQuantities();
 
-  void setDominantQuantity(QuantityType* q);
+  void setDominantQuantity(Quantity<S>* q);
   void clearDominantQuantity();
 
   // = Quantities
   std::map<std::string, std::unique_ptr<QuantityType>> quantities;
-  QuantityType* dominantQuantity = nullptr; // If non-null, a special quantity of which only one can be drawn for
-                                            // the structure. Handles common case of a surface color, e.g. color of
-                                            // a mesh or point cloud The dominant quantity must always be enabled
+  Quantity<S>* dominantQuantity = nullptr; // If non-null, a special quantity of which only one can be drawn for
+                                           // the structure. Handles common case of a surface color, e.g. color of
+                                           // a mesh or point cloud. The dominant quantity must always be enabled.
 };
 
 

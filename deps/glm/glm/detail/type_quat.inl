@@ -17,7 +17,7 @@ namespace detail
 	{
 		static GLM_FUNC_QUALIFIER T call(qua<T, Q> const& a, qua<T, Q> const& b)
 		{
-			vec<4, T, Q> tmp(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
+			vec<4, T, Q> tmp(a.w * b.w, a.x * b.x, a.y * b.y, a.z * b.z);
 			return (tmp.x + tmp.y) + (tmp.z + tmp.w);
 		}
 	};
@@ -197,13 +197,13 @@ namespace detail
 
 #	if GLM_HAS_EXPLICIT_CONVERSION_OPERATORS
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER qua<T, Q>::operator mat<3, 3, T, Q>()
+	GLM_FUNC_QUALIFIER qua<T, Q>::operator mat<3, 3, T, Q>() const
 	{
 		return mat3_cast(*this);
 	}
 
 	template<typename T, qualifier Q>
-	GLM_FUNC_QUALIFIER qua<T, Q>::operator mat<4, 4, T, Q>()
+	GLM_FUNC_QUALIFIER qua<T, Q>::operator mat<4, 4, T, Q>() const
 	{
 		return mat4_cast(*this);
 	}

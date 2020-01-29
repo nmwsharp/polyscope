@@ -112,17 +112,29 @@ public:
   void fillEdgeGeometryBuffers(gl::GLProgram& program);
   void fillNodeGeometryBuffers(gl::GLProgram& program);
 
-  // Visualization parameters
-  glm::vec3 baseColor;
-  float radius = 0.001;
-
   // === Mutate
   template <class V>
   void updateNodePositions(const V& newPositions);
   template <class V>
   void updateNodePositions2D(const V& newPositions);
+  
+  // === Get/set visualization parameters
+  
+  // set the base color of the points
+  CurveNetwork* setColor(glm::vec3 newVal);
+  glm::vec3 getColor();
+
+  // set the radius of the points
+  CurveNetwork* setRadius(float newVal, bool isRelative = true);
+  float getRadius();
 
 private:
+
+  // === Visualization parameters
+  PersistentValue<glm::vec3> color;
+  PersistentValue<ScaledValue<float>> radius;
+
+
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
   std::unique_ptr<gl::GLProgram> edgeProgram;

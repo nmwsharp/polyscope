@@ -1,10 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
-#include <functional>
-#include <map>
-#include <unordered_set>
-
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/messages.h"
 #include "polyscope/options.h"
@@ -14,7 +10,15 @@
 
 #include "imgui.h"
 
+#include <functional>
+#include <map>
+#include <unordered_set>
+
+
 namespace polyscope {
+
+// forward declarations
+class Structure;
 
 // Initialize polyscope, including windowing system and openGL. Should be
 // called exactly once at the beginning of a program. If initialization
@@ -75,7 +79,7 @@ void updateStructureExtents();
 
 // === Handle draw flow, interrupts, and popups
 
-// Actually render to the framebuffer.
+// Main draw call . Note that due to cached drawing, this will draw the 3D structures
 void draw(bool withUI = true);
 
 // Request that the 3D scene be redrawn for the next frame. Should be called anytime something changes in the scene.
@@ -84,8 +88,10 @@ void requestRedraw();
 // Has a redraw been requested for the next frame?
 bool redrawRequested();
 
-// A callback function currently drawing a focused popup GUI
-// If this is non-null, then we should not draw or respect any IMGUI elements except those drawn within this function.
+// Managed a stack of of contexts to draw the UI. Usually contains one entry, which causes the main GUI to be drawn, but
+// in general the top callback will be called instead. Primarily exists to manage the ImGUI context, so callbacks can
+// create other contexts and circumvent the main draw loop. This is used internally to implement messages, element
+// selections, etc.
 void pushContext(std::function<void()> callbackFunction);
 void popContext();
 

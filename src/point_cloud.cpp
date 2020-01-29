@@ -2,7 +2,6 @@
 #include "polyscope/point_cloud.h"
 
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/colors.h"
 #include "polyscope/gl/materials/materials.h"
 #include "polyscope/gl/shaders.h"
 #include "polyscope/gl/shaders/sphere_shaders.h"
@@ -28,16 +27,14 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 
 // Constructor
 PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
-    : QuantityStructure<PointCloud>(name), points(std::move(points_)) {
-
-  initialBaseColor = getNextUniqueColor();
-  pointColor = initialBaseColor;
-}
+    : QuantityStructure<PointCloud>(name, structureTypeName), points(std::move(points_)),
+      pointColor(uniquePrefix() + "#pointColor", getNextUniqueColor()),
+      pointRadius(uniquePrefix() + "#pointRadius", relativeValue(0.005)) {}
 
 
 // Helper to set uniforms
 void PointCloud::setPointCloudUniforms(gl::GLProgram& p) {
-  p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
+  p.setUniform("u_pointRadius", pointRadius.get().asAbsolute());
 
   glm::vec3 lookDir, upDir, rightDir;
   view::getCameraFrame(lookDir, upDir, rightDir);
@@ -47,7 +44,7 @@ void PointCloud::setPointCloudUniforms(gl::GLProgram& p) {
 }
 
 void PointCloud::draw() {
-  if (!enabled) {
+  if (!isEnabled()) {
     return;
   }
 
@@ -62,7 +59,7 @@ void PointCloud::draw() {
     // Set program uniforms
     setTransformUniforms(*program);
     setPointCloudUniforms(*program);
-    program->setUniform("u_baseColor", pointColor);
+    program->setUniform("u_baseColor", pointColor.get());
 
     // Draw the actual point cloud
     program->draw();
@@ -75,7 +72,7 @@ void PointCloud::draw() {
 }
 
 void PointCloud::drawPick() {
-  if (!enabled) {
+  if (!isEnabled()) {
     return;
   }
 
@@ -151,10 +148,15 @@ void PointCloud::buildPickUI(size_t localPickID) {
 
 void PointCloud::buildCustomUI() {
   ImGui::Text("# points: %lld", static_cast<long long int>(points.size()));
-  ImGui::ColorEdit3("Point color", (float*)&pointColor, ImGuiColorEditFlags_NoInputs);
+  if (ImGui::ColorEdit3("Point color", &pointColor.get()[0], ImGuiColorEditFlags_NoInputs)) {
+    setPointColor(getPointColor());
+  }
   ImGui::SameLine();
   ImGui::PushItemWidth(100);
-  ImGui::SliderFloat("Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
+  if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+    pointRadius.manuallyChanged();
+    requestRedraw();
+  }
   ImGui::PopItemWidth();
 }
 
@@ -170,7 +172,8 @@ double PointCloud::lengthScale() {
   glm::vec3 center = 0.5f * (std::get<0>(bound) + std::get<1>(bound));
 
   double lengthScale = 0.0;
-  for (glm::vec3& p : points) {
+  for (glm::vec3& rawP : points) {
+    glm::vec3 p = glm::vec3(objectTransform * glm::vec4(rawP, 1.0));
     lengthScale = std::max(lengthScale, (double)glm::length2(p - center));
   }
 
@@ -214,7 +217,7 @@ void PointCloud::writePointsToFile(std::string filename) {
 
   std::ofstream outFile(filename);
   outFile << "#Polyscope point cloud " << name << endl;
-  outFile << "#displayradius " << (pointRadius * state::lengthScale) << endl;
+  outFile << "#displayradius " << (pointRadius.get().asAbsolute()) << endl;
 
   for (size_t i = 0; i < points.size(); i++) {
     outFile << points[i] << endl;
@@ -248,5 +251,18 @@ PointCloudVectorQuantity* PointCloud::addVectorQuantityImpl(std::string name, co
   return q;
 }
 
+PointCloud* PointCloud::setPointColor(glm::vec3 newVal) {
+  pointColor = newVal;
+  polyscope::requestRedraw();
+  return this;
+}
+glm::vec3 PointCloud::getPointColor() { return pointColor.get(); }
+
+PointCloud* PointCloud::setPointRadius(double newVal, bool isRelative) {
+  pointRadius = ScaledValue<float>(newVal, isRelative);
+  polyscope::requestRedraw();
+  return this;
+}
+double PointCloud::getPointRadius() { return pointRadius.get().asAbsolute(); }
 
 } // namespace polyscope

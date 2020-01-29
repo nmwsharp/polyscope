@@ -21,7 +21,12 @@ namespace polyscope {
 
 SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh_, MeshElement definedOn_,
                                              VectorType vectorType_)
-    : SurfaceMeshQuantity(name, mesh_), vectorType(vectorType_), definedOn(definedOn_) {}
+    : SurfaceMeshQuantity(name, mesh_), vectorType(vectorType_),
+      vectorLengthMult(uniquePrefix() + name + "#vectorLengthMult",
+                       vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
+      vectorRadius(uniquePrefix() + name + "#vectorRadius", relativeValue(0.0025)),
+      vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()), definedOn(definedOn_),
+      ribbonEnabled(uniquePrefix() + "#ribbonEnabled", false) {}
 
 void SurfaceVectorQuantity::prepareVectorMapper() {
 
@@ -31,32 +36,23 @@ void SurfaceVectorQuantity::prepareVectorMapper() {
   } else {
     mapper = AffineRemapper<glm::vec3>(vectors, DataType::MAGNITUDE);
   }
-
-  // Default viz settings
-  if (vectorType != VectorType::AMBIENT) {
-    lengthMult = .02;
-  } else {
-    lengthMult = 1.0;
-  }
-  radiusMult = .0005;
-  vectorColor = getNextUniqueColor();
 }
 
 void SurfaceVectorQuantity::draw() {
-  if (!enabled) return;
+  if (!isEnabled()) return;
 
   if (program == nullptr) prepareProgram();
 
   // Set uniforms
   parent.setTransformUniforms(*program);
 
-  program->setUniform("u_radius", radiusMult * state::lengthScale);
-  program->setUniform("u_color", vectorColor);
+  program->setUniform("u_radius", getVectorRadius());
+  program->setUniform("u_color", getVectorColor());
 
   if (vectorType == VectorType::AMBIENT) {
     program->setUniform("u_lengthMult", 1.0);
   } else {
-    program->setUniform("u_lengthMult", lengthMult * state::lengthScale);
+    program->setUniform("u_lengthMult", getVectorLengthScale());
   }
 
   program->draw();
@@ -81,7 +77,9 @@ void SurfaceVectorQuantity::prepareProgram() {
 
 void SurfaceVectorQuantity::buildCustomUI() {
   ImGui::SameLine();
-  ImGui::ColorEdit3("Color", (float*)&vectorColor, ImGuiColorEditFlags_NoInputs);
+  if (ImGui::ColorEdit3("Color", &vectorColor.get()[0], ImGuiColorEditFlags_NoInputs)) {
+    setVectorColor(getVectorColor());
+  }
   ImGui::SameLine();
 
 
@@ -97,10 +95,16 @@ void SurfaceVectorQuantity::buildCustomUI() {
 
   // Only get to set length for non-ambient vectors
   if (vectorType != VectorType::AMBIENT) {
-    ImGui::SliderFloat("Length", &lengthMult, 0.0, .1, "%.5f", 3.);
+    if (ImGui::SliderFloat("Length", vectorLengthMult.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+      vectorLengthMult.manuallyChanged();
+      requestRedraw();
+    }
   }
 
-  ImGui::SliderFloat("Radius", &radiusMult, 0.0, .1, "%.5f", 3.);
+  if (ImGui::SliderFloat("Radius", vectorRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+    vectorRadius.manuallyChanged();
+    requestRedraw();
+  }
 
   { // Draw max and min magnitude
     ImGui::TextUnformatted(mapper.printBounds().c_str());
@@ -126,8 +130,8 @@ void SurfaceVectorQuantity::writeToFile(std::string filename) {
 
   std::ofstream outFile(filename);
   outFile << "#Vectors written by polyscope from Surface Vector Quantity " << name << endl;
-  outFile << "#displayradius " << (radiusMult * state::lengthScale) << endl;
-  outFile << "#displaylength " << (lengthMult * state::lengthScale) << endl;
+  outFile << "#displayradius " << getVectorRadius() << endl;
+  outFile << "#displaylength " << getVectorLengthScale() << endl;
 
   for (size_t i = 0; i < vectors.size(); i++) {
     if (glm::length(vectors[i]) > 0) {
@@ -137,6 +141,31 @@ void SurfaceVectorQuantity::writeToFile(std::string filename) {
 
   outFile.close();
 }
+
+SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorLengthScale(double newLength, bool isRelative) {
+  vectorLengthMult = ScaledValue<double>(newLength, isRelative);
+  requestRedraw();
+  return this;
+}
+double SurfaceVectorQuantity::getVectorLengthScale() { return vectorLengthMult.get().asAbsolute(); }
+SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorRadius(double val, bool isRelative) {
+  vectorRadius = ScaledValue<double>(val, isRelative);
+  requestRedraw();
+  return this;
+}
+double SurfaceVectorQuantity::getVectorRadius() { return vectorRadius.get().asAbsolute(); }
+SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorColor(glm::vec3 color) {
+  vectorColor = color;
+  requestRedraw();
+  return this;
+}
+glm::vec3 SurfaceVectorQuantity::getVectorColor() { return vectorColor.get(); }
+SurfaceVectorQuantity* SurfaceVectorQuantity::setRibbonEnabled(bool val) {
+  ribbonEnabled = val;
+  requestRedraw();
+  return this;
+}
+bool SurfaceVectorQuantity::isRibbonEnabled() { return ribbonEnabled.get(); }
 
 // ========================================================
 // ==========           Vertex Vector            ==========
@@ -268,7 +297,7 @@ void SurfaceFaceIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
 void SurfaceFaceIntrinsicVectorQuantity::draw() {
   SurfaceVectorQuantity::draw();
 
-  if (ribbonEnabled) {
+  if (ribbonEnabled.get() && isEnabled()) {
 
     // Make sure we have a ribbon artist
     if (ribbonArtist == nullptr) {
@@ -276,18 +305,16 @@ void SurfaceFaceIntrinsicVectorQuantity::draw() {
       ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, vectorField, nSym, 2500)));
     }
 
-    if (enabled) {
-      // Update transform matrix from parent
-      ribbonArtist->objectTransform = parent.objectTransform;
-      ribbonArtist->draw();
-    }
+    // Update transform matrix from parent
+    ribbonArtist->objectTransform = parent.objectTransform;
+    ribbonArtist->draw();
   }
 }
 
 void SurfaceFaceIntrinsicVectorQuantity::drawSubUI() {
 
-  ImGui::Checkbox("Draw ribbon", &ribbonEnabled);
-  if (ribbonEnabled && ribbonArtist != nullptr) {
+  if (ImGui::Checkbox("Draw ribbon", &ribbonEnabled.get())) setRibbonEnabled(isRibbonEnabled());
+  if (ribbonEnabled.get() && ribbonArtist != nullptr) {
     ribbonArtist->buildParametersGUI();
   }
 }
@@ -350,7 +377,7 @@ void SurfaceVertexIntrinsicVectorQuantity::buildVertexInfoGUI(size_t iV) {
 void SurfaceVertexIntrinsicVectorQuantity::draw() {
   SurfaceVectorQuantity::draw();
 
-  if (ribbonEnabled) {
+  if (isEnabled() && ribbonEnabled.get()) {
 
     // Make sure we have a ribbon artist
     if (ribbonArtist == nullptr) {
@@ -368,12 +395,17 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
         glm::vec2 sum{0.0, 0.0};
         for (size_t iV : face) {
           glm::vec2 vertVec = vectorField[iV];
+          Complex angle = std::pow(Complex(vertVec.x, vertVec.y), 1.0 / nSym);
+          vertVec = glm::vec2{angle.real(), angle.imag()};
+
 
           glm::vec3 vertexBasisX = parent.vertexTangentSpaces[iV][0];
           glm::vec3 vertexBasisY = parent.vertexTangentSpaces[iV][1];
 
           // Rotate in to the basis of the face
           glm::vec2 faceVec = rotateToTangentBasis(vertVec, vertexBasisX, vertexBasisY, faceBasisX, faceBasisY);
+          angle = std::pow(Complex(faceVec.x, faceVec.y), nSym);
+          faceVec = glm::vec2{angle.real(), angle.imag()};
           sum += faceVec;
         }
         unitFaceVecs[iF] = glm::normalize(sum);
@@ -383,19 +415,16 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
       ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, unitFaceVecs, nSym, 2500)));
     }
 
-
-    if (enabled) {
-      // Update transform matrix from parent
-      ribbonArtist->objectTransform = parent.objectTransform;
-      ribbonArtist->draw();
-    }
+    // Update transform matrix from parent
+    ribbonArtist->objectTransform = parent.objectTransform;
+    ribbonArtist->draw();
   }
 }
 
 void SurfaceVertexIntrinsicVectorQuantity::drawSubUI() {
 
-  ImGui::Checkbox("Draw ribbon", &ribbonEnabled);
-  if (ribbonEnabled && ribbonArtist != nullptr) {
+  if (ImGui::Checkbox("Draw ribbon", &ribbonEnabled.get())) setRibbonEnabled(isRibbonEnabled());
+  if (ribbonEnabled.get() && ribbonArtist != nullptr) {
     ribbonArtist->buildParametersGUI();
   }
 }
@@ -499,7 +528,7 @@ void SurfaceOneFormIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
 void SurfaceOneFormIntrinsicVectorQuantity::draw() {
   SurfaceVectorQuantity::draw();
 
-  if (ribbonEnabled) {
+  if (isEnabled() && ribbonEnabled.get()) {
 
     // Make sure we have a ribbon artist
     if (ribbonArtist == nullptr) {
@@ -513,18 +542,16 @@ void SurfaceOneFormIntrinsicVectorQuantity::draw() {
     }
 
 
-    if (enabled) {
-      // Update transform matrix from parent
-      ribbonArtist->objectTransform = parent.objectTransform;
-      ribbonArtist->draw();
-    }
+    // Update transform matrix from parent
+    ribbonArtist->objectTransform = parent.objectTransform;
+    ribbonArtist->draw();
   }
 }
 
 void SurfaceOneFormIntrinsicVectorQuantity::drawSubUI() {
 
-  ImGui::Checkbox("Draw ribbon", &ribbonEnabled);
-  if (ribbonEnabled && ribbonArtist != nullptr) {
+  if (ImGui::Checkbox("Draw ribbon", &ribbonEnabled.get())) setRibbonEnabled(isRibbonEnabled());
+  if (ribbonEnabled.get() && ribbonArtist != nullptr) {
     ribbonArtist->buildParametersGUI();
   }
 }

@@ -7,3 +7,5 @@ add_library(
     )
 
 target_include_directories(glad PRIVATE "../include")    
+
+set_target_properties(glad PROPERTIES POSITION_INDEPENDENT_CODE TRUE)

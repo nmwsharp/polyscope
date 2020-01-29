@@ -30,8 +30,9 @@ extern bool usePrefsFile;
 // Should we redraw every frame, even if not requested? (default: false)
 extern bool alwaysRedraw;
 
-// Should we center every structure after it is loaded up (default: false)
+// Should we center/scale every structure after it is loaded up (default: false)
 extern bool autocenterStructures;
+extern bool autoscaleStructures;
 
 // Should the user call back start out with an imgui window context open (default: true)
 extern bool openImGuiWindowForUserCallback;

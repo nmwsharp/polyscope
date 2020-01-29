@@ -25,28 +25,52 @@ public:
   virtual void drawSubUI();
 
   // === Members
+
+  // Note: these vectors are not the raw vectors passed in by the user, but have been rescaled such that the longest has
+  // length 1 (unless type is VectorType::Ambient)
   const VectorType vectorType;
   std::vector<glm::vec3> vectorRoots;
   std::vector<glm::vec3> vectors;
-  float lengthMult; // longest vector will be this fraction of lengthScale (if not ambient)
-  float radiusMult; // radius is this fraction of lengthScale
-  glm::vec3 vectorColor;
-  MeshElement definedOn;
 
-  // A ribbon viz that is appropriate for some fields
-  std::unique_ptr<RibbonArtist> ribbonArtist;
-  bool ribbonEnabled = false;
+  void writeToFile(std::string filename = "");
+
+  // === Option accessors
+
+  //  The vectors will be scaled such that the longest vector is this long
+  SurfaceVectorQuantity* setVectorLengthScale(double newLength, bool isRelative = true);
+  double getVectorLengthScale();
+
+  // The radius of the vectors
+  SurfaceVectorQuantity* setVectorRadius(double val, bool isRelative = true);
+  double getVectorRadius();
+
+  // The color of the vectors
+  SurfaceVectorQuantity* setVectorColor(glm::vec3 color);
+  glm::vec3 getVectorColor();
+
+  // Enable the ribbon visualization
+  SurfaceVectorQuantity* setRibbonEnabled(bool newVal);
+  bool isRibbonEnabled();
+
+protected:
+  // === Visualization options
+  PersistentValue<ScaledValue<float>> vectorLengthMult;
+  PersistentValue<ScaledValue<float>> vectorRadius;
+  PersistentValue<glm::vec3> vectorColor;
 
   // The map that takes values to [0,1] for drawing
   AffineRemapper<glm::vec3> mapper;
 
-  void writeToFile(std::string filename = "");
+  MeshElement definedOn;
+
+  // A ribbon viz that is appropriate for some fields
+  std::unique_ptr<RibbonArtist> ribbonArtist;
+  PersistentValue<bool> ribbonEnabled;
 
   // GL things
   void prepareProgram();
   std::unique_ptr<gl::GLProgram> program;
 
-protected:
   // Set up the mapper for vectors
   void prepareVectorMapper();
 };
