@@ -27,7 +27,7 @@ polyscope::getSurfaceMesh("my mesh")->addFaceVectorQuantity("my_vector", vectorQ
 polyscope::show();
 ```
 
-Polyscope is designed to be easy to integrate with existing programs. It is simple to build, and fewer than 10 lines of code should be sufficient to start visualizing. Thanks to some [template magic](../data_adaptors), Polyscope can probably directly read from the data types you're already using!
+Polyscope is designed to be easy to integrate with existing programs. It is simple to build, and fewer than 10 lines of code should be sufficient to start visualizing. Thanks to some [template magic](http://polyscope.run/data_adaptors/), Polyscope can probably directly read from the data types you're already using!
 
 ---
 Author: [Nicholas Sharp](http://www.nmwsharp.com)
