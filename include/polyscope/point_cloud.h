@@ -91,7 +91,7 @@ public:
   void setPointCloudUniforms(gl::GLProgram& p);
 
   // === Get/set visualization parameters
-  
+
   // set the base color of the points
   PointCloud* setPointColor(glm::vec3 newVal);
   glm::vec3 getPointColor();
@@ -101,7 +101,6 @@ public:
   double getPointRadius();
 
 private:
-
   // === Visualization parameters
   PersistentValue<glm::vec3> pointColor;
   PersistentValue<ScaledValue<float>> pointRadius;
@@ -133,6 +132,8 @@ PointCloud* registerPointCloud2D(std::string name, const T& points, bool replace
 
 // Shorthand to get a point cloud from polyscope
 inline PointCloud* getPointCloud(std::string name = "");
+inline bool hasPointCloud(std::string name = "");
+inline void removePointCloud(std::string name = "", bool errorIfAbsent = true);
 
 
 } // namespace polyscope

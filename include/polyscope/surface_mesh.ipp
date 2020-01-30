@@ -79,6 +79,12 @@ inline glm::vec3 SurfaceMesh::faceCenter(size_t iF) {
 inline SurfaceMesh* getSurfaceMesh(std::string name) {
   return dynamic_cast<SurfaceMesh*>(getStructure(SurfaceMesh::structureTypeName, name));
 }
+inline bool hasSurfaceMesh(std::string name) {
+  return hasStructure(SurfaceMesh::structureTypeName, name);
+}
+inline void removeSurfaceMesh(std::string name, bool errorIfAbsent) {
+  removeStructure(SurfaceMesh::structureTypeName, name, errorIfAbsent);
+}
 
 
 // Make mesh element type printable

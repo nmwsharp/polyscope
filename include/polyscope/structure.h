@@ -65,6 +65,8 @@ public:
   void resetTransform();
   void setTransformUniforms(gl::GLProgram& p);
 
+  // Get rid of it (invalidates the object and all pointers, etc!)
+  void remove(); 
 
 protected:
   // = State

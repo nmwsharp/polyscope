@@ -207,12 +207,12 @@ void info(std::string message) { cout << options::printPrefix << message << endl
 void error(std::string message) {
   std::cout << options::printPrefix << "[ERROR] " << message << std::endl;
 
-  auto func = std::bind(buildErrorUI, message, false);
-  pushContext(func);
-
   if (options::errorsThrowExceptions) {
     throw std::logic_error(options::printPrefix + message);
   }
+  
+  auto func = std::bind(buildErrorUI, message, false);
+  pushContext(func);
 }
 
 void terminatingError(std::string message) {

@@ -397,6 +397,8 @@ SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, con
 
 // Shorthand to get a mesh from polyscope
 inline SurfaceMesh* getSurfaceMesh(std::string name = "");
+inline bool hasSurfaceMesh(std::string name = "");
+inline void removeSurfaceMesh(std::string name = "", bool errorIfAbsent = true);
 
 
 } // namespace polyscope

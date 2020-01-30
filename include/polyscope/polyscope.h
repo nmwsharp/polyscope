@@ -27,7 +27,7 @@ void init();
 
 // Give control to the polyscope GUI. Blocks until the user returns control via
 // the GUI, possibly by exiting the window.
-void show();
+void show(size_t forFrames = std::numeric_limits<size_t>::max());
 
 // Do shutdown work and quit the entire program. Can be called in other situations due to errors (etc)
 void shutdown(int exitCode = 0);
@@ -65,6 +65,9 @@ bool registerStructure(Structure* structure, bool replaceIfPresent = true);
 // The default version with name="" arbitrarily returns any structure of that type. This is useful as a shorthand when
 // only using a single structure.
 Structure* getStructure(std::string type, std::string name = "");
+
+// True if such a structure exists
+bool hasStructure(std::string type, std::string name = "");
 
 // De-register a structure, of any type. Also removes any quantities associated with the structure
 void removeStructure(Structure* structure, bool errorIfAbsent = true);

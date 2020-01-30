@@ -135,6 +135,12 @@ void CurveNetwork::updateNodePositions2D(const V& newPositions2D) {
 inline CurveNetwork* getCurveNetwork(std::string name) {
   return dynamic_cast<CurveNetwork*>(getStructure(CurveNetwork::structureTypeName, name));
 }
+inline bool hasCurveNetwork(std::string name) {
+  return hasStructure(CurveNetwork::structureTypeName, name);
+}
+inline void removeCurveNetwork(std::string name, bool errorIfAbsent) {
+  removeStructure(CurveNetwork::structureTypeName, name, errorIfAbsent);
+}
 
 
 // =====================================================

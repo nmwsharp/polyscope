@@ -889,7 +889,7 @@ void mainLoopIteration() {
   glfwSwapBuffers(mainWindow);
 }
 
-void show() {
+void show(size_t forFrames) {
 
   if (!state::initialized) {
     throw std::logic_error(options::printPrefix +
@@ -897,8 +897,9 @@ void show() {
   }
 
   // Main loop
-  while (!glfwWindowShouldClose(mainWindow)) {
+  while (!glfwWindowShouldClose(mainWindow) && forFrames > 0) {
     mainLoopIteration();
+    forFrames--;
   }
   glfwSetWindowShouldClose(mainWindow, false);
 
@@ -988,6 +989,24 @@ Structure* getStructure(std::string type, std::string name) {
     return nullptr;
   }
   return sMap[name];
+}
+
+bool hasStructure(std::string type, std::string name) {
+  // If there are no structures of that type it is an automatic fail
+  if (state::structures.find(type) == state::structures.end()) {
+    return false;
+  }
+  std::map<std::string, Structure*>& sMap = state::structures[type];
+
+  // Special automatic case, return any
+  if (name == "") {
+    if (sMap.size() != 1) {
+      error("Cannot use automatic structure get with empty name unless there is exactly one structure of that type "
+            "registered");
+    }
+    return true;
+  }
+  return sMap.find(name) != sMap.end();
 }
 
 

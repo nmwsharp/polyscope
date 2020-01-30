@@ -104,4 +104,8 @@ void Structure::setTransformUniforms(gl::GLProgram& p) {
 
 std::string Structure::uniquePrefix() { return typeName() + "#" + name + "#"; }
 
+void Structure::remove() {
+  removeStructure(typeName(), name);
+}
+
 } // namespace polyscope
