@@ -6,6 +6,13 @@ if (CMAKE_BINARY_DIR STREQUAL CMAKE_SOURCE_DIR)
 endif()
 
 SET(SRCS
+  
+  # Rendering stuff
+  render/opengl/gl_engine.cpp  
+  #gl/gl_utils.cpp
+  #gl/ground_plane.cpp
+  #gl/color_maps.cpp
+  
 
   # Core functionality 
   polyscope.cpp
@@ -23,11 +30,6 @@ SET(SRCS
   #histogram.cpp
   persistent_value.cpp
 
-  # Rendering stuff
-  gl/gl_utils.cpp
-  gl/ground_plane.cpp
-  gl/color_maps.cpp
-  
   color_management.cpp
 
   #gl/materials/bindata_concrete_seamless.cpp

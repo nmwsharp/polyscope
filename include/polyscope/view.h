@@ -4,7 +4,7 @@
 #include <array>
 
 #include "polyscope/camera_parameters.h"
-#include "polyscope/gl/gl_utils.h"
+//#include "polyscope/gl/gl_utils.h"
 
 // GLM for view matrices
 #include "glm/gtc/constants.hpp"
