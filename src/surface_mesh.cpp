@@ -378,7 +378,7 @@ void SurfaceMesh::prepare() {
   // Populate draw buffers
   fillGeometryBuffers(*program);
 
-  setMaterialForProgram(*program, "wax");
+  //setMaterialForProgram(*program, "wax");
 }
 
 void SurfaceMesh::prepareWireframe() {
@@ -388,7 +388,7 @@ void SurfaceMesh::prepareWireframe() {
   // Populate draw buffers
   fillGeometryBuffersWireframe(*wireframeProgram);
 
-  setMaterialForProgram(*wireframeProgram, "wax");
+  //setMaterialForProgram(*wireframeProgram, "wax");
 }
 
 void SurfaceMesh::preparePick() {
@@ -1151,6 +1151,7 @@ double SurfaceMesh::getEdgeWidth() { return edgeWidth.get(); }
 
 // === Quantity adders
 
+/* SIMPLE
 
 SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantityImpl(std::string name,
                                                                     const std::vector<glm::vec3>& colors) {
@@ -1319,6 +1320,8 @@ SurfaceMesh::addOneFormIntrinsicVectorQuantityImpl(std::string name, const std::
   addQuantity(q);
   return q;
 }
+
+*/
 
 void SurfaceMesh::setVertexTangentBasisXImpl(const std::vector<glm::vec3>& vectors) {
 

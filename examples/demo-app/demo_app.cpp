@@ -30,6 +30,7 @@ bool endsWith(const std::string& str, const std::string& suffix) {
   return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
+/*
 void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nodes,
                                std::vector<std::array<size_t, 2>> edges) {
 
@@ -77,6 +78,7 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
     polyscope::getCurveNetwork(curveName)->addEdgeVectorQuantity("randVecE", randVec);
   }
 }
+*/
 
 void processFileOBJ(string filename) {
   // Get a nice name for the file
@@ -92,6 +94,7 @@ void processFileOBJ(string filename) {
   }
   auto psMesh = polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
 
+  /*
   // Useful data
   size_t nVertices = psMesh->nVertices();
   size_t nFaces = psMesh->nFaces();
@@ -404,6 +407,7 @@ void processFileOBJ(string filename) {
     constructDemoCurveNetwork(curveName, vertexPositionsGLM, edges);
   }
 
+  */
 
   /*
 
@@ -423,8 +427,10 @@ void processFileOBJ(string filename) {
   // polyscope::getSurfaceMesh(niceName)->addInputCurveQuantity("input curve");
 
   */
+
 }
 
+/*
 void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& points) {
 
 
@@ -454,6 +460,7 @@ void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& po
   // polyscope::getPointCloud(pointCloudName)->addVectorQuantity("unit 'normal' vector", centerNormalVec);
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("to zero", toZeroVec, polyscope::VectorType::AMBIENT);
 }
+*/
 
 
 void processFile(string filename) {
@@ -519,6 +526,7 @@ int main(int argc, char** argv) {
   }
 
   // Create a point cloud
+  /*
   for (int j = 0; j < 1; j++) {
     std::vector<glm::vec3> points;
     for (size_t i = 0; i < 3000; i++) {
@@ -528,6 +536,7 @@ int main(int argc, char** argv) {
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
     addDataToPointCloud("really great points" + std::to_string(j), points);
   }
+  */
 
   // Add a few gui elements
   polyscope::state::userCallback = callback;

@@ -335,7 +335,7 @@ void init() {
 
   // Initialize gl data
   gl::GLProgram::initCommonShaders();
-  gl::loadMaterialTextures();
+  //gl::loadMaterialTextures(); SIMPLE
 
   // Initialize pick buffer
   allocateGlobalBuffersAndPrograms();
@@ -414,9 +414,11 @@ namespace pick {
 // but.... this is awkward. Move the implementation of this function if/when the rendering API gets cleaned up.
 std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
 
+    return {nullptr, 0};
+  /* SIMPLE
+
   // Be sure not to pick outside of buffer
   if (xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
-    return {nullptr, 0};
   }
 
   pickFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
@@ -438,6 +440,7 @@ std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
 
 
   return pick::globalIndexToLocal(globalInd);
+  */
 }
 
 } // namespace pick
@@ -601,7 +604,7 @@ void renderScene() {
   drawStructures();
 
   // Draw the ground plane
-  gl::drawGroundPlane();
+  //gl::drawGroundPlane();
 }
 
 void renderSceneToScreen() {
@@ -916,7 +919,7 @@ void shutdown(int exitCode) {
   }
 
   deleteGlobalBuffersAndPrograms();
-  gl::unloadMaterialTextures();
+  //gl::unloadMaterialTextures(); SIMPLE
   gl::deleteGroundPlaneResources();
 
   // ImGui shutdown things

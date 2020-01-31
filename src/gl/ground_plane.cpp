@@ -69,6 +69,8 @@ void populateGroundPlaneGeometry() {
 
 void prepareGroundPlane() {
 
+  /* SIMPLE
+
   // The program that draws the ground plane
   groundPlaneProgram = new gl::GLProgram(&GROUND_PLANE_VERT_SHADER, &GROUND_PLANE_FRAG_SHADER, gl::DrawMode::Triangles);
 
@@ -100,6 +102,7 @@ void prepareGroundPlane() {
 
 
   groundPlanePrepared = true;
+  */
 }
 }; // namespace
 

@@ -14,6 +14,7 @@
 #include "polyscope/surface_mesh_quantity.h"
 
 // Alllll the quantities
+/* SIMPLE
 #include "polyscope/surface_color_quantity.h"
 #include "polyscope/surface_count_quantity.h"
 #include "polyscope/surface_distance_quantity.h"
@@ -22,6 +23,7 @@
 #include "polyscope/surface_parameterization_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
+*/
 //#include "polyscope/surface_selection_quantity.h"
 //#include "polyscope/surface_subset_quantity.h"
 
@@ -29,6 +31,7 @@
 namespace polyscope {
 
 // Forward declarations for quantities
+/* SIMPLE
 class SurfaceVertexColorQuantity;
 class SurfaceFaceColorQuantity;
 class SurfaceVertexCountQuantity;
@@ -47,6 +50,7 @@ class SurfaceFaceVectorQuantity;
 class SurfaceVertexIntrinsicVectorQuantity;
 class SurfaceFaceIntrinsicVectorQuantity;
 class SurfaceOneFormIntrinsicVectorQuantity;
+*/
 
 
 template <> // Specialize the quantity type
@@ -86,7 +90,7 @@ public:
   virtual std::string typeName() override;
 
   // === Quantity-related
-
+  /* SIMPLE
   // clang-format off
 
   // = Scalars (expect scalar array)
@@ -160,6 +164,7 @@ public:
   void addVertexSelectionQuantity(std::string name, const T& initialMembership);
   // void addInputCurveQuantity(std::string name);
 
+  */
   // clang-format on
 
 
@@ -355,6 +360,7 @@ private:
 
   // === Quantity adders
 
+  /* SIMPLE
   SurfaceVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   SurfaceFaceColorQuantity* addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   SurfaceVertexCountQuantity* addVertexCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
@@ -375,6 +381,7 @@ private:
   SurfaceFaceIntrinsicVectorQuantity* addFaceIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym, VectorType vectorType);
   SurfaceVertexIntrinsicVectorQuantity* addVertexIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym, VectorType vectorType);
   SurfaceOneFormIntrinsicVectorQuantity* addOneFormIntrinsicVectorQuantityImpl(std::string name, const std::vector<double>& data, const std::vector<char>& orientations);
+  */
 
   // === Helper implementations
 

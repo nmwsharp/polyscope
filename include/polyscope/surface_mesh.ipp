@@ -207,6 +207,8 @@ void SurfaceMesh::setAllPermutations(const std::array<std::pair<T, size_t>, 5>& 
 // These are generally small wrappers which do some error checks, apply an array adaptor, and hand off to a
 // private non-templated ___Impl version which does the actual adding work.
 
+/* SIMPLE
+
 template <class T>
 SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantity(std::string name, const T& colors) {
   validateSize<T>(colors, vertexDataSize, "vertex color quantity " + name);
@@ -428,6 +430,7 @@ SurfaceVertexIntrinsicVectorQuantity* SurfaceMesh::addVertexIntrinsicVectorQuant
   return addVertexIntrinsicVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), nSym, vectorType);
 }
 
+
 // Orientations is `true` if the canonical orientation of the edge points from the lower-indexed vertex to the
 // higher-indexed vertex, and `false` otherwise.
 template <class T, class O>
@@ -438,6 +441,7 @@ SurfaceOneFormIntrinsicVectorQuantity* SurfaceMesh::addOneFormIntrinsicVectorQua
                                                standardizeArray<char, O>(orientations));
 }
 
+*/
 
 template <class T>
 void SurfaceMesh::setVertexTangentBasisX(const T& vectors) {
