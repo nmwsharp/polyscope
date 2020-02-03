@@ -1,7 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
-#include "polyscope/gl/gl_utils.h"
 #include "polyscope/persistent_value.h"
 #include "polyscope/quantity.h"
 

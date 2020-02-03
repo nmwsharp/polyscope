@@ -39,107 +39,99 @@ enum class DataType { Vector2Float, Vector3Float, Vector4Float, Matrix44Float, F
 
 // All of these are templated on the backend B. The backend should specialize the low-level functions
 
-template <typename B>
 class TextureBuffer {
 public:
-  // create a 1D texture from data
-  TextureBuffer(TextureFormat format, unsigned int size1D, unsigned char* data);
-  TextureBuffer(TextureFormat format, unsigned int size1D, float* data);
+  // abstract class: no constructor by design! use the factory methods from the Engine class
 
-  // create a 2D texture from data
-  TextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data = nullptr);
-
-  ~TextureBuffer();
-
-  void setFilterMode(FilterMode newMode);
-  void bind();
+  virtual ~TextureBuffer();
 
   // Resize the underlying buffer (contents are lost)
-  void resize(unsigned int newLen);
-  void resize(unsigned int newX, unsigned int newY);
+  virtual void resize(unsigned int newLen);
+  virtual void resize(unsigned int newX, unsigned int newY);
 
-  typename B::TextureBufferHandle getHandle() const { return handle; }
   unsigned int getSizeX() const { return sizeX; }
   unsigned int getSizeY() const { return sizeY; }
   int getDimension() const { return dim; }
 
-private:
-  typename B::TextureBufferHandle handle;
+  virtual void setFilterMode(FilterMode newMode);
+
+  // Set texture data
+  void fillTextureData1D(std::string name, unsigned char* texData, unsigned int length);
+  void fillTextureData2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
+                         bool withAlpha = true, bool useMipMap = false, bool repeat = false);
+
+protected:
   TextureFormat format;
   unsigned int sizeX, sizeY;
   int dim;
 };
 
-template <typename B>
 class RenderBuffer {
 public:
-  RenderBuffer(RenderBufferType type, unsigned int sizeX_, unsigned int sizeY_);
-  ~RenderBuffer();
+  // abstract class: no constructor by design! use the factory methods from the Engine class
 
-  void bind();
-  typename B::RenderBufferHandle getHandle() const { return handle; }
+  virtual ~RenderBuffer();
+
   RenderBufferType getType() const { return type; }
   unsigned int getSizeX() const { return sizeX; }
   unsigned int getSizeY() const { return sizeY; }
 
-private:
-  typename B::RenderBufferHandle handle;
+protected:
   RenderBufferType type;
   unsigned int sizeX, sizeY;
 };
 
 
-template <typename B>
 class FrameBuffer {
 
 public:
-  FrameBuffer();
-  ~FrameBuffer();
+  // abstract class: no constructor by design! use the factory methods from the Engine class
+  virtual ~FrameBuffer();
 
   // Bind to this framebuffer so subsequent draw calls will go to it
   // If return is false, binding failed and the framebuffer should not be used.
-  bool bindForRendering();
+  virtual bool bindForRendering() = 0;
 
   // Clear to redraw
-  void clear();
-
-  // Bind to textures/renderbuffers for output
-  void bindToColorRenderbuffer(RenderBuffer<B>* renderBuffer);
-  void bindToDepthRenderbuffer(RenderBuffer<B>* renderBuffer);
-  void bindToColorTexturebuffer(TextureBuffer<B>* textureBuffer);
-  void bindToDepthTexturebuffer(TextureBuffer<B>* textureBuffer);
-
-  // Specify the viewport coordinates and clearcolor
-  void setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
+  virtual void clear() = 0;
   glm::vec3 clearColor{0.0, 0.0, 0.0};
   float clearAlpha = 1.0;
 
+  // Bind to textures/renderbuffers for output
+  // TODO probably don't want these in general
+  virtual void bindToColorRenderbuffer(RenderBuffer& renderBuffer) = 0;
+  virtual void bindToDepthRenderbuffer(RenderBuffer& renderBuffer) = 0;
+  virtual void bindToColorTexturebuffer(TextureBuffer& textureBuffer) = 0;
+  virtual void bindToDepthTexturebuffer(TextureBuffer& textureBuffer) = 0;
+
+  // Specify the viewport coordinates and clearcolor
+  void setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
+
   // Resizes textures and renderbuffers if different from current size.
-  void resizeBuffers(unsigned int newXSize, unsigned int newYSize);
+  virtual void resizeBuffers(unsigned int newXSize, unsigned int newYSize) = 0;
 
   // Getters
-  typename B::FrameBufferHandle getHandle() const { return handle; }
-  RenderBuffer<B>* getColorRenderBuffer() const { return colorRenderBuffer; }
-  RenderBuffer<B>* getDepthRenderBuffer() const { return depthRenderBuffer; }
-  TextureBuffer<B>* getColorTextureBuffer() const { return colorTextureBuffer; }
-  TextureBuffer<B>* getDepthTextureBuffer() const { return depthTextureBuffer; }
+  // RenderBuffer* getColorRenderBuffer() const { return colorRenderBuffer; }
+  // RenderBuffer* getDepthRenderBuffer() const { return depthRenderBuffer; }
+  // TextureBuffer* getColorTextureBuffer() const { return colorTextureBuffer; }
+  // TextureBuffer* getDepthTextureBuffer() const { return depthTextureBuffer; }
+
+  // Manage buffers
+  std::shared_ptr<RenderBuffer> getRenderBuffer(std::string bufferName);
+  std::shared_ptr<TextureBuffer> getTextureBuffer(std::string bufferName);
 
   // Query pixel
-  std::array<float, 4> readFloat4(int xPos, int yPos);
+  virtual std::array<float, 4> readFloat4(int xPos, int yPos) = 0;
 
-private:
-  typename B::FrameBufferHandle handle;
-
-  // Will have a renderbuffer, a texturebuffer, or neither for each of depth and color.
-  RenderBuffer<B>* colorRenderBuffer = nullptr;
-  TextureBuffer<B>* colorTextureBuffer = nullptr;
-  RenderBuffer<B>* depthRenderBuffer = nullptr;
-  TextureBuffer<B>* depthTextureBuffer = nullptr;
-
+protected:
   // Viewport
   bool viewportSet = false;
   int viewportX, viewportY;
   unsigned int viewportSizeX, viewportSizeY;
+
+  // Buffers
+  std::vector<std::pair<std::string, std::shared_ptr<RenderBuffer>>> renderBuffers;
+  std::vector<std::pair<std::string, std::shared_ptr<TextureBuffer>>> textureBuffers;
 };
 
 // == Shaders
@@ -163,32 +155,9 @@ struct ShaderTexture {
 
 
 // Types which represents shaders and the values they require
-template <typename B>
-struct VertexShader {
-  const std::vector<ShaderUniform> uniforms;
-  const std::vector<ShaderAttribute> attributes;
-  const std::string src;
-};
-template <typename B>
-struct TessellationShader {
-  const std::vector<ShaderUniform> uniforms;
-  const std::vector<ShaderAttribute> attributes;
-  const std::string src;
-};
-template <typename B>
-struct EvaluationShader {
-  const std::vector<ShaderUniform> uniforms;
-  const std::vector<ShaderAttribute> attributes;
-  const std::string src;
-};
-template <typename B>
-struct GeometryShader {
-  const std::vector<ShaderUniform> uniforms;
-  const std::vector<ShaderAttribute> attributes;
-  const std::string src;
-};
-template <typename B>
-struct FragmentShader {
+enum class ShaderStageType { Vertex, Tessellation, Evaluation, Geometry, Fragment };
+struct ShaderStageSpecification {
+  const ShaderStageType stage;
   const std::vector<ShaderUniform> uniforms;
   const std::vector<ShaderAttribute> attributes;
   const std::vector<ShaderTexture> textures;
@@ -198,26 +167,11 @@ struct FragmentShader {
 
 
 // Encapsulate a shader program
-template <typename B>
 class ShaderProgram {
 
 public:
-  // Constructors
-  ShaderProgram(const VertexShader<B>* vShader, const FragmentShader<B>* fShader, DrawMode dm);
-  ShaderProgram(const VertexShader<B>* vShader, const GeometryShader<B>* gShader, const FragmentShader<B>* fShader,
-                DrawMode dm);
-  ShaderProgram(const VertexShader<B>* vShader, const TessellationShader<B>* tShader, const FragmentShader<B>* fShader,
-                DrawMode dm, int nPatchVertices);
-  ShaderProgram(const VertexShader<B>* vShader, const EvaluationShader<B>* eShader, const FragmentShader<B>* fShader,
-                DrawMode dm, int nPatchVertices);
-  ShaderProgram(const VertexShader<B>* vShader, const TessellationShader<B>* tShader,
-                const EvaluationShader<B>* eShader, const FragmentShader<B>* fShader, DrawMode dm, int nPatchVertices);
-  ShaderProgram(const VertexShader<B>* vShader, const TessellationShader<B>* tShader,
-                const EvaluationShader<B>* eShader, const GeometryShader<B>* gShader, const FragmentShader<B>* fShader,
-                DrawMode dm, int nPatchVertices);
-
   // Destructor (free gl buffers)
-  ~ShaderProgram();
+  virtual ~ShaderProgram();
 
 
   // === Store data
@@ -225,96 +179,81 @@ public:
 
   // Uniforms
   bool hasUniform(std::string name);
-  void setUniform(std::string name, int val);
-  void setUniform(std::string name, unsigned int val);
-  void setUniform(std::string name, float val);
-  void setUniform(std::string name, double val); // WARNING casts down to float
-  void setUniform(std::string name, float* val);
-  void setUniform(std::string name, glm::vec2 val);
-  void setUniform(std::string name, glm::vec3 val);
-  void setUniform(std::string name, glm::vec4 val);
-  void setUniform(std::string name, std::array<float, 3> val);
-  void setUniform(std::string name, float x, float y, float z, float w);
+  virtual void setUniform(std::string name, int val) = 0;
+  virtual void setUniform(std::string name, unsigned int val) = 0;
+  virtual void setUniform(std::string name, float val) = 0;
+  virtual void setUniform(std::string name, double val) = 0; // WARNING casts down to float
+  virtual void setUniform(std::string name, float* val) = 0;
+  virtual void setUniform(std::string name, glm::vec2 val) = 0;
+  virtual void setUniform(std::string name, glm::vec3 val) = 0;
+  virtual void setUniform(std::string name, glm::vec4 val) = 0;
+  virtual void setUniform(std::string name, std::array<float, 3> val) = 0;
+  virtual void setUniform(std::string name, float x, float y, float z, float w) = 0;
 
   // = Attributes
   bool hasAttribute(std::string name);
-  void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0,
-                    int size = -1);
-  void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0,
-                    int size = -1);
-  void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0,
-                    int size = -1);
-  void setAttribute(std::string name, const std::vector<double>& data, bool update = false, int offset = 0,
-                    int size = -1);
-  void setAttribute(std::string name, const std::vector<int>& data, bool update = false, int offset = 0, int size = -1);
-  void setAttribute(std::string name, const std::vector<uint32_t>& data, bool update = false, int offset = 0,
-                    int size = -1);
+  // clang-format off
+  virtual void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0, int size = -1) = 0;
+  virtual void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) = 0;
+  virtual void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) = 0;
+  virtual void setAttribute(std::string name, const std::vector<double>& data, bool update = false, int offset = 0, int size = -1) = 0;
+  virtual void setAttribute(std::string name, const std::vector<int>& data, bool update = false, int offset = 0, int size = -1) = 0;
+  virtual void setAttribute(std::string name, const std::vector<uint32_t>& data, bool update = false, int offset = 0, int size = -1) = 0;
+  // clang-format on
 
   // Convenience method to set an array-valued attrbute, such as 'in vec3 vertexVal[3]'. Applies interleaving then
   // forwards to the usual setAttribute
   template <typename T, unsigned int C>
   void setAttribute(std::string name, const std::vector<std::array<T, C>>& data, bool update = false, int offset = 0,
-                       int size = -1);
-
-
-  // Textures
-  void setTexture1D(std::string name, unsigned char* texData, unsigned int length);
-  void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
-                    bool withAlpha = true, bool useMipMap = false, bool repeat = false);
-  // void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false); TODO
-  void setTextureFromBuffer(std::string name, TextureBuffer<B>* textureBuffer);
+                    int size = -1);
 
 
   // Indices
-  void setIndex(std::vector<std::array<unsigned int, 3>>& indices);
-  void setIndex(std::vector<unsigned int>& indices);
-  void setPrimitiveRestartIndex(unsigned int restartIndex);
+  virtual void setIndex(std::vector<std::array<unsigned int, 3>>& indices) = 0;
+  virtual void setIndex(std::vector<unsigned int>& indices) = 0;
+  virtual void setPrimitiveRestartIndex(unsigned int restartIndex) = 0;
 
   // Call once to initialize GLSL code used by multiple shaders
-  static void initCommonShaders();
+  static void initCommonShaders(); // TODO
 
   // Draw!
-  void draw();
+  virtual void draw() = 0;
 
-private:
-  // Classes to keep track of attributes and uniforms
-  struct Uniform {
+
+  virtual void validateData();
+
+protected:
+
+  // Classes to keep track of attributes and uniforms for the progam
+  struct ShaderUniform {
     std::string name;
     DataType type;
-    typename B::UniformLocation location;
     bool isSet; // has a value been assigned to this uniform?
   };
-  struct Attribute {
+  struct ShaderAttribute {
     std::string name;
     DataType type;
-    typename B::AttributeLocation location;
-    typename B::VertexBufferHandle VBOLoc;
     long int dataSize; // the size of the data currently stored in this attribute (-1 if nothing)
     int arrayCount;
   };
-  struct Texture {
+  struct ShaderTexture {
     std::string name;
     int dim;
-    typename B::TextureLocation location;
-    TextureBuffer<B>* textureBuffer;
     unsigned int index;
     bool isSet;
-    bool managedByProgram; // should the program delete the texture when its done?
+    std::shared_ptr<TextureBuffer> textureBuffer;
   };
 
 
+private:
   // The shader objects to use, which generally come from shaders.h
-  const VertexShader<B>* vertShader = nullptr;
-  const TessellationShader<B>* tessShader = nullptr;
-  const EvaluationShader<B>* evalShader = nullptr;
-  const GeometryShader<B>* geomShader = nullptr;
-  const FragmentShader<B>* fragShader = nullptr;
+  // std::vector<ShaderStageSpecification> shaderStages;
 
 
   // Lists of attributes and uniforms that need to be set
-  std::vector<Uniform> uniforms;
-  std::vector<Attribute> attributes;
-  std::vector<Texture> textures;
+  std::vector<std::unique_ptr<ShaderUniform>> uniforms;
+  std::vector<std::unique_ptr<ShaderAttribute>> attributes;
+  std::vector<std::unique_ptr<ShaderTexture>> textures;
 
   // What mode does this program draw in?
   DrawMode drawMode;
@@ -333,34 +272,18 @@ private:
   unsigned int nPatchVertices;
 
   // Setup routines
+  void activateTextures();
   void compileGLProgram();
   void setDataLocations();
   void createBuffers();
   void addUniqueAttribute(ShaderAttribute attribute);
-  void deleteAttributeBuffer(Attribute attribute);
+  void deleteAttributeBuffer(ShaderAttribute attribute);
   void addUniqueUniform(ShaderUniform uniform);
   void addUniqueTexture(ShaderTexture texture);
-  void freeTexture(Texture t);
-
-  // Drawing related
-  void validateData();
-  void activateTextures();
-
-  // GL pointers for various useful things
-  typename B::ProgramHandle programHandle = 0;
-  typename B::ShaderHandle vertShaderHandle = 0; // vertex shader
-  typename B::ShaderHandle tessShaderHandle = 0; // tessellation control shader
-  typename B::ShaderHandle evalShaderHandle = 0; // tesselation evaluation shader
-  typename B::ShaderHandle geomShaderHandle = 0; // geometry shader
-  typename B::ShaderHandle fragShaderHandle = 0; // fragment shader
-  typename B::AttributeHandle vaoHandle;         // TODO rename
-  typename B::AttributeHandle indexVBO;          // TODO rename
-
-  //static typename B::ShaderHandle commonShaderHandle; // functions accessible to all shaders TODO move to engine
+  void freeTexture(TextureBuffer t);
 };
 
 
-template <typename B>
 class Engine {
 
 public:
@@ -368,36 +291,43 @@ public:
 
 
   // High-level control
-  void initialize();
-  void clearGBuffer();
-  void computeLighting();
-  void toDisplay();
+  virtual void initialize() = 0;
+  virtual void clearGBuffer() = 0;
+  virtual void computeLighting() = 0;
+  virtual void toDisplay() = 0;
+  virtual void checkError(bool fatal = false) = 0;
 
+  // === Factory methods
+
+  // create textures
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
+                                                       unsigned char* data);                                    // 1d
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D, float* data); // 1d
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+                                                       unsigned char* data = nullptr); // 2d
+
+  // create render buffers
+  std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_, unsigned int sizeY_);
+
+  // create frame buffers
+  std::shared_ptr<FrameBuffer> generateFrameBuffer();
+
+  // create shader programs
+  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
+                                                       int nPatchVertices = -1);
 
   // === All of the frame buffers used in the rendering pipeline
-  std::unique_ptr<FrameBuffer<B>> GBuffer;
+  std::unique_ptr<FrameBuffer> GBuffer;
 
 private:
   // Manage a cache of compiled shaders
 };
 
 
-// === Utility functions
-template <typename B>
-void printShaderInfoLog(typename B::ShaderHandle shaderHandle);
-
-template <typename B>
-void printProgramInfoLog(typename B::ProgramHandle handle);
-
-template <typename B>
-void checkError(bool fatal = false);
-
-
 // Implementation of template functions
-template <typename B>
 template <typename T, unsigned int C>
-inline void ShaderProgram<B>::setAttribute(std::string name, const std::vector<std::array<T, C>>& data, bool update,
-                                           int offset, int size) {
+inline void ShaderProgram::setAttribute(std::string name, const std::vector<std::array<T, C>>& data, bool update,
+                                        int offset, int size) {
 
   // Unpack and forward
   std::vector<T> entryData;

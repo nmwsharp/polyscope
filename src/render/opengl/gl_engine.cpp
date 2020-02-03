@@ -1,35 +1,10 @@
 #include "polyscope/render/opengl/gl_engine.h"
 
-#include "polyscope/utilities.h"
 #include "polyscope/options.h"
-
-#ifdef __APPLE__
-#define GLFW_INCLUDE_GLCOREARB
-#include "GLFW/glfw3.h"
-#else
-#include "glad/glad.h"
-// glad must come first
-#include "GLFW/glfw3.h"
-#endif
+#include "polyscope/utilities.h"
 
 namespace polyscope {
 namespace render {
-
-struct GLBackend {
-
-  // Handle types
-  typedef GLuint TextureBufferHandle;
-  typedef GLuint RenderBufferHandle;
-  typedef GLuint FrameBufferHandle;
-  typedef GLuint ShaderHandle;
-  typedef GLuint ProgramHandle;
-  typedef GLuint AttributeHandle;
-  typedef GLuint VertexBufferHandle;
-
-  typedef GLint UniformLocation;
-  typedef GLint AttributeLocation;
-  typedef GLint TextureLocation;
-};
 
 // == Map enums to native values
 
@@ -293,18 +268,18 @@ void RenderBuffer<GLBackend>::bind() {
 // =============================================================
 
 template <>
-FrameBuffer<GLBackend>::FrameBuffer() {
+FrameBufferImpl<GLBackend>::FrameBufferImpl() {
   glGenFramebuffers(1, &handle);
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
 };
 
 template <>
-FrameBuffer<GLBackend>::~FrameBuffer() {
+FrameBufferImpl<GLBackend>::~FrameBufferImpl() {
   glDeleteFramebuffers(1, &handle);
 }
 
 template <>
-void FrameBuffer<GLBackend>::bindToColorRenderbuffer(RenderBuffer<GLBackend>* renderBuffer) {
+void FrameBufferImpl<GLBackend>::bindToColorRenderbuffer(RenderBuffer<GLBackend>* renderBuffer) {
   renderBuffer->bind();
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
 
@@ -320,7 +295,7 @@ void FrameBuffer<GLBackend>::bindToColorRenderbuffer(RenderBuffer<GLBackend>* re
 }
 
 template <>
-void FrameBuffer<GLBackend>::bindToDepthRenderbuffer(RenderBuffer<GLBackend>* renderBuffer) {
+void FrameBufferImpl<GLBackend>::bindToDepthRenderbuffer(RenderBuffer<GLBackend>* renderBuffer) {
   renderBuffer->bind();
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
 
@@ -333,7 +308,7 @@ void FrameBuffer<GLBackend>::bindToDepthRenderbuffer(RenderBuffer<GLBackend>* re
 }
 
 template <>
-void FrameBuffer<GLBackend>::bindToColorTexturebuffer(TextureBuffer<GLBackend>* textureBuffer) {
+void FrameBufferImpl<GLBackend>::bindToColorTexturebuffer(TextureBuffer<GLBackend>* textureBuffer) {
   textureBuffer->bind();
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
 
@@ -349,7 +324,7 @@ void FrameBuffer<GLBackend>::bindToColorTexturebuffer(TextureBuffer<GLBackend>* 
 }
 
 template <>
-void FrameBuffer<GLBackend>::bindToDepthTexturebuffer(TextureBuffer<GLBackend>* textureBuffer) {
+void FrameBufferImpl<GLBackend>::bindToDepthTexturebuffer(TextureBuffer<GLBackend>* textureBuffer) {
   textureBuffer->bind();
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
 
@@ -362,7 +337,7 @@ void FrameBuffer<GLBackend>::bindToDepthTexturebuffer(TextureBuffer<GLBackend>* 
 }
 
 template <>
-bool FrameBuffer<GLBackend>::bindForRendering() {
+bool FrameBufferImpl<GLBackend>::bindForRendering() {
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
 
   // Check if the frame buffer is okay
@@ -377,7 +352,7 @@ bool FrameBuffer<GLBackend>::bindForRendering() {
   // Set the viewport
   if (!viewportSet) {
     throw std::runtime_error(
-        "OpenGL error: viewport not set for framebuffer object. Call FrameBuffer<GLBackend>::setViewport()");
+        "OpenGL error: viewport not set for framebuffer object. Call FrameBufferImpl<GLBackend>::setViewport()");
   }
   glViewport(viewportX, viewportY, viewportSizeX, viewportSizeY);
 
@@ -395,7 +370,7 @@ bool FrameBuffer<GLBackend>::bindForRendering() {
 }
 
 template <>
-void FrameBuffer<GLBackend>::resizeBuffers(unsigned int newXSize, unsigned int newYSize) {
+void FrameBufferImpl<GLBackend>::resizeBuffers(unsigned int newXSize, unsigned int newYSize) {
 
   // Resize color buffer
   if (colorRenderBuffer != nullptr &&
@@ -442,7 +417,7 @@ void FrameBuffer<GLBackend>::resizeBuffers(unsigned int newXSize, unsigned int n
 }
 
 template <>
-void FrameBuffer<GLBackend>::setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
+void FrameBufferImpl<GLBackend>::setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
   viewportSet = true;
   viewportX = startX;
   viewportY = startY;
@@ -451,7 +426,7 @@ void FrameBuffer<GLBackend>::setViewport(int startX, int startY, unsigned int si
 }
 
 template <>
-void FrameBuffer<GLBackend>::clear() {
+void FrameBufferImpl<GLBackend>::clear() {
   if (!bindForRendering()) return;
   glClearColor(clearColor[0], clearColor[1], clearColor[2], clearAlpha);
   glClearDepth(1.);
@@ -459,7 +434,7 @@ void FrameBuffer<GLBackend>::clear() {
 }
 
 template <>
-std::array<float, 4> FrameBuffer<GLBackend>::readFloat4(int xPos, int yPos) {
+std::array<float, 4> FrameBufferImpl<GLBackend>::readFloat4(int xPos, int yPos) {
 
   if (colorRenderBuffer == nullptr || colorRenderBuffer->getType() != RenderBufferType::Float4) {
     throw std::runtime_error("OpenGL error: buffer is not of right type to pick from");
@@ -483,7 +458,7 @@ std::array<float, 4> FrameBuffer<GLBackend>::readFloat4(int xPos, int yPos) {
 GLBackend::ShaderHandle commonShaderHandle = 0; // TODO
 
 template <>
-void ShaderProgram<GLBackend>::addUniqueAttribute(ShaderAttribute newAttribute) {
+void ShaderProgramImpl<GLBackend>::addUniqueAttribute(ShaderAttribute newAttribute) {
   for (Attribute& a : attributes) {
     if (a.name == newAttribute.name && a.type == newAttribute.type) {
       return;
@@ -493,7 +468,7 @@ void ShaderProgram<GLBackend>::addUniqueAttribute(ShaderAttribute newAttribute) 
 }
 
 template <>
-void ShaderProgram<GLBackend>::addUniqueUniform(ShaderUniform newUniform) {
+void ShaderProgramImpl<GLBackend>::addUniqueUniform(ShaderUniform newUniform) {
   for (Uniform& u : uniforms) {
     if (u.name == newUniform.name && u.type == newUniform.type) {
       return;
@@ -503,7 +478,7 @@ void ShaderProgram<GLBackend>::addUniqueUniform(ShaderUniform newUniform) {
 }
 
 template <>
-void ShaderProgram<GLBackend>::addUniqueTexture(ShaderTexture newTexture) {
+void ShaderProgramImpl<GLBackend>::addUniqueTexture(ShaderTexture newTexture) {
   for (Texture& t : textures) {
     if (t.name == newTexture.name && t.dim == newTexture.dim) {
       return;
@@ -514,21 +489,21 @@ void ShaderProgram<GLBackend>::addUniqueTexture(ShaderTexture newTexture) {
 
 
 template <>
-void ShaderProgram<GLBackend>::deleteAttributeBuffer(Attribute attribute) {
+void ShaderProgramImpl<GLBackend>::deleteAttributeBuffer(Attribute attribute) {
   glUseProgram(programHandle);
   glBindVertexArray(vaoHandle);
   glDeleteBuffers(1, &attribute.VBOLoc);
 }
 
 template <>
-void ShaderProgram<GLBackend>::freeTexture(Texture t) {
+void ShaderProgramImpl<GLBackend>::freeTexture(Texture t) {
   if (t.managedByProgram) {
     delete t.textureBuffer;
   }
 }
 
 template <>
-void ShaderProgram<GLBackend>::compileGLProgram() {
+void ShaderProgramImpl<GLBackend>::compileGLProgram() {
   // Compile the vertex shader
   vertShaderHandle = glCreateShader(GL_VERTEX_SHADER);
   const char* vertShaderTmp = vertShader->src.c_str();
@@ -608,7 +583,7 @@ void ShaderProgram<GLBackend>::compileGLProgram() {
 
 
 template <>
-void ShaderProgram<GLBackend>::setDataLocations() {
+void ShaderProgramImpl<GLBackend>::setDataLocations() {
   glUseProgram(programHandle);
 
   // Uniforms
@@ -631,7 +606,7 @@ void ShaderProgram<GLBackend>::setDataLocations() {
 }
 
 template <>
-void ShaderProgram<GLBackend>::createBuffers() {
+void ShaderProgramImpl<GLBackend>::createBuffers() {
   // Create a VAO
   glGenVertexArrays(1, &vaoHandle);
   glBindVertexArray(vaoHandle);
@@ -704,7 +679,7 @@ void ShaderProgram<GLBackend>::createBuffers() {
 }
 
 template <>
-bool ShaderProgram<GLBackend>::hasUniform(std::string name) {
+bool ShaderProgramImpl<GLBackend>::hasUniform(std::string name) {
   for (Uniform& u : uniforms) {
     if (u.name == name) {
       return true;
@@ -715,7 +690,7 @@ bool ShaderProgram<GLBackend>::hasUniform(std::string name) {
 
 // Set an integer
 template <>
-void ShaderProgram<GLBackend>::setUniform(std::string name, int val) {
+void ShaderProgramImpl<GLBackend>::setUniform(std::string name, int val) {
   glUseProgram(programHandle);
 
   for (Uniform& u : uniforms) {
@@ -734,7 +709,7 @@ void ShaderProgram<GLBackend>::setUniform(std::string name, int val) {
 
 // Set an unsigned integer
 template <>
-void ShaderProgram<GLBackend>::setUniform(std::string name, unsigned int val) {
+void ShaderProgramImpl<GLBackend>::setUniform(std::string name, unsigned int val) {
   glUseProgram(programHandle);
 
   for (Uniform& u : uniforms) {
@@ -753,7 +728,7 @@ void ShaderProgram<GLBackend>::setUniform(std::string name, unsigned int val) {
 
 // Set a float
 template <>
-void ShaderProgram<GLBackend>::setUniform(std::string name, float val) {
+void ShaderProgramImpl<GLBackend>::setUniform(std::string name, float val) {
   glUseProgram(programHandle);
 
   for (Uniform& u : uniforms) {
@@ -772,7 +747,7 @@ void ShaderProgram<GLBackend>::setUniform(std::string name, float val) {
 
 // Set a double --- WARNING casts down to float
 template <>
-void ShaderProgram<GLBackend>::setUniform(std::string name, double val) {
+void ShaderProgramImpl<GLBackend>::setUniform(std::string name, double val) {
   glUseProgram(programHandle);
 
   for (Uniform& u : uniforms) {
@@ -791,7 +766,7 @@ void ShaderProgram<GLBackend>::setUniform(std::string name, double val) {
 
 // Set a 4x4 uniform matrix
 template <>
-void ShaderProgram<GLBackend>::setUniform(std::string name, float* val) {
+void ShaderProgramImpl<GLBackend>::setUniform(std::string name, float* val) {
   glUseProgram(programHandle);
 
   for (Uniform& u : uniforms) {
@@ -810,7 +785,7 @@ void ShaderProgram<GLBackend>::setUniform(std::string name, float* val) {
 
 // Set a vector2 uniform
 template <>
-void ShaderProgram<GLBackend>::setUniform(std::string name, glm::vec2 val) {
+void ShaderProgramImpl<GLBackend>::setUniform(std::string name, glm::vec2 val) {
   glUseProgram(programHandle);
 
   for (Uniform& u : uniforms) {
@@ -829,7 +804,7 @@ void ShaderProgram<GLBackend>::setUniform(std::string name, glm::vec2 val) {
 
 // Set a vector3 uniform
 template <>
-void ShaderProgram<GLBackend>::setUniform(std::string name, glm::vec3 val) {
+void ShaderProgramImpl<GLBackend>::setUniform(std::string name, glm::vec3 val) {
   glUseProgram(programHandle);
 
   for (Uniform& u : uniforms) {
@@ -848,7 +823,7 @@ void ShaderProgram<GLBackend>::setUniform(std::string name, glm::vec3 val) {
 
 // Set a vector4 uniform
 template <>
-void ShaderProgram<GLBackend>::setUniform(std::string name, glm::vec4 val) {
+void ShaderProgramImpl<GLBackend>::setUniform(std::string name, glm::vec4 val) {
   glUseProgram(programHandle);
 
   for (Uniform& u : uniforms) {
@@ -867,7 +842,7 @@ void ShaderProgram<GLBackend>::setUniform(std::string name, glm::vec4 val) {
 
 // Set a vector3 uniform from a float array
 template <>
-void ShaderProgram<GLBackend>::setUniform(std::string name, std::array<float, 3> val) {
+void ShaderProgramImpl<GLBackend>::setUniform(std::string name, std::array<float, 3> val) {
   glUseProgram(programHandle);
 
   for (Uniform& u : uniforms) {
@@ -886,7 +861,7 @@ void ShaderProgram<GLBackend>::setUniform(std::string name, std::array<float, 3>
 
 // Set a vec4 uniform
 template <>
-void ShaderProgram<GLBackend>::setUniform(std::string name, float x, float y, float z, float w) {
+void ShaderProgramImpl<GLBackend>::setUniform(std::string name, float x, float y, float z, float w) {
   glUseProgram(programHandle);
 
   for (Uniform& u : uniforms) {
@@ -904,7 +879,7 @@ void ShaderProgram<GLBackend>::setUniform(std::string name, float x, float y, fl
 }
 
 template <>
-bool ShaderProgram<GLBackend>::hasAttribute(std::string name) {
+bool ShaderProgramImpl<GLBackend>::hasAttribute(std::string name) {
   for (Attribute& a : attributes) {
     if (a.name == name) {
       return true;
@@ -914,8 +889,8 @@ bool ShaderProgram<GLBackend>::hasAttribute(std::string name) {
 }
 
 template <>
-void ShaderProgram<GLBackend>::setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update,
-                                            int offset, int size) {
+void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update,
+                                                int offset, int size) {
   // Reshape the vector
   // Right now, the data is probably laid out in this form already... but let's
   // not be overly clever and just reshape it.
@@ -957,8 +932,8 @@ void ShaderProgram<GLBackend>::setAttribute(std::string name, const std::vector<
 }
 
 template <>
-void ShaderProgram<GLBackend>::setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update,
-                                            int offset, int size) {
+void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update,
+                                                int offset, int size) {
   // Reshape the vector
   // Right now, the data is probably laid out in this form already... but let's
   // not be overly clever and just reshape it.
@@ -1001,8 +976,8 @@ void ShaderProgram<GLBackend>::setAttribute(std::string name, const std::vector<
 }
 
 template <>
-void ShaderProgram<GLBackend>::setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update,
-                                            int offset, int size) {
+void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update,
+                                                int offset, int size) {
   // Reshape the vector
   // Right now, the data is probably laid out in this form already... but let's
   // not be overly clever and just reshape it.
@@ -1046,8 +1021,8 @@ void ShaderProgram<GLBackend>::setAttribute(std::string name, const std::vector<
 }
 
 template <>
-void ShaderProgram<GLBackend>::setAttribute(std::string name, const std::vector<double>& data, bool update, int offset,
-                                            int size) {
+void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vector<double>& data, bool update,
+                                                int offset, int size) {
   // Convert input data to floats
   std::vector<float> floatData(data.size());
   for (unsigned int i = 0; i < data.size(); i++) {
@@ -1086,8 +1061,8 @@ void ShaderProgram<GLBackend>::setAttribute(std::string name, const std::vector<
 }
 
 template <>
-void ShaderProgram<GLBackend>::setAttribute(std::string name, const std::vector<int>& data, bool update, int offset,
-                                            int size) {
+void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vector<int>& data, bool update, int offset,
+                                                int size) {
   // FIXME I've seen strange bugs when using int's in shaders. Need to figure
   // out it it's my shaders or something wrong with this function
 
@@ -1129,8 +1104,8 @@ void ShaderProgram<GLBackend>::setAttribute(std::string name, const std::vector<
 }
 
 template <>
-void ShaderProgram<GLBackend>::setAttribute(std::string name, const std::vector<uint32_t>& data, bool update,
-                                            int offset, int size) {
+void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vector<uint32_t>& data, bool update,
+                                                int offset, int size) {
   // FIXME I've seen strange bugs when using int's in shaders. Need to figure
   // out it it's my shaders or something wrong with this function
 
@@ -1172,7 +1147,7 @@ void ShaderProgram<GLBackend>::setAttribute(std::string name, const std::vector<
 }
 
 template <>
-void ShaderProgram<GLBackend>::setTexture1D(std::string name, unsigned char* texData, unsigned int length) {
+void ShaderProgramImpl<GLBackend>::setTexture1D(std::string name, unsigned char* texData, unsigned int length) {
   throw std::invalid_argument("This code hasn't been testded yet.");
 
   // Find the right texture
@@ -1205,8 +1180,8 @@ void ShaderProgram<GLBackend>::setTexture1D(std::string name, unsigned char* tex
 }
 
 template <>
-void ShaderProgram<GLBackend>::setTexture2D(std::string name, unsigned char* texData, unsigned int width,
-                                            unsigned int height, bool withAlpha, bool useMipMap, bool repeat) {
+void ShaderProgramImpl<GLBackend>::setTexture2D(std::string name, unsigned char* texData, unsigned int width,
+                                                unsigned int height, bool withAlpha, bool useMipMap, bool repeat) {
 
 
   // Find the right texture
@@ -1255,7 +1230,7 @@ void ShaderProgram<GLBackend>::setTexture2D(std::string name, unsigned char* tex
 }
 
 template <>
-void ShaderProgram<GLBackend>::setTextureFromBuffer(std::string name, TextureBuffer<GLBackend>* textureBuffer) {
+void ShaderProgramImpl<GLBackend>::setTextureFromBuffer(std::string name, TextureBuffer<GLBackend>* textureBuffer) {
   glUseProgram(programHandle);
 
   // Find the right texture
@@ -1278,7 +1253,7 @@ void ShaderProgram<GLBackend>::setTextureFromBuffer(std::string name, TextureBuf
 
 /*
 template <>
-void ShaderProgram<GLBackend>::setTextureFromColormap(std::string name, const ValueColorMap& colormap,
+void ShaderProgramImpl<GLBackend>::setTextureFromColormap(std::string name, const ValueColorMap& colormap,
                                                       bool allowUpdate) {
   // TODO switch to global shared buffers from colormap
 
@@ -1316,7 +1291,7 @@ void ShaderProgram<GLBackend>::setTextureFromColormap(std::string name, const Va
 */
 
 template <>
-void ShaderProgram<GLBackend>::setIndex(std::vector<std::array<unsigned int, 3>>& indices) {
+void ShaderProgramImpl<GLBackend>::setIndex(std::vector<std::array<unsigned int, 3>>& indices) {
   if (!useIndex) {
     throw std::invalid_argument("Tried to setIndex() when program drawMode does not use indexed "
                                 "drawing");
@@ -1340,7 +1315,7 @@ void ShaderProgram<GLBackend>::setIndex(std::vector<std::array<unsigned int, 3>>
 }
 
 template <>
-void ShaderProgram<GLBackend>::setIndex(std::vector<unsigned int>& indices) {
+void ShaderProgramImpl<GLBackend>::setIndex(std::vector<unsigned int>& indices) {
   // (This version is typically used for indexed lines)
 
   if (!useIndex) {
@@ -1367,7 +1342,7 @@ void ShaderProgram<GLBackend>::setIndex(std::vector<unsigned int>& indices) {
 
 // Check that uniforms and attributes are all set and of consistent size
 template <>
-void ShaderProgram<GLBackend>::validateData() {
+void ShaderProgramImpl<GLBackend>::validateData() {
   // Check uniforms
   for (Uniform& u : uniforms) {
     if (!u.isSet) {
@@ -1411,7 +1386,7 @@ void ShaderProgram<GLBackend>::validateData() {
 
 /*
 template <>
-void ShaderProgram<GLBackend>::initCommonShaders() {
+void ShaderProgramImpl<GLBackend>::initCommonShaders() {
   // Compile functions accessible to all shaders
   commonShaderHandle = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(commonShaderHandle, 1, &shaderCommonSource, nullptr);
@@ -1421,7 +1396,7 @@ void ShaderProgram<GLBackend>::initCommonShaders() {
 */
 
 template <>
-void ShaderProgram<GLBackend>::setPrimitiveRestartIndex(GLuint restartIndex_) {
+void ShaderProgramImpl<GLBackend>::setPrimitiveRestartIndex(GLuint restartIndex_) {
   if (!usePrimitiveRestart) {
     throw std::runtime_error("setPrimitiveRestartIndex() called, but draw mode does not support restart indices.");
   }
@@ -1430,7 +1405,7 @@ void ShaderProgram<GLBackend>::setPrimitiveRestartIndex(GLuint restartIndex_) {
 }
 
 template <>
-void ShaderProgram<GLBackend>::activateTextures() {
+void ShaderProgramImpl<GLBackend>::activateTextures() {
   for (Texture& t : textures) {
     // Point the uniform at this texture
 
@@ -1452,7 +1427,7 @@ void ShaderProgram<GLBackend>::activateTextures() {
 }
 
 template <>
-void ShaderProgram<GLBackend>::draw() {
+void ShaderProgramImpl<GLBackend>::draw() {
   validateData();
 
   glUseProgram(programHandle);
@@ -1515,11 +1490,12 @@ void ShaderProgram<GLBackend>::draw() {
 }
 
 template <>
-ShaderProgram<GLBackend>::ShaderProgram(const VertexShader<GLBackend>* vShader,
-                                        const TessellationShader<GLBackend>* tShader,
-                                        const EvaluationShader<GLBackend>* eShader,
-                                        const GeometryShader<GLBackend>* gShader,
-                                        const FragmentShader<GLBackend>* fShader, DrawMode dm, int patchVertices) {
+ShaderProgramImpl<GLBackend>::ShaderProgramImpl(const VertexShader<GLBackend>* vShader,
+                                                const TessellationShader<GLBackend>* tShader,
+                                                const EvaluationShader<GLBackend>* eShader,
+                                                const GeometryShader<GLBackend>* gShader,
+                                                const FragmentShader<GLBackend>* fShader, DrawMode dm,
+                                                int patchVertices) {
   vertShader = vShader;
   tessShader = tShader;
   evalShader = eShader;
@@ -1598,7 +1574,7 @@ ShaderProgram<GLBackend>::ShaderProgram(const VertexShader<GLBackend>* vShader,
   }
 
   if (attributes.size() == 0) {
-    throw std::invalid_argument("Uh oh... ShaderProgram has no attributes");
+    throw std::invalid_argument("Uh oh... ShaderProgramImpl has no attributes");
   }
 
   // Perform setup tasks
@@ -1609,7 +1585,7 @@ ShaderProgram<GLBackend>::ShaderProgram(const VertexShader<GLBackend>* vShader,
 }
 
 template <>
-ShaderProgram<GLBackend>::~ShaderProgram() {
+ShaderProgramImpl<GLBackend>::~ShaderProgramImpl() {
   // Make sure that we free the buffers for all attributes
   for (Attribute a : attributes) {
     deleteAttributeBuffer(a);
@@ -1624,41 +1600,44 @@ ShaderProgram<GLBackend>::~ShaderProgram() {
 
 
 template <>
-ShaderProgram<GLBackend>::ShaderProgram(const VertexShader<GLBackend>* vShader,
-                                        const FragmentShader<GLBackend>* fShader, DrawMode dm)
-    : ShaderProgram(vShader, nullptr, nullptr, nullptr, fShader, dm, 0) {}
+ShaderProgramImpl<GLBackend>::ShaderProgramImpl(const VertexShader<GLBackend>* vShader,
+                                                const FragmentShader<GLBackend>* fShader, DrawMode dm)
+    : ShaderProgramImpl(vShader, nullptr, nullptr, nullptr, fShader, dm, 0) {}
 
 template <>
-ShaderProgram<GLBackend>::ShaderProgram(const VertexShader<GLBackend>* vShader,
-                                        const GeometryShader<GLBackend>* gShader,
-                                        const FragmentShader<GLBackend>* fShader, DrawMode dm)
-    : ShaderProgram(vShader, nullptr, nullptr, gShader, fShader, dm, 0) {}
+ShaderProgramImpl<GLBackend>::ShaderProgramImpl(const VertexShader<GLBackend>* vShader,
+                                                const GeometryShader<GLBackend>* gShader,
+                                                const FragmentShader<GLBackend>* fShader, DrawMode dm)
+    : ShaderProgramImpl(vShader, nullptr, nullptr, gShader, fShader, dm, 0) {}
 
 template <>
-ShaderProgram<GLBackend>::ShaderProgram(const VertexShader<GLBackend>* vShader,
-                                        const TessellationShader<GLBackend>* tShader,
-                                        const FragmentShader<GLBackend>* fShader, DrawMode dm, int patchVertices)
-    : ShaderProgram(vShader, tShader, nullptr, nullptr, fShader, dm, patchVertices) {}
+ShaderProgramImpl<GLBackend>::ShaderProgramImpl(const VertexShader<GLBackend>* vShader,
+                                                const TessellationShader<GLBackend>* tShader,
+                                                const FragmentShader<GLBackend>* fShader, DrawMode dm,
+                                                int patchVertices)
+    : ShaderProgramImpl(vShader, tShader, nullptr, nullptr, fShader, dm, patchVertices) {}
 
 template <>
-ShaderProgram<GLBackend>::ShaderProgram(const VertexShader<GLBackend>* vShader,
-                                        const EvaluationShader<GLBackend>* eShader,
-                                        const FragmentShader<GLBackend>* fShader, DrawMode dm, int patchVertices)
-    : ShaderProgram(vShader, nullptr, eShader, nullptr, fShader, dm, patchVertices) {}
+ShaderProgramImpl<GLBackend>::ShaderProgramImpl(const VertexShader<GLBackend>* vShader,
+                                                const EvaluationShader<GLBackend>* eShader,
+                                                const FragmentShader<GLBackend>* fShader, DrawMode dm,
+                                                int patchVertices)
+    : ShaderProgramImpl(vShader, nullptr, eShader, nullptr, fShader, dm, patchVertices) {}
 
 template <>
-ShaderProgram<GLBackend>::ShaderProgram(const VertexShader<GLBackend>* vShader,
-                                        const TessellationShader<GLBackend>* tShader,
-                                        const EvaluationShader<GLBackend>* eShader,
-                                        const FragmentShader<GLBackend>* fShader, DrawMode dm, int patchVertices)
-    : ShaderProgram(vShader, tShader, eShader, nullptr, fShader, dm, patchVertices) {}
+ShaderProgramImpl<GLBackend>::ShaderProgramImpl(const VertexShader<GLBackend>* vShader,
+                                                const TessellationShader<GLBackend>* tShader,
+                                                const EvaluationShader<GLBackend>* eShader,
+                                                const FragmentShader<GLBackend>* fShader, DrawMode dm,
+                                                int patchVertices)
+    : ShaderProgramImpl(vShader, tShader, eShader, nullptr, fShader, dm, patchVertices) {}
 
 
 // == Explicitly instantiate the templates
 
 template class TextureBuffer<GLBackend>;
 template class RenderBuffer<GLBackend>;
-template class FrameBuffer<GLBackend>;
+template class FrameBufferImpl<GLBackend>;
 
 template struct VertexShader<GLBackend>;
 template struct FragmentShader<GLBackend>;
@@ -1666,7 +1645,7 @@ template struct GeometryShader<GLBackend>;
 template struct TessellationShader<GLBackend>;
 template struct EvaluationShader<GLBackend>;
 
-template class ShaderProgram<GLBackend>;
+template class ShaderProgramImpl<GLBackend>;
 template class Engine<GLBackend>;
 
 } // namespace render
