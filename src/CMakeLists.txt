@@ -8,6 +8,7 @@ endif()
 SET(SRCS
   
   # Rendering stuff
+  render/engine.cpp  
   render/opengl/gl_engine.cpp  
   #gl/gl_utils.cpp
   #gl/ground_plane.cpp

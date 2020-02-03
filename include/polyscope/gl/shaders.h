@@ -5,11 +5,4 @@
 #include <string>
 #include <vector>
 
-// Make syntax  nicer like this, but we lose line numbers in GL debug output
-#define POLYSCOPE_GLSL(version, shader) "#version " #version "\n" #shader
 
-namespace polyscope {
-namespace gl {
-
-} // namespace gl
-} // namespace polyscope

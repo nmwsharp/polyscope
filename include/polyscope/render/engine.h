@@ -11,6 +11,9 @@
 //#include "polyscope/gl/shaders.h"
 #include "polyscope/view.h"
 
+// Make syntax  nicer like this, but we lose line numbers in GL debug output
+#define POLYSCOPE_GLSL(version, shader) "#version " #version "\n" #shader
+
 namespace polyscope {
 namespace render {
 
@@ -41,7 +44,8 @@ enum class DataType { Vector2Float, Vector3Float, Vector4Float, Matrix44Float, F
 
 class TextureBuffer {
 public:
-  // abstract class: no constructor by design! use the factory methods from the Engine class
+  // abstract class: use the factory methods from the Engine class
+  TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_ = -1);
 
   virtual ~TextureBuffer();
 
@@ -61,14 +65,15 @@ public:
                          bool withAlpha = true, bool useMipMap = false, bool repeat = false);
 
 protected:
+  int dim;
   TextureFormat format;
   unsigned int sizeX, sizeY;
-  int dim;
 };
 
 class RenderBuffer {
 public:
-  // abstract class: no constructor by design! use the factory methods from the Engine class
+  // abstract class: use the factory methods from the Engine class
+  RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_);
 
   virtual ~RenderBuffer();
 
@@ -99,10 +104,10 @@ public:
 
   // Bind to textures/renderbuffers for output
   // TODO probably don't want these in general
-  virtual void bindToColorRenderbuffer(RenderBuffer& renderBuffer) = 0;
-  virtual void bindToDepthRenderbuffer(RenderBuffer& renderBuffer) = 0;
-  virtual void bindToColorTexturebuffer(TextureBuffer& textureBuffer) = 0;
-  virtual void bindToDepthTexturebuffer(TextureBuffer& textureBuffer) = 0;
+  virtual void bindToColorRenderbuffer(RenderBuffer* renderBuffer) = 0;
+  virtual void bindToDepthRenderbuffer(RenderBuffer* renderBuffer) = 0;
+  virtual void bindToColorTexturebuffer(TextureBuffer* textureBuffer) = 0;
+  virtual void bindToDepthTexturebuffer(TextureBuffer* textureBuffer) = 0;
 
   // Specify the viewport coordinates and clearcolor
   void setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
@@ -136,31 +141,31 @@ protected:
 
 // == Shaders
 
-struct ShaderUniform {
+struct ShaderSpecUniform {
   const std::string name;
   const DataType type;
 };
-struct ShaderAttribute {
-  ShaderAttribute(std::string name_, DataType type_) : name(name_), type(type_), arrayCount(1) {}
-  ShaderAttribute(std::string name_, DataType type_, int arrayCount_)
+struct ShaderSpecAttribute {
+  ShaderSpecAttribute(std::string name_, DataType type_) : name(name_), type(type_), arrayCount(1) {}
+  ShaderSpecAttribute(std::string name_, DataType type_, int arrayCount_)
       : name(name_), type(type_), arrayCount(arrayCount_) {}
   const std::string name;
   const DataType type;
   const int arrayCount; // number of times this element is repeated in an array
 };
-struct ShaderTexture {
+struct ShaderSpecTexture {
   const std::string name;
   const int dim;
 };
 
 
 // Types which represents shaders and the values they require
-enum class ShaderStageType { Vertex, Tessellation, Evaluation, Geometry, Fragment };
+enum class ShaderStageType { Vertex, Tessellation, Evaluation, Geometry, /* Compute,*/ Fragment };
 struct ShaderStageSpecification {
   const ShaderStageType stage;
-  const std::vector<ShaderUniform> uniforms;
-  const std::vector<ShaderAttribute> attributes;
-  const std::vector<ShaderTexture> textures;
+  const std::vector<ShaderSpecUniform> uniforms;
+  const std::vector<ShaderSpecAttribute> attributes;
+  const std::vector<ShaderSpecTexture> textures;
   const std::string outputLoc;
   const std::string src;
 };
@@ -170,7 +175,7 @@ struct ShaderStageSpecification {
 class ShaderProgram {
 
 public:
-  // Destructor (free gl buffers)
+  ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm, unsigned int nPatchVertices = 0);
   virtual ~ShaderProgram();
 
 
@@ -208,6 +213,14 @@ public:
                     int size = -1);
 
 
+  // Textures
+  virtual void setTexture1D(std::string name, unsigned char* texData, unsigned int length) = 0;
+  virtual void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
+                            bool withAlpha = true, bool useMipMap = false, bool repeat = false) = 0;
+  //virtual void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false) = 0;
+  virtual void setTextureFromBuffer(std::string name, std::shared_ptr<TextureBuffer> textureBuffer) = 0;
+
+
   // Indices
   virtual void setIndex(std::vector<std::array<unsigned int, 3>>& indices) = 0;
   virtual void setIndex(std::vector<unsigned int>& indices) = 0;
@@ -219,42 +232,9 @@ public:
   // Draw!
   virtual void draw() = 0;
 
-
-  virtual void validateData();
+  virtual void validateData() = 0;
 
 protected:
-
-  // Classes to keep track of attributes and uniforms for the progam
-  struct ShaderUniform {
-    std::string name;
-    DataType type;
-    bool isSet; // has a value been assigned to this uniform?
-  };
-  struct ShaderAttribute {
-    std::string name;
-    DataType type;
-    long int dataSize; // the size of the data currently stored in this attribute (-1 if nothing)
-    int arrayCount;
-  };
-  struct ShaderTexture {
-    std::string name;
-    int dim;
-    unsigned int index;
-    bool isSet;
-    std::shared_ptr<TextureBuffer> textureBuffer;
-  };
-
-
-private:
-  // The shader objects to use, which generally come from shaders.h
-  // std::vector<ShaderStageSpecification> shaderStages;
-
-
-  // Lists of attributes and uniforms that need to be set
-  std::vector<std::unique_ptr<ShaderUniform>> uniforms;
-  std::vector<std::unique_ptr<ShaderAttribute>> attributes;
-  std::vector<std::unique_ptr<ShaderTexture>> textures;
-
   // What mode does this program draw in?
   DrawMode drawMode;
 
@@ -270,17 +250,6 @@ private:
 
   // Tessellation parameters
   unsigned int nPatchVertices;
-
-  // Setup routines
-  void activateTextures();
-  void compileGLProgram();
-  void setDataLocations();
-  void createBuffers();
-  void addUniqueAttribute(ShaderAttribute attribute);
-  void deleteAttributeBuffer(ShaderAttribute attribute);
-  void addUniqueUniform(ShaderUniform uniform);
-  void addUniqueTexture(ShaderTexture texture);
-  void freeTexture(TextureBuffer t);
 };
 
 
@@ -314,7 +283,7 @@ public:
 
   // create shader programs
   std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-                                                       int nPatchVertices = -1);
+                                                       unsigned int nPatchVertices = 0);
 
   // === All of the frame buffers used in the rendering pipeline
   std::unique_ptr<FrameBuffer> GBuffer;

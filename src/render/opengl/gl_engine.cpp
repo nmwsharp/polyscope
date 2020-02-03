@@ -1,7 +1,10 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/render/opengl/gl_engine.h"
 
 #include "polyscope/options.h"
 #include "polyscope/utilities.h"
+
+#include "polyscope/render/opengl/shaders/common.h"
 
 namespace polyscope {
 namespace render {
@@ -18,52 +21,23 @@ inline GLenum native(const TextureFormat& x) {
     case TextureFormat::R32F:     return GL_R32F;
   }
 }
+
+inline GLenum native(const ShaderStageType& x) {
+  switch (x) {
+    case ShaderStageType::Vertex:           return GL_VERTEX_SHADER;
+    case ShaderStageType::Tessellation:     return GL_TESS_CONTROL_SHADER;
+    case ShaderStageType::Evaluation:       return GL_TESS_EVALUATION_SHADER;
+    case ShaderStageType::Geometry:         return GL_GEOMETRY_SHADER;
+    //case ShaderStageType::Compute:          return GL_COMPUTE_SHADER;
+    case ShaderStageType::Fragment:         return GL_FRAGMENT_SHADER;
+  }
+}
+
 // clang-format on
 
 
-// =============================================================
-// ======================= Misc Stuff ==========================
-// =============================================================
-
-
-// Helper function to print compile logs
-template <>
-void printShaderInfoLog<GLBackend>(GLuint shaderHandle) {
-  int logLen = 0;
-  int chars = 0;
-  char* log;
-
-  glGetShaderiv(shaderHandle, GL_INFO_LOG_LENGTH, &logLen);
-
-  if (options::verbosity > 0 && logLen > 1) { // for some reason we often get logs of length 1 with no
-                                              // visible characters
-    log = (char*)malloc(logLen);
-    glGetShaderInfoLog(shaderHandle, logLen, &chars, log);
-    printf("Shader info log:\n%s\n", log);
-    free(log);
-  }
-}
-
-template <>
-void printProgramInfoLog<GLBackend>(GLuint handle) {
-  int logLen = 0;
-  int chars = 0;
-  char* log;
-
-  glGetProgramiv(handle, GL_INFO_LOG_LENGTH, &logLen);
-
-  if (options::verbosity > 0 && logLen > 1) { // for some reason we often get logs of length 1 with no
-                                              // visible characters
-    log = (char*)malloc(logLen);
-    glGetProgramInfoLog(handle, logLen, &chars, log);
-    printf("Program info log:\n%s\n", log);
-    free(log);
-  }
-}
-
-template <>
-void checkError<GLBackend>(bool fatal) {
-  fatal = true;
+// Stateful error checker
+void checkGLError(bool fatal = true) {
 #ifndef NDEBUG
   GLenum err = GL_NO_ERROR;
   while ((err = glGetError()) != GL_NO_ERROR) {
@@ -98,23 +72,106 @@ void checkError<GLBackend>(bool fatal) {
 #endif
 }
 
+// Helper function to print compile logs
+void printShaderInfoLog(ShaderHandle shaderHandle) {
+  int logLen = 0;
+  int chars = 0;
+  char* log;
 
-// =============================================================
-// ===================== Texture buffer ========================
-// =============================================================
+  glGetShaderiv(shaderHandle, GL_INFO_LOG_LENGTH, &logLen);
 
-template <>
-void TextureBuffer<GLBackend>::bind() {
-  if (dim == 1) {
-    glBindTexture(GL_TEXTURE_1D, handle);
+  if (options::verbosity > 0 && logLen > 1) { // for some reason we often get logs of length 1 with no
+                                              // visible characters
+    log = (char*)malloc(logLen);
+    glGetShaderInfoLog(shaderHandle, logLen, &chars, log);
+    printf("Shader info log:\n%s\n", log);
+    free(log);
   }
-  if (dim == 2) {
-    glBindTexture(GL_TEXTURE_2D, handle);
+}
+void printProgramInfoLog(GLuint handle) {
+  int logLen = 0;
+  int chars = 0;
+  char* log;
+
+  glGetProgramiv(handle, GL_INFO_LOG_LENGTH, &logLen);
+
+  if (options::verbosity > 0 && logLen > 1) { // for some reason we often get logs of length 1 with no
+                                              // visible characters
+    log = (char*)malloc(logLen);
+    glGetProgramInfoLog(handle, logLen, &chars, log);
+    printf("Program info log:\n%s\n", log);
+    free(log);
   }
 }
 
-template <>
-void TextureBuffer<GLBackend>::setFilterMode(FilterMode newMode) {
+// =============================================================
+// ==================== Texture buffer =========================
+// =============================================================
+
+// create a 1D texture from data
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, unsigned char* data)
+    : TextureBuffer(1, format_, size1D) {
+
+  glGenTextures(1, &handle);
+  glBindTexture(GL_TEXTURE_1D, handle);
+  glTexImage1D(GL_TEXTURE_1D, 0, native(format), size1D, 0, native(format), GL_UNSIGNED_BYTE,
+               data); // TODO use format for both options is scary (here and below)
+
+  setFilterMode(FilterMode::Linear);
+}
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, float* data)
+    : TextureBuffer(1, format_, size1D) {
+
+  glGenTextures(1, &handle);
+  glBindTexture(GL_TEXTURE_1D, handle);
+  glTexImage1D(GL_TEXTURE_1D, 0, native(format), size1D, 0, native(format), GL_FLOAT, data);
+
+  setFilterMode(FilterMode::Linear);
+}
+
+// create a 2D texture from data
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data)
+    : TextureBuffer(1, format_, sizeX_, sizeY_) {
+
+  glGenTextures(1, &handle);
+  glBindTexture(GL_TEXTURE_2D, handle);
+  glTexImage2D(GL_TEXTURE_2D, 0, native(format), sizeX, sizeY, 0, native(format), GL_UNSIGNED_BYTE, data);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+  setFilterMode(FilterMode::Linear);
+}
+
+GLTextureBuffer::~GLTextureBuffer() { glDeleteTextures(1, &handle); }
+
+void GLTextureBuffer::resize(unsigned int newLen) {
+  bind();
+
+  sizeX = newLen;
+
+  if (dim == 1) {
+    glTexImage1D(GL_TEXTURE_1D, 0, native(format), sizeX, 0, native(format), GL_UNSIGNED_BYTE, 0);
+  }
+  if (dim == 2) {
+    throw std::runtime_error("OpenGL error: called 1D resize on 2D texture");
+  }
+}
+
+void GLTextureBuffer::resize(unsigned int newX, unsigned int newY) {
+  bind();
+
+  sizeX = newX;
+  sizeY = newY;
+
+  if (dim == 1) {
+    throw std::runtime_error("OpenGL error: called 2D resize on 1D texture");
+  }
+  if (dim == 2) {
+    glTexImage2D(GL_TEXTURE_2D, 0, native(format), sizeX, sizeY, 0, native(format), GL_UNSIGNED_BYTE, 0);
+  }
+}
+
+void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 
   bind();
 
@@ -148,90 +205,21 @@ void TextureBuffer<GLBackend>::setFilterMode(FilterMode newMode) {
   }
 }
 
-
-template <>
-TextureBuffer<GLBackend>::TextureBuffer(TextureFormat format_, unsigned int size1D, unsigned char* data)
-    : format(format_), sizeX(size1D), dim(1) {
-  if (size1D > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
-
-  glGenTextures(1, &handle);
-  glBindTexture(GL_TEXTURE_1D, handle);
-  glTexImage1D(GL_TEXTURE_1D, 0, native(format), size1D, 0, native(format), GL_UNSIGNED_BYTE,
-               data); // TODO seems bad to be using the same format throughout? are these right?
-
-  setFilterMode(FilterMode::Linear);
-}
-
-template <>
-TextureBuffer<GLBackend>::TextureBuffer(TextureFormat format_, unsigned int size1D, float* data)
-    : format(format_), sizeX(size1D), dim(1) {
-  if (size1D > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
-
-  glGenTextures(1, &handle);
-  glBindTexture(GL_TEXTURE_1D, handle);
-  glTexImage1D(GL_TEXTURE_1D, 0, native(format), size1D, 0, native(format), GL_FLOAT, data);
-
-  setFilterMode(FilterMode::Linear);
-}
-
-template <>
-TextureBuffer<GLBackend>::TextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_,
-                                        unsigned char* data)
-    : format(format_), sizeX(sizeX_), sizeY(sizeY_), dim(2) {
-  if (sizeX > (1 << 22) || sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
-
-  glGenTextures(1, &handle);
-  glBindTexture(GL_TEXTURE_2D, handle);
-  glTexImage2D(GL_TEXTURE_2D, 0, native(format), sizeX, sizeY, 0, native(format), GL_UNSIGNED_BYTE, data);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-  setFilterMode(FilterMode::Linear);
-}
-
-template <>
-TextureBuffer<GLBackend>::~TextureBuffer() {
-  glDeleteTextures(1, &handle);
-}
-
-template <>
-void TextureBuffer<GLBackend>::resize(unsigned int newLen) {
-  bind();
-
-  sizeX = newLen;
-
+void GLTextureBuffer::bind() {
   if (dim == 1) {
-    glTexImage1D(GL_TEXTURE_1D, 0, native(format), sizeX, 0, native(format), GL_UNSIGNED_BYTE, 0);
+    glBindTexture(GL_TEXTURE_1D, handle);
   }
   if (dim == 2) {
-    throw std::runtime_error("OpenGL error: called 1D resize on 2D texture");
+    glBindTexture(GL_TEXTURE_2D, handle);
   }
 }
-
-template <>
-void TextureBuffer<GLBackend>::resize(unsigned int newX, unsigned int newY) {
-  bind();
-
-  sizeX = newX;
-  sizeY = newY;
-
-  if (dim == 1) {
-    throw std::runtime_error("OpenGL error: called 2D resize on 1D texture");
-  }
-  if (dim == 2) {
-    glTexImage2D(GL_TEXTURE_2D, 0, native(format), sizeX, sizeY, 0, native(format), GL_UNSIGNED_BYTE, 0);
-  }
-}
-
 
 // =============================================================
 // ===================== Render buffer =========================
 // =============================================================
 
-template <>
-RenderBuffer<GLBackend>::RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_)
-    : type(type_), sizeX(sizeX_), sizeY(sizeY_) {
-  if (sizeX > (1 << 22) || sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid renderbuffer dimensions");
+GLRenderBuffer::GLRenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_)
+    : RenderBuffer(type_, sizeX_, sizeY_) {
 
   glGenRenderbuffers(1, &handle);
   glBindRenderbuffer(GL_RENDERBUFFER, handle);
@@ -252,40 +240,36 @@ RenderBuffer<GLBackend>::RenderBuffer(RenderBufferType type_, unsigned int sizeX
   }
 }
 
-template <>
-RenderBuffer<GLBackend>::~RenderBuffer() {
-  glDeleteRenderbuffers(1, &handle);
-}
+GLRenderBuffer::~GLRenderBuffer() { glDeleteRenderbuffers(1, &handle); }
 
-template <>
-void RenderBuffer<GLBackend>::bind() {
-  glBindRenderbuffer(GL_RENDERBUFFER, handle);
-}
+void GLRenderBuffer::bind() { glBindRenderbuffer(GL_RENDERBUFFER, handle); }
 
 
 // =============================================================
 // ===================== Framebuffer ===========================
 // =============================================================
 
-template <>
-FrameBufferImpl<GLBackend>::FrameBufferImpl() {
+GLFrameBuffer::GLFrameBuffer() {
   glGenFramebuffers(1, &handle);
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
 };
 
-template <>
-FrameBufferImpl<GLBackend>::~FrameBufferImpl() {
-  glDeleteFramebuffers(1, &handle);
-}
+GLFrameBuffer::~GLFrameBuffer() { glDeleteFramebuffers(1, &handle); }
 
-template <>
-void FrameBufferImpl<GLBackend>::bindToColorRenderbuffer(RenderBuffer<GLBackend>* renderBuffer) {
+void GLFrameBuffer::bind() { glBindFramebuffer(GL_FRAMEBUFFER, handle); }
+
+void GLFrameBuffer::bindToColorRenderbuffer(RenderBuffer* renderBufferIn) {
+
+  // it _better_ be a GL buffer
+  GLRenderBuffer* renderBuffer = dynamic_cast<GLRenderBuffer*>(renderBufferIn);
+  if (!renderBuffer) throw std::runtime_error("tried to bind to non-GL render buffer");
+
   renderBuffer->bind();
-  glBindFramebuffer(GL_FRAMEBUFFER, handle);
+  bind();
 
   // Sanity checks
-  if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
-  if (colorTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+  // if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
+  // if (colorTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
 
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, renderBuffer->getHandle());
   colorRenderBuffer = renderBuffer;
@@ -294,27 +278,34 @@ void FrameBufferImpl<GLBackend>::bindToColorRenderbuffer(RenderBuffer<GLBackend>
   glDrawBuffers(1, DrawBuffers);
 }
 
-template <>
-void FrameBufferImpl<GLBackend>::bindToDepthRenderbuffer(RenderBuffer<GLBackend>* renderBuffer) {
+void GLFrameBuffer::bindToDepthRenderbuffer(RenderBuffer* renderBufferIn) {
+  // it _better_ be a GL buffer
+  GLRenderBuffer* renderBuffer = dynamic_cast<GLRenderBuffer*>(renderBufferIn);
+  if (!renderBuffer) throw std::runtime_error("tried to bind to non-GL render buffer");
+
   renderBuffer->bind();
-  glBindFramebuffer(GL_FRAMEBUFFER, handle);
+  bind();
 
   // Sanity checks
-  if (depthRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
-  if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+  // if (depthRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
+  // if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
 
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderBuffer->getHandle());
   depthRenderBuffer = renderBuffer;
 }
 
-template <>
-void FrameBufferImpl<GLBackend>::bindToColorTexturebuffer(TextureBuffer<GLBackend>* textureBuffer) {
+void GLFrameBuffer::bindToColorTexturebuffer(TextureBuffer* textureBufferIn) {
+
+  // it _better_ be a GL buffer
+  GLTextureBuffer* textureBuffer = dynamic_cast<GLTextureBuffer*>(textureBufferIn);
+  if (!textureBuffer) throw std::runtime_error("tried to bind to non-GL texture buffer");
+
   textureBuffer->bind();
-  glBindFramebuffer(GL_FRAMEBUFFER, handle);
+  bind();
 
   // Sanity checks
-  if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
-  if (colorTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+  // if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
+  // if (colorTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
 
   glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureBuffer->getHandle(), 0);
   colorTextureBuffer = textureBuffer;
@@ -323,22 +314,25 @@ void FrameBufferImpl<GLBackend>::bindToColorTexturebuffer(TextureBuffer<GLBacken
   glDrawBuffers(1, DrawBuffers);
 }
 
-template <>
-void FrameBufferImpl<GLBackend>::bindToDepthTexturebuffer(TextureBuffer<GLBackend>* textureBuffer) {
+void GLFrameBuffer::bindToDepthTexturebuffer(TextureBuffer* textureBufferIn) {
+
+  // it _better_ be a GL buffer
+  GLTextureBuffer* textureBuffer = dynamic_cast<GLTextureBuffer*>(textureBufferIn);
+  if (!textureBuffer) throw std::runtime_error("tried to bind to non-GL texture buffer");
+
   textureBuffer->bind();
-  glBindFramebuffer(GL_FRAMEBUFFER, handle);
+  bind();
 
   // Sanity checks
-  if (depthRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
-  if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+  // if (depthRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
+  // if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
 
   glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureBuffer->getHandle(), 0);
   depthTextureBuffer = textureBuffer;
 }
 
-template <>
-bool FrameBufferImpl<GLBackend>::bindForRendering() {
-  glBindFramebuffer(GL_FRAMEBUFFER, handle);
+bool GLFrameBuffer::bindForRendering() {
+  bind();
 
   // Check if the frame buffer is okay
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -352,7 +346,7 @@ bool FrameBufferImpl<GLBackend>::bindForRendering() {
   // Set the viewport
   if (!viewportSet) {
     throw std::runtime_error(
-        "OpenGL error: viewport not set for framebuffer object. Call FrameBufferImpl<GLBackend>::setViewport()");
+        "OpenGL error: viewport not set for framebuffer object. Call GLFrameBuffer::setViewport()");
   }
   glViewport(viewportX, viewportY, viewportSizeX, viewportSizeY);
 
@@ -364,19 +358,20 @@ bool FrameBufferImpl<GLBackend>::bindForRendering() {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  checkError<GLBackend>();
+  checkGLError();
 
   return true;
 }
 
-template <>
-void FrameBufferImpl<GLBackend>::resizeBuffers(unsigned int newXSize, unsigned int newYSize) {
+void GLFrameBuffer::resizeBuffers(unsigned int newXSize, unsigned int newYSize) {
+
+  // TODO switch these to just resize existing buffers instead of reallocating
 
   // Resize color buffer
   if (colorRenderBuffer != nullptr &&
       (colorRenderBuffer->getSizeX() != newXSize || colorRenderBuffer->getSizeY() != newYSize)) {
     // Make a new buffer
-    RenderBuffer<GLBackend>* newBuff = new RenderBuffer<GLBackend>(colorRenderBuffer->getType(), newXSize, newYSize);
+    GLRenderBuffer* newBuff = new GLRenderBuffer(colorRenderBuffer->getType(), newXSize, newYSize);
 
     // Delete the old buffer
     GLuint h = colorRenderBuffer->getHandle();
@@ -398,7 +393,7 @@ void FrameBufferImpl<GLBackend>::resizeBuffers(unsigned int newXSize, unsigned i
       (depthRenderBuffer->getSizeX() != newXSize || depthRenderBuffer->getSizeY() != newYSize)) {
 
     // Make a new buffer
-    RenderBuffer<GLBackend>* newBuff = new RenderBuffer<GLBackend>(depthRenderBuffer->getType(), newXSize, newYSize);
+    GLRenderBuffer* newBuff = new GLRenderBuffer(depthRenderBuffer->getType(), newXSize, newYSize);
 
     // Delete the old buffer
     GLuint h = depthRenderBuffer->getHandle();
@@ -416,28 +411,18 @@ void FrameBufferImpl<GLBackend>::resizeBuffers(unsigned int newXSize, unsigned i
   }
 }
 
-template <>
-void FrameBufferImpl<GLBackend>::setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
-  viewportSet = true;
-  viewportX = startX;
-  viewportY = startY;
-  viewportSizeX = sizeX;
-  viewportSizeY = sizeY;
-}
 
-template <>
-void FrameBufferImpl<GLBackend>::clear() {
+void GLFrameBuffer::clear() {
   if (!bindForRendering()) return;
   glClearColor(clearColor[0], clearColor[1], clearColor[2], clearAlpha);
   glClearDepth(1.);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-template <>
-std::array<float, 4> FrameBufferImpl<GLBackend>::readFloat4(int xPos, int yPos) {
+std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
 
   if (colorRenderBuffer == nullptr || colorRenderBuffer->getType() != RenderBufferType::Float4) {
-    throw std::runtime_error("OpenGL error: buffer is not of right type to pick from");
+    throw std::runtime_error("OpenGL error: buffer is not of right type to read float4 from");
   }
 
   glFlush();
@@ -450,169 +435,161 @@ std::array<float, 4> FrameBufferImpl<GLBackend>::readFloat4(int xPos, int yPos) 
   return result;
 }
 
-
 // =============================================================
 // ==================  Shader Program  =========================
 // =============================================================
 
-GLBackend::ShaderHandle commonShaderHandle = 0; // TODO
+ProgramHandle commonShaderHandle = 0;
 
-template <>
-void ShaderProgramImpl<GLBackend>::addUniqueAttribute(ShaderAttribute newAttribute) {
-  for (Attribute& a : attributes) {
+GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
+                                 unsigned int nPatchVertices)
+    : ShaderProgram(stages, dm, nPatchVertices) {
+
+  GLint maxPatchVertices;
+  glGetIntegerv(GL_MAX_PATCH_VERTICES, &maxPatchVertices);
+  if (nPatchVertices != 0 && nPatchVertices > (unsigned int)maxPatchVertices) {
+    throw std::invalid_argument("Requested number of patch vertices (" + std::to_string(nPatchVertices) +
+                                ") is greater than the number supported by the tessellator (" +
+                                std::to_string(maxPatchVertices));
+  }
+
+
+  // Collect attributes and uniforms from all of the shaders
+  for (const ShaderStageSpecification& s : stages) {
+    for (ShaderSpecUniform u : s.uniforms) {
+      addUniqueUniform(u);
+    }
+    for (ShaderSpecAttribute a : s.attributes) {
+      addUniqueAttribute(a);
+    }
+    for (ShaderSpecTexture t : s.textures) {
+      addUniqueTexture(t);
+    }
+  }
+
+  if (attributes.size() == 0) {
+    throw std::invalid_argument("Uh oh... GLProgram has no attributes");
+  }
+
+
+  // Perform setup tasks
+  compileGLProgram(stages);
+  setDataLocations();
+  createBuffers();
+  checkGLError();
+}
+
+GLShaderProgram::~GLShaderProgram() {
+  // Make sure that we free the buffers for all attributes
+  for (GLShaderAttribute& a : attributes) {
+    deleteAttributeBuffer(a);
+  }
+
+  // Free the program
+  glDeleteProgram(programHandle);
+}
+
+void GLShaderProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
+  for (GLShaderAttribute& a : attributes) {
     if (a.name == newAttribute.name && a.type == newAttribute.type) {
       return;
     }
   }
-  attributes.push_back(Attribute{newAttribute.name, newAttribute.type, 777, 777, -1, newAttribute.arrayCount});
+  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, 777, 777, 777});
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::addUniqueUniform(ShaderUniform newUniform) {
-  for (Uniform& u : uniforms) {
+void GLShaderProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
+  for (GLShaderUniform& u : uniforms) {
     if (u.name == newUniform.name && u.type == newUniform.type) {
       return;
     }
   }
-  uniforms.push_back(Uniform{newUniform.name, newUniform.type, 777, false});
+  uniforms.push_back(GLShaderUniform{newUniform.name, newUniform.type, false, 777});
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::addUniqueTexture(ShaderTexture newTexture) {
-  for (Texture& t : textures) {
+void GLShaderProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
+  for (GLShaderTexture& t : textures) {
     if (t.name == newTexture.name && t.dim == newTexture.dim) {
       return;
     }
   }
-  textures.push_back(Texture{newTexture.name, newTexture.dim, 777, nullptr, 777, false, false});
+  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, 777});
 }
 
 
-template <>
-void ShaderProgramImpl<GLBackend>::deleteAttributeBuffer(Attribute attribute) {
+void GLShaderProgram::deleteAttributeBuffer(GLShaderAttribute& attribute) {
   glUseProgram(programHandle);
   glBindVertexArray(vaoHandle);
   glDeleteBuffers(1, &attribute.VBOLoc);
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::freeTexture(Texture t) {
-  if (t.managedByProgram) {
-    delete t.textureBuffer;
+void GLShaderProgram::compileGLProgram(const std::vector<ShaderStageSpecification>& stages) {
+
+
+  // Compile all of the shaders
+  std::vector<ShaderHandle> handles;
+  for (const ShaderStageSpecification& s : stages) {
+    ShaderHandle h = glCreateShader(native(s.stage));
+    const char* shaderSrcTmp = s.src.c_str();
+    glShaderSource(h, 1, &shaderSrcTmp, nullptr);
+    glCompileShader(h);
+    printShaderInfoLog(h);
+    handles.push_back(h);
   }
-}
-
-template <>
-void ShaderProgramImpl<GLBackend>::compileGLProgram() {
-  // Compile the vertex shader
-  vertShaderHandle = glCreateShader(GL_VERTEX_SHADER);
-  const char* vertShaderTmp = vertShader->src.c_str();
-  glShaderSource(vertShaderHandle, 1, &vertShaderTmp, nullptr);
-  glCompileShader(vertShaderHandle);
-  printShaderInfoLog<GLBackend>(vertShaderHandle);
-
-  // Compile the tessellation control shader
-  if (tessShader != nullptr) {
-    tessShaderHandle = glCreateShader(GL_TESS_CONTROL_SHADER);
-    const char* tessShaderTmp = tessShader->src.c_str();
-    glShaderSource(tessShaderHandle, 1, &tessShaderTmp, nullptr);
-    glCompileShader(tessShaderHandle);
-    printShaderInfoLog<GLBackend>(tessShaderHandle);
-  }
-
-  // Compile the tessellation evaluation shader
-  if (evalShader != nullptr) {
-    evalShaderHandle = glCreateShader(GL_TESS_EVALUATION_SHADER);
-    const char* evalShaderTmp = evalShader->src.c_str();
-    glShaderSource(evalShaderHandle, 1, &evalShaderTmp, nullptr);
-    glCompileShader(evalShaderHandle);
-    printShaderInfoLog<GLBackend>(evalShaderHandle);
-  }
-
-  // Compile the geometry shader
-  if (geomShader != nullptr) {
-    geomShaderHandle = glCreateShader(GL_GEOMETRY_SHADER);
-    const char* geomShaderTmp = geomShader->src.c_str();
-    glShaderSource(geomShaderHandle, 1, &geomShaderTmp, nullptr);
-    glCompileShader(geomShaderHandle);
-    printShaderInfoLog<GLBackend>(geomShaderHandle);
-  }
-
-  // Compile the fragment shader
-  fragShaderHandle = glCreateShader(GL_FRAGMENT_SHADER);
-  const char* fragShaderTmp = fragShader->src.c_str();
-  glShaderSource(fragShaderHandle, 1, &fragShaderTmp, nullptr);
-  glCompileShader(fragShaderHandle);
-  printShaderInfoLog<GLBackend>(fragShaderHandle);
 
   // Create the program and attach the shaders
   programHandle = glCreateProgram();
-  glAttachShader(programHandle, vertShaderHandle);
-  if (tessShader != nullptr) {
-    glAttachShader(programHandle, tessShaderHandle);
+  for (ShaderHandle h : handles) {
+    glAttachShader(programHandle, h);
   }
-  if (evalShader != nullptr) {
-    glAttachShader(programHandle, evalShaderHandle);
-  }
-  if (geomShader != nullptr) {
-    glAttachShader(programHandle, geomShaderHandle);
-  }
-  glAttachShader(programHandle, commonShaderHandle);
-  glAttachShader(programHandle, fragShaderHandle);
 
   // Set the output data location
-  glBindFragDataLocation(programHandle, 0, fragShader->outputLoc.c_str());
+  for (const ShaderStageSpecification& s : stages) {
+    if (s.stage == ShaderStageType::Fragment) {
+      glBindFragDataLocation(programHandle, 0, s.outputLoc.c_str());
+    }
+  }
 
   // Link the program
   glLinkProgram(programHandle);
-  printProgramInfoLog<GLBackend>(programHandle);
+  printProgramInfoLog(programHandle);
+
 
   // Delete the shaders we just compiled, they aren't used after link
-  glDeleteShader(vertShaderHandle);
-  if (tessShader != nullptr) {
-    glDeleteShader(tessShaderHandle);
+  for (ShaderHandle h : handles) {
+    glDeleteShader(h);
   }
-  if (evalShader != nullptr) {
-    glDeleteShader(evalShaderHandle);
-  }
-  if (geomShader != nullptr) {
-    glDeleteShader(geomShaderHandle);
-  }
-  glDeleteShader(fragShaderHandle);
 }
 
-
-template <>
-void ShaderProgramImpl<GLBackend>::setDataLocations() {
+void GLShaderProgram::setDataLocations() {
   glUseProgram(programHandle);
 
   // Uniforms
-  for (Uniform& u : uniforms) {
+  for (GLShaderUniform& u : uniforms) {
     u.location = glGetUniformLocation(programHandle, u.name.c_str());
     if (u.location == -1) throw std::runtime_error("failed to get location for uniform " + u.name);
   }
 
   // Attributes
-  for (Attribute& a : attributes) {
+  for (GLShaderAttribute& a : attributes) {
     a.location = glGetAttribLocation(programHandle, a.name.c_str());
     if (a.location == -1) throw std::runtime_error("failed to get location for attribute " + a.name);
   }
 
   // Textures
-  for (Texture& t : textures) {
+  for (GLShaderTexture& t : textures) {
     t.location = glGetUniformLocation(programHandle, t.name.c_str());
     if (t.location == -1) throw std::runtime_error("failed to get location for texture " + t.name);
   }
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::createBuffers() {
+void GLShaderProgram::createBuffers() {
   // Create a VAO
   glGenVertexArrays(1, &vaoHandle);
   glBindVertexArray(vaoHandle);
 
   // Create buffers for each attributes
-  for (Attribute& a : attributes) {
+  for (GLShaderAttribute& a : attributes) {
     glGenBuffers(1, &a.VBOLoc);
     glBindBuffer(GL_ARRAY_BUFFER, a.VBOLoc);
 
@@ -647,11 +624,11 @@ void ShaderProgramImpl<GLBackend>::createBuffers() {
                               reinterpret_cast<void*>(sizeof(float) * 4 * iArrInd));
         break;
       default:
-        throw std::invalid_argument("Unrecognized Attribute type");
+        throw std::invalid_argument("Unrecognized GLShaderAttribute type");
         break;
       }
     }
-    checkError<GLBackend>();
+    checkGLError();
   }
 
   // Create an index buffer, if we're using one
@@ -673,14 +650,13 @@ void ShaderProgramImpl<GLBackend>::createBuffers() {
 
   // Set indices sequentially
   for (unsigned int iTexture = 0; iTexture < textures.size(); iTexture++) {
-    Texture& t = textures[iTexture];
+    GLShaderTexture& t = textures[iTexture];
     t.index = iTexture;
   }
 }
 
-template <>
-bool ShaderProgramImpl<GLBackend>::hasUniform(std::string name) {
-  for (Uniform& u : uniforms) {
+bool GLShaderProgram::hasUniform(std::string name) {
+  for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
       return true;
     }
@@ -689,17 +665,16 @@ bool ShaderProgramImpl<GLBackend>::hasUniform(std::string name) {
 }
 
 // Set an integer
-template <>
-void ShaderProgramImpl<GLBackend>::setUniform(std::string name, int val) {
+void GLShaderProgram::setUniform(std::string name, int val) {
   glUseProgram(programHandle);
 
-  for (Uniform& u : uniforms) {
+  for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
       if (u.type == DataType::Int) {
         glUniform1i(u.location, val);
         u.isSet = true;
       } else {
-        throw std::invalid_argument("Tried to set Uniform with wrong type");
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
       }
       return;
     }
@@ -708,17 +683,16 @@ void ShaderProgramImpl<GLBackend>::setUniform(std::string name, int val) {
 }
 
 // Set an unsigned integer
-template <>
-void ShaderProgramImpl<GLBackend>::setUniform(std::string name, unsigned int val) {
+void GLShaderProgram::setUniform(std::string name, unsigned int val) {
   glUseProgram(programHandle);
 
-  for (Uniform& u : uniforms) {
+  for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
       if (u.type == DataType::UInt) {
         glUniform1ui(u.location, val);
         u.isSet = true;
       } else {
-        throw std::invalid_argument("Tried to set Uniform with wrong type");
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
       }
       return;
     }
@@ -727,17 +701,16 @@ void ShaderProgramImpl<GLBackend>::setUniform(std::string name, unsigned int val
 }
 
 // Set a float
-template <>
-void ShaderProgramImpl<GLBackend>::setUniform(std::string name, float val) {
+void GLShaderProgram::setUniform(std::string name, float val) {
   glUseProgram(programHandle);
 
-  for (Uniform& u : uniforms) {
+  for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
       if (u.type == DataType::Float) {
         glUniform1f(u.location, val);
         u.isSet = true;
       } else {
-        throw std::invalid_argument("Tried to set Uniform with wrong type");
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
       }
       return;
     }
@@ -746,17 +719,16 @@ void ShaderProgramImpl<GLBackend>::setUniform(std::string name, float val) {
 }
 
 // Set a double --- WARNING casts down to float
-template <>
-void ShaderProgramImpl<GLBackend>::setUniform(std::string name, double val) {
+void GLShaderProgram::setUniform(std::string name, double val) {
   glUseProgram(programHandle);
 
-  for (Uniform& u : uniforms) {
+  for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
       if (u.type == DataType::Float) {
         glUniform1f(u.location, static_cast<float>(val));
         u.isSet = true;
       } else {
-        throw std::invalid_argument("Tried to set Uniform with wrong type");
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
       }
       return;
     }
@@ -765,17 +737,16 @@ void ShaderProgramImpl<GLBackend>::setUniform(std::string name, double val) {
 }
 
 // Set a 4x4 uniform matrix
-template <>
-void ShaderProgramImpl<GLBackend>::setUniform(std::string name, float* val) {
+void GLShaderProgram::setUniform(std::string name, float* val) {
   glUseProgram(programHandle);
 
-  for (Uniform& u : uniforms) {
+  for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
       if (u.type == DataType::Matrix44Float) {
         glUniformMatrix4fv(u.location, 1, false, val);
         u.isSet = true;
       } else {
-        throw std::invalid_argument("Tried to set Uniform with wrong type");
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
       }
       return;
     }
@@ -784,17 +755,16 @@ void ShaderProgramImpl<GLBackend>::setUniform(std::string name, float* val) {
 }
 
 // Set a vector2 uniform
-template <>
-void ShaderProgramImpl<GLBackend>::setUniform(std::string name, glm::vec2 val) {
+void GLShaderProgram::setUniform(std::string name, glm::vec2 val) {
   glUseProgram(programHandle);
 
-  for (Uniform& u : uniforms) {
+  for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
       if (u.type == DataType::Vector2Float) {
         glUniform2f(u.location, val.x, val.y);
         u.isSet = true;
       } else {
-        throw std::invalid_argument("Tried to set Uniform with wrong type");
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
       }
       return;
     }
@@ -803,17 +773,16 @@ void ShaderProgramImpl<GLBackend>::setUniform(std::string name, glm::vec2 val) {
 }
 
 // Set a vector3 uniform
-template <>
-void ShaderProgramImpl<GLBackend>::setUniform(std::string name, glm::vec3 val) {
+void GLShaderProgram::setUniform(std::string name, glm::vec3 val) {
   glUseProgram(programHandle);
 
-  for (Uniform& u : uniforms) {
+  for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
       if (u.type == DataType::Vector3Float) {
         glUniform3f(u.location, val.x, val.y, val.z);
         u.isSet = true;
       } else {
-        throw std::invalid_argument("Tried to set Uniform with wrong type");
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
       }
       return;
     }
@@ -822,17 +791,16 @@ void ShaderProgramImpl<GLBackend>::setUniform(std::string name, glm::vec3 val) {
 }
 
 // Set a vector4 uniform
-template <>
-void ShaderProgramImpl<GLBackend>::setUniform(std::string name, glm::vec4 val) {
+void GLShaderProgram::setUniform(std::string name, glm::vec4 val) {
   glUseProgram(programHandle);
 
-  for (Uniform& u : uniforms) {
+  for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
       if (u.type == DataType::Vector4Float) {
         glUniform4f(u.location, val.x, val.y, val.z, val.w);
         u.isSet = true;
       } else {
-        throw std::invalid_argument("Tried to set Uniform with wrong type");
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
       }
       return;
     }
@@ -841,17 +809,16 @@ void ShaderProgramImpl<GLBackend>::setUniform(std::string name, glm::vec4 val) {
 }
 
 // Set a vector3 uniform from a float array
-template <>
-void ShaderProgramImpl<GLBackend>::setUniform(std::string name, std::array<float, 3> val) {
+void GLShaderProgram::setUniform(std::string name, std::array<float, 3> val) {
   glUseProgram(programHandle);
 
-  for (Uniform& u : uniforms) {
+  for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
       if (u.type == DataType::Vector3Float) {
         glUniform3f(u.location, val[0], val[1], val[2]);
         u.isSet = true;
       } else {
-        throw std::invalid_argument("Tried to set Uniform with wrong type");
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
       }
       return;
     }
@@ -860,17 +827,16 @@ void ShaderProgramImpl<GLBackend>::setUniform(std::string name, std::array<float
 }
 
 // Set a vec4 uniform
-template <>
-void ShaderProgramImpl<GLBackend>::setUniform(std::string name, float x, float y, float z, float w) {
+void GLShaderProgram::setUniform(std::string name, float x, float y, float z, float w) {
   glUseProgram(programHandle);
 
-  for (Uniform& u : uniforms) {
+  for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
       if (u.type == DataType::Vector4Float) {
         glUniform4f(u.location, x, y, z, w);
         u.isSet = true;
       } else {
-        throw std::invalid_argument("Tried to set Uniform with wrong type");
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
       }
       return;
     }
@@ -878,9 +844,8 @@ void ShaderProgramImpl<GLBackend>::setUniform(std::string name, float x, float y
   throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
-template <>
-bool ShaderProgramImpl<GLBackend>::hasAttribute(std::string name) {
-  for (Attribute& a : attributes) {
+bool GLShaderProgram::hasAttribute(std::string name) {
+  for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
       return true;
     }
@@ -888,9 +853,8 @@ bool ShaderProgramImpl<GLBackend>::hasAttribute(std::string name) {
   return false;
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update,
-                                                int offset, int size) {
+void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update, int offset,
+                                   int size) {
   // Reshape the vector
   // Right now, the data is probably laid out in this form already... but let's
   // not be overly clever and just reshape it.
@@ -900,7 +864,7 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
     rawData[2 * i + 1] = static_cast<float>(data[i].y);
   }
 
-  for (Attribute& a : attributes) {
+  for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
       if (a.type == DataType::Vector2Float) {
         glBindVertexArray(vaoHandle);
@@ -920,7 +884,7 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set Attribute named " + name +
+        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
                                     " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
                                     "  Attempted type: " + std::to_string(static_cast<int>(DataType::Vector2Float)));
       }
@@ -931,9 +895,8 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update,
-                                                int offset, int size) {
+void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update, int offset,
+                                   int size) {
   // Reshape the vector
   // Right now, the data is probably laid out in this form already... but let's
   // not be overly clever and just reshape it.
@@ -944,7 +907,7 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
     rawData[3 * i + 2] = static_cast<float>(data[i].z);
   }
 
-  for (Attribute& a : attributes) {
+  for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
       if (a.type == DataType::Vector3Float) {
         glBindVertexArray(vaoHandle);
@@ -964,7 +927,7 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set Attribute named " + name +
+        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
                                     " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
                                     "  Attempted type: " + std::to_string(static_cast<int>(DataType::Vector3Float)));
       }
@@ -975,9 +938,8 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update,
-                                                int offset, int size) {
+void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update, int offset,
+                                   int size) {
   // Reshape the vector
   // Right now, the data is probably laid out in this form already... but let's
   // not be overly clever and just reshape it.
@@ -989,7 +951,7 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
     rawData[4 * i + 3] = static_cast<float>(data[i].w);
   }
 
-  for (Attribute& a : attributes) {
+  for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
       if (a.type == DataType::Vector4Float) {
         glBindVertexArray(vaoHandle);
@@ -1009,7 +971,7 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set Attribute named " + name +
+        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
                                     " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
                                     "  Attempted type: " + std::to_string(static_cast<int>(DataType::Vector4Float)));
       }
@@ -1020,16 +982,15 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vector<double>& data, bool update,
-                                                int offset, int size) {
+void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& data, bool update, int offset,
+                                   int size) {
   // Convert input data to floats
   std::vector<float> floatData(data.size());
   for (unsigned int i = 0; i < data.size(); i++) {
     floatData[i] = static_cast<float>(data[i]);
   }
 
-  for (Attribute& a : attributes) {
+  for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
       if (a.type == DataType::Float) {
         glBindVertexArray(vaoHandle);
@@ -1049,7 +1010,7 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set Attribute named " + name +
+        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
                                     " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
                                     "  Attempted type: " + std::to_string(static_cast<float>(DataType::Float)));
       }
@@ -1060,9 +1021,7 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
   throw std::invalid_argument("No attribute with name " + name);
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vector<int>& data, bool update, int offset,
-                                                int size) {
+void GLShaderProgram::setAttribute(std::string name, const std::vector<int>& data, bool update, int offset, int size) {
   // FIXME I've seen strange bugs when using int's in shaders. Need to figure
   // out it it's my shaders or something wrong with this function
 
@@ -1072,7 +1031,7 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
     intData[i] = static_cast<GLint>(data[i]);
   }
 
-  for (Attribute& a : attributes) {
+  for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
       if (a.type == DataType::Int) {
         glBindVertexArray(vaoHandle);
@@ -1092,7 +1051,7 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set Attribute named " + name +
+        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
                                     " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
                                     "  Attempted type: " + std::to_string(static_cast<int>(DataType::Int)));
       }
@@ -1103,9 +1062,8 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
   throw std::invalid_argument("No attribute with name " + name);
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vector<uint32_t>& data, bool update,
-                                                int offset, int size) {
+void GLShaderProgram::setAttribute(std::string name, const std::vector<uint32_t>& data, bool update, int offset,
+                                   int size) {
   // FIXME I've seen strange bugs when using int's in shaders. Need to figure
   // out it it's my shaders or something wrong with this function
 
@@ -1115,7 +1073,7 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
     intData[i] = static_cast<GLuint>(data[i]);
   }
 
-  for (Attribute& a : attributes) {
+  for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
       if (a.type == DataType::UInt) {
         glBindVertexArray(vaoHandle);
@@ -1135,7 +1093,7 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set Attribute named " + name +
+        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
                                     " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
                                     "  Attempted type: " + std::to_string(static_cast<int>(DataType::UInt)));
       }
@@ -1146,12 +1104,11 @@ void ShaderProgramImpl<GLBackend>::setAttribute(std::string name, const std::vec
   throw std::invalid_argument("No attribute with name " + name);
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::setTexture1D(std::string name, unsigned char* texData, unsigned int length) {
+void GLShaderProgram::setTexture1D(std::string name, unsigned char* texData, unsigned int length) {
   throw std::invalid_argument("This code hasn't been testded yet.");
 
   // Find the right texture
-  for (Texture& t : textures) {
+  for (GLShaderTexture& t : textures) {
     if (t.name != name) continue;
 
     if (t.isSet) {
@@ -1163,8 +1120,7 @@ void ShaderProgramImpl<GLBackend>::setTexture1D(std::string name, unsigned char*
     }
 
     // Create a new texture object
-    t.textureBuffer = new TextureBuffer<GLBackend>(TextureFormat::RGB8, length, texData);
-    t.managedByProgram = true;
+    t.textureBuffer.reset(new GLTextureBuffer(TextureFormat::RGB8, length, texData));
 
 
     // Set policies
@@ -1179,13 +1135,12 @@ void ShaderProgramImpl<GLBackend>::setTexture1D(std::string name, unsigned char*
   throw std::invalid_argument("No texture with name " + name);
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::setTexture2D(std::string name, unsigned char* texData, unsigned int width,
-                                                unsigned int height, bool withAlpha, bool useMipMap, bool repeat) {
+void GLShaderProgram::setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
+                                   bool withAlpha, bool useMipMap, bool repeat) {
 
 
   // Find the right texture
-  for (Texture& t : textures) {
+  for (GLShaderTexture& t : textures) {
     if (t.name != name) continue;
 
     if (t.isSet) {
@@ -1197,11 +1152,10 @@ void ShaderProgramImpl<GLBackend>::setTexture2D(std::string name, unsigned char*
     }
 
     if (withAlpha) {
-      t.textureBuffer = new TextureBuffer<GLBackend>(TextureFormat::RGBA8, width, height, texData);
+      t.textureBuffer.reset(new GLTextureBuffer(TextureFormat::RGBA8, width, height, texData));
     } else {
-      t.textureBuffer = new TextureBuffer<GLBackend>(TextureFormat::RGB8, width, height, texData);
+      t.textureBuffer.reset(new GLTextureBuffer(TextureFormat::RGB8, width, height, texData));
     }
-    t.managedByProgram = true;
 
 
     // Set policies
@@ -1229,20 +1183,21 @@ void ShaderProgramImpl<GLBackend>::setTexture2D(std::string name, unsigned char*
   throw std::invalid_argument("No texture with name " + name);
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::setTextureFromBuffer(std::string name, TextureBuffer<GLBackend>* textureBuffer) {
+void GLShaderProgram::setTextureFromBuffer(std::string name, std::shared_ptr<TextureBuffer> textureBuffer) {
   glUseProgram(programHandle);
 
   // Find the right texture
-  for (Texture& t : textures) {
+  for (GLShaderTexture& t : textures) {
     if (t.name != name) continue;
 
     if (t.dim != (int)textureBuffer->getDimension()) {
       throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
     }
 
-    t.textureBuffer = textureBuffer;
-    t.managedByProgram = false;
+    t.textureBuffer = std::dynamic_pointer_cast<GLTextureBuffer>(textureBuffer);
+    if (!t.textureBuffer) {
+      throw std::invalid_argument("Bad texture in setTextureFromBuffer()");
+    }
 
     t.isSet = true;
     return;
@@ -1252,13 +1207,11 @@ void ShaderProgramImpl<GLBackend>::setTextureFromBuffer(std::string name, Textur
 }
 
 /*
-template <>
-void ShaderProgramImpl<GLBackend>::setTextureFromColormap(std::string name, const ValueColorMap& colormap,
-                                                      bool allowUpdate) {
+void GLShaderProgram::setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate) {
   // TODO switch to global shared buffers from colormap
 
   // Find the right texture
-  for (Texture& t : textures) {
+  for (GLShaderTexture& t : textures) {
     if (t.name != name) continue;
 
     if (t.isSet && !allowUpdate) {
@@ -1279,8 +1232,7 @@ void ShaderProgramImpl<GLBackend>::setTextureFromColormap(std::string name, cons
     }
 
     // glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, colormap.values.size(), 0, GL_RGB, GL_FLOAT, &(colorBuffer[0]));
-    t.textureBuffer = new TextureBuffer<GLBackend>(GL_RGB, colormap.values.size(), &(colorBuffer[0]));
-    t.managedByProgram = true;
+    t.textureBuffer = new GLTextureBuffer(GL_RGB, colormap.values.size(), &(colorBuffer[0]));
 
     t.isSet = true;
     return;
@@ -1290,8 +1242,7 @@ void ShaderProgramImpl<GLBackend>::setTextureFromColormap(std::string name, cons
 }
 */
 
-template <>
-void ShaderProgramImpl<GLBackend>::setIndex(std::vector<std::array<unsigned int, 3>>& indices) {
+void GLShaderProgram::setIndex(std::vector<std::array<unsigned int, 3>>& indices) {
   if (!useIndex) {
     throw std::invalid_argument("Tried to setIndex() when program drawMode does not use indexed "
                                 "drawing");
@@ -1314,8 +1265,7 @@ void ShaderProgramImpl<GLBackend>::setIndex(std::vector<std::array<unsigned int,
   delete[] rawData;
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::setIndex(std::vector<unsigned int>& indices) {
+void GLShaderProgram::setIndex(std::vector<unsigned int>& indices) {
   // (This version is typically used for indexed lines)
 
   if (!useIndex) {
@@ -1341,10 +1291,9 @@ void ShaderProgramImpl<GLBackend>::setIndex(std::vector<unsigned int>& indices) 
 }
 
 // Check that uniforms and attributes are all set and of consistent size
-template <>
-void ShaderProgramImpl<GLBackend>::validateData() {
+void GLShaderProgram::validateData() {
   // Check uniforms
-  for (Uniform& u : uniforms) {
+  for (GLShaderUniform& u : uniforms) {
     if (!u.isSet) {
       throw std::invalid_argument("Uniform " + u.name + " has not been set");
     }
@@ -1352,7 +1301,7 @@ void ShaderProgramImpl<GLBackend>::validateData() {
 
   // Check attributes
   long int attributeSize = -1;
-  for (Attribute a : attributes) {
+  for (GLShaderAttribute a : attributes) {
     if (a.dataSize < 0) {
       throw std::invalid_argument("Attribute " + a.name + " has not been set");
     }
@@ -1369,7 +1318,7 @@ void ShaderProgramImpl<GLBackend>::validateData() {
   drawDataLength = static_cast<unsigned int>(attributeSize);
 
   // Check textures
-  for (Texture& t : textures) {
+  for (GLShaderTexture& t : textures) {
     if (!t.isSet) {
       throw std::invalid_argument("Texture " + t.name + " has not been set");
     }
@@ -1384,19 +1333,15 @@ void ShaderProgramImpl<GLBackend>::validateData() {
   }
 }
 
-/*
-template <>
-void ShaderProgramImpl<GLBackend>::initCommonShaders() {
+void GLShaderProgram::initCommonShaders() {
   // Compile functions accessible to all shaders
   commonShaderHandle = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(commonShaderHandle, 1, &shaderCommonSource, nullptr);
   glCompileShader(commonShaderHandle);
-  printShaderInfoLog<GLBackend>(commonShaderHandle);
+  printShaderInfoLog(commonShaderHandle);
 }
-*/
 
-template <>
-void ShaderProgramImpl<GLBackend>::setPrimitiveRestartIndex(GLuint restartIndex_) {
+void GLShaderProgram::setPrimitiveRestartIndex(GLuint restartIndex_) {
   if (!usePrimitiveRestart) {
     throw std::runtime_error("setPrimitiveRestartIndex() called, but draw mode does not support restart indices.");
   }
@@ -1404,9 +1349,8 @@ void ShaderProgramImpl<GLBackend>::setPrimitiveRestartIndex(GLuint restartIndex_
   primitiveRestartIndexSet = true;
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::activateTextures() {
-  for (Texture& t : textures) {
+void GLShaderProgram::activateTextures() {
+  for (GLShaderTexture& t : textures) {
     // Point the uniform at this texture
 
     // Bind to the texture buffer
@@ -1426,8 +1370,7 @@ void ShaderProgramImpl<GLBackend>::activateTextures() {
   }
 }
 
-template <>
-void ShaderProgramImpl<GLBackend>::draw() {
+void GLShaderProgram::draw() {
   validateData();
 
   glUseProgram(programHandle);
@@ -1486,167 +1429,9 @@ void ShaderProgramImpl<GLBackend>::draw() {
     glDisable(GL_PRIMITIVE_RESTART);
   }
 
-  checkError<GLBackend>();
+  checkGLError();
 }
 
-template <>
-ShaderProgramImpl<GLBackend>::ShaderProgramImpl(const VertexShader<GLBackend>* vShader,
-                                                const TessellationShader<GLBackend>* tShader,
-                                                const EvaluationShader<GLBackend>* eShader,
-                                                const GeometryShader<GLBackend>* gShader,
-                                                const FragmentShader<GLBackend>* fShader, DrawMode dm,
-                                                int patchVertices) {
-  vertShader = vShader;
-  tessShader = tShader;
-  evalShader = eShader;
-  geomShader = gShader;
-  fragShader = fShader;
-
-  GLint maxPatchVertices;
-  glGetIntegerv(GL_MAX_PATCH_VERTICES, &maxPatchVertices);
-  if (patchVertices > maxPatchVertices) {
-    throw std::invalid_argument("Requested number of patch vertices (" + std::to_string(patchVertices) +
-                                ") is greater than the number supported by the tessellator (" +
-                                std::to_string(maxPatchVertices));
-  }
-
-  nPatchVertices = patchVertices;
-
-  drawMode = dm;
-  if (dm == DrawMode::IndexedLines || dm == DrawMode::IndexedLineStrip || dm == DrawMode::IndexedLineStripAdjacency ||
-      dm == DrawMode::IndexedTriangles) {
-    useIndex = true;
-  }
-
-  if (dm == DrawMode::IndexedLineStripAdjacency) {
-    usePrimitiveRestart = true;
-  }
-
-  // Collect attributes and uniforms from all of the shaders
-
-  // Vertex shader
-  for (ShaderUniform u : vertShader->uniforms) {
-    addUniqueUniform(u);
-  }
-  for (ShaderAttribute a : vertShader->attributes) {
-    addUniqueAttribute(a);
-  }
-
-  // Tessellation control shader
-  if (tessShader != nullptr) {
-    for (ShaderUniform u : tessShader->uniforms) {
-      addUniqueUniform(u);
-    }
-    for (ShaderAttribute a : tessShader->attributes) {
-      addUniqueAttribute(a);
-    }
-  }
-
-  // Tessellation evaluation shader
-  if (evalShader != nullptr) {
-    for (ShaderUniform u : evalShader->uniforms) {
-      addUniqueUniform(u);
-    }
-    for (ShaderAttribute a : evalShader->attributes) {
-      addUniqueAttribute(a);
-    }
-  }
-
-  // Geometry shader
-  if (geomShader != nullptr) {
-    for (ShaderUniform u : geomShader->uniforms) {
-      addUniqueUniform(u);
-    }
-    for (ShaderAttribute a : geomShader->attributes) {
-      addUniqueAttribute(a);
-    }
-  }
-
-  // Fragment shader
-  for (ShaderUniform u : fragShader->uniforms) {
-    addUniqueUniform(u);
-  }
-  for (ShaderAttribute a : fragShader->attributes) {
-    addUniqueAttribute(a);
-  }
-  for (ShaderTexture t : fragShader->textures) {
-    addUniqueTexture(t);
-  }
-
-  if (attributes.size() == 0) {
-    throw std::invalid_argument("Uh oh... ShaderProgramImpl has no attributes");
-  }
-
-  // Perform setup tasks
-  compileGLProgram();
-  setDataLocations();
-  createBuffers();
-  checkError<GLBackend>();
-}
-
-template <>
-ShaderProgramImpl<GLBackend>::~ShaderProgramImpl() {
-  // Make sure that we free the buffers for all attributes
-  for (Attribute a : attributes) {
-    deleteAttributeBuffer(a);
-  }
-  for (Texture t : textures) {
-    freeTexture(t);
-  }
-
-  // Free the program
-  glDeleteProgram(programHandle);
-}
-
-
-template <>
-ShaderProgramImpl<GLBackend>::ShaderProgramImpl(const VertexShader<GLBackend>* vShader,
-                                                const FragmentShader<GLBackend>* fShader, DrawMode dm)
-    : ShaderProgramImpl(vShader, nullptr, nullptr, nullptr, fShader, dm, 0) {}
-
-template <>
-ShaderProgramImpl<GLBackend>::ShaderProgramImpl(const VertexShader<GLBackend>* vShader,
-                                                const GeometryShader<GLBackend>* gShader,
-                                                const FragmentShader<GLBackend>* fShader, DrawMode dm)
-    : ShaderProgramImpl(vShader, nullptr, nullptr, gShader, fShader, dm, 0) {}
-
-template <>
-ShaderProgramImpl<GLBackend>::ShaderProgramImpl(const VertexShader<GLBackend>* vShader,
-                                                const TessellationShader<GLBackend>* tShader,
-                                                const FragmentShader<GLBackend>* fShader, DrawMode dm,
-                                                int patchVertices)
-    : ShaderProgramImpl(vShader, tShader, nullptr, nullptr, fShader, dm, patchVertices) {}
-
-template <>
-ShaderProgramImpl<GLBackend>::ShaderProgramImpl(const VertexShader<GLBackend>* vShader,
-                                                const EvaluationShader<GLBackend>* eShader,
-                                                const FragmentShader<GLBackend>* fShader, DrawMode dm,
-                                                int patchVertices)
-    : ShaderProgramImpl(vShader, nullptr, eShader, nullptr, fShader, dm, patchVertices) {}
-
-template <>
-ShaderProgramImpl<GLBackend>::ShaderProgramImpl(const VertexShader<GLBackend>* vShader,
-                                                const TessellationShader<GLBackend>* tShader,
-                                                const EvaluationShader<GLBackend>* eShader,
-                                                const FragmentShader<GLBackend>* fShader, DrawMode dm,
-                                                int patchVertices)
-    : ShaderProgramImpl(vShader, tShader, eShader, nullptr, fShader, dm, patchVertices) {}
-
-
-// == Explicitly instantiate the templates
-
-template class TextureBuffer<GLBackend>;
-template class RenderBuffer<GLBackend>;
-template class FrameBufferImpl<GLBackend>;
-
-template struct VertexShader<GLBackend>;
-template struct FragmentShader<GLBackend>;
-template struct GeometryShader<GLBackend>;
-template struct TessellationShader<GLBackend>;
-template struct EvaluationShader<GLBackend>;
-
-template class ShaderProgramImpl<GLBackend>;
-template class Engine<GLBackend>;
 
 } // namespace render
 } // namespace polyscope

@@ -1,3 +1,4 @@
+// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
 #include "polyscope/options.h"
@@ -12,6 +13,11 @@
 // glad must come first
 #include "GLFW/glfw3.h"
 #endif
+
+
+// Note: DO NOT include this header throughout polyscope, and do not directly make openGL calls. This header should only
+// be used to construct an instance of Engine. engine.h gives the render API, all render calls should pass through that.
+
 
 namespace polyscope {
 namespace render {
@@ -40,7 +46,6 @@ public:
 
   ~GLTextureBuffer() override;
 
-  void bind(); // TODO
 
   // Resize the underlying buffer (contents are lost)
   void resize(unsigned int newLen) override;
@@ -48,6 +53,8 @@ public:
 
   void setFilterMode(FilterMode newMode) override;
 
+
+  void bind();
   TextureBufferHandle getHandle() const { return handle; }
 
 protected:
@@ -59,7 +66,7 @@ public:
   GLRenderBuffer(RenderBufferType type, unsigned int sizeX_, unsigned int sizeY_);
   ~GLRenderBuffer() override;
 
-  void bind(); // TODO
+  void bind();
   RenderBufferHandle getHandle() const { return handle; }
 
 protected:
@@ -81,10 +88,10 @@ public:
   void clear() override;
 
   // Bind to textures/renderbuffers for output
-  void bindToColorRenderbuffer(RenderBuffer& renderBuffer) override;
-  void bindToDepthRenderbuffer(RenderBuffer& renderBuffer) override;
-  void bindToColorTexturebuffer(TextureBuffer& textureBuffer) override;
-  void bindToDepthTexturebuffer(TextureBuffer& textureBuffer) override;
+  void bindToColorRenderbuffer(RenderBuffer* renderBuffer) override;
+  void bindToDepthRenderbuffer(RenderBuffer* renderBuffer) override;
+  void bindToColorTexturebuffer(TextureBuffer* textureBuffer) override;
+  void bindToDepthTexturebuffer(TextureBuffer* textureBuffer) override;
 
   // Resizes textures and renderbuffers if different from current size.
   void resizeBuffers(unsigned int newXSize, unsigned int newYSize) override;
@@ -95,18 +102,23 @@ public:
   // Getters
   FrameBufferHandle getHandle() const { return handle; }
 
-private:
+protected:
   FrameBufferHandle handle;
+
+  void bind();
+
+  // TODO maybe get rid of these?
+  GLRenderBuffer* colorRenderBuffer = nullptr;
+  GLRenderBuffer* depthRenderBuffer = nullptr;
+  GLTextureBuffer* colorTextureBuffer = nullptr;
+  GLTextureBuffer* depthTextureBuffer = nullptr;
 };
 
 
 class GLShaderProgram : public ShaderProgram {
 
 public:
-  // Constructors
-  GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm, int nPatchVertices = -1);
-
-  // Destructor
+  GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm, unsigned int nPatchVertices = 0);
   ~GLShaderProgram() override;
 
   // === Store data
@@ -128,12 +140,12 @@ public:
   // = Attributes
   bool hasAttribute(std::string name);
   // clang-format off
-   void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0, int size = -1) override;
-   void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) override;
-   void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) override;
-   void setAttribute(std::string name, const std::vector<double>& data, bool update = false, int offset = 0, int size = -1) override;
-   void setAttribute(std::string name, const std::vector<int>& data, bool update = false, int offset = 0, int size = -1) override; 
-   void setAttribute(std::string name, const std::vector<uint32_t>& data, bool update = false, int offset = 0, int size = -1) override;
+  void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0, int size = -1) override;
+  void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) override;
+  void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) override;
+  void setAttribute(std::string name, const std::vector<double>& data, bool update = false, int offset = 0, int size = -1) override;
+  void setAttribute(std::string name, const std::vector<int>& data, bool update = false, int offset = 0, int size = -1) override; 
+  void setAttribute(std::string name, const std::vector<uint32_t>& data, bool update = false, int offset = 0, int size = -1) override;
   // clang-format on
 
   // Convenience method to set an array-valued attrbute, such as 'in vec3 vertexVal[3]'. Applies interleaving then
@@ -148,6 +160,14 @@ public:
   void setIndex(std::vector<unsigned int>& indices) override;
   void setPrimitiveRestartIndex(unsigned int restartIndex) override;
 
+  // Textures
+  void setTexture1D(std::string name, unsigned char* texData, unsigned int length) override;
+  void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
+                    bool withAlpha = true, bool useMipMap = false, bool repeat = false) override;
+  //void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false) override;
+  void setTextureFromBuffer(std::string name, std::shared_ptr<TextureBuffer> textureBuffer) override;
+
+
   // Call once to initialize GLSL code used by multiple shaders
   static void initCommonShaders();
 
@@ -157,30 +177,49 @@ public:
 
 protected:
   // Classes to keep track of attributes and uniforms
-  struct GLShaderUniform : public ShaderProgram::ShaderUniform {
+  struct GLShaderUniform {
+    std::string name;
+    DataType type;
+    bool isSet; // has a value been assigned to this uniform?
     UniformLocation location;
   };
 
-  struct GLShaderAttribute : public ShaderProgram::ShaderAttribute {
+  struct GLShaderAttribute {
+    std::string name;
+    DataType type;
+    int arrayCount;
+    long int dataSize; // the size of the data currently stored in this attribute (-1 if nothing)
     AttributeLocation location;
     VertexBufferHandle VBOLoc;
   };
 
-  struct GLShaderTexture : public ShaderProgram::ShaderTexture {
+  struct GLShaderTexture {
+    std::string name;
+    int dim;
+    unsigned int index;
+    bool isSet;
+    std::shared_ptr<GLTextureBuffer> textureBuffer;
     TextureLocation location;
   };
+
+  void addUniqueAttribute(ShaderSpecAttribute attribute);
+  void addUniqueUniform(ShaderSpecUniform uniform);
+  void addUniqueTexture(ShaderSpecTexture texture);
+
+protected:
+  // Lists of attributes and uniforms that need to be set
+  std::vector<GLShaderUniform> uniforms;
+  std::vector<GLShaderAttribute> attributes;
+  std::vector<GLShaderTexture> textures;
 
 
 private:
   // Setup routines
-  void compileGLProgram();
+  void compileGLProgram(const std::vector<ShaderStageSpecification>& stages);
   void setDataLocations();
   void createBuffers();
-  void addUniqueAttribute(GLShaderAttribute attribute);
-  void deleteAttributeBuffer(GLShaderAttribute attribute);
-  void addUniqueUniform(GLShaderUniform uniform);
-  void addUniqueTexture(GLShaderTexture texture);
-  void freeTexture(GLShaderTexture t);
+
+  void deleteAttributeBuffer(GLShaderAttribute& attribute);
 
   // Drawing related
   void activateTextures();
@@ -189,6 +228,8 @@ private:
   ProgramHandle programHandle = 0;
   AttributeHandle vaoHandle;
   AttributeHandle indexVBO;
+
+  int nPatchVertices;
 
   // static  ShaderHandle commonShaderHandle; // functions accessible to all shaders TODO move to engine
 };
