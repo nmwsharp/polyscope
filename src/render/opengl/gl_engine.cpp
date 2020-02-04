@@ -5,20 +5,33 @@
 #include "polyscope/utilities.h"
 
 #include "polyscope/render/opengl/shaders/common.h"
+#include "polyscope/render/shaders.h"
 
 namespace polyscope {
 namespace render {
+
+// == Storage and initialization for the global engine
+Engine* engine = nullptr;
+GLEngine* glEngine = nullptr; // alias for engine above
+void initializeRenderEngine() {
+  glEngine = new GLEngine();
+  engine = glEngine;
+}
+ProgramHandle commonShaderHandle = 777;
 
 // == Map enums to native values
 
 // clang-format off
 inline GLenum native(const TextureFormat& x) {
   switch (x) {
-    case TextureFormat::RGB8:     return GL_RGB8;
-    case TextureFormat::RGBA8:    return GL_RGBA8;
-    case TextureFormat::RGBA32F:  return GL_RGBA32F;
-    case TextureFormat::RGB32F:   return GL_RGB32F;
-    case TextureFormat::R32F:     return GL_R32F;
+    case TextureFormat::RGB8:     return GL_RGB;
+    case TextureFormat::RGBA8:    return GL_RGBA;
+    //case TextureFormat::RGBA32F:  return GL_RGBA32F;
+    case TextureFormat::RGBA32F:  throw std::runtime_error("figure out enums"); // TODO
+    //case TextureFormat::RGB32F:   return GL_RGB32F;
+    case TextureFormat::RGB32F:  throw std::runtime_error("figure out enums"); // TODO
+    //case TextureFormat::R32F:     return GL_R32F;
+    case TextureFormat::R32F:  throw std::runtime_error("figure out enums"); // TODO
   }
 }
 
@@ -38,6 +51,7 @@ inline GLenum native(const ShaderStageType& x) {
 
 // Stateful error checker
 void checkGLError(bool fatal = true) {
+  // TODO remove MANY of these throughout?
 #ifndef NDEBUG
   GLenum err = GL_NO_ERROR;
   while ((err = glGetError()) != GL_NO_ERROR) {
@@ -116,6 +130,7 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, uns
   glBindTexture(GL_TEXTURE_1D, handle);
   glTexImage1D(GL_TEXTURE_1D, 0, native(format), size1D, 0, native(format), GL_UNSIGNED_BYTE,
                data); // TODO use format for both options is scary (here and below)
+  checkGLError();
 
   setFilterMode(FilterMode::Linear);
 }
@@ -125,19 +140,25 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, flo
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_1D, handle);
   glTexImage1D(GL_TEXTURE_1D, 0, native(format), size1D, 0, native(format), GL_FLOAT, data);
+  checkGLError();
 
   setFilterMode(FilterMode::Linear);
 }
 
 // create a 2D texture from data
 GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data)
-    : TextureBuffer(1, format_, sizeX_, sizeY_) {
+    : TextureBuffer(2, format_, sizeX_, sizeY_) {
 
+  checkGLError();
   glGenTextures(1, &handle);
+  checkGLError();
   glBindTexture(GL_TEXTURE_2D, handle);
+  checkGLError();
   glTexImage2D(GL_TEXTURE_2D, 0, native(format), sizeX, sizeY, 0, native(format), GL_UNSIGNED_BYTE, data);
+  checkGLError();
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  checkGLError();
 
   setFilterMode(FilterMode::Linear);
 }
@@ -145,30 +166,31 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
 GLTextureBuffer::~GLTextureBuffer() { glDeleteTextures(1, &handle); }
 
 void GLTextureBuffer::resize(unsigned int newLen) {
+
+  TextureBuffer::resize(newLen);
+
   bind();
-
-  sizeX = newLen;
-
   if (dim == 1) {
     glTexImage1D(GL_TEXTURE_1D, 0, native(format), sizeX, 0, native(format), GL_UNSIGNED_BYTE, 0);
   }
   if (dim == 2) {
     throw std::runtime_error("OpenGL error: called 1D resize on 2D texture");
   }
+  checkGLError();
 }
 
 void GLTextureBuffer::resize(unsigned int newX, unsigned int newY) {
+
+  TextureBuffer::resize(newX, newY);
+
   bind();
-
-  sizeX = newX;
-  sizeY = newY;
-
   if (dim == 1) {
     throw std::runtime_error("OpenGL error: called 2D resize on 1D texture");
   }
   if (dim == 2) {
     glTexImage2D(GL_TEXTURE_2D, 0, native(format), sizeX, sizeY, 0, native(format), GL_UNSIGNED_BYTE, 0);
   }
+  checkGLError();
 }
 
 void GLTextureBuffer::setFilterMode(FilterMode newMode) {
@@ -203,6 +225,7 @@ void GLTextureBuffer::setFilterMode(FilterMode newMode) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   }
+  checkGLError();
 }
 
 void GLTextureBuffer::bind() {
@@ -212,6 +235,7 @@ void GLTextureBuffer::bind() {
   if (dim == 2) {
     glBindTexture(GL_TEXTURE_2D, handle);
   }
+  checkGLError();
 }
 
 // =============================================================
@@ -238,11 +262,16 @@ GLRenderBuffer::GLRenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsi
     glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, sizeX, sizeY);
     break;
   }
+  checkGLError();
 }
 
 GLRenderBuffer::~GLRenderBuffer() { glDeleteRenderbuffers(1, &handle); }
 
-void GLRenderBuffer::bind() { glBindRenderbuffer(GL_RENDERBUFFER, handle); }
+void GLRenderBuffer::bind() {
+  glBindRenderbuffer(GL_RENDERBUFFER, handle);
+
+  checkGLError();
+}
 
 
 // =============================================================
@@ -252,13 +281,18 @@ void GLRenderBuffer::bind() { glBindRenderbuffer(GL_RENDERBUFFER, handle); }
 GLFrameBuffer::GLFrameBuffer() {
   glGenFramebuffers(1, &handle);
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
+  checkGLError();
 };
 
 GLFrameBuffer::~GLFrameBuffer() { glDeleteFramebuffers(1, &handle); }
 
-void GLFrameBuffer::bind() { glBindFramebuffer(GL_FRAMEBUFFER, handle); }
+void GLFrameBuffer::bind() {
+  glBindFramebuffer(GL_FRAMEBUFFER, handle);
 
-void GLFrameBuffer::bindToColorRenderbuffer(RenderBuffer* renderBufferIn) {
+  checkGLError();
+}
+
+void GLFrameBuffer::bindToColorRenderBuffer(RenderBuffer* renderBufferIn) {
 
   // it _better_ be a GL buffer
   GLRenderBuffer* renderBuffer = dynamic_cast<GLRenderBuffer*>(renderBufferIn);
@@ -266,6 +300,7 @@ void GLFrameBuffer::bindToColorRenderbuffer(RenderBuffer* renderBufferIn) {
 
   renderBuffer->bind();
   bind();
+  checkGLError();
 
   // Sanity checks
   // if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
@@ -273,12 +308,14 @@ void GLFrameBuffer::bindToColorRenderbuffer(RenderBuffer* renderBufferIn) {
 
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, renderBuffer->getHandle());
   colorRenderBuffer = renderBuffer;
+  checkGLError();
 
   GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
   glDrawBuffers(1, DrawBuffers);
+  checkGLError();
 }
 
-void GLFrameBuffer::bindToDepthRenderbuffer(RenderBuffer* renderBufferIn) {
+void GLFrameBuffer::bindToDepthRenderBuffer(RenderBuffer* renderBufferIn) {
   // it _better_ be a GL buffer
   GLRenderBuffer* renderBuffer = dynamic_cast<GLRenderBuffer*>(renderBufferIn);
   if (!renderBuffer) throw std::runtime_error("tried to bind to non-GL render buffer");
@@ -294,7 +331,7 @@ void GLFrameBuffer::bindToDepthRenderbuffer(RenderBuffer* renderBufferIn) {
   depthRenderBuffer = renderBuffer;
 }
 
-void GLFrameBuffer::bindToColorTexturebuffer(TextureBuffer* textureBufferIn) {
+void GLFrameBuffer::bindToColorTextureBuffer(TextureBuffer* textureBufferIn) {
 
   // it _better_ be a GL buffer
   GLTextureBuffer* textureBuffer = dynamic_cast<GLTextureBuffer*>(textureBufferIn);
@@ -302,6 +339,7 @@ void GLFrameBuffer::bindToColorTexturebuffer(TextureBuffer* textureBufferIn) {
 
   textureBuffer->bind();
   bind();
+  checkGLError();
 
   // Sanity checks
   // if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
@@ -309,12 +347,14 @@ void GLFrameBuffer::bindToColorTexturebuffer(TextureBuffer* textureBufferIn) {
 
   glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureBuffer->getHandle(), 0);
   colorTextureBuffer = textureBuffer;
+  checkGLError();
 
   GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
   glDrawBuffers(1, DrawBuffers);
+  checkGLError();
 }
 
-void GLFrameBuffer::bindToDepthTexturebuffer(TextureBuffer* textureBufferIn) {
+void GLFrameBuffer::bindToDepthTextureBuffer(TextureBuffer* textureBufferIn) {
 
   // it _better_ be a GL buffer
   GLTextureBuffer* textureBuffer = dynamic_cast<GLTextureBuffer*>(textureBufferIn);
@@ -322,6 +362,7 @@ void GLFrameBuffer::bindToDepthTexturebuffer(TextureBuffer* textureBufferIn) {
 
   textureBuffer->bind();
   bind();
+  checkGLError();
 
   // Sanity checks
   // if (depthRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
@@ -329,6 +370,7 @@ void GLFrameBuffer::bindToDepthTexturebuffer(TextureBuffer* textureBufferIn) {
 
   glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureBuffer->getHandle(), 0);
   depthTextureBuffer = textureBuffer;
+  checkGLError();
 }
 
 bool GLFrameBuffer::bindForRendering() {
@@ -349,10 +391,12 @@ bool GLFrameBuffer::bindForRendering() {
         "OpenGL error: viewport not set for framebuffer object. Call GLFrameBuffer::setViewport()");
   }
   glViewport(viewportX, viewportY, viewportSizeX, viewportSizeY);
+  checkGLError();
 
   // Enable depth testing
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
+  checkGLError();
 
   // Enable blending
   glEnable(GL_BLEND);
@@ -379,7 +423,7 @@ void GLFrameBuffer::resizeBuffers(unsigned int newXSize, unsigned int newYSize) 
     safeDelete(colorRenderBuffer);
 
     // Register new buffer
-    bindToColorRenderbuffer(newBuff);
+    bindToColorRenderBuffer(newBuff);
   }
 
   // Resize color texture
@@ -401,7 +445,7 @@ void GLFrameBuffer::resizeBuffers(unsigned int newXSize, unsigned int newYSize) 
     safeDelete(depthRenderBuffer);
 
     // Register new buffer
-    bindToDepthRenderbuffer(newBuff);
+    bindToDepthRenderBuffer(newBuff);
   }
 
   // Resize depth texture
@@ -416,7 +460,7 @@ void GLFrameBuffer::clear() {
   if (!bindForRendering()) return;
   glClearColor(clearColor[0], clearColor[1], clearColor[2], clearAlpha);
   glClearDepth(1.);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
 std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
@@ -428,7 +472,7 @@ std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
   glFlush();
   glFinish();
 
-  // Read from the pick buffer
+  // Read from the buffer
   std::array<float, 4> result;
   glReadPixels(xPos, yPos, 1, 1, GL_RGBA, GL_FLOAT, &result);
 
@@ -439,12 +483,11 @@ std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
 // ==================  Shader Program  =========================
 // =============================================================
 
-ProgramHandle commonShaderHandle = 0;
-
 GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
                                  unsigned int nPatchVertices)
     : ShaderProgram(stages, dm, nPatchVertices) {
 
+  checkGLError();
   GLint maxPatchVertices;
   glGetIntegerv(GL_MAX_PATCH_VERTICES, &maxPatchVertices);
   if (nPatchVertices != 0 && nPatchVertices > (unsigned int)maxPatchVertices) {
@@ -452,6 +495,7 @@ GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& st
                                 ") is greater than the number supported by the tessellator (" +
                                 std::to_string(maxPatchVertices));
   }
+  checkGLError();
 
 
   // Collect attributes and uniforms from all of the shaders
@@ -473,8 +517,11 @@ GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& st
 
 
   // Perform setup tasks
+  checkGLError();
   compileGLProgram(stages);
+  checkGLError();
   setDataLocations();
+  checkGLError();
   createBuffers();
   checkGLError();
 }
@@ -513,7 +560,7 @@ void GLShaderProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
       return;
     }
   }
-  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, 777});
+  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr, 777});
 }
 
 
@@ -527,76 +574,99 @@ void GLShaderProgram::compileGLProgram(const std::vector<ShaderStageSpecificatio
 
 
   // Compile all of the shaders
+  checkGLError();
   std::vector<ShaderHandle> handles;
   for (const ShaderStageSpecification& s : stages) {
     ShaderHandle h = glCreateShader(native(s.stage));
+    checkGLError();
     const char* shaderSrcTmp = s.src.c_str();
     glShaderSource(h, 1, &shaderSrcTmp, nullptr);
     glCompileShader(h);
+    checkGLError();
     printShaderInfoLog(h);
     handles.push_back(h);
+    checkGLError();
   }
 
   // Create the program and attach the shaders
   programHandle = glCreateProgram();
   for (ShaderHandle h : handles) {
     glAttachShader(programHandle, h);
+    checkGLError();
   }
+  glAttachShader(programHandle, commonShaderHandle);
+  checkGLError();
 
   // Set the output data location
   for (const ShaderStageSpecification& s : stages) {
     if (s.stage == ShaderStageType::Fragment) {
       glBindFragDataLocation(programHandle, 0, s.outputLoc.c_str());
+      checkGLError();
     }
   }
 
   // Link the program
   glLinkProgram(programHandle);
+  checkGLError();
   printProgramInfoLog(programHandle);
+  checkGLError();
 
 
   // Delete the shaders we just compiled, they aren't used after link
   for (ShaderHandle h : handles) {
     glDeleteShader(h);
+    checkGLError();
   }
 }
 
 void GLShaderProgram::setDataLocations() {
+  checkGLError();
   glUseProgram(programHandle);
 
   // Uniforms
+  checkGLError();
   for (GLShaderUniform& u : uniforms) {
     u.location = glGetUniformLocation(programHandle, u.name.c_str());
     if (u.location == -1) throw std::runtime_error("failed to get location for uniform " + u.name);
+    checkGLError();
   }
 
   // Attributes
+  checkGLError();
   for (GLShaderAttribute& a : attributes) {
     a.location = glGetAttribLocation(programHandle, a.name.c_str());
     if (a.location == -1) throw std::runtime_error("failed to get location for attribute " + a.name);
+    checkGLError();
   }
 
   // Textures
+  checkGLError();
   for (GLShaderTexture& t : textures) {
     t.location = glGetUniformLocation(programHandle, t.name.c_str());
     if (t.location == -1) throw std::runtime_error("failed to get location for texture " + t.name);
+    checkGLError();
   }
 }
 
 void GLShaderProgram::createBuffers() {
   // Create a VAO
+  checkGLError();
   glGenVertexArrays(1, &vaoHandle);
   glBindVertexArray(vaoHandle);
+  checkGLError();
 
   // Create buffers for each attributes
   for (GLShaderAttribute& a : attributes) {
     glGenBuffers(1, &a.VBOLoc);
     glBindBuffer(GL_ARRAY_BUFFER, a.VBOLoc);
+    checkGLError();
 
     // Choose the correct type for the buffer
     for (int iArrInd = 0; iArrInd < a.arrayCount; iArrInd++) {
+      checkGLError();
 
       glEnableVertexAttribArray(a.location + iArrInd);
+      checkGLError();
 
       switch (a.type) {
       case DataType::Float:
@@ -627,6 +697,7 @@ void GLShaderProgram::createBuffers() {
         throw std::invalid_argument("Unrecognized GLShaderAttribute type");
         break;
       }
+      checkGLError();
     }
     checkGLError();
   }
@@ -1120,7 +1191,8 @@ void GLShaderProgram::setTexture1D(std::string name, unsigned char* texData, uns
     }
 
     // Create a new texture object
-    t.textureBuffer.reset(new GLTextureBuffer(TextureFormat::RGB8, length, texData));
+    t.textureBufferOwned.reset(new GLTextureBuffer(TextureFormat::RGB8, length, texData));
+    t.textureBuffer = t.textureBufferOwned.get();
 
 
     // Set policies
@@ -1152,10 +1224,11 @@ void GLShaderProgram::setTexture2D(std::string name, unsigned char* texData, uns
     }
 
     if (withAlpha) {
-      t.textureBuffer.reset(new GLTextureBuffer(TextureFormat::RGBA8, width, height, texData));
+      t.textureBufferOwned.reset(new GLTextureBuffer(TextureFormat::RGBA8, width, height, texData));
     } else {
-      t.textureBuffer.reset(new GLTextureBuffer(TextureFormat::RGB8, width, height, texData));
+      t.textureBufferOwned.reset(new GLTextureBuffer(TextureFormat::RGB8, width, height, texData));
     }
+    t.textureBuffer = t.textureBufferOwned.get();
 
 
     // Set policies
@@ -1183,7 +1256,7 @@ void GLShaderProgram::setTexture2D(std::string name, unsigned char* texData, uns
   throw std::invalid_argument("No texture with name " + name);
 }
 
-void GLShaderProgram::setTextureFromBuffer(std::string name, std::shared_ptr<TextureBuffer> textureBuffer) {
+void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) {
   glUseProgram(programHandle);
 
   // Find the right texture
@@ -1194,7 +1267,7 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, std::shared_ptr<Tex
       throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
     }
 
-    t.textureBuffer = std::dynamic_pointer_cast<GLTextureBuffer>(textureBuffer);
+    t.textureBuffer = dynamic_cast<GLTextureBuffer*>(textureBuffer);
     if (!t.textureBuffer) {
       throw std::invalid_argument("Bad texture in setTextureFromBuffer()");
     }
@@ -1333,14 +1406,6 @@ void GLShaderProgram::validateData() {
   }
 }
 
-void GLShaderProgram::initCommonShaders() {
-  // Compile functions accessible to all shaders
-  commonShaderHandle = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(commonShaderHandle, 1, &shaderCommonSource, nullptr);
-  glCompileShader(commonShaderHandle);
-  printShaderInfoLog(commonShaderHandle);
-}
-
 void GLShaderProgram::setPrimitiveRestartIndex(GLuint restartIndex_) {
   if (!usePrimitiveRestart) {
     throw std::runtime_error("setPrimitiveRestartIndex() called, but draw mode does not support restart indices.");
@@ -1432,6 +1497,134 @@ void GLShaderProgram::draw() {
   checkGLError();
 }
 
+GLEngine::GLEngine() { allocateGlobalBuffersAndPrograms(); }
+
+// Called once on init
+void GLEngine::allocateGlobalBuffersAndPrograms() {
+
+  { // Compile functions accessible to all shaders
+    commonShaderHandle = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(commonShaderHandle, 1, &shaderCommonSource, nullptr);
+    glCompileShader(commonShaderHandle);
+    printShaderInfoLog(commonShaderHandle);
+    checkGLError();
+  }
+
+  { // Scene buffer
+    checkGLError();
+    sceneColorTexture.reset(new GLTextureBuffer(TextureFormat::RGBA8, view::bufferWidth, view::bufferHeight));
+    checkGLError();
+    sceneDepthBuffer.reset(new GLRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight));
+    checkGLError();
+
+    sceneFramebuffer.reset(new GLFrameBuffer());
+    checkGLError();
+    sceneFramebuffer->bindToColorTextureBuffer(sceneColorTexture.get());
+    checkGLError();
+    sceneFramebuffer->bindToDepthRenderBuffer(sceneDepthBuffer.get());
+    checkGLError();
+  }
+
+  { // Pick buffer
+    pickColorBuffer.reset(new GLRenderBuffer(RenderBufferType::Float4, view::bufferWidth, view::bufferHeight));
+    pickDepthBuffer.reset(new GLRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight));
+
+    pickFramebuffer.reset(new GLFrameBuffer());
+    pickFramebuffer->bindToColorRenderBuffer(pickColorBuffer.get());
+    pickFramebuffer->bindToDepthRenderBuffer(pickDepthBuffer.get());
+    checkGLError();
+  }
+
+  { // Simple program which draws scene texture to screen
+    sceneToScreenProgram =
+        generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    std::vector<glm::vec3> coords = {{-1.0f, -1.0f, 0.0f}, {1.0f, -1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f},
+                                     {-1.0f, 1.0f, 0.0f},  {1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}};
+
+    sceneToScreenProgram->setAttribute("a_position", coords);
+    checkGLError();
+  }
+
+  // Initialize gl data
+  // gl::loadMaterialTextures(); SIMPLE
+}
+
+void GLEngine::bindDisplay() {
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+
+void GLEngine::clearDisplay() {
+  glClearColor(1., 1., 1., 0.);
+  glClearDepth(1.);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+}
+
+void GLEngine::clearGBuffer() {
+  // GBuffer->clear();
+  sceneFramebuffer->clear();
+}
+
+void GLEngine::computeLighting() {}
+
+void GLEngine::toDisplay() {
+  // Bind to the view framebuffer
+  bindDisplay();
+
+  // Set the texture uniform
+  sceneToScreenProgram->setTextureFromBuffer("t_image", sceneColorTexture.get());
+
+  sceneToScreenProgram->draw();
+}
+
+void GLEngine::checkError(bool fatal) { checkGLError(fatal); }
+
+void GLEngine::resizeGBuffer(int width, int height) { sceneFramebuffer->resizeBuffers(width, height); }
+
+void GLEngine::setGBufferViewport(int xStart, int yStart, int sizeX, int sizeY) {
+  sceneFramebuffer->setViewport(xStart, yStart, sizeX, sizeY);
+}
+
+bool GLEngine::bindGBuffer() { return sceneFramebuffer->bindForRendering(); }
+
+// == Factories
+std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat format, unsigned int size1D,
+                                                               unsigned char* data) {
+  GLTextureBuffer* newT = new GLTextureBuffer(format, size1D, data);
+  return std::shared_ptr<TextureBuffer>(newT);
+}
+
+std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat format, unsigned int size1D, float* data) {
+  GLTextureBuffer* newT = new GLTextureBuffer(format, size1D, data);
+  return std::shared_ptr<TextureBuffer>(newT);
+}
+std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
+                                                               unsigned int sizeY_, unsigned char* data) {
+  GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, data);
+  return std::shared_ptr<TextureBuffer>(newT);
+}
+
+std::shared_ptr<RenderBuffer> GLEngine::generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
+                                                             unsigned int sizeY_) {
+  GLRenderBuffer* newR = new GLRenderBuffer(type, sizeX_, sizeY_);
+  return std::shared_ptr<RenderBuffer>(newR);
+}
+
+std::shared_ptr<FrameBuffer> GLEngine::generateFrameBuffer() {
+  GLFrameBuffer* newF = new GLFrameBuffer();
+  return std::shared_ptr<FrameBuffer>(newF);
+}
+
+std::shared_ptr<ShaderProgram> GLEngine::generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
+                                                               DrawMode dm, unsigned int nPatchVertices) {
+  GLShaderProgram* newP = new GLShaderProgram(stages, dm, nPatchVertices);
+  return std::shared_ptr<ShaderProgram>(newP);
+}
 
 } // namespace render
 } // namespace polyscope

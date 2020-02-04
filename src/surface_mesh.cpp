@@ -2,13 +2,10 @@
 #include "polyscope/surface_mesh.h"
 
 #include "polyscope/combining_hash_functions.h"
-#include "polyscope/gl/gl_utils.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/surface_shaders.h"
-#include "polyscope/gl/shaders/wireframe_shaders.h"
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -337,6 +334,7 @@ void SurfaceMesh::draw() {
     if (wireframeProgram == nullptr) {
       prepareWireframe();
     }
+    /* SIMPLE
 
     // Set uniforms
     setTransformUniforms(*wireframeProgram);
@@ -353,6 +351,7 @@ void SurfaceMesh::draw() {
 
     glDepthFunc(GL_LESS); // return to normal
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    */
   }
 }
 
@@ -372,30 +371,33 @@ void SurfaceMesh::drawPick() {
 }
 
 void SurfaceMesh::prepare() {
-  program.reset(
-      new gl::GLProgram(&gl::PLAIN_SURFACE_VERT_SHADER, &gl::PLAIN_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
+  program = render::engine->generateShaderProgram(
+      {render::PLAIN_SURFACE_VERT_SHADER, render::PLAIN_SURFACE_FRAG_SHADER}, render::DrawMode::Triangles);
 
   // Populate draw buffers
   fillGeometryBuffers(*program);
 
-  //setMaterialForProgram(*program, "wax");
+  // setMaterialForProgram(*program, "wax");
 }
 
 void SurfaceMesh::prepareWireframe() {
-  wireframeProgram.reset(new gl::GLProgram(&gl::SURFACE_WIREFRAME_VERT_SHADER, &gl::SURFACE_WIREFRAME_FRAG_SHADER,
-                                           gl::DrawMode::Triangles));
+  /* SIMPLE
+  wireframeProgram = render::engine->generateShaderProgram(
+      {render::SURFACE_WIREFRAME_VERT_SHADER, render::SURFACE_WIREFRAME_FRAG_SHADER}, render::DrawMode::Triangles);
 
   // Populate draw buffers
   fillGeometryBuffersWireframe(*wireframeProgram);
 
-  //setMaterialForProgram(*wireframeProgram, "wax");
+  // setMaterialForProgram(*wireframeProgram, "wax");
+  */
 }
 
 void SurfaceMesh::preparePick() {
+  /* SIMPLE
 
   // Create a new program
-  pickProgram.reset(
-      new gl::GLProgram(&gl::PICK_SURFACE_VERT_SHADER, &gl::PICK_SURFACE_FRAG_SHADER, gl::DrawMode::Triangles));
+  pickProgram = render::engine->generateShaderProgram(
+      {render::PICK_SURFACE_VERT_SHADER, render::PICK_SURFACE_FRAG_SHADER}, render::DrawMode::Triangles);
 
   // Get element indices
   size_t totalPickElements = nVertices() + nFaces() + nEdges() + nHalfedges();
@@ -493,9 +495,10 @@ void SurfaceMesh::preparePick() {
   pickProgram->setAttribute<glm::vec3, 3>("a_edgeColors", edgeColors);
   pickProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", halfedgeColors);
   pickProgram->setAttribute("a_faceColor", faceColor);
+  */
 }
 
-void SurfaceMesh::fillGeometryBuffers(gl::GLProgram& p) {
+void SurfaceMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   if (isSmoothShade()) {
     fillGeometryBuffersSmooth(p);
   } else {
@@ -503,7 +506,7 @@ void SurfaceMesh::fillGeometryBuffers(gl::GLProgram& p) {
   }
 }
 
-void SurfaceMesh::fillGeometryBuffersSmooth(gl::GLProgram& p) {
+void SurfaceMesh::fillGeometryBuffersSmooth(render::ShaderProgram& p) {
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
@@ -554,7 +557,7 @@ void SurfaceMesh::fillGeometryBuffersSmooth(gl::GLProgram& p) {
   }
 }
 
-void SurfaceMesh::fillGeometryBuffersFlat(gl::GLProgram& p) {
+void SurfaceMesh::fillGeometryBuffersFlat(render::ShaderProgram& p) {
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
@@ -606,7 +609,7 @@ void SurfaceMesh::fillGeometryBuffersFlat(gl::GLProgram& p) {
   }
 }
 
-void SurfaceMesh::fillGeometryBuffersWireframe(gl::GLProgram& p) {
+void SurfaceMesh::fillGeometryBuffersWireframe(render::ShaderProgram& p) {
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;

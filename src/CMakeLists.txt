@@ -10,6 +10,8 @@ SET(SRCS
   # Rendering stuff
   render/engine.cpp  
   render/opengl/gl_engine.cpp  
+  render/opengl/shaders/texture_draw_shaders.cpp  
+  render/opengl/shaders/surface_mesh_shaders.cpp  
   #gl/gl_utils.cpp
   #gl/ground_plane.cpp
   #gl/color_maps.cpp
@@ -17,7 +19,7 @@ SET(SRCS
 
   # Core functionality 
   polyscope.cpp
-  screenshot.cpp
+  #screenshot.cpp
   structure.cpp
   utilities.cpp
   view.cpp
@@ -129,25 +131,27 @@ SET(HEADERS
   ${INCLUDE_ROOT}/utilities.h
   ${INCLUDE_ROOT}/view.h
   ${INCLUDE_ROOT}/colors.h
-  ${INCLUDE_ROOT}/gl/color_maps.h
-  ${INCLUDE_ROOT}/gl/gl_utils.h
-  ${INCLUDE_ROOT}/gl/ground_plane.h
-  ${INCLUDE_ROOT}/gl/shaders.h
-  ${INCLUDE_ROOT}/gl/materials/materials.h
-  ${INCLUDE_ROOT}/gl/shaders/common.h
-  ${INCLUDE_ROOT}/gl/shaders/cylinder_shaders.h
-  ${INCLUDE_ROOT}/gl/shaders/distance_shaders.h
-  ${INCLUDE_ROOT}/gl/shaders/ground_plane_shaders.h
-  ${INCLUDE_ROOT}/gl/shaders/histogram_shaders.h
-  ${INCLUDE_ROOT}/gl/shaders/image_shaders.h
-  ${INCLUDE_ROOT}/gl/shaders/parameterization_shaders.h
-  ${INCLUDE_ROOT}/gl/shaders/ray_shaders.h
-  ${INCLUDE_ROOT}/gl/shaders/ribbon_shaders.h
-  ${INCLUDE_ROOT}/gl/shaders/sphere_shaders.h
-  ${INCLUDE_ROOT}/gl/shaders/surface_shaders.h
-  ${INCLUDE_ROOT}/gl/shaders/texture_draw_shaders.h
-  ${INCLUDE_ROOT}/gl/shaders/vector_shaders.h
-  ${INCLUDE_ROOT}/gl/shaders/wireframe_shaders.h
+
+  # SIMPLE
+  #${INCLUDE_ROOT}/gl/color_maps.h
+  #${INCLUDE_ROOT}/gl/gl_utils.h
+  #${INCLUDE_ROOT}/gl/ground_plane.h
+  #${INCLUDE_ROOT}/gl/shaders.h
+  #${INCLUDE_ROOT}/gl/materials/materials.h
+  #${INCLUDE_ROOT}/gl/shaders/common.h
+  #${INCLUDE_ROOT}/gl/shaders/cylinder_shaders.h
+  #${INCLUDE_ROOT}/gl/shaders/distance_shaders.h
+  #${INCLUDE_ROOT}/gl/shaders/ground_plane_shaders.h
+  #${INCLUDE_ROOT}/gl/shaders/histogram_shaders.h
+  #${INCLUDE_ROOT}/gl/shaders/image_shaders.h
+  #${INCLUDE_ROOT}/gl/shaders/parameterization_shaders.h
+  #${INCLUDE_ROOT}/gl/shaders/ray_shaders.h
+  #${INCLUDE_ROOT}/gl/shaders/ribbon_shaders.h
+  #${INCLUDE_ROOT}/gl/shaders/sphere_shaders.h
+  #${INCLUDE_ROOT}/gl/shaders/surface_shaders.h
+  #${INCLUDE_ROOT}/gl/shaders/texture_draw_shaders.h
+  #${INCLUDE_ROOT}/gl/shaders/vector_shaders.h
+  #${INCLUDE_ROOT}/gl/shaders/wireframe_shaders.h
 )
 
 # Create a single library for the project

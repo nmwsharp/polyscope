@@ -1,9 +1,10 @@
 #include "polyscope/polyscope.h"
 
 #include "polyscope/combining_hash_functions.h"
-#include "polyscope/curve_network.h"
 #include "polyscope/messages.h"
-#include "polyscope/point_cloud.h"
+
+//#include "polyscope/curve_network.h"
+//#include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_io.h"
 

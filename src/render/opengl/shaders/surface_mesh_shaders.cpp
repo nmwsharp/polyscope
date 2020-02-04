@@ -1,26 +1,34 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
-#pragma once
 
-#include "polyscope/gl/shaders.h"
+#include "polyscope/render/shaders.h"
 
 namespace polyscope {
-namespace gl {
+namespace render {
 
 // clang-format off
 
-static const VertShader PLAIN_SURFACE_VERT_SHADER =  {
+const ShaderStageSpecification PLAIN_SURFACE_VERT_SHADER =  {
+    
+    // stage
+    ShaderStageType::Vertex,
     
     // uniforms
     {
-       {"u_modelView", GLData::Matrix44Float},
-       {"u_projMatrix", GLData::Matrix44Float},
+       {"u_modelView", DataType::Matrix44Float},
+       {"u_projMatrix", DataType::Matrix44Float},
     },
 
     // attributes
     {
-        {"a_position", GLData::Vector3Float},
-        {"a_normal", GLData::Vector3Float},
+        {"a_position", DataType::Vector3Float},
+        {"a_normal", DataType::Vector3Float},
     },
+    
+    // textures
+    {},
+    
+    // outputs
+    "",
 
     // source
     POLYSCOPE_GLSL(150,
@@ -38,23 +46,21 @@ static const VertShader PLAIN_SURFACE_VERT_SHADER =  {
     )
 };
 
-static const FragShader PLAIN_SURFACE_FRAG_SHADER = {
+const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER = {
+    
+    // stage
+    ShaderStageType::Fragment,
     
     // uniforms
     {
-        {"u_basecolor", GLData::Vector3Float},
+        {"u_basecolor", DataType::Vector3Float},
     }, 
 
     // attributes
-    {
-    },
+    { },
     
     // textures 
-    {
-        {"t_mat_r", 2},
-        {"t_mat_g", 2},
-        {"t_mat_b", 2},
-    },
+    { },
     
     // output location
     "outputF",
@@ -62,39 +68,37 @@ static const FragShader PLAIN_SURFACE_FRAG_SHADER = {
     // source 
     POLYSCOPE_GLSL(150,
       uniform vec3 u_basecolor;
-      uniform sampler2D t_mat_r;
-      uniform sampler2D t_mat_g;
-      uniform sampler2D t_mat_b;
       in vec3 Normal;
       out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
-      vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
+      //vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
 
       void main()
       {
         vec3 color = u_basecolor;
-        outputF = lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b);
+        outputF = vec4(color,1.);
       }
 
     )
 };
 
+/*
 
 
-static const VertShader VERTCOLOR_SURFACE_VERT_SHADER =  {
+static const ShaderStageSpecification VERTCOLOR_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_modelView", GLData::Matrix44Float},
-       {"u_projMatrix", GLData::Matrix44Float},
+       {"u_modelView", DataType::Matrix44Float},
+       {"u_projMatrix", DataType::Matrix44Float},
     },
 
     // attributes
     {
-        {"a_position", GLData::Vector3Float},
-        {"a_normal", GLData::Vector3Float},
-        {"a_colorval", GLData::Float},
+        {"a_position", DataType::Vector3Float},
+        {"a_normal", DataType::Vector3Float},
+        {"a_colorval", DataType::Float},
     },
 
     // source
@@ -117,12 +121,12 @@ static const VertShader VERTCOLOR_SURFACE_VERT_SHADER =  {
     )
 };
 
-static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
+static const ShaderStageSpecification VERTCOLOR_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_rangeLow", GLData::Float},
-        {"u_rangeHigh", GLData::Float},
+        {"u_rangeLow", DataType::Float},
+        {"u_rangeHigh", DataType::Float},
     }, 
 
     // attributes
@@ -172,19 +176,19 @@ static const FragShader VERTCOLOR_SURFACE_FRAG_SHADER = {
 };
 
 
-static const VertShader VERTBINARY_SURFACE_VERT_SHADER =  {
+static const ShaderStageSpecification VERTBINARY_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_modelView", GLData::Matrix44Float},
-       {"u_projMatrix", GLData::Matrix44Float},
+       {"u_modelView", DataType::Matrix44Float},
+       {"u_projMatrix", DataType::Matrix44Float},
     },
 
     // attributes
     {
-        {"a_position", GLData::Vector3Float},
-        {"a_normal", GLData::Vector3Float},
-        {"a_colorval", GLData::Float}, // should be 0 or 1
+        {"a_position", DataType::Vector3Float},
+        {"a_normal", DataType::Vector3Float},
+        {"a_colorval", DataType::Float}, // should be 0 or 1
     },
 
     // source
@@ -206,7 +210,7 @@ static const VertShader VERTBINARY_SURFACE_VERT_SHADER =  {
     )
 };
 
-static const FragShader VERTBINARY_SURFACE_FRAG_SHADER = {
+static const ShaderStageSpecification VERTBINARY_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
@@ -258,19 +262,19 @@ static const FragShader VERTBINARY_SURFACE_FRAG_SHADER = {
     )
 };
 
-static const VertShader VERTCOLOR3_SURFACE_VERT_SHADER =  {
+static const ShaderStageSpecification VERTCOLOR3_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_modelView", GLData::Matrix44Float},
-       {"u_projMatrix", GLData::Matrix44Float},
+       {"u_modelView", DataType::Matrix44Float},
+       {"u_projMatrix", DataType::Matrix44Float},
     },
 
     // attributes
     {
-        {"a_position", GLData::Vector3Float},
-        {"a_normal", GLData::Vector3Float},
-        {"a_colorval", GLData::Vector3Float},
+        {"a_position", DataType::Vector3Float},
+        {"a_normal", DataType::Vector3Float},
+        {"a_colorval", DataType::Vector3Float},
     },
 
     // source
@@ -292,7 +296,7 @@ static const VertShader VERTCOLOR3_SURFACE_VERT_SHADER =  {
     )
 };
 
-static const FragShader VERTCOLOR3_SURFACE_FRAG_SHADER = {
+static const ShaderStageSpecification VERTCOLOR3_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
@@ -335,22 +339,22 @@ static const FragShader VERTCOLOR3_SURFACE_FRAG_SHADER = {
 };
 
 
-static const VertShader HALFEDGECOLOR_SURFACE_VERT_SHADER =  {
+static const ShaderStageSpecification HALFEDGECOLOR_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_modelView", GLData::Matrix44Float},
-       {"u_projMatrix", GLData::Matrix44Float},
-       {"u_modelView", GLData::Matrix44Float},
-       {"u_projMatrix", GLData::Matrix44Float},
+       {"u_modelView", DataType::Matrix44Float},
+       {"u_projMatrix", DataType::Matrix44Float},
+       {"u_modelView", DataType::Matrix44Float},
+       {"u_projMatrix", DataType::Matrix44Float},
     },
 
     // attributes
     {
-        {"a_position", GLData::Vector3Float},
-        {"a_normal", GLData::Vector3Float},
-        {"a_barycoord", GLData::Vector3Float},
-        {"a_colorvals", GLData::Vector3Float},
+        {"a_position", DataType::Vector3Float},
+        {"a_normal", DataType::Vector3Float},
+        {"a_barycoord", DataType::Vector3Float},
+        {"a_colorvals", DataType::Vector3Float},
     },
 
     // source
@@ -375,12 +379,12 @@ static const VertShader HALFEDGECOLOR_SURFACE_VERT_SHADER =  {
     )
 };
 
-static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
+static const ShaderStageSpecification HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_rangeLow", GLData::Float},
-        {"u_rangeHigh", GLData::Float},
+        {"u_rangeLow", DataType::Float},
+        {"u_rangeHigh", DataType::Float},
     }, 
 
     // attributes
@@ -443,22 +447,22 @@ static const FragShader HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     )
 };
 
-static const VertShader PICK_SURFACE_VERT_SHADER =  {
+static const ShaderStageSpecification PICK_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_modelView", GLData::Matrix44Float},
-       {"u_projMatrix", GLData::Matrix44Float},
+       {"u_modelView", DataType::Matrix44Float},
+       {"u_projMatrix", DataType::Matrix44Float},
     },
 
     // attributes
     {
-        {"a_position", GLData::Vector3Float},
-        {"a_barycoord", GLData::Vector3Float},
-        {"a_vertexColors", GLData::Vector3Float, 3},
-        {"a_edgeColors", GLData::Vector3Float, 3},
-        {"a_halfedgeColors", GLData::Vector3Float, 3},
-        {"a_faceColor", GLData::Vector3Float},
+        {"a_position", DataType::Vector3Float},
+        {"a_barycoord", DataType::Vector3Float},
+        {"a_vertexColors", DataType::Vector3Float, 3},
+        {"a_edgeColors", DataType::Vector3Float, 3},
+        {"a_halfedgeColors", DataType::Vector3Float, 3},
+        {"a_faceColor", DataType::Vector3Float},
     },
 
     // source
@@ -497,7 +501,7 @@ static const VertShader PICK_SURFACE_VERT_SHADER =  {
     )
 };
 
-static const FragShader PICK_SURFACE_FRAG_SHADER = {
+static const ShaderStageSpecification PICK_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
@@ -566,18 +570,18 @@ static const FragShader PICK_SURFACE_FRAG_SHADER = {
 
 
 
-static const VertShader FACECOLOR_PLAIN_SURFACE_VERT_SHADER =  {
+static const ShaderStageSpecification FACECOLOR_PLAIN_SURFACE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_modelView", GLData::Matrix44Float},
-       {"u_projMatrix", GLData::Matrix44Float},
+       {"u_modelView", DataType::Matrix44Float},
+       {"u_projMatrix", DataType::Matrix44Float},
     },
 
     // attributes
     {
-        {"a_position", GLData::Vector3Float},
-        {"a_color", GLData::Vector3Float},
+        {"a_position", DataType::Vector3Float},
+        {"a_color", DataType::Vector3Float},
     },
 
     // source
@@ -596,7 +600,7 @@ static const VertShader FACECOLOR_PLAIN_SURFACE_VERT_SHADER =  {
     )
 };
 
-static const FragShader FACECOLOR_PLAIN_SURFACE_FRAG_SHADER = {
+static const ShaderStageSpecification FACECOLOR_PLAIN_SURFACE_FRAG_SHADER = {
     
     // uniforms
     {
@@ -625,8 +629,9 @@ static const FragShader FACECOLOR_PLAIN_SURFACE_FRAG_SHADER = {
 
     )
 };
+*/
 
 // clang-format on
 
-} // namespace gl
+} // namespace render
 } // namespace polyscope

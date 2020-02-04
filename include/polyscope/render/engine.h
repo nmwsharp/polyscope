@@ -67,6 +67,7 @@ public:
 protected:
   int dim;
   TextureFormat format;
+
   unsigned int sizeX, sizeY;
 };
 
@@ -74,8 +75,7 @@ class RenderBuffer {
 public:
   // abstract class: use the factory methods from the Engine class
   RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_);
-
-  virtual ~RenderBuffer();
+  virtual ~RenderBuffer(){};
 
   RenderBufferType getType() const { return type; }
   unsigned int getSizeX() const { return sizeX; }
@@ -90,8 +90,9 @@ protected:
 class FrameBuffer {
 
 public:
-  // abstract class: no constructor by design! use the factory methods from the Engine class
-  virtual ~FrameBuffer();
+  // abstract class: use the factory methods from the Engine class
+  FrameBuffer();
+  virtual ~FrameBuffer(){};
 
   // Bind to this framebuffer so subsequent draw calls will go to it
   // If return is false, binding failed and the framebuffer should not be used.
@@ -99,18 +100,18 @@ public:
 
   // Clear to redraw
   virtual void clear() = 0;
-  glm::vec3 clearColor{0.0, 0.0, 0.0};
+  glm::vec3 clearColor{1.0, 1.0, 1.0};
   float clearAlpha = 1.0;
 
   // Bind to textures/renderbuffers for output
   // TODO probably don't want these in general
-  virtual void bindToColorRenderbuffer(RenderBuffer* renderBuffer) = 0;
-  virtual void bindToDepthRenderbuffer(RenderBuffer* renderBuffer) = 0;
-  virtual void bindToColorTexturebuffer(TextureBuffer* textureBuffer) = 0;
-  virtual void bindToDepthTexturebuffer(TextureBuffer* textureBuffer) = 0;
+  virtual void bindToColorRenderBuffer(RenderBuffer* renderBuffer) = 0;
+  virtual void bindToDepthRenderBuffer(RenderBuffer* renderBuffer) = 0;
+  virtual void bindToColorTextureBuffer(TextureBuffer* textureBuffer) = 0;
+  virtual void bindToDepthTextureBuffer(TextureBuffer* textureBuffer) = 0;
 
   // Specify the viewport coordinates and clearcolor
-  void setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
+  virtual void setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
 
   // Resizes textures and renderbuffers if different from current size.
   virtual void resizeBuffers(unsigned int newXSize, unsigned int newYSize) = 0;
@@ -176,14 +177,14 @@ class ShaderProgram {
 
 public:
   ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm, unsigned int nPatchVertices = 0);
-  virtual ~ShaderProgram();
+  virtual ~ShaderProgram(){};
 
 
   // === Store data
   // If update is set to "true", data is updated rather than allocated (must be allocated first)
 
   // Uniforms
-  bool hasUniform(std::string name);
+  virtual bool hasUniform(std::string name) = 0;
   virtual void setUniform(std::string name, int val) = 0;
   virtual void setUniform(std::string name, unsigned int val) = 0;
   virtual void setUniform(std::string name, float val) = 0;
@@ -196,8 +197,8 @@ public:
   virtual void setUniform(std::string name, float x, float y, float z, float w) = 0;
 
   // = Attributes
-  bool hasAttribute(std::string name);
   // clang-format off
+  virtual bool hasAttribute(std::string name) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0, int size = -1) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) = 0;
@@ -217,8 +218,8 @@ public:
   virtual void setTexture1D(std::string name, unsigned char* texData, unsigned int length) = 0;
   virtual void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                             bool withAlpha = true, bool useMipMap = false, bool repeat = false) = 0;
-  //virtual void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false) = 0;
-  virtual void setTextureFromBuffer(std::string name, std::shared_ptr<TextureBuffer> textureBuffer) = 0;
+  // virtual void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false) = 0;
+  virtual void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) = 0;
 
 
   // Indices
@@ -258,38 +259,50 @@ class Engine {
 public:
   // Options
 
-
   // High-level control
-  virtual void initialize() = 0;
+  virtual void checkError(bool fatal = false) = 0;
+
+  virtual void clearDisplay() = 0;
+  virtual void bindDisplay() = 0;
+  
   virtual void clearGBuffer() = 0;
   virtual void computeLighting() = 0;
   virtual void toDisplay() = 0;
-  virtual void checkError(bool fatal = false) = 0;
+
+  // Small options
+  virtual bool bindGBuffer() = 0; // TODO I'm not sure any of these should actually be virtual
+  virtual void resizeGBuffer(int width, int height) = 0;
+  virtual void setGBufferViewport(int xStart, int yStart, int sizeX, int sizeY) = 0;
+  void setBackgroundColor(glm::vec3 newColor);
+  void setBackgroundAlpha(float newAlpha);
 
   // === Factory methods
 
   // create textures
-  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
-                                                       unsigned char* data);                                    // 1d
-  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D, float* data); // 1d
-  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
-                                                       unsigned char* data = nullptr); // 2d
+  virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
+                                                               unsigned char* data) = 0; // 1d
+  virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
+                                                               float* data) = 0; // 1d
+  virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
+                                                               unsigned int sizeY_,
+                                                               unsigned char* data = nullptr) = 0; // 2d
 
   // create render buffers
-  std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_, unsigned int sizeY_);
+  virtual std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
+                                                             unsigned int sizeY_) = 0;
 
   // create frame buffers
-  std::shared_ptr<FrameBuffer> generateFrameBuffer();
+  virtual std::shared_ptr<FrameBuffer> generateFrameBuffer() = 0;
 
   // create shader programs
-  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-                                                       unsigned int nPatchVertices = 0);
+  virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
+                                                               DrawMode dm, unsigned int nPatchVertices = 0) = 0;
 
   // === All of the frame buffers used in the rendering pipeline
   std::unique_ptr<FrameBuffer> GBuffer;
 
 private:
-  // Manage a cache of compiled shaders
+  // TODO Manage a cache of compiled shaders?
 };
 
 
@@ -308,6 +321,16 @@ inline void ShaderProgram::setAttribute(std::string name, const std::vector<std:
   }
   setAttribute(name, entryData, update, offset, size);
 }
+
+// === Public API
+// Callers should basically only interact via these methods and variables
+
+// Call once to initialize
+void initializeRenderEngine();
+
+// The global render engine
+// Gets initialized by initializeRenderEngine() in polyscope::init();
+extern Engine* engine;
 
 } // namespace render
 } // namespace polyscope

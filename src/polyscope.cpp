@@ -6,6 +6,7 @@
 #include <iostream>
 #include <thread>
 
+#include "GLFW/glfw3.h"
 #ifdef _WIN32
 #undef APIENTRY
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -18,11 +19,9 @@
 #include "examples/imgui_impl_opengl3.h"
 #include "imgui.h"
 
-#include "polyscope/gl/ground_plane.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders/texture_draw_shaders.h"
 #include "polyscope/pick.h"
 #include "polyscope/view.h"
+#include "polyscope/render/engine.h"
 
 #include "stb_image.h"
 
@@ -95,11 +94,6 @@ std::vector<ContextEntry> contextStack;
 // GLFW window
 GLFWwindow* mainWindow = nullptr;
 
-// Main buffers for rendering
-gl::GLTexturebuffer* sceneColorTexture = nullptr;
-gl::GLFramebuffer* sceneFramebuffer = nullptr; // the main 3D scene
-gl::GLFramebuffer* pickFramebuffer = nullptr;
-gl::GLProgram* sceneToScreenProgram = nullptr;
 
 // Font atlas pointer
 ImFontAtlas* globalFontAtlas = nullptr;
@@ -112,55 +106,6 @@ float lastWindowHeightPolyscope = 200;
 float lastWindowHeightUser = 200;
 float leftWindowsWidth = 300;
 float rightWindowsWidth = 500;
-
-// Called once on init
-void allocateGlobalBuffersAndPrograms() {
-  using namespace gl;
-
-  { // Scene buffer
-    sceneColorTexture = new GLTexturebuffer(GL_RGBA, view::bufferWidth, view::bufferHeight);
-    GLRenderbuffer* sceneDepthBuffer =
-        new GLRenderbuffer(RenderbufferType::Depth, view::bufferWidth, view::bufferHeight);
-
-    sceneFramebuffer = new GLFramebuffer();
-    sceneFramebuffer->bindToColorTexturebuffer(sceneColorTexture);
-    sceneFramebuffer->bindToDepthRenderbuffer(sceneDepthBuffer);
-  }
-
-  { // Pick buffer
-    GLRenderbuffer* pickColorBuffer =
-        new GLRenderbuffer(RenderbufferType::Float4, view::bufferWidth, view::bufferHeight);
-    GLRenderbuffer* pickDepthBuffer =
-        new GLRenderbuffer(RenderbufferType::Depth, view::bufferWidth, view::bufferHeight);
-
-    pickFramebuffer = new GLFramebuffer();
-    pickFramebuffer->bindToColorRenderbuffer(pickColorBuffer);
-    pickFramebuffer->bindToDepthRenderbuffer(pickDepthBuffer);
-  }
-
-  { // Simple program which draws scene texture to screen
-    sceneToScreenProgram =
-        new gl::GLProgram(&TEXTURE_DRAW_VERT_SHADER, &TEXTURE_DRAW_FRAG_SHADER, gl::DrawMode::Triangles);
-    std::vector<glm::vec3> coords = {{-1.0f, -1.0f, 0.0f}, {1.0f, -1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f},
-                                     {-1.0f, 1.0f, 0.0f},  {1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}};
-
-    sceneToScreenProgram->setAttribute("a_position", coords);
-  }
-}
-
-// Called once on closing
-void deleteGlobalBuffersAndPrograms() {
-
-  // Scene
-  delete sceneColorTexture;
-  delete sceneFramebuffer->getDepthRenderBuffer();
-  delete sceneFramebuffer;
-
-  // Pick
-  delete pickFramebuffer->getColorRenderBuffer();
-  delete pickFramebuffer->getDepthRenderBuffer();
-  delete pickFramebuffer;
-}
 
 
 void setStyle() {
@@ -333,12 +278,8 @@ void init() {
   initializeImGUIContext();
   contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr});
 
-  // Initialize gl data
-  gl::GLProgram::initCommonShaders();
-  //gl::loadMaterialTextures(); SIMPLE
-
-  // Initialize pick buffer
-  allocateGlobalBuffersAndPrograms();
+  // Initialize the rendering engine
+  render::initializeRenderEngine(); 
 
   draw(); // TODO this is a terrible fix for a bug where the ground doesn't show up until the SECOND time we draw...
           // cannot figure out why
@@ -588,15 +529,14 @@ void processInputEvents() {
 
 void renderScene() {
 
-  // Activate the texture that we draw to
-  sceneFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
-  sceneFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  render::engine->resizeGBuffer(view::bufferWidth, view::bufferHeight);
+  render::engine->setGBufferViewport(0, 0, view::bufferWidth, view::bufferHeight);
 
-  if (!sceneFramebuffer->bindForRendering()) return;
-
-  sceneFramebuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
-  sceneFramebuffer->clearAlpha = 0.0;
-  sceneFramebuffer->clear();
+  render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
+  render::engine->setBackgroundAlpha(0.0);
+  render::engine->clearGBuffer();
+  
+  if(!render::engine->bindGBuffer()) return;
 
   // If a view has never been set, this will set it to the home view
   view::ensureViewValid();
@@ -608,15 +548,8 @@ void renderScene() {
 }
 
 void renderSceneToScreen() {
-
-  // Bind to the view framebuffer
-  bindDefaultBuffer();
-
-  // Set the texture uniform
-  sceneToScreenProgram->setTextureFromBuffer("t_image", sceneColorTexture);
-
   // Draw
-  sceneToScreenProgram->draw();
+  render::engine->toDisplay();
 }
 
 void buildPolyscopeGui() {
@@ -633,7 +566,7 @@ void buildPolyscopeGui() {
   }
   ImGui::SameLine();
   if (ImGui::Button("Screenshot")) {
-    screenshot(true);
+    //screenshot(true); SIMPLE
   }
   ImGui::SameLine();
   if (ImGui::Button("Controls")) {
@@ -672,7 +605,7 @@ void buildPolyscopeGui() {
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Appearance")) {
     ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
-    gl::buildGroundPlaneGui();
+    //gl::buildGroundPlaneGui(); SIMPLE
     ImGui::TreePop();
   }
 
@@ -786,6 +719,9 @@ void draw(bool withUI) {
   // Update buffer and context
   glfwMakeContextCurrent(mainWindow);
 
+  render::engine->bindDisplay();
+  render::engine->clearDisplay();
+
   if (withUI) {
     // New IMGUI frame
     ImGui_ImplOpenGL3_NewFrame();
@@ -793,12 +729,16 @@ void draw(bool withUI) {
     ImGui::NewFrame();
   }
 
-  bindDefaultBuffer();
+  // TODO I think most of these are unnecssary, they already get called in renderScene()
+  //render::engine->resizeGBuffer(view::bufferWidth, view::bufferHeight);
+  //render::engine->setGBufferViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  //render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
+  //render::engine->setBackgroundAlpha(0.0);
+  //render::engine->clearGBuffer();
+  
+  //if(!render::engine->bindGBuffer()) return;
 
   // Ensure the default framebuffer is bound
-  glClearColor(view::bgColor[0], view::bgColor[1], view::bgColor[2], 0);
-  glClearDepth(1.);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
   // Build the GUI components
   if (withUI) {
@@ -824,7 +764,7 @@ void draw(bool withUI) {
 
   // Draw structures in the scene
   if (redrawNextFrame || options::alwaysRedraw) {
-    renderScene();
+    renderScene(); 
     redrawNextFrame = false;
   }
   renderSceneToScreen();
@@ -833,19 +773,10 @@ void draw(bool withUI) {
   if (withUI) {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    gl::checkGLError();
   }
 }
 
 
-void bindDefaultBuffer() {
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-}
 
 void mainLoopIteration() {
 
@@ -918,9 +849,8 @@ void shutdown(int exitCode) {
     writePrefsFile();
   }
 
-  deleteGlobalBuffersAndPrograms();
   //gl::unloadMaterialTextures(); SIMPLE
-  gl::deleteGroundPlaneResources();
+  //gl::deleteGroundPlaneResources(); SIMPLE
 
   // ImGui shutdown things
   ImGui_ImplOpenGL3_Shutdown();

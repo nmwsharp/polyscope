@@ -88,10 +88,10 @@ public:
   void clear() override;
 
   // Bind to textures/renderbuffers for output
-  void bindToColorRenderbuffer(RenderBuffer* renderBuffer) override;
-  void bindToDepthRenderbuffer(RenderBuffer* renderBuffer) override;
-  void bindToColorTexturebuffer(TextureBuffer* textureBuffer) override;
-  void bindToDepthTexturebuffer(TextureBuffer* textureBuffer) override;
+  void bindToColorRenderBuffer(RenderBuffer* renderBuffer) override;
+  void bindToDepthRenderBuffer(RenderBuffer* renderBuffer) override;
+  void bindToColorTextureBuffer(TextureBuffer* textureBuffer) override;
+  void bindToDepthTextureBuffer(TextureBuffer* textureBuffer) override;
 
   // Resizes textures and renderbuffers if different from current size.
   void resizeBuffers(unsigned int newXSize, unsigned int newYSize) override;
@@ -125,7 +125,7 @@ public:
   // If update is set to "true", data is updated rather than allocated (must be allocated first)
 
   // Uniforms
-  bool hasUniform(std::string name);
+  bool hasUniform(std::string name) override;
   void setUniform(std::string name, int val) override;
   void setUniform(std::string name, unsigned int val) override;
   void setUniform(std::string name, float val) override;
@@ -138,8 +138,8 @@ public:
   void setUniform(std::string name, float x, float y, float z, float w) override;
 
   // = Attributes
-  bool hasAttribute(std::string name);
   // clang-format off
+  bool hasAttribute(std::string name) override;
   void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0, int size = -1) override;
   void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) override;
   void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) override;
@@ -164,12 +164,8 @@ public:
   void setTexture1D(std::string name, unsigned char* texData, unsigned int length) override;
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                     bool withAlpha = true, bool useMipMap = false, bool repeat = false) override;
-  //void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false) override;
-  void setTextureFromBuffer(std::string name, std::shared_ptr<TextureBuffer> textureBuffer) override;
-
-
-  // Call once to initialize GLSL code used by multiple shaders
-  static void initCommonShaders();
+  // void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false) override;
+  void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) override;
 
   // Draw!
   void draw() override;
@@ -198,20 +194,19 @@ protected:
     int dim;
     unsigned int index;
     bool isSet;
-    std::shared_ptr<GLTextureBuffer> textureBuffer;
+    GLTextureBuffer* textureBuffer;
+    std::shared_ptr<GLTextureBuffer> textureBufferOwned; // might be empty, if texture isn't owned
     TextureLocation location;
   };
 
-  void addUniqueAttribute(ShaderSpecAttribute attribute);
-  void addUniqueUniform(ShaderSpecUniform uniform);
-  void addUniqueTexture(ShaderSpecTexture texture);
-
-protected:
   // Lists of attributes and uniforms that need to be set
   std::vector<GLShaderUniform> uniforms;
   std::vector<GLShaderAttribute> attributes;
   std::vector<GLShaderTexture> textures;
 
+  void addUniqueAttribute(ShaderSpecAttribute attribute);
+  void addUniqueUniform(ShaderSpecUniform uniform);
+  void addUniqueTexture(ShaderSpecTexture texture);
 
 private:
   // Setup routines
@@ -230,8 +225,63 @@ private:
   AttributeHandle indexVBO;
 
   int nPatchVertices;
+};
 
-  // static  ShaderHandle commonShaderHandle; // functions accessible to all shaders TODO move to engine
+
+class GLEngine : public Engine {
+public:
+  GLEngine();
+
+  // High-level control
+  void checkError(bool fatal = false) override;
+
+  void clearDisplay() override;
+  void bindDisplay() override;
+
+  void clearGBuffer() override;
+  void computeLighting() override;
+  void toDisplay() override;
+
+  // Small options
+  bool bindGBuffer() override;
+  void resizeGBuffer(int width, int height) override;
+  void setGBufferViewport(int xStart, int yStart, int sizeX, int sizeY) override;
+
+  // === Factory methods
+
+  // create textures
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
+                                                       unsigned char* data) override; // 1d
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
+                                                       float* data) override; // 1d
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+                                                       unsigned char* data = nullptr) override; // 2d
+
+  // create render buffers
+  std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
+                                                     unsigned int sizeY_) override;
+
+  // create frame buffers
+  std::shared_ptr<FrameBuffer> generateFrameBuffer() override;
+
+  // create shader programs
+  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
+                                                       unsigned int nPatchVertices = 0) override;
+
+  // === All of the frame buffers used in the rendering pipeline
+  std::unique_ptr<FrameBuffer> GBuffer;
+
+protected:
+  // Main buffers for rendering
+  std::unique_ptr<GLTextureBuffer> sceneColorTexture;
+  std::unique_ptr<GLRenderBuffer> sceneDepthBuffer, pickColorBuffer, pickDepthBuffer;
+  std::unique_ptr<GLFrameBuffer> sceneFramebuffer, pickFramebuffer;
+
+  std::shared_ptr<ShaderProgram> sceneToScreenProgram;
+
+
+  // Helpers
+  void allocateGlobalBuffersAndPrograms();
 };
 
 } // namespace render
