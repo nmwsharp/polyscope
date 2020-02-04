@@ -11,13 +11,23 @@
 //#include "polyscope/gl/shaders.h"
 #include "polyscope/view.h"
 
-// Make syntax  nicer like this, but we lose line numbers in GL debug output
+// Make syntax nicer like this, but we lose line numbers in GL debug output
+// TODO MOVE
 #define POLYSCOPE_GLSL(version, shader) "#version " #version "\n" #shader
+#define POLYSCOPE_GLSL_DEFERRED(version, shader) "#version " #version "\n" \
+      "layout (location = 0) out vec4 gAlbedo;"     \
+      "layout (location = 1) out vec4 gMaterial;"   \
+      "layout (location = 2) out vec4 gPosition;"   \
+      "layout (location = 3) out vec4 gNormal;"     \
+      #shader
+      
+
+
 
 namespace polyscope {
 namespace render {
 
-// == A few enums that contorl behavior
+// == A few enums that control behavior
 
 // The drawing modes available
 enum class DrawMode {
@@ -35,7 +45,7 @@ enum class DrawMode {
 };
 
 enum class FilterMode { Nearest = 0, Linear };
-enum class TextureFormat { RGB8 = 0, RGBA8, RGBA32F, RGB32F, R32F };
+enum class TextureFormat { RGB8 = 0, RGBA8, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F };
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
 
 enum class DataType { Vector2Float, Vector3Float, Vector4Float, Matrix44Float, Float, Int, UInt, Index };
@@ -77,6 +87,8 @@ public:
   RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_);
   virtual ~RenderBuffer(){};
 
+  virtual void resize(unsigned int newX, unsigned int newY);
+
   RenderBufferType getType() const { return type; }
   unsigned int getSizeX() const { return sizeX; }
   unsigned int getSizeY() const { return sizeY; }
@@ -104,27 +116,25 @@ public:
   float clearAlpha = 1.0;
 
   // Bind to textures/renderbuffers for output
-  // TODO probably don't want these in general
-  virtual void bindToColorRenderBuffer(RenderBuffer* renderBuffer) = 0;
-  virtual void bindToDepthRenderBuffer(RenderBuffer* renderBuffer) = 0;
-  virtual void bindToColorTextureBuffer(TextureBuffer* textureBuffer) = 0;
-  virtual void bindToDepthTextureBuffer(TextureBuffer* textureBuffer) = 0;
+  // note: currently no way to remove buffers
+  virtual void addColorBuffer(std::shared_ptr<RenderBuffer> renderBuffer) = 0;
+  virtual void addColorBuffer(std::shared_ptr<TextureBuffer> textureBuffer) = 0;
+  virtual void addDepthBuffer(std::shared_ptr<RenderBuffer> renderBuffer) = 0;
+  virtual void addDepthBuffer(std::shared_ptr<TextureBuffer> textureBuffer) = 0;
+
+  virtual void setDrawBuffers() = 0;
 
   // Specify the viewport coordinates and clearcolor
   virtual void setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
 
   // Resizes textures and renderbuffers if different from current size.
-  virtual void resizeBuffers(unsigned int newXSize, unsigned int newYSize) = 0;
+  virtual void resizeBuffers(unsigned int newXSize, unsigned int newYSize);
 
   // Getters
   // RenderBuffer* getColorRenderBuffer() const { return colorRenderBuffer; }
   // RenderBuffer* getDepthRenderBuffer() const { return depthRenderBuffer; }
   // TextureBuffer* getColorTextureBuffer() const { return colorTextureBuffer; }
   // TextureBuffer* getDepthTextureBuffer() const { return depthTextureBuffer; }
-
-  // Manage buffers
-  std::shared_ptr<RenderBuffer> getRenderBuffer(std::string bufferName);
-  std::shared_ptr<TextureBuffer> getTextureBuffer(std::string bufferName);
 
   // Query pixel
   virtual std::array<float, 4> readFloat4(int xPos, int yPos) = 0;
@@ -136,8 +146,9 @@ protected:
   unsigned int viewportSizeX, viewportSizeY;
 
   // Buffers
-  std::vector<std::pair<std::string, std::shared_ptr<RenderBuffer>>> renderBuffers;
-  std::vector<std::pair<std::string, std::shared_ptr<TextureBuffer>>> textureBuffers;
+  int nColorBuffers = 0;
+  std::vector<std::shared_ptr<RenderBuffer>> renderBuffers;
+  std::vector<std::shared_ptr<TextureBuffer>> textureBuffers;
 };
 
 // == Shaders
@@ -253,6 +264,7 @@ protected:
   unsigned int nPatchVertices;
 };
 
+enum class RenderResult { Albedo, Roughness, Metallic, Depth, Normal, Position, Final };
 
 class Engine {
 
@@ -261,18 +273,18 @@ public:
 
   // High-level control
   virtual void checkError(bool fatal = false) = 0;
-
   virtual void clearDisplay() = 0;
   virtual void bindDisplay() = 0;
-  
-  virtual void clearGBuffer() = 0;
-  virtual void computeLighting() = 0;
-  virtual void toDisplay() = 0;
+  void buildEngineGui();
+
+  virtual void clearGBuffer();
+  // virtual void computeLighting() = 0;
+  virtual bool bindGBuffer();
+  virtual void resizeGBuffer(int width, int height);
+  virtual void setGBufferViewport(int xStart, int yStart, int sizeX, int sizeY);
+  virtual void copyGBufferToDisplay(); // respects resultToDisplay
 
   // Small options
-  virtual bool bindGBuffer() = 0; // TODO I'm not sure any of these should actually be virtual
-  virtual void resizeGBuffer(int width, int height) = 0;
-  virtual void setGBufferViewport(int xStart, int yStart, int sizeX, int sizeY) = 0;
   void setBackgroundColor(glm::vec3 newColor);
   void setBackgroundAlpha(float newAlpha);
 
@@ -298,11 +310,25 @@ public:
   virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
                                                                DrawMode dm, unsigned int nPatchVertices = 0) = 0;
 
-  // === All of the frame buffers used in the rendering pipeline
-  std::unique_ptr<FrameBuffer> GBuffer;
+  // === The frame buffers used in the rendering pipeline
+  std::shared_ptr<FrameBuffer> GBuffer;
+  std::shared_ptr<FrameBuffer> pickFramebuffer;
 
-private:
+  // Main buffers for rendering
+  std::shared_ptr<TextureBuffer> gAlbedo, gMaterial, gViewNormal, gViewPosition, gFinal;
+  std::shared_ptr<RenderBuffer> gDepth, pickColorBuffer, pickDepthBuffer;
+
+  // General-use programs used by the engine
+  std::shared_ptr<ShaderProgram> renderTexturePlain, renderTextureDot3, renderTextureMap3;
+
+  // Options
+  RenderResult resultToDisplay = RenderResult::Final; 
+
+protected:
   // TODO Manage a cache of compiled shaders?
+
+  // Helpers
+  std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen
 };
 
 

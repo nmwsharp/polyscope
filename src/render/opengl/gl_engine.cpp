@@ -22,16 +22,40 @@ ProgramHandle commonShaderHandle = 777;
 // == Map enums to native values
 
 // clang-format off
-inline GLenum native(const TextureFormat& x) {
+
+inline GLenum internalFormat(const TextureFormat& x) {
   switch (x) {
-    case TextureFormat::RGB8:     return GL_RGB;
-    case TextureFormat::RGBA8:    return GL_RGBA;
-    //case TextureFormat::RGBA32F:  return GL_RGBA32F;
-    case TextureFormat::RGBA32F:  throw std::runtime_error("figure out enums"); // TODO
-    //case TextureFormat::RGB32F:   return GL_RGB32F;
-    case TextureFormat::RGB32F:  throw std::runtime_error("figure out enums"); // TODO
-    //case TextureFormat::R32F:     return GL_R32F;
-    case TextureFormat::R32F:  throw std::runtime_error("figure out enums"); // TODO
+    case TextureFormat::RGB8:       return GL_RGB8;
+    case TextureFormat::RGBA8:      return GL_RGBA8;
+    case TextureFormat::RGB16F:     return GL_RGB16F;
+    case TextureFormat::RGBA16F:    return GL_RGBA16F;
+    case TextureFormat::R32F:       return GL_R32F;
+    case TextureFormat::RGB32F:     return GL_RGBA32F;
+    case TextureFormat::RGBA32F:    return GL_RGBA32F;
+  }
+}
+
+inline GLenum formatF(const TextureFormat& x) {
+  switch (x) {
+    case TextureFormat::RGB8:       return GL_RGB;
+    case TextureFormat::RGBA8:      return GL_RGBA;
+    case TextureFormat::RGB16F:     return GL_RGB; 
+    case TextureFormat::RGBA16F:    return GL_RGBA;
+    case TextureFormat::R32F:       return GL_RED;
+    case TextureFormat::RGB32F:     return GL_RGB;
+    case TextureFormat::RGBA32F:    return GL_RGBA;
+  }
+}
+
+inline GLenum type(const TextureFormat& x) {
+  switch (x) {
+    case TextureFormat::RGB8:       return GL_UNSIGNED_BYTE;
+    case TextureFormat::RGBA8:      return GL_UNSIGNED_BYTE;
+    case TextureFormat::RGB16F:     return GL_HALF_FLOAT;
+    case TextureFormat::RGBA16F:    return GL_HALF_FLOAT;
+    case TextureFormat::R32F:       return GL_FLOAT;
+    case TextureFormat::RGB32F:     return GL_FLOAT;
+    case TextureFormat::RGBA32F:    return GL_FLOAT;
   }
 }
 
@@ -43,6 +67,30 @@ inline GLenum native(const ShaderStageType& x) {
     case ShaderStageType::Geometry:         return GL_GEOMETRY_SHADER;
     //case ShaderStageType::Compute:          return GL_COMPUTE_SHADER;
     case ShaderStageType::Fragment:         return GL_FRAGMENT_SHADER;
+  }
+}
+
+inline GLenum native(const RenderBufferType& x) {
+  switch (x) {
+    case RenderBufferType::ColorAlpha:      return GL_RGBA;
+    case RenderBufferType::Color:           return GL_RGB; 
+    case RenderBufferType::Depth:           return GL_DEPTH_COMPONENT;
+    case RenderBufferType::Float4:          return GL_RGBA32F;
+  }
+}
+
+inline GLenum colorAttachNum(const unsigned int i) {
+  // can we just add to the 0 one? couldn't find documentation saying yes for sure.
+  switch (i) {
+    case 0:     return GL_COLOR_ATTACHMENT0;
+    case 1:     return GL_COLOR_ATTACHMENT1;
+    case 2:     return GL_COLOR_ATTACHMENT2;
+    case 3:     return GL_COLOR_ATTACHMENT3;
+    case 4:     return GL_COLOR_ATTACHMENT4;
+    case 5:     return GL_COLOR_ATTACHMENT5;
+    case 6:     return GL_COLOR_ATTACHMENT6;
+    case 7:     return GL_COLOR_ATTACHMENT7;
+    default:          throw std::runtime_error("tried to use too many color attachments");
   }
 }
 
@@ -128,21 +176,20 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, uns
 
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_1D, handle);
-  glTexImage1D(GL_TEXTURE_1D, 0, native(format), size1D, 0, native(format), GL_UNSIGNED_BYTE,
-               data); // TODO use format for both options is scary (here and below)
+  glTexImage1D(GL_TEXTURE_1D, 0, internalFormat(format), size1D, 0, formatF(format), type(format), data);
   checkGLError();
 
-  setFilterMode(FilterMode::Linear);
+  setFilterMode(FilterMode::Nearest);
 }
 GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, float* data)
     : TextureBuffer(1, format_, size1D) {
 
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_1D, handle);
-  glTexImage1D(GL_TEXTURE_1D, 0, native(format), size1D, 0, native(format), GL_FLOAT, data);
+  glTexImage1D(GL_TEXTURE_1D, 0, internalFormat(format), size1D, 0, formatF(format), type(format), data);
   checkGLError();
 
-  setFilterMode(FilterMode::Linear);
+  setFilterMode(FilterMode::Nearest);
 }
 
 // create a 2D texture from data
@@ -151,16 +198,11 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
 
   checkGLError();
   glGenTextures(1, &handle);
-  checkGLError();
   glBindTexture(GL_TEXTURE_2D, handle);
-  checkGLError();
-  glTexImage2D(GL_TEXTURE_2D, 0, native(format), sizeX, sizeY, 0, native(format), GL_UNSIGNED_BYTE, data);
-  checkGLError();
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexImage2D(GL_TEXTURE_2D, 0, internalFormat(format), sizeX, sizeY, 0, formatF(format), type(format), data);
   checkGLError();
 
-  setFilterMode(FilterMode::Linear);
+  setFilterMode(FilterMode::Nearest);
 }
 
 GLTextureBuffer::~GLTextureBuffer() { glDeleteTextures(1, &handle); }
@@ -171,7 +213,7 @@ void GLTextureBuffer::resize(unsigned int newLen) {
 
   bind();
   if (dim == 1) {
-    glTexImage1D(GL_TEXTURE_1D, 0, native(format), sizeX, 0, native(format), GL_UNSIGNED_BYTE, 0);
+    glTexImage1D(GL_TEXTURE_1D, 0, internalFormat(format), sizeX, 0, formatF(format), type(format), nullptr);
   }
   if (dim == 2) {
     throw std::runtime_error("OpenGL error: called 1D resize on 2D texture");
@@ -188,7 +230,7 @@ void GLTextureBuffer::resize(unsigned int newX, unsigned int newY) {
     throw std::runtime_error("OpenGL error: called 2D resize on 1D texture");
   }
   if (dim == 2) {
-    glTexImage2D(GL_TEXTURE_2D, 0, native(format), sizeX, sizeY, 0, native(format), GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat(format), sizeX, sizeY, 0, formatF(format), type(format), nullptr);
   }
   checkGLError();
 }
@@ -244,32 +286,22 @@ void GLTextureBuffer::bind() {
 
 GLRenderBuffer::GLRenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_)
     : RenderBuffer(type_, sizeX_, sizeY_) {
-
   glGenRenderbuffers(1, &handle);
-  glBindRenderbuffer(GL_RENDERBUFFER, handle);
-
-  switch (type) {
-  case RenderBufferType::ColorAlpha:
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, sizeX, sizeY);
-    break;
-  case RenderBufferType::Color:
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, sizeX, sizeY);
-    break;
-  case RenderBufferType::Depth:
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, sizeX, sizeY);
-    break;
-  case RenderBufferType::Float4:
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, sizeX, sizeY);
-    break;
-  }
   checkGLError();
+  resize(sizeX, sizeY);
 }
 
 GLRenderBuffer::~GLRenderBuffer() { glDeleteRenderbuffers(1, &handle); }
 
+void GLRenderBuffer::resize(unsigned int newX, unsigned int newY) {
+  RenderBuffer::resize(newX, newY);
+  bind();
+  glRenderbufferStorage(GL_RENDERBUFFER, native(type), sizeX, sizeY);
+  checkGLError();
+}
+
 void GLRenderBuffer::bind() {
   glBindRenderbuffer(GL_RENDERBUFFER, handle);
-
   checkGLError();
 }
 
@@ -292,32 +324,25 @@ void GLFrameBuffer::bind() {
   checkGLError();
 }
 
-void GLFrameBuffer::bindToColorRenderBuffer(RenderBuffer* renderBufferIn) {
+void GLFrameBuffer::addColorBuffer(std::shared_ptr<RenderBuffer> renderBufferIn) {
 
   // it _better_ be a GL buffer
-  GLRenderBuffer* renderBuffer = dynamic_cast<GLRenderBuffer*>(renderBufferIn);
+  std::shared_ptr<GLRenderBuffer> renderBuffer = std::dynamic_pointer_cast<GLRenderBuffer>(renderBufferIn);
   if (!renderBuffer) throw std::runtime_error("tried to bind to non-GL render buffer");
 
   renderBuffer->bind();
   bind();
   checkGLError();
 
-  // Sanity checks
-  // if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
-  // if (colorTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
-
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, renderBuffer->getHandle());
-  colorRenderBuffer = renderBuffer;
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, colorAttachNum(nColorBuffers), GL_RENDERBUFFER, renderBuffer->getHandle());
   checkGLError();
-
-  GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-  glDrawBuffers(1, DrawBuffers);
-  checkGLError();
+  renderBuffers.push_back(renderBuffer);
+  nColorBuffers++;
 }
 
-void GLFrameBuffer::bindToDepthRenderBuffer(RenderBuffer* renderBufferIn) {
+void GLFrameBuffer::addDepthBuffer(std::shared_ptr<RenderBuffer> renderBufferIn) {
   // it _better_ be a GL buffer
-  GLRenderBuffer* renderBuffer = dynamic_cast<GLRenderBuffer*>(renderBufferIn);
+  std::shared_ptr<GLRenderBuffer> renderBuffer = std::dynamic_pointer_cast<GLRenderBuffer>(renderBufferIn);
   if (!renderBuffer) throw std::runtime_error("tried to bind to non-GL render buffer");
 
   renderBuffer->bind();
@@ -328,13 +353,14 @@ void GLFrameBuffer::bindToDepthRenderBuffer(RenderBuffer* renderBufferIn) {
   // if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
 
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderBuffer->getHandle());
-  depthRenderBuffer = renderBuffer;
+  checkGLError();
+  renderBuffers.push_back(renderBuffer);
 }
 
-void GLFrameBuffer::bindToColorTextureBuffer(TextureBuffer* textureBufferIn) {
+void GLFrameBuffer::addColorBuffer(std::shared_ptr<TextureBuffer> textureBufferIn) {
 
   // it _better_ be a GL buffer
-  GLTextureBuffer* textureBuffer = dynamic_cast<GLTextureBuffer*>(textureBufferIn);
+  std::shared_ptr<GLTextureBuffer> textureBuffer = std::dynamic_pointer_cast<GLTextureBuffer>(textureBufferIn);
   if (!textureBuffer) throw std::runtime_error("tried to bind to non-GL texture buffer");
 
   textureBuffer->bind();
@@ -345,19 +371,16 @@ void GLFrameBuffer::bindToColorTextureBuffer(TextureBuffer* textureBufferIn) {
   // if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
   // if (colorTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
 
-  glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureBuffer->getHandle(), 0);
-  colorTextureBuffer = textureBuffer;
+  glFramebufferTexture2D(GL_FRAMEBUFFER, colorAttachNum(nColorBuffers), GL_TEXTURE_2D, textureBuffer->getHandle(), 0);
   checkGLError();
-
-  GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-  glDrawBuffers(1, DrawBuffers);
-  checkGLError();
+  textureBuffers.push_back(textureBuffer);
+  nColorBuffers++;
 }
 
-void GLFrameBuffer::bindToDepthTextureBuffer(TextureBuffer* textureBufferIn) {
+void GLFrameBuffer::addDepthBuffer(std::shared_ptr<TextureBuffer> textureBufferIn) {
 
   // it _better_ be a GL buffer
-  GLTextureBuffer* textureBuffer = dynamic_cast<GLTextureBuffer*>(textureBufferIn);
+  std::shared_ptr<GLTextureBuffer> textureBuffer = std::dynamic_pointer_cast<GLTextureBuffer>(textureBufferIn);
   if (!textureBuffer) throw std::runtime_error("tried to bind to non-GL texture buffer");
 
   textureBuffer->bind();
@@ -368,8 +391,19 @@ void GLFrameBuffer::bindToDepthTextureBuffer(TextureBuffer* textureBufferIn) {
   // if (depthRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
   // if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
 
-  glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureBuffer->getHandle(), 0);
-  depthTextureBuffer = textureBuffer;
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, textureBuffer->getHandle(), 0);
+  checkGLError();
+  textureBuffers.push_back(textureBuffer);
+}
+
+void GLFrameBuffer::setDrawBuffers() {
+  bind();
+
+  std::vector<GLenum> buffs;
+  for (int i = 0; i < nColorBuffers; i++) {
+    buffs.push_back(GL_COLOR_ATTACHMENT0 + i);
+  }
+  glDrawBuffers(nColorBuffers, &buffs.front());
   checkGLError();
 }
 
@@ -407,55 +441,6 @@ bool GLFrameBuffer::bindForRendering() {
   return true;
 }
 
-void GLFrameBuffer::resizeBuffers(unsigned int newXSize, unsigned int newYSize) {
-
-  // TODO switch these to just resize existing buffers instead of reallocating
-
-  // Resize color buffer
-  if (colorRenderBuffer != nullptr &&
-      (colorRenderBuffer->getSizeX() != newXSize || colorRenderBuffer->getSizeY() != newYSize)) {
-    // Make a new buffer
-    GLRenderBuffer* newBuff = new GLRenderBuffer(colorRenderBuffer->getType(), newXSize, newYSize);
-
-    // Delete the old buffer
-    GLuint h = colorRenderBuffer->getHandle();
-    glDeleteRenderbuffers(1, &h);
-    safeDelete(colorRenderBuffer);
-
-    // Register new buffer
-    bindToColorRenderBuffer(newBuff);
-  }
-
-  // Resize color texture
-  if (colorTextureBuffer != nullptr &&
-      (colorTextureBuffer->getSizeX() != newXSize || colorTextureBuffer->getSizeY() != newYSize)) {
-    colorTextureBuffer->resize(newXSize, newYSize);
-  }
-
-  // Resize depth buffer
-  if (depthRenderBuffer != nullptr &&
-      (depthRenderBuffer->getSizeX() != newXSize || depthRenderBuffer->getSizeY() != newYSize)) {
-
-    // Make a new buffer
-    GLRenderBuffer* newBuff = new GLRenderBuffer(depthRenderBuffer->getType(), newXSize, newYSize);
-
-    // Delete the old buffer
-    GLuint h = depthRenderBuffer->getHandle();
-    glDeleteRenderbuffers(1, &h);
-    safeDelete(depthRenderBuffer);
-
-    // Register new buffer
-    bindToDepthRenderBuffer(newBuff);
-  }
-
-  // Resize depth texture
-  if (depthTextureBuffer != nullptr &&
-      (depthTextureBuffer->getSizeX() != newXSize || depthTextureBuffer->getSizeY() != newYSize)) {
-    depthTextureBuffer->resize(newXSize, newYSize);
-  }
-}
-
-
 void GLFrameBuffer::clear() {
   if (!bindForRendering()) return;
   glClearColor(clearColor[0], clearColor[1], clearColor[2], clearAlpha);
@@ -465,9 +450,9 @@ void GLFrameBuffer::clear() {
 
 std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
 
-  if (colorRenderBuffer == nullptr || colorRenderBuffer->getType() != RenderBufferType::Float4) {
-    throw std::runtime_error("OpenGL error: buffer is not of right type to read float4 from");
-  }
+  // if (colorRenderBuffer == nullptr || colorRenderBuffer->getType() != RenderBufferType::Float4) {
+  // throw std::runtime_error("OpenGL error: buffer is not of right type to read float4 from");
+  //}
 
   glFlush();
   glFinish();
@@ -600,7 +585,9 @@ void GLShaderProgram::compileGLProgram(const std::vector<ShaderStageSpecificatio
   // Set the output data location
   for (const ShaderStageSpecification& s : stages) {
     if (s.stage == ShaderStageType::Fragment) {
-      glBindFragDataLocation(programHandle, 0, s.outputLoc.c_str());
+      if (s.outputLoc != "") {
+        glBindFragDataLocation(programHandle, 0, s.outputLoc.c_str());
+      }
       checkGLError();
     }
   }
@@ -1507,47 +1494,55 @@ void GLEngine::allocateGlobalBuffersAndPrograms() {
     glShaderSource(commonShaderHandle, 1, &shaderCommonSource, nullptr);
     glCompileShader(commonShaderHandle);
     printShaderInfoLog(commonShaderHandle);
-    checkGLError();
   }
 
   { // Scene buffer
-    checkGLError();
-    sceneColorTexture.reset(new GLTextureBuffer(TextureFormat::RGBA8, view::bufferWidth, view::bufferHeight));
-    checkGLError();
-    sceneDepthBuffer.reset(new GLRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight));
-    checkGLError();
 
-    sceneFramebuffer.reset(new GLFrameBuffer());
-    checkGLError();
-    sceneFramebuffer->bindToColorTextureBuffer(sceneColorTexture.get());
-    checkGLError();
-    sceneFramebuffer->bindToDepthRenderBuffer(sceneDepthBuffer.get());
-    checkGLError();
+    // Note: these all use 4-channel RGBA textures, even though 3-channel RGB might be more appropriate for some. I
+    // couldn't get it to work using 4-channel render targets. Some info online indiciated that render targets need to
+    // have power-2 size, but I couldn't find a concrete reference.
+
+    gAlbedo = generateTextureBuffer(TextureFormat::RGBA8, view::bufferWidth, view::bufferHeight);
+    gMaterial = generateTextureBuffer(TextureFormat::RGBA8, view::bufferWidth, view::bufferHeight);
+    gViewPosition = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    gViewNormal = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    gFinal = generateTextureBuffer(TextureFormat::RGBA8, view::bufferWidth, view::bufferHeight);
+    gDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
+
+    GBuffer = generateFrameBuffer();
+    GBuffer->addColorBuffer(gAlbedo);
+    GBuffer->addColorBuffer(gMaterial);
+    GBuffer->addColorBuffer(gViewPosition);
+    GBuffer->addColorBuffer(gViewNormal);
+    GBuffer->addColorBuffer(gFinal);
+    GBuffer->addDepthBuffer(gDepth);
+    GBuffer->setDrawBuffers();
   }
 
   { // Pick buffer
-    pickColorBuffer.reset(new GLRenderBuffer(RenderBufferType::Float4, view::bufferWidth, view::bufferHeight));
-    pickDepthBuffer.reset(new GLRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight));
+    pickColorBuffer = generateRenderBuffer(RenderBufferType::Float4, view::bufferWidth, view::bufferHeight);
+    pickDepthBuffer = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
 
-    pickFramebuffer.reset(new GLFrameBuffer());
-    pickFramebuffer->bindToColorRenderBuffer(pickColorBuffer.get());
-    pickFramebuffer->bindToDepthRenderBuffer(pickDepthBuffer.get());
-    checkGLError();
+    pickFramebuffer = generateFrameBuffer();
+    pickFramebuffer->addColorBuffer(pickColorBuffer);
+    pickFramebuffer->addDepthBuffer(pickDepthBuffer);
+    pickFramebuffer->setDrawBuffers();
   }
 
-  { // Simple program which draws scene texture to screen
-    sceneToScreenProgram =
-        generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
-    std::vector<glm::vec3> coords = {{-1.0f, -1.0f, 0.0f}, {1.0f, -1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f},
-                                     {-1.0f, 1.0f, 0.0f},  {1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}};
+  { // Generate the general-use programs
+    // clang-format off
+    renderTexturePlain = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, PLAIN_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTexturePlain->setAttribute("a_position", screenTrianglesCoords());
 
-    sceneToScreenProgram->setAttribute("a_position", coords);
-    checkGLError();
+    renderTextureDot3 = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, DOT3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTextureDot3->setAttribute("a_position", screenTrianglesCoords());
+
+    renderTextureMap3 = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, MAP3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTextureMap3->setAttribute("a_position", screenTrianglesCoords());
+    // clang-format on
   }
-
-  // Initialize gl data
-  // gl::loadMaterialTextures(); SIMPLE
 }
+
 
 void GLEngine::bindDisplay() {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1565,32 +1560,8 @@ void GLEngine::clearDisplay() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
-void GLEngine::clearGBuffer() {
-  // GBuffer->clear();
-  sceneFramebuffer->clear();
-}
-
-void GLEngine::computeLighting() {}
-
-void GLEngine::toDisplay() {
-  // Bind to the view framebuffer
-  bindDisplay();
-
-  // Set the texture uniform
-  sceneToScreenProgram->setTextureFromBuffer("t_image", sceneColorTexture.get());
-
-  sceneToScreenProgram->draw();
-}
-
 void GLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
-void GLEngine::resizeGBuffer(int width, int height) { sceneFramebuffer->resizeBuffers(width, height); }
-
-void GLEngine::setGBufferViewport(int xStart, int yStart, int sizeX, int sizeY) {
-  sceneFramebuffer->setViewport(xStart, yStart, sizeX, sizeY);
-}
-
-bool GLEngine::bindGBuffer() { return sceneFramebuffer->bindForRendering(); }
 
 // == Factories
 std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat format, unsigned int size1D,

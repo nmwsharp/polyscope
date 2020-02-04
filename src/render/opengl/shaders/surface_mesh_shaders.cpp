@@ -36,12 +36,15 @@ const ShaderStageSpecification PLAIN_SURFACE_VERT_SHADER =  {
       uniform mat4 u_projMatrix;
       in vec3 a_position;
       in vec3 a_normal;
-      out vec3 Normal;
+      out vec3 viewNormal;
+      out vec3 viewPos;
 
       void main()
       {
-          Normal = mat3(u_modelView) * a_normal;
-          gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
+          viewNormal = mat3(u_modelView) * a_normal;
+          vec4 viewPos4 = u_modelView * vec4(a_position,1.);
+          viewPos = vec3(viewPos4);
+          gl_Position = u_projMatrix * viewPos4;
       }
     )
 };
@@ -63,23 +66,23 @@ const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER = {
     { },
     
     // output location
-    "outputF",
+    "",
     
     // source 
-    POLYSCOPE_GLSL(150,
+    POLYSCOPE_GLSL_DEFERRED(330 core,
       uniform vec3 u_basecolor;
-      in vec3 Normal;
-      out vec4 outputF;
-
-      // Forward declarations of methods from <shaders/common.h>
-      //vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
+      in vec3 viewNormal;
+      in vec3 viewPos; 
 
       void main()
       {
         vec3 color = u_basecolor;
-        outputF = vec4(color,1.);
-      }
 
+        gAlbedo = vec4(color, 1.);
+        gMaterial = vec4(0.5, 0.0, 0.0, 1.);
+        gNormal = vec4(normalize(viewNormal), 1.);
+        gPosition = vec4(viewPos, 1.);
+      }
     )
 };
 

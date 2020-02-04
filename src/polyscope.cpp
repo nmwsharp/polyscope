@@ -548,8 +548,7 @@ void renderScene() {
 }
 
 void renderSceneToScreen() {
-  // Draw
-  render::engine->toDisplay();
+  render::engine->copyGBufferToDisplay();
 }
 
 void buildPolyscopeGui() {
@@ -605,6 +604,7 @@ void buildPolyscopeGui() {
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Appearance")) {
     ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
+    render::engine->buildEngineGui();
     //gl::buildGroundPlaneGui(); SIMPLE
     ImGui::TreePop();
   }
@@ -728,17 +728,6 @@ void draw(bool withUI) {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
   }
-
-  // TODO I think most of these are unnecssary, they already get called in renderScene()
-  //render::engine->resizeGBuffer(view::bufferWidth, view::bufferHeight);
-  //render::engine->setGBufferViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  //render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
-  //render::engine->setBackgroundAlpha(0.0);
-  //render::engine->clearGBuffer();
-  
-  //if(!render::engine->bindGBuffer()) return;
-
-  // Ensure the default framebuffer is bound
 
   // Build the GUI components
   if (withUI) {

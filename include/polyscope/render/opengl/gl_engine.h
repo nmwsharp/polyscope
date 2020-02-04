@@ -66,6 +66,8 @@ public:
   GLRenderBuffer(RenderBufferType type, unsigned int sizeX_, unsigned int sizeY_);
   ~GLRenderBuffer() override;
 
+  void resize(unsigned int newX, unsigned int newY) override;
+
   void bind();
   RenderBufferHandle getHandle() const { return handle; }
 
@@ -88,13 +90,12 @@ public:
   void clear() override;
 
   // Bind to textures/renderbuffers for output
-  void bindToColorRenderBuffer(RenderBuffer* renderBuffer) override;
-  void bindToDepthRenderBuffer(RenderBuffer* renderBuffer) override;
-  void bindToColorTextureBuffer(TextureBuffer* textureBuffer) override;
-  void bindToDepthTextureBuffer(TextureBuffer* textureBuffer) override;
-
-  // Resizes textures and renderbuffers if different from current size.
-  void resizeBuffers(unsigned int newXSize, unsigned int newYSize) override;
+  void addColorBuffer(std::shared_ptr<RenderBuffer> renderBuffer) override;
+  void addColorBuffer(std::shared_ptr<TextureBuffer> textureBuffer) override;
+  void addDepthBuffer(std::shared_ptr<RenderBuffer> renderBuffer) override;
+  void addDepthBuffer(std::shared_ptr<TextureBuffer> textureBuffer) override;
+  
+  void setDrawBuffers() override;
 
   // Query pixel
   std::array<float, 4> readFloat4(int xPos, int yPos) override;
@@ -106,12 +107,6 @@ protected:
   FrameBufferHandle handle;
 
   void bind();
-
-  // TODO maybe get rid of these?
-  GLRenderBuffer* colorRenderBuffer = nullptr;
-  GLRenderBuffer* depthRenderBuffer = nullptr;
-  GLTextureBuffer* colorTextureBuffer = nullptr;
-  GLTextureBuffer* depthTextureBuffer = nullptr;
 };
 
 
@@ -238,15 +233,6 @@ public:
   void clearDisplay() override;
   void bindDisplay() override;
 
-  void clearGBuffer() override;
-  void computeLighting() override;
-  void toDisplay() override;
-
-  // Small options
-  bool bindGBuffer() override;
-  void resizeGBuffer(int width, int height) override;
-  void setGBufferViewport(int xStart, int yStart, int sizeX, int sizeY) override;
-
   // === Factory methods
 
   // create textures
@@ -268,16 +254,7 @@ public:
   std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
                                                        unsigned int nPatchVertices = 0) override;
 
-  // === All of the frame buffers used in the rendering pipeline
-  std::unique_ptr<FrameBuffer> GBuffer;
-
 protected:
-  // Main buffers for rendering
-  std::unique_ptr<GLTextureBuffer> sceneColorTexture;
-  std::unique_ptr<GLRenderBuffer> sceneDepthBuffer, pickColorBuffer, pickDepthBuffer;
-  std::unique_ptr<GLFrameBuffer> sceneFramebuffer, pickFramebuffer;
-
-  std::shared_ptr<ShaderProgram> sceneToScreenProgram;
 
 
   // Helpers
