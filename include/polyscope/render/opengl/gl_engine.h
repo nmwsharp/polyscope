@@ -52,6 +52,7 @@ public:
   void resize(unsigned int newX, unsigned int newY) override;
 
   void setFilterMode(FilterMode newMode) override;
+  void* getNativeHandle() override;
 
 
   void bind();
@@ -94,7 +95,7 @@ public:
   void addColorBuffer(std::shared_ptr<TextureBuffer> textureBuffer) override;
   void addDepthBuffer(std::shared_ptr<RenderBuffer> renderBuffer) override;
   void addDepthBuffer(std::shared_ptr<TextureBuffer> textureBuffer) override;
-  
+
   void setDrawBuffers() override;
 
   // Query pixel
@@ -159,7 +160,7 @@ public:
   void setTexture1D(std::string name, unsigned char* texData, unsigned int length) override;
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                     bool withAlpha = true, bool useMipMap = false, bool repeat = false) override;
-  // void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false) override;
+  void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false) override;
   void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) override;
 
   // Draw!
@@ -255,8 +256,6 @@ public:
                                                        unsigned int nPatchVertices = 0) override;
 
 protected:
-
-
   // Helpers
   void allocateGlobalBuffersAndPrograms();
 };

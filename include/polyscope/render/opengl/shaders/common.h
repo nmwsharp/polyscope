@@ -84,6 +84,57 @@ vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat
   return vec4(colorCombined, 1.0);
 }
 
+float softpos(float val, float threshLow, float threshHigh) {
+  float b = smoothstep(threshHigh, threshLow, val) * threshLow;
+  return max(val, 0.0) + b;
+}
+
+float softpos(float val) {
+  return softpos(val, 0.05, 0.08);
+}
+
+
+// PBR Lighting functions below are copyright Joey de Vries at learnopengl.com, used under CC-BY-4.0
+
+float DistributionGGX(vec3 N, vec3 H, float roughness) {
+    const float PI = 3.14159265359;
+    float a = roughness*roughness;
+    float a2 = a*a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+	
+    float num = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+	
+    return num / denom;
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness) {
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float num = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+	
+    return num / denom;
+}
+
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
+    //float NdotV = max(dot(N, V), 0.0);
+    //float NdotL = max(dot(N, L), 0.0);
+    float NdotV = softpos(dot(N, V));
+    float NdotL = softpos(dot(N, L));
+    float ggx2  = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1  = GeometrySchlickGGX(NdotL, roughness);
+	
+    return ggx1 * ggx2;
+}
+
+vec3 FresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}  
 
 
 )";

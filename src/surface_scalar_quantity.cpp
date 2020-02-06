@@ -2,10 +2,9 @@
 #include "polyscope/surface_scalar_quantity.h"
 
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/surface_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -29,6 +28,7 @@ void SurfaceScalarQuantity::draw() {
   // Set uniforms
   parent.setTransformUniforms(*program);
   setProgramUniforms(*program);
+  parent.setMaterialUniforms(*program);
 
   program->draw();
 }
@@ -39,7 +39,7 @@ void SurfaceScalarQuantity::writeToFile(std::string filename) {
 
 
 // Update range uniforms
-void SurfaceScalarQuantity::setProgramUniforms(gl::GLProgram& program) {
+void SurfaceScalarQuantity::setProgramUniforms(render::ShaderProgram& program) {
   program.setUniform("u_rangeLow", vizRange.first);
   program.setUniform("u_rangeHigh", vizRange.second);
 }
@@ -112,13 +112,13 @@ void SurfaceScalarQuantity::buildCustomUI() {
 
 void SurfaceScalarQuantity::geometryChanged() { program.reset(); }
 
-SurfaceScalarQuantity* SurfaceScalarQuantity::setColorMap(gl::ColorMapID val) {
+SurfaceScalarQuantity* SurfaceScalarQuantity::setColorMap(render::ColorMapID val) {
   cMap = val;
   hist.updateColormap(cMap.get());
   requestRedraw();
   return this;
 }
-gl::ColorMapID SurfaceScalarQuantity::getColorMap() { return cMap.get(); }
+render::ColorMapID SurfaceScalarQuantity::getColorMap() { return cMap.get(); }
 SurfaceScalarQuantity* SurfaceScalarQuantity::setMapRange(std::pair<double, double> val) {
   vizRange = val;
   requestRedraw();
@@ -146,18 +146,16 @@ SurfaceVertexScalarQuantity::SurfaceVertexScalarQuantity(std::string name, std::
 
 void SurfaceVertexScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  program.reset(new gl::GLProgram(&gl::VERTCOLOR_SURFACE_VERT_SHADER, &gl::VERTCOLOR_SURFACE_FRAG_SHADER,
-                                  gl::DrawMode::Triangles));
+  program = render::engine->generateShaderProgram(
+      {render::VERTCOLOR_SURFACE_VERT_SHADER, render::VERTCOLOR_SURFACE_FRAG_SHADER}, render::DrawMode::Triangles);
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
-
-  setMaterialForProgram(*program, "wax");
 }
 
 
-void SurfaceVertexScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
+void SurfaceVertexScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
   std::vector<double> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
@@ -179,7 +177,7 @@ void SurfaceVertexScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap.get()));
+  p.setTextureFromColormap("t_colormap", render::getColorMap(cMap.get()));
 }
 
 void SurfaceVertexScalarQuantity::writeToFile(std::string filename) {
@@ -233,17 +231,15 @@ SurfaceFaceScalarQuantity::SurfaceFaceScalarQuantity(std::string name, std::vect
 
 void SurfaceFaceScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  program.reset(new gl::GLProgram(&gl::VERTCOLOR_SURFACE_VERT_SHADER, &gl::VERTCOLOR_SURFACE_FRAG_SHADER,
-                                  gl::DrawMode::Triangles));
+  program = render::engine->generateShaderProgram(
+      {render::VERTCOLOR_SURFACE_VERT_SHADER, render::VERTCOLOR_SURFACE_FRAG_SHADER}, render::DrawMode::Triangles);
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
-
-  setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceFaceScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
+void SurfaceFaceScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
   std::vector<double> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
@@ -258,7 +254,7 @@ void SurfaceFaceScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap.get()));
+  p.setTextureFromColormap("t_colormap", render::getColorMap(cMap.get()));
 }
 
 void SurfaceFaceScalarQuantity::buildFaceInfoGUI(size_t fInd) {
@@ -287,17 +283,16 @@ SurfaceEdgeScalarQuantity::SurfaceEdgeScalarQuantity(std::string name, std::vect
 
 void SurfaceEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  program.reset(new gl::GLProgram(&gl::HALFEDGECOLOR_SURFACE_VERT_SHADER, &gl::HALFEDGECOLOR_SURFACE_FRAG_SHADER,
-                                  gl::DrawMode::Triangles));
+  program = render::engine->generateShaderProgram(
+      {render::HALFEDGECOLOR_SURFACE_VERT_SHADER, render::HALFEDGECOLOR_SURFACE_FRAG_SHADER},
+      render::DrawMode::Triangles);
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
-
-  setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceEdgeScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
+void SurfaceEdgeScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
   std::vector<glm::vec3> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
@@ -333,8 +328,8 @@ void SurfaceEdgeScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
   }
 
   // Store data in buffers
-  p.setAttribute("a_colorvals", colorval);
-  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap.get()));
+  p.setAttribute("a_colorval", colorval);
+  p.setTextureFromColormap("t_colormap", render::getColorMap(cMap.get()));
 }
 
 void SurfaceEdgeScalarQuantity::buildEdgeInfoGUI(size_t eInd) {
@@ -374,17 +369,16 @@ SurfaceHalfedgeScalarQuantity::SurfaceHalfedgeScalarQuantity(std::string name, s
 
 void SurfaceHalfedgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  program.reset(new gl::GLProgram(&gl::HALFEDGECOLOR_SURFACE_VERT_SHADER, &gl::HALFEDGECOLOR_SURFACE_FRAG_SHADER,
-                                  gl::DrawMode::Triangles));
+  program = render::engine->generateShaderProgram(
+      {render::HALFEDGECOLOR_SURFACE_VERT_SHADER, render::HALFEDGECOLOR_SURFACE_FRAG_SHADER},
+      render::DrawMode::Triangles);
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
-
-  setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceHalfedgeScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
+void SurfaceHalfedgeScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
   std::vector<glm::vec3> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
@@ -427,8 +421,8 @@ void SurfaceHalfedgeScalarQuantity::fillColorBuffers(gl::GLProgram& p) {
 
 
   // Store data in buffers
-  p.setAttribute("a_colorvals", colorval);
-  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap.get()));
+  p.setAttribute("a_colorval", colorval);
+  p.setTextureFromColormap("t_colormap", render::getColorMap(cMap.get()));
 }
 
 void SurfaceHalfedgeScalarQuantity::buildHalfedgeInfoGUI(size_t heInd) {

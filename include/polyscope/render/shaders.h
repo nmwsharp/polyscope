@@ -11,9 +11,22 @@ extern const ShaderStageSpecification PLAIN_TEXTURE_DRAW_FRAG_SHADER;
 extern const ShaderStageSpecification DOT3_TEXTURE_DRAW_FRAG_SHADER;
 extern const ShaderStageSpecification MAP3_TEXTURE_DRAW_FRAG_SHADER;
 
+// == Lighting shaders
+extern const ShaderStageSpecification PBR_DEFERRED_FRAG_SHADER;
+
+// == Histogram shaders
+extern const ShaderStageSpecification HISTOGRAM_VERT_SHADER;
+extern const ShaderStageSpecification HISTOGRAM_FRAG_SHADER;
+
 // == Surface mesh shaders
 extern const ShaderStageSpecification PLAIN_SURFACE_VERT_SHADER;
 extern const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER;
+extern const ShaderStageSpecification VERTCOLOR3_SURFACE_VERT_SHADER;
+extern const ShaderStageSpecification VERTCOLOR3_SURFACE_FRAG_SHADER;
+extern const ShaderStageSpecification VERTCOLOR_SURFACE_VERT_SHADER;
+extern const ShaderStageSpecification VERTCOLOR_SURFACE_FRAG_SHADER;
+extern const ShaderStageSpecification HALFEDGECOLOR_SURFACE_VERT_SHADER;
+extern const ShaderStageSpecification HALFEDGECOLOR_SURFACE_FRAG_SHADER;
 
 
 } // namespace render

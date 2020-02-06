@@ -319,6 +319,7 @@ void SurfaceMesh::draw() {
 
     // Set uniforms
     setTransformUniforms(*program);
+    setMaterialUniforms(*program);
     program->setUniform("u_basecolor", getSurfaceColor());
 
     program->draw();
@@ -667,6 +668,12 @@ void SurfaceMesh::fillGeometryBuffersWireframe(render::ShaderProgram& p) {
   p.setAttribute("a_edgeReal", edgeReal);
 }
 
+void SurfaceMesh::setMaterialUniforms(render::ShaderProgram& p) {
+  p.setUniform("u_roughness", pbrRoughness);
+  p.setUniform("u_metallic", pbrMetallic);
+  p.setUniform("u_F0", pbrF0);
+}
+
 void SurfaceMesh::buildPickUI(size_t localPickID) {
 
   // Selection type
@@ -927,6 +934,12 @@ void SurfaceMesh::buildCustomUI() {
     if (ImGui::SliderFloat("Edge Width", &edgeWidth.get(), 0.0, 1., "%.5f", 2.)) setEdgeWidth(getEdgeWidth());
     ImGui::PopItemWidth();
   }
+
+  { // TODO pbr
+    ImGui::SliderFloat("roughness", &pbrRoughness, 0.0, 1.0, "%.3f", 1.);
+    ImGui::SliderFloat("metallic", &pbrMetallic, 0.0, 1.0, "%.3f", 1.);
+    ImGui::SliderFloat("F0", &pbrF0, 0.0, 1.0, "%.3f", 3.);
+  }
 }
 
 void SurfaceMesh::buildCustomOptionsUI() {}
@@ -1154,7 +1167,6 @@ double SurfaceMesh::getEdgeWidth() { return edgeWidth.get(); }
 
 // === Quantity adders
 
-/* SIMPLE
 
 SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantityImpl(std::string name,
                                                                     const std::vector<glm::vec3>& colors) {
@@ -1169,6 +1181,8 @@ SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantityImpl(std::string name
   addQuantity(q);
   return q;
 }
+
+/* SIMPLE
 
 SurfaceVertexCountQuantity* SurfaceMesh::addVertexCountQuantityImpl(std::string name,
                                                                     const std::vector<std::pair<size_t, int>>& values) {
@@ -1243,6 +1257,7 @@ SurfaceMesh::addLocalParameterizationQuantityImpl(std::string name, const std::v
   return q;
 }
 
+*/
 
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                       DataType type) {
@@ -1274,6 +1289,8 @@ SurfaceMesh::addHalfedgeScalarQuantityImpl(std::string name, const std::vector<d
   addQuantity(q);
   return q;
 }
+
+/*
 
 SurfaceVertexVectorQuantity* SurfaceMesh::addVertexVectorQuantityImpl(std::string name,
                                                                       const std::vector<glm::vec3>& vectors,

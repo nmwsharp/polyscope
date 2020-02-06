@@ -207,7 +207,6 @@ void SurfaceMesh::setAllPermutations(const std::array<std::pair<T, size_t>, 5>& 
 // These are generally small wrappers which do some error checks, apply an array adaptor, and hand off to a
 // private non-templated ___Impl version which does the actual adding work.
 
-/* SIMPLE
 
 template <class T>
 SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantity(std::string name, const T& colors) {
@@ -222,6 +221,7 @@ SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantity(std::string name, co
   return addFaceColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(colors));
 }
 
+/* SIMPLE
 
 inline SurfaceVertexCountQuantity*
 SurfaceMesh::addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values) {
@@ -354,7 +354,7 @@ SurfaceVertexParameterizationQuantity* SurfaceMesh::addLocalParameterizationQuan
   validateSize(coords, vertexDataSize, "parameterization (at vertices) quantity " + name);
   return addLocalParameterizationQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(coords), type);
 }
-
+*/
 
 template <class T>
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexScalarQuantity(std::string name, const T& data, DataType type) {
@@ -380,6 +380,8 @@ SurfaceHalfedgeScalarQuantity* SurfaceMesh::addHalfedgeScalarQuantity(std::strin
   validateSize(data, halfedgeDataSize, "halfedge scalar quantity " + name);
   return addHalfedgeScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
 }
+
+/*
 
 template <class T>
 SurfaceVertexVectorQuantity* SurfaceMesh::addVertexVectorQuantity(std::string name, const T& vectors,

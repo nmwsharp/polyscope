@@ -269,6 +269,10 @@ void GLTextureBuffer::setFilterMode(FilterMode newMode) {
   }
   checkGLError();
 }
+  
+void* GLTextureBuffer::getNativeHandle() {
+  return reinterpret_cast<void*>(getHandle());
+}
 
 void GLTextureBuffer::bind() {
   if (dim == 1) {
@@ -1266,7 +1270,6 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
   throw std::invalid_argument("No texture with name " + name);
 }
 
-/*
 void GLShaderProgram::setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate) {
   // TODO switch to global shared buffers from colormap
 
@@ -1292,7 +1295,9 @@ void GLShaderProgram::setTextureFromColormap(std::string name, const ValueColorM
     }
 
     // glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, colormap.values.size(), 0, GL_RGB, GL_FLOAT, &(colorBuffer[0]));
-    t.textureBuffer = new GLTextureBuffer(GL_RGB, colormap.values.size(), &(colorBuffer[0]));
+    t.textureBufferOwned = std::dynamic_pointer_cast<GLTextureBuffer>(
+        engine->generateTextureBuffer(TextureFormat::RGB32F, colormap.values.size(), &(colorBuffer[0])));
+    t.textureBuffer = t.textureBufferOwned.get();
 
     t.isSet = true;
     return;
@@ -1300,7 +1305,6 @@ void GLShaderProgram::setTextureFromColormap(std::string name, const ValueColorM
 
   throw std::invalid_argument("No texture with name " + name);
 }
-*/
 
 void GLShaderProgram::setIndex(std::vector<std::array<unsigned int, 3>>& indices) {
   if (!useIndex) {
@@ -1496,7 +1500,7 @@ void GLEngine::allocateGlobalBuffersAndPrograms() {
     printShaderInfoLog(commonShaderHandle);
   }
 
-  { // Scene buffer
+  { // G buffer
 
     // Note: these all use 4-channel RGBA textures, even though 3-channel RGB might be more appropriate for some. I
     // couldn't get it to work using 4-channel render targets. Some info online indiciated that render targets need to
@@ -1517,6 +1521,9 @@ void GLEngine::allocateGlobalBuffersAndPrograms() {
     GBuffer->addColorBuffer(gFinal);
     GBuffer->addDepthBuffer(gDepth);
     GBuffer->setDrawBuffers();
+
+    GBuffer->clearColor = glm::vec3{1., 1., 1.};
+    GBuffer->clearAlpha = 0.0;
   }
 
   { // Pick buffer
@@ -1539,6 +1546,9 @@ void GLEngine::allocateGlobalBuffersAndPrograms() {
 
     renderTextureMap3 = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, MAP3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
     renderTextureMap3->setAttribute("a_position", screenTrianglesCoords());
+    
+    pbrDeferredShader = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, PBR_DEFERRED_FRAG_SHADER}, DrawMode::Triangles);
+    pbrDeferredShader->setAttribute("a_position", screenTrianglesCoords());
     // clang-format on
   }
 }
@@ -1547,14 +1557,15 @@ void GLEngine::allocateGlobalBuffersAndPrograms() {
 void GLEngine::bindDisplay() {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  // glEnable(GL_DEPTH_TEST);
+  // glDepthFunc(GL_LESS);
+  // glEnable(GL_BLEND);
+  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 
 void GLEngine::clearDisplay() {
+  bindDisplay();
   glClearColor(1., 1., 1., 0.);
   glClearDepth(1.);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);

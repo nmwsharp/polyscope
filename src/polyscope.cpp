@@ -540,11 +540,13 @@ void renderScene() {
 
   // If a view has never been set, this will set it to the home view
   view::ensureViewValid();
+  
+  // Draw the ground plane
+  //gl::drawGroundPlane();
 
   drawStructures();
 
-  // Draw the ground plane
-  //gl::drawGroundPlane();
+  render::engine->lightGBuffer();
 }
 
 void renderSceneToScreen() {

@@ -71,49 +71,58 @@ ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages
 }
 
 void Engine::buildEngineGui() {
-    // == Display
-    ImGui::PushItemWidth(120);
-    ImGui::Text("Show Buffer");
-    ImGui::SameLine();
-    static std::string displayResultName = "Final";
-    if (ImGui::BeginCombo("##Up Direction", displayResultName.c_str())) {
-      if (ImGui::Selectable("Albedo", resultToDisplay == RenderResult::Albedo)) {
-        resultToDisplay = RenderResult::Albedo;
-        ImGui::SetItemDefaultFocus();
-        displayResultName = "Albedo";
-      }
-      if (ImGui::Selectable("Roughness", resultToDisplay == RenderResult::Roughness)) {
-        resultToDisplay = RenderResult::Roughness;
-        ImGui::SetItemDefaultFocus();
-        displayResultName = "Roughness";
-      }
-      if (ImGui::Selectable("Metallic", resultToDisplay == RenderResult::Metallic)) {
-        resultToDisplay = RenderResult::Metallic;
-        ImGui::SetItemDefaultFocus();
-        displayResultName = "Metallic";
-      }
-      if (ImGui::Selectable("Depth", resultToDisplay == RenderResult::Depth)) {
-        resultToDisplay = RenderResult::Depth;
-        ImGui::SetItemDefaultFocus();
-        displayResultName = "Depth";
-      }
-      if (ImGui::Selectable("Normal", resultToDisplay == RenderResult::Normal)) {
-        resultToDisplay = RenderResult::Normal;
-        ImGui::SetItemDefaultFocus();
-        displayResultName = "Normal";
-      }
-      if (ImGui::Selectable("Position", resultToDisplay == RenderResult::Position)) {
-        resultToDisplay = RenderResult::Position;
-        ImGui::SetItemDefaultFocus();
-        displayResultName = "Position";
-      }
-      if (ImGui::Selectable("Final", resultToDisplay == RenderResult::Final)) {
-        resultToDisplay = RenderResult::Final;
-        ImGui::SetItemDefaultFocus();
-        displayResultName = "Final";
-      }
-      ImGui::EndCombo();
+  // == Display
+  ImGui::PushItemWidth(120);
+  ImGui::Text("Show Buffer");
+  ImGui::SameLine();
+  static std::string displayResultName = "Final";
+  if (ImGui::BeginCombo("##Up Direction", displayResultName.c_str())) {
+    if (ImGui::Selectable("Albedo", resultToDisplay == RenderResult::Albedo)) {
+      resultToDisplay = RenderResult::Albedo;
+      ImGui::SetItemDefaultFocus();
+      displayResultName = "Albedo";
     }
+    if (ImGui::Selectable("Roughness", resultToDisplay == RenderResult::Roughness)) {
+      resultToDisplay = RenderResult::Roughness;
+      ImGui::SetItemDefaultFocus();
+      displayResultName = "Roughness";
+    }
+    if (ImGui::Selectable("Metallic", resultToDisplay == RenderResult::Metallic)) {
+      resultToDisplay = RenderResult::Metallic;
+      ImGui::SetItemDefaultFocus();
+      displayResultName = "Metallic";
+    }
+    if (ImGui::Selectable("Fresnel", resultToDisplay == RenderResult::Fresnel)) {
+      resultToDisplay = RenderResult::Fresnel;
+      ImGui::SetItemDefaultFocus();
+      displayResultName = "Fresnel";
+    }
+    if (ImGui::Selectable("Depth", resultToDisplay == RenderResult::Depth)) {
+      resultToDisplay = RenderResult::Depth;
+      ImGui::SetItemDefaultFocus();
+      displayResultName = "Depth";
+    }
+    if (ImGui::Selectable("Normal", resultToDisplay == RenderResult::Normal)) {
+      resultToDisplay = RenderResult::Normal;
+      ImGui::SetItemDefaultFocus();
+      displayResultName = "Normal";
+    }
+    if (ImGui::Selectable("Position", resultToDisplay == RenderResult::Position)) {
+      resultToDisplay = RenderResult::Position;
+      ImGui::SetItemDefaultFocus();
+      displayResultName = "Position";
+    }
+    if (ImGui::Selectable("Final", resultToDisplay == RenderResult::Final)) {
+      resultToDisplay = RenderResult::Final;
+      ImGui::SetItemDefaultFocus();
+      displayResultName = "Final";
+    }
+    ImGui::EndCombo();
+  }
+
+  ImGui::SliderFloat("exposure", &exposure, 0.1, 5.0, "%.3f", 2.);
+  ImGui::SliderFloat("light stength", &lightStrength, 0.0, 5.0, "%.3f", 2.);
+  ImGui::SliderFloat("ambient strength", &ambientStrength, 0.0, 1.0, "%.3f", 2.);
 }
 
 void Engine::setBackgroundColor(glm::vec3) {
@@ -126,9 +135,7 @@ void Engine::setBackgroundAlpha(float newAlpha) {
 
 // bool Engine::bindGBuffer() { return GBuffer->bindForRendering(); }
 
-void Engine::clearGBuffer() { 
-  GBuffer->clear(); 
-}
+void Engine::clearGBuffer() { GBuffer->clear(); }
 
 void Engine::resizeGBuffer(int width, int height) { GBuffer->resizeBuffers(width, height); }
 
@@ -158,6 +165,11 @@ void Engine::copyGBufferToDisplay() {
     renderTextureDot3->setUniform("u_mapDot", glm::vec3{0., 1., 0.});
     renderTextureDot3->draw();
     break;
+  case RenderResult::Fresnel:
+    renderTextureDot3->setTextureFromBuffer("t_image", gMaterial.get());
+    renderTextureDot3->setUniform("u_mapDot", glm::vec3{0., 0., 1.});
+    renderTextureDot3->draw();
+    break;
   case RenderResult::Depth:
     // TODO
     break;
@@ -166,9 +178,9 @@ void Engine::copyGBufferToDisplay() {
     renderTextureMap3->setUniform("u_shift", glm::vec3(-0.5f));
     renderTextureMap3->setUniform("u_scale", glm::vec3(2.f));
     renderTextureMap3->draw();
-    //renderTextureDot3->setTextureFromBuffer("t_image", gViewNormal.get());
-    //renderTextureDot3->setUniform("u_mapDot", glm::vec3{1., 0., 0.});
-    //renderTextureDot3->draw();
+    // renderTextureDot3->setTextureFromBuffer("t_image", gViewNormal.get());
+    // renderTextureDot3->setUniform("u_mapDot", glm::vec3{1., 0., 0.});
+    // renderTextureDot3->draw();
     break;
   case RenderResult::Position:
     renderTextureMap3->setTextureFromBuffer("t_image", gViewPosition.get());
@@ -181,6 +193,21 @@ void Engine::copyGBufferToDisplay() {
     renderTexturePlain->draw();
     break;
   }
+}
+
+void Engine::lightGBuffer() {
+  bindGBuffer();
+
+  pbrDeferredShader->setTextureFromBuffer("t_albedo", gAlbedo.get());
+  pbrDeferredShader->setTextureFromBuffer("t_material", gMaterial.get());
+  pbrDeferredShader->setTextureFromBuffer("t_viewPos", gViewPosition.get());
+  pbrDeferredShader->setTextureFromBuffer("t_viewNormal", gViewNormal.get());
+
+  pbrDeferredShader->setUniform("u_exposure", exposure);
+  pbrDeferredShader->setUniform("u_ambientStrength", ambientStrength);
+  pbrDeferredShader->setUniform("u_lightStrength", lightStrength);
+
+  pbrDeferredShader->draw();
 }
 
 

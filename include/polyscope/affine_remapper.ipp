@@ -5,18 +5,18 @@
 
 namespace polyscope {
 
-inline gl::ColorMapID defaultColorMap(DataType type) {
+inline render::ColorMapID defaultColorMap(DataType type) {
   switch (type) {
   case DataType::STANDARD:
-    return gl::ColorMapID::VIRIDIS;
+    return render::ColorMapID::VIRIDIS;
     break;
   case DataType::SYMMETRIC:
-    return gl::ColorMapID::COOLWARM;
+    return render::ColorMapID::COOLWARM;
   case DataType::MAGNITUDE:
-    return gl::ColorMapID::BLUES;
+    return render::ColorMapID::BLUES;
     break;
   }
-  return gl::ColorMapID::VIRIDIS;
+  return render::ColorMapID::VIRIDIS;
 }
 
 // Helpers used mainy to treat vectors as fields

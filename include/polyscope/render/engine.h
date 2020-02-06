@@ -7,21 +7,20 @@
 #include <vector>
 
 //#include "polyscope/colors.h"
-//#include "polyscope/gl/color_maps.h"
+#include "polyscope/render/color_maps.h"
 //#include "polyscope/gl/shaders.h"
 #include "polyscope/view.h"
 
 // Make syntax nicer like this, but we lose line numbers in GL debug output
 // TODO MOVE
 #define POLYSCOPE_GLSL(version, shader) "#version " #version "\n" #shader
-#define POLYSCOPE_GLSL_DEFERRED(version, shader) "#version " #version "\n" \
-      "layout (location = 0) out vec4 gAlbedo;"     \
-      "layout (location = 1) out vec4 gMaterial;"   \
-      "layout (location = 2) out vec4 gPosition;"   \
-      "layout (location = 3) out vec4 gNormal;"     \
-      #shader
-      
-
+#define POLYSCOPE_GLSL_DEFERRED(version, shader)                                                                       \
+  "#version " #version "\n"                                                                                            \
+  "layout (location = 0) out vec4 gAlbedo;"                                                                            \
+  "layout (location = 1) out vec4 gMaterial;"                                                                          \
+  "layout (location = 2) out vec4 gPosition;"                                                                          \
+  "layout (location = 3) out vec4 gNormal;"                                                                            \
+  "layout (location = 4) out vec4 gFinal;" #shader
 
 
 namespace polyscope {
@@ -74,6 +73,8 @@ public:
   void fillTextureData2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                          bool withAlpha = true, bool useMipMap = false, bool repeat = false);
 
+  virtual void* getNativeHandle() = 0; // used to interop with external things, e.g. ImGui
+
 protected:
   int dim;
   TextureFormat format;
@@ -113,7 +114,7 @@ public:
   // Clear to redraw
   virtual void clear() = 0;
   glm::vec3 clearColor{1.0, 1.0, 1.0};
-  float clearAlpha = 1.0;
+  float clearAlpha = 0.0;
 
   // Bind to textures/renderbuffers for output
   // note: currently no way to remove buffers
@@ -129,12 +130,6 @@ public:
 
   // Resizes textures and renderbuffers if different from current size.
   virtual void resizeBuffers(unsigned int newXSize, unsigned int newYSize);
-
-  // Getters
-  // RenderBuffer* getColorRenderBuffer() const { return colorRenderBuffer; }
-  // RenderBuffer* getDepthRenderBuffer() const { return depthRenderBuffer; }
-  // TextureBuffer* getColorTextureBuffer() const { return colorTextureBuffer; }
-  // TextureBuffer* getDepthTextureBuffer() const { return depthTextureBuffer; }
 
   // Query pixel
   virtual std::array<float, 4> readFloat4(int xPos, int yPos) = 0;
@@ -229,7 +224,7 @@ public:
   virtual void setTexture1D(std::string name, unsigned char* texData, unsigned int length) = 0;
   virtual void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                             bool withAlpha = true, bool useMipMap = false, bool repeat = false) = 0;
-  // virtual void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false) = 0;
+  virtual void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false) = 0;
   virtual void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) = 0;
 
 
@@ -264,7 +259,7 @@ protected:
   unsigned int nPatchVertices;
 };
 
-enum class RenderResult { Albedo, Roughness, Metallic, Depth, Normal, Position, Final };
+enum class RenderResult { Albedo, Roughness, Metallic, Fresnel, Depth, Normal, Position, Final };
 
 class Engine {
 
@@ -278,10 +273,10 @@ public:
   void buildEngineGui();
 
   virtual void clearGBuffer();
-  // virtual void computeLighting() = 0;
   virtual bool bindGBuffer();
   virtual void resizeGBuffer(int width, int height);
   virtual void setGBufferViewport(int xStart, int yStart, int sizeX, int sizeY);
+  virtual void lightGBuffer();
   virtual void copyGBufferToDisplay(); // respects resultToDisplay
 
   // Small options
@@ -320,9 +315,15 @@ public:
 
   // General-use programs used by the engine
   std::shared_ptr<ShaderProgram> renderTexturePlain, renderTextureDot3, renderTextureMap3;
+  std::shared_ptr<ShaderProgram> pbrDeferredShader;
 
   // Options
-  RenderResult resultToDisplay = RenderResult::Final; 
+  RenderResult resultToDisplay = RenderResult::Final;
+
+  // TODO make these persistent?
+  float exposure = 1.0;
+  float ambientStrength = 0.05;
+  float lightStrength = 1.0;
 
 protected:
   // TODO Manage a cache of compiled shaders?

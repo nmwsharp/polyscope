@@ -95,7 +95,6 @@ void processFileOBJ(string filename) {
   }
   auto psMesh = polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
 
-  /*
   // Useful data
   size_t nVertices = psMesh->nVertices();
   size_t nFaces = psMesh->nFaces();
@@ -122,8 +121,9 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cY_sym", valY, polyscope::DataType::SYMMETRIC);
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cNorm", valMag, polyscope::DataType::MAGNITUDE);
 
-  polyscope::getSurfaceMesh(niceName)->addVertexDistanceQuantity("cY_dist", valY);
-  polyscope::getSurfaceMesh(niceName)->addVertexSignedDistanceQuantity("cY_signeddist", valY);
+  // SIMPLE
+  //polyscope::getSurfaceMesh(niceName)->addVertexDistanceQuantity("cY_dist", valY);
+  //polyscope::getSurfaceMesh(niceName)->addVertexSignedDistanceQuantity("cY_signeddist", valY);
 
 
   // Add some face scalars
@@ -195,6 +195,7 @@ void processFileOBJ(string filename) {
   // polyscope::warning("Some problems come in groups", "detail = " + std::to_string(i));
   //}
 
+  /*
   // === Add some vectors
 
   // Face & vertex normals

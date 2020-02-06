@@ -1,5 +1,7 @@
 #include "polyscope/persistent_value.h"
 
+#include "polyscope/render/color_maps.h"
+
 namespace polyscope {
 namespace detail {
 // storage for persistent value global caches
@@ -10,7 +12,7 @@ PersistentCache<bool> persistentCache_bool;
 PersistentCache<glm::vec3> persistentCache_glmvec3;
 PersistentCache<ScaledValue<double>> persistentCache_scaleddouble;
 PersistentCache<ScaledValue<float>> persistentCache_scaledfloat;
-PersistentCache<gl::ColorMapID> persistentCache_colormapID;
+PersistentCache<render::ColorMapID> persistentCache_colormapID;
 PersistentCache<ParamVizStyle> persistentCache_paramVizStyle;
 // clang-format on
 } // namespace detail

@@ -1,10 +1,10 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
-#include "polyscope/gl/color_maps.h"
+#include "polyscope/render/color_maps.h"
 
 #include "imgui.h"
 
 namespace polyscope {
-namespace gl {
+namespace render {
 
 // ImGUI helper to select a colormap. Returns true if the selection changed
 bool buildColormapSelector(ColorMapID& cm, std::string fieldName) {

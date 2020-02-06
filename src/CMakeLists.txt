@@ -11,10 +11,12 @@ SET(SRCS
   render/engine.cpp  
   render/opengl/gl_engine.cpp  
   render/opengl/shaders/texture_draw_shaders.cpp  
+  render/opengl/shaders/lighting_shaders.cpp  
   render/opengl/shaders/surface_mesh_shaders.cpp  
+  render/opengl/shaders/histogram_shaders.cpp  
+  render/color_maps.cpp
   #gl/gl_utils.cpp
   #gl/ground_plane.cpp
-  #gl/color_maps.cpp
   
 
   # Core functionality 
@@ -30,7 +32,7 @@ SET(SRCS
   disjoint_sets.cpp
   file_helpers.cpp
   camera_parameters.cpp
-  #histogram.cpp
+  histogram.cpp
   persistent_value.cpp
 
   color_management.cpp
@@ -56,8 +58,8 @@ SET(SRCS
   # Surface
   surface_mesh.cpp
   surface_mesh_io.cpp
-  #surface_scalar_quantity.cpp
-  #surface_color_quantity.cpp
+  surface_scalar_quantity.cpp
+  surface_color_quantity.cpp
   #surface_distance_quantity.cpp
   #surface_vector_quantity.cpp
   #surface_count_quantity.cpp

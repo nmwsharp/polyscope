@@ -1,10 +1,8 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/surface_color_quantity.h"
 
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/surface_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -22,6 +20,7 @@ void SurfaceColorQuantity::draw() {
 
   // Set uniforms
   parent.setTransformUniforms(*program);
+  parent.setMaterialUniforms(*program);
 
   program->draw();
 }
@@ -38,17 +37,15 @@ SurfaceVertexColorQuantity::SurfaceVertexColorQuantity(std::string name, std::ve
 
 void SurfaceVertexColorQuantity::createProgram() {
   // Create the program to draw this quantity
-  program.reset(new gl::GLProgram(&gl::VERTCOLOR3_SURFACE_VERT_SHADER, &gl::VERTCOLOR3_SURFACE_FRAG_SHADER,
-                                  gl::DrawMode::Triangles));
+  program = render::engine->generateShaderProgram(
+      {render::VERTCOLOR3_SURFACE_VERT_SHADER, render::VERTCOLOR3_SURFACE_FRAG_SHADER}, render::DrawMode::Triangles);
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
-
-  setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceVertexColorQuantity::fillColorBuffers(gl::GLProgram& p) {
+void SurfaceVertexColorQuantity::fillColorBuffers(render::ShaderProgram& p) {
   std::vector<glm::vec3> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
@@ -99,17 +96,15 @@ SurfaceFaceColorQuantity::SurfaceFaceColorQuantity(std::string name, std::vector
 
 void SurfaceFaceColorQuantity::createProgram() {
   // Create the program to draw this quantity
-  program.reset(new gl::GLProgram(&gl::VERTCOLOR3_SURFACE_VERT_SHADER, &gl::VERTCOLOR3_SURFACE_FRAG_SHADER,
-                                  gl::DrawMode::Triangles));
+  program = render::engine->generateShaderProgram(
+      {render::VERTCOLOR3_SURFACE_VERT_SHADER, render::VERTCOLOR3_SURFACE_FRAG_SHADER}, render::DrawMode::Triangles);
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
-
-  setMaterialForProgram(*program, "wax");
 }
 
-void SurfaceFaceColorQuantity::fillColorBuffers(gl::GLProgram& p) {
+void SurfaceFaceColorQuantity::fillColorBuffers(render::ShaderProgram& p) {
   std::vector<glm::vec3> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
