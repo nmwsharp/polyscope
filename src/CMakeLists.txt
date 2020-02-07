@@ -10,14 +10,17 @@ SET(SRCS
   # Rendering stuff
   render/engine.cpp  
   render/opengl/gl_engine.cpp  
+  render/color_maps.cpp
+  render/ground_plane.cpp
+
   render/opengl/shaders/texture_draw_shaders.cpp  
   render/opengl/shaders/lighting_shaders.cpp  
-  render/opengl/shaders/surface_mesh_shaders.cpp  
+  render/opengl/shaders/ground_plane_shaders.cpp  
   render/opengl/shaders/histogram_shaders.cpp  
-  render/color_maps.cpp
-  #gl/gl_utils.cpp
-  #gl/ground_plane.cpp
+  render/opengl/shaders/surface_mesh_shaders.cpp  
   
+  render/bindata/concrete_seamless.cpp
+
 
   # Core functionality 
   polyscope.cpp
@@ -37,7 +40,6 @@ SET(SRCS
 
   color_management.cpp
 
-  #gl/materials/bindata_concrete_seamless.cpp
   #gl/materials/bindata_mat_wax.cpp
   #gl/materials/materials.cpp
 

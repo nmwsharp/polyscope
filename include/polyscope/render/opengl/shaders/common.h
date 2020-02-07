@@ -84,15 +84,6 @@ vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat
   return vec4(colorCombined, 1.0);
 }
 
-float softpos(float val, float threshLow, float threshHigh) {
-  float b = smoothstep(threshHigh, threshLow, val) * threshLow;
-  return max(val, 0.0) + b;
-}
-
-float softpos(float val) {
-  return softpos(val, 0.05, 0.08);
-}
-
 
 // PBR Lighting functions below are copyright Joey de Vries at learnopengl.com, used under CC-BY-4.0
 
@@ -121,10 +112,8 @@ float GeometrySchlickGGX(float NdotV, float roughness) {
 }
 
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
-    //float NdotV = max(dot(N, V), 0.0);
-    //float NdotL = max(dot(N, L), 0.0);
-    float NdotV = softpos(dot(N, V));
-    float NdotL = softpos(dot(N, L));
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
     float ggx2  = GeometrySchlickGGX(NdotV, roughness);
     float ggx1  = GeometrySchlickGGX(NdotL, roughness);
 	
@@ -135,6 +124,59 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }  
+
+vec3 computeLightingPBR(vec3 position, vec3 N, vec3 albedo, float roughness, float metallic, float F0val, float lightStrength, float ambientStrength) {
+  const float PI = 3.14159265359;
+
+  // compute some intermediate values
+  vec3 F0 = vec3(F0val);  // Fresnel constant (plastic-ish)
+  F0 = mix(F0, albedo, metallic);
+  vec3 V = normalize(-position);
+  
+  // if the normals are facing away from the camera, flip and take note 
+  N = normalize(N);
+  float flipsign = sign(dot(N,V));
+  N = N * flipsign; // TODO problem if == 0?
+  float backfaceFac = max(0., flipsign);
+
+  vec3 Lo = vec3(0.0); // accumulate light results
+
+  vec4 lightLocsX = vec4(1, 1, -1, -1);
+  vec4 lightLocsY = vec4(1, -1, 1, -1);
+  vec4 lightLocsZ = vec4(3.);
+  for(int i = 0; i < 4; ++i) 
+  {
+      // calculate per-light radiance
+      vec3 L = normalize(vec3(lightLocsX[i], lightLocsY[i], lightLocsZ[i]));
+      vec3 H = normalize(V + L);
+      vec3 radiance = lightStrength * vec3(1.,.9,.9); // lights at infinity, no attenuation
+      
+      // cook-torrance brdf
+      float NDF = DistributionGGX(N, H, roughness);        
+      float G = GeometrySmith(N, V, L, roughness);      
+      vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);       
+      
+      vec3 kS = F;
+      vec3 kD = vec3(1.0) - kS;
+      kD *= 1.0 - metallic;	  
+      
+      vec3 num = NDF * G * F;
+      float denom = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+      vec3 specular = num / max(denom, 0.001);  
+          
+      // add to outgoing radiance Lo
+      float NdotL = max(dot(N, L), 0.0);
+      vec3 contrib = (kD * albedo / PI + specular * backfaceFac) * radiance * NdotL;
+      Lo += contrib;
+  }   
+
+  // Add an ambient term
+  float ao = 1.0;
+  vec3 ambient = vec3(ambientStrength) * albedo * ao;
+  vec3 resultColor = ambient + Lo;
+
+  return resultColor;
+}
 
 
 )";

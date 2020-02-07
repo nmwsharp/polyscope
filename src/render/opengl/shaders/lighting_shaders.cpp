@@ -1,5 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 
+#include "polyscope/render/opengl/gl_engine.h"
 #include "polyscope/render/shaders.h"
 
 // clang-format off
@@ -30,9 +31,6 @@ const ShaderStageSpecification PBR_DEFERRED_FRAG_SHADER = {
       {"t_viewNormal", 2},
     },
     
-    // output location
-    "",
-    
     // source 
     // PBR Lighting functions below are copyright Joey de Vries at learnopengl.com, used under CC-BY-4.0
     POLYSCOPE_GLSL_DEFERRED(330 core,
@@ -47,14 +45,7 @@ const ShaderStageSpecification PBR_DEFERRED_FRAG_SHADER = {
       uniform float u_lightStrength;
 
       // Forward declarations for pbr functions
-      float DistributionGGX(vec3 N, vec3 H, float roughness);
-      float GeometrySchlickGGX(float NdotV, float roughness);
-      float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
-      vec3 FresnelSchlick(float cosTheta, vec3 F0);
-      float softpos(float val);
-      float softpos(float val, float low, float high);
-
-      const float PI = 3.14159265359;
+      vec3 computeLightingPBR(vec3 position, vec3 N, vec3 albedo, float roughness, float metallic, float F0val, float lightStrength, float ambientStrength);
 
       void main() {
 
@@ -76,58 +67,9 @@ const ShaderStageSpecification PBR_DEFERRED_FRAG_SHADER = {
 
         // normals
         vec3 N = texture(t_viewNormal, tCoord).rgb;
-        N = normalize(N);
 
-        // compute some intermediate values
-        vec3 F0 = vec3(F0val);  // Fresnel constant (plastic-ish)
-        F0 = mix(F0, albedo, metallic);
-        vec3 V = normalize(-position);
-        
-        // if the normals are facing away from the camera, flip and take note 
-        float flipsign = sign(dot(N,V));
-        N = N * flipsign; // TODO problem if == 0?
-        float backfaceFac = max(0., flipsign);
-
-        vec3 Lo = vec3(0.0); // accumulate light results
-
-        vec4 lightLocsX = vec4(1, 1, -1, -1);
-        vec4 lightLocsY = vec4(1, -1, 1, -1);
-        vec4 lightLocsZ = vec4(3.);
-        for(int i = 0; i < 4; ++i) 
-        {
-            
-            // calculate per-light radiance
-            vec3 L = normalize(vec3(lightLocsX[i], lightLocsY[i], lightLocsZ[i]));
-            vec3 H = normalize(V + L);
-            vec3 radiance = u_lightStrength * vec3(1.,.9,.9); // lights at infinity, no attenuation
-            
-            // cook-torrance brdf
-            float NDF = DistributionGGX(N, H, roughness);        
-            float G = GeometrySmith(N, V, L, roughness);      
-            //vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);       
-            vec3 F = FresnelSchlick(softpos(dot(H, V)), F0);       
-            
-            vec3 kS = F;
-            vec3 kD = vec3(1.0) - kS;
-            kD *= 1.0 - metallic;	  
-            
-            vec3 num = NDF * G * F;
-            //float denom = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
-            float denom = 4.0 * softpos(dot(N, V)) * softpos(dot(N, L));
-            vec3 specular = num / max(denom, 0.001);  
-                
-            // add to outgoing radiance Lo
-            //float NdotL = max(dot(N, L), 0.0);
-            float NdotL = softpos(dot(N, L), .1, .13);
-            vec3 contrib = (kD * albedo / PI + specular * backfaceFac) * radiance * NdotL;
-            Lo += contrib;
-        }   
-     
-        // Add an ambient term
-        float ao = 1.0;
-        vec3 ambient = vec3(u_ambientStrength) * albedo * ao;
-        vec3 resultColor = ambient + Lo;
-     
+        vec3 resultColor = computeLightingPBR(position, N, albedo, roughness, metallic, F0val, u_lightStrength, u_ambientStrength);
+       
         // tonemapping
         resultColor = vec3(1.0) - exp(-resultColor * u_exposure);
 

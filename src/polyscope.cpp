@@ -20,8 +20,8 @@
 #include "imgui.h"
 
 #include "polyscope/pick.h"
-#include "polyscope/view.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/view.h"
 
 #include "stb_image.h"
 
@@ -279,7 +279,7 @@ void init() {
   contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr});
 
   // Initialize the rendering engine
-  render::initializeRenderEngine(); 
+  render::initializeRenderEngine();
 
   draw(); // TODO this is a terrible fix for a bug where the ground doesn't show up until the SECOND time we draw...
           // cannot figure out why
@@ -355,7 +355,7 @@ namespace pick {
 // but.... this is awkward. Move the implementation of this function if/when the rendering API gets cleaned up.
 std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
 
-    return {nullptr, 0};
+  return {nullptr, 0};
   /* SIMPLE
 
   // Be sure not to pick outside of buffer
@@ -535,23 +535,23 @@ void renderScene() {
   render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
   render::engine->setBackgroundAlpha(0.0);
   render::engine->clearGBuffer();
-  
-  if(!render::engine->bindGBuffer()) return;
+
+  if (!render::engine->bindGBuffer()) return;
 
   // If a view has never been set, this will set it to the home view
   view::ensureViewValid();
-  
+
   // Draw the ground plane
-  //gl::drawGroundPlane();
+  if (options::groundPlaneEnabled) {
+    render::engine->groundPlane.draw();
+  }
 
   drawStructures();
 
   render::engine->lightGBuffer();
 }
 
-void renderSceneToScreen() {
-  render::engine->copyGBufferToDisplay();
-}
+void renderSceneToScreen() { render::engine->copyGBufferToDisplay(); }
 
 void buildPolyscopeGui() {
 
@@ -567,7 +567,7 @@ void buildPolyscopeGui() {
   }
   ImGui::SameLine();
   if (ImGui::Button("Screenshot")) {
-    //screenshot(true); SIMPLE
+    // screenshot(true); SIMPLE
   }
   ImGui::SameLine();
   if (ImGui::Button("Controls")) {
@@ -607,7 +607,6 @@ void buildPolyscopeGui() {
   if (ImGui::TreeNode("Appearance")) {
     ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
     render::engine->buildEngineGui();
-    //gl::buildGroundPlaneGui(); SIMPLE
     ImGui::TreePop();
   }
 
@@ -615,6 +614,7 @@ void buildPolyscopeGui() {
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Debug")) {
     ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
+    ImGui::Checkbox("Always redraw", &options::alwaysRedraw);
     ImGui::TreePop();
   }
 
@@ -755,7 +755,7 @@ void draw(bool withUI) {
 
   // Draw structures in the scene
   if (redrawNextFrame || options::alwaysRedraw) {
-    renderScene(); 
+    renderScene();
     redrawNextFrame = false;
   }
   renderSceneToScreen();
@@ -766,7 +766,6 @@ void draw(bool withUI) {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
   }
 }
-
 
 
 void mainLoopIteration() {
@@ -840,8 +839,7 @@ void shutdown(int exitCode) {
     writePrefsFile();
   }
 
-  //gl::unloadMaterialTextures(); SIMPLE
-  //gl::deleteGroundPlaneResources(); SIMPLE
+  // gl::unloadMaterialTextures(); SIMPLE
 
   // ImGui shutdown things
   ImGui_ImplOpenGL3_Shutdown();

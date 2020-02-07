@@ -269,10 +269,8 @@ void GLTextureBuffer::setFilterMode(FilterMode newMode) {
   }
   checkGLError();
 }
-  
-void* GLTextureBuffer::getNativeHandle() {
-  return reinterpret_cast<void*>(getHandle());
-}
+
+void* GLTextureBuffer::getNativeHandle() { return reinterpret_cast<void*>(getHandle()); }
 
 void GLTextureBuffer::bind() {
   if (dim == 1) {
@@ -589,9 +587,6 @@ void GLShaderProgram::compileGLProgram(const std::vector<ShaderStageSpecificatio
   // Set the output data location
   for (const ShaderStageSpecification& s : stages) {
     if (s.stage == ShaderStageType::Fragment) {
-      if (s.outputLoc != "") {
-        glBindFragDataLocation(programHandle, 0, s.outputLoc.c_str());
-      }
       checkGLError();
     }
   }
@@ -1573,6 +1568,20 @@ void GLEngine::clearDisplay() {
 
 void GLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
+void GLEngine::pushActiveRenderBuffer() {
+  GLint drawFboId_i = 0;
+  glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId_i);
+  FrameBufferHandle drawFboId = drawFboId_i;
+  activeRenderBufferStack.push_back(drawFboId);
+}
+
+void GLEngine::popActiveRenderBuffer() {
+  if (activeRenderBufferStack.empty()) throw std::runtime_error("tried to pop from empty render buffer stack");
+
+  FrameBufferHandle drawFboId = activeRenderBufferStack.back();
+  activeRenderBufferStack.pop_back();
+  glBindFramebuffer(GL_FRAMEBUFFER, drawFboId);
+}
 
 // == Factories
 std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat format, unsigned int size1D,

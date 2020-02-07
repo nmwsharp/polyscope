@@ -1,5 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 
+#include "polyscope/render/opengl/gl_engine.h"
 #include "polyscope/render/shaders.h"
 
 namespace polyscope {
@@ -23,7 +24,6 @@ const ShaderStageSpecification PLAIN_SURFACE_VERT_SHADER =  {
     },
     
     {}, // textures
-    "", // outputs
 
     // source
     POLYSCOPE_GLSL(150,
@@ -62,9 +62,6 @@ const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER = {
     
     // textures 
     { },
-    
-    // output location
-    "",
     
     // source 
     POLYSCOPE_GLSL_DEFERRED(330 core,
@@ -106,7 +103,6 @@ const ShaderStageSpecification VERTCOLOR_SURFACE_VERT_SHADER =  {
     },
     
     {}, // textures
-    "", // outputs
 
     // source
     POLYSCOPE_GLSL(150,
@@ -151,8 +147,6 @@ const ShaderStageSpecification VERTCOLOR_SURFACE_FRAG_SHADER = {
     {
         {"t_colormap", 1}
     },
-    
-    "", // outputs
     
     // source 
     POLYSCOPE_GLSL_DEFERRED(330 core,
@@ -239,9 +233,6 @@ const ShaderStageSpecification VERTCOLOR_SURFACE_FRAG_SHADER = {
         {"t_colormap", 1}
     },
     
-    // output location
-    "outputF",
-    
     // source 
     POLYSCOPE_GLSL(150,
       uniform sampler2D t_mat_r;
@@ -291,7 +282,6 @@ const ShaderStageSpecification VERTCOLOR3_SURFACE_VERT_SHADER =  {
     },
 
     {}, // textures
-    "", // outputs
 
     // source
     POLYSCOPE_GLSL(150,
@@ -330,7 +320,6 @@ const ShaderStageSpecification VERTCOLOR3_SURFACE_FRAG_SHADER = {
 
     {}, // attributes
     {}, // textures 
-    "", // outputs
     
     // source 
     POLYSCOPE_GLSL_DEFERRED(330 core,
@@ -372,7 +361,6 @@ const ShaderStageSpecification HALFEDGECOLOR_SURFACE_VERT_SHADER =  {
     },
     
     {}, // textures
-    "", // outputs
 
     // source
     POLYSCOPE_GLSL(150,
@@ -418,8 +406,6 @@ const ShaderStageSpecification HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     {
         {"t_colormap", 1}
     },
-    
-    "", // outputs
     
     // source 
     POLYSCOPE_GLSL_DEFERRED(330 core,
@@ -535,9 +521,6 @@ const ShaderStageSpecification HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     // textures 
     {
     },
-    
-    // output location
-    "outputF",
     
     // source 
     POLYSCOPE_GLSL(150,

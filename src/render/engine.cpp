@@ -123,6 +123,8 @@ void Engine::buildEngineGui() {
   ImGui::SliderFloat("exposure", &exposure, 0.1, 5.0, "%.3f", 2.);
   ImGui::SliderFloat("light stength", &lightStrength, 0.0, 5.0, "%.3f", 2.);
   ImGui::SliderFloat("ambient strength", &ambientStrength, 0.0, 1.0, "%.3f", 2.);
+
+  groundPlane.buildGui();
 }
 
 void Engine::setBackgroundColor(glm::vec3) {
@@ -203,11 +205,13 @@ void Engine::lightGBuffer() {
   pbrDeferredShader->setTextureFromBuffer("t_viewPos", gViewPosition.get());
   pbrDeferredShader->setTextureFromBuffer("t_viewNormal", gViewNormal.get());
 
-  pbrDeferredShader->setUniform("u_exposure", exposure);
-  pbrDeferredShader->setUniform("u_ambientStrength", ambientStrength);
-  pbrDeferredShader->setUniform("u_lightStrength", lightStrength);
-
   pbrDeferredShader->draw();
+}
+
+void Engine::setGlobalLightingParameters(ShaderProgram& program) {
+  program.setUniform("u_exposure", exposure);
+  program.setUniform("u_ambientStrength", ambientStrength);
+  program.setUniform("u_lightStrength", lightStrength);
 }
 
 

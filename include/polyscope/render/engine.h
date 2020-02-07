@@ -6,22 +6,9 @@
 #include <string>
 #include <vector>
 
-//#include "polyscope/colors.h"
 #include "polyscope/render/color_maps.h"
-//#include "polyscope/gl/shaders.h"
+#include "polyscope/render/ground_plane.h"
 #include "polyscope/view.h"
-
-// Make syntax nicer like this, but we lose line numbers in GL debug output
-// TODO MOVE
-#define POLYSCOPE_GLSL(version, shader) "#version " #version "\n" #shader
-#define POLYSCOPE_GLSL_DEFERRED(version, shader)                                                                       \
-  "#version " #version "\n"                                                                                            \
-  "layout (location = 0) out vec4 gAlbedo;"                                                                            \
-  "layout (location = 1) out vec4 gMaterial;"                                                                          \
-  "layout (location = 2) out vec4 gPosition;"                                                                          \
-  "layout (location = 3) out vec4 gNormal;"                                                                            \
-  "layout (location = 4) out vec4 gFinal;" #shader
-
 
 namespace polyscope {
 namespace render {
@@ -173,7 +160,6 @@ struct ShaderStageSpecification {
   const std::vector<ShaderSpecUniform> uniforms;
   const std::vector<ShaderSpecAttribute> attributes;
   const std::vector<ShaderSpecTexture> textures;
-  const std::string outputLoc;
   const std::string src;
 };
 
@@ -261,6 +247,9 @@ protected:
 
 enum class RenderResult { Albedo, Roughness, Metallic, Fresnel, Depth, Normal, Position, Final };
 
+// A few forward declarations for types that engine needs to touch
+class GroundPlane;
+
 class Engine {
 
 public:
@@ -279,9 +268,20 @@ public:
   virtual void lightGBuffer();
   virtual void copyGBufferToDisplay(); // respects resultToDisplay
 
+  // Manage render state
+  virtual void pushActiveRenderBuffer() = 0;
+  virtual void popActiveRenderBuffer() = 0;
+
+  // Helpers
+  void setGlobalLightingParameters(ShaderProgram& program);
+
   // Small options
   void setBackgroundColor(glm::vec3 newColor);
   void setBackgroundAlpha(float newAlpha);
+
+
+  // === Scene data and niceties
+  GroundPlane groundPlane;
 
   // === Factory methods
 

@@ -18,6 +18,16 @@
 // Note: DO NOT include this header throughout polyscope, and do not directly make openGL calls. This header should only
 // be used to construct an instance of Engine. engine.h gives the render API, all render calls should pass through that.
 
+// Macro to construct shader strings. Unforunately, it eats line numbers.
+#define POLYSCOPE_GLSL(version, shader) "#version " #version "\n" #shader
+#define POLYSCOPE_GLSL_DEFERRED(version, shader)                                                                       \
+  "#version " #version "\n"                                                                                            \
+  "layout (location = 0) out vec4 gAlbedo;"                                                                            \
+  "layout (location = 1) out vec4 gMaterial;"                                                                          \
+  "layout (location = 2) out vec4 gPosition;"                                                                          \
+  "layout (location = 3) out vec4 gNormal;"                                                                            \
+  "layout (location = 4) out vec4 gFinal;" #shader
+
 
 namespace polyscope {
 namespace render {
@@ -234,6 +244,10 @@ public:
   void clearDisplay() override;
   void bindDisplay() override;
 
+  // Manage render state
+  void pushActiveRenderBuffer() override;
+  void popActiveRenderBuffer() override;
+
   // === Factory methods
 
   // create textures
@@ -258,6 +272,8 @@ public:
 protected:
   // Helpers
   void allocateGlobalBuffersAndPrograms();
+
+  std::vector<FrameBufferHandle> activeRenderBufferStack;
 };
 
 } // namespace render

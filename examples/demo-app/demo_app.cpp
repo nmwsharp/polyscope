@@ -518,6 +518,8 @@ int main(int argc, char** argv) {
   // polyscope::options::autocenterStructures = true;
   // polyscope::view::windowWidth = 600;
   // polyscope::view::windowHeight = 800;
+  polyscope::options::maxFPS = -1;
+  polyscope::options::alwaysRedraw = true;
 
 
   // Initialize polyscope

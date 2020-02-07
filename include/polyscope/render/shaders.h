@@ -18,6 +18,10 @@ extern const ShaderStageSpecification PBR_DEFERRED_FRAG_SHADER;
 extern const ShaderStageSpecification HISTOGRAM_VERT_SHADER;
 extern const ShaderStageSpecification HISTOGRAM_FRAG_SHADER;
 
+// == Ground plane shaders
+extern const ShaderStageSpecification GROUND_PLANE_VERT_SHADER;
+extern const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER;
+
 // == Surface mesh shaders
 extern const ShaderStageSpecification PLAIN_SURFACE_VERT_SHADER;
 extern const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER;

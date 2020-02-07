@@ -1,5 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 
+#include "polyscope/render/opengl/gl_engine.h"
 #include "polyscope/render/shaders.h"
 
 namespace polyscope {
@@ -19,7 +20,6 @@ const ShaderStageSpecification HISTOGRAM_VERT_SHADER =  {
     },
 
     {}, // textures
-    "", // outputs
 
     // source
     POLYSCOPE_GLSL(150,
@@ -54,9 +54,6 @@ const ShaderStageSpecification HISTOGRAM_FRAG_SHADER = {
     {
         {"t_colormap", 1}
     },
-    
-    // output location
-    "outputF",
     
     // source 
     POLYSCOPE_GLSL(330 core,

@@ -1,5 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 
+#include "polyscope/render/opengl/gl_engine.h"
 #include "polyscope/render/shaders.h"
 
 // clang-format off
@@ -23,9 +24,6 @@ const ShaderStageSpecification  TEXTURE_DRAW_VERT_SHADER =  {
     // textures
     {},
     
-    // outputs
-    "",
-
     // source
     POLYSCOPE_GLSL(150,
       in vec3 a_position;
@@ -53,14 +51,11 @@ const ShaderStageSpecification PLAIN_TEXTURE_DRAW_FRAG_SHADER = {
     // textures 
     { {"t_image", 2} },
     
-    // output location
-    "outputF",
-    
     // source 
-    POLYSCOPE_GLSL(150,
+    POLYSCOPE_GLSL(330 core,
       in vec2 tCoord;
       uniform sampler2D t_image;
-      out vec4 outputF;
+      layout(location = 0) out vec4 outputF;
 
       void main()
       {
@@ -85,15 +80,12 @@ const ShaderStageSpecification DOT3_TEXTURE_DRAW_FRAG_SHADER = {
     // textures 
     { {"t_image", 2} },
     
-    // output location
-    "outputF",
-    
     // source 
-    POLYSCOPE_GLSL(150,
+    POLYSCOPE_GLSL(330 core,
       in vec2 tCoord;
       uniform sampler2D t_image;
       uniform vec3 u_mapDot;
-      out vec4 outputF;
+      layout(location = 0) out vec4 outputF;
 
       void main()
       {
@@ -120,16 +112,13 @@ const ShaderStageSpecification MAP3_TEXTURE_DRAW_FRAG_SHADER = {
     // textures 
     { {"t_image", 2} },
     
-    // output location
-    "outputF",
-    
     // source 
-    POLYSCOPE_GLSL(150,
+    POLYSCOPE_GLSL(330 core,
       in vec2 tCoord;
       uniform sampler2D t_image;
       uniform vec3 u_scale;
       uniform vec3 u_shift;
-      out vec4 outputF;
+      layout(location = 0) out vec4 outputF;
 
       void main()
       {
