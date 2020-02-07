@@ -75,15 +75,19 @@ void GroundPlane::prepareGroundPlane() {
 
 
   { // Mirored scene buffer
-    mirroredSceneColorTexture =
-        render::engine->generateTextureBuffer(TextureFormat::RGBA8, view::bufferWidth, view::bufferHeight);
 
-    std::shared_ptr<RenderBuffer> mirroredSceneDepthBuffer =
+    mirroredSceneColorTexture =
+        render::engine->generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    std::shared_ptr<RenderBuffer> mirroredSceneDepth =
         render::engine->generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
 
-    mirroredSceneFramebuffer = render::engine->generateFrameBuffer();
-    mirroredSceneFramebuffer->addColorBuffer(mirroredSceneColorTexture);
-    mirroredSceneFramebuffer->addDepthBuffer(mirroredSceneDepthBuffer);
+    mirroredSceneFrameBuffer = render::engine->generateFrameBuffer();
+    mirroredSceneFrameBuffer->addColorBuffer(mirroredSceneColorTexture);
+    mirroredSceneFrameBuffer->addDepthBuffer(mirroredSceneDepth);
+    mirroredSceneFrameBuffer->setDrawBuffers();
+
+    mirroredSceneFrameBuffer->clearColor = glm::vec3{1., 1., 1.};
+    mirroredSceneFrameBuffer->clearAlpha = 0.0;
 
     groundPlaneProgram->setTextureFromBuffer("t_mirrorImage", mirroredSceneColorTexture.get());
   }
@@ -132,13 +136,14 @@ void GroundPlane::draw() {
 
   // Implement the mirror effect
   {
-
-    render::engine->clearGBuffer(); 
-    /*
     render::engine->pushActiveRenderBuffer();
 
     // Render to a texture so we can sample from it on the ground
-    */
+    mirroredSceneFrameBuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
+    mirroredSceneFrameBuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+    mirroredSceneFrameBuffer->bindForRendering();
+    mirroredSceneFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
+    mirroredSceneFrameBuffer->clear();
 
     // Push a reflected view matrix
     glm::mat4 origViewMat = view::viewMat;
@@ -153,26 +158,11 @@ void GroundPlane::draw() {
 
     // Draw everything
     drawStructures();
-    render::engine->lightGBuffer();
-
-    // FIXME need to actually use final result from gbuffer, right now we're just getting lucky and using albedo
 
     // Restore original view matrix
     view::viewMat = origViewMat;
 
-    // "copy" the render result over and clear the gBuffer
-    mirroredSceneFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
-    mirroredSceneFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
-    mirroredSceneFramebuffer->bindForRendering();
-    mirroredSceneFramebuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
-    mirroredSceneFramebuffer->clear();
-
-    render::engine->renderTexturePlain->setTextureFromBuffer("t_image", render::engine->gFinal.get());
-    render::engine->renderTexturePlain->draw();
-
-    render::engine->clearGBuffer(); 
-
-    //render::engine->popActiveRenderBuffer();
+    render::engine->popActiveRenderBuffer();
   }
 
   // Set uniforms
@@ -199,6 +189,7 @@ void GroundPlane::draw() {
   groundPlaneProgram->setUniform("u_roughness", pbrRoughness);
   groundPlaneProgram->setUniform("u_metallic", pbrMetallic);
   groundPlaneProgram->setUniform("u_F0", pbrF0);
+  render::engine->setGlobalLightingParameters(*groundPlaneProgram);
 
   // glEnable(GL_BLEND);
   // glDepthFunc(GL_LESS); // return to normal

@@ -135,81 +135,25 @@ void Engine::setBackgroundAlpha(float newAlpha) {
   // TODO
 }
 
-// bool Engine::bindGBuffer() { return GBuffer->bindForRendering(); }
+// bool Engine::bindSceneBuffer() { return sceneBuffer->bindForRendering(); }
 
-void Engine::clearGBuffer() { GBuffer->clear(); }
+void Engine::clearSceneBuffer() { sceneBuffer->clear(); }
 
-void Engine::resizeGBuffer(int width, int height) { GBuffer->resizeBuffers(width, height); }
+void Engine::resizeSceneBuffer(int width, int height) { sceneBuffer->resizeBuffers(width, height); }
 
-void Engine::setGBufferViewport(int xStart, int yStart, int sizeX, int sizeY) {
-  GBuffer->setViewport(xStart, yStart, sizeX, sizeY);
+void Engine::setSceneBufferViewport(int xStart, int yStart, int sizeX, int sizeY) {
+  sceneBuffer->setViewport(xStart, yStart, sizeX, sizeY);
 }
 
-bool Engine::bindGBuffer() { return GBuffer->bindForRendering(); }
+bool Engine::bindSceneBuffer() { return sceneBuffer->bindForRendering(); }
 
-void Engine::copyGBufferToDisplay() {
-
-  // Bind to the view framebuffer
-  bindDisplay();
-
-  switch (resultToDisplay) {
-  case RenderResult::Albedo:
-    renderTexturePlain->setTextureFromBuffer("t_image", gAlbedo.get());
-    renderTexturePlain->draw();
-    break;
-  case RenderResult::Roughness:
-    renderTextureDot3->setTextureFromBuffer("t_image", gMaterial.get());
-    renderTextureDot3->setUniform("u_mapDot", glm::vec3{1., 0., 0.});
-    renderTextureDot3->draw();
-    break;
-  case RenderResult::Metallic:
-    renderTextureDot3->setTextureFromBuffer("t_image", gMaterial.get());
-    renderTextureDot3->setUniform("u_mapDot", glm::vec3{0., 1., 0.});
-    renderTextureDot3->draw();
-    break;
-  case RenderResult::Fresnel:
-    renderTextureDot3->setTextureFromBuffer("t_image", gMaterial.get());
-    renderTextureDot3->setUniform("u_mapDot", glm::vec3{0., 0., 1.});
-    renderTextureDot3->draw();
-    break;
-  case RenderResult::Depth:
-    // TODO
-    break;
-  case RenderResult::Normal:
-    renderTextureMap3->setTextureFromBuffer("t_image", gViewNormal.get());
-    renderTextureMap3->setUniform("u_shift", glm::vec3(-0.5f));
-    renderTextureMap3->setUniform("u_scale", glm::vec3(2.f));
-    renderTextureMap3->draw();
-    // renderTextureDot3->setTextureFromBuffer("t_image", gViewNormal.get());
-    // renderTextureDot3->setUniform("u_mapDot", glm::vec3{1., 0., 0.});
-    // renderTextureDot3->draw();
-    break;
-  case RenderResult::Position:
-    renderTextureMap3->setTextureFromBuffer("t_image", gViewPosition.get());
-    renderTextureMap3->setUniform("u_shift", glm::vec3(0.f));
-    renderTextureMap3->setUniform("u_scale", glm::vec3(1.0 / state::lengthScale));
-    renderTextureMap3->draw();
-    break;
-  case RenderResult::Final:
-    renderTexturePlain->setTextureFromBuffer("t_image", gFinal.get());
-    renderTexturePlain->draw();
-    break;
-  }
-}
-
-void Engine::lightGBuffer() {
-  bindGBuffer();
-
-  pbrDeferredShader->setTextureFromBuffer("t_albedo", gAlbedo.get());
-  pbrDeferredShader->setTextureFromBuffer("t_material", gMaterial.get());
-  pbrDeferredShader->setTextureFromBuffer("t_viewPos", gViewPosition.get());
-  pbrDeferredShader->setTextureFromBuffer("t_viewNormal", gViewNormal.get());
-
-  pbrDeferredShader->draw();
+void Engine::lightSceneBuffer() {
+  mapLight->setUniform("u_exposure", exposure);
+  mapLight->setTextureFromBuffer("t_image", sceneColor.get());
+  mapLight->draw();
 }
 
 void Engine::setGlobalLightingParameters(ShaderProgram& program) {
-  program.setUniform("u_exposure", exposure);
   program.setUniform("u_ambientStrength", ambientStrength);
   program.setUniform("u_lightStrength", lightStrength);
 }

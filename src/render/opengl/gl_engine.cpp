@@ -1495,30 +1495,19 @@ void GLEngine::allocateGlobalBuffersAndPrograms() {
     printShaderInfoLog(commonShaderHandle);
   }
 
-  { // G buffer
+  { // Scene buffer
 
-    // Note: these all use 4-channel RGBA textures, even though 3-channel RGB might be more appropriate for some. I
-    // couldn't get it to work using 4-channel render targets. Some info online indiciated that render targets need to
-    // have power-2 size, but I couldn't find a concrete reference.
+    // Note that this is basically duplicated in ground_plane.cpp, changes here should probably be reflected there 
+    sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
 
-    gAlbedo = generateTextureBuffer(TextureFormat::RGBA8, view::bufferWidth, view::bufferHeight);
-    gMaterial = generateTextureBuffer(TextureFormat::RGBA8, view::bufferWidth, view::bufferHeight);
-    gViewPosition = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
-    gViewNormal = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
-    gFinal = generateTextureBuffer(TextureFormat::RGBA8, view::bufferWidth, view::bufferHeight);
-    gDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
+    sceneBuffer = generateFrameBuffer();
+    sceneBuffer->addColorBuffer(sceneColor);
+    sceneBuffer->addDepthBuffer(sceneDepth);
+    sceneBuffer->setDrawBuffers();
 
-    GBuffer = generateFrameBuffer();
-    GBuffer->addColorBuffer(gAlbedo);
-    GBuffer->addColorBuffer(gMaterial);
-    GBuffer->addColorBuffer(gViewPosition);
-    GBuffer->addColorBuffer(gViewNormal);
-    GBuffer->addColorBuffer(gFinal);
-    GBuffer->addDepthBuffer(gDepth);
-    GBuffer->setDrawBuffers();
-
-    GBuffer->clearColor = glm::vec3{1., 1., 1.};
-    GBuffer->clearAlpha = 0.0;
+    sceneBuffer->clearColor = glm::vec3{1., 1., 1.};
+    sceneBuffer->clearAlpha = 0.0;
   }
 
   { // Pick buffer
@@ -1542,8 +1531,8 @@ void GLEngine::allocateGlobalBuffersAndPrograms() {
     renderTextureMap3 = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, MAP3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
     renderTextureMap3->setAttribute("a_position", screenTrianglesCoords());
     
-    pbrDeferredShader = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, PBR_DEFERRED_FRAG_SHADER}, DrawMode::Triangles);
-    pbrDeferredShader->setAttribute("a_position", screenTrianglesCoords());
+    mapLight = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, MAP_LIGHT_FRAG_SHADER}, DrawMode::Triangles);
+    mapLight->setAttribute("a_position", screenTrianglesCoords());
     // clang-format on
   }
 }

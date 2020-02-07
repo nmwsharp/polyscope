@@ -529,14 +529,14 @@ void processInputEvents() {
 
 void renderScene() {
 
-  render::engine->resizeGBuffer(view::bufferWidth, view::bufferHeight);
-  render::engine->setGBufferViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  render::engine->resizeSceneBuffer(view::bufferWidth, view::bufferHeight);
+  render::engine->setSceneBufferViewport(0, 0, view::bufferWidth, view::bufferHeight);
 
   render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
   render::engine->setBackgroundAlpha(0.0);
-  render::engine->clearGBuffer();
+  render::engine->clearSceneBuffer();
 
-  if (!render::engine->bindGBuffer()) return;
+  if (!render::engine->bindSceneBuffer()) return;
 
   // If a view has never been set, this will set it to the home view
   view::ensureViewValid();
@@ -548,10 +548,12 @@ void renderScene() {
 
   drawStructures();
 
-  render::engine->lightGBuffer();
 }
 
-void renderSceneToScreen() { render::engine->copyGBufferToDisplay(); }
+void renderSceneToScreen() { 
+  render::engine->bindDisplay();
+  render::engine->lightSceneBuffer();
+}
 
 void buildPolyscopeGui() {
 

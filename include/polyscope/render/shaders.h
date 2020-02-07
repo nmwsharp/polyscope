@@ -12,7 +12,7 @@ extern const ShaderStageSpecification DOT3_TEXTURE_DRAW_FRAG_SHADER;
 extern const ShaderStageSpecification MAP3_TEXTURE_DRAW_FRAG_SHADER;
 
 // == Lighting shaders
-extern const ShaderStageSpecification PBR_DEFERRED_FRAG_SHADER;
+extern const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER;
 
 // == Histogram shaders
 extern const ShaderStageSpecification HISTOGRAM_VERT_SHADER;

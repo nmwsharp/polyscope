@@ -320,6 +320,7 @@ void SurfaceMesh::draw() {
     // Set uniforms
     setTransformUniforms(*program);
     setMaterialUniforms(*program);
+    render::engine->setGlobalLightingParameters(*program);
     program->setUniform("u_basecolor", getSurfaceColor());
 
     program->draw();

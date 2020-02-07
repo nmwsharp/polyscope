@@ -68,6 +68,8 @@ const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER = {
       {"u_roughness", DataType::Float},
       {"u_metallic", DataType::Float},
       {"u_F0", DataType::Float},
+      {"u_ambientStrength", DataType::Float},
+      {"u_lightStrength", DataType::Float},
     }, 
 
     // attributes
@@ -81,7 +83,7 @@ const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER = {
     },
     
     // source 
-    POLYSCOPE_GLSL_DEFERRED(330 core,
+    POLYSCOPE_GLSL(330 core,
 
       uniform sampler2D t_ground;
       uniform sampler2D t_mirrorImage;
@@ -96,9 +98,14 @@ const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER = {
       uniform float u_roughness;
       uniform float u_metallic;
       uniform float u_F0;
+      uniform float u_ambientStrength;
+      uniform float u_lightStrength;
       in vec4 PositionWorldHomog;
       in vec3 viewNormal;
       in vec3 viewPos; 
+      out vec4 colorVal; 
+      
+      vec3 computeLightingPBR(vec3 position, vec3 N, vec3 albedo, float roughness, float metallic, float F0val, float lightStrength, float ambientStrength);
 
       vec4 blurMirrorSample() {
         vec2 screenCoords = vec2(gl_FragCoord.x, gl_FragCoord.y);
@@ -113,8 +120,8 @@ const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER = {
         return mirrorImage;
       }
 
-      void main()
-      {
+      void main() {
+
         vec3 coord = PositionWorldHomog.xyz / PositionWorldHomog.w - u_center;
         coord /= u_lengthScale * .5;
         vec2 coord2D = vec2(dot(u_basisX, coord), dot(u_basisY, coord));
@@ -124,26 +131,26 @@ const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER = {
         float stripeBlendFac = smoothstep(0.005, .01, modDist);
         vec4 baseColor = mix(texture(t_ground, coord2D), vec4(.88, .88, .88, 1.), .4); 
         vec4 groundColor = mix( vec4(baseColor.xyz * .2, 1.0), baseColor, stripeBlendFac);
+        vec3 shadedGroundColor = computeLightingPBR(viewPos, viewNormal, groundColor.rgb, u_roughness, u_metallic, u_F0, u_lightStrength, u_ambientStrength);
 
         // Mirror image
         //vec2 screenCoords = vec2(gl_FragCoord.x / u_viewportDim.x, gl_FragCoord.y / u_viewportDim.y);
         //vec4 mirrorImage = texture(t_mirrorImage, screenCoords);
         vec4 mirrorImage = blurMirrorSample();
 
-        // Ground color
-        vec3 color3 = mix(groundColor.rgb, mirrorImage.rgb * mirrorImage.w, .2 * mirrorImage.w);
-
+        // Combined color
+        vec3 combinedColor = mix(shadedGroundColor.rgb, mirrorImage.rgb * mirrorImage.w, .2 * mirrorImage.w);
+        
         // Fade off far away
         float distFromCenter = length(coord2D);
         float distFadeFactor = 1.0 - smoothstep(8.0, 8.5, distFromCenter);
         float viewFromBelowFadeFactor = smoothstep(0, .1, (u_cameraHeight - u_groundHeight) / u_lengthScale);
+        if(viewFromBelowFadeFactor == 0.) {
+          discard;
+        }
         float fadeFactor = min(distFadeFactor, viewFromBelowFadeFactor);
-        vec4 color = vec4(color3, fadeFactor);
-        
-        gAlbedo = color;
-        gMaterial = vec4(u_roughness, u_metallic, u_F0, 1.);
-        gNormal = vec4(normalize(viewNormal), 1.);
-        gPosition = vec4(viewPos, 1.);
+         
+        colorVal = vec4(combinedColor, fadeFactor);
       }
 
     )

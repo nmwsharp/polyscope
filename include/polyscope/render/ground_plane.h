@@ -31,7 +31,7 @@ public:
 private:
   std::shared_ptr<render::ShaderProgram> groundPlaneProgram = nullptr;
   std::shared_ptr<render::TextureBuffer> mirroredSceneColorTexture = nullptr;
-  std::shared_ptr<render::FrameBuffer> mirroredSceneFramebuffer = nullptr;
+  std::shared_ptr<render::FrameBuffer> mirroredSceneFrameBuffer = nullptr;
 
   void prepareGroundPlane();
   void populateGroundPlaneGeometry();

@@ -261,12 +261,11 @@ public:
   virtual void bindDisplay() = 0;
   void buildEngineGui();
 
-  virtual void clearGBuffer();
-  virtual bool bindGBuffer();
-  virtual void resizeGBuffer(int width, int height);
-  virtual void setGBufferViewport(int xStart, int yStart, int sizeX, int sizeY);
-  virtual void lightGBuffer();
-  virtual void copyGBufferToDisplay(); // respects resultToDisplay
+  virtual void clearSceneBuffer();
+  virtual bool bindSceneBuffer();
+  virtual void resizeSceneBuffer(int width, int height);
+  virtual void setSceneBufferViewport(int xStart, int yStart, int sizeX, int sizeY);
+  virtual void lightSceneBuffer(); // tonemap and gamma correct, render to active framebuffer
 
   // Manage render state
   virtual void pushActiveRenderBuffer() = 0;
@@ -306,16 +305,16 @@ public:
                                                                DrawMode dm, unsigned int nPatchVertices = 0) = 0;
 
   // === The frame buffers used in the rendering pipeline
-  std::shared_ptr<FrameBuffer> GBuffer;
+  std::shared_ptr<FrameBuffer> sceneBuffer;
   std::shared_ptr<FrameBuffer> pickFramebuffer;
 
   // Main buffers for rendering
-  std::shared_ptr<TextureBuffer> gAlbedo, gMaterial, gViewNormal, gViewPosition, gFinal;
-  std::shared_ptr<RenderBuffer> gDepth, pickColorBuffer, pickDepthBuffer;
+  std::shared_ptr<TextureBuffer> sceneColor;
+  std::shared_ptr<RenderBuffer> sceneDepth, pickColorBuffer, pickDepthBuffer;
 
   // General-use programs used by the engine
   std::shared_ptr<ShaderProgram> renderTexturePlain, renderTextureDot3, renderTextureMap3;
-  std::shared_ptr<ShaderProgram> pbrDeferredShader;
+  std::shared_ptr<ShaderProgram> mapLight;
 
   // Options
   RenderResult resultToDisplay = RenderResult::Final;

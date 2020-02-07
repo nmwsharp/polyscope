@@ -20,14 +20,6 @@
 
 // Macro to construct shader strings. Unforunately, it eats line numbers.
 #define POLYSCOPE_GLSL(version, shader) "#version " #version "\n" #shader
-#define POLYSCOPE_GLSL_DEFERRED(version, shader)                                                                       \
-  "#version " #version "\n"                                                                                            \
-  "layout (location = 0) out vec4 gAlbedo;"                                                                            \
-  "layout (location = 1) out vec4 gMaterial;"                                                                          \
-  "layout (location = 2) out vec4 gPosition;"                                                                          \
-  "layout (location = 3) out vec4 gNormal;"                                                                            \
-  "layout (location = 4) out vec4 gFinal;" #shader
-
 
 namespace polyscope {
 namespace render {

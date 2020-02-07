@@ -55,6 +55,8 @@ const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER = {
         {"u_roughness", DataType::Float},
         {"u_metallic", DataType::Float},
         {"u_F0", DataType::Float},
+        {"u_ambientStrength", DataType::Float},
+        {"u_lightStrength", DataType::Float},
     }, 
 
     // attributes
@@ -64,22 +66,26 @@ const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER = {
     { },
     
     // source 
-    POLYSCOPE_GLSL_DEFERRED(330 core,
+    POLYSCOPE_GLSL(330 core,
       uniform vec3 u_basecolor;
       uniform float u_roughness;
       uniform float u_metallic;
       uniform float u_F0;
+      uniform float u_ambientStrength;
+      uniform float u_lightStrength;
       in vec3 viewNormal;
       in vec3 viewPos; 
+      layout (location = 0) out vec4 outputVal; 
+      
+      vec3 computeLightingPBR(vec3 position, vec3 N, vec3 albedo, float roughness, float metallic, float F0val, float lightStrength, float ambientStrength);
 
       void main()
       {
         vec3 color = u_basecolor;
 
-        gAlbedo = vec4(color, 1.);
-        gMaterial = vec4(u_roughness, u_metallic, u_F0, 1.);
-        gNormal = vec4(normalize(viewNormal), 1.);
-        gPosition = vec4(viewPos, 1.);
+        vec3 resultColor = computeLightingPBR(viewPos, viewNormal, u_basecolor, u_roughness, u_metallic, u_F0, u_lightStrength, u_ambientStrength);
+
+        outputVal = vec4(resultColor, 1.);
       }
     )
 };
@@ -149,7 +155,7 @@ const ShaderStageSpecification VERTCOLOR_SURFACE_FRAG_SHADER = {
     },
     
     // source 
-    POLYSCOPE_GLSL_DEFERRED(330 core,
+    POLYSCOPE_GLSL(330 core,
       uniform float u_rangeLow;
       uniform float u_rangeHigh;
       uniform float u_roughness;
@@ -322,7 +328,7 @@ const ShaderStageSpecification VERTCOLOR3_SURFACE_FRAG_SHADER = {
     {}, // textures 
     
     // source 
-    POLYSCOPE_GLSL_DEFERRED(330 core,
+    POLYSCOPE_GLSL(330 core,
       uniform float u_roughness;
       uniform float u_metallic;
       uniform float u_F0;
@@ -408,7 +414,7 @@ const ShaderStageSpecification HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     },
     
     // source 
-    POLYSCOPE_GLSL_DEFERRED(330 core,
+    POLYSCOPE_GLSL(330 core,
       uniform float u_rangeLow;
       uniform float u_rangeHigh;
       uniform float u_roughness;
