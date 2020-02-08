@@ -3,12 +3,9 @@
 
 #include "polyscope/options.h"
 #include "polyscope/utilities.h"
-#include "polyscope/messages.h"
 
 #include "polyscope/render/opengl/shaders/common.h"
 #include "polyscope/render/shaders.h"
-
-#include "stb_image.h"
 
 namespace polyscope {
 namespace render {
@@ -1567,36 +1564,21 @@ void GLEngine::allocateGlobalBuffersAndPrograms() {
   }
 
   { // Precompute specular
-
-		/* lol
-		std::string specFile = "ibl_brdf_lut.png";
-		int w;
-		int h;
-		int comp;
-		unsigned char* image = stbi_load(specFile.c_str(), &w, &h, &comp, STBI_rgb);
-    if (!image) {
-      error("failed to load environment map at " + specFile);
-    }
-		specularSplitPrecomp = generateTextureBuffer(TextureFormat::RGB16F, w, h, image);
-		*/
-
-    std::shared_ptr<ShaderProgram> p =
-        generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, SPLIT_SPECULAR_PRECOMPUTE_FRAG_SHADER}, DrawMode::Triangles);
+    setDepthMode(DepthMode::Disable);
 
     unsigned int precompSize = 512;
-    specularSplitPrecomp = generateTextureBuffer(TextureFormat::RGBA16F, precompSize, precompSize);
+    specularSplitPrecomp = generateTextureBuffer(TextureFormat::RG16F, precompSize, precompSize);
     std::shared_ptr<FrameBuffer> tempBuffer = generateFrameBuffer();
     tempBuffer->addColorBuffer(specularSplitPrecomp);
     tempBuffer->setDrawBuffers();
     tempBuffer->setViewport(0, 0, precompSize, precompSize);
-    tempBuffer->clearColor = glm::vec3{1., 1., 1.};
-    tempBuffer->clearAlpha = 0.0;
     tempBuffer->clear();
     tempBuffer->bindForRendering();
 
+    std::shared_ptr<ShaderProgram> p =
+        generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, SPLIT_SPECULAR_PRECOMPUTE_FRAG_SHADER}, DrawMode::Triangles);
     p->setAttribute("a_position", screenTrianglesCoords());
 
-		setDepthMode(DepthMode::Disable);
     p->draw();
   }
 

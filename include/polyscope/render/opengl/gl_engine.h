@@ -40,11 +40,12 @@ typedef GLint TextureLocation;
 class GLTextureBuffer : public TextureBuffer {
 public:
   // create a 1D texture from data
-  GLTextureBuffer(TextureFormat format, unsigned int size1D, unsigned char* data);
+  GLTextureBuffer(TextureFormat format, unsigned int size1D, unsigned char* data = nullptr);
   GLTextureBuffer(TextureFormat format, unsigned int size1D, float* data);
 
   // create a 2D texture from data
   GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data = nullptr);
+  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, float* data);
 
   ~GLTextureBuffer() override;
 
@@ -159,6 +160,7 @@ public:
   void setPrimitiveRestartIndex(unsigned int restartIndex) override;
 
   // Textures
+  bool hasTexture(std::string name) override;
   void setTexture1D(std::string name, unsigned char* texData, unsigned int length) override;
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                     bool withAlpha = true, bool useMipMap = false, bool repeat = false) override;
@@ -239,16 +241,19 @@ public:
   // Manage render state
   void pushActiveRenderBuffer() override;
   void popActiveRenderBuffer() override;
+  void setDepthMode(DepthMode newMode = DepthMode::Less) override;
 
   // === Factory methods
 
   // create textures
   std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
-                                                       unsigned char* data) override; // 1d
+                                                       unsigned char* data = nullptr) override; // 1d
   std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
                                                        float* data) override; // 1d
   std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
                                                        unsigned char* data = nullptr) override; // 2d
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+                                                       float* data) override; // 2d
 
   // create render buffers
   std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,

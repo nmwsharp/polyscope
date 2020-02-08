@@ -122,8 +122,17 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
+  // TODO add roughness
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }  
+
+vec2 sphericalTexCoords(vec3 v) {
+  const vec2 invAtan = vec2(0.1591, 0.3183);
+  vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+  uv *= invAtan;
+  uv += 0.5;
+  return uv;
+}
 
 vec3 computeLightingPBR(vec3 position, vec3 N, vec3 albedo, float roughness, float metallic, float F0val, float lightStrength, float ambientStrength) {
   const float PI = 3.14159265359;
@@ -177,6 +186,44 @@ vec3 computeLightingPBR(vec3 position, vec3 N, vec3 albedo, float roughness, flo
 
   return resultColor;
 }
+
+
+vec3 computeLightingPBR(vec3 position, vec3 N, vec3 albedo, float roughness, float metallic, float F0val, float lightStrength, float ambientStrength, sampler2D t_envDiffuse, sampler2D t_envSpecular, sampler2D t_specularPrecomp) {
+  const float PI = 3.14159265359;
+
+  vec3 viewDirN = normalize(N);
+  vec2 sampleCoords = sphericalTexCoords(viewDirN);
+  
+  // compute some intermediate values
+  vec3 F0 = vec3(F0val);  // Fresnel constant (plastic-ish)
+  F0 = mix(F0, albedo, metallic);
+  vec3 V = normalize(-position);
+  
+  // if the normals are facing away from the camera, flip and take note 
+  N = normalize(N);
+  float flipsign = sign(dot(N,V));
+  N = N * flipsign; // TODO problem if == 0?
+  float backfaceFac = max(0., flipsign);
+
+  vec3 F = FresnelSchlick(max(dot(N, V), 0.0), F0);
+  vec3 kS = F;
+  vec3 kD = 1.0 - kS;
+  kD *= 1.0 - metallic;
+
+  vec3 irradiance = texture(t_envDiffuse, sampleCoords).rgb;
+	vec3 diffuse = irradiance * albedo;
+
+  vec2 envBRDF  = texture(t_specularPrecomp, vec2(max(dot(N, V), 0.0), roughness)).rg;
+	//vec3 specularIncoming = texture(t_envSpecular, sampleCoords).rgb; FIXME
+	vec3 specularIncoming = texture(t_envDiffuse, sampleCoords).rgb;
+	vec3 specular = specularIncoming * (F * envBRDF.x + envBRDF.y);
+
+  float ao = 1.0;
+	vec3 result = (kD * diffuse + specular) * ao; 
+
+  return result;
+}
+
 
 
 )";

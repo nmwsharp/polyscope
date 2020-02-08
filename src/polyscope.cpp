@@ -540,6 +540,9 @@ void renderScene() {
 
   // If a view has never been set, this will set it to the home view
   view::ensureViewValid();
+  
+  render::engine->renderBackground();
+  render::engine->setDepthMode(render::DepthMode::Less);
 
   // Draw the ground plane
   if (options::groundPlaneEnabled) {

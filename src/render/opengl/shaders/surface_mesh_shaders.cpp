@@ -19,8 +19,8 @@ const ShaderStageSpecification PLAIN_SURFACE_VERT_SHADER =  {
     },
 
     { // attributes
-        {"a_position", DataType::Vector3Float},
-        {"a_normal", DataType::Vector3Float},
+       {"a_position", DataType::Vector3Float},
+       {"a_normal", DataType::Vector3Float},
     },
     
     {}, // textures
@@ -63,7 +63,11 @@ const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER = {
     { },
     
     // textures 
-    { },
+    { 
+        {"t_envDiffuse", 2},
+        {"t_envSpecular", 2},
+        {"t_specularPrecomp", 2},
+    },
     
     // source 
     POLYSCOPE_GLSL(330 core,
@@ -75,15 +79,18 @@ const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER = {
       uniform float u_lightStrength;
       in vec3 viewNormal;
       in vec3 viewPos; 
+      uniform sampler2D t_envDiffuse;
+      uniform sampler2D t_envSpecular;
+      uniform sampler2D t_specularPrecomp;
       layout (location = 0) out vec4 outputVal; 
       
-      vec3 computeLightingPBR(vec3 position, vec3 N, vec3 albedo, float roughness, float metallic, float F0val, float lightStrength, float ambientStrength);
+      vec3 computeLightingPBR(vec3 position, vec3 N, vec3 albedo, float roughness, float metallic, float F0val, float lightStrength, float ambientStrength, sampler2D t_envDiffuse, sampler2D t_envSpecular, sampler2D t_specularPrecomp);
 
       void main()
       {
         vec3 color = u_basecolor;
 
-        vec3 resultColor = computeLightingPBR(viewPos, viewNormal, u_basecolor, u_roughness, u_metallic, u_F0, u_lightStrength, u_ambientStrength);
+        vec3 resultColor = computeLightingPBR(viewPos, viewNormal, u_basecolor, u_roughness, u_metallic, u_F0, u_lightStrength, u_ambientStrength, t_envDiffuse, t_envSpecular, t_specularPrecomp);
 
         outputVal = vec4(resultColor, 1.);
       }
