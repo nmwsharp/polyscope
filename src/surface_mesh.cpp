@@ -26,9 +26,8 @@ SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexP
     : QuantityStructure<SurfaceMesh>(name, typeName()), vertices(vertexPositions), faces(faceIndices),
       shadeSmooth(uniquePrefix() + "shadeSmooth", false),
       surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
-      edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), edgeWidth(uniquePrefix() + "edgeWidth", 0.)
-
-{
+      edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}),
+      material(uniquePrefix() + "material", Material::Clay), edgeWidth(uniquePrefix() + "edgeWidth", 0.) {
 
   computeCounts();
   computeGeometryData();
@@ -375,7 +374,7 @@ void SurfaceMesh::prepare() {
 
   // Populate draw buffers
   fillGeometryBuffers(*program);
-  render::engine->setMaterial(*program, Material::Wax);
+  render::engine->setMaterial(*program, material.get());
 }
 
 void SurfaceMesh::prepareWireframe() {
@@ -384,7 +383,7 @@ void SurfaceMesh::prepareWireframe() {
 
   // Populate draw buffers
   fillGeometryBuffersWireframe(*wireframeProgram);
-  render::engine->setMaterial(*wireframeProgram, Material::Wax);
+  render::engine->setMaterial(*wireframeProgram, material.get());
 }
 
 void SurfaceMesh::preparePick() {
@@ -922,7 +921,12 @@ void SurfaceMesh::buildCustomUI() {
   }
 }
 
-void SurfaceMesh::buildCustomOptionsUI() {}
+void SurfaceMesh::buildCustomOptionsUI() {
+  if (render::buildMaterialOptionsGui(material.get())) {
+    material.manuallyChanged();
+    setMaterial(material.get()); // trigger the other updates that happen on set()
+  }
+}
 
 
 void SurfaceMesh::geometryChanged() {
@@ -1138,6 +1142,13 @@ SurfaceMesh* SurfaceMesh::setEdgeColor(glm::vec3 val) {
   return this;
 }
 glm::vec3 SurfaceMesh::getEdgeColor() { return edgeColor.get(); }
+SurfaceMesh* SurfaceMesh::setMaterial(Material m) {
+  material = m;
+  geometryChanged(); // (serves the purpose of re-initializing everything, though this is a bit overkill)
+  requestRedraw();
+  return this;
+}
+Material SurfaceMesh::getMaterial() { return material.get(); }
 SurfaceMesh* SurfaceMesh::setEdgeWidth(double newVal) {
   edgeWidth = newVal;
   requestRedraw();

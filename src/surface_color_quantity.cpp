@@ -102,7 +102,7 @@ void SurfaceFaceColorQuantity::createProgram() {
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
-  render::engine->setMaterial(*program, Material::Wax);
+  render::engine->setMaterial(*program, parent.getMaterial());
 }
 
 void SurfaceFaceColorQuantity::fillColorBuffers(render::ShaderProgram& p) {

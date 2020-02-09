@@ -6,6 +6,7 @@
 #include "glm/glm.hpp"
 #include "polyscope/surface_parameterization_enums.h"
 #include "polyscope/render/color_maps.h"
+#include "polyscope/render/materials.h"
 
 #include <iostream>
 #include <string>
@@ -112,6 +113,7 @@ extern PersistentCache<glm::vec3> persistentCache_glmvec3;
 extern PersistentCache<ScaledValue<double>> persistentCache_scaleddouble;
 extern PersistentCache<ScaledValue<float>> persistentCache_scaledfloat;
 extern PersistentCache<render::ColorMapID> persistentCache_colormapID;
+extern PersistentCache<Material> persistentCache_material;
 extern PersistentCache<ParamVizStyle> persistentCache_paramVizStyle;
 
 template<> inline PersistentCache<double>&                  getPersistentCacheRef<double>()                 { return persistentCache_double; }
@@ -121,6 +123,7 @@ template<> inline PersistentCache<glm::vec3>&               getPersistentCacheRe
 template<> inline PersistentCache<ScaledValue<double>>&     getPersistentCacheRef<ScaledValue<double>>()    { return persistentCache_scaleddouble; }
 template<> inline PersistentCache<ScaledValue<float>>&      getPersistentCacheRef<ScaledValue<float>>()     { return persistentCache_scaledfloat; }
 template<> inline PersistentCache<render::ColorMapID>&      getPersistentCacheRef<render::ColorMapID>()     { return persistentCache_colormapID; }
+template<> inline PersistentCache<Material>&                getPersistentCacheRef<Material>()     					{ return persistentCache_material; }
 template<> inline PersistentCache<ParamVizStyle>&           getPersistentCacheRef<ParamVizStyle>()          { return persistentCache_paramVizStyle; }
 }
 // clang-format on

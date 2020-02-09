@@ -13,6 +13,7 @@ PersistentCache<glm::vec3> persistentCache_glmvec3;
 PersistentCache<ScaledValue<double>> persistentCache_scaleddouble;
 PersistentCache<ScaledValue<float>> persistentCache_scaledfloat;
 PersistentCache<render::ColorMapID> persistentCache_colormapID;
+PersistentCache<Material> persistentCache_material;
 PersistentCache<ParamVizStyle> persistentCache_paramVizStyle;
 // clang-format on
 } // namespace detail

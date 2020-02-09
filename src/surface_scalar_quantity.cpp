@@ -151,7 +151,7 @@ void SurfaceVertexScalarQuantity::createProgram() {
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
-  render::engine->setMaterial(*program, Material::Wax);
+  render::engine->setMaterial(*program, parent.getMaterial());
 }
 
 
@@ -237,7 +237,7 @@ void SurfaceFaceScalarQuantity::createProgram() {
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
-  render::engine->setMaterial(*program, Material::Wax);
+  render::engine->setMaterial(*program, parent.getMaterial());
 }
 
 void SurfaceFaceScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
@@ -290,7 +290,7 @@ void SurfaceEdgeScalarQuantity::createProgram() {
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
-  render::engine->setMaterial(*program, Material::Wax);
+  render::engine->setMaterial(*program, parent.getMaterial());
 }
 
 void SurfaceEdgeScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
@@ -376,7 +376,7 @@ void SurfaceHalfedgeScalarQuantity::createProgram() {
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
-  render::engine->setMaterial(*program, Material::Wax);
+  render::engine->setMaterial(*program, parent.getMaterial());
 }
 
 void SurfaceHalfedgeScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {

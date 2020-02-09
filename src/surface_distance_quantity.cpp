@@ -53,7 +53,7 @@ void SurfaceDistanceQuantity::createProgram() {
   fillColorBuffers(*program);
   parent.fillGeometryBuffers(*program);
 
-  render::engine->setMaterial(*program, Material::Wax);
+  render::engine->setMaterial(*program, parent.getMaterial());
 }
 
 
