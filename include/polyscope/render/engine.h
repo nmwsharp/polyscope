@@ -8,6 +8,7 @@
 
 #include "polyscope/render/color_maps.h"
 #include "polyscope/render/ground_plane.h"
+#include "polyscope/render/materials.h"
 #include "polyscope/view.h"
 
 namespace polyscope {
@@ -34,7 +35,7 @@ enum class FilterMode { Nearest = 0, Linear };
 enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F };
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
 enum class DataType { Vector2Float, Vector3Float, Vector4Float, Matrix44Float, Float, Int, UInt, Index };
-enum class DepthMode {Less, LEqual, LEqualReadOnly, Disable};
+enum class DepthMode { Less, LEqual, LEqualReadOnly, Disable };
 
 // All of these are templated on the backend B. The backend should specialize the low-level functions
 
@@ -56,9 +57,9 @@ public:
   virtual void setFilterMode(FilterMode newMode);
 
   // Set texture data
-  //void fillTextureData1D(std::string name, unsigned char* texData, unsigned int length);
-  //void fillTextureData2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
-                         //bool withAlpha = true, bool useMipMap = false, bool repeat = false);
+  // void fillTextureData1D(std::string name, unsigned char* texData, unsigned int length);
+  // void fillTextureData2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
+  // bool withAlpha = true, bool useMipMap = false, bool repeat = false);
 
   virtual void* getNativeHandle() = 0; // used to interop with external things, e.g. ImGui
 
@@ -246,7 +247,7 @@ protected:
   unsigned int nPatchVertices;
 };
 
-enum class BackgroundView { None=0, Env, EnvDiffuse, EnvSpecular};
+enum class BackgroundView { None = 0 };
 
 // A few forward declarations for types that engine needs to touch
 class GroundPlane;
@@ -267,7 +268,7 @@ public:
   virtual void resizeSceneBuffer(int width, int height);
   virtual void setSceneBufferViewport(int xStart, int yStart, int sizeX, int sizeY);
   virtual void lightSceneBuffer(); // tonemap and gamma correct, render to active framebuffer
-  void renderBackground(); // respects background setting
+  void renderBackground();         // respects background setting
 
   // Manage render state
   virtual void pushActiveRenderBuffer() = 0;
@@ -275,19 +276,17 @@ public:
   virtual void setDepthMode(DepthMode newMode = DepthMode::Less) = 0;
 
   // Helpers
-  void setGlobalLightingParameters(ShaderProgram& program);
+	void allocateGlobalBuffersAndPrograms(); // called once during startup
 
   // Small options
   void setBackgroundColor(glm::vec3 newColor);
   void setBackgroundAlpha(float newAlpha);
 
+  // Manage materials
+  void setMaterial(ShaderProgram& program, Material mat);
 
   // === Scene data and niceties
   GroundPlane groundPlane;
-
-  // Manage an environment map
-  void loadEnvironmentMap(std::string mapFilename, std::string diffuseFilename = "");
-  std::shared_ptr<TextureBuffer> envMapDiffuse, envMapSpecular, envMapOrig;
 
   // === Factory methods
 
@@ -301,7 +300,7 @@ public:
                                                                unsigned char* data = nullptr) = 0; // 2d
   virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
                                                                unsigned int sizeY_,
-                                                               float* data ) = 0; // 2d
+                                                               float* data) = 0; // 2d
 
   // create render buffers
   virtual std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
@@ -325,9 +324,6 @@ public:
   // General-use programs used by the engine
   std::shared_ptr<ShaderProgram> renderTexturePlain, renderTextureDot3, renderTextureMap3, renderTextureSphereBG;
   std::shared_ptr<ShaderProgram> mapLight;
-  
-  // Pre-computed data 
-  std::shared_ptr<TextureBuffer> specularSplitPrecomp;
 
   // Options
   BackgroundView background = BackgroundView::None;
@@ -342,7 +338,10 @@ protected:
 
   // Helpers
   std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen
-  std::vector<glm::vec4> distantCubeCoords(); // cube with vertices at infinity
+  std::vector<glm::vec4> distantCubeCoords();     // cube with vertices at infinity
+
+  // The cache of materials
+  std::map<Material, BasisMaterial> materialCache;
 };
 
 

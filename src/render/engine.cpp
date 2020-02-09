@@ -2,6 +2,7 @@
 #include "polyscope/render/engine.h"
 
 #include "polyscope/polyscope.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 #include "stb_image.h"
@@ -78,25 +79,10 @@ void Engine::buildEngineGui() {
   ImGui::SameLine();
   static std::string displayBackgroundName = "None";
   if (ImGui::BeginCombo("##Background", displayBackgroundName.c_str())) {
-    if (ImGui::Selectable("Albedo", background == BackgroundView::None)) {
+    if (ImGui::Selectable("None", background == BackgroundView::None)) {
       background = BackgroundView::None;
       ImGui::SetItemDefaultFocus();
-      displayBackgroundName = "Albedo";
-    }
-    if (ImGui::Selectable("Enviornment", background == BackgroundView::Env)) {
-      background = BackgroundView::Env;
-      ImGui::SetItemDefaultFocus();
-      displayBackgroundName = "Environment";
-    }
-    if (ImGui::Selectable("Environment (diffuse)", background == BackgroundView::EnvDiffuse)) {
-      background = BackgroundView::EnvDiffuse;
-      ImGui::SetItemDefaultFocus();
-      displayBackgroundName = "Environment (diffuse)";
-    }
-    if (ImGui::Selectable("Environment (specular)", background == BackgroundView::EnvSpecular)) {
-      background = BackgroundView::EnvSpecular;
-      ImGui::SetItemDefaultFocus();
-      displayBackgroundName = "Environment (specular)";
+      displayBackgroundName = "None";
     }
     ImGui::EndCombo();
   }
@@ -134,49 +120,81 @@ void Engine::lightSceneBuffer() {
   mapLight->draw();
 }
 
-void Engine::setGlobalLightingParameters(ShaderProgram& program) {
-  program.setUniform("u_ambientStrength", ambientStrength);
-  program.setUniform("u_lightStrength", lightStrength);
-  if (program.hasTexture("t_envDiffuse")) {
-    program.setTextureFromBuffer("t_envDiffuse", envMapDiffuse.get());
-    program.setTextureFromBuffer("t_envSpecular", envMapSpecular.get());
-    program.setTextureFromBuffer("t_specularPrecomp", specularSplitPrecomp.get());
-  }
+void Engine::setMaterial(ShaderProgram& program, Material mat) {
+  BasisMaterial& material = materialCache[mat];
+  program.setTextureFromBuffer("t_mat_r", material.textureBuffers[0].get());
+  program.setTextureFromBuffer("t_mat_g", material.textureBuffers[1].get());
+  program.setTextureFromBuffer("t_mat_b", material.textureBuffers[2].get());
 }
 
 void Engine::renderBackground() {
   switch (background) {
   case BackgroundView::None:
     break;
-  case BackgroundView::Env: {
-    glm::mat4 V = view::getCameraViewMatrix();
-    glm::mat4 P = view::getCameraPerspectiveMatrix();
-    renderTextureSphereBG->setUniform("u_viewMatrix", glm::value_ptr(V));
-    renderTextureSphereBG->setUniform("u_projMatrix", glm::value_ptr(P));
-    renderTextureSphereBG->setTextureFromBuffer("t_image", envMapOrig.get());
-    setDepthMode(DepthMode::LEqualReadOnly);
-    renderTextureSphereBG->draw();
-    break;
+    /*
+      case BackgroundView::Env: {
+        glm::mat4 V = view::getCameraViewMatrix();
+        glm::mat4 P = view::getCameraPerspectiveMatrix();
+        renderTextureSphereBG->setUniform("u_viewMatrix", glm::value_ptr(V));
+        renderTextureSphereBG->setUniform("u_projMatrix", glm::value_ptr(P));
+        renderTextureSphereBG->setTextureFromBuffer("t_image", envMapOrig.get());
+        setDepthMode(DepthMode::LEqualReadOnly);
+        renderTextureSphereBG->draw();
+        break;
+      }
+    */
   }
-  case BackgroundView::EnvDiffuse: {
-    glm::mat4 V = view::getCameraViewMatrix();
-    glm::mat4 P = view::getCameraPerspectiveMatrix();
-    renderTextureSphereBG->setUniform("u_viewMatrix", glm::value_ptr(V));
-    renderTextureSphereBG->setUniform("u_projMatrix", glm::value_ptr(P));
-    renderTextureSphereBG->setTextureFromBuffer("t_image", envMapDiffuse.get());
-    setDepthMode(DepthMode::LEqualReadOnly);
-    renderTextureSphereBG->draw();
-  } break;
-  case BackgroundView::EnvSpecular: {
-    glm::mat4 V = view::getCameraViewMatrix();
-    glm::mat4 P = view::getCameraPerspectiveMatrix();
-    renderTextureSphereBG->setUniform("u_viewMatrix", glm::value_ptr(V));
-    renderTextureSphereBG->setUniform("u_projMatrix", glm::value_ptr(P));
-    renderTextureSphereBG->setTextureFromBuffer("t_image", specularSplitPrecomp.get());
-    setDepthMode(DepthMode::LEqualReadOnly);
-    renderTextureSphereBG->draw();
-  } break;
+}
+
+void Engine::allocateGlobalBuffersAndPrograms() {
+
+  { // Scene buffer
+
+    // Note that this is basically duplicated in ground_plane.cpp, changes here should probably be reflected there
+    sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
+
+    sceneBuffer = generateFrameBuffer();
+    sceneBuffer->addColorBuffer(sceneColor);
+    sceneBuffer->addDepthBuffer(sceneDepth);
+    sceneBuffer->setDrawBuffers();
+
+    sceneBuffer->clearColor = glm::vec3{1., 1., 1.};
+    sceneBuffer->clearAlpha = 0.0;
   }
+
+  { // Pick buffer
+    pickColorBuffer = generateRenderBuffer(RenderBufferType::Float4, view::bufferWidth, view::bufferHeight);
+    pickDepthBuffer = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
+
+    pickFramebuffer = generateFrameBuffer();
+    pickFramebuffer->addColorBuffer(pickColorBuffer);
+    pickFramebuffer->addDepthBuffer(pickDepthBuffer);
+    pickFramebuffer->setDrawBuffers();
+  }
+
+  { // Generate the general-use programs
+    // clang-format off
+    renderTexturePlain = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, PLAIN_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTexturePlain->setAttribute("a_position", screenTrianglesCoords());
+
+    renderTextureDot3 = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, DOT3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTextureDot3->setAttribute("a_position", screenTrianglesCoords());
+
+    renderTextureMap3 = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, MAP3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTextureMap3->setAttribute("a_position", screenTrianglesCoords());
+
+    renderTextureSphereBG = generateShaderProgram({SPHEREBG_DRAW_VERT_SHADER, SPHEREBG_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTextureSphereBG->setAttribute("a_position", distantCubeCoords());
+    
+    mapLight = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, MAP_LIGHT_FRAG_SHADER}, DrawMode::Triangles);
+    mapLight->setAttribute("a_position", screenTrianglesCoords());
+    // clang-format on
+  }
+
+	{ // Load default materials
+		materialCache = loadDefaultMaterials();	
+	}
 }
 
 
@@ -234,42 +252,6 @@ std::vector<glm::vec4> Engine::distantCubeCoords() {
   return coords;
 }
 
-void Engine::loadEnvironmentMap(std::string mapFilename, std::string diffuseFilename) {
-
-  stbi_set_flip_vertically_on_load(true);
-
-  int width, height, nrComponents;
-  float* data = stbi_loadf(mapFilename.c_str(), &width, &height, &nrComponents, 0);
-  unsigned int hdrTexture;
-  if (!data) {
-    error("failed to load environment map at " + mapFilename);
-    return;
-  }
-
-  // Load the texture
-  envMapOrig = generateTextureBuffer(TextureFormat::RGB16F, width, height, data);
-  envMapOrig->setFilterMode(FilterMode::Linear);
-
-  // TODO generate these
-  if (diffuseFilename == "") {
-    envMapDiffuse = generateTextureBuffer(TextureFormat::RGB16F, width, height, data);
-  } else {
-    int width, height, nrComponents;
-    float* data = stbi_loadf(diffuseFilename.c_str(), &width, &height, &nrComponents, 0);
-    unsigned int hdrTexture;
-    if (!data) {
-      error("failed to load environment map at " + diffuseFilename);
-      return;
-    }
-    envMapDiffuse = generateTextureBuffer(TextureFormat::RGB16F, width, height, data);
-  }
-  envMapDiffuse->setFilterMode(FilterMode::Linear);
-
-  envMapSpecular = generateTextureBuffer(TextureFormat::RGB16F, width, height, data);
-  envMapSpecular->setFilterMode(FilterMode::Linear);
-
-  stbi_image_free(data);
-}
 
 } // namespace render
 } // namespace polyscope

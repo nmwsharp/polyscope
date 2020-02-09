@@ -12,6 +12,7 @@ SET(SRCS
   render/opengl/gl_engine.cpp  
   render/color_maps.cpp
   render/ground_plane.cpp
+  render/materials.cpp
 
   render/opengl/shaders/texture_draw_shaders.cpp  
   render/opengl/shaders/lighting_shaders.cpp  
@@ -20,6 +21,7 @@ SET(SRCS
   render/opengl/shaders/surface_mesh_shaders.cpp  
   
   render/bindata/concrete_seamless.cpp
+  render/bindata/bindata_mat_wax.cpp
 
 
   # Core functionality 
@@ -39,9 +41,6 @@ SET(SRCS
   persistent_value.cpp
 
   color_management.cpp
-
-  #gl/materials/bindata_mat_wax.cpp
-  #gl/materials/materials.cpp
 
   binary_font_cousine_regular.cpp
 

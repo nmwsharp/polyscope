@@ -1,9 +1,9 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/render/opengl/gl_engine.h"
 
+#include "polyscope/messages.h"
 #include "polyscope/options.h"
 #include "polyscope/utilities.h"
-#include "polyscope/messages.h"
 
 #include "polyscope/render/opengl/shaders/common.h"
 #include "polyscope/render/shaders.h"
@@ -19,6 +19,7 @@ GLEngine* glEngine = nullptr; // alias for engine above
 void initializeRenderEngine() {
   glEngine = new GLEngine();
   engine = glEngine;
+	engine->allocateGlobalBuffersAndPrograms();
 }
 ProgramHandle commonShaderHandle = 777;
 
@@ -1510,99 +1511,12 @@ void GLShaderProgram::draw() {
   checkGLError();
 }
 
-GLEngine::GLEngine() { allocateGlobalBuffersAndPrograms(); }
-
-// Called once on init
-void GLEngine::allocateGlobalBuffersAndPrograms() {
-
+GLEngine::GLEngine() {
   { // Compile functions accessible to all shaders
     commonShaderHandle = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(commonShaderHandle, 1, &shaderCommonSource, nullptr);
     glCompileShader(commonShaderHandle);
     printShaderInfoLog(commonShaderHandle);
-  }
-
-  { // Scene buffer
-
-    // Note that this is basically duplicated in ground_plane.cpp, changes here should probably be reflected there
-    sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
-    sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
-
-    sceneBuffer = generateFrameBuffer();
-    sceneBuffer->addColorBuffer(sceneColor);
-    sceneBuffer->addDepthBuffer(sceneDepth);
-    sceneBuffer->setDrawBuffers();
-
-    sceneBuffer->clearColor = glm::vec3{1., 1., 1.};
-    sceneBuffer->clearAlpha = 0.0;
-  }
-
-  { // Pick buffer
-    pickColorBuffer = generateRenderBuffer(RenderBufferType::Float4, view::bufferWidth, view::bufferHeight);
-    pickDepthBuffer = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
-
-    pickFramebuffer = generateFrameBuffer();
-    pickFramebuffer->addColorBuffer(pickColorBuffer);
-    pickFramebuffer->addDepthBuffer(pickDepthBuffer);
-    pickFramebuffer->setDrawBuffers();
-  }
-
-  { // Generate the general-use programs
-    // clang-format off
-    renderTexturePlain = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, PLAIN_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
-    renderTexturePlain->setAttribute("a_position", screenTrianglesCoords());
-
-    renderTextureDot3 = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, DOT3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
-    renderTextureDot3->setAttribute("a_position", screenTrianglesCoords());
-
-    renderTextureMap3 = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, MAP3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
-    renderTextureMap3->setAttribute("a_position", screenTrianglesCoords());
-
-    renderTextureSphereBG = generateShaderProgram({SPHEREBG_DRAW_VERT_SHADER, SPHEREBG_DRAW_FRAG_SHADER}, DrawMode::Triangles);
-    renderTextureSphereBG->setAttribute("a_position", distantCubeCoords());
-    
-    mapLight = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, MAP_LIGHT_FRAG_SHADER}, DrawMode::Triangles);
-    mapLight->setAttribute("a_position", screenTrianglesCoords());
-    // clang-format on
-  }
-
-  { // Precompute specular
-
-		/* lol
-		std::string specFile = "ibl_brdf_lut.png";
-		int w;
-		int h;
-		int comp;
-		unsigned char* image = stbi_load(specFile.c_str(), &w, &h, &comp, STBI_rgb);
-    if (!image) {
-      error("failed to load environment map at " + specFile);
-    }
-		specularSplitPrecomp = generateTextureBuffer(TextureFormat::RGB16F, w, h, image);
-		*/
-
-    std::shared_ptr<ShaderProgram> p =
-        generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, SPLIT_SPECULAR_PRECOMPUTE_FRAG_SHADER}, DrawMode::Triangles);
-
-    unsigned int precompSize = 512;
-    specularSplitPrecomp = generateTextureBuffer(TextureFormat::RGBA16F, precompSize, precompSize);
-    std::shared_ptr<FrameBuffer> tempBuffer = generateFrameBuffer();
-    tempBuffer->addColorBuffer(specularSplitPrecomp);
-    tempBuffer->setDrawBuffers();
-    tempBuffer->setViewport(0, 0, precompSize, precompSize);
-    tempBuffer->clearColor = glm::vec3{1., 1., 1.};
-    tempBuffer->clearAlpha = 0.0;
-    tempBuffer->clear();
-    tempBuffer->bindForRendering();
-
-    p->setAttribute("a_position", screenTrianglesCoords());
-
-		setDepthMode(DepthMode::Disable);
-    p->draw();
-  }
-
-  { // Load environment map
-    // loadEnvironmentMap("Chelsea_Stairs_3k.hdr", "Chelsea_Stairs_Env.hdr");
-    loadEnvironmentMap("GCanyon_C_YumaPoint_3k.hdr", "GCanyon_C_YumaPoint_Env.hdr");
   }
 }
 
@@ -1610,10 +1524,6 @@ void GLEngine::allocateGlobalBuffersAndPrograms() {
 void GLEngine::bindDisplay() {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  // glEnable(GL_DEPTH_TEST);
-  // glDepthFunc(GL_LESS);
-  // glEnable(GL_BLEND);
-  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 

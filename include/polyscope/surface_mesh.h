@@ -209,7 +209,6 @@ public:
 
   // === Helpers
   void fillGeometryBuffers(render::ShaderProgram& p);
-  void setMaterialUniforms(render::ShaderProgram& p);
   void setShadeStyle(ShadeStyle newShadeStyle);
 
 

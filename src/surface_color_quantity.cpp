@@ -20,7 +20,6 @@ void SurfaceColorQuantity::draw() {
 
   // Set uniforms
   parent.setTransformUniforms(*program);
-  parent.setMaterialUniforms(*program);
 
   program->draw();
 }
@@ -43,6 +42,7 @@ void SurfaceVertexColorQuantity::createProgram() {
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
+  render::engine->setMaterial(*program, Material::Wax);
 }
 
 void SurfaceVertexColorQuantity::fillColorBuffers(render::ShaderProgram& p) {
@@ -102,6 +102,7 @@ void SurfaceFaceColorQuantity::createProgram() {
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
+  render::engine->setMaterial(*program, Material::Wax);
 }
 
 void SurfaceFaceColorQuantity::fillColorBuffers(render::ShaderProgram& p) {

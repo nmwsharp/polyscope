@@ -319,8 +319,6 @@ void SurfaceMesh::draw() {
 
     // Set uniforms
     setTransformUniforms(*program);
-    setMaterialUniforms(*program);
-    render::engine->setGlobalLightingParameters(*program);
     program->setUniform("u_basecolor", getSurfaceColor());
 
     program->draw();
@@ -378,8 +376,7 @@ void SurfaceMesh::prepare() {
 
   // Populate draw buffers
   fillGeometryBuffers(*program);
-
-  // setMaterialForProgram(*program, "wax");
+  render::engine->setMaterial(*program, Material::Wax);
 }
 
 void SurfaceMesh::prepareWireframe() {
@@ -667,12 +664,6 @@ void SurfaceMesh::fillGeometryBuffersWireframe(render::ShaderProgram& p) {
   p.setAttribute("a_normal", normals);
   p.setAttribute("a_barycoord", bcoord);
   p.setAttribute("a_edgeReal", edgeReal);
-}
-
-void SurfaceMesh::setMaterialUniforms(render::ShaderProgram& p) {
-  p.setUniform("u_roughness", pbrRoughness);
-  p.setUniform("u_metallic", pbrMetallic);
-  p.setUniform("u_F0", pbrF0);
 }
 
 void SurfaceMesh::buildPickUI(size_t localPickID) {

@@ -1,8 +1,8 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
-#include "polyscope/gl/materials/materials.h"
+#include "polyscope/render/materials.h"
 #include <vector>
 namespace polyscope {
-namespace gl {
+namespace render {
 
 // clang-format off
 
@@ -4021,5 +4021,5 @@ const std::vector<std::vector<unsigned char>> bindata_mat_wax = {
 };
 
 // clang-format on
-} // namespace gl
+} // namespace render
 } // namespace polyscope

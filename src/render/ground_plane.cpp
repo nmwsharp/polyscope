@@ -186,11 +186,6 @@ void GroundPlane::draw() {
   groundPlaneProgram->setUniform("u_lengthScale", state::lengthScale);
   groundPlaneProgram->setUniform("u_groundHeight", groundHeight);
 
-  groundPlaneProgram->setUniform("u_roughness", pbrRoughness);
-  groundPlaneProgram->setUniform("u_metallic", pbrMetallic);
-  groundPlaneProgram->setUniform("u_F0", pbrF0);
-  render::engine->setGlobalLightingParameters(*groundPlaneProgram);
-
   // glEnable(GL_BLEND);
   // glDepthFunc(GL_LESS); // return to normal
   // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

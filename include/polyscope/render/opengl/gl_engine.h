@@ -267,9 +267,10 @@ public:
                                                        unsigned int nPatchVertices = 0) override;
 
 protected:
-  // Helpers
-  void allocateGlobalBuffersAndPrograms();
 
+  // Helpers
+
+	// Internal members
   std::vector<FrameBufferHandle> activeRenderBufferStack;
 };
 
