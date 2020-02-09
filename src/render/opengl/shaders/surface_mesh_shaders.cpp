@@ -60,6 +60,7 @@ const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER = {
         {"t_mat_r", 2},
         {"t_mat_g", 2},
         {"t_mat_b", 2},
+        {"t_mat_k", 2},
     },
     
     // source 
@@ -68,16 +69,17 @@ const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER = {
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
       uniform sampler2D t_mat_b;
+      uniform sampler2D t_mat_k;
       in vec3 Normal;
       layout(location = 0) out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
-      vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
+      vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 
       void main()
       {
         vec3 color = u_basecolor;
-        outputF = vec4(lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b), 1.);
+        outputF = vec4(lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
       }
 
     )
@@ -143,6 +145,7 @@ const ShaderStageSpecification VERTCOLOR_SURFACE_FRAG_SHADER = {
         {"t_mat_r", 2},
         {"t_mat_g", 2},
         {"t_mat_b", 2},
+        {"t_mat_k", 2},
         {"t_colormap", 1}
     },
     
@@ -154,13 +157,14 @@ const ShaderStageSpecification VERTCOLOR_SURFACE_FRAG_SHADER = {
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
       uniform sampler2D t_mat_b;
+      uniform sampler2D t_mat_k;
       in vec3 Normal;
       in float Colorval;
       layout(location = 0) out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
       float getEdgeFactor(vec3 UVW, float width);
-      vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
+      vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 
       vec3 surfaceColor() {
         float t = (Colorval - u_rangeLow) / (u_rangeHigh - u_rangeLow);
@@ -171,7 +175,7 @@ const ShaderStageSpecification VERTCOLOR_SURFACE_FRAG_SHADER = {
       void main()
       {
         vec3 color = surfaceColor();
-        outputF = vec4(lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b), 1.);
+        outputF = vec4(lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
       }
 
     )
@@ -315,6 +319,7 @@ const ShaderStageSpecification VERTCOLOR3_SURFACE_FRAG_SHADER = {
         {"t_mat_r", 2},
         {"t_mat_g", 2},
         {"t_mat_b", 2},
+        {"t_mat_k", 2},
     },
     
     // source 
@@ -322,18 +327,19 @@ const ShaderStageSpecification VERTCOLOR3_SURFACE_FRAG_SHADER = {
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
       uniform sampler2D t_mat_b;
+      uniform sampler2D t_mat_k;
       in vec3 Normal;
       in vec3 Colorval;
       out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
-      vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
+      vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
       float getEdgeFactor(vec3 UVW, float width);
 
       void main()
       {
         vec3 color = Colorval;
-        outputF = vec4(lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b), 1.);
+        outputF = vec4(lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
       }
 
     )
@@ -401,6 +407,7 @@ const ShaderStageSpecification HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
         {"t_mat_r", 2},
         {"t_mat_g", 2},
         {"t_mat_b", 2},
+        {"t_mat_k", 2},
         {"t_colormap", 1}
     },
     
@@ -411,6 +418,7 @@ const ShaderStageSpecification HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
       uniform sampler2D t_mat_r;
       uniform sampler2D t_mat_g;
       uniform sampler2D t_mat_b;
+      uniform sampler2D t_mat_k;
       uniform sampler1D t_colormap;
       in vec3 Normal;
       in vec3 Barycoord;
@@ -418,7 +426,7 @@ const ShaderStageSpecification HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
       layout(location = 0) out vec4 outputF;
 
       // Forward declarations of methods from <shaders/common.h>
-      vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
+      vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
       float getEdgeFactor(vec3 UVW, float width);
 
       vec3 surfaceColor() {
@@ -443,7 +451,7 @@ const ShaderStageSpecification HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
       void main()
       {
         vec3 color = surfaceColor();
-        outputF = vec4(lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b), 1.);
+        outputF = vec4(lightSurfaceMat(Normal, color, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
       }
 
     )

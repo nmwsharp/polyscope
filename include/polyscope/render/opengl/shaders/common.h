@@ -58,6 +58,11 @@ float fresnel( vec3 N, vec3 E ) {
    return pow( sqrt( 1. - NE*NE ), sharpness );
 }
 
+float luminance(vec3 v) {
+    return dot(v, vec3(0.2126f, 0.7152f, 0.0722f));
+}
+
+
 vec3 gammaCorrect( vec3 colorLinear )
 {
    const float screenGamma = 2.2;
@@ -71,15 +76,18 @@ vec3 undoGammaCorrect( vec3 colorLinear )
 }
       
 
-vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b) {
+vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k) {
   normal = normalize(normal);
   normal.y = -normal.y;
+	normal *= 0.98; // pull slightly inward, to reduce sampling artifacts near edges
   vec2 matUV = normal.xy/2.0 + vec2(.5, .5);
   
   vec3 mat_r = texture(t_mat_r, matUV).rgb;
   vec3 mat_g = texture(t_mat_g, matUV).rgb;
   vec3 mat_b = texture(t_mat_b, matUV).rgb;
-  vec3 colorCombined = color.r * mat_r + color.g * mat_g + color.b * mat_b;
+  vec3 mat_k = texture(t_mat_k, matUV).rgb;
+	vec3 colorCombined = color.r * mat_r + color.g * mat_g + color.b * mat_b + 
+											 (1. - color.r - color.g - color.b) * mat_k;
 
   return colorCombined;
 }

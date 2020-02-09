@@ -16,6 +16,8 @@ const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER = {
     // uniforms
     { 
         {"u_exposure", DataType::Float},
+        {"u_gamma", DataType::Float},
+        {"u_whiteLevel", DataType::Float},
     }, 
 
     // attributes
@@ -32,9 +34,9 @@ const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER = {
       in vec2 tCoord;
       uniform sampler2D t_image;
       uniform float u_exposure;
+      uniform float u_whiteLevel;
+      uniform float u_gamma;
       layout (location = 0) out vec4 outputVal;
-
-      // Forward declarations for pbr functions
 
       void main() {
 
@@ -42,11 +44,16 @@ const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER = {
         vec3 color = color4.rgb;
         float alpha = color4.a;
 
-        // tonemapping
-        color = vec3(1.0) - exp(-color * u_exposure);
+				// "lighting"
+				color = color * u_exposure;
+
+        // tonemapping (extended Reinhard)
+				vec3 num = color * (1.0f + (color / vec3(u_whiteLevel * u_whiteLevel)));
+				vec3 den = (1.0f + color);
+				color = num / den;
         
         // gamma correction
-        color = pow(color, vec3(1.0/2.2));  
+				color = pow(color, vec3(1.0/u_gamma));  
        
         outputVal = vec4(color, alpha);
     }  

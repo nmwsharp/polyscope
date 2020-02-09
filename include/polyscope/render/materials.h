@@ -17,9 +17,9 @@ std::string name(Material m);
 // forward declare
 class TextureBuffer;
 
-// Basis materials have _r, _g, _b textures for blending with arbitrary surface colors.
+// Basis materials have _r, _g, _b, _k textures for blending with arbitrary surface colors.
 struct BasisMaterial {
-  std::array<std::shared_ptr<TextureBuffer>, 3> textureBuffers;
+  std::array<std::shared_ptr<TextureBuffer>, 4> textureBuffers;
 };
 
 

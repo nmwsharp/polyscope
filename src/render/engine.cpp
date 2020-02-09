@@ -88,8 +88,8 @@ void Engine::buildEngineGui() {
   }
 
   ImGui::SliderFloat("exposure", &exposure, 0.1, 5.0, "%.3f", 2.);
-  ImGui::SliderFloat("light stength", &lightStrength, 0.0, 5.0, "%.3f", 2.);
-  ImGui::SliderFloat("ambient strength", &ambientStrength, 0.0, 1.0, "%.3f", 2.);
+  ImGui::SliderFloat("white level", &whiteLevel, 0.0, 5.0, "%.3f", 2.);
+  ImGui::SliderFloat("gamma", &gamma, 0.1, 5.0, "%.3f", 2.);
 
   groundPlane.buildGui();
 }
@@ -116,6 +116,8 @@ bool Engine::bindSceneBuffer() { return sceneBuffer->bindForRendering(); }
 
 void Engine::lightSceneBuffer() {
   mapLight->setUniform("u_exposure", exposure);
+  mapLight->setUniform("u_whiteLevel", whiteLevel);
+  mapLight->setUniform("u_gamma", gamma);
   mapLight->setTextureFromBuffer("t_image", sceneColor.get());
   mapLight->draw();
 }
@@ -125,6 +127,7 @@ void Engine::setMaterial(ShaderProgram& program, Material mat) {
   program.setTextureFromBuffer("t_mat_r", material.textureBuffers[0].get());
   program.setTextureFromBuffer("t_mat_g", material.textureBuffers[1].get());
   program.setTextureFromBuffer("t_mat_b", material.textureBuffers[2].get());
+  program.setTextureFromBuffer("t_mat_k", material.textureBuffers[3].get());
 }
 
 void Engine::renderBackground() {

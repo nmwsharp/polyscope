@@ -329,9 +329,9 @@ public:
   BackgroundView background = BackgroundView::None;
 
   // TODO make these persistent?
-  float exposure = 1.0;
-  float ambientStrength = 0.05;
-  float lightStrength = 1.0;
+  float exposure = 1.2;
+  float whiteLevel = 0.75;
+  float gamma = 2.2;
 
 protected:
   // TODO Manage a cache of compiled shaders?
