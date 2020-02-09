@@ -3,6 +3,8 @@
 
 #include "polyscope/view.h"
 
+#include <memory>
+
 namespace polyscope {
 namespace render {
 

@@ -6,7 +6,15 @@
 #include <iostream>
 #include <thread>
 
+#ifdef __APPLE__
+#define GLFW_INCLUDE_GLCOREARB
 #include "GLFW/glfw3.h"
+#else
+#include "glad/glad.h"
+// glad must come first
+#include "GLFW/glfw3.h"
+#endif
+
 #ifdef _WIN32
 #undef APIENTRY
 #define GLFW_EXPOSE_NATIVE_WIN32

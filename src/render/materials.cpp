@@ -59,6 +59,7 @@ std::string name(Material m) {
   case Material::Wax:
     return "wax";
   }
+  throw std::runtime_error("bad enum");
 }
 
 std::map<Material, BasisMaterial> loadDefaultMaterials() {

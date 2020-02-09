@@ -38,6 +38,7 @@ inline GLenum internalFormat(const TextureFormat& x) {
     case TextureFormat::RGB32F:     return GL_RGBA32F;
     case TextureFormat::RGBA32F:    return GL_RGBA32F;
   }
+  throw std::runtime_error("bad enum");
 }
 
 inline GLenum formatF(const TextureFormat& x) {
@@ -51,6 +52,7 @@ inline GLenum formatF(const TextureFormat& x) {
     case TextureFormat::RGB32F:     return GL_RGB;
     case TextureFormat::RGBA32F:    return GL_RGBA;
   }
+  throw std::runtime_error("bad enum");
 }
 
 inline GLenum type(const TextureFormat& x) {
@@ -64,6 +66,7 @@ inline GLenum type(const TextureFormat& x) {
     case TextureFormat::RGB32F:     return GL_FLOAT;
     case TextureFormat::RGBA32F:    return GL_FLOAT;
   }
+  throw std::runtime_error("bad enum");
 }
 
 inline GLenum native(const ShaderStageType& x) {
@@ -75,6 +78,7 @@ inline GLenum native(const ShaderStageType& x) {
     //case ShaderStageType::Compute:          return GL_COMPUTE_SHADER;
     case ShaderStageType::Fragment:         return GL_FRAGMENT_SHADER;
   }
+  throw std::runtime_error("bad enum");
 }
 
 inline GLenum native(const RenderBufferType& x) {
@@ -84,6 +88,7 @@ inline GLenum native(const RenderBufferType& x) {
     case RenderBufferType::Depth:           return GL_DEPTH_COMPONENT;
     case RenderBufferType::Float4:          return GL_RGBA32F;
   }
+  throw std::runtime_error("bad enum");
 }
 
 inline GLenum colorAttachNum(const unsigned int i) {
@@ -99,6 +104,7 @@ inline GLenum colorAttachNum(const unsigned int i) {
     case 7:     return GL_COLOR_ATTACHMENT7;
     default:          throw std::runtime_error("tried to use too many color attachments");
   }
+  throw std::runtime_error("bad enum");
 }
 
 // clang-format on

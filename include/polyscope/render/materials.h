@@ -3,6 +3,8 @@
 
 #include <array>
 #include <map>
+#include <memory>
+#include <vector>
 
 namespace polyscope {
 
