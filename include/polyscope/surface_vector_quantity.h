@@ -33,8 +33,6 @@ public:
   std::vector<glm::vec3> vectorRoots;
   std::vector<glm::vec3> vectors;
 
-  void writeToFile(std::string filename = "");
-
   // === Option accessors
 
   //  The vectors will be scaled such that the longest vector is this long
@@ -48,6 +46,10 @@ public:
   // The color of the vectors
   SurfaceVectorQuantity* setVectorColor(glm::vec3 color);
   glm::vec3 getVectorColor();
+	
+  // Material
+  SurfaceVectorQuantity* setMaterial(Material newMat);
+  Material getMaterial();
 
   // Enable the ribbon visualization
   SurfaceVectorQuantity* setRibbonEnabled(bool newVal);
@@ -58,6 +60,7 @@ protected:
   PersistentValue<ScaledValue<float>> vectorLengthMult;
   PersistentValue<ScaledValue<float>> vectorRadius;
   PersistentValue<glm::vec3> vectorColor;
+  PersistentValue<Material> material;
 
   // The map that takes values to [0,1] for drawing
   AffineRemapper<glm::vec3> mapper;

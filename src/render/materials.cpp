@@ -29,6 +29,7 @@ BasisMaterial loadBasisMaterial(Material m, const std::vector<std::vector<unsign
        &comp, STBI_rgb); if (image == nullptr) throw std::logic_error("Failed to load material image");
 
         newMaterial.textureBuffers[i] = engine->generateTextureBuffer(TextureFormat::RGB8, w, h, image);
+    newMaterial.textureBuffers[i]->setFilterMode(FilterMode::Linear);
         stbi_image_free(image);
     */
     int width, height, nrComponents;
@@ -41,6 +42,7 @@ BasisMaterial loadBasisMaterial(Material m, const std::vector<std::vector<unsign
 
     // Load the texture
     newMaterial.textureBuffers[i] = engine->generateTextureBuffer(TextureFormat::RGB16F, width, height, data);
+    newMaterial.textureBuffers[i]->setFilterMode(FilterMode::Linear);
     stbi_image_free(data);
   }
 
@@ -58,6 +60,8 @@ std::string name(Material m) {
     return "clay";
   case Material::Wax:
     return "wax";
+  case Material::Candy:
+    return "candy";
   }
   throw std::runtime_error("bad enum");
 }
@@ -66,13 +70,14 @@ std::map<Material, BasisMaterial> loadDefaultMaterials() {
   std::map<Material, BasisMaterial> d = {
       {Material::Clay, loadBasisMaterial(Material::Clay, bindata_mat_wax)},
       {Material::Wax, loadBasisMaterial(Material::Wax, bindata_mat_wax)},
+      {Material::Candy, loadBasisMaterial(Material::Candy, bindata_mat_wax)},
   };
   return d;
 }
 
 bool buildMaterialOptionsGui(Material& m) {
   if (ImGui::BeginMenu("Material")) {
-    for (Material o : {Material::Clay, Material::Wax}) {
+    for (Material o : {Material::Clay, Material::Wax, Material::Candy}) {
       bool selected = (o == m);
       if (ImGui::MenuItem(name(o).c_str(), NULL, selected)) {
         m = o;

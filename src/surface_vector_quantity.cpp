@@ -24,7 +24,8 @@ SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh
       vectorLengthMult(uniquePrefix() + name + "#vectorLengthMult",
                        vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
       vectorRadius(uniquePrefix() + name + "#vectorRadius", relativeValue(0.0025)),
-      vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()), definedOn(definedOn_),
+      vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()),
+      material(uniquePrefix() + "#material", Material::Wax), definedOn(definedOn_),
       ribbonEnabled(uniquePrefix() + "#ribbonEnabled", false) {}
 
 void SurfaceVectorQuantity::prepareVectorMapper() {
@@ -71,7 +72,7 @@ void SurfaceVectorQuantity::prepareProgram() {
   program->setAttribute("a_vector", mappedVectors);
   program->setAttribute("a_position", vectorRoots);
 
-  render::engine->setMaterial(*program, Material::Wax);
+  render::engine->setMaterial(*program, material.get());
 }
 
 void SurfaceVectorQuantity::buildCustomUI() {
@@ -87,7 +88,10 @@ void SurfaceVectorQuantity::buildCustomUI() {
     ImGui::OpenPopup("OptionsPopup");
   }
   if (ImGui::BeginPopup("OptionsPopup")) {
-    if (ImGui::MenuItem("Write to file")) writeToFile();
+    if (render::buildMaterialOptionsGui(material.get())) {
+      material.manuallyChanged();
+      setMaterial(material.get()); // trigger the other updates that happen on set()
+    }
     ImGui::EndPopup();
   }
 
@@ -114,33 +118,6 @@ void SurfaceVectorQuantity::buildCustomUI() {
 
 void SurfaceVectorQuantity::drawSubUI() {}
 
-void SurfaceVectorQuantity::writeToFile(std::string filename) {
-
-  if (filename == "") {
-    filename = promptForFilename();
-    if (filename == "") {
-      return;
-    }
-  }
-
-  if (options::verbosity > 0) {
-    cout << "Writing surface vector quantity " << name << " to file " << filename << endl;
-  }
-
-  std::ofstream outFile(filename);
-  outFile << "#Vectors written by polyscope from Surface Vector Quantity " << name << endl;
-  outFile << "#displayradius " << getVectorRadius() << endl;
-  outFile << "#displaylength " << getVectorLengthScale() << endl;
-
-  for (size_t i = 0; i < vectors.size(); i++) {
-    if (glm::length(vectors[i]) > 0) {
-      outFile << vectorRoots[i] << " " << vectors[i] << endl;
-    }
-  }
-
-  outFile.close();
-}
-
 SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorLengthScale(double newLength, bool isRelative) {
   vectorLengthMult = ScaledValue<double>(newLength, isRelative);
   requestRedraw();
@@ -159,6 +136,14 @@ SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorColor(glm::vec3 color) {
   return this;
 }
 glm::vec3 SurfaceVectorQuantity::getVectorColor() { return vectorColor.get(); }
+SurfaceVectorQuantity* SurfaceVectorQuantity::setMaterial(Material m) {
+  material = m;
+  if (program) render::engine->setMaterial(*program, material.get());
+  if (ribbonArtist && ribbonArtist->program) render::engine->setMaterial(*ribbonArtist->program, material.get());
+  requestRedraw();
+  return this;
+}
+Material SurfaceVectorQuantity::getMaterial() { return material.get(); }
 SurfaceVectorQuantity* SurfaceVectorQuantity::setRibbonEnabled(bool val) {
   ribbonEnabled = val;
   requestRedraw();

@@ -1326,7 +1326,9 @@ void GLShaderProgram::setTextureFromColormap(std::string name, const ValueColorM
     // glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, colormap.values.size(), 0, GL_RGB, GL_FLOAT, &(colorBuffer[0]));
     t.textureBufferOwned = std::dynamic_pointer_cast<GLTextureBuffer>(
         engine->generateTextureBuffer(TextureFormat::RGB32F, colormap.values.size(), &(colorBuffer[0])));
+    t.textureBufferOwned->setFilterMode(FilterMode::Linear);
     t.textureBuffer = t.textureBufferOwned.get();
+
 
     t.isSet = true;
     return;

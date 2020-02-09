@@ -9,7 +9,7 @@
 namespace polyscope {
 
 // Pull the enum to the outer namespace to keep typing burden down
-enum class Material { Clay = 0, Wax };
+enum class Material { Clay = 0, Wax, Candy };
 
 namespace render {
 

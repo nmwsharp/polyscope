@@ -29,6 +29,8 @@ public:
 
   glm::mat4 objectTransform = glm::mat4(1.0);
 
+  std::shared_ptr<render::ShaderProgram> program;
+
 private:
   // Data
   std::vector<std::vector<std::array<glm::vec3, 2>>> ribbons;
@@ -37,7 +39,6 @@ private:
   PersistentValue<bool> enabled;
   PersistentValue<ScaledValue<float>> ribbonWidth;
 
-  std::shared_ptr<render::ShaderProgram> program;
 
   void createProgram();
   void deleteProgram();
