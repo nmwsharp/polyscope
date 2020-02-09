@@ -242,6 +242,7 @@ public:
   void pushActiveRenderBuffer() override;
   void popActiveRenderBuffer() override;
   void setDepthMode(DepthMode newMode = DepthMode::Less) override;
+  void setBlendMode(BlendMode newMode = BlendMode::Over) override;
 
   // === Factory methods
 

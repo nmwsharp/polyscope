@@ -26,14 +26,39 @@ extern const ShaderStageSpecification GROUND_PLANE_VERT_SHADER;
 extern const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER;
 
 // == Surface mesh shaders
+
 extern const ShaderStageSpecification PLAIN_SURFACE_VERT_SHADER;
 extern const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER;
+extern const ShaderStageSpecification SURFACE_WIREFRAME_VERT_SHADER;
+extern const ShaderStageSpecification SURFACE_WIREFRAME_FRAG_SHADER;
+extern const ShaderStageSpecification PICK_SURFACE_VERT_SHADER;
+extern const ShaderStageSpecification PICK_SURFACE_FRAG_SHADER;
+
 extern const ShaderStageSpecification VERTCOLOR3_SURFACE_VERT_SHADER;
 extern const ShaderStageSpecification VERTCOLOR3_SURFACE_FRAG_SHADER;
+
 extern const ShaderStageSpecification VERTCOLOR_SURFACE_VERT_SHADER;
 extern const ShaderStageSpecification VERTCOLOR_SURFACE_FRAG_SHADER;
 extern const ShaderStageSpecification HALFEDGECOLOR_SURFACE_VERT_SHADER;
 extern const ShaderStageSpecification HALFEDGECOLOR_SURFACE_FRAG_SHADER;
+
+extern const ShaderStageSpecification VERT_DIST_SURFACE_VERT_SHADER;
+extern const ShaderStageSpecification VERT_DIST_SURFACE_FRAG_SHADER;
+extern const ShaderStageSpecification PARAM_SURFACE_VERT_SHADER;
+extern const ShaderStageSpecification PARAM_CHECKER_SURFACE_FRAG_SHADER;
+extern const ShaderStageSpecification PARAM_GRID_SURFACE_FRAG_SHADER;
+extern const ShaderStageSpecification PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER;
+extern const ShaderStageSpecification PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER;
+
+// == Vector shaders
+extern const ShaderStageSpecification PASSTHRU_VECTOR_VERT_SHADER;
+extern const ShaderStageSpecification VECTOR_GEOM_SHADER;
+extern const ShaderStageSpecification VECTOR_FRAG_SHADER;
+
+// == Ribbon shaders
+extern const ShaderStageSpecification RIBBON_VERT_SHADER;
+extern const ShaderStageSpecification RIBBON_GEOM_SHADER;
+extern const ShaderStageSpecification RIBBON_FRAG_SHADER;
 
 
 } // namespace render

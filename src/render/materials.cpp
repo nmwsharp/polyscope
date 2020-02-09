@@ -8,6 +8,7 @@
 
 namespace { // helpers
 
+using namespace polyscope;
 using namespace polyscope::render;
 
 BasisMaterial loadBasisMaterial(const std::vector<std::vector<unsigned char>>& data) {

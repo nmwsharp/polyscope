@@ -146,7 +146,7 @@ SurfaceVertexScalarQuantity::SurfaceVertexScalarQuantity(std::string name, std::
 void SurfaceVertexScalarQuantity::createProgram() {
   // Create the program to draw this quantity
   program = render::engine->generateShaderProgram(
-      {render::VERTCOLOR_SURFACE_VERT_SHADER, render::VERTCOLOR_SURFACE_FRAG_SHADER}, render::DrawMode::Triangles);
+      {render::VERTCOLOR_SURFACE_VERT_SHADER, render::VERTCOLOR_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -232,7 +232,7 @@ SurfaceFaceScalarQuantity::SurfaceFaceScalarQuantity(std::string name, std::vect
 void SurfaceFaceScalarQuantity::createProgram() {
   // Create the program to draw this quantity
   program = render::engine->generateShaderProgram(
-      {render::VERTCOLOR_SURFACE_VERT_SHADER, render::VERTCOLOR_SURFACE_FRAG_SHADER}, render::DrawMode::Triangles);
+      {render::VERTCOLOR_SURFACE_VERT_SHADER, render::VERTCOLOR_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -285,8 +285,7 @@ SurfaceEdgeScalarQuantity::SurfaceEdgeScalarQuantity(std::string name, std::vect
 void SurfaceEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
   program = render::engine->generateShaderProgram(
-      {render::HALFEDGECOLOR_SURFACE_VERT_SHADER, render::HALFEDGECOLOR_SURFACE_FRAG_SHADER},
-      render::DrawMode::Triangles);
+      {render::HALFEDGECOLOR_SURFACE_VERT_SHADER, render::HALFEDGECOLOR_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -372,8 +371,7 @@ SurfaceHalfedgeScalarQuantity::SurfaceHalfedgeScalarQuantity(std::string name, s
 void SurfaceHalfedgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
   program = render::engine->generateShaderProgram(
-      {render::HALFEDGECOLOR_SURFACE_VERT_SHADER, render::HALFEDGECOLOR_SURFACE_FRAG_SHADER},
-      render::DrawMode::Triangles);
+      {render::HALFEDGECOLOR_SURFACE_VERT_SHADER, render::HALFEDGECOLOR_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);

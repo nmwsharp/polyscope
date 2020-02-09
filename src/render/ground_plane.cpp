@@ -58,8 +58,8 @@ void GroundPlane::populateGroundPlaneGeometry() {
 void GroundPlane::prepareGroundPlane() {
 
   // The program that draws the ground plane
-  groundPlaneProgram = render::engine->generateShaderProgram({GROUND_PLANE_VERT_SHADER, GROUND_PLANE_FRAG_SHADER},
-                                                             render::DrawMode::Triangles);
+  groundPlaneProgram =
+      render::engine->generateShaderProgram({GROUND_PLANE_VERT_SHADER, GROUND_PLANE_FRAG_SHADER}, DrawMode::Triangles);
 
   populateGroundPlaneGeometry();
 

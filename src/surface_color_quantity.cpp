@@ -37,7 +37,7 @@ SurfaceVertexColorQuantity::SurfaceVertexColorQuantity(std::string name, std::ve
 void SurfaceVertexColorQuantity::createProgram() {
   // Create the program to draw this quantity
   program = render::engine->generateShaderProgram(
-      {render::VERTCOLOR3_SURFACE_VERT_SHADER, render::VERTCOLOR3_SURFACE_FRAG_SHADER}, render::DrawMode::Triangles);
+      {render::VERTCOLOR3_SURFACE_VERT_SHADER, render::VERTCOLOR3_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -97,7 +97,7 @@ SurfaceFaceColorQuantity::SurfaceFaceColorQuantity(std::string name, std::vector
 void SurfaceFaceColorQuantity::createProgram() {
   // Create the program to draw this quantity
   program = render::engine->generateShaderProgram(
-      {render::VERTCOLOR3_SURFACE_VERT_SHADER, render::VERTCOLOR3_SURFACE_FRAG_SHADER}, render::DrawMode::Triangles);
+      {render::VERTCOLOR3_SURFACE_VERT_SHADER, render::VERTCOLOR3_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);

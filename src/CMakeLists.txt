@@ -19,6 +19,8 @@ SET(SRCS
   render/opengl/shaders/ground_plane_shaders.cpp  
   render/opengl/shaders/histogram_shaders.cpp  
   render/opengl/shaders/surface_mesh_shaders.cpp  
+  render/opengl/shaders/vector_shaders.cpp  
+  render/opengl/shaders/ribbon_shaders.cpp  
   
   render/bindata/concrete_seamless.cpp
   render/bindata/bindata_mat_wax.cpp
@@ -45,8 +47,8 @@ SET(SRCS
   binary_font_cousine_regular.cpp
 
   # Rendering utilities
-  #trace_vector_field.cpp
-  #ribbon_artist.cpp
+	trace_vector_field.cpp
+	ribbon_artist.cpp
 
   ## Structures
 
@@ -61,11 +63,11 @@ SET(SRCS
   surface_mesh_io.cpp
   surface_scalar_quantity.cpp
   surface_color_quantity.cpp
-  #surface_distance_quantity.cpp
-  #surface_vector_quantity.cpp
+	surface_distance_quantity.cpp
+	surface_parameterization_quantity.cpp
+	surface_vector_quantity.cpp
   #surface_count_quantity.cpp
   #surface_graph_quantity.cpp
-  #surface_parameterization_quantity.cpp
   #surface_subset_quantity.cpp
   #surface_selection_quantity.cpp
   #surface_input_curve_quantity.cpp

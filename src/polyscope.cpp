@@ -341,51 +341,6 @@ void initializeImGUIContext() {
   globalFontAtlas = io.Fonts;
 }
 
-namespace {
-
-// Keep track of whether or not the last click was a double click.
-// ImGUI normally provides this for us, but we want to know about the RELEASE of a double click, while im ImGUI the flag
-// is only set for the down press. Use this variable to pass it forward.
-bool lastClickWasDouble = false;
-} // namespace
-
-namespace pick {
-
-// TODO This lives here rather than in pick.cpp because it has to touch the rendering data which is not available there,
-// but.... this is awkward. Move the implementation of this function if/when the rendering API gets cleaned up.
-std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
-
-  return {nullptr, 0};
-  /* SIMPLE
-
-  // Be sure not to pick outside of buffer
-  if (xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
-  }
-
-  pickFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
-  pickFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  if (!pickFramebuffer->bindForRendering()) return {nullptr, 0};
-  pickFramebuffer->clear();
-
-  // Render pick buffer
-  for (auto cat : state::structures) {
-    for (auto x : cat.second) {
-      x.second->drawPick();
-    }
-  }
-  gl::checkGLError(true);
-
-  // Read from the pick buffer
-  std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, view::bufferHeight - yPos);
-  size_t globalInd = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
-
-
-  return pick::globalIndexToLocal(globalInd);
-  */
-}
-
-} // namespace pick
-
 void drawStructures() {
 
   // Draw all off the structures registered with polyscope
@@ -448,10 +403,6 @@ void processInputEvents() {
         }
       }
     }
-  }
-
-  if (ImGui::IsMouseClicked(0)) {
-    lastClickWasDouble = ImGui::IsMouseDoubleClicked(0);
   }
 
   // === Mouse inputs
@@ -540,9 +491,10 @@ void renderScene() {
 
   // If a view has never been set, this will set it to the home view
   view::ensureViewValid();
-  
+
   render::engine->renderBackground();
-  render::engine->setDepthMode(render::DepthMode::Less);
+  render::engine->setDepthMode();
+  render::engine->setBlendMode();
 
   // Draw the ground plane
   if (options::groundPlaneEnabled) {
@@ -550,10 +502,9 @@ void renderScene() {
   }
 
   drawStructures();
-
 }
 
-void renderSceneToScreen() { 
+void renderSceneToScreen() {
   render::engine->bindDisplay();
   render::engine->lightSceneBuffer();
 }
@@ -843,8 +794,6 @@ void shutdown(int exitCode) {
   if (options::usePrefsFile) {
     writePrefsFile();
   }
-
-  // gl::unloadMaterialTextures(); SIMPLE
 
   // ImGui shutdown things
   ImGui_ImplOpenGL3_Shutdown();

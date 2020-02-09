@@ -2,10 +2,9 @@
 #include "polyscope/surface_vector_quantity.h"
 
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/vector_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/render/shaders.h"
 #include "polyscope/trace_vector_field.h"
 
 #include "imgui.h"
@@ -60,8 +59,8 @@ void SurfaceVectorQuantity::draw() {
 
 void SurfaceVectorQuantity::prepareProgram() {
 
-  program.reset(new gl::GLProgram(&gl::PASSTHRU_VECTOR_VERT_SHADER, &gl::VECTOR_GEOM_SHADER,
-                                  &gl::SHINY_VECTOR_FRAG_SHADER, gl::DrawMode::Points));
+  program = render::engine->generateShaderProgram(
+      {render::PASSTHRU_VECTOR_VERT_SHADER, render::VECTOR_GEOM_SHADER, render::VECTOR_FRAG_SHADER}, DrawMode::Points);
 
   // Fill buffers
   std::vector<glm::vec3> mappedVectors;
@@ -72,7 +71,7 @@ void SurfaceVectorQuantity::prepareProgram() {
   program->setAttribute("a_vector", mappedVectors);
   program->setAttribute("a_position", vectorRoots);
 
-  setMaterialForProgram(*program, "wax");
+  render::engine->setMaterial(*program, Material::Wax);
 }
 
 void SurfaceVectorQuantity::buildCustomUI() {

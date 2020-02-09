@@ -19,7 +19,7 @@ GLEngine* glEngine = nullptr; // alias for engine above
 void initializeRenderEngine() {
   glEngine = new GLEngine();
   engine = glEngine;
-	engine->allocateGlobalBuffersAndPrograms();
+  engine->allocateGlobalBuffersAndPrograms();
 }
 ProgramHandle commonShaderHandle = 777;
 
@@ -1569,6 +1569,23 @@ void GLEngine::setDepthMode(DepthMode newMode) {
     glDepthMask(GL_FALSE);
     break;
   case DepthMode::Disable:
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE); // doesn't actually matter
+    break;
+  }
+}
+
+void GLEngine::setBlendMode(BlendMode newMode) {
+  switch (newMode) {
+  case BlendMode::Over:
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    break;
+  case BlendMode::OverNoWrite:
+    glEnable(GL_BLEND);
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
+    break;
+  case BlendMode::Disable:
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE); // doesn't actually matter
     break;

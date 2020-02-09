@@ -334,24 +334,23 @@ void SurfaceMesh::draw() {
     if (wireframeProgram == nullptr) {
       prepareWireframe();
     }
-    /* SIMPLE
 
     // Set uniforms
     setTransformUniforms(*wireframeProgram);
     wireframeProgram->setUniform("u_edgeWidth", getEdgeWidth());
     wireframeProgram->setUniform("u_edgeColor", getEdgeColor());
 
-    glEnable(GL_BLEND);
-    glDepthFunc(GL_LEQUAL); // Make sure wireframe wins depth tests
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO,
-                        GL_ONE); // slightly weird blend function: ensures alpha is set by whatever was drawn before,
-                                 // rather than the wireframe
+    // Make sure wireframe wins depth tests
+    render::engine->setDepthMode(DepthMode::LEqualReadOnly);
+
+    // slightly weird blend function: ensures alpha is set by whatever was drawn before, rather than the wireframe
+    render::engine->setBlendMode(BlendMode::OverNoWrite);
 
     wireframeProgram->draw();
 
-    glDepthFunc(GL_LESS); // return to normal
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    */
+    // Return to default modes
+    render::engine->setBlendMode();
+    render::engine->setDepthMode();
   }
 }
 
@@ -372,7 +371,7 @@ void SurfaceMesh::drawPick() {
 
 void SurfaceMesh::prepare() {
   program = render::engine->generateShaderProgram(
-      {render::PLAIN_SURFACE_VERT_SHADER, render::PLAIN_SURFACE_FRAG_SHADER}, render::DrawMode::Triangles);
+      {render::PLAIN_SURFACE_VERT_SHADER, render::PLAIN_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
 
   // Populate draw buffers
   fillGeometryBuffers(*program);
@@ -380,23 +379,19 @@ void SurfaceMesh::prepare() {
 }
 
 void SurfaceMesh::prepareWireframe() {
-  /* SIMPLE
   wireframeProgram = render::engine->generateShaderProgram(
-      {render::SURFACE_WIREFRAME_VERT_SHADER, render::SURFACE_WIREFRAME_FRAG_SHADER}, render::DrawMode::Triangles);
+      {render::SURFACE_WIREFRAME_VERT_SHADER, render::SURFACE_WIREFRAME_FRAG_SHADER}, DrawMode::Triangles);
 
   // Populate draw buffers
   fillGeometryBuffersWireframe(*wireframeProgram);
-
-  // setMaterialForProgram(*wireframeProgram, "wax");
-  */
+  render::engine->setMaterial(*wireframeProgram, Material::Wax);
 }
 
 void SurfaceMesh::preparePick() {
-  /* SIMPLE
 
   // Create a new program
   pickProgram = render::engine->generateShaderProgram(
-      {render::PICK_SURFACE_VERT_SHADER, render::PICK_SURFACE_FRAG_SHADER}, render::DrawMode::Triangles);
+      {render::PICK_SURFACE_VERT_SHADER, render::PICK_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
 
   // Get element indices
   size_t totalPickElements = nVertices() + nFaces() + nEdges() + nHalfedges();
@@ -494,7 +489,6 @@ void SurfaceMesh::preparePick() {
   pickProgram->setAttribute<glm::vec3, 3>("a_edgeColors", edgeColors);
   pickProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", halfedgeColors);
   pickProgram->setAttribute("a_faceColor", faceColor);
-  */
 }
 
 void SurfaceMesh::fillGeometryBuffers(render::ShaderProgram& p) {
@@ -926,12 +920,6 @@ void SurfaceMesh::buildCustomUI() {
     if (ImGui::SliderFloat("Edge Width", &edgeWidth.get(), 0.0, 1., "%.5f", 2.)) setEdgeWidth(getEdgeWidth());
     ImGui::PopItemWidth();
   }
-
-  { // TODO pbr
-    ImGui::SliderFloat("roughness", &pbrRoughness, 0.0, 1.0, "%.3f", 1.);
-    ImGui::SliderFloat("metallic", &pbrMetallic, 0.0, 1.0, "%.3f", 1.);
-    ImGui::SliderFloat("F0", &pbrF0, 0.0, 1.0, "%.3f", 3.);
-  }
 }
 
 void SurfaceMesh::buildCustomOptionsUI() {}
@@ -1174,31 +1162,6 @@ SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantityImpl(std::string name
   return q;
 }
 
-/* SIMPLE
-
-SurfaceVertexCountQuantity* SurfaceMesh::addVertexCountQuantityImpl(std::string name,
-                                                                    const std::vector<std::pair<size_t, int>>& values) {
-
-  SurfaceVertexCountQuantity* q = new SurfaceVertexCountQuantity(name, values, *this);
-  addQuantity(q);
-  return q;
-}
-
-SurfaceVertexIsolatedScalarQuantity*
-SurfaceMesh::addVertexIsolatedScalarQuantityImpl(std::string name,
-                                                 const std::vector<std::pair<size_t, double>>& values) {
-  SurfaceVertexIsolatedScalarQuantity* q = new SurfaceVertexIsolatedScalarQuantity(name, values, *this);
-  addQuantity(q);
-  return q;
-}
-
-SurfaceFaceCountQuantity* SurfaceMesh::addFaceCountQuantityImpl(std::string name,
-                                                                const std::vector<std::pair<size_t, int>>& values) {
-  SurfaceFaceCountQuantity* q = new SurfaceFaceCountQuantity(name, values, *this);
-  addQuantity(q);
-  return q;
-}
-
 SurfaceDistanceQuantity* SurfaceMesh::addVertexDistanceQuantityImpl(std::string name, const std::vector<double>& data) {
   SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, applyPermutation(data, vertexPerm), *this, false);
   addQuantity(q);
@@ -1208,13 +1171,6 @@ SurfaceDistanceQuantity* SurfaceMesh::addVertexDistanceQuantityImpl(std::string 
 SurfaceDistanceQuantity* SurfaceMesh::addVertexSignedDistanceQuantityImpl(std::string name,
                                                                           const std::vector<double>& data) {
   SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, applyPermutation(data, vertexPerm), *this, true);
-  addQuantity(q);
-  return q;
-}
-
-SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantityImpl(std::string name, const std::vector<glm::vec3>& nodes,
-                                                               const std::vector<std::array<size_t, 2>>& edges) {
-  SurfaceGraphQuantity* q = new SurfaceGraphQuantity(name, nodes, edges, *this);
   addQuantity(q);
   return q;
 }
@@ -1246,6 +1202,40 @@ SurfaceMesh::addLocalParameterizationQuantityImpl(std::string name, const std::v
       name, applyPermutation(coords, vertexPerm), type, ParamVizStyle::LOCAL_CHECK, *this);
   addQuantity(q);
 
+  return q;
+}
+
+
+/* SIMPLE
+
+SurfaceVertexCountQuantity* SurfaceMesh::addVertexCountQuantityImpl(std::string name,
+                                                                    const std::vector<std::pair<size_t, int>>& values) {
+
+  SurfaceVertexCountQuantity* q = new SurfaceVertexCountQuantity(name, values, *this);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceVertexIsolatedScalarQuantity*
+SurfaceMesh::addVertexIsolatedScalarQuantityImpl(std::string name,
+                                                 const std::vector<std::pair<size_t, double>>& values) {
+  SurfaceVertexIsolatedScalarQuantity* q = new SurfaceVertexIsolatedScalarQuantity(name, values, *this);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceFaceCountQuantity* SurfaceMesh::addFaceCountQuantityImpl(std::string name,
+                                                                const std::vector<std::pair<size_t, int>>& values) {
+  SurfaceFaceCountQuantity* q = new SurfaceFaceCountQuantity(name, values, *this);
+  addQuantity(q);
+  return q;
+}
+
+
+SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantityImpl(std::string name, const std::vector<glm::vec3>& nodes,
+                                                               const std::vector<std::array<size_t, 2>>& edges) {
+  SurfaceGraphQuantity* q = new SurfaceGraphQuantity(name, nodes, edges, *this);
+  addQuantity(q);
   return q;
 }
 
@@ -1282,7 +1272,6 @@ SurfaceMesh::addHalfedgeScalarQuantityImpl(std::string name, const std::vector<d
   return q;
 }
 
-/*
 
 SurfaceVertexVectorQuantity* SurfaceMesh::addVertexVectorQuantityImpl(std::string name,
                                                                       const std::vector<glm::vec3>& vectors,
@@ -1333,7 +1322,6 @@ SurfaceMesh::addOneFormIntrinsicVectorQuantityImpl(std::string name, const std::
   return q;
 }
 
-*/
 
 void SurfaceMesh::setVertexTangentBasisXImpl(const std::vector<glm::vec3>& vectors) {
 

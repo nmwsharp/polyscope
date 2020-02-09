@@ -12,9 +12,9 @@
 #include "polyscope/view.h"
 
 namespace polyscope {
-namespace render {
 
 // == A few enums that control behavior
+// public enums are in the outer namespace to keep the typing burden down
 
 // The drawing modes available
 enum class DrawMode {
@@ -34,10 +34,10 @@ enum class DrawMode {
 enum class FilterMode { Nearest = 0, Linear };
 enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F };
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
-enum class DataType { Vector2Float, Vector3Float, Vector4Float, Matrix44Float, Float, Int, UInt, Index };
 enum class DepthMode { Less, LEqual, LEqualReadOnly, Disable };
+enum class BlendMode { Over, OverNoWrite, Disable }; // TODO what to call these...
 
-// All of these are templated on the backend B. The backend should specialize the low-level functions
+namespace render {
 
 class TextureBuffer {
 public:
@@ -136,6 +136,7 @@ protected:
 
 // == Shaders
 
+enum class DataType { Vector2Float, Vector3Float, Vector4Float, Matrix44Float, Float, Int, UInt, Index };
 struct ShaderSpecUniform {
   const std::string name;
   const DataType type;
@@ -274,9 +275,10 @@ public:
   virtual void pushActiveRenderBuffer() = 0;
   virtual void popActiveRenderBuffer() = 0;
   virtual void setDepthMode(DepthMode newMode = DepthMode::Less) = 0;
+  virtual void setBlendMode(BlendMode newMode = BlendMode::Over) = 0;
 
   // Helpers
-	void allocateGlobalBuffersAndPrograms(); // called once during startup
+  void allocateGlobalBuffersAndPrograms(); // called once during startup
 
   // Small options
   void setBackgroundColor(glm::vec3 newColor);

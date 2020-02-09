@@ -121,9 +121,8 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cY_sym", valY, polyscope::DataType::SYMMETRIC);
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cNorm", valMag, polyscope::DataType::MAGNITUDE);
 
-  // SIMPLE
-  //polyscope::getSurfaceMesh(niceName)->addVertexDistanceQuantity("cY_dist", valY);
-  //polyscope::getSurfaceMesh(niceName)->addVertexSignedDistanceQuantity("cY_signeddist", valY);
+	polyscope::getSurfaceMesh(niceName)->addVertexDistanceQuantity("cY_dist", valY);
+	polyscope::getSurfaceMesh(niceName)->addVertexSignedDistanceQuantity("cY_signeddist", valY);
 
 
   // Add some face scalars
@@ -195,7 +194,6 @@ void processFileOBJ(string filename) {
   // polyscope::warning("Some problems come in groups", "detail = " + std::to_string(i));
   //}
 
-  /*
   // === Add some vectors
 
   // Face & vertex normals
@@ -220,7 +218,7 @@ void processFileOBJ(string filename) {
       vNormals[face[iV]] += N;
     }
   }
-  polyscope::getSurfaceMesh(niceName)->addFaceVectorQuantity("face normals", fNormals);
+	polyscope::getSurfaceMesh(niceName)->addFaceVectorQuantity("face normals", fNormals);
 
 
   std::vector<glm::vec3> vNormalsRand(nVertices, glm::vec3{0., 0., 0.});
@@ -230,6 +228,7 @@ void processFileOBJ(string filename) {
     vNormalsRand[iV] = vNormals[iV] * (float)polyscope::randomUnit() * 5000.f;
     toZero[iV] = -vertexPositionsGLM[iV];
   }
+  
   polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("area vertex normals", vNormals);
   polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("rand length normals", vNormalsRand);
   polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("toZero", toZero, polyscope::VectorType::AMBIENT);
@@ -311,6 +310,7 @@ void processFileOBJ(string filename) {
   }
 
 
+	/*
   // Add count quantities
   std::vector<std::pair<size_t, int>> vCount;
   std::vector<std::pair<size_t, double>> vVal;
@@ -324,7 +324,7 @@ void processFileOBJ(string filename) {
   }
   polyscope::getSurfaceMesh(niceName)->addVertexCountQuantity("sample count", vCount);
   polyscope::getSurfaceMesh(niceName)->addVertexIsolatedScalarQuantity("sample isolated", vVal);
-
+	*/
 
   { // Parameterizations
 
@@ -371,7 +371,7 @@ void processFileOBJ(string filename) {
 
     polyscope::getSurfaceMesh(niceName)->addLocalParameterizationQuantity("param vert local test", vertParamLocal);
   }
-
+	/*
 
   { // Add a surface graph quantity
 

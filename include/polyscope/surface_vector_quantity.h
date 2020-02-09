@@ -5,6 +5,7 @@
 #include "polyscope/ribbon_artist.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_enums.h"
+#include "polyscope/render/engine.h"
 
 namespace polyscope {
 
@@ -69,7 +70,7 @@ protected:
 
   // GL things
   void prepareProgram();
-  std::unique_ptr<gl::GLProgram> program;
+  std::shared_ptr<render::ShaderProgram> program;
 
   // Set up the mapper for vectors
   void prepareVectorMapper();

@@ -232,12 +232,12 @@ void Histogram::fillBuffers() {
 void Histogram::prepare() {
 
   framebuffer = render::engine->generateFrameBuffer();
-  texturebuffer = render::engine->generateTextureBuffer(render::TextureFormat::RGBA8, texDim, texDim);
+  texturebuffer = render::engine->generateTextureBuffer(TextureFormat::RGBA8, texDim, texDim);
   framebuffer->addColorBuffer(texturebuffer);
 
   // Create the program
   program = render::engine->generateShaderProgram({render::HISTOGRAM_VERT_SHADER, render::HISTOGRAM_FRAG_SHADER},
-                                                  render::DrawMode::Triangles);
+                                                  DrawMode::Triangles);
 
   prepared = true;
 }

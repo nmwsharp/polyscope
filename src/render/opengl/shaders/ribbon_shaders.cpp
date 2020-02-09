@@ -1,24 +1,27 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
-#pragma once
 
-#include "polyscope/gl/shaders.h"
+#include "polyscope/render/opengl/gl_engine.h"
+#include "polyscope/render/shaders.h"
 
 namespace polyscope {
-namespace gl {
+namespace render {
 
 // clang-format off
 
-static const VertShader RIBBON_VERT_SHADER = {
-    // uniforms
-    {
-    }, 
+const ShaderStageSpecification RIBBON_VERT_SHADER = {
+
+		ShaderStageType::Vertex,
+
+    { }, // uniforms
 
     // attributes
     {
-        {"a_position", GLData::Vector3Float},
-        {"a_color", GLData::Vector3Float},
-        {"a_normal", GLData::Vector3Float},
+        {"a_position", DataType::Vector3Float},
+        {"a_color", DataType::Vector3Float},
+        {"a_normal", DataType::Vector3Float},
     },
+		
+    {}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -37,19 +40,23 @@ static const VertShader RIBBON_VERT_SHADER = {
 };
 
 
-static const GeomShader RIBBON_GEOM_SHADER = {
+const ShaderStageSpecification RIBBON_GEOM_SHADER = {
+		
+    ShaderStageType::Geometry,
     
     // uniforms
     {
-        {"u_modelView", GLData::Matrix44Float},
-        {"u_projMatrix", GLData::Matrix44Float},
-        {"u_ribbonWidth", GLData::Float},
-        {"u_depthOffset", GLData::Float},
+        {"u_modelView", DataType::Matrix44Float},
+        {"u_projMatrix", DataType::Matrix44Float},
+        {"u_ribbonWidth", DataType::Float},
+        {"u_depthOffset", DataType::Float},
     }, 
 
     // attributes
     {
     },
+		
+    {}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -140,42 +147,37 @@ static const GeomShader RIBBON_GEOM_SHADER = {
 
 
 
-static const FragShader RIBBON_FRAG_SHADER = {
+const ShaderStageSpecification RIBBON_FRAG_SHADER = {
+		
+    ShaderStageType::Fragment,
     
-    // uniforms
-    {
-    }, 
+    { }, // uniforms
 
-    // attributes
-    {
-    },
+    { }, // attributes
     
     // textures 
     {
         {"t_mat_r", 2},
         {"t_mat_g", 2},
         {"t_mat_b", 2},
+        {"t_mat_k", 2},
     },
-    
-    // output location
-    "outputF",
  
     // source
-    POLYSCOPE_GLSL(150,
+    POLYSCOPE_GLSL(330 core,
         uniform sampler2D t_mat_r;
         uniform sampler2D t_mat_g;
         uniform sampler2D t_mat_b;
+        uniform sampler2D t_mat_k;
         in vec3 colorToFrag;
         in vec3 cameraNormalToFrag;
         in float intensityToFrag;
-        out vec4 outputF;
+        layout(location = 0) out vec4 outputF;
 
-        // Forward declarations of methods from <shaders/common.h>
-        vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
+        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 
         void main()
         {
-           outputF = lightSurfaceMat(cameraNormalToFrag, colorToFrag, t_mat_r, t_mat_g, t_mat_b);
 
            // Compute a fade factor to set the transparency
            // Basically amounts to antialiasing in screen space when lines are relatively large on screen
@@ -184,7 +186,7 @@ static const FragShader RIBBON_FRAG_SHADER = {
            float thresh = min(dF * screenFadeLen, 0.2);
            float fadeFactor = smoothstep(0, thresh, intensityToFrag);
 
-           outputF.a = fadeFactor;
+           outputF = vec4(lightSurfaceMat(cameraNormalToFrag, colorToFrag, t_mat_r, t_mat_g, t_mat_b, t_mat_k), fadeFactor);
         }
     )
 };

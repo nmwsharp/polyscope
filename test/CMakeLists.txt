@@ -31,7 +31,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STR
   endif()
   
   SET(CMAKE_CXX_FLAGS "${BASE_CXX_FLAGS} ${DISABLED_WARNINGS}")
-  SET(CMAKE_CXX_FLAGS_DEBUG          "-g3")
+  SET(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} -g3")
   SET(CMAKE_CXX_FLAGS_RELEASE        "-O3 -march=native -DNDEBUG")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -91,6 +91,7 @@ set_property(TARGET gtest PROPERTY CXX_STANDARD 11)
 set(TEST_SRCS 
   src/main_test.cpp
   src/array_adaptors_test.cpp
+  src/basics_test.cpp
 )
 
 add_executable(polyscope-test "${TEST_SRCS}")
