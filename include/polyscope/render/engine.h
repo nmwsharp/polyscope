@@ -332,7 +332,7 @@ public:
 
   // TODO make these persistent?
   float exposure = 1.0;
-  float whiteLevel = 0.75;
+  float whiteLevel = 0.7;
   float gamma = 2.2;
 
 protected:
