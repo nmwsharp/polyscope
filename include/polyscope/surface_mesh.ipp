@@ -255,7 +255,6 @@ SurfaceVertexParameterizationQuantity* SurfaceMesh::addLocalParameterizationQuan
   return addLocalParameterizationQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(coords), type);
 }
 
-/* SIMPLE
 
 inline SurfaceVertexCountQuantity*
 SurfaceMesh::addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values) {
@@ -293,6 +292,7 @@ inline SurfaceFaceCountQuantity* SurfaceMesh::addFaceCountQuantity(std::string n
 }
 
 
+/* SIMPLE
 
 template <class P, class E>
 SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantity(std::string name, const P& nodes, const E& edges) {

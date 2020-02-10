@@ -178,23 +178,23 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addEdgeScalarQuantity("edge length", eLen);
   polyscope::getSurfaceMesh(niceName)->addHalfedgeScalarQuantity("halfedge length", heLen);
 
-	
+
   // Test error
-	/*
-  polyscope::error("Resistance is futile.");
-  polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we "
-                   "share this crisis in a way which looks right while properly wrapping text in some form or other?");
-  polyscope::terminatingError("and that was all");
+  /*
+polyscope::error("Resistance is futile.");
+polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we "
+             "share this crisis in a way which looks right while properly wrapping text in some form or other?");
+polyscope::terminatingError("and that was all");
 
-  // Test warning
-  polyscope::warning("Something went slightly wrong", "it was bad");
+// Test warning
+polyscope::warning("Something went slightly wrong", "it was bad");
 
-  polyscope::warning("Something else went slightly wrong", "it was also bad");
-  polyscope::warning("Something went slightly wrong", "it was still bad");
-  for (int i = 0; i < 5000; i++) {
-    polyscope::warning("Some problems come in groups", "detail = " + std::to_string(i));
-  }
-	*/
+polyscope::warning("Something else went slightly wrong", "it was also bad");
+polyscope::warning("Something went slightly wrong", "it was still bad");
+for (int i = 0; i < 5000; i++) {
+polyscope::warning("Some problems come in groups", "detail = " + std::to_string(i));
+}
+  */
 
   // === Add some vectors
 
@@ -311,21 +311,19 @@ void processFileOBJ(string filename) {
   }
 
 
-  /*
-// Add count quantities
-std::vector<std::pair<size_t, int>> vCount;
-std::vector<std::pair<size_t, double>> vVal;
-for (size_t iV = 0; iV < nVertices; iV++) {
-if (polyscope::randomUnit() > 0.8) {
-vCount.push_back(std::make_pair(iV, 2));
-}
-if (polyscope::randomUnit() > 0.8) {
-vVal.push_back(std::make_pair(iV, polyscope::randomUnit()));
-}
-}
-polyscope::getSurfaceMesh(niceName)->addVertexCountQuantity("sample count", vCount);
-polyscope::getSurfaceMesh(niceName)->addVertexIsolatedScalarQuantity("sample isolated", vVal);
-  */
+  // Add count quantities
+  std::vector<std::pair<size_t, int>> vCount;
+  std::vector<std::pair<size_t, double>> vVal;
+  for (size_t iV = 0; iV < nVertices; iV++) {
+    if (polyscope::randomUnit() > 0.8) {
+      vCount.push_back(std::make_pair(iV, 2));
+    }
+    if (polyscope::randomUnit() > 0.8) {
+      vVal.push_back(std::make_pair(iV, polyscope::randomUnit()));
+    }
+  }
+  polyscope::getSurfaceMesh(niceName)->addVertexCountQuantity("sample count", vCount);
+  polyscope::getSurfaceMesh(niceName)->addVertexIsolatedScalarQuantity("sample isolated", vVal);
 
   { // Parameterizations
     std::vector<std::array<double, 2>> cornerParam;

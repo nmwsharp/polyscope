@@ -2,10 +2,9 @@
 #include "polyscope/surface_count_quantity.h"
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -35,8 +34,10 @@ void SurfaceCountQuantity::initializeLimits() {
 
 void SurfaceCountQuantity::createProgram() {
 
-  program.reset(new gl::GLProgram(&gl::SPHERE_VALUE_VERT_SHADER, &gl::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
-                                  &gl::SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+  program = render::engine->generateShaderProgram({render::SPHERE_VALUE_VERT_SHADER,
+                                                   render::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
+                                                   render::SPHERE_VALUE_BILLBOARD_FRAG_SHADER},
+                                                  DrawMode::Points);
 
 
   // Fill buffers
@@ -52,11 +53,13 @@ void SurfaceCountQuantity::createProgram() {
   program->setAttribute("a_position", pos);
   program->setAttribute("a_value", value);
 
-  program->setTextureFromColormap("t_colormap", gl::getColorMap(cMap));
-  setMaterialForProgram(*program, "wax");
+  program->setTextureFromColormap("t_colormap", render::getColorMap(cMap));
+  render::engine->setMaterial(*program, parent.getMaterial());
 }
 
-void SurfaceCountQuantity::setUniforms(gl::GLProgram& p) {
+void SurfaceCountQuantity::geometryChanged() { program.reset(); }
+
+void SurfaceCountQuantity::setUniforms(render::ShaderProgram& p) {
   glm::vec3 lookDir, upDir, rightDir;
   view::getCameraFrame(lookDir, upDir, rightDir);
   p.setUniform("u_camZ", lookDir);

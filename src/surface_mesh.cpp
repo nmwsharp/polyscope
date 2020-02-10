@@ -315,9 +315,9 @@ void SurfaceMesh::draw() {
     if (program == nullptr) {
       prepare();
 
-			// do these now to reduce lag when picking later, etc
-			prepareWireframe();
-			preparePick(); 
+      // do these now to reduce lag when picking later, etc
+      //prepareWireframe();
+      preparePick();
     }
 
     // Set uniforms
@@ -1221,8 +1221,6 @@ SurfaceMesh::addLocalParameterizationQuantityImpl(std::string name, const std::v
 }
 
 
-/* SIMPLE
-
 SurfaceVertexCountQuantity* SurfaceMesh::addVertexCountQuantityImpl(std::string name,
                                                                     const std::vector<std::pair<size_t, int>>& values) {
 
@@ -1246,6 +1244,7 @@ SurfaceFaceCountQuantity* SurfaceMesh::addFaceCountQuantityImpl(std::string name
   return q;
 }
 
+/* SIMPLE
 
 SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantityImpl(std::string name, const std::vector<glm::vec3>& nodes,
                                                                const std::vector<std::array<size_t, 2>>& edges) {

@@ -60,6 +60,18 @@ extern const ShaderStageSpecification RIBBON_VERT_SHADER;
 extern const ShaderStageSpecification RIBBON_GEOM_SHADER;
 extern const ShaderStageSpecification RIBBON_FRAG_SHADER;
 
+// == Sphere shaders
+extern const ShaderStageSpecification SPHERE_VERT_SHADER;
+extern const ShaderStageSpecification SPHERE_VALUE_VERT_SHADER;
+extern const ShaderStageSpecification SPHERE_COLOR_VERT_SHADER;
+extern const ShaderStageSpecification SPHERE_BILLBOARD_GEOM_SHADER;
+extern const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_GEOM_SHADER;
+extern const ShaderStageSpecification SPHERE_COLOR_BILLBOARD_GEOM_SHADER;
+extern const ShaderStageSpecification SPHERE_BILLBOARD_FRAG_SHADER;
+extern const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_FRAG_SHADER;
+extern const ShaderStageSpecification SPHERE_COLOR_BILLBOARD_FRAG_SHADER;
+extern const ShaderStageSpecification SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER;
+
 
 } // namespace render
 } // namespace polyscope

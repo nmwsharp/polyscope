@@ -9,17 +9,18 @@ SET(SRCS
   
   # Rendering stuff
   render/engine.cpp  
-  render/opengl/gl_engine.cpp  
   render/color_maps.cpp
   render/ground_plane.cpp
   render/materials.cpp
 
+  render/opengl/gl_engine.cpp  
   render/opengl/shaders/texture_draw_shaders.cpp  
   render/opengl/shaders/lighting_shaders.cpp  
   render/opengl/shaders/ground_plane_shaders.cpp  
   render/opengl/shaders/histogram_shaders.cpp  
   render/opengl/shaders/surface_mesh_shaders.cpp  
   render/opengl/shaders/vector_shaders.cpp  
+  render/opengl/shaders/sphere_shaders.cpp  
   render/opengl/shaders/ribbon_shaders.cpp  
   
   render/bindata/concrete_seamless.cpp
@@ -69,7 +70,7 @@ SET(SRCS
 	surface_distance_quantity.cpp
 	surface_parameterization_quantity.cpp
 	surface_vector_quantity.cpp
-  #surface_count_quantity.cpp
+	surface_count_quantity.cpp
   #surface_graph_quantity.cpp
   #surface_subset_quantity.cpp
   #surface_selection_quantity.cpp

@@ -304,3 +304,31 @@ TEST_F(PolyscopeTest, SurfaceMeshFaceIntrinsicRibbon) {
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
+
+
+TEST_F(PolyscopeTest, SurfaceMeshVertexCount) {
+  auto psMesh = registerTriangleMesh();
+  std::vector<std::pair<size_t, int>> vals = {{0, 1}, {2, -2}};
+  auto q1 = psMesh->addVertexCountQuantity("vals", vals);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SurfaceMeshFaceCount) {
+  auto psMesh = registerTriangleMesh();
+  std::vector<std::pair<size_t, int>> vals = {{0, 1}, {2, -2}};
+  auto q1 = psMesh->addFaceCountQuantity("vals", vals);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SurfaceMeshVertexIsolated) {
+  auto psMesh = registerTriangleMesh();
+  std::vector<std::pair<size_t, double>> vals = {{0, 1.1}, {2, -2.3}};
+  auto q1 = psMesh->addVertexIsolatedScalarQuantity("vals", vals);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}

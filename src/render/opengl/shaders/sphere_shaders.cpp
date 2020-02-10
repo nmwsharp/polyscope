@@ -1,22 +1,25 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
-#pragma once
 
-#include "polyscope/gl/shaders.h"
+#include "polyscope/render/opengl/gl_engine.h"
+#include "polyscope/render/shaders.h"
 
 namespace polyscope {
-namespace gl {
+namespace render {
 
 // clang-format off
 
-static const VertShader SPHERE_VERT_SHADER = {
-    // uniforms
-    {
-    }, 
+const ShaderStageSpecification SPHERE_VERT_SHADER = {
+
+    ShaderStageType::Vertex,
+
+    {}, // uniforms
 
     // attributes
     {
-        {"a_position", GLData::Vector3Float},
+        {"a_position", DataType::Vector3Float},
     },
+		
+    {}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -28,16 +31,19 @@ static const VertShader SPHERE_VERT_SHADER = {
     )
 };
 
-static const VertShader SPHERE_VALUE_VERT_SHADER = {
-    // uniforms
-    {
-    }, 
+const ShaderStageSpecification SPHERE_VALUE_VERT_SHADER = {
+    
+    ShaderStageType::Vertex,
+
+    { }, // uniforms
 
     // attributes
     {
-        {"a_position", GLData::Vector3Float},
-        {"a_value", GLData::Float},
+        {"a_position", DataType::Vector3Float},
+        {"a_value", DataType::Float},
     },
+		
+    {}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -54,16 +60,21 @@ static const VertShader SPHERE_VALUE_VERT_SHADER = {
 };
 
 
-static const VertShader SPHERE_COLOR_VERT_SHADER = {
+const ShaderStageSpecification SPHERE_COLOR_VERT_SHADER = {
+    
+    ShaderStageType::Vertex,
+
     // uniforms
     {
     }, 
 
     // attributes
     {
-        {"a_position", GLData::Vector3Float},
-        {"a_color", GLData::Vector3Float},
+        {"a_position", DataType::Vector3Float},
+        {"a_color", DataType::Vector3Float},
     },
+
+		{}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -80,21 +91,25 @@ static const VertShader SPHERE_COLOR_VERT_SHADER = {
 
 
 
-static const GeomShader SPHERE_BILLBOARD_GEOM_SHADER = {
+const ShaderStageSpecification SPHERE_BILLBOARD_GEOM_SHADER = {
+
+    ShaderStageType::Geometry,
     
     // uniforms
     {
-        {"u_modelView", GLData::Matrix44Float},
-        {"u_projMatrix", GLData::Matrix44Float},
-        {"u_pointRadius", GLData::Float},
-        {"u_camRight", GLData::Vector3Float},
-        {"u_camUp", GLData::Vector3Float},
-        {"u_camZ", GLData::Vector3Float},
+        {"u_modelView", DataType::Matrix44Float},
+        {"u_projMatrix", DataType::Matrix44Float},
+        {"u_pointRadius", DataType::Float},
+        {"u_camRight", DataType::Vector3Float},
+        {"u_camUp", DataType::Vector3Float},
+        {"u_camZ", DataType::Vector3Float},
     }, 
 
     // attributes
     {
     },
+		
+    {}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -149,21 +164,25 @@ static const GeomShader SPHERE_BILLBOARD_GEOM_SHADER = {
     )
 };
 
-static const GeomShader SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
+const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
+    
+    ShaderStageType::Geometry,
     
     // uniforms
     {
-        {"u_modelView", GLData::Matrix44Float},
-        {"u_projMatrix", GLData::Matrix44Float},
-        {"u_pointRadius", GLData::Float},
-        {"u_camRight", GLData::Vector3Float},
-        {"u_camUp", GLData::Vector3Float},
-        {"u_camZ", GLData::Vector3Float},
+        {"u_modelView", DataType::Matrix44Float},
+        {"u_projMatrix", DataType::Matrix44Float},
+        {"u_pointRadius", DataType::Float},
+        {"u_camRight", DataType::Vector3Float},
+        {"u_camUp", DataType::Vector3Float},
+        {"u_camZ", DataType::Vector3Float},
     }, 
 
     // attributes
     {
     },
+		
+    {}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -224,21 +243,23 @@ static const GeomShader SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
     )
 };
 
-static const GeomShader SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
+const ShaderStageSpecification SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
+    
+    ShaderStageType::Geometry,
     
     // uniforms
     {
-        {"u_camRight", GLData::Vector3Float},
-        {"u_camUp", GLData::Vector3Float},
-        {"u_camZ", GLData::Vector3Float},
-        {"u_modelView", GLData::Matrix44Float},
-        {"u_projMatrix", GLData::Matrix44Float},
-        {"u_pointRadius", GLData::Float},
+        {"u_camRight", DataType::Vector3Float},
+        {"u_camUp", DataType::Vector3Float},
+        {"u_camZ", DataType::Vector3Float},
+        {"u_modelView", DataType::Matrix44Float},
+        {"u_projMatrix", DataType::Matrix44Float},
+        {"u_pointRadius", DataType::Float},
     }, 
 
-    // attributes
-    {
-    },
+    {}, // attributes
+		
+    {}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -302,37 +323,34 @@ static const GeomShader SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
 
 
 
-static const FragShader SPHERE_BILLBOARD_FRAG_SHADER = {
+const ShaderStageSpecification SPHERE_BILLBOARD_FRAG_SHADER = {
     
-    // uniforms
-    {
-        {"u_camRight", GLData::Vector3Float},
-        {"u_camUp", GLData::Vector3Float},
-        {"u_camZ", GLData::Vector3Float},
-        {"u_modelView", GLData::Matrix44Float},
-        {"u_projMatrix", GLData::Matrix44Float},
-        {"u_pointRadius", GLData::Float},
+    ShaderStageType::Fragment,
+    
+    { // uniforms
+        {"u_camRight", DataType::Vector3Float},
+        {"u_camUp", DataType::Vector3Float},
+        {"u_camZ", DataType::Vector3Float},
+        {"u_modelView", DataType::Matrix44Float},
+        {"u_projMatrix", DataType::Matrix44Float},
+        {"u_pointRadius", DataType::Float},
 
 
-        {"u_baseColor", GLData::Vector3Float},
+        {"u_baseColor", DataType::Vector3Float},
     }, 
 
-    // attributes
-    {
-    },
+    { }, // attributes
     
     // textures 
     {
         {"t_mat_r", 2},
         {"t_mat_g", 2},
         {"t_mat_b", 2},
+        {"t_mat_k", 2},
     },
     
-    // output location
-    "outputF",
- 
     // source
-    POLYSCOPE_GLSL(150,
+    POLYSCOPE_GLSL(330 core,
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
@@ -343,12 +361,13 @@ static const FragShader SPHERE_BILLBOARD_FRAG_SHADER = {
         uniform sampler2D t_mat_r;
         uniform sampler2D t_mat_g;
         uniform sampler2D t_mat_b;
+        uniform sampler2D t_mat_k;
         in vec3 worldPosToFrag;
         in vec2 boxCoord;
-        out vec4 outputF;
+        layout(location = 0) out vec4 outputF;
 
         // Forward declarations of methods from <shaders/common.h>
-        vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
+        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 
 
         void main()
@@ -364,7 +383,7 @@ static const FragShader SPHERE_BILLBOARD_FRAG_SHADER = {
 
            // Lighting
            vec3 Normal = mat3(u_modelView) * worldN;
-           outputF = lightSurfaceMat(Normal, u_baseColor, t_mat_r, t_mat_g, t_mat_b);
+           outputF = vec4(lightSurfaceMat(Normal, u_baseColor, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
 
            // Set depth (expensive!)
            vec3 zOffset = -zC * u_camZ * u_pointRadius;
@@ -376,38 +395,33 @@ static const FragShader SPHERE_BILLBOARD_FRAG_SHADER = {
     )
 };
 
-static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
+const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
     
-    // uniforms
-    {
-        {"u_camRight", GLData::Vector3Float},
-        {"u_camUp", GLData::Vector3Float},
-        {"u_camZ", GLData::Vector3Float},
-        {"u_modelView", GLData::Matrix44Float},
-        {"u_projMatrix", GLData::Matrix44Float},
-        {"u_pointRadius", GLData::Float},
-
-        {"u_rangeLow", GLData::Float},
-        {"u_rangeHigh", GLData::Float},
+    ShaderStageType::Fragment,
+    
+    { // uniforms
+        {"u_camRight", DataType::Vector3Float},
+        {"u_camUp", DataType::Vector3Float},
+        {"u_camZ", DataType::Vector3Float},
+        {"u_modelView", DataType::Matrix44Float},
+        {"u_projMatrix", DataType::Matrix44Float},
+        {"u_pointRadius", DataType::Float},
+        {"u_rangeLow", DataType::Float},
+        {"u_rangeHigh", DataType::Float},
     }, 
 
-    // attributes
-    {
-    },
+    { }, // attributes
     
-    // textures 
-    {
+    { // textures 
         {"t_mat_r", 2},
         {"t_mat_g", 2},
         {"t_mat_b", 2},
+        {"t_mat_k", 2},
         {"t_colormap", 1}
     },
-    
-    // output location
-    "outputF",
  
     // source
-    POLYSCOPE_GLSL(150,
+    POLYSCOPE_GLSL(330 core,
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
@@ -419,14 +433,15 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
         uniform sampler2D t_mat_r;
         uniform sampler2D t_mat_g;
         uniform sampler2D t_mat_b;
+        uniform sampler2D t_mat_k;
         uniform sampler1D t_colormap;
         flat in float valueToFrag;
         in vec3 worldPosToFrag;
         in vec2 boxCoord;
-        out vec4 outputF;
+        layout(location = 0) out vec4 outputF;
 
         // Forward declarations of methods from <shaders/common.h>
-        vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
+        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
         
         vec3 surfaceColor() {
           float t = (valueToFrag - u_rangeLow) / (u_rangeHigh - u_rangeLow);
@@ -447,7 +462,7 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
 
            // Lighting
            vec3 Normal = mat3(u_modelView) * worldN;
-           outputF = lightSurfaceMat(Normal, surfaceColor(), t_mat_r, t_mat_g, t_mat_b);
+           outputF = vec4(lightSurfaceMat(Normal, surfaceColor(), t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
            
            // Set depth (expensive!)
            vec3 zOffset = -zC * u_camZ * u_pointRadius;
@@ -461,16 +476,18 @@ static const FragShader SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
 
 
 
-static const FragShader SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
+const ShaderStageSpecification SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
+    
+    ShaderStageType::Fragment,
     
     // uniforms
     {
-        {"u_camRight", GLData::Vector3Float},
-        {"u_camUp", GLData::Vector3Float},
-        {"u_camZ", GLData::Vector3Float},
-        {"u_modelView", GLData::Matrix44Float},
-        {"u_projMatrix", GLData::Matrix44Float},
-        {"u_pointRadius", GLData::Float},
+        {"u_camRight", DataType::Vector3Float},
+        {"u_camUp", DataType::Vector3Float},
+        {"u_camZ", DataType::Vector3Float},
+        {"u_modelView", DataType::Matrix44Float},
+        {"u_projMatrix", DataType::Matrix44Float},
+        {"u_pointRadius", DataType::Float},
     }, 
 
     // attributes
@@ -482,13 +499,11 @@ static const FragShader SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
         {"t_mat_r", 2},
         {"t_mat_g", 2},
         {"t_mat_b", 2},
+        {"t_mat_k", 2},
     },
-    
-    // output location
-    "outputF",
  
     // source
-    POLYSCOPE_GLSL(150,
+    POLYSCOPE_GLSL(330 core,
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
@@ -498,13 +513,13 @@ static const FragShader SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
         uniform sampler2D t_mat_r;
         uniform sampler2D t_mat_g;
         uniform sampler2D t_mat_b;
+        uniform sampler2D t_mat_k;
         flat in vec3 colorToFrag;
         in vec3 worldPosToFrag;
         in vec2 boxCoord;
-        out vec4 outputF;
+        layout(location = 0) out vec4 outputF;
 
-        // Forward declarations of methods from <shaders/common.h>
-        vec4 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b);
+        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 
         void main()
         {
@@ -519,7 +534,7 @@ static const FragShader SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
            
            // Lighting
            vec3 Normal = mat3(u_modelView) * worldN;
-           outputF = lightSurfaceMat(Normal, colorToFrag, t_mat_r, t_mat_g, t_mat_b);
+           outputF = vec4(lightSurfaceMat(Normal, colorToFrag, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
            
            // Set depth (expensive!)
            vec3 zOffset = -zC * u_camZ * u_pointRadius;
@@ -532,16 +547,18 @@ static const FragShader SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
 };
 
 
-static const FragShader SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
+const ShaderStageSpecification SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
+    
+    ShaderStageType::Fragment,
     
     // uniforms
     {
-        {"u_camRight", GLData::Vector3Float},
-        {"u_camUp", GLData::Vector3Float},
-        {"u_camZ", GLData::Vector3Float},
-        {"u_modelView", GLData::Matrix44Float},
-        {"u_projMatrix", GLData::Matrix44Float},
-        {"u_pointRadius", GLData::Float},
+        {"u_camRight", DataType::Vector3Float},
+        {"u_camUp", DataType::Vector3Float},
+        {"u_camZ", DataType::Vector3Float},
+        {"u_modelView", DataType::Matrix44Float},
+        {"u_projMatrix", DataType::Matrix44Float},
+        {"u_pointRadius", DataType::Float},
     }, 
 
     // attributes
@@ -551,12 +568,9 @@ static const FragShader SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
     // textures 
     {
     },
-    
-    // output location
-    "outputF",
  
     // source
-    POLYSCOPE_GLSL(150,
+    POLYSCOPE_GLSL(330 core,
         uniform vec3 u_camRight;
         uniform vec3 u_camUp;
         uniform vec3 u_camZ;
@@ -566,7 +580,7 @@ static const FragShader SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
         flat in vec3 colorToFrag;
         in vec3 worldPosToFrag;
         in vec2 boxCoord;
-        out vec4 outputF;
+        layout(location = 0) out vec4 outputF;
 
         // Forward declarations of methods from <shaders/common.h>
 
@@ -594,5 +608,5 @@ static const FragShader SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
 
 // clang-format on
 
-} // namespace gl
+} // namespace render
 } // namespace polyscope
