@@ -121,8 +121,8 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cY_sym", valY, polyscope::DataType::SYMMETRIC);
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cNorm", valMag, polyscope::DataType::MAGNITUDE);
 
-	polyscope::getSurfaceMesh(niceName)->addVertexDistanceQuantity("cY_dist", valY);
-	polyscope::getSurfaceMesh(niceName)->addVertexSignedDistanceQuantity("cY_signeddist", valY);
+  polyscope::getSurfaceMesh(niceName)->addVertexDistanceQuantity("cY_dist", valY);
+  polyscope::getSurfaceMesh(niceName)->addVertexSignedDistanceQuantity("cY_signeddist", valY);
 
 
   // Add some face scalars
@@ -178,21 +178,23 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addEdgeScalarQuantity("edge length", eLen);
   polyscope::getSurfaceMesh(niceName)->addHalfedgeScalarQuantity("halfedge length", heLen);
 
-
+	
   // Test error
-  // polyscope::error("Resistance is futile.");
-  // polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we
-  // " "share this crisis in a way which looks right while properly wrapping text in some form or other?");
-  // polyscope::terminatingError("and that was all");
+	/*
+  polyscope::error("Resistance is futile.");
+  polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we "
+                   "share this crisis in a way which looks right while properly wrapping text in some form or other?");
+  polyscope::terminatingError("and that was all");
 
   // Test warning
-  // polyscope::warning("Something went slightly wrong", "it was bad");
+  polyscope::warning("Something went slightly wrong", "it was bad");
 
-  // polyscope::warning("Smoething else went slightly wrong", "it was also bad");
-  // polyscope::warning("Something went slightly wrong", "it was still bad");
-  // for (int i = 0; i < 5000; i++) {
-  // polyscope::warning("Some problems come in groups", "detail = " + std::to_string(i));
-  //}
+  polyscope::warning("Something else went slightly wrong", "it was also bad");
+  polyscope::warning("Something went slightly wrong", "it was still bad");
+  for (int i = 0; i < 5000; i++) {
+    polyscope::warning("Some problems come in groups", "detail = " + std::to_string(i));
+  }
+	*/
 
   // === Add some vectors
 
@@ -218,7 +220,7 @@ void processFileOBJ(string filename) {
       vNormals[face[iV]] += N;
     }
   }
-	polyscope::getSurfaceMesh(niceName)->addFaceVectorQuantity("face normals", fNormals);
+  polyscope::getSurfaceMesh(niceName)->addFaceVectorQuantity("face normals", fNormals);
 
 
   std::vector<glm::vec3> vNormalsRand(nVertices, glm::vec3{0., 0., 0.});
@@ -228,14 +230,13 @@ void processFileOBJ(string filename) {
     vNormalsRand[iV] = vNormals[iV] * (float)polyscope::randomUnit() * 5000.f;
     toZero[iV] = -vertexPositionsGLM[iV];
   }
-  
+
   polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("area vertex normals", vNormals);
   polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("rand length normals", vNormalsRand);
   polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("toZero", toZero, polyscope::VectorType::AMBIENT);
 
 
   { // Some kind of intrinsic vector field
-
     // Project this weird swirly field on to the surface (the ABC flow)
     auto spatialFunc = [&](glm::vec3 p) {
       float A = 1.;
@@ -310,25 +311,23 @@ void processFileOBJ(string filename) {
   }
 
 
-	/*
-  // Add count quantities
-  std::vector<std::pair<size_t, int>> vCount;
-  std::vector<std::pair<size_t, double>> vVal;
-  for (size_t iV = 0; iV < nVertices; iV++) {
-    if (polyscope::randomUnit() > 0.8) {
-      vCount.push_back(std::make_pair(iV, 2));
-    }
-    if (polyscope::randomUnit() > 0.8) {
-      vVal.push_back(std::make_pair(iV, polyscope::randomUnit()));
-    }
-  }
-  polyscope::getSurfaceMesh(niceName)->addVertexCountQuantity("sample count", vCount);
-  polyscope::getSurfaceMesh(niceName)->addVertexIsolatedScalarQuantity("sample isolated", vVal);
-	*/
+  /*
+// Add count quantities
+std::vector<std::pair<size_t, int>> vCount;
+std::vector<std::pair<size_t, double>> vVal;
+for (size_t iV = 0; iV < nVertices; iV++) {
+if (polyscope::randomUnit() > 0.8) {
+vCount.push_back(std::make_pair(iV, 2));
+}
+if (polyscope::randomUnit() > 0.8) {
+vVal.push_back(std::make_pair(iV, polyscope::randomUnit()));
+}
+}
+polyscope::getSurfaceMesh(niceName)->addVertexCountQuantity("sample count", vCount);
+polyscope::getSurfaceMesh(niceName)->addVertexIsolatedScalarQuantity("sample isolated", vVal);
+  */
 
   { // Parameterizations
-
-
     std::vector<std::array<double, 2>> cornerParam;
     for (size_t iF = 0; iF < nFaces; iF++) {
       std::vector<size_t>& face = faceIndices[iF];
@@ -371,45 +370,45 @@ void processFileOBJ(string filename) {
 
     polyscope::getSurfaceMesh(niceName)->addLocalParameterizationQuantity("param vert local test", vertParamLocal);
   }
-	/*
+  /*
 
-  { // Add a surface graph quantity
+{ // Add a surface graph quantity
 
-    std::vector<std::array<size_t, 2>> edges;
-    for (size_t iF = 0; iF < nFaces; iF++) {
-      std::vector<size_t>& face = faceIndices[iF];
+std::vector<std::array<size_t, 2>> edges;
+for (size_t iF = 0; iF < nFaces; iF++) {
+std::vector<size_t>& face = faceIndices[iF];
 
-      for (size_t iV = 0; iV < face.size(); iV++) {
-        size_t i0 = face[iV];
-        size_t i1 = face[(iV + 1) % face.size()];
+for (size_t iV = 0; iV < face.size(); iV++) {
+  size_t i0 = face[iV];
+  size_t i1 = face[(iV + 1) % face.size()];
 
-        edges.push_back({i0, i1});
-      }
-    }
+  edges.push_back({i0, i1});
+}
+}
 
-    polyscope::getSurfaceMesh(niceName)->addSurfaceGraphQuantity("surface graph", vertexPositionsGLM, edges);
+polyscope::getSurfaceMesh(niceName)->addSurfaceGraphQuantity("surface graph", vertexPositionsGLM, edges);
+}
+
+
+{ // Add a curve network from the edges
+std::vector<std::array<size_t, 2>> edges;
+for (size_t iF = 0; iF < nFaces; iF++) {
+std::vector<size_t>& face = faceIndices[iF];
+
+for (size_t iV = 0; iV < face.size(); iV++) {
+  size_t i0 = face[iV];
+  size_t i1 = face[(iV + 1) % face.size()];
+  if (i0 < i1) {
+    edges.push_back({i0, i1});
   }
+}
+}
 
+std::string curveName = niceName + " curves";
+constructDemoCurveNetwork(curveName, vertexPositionsGLM, edges);
+}
 
-  { // Add a curve network from the edges
-    std::vector<std::array<size_t, 2>> edges;
-    for (size_t iF = 0; iF < nFaces; iF++) {
-      std::vector<size_t>& face = faceIndices[iF];
-
-      for (size_t iV = 0; iV < face.size(); iV++) {
-        size_t i0 = face[iV];
-        size_t i1 = face[(iV + 1) % face.size()];
-        if (i0 < i1) {
-          edges.push_back({i0, i1});
-        }
-      }
-    }
-
-    std::string curveName = niceName + " curves";
-    constructDemoCurveNetwork(curveName, vertexPositionsGLM, edges);
-  }
-
-  */
+*/
 
   /*
 
@@ -429,7 +428,6 @@ void processFileOBJ(string filename) {
   // polyscope::getSurfaceMesh(niceName)->addInputCurveQuantity("input curve");
 
   */
-
 }
 
 /*

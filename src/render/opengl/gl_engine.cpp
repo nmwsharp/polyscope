@@ -3,6 +3,7 @@
 
 #include "polyscope/messages.h"
 #include "polyscope/options.h"
+#include "polyscope/polyscope.h"
 #include "polyscope/utilities.h"
 
 #include "polyscope/render/opengl/shaders/common.h"
@@ -18,6 +19,7 @@ Engine* engine = nullptr;
 GLEngine* glEngine = nullptr; // alias for engine above
 void initializeRenderEngine() {
   glEngine = new GLEngine();
+  glEngine->initialize();
   engine = glEngine;
   engine->allocateGlobalBuffersAndPrograms();
 }
@@ -1519,7 +1521,57 @@ void GLShaderProgram::draw() {
   checkGLError();
 }
 
-GLEngine::GLEngine() {
+GLEngine::GLEngine() {}
+
+void GLEngine::initialize() {
+
+  // Small callback function for GLFW errors
+  auto error_print_callback = [](int error, const char* description) {
+    std::cerr << "GLFW emitted error: " << description << std::endl;
+  };
+
+  // === Initialize glfw
+  glfwSetErrorCallback(error_print_callback);
+  if (!glfwInit()) {
+    throw std::runtime_error(options::printPrefix + "ERROR: Failed to initialize glfw");
+  }
+
+  // OpenGL version things
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#if __APPLE__
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+  // Create the window with context
+  mainWindow = glfwCreateWindow(view::windowWidth, view::windowHeight, options::programName.c_str(), NULL, NULL);
+  glfwMakeContextCurrent(mainWindow);
+  glfwSwapInterval(1); // Enable vsync
+  glfwSetWindowPos(mainWindow, view::initWindowPosX, view::initWindowPosY);
+
+// === Initialize openGL
+// Load openGL functions (using GLAD)
+#ifndef __APPLE__
+  if (!gladLoadGL()) {
+    throw std::runtime_error(options::printPrefix + "ERROR: Failed to load openGL using GLAD");
+  }
+#endif
+  if (options::verbosity > 0) {
+    std::cout << options::printPrefix << "Loaded openGL version: " << glGetString(GL_VERSION) << std::endl;
+  }
+
+#ifdef __APPLE__
+  // Hack to classify the process as interactive
+  glfwPollEvents();
+#endif
+
+  // Update the width and height
+  glfwMakeContextCurrent(mainWindow);
+  glfwGetWindowSize(mainWindow, &view::windowWidth, &view::windowHeight);
+  glfwGetFramebufferSize(mainWindow, &view::bufferWidth, &view::bufferHeight);
+
+
   { // Compile functions accessible to all shaders
     commonShaderHandle = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(commonShaderHandle, 1, &shaderCommonSource, nullptr);
@@ -1528,6 +1580,39 @@ GLEngine::GLEngine() {
   }
 }
 
+
+// Forward declare compressed binary font functions
+unsigned int getCousineRegularCompressedSize();
+const unsigned int* getCousineRegularCompressedData();
+
+void GLEngine::initializeImGui() {
+
+  ImGui::CreateContext(); // must call once at start
+
+  // Set up ImGUI glfw bindings
+  ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
+  const char* glsl_version = "#version 150";
+  ImGui_ImplOpenGL3_Init(glsl_version);
+
+  ImGuiIO& io = ImGui::GetIO();
+  ImFontConfig config;
+  config.OversampleH = 5;
+  config.OversampleV = 5;
+  ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(getCousineRegularCompressedData(),
+                                                          getCousineRegularCompressedSize(), 15.0f, &config);
+  // io.OptResizeWindowsFromEdges = true;
+  // ImGui::StyleColorsLight();
+  setImGuiStyle();
+
+  globalFontAtlas = io.Fonts;
+}
+
+void GLEngine::shutdownImGui() {
+  // ImGui shutdown things
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
+}
 
 void GLEngine::bindDisplay() {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1541,6 +1626,8 @@ void GLEngine::clearDisplay() {
   glClearDepth(1.);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
+
+void GLEngine::swapDisplayBuffers() { glfwSwapBuffers(mainWindow); }
 
 void GLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
@@ -1557,6 +1644,57 @@ void GLEngine::popActiveRenderBuffer() {
   FrameBufferHandle drawFboId = activeRenderBufferStack.back();
   activeRenderBufferStack.pop_back();
   glBindFramebuffer(GL_FRAMEBUFFER, drawFboId);
+}
+
+void GLEngine::makeContextCurrent() { glfwMakeContextCurrent(mainWindow); }
+
+void GLEngine::updateWindowSize() {
+  int newBufferWidth, newBufferHeight, newWindowWidth, newWindowHeight;
+  glfwGetFramebufferSize(mainWindow, &newBufferWidth, &newBufferHeight);
+  glfwGetWindowSize(mainWindow, &newWindowWidth, &newWindowHeight);
+  if (newBufferWidth != view::bufferWidth || newBufferHeight != view::bufferHeight ||
+      newWindowHeight != view::windowHeight || newWindowWidth != view::windowWidth) {
+    // Basically a resize callback
+    requestRedraw();
+    view::bufferWidth = newBufferWidth;
+    view::bufferHeight = newBufferHeight;
+    view::windowWidth = newWindowWidth;
+    view::windowHeight = newWindowHeight;
+  }
+}
+
+std::tuple<int, int> GLEngine::getWindowPos() {
+  int x, y;
+  glfwGetWindowPos(mainWindow, &x, &y);
+  return {x, y};
+}
+
+bool GLEngine::windowRequestsClose() {
+  bool shouldClose = glfwWindowShouldClose(mainWindow);
+  if (shouldClose) {
+    glfwSetWindowShouldClose(mainWindow, false); // un-set the state bit so we can close again
+    return true;
+  }
+  return false;
+}
+
+void GLEngine::pollEvents() { glfwPollEvents(); }
+
+bool GLEngine::isKeyPressed(char c) {
+  if (c >= '0' && c <= '9') return ImGui::IsKeyPressed(GLFW_KEY_0 + (c - '0'));
+  if (c >= 'a' && c <= 'z') return ImGui::IsKeyPressed(GLFW_KEY_A + (c - 'a'));
+  throw std::runtime_error("keyPressed only supports 0-9, a-z");
+}
+
+void GLEngine::ImGuiNewFrame() {
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+}
+
+void GLEngine::ImGuiRender() {
+  ImGui::Render();
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void GLEngine::setDepthMode(DepthMode newMode) {

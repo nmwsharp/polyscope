@@ -14,6 +14,18 @@
 #include "GLFW/glfw3.h"
 #endif
 
+#ifdef _WIN32
+#undef APIENTRY
+#define GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_EXPOSE_NATIVE_WGL
+#include <GLFW/glfw3native.h>
+#endif
+
+#include "imgui.h"
+#define IMGUI_IMPL_OPENGL_LOADER_GLAD
+#include "examples/imgui_impl_glfw.h"
+#include "examples/imgui_impl_opengl3.h"
+
 
 // Note: DO NOT include this header throughout polyscope, and do not directly make openGL calls. This header should only
 // be used to construct an instance of Engine. engine.h gives the render API, all render calls should pass through that.
@@ -233,16 +245,32 @@ public:
   GLEngine();
 
   // High-level control
+	void initialize();
   void checkError(bool fatal = false) override;
 
   void clearDisplay() override;
   void bindDisplay() override;
+	void swapDisplayBuffers() override;
 
   // Manage render state
   void pushActiveRenderBuffer() override;
   void popActiveRenderBuffer() override;
   void setDepthMode(DepthMode newMode = DepthMode::Less) override;
   void setBlendMode(BlendMode newMode = BlendMode::Over) override;
+  
+	// === Windowing and framework things
+	void makeContextCurrent() override;
+	void updateWindowSize() override;
+	std::tuple<int, int> getWindowPos() override;
+	bool windowRequestsClose() override;
+	void pollEvents() override;
+	bool isKeyPressed(char c) override; // for lowercase a-z and 0-9 only
+	
+	// ImGui
+  void initializeImGui() override;
+  void shutdownImGui() override;
+	void ImGuiNewFrame() override;
+	void ImGuiRender() override;
 
   // === Factory methods
 
@@ -273,6 +301,9 @@ protected:
 
 	// Internal members
   std::vector<FrameBufferHandle> activeRenderBufferStack;
+
+	// Internal windowing and engine details
+	GLFWwindow* mainWindow = nullptr;
 };
 
 } // namespace render

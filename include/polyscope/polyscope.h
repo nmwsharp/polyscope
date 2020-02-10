@@ -105,7 +105,5 @@ void mainLoopIteration();
 void initializeImGUIContext();
 void drawStructures();
 
-// Share a font atlas for multiple uses (mainly with imgui)
-ImFontAtlas* getGlobalFontAtlas();
 
 } // namespace polyscope

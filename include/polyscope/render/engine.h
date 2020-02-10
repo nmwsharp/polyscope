@@ -11,6 +11,8 @@
 #include "polyscope/render/materials.h"
 #include "polyscope/view.h"
 
+#include "imgui.h"
+
 namespace polyscope {
 
 // == A few enums that control behavior
@@ -260,9 +262,11 @@ public:
 
   // High-level control
   virtual void checkError(bool fatal = false) = 0;
+  void buildEngineGui();
+
   virtual void clearDisplay() = 0;
   virtual void bindDisplay() = 0;
-  void buildEngineGui();
+  virtual void swapDisplayBuffers() = 0;
 
   virtual void clearSceneBuffer();
   virtual bool bindSceneBuffer();
@@ -289,6 +293,23 @@ public:
 
   // === Scene data and niceties
   GroundPlane groundPlane;
+
+  // === Windowing and framework things
+  virtual void makeContextCurrent() = 0;
+  virtual void updateWindowSize() = 0;
+  virtual bool windowRequestsClose() = 0;
+  virtual void pollEvents() = 0;
+  virtual bool isKeyPressed(char c) = 0; // for lowercase a-z and 0-9 only
+  virtual std::tuple<int, int> getWindowPos() = 0;
+
+  // ImGui
+  virtual void initializeImGui() = 0;
+  virtual void shutdownImGui() = 0;
+  void setImGuiStyle();
+	ImFontAtlas* getImGuiGlobalFontAtlas();
+  virtual void ImGuiNewFrame() = 0;
+  virtual void ImGuiRender() = 0;
+
 
   // === Factory methods
 
@@ -344,6 +365,9 @@ protected:
 
   // The cache of materials
   std::map<Material, BasisMaterial> materialCache;
+	
+	// Internal windowing and engine details
+	ImFontAtlas* globalFontAtlas = nullptr;
 };
 
 

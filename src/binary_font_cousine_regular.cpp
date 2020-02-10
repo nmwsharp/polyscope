@@ -2,6 +2,7 @@
 // File: 'Cousine-Regular.ttf' (43912 bytes)
 // Exported using binary_to_compressed_c.cpp
 namespace polyscope {
+namespace render {
 
 // clang-format off
 
@@ -1580,7 +1581,7 @@ static const unsigned int CousineRegular_compressed_data[37632 / 4] = {
 // clang-format on
 
 unsigned int getCousineRegularCompressedSize() { return CousineRegular_compressed_size; }
-
 const unsigned int* getCousineRegularCompressedData() { return CousineRegular_compressed_data; }
 
+} // namespace render
 } // namespace polyscope

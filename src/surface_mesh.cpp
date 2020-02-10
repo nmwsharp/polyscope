@@ -314,6 +314,10 @@ void SurfaceMesh::draw() {
 
     if (program == nullptr) {
       prepare();
+
+			// do these now to reduce lag when picking later, etc
+			prepareWireframe();
+			preparePick(); 
     }
 
     // Set uniforms
