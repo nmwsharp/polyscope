@@ -25,7 +25,7 @@ SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh
                        vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
       vectorRadius(uniquePrefix() + name + "#vectorRadius", relativeValue(0.0025)),
       vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()),
-      material(uniquePrefix() + "#material", Material::Wax), definedOn(definedOn_),
+      material(uniquePrefix() + "#material", Material::Clay), definedOn(definedOn_),
       ribbonEnabled(uniquePrefix() + "#ribbonEnabled", false) {}
 
 void SurfaceVectorQuantity::prepareVectorMapper() {
@@ -287,6 +287,7 @@ void SurfaceFaceIntrinsicVectorQuantity::draw() {
     if (ribbonArtist == nullptr) {
       // Warning: expensive... Creates noticeable UI lag
       ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, vectorField, nSym, 2500)));
+      render::engine->setMaterial(*ribbonArtist->program, material.get());
     }
 
     // Update transform matrix from parent
@@ -397,6 +398,7 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
 
       // Warning: expensive... Creates noticeable UI lag
       ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, unitFaceVecs, nSym, 2500)));
+      render::engine->setMaterial(*ribbonArtist->program, material.get());
     }
 
     // Update transform matrix from parent
@@ -523,6 +525,7 @@ void SurfaceOneFormIntrinsicVectorQuantity::draw() {
       }
       // Warning: expensive... Creates noticeable UI lag
       ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, unitMappedField, 1, 2500)));
+      render::engine->setMaterial(*ribbonArtist->program, material.get());
     }
 
 

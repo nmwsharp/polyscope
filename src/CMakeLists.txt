@@ -23,7 +23,10 @@ SET(SRCS
   render/opengl/shaders/ribbon_shaders.cpp  
   
   render/bindata/concrete_seamless.cpp
-  render/bindata/bindata_mat_wax.cpp
+  render/bindata/bindata_clay.cpp
+  render/bindata/bindata_wax.cpp
+  render/bindata/bindata_candy.cpp
+  render/bindata/bindata_flat.cpp
 
 
   # Core functionality 

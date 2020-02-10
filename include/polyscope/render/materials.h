@@ -9,7 +9,7 @@
 namespace polyscope {
 
 // Pull the enum to the outer namespace to keep typing burden down
-enum class Material { Clay = 0, Wax, Candy };
+enum class Material { Clay = 0, Wax, Candy, Flat };
 
 namespace render {
 
@@ -31,12 +31,6 @@ bool buildMaterialOptionsGui(Material& m);
 
 // Read pre-defined materials in to textures
 std::map<Material, BasisMaterial> loadDefaultMaterials();
-
-
-// The arrays that hold the actual data. Stored as constants in translations units in gl/materials/
-extern const std::vector<std::vector<unsigned char>> bindata_mat_wax;
-
-
 
 } // namespace render
 } // namespace polyscope

@@ -18,7 +18,9 @@ RibbonArtist::RibbonArtist(Structure& parentStructure_,
                            double normalOffsetFraction_)
     : parentStructure(parentStructure_), ribbons(ribbons_), normalOffsetFraction(normalOffsetFraction_),
       enabled(parentStructure.uniquePrefix() + "#ribbon#" + "uniqueName" + "#enabled", true),
-      ribbonWidth(parentStructure.uniquePrefix() + "#ribbon#" + "uniqueName" + "#ribbonWidth", relativeValue(5e-4)) {}
+      ribbonWidth(parentStructure.uniquePrefix() + "#ribbon#" + "uniqueName" + "#ribbonWidth", relativeValue(5e-4)) {
+  createProgram();
+}
 
 void RibbonArtist::deleteProgram() { program.reset(); }
 
