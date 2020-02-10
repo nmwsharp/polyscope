@@ -99,7 +99,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/disjoint_sets.h
   ${INCLUDE_ROOT}/file_helpers.h
   ${INCLUDE_ROOT}/histogram.h
-  ${INCLUDE_ROOT}/imgui_render.h
   ${INCLUDE_ROOT}/messages.h
   ${INCLUDE_ROOT}/options.h
   ${INCLUDE_ROOT}/persistent_value.h
