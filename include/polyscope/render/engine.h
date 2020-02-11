@@ -267,6 +267,7 @@ public:
   virtual void clearDisplay() = 0;
   virtual void bindDisplay() = 0;
   virtual void swapDisplayBuffers() = 0;
+  virtual std::vector<unsigned char> readDisplayBuffer() = 0;
 
   virtual void clearSceneBuffer();
   virtual bool bindSceneBuffer();

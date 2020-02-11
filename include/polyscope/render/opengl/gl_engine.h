@@ -113,7 +113,7 @@ public:
 
   void setDrawBuffers() override;
 
-  // Query pixel
+  // Query pixels
   std::array<float, 4> readFloat4(int xPos, int yPos) override;
 
   // Getters
@@ -251,6 +251,7 @@ public:
   void clearDisplay() override;
   void bindDisplay() override;
 	void swapDisplayBuffers() override;
+  std::vector<unsigned char> readDisplayBuffer() override;
 
   // Manage render state
   void pushActiveRenderBuffer() override;

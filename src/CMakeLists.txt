@@ -33,7 +33,7 @@ SET(SRCS
 
   # Core functionality 
   polyscope.cpp
-  #screenshot.cpp
+	screenshot.cpp
   structure.cpp
   utilities.cpp
   view.cpp

@@ -370,7 +370,7 @@ void buildPolyscopeGui() {
   }
   ImGui::SameLine();
   if (ImGui::Button("Screenshot")) {
-    // screenshot(true); SIMPLE
+    screenshot(true);
   }
   ImGui::SameLine();
   if (ImGui::Button("Controls")) {
@@ -623,7 +623,7 @@ void shutdown(int exitCode) {
 
   render::engine->shutdownImGui();
 
-	std::exit(exitCode);
+  std::exit(exitCode);
 }
 
 bool registerStructure(Structure* s, bool replaceIfPresent) {

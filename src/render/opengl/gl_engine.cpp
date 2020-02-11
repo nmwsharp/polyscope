@@ -493,6 +493,7 @@ std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
   return result;
 }
 
+
 // =============================================================
 // ==================  Shader Program  =========================
 // =============================================================
@@ -1628,6 +1629,23 @@ void GLEngine::clearDisplay() {
 }
 
 void GLEngine::swapDisplayBuffers() { glfwSwapBuffers(mainWindow); }
+
+std::vector<unsigned char> GLEngine::readDisplayBuffer() {
+
+  // Get buffer size
+  GLint viewport[4];
+  glGetIntegerv(GL_VIEWPORT, viewport);
+  int w = viewport[2];
+  int h = viewport[3];
+
+  // Read from openGL
+  size_t buffSize = w * h * 4;
+	std::vector<unsigned char> buff(buffSize);
+  glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, &(buff.front()));
+
+	return buff;	
+}
+
 
 void GLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
