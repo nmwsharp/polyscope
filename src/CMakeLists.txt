@@ -78,10 +78,10 @@ SET(SRCS
   #surface_input_curve_quantity.cpp
   
   # Curve network
-  #curve_network.cpp
-  #curve_network_scalar_quantity.cpp
-  #curve_network_color_quantity.cpp
-  #curve_network_vector_quantity.cpp
+	curve_network.cpp
+	curve_network_scalar_quantity.cpp
+	curve_network_color_quantity.cpp
+	curve_network_vector_quantity.cpp
 )
 
 

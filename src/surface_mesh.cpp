@@ -378,7 +378,7 @@ void SurfaceMesh::prepare() {
 
   // Populate draw buffers
   fillGeometryBuffers(*program);
-  render::engine->setMaterial(*program, material.get());
+  render::engine->setMaterial(*program, getMaterial());
 }
 
 void SurfaceMesh::prepareWireframe() {
@@ -387,7 +387,7 @@ void SurfaceMesh::prepareWireframe() {
 
   // Populate draw buffers
   fillGeometryBuffersWireframe(*wireframeProgram);
-  render::engine->setMaterial(*wireframeProgram, material.get());
+  render::engine->setMaterial(*wireframeProgram, getMaterial());
 }
 
 void SurfaceMesh::preparePick() {
@@ -747,7 +747,6 @@ glm::vec2 SurfaceMesh::projectToScreenSpace(glm::vec3 coord) {
 //}
 
 
-
 void SurfaceMesh::buildVertexInfoGui(size_t vInd) {
 
   size_t displayInd = vInd;
@@ -1080,18 +1079,21 @@ SurfaceMesh* SurfaceMesh::setSmoothShade(bool isSmooth) {
   return this;
 }
 bool SurfaceMesh::isSmoothShade() { return shadeSmooth.get(); }
+
 SurfaceMesh* SurfaceMesh::setSurfaceColor(glm::vec3 val) {
   surfaceColor = val;
   requestRedraw();
   return this;
 }
 glm::vec3 SurfaceMesh::getSurfaceColor() { return surfaceColor.get(); }
+
 SurfaceMesh* SurfaceMesh::setEdgeColor(glm::vec3 val) {
   edgeColor = val;
   requestRedraw();
   return this;
 }
 glm::vec3 SurfaceMesh::getEdgeColor() { return edgeColor.get(); }
+
 SurfaceMesh* SurfaceMesh::setMaterial(Material m) {
   material = m;
   geometryChanged(); // (serves the purpose of re-initializing everything, though this is a bit overkill)
@@ -1099,6 +1101,7 @@ SurfaceMesh* SurfaceMesh::setMaterial(Material m) {
   return this;
 }
 Material SurfaceMesh::getMaterial() { return material.get(); }
+
 SurfaceMesh* SurfaceMesh::setEdgeWidth(double newVal) {
   edgeWidth = newVal;
   requestRedraw();

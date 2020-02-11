@@ -1,12 +1,10 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/curve_network.h"
 
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/cylinder_shaders.h"
-#include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -24,7 +22,8 @@ const std::string CurveNetwork::structureTypeName = "Curve Network";
 // Constructor
 CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std::vector<std::array<size_t, 2>> edges_)
     : QuantityStructure<CurveNetwork>(name, typeName()), nodes(std::move(nodes_)), edges(std::move(edges_)),
-      color(uniquePrefix() + "#color", getNextUniqueColor()), radius(uniquePrefix() + "#radius", relativeValue(0.005))
+      color(uniquePrefix() + "#color", getNextUniqueColor()), radius(uniquePrefix() + "#radius", relativeValue(0.005)),
+      material(uniquePrefix() + "material", Material::Clay)
 
 {
 
@@ -51,7 +50,7 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
 
 
 // Helper to set uniforms
-void CurveNetwork::setCurveNetworkNodeUniforms(gl::GLProgram& p) {
+void CurveNetwork::setCurveNetworkNodeUniforms(render::ShaderProgram& p) {
   p.setUniform("u_pointRadius", getRadius());
 
   glm::vec3 lookDir, upDir, rightDir;
@@ -61,7 +60,7 @@ void CurveNetwork::setCurveNetworkNodeUniforms(gl::GLProgram& p) {
   p.setUniform("u_camRight", rightDir);
 }
 
-void CurveNetwork::setCurveNetworkEdgeUniforms(gl::GLProgram& p) { p.setUniform("u_radius", getRadius()); }
+void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) { p.setUniform("u_radius", getRadius()); }
 
 void CurveNetwork::draw() {
   if (!isEnabled()) {
@@ -130,13 +129,16 @@ void CurveNetwork::prepare() {
 
 
   // It not quantity is coloring the network, draw with a default color
-  nodeProgram.reset(new gl::GLProgram(&gl::SPHERE_VERT_SHADER, &gl::SPHERE_BILLBOARD_GEOM_SHADER,
-                                      &gl::SPHERE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
-  setMaterialForProgram(*nodeProgram, "wax");
+  nodeProgram = render::engine->generateShaderProgram(
+      {render::SPHERE_VERT_SHADER, render::SPHERE_BILLBOARD_GEOM_SHADER, render::SPHERE_BILLBOARD_FRAG_SHADER},
+      DrawMode::Points);
+  render::engine->setMaterial(*nodeProgram, getMaterial());
 
-  edgeProgram.reset(new gl::GLProgram(&gl::PASSTHRU_CYLINDER_VERT_SHADER, &gl::CYLINDER_GEOM_SHADER,
-                                      &gl::CYLINDER_FRAG_SHADER, gl::DrawMode::Points));
-  setMaterialForProgram(*edgeProgram, "wax");
+
+  edgeProgram = render::engine->generateShaderProgram(
+      {render::PASSTHRU_CYLINDER_VERT_SHADER, render::CYLINDER_GEOM_SHADER, render::CYLINDER_FRAG_SHADER},
+      DrawMode::Points);
+  render::engine->setMaterial(*edgeProgram, getMaterial());
 
   // Fill out the geometry data for the programs
   fillNodeGeometryBuffers(*nodeProgram);
@@ -155,8 +157,10 @@ void CurveNetwork::preparePick() {
   size_t pickStart = pick::requestPickBufferRange(this, totalPickElements);
 
   { // Set up node picking program
-    nodePickProgram.reset(new gl::GLProgram(&gl::SPHERE_COLOR_VERT_SHADER, &gl::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                            &gl::SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+    nodePickProgram = render::engine->generateShaderProgram({render::SPHERE_COLOR_VERT_SHADER,
+                                                             render::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
+                                                             render::SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER},
+                                                            DrawMode::Points);
 
     // Fill color buffer with packed point indices
     std::vector<glm::vec3> pickColors;
@@ -174,8 +178,9 @@ void CurveNetwork::preparePick() {
   }
 
   { // Set up edge picking program
-    edgePickProgram.reset(new gl::GLProgram(&gl::CYLINDER_PICK_VERT_SHADER, &gl::CYLINDER_PICK_GEOM_SHADER,
-                                            &gl::CYLINDER_PICK_FRAG_SHADER, gl::DrawMode::Points));
+    edgePickProgram = render::engine->generateShaderProgram(
+        {render::CYLINDER_PICK_VERT_SHADER, render::CYLINDER_PICK_GEOM_SHADER, render::CYLINDER_PICK_FRAG_SHADER},
+        DrawMode::Points);
 
     // Fill color buffer with packed node/edge indices
     std::vector<glm::vec3> edgePickTail(nEdges());
@@ -203,9 +208,11 @@ void CurveNetwork::preparePick() {
   }
 }
 
-void CurveNetwork::fillNodeGeometryBuffers(gl::GLProgram& program) { program.setAttribute("a_position", nodes); }
+void CurveNetwork::fillNodeGeometryBuffers(render::ShaderProgram& program) {
+  program.setAttribute("a_position", nodes);
+}
 
-void CurveNetwork::fillEdgeGeometryBuffers(gl::GLProgram& program) {
+void CurveNetwork::fillEdgeGeometryBuffers(render::ShaderProgram& program) {
 
   // Positions at either end of edges
   std::vector<glm::vec3> posTail(nEdges());
@@ -334,6 +341,14 @@ CurveNetwork* CurveNetwork::setRadius(float newVal, bool isRelative) {
   return this;
 }
 float CurveNetwork::getRadius() { return radius.get().asAbsolute(); }
+
+CurveNetwork* CurveNetwork::setMaterial(Material m) {
+  material = m;
+  //geometryChanged(); // (serves the purpose of re-initializing everything, though this is a bit overkill)
+  requestRedraw();
+  return this;
+}
+Material CurveNetwork::getMaterial() { return material.get(); }
 
 std::string CurveNetwork::typeName() { return structureTypeName; }
 

@@ -892,6 +892,7 @@ const ShaderStageSpecification CYLINDER_VALUE_FRAG_SHADER = {
     {
         {"t_mat_r", 2},
         {"t_mat_g", 2},
+        {"t_mat_b", 2},
         {"t_mat_k", 2},
         {"t_colormap", 1}
     },
@@ -919,7 +920,7 @@ const ShaderStageSpecification CYLINDER_VALUE_FRAG_SHADER = {
         
         void main()
         {
-            outputF = vec4(lightSurfaceMat(cameraNormal, surfaceColor(), t_mat_r, t_mat_g, t_mat_b), 1.);
+            outputF = vec4(lightSurfaceMat(cameraNormal, surfaceColor(), t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
         }
     )
 };

@@ -72,7 +72,7 @@ void SurfaceVectorQuantity::prepareProgram() {
   program->setAttribute("a_vector", mappedVectors);
   program->setAttribute("a_position", vectorRoots);
 
-  render::engine->setMaterial(*program, material.get());
+  render::engine->setMaterial(*program, getMaterial());
 }
 
 void SurfaceVectorQuantity::buildCustomUI() {
@@ -124,26 +124,30 @@ SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorLengthScale(double newLen
   return this;
 }
 double SurfaceVectorQuantity::getVectorLengthScale() { return vectorLengthMult.get().asAbsolute(); }
+
 SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorRadius(double val, bool isRelative) {
   vectorRadius = ScaledValue<double>(val, isRelative);
   requestRedraw();
   return this;
 }
 double SurfaceVectorQuantity::getVectorRadius() { return vectorRadius.get().asAbsolute(); }
+
 SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorColor(glm::vec3 color) {
   vectorColor = color;
   requestRedraw();
   return this;
 }
 glm::vec3 SurfaceVectorQuantity::getVectorColor() { return vectorColor.get(); }
+
 SurfaceVectorQuantity* SurfaceVectorQuantity::setMaterial(Material m) {
   material = m;
-  if (program) render::engine->setMaterial(*program, material.get());
+  if (program) render::engine->setMaterial(*program, getMaterial());
   if (ribbonArtist && ribbonArtist->program) render::engine->setMaterial(*ribbonArtist->program, material.get());
   requestRedraw();
   return this;
 }
 Material SurfaceVectorQuantity::getMaterial() { return material.get(); }
+
 SurfaceVectorQuantity* SurfaceVectorQuantity::setRibbonEnabled(bool val) {
   ribbonEnabled = val;
   requestRedraw();

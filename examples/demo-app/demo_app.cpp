@@ -3,7 +3,7 @@
 #include "polyscope/combining_hash_functions.h"
 #include "polyscope/messages.h"
 
-//#include "polyscope/curve_network.h"
+#include "polyscope/curve_network.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_io.h"
@@ -31,7 +31,6 @@ bool endsWith(const std::string& str, const std::string& suffix) {
   return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
-/*
 void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nodes,
                                std::vector<std::array<size_t, 2>> edges) {
 
@@ -79,7 +78,6 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
     polyscope::getCurveNetwork(curveName)->addEdgeVectorQuantity("randVecE", randVec);
   }
 }
-*/
 
 void processFileOBJ(string filename) {
   // Get a nice name for the file
@@ -387,26 +385,24 @@ polyscope::warning("Some problems come in groups", "detail = " + std::to_string(
   }
 
 
-  /*
-{ // Add a curve network from the edges
-std::vector<std::array<size_t, 2>> edges;
-for (size_t iF = 0; iF < nFaces; iF++) {
-std::vector<size_t>& face = faceIndices[iF];
+  { // Add a curve network from the edges
+    std::vector<std::array<size_t, 2>> edges;
+    for (size_t iF = 0; iF < nFaces; iF++) {
+      std::vector<size_t>& face = faceIndices[iF];
 
-for (size_t iV = 0; iV < face.size(); iV++) {
-  size_t i0 = face[iV];
-  size_t i1 = face[(iV + 1) % face.size()];
-  if (i0 < i1) {
-    edges.push_back({i0, i1});
+      for (size_t iV = 0; iV < face.size(); iV++) {
+        size_t i0 = face[iV];
+        size_t i1 = face[(iV + 1) % face.size()];
+        if (i0 < i1) {
+          edges.push_back({i0, i1});
+        }
+      }
+    }
+
+    std::string curveName = niceName + " curves";
+    constructDemoCurveNetwork(curveName, vertexPositionsGLM, edges);
   }
-}
-}
 
-std::string curveName = niceName + " curves";
-constructDemoCurveNetwork(curveName, vertexPositionsGLM, edges);
-}
-
-*/
 
   /*
 

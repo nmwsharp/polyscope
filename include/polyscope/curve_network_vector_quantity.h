@@ -40,21 +40,25 @@ public:
   CurveNetworkVectorQuantity* setVectorColor(glm::vec3 color);
   glm::vec3 getVectorColor();
 
+  // Material
+  CurveNetworkVectorQuantity* setMaterial(Material newMat);
+  Material getMaterial();
+
   void writeToFile(std::string filename = "");
 
 protected:
-
   // === Visualization options
   PersistentValue<ScaledValue<float>> vectorLengthMult;
   PersistentValue<ScaledValue<float>> vectorRadius;
   PersistentValue<glm::vec3> vectorColor;
+  PersistentValue<Material> material;
 
   // The map that takes values to [0,1] for drawing
   AffineRemapper<glm::vec3> mapper;
 
   // GL things
   void prepareProgram();
-  std::unique_ptr<gl::GLProgram> program;
+  std::shared_ptr<render::ShaderProgram> program;
 
   // Set up the mapper for vectors
   void prepareVectorMapper();

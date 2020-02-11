@@ -2,11 +2,8 @@
 #include "polyscope/curve_network_scalar_quantity.h"
 
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/cylinder_shaders.h"
-#include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -43,7 +40,7 @@ void CurveNetworkScalarQuantity::draw() {
 
 
 // Update range uniforms
-void CurveNetworkScalarQuantity::setProgramUniforms(gl::GLProgram& program) {
+void CurveNetworkScalarQuantity::setProgramUniforms(render::ShaderProgram& program) {
   program.setUniform("u_rangeLow", vizRange.first);
   program.setUniform("u_rangeHigh", vizRange.second);
 }
@@ -119,13 +116,13 @@ void CurveNetworkScalarQuantity::geometryChanged() {
   edgeProgram.reset();
 }
 
-CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::setColorMap(gl::ColorMapID val) {
+CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::setColorMap(render::ColorMapID val) {
   cMap = val;
   hist.updateColormap(cMap.get());
   requestRedraw();
   return this;
 }
-gl::ColorMapID CurveNetworkScalarQuantity::getColorMap() { return cMap.get(); }
+render::ColorMapID CurveNetworkScalarQuantity::getColorMap() { return cMap.get(); }
 CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::setMapRange(std::pair<double, double> val) {
   vizRange = val;
   requestRedraw();
@@ -153,10 +150,14 @@ CurveNetworkNodeScalarQuantity::CurveNetworkNodeScalarQuantity(std::string name,
 
 void CurveNetworkNodeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  nodeProgram.reset(new gl::GLProgram(&gl::SPHERE_VALUE_VERT_SHADER, &gl::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
-                                      &gl::SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
-  edgeProgram.reset(new gl::GLProgram(&gl::CYLINDER_BLEND_VALUE_VERT_SHADER, &gl::CYLINDER_BLEND_VALUE_GEOM_SHADER,
-                                      &gl::CYLINDER_VALUE_FRAG_SHADER, gl::DrawMode::Points));
+  nodeProgram = render::engine->generateShaderProgram({render::SPHERE_VALUE_VERT_SHADER,
+                                                       render::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
+                                                       render::SPHERE_VALUE_BILLBOARD_FRAG_SHADER},
+                                                      DrawMode::Points);
+  edgeProgram = render::engine->generateShaderProgram({render::CYLINDER_BLEND_VALUE_VERT_SHADER,
+                                                       render::CYLINDER_BLEND_VALUE_GEOM_SHADER,
+                                                       render::CYLINDER_VALUE_FRAG_SHADER},
+                                                      DrawMode::Points);
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);
@@ -181,10 +182,10 @@ void CurveNetworkNodeScalarQuantity::createProgram() {
     edgeProgram->setAttribute("a_value_tip", valueTip);
   }
 
-  edgeProgram->setTextureFromColormap("t_colormap", gl::getColorMap(getColorMap()));
-  nodeProgram->setTextureFromColormap("t_colormap", gl::getColorMap(getColorMap()));
-  setMaterialForProgram(*edgeProgram, "wax");
-  setMaterialForProgram(*nodeProgram, "wax");
+  edgeProgram->setTextureFromColormap("t_colormap", render::getColorMap(getColorMap()));
+  nodeProgram->setTextureFromColormap("t_colormap", render::getColorMap(getColorMap()));
+  render::engine->setMaterial(*nodeProgram, parent.getMaterial());
+  render::engine->setMaterial(*edgeProgram, parent.getMaterial());
 }
 
 
@@ -214,10 +215,13 @@ CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name,
 
 void CurveNetworkEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  nodeProgram.reset(new gl::GLProgram(&gl::SPHERE_VALUE_VERT_SHADER, &gl::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
-                                      &gl::SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
-  edgeProgram.reset(new gl::GLProgram(&gl::CYLINDER_VALUE_VERT_SHADER, &gl::CYLINDER_VALUE_GEOM_SHADER,
-                                      &gl::CYLINDER_VALUE_FRAG_SHADER, gl::DrawMode::Points));
+  nodeProgram = render::engine->generateShaderProgram({render::SPHERE_VALUE_VERT_SHADER,
+                                                       render::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
+                                                       render::SPHERE_VALUE_BILLBOARD_FRAG_SHADER},
+                                                      DrawMode::Points);
+  edgeProgram = render::engine->generateShaderProgram(
+      {render::CYLINDER_VALUE_VERT_SHADER, render::CYLINDER_VALUE_GEOM_SHADER, render::CYLINDER_VALUE_FRAG_SHADER},
+      DrawMode::Points);
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);
@@ -245,10 +249,10 @@ void CurveNetworkEdgeScalarQuantity::createProgram() {
     edgeProgram->setAttribute("a_value", values);
   }
 
-  edgeProgram->setTextureFromColormap("t_colormap", gl::getColorMap(getColorMap()));
-  nodeProgram->setTextureFromColormap("t_colormap", gl::getColorMap(getColorMap()));
-  setMaterialForProgram(*edgeProgram, "wax");
-  setMaterialForProgram(*nodeProgram, "wax");
+  edgeProgram->setTextureFromColormap("t_colormap", render::getColorMap(getColorMap()));
+  nodeProgram->setTextureFromColormap("t_colormap", render::getColorMap(getColorMap()));
+  render::engine->setMaterial(*nodeProgram, parent.getMaterial());
+  render::engine->setMaterial(*edgeProgram, parent.getMaterial());
 }
 
 

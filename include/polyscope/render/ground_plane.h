@@ -25,11 +25,6 @@ public:
   // box of the scene.
   float groundPlaneHeightFactor = 0;
 
-  // TODO pbr settings
-  float pbrRoughness = 0.35;
-  float pbrMetallic = 0.0;
-  float pbrF0 = 0.05;
-
 private:
   std::shared_ptr<render::ShaderProgram> groundPlaneProgram = nullptr;
   std::shared_ptr<render::TextureBuffer> mirroredSceneColorTexture = nullptr;

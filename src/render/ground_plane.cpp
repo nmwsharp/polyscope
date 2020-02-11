@@ -186,10 +186,6 @@ void GroundPlane::draw() {
   groundPlaneProgram->setUniform("u_lengthScale", state::lengthScale);
   groundPlaneProgram->setUniform("u_groundHeight", groundHeight);
 
-  // glEnable(GL_BLEND);
-  // glDepthFunc(GL_LESS); // return to normal
-  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
   groundPlaneProgram->draw();
 }
 
@@ -199,14 +195,7 @@ void GroundPlane::buildGui() {
   if (ImGui::TreeNode("Ground Plane")) {
 
     ImGui::Checkbox("Enabled", &options::groundPlaneEnabled);
-
     ImGui::SliderFloat("Height", &groundPlaneHeightFactor, 0.0, 1.0);
-
-    { // TODO pbr
-      ImGui::SliderFloat("roughness", &pbrRoughness, 0.0, 1.0, "%.3f", 1.);
-      ImGui::SliderFloat("metallic", &pbrMetallic, 0.0, 1.0, "%.3f", 1.);
-      ImGui::SliderFloat("F0", &pbrF0, 0.0, 1.0, "%.3f", 3.);
-    }
 
     ImGui::TreePop();
   }

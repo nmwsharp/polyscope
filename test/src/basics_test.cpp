@@ -4,6 +4,7 @@
 #include "polyscope/point_cloud.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/curve_network.h"
 
 #include <array>
 #include <iostream>
@@ -452,4 +453,127 @@ TEST_F(PolyscopeTest, SurfaceMeshSurfaceGraphPath) {
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
+
+
+// ============================================================
+// =============== Curve network tests
+// ============================================================
+
+std::tuple<std::vector<glm::vec3>, std::vector<std::array<size_t, 2>>> getCurveNetwork() {
+  std::vector<glm::vec3> points;
+  std::vector<std::array<size_t, 2>> edges;
+
+  // clang-format off
+  points = {
+    {1, 0, 0},
+    {0, 1, 0},
+    {0, 0, 1},
+    {0, 0, 0},
+  };
+
+  edges = {
+    {1, 3},
+    {3, 0},
+    {1, 0},
+    {0, 2}
+   };
+  // clang-format on
+
+  return {points, edges};
+};
+
+polyscope::CurveNetwork* registerCurveNetwork(std::string name = "test1") {
+  std::vector<glm::vec3> points;
+  std::vector<std::array<size_t, 2>> edges;
+  std::tie(points, edges) = getCurveNetwork();
+  return polyscope::registerCurveNetwork(name, points, edges);
+}
+
+
+TEST_F(PolyscopeTest, ShowCurveNetwork) {
+  auto psCurve = registerCurveNetwork();
+
+  // Make sure we actually added the mesh
+  polyscope::show(3);
+  EXPECT_TRUE(polyscope::hasCurveNetwork("test1"));
+  EXPECT_FALSE(polyscope::hasCurveNetwork("test2"));
+  polyscope::removeAllStructures();
+  EXPECT_FALSE(polyscope::hasCurveNetwork("test1"));
+}
+
+TEST_F(PolyscopeTest, CurveNetworkAppearance) {
+  auto psCurve = registerCurveNetwork();
+
+  // Material
+  psCurve->setMaterial(polyscope::Material::Wax);
+  EXPECT_EQ(psCurve->getMaterial(), polyscope::Material::Wax);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, CurveNetworkPick) {
+  auto psCurve = registerCurveNetwork();
+
+  // Don't bother trying to actually click on anything, but make sure this doesn't crash
+  polyscope::pick::evaluatePickQuery(77, 88);
+
+  polyscope::removeAllStructures();
+}
+
+
+TEST_F(PolyscopeTest, CurveNetworkColorNode) {
+  auto psCurve = registerCurveNetwork();
+  std::vector<glm::vec3> vColors(psCurve->nNodes(), glm::vec3{.2, .3, .4});
+  auto q1 = psCurve->addNodeColorQuantity("vcolor", vColors);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, CurveNetworkColorFace) {
+  auto psCurve = registerCurveNetwork();
+  std::vector<glm::vec3> eColors(psCurve->nEdges(), glm::vec3{.2, .3, .4});
+  auto q2 = psCurve->addEdgeColorQuantity("eColor", eColors);
+  q2->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, CurveNetworkScalarNode) {
+  auto psCurve = registerCurveNetwork();
+  std::vector<double> vScalar(psCurve->nNodes(), 7.);
+  auto q1 = psCurve->addNodeScalarQuantity("vScalar", vScalar);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, CurveNetworkScalarEdge) {
+  auto psCurve = registerCurveNetwork();
+  std::vector<double> eScalar(psCurve->nEdges(), 9.);
+  auto q3 = psCurve->addEdgeScalarQuantity("eScalar", eScalar);
+  q3->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, CurveNetworkVertexVector) {
+  auto psCurve = registerCurveNetwork();
+  std::vector<glm::vec3> vals(psCurve->nNodes(), {1., 2., 3.});
+  auto q1 = psCurve->addNodeVectorQuantity("vals", vals);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, CurveNetworkFaceVector) {
+  auto psCurve = registerCurveNetwork();
+  std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
+  auto q1 = psCurve->addEdgeVectorQuantity("vals", vals);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
 
