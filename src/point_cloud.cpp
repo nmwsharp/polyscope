@@ -34,13 +34,11 @@ PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
 
 // Helper to set uniforms
 void PointCloud::setPointCloudUniforms(render::ShaderProgram& p) {
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
   p.setUniform("u_pointRadius", pointRadius.get().asAbsolute());
-
-  glm::vec3 lookDir, upDir, rightDir;
-  view::getCameraFrame(lookDir, upDir, rightDir);
-  p.setUniform("u_camZ", lookDir);
-  p.setUniform("u_camUp", upDir);
-  p.setUniform("u_camRight", rightDir);
+  p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  p.setUniform("u_viewport", view::getViewport());
 }
 
 void PointCloud::draw() {

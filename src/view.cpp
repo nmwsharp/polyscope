@@ -224,7 +224,8 @@ glm::mat4 computeHomeView() {
   case UpDir::ZUp:
     baseUp = glm::vec3(0., 0., 1.);
     R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI / 2), glm::vec3(-1., 0., 0.));
-    R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI), glm::vec3(0., 1., 0.)) * R; // follow common convention for "front"
+    R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI), glm::vec3(0., 1., 0.)) *
+        R; // follow common convention for "front"
     break;
   }
 
@@ -283,6 +284,8 @@ glm::mat4 getCameraPerspectiveMatrix() {
 
   return glm::perspective(fovRad, aspectRatio, nearClip, farClip);
 }
+
+glm::vec4 getViewport() { return glm::vec4{0., 0., view::bufferWidth, view::bufferHeight}; }
 
 glm::vec3 getCameraWorldPosition() {
   // This will work no matter how the view matrix is constructed...

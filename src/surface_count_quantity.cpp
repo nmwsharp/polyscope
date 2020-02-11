@@ -60,14 +60,12 @@ void SurfaceCountQuantity::createProgram() {
 void SurfaceCountQuantity::geometryChanged() { program.reset(); }
 
 void SurfaceCountQuantity::setUniforms(render::ShaderProgram& p) {
-  glm::vec3 lookDir, upDir, rightDir;
-  view::getCameraFrame(lookDir, upDir, rightDir);
-  p.setUniform("u_camZ", lookDir);
-  p.setUniform("u_camUp", upDir);
-  p.setUniform("u_camRight", rightDir);
+	glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+  p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  p.setUniform("u_viewport", view::getViewport());
 
   p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
-
   p.setUniform("u_rangeLow", vizRangeLow);
   p.setUniform("u_rangeHigh", vizRangeHigh);
 }

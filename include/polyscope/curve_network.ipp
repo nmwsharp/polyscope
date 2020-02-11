@@ -106,17 +106,7 @@ CurveNetwork* registerCurveNetworkLoop2D(std::string name, const P& nodes) {
 template <class V>
 void CurveNetwork::updateNodePositions(const V& newPositions) {
   nodes = standardizeVectorArray<glm::vec3, 3>(newPositions);
-
-  nodeProgram.reset();
-  edgeProgram.reset();
-  nodePickProgram.reset();
-  edgePickProgram.reset();
-
-  for (auto& q : quantities) {
-    q.second->geometryChanged();
-  }
-
-  requestRedraw();
+  geometryChanged();
 }
 
 

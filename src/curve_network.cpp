@@ -51,13 +51,11 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
 
 // Helper to set uniforms
 void CurveNetwork::setCurveNetworkNodeUniforms(render::ShaderProgram& p) {
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+  p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  p.setUniform("u_viewport", view::getViewport());
   p.setUniform("u_pointRadius", getRadius());
-
-  glm::vec3 lookDir, upDir, rightDir;
-  view::getCameraFrame(lookDir, upDir, rightDir);
-  p.setUniform("u_camZ", lookDir);
-  p.setUniform("u_camUp", upDir);
-  p.setUniform("u_camRight", rightDir);
 }
 
 void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) { p.setUniform("u_radius", getRadius()); }
@@ -228,6 +226,18 @@ void CurveNetwork::fillEdgeGeometryBuffers(render::ShaderProgram& program) {
   program.setAttribute("a_position_tip", posTip);
 }
 
+void CurveNetwork::geometryChanged() {
+  nodeProgram.reset();
+  edgeProgram.reset();
+  nodePickProgram.reset();
+  edgePickProgram.reset();
+
+  for (auto& q : quantities) {
+    q.second->geometryChanged();
+  }
+
+  requestRedraw();
+}
 
 void CurveNetwork::buildPickUI(size_t localPickID) {
 
@@ -298,6 +308,13 @@ void CurveNetwork::buildCustomUI() {
   ImGui::PopItemWidth();
 }
 
+void CurveNetwork::buildCustomOptionsUI() {
+  if (render::buildMaterialOptionsGui(material.get())) {
+    material.manuallyChanged();
+    setMaterial(material.get()); // trigger the other updates that happen on set()
+  }
+}
+
 double CurveNetwork::lengthScale() {
   // TODO cache
 
@@ -344,7 +361,7 @@ float CurveNetwork::getRadius() { return radius.get().asAbsolute(); }
 
 CurveNetwork* CurveNetwork::setMaterial(Material m) {
   material = m;
-  //geometryChanged(); // (serves the purpose of re-initializing everything, though this is a bit overkill)
+  geometryChanged(); // (serves the purpose of re-initializing everything, though this is a bit overkill)
   requestRedraw();
   return this;
 }

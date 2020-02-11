@@ -44,13 +44,10 @@ void SurfaceGraphQuantity::draw() {
 }
 
 void SurfaceGraphQuantity::setUniforms() {
-  // Point billboard uniforms
-  glm::vec3 lookDir, upDir, rightDir;
-  view::getCameraFrame(lookDir, upDir, rightDir);
-  pointProgram->setUniform("u_camZ", lookDir);
-
-  pointProgram->setUniform("u_camUp", upDir);
-  pointProgram->setUniform("u_camRight", rightDir);
+	glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+  pointProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  pointProgram->setUniform("u_viewport", view::getViewport());
 
   // Radii and colors
   pointProgram->setUniform("u_pointRadius", getRadius());

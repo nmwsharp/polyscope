@@ -100,6 +100,46 @@ vec2 sphericalTexCoords(vec3 v) {
   return uv;
 }
 
+// Two useful references:
+//   - https://stackoverflow.com/questions/38938498/how-do-i-convert-gl-fragcoord-to-a-world-space-point-in-a-fragment-shader
+//   - https://stackoverflow.com/questions/11277501/how-to-recover-view-space-position-given-view-space-depth-value-and-ndc-xy
+
+vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord) {
+	vec4 ndcPos;
+	ndcPos.xy = ((2.0 * fragCoord.xy) - (2.0 * viewport.xy)) / (viewport.zw) - 1;
+	ndcPos.z = (2.0 * fragCoord.z - depthRange.x - depthRange.y) / (depthRange.y - depthRange.x);
+	ndcPos.w = 1.0;
+
+	vec4 clipPos = ndcPos / fragCoord.w;
+	vec4 eyePos = invProjMat * clipPos;
+	return eyePos.xyz / eyePos.w;
+}
+
+float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint) {
+	vec4 clipPos = projMat * vec4(viewPoint, 1.); // only actually need one element of this result, could save work
+	float z_ndc = clipPos.z / clipPos.w;
+	float depth = (((depthRange.y-depthRange.x) * z_ndc) + depthRange.x + depthRange.y) / 2.0;
+	return depth;
+}
+
+void raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit) {
+		rayDir = normalize(rayDir);
+		vec3 o = rayStart - sphereCenter;
+    float a = dot(rayDir, rayDir);
+    float b = 2.0 * dot(o, rayDir);
+    float c = dot(o,o) - sphereRad*sphereRad;
+    float disc = b*b - 4*a*c;
+    if(disc < 0){
+				tHit = -1.;
+				pHit = vec3(777, 777, 777);
+				nHit = vec3(777, 777, 777);
+    } else {
+			tHit = (-b - sqrt(disc)) / (2.0*a);
+			pHit = rayStart + tHit * rayDir;
+			nHit = normalize(pHit - sphereCenter);
+		}
+}
+
 
 )";
 

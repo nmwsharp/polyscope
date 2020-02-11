@@ -45,6 +45,7 @@ public:
 
   // Build the imgui display
   virtual void buildCustomUI() override;
+  virtual void buildCustomOptionsUI() override;
   virtual void buildPickUI(size_t localPickID) override;
 
   // Render the the structure on screen
@@ -58,7 +59,6 @@ public:
 
   // Axis-aligned bounding box for the structure
   virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
-
   virtual std::string typeName() override;
 
   // === Quantities
@@ -151,6 +151,8 @@ private:
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
   void preparePick();
+
+	void geometryChanged();
 
   // Pick helpers
   void buildNodePickUI(size_t nodeInd);
