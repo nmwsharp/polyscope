@@ -1,6 +1,6 @@
 #pragma once
 
-#include "polyscope/render/engine.h"
+#include "polyscope/render/opengl/gl_shaders.h"
 
 namespace polyscope {
 namespace render {

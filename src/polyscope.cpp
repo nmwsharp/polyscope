@@ -314,12 +314,12 @@ void processInputEvents() {
     // ctrl-c
     if (io.KeyCtrl && render::engine->isKeyPressed('c')) {
       std::string outData = view::getCameraJson();
-      ImGui::SetClipboardText(outData.c_str());
+      render::engine->setClipboardText(outData);
     }
 
     // ctrl-v
     if (io.KeyCtrl && render::engine->isKeyPressed('v')) {
-      std::string clipboardData = ImGui::GetClipboardText();
+      std::string clipboardData = render::engine->getClipboardText();
       view::setCameraFromJson(clipboardData, true);
     }
   }

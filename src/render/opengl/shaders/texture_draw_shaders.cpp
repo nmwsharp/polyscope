@@ -1,6 +1,5 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 
-#include "polyscope/render/opengl/gl_engine.h"
 #include "polyscope/render/shaders.h"
 
 // clang-format off

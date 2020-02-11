@@ -53,6 +53,31 @@ if("${POLYSCOPE_BACKEND}" STREQUAL "OPENGL3_GLFW")
 	endif()
 	
 elseif("${POLYSCOPE_BACKEND}" STREQUAL "MOCK_OPENGL")
+	
+	SET(BACKEND_SRCS
+		render/mock_opengl/mock_gl_engine.cpp  
+		render/opengl/shaders/texture_draw_shaders.cpp  
+		render/opengl/shaders/lighting_shaders.cpp  
+		render/opengl/shaders/ground_plane_shaders.cpp  
+		render/opengl/shaders/histogram_shaders.cpp  
+		render/opengl/shaders/surface_mesh_shaders.cpp  
+		render/opengl/shaders/vector_shaders.cpp  
+		render/opengl/shaders/sphere_shaders.cpp  
+		render/opengl/shaders/ribbon_shaders.cpp  
+		render/opengl/shaders/cylinder_shaders.cpp  
+	)
+
+	SET(BACKEND_HEADERS
+		${INCLUDE_ROOT}render/mock_opengl/mock_gl_engine.h
+		${INCLUDE_ROOT}render/opengl/shaders/common.h
+	)
+
+	SET(BACKEND_INCLUDE_DIRS
+	)
+
+	# Link settings
+	SET(BACKEND_LIBS
+	)
 
 endif()
 

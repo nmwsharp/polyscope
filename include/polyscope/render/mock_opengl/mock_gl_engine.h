@@ -5,47 +5,13 @@
 #include "polyscope/render/engine.h"
 #include "polyscope/utilities.h"
 
-#ifdef __APPLE__
-#define GLFW_INCLUDE_GLCOREARB
-#include "GLFW/glfw3.h"
-#else
-#include "glad/glad.h"
-// glad must come first
-#include "GLFW/glfw3.h"
-#endif
+// A fake version of the opengl engine, with all of the actual gl calls stubbed out. Useful for testing.
 
-#ifdef _WIN32
-#undef APIENTRY
-#define GLFW_EXPOSE_NATIVE_WIN32
-#define GLFW_EXPOSE_NATIVE_WGL
-#include <GLFW/glfw3native.h>
-#endif
-
-#include "imgui.h"
-#define IMGUI_IMPL_OPENGL_LOADER_GLAD
-#include "examples/imgui_impl_glfw.h"
-#include "examples/imgui_impl_opengl3.h"
-
-
-// Note: DO NOT include this header throughout polyscope, and do not directly make openGL calls. This header should only
-// be used to construct an instance of Engine. engine.h gives the render API, all render calls should pass through that.
-
+// Macro to construct shader strings. Unforunately, it eats line numbers.
+#define POLYSCOPE_GLSL(version, shader) "#version " #version "\n" #shader
 
 namespace polyscope {
 namespace render {
-
-// Some very nice typdefs
-typedef GLuint TextureBufferHandle;
-typedef GLuint RenderBufferHandle;
-typedef GLuint FrameBufferHandle;
-typedef GLuint ShaderHandle;
-typedef GLuint ProgramHandle;
-typedef GLuint AttributeHandle;
-typedef GLuint VertexBufferHandle;
-
-typedef GLint UniformLocation;
-typedef GLint AttributeLocation;
-typedef GLint TextureLocation;
 
 class GLTextureBuffer : public TextureBuffer {
 public:
@@ -69,10 +35,8 @@ public:
 
 
   void bind();
-  TextureBufferHandle getHandle() const { return handle; }
 
 protected:
-  TextureBufferHandle handle;
 };
 
 class GLRenderBuffer : public RenderBuffer {
@@ -83,10 +47,8 @@ public:
   void resize(unsigned int newX, unsigned int newY) override;
 
   void bind();
-  RenderBufferHandle getHandle() const { return handle; }
 
 protected:
-  RenderBufferHandle handle;
 };
 
 
@@ -115,10 +77,8 @@ public:
   std::array<float, 4> readFloat4(int xPos, int yPos) override;
 
   // Getters
-  FrameBufferHandle getHandle() const { return handle; }
 
 protected:
-  FrameBufferHandle handle;
 
   void bind();
 };
@@ -187,7 +147,7 @@ protected:
     std::string name;
     DataType type;
     bool isSet; // has a value been assigned to this uniform?
-    UniformLocation location;
+    int location;
   };
 
   struct GLShaderAttribute {
@@ -195,8 +155,8 @@ protected:
     DataType type;
     int arrayCount;
     long int dataSize; // the size of the data currently stored in this attribute (-1 if nothing)
-    AttributeLocation location;
-    VertexBufferHandle VBOLoc;
+    int location;
+    int VBOLoc;
   };
 
   struct GLShaderTexture {
@@ -206,7 +166,7 @@ protected:
     bool isSet;
     GLTextureBuffer* textureBuffer;
     std::shared_ptr<GLTextureBuffer> textureBufferOwned; // might be empty, if texture isn't owned
-    TextureLocation location;
+    int location;
   };
 
   // Lists of attributes and uniforms that need to be set
@@ -229,26 +189,21 @@ private:
   // Drawing related
   void activateTextures();
 
-  // GL pointers for various useful things
-  ProgramHandle programHandle = 0;
-  AttributeHandle vaoHandle;
-  AttributeHandle indexVBO;
-
   int nPatchVertices;
 };
 
 
-class GLEngine : public Engine {
+class MockGLEngine : public Engine {
 public:
-  GLEngine();
+  MockGLEngine();
 
   // High-level control
-  void initialize();
+	void initialize();
   void checkError(bool fatal = false) override;
 
   void clearDisplay() override;
   void bindDisplay() override;
-  void swapDisplayBuffers() override;
+	void swapDisplayBuffers() override;
   std::vector<unsigned char> readDisplayBuffer() override;
 
   // Manage render state
@@ -256,22 +211,22 @@ public:
   void popActiveRenderBuffer() override;
   void setDepthMode(DepthMode newMode = DepthMode::Less) override;
   void setBlendMode(BlendMode newMode = BlendMode::Over) override;
-
-  // === Windowing and framework things
-  void makeContextCurrent() override;
-  void updateWindowSize() override;
-  std::tuple<int, int> getWindowPos() override;
-  bool windowRequestsClose() override;
-  void pollEvents() override;
-  bool isKeyPressed(char c) override; // for lowercase a-z and 0-9 only
+  
+	// === Windowing and framework things
+	void makeContextCurrent() override;
+	void updateWindowSize() override;
+	std::tuple<int, int> getWindowPos() override;
+	bool windowRequestsClose() override;
+	void pollEvents() override;
+	bool isKeyPressed(char c) override; // for lowercase a-z and 0-9 only
   std::string getClipboardText() override;
   void setClipboardText(std::string text) override;
-
-  // ImGui
+	
+	// ImGui
   void initializeImGui() override;
   void shutdownImGui() override;
-  void ImGuiNewFrame() override;
-  void ImGuiRender() override;
+	void ImGuiNewFrame() override;
+	void ImGuiRender() override;
 
   // === Factory methods
 
@@ -297,13 +252,9 @@ public:
                                                        unsigned int nPatchVertices = 0) override;
 
 protected:
-  // Helpers
 
-  // Internal members
-  std::vector<FrameBufferHandle> activeRenderBufferStack;
+  std::vector<unsigned int> activeRenderBufferStack;
 
-  // Internal windowing and engine details
-  GLFWwindow* mainWindow = nullptr;
 };
 
 } // namespace render

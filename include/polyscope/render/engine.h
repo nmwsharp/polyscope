@@ -298,16 +298,18 @@ public:
   // === Windowing and framework things
   virtual void makeContextCurrent() = 0;
   virtual void updateWindowSize() = 0;
+  virtual std::tuple<int, int> getWindowPos() = 0;
   virtual bool windowRequestsClose() = 0;
   virtual void pollEvents() = 0;
   virtual bool isKeyPressed(char c) = 0; // for lowercase a-z and 0-9 only
-  virtual std::tuple<int, int> getWindowPos() = 0;
+  virtual std::string getClipboardText() = 0;
+  virtual void setClipboardText(std::string text) = 0;
 
   // ImGui
   virtual void initializeImGui() = 0;
   virtual void shutdownImGui() = 0;
   void setImGuiStyle();
-	ImFontAtlas* getImGuiGlobalFontAtlas();
+  ImFontAtlas* getImGuiGlobalFontAtlas();
   virtual void ImGuiNewFrame() = 0;
   virtual void ImGuiRender() = 0;
 
@@ -366,9 +368,9 @@ protected:
 
   // The cache of materials
   std::map<Material, BasisMaterial> materialCache;
-	
-	// Internal windowing and engine details
-	ImFontAtlas* globalFontAtlas = nullptr;
+
+  // Internal windowing and engine details
+  ImFontAtlas* globalFontAtlas = nullptr;
 };
 
 
