@@ -15,15 +15,13 @@
 
 // Alllll the quantities
 #include "polyscope/surface_color_quantity.h"
+#include "polyscope/surface_count_quantity.h"
 #include "polyscope/surface_distance_quantity.h"
+#include "polyscope/surface_graph_quantity.h"
 #include "polyscope/surface_parameterization_enums.h"
 #include "polyscope/surface_parameterization_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
-#include "polyscope/surface_count_quantity.h"
-/* SIMPLE
-#include "polyscope/surface_graph_quantity.h"
-*/
 //#include "polyscope/surface_selection_quantity.h"
 //#include "polyscope/surface_subset_quantity.h"
 
@@ -48,9 +46,7 @@ class SurfaceOneFormIntrinsicVectorQuantity;
 class SurfaceVertexCountQuantity;
 class SurfaceVertexIsolatedScalarQuantity;
 class SurfaceFaceCountQuantity;
-/* SIMPLE
 class SurfaceGraphQuantity;
-*/
 
 
 template <> // Specialize the quantity type
@@ -134,7 +130,6 @@ public:
 
 
 
-  /* SIMPLE
   // = Misc quantities
   template <class P, class E>
   SurfaceGraphQuantity* addSurfaceGraphQuantity(std::string name, const P& nodes, const E& edges);
@@ -150,7 +145,6 @@ public:
   void addVertexSelectionQuantity(std::string name, const T& initialMembership);
   // void addInputCurveQuantity(std::string name);
 
-  */
   // clang-format on
 
 
@@ -276,13 +270,8 @@ public:
   // One of these will be non-null on return
   // void getPickedElement(size_t localPickID, size_t& vOut, size_t& fOut, size_t& eOut, size_t& heOut);
 
-  // Returns the face ands coordinates in that face of the last pick. fOut == FacePtr() if not in any face. Note that
-  // you may needed to update the pick data, beacuse this uses mouse coordinates from the current state but possibly
-  // old pick lookup results.
-  // void getPickedFacePoint(FacePtr& fOut, glm::vec3& baryCoordOut);
-
   // === Getters and setters for visualization settings
-  
+
   // Flat or smooth shading
   SurfaceMesh* setSmoothShade(bool isSmooth);
   bool isSmoothShade();
@@ -294,8 +283,8 @@ public:
   // Color of edges
   SurfaceMesh* setEdgeColor(glm::vec3 val);
   glm::vec3 getEdgeColor();
-	
-	// Material
+
+  // Material
   SurfaceMesh* setMaterial(Material newMat);
   Material getMaterial();
 
@@ -372,7 +361,7 @@ private:
   SurfaceVertexCountQuantity* addVertexCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
   SurfaceVertexIsolatedScalarQuantity* addVertexIsolatedScalarQuantityImpl(std::string name, const std::vector<std::pair<size_t, double>>& values);
   SurfaceFaceCountQuantity* addFaceCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
-  //SurfaceGraphQuantity* addSurfaceGraphQuantityImpl(std::string name, const std::vector<glm::vec3>& nodes, const std::vector<std::array<size_t, 2>>& edges);
+	SurfaceGraphQuantity* addSurfaceGraphQuantityImpl(std::string name, const std::vector<glm::vec3>& nodes, const std::vector<std::array<size_t, 2>>& edges);
 
   // === Helper implementations
 

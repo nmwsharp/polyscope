@@ -316,7 +316,7 @@ void SurfaceMesh::draw() {
       prepare();
 
       // do these now to reduce lag when picking later, etc
-      //prepareWireframe();
+      // prepareWireframe();
       preparePick();
     }
 
@@ -746,60 +746,6 @@ glm::vec2 SurfaceMesh::projectToScreenSpace(glm::vec3 coord) {
 // return true;
 //}
 
-/*
-void SurfaceMesh::getPickedFacePoint(FacePtr& fOut, glm::vec3& baryCoordOut) {
-
-  // Get the most recent pick data
-  size_t localInd;
-  Structure* pickStruct = pick::getCurrentPickElement(localInd);
-  if (pickStruct != this) {
-    fOut = FacePtr();
-    return;
-  }
-
-  // Build a list of all faces we might need to check
-  std::vector<FacePtr> facesToCheck;
-  if (localInd < facePickIndStart) {
-    VertexPtr v = mesh->vertex(localInd);
-    for (FacePtr f : v.adjacentFaces()) {
-      facesToCheck.push_back(f);
-    }
-  } else if (localInd < edgePickIndStart) {
-    FacePtr f = mesh->face(localInd - facePickIndStart);
-    facesToCheck.push_back(f);
-  } else if (localInd < halfedgePickIndStart) {
-    EdgePtr e = mesh->edge(localInd - edgePickIndStart);
-    facesToCheck.push_back(e.halfedge().face());
-    if (!e.isBoundary()) {
-      facesToCheck.push_back(e.halfedge().twin().face());
-    }
-  } else {
-    HalfedgePtr he = mesh->allHalfedge(localInd - halfedgePickIndStart);
-    facesToCheck.push_back(he.face());
-    if (he.twin().isReal()) {
-      facesToCheck.push_back(he.twin().face());
-    }
-  }
-
-  // Get the coordinates of the mouse (in its CURRENT position)
-  ImVec2 p = ImGui::GetMousePos();
-  ImGuiIO& io = ImGui::GetIO();
-  glm::vec2 mouseCoords{(2.0 * p.x) / view::windowWidth - 1.0, (2.0 * p.y) / view::windowHeight - 1.0};
-  mouseCoords.y *= -1;
-
-  // Test all candidate faces
-  for (FacePtr f : facesToCheck) {
-    bool hitTri = screenSpaceTriangleTest(f, mouseCoords, baryCoordOut);
-    if (hitTri) {
-      fOut = f;
-      return;
-    }
-  }
-
-  // None found, no intersection
-  fOut = FacePtr();
-}
-*/
 
 
 void SurfaceMesh::buildVertexInfoGui(size_t vInd) {
@@ -1244,8 +1190,6 @@ SurfaceFaceCountQuantity* SurfaceMesh::addFaceCountQuantityImpl(std::string name
   return q;
 }
 
-/* SIMPLE
-
 SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantityImpl(std::string name, const std::vector<glm::vec3>& nodes,
                                                                const std::vector<std::array<size_t, 2>>& edges) {
   SurfaceGraphQuantity* q = new SurfaceGraphQuantity(name, nodes, edges, *this);
@@ -1253,7 +1197,6 @@ SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantityImpl(std::string name,
   return q;
 }
 
-*/
 
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                       DataType type) {

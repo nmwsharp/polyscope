@@ -20,7 +20,7 @@ public:
   std::vector<std::array<size_t, 2>> edges;
 
   // == Option setters and getters
-  SurfaceGraphQuantity* setRadius(double newVal, bool isRelative=true);
+  SurfaceGraphQuantity* setRadius(double newVal, bool isRelative = true);
   double getRadius();
 
   SurfaceGraphQuantity* setColor(glm::vec3 newColor);
@@ -31,8 +31,8 @@ private:
   PersistentValue<ScaledValue<float>> radius;
   PersistentValue<glm::vec3> color;
 
-  std::unique_ptr<gl::GLProgram> pointProgram;
-  std::unique_ptr<gl::GLProgram> lineProgram;
+  std::shared_ptr<render::ShaderProgram> pointProgram;
+  std::shared_ptr<render::ShaderProgram> lineProgram;
 
   void createPrograms();
   void setUniforms();

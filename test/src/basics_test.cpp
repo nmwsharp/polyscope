@@ -332,3 +332,30 @@ TEST_F(PolyscopeTest, SurfaceMeshVertexIsolated) {
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
+
+TEST_F(PolyscopeTest, SurfaceMeshSurfaceGraph) {
+  auto psMesh = registerTriangleMesh();
+  std::vector<glm::vec3> nodes = {
+      {1., 2., 3.},
+      {3., 4., 5.},
+      {5., 6., 7.},
+  };
+  std::vector<std::array<size_t, 2>> edges = {{0, 1}, {1, 2}, {2, 0}};
+  auto q1 = psMesh->addSurfaceGraphQuantity("vals", nodes, edges);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SurfaceMeshSurfaceGraphPath) {
+  auto psMesh = registerTriangleMesh();
+  std::vector<glm::vec3> nodes = {
+      {1., 2., 3.},
+      {3., 4., 5.},
+      {5., 6., 7.},
+  };
+  auto q1 = psMesh->addSurfaceGraphQuantity("vals", std::vector<std::vector<glm::vec3>>({nodes, nodes}));
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}

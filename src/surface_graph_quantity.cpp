@@ -1,11 +1,9 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/surface_graph_quantity.h"
 
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/cylinder_shaders.h"
-#include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/render/shaders.h"
 #include "polyscope/utilities.h"
 
 #include "imgui.h"
@@ -66,18 +64,21 @@ void SurfaceGraphQuantity::setUniforms() {
 
 
 void SurfaceGraphQuantity::createPrograms() {
+
   { // Point program
-    pointProgram.reset(new gl::GLProgram(&gl::SPHERE_VERT_SHADER, &gl::SPHERE_BILLBOARD_GEOM_SHADER,
-                                         &gl::SPHERE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+    pointProgram = render::engine->generateShaderProgram(
+        {render::SPHERE_VERT_SHADER, render::SPHERE_BILLBOARD_GEOM_SHADER, render::SPHERE_BILLBOARD_FRAG_SHADER},
+        DrawMode::Points);
 
     pointProgram->setAttribute("a_position", nodes);
-    setMaterialForProgram(*pointProgram, "wax");
+    render::engine->setMaterial(*pointProgram, parent.getMaterial());
   }
 
   { // Line program
 
-    lineProgram.reset(new gl::GLProgram(&gl::PASSTHRU_CYLINDER_VERT_SHADER, &gl::CYLINDER_GEOM_SHADER,
-                                        &gl::CYLINDER_FRAG_SHADER, gl::DrawMode::Points));
+    lineProgram = render::engine->generateShaderProgram(
+        {render::PASSTHRU_CYLINDER_VERT_SHADER, render::CYLINDER_GEOM_SHADER, render::CYLINDER_FRAG_SHADER},
+        DrawMode::Points);
 
     // Build buffers
     std::vector<glm::vec3> edgeStarts, edgeEnds;
@@ -92,7 +93,7 @@ void SurfaceGraphQuantity::createPrograms() {
     lineProgram->setAttribute("a_position_tail", edgeStarts);
     lineProgram->setAttribute("a_position_tip", edgeEnds);
 
-    setMaterialForProgram(*lineProgram, "wax");
+    render::engine->setMaterial(*lineProgram, parent.getMaterial());
   }
 }
 

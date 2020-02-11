@@ -368,26 +368,26 @@ polyscope::warning("Some problems come in groups", "detail = " + std::to_string(
 
     polyscope::getSurfaceMesh(niceName)->addLocalParameterizationQuantity("param vert local test", vertParamLocal);
   }
+
+  { // Add a surface graph quantity
+
+    std::vector<std::array<size_t, 2>> edges;
+    for (size_t iF = 0; iF < nFaces; iF++) {
+      std::vector<size_t>& face = faceIndices[iF];
+
+      for (size_t iV = 0; iV < face.size(); iV++) {
+        size_t i0 = face[iV];
+        size_t i1 = face[(iV + 1) % face.size()];
+
+        edges.push_back({i0, i1});
+      }
+    }
+
+    polyscope::getSurfaceMesh(niceName)->addSurfaceGraphQuantity("surface graph", vertexPositionsGLM, edges);
+  }
+
+
   /*
-
-{ // Add a surface graph quantity
-
-std::vector<std::array<size_t, 2>> edges;
-for (size_t iF = 0; iF < nFaces; iF++) {
-std::vector<size_t>& face = faceIndices[iF];
-
-for (size_t iV = 0; iV < face.size(); iV++) {
-  size_t i0 = face[iV];
-  size_t i1 = face[(iV + 1) % face.size()];
-
-  edges.push_back({i0, i1});
-}
-}
-
-polyscope::getSurfaceMesh(niceName)->addSurfaceGraphQuantity("surface graph", vertexPositionsGLM, edges);
-}
-
-
 { // Add a curve network from the edges
 std::vector<std::array<size_t, 2>> edges;
 for (size_t iF = 0; iF < nFaces; iF++) {

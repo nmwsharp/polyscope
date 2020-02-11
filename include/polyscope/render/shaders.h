@@ -72,6 +72,24 @@ extern const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_FRAG_SHADER;
 extern const ShaderStageSpecification SPHERE_COLOR_BILLBOARD_FRAG_SHADER;
 extern const ShaderStageSpecification SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER;
 
+// == Cylinder shaders
+extern const ShaderStageSpecification PASSTHRU_CYLINDER_VERT_SHADER;
+extern const ShaderStageSpecification CYLINDER_VALUE_VERT_SHADER;
+extern const ShaderStageSpecification CYLINDER_COLOR_VERT_SHADER;
+extern const ShaderStageSpecification CYLINDER_BLEND_VALUE_VERT_SHADER;
+extern const ShaderStageSpecification CYLINDER_BLEND_COLOR_VERT_SHADER;
+extern const ShaderStageSpecification CYLINDER_PICK_VERT_SHADER;
+extern const ShaderStageSpecification CYLINDER_GEOM_SHADER;
+extern const ShaderStageSpecification CYLINDER_VALUE_GEOM_SHADER;
+extern const ShaderStageSpecification CYLINDER_COLOR_GEOM_SHADER;
+extern const ShaderStageSpecification CYLINDER_BLEND_VALUE_GEOM_SHADER;
+extern const ShaderStageSpecification CYLINDER_BLEND_COLOR_GEOM_SHADER;
+extern const ShaderStageSpecification CYLINDER_PICK_GEOM_SHADER;
+extern const ShaderStageSpecification CYLINDER_FRAG_SHADER;
+extern const ShaderStageSpecification CYLINDER_VALUE_FRAG_SHADER;
+extern const ShaderStageSpecification CYLINDER_COLOR_FRAG_SHADER;
+extern const ShaderStageSpecification CYLINDER_PICK_FRAG_SHADER;
+
 
 } // namespace render
 } // namespace polyscope

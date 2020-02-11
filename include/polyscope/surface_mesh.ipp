@@ -292,8 +292,6 @@ inline SurfaceFaceCountQuantity* SurfaceMesh::addFaceCountQuantity(std::string n
 }
 
 
-/* SIMPLE
-
 template <class P, class E>
 SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantity(std::string name, const P& nodes, const E& edges) {
   return addSurfaceGraphQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(nodes),
@@ -353,8 +351,6 @@ SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantity2D(std::string name, c
   return addSurfaceGraphQuantity(name, paths3D);
 }
 
-
-*/
 
 template <class T>
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexScalarQuantity(std::string name, const T& data, DataType type) {

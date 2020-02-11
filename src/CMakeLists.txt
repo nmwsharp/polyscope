@@ -22,6 +22,7 @@ SET(SRCS
   render/opengl/shaders/vector_shaders.cpp  
   render/opengl/shaders/sphere_shaders.cpp  
   render/opengl/shaders/ribbon_shaders.cpp  
+  render/opengl/shaders/cylinder_shaders.cpp  
   
   render/bindata/concrete_seamless.cpp
   render/bindata/bindata_clay.cpp
@@ -71,7 +72,7 @@ SET(SRCS
 	surface_parameterization_quantity.cpp
 	surface_vector_quantity.cpp
 	surface_count_quantity.cpp
-  #surface_graph_quantity.cpp
+	surface_graph_quantity.cpp
   #surface_subset_quantity.cpp
   #surface_selection_quantity.cpp
   #surface_input_curve_quantity.cpp
