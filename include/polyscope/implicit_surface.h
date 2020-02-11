@@ -23,7 +23,7 @@ namespace polyscope {
 class ImplicitSurface : public QuantityStructure<ImplicitSurface> {
 public:
   // Construct a new curve network structure
-  ImplicitSurface(std::string name, double* field, size_t nValuesPerSide, glm::vec3 center, double sideLen);
+  ImplicitSurface(std::string name, const std::vector<double> &field, size_t nValuesPerSide, glm::vec3 center, double sideLen);
 
   // === Overloads
 
@@ -41,20 +41,52 @@ public:
   virtual std::string typeName() override;
 
   // Field data
-  double* field;
+  std::vector<double> field;
   size_t nCornersPerSide;
+  glm::vec3 gridCenter;
+  double sideLength;
+  double levelSet;
 
   inline size_t nCells() const { return nCornersPerSide * nCornersPerSide * nCornersPerSide; }
+
+  void meshCurrentLevelSet();
 
   // Misc data
   static const std::string structureTypeName;
 
 private:
-  glm::vec3 gridCenter;
-  double sideLength;
   PersistentValue<glm::vec3> color;
   ImplicitSurface* setColor(glm::vec3 newVal);
   glm::vec3 getColor();
 
+
 };
+
+template<typename T>
+ImplicitSurface* registerImplicitSurfaceGrid(std::string name, const T &field,
+size_t nValuesPerSide, glm::vec3 center, double sideLen) {
+  ImplicitSurface* s = new ImplicitSurface(name, field, nValuesPerSide, center, sideLen);
+  bool success = registerStructure(s);
+  if (!success) {
+    safeDelete(s);
+  }
+  return s;
+}
+
+template<typename Implicit>
+ImplicitSurface* registerImplicitSurfaceFunction(std::string name, const Implicit &surface,
+size_t nValuesPerSide, glm::vec3 center, double sideLen, bool meshImmediately = true) {
+    size_t totalValues = nValuesPerSide * nValuesPerSide * nValuesPerSide;
+    std::vector<double> field(totalValues);
+    marchingcubes::SampleFunctionToGrid<Implicit>(surface, nValuesPerSide, center, sideLen, field);
+
+    ImplicitSurface* outputSurface = registerImplicitSurfaceGrid(name, field, nValuesPerSide, center, sideLen);
+    if (meshImmediately) {
+      outputSurface->meshCurrentLevelSet();
+    }
+    return outputSurface;
+}
+
 } // namespace polyscope
+
+#include "implicit_surface.ipp"

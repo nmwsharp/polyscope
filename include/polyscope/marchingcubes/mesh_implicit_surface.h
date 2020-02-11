@@ -10,38 +10,37 @@ namespace polyscope {
 namespace marchingcubes {
 
 template <typename Implicit>
-void SampleFunctionToGrid(Implicit* surface, size_t numCells, glm::vec3 center, double sideLength, double* field) {
+void SampleFunctionToGrid(const Implicit &surface, size_t numCornersPerSide, glm::vec3 center, double sideLength, std::vector<double> &field) {
   double diameter = sideLength;
-  double cellSize = diameter / numCells;
+  double cellSize = diameter / (numCornersPerSide - 1);
   double radius = diameter / 2;
 
   glm::vec3 lowerCorner = center - glm::vec3{radius, radius, radius};
 
-  int numCorners = numCells + 1;
+  int nSlice = numCornersPerSide * numCornersPerSide;
+  int nRow = numCornersPerSide;
 
-  int nSlice = numCorners * numCorners;
-  int nRow = numCorners;
-
-  for (int x = 0; x < numCorners; x++) {
-    for (int y = 0; y < numCorners; y++) {
-      for (int z = 0; z < numCorners; z++) {
+  for (size_t x = 0; x < numCornersPerSide; x++) {
+    for (size_t y = 0; y < numCornersPerSide; y++) {
+      for (size_t z = 0; z < numCornersPerSide; z++) {
         glm::vec3 samplePt = lowerCorner + glm::vec3{(double)x, (double)y, (double)z} * (float)cellSize;
-        double value = surface->SampleField(samplePt);
+        double value = surface.SampleField(samplePt);
         field[nSlice * z + nRow * y + x] = value;
       }
     }
   }
 }
 
-inline void MeshImplicitGrid(double* field, double isoLevel, size_t numCells, glm::vec3 center, double sideLength,
-                             std::vector<glm::vec3>& nodes, std::vector<std::array<size_t, 3>> triangles) {
+inline void MeshImplicitGrid(std::vector<double> &field, double isoLevel, size_t numCornersPerSide, glm::vec3 center, double sideLength,
+                             std::vector<glm::vec3> &nodes, std::vector<std::array<size_t, 3>> &triangles) {
   CIsoSurface<double>* iso = new CIsoSurface<double>();
+  int numCells = numCornersPerSide - 1;
   double diameter = sideLength;
   double cellSize = diameter / numCells;
   double radius = diameter / 2;
   glm::vec3 lowerCorner = center - glm::vec3{radius, radius, radius};
 
-  iso->GenerateSurface(field, isoLevel, numCells, numCells, numCells, cellSize, cellSize, cellSize);
+  iso->GenerateSurface(&field[0], isoLevel, numCells, numCells, numCells, cellSize, cellSize, cellSize);
 
   int nVerts = iso->m_nVertices;
 
