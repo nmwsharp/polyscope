@@ -353,7 +353,7 @@ public:
   BackgroundView background = BackgroundView::None;
 
   // TODO make these persistent?
-  float exposure = 1.0;
+  float exposure = 0.9;
   float whiteLevel = 0.7;
   float gamma = 2.2;
 

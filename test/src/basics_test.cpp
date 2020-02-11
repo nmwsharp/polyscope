@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "polyscope/pick.h"
+#include "polyscope/point_cloud.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 
@@ -52,6 +53,93 @@ TEST_F(PolyscopeTest, InitializeAndShow) { polyscope::show(3); }
 
 
 // ============================================================
+// =============== Point cloud tests
+// ============================================================
+
+std::vector<glm::vec3> getPoints() {
+  std::vector<glm::vec3> points;
+
+  // clang-format off
+  points = {
+    {1, 0, 0},
+    {0, 1, 0},
+    {0, 0, 1},
+    {0, 0, 0},
+  };
+
+  return points;
+};
+
+polyscope::PointCloud* registerPointCloud(std::string name = "test1") {
+  std::vector<glm::vec3> points = getPoints();
+  return polyscope::registerPointCloud(name, points);
+}
+
+
+TEST_F(PolyscopeTest, ShowPointCloud) {
+  auto psPoints = registerPointCloud();
+
+  polyscope::show(3);
+  EXPECT_TRUE(polyscope::hasPointCloud("test1"));
+  EXPECT_FALSE(polyscope::hasPointCloud("test2"));
+  polyscope::removeAllStructures();
+  EXPECT_FALSE(polyscope::hasPointCloud("test1"));
+}
+
+TEST_F(PolyscopeTest, PointCloudAppearance) {
+  auto psPoints = registerPointCloud();
+
+  // Radius
+  psPoints->setPointRadius(0.02);
+  polyscope::show(3);
+
+  // Material
+  psPoints->setMaterial(polyscope::Material::Wax);
+  EXPECT_EQ(psPoints->getMaterial(), polyscope::Material::Wax);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, PointCloudPick) {
+  auto psPoints = registerPointCloud();
+
+  // Don't bother trying to actually click on anything, but make sure this doesn't crash
+  polyscope::pick::evaluatePickQuery(77, 88);
+
+  polyscope::removeAllStructures();
+}
+
+
+TEST_F(PolyscopeTest, PointCloudColor) {
+  auto psPoints = registerPointCloud();
+  std::vector<glm::vec3> vColors(psPoints->nPoints(), glm::vec3{.2, .3, .4});
+  auto q1 = psPoints->addColorQuantity("vcolor", vColors);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+
+TEST_F(PolyscopeTest, PointCloudScalar) {
+  auto psPoints = registerPointCloud();
+  std::vector<double> vScalar(psPoints->nPoints(), 7.);
+  auto q1 = psPoints->addScalarQuantity("vScalar", vScalar);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, PointCloudVector) {
+  auto psPoints = registerPointCloud();
+  std::vector<glm::vec3> vals(psPoints->nPoints(), {1., 2., 3.});
+  auto q1 = psPoints->addVectorQuantity("vals", vals);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+// ============================================================
 // =============== Surface mesh tests
 // ============================================================
 
@@ -82,7 +170,7 @@ polyscope::SurfaceMesh* registerTriangleMesh(std::string name = "test1") {
   std::vector<glm::vec3> points;
   std::vector<std::vector<size_t>> faces;
   std::tie(points, faces) = getTriangleMesh();
-  return polyscope::registerSurfaceMesh("test1", points, faces);
+  return polyscope::registerSurfaceMesh(name, points, faces);
 }
 
 
@@ -112,6 +200,11 @@ TEST_F(PolyscopeTest, SurfaceMeshAppearance) {
   // Wireframe
   psMesh->setEdgeWidth(1.);
   EXPECT_EQ(psMesh->getEdgeWidth(), 1.);
+  polyscope::show(3);
+  
+  // Material
+  psMesh->setMaterial(polyscope::Material::Wax);
+  EXPECT_EQ(psMesh->getMaterial(), polyscope::Material::Wax);
   polyscope::show(3);
 
   polyscope::removeAllStructures();
@@ -359,3 +452,4 @@ TEST_F(PolyscopeTest, SurfaceMeshSurfaceGraphPath) {
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
+

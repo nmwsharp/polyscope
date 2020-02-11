@@ -50,7 +50,7 @@ private:
   AffineRemapper<glm::vec3> mapper;
 
   void createProgram();
-  std::unique_ptr<gl::GLProgram> program;
+  std::shared_ptr<render::ShaderProgram> program;
 };
 
 } // namespace polyscope

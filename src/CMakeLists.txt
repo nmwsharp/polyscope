@@ -58,10 +58,10 @@ SET(SRCS
   ## Structures
 
   # Point cloud
-  #point_cloud.cpp
-  #point_cloud_color_quantity.cpp
-  #point_cloud_scalar_quantity.cpp
-  #point_cloud_vector_quantity.cpp
+	point_cloud.cpp
+	point_cloud_color_quantity.cpp
+	point_cloud_scalar_quantity.cpp
+	point_cloud_vector_quantity.cpp
 
   # Surface
   surface_mesh.cpp

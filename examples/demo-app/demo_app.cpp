@@ -4,7 +4,7 @@
 #include "polyscope/messages.h"
 
 //#include "polyscope/curve_network.h"
-//#include "polyscope/point_cloud.h"
+#include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_io.h"
 
@@ -428,7 +428,6 @@ constructDemoCurveNetwork(curveName, vertexPositionsGLM, edges);
   */
 }
 
-/*
 void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& points) {
 
 
@@ -455,10 +454,9 @@ void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& po
     toZeroVec[i] = -points[i];
   }
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("random vector", randVec);
-  // polyscope::getPointCloud(pointCloudName)->addVectorQuantity("unit 'normal' vector", centerNormalVec);
+  polyscope::getPointCloud(pointCloudName)->addVectorQuantity("unit 'normal' vector", centerNormalVec);
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("to zero", toZeroVec, polyscope::VectorType::AMBIENT);
 }
-*/
 
 
 void processFile(string filename) {
@@ -526,7 +524,6 @@ int main(int argc, char** argv) {
   }
 
   // Create a point cloud
-  /*
   for (int j = 0; j < 1; j++) {
     std::vector<glm::vec3> points;
     for (size_t i = 0; i < 3000; i++) {
@@ -536,7 +533,6 @@ int main(int argc, char** argv) {
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
     addDataToPointCloud("really great points" + std::to_string(j), points);
   }
-  */
 
   // Add a few gui elements
   polyscope::state::userCallback = callback;
