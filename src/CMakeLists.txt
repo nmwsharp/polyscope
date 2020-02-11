@@ -175,12 +175,17 @@ SET(SRCS
   volume_mesh_color_quantity.cpp
   volume_mesh_scalar_quantity.cpp
   volume_mesh_vector_quantity.cpp
+
+  # Marching cubes
+  # Implicit surface
   
   # Rendering utilities
   vector_artist.cpp
   trace_vector_field.cpp
   ribbon_artist.cpp
   image_scalar_artist.cpp
+  marchingcubes/Vectors.cpp
+  implicit_surface.cpp
   
   ## Embedded binary data 
   render/bindata/bindata_font_lato_regular.cpp
