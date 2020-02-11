@@ -5,32 +5,60 @@ if (CMAKE_BINARY_DIR STREQUAL CMAKE_SOURCE_DIR)
     message(FATAL_ERROR "Source and build directories cannot be the same. Go use the /build directory.")
 endif()
 
+SET(INCLUDE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../include/polyscope/")
+
+# Configure the render backend
+if("${POLYSCOPE_BACKEND}" STREQUAL "OPENGL3_GLFW")
+	
+	SET(BACKEND_SRCS
+		render/opengl/gl_engine.cpp  
+		render/opengl/shaders/texture_draw_shaders.cpp  
+		render/opengl/shaders/lighting_shaders.cpp  
+		render/opengl/shaders/ground_plane_shaders.cpp  
+		render/opengl/shaders/histogram_shaders.cpp  
+		render/opengl/shaders/surface_mesh_shaders.cpp  
+		render/opengl/shaders/vector_shaders.cpp  
+		render/opengl/shaders/sphere_shaders.cpp  
+		render/opengl/shaders/ribbon_shaders.cpp  
+		render/opengl/shaders/cylinder_shaders.cpp  
+	)
+
+	SET(BACKEND_HEADERS
+		${INCLUDE_ROOT}render/opengl/gl_engine.h
+		${INCLUDE_ROOT}render/opengl/shaders/common.h
+	)
+
+	SET(BACKEND_INCLUDE_DIRS
+		${CMAKE_CURRENT_SOURCE_DIR}/../deps/glad/include
+		${CMAKE_CURRENT_SOURCE_DIR}/../deps/glfw/include
+	)
+
+	# Link settings
+	SET(BACKEND_LIBS
+		glfw ${GLFW_LIBRARIES}
+	)
+
+	if(APPLE)
+			# Apple is playing hardball and deprecating openGL... we'll cross that bridge when we come to it
+			# Silence warnings about openGL deprecation
+			add_definitions(-DGL_SILENCE_DEPRECATION)  
+
+			find_library(cocoa_library Cocoa)
+			find_library(opengl_library OpenGL)
+			find_library(corevideo_library CoreVideo)
+			find_library(iokit_library IOKit)
+			list(APPEND BACKEND_LIBS ${cocoa_library} ${opengl_library} ${corevideo_library} ${iokit_library})
+	else()
+			list(APPEND BACKEND_LIBS glad)
+	endif()
+	
+elseif("${POLYSCOPE_BACKEND}" STREQUAL "MOCK_OPENGL")
+
+endif()
+
+
 SET(SRCS
   
-  # Rendering stuff
-  render/engine.cpp  
-  render/color_maps.cpp
-  render/ground_plane.cpp
-  render/materials.cpp
-
-  render/opengl/gl_engine.cpp  
-  render/opengl/shaders/texture_draw_shaders.cpp  
-  render/opengl/shaders/lighting_shaders.cpp  
-  render/opengl/shaders/ground_plane_shaders.cpp  
-  render/opengl/shaders/histogram_shaders.cpp  
-  render/opengl/shaders/surface_mesh_shaders.cpp  
-  render/opengl/shaders/vector_shaders.cpp  
-  render/opengl/shaders/sphere_shaders.cpp  
-  render/opengl/shaders/ribbon_shaders.cpp  
-  render/opengl/shaders/cylinder_shaders.cpp  
-  
-  render/bindata/concrete_seamless.cpp
-  render/bindata/bindata_clay.cpp
-  render/bindata/bindata_wax.cpp
-  render/bindata/bindata_candy.cpp
-  render/bindata/bindata_flat.cpp
-
-
   # Core functionality 
   polyscope.cpp
 	screenshot.cpp
@@ -39,6 +67,12 @@ SET(SRCS
   view.cpp
   messages.cpp
   pick.cpp
+  
+	# Rendering stuff
+  render/engine.cpp  
+  render/color_maps.cpp
+  render/ground_plane.cpp
+  render/materials.cpp
 
   # General utilities
   disjoint_sets.cpp
@@ -46,10 +80,7 @@ SET(SRCS
   camera_parameters.cpp
   histogram.cpp
   persistent_value.cpp
-
   color_management.cpp
-
-  binary_font_cousine_regular.cpp
 
   # Rendering utilities
 	trace_vector_field.cpp
@@ -82,89 +113,84 @@ SET(SRCS
 	curve_network_scalar_quantity.cpp
 	curve_network_color_quantity.cpp
 	curve_network_vector_quantity.cpp
+	
+	## Embedded binary data 
+  render/bindata/bindata_font_cousine_regular.cpp
+  render/bindata/concrete_seamless.cpp
+  render/bindata/bindata_clay.cpp
+  render/bindata/bindata_wax.cpp
+  render/bindata/bindata_candy.cpp
+  render/bindata/bindata_flat.cpp
 )
 
 
-SET(INCLUDE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../include/polyscope/")
+# Setting headers is useful for some build systems. For instance, in Visual Studio this is necessary for the header files to be indexed as a part of the project.
 SET(HEADERS
-  ${INCLUDE_ROOT}/affine_remapper.h
-  ${INCLUDE_ROOT}/affine_remapper.ipp
-  ${INCLUDE_ROOT}/camera_parameters.h
-  ${INCLUDE_ROOT}/color_management.h
-  ${INCLUDE_ROOT}/combining_hash_functions.h
-  ${INCLUDE_ROOT}/curve_network.h
-  ${INCLUDE_ROOT}/curve_network.ipp
-  ${INCLUDE_ROOT}/curve_network_color_quantity.h
-  ${INCLUDE_ROOT}/curve_network_quantity.h
-  ${INCLUDE_ROOT}/curve_network_scalar_quantity.h
-  ${INCLUDE_ROOT}/curve_network_vector_quantity.h
-  ${INCLUDE_ROOT}/disjoint_sets.h
-  ${INCLUDE_ROOT}/file_helpers.h
-  ${INCLUDE_ROOT}/histogram.h
-  ${INCLUDE_ROOT}/messages.h
-  ${INCLUDE_ROOT}/options.h
-  ${INCLUDE_ROOT}/persistent_value.h
-  ${INCLUDE_ROOT}/pick.h
-  ${INCLUDE_ROOT}/point_cloud.h
-  ${INCLUDE_ROOT}/point_cloud.ipp
-  ${INCLUDE_ROOT}/point_cloud_color_quantity.h
-  ${INCLUDE_ROOT}/point_cloud_quantity.h
-  ${INCLUDE_ROOT}/point_cloud_scalar_quantity.h
-  ${INCLUDE_ROOT}/point_cloud_vector_quantity.h
-  ${INCLUDE_ROOT}/polyscope.h
-  ${INCLUDE_ROOT}/quantity.h
-  ${INCLUDE_ROOT}/quantity.ipp
-  ${INCLUDE_ROOT}/ribbon_artist.h
-  ${INCLUDE_ROOT}/scaled_value.h
-  ${INCLUDE_ROOT}/screenshot.h
-  ${INCLUDE_ROOT}/standardize_data_array.h
-  ${INCLUDE_ROOT}/structure.h
-  ${INCLUDE_ROOT}/structure.ipp
-  ${INCLUDE_ROOT}/surface_color_quantity.h
-  ${INCLUDE_ROOT}/surface_count_quantity.h
-  ${INCLUDE_ROOT}/surface_distance_quantity.h
-  ${INCLUDE_ROOT}/surface_graph_quantity.h
-  ${INCLUDE_ROOT}/surface_input_curve_quantity.h
-  ${INCLUDE_ROOT}/surface_mesh.h
-  ${INCLUDE_ROOT}/surface_mesh.ipp
-  ${INCLUDE_ROOT}/surface_mesh_enums.h
-  ${INCLUDE_ROOT}/surface_mesh_io.h
-  ${INCLUDE_ROOT}/surface_mesh_quantity.h
-  ${INCLUDE_ROOT}/surface_parameterization_enums.h
-  ${INCLUDE_ROOT}/surface_parameterization_quantity.h
-  ${INCLUDE_ROOT}/surface_scalar_quantity.h
-  ${INCLUDE_ROOT}/surface_selection_quantity.h
-  ${INCLUDE_ROOT}/surface_subset_quantity.h
-  ${INCLUDE_ROOT}/surface_vector_quantity.h
-  ${INCLUDE_ROOT}/trace_vector_field.h
-  ${INCLUDE_ROOT}/utilities.h
-  ${INCLUDE_ROOT}/view.h
-  ${INCLUDE_ROOT}/colors.h
-
-  # SIMPLE
-  #${INCLUDE_ROOT}/gl/color_maps.h
-  #${INCLUDE_ROOT}/gl/gl_utils.h
-  #${INCLUDE_ROOT}/gl/ground_plane.h
-  #${INCLUDE_ROOT}/gl/shaders.h
-  #${INCLUDE_ROOT}/gl/materials/materials.h
-  #${INCLUDE_ROOT}/gl/shaders/common.h
-  #${INCLUDE_ROOT}/gl/shaders/cylinder_shaders.h
-  #${INCLUDE_ROOT}/gl/shaders/distance_shaders.h
-  #${INCLUDE_ROOT}/gl/shaders/ground_plane_shaders.h
-  #${INCLUDE_ROOT}/gl/shaders/histogram_shaders.h
-  #${INCLUDE_ROOT}/gl/shaders/image_shaders.h
-  #${INCLUDE_ROOT}/gl/shaders/parameterization_shaders.h
-  #${INCLUDE_ROOT}/gl/shaders/ray_shaders.h
-  #${INCLUDE_ROOT}/gl/shaders/ribbon_shaders.h
-  #${INCLUDE_ROOT}/gl/shaders/sphere_shaders.h
-  #${INCLUDE_ROOT}/gl/shaders/surface_shaders.h
-  #${INCLUDE_ROOT}/gl/shaders/texture_draw_shaders.h
-  #${INCLUDE_ROOT}/gl/shaders/vector_shaders.h
-  #${INCLUDE_ROOT}/gl/shaders/wireframe_shaders.h
+	${INCLUDE_ROOT}/affine_remapper.h
+	${INCLUDE_ROOT}/affine_remapper.ipp
+	${INCLUDE_ROOT}/camera_parameters.h
+	${INCLUDE_ROOT}/color_management.h
+	${INCLUDE_ROOT}/colors.h
+	${INCLUDE_ROOT}/combining_hash_functions.h
+	${INCLUDE_ROOT}/curve_network.h
+	${INCLUDE_ROOT}/curve_network.ipp
+	${INCLUDE_ROOT}/curve_network_color_quantity.h
+	${INCLUDE_ROOT}/curve_network_quantity.h
+	${INCLUDE_ROOT}/curve_network_scalar_quantity.h
+	${INCLUDE_ROOT}/curve_network_vector_quantity.h
+	${INCLUDE_ROOT}/disjoint_sets.h
+	${INCLUDE_ROOT}/file_helpers.h
+	${INCLUDE_ROOT}/histogram.h
+	${INCLUDE_ROOT}/messages.h
+	${INCLUDE_ROOT}/options.h
+	${INCLUDE_ROOT}/persistent_value.h
+	${INCLUDE_ROOT}/pick.h
+	${INCLUDE_ROOT}/pick.ipp
+	${INCLUDE_ROOT}/point_cloud.h
+	${INCLUDE_ROOT}/point_cloud.ipp
+	${INCLUDE_ROOT}/point_cloud_color_quantity.h
+	${INCLUDE_ROOT}/point_cloud_quantity.h
+	${INCLUDE_ROOT}/point_cloud_scalar_quantity.h
+	${INCLUDE_ROOT}/point_cloud_vector_quantity.h
+	${INCLUDE_ROOT}/polyscope.h
+	${INCLUDE_ROOT}/quantity.h
+	${INCLUDE_ROOT}/quantity.ipp
+	${INCLUDE_ROOT}/render/color_maps.h
+	${INCLUDE_ROOT}/render/engine.h
+	${INCLUDE_ROOT}/render/engine.ipp
+	${INCLUDE_ROOT}/render/ground_plane.h
+	${INCLUDE_ROOT}/render/material_defs.h
+	${INCLUDE_ROOT}/render/materials.h
+	${INCLUDE_ROOT}/render/shaders.h
+	${INCLUDE_ROOT}/ribbon_artist.h
+	${INCLUDE_ROOT}/scaled_value.h
+	${INCLUDE_ROOT}/screenshot.h
+	${INCLUDE_ROOT}/standardize_data_array.h
+	${INCLUDE_ROOT}/structure.h
+	${INCLUDE_ROOT}/structure.ipp
+	${INCLUDE_ROOT}/surface_color_quantity.h
+	${INCLUDE_ROOT}/surface_count_quantity.h
+	${INCLUDE_ROOT}/surface_distance_quantity.h
+	${INCLUDE_ROOT}/surface_graph_quantity.h
+	${INCLUDE_ROOT}/surface_input_curve_quantity.h
+	${INCLUDE_ROOT}/surface_mesh.h
+	${INCLUDE_ROOT}/surface_mesh.ipp
+	${INCLUDE_ROOT}/surface_mesh_enums.h
+	${INCLUDE_ROOT}/surface_mesh_io.h
+	${INCLUDE_ROOT}/surface_mesh_quantity.h
+	${INCLUDE_ROOT}/surface_parameterization_enums.h
+	${INCLUDE_ROOT}/surface_parameterization_quantity.h
+	${INCLUDE_ROOT}/surface_scalar_quantity.h
+	${INCLUDE_ROOT}/surface_selection_quantity.h
+	${INCLUDE_ROOT}/surface_subset_quantity.h
+	${INCLUDE_ROOT}/surface_vector_quantity.h
+	${INCLUDE_ROOT}/trace_vector_field.h
+	${INCLUDE_ROOT}/utilities.h
+	${INCLUDE_ROOT}/view.h
 )
 
 # Create a single library for the project
-add_library(polyscope ${SRCS} ${HEADERS})
+add_library(polyscope ${BACKEND_SRCS} ${SRCS} ${BACKEND_HEADERS} ${HEADERS})
 
 # Required compiler settings
 set_property(TARGET polyscope PROPERTY CXX_STANDARD 11)
@@ -172,30 +198,14 @@ set_property(TARGET polyscope PROPERTY CXX_STANDARD_REQUIRED TRUE)
 set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 add_definitions(-DNOMINMAX)
 
-
 # Include settings
 target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
 target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../deps/args")
-target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../deps/glad/include")
-target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../deps/glfw/include")
 target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../deps/glm")
 target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../deps/happly")
 target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../deps/json/include")
 target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../deps/stb")
+target_include_directories(polyscope PUBLIC "${BACKEND_INCLUDE_DIRS}")
         
 # Link settings
-target_link_libraries(polyscope imgui glfw ${GLFW_LIBRARIES} stb)
-
-if(APPLE)
-    # Apple is playing hardball and deprecating openGL, we'll see how that goes
-    # Silence warnings about openGL deprecation
-    add_definitions (-DGL_SILENCE_DEPRECATION)  
-
-    find_library(cocoa_library Cocoa)
-    find_library(opengl_library OpenGL)
-    find_library(corevideo_library CoreVideo)
-    find_library(iokit_library IOKit)
-    target_link_libraries(polyscope ${cocoa_library} ${opengl_library} ${corevideo_library} ${iokit_library})
-else()
-    target_link_libraries(polyscope glad)
-endif()
+target_link_libraries(polyscope "${BACKEND_LIBS}" imgui stb)

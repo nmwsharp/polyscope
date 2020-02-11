@@ -12,22 +12,30 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STR
 endif()
 
 
-set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp imgui/imgui_demo.cpp imgui/examples/imgui_impl_glfw.cpp imgui/examples/imgui_impl_opengl3.cpp)
+if("${POLYSCOPE_BACKEND}" STREQUAL "OPENGL3_GLFW")
 
-add_library(
-        imgui
-        ${SRCS}
-        )
+  set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp imgui/imgui_demo.cpp imgui/examples/imgui_impl_glfw.cpp imgui/examples/imgui_impl_opengl3.cpp)
 
-target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
-target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glfw/include/")
-target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/")
+  add_library(
+          imgui
+          ${SRCS}
+          )
 
-if(APPLE)
-  add_definitions(-DGLFW_INCLUDE_GLCOREARB)
-  add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=<GLFW/glfw3.h>)
-else()
-  add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
+  target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
+  target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glfw/include/")
+  target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/")
+
+  if(APPLE)
+    add_definitions(-DGLFW_INCLUDE_GLCOREARB)
+    add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=<GLFW/glfw3.h>)
+  else()
+    add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
+  endif()
+
+elseif("${POLYSCOPE_BACKEND}" STREQUAL "MOCK_OPENGL")
+
 endif()
+
+
 
 set_target_properties(imgui PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
