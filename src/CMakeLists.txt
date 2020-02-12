@@ -176,8 +176,8 @@ SET(SRCS
   volume_mesh_scalar_quantity.cpp
   volume_mesh_vector_quantity.cpp
 
-  # Marching cubes
-  # Implicit surface
+  # Volume grid
+  volumetric_grid.cpp
   
   # Rendering utilities
   vector_artist.cpp

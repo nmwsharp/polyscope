@@ -1,7 +1,7 @@
 // Copyright 2017-2020, Christopher Yu, Nicholas Sharp and the
 // Polyscope contributors. http://polyscope.run.
 
-#include "polyscope/implicit_surface.h"
+#include "polyscope/volumetric_grid.h"
 
 #include "polyscope/combining_hash_functions.h"
 #include "polyscope/gl/gl_utils.h"
@@ -18,11 +18,11 @@
 
 namespace polyscope {
 // Initialize statics
-const std::string ImplicitSurface::structureTypeName = "Implicit Surface";
+const std::string VolumetricGrid::structureTypeName = "Implicit Surface";
 
-ImplicitSurface::ImplicitSurface(std::string name, const std::vector<double>& f, size_t nValuesPerSide, glm::vec3 center,
+VolumetricGrid::VolumetricGrid(std::string name, const std::vector<double>& f, size_t nValuesPerSide, glm::vec3 center,
                                  double sideLen)
-    : QuantityStructure<ImplicitSurface>(name, typeName()), field(nValuesPerSide * nValuesPerSide * nValuesPerSide),
+    : QuantityStructure<VolumetricGrid>(name, typeName()), field(nValuesPerSide * nValuesPerSide * nValuesPerSide),
       color(uniquePrefix() + "#color", getNextUniqueColor()) {
   nCornersPerSide = nValuesPerSide;
   sideLength = sideLen;
@@ -41,15 +41,15 @@ ImplicitSurface::ImplicitSurface(std::string name, const std::vector<double>& f,
   }
 }
 
-ImplicitSurface* ImplicitSurface::setColor(glm::vec3 newVal) {
+VolumetricGrid* VolumetricGrid::setColor(glm::vec3 newVal) {
   color = newVal;
   polyscope::requestRedraw();
   return this;
 }
 
-glm::vec3 ImplicitSurface::getColor() { return color.get(); }
+glm::vec3 VolumetricGrid::getColor() { return color.get(); }
 
-void ImplicitSurface::buildCustomUI() {
+void VolumetricGrid::buildCustomUI() {
   ImGui::Text("samples: %lld  (%lld per side)", static_cast<long long int>(nCells()),
               static_cast<long long int>(nCornersPerSide));
   ImGui::Text("center: (%.3f, %.3f, %.3f)", gridCenter.x, gridCenter.y, gridCenter.z);
@@ -67,21 +67,21 @@ void ImplicitSurface::buildCustomUI() {
   }
 }
 
-void ImplicitSurface::buildPickUI(size_t localPickID) {
+void VolumetricGrid::buildPickUI(size_t localPickID) {
   // For now do nothing
 }
 
-void ImplicitSurface::draw() {
+void VolumetricGrid::draw() {
   // For now do nothing
 }
 
-void ImplicitSurface::drawPick() {
+void VolumetricGrid::drawPick() {
   // For now do nothing
 }
 
-double ImplicitSurface::lengthScale() { return sideLength; }
+double VolumetricGrid::lengthScale() { return sideLength; }
 
-std::tuple<glm::vec3, glm::vec3> ImplicitSurface::boundingBox() {
+std::tuple<glm::vec3, glm::vec3> VolumetricGrid::boundingBox() {
   double r = sideLength / 2;
   glm::vec3 minCorner = gridCenter - glm::vec3{r, r, r};
   glm::vec3 maxCorner = gridCenter + glm::vec3{r, r, r};
@@ -89,9 +89,9 @@ std::tuple<glm::vec3, glm::vec3> ImplicitSurface::boundingBox() {
   return std::make_tuple(minCorner, maxCorner);
 }
 
-std::string ImplicitSurface::typeName() { return structureTypeName; }
+std::string VolumetricGrid::typeName() { return structureTypeName; }
 
-void ImplicitSurface::meshCurrentLevelSet() {
+void VolumetricGrid::meshCurrentLevelSet() {
     std::vector<glm::vec3> nodes;
     std::vector<std::array<size_t, 3>> triangles;
 

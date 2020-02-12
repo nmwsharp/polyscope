@@ -20,10 +20,10 @@
 namespace polyscope {
 
 
-class ImplicitSurface : public QuantityStructure<ImplicitSurface> {
+class VolumetricGrid : public QuantityStructure<VolumetricGrid> {
 public:
   // Construct a new curve network structure
-  ImplicitSurface(std::string name, const std::vector<double> &field, size_t nValuesPerSide, glm::vec3 center, double sideLen);
+  VolumetricGrid(std::string name, const std::vector<double> &field, size_t nValuesPerSide, glm::vec3 center, double sideLen);
 
   // === Overloads
 
@@ -56,16 +56,16 @@ public:
 
 private:
   PersistentValue<glm::vec3> color;
-  ImplicitSurface* setColor(glm::vec3 newVal);
+  VolumetricGrid* setColor(glm::vec3 newVal);
   glm::vec3 getColor();
 
 
 };
 
 template<typename T>
-ImplicitSurface* registerImplicitSurfaceGrid(std::string name, const T &field,
+VolumetricGrid* registerImplicitSurfaceGrid(std::string name, const T &field,
 size_t nValuesPerSide, glm::vec3 center, double sideLen) {
-  ImplicitSurface* s = new ImplicitSurface(name, field, nValuesPerSide, center, sideLen);
+  VolumetricGrid* s = new VolumetricGrid(name, field, nValuesPerSide, center, sideLen);
   bool success = registerStructure(s);
   if (!success) {
     safeDelete(s);
@@ -74,13 +74,13 @@ size_t nValuesPerSide, glm::vec3 center, double sideLen) {
 }
 
 template<typename Implicit>
-ImplicitSurface* registerImplicitSurfaceFunction(std::string name, const Implicit &surface,
+VolumetricGrid* registerImplicitSurfaceFunction(std::string name, const Implicit &surface,
 size_t nValuesPerSide, glm::vec3 center, double sideLen, bool meshImmediately = true) {
     size_t totalValues = nValuesPerSide * nValuesPerSide * nValuesPerSide;
     std::vector<double> field(totalValues);
     marchingcubes::SampleFunctionToGrid<Implicit>(surface, nValuesPerSide, center, sideLen, field);
 
-    ImplicitSurface* outputSurface = registerImplicitSurfaceGrid(name, field, nValuesPerSide, center, sideLen);
+    VolumetricGrid* outputSurface = registerImplicitSurfaceGrid(name, field, nValuesPerSide, center, sideLen);
     if (meshImmediately) {
       outputSurface->meshCurrentLevelSet();
     }
@@ -89,4 +89,3 @@ size_t nValuesPerSide, glm::vec3 center, double sideLen, bool meshImmediately = 
 
 } // namespace polyscope
 
-#include "implicit_surface.ipp"
