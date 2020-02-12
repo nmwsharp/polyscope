@@ -178,6 +178,7 @@ SET(SRCS
 
   # Volume grid
   volumetric_grid.cpp
+  volumetric_grid_scalar_isosurface.cpp
   
   # Rendering utilities
   vector_artist.cpp

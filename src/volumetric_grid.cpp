@@ -2,6 +2,7 @@
 // Polyscope contributors. http://polyscope.run.
 
 #include "polyscope/volumetric_grid.h"
+#include "polyscope/volumetric_grid_scalar_isosurface.h"
 
 #include "polyscope/combining_hash_functions.h"
 #include "polyscope/gl/gl_utils.h"
@@ -21,7 +22,7 @@ namespace polyscope {
 const std::string VolumetricGrid::structureTypeName = "Implicit Surface";
 
 VolumetricGrid::VolumetricGrid(std::string name, const std::vector<double>& f, size_t nValuesPerSide, glm::vec3 center,
-                                 double sideLen)
+                               double sideLen)
     : QuantityStructure<VolumetricGrid>(name, typeName()), field(nValuesPerSide * nValuesPerSide * nValuesPerSide),
       color(uniquePrefix() + "#color", getNextUniqueColor()) {
   nCornersPerSide = nValuesPerSide;
@@ -50,20 +51,20 @@ VolumetricGrid* VolumetricGrid::setColor(glm::vec3 newVal) {
 glm::vec3 VolumetricGrid::getColor() { return color.get(); }
 
 void VolumetricGrid::buildCustomUI() {
-  ImGui::Text("samples: %lld  (%lld per side)", static_cast<long long int>(nCells()),
+  ImGui::Text("samples: %lld  (%lld per side)", static_cast<long long int>(nValues()),
               static_cast<long long int>(nCornersPerSide));
   ImGui::Text("center: (%.3f, %.3f, %.3f)", gridCenter.x, gridCenter.y, gridCenter.z);
   ImGui::Text("grid side length: %.4f", sideLength);
   if (ImGui::ColorEdit3("Color", &color.get()[0], ImGuiColorEditFlags_NoInputs)) {
     setColor(getColor());
   }
-  
+
   ImGui::PushItemWidth(100);
   ImGui::InputDouble("level set", &levelSet);
   ImGui::PopItemWidth();
 
   if (ImGui::Button("Remesh level set")) {
-      meshCurrentLevelSet();
+    meshCurrentLevelSet();
   }
 }
 
@@ -92,12 +93,26 @@ std::tuple<glm::vec3, glm::vec3> VolumetricGrid::boundingBox() {
 std::string VolumetricGrid::typeName() { return structureTypeName; }
 
 void VolumetricGrid::meshCurrentLevelSet() {
-    std::vector<glm::vec3> nodes;
-    std::vector<std::array<size_t, 3>> triangles;
+  std::vector<glm::vec3> nodes;
+  std::vector<std::array<size_t, 3>> triangles;
 
-    marchingcubes::MeshImplicitGrid(field, levelSet, nCornersPerSide, gridCenter, sideLength, nodes, triangles);
-    polyscope::SurfaceMesh* mesh = registerSurfaceMesh(name + "_meshed", nodes, triangles, true);
-    mesh->setSurfaceColor(color.get());
+  marchingcubes::MeshImplicitGrid(field, levelSet, nCornersPerSide, gridCenter, sideLength, nodes, triangles);
+  polyscope::SurfaceMesh* mesh = registerSurfaceMesh(name + "_meshed", nodes, triangles, true);
+  mesh->setSurfaceColor(color.get());
+}
+
+VolumetricGridQuantity::VolumetricGridQuantity(std::string name_, VolumetricGrid& curveNetwork_, bool dominates_)
+    : Quantity<VolumetricGrid>(name_, curveNetwork_, dominates_) {}
+
+
+void VolumetricGridQuantity::buildNodeInfoGUI(size_t nodeInd) {}
+void VolumetricGridQuantity::buildEdgeInfoGUI(size_t edgeInd) {}
+
+VolumetricGridScalarIsosurface* VolumetricGrid::addIsosurfaceQuantityImpl(std::string name,
+                                                                          const std::vector<double>& data) {
+  VolumetricGridScalarIsosurface* q = new VolumetricGridScalarIsosurface(name, *this, data);
+  addQuantity(q);
+  return q;
 }
 
 } // namespace polyscope

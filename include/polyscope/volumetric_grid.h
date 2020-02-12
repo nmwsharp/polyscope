@@ -3,21 +3,27 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
-#include "polyscope/curve_network_quantity.h"
 #include "polyscope/gl/gl_utils.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
 
-#include "polyscope/curve_network_color_quantity.h"
-#include "polyscope/curve_network_scalar_quantity.h"
-#include "polyscope/curve_network_vector_quantity.h"
+#include "polyscope/volumetric_grid_quantity.h"
 
 #include <vector>
 
 #include "marchingcubes/mesh_implicit_surface.h"
 
 namespace polyscope {
+
+class VolumetricGrid;
+
+class VolumetricGridScalarIsosurface;
+
+template <> // Specialize the quantity type
+struct QuantityTypeHelper<VolumetricGrid> {
+  typedef VolumetricGridQuantity type;
+};
 
 
 class VolumetricGrid : public QuantityStructure<VolumetricGrid> {
@@ -47,20 +53,30 @@ public:
   double sideLength;
   double levelSet;
 
-  inline size_t nCells() const { return nCornersPerSide * nCornersPerSide * nCornersPerSide; }
+  inline size_t nValues() const { return nCornersPerSide * nCornersPerSide * nCornersPerSide; }
 
   void meshCurrentLevelSet();
 
   // Misc data
   static const std::string structureTypeName;
 
+  template <class T>
+  VolumetricGridScalarIsosurface* addGridIsosurfaceQuantity(std::string name, const T& values);
+
 private:
   PersistentValue<glm::vec3> color;
   VolumetricGrid* setColor(glm::vec3 newVal);
   glm::vec3 getColor();
-
-
+  VolumetricGridScalarIsosurface* addIsosurfaceQuantityImpl(std::string name, const std::vector<double>& data);
 };
+
+
+
+template <class T>
+VolumetricGridScalarIsosurface* VolumetricGrid::addGridIsosurfaceQuantity(std::string name, const T& values) {
+  validateSize(values, nValues(), "grid isosurface quantity " + name);
+  return addIsosurfaceQuantityImpl(name, standardizeArray<double, T>(values));
+}
 
 template<typename T>
 VolumetricGrid* registerImplicitSurfaceGrid(std::string name, const T &field,
@@ -81,6 +97,7 @@ size_t nValuesPerSide, glm::vec3 center, double sideLen, bool meshImmediately = 
     marchingcubes::SampleFunctionToGrid<Implicit>(surface, nValuesPerSide, center, sideLen, field);
 
     VolumetricGrid* outputSurface = registerImplicitSurfaceGrid(name, field, nValuesPerSide, center, sideLen);
+    outputSurface->addGridIsosurfaceQuantity("isosurface", field);
     if (meshImmediately) {
       outputSurface->meshCurrentLevelSet();
     }
