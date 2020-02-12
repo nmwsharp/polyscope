@@ -97,6 +97,7 @@ public:
   FrameBuffer();
   virtual ~FrameBuffer(){};
 
+  virtual void bind() = 0;
   // Bind to this framebuffer so subsequent draw calls will go to it
   // If return is false, binding failed and the framebuffer should not be used.
   virtual bool bindForRendering() = 0;

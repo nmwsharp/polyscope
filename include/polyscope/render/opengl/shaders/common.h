@@ -13,7 +13,6 @@ namespace render {
 // clang-format off
 
 const char* shaderCommonSource = R"(
-#version 410
 
 const vec3 RGB_TEAL     = vec3(0., 178./255., 178./255.);
 const vec3 RGB_BLUE     = vec3(150./255., 154./255., 255./255.);
@@ -24,6 +23,19 @@ const vec3 RGB_WHITE    = vec3(1., 1., 1.);
 const vec3 RGB_RED      = vec3(0.8, 0., 0.);
 const vec3 RGB_DARKGRAY = vec3( .2, .2, .2 );
 const vec3 RGB_DARKRED  = vec3( .2, .0, .0 );
+
+float length2(vec3 a) { return dot(a,a); }
+
+void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY) {
+		basisX = vec3(1., 0., 0.);
+		basisX -= dot(basisX, unitNormal) * unitNormal;
+		if(abs(basisX.x) < 0.1) {
+			basisX = vec3(0., 1., 0.);
+			basisX -= dot(basisX, unitNormal) * unitNormal;
+		}
+		basisX = normalize(basisX);
+		basisY = normalize(cross(unitNormal, basisX));
+}
 
 float orenNayarDiffuse(
   vec3 lightDirection,
@@ -122,7 +134,7 @@ float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint) {
 	return depth;
 }
 
-void raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit) {
+bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit) {
 		rayDir = normalize(rayDir);
 		vec3 o = rayStart - sphereCenter;
     float a = dot(rayDir, rayDir);
@@ -130,14 +142,117 @@ void raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float 
     float c = dot(o,o) - sphereRad*sphereRad;
     float disc = b*b - 4*a*c;
     if(disc < 0){
-				tHit = -1.;
-				pHit = vec3(777, 777, 777);
-				nHit = vec3(777, 777, 777);
+			tHit = -1.;
+			pHit = vec3(777, 777, 777);
+			nHit = vec3(777, 777, 777);
+			return false;
     } else {
 			tHit = (-b - sqrt(disc)) / (2.0*a);
 			pHit = rayStart + tHit * rayDir;
 			nHit = normalize(pHit - sphereCenter);
+			return true;
 		}
+}
+
+bool rayPlaneIntersection(vec3 rayStart, vec3 rayDir, vec3 planePos, vec3 planeDir, out float tHit, out vec3 pHit, out vec3 nHit) {
+	
+	float num = dot(planePos - rayStart, planeDir);
+	float denom = dot(rayDir, planeDir);
+	if(abs(denom) < 1e-6) {
+			tHit = -1.;
+			pHit = vec3(777, 777, 777);
+			nHit = vec3(777, 777, 777);
+			return false;
+	}
+
+	tHit = num / denom;
+	pHit = rayStart + tHit * rayDir;
+	nHit = planeDir;
+	return true;
+}
+
+bool rayDiskIntersection(vec3 rayStart, vec3 rayDir, vec3 planePos, vec3 planeDir, float diskRad, out float tHit, out vec3 pHit, out vec3 nHit) {
+	
+	float num = dot(planePos - rayStart, planeDir);
+	float denom = dot(rayDir, planeDir);
+	if(abs(denom) < 1e-6) {
+			tHit = -1.;
+			pHit = vec3(777, 777, 777);
+			nHit = vec3(777, 777, 777);
+			return false;
+	}
+
+	tHit = num / denom;
+	pHit = rayStart + tHit * rayDir;
+
+	if(length2(pHit-planePos) > diskRad*diskRad) {
+			tHit = -1.;
+			pHit = vec3(777, 777, 777);
+			nHit = vec3(777, 777, 777);
+			return false;
+	}
+
+	nHit = planeDir;
+
+	return true;
+}
+
+bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit) {
+
+		rayDir = normalize(rayDir);
+	  vec3 cylDir = normalize(cylTip - cylTail);
+
+		vec3 o = rayStart - cylTail;
+		float d = dot(rayDir, cylDir);
+		vec3 qVec = rayDir - d * cylDir;
+		vec3 pVec = o - dot(o, cylDir)*cylDir;
+    float a = length2(qVec);
+    float b = 2.0 * dot(qVec, pVec);
+    float c = length2(pVec) - cylRad*cylRad;
+    float disc = b*b - 4*a*c;
+    if(disc < 0){
+			tHit = -1.;
+			pHit = vec3(777, 777, 777);
+			nHit = vec3(777, 777, 777);
+			return false;
+    } 
+
+		// Compute intersection with infinite cylinder
+		tHit = (-b - sqrt(disc)) / (2.0*a);
+		if(tHit < 0) tHit = (-b + sqrt(disc)) / (2.0*a);
+		pHit = rayStart + tHit * rayDir;
+		nHit = pHit - cylTail;
+		nHit = normalize(nHit - dot(cylDir, nHit)*cylDir); 
+
+
+		// Check if intersection was outside finite cylinder
+		if(dot(cylDir, pHit - cylTail) < 0 || dot(-cylDir, pHit - cylTip) < 0) {
+			tHit = -1;
+		}
+			
+		// Test start endcap
+		float tHitTail;
+		vec3 pHitTail;
+		vec3 nHitTail;
+		rayDiskIntersection(rayStart, rayDir, cylTail, -cylDir, cylRad, tHitTail, pHitTail, nHitTail);
+		if(tHitTail >=0 && (tHit < 0 || tHitTail < tHit)) {
+			tHit = tHitTail;
+			pHit = pHitTail;
+			nHit = nHitTail;
+		}
+
+		// Test end endcap
+		float tHitTip;
+		vec3 pHitTip;
+		vec3 nHitTip;
+		rayDiskIntersection(rayStart, rayDir, cylTip, cylDir, cylRad, tHitTip, pHitTip, nHitTip);
+		if(tHitTip >=0 && (tHit < 0 || tHitTip < tHit)) {
+			tHit = tHitTip;
+			pHit = pHitTip;
+			nHit = nHitTip;
+		}
+
+		return tHit >= 0;
 }
 
 

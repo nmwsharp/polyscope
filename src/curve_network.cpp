@@ -58,7 +58,13 @@ void CurveNetwork::setCurveNetworkNodeUniforms(render::ShaderProgram& p) {
   p.setUniform("u_pointRadius", getRadius());
 }
 
-void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) { p.setUniform("u_radius", getRadius()); }
+void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) {
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+  p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  p.setUniform("u_viewport", view::getViewport());
+  p.setUniform("u_radius", getRadius());
+}
 
 void CurveNetwork::draw() {
   if (!isEnabled()) {
@@ -80,12 +86,12 @@ void CurveNetwork::draw() {
     setCurveNetworkEdgeUniforms(*edgeProgram);
     setCurveNetworkNodeUniforms(*nodeProgram);
 
-    edgeProgram->setUniform("u_color", getColor());
+    edgeProgram->setUniform("u_baseColor", getColor());
     nodeProgram->setUniform("u_baseColor", getColor());
 
     // Draw the actual curve network
     edgeProgram->draw();
-    nodeProgram->draw();
+		nodeProgram->draw();
   }
 
   // Draw the quantities

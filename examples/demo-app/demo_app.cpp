@@ -519,6 +519,7 @@ int main(int argc, char** argv) {
     processFile(s);
   }
 
+	/*
   // Create a point cloud
   for (int j = 0; j < 1; j++) {
     std::vector<glm::vec3> points;
@@ -529,6 +530,7 @@ int main(int argc, char** argv) {
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
     addDataToPointCloud("really great points" + std::to_string(j), points);
   }
+	*/
 
   // Add a few gui elements
   polyscope::state::userCallback = callback;

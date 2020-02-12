@@ -156,7 +156,7 @@ void CurveNetworkNodeScalarQuantity::createProgram() {
                                                       DrawMode::Points);
   edgeProgram = render::engine->generateShaderProgram({render::CYLINDER_BLEND_VALUE_VERT_SHADER,
                                                        render::CYLINDER_BLEND_VALUE_GEOM_SHADER,
-                                                       render::CYLINDER_VALUE_FRAG_SHADER},
+                                                       render::CYLINDER_BLEND_VALUE_FRAG_SHADER},
                                                       DrawMode::Points);
 
   // Fill geometry buffers

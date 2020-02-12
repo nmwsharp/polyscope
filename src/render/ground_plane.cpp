@@ -141,6 +141,9 @@ void GroundPlane::draw() {
     // Render to a texture so we can sample from it on the ground
     mirroredSceneFrameBuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
     mirroredSceneFrameBuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+		// (use a texture 1/4 the area of the view buffer, it's supposed to be blurry anyway and this saves perf) TODO
+    //mirroredSceneFrameBuffer->resizeBuffers(view::bufferWidth/2, view::bufferHeight/2);
+    //mirroredSceneFrameBuffer->setViewport(0, 0, view::bufferWidth/2, view::bufferHeight/2);
     mirroredSceneFrameBuffer->bindForRendering();
     mirroredSceneFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
     mirroredSceneFrameBuffer->clear();

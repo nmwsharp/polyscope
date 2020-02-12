@@ -23,7 +23,6 @@ void initializeRenderEngine() {
   engine = glEngine;
   engine->allocateGlobalBuffersAndPrograms();
 }
-ProgramHandle commonShaderHandle = 777;
 
 // == Map enums to native values
 
@@ -162,6 +161,8 @@ void printShaderInfoLog(ShaderHandle shaderHandle) {
     glGetShaderInfoLog(shaderHandle, logLen, &chars, log);
     printf("Shader info log:\n%s\n", log);
     free(log);
+
+		throw std::runtime_error("shader compile failed");
   }
 }
 void printProgramInfoLog(GLuint handle) {
@@ -177,6 +178,8 @@ void printProgramInfoLog(GLuint handle) {
     glGetProgramInfoLog(handle, logLen, &chars, log);
     printf("Program info log:\n%s\n", log);
     free(log);
+		
+		throw std::runtime_error("shader program compile failed");
   }
 }
 
@@ -581,8 +584,8 @@ void GLShaderProgram::compileGLProgram(const std::vector<ShaderStageSpecificatio
   std::vector<ShaderHandle> handles;
   for (const ShaderStageSpecification& s : stages) {
     ShaderHandle h = glCreateShader(native(s.stage));
-    const char* shaderSrcTmp = s.src.c_str();
-    glShaderSource(h, 1, &shaderSrcTmp, nullptr);
+		std::array<const char*, 2> srcs = {s.src.c_str(), shaderCommonSource};
+    glShaderSource(h, 2, &(srcs[0]), nullptr);
     glCompileShader(h);
     printShaderInfoLog(h);
     handles.push_back(h);
@@ -594,7 +597,6 @@ void GLShaderProgram::compileGLProgram(const std::vector<ShaderStageSpecificatio
   for (ShaderHandle h : handles) {
     glAttachShader(programHandle, h);
   }
-  glAttachShader(programHandle, commonShaderHandle);
 
   // Link the program
   glLinkProgram(programHandle);
@@ -1535,13 +1537,6 @@ void GLEngine::initialize() {
 
   // Update the width and height
 	updateWindowSize();
-
-  { // Compile functions accessible to all shaders
-    commonShaderHandle = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(commonShaderHandle, 1, &shaderCommonSource, nullptr);
-    glCompileShader(commonShaderHandle);
-    printShaderInfoLog(commonShaderHandle);
-  }
 }
 
 

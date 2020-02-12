@@ -126,18 +126,18 @@ const ShaderStageSpecification SPHERE_BILLBOARD_GEOM_SHADER = {
         void main()   {
 
 						// Compute corners of cube
-					  vec4 centerWorld = u_projMatrix * gl_in[0].gl_Position;
+					  vec4 center = u_projMatrix * gl_in[0].gl_Position;
 						vec4 dx = u_projMatrix * vec4(u_pointRadius, 0., 0., 0.);
 						vec4 dy = u_projMatrix * vec4(0., u_pointRadius, 0., 0.);
 						vec4 dz = u_projMatrix * vec4(0., 0., u_pointRadius, 0.);
-						vec4 p1 = centerWorld - dx - dy - dz;
-						vec4 p2 = centerWorld + dx - dy - dz;
-						vec4 p3 = centerWorld - dx + dy - dz;
-						vec4 p4 = centerWorld + dx + dy - dz;
-						vec4 p5 = centerWorld - dx - dy + dz;
-						vec4 p6 = centerWorld + dx - dy + dz;
-						vec4 p7 = centerWorld - dx + dy + dz;
-						vec4 p8 = centerWorld + dx + dy + dz;
+						vec4 p1 = center - dx - dy - dz;
+						vec4 p2 = center + dx - dy - dz;
+						vec4 p3 = center - dx + dy - dz;
+						vec4 p4 = center + dx + dy - dz;
+						vec4 p5 = center - dx - dy + dz;
+						vec4 p6 = center + dx - dy + dz;
+						vec4 p7 = center - dx + dy + dz;
+						vec4 p8 = center + dx + dy + dz;
 						
 						// Other data to emit		
 						vec3 sphereCenterViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
@@ -192,18 +192,18 @@ const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
         void main()   {
 
 						// Compute corners of cube
-					  vec4 centerWorld = u_projMatrix * gl_in[0].gl_Position;
+					  vec4 center = u_projMatrix * gl_in[0].gl_Position;
 						vec4 dx = u_projMatrix * vec4(u_pointRadius, 0., 0., 0.);
 						vec4 dy = u_projMatrix * vec4(0., u_pointRadius, 0., 0.);
 						vec4 dz = u_projMatrix * vec4(0., 0., u_pointRadius, 0.);
-						vec4 p1 = centerWorld - dx - dy - dz;
-						vec4 p2 = centerWorld + dx - dy - dz;
-						vec4 p3 = centerWorld - dx + dy - dz;
-						vec4 p4 = centerWorld + dx + dy - dz;
-						vec4 p5 = centerWorld - dx - dy + dz;
-						vec4 p6 = centerWorld + dx - dy + dz;
-						vec4 p7 = centerWorld - dx + dy + dz;
-						vec4 p8 = centerWorld + dx + dy + dz;
+						vec4 p1 = center - dx - dy - dz;
+						vec4 p2 = center + dx - dy - dz;
+						vec4 p3 = center - dx + dy - dz;
+						vec4 p4 = center + dx + dy - dz;
+						vec4 p5 = center - dx - dy + dz;
+						vec4 p6 = center + dx - dy + dz;
+						vec4 p7 = center - dx + dy + dz;
+						vec4 p8 = center + dx + dy + dz;
 						
 						// Other data to emit		
 						vec3 sphereCenterViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
@@ -258,18 +258,18 @@ const ShaderStageSpecification SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
         void main()   {
 						
 						// Compute corners of cube
-					  vec4 centerWorld = u_projMatrix * gl_in[0].gl_Position;
+					  vec4 center = u_projMatrix * gl_in[0].gl_Position;
 						vec4 dx = u_projMatrix * vec4(u_pointRadius, 0., 0., 0.);
 						vec4 dy = u_projMatrix * vec4(0., u_pointRadius, 0., 0.);
 						vec4 dz = u_projMatrix * vec4(0., 0., u_pointRadius, 0.);
-						vec4 p1 = centerWorld - dx - dy - dz;
-						vec4 p2 = centerWorld + dx - dy - dz;
-						vec4 p3 = centerWorld - dx + dy - dz;
-						vec4 p4 = centerWorld + dx + dy - dz;
-						vec4 p5 = centerWorld - dx - dy + dz;
-						vec4 p6 = centerWorld + dx - dy + dz;
-						vec4 p7 = centerWorld - dx + dy + dz;
-						vec4 p8 = centerWorld + dx + dy + dz;
+						vec4 p1 = center - dx - dy - dz;
+						vec4 p2 = center + dx - dy - dz;
+						vec4 p3 = center - dx + dy - dz;
+						vec4 p4 = center + dx + dy - dz;
+						vec4 p5 = center - dx - dy + dz;
+						vec4 p6 = center + dx - dy + dz;
+						vec4 p7 = center - dx + dy + dz;
+						vec4 p8 = center + dx + dy + dz;
 						
 						// Other data to emit		
 						vec3 sphereCenterViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
@@ -338,7 +338,7 @@ const ShaderStageSpecification SPHERE_BILLBOARD_FRAG_SHADER = {
 
         vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
-				void raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
+				bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
 				float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
 
 
@@ -358,6 +358,7 @@ const ShaderStageSpecification SPHERE_BILLBOARD_FRAG_SHADER = {
 					 }
 
            // Lighting
+					 vec3 nothing = u_baseColor;
            outputF = vec4(lightSurfaceMat(nHit, u_baseColor, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
 
            // Set depth (expensive!)
@@ -410,7 +411,7 @@ const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
 
         vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
-				void raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
+				bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
 				float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
 
         vec3 surfaceColor() {
@@ -481,7 +482,7 @@ const ShaderStageSpecification SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
 
         vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
-				void raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
+				bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
 				float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
 
 
@@ -539,7 +540,7 @@ const ShaderStageSpecification SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
         layout(location = 0) out vec4 outputF;
 
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
-				void raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
+				bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
 				float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
 
 

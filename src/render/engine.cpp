@@ -49,6 +49,7 @@ void FrameBuffer::setViewport(int startX, int startY, unsigned int sizeX, unsign
 }
 
 void FrameBuffer::resizeBuffers(unsigned int newXSize, unsigned int newYSize) {
+	bind();
   for (auto& b : renderBuffers) {
     b->resize(newXSize, newYSize);
   }

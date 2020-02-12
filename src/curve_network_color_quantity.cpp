@@ -47,7 +47,7 @@ void CurveNetworkNodeColorQuantity::createProgram() {
                                                       DrawMode::Points);
   edgeProgram = render::engine->generateShaderProgram({render::CYLINDER_BLEND_COLOR_VERT_SHADER,
                                                        render::CYLINDER_BLEND_COLOR_GEOM_SHADER,
-                                                       render::CYLINDER_COLOR_FRAG_SHADER},
+                                                       render::CYLINDER_BLEND_COLOR_FRAG_SHADER},
                                                       DrawMode::Points);
 
   // Fill geometry buffers
