@@ -352,14 +352,14 @@ const ShaderStageSpecification SPHERE_BILLBOARD_FRAG_SHADER = {
 					 float tHit;
 					 vec3 pHit;
 					 vec3 nHit;
-					 raySphereIntersection(vec3(0., 0., 0), viewRay, sphereCenterView, u_pointRadius, tHit, pHit, nHit);
+					 bool hit = raySphereIntersection(vec3(0., 0., 0), viewRay, sphereCenterView, u_pointRadius, tHit, pHit, nHit);
 					 if(tHit < 0.) {
 							discard;
 					 }
 
            // Lighting
 					 vec3 nothing = u_baseColor;
-           outputF = vec4(lightSurfaceMat(nHit, u_baseColor, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
+					 outputF = vec4(lightSurfaceMat(nHit, u_baseColor, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
 
            // Set depth (expensive!)
 					 float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);

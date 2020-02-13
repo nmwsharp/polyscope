@@ -1516,7 +1516,7 @@ void GLEngine::initialize() {
   // Create the window with context
   mainWindow = glfwCreateWindow(view::windowWidth, view::windowHeight, options::programName.c_str(), NULL, NULL);
   glfwMakeContextCurrent(mainWindow);
-  glfwSwapInterval(1); // Enable vsync
+  glfwSwapInterval(1); // Enable vsync FIXME
   glfwSetWindowPos(mainWindow, view::initWindowPosX, view::initWindowPosY);
 
 // === Initialize openGL
@@ -1610,20 +1610,6 @@ std::vector<unsigned char> GLEngine::readDisplayBuffer() {
 
 void GLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
-void GLEngine::pushActiveRenderBuffer() {
-  GLint drawFboId_i = 0;
-  glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId_i);
-  FrameBufferHandle drawFboId = drawFboId_i;
-  activeRenderBufferStack.push_back(drawFboId);
-}
-
-void GLEngine::popActiveRenderBuffer() {
-  if (activeRenderBufferStack.empty()) throw std::runtime_error("tried to pop from empty render buffer stack");
-
-  FrameBufferHandle drawFboId = activeRenderBufferStack.back();
-  activeRenderBufferStack.pop_back();
-  glBindFramebuffer(GL_FRAMEBUFFER, drawFboId);
-}
 
 void GLEngine::makeContextCurrent() { glfwMakeContextCurrent(mainWindow); }
 

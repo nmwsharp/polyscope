@@ -201,7 +201,6 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   }
 }
 
-
 std::vector<glm::vec3> Engine::screenTrianglesCoords() {
   std::vector<glm::vec3> coords = {{-1.0f, -1.0f, 0.0f}, {1.0f, -1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f},
                                    {-1.0f, 1.0f, 0.0f},  {1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}};

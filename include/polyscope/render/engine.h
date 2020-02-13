@@ -116,7 +116,7 @@ public:
 
   virtual void setDrawBuffers() = 0;
 
-  // Specify the viewport coordinates and clearcolor
+  // Specify the viewport coordinates 
   virtual void setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
 
   // Resizes textures and renderbuffers if different from current size.
@@ -278,8 +278,6 @@ public:
   void renderBackground();         // respects background setting
 
   // Manage render state
-  virtual void pushActiveRenderBuffer() = 0;
-  virtual void popActiveRenderBuffer() = 0;
   virtual void setDepthMode(DepthMode newMode = DepthMode::Less) = 0;
   virtual void setBlendMode(BlendMode newMode = BlendMode::Over) = 0;
 
