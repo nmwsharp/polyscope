@@ -336,6 +336,7 @@ const ShaderStageSpecification SPHERE_BILLBOARD_FRAG_SHADER = {
         uniform sampler2D t_mat_k;
         layout(location = 0) out vec4 outputF;
 
+        float LARGE_FLOAT();
         vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
 				bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
@@ -353,7 +354,7 @@ const ShaderStageSpecification SPHERE_BILLBOARD_FRAG_SHADER = {
 					 vec3 pHit;
 					 vec3 nHit;
 					 bool hit = raySphereIntersection(vec3(0., 0., 0), viewRay, sphereCenterView, u_pointRadius, tHit, pHit, nHit);
-					 if(tHit < 0.) {
+					 if(tHit >= LARGE_FLOAT()) {
 							discard;
 					 }
 
@@ -409,6 +410,7 @@ const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
         uniform sampler1D t_colormap;
         layout(location = 0) out vec4 outputF;
 
+        float LARGE_FLOAT();
         vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
 				bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
@@ -431,7 +433,7 @@ const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
 					 vec3 pHit;
 					 vec3 nHit;
 					 raySphereIntersection(vec3(0., 0., 0), viewRay, sphereCenterView, u_pointRadius, tHit, pHit, nHit);
-					 if(tHit < 0.) {
+					 if(tHit >= LARGE_FLOAT()) {
 							discard;
 					 }
 
@@ -480,6 +482,7 @@ const ShaderStageSpecification SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
         uniform sampler2D t_mat_k;
         layout(location = 0) out vec4 outputF;
 
+        float LARGE_FLOAT();
         vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
 				bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
@@ -497,7 +500,7 @@ const ShaderStageSpecification SPHERE_COLOR_BILLBOARD_FRAG_SHADER = {
 					 vec3 pHit;
 					 vec3 nHit;
 					 raySphereIntersection(vec3(0., 0., 0), viewRay, sphereCenterView, u_pointRadius, tHit, pHit, nHit);
-					 if(tHit < 0.) {
+					 if(tHit >= LARGE_FLOAT()) {
 							discard;
 					 }
 
@@ -539,6 +542,7 @@ const ShaderStageSpecification SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
         flat in vec3 colorToFrag;
         layout(location = 0) out vec4 outputF;
 
+        float LARGE_FLOAT();
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
 				bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
 				float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
@@ -555,7 +559,7 @@ const ShaderStageSpecification SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER = {
 					 vec3 pHit;
 					 vec3 nHit;
 					 raySphereIntersection(vec3(0., 0., 0), viewRay, sphereCenterView, u_pointRadius, tHit, pHit, nHit);
-					 if(tHit < 0.) {
+					 if(tHit >= LARGE_FLOAT()) {
 							discard;
 					 }
 

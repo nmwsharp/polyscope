@@ -53,13 +53,18 @@ void PointCloudVectorQuantity::draw() {
   parent.setTransformUniforms(*program);
 
   program->setUniform("u_radius", vectorRadius.get().asAbsolute());
-  program->setUniform("u_color", vectorColor.get());
+  program->setUniform("u_baseColor", vectorColor.get());
 
   if (vectorType == VectorType::AMBIENT) {
     program->setUniform("u_lengthMult", 1.0);
   } else {
     program->setUniform("u_lengthMult", vectorLengthMult.get().asAbsolute());
   }
+	
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+  program->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+ 	program->setUniform("u_viewport", view::getViewport());
 
   program->draw();
 }

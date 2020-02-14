@@ -288,34 +288,32 @@ bool rayConeIntersection(vec3 rayStart, vec3 rayDir, vec3 coneBase, vec3 coneTip
 			nHit = vec3(777, 777, 777);
 			return false;
     } 
-
+    
 		// Check first intersection
-		tHit = (-b - sqrt(disc)) / (2.0*a);
-		pHit = rayStart + tHit * rayDir;
-		//nHit = vec3(1., 1., 1.);
-		//if(tHit < 0 || dot(pHit-coneTip,-coneDir) < 0. || dot(pHit-coneBase, coneDir) < 0.) {
-			if((tHit < 0) || 
-				 (dot(pHit-coneTip,-coneDir) < 0.) || 
-			   (dot(pHit-coneBase, coneDir) < 0.)) {
-			
-			//if(tHit < 0) nHit = vec3(0, 0, 0);
-			//if(dot(pHit-coneTip,-coneDir) < 0.) nHit = vec3(0, 0, 0);
-			//if(dot(pHit-coneBase, -coneDir) < 0.) nHit = vec3(0, 0, 0);
+    // NOTE: The signs on the discriminant here and below are flipped from what you would expect,
+    //       and I cannot figure out why. There must be some other matching sign flip elsewhere,
+    //       or a bad bug in my understanding.
+		tHit = (-b + sqrt(disc)) / (2.0*a); 
+		pHit = rayStart + tHit * rayDir; 
+
+    if((tHit < 0) || 
+       (dot(pHit-coneTip,-coneDir) < 0.) || 
+       (dot(pHit-coneBase, coneDir) < 0.)) {
 
 			// try second intersection
-			tHit = (-b + sqrt(disc)) / (2.0*a); 
-			pHit = rayStart + tHit * rayDir;
+      tHit = (-b - sqrt(disc)) / (2.0*a); 
+      pHit = rayStart + tHit * rayDir;
 
 		
 			// Check second intersection
-			if((tHit < 0) || 
-				 (dot(pHit-coneTip,-coneDir) < 0.) || 
-			   (dot(pHit-coneBase, coneDir) < 0.)) {
+      if((tHit < 0) || 
+         (dot(pHit-coneTip,-coneDir) < 0.) || 
+         (dot(pHit-coneBase, coneDir) < 0.)) {
 				tHit = LARGE_FLOAT();
 				pHit = vec3(777, 777, 777);
 				nHit = vec3(777, 777, 777);
 				return false; 
-			}
+      }
 		}
 
 		nHit = pHit - coneBase;

@@ -172,19 +172,17 @@ const ShaderStageSpecification VECTOR_FRAG_SHADER = {
 					 float tipFrac = 0.2;
 
 					 // Raycast to the cylinder 
-					 float tHit;
-					 vec3 pHit;
-					 vec3 nHit;
+					 float tHit = LARGE_FLOAT();
+					 vec3 pHit = vec3(777,777,777);
+					 vec3 nHit =  vec3(777,777,777);
 					 vec3 cylEnd = tailView + (1. - tipFrac) * (tipView - tailView);
-					 //rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, cylEnd, u_radius, tHit, pHit, nHit);
-					 tHit = LARGE_FLOAT();
+           rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, cylEnd, u_radius, tHit, pHit, nHit);
 					
 					 // Raycast to cone
 					 float tHitCone;
 					 vec3 pHitCone;
 					 vec3 nHitCone;
 					 bool coneHit = rayConeIntersection(vec3(0., 0., 0), viewRay, cylEnd, tipView, u_radius, tHitCone, pHitCone, nHitCone);
-					 //tHitCone = LARGE_FLOAT();
 				
 					 
 					 if(tHitCone < tHit) {
@@ -193,18 +191,17 @@ const ShaderStageSpecification VECTOR_FRAG_SHADER = {
 						 nHit = nHitCone;
 					 }
 				
-					 if(tHit >= LARGE_FLOAT()) {
-						 discard;
-					 }
+           if(tHit >= LARGE_FLOAT()) {
+             discard;
+           }
 					 
 
            // Lighting
-					 outputF = vec4(lightSurfaceMat(nHit, u_baseColor, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
-					 //outputF = vec4(lightSurfaceMat(viewRay, u_baseColor, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
+           outputF = vec4(lightSurfaceMat(nHit, u_baseColor, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
 
            // Set depth (expensive!)
-					 float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);
-					 gl_FragDepth = depth;
+           float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);
+           gl_FragDepth = depth;
         }
     )
 };

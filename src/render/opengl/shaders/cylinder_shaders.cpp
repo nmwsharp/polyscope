@@ -754,6 +754,7 @@ const ShaderStageSpecification CYLINDER_FRAG_SHADER = {
         uniform sampler2D t_mat_k;
         layout(location = 0) out vec4 outputF;
 
+        float LARGE_FLOAT();
         vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
 				bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
@@ -770,7 +771,7 @@ const ShaderStageSpecification CYLINDER_FRAG_SHADER = {
 					 vec3 pHit;
 					 vec3 nHit;
 					 rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, u_radius, tHit, pHit, nHit);
-					 if(tHit < 0.) {
+					 if(tHit >= LARGE_FLOAT()) {
 							discard;
 					 }
 
@@ -827,6 +828,7 @@ const ShaderStageSpecification CYLINDER_VALUE_FRAG_SHADER = {
         uniform sampler1D t_colormap;
         layout(location = 0) out vec4 outputF;
 
+        float LARGE_FLOAT();
         vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
 				bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
@@ -849,7 +851,7 @@ const ShaderStageSpecification CYLINDER_VALUE_FRAG_SHADER = {
 					 vec3 pHit;
 					 vec3 nHit;
 					 rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, u_radius, tHit, pHit, nHit);
-					 if(tHit < 0.) {
+					 if(tHit >= LARGE_FLOAT()) {
 							discard;
 					 }
 
@@ -900,6 +902,7 @@ const ShaderStageSpecification CYLINDER_COLOR_FRAG_SHADER = {
         uniform sampler2D t_mat_k;
         layout(location = 0) out vec4 outputF;
 
+        float LARGE_FLOAT();
         vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
 				bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
@@ -916,7 +919,7 @@ const ShaderStageSpecification CYLINDER_COLOR_FRAG_SHADER = {
 					 vec3 pHit;
 					 vec3 nHit;
 					 rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, u_radius, tHit, pHit, nHit);
-					 if(tHit < 0.) {
+					 if(tHit >= LARGE_FLOAT()) {
 							discard;
 					 }
 
@@ -975,6 +978,7 @@ const ShaderStageSpecification CYLINDER_BLEND_VALUE_FRAG_SHADER = {
         uniform sampler1D t_colormap;
         layout(location = 0) out vec4 outputF;
 
+        float LARGE_FLOAT();
         vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
 				bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
@@ -998,7 +1002,7 @@ const ShaderStageSpecification CYLINDER_BLEND_VALUE_FRAG_SHADER = {
 					 vec3 pHit;
 					 vec3 nHit;
 					 rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, u_radius, tHit, pHit, nHit);
-					 if(tHit < 0.) {
+					 if(tHit >= LARGE_FLOAT()) {
 							discard;
 					 }
 					 
@@ -1054,6 +1058,7 @@ const ShaderStageSpecification CYLINDER_BLEND_COLOR_FRAG_SHADER = {
         uniform sampler2D t_mat_k;
         layout(location = 0) out vec4 outputF;
 
+        float LARGE_FLOAT();
         vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
 				bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
@@ -1071,9 +1076,9 @@ const ShaderStageSpecification CYLINDER_BLEND_COLOR_FRAG_SHADER = {
 					 vec3 pHit;
 					 vec3 nHit;
 					 rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, u_radius, tHit, pHit, nHit);
-					 if(tHit < 0.) {
+					 if(tHit >= LARGE_FLOAT()) {
 							discard;
-					 }
+           }
 					 
 				   // Compute distance along edge
 					 float tEdge = dot(pHit - tailView, tipView - tailView) / length2(tipView - tailView);
@@ -1121,6 +1126,7 @@ const ShaderStageSpecification CYLINDER_PICK_FRAG_SHADER = {
         flat in vec3 colorEdge;
         layout(location = 0) out vec4 outputF;
 
+        float LARGE_FLOAT();
 				vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
 				bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
 				float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
@@ -1137,7 +1143,7 @@ const ShaderStageSpecification CYLINDER_PICK_FRAG_SHADER = {
 					 vec3 pHit;
 					 vec3 nHit;
 					 rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, u_radius, tHit, pHit, nHit);
-					 if(tHit < 0.) {
+					 if(tHit >= LARGE_FLOAT()) {
 							discard;
 					 }
 
