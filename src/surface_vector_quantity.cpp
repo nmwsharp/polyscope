@@ -47,13 +47,18 @@ void SurfaceVectorQuantity::draw() {
   parent.setTransformUniforms(*program);
 
   program->setUniform("u_radius", getVectorRadius());
-  program->setUniform("u_color", getVectorColor());
+  program->setUniform("u_baseColor", getVectorColor());
 
   if (vectorType == VectorType::AMBIENT) {
     program->setUniform("u_lengthMult", 1.0);
   } else {
     program->setUniform("u_lengthMult", getVectorLengthScale());
   }
+  
+	glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+  program->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+ 	program->setUniform("u_viewport", view::getViewport());
 
   program->draw();
 }

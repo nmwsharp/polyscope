@@ -24,6 +24,7 @@ const vec3 RGB_RED      = vec3(0.8, 0., 0.);
 const vec3 RGB_DARKGRAY = vec3( .2, .2, .2 );
 const vec3 RGB_DARKRED  = vec3( .2, .0, .0 );
 
+float LARGE_FLOAT() { return 1e25; }
 float length2(vec3 a) { return dot(a,a); }
 
 void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY) {
@@ -142,7 +143,7 @@ bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float 
     float c = dot(o,o) - sphereRad*sphereRad;
     float disc = b*b - 4*a*c;
     if(disc < 0){
-			tHit = -1.;
+			tHit = LARGE_FLOAT();
 			pHit = vec3(777, 777, 777);
 			nHit = vec3(777, 777, 777);
 			return false;
@@ -159,7 +160,7 @@ bool rayPlaneIntersection(vec3 rayStart, vec3 rayDir, vec3 planePos, vec3 planeD
 	float num = dot(planePos - rayStart, planeDir);
 	float denom = dot(rayDir, planeDir);
 	if(abs(denom) < 1e-6) {
-			tHit = -1.;
+			tHit = LARGE_FLOAT();
 			pHit = vec3(777, 777, 777);
 			nHit = vec3(777, 777, 777);
 			return false;
@@ -176,7 +177,7 @@ bool rayDiskIntersection(vec3 rayStart, vec3 rayDir, vec3 planePos, vec3 planeDi
 	float num = dot(planePos - rayStart, planeDir);
 	float denom = dot(rayDir, planeDir);
 	if(abs(denom) < 1e-6) {
-			tHit = -1.;
+			tHit = LARGE_FLOAT();
 			pHit = vec3(777, 777, 777);
 			nHit = vec3(777, 777, 777);
 			return false;
@@ -186,7 +187,7 @@ bool rayDiskIntersection(vec3 rayStart, vec3 rayDir, vec3 planePos, vec3 planeDi
 	pHit = rayStart + tHit * rayDir;
 
 	if(length2(pHit-planePos) > diskRad*diskRad) {
-			tHit = -1.;
+			tHit = LARGE_FLOAT();
 			pHit = vec3(777, 777, 777);
 			nHit = vec3(777, 777, 777);
 			return false;
@@ -211,7 +212,7 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
     float c = length2(pVec) - cylRad*cylRad;
     float disc = b*b - 4*a*c;
     if(disc < 0){
-			tHit = -1.;
+			tHit = LARGE_FLOAT();
 			pHit = vec3(777, 777, 777);
 			nHit = vec3(777, 777, 777);
 			return false;
@@ -219,7 +220,13 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
 
 		// Compute intersection with infinite cylinder
 		tHit = (-b - sqrt(disc)) / (2.0*a);
-		if(tHit < 0) tHit = (-b + sqrt(disc)) / (2.0*a);
+		if(tHit < 0) tHit = (-b + sqrt(disc)) / (2.0*a); // try second intersection
+		if(tHit < 0) {
+			tHit = LARGE_FLOAT();
+			pHit = vec3(777, 777, 777);
+			nHit = vec3(777, 777, 777);
+			return false;
+		}
 		pHit = rayStart + tHit * rayDir;
 		nHit = pHit - cylTail;
 		nHit = normalize(nHit - dot(cylDir, nHit)*cylDir); 
@@ -227,7 +234,7 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
 
 		// Check if intersection was outside finite cylinder
 		if(dot(cylDir, pHit - cylTail) < 0 || dot(-cylDir, pHit - cylTip) < 0) {
-			tHit = -1;
+			tHit = LARGE_FLOAT();
 		}
 			
 		// Test start endcap
@@ -235,7 +242,7 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
 		vec3 pHitTail;
 		vec3 nHitTail;
 		rayDiskIntersection(rayStart, rayDir, cylTail, -cylDir, cylRad, tHitTail, pHitTail, nHitTail);
-		if(tHitTail >=0 && (tHit < 0 || tHitTail < tHit)) {
+		if(tHitTail < tHit) {
 			tHit = tHitTail;
 			pHit = pHitTail;
 			nHit = nHitTail;
@@ -246,7 +253,7 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
 		vec3 pHitTip;
 		vec3 nHitTip;
 		rayDiskIntersection(rayStart, rayDir, cylTip, cylDir, cylRad, tHitTip, pHitTip, nHitTip);
-		if(tHitTip >=0 && (tHit < 0 || tHitTip < tHit)) {
+		if(tHitTip < tHit) {
 			tHit = tHitTip;
 			pHit = pHitTip;
 			nHit = nHitTip;
@@ -255,6 +262,67 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
 		return tHit >= 0;
 }
 
+
+bool rayConeIntersection(vec3 rayStart, vec3 rayDir, vec3 coneBase, vec3 coneTip, float coneRad, out float tHit, out vec3 pHit, out vec3 nHit) {
+
+		rayDir = normalize(rayDir);
+		float coneH = length(coneTip - coneBase);
+	  vec3 coneDir = (coneTip - coneBase) / coneH;
+		
+		vec3 O = rayStart;
+		vec3 D = rayDir;
+		vec3 C = coneTip;
+		vec3 V = -coneDir;
+		float cosT = coneH / sqrt(coneH*coneH + coneRad*coneRad);
+		float DdotV = dot(D,V);
+		vec3 CO = O-C;
+	  float COdotV = dot(CO, V);
+    float a = DdotV*DdotV - cosT*cosT;
+    float b = 2.0 * (DdotV*COdotV - dot(D, CO)*cosT*cosT);
+    float c = COdotV*COdotV - dot(CO, CO)*cosT*cosT;
+    float disc = b*b - 4*a*c;
+
+    if(disc < 0){
+			tHit = LARGE_FLOAT();
+			pHit = vec3(777, 777, 777);
+			nHit = vec3(777, 777, 777);
+			return false;
+    } 
+
+		// Check first intersection
+		tHit = (-b - sqrt(disc)) / (2.0*a);
+		pHit = rayStart + tHit * rayDir;
+		//nHit = vec3(1., 1., 1.);
+		//if(tHit < 0 || dot(pHit-coneTip,-coneDir) < 0. || dot(pHit-coneBase, coneDir) < 0.) {
+			if((tHit < 0) || 
+				 (dot(pHit-coneTip,-coneDir) < 0.) || 
+			   (dot(pHit-coneBase, coneDir) < 0.)) {
+			
+			//if(tHit < 0) nHit = vec3(0, 0, 0);
+			//if(dot(pHit-coneTip,-coneDir) < 0.) nHit = vec3(0, 0, 0);
+			//if(dot(pHit-coneBase, -coneDir) < 0.) nHit = vec3(0, 0, 0);
+
+			// try second intersection
+			tHit = (-b + sqrt(disc)) / (2.0*a); 
+			pHit = rayStart + tHit * rayDir;
+
+		
+			// Check second intersection
+			if((tHit < 0) || 
+				 (dot(pHit-coneTip,-coneDir) < 0.) || 
+			   (dot(pHit-coneBase, coneDir) < 0.)) {
+				tHit = LARGE_FLOAT();
+				pHit = vec3(777, 777, 777);
+				nHit = vec3(777, 777, 777);
+				return false; 
+			}
+		}
+
+		nHit = pHit - coneBase;
+		vec3 sideDir = normalize(pHit - coneTip);
+		nHit = normalize(nHit - dot(sideDir, nHit)*sideDir); 
+		return true;
+}
 
 )";
 
