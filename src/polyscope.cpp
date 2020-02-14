@@ -349,11 +349,13 @@ void renderScene() {
   }
 
   drawStructures();
+
+  render::engine->sceneBufferFinal->bindForRendering();
+  render::engine->lightSceneBuffer();
 }
 
 void renderSceneToScreen() {
-  render::engine->bindDisplay();
-  render::engine->lightSceneBuffer();
+  render::engine->blitFinalSceneToScreen();
 }
 
 void buildPolyscopeGui() {
@@ -532,7 +534,6 @@ void draw(bool withUI) {
 
   // Build the GUI components
   if (withUI) {
-    // ImGui::ShowDemoWindow();
 
     // The common case, rendering UI and structures
     if (contextStack.size() == 1) {

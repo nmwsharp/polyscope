@@ -285,7 +285,6 @@ glm::mat4 getCameraPerspectiveMatrix() {
   return glm::perspective(fovRad, aspectRatio, nearClip, farClip);
 }
 
-glm::vec4 getViewport() { return glm::vec4{0., 0., view::bufferWidth, view::bufferHeight}; }
 
 glm::vec3 getCameraWorldPosition() {
   // This will work no matter how the view matrix is constructed...

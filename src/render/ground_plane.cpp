@@ -95,7 +95,6 @@ void GroundPlane::prepareGroundPlane() {
   groundPlanePrepared = true;
 }
 
-
 void GroundPlane::draw() {
 
   // don't draw ground in planar mode
@@ -134,14 +133,39 @@ void GroundPlane::draw() {
   double heightEPS = state::lengthScale * 1e-4;
   double groundHeight = bboxBottom - groundPlaneHeightFactor * bboxHeight - heightEPS;
 
+  auto setUniforms = [&]() {
+    glm::mat4 viewMat = view::getCameraViewMatrix();
+    groundPlaneProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+
+    glm::mat4 projMat = view::getCameraPerspectiveMatrix();
+    groundPlaneProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
+
+    glm::vec4 viewport = render::engine->getSceneBufferViewport();
+    glm::vec2 viewportDim{viewport[2], viewport[3]};
+    groundPlaneProgram->setUniform("u_viewportDim", viewportDim);
+
+    groundPlaneProgram->setUniform("u_center", state::center);
+    groundPlaneProgram->setUniform("u_basisX", baseForward);
+    groundPlaneProgram->setUniform("u_basisY", baseRight);
+    groundPlaneProgram->setUniform("u_basisZ", baseUp);
+
+    float camHeight = view::getCameraWorldPosition()[iP];
+    groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
+
+    groundPlaneProgram->setUniform("u_lengthScale", state::lengthScale);
+    groundPlaneProgram->setUniform("u_groundHeight", groundHeight);
+  };
+
+
   // Implement the mirror effect
   {
     // Render to a texture so we can sample from it on the ground
-		mirroredSceneFrameBuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
-		mirroredSceneFrameBuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
-		// (use a texture 1/4 the area of the view buffer, it's supposed to be blurry anyway and this saves perf) TODO viewport size problems
-		//mirroredSceneFrameBuffer->resizeBuffers(view::bufferWidth/2, view::bufferHeight/2);
-		//mirroredSceneFrameBuffer->setViewport(0, 0, view::bufferWidth/2, view::bufferHeight/2);
+    mirroredSceneFrameBuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
+    mirroredSceneFrameBuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+    // (use a texture 1/4 the area of the view buffer, it's supposed to be blurry anyway and this saves perf) TODO
+    // viewport size problems
+    // mirroredSceneFrameBuffer->resizeBuffers(view::bufferWidth/2, view::bufferHeight/2);
+    // mirroredSceneFrameBuffer->setViewport(0, 0, view::bufferWidth/2, view::bufferHeight/2);
 
     mirroredSceneFrameBuffer->bindForRendering();
     mirroredSceneFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
@@ -163,31 +187,12 @@ void GroundPlane::draw() {
 
     // Restore original view matrix
     view::viewMat = origViewMat;
-	
-		render::engine->bindSceneBuffer();
+
+    render::engine->bindSceneBuffer();
   }
 
-  // Set uniforms
-  glm::mat4 viewMat = view::getCameraViewMatrix();
-  groundPlaneProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
 
-  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-  groundPlaneProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
-
-  glm::vec2 viewportDim{view::bufferWidth, view::bufferHeight};
-  groundPlaneProgram->setUniform("u_viewportDim", viewportDim);
-
-  groundPlaneProgram->setUniform("u_center", state::center);
-  groundPlaneProgram->setUniform("u_basisX", baseForward);
-  groundPlaneProgram->setUniform("u_basisY", baseRight);
-  groundPlaneProgram->setUniform("u_basisZ", baseUp);
-
-  float camHeight = view::getCameraWorldPosition()[iP];
-  groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
-
-  groundPlaneProgram->setUniform("u_lengthScale", state::lengthScale);
-  groundPlaneProgram->setUniform("u_groundHeight", groundHeight);
-
+  setUniforms();
   groundPlaneProgram->draw();
 }
 
@@ -196,8 +201,8 @@ void GroundPlane::buildGui() {
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Ground Plane")) {
 
-    ImGui::Checkbox("Enabled", &options::groundPlaneEnabled);
-    ImGui::SliderFloat("Height", &groundPlaneHeightFactor, 0.0, 1.0);
+    if(ImGui::Checkbox("Enabled", &options::groundPlaneEnabled)) requestRedraw();
+    if(ImGui::SliderFloat("Height", &groundPlaneHeightFactor, 0.0, 1.0)) requestRedraw();
 
     ImGui::TreePop();
   }

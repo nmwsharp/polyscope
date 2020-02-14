@@ -49,11 +49,17 @@ void FrameBuffer::setViewport(int startX, int startY, unsigned int sizeX, unsign
 }
 
 void FrameBuffer::resizeBuffers(unsigned int newXSize, unsigned int newYSize) {
-	bind();
-  for (auto& b : renderBuffers) {
+  bind();
+  for (auto& b : renderBuffersColor) {
     b->resize(newXSize, newYSize);
   }
-  for (auto& b : textureBuffers) {
+  for (auto& b : renderBuffersDepth) {
+    b->resize(newXSize, newYSize);
+  }
+  for (auto& b : textureBuffersColor) {
+    b->resize(newXSize, newYSize);
+  }
+  for (auto& b : textureBuffersDepth) {
     b->resize(newXSize, newYSize);
   }
 }
@@ -88,9 +94,13 @@ void Engine::buildEngineGui() {
     ImGui::EndCombo();
   }
 
-  ImGui::SliderFloat("exposure", &exposure, 0.1, 5.0, "%.3f", 2.);
-  ImGui::SliderFloat("white level", &whiteLevel, 0.0, 5.0, "%.3f", 2.);
-  ImGui::SliderFloat("gamma", &gamma, 0.1, 5.0, "%.3f", 2.);
+  ImGui::Text("Tone mapping");
+  ImGui::SliderFloat("exposure", &exposure, 0.1, 2.0, "%.3f", 2.);
+  ImGui::SliderFloat("white level", &whiteLevel, 0.0, 2.0, "%.3f", 2.);
+  ImGui::SliderFloat("gamma", &gamma, 0.5, 3.0, "%.3f", 2.);
+
+  ImGui::Text("Anti-aliasing");
+  if (ImGui::InputInt("SSAA", &ssaaFactor, 1)) resizeSceneBuffer(view::bufferWidth, view::bufferHeight);
 
   groundPlane.buildGui();
 }
@@ -103,14 +113,20 @@ void Engine::setBackgroundAlpha(float newAlpha) {
   // TODO
 }
 
-// bool Engine::bindSceneBuffer() { return sceneBuffer->bindForRendering(); }
 
-void Engine::clearSceneBuffer() { sceneBuffer->clear(); }
+void Engine::clearSceneBuffer() {
+  sceneBuffer->clear();
+  sceneBufferFinal->clear();
+}
 
-void Engine::resizeSceneBuffer(int width, int height) { sceneBuffer->resizeBuffers(width, height); }
+void Engine::resizeSceneBuffer(int width, int height) {
+  sceneBuffer->resizeBuffers(ssaaFactor * width, ssaaFactor * height);
+  sceneBufferFinal->resizeBuffers(ssaaFactor * width, ssaaFactor * height);
+}
 
 void Engine::setSceneBufferViewport(int xStart, int yStart, int sizeX, int sizeY) {
-  sceneBuffer->setViewport(xStart, yStart, sizeX, sizeY);
+  sceneBuffer->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
+  sceneBufferFinal->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
 }
 
 bool Engine::bindSceneBuffer() { return sceneBuffer->bindForRendering(); }
@@ -155,7 +171,7 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   { // Scene buffer
 
     // Note that this is basically duplicated in ground_plane.cpp, changes here should probably be reflected there
-    sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    sceneColor = generateTextureBufferMultisample(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight, 1);
     sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
 
     sceneBuffer = generateFrameBuffer();
@@ -165,6 +181,17 @@ void Engine::allocateGlobalBuffersAndPrograms() {
 
     sceneBuffer->clearColor = glm::vec3{1., 1., 1.};
     sceneBuffer->clearAlpha = 0.0;
+  }
+
+  { // "Final" scene buffer (after lighting)
+    sceneColorFinal = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+
+    sceneBufferFinal = generateFrameBuffer();
+    sceneBufferFinal->addColorBuffer(sceneColorFinal);
+    sceneBufferFinal->setDrawBuffers();
+
+    sceneBufferFinal->clearColor = glm::vec3{1., 1., 1.};
+    sceneBufferFinal->clearAlpha = 0.0;
   }
 
   { // Pick buffer
@@ -199,6 +226,10 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   { // Load default materials
     materialCache = loadDefaultMaterials();
   }
+}
+
+glm::vec4 Engine::getSceneBufferViewport() {
+  return glm::vec4{0., 0., ssaaFactor * view::bufferWidth, ssaaFactor * view::bufferHeight};
 }
 
 std::vector<glm::vec3> Engine::screenTrianglesCoords() {

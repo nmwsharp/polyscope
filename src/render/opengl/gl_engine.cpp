@@ -162,7 +162,7 @@ void printShaderInfoLog(ShaderHandle shaderHandle) {
     printf("Shader info log:\n%s\n", log);
     free(log);
 
-		throw std::runtime_error("shader compile failed");
+    throw std::runtime_error("shader compile failed");
   }
 }
 void printProgramInfoLog(GLuint handle) {
@@ -178,8 +178,8 @@ void printProgramInfoLog(GLuint handle) {
     glGetProgramInfoLog(handle, logLen, &chars, log);
     printf("Program info log:\n%s\n", log);
     free(log);
-		
-		throw std::runtime_error("shader program compile failed");
+
+    throw std::runtime_error("shader program compile failed");
   }
 }
 
@@ -231,6 +231,19 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
 
   setFilterMode(FilterMode::Nearest);
 }
+
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples)
+    : TextureBuffer(2, format_, sizeX_, sizeY_) {
+
+  glGenTextures(1, &handle);
+  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, handle);
+  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nSamples, internalFormat(format), sizeX, sizeY, GL_TRUE);
+  isMultisample = true;
+  checkGLError();
+
+  setFilterMode(FilterMode::Nearest);
+}
+
 
 GLTextureBuffer::~GLTextureBuffer() { glDeleteTextures(1, &handle); }
 
@@ -304,7 +317,11 @@ void GLTextureBuffer::bind() {
     glBindTexture(GL_TEXTURE_1D, handle);
   }
   if (dim == 2) {
-    glBindTexture(GL_TEXTURE_2D, handle);
+    if (isMultisample) {
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, handle);
+    } else {
+      glBindTexture(GL_TEXTURE_2D, handle);
+    }
   }
   checkGLError();
 }
@@ -364,7 +381,7 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<RenderBuffer> renderBufferIn)
 
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, colorAttachNum(nColorBuffers), GL_RENDERBUFFER, renderBuffer->getHandle());
   checkGLError();
-  renderBuffers.push_back(renderBuffer);
+  renderBuffersColor.push_back(renderBuffer);
   nColorBuffers++;
 }
 
@@ -382,7 +399,7 @@ void GLFrameBuffer::addDepthBuffer(std::shared_ptr<RenderBuffer> renderBufferIn)
 
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderBuffer->getHandle());
   checkGLError();
-  renderBuffers.push_back(renderBuffer);
+  renderBuffersDepth.push_back(renderBuffer);
 }
 
 void GLFrameBuffer::addColorBuffer(std::shared_ptr<TextureBuffer> textureBufferIn) {
@@ -399,9 +416,16 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<TextureBuffer> textureBufferI
   // if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
   // if (colorTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
 
-  glFramebufferTexture2D(GL_FRAMEBUFFER, colorAttachNum(nColorBuffers), GL_TEXTURE_2D, textureBuffer->getHandle(), 0);
+  if (textureBufferIn->isMultisample) {
+    glFramebufferTexture2D(GL_FRAMEBUFFER, colorAttachNum(nColorBuffers), GL_TEXTURE_2D_MULTISAMPLE,
+                           textureBuffer->getHandle(), 0);
+    std::cout << "adding multisample" << std::endl;
+  } else {
+    glFramebufferTexture2D(GL_FRAMEBUFFER, colorAttachNum(nColorBuffers), GL_TEXTURE_2D, textureBuffer->getHandle(), 0);
+    std::cout << "adding non-multisample" << std::endl;
+  }
   checkGLError();
-  textureBuffers.push_back(textureBuffer);
+  textureBuffersColor.push_back(textureBuffer);
   nColorBuffers++;
 }
 
@@ -421,7 +445,7 @@ void GLFrameBuffer::addDepthBuffer(std::shared_ptr<TextureBuffer> textureBufferI
 
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, textureBuffer->getHandle(), 0);
   checkGLError();
-  textureBuffers.push_back(textureBuffer);
+  textureBuffersDepth.push_back(textureBuffer);
 }
 
 void GLFrameBuffer::setDrawBuffers() {
@@ -440,10 +464,10 @@ bool GLFrameBuffer::bindForRendering() {
 
   // Check if the frame buffer is okay
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-    // it would be nice to error out here, but it seems that on some platforms this happens even during normal flow. For
-    // instance, on Windows we get an incomplete framebuffer when the application is minimized
-    // see https://github.com/nmwsharp/polyscope/issues/36
-    // throw std::runtime_error("OpenGL error occurred: framebuffer not complete!");
+    // it would be nice to error out here, but it seems that on some platforms this happens even during normal flow.
+    // For instance, on Windows we get an incomplete framebuffer when the application is minimized see
+    // https://github.com/nmwsharp/polyscope/issues/36 throw std::runtime_error("OpenGL error occurred: framebuffer
+    // not complete!");
     return false;
   }
 
@@ -490,6 +514,11 @@ std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
   return result;
 }
 
+void GLFrameBuffer::blitTo() {
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, getHandle());
+  // TODO get active framebuffer's size
+  glBlitFramebuffer(0, 0, view::bufferWidth * ssaaFactor, view::bufferHeight * ssaaFactor, 0, 0, view::bufferWidth, view::bufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+}
 
 // =============================================================
 // ==================  Shader Program  =========================
@@ -584,7 +613,7 @@ void GLShaderProgram::compileGLProgram(const std::vector<ShaderStageSpecificatio
   std::vector<ShaderHandle> handles;
   for (const ShaderStageSpecification& s : stages) {
     ShaderHandle h = glCreateShader(native(s.stage));
-		std::array<const char*, 2> srcs = {s.src.c_str(), shaderCommonSource};
+    std::array<const char*, 2> srcs = {s.src.c_str(), shaderCommonSource};
     glShaderSource(h, 2, &(srcs[0]), nullptr);
     glCompileShader(h);
     printShaderInfoLog(h);
@@ -1535,8 +1564,10 @@ void GLEngine::initialize() {
   glfwPollEvents();
 #endif
 
+  glEnable(GL_MULTISAMPLE);
+
   // Update the width and height
-	updateWindowSize();
+  updateWindowSize();
 }
 
 
@@ -1655,6 +1686,8 @@ void GLEngine::ImGuiNewFrame() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
+
+  // ImGui::ShowDemoWindow();
 }
 
 void GLEngine::ImGuiRender() {
@@ -1696,6 +1729,10 @@ void GLEngine::setBlendMode(BlendMode newMode) {
     glEnable(GL_BLEND);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
     break;
+  case BlendMode::Zero:
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ZERO, GL_ZERO);
+    break;
   case BlendMode::Disable:
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE); // doesn't actually matter
@@ -1703,10 +1740,18 @@ void GLEngine::setBlendMode(BlendMode newMode) {
   }
 }
 
+void GLEngine::setColorMask(std::array<bool, 4> mask) { glColorMask(mask[0], mask[1], mask[2], mask[3]); }
+
 std::string GLEngine::getClipboardText() {
   std::string clipboardData = ImGui::GetClipboardText();
   return clipboardData;
 }
+
+void GLEngine::blitSceneToFinal() {
+  sceneBuffer->bindForRendering();
+  sceneBufferFinal->blitTo();
+}
+
 
 void GLEngine::setClipboardText(std::string text) { ImGui::SetClipboardText(text.c_str()); }
 
@@ -1729,6 +1774,11 @@ std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat for
 std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
                                                                unsigned int sizeY_, float* data) {
   GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, data);
+  return std::shared_ptr<TextureBuffer>(newT);
+}
+std::shared_ptr<TextureBuffer> GLEngine::generateTextureBufferMultisample(TextureFormat format, unsigned int sizeX_,
+                                                                          unsigned int sizeY_, unsigned int nSamples) {
+  GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, nSamples);
   return std::shared_ptr<TextureBuffer>(newT);
 }
 

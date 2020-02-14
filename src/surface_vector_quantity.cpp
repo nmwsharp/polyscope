@@ -58,7 +58,7 @@ void SurfaceVectorQuantity::draw() {
 	glm::mat4 P = view::getCameraPerspectiveMatrix();
   glm::mat4 Pinv = glm::inverse(P);
   program->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
- 	program->setUniform("u_viewport", view::getViewport());
+ 	program->setUniform("u_viewport", render::engine->getSceneBufferViewport());
 
   program->draw();
 }

@@ -56,6 +56,7 @@ public:
   // create a 2D texture from data
   GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data = nullptr);
   GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, float* data);
+  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples);
 
   ~GLTextureBuffer() override;
 
@@ -67,9 +68,9 @@ public:
   void setFilterMode(FilterMode newMode) override;
   void* getNativeHandle() override;
 
-
   void bind();
   TextureBufferHandle getHandle() const { return handle; }
+
 
 protected:
   TextureBufferHandle handle;
@@ -121,7 +122,6 @@ public:
 
 protected:
   FrameBufferHandle handle;
-
 };
 
 
@@ -251,10 +251,12 @@ public:
   void bindDisplay() override;
   void swapDisplayBuffers() override;
   std::vector<unsigned char> readDisplayBuffer() override;
+  void blitFinalSceneToScreen() override;
 
   // Manage render state
   void setDepthMode(DepthMode newMode = DepthMode::Less) override;
   void setBlendMode(BlendMode newMode = BlendMode::Over) override;
+  void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) override;
 
   // === Windowing and framework things
   void makeContextCurrent() override;
@@ -283,6 +285,9 @@ public:
                                                        unsigned char* data = nullptr) override; // 2d
   std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
                                                        float* data) override; // 2d
+  std::shared_ptr<TextureBuffer> generateTextureBufferMultisample(TextureFormat format, unsigned int sizeX_,
+                                                                  unsigned int sizeY_,
+                                                                  unsigned int nSamples) override; // 2d
 
   // create render buffers
   std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
@@ -298,8 +303,6 @@ public:
 protected:
   // Helpers
 
-  // Internal members
-  std::vector<FrameBufferHandle> activeRenderBufferStack;
 
   // Internal windowing and engine details
   GLFWwindow* mainWindow = nullptr;

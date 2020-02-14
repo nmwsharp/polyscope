@@ -84,7 +84,6 @@ glm::mat4 getCameraViewMatrix();
 glm::mat4 getCameraPerspectiveMatrix();
 glm::vec3 getCameraWorldPosition();
 void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
-glm::vec4 getViewport();
 
 
 // Flight-related

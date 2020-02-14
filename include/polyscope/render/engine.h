@@ -37,7 +37,7 @@ enum class FilterMode { Nearest = 0, Linear };
 enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F };
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
 enum class DepthMode { Less, LEqual, LEqualReadOnly, Disable };
-enum class BlendMode { Over, OverNoWrite, Disable }; // TODO what to call these...
+enum class BlendMode { Over, OverNoWrite, Zero, Disable }; // TODO what to call these...
 
 namespace render {
 
@@ -62,6 +62,9 @@ public:
   // void fillTextureData1D(std::string name, unsigned char* texData, unsigned int length);
   // void fillTextureData2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
   // bool withAlpha = true, bool useMipMap = false, bool repeat = false);
+
+  // Limited support for multisampled buffers
+  bool isMultisample = false;
 
   virtual void* getNativeHandle() = 0; // used to interop with external things, e.g. ImGui
 
@@ -116,7 +119,7 @@ public:
 
   virtual void setDrawBuffers() = 0;
 
-  // Specify the viewport coordinates 
+  // Specify the viewport coordinates
   virtual void setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
 
   // Resizes textures and renderbuffers if different from current size.
@@ -133,8 +136,8 @@ protected:
 
   // Buffers
   int nColorBuffers = 0;
-  std::vector<std::shared_ptr<RenderBuffer>> renderBuffers;
-  std::vector<std::shared_ptr<TextureBuffer>> textureBuffers;
+  std::vector<std::shared_ptr<RenderBuffer>> renderBuffersColor, renderBuffersDepth;
+  std::vector<std::shared_ptr<TextureBuffer>> textureBuffersColor, textureBuffersDepth;
 };
 
 // == Shaders
@@ -274,12 +277,15 @@ public:
   virtual bool bindSceneBuffer();
   virtual void resizeSceneBuffer(int width, int height);
   virtual void setSceneBufferViewport(int xStart, int yStart, int sizeX, int sizeY);
-  virtual void lightSceneBuffer(); // tonemap and gamma correct, render to active framebuffer
-  void renderBackground();         // respects background setting
+  glm::vec4 getSceneBufferViewport();
+  virtual void lightSceneBuffer(); // tonemap and gamma correct, render to active buffer
+  virtual void blitFinalSceneToScreen() = 0;
+  void renderBackground(); // respects background setting
 
   // Manage render state
   virtual void setDepthMode(DepthMode newMode = DepthMode::Less) = 0;
   virtual void setBlendMode(BlendMode newMode = BlendMode::Over) = 0;
+  virtual void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) = 0;
 
   // Helpers
   void allocateGlobalBuffersAndPrograms(); // called once during startup
@@ -326,6 +332,9 @@ public:
   virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
                                                                unsigned int sizeY_,
                                                                float* data) = 0; // 2d
+  virtual std::shared_ptr<TextureBuffer> generateTextureBufferMultisample(TextureFormat format, unsigned int sizeX_,
+                                                                          unsigned int sizeY_,
+                                                                          unsigned int nSamples) = 0; // 2d
 
   // create render buffers
   virtual std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
@@ -339,11 +348,11 @@ public:
                                                                DrawMode dm, unsigned int nPatchVertices = 0) = 0;
 
   // === The frame buffers used in the rendering pipeline
-  std::shared_ptr<FrameBuffer> sceneBuffer;
+  std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal;
   std::shared_ptr<FrameBuffer> pickFramebuffer;
 
   // Main buffers for rendering
-  std::shared_ptr<TextureBuffer> sceneColor;
+  std::shared_ptr<TextureBuffer> sceneColor, sceneColorFinal;
   std::shared_ptr<RenderBuffer> sceneDepth, pickColorBuffer, pickDepthBuffer;
 
   // General-use programs used by the engine
@@ -353,13 +362,14 @@ public:
   // Options
   BackgroundView background = BackgroundView::None;
 
-  // TODO make these persistent?
   float exposure = 0.9;
   float whiteLevel = 0.7;
   float gamma = 2.2;
 
 protected:
   // TODO Manage a cache of compiled shaders?
+
+  int ssaaFactor = 1;
 
   // Helpers
   std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen
