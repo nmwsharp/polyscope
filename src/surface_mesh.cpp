@@ -852,10 +852,6 @@ void SurfaceMesh::buildCustomUI() {
     if (ImGui::ColorEdit3("Color", &surfaceColor.get()[0], ImGuiColorEditFlags_NoInputs))
       setSurfaceColor(surfaceColor.get());
     ImGui::SameLine();
-    ImGui::PushItemWidth(100);
-    if (ImGui::ColorEdit3("Edge Color", &edgeColor.get()[0], ImGuiColorEditFlags_NoInputs))
-      setEdgeColor(edgeColor.get());
-    ImGui::PopItemWidth();
   }
 
   { // Flat shading or smooth shading?
@@ -863,9 +859,32 @@ void SurfaceMesh::buildCustomUI() {
     if (ImGui::Checkbox("Smooth", &shadeSmooth.get())) setSmoothShade(shadeSmooth.get());
   }
 
-  { // Edge width
+  ImGui::SameLine();
+  { // Edge options
     ImGui::PushItemWidth(100);
-    if (ImGui::SliderFloat("Edge Width", &edgeWidth.get(), 0.0, 1., "%.5f", 2.)) setEdgeWidth(getEdgeWidth());
+    if (edgeWidth.get() == 0.) {
+      bool showEdges = false;
+      if (ImGui::Checkbox("Edges", &showEdges)) {
+        setEdgeWidth(1.);
+      }
+    } else {
+      bool showEdges = true;
+      if (ImGui::Checkbox("Edges", &showEdges)) {
+        setEdgeWidth(0.);
+      }
+
+      // Edge color
+      ImGui::PushItemWidth(100);
+      if (ImGui::ColorEdit3("Edge Color", &edgeColor.get()[0], ImGuiColorEditFlags_NoInputs))
+        setEdgeColor(edgeColor.get());
+      ImGui::PopItemWidth();
+
+      // Edge width
+      ImGui::SameLine();
+      ImGui::PushItemWidth(60);
+      if (ImGui::SliderFloat("Width", &edgeWidth.get(), 0.001, 2.)) setEdgeWidth(getEdgeWidth());
+      ImGui::PopItemWidth();
+    }
     ImGui::PopItemWidth();
   }
 }
