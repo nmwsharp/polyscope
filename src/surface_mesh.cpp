@@ -340,7 +340,7 @@ void SurfaceMesh::draw() {
 
     // Set uniforms
     setTransformUniforms(*wireframeProgram);
-    wireframeProgram->setUniform("u_edgeWidth", getEdgeWidth());
+    wireframeProgram->setUniform("u_edgeWidth", getEdgeWidth() * render::engine->getCurrentPixelScaling());
     wireframeProgram->setUniform("u_edgeColor", getEdgeColor());
 
     // Make sure wireframe wins depth tests

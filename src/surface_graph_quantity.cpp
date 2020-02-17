@@ -48,8 +48,8 @@ void SurfaceGraphQuantity::setUniforms() {
   glm::mat4 Pinv = glm::inverse(P);
   pointProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   lineProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
-  pointProgram->setUniform("u_viewport", render::engine->getSceneBufferViewport());
-  lineProgram->setUniform("u_viewport", render::engine->getSceneBufferViewport());
+  pointProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
+  lineProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
 
   // Radii and colors
   pointProgram->setUniform("u_pointRadius", getRadius());

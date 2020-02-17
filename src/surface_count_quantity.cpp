@@ -63,7 +63,7 @@ void SurfaceCountQuantity::setUniforms(render::ShaderProgram& p) {
 	glm::mat4 P = view::getCameraPerspectiveMatrix();
   glm::mat4 Pinv = glm::inverse(P);
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
-  p.setUniform("u_viewport", render::engine->getSceneBufferViewport());
+  p.setUniform("u_viewport", render::engine->getCurrentViewport());
 
   p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
   p.setUniform("u_rangeLow", vizRangeLow);

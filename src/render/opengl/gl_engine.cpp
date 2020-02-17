@@ -235,13 +235,15 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
 GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples)
     : TextureBuffer(2, format_, sizeX_, sizeY_) {
 
+  isMultisample = true;
+  multisampleCount = nSamples;
+
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, handle);
-  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nSamples, internalFormat(format), sizeX, sizeY, GL_TRUE);
-  isMultisample = true;
+  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, multisampleCount, internalFormat(format), sizeX, sizeY, GL_TRUE);
   checkGLError();
 
-  setFilterMode(FilterMode::Nearest);
+  // setFilterMode(FilterMode::Nearest); // openGL rejects this?
 }
 
 
@@ -270,7 +272,31 @@ void GLTextureBuffer::resize(unsigned int newX, unsigned int newY) {
     throw std::runtime_error("OpenGL error: called 2D resize on 1D texture");
   }
   if (dim == 2) {
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat(format), sizeX, sizeY, 0, formatF(format), type(format), nullptr);
+    if (isMultisample) {
+      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, multisampleCount, internalFormat(format), sizeX, sizeY,
+                              GL_TRUE);
+    } else {
+      glTexImage2D(GL_TEXTURE_2D, 0, internalFormat(format), sizeX, sizeY, 0, formatF(format), type(format), nullptr);
+    }
+  }
+  checkGLError();
+}
+
+void GLTextureBuffer::resize(unsigned int newX, unsigned int newY, unsigned int nSamples) {
+
+  TextureBuffer::resize(newX, newY, nSamples);
+
+  bind();
+  if (dim == 1) {
+    throw std::runtime_error("OpenGL error: called 2D resize on 1D texture");
+  }
+  if (dim == 2) {
+    if (isMultisample) {
+      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, multisampleCount, internalFormat(format), sizeX, sizeY,
+                              GL_TRUE);
+    } else {
+      throw std::runtime_error("OpenGL error: called 2D multisample resize on non-multisample texture");
+    }
   }
   checkGLError();
 }
@@ -279,50 +305,41 @@ void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 
   bind();
 
-  if (dim == 1) {
-    switch (newMode) {
-    case FilterMode::Nearest:
-      glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      break;
-    case FilterMode::Linear:
-      glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      break;
-    }
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  switch (newMode) {
+  case FilterMode::Nearest:
+    glTexParameteri(textureType(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(textureType(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    break;
+  case FilterMode::Linear:
+    glTexParameteri(textureType(), GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(textureType(), GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    break;
   }
+  glTexParameteri(textureType(), GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   if (dim == 2) {
-
-    switch (newMode) {
-    case FilterMode::Nearest:
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      break;
-    case FilterMode::Linear:
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      break;
-    }
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(textureType(), GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   }
+
   checkGLError();
 }
 
 void* GLTextureBuffer::getNativeHandle() { return reinterpret_cast<void*>(getHandle()); }
 
-void GLTextureBuffer::bind() {
+GLenum GLTextureBuffer::textureType() {
   if (dim == 1) {
-    glBindTexture(GL_TEXTURE_1D, handle);
-  }
-  if (dim == 2) {
+    return GL_TEXTURE_1D;
+  } else {
     if (isMultisample) {
-      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, handle);
+      return GL_TEXTURE_2D_MULTISAMPLE;
     } else {
-      glBindTexture(GL_TEXTURE_2D, handle);
+      return GL_TEXTURE_2D;
     }
   }
+  throw std::runtime_error("bad texture type");
+}
+
+void GLTextureBuffer::bind() {
+  glBindTexture(textureType(), handle);
   checkGLError();
 }
 
@@ -337,12 +354,38 @@ GLRenderBuffer::GLRenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsi
   resize(sizeX, sizeY);
 }
 
+GLRenderBuffer::GLRenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples_)
+    : RenderBuffer(type_, sizeX_, sizeY_) {
+  isMultisample = true;
+  multisampleCount = nSamples_;
+  glGenRenderbuffers(1, &handle);
+  checkGLError();
+  resize(sizeX, sizeY);
+}
+
 GLRenderBuffer::~GLRenderBuffer() { glDeleteRenderbuffers(1, &handle); }
 
 void GLRenderBuffer::resize(unsigned int newX, unsigned int newY) {
   RenderBuffer::resize(newX, newY);
   bind();
-  glRenderbufferStorage(GL_RENDERBUFFER, native(type), sizeX, sizeY);
+
+  if (isMultisample) {
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, multisampleCount, native(type), sizeX, sizeY);
+  } else {
+    glRenderbufferStorage(GL_RENDERBUFFER, native(type), sizeX, sizeY);
+  }
+  checkGLError();
+}
+
+void GLRenderBuffer::resize(unsigned int newX, unsigned int newY, unsigned int nSamples) {
+  RenderBuffer::resize(newX, newY, nSamples);
+  bind();
+
+  if (isMultisample) {
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, multisampleCount, native(type), sizeX, sizeY);
+  } else {
+    throw std::runtime_error("OpenGL error: called multisample resize on non-multisample renderbuffer");
+  }
   checkGLError();
 }
 
@@ -356,17 +399,26 @@ void GLRenderBuffer::bind() {
 // ===================== Framebuffer ===========================
 // =============================================================
 
-GLFrameBuffer::GLFrameBuffer() {
-  glGenFramebuffers(1, &handle);
-  glBindFramebuffer(GL_FRAMEBUFFER, handle);
+GLFrameBuffer::GLFrameBuffer(unsigned int sizeX_, unsigned int sizeY_, bool isDefault) {
+  sizeX = sizeX_;
+  sizeY = sizeY_;
+  if (isDefault) {
+    handle = 0;
+  } else {
+    glGenFramebuffers(1, &handle);
+    glBindFramebuffer(GL_FRAMEBUFFER, handle);
+  }
   checkGLError();
 };
 
-GLFrameBuffer::~GLFrameBuffer() { glDeleteFramebuffers(1, &handle); }
+GLFrameBuffer::~GLFrameBuffer() {
+  if (handle != 0) {
+    glDeleteFramebuffers(1, &handle);
+  }
+}
 
 void GLFrameBuffer::bind() {
   glBindFramebuffer(GL_FRAMEBUFFER, handle);
-
   checkGLError();
 }
 
@@ -412,17 +464,11 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<TextureBuffer> textureBufferI
   bind();
   checkGLError();
 
-  // Sanity checks
-  // if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
-  // if (colorTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
-
   if (textureBufferIn->isMultisample) {
     glFramebufferTexture2D(GL_FRAMEBUFFER, colorAttachNum(nColorBuffers), GL_TEXTURE_2D_MULTISAMPLE,
                            textureBuffer->getHandle(), 0);
-    std::cout << "adding multisample" << std::endl;
   } else {
     glFramebufferTexture2D(GL_FRAMEBUFFER, colorAttachNum(nColorBuffers), GL_TEXTURE_2D, textureBuffer->getHandle(), 0);
-    std::cout << "adding non-multisample" << std::endl;
   }
   checkGLError();
   textureBuffersColor.push_back(textureBuffer);
@@ -460,14 +506,17 @@ void GLFrameBuffer::setDrawBuffers() {
 }
 
 bool GLFrameBuffer::bindForRendering() {
+  verifyBufferSizes();
   bind();
 
   // Check if the frame buffer is okay
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
     // it would be nice to error out here, but it seems that on some platforms this happens even during normal flow.
     // For instance, on Windows we get an incomplete framebuffer when the application is minimized see
-    // https://github.com/nmwsharp/polyscope/issues/36 throw std::runtime_error("OpenGL error occurred: framebuffer
-    // not complete!");
+    // https://github.com/nmwsharp/polyscope/issues/36
+
+    // throw std::runtime_error("OpenGL error occurred: framebuffer not complete!");
+    // std::cout << "OpenGL error occurred: framebuffer not complete!\n";
     return false;
   }
 
@@ -477,6 +526,7 @@ bool GLFrameBuffer::bindForRendering() {
         "OpenGL error: viewport not set for framebuffer object. Call GLFrameBuffer::setViewport()");
   }
   glViewport(viewportX, viewportY, viewportSizeX, viewportSizeY);
+  render::engine->setCurrentViewport({viewportX, viewportY, viewportSizeX, viewportSizeY});
   checkGLError();
 
   // Enable depth testing
@@ -514,10 +564,19 @@ std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
   return result;
 }
 
-void GLFrameBuffer::blitTo() {
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, getHandle());
-  // TODO get active framebuffer's size
-  glBlitFramebuffer(0, 0, view::bufferWidth * ssaaFactor, view::bufferHeight * ssaaFactor, 0, 0, view::bufferWidth, view::bufferHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
+
+  // it _better_ be a GL buffer
+  GLFrameBuffer* target = dynamic_cast<GLFrameBuffer*>(targetIn);
+  if (!target) throw std::runtime_error("tried to blitTo() non-GL framebuffer");
+
+  // target->bindForRendering();
+  bindForRendering();
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->getHandle());
+
+  glBlitFramebuffer(0, 0, getSizeX(), getSizeY(), 0, 0, target->getSizeX(), target->getSizeY(), GL_COLOR_BUFFER_BIT,
+                    GL_LINEAR);
+  checkGLError();
 }
 
 // =============================================================
@@ -1104,7 +1163,7 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& 
 }
 
 void GLShaderProgram::setAttribute(std::string name, const std::vector<int>& data, bool update, int offset, int size) {
-  // FIXME I've seen strange bugs when using int's in shaders. Need to figure
+  // TODO I've seen strange bugs when using int's in shaders. Need to figure
   // out it it's my shaders or something wrong with this function
 
   // Convert data to GL_INT (probably does nothing)
@@ -1146,7 +1205,7 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<int>& dat
 
 void GLShaderProgram::setAttribute(std::string name, const std::vector<uint32_t>& data, bool update, int offset,
                                    int size) {
-  // FIXME I've seen strange bugs when using int's in shaders. Need to figure
+  // TODO I've seen strange bugs when using int's in shaders. Need to figure
   // out it it's my shaders or something wrong with this function
 
   // Convert data to GL_UINT (probably does nothing)
@@ -1453,6 +1512,7 @@ void GLShaderProgram::activateTextures() {
 
     glActiveTexture(GL_TEXTURE0 + t.index);
     t.textureBuffer->bind();
+    if (t.textureBuffer->isMultisample) throw std::runtime_error("OpenGL can't sample from multisample textures");
     glUniform1i(t.location, t.index);
   }
 }
@@ -1545,8 +1605,17 @@ void GLEngine::initialize() {
   // Create the window with context
   mainWindow = glfwCreateWindow(view::windowWidth, view::windowHeight, options::programName.c_str(), NULL, NULL);
   glfwMakeContextCurrent(mainWindow);
-  glfwSwapInterval(1); // Enable vsync FIXME
+  glfwSwapInterval(1); // Enable vsync
   glfwSetWindowPos(mainWindow, view::initWindowPosX, view::initWindowPosY);
+
+  // Set initial window size
+  int newBufferWidth, newBufferHeight, newWindowWidth, newWindowHeight;
+  glfwGetFramebufferSize(mainWindow, &newBufferWidth, &newBufferHeight);
+  glfwGetWindowSize(mainWindow, &newWindowWidth, &newWindowHeight);
+  view::bufferWidth = newBufferWidth;
+  view::bufferHeight = newBufferHeight;
+  view::windowWidth = newWindowWidth;
+  view::windowHeight = newWindowHeight;
 
 // === Initialize openGL
 // Load openGL functions (using GLAD)
@@ -1566,8 +1635,14 @@ void GLEngine::initialize() {
 
   glEnable(GL_MULTISAMPLE);
 
-  // Update the width and height
-  updateWindowSize();
+
+  { // Manually create the screen frame buffer
+    GLFrameBuffer* glScreenBuffer = new GLFrameBuffer(view::bufferWidth, view::bufferHeight, true);
+    displayBuffer.reset(glScreenBuffer);
+    // glScreenBuffer->bind();
+    // glClearColor(1., 1., 1., 0.);
+    // glClearDepth(1.);
+  }
 }
 
 
@@ -1576,6 +1651,8 @@ unsigned int getCousineRegularCompressedSize();
 const unsigned int* getCousineRegularCompressedData();
 
 void GLEngine::initializeImGui() {
+
+  bindDisplay();
 
   ImGui::CreateContext(); // must call once at start
 
@@ -1604,20 +1681,10 @@ void GLEngine::shutdownImGui() {
   ImGui::DestroyContext();
 }
 
-void GLEngine::bindDisplay() {
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glViewport(0, 0, view::bufferWidth, view::bufferHeight);
-}
-
-
-void GLEngine::clearDisplay() {
+void GLEngine::swapDisplayBuffers() {
   bindDisplay();
-  glClearColor(1., 1., 1., 0.);
-  glClearDepth(1.);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+  glfwSwapBuffers(mainWindow);
 }
-
-void GLEngine::swapDisplayBuffers() { glfwSwapBuffers(mainWindow); }
 
 std::vector<unsigned char> GLEngine::readDisplayBuffer() {
 
@@ -1644,11 +1711,11 @@ void GLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
 void GLEngine::makeContextCurrent() { glfwMakeContextCurrent(mainWindow); }
 
-void GLEngine::updateWindowSize() {
+void GLEngine::updateWindowSize(bool force) {
   int newBufferWidth, newBufferHeight, newWindowWidth, newWindowHeight;
   glfwGetFramebufferSize(mainWindow, &newBufferWidth, &newBufferHeight);
   glfwGetWindowSize(mainWindow, &newWindowWidth, &newWindowHeight);
-  if (newBufferWidth != view::bufferWidth || newBufferHeight != view::bufferHeight ||
+  if (force || newBufferWidth != view::bufferWidth || newBufferHeight != view::bufferHeight ||
       newWindowHeight != view::windowHeight || newWindowWidth != view::windowWidth) {
     // Basically a resize callback
     requestRedraw();
@@ -1656,6 +1723,9 @@ void GLEngine::updateWindowSize() {
     view::bufferHeight = newBufferHeight;
     view::windowWidth = newWindowWidth;
     view::windowHeight = newWindowHeight;
+
+    render::engine->resizeScreenBuffers();
+    render::engine->setScreenBufferViewports();
   }
 }
 
@@ -1747,10 +1817,10 @@ std::string GLEngine::getClipboardText() {
   return clipboardData;
 }
 
-void GLEngine::blitSceneToFinal() {
-  sceneBuffer->bindForRendering();
-  sceneBufferFinal->blitTo();
-}
+// void GLEngine::blitSceneToFinal() { TODO
+// sceneBuffer->bindForRendering();
+// sceneBufferFinal->blitTo();
+//}
 
 
 void GLEngine::setClipboardText(std::string text) { ImGui::SetClipboardText(text.c_str()); }
@@ -1788,8 +1858,14 @@ std::shared_ptr<RenderBuffer> GLEngine::generateRenderBuffer(RenderBufferType ty
   return std::shared_ptr<RenderBuffer>(newR);
 }
 
-std::shared_ptr<FrameBuffer> GLEngine::generateFrameBuffer() {
-  GLFrameBuffer* newF = new GLFrameBuffer();
+std::shared_ptr<RenderBuffer> GLEngine::generateRenderBufferMultisample(RenderBufferType type, unsigned int sizeX_,
+                                                                        unsigned int sizeY_, unsigned int nSamples) {
+  GLRenderBuffer* newR = new GLRenderBuffer(type, sizeX_, sizeY_, nSamples);
+  return std::shared_ptr<RenderBuffer>(newR);
+}
+
+std::shared_ptr<FrameBuffer> GLEngine::generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) {
+  GLFrameBuffer* newF = new GLFrameBuffer(sizeX_, sizeY_);
   return std::shared_ptr<FrameBuffer>(newF);
 }
 

@@ -64,11 +64,13 @@ public:
   // Resize the underlying buffer (contents are lost)
   void resize(unsigned int newLen) override;
   void resize(unsigned int newX, unsigned int newY) override;
+  void resize(unsigned int newX, unsigned int newY, unsigned int nSamples) override;
 
   void setFilterMode(FilterMode newMode) override;
   void* getNativeHandle() override;
 
   void bind();
+  GLenum textureType();
   TextureBufferHandle getHandle() const { return handle; }
 
 
@@ -79,14 +81,15 @@ protected:
 class GLRenderBuffer : public RenderBuffer {
 public:
   GLRenderBuffer(RenderBufferType type, unsigned int sizeX_, unsigned int sizeY_);
+  GLRenderBuffer(RenderBufferType type, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples);
   ~GLRenderBuffer() override;
 
   void resize(unsigned int newX, unsigned int newY) override;
+  void resize(unsigned int newX, unsigned int newY, unsigned int nSamples) override;
 
   void bind();
   RenderBufferHandle getHandle() const { return handle; }
 
-protected:
   RenderBufferHandle handle;
 };
 
@@ -94,7 +97,7 @@ protected:
 class GLFrameBuffer : public FrameBuffer {
 
 public:
-  GLFrameBuffer();
+  GLFrameBuffer(unsigned int sizeX_, unsigned int sizeY_, bool isDefault = false);
   ~GLFrameBuffer() override;
 
   void bind() override;
@@ -117,10 +120,11 @@ public:
   // Query pixels
   std::array<float, 4> readFloat4(int xPos, int yPos) override;
 
+  void blitTo(FrameBuffer* other) override;
+
   // Getters
   FrameBufferHandle getHandle() const { return handle; }
 
-protected:
   FrameBufferHandle handle;
 };
 
@@ -247,11 +251,9 @@ public:
   void initialize();
   void checkError(bool fatal = false) override;
 
-  void clearDisplay() override;
-  void bindDisplay() override;
   void swapDisplayBuffers() override;
   std::vector<unsigned char> readDisplayBuffer() override;
-  void blitFinalSceneToScreen() override;
+  // void blitFinalSceneToScreen() override;
 
   // Manage render state
   void setDepthMode(DepthMode newMode = DepthMode::Less) override;
@@ -260,7 +262,7 @@ public:
 
   // === Windowing and framework things
   void makeContextCurrent() override;
-  void updateWindowSize() override;
+  void updateWindowSize(bool force = false) override;
   std::tuple<int, int> getWindowPos() override;
   bool windowRequestsClose() override;
   void pollEvents() override;
@@ -292,9 +294,11 @@ public:
   // create render buffers
   std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
                                                      unsigned int sizeY_) override;
+  std::shared_ptr<RenderBuffer> generateRenderBufferMultisample(RenderBufferType type, unsigned int sizeX_,
+                                                                unsigned int sizeY_, unsigned int nSamples) override;
 
   // create frame buffers
-  std::shared_ptr<FrameBuffer> generateFrameBuffer() override;
+  std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) override;
 
   // create shader programs
   std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,

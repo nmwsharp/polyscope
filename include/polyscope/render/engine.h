@@ -51,6 +51,7 @@ public:
   // Resize the underlying buffer (contents are lost)
   virtual void resize(unsigned int newLen);
   virtual void resize(unsigned int newX, unsigned int newY);
+  virtual void resize(unsigned int newX, unsigned int newY, unsigned int nSamples);
 
   unsigned int getSizeX() const { return sizeX; }
   unsigned int getSizeY() const { return sizeY; }
@@ -65,13 +66,13 @@ public:
 
   // Limited support for multisampled buffers
   bool isMultisample = false;
+  int multisampleCount = -1;
 
   virtual void* getNativeHandle() = 0; // used to interop with external things, e.g. ImGui
 
 protected:
   int dim;
   TextureFormat format;
-
   unsigned int sizeX, sizeY;
 };
 
@@ -82,6 +83,11 @@ public:
   virtual ~RenderBuffer(){};
 
   virtual void resize(unsigned int newX, unsigned int newY);
+  virtual void resize(unsigned int newX, unsigned int newY, unsigned int nSamples);
+
+  // Limited support for multisampled buffers
+  bool isMultisample = false;
+  int multisampleCount = -1;
 
   RenderBufferType getType() const { return type; }
   unsigned int getSizeX() const { return sizeX; }
@@ -123,12 +129,21 @@ public:
   virtual void setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY);
 
   // Resizes textures and renderbuffers if different from current size.
-  virtual void resizeBuffers(unsigned int newXSize, unsigned int newYSize);
+  // We will always maintain that all bound color and depth buffers have the same size as the
+  // framebuffer size.
+  virtual void resize(unsigned int newXSize, unsigned int newYSize);
+  virtual void resize(unsigned int newXSize, unsigned int newYSize, unsigned int nSamples);
+  unsigned int getSizeX() const { return sizeX; }
+  unsigned int getSizeY() const { return sizeY; }
+  void verifyBufferSizes();
 
   // Query pixel
   virtual std::array<float, 4> readFloat4(int xPos, int yPos) = 0;
+  virtual void blitTo(FrameBuffer* other) = 0;
 
 protected:
+  unsigned int sizeX, sizeY;
+
   // Viewport
   bool viewportSet = false;
   int viewportX, viewportY;
@@ -268,24 +283,29 @@ public:
   virtual void checkError(bool fatal = false) = 0;
   void buildEngineGui();
 
-  virtual void clearDisplay() = 0;
-  virtual void bindDisplay() = 0;
+  virtual void clearDisplay();
+  virtual void bindDisplay();
   virtual void swapDisplayBuffers() = 0;
   virtual std::vector<unsigned char> readDisplayBuffer() = 0;
 
   virtual void clearSceneBuffer();
   virtual bool bindSceneBuffer();
-  virtual void resizeSceneBuffer(int width, int height);
-  virtual void setSceneBufferViewport(int xStart, int yStart, int sizeX, int sizeY);
-  glm::vec4 getSceneBufferViewport();
-  virtual void lightSceneBuffer(); // tonemap and gamma correct, render to active buffer
-  virtual void blitFinalSceneToScreen() = 0;
+  virtual void resizeScreenBuffers(); // applies to all buffers tied to display size
+  virtual void setScreenBufferViewports();
+  virtual void
+  applyLightingTransform(std::shared_ptr<TextureBuffer>& texture); // tonemap and gamma correct, render to active buffer
+  // virtual void blitFinalSceneToScreen() = 0;
   void renderBackground(); // respects background setting
 
   // Manage render state
   virtual void setDepthMode(DepthMode newMode = DepthMode::Less) = 0;
   virtual void setBlendMode(BlendMode newMode = BlendMode::Over) = 0;
   virtual void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) = 0;
+
+	void setCurrentViewport(glm::vec4 viewport); 
+	glm::vec4 getCurrentViewport(); 
+	void setCurrentPixelScaling(float scale);
+	float getCurrentPixelScaling();
 
   // Helpers
   void allocateGlobalBuffersAndPrograms(); // called once during startup
@@ -302,7 +322,7 @@ public:
 
   // === Windowing and framework things
   virtual void makeContextCurrent() = 0;
-  virtual void updateWindowSize() = 0;
+  virtual void updateWindowSize(bool force = false) = 0;
   virtual std::tuple<int, int> getWindowPos() = 0;
   virtual bool windowRequestsClose() = 0;
   virtual void pollEvents() = 0;
@@ -317,6 +337,7 @@ public:
   ImFontAtlas* getImGuiGlobalFontAtlas();
   virtual void ImGuiNewFrame() = 0;
   virtual void ImGuiRender() = 0;
+	virtual void showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer);
 
 
   // === Factory methods
@@ -339,15 +360,19 @@ public:
   // create render buffers
   virtual std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
                                                              unsigned int sizeY_) = 0;
+  virtual std::shared_ptr<RenderBuffer> generateRenderBufferMultisample(RenderBufferType type, unsigned int sizeX_,
+                                                                        unsigned int sizeY_, unsigned int nSamples) = 0;
 
   // create frame buffers
-  virtual std::shared_ptr<FrameBuffer> generateFrameBuffer() = 0;
+  virtual std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) = 0;
 
   // create shader programs
   virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
                                                                DrawMode dm, unsigned int nPatchVertices = 0) = 0;
 
   // === The frame buffers used in the rendering pipeline
+  // The size of these buffers is always kept in sync with the screen size
+  std::shared_ptr<FrameBuffer> displayBuffer;
   std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal;
   std::shared_ptr<FrameBuffer> pickFramebuffer;
 
@@ -369,7 +394,11 @@ public:
 protected:
   // TODO Manage a cache of compiled shaders?
 
+	// Render state
   int ssaaFactor = 1;
+  int msaaFactor = 4;
+	glm::vec4 currViewport;	
+	float currPixelScale;	
 
   // Helpers
   std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen

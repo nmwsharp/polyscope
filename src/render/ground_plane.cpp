@@ -81,7 +81,7 @@ void GroundPlane::prepareGroundPlane() {
     std::shared_ptr<RenderBuffer> mirroredSceneDepth =
         render::engine->generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
 
-    mirroredSceneFrameBuffer = render::engine->generateFrameBuffer();
+    mirroredSceneFrameBuffer = render::engine->generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     mirroredSceneFrameBuffer->addColorBuffer(mirroredSceneColorTexture);
     mirroredSceneFrameBuffer->addDepthBuffer(mirroredSceneDepth);
     mirroredSceneFrameBuffer->setDrawBuffers();
@@ -140,7 +140,7 @@ void GroundPlane::draw() {
     glm::mat4 projMat = view::getCameraPerspectiveMatrix();
     groundPlaneProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-    glm::vec4 viewport = render::engine->getSceneBufferViewport();
+    glm::vec4 viewport = render::engine->getCurrentViewport();
     glm::vec2 viewportDim{viewport[2], viewport[3]};
     groundPlaneProgram->setUniform("u_viewportDim", viewportDim);
 
@@ -160,12 +160,11 @@ void GroundPlane::draw() {
   // Implement the mirror effect
   {
     // Render to a texture so we can sample from it on the ground
-    mirroredSceneFrameBuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
-    mirroredSceneFrameBuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
-    // (use a texture 1/4 the area of the view buffer, it's supposed to be blurry anyway and this saves perf) TODO
+    // (use a texture 1/4 the area of the view buffer, it's supposed to be blurry anyway and this saves perf)
     // viewport size problems
-    // mirroredSceneFrameBuffer->resizeBuffers(view::bufferWidth/2, view::bufferHeight/2);
-    // mirroredSceneFrameBuffer->setViewport(0, 0, view::bufferWidth/2, view::bufferHeight/2);
+    mirroredSceneFrameBuffer->resize(view::bufferWidth / 2, view::bufferHeight / 2);
+    mirroredSceneFrameBuffer->setViewport(0, 0, view::bufferWidth / 2, view::bufferHeight / 2);
+    render::engine->setCurrentPixelScaling(1. / 2.);
 
     mirroredSceneFrameBuffer->bindForRendering();
     mirroredSceneFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
@@ -201,8 +200,8 @@ void GroundPlane::buildGui() {
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Ground Plane")) {
 
-    if(ImGui::Checkbox("Enabled", &options::groundPlaneEnabled)) requestRedraw();
-    if(ImGui::SliderFloat("Height", &groundPlaneHeightFactor, 0.0, 1.0)) requestRedraw();
+    if (ImGui::Checkbox("Enabled", &options::groundPlaneEnabled)) requestRedraw();
+    if (ImGui::SliderFloat("Height", &groundPlaneHeightFactor, 0.0, 1.0)) requestRedraw();
 
     ImGui::TreePop();
   }

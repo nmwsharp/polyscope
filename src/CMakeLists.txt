@@ -215,7 +215,7 @@ SET(HEADERS
 )
 
 # Create a single library for the project
-add_library(polyscope ${BACKEND_SRCS} ${SRCS} ${BACKEND_HEADERS} ${HEADERS})
+add_library(polyscope ${SRCS} ${BACKEND_SRCS} ${HEADERS} ${BACKEND_HEADERS})
 
 # Required compiler settings
 set_property(TARGET polyscope PROPERTY CXX_STANDARD 11)

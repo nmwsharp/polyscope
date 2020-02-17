@@ -50,11 +50,11 @@ void CurveNetworkVectorQuantity::draw() {
   } else {
     program->setUniform("u_lengthMult", vectorLengthMult.get().asAbsolute());
   }
-	
+
   glm::mat4 P = view::getCameraPerspectiveMatrix();
   glm::mat4 Pinv = glm::inverse(P);
   program->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
- 	program->setUniform("u_viewport", render::engine->getSceneBufferViewport());
+  program->setUniform("u_viewport", render::engine->getCurrentViewport());
 
   program->draw();
 }

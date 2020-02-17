@@ -128,7 +128,7 @@ std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
 
   render::FrameBuffer* pickFramebuffer = render::engine->pickFramebuffer.get();
 
-  pickFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
+  pickFramebuffer->resize(view::bufferWidth, view::bufferHeight);
   pickFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
   if (!pickFramebuffer->bindForRendering()) return {nullptr, 0};
   pickFramebuffer->clear();

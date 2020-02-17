@@ -154,8 +154,6 @@ void init() {
   render::engine->initializeImGui();
   contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr});
 
-  draw(); // TODO this is a terrible fix for a bug where the ground doesn't show up until the SECOND time we draw...
-          // cannot figure out why
   view::invalidateView();
 
   state::initialized = true;
@@ -327,9 +325,6 @@ void processInputEvents() {
 
 void renderScene() {
 
-  render::engine->resizeSceneBuffer(view::bufferWidth, view::bufferHeight);
-  render::engine->setSceneBufferViewport(0, 0, view::bufferWidth, view::bufferHeight);
-
   render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
   render::engine->setBackgroundAlpha(0.0);
   render::engine->clearSceneBuffer();
@@ -349,13 +344,13 @@ void renderScene() {
   }
 
   drawStructures();
-
-  render::engine->sceneBufferFinal->bindForRendering();
-  render::engine->lightSceneBuffer();
+  
+	render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
 }
 
 void renderSceneToScreen() {
-  render::engine->blitFinalSceneToScreen();
+  render::engine->bindDisplay();
+  render::engine->applyLightingTransform(render::engine->sceneColorFinal);
 }
 
 void buildPolyscopeGui() {
@@ -420,6 +415,13 @@ void buildPolyscopeGui() {
   if (ImGui::TreeNode("Debug")) {
     ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
     ImGui::Checkbox("Always redraw", &options::alwaysRedraw);
+	
+		static bool showDebugTextures = false;
+    ImGui::Checkbox("Show debug textures", &showDebugTextures);
+		if(showDebugTextures) {
+			render::engine->showTextureInImGuiWindow("Scene Final", render::engine->sceneColorFinal.get());
+		}
+
     ImGui::TreePop();
   }
 
@@ -562,6 +564,7 @@ void draw(bool withUI) {
 
   // Draw the GUI
   if (withUI) {
+    render::engine->bindDisplay();
     render::engine->ImGuiRender();
   }
 }

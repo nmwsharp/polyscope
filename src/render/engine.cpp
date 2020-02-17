@@ -27,6 +27,12 @@ void TextureBuffer::resize(unsigned int newX, unsigned int newY) {
   sizeY = newY;
 }
 
+void TextureBuffer::resize(unsigned int newX, unsigned int newY, unsigned int nSamples) {
+  sizeX = newX;
+  sizeY = newY;
+  multisampleCount = nSamples;
+}
+
 
 RenderBuffer::RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_)
     : type(type_), sizeX(sizeX_), sizeY(sizeY_) {
@@ -36,6 +42,12 @@ RenderBuffer::RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned
 void RenderBuffer::resize(unsigned int newX, unsigned int newY) {
   sizeX = newX;
   sizeY = newY;
+}
+
+void RenderBuffer::resize(unsigned int newX, unsigned int newY, unsigned int nSamples) {
+  sizeX = newX;
+  sizeY = newY;
+  multisampleCount = nSamples;
 }
 
 FrameBuffer::FrameBuffer() {}
@@ -48,7 +60,7 @@ void FrameBuffer::setViewport(int startX, int startY, unsigned int sizeX, unsign
   viewportSet = true;
 }
 
-void FrameBuffer::resizeBuffers(unsigned int newXSize, unsigned int newYSize) {
+void FrameBuffer::resize(unsigned int newXSize, unsigned int newYSize) {
   bind();
   for (auto& b : renderBuffersColor) {
     b->resize(newXSize, newYSize);
@@ -61,6 +73,33 @@ void FrameBuffer::resizeBuffers(unsigned int newXSize, unsigned int newYSize) {
   }
   for (auto& b : textureBuffersDepth) {
     b->resize(newXSize, newYSize);
+  }
+  sizeX = newXSize;
+  sizeY = newYSize;
+}
+
+void FrameBuffer::resize(unsigned int newXSize, unsigned int newYSize, unsigned int nSamples) {
+  bind();
+  for (auto& b : renderBuffersColor) {
+    b->resize(newXSize, newYSize, nSamples);
+  }
+  for (auto& b : renderBuffersDepth) {
+    b->resize(newXSize, newYSize, nSamples);
+  }
+  for (auto& b : textureBuffersColor) {
+    b->resize(newXSize, newYSize, nSamples);
+  }
+  for (auto& b : textureBuffersDepth) {
+    b->resize(newXSize, newYSize, nSamples);
+  }
+  sizeX = newXSize;
+  sizeY = newYSize;
+}
+
+void FrameBuffer::verifyBufferSizes() {
+  for (auto& b : renderBuffersColor) {
+    if (b->getSizeX() != getSizeX() || b->getSizeY() != getSizeY())
+      throw std::runtime_error("render buffer size does not match framebuffer size");
   }
 }
 
@@ -100,7 +139,16 @@ void Engine::buildEngineGui() {
   ImGui::SliderFloat("gamma", &gamma, 0.5, 3.0, "%.3f", 2.);
 
   ImGui::Text("Anti-aliasing");
-  if (ImGui::InputInt("SSAA", &ssaaFactor, 1)) resizeSceneBuffer(view::bufferWidth, view::bufferHeight);
+  if (ImGui::InputInt("MSAA (fast)", &msaaFactor, 1)) {
+    msaaFactor = std::min(msaaFactor, 32);
+    msaaFactor = std::max(msaaFactor, 1);
+    updateWindowSize(true);
+  }
+  if (ImGui::InputInt("SSAA (pretty)", &ssaaFactor, 1)) {
+    ssaaFactor = std::min(ssaaFactor, 4);
+    ssaaFactor = std::max(ssaaFactor, 1);
+    updateWindowSize(true);
+  }
 
   groundPlane.buildGui();
 }
@@ -113,29 +161,78 @@ void Engine::setBackgroundAlpha(float newAlpha) {
   // TODO
 }
 
+void Engine::setCurrentViewport(glm::vec4 val) { currViewport = val; }
+glm::vec4 Engine::getCurrentViewport() { return currViewport; }
+void Engine::setCurrentPixelScaling(float val) { currPixelScale = val; }
+float Engine::getCurrentPixelScaling() { return currPixelScale; }
+
+void Engine::bindDisplay() { displayBuffer->bindForRendering(); }
+
+
+void Engine::clearDisplay() {
+  displayBuffer->clear();
+  // bindDisplay();
+  // glClearColor(1., 1., 1., 0.);
+  // glClearDepth(1.);
+  // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+}
+
 
 void Engine::clearSceneBuffer() {
   sceneBuffer->clear();
   sceneBufferFinal->clear();
 }
 
-void Engine::resizeSceneBuffer(int width, int height) {
-  sceneBuffer->resizeBuffers(ssaaFactor * width, ssaaFactor * height);
-  sceneBufferFinal->resizeBuffers(ssaaFactor * width, ssaaFactor * height);
+void Engine::resizeScreenBuffers() {
+  unsigned int width = view::bufferWidth;
+  unsigned int height = view::bufferHeight;
+  displayBuffer->resize(width, height);
+  sceneBuffer->resize(ssaaFactor * width, ssaaFactor * height, msaaFactor);
+  sceneBufferFinal->resize(ssaaFactor * width, ssaaFactor * height);
 }
 
-void Engine::setSceneBufferViewport(int xStart, int yStart, int sizeX, int sizeY) {
+void Engine::setScreenBufferViewports() {
+  unsigned int xStart = 0;
+  unsigned int yStart = 0;
+  unsigned int sizeX = view::bufferWidth;
+  unsigned int sizeY = view::bufferHeight;
+
+  displayBuffer->setViewport(xStart, yStart, sizeX, sizeY);
   sceneBuffer->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
   sceneBufferFinal->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
 }
 
-bool Engine::bindSceneBuffer() { return sceneBuffer->bindForRendering(); }
+bool Engine::bindSceneBuffer() {
+  setCurrentPixelScaling(ssaaFactor);
+  return sceneBuffer->bindForRendering();
+}
 
-void Engine::lightSceneBuffer() {
+void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
   mapLight->setUniform("u_exposure", exposure);
   mapLight->setUniform("u_whiteLevel", whiteLevel);
   mapLight->setUniform("u_gamma", gamma);
-  mapLight->setTextureFromBuffer("t_image", sceneColor.get());
+  mapLight->setTextureFromBuffer("t_image", texture.get());
+
+
+  // compute downsampling rate
+  glm::vec4 currV = getCurrentViewport();
+  float sampleX = texture->getSizeX() / currV[2];
+  float sampleY = texture->getSizeY() / currV[3];
+  if (sampleX != sampleY) throw std::runtime_error("lighting downsampling should have same aspect");
+  int sampleLevel;
+  if (sampleX < 1.) {
+    sampleLevel = 1;
+  } else {
+    if (sampleX != static_cast<int>(sampleX))
+      throw std::runtime_error("lighting downsampling should have integer ratio");
+    sampleLevel = static_cast<int>(sampleX);
+    if (sampleLevel > 4) throw std::runtime_error("lighting downsampling only implemented up to 4x");
+  }
+
+  mapLight->setUniform("u_downsampleFactor", sampleLevel);
+  glm::vec2 texelSize{1. / texture->getSizeX(), 1. / texture->getSizeY()};
+  mapLight->setUniform("u_texelSize", texelSize);
+
   mapLight->draw();
 }
 
@@ -168,25 +265,31 @@ void Engine::renderBackground() {
 
 void Engine::allocateGlobalBuffersAndPrograms() {
 
+  // Note: The display frame buffer should be manually wrapped by child classes
+
   { // Scene buffer
 
     // Note that this is basically duplicated in ground_plane.cpp, changes here should probably be reflected there
-    sceneColor = generateTextureBufferMultisample(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight, 1);
-    sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
+    // sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    // sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
+    sceneColor =
+        generateTextureBufferMultisample(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight, msaaFactor);
+    sceneDepth =
+        generateRenderBufferMultisample(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight, msaaFactor);
 
-    sceneBuffer = generateFrameBuffer();
+    sceneBuffer = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     sceneBuffer->addColorBuffer(sceneColor);
     sceneBuffer->addDepthBuffer(sceneDepth);
     sceneBuffer->setDrawBuffers();
 
-    sceneBuffer->clearColor = glm::vec3{1., 1., 1.};
+    sceneBuffer->clearColor = glm::vec3{0., 0., 0.};
     sceneBuffer->clearAlpha = 0.0;
   }
 
-  { // "Final" scene buffer (after lighting)
+  { // "Final" scene buffer (after resolving multisample)
     sceneColorFinal = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
 
-    sceneBufferFinal = generateFrameBuffer();
+    sceneBufferFinal = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     sceneBufferFinal->addColorBuffer(sceneColorFinal);
     sceneBufferFinal->setDrawBuffers();
 
@@ -198,11 +301,14 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     pickColorBuffer = generateRenderBuffer(RenderBufferType::Float4, view::bufferWidth, view::bufferHeight);
     pickDepthBuffer = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
 
-    pickFramebuffer = generateFrameBuffer();
+    pickFramebuffer = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     pickFramebuffer->addColorBuffer(pickColorBuffer);
     pickFramebuffer->addDepthBuffer(pickDepthBuffer);
     pickFramebuffer->setDrawBuffers();
   }
+
+  // Make sure all the buffer sizes are up to date
+  updateWindowSize(true);
 
   { // Generate the general-use programs
     // clang-format off
@@ -226,10 +332,6 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   { // Load default materials
     materialCache = loadDefaultMaterials();
   }
-}
-
-glm::vec4 Engine::getSceneBufferViewport() {
-  return glm::vec4{0., 0., ssaaFactor * view::bufferWidth, ssaaFactor * view::bufferHeight};
 }
 
 std::vector<glm::vec3> Engine::screenTrianglesCoords() {
@@ -284,6 +386,20 @@ std::vector<glm::vec4> Engine::distantCubeCoords() {
   addCubeFace(2, -1.);
 
   return coords;
+}
+
+void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer) {
+  ImGui::Begin(windowName.c_str());
+
+  if (buffer->getDimension() != 2) error("only know how to show 2D textures");
+
+  float w = ImGui::GetWindowWidth();
+  float h = w * buffer->getSizeY() / buffer->getSizeX();
+
+  ImGui::Text("Dimensions: %dx%d", buffer->getSizeX(), buffer->getSizeY());
+  ImGui::Image(buffer->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+
+  ImGui::End();
 }
 
 void Engine::setImGuiStyle() {
