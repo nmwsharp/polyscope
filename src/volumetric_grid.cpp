@@ -62,10 +62,6 @@ void VolumetricGrid::buildCustomUI() {
   ImGui::PushItemWidth(100);
   ImGui::InputDouble("level set", &levelSet);
   ImGui::PopItemWidth();
-
-  if (ImGui::Button("Remesh level set")) {
-    meshCurrentLevelSet();
-  }
 }
 
 void VolumetricGrid::buildPickUI(size_t localPickID) {
@@ -73,7 +69,12 @@ void VolumetricGrid::buildPickUI(size_t localPickID) {
 }
 
 void VolumetricGrid::draw() {
-  // For now do nothing
+  // For now, do nothing for the actual grid
+
+  // Draw the quantities
+  for (auto& x : quantities) {
+    x.second->draw();
+  }
 }
 
 void VolumetricGrid::drawPick() {
@@ -92,15 +93,6 @@ std::tuple<glm::vec3, glm::vec3> VolumetricGrid::boundingBox() {
 
 std::string VolumetricGrid::typeName() { return structureTypeName; }
 
-void VolumetricGrid::meshCurrentLevelSet() {
-  std::vector<glm::vec3> nodes;
-  std::vector<std::array<size_t, 3>> triangles;
-
-  marchingcubes::MeshImplicitGrid(field, levelSet, nCornersPerSide, gridCenter, sideLength, nodes, triangles);
-  polyscope::SurfaceMesh* mesh = registerSurfaceMesh(name + "_meshed", nodes, triangles, true);
-  mesh->setSurfaceColor(color.get());
-}
-
 VolumetricGridQuantity::VolumetricGridQuantity(std::string name_, VolumetricGrid& curveNetwork_, bool dominates_)
     : Quantity<VolumetricGrid>(name_, curveNetwork_, dominates_) {}
 
@@ -108,10 +100,11 @@ VolumetricGridQuantity::VolumetricGridQuantity(std::string name_, VolumetricGrid
 void VolumetricGridQuantity::buildNodeInfoGUI(size_t nodeInd) {}
 void VolumetricGridQuantity::buildEdgeInfoGUI(size_t edgeInd) {}
 
-VolumetricGridScalarIsosurface* VolumetricGrid::addIsosurfaceQuantityImpl(std::string name,
+VolumetricGridScalarIsosurface* VolumetricGrid::addIsosurfaceQuantityImpl(std::string name, double isoLevel,
                                                                           const std::vector<double>& data) {
-  VolumetricGridScalarIsosurface* q = new VolumetricGridScalarIsosurface(name, *this, data);
+  VolumetricGridScalarIsosurface* q = new VolumetricGridScalarIsosurface(name, *this, data, isoLevel);
   addQuantity(q);
+  q->setEnabled(true);
   return q;
 }
 

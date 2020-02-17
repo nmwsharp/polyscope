@@ -55,27 +55,25 @@ public:
 
   inline size_t nValues() const { return nCornersPerSide * nCornersPerSide * nCornersPerSide; }
 
-  void meshCurrentLevelSet();
-
   // Misc data
   static const std::string structureTypeName;
 
   template <class T>
-  VolumetricGridScalarIsosurface* addGridIsosurfaceQuantity(std::string name, const T& values);
+  VolumetricGridScalarIsosurface* addGridIsosurfaceQuantity(std::string name, double isoLevel, const T& values);
+  glm::vec3 getColor();
 
 private:
   PersistentValue<glm::vec3> color;
   VolumetricGrid* setColor(glm::vec3 newVal);
-  glm::vec3 getColor();
-  VolumetricGridScalarIsosurface* addIsosurfaceQuantityImpl(std::string name, const std::vector<double>& data);
+  VolumetricGridScalarIsosurface* addIsosurfaceQuantityImpl(std::string name, double isoLevel, const std::vector<double>& data);
 };
 
 
 
 template <class T>
-VolumetricGridScalarIsosurface* VolumetricGrid::addGridIsosurfaceQuantity(std::string name, const T& values) {
+VolumetricGridScalarIsosurface* VolumetricGrid::addGridIsosurfaceQuantity(std::string name, double isoLevel, const T& values) {
   validateSize(values, nValues(), "grid isosurface quantity " + name);
-  return addIsosurfaceQuantityImpl(name, standardizeArray<double, T>(values));
+  return addIsosurfaceQuantityImpl(name, isoLevel, standardizeArray<double, T>(values));
 }
 
 template<typename T>
@@ -97,10 +95,7 @@ size_t nValuesPerSide, glm::vec3 center, double sideLen, bool meshImmediately = 
     marchingcubes::SampleFunctionToGrid<Implicit>(surface, nValuesPerSide, center, sideLen, field);
 
     VolumetricGrid* outputSurface = registerImplicitSurfaceGrid(name, field, nValuesPerSide, center, sideLen);
-    outputSurface->addGridIsosurfaceQuantity("isosurface", field);
-    if (meshImmediately) {
-      outputSurface->meshCurrentLevelSet();
-    }
+    outputSurface->addGridIsosurfaceQuantity("isosurface", 0, field);
     return outputSurface;
 }
 
