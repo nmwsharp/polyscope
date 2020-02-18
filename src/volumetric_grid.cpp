@@ -4,6 +4,7 @@
 #include "polyscope/volumetric_grid.h"
 #include "polyscope/volumetric_grid_scalar_isosurface.h"
 #include "polyscope/volumetric_grid_scalar_quantity.h"
+#include "polyscope/volumetric_grid_vector_quantity.h"
 
 #include "polyscope/combining_hash_functions.h"
 #include "polyscope/gl/gl_utils.h"
@@ -94,6 +95,13 @@ VolumetricGridScalarIsosurface* VolumetricGrid::addIsosurfaceQuantityImpl(std::s
 VolumetricGridScalarQuantity* VolumetricGrid::addScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                     DataType dataType_) {
   VolumetricGridScalarQuantity* q = new VolumetricGridScalarQuantity(name, *this, data, dataType_);
+  addQuantity(q);
+  return q;
+}
+
+VolumetricGridVectorQuantity* VolumetricGrid::addVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& data,
+                                                    VectorType dataType_) {
+  VolumetricGridVectorQuantity* q = new VolumetricGridVectorQuantity(name, *this, data, dataType_);
   addQuantity(q);
   return q;
 }

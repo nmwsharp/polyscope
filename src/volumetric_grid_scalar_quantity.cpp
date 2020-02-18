@@ -26,7 +26,7 @@ void VolumetricGridScalarQuantity::buildCustomUI() {
 std::string VolumetricGridScalarQuantity::niceName() { return name + " (scalar)"; }
 
 void VolumetricGridScalarQuantity::geometryChanged() {
-  // For now, nothing
+  pointsProgram.reset();
 }
 
 void VolumetricGridScalarQuantity::fillPositions() {

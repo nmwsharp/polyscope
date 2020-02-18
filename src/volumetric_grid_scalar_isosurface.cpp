@@ -111,7 +111,7 @@ void VolumetricGridScalarIsosurface::setProgramUniforms(gl::GLProgram& program) 
 std::string VolumetricGridScalarIsosurface::niceName() { return name + " (isosurface)"; }
 
 void VolumetricGridScalarIsosurface::geometryChanged() {
-  // For now, nothing
+  meshProgram.reset();
 }
 
 void VolumetricGridScalarIsosurface::prepareTriangleIndices() {

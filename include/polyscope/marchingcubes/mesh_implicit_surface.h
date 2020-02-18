@@ -9,8 +9,8 @@
 namespace polyscope {
 namespace marchingcubes {
 
-template <typename Implicit>
-void SampleFunctionToGrid(const Implicit &surface, size_t numCornersPerSide, glm::vec3 center, double sideLength, std::vector<double> &field) {
+template <typename Implicit, typename Data>
+void SampleFunctionToGrid(const Implicit &funct, size_t numCornersPerSide, glm::vec3 center, double sideLength, std::vector<Data> &field) {
   double diameter = sideLength;
   double cellSize = diameter / (numCornersPerSide - 1);
   double radius = diameter / 2;
@@ -24,7 +24,7 @@ void SampleFunctionToGrid(const Implicit &surface, size_t numCornersPerSide, glm
     for (size_t y = 0; y < numCornersPerSide; y++) {
       for (size_t z = 0; z < numCornersPerSide; z++) {
         glm::vec3 samplePt = lowerCorner + glm::vec3{(double)x, (double)y, (double)z} * (float)cellSize;
-        double value = surface.SampleField(samplePt);
+        Data value = funct.ValueAt(samplePt);
         field[nSlice * z + nRow * y + x] = value;
       }
     }
