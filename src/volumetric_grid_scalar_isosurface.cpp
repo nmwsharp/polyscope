@@ -105,7 +105,7 @@ void VolumetricGridScalarIsosurface::buildCustomUI() {
 }
 
 void VolumetricGridScalarIsosurface::setProgramUniforms(gl::GLProgram& program) {
-  meshProgram->setUniform("u_basecolor", parent.getColor());
+  program.setUniform("u_basecolor", parent.getColor());
 }
 
 std::string VolumetricGridScalarIsosurface::niceName() { return name + " (isosurface)"; }

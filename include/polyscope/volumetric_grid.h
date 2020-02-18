@@ -17,8 +17,8 @@
 namespace polyscope {
 
 class VolumetricGrid;
-
 class VolumetricGridScalarIsosurface;
+class VolumetricGridScalarQuantity;
 
 template <> // Specialize the quantity type
 struct QuantityTypeHelper<VolumetricGrid> {
@@ -29,7 +29,7 @@ struct QuantityTypeHelper<VolumetricGrid> {
 class VolumetricGrid : public QuantityStructure<VolumetricGrid> {
 public:
   // Construct a new curve network structure
-  VolumetricGrid(std::string name, const std::vector<double> &field, size_t nValuesPerSide, glm::vec3 center, double sideLen);
+  VolumetricGrid(std::string name, size_t nValuesPerSide, glm::vec3 center, double sideLen);
 
   // === Overloads
 
@@ -47,57 +47,70 @@ public:
   virtual std::string typeName() override;
 
   // Field data
-  std::vector<double> field;
   size_t nCornersPerSide;
   glm::vec3 gridCenter;
   double sideLength;
-  double levelSet;
 
   inline size_t nValues() const { return nCornersPerSide * nCornersPerSide * nCornersPerSide; }
+
+  inline glm::vec3 positionOfIndex(size_t i) {
+    size_t nPerSlice = nCornersPerSide * nCornersPerSide;
+    size_t z = i / nPerSlice;
+    size_t i_in_slice = i % nPerSlice;
+    size_t y = i_in_slice / nCornersPerSide;
+    size_t x = i_in_slice % nCornersPerSide;
+
+    double cellSize = sideLength / (nCornersPerSide - 1);
+    double radius = sideLength / 2;
+    glm::vec3 lowerCorner = gridCenter - glm::vec3{radius, radius, radius};
+    return lowerCorner + glm::vec3{x * cellSize, y * cellSize, z * cellSize};
+  }
 
   // Misc data
   static const std::string structureTypeName;
 
   template <class T>
-  VolumetricGridScalarIsosurface* addGridIsosurfaceQuantity(std::string name, double isoLevel, const T& values);
+  VolumetricGridScalarIsosurface* addGridIsosurfaceQuantity(std::string name, double isoLevel, const T& values) {
+    validateSize(values, nValues(), "grid isosurface quantity " + name);
+    return addIsosurfaceQuantityImpl(name, isoLevel, standardizeArray<double, T>(values));
+  }
+  template <class T>
+  VolumetricGridScalarQuantity* addGridScalarQuantity(std::string name, const T& values, DataType dataType_) {
+    validateSize(values, nValues(), "grid scalar quantity " + name);
+    return addScalarQuantityImpl(name, standardizeArray<double, T>(values), dataType_);
+  }
+  template <class Implicit>
+  VolumetricGridScalarQuantity* addGridScalarQuantityFromFunction(std::string name, const Implicit& funct, DataType dataType_) {
+    size_t totalValues = nCornersPerSide * nCornersPerSide * nCornersPerSide;
+    std::vector<double> field(totalValues);
+    marchingcubes::SampleFunctionToGrid<Implicit>(funct, nCornersPerSide, gridCenter, sideLength, field);
+    return addGridScalarQuantity(name, field, dataType_);
+  }
+
   glm::vec3 getColor();
 
 private:
   PersistentValue<glm::vec3> color;
   VolumetricGrid* setColor(glm::vec3 newVal);
-  VolumetricGridScalarIsosurface* addIsosurfaceQuantityImpl(std::string name, double isoLevel, const std::vector<double>& data);
+  VolumetricGridScalarIsosurface* addIsosurfaceQuantityImpl(std::string name, double isoLevel,
+                                                            const std::vector<double>& data);
+  VolumetricGridScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<double>& data,
+                                                      DataType dataType_);
 };
 
 
+VolumetricGrid* registerVolumetricGrid(std::string name, size_t nValuesPerSide, glm::vec3 center, double sideLen);
 
-template <class T>
-VolumetricGridScalarIsosurface* VolumetricGrid::addGridIsosurfaceQuantity(std::string name, double isoLevel, const T& values) {
-  validateSize(values, nValues(), "grid isosurface quantity " + name);
-  return addIsosurfaceQuantityImpl(name, isoLevel, standardizeArray<double, T>(values));
-}
+template <typename Implicit>
+VolumetricGrid* registerIsosurfaceFromFunction(std::string name, const Implicit& funct, size_t nValuesPerSide,
+                                               glm::vec3 center, double sideLen, bool meshImmediately = true) {
+  size_t totalValues = nValuesPerSide * nValuesPerSide * nValuesPerSide;
+  std::vector<double> field(totalValues);
+  marchingcubes::SampleFunctionToGrid<Implicit>(funct, nValuesPerSide, center, sideLen, field);
 
-template<typename T>
-VolumetricGrid* registerImplicitSurfaceGrid(std::string name, const T &field,
-size_t nValuesPerSide, glm::vec3 center, double sideLen) {
-  VolumetricGrid* s = new VolumetricGrid(name, field, nValuesPerSide, center, sideLen);
-  bool success = registerStructure(s);
-  if (!success) {
-    safeDelete(s);
-  }
-  return s;
-}
-
-template<typename Implicit>
-VolumetricGrid* registerImplicitSurfaceFunction(std::string name, const Implicit &surface,
-size_t nValuesPerSide, glm::vec3 center, double sideLen, bool meshImmediately = true) {
-    size_t totalValues = nValuesPerSide * nValuesPerSide * nValuesPerSide;
-    std::vector<double> field(totalValues);
-    marchingcubes::SampleFunctionToGrid<Implicit>(surface, nValuesPerSide, center, sideLen, field);
-
-    VolumetricGrid* outputSurface = registerImplicitSurfaceGrid(name, field, nValuesPerSide, center, sideLen);
-    outputSurface->addGridIsosurfaceQuantity("isosurface", 0, field);
-    return outputSurface;
+  VolumetricGrid* outputSurface = registerVolumetricGrid(name, nValuesPerSide, center, sideLen);
+  outputSurface->addGridIsosurfaceQuantity("isosurface", 0, field);
+  return outputSurface;
 }
 
 } // namespace polyscope
-

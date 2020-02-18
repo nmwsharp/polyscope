@@ -3,6 +3,7 @@
 
 #include "polyscope/volumetric_grid.h"
 #include "polyscope/volumetric_grid_scalar_isosurface.h"
+#include "polyscope/volumetric_grid_scalar_quantity.h"
 
 #include "polyscope/combining_hash_functions.h"
 #include "polyscope/gl/gl_utils.h"
@@ -21,25 +22,11 @@ namespace polyscope {
 // Initialize statics
 const std::string VolumetricGrid::structureTypeName = "Implicit Surface";
 
-VolumetricGrid::VolumetricGrid(std::string name, const std::vector<double>& f, size_t nValuesPerSide, glm::vec3 center,
-                               double sideLen)
-    : QuantityStructure<VolumetricGrid>(name, typeName()), field(nValuesPerSide * nValuesPerSide * nValuesPerSide),
-      color(uniquePrefix() + "#color", getNextUniqueColor()) {
+VolumetricGrid::VolumetricGrid(std::string name, size_t nValuesPerSide, glm::vec3 center, double sideLen)
+    : QuantityStructure<VolumetricGrid>(name, typeName()), color(uniquePrefix() + "#color", getNextUniqueColor()) {
   nCornersPerSide = nValuesPerSide;
   sideLength = sideLen;
   gridCenter = center;
-  levelSet = 0;
-
-  int nPerSlice = nCornersPerSide * nCornersPerSide;
-
-  for (size_t x = 0; x < nCornersPerSide; x++) {
-    for (size_t y = 0; y < nCornersPerSide; y++) {
-      for (size_t z = 0; z < nCornersPerSide; z++) {
-        int index = nPerSlice * z + nCornersPerSide * y + x;
-        field[index] = f[index];
-      }
-    }
-  }
 }
 
 VolumetricGrid* VolumetricGrid::setColor(glm::vec3 newVal) {
@@ -58,10 +45,6 @@ void VolumetricGrid::buildCustomUI() {
   if (ImGui::ColorEdit3("Color", &color.get()[0], ImGuiColorEditFlags_NoInputs)) {
     setColor(getColor());
   }
-
-  ImGui::PushItemWidth(100);
-  ImGui::InputDouble("level set", &levelSet);
-  ImGui::PopItemWidth();
 }
 
 void VolumetricGrid::buildPickUI(size_t localPickID) {
@@ -106,6 +89,22 @@ VolumetricGridScalarIsosurface* VolumetricGrid::addIsosurfaceQuantityImpl(std::s
   addQuantity(q);
   q->setEnabled(true);
   return q;
+}
+
+VolumetricGridScalarQuantity* VolumetricGrid::addScalarQuantityImpl(std::string name, const std::vector<double>& data,
+                                                                    DataType dataType_) {
+  VolumetricGridScalarQuantity* q = new VolumetricGridScalarQuantity(name, *this, data, dataType_);
+  addQuantity(q);
+  return q;
+}
+
+VolumetricGrid* registerVolumetricGrid(std::string name, size_t nValuesPerSide, glm::vec3 center, double sideLen) {
+  VolumetricGrid* s = new VolumetricGrid(name, nValuesPerSide, center, sideLen);
+  bool success = registerStructure(s);
+  if (!success) {
+    safeDelete(s);
+  }
+  return s;
 }
 
 } // namespace polyscope
