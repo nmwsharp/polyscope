@@ -67,6 +67,14 @@ SET(SRCS
   curve_network_scalar_quantity.cpp
   curve_network_color_quantity.cpp
   curve_network_vector_quantity.cpp
+
+  # Marching cubes
+  marchingcubes/Vectors.cpp
+  # Volumetric grids
+  volumetric_grid.cpp
+  volumetric_grid_scalar_isosurface.cpp
+  volumetric_grid_scalar_quantity.cpp
+  volumetric_grid_vector_quantity.cpp
 )
 
 
