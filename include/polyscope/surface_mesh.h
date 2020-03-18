@@ -285,8 +285,8 @@ public:
   glm::vec3 getEdgeColor();
 
   // Material
-  SurfaceMesh* setMaterial(Material newMat);
-  Material getMaterial();
+  SurfaceMesh* setMaterial(std::string name);
+  std::string getMaterial();
 
 
   // Width of the edges. Scaled such that 1 is a reasonable weight for visible edges, but values  1 can be used for
@@ -299,7 +299,7 @@ private:
   PersistentValue<bool> shadeSmooth;
   PersistentValue<glm::vec3> surfaceColor;
   PersistentValue<glm::vec3> edgeColor;
-  PersistentValue<Material> material;
+  PersistentValue<std::string> material;
   PersistentValue<float> edgeWidth;
 
   // Do setup work related to drawing, including allocating openGL data

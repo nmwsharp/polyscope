@@ -3,6 +3,7 @@
 
 #include "polyscope/polyscope.h"
 #include "polyscope/render/shaders.h"
+#include "polyscope/render/material_defs.h"
 
 #include "imgui.h"
 #include "stb_image.h"
@@ -236,12 +237,12 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
   mapLight->draw();
 }
 
-void Engine::setMaterial(ShaderProgram& program, Material mat) {
-  BasisMaterial& material = materialCache[mat];
-  program.setTextureFromBuffer("t_mat_r", material.textureBuffers[0].get());
-  program.setTextureFromBuffer("t_mat_g", material.textureBuffers[1].get());
-  program.setTextureFromBuffer("t_mat_b", material.textureBuffers[2].get());
-  program.setTextureFromBuffer("t_mat_k", material.textureBuffers[3].get());
+void Engine::setMaterial(ShaderProgram& program, const std::string& mat) {
+  const Material& m = getMaterial(mat);
+  program.setTextureFromBuffer("t_mat_r", m.textureBuffers[0].get());
+  program.setTextureFromBuffer("t_mat_g", m.textureBuffers[1].get());
+  program.setTextureFromBuffer("t_mat_b", m.textureBuffers[2].get());
+  program.setTextureFromBuffer("t_mat_k", m.textureBuffers[3].get());
 }
 
 void Engine::renderBackground() {
@@ -330,7 +331,7 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   }
 
   { // Load default materials
-    materialCache = loadDefaultMaterials();
+    loadDefaultMaterials();
   }
 }
 
@@ -387,6 +388,87 @@ std::vector<glm::vec4> Engine::distantCubeCoords() {
 
   return coords;
 }
+
+
+// Helper (TODO rework to load custom materials)
+void Engine::loadDefaultMaterial(std::string name) {
+
+  Material* newMaterial = new Material();
+  newMaterial->name = name;
+
+  std::array<unsigned char const*, 4> buff;
+  std::array<size_t, 4> buffSize;
+
+  // clang-format off
+  if(name == "clay") {
+    buff[0] = &bindata_clay_r[0]; buffSize[0] = bindata_clay_r.size();
+    buff[1] = &bindata_clay_g[0]; buffSize[1] = bindata_clay_g.size();
+    buff[2] = &bindata_clay_b[0]; buffSize[2] = bindata_clay_b.size();
+    buff[3] = &bindata_clay_k[0]; buffSize[3] = bindata_clay_k.size();
+  }
+  else if(name == "wax") {
+    buff[0] = &bindata_wax_r[0]; buffSize[0] = bindata_wax_r.size();
+    buff[1] = &bindata_wax_g[0]; buffSize[1] = bindata_wax_g.size();
+    buff[2] = &bindata_wax_b[0]; buffSize[2] = bindata_wax_b.size();
+    buff[3] = &bindata_wax_k[0]; buffSize[3] = bindata_wax_k.size();
+  }
+  else if(name == "candy") {
+    buff[0] = &bindata_candy_r[0]; buffSize[0] = bindata_candy_r.size();
+    buff[1] = &bindata_candy_g[0]; buffSize[1] = bindata_candy_g.size();
+    buff[2] = &bindata_candy_b[0]; buffSize[2] = bindata_candy_b.size();
+    buff[3] = &bindata_candy_k[0]; buffSize[3] = bindata_candy_k.size();
+  }
+  else if(name == "flat") {
+    buff[0] = &bindata_flat_r[0]; buffSize[0] = bindata_flat_r.size();
+    buff[1] = &bindata_flat_g[0]; buffSize[1] = bindata_flat_g.size();
+    buff[2] = &bindata_flat_b[0]; buffSize[2] = bindata_flat_b.size();
+    buff[3] = &bindata_flat_k[0]; buffSize[3] = bindata_flat_k.size();
+  } else {
+    throw std::runtime_error("unrecognized default material name " + name);
+  }
+  // clang-format on
+
+
+  /*
+      int w, h, comp;
+      unsigned char* image = nullptr;
+      image = stbi_load_from_memory(reinterpret_cast<const unsigned char*>(&data[i][0]), data[i].size(), &w, &h,
+     &comp, STBI_rgb); if (image == nullptr) throw std::logic_error("Failed to load material image");
+
+      newMaterial.textureBuffers[i] = engine->generateTextureBuffer(TextureFormat::RGB8, w, h, image);
+  newMaterial.textureBuffers[i]->setFilterMode(FilterMode::Linear);
+      stbi_image_free(image);
+  */
+
+  for (int i = 0; i < 4; i++) {
+    int width, height, nrComponents;
+    float* data = stbi_loadf_from_memory(buff[i], buffSize[i], &width, &height, &nrComponents, 3);
+    if (!data) polyscope::error("failed to load environment map");
+    newMaterial->textureBuffers[i] = engine->generateTextureBuffer(TextureFormat::RGB16F, width, height, data);
+    newMaterial->textureBuffers[i]->setFilterMode(FilterMode::Linear);
+    stbi_image_free(data);
+  }
+
+  materials.emplace_back(newMaterial);
+}
+
+void Engine::loadDefaultMaterials() {
+  loadDefaultMaterial("clay");
+  loadDefaultMaterial("wax");
+  loadDefaultMaterial("candy");
+  loadDefaultMaterial("flat");
+}
+
+Material& Engine::getMaterial(const std::string& name) {
+  for (std::unique_ptr<Material>& m : materials) {
+    if (name == m->name) return *m;
+  }
+
+  throw std::runtime_error("unrecognized material name: " + name);
+  return *materials[0];
+}
+
+
 
 void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer) {
   ImGui::Begin(windowName.c_str());

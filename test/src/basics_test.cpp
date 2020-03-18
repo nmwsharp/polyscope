@@ -95,8 +95,8 @@ TEST_F(PolyscopeTest, PointCloudAppearance) {
   polyscope::show(3);
 
   // Material
-  psPoints->setMaterial(polyscope::Material::Wax);
-  EXPECT_EQ(psPoints->getMaterial(), polyscope::Material::Wax);
+  psPoints->setMaterial("wax");
+  EXPECT_EQ(psPoints->getMaterial(), "wax");
   polyscope::show(3);
 
   polyscope::removeAllStructures();
@@ -204,8 +204,8 @@ TEST_F(PolyscopeTest, SurfaceMeshAppearance) {
   polyscope::show(3);
   
   // Material
-  psMesh->setMaterial(polyscope::Material::Wax);
-  EXPECT_EQ(psMesh->getMaterial(), polyscope::Material::Wax);
+  psMesh->setMaterial("wax");
+  EXPECT_EQ(psMesh->getMaterial(), "wax");
   polyscope::show(3);
 
   polyscope::removeAllStructures();
@@ -505,8 +505,8 @@ TEST_F(PolyscopeTest, CurveNetworkAppearance) {
   auto psCurve = registerCurveNetwork();
 
   // Material
-  psCurve->setMaterial(polyscope::Material::Wax);
-  EXPECT_EQ(psCurve->getMaterial(), polyscope::Material::Wax);
+  psCurve->setMaterial("wax");
+  EXPECT_EQ(psCurve->getMaterial(), "wax");
   polyscope::show(3);
 
   polyscope::removeAllStructures();

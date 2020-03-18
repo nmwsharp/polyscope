@@ -22,7 +22,7 @@ CurveNetworkVectorQuantity::CurveNetworkVectorQuantity(std::string name, CurveNe
                        vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
       vectorRadius(uniquePrefix() + "#vectorRadius", relativeValue(0.0025)),
       vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()),
-      material(uniquePrefix() + "#material", Material::Clay) {}
+      material(uniquePrefix() + "#material", "clay") {}
 
 void CurveNetworkVectorQuantity::prepareVectorMapper() {
 
@@ -161,13 +161,13 @@ CurveNetworkVectorQuantity* CurveNetworkVectorQuantity::setVectorColor(glm::vec3
 }
 glm::vec3 CurveNetworkVectorQuantity::getVectorColor() { return vectorColor.get(); }
 
-CurveNetworkVectorQuantity* CurveNetworkVectorQuantity::setMaterial(Material m) {
+CurveNetworkVectorQuantity* CurveNetworkVectorQuantity::setMaterial(std::string m) {
   material = m;
   if (program) render::engine->setMaterial(*program, getMaterial());
   requestRedraw();
   return this;
 }
-Material CurveNetworkVectorQuantity::getMaterial() { return material.get(); }
+std::string CurveNetworkVectorQuantity::getMaterial() { return material.get(); }
 
 
 std::string CurveNetworkEdgeVectorQuantity::niceName() { return name + " (edge vector)"; }

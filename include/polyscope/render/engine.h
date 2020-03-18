@@ -315,7 +315,7 @@ public:
   void setBackgroundAlpha(float newAlpha);
 
   // Manage materials
-  void setMaterial(ShaderProgram& program, Material mat);
+  void setMaterial(ShaderProgram& program, const std::string& mat);
 
   // === Scene data and niceties
   GroundPlane groundPlane;
@@ -390,6 +390,13 @@ public:
   float exposure = 0.9;
   float whiteLevel = 0.7;
   float gamma = 2.2;
+  
+  
+  // == Cached data
+
+  // Materials
+  std::vector<std::unique_ptr<Material>> materials;
+  Material& getMaterial(const std::string& name);
 
 protected:
   // TODO Manage a cache of compiled shaders?
@@ -403,12 +410,12 @@ protected:
   // Helpers
   std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen
   std::vector<glm::vec4> distantCubeCoords();     // cube with vertices at infinity
-
-  // The cache of materials
-  std::map<Material, BasisMaterial> materialCache;
+  void loadDefaultMaterials();
+  void loadDefaultMaterial(std::string name);
 
   // Internal windowing and engine details
   ImFontAtlas* globalFontAtlas = nullptr;
+
 };
 
 

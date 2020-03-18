@@ -39,8 +39,8 @@ public:
   glm::vec3 getVectorColor();
 	
   // Material
-  PointCloudVectorQuantity* setMaterial(Material newMat);
-  Material getMaterial();
+  PointCloudVectorQuantity* setMaterial(std::string name);
+  std::string getMaterial();
 
   void writeToFile(std::string filename = "");
 
@@ -49,7 +49,7 @@ private:
   PersistentValue<ScaledValue<float>> vectorLengthMult;
   PersistentValue<ScaledValue<float>> vectorRadius;
   PersistentValue<glm::vec3> vectorColor;
-  PersistentValue<Material> material;
+  PersistentValue<std::string> material;
 
   // The map that takes values to [0,1] for drawing
   AffineRemapper<glm::vec3> mapper;

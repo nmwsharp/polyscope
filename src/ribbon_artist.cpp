@@ -98,7 +98,7 @@ void RibbonArtist::createProgram() {
   program->setAttribute("a_color", colors);
   program->setIndex(indices);
 
-  render::engine->setMaterial(*program, Material::Wax);
+  render::engine->setMaterial(*program, "wax");
 }
 
 

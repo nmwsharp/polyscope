@@ -3,34 +3,41 @@
 
 #include <array>
 #include <map>
+#include <iostream>
 #include <memory>
 #include <vector>
 
 namespace polyscope {
 
-// Pull the enum to the outer namespace to keep typing burden down
-enum class Material { Clay = 0, Wax, Candy, Flat };
+// == Predefinied materials:
+//
+// RGB colorable materials:
+//   - clay: Simple material without much specularity, default for most object.
+//   - wax: Slightly more specular and exciting looking
+//   - candy: Shiny and bright, useful for accents
+//   - flat: Flat shading, plain RGB lookups
+//
+// Single-color materials:
+//   -
 
 namespace render {
-
-// Give the enums names
-std::string name(Material m);
 
 // forward declare
 class TextureBuffer;
 
-// Basis materials have _r, _g, _b, _k textures for blending with arbitrary surface colors.
-struct BasisMaterial {
+// Materials have _r, _g, _b, _k textures for blending with arbitrary surface colors.
+struct Material {
+  std::string name;
   std::array<std::shared_ptr<TextureBuffer>, 4> textureBuffers;
 };
 
-
 // Build an ImGui option picker in a dropdown ui
 // Returns true if modified.
-bool buildMaterialOptionsGui(Material& m);
+bool buildMaterialOptionsGui(std::string& mat);
+
 
 // Read pre-defined materials in to textures
-std::map<Material, BasisMaterial> loadDefaultMaterials();
+void loadDefaultMaterials();
 
 } // namespace render
 } // namespace polyscope

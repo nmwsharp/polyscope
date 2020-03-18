@@ -23,7 +23,7 @@ const std::string CurveNetwork::structureTypeName = "Curve Network";
 CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std::vector<std::array<size_t, 2>> edges_)
     : QuantityStructure<CurveNetwork>(name, typeName()), nodes(std::move(nodes_)), edges(std::move(edges_)),
       color(uniquePrefix() + "#color", getNextUniqueColor()), radius(uniquePrefix() + "#radius", relativeValue(0.005)),
-      material(uniquePrefix() + "material", Material::Clay)
+      material(uniquePrefix() + "#material", "clay")
 
 {
 
@@ -365,13 +365,13 @@ CurveNetwork* CurveNetwork::setRadius(float newVal, bool isRelative) {
 }
 float CurveNetwork::getRadius() { return radius.get().asAbsolute(); }
 
-CurveNetwork* CurveNetwork::setMaterial(Material m) {
+CurveNetwork* CurveNetwork::setMaterial(std::string m) {
   material = m;
   geometryChanged(); // (serves the purpose of re-initializing everything, though this is a bit overkill)
   requestRedraw();
   return this;
 }
-Material CurveNetwork::getMaterial() { return material.get(); }
+std::string CurveNetwork::getMaterial() { return material.get(); }
 
 std::string CurveNetwork::typeName() { return structureTypeName; }
 

@@ -95,8 +95,7 @@ extern const ValueColorMap CM_PHASE;
 
 // All of the colormaps Polyscope is aware of.
 // These need to be global objects; we will compare them by pointer equality.
-static std::vector<const ValueColorMap*> colorMaps{&CM_VIRIDIS, &CM_COOLWARM, &CM_BLUES,   &CM_REDS, &CM_PIYG,
-                                                   &CM_PHASE,   &CM_SPECTRAL, &CM_RAINBOW, &CM_JET};
+extern std::vector<const ValueColorMap*> colorMaps;
 
 
 inline const ValueColorMap* getColorMap(const std::string& name) {

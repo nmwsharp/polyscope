@@ -101,14 +101,14 @@ public:
   double getPointRadius();
 
   // Material
-  PointCloud* setMaterial(Material newMat);
-  Material getMaterial();
+  PointCloud* setMaterial(std::string name);
+  std::string getMaterial();
 
 private:
   // === Visualization parameters
   PersistentValue<glm::vec3> pointColor;
   PersistentValue<ScaledValue<float>> pointRadius;
-  PersistentValue<Material> material;
+  PersistentValue<std::string> material;
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called

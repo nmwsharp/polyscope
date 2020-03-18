@@ -25,7 +25,7 @@ SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh
                        vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
       vectorRadius(uniquePrefix() + name + "#vectorRadius", relativeValue(0.0025)),
       vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()),
-      material(uniquePrefix() + "#material", Material::Clay), definedOn(definedOn_),
+      material(uniquePrefix() + "#material", "clay"), definedOn(definedOn_),
       ribbonEnabled(uniquePrefix() + "#ribbonEnabled", false) {}
 
 void SurfaceVectorQuantity::prepareVectorMapper() {
@@ -144,14 +144,14 @@ SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorColor(glm::vec3 color) {
 }
 glm::vec3 SurfaceVectorQuantity::getVectorColor() { return vectorColor.get(); }
 
-SurfaceVectorQuantity* SurfaceVectorQuantity::setMaterial(Material m) {
+SurfaceVectorQuantity* SurfaceVectorQuantity::setMaterial(std::string m) {
   material = m;
   if (program) render::engine->setMaterial(*program, getMaterial());
   if (ribbonArtist && ribbonArtist->program) render::engine->setMaterial(*ribbonArtist->program, material.get());
   requestRedraw();
   return this;
 }
-Material SurfaceVectorQuantity::getMaterial() { return material.get(); }
+std::string SurfaceVectorQuantity::getMaterial() { return material.get(); }
 
 SurfaceVectorQuantity* SurfaceVectorQuantity::setRibbonEnabled(bool val) {
   ribbonEnabled = val;

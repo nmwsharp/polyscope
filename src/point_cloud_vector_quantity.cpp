@@ -24,7 +24,7 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
                        vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
       vectorRadius(uniquePrefix() + "#vectorRadius", relativeValue(0.0025)),
       vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()),
-      material(uniquePrefix() + "#material", Material::Clay)
+      material(uniquePrefix() + "#material", "clay")
 
 {
 
@@ -82,7 +82,7 @@ void PointCloudVectorQuantity::createProgram() {
   program->setAttribute("a_vector", mappedVectors);
   program->setAttribute("a_position", parent.points);
 
-  render::engine->setMaterial(*program, getMaterial());
+  render::engine->setMaterial(*program, material.get());
 }
 
 void PointCloudVectorQuantity::geometryChanged() { program.reset(); }
@@ -178,13 +178,13 @@ PointCloudVectorQuantity* PointCloudVectorQuantity::setVectorColor(glm::vec3 col
 }
 glm::vec3 PointCloudVectorQuantity::getVectorColor() { return vectorColor.get(); }
 
-PointCloudVectorQuantity* PointCloudVectorQuantity::setMaterial(Material m) {
+PointCloudVectorQuantity* PointCloudVectorQuantity::setMaterial(std::string m) {
   material = m;
   if (program) render::engine->setMaterial(*program, getMaterial());
   requestRedraw();
   return this;
 }
-Material PointCloudVectorQuantity::getMaterial() { return material.get(); }
+std::string PointCloudVectorQuantity::getMaterial() { return material.get(); }
 
 std::string PointCloudVectorQuantity::niceName() { return name + " (vector)"; }
 

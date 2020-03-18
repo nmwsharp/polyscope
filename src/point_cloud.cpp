@@ -29,7 +29,7 @@ PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
     : QuantityStructure<PointCloud>(name, structureTypeName), points(std::move(points_)),
       pointColor(uniquePrefix() + "#pointColor", getNextUniqueColor()),
       pointRadius(uniquePrefix() + "#pointRadius", relativeValue(0.005)),
-      material(uniquePrefix() + "material", Material::Clay) {}
+      material(uniquePrefix() + "#material", "clay") {}
 
 
 // Helper to set uniforms
@@ -96,7 +96,7 @@ void PointCloud::prepare() {
       {render::SPHERE_VERT_SHADER, render::SPHERE_BILLBOARD_GEOM_SHADER, render::SPHERE_BILLBOARD_FRAG_SHADER},
       DrawMode::Points);
 
-  render::engine->setMaterial(*program, getMaterial());
+  render::engine->setMaterial(*program, material.get());
 
   // Fill out the geometry data for the program
   program->setAttribute("a_position", points);
@@ -275,13 +275,13 @@ PointCloud* PointCloud::setPointColor(glm::vec3 newVal) {
 }
 glm::vec3 PointCloud::getPointColor() { return pointColor.get(); }
 
-PointCloud* PointCloud::setMaterial(Material m) {
+PointCloud* PointCloud::setMaterial(std::string m) {
   material = m;
   geometryChanged(); // (serves the purpose of re-initializing everything, though this is a bit overkill)
   requestRedraw();
   return this;
 }
-Material PointCloud::getMaterial() { return material.get(); }
+std::string PointCloud::getMaterial() { return material.get(); }
 
 PointCloud* PointCloud::setPointRadius(double newVal, bool isRelative) {
   pointRadius = ScaledValue<float>(newVal, isRelative);

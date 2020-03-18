@@ -129,14 +129,14 @@ public:
   float getRadius();
   
   // Material
-  CurveNetwork* setMaterial(Material newMat);
-  Material getMaterial();
+  CurveNetwork* setMaterial(std::string name);
+  std::string getMaterial();
 
 private:
   // === Visualization parameters
   PersistentValue<glm::vec3> color;
   PersistentValue<ScaledValue<float>> radius;
-  PersistentValue<Material> material;
+  PersistentValue<std::string> material;
 
 
   // Drawing related things

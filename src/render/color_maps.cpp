@@ -6,6 +6,10 @@
 namespace polyscope {
 namespace render {
 
+
+std::vector<const ValueColorMap*> colorMaps{&CM_VIRIDIS, &CM_COOLWARM, &CM_BLUES,   &CM_REDS, &CM_PIYG,
+                                            &CM_PHASE,   &CM_SPECTRAL, &CM_RAINBOW, &CM_JET};
+
 // ImGUI helper to select a colormap. Returns true if the selection changed
 bool buildColormapSelector(const ValueColorMap*& cm, std::string fieldName) {
   bool changed = false;

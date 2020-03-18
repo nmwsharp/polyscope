@@ -42,7 +42,7 @@ void SurfaceVertexColorQuantity::createProgram() {
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
-  render::engine->setMaterial(*program, Material::Wax);
+  render::engine->setMaterial(*program, parent.getMaterial());
 }
 
 void SurfaceVertexColorQuantity::fillColorBuffers(render::ShaderProgram& p) {

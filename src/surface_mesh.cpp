@@ -27,7 +27,7 @@ SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexP
       shadeSmooth(uniquePrefix() + "shadeSmooth", false),
       surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}),
-      material(uniquePrefix() + "material", Material::Clay), edgeWidth(uniquePrefix() + "edgeWidth", 0.) {
+      material(uniquePrefix() + "material", "clay"), edgeWidth(uniquePrefix() + "edgeWidth", 0.) {
 
   computeCounts();
   computeGeometryData();
@@ -1113,13 +1113,13 @@ SurfaceMesh* SurfaceMesh::setEdgeColor(glm::vec3 val) {
 }
 glm::vec3 SurfaceMesh::getEdgeColor() { return edgeColor.get(); }
 
-SurfaceMesh* SurfaceMesh::setMaterial(Material m) {
+SurfaceMesh* SurfaceMesh::setMaterial(std::string m) {
   material = m;
   geometryChanged(); // (serves the purpose of re-initializing everything, though this is a bit overkill)
   requestRedraw();
   return this;
 }
-Material SurfaceMesh::getMaterial() { return material.get(); }
+std::string SurfaceMesh::getMaterial() { return material.get(); }
 
 SurfaceMesh* SurfaceMesh::setEdgeWidth(double newVal) {
   edgeWidth = newVal;
