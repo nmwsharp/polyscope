@@ -54,8 +54,8 @@ public:
   double getCheckerSize();
 
   // Color map for radial visualization
-  SurfaceParameterizationQuantity* setColorMap(render::ColorMapID val);
-  render::ColorMapID getColorMap();
+  SurfaceParameterizationQuantity* setColorMap(std::string val);
+  std::string getColorMap();
 
 protected:
   // === Visualiztion options
@@ -64,7 +64,7 @@ protected:
   PersistentValue<glm::vec3> checkColor1, checkColor2;           // for checker (two colors to use)
   PersistentValue<glm::vec3> gridLineColor, gridBackgroundColor; // for GRID (two colors to use)
 
-  PersistentValue<render::ColorMapID> cMap;
+  PersistentValue<const render::ValueColorMap*> cMap;
   float localRot = 0.; // for LOCAL (angular shift, in radians)
   std::shared_ptr<render::ShaderProgram> program;
 

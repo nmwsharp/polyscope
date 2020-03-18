@@ -30,8 +30,8 @@ public:
   // === Get/set visualization parameters
 
   // The color map
-  PointCloudScalarQuantity* setColorMap(render::ColorMapID val);
-  render::ColorMapID getColorMap();
+  PointCloudScalarQuantity* setColorMap(std::string val);
+  std::string getColorMap();
 
   // Data limits mapped in to colormap
   PointCloudScalarQuantity* setMapRange(std::pair<double, double> val);
@@ -47,7 +47,7 @@ protected:
   Histogram hist;
 
   // UI internals
-  PersistentValue<render::ColorMapID> cMap;
+  PersistentValue<const render::ValueColorMap*> cMap;
 
 
   void createPointProgram();

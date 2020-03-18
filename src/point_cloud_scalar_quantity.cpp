@@ -131,7 +131,7 @@ void PointCloudScalarQuantity::createPointProgram() {
   // Fill buffers
   pointProgram->setAttribute("a_position", parent.points);
   pointProgram->setAttribute("a_value", values);
-  pointProgram->setTextureFromColormap("t_colormap", render::getColorMap(cMap.get()));
+  pointProgram->setTextureFromColormap("t_colormap", *cMap.get());
 
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
@@ -145,13 +145,14 @@ void PointCloudScalarQuantity::buildPickUI(size_t ind) {
   ImGui::NextColumn();
 }
 
-PointCloudScalarQuantity* PointCloudScalarQuantity::setColorMap(render::ColorMapID val) {
-  cMap = val;
+PointCloudScalarQuantity* PointCloudScalarQuantity::setColorMap(std::string val) {
+  cMap = render::getColorMap(val);
   hist.updateColormap(cMap.get());
   requestRedraw();
   return this;
 }
-render::ColorMapID PointCloudScalarQuantity::getColorMap() { return cMap.get(); }
+std::string PointCloudScalarQuantity::getColorMap() { return cMap.get()->name; }
+
 PointCloudScalarQuantity* PointCloudScalarQuantity::setMapRange(std::pair<double, double> val) {
   vizRange = val;
   requestRedraw();

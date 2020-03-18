@@ -26,8 +26,8 @@ public:
   // === Get/set visualization parameters
 
   // The color map
-  SurfaceDistanceQuantity* setColorMap(render::ColorMapID val);
-  render::ColorMapID getColorMap();
+  SurfaceDistanceQuantity* setColorMap(std::string val);
+  std::string getColorMap();
 
   // Length of isoline stripes
   SurfaceDistanceQuantity* setStripeSize(double stripeSize, bool isRelative=true);
@@ -49,7 +49,7 @@ protected:
   Histogram hist;
 
   // UI internals
-  PersistentValue<render::ColorMapID> cMap;
+  PersistentValue<const render::ValueColorMap*> cMap;
   std::shared_ptr<render::ShaderProgram> program;
 
   // Helpers

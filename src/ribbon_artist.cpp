@@ -63,7 +63,7 @@ void RibbonArtist::createProgram() {
     }
 
     // Sample a color for this line
-    glm::vec3 lineColor = render::getColorMap(cMap).getValue(randomUnit());
+    glm::vec3 lineColor = cMap->getValue(randomUnit());
 
     // Add a false point at the beginning (so it's not a special case for the geometry shader)
     float EPS = 0.01;

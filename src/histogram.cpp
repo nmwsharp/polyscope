@@ -155,7 +155,7 @@ void Histogram::smoothCurve(std::vector<std::array<double, 2>>& xVals, std::vect
   yVals = smoothedVals;
 }
 
-void Histogram::updateColormap(render::ColorMapID newColormap) {
+void Histogram::updateColormap(const render::ValueColorMap* newColormap) {
   colormap = newColormap;
   fillBuffers();
 }
@@ -221,8 +221,7 @@ void Histogram::fillBuffers() {
   }
 
   program->setAttribute("a_coord", coords);
-  program->setTextureFromColormap("t_colormap", render::getColorMap(colormap), true);
-
+  program->setTextureFromColormap("t_colormap", *colormap, true);
 
   // Update current buffer settings
   currBufferWeighted = useWeighted;

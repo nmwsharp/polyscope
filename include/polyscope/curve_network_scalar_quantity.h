@@ -23,8 +23,8 @@ public:
   // === Get/set visualization parameters
 
   // The color map
-  CurveNetworkScalarQuantity* setColorMap(render::ColorMapID val);
-  render::ColorMapID getColorMap();
+  CurveNetworkScalarQuantity* setColorMap(std::string name);
+  std::string getColorMap();
 
   // Data limits mapped in to colormap
   CurveNetworkScalarQuantity* setMapRange(std::pair<double, double> val);
@@ -40,7 +40,7 @@ protected:
   Histogram hist;
 
   // UI internals
-  PersistentValue<render::ColorMapID> cMap;
+  PersistentValue<const render::ValueColorMap*> cMap;
   const std::string definedOn;
   std::shared_ptr<render::ShaderProgram> nodeProgram;
   std::shared_ptr<render::ShaderProgram> edgeProgram;

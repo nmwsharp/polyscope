@@ -116,13 +116,14 @@ void CurveNetworkScalarQuantity::geometryChanged() {
   edgeProgram.reset();
 }
 
-CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::setColorMap(render::ColorMapID val) {
-  cMap = val;
+CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::setColorMap(std::string name) {
+  cMap = render::getColorMap(name);
   hist.updateColormap(cMap.get());
   requestRedraw();
   return this;
 }
-render::ColorMapID CurveNetworkScalarQuantity::getColorMap() { return cMap.get(); }
+std::string CurveNetworkScalarQuantity::getColorMap() { return cMap.get()->name; }
+
 CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::setMapRange(std::pair<double, double> val) {
   vizRange = val;
   requestRedraw();
@@ -182,8 +183,8 @@ void CurveNetworkNodeScalarQuantity::createProgram() {
     edgeProgram->setAttribute("a_value_tip", valueTip);
   }
 
-  edgeProgram->setTextureFromColormap("t_colormap", render::getColorMap(getColorMap()));
-  nodeProgram->setTextureFromColormap("t_colormap", render::getColorMap(getColorMap()));
+  edgeProgram->setTextureFromColormap("t_colormap", *cMap.get());
+  nodeProgram->setTextureFromColormap("t_colormap", *cMap.get());
   render::engine->setMaterial(*nodeProgram, parent.getMaterial());
   render::engine->setMaterial(*edgeProgram, parent.getMaterial());
 }
@@ -206,7 +207,7 @@ CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name,
     : CurveNetworkScalarQuantity(name, network_, "edge", dataType_), values(std::move(values_))
 
 {
-  hist.updateColormap(getColorMap());
+  hist.updateColormap(cMap.get());
   hist.buildHistogram(values);
 
   dataRange = robustMinMax(values, 1e-5);
@@ -249,8 +250,8 @@ void CurveNetworkEdgeScalarQuantity::createProgram() {
     edgeProgram->setAttribute("a_value", values);
   }
 
-  edgeProgram->setTextureFromColormap("t_colormap", render::getColorMap(getColorMap()));
-  nodeProgram->setTextureFromColormap("t_colormap", render::getColorMap(getColorMap()));
+  edgeProgram->setTextureFromColormap("t_colormap", *cMap.get());
+  nodeProgram->setTextureFromColormap("t_colormap", *cMap.get());
   render::engine->setMaterial(*nodeProgram, parent.getMaterial());
   render::engine->setMaterial(*edgeProgram, parent.getMaterial());
 }

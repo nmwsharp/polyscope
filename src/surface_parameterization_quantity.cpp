@@ -24,7 +24,7 @@ SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string nam
       checkColor2(uniquePrefix() + "#checkColor2", glm::vec3(.976, .856, .885)),
       gridLineColor(uniquePrefix() + "#gridLineColor", render::RGB_WHITE),
       gridBackgroundColor(uniquePrefix() + "#gridBackgroundColor", render::RGB_PINK),
-      cMap(uniquePrefix() + "#cMap", render::ColorMapID::PHASE)
+      cMap(uniquePrefix() + "#cMap", render::getColorMap("phase"))
 
 {}
 
@@ -57,12 +57,12 @@ void SurfaceParameterizationQuantity::createProgram() {
   case ParamVizStyle::LOCAL_CHECK:
     program = render::engine->generateShaderProgram(
         {render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program->setTextureFromColormap("t_colormap", render::getColorMap(getColorMap()));
+    program->setTextureFromColormap("t_colormap", *cMap.get());
     break;
   case ParamVizStyle::LOCAL_RAD:
     program = render::engine->generateShaderProgram(
         {render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program->setTextureFromColormap("t_colormap", render::getColorMap(getColorMap()));
+    program->setTextureFromColormap("t_colormap", *cMap.get());
     break;
   }
 
@@ -224,14 +224,13 @@ SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setCheckerSize
 
 double SurfaceParameterizationQuantity::getCheckerSize() { return checkerSize.get(); }
 
-SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setColorMap(render::ColorMapID val) {
-  cMap = val;
+SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setColorMap(std::string name) {
+  cMap = render::getColorMap(name);
   program.reset();
   requestRedraw();
   return this;
 }
-
-render::ColorMapID SurfaceParameterizationQuantity::getColorMap() { return cMap.get(); }
+std::string SurfaceParameterizationQuantity::getColorMap() { return cMap.get()->name; }
 
 void SurfaceParameterizationQuantity::geometryChanged() { program.reset(); }
 

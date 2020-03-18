@@ -111,13 +111,14 @@ void SurfaceScalarQuantity::buildCustomUI() {
 
 void SurfaceScalarQuantity::geometryChanged() { program.reset(); }
 
-SurfaceScalarQuantity* SurfaceScalarQuantity::setColorMap(render::ColorMapID val) {
-  cMap = val;
+SurfaceScalarQuantity* SurfaceScalarQuantity::setColorMap(std::string name) {
+  cMap = render::getColorMap(name);
   hist.updateColormap(cMap.get());
   requestRedraw();
   return this;
 }
-render::ColorMapID SurfaceScalarQuantity::getColorMap() { return cMap.get(); }
+std::string SurfaceScalarQuantity::getColorMap() { return cMap.get()->name; }
+
 SurfaceScalarQuantity* SurfaceScalarQuantity::setMapRange(std::pair<double, double> val) {
   vizRange = val;
   requestRedraw();
@@ -177,7 +178,7 @@ void SurfaceVertexScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", render::getColorMap(cMap.get()));
+  p.setTextureFromColormap("t_colormap", *cMap.get());
 }
 
 void SurfaceVertexScalarQuantity::writeToFile(std::string filename) {
@@ -255,7 +256,7 @@ void SurfaceFaceScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", render::getColorMap(cMap.get()));
+  p.setTextureFromColormap("t_colormap", *cMap.get());
 }
 
 void SurfaceFaceScalarQuantity::buildFaceInfoGUI(size_t fInd) {
@@ -330,7 +331,7 @@ void SurfaceEdgeScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", render::getColorMap(cMap.get()));
+  p.setTextureFromColormap("t_colormap", *cMap.get());
 }
 
 void SurfaceEdgeScalarQuantity::buildEdgeInfoGUI(size_t eInd) {
@@ -423,7 +424,7 @@ void SurfaceHalfedgeScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", render::getColorMap(cMap.get()));
+  p.setTextureFromColormap("t_colormap", *cMap.get());
 }
 
 void SurfaceHalfedgeScalarQuantity::buildHalfedgeInfoGUI(size_t heInd) {

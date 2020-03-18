@@ -107,10 +107,6 @@ SET(SRCS
   persistent_value.cpp
   color_management.cpp
 
-  # Rendering utilities
-	trace_vector_field.cpp
-	ribbon_artist.cpp
-
   ## Structures
 
   # Point cloud
@@ -138,6 +134,10 @@ SET(SRCS
 	curve_network_scalar_quantity.cpp
 	curve_network_color_quantity.cpp
 	curve_network_vector_quantity.cpp
+  
+  # Rendering utilities
+	trace_vector_field.cpp
+	ribbon_artist.cpp
 	
 	## Embedded binary data 
   render/bindata/bindata_font_cousine_regular.cpp

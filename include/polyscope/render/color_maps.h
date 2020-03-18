@@ -33,12 +33,6 @@ namespace render {
 //  Should work on any colormap from http://matplotlib.org/examples/color/colormaps_reference.html
 //
 
-// All of the color maps
-enum class ColorMapID { VIRIDIS = 0, COOLWARM, BLUES, REDS, PIYG, PHASE, SPECTRAL, RAINBOW, JET };
-
-static std::vector<ColorMapID> allColorMaps{ColorMapID::VIRIDIS,  ColorMapID::COOLWARM, ColorMapID::BLUES,
-                                            ColorMapID::REDS,     ColorMapID::PIYG,     ColorMapID::PHASE,
-                                            ColorMapID::SPECTRAL, ColorMapID::RAINBOW,  ColorMapID::JET};
 
 // Some colors, while we're at it
 const glm::vec3 RGB_TEAL = {0., 178. / 255., 178. / 255.};
@@ -82,43 +76,10 @@ struct ValueColorMap {
 };
 
 
-inline std::string colorMapName(ColorMapID cmap) {
-  switch (cmap) {
-  case ColorMapID::VIRIDIS:
-    return "viridis";
-    break;
-  case ColorMapID::COOLWARM:
-    return "coolwarm";
-    break;
-  case ColorMapID::PIYG:
-    return "pink-green";
-    break;
-  case ColorMapID::BLUES:
-    return "blues";
-    break;
-  case ColorMapID::REDS:
-    return "reds";
-    break;
-  case ColorMapID::SPECTRAL:
-    return "spectral";
-    break;
-  case ColorMapID::RAINBOW:
-    return "rainbow";
-    break;
-  case ColorMapID::JET:
-    return "jet";
-    break;
-  case ColorMapID::PHASE:
-    return "phase";
-    break;
-  }
-  return "SOMETHING_IS_WRONG";
-}
-
 // Helper to build a ImGUI dropdown to select color maps. Returns true if changed.
-bool buildColormapSelector(ColorMapID& cm, std::string fieldname = "##colormap_picker");
+bool buildColormapSelector(const ValueColorMap*& cm, std::string fieldname = "##colormap_picker");
 
-// === the colormaps themselves
+// === the default colormaps themselves
 // (stored in color_maps.cpp)
 
 extern const ValueColorMap CM_VIRIDIS;
@@ -132,39 +93,19 @@ extern const ValueColorMap CM_REDS;
 extern const ValueColorMap CM_PHASE;
 
 
-inline const ValueColorMap& getColorMap(ColorMapID cmap) {
-  switch (cmap) {
-  case ColorMapID::VIRIDIS:
-    return CM_VIRIDIS;
-    break;
-  case ColorMapID::COOLWARM:
-    return CM_COOLWARM;
-    break;
-  case ColorMapID::PIYG:
-    return CM_PIYG;
-    break;
-  case ColorMapID::BLUES:
-    return CM_BLUES;
-    break;
-  case ColorMapID::REDS:
-    return CM_REDS;
-    break;
-  case ColorMapID::SPECTRAL:
-    return CM_SPECTRAL;
-    break;
-  case ColorMapID::RAINBOW:
-    return CM_RAINBOW;
-    break;
-  case ColorMapID::JET:
-    return CM_JET;
-    break;
-  case ColorMapID::PHASE:
-    return CM_PHASE;
-    break;
+// All of the colormaps Polyscope is aware of.
+// These need to be global objects; we will compare them by pointer equality.
+static std::vector<const ValueColorMap*> colorMaps{&CM_VIRIDIS, &CM_COOLWARM, &CM_BLUES,   &CM_REDS, &CM_PIYG,
+                                                   &CM_PHASE,   &CM_SPECTRAL, &CM_RAINBOW, &CM_JET};
+
+
+inline const ValueColorMap* getColorMap(const std::string& name) {
+  for (const ValueColorMap* cmap : colorMaps) {
+    if (name == cmap->name) return cmap;
   }
 
-  throw std::runtime_error("shouldn't happen");
-  return CM_VIRIDIS;
+  throw std::runtime_error("unrecognized colormap name: " + name);
+  return &CM_VIRIDIS;
 }
 
 

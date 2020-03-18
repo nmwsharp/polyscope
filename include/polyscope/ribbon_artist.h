@@ -43,7 +43,7 @@ private:
   void createProgram();
   void deleteProgram();
 
-  render::ColorMapID cMap = render::ColorMapID::SPECTRAL;
+  const render::ValueColorMap* cMap = render::getColorMap("spectral");
 };
 
 

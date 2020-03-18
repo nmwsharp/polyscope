@@ -99,11 +99,6 @@ private:
   T value;
 };
 
-// Forward declare
-namespace gl {
-  enum class ColorMapID;
-};
-
 // clang-format off
 namespace detail {
 extern PersistentCache<double> persistentCache_double;
@@ -112,7 +107,7 @@ extern PersistentCache<bool> persistentCache_bool;
 extern PersistentCache<glm::vec3> persistentCache_glmvec3;
 extern PersistentCache<ScaledValue<double>> persistentCache_scaleddouble;
 extern PersistentCache<ScaledValue<float>> persistentCache_scaledfloat;
-extern PersistentCache<render::ColorMapID> persistentCache_colormapID;
+extern PersistentCache<const render::ValueColorMap*> persistentCache_colormap;
 extern PersistentCache<Material> persistentCache_material;
 extern PersistentCache<ParamVizStyle> persistentCache_paramVizStyle;
 
@@ -122,9 +117,9 @@ template<> inline PersistentCache<bool>&                    getPersistentCacheRe
 template<> inline PersistentCache<glm::vec3>&               getPersistentCacheRef<glm::vec3>()              { return persistentCache_glmvec3; }
 template<> inline PersistentCache<ScaledValue<double>>&     getPersistentCacheRef<ScaledValue<double>>()    { return persistentCache_scaleddouble; }
 template<> inline PersistentCache<ScaledValue<float>>&      getPersistentCacheRef<ScaledValue<float>>()     { return persistentCache_scaledfloat; }
-template<> inline PersistentCache<render::ColorMapID>&      getPersistentCacheRef<render::ColorMapID>()     { return persistentCache_colormapID; }
 template<> inline PersistentCache<Material>&                getPersistentCacheRef<Material>()     					{ return persistentCache_material; }
 template<> inline PersistentCache<ParamVizStyle>&           getPersistentCacheRef<ParamVizStyle>()          { return persistentCache_paramVizStyle; }
+template<> inline PersistentCache<const render::ValueColorMap*>&  getPersistentCacheRef<const render::ValueColorMap*>() { return persistentCache_colormap; }
 }
 // clang-format on
 

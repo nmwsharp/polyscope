@@ -17,7 +17,7 @@ SurfaceDistanceQuantity::SurfaceDistanceQuantity(std::string name, std::vector<d
                                                  bool signedDist_)
     : SurfaceMeshQuantity(name, mesh_, true), distances(std::move(distances_)), signedDist(signedDist_),
       stripeSize(uniquePrefix() + name + "#stripeSize", relativeValue(0.02)),
-      cMap(uniquePrefix() + name + "#cmap", signedDist ? render::ColorMapID::COOLWARM : render::ColorMapID::VIRIDIS)
+      cMap(uniquePrefix() + name + "#cmap", signedDist ? render::getColorMap("coolwarm"): render::getColorMap("viridis"))
 
 
 {
@@ -144,16 +144,17 @@ void SurfaceDistanceQuantity::fillColorBuffers(render::ShaderProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", render::getColorMap(cMap.get()));
+  p.setTextureFromColormap("t_colormap", *cMap.get());
 }
 
-SurfaceDistanceQuantity* SurfaceDistanceQuantity::setColorMap(render::ColorMapID val) {
-  cMap = val;
+SurfaceDistanceQuantity* SurfaceDistanceQuantity::setColorMap(std::string name) {
+  cMap = render::getColorMap(name);
   hist.updateColormap(cMap.get());
   requestRedraw();
   return this;
 }
-render::ColorMapID SurfaceDistanceQuantity::getColorMap() { return cMap.get(); }
+std::string SurfaceDistanceQuantity::getColorMap() { return cMap.get()->name; }
+
 SurfaceDistanceQuantity* SurfaceDistanceQuantity::setMapRange(std::pair<double, double> val) {
   vizRange = val;
   requestRedraw();

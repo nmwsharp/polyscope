@@ -53,14 +53,14 @@ void SurfaceCountQuantity::createProgram() {
   program->setAttribute("a_position", pos);
   program->setAttribute("a_value", value);
 
-  program->setTextureFromColormap("t_colormap", render::getColorMap(cMap));
+  program->setTextureFromColormap("t_colormap", *cMap);
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
 void SurfaceCountQuantity::geometryChanged() { program.reset(); }
 
 void SurfaceCountQuantity::setUniforms(render::ShaderProgram& p) {
-	glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
   glm::mat4 Pinv = glm::inverse(P);
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
