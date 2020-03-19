@@ -3,8 +3,7 @@ namespace polyscope {
 
 // Shorthand to add a mesh to polyscope
 template <class V, class F>
-SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
-                                 bool replaceIfPresent) {
+SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
   SurfaceMesh* s = new SurfaceMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
                                    standardizeNestedList<size_t, F>(faceIndices));
   bool success = registerStructure(s);
@@ -15,8 +14,7 @@ SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, con
   return s;
 }
 template <class V, class F>
-SurfaceMesh* registerSurfaceMesh2D(std::string name, const V& vertexPositions, const F& faceIndices,
-                                   bool replaceIfPresent) {
+SurfaceMesh* registerSurfaceMesh2D(std::string name, const V& vertexPositions, const F& faceIndices) {
 
   std::vector<glm::vec3> positions3D = standardizeVectorArray<glm::vec3, 2>(vertexPositions);
   for (auto& v : positions3D) {
@@ -35,8 +33,8 @@ SurfaceMesh* registerSurfaceMesh2D(std::string name, const V& vertexPositions, c
 // Shorthand to add a mesh to polyscope while also setting permutations
 template <class V, class F, class P>
 SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
-                                 const std::array<std::pair<P, size_t>, 5>& perms, bool replaceIfPresent) {
-  SurfaceMesh* s = registerSurfaceMesh(name, vertexPositions, faceIndices, replaceIfPresent);
+                                 const std::array<std::pair<P, size_t>, 5>& perms) {
+  SurfaceMesh* s = registerSurfaceMesh(name, vertexPositions, faceIndices);
 
   if (s) {
     s->setAllPermutations(perms);

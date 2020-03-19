@@ -132,9 +132,9 @@ private:
 
 // Shorthand to add a point cloud to polyscope
 template <class T>
-PointCloud* registerPointCloud(std::string name, const T& points, bool replaceIfPresent = true);
+PointCloud* registerPointCloud(std::string name, const T& points);
 template <class T>
-PointCloud* registerPointCloud2D(std::string name, const T& points, bool replaceIfPresent = true);
+PointCloud* registerPointCloud2D(std::string name, const T& points);
 
 // Shorthand to get a point cloud from polyscope
 inline PointCloud* getPointCloud(std::string name = "");

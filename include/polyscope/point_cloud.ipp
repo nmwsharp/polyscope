@@ -6,7 +6,7 @@ namespace polyscope {
 
 // Shorthand to add a point cloud to polyscope
 template <class T>
-PointCloud* registerPointCloud(std::string name, const T& points, bool replaceIfPresent) {
+PointCloud* registerPointCloud(std::string name, const T& points) {
   PointCloud* s = new PointCloud(name, standardizeVectorArray<glm::vec3, 3>(points));
   bool success = registerStructure(s);
   if (!success) {
@@ -15,7 +15,7 @@ PointCloud* registerPointCloud(std::string name, const T& points, bool replaceIf
   return s;
 }
 template <class T>
-PointCloud* registerPointCloud2D(std::string name, const T& points, bool replaceIfPresent) {
+PointCloud* registerPointCloud2D(std::string name, const T& points) {
   std::vector<glm::vec3> points3D(standardizeVectorArray<glm::vec3, 2>(points));
   for (auto& v : points3D) {
     v.z = 0.;
