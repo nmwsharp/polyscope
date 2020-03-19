@@ -5,10 +5,13 @@
 
 #include "polyscope/color_management.h"
 
+#define COLORMAP_DATA_LENGTH 500
+
 namespace polyscope {
 namespace render {
 
-#define COLORMAP_DATA_LENGTH 500
+// Helper to build a ImGUI dropdown to select color maps. Returns true if changed.
+bool buildColormapSelector(std::string& cm, std::string fieldname = "##colormap_picker");
 
 
 // ColorMaps currently available below
@@ -76,9 +79,6 @@ struct ValueColorMap {
 };
 
 
-// Helper to build a ImGUI dropdown to select color maps. Returns true if changed.
-bool buildColormapSelector(const ValueColorMap*& cm, std::string fieldname = "##colormap_picker");
-
 // === the default colormaps themselves
 // (stored in color_maps.cpp)
 
@@ -91,22 +91,6 @@ extern const ValueColorMap CM_RAINBOW;
 extern const ValueColorMap CM_JET;
 extern const ValueColorMap CM_REDS;
 extern const ValueColorMap CM_PHASE;
-
-
-// All of the colormaps Polyscope is aware of.
-// These need to be global objects; we will compare them by pointer equality.
-extern std::vector<const ValueColorMap*> colorMaps;
-
-
-inline const ValueColorMap* getColorMap(const std::string& name) {
-  for (const ValueColorMap* cmap : colorMaps) {
-    if (name == cmap->name) return cmap;
-  }
-
-  throw std::runtime_error("unrecognized colormap name: " + name);
-  return &CM_VIRIDIS;
-}
-
 
 } // namespace render
 } // namespace polyscope

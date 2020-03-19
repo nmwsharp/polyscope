@@ -47,7 +47,7 @@ protected:
   Histogram hist;
 
   // UI internals
-  PersistentValue<const render::ValueColorMap*> cMap;
+  PersistentValue<std::string> cMap;
 
 
   void createPointProgram();

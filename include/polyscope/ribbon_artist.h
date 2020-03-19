@@ -43,7 +43,7 @@ private:
   void createProgram();
   void deleteProgram();
 
-  const render::ValueColorMap* cMap = render::getColorMap("spectral");
+  std::string cMap = "spectral";
 };
 
 

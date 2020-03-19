@@ -47,6 +47,7 @@ void RibbonArtist::createProgram() {
   std::vector<glm::vec3> colors;
   std::vector<unsigned int> indices;
   unsigned int nPts = 0;
+  const render::ValueColorMap& cmapValue = render::engine->getColorMap(cMap);
   for (size_t iLine = 0; iLine < ribbons.size(); iLine++) {
 
     // Process each point from the list
@@ -63,7 +64,7 @@ void RibbonArtist::createProgram() {
     }
 
     // Sample a color for this line
-    glm::vec3 lineColor = cMap->getValue(randomUnit());
+    glm::vec3 lineColor = cmapValue.getValue(randomUnit());
 
     // Add a false point at the beginning (so it's not a special case for the geometry shader)
     float EPS = 0.01;

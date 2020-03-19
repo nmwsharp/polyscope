@@ -49,7 +49,7 @@ protected:
   Histogram hist;
 
   // UI internals
-  PersistentValue<const render::ValueColorMap*> cMap;
+  PersistentValue<std::string> cMap;
   std::shared_ptr<render::ShaderProgram> program;
 
   // Helpers

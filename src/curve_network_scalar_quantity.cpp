@@ -77,7 +77,7 @@ void CurveNetworkScalarQuantity::buildCustomUI() {
     ImGui::EndPopup();
   }
 
-  if (buildColormapSelector(cMap.get())) {
+  if (render::buildColormapSelector(cMap.get())) {
     nodeProgram.reset();
     edgeProgram.reset();
     setColorMap(getColorMap());
@@ -117,12 +117,12 @@ void CurveNetworkScalarQuantity::geometryChanged() {
 }
 
 CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::setColorMap(std::string name) {
-  cMap = render::getColorMap(name);
+  cMap = name;
   hist.updateColormap(cMap.get());
   requestRedraw();
   return this;
 }
-std::string CurveNetworkScalarQuantity::getColorMap() { return cMap.get()->name; }
+std::string CurveNetworkScalarQuantity::getColorMap() { return cMap.get(); }
 
 CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::setMapRange(std::pair<double, double> val) {
   vizRange = val;
@@ -183,8 +183,8 @@ void CurveNetworkNodeScalarQuantity::createProgram() {
     edgeProgram->setAttribute("a_value_tip", valueTip);
   }
 
-  edgeProgram->setTextureFromColormap("t_colormap", *cMap.get());
-  nodeProgram->setTextureFromColormap("t_colormap", *cMap.get());
+  edgeProgram->setTextureFromColormap("t_colormap", cMap.get());
+  nodeProgram->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*nodeProgram, parent.getMaterial());
   render::engine->setMaterial(*edgeProgram, parent.getMaterial());
 }
@@ -250,8 +250,8 @@ void CurveNetworkEdgeScalarQuantity::createProgram() {
     edgeProgram->setAttribute("a_value", values);
   }
 
-  edgeProgram->setTextureFromColormap("t_colormap", *cMap.get());
-  nodeProgram->setTextureFromColormap("t_colormap", *cMap.get());
+  edgeProgram->setTextureFromColormap("t_colormap", cMap.get());
+  nodeProgram->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*nodeProgram, parent.getMaterial());
   render::engine->setMaterial(*edgeProgram, parent.getMaterial());
 }

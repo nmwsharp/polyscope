@@ -2,8 +2,8 @@
 #include "polyscope/render/engine.h"
 
 #include "polyscope/polyscope.h"
-#include "polyscope/render/shaders.h"
 #include "polyscope/render/material_defs.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 #include "stb_image.h"
@@ -330,8 +330,9 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     // clang-format on
   }
 
-  { // Load default materials
+  { // Load defaults
     loadDefaultMaterials();
+    loadDefaultColorMaps();
   }
 }
 
@@ -459,6 +460,7 @@ void Engine::loadDefaultMaterials() {
   loadDefaultMaterial("flat");
 }
 
+
 Material& Engine::getMaterial(const std::string& name) {
   for (std::unique_ptr<Material>& m : materials) {
     if (name == m->name) return *m;
@@ -468,6 +470,27 @@ Material& Engine::getMaterial(const std::string& name) {
   return *materials[0];
 }
 
+const ValueColorMap& Engine::getColorMap(const std::string& name) {
+  for (const ValueColorMap* cmap : colorMaps) {
+    if (name == cmap->name) return *cmap;
+  }
+
+  throw std::runtime_error("unrecognized colormap name: " + name);
+  return CM_VIRIDIS;
+}
+
+void Engine::loadDefaultColorMaps() {
+  // TODO store these in buffers like the materials
+  colorMaps.push_back(&CM_VIRIDIS);
+  colorMaps.push_back(&CM_COOLWARM);
+  colorMaps.push_back(&CM_BLUES);
+  colorMaps.push_back(&CM_REDS);
+  colorMaps.push_back(&CM_PIYG);
+  colorMaps.push_back(&CM_PHASE);
+  colorMaps.push_back(&CM_SPECTRAL);
+  colorMaps.push_back(&CM_RAINBOW);
+  colorMaps.push_back(&CM_JET);
+}
 
 
 void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer) {

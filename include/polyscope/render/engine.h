@@ -234,7 +234,7 @@ public:
   virtual void setTexture1D(std::string name, unsigned char* texData, unsigned int length) = 0;
   virtual void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                             bool withAlpha = true, bool useMipMap = false, bool repeat = false) = 0;
-  virtual void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false) = 0;
+  virtual void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) = 0;
   virtual void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) = 0;
 
 
@@ -398,6 +398,10 @@ public:
   std::vector<std::unique_ptr<Material>> materials;
   Material& getMaterial(const std::string& name);
 
+  // Color maps
+  std::vector<const ValueColorMap*> colorMaps;
+  const ValueColorMap& getColorMap(const std::string& name);
+
 protected:
   // TODO Manage a cache of compiled shaders?
 
@@ -412,6 +416,7 @@ protected:
   std::vector<glm::vec4> distantCubeCoords();     // cube with vertices at infinity
   void loadDefaultMaterials();
   void loadDefaultMaterial(std::string name);
+  void loadDefaultColorMaps();
 
   // Internal windowing and engine details
   ImFontAtlas* globalFontAtlas = nullptr;

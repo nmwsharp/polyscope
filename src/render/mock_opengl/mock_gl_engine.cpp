@@ -877,7 +877,8 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
   throw std::invalid_argument("No texture with name " + name);
 }
 
-void GLShaderProgram::setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate) {
+void GLShaderProgram::setTextureFromColormap(std::string name, const std::string& colormapName, bool allowUpdate) {
+   const ValueColorMap& colormap = getColorMap(colormapName);
   // TODO switch to global shared buffers from colormap
 
   // Find the right texture

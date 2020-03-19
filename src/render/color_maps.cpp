@@ -1,26 +1,24 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/render/color_maps.h"
 
+#include "polyscope/render/engine.h"
+
 #include "imgui.h"
 
 namespace polyscope {
 namespace render {
 
-
-std::vector<const ValueColorMap*> colorMaps{&CM_VIRIDIS, &CM_COOLWARM, &CM_BLUES,   &CM_REDS, &CM_PIYG,
-                                            &CM_PHASE,   &CM_SPECTRAL, &CM_RAINBOW, &CM_JET};
-
 // ImGUI helper to select a colormap. Returns true if the selection changed
-bool buildColormapSelector(const ValueColorMap*& cm, std::string fieldName) {
+bool buildColormapSelector(std::string& cm, std::string fieldName) {
   bool changed = false;
 
   ImGui::PushItemWidth(100);
 
-  if (ImGui::BeginCombo(fieldName.c_str(), cm->name.c_str())) {
-    for (const ValueColorMap* c : colorMaps) {
-      if (ImGui::Selectable(c->name.c_str(), c == cm)) {
+  if (ImGui::BeginCombo(fieldName.c_str(), cm.c_str())) {
+    for (const ValueColorMap* c : render::engine->colorMaps) {
+      if (ImGui::Selectable(c->name.c_str(), c->name == cm)) {
         changed = true;
-        cm = c;
+        cm = c->name;
       }
     }
     ImGui::EndCombo();

@@ -53,7 +53,7 @@ void SurfaceCountQuantity::createProgram() {
   program->setAttribute("a_position", pos);
   program->setAttribute("a_value", value);
 
-  program->setTextureFromColormap("t_colormap", *cMap);
+  program->setTextureFromColormap("t_colormap", cMap);
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
@@ -86,7 +86,7 @@ void SurfaceCountQuantity::draw() {
 
 void SurfaceCountQuantity::buildCustomUI() {
 
-  if (buildColormapSelector(cMap)) {
+  if (render::buildColormapSelector(cMap)) {
     program.reset();
   }
   ImGui::Text("Sum: %d", sum);

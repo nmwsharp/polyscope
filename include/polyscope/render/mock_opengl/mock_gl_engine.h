@@ -134,7 +134,7 @@ public:
   void setTexture1D(std::string name, unsigned char* texData, unsigned int length) override;
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                     bool withAlpha = true, bool useMipMap = false, bool repeat = false) override;
-  void setTextureFromColormap(std::string name, const ValueColorMap& colormap, bool allowUpdate = false) override;
+  void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) override;
   void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) override;
 
   // Draw!

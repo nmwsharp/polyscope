@@ -5,18 +5,18 @@
 
 namespace polyscope {
 
-inline const render::ValueColorMap* defaultColorMap(DataType type) {
+inline std::string defaultColorMap(DataType type) {
   switch (type) {
   case DataType::STANDARD:
-    return &render::CM_VIRIDIS;
+    return "viridis";
     break;
   case DataType::SYMMETRIC:
-    return &render::CM_COOLWARM;
+    return "coolwarm";
   case DataType::MAGNITUDE:
-    return &render::CM_BLUES;
+    return "blues";
     break;
   }
-  return &render::CM_VIRIDIS;
+  return "viridis";
 }
 
 // Helpers used mainy to treat vectors as fields

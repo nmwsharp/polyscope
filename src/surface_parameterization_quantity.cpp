@@ -24,7 +24,7 @@ SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string nam
       checkColor2(uniquePrefix() + "#checkColor2", glm::vec3(.976, .856, .885)),
       gridLineColor(uniquePrefix() + "#gridLineColor", render::RGB_WHITE),
       gridBackgroundColor(uniquePrefix() + "#gridBackgroundColor", render::RGB_PINK),
-      cMap(uniquePrefix() + "#cMap", render::getColorMap("phase"))
+      cMap(uniquePrefix() + "#cMap", "phase")
 
 {}
 
@@ -57,12 +57,12 @@ void SurfaceParameterizationQuantity::createProgram() {
   case ParamVizStyle::LOCAL_CHECK:
     program = render::engine->generateShaderProgram(
         {render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program->setTextureFromColormap("t_colormap", *cMap.get());
+    program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   case ParamVizStyle::LOCAL_RAD:
     program = render::engine->generateShaderProgram(
         {render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program->setTextureFromColormap("t_colormap", *cMap.get());
+    program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   }
 
@@ -173,7 +173,7 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
     ImGui::PopItemWidth();
 
     // Set colormap
-    if (buildColormapSelector(cMap.get())) {
+    if (render::buildColormapSelector(cMap.get())) {
       setColorMap(getColorMap());
     }
   }
@@ -225,12 +225,12 @@ SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setCheckerSize
 double SurfaceParameterizationQuantity::getCheckerSize() { return checkerSize.get(); }
 
 SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setColorMap(std::string name) {
-  cMap = render::getColorMap(name);
+  cMap = name;
   program.reset();
   requestRedraw();
   return this;
 }
-std::string SurfaceParameterizationQuantity::getColorMap() { return cMap.get()->name; }
+std::string SurfaceParameterizationQuantity::getColorMap() { return cMap.get(); }
 
 void SurfaceParameterizationQuantity::geometryChanged() { program.reset(); }
 

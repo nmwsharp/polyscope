@@ -64,7 +64,7 @@ protected:
   PersistentValue<glm::vec3> checkColor1, checkColor2;           // for checker (two colors to use)
   PersistentValue<glm::vec3> gridLineColor, gridBackgroundColor; // for GRID (two colors to use)
 
-  PersistentValue<const render::ValueColorMap*> cMap;
+  PersistentValue<std::string> cMap;
   float localRot = 0.; // for LOCAL (angular shift, in radians)
   std::shared_ptr<render::ShaderProgram> program;
 

@@ -19,7 +19,7 @@ public:
   ~Histogram();
 
   void buildHistogram(std::vector<double>& values, const std::vector<double>& weights = {});
-  void updateColormap(const render::ValueColorMap* newColormap);
+  void updateColormap(const std::string& newColormap);
 
   // Width = -1 means set automatically
   void buildUI(float width = -1.0);
@@ -60,7 +60,7 @@ private:
   std::shared_ptr<render::TextureBuffer> texturebuffer = nullptr;
   std::shared_ptr<render::FrameBuffer> framebuffer = nullptr;
   std::shared_ptr<render::ShaderProgram> program = nullptr;
-  const render::ValueColorMap* colormap = &render::CM_VIRIDIS;
+  std::string colormap = "viridis";
 };
 
 

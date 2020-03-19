@@ -32,7 +32,7 @@ public:
   // TODO use persistent/scaled quantities
   float pointRadius = 0.003;
   float vizRangeLow, vizRangeHigh, dataRangeLow, dataRangeHigh;
-  const render::ValueColorMap* cMap = render::getColorMap("coolwarm");
+  std::string cMap = "coolwarm";
 
 protected:
   void initializeLimits();
