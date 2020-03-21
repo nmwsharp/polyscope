@@ -1,10 +1,10 @@
 #include "gtest/gtest.h"
 
+#include "polyscope/curve_network.h"
 #include "polyscope/pick.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
-#include "polyscope/curve_network.h"
 
 #include <array>
 #include <iostream>
@@ -202,7 +202,7 @@ TEST_F(PolyscopeTest, SurfaceMeshAppearance) {
   psMesh->setEdgeWidth(1.);
   EXPECT_EQ(psMesh->getEdgeWidth(), 1.);
   polyscope::show(3);
-  
+
   // Material
   psMesh->setMaterial("wax");
   EXPECT_EQ(psMesh->getMaterial(), "wax");
@@ -301,13 +301,13 @@ TEST_F(PolyscopeTest, SurfaceMeshCornerParam) {
   polyscope::show(3);
 
   // try the various render options
-  q1->setStyle(ParamVizStyle::CHECKER);
+  q1->setStyle(polyscope::ParamVizStyle::CHECKER);
   polyscope::show(3);
-  q1->setStyle(ParamVizStyle::GRID);
+  q1->setStyle(polyscope::ParamVizStyle::GRID);
   polyscope::show(3);
-  q1->setStyle(ParamVizStyle::LOCAL_CHECK);
+  q1->setStyle(polyscope::ParamVizStyle::LOCAL_CHECK);
   polyscope::show(3);
-  q1->setStyle(ParamVizStyle::LOCAL_RAD);
+  q1->setStyle(polyscope::ParamVizStyle::LOCAL_RAD);
   polyscope::show(3);
 
   polyscope::removeAllStructures();
@@ -321,13 +321,13 @@ TEST_F(PolyscopeTest, SurfaceMeshVertexParam) {
   polyscope::show(3);
 
   // try the various render options
-  q1->setStyle(ParamVizStyle::CHECKER);
+  q1->setStyle(polyscope::ParamVizStyle::CHECKER);
   polyscope::show(3);
-  q1->setStyle(ParamVizStyle::GRID);
+  q1->setStyle(polyscope::ParamVizStyle::GRID);
   polyscope::show(3);
-  q1->setStyle(ParamVizStyle::LOCAL_CHECK);
+  q1->setStyle(polyscope::ParamVizStyle::LOCAL_CHECK);
   polyscope::show(3);
-  q1->setStyle(ParamVizStyle::LOCAL_RAD);
+  q1->setStyle(polyscope::ParamVizStyle::LOCAL_RAD);
   polyscope::show(3);
 
   polyscope::removeAllStructures();
@@ -575,5 +575,4 @@ TEST_F(PolyscopeTest, CurveNetworkFaceVector) {
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
-
 
