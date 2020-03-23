@@ -81,8 +81,8 @@ const ShaderStageSpecification VECTOR_GEOM_SHADER = {
 						// Compute corners of cube
 					  vec4 tailProj = u_projMatrix * vec4(tailViewVal, 1.0);
 					  vec4 tipProj = u_projMatrix * vec4(tipViewVal, 1.0);
-						vec4 dx = u_projMatrix * vec4(basisX * u_radius*3., 0.);
-						vec4 dy = u_projMatrix * vec4(basisY * u_radius*3., 0.); // FIXME 3
+						vec4 dx = u_projMatrix * vec4(basisX * u_radius, 0.);
+						vec4 dy = u_projMatrix * vec4(basisY * u_radius, 0.);
 
 						vec4 p1 = tailProj - dx - dy;
 						vec4 p2 = tailProj + dx - dy;
