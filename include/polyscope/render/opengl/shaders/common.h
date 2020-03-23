@@ -199,9 +199,10 @@ bool rayDiskIntersection(vec3 rayStart, vec3 rayDir, vec3 planePos, vec3 planeDi
 }
 
 bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit) {
-
+    
 		rayDir = normalize(rayDir);
-	  vec3 cylDir = normalize(cylTip - cylTail);
+    float cylLen = max(length(cylTip - cylTail), 1e-6);
+	  vec3 cylDir = (cylTip - cylTail) / cylLen;
 
 		vec3 o = rayStart - cylTail;
 		float d = dot(rayDir, cylDir);
@@ -231,12 +232,11 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
 		nHit = pHit - cylTail;
 		nHit = normalize(nHit - dot(cylDir, nHit)*cylDir); 
 
-
 		// Check if intersection was outside finite cylinder
 		if(dot(cylDir, pHit - cylTail) < 0 || dot(-cylDir, pHit - cylTip) < 0) {
 			tHit = LARGE_FLOAT();
 		}
-			
+		
 		// Test start endcap
 		float tHitTail;
 		vec3 pHitTail;
@@ -266,7 +266,7 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
 bool rayConeIntersection(vec3 rayStart, vec3 rayDir, vec3 coneBase, vec3 coneTip, float coneRad, out float tHit, out vec3 pHit, out vec3 nHit) {
 
 		rayDir = normalize(rayDir);
-		float coneH = length(coneTip - coneBase);
+		float coneH = max(length(coneTip - coneBase), 1e-6);
 	  vec3 coneDir = (coneTip - coneBase) / coneH;
 		
 		vec3 O = rayStart;
@@ -319,6 +319,18 @@ bool rayConeIntersection(vec3 rayStart, vec3 rayDir, vec3 coneBase, vec3 coneTip
 		nHit = pHit - coneBase;
 		vec3 sideDir = normalize(pHit - coneTip);
 		nHit = normalize(nHit - dot(sideDir, nHit)*sideDir); 
+
+		// Test base cap
+		float tHitTail;
+		vec3 pHitTail;
+		vec3 nHitTail;
+		rayDiskIntersection(rayStart, rayDir, coneBase, coneDir, coneRad, tHitTail, pHitTail, nHitTail);
+		if(tHitTail < tHit) {
+			tHit = tHitTail;
+			pHit = pHitTail;
+			nHit = nHitTail;
+		}
+
 		return true;
 }
 

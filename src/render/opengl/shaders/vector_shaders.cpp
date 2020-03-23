@@ -169,21 +169,22 @@ const ShaderStageSpecification VECTOR_FRAG_SHADER = {
 					 vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
 					 vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
 
-					 float tipFrac = 0.2;
+					 float tipLengthFrac = 0.2;
+					 float tipWidthFrac = 0.6;
+           float adjRadius = min(u_radius, length(tipView - tailView)*tipLengthFrac); // clip vector aspect ratio by shrinking width of small vectors (length is always an accurate representation of data)
 
 					 // Raycast to the cylinder 
 					 float tHit = LARGE_FLOAT();
 					 vec3 pHit = vec3(777,777,777);
 					 vec3 nHit =  vec3(777,777,777);
-					 vec3 cylEnd = tailView + (1. - tipFrac) * (tipView - tailView);
-           rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, cylEnd, u_radius, tHit, pHit, nHit);
+					 vec3 cylEnd = tailView + (1. - tipLengthFrac) * (tipView - tailView);
+           rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, cylEnd, tipWidthFrac * adjRadius, tHit, pHit, nHit);
 					
 					 // Raycast to cone
-					 float tHitCone;
-					 vec3 pHitCone;
-					 vec3 nHitCone;
-					 bool coneHit = rayConeIntersection(vec3(0., 0., 0), viewRay, cylEnd, tipView, u_radius, tHitCone, pHitCone, nHitCone);
-				
+           float tHitCone;
+           vec3 pHitCone;
+           vec3 nHitCone;
+           bool coneHit = rayConeIntersection(vec3(0., 0., 0), viewRay, cylEnd, tipView, adjRadius, tHitCone, pHitCone, nHitCone);
 					 
 					 if(tHitCone < tHit) {
 						 tHit = tHitCone;
