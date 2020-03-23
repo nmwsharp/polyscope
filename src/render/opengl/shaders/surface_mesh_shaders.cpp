@@ -9,7 +9,7 @@ namespace render {
 
 const ShaderStageSpecification PLAIN_SURFACE_VERT_SHADER =  {
     
-		ShaderStageType::Vertex,
+    ShaderStageType::Vertex,
     
     // uniforms
     {
@@ -23,7 +23,7 @@ const ShaderStageSpecification PLAIN_SURFACE_VERT_SHADER =  {
         {"a_normal", DataType::Vector3Float},
     },
     
-		{}, // textures
+    {}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -42,8 +42,8 @@ const ShaderStageSpecification PLAIN_SURFACE_VERT_SHADER =  {
 };
 
 const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER = {
-		
-		ShaderStageType::Fragment,
+    
+    ShaderStageType::Fragment,
     
     // uniforms
     {
@@ -84,8 +84,8 @@ const ShaderStageSpecification PLAIN_SURFACE_FRAG_SHADER = {
 };
 
 const ShaderStageSpecification SURFACE_WIREFRAME_VERT_SHADER =  {
-		
-		ShaderStageType::Vertex,
+    
+    ShaderStageType::Vertex,
     
     { // uniforms
        {"u_modelView", DataType::Matrix44Float},
@@ -98,8 +98,8 @@ const ShaderStageSpecification SURFACE_WIREFRAME_VERT_SHADER =  {
         {"a_barycoord", DataType::Vector3Float},
         {"a_edgeReal", DataType::Vector3Float},
     },
-		
-		{}, // textures
+    
+    {}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -124,8 +124,8 @@ const ShaderStageSpecification SURFACE_WIREFRAME_VERT_SHADER =  {
 };
 
 const ShaderStageSpecification SURFACE_WIREFRAME_FRAG_SHADER = {
-		
-		ShaderStageType::Fragment,
+    
+    ShaderStageType::Fragment,
     
     { // uniforms
         {"u_edgeColor", DataType::Vector3Float},
@@ -188,7 +188,7 @@ const ShaderStageSpecification SURFACE_WIREFRAME_FRAG_SHADER = {
 
 const ShaderStageSpecification VERTCOLOR_SURFACE_VERT_SHADER =  {
     
-		ShaderStageType::Vertex,
+    ShaderStageType::Vertex,
     
     // uniforms
     {
@@ -227,7 +227,7 @@ const ShaderStageSpecification VERTCOLOR_SURFACE_VERT_SHADER =  {
 
 const ShaderStageSpecification VERTCOLOR_SURFACE_FRAG_SHADER = {
     
-		ShaderStageType::Fragment,
+    ShaderStageType::Fragment,
     
     // uniforms
     {
@@ -371,8 +371,8 @@ const ShaderStageSpecification VERTCOLOR_SURFACE_FRAG_SHADER = {
 
 
 const ShaderStageSpecification VERTCOLOR3_SURFACE_VERT_SHADER =  {
-		
-		ShaderStageType::Vertex,
+    
+    ShaderStageType::Vertex,
     
     // uniforms
     {
@@ -387,7 +387,7 @@ const ShaderStageSpecification VERTCOLOR3_SURFACE_VERT_SHADER =  {
         {"a_colorval", DataType::Vector3Float},
     },
     
-		{}, // textures
+    {}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -410,7 +410,7 @@ const ShaderStageSpecification VERTCOLOR3_SURFACE_VERT_SHADER =  {
 
 const ShaderStageSpecification VERTCOLOR3_SURFACE_FRAG_SHADER = {
     
-		ShaderStageType::Fragment,
+    ShaderStageType::Fragment,
     
     { }, // uniforms
 
@@ -449,7 +449,7 @@ const ShaderStageSpecification VERTCOLOR3_SURFACE_FRAG_SHADER = {
 
 const ShaderStageSpecification HALFEDGECOLOR_SURFACE_VERT_SHADER =  {
     
-		ShaderStageType::Vertex,
+    ShaderStageType::Vertex,
     
     { // uniforms
        {"u_modelView", DataType::Matrix44Float},
@@ -465,7 +465,7 @@ const ShaderStageSpecification HALFEDGECOLOR_SURFACE_VERT_SHADER =  {
         {"a_colorval", DataType::Vector3Float},
     },
     
-		{}, // textures
+    {}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -491,7 +491,7 @@ const ShaderStageSpecification HALFEDGECOLOR_SURFACE_VERT_SHADER =  {
 
 const ShaderStageSpecification HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
     
-		ShaderStageType::Fragment,
+    ShaderStageType::Fragment,
     
     // uniforms
     {
@@ -561,8 +561,8 @@ const ShaderStageSpecification HALFEDGECOLOR_SURFACE_FRAG_SHADER = {
 
 
 const ShaderStageSpecification PICK_SURFACE_VERT_SHADER =  {
-		
-		ShaderStageType::Vertex,
+    
+    ShaderStageType::Vertex,
     
     // uniforms
     {
@@ -580,7 +580,7 @@ const ShaderStageSpecification PICK_SURFACE_VERT_SHADER =  {
         {"a_faceColor", DataType::Vector3Float},
     },
     
-		{ }, // textures 
+    { }, // textures 
 
     // source
     POLYSCOPE_GLSL(150,
@@ -619,8 +619,8 @@ const ShaderStageSpecification PICK_SURFACE_VERT_SHADER =  {
 };
 
 const ShaderStageSpecification PICK_SURFACE_FRAG_SHADER = {
-		
-		ShaderStageType::Fragment,
+    
+    ShaderStageType::Fragment,
     
     { }, // uniforms
     { }, // attributes 
@@ -677,8 +677,8 @@ const ShaderStageSpecification PICK_SURFACE_FRAG_SHADER = {
 };
 
 const ShaderStageSpecification VERT_DIST_SURFACE_VERT_SHADER =  {
-		
-		ShaderStageType::Vertex,
+    
+    ShaderStageType::Vertex,
     
     // uniforms
     {
@@ -692,8 +692,8 @@ const ShaderStageSpecification VERT_DIST_SURFACE_VERT_SHADER =  {
         {"a_normal", DataType::Vector3Float},
         {"a_colorval", DataType::Float},
     },
-		
-		{}, // textures
+    
+    {}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -715,8 +715,8 @@ const ShaderStageSpecification VERT_DIST_SURFACE_VERT_SHADER =  {
 };
 
 const ShaderStageSpecification VERT_DIST_SURFACE_FRAG_SHADER = {
-		
-		ShaderStageType::Fragment,
+    
+    ShaderStageType::Fragment,
     
     // uniforms
     {
@@ -777,8 +777,8 @@ const ShaderStageSpecification VERT_DIST_SURFACE_FRAG_SHADER = {
 };
 
 const ShaderStageSpecification PARAM_SURFACE_VERT_SHADER =  {
-		
-		ShaderStageType::Vertex,
+    
+    ShaderStageType::Vertex,
     
     // uniforms
     {
@@ -792,8 +792,8 @@ const ShaderStageSpecification PARAM_SURFACE_VERT_SHADER =  {
         {"a_normal", DataType::Vector3Float},
         {"a_coord", DataType::Vector2Float},
     },
-		
-		{}, // textures
+    
+    {}, // textures
 
     // source
     POLYSCOPE_GLSL(150,
@@ -816,7 +816,7 @@ const ShaderStageSpecification PARAM_SURFACE_VERT_SHADER =  {
 
 const ShaderStageSpecification PARAM_CHECKER_SURFACE_FRAG_SHADER = { 
   
-		ShaderStageType::Fragment,
+    ShaderStageType::Fragment,
   
     // uniforms 
     {
@@ -881,7 +881,7 @@ const ShaderStageSpecification PARAM_CHECKER_SURFACE_FRAG_SHADER = {
 
 const ShaderStageSpecification PARAM_GRID_SURFACE_FRAG_SHADER = { 
   
-		ShaderStageType::Fragment,
+    ShaderStageType::Fragment,
   
     // uniforms 
     {
@@ -946,7 +946,7 @@ const ShaderStageSpecification PARAM_GRID_SURFACE_FRAG_SHADER = {
 
 const ShaderStageSpecification PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER = { 
   
-		ShaderStageType::Fragment,
+    ShaderStageType::Fragment,
   
     // uniforms 
     {
@@ -1011,7 +1011,7 @@ const ShaderStageSpecification PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER = {
 
 const ShaderStageSpecification PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER = { 
   
-		ShaderStageType::Fragment,
+    ShaderStageType::Fragment,
   
     // uniforms 
     {

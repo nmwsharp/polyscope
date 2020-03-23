@@ -9,7 +9,7 @@ namespace render {
 
 const ShaderStageSpecification RIBBON_VERT_SHADER = {
 
-		ShaderStageType::Vertex,
+    ShaderStageType::Vertex,
 
     { }, // uniforms
 
@@ -19,7 +19,7 @@ const ShaderStageSpecification RIBBON_VERT_SHADER = {
         {"a_color", DataType::Vector3Float},
         {"a_normal", DataType::Vector3Float},
     },
-		
+    
     {}, // textures
 
     // source
@@ -40,7 +40,7 @@ const ShaderStageSpecification RIBBON_VERT_SHADER = {
 
 
 const ShaderStageSpecification RIBBON_GEOM_SHADER = {
-		
+    
     ShaderStageType::Geometry,
     
     // uniforms
@@ -54,7 +54,7 @@ const ShaderStageSpecification RIBBON_GEOM_SHADER = {
     // attributes
     {
     },
-		
+    
     {}, // textures
 
     // source
@@ -147,7 +147,7 @@ const ShaderStageSpecification RIBBON_GEOM_SHADER = {
 
 
 const ShaderStageSpecification RIBBON_FRAG_SHADER = {
-		
+    
     ShaderStageType::Fragment,
     
     { }, // uniforms

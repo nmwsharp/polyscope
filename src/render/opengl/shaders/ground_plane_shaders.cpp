@@ -136,7 +136,7 @@ const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER = {
         float distFadeFactor = 1.0 - smoothstep(8.0, 8.5, distFromCenter);
         float viewFromBelowFadeFactor = smoothstep(0, .1, (u_cameraHeight - u_groundHeight) / u_lengthScale);
         float fadeFactor = min(distFadeFactor, viewFromBelowFadeFactor);
-				if(fadeFactor <= 0.) discard;
+        if(fadeFactor <= 0.) discard;
         vec4 color = vec4(color3, fadeFactor);
       
         // NOTE: parameters swapped from comments.. which is correct?
