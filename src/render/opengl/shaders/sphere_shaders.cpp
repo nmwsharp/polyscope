@@ -118,45 +118,38 @@ const ShaderStageSpecification SPHERE_BILLBOARD_GEOM_SHADER = {
     // source
     POLYSCOPE_GLSL(150,
         layout(points) in;
-        layout(triangle_strip, max_vertices=14) out;
+        layout(triangle_strip, max_vertices=4) out;
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
 				out vec3 sphereCenterView;
 
+        void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
+
         void main()   {
 
-						// Compute corners of cube
-					  vec4 center = u_projMatrix * gl_in[0].gl_Position;
-						vec4 dx = u_projMatrix * vec4(u_pointRadius, 0., 0., 0.);
-						vec4 dy = u_projMatrix * vec4(0., u_pointRadius, 0., 0.);
-						vec4 dz = u_projMatrix * vec4(0., 0., u_pointRadius, 0.);
-						vec4 p1 = center - dx - dy - dz;
-						vec4 p2 = center + dx - dy - dz;
-						vec4 p3 = center - dx + dy - dz;
-						vec4 p4 = center + dx + dy - dz;
-						vec4 p5 = center - dx - dy + dz;
-						vec4 p6 = center + dx - dy + dz;
-						vec4 p7 = center - dx + dy + dz;
-						vec4 p8 = center + dx + dy + dz;
+            // Construct the 4 corners of a billboard quad, facing the camera
+            // Quad is shifted u_pointRadius toward the camera, otherwise it doesn't actually necessarily
+            // cover the full sphere due to perspective>
+            vec3 dirToCam = normalize(-gl_in[0].gl_Position.xyz);
+            vec3 basisX;
+            vec3 basisY;
+            buildTangentBasis(dirToCam, basisX, basisY);
+            vec4 center = u_projMatrix * (gl_in[0].gl_Position + vec4(dirToCam, 0.) * u_pointRadius);
+            vec4 dx = u_projMatrix * (vec4(basisX, 0.) * u_pointRadius);
+            vec4 dy = u_projMatrix * (vec4(basisY, 0.) * u_pointRadius);
+						vec4 p1 = center - dx - dy;
+						vec4 p2 = center + dx - dy;
+						vec4 p3 = center - dx + dy;
+						vec4 p4 = center + dx + dy;
 						
 						// Other data to emit		
 						vec3 sphereCenterViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
 		
 						// Emit the vertices as a triangle strip
-						sphereCenterView = sphereCenterViewVal;	gl_Position = p7; EmitVertex(); 
-						sphereCenterView = sphereCenterViewVal;	gl_Position = p8; EmitVertex(); 
-						sphereCenterView = sphereCenterViewVal;	gl_Position = p5; EmitVertex(); 
-						sphereCenterView = sphereCenterViewVal;	gl_Position = p6; EmitVertex(); 
-						sphereCenterView = sphereCenterViewVal;	gl_Position = p2; EmitVertex(); 
-						sphereCenterView = sphereCenterViewVal;	gl_Position = p8; EmitVertex(); 
-						sphereCenterView = sphereCenterViewVal;	gl_Position = p4; EmitVertex(); 
-						sphereCenterView = sphereCenterViewVal;	gl_Position = p7; EmitVertex(); 
-						sphereCenterView = sphereCenterViewVal;	gl_Position = p3; EmitVertex(); 
-						sphereCenterView = sphereCenterViewVal;	gl_Position = p5; EmitVertex(); 
 						sphereCenterView = sphereCenterViewVal;	gl_Position = p1; EmitVertex(); 
 						sphereCenterView = sphereCenterViewVal;	gl_Position = p2; EmitVertex(); 
 						sphereCenterView = sphereCenterViewVal;	gl_Position = p3; EmitVertex(); 
-						sphereCenterView = sphereCenterViewVal;	gl_Position = p4; EmitVertex();
+						sphereCenterView = sphereCenterViewVal;	gl_Position = p4; EmitVertex(); 
     
             EndPrimitive();
         }
@@ -188,42 +181,33 @@ const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
         uniform float u_pointRadius;
         flat out float valueToFrag;
 				out vec3 sphereCenterView;
+        
+        void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
 
         void main()   {
 
-						// Compute corners of cube
-					  vec4 center = u_projMatrix * gl_in[0].gl_Position;
-						vec4 dx = u_projMatrix * vec4(u_pointRadius, 0., 0., 0.);
-						vec4 dy = u_projMatrix * vec4(0., u_pointRadius, 0., 0.);
-						vec4 dz = u_projMatrix * vec4(0., 0., u_pointRadius, 0.);
-						vec4 p1 = center - dx - dy - dz;
-						vec4 p2 = center + dx - dy - dz;
-						vec4 p3 = center - dx + dy - dz;
-						vec4 p4 = center + dx + dy - dz;
-						vec4 p5 = center - dx - dy + dz;
-						vec4 p6 = center + dx - dy + dz;
-						vec4 p7 = center - dx + dy + dz;
-						vec4 p8 = center + dx + dy + dz;
+            // Construct the 4 corners of a billboard quad, facing the camera
+            vec3 dirToCam = normalize(-gl_in[0].gl_Position.xyz);
+            vec3 basisX;
+            vec3 basisY;
+            buildTangentBasis(dirToCam, basisX, basisY);
+            vec4 center = u_projMatrix * (gl_in[0].gl_Position + vec4(dirToCam, 0.) * u_pointRadius);
+            vec4 dx = u_projMatrix * (vec4(basisX, 0.) * u_pointRadius);
+            vec4 dy = u_projMatrix * (vec4(basisY, 0.) * u_pointRadius);
+						vec4 p1 = center - dx - dy;
+						vec4 p2 = center + dx - dy;
+						vec4 p3 = center - dx + dy;
+						vec4 p4 = center + dx + dy;
 						
 						// Other data to emit		
 						vec3 sphereCenterViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
 						float valueOut = value[0];
 		
 						// Emit the vertices as a triangle strip
-						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p7; EmitVertex(); 
-						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p8; EmitVertex(); 
-						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p5; EmitVertex(); 
-						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p6; EmitVertex(); 
-						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p2; EmitVertex(); 
-						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p8; EmitVertex(); 
-						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p4; EmitVertex(); 
-						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p7; EmitVertex(); 
-						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p3; EmitVertex(); 
-						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p5; EmitVertex(); 
 						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p1; EmitVertex(); 
 						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p2; EmitVertex(); 
 						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p3; EmitVertex(); 
-						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p4; EmitVertex();
+						valueToFrag = valueOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p4; EmitVertex(); 
     
             EndPrimitive();
 
@@ -254,42 +238,33 @@ const ShaderStageSpecification SPHERE_COLOR_BILLBOARD_GEOM_SHADER = {
         uniform float u_pointRadius;
 				out vec3 sphereCenterView;
         flat out vec3 colorToFrag;
+        
+        void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
 
         void main()   {
 						
-						// Compute corners of cube
-					  vec4 center = u_projMatrix * gl_in[0].gl_Position;
-						vec4 dx = u_projMatrix * vec4(u_pointRadius, 0., 0., 0.);
-						vec4 dy = u_projMatrix * vec4(0., u_pointRadius, 0., 0.);
-						vec4 dz = u_projMatrix * vec4(0., 0., u_pointRadius, 0.);
-						vec4 p1 = center - dx - dy - dz;
-						vec4 p2 = center + dx - dy - dz;
-						vec4 p3 = center - dx + dy - dz;
-						vec4 p4 = center + dx + dy - dz;
-						vec4 p5 = center - dx - dy + dz;
-						vec4 p6 = center + dx - dy + dz;
-						vec4 p7 = center - dx + dy + dz;
-						vec4 p8 = center + dx + dy + dz;
+            // Construct the 4 corners of a billboard quad, facing the camera
+            vec3 dirToCam = normalize(-gl_in[0].gl_Position.xyz);
+            vec3 basisX;
+            vec3 basisY;
+            buildTangentBasis(dirToCam, basisX, basisY);
+            vec4 center = u_projMatrix * (gl_in[0].gl_Position + vec4(dirToCam, 0.) * u_pointRadius);
+            vec4 dx = u_projMatrix * (vec4(basisX, 0.) * u_pointRadius);
+            vec4 dy = u_projMatrix * (vec4(basisY, 0.) * u_pointRadius);
+						vec4 p1 = center - dx - dy;
+						vec4 p2 = center + dx - dy;
+						vec4 p3 = center - dx + dy;
+						vec4 p4 = center + dx + dy;
 						
 						// Other data to emit		
 						vec3 sphereCenterViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
 						vec3 colorOut = color[0];
 		
 						// Emit the vertices as a triangle strip
-						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p7; EmitVertex(); 
-						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p8; EmitVertex(); 
-						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p5; EmitVertex(); 
-						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p6; EmitVertex(); 
-						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p2; EmitVertex(); 
-						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p8; EmitVertex(); 
-						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p4; EmitVertex(); 
-						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p7; EmitVertex(); 
-						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p3; EmitVertex(); 
-						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p5; EmitVertex(); 
 						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p1; EmitVertex(); 
 						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p2; EmitVertex(); 
 						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p3; EmitVertex(); 
-						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p4; EmitVertex();
+						colorToFrag = colorOut; sphereCenterView = sphereCenterViewVal;	gl_Position = p4; EmitVertex(); 
     
             EndPrimitive();
 
