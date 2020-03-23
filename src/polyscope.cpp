@@ -362,7 +362,7 @@ void buildPolyscopeGui() {
 
   ImGui::Begin("Polyscope", &showPolyscopeWindow);
 
-  if (ImGui::Button("Reset view")) {
+  if (ImGui::Button("Reset View")) {
     view::flyToHomeView();
   }
   ImGui::SameLine();

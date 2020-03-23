@@ -122,33 +122,40 @@ ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages
 void Engine::buildEngineGui() {
   // == Display
   ImGui::PushItemWidth(120);
-  ImGui::Text("Background");
-  ImGui::SameLine();
+  // ImGui::Text("Background");
+  // ImGui::SameLine();
   static std::string displayBackgroundName = "None";
-  if (ImGui::BeginCombo("##Background", displayBackgroundName.c_str())) {
-    if (ImGui::Selectable("None", background == BackgroundView::None)) {
-      background = BackgroundView::None;
-      ImGui::SetItemDefaultFocus();
-      displayBackgroundName = "None";
+  // if (ImGui::BeginCombo("##Background", displayBackgroundName.c_str())) {
+  // if (ImGui::Selectable("None", background == BackgroundView::None)) {
+  // background = BackgroundView::None;
+  // ImGui::SetItemDefaultFocus();
+  // displayBackgroundName = "None";
+  //}
+  // ImGui::EndCombo();
+  //}
+
+  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  if (ImGui::TreeNode("Tone Mapping")) {
+    ImGui::SliderFloat("exposure", &exposure, 0.1, 2.0, "%.3f", 2.);
+    ImGui::SliderFloat("white level", &whiteLevel, 0.0, 2.0, "%.3f", 2.);
+    ImGui::SliderFloat("gamma", &gamma, 0.5, 3.0, "%.3f", 2.);
+
+    ImGui::TreePop();
+  }
+
+  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  if (ImGui::TreeNode("Anti-Aliasing")) {
+    if (ImGui::InputInt("MSAA (fast)", &msaaFactor, 1)) {
+      msaaFactor = std::min(msaaFactor, 32);
+      msaaFactor = std::max(msaaFactor, 1);
+      updateWindowSize(true);
     }
-    ImGui::EndCombo();
-  }
-
-  ImGui::Text("Tone mapping");
-  ImGui::SliderFloat("exposure", &exposure, 0.1, 2.0, "%.3f", 2.);
-  ImGui::SliderFloat("white level", &whiteLevel, 0.0, 2.0, "%.3f", 2.);
-  ImGui::SliderFloat("gamma", &gamma, 0.5, 3.0, "%.3f", 2.);
-
-  ImGui::Text("Anti-aliasing");
-  if (ImGui::InputInt("MSAA (fast)", &msaaFactor, 1)) {
-    msaaFactor = std::min(msaaFactor, 32);
-    msaaFactor = std::max(msaaFactor, 1);
-    updateWindowSize(true);
-  }
-  if (ImGui::InputInt("SSAA (pretty)", &ssaaFactor, 1)) {
-    ssaaFactor = std::min(ssaaFactor, 4);
-    ssaaFactor = std::max(ssaaFactor, 1);
-    updateWindowSize(true);
+    if (ImGui::InputInt("SSAA (pretty)", &ssaaFactor, 1)) {
+      ssaaFactor = std::min(ssaaFactor, 4);
+      ssaaFactor = std::max(ssaaFactor, 1);
+      updateWindowSize(true);
+    }
+    ImGui::TreePop();
   }
 
   groundPlane.buildGui();
