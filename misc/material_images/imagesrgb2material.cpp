@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
   FILE* out = open_or_exit(symfile, "w");
   fprintf(out, "#include <array>\n");
 
-  fprintf(out, "#include \"polyscope/render/materials.h\"\n");
+  fprintf(out, "#include \"polyscope/render/material_defs.h\"\n");
   fprintf(out, "namespace polyscope { \n");
   fprintf(out, "namespace render { \n\n");
   
