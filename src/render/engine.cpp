@@ -2,6 +2,7 @@
 #include "polyscope/render/engine.h"
 
 #include "polyscope/polyscope.h"
+#include "polyscope/render/colormap_defs.h"
 #include "polyscope/render/material_defs.h"
 #include "polyscope/render/shaders.h"
 
@@ -196,6 +197,29 @@ void Engine::buildEngineGui() {
       ImGui::TreePop();
     }
 
+    if (ImGui::TreeNode("Color Maps")) {
+
+      ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+      if (ImGui::TreeNode("Load color map")) {
+
+        size_t buffLen = 512;
+        static std::vector<char> buffName(buffLen);
+        ImGui::InputText("Color map name", &buffName[0], buffLen);
+        static std::vector<char> buffFile(buffLen);
+        ImGui::InputText("File name", &buffFile[0], buffLen);
+
+        if (ImGui::Button("Load")) {
+          std::string filename(&buffFile[0]);
+          std::string cmapName(&buffName[0]);
+          polyscope::loadColorMap(cmapName, filename);
+        }
+
+        ImGui::TreePop();
+      }
+
+      ImGui::TreePop();
+    }
+
     groundPlane.buildGui();
 
     ImGui::TreePop();
@@ -204,9 +228,7 @@ void Engine::buildEngineGui() {
 
 void Engine::setBackgroundColor(glm::vec3 c) { sceneBuffer->clearColor = c; }
 
-void Engine::setBackgroundAlpha(float newAlpha) {
-  sceneBuffer->clearAlpha = newAlpha;
-}
+void Engine::setBackgroundAlpha(float newAlpha) { sceneBuffer->clearAlpha = newAlpha; }
 
 void Engine::setCurrentViewport(glm::vec4 val) { currViewport = val; }
 glm::vec4 Engine::getCurrentViewport() { return currViewport; }
@@ -508,8 +530,8 @@ void Engine::loadDefaultMaterial(std::string name) {
   */
 
   for (int i = 0; i < 4; i++) {
-    int width, height, nrComponents;
-    float* data = stbi_loadf_from_memory(buff[i], buffSize[i], &width, &height, &nrComponents, 3);
+    int width, height, nComp;
+    float* data = stbi_loadf_from_memory(buff[i], buffSize[i], &width, &height, &nComp, 3);
     if (!data) polyscope::error("failed to load material");
     newMaterial->textureBuffers[i] = loadMaterialTexture(data, width, height);
     stbi_image_free(data);
@@ -534,8 +556,8 @@ void Engine::loadColorableMaterial(std::string matName, std::array<std::string, 
 
   // Load each of the four components
   for (int i = 0; i < 4; i++) {
-    int width, height, nrComponents;
-    float* data = stbi_loadf(filenames[i].c_str(), &width, &height, &nrComponents, 3);
+    int width, height, nComp;
+    float* data = stbi_loadf(filenames[i].c_str(), &width, &height, &nComp, 3);
     if (!data) {
       polyscope::warning("failed to load material from " + filenames[i]);
       materials.pop_back();
@@ -562,8 +584,8 @@ void Engine::loadStaticMaterial(std::string matName, std::string filename) {
 
   // Load each of the four components
   for (int i = 0; i < 4; i++) {
-    int width, height, nrComponents;
-    float* data = stbi_loadf(filename.c_str(), &width, &height, &nrComponents, 3);
+    int width, height, nComp;
+    float* data = stbi_loadf(filename.c_str(), &width, &height, &nComp, 3);
     if (!data) {
       polyscope::warning("failed to load material from " + filename);
       materials.pop_back();
@@ -608,26 +630,93 @@ Material& Engine::getMaterial(const std::string& name) {
   return *materials[0];
 }
 
+void Engine::loadColorMap(std::string cmapName, std::string filename) {
+
+  for (auto& cmap : colorMaps) {
+    if (cmapName == cmap->name) {
+      polyscope::warning("color map named " + cmapName + " already exists");
+    }
+  }
+
+  // Load the image
+  int width, height, nComp;
+  unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nComp, 3);
+  if (!data) {
+    polyscope::warning("failed to load colormap from " + filename);
+    return;
+  }
+
+  // Parse the data in to a float array
+  // (assumes colormap is oriented horizontally)
+  std::vector<glm::vec3> vals;
+  int readRow = height / 2;
+  for (int iCol = 0; iCol < width; iCol++) {
+    int pixInd = (readRow * width + iCol) * 3;
+    unsigned char pR = data[pixInd + 0];
+    unsigned char pG = data[pixInd + 1];
+    unsigned char pB = data[pixInd + 2];
+    glm::vec3 val = {pR / 255., pG / 255., pB / 255.};
+    vals.push_back(val);
+  }
+
+  stbi_image_free(data);
+
+  ValueColorMap* newMap = new ValueColorMap();
+  newMap->name = cmapName;
+  newMap->values = vals;
+  colorMaps.emplace_back(newMap);
+}
+
 const ValueColorMap& Engine::getColorMap(const std::string& name) {
-  for (const ValueColorMap* cmap : colorMaps) {
+  for (auto& cmap : colorMaps) {
     if (name == cmap->name) return *cmap;
   }
 
   throw std::runtime_error("unrecognized colormap name: " + name);
-  return CM_VIRIDIS;
+  return *colorMaps[0];
+}
+
+void Engine::loadDefaultColorMap(std::string name) {
+
+  const std::vector<glm::vec3>* buff = nullptr;
+  if (name == "viridis") {
+    buff = &CM_VIRIDIS;
+  } else if (name == "coolwarm") {
+    buff = &CM_COOLWARM;
+  } else if (name == "blues") {
+    buff = &CM_BLUES;
+  } else if (name == "reds") {
+    buff = &CM_REDS;
+  } else if (name == "pink-green") {
+    buff = &CM_PIYG;
+  } else if (name == "phase") {
+    buff = &CM_PHASE;
+  } else if (name == "spectral") {
+    buff = &CM_SPECTRAL;
+  } else if (name == "rainbow") {
+    buff = &CM_RAINBOW;
+  } else if (name == "jet") {
+    buff = &CM_JET;
+  } else {
+    throw std::runtime_error("unrecognized default colormap " + name);
+  }
+
+  ValueColorMap* newMap = new ValueColorMap();
+  newMap->name = name;
+  newMap->values = *buff;
+  colorMaps.emplace_back(newMap);
 }
 
 void Engine::loadDefaultColorMaps() {
-  // TODO store these in buffers like the materials
-  colorMaps.push_back(&CM_VIRIDIS);
-  colorMaps.push_back(&CM_COOLWARM);
-  colorMaps.push_back(&CM_BLUES);
-  colorMaps.push_back(&CM_REDS);
-  colorMaps.push_back(&CM_PIYG);
-  colorMaps.push_back(&CM_PHASE);
-  colorMaps.push_back(&CM_SPECTRAL);
-  colorMaps.push_back(&CM_RAINBOW);
-  colorMaps.push_back(&CM_JET);
+  loadDefaultColorMap("viridis");
+  loadDefaultColorMap("coolwarm");
+  loadDefaultColorMap("blues");
+  loadDefaultColorMap("reds");
+  loadDefaultColorMap("pink-green");
+  loadDefaultColorMap("phase");
+  loadDefaultColorMap("spectral");
+  loadDefaultColorMap("rainbow");
+  loadDefaultColorMap("jet");
 }
 
 

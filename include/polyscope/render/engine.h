@@ -402,8 +402,9 @@ public:
   void loadStaticMaterial(std::string matName, std::string filename);
 
   // Color maps
-  std::vector<const ValueColorMap*> colorMaps;
+  std::vector<std::unique_ptr<ValueColorMap>> colorMaps;
   const ValueColorMap& getColorMap(const std::string& name);
+  void loadColorMap(std::string cmapName, std::string filename);
 
 protected:
   // TODO Manage a cache of compiled shaders?
@@ -420,6 +421,7 @@ protected:
   void loadDefaultMaterials();
   void loadDefaultMaterial(std::string name);
   std::shared_ptr<TextureBuffer> loadMaterialTexture(float* data, int width, int height);
+  void loadDefaultColorMap(std::string name);
   void loadDefaultColorMaps();
 
   // Internal windowing and engine details

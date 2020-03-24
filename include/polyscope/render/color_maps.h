@@ -5,9 +5,11 @@
 
 #include "polyscope/color_management.h"
 
-#define COLORMAP_DATA_LENGTH 500
-
 namespace polyscope {
+
+// Load a new colormap from a (horizontally oriented) image file
+void loadColorMap(std::string cmapName, std::string filename);
+
 namespace render {
 
 // Helper to build a ImGUI dropdown to select color maps. Returns true if changed.
@@ -68,7 +70,7 @@ struct ValueColorMap {
 
     // Find the two nearest indices in to the colormap lookup table, then
     // return a linear blend between them.
-    double scaledVal = val * (COLORMAP_DATA_LENGTH - 1);
+    double scaledVal = val * (values.size() - 1);
     double lowerVal = std::floor(scaledVal);
     double upperBlendVal = scaledVal - lowerVal;
     unsigned int lowerInd = static_cast<unsigned int>(lowerVal);
@@ -78,19 +80,6 @@ struct ValueColorMap {
   }
 };
 
-
-// === the default colormaps themselves
-// (stored in color_maps.cpp)
-
-extern const ValueColorMap CM_VIRIDIS;
-extern const ValueColorMap CM_COOLWARM;
-extern const ValueColorMap CM_BLUES;
-extern const ValueColorMap CM_PIYG;
-extern const ValueColorMap CM_SPECTRAL;
-extern const ValueColorMap CM_RAINBOW;
-extern const ValueColorMap CM_JET;
-extern const ValueColorMap CM_REDS;
-extern const ValueColorMap CM_PHASE;
 
 } // namespace render
 } // namespace polyscope
