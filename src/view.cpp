@@ -27,7 +27,7 @@ const double defaultFov = 45.;
 double fov = defaultFov;
 double nearClipRatio = defaultNearClipRatio;
 double farClipRatio = defaultFarClipRatio;
-std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 1.0}};
+std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 0.0}};
 
 glm::mat4x4 viewMat;
 

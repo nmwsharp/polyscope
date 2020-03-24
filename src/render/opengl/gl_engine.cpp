@@ -1359,7 +1359,7 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
 }
 
 void GLShaderProgram::setTextureFromColormap(std::string name, const std::string& colormapName, bool allowUpdate) {
-   const ValueColorMap& colormap = render::engine->getColorMap(colormapName);
+  const ValueColorMap& colormap = render::engine->getColorMap(colormapName);
 
   // TODO switch to global shared buffers from colormap
 
@@ -1806,8 +1806,8 @@ void GLEngine::setBlendMode(BlendMode newMode) {
     glBlendFunc(GL_ZERO, GL_ZERO);
     break;
   case BlendMode::Disable:
-    glDisable(GL_DEPTH_TEST);
-    glDepthMask(GL_FALSE); // doesn't actually matter
+    glDisable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // doesn't actually matter
     break;
   }
 }

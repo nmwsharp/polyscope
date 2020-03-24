@@ -120,85 +120,92 @@ ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages
 }
 
 void Engine::buildEngineGui() {
-  // == Display
-  ImGui::PushItemWidth(120);
-  // ImGui::Text("Background");
-  // ImGui::SameLine();
-  static std::string displayBackgroundName = "None";
-  // if (ImGui::BeginCombo("##Background", displayBackgroundName.c_str())) {
-  // if (ImGui::Selectable("None", background == BackgroundView::None)) {
-  // background = BackgroundView::None;
-  // ImGui::SetItemDefaultFocus();
-  // displayBackgroundName = "None";
-  //}
-  // ImGui::EndCombo();
-  //}
 
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-  if (ImGui::TreeNode("Tone Mapping")) {
-    ImGui::SliderFloat("exposure", &exposure, 0.1, 2.0, "%.3f", 2.);
-    ImGui::SliderFloat("white level", &whiteLevel, 0.0, 2.0, "%.3f", 2.);
-    ImGui::SliderFloat("gamma", &gamma, 0.5, 3.0, "%.3f", 2.);
+  if (ImGui::TreeNode("Appearance")) {
 
-    ImGui::TreePop();
-  }
+    // == Display
+    ImGui::PushItemWidth(120);
+    // ImGui::Text("Background");
+    // ImGui::SameLine();
+    static std::string displayBackgroundName = "None";
+    // if (ImGui::BeginCombo("##Background", displayBackgroundName.c_str())) {
+    // if (ImGui::Selectable("None", background == BackgroundView::None)) {
+    // background = BackgroundView::None;
+    // ImGui::SetItemDefaultFocus();
+    // displayBackgroundName = "None";
+    //}
+    // ImGui::EndCombo();
+    //}
 
-  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-  if (ImGui::TreeNode("Anti-Aliasing")) {
-    if (ImGui::InputInt("MSAA (fast)", &msaaFactor, 1)) {
-      msaaFactor = std::min(msaaFactor, 32);
-      msaaFactor = std::max(msaaFactor, 1);
-      updateWindowSize(true);
-    }
-    if (ImGui::InputInt("SSAA (pretty)", &ssaaFactor, 1)) {
-      ssaaFactor = std::min(ssaaFactor, 4);
-      ssaaFactor = std::max(ssaaFactor, 1);
-      updateWindowSize(true);
-    }
-    ImGui::TreePop();
-  }
-
-  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-  if (ImGui::TreeNode("Materials")) {
+    ImGui::ColorEdit4("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
 
     ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-    if (ImGui::TreeNode("Load material")) {
+    if (ImGui::TreeNode("Tone Mapping")) {
+      ImGui::SliderFloat("exposure", &exposure, 0.1, 2.0, "%.3f", 2.);
+      ImGui::SliderFloat("white level", &whiteLevel, 0.0, 2.0, "%.3f", 2.);
+      ImGui::SliderFloat("gamma", &gamma, 0.5, 3.0, "%.3f", 2.);
 
-      size_t buffLen = 512;
-      static std::vector<char> buffName(buffLen);
-      ImGui::InputText("Material name", &buffName[0], buffLen);
-      static std::vector<char> buffFile(buffLen);
-      ImGui::InputText("File name", &buffFile[0], buffLen);
+      ImGui::TreePop();
+    }
 
-      if (ImGui::Button("Load static material")) {
-        std::string filename(&buffFile[0]);
-        std::string matName(&buffName[0]);
-        polyscope::loadStaticMaterial(matName, filename);
+    ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+    if (ImGui::TreeNode("Anti-Aliasing")) {
+      if (ImGui::InputInt("MSAA (fast)", &msaaFactor, 1)) {
+        msaaFactor = std::min(msaaFactor, 32);
+        msaaFactor = std::max(msaaFactor, 1);
+        updateWindowSize(true);
       }
+      if (ImGui::InputInt("SSAA (pretty)", &ssaaFactor, 1)) {
+        ssaaFactor = std::min(ssaaFactor, 4);
+        ssaaFactor = std::max(ssaaFactor, 1);
+        updateWindowSize(true);
+      }
+      ImGui::TreePop();
+    }
 
-      if (ImGui::Button("Load colorable material")) {
-        std::string filename(&buffFile[0]);
-        std::string matName(&buffName[0]);
-        std::string filebase, fileext;
-        std::tie(filebase, fileext) = splitExt(filename);
-        polyscope::loadColorableMaterial(matName, filebase, fileext);
+    ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+    if (ImGui::TreeNode("Materials")) {
+
+      ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+      if (ImGui::TreeNode("Load material")) {
+
+        size_t buffLen = 512;
+        static std::vector<char> buffName(buffLen);
+        ImGui::InputText("Material name", &buffName[0], buffLen);
+        static std::vector<char> buffFile(buffLen);
+        ImGui::InputText("File name", &buffFile[0], buffLen);
+
+        if (ImGui::Button("Load static material")) {
+          std::string filename(&buffFile[0]);
+          std::string matName(&buffName[0]);
+          polyscope::loadStaticMaterial(matName, filename);
+        }
+
+        if (ImGui::Button("Load colorable material")) {
+          std::string filename(&buffFile[0]);
+          std::string matName(&buffName[0]);
+          std::string filebase, fileext;
+          std::tie(filebase, fileext) = splitExt(filename);
+          polyscope::loadColorableMaterial(matName, filebase, fileext);
+        }
+
+        ImGui::TreePop();
       }
 
       ImGui::TreePop();
     }
 
+    groundPlane.buildGui();
+
     ImGui::TreePop();
   }
-
-  groundPlane.buildGui();
 }
 
-void Engine::setBackgroundColor(glm::vec3) {
-  // TODO
-}
+void Engine::setBackgroundColor(glm::vec3 c) { sceneBuffer->clearColor = c; }
 
 void Engine::setBackgroundAlpha(float newAlpha) {
-  // TODO
+  sceneBuffer->clearAlpha = newAlpha;
 }
 
 void Engine::setCurrentViewport(glm::vec4 val) { currViewport = val; }
@@ -322,7 +329,7 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     sceneBuffer->addDepthBuffer(sceneDepth);
     sceneBuffer->setDrawBuffers();
 
-    sceneBuffer->clearColor = glm::vec3{0., 0., 0.};
+    sceneBuffer->clearColor = glm::vec3{1., 1., 1.};
     sceneBuffer->clearAlpha = 0.0;
   }
 

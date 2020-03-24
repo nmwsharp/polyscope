@@ -192,7 +192,9 @@ void GroundPlane::draw() {
 
 
   setUniforms();
+  render::engine->setBlendMode(BlendMode::Over);
   groundPlaneProgram->draw();
+  render::engine->setBlendMode(BlendMode::Disable);
 }
 
 void GroundPlane::buildGui() {

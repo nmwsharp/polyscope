@@ -326,7 +326,7 @@ void processInputEvents() {
 void renderScene() {
 
   render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
-  render::engine->setBackgroundAlpha(0.0);
+  render::engine->setBackgroundAlpha(view::bgColor[3]);
   render::engine->clearSceneBuffer();
 
   if (!render::engine->bindSceneBuffer()) return;
@@ -344,8 +344,8 @@ void renderScene() {
   }
 
   drawStructures();
-  
-	render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
+
+  render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
 }
 
 void renderSceneToScreen() {
@@ -403,24 +403,19 @@ void buildPolyscopeGui() {
   view::buildViewGui();
 
   // Appearance options tree
-  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-  if (ImGui::TreeNode("Appearance")) {
-    ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
-    render::engine->buildEngineGui();
-    ImGui::TreePop();
-  }
+  render::engine->buildEngineGui();
 
   // Debug options tree
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Debug")) {
     ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
     ImGui::Checkbox("Always redraw", &options::alwaysRedraw);
-	
-		static bool showDebugTextures = false;
+
+    static bool showDebugTextures = false;
     ImGui::Checkbox("Show debug textures", &showDebugTextures);
-		if(showDebugTextures) {
-			render::engine->showTextureInImGuiWindow("Scene Final", render::engine->sceneColorFinal.get());
-		}
+    if (showDebugTextures) {
+      render::engine->showTextureInImGuiWindow("Scene Final", render::engine->sceneColorFinal.get());
+    }
 
     ImGui::TreePop();
   }
