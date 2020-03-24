@@ -397,8 +397,8 @@ public:
   // Materials
   std::vector<std::unique_ptr<Material>> materials;
   Material& getMaterial(const std::string& name);
-  void loadColorableMaterial(std::string matName, std::array<std::string,4> filenames);
-  void loadColorableMaterial(std::string matName, std::string filenameBase, std::string filenameExt);
+  void loadBlendableMaterial(std::string matName, std::array<std::string,4> filenames);
+  void loadBlendableMaterial(std::string matName, std::string filenameBase, std::string filenameExt);
   void loadStaticMaterial(std::string matName, std::string filename);
 
   // Color maps

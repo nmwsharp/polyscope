@@ -183,12 +183,12 @@ void Engine::buildEngineGui() {
           polyscope::loadStaticMaterial(matName, filename);
         }
 
-        if (ImGui::Button("Load colorable material")) {
+        if (ImGui::Button("Load blendable material")) {
           std::string filename(&buffFile[0]);
           std::string matName(&buffName[0]);
           std::string filebase, fileext;
           std::tie(filebase, fileext) = splitExt(filename);
-          polyscope::loadColorableMaterial(matName, filebase, fileext);
+          polyscope::loadBlendableMaterial(matName, filebase, fileext);
         }
 
         ImGui::TreePop();
@@ -540,7 +540,7 @@ void Engine::loadDefaultMaterial(std::string name) {
   materials.emplace_back(newMaterial);
 }
 
-void Engine::loadColorableMaterial(std::string matName, std::array<std::string, 4> filenames) {
+void Engine::loadBlendableMaterial(std::string matName, std::array<std::string, 4> filenames) {
 
   for (auto& m : materials) {
     if (m->name == matName) {
@@ -596,11 +596,11 @@ void Engine::loadStaticMaterial(std::string matName, std::string filename) {
   }
 }
 
-void Engine::loadColorableMaterial(std::string matName, std::string filenameBase, std::string filenameExt) {
+void Engine::loadBlendableMaterial(std::string matName, std::string filenameBase, std::string filenameExt) {
 
   std::array<std::string, 4> names = {filenameBase + "_r" + filenameExt, filenameBase + "_g" + filenameExt,
                                       filenameBase + "_b" + filenameExt, filenameBase + "_k" + filenameExt};
-  loadColorableMaterial(matName, names);
+  loadBlendableMaterial(matName, names);
 }
 
 std::shared_ptr<TextureBuffer> Engine::loadMaterialTexture(float* data, int width, int height) {

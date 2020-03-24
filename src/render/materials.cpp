@@ -34,11 +34,11 @@ bool buildMaterialOptionsGui(std::string& mat) {
 
 } // namespace render
 
-void loadColorableMaterial(std::string matName, std::array<std::string, 4> filenames) {
-  render::engine->loadColorableMaterial(matName, filenames);
+void loadBlendableMaterial(std::string matName, std::array<std::string, 4> filenames) {
+  render::engine->loadBlendableMaterial(matName, filenames);
 }
-void loadColorableMaterial(std::string matName, std::string filenameBase, std::string filenameExt) {
-  render::engine->loadColorableMaterial(matName, filenameBase, filenameExt);
+void loadBlendableMaterial(std::string matName, std::string filenameBase, std::string filenameExt) {
+  render::engine->loadBlendableMaterial(matName, filenameBase, filenameExt);
 }
 void loadStaticMaterial(std::string matName, std::string filename) {
   render::engine->loadStaticMaterial(matName, filename);
