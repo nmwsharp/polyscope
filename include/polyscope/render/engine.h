@@ -387,8 +387,8 @@ public:
   // Options
   BackgroundView background = BackgroundView::None;
 
-  float exposure = 0.9;
-  float whiteLevel = 0.7;
+  float exposure = 1.0;
+  float whiteLevel = 0.75;
   float gamma = 2.2;
   
   

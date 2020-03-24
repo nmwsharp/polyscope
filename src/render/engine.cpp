@@ -409,24 +409,28 @@ void Engine::loadDefaultMaterial(std::string name) {
 
   // clang-format off
   if(name == "clay") {
+    newMaterial->supportsRGB = true;
     buff[0] = &bindata_clay_r[0]; buffSize[0] = bindata_clay_r.size();
     buff[1] = &bindata_clay_g[0]; buffSize[1] = bindata_clay_g.size();
     buff[2] = &bindata_clay_b[0]; buffSize[2] = bindata_clay_b.size();
     buff[3] = &bindata_clay_k[0]; buffSize[3] = bindata_clay_k.size();
   }
   else if(name == "wax") {
+    newMaterial->supportsRGB = true;
     buff[0] = &bindata_wax_r[0]; buffSize[0] = bindata_wax_r.size();
     buff[1] = &bindata_wax_g[0]; buffSize[1] = bindata_wax_g.size();
     buff[2] = &bindata_wax_b[0]; buffSize[2] = bindata_wax_b.size();
     buff[3] = &bindata_wax_k[0]; buffSize[3] = bindata_wax_k.size();
   }
   else if(name == "candy") {
+    newMaterial->supportsRGB = true;
     buff[0] = &bindata_candy_r[0]; buffSize[0] = bindata_candy_r.size();
     buff[1] = &bindata_candy_g[0]; buffSize[1] = bindata_candy_g.size();
     buff[2] = &bindata_candy_b[0]; buffSize[2] = bindata_candy_b.size();
     buff[3] = &bindata_candy_k[0]; buffSize[3] = bindata_candy_k.size();
   }
   else if(name == "flat") {
+    newMaterial->supportsRGB = true;
     buff[0] = &bindata_flat_r[0]; buffSize[0] = bindata_flat_r.size();
     buff[1] = &bindata_flat_g[0]; buffSize[1] = bindata_flat_g.size();
     buff[2] = &bindata_flat_b[0]; buffSize[2] = bindata_flat_b.size();
@@ -470,6 +474,7 @@ void Engine::loadColorableMaterial(std::string matName, std::array<std::string, 
 
   Material* newMaterial = new Material();
   newMaterial->name = matName;
+  newMaterial->supportsRGB = true;
   materials.emplace_back(newMaterial);
 
   // Load each of the four components
@@ -497,6 +502,7 @@ void Engine::loadStaticMaterial(std::string matName, std::string filename) {
 
   Material* newMaterial = new Material();
   newMaterial->name = matName;
+  newMaterial->supportsRGB = false;
   materials.emplace_back(newMaterial);
 
   // Load each of the four components

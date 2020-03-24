@@ -488,6 +488,9 @@ void callback() {
     polyscope::warning("hi");
   }
 
+  static std::vector<char>vec(100);
+  ImGui::InputText("test", &vec[0], 100);
+
 
   if (ImGui::Button("Load colorable material")) {
     std::string filename = polyscope::promptForFilename();

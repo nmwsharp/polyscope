@@ -16,7 +16,11 @@ bool buildMaterialOptionsGui(std::string& mat) {
   if (ImGui::BeginMenu("Material")) {
     for (const std::unique_ptr<Material>& o : render::engine->materials) {
       bool selected = (o->name == mat);
-      if (ImGui::MenuItem(o->name.c_str(), NULL, selected)) {
+      std::string fancyName = o->name;
+      if(o->supportsRGB) {
+        fancyName += " (rgb)";
+      }
+      if (ImGui::MenuItem(fancyName.c_str(), NULL, selected)) {
         mat = o->name;
         ImGui::EndMenu();
         return true;
