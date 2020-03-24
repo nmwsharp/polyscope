@@ -2,8 +2,8 @@
 #pragma once
 
 #include <array>
-#include <map>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -40,4 +40,12 @@ bool buildMaterialOptionsGui(std::string& mat);
 void loadDefaultMaterials();
 
 } // namespace render
+
+
+// Load new materials from file
+void loadColorableMaterial(std::string matName, std::array<std::string, 4> filenames);
+void loadColorableMaterial(std::string matName, std::string filenameBase, std::string filenameExt);
+void loadStaticMaterial(std::string matName, std::string filename);
+
+
 } // namespace polyscope

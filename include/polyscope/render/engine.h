@@ -397,6 +397,9 @@ public:
   // Materials
   std::vector<std::unique_ptr<Material>> materials;
   Material& getMaterial(const std::string& name);
+  void loadColorableMaterial(std::string matName, std::array<std::string,4> filenames);
+  void loadColorableMaterial(std::string matName, std::string filenameBase, std::string filenameExt);
+  void loadStaticMaterial(std::string matName, std::string filename);
 
   // Color maps
   std::vector<const ValueColorMap*> colorMaps;
@@ -416,6 +419,7 @@ protected:
   std::vector<glm::vec4> distantCubeCoords();     // cube with vertices at infinity
   void loadDefaultMaterials();
   void loadDefaultMaterial(std::string name);
+  std::shared_ptr<TextureBuffer> loadMaterialTexture(float* data, int width, int height);
   void loadDefaultColorMaps();
 
   // Internal windowing and engine details

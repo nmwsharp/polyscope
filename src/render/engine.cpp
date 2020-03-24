@@ -451,13 +451,79 @@ void Engine::loadDefaultMaterial(std::string name) {
   for (int i = 0; i < 4; i++) {
     int width, height, nrComponents;
     float* data = stbi_loadf_from_memory(buff[i], buffSize[i], &width, &height, &nrComponents, 3);
-    if (!data) polyscope::error("failed to load environment map");
-    newMaterial->textureBuffers[i] = engine->generateTextureBuffer(TextureFormat::RGB16F, width, height, data);
-    newMaterial->textureBuffers[i]->setFilterMode(FilterMode::Linear);
+    if (!data) polyscope::error("failed to load material");
+    newMaterial->textureBuffers[i] = loadMaterialTexture(data, width, height);
     stbi_image_free(data);
   }
 
   materials.emplace_back(newMaterial);
+}
+
+void Engine::loadColorableMaterial(std::string matName, std::array<std::string, 4> filenames) {
+
+  for (auto& m : materials) {
+    if (m->name == matName) {
+      polyscope::warning("material named " + matName + " already exists");
+      return;
+    }
+  }
+
+  Material* newMaterial = new Material();
+  newMaterial->name = matName;
+  materials.emplace_back(newMaterial);
+
+  // Load each of the four components
+  for (int i = 0; i < 4; i++) {
+    int width, height, nrComponents;
+    float* data = stbi_loadf(filenames[i].c_str(), &width, &height, &nrComponents, 3);
+    if (!data) {
+      polyscope::warning("failed to load material from " + filenames[i]);
+      materials.pop_back();
+      return;
+    }
+    newMaterial->textureBuffers[i] = loadMaterialTexture(data, width, height);
+    stbi_image_free(data);
+  }
+}
+
+void Engine::loadStaticMaterial(std::string matName, std::string filename) {
+
+  for (auto& m : materials) {
+    if (m->name == matName) {
+      polyscope::warning("material named " + matName + " already exists");
+      return;
+    }
+  }
+
+  Material* newMaterial = new Material();
+  newMaterial->name = matName;
+  materials.emplace_back(newMaterial);
+
+  // Load each of the four components
+  for (int i = 0; i < 4; i++) {
+    int width, height, nrComponents;
+    float* data = stbi_loadf(filename.c_str(), &width, &height, &nrComponents, 3);
+    if (!data) {
+      polyscope::warning("failed to load material from " + filename);
+      materials.pop_back();
+      return;
+    }
+    newMaterial->textureBuffers[i] = loadMaterialTexture(data, width, height);
+    stbi_image_free(data);
+  }
+}
+
+void Engine::loadColorableMaterial(std::string matName, std::string filenameBase, std::string filenameExt) {
+
+  std::array<std::string, 4> names = {filenameBase + "_r" + filenameExt, filenameBase + "_g" + filenameExt,
+                                      filenameBase + "_b" + filenameExt, filenameBase + "_k" + filenameExt};
+  loadColorableMaterial(matName, names);
+}
+
+std::shared_ptr<TextureBuffer> Engine::loadMaterialTexture(float* data, int width, int height) {
+  std::shared_ptr<TextureBuffer> t = engine->generateTextureBuffer(TextureFormat::RGB16F, width, height, data);
+  t->setFilterMode(FilterMode::Linear);
+  return t;
 }
 
 void Engine::loadDefaultMaterials() {

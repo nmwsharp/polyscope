@@ -7,6 +7,7 @@
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_io.h"
+#include "polyscope/file_helpers.h"
 
 #include <iostream>
 #include <unordered_set>
@@ -464,9 +465,15 @@ void processFile(string filename) {
   }
 }
 
+std::tuple<std::string, std::string> splitString(std::string f) {
+  auto p = f.find_last_of(".");
+  return {f.substr(0, p), f.substr(p, std::string::npos)};
+}
+
 void callback() {
   static int numPoints = 2000;
   static float param = 3.14;
+  static int loadedMat = 1;
 
   ImGui::PushItemWidth(100);
 
@@ -479,6 +486,21 @@ void callback() {
   ImGui::SameLine();
   if (ImGui::Button("hi")) {
     polyscope::warning("hi");
+  }
+
+
+  if (ImGui::Button("Load colorable material")) {
+    std::string filename = polyscope::promptForFilename();
+    std::string matName = "loaded_color_mat_" + std::to_string(loadedMat++);
+    std::string filebase, fileext;
+    std::tie(filebase, fileext) = splitString(filename);
+    polyscope::loadColorableMaterial(matName, filebase, fileext);
+  }
+  
+  if (ImGui::Button("Load static material")) {
+    std::string filename = polyscope::promptForFilename();
+    std::string matName = "loaded_static_mat_" + std::to_string(loadedMat++);
+    polyscope::loadStaticMaterial(matName, filename);
   }
 
   ImGui::PopItemWidth();
