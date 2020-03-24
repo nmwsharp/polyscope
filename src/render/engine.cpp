@@ -158,6 +158,38 @@ void Engine::buildEngineGui() {
     ImGui::TreePop();
   }
 
+  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  if (ImGui::TreeNode("Materials")) {
+
+    ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+    if (ImGui::TreeNode("Load material")) {
+
+      size_t buffLen = 512;
+      static std::vector<char> buffName(buffLen);
+      ImGui::InputText("Material name", &buffName[0], buffLen);
+      static std::vector<char> buffFile(buffLen);
+      ImGui::InputText("File name", &buffFile[0], buffLen);
+
+      if (ImGui::Button("Load static material")) {
+        std::string filename(&buffFile[0]);
+        std::string matName(&buffName[0]);
+        polyscope::loadStaticMaterial(matName, filename);
+      }
+
+      if (ImGui::Button("Load colorable material")) {
+        std::string filename(&buffFile[0]);
+        std::string matName(&buffName[0]);
+        std::string filebase, fileext;
+        std::tie(filebase, fileext) = splitExt(filename);
+        polyscope::loadColorableMaterial(matName, filebase, fileext);
+      }
+
+      ImGui::TreePop();
+    }
+
+    ImGui::TreePop();
+  }
+
   groundPlane.buildGui();
 }
 

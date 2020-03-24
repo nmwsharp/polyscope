@@ -465,11 +465,6 @@ void processFile(string filename) {
   }
 }
 
-std::tuple<std::string, std::string> splitString(std::string f) {
-  auto p = f.find_last_of(".");
-  return {f.substr(0, p), f.substr(p, std::string::npos)};
-}
-
 void callback() {
   static int numPoints = 2000;
   static float param = 3.14;
@@ -486,24 +481,6 @@ void callback() {
   ImGui::SameLine();
   if (ImGui::Button("hi")) {
     polyscope::warning("hi");
-  }
-
-  static std::vector<char>vec(100);
-  ImGui::InputText("test", &vec[0], 100);
-
-
-  if (ImGui::Button("Load colorable material")) {
-    std::string filename = polyscope::promptForFilename();
-    std::string matName = "loaded_color_mat_" + std::to_string(loadedMat++);
-    std::string filebase, fileext;
-    std::tie(filebase, fileext) = splitString(filename);
-    polyscope::loadColorableMaterial(matName, filebase, fileext);
-  }
-  
-  if (ImGui::Button("Load static material")) {
-    std::string filename = polyscope::promptForFilename();
-    std::string matName = "loaded_static_mat_" + std::to_string(loadedMat++);
-    polyscope::loadStaticMaterial(matName, filename);
   }
 
   ImGui::PopItemWidth();
