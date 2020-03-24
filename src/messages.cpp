@@ -6,10 +6,6 @@
 
 #include <deque>
 
-using std::cout;
-using std::endl;
-using std::string;
-
 namespace polyscope {
 
 // Helpers
@@ -95,7 +91,7 @@ void buildWarningUI(std::string warningBaseString, std::string warningDetailStri
   ImGui::OpenPopup("WARNING");
 
 
-  string warningRepeatString = "";
+  std::string warningRepeatString = "";
   if (nRepeats > 0) {
     warningRepeatString = "(and " + std::to_string(nRepeats) + " similar warnings)";
   }
@@ -202,21 +198,29 @@ void buildWarningUI(std::string warningBaseString, std::string warningDetailStri
 } // namespace
 
 
-void info(std::string message) { cout << options::printPrefix << message << endl; }
+void info(std::string message) {
+  if (options::verbosity > 0) {
+    std::cout << options::printPrefix << message << std::endl;
+  }
+}
 
 void error(std::string message) {
-  std::cout << options::printPrefix << "[ERROR] " << message << std::endl;
+  if (options::verbosity > 0) {
+    std::cout << options::printPrefix << "[ERROR] " << message << std::endl;
+  }
 
   if (options::errorsThrowExceptions) {
     throw std::logic_error(options::printPrefix + message);
   }
-  
+
   auto func = std::bind(buildErrorUI, message, false);
   pushContext(func);
 }
 
 void terminatingError(std::string message) {
-  std::cout << options::printPrefix << "[ERROR] " << message << std::endl;
+  if (options::verbosity > 0) {
+    std::cout << options::printPrefix << "[ERROR] " << message << std::endl;
+  }
 
   auto func = std::bind(buildErrorUI, message, true);
   pushContext(func);
@@ -252,11 +256,10 @@ void showDelayedWarnings() {
     showingWarning = true;
     WarningMessage& currMessage = warningMessages.front();
 
-    std::cout << options::printPrefix << "[WARNING] " << currMessage.baseMessage << " --- "
-              << currMessage.detailMessage;
-    if (currMessage.repeatCount > 0) {
-      std::cout << " (and " << currMessage.repeatCount << " similar messages)." << std ::endl;
-    } else {
+    if (options::verbosity > 0) {
+      std::cout << options::printPrefix << "[WARNING] " << currMessage.baseMessage;
+      if (currMessage.detailMessage != "") std::cout << " --- " << currMessage.detailMessage;
+      if (currMessage.repeatCount > 0) std::cout << " (and " << currMessage.repeatCount << " similar messages).";
       std::cout << std ::endl;
     }
 
