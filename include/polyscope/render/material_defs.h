@@ -31,5 +31,11 @@ extern const std::array<unsigned char, 489> bindata_flat_g;
 extern const std::array<unsigned char, 489> bindata_flat_b;
 extern const std::array<unsigned char, 489> bindata_flat_k;
 
+extern const std::array<unsigned char, 18071> bindata_mud;
+extern const std::array<unsigned char, 20804> bindata_ceramic;
+extern const std::array<unsigned char, 17500> bindata_jade;
+extern const std::array<unsigned char, 29444> bindata_normal;
+
+
 } // namespace render
 } // namespace polyscope

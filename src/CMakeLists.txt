@@ -146,6 +146,10 @@ SET(SRCS
   render/bindata/bindata_wax.cpp
   render/bindata/bindata_candy.cpp
   render/bindata/bindata_flat.cpp
+  render/bindata/bindata_mud.cpp
+  render/bindata/bindata_ceramic.cpp
+  render/bindata/bindata_jade.cpp
+  render/bindata/bindata_normal.cpp
 )
 
 

@@ -435,7 +435,23 @@ void Engine::loadDefaultMaterial(std::string name) {
     buff[1] = &bindata_flat_g[0]; buffSize[1] = bindata_flat_g.size();
     buff[2] = &bindata_flat_b[0]; buffSize[2] = bindata_flat_b.size();
     buff[3] = &bindata_flat_k[0]; buffSize[3] = bindata_flat_k.size();
-  } else {
+  } 
+  else if(name == "mud") {
+    newMaterial->supportsRGB = false;
+    for(int i = 0; i < 4; i++) {buff[i] = &bindata_mud[0]; buffSize[i] = bindata_mud.size();}
+	}
+  else if(name == "ceramic") {
+    newMaterial->supportsRGB = false;
+    for(int i = 0; i < 4; i++) {buff[i] = &bindata_ceramic[0]; buffSize[i] = bindata_ceramic.size();}
+	}
+  else if(name == "jade") {
+    newMaterial->supportsRGB = false;
+    for(int i = 0; i < 4; i++) {buff[i] = &bindata_jade[0]; buffSize[i] = bindata_jade.size();}
+	}
+  else if(name == "normal") {
+    newMaterial->supportsRGB = false;
+    for(int i = 0; i < 4; i++) {buff[i] = &bindata_normal[0]; buffSize[i] = bindata_normal.size();}
+	} else {
     throw std::runtime_error("unrecognized default material name " + name);
   }
   // clang-format on
@@ -537,6 +553,10 @@ void Engine::loadDefaultMaterials() {
   loadDefaultMaterial("wax");
   loadDefaultMaterial("candy");
   loadDefaultMaterial("flat");
+  loadDefaultMaterial("mud");
+  loadDefaultMaterial("ceramic");
+  loadDefaultMaterial("jade");
+  loadDefaultMaterial("normal");
 }
 
 
