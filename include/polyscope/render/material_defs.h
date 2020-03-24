@@ -11,20 +11,20 @@ namespace render {
 
 // The arrays that hold the actual data. Stored as constants in render/bindata
 
-extern const std::array<unsigned char, 54634> bindata_clay_r;
-extern const std::array<unsigned char, 55016> bindata_clay_g;
-extern const std::array<unsigned char, 55586> bindata_clay_b;
-extern const std::array<unsigned char, 100903> bindata_clay_k;
+extern const std::array<unsigned char, 84934> bindata_clay_r;
+extern const std::array<unsigned char, 84889> bindata_clay_g;
+extern const std::array<unsigned char, 83655> bindata_clay_b;
+extern const std::array<unsigned char, 161312> bindata_clay_k;
 
-extern const std::array<unsigned char, 65962> bindata_wax_r;
-extern const std::array<unsigned char, 67015> bindata_wax_g;
-extern const std::array<unsigned char, 68106> bindata_wax_b;
-extern const std::array<unsigned char, 102435> bindata_wax_k;
+extern const std::array<unsigned char, 101212> bindata_wax_r;
+extern const std::array<unsigned char, 101157> bindata_wax_g;
+extern const std::array<unsigned char, 100294> bindata_wax_b;
+extern const std::array<unsigned char, 164233> bindata_wax_k;
 
-extern const std::array<unsigned char, 71709> bindata_candy_r;
-extern const std::array<unsigned char, 73863> bindata_candy_g;
-extern const std::array<unsigned char, 75477> bindata_candy_b;
-extern const std::array<unsigned char, 103065> bindata_candy_k;
+extern const std::array<unsigned char, 95767> bindata_candy_r;
+extern const std::array<unsigned char, 96019> bindata_candy_g;
+extern const std::array<unsigned char, 95002> bindata_candy_b;
+extern const std::array<unsigned char, 161136> bindata_candy_k;
 
 extern const std::array<unsigned char, 489> bindata_flat_r;
 extern const std::array<unsigned char, 489> bindata_flat_g;
