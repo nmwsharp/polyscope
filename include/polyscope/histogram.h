@@ -1,7 +1,8 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
-#include "polyscope/gl/gl_utils.h"
+#include "polyscope/render/color_maps.h"
+#include "polyscope/render/engine.h"
 
 #include <vector>
 
@@ -18,7 +19,7 @@ public:
   ~Histogram();
 
   void buildHistogram(std::vector<double>& values, const std::vector<double>& weights = {});
-  void updateColormap(gl::ColorMapID newColormap);
+  void updateColormap(const std::string& newColormap);
 
   // Width = -1 means set automatically
   void buildUI(float width = -1.0);
@@ -55,11 +56,11 @@ private:
   void prepare();
   bool prepared = false;
 
-  GLuint texDim = 600;
-  gl::GLTexturebuffer* texturebuffer = nullptr;
-  gl::GLFramebuffer* framebuffer = nullptr;
-  gl::GLProgram* program = nullptr;
-  gl::ColorMapID colormap = gl::ColorMapID::VIRIDIS;
+  unsigned int texDim = 600;
+  std::shared_ptr<render::TextureBuffer> texturebuffer = nullptr;
+  std::shared_ptr<render::FrameBuffer> framebuffer = nullptr;
+  std::shared_ptr<render::ShaderProgram> program = nullptr;
+  std::string colormap = "viridis";
 };
 
 

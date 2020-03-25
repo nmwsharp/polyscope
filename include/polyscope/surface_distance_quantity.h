@@ -19,8 +19,6 @@ public:
 
   void buildVertexInfoGUI(size_t v) override;
 
-  void writeToFile(std::string filename = "");
-
   // === Members
   std::vector<double> distances;
   const bool signedDist;
@@ -28,8 +26,8 @@ public:
   // === Get/set visualization parameters
 
   // The color map
-  SurfaceDistanceQuantity* setColorMap(gl::ColorMapID val);
-  gl::ColorMapID getColorMap();
+  SurfaceDistanceQuantity* setColorMap(std::string val);
+  std::string getColorMap();
 
   // Length of isoline stripes
   SurfaceDistanceQuantity* setStripeSize(double stripeSize, bool isRelative=true);
@@ -51,13 +49,13 @@ protected:
   Histogram hist;
 
   // UI internals
-  PersistentValue<gl::ColorMapID> cMap;
-  std::unique_ptr<gl::GLProgram> program;
+  PersistentValue<std::string> cMap;
+  std::shared_ptr<render::ShaderProgram> program;
 
   // Helpers
   void createProgram();
-  void setProgramUniforms(gl::GLProgram& program);
-  void fillColorBuffers(gl::GLProgram& p);
+  void setProgramUniforms(render::ShaderProgram& program);
+  void fillColorBuffers(render::ShaderProgram& p);
 };
 
 } // namespace polyscope

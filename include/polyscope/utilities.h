@@ -52,6 +52,10 @@ std::string str_printf(const std::string& format, Args... args) {
   return std::string(buf.get(), buf.get() + size - 1);
 }
 
+// Splits e.g. "file.png" to "file" and ".png"
+// Very naive, shouldn't be assumed to work for general paths
+std::tuple<std::string, std::string> splitExt(std::string f);
+
 // === GLM vector operations
 inline glm::vec3 componentwiseMin(const glm::vec3& vA, const glm::vec3& vB) {
   return glm::vec3{std::min(vA.x, vB.x), std::min(vA.y, vB.y), std::min(vA.z, vB.z)};

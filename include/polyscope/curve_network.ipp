@@ -35,7 +35,8 @@ template <class P>
 CurveNetwork* registerCurveNetworkLine(std::string name, const P& nodes) {
 
   std::vector<std::array<size_t, 2>> edges;
-  for (size_t iE = 1; iE < nodes.size(); iE++) {
+  size_t N = adaptorF_size(nodes);
+  for (size_t iE = 1; iE < N; iE++) {
     edges.push_back({iE - 1, iE});
   }
 
@@ -50,7 +51,8 @@ template <class P>
 CurveNetwork* registerCurveNetworkLine2D(std::string name, const P& nodes) {
 
   std::vector<std::array<size_t, 2>> edges;
-  for (size_t iE = 1; iE < nodes.size(); iE++) {
+  size_t N = adaptorF_size(nodes);
+  for (size_t iE = 1; iE < N; iE++) {
     edges.push_back({iE - 1, iE});
   }
   std::vector<glm::vec3> points3D(standardizeVectorArray<glm::vec3, 2>(nodes));
@@ -71,8 +73,9 @@ template <class P>
 CurveNetwork* registerCurveNetworkLoop(std::string name, const P& nodes) {
 
   std::vector<std::array<size_t, 2>> edges;
-  for (size_t iE = 0; iE < nodes.size(); iE++) {
-    edges.push_back({iE, (iE + 1) % nodes.size()});
+  size_t N = adaptorF_size(nodes);
+  for (size_t iE = 0; iE < N; iE++) {
+    edges.push_back({iE, (iE + 1) % N});
   }
 
   CurveNetwork* s = new CurveNetwork(name, standardizeVectorArray<glm::vec3, 3>(nodes), edges);
@@ -86,8 +89,9 @@ template <class P>
 CurveNetwork* registerCurveNetworkLoop2D(std::string name, const P& nodes) {
 
   std::vector<std::array<size_t, 2>> edges;
-  for (size_t iE = 0; iE < nodes.size(); iE++) {
-    edges.push_back({iE, (iE + 1) % nodes.size()});
+  size_t N = adaptorF_size(nodes);
+  for (size_t iE = 0; iE < N; iE++) {
+    edges.push_back({iE, (iE + 1) % N});
   }
   std::vector<glm::vec3> points3D(standardizeVectorArray<glm::vec3, 2>(nodes));
   for (auto& v : points3D) {
@@ -106,17 +110,7 @@ CurveNetwork* registerCurveNetworkLoop2D(std::string name, const P& nodes) {
 template <class V>
 void CurveNetwork::updateNodePositions(const V& newPositions) {
   nodes = standardizeVectorArray<glm::vec3, 3>(newPositions);
-
-  nodeProgram.reset();
-  edgeProgram.reset();
-  nodePickProgram.reset();
-  edgePickProgram.reset();
-
-  for (auto& q : quantities) {
-    q.second->geometryChanged();
-  }
-
-  requestRedraw();
+  geometryChanged();
 }
 
 

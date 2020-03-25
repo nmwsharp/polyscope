@@ -3,10 +3,10 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
-#include "polyscope/gl/gl_utils.h"
 #include "polyscope/persistent_value.h"
 #include "polyscope/point_cloud_quantity.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
 #include "polyscope/scaled_value.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
@@ -88,7 +88,7 @@ public:
   // Small utilities
   void deleteProgram();
   void writePointsToFile(std::string filename = "");
-  void setPointCloudUniforms(gl::GLProgram& p);
+  void setPointCloudUniforms(render::ShaderProgram& p);
 
   // === Get/set visualization parameters
 
@@ -100,20 +100,26 @@ public:
   PointCloud* setPointRadius(double newVal, bool isRelative = true);
   double getPointRadius();
 
+  // Material
+  PointCloud* setMaterial(std::string name);
+  std::string getMaterial();
+
 private:
   // === Visualization parameters
   PersistentValue<glm::vec3> pointColor;
   PersistentValue<ScaledValue<float>> pointRadius;
+  PersistentValue<std::string> material;
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
-  std::unique_ptr<gl::GLProgram> program;
-  std::unique_ptr<gl::GLProgram> pickProgram;
+  std::shared_ptr<render::ShaderProgram> program;
+  std::shared_ptr<render::ShaderProgram> pickProgram;
 
   // === Helpers
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
   void preparePick();
+  void geometryChanged();
 
 
   // === Quantity adder implementations
@@ -126,9 +132,9 @@ private:
 
 // Shorthand to add a point cloud to polyscope
 template <class T>
-PointCloud* registerPointCloud(std::string name, const T& points, bool replaceIfPresent = true);
+PointCloud* registerPointCloud(std::string name, const T& points);
 template <class T>
-PointCloud* registerPointCloud2D(std::string name, const T& points, bool replaceIfPresent = true);
+PointCloud* registerPointCloud2D(std::string name, const T& points);
 
 // Shorthand to get a point cloud from polyscope
 inline PointCloud* getPointCloud(std::string name = "");

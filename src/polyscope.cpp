@@ -6,22 +6,10 @@
 #include <iostream>
 #include <thread>
 
-#ifdef _WIN32
-#undef APIENTRY
-#define GLFW_EXPOSE_NATIVE_WIN32
-#define GLFW_EXPOSE_NATIVE_WGL
-#include <GLFW/glfw3native.h>
-#endif
-
-#define IMGUI_IMPL_OPENGL_LOADER_GLAD
-#include "examples/imgui_impl_glfw.h"
-#include "examples/imgui_impl_opengl3.h"
 #include "imgui.h"
 
-#include "polyscope/gl/ground_plane.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders/texture_draw_shaders.h"
 #include "polyscope/pick.h"
+#include "polyscope/render/engine.h"
 #include "polyscope/view.h"
 
 #include "stb_image.h"
@@ -69,15 +57,6 @@ bool openImGuiWindowForUserCallback = true;
 } // namespace options
 
 
-// Small callback function for GLFW errors
-void error_print_callback(int error, const char* description) {
-  std::cerr << "GLFW emitted error: " << description << std::endl;
-}
-
-// Forward declare compressed binary font functions
-unsigned int getCousineRegularCompressedSize();
-const unsigned int* getCousineRegularCompressedData();
-
 // Helpers
 namespace {
 
@@ -91,19 +70,6 @@ struct ContextEntry {
 };
 std::vector<ContextEntry> contextStack;
 
-
-// GLFW window
-GLFWwindow* mainWindow = nullptr;
-
-// Main buffers for rendering
-gl::GLTexturebuffer* sceneColorTexture = nullptr;
-gl::GLFramebuffer* sceneFramebuffer = nullptr; // the main 3D scene
-gl::GLFramebuffer* pickFramebuffer = nullptr;
-gl::GLProgram* sceneToScreenProgram = nullptr;
-
-// Font atlas pointer
-ImFontAtlas* globalFontAtlas = nullptr;
-
 bool redrawNextFrame = true;
 
 // Some state about imgui windows to stack them
@@ -113,113 +79,6 @@ float lastWindowHeightUser = 200;
 float leftWindowsWidth = 300;
 float rightWindowsWidth = 500;
 
-// Called once on init
-void allocateGlobalBuffersAndPrograms() {
-  using namespace gl;
-
-  { // Scene buffer
-    sceneColorTexture = new GLTexturebuffer(GL_RGBA, view::bufferWidth, view::bufferHeight);
-    GLRenderbuffer* sceneDepthBuffer =
-        new GLRenderbuffer(RenderbufferType::Depth, view::bufferWidth, view::bufferHeight);
-
-    sceneFramebuffer = new GLFramebuffer();
-    sceneFramebuffer->bindToColorTexturebuffer(sceneColorTexture);
-    sceneFramebuffer->bindToDepthRenderbuffer(sceneDepthBuffer);
-  }
-
-  { // Pick buffer
-    GLRenderbuffer* pickColorBuffer =
-        new GLRenderbuffer(RenderbufferType::Float4, view::bufferWidth, view::bufferHeight);
-    GLRenderbuffer* pickDepthBuffer =
-        new GLRenderbuffer(RenderbufferType::Depth, view::bufferWidth, view::bufferHeight);
-
-    pickFramebuffer = new GLFramebuffer();
-    pickFramebuffer->bindToColorRenderbuffer(pickColorBuffer);
-    pickFramebuffer->bindToDepthRenderbuffer(pickDepthBuffer);
-  }
-
-  { // Simple program which draws scene texture to screen
-    sceneToScreenProgram =
-        new gl::GLProgram(&TEXTURE_DRAW_VERT_SHADER, &TEXTURE_DRAW_FRAG_SHADER, gl::DrawMode::Triangles);
-    std::vector<glm::vec3> coords = {{-1.0f, -1.0f, 0.0f}, {1.0f, -1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f},
-                                     {-1.0f, 1.0f, 0.0f},  {1.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}};
-
-    sceneToScreenProgram->setAttribute("a_position", coords);
-  }
-}
-
-// Called once on closing
-void deleteGlobalBuffersAndPrograms() {
-
-  // Scene
-  delete sceneColorTexture;
-  delete sceneFramebuffer->getDepthRenderBuffer();
-  delete sceneFramebuffer;
-
-  // Pick
-  delete pickFramebuffer->getColorRenderBuffer();
-  delete pickFramebuffer->getDepthRenderBuffer();
-  delete pickFramebuffer;
-}
-
-
-void setStyle() {
-
-  // Style
-  ImGuiStyle* style = &ImGui::GetStyle();
-  style->WindowRounding = 1;
-  style->FrameRounding = 1;
-  style->FramePadding.y = 4;
-  style->ScrollbarRounding = 1;
-  style->ScrollbarSize = 20;
-
-
-  // Colors
-  ImVec4* colors = style->Colors;
-  colors[ImGuiCol_Text] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-  colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
-  colors[ImGuiCol_WindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.70f);
-  colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-  colors[ImGuiCol_PopupBg] = ImVec4(0.11f, 0.11f, 0.14f, 0.92f);
-  colors[ImGuiCol_Border] = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
-  colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-  colors[ImGuiCol_FrameBg] = ImVec4(0.63f, 0.63f, 0.63f, 0.39f);
-  colors[ImGuiCol_FrameBgHovered] = ImVec4(0.47f, 0.69f, 0.59f, 0.40f);
-  colors[ImGuiCol_FrameBgActive] = ImVec4(0.41f, 0.64f, 0.53f, 0.69f);
-  colors[ImGuiCol_TitleBg] = ImVec4(0.27f, 0.54f, 0.42f, 0.83f);
-  colors[ImGuiCol_TitleBgActive] = ImVec4(0.32f, 0.63f, 0.49f, 0.87f);
-  colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.27f, 0.54f, 0.42f, 0.83f);
-  colors[ImGuiCol_MenuBarBg] = ImVec4(0.40f, 0.55f, 0.48f, 0.80f);
-  colors[ImGuiCol_ScrollbarBg] = ImVec4(0.63f, 0.63f, 0.63f, 0.39f);
-  colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
-  colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.40f, 0.80f, 0.62f, 0.40f);
-  colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.39f, 0.80f, 0.61f, 0.60f);
-  colors[ImGuiCol_CheckMark] = ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
-  colors[ImGuiCol_SliderGrab] = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
-  colors[ImGuiCol_SliderGrabActive] = ImVec4(0.39f, 0.80f, 0.61f, 0.60f);
-  colors[ImGuiCol_Button] = ImVec4(0.35f, 0.61f, 0.49f, 0.62f);
-  colors[ImGuiCol_ButtonHovered] = ImVec4(0.40f, 0.71f, 0.57f, 0.79f);
-  colors[ImGuiCol_ButtonActive] = ImVec4(0.46f, 0.80f, 0.64f, 1.00f);
-  colors[ImGuiCol_Header] = ImVec4(0.40f, 0.90f, 0.67f, 0.45f);
-  colors[ImGuiCol_HeaderHovered] = ImVec4(0.45f, 0.90f, 0.69f, 0.80f);
-  colors[ImGuiCol_HeaderActive] = ImVec4(0.53f, 0.87f, 0.71f, 0.80f);
-  colors[ImGuiCol_Separator] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-  colors[ImGuiCol_SeparatorHovered] = ImVec4(0.60f, 0.70f, 0.66f, 1.00f);
-  colors[ImGuiCol_SeparatorActive] = ImVec4(0.70f, 0.90f, 0.81f, 1.00f);
-  colors[ImGuiCol_ResizeGrip] = ImVec4(1.00f, 1.00f, 1.00f, 0.16f);
-  colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.78f, 1.00f, 0.90f, 0.60f);
-  colors[ImGuiCol_ResizeGripActive] = ImVec4(0.78f, 1.00f, 0.90f, 0.90f);
-  colors[ImGuiCol_PlotLines] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-  colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-  colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-  colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
-  colors[ImGuiCol_TextSelectedBg] = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
-  colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
-  colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
-  colors[ImGuiCol_Tab] = ImVec4(0.27f, 0.54f, 0.42f, 0.83f);
-  colors[ImGuiCol_TabHovered] = ImVec4(0.34f, 0.68f, 0.53f, 0.83f);
-  colors[ImGuiCol_TabActive] = ImVec4(0.38f, 0.76f, 0.58f, 0.83f);
-}
 
 const std::string prefsFilename = ".polyscope.ini";
 
@@ -258,14 +117,15 @@ void readPrefsFile() {
 void writePrefsFile() {
 
   // Update values as needed
-  glfwGetWindowPos(mainWindow, &view::initWindowPosX, &view::initWindowPosY);
+  int posX, posY;
+  std::tie(posX, posY) = render::engine->getWindowPos();
 
   // Build json object
   json prefsJSON = {
       {"windowWidth", view::windowWidth},
       {"windowHeight", view::windowHeight},
-      {"windowPosX", view::initWindowPosX},
-      {"windowPosY", view::initWindowPosY},
+      {"windowPosX", posX},
+      {"windowPosY", posY},
   };
 
   // Write out json object
@@ -286,62 +146,14 @@ void init() {
     readPrefsFile();
   }
 
-  // === Initialize glfw
-  glfwSetErrorCallback(error_print_callback);
-  if (!glfwInit()) {
-    throw std::runtime_error(options::printPrefix + "ERROR: Failed to initialize glfw");
-  }
-
-  // OpenGL version things
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#if __APPLE__
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-
-  // Create the window with context
-  mainWindow = glfwCreateWindow(view::windowWidth, view::windowHeight, options::programName.c_str(), NULL, NULL);
-  glfwMakeContextCurrent(mainWindow);
-  glfwSwapInterval(1); // Enable vsync
-  glfwSetWindowPos(mainWindow, view::initWindowPosX, view::initWindowPosY);
-
-// === Initialize openGL
-// Load openGL functions (using GLAD)
-#ifndef __APPLE__
-  if (!gladLoadGL()) {
-    throw std::runtime_error(options::printPrefix + "ERROR: Failed to load openGL using GLAD");
-  }
-#endif
-  if (options::verbosity > 0) {
-    std::cout << options::printPrefix << "Loaded openGL version: " << glGetString(GL_VERSION) << std::endl;
-  }
-
-#ifdef __APPLE__
-  // Hack to classify the process as interactive
-  glfwPollEvents();
-#endif
-
-  // Update the width and heigh
-  glfwMakeContextCurrent(mainWindow);
-  glfwGetWindowSize(mainWindow, &view::windowWidth, &view::windowHeight);
-  glfwGetFramebufferSize(mainWindow, &view::bufferWidth, &view::bufferHeight);
+  // Initialize the rendering engine
+  render::initializeRenderEngine();
 
   // Initialie ImGUI
   IMGUI_CHECKVERSION();
-  initializeImGUIContext();
+  render::engine->initializeImGui();
   contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr});
 
-  // Initialize gl data
-  gl::GLProgram::initCommonShaders();
-  gl::loadMaterialTextures();
-
-  // Initialize pick buffer
-  allocateGlobalBuffersAndPrograms();
-
-  draw(); // TODO this is a terrible fix for a bug where the ground doesn't show up until the SECOND time we draw...
-          // cannot figure out why
   view::invalidateView();
 
   state::initialized = true;
@@ -350,9 +162,9 @@ void init() {
 void pushContext(std::function<void()> callbackFunction) {
 
   // Create a new context and push it on to the stack
-  ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
+  ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
   ImGui::SetCurrentContext(newContext);
-  setStyle();
+  render::engine->setImGuiStyle();
   contextStack.push_back(ContextEntry{newContext, callbackFunction});
 
   // Re-enter main loop until the context has been popped
@@ -375,72 +187,6 @@ void popContext() {
 
 void requestRedraw() { redrawNextFrame = true; }
 bool redrawRequested() { return redrawNextFrame; }
-
-ImFontAtlas* getGlobalFontAtlas() { return globalFontAtlas; }
-
-void initializeImGUIContext() {
-
-  ImGui::CreateContext();
-
-  // Set up ImGUI glfw bindings
-  ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
-  const char* glsl_version = "#version 150";
-  ImGui_ImplOpenGL3_Init(glsl_version);
-
-  ImGuiIO& io = ImGui::GetIO();
-  ImFontConfig config;
-  config.OversampleH = 5;
-  config.OversampleV = 5;
-  ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(getCousineRegularCompressedData(),
-                                                          getCousineRegularCompressedSize(), 15.0f, &config);
-  // io.OptResizeWindowsFromEdges = true;
-  // ImGui::StyleColorsLight();
-  setStyle();
-
-  globalFontAtlas = io.Fonts;
-}
-
-namespace {
-
-// Keep track of whether or not the last click was a double click.
-// ImGUI normally provides this for us, but we want to know about the RELEASE of a double click, while im ImGUI the flag
-// is only set for the down press. Use this variable to pass it forward.
-bool lastClickWasDouble = false;
-} // namespace
-
-namespace pick {
-
-// TODO This lives here rather than in pick.cpp because it has to touch the rendering data which is not available there,
-// but.... this is awkward. Move the implementation of this function if/when the rendering API gets cleaned up.
-std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
-
-  // Be sure not to pick outside of buffer
-  if (xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
-    return {nullptr, 0};
-  }
-
-  pickFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
-  pickFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  if (!pickFramebuffer->bindForRendering()) return {nullptr, 0};
-  pickFramebuffer->clear();
-
-  // Render pick buffer
-  for (auto cat : state::structures) {
-    for (auto x : cat.second) {
-      x.second->drawPick();
-    }
-  }
-  gl::checkGLError(true);
-
-  // Read from the pick buffer
-  std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, view::bufferHeight - yPos);
-  size_t globalInd = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
-
-
-  return pick::globalIndexToLocal(globalInd);
-}
-
-} // namespace pick
 
 void drawStructures() {
 
@@ -493,9 +239,7 @@ void processInputEvents() {
 
       // Pass camera commands to the camera
       if (maxScroll != 0.0) {
-        int leftShiftState = glfwGetKey(mainWindow, GLFW_KEY_LEFT_SHIFT);
-        int rightShiftState = glfwGetKey(mainWindow, GLFW_KEY_RIGHT_SHIFT);
-        bool scrollClipPlane = (leftShiftState == GLFW_PRESS || rightShiftState == GLFW_PRESS);
+        bool scrollClipPlane = io.KeyShift;
 
         if (scrollClipPlane) {
           view::processClipPlaneShift(maxScroll);
@@ -504,10 +248,6 @@ void processInputEvents() {
         }
       }
     }
-  }
-
-  if (ImGui::IsMouseClicked(0)) {
-    lastClickWasDouble = ImGui::IsMouseDoubleClicked(0);
   }
 
   // === Mouse inputs
@@ -570,14 +310,14 @@ void processInputEvents() {
   if (!io.WantCaptureKeyboard) {
 
     // ctrl-c
-    if (io.KeyCtrl && ImGui::IsKeyPressed(GLFW_KEY_C)) {
+    if (io.KeyCtrl && render::engine->isKeyPressed('c')) {
       std::string outData = view::getCameraJson();
-      ImGui::SetClipboardText(outData.c_str());
+      render::engine->setClipboardText(outData);
     }
 
     // ctrl-v
-    if (io.KeyCtrl && ImGui::IsKeyPressed(GLFW_KEY_V)) {
-      std::string clipboardData = ImGui::GetClipboardText();
+    if (io.KeyCtrl && render::engine->isKeyPressed('v')) {
+      std::string clipboardData = render::engine->getClipboardText();
       view::setCameraFromJson(clipboardData, true);
     }
   }
@@ -585,35 +325,32 @@ void processInputEvents() {
 
 void renderScene() {
 
-  // Activate the texture that we draw to
-  sceneFramebuffer->resizeBuffers(view::bufferWidth, view::bufferHeight);
-  sceneFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
+  render::engine->setBackgroundAlpha(view::bgColor[3]);
+  render::engine->clearSceneBuffer();
 
-  if (!sceneFramebuffer->bindForRendering()) return;
-
-  sceneFramebuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
-  sceneFramebuffer->clearAlpha = 0.0;
-  sceneFramebuffer->clear();
+  if (!render::engine->bindSceneBuffer()) return;
 
   // If a view has never been set, this will set it to the home view
   view::ensureViewValid();
 
-  drawStructures();
+  render::engine->renderBackground();
+  render::engine->setDepthMode();
+  render::engine->setBlendMode();
 
   // Draw the ground plane
-  gl::drawGroundPlane();
+  if (options::groundPlaneEnabled) {
+    render::engine->groundPlane.draw();
+  }
+
+  drawStructures();
+
+  render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
 }
 
 void renderSceneToScreen() {
-
-  // Bind to the view framebuffer
-  bindDefaultBuffer();
-
-  // Set the texture uniform
-  sceneToScreenProgram->setTextureFromBuffer("t_image", sceneColorTexture);
-
-  // Draw
-  sceneToScreenProgram->draw();
+  render::engine->bindDisplay();
+  render::engine->applyLightingTransform(render::engine->sceneColorFinal);
 }
 
 void buildPolyscopeGui() {
@@ -625,7 +362,7 @@ void buildPolyscopeGui() {
 
   ImGui::Begin("Polyscope", &showPolyscopeWindow);
 
-  if (ImGui::Button("Reset view")) {
+  if (ImGui::Button("Reset View")) {
     view::flyToHomeView();
   }
   ImGui::SameLine();
@@ -666,17 +403,20 @@ void buildPolyscopeGui() {
   view::buildViewGui();
 
   // Appearance options tree
-  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-  if (ImGui::TreeNode("Appearance")) {
-    ImGui::ColorEdit3("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
-    gl::buildGroundPlaneGui();
-    ImGui::TreePop();
-  }
+  render::engine->buildEngineGui();
 
   // Debug options tree
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Debug")) {
     ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
+    ImGui::Checkbox("Always redraw", &options::alwaysRedraw);
+
+    static bool showDebugTextures = false;
+    ImGui::Checkbox("Show debug textures", &showDebugTextures);
+    if (showDebugTextures) {
+      render::engine->showTextureInImGuiWindow("Scene Final", render::engine->sceneColorFinal.get());
+    }
+
     ImGui::TreePop();
   }
 
@@ -781,25 +521,16 @@ auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 void draw(bool withUI) {
 
   // Update buffer and context
-  glfwMakeContextCurrent(mainWindow);
+  render::engine->makeContextCurrent();
+  render::engine->bindDisplay();
+  render::engine->clearDisplay();
 
   if (withUI) {
-    // New IMGUI frame
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
+    render::engine->ImGuiNewFrame();
   }
-
-  bindDefaultBuffer();
-
-  // Ensure the default framebuffer is bound
-  glClearColor(view::bgColor[0], view::bgColor[1], view::bgColor[2], 0);
-  glClearDepth(1.);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
   // Build the GUI components
   if (withUI) {
-    // ImGui::ShowDemoWindow();
 
     // The common case, rendering UI and structures
     if (contextStack.size() == 1) {
@@ -828,21 +559,11 @@ void draw(bool withUI) {
 
   // Draw the GUI
   if (withUI) {
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    gl::checkGLError();
+    render::engine->bindDisplay();
+    render::engine->ImGuiRender();
   }
 }
 
-
-void bindDefaultBuffer() {
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glViewport(0, 0, view::bufferWidth, view::bufferHeight);
-  glEnable(GL_DEPTH_TEST);
-  glDepthFunc(GL_LESS);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-}
 
 void mainLoopIteration() {
 
@@ -854,39 +575,24 @@ void mainLoopIteration() {
     microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
     while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
            microsecPerLoop) {
-      // std::chrono::milliseconds timespan(1);
-      // std::this_thread::sleep_for(timespan);
       std::this_thread::yield();
       currTime = std::chrono::steady_clock::now();
     }
   }
   lastMainLoopIterTime = std::chrono::steady_clock::now();
 
-
-  // Update the width and height
-  glfwMakeContextCurrent(mainWindow);
-  int newBufferWidth, newBufferHeight, newWindowWidth, newWindowHeight;
-  glfwGetFramebufferSize(mainWindow, &newBufferWidth, &newBufferHeight);
-  glfwGetWindowSize(mainWindow, &newWindowWidth, &newWindowHeight);
-  if (newBufferWidth != view::bufferWidth || newBufferHeight != view::bufferHeight ||
-      newWindowHeight != view::windowHeight || newWindowWidth != view::windowWidth) {
-    // Basically a resize callback
-    requestRedraw();
-    view::bufferWidth = newBufferWidth;
-    view::bufferHeight = newBufferHeight;
-    view::windowWidth = newWindowWidth;
-    view::windowHeight = newWindowHeight;
-  }
+  render::engine->makeContextCurrent();
+  render::engine->updateWindowSize();
 
   // Process UI events
-  glfwPollEvents();
+  render::engine->pollEvents();
   processInputEvents();
   view::updateFlight();
   showDelayedWarnings();
 
   // Rendering
   draw();
-  glfwSwapBuffers(mainWindow);
+  render::engine->swapDisplayBuffers();
 }
 
 void show(size_t forFrames) {
@@ -897,11 +603,10 @@ void show(size_t forFrames) {
   }
 
   // Main loop
-  while (!glfwWindowShouldClose(mainWindow) && forFrames > 0) {
+  while (!render::engine->windowRequestsClose() && forFrames > 0) {
     mainLoopIteration();
     forFrames--;
   }
-  glfwSetWindowShouldClose(mainWindow, false);
 
   if (options::usePrefsFile) {
     writePrefsFile();
@@ -915,14 +620,7 @@ void shutdown(int exitCode) {
     writePrefsFile();
   }
 
-  deleteGlobalBuffersAndPrograms();
-  gl::unloadMaterialTextures();
-  gl::deleteGroundPlaneResources();
-
-  // ImGui shutdown things
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
+  render::engine->shutdownImGui();
 
   std::exit(exitCode);
 }

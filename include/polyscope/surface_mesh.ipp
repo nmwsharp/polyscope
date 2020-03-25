@@ -3,8 +3,7 @@ namespace polyscope {
 
 // Shorthand to add a mesh to polyscope
 template <class V, class F>
-SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
-                                 bool replaceIfPresent) {
+SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
   SurfaceMesh* s = new SurfaceMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
                                    standardizeNestedList<size_t, F>(faceIndices));
   bool success = registerStructure(s);
@@ -15,8 +14,7 @@ SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, con
   return s;
 }
 template <class V, class F>
-SurfaceMesh* registerSurfaceMesh2D(std::string name, const V& vertexPositions, const F& faceIndices,
-                                   bool replaceIfPresent) {
+SurfaceMesh* registerSurfaceMesh2D(std::string name, const V& vertexPositions, const F& faceIndices) {
 
   std::vector<glm::vec3> positions3D = standardizeVectorArray<glm::vec3, 2>(vertexPositions);
   for (auto& v : positions3D) {
@@ -35,8 +33,8 @@ SurfaceMesh* registerSurfaceMesh2D(std::string name, const V& vertexPositions, c
 // Shorthand to add a mesh to polyscope while also setting permutations
 template <class V, class F, class P>
 SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
-                                 const std::array<std::pair<P, size_t>, 5>& perms, bool replaceIfPresent) {
-  SurfaceMesh* s = registerSurfaceMesh(name, vertexPositions, faceIndices, replaceIfPresent);
+                                 const std::array<std::pair<P, size_t>, 5>& perms) {
+  SurfaceMesh* s = registerSurfaceMesh(name, vertexPositions, faceIndices);
 
   if (s) {
     s->setAllPermutations(perms);
@@ -79,9 +77,7 @@ inline glm::vec3 SurfaceMesh::faceCenter(size_t iF) {
 inline SurfaceMesh* getSurfaceMesh(std::string name) {
   return dynamic_cast<SurfaceMesh*>(getStructure(SurfaceMesh::structureTypeName, name));
 }
-inline bool hasSurfaceMesh(std::string name) {
-  return hasStructure(SurfaceMesh::structureTypeName, name);
-}
+inline bool hasSurfaceMesh(std::string name) { return hasStructure(SurfaceMesh::structureTypeName, name); }
 inline void removeSurfaceMesh(std::string name, bool errorIfAbsent) {
   removeStructure(SurfaceMesh::structureTypeName, name, errorIfAbsent);
 }
@@ -118,7 +114,7 @@ void SurfaceMesh::setVertexPermutation(const T& perm, size_t expectedSize) {
   if (vertexDataSize == 0) {
     // Find max element to set the data size
     for (size_t i : vertexPerm) {
-      vertexDataSize = std::max(vertexDataSize, i+1);
+      vertexDataSize = std::max(vertexDataSize, i + 1);
     }
   }
 }
@@ -133,7 +129,7 @@ void SurfaceMesh::setFacePermutation(const T& perm, size_t expectedSize) {
   if (faceDataSize == 0) {
     // Find max element to set the data size
     for (size_t i : facePerm) {
-      faceDataSize = std::max(faceDataSize, i+1);
+      faceDataSize = std::max(faceDataSize, i + 1);
     }
   }
 }
@@ -148,7 +144,7 @@ void SurfaceMesh::setEdgePermutation(const T& perm, size_t expectedSize) {
   if (edgeDataSize == 0) {
     // Find max element to set the data size
     for (size_t i : edgePerm) {
-      edgeDataSize = std::max(edgeDataSize, i+1);
+      edgeDataSize = std::max(edgeDataSize, i + 1);
     }
   }
 }
@@ -163,7 +159,7 @@ void SurfaceMesh::setHalfedgePermutation(const T& perm, size_t expectedSize) {
   if (halfedgeDataSize == 0) {
     // Find max element to set the data size
     for (size_t i : halfedgePerm) {
-      halfedgeDataSize = std::max(halfedgeDataSize, i+1);
+      halfedgeDataSize = std::max(halfedgeDataSize, i + 1);
     }
   }
 }
@@ -178,7 +174,7 @@ void SurfaceMesh::setCornerPermutation(const T& perm, size_t expectedSize) {
   if (cornerDataSize == 0) {
     // Find max element to set the data size
     for (size_t i : cornerPerm) {
-      cornerDataSize = std::max(cornerDataSize, i+1);
+      cornerDataSize = std::max(cornerDataSize, i + 1);
     }
   }
 }
@@ -207,6 +203,7 @@ void SurfaceMesh::setAllPermutations(const std::array<std::pair<T, size_t>, 5>& 
 // These are generally small wrappers which do some error checks, apply an array adaptor, and hand off to a
 // private non-templated ___Impl version which does the actual adding work.
 
+
 template <class T>
 SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantity(std::string name, const T& colors) {
   validateSize<T>(colors, vertexDataSize, "vertex color quantity " + name);
@@ -218,6 +215,42 @@ template <class T>
 SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantity(std::string name, const T& colors) {
   validateSize<T>(colors, faceDataSize, "face color quantity " + name);
   return addFaceColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(colors));
+}
+
+template <class T>
+SurfaceDistanceQuantity* SurfaceMesh::addVertexDistanceQuantity(std::string name, const T& distances) {
+  validateSize(distances, vertexDataSize, "distance quantity " + name);
+  return addVertexDistanceQuantityImpl(name, standardizeArray<double>(distances));
+}
+
+template <class T>
+SurfaceDistanceQuantity* SurfaceMesh::addVertexSignedDistanceQuantity(std::string name, const T& distances) {
+  validateSize(distances, vertexDataSize, "signed distance quantity " + name);
+  return addVertexSignedDistanceQuantityImpl(name, standardizeArray<double>(distances));
+}
+
+// Standard a parameterization, defined at corners
+template <class T>
+SurfaceCornerParameterizationQuantity* SurfaceMesh::addParameterizationQuantity(std::string name, const T& coords,
+                                                                                ParamCoordsType type) {
+  validateSize(coords, cornerDataSize, "parameterization quantity " + name);
+  return addParameterizationQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(coords), type);
+}
+
+// Parameterization defined at vertices, rather than corners
+template <class T>
+SurfaceVertexParameterizationQuantity* SurfaceMesh::addVertexParameterizationQuantity(std::string name, const T& coords,
+                                                                                      ParamCoordsType type) {
+  validateSize(coords, vertexDataSize, "parameterization (at vertices) quantity " + name);
+  return addVertexParameterizationQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(coords), type);
+}
+
+// "local" parameterization defined at vertices. has different presets: type is WORLD and style is LOCAL
+template <class T>
+SurfaceVertexParameterizationQuantity* SurfaceMesh::addLocalParameterizationQuantity(std::string name, const T& coords,
+                                                                                     ParamCoordsType type) {
+  validateSize(coords, vertexDataSize, "parameterization (at vertices) quantity " + name);
+  return addLocalParameterizationQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(coords), type);
 }
 
 
@@ -254,18 +287,6 @@ inline SurfaceFaceCountQuantity* SurfaceMesh::addFaceCountQuantity(std::string n
     }
   }
   return addFaceCountQuantityImpl(name, values);
-}
-
-template <class T>
-SurfaceDistanceQuantity* SurfaceMesh::addVertexDistanceQuantity(std::string name, const T& distances) {
-  validateSize(distances, vertexDataSize, "distance quantity " + name);
-  return addVertexDistanceQuantityImpl(name, standardizeArray<double>(distances));
-}
-
-template <class T>
-SurfaceDistanceQuantity* SurfaceMesh::addVertexSignedDistanceQuantity(std::string name, const T& distances) {
-  validateSize(distances, vertexDataSize, "signed distance quantity " + name);
-  return addVertexSignedDistanceQuantityImpl(name, standardizeArray<double>(distances));
 }
 
 
@@ -329,31 +350,6 @@ SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantity2D(std::string name, c
 }
 
 
-// Standard a parameterization, defined at corners
-template <class T>
-SurfaceCornerParameterizationQuantity* SurfaceMesh::addParameterizationQuantity(std::string name, const T& coords,
-                                                                                ParamCoordsType type) {
-  validateSize(coords, cornerDataSize, "parameterization quantity " + name);
-  return addParameterizationQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(coords), type);
-}
-
-// Parameterization defined at vertices, rather than corners
-template <class T>
-SurfaceVertexParameterizationQuantity* SurfaceMesh::addVertexParameterizationQuantity(std::string name, const T& coords,
-                                                                                      ParamCoordsType type) {
-  validateSize(coords, vertexDataSize, "parameterization (at vertices) quantity " + name);
-  return addVertexParameterizationQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(coords), type);
-}
-
-// "local" parameterization defined at vertices. has different presets: type is WORLD and style is LOCAL
-template <class T>
-SurfaceVertexParameterizationQuantity* SurfaceMesh::addLocalParameterizationQuantity(std::string name, const T& coords,
-                                                                                     ParamCoordsType type) {
-  validateSize(coords, vertexDataSize, "parameterization (at vertices) quantity " + name);
-  return addLocalParameterizationQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(coords), type);
-}
-
-
 template <class T>
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexScalarQuantity(std::string name, const T& data, DataType type) {
   validateSize(data, vertexDataSize, "vertex scalar quantity " + name);
@@ -378,6 +374,7 @@ SurfaceHalfedgeScalarQuantity* SurfaceMesh::addHalfedgeScalarQuantity(std::strin
   validateSize(data, halfedgeDataSize, "halfedge scalar quantity " + name);
   return addHalfedgeScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
 }
+
 
 template <class T>
 SurfaceVertexVectorQuantity* SurfaceMesh::addVertexVectorQuantity(std::string name, const T& vectors,
@@ -427,6 +424,7 @@ SurfaceVertexIntrinsicVectorQuantity* SurfaceMesh::addVertexIntrinsicVectorQuant
   validateSize(vectors, vertexDataSize, "vertex intrinsic vector quantity " + name);
   return addVertexIntrinsicVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), nSym, vectorType);
 }
+
 
 // Orientations is `true` if the canonical orientation of the edge points from the lower-indexed vertex to the
 // higher-indexed vertex, and `false` otherwise.

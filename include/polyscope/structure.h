@@ -1,9 +1,9 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
-#include "polyscope/gl/gl_utils.h"
 #include "polyscope/persistent_value.h"
 #include "polyscope/quantity.h"
+#include "polyscope/render/engine.h"
 
 #include "glm/glm.hpp"
 
@@ -63,10 +63,10 @@ public:
   void centerBoundingBox();
   void rescaleToUnit();
   void resetTransform();
-  void setTransformUniforms(gl::GLProgram& p);
+  void setTransformUniforms(render::ShaderProgram& p);
 
   // Get rid of it (invalidates the object and all pointers, etc!)
-  void remove(); 
+  void remove();
 
 protected:
   // = State

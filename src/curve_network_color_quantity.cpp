@@ -1,11 +1,8 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/curve_network_color_quantity.h"
 
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/cylinder_shaders.h"
-#include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -44,10 +41,14 @@ CurveNetworkNodeColorQuantity::CurveNetworkNodeColorQuantity(std::string name, s
 
 void CurveNetworkNodeColorQuantity::createProgram() {
   // Create the program to draw this quantity
-  nodeProgram.reset(new gl::GLProgram(&gl::SPHERE_COLOR_VERT_SHADER, &gl::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                      &gl::SPHERE_COLOR_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
-  edgeProgram.reset(new gl::GLProgram(&gl::CYLINDER_BLEND_COLOR_VERT_SHADER, &gl::CYLINDER_BLEND_COLOR_GEOM_SHADER,
-                                      &gl::CYLINDER_COLOR_FRAG_SHADER, gl::DrawMode::Points));
+  nodeProgram = render::engine->generateShaderProgram({render::SPHERE_COLOR_VERT_SHADER,
+                                                       render::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
+                                                       render::SPHERE_COLOR_BILLBOARD_FRAG_SHADER},
+                                                      DrawMode::Points);
+  edgeProgram = render::engine->generateShaderProgram({render::CYLINDER_BLEND_COLOR_VERT_SHADER,
+                                                       render::CYLINDER_BLEND_COLOR_GEOM_SHADER,
+                                                       render::CYLINDER_BLEND_COLOR_FRAG_SHADER},
+                                                      DrawMode::Points);
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);
@@ -72,8 +73,8 @@ void CurveNetworkNodeColorQuantity::createProgram() {
     edgeProgram->setAttribute("a_color_tip", colorTip);
   }
 
-  setMaterialForProgram(*edgeProgram, "wax");
-  setMaterialForProgram(*nodeProgram, "wax");
+  render::engine->setMaterial(*nodeProgram, parent.getMaterial());
+  render::engine->setMaterial(*edgeProgram, parent.getMaterial());
 }
 
 
@@ -107,10 +108,13 @@ CurveNetworkEdgeColorQuantity::CurveNetworkEdgeColorQuantity(std::string name, s
 {}
 
 void CurveNetworkEdgeColorQuantity::createProgram() {
-  nodeProgram.reset(new gl::GLProgram(&gl::SPHERE_COLOR_VERT_SHADER, &gl::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                      &gl::SPHERE_COLOR_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
-  edgeProgram.reset(new gl::GLProgram(&gl::CYLINDER_COLOR_VERT_SHADER, &gl::CYLINDER_COLOR_GEOM_SHADER,
-                                      &gl::CYLINDER_COLOR_FRAG_SHADER, gl::DrawMode::Points));
+  nodeProgram = render::engine->generateShaderProgram({render::SPHERE_COLOR_VERT_SHADER,
+                                                       render::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
+                                                       render::SPHERE_COLOR_BILLBOARD_FRAG_SHADER},
+                                                      DrawMode::Points);
+  edgeProgram = render::engine->generateShaderProgram(
+      {render::CYLINDER_COLOR_VERT_SHADER, render::CYLINDER_COLOR_GEOM_SHADER, render::CYLINDER_COLOR_FRAG_SHADER},
+      DrawMode::Points);
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);
@@ -139,8 +143,8 @@ void CurveNetworkEdgeColorQuantity::createProgram() {
     edgeProgram->setAttribute("a_color", values);
   }
 
-  setMaterialForProgram(*edgeProgram, "wax");
-  setMaterialForProgram(*nodeProgram, "wax");
+  render::engine->setMaterial(*nodeProgram, parent.getMaterial());
+  render::engine->setMaterial(*edgeProgram, parent.getMaterial());
 }
 
 

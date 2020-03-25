@@ -4,7 +4,7 @@
 #include <array>
 
 #include "polyscope/camera_parameters.h"
-#include "polyscope/gl/gl_utils.h"
+//#include "polyscope/gl/gl_utils.h"
 
 // GLM for view matrices
 #include "glm/gtc/constants.hpp"
@@ -84,6 +84,7 @@ glm::mat4 getCameraViewMatrix();
 glm::mat4 getCameraPerspectiveMatrix();
 glm::vec3 getCameraWorldPosition();
 void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
+
 
 // Flight-related
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds = .4);

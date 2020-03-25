@@ -2,7 +2,7 @@
 #pragma once
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/gl/color_maps.h"
+#include "polyscope/render/color_maps.h"
 #include "polyscope/histogram.h"
 #include "polyscope/point_cloud.h"
 
@@ -30,8 +30,8 @@ public:
   // === Get/set visualization parameters
 
   // The color map
-  PointCloudScalarQuantity* setColorMap(gl::ColorMapID val);
-  gl::ColorMapID getColorMap();
+  PointCloudScalarQuantity* setColorMap(std::string val);
+  std::string getColorMap();
 
   // Data limits mapped in to colormap
   PointCloudScalarQuantity* setMapRange(std::pair<double, double> val);
@@ -47,11 +47,11 @@ protected:
   Histogram hist;
 
   // UI internals
-  PersistentValue<gl::ColorMapID> cMap;
+  PersistentValue<std::string> cMap;
 
 
   void createPointProgram();
-  std::unique_ptr<gl::GLProgram> pointProgram;
+  std::shared_ptr<render::ShaderProgram> pointProgram;
 };
 
 

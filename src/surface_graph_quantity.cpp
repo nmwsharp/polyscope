@@ -1,11 +1,9 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/surface_graph_quantity.h"
 
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/cylinder_shaders.h"
-#include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/render/shaders.h"
 #include "polyscope/utilities.h"
 
 #include "imgui.h"
@@ -46,19 +44,18 @@ void SurfaceGraphQuantity::draw() {
 }
 
 void SurfaceGraphQuantity::setUniforms() {
-  // Point billboard uniforms
-  glm::vec3 lookDir, upDir, rightDir;
-  view::getCameraFrame(lookDir, upDir, rightDir);
-  pointProgram->setUniform("u_camZ", lookDir);
-
-  pointProgram->setUniform("u_camUp", upDir);
-  pointProgram->setUniform("u_camRight", rightDir);
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+  pointProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  lineProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  pointProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
+  lineProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
 
   // Radii and colors
   pointProgram->setUniform("u_pointRadius", getRadius());
   lineProgram->setUniform("u_radius", getRadius());
   pointProgram->setUniform("u_baseColor", getColor());
-  lineProgram->setUniform("u_color", getColor());
+  lineProgram->setUniform("u_baseColor", getColor());
 
   parent.setTransformUniforms(*pointProgram);
   parent.setTransformUniforms(*lineProgram);
@@ -66,18 +63,21 @@ void SurfaceGraphQuantity::setUniforms() {
 
 
 void SurfaceGraphQuantity::createPrograms() {
+
   { // Point program
-    pointProgram.reset(new gl::GLProgram(&gl::SPHERE_VERT_SHADER, &gl::SPHERE_BILLBOARD_GEOM_SHADER,
-                                         &gl::SPHERE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+    pointProgram = render::engine->generateShaderProgram(
+        {render::SPHERE_VERT_SHADER, render::SPHERE_BILLBOARD_GEOM_SHADER, render::SPHERE_BILLBOARD_FRAG_SHADER},
+        DrawMode::Points);
 
     pointProgram->setAttribute("a_position", nodes);
-    setMaterialForProgram(*pointProgram, "wax");
+    render::engine->setMaterial(*pointProgram, parent.getMaterial());
   }
 
   { // Line program
 
-    lineProgram.reset(new gl::GLProgram(&gl::PASSTHRU_CYLINDER_VERT_SHADER, &gl::CYLINDER_GEOM_SHADER,
-                                        &gl::CYLINDER_FRAG_SHADER, gl::DrawMode::Points));
+    lineProgram = render::engine->generateShaderProgram(
+        {render::PASSTHRU_CYLINDER_VERT_SHADER, render::CYLINDER_GEOM_SHADER, render::CYLINDER_FRAG_SHADER},
+        DrawMode::Points);
 
     // Build buffers
     std::vector<glm::vec3> edgeStarts, edgeEnds;
@@ -92,7 +92,7 @@ void SurfaceGraphQuantity::createPrograms() {
     lineProgram->setAttribute("a_position_tail", edgeStarts);
     lineProgram->setAttribute("a_position_tip", edgeEnds);
 
-    setMaterialForProgram(*lineProgram, "wax");
+    render::engine->setMaterial(*lineProgram, parent.getMaterial());
   }
 }
 

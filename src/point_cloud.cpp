@@ -2,11 +2,10 @@
 #include "polyscope/point_cloud.h"
 
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/render/shaders.h"
 
 #include "polyscope/point_cloud_color_quantity.h"
 #include "polyscope/point_cloud_scalar_quantity.h"
@@ -29,18 +28,17 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
     : QuantityStructure<PointCloud>(name, structureTypeName), points(std::move(points_)),
       pointColor(uniquePrefix() + "#pointColor", getNextUniqueColor()),
-      pointRadius(uniquePrefix() + "#pointRadius", relativeValue(0.005)) {}
+      pointRadius(uniquePrefix() + "#pointRadius", relativeValue(0.005)),
+      material(uniquePrefix() + "#material", "clay") {}
 
 
 // Helper to set uniforms
-void PointCloud::setPointCloudUniforms(gl::GLProgram& p) {
+void PointCloud::setPointCloudUniforms(render::ShaderProgram& p) {
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
   p.setUniform("u_pointRadius", pointRadius.get().asAbsolute());
-
-  glm::vec3 lookDir, upDir, rightDir;
-  view::getCameraFrame(lookDir, upDir, rightDir);
-  p.setUniform("u_camZ", lookDir);
-  p.setUniform("u_camUp", upDir);
-  p.setUniform("u_camRight", rightDir);
+  p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  p.setUniform("u_viewport", render::engine->getCurrentViewport());
 }
 
 void PointCloud::draw() {
@@ -94,9 +92,11 @@ void PointCloud::prepare() {
     return;
   }
 
-  program.reset(new gl::GLProgram(&gl::SPHERE_VERT_SHADER, &gl::SPHERE_BILLBOARD_GEOM_SHADER,
-                                  &gl::SPHERE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
-  setMaterialForProgram(*program, "wax");
+  program = render::engine->generateShaderProgram(
+      {render::SPHERE_VERT_SHADER, render::SPHERE_BILLBOARD_GEOM_SHADER, render::SPHERE_BILLBOARD_FRAG_SHADER},
+      DrawMode::Points);
+
+  render::engine->setMaterial(*program, material.get());
 
   // Fill out the geometry data for the program
   program->setAttribute("a_position", points);
@@ -109,8 +109,10 @@ void PointCloud::preparePick() {
   size_t pickStart = pick::requestPickBufferRange(this, pickCount);
 
   // Create a new pick program
-  pickProgram.reset(new gl::GLProgram(&gl::SPHERE_COLOR_VERT_SHADER, &gl::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                      &gl::SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+  pickProgram = render::engine->generateShaderProgram({render::SPHERE_COLOR_VERT_SHADER,
+                                                       render::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
+                                                       render::SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER},
+                                                      DrawMode::Points);
 
   // Fill color buffer with packed point indices
   std::vector<glm::vec3> pickColors;
@@ -123,6 +125,17 @@ void PointCloud::preparePick() {
   // Store data in buffers
   pickProgram->setAttribute("a_position", points);
   pickProgram->setAttribute("a_color", pickColors);
+}
+
+void PointCloud::geometryChanged() {
+  program.reset();
+  pickProgram.reset();
+
+  for (auto& q : quantities) {
+    q.second->geometryChanged();
+  }
+
+  requestRedraw();
 }
 
 void PointCloud::buildPickUI(size_t localPickID) {
@@ -162,6 +175,10 @@ void PointCloud::buildCustomUI() {
 
 void PointCloud::buildCustomOptionsUI() {
   if (ImGui::MenuItem("Write points to file")) writePointsToFile();
+  if (render::buildMaterialOptionsGui(material.get())) {
+    material.manuallyChanged();
+    setMaterial(material.get()); // trigger the other updates that happen on set()
+  }
 }
 
 double PointCloud::lengthScale() {
@@ -257,6 +274,14 @@ PointCloud* PointCloud::setPointColor(glm::vec3 newVal) {
   return this;
 }
 glm::vec3 PointCloud::getPointColor() { return pointColor.get(); }
+
+PointCloud* PointCloud::setMaterial(std::string m) {
+  material = m;
+  geometryChanged(); // (serves the purpose of re-initializing everything, though this is a bit overkill)
+  requestRedraw();
+  return this;
+}
+std::string PointCloud::getMaterial() { return material.get(); }
 
 PointCloud* PointCloud::setPointRadius(double newVal, bool isRelative) {
   pointRadius = ScaledValue<float>(newVal, isRelative);

@@ -6,7 +6,7 @@ namespace polyscope {
 
 // Shorthand to add a point cloud to polyscope
 template <class T>
-PointCloud* registerPointCloud(std::string name, const T& points, bool replaceIfPresent) {
+PointCloud* registerPointCloud(std::string name, const T& points) {
   PointCloud* s = new PointCloud(name, standardizeVectorArray<glm::vec3, 3>(points));
   bool success = registerStructure(s);
   if (!success) {
@@ -15,7 +15,7 @@ PointCloud* registerPointCloud(std::string name, const T& points, bool replaceIf
   return s;
 }
 template <class T>
-PointCloud* registerPointCloud2D(std::string name, const T& points, bool replaceIfPresent) {
+PointCloud* registerPointCloud2D(std::string name, const T& points) {
   std::vector<glm::vec3> points3D(standardizeVectorArray<glm::vec3, 2>(points));
   for (auto& v : points3D) {
     v.z = 0.;
@@ -31,15 +31,7 @@ PointCloud* registerPointCloud2D(std::string name, const T& points, bool replace
 template <class V>
 void PointCloud::updatePointPositions(const V& newPositions) {
   points = standardizeVectorArray<glm::vec3, 3>(newPositions);
-
-  program.reset();
-  pickProgram.reset();
-
-  for (auto& q : quantities) {
-    q.second->geometryChanged();
-  }
-
-  requestRedraw();
+  geometryChanged();
 }
 
 template <class V>
@@ -58,9 +50,7 @@ void PointCloud::updatePointPositions2D(const V& newPositions2D) {
 inline PointCloud* getPointCloud(std::string name) {
   return dynamic_cast<PointCloud*>(getStructure(PointCloud::structureTypeName, name));
 }
-inline bool hasPointCloud(std::string name) {
-  return hasStructure(PointCloud::structureTypeName, name);
-}
+inline bool hasPointCloud(std::string name) { return hasStructure(PointCloud::structureTypeName, name); }
 inline void removePointCloud(std::string name, bool errorIfAbsent) {
   removeStructure(PointCloud::structureTypeName, name, errorIfAbsent);
 }

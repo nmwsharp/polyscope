@@ -36,18 +36,12 @@ std::string guessNiceNameFromPath(std::string fullname) {
   return niceName;
 }
 
-std::string prettyPrintCount(size_t count) {
+std::tuple<std::string, std::string> splitExt(std::string f) {
+  auto p = f.find_last_of(".");
+  return std::tuple<std::string, std::string>{f.substr(0, p), f.substr(p, std::string::npos)};
+}
 
-  /*
-  // Pretty print test
-  size_t num = 0;
-  size_t mult = 1;
-  for(int i = 0; i < 18; i++) {
-    cout << num <<  " --> |" << polyscope::utilities::prettyPrintCount(num) << "|" <<  endl;
-    mult *= 10;
-    num += mult * randomInt(0,9);
-  }
-  */
+std::string prettyPrintCount(size_t count) {
 
   int nDigits = 1;
   if (count > 0) {

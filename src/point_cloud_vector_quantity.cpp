@@ -2,10 +2,8 @@
 #include "polyscope/point_cloud_vector_quantity.h"
 
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/vector_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -25,7 +23,8 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
       vectorLengthMult(uniquePrefix() + "#vectorLengthMult",
                        vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
       vectorRadius(uniquePrefix() + "#vectorRadius", relativeValue(0.0025)),
-      vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor())
+      vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()),
+      material(uniquePrefix() + "#material", "clay")
 
 {
 
@@ -54,20 +53,25 @@ void PointCloudVectorQuantity::draw() {
   parent.setTransformUniforms(*program);
 
   program->setUniform("u_radius", vectorRadius.get().asAbsolute());
-  program->setUniform("u_color", vectorColor.get());
+  program->setUniform("u_baseColor", vectorColor.get());
 
   if (vectorType == VectorType::AMBIENT) {
     program->setUniform("u_lengthMult", 1.0);
   } else {
     program->setUniform("u_lengthMult", vectorLengthMult.get().asAbsolute());
   }
+	
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+  program->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+ 	program->setUniform("u_viewport", render::engine->getCurrentViewport());
 
   program->draw();
 }
 
 void PointCloudVectorQuantity::createProgram() {
-  program.reset(new gl::GLProgram(&gl::PASSTHRU_VECTOR_VERT_SHADER, &gl::VECTOR_GEOM_SHADER,
-                                  &gl::SHINY_VECTOR_FRAG_SHADER, gl::DrawMode::Points));
+  program = render::engine->generateShaderProgram(
+      {render::PASSTHRU_VECTOR_VERT_SHADER, render::VECTOR_GEOM_SHADER, render::VECTOR_FRAG_SHADER}, DrawMode::Points);
 
   // Fill buffers
   std::vector<glm::vec3> mappedVectors;
@@ -78,7 +82,7 @@ void PointCloudVectorQuantity::createProgram() {
   program->setAttribute("a_vector", mappedVectors);
   program->setAttribute("a_position", parent.points);
 
-  setMaterialForProgram(*program, "wax");
+  render::engine->setMaterial(*program, material.get());
 }
 
 void PointCloudVectorQuantity::geometryChanged() { program.reset(); }
@@ -173,6 +177,14 @@ PointCloudVectorQuantity* PointCloudVectorQuantity::setVectorColor(glm::vec3 col
   return this;
 }
 glm::vec3 PointCloudVectorQuantity::getVectorColor() { return vectorColor.get(); }
+
+PointCloudVectorQuantity* PointCloudVectorQuantity::setMaterial(std::string m) {
+  material = m;
+  if (program) render::engine->setMaterial(*program, getMaterial());
+  requestRedraw();
+  return this;
+}
+std::string PointCloudVectorQuantity::getMaterial() { return material.get(); }
 
 std::string PointCloudVectorQuantity::niceName() { return name + " (vector)"; }
 

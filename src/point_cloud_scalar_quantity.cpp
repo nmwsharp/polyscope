@@ -1,10 +1,8 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/point_cloud_scalar_quantity.h"
 
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/sphere_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -81,7 +79,7 @@ void PointCloudScalarQuantity::buildCustomUI() {
 
     ImGui::EndPopup();
   }
-  if (buildColormapSelector(cMap.get())) {
+  if (render::buildColormapSelector(cMap.get())) {
     pointProgram.reset();
     hist.updateColormap(cMap.get());
     setColorMap(getColorMap());
@@ -125,15 +123,17 @@ void PointCloudScalarQuantity::buildCustomUI() {
 void PointCloudScalarQuantity::createPointProgram() {
   // Create the program to draw this quantity
 
-  pointProgram.reset(new gl::GLProgram(&gl::SPHERE_VALUE_VERT_SHADER, &gl::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
-                                       &gl::SPHERE_VALUE_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+  pointProgram = render::engine->generateShaderProgram({render::SPHERE_VALUE_VERT_SHADER,
+                                                        render::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
+                                                        render::SPHERE_VALUE_BILLBOARD_FRAG_SHADER},
+                                                       DrawMode::Points);
 
   // Fill buffers
   pointProgram->setAttribute("a_position", parent.points);
   pointProgram->setAttribute("a_value", values);
-  pointProgram->setTextureFromColormap("t_colormap", gl::getColorMap(cMap.get()));
+  pointProgram->setTextureFromColormap("t_colormap", cMap.get());
 
-  setMaterialForProgram(*pointProgram, "wax");
+  render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
 
 void PointCloudScalarQuantity::geometryChanged() { pointProgram.reset(); }
@@ -145,13 +145,14 @@ void PointCloudScalarQuantity::buildPickUI(size_t ind) {
   ImGui::NextColumn();
 }
 
-PointCloudScalarQuantity* PointCloudScalarQuantity::setColorMap(gl::ColorMapID val) {
+PointCloudScalarQuantity* PointCloudScalarQuantity::setColorMap(std::string val) {
   cMap = val;
   hist.updateColormap(cMap.get());
   requestRedraw();
   return this;
 }
-gl::ColorMapID PointCloudScalarQuantity::getColorMap() { return cMap.get(); }
+std::string PointCloudScalarQuantity::getColorMap() { return cMap.get(); }
+
 PointCloudScalarQuantity* PointCloudScalarQuantity::setMapRange(std::pair<double, double> val) {
   vizRange = val;
   requestRedraw();

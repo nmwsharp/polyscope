@@ -3,7 +3,7 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/curve_network.h"
-#include "polyscope/gl/color_maps.h"
+#include "polyscope/render/color_maps.h"
 #include "polyscope/histogram.h"
 
 namespace polyscope {
@@ -23,8 +23,8 @@ public:
   // === Get/set visualization parameters
 
   // The color map
-  CurveNetworkScalarQuantity* setColorMap(gl::ColorMapID val);
-  gl::ColorMapID getColorMap();
+  CurveNetworkScalarQuantity* setColorMap(std::string name);
+  std::string getColorMap();
 
   // Data limits mapped in to colormap
   CurveNetworkScalarQuantity* setMapRange(std::pair<double, double> val);
@@ -40,14 +40,14 @@ protected:
   Histogram hist;
 
   // UI internals
-  PersistentValue<gl::ColorMapID> cMap;
+  PersistentValue<std::string> cMap;
   const std::string definedOn;
-  std::unique_ptr<gl::GLProgram> nodeProgram;
-  std::unique_ptr<gl::GLProgram> edgeProgram;
+  std::shared_ptr<render::ShaderProgram> nodeProgram;
+  std::shared_ptr<render::ShaderProgram> edgeProgram;
 
   // Helpers
   virtual void createProgram() = 0;
-  void setProgramUniforms(gl::GLProgram& program);
+  void setProgramUniforms(render::ShaderProgram& program);
 };
 
 // ========================================================

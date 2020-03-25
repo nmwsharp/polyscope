@@ -4,8 +4,8 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
 #include "polyscope/curve_network_quantity.h"
-#include "polyscope/gl/gl_utils.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
 
@@ -45,6 +45,7 @@ public:
 
   // Build the imgui display
   virtual void buildCustomUI() override;
+  virtual void buildCustomOptionsUI() override;
   virtual void buildPickUI(size_t localPickID) override;
 
   // Render the the structure on screen
@@ -58,7 +59,6 @@ public:
 
   // Axis-aligned bounding box for the structure
   virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
-
   virtual std::string typeName() override;
 
   // === Quantities
@@ -107,19 +107,19 @@ public:
   static const std::string structureTypeName;
 
   // Small utilities
-  void setCurveNetworkNodeUniforms(gl::GLProgram& p);
-  void setCurveNetworkEdgeUniforms(gl::GLProgram& p);
-  void fillEdgeGeometryBuffers(gl::GLProgram& program);
-  void fillNodeGeometryBuffers(gl::GLProgram& program);
+  void setCurveNetworkNodeUniforms(render::ShaderProgram& p);
+  void setCurveNetworkEdgeUniforms(render::ShaderProgram& p);
+  void fillEdgeGeometryBuffers(render::ShaderProgram& program);
+  void fillNodeGeometryBuffers(render::ShaderProgram& program);
 
   // === Mutate
   template <class V>
   void updateNodePositions(const V& newPositions);
   template <class V>
   void updateNodePositions2D(const V& newPositions);
-  
+
   // === Get/set visualization parameters
-  
+
   // set the base color of the points
   CurveNetwork* setColor(glm::vec3 newVal);
   glm::vec3 getColor();
@@ -127,26 +127,32 @@ public:
   // set the radius of the points
   CurveNetwork* setRadius(float newVal, bool isRelative = true);
   float getRadius();
+  
+  // Material
+  CurveNetwork* setMaterial(std::string name);
+  std::string getMaterial();
 
 private:
-
   // === Visualization parameters
   PersistentValue<glm::vec3> color;
   PersistentValue<ScaledValue<float>> radius;
+  PersistentValue<std::string> material;
 
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
-  std::unique_ptr<gl::GLProgram> edgeProgram;
-  std::unique_ptr<gl::GLProgram> nodeProgram;
-  std::unique_ptr<gl::GLProgram> edgePickProgram;
-  std::unique_ptr<gl::GLProgram> nodePickProgram;
+  std::shared_ptr<render::ShaderProgram> edgeProgram;
+  std::shared_ptr<render::ShaderProgram> nodeProgram;
+  std::shared_ptr<render::ShaderProgram> edgePickProgram;
+  std::shared_ptr<render::ShaderProgram> nodePickProgram;
 
   // === Helpers
 
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
   void preparePick();
+
+	void geometryChanged();
 
   // Pick helpers
   void buildNodePickUI(size_t nodeInd);

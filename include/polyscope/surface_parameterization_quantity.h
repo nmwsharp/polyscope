@@ -3,6 +3,8 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/histogram.h"
+#include "polyscope/render/color_maps.h"
+#include "polyscope/render/engine.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_parameterization_enums.h"
 
@@ -29,9 +31,6 @@ public:
   // === Members
   const ParamCoordsType coordsType;
 
-  // The program which does the drawing
-  std::unique_ptr<gl::GLProgram> program;
-
   // === Viz stuff
   // to keep things simple, has settings for all of the viz styles, even though not all are used at all times
 
@@ -55,8 +54,8 @@ public:
   double getCheckerSize();
 
   // Color map for radial visualization
-  SurfaceParameterizationQuantity* setColorMap(gl::ColorMapID val);
-  gl::ColorMapID getColorMap();
+  SurfaceParameterizationQuantity* setColorMap(std::string val);
+  std::string getColorMap();
 
 protected:
   // === Visualiztion options
@@ -65,13 +64,14 @@ protected:
   PersistentValue<glm::vec3> checkColor1, checkColor2;           // for checker (two colors to use)
   PersistentValue<glm::vec3> gridLineColor, gridBackgroundColor; // for GRID (two colors to use)
 
-  PersistentValue<gl::ColorMapID> cMap;
+  PersistentValue<std::string> cMap;
   float localRot = 0.; // for LOCAL (angular shift, in radians)
+  std::shared_ptr<render::ShaderProgram> program;
 
   // Helpers
   void createProgram();
-  void setProgramUniforms(gl::GLProgram& program);
-  virtual void fillColorBuffers(gl::GLProgram& p) = 0;
+  void setProgramUniforms(render::ShaderProgram& program);
+  virtual void fillColorBuffers(render::ShaderProgram& p) = 0;
 };
 
 
@@ -92,7 +92,7 @@ public:
   std::vector<glm::vec2> coords; // on corners
 
 protected:
-  virtual void fillColorBuffers(gl::GLProgram& p) override;
+  virtual void fillColorBuffers(render::ShaderProgram& p) override;
 };
 
 
@@ -112,7 +112,7 @@ public:
   std::vector<glm::vec2> coords; // on vertices
 
 protected:
-  virtual void fillColorBuffers(gl::GLProgram& p) override;
+  virtual void fillColorBuffers(render::ShaderProgram& p) override;
 };
 
 } // namespace polyscope

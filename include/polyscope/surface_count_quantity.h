@@ -15,6 +15,7 @@ public:
   virtual void draw() override;
   virtual void buildCustomUI() override;
   virtual std::string niceName() override;
+  virtual void geometryChanged() override;
 
   // The map that takes values to [0,1] for drawing
   AffineRemapper<double> mapper;
@@ -26,15 +27,16 @@ public:
 
   // UI internals
   const std::string descriptiveType; // ("vertex count", etc)
-  std::unique_ptr<gl::GLProgram> program;
+  std::shared_ptr<render::ShaderProgram> program;
 
+  // TODO use persistent/scaled quantities
   float pointRadius = 0.003;
   float vizRangeLow, vizRangeHigh, dataRangeLow, dataRangeHigh;
-  gl::ColorMapID cMap = gl::ColorMapID::COOLWARM;
+  std::string cMap = "coolwarm";
 
 protected:
   void initializeLimits();
-  void setUniforms(gl::GLProgram& p);
+  void setUniforms(render::ShaderProgram& p);
   void createProgram();
 };
 

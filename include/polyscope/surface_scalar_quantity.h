@@ -2,9 +2,10 @@
 #pragma once
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/gl/color_maps.h"
+#include "polyscope/render/color_maps.h"
 #include "polyscope/histogram.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/render/engine.h"
 
 namespace polyscope {
 
@@ -25,8 +26,8 @@ public:
   // === Get/set visualization parameters
 
   // The color map
-  SurfaceScalarQuantity* setColorMap(gl::ColorMapID val);
-  gl::ColorMapID getColorMap();
+  SurfaceScalarQuantity* setColorMap(std::string val);
+  std::string getColorMap();
 
   // Data limits mapped in to colormap
   SurfaceScalarQuantity* setMapRange(std::pair<double, double> val);
@@ -42,13 +43,13 @@ protected:
   Histogram hist;
 
   // UI internals
-  PersistentValue<gl::ColorMapID> cMap;
+  PersistentValue<std::string> cMap;
   const std::string definedOn;
-  std::unique_ptr<gl::GLProgram> program;
+  std::shared_ptr<render::ShaderProgram> program;
 
   // Helpers
   virtual void createProgram() = 0;
-  void setProgramUniforms(gl::GLProgram& program);
+  void setProgramUniforms(render::ShaderProgram& program);
 };
 
 // ========================================================
@@ -62,7 +63,7 @@ public:
 
   virtual void createProgram() override;
 
-  void fillColorBuffers(gl::GLProgram& p);
+  void fillColorBuffers(render::ShaderProgram& p);
 
   void buildVertexInfoGUI(size_t vInd) override;
   virtual void writeToFile(std::string filename = "") override;
@@ -83,7 +84,7 @@ public:
 
   virtual void createProgram() override;
 
-  void fillColorBuffers(gl::GLProgram& p);
+  void fillColorBuffers(render::ShaderProgram& p);
 
   void buildFaceInfoGUI(size_t fInd) override;
 
@@ -104,7 +105,7 @@ public:
 
   virtual void createProgram() override;
 
-  void fillColorBuffers(gl::GLProgram& p);
+  void fillColorBuffers(render::ShaderProgram& p);
 
   void buildEdgeInfoGUI(size_t edgeInd) override;
 
@@ -125,7 +126,7 @@ public:
 
   virtual void createProgram() override;
 
-  void fillColorBuffers(gl::GLProgram& p);
+  void fillColorBuffers(render::ShaderProgram& p);
 
   void buildHalfedgeInfoGUI(size_t heInd) override;
 

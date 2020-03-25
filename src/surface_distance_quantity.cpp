@@ -2,10 +2,9 @@
 #include "polyscope/surface_distance_quantity.h"
 
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/distance_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -18,7 +17,7 @@ SurfaceDistanceQuantity::SurfaceDistanceQuantity(std::string name, std::vector<d
                                                  bool signedDist_)
     : SurfaceMeshQuantity(name, mesh_, true), distances(std::move(distances_)), signedDist(signedDist_),
       stripeSize(uniquePrefix() + name + "#stripeSize", relativeValue(0.02)),
-      cMap(uniquePrefix() + name + "#cmap", signedDist ? gl::ColorMapID::COOLWARM : gl::ColorMapID::VIRIDIS)
+      cMap(uniquePrefix() + name + "#cmap", signedDist ? "coolwarm" : "viridis")
 
 
 {
@@ -47,19 +46,19 @@ void SurfaceDistanceQuantity::draw() {
 
 void SurfaceDistanceQuantity::createProgram() {
   // Create the program to draw this quantity
-  program.reset(new gl::GLProgram(&gl::VERT_DIST_SURFACE_VERT_SHADER, &gl::VERT_DIST_SURFACE_FRAG_SHADER,
-                                  gl::DrawMode::Triangles));
+  program = render::engine->generateShaderProgram(
+      {render::VERT_DIST_SURFACE_VERT_SHADER, render::VERT_DIST_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
 
   // Fill color buffers
   fillColorBuffers(*program);
   parent.fillGeometryBuffers(*program);
 
-  setMaterialForProgram(*program, "wax");
+  render::engine->setMaterial(*program, parent.getMaterial());
 }
 
 
 // Update range uniforms
-void SurfaceDistanceQuantity::setProgramUniforms(gl::GLProgram& program) {
+void SurfaceDistanceQuantity::setProgramUniforms(render::ShaderProgram& program) {
   program.setUniform("u_rangeLow", vizRange.first);
   program.setUniform("u_rangeHigh", vizRange.second);
   program.setUniform("u_modLen", getStripeSize());
@@ -79,7 +78,7 @@ SurfaceDistanceQuantity* SurfaceDistanceQuantity::resetMapRange() {
 void SurfaceDistanceQuantity::buildCustomUI() {
   ImGui::SameLine();
 
-  if (buildColormapSelector(cMap.get())) {
+  if (render::buildColormapSelector(cMap.get())) {
     program.reset();
     setColorMap(getColorMap());
   }
@@ -90,10 +89,7 @@ void SurfaceDistanceQuantity::buildCustomUI() {
     ImGui::OpenPopup("OptionsPopup");
   }
   if (ImGui::BeginPopup("OptionsPopup")) {
-
-    if (ImGui::MenuItem("Write to file")) writeToFile();
     if (ImGui::MenuItem("Reset colormap range")) resetMapRange();
-
     ImGui::EndPopup();
   }
 
@@ -125,7 +121,7 @@ void SurfaceDistanceQuantity::buildCustomUI() {
 }
 
 
-void SurfaceDistanceQuantity::fillColorBuffers(gl::GLProgram& p) {
+void SurfaceDistanceQuantity::fillColorBuffers(render::ShaderProgram& p) {
   std::vector<double> colorval;
   colorval.reserve(3 * parent.nFacesTriangulation());
 
@@ -148,16 +144,17 @@ void SurfaceDistanceQuantity::fillColorBuffers(gl::GLProgram& p) {
 
   // Store data in buffers
   p.setAttribute("a_colorval", colorval);
-  p.setTextureFromColormap("t_colormap", gl::getColorMap(cMap.get()));
+  p.setTextureFromColormap("t_colormap", cMap.get());
 }
 
-SurfaceDistanceQuantity* SurfaceDistanceQuantity::setColorMap(gl::ColorMapID val) {
-  cMap = val;
+SurfaceDistanceQuantity* SurfaceDistanceQuantity::setColorMap(std::string name) {
+  cMap = name;
   hist.updateColormap(cMap.get());
   requestRedraw();
   return this;
 }
-gl::ColorMapID SurfaceDistanceQuantity::getColorMap() { return cMap.get(); }
+std::string SurfaceDistanceQuantity::getColorMap() { return cMap.get(); }
+
 SurfaceDistanceQuantity* SurfaceDistanceQuantity::setMapRange(std::pair<double, double> val) {
   vizRange = val;
   requestRedraw();
@@ -177,32 +174,6 @@ void SurfaceDistanceQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::NextColumn();
   ImGui::Text("%g", distances[vInd]);
   ImGui::NextColumn();
-}
-
-
-void SurfaceDistanceQuantity::writeToFile(std::string filename) {
-
-  throw std::runtime_error("NOT IMPLEMENTED");
-
-  /* TODO
-
-  if (filename == "") {
-    filename = promptForFilename();
-    if (filename == "") {
-      return;
-    }
-  }
-
-  cout << "Writing distance function to file " << filename << " in U coordinate of texture map" << endl;
-
-  HalfedgeMesh* mesh = parent->mesh;
-  CornerData<Vector2> scalarVal(mesh, Vector2{0.0, 0.0});
-  for (CornerPtr c : mesh->corners()) {
-    scalarVal[c].x = distances[c.vertex()];
-  }
-
-  WavefrontOBJ::write(filename, *parent->geometry, scalarVal);
-  */
 }
 
 

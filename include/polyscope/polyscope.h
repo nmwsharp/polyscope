@@ -1,7 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
-#include "polyscope/gl/gl_utils.h"
 #include "polyscope/messages.h"
 #include "polyscope/options.h"
 #include "polyscope/screenshot.h"
@@ -103,11 +102,8 @@ void popContext();
 // Execute one iteration of the main loop
 // Exposed so that some weird flow (eg, errors) can re-enter the main loop when appropriate. Be careful!
 void mainLoopIteration();
-void bindDefaultBuffer();
 void initializeImGUIContext();
 void drawStructures();
 
-// Share a font atlas for multiple uses (mainly with imgui)
-ImFontAtlas* getGlobalFontAtlas();
 
 } // namespace polyscope

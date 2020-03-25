@@ -58,16 +58,10 @@ void screenshot(std::string filename, bool transparentBG) {
   requestRedraw();
   draw(false);
 
-  // Get buffer size
-  GLint viewport[4];
-  glGetIntegerv(GL_VIEWPORT, viewport);
-  int w = viewport[2];
-  int h = viewport[3];
-
-  // Read from openGL
-  size_t buffSize = w * h * 4;
-  unsigned char* buff = new unsigned char[buffSize];
-  glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buff);
+  // these _should_ always be accurate
+  int w = view::bufferWidth;
+  int h = view::bufferHeight;
+  std::vector<unsigned char> buff = render::engine->readDisplayBuffer();
 
   // Just flip
   if (transparentBG) {
@@ -111,7 +105,6 @@ void screenshot(std::string filename, bool transparentBG) {
     delete[] noAlphaBuff;
   }
 
-  delete[] buff;
 }
 
 void screenshot(bool transparentBG) {
@@ -125,8 +118,6 @@ void screenshot(bool transparentBG) {
   state::screenshotInd++;
 }
 
-void resetScreenshotIndex() {
-  state::screenshotInd = 0;
-}
+void resetScreenshotIndex() { state::screenshotInd = 0; }
 
 } // namespace polyscope

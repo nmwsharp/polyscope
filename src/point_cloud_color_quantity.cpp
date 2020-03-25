@@ -1,9 +1,7 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/point_cloud_color_quantity.h"
 
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/sphere_shaders.h"
+#include "polyscope/render/shaders.h"
 #include "polyscope/polyscope.h"
 
 #include "imgui.h"
@@ -45,19 +43,19 @@ std::string PointCloudColorQuantity::niceName() { return name + " (color)"; }
 
 void PointCloudColorQuantity::createPointProgram() {
   // Create the program to draw this quantity
-  pointProgram.reset(new gl::GLProgram(&gl::SPHERE_COLOR_VERT_SHADER, &gl::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                       &gl::SPHERE_COLOR_BILLBOARD_FRAG_SHADER, gl::DrawMode::Points));
+  pointProgram = render::engine->generateShaderProgram({render::SPHERE_COLOR_VERT_SHADER,
+                                                        render::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
+                                                        render::SPHERE_COLOR_BILLBOARD_FRAG_SHADER},
+                                                       DrawMode::Points);
 
   // Fill buffers
   pointProgram->setAttribute("a_position", parent.points);
   pointProgram->setAttribute("a_color", values);
 
-  setMaterialForProgram(*pointProgram, "wax");
+  render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
 
-void PointCloudColorQuantity::geometryChanged() {
-  pointProgram.reset();
-}
+void PointCloudColorQuantity::geometryChanged() { pointProgram.reset(); }
 
 
 void PointCloudColorQuantity::buildPickUI(size_t ind) {

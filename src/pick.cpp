@@ -119,5 +119,35 @@ size_t localIndexToGlobal(std::pair<Structure*, size_t> localPick) {
 }
 
 
+std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
+
+  // Be sure not to pick outside of buffer
+  if (xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
+    return {nullptr, 0};
+  }
+
+  render::FrameBuffer* pickFramebuffer = render::engine->pickFramebuffer.get();
+
+  pickFramebuffer->resize(view::bufferWidth, view::bufferHeight);
+  pickFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  if (!pickFramebuffer->bindForRendering()) return {nullptr, 0};
+  pickFramebuffer->clear();
+
+  // Render pick buffer
+  for (auto cat : state::structures) {
+    for (auto x : cat.second) {
+      x.second->drawPick();
+    }
+  }
+
+  // Read from the pick buffer
+  std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, view::bufferHeight - yPos);
+  size_t globalInd = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
+
+  return pick::globalIndexToLocal(globalInd);
+}
+
 } // namespace pick
+
+
 } // namespace polyscope

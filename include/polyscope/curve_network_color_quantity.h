@@ -22,8 +22,8 @@ public:
 protected:
   // UI internals
   const std::string definedOn;
-  std::unique_ptr<gl::GLProgram> nodeProgram;
-  std::unique_ptr<gl::GLProgram> edgeProgram;
+  std::shared_ptr<render::ShaderProgram> nodeProgram;
+  std::shared_ptr<render::ShaderProgram> edgeProgram;
 
   // Helpers
   virtual void createProgram() = 0;

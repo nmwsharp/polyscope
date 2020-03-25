@@ -26,7 +26,7 @@ public:
 
 protected:
   void createPointProgram();
-  std::unique_ptr<gl::GLProgram> pointProgram;
+  std::shared_ptr<render::ShaderProgram> pointProgram;
 };
 
 

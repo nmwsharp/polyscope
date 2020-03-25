@@ -2,10 +2,8 @@
 #include "polyscope/curve_network_vector_quantity.h"
 
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/vector_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -23,7 +21,8 @@ CurveNetworkVectorQuantity::CurveNetworkVectorQuantity(std::string name, CurveNe
       vectorLengthMult(uniquePrefix() + "#vectorLengthMult",
                        vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
       vectorRadius(uniquePrefix() + "#vectorRadius", relativeValue(0.0025)),
-      vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()) {}
+      vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()),
+      material(uniquePrefix() + "#material", "clay") {}
 
 void CurveNetworkVectorQuantity::prepareVectorMapper() {
 
@@ -44,7 +43,7 @@ void CurveNetworkVectorQuantity::draw() {
   parent.setTransformUniforms(*program);
 
   program->setUniform("u_radius", vectorRadius.get().asAbsolute());
-  program->setUniform("u_color", vectorColor.get());
+  program->setUniform("u_baseColor", vectorColor.get());
 
   if (vectorType == VectorType::AMBIENT) {
     program->setUniform("u_lengthMult", 1.0);
@@ -52,13 +51,18 @@ void CurveNetworkVectorQuantity::draw() {
     program->setUniform("u_lengthMult", vectorLengthMult.get().asAbsolute());
   }
 
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+  program->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  program->setUniform("u_viewport", render::engine->getCurrentViewport());
+
   program->draw();
 }
 
 void CurveNetworkVectorQuantity::prepareProgram() {
 
-  program.reset(new gl::GLProgram(&gl::PASSTHRU_VECTOR_VERT_SHADER, &gl::VECTOR_GEOM_SHADER,
-                                  &gl::SHINY_VECTOR_FRAG_SHADER, gl::DrawMode::Points));
+  program = render::engine->generateShaderProgram(
+      {render::PASSTHRU_VECTOR_VERT_SHADER, render::VECTOR_GEOM_SHADER, render::VECTOR_FRAG_SHADER}, DrawMode::Points);
 
   // Fill buffers
   std::vector<glm::vec3> mappedVectors;
@@ -69,7 +73,7 @@ void CurveNetworkVectorQuantity::prepareProgram() {
   program->setAttribute("a_vector", mappedVectors);
   program->setAttribute("a_position", vectorRoots);
 
-  setMaterialForProgram(*program, "wax");
+  render::engine->setMaterial(*program, getMaterial());
 }
 
 void CurveNetworkVectorQuantity::buildCustomUI() {
@@ -142,18 +146,29 @@ CurveNetworkVectorQuantity* CurveNetworkVectorQuantity::setVectorLengthScale(dou
   return this;
 }
 double CurveNetworkVectorQuantity::getVectorLengthScale() { return vectorLengthMult.get().asAbsolute(); }
+
 CurveNetworkVectorQuantity* CurveNetworkVectorQuantity::setVectorRadius(double val, bool isRelative) {
   vectorRadius = ScaledValue<double>(val, isRelative);
   requestRedraw();
   return this;
 }
 double CurveNetworkVectorQuantity::getVectorRadius() { return vectorRadius.get().asAbsolute(); }
+
 CurveNetworkVectorQuantity* CurveNetworkVectorQuantity::setVectorColor(glm::vec3 color) {
   vectorColor = color;
   requestRedraw();
   return this;
 }
 glm::vec3 CurveNetworkVectorQuantity::getVectorColor() { return vectorColor.get(); }
+
+CurveNetworkVectorQuantity* CurveNetworkVectorQuantity::setMaterial(std::string m) {
+  material = m;
+  if (program) render::engine->setMaterial(*program, getMaterial());
+  requestRedraw();
+  return this;
+}
+std::string CurveNetworkVectorQuantity::getMaterial() { return material.get(); }
+
 
 std::string CurveNetworkEdgeVectorQuantity::niceName() { return name + " (edge vector)"; }
 

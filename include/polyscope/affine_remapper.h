@@ -1,8 +1,8 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include "polyscope/render/color_maps.h"
 #include "polyscope/utilities.h"
-#include "polyscope/gl/color_maps.h"
 
 #include <algorithm>
 #include <cmath>
@@ -20,7 +20,7 @@ namespace polyscope {
 // MAGNITUDE: [0, inf], zero is special (ie, length of a vector)
 enum class DataType { STANDARD = 0, SYMMETRIC, MAGNITUDE };
 
-inline gl::ColorMapID defaultColorMap(DataType type);
+inline std::string defaultColorMap(DataType type);
 
 
 // What is the meaningful scale of an R3 vector?

@@ -27,7 +27,7 @@ const double defaultFov = 45.;
 double fov = defaultFov;
 double nearClipRatio = defaultNearClipRatio;
 double farClipRatio = defaultFarClipRatio;
-std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 1.0}};
+std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 0.0}};
 
 glm::mat4x4 viewMat;
 
@@ -224,7 +224,8 @@ glm::mat4 computeHomeView() {
   case UpDir::ZUp:
     baseUp = glm::vec3(0., 0., 1.);
     R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI / 2), glm::vec3(-1., 0., 0.));
-    R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI), glm::vec3(0., 1., 0.)) * R; // follow common convention for "front"
+    R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI), glm::vec3(0., 1., 0.)) *
+        R; // follow common convention for "front"
     break;
   }
 
@@ -283,6 +284,7 @@ glm::mat4 getCameraPerspectiveMatrix() {
 
   return glm::perspective(fovRad, aspectRatio, nearClip, farClip);
 }
+
 
 glm::vec3 getCameraWorldPosition() {
   // This will work no matter how the view matrix is constructed...

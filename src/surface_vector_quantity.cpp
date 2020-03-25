@@ -2,10 +2,9 @@
 #include "polyscope/surface_vector_quantity.h"
 
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/vector_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/render/shaders.h"
 #include "polyscope/trace_vector_field.h"
 
 #include "imgui.h"
@@ -25,7 +24,8 @@ SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh
       vectorLengthMult(uniquePrefix() + name + "#vectorLengthMult",
                        vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
       vectorRadius(uniquePrefix() + name + "#vectorRadius", relativeValue(0.0025)),
-      vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()), definedOn(definedOn_),
+      vectorColor(uniquePrefix() + "#vectorColor", getNextUniqueColor()),
+      material(uniquePrefix() + "#material", "clay"), definedOn(definedOn_),
       ribbonEnabled(uniquePrefix() + "#ribbonEnabled", false) {}
 
 void SurfaceVectorQuantity::prepareVectorMapper() {
@@ -47,21 +47,26 @@ void SurfaceVectorQuantity::draw() {
   parent.setTransformUniforms(*program);
 
   program->setUniform("u_radius", getVectorRadius());
-  program->setUniform("u_color", getVectorColor());
+  program->setUniform("u_baseColor", getVectorColor());
 
   if (vectorType == VectorType::AMBIENT) {
     program->setUniform("u_lengthMult", 1.0);
   } else {
     program->setUniform("u_lengthMult", getVectorLengthScale());
   }
+  
+	glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+  program->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+ 	program->setUniform("u_viewport", render::engine->getCurrentViewport());
 
   program->draw();
 }
 
 void SurfaceVectorQuantity::prepareProgram() {
 
-  program.reset(new gl::GLProgram(&gl::PASSTHRU_VECTOR_VERT_SHADER, &gl::VECTOR_GEOM_SHADER,
-                                  &gl::SHINY_VECTOR_FRAG_SHADER, gl::DrawMode::Points));
+  program = render::engine->generateShaderProgram(
+      {render::PASSTHRU_VECTOR_VERT_SHADER, render::VECTOR_GEOM_SHADER, render::VECTOR_FRAG_SHADER}, DrawMode::Points);
 
   // Fill buffers
   std::vector<glm::vec3> mappedVectors;
@@ -72,7 +77,7 @@ void SurfaceVectorQuantity::prepareProgram() {
   program->setAttribute("a_vector", mappedVectors);
   program->setAttribute("a_position", vectorRoots);
 
-  setMaterialForProgram(*program, "wax");
+  render::engine->setMaterial(*program, getMaterial());
 }
 
 void SurfaceVectorQuantity::buildCustomUI() {
@@ -88,7 +93,10 @@ void SurfaceVectorQuantity::buildCustomUI() {
     ImGui::OpenPopup("OptionsPopup");
   }
   if (ImGui::BeginPopup("OptionsPopup")) {
-    if (ImGui::MenuItem("Write to file")) writeToFile();
+    if (render::buildMaterialOptionsGui(material.get())) {
+      material.manuallyChanged();
+      setMaterial(material.get()); // trigger the other updates that happen on set()
+    }
     ImGui::EndPopup();
   }
 
@@ -115,51 +123,36 @@ void SurfaceVectorQuantity::buildCustomUI() {
 
 void SurfaceVectorQuantity::drawSubUI() {}
 
-void SurfaceVectorQuantity::writeToFile(std::string filename) {
-
-  if (filename == "") {
-    filename = promptForFilename();
-    if (filename == "") {
-      return;
-    }
-  }
-
-  if (options::verbosity > 0) {
-    cout << "Writing surface vector quantity " << name << " to file " << filename << endl;
-  }
-
-  std::ofstream outFile(filename);
-  outFile << "#Vectors written by polyscope from Surface Vector Quantity " << name << endl;
-  outFile << "#displayradius " << getVectorRadius() << endl;
-  outFile << "#displaylength " << getVectorLengthScale() << endl;
-
-  for (size_t i = 0; i < vectors.size(); i++) {
-    if (glm::length(vectors[i]) > 0) {
-      outFile << vectorRoots[i] << " " << vectors[i] << endl;
-    }
-  }
-
-  outFile.close();
-}
-
 SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorLengthScale(double newLength, bool isRelative) {
   vectorLengthMult = ScaledValue<double>(newLength, isRelative);
   requestRedraw();
   return this;
 }
 double SurfaceVectorQuantity::getVectorLengthScale() { return vectorLengthMult.get().asAbsolute(); }
+
 SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorRadius(double val, bool isRelative) {
   vectorRadius = ScaledValue<double>(val, isRelative);
   requestRedraw();
   return this;
 }
 double SurfaceVectorQuantity::getVectorRadius() { return vectorRadius.get().asAbsolute(); }
+
 SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorColor(glm::vec3 color) {
   vectorColor = color;
   requestRedraw();
   return this;
 }
 glm::vec3 SurfaceVectorQuantity::getVectorColor() { return vectorColor.get(); }
+
+SurfaceVectorQuantity* SurfaceVectorQuantity::setMaterial(std::string m) {
+  material = m;
+  if (program) render::engine->setMaterial(*program, getMaterial());
+  if (ribbonArtist && ribbonArtist->program) render::engine->setMaterial(*ribbonArtist->program, material.get());
+  requestRedraw();
+  return this;
+}
+std::string SurfaceVectorQuantity::getMaterial() { return material.get(); }
+
 SurfaceVectorQuantity* SurfaceVectorQuantity::setRibbonEnabled(bool val) {
   ribbonEnabled = val;
   requestRedraw();
@@ -303,6 +296,7 @@ void SurfaceFaceIntrinsicVectorQuantity::draw() {
     if (ribbonArtist == nullptr) {
       // Warning: expensive... Creates noticeable UI lag
       ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, vectorField, nSym, 2500)));
+      render::engine->setMaterial(*ribbonArtist->program, material.get());
     }
 
     // Update transform matrix from parent
@@ -413,6 +407,7 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
 
       // Warning: expensive... Creates noticeable UI lag
       ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, unitFaceVecs, nSym, 2500)));
+      render::engine->setMaterial(*ribbonArtist->program, material.get());
     }
 
     // Update transform matrix from parent
@@ -539,6 +534,7 @@ void SurfaceOneFormIntrinsicVectorQuantity::draw() {
       }
       // Warning: expensive... Creates noticeable UI lag
       ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, unitMappedField, 1, 2500)));
+      render::engine->setMaterial(*ribbonArtist->program, material.get());
     }
 
 

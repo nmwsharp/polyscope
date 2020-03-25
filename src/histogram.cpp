@@ -2,8 +2,8 @@
 #include "polyscope/histogram.h"
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/gl/shaders/histogram_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -30,11 +30,7 @@ Histogram::Histogram(std::vector<double>& values, const std::vector<double>& wei
   buildHistogram(values, weights);
 }
 
-Histogram::~Histogram() {
-  delete texturebuffer;
-  delete framebuffer;
-  delete program;
-}
+Histogram::~Histogram() {}
 
 void Histogram::buildHistogram(std::vector<double>& values, const std::vector<double>& weights) {
 
@@ -159,7 +155,7 @@ void Histogram::smoothCurve(std::vector<std::array<double, 2>>& xVals, std::vect
   yVals = smoothedVals;
 }
 
-void Histogram::updateColormap(gl::ColorMapID newColormap) {
+void Histogram::updateColormap(const std::string& newColormap) {
   colormap = newColormap;
   fillBuffers();
 }
@@ -225,8 +221,7 @@ void Histogram::fillBuffers() {
   }
 
   program->setAttribute("a_coord", coords);
-  program->setTextureFromColormap("t_colormap", gl::getColorMap(colormap), true);
-
+  program->setTextureFromColormap("t_colormap", colormap, true);
 
   // Update current buffer settings
   currBufferWeighted = useWeighted;
@@ -235,12 +230,13 @@ void Histogram::fillBuffers() {
 
 void Histogram::prepare() {
 
-  framebuffer = new gl::GLFramebuffer();
-  texturebuffer = new gl::GLTexturebuffer(GL_RGBA, texDim, texDim);
-  framebuffer->bindToColorTexturebuffer(texturebuffer);
+  framebuffer = render::engine->generateFrameBuffer(texDim, texDim);
+  texturebuffer = render::engine->generateTextureBuffer(TextureFormat::RGBA8, texDim, texDim);
+  framebuffer->addColorBuffer(texturebuffer);
 
   // Create the program
-  program = new gl::GLProgram(&gl::HISTOGRAM_VERT_SHADER, &gl::HISTORGRAM_FRAG_SHADER, gl::DrawMode::Triangles);
+  program = render::engine->generateShaderProgram({render::HISTOGRAM_VERT_SHADER, render::HISTOGRAM_FRAG_SHADER},
+                                                  DrawMode::Triangles);
 
   prepared = true;
 }
@@ -268,8 +264,6 @@ void Histogram::renderToTexture() {
 
   // Draw
   program->draw();
-
-  bindDefaultBuffer();
 }
 
 
@@ -285,8 +279,7 @@ void Histogram::buildUI(float width) {
   float h = w / aspect;
 
   // Render image
-  ImGui::Image(reinterpret_cast<void*>((size_t)texturebuffer->getHandle()) /* yes, really. */, ImVec2(w, h),
-               ImVec2(0, 1), ImVec2(1, 0));
+  ImGui::Image(texturebuffer->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
 
   // Draw a cursor popup on mouseover
   if (ImGui::IsItemHovered()) {

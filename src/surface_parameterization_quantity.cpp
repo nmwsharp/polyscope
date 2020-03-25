@@ -2,10 +2,9 @@
 #include "polyscope/surface_parameterization_quantity.h"
 
 #include "polyscope/file_helpers.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/parameterization_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -21,11 +20,11 @@ namespace polyscope {
 SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string name, ParamCoordsType type_,
                                                                  ParamVizStyle style_, SurfaceMesh& mesh_)
     : SurfaceMeshQuantity(name, mesh_, true), coordsType(type_), checkerSize(uniquePrefix() + "#checkerSize", 0.02),
-      vizStyle(uniquePrefix() + "#vizStyle", style_), checkColor1(uniquePrefix() + "#checkColor1", RGB_PINK),
+      vizStyle(uniquePrefix() + "#vizStyle", style_), checkColor1(uniquePrefix() + "#checkColor1", render::RGB_PINK),
       checkColor2(uniquePrefix() + "#checkColor2", glm::vec3(.976, .856, .885)),
-      gridLineColor(uniquePrefix() + "#gridLineColor", RGB_WHITE),
-      gridBackgroundColor(uniquePrefix() + "#gridBackgroundColor", RGB_PINK),
-      cMap(uniquePrefix() + "#cMap", gl::ColorMapID::PHASE)
+      gridLineColor(uniquePrefix() + "#gridLineColor", render::RGB_WHITE),
+      gridBackgroundColor(uniquePrefix() + "#gridBackgroundColor", render::RGB_PINK),
+      cMap(uniquePrefix() + "#cMap", "phase")
 
 {}
 
@@ -48,22 +47,22 @@ void SurfaceParameterizationQuantity::createProgram() {
 
   switch (getStyle()) {
   case ParamVizStyle::CHECKER:
-    program.reset(new gl::GLProgram(&gl::PARAM_SURFACE_VERT_SHADER, &gl::PARAM_CHECKER_SURFACE_FRAG_SHADER,
-                                    gl::DrawMode::Triangles));
+    program = render::engine->generateShaderProgram(
+        {render::PARAM_SURFACE_VERT_SHADER, render::PARAM_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
     break;
   case ParamVizStyle::GRID:
-    program.reset(new gl::GLProgram(&gl::PARAM_SURFACE_VERT_SHADER, &gl::PARAM_GRID_SURFACE_FRAG_SHADER,
-                                    gl::DrawMode::Triangles));
+    program = render::engine->generateShaderProgram(
+        {render::PARAM_SURFACE_VERT_SHADER, render::PARAM_GRID_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
     break;
   case ParamVizStyle::LOCAL_CHECK:
-    program.reset(new gl::GLProgram(&gl::PARAM_SURFACE_VERT_SHADER, &gl::PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER,
-                                    gl::DrawMode::Triangles));
-    program->setTextureFromColormap("t_colormap", gl::getColorMap(getColorMap()));
+    program = render::engine->generateShaderProgram(
+        {render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+    program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   case ParamVizStyle::LOCAL_RAD:
-    program.reset(new gl::GLProgram(&gl::PARAM_SURFACE_VERT_SHADER, &gl::PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER,
-                                    gl::DrawMode::Triangles));
-    program->setTextureFromColormap("t_colormap", gl::getColorMap(getColorMap()));
+    program = render::engine->generateShaderProgram(
+        {render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+    program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   }
 
@@ -71,13 +70,12 @@ void SurfaceParameterizationQuantity::createProgram() {
   fillColorBuffers(*program);
   parent.fillGeometryBuffers(*program);
 
-  setMaterialForProgram(*program, "wax");
+  render::engine->setMaterial(*program, parent.getMaterial());
 }
 
 
 // Update range uniforms
-void SurfaceParameterizationQuantity::setProgramUniforms(gl::GLProgram& program) {
-
+void SurfaceParameterizationQuantity::setProgramUniforms(render::ShaderProgram& program) {
   // Interpretatin of modulo parameter depends on data type
   switch (coordsType) {
   case ParamCoordsType::UNIT:
@@ -175,7 +173,7 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
     ImGui::PopItemWidth();
 
     // Set colormap
-    if (buildColormapSelector(cMap.get())) {
+    if (render::buildColormapSelector(cMap.get())) {
       setColorMap(getColorMap());
     }
   }
@@ -226,14 +224,13 @@ SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setCheckerSize
 
 double SurfaceParameterizationQuantity::getCheckerSize() { return checkerSize.get(); }
 
-SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setColorMap(gl::ColorMapID val) {
-  cMap = val;
+SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setColorMap(std::string name) {
+  cMap = name;
   program.reset();
   requestRedraw();
   return this;
 }
-
-gl::ColorMapID SurfaceParameterizationQuantity::getColorMap() { return cMap.get(); }
+std::string SurfaceParameterizationQuantity::getColorMap() { return cMap.get(); }
 
 void SurfaceParameterizationQuantity::geometryChanged() { program.reset(); }
 
@@ -251,8 +248,7 @@ SurfaceCornerParameterizationQuantity::SurfaceCornerParameterizationQuantity(std
 std::string SurfaceCornerParameterizationQuantity::niceName() { return name + " (corner parameterization)"; }
 
 
-void SurfaceCornerParameterizationQuantity::fillColorBuffers(gl::GLProgram& p) {
-
+void SurfaceCornerParameterizationQuantity::fillColorBuffers(render::ShaderProgram& p) {
   std::vector<glm::vec2> coordVal;
   coordVal.reserve(3 * parent.nFacesTriangulation());
 
@@ -300,8 +296,7 @@ SurfaceVertexParameterizationQuantity::SurfaceVertexParameterizationQuantity(std
 
 std::string SurfaceVertexParameterizationQuantity::niceName() { return name + " (vertex parameterization)"; }
 
-void SurfaceVertexParameterizationQuantity::fillColorBuffers(gl::GLProgram& p) {
-
+void SurfaceVertexParameterizationQuantity::fillColorBuffers(render::ShaderProgram& p) {
   std::vector<glm::vec2> coordVal;
   coordVal.reserve(3 * parent.nFacesTriangulation());
 

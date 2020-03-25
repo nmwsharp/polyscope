@@ -2,7 +2,12 @@
 
 ![Polyscope](http://polyscope.run/media/teaser.svg)
 
-Polyscope is a C++ viewer and user interface for the rapid prototyping and debugging of geometric algorithms in 3D geometry processing, scientific computing, and computer graphics/vision. The lofty objective of Polyscope is to offer a useful visual interface to your data via a single line of code.
+![GitHub](https://img.shields.io/github/license/nmwsharp/polyscope?style=flat-square)
+![Travis (.com)](https://img.shields.io/travis/com/nmwsharp/polyscope?style=flat-square)
+![GitHub stars](https://img.shields.io/github/stars/nmwsharp/polyscope?style=flat-square)
+
+
+Polyscope is a C++ viewer and user interface for 3D data like meshes and point clouds. Scientists, engineers, artists, and hackers can use Polyscope to prototype and debug algorithms---it is designed to easily integrate with existing codebases and popular libraries.  The lofty objective of Polyscope is to offer a useful visual interface to your data via a single line of code.
 
 Polyscope uses a paradigm of *structures* and *quantities*. A **structure** is a geometric object in the scene, such as a surface mesh or point cloud. A **quantity** is data associated with a structure, such as a scalar function or a vector field.
 
@@ -27,7 +32,7 @@ polyscope::getSurfaceMesh("my mesh")->addFaceVectorQuantity("my_vector", vectorQ
 polyscope::show();
 ```
 
-Polyscope is designed to be easy to integrate with existing programs. It is simple to build, and fewer than 10 lines of code should be sufficient to start visualizing. Thanks to some [template magic](http://polyscope.run/data_adaptors/), Polyscope can probably directly read from the data types you're already using!
+Polyscope is designed to make your life easier. It is simple to build, and fewer than 10 lines of code should be sufficient to start visualizing. Thanks to some [template magic](http://polyscope.run/data_adaptors/), Polyscope can probably directly read from the data types you're already using!
 
 ---
 Author: [Nicholas Sharp](http://www.nmwsharp.com)

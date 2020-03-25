@@ -2,6 +2,7 @@
 #pragma once
 
 #include "polyscope/affine_remapper.h"
+#include "polyscope/render/engine.h"
 #include "polyscope/surface_mesh.h"
 
 namespace polyscope {
@@ -22,7 +23,7 @@ public:
 protected:
   // UI internals
   const std::string definedOn;
-  std::unique_ptr<gl::GLProgram> program;
+  std::shared_ptr<render::ShaderProgram> program;
 
   // Helpers
   virtual void createProgram() = 0;
@@ -37,7 +38,7 @@ public:
   SurfaceVertexColorQuantity(std::string name, std::vector<glm::vec3> values_, SurfaceMesh& mesh_);
 
   virtual void createProgram() override;
-  void fillColorBuffers(gl::GLProgram& p);
+  void fillColorBuffers(render::ShaderProgram& p);
 
   void buildVertexInfoGUI(size_t vInd) override;
 
@@ -54,7 +55,7 @@ public:
   SurfaceFaceColorQuantity(std::string name, std::vector<glm::vec3> values_, SurfaceMesh& mesh_);
 
   virtual void createProgram() override;
-  void fillColorBuffers(gl::GLProgram& p);
+  void fillColorBuffers(render::ShaderProgram& p);
 
   void buildFaceInfoGUI(size_t fInd) override;
 

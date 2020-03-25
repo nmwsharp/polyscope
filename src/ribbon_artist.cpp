@@ -1,11 +1,10 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/ribbon_artist.h"
 
-#include "polyscope/gl/color_maps.h"
-#include "polyscope/gl/materials/materials.h"
-#include "polyscope/gl/shaders.h"
-#include "polyscope/gl/shaders/ribbon_shaders.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/color_maps.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 
@@ -15,25 +14,29 @@ using std::endl;
 namespace polyscope {
 
 RibbonArtist::RibbonArtist(Structure& parentStructure_,
-                           const std::vector<std::vector<std::array<glm::vec3, 2>>>& ribbons_,
+                           const std::vector<std::vector<std::array<glm::vec3, 2>>>& ribbons_, std::string uniqueName,
                            double normalOffsetFraction_)
-    : parentStructure(parentStructure_), ribbons(ribbons_), normalOffsetFraction(normalOffsetFraction_) {}
+    : parentStructure(parentStructure_), ribbons(ribbons_), normalOffsetFraction(normalOffsetFraction_),
+      enabled(parentStructure.uniquePrefix() + "#ribbon#" + "uniqueName" + "#enabled", true),
+      ribbonWidth(parentStructure.uniquePrefix() + "#ribbon#" + "uniqueName" + "#ribbonWidth", relativeValue(5e-4)) {
+  createProgram();
+}
 
 void RibbonArtist::deleteProgram() { program.reset(); }
 
 void RibbonArtist::createProgram() {
 
   // Create the program
-  program.reset(new gl::GLProgram(&gl::RIBBON_VERT_SHADER, &gl::RIBBON_GEOM_SHADER, &gl::RIBBON_FRAG_SHADER,
-                                  gl::DrawMode::IndexedLineStripAdjacency));
+  program = render::engine->generateShaderProgram(
+      {render::RIBBON_VERT_SHADER, render::RIBBON_GEOM_SHADER, render::RIBBON_FRAG_SHADER},
+      DrawMode::IndexedLineStripAdjacency);
 
   // Set the restart index for the line strip
-  GLuint restartInd = static_cast<GLuint>(-1);
+  unsigned int restartInd = -1;
   program->setPrimitiveRestartIndex(restartInd);
 
   // Compute length scales and whatnot
   float normalOffset = static_cast<float>(state::lengthScale * normalOffsetFraction);
-  ribbonWidth = 5 * 1e-4;
 
   // == Fill buffers
 
@@ -44,6 +47,7 @@ void RibbonArtist::createProgram() {
   std::vector<glm::vec3> colors;
   std::vector<unsigned int> indices;
   unsigned int nPts = 0;
+  const render::ValueColorMap& cmapValue = render::engine->getColorMap(cMap);
   for (size_t iLine = 0; iLine < ribbons.size(); iLine++) {
 
     // Process each point from the list
@@ -60,7 +64,7 @@ void RibbonArtist::createProgram() {
     }
 
     // Sample a color for this line
-    glm::vec3 lineColor = gl::getColorMap(cMap).getValue(randomUnit());
+    glm::vec3 lineColor = cmapValue.getValue(randomUnit());
 
     // Add a false point at the beginning (so it's not a special case for the geometry shader)
     float EPS = 0.01;
@@ -95,13 +99,13 @@ void RibbonArtist::createProgram() {
   program->setAttribute("a_color", colors);
   program->setIndex(indices);
 
-  setMaterialForProgram(*program, "wax");
+  render::engine->setMaterial(*program, "wax");
 }
 
 
 void RibbonArtist::draw() {
 
-  if (!enabled) {
+  if (!enabled.get()) {
     return;
   }
 
@@ -114,33 +118,49 @@ void RibbonArtist::draw() {
 
   glm::vec3 eyePos = view::getCameraWorldPosition();
 
-  program->setUniform("u_ribbonWidth", ribbonWidth * state::lengthScale);
+  program->setUniform("u_ribbonWidth", getWidth());
   program->setUniform("u_depthOffset", 1e-4);
 
   // Draw
-  glEnable(GL_BLEND);
-  glDepthMask(GL_FALSE);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-  glDepthFunc(GL_LEQUAL);
+  render::engine->setDepthMode(DepthMode::LEqualReadOnly);
+  render::engine->setBlendMode(BlendMode::Over);
 
   program->draw();
 
-  glDepthMask(GL_TRUE);
-  glDisable(GL_BLEND);
+  render::engine->setDepthMode();
+  render::engine->setBlendMode();
 }
 
 
 void RibbonArtist::buildParametersGUI() {
 
-  if (gl::buildColormapSelector(cMap)) {
+  if (render::buildColormapSelector(cMap)) {
     deleteProgram();
   }
 
   ImGui::PushItemWidth(150);
-  ImGui::SliderFloat("Ribbon width", &ribbonWidth, 0.0, .1, "%.5f", 3.);
+  if (ImGui::SliderFloat("Ribbon width", ribbonWidth.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+    ribbonWidth.manuallyChanged();
+    requestRedraw();
+  }
   ImGui::PopItemWidth();
 }
+
+RibbonArtist* RibbonArtist::setEnabled(bool newEnabled) {
+  enabled = newEnabled;
+  requestRedraw();
+  return this;
+}
+
+bool RibbonArtist::getEnabled() { return enabled.get(); }
+
+RibbonArtist* RibbonArtist::setWidth(double newVal, bool isRelative) {
+  ribbonWidth = ScaledValue<float>(newVal, isRelative);
+  requestRedraw();
+  return this;
+}
+
+double RibbonArtist::getWidth() { return ribbonWidth.get().asAbsolute(); }
 
 
 } // namespace polyscope

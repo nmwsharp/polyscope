@@ -1,11 +1,13 @@
 #include "polyscope/polyscope.h"
 
 #include "polyscope/combining_hash_functions.h"
-#include "polyscope/curve_network.h"
 #include "polyscope/messages.h"
+
+#include "polyscope/curve_network.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_io.h"
+#include "polyscope/file_helpers.h"
 
 #include <iostream>
 #include <unordered_set>
@@ -177,19 +179,21 @@ void processFileOBJ(string filename) {
 
 
   // Test error
-  // polyscope::error("Resistance is futile.");
-  // polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we
-  // " "share this crisis in a way which looks right while properly wrapping text in some form or other?");
-  // polyscope::terminatingError("and that was all");
+  /*
+polyscope::error("Resistance is futile.");
+polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we "
+             "share this crisis in a way which looks right while properly wrapping text in some form or other?");
+polyscope::terminatingError("and that was all");
 
-  // Test warning
-  // polyscope::warning("Something went slightly wrong", "it was bad");
+// Test warning
+polyscope::warning("Something went slightly wrong", "it was bad");
 
-  // polyscope::warning("Smoething else went slightly wrong", "it was also bad");
-  // polyscope::warning("Something went slightly wrong", "it was still bad");
-  // for (int i = 0; i < 5000; i++) {
-  // polyscope::warning("Some problems come in groups", "detail = " + std::to_string(i));
-  //}
+polyscope::warning("Something else went slightly wrong", "it was also bad");
+polyscope::warning("Something went slightly wrong", "it was still bad");
+for (int i = 0; i < 5000; i++) {
+polyscope::warning("Some problems come in groups", "detail = " + std::to_string(i));
+}
+  */
 
   // === Add some vectors
 
@@ -225,13 +229,13 @@ void processFileOBJ(string filename) {
     vNormalsRand[iV] = vNormals[iV] * (float)polyscope::randomUnit() * 5000.f;
     toZero[iV] = -vertexPositionsGLM[iV];
   }
+
   polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("area vertex normals", vNormals);
   polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("rand length normals", vNormalsRand);
   polyscope::getSurfaceMesh(niceName)->addVertexVectorQuantity("toZero", toZero, polyscope::VectorType::AMBIENT);
 
 
   { // Some kind of intrinsic vector field
-
     // Project this weird swirly field on to the surface (the ABC flow)
     auto spatialFunc = [&](glm::vec3 p) {
       float A = 1.;
@@ -320,10 +324,7 @@ void processFileOBJ(string filename) {
   polyscope::getSurfaceMesh(niceName)->addVertexCountQuantity("sample count", vCount);
   polyscope::getSurfaceMesh(niceName)->addVertexIsolatedScalarQuantity("sample isolated", vVal);
 
-
   { // Parameterizations
-
-
     std::vector<std::array<double, 2>> cornerParam;
     for (size_t iF = 0; iF < nFaces; iF++) {
       std::vector<size_t>& face = faceIndices[iF];
@@ -366,7 +367,6 @@ void processFileOBJ(string filename) {
 
     polyscope::getSurfaceMesh(niceName)->addLocalParameterizationQuantity("param vert local test", vertParamLocal);
   }
-
 
   { // Add a surface graph quantity
 
@@ -451,7 +451,7 @@ void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& po
     toZeroVec[i] = -points[i];
   }
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("random vector", randVec);
-  // polyscope::getPointCloud(pointCloudName)->addVectorQuantity("unit 'normal' vector", centerNormalVec);
+  polyscope::getPointCloud(pointCloudName)->addVectorQuantity("unit 'normal' vector", centerNormalVec);
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("to zero", toZeroVec, polyscope::VectorType::AMBIENT);
 }
 
@@ -468,6 +468,7 @@ void processFile(string filename) {
 void callback() {
   static int numPoints = 2000;
   static float param = 3.14;
+  static int loadedMat = 1;
 
   ImGui::PushItemWidth(100);
 
@@ -509,6 +510,8 @@ int main(int argc, char** argv) {
   // polyscope::options::autocenterStructures = true;
   // polyscope::view::windowWidth = 600;
   // polyscope::view::windowHeight = 800;
+  // polyscope::options::maxFPS = -1;
+  // polyscope::options::alwaysRedraw = true;
 
 
   // Initialize polyscope
