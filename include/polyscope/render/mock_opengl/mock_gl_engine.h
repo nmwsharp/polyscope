@@ -83,7 +83,7 @@ public:
   // Getters
 
 protected:
-  void bind();
+  void bind() override;
 };
 
 
