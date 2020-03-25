@@ -22,6 +22,7 @@ public:
   // create a 2D texture from data
   GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data = nullptr);
   GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, float* data);
+  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples);
 
   ~GLTextureBuffer() override;
 
@@ -42,6 +43,7 @@ protected:
 class GLRenderBuffer : public RenderBuffer {
 public:
   GLRenderBuffer(RenderBufferType type, unsigned int sizeX_, unsigned int sizeY_);
+  GLRenderBuffer(RenderBufferType type, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples);
   ~GLRenderBuffer() override;
 
   void resize(unsigned int newX, unsigned int newY) override;
@@ -55,7 +57,7 @@ protected:
 class GLFrameBuffer : public FrameBuffer {
 
 public:
-  GLFrameBuffer();
+  GLFrameBuffer(unsigned int sizeX_, unsigned int sizeY_, bool isDefault = false);
   ~GLFrameBuffer() override;
 
   // Bind to this framebuffer so subsequent draw calls will go to it
@@ -76,10 +78,11 @@ public:
   // Query pixels
   std::array<float, 4> readFloat4(int xPos, int yPos) override;
 
+  void blitTo(FrameBuffer* other) override;
+
   // Getters
 
 protected:
-
   void bind();
 };
 
@@ -198,35 +201,34 @@ public:
   MockGLEngine();
 
   // High-level control
-	void initialize();
+  void initialize();
   void checkError(bool fatal = false) override;
 
   void clearDisplay() override;
   void bindDisplay() override;
-	void swapDisplayBuffers() override;
+  void swapDisplayBuffers() override;
   std::vector<unsigned char> readDisplayBuffer() override;
 
   // Manage render state
-  void pushActiveRenderBuffer() override;
-  void popActiveRenderBuffer() override;
   void setDepthMode(DepthMode newMode = DepthMode::Less) override;
   void setBlendMode(BlendMode newMode = BlendMode::Over) override;
-  
-	// === Windowing and framework things
-	void makeContextCurrent() override;
-	void updateWindowSize() override;
-	std::tuple<int, int> getWindowPos() override;
-	bool windowRequestsClose() override;
-	void pollEvents() override;
-	bool isKeyPressed(char c) override; // for lowercase a-z and 0-9 only
+  void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) override;
+
+  // === Windowing and framework things
+  void makeContextCurrent() override;
+  void updateWindowSize(bool force = false) override;
+  std::tuple<int, int> getWindowPos() override;
+  bool windowRequestsClose() override;
+  void pollEvents() override;
+  bool isKeyPressed(char c) override; // for lowercase a-z and 0-9 only
   std::string getClipboardText() override;
   void setClipboardText(std::string text) override;
-	
-	// ImGui
+
+  // ImGui
   void initializeImGui() override;
   void shutdownImGui() override;
-	void ImGuiNewFrame() override;
-	void ImGuiRender() override;
+  void ImGuiNewFrame() override;
+  void ImGuiRender() override;
 
   // === Factory methods
 
@@ -239,22 +241,24 @@ public:
                                                        unsigned char* data = nullptr) override; // 2d
   std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
                                                        float* data) override; // 2d
+  std::shared_ptr<TextureBuffer> generateTextureBufferMultisample(TextureFormat format, unsigned int sizeX_,
+                                                                  unsigned int sizeY_,
+                                                                  unsigned int nSamples) override; // 2d
 
   // create render buffers
   std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
                                                      unsigned int sizeY_) override;
+  std::shared_ptr<RenderBuffer> generateRenderBufferMultisample(RenderBufferType type, unsigned int sizeX_,
+                                                                unsigned int sizeY_, unsigned int nSamples) override;
 
   // create frame buffers
-  std::shared_ptr<FrameBuffer> generateFrameBuffer() override;
+  std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) override;
 
   // create shader programs
   std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
                                                        unsigned int nPatchVertices = 0) override;
 
 protected:
-
-  std::vector<unsigned int> activeRenderBufferStack;
-
 };
 
 } // namespace render

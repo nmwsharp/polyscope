@@ -64,6 +64,15 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
   setFilterMode(FilterMode::Nearest);
 }
 
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples)
+    : TextureBuffer(2, format_, sizeX_, sizeY_) {
+
+  isMultisample = true;
+  multisampleCount = nSamples;
+
+  // setFilterMode(FilterMode::Nearest); // openGL rejects this?
+}
+
 GLTextureBuffer::~GLTextureBuffer() {}
 
 void GLTextureBuffer::resize(unsigned int newLen) {
@@ -135,6 +144,14 @@ GLRenderBuffer::GLRenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsi
   checkGLError();
   resize(sizeX, sizeY);
 }
+GLRenderBuffer::GLRenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples_)
+    : RenderBuffer(type_, sizeX_, sizeY_) {
+  isMultisample = true;
+  multisampleCount = nSamples_;
+  checkGLError();
+  resize(sizeX, sizeY);
+}
+
 
 GLRenderBuffer::~GLRenderBuffer() {}
 
@@ -151,7 +168,14 @@ void GLRenderBuffer::bind() { checkGLError(); }
 // ===================== Framebuffer ===========================
 // =============================================================
 
-GLFrameBuffer::GLFrameBuffer() { checkGLError(); };
+GLFrameBuffer::GLFrameBuffer(unsigned int sizeX_, unsigned int sizeY_, bool isDefault) {
+  sizeX = sizeX_;
+  sizeY = sizeY_;
+  if (isDefault) {
+  } else {
+  }
+  checkGLError();
+};
 
 GLFrameBuffer::~GLFrameBuffer() {}
 
@@ -167,7 +191,7 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<RenderBuffer> renderBufferIn)
   bind();
 
   checkGLError();
-  renderBuffers.push_back(renderBuffer);
+  renderBuffersColor.push_back(renderBuffer);
   nColorBuffers++;
 }
 
@@ -184,7 +208,7 @@ void GLFrameBuffer::addDepthBuffer(std::shared_ptr<RenderBuffer> renderBufferIn)
   // if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
 
   checkGLError();
-  renderBuffers.push_back(renderBuffer);
+  renderBuffersDepth.push_back(renderBuffer);
 }
 
 void GLFrameBuffer::addColorBuffer(std::shared_ptr<TextureBuffer> textureBufferIn) {
@@ -202,7 +226,7 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<TextureBuffer> textureBufferI
   // if (colorTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
 
   checkGLError();
-  textureBuffers.push_back(textureBuffer);
+  textureBuffersColor.push_back(textureBuffer);
   nColorBuffers++;
 }
 
@@ -221,7 +245,7 @@ void GLFrameBuffer::addDepthBuffer(std::shared_ptr<TextureBuffer> textureBufferI
   // if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
 
   checkGLError();
-  textureBuffers.push_back(textureBuffer);
+  textureBuffersDepth.push_back(textureBuffer);
 }
 
 void GLFrameBuffer::setDrawBuffers() {
@@ -231,6 +255,7 @@ void GLFrameBuffer::setDrawBuffers() {
 
 bool GLFrameBuffer::bindForRendering() {
   bind();
+  render::engine->setCurrentViewport({0, 0, 400, 600});
   checkGLError();
   return true;
 }
@@ -241,11 +266,21 @@ void GLFrameBuffer::clear() {
 
 std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
   // Read from the buffer
-  std::array<float, 4> result;
+  std::array<float, 4> result = {1., 2., 3., 4.};
 
   return result;
 }
 
+void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
+
+  // it _better_ be a GL buffer
+  GLFrameBuffer* target = dynamic_cast<GLFrameBuffer*>(targetIn);
+  if (!target) throw std::runtime_error("tried to blitTo() non-GL framebuffer");
+
+  // target->bindForRendering();
+  bindForRendering();
+  checkGLError();
+}
 
 // =============================================================
 // ==================  Shader Program  =========================
@@ -878,8 +913,7 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
 }
 
 void GLShaderProgram::setTextureFromColormap(std::string name, const std::string& colormapName, bool allowUpdate) {
-   const ValueColorMap& colormap = getColorMap(colormapName);
-  // TODO switch to global shared buffers from colormap
+  const ValueColorMap& colormap = render::engine->getColorMap(colormapName);
 
   // Find the right texture
   for (GLShaderTexture& t : textures) {
@@ -1110,21 +1144,14 @@ std::vector<unsigned char> MockGLEngine::readDisplayBuffer() {
 
 void MockGLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
-void MockGLEngine::pushActiveRenderBuffer() { activeRenderBufferStack.push_back(7); }
-
-void MockGLEngine::popActiveRenderBuffer() {
-  if (activeRenderBufferStack.empty()) throw std::runtime_error("tried to pop from empty render buffer stack");
-  activeRenderBufferStack.pop_back();
-}
-
 void MockGLEngine::makeContextCurrent() {}
 
-void MockGLEngine::updateWindowSize() {
+void MockGLEngine::updateWindowSize(bool force) {
   int newBufferWidth = 400;
   int newBufferHeight = 600;
   int newWindowWidth = 400;
   int newWindowHeight = 600;
-  if (newBufferWidth != view::bufferWidth || newBufferHeight != view::bufferHeight ||
+  if (force || newBufferWidth != view::bufferWidth || newBufferHeight != view::bufferHeight ||
       newWindowHeight != view::windowHeight || newWindowWidth != view::windowWidth) {
     // Basically a resize callback
     requestRedraw();
@@ -1163,6 +1190,8 @@ void MockGLEngine::setDepthMode(DepthMode newMode) {}
 
 void MockGLEngine::setBlendMode(BlendMode newMode) {}
 
+void MockGLEngine::setColorMask(std::array<bool, 4> mask) {}
+
 std::string MockGLEngine::getClipboardText() {
   std::string clipboardData = "";
   return clipboardData;
@@ -1193,14 +1222,27 @@ std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat
   return std::shared_ptr<TextureBuffer>(newT);
 }
 
+std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBufferMultisample(TextureFormat format, unsigned int sizeX_,
+                                                                              unsigned int sizeY_,
+                                                                              unsigned int nSamples) {
+  GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, nSamples);
+  return std::shared_ptr<TextureBuffer>(newT);
+}
+
 std::shared_ptr<RenderBuffer> MockGLEngine::generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
                                                                  unsigned int sizeY_) {
   GLRenderBuffer* newR = new GLRenderBuffer(type, sizeX_, sizeY_);
   return std::shared_ptr<RenderBuffer>(newR);
 }
+std::shared_ptr<RenderBuffer> MockGLEngine::generateRenderBufferMultisample(RenderBufferType type, unsigned int sizeX_,
+                                                                            unsigned int sizeY_,
+                                                                            unsigned int nSamples) {
+  GLRenderBuffer* newR = new GLRenderBuffer(type, sizeX_, sizeY_, nSamples);
+  return std::shared_ptr<RenderBuffer>(newR);
+}
 
-std::shared_ptr<FrameBuffer> MockGLEngine::generateFrameBuffer() {
-  GLFrameBuffer* newF = new GLFrameBuffer();
+std::shared_ptr<FrameBuffer> MockGLEngine::generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) {
+  GLFrameBuffer* newF = new GLFrameBuffer(sizeX_, sizeY_);
   return std::shared_ptr<FrameBuffer>(newF);
 }
 
