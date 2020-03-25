@@ -38,7 +38,7 @@ std::string guessNiceNameFromPath(std::string fullname) {
 
 std::tuple<std::string, std::string> splitExt(std::string f) {
   auto p = f.find_last_of(".");
-  return {f.substr(0, p), f.substr(p, std::string::npos)};
+  return std::tuple<std::string, std::string>{f.substr(0, p), f.substr(p, std::string::npos)};
 }
 
 std::string prettyPrintCount(size_t count) {
