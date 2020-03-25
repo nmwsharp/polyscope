@@ -27,5 +27,5 @@ before_script:
 script: 
   - make 
   - ./bin/polyscope-test --gtest_catch_exceptions=0 
-  - cmake -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND=OPENGL_GLFW3 ..
+  - cmake -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND=OPENGL3_GLFW ..
   - make 
