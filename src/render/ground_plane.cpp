@@ -4,6 +4,7 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/render/shaders.h"
+#include "polyscope/render/material_defs.h"
 
 #include "imgui.h"
 #include "stb_image.h"
@@ -15,9 +16,6 @@ bool groundPlaneEnabled = true;
 }
 
 namespace render {
-
-// The concrete texture, stored in a separate binary unit
-extern const std::array<unsigned char, 758403> bindata_concrete_seamless;
 
 void GroundPlane::populateGroundPlaneGeometry() {
 
@@ -67,8 +65,8 @@ void GroundPlane::prepareGroundPlane() {
     int w, h, comp;
     unsigned char* image = nullptr;
     image = stbi_load("concrete_seamless.jpg", &w, &h, &comp, STBI_rgb);
-    image = stbi_load_from_memory(reinterpret_cast<const unsigned char*>(&render::bindata_concrete_seamless[0]),
-                                  render::bindata_concrete_seamless.size(), &w, &h, &comp, STBI_rgb);
+    image = stbi_load_from_memory(reinterpret_cast<const unsigned char*>(&render::bindata_concrete[0]),
+                                  render::bindata_concrete.size(), &w, &h, &comp, STBI_rgb);
     if (image == nullptr) throw std::logic_error("Failed to load material image");
     groundPlaneProgram->setTexture2D("t_ground", image, w, h, false, false, true);
   }

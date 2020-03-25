@@ -10,7 +10,6 @@ namespace polyscope {
 namespace render {
 
 // The arrays that hold the actual data. Stored as constants in render/bindata
-
 extern const std::array<unsigned char, 84934> bindata_clay_r;
 extern const std::array<unsigned char, 84889> bindata_clay_g;
 extern const std::array<unsigned char, 83655> bindata_clay_b;
@@ -35,6 +34,8 @@ extern const std::array<unsigned char, 18071> bindata_mud;
 extern const std::array<unsigned char, 20804> bindata_ceramic;
 extern const std::array<unsigned char, 17500> bindata_jade;
 extern const std::array<unsigned char, 29444> bindata_normal;
+
+extern const std::array<unsigned char, 50022> bindata_concrete;
 
 
 } // namespace render
