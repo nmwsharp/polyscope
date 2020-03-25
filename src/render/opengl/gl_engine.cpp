@@ -1734,7 +1734,7 @@ void GLEngine::updateWindowSize(bool force) {
 std::tuple<int, int> GLEngine::getWindowPos() {
   int x, y;
   glfwGetWindowPos(mainWindow, &x, &y);
-  return {x, y};
+  return std::tuple<int,int>{x, y};
 }
 
 bool GLEngine::windowRequestsClose() {

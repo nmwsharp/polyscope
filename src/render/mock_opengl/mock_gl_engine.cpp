@@ -1165,7 +1165,7 @@ void MockGLEngine::updateWindowSize(bool force) {
 std::tuple<int, int> MockGLEngine::getWindowPos() {
   int x = 20;
   int y = 40;
-  return {x, y};
+  return std::tuple<int,int>{x, y};
 }
 
 bool MockGLEngine::windowRequestsClose() { return false; }
