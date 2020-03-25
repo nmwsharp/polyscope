@@ -164,7 +164,7 @@ std::tuple<std::vector<glm::vec3>, std::vector<std::vector<size_t>>> getTriangle
    };
   // clang-format on
 
-  return {points, faces};
+  return std::tuple<std::vector<glm::vec3>, std::vector<std::vector<size_t>>>{points, faces};
 };
 
 polyscope::SurfaceMesh* registerTriangleMesh(std::string name = "test1") {
@@ -479,7 +479,7 @@ std::tuple<std::vector<glm::vec3>, std::vector<std::array<size_t, 2>>> getCurveN
    };
   // clang-format on
 
-  return {points, edges};
+  return std::tuple<std::vector<glm::vec3>, std::vector<std::array<size_t, 2>>>{points, edges};
 };
 
 polyscope::CurveNetwork* registerCurveNetwork(std::string name = "test1") {
