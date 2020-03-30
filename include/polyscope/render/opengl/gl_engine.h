@@ -33,6 +33,7 @@
 
 namespace polyscope {
 namespace render {
+namespace backend_openGL3_glfw {
 
 // Some very nice typdefs
 typedef GLuint TextureBufferHandle;
@@ -312,5 +313,6 @@ protected:
   GLFWwindow* mainWindow = nullptr;
 };
 
+} // namespace backend_openGL3_glfw
 } // namespace render
 } // namespace polyscope

@@ -450,7 +450,8 @@ inline void ShaderProgram::setAttribute(std::string name, const std::vector<std:
 // Callers should basically only interact via these methods and variables
 
 // Call once to initialize
-void initializeRenderEngine();
+// (see render/initialize_backend.cpp)
+void initializeRenderEngine(std::string backend="");
 
 // The global render engine
 // Gets initialized by initializeRenderEngine() in polyscope::init();

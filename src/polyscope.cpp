@@ -137,7 +137,7 @@ void writePrefsFile() {
 
 // === Core global functions
 
-void init() {
+void init(std::string backend) {
   if (state::initialized) {
     throw std::logic_error(options::printPrefix + "Initialize called twice");
   }
@@ -147,7 +147,7 @@ void init() {
   }
 
   // Initialize the rendering engine
-  render::initializeRenderEngine();
+  render::initializeRenderEngine(backend);
 
   // Initialie ImGUI
   IMGUI_CHECKVERSION();

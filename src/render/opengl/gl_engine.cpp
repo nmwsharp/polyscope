@@ -1,4 +1,5 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+#ifdef POLYSCOPE_BACKEND_OPENGL3_GLFW_ENABLED
 #include "polyscope/render/opengl/gl_engine.h"
 
 #include "polyscope/messages.h"
@@ -14,9 +15,15 @@
 namespace polyscope {
 namespace render {
 
-// == Storage and initialization for the global engine
-Engine* engine = nullptr;
-GLEngine* glEngine = nullptr; // alias for engine above
+// Forward declare compressed binary font functions
+unsigned int getCousineRegularCompressedSize();
+const unsigned int* getCousineRegularCompressedData();
+
+namespace backend_openGL3_glfw {
+
+
+GLEngine* glEngine = nullptr; // alias for global engine pointer
+
 void initializeRenderEngine() {
   glEngine = new GLEngine();
   glEngine->initialize();
@@ -1627,7 +1634,8 @@ void GLEngine::initialize() {
   }
 #endif
   if (options::verbosity > 0) {
-    std::cout << options::printPrefix << "Loaded openGL version: " << glGetString(GL_VERSION) << std::endl;
+    std::cout << options::printPrefix << "Backend: openGL3_glfw -- "
+              << "Loaded openGL version: " << glGetString(GL_VERSION) << std::endl;
   }
 
 #ifdef __APPLE__
@@ -1647,10 +1655,6 @@ void GLEngine::initialize() {
   }
 }
 
-
-// Forward declare compressed binary font functions
-unsigned int getCousineRegularCompressedSize();
-const unsigned int* getCousineRegularCompressedData();
 
 void GLEngine::initializeImGui() {
 
@@ -1734,7 +1738,7 @@ void GLEngine::updateWindowSize(bool force) {
 std::tuple<int, int> GLEngine::getWindowPos() {
   int x, y;
   glfwGetWindowPos(mainWindow, &x, &y);
-  return std::tuple<int,int>{x, y};
+  return std::tuple<int, int>{x, y};
 }
 
 bool GLEngine::windowRequestsClose() {
@@ -1877,5 +1881,23 @@ std::shared_ptr<ShaderProgram> GLEngine::generateShaderProgram(const std::vector
   return std::shared_ptr<ShaderProgram>(newP);
 }
 
+
+} // namespace backend_openGL3_glfw
 } // namespace render
 } // namespace polyscope
+
+#else
+
+#include <stdexcept>
+
+namespace polyscope {
+namespace render {
+namespace backend_openGL3_glfw {
+void initializeRenderEngine() {
+  throw std::runtime_error("Polyscope was not compiled with support for backend: openGL3_glfw");
+}
+} // namespace backend_openGL3_glfw
+} // namespace render
+} // namespace polyscope
+
+#endif
