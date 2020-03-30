@@ -602,6 +602,8 @@ void show(size_t forFrames) {
                            "must initialize Polyscope with polyscope::init() before calling polyscope::show().");
   }
 
+  render::engine->showWindow();
+
   // Main loop
   while (!render::engine->windowRequestsClose() && forFrames > 0) {
     mainLoopIteration();

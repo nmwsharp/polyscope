@@ -1612,6 +1612,8 @@ void GLEngine::initialize() {
 #endif
 
   // Create the window with context
+  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+  glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
   mainWindow = glfwCreateWindow(view::windowWidth, view::windowHeight, options::programName.c_str(), NULL, NULL);
   glfwMakeContextCurrent(mainWindow);
   glfwSwapInterval(1); // Enable vsync
@@ -1716,6 +1718,8 @@ void GLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
 
 void GLEngine::makeContextCurrent() { glfwMakeContextCurrent(mainWindow); }
+
+void GLEngine::showWindow() { glfwShowWindow(mainWindow); }
 
 void GLEngine::updateWindowSize(bool force) {
   int newBufferWidth, newBufferHeight, newWindowWidth, newWindowHeight;

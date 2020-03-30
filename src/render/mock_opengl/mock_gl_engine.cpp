@@ -1155,6 +1155,8 @@ void MockGLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
 void MockGLEngine::makeContextCurrent() {}
 
+void MockGLEngine::showWindow() {}
+
 void MockGLEngine::updateWindowSize(bool force) {
   int newBufferWidth = 400;
   int newBufferHeight = 600;
