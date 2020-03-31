@@ -33,6 +33,7 @@
 
 namespace polyscope {
 namespace render {
+namespace backend_openGL3_glfw {
 
 // Some very nice typdefs
 typedef GLuint TextureBufferHandle;
@@ -262,6 +263,7 @@ public:
 
   // === Windowing and framework things
   void makeContextCurrent() override;
+  void showWindow() override;
   void updateWindowSize(bool force = false) override;
   std::tuple<int, int> getWindowPos() override;
   bool windowRequestsClose() override;
@@ -312,5 +314,6 @@ protected:
   GLFWwindow* mainWindow = nullptr;
 };
 
+} // namespace backend_openGL3_glfw
 } // namespace render
 } // namespace polyscope

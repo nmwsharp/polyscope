@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.9)
 
-if("${POLYSCOPE_BACKEND}" STREQUAL "OPENGL3_GLFW")
+if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 
   ## Glad
   add_subdirectory(glad)
@@ -11,8 +11,9 @@ if("${POLYSCOPE_BACKEND}" STREQUAL "OPENGL3_GLFW")
   set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
   set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
   add_subdirectory(glfw)
+endif()
 
-elseif("${POLYSCOPE_BACKEND}" STREQUAL "MOCK_OPENGL")
+if("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
 endif()
 
 ## Imgui

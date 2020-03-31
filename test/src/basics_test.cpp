@@ -1,10 +1,13 @@
-#include "gtest/gtest.h"
+
+#include "polyscope_test.h"
 
 #include "polyscope/curve_network.h"
 #include "polyscope/pick.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
+
+#include "gtest/gtest.h"
 
 #include <array>
 #include <iostream>
@@ -21,7 +24,7 @@ protected:
   // Per-test-suite set-up.
   // Called before the first test in this test suite.
   // Can be omitted if not needed.
-  static void SetUpTestSuite() { polyscope::init(); }
+  static void SetUpTestSuite() { polyscope::init(testBackend); }
 
   // Per-test-suite tear-down.
   // Called after the last test in this test suite.

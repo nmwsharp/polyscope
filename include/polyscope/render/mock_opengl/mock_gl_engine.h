@@ -7,11 +7,9 @@
 
 // A fake version of the opengl engine, with all of the actual gl calls stubbed out. Useful for testing.
 
-// Macro to construct shader strings. Unforunately, it eats line numbers.
-#define POLYSCOPE_GLSL(version, shader) "#version " #version "\n" #shader
-
 namespace polyscope {
 namespace render {
+namespace backend_openGL_mock {
 
 class GLTextureBuffer : public TextureBuffer {
 public:
@@ -216,6 +214,7 @@ public:
 
   // === Windowing and framework things
   void makeContextCurrent() override;
+  void showWindow() override;
   void updateWindowSize(bool force = false) override;
   std::tuple<int, int> getWindowPos() override;
   bool windowRequestsClose() override;
@@ -261,5 +260,6 @@ public:
 protected:
 };
 
+}
 } // namespace render
 } // namespace polyscope

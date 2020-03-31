@@ -12,7 +12,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STR
 endif()
 
 
-if("${POLYSCOPE_BACKEND}" STREQUAL "OPENGL3_GLFW")
+if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 
   set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp imgui/imgui_demo.cpp imgui/examples/imgui_impl_glfw.cpp imgui/examples/imgui_impl_opengl3.cpp)
 
@@ -32,7 +32,7 @@ if("${POLYSCOPE_BACKEND}" STREQUAL "OPENGL3_GLFW")
     add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
   endif()
 
-elseif("${POLYSCOPE_BACKEND}" STREQUAL "MOCK_OPENGL")
+elseif("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
 
   # Disable every platform-specific thing I can find in imgui
   add_definitions(-DIMGUI_DISABLE_OSX_FUNCTIONS)

@@ -1,4 +1,5 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+#ifdef POLYSCOPE_BACKEND_OPENGL_MOCK_ENABLED
 #include "polyscope/render/mock_opengl/mock_gl_engine.h"
 
 #include "polyscope/messages.h"
@@ -12,10 +13,11 @@
 
 namespace polyscope {
 namespace render {
+namespace backend_openGL_mock {
 
-// == Storage and initialization for the global engine
-Engine* engine = nullptr;
-MockGLEngine* glEngine = nullptr; // alias for engine above
+
+MockGLEngine* glEngine = nullptr; // alias for engine pointer
+
 void initializeRenderEngine() {
   glEngine = new MockGLEngine();
   glEngine->initialize();
@@ -1100,7 +1102,14 @@ void GLShaderProgram::draw() {
 
 MockGLEngine::MockGLEngine() {}
 
-void MockGLEngine::initialize() { updateWindowSize(); }
+void MockGLEngine::initialize() {
+
+  if (options::verbosity > 0) {
+    std::cout << options::printPrefix << "Backend: openGL_mock" << std::endl;
+  }
+
+  updateWindowSize();
+}
 
 void MockGLEngine::initializeImGui() {
 
@@ -1146,6 +1155,8 @@ void MockGLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
 void MockGLEngine::makeContextCurrent() {}
 
+void MockGLEngine::showWindow() {}
+
 void MockGLEngine::updateWindowSize(bool force) {
   int newBufferWidth = 400;
   int newBufferHeight = 600;
@@ -1165,7 +1176,7 @@ void MockGLEngine::updateWindowSize(bool force) {
 std::tuple<int, int> MockGLEngine::getWindowPos() {
   int x = 20;
   int y = 40;
-  return std::tuple<int,int>{x, y};
+  return std::tuple<int, int>{x, y};
 }
 
 bool MockGLEngine::windowRequestsClose() { return false; }
@@ -1252,5 +1263,23 @@ std::shared_ptr<ShaderProgram> MockGLEngine::generateShaderProgram(const std::ve
   return std::shared_ptr<ShaderProgram>(newP);
 }
 
+} // namespace backend_openGL_mock
 } // namespace render
 } // namespace polyscope
+
+#else
+
+#include <stdexcept>
+
+namespace polyscope {
+namespace render {
+namespace backend_openGL_mock {
+void initializeRenderEngine() {
+  throw std::runtime_error("Polyscope was not compiled with support for backend: openGL_mock");
+}
+} // namespace backend_openGL_mock
+} // namespace render
+} // namespace polyscope
+
+#endif
+

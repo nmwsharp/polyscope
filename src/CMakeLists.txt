@@ -7,10 +7,20 @@ endif()
 
 SET(INCLUDE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../include/polyscope/")
 
+# Lists that will be populated for the render backend
+
+# Add the main _engine file no matter what. All of the interesting parts are ifdef'd out, and this
+# allows us to resolve stubs.
+list (APPEND BACKEND_SRCS
+		render/opengl/gl_engine.cpp  
+		render/mock_opengl/mock_gl_engine.cpp  
+)
+
 # Configure the render backend
-if("${POLYSCOPE_BACKEND}" STREQUAL "OPENGL3_GLFW")
+if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
+  message("Polyscope backend openGL3_glfw enabled")
 	
-	SET(BACKEND_SRCS
+  list (APPEND BACKEND_SRCS
 		render/opengl/gl_engine.cpp  
 		render/opengl/shaders/texture_draw_shaders.cpp  
 		render/opengl/shaders/lighting_shaders.cpp  
@@ -23,18 +33,18 @@ if("${POLYSCOPE_BACKEND}" STREQUAL "OPENGL3_GLFW")
 		render/opengl/shaders/cylinder_shaders.cpp  
 	)
 
-	SET(BACKEND_HEADERS
+  list(APPEND BACKEND_HEADERS
 		${INCLUDE_ROOT}render/opengl/gl_engine.h
 		${INCLUDE_ROOT}render/opengl/shaders/common.h
 	)
 
-	SET(BACKEND_INCLUDE_DIRS
+  list(APPEND BACKEND_INCLUDE_DIRS
 		${CMAKE_CURRENT_SOURCE_DIR}/../deps/glad/include
 		${CMAKE_CURRENT_SOURCE_DIR}/../deps/glfw/include
 	)
 
 	# Link settings
-	SET(BACKEND_LIBS
+  list(APPEND BACKEND_LIBS
 		glfw ${GLFW_LIBRARIES}
 	)
 
@@ -51,10 +61,14 @@ if("${POLYSCOPE_BACKEND}" STREQUAL "OPENGL3_GLFW")
 	else()
 			list(APPEND BACKEND_LIBS glad)
 	endif()
+			
+  add_definitions(-DPOLYSCOPE_BACKEND_OPENGL3_GLFW_ENABLED)  
+endif()
 	
-elseif("${POLYSCOPE_BACKEND}" STREQUAL "MOCK_OPENGL")
+if("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
+  message("Polyscope backend openGL_mock enabled")
 	
-	SET(BACKEND_SRCS
+  list (APPEND BACKEND_SRCS
 		render/mock_opengl/mock_gl_engine.cpp  
 		render/opengl/shaders/texture_draw_shaders.cpp  
 		render/opengl/shaders/lighting_shaders.cpp  
@@ -67,18 +81,19 @@ elseif("${POLYSCOPE_BACKEND}" STREQUAL "MOCK_OPENGL")
 		render/opengl/shaders/cylinder_shaders.cpp  
 	)
 
-	SET(BACKEND_HEADERS
+  list(APPEND BACKEND_HEADERS
 		${INCLUDE_ROOT}render/mock_opengl/mock_gl_engine.h
 		${INCLUDE_ROOT}render/opengl/shaders/common.h
 	)
 
-	SET(BACKEND_INCLUDE_DIRS
+  list(APPEND BACKEND_INCLUDE_DIRS
 	)
 
 	# Link settings
-	SET(BACKEND_LIBS
+  list(APPEND BACKEND_LIBS
 	)
 
+add_definitions(-DPOLYSCOPE_BACKEND_OPENGL_MOCK_ENABLED)  
 endif()
 
 
@@ -98,6 +113,7 @@ SET(SRCS
   render/color_maps.cpp
   render/ground_plane.cpp
   render/materials.cpp
+  render/initialize_backend.cpp  
 
   # General utilities
   disjoint_sets.cpp
