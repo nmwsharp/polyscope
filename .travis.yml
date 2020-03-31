@@ -12,6 +12,12 @@ os:
 compiler:
   - gcc
   - clang
+
+jobs:
+  # exclude one of the windows jobs; compiler is ignored so no need to do it twice
+  exclude:
+    - os: windows
+      compiler: clang
   
 addons:
   apt:
@@ -39,5 +45,6 @@ script:
   - |
     if [ "$TRAVIS_OS_NAME" = "windows" ]; then 
       cmake --build "."
-      ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL_mock
+      ls
+      ./bin/Debug/polyscope-test.exe --gtest_catch_exceptions=0 backend=openGL_mock
     fi
