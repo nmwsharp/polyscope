@@ -26,5 +26,18 @@ before_script:
   - cmake -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND_OPENGL3_GLFW=ON -DPOLYSCOPE_BACKEND_OPENGL_MOCK=ON ..
 
 script: 
-  - make 
-  - ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL_mock
+  - |
+    if [ "$TRAVIS_OS_NAME" = "linux" ]; then 
+      make 
+      ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL_mock
+    fi
+  - |
+    if [ "$TRAVIS_OS_NAME" = "osx" ]; then 
+      make 
+      ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL_mock
+    fi
+  - |
+    if [ "$TRAVIS_OS_NAME" = "windows" ]; then 
+      cmake --build "."
+      ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL_mock
+    fi
