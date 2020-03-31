@@ -7,18 +7,15 @@ language: cpp
 os:
  - linux
  - osx
- - windows
 
 compiler:
   - gcc
   - clang
 
 jobs:
-  # exclude one of the windows jobs; compiler is ignored so no need to do it twice
-  exclude:
+  include:
     - os: windows
-      compiler: clang
-  
+
 addons:
   apt:
     packages:
