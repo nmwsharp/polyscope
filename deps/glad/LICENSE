@@ -1,0 +1,7 @@
+This file is not distributed by the glad authors. It is a placeholder to explain the licensing situation for 
+this subdirectory.
+
+These source files are not the "glad" project, they are outputs _generated_ by the glad project.
+
+As of Apr 13, 2020, the Readme in the glad repository https://github.com/Dav1dde/glad states that generated files
+can be licensed as Public Domain.  Quote: "The glad generated code itself is any of Public Domain, WTFPL or CC0"
