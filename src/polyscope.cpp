@@ -54,6 +54,13 @@ bool autocenterStructures = false;
 bool autoscaleStructures = false;
 bool openImGuiWindowForUserCallback = true;
 
+// enabled by default in debug mode
+#ifndef NDEBUG
+bool enableRenderErrorChecks = false;
+#else
+bool enableRenderErrorChecks = true;
+#endif
+
 } // namespace options
 
 

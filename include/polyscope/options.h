@@ -37,5 +37,8 @@ extern bool autoscaleStructures;
 // Should the user call back start out with an imgui window context open (default: true)
 extern bool openImGuiWindowForUserCallback;
 
+// Enables optional error checks in the rendering system
+extern bool enableRenderErrorChecks;
+
 } // namespace options
 } // namespace polyscope
