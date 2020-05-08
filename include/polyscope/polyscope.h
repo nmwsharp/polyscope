@@ -94,7 +94,7 @@ bool redrawRequested();
 // in general the top callback will be called instead. Primarily exists to manage the ImGUI context, so callbacks can
 // create other contexts and circumvent the main draw loop. This is used internally to implement messages, element
 // selections, etc.
-void pushContext(std::function<void()> callbackFunction);
+void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI=true);
 void popContext();
 
 // === Utility
