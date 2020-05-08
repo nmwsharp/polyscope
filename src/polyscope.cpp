@@ -18,9 +18,6 @@
 using json = nlohmann::json;
 
 
-using std::cout;
-using std::endl;
-
 namespace polyscope {
 
 // === Declare storage global members
@@ -53,6 +50,14 @@ bool alwaysRedraw = false;
 bool autocenterStructures = false;
 bool autoscaleStructures = false;
 bool openImGuiWindowForUserCallback = true;
+bool invokeUserCallbackForNestedShow = false;
+
+// enabled by default in debug mode
+#ifndef NDEBUG
+bool enableRenderErrorChecks = false;
+#else
+bool enableRenderErrorChecks = true;
+#endif
 
 } // namespace options
 
@@ -67,6 +72,7 @@ namespace {
 struct ContextEntry {
   ImGuiContext* context;
   std::function<void()> callback;
+  bool drawDefaultUI;
 };
 std::vector<ContextEntry> contextStack;
 
@@ -152,35 +158,54 @@ void init(std::string backend) {
   // Initialie ImGUI
   IMGUI_CHECKVERSION();
   render::engine->initializeImGui();
-  contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr});
+  // push a fake context which will never be used (but dodges some invalidation issues)
+  contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr, false});
 
   view::invalidateView();
 
   state::initialized = true;
 }
 
-void pushContext(std::function<void()> callbackFunction) {
+void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Create a new context and push it on to the stack
   ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
   ImGui::SetCurrentContext(newContext);
   render::engine->setImGuiStyle();
-  contextStack.push_back(ContextEntry{newContext, callbackFunction});
+  contextStack.push_back(ContextEntry{newContext, callbackFunction, drawDefaultUI});
+
+  if (contextStack.size() > 50) {
+    // Catch bugs with nested show()
+    throw std::runtime_error(
+        "Uh oh, polyscope::show() was recusively MANY times (depth > 50), this is probably a bug. Perhaps "
+        "you are accidentally calling show every time polyscope::userCallback executes?");
+  };
 
   // Re-enter main loop until the context has been popped
   size_t currentContextStackSize = contextStack.size();
   while (contextStack.size() >= currentContextStackSize) {
+
     mainLoopIteration();
+
+    // auto-exit if the window is closed
+    if (render::engine->windowRequestsClose()) {
+      popContext();
+    }
   }
 
   ImGui::DestroyContext(newContext);
-  ImGui::SetCurrentContext(contextStack.back().context);
+
+  // Restore the previous context, if there was one
+  if (!contextStack.empty()) {
+    ImGui::SetCurrentContext(contextStack.back().context);
+  }
 }
 
 
 void popContext() {
-  if (contextStack.size() == 1) {
+  if (contextStack.empty()) {
     error("Called popContext() too many times");
+    return;
   }
   contextStack.pop_back();
 }
@@ -470,7 +495,12 @@ void buildStructureGui() {
   ImGui::End();
 }
 
-void buildUserGui() {
+void buildUserGuiAndInvokeCallback() {
+
+  if (!options::invokeUserCallbackForNestedShow && contextStack.size() > 2) {
+    return;
+  }
+
   if (state::userCallback) {
     ImGui::PushID("user_callback");
 
@@ -531,23 +561,23 @@ void draw(bool withUI) {
 
   // Build the GUI components
   if (withUI) {
-
-    // The common case, rendering UI and structures
-    if (contextStack.size() == 1) {
+    if (contextStack.back().drawDefaultUI) {
 
       // Note: It is important to build the user GUI first, because it is likely that callbacks there will modify
       // polyscope data. If we do these modifications happen later in the render cycle, they might invalidate data which
       // is necessary when ImGui::Render() happens below.
-      buildUserGui();
+      buildUserGuiAndInvokeCallback();
 
       buildPolyscopeGui();
       buildStructureGui();
       buildPickGui();
     }
-    // If there is a popup UI active, only draw that
-    else {
-      (contextStack.back().callback)();
-    }
+  }
+
+  // Execute the context callback, if there is one.
+  // This callback is Polyscope implementation detail, which is distinct from the userCallback (which gets called below)
+  if (contextStack.back().callback) {
+    (contextStack.back().callback)();
   }
 
   // Draw structures in the scene
@@ -562,7 +592,7 @@ void draw(bool withUI) {
     render::engine->bindDisplay();
     render::engine->ImGuiRender();
   }
-}
+} // namespace polyscope
 
 
 void mainLoopIteration() {
@@ -604,11 +634,14 @@ void show(size_t forFrames) {
 
   render::engine->showWindow();
 
-  // Main loop
-  while (!render::engine->windowRequestsClose() && forFrames > 0) {
-    mainLoopIteration();
-    forFrames--;
-  }
+  auto checkFrames = [&]() {
+    if (forFrames == 0) {
+      popContext();
+    } else {
+      forFrames--;
+    }
+  };
+  pushContext(checkFrames);
 
   if (options::usePrefsFile) {
     writePrefsFile();

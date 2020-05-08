@@ -214,7 +214,9 @@ void error(std::string message) {
   }
 
   auto func = std::bind(buildErrorUI, message, false);
-  pushContext(func);
+  
+  render::engine->showWindow();
+  pushContext(func, false);
 }
 
 void terminatingError(std::string message) {
@@ -223,7 +225,7 @@ void terminatingError(std::string message) {
   }
 
   auto func = std::bind(buildErrorUI, message, true);
-  pushContext(func);
+  pushContext(func, false);
 
   // Quit the program
   shutdown(-1);
@@ -264,7 +266,7 @@ void showDelayedWarnings() {
     }
 
     auto func = std::bind(buildWarningUI, currMessage.baseMessage, currMessage.detailMessage, currMessage.repeatCount);
-    pushContext(func);
+    pushContext(func, false);
 
     warningMessages.pop_front();
     showingWarning = false;

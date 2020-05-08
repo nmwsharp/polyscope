@@ -55,6 +55,18 @@ protected:
 // Show the gui. Note that the pre-suite script calls Polyscope::init() before
 TEST_F(PolyscopeTest, InitializeAndShow) { polyscope::show(3); }
 
+// We should be able to nest calls to show() via the callback. ImGUI causes headaches here
+TEST_F(PolyscopeTest, NestedShow) {
+
+  auto showCallback = [&]() {
+		polyscope::show(3);
+  };
+  polyscope::state::userCallback = showCallback;
+  polyscope::show(3);
+
+  polyscope::state::userCallback = nullptr;
+}
+
 
 // ============================================================
 // =============== Point cloud tests

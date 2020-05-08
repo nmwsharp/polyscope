@@ -37,5 +37,11 @@ extern bool autoscaleStructures;
 // Should the user call back start out with an imgui window context open (default: true)
 extern bool openImGuiWindowForUserCallback;
 
+// If true, the user callback will be invoked for nested calls to polyscope::show(), otherwise not (default: false)
+extern bool invokeUserCallbackForNestedShow;
+
+// Enables optional error checks in the rendering system
+extern bool enableRenderErrorChecks;
+
 } // namespace options
 } // namespace polyscope

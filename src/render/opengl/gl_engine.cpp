@@ -120,38 +120,44 @@ inline GLenum colorAttachNum(const unsigned int i) {
 
 // Stateful error checker
 void checkGLError(bool fatal = true) {
-#ifndef NDEBUG
+
+  if(!options::enableRenderErrorChecks) {
+    return;
+  }
+
+  // Map the GL error enums to strings
   GLenum err = GL_NO_ERROR;
   while ((err = glGetError()) != GL_NO_ERROR) {
-    std::cerr << "OpenGL Error!  Type: ";
+    std::string errText;
     switch (err) {
     case GL_NO_ERROR:
-      std::cerr << "No error";
+      errText = "No error";
       break;
     case GL_INVALID_ENUM:
-      std::cerr << "Invalid enum";
+      errText = "Invalid enum";
       break;
     case GL_INVALID_VALUE:
-      std::cerr << "Invalid value";
+      errText = "Invalid value";
       break;
     case GL_INVALID_OPERATION:
-      std::cerr << "Invalid operation";
+      errText = "Invalid operation";
       break;
     // case GL_STACK_OVERFLOW:    std::cerr << "Stack overflow"; break;
     // case GL_STACK_UNDERFLOW:   std::cerr << "Stack underflow"; break;
     case GL_OUT_OF_MEMORY:
-      std::cerr << "Out of memory";
+      errText = "Out of memory";
       break;
     default:
-      std::cerr << "Unknown error";
+      errText = "Unknown error " + std::to_string(static_cast<unsigned int>(err));
     }
-    std::cerr << std::endl;
 
+    if (polyscope::options::verbosity > 0) {
+      std::cout << polyscope::options::printPrefix << "Polyscope OpenGL Error!  Type: " << errText << std::endl;
+    }
     if (fatal) {
-      throw std::runtime_error("OpenGl error occurred");
+      throw std::runtime_error("OpenGl error occurred. Text: " + errText);
     }
   }
-#endif
 }
 
 // Helper function to print compile logs
