@@ -170,8 +170,14 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Create a new context and push it on to the stack
   ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
+  ImGuiIO& oldIO = ImGui::GetIO(); // used to copy below, see note
   ImGui::SetCurrentContext(newContext);
+
   render::engine->setImGuiStyle();
+  ImGui::GetIO() = oldIO; // Copy all of the old IO values to new. With ImGUI 1.76 (and some previous versions), this
+                          // was necessary to fix a bug where keys like delete, etc would break in subcontexts. The
+                          // problem was that the key mappings (e.g. GLFW_KEY_BACKSPACE --> ImGuiKey_Backspace) need to
+                          // be populated in io.KeyMap, and these entries would get lost on creating a new context.
   contextStack.push_back(ContextEntry{newContext, callbackFunction, drawDefaultUI});
 
   if (contextStack.size() > 50) {
@@ -192,6 +198,9 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
       popContext();
     }
   }
+
+  oldIO = ImGui::GetIO(); // Copy new IO values to old. I haven't encountered anything that strictly requires this, but
+                          // it feels like we should mirror the behavior from pushing.
 
   ImGui::DestroyContext(newContext);
 
