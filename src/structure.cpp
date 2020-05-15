@@ -39,6 +39,9 @@ void Structure::buildUI() {
     }
     if (ImGui::BeginPopup("OptionsPopup")) {
 
+      // Solo
+      if (ImGui::MenuItem("Solo toggle")) solo();
+      
       // Transform
       if (ImGui::BeginMenu("Transform")) {
         if (ImGui::MenuItem("Center")) centerBoundingBox();
@@ -106,6 +109,12 @@ std::string Structure::uniquePrefix() { return typeName() + "#" + name + "#"; }
 
 void Structure::remove() {
   removeStructure(typeName(), name);
+}
+
+void Structure::solo() {
+    for(auto &structure: polyscope::state::structures[this->typeName()])
+        structure.second->setEnabled(!structure.second->isEnabled());
+    this->setEnabled(true);
 }
 
 } // namespace polyscope

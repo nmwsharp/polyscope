@@ -56,7 +56,8 @@ public:
   virtual Structure* setEnabled(bool newEnabled);
   bool isEnabled();
   virtual std::string typeName() = 0;
-
+  void solo();
+  
   // = Scene transform
   glm::mat4 objectTransform = glm::mat4(1.0);
   glm::mat4 getModelView();
