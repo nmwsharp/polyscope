@@ -186,6 +186,24 @@ struct ShaderStageSpecification {
   const std::string src;
 };
 
+// A simple interface for replacement rules to customize shaders
+// The "replacements" are key-value pairs will be used to modify the program source. Each key corresponds to a tag in
+// the program source, which will be replaced by the string value (if many such replacements exist, the values are
+// concatenated together).
+// The uniforms/attributes/textures are unioned to the respective lists for the program.
+class ShaderReplacementRule {
+public:
+  ShaderReplacementRule(std::string ruleName_, std::vector<std::pair<std::string, std::string>> replacements_);
+  ShaderReplacementRule(std::string ruleName_, std::vector<std::pair<std::string, std::string>> replacements_,
+                        std::vector<ShaderSpecUniform> uniforms_, std::vector<ShaderSpecAttribute> attributes_,
+                        std::vector<ShaderSpecTexture> textures_);
+
+  std::string ruleName;
+  std::vector<std::pair<std::string, std::string>> replacements;
+  std::vector<ShaderSpecUniform> uniforms;
+  std::vector<ShaderSpecAttribute> attributes;
+  std::vector<ShaderSpecTexture> textures;
+};
 
 // Encapsulate a shader program
 class ShaderProgram {
@@ -302,10 +320,10 @@ public:
   virtual void setBlendMode(BlendMode newMode = BlendMode::Over) = 0;
   virtual void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) = 0;
 
-	void setCurrentViewport(glm::vec4 viewport); 
-	glm::vec4 getCurrentViewport(); 
-	void setCurrentPixelScaling(float scale);
-	float getCurrentPixelScaling();
+  void setCurrentViewport(glm::vec4 viewport);
+  glm::vec4 getCurrentViewport();
+  void setCurrentPixelScaling(float scale);
+  float getCurrentPixelScaling();
 
   // Helpers
   void allocateGlobalBuffersAndPrograms(); // called once during startup
@@ -338,7 +356,7 @@ public:
   ImFontAtlas* getImGuiGlobalFontAtlas();
   virtual void ImGuiNewFrame() = 0;
   virtual void ImGuiRender() = 0;
-	virtual void showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer);
+  virtual void showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer);
 
 
   // === Factory methods
@@ -367,9 +385,12 @@ public:
   // create frame buffers
   virtual std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) = 0;
 
-  // create shader programs
+  // create shader programs, either direclty using the text or with replacement rules
   virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                               DrawMode dm, unsigned int nPatchVertices = 0) = 0;
+                                                               DrawMode dm) = 0;
+  virtual std::shared_ptr<ShaderProgram>
+  generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
+                        const std::vector<ShaderReplacementRule>& replacementRules) = 0;
 
   // === The frame buffers used in the rendering pipeline
   // The size of these buffers is always kept in sync with the screen size
@@ -391,14 +412,14 @@ public:
   float exposure = 1.0;
   float whiteLevel = 0.75;
   float gamma = 2.2;
-  
-  
+
+
   // == Cached data
 
   // Materials
   std::vector<std::unique_ptr<Material>> materials;
   Material& getMaterial(const std::string& name);
-  void loadBlendableMaterial(std::string matName, std::array<std::string,4> filenames);
+  void loadBlendableMaterial(std::string matName, std::array<std::string, 4> filenames);
   void loadBlendableMaterial(std::string matName, std::string filenameBase, std::string filenameExt);
   void loadStaticMaterial(std::string matName, std::string filename);
 
@@ -410,11 +431,11 @@ public:
 protected:
   // TODO Manage a cache of compiled shaders?
 
-	// Render state
+  // Render state
   int ssaaFactor = 1;
   int msaaFactor = 4;
-	glm::vec4 currViewport;	
-	float currPixelScale;	
+  glm::vec4 currViewport;
+  float currPixelScale;
 
   // Helpers
   std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen
@@ -427,7 +448,6 @@ protected:
 
   // Internal windowing and engine details
   ImFontAtlas* globalFontAtlas = nullptr;
-
 };
 
 
@@ -452,7 +472,7 @@ inline void ShaderProgram::setAttribute(std::string name, const std::vector<std:
 
 // Call once to initialize
 // (see render/initialize_backend.cpp)
-void initializeRenderEngine(std::string backend="");
+void initializeRenderEngine(std::string backend = "");
 
 // The global render engine
 // Gets initialized by initializeRenderEngine() in polyscope::init();

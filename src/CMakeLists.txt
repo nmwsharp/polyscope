@@ -114,6 +114,7 @@ SET(SRCS
   render/ground_plane.cpp
   render/materials.cpp
   render/initialize_backend.cpp  
+  render/shader_builder.cpp  
 
   # General utilities
   disjoint_sets.cpp

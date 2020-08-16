@@ -303,8 +303,11 @@ public:
   std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) override;
 
   // create shader programs
-  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-                                                       unsigned int nPatchVertices = 0) override;
+  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
+                                                       DrawMode dm) override;
+  std::shared_ptr<ShaderProgram>
+  generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
+                        const std::vector<ShaderReplacementRule>& replacementRules) override;
 
 protected:
   // Helpers

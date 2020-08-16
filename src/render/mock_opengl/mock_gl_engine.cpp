@@ -7,6 +7,7 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/utilities.h"
 
+#include "polyscope/render/shader_builder.h"
 #include "polyscope/render/shaders.h"
 
 #include "stb_image.h"
@@ -290,7 +291,7 @@ void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
 
 GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
                                  unsigned int nPatchVertices)
-    : ShaderProgram(stages, dm, nPatchVertices) {
+    : ShaderProgram(stages, dm) {
 
 
   // Collect attributes and uniforms from all of the shaders
@@ -1258,9 +1259,17 @@ std::shared_ptr<FrameBuffer> MockGLEngine::generateFrameBuffer(unsigned int size
 }
 
 std::shared_ptr<ShaderProgram> MockGLEngine::generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                                   DrawMode dm, unsigned int nPatchVertices) {
-  GLShaderProgram* newP = new GLShaderProgram(stages, dm, nPatchVertices);
+                                                                   DrawMode dm) {
+  GLShaderProgram* newP = new GLShaderProgram(stages, dm);
   return std::shared_ptr<ShaderProgram>(newP);
+}
+
+std::shared_ptr<ShaderProgram>
+MockGLEngine::generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
+                                    const std::vector<ShaderReplacementRule>& replacementRules) {
+
+  std::vector<ShaderStageSpecification> newStages = applyShaderReplacements(stages, replacementRules);
+  return generateShaderProgram(newStages, dm);
 }
 
 } // namespace backend_openGL_mock

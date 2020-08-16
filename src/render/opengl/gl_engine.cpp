@@ -8,6 +8,7 @@
 #include "polyscope/utilities.h"
 
 #include "polyscope/render/opengl/shaders/common.h"
+#include "polyscope/render/shader_builder.h"
 #include "polyscope/render/shaders.h"
 
 #include "stb_image.h"
@@ -121,7 +122,7 @@ inline GLenum colorAttachNum(const unsigned int i) {
 // Stateful error checker
 void checkGLError(bool fatal = true) {
 
-  if(!options::enableRenderErrorChecks) {
+  if (!options::enableRenderErrorChecks) {
     return;
   }
 
@@ -1886,9 +1887,17 @@ std::shared_ptr<FrameBuffer> GLEngine::generateFrameBuffer(unsigned int sizeX_, 
 }
 
 std::shared_ptr<ShaderProgram> GLEngine::generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                               DrawMode dm, unsigned int nPatchVertices) {
-  GLShaderProgram* newP = new GLShaderProgram(stages, dm, nPatchVertices);
+                                                               DrawMode dm) {
+  GLShaderProgram* newP = new GLShaderProgram(stages, dm);
   return std::shared_ptr<ShaderProgram>(newP);
+}
+
+std::shared_ptr<ShaderProgram>
+GLEngine::generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
+                                const std::vector<ShaderReplacementRule>& replacementRules) {
+
+  std::vector<ShaderStageSpecification> newStages = applyShaderReplacements(stages, replacementRules);
+  return generateShaderProgram(newStages, dm);
 }
 
 
