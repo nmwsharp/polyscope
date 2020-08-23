@@ -91,7 +91,7 @@ void CurveNetwork::draw() {
 
     // Draw the actual curve network
     edgeProgram->draw();
-		nodeProgram->draw();
+    nodeProgram->draw();
   }
 
   // Draw the quantities
@@ -132,16 +132,14 @@ void CurveNetwork::prepare() {
   }
 
 
-  // It not quantity is coloring the network, draw with a default color
+  // It no quantity is coloring the network, draw with a default color
   nodeProgram = render::engine->generateShaderProgram(
       {render::SPHERE_VERT_SHADER, render::SPHERE_BILLBOARD_GEOM_SHADER, render::SPHERE_BILLBOARD_FRAG_SHADER},
       DrawMode::Points);
   render::engine->setMaterial(*nodeProgram, getMaterial());
 
 
-  edgeProgram = render::engine->generateShaderProgram(
-      {render::PASSTHRU_CYLINDER_VERT_SHADER, render::CYLINDER_GEOM_SHADER, render::CYLINDER_FRAG_SHADER},
-      DrawMode::Points);
+  edgeProgram = render::engine->generateShaderProgram(render::FLEX_CYLINDER_PIPELINE, DrawMode::Points, {});
   render::engine->setMaterial(*edgeProgram, getMaterial());
 
   // Fill out the geometry data for the programs

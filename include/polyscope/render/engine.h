@@ -385,12 +385,13 @@ public:
   // create frame buffers
   virtual std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) = 0;
 
-  // create shader programs, either direclty using the text or with replacement rules
+  // == create shader programs
+  // low-level interface
   virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
                                                                DrawMode dm) = 0;
-  virtual std::shared_ptr<ShaderProgram>
-  generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-                        const std::vector<ShaderReplacementRule>& replacementRules) = 0;
+  // general flexible interface
+  virtual std::shared_ptr<ShaderProgram> requestShader(std::string programName,
+                                                       std::vector<std::string> customRules) = 0;
 
   // === The frame buffers used in the rendering pipeline
   // The size of these buffers is always kept in sync with the screen size

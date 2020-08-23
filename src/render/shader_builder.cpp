@@ -24,7 +24,7 @@ applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
 
   const auto npos = std::string::npos;
   const std::string startTagToken = "${ ";
-  const std::string endTagToken = "}$ ";
+  const std::string endTagToken = " }$";
 
   // == Apply the replacements to the shader source
   std::vector<ShaderStageSpecification> replacedStages;
@@ -34,6 +34,8 @@ applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
     std::string resultText = "";
 
     while (!progText.empty()) {
+
+      //std::cout << "searching " << progText << std::endl;
 
       // Find the next tag in the program
       auto tagStart = progText.find(startTagToken);
@@ -48,9 +50,13 @@ applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
         progText = "";
       } else {
 
+        std::cout << "FOUND TAG: " << tagStart << " " << tagEnd << std::endl;
+
         std::string srcBefore = progText.substr(0, tagStart);
         std::string tag = progText.substr(tagStart + startTagToken.size(), tagEnd - (tagStart + startTagToken.size()));
         std::string srcAfter = progText.substr(tagEnd + endTagToken.size(), npos);
+        
+        std::cout << "  TAG NAME: [" << tag << "]\n";
 
         resultText += srcBefore;
         if (replacements.find(tag) != replacements.end()) {
