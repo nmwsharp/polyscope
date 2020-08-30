@@ -45,10 +45,7 @@ void CurveNetworkNodeColorQuantity::createProgram() {
                                                        render::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
                                                        render::SPHERE_COLOR_BILLBOARD_FRAG_SHADER},
                                                       DrawMode::Points);
-  edgeProgram = render::engine->generateShaderProgram({render::CYLINDER_BLEND_COLOR_VERT_SHADER,
-                                                       render::CYLINDER_BLEND_COLOR_GEOM_SHADER,
-                                                       render::CYLINDER_BLEND_COLOR_FRAG_SHADER},
-                                                      DrawMode::Points);
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_BLEND_COLOR", "SHADE_COLOR"});
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);
@@ -112,9 +109,7 @@ void CurveNetworkEdgeColorQuantity::createProgram() {
                                                        render::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
                                                        render::SPHERE_COLOR_BILLBOARD_FRAG_SHADER},
                                                       DrawMode::Points);
-  edgeProgram = render::engine->generateShaderProgram(
-      {render::CYLINDER_COLOR_VERT_SHADER, render::CYLINDER_COLOR_GEOM_SHADER, render::CYLINDER_COLOR_FRAG_SHADER},
-      DrawMode::Points);
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_COLOR", "SHADE_COLOR"});
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);

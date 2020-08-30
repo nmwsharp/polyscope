@@ -155,10 +155,7 @@ void CurveNetworkNodeScalarQuantity::createProgram() {
                                                        render::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
                                                        render::SPHERE_VALUE_BILLBOARD_FRAG_SHADER},
                                                       DrawMode::Points);
-  edgeProgram = render::engine->generateShaderProgram({render::CYLINDER_BLEND_VALUE_VERT_SHADER,
-                                                       render::CYLINDER_BLEND_VALUE_GEOM_SHADER,
-                                                       render::CYLINDER_BLEND_VALUE_FRAG_SHADER},
-                                                      DrawMode::Points);
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_BLEND_VALUE", "SHADE_COLORMAP_VALUE"});
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);
@@ -223,6 +220,7 @@ void CurveNetworkEdgeScalarQuantity::createProgram() {
   edgeProgram = render::engine->generateShaderProgram(
       {render::CYLINDER_VALUE_VERT_SHADER, render::CYLINDER_VALUE_GEOM_SHADER, render::CYLINDER_VALUE_FRAG_SHADER},
       DrawMode::Points);
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"});
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);

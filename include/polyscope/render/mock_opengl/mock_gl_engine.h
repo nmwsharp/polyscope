@@ -5,6 +5,8 @@
 #include "polyscope/render/engine.h"
 #include "polyscope/utilities.h"
 
+#include <unordered_map>
+
 // A fake version of the opengl engine, with all of the actual gl calls stubbed out. Useful for testing.
 
 namespace polyscope {
@@ -256,11 +258,16 @@ public:
   // create shader programs
   std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
                                                        DrawMode dm) override;
-  std::shared_ptr<ShaderProgram>
-  generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-                        const std::vector<ShaderReplacementRule>& replacementRules) override;
+  std::shared_ptr<ShaderProgram> requestShader(const std::string& programName,
+                                               const std::vector<std::string>& customRules,
+                                               bool withDefaults = true) override;
+
 
 protected:
+  // Shader program & rule caches
+  std::unordered_map<std::string, std::pair<std::vector<ShaderStageSpecification>, DrawMode>> registeredShaderPrograms;
+  std::unordered_map<std::string, ShaderReplacementRule> registeredShaderRules;
+  void populateDefaultShadersAndRules();
 };
 
 } // namespace backend_openGL_mock

@@ -8,10 +8,13 @@
 #include "polyscope/utilities.h"
 
 #include "polyscope/render/opengl/shaders/common.h"
+#include "polyscope/render/rules.h"
 #include "polyscope/render/shader_builder.h"
 #include "polyscope/render/shaders.h"
 
 #include "stb_image.h"
+
+#include <set>
 
 namespace polyscope {
 namespace render {
@@ -21,7 +24,6 @@ unsigned int getCousineRegularCompressedSize();
 const unsigned int* getCousineRegularCompressedData();
 
 namespace backend_openGL3_glfw {
-
 
 GLEngine* glEngine = nullptr; // alias for global engine pointer
 
@@ -686,6 +688,7 @@ void GLShaderProgram::compileGLProgram(const std::vector<ShaderStageSpecificatio
   std::vector<ShaderHandle> handles;
   for (const ShaderStageSpecification& s : stages) {
     ShaderHandle h = glCreateShader(native(s.stage));
+    std::cout << s.src.c_str() << std::endl;
     std::array<const char*, 2> srcs = {s.src.c_str(), shaderCommonSource};
     glShaderSource(h, 2, &(srcs[0]), nullptr);
     glCompileShader(h);
@@ -1662,6 +1665,8 @@ void GLEngine::initialize() {
     // glClearColor(1., 1., 1., 0.);
     // glClearDepth(1.);
   }
+
+  populateDefaultShadersAndRules();
 }
 
 
@@ -1892,13 +1897,57 @@ std::shared_ptr<ShaderProgram> GLEngine::generateShaderProgram(const std::vector
   return std::shared_ptr<ShaderProgram>(newP);
 }
 
-std::shared_ptr<ShaderProgram>
-GLEngine::generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-                                const std::vector<ShaderReplacementRule>& replacementRules) {
+std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& programName,
+                                                       const std::vector<std::string>& customRules, bool withDefaults) {
 
-  std::vector<ShaderStageSpecification> newStages = applyShaderReplacements(stages, replacementRules);
-  return generateShaderProgram(newStages, dm);
+  // Get the program
+  if (registeredShaderPrograms.find(programName) == registeredShaderPrograms.end()) {
+    throw std::runtime_error("No shader program with name [" + programName + "] registered.");
+  }
+  const std::vector<ShaderStageSpecification>& stages = registeredShaderPrograms[programName].first;
+  DrawMode dm = registeredShaderPrograms[programName].second;
+
+  // Add in the default rules
+  std::set<std::string> fullCustomRules(customRules.begin(), customRules.end());
+  if (withDefaults) {
+    std::vector<std::string> defaultRules{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "MATCAP_SHADE"};
+    fullCustomRules.insert(defaultRules.begin(), defaultRules.end());
+  }
+
+  // Get the rules
+  std::vector<ShaderReplacementRule> rules;
+  for (const std::string& ruleName : fullCustomRules) {
+    if (registeredShaderRules.find(ruleName) == registeredShaderRules.end()) {
+      throw std::runtime_error("No shader replacement rule with name [" + ruleName + "] registered.");
+    }
+    ShaderReplacementRule& thisRule = registeredShaderRules[ruleName];
+    rules.push_back(thisRule);
+  }
+
+  std::vector<ShaderStageSpecification> updatedStages = applyShaderReplacements(stages, rules);
+  return generateShaderProgram(updatedStages, dm);
 }
+
+void GLEngine::populateDefaultShadersAndRules() {
+  // Note: we use .insert({key, value}) rather than map[key] = value to support const members in the value.
+
+  // Load shaders
+  registeredShaderPrograms.insert({"RAYCAST_CYLINDER", {FLEX_CYLINDER_PIPELINE, DrawMode::Points}});
+
+  // === Load rules
+  registeredShaderRules.insert({"GLSL_VERSION", GLSL_VERSION});
+  registeredShaderRules.insert({"GLOBAL_FRAGMENT_FILTER", GLOBAL_FRAGMENT_FILTER});
+
+  registeredShaderRules.insert({"MATCAP_SHADE", MATCAP_SHADE});
+  registeredShaderRules.insert({"SHADE_BASECOLOR", SHADE_BASECOLOR});
+  registeredShaderRules.insert({"SHADE_COLOR", SHADE_COLOR});
+  registeredShaderRules.insert({"SHADE_COLORMAP_VALUE", SHADE_COLORMAP_VALUE});
+
+  registeredShaderRules.insert({"CYLINDER_PROPAGATE_VALUE", CYLINDER_PROPAGATE_VALUE});
+  registeredShaderRules.insert({"CYLINDER_PROPAGATE_BLEND_VALUE", CYLINDER_PROPAGATE_BLEND_VALUE});
+  registeredShaderRules.insert({"CYLINDER_PROPAGATE_COLOR", CYLINDER_PROPAGATE_COLOR});
+  registeredShaderRules.insert({"CYLINDER_PROPAGATE_BLEND_COLOR", CYLINDER_PROPAGATE_BLEND_COLOR});
+};
 
 
 } // namespace backend_openGL3_glfw

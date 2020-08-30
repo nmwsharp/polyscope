@@ -11,6 +11,9 @@ applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
   // accumulate the text to be inserted at each tag from all of the rules
   std::map<std::string, std::string> replacements;
   for (const ShaderReplacementRule& rule : replacementRules) {
+
+    std::cout << "Replacement rule: " << rule.ruleName << std::endl;
+
     for (const std::pair<std::string, std::string>& r : rule.replacements) {
       std::string key = r.first;
       std::string value = r.second;
@@ -50,17 +53,18 @@ applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
         progText = "";
       } else {
 
-        std::cout << "FOUND TAG: " << tagStart << " " << tagEnd << std::endl;
+        //std::cout << "FOUND TAG: " << tagStart << " " << tagEnd << std::endl;
 
         std::string srcBefore = progText.substr(0, tagStart);
         std::string tag = progText.substr(tagStart + startTagToken.size(), tagEnd - (tagStart + startTagToken.size()));
         std::string srcAfter = progText.substr(tagEnd + endTagToken.size(), npos);
-        
-        std::cout << "  TAG NAME: [" << tag << "]\n";
+
+        //std::cout << "  TAG NAME: [" << tag << "]\n";
 
         resultText += srcBefore;
         if (replacements.find(tag) != replacements.end()) {
           resultText += replacements[tag];
+          //std::cout << "  ADDING REPLACEMENT: [" << replacements[tag] << "]\n";
         }
         progText = srcAfter; // continue processing the remaining program text
       }
@@ -140,7 +144,7 @@ applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
           for (ShaderSpecTexture existingT : replacedTextures) {
             if (existingT.name == newT.name) {
               // check for conflics
-              if (existingT.dim != newT.dim ) {
+              if (existingT.dim != newT.dim) {
                 throw std::runtime_error("ShaderBuilder: rule texture [" + newT.name +
                                          "] conflicts with existing texture of different dim");
               }
@@ -151,6 +155,7 @@ applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
 
           // No matching texture found, append
           if (!existingFound) {
+            std::cout << "adding new texture: " << newT.name << std::endl;
             replacedTextures.push_back(newT);
           }
         }

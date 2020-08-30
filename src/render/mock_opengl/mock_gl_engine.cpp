@@ -1264,13 +1264,40 @@ std::shared_ptr<ShaderProgram> MockGLEngine::generateShaderProgram(const std::ve
   return std::shared_ptr<ShaderProgram>(newP);
 }
 
-std::shared_ptr<ShaderProgram>
-MockGLEngine::generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-                                    const std::vector<ShaderReplacementRule>& replacementRules) {
+std::shared_ptr<ShaderProgram> MockGLEngine::requestShader(const std::string& programName,
+                                                           const std::vector<std::string>& customRules,
+                                                           bool withDefaults) {
 
-  std::vector<ShaderStageSpecification> newStages = applyShaderReplacements(stages, replacementRules);
-  return generateShaderProgram(newStages, dm);
+  throw std::runtime_error("do something good here");
+
+  // Get the program
+  if (registeredShaderPrograms.find(programName) == registeredShaderPrograms.end()) {
+    polyscope::error("No shader program with name [" + programName + "] registered.");
+  }
+  const std::vector<ShaderStageSpecification>& stages = registeredShaderPrograms[programName].first;
+  DrawMode dm = registeredShaderPrograms[programName].second;
+
+  // Get the rules
+  std::vector<ShaderReplacementRule> rules;
+  for (const std::string& ruleName : customRules) {
+    if (registeredShaderRules.find(ruleName) == registeredShaderRules.end()) {
+      polyscope::error("No shader replacement rule with name [" + ruleName + "] registered.");
+    }
+    ShaderReplacementRule& thisRule = registeredShaderRules[ruleName];
+    // rules.push_back(thisRule);
+  }
+
+  std::vector<ShaderStageSpecification> updatedStages = applyShaderReplacements(stages, rules);
+  return generateShaderProgram(updatedStages, dm);
 }
+
+void MockGLEngine::populateDefaultShadersAndRules(){
+
+    // Load shaders
+
+    // Load rules
+
+};
 
 } // namespace backend_openGL_mock
 } // namespace render

@@ -31,6 +31,7 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 		render/opengl/shaders/sphere_shaders.cpp  
 		render/opengl/shaders/ribbon_shaders.cpp  
 		render/opengl/shaders/cylinder_shaders.cpp  
+		render/opengl/shaders/rules.cpp  
 	)
 
   list(APPEND BACKEND_HEADERS
@@ -79,6 +80,7 @@ if("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
 		render/opengl/shaders/sphere_shaders.cpp  
 		render/opengl/shaders/ribbon_shaders.cpp  
 		render/opengl/shaders/cylinder_shaders.cpp  
+		render/opengl/shaders/rules.cpp  
 	)
 
   list(APPEND BACKEND_HEADERS

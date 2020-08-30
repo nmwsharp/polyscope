@@ -105,6 +105,8 @@ void FrameBuffer::verifyBufferSizes() {
   }
 }
 
+ShaderReplacementRule::ShaderReplacementRule() {}
+
 ShaderReplacementRule::ShaderReplacementRule(std::string ruleName_,
                                              std::vector<std::pair<std::string, std::string>> replacements_)
     : ruleName(ruleName_), replacements(replacements_) {}
@@ -115,8 +117,7 @@ ShaderReplacementRule::ShaderReplacementRule(std::string ruleName_,
                                              std::vector<ShaderSpecAttribute> attributes_,
                                              std::vector<ShaderSpecTexture> textures_)
     : ruleName(ruleName_), replacements(replacements_), uniforms(uniforms_), attributes(attributes_),
-      textures(textures_)
-{}
+      textures(textures_) {}
 
 ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
                              unsigned int nPatchVertices_)

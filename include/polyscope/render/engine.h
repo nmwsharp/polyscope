@@ -193,6 +193,7 @@ struct ShaderStageSpecification {
 // The uniforms/attributes/textures are unioned to the respective lists for the program.
 class ShaderReplacementRule {
 public:
+  ShaderReplacementRule();
   ShaderReplacementRule(std::string ruleName_, std::vector<std::pair<std::string, std::string>> replacements_);
   ShaderReplacementRule(std::string ruleName_, std::vector<std::pair<std::string, std::string>> replacements_,
                         std::vector<ShaderSpecUniform> uniforms_, std::vector<ShaderSpecAttribute> attributes_,
@@ -390,8 +391,9 @@ public:
   virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
                                                                DrawMode dm) = 0;
   // general flexible interface
-  virtual std::shared_ptr<ShaderProgram> requestShader(std::string programName,
-                                                       std::vector<std::string> customRules) = 0;
+  virtual std::shared_ptr<ShaderProgram> requestShader(const std::string& programName,
+                                                       const std::vector<std::string>& customRules,
+                                                       bool withDefaults = true) = 0;
 
   // === The frame buffers used in the rendering pipeline
   // The size of these buffers is always kept in sync with the screen size

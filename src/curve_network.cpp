@@ -139,7 +139,7 @@ void CurveNetwork::prepare() {
   render::engine->setMaterial(*nodeProgram, getMaterial());
 
 
-  edgeProgram = render::engine->generateShaderProgram(render::FLEX_CYLINDER_PIPELINE, DrawMode::Points, {});
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"SHADE_BASECOLOR"});
   render::engine->setMaterial(*edgeProgram, getMaterial());
 
   // Fill out the geometry data for the programs
