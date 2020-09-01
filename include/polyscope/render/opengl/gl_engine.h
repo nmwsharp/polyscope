@@ -308,9 +308,9 @@ public:
                                                        DrawMode dm) override;
 
   // general flexible interface
-  std::shared_ptr<ShaderProgram> requestShader(const std::string& programName,
-                                               const std::vector<std::string>& customRules,
-                                               bool withDefaults = true) override;
+  std::shared_ptr<ShaderProgram>
+  requestShader(const std::string& programName, const std::vector<std::string>& customRules,
+                ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) override;
 
   // === Implementation details
 

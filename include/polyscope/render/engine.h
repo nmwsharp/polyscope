@@ -205,6 +205,7 @@ public:
   std::vector<ShaderSpecAttribute> attributes;
   std::vector<ShaderSpecTexture> textures;
 };
+enum class ShaderReplacementDefaults { SceneObject, Pick, None };
 
 // Encapsulate a shader program
 class ShaderProgram {
@@ -391,9 +392,9 @@ public:
   virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
                                                                DrawMode dm) = 0;
   // general flexible interface
-  virtual std::shared_ptr<ShaderProgram> requestShader(const std::string& programName,
-                                                       const std::vector<std::string>& customRules,
-                                                       bool withDefaults = true) = 0;
+  virtual std::shared_ptr<ShaderProgram>
+  requestShader(const std::string& programName, const std::vector<std::string>& customRules,
+                ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) = 0;
 
   // === The frame buffers used in the rendering pipeline
   // The size of these buffers is always kept in sync with the screen size

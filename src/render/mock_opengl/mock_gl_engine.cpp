@@ -1266,7 +1266,7 @@ std::shared_ptr<ShaderProgram> MockGLEngine::generateShaderProgram(const std::ve
 
 std::shared_ptr<ShaderProgram> MockGLEngine::requestShader(const std::string& programName,
                                                            const std::vector<std::string>& customRules,
-                                                           bool withDefaults) {
+                                                           ShaderReplacementDefaults defaults) {
 
   throw std::runtime_error("do something good here");
 

@@ -1,6 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 
-#include "polyscope/render/opengl/gl_shaders.h"
+#include "polyscope/render/opengl/shaders/cylinder_shaders.h"
 
 namespace polyscope {
 namespace render {
@@ -1168,6 +1168,8 @@ const ShaderStageSpecification CYLINDER_PICK_FRAG_SHADER = {
     )
 };
 
+namespace backend_openGL3_glfw { // TODO eventually, move everything in to the namespace 
+
 const ShaderStageSpecification FLEX_CYLINDER_VERT_SHADER = {
 
     ShaderStageType::Vertex,
@@ -1198,7 +1200,7 @@ R"(
         
         void main()
         {
-            gl_Position = u_modelView * vec4(a_position_tail,1.0);
+            gl_Position = u_modelView * vec4(a_position_tail, 1.0);
             position_tip = u_modelView * vec4(a_position_tip, 1.0);
 
             ${ VERT_ASSIGNMENTS }$
@@ -1351,14 +1353,231 @@ R"(
 
            // Lighting
            ${ GENERATE_LIT_COLOR }$
-           outputF = vec4(litColor, 1.);
+
+           // Set alpha
+           float alphaOut = 1.0;
+           ${ GENERATE_ALPHA }$
+
+           // Write output
+           outputF = vec4(litColor, alphaOut);
         }
 )"
 };
 
-const std::vector<ShaderStageSpecification> FLEX_CYLINDER_PIPELINE{FLEX_CYLINDER_VERT_SHADER, FLEX_CYLINDER_GEOM_SHADER, FLEX_CYLINDER_FRAG_SHADER};
+
+
+const std::vector<ShaderStageSpecification> RAYCAST_CYLINDER_PIPELINE{FLEX_CYLINDER_VERT_SHADER, FLEX_CYLINDER_GEOM_SHADER, FLEX_CYLINDER_FRAG_SHADER};
+
+
+// == Rules
+
+const ShaderReplacementRule CYLINDER_PROPAGATE_VALUE (
+    /* rule name */ "CYLINDER_PROPAGATE_VALUE",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in float a_value;
+          out float a_valueToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_valueToGeom = a_value;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in float a_valueToGeom[];
+          out float a_valueToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_valueToFrag = a_valueToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in float a_valueToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float shadeValue = a_valueToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_value", DataType::Float},
+    },
+    /* textures */ {}
+);
+
+// like propagate value, but takes two values at tip and tail and linearly interpolates
+const ShaderReplacementRule CYLINDER_PROPAGATE_BLEND_VALUE (
+    /* rule name */ "CYLINDER_PROPAGATE_BLEND_VALUE",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in float a_value_tail;
+          in float a_value_tip;
+          out float a_valueTailToGeom;
+          out float a_valueTipToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_valueTailToGeom = a_value_tail;
+          a_valueTipToGeom = a_value_tip;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in float a_valueTailToGeom[];
+          in float a_valueTipToGeom[];
+          out float a_valueTailToFrag;
+          out float a_valueTipToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_valueTailToFrag = a_valueTailToGeom[0]; 
+          a_valueTipToFrag = a_valueTipToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in float a_valueTailToFrag;
+          in float a_valueTipToFrag;
+          float length2(vec3 x);
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float tEdge = dot(pHit - tailView, tipView - tailView) / length2(tipView - tailView);
+          float shadeValue = mix(a_valueTailToFrag, a_valueTipToFrag, tEdge);
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_value_tail", DataType::Float},
+      {"a_value_tip", DataType::Float},
+    },
+    /* textures */ {}
+);
+
+const ShaderReplacementRule CYLINDER_PROPAGATE_COLOR (
+    /* rule name */ "CYLINDER_PROPAGATE_COLOR",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec3 a_color;
+          out vec3 a_colorToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_colorToGeom = a_color;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in vec3 a_colorToGeom[];
+          out vec3 a_colorToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_colorToFrag = a_colorToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec3 a_colorToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          vec3 shadeColor = a_colorToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_color", DataType::Vector3Float},
+    },
+    /* textures */ {}
+);
+
+// like propagate color, but takes two values at tip and taail and linearly interpolates
+const ShaderReplacementRule CYLINDER_PROPAGATE_BLEND_COLOR (
+    /* rule name */ "CYLINDER_PROPAGATE_BLEND_VALUE",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec3 a_color_tail;
+          in vec3 a_color_tip;
+          out vec3 a_colorTailToGeom;
+          out vec3 a_colorTipToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_colorTailToGeom = a_color_tail;
+          a_colorTipToGeom = a_color_tip;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in vec3 a_colorTailToGeom[];
+          in vec3 a_colorTipToGeom[];
+          out vec3 a_colorTailToFrag;
+          out vec3 a_colorTipToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_colorTailToFrag = a_colorTailToGeom[0]; 
+          a_colorTipToFrag = a_colorTipToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec3 a_colorTailToFrag;
+          in vec3 a_colorTipToFrag;
+          float length2(vec3 x);
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float tEdge = dot(pHit - tailView, tipView - tailView) / length2(tipView - tailView);
+          vec3 shadeColor = mix(a_colorTailToFrag, a_colorTipToFrag, tEdge);
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_color_tail", DataType::Vector3Float},
+      {"a_color_tip", DataType::Vector3Float},
+    },
+    /* textures */ {}
+);
+
+// like propagate color, but takes two values at tip and taail and linearly interpolates
+const ShaderReplacementRule CYLINDER_PROPAGATE_PICK (
+    /* rule name */ "CYLINDER_PROPAGATE_BLEND_VALUE",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec3 a_color_tail;
+          in vec3 a_color_tip;
+          in vec3 a_color_edge;
+          out vec3 a_colorTailToGeom;
+          out vec3 a_colorTipToGeom;
+          out vec3 a_colorEdgeToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_colorTailToGeom = a_color_tail;
+          a_colorTipToGeom = a_color_tip;
+          a_colorEdgeToGeom = a_color_edge;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in vec3 a_colorTailToGeom[];
+          in vec3 a_colorTipToGeom[];
+          in vec3 a_colorEdgeToGeom[];
+          out vec3 a_colorTailToFrag;
+          out vec3 a_colorTipToFrag;
+          out vec3 a_colorEdgeToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_colorTailToFrag = a_colorTailToGeom[0]; 
+          a_colorTipToFrag = a_colorTipToGeom[0]; 
+          a_colorEdgeToFrag = a_colorEdgeToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec3 a_colorTailToFrag;
+          in vec3 a_colorTipToFrag;
+          in vec3 a_colorEdgeToFrag;
+          float length2(vec3 x);
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float tEdge = dot(pHit - tailView, tipView - tailView) / length2(tipView - tailView);
+          float endWidth = 0.2;
+          vec3 shadeColor;
+          if(tEdge < endWidth) {
+            shadeColor = a_colorTailToFrag;
+          } else if (tEdge < (1.0f - endWidth)) {
+            shadeColor = a_colorEdgeToFrag;
+          } else {
+            shadeColor = a_colorTipToFrag;
+          }
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_color_tail", DataType::Vector3Float},
+      {"a_color_tip", DataType::Vector3Float},
+      {"a_color_edge", DataType::Vector3Float},
+    },
+    /* textures */ {}
+);
+
 
 // clang-format on
 
+} // namespace backend_openGL3_glfw
 } // namespace render
 } // namespace polyscope

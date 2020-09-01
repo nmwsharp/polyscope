@@ -138,7 +138,6 @@ void CurveNetwork::prepare() {
       DrawMode::Points);
   render::engine->setMaterial(*nodeProgram, getMaterial());
 
-
   edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"SHADE_BASECOLOR"});
   render::engine->setMaterial(*edgeProgram, getMaterial());
 
@@ -180,9 +179,9 @@ void CurveNetwork::preparePick() {
   }
 
   { // Set up edge picking program
-    edgePickProgram = render::engine->generateShaderProgram(
-        {render::CYLINDER_PICK_VERT_SHADER, render::CYLINDER_PICK_GEOM_SHADER, render::CYLINDER_PICK_FRAG_SHADER},
-        DrawMode::Points);
+    edgePickProgram = render::engine->requestShader(
+        "RAYCAST_CYLINDER", {"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "CYLINDER_PROPAGATE_PICK", "SHADE_COLOR"},
+        render::ShaderReplacementDefaults::Pick);
 
     // Fill color buffer with packed node/edge indices
     std::vector<glm::vec3> edgePickTail(nEdges());

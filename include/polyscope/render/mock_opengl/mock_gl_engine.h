@@ -258,9 +258,9 @@ public:
   // create shader programs
   std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
                                                        DrawMode dm) override;
-  std::shared_ptr<ShaderProgram> requestShader(const std::string& programName,
-                                               const std::vector<std::string>& customRules,
-                                               bool withDefaults = true) override;
+  std::shared_ptr<ShaderProgram>
+  requestShader(const std::string& programName, const std::vector<std::string>& customRules,
+                ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) override;
 
 
 protected:

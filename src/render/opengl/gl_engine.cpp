@@ -7,10 +7,13 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/utilities.h"
 
-#include "polyscope/render/opengl/shaders/common.h"
-#include "polyscope/render/rules.h"
 #include "polyscope/render/shader_builder.h"
 #include "polyscope/render/shaders.h"
+
+// all the shaders
+#include "polyscope/render/opengl/shaders/common.h"
+#include "polyscope/render/opengl/shaders/cylinder_shaders.h"
+#include "polyscope/render/opengl/shaders/rules.h"
 
 #include "stb_image.h"
 
@@ -1898,7 +1901,8 @@ std::shared_ptr<ShaderProgram> GLEngine::generateShaderProgram(const std::vector
 }
 
 std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& programName,
-                                                       const std::vector<std::string>& customRules, bool withDefaults) {
+                                                       const std::vector<std::string>& customRules,
+                                                       ShaderReplacementDefaults defaults) {
 
   // Get the program
   if (registeredShaderPrograms.find(programName) == registeredShaderPrograms.end()) {
@@ -1909,9 +1913,20 @@ std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& progra
 
   // Add in the default rules
   std::set<std::string> fullCustomRules(customRules.begin(), customRules.end());
-  if (withDefaults) {
-    std::vector<std::string> defaultRules{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "MATCAP_SHADE"};
+  switch (defaults) {
+  case ShaderReplacementDefaults::SceneObject: {
+    std::vector<std::string> defaultRules{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "LIGHT_MATCAP"};
     fullCustomRules.insert(defaultRules.begin(), defaultRules.end());
+    break;
+  }
+  case ShaderReplacementDefaults::Pick: {
+    std::vector<std::string> defaultRules{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "LIGHT_PASSTHRU"};
+    fullCustomRules.insert(defaultRules.begin(), defaultRules.end());
+    break;
+  }
+  case ShaderReplacementDefaults::None: {
+    break;
+  }
   }
 
   // Get the rules
@@ -1932,13 +1947,14 @@ void GLEngine::populateDefaultShadersAndRules() {
   // Note: we use .insert({key, value}) rather than map[key] = value to support const members in the value.
 
   // Load shaders
-  registeredShaderPrograms.insert({"RAYCAST_CYLINDER", {FLEX_CYLINDER_PIPELINE, DrawMode::Points}});
+  registeredShaderPrograms.insert({"RAYCAST_CYLINDER", {RAYCAST_CYLINDER_PIPELINE, DrawMode::Points}});
 
   // === Load rules
   registeredShaderRules.insert({"GLSL_VERSION", GLSL_VERSION});
   registeredShaderRules.insert({"GLOBAL_FRAGMENT_FILTER", GLOBAL_FRAGMENT_FILTER});
 
-  registeredShaderRules.insert({"MATCAP_SHADE", MATCAP_SHADE});
+  registeredShaderRules.insert({"LIGHT_MATCAP", LIGHT_MATCAP});
+  registeredShaderRules.insert({"LIGHT_PASSTHRU", LIGHT_PASSTHRU});
   registeredShaderRules.insert({"SHADE_BASECOLOR", SHADE_BASECOLOR});
   registeredShaderRules.insert({"SHADE_COLOR", SHADE_COLOR});
   registeredShaderRules.insert({"SHADE_COLORMAP_VALUE", SHADE_COLORMAP_VALUE});
@@ -1947,6 +1963,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registeredShaderRules.insert({"CYLINDER_PROPAGATE_BLEND_VALUE", CYLINDER_PROPAGATE_BLEND_VALUE});
   registeredShaderRules.insert({"CYLINDER_PROPAGATE_COLOR", CYLINDER_PROPAGATE_COLOR});
   registeredShaderRules.insert({"CYLINDER_PROPAGATE_BLEND_COLOR", CYLINDER_PROPAGATE_BLEND_COLOR});
+  registeredShaderRules.insert({"CYLINDER_PROPAGATE_PICK", CYLINDER_PROPAGATE_PICK});
 };
 
 

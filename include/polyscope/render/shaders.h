@@ -92,7 +92,6 @@ extern const ShaderStageSpecification CYLINDER_BLEND_VALUE_FRAG_SHADER;
 extern const ShaderStageSpecification CYLINDER_BLEND_COLOR_FRAG_SHADER;
 extern const ShaderStageSpecification CYLINDER_PICK_FRAG_SHADER;
 
-extern const std::vector<ShaderStageSpecification> FLEX_CYLINDER_PIPELINE;
 
 
 } // namespace render
