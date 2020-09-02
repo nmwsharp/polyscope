@@ -691,13 +691,21 @@ void GLShaderProgram::compileGLProgram(const std::vector<ShaderStageSpecificatio
   std::vector<ShaderHandle> handles;
   for (const ShaderStageSpecification& s : stages) {
     ShaderHandle h = glCreateShader(native(s.stage));
-    std::cout << s.src.c_str() << std::endl;
     std::array<const char*, 2> srcs = {s.src.c_str(), shaderCommonSource};
     glShaderSource(h, 2, &(srcs[0]), nullptr);
     glCompileShader(h);
-    printShaderInfoLog(h);
+
+    // Catch the error here, so we can print shader source before re-throwing
+    try {
+      printShaderInfoLog(h);
+      checkGLError();
+    } catch (...) {
+      std::cout << "GLError() after shader compilation! Program text:" << std::endl;
+      std::cout << s.src.c_str() << std::endl;
+      throw;
+    }
+
     handles.push_back(h);
-    checkGLError();
   }
 
   // Create the program and attach the shaders
@@ -717,7 +725,7 @@ void GLShaderProgram::compileGLProgram(const std::vector<ShaderStageSpecificatio
   }
 
   checkGLError();
-}
+} // namespace backend_openGL3_glfw
 
 void GLShaderProgram::setDataLocations() {
   glUseProgram(programHandle);
