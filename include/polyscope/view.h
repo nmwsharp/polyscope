@@ -2,6 +2,7 @@
 #pragma once
 
 #include <array>
+#include <string>
 
 #include "polyscope/camera_parameters.h"
 //#include "polyscope/gl/gl_utils.h"
