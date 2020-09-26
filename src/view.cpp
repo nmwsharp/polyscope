@@ -202,7 +202,7 @@ void processZoom(double amount) {
 
 void invalidateView() { viewMat = glm::mat4x4(std::numeric_limits<float>::quiet_NaN()); }
 
-void ensureViewValid() {
+bool viewIsValid() { 
   bool allFinite = true;
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
@@ -211,8 +211,18 @@ void ensureViewValid() {
       }
     }
   }
+  return allFinite;
+}
 
-  if (!allFinite) {
+void ensureViewValid() {
+  if (!viewIsValid()) {
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        if (!std::isfinite(viewMat[i][j])) {
+          viewMat[i][j] = 0.;
+        }
+      }
+    }
     resetCameraToHomeView();
   }
 }
@@ -266,6 +276,11 @@ glm::mat4 computeHomeView() {
 void resetCameraToHomeView() {
 
   // WARNING: Duplicated here and in flyToHomeView()
+
+  // If the view is invalid, don't change it. It will get reset before the first call to show().
+  if(!viewIsValid()) {
+    return;
+  }
 
   viewMat = computeHomeView();
 
