@@ -202,7 +202,7 @@ void processZoom(double amount) {
 
 void invalidateView() { viewMat = glm::mat4x4(std::numeric_limits<float>::quiet_NaN()); }
 
-bool viewIsValid() { 
+bool viewIsValid() {
   bool allFinite = true;
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
@@ -278,7 +278,7 @@ void resetCameraToHomeView() {
   // WARNING: Duplicated here and in flyToHomeView()
 
   // If the view is invalid, don't change it. It will get reset before the first call to show().
-  if(!viewIsValid()) {
+  if (!viewIsValid()) {
     return;
   }
 
@@ -505,36 +505,44 @@ void buildViewGui() {
   if (ImGui::TreeNode("View")) {
 
     // == Camera style
+
+    std::string viewStyleName;
+    switch (view::style) {
+    case view::NavigateStyle::Turntable:
+      viewStyleName = "Turntable";
+      break;
+    case view::NavigateStyle::Free:
+      viewStyleName = "Free";
+      break;
+    case view::NavigateStyle::Planar:
+      viewStyleName = "Planar";
+      break;
+    case view::NavigateStyle::Arcball:
+      viewStyleName = "Arcball";
+      break;
+    }
+
     ImGui::PushItemWidth(120);
-    static std::string viewStyleName = "Turntable";
     if (ImGui::BeginCombo("##View Style", viewStyleName.c_str())) {
       if (ImGui::Selectable("Turntable", view::style == view::NavigateStyle::Turntable)) {
         view::style = view::NavigateStyle::Turntable;
         view::flyToHomeView();
         ImGui::SetItemDefaultFocus();
-        viewStyleName = "Turntable";
       }
       if (ImGui::Selectable("Free", view::style == view::NavigateStyle::Free)) {
         view::style = view::NavigateStyle::Free;
         ImGui::SetItemDefaultFocus();
-        viewStyleName = "Free";
       }
       if (ImGui::Selectable("Planar", view::style == view::NavigateStyle::Planar)) {
         view::style = view::NavigateStyle::Planar;
         view::flyToHomeView();
         ImGui::SetItemDefaultFocus();
-        viewStyleName = "Planar";
       }
-      // if (ImGui::Selectable("Arcblob", view::style == view::NavigateStyle::Arcball)) {
-      // view::style = view::NavigateStyle::Arcball;
-      // ImGui::SetItemDefaultFocus();
-      // viewStyleName = "Arcblob";
-      //}
       ImGui::EndCombo();
     }
     ImGui::SameLine();
-    ImGui::Text("Camera Style");
 
+    ImGui::Text("Camera Style");
 
     // == Up direction
     ImGui::PushItemWidth(120);
