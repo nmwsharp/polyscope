@@ -56,7 +56,8 @@ const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER = {
       {"u_basisY", DataType::Vector3Float},
       {"u_viewportDim", DataType::Vector2Float},
       {"u_cameraHeight", DataType::Float},
-      {"u_groundHeight", DataType::Float}
+      {"u_groundHeight", DataType::Float},
+      {"u_upSign", DataType::Float}
     }, 
 
     // attributes
@@ -82,6 +83,7 @@ const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER = {
       uniform vec2 u_viewportDim;
       uniform float u_cameraHeight;
       uniform float u_groundHeight;
+      uniform float u_upSign;
       in vec4 PositionWorldHomog;
       layout(location = 0) out vec4 outputF;
 
@@ -134,7 +136,7 @@ const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER = {
         // Fade off far away
         float distFromCenter = length(coord2D);
         float distFadeFactor = 1.0 - smoothstep(8.0, 8.5, distFromCenter);
-        float viewFromBelowFadeFactor = smoothstep(0, .1, (u_cameraHeight - u_groundHeight) / u_lengthScale);
+        float viewFromBelowFadeFactor = smoothstep(0, .1, u_upSign * (u_cameraHeight - u_groundHeight) / u_lengthScale);
         float fadeFactor = min(distFadeFactor, viewFromBelowFadeFactor);
         if(fadeFactor <= 0.) discard;
         vec4 color = vec4(color3, fadeFactor);

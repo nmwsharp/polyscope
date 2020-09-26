@@ -23,7 +23,7 @@ namespace polyscope {
 namespace view {
 
 enum class NavigateStyle { Turntable = 0, Free, Planar, Arcball };
-enum class UpDir { XUp = 0, YUp, ZUp };
+enum class UpDir { XUp = 0, YUp, ZUp, NegXUp, NegYUp, NegZUp};
 
 // === View state
 extern int bufferWidth;

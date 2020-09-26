@@ -3,8 +3,8 @@
 
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
-#include "polyscope/render/shaders.h"
 #include "polyscope/render/material_defs.h"
+#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 #include "stb_image.h"
@@ -20,13 +20,20 @@ namespace render {
 void GroundPlane::populateGroundPlaneGeometry() {
 
   int iP = 0;
+  double sign = 1.0;
   switch (view::upDir) {
+  case view::UpDir::NegXUp:
+    sign *= -1.;
   case view::UpDir::XUp:
     iP = 0;
     break;
+  case view::UpDir::NegYUp:
+    sign *= -1.;
   case view::UpDir::YUp:
     iP = 1;
     break;
+  case view::UpDir::NegZUp:
+    sign *= -1.;
   case view::UpDir::ZUp:
     iP = 2;
     break;
@@ -36,10 +43,10 @@ void GroundPlane::populateGroundPlaneGeometry() {
   // Geometry of the ground plane, using triangles with vertices at infinity
   // clang-format off
   glm::vec4 cVert{0., 0., 0., 1.};
-  glm::vec4 v1{0., 0., 0., 0.}; v1[(iP+2)%3] =  1.;
-  glm::vec4 v2{0., 0., 0., 0.}; v2[(iP+1)%3] =  1.;
-  glm::vec4 v3{0., 0., 0., 0.}; v3[(iP+2)%3] = -1.;
-  glm::vec4 v4{0., 0., 0., 0.}; v4[(iP+1)%3] = -1.;
+  glm::vec4 v1{0., 0., 0., 0.}; v1[(iP+2)%3] = sign * 1.;
+  glm::vec4 v2{0., 0., 0., 0.}; v2[(iP+1)%3] = sign * 1.;
+  glm::vec4 v3{0., 0., 0., 0.}; v3[(iP+2)%3] = sign *-1.;
+  glm::vec4 v4{0., 0., 0., 0.}; v4[(iP+1)%3] = sign *-1.;
   
   std::vector<glm::vec4> positions = {
     cVert, v2, v1,
@@ -68,7 +75,7 @@ void GroundPlane::prepareGroundPlane() {
                                   render::bindata_concrete.size(), &w, &h, &comp, STBI_rgb);
     if (image == nullptr) throw std::logic_error("Failed to load material image");
     groundPlaneProgram->setTexture2D("t_ground", image, w, h, false, false, true);
-		stbi_image_free(image);
+    stbi_image_free(image);
   }
 
 
@@ -107,13 +114,20 @@ void GroundPlane::draw() {
 
   // Get logical "up" direction to which the ground plane is oriented
   int iP = 0;
+  float sign = 1.0;
   switch (view::upDir) {
+  case view::UpDir::NegXUp:
+    sign *= -1.;
   case view::UpDir::XUp:
     iP = 0;
     break;
+  case view::UpDir::NegYUp:
+    sign *= -1.;
   case view::UpDir::YUp:
     iP = 1;
     break;
+  case view::UpDir::NegZUp:
+    sign *= -1.;
   case view::UpDir::ZUp:
     iP = 2;
     break;
@@ -122,14 +136,14 @@ void GroundPlane::draw() {
   glm::vec3 baseForward{0., 0., 0.};
   glm::vec3 baseRight{0., 0., 0.};
   baseUp[iP] = 1.;
-  baseForward[(iP + 1) % 3] = 1.;
-  baseRight[(iP + 2) % 3] = 1.;
+  baseForward[(iP + 1) % 3] = sign;
+  baseRight[(iP + 2) % 3] = sign;
 
   // Location for ground plane
-  double bboxBottom = std::get<0>(state::boundingBox)[iP];
+  double bboxBottom = sign == 1.0 ? std::get<0>(state::boundingBox)[iP] : std::get<1>(state::boundingBox)[iP];
   double bboxHeight = std::get<1>(state::boundingBox)[iP] - std::get<0>(state::boundingBox)[iP];
   double heightEPS = state::lengthScale * 1e-4;
-  double groundHeight = bboxBottom - groundPlaneHeightFactor * bboxHeight - heightEPS;
+  double groundHeight = bboxBottom - sign * (groundPlaneHeightFactor * bboxHeight + heightEPS);
 
   auto setUniforms = [&]() {
     glm::mat4 viewMat = view::getCameraViewMatrix();
@@ -146,6 +160,7 @@ void GroundPlane::draw() {
     groundPlaneProgram->setUniform("u_basisX", baseForward);
     groundPlaneProgram->setUniform("u_basisY", baseRight);
     groundPlaneProgram->setUniform("u_basisZ", baseUp);
+    groundPlaneProgram->setUniform("u_upSign", sign);
 
     float camHeight = view::getCameraWorldPosition()[iP];
     groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
@@ -171,7 +186,7 @@ void GroundPlane::draw() {
     // Push a reflected view matrix
     glm::mat4 origViewMat = view::viewMat;
 
-    glm::vec3 mirrorN = baseUp;
+    glm::vec3 mirrorN = baseUp * sign;
     glm::mat3 mirrorMat3 = glm::mat3(1.0) - 2.0f * glm::outerProduct(mirrorN, mirrorN);
     glm::vec3 tVec{0., 0., 0.};
     tVec[iP] = -groundHeight;

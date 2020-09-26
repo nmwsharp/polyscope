@@ -75,6 +75,15 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
     case UpDir::ZUp:
       turntableUp = glm::vec3(0., 0., 1.);
       break;
+    case UpDir::NegXUp:
+      turntableUp = glm::vec3(-1., 0., 0.);
+      break;
+    case UpDir::NegYUp:
+      turntableUp = glm::vec3(0., -1., 0.);
+      break;
+    case UpDir::NegZUp:
+      turntableUp = glm::vec3(0., 0., -1.);
+      break;
     }
     glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, turntableUp);
     viewMat = viewMat * thetaCamR;
@@ -214,18 +223,33 @@ glm::mat4 computeHomeView() {
   glm::vec3 baseUp;
   switch (upDir) {
   case UpDir::XUp:
+  case UpDir::NegXUp:
     baseUp = glm::vec3(1., 0., 0.);
     R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI / 2), glm::vec3(0., 0., 1.));
+    if (upDir == UpDir::NegXUp) {
+      baseUp *= -1;
+      R = glm::rotate(R, static_cast<float>(PI), glm::vec3(0., 0., 1.));
+    }
     break;
   case UpDir::YUp:
+  case UpDir::NegYUp:
     baseUp = glm::vec3(0., 1., 0.);
     // this is our camera's default
+    if (upDir == UpDir::NegYUp) {
+      baseUp *= -1;
+      R = glm::rotate(R, static_cast<float>(PI), glm::vec3(0., 0., 1.));
+    }
     break;
   case UpDir::ZUp:
+  case UpDir::NegZUp:
     baseUp = glm::vec3(0., 0., 1.);
     R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI / 2), glm::vec3(-1., 0., 0.));
     R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI), glm::vec3(0., 1., 0.)) *
         R; // follow common convention for "front"
+    if (upDir == UpDir::NegZUp) {
+      baseUp *= -1;
+      R = glm::rotate(R, static_cast<float>(PI), glm::vec3(0., 1., 0.));
+    }
     break;
   }
 
@@ -504,11 +528,20 @@ void buildViewGui() {
     case UpDir::XUp:
       upStyleName = "X Up";
       break;
+    case UpDir::NegXUp:
+      upStyleName = "-X Up";
+      break;
     case UpDir::YUp:
       upStyleName = "Y Up";
       break;
+    case UpDir::NegYUp:
+      upStyleName = "-Y Up";
+      break;
     case UpDir::ZUp:
       upStyleName = "Z Up";
+      break;
+    case UpDir::NegZUp:
+      upStyleName = "-Z Up";
       break;
     }
 
@@ -517,12 +550,24 @@ void buildViewGui() {
         view::setUpDir(view::UpDir::XUp, true);
         ImGui::SetItemDefaultFocus();
       }
+      if (ImGui::Selectable("-X Up", view::upDir == view::UpDir::NegXUp)) {
+        view::setUpDir(view::UpDir::NegXUp, true);
+        ImGui::SetItemDefaultFocus();
+      }
       if (ImGui::Selectable("Y Up", view::upDir == view::UpDir::YUp)) {
         view::setUpDir(view::UpDir::YUp, true);
         ImGui::SetItemDefaultFocus();
       }
+      if (ImGui::Selectable("-Y Up", view::upDir == view::UpDir::NegYUp)) {
+        view::setUpDir(view::UpDir::NegYUp, true);
+        ImGui::SetItemDefaultFocus();
+      }
       if (ImGui::Selectable("Z Up", view::upDir == view::UpDir::ZUp)) {
         view::setUpDir(view::UpDir::ZUp, true);
+        ImGui::SetItemDefaultFocus();
+      }
+      if (ImGui::Selectable("-Z Up", view::upDir == view::UpDir::NegZUp)) {
+        view::setUpDir(view::UpDir::NegZUp, true);
         ImGui::SetItemDefaultFocus();
       }
       ImGui::EndCombo();
