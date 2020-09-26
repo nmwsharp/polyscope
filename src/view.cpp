@@ -499,25 +499,31 @@ void buildViewGui() {
 
     // == Up direction
     ImGui::PushItemWidth(120);
-    static std::string upStyleName = "Y Up";
+    std::string upStyleName;
+    switch (upDir) {
+    case UpDir::XUp:
+      upStyleName = "X Up";
+      break;
+    case UpDir::YUp:
+      upStyleName = "Y Up";
+      break;
+    case UpDir::ZUp:
+      upStyleName = "Z Up";
+      break;
+    }
+
     if (ImGui::BeginCombo("##Up Direction", upStyleName.c_str())) {
       if (ImGui::Selectable("X Up", view::upDir == view::UpDir::XUp)) {
-        view::upDir = view::UpDir::XUp;
-        view::flyToHomeView();
+        view::setUpDir(view::UpDir::XUp, true);
         ImGui::SetItemDefaultFocus();
-        upStyleName = "X Up";
       }
       if (ImGui::Selectable("Y Up", view::upDir == view::UpDir::YUp)) {
-        view::upDir = view::UpDir::YUp;
-        view::flyToHomeView();
+        view::setUpDir(view::UpDir::YUp, true);
         ImGui::SetItemDefaultFocus();
-        upStyleName = "Y Up";
       }
       if (ImGui::Selectable("Z Up", view::upDir == view::UpDir::ZUp)) {
-        view::upDir = view::UpDir::ZUp;
-        view::flyToHomeView();
+        view::setUpDir(view::UpDir::ZUp, true);
         ImGui::SetItemDefaultFocus();
-        upStyleName = "Z Up";
       }
       ImGui::EndCombo();
     }
@@ -554,6 +560,17 @@ void buildViewGui() {
     ImGui::TreePop();
   }
 }
+
+void setUpDir(UpDir newUpDir, bool animateFlight) {
+  upDir = newUpDir;
+  if (animateFlight) {
+    flyToHomeView();
+  } else {
+    resetCameraToHomeView();
+  }
+}
+
+UpDir getUpDir() { return upDir; }
 
 } // namespace view
 } // namespace polyscope

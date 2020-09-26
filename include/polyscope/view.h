@@ -105,5 +105,10 @@ void buildViewGui();
 void updateFlight(); // Note: uses wall-clock time, so should generally be called exactly once at the beginning of each
                      // iteration
 
+
+// Setters, getters, etc
+void setUpDir(UpDir newUpDir, bool animateFlight=false);
+UpDir getUpDir();
+
 } // namespace view
 } // namespace polyscope
