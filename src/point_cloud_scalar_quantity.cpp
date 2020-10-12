@@ -12,7 +12,8 @@ namespace polyscope {
 PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::vector<double>& values_,
                                                    PointCloud& pointCloud_, DataType dataType_)
     : PointCloudQuantity(name, pointCloud_, true), dataType(dataType_),
-      cMap(uniquePrefix() + "#cmap", defaultColorMap(dataType))
+      cMap(uniquePrefix() + "#cmap", defaultColorMap(dataType)),
+      valueAsRadius(uniquePrefix() + "#valueAsRadius", false)
 
 {
   if (values_.size() != parent.points.size()) {
@@ -44,6 +45,7 @@ void PointCloudScalarQuantity::draw() {
   parent.setPointCloudUniforms(*pointProgram);
   pointProgram->setUniform("u_rangeLow", vizRange.first);
   pointProgram->setUniform("u_rangeHigh", vizRange.second);
+  pointProgram->setUniform("u_valueAsRadius", (unsigned int) valueAsRadius.get()) ;
 
   pointProgram->draw();
 }
@@ -68,6 +70,9 @@ PointCloudScalarQuantity* PointCloudScalarQuantity::resetMapRange() {
 
 void PointCloudScalarQuantity::buildCustomUI() {
   ImGui::SameLine();
+
+  // == Using as radius
+  ImGui::Checkbox("Use as radius", &valueAsRadius.get()) ;
 
   // == Options popup
   if (ImGui::Button("Options")) {

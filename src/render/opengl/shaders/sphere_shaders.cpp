@@ -164,6 +164,7 @@ const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
     {
         {"u_projMatrix", DataType::Matrix44Float},
         {"u_pointRadius", DataType::Float},
+        {"u_valueAsRadius", DataType::UInt},
     }, 
 
     // attributes
@@ -179,21 +180,24 @@ const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_GEOM_SHADER = {
         in float value[];
         uniform mat4 u_projMatrix;
         uniform float u_pointRadius;
+        uniform uint u_valueAsRadius;
         flat out float valueToFrag;
+        flat out float radiusToFrag;
         out vec3 sphereCenterView;
         
         void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
 
         void main()   {
+            radiusToFrag = bool(u_valueAsRadius) ? value[0] : u_pointRadius ;
 
             // Construct the 4 corners of a billboard quad, facing the camera
             vec3 dirToCam = normalize(-gl_in[0].gl_Position.xyz);
             vec3 basisX;
             vec3 basisY;
             buildTangentBasis(dirToCam, basisX, basisY);
-            vec4 center = u_projMatrix * (gl_in[0].gl_Position + vec4(dirToCam, 0.) * u_pointRadius);
-            vec4 dx = u_projMatrix * (vec4(basisX, 0.) * u_pointRadius);
-            vec4 dy = u_projMatrix * (vec4(basisY, 0.) * u_pointRadius);
+            vec4 center = u_projMatrix * (gl_in[0].gl_Position + vec4(dirToCam, 0.) * radiusToFrag);
+            vec4 dx = u_projMatrix * (vec4(basisX, 0.) * radiusToFrag);
+            vec4 dy = u_projMatrix * (vec4(basisY, 0.) * radiusToFrag);
             vec4 p1 = center - dx - dy;
             vec4 p2 = center + dx - dy;
             vec4 p3 = center - dx + dy;
@@ -377,6 +381,7 @@ const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
         uniform float u_rangeLow;
         uniform float u_rangeHigh;
         flat in float valueToFrag;
+        flat in float radiusToFrag;
         in vec3 sphereCenterView;
         uniform sampler2D t_mat_r;
         uniform sampler2D t_mat_g;
@@ -407,7 +412,7 @@ const ShaderStageSpecification SPHERE_VALUE_BILLBOARD_FRAG_SHADER = {
            float tHit;
            vec3 pHit;
            vec3 nHit;
-           raySphereIntersection(vec3(0., 0., 0), viewRay, sphereCenterView, u_pointRadius, tHit, pHit, nHit);
+           raySphereIntersection(vec3(0., 0., 0), viewRay, sphereCenterView, radiusToFrag, tHit, pHit, nHit);
            if(tHit >= LARGE_FLOAT()) {
               discard;
            }
