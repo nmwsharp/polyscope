@@ -17,28 +17,38 @@ bool groundPlaneEnabled = true;
 
 namespace render {
 
-void GroundPlane::populateGroundPlaneGeometry() {
-
+// quick helper function
+namespace {
+std::tuple<int, float> getGroundPlaneAxisAndSign() {
   int iP = 0;
-  double sign = 1.0;
   switch (view::upDir) {
   case view::UpDir::NegXUp:
-    sign *= -1.;
   case view::UpDir::XUp:
     iP = 0;
     break;
   case view::UpDir::NegYUp:
-    sign *= -1.;
   case view::UpDir::YUp:
     iP = 1;
     break;
   case view::UpDir::NegZUp:
-    sign *= -1.;
   case view::UpDir::ZUp:
     iP = 2;
     break;
   }
+  float sign = 1.0;
+  if (view::upDir == view::UpDir::NegXUp || view::upDir == view::UpDir::NegYUp || view::upDir == view::UpDir::NegZUp) {
+    sign = -1.;
+  }
 
+  return std::tuple<int, float>{iP, sign};
+}
+}; // namespace
+
+void GroundPlane::populateGroundPlaneGeometry() {
+
+  int iP;
+  float sign;
+  std::tie(iP, sign) = getGroundPlaneAxisAndSign();
 
   // Geometry of the ground plane, using triangles with vertices at infinity
   // clang-format off
@@ -113,25 +123,10 @@ void GroundPlane::draw() {
   }
 
   // Get logical "up" direction to which the ground plane is oriented
-  int iP = 0;
-  float sign = 1.0;
-  switch (view::upDir) {
-  case view::UpDir::NegXUp:
-    sign *= -1.;
-  case view::UpDir::XUp:
-    iP = 0;
-    break;
-  case view::UpDir::NegYUp:
-    sign *= -1.;
-  case view::UpDir::YUp:
-    iP = 1;
-    break;
-  case view::UpDir::NegZUp:
-    sign *= -1.;
-  case view::UpDir::ZUp:
-    iP = 2;
-    break;
-  }
+  int iP;
+  float sign;
+  std::tie(iP, sign) = getGroundPlaneAxisAndSign();
+
   glm::vec3 baseUp{0., 0., 0.};
   glm::vec3 baseForward{0., 0., 0.};
   glm::vec3 baseRight{0., 0., 0.};
