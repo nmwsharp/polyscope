@@ -48,6 +48,7 @@ protected:
 
   // UI internals
   PersistentValue<std::string> cMap;
+  PersistentValue<bool> valueAsRadius;
 
 
   void createPointProgram();
