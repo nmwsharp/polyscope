@@ -66,6 +66,7 @@ void SurfaceCountQuantity::setUniforms(render::ShaderProgram& p) {
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
 
   p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
+  p.setUniform("u_valueAsRadius", (unsigned int)false);
   p.setUniform("u_rangeLow", vizRangeLow);
   p.setUniform("u_rangeHigh", vizRangeHigh);
 }

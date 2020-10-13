@@ -56,6 +56,9 @@ void CurveNetwork::setCurveNetworkNodeUniforms(render::ShaderProgram& p) {
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
   p.setUniform("u_pointRadius", getRadius());
+  if(p.hasUniform("u_valueAsRadius")) {
+    p.setUniform("u_valueAsRadius", (unsigned int)false);
+  }
 }
 
 void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) {
