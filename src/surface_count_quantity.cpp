@@ -237,6 +237,7 @@ SurfaceFaceCountQuantity::SurfaceFaceCountQuantity(std::string name, std::vector
     for (size_t j = 0; j < D; j++) {
       faceCenter += parent.vertices[face[j]];
     }
+    faceCenter /= static_cast<double>(D);
 
     entries.push_back(std::make_pair(faceCenter, t.second));
   }
