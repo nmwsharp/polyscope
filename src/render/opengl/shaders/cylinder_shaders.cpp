@@ -766,7 +766,7 @@ const ShaderStageSpecification CYLINDER_FRAG_SHADER = {
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
            vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
 
-           // Raycast to the sphere 
+           // Raycast to the cylinder
            float tHit;
            vec3 pHit;
            vec3 nHit;
@@ -846,7 +846,7 @@ const ShaderStageSpecification CYLINDER_VALUE_FRAG_SHADER = {
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
            vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
 
-           // Raycast to the sphere 
+           // Raycast to the cylinder
            float tHit;
            vec3 pHit;
            vec3 nHit;
@@ -914,7 +914,7 @@ const ShaderStageSpecification CYLINDER_COLOR_FRAG_SHADER = {
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
            vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
 
-           // Raycast to the sphere 
+           // Raycast to the cylinder
            float tHit;
            vec3 pHit;
            vec3 nHit;
@@ -997,7 +997,7 @@ const ShaderStageSpecification CYLINDER_BLEND_VALUE_FRAG_SHADER = {
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
            vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
 
-           // Raycast to the sphere 
+           // Raycast to the cylinder
            float tHit;
            vec3 pHit;
            vec3 nHit;
@@ -1071,7 +1071,7 @@ const ShaderStageSpecification CYLINDER_BLEND_COLOR_FRAG_SHADER = {
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
            vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
 
-           // Raycast to the sphere 
+           // Raycast to the cylinder
            float tHit;
            vec3 pHit;
            vec3 nHit;
@@ -1138,7 +1138,7 @@ const ShaderStageSpecification CYLINDER_PICK_FRAG_SHADER = {
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
            vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
 
-           // Raycast to the sphere 
+           // Raycast to the cylinder
            float tHit;
            vec3 pHit;
            vec3 nHit;
@@ -1332,7 +1332,7 @@ R"(
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
            vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
 
-           // Raycast to the sphere 
+           // Raycast to the cylinder
            float tHit;
            vec3 pHit;
            vec3 nHit;
@@ -1477,7 +1477,7 @@ const ShaderReplacementRule CYLINDER_PROPAGATE_COLOR (
 
 // like propagate color, but takes two values at tip and taail and linearly interpolates
 const ShaderReplacementRule CYLINDER_PROPAGATE_BLEND_COLOR (
-    /* rule name */ "CYLINDER_PROPAGATE_BLEND_VALUE",
+    /* rule name */ "CYLINDER_PROPAGATE_BLEND_COLOR",
     { /* replacement sources */
       {"VERT_DECLARATIONS", R"(
           in vec3 a_color_tail;
@@ -1517,9 +1517,9 @@ const ShaderReplacementRule CYLINDER_PROPAGATE_BLEND_COLOR (
     /* textures */ {}
 );
 
-// like propagate color, but takes two values at tip and taail and linearly interpolates
+// data for picking
 const ShaderReplacementRule CYLINDER_PROPAGATE_PICK (
-    /* rule name */ "CYLINDER_PROPAGATE_BLEND_VALUE",
+    /* rule name */ "CYLINDER_PROPAGATE_PICK",
     { /* replacement sources */
       {"VERT_DECLARATIONS", R"(
           in vec3 a_color_tail;

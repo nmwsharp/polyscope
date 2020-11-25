@@ -151,11 +151,9 @@ CurveNetworkNodeScalarQuantity::CurveNetworkNodeScalarQuantity(std::string name,
 
 void CurveNetworkNodeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  nodeProgram = render::engine->generateShaderProgram({render::SPHERE_VALUE_VERT_SHADER,
-                                                       render::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
-                                                       render::SPHERE_VALUE_BILLBOARD_FRAG_SHADER},
-                                                      DrawMode::Points);
-  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_BLEND_VALUE", "SHADE_COLORMAP_VALUE"});
+  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"});
+  edgeProgram =
+      render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_BLEND_VALUE", "SHADE_COLORMAP_VALUE"});
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);
@@ -217,9 +215,7 @@ void CurveNetworkEdgeScalarQuantity::createProgram() {
                                                        render::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
                                                        render::SPHERE_VALUE_BILLBOARD_FRAG_SHADER},
                                                       DrawMode::Points);
-  edgeProgram = render::engine->generateShaderProgram(
-      {render::CYLINDER_VALUE_VERT_SHADER, render::CYLINDER_VALUE_GEOM_SHADER, render::CYLINDER_VALUE_FRAG_SHADER},
-      DrawMode::Points);
+  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"});
   edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"});
 
   // Fill geometry buffers

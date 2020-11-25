@@ -43,10 +43,7 @@ std::string PointCloudColorQuantity::niceName() { return name + " (color)"; }
 
 void PointCloudColorQuantity::createPointProgram() {
   // Create the program to draw this quantity
-  pointProgram = render::engine->generateShaderProgram({render::SPHERE_COLOR_VERT_SHADER,
-                                                        render::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                                        render::SPHERE_COLOR_BILLBOARD_FRAG_SHADER},
-                                                       DrawMode::Points);
+  pointProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"});
 
   // Fill buffers
   pointProgram->setAttribute("a_position", parent.points);

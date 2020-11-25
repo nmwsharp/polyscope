@@ -452,6 +452,10 @@ protected:
 
   // Internal windowing and engine details
   ImFontAtlas* globalFontAtlas = nullptr;
+
+  // Default rule lists
+  std::vector<std::string> defaultRules_sceneObject{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "LIGHT_MATCAP"};
+  std::vector<std::string> defaultRules_pick{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "SHADE_COLOR", "LIGHT_PASSTHRU"};
 };
 
 
