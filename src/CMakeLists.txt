@@ -155,6 +155,7 @@ SET(SRCS
 	curve_network_vector_quantity.cpp
   
   # Rendering utilities
+	vector_artist.cpp
 	trace_vector_field.cpp
 	ribbon_artist.cpp
 	

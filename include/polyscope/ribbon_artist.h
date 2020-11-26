@@ -14,12 +14,13 @@ public:
   // - normalOffsetFraction is an offset, relative to polyscope::state::lengthScale, along which ribbons are offset in
   // the normal direction.
   RibbonArtist(Structure& parentStructure, const std::vector<std::vector<std::array<glm::vec3, 2>>>& ribbons,
-               std::string uniqueName = "", double normalOffsetFraction = 1e-4);
+               std::string uniqueName = "ribbon", double normalOffsetFraction = 1e-4);
 
   void draw();
   void buildParametersGUI();
 
   Structure& parentStructure;
+  const std::string uniqueName;
 
   RibbonArtist* setEnabled(bool newEnabled);
   bool getEnabled();
@@ -27,9 +28,8 @@ public:
   RibbonArtist* setWidth(double newVal, bool isRelative = true);
   double getWidth();
 
-  glm::mat4 objectTransform = glm::mat4(1.0);
-
-  std::shared_ptr<render::ShaderProgram> program;
+  RibbonArtist* setMaterial(std::string mat);
+  std::string getMaterial();
 
 private:
   // Data
@@ -38,12 +38,14 @@ private:
 
   PersistentValue<bool> enabled;
   PersistentValue<ScaledValue<float>> ribbonWidth;
-
+  PersistentValue<std::string> material;
 
   void createProgram();
   void deleteProgram();
 
   std::string cMap = "spectral";
+  
+  std::shared_ptr<render::ShaderProgram> program;
 };
 
 

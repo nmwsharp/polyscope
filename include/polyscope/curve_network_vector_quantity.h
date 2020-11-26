@@ -4,6 +4,7 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/curve_network.h"
 #include "polyscope/ribbon_artist.h"
+#include "polyscope/vector_artist.h"
 
 namespace polyscope {
 
@@ -23,8 +24,8 @@ public:
 
   // === Members
   const VectorType vectorType;
-  std::vector<glm::vec3> vectorRoots;
   std::vector<glm::vec3> vectors;
+  std::vector<glm::vec3> vectorRoots;
 
   // === Option accessors
 
@@ -44,24 +45,10 @@ public:
   CurveNetworkVectorQuantity* setMaterial(std::string name);
   std::string getMaterial();
 
-  void writeToFile(std::string filename = "");
-
 protected:
-  // === Visualization options
-  PersistentValue<ScaledValue<float>> vectorLengthMult;
-  PersistentValue<ScaledValue<float>> vectorRadius;
-  PersistentValue<glm::vec3> vectorColor;
-  PersistentValue<std::string> material;
-
-  // The map that takes values to [0,1] for drawing
-  AffineRemapper<glm::vec3> mapper;
-
-  // GL things
-  void prepareProgram();
-  std::shared_ptr<render::ShaderProgram> program;
-
-  // Set up the mapper for vectors
-  void prepareVectorMapper();
+  // Manages _actually_ drawing the vectors, generating gui, etc.
+  std::unique_ptr<VectorArtist> vectorArtist;
+  void prepareVectorArtist();
 };
 
 
@@ -71,8 +58,6 @@ class CurveNetworkNodeVectorQuantity : public CurveNetworkVectorQuantity {
 public:
   CurveNetworkNodeVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, CurveNetwork& network_,
                                  VectorType vectorType_ = VectorType::STANDARD);
-
-  std::vector<glm::vec3> vectorField;
 
   virtual std::string niceName() override;
   virtual void buildNodeInfoGUI(size_t vInd) override;
@@ -86,8 +71,6 @@ class CurveNetworkEdgeVectorQuantity : public CurveNetworkVectorQuantity {
 public:
   CurveNetworkEdgeVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, CurveNetwork& network_,
                                  VectorType vectorType_ = VectorType::STANDARD);
-
-  std::vector<glm::vec3> vectorField;
 
   virtual std::string niceName() override;
   virtual void buildEdgeInfoGUI(size_t fInd) override;

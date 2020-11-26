@@ -2,10 +2,11 @@
 #pragma once
 
 #include "polyscope/affine_remapper.h"
+#include "polyscope/render/engine.h"
 #include "polyscope/ribbon_artist.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_enums.h"
-#include "polyscope/render/engine.h"
+#include "polyscope/vector_artist.h"
 
 namespace polyscope {
 
@@ -18,7 +19,6 @@ public:
   SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh_, MeshElement definedOn_,
                         VectorType vectorType_ = VectorType::STANDARD);
 
-
   virtual void draw() override;
   virtual void buildCustomUI() override;
 
@@ -30,8 +30,10 @@ public:
   // Note: these vectors are not the raw vectors passed in by the user, but have been rescaled such that the longest has
   // length 1 (unless type is VectorType::Ambient)
   const VectorType vectorType;
-  std::vector<glm::vec3> vectorRoots;
+
+  // The actual data
   std::vector<glm::vec3> vectors;
+  std::vector<glm::vec3> vectorRoots;
 
   // === Option accessors
 
@@ -46,7 +48,7 @@ public:
   // The color of the vectors
   SurfaceVectorQuantity* setVectorColor(glm::vec3 color);
   glm::vec3 getVectorColor();
-	
+
   // Material
   SurfaceVectorQuantity* setMaterial(std::string name);
   std::string getMaterial();
@@ -54,29 +56,25 @@ public:
   // Enable the ribbon visualization
   SurfaceVectorQuantity* setRibbonEnabled(bool newVal);
   bool isRibbonEnabled();
+  
+  // Ribbon width
+  SurfaceVectorQuantity* setRibbonWidth(double val, bool isRelative);
+  double getRibbonWidth();
+  
+  // Ribbon material
+  SurfaceVectorQuantity* setRibbonMaterial(std::string name);
+  std::string getRibbonMaterial();
 
 protected:
-  // === Visualization options
-  PersistentValue<ScaledValue<float>> vectorLengthMult;
-  PersistentValue<ScaledValue<float>> vectorRadius;
-  PersistentValue<glm::vec3> vectorColor;
-  PersistentValue<std::string> material;
-
-  // The map that takes values to [0,1] for drawing
-  AffineRemapper<glm::vec3> mapper;
+  // Manages _actually_ drawing the vectors, generating gui.
+  std::unique_ptr<VectorArtist> vectorArtist;
+  void prepareVectorArtist();
 
   MeshElement definedOn;
 
   // A ribbon viz that is appropriate for some fields
   std::unique_ptr<RibbonArtist> ribbonArtist;
   PersistentValue<bool> ribbonEnabled;
-
-  // GL things
-  void prepareProgram();
-  std::shared_ptr<render::ShaderProgram> program;
-
-  // Set up the mapper for vectors
-  void prepareVectorMapper();
 };
 
 
@@ -87,8 +85,7 @@ public:
   SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh& mesh_,
                               VectorType vectorType_ = VectorType::STANDARD);
 
-  std::vector<glm::vec3> vectorField;
-
+  virtual void geometryChanged() override;
   virtual std::string niceName() override;
   virtual void buildVertexInfoGUI(size_t vInd) override;
 };
@@ -101,8 +98,7 @@ public:
   SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh& mesh_,
                             VectorType vectorType_ = VectorType::STANDARD);
 
-  std::vector<glm::vec3> vectorField;
-
+  virtual void geometryChanged() override;
   virtual std::string niceName() override;
   virtual void buildFaceInfoGUI(size_t fInd) override;
 };
@@ -122,6 +118,7 @@ public:
 
   void drawSubUI() override;
 
+  virtual void geometryChanged() override;
   virtual std::string niceName() override;
   void buildFaceInfoGUI(size_t fInd) override;
 };
@@ -141,6 +138,7 @@ public:
 
   void drawSubUI() override;
 
+  virtual void geometryChanged() override;
   virtual std::string niceName() override;
   void buildVertexInfoGUI(size_t vInd) override;
 };
@@ -155,11 +153,13 @@ public:
 
   std::vector<double> oneForm;
   std::vector<glm::vec2> mappedVectorField;
+  std::vector<char> canonicalOrientation;
 
   virtual void draw() override;
 
   void drawSubUI() override;
 
+  virtual void geometryChanged() override;
   virtual std::string niceName() override;
   void buildEdgeInfoGUI(size_t eInd) override;
   void buildFaceInfoGUI(size_t fInd) override;

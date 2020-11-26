@@ -15,6 +15,7 @@
 #include "polyscope/render/opengl/shaders/cylinder_shaders.h"
 #include "polyscope/render/opengl/shaders/rules.h"
 #include "polyscope/render/opengl/shaders/sphere_shaders.h"
+#include "polyscope/render/opengl/shaders/vector_shaders.h"
 
 #include "stb_image.h"
 
@@ -1955,6 +1956,7 @@ void GLEngine::populateDefaultShadersAndRules() {
 
   // == Load general base shaders
   registeredShaderPrograms.insert({"RAYCAST_SPHERE", {RAYCAST_SPHERE_PIPELINE, DrawMode::Points}});
+  registeredShaderPrograms.insert({"RAYCAST_VECTOR", {RAYCAST_VECTOR_PIPELINE, DrawMode::Points}});
   registeredShaderPrograms.insert({"RAYCAST_CYLINDER", {RAYCAST_CYLINDER_PIPELINE, DrawMode::Points}});
 
   // === Load rules
@@ -1973,6 +1975,8 @@ void GLEngine::populateDefaultShadersAndRules() {
   // sphere things
   registeredShaderRules.insert({"SPHERE_PROPAGATE_VALUE", SPHERE_PROPAGATE_VALUE});
   registeredShaderRules.insert({"SPHERE_PROPAGATE_COLOR", SPHERE_PROPAGATE_COLOR});
+
+  // vector things
 
   // cylinder things
   registeredShaderRules.insert({"CYLINDER_PROPAGATE_VALUE", CYLINDER_PROPAGATE_VALUE});

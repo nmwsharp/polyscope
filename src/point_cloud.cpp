@@ -159,7 +159,7 @@ void PointCloud::buildCustomUI() {
     setPointColor(getPointColor());
   }
   ImGui::SameLine();
-  ImGui::PushItemWidth(100);
+  ImGui::PushItemWidth(70);
   if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
     pointRadius.manuallyChanged();
     requestRedraw();
