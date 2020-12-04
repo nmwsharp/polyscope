@@ -294,6 +294,10 @@ public:
   SurfaceMesh* setEdgeWidth(double newVal);
   double getEdgeWidth();
 
+  // Rendering helpers used by quantities
+  std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
+  void setStructureUniforms(render::ShaderProgram& p);
+
 private:
   // Visualization settings
   PersistentValue<bool> shadeSmooth;
@@ -305,7 +309,6 @@ private:
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
   void preparePick();
-  void prepareWireframe();
   void geometryChanged(); // call whenever geometry changed
 
   // Picking-related
@@ -323,7 +326,6 @@ private:
   // Drawing related things
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> pickProgram;
-  std::shared_ptr<render::ShaderProgram> wireframeProgram;
 
 
   // === Helper functions
@@ -333,7 +335,6 @@ private:
 
   void fillGeometryBuffersSmooth(render::ShaderProgram& p);
   void fillGeometryBuffersFlat(render::ShaderProgram& p);
-  void fillGeometryBuffersWireframe(render::ShaderProgram& p);
   glm::vec2 projectToScreenSpace(glm::vec3 coord);
   // bool screenSpaceTriangleTest(size_t fInd, glm::vec2 testCoords, glm::vec3& bCoordOut);
 

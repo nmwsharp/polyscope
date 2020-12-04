@@ -38,7 +38,9 @@ const ShaderReplacementRule LIGHT_MATCAP (
           uniform sampler2D t_mat_k;
           vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
         )"},
-      {"GENERATE_LIT_COLOR", "vec3 litColor = lightSurfaceMat(nHit, albedoColor, t_mat_r, t_mat_g, t_mat_b, t_mat_k);"}
+      {"GENERATE_LIT_COLOR", R"(
+          vec3 litColor = lightSurfaceMat(shadeNormal, albedoColor, t_mat_r, t_mat_g, t_mat_b, t_mat_k);
+      )"}
     },
     /* uniforms */ {},
     /* attributes */ {},
@@ -75,7 +77,7 @@ const ShaderReplacementRule SHADE_BASECOLOR (
       {"GENERATE_SHADE_COLOR", "vec3 albedoColor = u_baseColor;"}
     },
     /* uniforms */ {
-        {"u_baseColor", DataType::Vector3Float},
+      {"u_baseColor", DataType::Vector3Float},
     },
     /* attributes */ {},
     /* textures */ {}
@@ -119,6 +121,149 @@ const ShaderReplacementRule SHADE_COLORMAP_VALUE(
     }
 );
 
+// input: attribute vec2 shadeValue2
+// output: vec3 albedoColor
+const ShaderReplacementRule SHADE_COLORMAP_ANGULAR2(
+    /* rule name */ "SHADE_COLORMAP_ANGULAR2",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_angle;
+          uniform sampler1D t_colormap;
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+          float pi = 3.14159265359;
+          float angle = atan(shadeValue2.y, shadeValue2.x) / (2. * pi) + 0.5; // in [0,1]
+          float shiftedAngle = mod(angle + u_angle/(2. * pi), 1.);
+          vec3 albedoColor = texture(t_colormap, shiftedAngle).rgb;
+      )"}
+    },
+    /* uniforms */ {
+        {"u_angle", DataType::Float},
+    },
+    /* attributes */ {},
+    /* textures */ {
+        {"t_colormap", 1}
+    }
+);
+
+const ShaderReplacementRule SHADE_GRID_VALUE2 (
+    /* rule name */ "SHADE_GRID_VALUE2",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_modLen;
+          uniform vec3 u_gridLineColor;
+          uniform vec3 u_gridBackgroundColor;
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+        float mX = mod(shadeValue2.x, 2.0 * u_modLen) / u_modLen - 1.f; // in [-1, 1]
+        float mY = mod(shadeValue2.y, 2.0 * u_modLen) / u_modLen - 1.f;
+        float minD = min(min(abs(mX), 1.0 - abs(mX)), min(abs(mY), 1.0 - abs(mY))) * 2.; // rect distace from flipping sign in [0,1]
+        float width = 0.05;
+        float slopeWidthPix = 5.;
+        vec2 fw = fwidth(shadeValue2);
+        float scale = max(fw.x, fw.y);
+        float pWidth = slopeWidthPix * scale;
+        float s = smoothstep(width, width + pWidth, minD);
+        vec3 albedoColor = mix(u_gridLineColor, u_gridBackgroundColor, s);
+      )"}
+    },
+    /* uniforms */ {
+       {"u_modLen", DataType::Float},
+       {"u_gridLineColor", DataType::Vector3Float},
+       {"u_gridBackgroundColor", DataType::Vector3Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule SHADE_CHECKER_VALUE2 (
+    /* rule name */ "SHADE_CHECKER_VALUE2",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_modLen;
+          uniform vec3 u_color1;
+          uniform vec3 u_color2;
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+        float mX = mod(shadeValue2.x, 2.0 * u_modLen) / u_modLen - 1.f; // in [-1, 1]
+        float mY = mod(shadeValue2.y, 2.0 * u_modLen) / u_modLen - 1.f;
+        float minD = min( min(abs(mX), 1.0 - abs(mX)), min(abs(mY), 1.0 - abs(mY))) * 2.; // rect distace from flipping sign in [0,1]
+        float p = 6;
+        float minDSmooth = pow(minD, 1. / p);
+        // TODO do some clever screen space derivative thing to prevent aliasing
+        float v = (mX * mY); // in [-1, 1], color switches at 0
+        float adjV = sign(v) * minDSmooth;
+        float s = smoothstep(-1.f, 1.f, adjV);
+        vec3 albedoColor = mix(u_color1, u_color2, s);
+      )"}
+    },
+    /* uniforms */ {
+       {"u_modLen", DataType::Float},
+       {"u_color1", DataType::Vector3Float},
+       {"u_color2", DataType::Vector3Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+// input vec2 shadeValue2
+// output: float shadeValue
+const ShaderReplacementRule SHADEVALUE_MAG_VALUE2(
+    /* rule name */ "SHADEVALUE_MAG_VALUE2",
+    { /* replacement sources */
+      {"GENERATE_SHADE_COLOR", "float shadeValue = length(shadeValue2);"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+
+const ShaderReplacementRule ISOLINE_STRIPE_VALUECOLOR (
+    /* rule name */ "ISOLINE_STRIPE_VALUECOLOR",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_modLen;
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+        float modVal = mod(shadeValue, 2.0 * u_modLen);
+        if(modVal > u_modLen) {
+          albedoColor *= 0.7;
+        }
+      )"}
+    },
+    /* uniforms */ {
+        {"u_modLen", DataType::Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule CHECKER_VALUE2COLOR (
+    /* rule name */ "CHECKER_VALUE2COLOR",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_modLen;
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+        vec3 albedoColorDark = albedoColor * .5;
+        float mX = mod(shadeValue2.x, 2.0 * u_modLen) / u_modLen - 1.f; // in [-1, 1]
+        float mY = mod(shadeValue2.y, 2.0 * u_modLen) / u_modLen - 1.f;
+        float minD = min( min(abs(mX), 1.0 - abs(mX)), min(abs(mY), 1.0 - abs(mY))) * 2.; // rect distace from flipping sign in [0,1]
+        float p = 6;
+        float minDSmooth = pow(minD, 1. / p);
+        float v = (mX * mY); // in [-1, 1], color switches at 0
+        float adjV = sign(v) * minDSmooth;
+        float s = smoothstep(-1.f, 1.f, adjV);
+        albedoColor = mix(albedoColor, albedoColorDark, s);
+      )"}
+    },
+    /* uniforms */ {
+       {"u_modLen", DataType::Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
 
 // clang-format on
 

@@ -363,7 +363,6 @@ R"(
         layout(location = 0) out vec4 outputF;
 
         float LARGE_FLOAT();
-        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
         vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
         bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
         bool rayConeIntersection(vec3 rayStart, vec3 rayDir, vec3 coneBase, vec3 coneTip, float coneRad, out float tHit, out vec3 pHit, out vec3 nHit);
@@ -415,6 +414,7 @@ R"(
            ${ GENERATE_SHADE_COLOR }$
 
            // Lighting
+           vec3 shadeNormal = nHit;
            ${ GENERATE_LIT_COLOR }$
 
            // Set alpha

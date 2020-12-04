@@ -27,13 +27,10 @@ void SurfaceScalarQuantity::draw() {
 
   // Set uniforms
   parent.setTransformUniforms(*program);
+  parent.setStructureUniforms(*program);
   setProgramUniforms(*program);
 
   program->draw();
-}
-
-void SurfaceScalarQuantity::writeToFile(std::string filename) {
-  polyscope::warning("Writing to file not yet implemented for this datatype");
 }
 
 
@@ -70,7 +67,6 @@ void SurfaceScalarQuantity::buildCustomUI() {
   }
   if (ImGui::BeginPopup("OptionsPopup")) {
 
-    if (ImGui::MenuItem("Write to file")) writeToFile();
     if (ImGui::MenuItem("Reset colormap range")) resetMapRange();
 
     ImGui::EndPopup();
@@ -146,8 +142,7 @@ SurfaceVertexScalarQuantity::SurfaceVertexScalarQuantity(std::string name, std::
 
 void SurfaceVertexScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->generateShaderProgram(
-      {render::VERTCOLOR_SURFACE_VERT_SHADER, render::VERTCOLOR_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+  program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"}));
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -177,34 +172,8 @@ void SurfaceVertexScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
   }
 
   // Store data in buffers
-  p.setAttribute("a_colorval", colorval);
+  p.setAttribute("a_value", colorval);
   p.setTextureFromColormap("t_colormap", cMap.get());
-}
-
-void SurfaceVertexScalarQuantity::writeToFile(std::string filename) {
-
-  throw std::runtime_error("not implemented");
-
-  /* TODO
-  if (filename == "") {
-    filename = promptForFilename();
-    if (filename == "") {
-      return;
-    }
-  }
-
-  // For now, just always write scalar to U texture coordinate
-
-  cout << "Writing vertex value to file " << filename << " in U coordinate of texture map" << endl;
-
-  HalfedgeMesh* mesh = parent.mesh;
-  CornerData<Vector2> scalarVal(mesh, Vector2{0.0, 0.0});
-  for (CornerPtr c : mesh->corners()) {
-    scalarVal[c].x = values[c.vertex()];
-  }
-
-  WavefrontOBJ::write(filename, *parent.geometry, scalarVal);
-  */
 }
 
 void SurfaceVertexScalarQuantity::buildVertexInfoGUI(size_t vInd) {
@@ -232,8 +201,7 @@ SurfaceFaceScalarQuantity::SurfaceFaceScalarQuantity(std::string name, std::vect
 
 void SurfaceFaceScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->generateShaderProgram(
-      {render::VERTCOLOR_SURFACE_VERT_SHADER, render::VERTCOLOR_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+  program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"}));
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -255,7 +223,7 @@ void SurfaceFaceScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
   }
 
   // Store data in buffers
-  p.setAttribute("a_colorval", colorval);
+  p.setAttribute("a_value", colorval);
   p.setTextureFromColormap("t_colormap", cMap.get());
 }
 
@@ -285,8 +253,7 @@ SurfaceEdgeScalarQuantity::SurfaceEdgeScalarQuantity(std::string name, std::vect
 
 void SurfaceEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->generateShaderProgram(
-      {render::HALFEDGECOLOR_SURFACE_VERT_SHADER, render::HALFEDGECOLOR_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+  program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_HALFEDGE_VALUE", "SHADE_COLORMAP_VALUE"}));
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -330,7 +297,7 @@ void SurfaceEdgeScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
   }
 
   // Store data in buffers
-  p.setAttribute("a_colorval", colorval);
+  p.setAttribute("a_value3", colorval);
   p.setTextureFromColormap("t_colormap", cMap.get());
 }
 
@@ -371,8 +338,7 @@ SurfaceHalfedgeScalarQuantity::SurfaceHalfedgeScalarQuantity(std::string name, s
 
 void SurfaceHalfedgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->generateShaderProgram(
-      {render::HALFEDGECOLOR_SURFACE_VERT_SHADER, render::HALFEDGECOLOR_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+  program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_HALFEDGE_VALUE", "SHADE_COLORMAP_VALUE"}));
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -423,7 +389,7 @@ void SurfaceHalfedgeScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
 
 
   // Store data in buffers
-  p.setAttribute("a_colorval", colorval);
+  p.setAttribute("a_value3", colorval);
   p.setTextureFromColormap("t_colormap", cMap.get());
 }
 

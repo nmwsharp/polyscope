@@ -531,18 +531,6 @@ void Engine::loadDefaultMaterial(std::string name) {
   }
   // clang-format on
 
-
-  /*
-      int w, h, comp;
-      unsigned char* image = nullptr;
-      image = stbi_load_from_memory(reinterpret_cast<const unsigned char*>(&data[i][0]), data[i].size(), &w, &h,
-     &comp, STBI_rgb); if (image == nullptr) throw std::logic_error("Failed to load material image");
-
-      newMaterial.textureBuffers[i] = engine->generateTextureBuffer(TextureFormat::RGB8, w, h, image);
-  newMaterial.textureBuffers[i]->setFilterMode(FilterMode::Linear);
-      stbi_image_free(image);
-  */
-
   for (int i = 0; i < 4; i++) {
     int width, height, nComp;
     float* data = stbi_loadf_from_memory(buff[i], buffSize[i], &width, &height, &nComp, 3);

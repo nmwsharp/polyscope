@@ -15,6 +15,7 @@
 #include "polyscope/render/opengl/shaders/cylinder_shaders.h"
 #include "polyscope/render/opengl/shaders/rules.h"
 #include "polyscope/render/opengl/shaders/sphere_shaders.h"
+#include "polyscope/render/opengl/shaders/surface_mesh_shaders.h"
 #include "polyscope/render/opengl/shaders/vector_shaders.h"
 
 #include "stb_image.h"
@@ -1922,14 +1923,14 @@ std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& progra
   DrawMode dm = registeredShaderPrograms[programName].second;
 
   // Add in the default rules
-  std::set<std::string> fullCustomRules(customRules.begin(), customRules.end());
+  std::vector<std::string> fullCustomRules = customRules;
   switch (defaults) {
   case ShaderReplacementDefaults::SceneObject: {
-    fullCustomRules.insert(defaultRules_sceneObject.begin(), defaultRules_sceneObject.end());
+    fullCustomRules.insert(fullCustomRules.begin(), defaultRules_sceneObject.begin(), defaultRules_sceneObject.end());
     break;
   }
   case ShaderReplacementDefaults::Pick: {
-    fullCustomRules.insert(defaultRules_pick.begin(), defaultRules_pick.end());
+    fullCustomRules.insert(fullCustomRules.begin(), defaultRules_pick.begin(), defaultRules_pick.end());
     break;
   }
   case ShaderReplacementDefaults::None: {
@@ -1955,6 +1956,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   // Note: we use .insert({key, value}) rather than map[key] = value to support const members in the value.
 
   // == Load general base shaders
+  registeredShaderPrograms.insert({"MESH", {MESH_PIPELINE, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"RAYCAST_SPHERE", {RAYCAST_SPHERE_PIPELINE, DrawMode::Points}});
   registeredShaderPrograms.insert({"RAYCAST_VECTOR", {RAYCAST_VECTOR_PIPELINE, DrawMode::Points}});
   registeredShaderPrograms.insert({"RAYCAST_CYLINDER", {RAYCAST_CYLINDER_PIPELINE, DrawMode::Points}});
@@ -1965,13 +1967,26 @@ void GLEngine::populateDefaultShadersAndRules() {
   registeredShaderRules.insert({"GLSL_VERSION", GLSL_VERSION});
   registeredShaderRules.insert({"GLOBAL_FRAGMENT_FILTER", GLOBAL_FRAGMENT_FILTER});
 
-  // Lighting an d shading things
+  // Lighting and shading things
   registeredShaderRules.insert({"LIGHT_MATCAP", LIGHT_MATCAP});
   registeredShaderRules.insert({"LIGHT_PASSTHRU", LIGHT_PASSTHRU});
   registeredShaderRules.insert({"SHADE_BASECOLOR", SHADE_BASECOLOR});
   registeredShaderRules.insert({"SHADE_COLOR", SHADE_COLOR});
   registeredShaderRules.insert({"SHADE_COLORMAP_VALUE", SHADE_COLORMAP_VALUE});
+  registeredShaderRules.insert({"SHADE_COLORMAP_ANGULAR2", SHADE_COLORMAP_ANGULAR2});
+  registeredShaderRules.insert({"SHADE_GRID_VALUE2", SHADE_GRID_VALUE2});
+  registeredShaderRules.insert({"SHADE_CHECKER_VALUE2", SHADE_CHECKER_VALUE2});
+  registeredShaderRules.insert({"SHADEVALUE_MAG_VALUE2", SHADEVALUE_MAG_VALUE2});
+  registeredShaderRules.insert({"ISOLINE_STRIPE_VALUECOLOR", ISOLINE_STRIPE_VALUECOLOR});
+  registeredShaderRules.insert({"CHECKER_VALUE2COLOR", CHECKER_VALUE2COLOR});
 
+  // mesh things
+  registeredShaderRules.insert({"MESH_WIREFRAME", MESH_WIREFRAME});
+  registeredShaderRules.insert({"MESH_PROPAGATE_VALUE", MESH_PROPAGATE_VALUE});
+  registeredShaderRules.insert({"MESH_PROPAGATE_VALUE2", MESH_PROPAGATE_VALUE2});
+  registeredShaderRules.insert({"MESH_PROPAGATE_COLOR", MESH_PROPAGATE_COLOR});
+  registeredShaderRules.insert({"MESH_PROPAGATE_HALFEDGE_VALUE", MESH_PROPAGATE_HALFEDGE_VALUE});
+  
   // sphere things
   registeredShaderRules.insert({"SPHERE_PROPAGATE_VALUE", SPHERE_PROPAGATE_VALUE});
   registeredShaderRules.insert({"SPHERE_PROPAGATE_COLOR", SPHERE_PROPAGATE_COLOR});

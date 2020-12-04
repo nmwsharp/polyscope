@@ -18,8 +18,6 @@ public:
   virtual std::string niceName() override;
   virtual void geometryChanged() override;
 
-  virtual void writeToFile(std::string filename = "");
-
   // === Members
   const DataType dataType;
   
@@ -66,7 +64,6 @@ public:
   void fillColorBuffers(render::ShaderProgram& p);
 
   void buildVertexInfoGUI(size_t vInd) override;
-  virtual void writeToFile(std::string filename = "") override;
 
   // === Members
   std::vector<double> values;

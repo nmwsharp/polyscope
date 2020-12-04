@@ -710,6 +710,7 @@ R"(
            ${ GENERATE_SHADE_COLOR }$
 
            // Lighting
+           vec3 shadeNormal = nHit;
            ${ GENERATE_LIT_COLOR }$
 
            // Set alpha
