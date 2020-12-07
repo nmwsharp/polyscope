@@ -1335,6 +1335,77 @@ const ShaderReplacementRule MESH_WIREFRAME(
     /* textures */ {}
 );
 
+// data for picking
+const ShaderReplacementRule MESH_PROPAGATE_PICK (
+    /* rule name */ "MESH_PROPAGATE_PICK",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec3 a_vertexColors[3];
+          in vec3 a_edgeColors[3];
+          in vec3 a_halfedgeColors[3];
+          in vec3 a_faceColor;
+          flat out vec3 vertexColors[3];
+          flat out vec3 edgeColors[3];
+          flat out vec3 halfedgeColors[3];
+          flat out vec3 faceColor;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          for(int i = 0; i < 3; i++) {
+              vertexColors[i] = a_vertexColors[i];
+              edgeColors[i] = a_edgeColors[i];
+              halfedgeColors[i] = a_halfedgeColors[i];
+          }
+          faceColor = a_faceColor;
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          flat in vec3 vertexColors[3];
+          flat in vec3 edgeColors[3];
+          flat in vec3 halfedgeColors[3];
+          flat in vec3 faceColor;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          // Parameters defining the pick shape (in barycentric 0-1 units)
+          float vertRadius = 0.2;
+          float edgeRadius = 0.1;
+          float halfedgeRadius = 0.2;
+          
+          vec3 shadeColor = faceColor;
+          bool colorSet = false;
+
+          // Test vertices
+          for(int i = 0; i < 3; i++) {
+              if(a_barycoordToFrag[i] > 1.0-vertRadius) {
+                shadeColor = vertexColors[i];
+                colorSet = true;
+              }
+          }
+
+          // Test edges and halfedges
+          for(int i = 0; i < 3; i++) {
+              if(colorSet) continue;
+              float eDist = a_barycoordToFrag[(i+2)%3];
+              if(eDist < edgeRadius) {
+                shadeColor = edgeColors[i];
+                colorSet = true;
+                continue;
+              }
+              if(eDist < halfedgeRadius) {
+                shadeColor = halfedgeColors[i];
+                colorSet = true;
+              }
+          }
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_vertexColors", DataType::Vector3Float, 3},
+      {"a_edgeColors", DataType::Vector3Float, 3},
+      {"a_halfedgeColors", DataType::Vector3Float, 3},
+      {"a_faceColor", DataType::Vector3Float},
+    },
+    /* textures */ {}
+);
+
 
 // clang-format on
 

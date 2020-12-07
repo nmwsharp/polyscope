@@ -359,8 +359,7 @@ void SurfaceMesh::prepare() {
 void SurfaceMesh::preparePick() {
 
   // Create a new program
-  pickProgram = render::engine->generateShaderProgram(
-      {render::PICK_SURFACE_VERT_SHADER, render::PICK_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+  pickProgram = render::engine->requestShader("MESH", {"MESH_PROPAGATE_PICK"}, render::ShaderReplacementDefaults::Pick);
 
   // Get element indices
   size_t totalPickElements = nVertices() + nFaces() + nEdges() + nHalfedges();
@@ -378,6 +377,7 @@ void SurfaceMesh::preparePick() {
 
   // == Fill buffers
   std::vector<glm::vec3> positions;
+  std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
   std::vector<std::array<glm::vec3, 3>> vertexColors, edgeColors, halfedgeColors;
   std::vector<glm::vec3> faceColor;
@@ -389,11 +389,13 @@ void SurfaceMesh::preparePick() {
   edgeColors.reserve(3 * nFacesTriangulation());
   halfedgeColors.reserve(3 * nFacesTriangulation());
   faceColor.reserve(3 * nFacesTriangulation());
+  normals.reserve(3 * nFacesTriangulation());
 
   // Build all quantities in each face
   for (size_t iF = 0; iF < nFaces(); iF++) {
     auto& face = faces[iF];
     size_t D = face.size();
+    glm::vec3 faceN = faceNormals[iF];
 
     // implicitly triangulate from root
     size_t vRoot = face[0];
@@ -410,6 +412,10 @@ void SurfaceMesh::preparePick() {
       positions.push_back(pRoot);
       positions.push_back(pB);
       positions.push_back(pC);
+
+      normals.push_back(faceN);
+      normals.push_back(faceN);
+      normals.push_back(faceN);
 
       // Build all quantities
       std::array<glm::vec3, 3> vColor;
@@ -454,12 +460,13 @@ void SurfaceMesh::preparePick() {
   // Store data in buffers
   pickProgram->setAttribute("a_position", positions);
   pickProgram->setAttribute("a_barycoord", bcoord);
+  pickProgram->setAttribute("a_normal", normals);
   pickProgram->setAttribute<glm::vec3, 3>("a_vertexColors", vertexColors);
   pickProgram->setAttribute<glm::vec3, 3>("a_edgeColors", edgeColors);
   pickProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", halfedgeColors);
   pickProgram->setAttribute("a_faceColor", faceColor);
 }
-  
+
 std::vector<std::string> SurfaceMesh::addStructureRules(std::vector<std::string> initRules) {
   if (getEdgeWidth() > 0) {
     initRules.push_back("MESH_WIREFRAME");
