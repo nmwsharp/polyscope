@@ -57,8 +57,6 @@ void VectorArtist::draw() {
 }
 
 void VectorArtist::createProgram() {
-  program = render::engine->generateShaderProgram(
-      {render::PASSTHRU_VECTOR_VERT_SHADER, render::VECTOR_GEOM_SHADER, render::VECTOR_FRAG_SHADER}, DrawMode::Points);
   program = render::engine->requestShader("RAYCAST_VECTOR", {"SHADE_BASECOLOR"});
 
   // Fill buffers

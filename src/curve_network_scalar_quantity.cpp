@@ -211,10 +211,6 @@ CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name,
 
 void CurveNetworkEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  nodeProgram = render::engine->generateShaderProgram({render::SPHERE_VALUE_VERT_SHADER,
-                                                       render::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
-                                                       render::SPHERE_VALUE_BILLBOARD_FRAG_SHADER},
-                                                      DrawMode::Points);
   nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"});
   edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"});
 

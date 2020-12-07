@@ -393,10 +393,6 @@ public:
   virtual std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) = 0;
 
   // == create shader programs
-  // low-level interface
-  virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                               DrawMode dm) = 0;
-  // general flexible interface
   virtual std::shared_ptr<ShaderProgram>
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
                 ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) = 0;
@@ -454,6 +450,10 @@ protected:
   std::shared_ptr<TextureBuffer> loadMaterialTexture(float* data, int width, int height);
   void loadDefaultColorMap(std::string name);
   void loadDefaultColorMaps();
+  
+  // low-level interface for creating shader programs
+  virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
+                                                               DrawMode dm) = 0;
 
   // Internal windowing and engine details
   ImFontAtlas* globalFontAtlas = nullptr;

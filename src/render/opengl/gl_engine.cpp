@@ -16,9 +16,9 @@
 #include "polyscope/render/opengl/shaders/ground_plane_shaders.h"
 #include "polyscope/render/opengl/shaders/histogram_shaders.h"
 #include "polyscope/render/opengl/shaders/lighting_shaders.h"
+#include "polyscope/render/opengl/shaders/ribbon_shaders.h"
 #include "polyscope/render/opengl/shaders/rules.h"
 #include "polyscope/render/opengl/shaders/sphere_shaders.h"
-#include "polyscope/render/opengl/shaders/ribbon_shaders.h"
 #include "polyscope/render/opengl/shaders/surface_mesh_shaders.h"
 #include "polyscope/render/opengl/shaders/texture_draw_shaders.h"
 #include "polyscope/render/opengl/shaders/vector_shaders.h"
@@ -1973,9 +1973,9 @@ void GLEngine::populateDefaultShadersAndRules() {
   registeredShaderPrograms.insert({"GROUND_PLANE", {GROUND_PLANE_PIPELINE, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"MAP_LIGHT", {MAP_LIGHT_PIPELINE, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"RIBBON", {RIBBON_PIPELINE, DrawMode::IndexedLineStripAdjacency}});
-  
+
   registeredShaderPrograms.insert({"TEXTURE_DRAW_PLAIN", {TEXTURE_DRAW_PLAIN_PIPELINE, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"TEXTURE_DRAW_DOT3", {TEXTURE_DRAW_DOT3_PIPELINE , DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"TEXTURE_DRAW_DOT3", {TEXTURE_DRAW_DOT3_PIPELINE, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"TEXTURE_DRAW_MAP3", {TEXTURE_DRAW_MAP3_PIPELINE, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"TEXTURE_DRAW_SPHEREBG", {TEXTURE_DRAW_SPHEREBG_PIPELINE, DrawMode::Triangles}});
 

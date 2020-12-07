@@ -303,10 +303,6 @@ public:
   // create frame buffers
   std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) override;
 
-  // create shader programs
-  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                       DrawMode dm) override;
-
   // general flexible interface
   std::shared_ptr<ShaderProgram>
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
@@ -329,6 +325,10 @@ protected:
   std::unordered_map<std::string, std::pair<std::vector<ShaderStageSpecification>, DrawMode>> registeredShaderPrograms;
   std::unordered_map<std::string, ShaderReplacementRule> registeredShaderRules;
   void populateDefaultShadersAndRules();
+  
+  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
+                                                       DrawMode dm) override;
+
 };
 
 } // namespace backend_openGL3_glfw
