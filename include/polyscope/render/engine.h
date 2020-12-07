@@ -205,7 +205,12 @@ public:
   std::vector<ShaderSpecAttribute> attributes;
   std::vector<ShaderSpecTexture> textures;
 };
-enum class ShaderReplacementDefaults { SceneObject, Pick, None };
+enum class ShaderReplacementDefaults { 
+  SceneObject,      // an object in the scene, which gets lit via matcap (etc)
+  Pick,             // rendering to a pick buffer
+  Process,          // postprocessing effects, etc
+  None              // no defaults applied
+};
 
 // Encapsulate a shader program
 class ShaderProgram {
@@ -453,9 +458,10 @@ protected:
   // Internal windowing and engine details
   ImFontAtlas* globalFontAtlas = nullptr;
 
-  // Default rule lists
+  // Default rule lists (see enum for explanation)
   std::vector<std::string> defaultRules_sceneObject{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "LIGHT_MATCAP"};
   std::vector<std::string> defaultRules_pick{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "SHADE_COLOR", "LIGHT_PASSTHRU"};
+  std::vector<std::string> defaultRules_process{"GLSL_VERSION"};
 };
 
 

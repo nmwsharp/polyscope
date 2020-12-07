@@ -1,9 +1,10 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 
-#include "polyscope/render/opengl/gl_shaders.h"
+#include "polyscope/render/opengl/shaders/histogram_shaders.h"
 
 namespace polyscope {
 namespace render {
+namespace backend_openGL3_glfw {
 
 // clang-format off
 
@@ -21,7 +22,8 @@ const ShaderStageSpecification HISTOGRAM_VERT_SHADER =  {
     {}, // textures
 
     // source
-    POLYSCOPE_GLSL(150,
+R"(
+      ${ GLSL_VERSION }$
       in vec2 a_coord;
       
       out float t;
@@ -32,7 +34,7 @@ const ShaderStageSpecification HISTOGRAM_VERT_SHADER =  {
           vec2 scaledCoord = vec2(a_coord.x, a_coord.y * .85);
           gl_Position = vec4(2.*scaledCoord - vec2(1.0, 1.0),0.,1.);
       }
-    )
+)"
 };
 
 const ShaderStageSpecification HISTOGRAM_FRAG_SHADER = {
@@ -55,7 +57,9 @@ const ShaderStageSpecification HISTOGRAM_FRAG_SHADER = {
     },
     
     // source 
-    POLYSCOPE_GLSL(330 core,
+R"(
+      ${ GLSL_VERSION }$
+
       in float t;
 
       uniform sampler1D t_colormap;
@@ -77,10 +81,13 @@ const ShaderStageSpecification HISTOGRAM_FRAG_SHADER = {
 
         outputF = vec4(darkFactor*texture(t_colormap, clampMapT).rgb, 1.0);
       }
-    )
+)"
 };
+
+const std::vector<ShaderStageSpecification> HISTOGRAM_PIPELINE{HISTOGRAM_VERT_SHADER, HISTOGRAM_FRAG_SHADER};
 
 // clang-format on
 
-} // namespace gl
+} // namespace backend_openGL3_glfw
+} // namespace render
 } // namespace polyscope

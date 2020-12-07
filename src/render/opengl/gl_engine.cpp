@@ -17,6 +17,7 @@
 #include "polyscope/render/opengl/shaders/sphere_shaders.h"
 #include "polyscope/render/opengl/shaders/surface_mesh_shaders.h"
 #include "polyscope/render/opengl/shaders/vector_shaders.h"
+#include "polyscope/render/opengl/shaders/histogram_shaders.h"
 
 #include "stb_image.h"
 
@@ -1933,6 +1934,10 @@ std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& progra
     fullCustomRules.insert(fullCustomRules.begin(), defaultRules_pick.begin(), defaultRules_pick.end());
     break;
   }
+  case ShaderReplacementDefaults::Process : {
+    fullCustomRules.insert(fullCustomRules.begin(), defaultRules_process.begin(), defaultRules_process.end());
+    break;
+  }
   case ShaderReplacementDefaults::None: {
     break;
   }
@@ -1960,6 +1965,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registeredShaderPrograms.insert({"RAYCAST_SPHERE", {RAYCAST_SPHERE_PIPELINE, DrawMode::Points}});
   registeredShaderPrograms.insert({"RAYCAST_VECTOR", {RAYCAST_VECTOR_PIPELINE, DrawMode::Points}});
   registeredShaderPrograms.insert({"RAYCAST_CYLINDER", {RAYCAST_CYLINDER_PIPELINE, DrawMode::Points}});
+  registeredShaderPrograms.insert({"HISTOGRAM", {HISTOGRAM_PIPELINE, DrawMode::Triangles}});
 
   // === Load rules
 

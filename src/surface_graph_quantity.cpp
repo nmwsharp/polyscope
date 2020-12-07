@@ -65,19 +65,13 @@ void SurfaceGraphQuantity::setUniforms() {
 void SurfaceGraphQuantity::createPrograms() {
 
   { // Point program
-    pointProgram = render::engine->generateShaderProgram(
-        {render::SPHERE_VERT_SHADER, render::SPHERE_BILLBOARD_GEOM_SHADER, render::SPHERE_BILLBOARD_FRAG_SHADER},
-        DrawMode::Points);
-
+    pointProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SHADE_BASECOLOR"});
     pointProgram->setAttribute("a_position", nodes);
     render::engine->setMaterial(*pointProgram, parent.getMaterial());
   }
 
   { // Line program
-
-    lineProgram = render::engine->generateShaderProgram(
-        {render::PASSTHRU_CYLINDER_VERT_SHADER, render::CYLINDER_GEOM_SHADER, render::CYLINDER_FRAG_SHADER},
-        DrawMode::Points);
+    lineProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"SHADE_BASECOLOR"});
 
     // Build buffers
     std::vector<glm::vec3> edgeStarts, edgeEnds;

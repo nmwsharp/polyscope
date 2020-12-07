@@ -235,8 +235,8 @@ void Histogram::prepare() {
   framebuffer->addColorBuffer(texturebuffer);
 
   // Create the program
-  program = render::engine->generateShaderProgram({render::HISTOGRAM_VERT_SHADER, render::HISTOGRAM_FRAG_SHADER},
-                                                  DrawMode::Triangles);
+  program = render::engine->requestShader("HISTOGRAM", {}, render::ShaderReplacementDefaults::Process);
+
 
   prepared = true;
 }
