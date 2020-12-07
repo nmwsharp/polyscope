@@ -1,9 +1,10 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 
-#include "polyscope/render/opengl/gl_shaders.h"
+#include "polyscope/render/opengl/shaders/ribbon_shaders.h"
 
 namespace polyscope {
 namespace render {
+namespace backend_openGL3_glfw {
 
 // clang-format off
 
@@ -23,7 +24,9 @@ const ShaderStageSpecification RIBBON_VERT_SHADER = {
     {}, // textures
 
     // source
-    POLYSCOPE_GLSL(150,
+R"(
+       ${ GLSL_VERSION }$
+
         in vec3 a_position;
         in vec3 a_color;
         in vec3 a_normal;
@@ -35,7 +38,7 @@ const ShaderStageSpecification RIBBON_VERT_SHADER = {
             Normal = a_normal;
             gl_Position = vec4(a_position,1.0);
         }
-    )
+)"
 };
 
 
@@ -58,7 +61,9 @@ const ShaderStageSpecification RIBBON_GEOM_SHADER = {
     {}, // textures
 
     // source
-    POLYSCOPE_GLSL(150,
+R"(
+        ${ GLSL_VERSION }$
+
         layout(lines_adjacency) in;
         layout(triangle_strip, max_vertices=20) out;
         in vec3 Color[];
@@ -141,7 +146,7 @@ const ShaderStageSpecification RIBBON_GEOM_SHADER = {
             EndPrimitive();
         }
 
-    )
+)"
 };
 
 
@@ -150,33 +155,25 @@ const ShaderStageSpecification RIBBON_FRAG_SHADER = {
     
     ShaderStageType::Fragment,
     
-    { }, // uniforms
-
-    { }, // attributes
-    
-    // textures 
-    {
-        {"t_mat_r", 2},
-        {"t_mat_g", 2},
-        {"t_mat_b", 2},
-        {"t_mat_k", 2},
-    },
+    {}, // uniforms
+    {}, // attributes
+    {}, // textures 
  
     // source
-    POLYSCOPE_GLSL(330 core,
-        uniform sampler2D t_mat_r;
-        uniform sampler2D t_mat_g;
-        uniform sampler2D t_mat_b;
-        uniform sampler2D t_mat_k;
+R"(
+        ${ GLSL_VERSION }$
+
         in vec3 colorToFrag;
         in vec3 cameraNormalToFrag;
         in float intensityToFrag;
         layout(location = 0) out vec4 outputF;
 
-        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
+        ${ FRAG_DECLARATIONS }$
 
         void main()
         {
+           
+           ${ GLOBAL_FRAGMENT_FILTER }$
 
            // Compute a fade factor to set the transparency
            // Basically amounts to antialiasing in screen space when lines are relatively large on screen
@@ -185,12 +182,27 @@ const ShaderStageSpecification RIBBON_FRAG_SHADER = {
            float thresh = min(dF * screenFadeLen, 0.2);
            float fadeFactor = smoothstep(0, thresh, intensityToFrag);
 
-           outputF = vec4(lightSurfaceMat(cameraNormalToFrag, colorToFrag, t_mat_r, t_mat_g, t_mat_b, t_mat_k), fadeFactor);
+           vec3 albedoColor = colorToFrag;
+           vec3 shadeNormal = cameraNormalToFrag;
+           
+           // Lighting
+           ${ GENERATE_LIT_COLOR }$
+           
+           // Set alpha
+           float alphaOut = 1.0;
+           ${ GENERATE_ALPHA }$
+           alphaOut *= fadeFactor;
+
+           // Write output
+           outputF = vec4(litColor, alphaOut);
         }
-    )
+)"
 };
+
+const std::vector<ShaderStageSpecification> RIBBON_PIPELINE{RIBBON_VERT_SHADER, RIBBON_GEOM_SHADER, RIBBON_FRAG_SHADER};
 
 // clang-format on
 
-} // namespace gl
+} // namespace backend_openGL3_glfw
+} // namespace render
 } // namespace polyscope

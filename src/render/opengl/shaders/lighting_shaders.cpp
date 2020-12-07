@@ -1,11 +1,13 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 
-#include "polyscope/render/opengl/gl_shaders.h"
+#include "polyscope/render/opengl/shaders/lighting_shaders.h"
+#include "polyscope/render/opengl/shaders/texture_draw_shaders.h"
 
 // clang-format off
 
 namespace polyscope {
 namespace render{
+namespace backend_openGL3_glfw {
 
 const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER = {
     
@@ -30,7 +32,8 @@ const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER = {
     },
     
     // source 
-    POLYSCOPE_GLSL(330 core,
+R"(
+      ${ GLSL_VERSION }$
 
       in vec2 tCoord;
       uniform sampler2D t_image;
@@ -101,11 +104,14 @@ const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER = {
        
         outputVal = vec4(color, alpha);
     }  
-    )
+)"
 };
 
 
+const std::vector<ShaderStageSpecification> MAP_LIGHT_PIPELINE{TEXTURE_DRAW_VERT_SHADER, MAP_LIGHT_FRAG_SHADER};
+
 // clang-format on
 
+}
 } // namespace render
 } // namespace polyscope

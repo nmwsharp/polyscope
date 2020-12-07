@@ -31,9 +31,7 @@ void RibbonArtist::deleteProgram() { program.reset(); }
 void RibbonArtist::createProgram() {
 
   // Create the program
-  program = render::engine->generateShaderProgram(
-      {render::RIBBON_VERT_SHADER, render::RIBBON_GEOM_SHADER, render::RIBBON_FRAG_SHADER},
-      DrawMode::IndexedLineStripAdjacency);
+  program = render::engine->requestShader("RIBBON", {});
 
   // Set the restart index for the line strip
   unsigned int restartInd = -1;
@@ -45,7 +43,6 @@ void RibbonArtist::createProgram() {
   // == Fill buffers
 
   // Trace a whole bunch of lines along the surface
-  // TODO Expensive yet trivially parallelizable
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> colors;

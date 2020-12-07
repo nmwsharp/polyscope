@@ -395,19 +395,19 @@ void Engine::allocateGlobalBuffersAndPrograms() {
 
   { // Generate the general-use programs
     // clang-format off
-    renderTexturePlain = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, PLAIN_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTexturePlain = render::engine->requestShader("TEXTURE_DRAW_PLAIN", {}, render::ShaderReplacementDefaults::Process);
     renderTexturePlain->setAttribute("a_position", screenTrianglesCoords());
 
-    renderTextureDot3 = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, DOT3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTextureDot3 = render::engine->requestShader("TEXTURE_DRAW_DOT3", {}, render::ShaderReplacementDefaults::Process);
     renderTextureDot3->setAttribute("a_position", screenTrianglesCoords());
 
-    renderTextureMap3 = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, MAP3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTextureMap3 = render::engine->requestShader("TEXTURE_DRAW_MAP3", {}, render::ShaderReplacementDefaults::Process);
     renderTextureMap3->setAttribute("a_position", screenTrianglesCoords());
 
-    renderTextureSphereBG = generateShaderProgram({SPHEREBG_DRAW_VERT_SHADER, SPHEREBG_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTextureSphereBG = render::engine->requestShader("TEXTURE_DRAW_SPHEREBG", {}, render::ShaderReplacementDefaults::Process);
     renderTextureSphereBG->setAttribute("a_position", distantCubeCoords());
     
-    mapLight = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, MAP_LIGHT_FRAG_SHADER}, DrawMode::Triangles);
+    mapLight = render::engine->requestShader("MAP_LIGHT", {}, render::ShaderReplacementDefaults::Process);
     mapLight->setAttribute("a_position", screenTrianglesCoords());
     // clang-format on
   }

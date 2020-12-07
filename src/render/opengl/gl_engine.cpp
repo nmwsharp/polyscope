@@ -13,11 +13,15 @@
 // all the shaders
 #include "polyscope/render/opengl/shaders/common.h"
 #include "polyscope/render/opengl/shaders/cylinder_shaders.h"
+#include "polyscope/render/opengl/shaders/ground_plane_shaders.h"
+#include "polyscope/render/opengl/shaders/histogram_shaders.h"
+#include "polyscope/render/opengl/shaders/lighting_shaders.h"
 #include "polyscope/render/opengl/shaders/rules.h"
 #include "polyscope/render/opengl/shaders/sphere_shaders.h"
+#include "polyscope/render/opengl/shaders/ribbon_shaders.h"
 #include "polyscope/render/opengl/shaders/surface_mesh_shaders.h"
+#include "polyscope/render/opengl/shaders/texture_draw_shaders.h"
 #include "polyscope/render/opengl/shaders/vector_shaders.h"
-#include "polyscope/render/opengl/shaders/histogram_shaders.h"
 
 #include "stb_image.h"
 
@@ -1934,7 +1938,7 @@ std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& progra
     fullCustomRules.insert(fullCustomRules.begin(), defaultRules_pick.begin(), defaultRules_pick.end());
     break;
   }
-  case ShaderReplacementDefaults::Process : {
+  case ShaderReplacementDefaults::Process: {
     fullCustomRules.insert(fullCustomRules.begin(), defaultRules_process.begin(), defaultRules_process.end());
     break;
   }
@@ -1966,6 +1970,14 @@ void GLEngine::populateDefaultShadersAndRules() {
   registeredShaderPrograms.insert({"RAYCAST_VECTOR", {RAYCAST_VECTOR_PIPELINE, DrawMode::Points}});
   registeredShaderPrograms.insert({"RAYCAST_CYLINDER", {RAYCAST_CYLINDER_PIPELINE, DrawMode::Points}});
   registeredShaderPrograms.insert({"HISTOGRAM", {HISTOGRAM_PIPELINE, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"GROUND_PLANE", {GROUND_PLANE_PIPELINE, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"MAP_LIGHT", {MAP_LIGHT_PIPELINE, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"RIBBON", {RIBBON_PIPELINE, DrawMode::IndexedLineStripAdjacency}});
+  
+  registeredShaderPrograms.insert({"TEXTURE_DRAW_PLAIN", {TEXTURE_DRAW_PLAIN_PIPELINE, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"TEXTURE_DRAW_DOT3", {TEXTURE_DRAW_DOT3_PIPELINE , DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"TEXTURE_DRAW_MAP3", {TEXTURE_DRAW_MAP3_PIPELINE, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"TEXTURE_DRAW_SPHEREBG", {TEXTURE_DRAW_SPHEREBG_PIPELINE, DrawMode::Triangles}});
 
   // === Load rules
 
@@ -1993,7 +2005,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registeredShaderRules.insert({"MESH_PROPAGATE_COLOR", MESH_PROPAGATE_COLOR});
   registeredShaderRules.insert({"MESH_PROPAGATE_HALFEDGE_VALUE", MESH_PROPAGATE_HALFEDGE_VALUE});
   registeredShaderRules.insert({"MESH_PROPAGATE_PICK", MESH_PROPAGATE_PICK});
-  
+
   // sphere things
   registeredShaderRules.insert({"SPHERE_PROPAGATE_VALUE", SPHERE_PROPAGATE_VALUE});
   registeredShaderRules.insert({"SPHERE_PROPAGATE_COLOR", SPHERE_PROPAGATE_COLOR});

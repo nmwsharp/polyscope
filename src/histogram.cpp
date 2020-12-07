@@ -237,7 +237,6 @@ void Histogram::prepare() {
   // Create the program
   program = render::engine->requestShader("HISTOGRAM", {}, render::ShaderReplacementDefaults::Process);
 
-
   prepared = true;
 }
 

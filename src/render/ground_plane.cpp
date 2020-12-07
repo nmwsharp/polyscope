@@ -56,9 +56,7 @@ void GroundPlane::populateGroundPlaneGeometry() {
 void GroundPlane::prepareGroundPlane() {
 
   // The program that draws the ground plane
-  groundPlaneProgram =
-      render::engine->generateShaderProgram({GROUND_PLANE_VERT_SHADER, GROUND_PLANE_FRAG_SHADER}, DrawMode::Triangles);
-
+  groundPlaneProgram = render::engine->requestShader("GROUND_PLANE", {}, render::ShaderReplacementDefaults::Process);
   populateGroundPlaneGeometry();
 
   { // Load the ground texture
@@ -73,7 +71,6 @@ void GroundPlane::prepareGroundPlane() {
 
 
   { // Mirored scene buffer
-
     mirroredSceneColorTexture =
         render::engine->generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
     std::shared_ptr<RenderBuffer> mirroredSceneDepth =
