@@ -107,7 +107,7 @@ inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
 template <class T>
 void SurfaceMesh::setVertexPermutation(const T& perm, size_t expectedSize) {
 
-  validateSize(perm, nVertices(), "vertex permutation for " + name);
+  validateSize(perm, vertexDataSize, "vertex permutation for " + name);
   vertexPerm = standardizeArray<size_t, T>(perm);
 
   vertexDataSize = expectedSize;
@@ -122,7 +122,7 @@ void SurfaceMesh::setVertexPermutation(const T& perm, size_t expectedSize) {
 template <class T>
 void SurfaceMesh::setFacePermutation(const T& perm, size_t expectedSize) {
 
-  validateSize(perm, nFaces(), "face permutation for " + name);
+  validateSize(perm, faceDataSize, "face permutation for " + name);
   facePerm = standardizeArray<size_t, T>(perm);
 
   faceDataSize = expectedSize;
@@ -137,7 +137,7 @@ void SurfaceMesh::setFacePermutation(const T& perm, size_t expectedSize) {
 template <class T>
 void SurfaceMesh::setEdgePermutation(const T& perm, size_t expectedSize) {
 
-  validateSize(perm, nEdges(), "edge permutation for " + name);
+  validateSize(perm, edgeDataSize, "edge permutation for " + name);
   edgePerm = standardizeArray<size_t, T>(perm);
 
   edgeDataSize = expectedSize;
@@ -152,7 +152,7 @@ void SurfaceMesh::setEdgePermutation(const T& perm, size_t expectedSize) {
 template <class T>
 void SurfaceMesh::setHalfedgePermutation(const T& perm, size_t expectedSize) {
 
-  validateSize(perm, nHalfedges(), "halfedge permutation for " + name);
+  validateSize(perm, halfedgeDataSize, "halfedge permutation for " + name);
   halfedgePerm = standardizeArray<size_t, T>(perm);
 
   halfedgeDataSize = expectedSize;
@@ -167,7 +167,7 @@ void SurfaceMesh::setHalfedgePermutation(const T& perm, size_t expectedSize) {
 template <class T>
 void SurfaceMesh::setCornerPermutation(const T& perm, size_t expectedSize) {
 
-  validateSize(perm, nCorners(), "corner permutation for " + name);
+  validateSize(perm, cornerDataSize, "corner permutation for " + name);
   cornerPerm = standardizeArray<size_t, T>(perm);
 
   cornerDataSize = expectedSize;
