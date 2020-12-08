@@ -244,6 +244,8 @@ public:
   glm::vec3 faceCenter(size_t iF);
 
   // if there are no tangent spaces, builds the default ones
+  void generateDefaultFaceTangentSpaces();
+  void generateDefaultVertexTangentSpaces();
   void ensureHaveFaceTangentSpaces();
   void ensureHaveVertexTangentSpaces();
 

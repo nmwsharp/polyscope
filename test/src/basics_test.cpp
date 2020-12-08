@@ -378,6 +378,8 @@ TEST_F(PolyscopeTest, SurfaceMeshFaceVector) {
 
 TEST_F(PolyscopeTest, SurfaceMeshVertexIntrinsic) {
   auto psMesh = registerTriangleMesh();
+  std::vector<glm::vec3> basisX(psMesh->nVertices(), {1., 2., 3.});
+  psMesh->setVertexTangentBasisX(basisX);
   std::vector<glm::vec2> vals(psMesh->nVertices(), {1., 2.});
   auto q1 = psMesh->addVertexIntrinsicVectorQuantity("param", vals);
   q1->setEnabled(true);
@@ -387,6 +389,8 @@ TEST_F(PolyscopeTest, SurfaceMeshVertexIntrinsic) {
 
 TEST_F(PolyscopeTest, SurfaceMeshFaceIntrinsic) {
   auto psMesh = registerTriangleMesh();
+  std::vector<glm::vec3> basisX(psMesh->nFaces(), {1., 2., 3.});
+  psMesh->setFaceTangentBasisX(basisX);
   std::vector<glm::vec2> vals(psMesh->nFaces(), {1., 2.});
   auto q1 = psMesh->addFaceIntrinsicVectorQuantity("param", vals);
   q1->setEnabled(true);
@@ -396,6 +400,10 @@ TEST_F(PolyscopeTest, SurfaceMeshFaceIntrinsic) {
 
 TEST_F(PolyscopeTest, SurfaceMeshVertexIntrinsicRibbon) {
   auto psMesh = registerTriangleMesh();
+  std::vector<glm::vec3> basisX(psMesh->nVertices(), {1., 2., 3.});
+  psMesh->setVertexTangentBasisX(basisX);
+  std::vector<glm::vec3> basisXF(psMesh->nFaces(), {1., 2., 3.});
+  psMesh->setFaceTangentBasisX(basisXF);
   std::vector<glm::vec2> vals(psMesh->nVertices(), {1., 2.});
   auto q1 = psMesh->addVertexIntrinsicVectorQuantity("param", vals);
   q1->setEnabled(true);
@@ -406,6 +414,8 @@ TEST_F(PolyscopeTest, SurfaceMeshVertexIntrinsicRibbon) {
 
 TEST_F(PolyscopeTest, SurfaceMeshFaceIntrinsicRibbon) {
   auto psMesh = registerTriangleMesh();
+  std::vector<glm::vec3> basisX(psMesh->nFaces(), {1., 2., 3.});
+  psMesh->setFaceTangentBasisX(basisX);
   std::vector<glm::vec2> vals(psMesh->nFaces(), {1., 2.});
   auto q1 = psMesh->addFaceIntrinsicVectorQuantity("param", vals);
   q1->setEnabled(true);

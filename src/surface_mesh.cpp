@@ -246,7 +246,15 @@ void SurfaceMesh::ensureHaveManifoldConnectivity() {
 
 void SurfaceMesh::ensureHaveFaceTangentSpaces() {
   if (faceTangentSpaces.size() > 0) return;
+  throw std::runtime_error("No face tangent bases registered. see setFaceTangentBasisX()");
+}
 
+void SurfaceMesh::ensureHaveVertexTangentSpaces() {
+  if (vertexTangentSpaces.size() > 0) return;
+  throw std::runtime_error("No vertex tangent bases registered. see setVertexTangentBasisX()");
+}
+
+void SurfaceMesh::generateDefaultFaceTangentSpaces() {
   faceTangentSpaces.resize(nFaces());
 
   for (size_t iF = 0; iF < nFaces(); iF++) {
@@ -268,9 +276,7 @@ void SurfaceMesh::ensureHaveFaceTangentSpaces() {
   }
 }
 
-void SurfaceMesh::ensureHaveVertexTangentSpaces() {
-  if (vertexTangentSpaces.size() > 0) return;
-
+void SurfaceMesh::generateDefaultVertexTangentSpaces() {
   vertexTangentSpaces.resize(nVertices());
   std::vector<char> hasTangent(nVertices(), false);
 
