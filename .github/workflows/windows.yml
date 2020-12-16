@@ -1,0 +1,25 @@
+name: windows
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    if: "! contains(toJSON(github.event.commits.*.message), '[ci skip]')"
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+
+    - name: configure
+      run: cd test && mkdir build && cd build && cmake cmake -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND_OPENGL3_GLFW=ON -DPOLYSCOPE_BACKEND_OPENGL_MOCK=ON ..
+
+    - name: build
+      run: cd test/build && cmake --build "."
+
+    - name: run test
+      run: cd test/build && ./bin/polyscope-test backend=openGL_mock
