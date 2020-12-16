@@ -105,6 +105,20 @@ void FrameBuffer::verifyBufferSizes() {
   }
 }
 
+ShaderReplacementRule::ShaderReplacementRule() {}
+
+ShaderReplacementRule::ShaderReplacementRule(std::string ruleName_,
+                                             std::vector<std::pair<std::string, std::string>> replacements_)
+    : ruleName(ruleName_), replacements(replacements_) {}
+
+ShaderReplacementRule::ShaderReplacementRule(std::string ruleName_,
+                                             std::vector<std::pair<std::string, std::string>> replacements_,
+                                             std::vector<ShaderSpecUniform> uniforms_,
+                                             std::vector<ShaderSpecAttribute> attributes_,
+                                             std::vector<ShaderSpecTexture> textures_)
+    : ruleName(ruleName_), replacements(replacements_), uniforms(uniforms_), attributes(attributes_),
+      textures(textures_) {}
+
 ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
                              unsigned int nPatchVertices_)
     : drawMode(dm), nPatchVertices(nPatchVertices_) {
@@ -381,19 +395,19 @@ void Engine::allocateGlobalBuffersAndPrograms() {
 
   { // Generate the general-use programs
     // clang-format off
-    renderTexturePlain = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, PLAIN_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTexturePlain = render::engine->requestShader("TEXTURE_DRAW_PLAIN", {}, render::ShaderReplacementDefaults::Process);
     renderTexturePlain->setAttribute("a_position", screenTrianglesCoords());
 
-    renderTextureDot3 = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, DOT3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTextureDot3 = render::engine->requestShader("TEXTURE_DRAW_DOT3", {}, render::ShaderReplacementDefaults::Process);
     renderTextureDot3->setAttribute("a_position", screenTrianglesCoords());
 
-    renderTextureMap3 = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, MAP3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTextureMap3 = render::engine->requestShader("TEXTURE_DRAW_MAP3", {}, render::ShaderReplacementDefaults::Process);
     renderTextureMap3->setAttribute("a_position", screenTrianglesCoords());
 
-    renderTextureSphereBG = generateShaderProgram({SPHEREBG_DRAW_VERT_SHADER, SPHEREBG_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+    renderTextureSphereBG = render::engine->requestShader("TEXTURE_DRAW_SPHEREBG", {}, render::ShaderReplacementDefaults::Process);
     renderTextureSphereBG->setAttribute("a_position", distantCubeCoords());
     
-    mapLight = generateShaderProgram({TEXTURE_DRAW_VERT_SHADER, MAP_LIGHT_FRAG_SHADER}, DrawMode::Triangles);
+    mapLight = render::engine->requestShader("MAP_LIGHT", {}, render::ShaderReplacementDefaults::Process);
     mapLight->setAttribute("a_position", screenTrianglesCoords());
     // clang-format on
   }
@@ -516,18 +530,6 @@ void Engine::loadDefaultMaterial(std::string name) {
     throw std::runtime_error("unrecognized default material name " + name);
   }
   // clang-format on
-
-
-  /*
-      int w, h, comp;
-      unsigned char* image = nullptr;
-      image = stbi_load_from_memory(reinterpret_cast<const unsigned char*>(&data[i][0]), data[i].size(), &w, &h,
-     &comp, STBI_rgb); if (image == nullptr) throw std::logic_error("Failed to load material image");
-
-      newMaterial.textureBuffers[i] = engine->generateTextureBuffer(TextureFormat::RGB8, w, h, image);
-  newMaterial.textureBuffers[i]->setFilterMode(FilterMode::Linear);
-      stbi_image_free(image);
-  */
 
   for (int i = 0; i < 4; i++) {
     int width, height, nComp;

@@ -26,6 +26,7 @@
 #include "examples/imgui_impl_glfw.h"
 #include "examples/imgui_impl_opengl3.h"
 
+#include <unordered_map>
 
 // Note: DO NOT include this header throughout polyscope, and do not directly make openGL calls. This header should only
 // be used to construct an instance of Engine. engine.h gives the render API, all render calls should pass through that.
@@ -302,16 +303,32 @@ public:
   // create frame buffers
   std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) override;
 
-  // create shader programs
-  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-                                                       unsigned int nPatchVertices = 0) override;
+  // general flexible interface
+  std::shared_ptr<ShaderProgram>
+  requestShader(const std::string& programName, const std::vector<std::string>& customRules,
+                ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) override;
+
+  // === Implementation details
+
+  // Add a shader programs/rules so that they can be requested above
+  void registerShaderProgram(const std::string& name, const std::vector<ShaderStageSpecification>& stages);
+  void registerShaderRule(const std::string& name, const ShaderReplacementRule& rule);
 
 protected:
   // Helpers
 
-
   // Internal windowing and engine details
   GLFWwindow* mainWindow = nullptr;
+
+  // Shader program & rule caches
+  // TODO oneday make these caches of precompiled programs which are shared, rather than caches of the sources
+  std::unordered_map<std::string, std::pair<std::vector<ShaderStageSpecification>, DrawMode>> registeredShaderPrograms;
+  std::unordered_map<std::string, ShaderReplacementRule> registeredShaderRules;
+  void populateDefaultShadersAndRules();
+  
+  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
+                                                       DrawMode dm) override;
+
 };
 
 } // namespace backend_openGL3_glfw

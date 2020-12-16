@@ -92,10 +92,7 @@ void PointCloud::prepare() {
     return;
   }
 
-  program = render::engine->generateShaderProgram(
-      {render::SPHERE_VERT_SHADER, render::SPHERE_BILLBOARD_GEOM_SHADER, render::SPHERE_BILLBOARD_FRAG_SHADER},
-      DrawMode::Points);
-
+  program = render::engine->requestShader("RAYCAST_SPHERE", {"SHADE_BASECOLOR"});
   render::engine->setMaterial(*program, material.get());
 
   // Fill out the geometry data for the program
@@ -109,10 +106,8 @@ void PointCloud::preparePick() {
   size_t pickStart = pick::requestPickBufferRange(this, pickCount);
 
   // Create a new pick program
-  pickProgram = render::engine->generateShaderProgram({render::SPHERE_COLOR_VERT_SHADER,
-                                                       render::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                                       render::SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER},
-                                                      DrawMode::Points);
+  pickProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_COLOR"},
+                                              render::ShaderReplacementDefaults::Pick);
 
   // Fill color buffer with packed point indices
   std::vector<glm::vec3> pickColors;
@@ -120,7 +115,6 @@ void PointCloud::preparePick() {
     glm::vec3 val = pick::indToVec(i);
     pickColors.push_back(pick::indToVec(i));
   }
-
 
   // Store data in buffers
   pickProgram->setAttribute("a_position", points);
@@ -165,7 +159,7 @@ void PointCloud::buildCustomUI() {
     setPointColor(getPointColor());
   }
   ImGui::SameLine();
-  ImGui::PushItemWidth(100);
+  ImGui::PushItemWidth(70);
   if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
     pointRadius.manuallyChanged();
     requestRedraw();

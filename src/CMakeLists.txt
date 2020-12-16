@@ -31,6 +31,8 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 		render/opengl/shaders/sphere_shaders.cpp  
 		render/opengl/shaders/ribbon_shaders.cpp  
 		render/opengl/shaders/cylinder_shaders.cpp  
+		render/opengl/shaders/rules.cpp  
+		render/opengl/shaders/common.cpp  
 	)
 
   list(APPEND BACKEND_HEADERS
@@ -79,6 +81,8 @@ if("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
 		render/opengl/shaders/sphere_shaders.cpp  
 		render/opengl/shaders/ribbon_shaders.cpp  
 		render/opengl/shaders/cylinder_shaders.cpp  
+		render/opengl/shaders/rules.cpp  
+		render/opengl/shaders/common.cpp  
 	)
 
   list(APPEND BACKEND_HEADERS
@@ -114,6 +118,7 @@ SET(SRCS
   render/ground_plane.cpp
   render/materials.cpp
   render/initialize_backend.cpp  
+  render/shader_builder.cpp  
 
   # General utilities
   disjoint_sets.cpp
@@ -152,6 +157,7 @@ SET(SRCS
 	curve_network_vector_quantity.cpp
   
   # Rendering utilities
+	vector_artist.cpp
 	trace_vector_field.cpp
 	ribbon_artist.cpp
 	

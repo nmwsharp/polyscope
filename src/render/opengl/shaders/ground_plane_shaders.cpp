@@ -1,9 +1,10 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 
-#include "polyscope/render/opengl/gl_shaders.h"
+#include "polyscope/render/opengl/shaders/ground_plane_shaders.h"
 
 namespace polyscope {
 namespace render {
+namespace backend_openGL3_glfw {
 
 // clang-format off
 
@@ -27,7 +28,9 @@ const ShaderStageSpecification GROUND_PLANE_VERT_SHADER =  {
     {}, // textures
 
     // source
-    POLYSCOPE_GLSL(150,
+R"(
+      ${ GLSL_VERSION }$
+
       uniform mat4 u_viewMatrix;
       uniform mat4 u_projMatrix;
       uniform float u_groundHeight;
@@ -42,7 +45,7 @@ const ShaderStageSpecification GROUND_PLANE_VERT_SHADER =  {
           PositionWorldHomog = adjustedPosition;
           vec4 viewPos4 = u_viewMatrix * adjustedPosition;
       }
-    )
+)"
 };
 
 const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER = {
@@ -71,7 +74,8 @@ const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER = {
     },
     
     // source 
-    POLYSCOPE_GLSL(330 core,
+R"(
+      ${ GLSL_VERSION }$
 
       uniform sampler2D t_ground;
       uniform sampler2D t_mirrorImage;
@@ -149,10 +153,13 @@ const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER = {
         outputF = lightColor;
       }
 
-    )   
+)"
 };
+
+const std::vector<ShaderStageSpecification> GROUND_PLANE_PIPELINE{GROUND_PLANE_VERT_SHADER, GROUND_PLANE_FRAG_SHADER};
 
 // clang-format on
 
-} // namespace gl
+} // namespace backend_openGL3_glfw
+} // namespace render
 } // namespace polyscope

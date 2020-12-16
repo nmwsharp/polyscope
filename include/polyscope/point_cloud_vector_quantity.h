@@ -3,6 +3,7 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/point_cloud.h"
+#include "polyscope/vector_artist.h"
 
 namespace polyscope {
 
@@ -11,6 +12,8 @@ class PointCloudVectorQuantity : public PointCloudQuantity {
 public:
   PointCloudVectorQuantity(std::string name, std::vector<glm::vec3> vectors, PointCloud& pointCloud_,
                            VectorType vectorType_ = VectorType::STANDARD);
+  
+  std::vector<glm::vec3> vectors;
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
@@ -22,7 +25,8 @@ public:
   // Note: these vectors are not the raw vectors passed in by the user, but have been rescaled such that the longest has
   // length 1 (unless type is VectorType::Ambient)
   const VectorType vectorType;
-  std::vector<glm::vec3> vectors;
+
+  // Note: all of the actual work is done by the vector artist
 
   // === Option accessors
 
@@ -37,25 +41,15 @@ public:
   // The color of the vectors
   PointCloudVectorQuantity* setVectorColor(glm::vec3 color);
   glm::vec3 getVectorColor();
-	
+
   // Material
   PointCloudVectorQuantity* setMaterial(std::string name);
   std::string getMaterial();
 
-  void writeToFile(std::string filename = "");
-
 private:
-  // === Visualization options
-  PersistentValue<ScaledValue<float>> vectorLengthMult;
-  PersistentValue<ScaledValue<float>> vectorRadius;
-  PersistentValue<glm::vec3> vectorColor;
-  PersistentValue<std::string> material;
 
-  // The map that takes values to [0,1] for drawing
-  AffineRemapper<glm::vec3> mapper;
-
-  void createProgram();
-  std::shared_ptr<render::ShaderProgram> program;
+  // Manages _actually_ drawing the vectors, generating gui.
+  std::unique_ptr<VectorArtist> vectorArtist;
 };
 
 } // namespace polyscope

@@ -1,13 +1,14 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 
-#include "polyscope/render/opengl/gl_shaders.h"
+#include "polyscope/render/opengl/shaders/cylinder_shaders.h"
 
 namespace polyscope {
 namespace render {
+namespace backend_openGL3_glfw { 
 
 // clang-format off
 
-const ShaderStageSpecification PASSTHRU_CYLINDER_VERT_SHADER = {
+const ShaderStageSpecification FLEX_CYLINDER_VERT_SHADER = {
 
     ShaderStageType::Vertex,
 
@@ -25,223 +26,27 @@ const ShaderStageSpecification PASSTHRU_CYLINDER_VERT_SHADER = {
     {}, // textures
 
     // source
-    POLYSCOPE_GLSL(150,
+R"(
+        ${ GLSL_VERSION }$
+
         in vec3 a_position_tail;
         in vec3 a_position_tip;
         uniform mat4 u_modelView;
-
         out vec4 position_tip;
+        
+        ${ VERT_DECLARATIONS }$
         
         void main()
         {
-            gl_Position = u_modelView * vec4(a_position_tail,1.0);
+            gl_Position = u_modelView * vec4(a_position_tail, 1.0);
             position_tip = u_modelView * vec4(a_position_tip, 1.0);
+
+            ${ VERT_ASSIGNMENTS }$
         }
-    )
+)"
 };
 
-const ShaderStageSpecification CYLINDER_VALUE_VERT_SHADER = {
-
-    ShaderStageType::Vertex,
-
-    // uniforms
-    {
-        {"u_modelView", DataType::Matrix44Float},
-    }, 
-
-    // attributes
-    {
-        {"a_position_tail", DataType::Vector3Float},
-        {"a_position_tip", DataType::Vector3Float},
-        {"a_value", DataType::Float},
-    },
-    
-    {}, // textures
-
-    // source
-    POLYSCOPE_GLSL(150,
-        in vec3 a_position_tail;
-        in vec3 a_position_tip;
-        in float a_value;
-        uniform mat4 u_modelView;
-
-        out vec4 position_tip;
-        out float edge_value;
-
-        void main()
-        {
-            gl_Position = u_modelView * vec4(a_position_tail,1.0);
-            position_tip = u_modelView * vec4(a_position_tip, 1.0);
-            edge_value = a_value;
-        }
-    )
-};
-
-const ShaderStageSpecification CYLINDER_COLOR_VERT_SHADER = {
-
-    ShaderStageType::Vertex,
-
-    // uniforms
-    {
-        {"u_modelView", DataType::Matrix44Float},
-    }, 
-
-    // attributes
-    {
-        {"a_position_tail", DataType::Vector3Float},
-        {"a_position_tip", DataType::Vector3Float},
-        {"a_color", DataType::Vector3Float},
-    },
-    
-    {}, // textures
-
-    // source
-    POLYSCOPE_GLSL(150,
-        in vec3 a_position_tail;
-        in vec3 a_position_tip;
-        in vec3 a_color;
-        uniform mat4 u_modelView;
-
-        out vec4 position_tip;
-        out vec3 edge_color;
-
-        void main()
-        {
-            gl_Position = u_modelView * vec4(a_position_tail,1.0);
-            position_tip = u_modelView * vec4(a_position_tip, 1.0);
-            edge_color = a_color;
-        }
-    )
-};
-
-const ShaderStageSpecification CYLINDER_BLEND_VALUE_VERT_SHADER = {
-
-    ShaderStageType::Vertex,
-
-    // uniforms
-    {
-        {"u_modelView", DataType::Matrix44Float},
-    }, 
-
-    // attributes
-    {
-        {"a_position_tail", DataType::Vector3Float},
-        {"a_position_tip", DataType::Vector3Float},
-        {"a_value_tail", DataType::Float},
-        {"a_value_tip", DataType::Float},
-    },
-    
-    {}, // textures
-
-    // source
-    POLYSCOPE_GLSL(150,
-        in vec3 a_position_tail;
-        in vec3 a_position_tip;
-        in float a_value_tail;
-        in float a_value_tip;
-        uniform mat4 u_modelView;
-
-        out vec4 position_tip;
-        out float value_tail;
-        out float value_tip;
-
-        void main()
-        {
-            gl_Position = u_modelView * vec4(a_position_tail,1.0);
-            position_tip = u_modelView * vec4(a_position_tip, 1.0);
-            value_tail = a_value_tail;
-            value_tip = a_value_tip;
-        }
-    )
-};
-
-const ShaderStageSpecification CYLINDER_BLEND_COLOR_VERT_SHADER = {
-    
-     ShaderStageType::Vertex,
-
-    { // uniforms
-        {"u_modelView", DataType::Matrix44Float},
-    }, 
-
-    // attributes
-    {
-        {"a_position_tail", DataType::Vector3Float},
-        {"a_position_tip", DataType::Vector3Float},
-        {"a_color_tail", DataType::Vector3Float},
-        {"a_color_tip", DataType::Vector3Float},
-    },
-    
-    {}, // textures
-
-    // source
-    POLYSCOPE_GLSL(150,
-        in vec3 a_position_tail;
-        in vec3 a_position_tip;
-        in vec3 a_color_tail;
-        in vec3 a_color_tip;
-        uniform mat4 u_modelView;
-
-        out vec4 position_tip;
-        out vec3 color_tail;
-        out vec3 color_tip;
-
-        void main()
-        {
-            gl_Position = u_modelView * vec4(a_position_tail,1.0);
-            position_tip = u_modelView * vec4(a_position_tip, 1.0);
-            color_tail = a_color_tail;
-            color_tip = a_color_tip;
-        }
-    )
-};
-
-const ShaderStageSpecification CYLINDER_PICK_VERT_SHADER = {
-    
-    ShaderStageType::Vertex,
-
-    { 
-        {"u_modelView", DataType::Matrix44Float},
-    }, // uniforms
-
-    // attributes
-    {
-        {"a_position_tail", DataType::Vector3Float},
-        {"a_position_tip", DataType::Vector3Float},
-        {"a_color_tail", DataType::Vector3Float},
-        {"a_color_tip", DataType::Vector3Float},
-        {"a_color_edge", DataType::Vector3Float},
-    },
-    
-    {}, // textures
-
-    // source
-    POLYSCOPE_GLSL(150,
-        in vec3 a_position_tail;
-        in vec3 a_position_tip;
-        in vec3 a_color_tail;
-        in vec3 a_color_tip;
-        in vec3 a_color_edge;
-        uniform mat4 u_modelView;
-
-        out vec4 position_tip;
-        out vec3 color_tail;
-        out vec3 color_tip;
-        out vec3 color_edge;
-
-        void main()
-        {
-            gl_Position = u_modelView * vec4(a_position_tail,1.0);
-            position_tip = u_modelView * vec4(a_position_tip, 1.0);
-            color_tail = a_color_tail;
-            color_tip = a_color_tip;
-            color_edge = a_color_edge;
-        }
-    )
-};
-
-
-
-const ShaderStageSpecification CYLINDER_GEOM_SHADER = {
+const ShaderStageSpecification FLEX_CYLINDER_GEOM_SHADER = {
     
     ShaderStageType::Geometry,
     
@@ -258,7 +63,9 @@ const ShaderStageSpecification CYLINDER_GEOM_SHADER = {
     {}, // textures
 
     // source
-    POLYSCOPE_GLSL(150,
+R"(
+        ${ GLSL_VERSION }$
+
         layout(points) in;
         layout(triangle_strip, max_vertices=14) out;
         in vec4 position_tip[];
@@ -266,6 +73,8 @@ const ShaderStageSpecification CYLINDER_GEOM_SHADER = {
         uniform float u_radius;
         out vec3 tipView;
         out vec3 tailView;
+
+        ${ GEOM_DECLARATIONS }$
 
         void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
 
@@ -295,428 +104,30 @@ const ShaderStageSpecification CYLINDER_GEOM_SHADER = {
             // Other data to emit   
     
             // Emit the vertices as a triangle strip
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p6; EmitVertex(); 
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex(); 
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p1; EmitVertex(); 
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
-            tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex();
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p6; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p1; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex();
     
             EndPrimitive();
 
         }
 
-    )
-};
-
-const ShaderStageSpecification CYLINDER_VALUE_GEOM_SHADER = {
-    
-    ShaderStageType::Geometry,
-    
-    // uniforms
-    {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_radius", DataType::Float},
-    }, 
-
-    // attributes
-    {
-    },
-
-    {}, // textures
-
-    // source
-    POLYSCOPE_GLSL(150,
-        layout(points) in;
-        layout(triangle_strip, max_vertices=14) out;
-        in vec4 position_tip[];
-        in float edge_value[];
-        uniform mat4 u_projMatrix;
-        uniform float u_radius;
-        out vec3 tipView;
-        out vec3 tailView;
-        out float value;
-
-        void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
-
-        void main() {
-
-            // Build an orthogonal basis
-            vec3 tailViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
-            vec3 tipViewVal = position_tip[0].xyz / position_tip[0].w;
-            vec3 cylDir = normalize(tipViewVal - tailViewVal);
-            vec3 basisX; vec3 basisY; buildTangentBasis(cylDir, basisX, basisY);
-  
-            // Compute corners of cube
-            vec4 tailProj = u_projMatrix * gl_in[0].gl_Position;
-            vec4 tipProj = u_projMatrix * position_tip[0];
-            vec4 dx = u_projMatrix * vec4(basisX * u_radius, 0.);
-            vec4 dy = u_projMatrix * vec4(basisY * u_radius, 0.);
-
-            vec4 p1 = tailProj - dx - dy;
-            vec4 p2 = tailProj + dx - dy;
-            vec4 p3 = tailProj - dx + dy;
-            vec4 p4 = tailProj + dx + dy;
-            vec4 p5 = tipProj - dx - dy;
-            vec4 p6 = tipProj + dx - dy;
-            vec4 p7 = tipProj - dx + dy;
-            vec4 p8 = tipProj + dx + dy;
-            
-            // Other data to emit   
-    
-            // Emit the vertices as a triangle strip
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p6; EmitVertex(); 
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex(); 
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p1; EmitVertex(); 
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
-            value = edge_value[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex();
-    
-            EndPrimitive();
-
-        }
-
-    )
-};
-
-const ShaderStageSpecification CYLINDER_COLOR_GEOM_SHADER = {
-    
-    ShaderStageType::Geometry,
-    
-    // uniforms
-    {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_radius", DataType::Float},
-    }, 
-
-    // attributes
-    {
-    },
-
-    {}, // textures
-
-    // source
-    POLYSCOPE_GLSL(150,
-        layout(points) in;
-        layout(triangle_strip, max_vertices=14) out;
-        in vec4 position_tip[];
-        in vec3 edge_color[];
-        uniform mat4 u_projMatrix;
-        uniform float u_radius;
-        out vec3 tipView;
-        out vec3 tailView;
-        out vec3 color;
-
-        void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
-
-        void main() {
-
-            // Build an orthogonal basis
-            vec3 tailViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
-            vec3 tipViewVal = position_tip[0].xyz / position_tip[0].w;
-            vec3 cylDir = normalize(tipViewVal - tailViewVal);
-            vec3 basisX; vec3 basisY; buildTangentBasis(cylDir, basisX, basisY);
-  
-            // Compute corners of cube
-            vec4 tailProj = u_projMatrix * gl_in[0].gl_Position;
-            vec4 tipProj = u_projMatrix * position_tip[0];
-            vec4 dx = u_projMatrix * vec4(basisX * u_radius, 0.);
-            vec4 dy = u_projMatrix * vec4(basisY * u_radius, 0.);
-
-            vec4 p1 = tailProj - dx - dy;
-            vec4 p2 = tailProj + dx - dy;
-            vec4 p3 = tailProj - dx + dy;
-            vec4 p4 = tailProj + dx + dy;
-            vec4 p5 = tipProj - dx - dy;
-            vec4 p6 = tipProj + dx - dy;
-            vec4 p7 = tipProj - dx + dy;
-            vec4 p8 = tipProj + dx + dy;
-            
-            // Other data to emit   
-    
-            // Emit the vertices as a triangle strip
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p6; EmitVertex(); 
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex(); 
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p1; EmitVertex(); 
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
-            color = edge_color[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex();
-    
-            EndPrimitive();
-
-        }
-
-    )
-};
-
-const ShaderStageSpecification CYLINDER_BLEND_VALUE_GEOM_SHADER = {
-    
-    ShaderStageType::Geometry,
-    
-    // uniforms
-    {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_radius", DataType::Float},
-    }, 
-
-    // attributes
-    {
-    },
-
-    {}, // textures
-
-    // source
-    POLYSCOPE_GLSL(150,
-        layout(points) in;
-        layout(triangle_strip, max_vertices=14) out;
-        in vec4 position_tip[];
-        in float value_tail[];
-        in float value_tip[];
-        uniform mat4 u_projMatrix;
-        uniform float u_radius;
-        out vec3 tipView;
-        out vec3 tailView;
-        out float valueTail;
-        out float valueTip;
-
-        void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
-
-        void main() {
-
-            // Build an orthogonal basis
-            vec3 tailViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
-            vec3 tipViewVal = position_tip[0].xyz / position_tip[0].w;
-            vec3 cylDir = normalize(tipViewVal - tailViewVal);
-            vec3 basisX; vec3 basisY; buildTangentBasis(cylDir, basisX, basisY);
-  
-            // Compute corners of cube
-            vec4 tailProj = u_projMatrix * gl_in[0].gl_Position;
-            vec4 tipProj = u_projMatrix * position_tip[0];
-            vec4 dx = u_projMatrix * vec4(basisX * u_radius, 0.);
-            vec4 dy = u_projMatrix * vec4(basisY * u_radius, 0.);
-
-            vec4 p1 = tailProj - dx - dy;
-            vec4 p2 = tailProj + dx - dy;
-            vec4 p3 = tailProj - dx + dy;
-            vec4 p4 = tailProj + dx + dy;
-            vec4 p5 = tipProj - dx - dy;
-            vec4 p6 = tipProj + dx - dy;
-            vec4 p7 = tipProj - dx + dy;
-            vec4 p8 = tipProj + dx + dy;
-            
-            // Other data to emit   
-    
-            // Emit the vertices as a triangle strip
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p6; EmitVertex(); 
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex(); 
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p1; EmitVertex(); 
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
-            valueTail = value_tail[0]; valueTip = value_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex();
-    
-            EndPrimitive();
-
-        }
-
-    )
-};
-
-const ShaderStageSpecification CYLINDER_BLEND_COLOR_GEOM_SHADER = {
-    
-    ShaderStageType::Geometry,
-    
-    // uniforms
-    {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_radius", DataType::Float},
-    }, 
-
-    // attributes
-    {
-    },
-
-    {}, // textures
-
-    // source
-    POLYSCOPE_GLSL(150,
-        layout(points) in;
-        layout(triangle_strip, max_vertices=14) out;
-        in vec4 position_tip[];
-        in vec3 color_tail[];
-        in vec3 color_tip[];
-        uniform mat4 u_projMatrix;
-        uniform float u_radius;
-        out vec3 tipView;
-        out vec3 tailView;
-        out vec3 colorTail;
-        out vec3 colorTip;
-
-        void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
-
-        void main() {
-
-            // Build an orthogonal basis
-            vec3 tailViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
-            vec3 tipViewVal = position_tip[0].xyz / position_tip[0].w;
-            vec3 cylDir = normalize(tipViewVal - tailViewVal);
-            vec3 basisX; vec3 basisY; buildTangentBasis(cylDir, basisX, basisY);
-  
-            // Compute corners of cube
-            vec4 tailProj = u_projMatrix * gl_in[0].gl_Position;
-            vec4 tipProj = u_projMatrix * position_tip[0];
-            vec4 dx = u_projMatrix * vec4(basisX * u_radius, 0.);
-            vec4 dy = u_projMatrix * vec4(basisY * u_radius, 0.);
-
-            vec4 p1 = tailProj - dx - dy;
-            vec4 p2 = tailProj + dx - dy;
-            vec4 p3 = tailProj - dx + dy;
-            vec4 p4 = tailProj + dx + dy;
-            vec4 p5 = tipProj - dx - dy;
-            vec4 p6 = tipProj + dx - dy;
-            vec4 p7 = tipProj - dx + dy;
-            vec4 p8 = tipProj + dx + dy;
-            
-            // Other data to emit   
-    
-            // Emit the vertices as a triangle strip
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p6; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p1; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex();
-    
-            EndPrimitive();
-
-        }
-
-    )
-};
-
-const ShaderStageSpecification CYLINDER_PICK_GEOM_SHADER = {
-    
-    ShaderStageType::Geometry,
-    
-    // uniforms
-    {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_radius", DataType::Float},
-    }, 
-
-    // attributes
-    {
-    },
-
-    {}, // textures
-
-    // source
-    POLYSCOPE_GLSL(150,
-        layout(points) in;
-        layout(triangle_strip, max_vertices=14) out;
-        in vec4 position_tip[];
-        in vec3 color_tip[];
-        in vec3 color_tail[];
-        in vec3 color_edge[];
-        uniform mat4 u_projMatrix;
-        uniform float u_radius;
-        out vec3 tipView;
-        out vec3 tailView;
-        flat out vec3 colorTail;
-        flat out vec3 colorTip;
-        flat out vec3 colorEdge;
-
-        void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
-
-        void main() {
-
-            // Build an orthogonal basis
-            vec3 tailViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
-            vec3 tipViewVal = position_tip[0].xyz / position_tip[0].w;
-            vec3 cylDir = normalize(tipViewVal - tailViewVal);
-            vec3 basisX; vec3 basisY; buildTangentBasis(cylDir, basisX, basisY);
-  
-            // Compute corners of cube
-            vec4 tailProj = u_projMatrix * gl_in[0].gl_Position;
-            vec4 tipProj = u_projMatrix * position_tip[0];
-            vec4 dx = u_projMatrix * vec4(basisX * u_radius, 0.);
-            vec4 dy = u_projMatrix * vec4(basisY * u_radius, 0.);
-
-            vec4 p1 = tailProj - dx - dy;
-            vec4 p2 = tailProj + dx - dy;
-            vec4 p3 = tailProj - dx + dy;
-            vec4 p4 = tailProj + dx + dy;
-            vec4 p5 = tipProj - dx - dy;
-            vec4 p6 = tipProj + dx - dy;
-            vec4 p7 = tipProj - dx + dy;
-            vec4 p8 = tipProj + dx + dy;
-            
-            // Other data to emit   
-    
-            // Emit the vertices as a triangle strip
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p6; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p8; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p7; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p5; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p1; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p2; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p3; EmitVertex(); 
-            colorTail = color_tail[0]; colorTip = color_tip[0]; colorEdge = color_edge[0]; tailView = tailViewVal; tipView = tipViewVal; gl_Position = p4; EmitVertex();
-    
-            EndPrimitive();
-
-        }
-
-    )
+)"
 };
 
 
-const ShaderStageSpecification CYLINDER_FRAG_SHADER = {
+const ShaderStageSpecification FLEX_CYLINDER_FRAG_SHADER = {
     
     ShaderStageType::Fragment,
     
@@ -726,119 +137,31 @@ const ShaderStageSpecification CYLINDER_FRAG_SHADER = {
         {"u_invProjMatrix", DataType::Matrix44Float},
         {"u_viewport", DataType::Vector4Float},
         {"u_radius", DataType::Float},
-        {"u_baseColor", DataType::Vector3Float},
     }, 
 
     { }, // attributes
     
     // textures 
     {
-        {"t_mat_r", 2},
-        {"t_mat_g", 2},
-        {"t_mat_b", 2},
-        {"t_mat_k", 2},
     },
  
     // source
-    POLYSCOPE_GLSL(330 core,
-        uniform mat4 u_projMatrix;
+R"(
+        ${ GLSL_VERSION }$
+        uniform mat4 u_projMatrix; 
         uniform mat4 u_invProjMatrix;
         uniform vec4 u_viewport;
         uniform float u_radius;
-        uniform vec3 u_baseColor;
         in vec3 tailView;
         in vec3 tipView;
-        uniform sampler2D t_mat_r;
-        uniform sampler2D t_mat_g;
-        uniform sampler2D t_mat_b;
-        uniform sampler2D t_mat_k;
         layout(location = 0) out vec4 outputF;
 
         float LARGE_FLOAT();
-        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
-        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
-        bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
-        float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
-
-        void main()
-        {
-           // Build a ray corresponding to this fragment
-           vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
-           vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
-
-           // Raycast to the sphere 
-           float tHit;
-           vec3 pHit;
-           vec3 nHit;
-           rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, u_radius, tHit, pHit, nHit);
-           if(tHit >= LARGE_FLOAT()) {
-              discard;
-           }
-
-           // Lighting
-           outputF = vec4(lightSurfaceMat(nHit, u_baseColor, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
-
-           // Set depth (expensive!)
-           float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);
-           gl_FragDepth = depth;
-        }
-    )
-};
-
-const ShaderStageSpecification CYLINDER_VALUE_FRAG_SHADER = {
-    
-    ShaderStageType::Fragment,
-    
-    // uniforms
-    {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_invProjMatrix", DataType::Matrix44Float},
-        {"u_viewport", DataType::Vector4Float},
-        {"u_radius", DataType::Float},
-        {"u_rangeLow", DataType::Float},
-        {"u_rangeHigh", DataType::Float},
-    }, 
-
-    { }, // attributes
-    
-    // textures 
-    {
-        {"t_mat_r", 2},
-        {"t_mat_g", 2},
-        {"t_mat_b", 2},
-        {"t_mat_k", 2},
-        {"t_colormap", 1}
-    },
- 
-    // source
-    POLYSCOPE_GLSL(330 core,
-        uniform mat4 u_projMatrix;
-        uniform mat4 u_invProjMatrix;
-        uniform vec4 u_viewport;
-        uniform float u_radius;
-        uniform float u_rangeHigh;
-        uniform float u_rangeLow;
-        in vec3 tailView;
-        in vec3 tipView;
-        in float value;
-        uniform sampler2D t_mat_r;
-        uniform sampler2D t_mat_g;
-        uniform sampler2D t_mat_b;
-        uniform sampler2D t_mat_k;
-        uniform sampler1D t_colormap;
-        layout(location = 0) out vec4 outputF;
-
-        float LARGE_FLOAT();
-        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
         vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
         bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
         float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
         
-        vec3 surfaceColor() {
-          float t = (value - u_rangeLow) / (u_rangeHigh - u_rangeLow);
-          t = clamp(t, 0.f, 1.f);
-          return texture(t_colormap, t).rgb;
-        }
+        ${ FRAG_DECLARATIONS }$
 
         void main()
         {
@@ -846,7 +169,7 @@ const ShaderStageSpecification CYLINDER_VALUE_FRAG_SHADER = {
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
            vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
 
-           // Raycast to the sphere 
+           // Raycast to the cylinder
            float tHit;
            vec3 pHit;
            vec3 nHit;
@@ -854,323 +177,245 @@ const ShaderStageSpecification CYLINDER_VALUE_FRAG_SHADER = {
            if(tHit >= LARGE_FLOAT()) {
               discard;
            }
+
+           // Set depth (expensive!)
+           float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);
+           gl_FragDepth = depth;
+
+           ${ GLOBAL_FRAGMENT_FILTER }$
+          
+           // Shading
+           ${ GENERATE_SHADE_VALUE }$
+           ${ GENERATE_SHADE_COLOR }$
 
            // Lighting
-           outputF = vec4(lightSurfaceMat(nHit, surfaceColor(), t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
+           vec3 shadeNormal = nHit;
+           ${ GENERATE_LIT_COLOR }$
 
-           // Set depth (expensive!)
-           float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);
-           gl_FragDepth = depth;
+           // Set alpha
+           float alphaOut = 1.0;
+           ${ GENERATE_ALPHA }$
+
+           // Write output
+           outputF = vec4(litColor, alphaOut);
         }
-    )
+)"
 };
 
-const ShaderStageSpecification CYLINDER_COLOR_FRAG_SHADER = {
-    
-    ShaderStageType::Fragment,
-    
-    // uniforms
-    {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_invProjMatrix", DataType::Matrix44Float},
-        {"u_viewport", DataType::Vector4Float},
-        {"u_radius", DataType::Float},
-    }, 
 
-    { }, // attributes
-    
-    // textures 
-    {
-        {"t_mat_r", 2},
-        {"t_mat_g", 2},
-        {"t_mat_b", 2},
-        {"t_mat_k", 2},
+
+const std::vector<ShaderStageSpecification> RAYCAST_CYLINDER_PIPELINE{FLEX_CYLINDER_VERT_SHADER, FLEX_CYLINDER_GEOM_SHADER, FLEX_CYLINDER_FRAG_SHADER};
+
+
+// == Rules
+
+const ShaderReplacementRule CYLINDER_PROPAGATE_VALUE (
+    /* rule name */ "CYLINDER_PROPAGATE_VALUE",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in float a_value;
+          out float a_valueToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_valueToGeom = a_value;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in float a_valueToGeom[];
+          out float a_valueToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_valueToFrag = a_valueToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in float a_valueToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float shadeValue = a_valueToFrag;
+        )"},
     },
- 
-    // source
-    POLYSCOPE_GLSL(330 core,
-        uniform mat4 u_projMatrix;
-        uniform mat4 u_invProjMatrix;
-        uniform vec4 u_viewport;
-        uniform float u_radius;
-        in vec3 tailView;
-        in vec3 tipView;
-        in vec3 color;
-        uniform sampler2D t_mat_r;
-        uniform sampler2D t_mat_g;
-        uniform sampler2D t_mat_b;
-        uniform sampler2D t_mat_k;
-        layout(location = 0) out vec4 outputF;
-
-        float LARGE_FLOAT();
-        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
-        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
-        bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
-        float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
-
-        void main()
-        {
-           // Build a ray corresponding to this fragment
-           vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
-           vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
-
-           // Raycast to the sphere 
-           float tHit;
-           vec3 pHit;
-           vec3 nHit;
-           rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, u_radius, tHit, pHit, nHit);
-           if(tHit >= LARGE_FLOAT()) {
-              discard;
-           }
-
-           // Lighting
-           outputF = vec4(lightSurfaceMat(nHit, color, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
-
-           // Set depth (expensive!)
-           float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);
-           gl_FragDepth = depth;
-        }
-    )
-};
-
-
-const ShaderStageSpecification CYLINDER_BLEND_VALUE_FRAG_SHADER = {
-    
-    ShaderStageType::Fragment,
-    
-    // uniforms
-    {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_invProjMatrix", DataType::Matrix44Float},
-        {"u_viewport", DataType::Vector4Float},
-        {"u_radius", DataType::Float},
-        {"u_rangeLow", DataType::Float},
-        {"u_rangeHigh", DataType::Float},
-    }, 
-
-    { }, // attributes
-    
-    // textures 
-    {
-        {"t_mat_r", 2},
-        {"t_mat_g", 2},
-        {"t_mat_b", 2},
-        {"t_mat_k", 2},
-        {"t_colormap", 1}
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_value", DataType::Float},
     },
- 
-    // source
-    POLYSCOPE_GLSL(330 core,
-        uniform mat4 u_projMatrix;
-        uniform mat4 u_invProjMatrix;
-        uniform vec4 u_viewport;
-        uniform float u_radius;
-        uniform float u_rangeHigh;
-        uniform float u_rangeLow;
-        in vec3 tailView;
-        in vec3 tipView;
-        in float valueTail;
-        in float valueTip;
-        uniform sampler2D t_mat_r;
-        uniform sampler2D t_mat_g;
-        uniform sampler2D t_mat_b;
-        uniform sampler2D t_mat_k;
-        uniform sampler1D t_colormap;
-        layout(location = 0) out vec4 outputF;
+    /* textures */ {}
+);
 
-        float LARGE_FLOAT();
-        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
-        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
-        bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
-        float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
-        float length2(vec3 x);
-        
-        vec3 surfaceColor(float value) {
-          float t = (value - u_rangeLow) / (u_rangeHigh - u_rangeLow);
-          t = clamp(t, 0.f, 1.f);
-          return texture(t_colormap, t).rgb;
-        }
-
-        void main()
-        {
-           // Build a ray corresponding to this fragment
-           vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
-           vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
-
-           // Raycast to the sphere 
-           float tHit;
-           vec3 pHit;
-           vec3 nHit;
-           rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, u_radius, tHit, pHit, nHit);
-           if(tHit >= LARGE_FLOAT()) {
-              discard;
-           }
-           
-           // Compute distance along edge
-           float tEdge = dot(pHit - tailView, tipView - tailView) / length2(tipView - tailView);
-           float value = mix(valueTail, valueTip, tEdge);
-
-           // Lighting
-           outputF = vec4(lightSurfaceMat(nHit, surfaceColor(value), t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
-
-           // Set depth (expensive!)
-           float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);
-           gl_FragDepth = depth;
-        }
-    )
-};
-
-const ShaderStageSpecification CYLINDER_BLEND_COLOR_FRAG_SHADER = {
-    
-    ShaderStageType::Fragment,
-    
-    // uniforms
-    {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_invProjMatrix", DataType::Matrix44Float},
-        {"u_viewport", DataType::Vector4Float},
-        {"u_radius", DataType::Float},
-    }, 
-
-    { }, // attributes
-    
-    // textures 
-    {
-        {"t_mat_r", 2},
-        {"t_mat_g", 2},
-        {"t_mat_b", 2},
-        {"t_mat_k", 2},
+// like propagate value, but takes two values at tip and tail and linearly interpolates
+const ShaderReplacementRule CYLINDER_PROPAGATE_BLEND_VALUE (
+    /* rule name */ "CYLINDER_PROPAGATE_BLEND_VALUE",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in float a_value_tail;
+          in float a_value_tip;
+          out float a_valueTailToGeom;
+          out float a_valueTipToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_valueTailToGeom = a_value_tail;
+          a_valueTipToGeom = a_value_tip;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in float a_valueTailToGeom[];
+          in float a_valueTipToGeom[];
+          out float a_valueTailToFrag;
+          out float a_valueTipToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_valueTailToFrag = a_valueTailToGeom[0]; 
+          a_valueTipToFrag = a_valueTipToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in float a_valueTailToFrag;
+          in float a_valueTipToFrag;
+          float length2(vec3 x);
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float tEdge = dot(pHit - tailView, tipView - tailView) / length2(tipView - tailView);
+          float shadeValue = mix(a_valueTailToFrag, a_valueTipToFrag, tEdge);
+        )"},
     },
- 
-    // source
-    POLYSCOPE_GLSL(330 core,
-        uniform mat4 u_projMatrix;
-        uniform mat4 u_invProjMatrix;
-        uniform vec4 u_viewport;
-        uniform float u_radius;
-        in vec3 tailView;
-        in vec3 tipView;
-        in vec3 colorTail;
-        in vec3 colorTip;
-        uniform sampler2D t_mat_r;
-        uniform sampler2D t_mat_g;
-        uniform sampler2D t_mat_b;
-        uniform sampler2D t_mat_k;
-        layout(location = 0) out vec4 outputF;
-
-        float LARGE_FLOAT();
-        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
-        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
-        bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
-        float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
-        float length2(vec3 x);
-        
-        void main()
-        {
-           // Build a ray corresponding to this fragment
-           vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
-           vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
-
-           // Raycast to the sphere 
-           float tHit;
-           vec3 pHit;
-           vec3 nHit;
-           rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, u_radius, tHit, pHit, nHit);
-           if(tHit >= LARGE_FLOAT()) {
-              discard;
-           }
-           
-           // Compute distance along edge
-           float tEdge = dot(pHit - tailView, tipView - tailView) / length2(tipView - tailView);
-           vec3 color = mix(colorTail, colorTip, tEdge);
-
-           // Lighting
-           outputF = vec4(lightSurfaceMat(nHit, color, t_mat_r, t_mat_g, t_mat_b, t_mat_k), 1.);
-
-           // Set depth (expensive!)
-           float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);
-           gl_FragDepth = depth;
-        }
-    )
-};
-
-
-const ShaderStageSpecification CYLINDER_PICK_FRAG_SHADER = {
-    
-    ShaderStageType::Fragment,
-    
-    // uniforms
-    {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_invProjMatrix", DataType::Matrix44Float},
-        {"u_viewport", DataType::Vector4Float},
-        {"u_radius", DataType::Float},
-    }, 
-
-    { }, // attributes
-    
-    // textures 
-    {
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_value_tail", DataType::Float},
+      {"a_value_tip", DataType::Float},
     },
- 
-    // source
-    POLYSCOPE_GLSL(330 core,
-        uniform mat4 u_projMatrix;
-        uniform mat4 u_invProjMatrix;
-        uniform vec4 u_viewport;
-        uniform float u_radius;
-        in vec3 tailView;
-        in vec3 tipView;
-        flat in vec3 colorTail;
-        flat in vec3 colorTip;
-        flat in vec3 colorEdge;
-        layout(location = 0) out vec4 outputF;
+    /* textures */ {}
+);
 
-        float LARGE_FLOAT();
-        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
-        bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
-        float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
-        float length2(vec3 x);
+const ShaderReplacementRule CYLINDER_PROPAGATE_COLOR (
+    /* rule name */ "CYLINDER_PROPAGATE_COLOR",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec3 a_color;
+          out vec3 a_colorToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_colorToGeom = a_color;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in vec3 a_colorToGeom[];
+          out vec3 a_colorToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_colorToFrag = a_colorToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec3 a_colorToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          vec3 shadeColor = a_colorToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_color", DataType::Vector3Float},
+    },
+    /* textures */ {}
+);
 
-        void main()
-        {
-           // Build a ray corresponding to this fragment
-           vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
-           vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
+// like propagate color, but takes two values at tip and taail and linearly interpolates
+const ShaderReplacementRule CYLINDER_PROPAGATE_BLEND_COLOR (
+    /* rule name */ "CYLINDER_PROPAGATE_BLEND_COLOR",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec3 a_color_tail;
+          in vec3 a_color_tip;
+          out vec3 a_colorTailToGeom;
+          out vec3 a_colorTipToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_colorTailToGeom = a_color_tail;
+          a_colorTipToGeom = a_color_tip;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in vec3 a_colorTailToGeom[];
+          in vec3 a_colorTipToGeom[];
+          out vec3 a_colorTailToFrag;
+          out vec3 a_colorTipToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_colorTailToFrag = a_colorTailToGeom[0]; 
+          a_colorTipToFrag = a_colorTipToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec3 a_colorTailToFrag;
+          in vec3 a_colorTipToFrag;
+          float length2(vec3 x);
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float tEdge = dot(pHit - tailView, tipView - tailView) / length2(tipView - tailView);
+          vec3 shadeColor = mix(a_colorTailToFrag, a_colorTipToFrag, tEdge);
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_color_tail", DataType::Vector3Float},
+      {"a_color_tip", DataType::Vector3Float},
+    },
+    /* textures */ {}
+);
 
-           // Raycast to the sphere 
-           float tHit;
-           vec3 pHit;
-           vec3 nHit;
-           rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, u_radius, tHit, pHit, nHit);
-           if(tHit >= LARGE_FLOAT()) {
-              discard;
-           }
-
-           // Compute distance along edge
-           float tEdge = dot(pHit - tailView, tipView - tailView) / length2(tipView - tailView);
-
-           float endWidth = 0.2;
-           vec3 myColor;
-           if(tEdge < endWidth) {
-             myColor = colorTail;
-           } else if (tEdge < (1.0f - endWidth)) {
-             myColor = colorEdge;
-           } else {
-             myColor = colorTip;
-           }
-           outputF = vec4(myColor, 1.f);
-
-           // Set depth (expensive!)
-           float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);
-           gl_FragDepth = depth;
-        }
-    )
-};
-
+// data for picking
+const ShaderReplacementRule CYLINDER_PROPAGATE_PICK (
+    /* rule name */ "CYLINDER_PROPAGATE_PICK",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec3 a_color_tail;
+          in vec3 a_color_tip;
+          in vec3 a_color_edge;
+          out vec3 a_colorTailToGeom;
+          out vec3 a_colorTipToGeom;
+          out vec3 a_colorEdgeToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_colorTailToGeom = a_color_tail;
+          a_colorTipToGeom = a_color_tip;
+          a_colorEdgeToGeom = a_color_edge;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in vec3 a_colorTailToGeom[];
+          in vec3 a_colorTipToGeom[];
+          in vec3 a_colorEdgeToGeom[];
+          out vec3 a_colorTailToFrag;
+          out vec3 a_colorTipToFrag;
+          out vec3 a_colorEdgeToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_colorTailToFrag = a_colorTailToGeom[0]; 
+          a_colorTipToFrag = a_colorTipToGeom[0]; 
+          a_colorEdgeToFrag = a_colorEdgeToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec3 a_colorTailToFrag;
+          in vec3 a_colorTipToFrag;
+          in vec3 a_colorEdgeToFrag;
+          float length2(vec3 x);
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float tEdge = dot(pHit - tailView, tipView - tailView) / length2(tipView - tailView);
+          float endWidth = 0.2;
+          vec3 shadeColor;
+          if(tEdge < endWidth) {
+            shadeColor = a_colorTailToFrag;
+          } else if (tEdge < (1.0f - endWidth)) {
+            shadeColor = a_colorEdgeToFrag;
+          } else {
+            shadeColor = a_colorTipToFrag;
+          }
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_color_tail", DataType::Vector3Float},
+      {"a_color_tip", DataType::Vector3Float},
+      {"a_color_edge", DataType::Vector3Float},
+    },
+    /* textures */ {}
+);
 
 
 // clang-format on
 
+} // namespace backend_openGL3_glfw
 } // namespace render
 } // namespace polyscope

@@ -123,10 +123,7 @@ void PointCloudScalarQuantity::buildCustomUI() {
 void PointCloudScalarQuantity::createPointProgram() {
   // Create the program to draw this quantity
 
-  pointProgram = render::engine->generateShaderProgram({render::SPHERE_VALUE_VERT_SHADER,
-                                                        render::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
-                                                        render::SPHERE_VALUE_BILLBOARD_FRAG_SHADER},
-                                                       DrawMode::Points);
+  pointProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"});
 
   // Fill buffers
   pointProgram->setAttribute("a_position", parent.points);

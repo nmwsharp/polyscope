@@ -93,5 +93,6 @@ extern const ShaderStageSpecification CYLINDER_BLEND_COLOR_FRAG_SHADER;
 extern const ShaderStageSpecification CYLINDER_PICK_FRAG_SHADER;
 
 
+
 } // namespace render
 } // namespace polyscope

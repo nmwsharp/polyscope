@@ -39,6 +39,7 @@ void SurfaceDistanceQuantity::draw() {
 
   // Set uniforms
   parent.setTransformUniforms(*program);
+  parent.setStructureUniforms(*program);
   setProgramUniforms(*program);
 
   program->draw();
@@ -46,8 +47,7 @@ void SurfaceDistanceQuantity::draw() {
 
 void SurfaceDistanceQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->generateShaderProgram(
-      {render::VERT_DIST_SURFACE_VERT_SHADER, render::VERT_DIST_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+  program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE", "ISOLINE_STRIPE_VALUECOLOR"}));
 
   // Fill color buffers
   fillColorBuffers(*program);
@@ -143,7 +143,7 @@ void SurfaceDistanceQuantity::fillColorBuffers(render::ShaderProgram& p) {
 
 
   // Store data in buffers
-  p.setAttribute("a_colorval", colorval);
+  p.setAttribute("a_value", colorval);
   p.setTextureFromColormap("t_colormap", cMap.get());
 }
 

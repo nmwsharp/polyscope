@@ -91,7 +91,7 @@ void CurveNetwork::draw() {
 
     // Draw the actual curve network
     edgeProgram->draw();
-		nodeProgram->draw();
+    nodeProgram->draw();
   }
 
   // Draw the quantities
@@ -122,26 +122,15 @@ void CurveNetwork::drawPick() {
 }
 
 void CurveNetwork::prepare() {
-
-  // TODO figure out billboarded cylinders to fix visual artifacs
-  // This might be a starting point:
-  // https://www.inf.tu-dresden.de/content/institutes/smt/cg/results/minorthesis/pbrausewetter/files/Beleg.pdf
-
   if (dominantQuantity != nullptr) {
     return;
   }
 
-
-  // It not quantity is coloring the network, draw with a default color
-  nodeProgram = render::engine->generateShaderProgram(
-      {render::SPHERE_VERT_SHADER, render::SPHERE_BILLBOARD_GEOM_SHADER, render::SPHERE_BILLBOARD_FRAG_SHADER},
-      DrawMode::Points);
+  // It no quantity is coloring the network, draw with a default color
+  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SHADE_BASECOLOR"});
   render::engine->setMaterial(*nodeProgram, getMaterial());
 
-
-  edgeProgram = render::engine->generateShaderProgram(
-      {render::PASSTHRU_CYLINDER_VERT_SHADER, render::CYLINDER_GEOM_SHADER, render::CYLINDER_FRAG_SHADER},
-      DrawMode::Points);
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"SHADE_BASECOLOR"});
   render::engine->setMaterial(*edgeProgram, getMaterial());
 
   // Fill out the geometry data for the programs
@@ -161,10 +150,8 @@ void CurveNetwork::preparePick() {
   size_t pickStart = pick::requestPickBufferRange(this, totalPickElements);
 
   { // Set up node picking program
-    nodePickProgram = render::engine->generateShaderProgram({render::SPHERE_COLOR_VERT_SHADER,
-                                                             render::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                                             render::SPHERE_COLOR_PLAIN_BILLBOARD_FRAG_SHADER},
-                                                            DrawMode::Points);
+    nodePickProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_COLOR"},
+                                                    render::ShaderReplacementDefaults::Pick);
 
     // Fill color buffer with packed point indices
     std::vector<glm::vec3> pickColors;
@@ -182,9 +169,8 @@ void CurveNetwork::preparePick() {
   }
 
   { // Set up edge picking program
-    edgePickProgram = render::engine->generateShaderProgram(
-        {render::CYLINDER_PICK_VERT_SHADER, render::CYLINDER_PICK_GEOM_SHADER, render::CYLINDER_PICK_FRAG_SHADER},
-        DrawMode::Points);
+    edgePickProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_PICK"},
+                                                    render::ShaderReplacementDefaults::Pick);
 
     // Fill color buffer with packed node/edge indices
     std::vector<glm::vec3> edgePickTail(nEdges());

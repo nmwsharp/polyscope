@@ -34,10 +34,7 @@ void SurfaceCountQuantity::initializeLimits() {
 
 void SurfaceCountQuantity::createProgram() {
 
-  program = render::engine->generateShaderProgram({render::SPHERE_VALUE_VERT_SHADER,
-                                                   render::SPHERE_VALUE_BILLBOARD_GEOM_SHADER,
-                                                   render::SPHERE_VALUE_BILLBOARD_FRAG_SHADER},
-                                                  DrawMode::Points);
+  program = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"});
 
 
   // Fill buffers

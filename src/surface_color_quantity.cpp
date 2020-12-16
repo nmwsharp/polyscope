@@ -20,6 +20,7 @@ void SurfaceColorQuantity::draw() {
 
   // Set uniforms
   parent.setTransformUniforms(*program);
+  parent.setStructureUniforms(*program);
 
   program->draw();
 }
@@ -36,8 +37,7 @@ SurfaceVertexColorQuantity::SurfaceVertexColorQuantity(std::string name, std::ve
 
 void SurfaceVertexColorQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->generateShaderProgram(
-      {render::VERTCOLOR3_SURFACE_VERT_SHADER, render::VERTCOLOR3_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+  program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_COLOR", "SHADE_COLOR"}));
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -66,7 +66,7 @@ void SurfaceVertexColorQuantity::fillColorBuffers(render::ShaderProgram& p) {
   }
 
   // Store data in buffers
-  p.setAttribute("a_colorval", colorval);
+  p.setAttribute("a_color", colorval);
 }
 
 void SurfaceVertexColorQuantity::buildVertexInfoGUI(size_t vInd) {
@@ -96,8 +96,7 @@ SurfaceFaceColorQuantity::SurfaceFaceColorQuantity(std::string name, std::vector
 
 void SurfaceFaceColorQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->generateShaderProgram(
-      {render::VERTCOLOR3_SURFACE_VERT_SHADER, render::VERTCOLOR3_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+  program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_COLOR", "SHADE_COLOR"}));
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -120,7 +119,7 @@ void SurfaceFaceColorQuantity::fillColorBuffers(render::ShaderProgram& p) {
 
 
   // Store data in buffers
-  p.setAttribute("a_colorval", colorval);
+  p.setAttribute("a_color", colorval);
 }
 
 void SurfaceFaceColorQuantity::buildFaceInfoGUI(size_t fInd) {

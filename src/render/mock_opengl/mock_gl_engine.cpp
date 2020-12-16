@@ -7,7 +7,22 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/utilities.h"
 
+#include "polyscope/render/shader_builder.h"
 #include "polyscope/render/shaders.h"
+
+// all the shaders
+#include "polyscope/render/opengl/shaders/common.h"
+#include "polyscope/render/opengl/shaders/cylinder_shaders.h"
+#include "polyscope/render/opengl/shaders/ground_plane_shaders.h"
+#include "polyscope/render/opengl/shaders/histogram_shaders.h"
+#include "polyscope/render/opengl/shaders/lighting_shaders.h"
+#include "polyscope/render/opengl/shaders/ribbon_shaders.h"
+#include "polyscope/render/opengl/shaders/rules.h"
+#include "polyscope/render/opengl/shaders/sphere_shaders.h"
+#include "polyscope/render/opengl/shaders/surface_mesh_shaders.h"
+#include "polyscope/render/opengl/shaders/texture_draw_shaders.h"
+#include "polyscope/render/opengl/shaders/vector_shaders.h"
+
 
 #include "stb_image.h"
 
@@ -290,7 +305,7 @@ void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
 
 GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
                                  unsigned int nPatchVertices)
-    : ShaderProgram(stages, dm, nPatchVertices) {
+    : ShaderProgram(stages, dm) {
 
 
   // Collect attributes and uniforms from all of the shaders
@@ -1109,6 +1124,8 @@ void MockGLEngine::initialize() {
   }
 
   updateWindowSize();
+
+  populateDefaultShadersAndRules();
 }
 
 void MockGLEngine::initializeImGui() {
@@ -1258,10 +1275,116 @@ std::shared_ptr<FrameBuffer> MockGLEngine::generateFrameBuffer(unsigned int size
 }
 
 std::shared_ptr<ShaderProgram> MockGLEngine::generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                                   DrawMode dm, unsigned int nPatchVertices) {
-  GLShaderProgram* newP = new GLShaderProgram(stages, dm, nPatchVertices);
+                                                                   DrawMode dm) {
+  GLShaderProgram* newP = new GLShaderProgram(stages, dm);
   return std::shared_ptr<ShaderProgram>(newP);
 }
+
+std::shared_ptr<ShaderProgram> MockGLEngine::requestShader(const std::string& programName,
+                                                           const std::vector<std::string>& customRules,
+                                                           ShaderReplacementDefaults defaults) {
+
+  // Get the program
+  if (registeredShaderPrograms.find(programName) == registeredShaderPrograms.end()) {
+    throw std::runtime_error("No shader program with name [" + programName + "] registered.");
+  }
+  const std::vector<ShaderStageSpecification>& stages = registeredShaderPrograms[programName].first;
+  DrawMode dm = registeredShaderPrograms[programName].second;
+
+  // Add in the default rules
+  std::vector<std::string> fullCustomRules = customRules;
+  switch (defaults) {
+  case ShaderReplacementDefaults::SceneObject: {
+    fullCustomRules.insert(fullCustomRules.begin(), defaultRules_sceneObject.begin(), defaultRules_sceneObject.end());
+    break;
+  }
+  case ShaderReplacementDefaults::Pick: {
+    fullCustomRules.insert(fullCustomRules.begin(), defaultRules_pick.begin(), defaultRules_pick.end());
+    break;
+  }
+  case ShaderReplacementDefaults::Process: {
+    fullCustomRules.insert(fullCustomRules.begin(), defaultRules_process.begin(), defaultRules_process.end());
+    break;
+  }
+  case ShaderReplacementDefaults::None: {
+    break;
+  }
+  }
+
+  // Get the rules
+  std::vector<ShaderReplacementRule> rules;
+  for (const std::string& ruleName : fullCustomRules) {
+    if (registeredShaderRules.find(ruleName) == registeredShaderRules.end()) {
+      throw std::runtime_error("No shader replacement rule with name [" + ruleName + "] registered.");
+    }
+    ShaderReplacementRule& thisRule = registeredShaderRules[ruleName];
+    rules.push_back(thisRule);
+  }
+
+  std::vector<ShaderStageSpecification> updatedStages = applyShaderReplacements(stages, rules);
+  return generateShaderProgram(updatedStages, dm);
+}
+
+void MockGLEngine::populateDefaultShadersAndRules() {
+  using namespace backend_openGL3_glfw;
+
+  // WARNING: duplicated from gl_engine.cpp
+
+  // == Load general base shaders
+  registeredShaderPrograms.insert({"MESH", {MESH_PIPELINE, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"RAYCAST_SPHERE", {RAYCAST_SPHERE_PIPELINE, DrawMode::Points}});
+  registeredShaderPrograms.insert({"RAYCAST_VECTOR", {RAYCAST_VECTOR_PIPELINE, DrawMode::Points}});
+  registeredShaderPrograms.insert({"RAYCAST_CYLINDER", {RAYCAST_CYLINDER_PIPELINE, DrawMode::Points}});
+  registeredShaderPrograms.insert({"HISTOGRAM", {HISTOGRAM_PIPELINE, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"GROUND_PLANE", {GROUND_PLANE_PIPELINE, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"MAP_LIGHT", {MAP_LIGHT_PIPELINE, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"RIBBON", {RIBBON_PIPELINE, DrawMode::IndexedLineStripAdjacency}});
+
+  registeredShaderPrograms.insert({"TEXTURE_DRAW_PLAIN", {TEXTURE_DRAW_PLAIN_PIPELINE, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"TEXTURE_DRAW_DOT3", {TEXTURE_DRAW_DOT3_PIPELINE, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"TEXTURE_DRAW_MAP3", {TEXTURE_DRAW_MAP3_PIPELINE, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"TEXTURE_DRAW_SPHEREBG", {TEXTURE_DRAW_SPHEREBG_PIPELINE, DrawMode::Triangles}});
+
+  // === Load rules
+
+  // Utilitiy rules
+  registeredShaderRules.insert({"GLSL_VERSION", GLSL_VERSION});
+  registeredShaderRules.insert({"GLOBAL_FRAGMENT_FILTER", GLOBAL_FRAGMENT_FILTER});
+
+  // Lighting and shading things
+  registeredShaderRules.insert({"LIGHT_MATCAP", LIGHT_MATCAP});
+  registeredShaderRules.insert({"LIGHT_PASSTHRU", LIGHT_PASSTHRU});
+  registeredShaderRules.insert({"SHADE_BASECOLOR", SHADE_BASECOLOR});
+  registeredShaderRules.insert({"SHADE_COLOR", SHADE_COLOR});
+  registeredShaderRules.insert({"SHADE_COLORMAP_VALUE", SHADE_COLORMAP_VALUE});
+  registeredShaderRules.insert({"SHADE_COLORMAP_ANGULAR2", SHADE_COLORMAP_ANGULAR2});
+  registeredShaderRules.insert({"SHADE_GRID_VALUE2", SHADE_GRID_VALUE2});
+  registeredShaderRules.insert({"SHADE_CHECKER_VALUE2", SHADE_CHECKER_VALUE2});
+  registeredShaderRules.insert({"SHADEVALUE_MAG_VALUE2", SHADEVALUE_MAG_VALUE2});
+  registeredShaderRules.insert({"ISOLINE_STRIPE_VALUECOLOR", ISOLINE_STRIPE_VALUECOLOR});
+  registeredShaderRules.insert({"CHECKER_VALUE2COLOR", CHECKER_VALUE2COLOR});
+
+  // mesh things
+  registeredShaderRules.insert({"MESH_WIREFRAME", MESH_WIREFRAME});
+  registeredShaderRules.insert({"MESH_PROPAGATE_VALUE", MESH_PROPAGATE_VALUE});
+  registeredShaderRules.insert({"MESH_PROPAGATE_VALUE2", MESH_PROPAGATE_VALUE2});
+  registeredShaderRules.insert({"MESH_PROPAGATE_COLOR", MESH_PROPAGATE_COLOR});
+  registeredShaderRules.insert({"MESH_PROPAGATE_HALFEDGE_VALUE", MESH_PROPAGATE_HALFEDGE_VALUE});
+  registeredShaderRules.insert({"MESH_PROPAGATE_PICK", MESH_PROPAGATE_PICK});
+
+  // sphere things
+  registeredShaderRules.insert({"SPHERE_PROPAGATE_VALUE", SPHERE_PROPAGATE_VALUE});
+  registeredShaderRules.insert({"SPHERE_PROPAGATE_COLOR", SPHERE_PROPAGATE_COLOR});
+
+  // vector things
+
+  // cylinder things
+  registeredShaderRules.insert({"CYLINDER_PROPAGATE_VALUE", CYLINDER_PROPAGATE_VALUE});
+  registeredShaderRules.insert({"CYLINDER_PROPAGATE_BLEND_VALUE", CYLINDER_PROPAGATE_BLEND_VALUE});
+  registeredShaderRules.insert({"CYLINDER_PROPAGATE_COLOR", CYLINDER_PROPAGATE_COLOR});
+  registeredShaderRules.insert({"CYLINDER_PROPAGATE_BLEND_COLOR", CYLINDER_PROPAGATE_BLEND_COLOR});
+  registeredShaderRules.insert({"CYLINDER_PROPAGATE_PICK", CYLINDER_PROPAGATE_PICK});
+};
 
 } // namespace backend_openGL_mock
 } // namespace render

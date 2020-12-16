@@ -41,14 +41,8 @@ CurveNetworkNodeColorQuantity::CurveNetworkNodeColorQuantity(std::string name, s
 
 void CurveNetworkNodeColorQuantity::createProgram() {
   // Create the program to draw this quantity
-  nodeProgram = render::engine->generateShaderProgram({render::SPHERE_COLOR_VERT_SHADER,
-                                                       render::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                                       render::SPHERE_COLOR_BILLBOARD_FRAG_SHADER},
-                                                      DrawMode::Points);
-  edgeProgram = render::engine->generateShaderProgram({render::CYLINDER_BLEND_COLOR_VERT_SHADER,
-                                                       render::CYLINDER_BLEND_COLOR_GEOM_SHADER,
-                                                       render::CYLINDER_BLEND_COLOR_FRAG_SHADER},
-                                                      DrawMode::Points);
+  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"});
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_BLEND_COLOR", "SHADE_COLOR"});
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);
@@ -108,13 +102,8 @@ CurveNetworkEdgeColorQuantity::CurveNetworkEdgeColorQuantity(std::string name, s
 {}
 
 void CurveNetworkEdgeColorQuantity::createProgram() {
-  nodeProgram = render::engine->generateShaderProgram({render::SPHERE_COLOR_VERT_SHADER,
-                                                       render::SPHERE_COLOR_BILLBOARD_GEOM_SHADER,
-                                                       render::SPHERE_COLOR_BILLBOARD_FRAG_SHADER},
-                                                      DrawMode::Points);
-  edgeProgram = render::engine->generateShaderProgram(
-      {render::CYLINDER_COLOR_VERT_SHADER, render::CYLINDER_COLOR_GEOM_SHADER, render::CYLINDER_COLOR_FRAG_SHADER},
-      DrawMode::Points);
+  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"});
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_COLOR", "SHADE_COLOR"});
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);
