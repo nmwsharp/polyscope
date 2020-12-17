@@ -4,7 +4,6 @@
 #include "polyscope/file_helpers.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
-#include "polyscope/render/shaders.h"
 #include "polyscope/trace_vector_field.h"
 
 #include "imgui.h"

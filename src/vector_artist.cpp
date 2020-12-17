@@ -2,7 +2,6 @@
 #include "polyscope/vector_artist.h"
 
 #include "imgui.h"
-#include "polyscope/render/shaders.h"
 
 
 namespace polyscope {

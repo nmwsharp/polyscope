@@ -2,7 +2,6 @@
 #include "polyscope/point_cloud_scalar_quantity.h"
 
 #include "polyscope/polyscope.h"
-#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 

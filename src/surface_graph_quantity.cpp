@@ -3,7 +3,6 @@
 
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
-#include "polyscope/render/shaders.h"
 #include "polyscope/utilities.h"
 
 #include "imgui.h"

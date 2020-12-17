@@ -210,14 +210,6 @@ R"(
       }
 )"
 };
-    
-const std::vector<ShaderStageSpecification> TEXTURE_DRAW_PLAIN_PIPELINE = {TEXTURE_DRAW_VERT_SHADER, PLAIN_TEXTURE_DRAW_FRAG_SHADER};
-
-const std::vector<ShaderStageSpecification> TEXTURE_DRAW_DOT3_PIPELINE = {TEXTURE_DRAW_VERT_SHADER, DOT3_TEXTURE_DRAW_FRAG_SHADER};
-
-const std::vector<ShaderStageSpecification> TEXTURE_DRAW_MAP3_PIPELINE = {TEXTURE_DRAW_VERT_SHADER, MAP3_TEXTURE_DRAW_FRAG_SHADER};
-
-const std::vector<ShaderStageSpecification> TEXTURE_DRAW_SPHEREBG_PIPELINE = {SPHEREBG_DRAW_VERT_SHADER, SPHEREBG_DRAW_FRAG_SHADER};
 
 // clang-format on
 

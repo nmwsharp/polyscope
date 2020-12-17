@@ -7,7 +7,8 @@ namespace render {
 namespace backend_openGL3_glfw {
 
 // High level pipeline
-extern const std::vector<ShaderStageSpecification> MESH_PIPELINE;
+extern const ShaderStageSpecification FLEX_MESH_VERT_SHADER;
+extern const ShaderStageSpecification FLEX_MESH_FRAG_SHADER;
 
 // Rules specific to meshes 
 extern const ShaderReplacementRule MESH_WIREFRAME;

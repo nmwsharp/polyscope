@@ -2,7 +2,6 @@
 #include "polyscope/curve_network_color_quantity.h"
 
 #include "polyscope/polyscope.h"
-#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 

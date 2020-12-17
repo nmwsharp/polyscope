@@ -156,7 +156,6 @@ R"(
 )"
 };
 
-const std::vector<ShaderStageSpecification> GROUND_PLANE_PIPELINE{GROUND_PLANE_VERT_SHADER, GROUND_PLANE_FRAG_SHADER};
 
 // clang-format on
 

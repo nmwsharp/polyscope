@@ -6,8 +6,8 @@ namespace polyscope {
 namespace render {
 namespace backend_openGL3_glfw {
 
-// High level pipeline
-extern const std::vector<ShaderStageSpecification> GROUND_PLANE_PIPELINE;
+extern const ShaderStageSpecification GROUND_PLANE_VERT_SHADER;
+extern const ShaderStageSpecification GROUND_PLANE_FRAG_SHADER;
 
 // Rules
 //extern const ShaderReplacementRule RULE_NAME;

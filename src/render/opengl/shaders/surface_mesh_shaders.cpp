@@ -105,10 +105,6 @@ R"(
 };
 
 
-
-const std::vector<ShaderStageSpecification> MESH_PIPELINE{FLEX_MESH_VERT_SHADER, FLEX_MESH_FRAG_SHADER};
-
-
 // == Rules
 
 const ShaderReplacementRule MESH_PROPAGATE_VALUE (

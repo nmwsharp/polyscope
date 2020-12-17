@@ -8,7 +8,6 @@
 #include "polyscope/utilities.h"
 
 #include "polyscope/render/shader_builder.h"
-#include "polyscope/render/shaders.h"
 
 // all the shaders
 #include "polyscope/render/opengl/shaders/common.h"
@@ -1964,20 +1963,22 @@ std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& progra
 void GLEngine::populateDefaultShadersAndRules() {
   // Note: we use .insert({key, value}) rather than map[key] = value to support const members in the value.
 
-  // == Load general base shaders
-  registeredShaderPrograms.insert({"MESH", {MESH_PIPELINE, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"RAYCAST_SPHERE", {RAYCAST_SPHERE_PIPELINE, DrawMode::Points}});
-  registeredShaderPrograms.insert({"RAYCAST_VECTOR", {RAYCAST_VECTOR_PIPELINE, DrawMode::Points}});
-  registeredShaderPrograms.insert({"RAYCAST_CYLINDER", {RAYCAST_CYLINDER_PIPELINE, DrawMode::Points}});
-  registeredShaderPrograms.insert({"HISTOGRAM", {HISTOGRAM_PIPELINE, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"GROUND_PLANE", {GROUND_PLANE_PIPELINE, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"MAP_LIGHT", {MAP_LIGHT_PIPELINE, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"RIBBON", {RIBBON_PIPELINE, DrawMode::IndexedLineStripAdjacency}});
+  // clang-format off
 
-  registeredShaderPrograms.insert({"TEXTURE_DRAW_PLAIN", {TEXTURE_DRAW_PLAIN_PIPELINE, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"TEXTURE_DRAW_DOT3", {TEXTURE_DRAW_DOT3_PIPELINE, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"TEXTURE_DRAW_MAP3", {TEXTURE_DRAW_MAP3_PIPELINE, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"TEXTURE_DRAW_SPHEREBG", {TEXTURE_DRAW_SPHEREBG_PIPELINE, DrawMode::Triangles}});
+  // == Load general base shaders
+  registeredShaderPrograms.insert({"MESH", {{FLEX_MESH_VERT_SHADER, FLEX_MESH_FRAG_SHADER}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"RAYCAST_SPHERE", {{FLEX_SPHERE_VERT_SHADER, FLEX_SPHERE_GEOM_SHADER, FLEX_SPHERE_FRAG_SHADER}, DrawMode::Points}});
+  registeredShaderPrograms.insert({"RAYCAST_VECTOR", {{FLEX_VECTOR_VERT_SHADER, FLEX_VECTOR_GEOM_SHADER, FLEX_VECTOR_FRAG_SHADER}, DrawMode::Points}});
+  registeredShaderPrograms.insert({"RAYCAST_CYLINDER", {{FLEX_CYLINDER_VERT_SHADER, FLEX_CYLINDER_GEOM_SHADER, FLEX_CYLINDER_FRAG_SHADER}, DrawMode::Points}});
+  registeredShaderPrograms.insert({"HISTOGRAM", {{HISTOGRAM_VERT_SHADER, HISTOGRAM_FRAG_SHADER}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"GROUND_PLANE", {{GROUND_PLANE_VERT_SHADER, GROUND_PLANE_FRAG_SHADER}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"MAP_LIGHT", {{TEXTURE_DRAW_VERT_SHADER, MAP_LIGHT_FRAG_SHADER}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"RIBBON", {{RIBBON_VERT_SHADER, RIBBON_GEOM_SHADER, RIBBON_FRAG_SHADER}, DrawMode::IndexedLineStripAdjacency}});
+
+  registeredShaderPrograms.insert({"TEXTURE_DRAW_PLAIN", {{TEXTURE_DRAW_VERT_SHADER, PLAIN_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"TEXTURE_DRAW_DOT3", {{TEXTURE_DRAW_VERT_SHADER, DOT3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"TEXTURE_DRAW_MAP3", {{TEXTURE_DRAW_VERT_SHADER, MAP3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"TEXTURE_DRAW_SPHEREBG", {{SPHEREBG_DRAW_VERT_SHADER, SPHEREBG_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
 
   // === Load rules
 
@@ -2018,6 +2019,8 @@ void GLEngine::populateDefaultShadersAndRules() {
   registeredShaderRules.insert({"CYLINDER_PROPAGATE_COLOR", CYLINDER_PROPAGATE_COLOR});
   registeredShaderRules.insert({"CYLINDER_PROPAGATE_BLEND_COLOR", CYLINDER_PROPAGATE_BLEND_COLOR});
   registeredShaderRules.insert({"CYLINDER_PROPAGATE_PICK", CYLINDER_PROPAGATE_PICK});
+
+  // clang-format on
 };
 
 

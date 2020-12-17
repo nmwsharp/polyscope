@@ -1,7 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/point_cloud_color_quantity.h"
 
-#include "polyscope/render/shaders.h"
 #include "polyscope/polyscope.h"
 
 #include "imgui.h"

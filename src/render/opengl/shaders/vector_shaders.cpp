@@ -226,10 +226,6 @@ R"(
 };
 
 
-
-const std::vector<ShaderStageSpecification> RAYCAST_VECTOR_PIPELINE{FLEX_VECTOR_VERT_SHADER, FLEX_VECTOR_GEOM_SHADER, FLEX_VECTOR_FRAG_SHADER};
-
-
 // == Rules
 
 

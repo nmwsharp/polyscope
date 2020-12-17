@@ -4,7 +4,6 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/render/colormap_defs.h"
 #include "polyscope/render/material_defs.h"
-#include "polyscope/render/shaders.h"
 
 #include "imgui.h"
 #include "stb_image.h"

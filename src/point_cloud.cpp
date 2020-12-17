@@ -5,7 +5,6 @@
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
-#include "polyscope/render/shaders.h"
 
 #include "polyscope/point_cloud_color_quantity.h"
 #include "polyscope/point_cloud_scalar_quantity.h"

@@ -107,9 +107,6 @@ R"(
 )"
 };
 
-
-const std::vector<ShaderStageSpecification> MAP_LIGHT_PIPELINE{TEXTURE_DRAW_VERT_SHADER, MAP_LIGHT_FRAG_SHADER};
-
 // clang-format on
 
 }

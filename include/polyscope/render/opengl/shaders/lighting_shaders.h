@@ -7,7 +7,7 @@ namespace render {
 namespace backend_openGL3_glfw {
 
 // High level pipeline
-extern const std::vector<ShaderStageSpecification> MAP_LIGHT_PIPELINE;
+extern const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER;
 
 // Rules
 //extern const ShaderReplacementRule RULE_NAME;

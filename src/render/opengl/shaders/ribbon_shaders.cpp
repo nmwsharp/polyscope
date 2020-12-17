@@ -199,8 +199,6 @@ R"(
 )"
 };
 
-const std::vector<ShaderStageSpecification> RIBBON_PIPELINE{RIBBON_VERT_SHADER, RIBBON_GEOM_SHADER, RIBBON_FRAG_SHADER};
-
 // clang-format on
 
 } // namespace backend_openGL3_glfw

@@ -182,10 +182,6 @@ R"(
 };
 
 
-
-const std::vector<ShaderStageSpecification> RAYCAST_SPHERE_PIPELINE{FLEX_SPHERE_VERT_SHADER, FLEX_SPHERE_GEOM_SHADER, FLEX_SPHERE_FRAG_SHADER};
-
-
 // == Rules
 
 const ShaderReplacementRule SPHERE_PROPAGATE_VALUE (

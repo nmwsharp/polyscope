@@ -7,7 +7,9 @@ namespace render {
 namespace backend_openGL3_glfw {
 
 // High level pipeline
-extern const std::vector<ShaderStageSpecification> RAYCAST_VECTOR_PIPELINE;
+extern const ShaderStageSpecification FLEX_VECTOR_VERT_SHADER;
+extern const ShaderStageSpecification FLEX_VECTOR_GEOM_SHADER;
+extern const ShaderStageSpecification FLEX_VECTOR_FRAG_SHADER;
 
 // Rules specific to cylinders
 

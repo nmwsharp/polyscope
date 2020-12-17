@@ -202,11 +202,6 @@ R"(
 )"
 };
 
-
-
-const std::vector<ShaderStageSpecification> RAYCAST_CYLINDER_PIPELINE{FLEX_CYLINDER_VERT_SHADER, FLEX_CYLINDER_GEOM_SHADER, FLEX_CYLINDER_FRAG_SHADER};
-
-
 // == Rules
 
 const ShaderReplacementRule CYLINDER_PROPAGATE_VALUE (

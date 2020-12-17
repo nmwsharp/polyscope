@@ -84,8 +84,6 @@ R"(
 )"
 };
 
-const std::vector<ShaderStageSpecification> HISTOGRAM_PIPELINE{HISTOGRAM_VERT_SHADER, HISTOGRAM_FRAG_SHADER};
-
 // clang-format on
 
 } // namespace backend_openGL3_glfw
