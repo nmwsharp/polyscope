@@ -135,10 +135,7 @@ void Engine::buildEngineGui() {
 
     ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
     if (ImGui::TreeNode("Anti-Aliasing")) {
-      if (ssaaFactor == 1) {
-        ImGui::Checkbox("FXAA (cheap)", &enableFXAA);
-      }
-      if (ImGui::InputInt("SSAA (expensive)", &ssaaFactor, 1)) {
+      if (ImGui::InputInt("SSAA (pretty)", &ssaaFactor, 1)) {
         ssaaFactor = std::min(ssaaFactor, 4);
         ssaaFactor = std::max(ssaaFactor, 1);
         updateWindowSize(true);
@@ -205,7 +202,7 @@ void Engine::buildEngineGui() {
 
     ImGui::TreePop();
   }
-} // namespace render
+}
 
 void Engine::setBackgroundColor(glm::vec3 c) { sceneBuffer->clearColor = c; }
 
@@ -274,23 +271,17 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
   }
 
 
-  if (!mapLight || currLightingSampleLevel != sampleLevel || currLightingFXAAEnable != enableFXAA) {
+  if (!mapLight || currLightingSampleLevel != sampleLevel) {
 
     std::string sampleRuleName = "";
-    if (sampleLevel == 1) sampleRuleName = "DOWNSAMPLE_RESOLVE_1";
-    if (sampleLevel == 2) sampleRuleName = "DOWNSAMPLE_RESOLVE_2";
-    if (sampleLevel == 3) sampleRuleName = "DOWNSAMPLE_RESOLVE_3";
-    if (sampleLevel == 4) sampleRuleName = "DOWNSAMPLE_RESOLVE_4";
+    if(sampleLevel == 1) sampleRuleName = "DOWNSAMPLE_RESOLVE_1";
+    if(sampleLevel == 2) sampleRuleName = "DOWNSAMPLE_RESOLVE_2";
+    if(sampleLevel == 3) sampleRuleName = "DOWNSAMPLE_RESOLVE_3";
+    if(sampleLevel == 4) sampleRuleName = "DOWNSAMPLE_RESOLVE_4";
 
-    std::string aaRuleName = "NOAA";
-    if (sampleLevel == 1 && enableFXAA) aaRuleName = "FXAA";
-
-    mapLight = render::engine->requestShader("MAP_LIGHT", {sampleRuleName, aaRuleName},
-                                             render::ShaderReplacementDefaults::Process);
+    mapLight = render::engine->requestShader("MAP_LIGHT", {sampleRuleName}, render::ShaderReplacementDefaults::Process);
     mapLight->setAttribute("a_position", screenTrianglesCoords());
-
     currLightingSampleLevel = sampleLevel;
-    currLightingFXAAEnable = enableFXAA;
   }
 
   mapLight->setUniform("u_exposure", exposure);

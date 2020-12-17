@@ -14,8 +14,6 @@ extern const ShaderReplacementRule DOWNSAMPLE_RESOLVE_1;
 extern const ShaderReplacementRule DOWNSAMPLE_RESOLVE_2;
 extern const ShaderReplacementRule DOWNSAMPLE_RESOLVE_3;
 extern const ShaderReplacementRule DOWNSAMPLE_RESOLVE_4;
-extern const ShaderReplacementRule NOAA;
-extern const ShaderReplacementRule FXAA;
 
 } // namespace backend_openGL3_glfw
 } // namespace render
