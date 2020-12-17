@@ -84,7 +84,7 @@ const ShaderReplacementRule DOWNSAMPLE_RESOLVE_1 (
     { /* replacement sources */
       {"DOWNSAMPLE_RESOLVE", R"(
           result += texture(t_image, tCoord);
-          result.x += 0.*u_texelSize.x; // prevent u_texelSize from being optimized out
+          result.x += 1e-8.*u_texelSize.x; // prevent u_texelSize from being optimized out
           int downsampleFactor = 1;
         )"},
     },

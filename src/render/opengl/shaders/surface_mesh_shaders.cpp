@@ -96,7 +96,7 @@ R"(
            
            // silly dummy usage to ensure normal and barycoords are always used; otherwise we get errors
            float dummyVal = a_normalToFrag.x + a_barycoordToFrag.x;
-           litColor.x = litColor.x + dummyVal * 0.;
+           litColor.x = litColor.x + dummyVal * 1e-8;
 
            // Write output
            outputF = vec4(litColor, alphaOut);
