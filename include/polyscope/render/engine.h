@@ -51,7 +51,6 @@ public:
   // Resize the underlying buffer (contents are lost)
   virtual void resize(unsigned int newLen);
   virtual void resize(unsigned int newX, unsigned int newY);
-  virtual void resize(unsigned int newX, unsigned int newY, unsigned int nSamples);
 
   unsigned int getSizeX() const { return sizeX; }
   unsigned int getSizeY() const { return sizeY; }
@@ -63,10 +62,6 @@ public:
   // void fillTextureData1D(std::string name, unsigned char* texData, unsigned int length);
   // void fillTextureData2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
   // bool withAlpha = true, bool useMipMap = false, bool repeat = false);
-
-  // Limited support for multisampled buffers
-  bool isMultisample = false;
-  int multisampleCount = -1;
 
   virtual void* getNativeHandle() = 0; // used to interop with external things, e.g. ImGui
 
@@ -83,11 +78,6 @@ public:
   virtual ~RenderBuffer(){};
 
   virtual void resize(unsigned int newX, unsigned int newY);
-  virtual void resize(unsigned int newX, unsigned int newY, unsigned int nSamples);
-
-  // Limited support for multisampled buffers
-  bool isMultisample = false;
-  int multisampleCount = -1;
 
   RenderBufferType getType() const { return type; }
   unsigned int getSizeX() const { return sizeX; }
@@ -132,7 +122,6 @@ public:
   // We will always maintain that all bound color and depth buffers have the same size as the
   // framebuffer size.
   virtual void resize(unsigned int newXSize, unsigned int newYSize);
-  virtual void resize(unsigned int newXSize, unsigned int newYSize, unsigned int nSamples);
   unsigned int getSizeX() const { return sizeX; }
   unsigned int getSizeY() const { return sizeY; }
   void verifyBufferSizes();
@@ -379,16 +368,10 @@ public:
   virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
                                                                unsigned int sizeY_,
                                                                float* data) = 0; // 2d
-  virtual std::shared_ptr<TextureBuffer> generateTextureBufferMultisample(TextureFormat format, unsigned int sizeX_,
-                                                                          unsigned int sizeY_,
-                                                                          unsigned int nSamples) = 0; // 2d
 
   // create render buffers
   virtual std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
                                                              unsigned int sizeY_) = 0;
-  virtual std::shared_ptr<RenderBuffer> generateRenderBufferMultisample(RenderBufferType type, unsigned int sizeX_,
-                                                                        unsigned int sizeY_, unsigned int nSamples) = 0;
-
   // create frame buffers
   virtual std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) = 0;
 
@@ -438,7 +421,6 @@ protected:
 
   // Render state
   int ssaaFactor = 1;
-  int msaaFactor = 4;
   glm::vec4 currViewport;
   float currPixelScale;
 

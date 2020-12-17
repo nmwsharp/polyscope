@@ -258,21 +258,6 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
   setFilterMode(FilterMode::Nearest);
 }
 
-GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples)
-    : TextureBuffer(2, format_, sizeX_, sizeY_) {
-
-  isMultisample = true;
-  multisampleCount = nSamples;
-
-  glGenTextures(1, &handle);
-  glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, handle);
-  glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, multisampleCount, internalFormat(format), sizeX, sizeY, GL_TRUE);
-  checkGLError();
-
-  // setFilterMode(FilterMode::Nearest); // openGL rejects this?
-}
-
-
 GLTextureBuffer::~GLTextureBuffer() { glDeleteTextures(1, &handle); }
 
 void GLTextureBuffer::resize(unsigned int newLen) {
@@ -298,31 +283,7 @@ void GLTextureBuffer::resize(unsigned int newX, unsigned int newY) {
     throw std::runtime_error("OpenGL error: called 2D resize on 1D texture");
   }
   if (dim == 2) {
-    if (isMultisample) {
-      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, multisampleCount, internalFormat(format), sizeX, sizeY,
-                              GL_TRUE);
-    } else {
-      glTexImage2D(GL_TEXTURE_2D, 0, internalFormat(format), sizeX, sizeY, 0, formatF(format), type(format), nullptr);
-    }
-  }
-  checkGLError();
-}
-
-void GLTextureBuffer::resize(unsigned int newX, unsigned int newY, unsigned int nSamples) {
-
-  TextureBuffer::resize(newX, newY, nSamples);
-
-  bind();
-  if (dim == 1) {
-    throw std::runtime_error("OpenGL error: called 2D resize on 1D texture");
-  }
-  if (dim == 2) {
-    if (isMultisample) {
-      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, multisampleCount, internalFormat(format), sizeX, sizeY,
-                              GL_TRUE);
-    } else {
-      throw std::runtime_error("OpenGL error: called 2D multisample resize on non-multisample texture");
-    }
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat(format), sizeX, sizeY, 0, formatF(format), type(format), nullptr);
   }
   checkGLError();
 }
@@ -355,11 +316,7 @@ GLenum GLTextureBuffer::textureType() {
   if (dim == 1) {
     return GL_TEXTURE_1D;
   } else {
-    if (isMultisample) {
-      return GL_TEXTURE_2D_MULTISAMPLE;
-    } else {
-      return GL_TEXTURE_2D;
-    }
+    return GL_TEXTURE_2D;
   }
   throw std::runtime_error("bad texture type");
 }
@@ -380,14 +337,6 @@ GLRenderBuffer::GLRenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsi
   resize(sizeX, sizeY);
 }
 
-GLRenderBuffer::GLRenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples_)
-    : RenderBuffer(type_, sizeX_, sizeY_) {
-  isMultisample = true;
-  multisampleCount = nSamples_;
-  glGenRenderbuffers(1, &handle);
-  checkGLError();
-  resize(sizeX, sizeY);
-}
 
 GLRenderBuffer::~GLRenderBuffer() { glDeleteRenderbuffers(1, &handle); }
 
@@ -395,23 +344,7 @@ void GLRenderBuffer::resize(unsigned int newX, unsigned int newY) {
   RenderBuffer::resize(newX, newY);
   bind();
 
-  if (isMultisample) {
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, multisampleCount, native(type), sizeX, sizeY);
-  } else {
-    glRenderbufferStorage(GL_RENDERBUFFER, native(type), sizeX, sizeY);
-  }
-  checkGLError();
-}
-
-void GLRenderBuffer::resize(unsigned int newX, unsigned int newY, unsigned int nSamples) {
-  RenderBuffer::resize(newX, newY, nSamples);
-  bind();
-
-  if (isMultisample) {
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, multisampleCount, native(type), sizeX, sizeY);
-  } else {
-    throw std::runtime_error("OpenGL error: called multisample resize on non-multisample renderbuffer");
-  }
+  glRenderbufferStorage(GL_RENDERBUFFER, native(type), sizeX, sizeY);
   checkGLError();
 }
 
@@ -490,12 +423,8 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<TextureBuffer> textureBufferI
   bind();
   checkGLError();
 
-  if (textureBufferIn->isMultisample) {
-    glFramebufferTexture2D(GL_FRAMEBUFFER, colorAttachNum(nColorBuffers), GL_TEXTURE_2D_MULTISAMPLE,
-                           textureBuffer->getHandle(), 0);
-  } else {
-    glFramebufferTexture2D(GL_FRAMEBUFFER, colorAttachNum(nColorBuffers), GL_TEXTURE_2D, textureBuffer->getHandle(), 0);
-  }
+  glFramebufferTexture2D(GL_FRAMEBUFFER, colorAttachNum(nColorBuffers), GL_TEXTURE_2D, textureBuffer->getHandle(), 0);
+
   checkGLError();
   textureBuffersColor.push_back(textureBuffer);
   nColorBuffers++;
@@ -1549,7 +1478,6 @@ void GLShaderProgram::activateTextures() {
 
     glActiveTexture(GL_TEXTURE0 + t.index);
     t.textureBuffer->bind();
-    if (t.textureBuffer->isMultisample) throw std::runtime_error("OpenGL can't sample from multisample textures");
     glUniform1i(t.location, t.index);
   }
 }
@@ -1672,9 +1600,6 @@ void GLEngine::initialize() {
   // Hack to classify the process as interactive
   glfwPollEvents();
 #endif
-
-  glEnable(GL_MULTISAMPLE);
-
 
   { // Manually create the screen frame buffer
     GLFrameBuffer* glScreenBuffer = new GLFrameBuffer(view::bufferWidth, view::bufferHeight, true);
@@ -1886,21 +1811,10 @@ std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat for
   GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, data);
   return std::shared_ptr<TextureBuffer>(newT);
 }
-std::shared_ptr<TextureBuffer> GLEngine::generateTextureBufferMultisample(TextureFormat format, unsigned int sizeX_,
-                                                                          unsigned int sizeY_, unsigned int nSamples) {
-  GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, nSamples);
-  return std::shared_ptr<TextureBuffer>(newT);
-}
 
 std::shared_ptr<RenderBuffer> GLEngine::generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
                                                              unsigned int sizeY_) {
   GLRenderBuffer* newR = new GLRenderBuffer(type, sizeX_, sizeY_);
-  return std::shared_ptr<RenderBuffer>(newR);
-}
-
-std::shared_ptr<RenderBuffer> GLEngine::generateRenderBufferMultisample(RenderBufferType type, unsigned int sizeX_,
-                                                                        unsigned int sizeY_, unsigned int nSamples) {
-  GLRenderBuffer* newR = new GLRenderBuffer(type, sizeX_, sizeY_, nSamples);
   return std::shared_ptr<RenderBuffer>(newR);
 }
 

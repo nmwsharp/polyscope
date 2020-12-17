@@ -80,15 +80,6 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
   setFilterMode(FilterMode::Nearest);
 }
 
-GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples)
-    : TextureBuffer(2, format_, sizeX_, sizeY_) {
-
-  isMultisample = true;
-  multisampleCount = nSamples;
-
-  // setFilterMode(FilterMode::Nearest); // openGL rejects this?
-}
-
 GLTextureBuffer::~GLTextureBuffer() {}
 
 void GLTextureBuffer::resize(unsigned int newLen) {
@@ -157,13 +148,6 @@ void GLTextureBuffer::bind() {
 
 GLRenderBuffer::GLRenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_)
     : RenderBuffer(type_, sizeX_, sizeY_) {
-  checkGLError();
-  resize(sizeX, sizeY);
-}
-GLRenderBuffer::GLRenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples_)
-    : RenderBuffer(type_, sizeX_, sizeY_) {
-  isMultisample = true;
-  multisampleCount = nSamples_;
   checkGLError();
   resize(sizeX, sizeY);
 }
@@ -1249,22 +1233,10 @@ std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat
   return std::shared_ptr<TextureBuffer>(newT);
 }
 
-std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBufferMultisample(TextureFormat format, unsigned int sizeX_,
-                                                                              unsigned int sizeY_,
-                                                                              unsigned int nSamples) {
-  GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, nSamples);
-  return std::shared_ptr<TextureBuffer>(newT);
-}
 
 std::shared_ptr<RenderBuffer> MockGLEngine::generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
                                                                  unsigned int sizeY_) {
   GLRenderBuffer* newR = new GLRenderBuffer(type, sizeX_, sizeY_);
-  return std::shared_ptr<RenderBuffer>(newR);
-}
-std::shared_ptr<RenderBuffer> MockGLEngine::generateRenderBufferMultisample(RenderBufferType type, unsigned int sizeX_,
-                                                                            unsigned int sizeY_,
-                                                                            unsigned int nSamples) {
-  GLRenderBuffer* newR = new GLRenderBuffer(type, sizeX_, sizeY_, nSamples);
   return std::shared_ptr<RenderBuffer>(newR);
 }
 

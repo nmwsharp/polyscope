@@ -28,12 +28,6 @@ void TextureBuffer::resize(unsigned int newX, unsigned int newY) {
   sizeY = newY;
 }
 
-void TextureBuffer::resize(unsigned int newX, unsigned int newY, unsigned int nSamples) {
-  sizeX = newX;
-  sizeY = newY;
-  multisampleCount = nSamples;
-}
-
 
 RenderBuffer::RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_)
     : type(type_), sizeX(sizeX_), sizeY(sizeY_) {
@@ -43,12 +37,6 @@ RenderBuffer::RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned
 void RenderBuffer::resize(unsigned int newX, unsigned int newY) {
   sizeX = newX;
   sizeY = newY;
-}
-
-void RenderBuffer::resize(unsigned int newX, unsigned int newY, unsigned int nSamples) {
-  sizeX = newX;
-  sizeY = newY;
-  multisampleCount = nSamples;
 }
 
 FrameBuffer::FrameBuffer() {}
@@ -74,24 +62,6 @@ void FrameBuffer::resize(unsigned int newXSize, unsigned int newYSize) {
   }
   for (auto& b : textureBuffersDepth) {
     b->resize(newXSize, newYSize);
-  }
-  sizeX = newXSize;
-  sizeY = newYSize;
-}
-
-void FrameBuffer::resize(unsigned int newXSize, unsigned int newYSize, unsigned int nSamples) {
-  bind();
-  for (auto& b : renderBuffersColor) {
-    b->resize(newXSize, newYSize, nSamples);
-  }
-  for (auto& b : renderBuffersDepth) {
-    b->resize(newXSize, newYSize, nSamples);
-  }
-  for (auto& b : textureBuffersColor) {
-    b->resize(newXSize, newYSize, nSamples);
-  }
-  for (auto& b : textureBuffersDepth) {
-    b->resize(newXSize, newYSize, nSamples);
   }
   sizeX = newXSize;
   sizeY = newYSize;
@@ -165,11 +135,6 @@ void Engine::buildEngineGui() {
 
     ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
     if (ImGui::TreeNode("Anti-Aliasing")) {
-      if (ImGui::InputInt("MSAA (fast)", &msaaFactor, 1)) {
-        msaaFactor = std::min(msaaFactor, 32);
-        msaaFactor = std::max(msaaFactor, 1);
-        updateWindowSize(true);
-      }
       if (ImGui::InputInt("SSAA (pretty)", &ssaaFactor, 1)) {
         ssaaFactor = std::min(ssaaFactor, 4);
         ssaaFactor = std::max(ssaaFactor, 1);
@@ -269,7 +234,7 @@ void Engine::resizeScreenBuffers() {
   unsigned int width = view::bufferWidth;
   unsigned int height = view::bufferHeight;
   displayBuffer->resize(width, height);
-  sceneBuffer->resize(ssaaFactor * width, ssaaFactor * height, msaaFactor);
+  sceneBuffer->resize(ssaaFactor * width, ssaaFactor * height);
   sceneBufferFinal->resize(ssaaFactor * width, ssaaFactor * height);
 }
 
@@ -355,9 +320,9 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     // sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
     // sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
     sceneColor =
-        generateTextureBufferMultisample(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight, msaaFactor);
+        generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
     sceneDepth =
-        generateRenderBufferMultisample(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight, msaaFactor);
+        generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
 
     sceneBuffer = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     sceneBuffer->addColorBuffer(sceneColor);
@@ -368,7 +333,7 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     sceneBuffer->clearAlpha = 0.0;
   }
 
-  { // "Final" scene buffer (after resolving multisample)
+  { // "Final" scene buffer (after resolving)
     sceneColorFinal = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
 
     sceneBufferFinal = generateFrameBuffer(view::bufferWidth, view::bufferHeight);

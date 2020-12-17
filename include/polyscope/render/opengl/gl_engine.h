@@ -58,7 +58,6 @@ public:
   // create a 2D texture from data
   GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data = nullptr);
   GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, float* data);
-  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples);
 
   ~GLTextureBuffer() override;
 
@@ -66,7 +65,6 @@ public:
   // Resize the underlying buffer (contents are lost)
   void resize(unsigned int newLen) override;
   void resize(unsigned int newX, unsigned int newY) override;
-  void resize(unsigned int newX, unsigned int newY, unsigned int nSamples) override;
 
   void setFilterMode(FilterMode newMode) override;
   void* getNativeHandle() override;
@@ -83,11 +81,9 @@ protected:
 class GLRenderBuffer : public RenderBuffer {
 public:
   GLRenderBuffer(RenderBufferType type, unsigned int sizeX_, unsigned int sizeY_);
-  GLRenderBuffer(RenderBufferType type, unsigned int sizeX_, unsigned int sizeY_, unsigned int nSamples);
   ~GLRenderBuffer() override;
 
   void resize(unsigned int newX, unsigned int newY) override;
-  void resize(unsigned int newX, unsigned int newY, unsigned int nSamples) override;
 
   void bind();
   RenderBufferHandle getHandle() const { return handle; }
@@ -290,16 +286,10 @@ public:
                                                        unsigned char* data = nullptr) override; // 2d
   std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
                                                        float* data) override; // 2d
-  std::shared_ptr<TextureBuffer> generateTextureBufferMultisample(TextureFormat format, unsigned int sizeX_,
-                                                                  unsigned int sizeY_,
-                                                                  unsigned int nSamples) override; // 2d
 
   // create render buffers
   std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
                                                      unsigned int sizeY_) override;
-  std::shared_ptr<RenderBuffer> generateRenderBufferMultisample(RenderBufferType type, unsigned int sizeX_,
-                                                                unsigned int sizeY_, unsigned int nSamples) override;
-
   // create frame buffers
   std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) override;
 
