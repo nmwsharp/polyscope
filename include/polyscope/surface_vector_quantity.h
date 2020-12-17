@@ -85,7 +85,7 @@ public:
   SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh& mesh_,
                               VectorType vectorType_ = VectorType::STANDARD);
 
-  virtual void geometryChanged() override;
+  virtual void refresh() override;
   virtual std::string niceName() override;
   virtual void buildVertexInfoGUI(size_t vInd) override;
 };
@@ -98,7 +98,7 @@ public:
   SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh& mesh_,
                             VectorType vectorType_ = VectorType::STANDARD);
 
-  virtual void geometryChanged() override;
+  virtual void refresh() override;
   virtual std::string niceName() override;
   virtual void buildFaceInfoGUI(size_t fInd) override;
 };
@@ -118,7 +118,7 @@ public:
 
   void drawSubUI() override;
 
-  virtual void geometryChanged() override;
+  virtual void refresh() override;
   virtual std::string niceName() override;
   void buildFaceInfoGUI(size_t fInd) override;
 };
@@ -138,7 +138,7 @@ public:
 
   void drawSubUI() override;
 
-  virtual void geometryChanged() override;
+  virtual void refresh() override;
   virtual std::string niceName() override;
   void buildVertexInfoGUI(size_t vInd) override;
 };
@@ -159,7 +159,7 @@ public:
 
   void drawSubUI() override;
 
-  virtual void geometryChanged() override;
+  virtual void refresh() override;
   virtual std::string niceName() override;
   void buildEdgeInfoGUI(size_t eInd) override;
   void buildFaceInfoGUI(size_t fInd) override;

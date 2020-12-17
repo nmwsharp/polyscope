@@ -71,6 +71,8 @@ void Structure::buildSharedStructureUI() {}
 
 void Structure::buildCustomOptionsUI() {}
 
+void Structure::refresh() { requestRedraw(); }
+
 void Structure::resetTransform() {
   objectTransform = glm::mat4(1.0);
   updateStructureExtents();
@@ -104,8 +106,6 @@ void Structure::setTransformUniforms(render::ShaderProgram& p) {
 
 std::string Structure::uniquePrefix() { return typeName() + "#" + name + "#"; }
 
-void Structure::remove() {
-  removeStructure(typeName(), name);
-}
+void Structure::remove() { removeStructure(typeName(), name); }
 
 } // namespace polyscope

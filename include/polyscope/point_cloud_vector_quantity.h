@@ -19,7 +19,7 @@ public:
   virtual void buildCustomUI() override;
   virtual void buildPickUI(size_t ind) override;
   virtual std::string niceName() override;
-  virtual void geometryChanged() override;
+  virtual void refresh() override;
 
   // === Members
   // Note: these vectors are not the raw vectors passed in by the user, but have been rescaled such that the longest has

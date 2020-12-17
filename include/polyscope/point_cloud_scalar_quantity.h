@@ -19,7 +19,7 @@ public:
   virtual void buildCustomUI() override;
 
   virtual void buildPickUI(size_t ind) override;
-  virtual void geometryChanged() override;
+  virtual void refresh() override;
 
   virtual std::string niceName() override;
 

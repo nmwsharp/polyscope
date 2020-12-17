@@ -53,6 +53,7 @@ public:
   virtual double lengthScale() override;
   virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
   virtual std::string typeName() override;
+  virtual void refresh() override;
 
   // === Quantities
 

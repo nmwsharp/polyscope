@@ -132,7 +132,10 @@ void PointCloudScalarQuantity::createPointProgram() {
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
 
-void PointCloudScalarQuantity::geometryChanged() { pointProgram.reset(); }
+void PointCloudScalarQuantity::refresh() { 
+  pointProgram.reset(); 
+  Quantity::refresh();
+}
 
 void PointCloudScalarQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());

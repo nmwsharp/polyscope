@@ -85,9 +85,10 @@ void CurveNetworkNodeColorQuantity::buildNodeInfoGUI(size_t vInd) {
 
 std::string CurveNetworkColorQuantity::niceName() { return name + " (" + definedOn + " color)"; }
 
-void CurveNetworkColorQuantity::geometryChanged() {
+void CurveNetworkColorQuantity::refresh() {
   nodeProgram.reset();
   edgeProgram.reset();
+  Quantity::refresh();
 }
 
 // ========================================================

@@ -51,6 +51,14 @@ typename QuantityStructure<S>::QuantityType* QuantityStructure<S>::getQuantity(s
 }
 
 template <typename S>
+void QuantityStructure<S>::refresh() {
+  for (auto& qp : quantities) {
+    qp.second->refresh();
+  }
+  requestRedraw();
+}
+
+template <typename S>
 void QuantityStructure<S>::removeQuantity(std::string name) {
   if (quantities.find(name) == quantities.end()) {
     return;

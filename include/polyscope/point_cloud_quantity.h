@@ -17,9 +17,6 @@ public:
 
   // Build GUI info about a point
   virtual void buildInfoGUI(size_t pointInd);
-  
-  // Invalidate geometric data
-  virtual void geometryChanged() = 0;
 };
 
 

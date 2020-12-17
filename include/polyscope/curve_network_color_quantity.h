@@ -17,7 +17,7 @@ public:
   virtual void draw() override;
   virtual std::string niceName() override;
 
-  virtual void geometryChanged() override;
+  virtual void refresh() override;
 
 protected:
   // UI internals

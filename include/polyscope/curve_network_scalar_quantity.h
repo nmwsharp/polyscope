@@ -15,7 +15,7 @@ public:
   virtual void draw() override;
   virtual void buildCustomUI() override;
   virtual std::string niceName() override;
-  virtual void geometryChanged() override;
+  virtual void refresh() override;
 
   // === Members
   const DataType dataType;

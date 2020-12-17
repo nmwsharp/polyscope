@@ -51,7 +51,10 @@ void PointCloudColorQuantity::createPointProgram() {
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
 
-void PointCloudColorQuantity::geometryChanged() { pointProgram.reset(); }
+void PointCloudColorQuantity::refresh() { 
+  pointProgram.reset(); 
+  Quantity::refresh();
+}
 
 
 void PointCloudColorQuantity::buildPickUI(size_t ind) {

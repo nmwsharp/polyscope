@@ -104,10 +104,10 @@ SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, std::
 
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_) {
   vectors = vectors_;
-  geometryChanged();
+  refresh();
 }
 
-void SurfaceVertexVectorQuantity::geometryChanged() {
+void SurfaceVertexVectorQuantity::refresh() {
   size_t i = 0;
   vectorRoots = parent.vertices;
   prepareVectorArtist();
@@ -137,10 +137,10 @@ SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, std::vect
                                                      SurfaceMesh& mesh_, VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_) {
   vectors = vectors_;
-  geometryChanged();
+  refresh();
 }
 
-void SurfaceFaceVectorQuantity::geometryChanged() {
+void SurfaceFaceVectorQuantity::refresh() {
   vectorRoots.resize(parent.nFaces());
   for (size_t iF = 0; iF < parent.nFaces(); iF++) {
     vectorRoots[iF] = parent.faceCenter(iF);
@@ -174,10 +174,10 @@ SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::stri
                                                                        SurfaceMesh& mesh_, int nSym_,
                                                                        VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), nSym(nSym_), vectorField(vectors_) {
-  geometryChanged();
+  refresh();
 }
 
-void SurfaceFaceIntrinsicVectorQuantity::geometryChanged() {
+void SurfaceFaceIntrinsicVectorQuantity::refresh() {
   parent.ensureHaveFaceTangentSpaces();
 
   double rotAngle = 2.0 * PI / nSym;
@@ -263,10 +263,10 @@ SurfaceVertexIntrinsicVectorQuantity::SurfaceVertexIntrinsicVectorQuantity(std::
                                                                            SurfaceMesh& mesh_, int nSym_,
                                                                            VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), nSym(nSym_), vectorField(vectors_) {
-  geometryChanged();
+  refresh();
 }
 
-void SurfaceVertexIntrinsicVectorQuantity::geometryChanged() {
+void SurfaceVertexIntrinsicVectorQuantity::refresh() {
   parent.ensureHaveVertexTangentSpaces();
 
   double rotAngle = 2.0 * PI / nSym;
@@ -378,10 +378,10 @@ SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std
                                                                              SurfaceMesh& mesh_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, VectorType::STANDARD), oneForm(oneForm_),
       canonicalOrientation(canonicalOrientation_) {
-  geometryChanged();
+  refresh();
 }
 
-void SurfaceOneFormIntrinsicVectorQuantity::geometryChanged() {
+void SurfaceOneFormIntrinsicVectorQuantity::refresh() {
 
   parent.ensureHaveVertexTangentSpaces();
 

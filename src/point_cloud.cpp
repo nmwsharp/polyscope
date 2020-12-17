@@ -121,14 +121,7 @@ void PointCloud::preparePick() {
 }
 
 void PointCloud::geometryChanged() {
-  program.reset();
-  pickProgram.reset();
-
-  for (auto& q : quantities) {
-    q.second->geometryChanged();
-  }
-
-  requestRedraw();
+  refresh();
 }
 
 void PointCloud::buildPickUI(size_t localPickID) {
@@ -206,6 +199,13 @@ std::tuple<glm::vec3, glm::vec3> PointCloud::boundingBox() {
 
 
 std::string PointCloud::typeName() { return structureTypeName; }
+
+
+void PointCloud::refresh() {
+  program.reset();
+  pickProgram.reset();
+  QuantityStructure<PointCloud>::refresh(); // call base class version, which refreshes quantities
+}
 
 // === Quantities
 

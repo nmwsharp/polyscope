@@ -64,6 +64,9 @@ public:
   void rescaleToUnit();
   void resetTransform();
   void setTransformUniforms(render::ShaderProgram& p);
+  
+  // Re-perform any setup work, including refreshing all quantities
+  virtual void refresh();
 
   // Get rid of it (invalidates the object and all pointers, etc!)
   void remove();
@@ -95,6 +98,9 @@ public:
   virtual ~QuantityStructure() = 0;
 
   virtual void buildQuantitiesUI() override;
+ 
+  // Re-perform any setup work, including refreshing all quantities
+  virtual void refresh() override;
 
   // = Manage quantities
 
@@ -107,6 +113,7 @@ public:
 
   void setDominantQuantity(Quantity<S>* q);
   void clearDominantQuantity();
+
 
   // = Quantities
   std::map<std::string, std::unique_ptr<QuantityType>> quantities;

@@ -18,9 +18,6 @@ public:
   // Build GUI info an element
   virtual void buildNodeInfoGUI(size_t vInd);
   virtual void buildEdgeInfoGUI(size_t fInd);
-
-  // Invalidate geometric data
-  virtual void geometryChanged() = 0;
 };
 
 

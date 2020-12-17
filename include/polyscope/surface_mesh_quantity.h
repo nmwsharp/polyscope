@@ -17,9 +17,6 @@ public:
   ~SurfaceMeshQuantity() {};
 
 public:
-  // Notify that the geometry has changed
-  virtual void geometryChanged();
-
   // Build GUI info about this element
   virtual void buildVertexInfoGUI(size_t vInd);
   virtual void buildFaceInfoGUI(size_t fInd);

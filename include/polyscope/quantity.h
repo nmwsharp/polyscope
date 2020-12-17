@@ -32,6 +32,9 @@ public:
 
   // = Utility
 
+  // Re-perform any setup work for the quantity, including regenerating shader programs.
+  virtual void refresh();
+
   // A decorated name for the quantity that will be used in headers. For instance, for surface scalar named "value" we
   // return "value (scalar)"
   virtual std::string niceName();

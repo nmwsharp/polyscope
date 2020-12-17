@@ -61,7 +61,7 @@ public:
 
   virtual std::string niceName() override;
   virtual void buildNodeInfoGUI(size_t vInd) override;
-  virtual void geometryChanged() override;
+  virtual void refresh() override;
 };
 
 
@@ -74,7 +74,7 @@ public:
 
   virtual std::string niceName() override;
   virtual void buildEdgeInfoGUI(size_t fInd) override;
-  virtual void geometryChanged() override;
+  virtual void refresh() override;
 };
 
 

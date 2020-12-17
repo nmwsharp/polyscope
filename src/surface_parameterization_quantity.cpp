@@ -47,25 +47,30 @@ void SurfaceParameterizationQuantity::createProgram() {
 
   switch (getStyle()) {
   case ParamVizStyle::CHECKER:
-    //program = render::engine->generateShaderProgram(
-        //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE2", "SHADE_CHECKER_VALUE2"}));
+    // program = render::engine->generateShaderProgram(
+    //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+    program = render::engine->requestShader(
+        "MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE2", "SHADE_CHECKER_VALUE2"}));
     break;
   case ParamVizStyle::GRID:
-    //program = render::engine->generateShaderProgram(
-        //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_GRID_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}));
+    // program = render::engine->generateShaderProgram(
+    //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_GRID_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+    program =
+        render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}));
     break;
   case ParamVizStyle::LOCAL_CHECK:
-    //program = render::engine->generateShaderProgram(
-        //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"}));
+    // program = render::engine->generateShaderProgram(
+    //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+    program = render::engine->requestShader(
+        "MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"}));
     program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   case ParamVizStyle::LOCAL_RAD:
-    //program = render::engine->generateShaderProgram(
-        //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "SHADEVALUE_MAG_VALUE2", "ISOLINE_STRIPE_VALUECOLOR"}));
+    // program = render::engine->generateShaderProgram(
+    //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
+    program = render::engine->requestShader(
+        "MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "SHADEVALUE_MAG_VALUE2",
+                                          "ISOLINE_STRIPE_VALUECOLOR"}));
     program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   }
@@ -236,7 +241,10 @@ SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setColorMap(st
 }
 std::string SurfaceParameterizationQuantity::getColorMap() { return cMap.get(); }
 
-void SurfaceParameterizationQuantity::geometryChanged() { program.reset(); }
+void SurfaceParameterizationQuantity::refresh() {
+  program.reset();
+  Quantity::refresh();
+}
 
 // ==============================================================
 // ===============  Corner Parameterization  ====================

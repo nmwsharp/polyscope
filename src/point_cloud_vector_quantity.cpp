@@ -33,8 +33,9 @@ void PointCloudVectorQuantity::draw() {
   vectorArtist->draw();
 }
 
-void PointCloudVectorQuantity::geometryChanged() {
+void PointCloudVectorQuantity::refresh() {
   vectorArtist.reset(new VectorArtist(parent, name + "#vectorartist", parent.points, vectors, vectorType));
+  Quantity::refresh();
 }
 
 void PointCloudVectorQuantity::buildCustomUI() {

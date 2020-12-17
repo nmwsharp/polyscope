@@ -104,7 +104,10 @@ void SurfaceScalarQuantity::buildCustomUI() {
   }
 }
 
-void SurfaceScalarQuantity::geometryChanged() { program.reset(); }
+void SurfaceScalarQuantity::refresh() { 
+  program.reset(); 
+  Quantity::refresh();
+}
 
 SurfaceScalarQuantity* SurfaceScalarQuantity::setColorMap(std::string name) {
   cMap = name;

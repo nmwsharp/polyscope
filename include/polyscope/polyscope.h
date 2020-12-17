@@ -79,6 +79,10 @@ void removeAllStructures();
 // Recompute the global state::lengthScale, boundingBox, and center by looping over registered structures
 void updateStructureExtents();
 
+// Essentially regenerates all state and programs within Polyscope, calling refresh() recurisvely on all structures and
+// quantities
+void refresh();
+
 // === Handle draw flow, interrupts, and popups
 
 // Main draw call . Note that due to cached drawing, this will draw the 3D structures
@@ -94,7 +98,7 @@ bool redrawRequested();
 // in general the top callback will be called instead. Primarily exists to manage the ImGUI context, so callbacks can
 // create other contexts and circumvent the main draw loop. This is used internally to implement messages, element
 // selections, etc.
-void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI=true);
+void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI = true);
 void popContext();
 
 // === Utility

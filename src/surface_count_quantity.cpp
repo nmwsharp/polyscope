@@ -53,7 +53,10 @@ void SurfaceCountQuantity::createProgram() {
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
-void SurfaceCountQuantity::geometryChanged() { program.reset(); }
+void SurfaceCountQuantity::refresh() { 
+  program.reset(); 
+  Quantity::refresh();
+}
 
 void SurfaceCountQuantity::setUniforms(render::ShaderProgram& p) {
   glm::mat4 P = view::getCameraPerspectiveMatrix();

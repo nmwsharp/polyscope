@@ -77,6 +77,12 @@ Quantity<S>* Quantity<S>::setEnabled(bool newEnabled) {
 }
 
 template <typename S>
+void Quantity<S>::refresh() {
+  requestRedraw();
+}
+
+
+template <typename S>
 std::string Quantity<S>::niceName() {
   return name;
 }

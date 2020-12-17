@@ -110,9 +110,10 @@ void CurveNetworkScalarQuantity::buildCustomUI() {
   }
 }
 
-void CurveNetworkScalarQuantity::geometryChanged() {
+void CurveNetworkScalarQuantity::refresh() {
   nodeProgram.reset();
   edgeProgram.reset();
+  Quantity::refresh();
 }
 
 CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::setColorMap(std::string name) {

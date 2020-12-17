@@ -805,17 +805,16 @@ void SurfaceMesh::buildCustomOptionsUI() {
 }
 
 
-void SurfaceMesh::geometryChanged() {
+void SurfaceMesh::refresh() {
+  computeGeometryData();
   program.reset();
   pickProgram.reset();
-
-  computeGeometryData();
-
-  for (auto& q : quantities) {
-    q.second->geometryChanged();
-  }
-
   requestRedraw();
+  QuantityStructure<SurfaceMesh>::refresh(); // call base class version, which refreshes quantities
+}
+
+void SurfaceMesh::geometryChanged() {
+  refresh();
 }
 
 double SurfaceMesh::lengthScale() {
@@ -1255,7 +1254,6 @@ void SurfaceMesh::setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors
 
 SurfaceMeshQuantity::SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates)
     : Quantity<SurfaceMesh>(name, parentStructure, dominates) {}
-void SurfaceMeshQuantity::geometryChanged() {}
 void SurfaceMeshQuantity::buildVertexInfoGUI(size_t vInd) {}
 void SurfaceMeshQuantity::buildFaceInfoGUI(size_t fInd) {}
 void SurfaceMeshQuantity::buildEdgeInfoGUI(size_t eInd) {}

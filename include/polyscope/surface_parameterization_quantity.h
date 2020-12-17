@@ -25,7 +25,7 @@ public:
   void draw() override;
   virtual void buildCustomUI() override;
 
-  virtual void geometryChanged() override;
+  virtual void refresh() override;
 
 
   // === Members

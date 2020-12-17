@@ -82,7 +82,10 @@ void SurfaceVertexColorQuantity::buildVertexInfoGUI(size_t vInd) {
 
 std::string SurfaceColorQuantity::niceName() { return name + " (" + definedOn + " color)"; }
 
-void SurfaceColorQuantity::geometryChanged() { program.reset(); }
+void SurfaceColorQuantity::refresh() { 
+  program.reset(); 
+  Quantity::refresh();
+}
 
 // ========================================================
 // ==========            Face Color              ==========

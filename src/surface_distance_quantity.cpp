@@ -181,6 +181,9 @@ std::string SurfaceDistanceQuantity::niceName() {
   return name + " (" + signedString + ")";
 }
 
-void SurfaceDistanceQuantity::geometryChanged() { program.reset(); }
+void SurfaceDistanceQuantity::refresh() { 
+  program.reset(); 
+  Quantity::refresh();
+}
 
 } // namespace polyscope

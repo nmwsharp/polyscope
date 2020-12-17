@@ -101,6 +101,12 @@ void SurfaceGraphQuantity::buildCustomUI() {
 
 std::string SurfaceGraphQuantity::niceName() { return name; }
 
+void SurfaceGraphQuantity::refresh() {
+  pointProgram.reset();
+  lineProgram.reset();
+  Quantity::refresh();
+}
+
 SurfaceGraphQuantity* SurfaceGraphQuantity::setRadius(double newVal, bool isRelative) {
   radius = ScaledValue<float>(newVal, isRelative);
   requestRedraw();

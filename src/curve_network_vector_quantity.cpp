@@ -69,14 +69,15 @@ CurveNetworkNodeVectorQuantity::CurveNetworkNodeVectorQuantity(std::string name,
 
     : CurveNetworkVectorQuantity(name, network_, vectorType_) {
   vectors = vectors_;
-  geometryChanged();
+  refresh();
 }
 
-void CurveNetworkNodeVectorQuantity::geometryChanged() {
+void CurveNetworkNodeVectorQuantity::refresh() {
   size_t i = 0;
   vectorRoots = parent.nodes;
 
   prepareVectorArtist();
+  Quantity::refresh();
 }
 
 void CurveNetworkNodeVectorQuantity::buildNodeInfoGUI(size_t iV) {
@@ -103,10 +104,10 @@ CurveNetworkEdgeVectorQuantity::CurveNetworkEdgeVectorQuantity(std::string name,
                                                                CurveNetwork& network_, VectorType vectorType_)
     : CurveNetworkVectorQuantity(name, network_, vectorType_) {
   vectors = vectors_;
-  geometryChanged();
+  refresh();
 }
 
-void CurveNetworkEdgeVectorQuantity::geometryChanged() {
+void CurveNetworkEdgeVectorQuantity::refresh() {
   // Copy the vectors
   vectorRoots.resize(parent.nEdges());
 
@@ -119,6 +120,7 @@ void CurveNetworkEdgeVectorQuantity::geometryChanged() {
   }
 
   prepareVectorArtist();
+  Quantity::refresh();
 }
 
 void CurveNetworkEdgeVectorQuantity::buildEdgeInfoGUI(size_t iF) {

@@ -15,6 +15,7 @@ public:
   virtual void draw() override;
   virtual void buildCustomUI() override;
   virtual std::string niceName() override;
+  virtual void refresh() override;
 
   std::vector<glm::vec3> nodes;
   std::vector<std::array<size_t, 2>> edges;

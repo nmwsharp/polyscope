@@ -217,17 +217,17 @@ void CurveNetwork::fillEdgeGeometryBuffers(render::ShaderProgram& program) {
   program.setAttribute("a_position_tip", posTip);
 }
 
-void CurveNetwork::geometryChanged() {
+void CurveNetwork::refresh() {
   nodeProgram.reset();
   edgeProgram.reset();
   nodePickProgram.reset();
   edgePickProgram.reset();
-
-  for (auto& q : quantities) {
-    q.second->geometryChanged();
-  }
-
   requestRedraw();
+  QuantityStructure<CurveNetwork>::refresh(); // call base class version, which refreshes quantities
+}
+
+void CurveNetwork::geometryChanged() {
+  refresh();
 }
 
 void CurveNetwork::buildPickUI(size_t localPickID) {

@@ -442,6 +442,9 @@ void buildPolyscopeGui() {
   // Debug options tree
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Debug")) {
+    if(ImGui::Button("Force refresh")) {
+      refresh();
+    }
     ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
     ImGui::Checkbox("Always redraw", &options::alwaysRedraw);
 
@@ -835,6 +838,15 @@ void removeAllStructures() {
 
   requestRedraw();
   pick::resetSelection();
+}
+
+void refresh() {
+  for (auto cat : state::structures) {
+    for (auto x : cat.second) {
+      x.second->refresh();
+    }
+  }
+  requestRedraw();
 }
 
 void updateStructureExtents() {
