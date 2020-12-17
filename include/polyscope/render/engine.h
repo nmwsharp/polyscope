@@ -424,7 +424,10 @@ protected:
   bool enableFXAA = true;
   glm::vec4 currViewport;
   float currPixelScale;
+
+  // cached state for program regen
   int currLightingSampleLevel = -1;
+  int currLightingFXAAEnable = true;
 
   // Helpers
   std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen
