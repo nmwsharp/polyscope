@@ -24,7 +24,7 @@ SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh
 
 
 void SurfaceVectorQuantity::prepareVectorArtist() {
-  vectorArtist.reset(new VectorArtist(parent, "artist", vectorRoots, vectors, vectorType));
+  vectorArtist.reset(new VectorArtist(parent, name + "#vectorartist", vectorRoots, vectors, vectorType));
 }
 
 void SurfaceVectorQuantity::draw() {

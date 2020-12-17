@@ -19,7 +19,7 @@ CurveNetworkVectorQuantity::CurveNetworkVectorQuantity(std::string name, CurveNe
     : CurveNetworkQuantity(name, network_), vectorType(vectorType_) {}
 
 void CurveNetworkVectorQuantity::prepareVectorArtist() {
-  vectorArtist.reset(new VectorArtist(parent, "artist", vectorRoots, vectors, vectorType));
+  vectorArtist.reset(new VectorArtist(parent, name + "#vectorartist", vectorRoots, vectors, vectorType));
 }
 
 void CurveNetworkVectorQuantity::draw() {

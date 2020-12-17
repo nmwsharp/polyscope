@@ -19,7 +19,7 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
                                                    PointCloud& pointCloud_, VectorType vectorType_)
 
     : PointCloudQuantity(name, pointCloud_), vectors(vectors_), vectorType(vectorType_),
-      vectorArtist(new VectorArtist(parent, "artist", parent.points, vectors, vectorType)) {
+      vectorArtist(new VectorArtist(parent, name + "#vectorartist", parent.points, vectors, vectorType)) {
 
   if (vectors.size() != parent.points.size()) {
     polyscope::error("Point cloud vector quantity " + name + " does not have same number of values (" +
@@ -34,7 +34,7 @@ void PointCloudVectorQuantity::draw() {
 }
 
 void PointCloudVectorQuantity::geometryChanged() {
-  vectorArtist.reset(new VectorArtist(parent, "artist", parent.points, vectors, vectorType));
+  vectorArtist.reset(new VectorArtist(parent, name + "#vectorartist", parent.points, vectors, vectorType));
 }
 
 void PointCloudVectorQuantity::buildCustomUI() {
