@@ -212,7 +212,6 @@ SET(HEADERS
 	${INCLUDE_ROOT}/render/ground_plane.h
 	${INCLUDE_ROOT}/render/material_defs.h
 	${INCLUDE_ROOT}/render/materials.h
-	${INCLUDE_ROOT}/render/shaders.h
 	${INCLUDE_ROOT}/ribbon_artist.h
 	${INCLUDE_ROOT}/scaled_value.h
 	${INCLUDE_ROOT}/screenshot.h
