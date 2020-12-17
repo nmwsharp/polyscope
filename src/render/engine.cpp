@@ -255,12 +255,6 @@ bool Engine::bindSceneBuffer() {
 }
 
 void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
-  mapLight->setUniform("u_exposure", exposure);
-  mapLight->setUniform("u_whiteLevel", whiteLevel);
-  mapLight->setUniform("u_gamma", gamma);
-  mapLight->setTextureFromBuffer("t_image", texture.get());
-
-
   // compute downsampling rate
   glm::vec4 currV = getCurrentViewport();
   float sampleX = texture->getSizeX() / currV[2];
@@ -276,7 +270,25 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
     if (sampleLevel > 4) throw std::runtime_error("lighting downsampling only implemented up to 4x");
   }
 
-  mapLight->setUniform("u_downsampleFactor", sampleLevel);
+
+  if (!mapLight || currLightingSampleLevel != sampleLevel) {
+
+    std::string sampleRuleName = "";
+    if(sampleLevel == 1) sampleRuleName = "DOWNSAMPLE_RESOLVE_1";
+    if(sampleLevel == 2) sampleRuleName = "DOWNSAMPLE_RESOLVE_2";
+    if(sampleLevel == 3) sampleRuleName = "DOWNSAMPLE_RESOLVE_3";
+    if(sampleLevel == 4) sampleRuleName = "DOWNSAMPLE_RESOLVE_4";
+
+    mapLight = render::engine->requestShader("MAP_LIGHT", {sampleRuleName}, render::ShaderReplacementDefaults::Process);
+    mapLight->setAttribute("a_position", screenTrianglesCoords());
+    currLightingSampleLevel = sampleLevel;
+  }
+
+  mapLight->setUniform("u_exposure", exposure);
+  mapLight->setUniform("u_whiteLevel", whiteLevel);
+  mapLight->setUniform("u_gamma", gamma);
+  mapLight->setTextureFromBuffer("t_image", texture.get());
+
   glm::vec2 texelSize{1. / texture->getSizeX(), 1. / texture->getSizeY()};
   mapLight->setUniform("u_texelSize", texelSize);
 
@@ -319,10 +331,8 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     // Note that this is basically duplicated in ground_plane.cpp, changes here should probably be reflected there
     // sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
     // sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
-    sceneColor =
-        generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
-    sceneDepth =
-        generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
+    sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
 
     sceneBuffer = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     sceneBuffer->addColorBuffer(sceneColor);
@@ -370,9 +380,7 @@ void Engine::allocateGlobalBuffersAndPrograms() {
 
     renderTextureSphereBG = render::engine->requestShader("TEXTURE_DRAW_SPHEREBG", {}, render::ShaderReplacementDefaults::Process);
     renderTextureSphereBG->setAttribute("a_position", distantCubeCoords());
-    
-    mapLight = render::engine->requestShader("MAP_LIGHT", {}, render::ShaderReplacementDefaults::Process);
-    mapLight->setAttribute("a_position", screenTrianglesCoords());
+
     // clang-format on
   }
 

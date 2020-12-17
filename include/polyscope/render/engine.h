@@ -421,8 +421,10 @@ protected:
 
   // Render state
   int ssaaFactor = 1;
+  bool enableFXAA = true;
   glm::vec4 currViewport;
   float currPixelScale;
+  int currLightingSampleLevel = -1;
 
   // Helpers
   std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen

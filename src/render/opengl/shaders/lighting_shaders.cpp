@@ -19,7 +19,6 @@ const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER = {
         {"u_exposure", DataType::Float},
         {"u_gamma", DataType::Float},
         {"u_whiteLevel", DataType::Float},
-        {"u_downsampleFactor", DataType::Int},
         {"u_texelSize", DataType::Vector2Float},
     }, 
 
@@ -40,7 +39,6 @@ R"(
       uniform float u_exposure;
       uniform float u_whiteLevel;
       uniform float u_gamma;
-      uniform int u_downsampleFactor;
       uniform vec2 u_texelSize;
       layout (location = 0) out vec4 outputVal;
 
@@ -51,38 +49,10 @@ R"(
         // This function is written like this to hopefully make it as easy as possible to unroll
 
         vec4 result = vec4(0., 0., 0., 0.);
-        if(u_downsampleFactor == 1) {
-          result += texture(t_image, tCoord);
-        }
-        if(u_downsampleFactor == 2) {
-          float fac = 0.5;
-          vec2 tCoordStart = tCoord - vec2(-fac, -fac)*u_texelSize;
-          for(int i = 0; i < 2; i++) {
-            for(int j = 0; j < 2; j++) {
-              result += texture(t_image, tCoordStart + vec2(i,j) * u_texelSize);
-            }
-          }
-        }
-        if(u_downsampleFactor == 3) {
-          float fac = 1.;
-          vec2 tCoordStart = tCoord - vec2(-fac, -fac)*u_texelSize;
-          for(int i = 0; i < 3; i++) {
-            for(int j = 0; j < 3; j++) {
-              result += texture(t_image, tCoordStart + vec2(i,j) * u_texelSize);
-            }
-          }
-        }
-        if(u_downsampleFactor == 4) {
-          float fac = 1.5;
-          vec2 tCoordStart = tCoord - vec2(-fac, -fac)*u_texelSize;
-          for(int i = 0; i < 4; i++) {
-            for(int j = 0; j < 4; j++) {
-              result += texture(t_image, tCoordStart + vec2(i,j) * u_texelSize);
-            }
-          }
-        }
+
+        ${ DOWNSAMPLE_RESOLVE }$
           
-        return result / (u_downsampleFactor * u_downsampleFactor);
+        return result / (downsampleFactor * downsampleFactor);
       } 
 
       void main() {
@@ -106,6 +76,79 @@ R"(
     }  
 )"
 };
+
+// === Rules
+
+const ShaderReplacementRule DOWNSAMPLE_RESOLVE_1 (
+    /* rule name */ "DOWNSAMPLE_RESOLVE_1",
+    { /* replacement sources */
+      {"DOWNSAMPLE_RESOLVE", R"(
+          result += texture(t_image, tCoord);
+          result.x += 0.*u_texelSize.x; // prevent u_texelSize from being optimized out
+          int downsampleFactor = 1;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule DOWNSAMPLE_RESOLVE_2 (
+    /* rule name */ "DOWNSAMPLE_RESOLVE_2",
+    { /* replacement sources */
+      {"DOWNSAMPLE_RESOLVE", R"(
+          float fac = 0.5;
+          vec2 tCoordStart = tCoord - vec2(-fac, -fac)*u_texelSize;
+          for(int i = 0; i < 2; i++) {
+            for(int j = 0; j < 2; j++) {
+              result += texture(t_image, tCoordStart + vec2(i,j) * u_texelSize);
+            }
+          }
+          int downsampleFactor = 2;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule DOWNSAMPLE_RESOLVE_3 (
+    /* rule name */ "DOWNSAMPLE_RESOLVE_3",
+    { /* replacement sources */
+      {"DOWNSAMPLE_RESOLVE", R"(
+          float fac = 1.;
+          vec2 tCoordStart = tCoord - vec2(-fac, -fac)*u_texelSize;
+          for(int i = 0; i < 3; i++) {
+            for(int j = 0; j < 3; j++) {
+              result += texture(t_image, tCoordStart + vec2(i,j) * u_texelSize);
+            }
+          }
+          int downsampleFactor = 3;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule DOWNSAMPLE_RESOLVE_4 (
+    /* rule name */ "DOWNSAMPLE_RESOLVE_4",
+    { /* replacement sources */
+      {"DOWNSAMPLE_RESOLVE", R"(
+          float fac = 1.5;
+          vec2 tCoordStart = tCoord - vec2(-fac, -fac)*u_texelSize;
+          for(int i = 0; i < 4; i++) {
+            for(int j = 0; j < 4; j++) {
+              result += texture(t_image, tCoordStart + vec2(i,j) * u_texelSize);
+            }
+          }
+          int downsampleFactor = 4;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
 
 // clang-format on
 

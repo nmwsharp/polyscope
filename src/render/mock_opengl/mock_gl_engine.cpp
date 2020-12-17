@@ -1324,6 +1324,10 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   // Utilitiy rules
   registeredShaderRules.insert({"GLSL_VERSION", GLSL_VERSION});
   registeredShaderRules.insert({"GLOBAL_FRAGMENT_FILTER", GLOBAL_FRAGMENT_FILTER});
+  registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_1", DOWNSAMPLE_RESOLVE_1});
+  registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_2", DOWNSAMPLE_RESOLVE_2});
+  registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_3", DOWNSAMPLE_RESOLVE_3});
+  registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_4", DOWNSAMPLE_RESOLVE_4});
 
   // Lighting and shading things
   registeredShaderRules.insert({"LIGHT_MATCAP", LIGHT_MATCAP});

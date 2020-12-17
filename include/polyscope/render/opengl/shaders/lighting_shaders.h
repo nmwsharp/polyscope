@@ -10,7 +10,10 @@ namespace backend_openGL3_glfw {
 extern const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER;
 
 // Rules
-//extern const ShaderReplacementRule RULE_NAME;
+extern const ShaderReplacementRule DOWNSAMPLE_RESOLVE_1;
+extern const ShaderReplacementRule DOWNSAMPLE_RESOLVE_2;
+extern const ShaderReplacementRule DOWNSAMPLE_RESOLVE_3;
+extern const ShaderReplacementRule DOWNSAMPLE_RESOLVE_4;
 
 } // namespace backend_openGL3_glfw
 } // namespace render
