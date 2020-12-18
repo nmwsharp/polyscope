@@ -168,6 +168,9 @@ TEST_F(PolyscopeTest, PointCloudScalarRadius) {
   psPoints->setPointRadiusQuantity("vScalar2");
   polyscope::show(3);
   
+  psPoints->setPointRadiusQuantity("vScalar2", false); // no autoscaling
+  polyscope::show(3);
+  
   psPoints->clearPointRadiusQuantity();
   polyscope::show(3);
 
