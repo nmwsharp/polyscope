@@ -58,9 +58,7 @@ TEST_F(PolyscopeTest, InitializeAndShow) { polyscope::show(3); }
 // We should be able to nest calls to show() via the callback. ImGUI causes headaches here
 TEST_F(PolyscopeTest, NestedShow) {
 
-  auto showCallback = [&]() {
-		polyscope::show(3);
-  };
+  auto showCallback = [&]() { polyscope::show(3); };
   polyscope::state::userCallback = showCallback;
   polyscope::show(3);
 
@@ -601,3 +599,39 @@ TEST_F(PolyscopeTest, CurveNetworkFaceVector) {
   polyscope::removeAllStructures();
 }
 
+
+// ============================================================
+// =============== Combo test
+// ============================================================
+
+
+// Register a handful of quantities / structures, then call refresh
+TEST_F(PolyscopeTest, RefreshMultiTest) {
+
+  { // Surface mesh
+    auto psMesh = registerTriangleMesh();
+    std::vector<double> vScalar(psMesh->nVertices(), 7.);
+    auto q1 = psMesh->addVertexDistanceQuantity("distance", vScalar);
+  }
+
+  { // Point cloud
+    auto psPoints = registerPointCloud();
+    std::vector<double> vScalar(psPoints->nPoints(), 7.);
+    auto q2 = psPoints->addScalarQuantity("vScalar", vScalar);
+    q2->setEnabled(true);
+  }
+
+  { // Curve network
+    auto psCurve = registerCurveNetwork();
+    std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
+    auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
+    q3->setEnabled(true);
+  }
+
+  polyscope::show(3);
+
+  polyscope::refresh();
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
