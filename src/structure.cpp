@@ -8,7 +8,9 @@
 namespace polyscope {
 
 Structure::Structure(std::string name_, std::string subtypeName)
-    : name(name_), enabled(subtypeName + "#" + name + "#enabled", true) {}
+    : name(name_), enabled(subtypeName + "#" + name + "#enabled", true) {
+  validateName(name);
+}
 
 Structure::~Structure(){};
 

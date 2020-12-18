@@ -42,6 +42,10 @@ void safeDeleteArray(T*& x) {
 // Attempt to get a user-friendly name for a file from its base name
 std::string guessNiceNameFromPath(std::string fullname);
 
+// Ensure that a string satisfies polyscope requirements for structure and quantity names. 
+// Raises an error on failure.
+void validateName(const std::string& name);
+
 // Print large integers in a user-friendly way (like "37.5B")
 std::string prettyPrintCount(size_t count);
 

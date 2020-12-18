@@ -1,5 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/utilities.h"
+#include "polyscope/messages.h"
 
 #include <cmath>
 #include <vector>
@@ -34,6 +35,11 @@ std::string guessNiceNameFromPath(std::string fullname) {
 
   std::string niceName = fullname.substr(startInd, endInd - startInd);
   return niceName;
+}
+
+void validateName(const std::string& name) {
+  if(name == "") polyscope::error("name must not be the empty string");
+  if(name.find("#") != std::string::npos) polyscope::error("name must not contain '#' characters");
 }
 
 std::tuple<std::string, std::string> splitExt(std::string f) {

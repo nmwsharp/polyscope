@@ -9,6 +9,8 @@ template <typename S>
 Quantity<S>::Quantity(std::string name_, S& parentStructure_, bool dominates_)
     : parent(parentStructure_), name(name_), enabled(parent.typeName() + "#" + parent.name + "#" + name, false),
       dominates(dominates_) {
+  validateName(name);
+
   // Hack: if the quantity pulls enabled=true from the cache, need to make sure the logic from setEnabled(true) happens,
   // so toggle it real quick
   if (isEnabled()) {
