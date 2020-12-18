@@ -110,7 +110,7 @@ void screenshot(std::string filename, bool transparentBG) {
 void screenshot(bool transparentBG) {
 
   char buff[50];
-  snprintf(buff, 50, "screenshot_%06zu.tga", state::screenshotInd);
+  snprintf(buff, 50, "screenshot_%06zu.png", state::screenshotInd);
   std::string defaultName(buff);
 
   screenshot(defaultName, transparentBG);
