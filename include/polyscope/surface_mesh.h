@@ -193,7 +193,6 @@ public:
 
 
   // === Helpers
-  void fillGeometryBuffers(render::ShaderProgram& p);
   void setShadeStyle(ShadeStyle newShadeStyle);
 
 
@@ -301,6 +300,7 @@ public:
   // Rendering helpers used by quantities
   std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
   void setStructureUniforms(render::ShaderProgram& p);
+  void fillGeometryBuffers(render::ShaderProgram& p);
 
 private:
   // Visualization settings

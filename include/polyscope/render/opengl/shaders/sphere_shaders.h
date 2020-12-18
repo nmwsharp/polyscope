@@ -14,6 +14,7 @@ extern const ShaderStageSpecification FLEX_SPHERE_GEOM_SHADER;
 // Rules specific to spheres
 extern const ShaderReplacementRule SPHERE_PROPAGATE_VALUE;
 extern const ShaderReplacementRule SPHERE_PROPAGATE_COLOR;
+extern const ShaderReplacementRule SPHERE_VARIABLE_SIZE;
 
 
 } // namespace backend_openGL3_glfw

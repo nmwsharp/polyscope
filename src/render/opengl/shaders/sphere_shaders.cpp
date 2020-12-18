@@ -73,17 +73,20 @@ R"(
         void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
 
         void main() {
+           
+            float pointRadius = u_pointRadius;
+            ${ SPHERE_SET_POINT_RADIUS_GEOM }$
             
             // Construct the 4 corners of a billboard quad, facing the camera
-            // Quad is shifted u_pointRadius toward the camera, otherwise it doesn't actually necessarily
+            // Quad is shifted pointRadius toward the camera, otherwise it doesn't actually necessarily
             // cover the full sphere due to perspective.
             vec3 dirToCam = normalize(-gl_in[0].gl_Position.xyz);
             vec3 basisX;
             vec3 basisY;
             buildTangentBasis(dirToCam, basisX, basisY);
-            vec4 center = u_projMatrix * (gl_in[0].gl_Position + vec4(dirToCam, 0.) * u_pointRadius);
-            vec4 dx = u_projMatrix * (vec4(basisX, 0.) * u_pointRadius);
-            vec4 dy = u_projMatrix * (vec4(basisY, 0.) * u_pointRadius);
+            vec4 center = u_projMatrix * (gl_in[0].gl_Position + vec4(dirToCam, 0.) * pointRadius);
+            vec4 dx = u_projMatrix * (vec4(basisX, 0.) * pointRadius);
+            vec4 dy = u_projMatrix * (vec4(basisY, 0.) * pointRadius);
             vec4 p1 = center - dx - dy;
             vec4 p2 = center + dx - dy;
             vec4 p3 = center - dx + dy;
@@ -148,11 +151,14 @@ R"(
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
            vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
 
+           float pointRadius = u_pointRadius;
+           ${ SPHERE_SET_POINT_RADIUS_FRAG }$
+
            // Raycast to the sphere 
            float tHit;
            vec3 pHit;
            vec3 nHit;
-           bool hit = raySphereIntersection(vec3(0., 0., 0), viewRay, sphereCenterView, u_pointRadius, tHit, pHit, nHit);
+           bool hit = raySphereIntersection(vec3(0., 0., 0), viewRay, sphereCenterView, pointRadius, tHit, pHit, nHit);
            if(tHit >= LARGE_FLOAT()) {
               discard;
            }
@@ -243,6 +249,40 @@ const ShaderReplacementRule SPHERE_PROPAGATE_COLOR (
     /* uniforms */ {},
     /* attributes */ {
       {"a_color", DataType::Vector3Float},
+    },
+    /* textures */ {}
+);
+
+const ShaderReplacementRule SPHERE_VARIABLE_SIZE (
+    /* rule name */ "SPHERE_VARIABLE_SIZE",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in float a_pointRadius;
+          out float a_pointRadiusToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_pointRadiusToGeom = a_pointRadius;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in float a_pointRadiusToGeom[];
+          out float a_pointRadiusToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_pointRadiusToFrag = a_pointRadiusToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in float a_pointRadiusToFrag;
+        )"},
+      {"SPHERE_SET_POINT_RADIUS_GEOM", R"(
+          pointRadius *= a_pointRadiusToGeom[0];
+        )"},
+      {"SPHERE_SET_POINT_RADIUS_FRAG", R"(
+          pointRadius *= a_pointRadiusToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_pointRadius", DataType::Float},
     },
     /* textures */ {}
 );

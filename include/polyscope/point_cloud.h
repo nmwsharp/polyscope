@@ -79,6 +79,14 @@ public:
   template <class V>
   void updatePointPositions2D(const V& newPositions);
 
+  // === Set point size from a scalar quantity
+  // effect is multiplicative with pointRadius
+  // negative values are always clamped to 0
+  // if autoScale==true, values are rescaled such that the largest has size pointRadius
+  void setPointRadiusQuantity(PointCloudScalarQuantity* quantity, bool autoScale = true);
+  void setPointRadiusQuantity(std::string name, bool autoScale = true);
+  void clearPointRadiusQuantity();
+
   // The points that make up this point cloud
   std::vector<glm::vec3> points;
   size_t nPoints() const { return points.size(); }
@@ -88,8 +96,6 @@ public:
 
   // Small utilities
   void deleteProgram();
-  void writePointsToFile(std::string filename = "");
-  void setPointCloudUniforms(render::ShaderProgram& p);
 
   // === Get/set visualization parameters
 
@@ -104,6 +110,11 @@ public:
   // Material
   PointCloud* setMaterial(std::string name);
   std::string getMaterial();
+
+  // Rendering helpers used by quantities
+  void setPointCloudUniforms(render::ShaderProgram& p);
+  std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
+  void fillGeometryBuffers(render::ShaderProgram& p);
 
 private:
   // === Visualization parameters
@@ -128,6 +139,12 @@ private:
   PointCloudColorQuantity* addColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   PointCloudVectorQuantity* addVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors,
                                                   VectorType vectorType);
+
+  // Manage varying point size
+  // which (scalar) quantity to set point size from
+  std::string pointRadiusQuantityName = ""; // empty string means none
+  bool pointRadiusQuantityAutoscale = true;
+  std::vector<double> resolvePointRadiusQuantity(); // helper
 };
 
 

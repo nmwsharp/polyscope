@@ -122,10 +122,10 @@ void PointCloudScalarQuantity::buildCustomUI() {
 void PointCloudScalarQuantity::createPointProgram() {
   // Create the program to draw this quantity
 
-  pointProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"});
+  pointProgram = render::engine->requestShader("RAYCAST_SPHERE", parent.addStructureRules({"SPHERE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"}));
 
   // Fill buffers
-  pointProgram->setAttribute("a_position", parent.points);
+  parent.fillGeometryBuffers(*pointProgram);
   pointProgram->setAttribute("a_value", values);
   pointProgram->setTextureFromColormap("t_colormap", cMap.get());
 

@@ -153,6 +153,27 @@ TEST_F(PolyscopeTest, PointCloudVector) {
   polyscope::removeAllStructures();
 }
 
+
+TEST_F(PolyscopeTest, PointCloudScalarRadius) {
+  auto psPoints = registerPointCloud();
+  std::vector<double> vScalar(psPoints->nPoints(), 7.);
+  std::vector<double> vScalar2(psPoints->nPoints(), 7.);
+  auto q1 = psPoints->addScalarQuantity("vScalar", vScalar);
+  auto q2 = psPoints->addScalarQuantity("vScalar2", vScalar2);
+  q1->setEnabled(true);
+  
+  psPoints->setPointRadiusQuantity(q1);
+  polyscope::show(3);
+  
+  psPoints->setPointRadiusQuantity("vScalar2");
+  polyscope::show(3);
+  
+  psPoints->clearPointRadiusQuantity();
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
 // ============================================================
 // =============== Surface mesh tests
 // ============================================================
