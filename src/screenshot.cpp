@@ -37,15 +37,25 @@ bool hasExtension(std::string str, std::string ext) {
 
 void saveImage(std::string name, unsigned char* buffer, int w, int h, int channels) {
 
+  // our buffers are from openGL, so they are flipped
+  stbi_flip_vertically_on_write(1);
+  stbi_write_png_compression_level = 0;
+
   // Auto-detect filename
   if (hasExtension(name, ".png")) {
     stbi_write_png(name.c_str(), w, h, channels, buffer, channels * w);
-    //} else if(hasExtension(name, ".jpg") || hasExtension(name, "jpeg")) {
-    // stbi_write_jgp(name.c_str(), w, h, channels, buffer);
-  } else if (hasExtension(name, ".tga")) {
-    stbi_write_tga(name.c_str(), w, h, channels, buffer);
-  } else if (hasExtension(name, ".bmp")) {
-    stbi_write_bmp(name.c_str(), w, h, channels, buffer);
+  } else if (hasExtension(name, ".jpg") || hasExtension(name, "jpeg")) {
+    stbi_write_jpg(name.c_str(), w, h, channels, buffer, 100);
+
+    // TGA seems to display different on different machines: our fault or theirs?
+    // Both BMP and TGA need alpha channel stripped? bmp doesn't seem to work even with this
+    /*
+    } else if (hasExtension(name, ".tga")) {
+     stbi_write_tga(name.c_str(), w, h, channels, buffer);
+    } else if (hasExtension(name, ".bmp")) {
+     stbi_write_bmp(name.c_str(), w, h, channels, buffer);
+    */
+
   } else {
     // Fall back on png
     stbi_write_png(name.c_str(), w, h, channels, buffer, channels * w);
@@ -63,48 +73,18 @@ void screenshot(std::string filename, bool transparentBG) {
   int h = view::bufferHeight;
   std::vector<unsigned char> buff = render::engine->readDisplayBuffer();
 
-  // Just flip
-  if (transparentBG) {
-
-    size_t flipBuffSize = w * h * 4;
-    unsigned char* flipBuff = new unsigned char[flipBuffSize];
+  // Set alpha to 1
+  if (!transparentBG) {
     for (int j = 0; j < h; j++) {
       for (int i = 0; i < w; i++) {
         int ind = i + j * w;
-        int flipInd = i + (h - j - 1) * w;
-        flipBuff[4 * flipInd + 0] = buff[4 * ind + 0];
-        flipBuff[4 * flipInd + 1] = buff[4 * ind + 1];
-        flipBuff[4 * flipInd + 2] = buff[4 * ind + 2];
-        flipBuff[4 * flipInd + 3] = buff[4 * ind + 3];
+        buff[4 * ind + 3] = std::numeric_limits<unsigned char>::max();
       }
     }
-
-    // Save to file
-    saveImage(filename, flipBuff, w, h, 4);
-
-    delete[] flipBuff;
-  }
-  // Strip alpha channel and flip
-  else {
-
-    size_t noAlphaBuffSize = w * h * 3;
-    unsigned char* noAlphaBuff = new unsigned char[noAlphaBuffSize];
-    for (int j = 0; j < h; j++) {
-      for (int i = 0; i < w; i++) {
-        int ind = i + j * w;
-        int flipInd = i + (h - j - 1) * w;
-        noAlphaBuff[3 * flipInd + 0] = buff[4 * ind + 0];
-        noAlphaBuff[3 * flipInd + 1] = buff[4 * ind + 1];
-        noAlphaBuff[3 * flipInd + 2] = buff[4 * ind + 2];
-      }
-    }
-
-    // Save to file
-    saveImage(filename, noAlphaBuff, w, h, 3);
-
-    delete[] noAlphaBuff;
   }
 
+  // Save to file
+  saveImage(filename, &(buff.front()), w, h, 4);
 }
 
 void screenshot(bool transparentBG) {

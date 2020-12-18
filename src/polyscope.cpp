@@ -401,7 +401,7 @@ void buildPolyscopeGui() {
   }
   ImGui::SameLine();
   if (ImGui::Button("Screenshot")) {
-    screenshot(true);
+    screenshot(false);
   }
   ImGui::SameLine();
   if (ImGui::Button("Controls")) {
