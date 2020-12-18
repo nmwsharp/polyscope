@@ -29,15 +29,24 @@ public:
   const std::string descriptiveType; // ("vertex count", etc)
   std::shared_ptr<render::ShaderProgram> program;
 
-  // TODO use persistent/scaled quantities
-  float pointRadius = 0.003;
   float vizRangeLow, vizRangeHigh, dataRangeLow, dataRangeHigh;
-  std::string cMap = "coolwarm";
+
+  // set the radius of the points
+  SurfaceCountQuantity* setPointRadius(double newVal, bool isRelative = true);
+  double getPointRadius();
+
+  // Material
+  SurfaceCountQuantity* setColorMap(std::string name);
+  std::string getColorMap();
 
 protected:
   void initializeLimits();
   void setUniforms(render::ShaderProgram& p);
   void createProgram();
+
+private:
+  PersistentValue<ScaledValue<float>> pointRadius;
+  PersistentValue<std::string> colorMap;
 };
 
 // ========================================================

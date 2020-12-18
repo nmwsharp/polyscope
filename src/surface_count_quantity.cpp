@@ -13,7 +13,9 @@ using std::endl;
 namespace polyscope {
 
 SurfaceCountQuantity::SurfaceCountQuantity(std::string name, SurfaceMesh& mesh_, std::string descriptiveType_)
-    : SurfaceMeshQuantity(name, mesh_), descriptiveType(descriptiveType_) {}
+    : SurfaceMeshQuantity(name, mesh_), descriptiveType(descriptiveType_),
+      pointRadius(uniquePrefix() + "#pointRadius", relativeValue(0.005)),
+      colorMap(uniquePrefix() + "#colorMap", "coolwarm") {}
 
 void SurfaceCountQuantity::initializeLimits() {
 
@@ -49,7 +51,7 @@ void SurfaceCountQuantity::createProgram() {
   program->setAttribute("a_position", pos);
   program->setAttribute("a_value", value);
 
-  program->setTextureFromColormap("t_colormap", cMap);
+  program->setTextureFromColormap("t_colormap", colorMap.get());
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
@@ -64,7 +66,7 @@ void SurfaceCountQuantity::setUniforms(render::ShaderProgram& p) {
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
 
-  p.setUniform("u_pointRadius", pointRadius * state::lengthScale);
+  p.setUniform("u_pointRadius", pointRadius.get().asAbsolute());
   p.setUniform("u_rangeLow", vizRangeLow);
   p.setUniform("u_rangeHigh", vizRangeHigh);
 }
@@ -85,7 +87,9 @@ void SurfaceCountQuantity::draw() {
 
 void SurfaceCountQuantity::buildCustomUI() {
 
-  if (render::buildColormapSelector(cMap)) {
+  if (render::buildColormapSelector(colorMap.get())) {
+    colorMap.manuallyChanged();
+    setColorMap(colorMap.get());
     program.reset();
   }
   ImGui::Text("Sum: %d", sum);
@@ -93,10 +97,29 @@ void SurfaceCountQuantity::buildCustomUI() {
   ImGui::DragFloatRange2("Color Range", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100.,
                          dataRangeLow, dataRangeHigh, "Min: %.3e", "Max: %.3e");
 
-  ImGui::SliderFloat("Point Radius", &pointRadius, 0.0, .1, "%.5f", 3.);
+  if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+    pointRadius.manuallyChanged();
+    requestRedraw();
+  }
 }
 
 std::string SurfaceCountQuantity::niceName() { return name + " (" + descriptiveType + ")"; }
+
+
+SurfaceCountQuantity* SurfaceCountQuantity::setColorMap(std::string m) {
+  colorMap = m;
+  requestRedraw();
+  return this;
+}
+std::string SurfaceCountQuantity::getColorMap() { return colorMap.get(); }
+
+SurfaceCountQuantity* SurfaceCountQuantity::setPointRadius(double newVal, bool isRelative) {
+  pointRadius = ScaledValue<float>(newVal, isRelative);
+  polyscope::requestRedraw();
+  return this;
+}
+double SurfaceCountQuantity::getPointRadius() { return pointRadius.get().asAbsolute(); }
+
 
 // ========================================================
 // ==========           Vertex Count            ==========
@@ -236,6 +259,7 @@ SurfaceFaceCountQuantity::SurfaceFaceCountQuantity(std::string name, std::vector
     for (size_t j = 0; j < D; j++) {
       faceCenter += parent.vertices[face[j]];
     }
+    faceCenter /= static_cast<double>(D);
 
     entries.push_back(std::make_pair(faceCenter, t.second));
   }
