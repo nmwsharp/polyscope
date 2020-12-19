@@ -22,6 +22,19 @@ Structure* Structure::setEnabled(bool newEnabled) {
 
 bool Structure::isEnabled() { return enabled.get(); };
 
+void Structure::enableIsolate() {
+  for (auto& structure : polyscope::state::structures[this->typeName()]) {
+    structure.second->setEnabled(false);
+  }
+  this->setEnabled(true);
+}
+
+void Structure::setEnabledAllOfType(bool newEnabled) {
+  for (auto& structure : polyscope::state::structures[this->typeName()]) {
+    structure.second->setEnabled(newEnabled);
+  }
+}
+
 void Structure::buildUI() {
 
   ImGui::PushID(name.c_str()); // ensure there are no conflicts with
@@ -46,6 +59,14 @@ void Structure::buildUI() {
         if (ImGui::MenuItem("Center")) centerBoundingBox();
         if (ImGui::MenuItem("Unit Scale")) rescaleToUnit();
         if (ImGui::MenuItem("Reset")) resetTransform();
+        ImGui::EndMenu();
+      }
+
+      // Selection
+      if (ImGui::BeginMenu("Selection")) {
+        if (ImGui::MenuItem("Enable all of type")) setEnabledAllOfType(true);
+        if (ImGui::MenuItem("Disable all of type")) setEnabledAllOfType(false);
+        if (ImGui::MenuItem("Isolate")) enableIsolate();
         ImGui::EndMenu();
       }
 

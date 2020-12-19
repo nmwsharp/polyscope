@@ -53,8 +53,6 @@ public:
   virtual double lengthScale() = 0;                           // get characteristic length
 
   // = Basic state
-  virtual Structure* setEnabled(bool newEnabled);
-  bool isEnabled();
   virtual std::string typeName() = 0;
 
   // = Scene transform
@@ -70,6 +68,12 @@ public:
 
   // Get rid of it (invalidates the object and all pointers, etc!)
   void remove();
+
+  // Selection tools
+  virtual Structure* setEnabled(bool newEnabled);
+  bool isEnabled();
+  void enableIsolate(); // enable this structure, disable all of same type
+  void setEnabledAllOfType(bool newEnabled); // enable/disable all structures of this type
 
 protected:
   // = State
