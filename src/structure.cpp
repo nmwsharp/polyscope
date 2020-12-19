@@ -63,12 +63,14 @@ void Structure::buildUI() {
       }
 
       // Selection
-      if (ImGui::BeginMenu("Selection")) {
+      if (ImGui::BeginMenu("Structure Selection")) {
         if (ImGui::MenuItem("Enable all of type")) setEnabledAllOfType(true);
         if (ImGui::MenuItem("Disable all of type")) setEnabledAllOfType(false);
         if (ImGui::MenuItem("Isolate")) enableIsolate();
         ImGui::EndMenu();
       }
+
+      buildStructureOptionsUI();
 
       // Do any structure-specific stuff here
       this->buildCustomOptionsUI();
@@ -91,6 +93,8 @@ void Structure::buildUI() {
 void Structure::buildQuantitiesUI() {}
 
 void Structure::buildSharedStructureUI() {}
+
+void Structure::buildStructureOptionsUI() {}
 
 void Structure::buildCustomOptionsUI() {}
 

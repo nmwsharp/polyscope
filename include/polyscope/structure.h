@@ -38,10 +38,11 @@ public:
 
   // == Build the ImGUI ui elements
   void buildUI();
-  virtual void buildCustomUI() = 0;      // overridden by childen to add custom UI data
-  virtual void buildCustomOptionsUI();   // overridden by childen to add to the options menu
-  virtual void buildQuantitiesUI();      // build quantities, if they exist. Overridden by QuantityStructure.
-  virtual void buildSharedStructureUI(); // Draw any UI elements shared between all instances of the structure
+  virtual void buildCustomUI() = 0;       // overridden by childen to add custom UI data
+  virtual void buildCustomOptionsUI();    // overridden by childen to add to the options menu
+  virtual void buildStructureOptionsUI(); // overridden by structure quantities to add to the options menu
+  virtual void buildQuantitiesUI();       // build quantities, if they exist. Overridden by QuantityStructure.
+  virtual void buildSharedStructureUI();  // Draw any UI elements shared between all instances of the structure
   virtual void buildPickUI(size_t localPickID) = 0; // Draw pick UI elements when index localPickID is selected
 
   // = Identifying data
@@ -62,7 +63,7 @@ public:
   void rescaleToUnit();
   void resetTransform();
   void setTransformUniforms(render::ShaderProgram& p);
-  
+
   // Re-perform any setup work, including refreshing all quantities
   virtual void refresh();
 
@@ -72,7 +73,7 @@ public:
   // Selection tools
   virtual Structure* setEnabled(bool newEnabled);
   bool isEnabled();
-  void enableIsolate(); // enable this structure, disable all of same type
+  void enableIsolate();                      // enable this structure, disable all of same type
   void setEnabledAllOfType(bool newEnabled); // enable/disable all structures of this type
 
 protected:
@@ -102,7 +103,8 @@ public:
   virtual ~QuantityStructure() = 0;
 
   virtual void buildQuantitiesUI() override;
- 
+  virtual void buildStructureOptionsUI() override;
+
   // Re-perform any setup work, including refreshing all quantities
   virtual void refresh() override;
 
@@ -118,6 +120,7 @@ public:
   void setDominantQuantity(Quantity<S>* q);
   void clearDominantQuantity();
 
+  void setAllQuantitiesEnabled(bool newEnabled);
 
   // = Quantities
   std::map<std::string, std::unique_ptr<QuantityType>> quantities;

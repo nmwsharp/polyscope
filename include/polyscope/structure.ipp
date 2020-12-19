@@ -107,6 +107,13 @@ void QuantityStructure<S>::clearDominantQuantity() {
   dominantQuantity = nullptr;
 }
 
+template <typename S>
+void QuantityStructure<S>::setAllQuantitiesEnabled(bool newEnabled) {
+  for (auto& x : quantities) {
+    x.second->setEnabled(newEnabled);
+  }
+}
+
 
 template <typename S>
 void QuantityStructure<S>::buildQuantitiesUI() {
@@ -116,5 +123,13 @@ void QuantityStructure<S>::buildQuantitiesUI() {
   }
 }
 
+template <typename S>
+void QuantityStructure<S>::buildStructureOptionsUI() {
+  if (ImGui::BeginMenu("Quantity Selection")) {
+  if (ImGui::MenuItem("Enable all")) setAllQuantitiesEnabled(true);
+  if (ImGui::MenuItem("Disable all")) setAllQuantitiesEnabled(false);
+    ImGui::EndMenu();
+  }
+}
 
 } // namespace polyscope
