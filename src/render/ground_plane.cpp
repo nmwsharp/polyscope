@@ -161,7 +161,8 @@ void GroundPlane::draw() {
   };
 
 
-  // Implement the mirror effect
+  // Render the scene to implement the mirror effect
+  bool doMirror = render::engine->getTransparencyMode() == TransparencyMode::None;
   {
     // Render to a texture so we can sample from it on the ground
     // (use a texture 1/4 the area of the view buffer, it's supposed to be blurry anyway and this saves perf)
@@ -186,15 +187,19 @@ void GroundPlane::draw() {
     view::viewMat = view::viewMat * mirrorMat;
 
     // Draw everything
-    drawStructures();
+    if (doMirror) {
+      drawStructures();
+    }
 
     // Restore original view matrix
     view::viewMat = origViewMat;
-
-    render::engine->bindSceneBuffer();
   }
 
+  render::engine->bindSceneBuffer();
 
+
+  render::engine->setDepthMode();
+  render::engine->applyTransparencySettings();
   setUniforms();
   render::engine->setBlendMode(BlendMode::Over);
   groundPlaneProgram->draw();

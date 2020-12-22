@@ -124,6 +124,38 @@ void Engine::buildEngineGui() {
 
     ImGui::ColorEdit4("background color", (float*)&view::bgColor, ImGuiColorEditFlags_NoInputs);
 
+    // == Transparency
+    ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+    if (ImGui::TreeNode("Transparency")) {
+
+      auto tName = [](TransparencyMode m) -> std::string {
+        switch (m) {
+        case TransparencyMode::None:
+          return "None";
+        case TransparencyMode::Simple:
+          return "Simple";
+        case TransparencyMode::Pretty:
+          return "Pretty";
+        }
+      };
+
+
+      if (ImGui::BeginCombo("Mode", tName(transparencyMode).c_str())) {
+        for (TransparencyMode m : {TransparencyMode::None, TransparencyMode::Simple, TransparencyMode::Pretty}) {
+          std::string mName = tName(m);
+          if (ImGui::Selectable(mName.c_str(), transparencyMode == m)) {
+            setTransparencyMode(m);
+          }
+        }
+        ImGui::EndCombo();
+      }
+
+      ImGui::TreePop();
+    }
+
+    // == Ground plane
+    groundPlane.buildGui();
+
     ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
     if (ImGui::TreeNode("Tone Mapping")) {
       ImGui::SliderFloat("exposure", &exposure, 0.1, 2.0, "%.3f", 2.);
@@ -133,6 +165,7 @@ void Engine::buildEngineGui() {
       ImGui::TreePop();
     }
 
+    // == Anti-aliasing
     ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
     if (ImGui::TreeNode("Anti-Aliasing")) {
       if (ImGui::InputInt("SSAA (pretty)", &ssaaFactor, 1)) {
@@ -143,6 +176,7 @@ void Engine::buildEngineGui() {
       ImGui::TreePop();
     }
 
+    // == Materials
     ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
     if (ImGui::TreeNode("Materials")) {
 
@@ -175,6 +209,7 @@ void Engine::buildEngineGui() {
       ImGui::TreePop();
     }
 
+    // == Color maps
     if (ImGui::TreeNode("Color Maps")) {
 
       ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
@@ -197,8 +232,6 @@ void Engine::buildEngineGui() {
 
       ImGui::TreePop();
     }
-
-    groundPlane.buildGui();
 
     ImGui::TreePop();
   }
@@ -270,18 +303,31 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
     if (sampleLevel > 4) throw std::runtime_error("lighting downsampling only implemented up to 4x");
   }
 
-
-  if (!mapLight || currLightingSampleLevel != sampleLevel) {
+  // == Lazily regnerate the mapper if it doesn't match the current settings
+  if (!mapLight || currLightingSampleLevel != sampleLevel || currLightingTransparencyMode != transparencyMode) {
 
     std::string sampleRuleName = "";
-    if(sampleLevel == 1) sampleRuleName = "DOWNSAMPLE_RESOLVE_1";
-    if(sampleLevel == 2) sampleRuleName = "DOWNSAMPLE_RESOLVE_2";
-    if(sampleLevel == 3) sampleRuleName = "DOWNSAMPLE_RESOLVE_3";
-    if(sampleLevel == 4) sampleRuleName = "DOWNSAMPLE_RESOLVE_4";
+    if (sampleLevel == 1) sampleRuleName = "DOWNSAMPLE_RESOLVE_1";
+    if (sampleLevel == 2) sampleRuleName = "DOWNSAMPLE_RESOLVE_2";
+    if (sampleLevel == 3) sampleRuleName = "DOWNSAMPLE_RESOLVE_3";
+    if (sampleLevel == 4) sampleRuleName = "DOWNSAMPLE_RESOLVE_4";
+    
+    std::vector<std::string> resolveRules = {sampleRuleName};
 
-    mapLight = render::engine->requestShader("MAP_LIGHT", {sampleRuleName}, render::ShaderReplacementDefaults::Process);
+    switch (transparencyMode) {
+    case TransparencyMode::None:
+      break;
+    case TransparencyMode::Simple:
+      resolveRules.push_back("TRANSPARENCY_RESOLVE_SIMPLE");
+      break;
+    case TransparencyMode::Pretty:
+      break;
+    }
+
+    mapLight = render::engine->requestShader("MAP_LIGHT", resolveRules, render::ShaderReplacementDefaults::Process);
     mapLight->setAttribute("a_position", screenTrianglesCoords());
     currLightingSampleLevel = sampleLevel;
+    currLightingTransparencyMode = transparencyMode;
   }
 
   mapLight->setUniform("u_exposure", exposure);
@@ -322,6 +368,63 @@ void Engine::renderBackground() {
   }
 }
 
+
+void Engine::setTransparencyMode(TransparencyMode newMode) {
+
+  // Remove any old transparency-related rules
+  switch (transparencyMode) {
+  case TransparencyMode::None: {
+    break;
+  }
+  case TransparencyMode::Simple: {
+    defaultRules_sceneObject.erase(
+        std::remove(defaultRules_sceneObject.begin(), defaultRules_sceneObject.end(), "TRANSPARENCY_STRUCTURE"),
+        defaultRules_sceneObject.end());
+    break;
+  }
+  case TransparencyMode::Pretty: {
+    defaultRules_sceneObject.erase(
+        std::remove(defaultRules_sceneObject.begin(), defaultRules_sceneObject.end(), "TRANSPARENCY_STRUCTURE"),
+        defaultRules_sceneObject.end());
+    break;
+  }
+  }
+
+  transparencyMode = newMode;
+
+  // Add a new rule for this setting
+  switch (newMode) {
+  case TransparencyMode::None: {
+    break;
+  }
+  case TransparencyMode::Simple: {
+    defaultRules_sceneObject.push_back("TRANSPARENCY_STRUCTURE");
+    break;
+  }
+  case TransparencyMode::Pretty: {
+    defaultRules_sceneObject.push_back("TRANSPARENCY_STRUCTURE");
+    break;
+  }
+  }
+
+  // Regenerate _all_ the things
+  refresh();
+}
+
+TransparencyMode Engine::getTransparencyMode() { return transparencyMode; }
+
+bool Engine::transparencyEnabled() {
+  switch (transparencyMode) {
+  case TransparencyMode::None:
+    return false;
+  case TransparencyMode::Simple:
+    return true;
+  case TransparencyMode::Pretty:
+    return true;
+  }
+  return false;
+}
+
 void Engine::allocateGlobalBuffersAndPrograms() {
 
   // Note: The display frame buffer should be manually wrapped by child classes
@@ -329,8 +432,6 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   { // Scene buffer
 
     // Note that this is basically duplicated in ground_plane.cpp, changes here should probably be reflected there
-    // sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
-    // sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
     sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
     sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
 

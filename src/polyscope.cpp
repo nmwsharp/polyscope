@@ -51,6 +51,7 @@ bool autocenterStructures = false;
 bool autoscaleStructures = false;
 bool openImGuiWindowForUserCallback = true;
 bool invokeUserCallbackForNestedShow = false;
+TransparencyMode transparencyMode = TransparencyMode::None;
 
 // enabled by default in debug mode
 #ifndef NDEBUG
@@ -235,6 +236,10 @@ void drawStructures() {
       }
       // The normal case
       else {
+        // make sure the right settings are active
+        render::engine->setDepthMode();
+        render::engine->applyTransparencySettings();
+
         s.second->draw();
       }
     }
@@ -359,7 +364,14 @@ void processInputEvents() {
 
 void renderScene() {
 
-  render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
+  // Set background color/alpha and clear
+  if (render::engine->getTransparencyMode() == TransparencyMode::Simple) {
+    // special case for averaging transparency: we need to premultiply background
+    float alpha = view::bgColor[3];
+    render::engine->setBackgroundColor({alpha * view::bgColor[0], alpha * view::bgColor[1], alpha * view::bgColor[2]});
+  } else {
+    render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
+  }
   render::engine->setBackgroundAlpha(view::bgColor[3]);
   render::engine->clearSceneBuffer();
 
@@ -368,9 +380,8 @@ void renderScene() {
   // If a view has never been set, this will set it to the home view
   view::ensureViewValid();
 
+  // Set defaults
   render::engine->renderBackground();
-  render::engine->setDepthMode();
-  render::engine->setBlendMode();
 
   // Draw the ground plane
   if (options::groundPlaneEnabled) {
@@ -378,6 +389,9 @@ void renderScene() {
   }
 
   drawStructures();
+
+  // Back to normal transparency settings
+  render::engine->disableTransparencySettings();
 
   render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
 }
@@ -442,7 +456,7 @@ void buildPolyscopeGui() {
   // Debug options tree
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Debug")) {
-    if(ImGui::Button("Force refresh")) {
+    if (ImGui::Button("Force refresh")) {
       refresh();
     }
     ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
@@ -604,11 +618,12 @@ void draw(bool withUI) {
     render::engine->bindDisplay();
     render::engine->ImGuiRender();
   }
-} // namespace polyscope
+}
 
 
 void mainLoopIteration() {
 
+  processLazyProperties();
 
   // The windowing system will let this busy-loop in some situations, unfortunately. Make sure that doesn't happen.
   if (options::maxFPS != -1) {
@@ -848,6 +863,19 @@ void refresh() {
   }
   requestRedraw();
 }
+
+// Cached versions of lazy properties used for updates
+namespace lazy {
+TransparencyMode transparencyMode = TransparencyMode::None;
+}
+
+void processLazyProperties() {
+  // transparency mode
+  if (lazy::transparencyMode != options::transparencyMode) {
+    lazy::transparencyMode = options::transparencyMode;
+    render::engine->setTransparencyMode(options::transparencyMode);
+  }
+};
 
 void updateStructureExtents() {
   // Compute length scale and bbox as the max of all structures

@@ -1,6 +1,8 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include "polyscope/types.h"
+
 #include <string>
 
 namespace polyscope {
@@ -43,5 +45,11 @@ extern bool invokeUserCallbackForNestedShow;
 // Enables optional error checks in the rendering system
 extern bool enableRenderErrorChecks;
 
+// Transparency settings for the renderer
+extern TransparencyMode transparencyMode;
+
 } // namespace options
+
+
+
 } // namespace polyscope

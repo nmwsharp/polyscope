@@ -10,6 +10,7 @@
 #include "polyscope/render/ground_plane.h"
 #include "polyscope/render/materials.h"
 #include "polyscope/view.h"
+#include "polyscope/types.h"
 
 #include "imgui.h"
 
@@ -37,7 +38,7 @@ enum class FilterMode { Nearest = 0, Linear };
 enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F };
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
 enum class DepthMode { Less, LEqual, LEqualReadOnly, Disable };
-enum class BlendMode { Over, OverNoWrite, Zero, Disable }; // TODO what to call these...
+enum class BlendMode { Over, OverNoWrite, Zero, WeightedAdd, Disable }; // TODO what to call these...
 
 namespace render {
 
@@ -194,11 +195,11 @@ public:
   std::vector<ShaderSpecAttribute> attributes;
   std::vector<ShaderSpecTexture> textures;
 };
-enum class ShaderReplacementDefaults { 
-  SceneObject,      // an object in the scene, which gets lit via matcap (etc)
-  Pick,             // rendering to a pick buffer
-  Process,          // postprocessing effects, etc
-  None              // no defaults applied
+enum class ShaderReplacementDefaults {
+  SceneObject, // an object in the scene, which gets lit via matcap (etc)
+  Pick,        // rendering to a pick buffer
+  Process,     // postprocessing effects, etc
+  None         // no defaults applied
 };
 
 // Encapsulate a shader program
@@ -282,8 +283,6 @@ protected:
   // Tessellation parameters
   unsigned int nPatchVertices;
 };
-
-enum class BackgroundView { None = 0 };
 
 // A few forward declarations for types that engine needs to touch
 class GroundPlane;
@@ -394,6 +393,13 @@ public:
   std::shared_ptr<ShaderProgram> renderTexturePlain, renderTextureDot3, renderTextureMap3, renderTextureSphereBG;
   std::shared_ptr<ShaderProgram> mapLight;
 
+  // Manage transparency and culling
+  void setTransparencyMode(TransparencyMode newMode);
+  TransparencyMode getTransparencyMode();
+  bool transparencyEnabled();
+  virtual void applyTransparencySettings() = 0;
+  virtual void disableTransparencySettings() = 0;
+
   // Options
   BackgroundView background = BackgroundView::None;
 
@@ -424,7 +430,11 @@ protected:
   bool enableFXAA = true;
   glm::vec4 currViewport;
   float currPixelScale;
+  TransparencyMode transparencyMode = TransparencyMode::None;
+
+  // Cached lazy seettings for the resolve and relight program
   int currLightingSampleLevel = -1;
+  TransparencyMode currLightingTransparencyMode = TransparencyMode::None;
 
   // Helpers
   std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen
@@ -434,7 +444,7 @@ protected:
   std::shared_ptr<TextureBuffer> loadMaterialTexture(float* data, int width, int height);
   void loadDefaultColorMap(std::string name);
   void loadDefaultColorMaps();
-  
+
   // low-level interface for creating shader programs
   virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
                                                                DrawMode dm) = 0;

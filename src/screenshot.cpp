@@ -65,6 +65,7 @@ void saveImage(std::string name, unsigned char* buffer, int w, int h, int channe
 void screenshot(std::string filename, bool transparentBG) {
 
   // Make sure we render first
+  processLazyProperties();
   requestRedraw();
   draw(false);
 

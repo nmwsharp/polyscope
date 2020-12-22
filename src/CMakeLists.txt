@@ -105,10 +105,11 @@ SET(SRCS
   
   # Core functionality 
   polyscope.cpp
-	screenshot.cpp
+  options.cpp
   structure.cpp
   utilities.cpp
   view.cpp
+	screenshot.cpp
   messages.cpp
   pick.cpp
   

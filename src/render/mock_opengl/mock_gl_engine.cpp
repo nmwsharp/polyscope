@@ -1296,11 +1296,15 @@ std::shared_ptr<ShaderProgram> MockGLEngine::requestShader(const std::string& pr
   return generateShaderProgram(updatedStages, dm);
 }
 
+void MockGLEngine::applyTransparencySettings() {}
+
+void MockGLEngine::disableTransparencySettings() {}
+
 void MockGLEngine::populateDefaultShadersAndRules() {
   using namespace backend_openGL3_glfw;
 
   // WARNING: duplicated from gl_engine.cpp
-  
+
   // clang-format off
 
   // == Load general base shaders
@@ -1328,6 +1332,9 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_2", DOWNSAMPLE_RESOLVE_2});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_3", DOWNSAMPLE_RESOLVE_3});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_4", DOWNSAMPLE_RESOLVE_4});
+  
+  registeredShaderRules.insert({"TRANSPARENCY_STRUCTURE", TRANSPARENCY_STRUCTURE});
+  registeredShaderRules.insert({"TRANSPARENCY_RESOLVE_SIMPLE", TRANSPARENCY_RESOLVE_SIMPLE});
 
   // Lighting and shading things
   registeredShaderRules.insert({"LIGHT_MATCAP", LIGHT_MATCAP});

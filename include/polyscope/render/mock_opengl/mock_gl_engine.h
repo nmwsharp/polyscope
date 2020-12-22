@@ -252,6 +252,9 @@ public:
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
                 ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) override;
 
+  // Transparency
+  virtual void applyTransparencySettings() override;
+  virtual void disableTransparencySettings() override;
 
 protected:
   // Shader program & rule caches

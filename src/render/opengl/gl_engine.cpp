@@ -1768,6 +1768,10 @@ void GLEngine::setBlendMode(BlendMode newMode) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_ZERO, GL_ZERO);
     break;
+  case BlendMode::WeightedAdd:
+    glEnable(GL_BLEND);
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE);
+    break;
   case BlendMode::Disable:
     glDisable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // doesn't actually matter
@@ -1782,13 +1786,28 @@ std::string GLEngine::getClipboardText() {
   return clipboardData;
 }
 
-// void GLEngine::blitSceneToFinal() { TODO
-// sceneBuffer->bindForRendering();
-// sceneBufferFinal->blitTo();
-//}
-
-
 void GLEngine::setClipboardText(std::string text) { ImGui::SetClipboardText(text.c_str()); }
+
+void GLEngine::applyTransparencySettings() {
+  // Remove any old transparency-related rules
+  switch (transparencyMode) {
+  case TransparencyMode::None: {
+    setBlendMode();
+    break;
+  }
+  case TransparencyMode::Simple: {
+    setBlendMode(BlendMode::WeightedAdd);
+    setDepthMode(DepthMode::Disable);
+    break;
+  }
+  case TransparencyMode::Pretty: {
+    // TODO
+    break;
+  }
+  }
+}
+
+void GLEngine::disableTransparencySettings() { setBlendMode(); }
 
 // == Factories
 std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat format, unsigned int size1D,
@@ -1896,13 +1915,16 @@ void GLEngine::populateDefaultShadersAndRules() {
 
   // === Load rules
 
-  // Utilitiy rules
+  // Utility rules
   registeredShaderRules.insert({"GLSL_VERSION", GLSL_VERSION});
   registeredShaderRules.insert({"GLOBAL_FRAGMENT_FILTER", GLOBAL_FRAGMENT_FILTER});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_1", DOWNSAMPLE_RESOLVE_1});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_2", DOWNSAMPLE_RESOLVE_2});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_3", DOWNSAMPLE_RESOLVE_3});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_4", DOWNSAMPLE_RESOLVE_4});
+  
+  registeredShaderRules.insert({"TRANSPARENCY_STRUCTURE", TRANSPARENCY_STRUCTURE});
+  registeredShaderRules.insert({"TRANSPARENCY_RESOLVE_SIMPLE", TRANSPARENCY_RESOLVE_SIMPLE});
 
   // Lighting and shading things
   registeredShaderRules.insert({"LIGHT_MATCAP", LIGHT_MATCAP});

@@ -304,6 +304,10 @@ public:
   void registerShaderProgram(const std::string& name, const std::vector<ShaderStageSpecification>& stages);
   void registerShaderRule(const std::string& name, const ShaderReplacementRule& rule);
 
+  // Transparency
+  virtual void applyTransparencySettings() override;
+  virtual void disableTransparencySettings() override;
+
 protected:
   // Helpers
 

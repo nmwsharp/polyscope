@@ -8,7 +8,8 @@
 namespace polyscope {
 
 Structure::Structure(std::string name_, std::string subtypeName)
-    : name(name_), enabled(subtypeName + "#" + name + "#enabled", true) {
+    : name(name_), enabled(subtypeName + "#" + name + "#enabled", true),
+      transparency(subtypeName + "#" + name + "#transparency", 1.0) {
   validateName(name);
 }
 
@@ -70,6 +71,12 @@ void Structure::buildUI() {
         ImGui::EndMenu();
       }
 
+      if (ImGui::BeginMenu("Transparency")) {
+        if (ImGui::SliderFloat("Alpha", &transparency.get(), 0., 1., "%.3f")) setTransparency(transparency.get());
+        ImGui::EndMenu();
+      }
+
+
       buildStructureOptionsUI();
 
       // Do any structure-specific stuff here
@@ -129,10 +136,18 @@ void Structure::setTransformUniforms(render::ShaderProgram& p) {
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   p.setUniform("u_projMatrix", glm::value_ptr(projMat));
+
+  if (render::engine->transparencyEnabled() && p.hasUniform("u_transparency")) {
+    p.setUniform("u_transparency", transparency.get());
+  }
 }
 
 std::string Structure::uniquePrefix() { return typeName() + "#" + name + "#"; }
 
 void Structure::remove() { removeStructure(typeName(), name); }
+
+
+void Structure::setTransparency(double newVal) { transparency = newVal; }
+double Structure::getTransparency() { return transparency.get(); }
 
 } // namespace polyscope
