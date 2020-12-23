@@ -20,48 +20,7 @@ using json = nlohmann::json;
 
 namespace polyscope {
 
-// === Declare storage global members
-
-namespace state {
-
-bool initialized = false;
-
-double lengthScale = 1.0;
-std::tuple<glm::vec3, glm::vec3> boundingBox;
-glm::vec3 center{0, 0, 0};
-
-std::map<std::string, std::map<std::string, Structure*>> structures;
-
-std::function<void()> userCallback;
-
-} // namespace state
-
-namespace options {
-
-std::string programName = "Polyscope";
-int verbosity = 1;
-std::string printPrefix = "[polyscope] ";
-bool errorsThrowExceptions = false;
-bool debugDrawPickBuffer = false;
-int maxFPS = 60;
-bool usePrefsFile = true;
-bool initializeWithDefaultStructures = true;
-bool alwaysRedraw = false;
-bool autocenterStructures = false;
-bool autoscaleStructures = false;
-bool openImGuiWindowForUserCallback = true;
-bool invokeUserCallbackForNestedShow = false;
-TransparencyMode transparencyMode = TransparencyMode::None;
-
-// enabled by default in debug mode
-#ifndef NDEBUG
-bool enableRenderErrorChecks = false;
-#else
-bool enableRenderErrorChecks = true;
-#endif
-
-} // namespace options
-
+// Note: Storage for global members lives in state.cpp and options.cpp
 
 // Helpers
 namespace {

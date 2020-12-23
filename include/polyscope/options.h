@@ -42,14 +42,16 @@ extern bool openImGuiWindowForUserCallback;
 // If true, the user callback will be invoked for nested calls to polyscope::show(), otherwise not (default: false)
 extern bool invokeUserCallbackForNestedShow;
 
-// Enables optional error checks in the rendering system
-extern bool enableRenderErrorChecks;
-
 // Transparency settings for the renderer
 extern TransparencyMode transparencyMode;
 
+// === Debug options
+
+// Enables optional error checks in the rendering system
+extern bool enableRenderErrorChecks;
+
+// Render the pick buffer to screen rather than the regular scene
+extern bool debugDrawPickBuffer;
+
 } // namespace options
-
-
-
 } // namespace polyscope
