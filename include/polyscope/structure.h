@@ -77,7 +77,7 @@ public:
   void setEnabledAllOfType(bool newEnabled); // enable/disable all structures of this type
 
   // Options
-  void setTransparency(double newVal); // also enables transparency if <1 and transparency is not enabled
+  Structure* setTransparency(double newVal); // also enables transparency if <1 and transparency is not enabled
   double getTransparency();
 
 protected:

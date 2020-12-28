@@ -166,13 +166,15 @@ std::string Structure::uniquePrefix() { return typeName() + "#" + name + "#"; }
 void Structure::remove() { removeStructure(typeName(), name); }
 
 
-void Structure::setTransparency(double newVal) {
+Structure* Structure::setTransparency(double newVal) {
   transparency = newVal;
 
   if (newVal < 1. && options::transparencyMode == TransparencyMode::None) {
     options::transparencyMode = TransparencyMode::Pretty;
   }
   requestRedraw();
+
+  return this;
 }
 double Structure::getTransparency() { return transparency.get(); }
 
