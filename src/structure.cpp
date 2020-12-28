@@ -63,6 +63,16 @@ void Structure::buildUI() {
         ImGui::EndMenu();
       }
 
+      if (ImGui::BeginMenu("Transparency")) {
+        if (ImGui::SliderFloat("Alpha", &transparency.get(), 0., 1., "%.3f")) setTransparency(transparency.get());
+        ImGui::TextUnformatted("Note: Change the transparency mode");
+        ImGui::TextUnformatted("      in Appearance --> Transparency.");
+        ImGui::TextUnformatted("Current mode: ");
+        ImGui::SameLine();
+        ImGui::TextUnformatted(modeName(render::engine->getTransparencyMode()).c_str());
+        ImGui::EndMenu();
+      }
+
       // Selection
       if (ImGui::BeginMenu("Structure Selection")) {
         if (ImGui::MenuItem("Enable all of type")) setEnabledAllOfType(true);
@@ -70,12 +80,6 @@ void Structure::buildUI() {
         if (ImGui::MenuItem("Isolate")) enableIsolate();
         ImGui::EndMenu();
       }
-
-      if (ImGui::BeginMenu("Transparency")) {
-        if (ImGui::SliderFloat("Alpha", &transparency.get(), 0., 1., "%.3f")) setTransparency(transparency.get());
-        ImGui::EndMenu();
-      }
-
 
       buildStructureOptionsUI();
 
@@ -162,7 +166,14 @@ std::string Structure::uniquePrefix() { return typeName() + "#" + name + "#"; }
 void Structure::remove() { removeStructure(typeName(), name); }
 
 
-void Structure::setTransparency(double newVal) { transparency = newVal; }
+void Structure::setTransparency(double newVal) {
+  transparency = newVal;
+
+  if (newVal < 1. && options::transparencyMode == TransparencyMode::None) {
+    options::transparencyMode = TransparencyMode::Pretty;
+  }
+  requestRedraw();
+}
 double Structure::getTransparency() { return transparency.get(); }
 
 } // namespace polyscope

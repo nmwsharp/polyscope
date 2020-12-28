@@ -77,13 +77,13 @@ public:
   void setEnabledAllOfType(bool newEnabled); // enable/disable all structures of this type
 
   // Options
-  void setTransparency(double newVal);
+  void setTransparency(double newVal); // also enables transparency if <1 and transparency is not enabled
   double getTransparency();
 
 protected:
   // = State
   PersistentValue<bool> enabled;
- 
+
   // 0 for transparent, 1 for opaque, only has effect if engine transparency is set
   PersistentValue<float> transparency;
 };

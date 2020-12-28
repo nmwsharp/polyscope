@@ -29,6 +29,19 @@ int dimension(const TextureFormat& x) {
   throw std::runtime_error("bad enum");
 }
 
+std::string modeName(const TransparencyMode& m) {
+  switch (m) {
+  case TransparencyMode::None:
+    return "None";
+  case TransparencyMode::Simple:
+    return "Simple";
+  case TransparencyMode::Pretty:
+    return "Pretty";
+  }
+  return "";
+}
+
+
 namespace render {
 
 TextureBuffer::TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_)
@@ -159,22 +172,9 @@ void Engine::buildEngineGui() {
     ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
     if (ImGui::TreeNode("Transparency")) {
 
-      auto tName = [](TransparencyMode m) -> std::string {
-        switch (m) {
-        case TransparencyMode::None:
-          return "None";
-        case TransparencyMode::Simple:
-          return "Simple";
-        case TransparencyMode::Pretty:
-          return "Pretty";
-        }
-        return "";
-      };
-
-
-      if (ImGui::BeginCombo("Mode", tName(transparencyMode).c_str())) {
+      if (ImGui::BeginCombo("Mode", modeName(transparencyMode).c_str())) {
         for (TransparencyMode m : {TransparencyMode::None, TransparencyMode::Simple, TransparencyMode::Pretty}) {
-          std::string mName = tName(m);
+          std::string mName = modeName(m);
           if (ImGui::Selectable(mName.c_str(), transparencyMode == m)) {
             options::transparencyMode = m;
             requestRedraw();
@@ -183,10 +183,24 @@ void Engine::buildEngineGui() {
         ImGui::EndCombo();
       }
 
-      if (transparencyMode == TransparencyMode::Pretty) {
+      switch (transparencyMode) {
+      case TransparencyMode::None: {
+        ImGui::TextWrapped("Transparency effects are disabled and all related options are ignored.");
+        break;
+      }
+      case TransparencyMode::Simple: {
+        ImGui::TextWrapped(
+            "Simple transparent rendering. Efficient, but objects at different depths may not look right.");
+        break;
+      }
+      case TransparencyMode::Pretty: {
+        ImGui::TextWrapped("Accurate but expensive transparent rendering. Increase the number of passes to resolve "
+                           "complicated scenes.");
         if (ImGui::InputInt("Render Passes", &options::transparencyRenderPasses)) {
           requestRedraw();
         }
+        break;
+      }
       }
 
       ImGui::TreePop();

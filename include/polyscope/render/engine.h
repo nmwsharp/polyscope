@@ -41,6 +41,7 @@ enum class DepthMode { Less, LEqual, LEqualReadOnly, Greater, Disable };
 enum class BlendMode { Over, OverNoWrite, Under, Zero, WeightedAdd, Disable };
 
 int dimension(const TextureFormat& x);
+std::string modeName(const TransparencyMode& m);
 
 namespace render {
 
