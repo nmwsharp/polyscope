@@ -168,6 +168,7 @@ void Engine::buildEngineGui() {
         case TransparencyMode::Pretty:
           return "Pretty";
         }
+        return "";
       };
 
 
