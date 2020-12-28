@@ -85,12 +85,33 @@ void GroundPlane::prepareGroundPlane() {
     stbi_image_free(image);
   }
 
+  { // Blur buffers and program
+    for (int i = 0; i < 2; i++) {
+      blurColorTextures[i] =
+          render::engine->generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+      blurFrameBuffers[i] = render::engine->generateFrameBuffer(view::bufferWidth, view::bufferHeight);
+
+      blurFrameBuffers[i]->addColorBuffer(blurColorTextures[i]);
+      blurFrameBuffers[i]->setDrawBuffers();
+
+      blurFrameBuffers[i]->clearColor = glm::vec3{1., 1., 1.};
+      blurFrameBuffers[i]->clearAlpha = 0.0;
+    }
+
+    blurProgram = render::engine->requestShader("BLUR_RGB", {}, render::ShaderReplacementDefaults::Process);
+    blurProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
+    copyTexProgram =
+        render::engine->requestShader("TEXTURE_DRAW_PLAIN", {}, render::ShaderReplacementDefaults::Process);
+    copyTexProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
+  }
 
   { // Mirored scene buffer
     mirroredSceneColorTexture =
         render::engine->generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
-    std::shared_ptr<RenderBuffer> mirroredSceneDepth =
+    mirroredSceneDepth =
         render::engine->generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
+
+    mirroredSceneColorTexture->setFilterMode(FilterMode::Linear);
 
     mirroredSceneFrameBuffer = render::engine->generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     mirroredSceneFrameBuffer->addColorBuffer(mirroredSceneColorTexture);
@@ -100,7 +121,7 @@ void GroundPlane::prepareGroundPlane() {
     mirroredSceneFrameBuffer->clearColor = glm::vec3{1., 1., 1.};
     mirroredSceneFrameBuffer->clearAlpha = 0.0;
 
-    groundPlaneProgram->setTextureFromBuffer("t_mirrorImage", mirroredSceneColorTexture.get());
+    groundPlaneProgram->setTextureFromBuffer("t_mirrorImage", blurColorTextures[0].get());
   }
 
   groundPlanePrepared = true;
@@ -136,6 +157,10 @@ void GroundPlane::draw() {
   double heightEPS = state::lengthScale * 1e-4;
   double groundHeight = bboxBottom - sign * (groundPlaneHeightFactor * bboxHeight + heightEPS);
 
+  // Viewport
+  glm::vec4 viewport = render::engine->getCurrentViewport();
+  glm::vec2 viewportDim{viewport[2], viewport[3]};
+
   auto setUniforms = [&]() {
     glm::mat4 viewMat = view::getCameraViewMatrix();
     groundPlaneProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
@@ -143,8 +168,6 @@ void GroundPlane::draw() {
     glm::mat4 projMat = view::getCameraPerspectiveMatrix();
     groundPlaneProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-    glm::vec4 viewport = render::engine->getCurrentViewport();
-    glm::vec2 viewportDim{viewport[2], viewport[3]};
     groundPlaneProgram->setUniform("u_viewportDim", viewportDim);
 
     groundPlaneProgram->setUniform("u_center", state::center);
@@ -164,12 +187,23 @@ void GroundPlane::draw() {
   // Render the scene to implement the mirror effect
   bool doMirror = render::engine->getTransparencyMode() == TransparencyMode::None;
   {
+
     // Render to a texture so we can sample from it on the ground
     // (use a texture 1/4 the area of the view buffer, it's supposed to be blurry anyway and this saves perf)
     // viewport size problems
-    mirroredSceneFrameBuffer->resize(view::bufferWidth / 2, view::bufferHeight / 2);
-    mirroredSceneFrameBuffer->setViewport(0, 0, view::bufferWidth / 2, view::bufferHeight / 2);
-    render::engine->setCurrentPixelScaling(1. / 2.);
+
+
+    // Make sure all framebuffers are the right shape
+    int factor = render::engine->getSSAAFactor();
+    mirroredSceneFrameBuffer->resize(factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
+    mirroredSceneFrameBuffer->setViewport(0, 0, factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
+    render::engine->setCurrentPixelScaling(factor / 2.);
+    for (int i = 0; i < 2; i++) {
+      blurFrameBuffers[i]->resize(factor * view::bufferWidth, factor * view::bufferHeight);
+      blurFrameBuffers[i]->setViewport(0, 0, factor * view::bufferWidth, factor * view::bufferHeight);
+    }
+
+    blurFrameBuffers[0]->clear();
 
     mirroredSceneFrameBuffer->bindForRendering();
     mirroredSceneFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
@@ -189,6 +223,32 @@ void GroundPlane::draw() {
     // Draw everything
     if (doMirror) {
       drawStructures();
+
+      // == Blur
+
+      // Render (upsample) to the first blur texture
+      render::engine->setBlendMode(BlendMode::Disable);
+      blurFrameBuffers[0]->bindForRendering();
+      copyTexProgram->setTextureFromBuffer("t_image", mirroredSceneColorTexture.get());
+      copyTexProgram->draw();
+
+      // Do some blur iterations (ends in same buffer it started in)
+      // FORNOW: no blur. I think it looks nicer without.
+      int nBlur = 0;
+      // int nBlur = 2 * render::engine->getSSAAFactor();
+      for (int i = 0; i < nBlur; i++) {
+        // horizontal blur
+        blurFrameBuffers[1]->bindForRendering();
+        blurProgram->setTextureFromBuffer("t_image", blurColorTextures[0].get());
+        blurProgram->setUniform("u_horizontal", 1);
+        blurProgram->draw();
+
+        // vertical blur
+        blurFrameBuffers[0]->bindForRendering();
+        blurProgram->setTextureFromBuffer("t_image", blurColorTextures[1].get());
+        blurProgram->setUniform("u_horizontal", 0);
+        blurProgram->draw();
+      }
     }
 
     // Restore original view matrix
@@ -201,7 +261,6 @@ void GroundPlane::draw() {
   render::engine->setDepthMode();
   render::engine->applyTransparencySettings();
   setUniforms();
-  render::engine->setBlendMode(BlendMode::Over);
   groundPlaneProgram->draw();
   render::engine->setBlendMode(BlendMode::Disable);
 }

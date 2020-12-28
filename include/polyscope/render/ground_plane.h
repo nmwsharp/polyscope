@@ -9,14 +9,16 @@ namespace polyscope {
 namespace render {
 
 // Forward declare necessary types
+// TODO get this out of the engine so this isn't necessary
 class ShaderProgram;
 class TextureBuffer;
 class FrameBuffer;
+class RenderBuffer;
 
 // There should probably only ever be one GroundPlane object, managed by the render::Engine.
 class GroundPlane {
 public:
-  GroundPlane() {};
+  GroundPlane(){};
 
   void draw();
   void buildGui();
@@ -26,9 +28,17 @@ public:
   float groundPlaneHeightFactor = 0;
 
 private:
-  std::shared_ptr<render::ShaderProgram> groundPlaneProgram = nullptr;
-  std::shared_ptr<render::TextureBuffer> mirroredSceneColorTexture = nullptr;
-  std::shared_ptr<render::FrameBuffer> mirroredSceneFrameBuffer = nullptr;
+  std::shared_ptr<render::ShaderProgram> groundPlaneProgram;
+  std::shared_ptr<render::TextureBuffer> mirroredSceneColorTexture;
+  std::shared_ptr<render::RenderBuffer> mirroredSceneDepth;
+  std::shared_ptr<render::FrameBuffer> mirroredSceneFrameBuffer;
+
+  // alternating blurring
+  // result starts and ends in the first buffer
+  std::array<std::shared_ptr<render::TextureBuffer>, 2> blurColorTextures;
+  std::array<std::shared_ptr<render::FrameBuffer>, 2> blurFrameBuffers;
+  std::shared_ptr<render::ShaderProgram> blurProgram, copyTexProgram;
+  void blurIteration();
 
   void prepareGroundPlane();
   void populateGroundPlaneGeometry();

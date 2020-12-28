@@ -17,6 +17,7 @@ bool autocenterStructures = false;
 bool autoscaleStructures = false;
 bool openImGuiWindowForUserCallback = true;
 bool invokeUserCallbackForNestedShow = false;
+int ssaaFactor = 1;
 TransparencyMode transparencyMode = TransparencyMode::None;
 int transparencyRenderPasses = 8;
 

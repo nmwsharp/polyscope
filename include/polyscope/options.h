@@ -42,6 +42,9 @@ extern bool openImGuiWindowForUserCallback;
 // If true, the user callback will be invoked for nested calls to polyscope::show(), otherwise not (default: false)
 extern bool invokeUserCallbackForNestedShow;
 
+// Rendering parameters
+extern int ssaaFactor;
+
 // Transparency settings for the renderer
 extern TransparencyMode transparencyMode;
 extern int transparencyRenderPasses;

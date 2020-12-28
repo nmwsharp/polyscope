@@ -98,12 +98,14 @@ R"(
       vec4 blurMirrorSample() {
         vec2 screenCoords = vec2(gl_FragCoord.x, gl_FragCoord.y);
 
-        vec4 mirrorImage =
-          texture(t_mirrorImage, screenCoords / u_viewportDim) * .4 + 
-          texture(t_mirrorImage, (screenCoords + vec2(+1.0, +1.0)) / u_viewportDim) * .15 + 
-          texture(t_mirrorImage, (screenCoords + vec2(+1.0, -1.0)) / u_viewportDim) * .15 + 
-          texture(t_mirrorImage, (screenCoords + vec2(-1.0, +1.0)) / u_viewportDim) * .15 + 
-          texture(t_mirrorImage, (screenCoords + vec2(-1.0, -1.0)) / u_viewportDim) * .15;
+        vec4 mirrorImage = texture(t_mirrorImage, screenCoords / u_viewportDim) ;
+
+        //vec4 mirrorImage =
+          //texture(t_mirrorImage, screenCoords / u_viewportDim) * .4 + 
+          //texture(t_mirrorImage, (screenCoords + vec2(+1.0, +1.0)) / u_viewportDim) * .15 + 
+          //texture(t_mirrorImage, (screenCoords + vec2(+1.0, -1.0)) / u_viewportDim) * .15 + 
+          //texture(t_mirrorImage, (screenCoords + vec2(-1.0, +1.0)) / u_viewportDim) * .15 + 
+          //texture(t_mirrorImage, (screenCoords + vec2(-1.0, -1.0)) / u_viewportDim) * .15;
 
         return mirrorImage;
       }

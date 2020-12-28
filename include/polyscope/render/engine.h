@@ -422,6 +422,8 @@ public:
   float whiteLevel = 0.75;
   float gamma = 2.2;
 
+  void setSSAAFactor(int newVal);
+  int getSSAAFactor();
 
   // == Cached data
 

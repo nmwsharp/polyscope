@@ -224,7 +224,8 @@ void Engine::buildEngineGui() {
       if (ImGui::InputInt("SSAA (pretty)", &ssaaFactor, 1)) {
         ssaaFactor = std::min(ssaaFactor, 4);
         ssaaFactor = std::max(ssaaFactor, 1);
-        updateWindowSize(true);
+        options::ssaaFactor = ssaaFactor;
+        requestRedraw();
       }
       ImGui::TreePop();
     }
@@ -475,6 +476,14 @@ bool Engine::transparencyEnabled() {
   }
   return false;
 }
+
+void Engine::setSSAAFactor(int newVal) {
+  if(newVal < 1 || newVal > 4) throw std::runtime_error("ssaaFactor must be one of 1,2,3,4");
+  ssaaFactor = newVal;
+  updateWindowSize(true);
+}
+
+int Engine::getSSAAFactor() { return ssaaFactor; }
 
 void Engine::allocateGlobalBuffersAndPrograms() {
 

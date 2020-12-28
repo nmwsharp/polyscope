@@ -311,6 +311,57 @@ R"(
 )"
 };
 
+
+const ShaderStageSpecification BLUR_RGB = {
+    
+    // stage
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    { 
+      {"u_horizontal", DataType::Int},
+    }, 
+
+    // attributes
+    { },
+    
+    // textures 
+    { {"t_image", 2} },
+    
+    // source 
+R"(
+      ${ GLSL_VERSION }$
+
+      in vec2 tCoord;
+      uniform sampler2D t_image;
+      uniform int u_horizontal;
+      uniform float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216); // gaussian blur weights
+      layout(location = 0) out vec4 outputF;
+
+      void main()
+      {
+        vec2 texScale = 1.0 / textureSize(t_image, 0);
+        vec3 val = texture(t_image, tCoord).rgb * weight[0];
+        if(u_horizontal == 1)
+        {
+            for(int i = 1; i < 5; ++i) {
+                val += texture(t_image, tCoord + vec2(texScale.x * i, 0.0)).rgb * weight[i];
+                val += texture(t_image, tCoord - vec2(texScale.x * i, 0.0)).rgb * weight[i];
+            }
+        }
+        else
+        {
+            for(int i = 1; i < 5; ++i) {
+                val += texture(t_image, tCoord + vec2(0.0, texScale.y * i)).rgb * weight[i];
+                val += texture(t_image, tCoord - vec2(0.0, texScale.y * i)).rgb * weight[i];
+            }
+        }
+
+        outputF = vec4(val, 1.);
+      }
+)"
+};
+
 // clang-format on
 
 } // namespace backend_openGL3_glfw

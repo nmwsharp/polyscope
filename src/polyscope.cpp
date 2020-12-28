@@ -872,6 +872,7 @@ void refresh() {
 namespace lazy {
 TransparencyMode transparencyMode = TransparencyMode::None;
 int transparencyRenderPasses = -1;
+int ssaaFactor = -1;
 } // namespace lazy
 
 void processLazyProperties() {
@@ -895,6 +896,12 @@ void processLazyProperties() {
   if (lazy::transparencyRenderPasses != options::transparencyRenderPasses) {
     lazy::transparencyRenderPasses = options::transparencyRenderPasses;
     requestRedraw();
+  }
+
+  // transparency render passes
+  if (lazy::ssaaFactor != options::ssaaFactor) {
+    lazy::ssaaFactor = options::ssaaFactor;
+    render::engine->setSSAAFactor(options::ssaaFactor);
   }
 };
 
