@@ -173,6 +173,7 @@ R"(
         void main()
         {
            
+           float depth = gl_FragCoord.z;
            ${ GLOBAL_FRAGMENT_FILTER }$
 
            // Compute a fade factor to set the transparency

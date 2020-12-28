@@ -210,6 +210,7 @@ void SurfaceFaceIntrinsicVectorQuantity::refresh() {
   }
 
   prepareVectorArtist();
+  ribbonArtist.reset();
 }
 
 void SurfaceFaceIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
@@ -295,6 +296,7 @@ void SurfaceVertexIntrinsicVectorQuantity::refresh() {
   }
 
   prepareVectorArtist();
+  ribbonArtist.reset();
 }
 
 void SurfaceVertexIntrinsicVectorQuantity::buildVertexInfoGUI(size_t iV) {
@@ -444,6 +446,7 @@ void SurfaceOneFormIntrinsicVectorQuantity::refresh() {
   }
 
   prepareVectorArtist();
+  ribbonArtist.reset();
 }
 
 void SurfaceOneFormIntrinsicVectorQuantity::buildEdgeInfoGUI(size_t iE) {
