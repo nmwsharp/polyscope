@@ -44,6 +44,7 @@ extern bool invokeUserCallbackForNestedShow;
 
 // Transparency settings for the renderer
 extern TransparencyMode transparencyMode;
+extern int transparencyRenderPasses;
 
 // === Debug options
 

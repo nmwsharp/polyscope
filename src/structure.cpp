@@ -137,8 +137,23 @@ void Structure::setTransformUniforms(render::ShaderProgram& p) {
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   p.setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-  if (render::engine->transparencyEnabled() && p.hasUniform("u_transparency")) {
-    p.setUniform("u_transparency", transparency.get());
+  if (render::engine->transparencyEnabled()) {
+    if (p.hasUniform("u_transparency")) {
+      p.setUniform("u_transparency", transparency.get());
+    }
+
+    if (p.hasUniform("u_viewportDim")) {
+      glm::vec4 viewport = render::engine->getCurrentViewport();
+      glm::vec2 viewportDim{viewport[2], viewport[3]};
+      p.setUniform("u_viewportDim", viewportDim);
+    }
+
+    // Attach the min depth texture, if needed
+    // (note that this design is somewhat lazy wrt to the name of the function: it sets a texture, not a uniform, and
+    // only actually does anything once on initialization)
+    if (render::engine->transparencyEnabled() && p.hasTexture("t_minDepth") && !p.textureIsSet("t_minDepth")) {
+      p.setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());
+    }
   }
 }
 

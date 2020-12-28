@@ -18,6 +18,7 @@ bool autoscaleStructures = false;
 bool openImGuiWindowForUserCallback = true;
 bool invokeUserCallbackForNestedShow = false;
 TransparencyMode transparencyMode = TransparencyMode::None;
+int transparencyRenderPasses = 8;
 
 // enabled by default in debug mode
 #ifndef NDEBUG

@@ -177,7 +177,7 @@ const ShaderReplacementRule TRANSPARENCY_STRUCTURE (
     /* rule name */ "TRANSPARENCY_STRUCTURE",
     { /* replacement sources */
       {"FRAG_DECLARATIONS", R"(
-        uniform float u_transparency;
+          uniform float u_transparency;
         )"},
       {"GENERATE_ALPHA", R"(
           alphaOut = u_transparency;
@@ -188,6 +188,35 @@ const ShaderReplacementRule TRANSPARENCY_STRUCTURE (
     },
     /* attributes */ {},
     /* textures */ {}
+);
+
+const ShaderReplacementRule TRANSPARENCY_PEEL_STRUCTURE (
+    /* rule name */ "TRANSPARENCY_PEEL_STRUCTURE",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_transparency;
+          uniform sampler2D t_minDepth;
+          uniform vec2 u_viewportDim;
+        )"},
+      {"GENERATE_ALPHA", R"(
+          alphaOut = u_transparency;
+        )"},
+      {"GLOBAL_FRAGMENT_FILTER", R"(
+          vec2 depthPixelCoords = gl_FragCoord.xy / u_viewportDim;
+          float minDepth = texture(t_minDepth, depthPixelCoords).x;
+          if(gl_FragCoord.z <= minDepth) {
+            discard;
+          }
+        )"},
+    },
+    /* uniforms */ {
+        {"u_transparency", DataType::Float},
+        {"u_viewportDim", DataType::Vector2Float},
+    },
+    /* attributes */ {},
+    /* textures */ {
+        {"t_minDepth", 2},
+    }
 );
 
 // clang-format on

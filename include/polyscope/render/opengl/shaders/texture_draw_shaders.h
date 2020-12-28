@@ -6,13 +6,15 @@ namespace polyscope {
 namespace render {
 namespace backend_openGL3_glfw {
 
-// High level pipeline
 extern const ShaderStageSpecification TEXTURE_DRAW_VERT_SHADER;
 extern const ShaderStageSpecification SPHEREBG_DRAW_VERT_SHADER;
 extern const ShaderStageSpecification SPHEREBG_DRAW_FRAG_SHADER;
 extern const ShaderStageSpecification PLAIN_TEXTURE_DRAW_FRAG_SHADER;
 extern const ShaderStageSpecification DOT3_TEXTURE_DRAW_FRAG_SHADER;
 extern const ShaderStageSpecification MAP3_TEXTURE_DRAW_FRAG_SHADER;
+extern const ShaderStageSpecification COMPOSITE_PEEL;
+extern const ShaderStageSpecification DEPTH_COPY;
+extern const ShaderStageSpecification SCALAR_TEXTURE_COLORMAP;
 
 
 // Rules

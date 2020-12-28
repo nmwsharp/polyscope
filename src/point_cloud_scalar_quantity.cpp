@@ -122,7 +122,8 @@ void PointCloudScalarQuantity::buildCustomUI() {
 void PointCloudScalarQuantity::createPointProgram() {
   // Create the program to draw this quantity
 
-  pointProgram = render::engine->requestShader("RAYCAST_SPHERE", parent.addStructureRules({"SPHERE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"}));
+  pointProgram = render::engine->requestShader(
+      "RAYCAST_SPHERE", parent.addStructureRules({"SPHERE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"}));
 
   // Fill buffers
   parent.fillGeometryBuffers(*pointProgram);
@@ -132,8 +133,8 @@ void PointCloudScalarQuantity::createPointProgram() {
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
 
-void PointCloudScalarQuantity::refresh() { 
-  pointProgram.reset(); 
+void PointCloudScalarQuantity::refresh() {
+  pointProgram.reset();
   Quantity::refresh();
 }
 
@@ -147,6 +148,7 @@ void PointCloudScalarQuantity::buildPickUI(size_t ind) {
 PointCloudScalarQuantity* PointCloudScalarQuantity::setColorMap(std::string val) {
   cMap = val;
   hist.updateColormap(cMap.get());
+  pointProgram.reset();
   requestRedraw();
   return this;
 }

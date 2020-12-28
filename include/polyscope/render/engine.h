@@ -9,8 +9,8 @@
 #include "polyscope/render/color_maps.h"
 #include "polyscope/render/ground_plane.h"
 #include "polyscope/render/materials.h"
-#include "polyscope/view.h"
 #include "polyscope/types.h"
+#include "polyscope/view.h"
 
 #include "imgui.h"
 
@@ -35,10 +35,12 @@ enum class DrawMode {
 };
 
 enum class FilterMode { Nearest = 0, Linear };
-enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F };
+enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F, R16F, DEPTH24 };
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
-enum class DepthMode { Less, LEqual, LEqualReadOnly, Disable };
-enum class BlendMode { Over, OverNoWrite, Zero, WeightedAdd, Disable }; // TODO what to call these...
+enum class DepthMode { Less, LEqual, LEqualReadOnly, Greater, Disable };
+enum class BlendMode { Over, OverNoWrite, Under, Zero, WeightedAdd, Disable };
+
+int dimension(const TextureFormat& x);
 
 namespace render {
 
@@ -56,8 +58,16 @@ public:
   unsigned int getSizeX() const { return sizeX; }
   unsigned int getSizeY() const { return sizeY; }
   int getDimension() const { return dim; }
+  unsigned int getTotalSize() const; // product of dimensions
 
   virtual void setFilterMode(FilterMode newMode);
+
+  // Get texture data CPU-side
+  // (call the version which matches the dimension of the texture datatype, otherwise you will get an error. remember
+  // that the texture datatype is a distinct concepts from its spatial dimension stored in dim)
+  virtual std::vector<float> getDataScalar() = 0;
+  virtual std::vector<glm::vec2> getDataVector2() = 0;
+  virtual std::vector<glm::vec3> getDataVector3() = 0;
 
   // Set texture data
   // void fillTextureData1D(std::string name, unsigned char* texData, unsigned int length);
@@ -106,6 +116,7 @@ public:
   virtual void clear() = 0;
   glm::vec3 clearColor{1.0, 1.0, 1.0};
   float clearAlpha = 0.0;
+  float clearDepth = 1.0;
 
   // Bind to textures/renderbuffers for output
   // note: currently no way to remove buffers
@@ -229,6 +240,7 @@ public:
   // = Attributes
   // clang-format off
   virtual bool hasAttribute(std::string name) = 0;
+  virtual bool attributeIsSet(std::string name) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0, int size = -1) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) = 0;
@@ -246,6 +258,7 @@ public:
 
   // Textures
   virtual bool hasTexture(std::string name) = 0;
+  virtual bool textureIsSet(std::string name) = 0;
   virtual void setTexture1D(std::string name, unsigned char* texData, unsigned int length) = 0;
   virtual void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                             bool withAlpha = true, bool useMipMap = false, bool repeat = false) = 0;
@@ -307,7 +320,7 @@ public:
   virtual void setScreenBufferViewports();
   virtual void
   applyLightingTransform(std::shared_ptr<TextureBuffer>& texture); // tonemap and gamma correct, render to active buffer
-  // virtual void blitFinalSceneToScreen() = 0;
+  void updateMinDepthTexture();
   void renderBackground(); // respects background setting
 
   // Manage render state
@@ -384,14 +397,16 @@ public:
   std::shared_ptr<FrameBuffer> displayBuffer;
   std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal;
   std::shared_ptr<FrameBuffer> pickFramebuffer;
+  std::shared_ptr<FrameBuffer> sceneDepthMinFrame; 
 
   // Main buffers for rendering
-  std::shared_ptr<TextureBuffer> sceneColor, sceneColorFinal;
-  std::shared_ptr<RenderBuffer> sceneDepth, pickColorBuffer, pickDepthBuffer;
+  // sceneDepthMin is an optional texture copy of the depth buffe used for some effects
+  std::shared_ptr<TextureBuffer> sceneColor, sceneColorFinal, sceneDepth, sceneDepthMin;
+  std::shared_ptr<RenderBuffer> pickColorBuffer, pickDepthBuffer;
 
   // General-use programs used by the engine
   std::shared_ptr<ShaderProgram> renderTexturePlain, renderTextureDot3, renderTextureMap3, renderTextureSphereBG;
-  std::shared_ptr<ShaderProgram> mapLight;
+  std::shared_ptr<ShaderProgram> compositePeel, mapLight, copyDepth;
 
   // Manage transparency and culling
   void setTransparencyMode(TransparencyMode newMode);
@@ -422,6 +437,10 @@ public:
   const ValueColorMap& getColorMap(const std::string& name);
   void loadColorMap(std::string cmapName, std::string filename);
 
+  // Helpers
+  std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen
+  std::vector<glm::vec4> distantCubeCoords();     // cube with vertices at infinity
+
 protected:
   // TODO Manage a cache of compiled shaders?
 
@@ -437,8 +456,6 @@ protected:
   TransparencyMode currLightingTransparencyMode = TransparencyMode::None;
 
   // Helpers
-  std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen
-  std::vector<glm::vec4> distantCubeCoords();     // cube with vertices at infinity
   void loadDefaultMaterials();
   void loadDefaultMaterial(std::string name);
   std::shared_ptr<TextureBuffer> loadMaterialTexture(float* data, int width, int height);

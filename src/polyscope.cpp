@@ -191,6 +191,7 @@ void drawStructures() {
 
       // Draw the pick buffer for debugging purposes
       if (options::debugDrawPickBuffer) {
+        render::engine->setDepthMode();
         s.second->drawPick();
       }
       // The normal case
@@ -324,35 +325,79 @@ void processInputEvents() {
 void renderScene() {
 
   // Set background color/alpha and clear
-  if (render::engine->getTransparencyMode() == TransparencyMode::Simple) {
-    // special case for averaging transparency: we need to premultiply background
+  // if (render::engine->getTransparencyMode() == TransparencyMode::Simple) {
+  if (render::engine->transparencyEnabled()) {
+    // special case for transparency: we need to premultiply background
     float alpha = view::bgColor[3];
     render::engine->setBackgroundColor({alpha * view::bgColor[0], alpha * view::bgColor[1], alpha * view::bgColor[2]});
   } else {
     render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
   }
   render::engine->setBackgroundAlpha(view::bgColor[3]);
-  render::engine->clearSceneBuffer();
+  render::engine->sceneBuffer->clear();
 
   if (!render::engine->bindSceneBuffer()) return;
 
   // If a view has never been set, this will set it to the home view
   view::ensureViewValid();
 
-  // Set defaults
-  render::engine->renderBackground();
+  if (render::engine->getTransparencyMode() == TransparencyMode::Pretty) {
+    // Special depth peeling case: multiple render passes
+    // We will perform several "peeled" rounds of rendering in to the usual scene buffer. After each, we will manually
+    // composite in to the final scene buffer.
 
-  // Draw the ground plane
-  if (options::groundPlaneEnabled) {
-    render::engine->groundPlane.draw();
+
+    // Clear the final buffer explicitly since we will gradually composite in to it rather than just blitting directly as in normal rendering.
+    render::engine->sceneBufferFinal->clearColor = glm::vec3{0., 0., 0.};
+    render::engine->sceneBufferFinal->clearAlpha = 0;
+    render::engine->sceneBufferFinal->clear();
+
+    render::engine->sceneDepthMinFrame->clear();
+
+    auto compositeToFinal = [&]() {
+      // Composite the result of this pass in to the result buffer
+      render::engine->sceneBufferFinal->bind();
+      render::engine->setDepthMode(DepthMode::Disable);
+      render::engine->setBlendMode(BlendMode::Under);
+      render::engine->compositePeel->draw();
+
+      // Update the minimum depth texture
+      render::engine->updateMinDepthTexture();
+    };
+
+    for (int iPass = 0; iPass < options::transparencyRenderPasses; iPass++) {
+      render::engine->bindSceneBuffer();
+      render::engine->clearSceneBuffer();
+      render::engine->setDepthMode();
+      render::engine->setBlendMode();
+
+      drawStructures();
+
+      // Draw the ground plane
+      if (options::groundPlaneEnabled) {
+        render::engine->groundPlane.draw();
+      }
+
+      compositeToFinal();
+    }
+
+
+  } else {
+    // Normal case: single render pass
+    render::engine->renderBackground();
+
+    // Draw the ground plane
+    if (options::groundPlaneEnabled) {
+      render::engine->groundPlane.draw();
+    }
+
+    drawStructures();
+
+    render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
   }
-
-  drawStructures();
 
   // Back to normal transparency settings
   render::engine->disableTransparencySettings();
-
-  render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
 }
 
 void renderSceneToScreen() {
@@ -424,9 +469,9 @@ void buildPolyscopeGui() {
     static bool showDebugTextures = false;
     ImGui::Checkbox("Show debug textures", &showDebugTextures);
     if (showDebugTextures) {
+      render::engine->showTextureInImGuiWindow("Scene", render::engine->sceneColor.get());
       render::engine->showTextureInImGuiWindow("Scene Final", render::engine->sceneColorFinal.get());
     }
-
     ImGui::TreePop();
   }
 
@@ -826,13 +871,19 @@ void refresh() {
 // Cached versions of lazy properties used for updates
 namespace lazy {
 TransparencyMode transparencyMode = TransparencyMode::None;
-}
+int transparencyRenderPasses = -1;
+} // namespace lazy
 
 void processLazyProperties() {
   // transparency mode
   if (lazy::transparencyMode != options::transparencyMode) {
     lazy::transparencyMode = options::transparencyMode;
     render::engine->setTransparencyMode(options::transparencyMode);
+  }
+
+  if (lazy::transparencyRenderPasses != options::transparencyRenderPasses) {
+    lazy::transparencyRenderPasses = options::transparencyRenderPasses;
+    requestRedraw();
   }
 };
 

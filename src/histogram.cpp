@@ -14,6 +14,8 @@ using std::endl;
 
 namespace polyscope {
 
+// TODO make histograms lazy. There's no need to prepare here rather than on first draw.
+
 Histogram::Histogram() {
   prepare();
   fillBuffers();

@@ -10,6 +10,25 @@
 
 
 namespace polyscope {
+
+int dimension(const TextureFormat& x) {
+  // clang-format off
+  switch (x) {
+    case TextureFormat::RGB8:     return 3;
+    case TextureFormat::RGBA8:    return 4;
+    case TextureFormat::RG16F:    return 2;
+    case TextureFormat::RGB16F:   return 3;
+    case TextureFormat::RGBA16F:  return 4;
+    case TextureFormat::R32F:     return 1;
+    case TextureFormat::R16F:     return 1;
+    case TextureFormat::RGB32F:   return 3;
+    case TextureFormat::RGBA32F:  return 4;
+    case TextureFormat::DEPTH24:  return 1;
+  }
+  // clang-format on
+  throw std::runtime_error("bad enum");
+}
+
 namespace render {
 
 TextureBuffer::TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_)
@@ -28,6 +47,18 @@ void TextureBuffer::resize(unsigned int newX, unsigned int newY) {
   sizeY = newY;
 }
 
+unsigned int TextureBuffer::getTotalSize() const {
+  switch (dim) {
+  case 1:
+    return getSizeX();
+  case 2:
+    return getSizeX() * getSizeY();
+  case 3:
+    throw std::runtime_error("not implemented");
+    return -1;
+  }
+  return -1;
+}
 
 RenderBuffer::RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_)
     : type(type_), sizeX(sizeX_), sizeY(sizeY_) {
@@ -144,10 +175,17 @@ void Engine::buildEngineGui() {
         for (TransparencyMode m : {TransparencyMode::None, TransparencyMode::Simple, TransparencyMode::Pretty}) {
           std::string mName = tName(m);
           if (ImGui::Selectable(mName.c_str(), transparencyMode == m)) {
-            setTransparencyMode(m);
+            options::transparencyMode = m;
+            processLazyProperties(); // this calls setTransparencyMode() and keeps us in-sync with the polyscope options
           }
         }
         ImGui::EndCombo();
+      }
+
+      if (transparencyMode == TransparencyMode::Pretty) {
+        if (ImGui::InputInt("Render Passes", &options::transparencyRenderPasses)) {
+          processLazyProperties();
+        }
       }
 
       ImGui::TreePop();
@@ -260,7 +298,6 @@ void Engine::clearDisplay() {
 
 void Engine::clearSceneBuffer() {
   sceneBuffer->clear();
-  sceneBufferFinal->clear();
 }
 
 void Engine::resizeScreenBuffers() {
@@ -269,6 +306,7 @@ void Engine::resizeScreenBuffers() {
   displayBuffer->resize(width, height);
   sceneBuffer->resize(ssaaFactor * width, ssaaFactor * height);
   sceneBufferFinal->resize(ssaaFactor * width, ssaaFactor * height);
+  sceneDepthMinFrame->resize(ssaaFactor * width, ssaaFactor * height);
 }
 
 void Engine::setScreenBufferViewports() {
@@ -280,6 +318,7 @@ void Engine::setScreenBufferViewports() {
   displayBuffer->setViewport(xStart, yStart, sizeX, sizeY);
   sceneBuffer->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
   sceneBufferFinal->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
+  sceneDepthMinFrame->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
 }
 
 bool Engine::bindSceneBuffer() {
@@ -311,7 +350,7 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
     if (sampleLevel == 2) sampleRuleName = "DOWNSAMPLE_RESOLVE_2";
     if (sampleLevel == 3) sampleRuleName = "DOWNSAMPLE_RESOLVE_3";
     if (sampleLevel == 4) sampleRuleName = "DOWNSAMPLE_RESOLVE_4";
-    
+
     std::vector<std::string> resolveRules = {sampleRuleName};
 
     switch (transparencyMode) {
@@ -370,7 +409,6 @@ void Engine::renderBackground() {
 
 
 void Engine::setTransparencyMode(TransparencyMode newMode) {
-
   // Remove any old transparency-related rules
   switch (transparencyMode) {
   case TransparencyMode::None: {
@@ -384,7 +422,7 @@ void Engine::setTransparencyMode(TransparencyMode newMode) {
   }
   case TransparencyMode::Pretty: {
     defaultRules_sceneObject.erase(
-        std::remove(defaultRules_sceneObject.begin(), defaultRules_sceneObject.end(), "TRANSPARENCY_STRUCTURE"),
+        std::remove(defaultRules_sceneObject.begin(), defaultRules_sceneObject.end(), "TRANSPARENCY_PEEL_STRUCTURE"),
         defaultRules_sceneObject.end());
     break;
   }
@@ -402,7 +440,7 @@ void Engine::setTransparencyMode(TransparencyMode newMode) {
     break;
   }
   case TransparencyMode::Pretty: {
-    defaultRules_sceneObject.push_back("TRANSPARENCY_STRUCTURE");
+    defaultRules_sceneObject.push_back("TRANSPARENCY_PEEL_STRUCTURE");
     break;
   }
   }
@@ -433,7 +471,8 @@ void Engine::allocateGlobalBuffersAndPrograms() {
 
     // Note that this is basically duplicated in ground_plane.cpp, changes here should probably be reflected there
     sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
-    sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
+    // sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
+    sceneDepth = generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
 
     sceneBuffer = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     sceneBuffer->addColorBuffer(sceneColor);
@@ -442,6 +481,14 @@ void Engine::allocateGlobalBuffersAndPrograms() {
 
     sceneBuffer->clearColor = glm::vec3{1., 1., 1.};
     sceneBuffer->clearAlpha = 0.0;
+  }
+
+  { // Alternate depth texture used for some effects
+    sceneDepthMin = generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
+
+    sceneDepthMinFrame = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
+    sceneDepthMinFrame->addDepthBuffer(sceneDepthMin);
+    sceneDepthMinFrame->clearDepth = 0.0;
   }
 
   { // "Final" scene buffer (after resolving)
@@ -482,6 +529,13 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     renderTextureSphereBG = render::engine->requestShader("TEXTURE_DRAW_SPHEREBG", {}, render::ShaderReplacementDefaults::Process);
     renderTextureSphereBG->setAttribute("a_position", distantCubeCoords());
 
+    compositePeel = render::engine->requestShader("COMPOSITE_PEEL", {}, render::ShaderReplacementDefaults::Process);
+    compositePeel->setAttribute("a_position", screenTrianglesCoords());
+    compositePeel->setTextureFromBuffer("t_image", sceneColor.get());
+
+    copyDepth = render::engine->requestShader("DEPTH_COPY", {}, render::ShaderReplacementDefaults::Process);
+    copyDepth->setAttribute("a_position", screenTrianglesCoords());
+    copyDepth->setTextureFromBuffer("t_depth", sceneDepth.get());
     // clang-format on
   }
 
@@ -543,6 +597,12 @@ std::vector<glm::vec4> Engine::distantCubeCoords() {
   addCubeFace(2, -1.);
 
   return coords;
+}
+
+void Engine::updateMinDepthTexture() {
+  setDepthMode(DepthMode::Greater);
+  sceneDepthMinFrame->bind();
+  copyDepth->draw();
 }
 
 
