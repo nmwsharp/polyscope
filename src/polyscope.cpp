@@ -875,12 +875,23 @@ int transparencyRenderPasses = -1;
 } // namespace lazy
 
 void processLazyProperties() {
+
+  // Note: This function essentially represents lazy software design, and it's an ugly and error-prone part of the
+  // system. The reason for it that some settings require action on a change (e..g re-drawing the scene), but we want to
+  // allow variable-set syntax like `polyscope::setting = newVal;` rather than getters and setters like
+  // `polyscope::setSetting(newVal);`. It might have been better to simple set options with setter from the start, but
+  // that ship has sailed.
+  //
+  // This function is a workaround which watches for changes to set options, and performs any necessary additional work.
+
+
   // transparency mode
   if (lazy::transparencyMode != options::transparencyMode) {
     lazy::transparencyMode = options::transparencyMode;
     render::engine->setTransparencyMode(options::transparencyMode);
   }
 
+  // transparency render passes
   if (lazy::transparencyRenderPasses != options::transparencyRenderPasses) {
     lazy::transparencyRenderPasses = options::transparencyRenderPasses;
     requestRedraw();
