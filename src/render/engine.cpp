@@ -176,7 +176,7 @@ void Engine::buildEngineGui() {
           std::string mName = tName(m);
           if (ImGui::Selectable(mName.c_str(), transparencyMode == m)) {
             options::transparencyMode = m;
-            processLazyProperties(); // this calls setTransparencyMode() and keeps us in-sync with the polyscope options
+            requestRedraw();
           }
         }
         ImGui::EndCombo();
@@ -184,7 +184,7 @@ void Engine::buildEngineGui() {
 
       if (transparencyMode == TransparencyMode::Pretty) {
         if (ImGui::InputInt("Render Passes", &options::transparencyRenderPasses)) {
-          processLazyProperties();
+          requestRedraw();
         }
       }
 
@@ -296,9 +296,7 @@ void Engine::clearDisplay() {
 }
 
 
-void Engine::clearSceneBuffer() {
-  sceneBuffer->clear();
-}
+void Engine::clearSceneBuffer() { sceneBuffer->clear(); }
 
 void Engine::resizeScreenBuffers() {
   unsigned int width = view::bufferWidth;

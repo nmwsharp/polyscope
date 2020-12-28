@@ -413,7 +413,6 @@ public:
   TransparencyMode getTransparencyMode();
   bool transparencyEnabled();
   virtual void applyTransparencySettings() = 0;
-  virtual void disableTransparencySettings() = 0;
 
   // Options
   BackgroundView background = BackgroundView::None;

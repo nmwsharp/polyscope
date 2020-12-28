@@ -323,6 +323,8 @@ void processInputEvents() {
 }
 
 void renderScene() {
+  processLazyProperties();
+
 
   // Set background color/alpha and clear
   // if (render::engine->getTransparencyMode() == TransparencyMode::Simple) {
@@ -347,25 +349,18 @@ void renderScene() {
     // composite in to the final scene buffer.
 
 
-    // Clear the final buffer explicitly since we will gradually composite in to it rather than just blitting directly as in normal rendering.
+    // Clear the final buffer explicitly since we will gradually composite in to it rather than just blitting directly
+    // as in normal rendering.
     render::engine->sceneBufferFinal->clearColor = glm::vec3{0., 0., 0.};
     render::engine->sceneBufferFinal->clearAlpha = 0;
     render::engine->sceneBufferFinal->clear();
 
+    render::engine->setDepthMode(); // we need depth to be enabled for the clear below to do anything
     render::engine->sceneDepthMinFrame->clear();
 
-    auto compositeToFinal = [&]() {
-      // Composite the result of this pass in to the result buffer
-      render::engine->sceneBufferFinal->bind();
-      render::engine->setDepthMode(DepthMode::Disable);
-      render::engine->setBlendMode(BlendMode::Under);
-      render::engine->compositePeel->draw();
-
-      // Update the minimum depth texture
-      render::engine->updateMinDepthTexture();
-    };
 
     for (int iPass = 0; iPass < options::transparencyRenderPasses; iPass++) {
+
       render::engine->bindSceneBuffer();
       render::engine->clearSceneBuffer();
       render::engine->setDepthMode();
@@ -378,10 +373,15 @@ void renderScene() {
         render::engine->groundPlane.draw();
       }
 
-      compositeToFinal();
+      // Composite the result of this pass in to the result buffer
+      render::engine->sceneBufferFinal->bind();
+      render::engine->setDepthMode(DepthMode::Disable);
+      render::engine->setBlendMode(BlendMode::Under);
+      render::engine->compositePeel->draw();
+
+      // Update the minimum depth texture
+      render::engine->updateMinDepthTexture();
     }
-
-
   } else {
     // Normal case: single render pass
     render::engine->renderBackground();
@@ -395,9 +395,6 @@ void renderScene() {
 
     render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
   }
-
-  // Back to normal transparency settings
-  render::engine->disableTransparencySettings();
 }
 
 void renderSceneToScreen() {
@@ -579,6 +576,7 @@ auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 } // namespace
 
 void draw(bool withUI) {
+  processLazyProperties();
 
   // Update buffer and context
   render::engine->makeContextCurrent();
@@ -609,6 +607,8 @@ void draw(bool withUI) {
   if (contextStack.back().callback) {
     (contextStack.back().callback)();
   }
+
+  processLazyProperties();
 
   // Draw structures in the scene
   if (redrawNextFrame || options::alwaysRedraw) {

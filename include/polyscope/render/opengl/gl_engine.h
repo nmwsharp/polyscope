@@ -312,7 +312,6 @@ public:
 
   // Transparency
   virtual void applyTransparencySettings() override;
-  virtual void disableTransparencySettings() override;
 
 protected:
   // Helpers

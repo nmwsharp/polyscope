@@ -202,9 +202,11 @@ const ShaderReplacementRule TRANSPARENCY_PEEL_STRUCTURE (
           alphaOut = u_transparency;
         )"},
       {"GLOBAL_FRAGMENT_FILTER", R"(
+          // assumption: "float depth" must be already set 
+          // (use float depth = gl_FragCoord.z; if not doing anything special)
           vec2 depthPixelCoords = gl_FragCoord.xy / u_viewportDim;
           float minDepth = texture(t_minDepth, depthPixelCoords).x;
-          if(gl_FragCoord.z <= minDepth) {
+          if(depth <= minDepth+1e-6) {
             discard;
           }
         )"},

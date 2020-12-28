@@ -259,7 +259,6 @@ public:
 
   // Transparency
   virtual void applyTransparencySettings() override;
-  virtual void disableTransparencySettings() override;
 
 protected:
   // Shader program & rule caches

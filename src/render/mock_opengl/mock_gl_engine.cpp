@@ -1342,7 +1342,6 @@ std::shared_ptr<ShaderProgram> MockGLEngine::requestShader(const std::string& pr
 
 void MockGLEngine::applyTransparencySettings() {}
 
-void MockGLEngine::disableTransparencySettings() {}
 
 void MockGLEngine::populateDefaultShadersAndRules() {
   using namespace backend_openGL3_glfw;

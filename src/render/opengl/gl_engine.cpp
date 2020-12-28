@@ -1888,8 +1888,6 @@ void GLEngine::applyTransparencySettings() {
   }
 }
 
-void GLEngine::disableTransparencySettings() { setBlendMode(); }
-
 // == Factories
 std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat format, unsigned int size1D,
                                                                unsigned char* data) {
