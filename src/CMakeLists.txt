@@ -162,6 +162,7 @@ SET(SRCS
 	vector_artist.cpp
 	trace_vector_field.cpp
 	ribbon_artist.cpp
+	image_scalar_artist.cpp
 	
 	## Embedded binary data 
   render/bindata/bindata_font_cousine_regular.cpp
@@ -194,6 +195,7 @@ SET(HEADERS
 	${INCLUDE_ROOT}/disjoint_sets.h
 	${INCLUDE_ROOT}/file_helpers.h
 	${INCLUDE_ROOT}/histogram.h
+	${INCLUDE_ROOT}/image_scalar_artist.h
 	${INCLUDE_ROOT}/messages.h
 	${INCLUDE_ROOT}/options.h
 	${INCLUDE_ROOT}/persistent_value.h
