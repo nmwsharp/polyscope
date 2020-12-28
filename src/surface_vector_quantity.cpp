@@ -108,7 +108,6 @@ SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, std::
 }
 
 void SurfaceVertexVectorQuantity::refresh() {
-  size_t i = 0;
   vectorRoots = parent.vertices;
   prepareVectorArtist();
 }
@@ -185,6 +184,7 @@ void SurfaceFaceIntrinsicVectorQuantity::refresh() {
 
   // Copy the vectors
   vectors.clear();
+  vectorRoots.clear();
   for (size_t iF = 0; iF < parent.nFaces(); iF++) {
 
     glm::vec3 normal = parent.faceNormals[iF];
@@ -274,6 +274,7 @@ void SurfaceVertexIntrinsicVectorQuantity::refresh() {
 
   // Copy the vectors
   vectors.clear();
+  vectorRoots.clear();
   for (size_t iV = 0; iV < parent.nVertices(); iV++) {
 
     glm::vec3 normal = parent.vertexNormals[iV];
