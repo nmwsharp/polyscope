@@ -77,6 +77,7 @@ R"(
 
         void main()
         {
+           float depth = gl_FragCoord.z;
            ${ GLOBAL_FRAGMENT_FILTER }$
           
            // Shading

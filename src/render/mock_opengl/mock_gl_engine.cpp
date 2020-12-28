@@ -134,6 +134,32 @@ void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 
 void* GLTextureBuffer::getNativeHandle() { return nullptr; }
 
+std::vector<float> GLTextureBuffer::getDataScalar() {
+  if (dimension(format) != 1) throw std::runtime_error("called getDataScalar on texture which does not have a 1 dimensional format");
+  std::vector<float> outData;
+  outData.resize(getSizeX() * getSizeY());
+
+  return outData;
+}
+
+std::vector<glm::vec2> GLTextureBuffer::getDataVector2() {
+  if (dimension(format) != 2) throw std::runtime_error("called getDataVector2 on texture which does not have a 2 dimensional format");
+
+  std::vector<glm::vec2> outData;
+  outData.resize(getSizeX() * getSizeY());
+
+  return outData;
+}
+
+std::vector<glm::vec3> GLTextureBuffer::getDataVector3() {
+  if (dimension(format) != 3) throw std::runtime_error("called getDataVector3 on texture which does not have a 3 dimensional format");
+  throw std::runtime_error("not implemented");
+
+  std::vector<glm::vec3> outData;
+  outData.resize(getSizeX() * getSizeY());
+
+  return outData;
+}
 void GLTextureBuffer::bind() {
   if (dim == 1) {
   }
@@ -588,6 +614,15 @@ bool GLShaderProgram::hasAttribute(std::string name) {
   return false;
 }
 
+bool GLShaderProgram::attributeIsSet(std::string name) {
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name) {
+      return a.dataSize != -1;
+    }
+  }
+  return false;
+}
+
 void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update, int offset,
                                    int size) {
   // Reshape the vector
@@ -812,6 +847,15 @@ bool GLShaderProgram::hasTexture(std::string name) {
   for (GLShaderTexture& t : textures) {
     if (t.name == name) {
       return true;
+    }
+  }
+  return false;
+}
+
+bool GLShaderProgram::textureIsSet(std::string name) {
+  for (GLShaderTexture& t : textures) {
+    if (t.name == name) {
+      return t.isSet;
     }
   }
   return false;
@@ -1296,11 +1340,14 @@ std::shared_ptr<ShaderProgram> MockGLEngine::requestShader(const std::string& pr
   return generateShaderProgram(updatedStages, dm);
 }
 
+void MockGLEngine::applyTransparencySettings() {}
+
+
 void MockGLEngine::populateDefaultShadersAndRules() {
   using namespace backend_openGL3_glfw;
 
   // WARNING: duplicated from gl_engine.cpp
-  
+
   // clang-format off
 
   // == Load general base shaders
@@ -1317,6 +1364,9 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registeredShaderPrograms.insert({"TEXTURE_DRAW_DOT3", {{TEXTURE_DRAW_VERT_SHADER, DOT3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"TEXTURE_DRAW_MAP3", {{TEXTURE_DRAW_VERT_SHADER, MAP3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"TEXTURE_DRAW_SPHEREBG", {{SPHEREBG_DRAW_VERT_SHADER, SPHEREBG_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"COMPOSITE_PEEL", {{TEXTURE_DRAW_VERT_SHADER, COMPOSITE_PEEL}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"DEPTH_COPY", {{TEXTURE_DRAW_VERT_SHADER, DEPTH_COPY}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"SCALAR_TEXTURE_COLORMAP", {{TEXTURE_DRAW_VERT_SHADER, SCALAR_TEXTURE_COLORMAP}, DrawMode::Triangles}});
 
 
   // === Load rules
@@ -1328,6 +1378,10 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_2", DOWNSAMPLE_RESOLVE_2});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_3", DOWNSAMPLE_RESOLVE_3});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_4", DOWNSAMPLE_RESOLVE_4});
+  
+  registeredShaderRules.insert({"TRANSPARENCY_STRUCTURE", TRANSPARENCY_STRUCTURE});
+  registeredShaderRules.insert({"TRANSPARENCY_RESOLVE_SIMPLE", TRANSPARENCY_RESOLVE_SIMPLE});
+  registeredShaderRules.insert({"TRANSPARENCY_PEEL_STRUCTURE", TRANSPARENCY_PEEL_STRUCTURE});
 
   // Lighting and shading things
   registeredShaderRules.insert({"LIGHT_MATCAP", LIGHT_MATCAP});

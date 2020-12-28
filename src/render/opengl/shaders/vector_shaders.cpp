@@ -200,11 +200,11 @@ R"(
            if(tHit >= LARGE_FLOAT()) {
              discard;
            }
+           float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);
            
            ${ GLOBAL_FRAGMENT_FILTER }$
 
            // Set depth (expensive!)
-           float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);
            gl_FragDepth = depth;
           
            // Shading

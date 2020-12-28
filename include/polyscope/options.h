@@ -1,6 +1,8 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include "polyscope/types.h"
+
 #include <string>
 
 namespace polyscope {
@@ -40,8 +42,17 @@ extern bool openImGuiWindowForUserCallback;
 // If true, the user callback will be invoked for nested calls to polyscope::show(), otherwise not (default: false)
 extern bool invokeUserCallbackForNestedShow;
 
+// Transparency settings for the renderer
+extern TransparencyMode transparencyMode;
+extern int transparencyRenderPasses;
+
+// === Debug options
+
 // Enables optional error checks in the rendering system
 extern bool enableRenderErrorChecks;
+
+// Render the pick buffer to screen rather than the regular scene
+extern bool debugDrawPickBuffer;
 
 } // namespace options
 } // namespace polyscope

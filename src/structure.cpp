@@ -8,7 +8,8 @@
 namespace polyscope {
 
 Structure::Structure(std::string name_, std::string subtypeName)
-    : name(name_), enabled(subtypeName + "#" + name + "#enabled", true) {
+    : name(name_), enabled(subtypeName + "#" + name + "#enabled", true),
+      transparency(subtypeName + "#" + name + "#transparency", 1.0) {
   validateName(name);
 }
 
@@ -59,6 +60,16 @@ void Structure::buildUI() {
         if (ImGui::MenuItem("Center")) centerBoundingBox();
         if (ImGui::MenuItem("Unit Scale")) rescaleToUnit();
         if (ImGui::MenuItem("Reset")) resetTransform();
+        ImGui::EndMenu();
+      }
+
+      if (ImGui::BeginMenu("Transparency")) {
+        if (ImGui::SliderFloat("Alpha", &transparency.get(), 0., 1., "%.3f")) setTransparency(transparency.get());
+        ImGui::TextUnformatted("Note: Change the transparency mode");
+        ImGui::TextUnformatted("      in Appearance --> Transparency.");
+        ImGui::TextUnformatted("Current mode: ");
+        ImGui::SameLine();
+        ImGui::TextUnformatted(modeName(render::engine->getTransparencyMode()).c_str());
         ImGui::EndMenu();
       }
 
@@ -129,10 +140,42 @@ void Structure::setTransformUniforms(render::ShaderProgram& p) {
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   p.setUniform("u_projMatrix", glm::value_ptr(projMat));
+
+  if (render::engine->transparencyEnabled()) {
+    if (p.hasUniform("u_transparency")) {
+      p.setUniform("u_transparency", transparency.get());
+    }
+
+    if (p.hasUniform("u_viewportDim")) {
+      glm::vec4 viewport = render::engine->getCurrentViewport();
+      glm::vec2 viewportDim{viewport[2], viewport[3]};
+      p.setUniform("u_viewportDim", viewportDim);
+    }
+
+    // Attach the min depth texture, if needed
+    // (note that this design is somewhat lazy wrt to the name of the function: it sets a texture, not a uniform, and
+    // only actually does anything once on initialization)
+    if (render::engine->transparencyEnabled() && p.hasTexture("t_minDepth") && !p.textureIsSet("t_minDepth")) {
+      p.setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());
+    }
+  }
 }
 
 std::string Structure::uniquePrefix() { return typeName() + "#" + name + "#"; }
 
 void Structure::remove() { removeStructure(typeName(), name); }
+
+
+Structure* Structure::setTransparency(double newVal) {
+  transparency = newVal;
+
+  if (newVal < 1. && options::transparencyMode == TransparencyMode::None) {
+    options::transparencyMode = TransparencyMode::Pretty;
+  }
+  requestRedraw();
+
+  return this;
+}
+double Structure::getTransparency() { return transparency.get(); }
 
 } // namespace polyscope

@@ -20,47 +20,7 @@ using json = nlohmann::json;
 
 namespace polyscope {
 
-// === Declare storage global members
-
-namespace state {
-
-bool initialized = false;
-
-double lengthScale = 1.0;
-std::tuple<glm::vec3, glm::vec3> boundingBox;
-glm::vec3 center{0, 0, 0};
-
-std::map<std::string, std::map<std::string, Structure*>> structures;
-
-std::function<void()> userCallback;
-
-} // namespace state
-
-namespace options {
-
-std::string programName = "Polyscope";
-int verbosity = 1;
-std::string printPrefix = "[polyscope] ";
-bool errorsThrowExceptions = false;
-bool debugDrawPickBuffer = false;
-int maxFPS = 60;
-bool usePrefsFile = true;
-bool initializeWithDefaultStructures = true;
-bool alwaysRedraw = false;
-bool autocenterStructures = false;
-bool autoscaleStructures = false;
-bool openImGuiWindowForUserCallback = true;
-bool invokeUserCallbackForNestedShow = false;
-
-// enabled by default in debug mode
-#ifndef NDEBUG
-bool enableRenderErrorChecks = false;
-#else
-bool enableRenderErrorChecks = true;
-#endif
-
-} // namespace options
-
+// Note: Storage for global members lives in state.cpp and options.cpp
 
 // Helpers
 namespace {
@@ -231,10 +191,15 @@ void drawStructures() {
 
       // Draw the pick buffer for debugging purposes
       if (options::debugDrawPickBuffer) {
+        render::engine->setDepthMode();
         s.second->drawPick();
       }
       // The normal case
       else {
+        // make sure the right settings are active
+        render::engine->setDepthMode();
+        render::engine->applyTransparencySettings();
+
         s.second->draw();
       }
     }
@@ -358,28 +323,78 @@ void processInputEvents() {
 }
 
 void renderScene() {
+  processLazyProperties();
 
-  render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
+
+  // Set background color/alpha and clear
+  // if (render::engine->getTransparencyMode() == TransparencyMode::Simple) {
+  if (render::engine->transparencyEnabled()) {
+    // special case for transparency: we need to premultiply background
+    float alpha = view::bgColor[3];
+    render::engine->setBackgroundColor({alpha * view::bgColor[0], alpha * view::bgColor[1], alpha * view::bgColor[2]});
+  } else {
+    render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
+  }
   render::engine->setBackgroundAlpha(view::bgColor[3]);
-  render::engine->clearSceneBuffer();
+  render::engine->sceneBuffer->clear();
 
   if (!render::engine->bindSceneBuffer()) return;
 
   // If a view has never been set, this will set it to the home view
   view::ensureViewValid();
 
-  render::engine->renderBackground();
-  render::engine->setDepthMode();
-  render::engine->setBlendMode();
+  if (render::engine->getTransparencyMode() == TransparencyMode::Pretty) {
+    // Special depth peeling case: multiple render passes
+    // We will perform several "peeled" rounds of rendering in to the usual scene buffer. After each, we will manually
+    // composite in to the final scene buffer.
 
-  // Draw the ground plane
-  if (options::groundPlaneEnabled) {
-    render::engine->groundPlane.draw();
+
+    // Clear the final buffer explicitly since we will gradually composite in to it rather than just blitting directly
+    // as in normal rendering.
+    render::engine->sceneBufferFinal->clearColor = glm::vec3{0., 0., 0.};
+    render::engine->sceneBufferFinal->clearAlpha = 0;
+    render::engine->sceneBufferFinal->clear();
+
+    render::engine->setDepthMode(); // we need depth to be enabled for the clear below to do anything
+    render::engine->sceneDepthMinFrame->clear();
+
+
+    for (int iPass = 0; iPass < options::transparencyRenderPasses; iPass++) {
+
+      render::engine->bindSceneBuffer();
+      render::engine->clearSceneBuffer();
+      render::engine->setDepthMode();
+      render::engine->setBlendMode();
+
+      drawStructures();
+
+      // Draw the ground plane
+      if (options::groundPlaneEnabled) {
+        render::engine->groundPlane.draw();
+      }
+
+      // Composite the result of this pass in to the result buffer
+      render::engine->sceneBufferFinal->bind();
+      render::engine->setDepthMode(DepthMode::Disable);
+      render::engine->setBlendMode(BlendMode::Under);
+      render::engine->compositePeel->draw();
+
+      // Update the minimum depth texture
+      render::engine->updateMinDepthTexture();
+    }
+  } else {
+    // Normal case: single render pass
+    render::engine->renderBackground();
+
+    // Draw the ground plane
+    if (options::groundPlaneEnabled) {
+      render::engine->groundPlane.draw();
+    }
+
+    drawStructures();
+
+    render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
   }
-
-  drawStructures();
-
-  render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
 }
 
 void renderSceneToScreen() {
@@ -442,7 +457,7 @@ void buildPolyscopeGui() {
   // Debug options tree
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Debug")) {
-    if(ImGui::Button("Force refresh")) {
+    if (ImGui::Button("Force refresh")) {
       refresh();
     }
     ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
@@ -451,9 +466,9 @@ void buildPolyscopeGui() {
     static bool showDebugTextures = false;
     ImGui::Checkbox("Show debug textures", &showDebugTextures);
     if (showDebugTextures) {
+      render::engine->showTextureInImGuiWindow("Scene", render::engine->sceneColor.get());
       render::engine->showTextureInImGuiWindow("Scene Final", render::engine->sceneColorFinal.get());
     }
-
     ImGui::TreePop();
   }
 
@@ -561,6 +576,7 @@ auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 } // namespace
 
 void draw(bool withUI) {
+  processLazyProperties();
 
   // Update buffer and context
   render::engine->makeContextCurrent();
@@ -592,6 +608,8 @@ void draw(bool withUI) {
     (contextStack.back().callback)();
   }
 
+  processLazyProperties();
+
   // Draw structures in the scene
   if (redrawNextFrame || options::alwaysRedraw) {
     renderScene();
@@ -604,11 +622,12 @@ void draw(bool withUI) {
     render::engine->bindDisplay();
     render::engine->ImGuiRender();
   }
-} // namespace polyscope
+}
 
 
 void mainLoopIteration() {
 
+  processLazyProperties();
 
   // The windowing system will let this busy-loop in some situations, unfortunately. Make sure that doesn't happen.
   if (options::maxFPS != -1) {
@@ -848,6 +867,36 @@ void refresh() {
   }
   requestRedraw();
 }
+
+// Cached versions of lazy properties used for updates
+namespace lazy {
+TransparencyMode transparencyMode = TransparencyMode::None;
+int transparencyRenderPasses = -1;
+} // namespace lazy
+
+void processLazyProperties() {
+
+  // Note: This function essentially represents lazy software design, and it's an ugly and error-prone part of the
+  // system. The reason for it that some settings require action on a change (e..g re-drawing the scene), but we want to
+  // allow variable-set syntax like `polyscope::setting = newVal;` rather than getters and setters like
+  // `polyscope::setSetting(newVal);`. It might have been better to simple set options with setter from the start, but
+  // that ship has sailed.
+  //
+  // This function is a workaround which watches for changes to set options, and performs any necessary additional work.
+
+
+  // transparency mode
+  if (lazy::transparencyMode != options::transparencyMode) {
+    lazy::transparencyMode = options::transparencyMode;
+    render::engine->setTransparencyMode(options::transparencyMode);
+  }
+
+  // transparency render passes
+  if (lazy::transparencyRenderPasses != options::transparencyRenderPasses) {
+    lazy::transparencyRenderPasses = options::transparencyRenderPasses;
+    requestRedraw();
+  }
+};
 
 void updateStructureExtents() {
   // Compute length scale and bbox as the max of all structures

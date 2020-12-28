@@ -211,8 +211,108 @@ R"(
 )"
 };
 
+
+const ShaderStageSpecification COMPOSITE_PEEL = {
+    
+    // stage
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    { }, 
+
+    // attributes
+    { },
+    
+    // textures 
+    { {"t_image", 2} },
+    
+    // source 
+R"(
+      ${ GLSL_VERSION }$
+
+      in vec2 tCoord;
+      uniform sampler2D t_image;
+      layout(location = 0) out vec4 outputF;
+
+      void main()
+      {
+        vec4 val = texture(t_image, tCoord);
+        val.rgb = val.rgb * val.a; // premultiply
+        outputF = val;
+      }
+)"
+};
+
+const ShaderStageSpecification DEPTH_COPY = {
+    
+    // stage
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    { }, 
+
+    // attributes
+    { },
+    
+    // textures 
+    { {"t_depth", 2} },
+    
+    // source 
+R"(
+      ${ GLSL_VERSION }$
+
+      in vec2 tCoord;
+      uniform sampler2D t_depth;
+      //layout(location = 0) out vec4 outputF;
+
+      void main()
+      {
+        float depth = texture(t_depth, tCoord).r;
+        gl_FragDepth = depth;
+        //outputF = val;
+      }
+)"
+};
+
+const ShaderStageSpecification SCALAR_TEXTURE_COLORMAP = {
+    
+    // stage
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    { }, 
+
+    // attributes
+    { },
+    
+    // textures 
+    { 
+      {"t_scalar", 2},
+    },
+    
+    // source 
+R"(
+      ${ GLSL_VERSION }$
+
+      in vec2 tCoord;
+      uniform sampler2D t_scalar;
+      layout(location = 0) out vec4 outputF;
+        
+      ${ FRAG_DECLARATIONS }$
+
+      void main()
+      {
+        float shadeValue = texture(t_scalar, tCoord).r;
+
+        ${ GENERATE_SHADE_COLOR }$
+
+        outputF = vec4(albedoColor, 1.);
+      }
+)"
+};
+
 // clang-format on
 
-}
+} // namespace backend_openGL3_glfw
 } // namespace render
 } // namespace polyscope

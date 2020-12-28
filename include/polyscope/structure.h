@@ -76,9 +76,16 @@ public:
   void enableIsolate();                      // enable this structure, disable all of same type
   void setEnabledAllOfType(bool newEnabled); // enable/disable all structures of this type
 
+  // Options
+  Structure* setTransparency(double newVal); // also enables transparency if <1 and transparency is not enabled
+  double getTransparency();
+
 protected:
   // = State
   PersistentValue<bool> enabled;
+
+  // 0 for transparent, 1 for opaque, only has effect if engine transparency is set
+  PersistentValue<float> transparency;
 };
 
 

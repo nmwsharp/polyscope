@@ -32,7 +32,10 @@ public:
 
   void setFilterMode(FilterMode newMode) override;
   void* getNativeHandle() override;
-
+  
+  std::vector<float> getDataScalar() override;
+  std::vector<glm::vec2> getDataVector2() override;
+  std::vector<glm::vec3> getDataVector3() override;
 
   void bind();
 
@@ -110,6 +113,7 @@ public:
   // = Attributes
   // clang-format off
   bool hasAttribute(std::string name) override;
+  bool attributeIsSet(std::string name) override;
   void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0, int size = -1) override;
   void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) override;
   void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) override;
@@ -132,6 +136,7 @@ public:
 
   // Textures
   bool hasTexture(std::string name) override;
+  bool textureIsSet(std::string name) override;
   void setTexture1D(std::string name, unsigned char* texData, unsigned int length) override;
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                     bool withAlpha = true, bool useMipMap = false, bool repeat = false) override;
@@ -252,6 +257,8 @@ public:
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
                 ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) override;
 
+  // Transparency
+  virtual void applyTransparencySettings() override;
 
 protected:
   // Shader program & rule caches

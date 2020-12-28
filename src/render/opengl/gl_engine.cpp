@@ -56,8 +56,10 @@ inline GLenum internalFormat(const TextureFormat& x) {
     case TextureFormat::RGB16F:     return GL_RGB16F;
     case TextureFormat::RGBA16F:    return GL_RGBA16F;
     case TextureFormat::R32F:       return GL_R32F;
+    case TextureFormat::R16F:       return GL_R16F;
     case TextureFormat::RGB32F:     return GL_RGBA32F;
     case TextureFormat::RGBA32F:    return GL_RGBA32F;
+    case TextureFormat::DEPTH24:    return GL_DEPTH_COMPONENT24;
   }
   throw std::runtime_error("bad enum");
 }
@@ -70,8 +72,10 @@ inline GLenum formatF(const TextureFormat& x) {
     case TextureFormat::RGB16F:     return GL_RGB; 
     case TextureFormat::RGBA16F:    return GL_RGBA;
     case TextureFormat::R32F:       return GL_RED;
+    case TextureFormat::R16F:       return GL_RED;
     case TextureFormat::RGB32F:     return GL_RGB;
     case TextureFormat::RGBA32F:    return GL_RGBA;
+    case TextureFormat::DEPTH24:    return GL_DEPTH_COMPONENT;
   }
   throw std::runtime_error("bad enum");
 }
@@ -84,8 +88,10 @@ inline GLenum type(const TextureFormat& x) {
     case TextureFormat::RGB16F:     return GL_HALF_FLOAT;
     case TextureFormat::RGBA16F:    return GL_HALF_FLOAT;
     case TextureFormat::R32F:       return GL_FLOAT;
+    case TextureFormat::R16F:       return GL_FLOAT;
     case TextureFormat::RGB32F:     return GL_FLOAT;
     case TextureFormat::RGBA32F:    return GL_FLOAT;
+    case TextureFormat::DEPTH24:    return GL_FLOAT;
   }
   throw std::runtime_error("bad enum");
 }
@@ -312,10 +318,53 @@ void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 
 void* GLTextureBuffer::getNativeHandle() { return reinterpret_cast<void*>(getHandle()); }
 
+std::vector<float> GLTextureBuffer::getDataScalar() {
+  if (dimension(format) != 1)
+    throw std::runtime_error("called getDataScalar on texture which does not have a 1 dimensional format");
+
+  std::vector<float> outData;
+  outData.resize(getTotalSize());
+
+  bind();
+  glGetTexImage(textureType(), 0, formatF(format), GL_FLOAT, static_cast<void*>(&outData.front()));
+  checkGLError();
+
+  return outData;
+}
+
+std::vector<glm::vec2> GLTextureBuffer::getDataVector2() {
+  if (dimension(format) != 2)
+    throw std::runtime_error("called getDataVector2 on texture which does not have a 2 dimensional format");
+
+  std::vector<glm::vec2> outData;
+  outData.resize(getTotalSize());
+
+  bind();
+  glGetTexImage(textureType(), 0, formatF(format), GL_FLOAT, static_cast<void*>(&outData.front()));
+  checkGLError();
+
+  return outData;
+}
+
+std::vector<glm::vec3> GLTextureBuffer::getDataVector3() {
+  if (dimension(format) != 3)
+    throw std::runtime_error("called getDataVector3 on texture which does not have a 3 dimensional format");
+  throw std::runtime_error("not implemented");
+
+  std::vector<glm::vec3> outData;
+  outData.resize(getTotalSize());
+
+  bind();
+  glGetTexImage(textureType(), 0, formatF(format), GL_FLOAT, static_cast<void*>(&outData.front()));
+  checkGLError();
+
+  return outData;
+}
+
 GLenum GLTextureBuffer::textureType() {
   if (dim == 1) {
     return GL_TEXTURE_1D;
-  } else {
+  } else if (dim == 2) {
     return GL_TEXTURE_2D;
   }
   throw std::runtime_error("bad texture type");
@@ -498,8 +547,9 @@ bool GLFrameBuffer::bindForRendering() {
 
 void GLFrameBuffer::clear() {
   if (!bindForRendering()) return;
+
   glClearColor(clearColor[0], clearColor[1], clearColor[2], clearAlpha);
-  glClearDepth(1.);
+  glClearDepth(clearDepth);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
@@ -958,6 +1008,15 @@ bool GLShaderProgram::hasAttribute(std::string name) {
   return false;
 }
 
+bool GLShaderProgram::attributeIsSet(std::string name) {
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name) {
+      return a.dataSize != -1;
+    }
+  }
+  return false;
+}
+
 void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update, int offset,
                                    int size) {
   // Reshape the vector
@@ -1213,6 +1272,15 @@ bool GLShaderProgram::hasTexture(std::string name) {
   for (GLShaderTexture& t : textures) {
     if (t.name == name) {
       return true;
+    }
+  }
+  return false;
+}
+
+bool GLShaderProgram::textureIsSet(std::string name) {
+  for (GLShaderTexture& t : textures) {
+    if (t.name == name) {
+      return t.isSet;
     }
   }
   return false;
@@ -1651,6 +1719,8 @@ void GLEngine::swapDisplayBuffers() {
 
 std::vector<unsigned char> GLEngine::readDisplayBuffer() {
 
+  // TODO do we need to bind here?
+
   glFlush();
   glFinish();
 
@@ -1747,6 +1817,11 @@ void GLEngine::setDepthMode(DepthMode newMode) {
     glDepthFunc(GL_LEQUAL);
     glDepthMask(GL_FALSE);
     break;
+  case DepthMode::Greater:
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_GREATER);
+    glDepthMask(GL_TRUE);
+    break;
   case DepthMode::Disable:
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE); // doesn't actually matter
@@ -1764,9 +1839,17 @@ void GLEngine::setBlendMode(BlendMode newMode) {
     glEnable(GL_BLEND);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
     break;
+  case BlendMode::Under:
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+    break;
   case BlendMode::Zero:
     glEnable(GL_BLEND);
     glBlendFunc(GL_ZERO, GL_ZERO);
+    break;
+  case BlendMode::WeightedAdd:
+    glEnable(GL_BLEND);
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE);
     break;
   case BlendMode::Disable:
     glDisable(GL_BLEND);
@@ -1782,13 +1865,28 @@ std::string GLEngine::getClipboardText() {
   return clipboardData;
 }
 
-// void GLEngine::blitSceneToFinal() { TODO
-// sceneBuffer->bindForRendering();
-// sceneBufferFinal->blitTo();
-//}
-
-
 void GLEngine::setClipboardText(std::string text) { ImGui::SetClipboardText(text.c_str()); }
+
+void GLEngine::applyTransparencySettings() {
+  // Remove any old transparency-related rules
+  switch (transparencyMode) {
+  case TransparencyMode::None: {
+    setBlendMode();
+    setDepthMode();
+    break;
+  }
+  case TransparencyMode::Simple: {
+    setBlendMode(BlendMode::WeightedAdd);
+    setDepthMode(DepthMode::Disable);
+    break;
+  }
+  case TransparencyMode::Pretty: {
+    setBlendMode(BlendMode::Disable);
+    setDepthMode();
+    break;
+  }
+  }
+}
 
 // == Factories
 std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat format, unsigned int size1D,
@@ -1893,16 +1991,23 @@ void GLEngine::populateDefaultShadersAndRules() {
   registeredShaderPrograms.insert({"TEXTURE_DRAW_DOT3", {{TEXTURE_DRAW_VERT_SHADER, DOT3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"TEXTURE_DRAW_MAP3", {{TEXTURE_DRAW_VERT_SHADER, MAP3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"TEXTURE_DRAW_SPHEREBG", {{SPHEREBG_DRAW_VERT_SHADER, SPHEREBG_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"COMPOSITE_PEEL", {{TEXTURE_DRAW_VERT_SHADER, COMPOSITE_PEEL}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"DEPTH_COPY", {{TEXTURE_DRAW_VERT_SHADER, DEPTH_COPY}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"SCALAR_TEXTURE_COLORMAP", {{TEXTURE_DRAW_VERT_SHADER, SCALAR_TEXTURE_COLORMAP}, DrawMode::Triangles}});
 
   // === Load rules
 
-  // Utilitiy rules
+  // Utility rules
   registeredShaderRules.insert({"GLSL_VERSION", GLSL_VERSION});
   registeredShaderRules.insert({"GLOBAL_FRAGMENT_FILTER", GLOBAL_FRAGMENT_FILTER});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_1", DOWNSAMPLE_RESOLVE_1});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_2", DOWNSAMPLE_RESOLVE_2});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_3", DOWNSAMPLE_RESOLVE_3});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_4", DOWNSAMPLE_RESOLVE_4});
+  
+  registeredShaderRules.insert({"TRANSPARENCY_STRUCTURE", TRANSPARENCY_STRUCTURE});
+  registeredShaderRules.insert({"TRANSPARENCY_RESOLVE_SIMPLE", TRANSPARENCY_RESOLVE_SIMPLE});
+  registeredShaderRules.insert({"TRANSPARENCY_PEEL_STRUCTURE", TRANSPARENCY_PEEL_STRUCTURE});
 
   // Lighting and shading things
   registeredShaderRules.insert({"LIGHT_MATCAP", LIGHT_MATCAP});

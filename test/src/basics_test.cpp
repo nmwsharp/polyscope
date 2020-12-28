@@ -659,3 +659,37 @@ TEST_F(PolyscopeTest, RefreshMultiTest) {
 
   polyscope::removeAllStructures();
 }
+
+// Cycle through the transparency optins
+TEST_F(PolyscopeTest, TransparencyTest) {
+
+  { // Surface mesh
+    auto psMesh = registerTriangleMesh();
+    std::vector<double> vScalar(psMesh->nVertices(), 7.);
+    auto q1 = psMesh->addVertexDistanceQuantity("distance", vScalar);
+  }
+
+  { // Point cloud
+    auto psPoints = registerPointCloud();
+    std::vector<double> vScalar(psPoints->nPoints(), 7.);
+    auto q2 = psPoints->addScalarQuantity("vScalar", vScalar);
+    q2->setEnabled(true);
+  }
+
+  { // Curve network
+    auto psCurve = registerCurveNetwork();
+    std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
+    auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
+    q3->setEnabled(true);
+  }
+
+  polyscope::show(3);
+  
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
