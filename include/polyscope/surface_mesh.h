@@ -296,6 +296,10 @@ public:
   // bigger edges. Use 0. to disable.
   SurfaceMesh* setEdgeWidth(double newVal);
   double getEdgeWidth();
+  
+  // Backface policy
+  SurfaceMesh* setBackfacePolicy(BackfacePolicy newPolicy);
+  BackfacePolicy getBackfacePolicy();
 
   // Rendering helpers used by quantities
   std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
@@ -309,6 +313,7 @@ private:
   PersistentValue<glm::vec3> edgeColor;
   PersistentValue<std::string> material;
   PersistentValue<float> edgeWidth;
+  PersistentValue<BackfacePolicy> backfacePolicy;
 
   // Do setup work related to drawing, including allocating openGL data
   void prepare();

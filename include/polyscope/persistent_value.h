@@ -1,6 +1,7 @@
 #pragma once
 
 #include "polyscope/scaled_value.h"
+#include "polyscope/types.h"
 
 // So we can cache the types therein
 #include "glm/glm.hpp"
@@ -109,6 +110,7 @@ extern PersistentCache<glm::vec3> persistentCache_glmvec3;
 extern PersistentCache<ScaledValue<double>> persistentCache_scaleddouble;
 extern PersistentCache<ScaledValue<float>> persistentCache_scaledfloat;
 extern PersistentCache<ParamVizStyle> persistentCache_paramVizStyle;
+extern PersistentCache<BackfacePolicy> persistentCache_backfacePolicy;
 
 template<> inline PersistentCache<double>&                  getPersistentCacheRef<double>()                 { return persistentCache_double; }
 template<> inline PersistentCache<float>&                   getPersistentCacheRef<float>()                  { return persistentCache_float; }
@@ -118,6 +120,7 @@ template<> inline PersistentCache<glm::vec3>&               getPersistentCacheRe
 template<> inline PersistentCache<ScaledValue<double>>&     getPersistentCacheRef<ScaledValue<double>>()    { return persistentCache_scaleddouble; }
 template<> inline PersistentCache<ScaledValue<float>>&      getPersistentCacheRef<ScaledValue<float>>()     { return persistentCache_scaledfloat; }
 template<> inline PersistentCache<ParamVizStyle>&           getPersistentCacheRef<ParamVizStyle>()          { return persistentCache_paramVizStyle; }
+template<> inline PersistentCache<BackfacePolicy>&          getPersistentCacheRef<BackfacePolicy>()         { return persistentCache_backfacePolicy; }
 }
 // clang-format on
 

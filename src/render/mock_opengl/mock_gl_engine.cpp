@@ -135,7 +135,8 @@ void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 void* GLTextureBuffer::getNativeHandle() { return nullptr; }
 
 std::vector<float> GLTextureBuffer::getDataScalar() {
-  if (dimension(format) != 1) throw std::runtime_error("called getDataScalar on texture which does not have a 1 dimensional format");
+  if (dimension(format) != 1)
+    throw std::runtime_error("called getDataScalar on texture which does not have a 1 dimensional format");
   std::vector<float> outData;
   outData.resize(getSizeX() * getSizeY());
 
@@ -143,7 +144,8 @@ std::vector<float> GLTextureBuffer::getDataScalar() {
 }
 
 std::vector<glm::vec2> GLTextureBuffer::getDataVector2() {
-  if (dimension(format) != 2) throw std::runtime_error("called getDataVector2 on texture which does not have a 2 dimensional format");
+  if (dimension(format) != 2)
+    throw std::runtime_error("called getDataVector2 on texture which does not have a 2 dimensional format");
 
   std::vector<glm::vec2> outData;
   outData.resize(getSizeX() * getSizeY());
@@ -152,7 +154,8 @@ std::vector<glm::vec2> GLTextureBuffer::getDataVector2() {
 }
 
 std::vector<glm::vec3> GLTextureBuffer::getDataVector3() {
-  if (dimension(format) != 3) throw std::runtime_error("called getDataVector3 on texture which does not have a 3 dimensional format");
+  if (dimension(format) != 3)
+    throw std::runtime_error("called getDataVector3 on texture which does not have a 3 dimensional format");
   throw std::runtime_error("not implemented");
 
   std::vector<glm::vec3> outData;
@@ -1260,6 +1263,8 @@ void MockGLEngine::setBlendMode(BlendMode newMode) {}
 
 void MockGLEngine::setColorMask(std::array<bool, 4> mask) {}
 
+void MockGLEngine::setBackfaceCull(bool newVal) {}
+
 std::string MockGLEngine::getClipboardText() {
   std::string clipboardData = "";
   return clipboardData;
@@ -1416,6 +1421,8 @@ void MockGLEngine::populateDefaultShadersAndRules() {
 
   // mesh things
   registeredShaderRules.insert({"MESH_WIREFRAME", MESH_WIREFRAME});
+  registeredShaderRules.insert({"MESH_BACKFACE_NORMAL_FLIP", MESH_BACKFACE_NORMAL_FLIP});
+  registeredShaderRules.insert({"MESH_BACKFACE_DARKEN", MESH_BACKFACE_DARKEN});
   registeredShaderRules.insert({"MESH_PROPAGATE_VALUE", MESH_PROPAGATE_VALUE});
   registeredShaderRules.insert({"MESH_PROPAGATE_VALUE2", MESH_PROPAGATE_VALUE2});
   registeredShaderRules.insert({"MESH_PROPAGATE_COLOR", MESH_PROPAGATE_COLOR});

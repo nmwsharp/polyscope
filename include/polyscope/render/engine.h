@@ -329,6 +329,7 @@ public:
   virtual void setDepthMode(DepthMode newMode = DepthMode::Less) = 0;
   virtual void setBlendMode(BlendMode newMode = BlendMode::Over) = 0;
   virtual void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) = 0;
+  virtual void setBackfaceCull(bool newVal = false) = 0;
 
   void setCurrentViewport(glm::vec4 viewport);
   glm::vec4 getCurrentViewport();

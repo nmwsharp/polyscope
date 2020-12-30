@@ -14,6 +14,7 @@ PersistentCache<glm::vec3> persistentCache_glmvec3;
 PersistentCache<ScaledValue<double>> persistentCache_scaleddouble;
 PersistentCache<ScaledValue<float>> persistentCache_scaledfloat;
 PersistentCache<ParamVizStyle> persistentCache_paramVizStyle;
+PersistentCache<BackfacePolicy> persistentCache_backfacePolicy;
 // clang-format on
 } // namespace detail
 } // namespace polyscope

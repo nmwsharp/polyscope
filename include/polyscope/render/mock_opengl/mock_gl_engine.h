@@ -216,6 +216,7 @@ public:
   void setDepthMode(DepthMode newMode = DepthMode::Less) override;
   void setBlendMode(BlendMode newMode = BlendMode::Over) override;
   void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) override;
+  void setBackfaceCull(bool newVal) override;
 
   // === Windowing and framework things
   void makeContextCurrent() override;

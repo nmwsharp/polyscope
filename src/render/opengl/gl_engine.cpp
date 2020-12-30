@@ -1890,6 +1890,15 @@ void GLEngine::setBlendMode(BlendMode newMode) {
 
 void GLEngine::setColorMask(std::array<bool, 4> mask) { glColorMask(mask[0], mask[1], mask[2], mask[3]); }
 
+void GLEngine::setBackfaceCull(bool newVal) {
+  if (newVal) {
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+  } else {
+    glDisable(GL_CULL_FACE);
+  }
+}
+
 std::string GLEngine::getClipboardText() {
   std::string clipboardData = ImGui::GetClipboardText();
   return clipboardData;
@@ -2059,6 +2068,8 @@ void GLEngine::populateDefaultShadersAndRules() {
 
   // mesh things
   registeredShaderRules.insert({"MESH_WIREFRAME", MESH_WIREFRAME});
+  registeredShaderRules.insert({"MESH_BACKFACE_NORMAL_FLIP", MESH_BACKFACE_NORMAL_FLIP});
+  registeredShaderRules.insert({"MESH_BACKFACE_DARKEN", MESH_BACKFACE_DARKEN});
   registeredShaderRules.insert({"MESH_PROPAGATE_VALUE", MESH_PROPAGATE_VALUE});
   registeredShaderRules.insert({"MESH_PROPAGATE_VALUE2", MESH_PROPAGATE_VALUE2});
   registeredShaderRules.insert({"MESH_PROPAGATE_COLOR", MESH_PROPAGATE_COLOR});

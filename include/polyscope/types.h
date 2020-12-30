@@ -8,4 +8,5 @@ namespace polyscope {
 enum class BackgroundView { None = 0 };
 enum class TransparencyMode { None = 0, Simple, Pretty };
 enum class GroundPlaneMode {None, Tile, TileReflection, ShadowOnly };
+enum class BackfacePolicy {Identical, Different, Cull};
 }; // namespace polyscope

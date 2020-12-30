@@ -89,6 +89,7 @@ R"(
 
            // Lighting
            vec3 shadeNormal = a_normalToFrag;
+           ${ PERTURB_SHADE_NORMAL }$
            ${ GENERATE_LIT_COLOR }$
 
            // Set alpha
@@ -98,6 +99,9 @@ R"(
            // silly dummy usage to ensure normal and barycoords are always used; otherwise we get errors
            float dummyVal = a_normalToFrag.x + a_barycoordToFrag.x;
            litColor.x = litColor.x + dummyVal * 1e-8;
+
+
+           ${ PERTURB_LIT_COLOR }$
 
            // Write output
            outputF = vec4(litColor, alphaOut);
@@ -256,6 +260,35 @@ const ShaderReplacementRule MESH_WIREFRAME(
     },
     /* textures */ {}
 );
+
+const ShaderReplacementRule MESH_BACKFACE_NORMAL_FLIP (
+    /* rule name */ "MESH_BACKFACE_NORMAL_FLIP",
+    { /* replacement sources */
+      {"PERTURB_SHADE_NORMAL", R"(
+        if(!gl_FrontFacing) {
+          shadeNormal *= -1.;
+        }
+        )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule MESH_BACKFACE_DARKEN (
+    /* rule name */ "MESH_BACKFACE_DARKEN",
+    { /* replacement sources */
+      {"PERTURB_LIT_COLOR", R"(
+        if(!gl_FrontFacing) {
+          litColor *= .7;
+        }
+        )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
 
 // data for picking
 const ShaderReplacementRule MESH_PROPAGATE_PICK (
