@@ -221,6 +221,29 @@ const ShaderReplacementRule TRANSPARENCY_PEEL_STRUCTURE (
     }
 );
 
+const ShaderReplacementRule TRANSPARENCY_PEEL_GROUND (
+    /* rule name */ "TRANSPARENCY_PEEL_GROUND",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform sampler2D t_minDepth;
+        )"},
+      {"GLOBAL_FRAGMENT_FILTER", R"(
+          // assumption: "float depth" must be already set 
+          // (use float depth = gl_FragCoord.z; if not doing anything special)
+          vec2 depthPixelCoords = gl_FragCoord.xy / u_viewportDim;
+          float minDepth = texture(t_minDepth, depthPixelCoords).x;
+          if(depth <= minDepth+1e-6) {
+            discard;
+          }
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {
+        {"t_minDepth", 2},
+    }
+);
+
 // clang-format on
 
 } // namespace backend_openGL3_glfw

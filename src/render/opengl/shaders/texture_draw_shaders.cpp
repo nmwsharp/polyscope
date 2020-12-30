@@ -274,6 +274,41 @@ R"(
 )"
 };
 
+const ShaderStageSpecification DEPTH_TO_MASK = {
+  // writes 0./1. mask to red channel
+    
+    // stage
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    { }, 
+
+    // attributes
+    { },
+    
+    // textures 
+    { {"t_depth", 2} },
+    
+    // source 
+R"(
+      ${ GLSL_VERSION }$
+
+      in vec2 tCoord;
+      uniform sampler2D t_depth;
+      layout(location = 0) out vec4 outputF;
+
+      void main()
+      {
+        float depth = texture(t_depth, tCoord).r;
+        if(depth < 1.) {
+          outputF = vec4(1., 0., 0., 1.);
+        } else {
+          outputF = vec4(0., 0., 0., 1.);
+        }
+      }
+)"
+};
+
 const ShaderStageSpecification SCALAR_TEXTURE_COLORMAP = {
     
     // stage
@@ -313,6 +348,7 @@ R"(
 
 
 const ShaderStageSpecification BLUR_RGB = {
+  // Separable gaussian blur. Run twice between a pair of buffers, once with horizontal=0, and once with horizontal=1.
     
     // stage
     ShaderStageType::Fragment,
@@ -326,7 +362,9 @@ const ShaderStageSpecification BLUR_RGB = {
     { },
     
     // textures 
-    { {"t_image", 2} },
+    { 
+      {"t_image", 2},
+    },
     
     // source 
 R"(
@@ -341,16 +379,15 @@ R"(
       void main()
       {
         vec2 texScale = 1.0 / textureSize(t_image, 0);
-        vec3 val = texture(t_image, tCoord).rgb * weight[0];
-        if(u_horizontal == 1)
-        {
+        vec3 valCenter = texture(t_image, tCoord).rgb;
+        vec3 val = valCenter * weight[0];
+        if(u_horizontal == 1) {
             for(int i = 1; i < 5; ++i) {
                 val += texture(t_image, tCoord + vec2(texScale.x * i, 0.0)).rgb * weight[i];
                 val += texture(t_image, tCoord - vec2(texScale.x * i, 0.0)).rgb * weight[i];
             }
         }
-        else
-        {
+        else {
             for(int i = 1; i < 5; ++i) {
                 val += texture(t_image, tCoord + vec2(0.0, texScale.y * i)).rgb * weight[i];
                 val += texture(t_image, tCoord - vec2(0.0, texScale.y * i)).rgb * weight[i];

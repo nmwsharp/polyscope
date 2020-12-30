@@ -9,11 +9,6 @@
 #include "stb_image.h"
 
 namespace polyscope {
-
-namespace options {
-bool groundPlaneEnabled = true;
-}
-
 namespace render {
 
 // quick helper function
@@ -69,13 +64,34 @@ void GroundPlane::populateGroundPlaneGeometry() {
   groundPlaneViewCached = view::upDir;
 }
 
-void GroundPlane::prepareGroundPlane() {
+void GroundPlane::prepare() {
+  if (options::groundPlaneMode == GroundPlaneMode::None) {
+    return;
+  }
 
   // The program that draws the ground plane
-  groundPlaneProgram = render::engine->requestShader("GROUND_PLANE", {}, render::ShaderReplacementDefaults::Process);
+  std::vector<std::string> rules;
+  if (options::transparencyMode == TransparencyMode::Pretty) rules.push_back("TRANSPARENCY_PEEL_GROUND");
+  switch (options::groundPlaneMode) {
+  case GroundPlaneMode::None:
+    break;
+  case GroundPlaneMode::Tile:
+    groundPlaneProgram =
+        render::engine->requestShader("GROUND_PLANE_TILE", rules, render::ShaderReplacementDefaults::Process);
+    break;
+  case GroundPlaneMode::TileReflection:
+    groundPlaneProgram =
+        render::engine->requestShader("GROUND_PLANE_TILE_REFLECT", rules, render::ShaderReplacementDefaults::Process);
+    break;
+  case GroundPlaneMode::ShadowOnly:
+    groundPlaneProgram =
+        render::engine->requestShader("GROUND_PLANE_SHADOW", rules, render::ShaderReplacementDefaults::Process);
+    break;
+  }
   populateGroundPlaneGeometry();
 
-  { // Load the ground texture
+  if (options::groundPlaneMode == GroundPlaneMode::Tile ||
+      options::groundPlaneMode == GroundPlaneMode::TileReflection) { // Load the ground texture
     int w, h, comp;
     unsigned char* image = nullptr;
     image = stbi_load_from_memory(reinterpret_cast<const unsigned char*>(&render::bindata_concrete[0]),
@@ -85,7 +101,39 @@ void GroundPlane::prepareGroundPlane() {
     stbi_image_free(image);
   }
 
-  { // Blur buffers and program
+  // For all effects which will use the alternate scene buffers, prepare them
+  if (options::groundPlaneMode == GroundPlaneMode::TileReflection ||
+      options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
+
+    if (options::groundPlaneMode == GroundPlaneMode::TileReflection) {
+      // only use color buffer for reflection
+      sceneAltColorTexture =
+          render::engine->generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+      sceneAltColorTexture->setFilterMode(FilterMode::Linear);
+    }
+    sceneAltDepthTexture =
+        render::engine->generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
+
+
+    sceneAltFrameBuffer = render::engine->generateFrameBuffer(view::bufferWidth, view::bufferHeight);
+    if (options::groundPlaneMode == GroundPlaneMode::TileReflection) {
+      sceneAltFrameBuffer->addColorBuffer(sceneAltColorTexture);
+    }
+    sceneAltFrameBuffer->addDepthBuffer(sceneAltDepthTexture);
+    sceneAltFrameBuffer->setDrawBuffers();
+
+    sceneAltFrameBuffer->clearColor = glm::vec3{1., 1., 1.};
+    sceneAltFrameBuffer->clearAlpha = 0.0;
+  }
+
+
+  if (options::groundPlaneMode == GroundPlaneMode::TileReflection) { // Mirrored scene buffer
+    groundPlaneProgram->setTextureFromBuffer("t_mirrorImage", sceneAltColorTexture.get());
+  }
+
+
+  if (options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
+    // Blur buffers and program
     for (int i = 0; i < 2; i++) {
       blurColorTextures[i] =
           render::engine->generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
@@ -100,40 +148,31 @@ void GroundPlane::prepareGroundPlane() {
 
     blurProgram = render::engine->requestShader("BLUR_RGB", {}, render::ShaderReplacementDefaults::Process);
     blurProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
-    copyTexProgram =
-        render::engine->requestShader("TEXTURE_DRAW_PLAIN", {}, render::ShaderReplacementDefaults::Process);
+    copyTexProgram = render::engine->requestShader("DEPTH_TO_MASK", {}, render::ShaderReplacementDefaults::Process);
     copyTexProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
+    copyTexProgram->setTextureFromBuffer("t_depth", sceneAltDepthTexture.get());
+
+    groundPlaneProgram->setTextureFromBuffer("t_shadow", blurColorTextures[0].get());
   }
 
-  { // Mirored scene buffer
-    mirroredSceneColorTexture =
-        render::engine->generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
-    mirroredSceneDepth =
-        render::engine->generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
-
-    mirroredSceneColorTexture->setFilterMode(FilterMode::Linear);
-
-    mirroredSceneFrameBuffer = render::engine->generateFrameBuffer(view::bufferWidth, view::bufferHeight);
-    mirroredSceneFrameBuffer->addColorBuffer(mirroredSceneColorTexture);
-    mirroredSceneFrameBuffer->addDepthBuffer(mirroredSceneDepth);
-    mirroredSceneFrameBuffer->setDrawBuffers();
-
-    mirroredSceneFrameBuffer->clearColor = glm::vec3{1., 1., 1.};
-    mirroredSceneFrameBuffer->clearAlpha = 0.0;
-
-    groundPlaneProgram->setTextureFromBuffer("t_mirrorImage", blurColorTextures[0].get());
+  // Respect global effects
+  if (options::transparencyMode == TransparencyMode::Pretty) {
+    groundPlaneProgram->setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());
   }
 
   groundPlanePrepared = true;
 }
 
-void GroundPlane::draw() {
+void GroundPlane::draw(bool isRedraw) {
+  if (options::groundPlaneMode == GroundPlaneMode::None) {
+    return;
+  }
 
   // don't draw ground in planar mode
   if (view::style == view::NavigateStyle::Planar) return;
 
   if (!groundPlanePrepared) {
-    prepareGroundPlane();
+    prepare();
   }
   if (view::upDir != groundPlaneViewCached) {
     populateGroundPlaneGeometry();
@@ -155,11 +194,12 @@ void GroundPlane::draw() {
   double bboxBottom = sign == 1.0 ? std::get<0>(state::boundingBox)[iP] : std::get<1>(state::boundingBox)[iP];
   double bboxHeight = std::get<1>(state::boundingBox)[iP] - std::get<0>(state::boundingBox)[iP];
   double heightEPS = state::lengthScale * 1e-4;
-  double groundHeight = bboxBottom - sign * (groundPlaneHeightFactor * bboxHeight + heightEPS);
+  double groundHeight = bboxBottom - sign * (options::groundPlaneHeightFactor.asAbsolute() + heightEPS);
 
   // Viewport
   glm::vec4 viewport = render::engine->getCurrentViewport();
   glm::vec2 viewportDim{viewport[2], viewport[3]};
+  int factor = render::engine->getSSAAFactor();
 
   auto setUniforms = [&]() {
     glm::mat4 viewMat = view::getCameraViewMatrix();
@@ -167,47 +207,60 @@ void GroundPlane::draw() {
 
     glm::mat4 projMat = view::getCameraPerspectiveMatrix();
     groundPlaneProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
-
     groundPlaneProgram->setUniform("u_viewportDim", viewportDim);
 
-    groundPlaneProgram->setUniform("u_center", state::center);
-    groundPlaneProgram->setUniform("u_basisX", baseForward);
-    groundPlaneProgram->setUniform("u_basisY", baseRight);
-    groundPlaneProgram->setUniform("u_basisZ", baseUp);
-    groundPlaneProgram->setUniform("u_upSign", sign);
+    if (options::groundPlaneMode == GroundPlaneMode::Tile ||
+        options::groundPlaneMode == GroundPlaneMode::TileReflection) {
+      groundPlaneProgram->setUniform("u_center", state::center);
+      groundPlaneProgram->setUniform("u_basisX", baseForward);
+      groundPlaneProgram->setUniform("u_basisY", baseRight);
+    }
+
+    if (options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
+      groundPlaneProgram->setUniform("u_shadowDarkness", options::shadowDarkness);
+    }
 
     float camHeight = view::getCameraWorldPosition()[iP];
     groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
-
-    groundPlaneProgram->setUniform("u_lengthScale", state::lengthScale);
+    groundPlaneProgram->setUniform("u_upSign", sign);
+    groundPlaneProgram->setUniform("u_basisZ", baseUp);
     groundPlaneProgram->setUniform("u_groundHeight", groundHeight);
+    groundPlaneProgram->setUniform("u_lengthScale", state::lengthScale);
   };
 
+  /*
+  // For all effects which will use the alternate scene buffers, prepare them
+  if (options::groundPlaneMode == GroundPlaneMode::TileReflection ||
+      options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
+
+
+    sceneAltFrameBuffer->resize(factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
+    sceneAltFrameBuffer->setViewport(0, 0, factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
+    render::engine->setCurrentPixelScaling(factor / 2.);
+
+    sceneAltFrameBuffer->bindForRendering();
+    sceneAltFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
+    sceneAltFrameBuffer->clear();
+  }
+  */
 
   // Render the scene to implement the mirror effect
-  bool doMirror = render::engine->getTransparencyMode() == TransparencyMode::None;
-  {
+  if (!isRedraw && options::groundPlaneMode == GroundPlaneMode::TileReflection) {
+
+    // Prepare the alternate scene buffers
+    // (use a texture 1/4 the area of the view buffer, it's supposed to be blurry anyway and this saves perf)
+    render::engine->setBlendMode();
+    render::engine->setDepthMode();
+    sceneAltFrameBuffer->resize(factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
+    sceneAltFrameBuffer->setViewport(0, 0, factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
+    render::engine->setCurrentPixelScaling(factor / 2.);
+
+    sceneAltFrameBuffer->bindForRendering();
+    sceneAltFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
+    sceneAltFrameBuffer->clear();
 
     // Render to a texture so we can sample from it on the ground
-    // (use a texture 1/4 the area of the view buffer, it's supposed to be blurry anyway and this saves perf)
-    // viewport size problems
-
-
-    // Make sure all framebuffers are the right shape
-    int factor = render::engine->getSSAAFactor();
-    mirroredSceneFrameBuffer->resize(factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
-    mirroredSceneFrameBuffer->setViewport(0, 0, factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
-    render::engine->setCurrentPixelScaling(factor / 2.);
-    for (int i = 0; i < 2; i++) {
-      blurFrameBuffers[i]->resize(factor * view::bufferWidth, factor * view::bufferHeight);
-      blurFrameBuffers[i]->setViewport(0, 0, factor * view::bufferWidth, factor * view::bufferHeight);
-    }
-
-    blurFrameBuffers[0]->clear();
-
-    mirroredSceneFrameBuffer->bindForRendering();
-    mirroredSceneFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
-    mirroredSceneFrameBuffer->clear();
+    sceneAltFrameBuffer->bindForRendering();
 
     // Push a reflected view matrix
     glm::mat4 origViewMat = view::viewMat;
@@ -221,34 +274,71 @@ void GroundPlane::draw() {
     view::viewMat = view::viewMat * mirrorMat;
 
     // Draw everything
-    if (doMirror) {
+    if (!render::engine->transparencyEnabled()) { // skip when transparency is turned on
       drawStructures();
+    }
 
-      // == Blur
+    // Restore original view matrix
+    view::viewMat = origViewMat;
+  }
 
-      // Render (upsample) to the first blur texture
-      render::engine->setBlendMode(BlendMode::Disable);
+  // Render the scene to implement the shadow effect
+  if (!isRedraw && options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
+
+    // Prepare the alternate scene buffers
+    render::engine->setBlendMode();
+    render::engine->setDepthMode();
+    sceneAltFrameBuffer->resize(factor * view::bufferWidth, factor * view::bufferHeight);
+    sceneAltFrameBuffer->setViewport(0, 0, factor * view::bufferWidth, factor * view::bufferHeight);
+
+    sceneAltFrameBuffer->bindForRendering();
+    sceneAltFrameBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
+    sceneAltFrameBuffer->clear();
+
+    // Make sure all framebuffers are the right shape
+    for (int i = 0; i < 2; i++) {
+      blurFrameBuffers[i]->resize(factor * view::bufferWidth, factor * view::bufferHeight);
+      blurFrameBuffers[i]->setViewport(0, 0, factor * view::bufferWidth, factor * view::bufferHeight);
+      blurFrameBuffers[i]->clear();
+    }
+
+    // Render to a texture so we can sample from it on the ground
+    sceneAltFrameBuffer->bindForRendering();
+
+    // Push a view matrix which projects on to the ground plane
+    glm::mat4 origViewMat = view::viewMat;
+    glm::mat4 projMat = glm::mat4(1.0);
+    projMat[iP][iP] = 0.;
+    projMat[3][iP] = groundHeight;
+    view::viewMat = view::viewMat * projMat;
+
+    // Draw everything
+    render::engine->setDepthMode();
+    render::engine->setBlendMode(BlendMode::Disable);
+    drawStructures();
+
+    // Copy the depth buffer to a texture (while upsampling)
+    render::engine->setBlendMode(BlendMode::Disable);
+    blurFrameBuffers[0]->bindForRendering();
+    copyTexProgram->draw();
+
+    // == Blur
+
+    // Do some blur iterations (ends in same buffer it started in)
+    int nBlur = options::shadowBlurIters * render::engine->getSSAAFactor();
+    // int nBlur = 0;
+    for (int i = 0; i < nBlur; i++) {
+      // horizontal blur
+      blurFrameBuffers[1]->bindForRendering();
+      blurProgram->setTextureFromBuffer("t_image", blurColorTextures[0].get());
+      blurProgram->setUniform("u_horizontal", 1);
+      blurProgram->draw();
+
+      // vertical blur
       blurFrameBuffers[0]->bindForRendering();
-      copyTexProgram->setTextureFromBuffer("t_image", mirroredSceneColorTexture.get());
-      copyTexProgram->draw();
-
-      // Do some blur iterations (ends in same buffer it started in)
-      // FORNOW: no blur. I think it looks nicer without.
-      int nBlur = 0;
-      // int nBlur = 2 * render::engine->getSSAAFactor();
-      for (int i = 0; i < nBlur; i++) {
-        // horizontal blur
-        blurFrameBuffers[1]->bindForRendering();
-        blurProgram->setTextureFromBuffer("t_image", blurColorTextures[0].get());
-        blurProgram->setUniform("u_horizontal", 1);
-        blurProgram->draw();
-
-        // vertical blur
-        blurFrameBuffers[0]->bindForRendering();
-        blurProgram->setTextureFromBuffer("t_image", blurColorTextures[1].get());
-        blurProgram->setUniform("u_horizontal", 0);
-        blurProgram->draw();
-      }
+      blurProgram->setTextureFromBuffer("t_image", blurColorTextures[1].get());
+      blurProgram->setUniform("u_horizontal", 0);
+      blurProgram->draw();
     }
 
     // Restore original view matrix
@@ -257,21 +347,63 @@ void GroundPlane::draw() {
 
   render::engine->bindSceneBuffer();
 
-
-  render::engine->setDepthMode();
+  // Render the ground plane
   render::engine->applyTransparencySettings();
+  if (options::transparencyMode != TransparencyMode::Simple) {
+    render::engine->setBlendMode(BlendMode::Disable);
+  }
   setUniforms();
   groundPlaneProgram->draw();
-  render::engine->setBlendMode(BlendMode::Disable);
 }
 
 void GroundPlane::buildGui() {
 
+  auto modeName = [](const GroundPlaneMode& m) -> std::string {
+    switch (m) {
+    case GroundPlaneMode::None:
+      return "None";
+    case GroundPlaneMode::Tile:
+      return "Tile";
+    case GroundPlaneMode::TileReflection:
+      return "Tile Reflection";
+    case GroundPlaneMode::ShadowOnly:
+      return "Shadow Only";
+    }
+    return "";
+  };
+
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Ground Plane")) {
 
-    if (ImGui::Checkbox("Enabled", &options::groundPlaneEnabled)) requestRedraw();
-    if (ImGui::SliderFloat("Height", &groundPlaneHeightFactor, 0.0, 1.0)) requestRedraw();
+    ImGui::PushItemWidth(160);
+    if (ImGui::BeginCombo("Mode", modeName(options::groundPlaneMode).c_str())) {
+      for (GroundPlaneMode m : {GroundPlaneMode::None, GroundPlaneMode::Tile, GroundPlaneMode::TileReflection,
+                                GroundPlaneMode::ShadowOnly}) {
+        std::string mName = modeName(m);
+        if (ImGui::Selectable(mName.c_str(), options::groundPlaneMode == m)) {
+          options::groundPlaneMode = m;
+          requestRedraw();
+        }
+      }
+      ImGui::EndCombo();
+    }
+    ImGui::PopItemWidth();
+
+    if (ImGui::SliderFloat("Height", options::groundPlaneHeightFactor.getValuePtr(), -1.0, 1.0)) requestRedraw();
+
+    switch (options::groundPlaneMode) {
+    case GroundPlaneMode::None:
+      break;
+    case GroundPlaneMode::Tile:
+      break;
+    case GroundPlaneMode::TileReflection:
+      break;
+    case GroundPlaneMode::ShadowOnly:
+      if (ImGui::SliderFloat("Shadow Darkness", &options::shadowDarkness, .0, 1.0)) requestRedraw();
+      if (ImGui::InputInt("Blur Iterations", &options::shadowBlurIters, 1)) requestRedraw();
+      break;
+    }
+
 
     ImGui::TreePop();
   }

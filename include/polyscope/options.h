@@ -2,6 +2,7 @@
 #pragma once
 
 #include "polyscope/types.h"
+#include "polyscope/scaled_value.h"
 
 #include <string>
 
@@ -42,7 +43,18 @@ extern bool openImGuiWindowForUserCallback;
 // If true, the user callback will be invoked for nested calls to polyscope::show(), otherwise not (default: false)
 extern bool invokeUserCallbackForNestedShow;
 
-// Rendering parameters
+// === Scene options
+
+// Behavior of the ground plane
+extern GroundPlaneMode groundPlaneMode;
+extern bool groundPlaneEnabled; // deprecated, but kept and respected for compatability. use groundPlaneMode.
+extern ScaledValue<float> groundPlaneHeightFactor;
+extern int shadowBlurIters;
+extern float shadowDarkness;
+
+// === Rendering parameters
+
+// SSAA scaling in pixel multiples
 extern int ssaaFactor;
 
 // Transparency settings for the renderer

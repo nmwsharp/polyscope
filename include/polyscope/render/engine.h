@@ -38,7 +38,7 @@ enum class FilterMode { Nearest = 0, Linear };
 enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F, R16F, DEPTH24 };
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
 enum class DepthMode { Less, LEqual, LEqualReadOnly, Greater, Disable };
-enum class BlendMode { Over, OverNoWrite, Under, Zero, WeightedAdd, Disable };
+enum class BlendMode { Over, AlphaOver, OverNoWrite, Under, Zero, WeightedAdd, Source, Disable };
 
 int dimension(const TextureFormat& x);
 std::string modeName(const TransparencyMode& m);
@@ -398,7 +398,7 @@ public:
   std::shared_ptr<FrameBuffer> displayBuffer;
   std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal;
   std::shared_ptr<FrameBuffer> pickFramebuffer;
-  std::shared_ptr<FrameBuffer> sceneDepthMinFrame; 
+  std::shared_ptr<FrameBuffer> sceneDepthMinFrame;
 
   // Main buffers for rendering
   // sceneDepthMin is an optional texture copy of the depth buffe used for some effects
@@ -424,6 +424,9 @@ public:
 
   void setSSAAFactor(int newVal);
   int getSSAAFactor();
+
+  bool lightCopy = false; // if true, when applying lighting transform does a copy instead of an alpha blend. Used
+                          // internally for alpha in screenshots, but should generally be left as false.
 
   // == Cached data
 

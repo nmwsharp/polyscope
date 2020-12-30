@@ -64,6 +64,11 @@ void saveImage(std::string name, unsigned char* buffer, int w, int h, int channe
 
 void screenshot(std::string filename, bool transparentBG) {
 
+  if(transparentBG) {
+    // copy directly in to buffer without blending so we can grab pre-blend values
+    render::engine->lightCopy = true;
+  }
+
   // Make sure we render first
   processLazyProperties();
   requestRedraw();
@@ -86,6 +91,10 @@ void screenshot(std::string filename, bool transparentBG) {
 
   // Save to file
   saveImage(filename, &(buff.front()), w, h, 4);
+  
+  if(transparentBG) {
+    render::engine->lightCopy = false;
+  }
 }
 
 void screenshot(bool transparentBG) {

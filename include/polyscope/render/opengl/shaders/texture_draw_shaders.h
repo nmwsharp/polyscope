@@ -14,6 +14,7 @@ extern const ShaderStageSpecification DOT3_TEXTURE_DRAW_FRAG_SHADER;
 extern const ShaderStageSpecification MAP3_TEXTURE_DRAW_FRAG_SHADER;
 extern const ShaderStageSpecification COMPOSITE_PEEL;
 extern const ShaderStageSpecification DEPTH_COPY;
+extern const ShaderStageSpecification DEPTH_TO_MASK;
 extern const ShaderStageSpecification BLUR_RGB;
 
 extern const ShaderStageSpecification SCALAR_TEXTURE_COLORMAP;

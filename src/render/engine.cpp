@@ -291,9 +291,15 @@ void Engine::buildEngineGui() {
   }
 }
 
-void Engine::setBackgroundColor(glm::vec3 c) { sceneBuffer->clearColor = c; }
+void Engine::setBackgroundColor(glm::vec3 c) { 
+  //sceneBuffer->clearColor = c; 
+  displayBuffer->clearColor = c; 
+}
 
-void Engine::setBackgroundAlpha(float newAlpha) { sceneBuffer->clearAlpha = newAlpha; }
+void Engine::setBackgroundAlpha(float newAlpha) { 
+  //sceneBuffer->clearAlpha = newAlpha; 
+  displayBuffer->clearAlpha = newAlpha; 
+}
 
 void Engine::setCurrentViewport(glm::vec4 val) { currViewport = val; }
 glm::vec4 Engine::getCurrentViewport() { return currViewport; }
@@ -391,6 +397,11 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
   glm::vec2 texelSize{1. / texture->getSizeX(), 1. / texture->getSizeY()};
   mapLight->setUniform("u_texelSize", texelSize);
 
+  if(lightCopy) {
+    setBlendMode(BlendMode::Disable); 
+  } else {
+    setBlendMode(BlendMode::AlphaOver); 
+  }
   mapLight->draw();
 }
 

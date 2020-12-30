@@ -197,8 +197,8 @@ void drawStructures() {
       // The normal case
       else {
         // make sure the right settings are active
-        render::engine->setDepthMode();
-        render::engine->applyTransparencySettings();
+        // render::engine->setDepthMode();
+        // render::engine->applyTransparencySettings();
 
         s.second->draw();
       }
@@ -325,17 +325,22 @@ void processInputEvents() {
 void renderScene() {
   processLazyProperties();
 
+  render::engine->applyTransparencySettings();
 
   // Set background color/alpha and clear
-  // if (render::engine->getTransparencyMode() == TransparencyMode::Simple) {
-  if (render::engine->transparencyEnabled()) {
-    // special case for transparency: we need to premultiply background
+  /*
+  if (render::engine->getTransparencyMode() == TransparencyMode::Simple) {
+    // special case for averaging transparency: we need to premultiply background
     float alpha = view::bgColor[3];
     render::engine->setBackgroundColor({alpha * view::bgColor[0], alpha * view::bgColor[1], alpha * view::bgColor[2]});
   } else {
     render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
   }
   render::engine->setBackgroundAlpha(view::bgColor[3]);
+  */
+
+  render::engine->sceneBuffer->clearColor = {0., 0., 0.};
+  render::engine->sceneBuffer->clearAlpha = 0.;
   render::engine->sceneBuffer->clear();
 
   if (!render::engine->bindSceneBuffer()) return;
@@ -363,15 +368,13 @@ void renderScene() {
 
       render::engine->bindSceneBuffer();
       render::engine->clearSceneBuffer();
-      render::engine->setDepthMode();
-      render::engine->setBlendMode();
 
+      render::engine->applyTransparencySettings();
       drawStructures();
 
-      // Draw the ground plane
-      if (options::groundPlaneEnabled) {
-        render::engine->groundPlane.draw();
-      }
+      // Draw the ground plane (will do nothing if disabled)
+      bool isRedraw = iPass > 0;
+      render::engine->groundPlane.draw(isRedraw);
 
       // Composite the result of this pass in to the result buffer
       render::engine->sceneBufferFinal->bind();
@@ -384,18 +387,16 @@ void renderScene() {
     }
   } else {
     // Normal case: single render pass
-    render::engine->renderBackground();
-
-    // Draw the ground plane
-    if (options::groundPlaneEnabled) {
-      render::engine->groundPlane.draw();
-    }
+    render::engine->applyTransparencySettings();
 
     drawStructures();
 
+    // Draw the ground plane (will do nothing if disabled)
+    render::engine->groundPlane.draw();
+
     render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
   }
-}
+} // namespace
 
 void renderSceneToScreen() {
   render::engine->bindDisplay();
@@ -416,7 +417,7 @@ void buildPolyscopeGui() {
   }
   ImGui::SameLine();
   if (ImGui::Button("Screenshot")) {
-    screenshot(false);
+    screenshot(true);
   }
   ImGui::SameLine();
   if (ImGui::Button("Controls")) {
@@ -581,6 +582,8 @@ void draw(bool withUI) {
   // Update buffer and context
   render::engine->makeContextCurrent();
   render::engine->bindDisplay();
+  render::engine->displayBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
+  render::engine->displayBuffer->clearAlpha = view::bgColor[3];
   render::engine->clearDisplay();
 
   if (withUI) {
@@ -860,19 +863,30 @@ void removeAllStructures() {
 }
 
 void refresh() {
+
+  // reset the ground plane
+  render::engine->groundPlane.prepare();
+
+  // reset all of the structures
   for (auto cat : state::structures) {
     for (auto x : cat.second) {
       x.second->refresh();
     }
   }
+
   requestRedraw();
 }
 
 // Cached versions of lazy properties used for updates
 namespace lazy {
 TransparencyMode transparencyMode = TransparencyMode::None;
-int transparencyRenderPasses = -1;
-int ssaaFactor = -1;
+int transparencyRenderPasses = 8;
+int ssaaFactor = 1;
+bool groundPlaneEnabled = true;
+GroundPlaneMode groundPlaneMode = GroundPlaneMode::TileReflection;
+ScaledValue<float> groundPlaneHeightFactor = 0;
+int shadowBlurIters = 2;
+float shadowDarkness = .4;
 } // namespace lazy
 
 void processLazyProperties() {
@@ -883,7 +897,8 @@ void processLazyProperties() {
   // `polyscope::setSetting(newVal);`. It might have been better to simple set options with setter from the start, but
   // that ship has sailed.
   //
-  // This function is a workaround which watches for changes to set options, and performs any necessary additional work.
+  // This function is a workaround which polls for changes to options settings, and performs any necessary additional
+  // work.
 
 
   // transparency mode
@@ -898,10 +913,35 @@ void processLazyProperties() {
     requestRedraw();
   }
 
-  // transparency render passes
+  // ssaa
   if (lazy::ssaaFactor != options::ssaaFactor) {
     lazy::ssaaFactor = options::ssaaFactor;
     render::engine->setSSAAFactor(options::ssaaFactor);
+  }
+
+  // ground plane
+  if (lazy::groundPlaneEnabled != options::groundPlaneEnabled || lazy::groundPlaneMode != options::groundPlaneMode) {
+    lazy::groundPlaneEnabled = options::groundPlaneEnabled;
+    if (!options::groundPlaneEnabled) {
+      // if the (depecated) groundPlaneEnabled = false, set mode to None, so we only have one variable to check
+      options::groundPlaneMode = GroundPlaneMode::None;
+    }
+    lazy::groundPlaneMode = options::groundPlaneMode;
+    render::engine->groundPlane.prepare();
+    requestRedraw();
+  }
+  if (lazy::groundPlaneHeightFactor.asAbsolute() != options::groundPlaneHeightFactor.asAbsolute() ||
+      lazy::groundPlaneHeightFactor.isRelative() != options::groundPlaneHeightFactor.isRelative()) {
+    lazy::groundPlaneHeightFactor = options::groundPlaneHeightFactor;
+    requestRedraw();
+  }
+  if (lazy::shadowBlurIters != options::shadowBlurIters) {
+    lazy::shadowBlurIters = options::shadowBlurIters;
+    requestRedraw();
+  }
+  if (lazy::shadowDarkness != options::shadowDarkness) {
+    lazy::shadowDarkness = options::shadowDarkness;
+    requestRedraw();
   }
 };
 

@@ -17,7 +17,21 @@ bool autocenterStructures = false;
 bool autoscaleStructures = false;
 bool openImGuiWindowForUserCallback = true;
 bool invokeUserCallbackForNestedShow = false;
+
+// == Scene options
+
+// Ground plane / shadows
+bool groundPlaneEnabled = true;
+GroundPlaneMode groundPlaneMode = GroundPlaneMode::TileReflection;
+ScaledValue<float> groundPlaneHeightFactor = 0;
+int shadowBlurIters = 2; 
+float shadowDarkness = 0.4; 
+
+// Rendering options
+
 int ssaaFactor = 1;
+
+// Transparency
 TransparencyMode transparencyMode = TransparencyMode::None;
 int transparencyRenderPasses = 8;
 
