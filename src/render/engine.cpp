@@ -291,14 +291,14 @@ void Engine::buildEngineGui() {
   }
 }
 
-void Engine::setBackgroundColor(glm::vec3 c) { 
-  //sceneBuffer->clearColor = c; 
-  displayBuffer->clearColor = c; 
+void Engine::setBackgroundColor(glm::vec3 c) {
+  FrameBuffer& targetBuffer = useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer;
+  targetBuffer.clearColor = c;
 }
 
-void Engine::setBackgroundAlpha(float newAlpha) { 
-  //sceneBuffer->clearAlpha = newAlpha; 
-  displayBuffer->clearAlpha = newAlpha; 
+void Engine::setBackgroundAlpha(float newAlpha) {
+  FrameBuffer& targetBuffer = useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer;
+  targetBuffer.clearAlpha = newAlpha;
 }
 
 void Engine::setCurrentViewport(glm::vec4 val) { currViewport = val; }
@@ -306,11 +306,15 @@ glm::vec4 Engine::getCurrentViewport() { return currViewport; }
 void Engine::setCurrentPixelScaling(float val) { currPixelScale = val; }
 float Engine::getCurrentPixelScaling() { return currPixelScale; }
 
-void Engine::bindDisplay() { displayBuffer->bindForRendering(); }
+void Engine::bindDisplay() {
+  FrameBuffer& targetBuffer = useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer;
+  targetBuffer.bindForRendering();
+}
 
 
 void Engine::clearDisplay() {
-  displayBuffer->clear();
+  FrameBuffer& targetBuffer = useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer;
+  targetBuffer.clear();
   // bindDisplay();
   // glClearColor(1., 1., 1., 0.);
   // glClearDepth(1.);
@@ -324,6 +328,7 @@ void Engine::resizeScreenBuffers() {
   unsigned int width = view::bufferWidth;
   unsigned int height = view::bufferHeight;
   displayBuffer->resize(width, height);
+  displayBufferAlt->resize(width, height);
   sceneBuffer->resize(ssaaFactor * width, ssaaFactor * height);
   sceneBufferFinal->resize(ssaaFactor * width, ssaaFactor * height);
   sceneDepthMinFrame->resize(ssaaFactor * width, ssaaFactor * height);
@@ -336,6 +341,7 @@ void Engine::setScreenBufferViewports() {
   unsigned int sizeY = view::bufferHeight;
 
   displayBuffer->setViewport(xStart, yStart, sizeX, sizeY);
+  displayBufferAlt->setViewport(xStart, yStart, sizeX, sizeY);
   sceneBuffer->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
   sceneBufferFinal->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
   sceneDepthMinFrame->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
@@ -397,10 +403,10 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
   glm::vec2 texelSize{1. / texture->getSizeX(), 1. / texture->getSizeY()};
   mapLight->setUniform("u_texelSize", texelSize);
 
-  if(lightCopy) {
-    setBlendMode(BlendMode::Disable); 
+  if (lightCopy) {
+    setBlendMode(BlendMode::Disable);
   } else {
-    setBlendMode(BlendMode::AlphaOver); 
+    setBlendMode(BlendMode::AlphaOver);
   }
   mapLight->draw();
 }
@@ -489,7 +495,7 @@ bool Engine::transparencyEnabled() {
 }
 
 void Engine::setSSAAFactor(int newVal) {
-  if(newVal < 1 || newVal > 4) throw std::runtime_error("ssaaFactor must be one of 1,2,3,4");
+  if (newVal < 1 || newVal > 4) throw std::runtime_error("ssaaFactor must be one of 1,2,3,4");
   ssaaFactor = newVal;
   updateWindowSize(true);
 }
@@ -533,6 +539,21 @@ void Engine::allocateGlobalBuffersAndPrograms() {
 
     sceneBufferFinal->clearColor = glm::vec3{1., 1., 1.};
     sceneBufferFinal->clearAlpha = 0.0;
+  }
+
+  { // Alternate display buffer
+    std::shared_ptr<RenderBuffer> sceneColorAlt =
+        generateRenderBuffer(RenderBufferType::ColorAlpha, view::bufferWidth, view::bufferHeight);
+    std::shared_ptr<RenderBuffer> sceneDepthAlt =
+        generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
+
+    displayBufferAlt = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
+    displayBufferAlt->addColorBuffer(sceneColorAlt);
+    displayBufferAlt->addDepthBuffer(sceneDepthAlt);
+    displayBufferAlt->setDrawBuffers();
+
+    displayBufferAlt->clearColor = glm::vec3{1., 1., 1.};
+    displayBufferAlt->clearAlpha = 0.0;
   }
 
   { // Pick buffer

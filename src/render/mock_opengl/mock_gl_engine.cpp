@@ -297,6 +297,19 @@ std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
   return result;
 }
 
+std::vector<unsigned char> GLFrameBuffer::readBuffer() {
+  bind();
+
+  int w = getSizeX();
+  int h = getSizeY();
+
+  // Read from openGL
+  size_t buffSize = w * h * 4;
+  std::vector<unsigned char> buff(buffSize);
+
+  return buff;
+}
+
 void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
 
   // it _better_ be a GL buffer

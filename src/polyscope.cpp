@@ -42,7 +42,7 @@ bool redrawNextFrame = true;
 float imguiStackMargin = 10;
 float lastWindowHeightPolyscope = 200;
 float lastWindowHeightUser = 200;
-float leftWindowsWidth = 300;
+float leftWindowsWidth = 305;
 float rightWindowsWidth = 500;
 
 
@@ -327,18 +327,6 @@ void renderScene() {
 
   render::engine->applyTransparencySettings();
 
-  // Set background color/alpha and clear
-  /*
-  if (render::engine->getTransparencyMode() == TransparencyMode::Simple) {
-    // special case for averaging transparency: we need to premultiply background
-    float alpha = view::bgColor[3];
-    render::engine->setBackgroundColor({alpha * view::bgColor[0], alpha * view::bgColor[1], alpha * view::bgColor[2]});
-  } else {
-    render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
-  }
-  render::engine->setBackgroundAlpha(view::bgColor[3]);
-  */
-
   render::engine->sceneBuffer->clearColor = {0., 0., 0.};
   render::engine->sceneBuffer->clearAlpha = 0.;
   render::engine->sceneBuffer->clear();
@@ -416,9 +404,29 @@ void buildPolyscopeGui() {
     view::flyToHomeView();
   }
   ImGui::SameLine();
+  ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 0.0f));
   if (ImGui::Button("Screenshot")) {
-    screenshot(true);
+    screenshot(options::screenshotTransparency);
   }
+  ImGui::SameLine();
+  if (ImGui::ArrowButton("##Option", ImGuiDir_Down)) {
+    ImGui::OpenPopup("ScreenshotOptionsPopup");
+  }
+  ImGui::PopStyleVar();
+  if (ImGui::BeginPopup("ScreenshotOptionsPopup")) {
+
+    ImGui::Checkbox("with transparency", &options::screenshotTransparency);
+
+    if (ImGui::BeginMenu("file format")) {
+      if (ImGui::MenuItem(".png", NULL, options::screenshotExtension == ".png")) options::screenshotExtension = ".png";
+      if (ImGui::MenuItem(".jpg", NULL, options::screenshotExtension == ".jpg")) options::screenshotExtension = ".jpg";
+      ImGui::EndMenu();
+    }
+
+    ImGui::EndPopup();
+  }
+
+
   ImGui::SameLine();
   if (ImGui::Button("Controls")) {
     // do nothing, just want hover state
@@ -582,8 +590,8 @@ void draw(bool withUI) {
   // Update buffer and context
   render::engine->makeContextCurrent();
   render::engine->bindDisplay();
-  render::engine->displayBuffer->clearColor = {view::bgColor[0], view::bgColor[1], view::bgColor[2]};
-  render::engine->displayBuffer->clearAlpha = view::bgColor[3];
+  render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
+  render::engine->setBackgroundAlpha(view::bgColor[3]);
   render::engine->clearDisplay();
 
   if (withUI) {

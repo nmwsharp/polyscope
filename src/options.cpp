@@ -18,6 +18,9 @@ bool autoscaleStructures = false;
 bool openImGuiWindowForUserCallback = true;
 bool invokeUserCallbackForNestedShow = false;
 
+bool screenshotTransparency = true;
+std::string screenshotExtension = ".png";
+
 // == Scene options
 
 // Ground plane / shadows

@@ -1,8 +1,8 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
-#include "polyscope/types.h"
 #include "polyscope/scaled_value.h"
+#include "polyscope/types.h"
 
 #include <string>
 
@@ -51,6 +51,11 @@ extern bool groundPlaneEnabled; // deprecated, but kept and respected for compat
 extern ScaledValue<float> groundPlaneHeightFactor;
 extern int shadowBlurIters;
 extern float shadowDarkness;
+
+extern bool screenshotTransparency;     // controls whether screenshots taken by clicking the GUI button have a
+                                        // transparent background
+extern std::string screenshotExtension; // sets the extension used for automatically-numbered screenshots (e.g. by
+                                        // clicking the GUI button)
 
 // === Rendering parameters
 

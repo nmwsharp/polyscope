@@ -562,11 +562,32 @@ std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
   glFlush();
   glFinish();
 
+  bind();
+
   // Read from the buffer
   std::array<float, 4> result;
   glReadPixels(xPos, yPos, 1, 1, GL_RGBA, GL_FLOAT, &result);
 
   return result;
+}
+
+
+std::vector<unsigned char> GLFrameBuffer::readBuffer() {
+
+  glFlush();
+  glFinish();
+
+  bind();
+
+  int w = getSizeX();
+  int h = getSizeY();
+
+  // Read from openGL
+  size_t buffSize = w * h * 4;
+  std::vector<unsigned char> buff(buffSize);
+  glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, &(buff.front()));
+
+  return buff;
 }
 
 void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
@@ -1674,7 +1695,7 @@ void GLEngine::initialize() {
     displayBuffer.reset(glScreenBuffer);
     glScreenBuffer->bind();
     glClearColor(1., 1., 1., 0.);
-    //glClearColor(0., 0., 0., 0.);
+    // glClearColor(0., 0., 0., 0.);
     // glClearDepth(1.);
   }
 

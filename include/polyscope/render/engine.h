@@ -142,6 +142,7 @@ public:
   // Query pixel
   virtual std::array<float, 4> readFloat4(int xPos, int yPos) = 0;
   virtual void blitTo(FrameBuffer* other) = 0;
+  virtual std::vector<unsigned char> readBuffer() = 0;
 
 protected:
   unsigned int sizeX, sizeY;
@@ -395,7 +396,7 @@ public:
 
   // === The frame buffers used in the rendering pipeline
   // The size of these buffers is always kept in sync with the screen size
-  std::shared_ptr<FrameBuffer> displayBuffer;
+  std::shared_ptr<FrameBuffer> displayBuffer, displayBufferAlt;
   std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal;
   std::shared_ptr<FrameBuffer> pickFramebuffer;
   std::shared_ptr<FrameBuffer> sceneDepthMinFrame;
@@ -415,7 +416,7 @@ public:
   bool transparencyEnabled();
   virtual void applyTransparencySettings() = 0;
 
-  // Options
+  // == Options
   BackgroundView background = BackgroundView::None;
 
   float exposure = 1.0;
@@ -425,8 +426,6 @@ public:
   void setSSAAFactor(int newVal);
   int getSSAAFactor();
 
-  bool lightCopy = false; // if true, when applying lighting transform does a copy instead of an alpha blend. Used
-                          // internally for alpha in screenshots, but should generally be left as false.
 
   // == Cached data
 
@@ -445,6 +444,13 @@ public:
   // Helpers
   std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen
   std::vector<glm::vec4> distantCubeCoords();     // cube with vertices at infinity
+
+
+  // ==  Implementation details and hacks
+  bool lightCopy = false; // if true, when applying lighting transform does a copy instead of an alpha blend. Used
+                          // internally for alpha in screenshots, but should generally be left as false.
+
+  bool useAltDisplayBuffer = false; // if true, push final render results offscreen to the alt buffer instead
 
 protected:
   // TODO Manage a cache of compiled shaders?

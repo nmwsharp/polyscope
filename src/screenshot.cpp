@@ -64,20 +64,26 @@ void saveImage(std::string name, unsigned char* buffer, int w, int h, int channe
 
 void screenshot(std::string filename, bool transparentBG) {
 
-  if(transparentBG) {
-    // copy directly in to buffer without blending so we can grab pre-blend values
-    render::engine->lightCopy = true;
-  }
+  render::engine->useAltDisplayBuffer = true;
+  if (transparentBG) render::engine->lightCopy = true; // copy directly in to buffer without blending
 
-  // Make sure we render first
+  // == Make sure we render first
   processLazyProperties();
+
+  // save the redraw requested bit and restore it below
+  bool requestedAlready = redrawRequested();
   requestRedraw();
+
   draw(false);
+
+  if (requestedAlready) {
+    requestRedraw();
+  }
 
   // these _should_ always be accurate
   int w = view::bufferWidth;
   int h = view::bufferHeight;
-  std::vector<unsigned char> buff = render::engine->readDisplayBuffer();
+  std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
 
   // Set alpha to 1
   if (!transparentBG) {
@@ -91,17 +97,21 @@ void screenshot(std::string filename, bool transparentBG) {
 
   // Save to file
   saveImage(filename, &(buff.front()), w, h, 4);
-  
-  if(transparentBG) {
-    render::engine->lightCopy = false;
-  }
+
+  render::engine->useAltDisplayBuffer = false;
+  if (transparentBG) render::engine->lightCopy = false;
 }
 
 void screenshot(bool transparentBG) {
 
   char buff[50];
-  snprintf(buff, 50, "screenshot_%06zu.png", state::screenshotInd);
+  snprintf(buff, 50, "screenshot_%06zu%s", state::screenshotInd, options::screenshotExtension.c_str());
   std::string defaultName(buff);
+
+  // only pngs can be written with transparency
+  if (!hasExtension(options::screenshotExtension, ".png")) {
+    transparentBG = false;
+  }
 
   screenshot(defaultName, transparentBG);
 
