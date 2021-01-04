@@ -1768,6 +1768,12 @@ void GLEngine::makeContextCurrent() { glfwMakeContextCurrent(mainWindow); }
 
 void GLEngine::showWindow() { glfwShowWindow(mainWindow); }
 
+void GLEngine::hideWindow() {
+  glfwHideWindow(mainWindow);
+  glfwPollEvents(); // this shouldn't be necessary, but seems to be needed at least on macOS. Perhaps realted to a glfw
+                    // bug? e.g. https://github.com/glfw/glfw/issues/1300 and related bugs
+}
+
 void GLEngine::updateWindowSize(bool force) {
   int newBufferWidth, newBufferHeight, newWindowWidth, newWindowHeight;
   glfwGetFramebufferSize(mainWindow, &newBufferWidth, &newBufferHeight);

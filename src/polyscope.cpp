@@ -688,6 +688,11 @@ void show(size_t forFrames) {
   if (options::usePrefsFile) {
     writePrefsFile();
   }
+
+  // if this was the outermost show(), hide the window afterward
+  if (contextStack.size() == 1) {
+    render::engine->hideWindow();
+  }
 }
 
 void shutdown(int exitCode) {

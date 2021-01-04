@@ -352,6 +352,7 @@ public:
   // === Windowing and framework things
   virtual void makeContextCurrent() = 0;
   virtual void showWindow() = 0;
+  virtual void hideWindow() = 0;
   virtual void updateWindowSize(bool force = false) = 0;
   virtual std::tuple<int, int> getWindowPos() = 0;
   virtual bool windowRequestsClose() = 0;

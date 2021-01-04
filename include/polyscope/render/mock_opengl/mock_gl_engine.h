@@ -221,6 +221,7 @@ public:
   // === Windowing and framework things
   void makeContextCurrent() override;
   void showWindow() override;
+  void hideWindow() override;
   void updateWindowSize(bool force = false) override;
   std::tuple<int, int> getWindowPos() override;
   bool windowRequestsClose() override;
