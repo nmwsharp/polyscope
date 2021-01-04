@@ -16,7 +16,7 @@ jobs:
         submodules: true
 
     - name: configure
-      run: cd test && mkdir build && cd build && cmake cmake -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND_OPENGL3_GLFW=ON -DPOLYSCOPE_BACKEND_OPENGL_MOCK=ON ..
+      run: cd test && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND_OPENGL3_GLFW=ON -DPOLYSCOPE_BACKEND_OPENGL_MOCK=ON ..
 
     - name: build
       run: cd test/build && make
