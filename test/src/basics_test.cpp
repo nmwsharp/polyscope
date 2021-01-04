@@ -420,6 +420,18 @@ TEST_F(PolyscopeTest, SurfaceMeshFaceIntrinsic) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, SurfaceMeshOneForm) {
+  auto psMesh = registerTriangleMesh();
+  //std::vector<glm::vec3> basisX(psMesh->nVertices(), {1., 2., 3.});
+  //psMesh->setVertexTangentBasisX(basisX);
+  std::vector<double> vals(psMesh->nEdges(), 3.);
+  std::vector<char> orients(psMesh->nEdges(), true);
+  auto q1 = psMesh->addOneFormIntrinsicVectorQuantity("one form vecs", vals, orients);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, SurfaceMeshVertexIntrinsicRibbon) {
   auto psMesh = registerTriangleMesh();
   std::vector<glm::vec3> basisX(psMesh->nVertices(), {1., 2., 3.});

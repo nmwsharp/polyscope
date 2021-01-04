@@ -244,13 +244,18 @@ void SurfaceMesh::ensureHaveManifoldConnectivity() {
   }
 }
 
+bool SurfaceMesh::hasFaceTangentSpaces() { return (faceTangentSpaces.size() > 0); }
+
+bool SurfaceMesh::hasVertexTangentSpaces() { return (vertexTangentSpaces.size() > 0); }
+
+
 void SurfaceMesh::ensureHaveFaceTangentSpaces() {
-  if (faceTangentSpaces.size() > 0) return;
+  if (hasFaceTangentSpaces()) return;
   throw std::runtime_error("No face tangent bases registered. see setFaceTangentBasisX()");
 }
 
 void SurfaceMesh::ensureHaveVertexTangentSpaces() {
-  if (vertexTangentSpaces.size() > 0) return;
+  if (hasVertexTangentSpaces()) return;
   throw std::runtime_error("No vertex tangent bases registered. see setVertexTangentBasisX()");
 }
 
@@ -480,10 +485,10 @@ std::vector<std::string> SurfaceMesh::addStructureRules(std::vector<std::string>
   if (getEdgeWidth() > 0) {
     initRules.push_back("MESH_WIREFRAME");
   }
-  if(backfacePolicy.get() == BackfacePolicy::Identical) {
+  if (backfacePolicy.get() == BackfacePolicy::Identical) {
     initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
   }
-  if(backfacePolicy.get() == BackfacePolicy::Different) {
+  if (backfacePolicy.get() == BackfacePolicy::Different) {
     initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
     initRules.push_back("MESH_BACKFACE_DARKEN");
   }
@@ -1256,6 +1261,10 @@ void SurfaceMesh::setVertexTangentBasisXImpl(const std::vector<glm::vec3>& vecto
     vertexTangentSpaces[iV][0] = basisX;
     vertexTangentSpaces[iV][1] = basisY;
   }
+
+  // Regenerate all data, in case stored data depends on tangent spaces.
+  // NOTE: This is overkill. We really only need to regenrate the handful of things which depend on tangent spaces.
+  refresh();
 }
 
 void SurfaceMesh::setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors) {
@@ -1277,6 +1286,10 @@ void SurfaceMesh::setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors
     faceTangentSpaces[iF][0] = basisX;
     faceTangentSpaces[iF][1] = basisY;
   }
+
+  // Regenerate all data, in case stored data depends on tangent spaces.
+  // NOTE: This is overkill. We really only need to regenrate the handful of things which depend on tangent spaces.
+  refresh();
 }
 
 

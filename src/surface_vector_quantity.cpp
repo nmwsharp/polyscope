@@ -386,14 +386,18 @@ SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std
 
 void SurfaceOneFormIntrinsicVectorQuantity::refresh() {
 
-  parent.ensureHaveVertexTangentSpaces();
+  // If the parent doesn't have face tangent spaces, auto-generate them
+  // (since the user shouldn't have to think about face tangent spaces to specify a 1-form)
+  if(!parent.hasFaceTangentSpaces()) {
+    parent.generateDefaultFaceTangentSpaces();
+  }
 
+  parent.ensureHaveFaceTangentSpaces();
   vectorRoots = std::vector<glm::vec3>(parent.nFaces(), glm::vec3{0., 0., 0.});
   vectors = std::vector<glm::vec3>(parent.nFaces(), glm::vec3{0., 0., 0.});
   mappedVectorField = std::vector<glm::vec2>(parent.nFaces(), glm::vec3{0., 0., 0.});
 
   // Remap to faces
-  parent.ensureHaveFaceTangentSpaces();
   for (size_t iF = 0; iF < parent.nFaces(); iF++) {
     auto& face = parent.faces[iF];
     size_t D = face.size();

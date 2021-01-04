@@ -245,10 +245,12 @@ public:
   glm::vec3 faceCenter(size_t iF);
 
   // if there are no tangent spaces, builds the default ones
-  void generateDefaultFaceTangentSpaces();
-  void generateDefaultVertexTangentSpaces();
+  bool hasFaceTangentSpaces();
+  bool hasVertexTangentSpaces();
   void ensureHaveFaceTangentSpaces();
   void ensureHaveVertexTangentSpaces();
+  void generateDefaultFaceTangentSpaces();
+  void generateDefaultVertexTangentSpaces();
 
   // Set tangent space coordinates for vertices
   template <class T>
