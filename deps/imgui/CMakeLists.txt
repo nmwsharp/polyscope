@@ -24,6 +24,8 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glfw/include/")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/")
+  
+  target_link_libraries(imgui PRIVATE glfw glad)
 
   if(APPLE)
     add_definitions(-DGLFW_INCLUDE_GLCOREARB)
