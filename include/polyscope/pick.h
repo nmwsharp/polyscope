@@ -41,8 +41,8 @@ size_t localIndexToGlobal(std::pair<Structure*, size_t> localPick);
 
 // Convert indices to float3 color and back
 // Structures will want to use these to fill their pick buffers
-inline glm::vec3 indToVec(size_t globalInd);
-inline size_t vecToInd(glm::vec3 vec);
+inline glm::vec3 indToVec(uint64_t globalInd);
+inline uint64_t vecToInd(glm::vec3 vec);
 
 } // namespace pick
 } // namespace polyscope

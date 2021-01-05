@@ -31,7 +31,10 @@ size_t requestPickBufferRange(Structure* requestingStructure, size_t count) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshift-count-overflow"
   if (bitsForPickPacking < 22) {
-    maxPickInd = 1ULL << (bitsForPickPacking * 3);
+    uint64_t bitMax = 1ULL << (bitsForPickPacking * 3);
+    if (bitMax < maxPickInd) {
+      maxPickInd = bitMax;
+    }
   }
 #pragma GCC diagnostic pop
 
