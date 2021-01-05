@@ -349,8 +349,15 @@ bool Engine::bindSceneBuffer() {
 }
 
 void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
-  // compute downsampling rate
+  
   glm::vec4 currV = getCurrentViewport();
+
+  // If the viewport extents are 0, don't do anything. This happens e.g. on Windows when the window is minimized.
+  if (currV[2] == 0 || currV[3] == 0) {
+    return;
+  }
+  
+  // compute downsampling rate
   float sampleX = texture->getSizeX() / currV[2];
   float sampleY = texture->getSizeY() / currV[3];
   if (sampleX != sampleY) throw std::runtime_error("lighting downsampling should have same aspect");

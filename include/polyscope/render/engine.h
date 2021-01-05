@@ -460,7 +460,8 @@ protected:
   // Render state
   int ssaaFactor = 1;
   bool enableFXAA = true;
-  glm::vec4 currViewport;
+  glm::vec4 currViewport; // TODO remove global viewport size. There is no reason for this, and stops us from doing
+                          // screenshot renders while minimized.
   float currPixelScale;
   TransparencyMode transparencyMode = TransparencyMode::None;
 
