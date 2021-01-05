@@ -505,7 +505,9 @@ void GLFrameBuffer::setDrawBuffers() {
   for (int i = 0; i < nColorBuffers; i++) {
     buffs.push_back(GL_COLOR_ATTACHMENT0 + i);
   }
-  glDrawBuffers(nColorBuffers, &buffs.front());
+  if (nColorBuffers > 0) {
+    glDrawBuffers(nColorBuffers, &buffs.front());
+  }
   checkGLError();
 }
 
