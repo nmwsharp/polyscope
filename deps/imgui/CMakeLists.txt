@@ -9,6 +9,11 @@ endif()
 # Append Wno-error to avoid compiling imgui with Werror; imgui seems to trigger lots of warnings
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
+
+  # apparently, this stronger command is needed to accomplish the same in Clang
+  if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-everything")
+  endif()
 endif()
 
 
