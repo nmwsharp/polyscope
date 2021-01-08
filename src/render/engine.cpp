@@ -411,6 +411,7 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
   } else {
     setBlendMode(BlendMode::AlphaOver);
   }
+  render::engine->setDepthMode(DepthMode::Disable);
   mapLight->draw();
 }
 

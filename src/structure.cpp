@@ -9,7 +9,9 @@ namespace polyscope {
 
 Structure::Structure(std::string name_, std::string subtypeName)
     : name(name_), enabled(subtypeName + "#" + name + "#enabled", true),
-      transparency(subtypeName + "#" + name + "#transparency", 1.0) {
+      objectTransform(subtypeName + "#" + name + "#object_transform", glm::mat4(1.0)),
+      transparency(subtypeName + "#" + name + "#transparency", 1.0),
+      transformGizmo(subtypeName + "#" + name + "#transform_gizmo", objectTransform.get(), &objectTransform) {
   validateName(name);
 }
 
@@ -37,7 +39,6 @@ void Structure::setEnabledAllOfType(bool newEnabled) {
 }
 
 void Structure::buildUI() {
-
   ImGui::PushID(name.c_str()); // ensure there are no conflicts with
                                // identically-named labels
 
@@ -60,6 +61,7 @@ void Structure::buildUI() {
         if (ImGui::MenuItem("Center")) centerBoundingBox();
         if (ImGui::MenuItem("Unit Scale")) rescaleToUnit();
         if (ImGui::MenuItem("Reset")) resetTransform();
+        if (ImGui::MenuItem("Show Gizmo", NULL, &transformGizmo.enabled.get())) transformGizmo.enabled.manuallyChanged();
         ImGui::EndMenu();
       }
 
@@ -120,7 +122,7 @@ void Structure::centerBoundingBox() {
   std::tuple<glm::vec3, glm::vec3> bbox = boundingBox();
   glm::vec3 center = (std::get<1>(bbox) + std::get<0>(bbox)) / 2.0f;
   glm::mat4x4 newTrans = glm::translate(glm::mat4x4(1.0), -glm::vec3(center.x, center.y, center.z));
-  objectTransform = newTrans * objectTransform;
+  objectTransform = newTrans * objectTransform.get();
   updateStructureExtents();
 }
 
@@ -128,11 +130,11 @@ void Structure::rescaleToUnit() {
   double currScale = lengthScale();
   float s = static_cast<float>(1.0 / currScale);
   glm::mat4x4 newTrans = glm::scale(glm::mat4x4(1.0), glm::vec3{s, s, s});
-  objectTransform = newTrans * objectTransform;
+  objectTransform = newTrans * objectTransform.get();
   updateStructureExtents();
 }
 
-glm::mat4 Structure::getModelView() { return view::getCameraViewMatrix() * objectTransform; }
+glm::mat4 Structure::getModelView() { return view::getCameraViewMatrix() * objectTransform.get(); }
 
 void Structure::setTransformUniforms(render::ShaderProgram& p) {
   glm::mat4 viewMat = getModelView();

@@ -25,6 +25,7 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 		render/opengl/shaders/texture_draw_shaders.cpp  
 		render/opengl/shaders/lighting_shaders.cpp  
 		render/opengl/shaders/ground_plane_shaders.cpp  
+		render/opengl/shaders/gizmo_shaders.cpp  
 		render/opengl/shaders/histogram_shaders.cpp  
 		render/opengl/shaders/surface_mesh_shaders.cpp  
 		render/opengl/shaders/vector_shaders.cpp  
@@ -75,6 +76,7 @@ if("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
 		render/opengl/shaders/texture_draw_shaders.cpp  
 		render/opengl/shaders/lighting_shaders.cpp  
 		render/opengl/shaders/ground_plane_shaders.cpp  
+		render/opengl/shaders/gizmo_shaders.cpp  
 		render/opengl/shaders/histogram_shaders.cpp  
 		render/opengl/shaders/surface_mesh_shaders.cpp  
 		render/opengl/shaders/vector_shaders.cpp  
@@ -113,6 +115,7 @@ SET(SRCS
 	screenshot.cpp
   messages.cpp
   pick.cpp
+  widget.cpp
   
 	# Rendering stuff
   render/engine.cpp  
@@ -129,6 +132,7 @@ SET(SRCS
   histogram.cpp
   persistent_value.cpp
   color_management.cpp
+  transformation_gizmo.cpp
 
   ## Structures
 

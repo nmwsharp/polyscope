@@ -47,6 +47,28 @@ std::tuple<std::string, std::string> splitExt(std::string f) {
   return std::tuple<std::string, std::string>{f.substr(0, p), f.substr(p, std::string::npos)};
 }
 
+void splitTransform(const glm::mat4& trans, glm::mat3x4& R, glm::vec3& T) {
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 4; j++) {
+      R[i][j] = trans[i][j];
+    }
+    T[i] = trans[3][i];
+  }
+}
+
+glm::mat4 buildTransform(const glm::mat3x4& R, const glm::vec3& T) {
+  glm::mat4 trans(1.0);
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 4; j++) {
+      trans[i][j] = R[i][j];
+    }
+    trans[3][i] = T[i];
+  }
+
+  return trans;
+}
+
+
 std::string prettyPrintCount(size_t count) {
 
   int nDigits = 1;

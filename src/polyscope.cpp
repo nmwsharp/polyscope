@@ -214,15 +214,21 @@ float dragDistSinceLastRelease = 0.0;
 void processInputEvents() {
   ImGuiIO& io = ImGui::GetIO();
 
-
   // If any mouse button is pressed, trigger a redraw
   if (ImGui::IsAnyMouseDown()) {
     requestRedraw();
   }
 
+  bool widgetCapturedMouse = false;
+  for (Widget* w : state::widgets) {
+    widgetCapturedMouse = w->interact();
+    if (widgetCapturedMouse) {
+      break;
+    }
+  }
 
   // Handle scroll events for 3D view
-  if (!io.WantCaptureMouse) {
+  if (!io.WantCaptureMouse && !widgetCapturedMouse) {
     double xoffset = io.MouseWheelH;
     double yoffset = io.MouseWheel;
 
@@ -250,7 +256,7 @@ void processInputEvents() {
   }
 
   // === Mouse inputs
-  if (!io.WantCaptureMouse) {
+  if (!io.WantCaptureMouse && !widgetCapturedMouse) {
 
     // Process drags
     bool dragLeft = ImGui::IsMouseDragging(0);
@@ -610,6 +616,10 @@ void draw(bool withUI) {
       buildPolyscopeGui();
       buildStructureGui();
       buildPickGui();
+
+      for (Widget* w : state::widgets) {
+        w->buildGUI();
+      }
     }
   }
 
@@ -630,6 +640,12 @@ void draw(bool withUI) {
 
   // Draw the GUI
   if (withUI) {
+    // render widgets
+    render::engine->bindDisplay();
+    for (Widget* w : state::widgets) {
+      w->draw();
+    }
+
     render::engine->bindDisplay();
     render::engine->ImGuiRender();
   }

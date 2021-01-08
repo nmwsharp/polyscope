@@ -13,6 +13,7 @@
 #include "polyscope/render/opengl/shaders/common.h"
 #include "polyscope/render/opengl/shaders/cylinder_shaders.h"
 #include "polyscope/render/opengl/shaders/ground_plane_shaders.h"
+#include "polyscope/render/opengl/shaders/gizmo_shaders.h"
 #include "polyscope/render/opengl/shaders/histogram_shaders.h"
 #include "polyscope/render/opengl/shaders/lighting_shaders.h"
 #include "polyscope/render/opengl/shaders/ribbon_shaders.h"
@@ -915,6 +916,7 @@ void GLShaderProgram::setUniform(std::string name, double val) {
 }
 
 // Set a 4x4 uniform matrix
+// TODO why do we use a pointer here... makes no sense
 void GLShaderProgram::setUniform(std::string name, float* val) {
   glUseProgram(programHandle);
 
@@ -2045,6 +2047,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registeredShaderPrograms.insert({"DEPTH_TO_MASK", {{TEXTURE_DRAW_VERT_SHADER, DEPTH_TO_MASK}, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"SCALAR_TEXTURE_COLORMAP", {{TEXTURE_DRAW_VERT_SHADER, SCALAR_TEXTURE_COLORMAP}, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"BLUR_RGB", {{TEXTURE_DRAW_VERT_SHADER, BLUR_RGB}, DrawMode::Triangles}});
+  registeredShaderPrograms.insert({"TRANSFORMATION_GIZMO_ROT", {{TRANSFORMATION_GIZMO_ROT_VERT, TRANSFORMATION_GIZMO_ROT_FRAG}, DrawMode::Triangles}});
 
   // === Load rules
 
@@ -2090,6 +2093,8 @@ void GLEngine::populateDefaultShadersAndRules() {
   registeredShaderRules.insert({"SPHERE_VARIABLE_SIZE", SPHERE_VARIABLE_SIZE});
 
   // vector things
+  registeredShaderRules.insert({"VECTOR_PROPAGATE_COLOR", VECTOR_PROPAGATE_COLOR});
+  registeredShaderRules.insert({"TRANSFORMATION_GIZMO_VEC", TRANSFORMATION_GIZMO_VEC});
 
   // cylinder things
   registeredShaderRules.insert({"CYLINDER_PROPAGATE_VALUE", CYLINDER_PROPAGATE_VALUE});

@@ -137,6 +137,7 @@ void GroundPlane::prepare() {
     for (int i = 0; i < 2; i++) {
       blurColorTextures[i] =
           render::engine->generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+      blurColorTextures[i]->setFilterMode(FilterMode::Linear);
       blurFrameBuffers[i] = render::engine->generateFrameBuffer(view::bufferWidth, view::bufferHeight);
 
       blurFrameBuffers[i]->addColorBuffer(blurColorTextures[i]);
@@ -297,8 +298,8 @@ void GroundPlane::draw(bool isRedraw) {
 
     // Make sure all framebuffers are the right shape
     for (int i = 0; i < 2; i++) {
-      blurFrameBuffers[i]->resize(factor * view::bufferWidth, factor * view::bufferHeight);
-      blurFrameBuffers[i]->setViewport(0, 0, factor * view::bufferWidth, factor * view::bufferHeight);
+      blurFrameBuffers[i]->resize(factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
+      blurFrameBuffers[i]->setViewport(0, 0, factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
       blurFrameBuffers[i]->clear();
     }
 

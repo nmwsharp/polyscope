@@ -6,12 +6,14 @@
 #include "polyscope/screenshot.h"
 #include "polyscope/structure.h"
 #include "polyscope/utilities.h"
+#include "polyscope/widget.h"
 
 #include "imgui.h"
 
 #include <functional>
 #include <map>
 #include <unordered_set>
+#include <set>
 
 
 namespace polyscope {
@@ -49,7 +51,10 @@ extern std::tuple<glm::vec3, glm::vec3> boundingBox;
 // representative center for all registered structures
 extern glm::vec3 center;
 
-// A callback function used to render a "user" gui
+// a list of widgets in the scene
+extern std::set<Widget*> widgets;
+
+// a callback function used to render a "user" gui
 extern std::function<void()> userCallback;
 
 } // namespace state

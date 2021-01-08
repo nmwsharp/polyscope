@@ -4,6 +4,7 @@
 #include "polyscope/persistent_value.h"
 #include "polyscope/quantity.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/transformation_gizmo.h"
 
 #include "glm/glm.hpp"
 
@@ -57,7 +58,6 @@ public:
   virtual std::string typeName() = 0;
 
   // = Scene transform
-  glm::mat4 objectTransform = glm::mat4(1.0);
   glm::mat4 getModelView();
   void centerBoundingBox();
   void rescaleToUnit();
@@ -83,9 +83,14 @@ public:
 protected:
   // = State
   PersistentValue<bool> enabled;
+  
+  PersistentValue<glm::mat4> objectTransform;
 
   // 0 for transparent, 1 for opaque, only has effect if engine transparency is set
   PersistentValue<float> transparency;
+
+  // Widget that wraps the transform
+  TransformationGizmo transformGizmo;
 };
 
 

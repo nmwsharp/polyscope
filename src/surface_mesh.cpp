@@ -849,7 +849,7 @@ double SurfaceMesh::lengthScale() {
 
   double lengthScale = 0.0;
   for (glm::vec3 p : vertices) {
-    glm::vec3 transPos = glm::vec3(objectTransform * glm::vec4(p.x, p.y, p.z, 1.0));
+    glm::vec3 transPos = glm::vec3(objectTransform.get() * glm::vec4(p.x, p.y, p.z, 1.0));
     lengthScale = std::max(lengthScale, (double)glm::length2(transPos - center));
   }
 
@@ -861,7 +861,7 @@ std::tuple<glm::vec3, glm::vec3> SurfaceMesh::boundingBox() {
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
 
   for (glm::vec3 pOrig : vertices) {
-    glm::vec3 p = glm::vec3(objectTransform * glm::vec4(pOrig, 1.0));
+    glm::vec3 p = glm::vec3(objectTransform.get() * glm::vec4(pOrig, 1.0));
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }

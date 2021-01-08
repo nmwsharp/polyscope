@@ -85,16 +85,12 @@ glm::mat4 getCameraViewMatrix();
 glm::mat4 getCameraPerspectiveMatrix();
 glm::vec3 getCameraWorldPosition();
 void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
-
+glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords);
 
 // Flight-related
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds = .4);
 void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeconds = .4);
 void immediatelyEndFlight();
-
-// Transformation utilities
-void splitTransform(const glm::mat4& trans, glm::mat3x4& R, glm::vec3& T);
-glm::mat4 buildTransform(const glm::mat3x4& R, const glm::vec3& T);
 
 // Get and set camera from json string
 std::string getCameraJson();

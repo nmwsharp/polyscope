@@ -253,7 +253,7 @@ double PointCloud::lengthScale() {
 
   double lengthScale = 0.0;
   for (glm::vec3& rawP : points) {
-    glm::vec3 p = glm::vec3(objectTransform * glm::vec4(rawP, 1.0));
+    glm::vec3 p = glm::vec3(objectTransform.get() * glm::vec4(rawP, 1.0));
     lengthScale = std::max(lengthScale, (double)glm::length2(p - center));
   }
 
@@ -266,7 +266,7 @@ std::tuple<glm::vec3, glm::vec3> PointCloud::boundingBox() {
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
 
   for (glm::vec3& rawP : points) {
-    glm::vec3 p = glm::vec3(objectTransform * glm::vec4(rawP, 1.0));
+    glm::vec3 p = glm::vec3(objectTransform.get() * glm::vec4(rawP, 1.0));
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
