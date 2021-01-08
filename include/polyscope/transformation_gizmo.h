@@ -37,13 +37,14 @@ public:
   bool interact() override;
 
 protected:
-  enum class TransformHandle { None, Rotation, Translation };
+  enum class TransformHandle { None, Rotation, Translation, Scale };
 
 
   // parameters
   const float gizmoSizeRel = 0.08;
   const float diskWidthObj = 0.1; // in object coordinates, before transformation
   const float vecLength = 1.5;
+  const float sphereRad = 0.32;
 
   // state
   int selectedDim = -1; // must be {0,1,2} if selectedType == Rotation/Translation
@@ -61,6 +62,7 @@ protected:
   // Render stuff
   std::shared_ptr<render::ShaderProgram> ringProgram;
   std::shared_ptr<render::ShaderProgram> arrowProgram;
+  std::shared_ptr<render::ShaderProgram> sphereProgram;
 
   // Geometry helpers used to test hits
 
@@ -69,6 +71,8 @@ protected:
                                                  glm::vec3 normal, float radius);
   std::tuple<float, float, glm::vec3> lineTest(glm::vec3 raySource, glm::vec3 rayDir, glm::vec3 center,
                                                glm::vec3 tangent, float length);
+  std::tuple<float, float, glm::vec3> sphereTest(glm::vec3 raySource, glm::vec3 rayDir, glm::vec3 center, float radius,
+                                                 bool allowHitSurface = true);
 
 
   std::tuple<std::vector<glm::vec3>, std::vector<glm::vec3>, std::vector<glm::vec3>, std::vector<glm::vec2>,
@@ -77,6 +81,8 @@ protected:
 
   std::tuple<std::vector<glm::vec3>, std::vector<glm::vec3>, std::vector<glm::vec3>, std::vector<glm::vec3>>
   tripleArrowCoords();
+
+  // std::tuple<std::vector<glm::vec3>, std::vector<glm::vec3>> unitCubeCoords();
 };
 
 } // namespace polyscope

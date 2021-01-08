@@ -10,7 +10,7 @@
 namespace polyscope {
 
 TransformationGizmo::TransformationGizmo(std::string name_, glm::mat4& T_, PersistentValue<glm::mat4>* Tpers_)
-    : name(name_), enabled(name + "#name", true), T(T_), Tpers(Tpers_)
+    : name(name_), enabled(name + "#name", false), T(T_), Tpers(Tpers_)
 
 {}
 
@@ -59,6 +59,14 @@ void TransformationGizmo::prepare() {
 
     render::engine->setMaterial(*arrowProgram, "wax");
   }
+
+  { // Scale sphere
+    sphereProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SHADE_BASECOLOR"});
+    render::engine->setMaterial(*sphereProgram, "wax");
+
+    std::vector<glm::vec3> center = {glm::vec3(0., 0., 0.)};
+    sphereProgram->setAttribute("a_position", center);
+  }
 }
 
 void TransformationGizmo::draw() {
@@ -67,21 +75,27 @@ void TransformationGizmo::draw() {
 
   // == set uniforms
 
-  float gizmoSize = gizmoSizeRel * state::lengthScale;
+  float transScale = glm::length(glm::vec3(T[0]));
+  float gizmoSizePreTrans = gizmoSizeRel * state::lengthScale;
+  float gizmoSize = transScale * gizmoSizePreTrans;
 
-  glm::mat4 viewMat = view::getCameraViewMatrix() * T * glm::scale(glm::vec3{gizmoSize, gizmoSize, gizmoSize});
+  glm::mat4 viewMat =
+      view::getCameraViewMatrix() * T * glm::scale(glm::vec3{gizmoSizePreTrans, gizmoSizePreTrans, gizmoSizePreTrans});
   ringProgram->setUniform("u_modelView", glm::value_ptr(viewMat));
   arrowProgram->setUniform("u_modelView", glm::value_ptr(viewMat));
+  sphereProgram->setUniform("u_modelView", glm::value_ptr(viewMat));
 
   glm::mat4 projMat = view::getCameraPerspectiveMatrix();
   ringProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
   arrowProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
+  sphereProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
   ringProgram->setUniform("u_diskWidthRel", diskWidthObj);
 
   // set selections
   glm::vec3 selectRot{0., 0., 0.};
   glm::vec3 selectTrans{0., 0., 0.};
+  glm::vec3 sphereColor(0.85);
   if (selectedType == TransformHandle::Rotation) {
     selectRot[selectedDim] = 1.;
   }
@@ -90,6 +104,9 @@ void TransformationGizmo::draw() {
     selectTrans[selectedDim] = 1.;
   }
   arrowProgram->setUniform("u_active", selectTrans);
+  if (selectedType == TransformHandle::Scale) {
+    sphereColor = glm::vec3(0.95);
+  }
 
   glm::mat4 P = view::getCameraPerspectiveMatrix();
   glm::mat4 Pinv = glm::inverse(P);
@@ -97,6 +114,12 @@ void TransformationGizmo::draw() {
   arrowProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
   arrowProgram->setUniform("u_lengthMult", vecLength);
   arrowProgram->setUniform("u_radius", 0.2 * gizmoSize);
+
+  sphereProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  sphereProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
+
+  sphereProgram->setUniform("u_pointRadius", sphereRad * gizmoSize);
+  sphereProgram->setUniform("u_baseColor", sphereColor);
 
   render::engine->setDepthMode(DepthMode::Less);
   render::engine->setBlendMode();
@@ -106,6 +129,7 @@ void TransformationGizmo::draw() {
 
   ringProgram->draw();
   arrowProgram->draw();
+  sphereProgram->draw();
 }
 
 
@@ -133,7 +157,8 @@ bool TransformationGizmo::interact() {
   glm::vec3 nZ(T * glm::vec4{0., 0., 1., 0.});
   std::array<glm::vec3, 3> axNormals{nX, nY, nZ};
 
-  float gizmoSize = gizmoSizeRel * state::lengthScale;
+  float transScale = glm::length(glm::vec3(T[0]));
+  float gizmoSize = transScale * gizmoSizeRel * state::lengthScale;
   float diskRad = gizmoSize; // size 1
   float diskWidth = gizmoSize * diskWidthObj;
 
@@ -190,8 +215,33 @@ bool TransformationGizmo::interact() {
 
         dragPrevVec = nearestPoint; // store this dir for the next time around
       }
-    }
 
+    } else if (selectedType == TransformHandle::Scale) {
+
+      // Cast against the scale sphere
+
+      float dist, tHit;
+      glm::vec3 nearestPoint;
+      float worldSphereRad = sphereRad * gizmoSize;
+      std::tie(tHit, dist, nearestPoint) = sphereTest(raySource, ray, center, worldSphereRad, false);
+
+      if (dist != std::numeric_limits<float>::infinity()) {
+        // if a collinear line (etc) causes an inf dist, just don't process
+
+        float newWorldRad = glm::length(nearestPoint - center);
+        float scaleRatio = newWorldRad / worldSphereRad;
+
+        // Split, transform, and recombine
+        glm::vec4 trans(T[3]);
+        T[3] = glm::vec4{0., 0., 0., 1.};
+        T *= scaleRatio;
+        T[3] = trans;
+        markUpdated();
+        polyscope::requestRedraw();
+
+        dragPrevVec = nearestPoint; // store this dir for the next time around
+      }
+    }
   } else /* !currentlyDragging */ {
 
     // == Find the part of the widget that we are closest to
@@ -199,7 +249,7 @@ bool TransformationGizmo::interact() {
     float firstHit = std::numeric_limits<float>::infinity();
     float hitDist = std::numeric_limits<float>::infinity();
     int hitDim = -1;
-    bool hitRot = true;
+    TransformHandle hitType = TransformHandle::None;
     glm::vec3 hitNearest(0., 0., 0.);
 
     // Test the three rotation directions
@@ -215,7 +265,7 @@ bool TransformationGizmo::interact() {
         firstHit = tHit;
         hitDist = dist;
         hitDim = dim;
-        hitRot = true;
+        hitType = TransformHandle::Rotation;
         hitNearest = nearestPoint;
       }
     }
@@ -234,7 +284,22 @@ bool TransformationGizmo::interact() {
         firstHit = tHit;
         hitDist = dist;
         hitDim = dim;
-        hitRot = false;
+        hitType = TransformHandle::Translation;
+        hitNearest = nearestPoint;
+      }
+    }
+
+    { // Test the scaling sphere
+
+      float dist, tHit;
+      glm::vec3 nearestPoint;
+      std::tie(tHit, dist, nearestPoint) = sphereTest(raySource, ray, center, sphereRad * gizmoSize);
+
+      if (dist == 0. && tHit < firstHit) {
+        firstHit = tHit;
+        hitDist = dist;
+        hitDim = 0;
+        hitType = TransformHandle::Scale;
         hitNearest = nearestPoint;
       }
     }
@@ -246,7 +311,7 @@ bool TransformationGizmo::interact() {
     selectedDim = -1;
     bool dragStarted = false;
 
-    if (hitRot && hitDist < diskWidth) {
+    if (hitType == TransformHandle::Rotation && hitDist < diskWidth) {
       // rotation is hovered
 
       // set new selection
@@ -261,7 +326,7 @@ bool TransformationGizmo::interact() {
         glm::vec3 nearestDir = glm::normalize(hitNearest - center);
         dragPrevVec = nearestDir;
       }
-    } else if (!hitRot && hitDist < diskWidth) {
+    } else if (hitType == TransformHandle::Translation && hitDist < diskWidth) {
       // translation is hovered
 
       // set new selection
@@ -275,11 +340,25 @@ bool TransformationGizmo::interact() {
 
         dragPrevVec = hitNearest;
       }
+    } else if (hitType == TransformHandle::Scale) {
+      // scaling is hovered
+
+      // set new selection
+      selectedType = TransformHandle::Scale;
+      selectedDim = -1;
+
+      // if the mouse is clicked, start a drag
+      if (ImGui::IsMouseClicked(0) && !io.WantCaptureMouse) {
+        currentlyDragging = true;
+        dragStarted = true;
+
+        dragPrevVec = hitNearest;
+      }
     }
   }
 
   return currentlyDragging || draggingAtStart;
-}
+} // namespace polyscope
 
 std::tuple<float, float, glm::vec3> TransformationGizmo::circleTest(glm::vec3 raySource, glm::vec3 rayDir,
                                                                     glm::vec3 center, glm::vec3 normal, float radius) {
@@ -323,6 +402,34 @@ std::tuple<float, float, glm::vec3> TransformationGizmo::lineTest(glm::vec3 rayS
   glm::vec3 pLine = center + tLine * tangent;
 
   return {tRay, glm::length(pRay - pLine), pLine};
+}
+
+std::tuple<float, float, glm::vec3> TransformationGizmo::sphereTest(glm::vec3 raySource, glm::vec3 rayDir,
+                                                                    glm::vec3 center, float radius,
+                                                                    bool allowHitSurface) {
+
+  glm::vec3 oc = raySource - center;
+  float b = 2. * dot(oc, rayDir);
+  float c = glm::dot(oc, oc) - radius * radius;
+  float disc = b * b - 4 * c;
+  if (disc < 1e-6 || !allowHitSurface) {
+    // miss, return nearest point
+    float tHit = glm::dot(rayDir, center - raySource);
+    if (tHit < 0.) {
+      // hit behind
+      return {-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}};
+    }
+    glm::vec3 hitPoint = raySource + tHit * rayDir;
+    return {tHit, glm::length(hitPoint - center) - radius, hitPoint};
+  } else {
+    // actual hit
+    float tHit = (-b - std::sqrt(disc)) / 2.;
+    if (tHit < 0.) {
+      // hit behind
+      return {-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}};
+    }
+    return {tHit, 0, raySource + tHit * rayDir};
+  }
 }
 
 std::tuple<std::vector<glm::vec3>, std::vector<glm::vec3>, std::vector<glm::vec3>, std::vector<glm::vec2>,
@@ -433,6 +540,7 @@ TransformationGizmo::tripleArrowCoords() {
 /*
 std::tuple<std::vector<glm::vec3>, std::vector<glm::vec3>> TransformationGizmo::unitCubeCoords() {
   std::vector<glm::vec3> coords;
+  std::vector<glm::vec3> normals;
 
   auto addCubeFace = [&](int iS, float s) {
     int iU = (iS + 1) % 3;
@@ -458,15 +566,24 @@ std::tuple<std::vector<glm::vec3>, std::vector<glm::vec3>> TransformationGizmo::
     upperRight[iU] = s;
     upperRight[iR] = s;
 
+    glm::vec3 normal(0., 0., 0.);
+    normal[iS] = s;
+
     // first triangle
     coords.push_back(lowerLeft);
     coords.push_back(lowerRight);
     coords.push_back(upperRight);
+    normals.push_back(normal);
+    normals.push_back(normal);
+    normals.push_back(normal);
 
     // second triangle
     coords.push_back(lowerLeft);
     coords.push_back(upperRight);
     coords.push_back(upperLeft);
+    normals.push_back(normal);
+    normals.push_back(normal);
+    normals.push_back(normal);
   };
 
   addCubeFace(0, +1.);
@@ -476,7 +593,7 @@ std::tuple<std::vector<glm::vec3>, std::vector<glm::vec3>> TransformationGizmo::
   addCubeFace(2, +1.);
   addCubeFace(2, -1.);
 
-  return coords;
+  return {coords, normals};
 }
 */
 } // namespace polyscope
