@@ -98,8 +98,7 @@ R"(
            
            // silly dummy usage to ensure normal and barycoords are always used; otherwise we get errors
            float dummyVal = a_normalToFrag.x + a_barycoordToFrag.x;
-           litColor.x = litColor.x + dummyVal * 1e-8;
-
+           alphaOut = alphaOut + dummyVal * (1e-12);
 
            ${ PERTURB_LIT_COLOR }$
 
