@@ -65,5 +65,7 @@ add_executable(
         demo_app.cpp
         )
 
-# Link settings
+target_include_directories(polyscopedemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../deps/args")
+target_include_directories(polyscopedemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../deps/json/include")
+
 target_link_libraries(polyscopedemo polyscope)

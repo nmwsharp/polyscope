@@ -19,8 +19,6 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/string_cast.hpp"
 
-#include "stb_image.h"
-
 
 using std::cerr;
 using std::cout;
