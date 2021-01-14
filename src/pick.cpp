@@ -49,9 +49,6 @@ size_t requestPickBufferRange(Structure* requestingStructure, size_t count) {
   return ret;
 }
 
-// Note: evaluatePickQuery() currently lives in polyscope.cpp, because it touches all the rendering data. See comment
-// there.
-
 // == Manage stateful picking
 
 void resetSelection() {
@@ -124,15 +121,21 @@ size_t localIndexToGlobal(std::pair<Structure*, size_t> localPick) {
 
 std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
 
+  // NOTE: hack used for debugging: if xPos == yPos == 1 we do a pick render but do not query the value.
+
   // Be sure not to pick outside of buffer
-  if (xPos < 0 || xPos >= view::bufferWidth || yPos < 0 || yPos >= view::bufferHeight) {
+  if (xPos < -1 || xPos >= view::bufferWidth || yPos < -1 || yPos >= view::bufferHeight) {
     return {nullptr, 0};
   }
 
   render::FrameBuffer* pickFramebuffer = render::engine->pickFramebuffer.get();
 
+  render::engine->setDepthMode();
+  render::engine->setBlendMode(BlendMode::Disable);
+
   pickFramebuffer->resize(view::bufferWidth, view::bufferHeight);
   pickFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  pickFramebuffer->clearColor = glm::vec3{0., 0., 0.};
   if (!pickFramebuffer->bindForRendering()) return {nullptr, 0};
   pickFramebuffer->clear();
 
@@ -141,6 +144,10 @@ std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
     for (auto x : cat.second) {
       x.second->drawPick();
     }
+  }
+
+  if (xPos == -1 || yPos == -1) {
+    return {nullptr, 0};
   }
 
   // Read from the pick buffer

@@ -188,20 +188,11 @@ void drawStructures() {
 
   for (auto catMap : state::structures) {
     for (auto s : catMap.second) {
+      // make sure the right settings are active
+      // render::engine->setDepthMode();
+      // render::engine->applyTransparencySettings();
 
-      // Draw the pick buffer for debugging purposes
-      if (options::debugDrawPickBuffer) {
-        render::engine->setDepthMode();
-        s.second->drawPick();
-      }
-      // The normal case
-      else {
-        // make sure the right settings are active
-        // render::engine->setDepthMode();
-        // render::engine->applyTransparencySettings();
-
-        s.second->draw();
-      }
+      s.second->draw();
     }
   }
 }
@@ -394,7 +385,13 @@ void renderScene() {
 
 void renderSceneToScreen() {
   render::engine->bindDisplay();
-  render::engine->applyLightingTransform(render::engine->sceneColorFinal);
+  if (options::debugDrawPickBuffer) {
+    // special debug draw
+    pick::evaluatePickQuery(-1, -1); // populate the buffer
+    render::engine->pickFramebuffer->blitTo(render::engine->displayBuffer.get());
+  } else {
+    render::engine->applyLightingTransform(render::engine->sceneColorFinal);
+  }
 }
 
 void buildPolyscopeGui() {
