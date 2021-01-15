@@ -1,6 +1,9 @@
 #pragma once
 
+#include "polyscope/persistent_value.h"
+#include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/scaled_value.h"
 
 namespace polyscope {
 

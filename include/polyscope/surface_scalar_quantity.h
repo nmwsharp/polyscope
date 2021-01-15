@@ -2,52 +2,30 @@
 #pragma once
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/render/color_maps.h"
 #include "polyscope/histogram.h"
-#include "polyscope/surface_mesh.h"
+#include "polyscope/render/color_maps.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/scalar_quantity.h"
+#include "polyscope/surface_mesh.h"
 
 namespace polyscope {
 
-class SurfaceScalarQuantity : public SurfaceMeshQuantity {
+class SurfaceScalarQuantity : public SurfaceMeshQuantity, public ScalarQuantity<SurfaceScalarQuantity> {
 public:
-  SurfaceScalarQuantity(std::string name, SurfaceMesh& mesh_, std::string definedOn, DataType dataType);
+  SurfaceScalarQuantity(std::string name, SurfaceMesh& mesh_, std::string definedOn, const std::vector<double>& values_,
+                        DataType dataType);
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
   virtual std::string niceName() override;
   virtual void refresh() override;
 
-  // === Members
-  const DataType dataType;
-  
-  // === Get/set visualization parameters
-
-  // The color map
-  SurfaceScalarQuantity* setColorMap(std::string val);
-  std::string getColorMap();
-
-  // Data limits mapped in to colormap
-  SurfaceScalarQuantity* setMapRange(std::pair<double, double> val);
-  std::pair<double, double> getMapRange();
-  SurfaceScalarQuantity* resetMapRange(); // reset to full range
-
 protected:
-  // === Visualization parameters
-
-  // Affine data maps and limits
-  std::pair<float, float> vizRange;
-  std::pair<double, double> dataRange;
-  Histogram hist;
-
-  // UI internals
-  PersistentValue<std::string> cMap;
   const std::string definedOn;
   std::shared_ptr<render::ShaderProgram> program;
 
   // Helpers
   virtual void createProgram() = 0;
-  void setProgramUniforms(render::ShaderProgram& program);
 };
 
 // ========================================================
@@ -56,7 +34,7 @@ protected:
 
 class SurfaceVertexScalarQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceVertexScalarQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
+  SurfaceVertexScalarQuantity(std::string name, const std::vector<double>& values_, SurfaceMesh& mesh_,
                               DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
@@ -64,9 +42,6 @@ public:
   void fillColorBuffers(render::ShaderProgram& p);
 
   void buildVertexInfoGUI(size_t vInd) override;
-
-  // === Members
-  std::vector<double> values;
 };
 
 
@@ -76,7 +51,7 @@ public:
 
 class SurfaceFaceScalarQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceFaceScalarQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
+  SurfaceFaceScalarQuantity(std::string name, const std::vector<double>& values_, SurfaceMesh& mesh_,
                             DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
@@ -84,9 +59,6 @@ public:
   void fillColorBuffers(render::ShaderProgram& p);
 
   void buildFaceInfoGUI(size_t fInd) override;
-
-  // === Members
-  std::vector<double> values;
 };
 
 
@@ -96,7 +68,7 @@ public:
 
 class SurfaceEdgeScalarQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceEdgeScalarQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
+  SurfaceEdgeScalarQuantity(std::string name, const std::vector<double>& values_, SurfaceMesh& mesh_,
                             DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceVertexScalarQuantity();
 
@@ -105,10 +77,6 @@ public:
   void fillColorBuffers(render::ShaderProgram& p);
 
   void buildEdgeInfoGUI(size_t edgeInd) override;
-
-
-  // === Members
-  std::vector<double> values;
 };
 
 // ========================================================
@@ -117,7 +85,7 @@ public:
 
 class SurfaceHalfedgeScalarQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceHalfedgeScalarQuantity(std::string name, std::vector<double> values_, SurfaceMesh& mesh_,
+  SurfaceHalfedgeScalarQuantity(std::string name, const std::vector<double>& values_, SurfaceMesh& mesh_,
                                 DataType dataType_ = DataType::STANDARD);
   //   ~SurfaceVertexScalarQuantity();
 
@@ -126,9 +94,6 @@ public:
   void fillColorBuffers(render::ShaderProgram& p);
 
   void buildHalfedgeInfoGUI(size_t heInd) override;
-
-  // === Members
-  std::vector<double> values;
 };
 
 
