@@ -218,13 +218,13 @@ SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantity(std::string name, co
 }
 
 template <class T>
-SurfaceDistanceQuantity* SurfaceMesh::addVertexDistanceQuantity(std::string name, const T& distances) {
+SurfaceVertexScalarQuantity* SurfaceMesh::addVertexDistanceQuantity(std::string name, const T& distances) {
   validateSize(distances, vertexDataSize, "distance quantity " + name);
   return addVertexDistanceQuantityImpl(name, standardizeArray<double>(distances));
 }
 
 template <class T>
-SurfaceDistanceQuantity* SurfaceMesh::addVertexSignedDistanceQuantity(std::string name, const T& distances) {
+SurfaceVertexScalarQuantity* SurfaceMesh::addVertexSignedDistanceQuantity(std::string name, const T& distances) {
   validateSize(distances, vertexDataSize, "signed distance quantity " + name);
   return addVertexSignedDistanceQuantityImpl(name, standardizeArray<double>(distances));
 }

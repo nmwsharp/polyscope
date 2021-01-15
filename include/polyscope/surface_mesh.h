@@ -35,7 +35,7 @@ class SurfaceVertexScalarQuantity;
 class SurfaceFaceScalarQuantity;
 class SurfaceEdgeScalarQuantity;
 class SurfaceHalfedgeScalarQuantity;
-class SurfaceDistanceQuantity;
+class SurfaceVertexScalarQuantity;
 class SurfaceCornerParameterizationQuantity;
 class SurfaceVertexParameterizationQuantity;
 class SurfaceVertexVectorQuantity;
@@ -84,7 +84,7 @@ public:
   // Axis-aligned bounding box for the structure
   virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
   virtual std::string typeName() override;
-  
+
   virtual void refresh() override;
 
   // === Quantity-related
@@ -97,8 +97,8 @@ public:
   template <class T> SurfaceHalfedgeScalarQuantity* addHalfedgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
 
   // = Distance (expect scalar array)
-  template <class T> SurfaceDistanceQuantity* addVertexDistanceQuantity(std::string name, const T& data);
-  template <class T> SurfaceDistanceQuantity* addVertexSignedDistanceQuantity(std::string name, const T& data);
+  template <class T> SurfaceVertexScalarQuantity* addVertexDistanceQuantity(std::string name, const T& data);
+  template <class T> SurfaceVertexScalarQuantity* addVertexSignedDistanceQuantity(std::string name, const T& data);
 
   // = Colors (expect vec3 array)
   template <class T> SurfaceVertexColorQuantity* addVertexColorQuantity(std::string name, const T& data);
@@ -298,7 +298,7 @@ public:
   // bigger edges. Use 0. to disable.
   SurfaceMesh* setEdgeWidth(double newVal);
   double getEdgeWidth();
-  
+
   // Backface policy
   SurfaceMesh* setBackfacePolicy(BackfacePolicy newPolicy);
   BackfacePolicy getBackfacePolicy();
@@ -360,8 +360,8 @@ private:
   SurfaceFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   SurfaceEdgeScalarQuantity* addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   SurfaceHalfedgeScalarQuantity* addHalfedgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  SurfaceDistanceQuantity* addVertexDistanceQuantityImpl(std::string name, const std::vector<double>& data);
-  SurfaceDistanceQuantity* addVertexSignedDistanceQuantityImpl(std::string name, const std::vector<double>& data);
+  SurfaceVertexScalarQuantity* addVertexDistanceQuantityImpl(std::string name, const std::vector<double>& data);
+  SurfaceVertexScalarQuantity* addVertexSignedDistanceQuantityImpl(std::string name, const std::vector<double>& data);
   SurfaceCornerParameterizationQuantity* addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
   SurfaceVertexParameterizationQuantity* addVertexParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
   SurfaceVertexParameterizationQuantity* addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
@@ -388,7 +388,8 @@ SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, con
 template <class V, class F>
 SurfaceMesh* registerSurfaceMesh2D(std::string name, const V& vertexPositions, const F& faceIndices);
 template <class V, class F, class P>
-SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices, const std::array<std::pair<P, size_t>, 5>& perms);
+SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
+                                 const std::array<std::pair<P, size_t>, 5>& perms);
 
 
 // Shorthand to get a mesh from polyscope

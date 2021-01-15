@@ -1085,15 +1085,26 @@ SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantityImpl(std::string name
   return q;
 }
 
-SurfaceDistanceQuantity* SurfaceMesh::addVertexDistanceQuantityImpl(std::string name, const std::vector<double>& data) {
-  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, applyPermutation(data, vertexPerm), *this, false);
+SurfaceVertexScalarQuantity* SurfaceMesh::addVertexDistanceQuantityImpl(std::string name,
+                                                                        const std::vector<double>& data) {
+  SurfaceVertexScalarQuantity* q =
+      new SurfaceVertexScalarQuantity(name, applyPermutation(data, vertexPerm), *this, DataType::MAGNITUDE);
+
+  q->setIsolinesEnabled(true);
+  q->setIsolineWidth(0.02, true);
+
   addQuantity(q);
   return q;
 }
 
-SurfaceDistanceQuantity* SurfaceMesh::addVertexSignedDistanceQuantityImpl(std::string name,
-                                                                          const std::vector<double>& data) {
-  SurfaceDistanceQuantity* q = new SurfaceDistanceQuantity(name, applyPermutation(data, vertexPerm), *this, true);
+SurfaceVertexScalarQuantity* SurfaceMesh::addVertexSignedDistanceQuantityImpl(std::string name,
+                                                                              const std::vector<double>& data) {
+  SurfaceVertexScalarQuantity* q =
+      new SurfaceVertexScalarQuantity(name, applyPermutation(data, vertexPerm), *this, DataType::SYMMETRIC);
+
+  q->setIsolinesEnabled(true);
+  q->setIsolineWidth(0.02, true);
+
   addQuantity(q);
   return q;
 }

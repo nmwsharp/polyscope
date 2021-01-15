@@ -147,7 +147,7 @@ std::pair<double, double> ScalarQuantity<QuantityT>::getMapRange() {
 template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::setIsolineWidth(double size, bool isRelative) {
   isolineWidth = ScaledValue<float>(size, isRelative);
-  if (!isolinesEnabled) {
+  if (!isolinesEnabled.get()) {
     setIsolinesEnabled(true);
   }
   requestRedraw();
