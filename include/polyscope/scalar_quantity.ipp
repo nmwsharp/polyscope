@@ -57,20 +57,24 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
 
   // Isolines
   if (isolinesEnabled.get()) {
+    ImGui::TextUnformatted("Isoline width");
+    ImGui::SameLine();
+    ImGui::PushItemWidth(100);
     if (isolineWidth.get().isRelative()) {
-      if (ImGui::DragFloat("Isoline width##relative", isolineWidth.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f",
+      if (ImGui::DragFloat("##Isoline width relative", isolineWidth.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f",
                            2.0)) {
         isolineWidth.manuallyChanged();
         requestRedraw();
       }
     } else {
       float scaleWidth = dataRange.second - dataRange.first;
-      if (ImGui::DragFloat("Isoline width##absolute", isolineWidth.get().getValuePtr(), scaleWidth/1000, 0., scaleWidth, "%.4f",
-                           2.0)) {
+      if (ImGui::DragFloat("##Isoline width absolute", isolineWidth.get().getValuePtr(), scaleWidth / 1000, 0.,
+                           scaleWidth, "%.4f", 2.0)) {
         isolineWidth.manuallyChanged();
         requestRedraw();
       }
     }
+    ImGui::PopItemWidth();
   }
 }
 
