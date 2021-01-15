@@ -12,9 +12,8 @@ using std::endl;
 namespace polyscope {
 
 CurveNetworkScalarQuantity::CurveNetworkScalarQuantity(std::string name, CurveNetwork& network_, std::string definedOn_,
-                                                       DataType dataType_)
-    : CurveNetworkQuantity(name, network_, true), dataType(dataType_),
-      cMap(uniquePrefix() + name + "#cmap", defaultColorMap(dataType)), definedOn(definedOn_) {}
+                                                       const std::vector<double>& values_, DataType dataType_)
+    : CurveNetworkQuantity(name, network_, true), ScalarQuantity(*this, values_, dataType_), definedOn(definedOn_) {}
 
 void CurveNetworkScalarQuantity::draw() {
   if (!isEnabled()) return;
@@ -30,36 +29,11 @@ void CurveNetworkScalarQuantity::draw() {
   parent.setCurveNetworkEdgeUniforms(*edgeProgram);
   parent.setCurveNetworkNodeUniforms(*nodeProgram);
 
-  setProgramUniforms(*edgeProgram);
-  setProgramUniforms(*nodeProgram);
+  setScalarUniforms(*edgeProgram);
+  setScalarUniforms(*nodeProgram);
 
   edgeProgram->draw();
   nodeProgram->draw();
-}
-
-
-// Update range uniforms
-void CurveNetworkScalarQuantity::setProgramUniforms(render::ShaderProgram& program) {
-  program.setUniform("u_rangeLow", vizRange.first);
-  program.setUniform("u_rangeHigh", vizRange.second);
-}
-
-CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::resetMapRange() {
-  switch (dataType) {
-  case DataType::STANDARD:
-    vizRange = dataRange;
-    break;
-  case DataType::SYMMETRIC: {
-    double absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
-    vizRange = std::make_pair(-absRange, absRange);
-  } break;
-  case DataType::MAGNITUDE:
-    vizRange = std::make_pair(0., dataRange.second);
-    break;
-  }
-
-  requestRedraw();
-  return this;
 }
 
 void CurveNetworkScalarQuantity::buildCustomUI() {
@@ -71,43 +45,12 @@ void CurveNetworkScalarQuantity::buildCustomUI() {
   }
   if (ImGui::BeginPopup("OptionsPopup")) {
 
-    if (ImGui::MenuItem("Reset colormap range")) resetMapRange();
+    buildScalarOptionsUI();
 
     ImGui::EndPopup();
   }
 
-  if (render::buildColormapSelector(cMap.get())) {
-    nodeProgram.reset();
-    edgeProgram.reset();
-    setColorMap(getColorMap());
-  }
-
-  // Draw the histogram of values
-  hist.colormapRange = vizRange;
-  hist.buildUI();
-
-  // Data range
-  // Note: %g specifies are generally nicer than %e, but here we don't acutally have a choice. ImGui (for somewhat
-  // valid reasons) links the resolution of the slider to the decimal width of the formatted number. When %g formats a
-  // number with few decimal places, sliders can break. There is no way to set a minimum number of decimal places with
-  // %g, unfortunately.
-  {
-    switch (dataType) {
-    case DataType::STANDARD:
-      ImGui::DragFloatRange2("", &vizRange.first, &vizRange.second, (dataRange.second - dataRange.first) / 100.,
-                             dataRange.first, dataRange.second, "Min: %.3e", "Max: %.3e");
-      break;
-    case DataType::SYMMETRIC: {
-      float absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
-      ImGui::DragFloatRange2("##range_symmetric", &vizRange.first, &vizRange.second, absRange / 100., -absRange,
-                             absRange, "Min: %.3e", "Max: %.3e");
-    } break;
-    case DataType::MAGNITUDE: {
-      ImGui::DragFloatRange2("##range_mag", &vizRange.first, &vizRange.second, vizRange.second / 100., 0.0,
-                             dataRange.second, "Min: %.3e", "Max: %.3e");
-    } break;
-    }
-  }
+  buildScalarUI();
 }
 
 void CurveNetworkScalarQuantity::refresh() {
@@ -116,44 +59,22 @@ void CurveNetworkScalarQuantity::refresh() {
   Quantity::refresh();
 }
 
-CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::setColorMap(std::string name) {
-  cMap = name;
-  hist.updateColormap(cMap.get());
-  requestRedraw();
-  return this;
-}
-std::string CurveNetworkScalarQuantity::getColorMap() { return cMap.get(); }
-
-CurveNetworkScalarQuantity* CurveNetworkScalarQuantity::setMapRange(std::pair<double, double> val) {
-  vizRange = val;
-  requestRedraw();
-  return this;
-}
-std::pair<double, double> CurveNetworkScalarQuantity::getMapRange() { return vizRange; }
-
 std::string CurveNetworkScalarQuantity::niceName() { return name + " (" + definedOn + " scalar)"; }
 
 // ========================================================
 // ==========             Node Scalar            ==========
 // ========================================================
 
-CurveNetworkNodeScalarQuantity::CurveNetworkNodeScalarQuantity(std::string name, std::vector<double> values_,
+CurveNetworkNodeScalarQuantity::CurveNetworkNodeScalarQuantity(std::string name, const std::vector<double>& values_,
                                                                CurveNetwork& network_, DataType dataType_)
-    : CurveNetworkScalarQuantity(name, network_, "node", dataType_), values(std::move(values_))
+    : CurveNetworkScalarQuantity(name, network_, "node", values_, dataType_)
 
-{
-  hist.updateColormap(cMap.get());
-  hist.buildHistogram(values);
-
-  dataRange = robustMinMax(values, 1e-5);
-  resetMapRange();
-}
+{}
 
 void CurveNetworkNodeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"});
-  edgeProgram =
-      render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_BLEND_VALUE", "SHADE_COLORMAP_VALUE"});
+  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", addScalarRules({"SPHERE_PROPAGATE_VALUE"}));
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", addScalarRules({"CYLINDER_PROPAGATE_BLEND_VALUE"}));
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);
@@ -197,22 +118,16 @@ void CurveNetworkNodeScalarQuantity::buildNodeInfoGUI(size_t nInd) {
 // ==========            Edge Scalar             ==========
 // ========================================================
 
-CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name, std::vector<double> values_,
+CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name, const std::vector<double>& values_,
                                                                CurveNetwork& network_, DataType dataType_)
-    : CurveNetworkScalarQuantity(name, network_, "edge", dataType_), values(std::move(values_))
+    : CurveNetworkScalarQuantity(name, network_, "edge", values_, dataType_)
 
-{
-  hist.updateColormap(cMap.get());
-  hist.buildHistogram(values);
-
-  dataRange = robustMinMax(values, 1e-5);
-  resetMapRange();
-}
+{}
 
 void CurveNetworkEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"});
-  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"});
+  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", addScalarRules({"SPHERE_PROPAGATE_VALUE"}));
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", addScalarRules({"CYLINDER_PROPAGATE_VALUE"}));
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);
