@@ -12,6 +12,7 @@
 #include "polyscope/structure.h"
 
 #include "polyscope/point_cloud_color_quantity.h"
+#include "polyscope/point_cloud_parameterization_quantity.h"
 #include "polyscope/point_cloud_scalar_quantity.h"
 #include "polyscope/point_cloud_vector_quantity.h"
 
@@ -25,6 +26,7 @@ class PointCloud;
 // Forward declare quantity types
 class PointCloudColorQuantity;
 class PointCloudScalarQuantity;
+class PointCloudParameterizationQuantity;
 class PointCloudVectorQuantity;
 
 
@@ -60,6 +62,14 @@ public:
   // Scalars
   template <class T>
   PointCloudScalarQuantity* addScalarQuantity(std::string name, const T& values, DataType type = DataType::STANDARD);
+
+  // Parameterization
+  template <class T>
+  PointCloudParameterizationQuantity* addParameterizationQuantity(std::string name, const T& values,
+                                                                  ParamCoordsType type = ParamCoordsType::UNIT);
+  template <class T>
+  PointCloudParameterizationQuantity* addLocalParameterizationQuantity(std::string name, const T& values,
+                                                                       ParamCoordsType type = ParamCoordsType::WORLD);
 
   // Colors
   template <class T>
@@ -136,6 +146,10 @@ private:
 
   // === Quantity adder implementations
   PointCloudScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
+  PointCloudParameterizationQuantity*
+  addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param, ParamCoordsType type);
+  PointCloudParameterizationQuantity*
+  addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param, ParamCoordsType type);
   PointCloudColorQuantity* addColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   PointCloudVectorQuantity* addVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors,
                                                   VectorType vectorType);

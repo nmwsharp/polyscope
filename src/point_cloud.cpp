@@ -329,6 +329,18 @@ PointCloudScalarQuantity* PointCloud::addScalarQuantityImpl(std::string name, co
   return q;
 }
 
+PointCloudParameterizationQuantity* PointCloud::addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param, ParamCoordsType type) {
+  PointCloudParameterizationQuantity* q = new PointCloudParameterizationQuantity(name, param, type, ParamVizStyle::CHECKER, *this);
+  addQuantity(q);
+  return q;
+}
+
+PointCloudParameterizationQuantity* PointCloud::addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param, ParamCoordsType type) {
+  PointCloudParameterizationQuantity* q = new PointCloudParameterizationQuantity(name, param, type, ParamVizStyle::LOCAL_CHECK, *this);
+  addQuantity(q);
+  return q;
+}
+
 PointCloudVectorQuantity* PointCloud::addVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors,
                                                             VectorType vectorType) {
   PointCloudVectorQuantity* q = new PointCloudVectorQuantity(name, vectors, *this, vectorType);

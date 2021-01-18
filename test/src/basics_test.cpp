@@ -134,6 +134,20 @@ TEST_F(PolyscopeTest, PointCloudColor) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, PointCloudParam) {
+  auto psPoints = registerPointCloud();
+  std::vector<glm::vec2> param(psPoints->nPoints(), glm::vec2{.2, .3});
+
+  auto q1 = psPoints->addParameterizationQuantity("param", param);
+  q1->setEnabled(true);
+  polyscope::show(3);
+
+  auto q2 = psPoints->addLocalParameterizationQuantity("local param", param);
+  q2->setEnabled(true);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
 
 TEST_F(PolyscopeTest, PointCloudScalar) {
   auto psPoints = registerPointCloud();
@@ -422,8 +436,8 @@ TEST_F(PolyscopeTest, SurfaceMeshFaceIntrinsic) {
 
 TEST_F(PolyscopeTest, SurfaceMeshOneForm) {
   auto psMesh = registerTriangleMesh();
-  //std::vector<glm::vec3> basisX(psMesh->nVertices(), {1., 2., 3.});
-  //psMesh->setVertexTangentBasisX(basisX);
+  // std::vector<glm::vec3> basisX(psMesh->nVertices(), {1., 2., 3.});
+  // psMesh->setVertexTangentBasisX(basisX);
   std::vector<double> vals(psMesh->nEdges(), 3.);
   std::vector<char> orients(psMesh->nEdges(), true);
   auto q1 = psMesh->addOneFormIntrinsicVectorQuantity("one form vecs", vals, orients);
@@ -696,7 +710,7 @@ TEST_F(PolyscopeTest, TransparencyTest) {
   }
 
   polyscope::show(3);
-  
+
   polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
   polyscope::show(3);
 

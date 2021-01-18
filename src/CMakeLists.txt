@@ -141,6 +141,7 @@ SET(SRCS
 	point_cloud_color_quantity.cpp
 	point_cloud_scalar_quantity.cpp
 	point_cloud_vector_quantity.cpp
+	point_cloud_parameterization_quantity.cpp
 
   # Surface
   surface_mesh.cpp
@@ -210,6 +211,7 @@ SET(HEADERS
 	${INCLUDE_ROOT}/point_cloud_color_quantity.h
 	${INCLUDE_ROOT}/point_cloud_quantity.h
 	${INCLUDE_ROOT}/point_cloud_scalar_quantity.h
+	${INCLUDE_ROOT}/point_cloud_parameterization_quantity.h
 	${INCLUDE_ROOT}/point_cloud_vector_quantity.h
 	${INCLUDE_ROOT}/polyscope.h
 	${INCLUDE_ROOT}/quantity.h

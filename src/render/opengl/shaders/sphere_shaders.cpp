@@ -221,6 +221,36 @@ const ShaderReplacementRule SPHERE_PROPAGATE_VALUE (
     /* textures */ {}
 );
 
+const ShaderReplacementRule SPHERE_PROPAGATE_VALUE2 (
+    /* rule name */ "SPHERE_PROPAGATE_VALUE2",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec2 a_value2;
+          out vec2 a_value2ToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_value2ToGeom = a_value2;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in vec2 a_value2ToGeom[];
+          out vec2 a_value2ToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_value2ToFrag = a_value2ToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec2 a_value2ToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          vec2 shadeValue2 = a_value2ToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_value2", DataType::Vector2Float},
+    },
+    /* textures */ {}
+);
 
 const ShaderReplacementRule SPHERE_PROPAGATE_COLOR (
     /* rule name */ "SPHERE_PROPAGATE_COLOR",

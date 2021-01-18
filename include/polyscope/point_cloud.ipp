@@ -74,6 +74,21 @@ PointCloudScalarQuantity* PointCloud::addScalarQuantity(std::string name, const 
   return addScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
 }
 
+
+template <class T>
+PointCloudParameterizationQuantity* PointCloud::addParameterizationQuantity(std::string name, const T& param,
+                                                                            ParamCoordsType type) {
+  validateSize(param, nPoints(), "point cloud parameterization quantity " + name);
+  return addParameterizationQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(param), type);
+}
+
+template <class T>
+PointCloudParameterizationQuantity* PointCloud::addLocalParameterizationQuantity(std::string name, const T& param,
+                                                                                 ParamCoordsType type) {
+  validateSize(param, nPoints(), "point cloud parameterization quantity " + name);
+  return addLocalParameterizationQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(param), type);
+}
+
 template <class T>
 PointCloudVectorQuantity* PointCloud::addVectorQuantity(std::string name, const T& vectors, VectorType vectorType) {
   validateSize(vectors, nPoints(), "point cloud vector quantity " + name);
