@@ -146,6 +146,9 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
         "Uh oh, polyscope::show() was recusively MANY times (depth > 50), this is probably a bug. Perhaps "
         "you are accidentally calling show every time polyscope::userCallback executes?");
   };
+ 
+  // Make sure the window is visible
+  render::engine->showWindow();
 
   // Re-enter main loop until the context has been popped
   size_t currentContextStackSize = contextStack.size();
@@ -686,8 +689,6 @@ void show(size_t forFrames) {
     throw std::logic_error(options::printPrefix +
                            "must initialize Polyscope with polyscope::init() before calling polyscope::show().");
   }
-
-  render::engine->showWindow();
 
   auto checkFrames = [&]() {
     if (forFrames == 0) {
