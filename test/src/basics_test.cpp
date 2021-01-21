@@ -268,6 +268,10 @@ TEST_F(PolyscopeTest, SurfaceMeshPick) {
   // Don't bother trying to actually click on anything, but make sure this doesn't crash
   polyscope::pick::evaluatePickQuery(77, 88);
 
+  // Do it again with edges enabled
+  psMesh->setEdgeWidth(1.0);
+  polyscope::pick::evaluatePickQuery(77, 88);
+
   polyscope::removeAllStructures();
 }
 

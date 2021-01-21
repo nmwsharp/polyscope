@@ -874,7 +874,8 @@ std::string SurfaceMesh::typeName() { return structureTypeName; }
 long long int SurfaceMesh::selectVertex() {
 
   // Make sure we can see edges
-  edgeWidth = 1.;
+  float oldEdgeWidth = getEdgeWidth();
+  setEdgeWidth(1.);
   this->setEnabled(true);
 
   long long int returnVertInd = -1;
@@ -930,9 +931,11 @@ long long int SurfaceMesh::selectVertex() {
       }
     }
   };
-
+  
   // Pass control to the context we just created
   pushContext(focusedPopupUI);
+  
+  setEdgeWidth(oldEdgeWidth); // restore edge setting
 
   return returnVertInd;
 }
