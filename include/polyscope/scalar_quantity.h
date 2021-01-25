@@ -45,6 +45,8 @@ public:
   bool getIsolinesEnabled();
   QuantityT* setIsolineWidth(double size, bool isRelative);
   double getIsolineWidth();
+  QuantityT* setIsolineDarkness(double val);
+  double getIsolineDarkness();
 
 
 protected:
@@ -59,6 +61,7 @@ protected:
   PersistentValue<std::string> cMap;
   PersistentValue<bool> isolinesEnabled;
   PersistentValue<ScaledValue<float>> isolineWidth;
+  PersistentValue<float> isolineDarkness;
 };
 
 } // namespace polyscope

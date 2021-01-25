@@ -50,6 +50,10 @@ public:
   // Color map for radial visualization
   PointCloudParameterizationQuantity* setColorMap(std::string val);
   std::string getColorMap();
+  
+  // Darkness for checkers (etc)
+  PointCloudParameterizationQuantity* setAltDarkness(double newVal);
+  double getAltDarkness();
 
 protected:
   // === Visualiztion options
@@ -57,6 +61,7 @@ protected:
   PersistentValue<ParamVizStyle> vizStyle;
   PersistentValue<glm::vec3> checkColor1, checkColor2;           // for checker (two colors to use)
   PersistentValue<glm::vec3> gridLineColor, gridBackgroundColor; // for GRID (two colors to use)
+  PersistentValue<float> altDarkness;
 
   PersistentValue<std::string> cMap;
   float localRot = 0.; // for LOCAL (angular shift, in radians)

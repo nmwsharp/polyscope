@@ -22,6 +22,7 @@ PointCloudParameterizationQuantity::PointCloudParameterizationQuantity(std::stri
       checkColor2(uniquePrefix() + "#checkColor2", glm::vec3(.976, .856, .885)),
       gridLineColor(uniquePrefix() + "#gridLineColor", render::RGB_WHITE),
       gridBackgroundColor(uniquePrefix() + "#gridBackgroundColor", render::RGB_PINK),
+      altDarkness(uniquePrefix() + "#altDarkness", 0.5),
       cMap(uniquePrefix() + "#cMap", "phase")
 
 {}
@@ -55,22 +56,23 @@ void PointCloudParameterizationQuantity::createProgram() {
   case ParamVizStyle::GRID:
     // program = render::engine->generateShaderProgram(
     //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_GRID_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program =
-        render::engine->requestShader("RAYCAST_SPHERE", parent.addStructureRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}));
+    program = render::engine->requestShader("RAYCAST_SPHERE",
+                                            parent.addStructureRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}));
     break;
   case ParamVizStyle::LOCAL_CHECK:
     // program = render::engine->generateShaderProgram(
     //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
     program = render::engine->requestShader(
-        "RAYCAST_SPHERE", parent.addStructureRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"}));
+        "RAYCAST_SPHERE",
+        parent.addStructureRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"}));
     program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   case ParamVizStyle::LOCAL_RAD:
     // program = render::engine->generateShaderProgram(
     //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
     program = render::engine->requestShader(
-        "RAYCAST_SPHERE", parent.addStructureRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "SHADEVALUE_MAG_VALUE2",
-                                          "ISOLINE_STRIPE_VALUECOLOR"}));
+        "RAYCAST_SPHERE", parent.addStructureRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2",
+                                                    "SHADEVALUE_MAG_VALUE2", "ISOLINE_STRIPE_VALUECOLOR"}));
     program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   }
@@ -108,6 +110,7 @@ void PointCloudParameterizationQuantity::setProgramUniforms(render::ShaderProgra
   case ParamVizStyle::LOCAL_CHECK:
   case ParamVizStyle::LOCAL_RAD:
     program.setUniform("u_angle", localRot);
+    program.setUniform("u_modDarkness", getAltDarkness());
     break;
   }
 }
@@ -179,6 +182,10 @@ void PointCloudParameterizationQuantity::buildCustomUI() {
     // Angle slider
     ImGui::PushItemWidth(100);
     ImGui::SliderAngle("angle shift", &localRot, -180, 180); // displays in degrees, works in radians
+    if (ImGui::DragFloat("alt darkness", &altDarkness.get(), 0.01, 0., 1.)) {
+      altDarkness.manuallyChanged();
+      requestRedraw();
+    }
     ImGui::PopItemWidth();
 
     // Set colormap
@@ -241,12 +248,21 @@ PointCloudParameterizationQuantity* PointCloudParameterizationQuantity::setColor
 }
 std::string PointCloudParameterizationQuantity::getColorMap() { return cMap.get(); }
 
+PointCloudParameterizationQuantity* PointCloudParameterizationQuantity::setAltDarkness(double newVal) {
+  altDarkness = newVal;
+  requestRedraw();
+  return this;
+}
+
+double PointCloudParameterizationQuantity::getAltDarkness() { return altDarkness.get(); }
+
+
 void PointCloudParameterizationQuantity::refresh() {
   program.reset();
   Quantity::refresh();
 }
 
-std::string PointCloudParameterizationQuantity::niceName() { return name + " (vertex parameterization)"; }
+std::string PointCloudParameterizationQuantity::niceName() { return name + " (point parameterization)"; }
 
 void PointCloudParameterizationQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());

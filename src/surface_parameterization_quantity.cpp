@@ -23,7 +23,7 @@ SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string nam
       checkColor2(uniquePrefix() + "#checkColor2", glm::vec3(.976, .856, .885)),
       gridLineColor(uniquePrefix() + "#gridLineColor", render::RGB_WHITE),
       gridBackgroundColor(uniquePrefix() + "#gridBackgroundColor", render::RGB_PINK),
-      cMap(uniquePrefix() + "#cMap", "phase")
+      altDarkness(uniquePrefix() + "#altDarkness", 0.5), cMap(uniquePrefix() + "#cMap", "phase")
 
 {}
 
@@ -108,6 +108,7 @@ void SurfaceParameterizationQuantity::setProgramUniforms(render::ShaderProgram& 
   case ParamVizStyle::LOCAL_CHECK:
   case ParamVizStyle::LOCAL_RAD:
     program.setUniform("u_angle", localRot);
+    program.setUniform("u_modDarkness", getAltDarkness());
     break;
   }
 }
@@ -178,7 +179,11 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
   case ParamVizStyle::LOCAL_RAD: {
     // Angle slider
     ImGui::PushItemWidth(100);
-    ImGui::SliderAngle("angle shift", &localRot, -180, 180); // displays in degrees, works in radians
+    ImGui::SliderAngle("angle shift", &localRot, -180, 180); // displays in degrees, works in radians TODO refresh/update/persist
+    if (ImGui::DragFloat("alt darkness", &altDarkness.get(), 0.01, 0., 1.)) {
+      altDarkness.manuallyChanged();
+      requestRedraw();
+    }
     ImGui::PopItemWidth();
 
     // Set colormap
@@ -240,6 +245,14 @@ SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setColorMap(st
   return this;
 }
 std::string SurfaceParameterizationQuantity::getColorMap() { return cMap.get(); }
+
+SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setAltDarkness(double newVal) {
+  altDarkness = newVal;
+  requestRedraw();
+  return this;
+}
+
+double SurfaceParameterizationQuantity::getAltDarkness() { return altDarkness.get(); }
 
 void SurfaceParameterizationQuantity::refresh() {
   program.reset();

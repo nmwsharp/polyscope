@@ -5,7 +5,8 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
     : quantity(quantity_), values(values_), dataType(dataType_), dataRange(robustMinMax(values, 1e-5)),
       cMap(quantity.name + "#cmap", defaultColorMap(dataType)),
       isolinesEnabled(quantity.name + "#isolinesEnabled", false),
-      isolineWidth(quantity.name + "#isolineWidth", absoluteValue((dataRange.second - dataRange.first) * 0.02))
+      isolineWidth(quantity.name + "#isolineWidth", absoluteValue((dataRange.second - dataRange.first) * 0.02)),
+      isolineDarkness(quantity.name + "#isolineDarkness", 0.7)
 
 {
   hist.updateColormap(cMap.get());
@@ -57,9 +58,11 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
 
   // Isolines
   if (isolinesEnabled.get()) {
+    ImGui::PushItemWidth(100);
+
+    // Isoline width
     ImGui::TextUnformatted("Isoline width");
     ImGui::SameLine();
-    ImGui::PushItemWidth(100);
     if (isolineWidth.get().isRelative()) {
       if (ImGui::DragFloat("##Isoline width relative", isolineWidth.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f",
                            2.0)) {
@@ -74,6 +77,15 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
         requestRedraw();
       }
     }
+
+    // Isoline darkness
+    ImGui::TextUnformatted("Isoline darkness");
+    ImGui::SameLine();
+    if (ImGui::DragFloat("##Isoline darkness", &isolineDarkness.get(), 0.01, 0., 1.)) {
+      isolineDarkness.manuallyChanged();
+      requestRedraw();
+    }
+
     ImGui::PopItemWidth();
   }
 }
@@ -101,6 +113,7 @@ void ScalarQuantity<QuantityT>::setScalarUniforms(render::ShaderProgram& p) {
 
   if (isolinesEnabled.get()) {
     p.setUniform("u_modLen", getIsolineWidth());
+    p.setUniform("u_modDarkness", getIsolineDarkness());
   }
 }
 
@@ -160,6 +173,20 @@ QuantityT* ScalarQuantity<QuantityT>::setIsolineWidth(double size, bool isRelati
 template <typename QuantityT>
 double ScalarQuantity<QuantityT>::getIsolineWidth() {
   return isolineWidth.get().asAbsolute();
+}
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setIsolineDarkness(double val) {
+  isolineDarkness = val;
+  if (!isolinesEnabled.get()) {
+    setIsolinesEnabled(true);
+  }
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+double ScalarQuantity<QuantityT>::getIsolineDarkness() {
+  return isolineDarkness.get();
 }
 
 template <typename QuantityT>

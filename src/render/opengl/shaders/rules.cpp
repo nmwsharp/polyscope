@@ -224,16 +224,18 @@ const ShaderReplacementRule ISOLINE_STRIPE_VALUECOLOR (
     { /* replacement sources */
       {"FRAG_DECLARATIONS", R"(
           uniform float u_modLen;
+          uniform float u_modDarkness;
         )"},
       {"GENERATE_SHADE_COLOR", R"(
         float modVal = mod(shadeValue, 2.0 * u_modLen);
         if(modVal > u_modLen) {
-          albedoColor *= 0.7;
+          albedoColor *= u_modDarkness;
         }
       )"}
     },
     /* uniforms */ {
         {"u_modLen", DataType::Float},
+        {"u_modDarkness", DataType::Float},
     },
     /* attributes */ {},
     /* textures */ {}
@@ -244,9 +246,10 @@ const ShaderReplacementRule CHECKER_VALUE2COLOR (
     { /* replacement sources */
       {"FRAG_DECLARATIONS", R"(
           uniform float u_modLen;
+          uniform float u_modDarkness;
         )"},
       {"GENERATE_SHADE_COLOR", R"(
-        vec3 albedoColorDark = albedoColor * .5;
+        vec3 albedoColorDark = albedoColor * u_modDarkness;
         float mX = mod(shadeValue2.x, 2.0 * u_modLen) / u_modLen - 1.f; // in [-1, 1]
         float mY = mod(shadeValue2.y, 2.0 * u_modLen) / u_modLen - 1.f;
         float minD = min( min(abs(mX), 1.0 - abs(mX)), min(abs(mY), 1.0 - abs(mY))) * 2.; // rect distace from flipping sign in [0,1]
@@ -260,6 +263,7 @@ const ShaderReplacementRule CHECKER_VALUE2COLOR (
     },
     /* uniforms */ {
        {"u_modLen", DataType::Float},
+       {"u_modDarkness", DataType::Float},
     },
     /* attributes */ {},
     /* textures */ {}
