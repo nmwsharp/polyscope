@@ -247,8 +247,8 @@ public:
   // if there are no tangent spaces, builds the default ones
   bool hasFaceTangentSpaces();
   bool hasVertexTangentSpaces();
-  void ensureHaveFaceTangentSpaces();
-  void ensureHaveVertexTangentSpaces();
+  void ensureHaveFaceTangentSpaces();   // sanity-check which errors if not present
+  void ensureHaveVertexTangentSpaces(); // sanity-check which errors if not present
   void generateDefaultFaceTangentSpaces();
   void generateDefaultVertexTangentSpaces();
 

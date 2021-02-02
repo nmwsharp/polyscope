@@ -322,7 +322,15 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
     if (ribbonArtist == nullptr) {
 
       // Remap to center of each face (extrinsically)
+
+      // Generate default tangent spaces if necessary
+      if (!parent.hasFaceTangentSpaces()) {
+        // TODO this could technically cause a problem if the user tries to register some other tangent spaces after
+        // enabling the ribbon. This should really be an entirely internal implementation detail.
+        parent.generateDefaultFaceTangentSpaces();
+      }
       parent.ensureHaveFaceTangentSpaces();
+
       parent.ensureHaveVertexTangentSpaces();
       std::vector<glm::vec2> unitFaceVecs(parent.nFaces());
       for (size_t iF = 0; iF < parent.nFaces(); iF++) {
@@ -388,7 +396,7 @@ void SurfaceOneFormIntrinsicVectorQuantity::refresh() {
 
   // If the parent doesn't have face tangent spaces, auto-generate them
   // (since the user shouldn't have to think about face tangent spaces to specify a 1-form)
-  if(!parent.hasFaceTangentSpaces()) {
+  if (!parent.hasFaceTangentSpaces()) {
     parent.generateDefaultFaceTangentSpaces();
   }
 
