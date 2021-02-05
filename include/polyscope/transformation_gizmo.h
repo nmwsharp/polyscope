@@ -53,9 +53,9 @@ protected:
   glm::vec3 dragPrevVec{1., 0.,
                         0.}; // the normal vector from the previous frame of the drag OR previous translation center
 
-  std::array<glm::vec3, 3> niceRGB = {glm::vec3{211 / 255., 45 / 255., 62 / 255.},
-                                      glm::vec3{65 / 255., 121 / 255., 225 / 255.},
-                                      glm::vec3{95 / 255., 175 / 255., 35 / 255.}};
+  std::array<glm::vec3, 3> niceRGB = {{glm::vec3{211 / 255., 45 / 255., 62 / 255.},
+                                       glm::vec3{65 / 255., 121 / 255., 225 / 255.},
+                                       glm::vec3{95 / 255., 175 / 255., 35 / 255.}}};
 
   void markUpdated();
 
