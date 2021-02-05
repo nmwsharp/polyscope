@@ -8,7 +8,9 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-16.04, ubuntu-latest]
     if: "! contains(toJSON(github.event.commits.*.message), '[ci skip]')"
     steps:
     - uses: actions/checkout@v1
