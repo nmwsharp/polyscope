@@ -363,13 +363,16 @@ bool TransformationGizmo::interact() {
 std::tuple<float, float, glm::vec3> TransformationGizmo::circleTest(glm::vec3 raySource, glm::vec3 rayDir,
                                                                     glm::vec3 center, glm::vec3 normal, float radius) {
 
+  // used for explicit constructors below to make old compilers (gcc-5) happy
+  typedef std::tuple<float, float, glm::vec3> ret_t;
 
   // Intersect the ray with the plane defined by the normal
   float div = glm::dot(normal, rayDir);
-  if (std::fabs(div) < 1e-6) return {-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}}; // parallel
+  if (std::fabs(div) < 1e-6)
+    return ret_t{-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}}; // parallel
 
   float tRay = glm::dot((center - raySource), normal) / div;
-  if (tRay < 0) return {-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}}; // behind the ray
+  if (tRay < 0) return ret_t{-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}}; // behind the ray
 
   glm::vec3 hitPoint = raySource + tRay * rayDir;
 
@@ -378,16 +381,18 @@ std::tuple<float, float, glm::vec3> TransformationGizmo::circleTest(glm::vec3 ra
   float ringDist = std::fabs(hitRad - radius);
   glm::vec3 nearestPoint = center + (hitPoint - center) / hitRad * radius;
 
-  return {tRay, ringDist, nearestPoint};
+  return ret_t{tRay, ringDist, nearestPoint};
 }
 
 std::tuple<float, float, glm::vec3> TransformationGizmo::lineTest(glm::vec3 raySource, glm::vec3 rayDir,
                                                                   glm::vec3 center, glm::vec3 tangent, float length) {
 
+  // used for explicit constructors below to make old compilers (gcc-5) happy
+  typedef std::tuple<float, float, glm::vec3> ret_t;
 
   glm::vec3 nBetween = glm::cross(rayDir, tangent);
   if (glm::length(nBetween) < 1e-6)
-    return {-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}}; // parallel
+    return ret_t{-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}}; // parallel
 
   glm::vec3 nTan = glm::cross(tangent, nBetween);
   glm::vec3 nRay = glm::cross(rayDir, nBetween);
@@ -396,17 +401,20 @@ std::tuple<float, float, glm::vec3> TransformationGizmo::lineTest(glm::vec3 rayS
   float tLine = glm::dot(raySource - center, nRay) / glm::dot(tangent, nRay);
 
   if (tLine < -length || tLine > length || tRay < 0)
-    return {-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}}; // out of bounds or beind
+    return ret_t{-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}}; // out of bounds or beind
 
   glm::vec3 pRay = raySource + tRay * rayDir;
   glm::vec3 pLine = center + tLine * tangent;
 
-  return {tRay, glm::length(pRay - pLine), pLine};
+  return ret_t{tRay, glm::length(pRay - pLine), pLine};
 }
 
 std::tuple<float, float, glm::vec3> TransformationGizmo::sphereTest(glm::vec3 raySource, glm::vec3 rayDir,
                                                                     glm::vec3 center, float radius,
                                                                     bool allowHitSurface) {
+
+  // used for explicit constructors below to make old compilers (gcc-5) happy
+  typedef std::tuple<float, float, glm::vec3> ret_t;
 
   glm::vec3 oc = raySource - center;
   float b = 2. * dot(oc, rayDir);
@@ -417,18 +425,18 @@ std::tuple<float, float, glm::vec3> TransformationGizmo::sphereTest(glm::vec3 ra
     float tHit = glm::dot(rayDir, center - raySource);
     if (tHit < 0.) {
       // hit behind
-      return {-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}};
+      return ret_t{-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}};
     }
     glm::vec3 hitPoint = raySource + tHit * rayDir;
-    return {tHit, glm::length(hitPoint - center) - radius, hitPoint};
+    return ret_t{tHit, glm::length(hitPoint - center) - radius, hitPoint};
   } else {
     // actual hit
     float tHit = (-b - std::sqrt(disc)) / 2.;
     if (tHit < 0.) {
       // hit behind
-      return {-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}};
+      return ret_t{-1, std::numeric_limits<float>::infinity(), glm::vec3{0., 0., 0.}};
     }
-    return {tHit, 0, raySource + tHit * rayDir};
+    return ret_t{tHit, 0, raySource + tHit * rayDir};
   }
 }
 
