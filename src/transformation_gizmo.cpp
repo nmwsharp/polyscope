@@ -155,7 +155,7 @@ bool TransformationGizmo::interact() {
   glm::vec3 nX(T * glm::vec4{1., 0., 0., 0.});
   glm::vec3 nY(T * glm::vec4{0., 1., 0., 0.});
   glm::vec3 nZ(T * glm::vec4{0., 0., 1., 0.});
-  std::array<glm::vec3, 3> axNormals{nX, nY, nZ};
+  std::array<glm::vec3, 3> axNormals{glm::normalize(nX), glm::normalize(nY), glm::normalize(nZ)};
 
   float transScale = glm::length(glm::vec3(T[0]));
   float gizmoSize = transScale * gizmoSizeRel * state::lengthScale;
