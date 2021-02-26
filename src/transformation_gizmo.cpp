@@ -43,8 +43,9 @@ void TransformationGizmo::prepare() {
   }
 
   { // Translation arrows
-    arrowProgram = render::engine->requestShader("RAYCAST_VECTOR",
-                                                 {"VECTOR_PROPAGATE_COLOR", "TRANSFORMATION_GIZMO_VEC", "SHADE_COLOR"});
+    arrowProgram = render::engine->requestShader(
+        "RAYCAST_VECTOR", {"VECTOR_PROPAGATE_COLOR", "TRANSFORMATION_GIZMO_VEC", "SHADE_COLOR", "LIGHT_MATCAP"},
+        render::ShaderReplacementDefaults::Process);
 
     std::vector<glm::vec3> vectors;
     std::vector<glm::vec3> bases;
@@ -61,7 +62,8 @@ void TransformationGizmo::prepare() {
   }
 
   { // Scale sphere
-    sphereProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SHADE_BASECOLOR"});
+    sphereProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SHADE_BASECOLOR", "LIGHT_MATCAP"},
+                                                  render::ShaderReplacementDefaults::Process);
     render::engine->setMaterial(*sphereProgram, "wax");
 
     std::vector<glm::vec3> center = {glm::vec3(0., 0., 0.)};

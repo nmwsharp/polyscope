@@ -317,6 +317,7 @@ public:
 
 protected:
   // Helpers
+  virtual void createSlicePlaneFliterRule(std::string name) override;
 
   // Internal windowing and engine details
   GLFWwindow* mainWindow = nullptr;

@@ -146,7 +146,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
         "Uh oh, polyscope::show() was recusively MANY times (depth > 50), this is probably a bug. Perhaps "
         "you are accidentally calling show every time polyscope::userCallback executes?");
   };
- 
+
   // Make sure the window is visible
   render::engine->showWindow();
 
@@ -322,6 +322,12 @@ void processInputEvents() {
   }
 }
 
+void renderSlicePlanes() {
+  for (SlicePlane* s : state::slicePlanes) {
+    s->draw();
+  }
+}
+
 void renderScene() {
   processLazyProperties();
 
@@ -360,9 +366,13 @@ void renderScene() {
       render::engine->applyTransparencySettings();
       drawStructures();
 
-      // Draw the ground plane (will do nothing if disabled)
+      // Draw ground plane, slicers, etc
       bool isRedraw = iPass > 0;
       render::engine->groundPlane.draw(isRedraw);
+      if (!isRedraw) {
+        // Only on first pass (kinda weird, but works out, and doesn't really matter)
+        renderSlicePlanes();
+      }
 
       // Composite the result of this pass in to the result buffer
       render::engine->sceneBufferFinal->bind();
@@ -373,14 +383,16 @@ void renderScene() {
       // Update the minimum depth texture
       render::engine->updateMinDepthTexture();
     }
+
+
   } else {
     // Normal case: single render pass
     render::engine->applyTransparencySettings();
 
     drawStructures();
 
-    // Draw the ground plane (will do nothing if disabled)
     render::engine->groundPlane.draw();
+    renderSlicePlanes();
 
     render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
   }

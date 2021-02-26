@@ -159,6 +159,119 @@ const ShaderReplacementRule TRANSFORMATION_GIZMO_VEC (
     /* textures */ {}
 );
 
+const ShaderStageSpecification SLICE_PLANE_VERT_SHADER =  {
+    
+    ShaderStageType::Vertex,
+    
+    // uniforms
+    {
+       {"u_viewMatrix", DataType::Matrix44Float},
+       {"u_projMatrix", DataType::Matrix44Float},
+       {"u_objectMatrix", DataType::Matrix44Float},
+    },
+
+    // attributes
+    {
+        {"a_position", DataType::Vector4Float},
+    },
+    
+    {}, // textures
+
+    // source
+R"(
+      ${ GLSL_VERSION }$
+
+      uniform mat4 u_viewMatrix;
+      uniform mat4 u_projMatrix;
+      uniform mat4 u_objectMatrix;
+      in vec4 a_position;
+      out vec4 PositionWorldHomog;
+
+      void main()
+      {
+          gl_Position = u_projMatrix * u_viewMatrix * u_objectMatrix * a_position;
+          PositionWorldHomog = u_objectMatrix * a_position;
+      }
+)"
+};
+
+const ShaderStageSpecification SLICE_PLANE_FRAG_SHADER= {
+    
+    ShaderStageType::Fragment,
+
+    { // uniforms
+      {"u_objectMatrix", DataType::Matrix44Float},
+      {"u_viewMatrix", DataType::Matrix44Float},
+      {"u_lengthScale", DataType::Float},
+      {"u_transparency", DataType::Float},
+    }, 
+
+    // attributes
+    {
+    },
+    
+    // textures 
+    {
+    },
+    
+    // source 
+R"(
+      ${ GLSL_VERSION }$
+
+      uniform mat4 u_objectMatrix;
+      uniform mat4 u_viewMatrix;
+      uniform float u_lengthScale;
+      uniform float u_cameraHeight;
+      uniform float u_transparency;
+      in vec4 PositionWorldHomog;
+      layout(location = 0) out vec4 outputF;
+        
+      ${ FRAG_DECLARATIONS }$
+
+      float orenNayarDiffuse( vec3 lightDirection, vec3 viewDirection, vec3 surfaceNormal, float roughness, float albedo);
+      float specular( vec3 N, vec3 L, vec3 E, float shininess );
+
+      void main()
+      {
+        float depth = gl_FragCoord.z;
+        ${ GLOBAL_FRAGMENT_FILTER }$
+
+        vec3 basisXObj = mat3(u_objectMatrix) * vec3(1,0,0);
+        vec3 basisYObj = mat3(u_objectMatrix) * vec3(0,1,0);
+        vec3 basisZObj = mat3(u_objectMatrix) * vec3(0,0,1);
+
+        vec3 coord = PositionWorldHomog.xyz / PositionWorldHomog.w;
+        coord /= u_lengthScale * .28;
+        vec2 coord2D = vec2(dot(basisYObj, coord), dot(basisZObj, coord));
+
+        // Checker stripes
+        float modDist = min(min(mod(coord2D.x, 1.0), mod(coord2D.y, 1.0)), min(mod(-coord2D.x, 1.0), mod(-coord2D.y, 1.0)));
+        float stripeBlendFac = smoothstep(0.005, .02, modDist);
+        vec3 baseColor = vec3(0.941, 0.578, 0.304);
+        vec3 gridColor = vec3(0.97, 0.87, 0.97);
+        vec3 groundColor = mix(gridColor, baseColor, stripeBlendFac);
+
+        // Lighting stuff
+        vec4 posCameraSpace4 = u_viewMatrix * PositionWorldHomog;
+        vec3 posCameraSpace = posCameraSpace4.xyz / posCameraSpace4.w;
+        vec3 normalCameraSpace = mat3(u_viewMatrix) * vec3(0., 1., 0.);
+        vec3 eyeCameraSpace = vec3(0., 0., 0.);
+        vec3 lightPosCameraSpace = vec3(5., 5., -5.) * u_lengthScale;
+        vec3 lightDir = normalize(lightPosCameraSpace - posCameraSpace);
+        vec3 eyeDir = normalize(eyeCameraSpace - posCameraSpace);
+        
+        // NOTE: parameters swapped from comments.. which is correct?
+        float coloredBrightness = 1.2 * orenNayarDiffuse(eyeDir, lightDir, normalCameraSpace, .05, 1.0) + .3;
+        float whiteBrightness = .25 * specular(normalCameraSpace, lightDir, eyeDir, 12.);
+
+        vec4 lightColor = vec4(groundColor * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness, u_transparency);
+        outputF = lightColor;
+      }
+
+)"
+};
+
+
 // clang-format on
 
 } // namespace backend_openGL3_glfw

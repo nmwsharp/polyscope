@@ -349,14 +349,14 @@ bool Engine::bindSceneBuffer() {
 }
 
 void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
-  
+
   glm::vec4 currV = getCurrentViewport();
 
   // If the viewport extents are 0, don't do anything. This happens e.g. on Windows when the window is minimized.
   if (currV[2] == 0 || currV[3] == 0) {
     return;
   }
-  
+
   // compute downsampling rate
   float sampleX = texture->getSizeX() / currV[2];
   float sampleY = texture->getSizeY() / currV[3];
@@ -601,6 +601,39 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     loadDefaultMaterials();
     loadDefaultColorMaps();
   }
+}
+
+void Engine::addSlicePlane(std::string uniquePostfix) {
+
+  // NOTE: Unfortunately, the logic here and in slice_plane.cpp depends on the names constructed from the postfix being
+  // identical.
+
+  createSlicePlaneFliterRule(uniquePostfix);
+
+  // Add rules
+  std::vector<std::string> newRules{"GENERATE_WORLD_POS", "CULL_POS_FROM_WORLD", "SLICE_PLANE_CULL_" + uniquePostfix};
+  defaultRules_sceneObject.insert(defaultRules_sceneObject.end(), newRules.begin(), newRules.end());
+  defaultRules_pick.insert(defaultRules_pick.end(), newRules.begin(), newRules.end());
+
+  // Regenerate everything
+  polyscope::refresh();
+}
+
+void Engine::removeSlicePlane(std::string uniquePostfix) {
+
+  // Remove the rules we added
+  std::vector<std::string> newRules{"GENERATE_WORLD_POS", "CULL_POS_FROM_WORLD", "SLICE_PLANE_CULL_" + uniquePostfix};
+  for (std::string r : newRules) {
+    defaultRules_sceneObject.erase(std::remove(defaultRules_sceneObject.begin(), defaultRules_sceneObject.end(), r),
+                                   defaultRules_sceneObject.end());
+    defaultRules_pick.erase(std::remove(defaultRules_pick.begin(), defaultRules_pick.end(), r),
+                            defaultRules_pick.end());
+  }
+
+  // Don't bother undoing the createRule(), since it doesn't really hurt to leave it around
+
+  // Regenerate everything
+  polyscope::refresh();
 }
 
 std::vector<glm::vec3> Engine::screenTrianglesCoords() {

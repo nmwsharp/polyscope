@@ -269,6 +269,81 @@ const ShaderReplacementRule CHECKER_VALUE2COLOR (
     /* textures */ {}
 );
 
+
+const ShaderReplacementRule GENERATE_WORLD_POS (
+    /* rule name */ "GENERATE_WORLD_POS",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform mat4 u_invProjMatrix_worldPos; // weird names are to unique-ify because we have multiple....
+          uniform mat4 u_invViewMatrix_worldPos;
+          uniform vec4 u_viewport_worldPos;
+          vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
+        )"},
+      {"GLOBAL_FRAGMENT_FILTER", R"(
+        vec2 depthRange_worldPos = vec2(gl_DepthRange.near, gl_DepthRange.far);
+        vec4 fragCoord_worldPos = gl_FragCoord;
+        fragCoord_worldPos.z = depth;
+        vec4 worldPos4 = u_invViewMatrix_worldPos * vec4(fragmentViewPosition(u_viewport_worldPos, depthRange_worldPos, u_invProjMatrix_worldPos, fragCoord_worldPos), 1.);
+        vec3 worldPos = worldPos4.xyz / worldPos4.w;
+      )"}
+    },
+    /* uniforms */ {
+      {"u_invProjMatrix_worldPos", DataType::Matrix44Float},
+      {"u_invViewMatrix_worldPos", DataType::Matrix44Float},
+      {"u_viewport_worldPos", DataType::Vector4Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule CULL_POS_FROM_WORLD (
+    /* rule name */ "CULL_POS_FROM_WORLD",
+    { /* replacement sources */
+      {"GLOBAL_FRAGMENT_FILTER", R"(
+        vec3 cullPos = worldPos;
+      )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule CULL_POS_FROM_ATTR (
+    /* rule name */ "CULL_POS_FROM_ATTR",
+    { /* replacement sources */
+      {"GLOBAL_FRAGMENT_FILTER", R"(
+        vec3 cullPos = cullPosAttr;
+      )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix) {
+
+  std::string centerUniformName = "u_slicePlaneCenter_" + uniquePostfix;
+  std::string normalUniformName = "u_slicePlaneNormal_" + uniquePostfix;
+
+  // This takes what is otherwise a simple rule, and substitues uniquely named uniforms so that we can have multiple slice planes
+  ShaderReplacementRule slicePlaneRule (
+      /* rule name */ "SLICE_PLANE_CULL_" + uniquePostfix,
+      { /* replacement sources */
+        {"FRAG_DECLARATIONS", "uniform vec3 " + centerUniformName + "; uniform vec3 " + normalUniformName + ";"},
+        {"GLOBAL_FRAGMENT_FILTER", 
+         "if(dot(cullPos, " + normalUniformName + ") < dot( " + centerUniformName + " , " + normalUniformName + ")) { discard; }"}
+      },
+      /* uniforms */ {
+        {centerUniformName, DataType::Vector3Float},
+        {normalUniformName, DataType::Vector3Float},
+      },
+      /* attributes */ {},
+      /* textures */ {}
+  );
+
+  return slicePlaneRule;
+}
+
 // clang-format on
 
 } // namespace backend_openGL3_glfw

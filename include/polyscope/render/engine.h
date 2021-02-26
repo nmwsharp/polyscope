@@ -299,8 +299,6 @@ protected:
   unsigned int nPatchVertices;
 };
 
-// A few forward declarations for types that engine needs to touch
-class GroundPlane;
 
 class Engine {
 
@@ -417,6 +415,8 @@ public:
   TransparencyMode getTransparencyMode();
   bool transparencyEnabled();
   virtual void applyTransparencySettings() = 0;
+  void addSlicePlane(std::string uniquePostfix);
+  void removeSlicePlane(std::string uniquePostfix);
 
   // == Options
   BackgroundView background = BackgroundView::None;
@@ -475,6 +475,7 @@ protected:
   std::shared_ptr<TextureBuffer> loadMaterialTexture(float* data, int width, int height);
   void loadDefaultColorMap(std::string name);
   void loadDefaultColorMaps();
+  virtual void createSlicePlaneFliterRule(std::string name) = 0;
 
   // low-level interface for creating shader programs
   virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,

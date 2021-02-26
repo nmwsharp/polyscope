@@ -7,6 +7,7 @@
 #include "polyscope/structure.h"
 #include "polyscope/utilities.h"
 #include "polyscope/widget.h"
+#include "polyscope/slice_plane.h"
 
 #include "imgui.h"
 
@@ -51,8 +52,9 @@ extern std::tuple<glm::vec3, glm::vec3> boundingBox;
 // representative center for all registered structures
 extern glm::vec3 center;
 
-// a list of widgets in the scene
+// a list of widgets and other more specific doodads in the scene
 extern std::set<Widget*> widgets;
+extern std::vector<SlicePlane*> slicePlanes;
 
 // a callback function used to render a "user" gui
 extern std::function<void()> userCallback;

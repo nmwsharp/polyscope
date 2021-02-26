@@ -12,8 +12,8 @@
 // all the shaders
 #include "polyscope/render/opengl/shaders/common.h"
 #include "polyscope/render/opengl/shaders/cylinder_shaders.h"
-#include "polyscope/render/opengl/shaders/ground_plane_shaders.h"
 #include "polyscope/render/opengl/shaders/gizmo_shaders.h"
+#include "polyscope/render/opengl/shaders/ground_plane_shaders.h"
 #include "polyscope/render/opengl/shaders/histogram_shaders.h"
 #include "polyscope/render/opengl/shaders/lighting_shaders.h"
 #include "polyscope/render/opengl/shaders/ribbon_shaders.h"
@@ -2009,7 +2009,14 @@ std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& progra
 
   // Get the rules
   std::vector<ShaderReplacementRule> rules;
-  for (const std::string& ruleName : fullCustomRules) {
+  for (auto it = fullCustomRules.begin(); it < fullCustomRules.end(); it++) {
+    std::string& ruleName = *it;
+
+    // Only process each rule the first time it is seen
+    if (std::find(fullCustomRules.begin(), it, ruleName) != it) {
+      continue;
+    }
+
     if (registeredShaderRules.find(ruleName) == registeredShaderRules.end()) {
       throw std::runtime_error("No shader replacement rule with name [" + ruleName + "] registered.");
     }
@@ -2037,6 +2044,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registeredShaderPrograms.insert({"GROUND_PLANE_SHADOW", {{GROUND_PLANE_VERT_SHADER, GROUND_PLANE_SHADOW_FRAG_SHADER}, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"MAP_LIGHT", {{TEXTURE_DRAW_VERT_SHADER, MAP_LIGHT_FRAG_SHADER}, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"RIBBON", {{RIBBON_VERT_SHADER, RIBBON_GEOM_SHADER, RIBBON_FRAG_SHADER}, DrawMode::IndexedLineStripAdjacency}});
+  registeredShaderPrograms.insert({"SLICE_PLANE", {{SLICE_PLANE_VERT_SHADER, SLICE_PLANE_FRAG_SHADER}, DrawMode::Triangles}});
 
   registeredShaderPrograms.insert({"TEXTURE_DRAW_PLAIN", {{TEXTURE_DRAW_VERT_SHADER, PLAIN_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
   registeredShaderPrograms.insert({"TEXTURE_DRAW_DOT3", {{TEXTURE_DRAW_VERT_SHADER, DOT3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
@@ -2063,6 +2071,10 @@ void GLEngine::populateDefaultShadersAndRules() {
   registeredShaderRules.insert({"TRANSPARENCY_RESOLVE_SIMPLE", TRANSPARENCY_RESOLVE_SIMPLE});
   registeredShaderRules.insert({"TRANSPARENCY_PEEL_STRUCTURE", TRANSPARENCY_PEEL_STRUCTURE});
   registeredShaderRules.insert({"TRANSPARENCY_PEEL_GROUND", TRANSPARENCY_PEEL_GROUND});
+  
+  registeredShaderRules.insert({"GENERATE_WORLD_POS", GENERATE_WORLD_POS});
+  registeredShaderRules.insert({"CULL_POS_FROM_WORLD", CULL_POS_FROM_WORLD});
+  registeredShaderRules.insert({"CULL_POS_FROM_ATTR", CULL_POS_FROM_ATTR});
 
   // Lighting and shading things
   registeredShaderRules.insert({"LIGHT_MATCAP", LIGHT_MATCAP});
@@ -2106,6 +2118,10 @@ void GLEngine::populateDefaultShadersAndRules() {
 
   // clang-format on
 };
+
+void GLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
+  registeredShaderRules.insert({"SLICE_PLANE_CULL_" + uniquePostfix, generateSlicePlaneRule(uniquePostfix)});
+}
 
 
 } // namespace backend_openGL3_glfw

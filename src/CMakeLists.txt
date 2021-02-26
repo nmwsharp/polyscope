@@ -133,6 +133,7 @@ SET(SRCS
   persistent_value.cpp
   color_management.cpp
   transformation_gizmo.cpp
+  slice_plane.cpp
 
   ## Structures
 

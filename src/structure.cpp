@@ -61,7 +61,8 @@ void Structure::buildUI() {
         if (ImGui::MenuItem("Center")) centerBoundingBox();
         if (ImGui::MenuItem("Unit Scale")) rescaleToUnit();
         if (ImGui::MenuItem("Reset")) resetTransform();
-        if (ImGui::MenuItem("Show Gizmo", NULL, &transformGizmo.enabled.get())) transformGizmo.enabled.manuallyChanged();
+        if (ImGui::MenuItem("Show Gizmo", NULL, &transformGizmo.enabled.get()))
+          transformGizmo.enabled.manuallyChanged();
         ImGui::EndMenu();
       }
 
@@ -160,6 +161,28 @@ void Structure::setTransformUniforms(render::ShaderProgram& p) {
     if (render::engine->transparencyEnabled() && p.hasTexture("t_minDepth") && !p.textureIsSet("t_minDepth")) {
       p.setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());
     }
+  }
+
+  // Respect any slice planes
+  for (SlicePlane* s : state::slicePlanes) {
+    s->setSceneObjectUniforms(p);
+  }
+
+  // TODO this chain if "if"s is not great. Set up some system in the render engine to conditionally set these? Maybe a
+  // list of lambdas? Ugh.
+  if (p.hasUniform("u_viewport_worldPos")) {
+    glm::vec4 viewport = render::engine->getCurrentViewport();
+    p.setUniform("u_viewport_worldPos", viewport);
+  }
+  if (p.hasUniform("u_invProjMatrix_worldPos")) {
+    glm::mat4 P = view::getCameraPerspectiveMatrix();
+    glm::mat4 Pinv = glm::inverse(P);
+    p.setUniform("u_invProjMatrix_worldPos", glm::value_ptr(Pinv));
+  }
+  if (p.hasUniform("u_invViewMatrix_worldPos")) {
+    glm::mat4 V = view::getCameraViewMatrix();
+    glm::mat4 Vinv = glm::inverse(V);
+    p.setUniform("u_invViewMatrix_worldPos", glm::value_ptr(Vinv));
   }
 }
 
