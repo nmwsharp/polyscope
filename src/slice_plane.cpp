@@ -7,30 +7,56 @@ namespace polyscope {
 // NOTE: Unfortunately, the logic here and in the engine depends on the names constructed from the postfix being
 // identical.
 
-SlicePlane* addSlicePlane() {
-  size_t nPlanes = state::slicePlanes.size();
-  std::string postfix = std::to_string(nPlanes);
+namespace {
+// storage for slice planes "owned" by the scene itself
+std::vector<std::unique_ptr<SlicePlane>> sceneSlicePlanes;
+} // namespace
+
+SlicePlane* addSceneSlicePlane() {
+  size_t nPlanes = sceneSlicePlanes.size();
   std::string newName = "Scene Slice Plane " + std::to_string(nPlanes);
-  render::engine->addSlicePlane(postfix);
-  return new SlicePlane(newName, postfix);
+  sceneSlicePlanes.emplace_back(new SlicePlane(newName));
+  return sceneSlicePlanes.back().get();
 }
 
-void buildSlicePlaneGUI() {}
+void removeLastSceneSlicePlane() {
+  if (sceneSlicePlanes.empty()) return;
+  sceneSlicePlanes.pop_back();
+}
 
-SlicePlane::SlicePlane(std::string name_, std::string postfix_)
-    : name(name_), postfix(postfix_), enabled("SlicePlane#" + name + "#enabled", true),
-      show("SlicePlane#" + name + "#show", true),
+void buildSlicePlaneGUI() {
+
+  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  if (ImGui::TreeNode("Slice Planes")) {
+    if (ImGui::Button("Add plane")) {
+      addSceneSlicePlane();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Remove plane")) {
+      removeLastSceneSlicePlane();
+    }
+    for (SlicePlane* s : state::slicePlanes) {
+      s->buildGUI();
+    }
+    ImGui::TreePop();
+  }
+}
+
+SlicePlane::SlicePlane(std::string name_)
+    : name(name_), postfix(std::to_string(state::slicePlanes.size())), active("SlicePlane#" + name + "#active", true),
+      drawPlane("SlicePlane#" + name + "#drawPlane", true),
       objectTransform("SlicePlane#" + name + "#object_transform", glm::mat4(1.0)),
-      transparency("SlicePlane#" + name + "#transparency", 0.3),
-      transformGizmo("SlicePlane#" + name + "#transform_gizmo", objectTransform.get(), &objectTransform)
-
-{
+      color("SlicePlane#" + name + "#color", getNextUniqueColor()),
+      transparency("SlicePlane#" + name + "#transparency", 0.5),
+      transformGizmo("SlicePlane#" + name + "#transform_gizmo", objectTransform.get(), &objectTransform) {
   state::slicePlanes.push_back(this);
+  render::engine->addSlicePlane(postfix);
   transformGizmo.enabled = true;
   prepare();
 }
 
 SlicePlane::~SlicePlane() {
+  render::engine->removeSlicePlane(postfix);
   auto pos = std::find(state::slicePlanes.begin(), state::slicePlanes.end(), this);
   if (pos == state::slicePlanes.end()) return;
   state::slicePlanes.erase(pos);
@@ -60,7 +86,7 @@ void SlicePlane::prepare() {
 }
 
 void SlicePlane::draw() {
-  if (!enabled.get() || !show.get()) return;
+  if (!drawPlane.get()) return;
 
   // Set uniforms
   glm::mat4 viewMat = view::getCameraViewMatrix();
@@ -70,6 +96,7 @@ void SlicePlane::draw() {
 
   planeProgram->setUniform("u_objectMatrix", glm::value_ptr(objectTransform.get()));
   planeProgram->setUniform("u_lengthScale", state::lengthScale);
+  planeProgram->setUniform("u_color", color.get());
   planeProgram->setUniform("u_transparency", transparency.get());
 
   // glm::vec3 center{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
@@ -85,12 +112,14 @@ void SlicePlane::buildGUI() {
   ImGui::PushID(name.c_str());
 
   ImGui::TextUnformatted(name.c_str());
-  if (ImGui::Checkbox("enabled", &enabled.get())) enabled.manuallyChanged();
+  ImGui::Indent(16.);
+  if (ImGui::Checkbox("active", &active.get())) active.manuallyChanged();
   ImGui::SameLine();
-  if (ImGui::Checkbox("draw plane", &show.get())) {
-    show.manuallyChanged();
-    transformGizmo.enabled = show.get();
+  if (ImGui::Checkbox("draw plane", &drawPlane.get())) {
+    drawPlane.manuallyChanged();
+    transformGizmo.enabled = drawPlane.get();
   }
+  ImGui::Unindent(16.);
 
   ImGui::PopID();
 }
@@ -101,7 +130,7 @@ void SlicePlane::setSceneObjectUniforms(render::ShaderProgram& p) {
 }
 
 glm::vec3 SlicePlane::getCenter() {
-  if (enabled.get()) {
+  if (active.get()) {
     glm::vec3 center{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
     return center;
   } else {
@@ -111,7 +140,7 @@ glm::vec3 SlicePlane::getCenter() {
 }
 
 glm::vec3 SlicePlane::getNormal() {
-  if (enabled.get()) {
+  if (active.get()) {
     glm::vec3 normal{objectTransform.get()[0][0], objectTransform.get()[0][1], objectTransform.get()[0][2]};
     normal = glm::normalize(normal);
     return normal;
@@ -119,6 +148,24 @@ glm::vec3 SlicePlane::getNormal() {
     // Matched with center so tests always pass when disabled
     return glm::vec3{-1., 0., 0.};
   }
+}
+
+bool SlicePlane::getActive() { return active.get(); }
+void SlicePlane::setActive(bool newVal) {
+  active = newVal;
+  polyscope::requestRedraw();
+}
+
+bool SlicePlane::getDrawPlane() { return drawPlane.get(); }
+void SlicePlane::setDrawPlane(bool newVal) {
+  drawPlane = newVal;
+  polyscope::requestRedraw();
+}
+
+glm::mat4 SlicePlane::getTransform() { return objectTransform.get(); }
+void SlicePlane::setTransform(glm::mat4 newTransform) {
+  objectTransform = newTransform;
+  polyscope::requestRedraw();
 }
 
 } // namespace polyscope

@@ -621,13 +621,19 @@ void Engine::addSlicePlane(std::string uniquePostfix) {
 
 void Engine::removeSlicePlane(std::string uniquePostfix) {
 
-  // Remove the rules we added
+  // Remove the (last occurence of the) rules we added
   std::vector<std::string> newRules{"GENERATE_WORLD_POS", "CULL_POS_FROM_WORLD", "SLICE_PLANE_CULL_" + uniquePostfix};
+  auto deleteLast = [&](std::vector<std::string>& vec, std::string target) {
+    for (size_t i = vec.size(); i > 0; i--) {
+      if (vec[i - 1] == target) {
+        vec.erase(vec.begin() + (i - 1));
+        return;
+      }
+    }
+  };
   for (std::string r : newRules) {
-    defaultRules_sceneObject.erase(std::remove(defaultRules_sceneObject.begin(), defaultRules_sceneObject.end(), r),
-                                   defaultRules_sceneObject.end());
-    defaultRules_pick.erase(std::remove(defaultRules_pick.begin(), defaultRules_pick.end(), r),
-                            defaultRules_pick.end());
+    deleteLast(defaultRules_sceneObject, r);
+    deleteLast(defaultRules_pick, r);
   }
 
   // Don't bother undoing the createRule(), since it doesn't really hurt to leave it around

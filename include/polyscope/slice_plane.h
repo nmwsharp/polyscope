@@ -12,7 +12,9 @@ class SlicePlane {
 
 public:
   // == Constructors
-  SlicePlane(std::string name, std::string postfix);
+
+  // Name and postfix should both be unique
+  SlicePlane(std::string name);
   ~SlicePlane();
 
   // No copy constructor/assignment
@@ -24,19 +26,31 @@ public:
 
   void setSceneObjectUniforms(render::ShaderProgram& p);
 
+  // == Some getters and setters
+ 
+  bool getActive();
+  void setActive(bool newVal);
+  
+  bool getDrawPlane();
+  void setDrawPlane(bool newVal);
+
+  glm::mat4 getTransform();
+  void setTransform(glm::mat4 newTransform);
+
 protected:
   const std::string name;
   const std::string postfix;
 
   // = State
-  PersistentValue<bool> enabled;
-  PersistentValue<bool> show;
+  PersistentValue<bool> active; // is it actually slicing?
+  PersistentValue<bool> drawPlane;   // do we draw the plane onscreen?
   PersistentValue<glm::mat4> objectTransform;
+  PersistentValue<glm::vec3> color;
   PersistentValue<float> transparency;
 
   // Widget that wraps the transform
   TransformationGizmo transformGizmo;
-  
+
   std::shared_ptr<render::ShaderProgram> planeProgram;
 
   // Helpers
@@ -45,7 +59,8 @@ protected:
   glm::vec3 getNormal();
 };
 
+SlicePlane* addSceneSlicePlane();
+void removeLastSceneSlicePlane();
 void buildSlicePlaneGUI();
-SlicePlane* addSlicePlane();
 
 } // namespace polyscope

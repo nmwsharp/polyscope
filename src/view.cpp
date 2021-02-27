@@ -622,19 +622,7 @@ void buildViewGui() {
     }
 
 
-    ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-    if (ImGui::TreeNode("Slice Planes")) {
-      if (ImGui::Button("Add plane")) {
-        addSlicePlane();
-      }
-      if (ImGui::Button("Remove plane")) {
-        polyscope::warning("TODO");
-      }
-      for (SlicePlane* s : state::slicePlanes) {
-        s->buildGUI();
-      }
-      ImGui::TreePop();
-    }
+    buildSlicePlaneGUI();
 
     ImGui::PopItemWidth();
     ImGui::TreePop();

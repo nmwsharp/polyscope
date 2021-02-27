@@ -204,6 +204,7 @@ const ShaderStageSpecification SLICE_PLANE_FRAG_SHADER= {
       {"u_viewMatrix", DataType::Matrix44Float},
       {"u_lengthScale", DataType::Float},
       {"u_transparency", DataType::Float},
+      {"u_color", DataType::Vector3Float},
     }, 
 
     // attributes
@@ -223,6 +224,7 @@ R"(
       uniform float u_lengthScale;
       uniform float u_cameraHeight;
       uniform float u_transparency;
+      uniform vec3 u_color;
       in vec4 PositionWorldHomog;
       layout(location = 0) out vec4 outputF;
         
@@ -247,8 +249,8 @@ R"(
         // Checker stripes
         float modDist = min(min(mod(coord2D.x, 1.0), mod(coord2D.y, 1.0)), min(mod(-coord2D.x, 1.0), mod(-coord2D.y, 1.0)));
         float stripeBlendFac = smoothstep(0.005, .02, modDist);
-        vec3 baseColor = vec3(0.941, 0.578, 0.304);
-        vec3 gridColor = vec3(0.97, 0.87, 0.97);
+        vec3 baseColor = u_color;
+        vec3 gridColor = vec3(0.97, 0.97, 0.97);
         vec3 groundColor = mix(gridColor, baseColor, stripeBlendFac);
 
         // Lighting stuff
