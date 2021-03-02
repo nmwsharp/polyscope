@@ -725,6 +725,7 @@ TEST_F(PolyscopeTest, TransparencyTest) {
 }
 
 // Do some slice plane stuff
+/*
 TEST_F(PolyscopeTest, SlicePlaneTest) {
 
   // Surface mesh
@@ -767,3 +768,4 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
 
   polyscope::removeAllStructures();
 }
+*/
