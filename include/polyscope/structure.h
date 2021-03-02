@@ -80,6 +80,9 @@ public:
   Structure* setTransparency(double newVal); // also enables transparency if <1 and transparency is not enabled
   double getTransparency();
 
+  void setIgnoreSlicePlane(std::string name, bool newValue);
+  bool getIgnoreSlicePlane(std::string name);
+
 protected:
   // = State
   PersistentValue<bool> enabled;
@@ -91,6 +94,8 @@ protected:
 
   // Widget that wraps the transform
   TransformationGizmo transformGizmo;
+  
+  PersistentValue<std::vector<std::string>> ignoredSlicePlaneNames;
 };
 
 

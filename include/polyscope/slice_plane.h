@@ -24,13 +24,18 @@ public:
   void buildGUI();
   void draw();
 
-  void setSceneObjectUniforms(render::ShaderProgram& p);
+  void setSceneObjectUniforms(render::ShaderProgram& p,
+                              bool alwaysPass = false); // if alwaysPass, fake values are given so the plane does
+                                                        // nothing (regardless of this plane's active setting)
+
+  const std::string name;
+  const std::string postfix;
 
   // == Some getters and setters
- 
+
   bool getActive();
   void setActive(bool newVal);
-  
+
   bool getDrawPlane();
   void setDrawPlane(bool newVal);
 
@@ -38,12 +43,9 @@ public:
   void setTransform(glm::mat4 newTransform);
 
 protected:
-  const std::string name;
-  const std::string postfix;
-
   // = State
-  PersistentValue<bool> active; // is it actually slicing?
-  PersistentValue<bool> drawPlane;   // do we draw the plane onscreen?
+  PersistentValue<bool> active;    // is it actually slicing?
+  PersistentValue<bool> drawPlane; // do we draw the plane onscreen?
   PersistentValue<glm::mat4> objectTransform;
   PersistentValue<glm::vec3> color;
   PersistentValue<float> transparency;

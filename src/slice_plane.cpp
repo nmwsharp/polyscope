@@ -124,9 +124,19 @@ void SlicePlane::buildGUI() {
   ImGui::PopID();
 }
 
-void SlicePlane::setSceneObjectUniforms(render::ShaderProgram& p) {
-  p.setUniform("u_slicePlaneCenter_" + postfix, getCenter());
-  p.setUniform("u_slicePlaneNormal_" + postfix, getNormal());
+void SlicePlane::setSceneObjectUniforms(render::ShaderProgram& p, bool alwaysPass) {
+  glm::vec3 normal, center;
+
+  if (alwaysPass) {
+    normal = glm::vec3{-1., 0., 0.};
+    center = glm::vec3{std::numeric_limits<float>::infinity(), 0., 0.};
+  } else {
+    normal = getNormal();
+    center = getCenter();
+  }
+
+  p.setUniform("u_slicePlaneNormal_" + postfix, normal);
+  p.setUniform("u_slicePlaneCenter_" + postfix, center);
 }
 
 glm::vec3 SlicePlane::getCenter() {

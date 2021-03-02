@@ -727,11 +727,10 @@ TEST_F(PolyscopeTest, TransparencyTest) {
 // Do some slice plane stuff
 TEST_F(PolyscopeTest, SlicePlaneTest) {
 
-  { // Surface mesh
-    auto psMesh = registerTriangleMesh();
-    std::vector<double> vScalar(psMesh->nVertices(), 7.);
-    auto q1 = psMesh->addVertexDistanceQuantity("distance", vScalar);
-  }
+  // Surface mesh
+  auto psMesh = registerTriangleMesh();
+  std::vector<double> vScalar(psMesh->nVertices(), 7.);
+  auto q1 = psMesh->addVertexDistanceQuantity("distance", vScalar);
 
   { // Point cloud
     auto psPoints = registerPointCloud();
@@ -757,9 +756,13 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
   polyscope::SlicePlane* p = polyscope::addSceneSlicePlane();
   p->setTransform(glm::translate(p->getTransform(), glm::vec3{-1., 0., 0.}));
   polyscope::show(3);
-  
+
   // test removal
   polyscope::removeLastSceneSlicePlane();
+  polyscope::show(3);
+
+  // make one structure ignore the plane
+  psMesh->setIgnoreSlicePlane(polyscope::state::slicePlanes[0]->name, true);
   polyscope::show(3);
 
   polyscope::removeAllStructures();

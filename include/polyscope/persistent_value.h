@@ -110,19 +110,21 @@ extern PersistentCache<glm::vec3> persistentCache_glmvec3;
 extern PersistentCache<glm::mat4> persistentCache_glmmat4;
 extern PersistentCache<ScaledValue<double>> persistentCache_scaleddouble;
 extern PersistentCache<ScaledValue<float>> persistentCache_scaledfloat;
+extern PersistentCache<std::vector<std::string>> persistentCache_vectorstring;
 extern PersistentCache<ParamVizStyle> persistentCache_paramVizStyle;
 extern PersistentCache<BackfacePolicy> persistentCache_backfacePolicy;
 
-template<> inline PersistentCache<double>&                  getPersistentCacheRef<double>()                 { return persistentCache_double; }
-template<> inline PersistentCache<float>&                   getPersistentCacheRef<float>()                  { return persistentCache_float; }
-template<> inline PersistentCache<bool>&                    getPersistentCacheRef<bool>()                   { return persistentCache_bool; }
-template<> inline PersistentCache<std::string>&             getPersistentCacheRef<std::string>()            { return persistentCache_string; }
-template<> inline PersistentCache<glm::vec3>&               getPersistentCacheRef<glm::vec3>()              { return persistentCache_glmvec3; }
-template<> inline PersistentCache<glm::mat4>&               getPersistentCacheRef<glm::mat4>()              { return persistentCache_glmmat4; }
-template<> inline PersistentCache<ScaledValue<double>>&     getPersistentCacheRef<ScaledValue<double>>()    { return persistentCache_scaleddouble; }
-template<> inline PersistentCache<ScaledValue<float>>&      getPersistentCacheRef<ScaledValue<float>>()     { return persistentCache_scaledfloat; }
-template<> inline PersistentCache<ParamVizStyle>&           getPersistentCacheRef<ParamVizStyle>()          { return persistentCache_paramVizStyle; }
-template<> inline PersistentCache<BackfacePolicy>&          getPersistentCacheRef<BackfacePolicy>()         { return persistentCache_backfacePolicy; }
+template<> inline PersistentCache<double>&                   getPersistentCacheRef<double>()                   { return persistentCache_double; }
+template<> inline PersistentCache<float>&                    getPersistentCacheRef<float>()                    { return persistentCache_float; }
+template<> inline PersistentCache<bool>&                     getPersistentCacheRef<bool>()                     { return persistentCache_bool; }
+template<> inline PersistentCache<std::string>&              getPersistentCacheRef<std::string>()              { return persistentCache_string; }
+template<> inline PersistentCache<glm::vec3>&                getPersistentCacheRef<glm::vec3>()                { return persistentCache_glmvec3; }
+template<> inline PersistentCache<glm::mat4>&                getPersistentCacheRef<glm::mat4>()                { return persistentCache_glmmat4; }
+template<> inline PersistentCache<ScaledValue<double>>&      getPersistentCacheRef<ScaledValue<double>>()      { return persistentCache_scaleddouble; }
+template<> inline PersistentCache<ScaledValue<float>>&       getPersistentCacheRef<ScaledValue<float>>()       { return persistentCache_scaledfloat; }
+template<> inline PersistentCache<std::vector<std::string>>& getPersistentCacheRef<std::vector<std::string>>() { return persistentCache_vectorstring; }
+template<> inline PersistentCache<ParamVizStyle>&            getPersistentCacheRef<ParamVizStyle>()            { return persistentCache_paramVizStyle; }
+template<> inline PersistentCache<BackfacePolicy>&           getPersistentCacheRef<BackfacePolicy>()           { return persistentCache_backfacePolicy; }
 }
 // clang-format on
 
