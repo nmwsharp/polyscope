@@ -21,6 +21,7 @@ SlicePlane* addSceneSlicePlane() {
 
 void removeLastSceneSlicePlane() {
   if (sceneSlicePlanes.empty()) return;
+  sceneSlicePlanes.back()->deregister();
   sceneSlicePlanes.pop_back();
 }
 
@@ -55,7 +56,9 @@ SlicePlane::SlicePlane(std::string name_)
   prepare();
 }
 
-SlicePlane::~SlicePlane() {
+SlicePlane::~SlicePlane() {}
+
+void SlicePlane::deregister() {
   render::engine->removeSlicePlane(postfix);
   auto pos = std::find(state::slicePlanes.begin(), state::slicePlanes.end(), this);
   if (pos == state::slicePlanes.end()) return;

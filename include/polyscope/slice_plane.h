@@ -17,6 +17,10 @@ public:
   SlicePlane(std::string name);
   ~SlicePlane();
 
+  void deregister(); // This is essentially a destructor, but we invoke it manually to avoid dealing with destructor
+                     // order and static variables / singletons. Call it when deleteing a slice plane, but not in the
+                     // midst of program exit. ONEDAY: handle global lists & registration better.
+
   // No copy constructor/assignment
   SlicePlane(const SlicePlane&) = delete;
   SlicePlane& operator=(const SlicePlane&) = delete;
