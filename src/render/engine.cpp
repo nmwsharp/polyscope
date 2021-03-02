@@ -639,7 +639,7 @@ void Engine::removeSlicePlane(std::string uniquePostfix) {
   // Don't bother undoing the createRule(), since it doesn't really hurt to leave it around
 
   // Regenerate everything
-  //polyscope::refresh(); TODO
+  polyscope::refresh();
 }
 
 std::vector<glm::vec3> Engine::screenTrianglesCoords() {
