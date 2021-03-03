@@ -112,6 +112,7 @@ R"(
            
            // Lighting
            vec3 shadeNormal = a_normalToFrag;
+	       albedoColor.x += 1e-6 * shadeNormal.x; // silly hack to stop shadeNormal from getting optimized out
 
            // Write output
            outputF = vec4(albedoColor, alphaOut);
