@@ -765,5 +765,8 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
   psMesh->setIgnoreSlicePlane(polyscope::state::slicePlanes[0]->name, true);
   polyscope::show(3);
 
+  // remove the last plane so we don't leave it around for future tests
+  polyscope::removeLastSceneSlicePlane();
+
   polyscope::removeAllStructures();
 }
