@@ -9,18 +9,23 @@ namespace polyscope {
 
 namespace {
 // storage for slice planes "owned" by the scene itself
-std::vector<std::unique_ptr<SlicePlane>> sceneSlicePlanes;
+// note: it would be nice for these to be unique_ptr<>, but unfortunately we fall in to a bad design trap---since
+// destruction order is essentially arbitrary, these might get destructed after other Polyscope data, causing faults
+// when the destructor executes. The lame solution is to just store as raw pointers, it only makes a difference at
+// program exit.
+std::vector<SlicePlane*> sceneSlicePlanes;
 } // namespace
 
 SlicePlane* addSceneSlicePlane() {
   size_t nPlanes = sceneSlicePlanes.size();
   std::string newName = "Scene Slice Plane " + std::to_string(nPlanes);
   sceneSlicePlanes.emplace_back(new SlicePlane(newName));
-  return sceneSlicePlanes.back().get();
+  return sceneSlicePlanes.back();
 }
 
 void removeLastSceneSlicePlane() {
   if (sceneSlicePlanes.empty()) return;
+  delete sceneSlicePlanes.back();
   sceneSlicePlanes.pop_back();
 }
 
@@ -61,6 +66,7 @@ SlicePlane::~SlicePlane() {
   if (pos == state::slicePlanes.end()) return;
   state::slicePlanes.erase(pos);
 }
+
 
 void SlicePlane::prepare() {
 

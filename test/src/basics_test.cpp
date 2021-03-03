@@ -175,16 +175,16 @@ TEST_F(PolyscopeTest, PointCloudScalarRadius) {
   auto q1 = psPoints->addScalarQuantity("vScalar", vScalar);
   auto q2 = psPoints->addScalarQuantity("vScalar2", vScalar2);
   q1->setEnabled(true);
-  
+
   psPoints->setPointRadiusQuantity(q1);
   polyscope::show(3);
-  
+
   psPoints->setPointRadiusQuantity("vScalar2");
   polyscope::show(3);
-  
+
   psPoints->setPointRadiusQuantity("vScalar2", false); // no autoscaling
   polyscope::show(3);
-  
+
   psPoints->clearPointRadiusQuantity();
   polyscope::show(3);
 
@@ -764,6 +764,9 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
   // make one structure ignore the plane
   psMesh->setIgnoreSlicePlane(polyscope::state::slicePlanes[0]->name, true);
   polyscope::show(3);
+
+  // remove the last plane so we don't leave it around for future tests
+  polyscope::removeLastSceneSlicePlane();
 
   polyscope::removeAllStructures();
 }
