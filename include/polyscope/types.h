@@ -7,6 +7,12 @@
 namespace polyscope {
 enum class BackgroundView { None = 0 };
 enum class TransparencyMode { None = 0, Simple, Pretty };
-enum class GroundPlaneMode {None, Tile, TileReflection, ShadowOnly };
-enum class BackfacePolicy {Identical, Different, Cull};
+enum class GroundPlaneMode { None, Tile, TileReflection, ShadowOnly };
+enum class BackfacePolicy { Identical, Different, Cull };
+enum class ShadeStyle { FLAT = 0, SMOOTH };
+
+enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE, CORNER };
+enum class VolumeMeshElement { VERTEX = 0, EDGE, FACE, CELL };
+enum class VolumeCellType { TET = 0, HEX };
+
 }; // namespace polyscope

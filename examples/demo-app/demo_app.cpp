@@ -4,10 +4,11 @@
 #include "polyscope/messages.h"
 
 #include "polyscope/curve_network.h"
+#include "polyscope/file_helpers.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_io.h"
-#include "polyscope/file_helpers.h"
+#include "polyscope/volume_mesh.h"
 
 #include <iostream>
 #include <unordered_set>
@@ -15,6 +16,8 @@
 
 #include "args/args.hxx"
 #include "json/json.hpp"
+
+#include "simple_dot_mesh_parser.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/string_cast.hpp"
@@ -425,6 +428,17 @@ polyscope::warning("Some problems come in groups", "detail = " + std::to_string(
   */
 }
 
+void processFileDotMesh(std::string filename) {
+  std::vector<std::array<double, 3>> verts;
+  std::vector<std::array<int64_t, 8>> cells;
+  parseVolumeDotMesh(filename, verts, cells);
+  std::string niceName = polyscope::guessNiceNameFromPath(filename);
+
+  std::cout << "parsed mesh with " << verts.size() << " verts and " << cells.size() << " cells\n";
+
+  polyscope::registerVolumeMesh(niceName, verts, cells);
+}
+
 void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& points) {
 
 
@@ -460,10 +474,13 @@ void processFile(string filename) {
   // Dispatch to correct varient
   if (endsWith(filename, ".obj")) {
     processFileOBJ(filename);
+  } else if (endsWith(filename, ".mesh")) {
+    processFileDotMesh(filename);
   } else {
     cerr << "Unrecognized file type for " << filename << endl;
   }
 }
+
 
 void callback() {
   static int numPoints = 2000;
