@@ -10,8 +10,8 @@
 #include "polyscope/render/engine.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
-#include "polyscope/surface_mesh_enums.h"
 #include "polyscope/surface_mesh_quantity.h"
+#include "polyscope/types.h"
 
 // Alllll the quantities
 #include "polyscope/surface_color_quantity.h"

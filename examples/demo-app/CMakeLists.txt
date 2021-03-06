@@ -63,9 +63,11 @@ add_subdirectory(../../ "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 add_executable(
         polyscopedemo
         demo_app.cpp
+        simple_dot_mesh_parser.cpp
         )
 
 target_include_directories(polyscopedemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../deps/args")
 target_include_directories(polyscopedemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../deps/json/include")
+target_include_directories(polyscopedemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(polyscopedemo polyscope)
