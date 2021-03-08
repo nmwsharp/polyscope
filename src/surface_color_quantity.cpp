@@ -18,8 +18,8 @@ void SurfaceColorQuantity::draw() {
   }
 
   // Set uniforms
-  parent.setTransformUniforms(*program);
   parent.setStructureUniforms(*program);
+  parent.setSurfaceMeshUniforms(*program);
 
   program->draw();
 }
@@ -36,7 +36,7 @@ SurfaceVertexColorQuantity::SurfaceVertexColorQuantity(std::string name, std::ve
 
 void SurfaceVertexColorQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_COLOR", "SHADE_COLOR"}));
+  program = render::engine->requestShader("MESH", parent.addSurfaceMeshRules({"MESH_PROPAGATE_COLOR", "SHADE_COLOR"}));
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -98,7 +98,7 @@ SurfaceFaceColorQuantity::SurfaceFaceColorQuantity(std::string name, std::vector
 
 void SurfaceFaceColorQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_COLOR", "SHADE_COLOR"}));
+  program = render::engine->requestShader("MESH", parent.addSurfaceMeshRules({"MESH_PROPAGATE_COLOR", "SHADE_COLOR"}));
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);

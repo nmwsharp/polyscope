@@ -22,8 +22,7 @@ PointCloudParameterizationQuantity::PointCloudParameterizationQuantity(std::stri
       checkColor2(uniquePrefix() + "#checkColor2", glm::vec3(.976, .856, .885)),
       gridLineColor(uniquePrefix() + "#gridLineColor", render::RGB_WHITE),
       gridBackgroundColor(uniquePrefix() + "#gridBackgroundColor", render::RGB_PINK),
-      altDarkness(uniquePrefix() + "#altDarkness", 0.5),
-      cMap(uniquePrefix() + "#cMap", "phase")
+      altDarkness(uniquePrefix() + "#altDarkness", 0.5), cMap(uniquePrefix() + "#cMap", "phase")
 
 {}
 
@@ -36,7 +35,7 @@ void PointCloudParameterizationQuantity::draw() {
   }
 
   // Set uniforms
-  parent.setTransformUniforms(*program);
+  parent.setStructureUniforms(*program);
   setProgramUniforms(*program);
   parent.setPointCloudUniforms(*program);
 
@@ -48,31 +47,23 @@ void PointCloudParameterizationQuantity::createProgram() {
 
   switch (getStyle()) {
   case ParamVizStyle::CHECKER:
-    // program = render::engine->generateShaderProgram(
-    //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
     program = render::engine->requestShader(
-        "RAYCAST_SPHERE", parent.addStructureRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_CHECKER_VALUE2"}));
+        "RAYCAST_SPHERE", parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_CHECKER_VALUE2"}));
     break;
   case ParamVizStyle::GRID:
-    // program = render::engine->generateShaderProgram(
-    //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_GRID_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program = render::engine->requestShader("RAYCAST_SPHERE",
-                                            parent.addStructureRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}));
+    program = render::engine->requestShader(
+        "RAYCAST_SPHERE", parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}));
     break;
   case ParamVizStyle::LOCAL_CHECK:
-    // program = render::engine->generateShaderProgram(
-    //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
     program = render::engine->requestShader(
         "RAYCAST_SPHERE",
-        parent.addStructureRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"}));
+        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"}));
     program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   case ParamVizStyle::LOCAL_RAD:
-    // program = render::engine->generateShaderProgram(
-    //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
     program = render::engine->requestShader(
-        "RAYCAST_SPHERE", parent.addStructureRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2",
-                                                    "SHADEVALUE_MAG_VALUE2", "ISOLINE_STRIPE_VALUECOLOR"}));
+        "RAYCAST_SPHERE", parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2",
+                                                     "SHADEVALUE_MAG_VALUE2", "ISOLINE_STRIPE_VALUECOLOR"}));
     program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   }

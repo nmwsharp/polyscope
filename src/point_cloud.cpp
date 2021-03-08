@@ -28,8 +28,9 @@ PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
     : QuantityStructure<PointCloud>(name, structureTypeName), points(std::move(points_)),
       pointColor(uniquePrefix() + "#pointColor", getNextUniqueColor()),
       pointRadius(uniquePrefix() + "#pointRadius", relativeValue(0.005)),
-      material(uniquePrefix() + "#material", "clay") {}
-
+      material(uniquePrefix() + "#material", "clay") {
+  cullWholeElements.setPassive(true);
+}
 
 // Helper to set uniforms
 void PointCloud::setPointCloudUniforms(render::ShaderProgram& p) {
@@ -61,7 +62,7 @@ void PointCloud::draw() {
     }
 
     // Set program uniforms
-    setTransformUniforms(*program);
+    setStructureUniforms(*program);
     setPointCloudUniforms(*program);
     program->setUniform("u_baseColor", pointColor.get());
 
@@ -86,7 +87,7 @@ void PointCloud::drawPick() {
   }
 
   // Set uniforms
-  setTransformUniforms(*pickProgram);
+  setStructureUniforms(*pickProgram);
   setPointCloudUniforms(*pickProgram);
 
   pickProgram->draw();
@@ -98,7 +99,7 @@ void PointCloud::prepare() {
     return;
   }
 
-  program = render::engine->requestShader("RAYCAST_SPHERE", addStructureRules({"SHADE_BASECOLOR"}));
+  program = render::engine->requestShader("RAYCAST_SPHERE", addPointCloudRules({"SHADE_BASECOLOR"}));
   render::engine->setMaterial(*program, material.get());
 
   // Fill out the geometry data for the program
@@ -112,7 +113,7 @@ void PointCloud::preparePick() {
   size_t pickStart = pick::requestPickBufferRange(this, pickCount);
 
   // Create a new pick program
-  pickProgram = render::engine->requestShader("RAYCAST_SPHERE", addStructureRules({"SPHERE_PROPAGATE_COLOR"}),
+  pickProgram = render::engine->requestShader("RAYCAST_SPHERE", addPointCloudRules({"SPHERE_PROPAGATE_COLOR"}, true),
                                               render::ShaderReplacementDefaults::Pick);
 
   // Fill color buffer with packed point indices
@@ -128,9 +129,15 @@ void PointCloud::preparePick() {
 }
 
 
-std::vector<std::string> PointCloud::addStructureRules(std::vector<std::string> initRules) {
-  if (pointRadiusQuantityName != "") {
-    initRules.push_back("SPHERE_VARIABLE_SIZE");
+std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud) {
+  initRules = addStructureRules(initRules);
+  if (withPointCloud) {
+    if (pointRadiusQuantityName != "") {
+      initRules.push_back("SPHERE_VARIABLE_SIZE");
+    }
+    if (wantsCullPosition()) {
+      initRules.push_back("SPHERE_CULLPOS_FROM_CENTER");
+    }
   }
   return initRules;
 }
@@ -329,14 +336,20 @@ PointCloudScalarQuantity* PointCloud::addScalarQuantityImpl(std::string name, co
   return q;
 }
 
-PointCloudParameterizationQuantity* PointCloud::addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param, ParamCoordsType type) {
-  PointCloudParameterizationQuantity* q = new PointCloudParameterizationQuantity(name, param, type, ParamVizStyle::CHECKER, *this);
+PointCloudParameterizationQuantity* PointCloud::addParameterizationQuantityImpl(std::string name,
+                                                                                const std::vector<glm::vec2>& param,
+                                                                                ParamCoordsType type) {
+  PointCloudParameterizationQuantity* q =
+      new PointCloudParameterizationQuantity(name, param, type, ParamVizStyle::CHECKER, *this);
   addQuantity(q);
   return q;
 }
 
-PointCloudParameterizationQuantity* PointCloud::addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param, ParamCoordsType type) {
-  PointCloudParameterizationQuantity* q = new PointCloudParameterizationQuantity(name, param, type, ParamVizStyle::LOCAL_CHECK, *this);
+PointCloudParameterizationQuantity*
+PointCloud::addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param,
+                                                 ParamCoordsType type) {
+  PointCloudParameterizationQuantity* q =
+      new PointCloudParameterizationQuantity(name, param, type, ParamVizStyle::LOCAL_CHECK, *this);
   addQuantity(q);
   return q;
 }
@@ -357,7 +370,7 @@ glm::vec3 PointCloud::getPointColor() { return pointColor.get(); }
 
 PointCloud* PointCloud::setMaterial(std::string m) {
   material = m;
-  geometryChanged(); // (serves the purpose of re-initializing everything, though this is a bit overkill)
+  refresh();
   requestRedraw();
   return this;
 }

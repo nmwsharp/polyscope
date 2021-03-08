@@ -56,21 +56,29 @@ void SurfaceGraphQuantity::setUniforms() {
   pointProgram->setUniform("u_baseColor", getColor());
   lineProgram->setUniform("u_baseColor", getColor());
 
-  parent.setTransformUniforms(*pointProgram);
-  parent.setTransformUniforms(*lineProgram);
+  parent.setStructureUniforms(*pointProgram);
+  parent.setStructureUniforms(*lineProgram);
 }
 
 
 void SurfaceGraphQuantity::createPrograms() {
 
   { // Point program
-    pointProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SHADE_BASECOLOR"});
+    std::vector<std::string> rules = parent.addStructureRules({"SHADE_BASECOLOR"});
+    if (parent.wantsCullPosition()) {
+      rules.push_back("SPHERE_CULLPOS_FROM_CENTER");
+    }
+    pointProgram = render::engine->requestShader("RAYCAST_SPHERE", rules);
     pointProgram->setAttribute("a_position", nodes);
     render::engine->setMaterial(*pointProgram, parent.getMaterial());
   }
 
   { // Line program
-    lineProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"SHADE_BASECOLOR"});
+    std::vector<std::string> rules = parent.addStructureRules({"SHADE_BASECOLOR"});
+    if (parent.wantsCullPosition()) {
+      rules.push_back("CYLINDER_CULLPOS_FROM_MID");
+    }
+    lineProgram = render::engine->requestShader("RAYCAST_CYLINDER", rules);
 
     // Build buffers
     std::vector<glm::vec3> edgeStarts, edgeEnds;
@@ -99,7 +107,7 @@ void SurfaceGraphQuantity::buildCustomUI() {
   }
 }
 
-std::string SurfaceGraphQuantity::niceName() { return name; }
+std::string SurfaceGraphQuantity::niceName() { return name + " (surface graph)"; }
 
 void SurfaceGraphQuantity::refresh() {
   pointProgram.reset();

@@ -18,8 +18,8 @@ void CurveNetworkColorQuantity::draw() {
   }
 
   // Set uniforms
-  parent.setTransformUniforms(*edgeProgram);
-  parent.setTransformUniforms(*nodeProgram);
+  parent.setStructureUniforms(*edgeProgram);
+  parent.setStructureUniforms(*nodeProgram);
 
   parent.setCurveNetworkEdgeUniforms(*edgeProgram);
   parent.setCurveNetworkNodeUniforms(*nodeProgram);
@@ -39,9 +39,12 @@ CurveNetworkNodeColorQuantity::CurveNetworkNodeColorQuantity(std::string name, s
 {}
 
 void CurveNetworkNodeColorQuantity::createProgram() {
+
   // Create the program to draw this quantity
-  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"});
-  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_BLEND_COLOR", "SHADE_COLOR"});
+  nodeProgram = render::engine->requestShader(
+      "RAYCAST_SPHERE", parent.addCurveNetworkNodeRules({"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"}));
+  edgeProgram = render::engine->requestShader(
+      "RAYCAST_CYLINDER", parent.addCurveNetworkEdgeRules({"CYLINDER_PROPAGATE_BLEND_COLOR", "SHADE_COLOR"}));
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);
@@ -102,8 +105,10 @@ CurveNetworkEdgeColorQuantity::CurveNetworkEdgeColorQuantity(std::string name, s
 {}
 
 void CurveNetworkEdgeColorQuantity::createProgram() {
-  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"});
-  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_COLOR", "SHADE_COLOR"});
+  nodeProgram = render::engine->requestShader(
+      "RAYCAST_SPHERE", parent.addCurveNetworkNodeRules({"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"}));
+  edgeProgram = render::engine->requestShader(
+      "RAYCAST_CYLINDER", parent.addCurveNetworkEdgeRules({"CYLINDER_PROPAGATE_COLOR", "SHADE_COLOR"}));
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);

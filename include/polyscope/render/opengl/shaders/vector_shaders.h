@@ -13,6 +13,7 @@ extern const ShaderStageSpecification FLEX_VECTOR_FRAG_SHADER;
 
 // Rules specific to cylinders
 extern const ShaderReplacementRule VECTOR_PROPAGATE_COLOR;
+extern const ShaderReplacementRule VECTOR_CULLPOS_FROM_TAIL;
 
 } // namespace backend_openGL3_glfw
 } // namespace render

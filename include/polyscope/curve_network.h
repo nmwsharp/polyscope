@@ -113,6 +113,8 @@ public:
   void setCurveNetworkEdgeUniforms(render::ShaderProgram& p);
   void fillEdgeGeometryBuffers(render::ShaderProgram& program);
   void fillNodeGeometryBuffers(render::ShaderProgram& program);
+  std::vector<std::string> addCurveNetworkNodeRules(std::vector<std::string> initRules);
+  std::vector<std::string> addCurveNetworkEdgeRules(std::vector<std::string> initRules);
 
   // === Mutate
   template <class V>
@@ -133,6 +135,8 @@ public:
   // Material
   CurveNetwork* setMaterial(std::string name);
   std::string getMaterial();
+  
+
 
 private:
   // === Visualization parameters

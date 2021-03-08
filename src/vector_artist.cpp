@@ -36,7 +36,7 @@ void VectorArtist::draw() {
   }
 
   // Set uniforms
-  parentStructure.setTransformUniforms(*program);
+  parentStructure.setStructureUniforms(*program);
 
   program->setUniform("u_radius", vectorRadius.get().asAbsolute());
   program->setUniform("u_baseColor", vectorColor.get());
@@ -56,7 +56,13 @@ void VectorArtist::draw() {
 }
 
 void VectorArtist::createProgram() {
-  program = render::engine->requestShader("RAYCAST_VECTOR", {"SHADE_BASECOLOR"});
+
+  std::vector<std::string> rules = parentStructure.addStructureRules({"SHADE_BASECOLOR"});
+  if (parentStructure.wantsCullPosition()) {
+    rules.push_back("VECTOR_CULLPOS_FROM_TAIL");
+  }
+
+  program = render::engine->requestShader("RAYCAST_VECTOR", rules);
 
   // Fill buffers
   program->setAttribute("a_vector", vectors);
@@ -96,7 +102,7 @@ void VectorArtist::buildParametersUI() {
   }
 
   //{ // Draw max and min magnitude
-    //ImGui::TextUnformatted(mapper.printBounds().c_str());
+  // ImGui::TextUnformatted(mapper.printBounds().c_str());
   //}
 }
 

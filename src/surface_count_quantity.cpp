@@ -35,7 +35,14 @@ void SurfaceCountQuantity::initializeLimits() {
 
 void SurfaceCountQuantity::createProgram() {
 
-  program = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"});
+  std::vector<std::string> rules =
+      parent.addSurfaceMeshRules({"SPHERE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"}, false, false);
+
+  if (parent.wantsCullPosition()) {
+    rules.push_back("SPHERE_CULLPOS_FROM_CENTER");
+  }
+
+  program = render::engine->requestShader("RAYCAST_SPHERE", rules);
 
 
   // Fill buffers
@@ -55,8 +62,8 @@ void SurfaceCountQuantity::createProgram() {
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
-void SurfaceCountQuantity::refresh() { 
-  program.reset(); 
+void SurfaceCountQuantity::refresh() {
+  program.reset();
   Quantity::refresh();
 }
 
@@ -80,7 +87,7 @@ void SurfaceCountQuantity::draw() {
 
   // Set uniforms
   setUniforms(*program);
-  parent.setTransformUniforms(*program);
+  parent.setStructureUniforms(*program);
 
   program->draw();
 }

@@ -23,8 +23,8 @@ void CurveNetworkScalarQuantity::draw() {
   }
 
   // Set uniforms
-  parent.setTransformUniforms(*edgeProgram);
-  parent.setTransformUniforms(*nodeProgram);
+  parent.setStructureUniforms(*edgeProgram);
+  parent.setStructureUniforms(*nodeProgram);
 
   parent.setCurveNetworkEdgeUniforms(*edgeProgram);
   parent.setCurveNetworkNodeUniforms(*nodeProgram);
@@ -73,8 +73,10 @@ CurveNetworkNodeScalarQuantity::CurveNetworkNodeScalarQuantity(std::string name,
 
 void CurveNetworkNodeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", addScalarRules({"SPHERE_PROPAGATE_VALUE"}));
-  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", addScalarRules({"CYLINDER_PROPAGATE_BLEND_VALUE"}));
+  nodeProgram = render::engine->requestShader(
+      "RAYCAST_SPHERE", addScalarRules(parent.addCurveNetworkNodeRules({"SPHERE_PROPAGATE_VALUE"})));
+  edgeProgram = render::engine->requestShader(
+      "RAYCAST_CYLINDER", addScalarRules(parent.addCurveNetworkEdgeRules({"CYLINDER_PROPAGATE_BLEND_VALUE"})));
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);
@@ -126,8 +128,10 @@ CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name,
 
 void CurveNetworkEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", addScalarRules({"SPHERE_PROPAGATE_VALUE"}));
-  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", addScalarRules({"CYLINDER_PROPAGATE_VALUE"}));
+  nodeProgram = render::engine->requestShader(
+      "RAYCAST_SPHERE", addScalarRules(parent.addCurveNetworkNodeRules({"SPHERE_PROPAGATE_VALUE"})));
+  edgeProgram = render::engine->requestShader(
+      "RAYCAST_CYLINDER", addScalarRules(parent.addCurveNetworkEdgeRules({"CYLINDER_PROPAGATE_VALUE"})));
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);

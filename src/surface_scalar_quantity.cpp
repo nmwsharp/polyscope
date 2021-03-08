@@ -24,8 +24,8 @@ void SurfaceScalarQuantity::draw() {
   }
 
   // Set uniforms
-  parent.setTransformUniforms(*program);
   parent.setStructureUniforms(*program);
+  parent.setSurfaceMeshUniforms(*program);
   setScalarUniforms(*program);
 
   program->draw();
@@ -71,7 +71,7 @@ SurfaceVertexScalarQuantity::SurfaceVertexScalarQuantity(std::string name, const
 void SurfaceVertexScalarQuantity::createProgram() {
   // Create the program to draw this quantity
   program =
-      render::engine->requestShader("MESH", parent.addStructureRules(addScalarRules({"MESH_PROPAGATE_VALUE"})));
+      render::engine->requestShader("MESH", parent.addSurfaceMeshRules(addScalarRules({"MESH_PROPAGATE_VALUE"})));
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -127,7 +127,7 @@ SurfaceFaceScalarQuantity::SurfaceFaceScalarQuantity(std::string name, const std
 void SurfaceFaceScalarQuantity::createProgram() {
   // Create the program to draw this quantity
   program =
-      render::engine->requestShader("MESH", parent.addStructureRules(addScalarRules({"MESH_PROPAGATE_VALUE"})));
+      render::engine->requestShader("MESH", parent.addSurfaceMeshRules(addScalarRules({"MESH_PROPAGATE_VALUE"})));
 
     // Fill color buffers
     parent.fillGeometryBuffers(*program);
@@ -176,7 +176,7 @@ SurfaceEdgeScalarQuantity::SurfaceEdgeScalarQuantity(std::string name, const std
 void SurfaceEdgeScalarQuantity::createProgram() {
     // Create the program to draw this quantity
     program = render::engine->requestShader(
-        "MESH", parent.addStructureRules(addScalarRules({"MESH_PROPAGATE_HALFEDGE_VALUE"})));
+        "MESH", parent.addSurfaceMeshRules(addScalarRules({"MESH_PROPAGATE_HALFEDGE_VALUE"})));
 
     // Fill color buffers
     parent.fillGeometryBuffers(*program);
@@ -256,7 +256,7 @@ SurfaceHalfedgeScalarQuantity::SurfaceHalfedgeScalarQuantity(std::string name, c
 void SurfaceHalfedgeScalarQuantity::createProgram() {
     // Create the program to draw this quantity
     program = render::engine->requestShader(
-        "MESH", parent.addStructureRules(addScalarRules({"MESH_PROPAGATE_HALFEDGE_VALUE"})));
+        "MESH", parent.addSurfaceMeshRules(addScalarRules({"MESH_PROPAGATE_HALFEDGE_VALUE"})));
 
     // Fill color buffers
     parent.fillGeometryBuffers(*program);

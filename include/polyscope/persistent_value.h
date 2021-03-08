@@ -45,9 +45,10 @@ public:
   PersistentValue(const std::string& name_, T value_) : name(name_), value(value_) {
     if (detail::getPersistentCacheRef<T>().cache.find(name) != detail::getPersistentCacheRef<T>().cache.end()) {
       value = detail::getPersistentCacheRef<T>().cache[name];
+      holdsDefaultValue = false;
     } else {
       // Update cache value
-      manuallyChanged();
+      detail::getPersistentCacheRef<T>().cache[name] = value;
     }
   }
 
@@ -89,6 +90,16 @@ public:
   void set(T value_) {
     value = value_;
     detail::getPersistentCacheRef<T>().cache[name] = value;
+    holdsDefaultValue = false;
+  }
+
+  // Passive setter, will change value without marking in cache; does nothing if some value has already been directly
+  // set (equivalent to constructing with a different value).
+  void setPassive(T value_) {
+    if (holdsDefaultValue) {
+      value = value_;
+      detail::getPersistentCacheRef<T>().cache[name] = value;
+    }
   }
 
   // Make all template variants friends, so conversion can access private members
@@ -98,6 +109,8 @@ public:
 private:
   const std::string name;
   T value;
+  bool holdsDefaultValue = true; // True if the value was set on construction and never changed. False if it was pulled
+                                 // from cache or has ever been explicitly set
 };
 
 // clang-format off

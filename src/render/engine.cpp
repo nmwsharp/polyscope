@@ -609,9 +609,10 @@ void Engine::addSlicePlane(std::string uniquePostfix) {
   // identical.
 
   createSlicePlaneFliterRule(uniquePostfix);
+  slicePlaneCount++;
 
   // Add rules
-  std::vector<std::string> newRules{"GENERATE_WORLD_POS", "CULL_POS_FROM_WORLD", "SLICE_PLANE_CULL_" + uniquePostfix};
+  std::vector<std::string> newRules{"SLICE_PLANE_CULL_" + uniquePostfix};
   defaultRules_sceneObject.insert(defaultRules_sceneObject.end(), newRules.begin(), newRules.end());
   defaultRules_pick.insert(defaultRules_pick.end(), newRules.begin(), newRules.end());
 
@@ -621,8 +622,9 @@ void Engine::addSlicePlane(std::string uniquePostfix) {
 
 void Engine::removeSlicePlane(std::string uniquePostfix) {
 
+  slicePlaneCount--;
   // Remove the (last occurence of the) rules we added
-  std::vector<std::string> newRules{"GENERATE_WORLD_POS", "CULL_POS_FROM_WORLD", "SLICE_PLANE_CULL_" + uniquePostfix};
+  std::vector<std::string> newRules{"SLICE_PLANE_CULL_" + uniquePostfix};
   auto deleteLast = [&](std::vector<std::string>& vec, std::string target) {
     for (size_t i = vec.size(); i > 0; i--) {
       if (vec[i - 1] == target) {
@@ -641,6 +643,11 @@ void Engine::removeSlicePlane(std::string uniquePostfix) {
   // Regenerate everything
   polyscope::refresh();
 }
+
+bool Engine::slicePlanesEnabled() {
+  return slicePlaneCount > 0;
+}
+
 
 std::vector<glm::vec3> Engine::screenTrianglesCoords() {
   std::vector<glm::vec3> coords = {{-1.0f, -1.0f, 0.0f}, {1.0f, -1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f},

@@ -78,6 +78,7 @@ R"(
         void main()
         {
            float depth = gl_FragCoord.z;
+           ${ GLOBAL_FRAGMENT_FILTER_PREP }$
            ${ GLOBAL_FRAGMENT_FILTER }$
           
            // Shading
@@ -213,6 +214,29 @@ const ShaderReplacementRule MESH_PROPAGATE_VALUE2 (
     /* textures */ {}
 );
 
+const ShaderReplacementRule MESH_PROPAGATE_CULLPOS (
+    /* rule name */ "MESH_PROPAGATE_CULLPOS",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec3 a_cullPos;
+          out vec3 a_cullPosFrag;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_cullPosFrag = vec3(u_modelView * vec4(a_cullPos, 1.));
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec3 a_cullPosFrag;
+        )"},
+      {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
+          vec3 cullPos = a_cullPosFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_cullPos", DataType::Vector3Float},
+    },
+    /* textures */ {}
+);
 
 const ShaderReplacementRule MESH_WIREFRAME(
     /* rule name */ "MESH_WIREFRAME",

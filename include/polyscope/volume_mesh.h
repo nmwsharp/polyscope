@@ -83,6 +83,7 @@ public:
   virtual std::string typeName() override;
 
   virtual void refresh() override;
+  virtual std::vector<std::string> addStructureRules(std::vector<std::string> initRules) override;
 
   // === Quantity-related
   // clang-format off
@@ -170,9 +171,9 @@ public:
   size_t nVertices() const { return vertices.size(); }
   size_t nCells() const { return cells.size(); }
 
-  //size_t nFacesTriangulationCount = 0; TODO
+  // size_t nFacesTriangulationCount = 0; TODO
   size_t nFacesCount = 0;
-  //size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
+  // size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
   size_t nFaces() const { return nFacesCount; }
 
   size_t nEdgesCount = 0;
@@ -211,8 +212,7 @@ public:
   double getEdgeWidth();
 
   // Rendering helpers used by quantities
-  std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
-  void setStructureUniforms(render::ShaderProgram& p);
+  void setVolumeMeshUniforms(render::ShaderProgram& p);
   void fillGeometryBuffers(render::ShaderProgram& p);
   static const std::vector<std::vector<std::array<size_t, 3>>>& cellStencil(VolumeCellType type);
 
