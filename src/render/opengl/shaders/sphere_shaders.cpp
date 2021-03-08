@@ -164,6 +164,7 @@ R"(
            }
            float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);
 
+           ${ GLOBAL_FRAGMENT_FILTER_PREP }$
            ${ GLOBAL_FRAGMENT_FILTER }$
            
            // Set depth (expensive!)
@@ -280,6 +281,18 @@ const ShaderReplacementRule SPHERE_PROPAGATE_COLOR (
     /* attributes */ {
       {"a_color", DataType::Vector3Float},
     },
+    /* textures */ {}
+);
+
+const ShaderReplacementRule SPHERE_CULLPOS_FROM_CENTER(
+    /* rule name */ "SPHERE_CULLPOS_FROM_CENTER",
+    { /* replacement sources */
+      {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
+          vec3 cullPos = sphereCenterView;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
     /* textures */ {}
 );
 

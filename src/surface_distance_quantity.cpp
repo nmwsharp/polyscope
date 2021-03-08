@@ -37,8 +37,8 @@ void SurfaceDistanceQuantity::draw() {
   }
 
   // Set uniforms
-  parent.setTransformUniforms(*program);
   parent.setStructureUniforms(*program);
+  parent.setSurfaceMeshUniforms(*program);
   setProgramUniforms(*program);
 
   program->draw();
@@ -46,7 +46,7 @@ void SurfaceDistanceQuantity::draw() {
 
 void SurfaceDistanceQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE", "ISOLINE_STRIPE_VALUECOLOR"}));
+  program = render::engine->requestShader("MESH", parent.addSurfaceMeshRules({"MESH_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE", "ISOLINE_STRIPE_VALUECOLOR"}));
 
   // Fill color buffers
   fillColorBuffers(*program);

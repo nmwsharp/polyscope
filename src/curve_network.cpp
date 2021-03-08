@@ -79,8 +79,8 @@ void CurveNetwork::draw() {
     }
 
     // Set program uniforms
-    setTransformUniforms(*edgeProgram);
-    setTransformUniforms(*nodeProgram);
+    setStructureUniforms(*edgeProgram);
+    setStructureUniforms(*nodeProgram);
 
     setCurveNetworkEdgeUniforms(*edgeProgram);
     setCurveNetworkNodeUniforms(*nodeProgram);
@@ -110,8 +110,8 @@ void CurveNetwork::drawPick() {
   }
 
   // Set uniforms
-  setTransformUniforms(*edgePickProgram);
-  setTransformUniforms(*nodePickProgram);
+  setStructureUniforms(*edgePickProgram);
+  setStructureUniforms(*nodePickProgram);
 
   setCurveNetworkEdgeUniforms(*edgePickProgram);
   setCurveNetworkNodeUniforms(*nodePickProgram);
@@ -120,17 +120,37 @@ void CurveNetwork::drawPick() {
   nodePickProgram->draw();
 }
 
+std::vector<std::string> CurveNetwork::addCurveNetworkNodeRules(std::vector<std::string> initRules) {
+  initRules = addStructureRules(initRules);
+  if (wantsCullPosition()) {
+    initRules.push_back("SPHERE_CULLPOS_FROM_CENTER");
+  }
+  return initRules;
+}
+std::vector<std::string> CurveNetwork::addCurveNetworkEdgeRules(std::vector<std::string> initRules) {
+  initRules = addStructureRules(initRules);
+  if (wantsCullPosition()) {
+    initRules.push_back("CYLINDER_CULLPOS_FROM_MID");
+  }
+  return initRules;
+}
+
 void CurveNetwork::prepare() {
   if (dominantQuantity != nullptr) {
     return;
   }
 
   // It no quantity is coloring the network, draw with a default color
-  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SHADE_BASECOLOR"});
-  render::engine->setMaterial(*nodeProgram, getMaterial());
 
-  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"SHADE_BASECOLOR"});
-  render::engine->setMaterial(*edgeProgram, getMaterial());
+  {
+    nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", addCurveNetworkNodeRules({"SHADE_BASECOLOR"}));
+    render::engine->setMaterial(*nodeProgram, getMaterial());
+  }
+
+  {
+    edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", addCurveNetworkEdgeRules({"SHADE_BASECOLOR"}));
+    render::engine->setMaterial(*edgeProgram, getMaterial());
+  }
 
   // Fill out the geometry data for the programs
   fillNodeGeometryBuffers(*nodeProgram);
@@ -149,8 +169,9 @@ void CurveNetwork::preparePick() {
   size_t pickStart = pick::requestPickBufferRange(this, totalPickElements);
 
   { // Set up node picking program
-    nodePickProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SPHERE_PROPAGATE_COLOR"},
-                                                    render::ShaderReplacementDefaults::Pick);
+    nodePickProgram =
+        render::engine->requestShader("RAYCAST_SPHERE", addCurveNetworkNodeRules({"SPHERE_PROPAGATE_COLOR"}),
+                                      render::ShaderReplacementDefaults::Pick);
 
     // Fill color buffer with packed point indices
     std::vector<glm::vec3> pickColors;
@@ -168,8 +189,9 @@ void CurveNetwork::preparePick() {
   }
 
   { // Set up edge picking program
-    edgePickProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"CYLINDER_PROPAGATE_PICK"},
-                                                    render::ShaderReplacementDefaults::Pick);
+    edgePickProgram =
+        render::engine->requestShader("RAYCAST_CYLINDER", addCurveNetworkEdgeRules({"CYLINDER_PROPAGATE_PICK"}),
+                                      render::ShaderReplacementDefaults::Pick);
 
     // Fill color buffer with packed node/edge indices
     std::vector<glm::vec3> edgePickTail(nEdges());
@@ -226,9 +248,7 @@ void CurveNetwork::refresh() {
   QuantityStructure<CurveNetwork>::refresh(); // call base class version, which refreshes quantities
 }
 
-void CurveNetwork::geometryChanged() {
-  refresh();
-}
+void CurveNetwork::geometryChanged() { refresh(); }
 
 void CurveNetwork::buildPickUI(size_t localPickID) {
 

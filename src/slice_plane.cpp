@@ -137,8 +137,9 @@ void SlicePlane::setSceneObjectUniforms(render::ShaderProgram& p, bool alwaysPas
     normal = glm::vec3{-1., 0., 0.};
     center = glm::vec3{std::numeric_limits<float>::infinity(), 0., 0.};
   } else {
-    normal = getNormal();
-    center = getCenter();
+    glm::mat4 viewMat = view::getCameraViewMatrix();
+    normal = glm::vec3(viewMat * glm::vec4(getNormal(), 0.));
+    center = glm::vec3(viewMat * glm::vec4(getCenter(), 1.));
   }
 
   p.setUniform("u_slicePlaneNormal_" + postfix, normal);

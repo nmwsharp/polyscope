@@ -27,9 +27,8 @@ extern const ShaderReplacementRule ISOLINE_STRIPE_VALUECOLOR;   // modulate albe
 extern const ShaderReplacementRule CHECKER_VALUE2COLOR;         // modulate albedoColor based on shadeValue2
 
 // Positions, culling, etc
-extern const ShaderReplacementRule GENERATE_WORLD_POS;          // computes worldPos, position in worldspace for fragment
-extern const ShaderReplacementRule CULL_POS_FROM_WORLD;
-extern const ShaderReplacementRule CULL_POS_FROM_ATTR;
+extern const ShaderReplacementRule GENERATE_VIEW_POS;          // computes viewPos, position in viewspace for fragment
+extern const ShaderReplacementRule CULL_POS_FROM_VIEW;
 
 ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix);
 

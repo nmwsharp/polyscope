@@ -161,8 +161,8 @@ void VolumeMesh::draw() {
     }
 
     // Set uniforms
-    setTransformUniforms(*program);
     setStructureUniforms(*program);
+    setVolumeMeshUniforms(*program);
     program->setUniform("u_baseColor", getColor());
 
     program->draw();
@@ -184,7 +184,7 @@ void VolumeMesh::drawPick() {
   }
 
   // Set uniforms
-  setTransformUniforms(*pickProgram);
+  setStructureUniforms(*pickProgram);
 
   pickProgram->draw();
 }
@@ -296,6 +296,7 @@ void VolumeMesh::preparePick() {
 }
 
 std::vector<std::string> VolumeMesh::addStructureRules(std::vector<std::string> initRules) {
+  initRules = Structure::addStructureRules(initRules);
   if (getEdgeWidth() > 0) {
     initRules.push_back("MESH_WIREFRAME");
   }
@@ -303,7 +304,7 @@ std::vector<std::string> VolumeMesh::addStructureRules(std::vector<std::string> 
   return initRules;
 }
 
-void VolumeMesh::setStructureUniforms(render::ShaderProgram& p) {
+void VolumeMesh::setVolumeMeshUniforms(render::ShaderProgram& p) {
   if (getEdgeWidth() > 0) {
     p.setUniform("u_edgeWidth", getEdgeWidth() * render::engine->getCurrentPixelScaling());
     p.setUniform("u_edgeColor", getEdgeColor());
@@ -409,7 +410,7 @@ void VolumeMesh::buildPickUI(size_t localPickID) {
   // Selection type
   if (localPickID < cellPickIndStart) {
     buildVertexInfoGui(localPickID);
-  } 
+  }
   // TODO faces and edges
   else {
     buildCellInfoGUI(localPickID - cellPickIndStart);
@@ -489,8 +490,8 @@ void VolumeMesh::buildEdgeInfoGui(size_t eInd) {
 
 void VolumeMesh::buildCellInfoGUI(size_t cellInd) {
   size_t displayInd = cellInd;
-  //if (halfedgePerm.size() > 0) {
-    //displayInd = halfedgePerm[cellInd];
+  // if (halfedgePerm.size() > 0) {
+  // displayInd = halfedgePerm[cellInd];
   //}
   ImGui::TextUnformatted(("Cell #" + std::to_string(displayInd)).c_str());
 

@@ -28,7 +28,7 @@ SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexP
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
       edgeWidth(uniquePrefix() + "edgeWidth", 0.),
       backfacePolicy(uniquePrefix() + "backfacePolicy", BackfacePolicy::Different) {
-
+  cullWholeElements.setPassive(true);
   computeCounts();
   computeGeometryData();
 }
@@ -332,8 +332,8 @@ void SurfaceMesh::draw() {
     }
 
     // Set uniforms
-    setTransformUniforms(*program);
     setStructureUniforms(*program);
+    setSurfaceMeshUniforms(*program);
     program->setUniform("u_baseColor", getSurfaceColor());
 
     program->draw();
@@ -356,14 +356,18 @@ void SurfaceMesh::drawPick() {
     preparePick();
   }
 
+  render::engine->setBackfaceCull(backfacePolicy.get() == BackfacePolicy::Cull);
+
   // Set uniforms
-  setTransformUniforms(*pickProgram);
+  setStructureUniforms(*pickProgram);
 
   pickProgram->draw();
+
+  render::engine->setBackfaceCull(); // return to default setting
 }
 
 void SurfaceMesh::prepare() {
-  program = render::engine->requestShader("MESH", addStructureRules({"SHADE_BASECOLOR"}));
+  program = render::engine->requestShader("MESH", addSurfaceMeshRules({"SHADE_BASECOLOR"}));
 
   // Populate draw buffers
   fillGeometryBuffers(*program);
@@ -373,7 +377,8 @@ void SurfaceMesh::prepare() {
 void SurfaceMesh::preparePick() {
 
   // Create a new program
-  pickProgram = render::engine->requestShader("MESH", {"MESH_PROPAGATE_PICK"}, render::ShaderReplacementDefaults::Pick);
+  pickProgram = render::engine->requestShader("MESH", addSurfaceMeshRules({"MESH_PROPAGATE_PICK"}, true, false),
+                                              render::ShaderReplacementDefaults::Pick);
 
   // Get element indices
   size_t totalPickElements = nVertices() + nFaces() + nEdges() + nHalfedges();
@@ -390,11 +395,14 @@ void SurfaceMesh::preparePick() {
   size_t halfedgeGlobalPickIndStart = edgeGlobalPickIndStart + nEdges();
 
   // == Fill buffers
+  bool wantsBarycenters = wantsCullPosition();
+
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
   std::vector<std::array<glm::vec3, 3>> vertexColors, edgeColors, halfedgeColors;
   std::vector<glm::vec3> faceColor;
+  std::vector<glm::vec3> barycenters;
 
   // Reserve space
   positions.reserve(3 * nFacesTriangulation());
@@ -404,12 +412,20 @@ void SurfaceMesh::preparePick() {
   halfedgeColors.reserve(3 * nFacesTriangulation());
   faceColor.reserve(3 * nFacesTriangulation());
   normals.reserve(3 * nFacesTriangulation());
+  if (wantsBarycenters) {
+    barycenters.reserve(3 * nFacesTriangulation());
+  }
 
   // Build all quantities in each face
   for (size_t iF = 0; iF < nFaces(); iF++) {
     auto& face = faces[iF];
     size_t D = face.size();
     glm::vec3 faceN = faceNormals[iF];
+
+    glm::vec3 barycenter;
+    if (wantsBarycenters) {
+      barycenter = faceCenter(iF);
+    }
 
     // implicitly triangulate from root
     size_t vRoot = face[0];
@@ -430,6 +446,12 @@ void SurfaceMesh::preparePick() {
       normals.push_back(faceN);
       normals.push_back(faceN);
       normals.push_back(faceN);
+
+      if (wantsBarycenters) {
+        barycenters.push_back(barycenter);
+        barycenters.push_back(barycenter);
+        barycenters.push_back(barycenter);
+      }
 
       // Build all quantities
       std::array<glm::vec3, 3> vColor;
@@ -479,23 +501,43 @@ void SurfaceMesh::preparePick() {
   pickProgram->setAttribute<glm::vec3, 3>("a_edgeColors", edgeColors);
   pickProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", halfedgeColors);
   pickProgram->setAttribute("a_faceColor", faceColor);
+  if (wantsCullPosition()) {
+    pickProgram->setAttribute("a_cullPos", barycenters);
+  }
 }
 
-std::vector<std::string> SurfaceMesh::addStructureRules(std::vector<std::string> initRules) {
-  if (getEdgeWidth() > 0) {
-    initRules.push_back("MESH_WIREFRAME");
-  }
-  if (backfacePolicy.get() == BackfacePolicy::Identical) {
-    initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
-  }
-  if (backfacePolicy.get() == BackfacePolicy::Different) {
-    initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
-    initRules.push_back("MESH_BACKFACE_DARKEN");
+std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::string> initRules, bool withMesh,
+                                                          bool withSurfaceShade) {
+  initRules = addStructureRules(initRules);
+
+  if (withMesh) {
+
+    if (withSurfaceShade) {
+      // rules that only get used when we're shading the surface of the mesh
+      if (getEdgeWidth() > 0) {
+        initRules.push_back("MESH_WIREFRAME");
+      }
+      if (backfacePolicy.get() == BackfacePolicy::Different) {
+        initRules.push_back("MESH_BACKFACE_DARKEN");
+      }
+    }
+
+    if (backfacePolicy.get() == BackfacePolicy::Identical) {
+      initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
+    }
+
+    if (backfacePolicy.get() == BackfacePolicy::Different) {
+      initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
+    }
+
+    if (wantsCullPosition()) {
+      initRules.push_back("MESH_PROPAGATE_CULLPOS");
+    }
   }
   return initRules;
 }
 
-void SurfaceMesh::setStructureUniforms(render::ShaderProgram& p) {
+void SurfaceMesh::setSurfaceMeshUniforms(render::ShaderProgram& p) {
   if (getEdgeWidth() > 0) {
     p.setUniform("u_edgeWidth", getEdgeWidth() * render::engine->getCurrentPixelScaling());
     p.setUniform("u_edgeColor", getEdgeColor());
@@ -507,9 +549,11 @@ void SurfaceMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
   std::vector<glm::vec3> edgeReal;
+  std::vector<glm::vec3> barycenters;
 
   bool wantsBary = p.hasAttribute("a_barycoord");
   bool wantsEdge = (getEdgeWidth() > 0);
+  bool wantsBarycenters = wantsCullPosition();
 
   positions.reserve(3 * nFacesTriangulation());
   normals.reserve(3 * nFacesTriangulation());
@@ -519,11 +563,19 @@ void SurfaceMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   if (wantsEdge) {
     edgeReal.reserve(3 * nFacesTriangulation());
   }
+  if (wantsBarycenters) {
+    barycenters.reserve(3 * nFacesTriangulation());
+  }
 
   for (size_t iF = 0; iF < nFaces(); iF++) {
     auto& face = faces[iF];
     size_t D = face.size();
     glm::vec3 faceN = faceNormals[iF];
+
+    glm::vec3 barycenter;
+    if (wantsBarycenters) {
+      barycenter = faceCenter(iF);
+    }
 
     // implicitly triangulate from root
     size_t vRoot = face[0];
@@ -554,6 +606,12 @@ void SurfaceMesh::fillGeometryBuffers(render::ShaderProgram& p) {
         bcoord.push_back(glm::vec3{0., 0., 1.});
       }
 
+      if (wantsBarycenters) {
+        barycenters.push_back(barycenter);
+        barycenters.push_back(barycenter);
+        barycenters.push_back(barycenter);
+      }
+
       if (wantsEdge) {
         glm::vec3 edgeRealV{0., 1., 0.};
         if (j == 1) {
@@ -567,6 +625,10 @@ void SurfaceMesh::fillGeometryBuffers(render::ShaderProgram& p) {
         edgeReal.push_back(edgeRealV);
       }
     }
+  }
+
+  if (wantsCullPosition()) {
+    p.setAttribute("a_cullPos", barycenters);
   }
 
   // Store data in buffers
@@ -931,10 +993,10 @@ long long int SurfaceMesh::selectVertex() {
       }
     }
   };
-  
+
   // Pass control to the context we just created
   pushContext(focusedPopupUI);
-  
+
   setEdgeWidth(oldEdgeWidth); // restore edge setting
 
   return returnVertInd;

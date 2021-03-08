@@ -18,6 +18,7 @@ extern const ShaderReplacementRule MESH_PROPAGATE_VALUE;
 extern const ShaderReplacementRule MESH_PROPAGATE_VALUE2;
 extern const ShaderReplacementRule MESH_PROPAGATE_COLOR;
 extern const ShaderReplacementRule MESH_PROPAGATE_HALFEDGE_VALUE;
+extern const ShaderReplacementRule MESH_PROPAGATE_CULLPOS;
 extern const ShaderReplacementRule MESH_PROPAGATE_PICK;
 
 

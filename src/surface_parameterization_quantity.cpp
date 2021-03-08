@@ -35,9 +35,9 @@ void SurfaceParameterizationQuantity::draw() {
   }
 
   // Set uniforms
-  parent.setTransformUniforms(*program);
   setProgramUniforms(*program);
   parent.setStructureUniforms(*program);
+  parent.setSurfaceMeshUniforms(*program);
 
   program->draw();
 }
@@ -50,27 +50,28 @@ void SurfaceParameterizationQuantity::createProgram() {
     // program = render::engine->generateShaderProgram(
     //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
     program = render::engine->requestShader(
-        "MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE2", "SHADE_CHECKER_VALUE2"}));
+        "MESH", parent.addSurfaceMeshRules({"MESH_PROPAGATE_VALUE2", "SHADE_CHECKER_VALUE2"}));
     break;
   case ParamVizStyle::GRID:
     // program = render::engine->generateShaderProgram(
     //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_GRID_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program =
-        render::engine->requestShader("MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}));
+    program = render::engine->requestShader("MESH",
+                                            parent.addSurfaceMeshRules({"MESH_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}));
     break;
   case ParamVizStyle::LOCAL_CHECK:
     // program = render::engine->generateShaderProgram(
     //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
     program = render::engine->requestShader(
-        "MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"}));
+        "MESH",
+        parent.addSurfaceMeshRules({"MESH_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"}));
     program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   case ParamVizStyle::LOCAL_RAD:
     // program = render::engine->generateShaderProgram(
     //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
     program = render::engine->requestShader(
-        "MESH", parent.addStructureRules({"MESH_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "SHADEVALUE_MAG_VALUE2",
-                                          "ISOLINE_STRIPE_VALUECOLOR"}));
+        "MESH", parent.addSurfaceMeshRules({"MESH_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "SHADEVALUE_MAG_VALUE2",
+                                            "ISOLINE_STRIPE_VALUECOLOR"}));
     program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   }
@@ -179,7 +180,8 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
   case ParamVizStyle::LOCAL_RAD: {
     // Angle slider
     ImGui::PushItemWidth(100);
-    ImGui::SliderAngle("angle shift", &localRot, -180, 180); // displays in degrees, works in radians TODO refresh/update/persist
+    ImGui::SliderAngle("angle shift", &localRot, -180,
+                       180); // displays in degrees, works in radians TODO refresh/update/persist
     if (ImGui::DragFloat("alt darkness", &altDarkness.get(), 0.01, 0., 1.)) {
       altDarkness.manuallyChanged();
       requestRedraw();

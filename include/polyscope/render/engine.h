@@ -417,6 +417,7 @@ public:
   virtual void applyTransparencySettings() = 0;
   void addSlicePlane(std::string uniquePostfix);
   void removeSlicePlane(std::string uniquePostfix);
+  bool slicePlanesEnabled(); // true if there is at least one slice plane in the scene
 
   // == Options
   BackgroundView background = BackgroundView::None;
@@ -464,6 +465,7 @@ protected:
                           // screenshot renders while minimized.
   float currPixelScale;
   TransparencyMode transparencyMode = TransparencyMode::None;
+  int slicePlaneCount = 0;
 
   // Cached lazy seettings for the resolve and relight program
   int currLightingSampleLevel = -1;

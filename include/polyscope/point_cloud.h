@@ -123,8 +123,9 @@ public:
 
   // Rendering helpers used by quantities
   void setPointCloudUniforms(render::ShaderProgram& p);
-  std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
   void fillGeometryBuffers(render::ShaderProgram& p);
+  std::vector<std::string> addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud = true);
+
 
 private:
   // === Visualization parameters

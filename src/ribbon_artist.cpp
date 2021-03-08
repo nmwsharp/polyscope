@@ -114,7 +114,7 @@ void RibbonArtist::draw() {
   }
 
   // Set uniforms
-  parentStructure.setTransformUniforms(*program);
+  parentStructure.setStructureUniforms(*program);
 
   glm::vec3 eyePos = view::getCameraWorldPosition();
 

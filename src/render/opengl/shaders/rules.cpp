@@ -270,37 +270,35 @@ const ShaderReplacementRule CHECKER_VALUE2COLOR (
 );
 
 
-const ShaderReplacementRule GENERATE_WORLD_POS (
-    /* rule name */ "GENERATE_WORLD_POS",
+const ShaderReplacementRule GENERATE_VIEW_POS (
+    /* rule name */ "GENERATE_VIEW_POS",
     { /* replacement sources */
       {"FRAG_DECLARATIONS", R"(
-          uniform mat4 u_invProjMatrix_worldPos; // weird names are to unique-ify because we have multiple....
-          uniform mat4 u_invViewMatrix_worldPos;
-          uniform vec4 u_viewport_worldPos;
+          uniform mat4 u_invProjMatrix_viewPos; // weird names are to unique-ify because we have multiple....
+          uniform vec4 u_viewport_viewPos;
           vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
         )"},
-      {"GLOBAL_FRAGMENT_FILTER", R"(
-        vec2 depthRange_worldPos = vec2(gl_DepthRange.near, gl_DepthRange.far);
-        vec4 fragCoord_worldPos = gl_FragCoord;
-        fragCoord_worldPos.z = depth;
-        vec4 worldPos4 = u_invViewMatrix_worldPos * vec4(fragmentViewPosition(u_viewport_worldPos, depthRange_worldPos, u_invProjMatrix_worldPos, fragCoord_worldPos), 1.);
-        vec3 worldPos = worldPos4.xyz / worldPos4.w;
+      {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
+        vec2 depthRange_viewPos = vec2(gl_DepthRange.near, gl_DepthRange.far);
+        vec4 fragCoord_viewPos = gl_FragCoord;
+        fragCoord_viewPos.z = depth;
+        vec3 viewPos = fragmentViewPosition(u_viewport_viewPos, depthRange_viewPos, u_invProjMatrix_viewPos, fragCoord_viewPos);
       )"}
     },
     /* uniforms */ {
-      {"u_invProjMatrix_worldPos", DataType::Matrix44Float},
-      {"u_invViewMatrix_worldPos", DataType::Matrix44Float},
-      {"u_viewport_worldPos", DataType::Vector4Float},
+      {"u_invProjMatrix_viewPos", DataType::Matrix44Float},
+      {"u_viewport_viewPos", DataType::Vector4Float},
     },
     /* attributes */ {},
     /* textures */ {}
 );
 
-const ShaderReplacementRule CULL_POS_FROM_WORLD (
-    /* rule name */ "CULL_POS_FROM_WORLD",
+// TODO delete me
+const ShaderReplacementRule CULL_POS_FROM_VIEW (
+    /* rule name */ "CULL_POS_FROM_VIEW",
     { /* replacement sources */
-      {"GLOBAL_FRAGMENT_FILTER", R"(
-        vec3 cullPos = worldPos;
+      {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
+        vec3 cullPos = viewPos;
       )"}
     },
     /* uniforms */ {},
@@ -308,17 +306,6 @@ const ShaderReplacementRule CULL_POS_FROM_WORLD (
     /* textures */ {}
 );
 
-const ShaderReplacementRule CULL_POS_FROM_ATTR (
-    /* rule name */ "CULL_POS_FROM_ATTR",
-    { /* replacement sources */
-      {"GLOBAL_FRAGMENT_FILTER", R"(
-        vec3 cullPos = cullPosAttr;
-      )"}
-    },
-    /* uniforms */ {},
-    /* attributes */ {},
-    /* textures */ {}
-);
 
 ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix) {
 

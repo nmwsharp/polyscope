@@ -304,9 +304,10 @@ public:
   BackfacePolicy getBackfacePolicy();
 
   // Rendering helpers used by quantities
-  std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
-  void setStructureUniforms(render::ShaderProgram& p);
+  void setSurfaceMeshUniforms(render::ShaderProgram& p);
   void fillGeometryBuffers(render::ShaderProgram& p);
+  std::vector<std::string> addSurfaceMeshRules(std::vector<std::string> initRules, bool withMesh = true,
+                                               bool withEdge = true);
 
 private:
   // Visualization settings

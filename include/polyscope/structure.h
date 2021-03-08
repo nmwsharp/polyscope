@@ -37,6 +37,9 @@ public:
   virtual void draw() = 0;
   virtual void drawPick() = 0;
 
+  // == Add rendering rules
+  virtual std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
+
   // == Build the ImGUI ui elements
   void buildUI();
   virtual void buildCustomUI() = 0;       // overridden by childen to add custom UI data
@@ -62,7 +65,8 @@ public:
   void centerBoundingBox();
   void rescaleToUnit();
   void resetTransform();
-  void setTransformUniforms(render::ShaderProgram& p);
+  void setStructureUniforms(render::ShaderProgram& p);
+  bool wantsCullPosition();
 
   // Re-perform any setup work, including refreshing all quantities
   virtual void refresh();
@@ -79,8 +83,11 @@ public:
   // Options
   Structure* setTransparency(double newVal); // also enables transparency if <1 and transparency is not enabled
   double getTransparency();
+  
+  Structure* setCullWholeElements(bool newVal);
+  bool getCullWholeElements();
 
-  void setIgnoreSlicePlane(std::string name, bool newValue);
+  Structure* setIgnoreSlicePlane(std::string name, bool newValue);
   bool getIgnoreSlicePlane(std::string name);
 
 protected:
@@ -95,6 +102,7 @@ protected:
   // Widget that wraps the transform
   TransformationGizmo transformGizmo;
   
+  PersistentValue<bool> cullWholeElements;
   PersistentValue<std::vector<std::string>> ignoredSlicePlaneNames;
 };
 
