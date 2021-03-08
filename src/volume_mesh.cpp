@@ -22,7 +22,7 @@ const std::string VolumeMesh::structureTypeName = "Volume Mesh";
 // clang-format off
 const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilTet = 
  {
-   {{0,1,2}}, 
+   {{0,2,1}}, 
    {{0,1,3}}, 
    {{0,3,2}}, 
    {{1,2,3}},
@@ -147,8 +147,8 @@ void VolumeMesh::draw() {
   if (!isEnabled()) {
     return;
   }
-  
-  render::engine->setBackfaceCull(true);
+
+  render::engine->setBackfaceCull();
 
   // If no quantity is drawing the volume, we should draw it
   if (dominantQuantity == nullptr) {
@@ -172,8 +172,6 @@ void VolumeMesh::draw() {
   for (auto& x : quantities) {
     x.second->draw();
   }
-
-  render::engine->setBackfaceCull(); // return to default setting
 }
 
 void VolumeMesh::drawPick() {
@@ -201,26 +199,25 @@ void VolumeMesh::prepare() {
 
 void VolumeMesh::preparePick() {
 
-  /*
-
   // Create a new program
   pickProgram = render::engine->requestShader("MESH", {"MESH_PROPAGATE_PICK"}, render::ShaderReplacementDefaults::Pick);
 
-  // Get element indices
-  size_t totalPickElements = nVertices() + nFaces() + nEdges() + nHalfedges();
+  // == Sort out element counts and index ranges
 
-  // In "local" indices, indexing elements only within this triMesh, used for reading later
-  facePickIndStart = nVertices();
-  edgePickIndStart = facePickIndStart + nFaces();
-  halfedgePickIndStart = edgePickIndStart + nEdges();
+  // TODO for now only picking cells and vertices
+
+  // Get element indices
+  size_t totalPickElements = nVertices() + nCells();
+
+  // In "local" indices, indexing elements only within this mesh, used for reading later
+  cellPickIndStart = nVertices();
 
   // In "global" indices, indexing all elements in the scene, used to fill buffers for drawing here
   size_t pickStart = pick::requestPickBufferRange(this, totalPickElements);
-  size_t faceGlobalPickIndStart = pickStart + nVertices();
-  size_t edgeGlobalPickIndStart = faceGlobalPickIndStart + nFaces();
-  size_t halfedgeGlobalPickIndStart = edgeGlobalPickIndStart + nEdges();
+  size_t cellGlobalPickIndStart = pickStart + nVertices();
 
   // == Fill buffers
+
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
@@ -228,79 +225,65 @@ void VolumeMesh::preparePick() {
   std::vector<glm::vec3> faceColor;
 
   // Reserve space
-  positions.reserve(3 * nFacesTriangulation());
-  bcoord.reserve(3 * nFacesTriangulation());
-  vertexColors.reserve(3 * nFacesTriangulation());
-  edgeColors.reserve(3 * nFacesTriangulation());
-  halfedgeColors.reserve(3 * nFacesTriangulation());
-  faceColor.reserve(3 * nFacesTriangulation());
-  normals.reserve(3 * nFacesTriangulation());
+  // TODO
+  // positions.reserve(3 * nFacesTriangulation());
+  // bcoord.reserve(3 * nFacesTriangulation());
+  // vertexColors.reserve(3 * nFacesTriangulation());
+  // edgeColors.reserve(3 * nFacesTriangulation());
+  // halfedgeColors.reserve(3 * nFacesTriangulation());
+  // faceColor.reserve(3 * nFacesTriangulation());
+  // normals.reserve(3 * nFacesTriangulation());
 
-  // Build all quantities in each face
-  for (size_t iF = 0; iF < nFaces(); iF++) {
-    auto& face = faces[iF];
-    size_t D = face.size();
-    glm::vec3 faceN = faceNormals[iF];
 
-    // implicitly triangulate from root
-    size_t vRoot = face[0];
-    glm::vec3 pRoot = vertices[vRoot];
-    for (size_t j = 1; (j + 1) < D; j++) {
-      size_t vB = face[j];
-      glm::vec3 pB = vertices[vB];
-      size_t vC = face[(j + 1) % D];
-      glm::vec3 pC = vertices[vC];
+  for (size_t iC = 0; iC < nCells(); iC++) {
+    const std::array<int64_t, 8>& cell = cells[iC];
+    VolumeCellType cellT = cellType(iC);
 
-      glm::vec3 fColor = pick::indToVec(iF + faceGlobalPickIndStart);
-      std::array<size_t, 3> vertexInds = {vRoot, vB, vC};
+    glm::vec3 cellColor = pick::indToVec(cellGlobalPickIndStart + iC);
+    std::array<glm::vec3, 3> cellColorArr{cellColor, cellColor, cellColor};
 
-      positions.push_back(pRoot);
-      positions.push_back(pB);
-      positions.push_back(pC);
+    for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
 
-      normals.push_back(faceN);
-      normals.push_back(faceN);
-      normals.push_back(faceN);
-
-      // Build all quantities
-      std::array<glm::vec3, 3> vColor;
-
-      for (size_t i = 0; i < 3; i++) {
-        // Want just one copy of face color, so we can build it in the usual way
-        faceColor.push_back(fColor);
-
-        // Vertex index color
-        vColor[i] = pick::indToVec(vertexInds[i] + pickStart);
+      // Do a first pass to compute a normal
+      glm::vec3 normal{0., 0., 0.};
+      for (const std::array<size_t, 3>& tri : face) {
+        glm::vec3 pA = vertices[cell[tri[0]]];
+        glm::vec3 pB = vertices[cell[tri[1]]];
+        glm::vec3 pC = vertices[cell[tri[2]]];
+        normal += glm::cross(pC - pB, pA - pB);
       }
+      normal = glm::normalize(normal);
 
-      std::array<glm::vec3, 3> eColor = {fColor, pick::indToVec(edgeIndices[iF][j] + edgeGlobalPickIndStart), fColor};
-      std::array<glm::vec3, 3> heColor = {fColor, pick::indToVec(halfedgeIndices[iF][j] + halfedgeGlobalPickIndStart),
-                                          fColor};
 
-      // First edge is a real edge
-      if (j == 1) {
-        eColor[0] = pick::indToVec(edgeIndices[iF][0] + edgeGlobalPickIndStart);
-        heColor[0] = pick::indToVec(halfedgeIndices[iF][0] + halfedgeGlobalPickIndStart);
+      // Emit the actual face triangulation
+      for (size_t j = 0; j < face.size(); j++) {
+        const std::array<size_t, 3>& tri = face[j];
+
+        std::array<glm::vec3, 3> vPos;
+        std::array<glm::vec3, 3> vColor;
+        for (int k = 0; k < 3; k++) {
+          vPos[k] = vertices[cell[tri[k]]];
+          vColor[k] = pick::indToVec(static_cast<size_t>(cell[tri[k]]) + pickStart);
+        }
+
+        for (int k = 0; k < 3; k++) {
+          positions.push_back(vPos[k]);
+          normals.push_back(normal);
+          faceColor.push_back(cellColor);
+
+          // need to pass each per-vertex value for these, since they will be interpolated
+          vertexColors.push_back(vColor);
+          edgeColors.push_back(cellColorArr);
+          halfedgeColors.push_back(cellColorArr);
+        }
+
+        bcoord.push_back(glm::vec3{1., 0., 0.});
+        bcoord.push_back(glm::vec3{0., 1., 0.});
+        bcoord.push_back(glm::vec3{0., 0., 1.});
       }
-      // Last is a real edge
-      if (j + 2 == D) {
-        eColor[2] = pick::indToVec(edgeIndices[iF].back() + edgeGlobalPickIndStart);
-        heColor[2] = pick::indToVec(halfedgeIndices[iF].back() + halfedgeGlobalPickIndStart);
-      }
-
-      // Push three copies of the values needed at each vertex
-      for (int j = 0; j < 3; j++) {
-        vertexColors.push_back(vColor);
-        edgeColors.push_back(eColor);
-        halfedgeColors.push_back(heColor);
-      }
-
-      // Barycoords
-      bcoord.push_back(glm::vec3{1.0, 0.0, 0.0});
-      bcoord.push_back(glm::vec3{0.0, 1.0, 0.0});
-      bcoord.push_back(glm::vec3{0.0, 0.0, 1.0});
     }
   }
+
 
   // Store data in buffers
   pickProgram->setAttribute("a_position", positions);
@@ -310,14 +293,13 @@ void VolumeMesh::preparePick() {
   pickProgram->setAttribute<glm::vec3, 3>("a_edgeColors", edgeColors);
   pickProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", halfedgeColors);
   pickProgram->setAttribute("a_faceColor", faceColor);
-
-  */
 }
 
 std::vector<std::string> VolumeMesh::addStructureRules(std::vector<std::string> initRules) {
   if (getEdgeWidth() > 0) {
     initRules.push_back("MESH_WIREFRAME");
   }
+  initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
   return initRules;
 }
 
@@ -338,6 +320,7 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   bool wantsBary = p.hasAttribute("a_barycoord");
   bool wantsEdge = (getEdgeWidth() > 0);
 
+  /* TODO
   positions.reserve(3 * nFacesTriangulation());
   normals.reserve(3 * nFacesTriangulation());
   if (wantsBary) {
@@ -346,6 +329,7 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   if (wantsEdge) {
     edgeReal.reserve(3 * nFacesTriangulation());
   }
+  */
 
   for (size_t iC = 0; iC < nCells(); iC++) {
     const std::array<int64_t, 8>& cell = cells[iC];
@@ -421,20 +405,15 @@ const std::vector<std::vector<std::array<size_t, 3>>>& VolumeMesh::cellStencil(V
 }
 
 void VolumeMesh::buildPickUI(size_t localPickID) {
-  /*
-  TODO
 
   // Selection type
-  if (localPickID < facePickIndStart) {
+  if (localPickID < cellPickIndStart) {
     buildVertexInfoGui(localPickID);
-  } else if (localPickID < edgePickIndStart) {
-    buildFaceInfoGui(localPickID - facePickIndStart);
-  } else if (localPickID < halfedgePickIndStart) {
-    buildEdgeInfoGui(localPickID - edgePickIndStart);
-  } else {
-    buildHalfedgeInfoGui(localPickID - halfedgePickIndStart);
+  } 
+  // TODO faces and edges
+  else {
+    buildCellInfoGUI(localPickID - cellPickIndStart);
   }
-  */
 }
 
 void VolumeMesh::buildVertexInfoGui(size_t vInd) {
@@ -508,11 +487,11 @@ void VolumeMesh::buildEdgeInfoGui(size_t eInd) {
   ImGui::Indent(-20.);
 }
 
-void VolumeMesh::buildCellInfoGUI(size_t heInd) {
-  size_t displayInd = heInd;
-  if (halfedgePerm.size() > 0) {
-    displayInd = halfedgePerm[heInd];
-  }
+void VolumeMesh::buildCellInfoGUI(size_t cellInd) {
+  size_t displayInd = cellInd;
+  //if (halfedgePerm.size() > 0) {
+    //displayInd = halfedgePerm[cellInd];
+  //}
   ImGui::TextUnformatted(("Cell #" + std::to_string(displayInd)).c_str());
 
   ImGui::Spacing();
@@ -524,7 +503,7 @@ void VolumeMesh::buildCellInfoGUI(size_t heInd) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildCellInfoGUI(heInd);
+    x.second->buildCellInfoGUI(cellInd);
   }
 
   ImGui::Indent(-20.);

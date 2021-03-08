@@ -130,8 +130,6 @@ public:
   std::vector<size_t> vertexPerm;
   std::vector<size_t> facePerm;
   std::vector<size_t> edgePerm;
-  std::vector<size_t> halfedgePerm;
-  std::vector<size_t> cornerPerm;
 
   /*
 
@@ -172,9 +170,9 @@ public:
   size_t nVertices() const { return vertices.size(); }
   size_t nCells() const { return cells.size(); }
 
-  size_t nFacesTriangulationCount = 0;
+  //size_t nFacesTriangulationCount = 0; TODO
   size_t nFacesCount = 0;
-  size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
+  //size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
   size_t nFaces() const { return nFacesCount; }
 
   size_t nEdgesCount = 0;
