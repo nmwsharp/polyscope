@@ -112,6 +112,37 @@ R"(
 
 // == Rules
 
+// input: 2 uniforms and an int attribute
+// output: vec3 albedoColor
+const ShaderReplacementRule MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE (
+    /* rule name */ "MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in float a_faceColorType;
+          out float a_faceColorTypeToFrag;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_faceColorTypeToFrag = a_faceColorType;
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          uniform vec3 u_baseColor1;
+          uniform vec3 u_baseColor2;
+          in float a_faceColorTypeToFrag;
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+          vec3 albedoColor = (a_faceColorTypeToFrag == 0.) ? u_baseColor1 : u_baseColor2;
+        )"}
+    },
+    /* uniforms */ {
+      {"u_baseColor1", DataType::Vector3Float},
+      {"u_baseColor2", DataType::Vector3Float},
+    },
+    /* attributes */ {
+      {"a_faceColorType", DataType::Float},
+    },
+    /* textures */ {}
+);
+
 const ShaderReplacementRule MESH_PROPAGATE_VALUE (
     /* rule name */ "MESH_PROPAGATE_VALUE",
     { /* replacement sources */

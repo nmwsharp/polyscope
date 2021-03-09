@@ -83,7 +83,6 @@ public:
   virtual std::string typeName() override;
 
   virtual void refresh() override;
-  virtual std::vector<std::string> addStructureRules(std::vector<std::string> initRules) override;
 
   // === Quantity-related
   // clang-format off
@@ -171,9 +170,7 @@ public:
   size_t nVertices() const { return vertices.size(); }
   size_t nCells() const { return cells.size(); }
 
-  // size_t nFacesTriangulationCount = 0; TODO
-  size_t nFacesCount = 0;
-  // size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
+   size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
   size_t nFaces() const { return nFacesCount; }
 
   size_t nEdgesCount = 0;
@@ -183,11 +180,14 @@ public:
   std::vector<double> cellAreas;
   std::vector<double> faceAreas;
   std::vector<double> vertexAreas;
+  std::vector<char> faceIsInterior; // a flat array whos order matches the iteration order of the mesh
 
   // = Mesh helpers
   VolumeCellType cellType(size_t i) const;
   void computeCounts();       // call to populate counts and indices
   void computeGeometryData(); // call to populate normals/areas/lengths
+  std::vector<std::string> addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade = true);
+  glm::vec3 cellCenter(size_t iC);
 
   // === Member variables ===
   static const std::string structureTypeName;
@@ -197,6 +197,10 @@ public:
   // Color of the mesh
   VolumeMesh* setColor(glm::vec3 val);
   glm::vec3 getColor();
+
+  // Color of the interior faces of the mesh
+  VolumeMesh* setInteriorColor(glm::vec3 val);
+  glm::vec3 getInteriorColor();
 
   // Color of edges
   VolumeMesh* setEdgeColor(glm::vec3 val);
@@ -219,6 +223,7 @@ public:
 private:
   // Visualization settings
   PersistentValue<glm::vec3> color;
+  PersistentValue<glm::vec3> interiorColor;
   PersistentValue<glm::vec3> edgeColor;
   PersistentValue<std::string> material;
   PersistentValue<float> edgeWidth;
@@ -244,6 +249,9 @@ private:
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> pickProgram;
 
+  // Internal members
+  size_t nFacesTriangulationCount = 0;
+  size_t nFacesCount = 0;
 
   // === Helper functions
 

@@ -65,5 +65,18 @@ struct hash<std::pair<T, U>> {
   }
 };
 
+// Hash for arrays
+template <class T, size_t N>
+struct hash<std::array<T, N>> {
+  std::size_t operator()(const std::array<T, N>& arr) const {
+    std::hash<T> hasher;
+    size_t result = 0;
+    for (size_t i = 0; i < N; i++) {
+      hash_combine(result, arr[i]);
+    }
+    return result;
+  }
+};
+
 }; // namespace hash_combine
 }; // namespace polyscope
