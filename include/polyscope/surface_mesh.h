@@ -307,7 +307,7 @@ public:
   void setSurfaceMeshUniforms(render::ShaderProgram& p);
   void fillGeometryBuffers(render::ShaderProgram& p);
   std::vector<std::string> addSurfaceMeshRules(std::vector<std::string> initRules, bool withMesh = true,
-                                               bool withEdge = true);
+                                               bool withSurfaceShade = true);
 
 private:
   // Visualization settings

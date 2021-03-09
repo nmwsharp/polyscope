@@ -38,7 +38,7 @@ public:
   virtual void drawPick() = 0;
 
   // == Add rendering rules
-  virtual std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
+  std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
 
   // == Build the ImGUI ui elements
   void buildUI();

@@ -28,7 +28,6 @@ SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexP
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
       edgeWidth(uniquePrefix() + "edgeWidth", 0.),
       backfacePolicy(uniquePrefix() + "backfacePolicy", BackfacePolicy::Different) {
-  cullWholeElements.setPassive(true);
   computeCounts();
   computeGeometryData();
 }
@@ -627,10 +626,6 @@ void SurfaceMesh::fillGeometryBuffers(render::ShaderProgram& p) {
     }
   }
 
-  if (wantsCullPosition()) {
-    p.setAttribute("a_cullPos", barycenters);
-  }
-
   // Store data in buffers
   p.setAttribute("a_position", positions);
   p.setAttribute("a_normal", normals);
@@ -639,6 +634,9 @@ void SurfaceMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   }
   if (wantsEdge) {
     p.setAttribute("a_edgeIsReal", edgeReal);
+  }
+  if (wantsCullPosition()) {
+    p.setAttribute("a_cullPos", barycenters);
   }
 }
 

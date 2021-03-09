@@ -83,6 +83,7 @@ const ShaderReplacementRule SHADE_BASECOLOR (
     /* textures */ {}
 );
 
+
 // input: vec3 shadeColor 
 // output: vec3 albedoColor
 const ShaderReplacementRule SHADE_COLOR(
