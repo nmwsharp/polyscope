@@ -38,6 +38,9 @@ public:
 
   bool getDrawPlane();
   void setDrawPlane(bool newVal);
+  
+  bool getDrawWidget();
+  void setDrawWidget(bool newVal);
 
   glm::mat4 getTransform();
   void setTransform(glm::mat4 newTransform);
@@ -46,6 +49,7 @@ protected:
   // = State
   PersistentValue<bool> active;    // is it actually slicing?
   PersistentValue<bool> drawPlane; // do we draw the plane onscreen?
+  PersistentValue<bool> drawWidget; // do we draw the widget onscreen?
   PersistentValue<glm::mat4> objectTransform;
   PersistentValue<glm::vec3> color;
   PersistentValue<float> transparency;
@@ -59,10 +63,14 @@ protected:
   void prepare();
   glm::vec3 getCenter();
   glm::vec3 getNormal();
+  void updateWidgetEnabled();
 };
 
 SlicePlane* addSceneSlicePlane();
 void removeLastSceneSlicePlane();
 void buildSlicePlaneGUI();
+
+// flag to open the slice plane menu after adding a slice plane
+extern bool openSlicePlaneMenu;
 
 } // namespace polyscope
