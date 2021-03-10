@@ -14,7 +14,11 @@ namespace {
 // when the destructor executes. The lame solution is to just store as raw pointers, it only makes a difference at
 // program exit.
 std::vector<SlicePlane*> sceneSlicePlanes;
+
 } // namespace
+
+// Storage for global options
+bool openSlicePlaneMenu = false;
 
 SlicePlane* addSceneSlicePlane() {
   size_t nPlanes = sceneSlicePlanes.size();
@@ -31,7 +35,12 @@ void removeLastSceneSlicePlane() {
 
 void buildSlicePlaneGUI() {
 
+
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  if (openSlicePlaneMenu) {
+    ImGui::SetNextTreeNodeOpen(true);
+    openSlicePlaneMenu = false;
+  }
   if (ImGui::TreeNode("Slice Planes")) {
     if (ImGui::Button("Add plane")) {
       addSceneSlicePlane();
@@ -49,7 +58,7 @@ void buildSlicePlaneGUI() {
 
 SlicePlane::SlicePlane(std::string name_)
     : name(name_), postfix(std::to_string(state::slicePlanes.size())), active("SlicePlane#" + name + "#active", true),
-      drawPlane("SlicePlane#" + name + "#drawPlane", true),
+      drawPlane("SlicePlane#" + name + "#drawPlane", true), drawWidget("SlicePlane#" + name + "#drawWidget", true),
       objectTransform("SlicePlane#" + name + "#object_transform", glm::mat4(1.0)),
       color("SlicePlane#" + name + "#color", getNextUniqueColor()),
       transparency("SlicePlane#" + name + "#transparency", 0.5),
@@ -92,7 +101,7 @@ void SlicePlane::prepare() {
 }
 
 void SlicePlane::draw() {
-  if (!drawPlane.get()) return;
+  if (!drawPlane.get() || !active.get()) return;
 
   // Set uniforms
   glm::mat4 viewMat = view::getCameraViewMatrix();
@@ -117,13 +126,16 @@ void SlicePlane::draw() {
 void SlicePlane::buildGUI() {
   ImGui::PushID(name.c_str());
 
-  ImGui::TextUnformatted(name.c_str());
+  if (ImGui::Checkbox(name.c_str(), &active.get())) {
+    setActive(getActive());
+  }
   ImGui::Indent(16.);
-  if (ImGui::Checkbox("active", &active.get())) active.manuallyChanged();
-  ImGui::SameLine();
   if (ImGui::Checkbox("draw plane", &drawPlane.get())) {
-    drawPlane.manuallyChanged();
-    transformGizmo.enabled = drawPlane.get();
+    setDrawPlane(getDrawPlane());
+  }
+  ImGui::SameLine();
+  if (ImGui::Checkbox("draw widget", &drawWidget.get())) {
+    setDrawWidget(getDrawWidget());
   }
   ImGui::Unindent(16.);
 
@@ -167,15 +179,28 @@ glm::vec3 SlicePlane::getNormal() {
   }
 }
 
+void SlicePlane::updateWidgetEnabled() {
+  bool enabled = getActive() && getDrawWidget();
+  transformGizmo.enabled = enabled;
+}
+
 bool SlicePlane::getActive() { return active.get(); }
 void SlicePlane::setActive(bool newVal) {
   active = newVal;
+  updateWidgetEnabled();
   polyscope::requestRedraw();
 }
 
 bool SlicePlane::getDrawPlane() { return drawPlane.get(); }
 void SlicePlane::setDrawPlane(bool newVal) {
   drawPlane = newVal;
+  polyscope::requestRedraw();
+}
+
+bool SlicePlane::getDrawWidget() { return drawWidget.get(); }
+void SlicePlane::setDrawWidget(bool newVal) {
+  drawWidget = newVal;
+  updateWidgetEnabled();
   polyscope::requestRedraw();
 }
 

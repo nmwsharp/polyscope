@@ -88,15 +88,23 @@ void Structure::buildUI() {
 
         if (state::slicePlanes.empty()) {
           // if there are none, show a helpful message
-          ImGui::TextUnformatted("Note: Add slice planes in");
-          ImGui::TextUnformatted("      View --> Slice Planes.");
+          if (ImGui::Button("Add slice plane")) {
+            openSlicePlaneMenu = true;
+            addSceneSlicePlane();
+          }
         } else {
           // otherwise, show toggles for each
+          ImGui::TextUnformatted("Plane slices this structure:");
+          ImGui::Indent(20);
           for (SlicePlane* s : state::slicePlanes) {
             bool ignorePlane = getIgnoreSlicePlane(s->name);
             if (ImGui::MenuItem(s->name.c_str(), NULL, !ignorePlane)) setIgnoreSlicePlane(s->name, !ignorePlane);
           }
+          ImGui::Indent(-20);
         }
+        ImGui::Separator();
+        ImGui::TextUnformatted("Note: Manage slice planes in");
+        ImGui::TextUnformatted("      View --> Slice Planes.");
 
         ImGui::EndMenu();
       }
