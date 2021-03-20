@@ -14,8 +14,8 @@
 
 // Alllll the quantities
 #include "polyscope/volume_mesh_color_quantity.h"
+#include "polyscope/volume_mesh_scalar_quantity.h"
 /*
-#include "polyscope/volume_scalar_quantity.h"
 #include "polyscope/volume_vector_quantity.h"
 */
 
@@ -25,10 +25,9 @@ namespace polyscope {
 // Forward declarations for quantities
 class VolumeMeshVertexColorQuantity;
 class VolumeMeshCellColorQuantity;
+class VolumeMeshVertexScalarQuantity;
+class VolumeMeshCellScalarQuantity;
 /*
-class VolumeFaceColorQuantity;
-class VolumeVertexScalarQuantity;
-class VolumeFaceScalarQuantity;
 class VolumeEdgeScalarQuantity;
 class VolumeHalfedgeScalarQuantity;
 class VolumeVertexScalarQuantity;
@@ -87,14 +86,9 @@ public:
   // === Quantity-related
   // clang-format off
 
-  /*
   // = Scalars (expect scalar array)
-  template <class T> VolumeVertexScalarQuantity* addVertexScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD); 
-  template <class T> VolumeFaceScalarQuantity* addFaceScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD); 
-  template <class T> VolumeEdgeScalarQuantity* addEdgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD); 
-  template <class T> VolumeHalfedgeScalarQuantity* addHalfedgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
-
-  */
+  template <class T> VolumeMeshVertexScalarQuantity* addVertexScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD); 
+  template <class T> VolumeMeshCellScalarQuantity* addCellScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD); 
 
   // = Colors (expect vec3 array)
   template <class T> VolumeMeshVertexColorQuantity* addVertexColorQuantity(std::string name, const T& data);
@@ -251,9 +245,9 @@ private:
 
   VolumeMeshVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   VolumeMeshCellColorQuantity* addCellColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
+  VolumeMeshVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
+  VolumeMeshCellScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   /*
-  VolumeVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  VolumeFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   VolumeEdgeScalarQuantity* addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   VolumeHalfedgeScalarQuantity* addHalfedgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   VolumeVertexVectorQuantity* addVertexVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
