@@ -73,6 +73,19 @@ VolumeMeshCellColorQuantity* VolumeMesh::addCellColorQuantity(std::string name, 
   return addCellColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(colors));
 }
 
+template <class T>
+VolumeMeshVertexScalarQuantity* VolumeMesh::addVertexScalarQuantity(std::string name, const T& data, DataType type) {
+  validateSize(data, vertexDataSize, "vertex scalar quantity " + name);
+  return addVertexScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
+}
+
+template <class T>
+VolumeMeshCellScalarQuantity* VolumeMesh::addCellScalarQuantity(std::string name, const T& data, DataType type) {
+  validateSize(data, cellDataSize, "cell scalar quantity " + name);
+  return addCellScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
+}
+
+
 /*
 
 template <class T>
@@ -207,18 +220,6 @@ VolumeGraphQuantity* VolumeMesh::addVolumeGraphQuantity2D(std::string name, cons
   return addVolumeGraphQuantity(name, paths3D);
 }
 
-
-template <class T>
-VolumeVertexScalarQuantity* VolumeMesh::addVertexScalarQuantity(std::string name, const T& data, DataType type) {
-  validateSize(data, vertexDataSize, "vertex scalar quantity " + name);
-  return addVertexScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
-}
-
-template <class T>
-VolumeFaceScalarQuantity* VolumeMesh::addFaceScalarQuantity(std::string name, const T& data, DataType type) {
-  validateSize(data, faceDataSize, "face scalar quantity " + name);
-  return addFaceScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
-}
 
 
 template <class T>

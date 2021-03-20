@@ -841,30 +841,23 @@ VolumeMeshCellColorQuantity* VolumeMesh::addCellColorQuantityImpl(std::string na
   return q;
 }
 
+VolumeMeshVertexScalarQuantity*
+VolumeMesh::addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type) {
+  VolumeMeshVertexScalarQuantity* q =
+      new VolumeMeshVertexScalarQuantity(name, applyPermutation(data, vertexPerm), *this, type);
+  addQuantity(q);
+  return q;
+}
+
+VolumeMeshCellScalarQuantity* VolumeMesh::addCellScalarQuantityImpl(std::string name, const std::vector<double>& data,
+                                                                    DataType type) {
+  VolumeMeshCellScalarQuantity* q =
+      new VolumeMeshCellScalarQuantity(name, applyPermutation(data, facePerm), *this, type);
+  addQuantity(q);
+  return q;
+}
+
 /*
-VolumeVertexScalarQuantity* VolumeMesh::addVertexDistanceQuantityImpl(std::string name,
-                                                                      const std::vector<double>& data) {
-  VolumeVertexScalarQuantity* q =
-      new VolumeVertexScalarQuantity(name, applyPermutation(data, vertexPerm), *this, DataType::MAGNITUDE);
-
-  q->setIsolinesEnabled(true);
-  q->setIsolineWidth(0.02, true);
-
-  addQuantity(q);
-  return q;
-}
-
-VolumeVertexScalarQuantity* VolumeMesh::addVertexSignedDistanceQuantityImpl(std::string name,
-                                                                            const std::vector<double>& data) {
-  VolumeVertexScalarQuantity* q =
-      new VolumeVertexScalarQuantity(name, applyPermutation(data, vertexPerm), *this, DataType::SYMMETRIC);
-
-  q->setIsolinesEnabled(true);
-  q->setIsolineWidth(0.02, true);
-
-  addQuantity(q);
-  return q;
-}
 
 VolumeCornerParameterizationQuantity* VolumeMesh::addParameterizationQuantityImpl(std::string name,
                                                                                   const std::vector<glm::vec2>&
@@ -927,18 +920,6 @@ VolumeGraphQuantity* VolumeMesh::addVolumeGraphQuantityImpl(std::string name, co
 }
 
 
-VolumeVertexScalarQuantity* VolumeMesh::addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data,
-                                                                    DataType type) {
-  VolumeVertexScalarQuantity* q = new VolumeVertexScalarQuantity(name, applyPermutation(data, vertexPerm), *this,
-type); addQuantity(q); return q;
-}
-
-VolumeFaceScalarQuantity* VolumeMesh::addFaceScalarQuantityImpl(std::string name, const std::vector<double>& data,
-                                                                DataType type) {
-  VolumeFaceScalarQuantity* q = new VolumeFaceScalarQuantity(name, applyPermutation(data, facePerm), *this, type);
-  addQuantity(q);
-  return q;
-}
 
 
 VolumeEdgeScalarQuantity* VolumeMesh::addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data,
