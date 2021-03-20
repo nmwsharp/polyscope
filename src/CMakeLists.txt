@@ -166,6 +166,7 @@ SET(SRCS
   
   # Volume mesh
   volume_mesh.cpp
+  volume_mesh_color_quantity.cpp
   
   # Rendering utilities
   vector_artist.cpp

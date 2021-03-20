@@ -13,9 +13,8 @@
 #include "polyscope/volume_mesh_quantity.h"
 
 // Alllll the quantities
+#include "polyscope/volume_mesh_color_quantity.h"
 /*
-#include "polyscope/volume_color_quantity.h"
-#include "polyscope/volume_count_quantity.h"
 #include "polyscope/volume_scalar_quantity.h"
 #include "polyscope/volume_vector_quantity.h"
 */
@@ -24,8 +23,9 @@
 namespace polyscope {
 
 // Forward declarations for quantities
+class VolumeMeshVertexColorQuantity;
+class VolumeMeshCellColorQuantity;
 /*
-class VolumeVertexColorQuantity;
 class VolumeFaceColorQuantity;
 class VolumeVertexScalarQuantity;
 class VolumeFaceScalarQuantity;
@@ -86,21 +86,21 @@ public:
 
   // === Quantity-related
   // clang-format off
-  /*
 
+  /*
   // = Scalars (expect scalar array)
   template <class T> VolumeVertexScalarQuantity* addVertexScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD); 
   template <class T> VolumeFaceScalarQuantity* addFaceScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD); 
   template <class T> VolumeEdgeScalarQuantity* addEdgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD); 
   template <class T> VolumeHalfedgeScalarQuantity* addHalfedgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
 
-  // = Distance (expect scalar array)
-  template <class T> VolumeVertexScalarQuantity* addVertexDistanceQuantity(std::string name, const T& data);
-  template <class T> VolumeVertexScalarQuantity* addVertexSignedDistanceQuantity(std::string name, const T& data);
+  */
 
   // = Colors (expect vec3 array)
-  template <class T> VolumeVertexColorQuantity* addVertexColorQuantity(std::string name, const T& data);
-  template <class T> VolumeFaceColorQuantity* addFaceColorQuantity(std::string name, const T& data);
+  template <class T> VolumeMeshVertexColorQuantity* addVertexColorQuantity(std::string name, const T& data);
+  template <class T> VolumeMeshCellColorQuantity* addCellColorQuantity(std::string name, const T& data);
+
+  /*
   
 	// = Vectors (expect vector array, inner type must be indexable with correct dimension (3 for extrinsic, 2 for intrinsic) 
 	template <class T> VolumeVertexVectorQuantity* addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
@@ -128,32 +128,15 @@ public:
 
   // Permutation arrays. Empty == default ordering
   std::vector<size_t> vertexPerm;
-  std::vector<size_t> facePerm;
   std::vector<size_t> edgePerm;
-
-  /*
-
-  // Set permutations
-  template <class T>
-  void setVertexPermutation(const T& perm, size_t expectedSize = 0);
-  template <class T>
-  void setFacePermutation(const T& perm, size_t expectedSize = 0);
-  template <class T>
-  void setEdgePermutation(const T& perm, size_t expectedSize = 0);
-  template <class T>
-  void setHalfedgePermutation(const T& perm, size_t expectedSize = 0);
-  template <class T>
-  void setCornerPermutation(const T& perm, size_t expectedSize = 0);
-  template <class T>
-  void setAllPermutations(const std::array<std::pair<T, size_t>, 5>& perms);
-  */
+  std::vector<size_t> facePerm;
+  std::vector<size_t> cellPerm;
 
   // Get the expected data length, either using the default convention or a permutation as above
   size_t vertexDataSize;
-  size_t faceDataSize;
   size_t edgeDataSize;
-  size_t halfedgeDataSize;
-  size_t cornerDataSize;
+  size_t faceDataSize;
+  size_t cellDataSize;
 
 
   // === Manage the mesh itself
@@ -162,15 +145,11 @@ public:
   std::vector<glm::vec3> vertices;
   std::vector<std::array<int64_t, 8>> cells; // holds unused indices hold INVALID_IND
 
-  // Derived indices
-  // std::vector<std::vector<size_t>> edgeIndices;
-  // std::vector<std::vector<size_t>> halfedgeIndices;
-
   // Counts
   size_t nVertices() const { return vertices.size(); }
   size_t nCells() const { return cells.size(); }
 
-   size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
+  size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
   size_t nFaces() const { return nFacesCount; }
 
   size_t nEdgesCount = 0;
@@ -270,9 +249,9 @@ private:
 
   // === Quantity adders
 
+  VolumeMeshVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
+  VolumeMeshCellColorQuantity* addCellColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   /*
-  VolumeVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
-  VolumeFaceColorQuantity* addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   VolumeVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   VolumeFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   VolumeEdgeScalarQuantity* addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);

@@ -1,9 +1,9 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "polyscope/volume_mesh.h"
 
+#include "polyscope/color_management.h"
 #include "polyscope/combining_hash_functions.h"
 #include "polyscope/pick.h"
-#include "polyscope/color_management.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
 
@@ -67,6 +67,11 @@ void VolumeMesh::computeCounts() {
   // ==== Populate counts
   nFacesCount = 0;
   nFacesTriangulationCount = 0;
+
+  vertexDataSize = nVertices();
+  edgeDataSize = 0; // TODO
+  faceDataSize = 0; // TODO
+  cellDataSize = nCells();
 
   // ==== Populate interior/exterior faces
   for (size_t iC = 0; iC < nCells(); iC++) {
@@ -821,20 +826,22 @@ double VolumeMesh::getEdgeWidth() { return edgeWidth.get(); }
 
 // === Quantity adders
 
-/*
-VolumeVertexColorQuantity* VolumeMesh::addVertexColorQuantityImpl(std::string name,
+VolumeMeshVertexColorQuantity* VolumeMesh::addVertexColorQuantityImpl(std::string name,
+                                                                      const std::vector<glm::vec3>& colors) {
+  VolumeMeshVertexColorQuantity* q =
+      new VolumeMeshVertexColorQuantity(name, applyPermutation(colors, vertexPerm), *this);
+  addQuantity(q);
+  return q;
+}
+
+VolumeMeshCellColorQuantity* VolumeMesh::addCellColorQuantityImpl(std::string name,
                                                                   const std::vector<glm::vec3>& colors) {
-  VolumeVertexColorQuantity* q = new VolumeVertexColorQuantity(name, applyPermutation(colors, vertexPerm), *this);
+  VolumeMeshCellColorQuantity* q = new VolumeMeshCellColorQuantity(name, applyPermutation(colors, cellPerm), *this);
   addQuantity(q);
   return q;
 }
 
-VolumeFaceColorQuantity* VolumeMesh::addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors)
-{ VolumeFaceColorQuantity* q = new VolumeFaceColorQuantity(name, applyPermutation(colors, facePerm), *this);
-  addQuantity(q);
-  return q;
-}
-
+/*
 VolumeVertexScalarQuantity* VolumeMesh::addVertexDistanceQuantityImpl(std::string name,
                                                                       const std::vector<double>& data) {
   VolumeVertexScalarQuantity* q =
