@@ -80,12 +80,6 @@ void Structure::buildUI() {
 
       // Toggle whether slice planes apply
       if (ImGui::BeginMenu("Slice planes")) {
-
-        if (ImGui::MenuItem("cull whole elements", NULL, getCullWholeElements()))
-          setCullWholeElements(!getCullWholeElements());
-
-        ImGui::Separator();
-
         if (state::slicePlanes.empty()) {
           // if there are none, show a helpful message
           if (ImGui::Button("Add slice plane")) {
@@ -94,7 +88,7 @@ void Structure::buildUI() {
           }
         } else {
           // otherwise, show toggles for each
-          ImGui::TextUnformatted("Plane slices this structure:");
+          ImGui::TextUnformatted("Applies to this structure:");
           ImGui::Indent(20);
           for (SlicePlane* s : state::slicePlanes) {
             bool ignorePlane = getIgnoreSlicePlane(s->name);
@@ -102,12 +96,20 @@ void Structure::buildUI() {
           }
           ImGui::Indent(-20);
         }
+        ImGui::TextUnformatted("");
         ImGui::Separator();
         ImGui::TextUnformatted("Note: Manage slice planes in");
         ImGui::TextUnformatted("      View --> Slice Planes.");
 
         ImGui::EndMenu();
       }
+      
+      if (ImGui::BeginMenu("Slice plane options")) {
+        if (ImGui::MenuItem("cull whole elements", NULL, getCullWholeElements()))
+          setCullWholeElements(!getCullWholeElements());
+        ImGui::EndMenu();
+      }
+
 
       // Selection
       if (ImGui::BeginMenu("Structure Selection")) {
