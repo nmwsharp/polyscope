@@ -436,7 +436,20 @@ void processFileDotMesh(std::string filename) {
 
   std::cout << "parsed mesh with " << verts.size() << " verts and " << cells.size() << " cells\n";
 
-  polyscope::registerVolumeMesh(niceName, verts, cells);
+  auto ps_vol = polyscope::registerVolumeMesh(niceName, verts, cells);
+
+  // Add some scalar quantities
+  std::vector<std::array<double, 3>> randColorV(verts.size());
+  std::vector<std::array<double, 3>> randColorC(cells.size());
+  for (size_t i = 0; i < verts.size(); i++) {
+    randColorV[i] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
+  }
+  for (size_t i = 0; i < cells.size(); i++) {
+    randColorC[i] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
+  }
+
+  polyscope::getVolumeMesh(niceName)->addVertexColorQuantity("random color", randColorV);
+  polyscope::getVolumeMesh(niceName)->addCellColorQuantity("random color2", randColorC);
 }
 
 void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& points) {

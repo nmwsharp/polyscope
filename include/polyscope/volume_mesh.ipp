@@ -59,20 +59,21 @@ inline std::ostream& operator<<(std::ostream& out, const VolumeMeshElement value
 // These are generally small wrappers which do some error checks, apply an array adaptor, and hand off to a
 // private non-templated ___Impl version which does the actual adding work.
 
-/*
 
 template <class T>
-VolumeVertexColorQuantity* VolumeMesh::addVertexColorQuantity(std::string name, const T& colors) {
+VolumeMeshVertexColorQuantity* VolumeMesh::addVertexColorQuantity(std::string name, const T& colors) {
   validateSize<T>(colors, vertexDataSize, "vertex color quantity " + name);
   return addVertexColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(colors));
 }
 
 
 template <class T>
-VolumeFaceColorQuantity* VolumeMesh::addFaceColorQuantity(std::string name, const T& colors) {
-  validateSize<T>(colors, faceDataSize, "face color quantity " + name);
-  return addFaceColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(colors));
+VolumeMeshCellColorQuantity* VolumeMesh::addCellColorQuantity(std::string name, const T& colors) {
+  validateSize<T>(colors, cellDataSize, "cell color quantity " + name);
+  return addCellColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(colors));
 }
+
+/*
 
 template <class T>
 VolumeVertexScalarQuantity* VolumeMesh::addVertexDistanceQuantity(std::string name, const T& distances) {
