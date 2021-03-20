@@ -15,10 +15,7 @@
 // Alllll the quantities
 #include "polyscope/volume_mesh_color_quantity.h"
 #include "polyscope/volume_mesh_scalar_quantity.h"
-/*
-#include "polyscope/volume_vector_quantity.h"
-*/
-
+#include "polyscope/volume_mesh_vector_quantity.h"
 
 namespace polyscope {
 
@@ -27,21 +24,13 @@ class VolumeMeshVertexColorQuantity;
 class VolumeMeshCellColorQuantity;
 class VolumeMeshVertexScalarQuantity;
 class VolumeMeshCellScalarQuantity;
+class VolumeMeshVertexVectorQuantity;
+class VolumeMeshCellVectorQuantity;
 /*
-class VolumeEdgeScalarQuantity;
-class VolumeHalfedgeScalarQuantity;
-class VolumeVertexScalarQuantity;
-class VolumeCornerParameterizationQuantity;
-class VolumeVertexParameterizationQuantity;
-class VolumeVertexVectorQuantity;
-class VolumeFaceVectorQuantity;
-class VolumeVertexIntrinsicVectorQuantity;
-class VolumeFaceIntrinsicVectorQuantity;
-class VolumeOneFormIntrinsicVectorQuantity;
-class VolumeVertexCountQuantity;
-class VolumeVertexIsolatedScalarQuantity;
-class VolumeFaceCountQuantity;
-class VolumeGraphQuantity;
+class VolumeMeshVertexCountQuantity;
+class VolumeMeshVertexIsolatedScalarQuantity;
+class VolumeMeshFaceCountQuantity;
+class VolumeMeshGraphQuantity;
 */
 
 
@@ -94,15 +83,13 @@ public:
   template <class T> VolumeMeshVertexColorQuantity* addVertexColorQuantity(std::string name, const T& data);
   template <class T> VolumeMeshCellColorQuantity* addCellColorQuantity(std::string name, const T& data);
 
-  /*
   
 	// = Vectors (expect vector array, inner type must be indexable with correct dimension (3 for extrinsic, 2 for intrinsic) 
-	template <class T> VolumeVertexVectorQuantity* addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
-	template <class T> VolumeVertexVectorQuantity* addVertexVectorQuantity2D(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
-	template <class T> VolumeFaceVectorQuantity* addFaceVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
-	template <class T> VolumeFaceVectorQuantity* addFaceVectorQuantity2D(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
+	template <class T> VolumeMeshVertexVectorQuantity* addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
+	template <class T> VolumeMeshCellVectorQuantity* addCellVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
 
 
+  /*
   // = Counts/Values on isolated vertices (expect index/value pairs)
   VolumeVertexCountQuantity* addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>&
   values); 
@@ -247,11 +234,9 @@ private:
   VolumeMeshCellColorQuantity* addCellColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   VolumeMeshVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   VolumeMeshCellScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
+  VolumeMeshVertexVectorQuantity* addVertexVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
+  VolumeMeshCellVectorQuantity* addCellVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
   /*
-  VolumeEdgeScalarQuantity* addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  VolumeHalfedgeScalarQuantity* addHalfedgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  VolumeVertexVectorQuantity* addVertexVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
-  VolumeFaceVectorQuantity* addFaceVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
   VolumeVertexCountQuantity* addVertexCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
   VolumeVertexIsolatedScalarQuantity* addVertexIsolatedScalarQuantityImpl(std::string name, const std::vector<std::pair<size_t, double>>& values);
   VolumeFaceCountQuantity* addFaceCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
@@ -265,6 +250,7 @@ private:
 };
 
 // Register functions
+// TODO FIXME think about these
 template <class V, class C>
 VolumeMesh* registerTetMesh(std::string name, const V& vertexPositions, const C& tetIndices);
 template <class V, class C>
