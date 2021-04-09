@@ -85,6 +85,10 @@ vec3 undoGammaCorrect( vec3 colorLinear )
       
 
 vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k) {
+
+  // ensure color is in range [0,1]
+  color = clamp(color, vec3(0.), vec3(1.));
+
   normal = normalize(normal);
   normal.y = -normal.y;
   normal *= 0.98; // pull slightly inward, to reduce sampling artifacts near edges
