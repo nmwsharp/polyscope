@@ -105,8 +105,14 @@ void writePrefsFile() {
 
 void init(std::string backend) {
   if (state::initialized) {
-    throw std::logic_error(options::printPrefix + "Initialize called twice");
+    if(backend != state::backend) {
+      throw std::runtime_error("re-initializing with different backend is not supported");
+    }
+    // otherwise silently allow multiple-init
+    return;
   }
+  
+  state::backend = backend;
 
   if (options::usePrefsFile) {
     readPrefsFile();

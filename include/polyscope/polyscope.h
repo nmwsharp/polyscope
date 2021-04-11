@@ -40,6 +40,9 @@ namespace state {
 // has polyscope::init() been called?
 extern bool initialized;
 
+// what backend was set on initialization
+extern std::string backend;
+
 // lists of all structures in Polyscope, by category
 extern std::map<std::string, std::map<std::string, Structure*>> structures;
 
