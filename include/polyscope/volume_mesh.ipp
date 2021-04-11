@@ -2,19 +2,80 @@
 namespace polyscope {
 
 // Shorthand to add a mesh to polyscope
+
 template <class V, class F>
-VolumeMesh* registerVolumeMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
-  VolumeMesh* s = new VolumeMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
-                                 standardizeVectorArray<std::array<int64_t, 8>, 8>(faceIndices));
+VolumeMesh* registerTetMesh(std::string name, const V& vertexPositions, const F& tetIndices) {
+
+  // Standardize the array, and pad out extra indices with -1 for our representation
+  std::vector<std::array<int64_t, 8>> tetIndsArr = standardizeVectorArray<std::array<int64_t, 8>, 4>(tetIndices);
+  for (size_t iC = 0; iC < tetIndsArr.size(); iC++) {
+    for (size_t j = 4; j < 8; j++) {
+      tetIndsArr[iC][j] = -1;
+    }
+  }
+
+  VolumeMesh* s = new VolumeMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions), tetIndsArr);
+
   bool success = registerStructure(s);
   if (!success) {
     safeDelete(s);
   }
 
-  // TODO
+  return s;
+}
+
+
+template <class V, class F>
+VolumeMesh* registerHexMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
+  VolumeMesh* s = new VolumeMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
+                                 standardizeVectorArray<std::array<int64_t, 8>, 8>(faceIndices));
+
+  bool success = registerStructure(s);
+  if (!success) {
+    safeDelete(s);
+  }
 
   return s;
 }
+
+template <class V, class F>
+VolumeMesh* registerVolumeMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
+  VolumeMesh* s = new VolumeMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
+                                 standardizeVectorArray<std::array<int64_t, 8>, 8>(faceIndices));
+
+  bool success = registerStructure(s);
+  if (!success) {
+    safeDelete(s);
+  }
+
+  return s;
+}
+
+template <class V, class Ft, class Fh>
+VolumeMesh* registerTetHexMesh(std::string name, const V& vertexPositions, const Ft& tetIndices, const Fh& hexIndices) {
+
+  // Standardize the array, and pad out extra indices with -1 for our representation
+  std::vector<std::array<int64_t, 8>> tetIndsArr = standardizeVectorArray<std::array<int64_t, 8>, 4>(tetIndices);
+  for (size_t iC = 0; iC < tetIndsArr.size(); iC++) {
+    for (size_t j = 4; j < 8; j++) {
+      tetIndsArr[iC][j] = -1;
+    }
+  }
+  std::vector<std::array<int64_t, 8>> hexIndsArr = standardizeVectorArray<std::array<int64_t, 8>, 8>(hexIndices);
+
+  // combine the arrays
+  tetIndsArr.insert(tetIndsArr.end(), hexIndsArr.begin(), hexIndsArr.end());
+
+  VolumeMesh* s = new VolumeMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions), tetIndsArr);
+
+  bool success = registerStructure(s);
+  if (!success) {
+    safeDelete(s);
+  }
+
+  return s;
+}
+
 
 template <class V>
 void VolumeMesh::updateVertexPositions(const V& newPositions) {

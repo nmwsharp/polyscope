@@ -26,12 +26,6 @@ class VolumeMeshVertexScalarQuantity;
 class VolumeMeshCellScalarQuantity;
 class VolumeMeshVertexVectorQuantity;
 class VolumeMeshCellVectorQuantity;
-/*
-class VolumeMeshVertexCountQuantity;
-class VolumeMeshVertexIsolatedScalarQuantity;
-class VolumeMeshFaceCountQuantity;
-class VolumeMeshGraphQuantity;
-*/
 
 
 template <> // Specialize the quantity type
@@ -88,16 +82,6 @@ public:
 	template <class T> VolumeMeshVertexVectorQuantity* addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
 	template <class T> VolumeMeshCellVectorQuantity* addCellVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
 
-
-  /*
-  // = Counts/Values on isolated vertices (expect index/value pairs)
-  VolumeVertexCountQuantity* addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>&
-  values); 
-	VolumeFaceCountQuantity* addFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>&
-  values); 
-	VolumeVertexIsolatedScalarQuantity* addVertexIsolatedScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>>& values);
-
-  */
   // clang-format on
 
   // === Mutate
@@ -194,13 +178,11 @@ private:
   void geometryChanged(); // call whenever geometry changed
 
   // Picking-related
-  // Order of indexing: vertices, edges, faces, cells
+  // Order of indexing: vertices, cells
   // Within each set, uses the implicit ordering from the mesh data structure
   // These starts are LOCAL indices, indexing elements only with the mesh
-  size_t facePickIndStart, edgePickIndStart, cellPickIndStart;
+  size_t cellPickIndStart;
   void buildVertexInfoGui(size_t vInd);
-  void buildEdgeInfoGui(size_t eInd);
-  void buildFaceInfoGui(size_t fInd);
   void buildCellInfoGUI(size_t cInd);
 
   // Gui implementation details
@@ -236,11 +218,6 @@ private:
   VolumeMeshCellScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   VolumeMeshVertexVectorQuantity* addVertexVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
   VolumeMeshCellVectorQuantity* addCellVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
-  /*
-  VolumeVertexCountQuantity* addVertexCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
-  VolumeVertexIsolatedScalarQuantity* addVertexIsolatedScalarQuantityImpl(std::string name, const std::vector<std::pair<size_t, double>>& values);
-  VolumeFaceCountQuantity* addFaceCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
-  */
 
   // === Helper implementations
 
@@ -250,11 +227,12 @@ private:
 };
 
 // Register functions
-// TODO FIXME think about these
 template <class V, class C>
 VolumeMesh* registerTetMesh(std::string name, const V& vertexPositions, const C& tetIndices);
 template <class V, class C>
 VolumeMesh* registerHexMesh(std::string name, const V& vertexPositions, const C& hexIndices);
+template <class V, class C>
+VolumeMesh* registerVolumeMesh(std::string name, const V& vertexPositions, const C& hexIndices);
 template <class V, class Ct, class Ch>
 VolumeMesh* registerTetHexMesh(std::string name, const V& vertexPositions, const Ct& tetIndices, const Ct& hexIndices);
 

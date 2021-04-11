@@ -10,26 +10,21 @@
 // This header contains a collection of template functions which enable Polyscope to consume user-defined types, so long
 // as they can be accessed by one of several mechanisms.
 
-
 // clang-format off
 
-// == "How the heck do these work", abridged version:
+// == "How do these work", quick guide
 //
 // Nicholas Sharp (nsharp@cs.cmu.edu)
 //
-// (This is Nick's best attempt to explain these functions, during a glorious 
-// few days after writing them in July 2019 when he sorta understood how they 
-// work. An actual C++ expert could certainly give a better explanation. Pardon 
-// misused terminology.)
+// These templates use a technique called SFINAE, which abuses C++'s function 
+// resolution rules to consider many version of a function, and pick the one 
+// which will compile. We use technique to heuristically convert unknown user 
+// types to a standard format.
 //
-// These templates abuse C++ to consider many version of a function, and pick 
-// the one which will compile. We use technique to heuristically convert 
-// unknown user types to a standard format.
-//
-// This isn't really something it seems like the language supports, but 
-// technically you can do it, thanks to a "feature" called SFINAE 
-// (Substitution Failure Is Not An Error). SFINAE is based on a quirk of 
-// how function calls get resolved by the compiler:
+// This isn't normally something the language supports, but technically you can 
+// do it, thanks to a "feature" called SFINAE (Substitution Failure Is Not An 
+// Error). SFINAE is based on a quirk of how function calls get resolved by 
+// the compiler:
 //
 //   (1) The compiler assembles a list of all available functions whose names
 //       match a given function call.
@@ -113,7 +108,7 @@
 // function overloads. We need to make sure that when multiple functions 
 // are valid, one is always preferred over all others.
 //
-// Our mechanism to do so will be including an extra dummpy parameter 
+// Our mechanism to do so will be including an extra dummy parameter 
 // PreferenceT<N> in every function's argument list, with a distinct 
 // value of N. Our Preference<N> is implicitly convertible to 
 // PreferenceT<N-1> (and so on). So if our initial function call uses 

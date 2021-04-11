@@ -111,7 +111,7 @@ void VolumeMeshVertexScalarQuantity::buildVertexInfoGUI(size_t vInd) {
 
 VolumeMeshCellScalarQuantity::VolumeMeshCellScalarQuantity(std::string name, const std::vector<double>& values_,
                                                            VolumeMesh& mesh_, DataType dataType_)
-    : VolumeMeshScalarQuantity(name, mesh_, "face", values_, dataType_)
+    : VolumeMeshScalarQuantity(name, mesh_, "cell", values_, dataType_)
 
 {
   hist.buildHistogram(values, parent.faceAreas); // rebuild to incorporate weights
