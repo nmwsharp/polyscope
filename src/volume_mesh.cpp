@@ -138,92 +138,7 @@ void VolumeMesh::computeCounts() {
   }
 }
 
-void VolumeMesh::computeGeometryData() {
-
-  /*
-  const glm::vec3 zero{0., 0., 0.};
-
-  // Reset face-valued
-  faceNormals.resize(nFaces());
-  faceAreas.resize(nFaces());
-
-  // Reset vertex-valued
-  vertexNormals.resize(nVertices());
-  std::fill(vertexNormals.begin(), vertexNormals.end(), zero);
-  vertexAreas.resize(nVertices());
-  std::fill(vertexAreas.begin(), vertexAreas.end(), 0);
-
-  // Reset edge-valued
-  edgeLengths.resize(nEdges());
-
-  // Loop over faces to compute face-valued quantities
-  for (size_t iF = 0; iF < nFaces(); iF++) {
-    auto& face = faces[iF];
-    size_t D = face.size();
-
-    glm::vec3 fN = zero;
-    double fA = 0;
-    if (face.size() == 3) {
-      glm::vec3 pA = vertices[face[0]];
-      glm::vec3 pB = vertices[face[1]];
-      glm::vec3 pC = vertices[face[2]];
-
-      fN = glm::cross(pB - pA, pC - pA);
-      fA = 0.5 * glm::length(fN);
-    } else if (face.size() > 3) {
-
-      glm::vec3 pRoot = vertices[face[0]];
-      for (size_t j = 0; j < D; j++) {
-        glm::vec3 pA = vertices[face[j]];
-        glm::vec3 pB = vertices[face[(j + 1) % D]];
-        glm::vec3 pC = vertices[face[(j + 2) % D]];
-
-        fN += glm::cross(pC - pB, pA - pB);
-
-        // _some_ definition of area for a non-triangular face
-        if (j != 0 && j != (D - 1)) {
-          fA += 0.5 * glm::length(glm::cross(pA - pRoot, pB - pRoot));
-        }
-      }
-    }
-
-    // Set face values
-    fN = glm::normalize(fN);
-    faceNormals[iF] = fN;
-    faceAreas[iF] = fA;
-
-    // Update incident vertices
-    for (size_t j = 0; j < D; j++) {
-      glm::vec3 pA = vertices[face[j]];
-      glm::vec3 pB = vertices[face[(j + 1) % D]];
-      glm::vec3 pC = vertices[face[(j + 2) % D]];
-
-      vertexAreas[face[j]] += fA / D;
-
-      // Corner angle for weighting normals
-      double dot = glm::dot(glm::normalize(pB - pA), glm::normalize(pC - pA));
-      float angle = std::acos(glm::clamp(-1., 1., dot));
-      glm::vec3 normalContrib = angle * fN;
-
-      if (std::isfinite(normalContrib.x) && std::isfinite(normalContrib.y) && std::isfinite(normalContrib.z)) {
-        vertexNormals[face[(j + 1) % D]] += normalContrib;
-      }
-
-      // Compute edge lengths while we're at it
-      edgeLengths[edgeIndices[iF][j]] = glm::length(pA - pB);
-    }
-  }
-
-
-  // Normalize vertex normals
-  for (auto& vec : vertexNormals) {
-    double L = glm::length(vec);
-    if (L > 0) {
-      vec /= L;
-    }
-  }
-  */
-}
+void VolumeMesh::computeGeometryData() {}
 
 
 void VolumeMesh::draw() {
@@ -610,55 +525,9 @@ void VolumeMesh::buildVertexInfoGui(size_t vInd) {
 
   ImGui::Indent(-20.);
 }
-void VolumeMesh::buildFaceInfoGui(size_t fInd) {
-  size_t displayInd = fInd;
-  if (facePerm.size() > 0) {
-    displayInd = facePerm[fInd];
-  }
-  ImGui::TextUnformatted(("Face #" + std::to_string(displayInd)).c_str());
-
-  ImGui::Spacing();
-  ImGui::Spacing();
-  ImGui::Spacing();
-  ImGui::Indent(20.);
-
-  // Build GUI to show the quantities
-  ImGui::Columns(2);
-  ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
-  for (auto& x : quantities) {
-    x.second->buildFaceInfoGUI(fInd);
-  }
-
-  ImGui::Indent(-20.);
-}
-
-void VolumeMesh::buildEdgeInfoGui(size_t eInd) {
-  size_t displayInd = eInd;
-  if (edgePerm.size() > 0) {
-    displayInd = edgePerm[eInd];
-  }
-  ImGui::TextUnformatted(("Edge #" + std::to_string(displayInd)).c_str());
-
-  ImGui::Spacing();
-  ImGui::Spacing();
-  ImGui::Spacing();
-  ImGui::Indent(20.);
-
-  // Build GUI to show the quantities
-  ImGui::Columns(2);
-  ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
-  for (auto& x : quantities) {
-    x.second->buildEdgeInfoGUI(eInd);
-  }
-
-  ImGui::Indent(-20.);
-}
 
 void VolumeMesh::buildCellInfoGUI(size_t cellInd) {
   size_t displayInd = cellInd;
-  // if (halfedgePerm.size() > 0) {
-  // displayInd = halfedgePerm[cellInd];
-  //}
   ImGui::TextUnformatted(("Cell #" + std::to_string(displayInd)).c_str());
 
   ImGui::Spacing();
