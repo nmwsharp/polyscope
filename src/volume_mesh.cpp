@@ -343,6 +343,14 @@ void VolumeMesh::setVolumeMeshUniforms(render::ShaderProgram& p) {
 
 void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
 
+  // NOTE: If we were to fill buffers naively via a loop over cells, we get pretty bad z-fighting artifacts where
+  // interior edges ever-so-slightly show through the exterior boundary (more generally, any place 3 faces meet at an
+  // edge, which happens everywhere in a tet mesh).
+  //
+  // To mitigate this issue, we fill the buffer such that all exterior faces come first, then all interior faces, so
+  // that exterior faces always win depth ties. This doesn't totally eliminate the problem, but greatly improves the
+  // most egregious cases.
+
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
@@ -355,22 +363,24 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   bool wantsBarycenters = wantsCullPosition();
   bool wantsFaceType = p.hasAttribute("a_faceColorType");
 
-  positions.reserve(3 * nFacesTriangulation());
-  normals.reserve(3 * nFacesTriangulation());
+  positions.resize(3 * nFacesTriangulation());
+  normals.resize(3 * nFacesTriangulation());
   if (wantsBary) {
-    bcoord.reserve(3 * nFacesTriangulation());
+    bcoord.resize(3 * nFacesTriangulation());
   }
   if (wantsEdge) {
-    edgeReal.reserve(3 * nFacesTriangulation());
+    edgeReal.resize(3 * nFacesTriangulation());
   }
   if (wantsBarycenters) {
-    barycenters.reserve(3 * nFacesTriangulation());
+    barycenters.resize(3 * nFacesTriangulation());
   }
   if (wantsFaceType) {
-    faceTypes.reserve(3 * nFacesTriangulation());
+    faceTypes.resize(3 * nFacesTriangulation());
   }
 
   size_t iF = 0;
+  size_t iFront = 0;
+  size_t iBack = 3 * nFacesTriangulation() - 3;
   for (size_t iC = 0; iC < nCells(); iC++) {
     const std::array<int64_t, 8>& cell = cells[iC];
     VolumeCellType cellT = cellType(iC);
@@ -381,6 +391,17 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
     }
 
     for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
+
+      // Push exterior faces to the front of the draw buffer, and interior faces to the back.
+      // (see note above)
+      size_t iData;
+      if (faceIsInterior[iF]) {
+        iData = iBack;
+        iBack -= 3;
+      } else {
+        iData = iFront;
+        iFront += 3;
+      }
 
       // Do a first pass to compute a normal
       glm::vec3 normal{0., 0., 0.};
@@ -399,30 +420,30 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
         glm::vec3 pB = vertices[cell[tri[1]]];
         glm::vec3 pC = vertices[cell[tri[2]]];
 
-        positions.push_back(pA);
-        positions.push_back(pB);
-        positions.push_back(pC);
+        positions[iData] = pA;
+        positions[iData + 1] = pB;
+        positions[iData + 2] = pC;
 
         for (int k = 0; k < 3; k++) {
-          normals.push_back(normal);
+          normals[iData + k] = normal;
         }
 
         if (wantsFaceType) {
           float faceType = faceIsInterior[iF] ? 1. : 0.;
           for (int k = 0; k < 3; k++) {
-            faceTypes.push_back(faceType);
+            faceTypes[iData + k] = faceType;
           }
         }
 
         if (wantsBary) {
-          bcoord.push_back(glm::vec3{1., 0., 0.});
-          bcoord.push_back(glm::vec3{0., 1., 0.});
-          bcoord.push_back(glm::vec3{0., 0., 1.});
+          bcoord[iData + 0] = glm::vec3{1., 0., 0.};
+          bcoord[iData + 1] = glm::vec3{0., 1., 0.};
+          bcoord[iData + 2] = glm::vec3{0., 0., 1.};
         }
 
         if (wantsBarycenters) {
           for (int k = 0; k < 3; k++) {
-            barycenters.push_back(barycenter);
+            barycenters[iData + k] = barycenter;
           }
         }
 
@@ -435,7 +456,7 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
             edgeRealV.z = 1.;
           }
           for (int k = 0; k < 3; k++) {
-            edgeReal.push_back(edgeRealV);
+            edgeReal[iData + k] = edgeRealV;
           }
         }
       }
@@ -468,6 +489,9 @@ const std::vector<std::vector<std::array<size_t, 3>>>& VolumeMesh::cellStencil(V
   case VolumeCellType::HEX:
     return stencilHex;
   }
+
+  // unreachable
+  return stencilTet;
 }
 
 glm::vec3 VolumeMesh::cellCenter(size_t iC) {
