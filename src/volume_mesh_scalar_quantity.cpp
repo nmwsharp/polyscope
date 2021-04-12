@@ -77,19 +77,35 @@ void VolumeMeshVertexScalarQuantity::createProgram() {
 
 void VolumeMeshVertexScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
   std::vector<double> colorval;
-  colorval.reserve(3 * parent.nFacesTriangulation());
+  colorval.resize(3 * parent.nFacesTriangulation());
 
   size_t iF = 0;
+  size_t iFront = 0;
+  size_t iBack = 3 * parent.nFacesTriangulation() - 3;
   for (size_t iC = 0; iC < parent.nCells(); iC++) {
     const std::array<int64_t, 8>& cell = parent.cells[iC];
     VolumeCellType cellT = parent.cellType(iC);
     for (const std::vector<std::array<size_t, 3>>& face : parent.cellStencil(cellT)) {
+
       for (size_t j = 0; j < face.size(); j++) {
         const std::array<size_t, 3>& tri = face[j];
+
+        // (see note in VolumeMesh.cpp about sorting the buffer outside-first)
+        size_t iData;
+        if (parent.faceIsInterior[iF]) {
+          iData = iBack;
+          iBack -= 3;
+        } else {
+          iData = iFront;
+          iFront += 3;
+        }
+
         for (int k = 0; k < 3; k++) {
-          colorval.push_back(values[cell[tri[k]]]);
+          colorval[iData + k] = values[cell[tri[k]]];
         }
       }
+
+      iF++;
     }
   }
 
@@ -129,19 +145,35 @@ void VolumeMeshCellScalarQuantity::createProgram() {
 
 void VolumeMeshCellScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
   std::vector<double> colorval;
-  colorval.reserve(3 * parent.nFacesTriangulation());
+  colorval.resize(3 * parent.nFacesTriangulation());
 
   size_t iF = 0;
+  size_t iFront = 0;
+  size_t iBack = 3 * parent.nFacesTriangulation() - 3;
   for (size_t iC = 0; iC < parent.nCells(); iC++) {
     const std::array<int64_t, 8>& cell = parent.cells[iC];
     VolumeCellType cellT = parent.cellType(iC);
     for (const std::vector<std::array<size_t, 3>>& face : parent.cellStencil(cellT)) {
+
       for (size_t j = 0; j < face.size(); j++) {
         const std::array<size_t, 3>& tri = face[j];
+
+        // (see note in VolumeMesh.cpp about sorting the buffer outside-first)
+        size_t iData;
+        if (parent.faceIsInterior[iF]) {
+          iData = iBack;
+          iBack -= 3;
+        } else {
+          iData = iFront;
+          iFront += 3;
+        }
+
         for (int k = 0; k < 3; k++) {
-          colorval.push_back(values[iC]);
+          colorval[iData + k] = values[iC];
         }
       }
+
+      iF++;
     }
   }
 

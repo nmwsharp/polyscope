@@ -228,19 +228,21 @@ void VolumeMesh::preparePick() {
   bool wantsBarycenters = wantsCullPosition();
 
   // Reserve space
-  // TODO
-  positions.reserve(3 * nFacesTriangulation());
-  bcoord.reserve(3 * nFacesTriangulation());
-  vertexColors.reserve(3 * nFacesTriangulation());
-  edgeColors.reserve(3 * nFacesTriangulation());
-  halfedgeColors.reserve(3 * nFacesTriangulation());
-  faceColor.reserve(3 * nFacesTriangulation());
-  normals.reserve(3 * nFacesTriangulation());
+  positions.resize(3 * nFacesTriangulation());
+  bcoord.resize(3 * nFacesTriangulation());
+  vertexColors.resize(3 * nFacesTriangulation());
+  edgeColors.resize(3 * nFacesTriangulation());
+  halfedgeColors.resize(3 * nFacesTriangulation());
+  faceColor.resize(3 * nFacesTriangulation());
+  normals.resize(3 * nFacesTriangulation());
   if (wantsBarycenters) {
-    barycenters.reserve(3 * nFacesTriangulation());
+    barycenters.resize(3 * nFacesTriangulation());
   }
 
 
+  size_t iFront = 0;
+  size_t iBack = 3 * nFacesTriangulation() - 3;
+  size_t iF = 0;
   for (size_t iC = 0; iC < nCells(); iC++) {
     const std::array<int64_t, 8>& cell = cells[iC];
     VolumeCellType cellT = cellType(iC);
@@ -266,7 +268,7 @@ void VolumeMesh::preparePick() {
       normal = glm::normalize(normal);
 
 
-      // Emit the actual face triangulation
+      // Emit the actual face in the triangulation
       for (size_t j = 0; j < face.size(); j++) {
         const std::array<size_t, 3>& tri = face[j];
 
@@ -277,27 +279,40 @@ void VolumeMesh::preparePick() {
           vColor[k] = pick::indToVec(static_cast<size_t>(cell[tri[k]]) + pickStart);
         }
 
-        for (int k = 0; k < 3; k++) {
-          positions.push_back(vPos[k]);
-          normals.push_back(normal);
-          faceColor.push_back(cellColor);
-
-          // need to pass each per-vertex value for these, since they will be interpolated
-          vertexColors.push_back(vColor);
-          edgeColors.push_back(cellColorArr);
-          halfedgeColors.push_back(cellColorArr);
+        // Push exterior faces to the front of the draw buffer, and interior faces to the back.
+        // (see note above)
+        size_t iData;
+        if (faceIsInterior[iF]) {
+          iData = iBack;
+          iBack -= 3;
+        } else {
+          iData = iFront;
+          iFront += 3;
         }
 
-        bcoord.push_back(glm::vec3{1., 0., 0.});
-        bcoord.push_back(glm::vec3{0., 1., 0.});
-        bcoord.push_back(glm::vec3{0., 0., 1.});
+        for (int k = 0; k < 3; k++) {
+          positions[iData + k] = vPos[k];
+          normals[iData + k] = normal;
+          faceColor[iData + k] = cellColor;
+
+          // need to pass each per-vertex value for these, since they will be interpolated
+          vertexColors[iData + k] = vColor;
+          edgeColors[iData + k] = cellColorArr;
+          halfedgeColors[iData + k] = cellColorArr;
+        }
+
+        bcoord[iData + 0] = glm::vec3{1., 0., 0.};
+        bcoord[iData + 1] = glm::vec3{0., 1., 0.};
+        bcoord[iData + 2] = glm::vec3{0., 0., 1.};
 
         if (wantsBarycenters) {
           for (int k = 0; k < 3; k++) {
-            barycenters.push_back(barycenter);
+            barycenters[iData + k] = barycenter;
           }
         }
       }
+
+      iF++;
     }
   }
 
@@ -392,17 +407,6 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
 
     for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
 
-      // Push exterior faces to the front of the draw buffer, and interior faces to the back.
-      // (see note above)
-      size_t iData;
-      if (faceIsInterior[iF]) {
-        iData = iBack;
-        iBack -= 3;
-      } else {
-        iData = iFront;
-        iFront += 3;
-      }
-
       // Do a first pass to compute a normal
       glm::vec3 normal{0., 0., 0.};
       for (const std::array<size_t, 3>& tri : face) {
@@ -416,6 +420,18 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
       // Emit the actual face triangulation
       for (size_t j = 0; j < face.size(); j++) {
         const std::array<size_t, 3>& tri = face[j];
+
+        // Push exterior faces to the front of the draw buffer, and interior faces to the back.
+        // (see note above)
+        size_t iData;
+        if (faceIsInterior[iF]) {
+          iData = iBack;
+          iBack -= 3;
+        } else {
+          iData = iFront;
+          iFront += 3;
+        }
+
         glm::vec3 pA = vertices[cell[tri[0]]];
         glm::vec3 pB = vertices[cell[tri[1]]];
         glm::vec3 pC = vertices[cell[tri[2]]];
