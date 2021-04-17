@@ -1176,22 +1176,8 @@ void MockGLEngine::initialize() {
 }
 
 void MockGLEngine::initializeImGui() {
-
   ImGui::CreateContext(); // must call once at start
-
-  // Set up ImGUI glfw bindings
-
-  // Build a fake font atlas for mocking
-  ImGuiIO& io = ImGui::GetIO();
-  unsigned char* tex_pixels = NULL;
-  int tex_w, tex_h;
-  io.Fonts->GetTexDataAsRGBA32(&tex_pixels, &tex_w, &tex_h);
-
-  // io.OptResizeWindowsFromEdges = true;
-  // ImGui::StyleColorsLight();
-  setImGuiStyle();
-
-  globalFontAtlas = io.Fonts;
+  configureImGui();
 }
 
 void MockGLEngine::shutdownImGui() { ImGui::DestroyContext(); }

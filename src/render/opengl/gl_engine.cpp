@@ -30,10 +30,6 @@
 namespace polyscope {
 namespace render {
 
-// Forward declare compressed binary font functions
-unsigned int getCousineRegularCompressedSize();
-const unsigned int* getCousineRegularCompressedData();
-
 namespace backend_openGL3_glfw {
 
 GLEngine* glEngine = nullptr; // alias for global engine pointer
@@ -1708,7 +1704,6 @@ void GLEngine::initialize() {
 
 
 void GLEngine::initializeImGui() {
-
   bindDisplay();
 
   ImGui::CreateContext(); // must call once at start
@@ -1718,17 +1713,7 @@ void GLEngine::initializeImGui() {
   const char* glsl_version = "#version 150";
   ImGui_ImplOpenGL3_Init(glsl_version);
 
-  ImGuiIO& io = ImGui::GetIO();
-  ImFontConfig config;
-  config.OversampleH = 5;
-  config.OversampleV = 5;
-  ImFont* font = io.Fonts->AddFontFromMemoryCompressedTTF(getCousineRegularCompressedData(),
-                                                          getCousineRegularCompressedSize(), 15.0f, &config);
-  // io.OptResizeWindowsFromEdges = true;
-  // ImGui::StyleColorsLight();
-  setImGuiStyle();
-
-  globalFontAtlas = io.Fonts;
+  configureImGui();
 }
 
 void GLEngine::shutdownImGui() {
