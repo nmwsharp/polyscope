@@ -8,7 +8,6 @@
 #include "imgui.h"
 #include "stb_image.h"
 
-
 namespace polyscope {
 
 int dimension(const TextureFormat& x) {
@@ -644,9 +643,7 @@ void Engine::removeSlicePlane(std::string uniquePostfix) {
   polyscope::refresh();
 }
 
-bool Engine::slicePlanesEnabled() {
-  return slicePlaneCount > 0;
-}
+bool Engine::slicePlanesEnabled() { return slicePlaneCount > 0; }
 
 
 std::vector<glm::vec3> Engine::screenTrianglesCoords() {
@@ -913,6 +910,38 @@ const ValueColorMap& Engine::getColorMap(const std::string& name) {
 
   throw std::runtime_error("unrecognized colormap name: " + name);
   return *colorMaps[0];
+}
+
+
+// Forward declare compressed binary font functions
+unsigned int getCousineRegularCompressedSize();
+const unsigned int* getCousineRegularCompressedData();
+unsigned int getLatoRegularCompressedSize();
+const unsigned int* getLatoRegularCompressedData();
+
+
+void Engine::configureImGui() {
+
+  ImGuiIO& io = ImGui::GetIO();
+
+  { // add regular font
+    ImFontConfig config;
+    regularFont = io.Fonts->AddFontFromMemoryCompressedTTF(getLatoRegularCompressedData(),
+                                                           getLatoRegularCompressedSize(), 18.0f, &config);
+  }
+
+  { // add mono font
+    ImFontConfig config;
+    monoFont = io.Fonts->AddFontFromMemoryCompressedTTF(getCousineRegularCompressedData(),
+                                                        getCousineRegularCompressedSize(), 16.0f, &config);
+  }
+  
+  // io.Fonts->AddFontFromFileTTF("test-font-name.ttf", 16);
+  
+  globalFontAtlas = io.Fonts;
+
+  
+  setImGuiStyle();
 }
 
 void Engine::loadDefaultColorMap(std::string name) {

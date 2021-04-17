@@ -177,6 +177,7 @@ SET(SRCS
   image_scalar_artist.cpp
   
   ## Embedded binary data 
+  render/bindata/bindata_font_lato_regular.cpp
   render/bindata/bindata_font_cousine_regular.cpp
   render/bindata/concrete_seamless.cpp
   render/bindata/bindata_clay.cpp
