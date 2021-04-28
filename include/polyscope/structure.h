@@ -62,6 +62,7 @@ public:
 
   // = Scene transform
   glm::mat4 getModelView();
+  void setTransform(glm::mat4x4 transform);
   void centerBoundingBox();
   void rescaleToUnit();
   void resetTransform();
@@ -93,7 +94,6 @@ public:
 protected:
   // = State
   PersistentValue<bool> enabled;
-  
   PersistentValue<glm::mat4> objectTransform;
 
   // 0 for transparent, 1 for opaque, only has effect if engine transparency is set
@@ -103,6 +103,7 @@ protected:
   TransformationGizmo transformGizmo;
   
   PersistentValue<bool> cullWholeElements;
+
   PersistentValue<std::vector<std::string>> ignoredSlicePlaneNames;
 };
 
