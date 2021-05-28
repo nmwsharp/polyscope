@@ -11,7 +11,7 @@ double lengthScale = 1.0;
 std::tuple<glm::vec3, glm::vec3> boundingBox;
 glm::vec3 center{0, 0, 0};
 std::map<std::string, std::map<std::string, Structure*>> structures;
-std::function<void()> userCallback;
+std::function<void()> userCallback = nullptr;
 
 // Lists of things
 std::set<Widget*> widgets;

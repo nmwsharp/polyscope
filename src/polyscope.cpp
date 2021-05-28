@@ -105,13 +105,13 @@ void writePrefsFile() {
 
 void init(std::string backend) {
   if (state::initialized) {
-    if(backend != state::backend) {
+    if (backend != state::backend) {
       throw std::runtime_error("re-initializing with different backend is not supported");
     }
     // otherwise silently allow multiple-init
     return;
   }
-  
+
   state::backend = backend;
 
   if (options::usePrefsFile) {
@@ -577,6 +577,8 @@ void buildUserGuiAndInvokeCallback() {
       rightWindowsWidth = ImGui::GetWindowWidth();
       lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
       ImGui::End();
+    } else {
+      lastWindowHeightUser = imguiStackMargin;
     }
 
     ImGui::PopID();
