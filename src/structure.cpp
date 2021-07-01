@@ -133,6 +133,12 @@ void Structure::buildCustomOptionsUI() {}
 
 void Structure::refresh() { requestRedraw(); }
 
+void Structure::setTransform(glm::mat4x4 transform)
+{
+  objectTransform = transform * objectTransform.get();
+  updateStructureExtents();
+}
+
 void Structure::resetTransform() {
   objectTransform = glm::mat4(1.0);
   updateStructureExtents();
