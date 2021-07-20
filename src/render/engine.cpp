@@ -937,7 +937,8 @@ void Engine::configureImGui() {
   }
   
   // io.Fonts->AddFontFromFileTTF("test-font-name.ttf", 16);
-  
+ 
+  io.Fonts->Build();
   globalFontAtlas = io.Fonts;
 
   
