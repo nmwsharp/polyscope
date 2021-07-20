@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.9)
+cmake_minimum_required(VERSION 3.5)
 
 if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 
