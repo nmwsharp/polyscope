@@ -234,7 +234,7 @@ VolumeMesh* registerHexMesh(std::string name, const V& vertexPositions, const C&
 template <class V, class C>
 VolumeMesh* registerVolumeMesh(std::string name, const V& vertexPositions, const C& hexIndices);
 template <class V, class Ct, class Ch>
-VolumeMesh* registerTetHexMesh(std::string name, const V& vertexPositions, const Ct& tetIndices, const Ct& hexIndices);
+VolumeMesh* registerTetHexMesh(std::string name, const V& vertexPositions, const Ct& tetIndices, const Ch& hexIndices);
 
 
 // Shorthand to get a mesh from polyscope
