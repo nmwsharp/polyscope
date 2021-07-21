@@ -117,9 +117,6 @@ public:
   size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
   size_t nFaces() const { return nFacesCount; }
 
-  size_t nEdgesCount = 0;
-  size_t nEdges() const { return nEdgesCount; }
-
   // Derived geometric quantities
   std::vector<double> cellAreas;
   std::vector<double> faceAreas;
