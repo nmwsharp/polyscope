@@ -662,22 +662,19 @@ std::tuple<std::vector<glm::vec3>, std::vector<std::array<int, 8>>> getVolumeMes
   // clang-format off
   std::vector<glm::vec3> combined_verts = {
     {0, 0, 0},
-    {0, 0, 1},
-    {0, 1, 0},
-    {0, 1, 1},
-    {0, 0, 0},
-    {0, 0, 1},
-    {0, 1, 0},
-    {0, 1, 1},
     {1, 0, 0},
-    {1, 0, 1},
     {1, 1, 0},
+    {0, 1, 0},
+    {0, 0, 1},
+    {1, 0, 1},
     {1, 1, 1},
+    {0, 1, 1},
+    {1, 1, 1.5}
   };
 
   std::vector<std::array<int, 8>> combined_cells = {
-      {0, 1, 3, 4, -1, -1, -1, -1},
-      {4, 5, 6, 7, 8, 9, 10, 11},
+    {0, 1, 2, 3, 4, 5, 6, 7},
+    {7, 5, 6, 8, -1, -1, -1, -1},
   };
   // clang-format on
 
