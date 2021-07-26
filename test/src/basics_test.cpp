@@ -276,6 +276,26 @@ TEST_F(PolyscopeTest, SurfaceMeshPick) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, SurfaceMeshBackface) {
+  auto psMesh = registerTriangleMesh();
+  
+  // Same appearance
+  psMesh->setBackfacePolicy(polyscope::BackfacePolicy::Identical);
+  EXPECT_EQ(psMesh->getBackfacePolicy(), polyscope::BackfacePolicy::Identical);
+  polyscope::show(3);
+
+  // Different appearance
+  psMesh->setBackfacePolicy(polyscope::BackfacePolicy::Different);
+  EXPECT_EQ(psMesh->getBackfacePolicy(), polyscope::BackfacePolicy::Different);
+  polyscope::show(3);
+
+  // Cull backfacing
+  psMesh->setBackfacePolicy(polyscope::BackfacePolicy::Cull);
+  EXPECT_EQ(psMesh->getBackfacePolicy(), polyscope::BackfacePolicy::Cull);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
 
 TEST_F(PolyscopeTest, SurfaceMeshColorVertex) {
   auto psMesh = registerTriangleMesh();
