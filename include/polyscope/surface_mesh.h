@@ -300,8 +300,8 @@ public:
   double getEdgeWidth();
 
   // Backface policy
-  SurfaceMesh* setBackfacePolicy(BackfacePolicy newPolicy);
-  BackfacePolicy getBackfacePolicy();
+  SurfaceMesh* setBackFacePolicy(BackFacePolicy newPolicy);
+  BackFacePolicy getBackFacePolicy();
 
   // Rendering helpers used by quantities
   void setSurfaceMeshUniforms(render::ShaderProgram& p);
@@ -316,7 +316,7 @@ private:
   PersistentValue<glm::vec3> edgeColor;
   PersistentValue<std::string> material;
   PersistentValue<float> edgeWidth;
-  PersistentValue<BackfacePolicy> backfacePolicy;
+  PersistentValue<BackFacePolicy> backFacePolicy;
 
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
