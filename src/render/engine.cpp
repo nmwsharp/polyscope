@@ -503,6 +503,10 @@ void Engine::setSSAAFactor(int newVal) {
   updateWindowSize(true);
 }
 
+bool Engine::getFrontFaceCCW() {
+  return frontFaceCCW;
+}
+
 int Engine::getSSAAFactor() { return ssaaFactor; }
 
 void Engine::allocateGlobalBuffersAndPrograms() {

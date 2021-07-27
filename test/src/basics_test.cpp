@@ -280,18 +280,18 @@ TEST_F(PolyscopeTest, SurfaceMeshBackface) {
   auto psMesh = registerTriangleMesh();
   
   // Same appearance
-  psMesh->setBackfacePolicy(polyscope::BackfacePolicy::Identical);
-  EXPECT_EQ(psMesh->getBackfacePolicy(), polyscope::BackfacePolicy::Identical);
+  psMesh->setBackFacePolicy(polyscope::BackFacePolicy::Identical);
+  EXPECT_EQ(psMesh->getBackFacePolicy(), polyscope::BackFacePolicy::Identical);
   polyscope::show(3);
 
   // Different appearance
-  psMesh->setBackfacePolicy(polyscope::BackfacePolicy::Different);
-  EXPECT_EQ(psMesh->getBackfacePolicy(), polyscope::BackfacePolicy::Different);
+  psMesh->setBackFacePolicy(polyscope::BackFacePolicy::Different);
+  EXPECT_EQ(psMesh->getBackFacePolicy(), polyscope::BackFacePolicy::Different);
   polyscope::show(3);
 
   // Cull backfacing
-  psMesh->setBackfacePolicy(polyscope::BackfacePolicy::Cull);
-  EXPECT_EQ(psMesh->getBackfacePolicy(), polyscope::BackfacePolicy::Cull);
+  psMesh->setBackFacePolicy(polyscope::BackFacePolicy::Cull);
+  EXPECT_EQ(psMesh->getBackFacePolicy(), polyscope::BackFacePolicy::Cull);
   polyscope::show(3);
 
   polyscope::removeAllStructures();

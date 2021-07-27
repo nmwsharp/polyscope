@@ -16,7 +16,7 @@ PersistentCache<ScaledValue<double>> persistentCache_scaleddouble;
 PersistentCache<ScaledValue<float>> persistentCache_scaledfloat;
 PersistentCache<std::vector<std::string>> persistentCache_vectorstring;
 PersistentCache<ParamVizStyle> persistentCache_paramVizStyle;
-PersistentCache<BackfacePolicy> persistentCache_backfacePolicy;
+PersistentCache<BackFacePolicy> persistentCache_BackFacePolicy;
 // clang-format on
 } // namespace detail
 } // namespace polyscope

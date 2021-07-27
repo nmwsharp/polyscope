@@ -125,7 +125,7 @@ extern PersistentCache<ScaledValue<double>> persistentCache_scaleddouble;
 extern PersistentCache<ScaledValue<float>> persistentCache_scaledfloat;
 extern PersistentCache<std::vector<std::string>> persistentCache_vectorstring;
 extern PersistentCache<ParamVizStyle> persistentCache_paramVizStyle;
-extern PersistentCache<BackfacePolicy> persistentCache_backfacePolicy;
+extern PersistentCache<BackFacePolicy> persistentCache_BackFacePolicy;
 
 template<> inline PersistentCache<double>&                   getPersistentCacheRef<double>()                   { return persistentCache_double; }
 template<> inline PersistentCache<float>&                    getPersistentCacheRef<float>()                    { return persistentCache_float; }
@@ -137,7 +137,7 @@ template<> inline PersistentCache<ScaledValue<double>>&      getPersistentCacheR
 template<> inline PersistentCache<ScaledValue<float>>&       getPersistentCacheRef<ScaledValue<float>>()       { return persistentCache_scaledfloat; }
 template<> inline PersistentCache<std::vector<std::string>>& getPersistentCacheRef<std::vector<std::string>>() { return persistentCache_vectorstring; }
 template<> inline PersistentCache<ParamVizStyle>&            getPersistentCacheRef<ParamVizStyle>()            { return persistentCache_paramVizStyle; }
-template<> inline PersistentCache<BackfacePolicy>&           getPersistentCacheRef<BackfacePolicy>()           { return persistentCache_backfacePolicy; }
+template<> inline PersistentCache<BackFacePolicy>&           getPersistentCacheRef<BackFacePolicy>()           { return persistentCache_BackFacePolicy; }
 }
 // clang-format on
 

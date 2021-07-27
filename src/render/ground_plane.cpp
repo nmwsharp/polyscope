@@ -274,12 +274,16 @@ void GroundPlane::draw(bool isRedraw) {
         glm::translate(glm::mat4(1.0), -tVec) * glm::mat4(mirrorMat3) * glm::translate(glm::mat4(1.0), tVec);
     view::viewMat = view::viewMat * mirrorMat;
 
+    // Flip the orientation
+    render::engine->setFrontFaceCCW(!render::engine->getFrontFaceCCW());
+
     // Draw everything
     if (!render::engine->transparencyEnabled()) { // skip when transparency is turned on
       drawStructures();
     }
 
-    // Restore original view matrix
+    // Restore original values
+    render::engine->setFrontFaceCCW(!render::engine->getFrontFaceCCW());
     view::viewMat = origViewMat;
   }
 

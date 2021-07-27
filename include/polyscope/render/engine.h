@@ -418,6 +418,8 @@ public:
   void addSlicePlane(std::string uniquePostfix);
   void removeSlicePlane(std::string uniquePostfix);
   bool slicePlanesEnabled(); // true if there is at least one slice plane in the scene
+  virtual void setFrontFaceCCW(bool newVal) = 0; // true if CCW triangles are considered front-facing; false otherwise
+  bool getFrontFaceCCW();
 
   // == Options
   BackgroundView background = BackgroundView::None;
@@ -471,6 +473,7 @@ protected:
   float currPixelScale;
   TransparencyMode transparencyMode = TransparencyMode::None;
   int slicePlaneCount = 0;
+  bool frontFaceCCW = true;
 
   // Cached lazy seettings for the resolve and relight program
   int currLightingSampleLevel = -1;

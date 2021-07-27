@@ -27,7 +27,7 @@ SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexP
       surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
       edgeWidth(uniquePrefix() + "edgeWidth", 0.),
-      backfacePolicy(uniquePrefix() + "backfacePolicy", BackfacePolicy::Different) {
+      backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different) {
   computeCounts();
   computeGeometryData();
 }
@@ -318,7 +318,7 @@ void SurfaceMesh::draw() {
     return;
   }
 
-  render::engine->setBackfaceCull(backfacePolicy.get() == BackfacePolicy::Cull);
+  render::engine->setBackfaceCull(backFacePolicy.get() == BackFacePolicy::Cull);
 
   // If no quantity is drawing the surface, we should draw it
   if (dominantQuantity == nullptr) {
@@ -355,7 +355,7 @@ void SurfaceMesh::drawPick() {
     preparePick();
   }
 
-  render::engine->setBackfaceCull(backfacePolicy.get() == BackfacePolicy::Cull);
+  render::engine->setBackfaceCull(backFacePolicy.get() == BackFacePolicy::Cull);
 
   // Set uniforms
   setStructureUniforms(*pickProgram);
@@ -516,16 +516,16 @@ std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::strin
       if (getEdgeWidth() > 0) {
         initRules.push_back("MESH_WIREFRAME");
       }
-      if (backfacePolicy.get() == BackfacePolicy::Different) {
+      if (backFacePolicy.get() == BackFacePolicy::Different) {
         initRules.push_back("MESH_BACKFACE_DARKEN");
       }
     }
 
-    if (backfacePolicy.get() == BackfacePolicy::Identical) {
+    if (backFacePolicy.get() == BackFacePolicy::Identical) {
       initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
     }
 
-    if (backfacePolicy.get() == BackfacePolicy::Different) {
+    if (backFacePolicy.get() == BackFacePolicy::Different) {
       initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
     }
 
@@ -881,12 +881,12 @@ void SurfaceMesh::buildCustomOptionsUI() {
 
   // backfaces
   if (ImGui::BeginMenu("Backface Policy")) {
-    if (ImGui::MenuItem("cull", NULL, backfacePolicy.get() == BackfacePolicy::Cull))
-      setBackfacePolicy(BackfacePolicy::Cull);
-    if (ImGui::MenuItem("identical shading", NULL, backfacePolicy.get() == BackfacePolicy::Identical))
-      setBackfacePolicy(BackfacePolicy::Identical);
-    if (ImGui::MenuItem("different shading", NULL, backfacePolicy.get() == BackfacePolicy::Different))
-      setBackfacePolicy(BackfacePolicy::Different);
+    if (ImGui::MenuItem("cull", NULL, backFacePolicy.get() == BackFacePolicy::Cull))
+      setBackFacePolicy(BackFacePolicy::Cull);
+    if (ImGui::MenuItem("identical shading", NULL, backFacePolicy.get() == BackFacePolicy::Identical))
+      setBackFacePolicy(BackFacePolicy::Identical);
+    if (ImGui::MenuItem("different shading", NULL, backFacePolicy.get() == BackFacePolicy::Different))
+      setBackFacePolicy(BackFacePolicy::Different);
     ImGui::EndMenu();
   }
 }
@@ -1123,13 +1123,13 @@ SurfaceMesh* SurfaceMesh::setEdgeWidth(double newVal) {
 }
 double SurfaceMesh::getEdgeWidth() { return edgeWidth.get(); }
 
-SurfaceMesh* SurfaceMesh::setBackfacePolicy(BackfacePolicy newPolicy) {
-  backfacePolicy = newPolicy;
+SurfaceMesh* SurfaceMesh::setBackFacePolicy(BackFacePolicy newPolicy) {
+  backFacePolicy = newPolicy;
   refresh();
   requestRedraw();
   return this;
 }
-BackfacePolicy SurfaceMesh::getBackfacePolicy() { return backfacePolicy.get(); }
+BackFacePolicy SurfaceMesh::getBackFacePolicy() { return backFacePolicy.get(); }
 
 // === Quantity adders
 

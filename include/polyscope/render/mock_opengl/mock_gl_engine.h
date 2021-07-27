@@ -261,6 +261,8 @@ public:
 
   // Transparency
   virtual void applyTransparencySettings() override;
+ 
+  virtual void setFrontFaceCCW(bool newVal) override;
 
 protected:
   

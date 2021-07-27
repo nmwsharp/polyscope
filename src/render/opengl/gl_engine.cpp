@@ -1922,6 +1922,16 @@ void GLEngine::applyTransparencySettings() {
   }
 }
 
+void GLEngine::setFrontFaceCCW(bool newVal) {
+  if (newVal == frontFaceCCW) return;
+  frontFaceCCW = newVal;
+  if (frontFaceCCW) {
+    glFrontFace(GL_CCW);
+  } else {
+    glFrontFace(GL_CW);
+  }
+}
+
 // == Factories
 std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat format, unsigned int size1D,
                                                                unsigned char* data) {
