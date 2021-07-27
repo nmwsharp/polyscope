@@ -880,13 +880,13 @@ void SurfaceMesh::buildCustomOptionsUI() {
   }
 
   // backfaces
-  if (ImGui::BeginMenu("Backface Policy")) {
-    if (ImGui::MenuItem("cull", NULL, backFacePolicy.get() == BackFacePolicy::Cull))
-      setBackFacePolicy(BackFacePolicy::Cull);
+  if (ImGui::BeginMenu("Back Face Policy")) {
     if (ImGui::MenuItem("identical shading", NULL, backFacePolicy.get() == BackFacePolicy::Identical))
       setBackFacePolicy(BackFacePolicy::Identical);
     if (ImGui::MenuItem("different shading", NULL, backFacePolicy.get() == BackFacePolicy::Different))
       setBackFacePolicy(BackFacePolicy::Different);
+    if (ImGui::MenuItem("cull", NULL, backFacePolicy.get() == BackFacePolicy::Cull))
+      setBackFacePolicy(BackFacePolicy::Cull);
     ImGui::EndMenu();
   }
 }
