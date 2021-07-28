@@ -80,6 +80,10 @@ glm::mat4 computeHomeView();
 void resetCameraToHomeView();
 void flyToHomeView();
 
+// Set the camera extrinsics to look at a particular location
+void lookAt(glm::vec3 cameraLocation, glm::vec3 target, bool flyTo = false);
+void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool flyTo = false);
+
 // Get various camera matrices and data
 glm::mat4 getCameraViewMatrix();
 glm::mat4 getCameraPerspectiveMatrix();
@@ -105,6 +109,7 @@ void updateFlight(); // Note: uses wall-clock time, so should generally be calle
 // Setters, getters, etc
 void setUpDir(UpDir newUpDir, bool animateFlight=false);
 UpDir getUpDir();
+glm::vec3 getUpVec();
 
 } // namespace view
 } // namespace polyscope

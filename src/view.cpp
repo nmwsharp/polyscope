@@ -306,6 +306,38 @@ void flyToHomeView() {
 }
 
 
+void lookAt(glm::vec3 cameraLocation, glm::vec3 target, bool flyTo) {
+  lookAt(cameraLocation, target, getUpVec(), flyTo);
+}
+
+void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool flyTo) {
+  immediatelyEndFlight();
+  glm::mat4x4 targetView = glm::lookAt(cameraLocation, target, upDir);
+
+  // Give a sane warning for invalid inputs
+  bool isFinite = true;
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      if (!std::isfinite(targetViewYes!
+
+For what it's worth, this construction has also been considered a bit for mean curvatures (see Ch 4, https://arxiv.org/pdf/math/0503219.pdf). But we haven't thought too much about what mean curvature on a nonmanifold mesh or point cloud means.[i][j])) {
+        isFinite = false;
+      }
+    }
+  }
+  if(!isFinite) { 
+    warning("lookAt() yielded an invalid view. Is the look direction collinear with the up direction?");
+    // just continue after; our view handling will take care of the NaN and set it to the default view
+  }
+
+  if (flyTo) {
+    startFlightTo(targetView, fov);
+  } else {
+    viewMat = targetView;
+    requestRedraw();
+  }
+}
+
 void setViewToCamera(const CameraParameters& p) {
   viewMat = p.E;
   // fov = glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y)));
@@ -495,7 +527,7 @@ void setCameraFromJson(std::string jsonData, bool flyTo) {
 void buildViewGui() {
 
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-  if(openSlicePlaneMenu) {
+  if (openSlicePlaneMenu) {
     // need to recursively open this tree node to respect slice plane menu open flag
     ImGui::SetNextTreeNodeOpen(true);
   }
@@ -643,6 +675,26 @@ void setUpDir(UpDir newUpDir, bool animateFlight) {
 }
 
 UpDir getUpDir() { return upDir; }
+
+glm::vec3 getUpVec() {
+  switch (upDir) {
+  case UpDir::NegXUp:
+    return glm::vec3{-1., 0., 0.};
+  case UpDir::XUp:
+    return glm::vec3{1., 0., 0.};
+  case UpDir::NegYUp:
+    return glm::vec3{0., -1., 0.};
+  case UpDir::YUp:
+    return glm::vec3{0., 1., 0.};
+  case UpDir::NegZUp:
+    return glm::vec3{0., 0., -1.};
+  case UpDir::ZUp:
+    return glm::vec3{0., 0., 1.};
+  }
+
+  // unused fallthrough
+  return glm::vec3{0., 0., 0.};
+}
 
 } // namespace view
 } // namespace polyscope
