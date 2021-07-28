@@ -1461,6 +1461,10 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   // clang-format on
 };
 
+void MockGLEngine::registerShaderRule(const std::string& name, const ShaderReplacementRule& rule) {
+  registeredShaderRules.insert({name, rule});
+}
+
 
 void MockGLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
   using namespace backend_openGL3_glfw;
@@ -1486,4 +1490,3 @@ void initializeRenderEngine() {
 } // namespace polyscope
 
 #endif
-

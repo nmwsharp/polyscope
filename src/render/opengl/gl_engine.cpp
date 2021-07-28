@@ -2028,6 +2028,10 @@ std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& progra
   return generateShaderProgram(updatedStages, dm);
 }
 
+void GLEngine::registerShaderRule(const std::string& name, const ShaderReplacementRule& rule) {
+  registeredShaderRules.insert({name, rule});
+}
+
 void GLEngine::populateDefaultShadersAndRules() {
   // Note: we use .insert({key, value}) rather than map[key] = value to support const members in the value.
 

@@ -394,6 +394,8 @@ public:
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
                 ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) = 0;
 
+  virtual void registerShaderRule(const std::string& name, const ShaderReplacementRule& rule) = 0;
+
   // === The frame buffers used in the rendering pipeline
   // The size of these buffers is always kept in sync with the screen size
   std::shared_ptr<FrameBuffer> displayBuffer, displayBufferAlt;

@@ -259,11 +259,12 @@ public:
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
                 ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) override;
 
+  void registerShaderRule(const std::string& name, const ShaderReplacementRule& rule) override;
+
   // Transparency
   virtual void applyTransparencySettings() override;
 
 protected:
-  
   // Helpers
   virtual void createSlicePlaneFliterRule(std::string name) override;
 
