@@ -183,6 +183,32 @@ void SlicePlane::updateWidgetEnabled() {
   bool enabled = getActive() && getDrawWidget();
   transformGizmo.enabled = enabled;
 }
+  
+void SlicePlane::setPose(glm::vec3 planePosition, glm::vec3 planeNormal) {
+
+  // Choose the other axes to be most similar to the current ones, which will make animations look smoother
+  // if the grid is shown
+  glm::vec3 currBasisX{objectTransform.get()[1][0], objectTransform.get()[1][1], objectTransform.get()[1][2]};
+  glm::vec3 currBasisY{objectTransform.get()[2][0], objectTransform.get()[2][1], objectTransform.get()[2][2]};
+
+  glm::vec3 normal = glm::normalize(planeNormal);
+  glm::vec3 basisX = currBasisX - normal * glm::dot(normal, currBasisX);
+  if(glm::length(basisX) < 0.01) basisX = currBasisY - normal * glm::dot(normal, currBasisY);
+  basisX = glm::normalize(basisX);
+  glm::vec3 basisY = glm::cross(normal, basisX);
+
+  // Build the rotation component
+  glm::mat4x4 newTransform = glm::mat4x4(1.0);
+  for(int i = 0; i < 3; i++) newTransform[0][i] = normal[i];
+  for(int i = 0; i < 3; i++) newTransform[1][i] = basisX[i];
+  for(int i = 0; i < 3; i++) newTransform[2][i] = basisY[i];
+  
+  // Build the translation component
+  for(int i = 0; i < 3; i++) newTransform[3][i] = planePosition[i];
+
+  objectTransform = newTransform;
+  polyscope::requestRedraw();
+}
 
 bool SlicePlane::getActive() { return active.get(); }
 void SlicePlane::setActive(bool newVal) {
