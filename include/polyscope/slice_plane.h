@@ -30,6 +30,12 @@ public:
 
   const std::string name;
   const std::string postfix;
+  
+  // Set the position and orientation of the plane
+  // planePosition is any 3D position which the plane touches (the center of the plane)
+  // planeNormal is a vector giving the normal direction of the plane, objects 
+  // in this negative side of the plane will be culled
+  void setPose(glm::vec3 planePosition, glm::vec3 planeNormal);
 
   // == Some getters and setters
 
@@ -44,6 +50,7 @@ public:
 
   glm::mat4 getTransform();
   void setTransform(glm::mat4 newTransform);
+  
 
 protected:
   // = State
