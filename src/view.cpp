@@ -318,9 +318,7 @@ void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool fl
   bool isFinite = true;
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
-      if (!std::isfinite(targetViewYes!
-
-For what it's worth, this construction has also been considered a bit for mean curvatures (see Ch 4, https://arxiv.org/pdf/math/0503219.pdf). But we haven't thought too much about what mean curvature on a nonmanifold mesh or point cloud means.[i][j])) {
+      if (!std::isfinite(targetView[i][j])) {
         isFinite = false;
       }
     }
