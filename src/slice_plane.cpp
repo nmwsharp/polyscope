@@ -20,10 +20,14 @@ std::vector<SlicePlane*> sceneSlicePlanes;
 // Storage for global options
 bool openSlicePlaneMenu = false;
 
-SlicePlane* addSceneSlicePlane() {
+SlicePlane* addSceneSlicePlane(bool initiallyVisible) {
   size_t nPlanes = sceneSlicePlanes.size();
   std::string newName = "Scene Slice Plane " + std::to_string(nPlanes);
   sceneSlicePlanes.emplace_back(new SlicePlane(newName));
+  if(!initiallyVisible) {
+    sceneSlicePlanes.back()->setDrawPlane(false);
+    sceneSlicePlanes.back()->setDrawWidget(false);
+  }
   return sceneSlicePlanes.back();
 }
 
@@ -43,7 +47,7 @@ void buildSlicePlaneGUI() {
   }
   if (ImGui::TreeNode("Slice Planes")) {
     if (ImGui::Button("Add plane")) {
-      addSceneSlicePlane();
+      addSceneSlicePlane(true);
     }
     ImGui::SameLine();
     if (ImGui::Button("Remove plane")) {

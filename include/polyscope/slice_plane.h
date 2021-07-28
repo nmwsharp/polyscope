@@ -73,7 +73,7 @@ protected:
   void updateWidgetEnabled();
 };
 
-SlicePlane* addSceneSlicePlane();
+SlicePlane* addSceneSlicePlane(bool initiallyVisible=false);
 void removeLastSceneSlicePlane();
 void buildSlicePlaneGUI();
 
