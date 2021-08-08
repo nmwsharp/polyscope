@@ -5,7 +5,9 @@
 // multiple shaders; it is combined at link time with all fragment
 // shaders compiled via the methods in the GLProgram class.
 
+#ifdef POLYSCOPE_BACKEND_OPENGL3_GLFW_ENABLED
 #include "polyscope/render/opengl/gl_engine.h"
+#endif
 
 namespace polyscope {
 namespace render {
