@@ -25,7 +25,6 @@ enum class DrawMode {
   LinesAdjacency,
   Triangles,
   TrianglesAdjacency,
-  Patches,
   IndexedTriangles,
   Lines,
   IndexedLines,
@@ -180,7 +179,7 @@ struct ShaderSpecTexture {
 
 
 // Types which represents shaders and the values they require
-enum class ShaderStageType { Vertex, Tessellation, Evaluation, Geometry, /* Compute,*/ Fragment };
+enum class ShaderStageType { Vertex, Geometry, /* Compute,*/ Fragment };
 struct ShaderStageSpecification {
   const ShaderStageType stage;
   const std::vector<ShaderSpecUniform> uniforms;
@@ -219,7 +218,7 @@ enum class ShaderReplacementDefaults {
 class ShaderProgram {
 
 public:
-  ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm, unsigned int nPatchVertices = 0);
+  ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm);
   virtual ~ShaderProgram(){};
 
 
@@ -294,9 +293,6 @@ protected:
   bool usePrimitiveRestart = false;
   bool primitiveRestartIndexSet = false;
   unsigned int restartIndex = -1;
-
-  // Tessellation parameters
-  unsigned int nPatchVertices;
 };
 
 

@@ -10,7 +10,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-16.04, ubuntu-latest]
+        os: [ubuntu-18.04, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     if: "! contains(toJSON(github.event.commits.*.message), '[ci skip]')"
     steps:
@@ -23,6 +23,29 @@ jobs:
 
     - name: configure
       run: cd test && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND_OPENGL3_GLFW=ON -DPOLYSCOPE_BACKEND_OPENGL_MOCK=ON ..
+
+    - name: build
+      run: cd test/build && make
+
+    - name: run test
+      run: cd test/build && ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL_mock
+  
+  build_shared:
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    if: "! contains(toJSON(github.event.commits.*.message), '[ci skip]')"
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+
+    - name: install packages
+      run: sudo apt-get update && sudo apt-get install -y xorg-dev libglu1-mesa-dev xpra xserver-xorg-video-dummy freeglut3-dev
+
+    - name: configure
+      run: cd test && mkdir build && cd build && cmake -DBUILD_SHARED_LIBS=TRUE -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND_OPENGL3_GLFW=ON -DPOLYSCOPE_BACKEND_OPENGL_MOCK=ON ..
 
     - name: build
       run: cd test/build && make

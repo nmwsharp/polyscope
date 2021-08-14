@@ -96,8 +96,6 @@ inline GLenum type(const TextureFormat& x) {
 inline GLenum native(const ShaderStageType& x) {
   switch (x) {
     case ShaderStageType::Vertex:           return GL_VERTEX_SHADER;
-    case ShaderStageType::Tessellation:     return GL_TESS_CONTROL_SHADER;
-    case ShaderStageType::Evaluation:       return GL_TESS_EVALUATION_SHADER;
     case ShaderStageType::Geometry:         return GL_GEOMETRY_SHADER;
     //case ShaderStageType::Compute:          return GL_COMPUTE_SHADER;
     case ShaderStageType::Fragment:         return GL_FRAGMENT_SHADER;
@@ -608,18 +606,8 @@ void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
 // ==================  Shader Program  =========================
 // =============================================================
 
-GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-                                 unsigned int nPatchVertices)
-    : ShaderProgram(stages, dm, nPatchVertices) {
-
-  GLint maxPatchVertices;
-  glGetIntegerv(GL_MAX_PATCH_VERTICES, &maxPatchVertices);
-  if (nPatchVertices != 0 && nPatchVertices > (unsigned int)maxPatchVertices) {
-    throw std::invalid_argument("Requested number of patch vertices (" + std::to_string(nPatchVertices) +
-                                ") is greater than the number supported by the tessellator (" +
-                                std::to_string(maxPatchVertices));
-  }
-
+GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm)
+    : ShaderProgram(stages, dm) {
 
   // Collect attributes and uniforms from all of the shaders
   for (const ShaderStageSpecification& s : stages) {
@@ -1596,10 +1584,6 @@ void GLShaderProgram::draw() {
     break;
   case DrawMode::TrianglesAdjacency:
     glDrawArrays(GL_TRIANGLES_ADJACENCY, 0, drawDataLength);
-    break;
-  case DrawMode::Patches:
-    glPatchParameteri(GL_PATCH_VERTICES, nPatchVertices);
-    glDrawArrays(GL_PATCHES, 0, drawDataLength);
     break;
   case DrawMode::LinesAdjacency:
     glDrawArrays(GL_LINES_ADJACENCY, 0, drawDataLength);
