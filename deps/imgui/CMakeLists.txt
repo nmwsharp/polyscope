@@ -30,13 +30,26 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glfw/include/")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/")
   
-  target_link_libraries(imgui PRIVATE glfw glad)
-
+  target_link_libraries(imgui PRIVATE glfw)
+  
   if(APPLE)
-    add_definitions(-DGLFW_INCLUDE_GLCOREARB)
-    add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=<GLFW/glfw3.h>)
+      # On macOS, get openGL & friends from Frameworks; do not use GLAD at all
+
+      add_definitions(-DGLFW_INCLUDE_GLCOREARB)
+      add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=<GLFW/glfw3.h>)
+
+      # NOTE: This code is essentially duplicated here and in polyscope/src/CMakeLists.txt
+
+      # Apple is playing hardball and deprecating openGL... we'll cross that bridge when we come to it
+      # Silence warnings about openGL deprecation
+      add_definitions(-DGL_SILENCE_DEPRECATION)  
+      find_library(opengl_library OpenGL)
+      target_link_libraries(imgui PRIVATE ${opengl_library})
   else()
-    add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
+      # On Windows/Linux, use the glad openGL loader
+
+      add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
+      target_link_libraries(imgui PRIVATE glad)
   endif()
 
 elseif("${POLYSCOPE_BACKEND_OPENGL_MOCK}")

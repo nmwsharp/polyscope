@@ -52,6 +52,10 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
   )
 
   if(APPLE)
+      # On macOS, get openGL & friends from Frameworks; do not use GLAD at all
+
+      # NOTE: This code is essentially duplicated here and in deps/imgui/CMakeLists.txt
+
       # Apple is playing hardball and deprecating openGL... we'll cross that bridge when we come to it
       # Silence warnings about openGL deprecation
       add_definitions(-DGL_SILENCE_DEPRECATION)  
@@ -62,6 +66,8 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
       find_library(iokit_library IOKit)
       list(APPEND BACKEND_LIBS ${cocoa_library} ${opengl_library} ${corevideo_library} ${iokit_library})
   else()
+      # On Windows/Linux, use the glad openGL loader
+
       list(APPEND BACKEND_LIBS glad)
   endif()
       
