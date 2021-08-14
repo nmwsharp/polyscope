@@ -179,7 +179,7 @@ struct ShaderSpecTexture {
 
 
 // Types which represents shaders and the values they require
-enum class ShaderStageType { Vertex, Tessellation, Evaluation, Geometry, /* Compute,*/ Fragment };
+enum class ShaderStageType { Vertex, Geometry, /* Compute,*/ Fragment };
 struct ShaderStageSpecification {
   const ShaderStageType stage;
   const std::vector<ShaderSpecUniform> uniforms;

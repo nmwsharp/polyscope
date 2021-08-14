@@ -96,8 +96,6 @@ inline GLenum type(const TextureFormat& x) {
 inline GLenum native(const ShaderStageType& x) {
   switch (x) {
     case ShaderStageType::Vertex:           return GL_VERTEX_SHADER;
-    case ShaderStageType::Tessellation:     return GL_TESS_CONTROL_SHADER;
-    case ShaderStageType::Evaluation:       return GL_TESS_EVALUATION_SHADER;
     case ShaderStageType::Geometry:         return GL_GEOMETRY_SHADER;
     //case ShaderStageType::Compute:          return GL_COMPUTE_SHADER;
     case ShaderStageType::Fragment:         return GL_FRAGMENT_SHADER;
