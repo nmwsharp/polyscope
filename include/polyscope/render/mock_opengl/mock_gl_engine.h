@@ -91,7 +91,7 @@ protected:
 class GLShaderProgram : public ShaderProgram {
 
 public:
-  GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm, unsigned int nPatchVertices = 0);
+  GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm);
   ~GLShaderProgram() override;
 
   // === Store data
@@ -194,8 +194,6 @@ private:
 
   // Drawing related
   void activateTextures();
-
-  int nPatchVertices;
 };
 
 

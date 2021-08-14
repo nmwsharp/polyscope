@@ -329,8 +329,7 @@ void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
 // ==================  Shader Program  =========================
 // =============================================================
 
-GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-                                 unsigned int nPatchVertices)
+GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm)
     : ShaderProgram(stages, dm) {
 
 
@@ -1136,8 +1135,6 @@ void GLShaderProgram::draw() {
   case DrawMode::Lines:
     break;
   case DrawMode::TrianglesAdjacency:
-    break;
-  case DrawMode::Patches:
     break;
   case DrawMode::LinesAdjacency:
     break;

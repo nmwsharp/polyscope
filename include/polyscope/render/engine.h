@@ -25,7 +25,6 @@ enum class DrawMode {
   LinesAdjacency,
   Triangles,
   TrianglesAdjacency,
-  Patches,
   IndexedTriangles,
   Lines,
   IndexedLines,
@@ -219,7 +218,7 @@ enum class ShaderReplacementDefaults {
 class ShaderProgram {
 
 public:
-  ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm, unsigned int nPatchVertices = 0);
+  ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm);
   virtual ~ShaderProgram(){};
 
 
@@ -294,9 +293,6 @@ protected:
   bool usePrimitiveRestart = false;
   bool primitiveRestartIndexSet = false;
   unsigned int restartIndex = -1;
-
-  // Tessellation parameters
-  unsigned int nPatchVertices;
 };
 
 

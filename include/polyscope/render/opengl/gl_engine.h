@@ -134,7 +134,7 @@ public:
 class GLShaderProgram : public ShaderProgram {
 
 public:
-  GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm, unsigned int nPatchVertices = 0);
+  GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm);
   ~GLShaderProgram() override;
 
   // === Store data
@@ -242,8 +242,6 @@ private:
   ProgramHandle programHandle = 0;
   AttributeHandle vaoHandle;
   AttributeHandle indexVBO;
-
-  int nPatchVertices;
 };
 
 

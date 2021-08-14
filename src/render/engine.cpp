@@ -131,9 +131,7 @@ ShaderReplacementRule::ShaderReplacementRule(std::string ruleName_,
     : ruleName(ruleName_), replacements(replacements_), uniforms(uniforms_), attributes(attributes_),
       textures(textures_) {}
 
-ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-                             unsigned int nPatchVertices_)
-    : drawMode(dm), nPatchVertices(nPatchVertices_) {
+ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm) : drawMode(dm) {
 
   drawMode = dm;
   if (dm == DrawMode::IndexedLines || dm == DrawMode::IndexedLineStrip || dm == DrawMode::IndexedLineStripAdjacency ||
@@ -503,9 +501,7 @@ void Engine::setSSAAFactor(int newVal) {
   updateWindowSize(true);
 }
 
-bool Engine::getFrontFaceCCW() {
-  return frontFaceCCW;
-}
+bool Engine::getFrontFaceCCW() { return frontFaceCCW; }
 
 int Engine::getSSAAFactor() { return ssaaFactor; }
 
@@ -939,13 +935,13 @@ void Engine::configureImGui() {
     monoFont = io.Fonts->AddFontFromMemoryCompressedTTF(getCousineRegularCompressedData(),
                                                         getCousineRegularCompressedSize(), 16.0f, &config);
   }
-  
+
   // io.Fonts->AddFontFromFileTTF("test-font-name.ttf", 16);
- 
+
   io.Fonts->Build();
   globalFontAtlas = io.Fonts;
 
-  
+
   setImGuiStyle();
 }
 
