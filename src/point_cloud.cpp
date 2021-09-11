@@ -15,9 +15,6 @@
 #include <fstream>
 #include <iostream>
 
-using std::cout;
-using std::endl;
-
 namespace polyscope {
 
 // Initialize statics
@@ -26,6 +23,7 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 // Constructor
 PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
     : QuantityStructure<PointCloud>(name, structureTypeName), points(std::move(points_)),
+      pointRenderMode(uniquePrefix() + "#pointRenderMode", "sphere"),
       pointColor(uniquePrefix() + "#pointColor", getNextUniqueColor()),
       pointRadius(uniquePrefix() + "#pointRadius", relativeValue(0.005)),
       material(uniquePrefix() + "#material", "clay") {
@@ -36,8 +34,11 @@ PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
 void PointCloud::setPointCloudUniforms(render::ShaderProgram& p) {
   glm::mat4 P = view::getCameraPerspectiveMatrix();
   glm::mat4 Pinv = glm::inverse(P);
-  p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
-  p.setUniform("u_viewport", render::engine->getCurrentViewport());
+
+  if (getPointRenderMode() == PointRenderMode::Sphere) {
+    p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+    p.setUniform("u_viewport", render::engine->getCurrentViewport());
+  }
 
   if (pointRadiusQuantityName != "" && !pointRadiusQuantityAutoscale) {
     // special case: ignore radius uniform
@@ -99,7 +100,7 @@ void PointCloud::prepare() {
     return;
   }
 
-  program = render::engine->requestShader("RAYCAST_SPHERE", addPointCloudRules({"SHADE_BASECOLOR"}));
+  program = render::engine->requestShader(getShaderNameForRenderMode(), addPointCloudRules({"SHADE_BASECOLOR"}));
   render::engine->setMaterial(*program, material.get());
 
   // Fill out the geometry data for the program
@@ -113,8 +114,9 @@ void PointCloud::preparePick() {
   size_t pickStart = pick::requestPickBufferRange(this, pickCount);
 
   // Create a new pick program
-  pickProgram = render::engine->requestShader("RAYCAST_SPHERE", addPointCloudRules({"SPHERE_PROPAGATE_COLOR"}, true),
-                                              render::ShaderReplacementDefaults::Pick);
+  pickProgram =
+      render::engine->requestShader(getShaderNameForRenderMode(), addPointCloudRules({"SPHERE_PROPAGATE_COLOR"}, true),
+                                    render::ShaderReplacementDefaults::Pick);
 
   // Fill color buffer with packed point indices
   std::vector<glm::vec3> pickColors;
@@ -126,6 +128,14 @@ void PointCloud::preparePick() {
   // Store data in buffers
   fillGeometryBuffers(*pickProgram);
   pickProgram->setAttribute("a_color", pickColors);
+}
+
+std::string PointCloud::getShaderNameForRenderMode() {
+  if (pointRenderMode.get() == "sphere")
+    return "RAYCAST_SPHERE";
+  else if (pointRenderMode.get() == "square")
+    return "POINT_QUAD";
+  return "ERROR";
 }
 
 
@@ -228,6 +238,28 @@ void PointCloud::buildCustomUI() {
 }
 
 void PointCloud::buildCustomOptionsUI() {
+
+
+  if (ImGui::BeginMenu("Point Render Mode")) {
+
+    for (const PointRenderMode& m : {PointRenderMode::Sphere, PointRenderMode::Square}) {
+      bool selected = (m == getPointRenderMode());
+      std::string fancyName;
+      switch (m) {
+      case PointRenderMode::Sphere:
+        fancyName = "sphere (pretty)";
+        break;
+      case PointRenderMode::Square:
+        fancyName = "square (fast)";
+        break;
+      }
+      if (ImGui::MenuItem(fancyName.c_str(), NULL, selected)) {
+        setPointRenderMode(m);
+      }
+    }
+
+    ImGui::EndMenu();
+  }
 
   if (ImGui::BeginMenu("Variable Radius")) {
 
@@ -359,6 +391,27 @@ PointCloudVectorQuantity* PointCloud::addVectorQuantityImpl(std::string name, co
   PointCloudVectorQuantity* q = new PointCloudVectorQuantity(name, vectors, *this, vectorType);
   addQuantity(q);
   return q;
+}
+
+PointCloud* PointCloud::setPointRenderMode(PointRenderMode newVal) {
+  switch (newVal) {
+  case PointRenderMode::Sphere:
+    pointRenderMode = "sphere";
+    break;
+  case PointRenderMode::Square:
+    pointRenderMode = "square";
+    break;
+  }
+  refresh();
+  polyscope::requestRedraw();
+  return this;
+}
+PointRenderMode PointCloud::getPointRenderMode() {
+  if (pointRenderMode.get() == "sphere")
+    return PointRenderMode::Sphere;
+  else if (pointRenderMode.get() == "square")
+    return PointRenderMode::Square;
+  return PointRenderMode::Sphere; // should never happen
 }
 
 PointCloud* PointCloud::setPointColor(glm::vec3 newVal) {
