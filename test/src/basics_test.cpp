@@ -910,11 +910,38 @@ TEST_F(PolyscopeTest, VolumeMeshCellVector) {
   polyscope::removeAllStructures();
 }
 
+// ============================================================
+// =============== Ground plane tests
+// ============================================================
+
+TEST_F(PolyscopeTest, GroundPlaneTest) {
+
+  // Add a structure and cycle through the ground plane options
+  auto psMesh = registerTriangleMesh();
+
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::None;
+  polyscope::refresh();
+  polyscope::show(3);
+
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::Tile;
+  polyscope::refresh();
+  polyscope::show(3);
+
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::TileReflection;
+  polyscope::refresh();
+  polyscope::show(3);
+
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::ShadowOnly;
+  polyscope::refresh();
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
 
 // ============================================================
 // =============== Combo test
 // ============================================================
-
 
 // Register a handful of quantities / structures, then call refresh
 TEST_F(PolyscopeTest, RefreshMultiTest) {
