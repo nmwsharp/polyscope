@@ -51,6 +51,14 @@ public:
   glm::mat4 getTransform();
   void setTransform(glm::mat4 newTransform);
   
+  void setColor(glm::vec3 newVal);
+  glm::vec3 getColor();
+  
+  void setGridLineColor(glm::vec3 newVal);
+  glm::vec3 getGridLineColor();
+
+  void setTransparency(double newVal);
+  double getTransparency();
 
 protected:
   // = State
@@ -59,6 +67,7 @@ protected:
   PersistentValue<bool> drawWidget; // do we draw the widget onscreen?
   PersistentValue<glm::mat4> objectTransform;
   PersistentValue<glm::vec3> color;
+  PersistentValue<glm::vec3> gridLineColor;
   PersistentValue<float> transparency;
 
   // Widget that wraps the transform
