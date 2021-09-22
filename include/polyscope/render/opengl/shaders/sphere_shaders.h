@@ -21,6 +21,7 @@ extern const ShaderReplacementRule SPHERE_PROPAGATE_VALUE2;
 extern const ShaderReplacementRule SPHERE_PROPAGATE_COLOR;
 extern const ShaderReplacementRule SPHERE_VARIABLE_SIZE;
 extern const ShaderReplacementRule SPHERE_CULLPOS_FROM_CENTER;
+extern const ShaderReplacementRule SPHERE_CULLPOS_FROM_CENTER_QUAD;
 
 
 } // namespace backend_openGL3_glfw

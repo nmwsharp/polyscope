@@ -93,6 +93,7 @@ R"(
             vec4 p4 = center + dx + dy;
             
             // Other data to emit   
+            ${ GEOM_COMPUTE_BEFORE_EMIT }$
             vec3 sphereCenterViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
     
             // Emit the vertices as a triangle strip
@@ -272,6 +273,8 @@ R"(
             vec4 p2 = center + dx - dy;
             vec4 p3 = center - dx + dy;
             vec4 p4 = center + dx + dy;
+            
+            ${ GEOM_COMPUTE_BEFORE_EMIT }$
     
             // Emit the vertices as a triangle strip
             ${ GEOM_PER_EMIT }$ gl_Position = p1; EmitVertex(); 
@@ -444,6 +447,32 @@ const ShaderReplacementRule SPHERE_PROPAGATE_COLOR (
 const ShaderReplacementRule SPHERE_CULLPOS_FROM_CENTER(
     /* rule name */ "SPHERE_CULLPOS_FROM_CENTER",
     { /* replacement sources */
+      {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
+          vec3 cullPos = sphereCenterView;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+// use a separate version for the quads because they don't already pass the center, and we 
+// don't want to always pass it
+const ShaderReplacementRule SPHERE_CULLPOS_FROM_CENTER_QUAD(
+    /* rule name */ "SPHERE_CULLPOS_FROM_CENTER_QUAD",
+    { /* replacement sources */
+      {"GEOM_DECLARATIONS", R"(
+          out vec3 sphereCenterView;
+        )"},
+      {"GEOM_COMPUTE_BEFORE_EMIT", R"(
+          vec3 sphereCenterViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          sphereCenterView = sphereCenterViewVal;
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec3 sphereCenterView;
+        )"},
       {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
           vec3 cullPos = sphereCenterView;
         )"},

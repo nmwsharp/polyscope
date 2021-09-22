@@ -1016,12 +1016,14 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
   std::vector<double> vScalar(psMesh->nVertices(), 7.);
   auto q1 = psMesh->addVertexDistanceQuantity("distance", vScalar);
 
-  { // Point cloud
-    auto psPoints = registerPointCloud();
-    std::vector<double> vScalar(psPoints->nPoints(), 7.);
-    auto q2 = psPoints->addScalarQuantity("vScalar", vScalar);
-    q2->setEnabled(true);
-  }
+  // Point cloud
+  auto psPoints = registerPointCloud();
+  psPoints->setPointRenderMode(polyscope::PointRenderMode::Sphere);
+  psPoints->setCullWholeElements(true);
+  std::vector<double> vScalarP(psPoints->nPoints(), 7.);
+  auto q2 = psPoints->addScalarQuantity("vScalar", vScalarP);
+  q2->setEnabled(true);
+
 
   { // Curve network
     auto psCurve = registerCurveNetwork();
@@ -1044,6 +1046,17 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
 
   // render with one slice plane
   polyscope::addSceneSlicePlane();
+  polyscope::show(3);
+
+  // try a few variations of point cloud settings
+  psPoints->setCullWholeElements(false);
+  polyscope::show(3);
+  psPoints->setCullWholeElements(true);
+  psPoints->setPointRenderMode(polyscope::PointRenderMode::Square);
+  polyscope::show(3);
+  psPoints->setCullWholeElements(false);
+  polyscope::show(3);
+  
   polyscope::show(3);
 
   // add another and rotate it
