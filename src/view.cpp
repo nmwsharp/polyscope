@@ -28,6 +28,8 @@ const double defaultFov = 45.;
 double fov = defaultFov;
 double nearClipRatio = defaultNearClipRatio;
 double farClipRatio = defaultFarClipRatio;
+bool isOrthoView = false;
+float orthoZoom = 1.0f;
 std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 0.0}};
 
 glm::mat4x4 viewMat;
@@ -196,6 +198,9 @@ void processZoom(double amount) {
   float movementScale = state::lengthScale * 0.1 * moveScale;
   glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), glm::vec3(0., 0., movementScale * amount));
   viewMat = camSpaceT * viewMat;
+  if(isOrthoView){
+    orthoZoom -= amount * 0.1f;
+  }
 
   immediatelyEndFlight();
   requestRedraw();
@@ -349,6 +354,11 @@ glm::mat4 getCameraViewMatrix() { return viewMat; }
 glm::mat4 getCameraPerspectiveMatrix() {
   double farClip = farClipRatio * state::lengthScale;
   double nearClip = nearClipRatio * state::lengthScale;
+  if(isOrthoView){
+    return glm::ortho(-0.002f * orthoZoom * (float)bufferWidth, 0.002f * orthoZoom * (float)bufferWidth, 
+                      -0.002f * orthoZoom * (float)bufferHeight, 0.002f * orthoZoom * (float)bufferHeight, 
+                      0.0f,(float)farClip);
+  }
   double fovRad = glm::radians(fov);
   double aspectRatio = (float)bufferWidth / bufferHeight;
 
@@ -651,6 +661,13 @@ void buildViewGui() {
       float moveScaleF = view::moveScale;
       ImGui::SliderFloat(" Move Speed", &moveScaleF, 0.0, 1.0, "%.5f", 3.);
       view::moveScale = moveScaleF;
+
+      bool isOrthoViewF = view::isOrthoView;
+      if(ImGui::Checkbox(" Orthogonal View", &isOrthoViewF)){
+        orthoZoom = 1.0f;
+        isOrthoView = isOrthoViewF;
+        requestRedraw();
+      }
 
       ImGui::TreePop();
     }
