@@ -42,6 +42,7 @@ extern std::array<float, 4> bgColor;
 // Current view camera parameters
 extern glm::mat4x4 viewMat;
 extern double fov; // in the y direction
+extern bool isOrthoView;
 
 // "Flying" view
 extern bool midflight;

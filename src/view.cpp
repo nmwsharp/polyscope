@@ -29,7 +29,8 @@ double fov = defaultFov;
 double nearClipRatio = defaultNearClipRatio;
 double farClipRatio = defaultFarClipRatio;
 bool isOrthoView = false;
-float orthoZoom = 1.0f;
+float minOrthoZoom = 1.;
+float orthoZoom = minOrthoZoom;
 std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 0.0}};
 
 glm::mat4x4 viewMat;
@@ -199,7 +200,10 @@ void processZoom(double amount) {
   glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), glm::vec3(0., 0., movementScale * amount));
   viewMat = camSpaceT * viewMat;
   if(isOrthoView){
-    orthoZoom -= amount * 0.1f;
+    orthoZoom -= amount * movementScale;
+    if(orthoZoom < minOrthoZoom){
+      orthoZoom = minOrthoZoom;
+    }
   }
 
   immediatelyEndFlight();
@@ -354,15 +358,15 @@ glm::mat4 getCameraViewMatrix() { return viewMat; }
 glm::mat4 getCameraPerspectiveMatrix() {
   double farClip = farClipRatio * state::lengthScale;
   double nearClip = nearClipRatio * state::lengthScale;
-  if(isOrthoView){
-    return glm::ortho(-0.002f * orthoZoom * (float)bufferWidth, 0.002f * orthoZoom * (float)bufferWidth, 
-                      -0.002f * orthoZoom * (float)bufferHeight, 0.002f * orthoZoom * (float)bufferHeight, 
-                      0.0f,(float)farClip);
-  }
   double fovRad = glm::radians(fov);
   double aspectRatio = (float)bufferWidth / bufferHeight;
-
-  return glm::perspective(fovRad, aspectRatio, nearClip, farClip);
+  glm::mat4 perspective = glm::perspective(fovRad, aspectRatio, nearClip, farClip);
+  if(isOrthoView){
+    double vert = orthoZoom * tan(fovRad);
+    double horiz = vert * aspectRatio;
+    return glm::ortho(-horiz, horiz, -vert, vert, nearClip, farClip);
+  }
+  return perspective;
 }
 
 
@@ -664,7 +668,6 @@ void buildViewGui() {
 
       bool isOrthoViewF = view::isOrthoView;
       if(ImGui::Checkbox(" Orthogonal View", &isOrthoViewF)){
-        orthoZoom = 1.0f;
         isOrthoView = isOrthoViewF;
         requestRedraw();
       }
