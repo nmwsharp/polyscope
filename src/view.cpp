@@ -29,8 +29,11 @@ double fov = defaultFov;
 double nearClipRatio = defaultNearClipRatio;
 double farClipRatio = defaultFarClipRatio;
 bool isOrthoView = false;
-float minOrthoZoom = 1.;
-float orthoZoom = minOrthoZoom;
+double distanceToFocus = 0.;
+double minOrthoZoom = 0.1;
+// Multiply ortho scale by zoom distance to get reasonable
+// transitions to and from perspective
+const double orthoViewMultipler = 0.35;
 std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 0.0}};
 
 glm::mat4x4 viewMat;
@@ -199,12 +202,7 @@ void processZoom(double amount) {
   float movementScale = state::lengthScale * 0.1 * moveScale;
   glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), glm::vec3(0., 0., movementScale * amount));
   viewMat = camSpaceT * viewMat;
-  if(isOrthoView){
-    orthoZoom -= amount * movementScale;
-    if(orthoZoom < minOrthoZoom){
-      orthoZoom = minOrthoZoom;
-    }
-  }
+  distanceToFocus -= amount * movementScale;
 
   immediatelyEndFlight();
   requestRedraw();
@@ -294,6 +292,7 @@ void resetCameraToHomeView() {
 
   viewMat = computeHomeView();
 
+  distanceToFocus = 1.5 * state::lengthScale;
   fov = defaultFov;
   nearClipRatio = defaultNearClipRatio;
   farClipRatio = defaultFarClipRatio;
@@ -307,6 +306,7 @@ void flyToHomeView() {
 
   glm::mat4x4 T = computeHomeView();
 
+  distanceToFocus = 1.5 * state::lengthScale;
   float Tfov = defaultFov;
   nearClipRatio = defaultNearClipRatio;
   farClipRatio = defaultFarClipRatio;
@@ -332,7 +332,7 @@ void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool fl
       }
     }
   }
-  if(!isFinite) { 
+  if (!isFinite) {
     warning("lookAt() yielded an invalid view. Is the look direction collinear with the up direction?");
     // just continue after; our view handling will take care of the NaN and set it to the default view
   }
@@ -361,8 +361,8 @@ glm::mat4 getCameraPerspectiveMatrix() {
   double fovRad = glm::radians(fov);
   double aspectRatio = (float)bufferWidth / bufferHeight;
   glm::mat4 perspective = glm::perspective(fovRad, aspectRatio, nearClip, farClip);
-  if(isOrthoView){
-    double vert = orthoZoom * tan(fovRad);
+  if (isOrthoView) {
+    double vert = orthoViewMultipler * std::max(minOrthoZoom, distanceToFocus) * tan(fovRad);
     double horiz = vert * aspectRatio;
     return glm::ortho(-horiz, horiz, -vert, vert, nearClip, farClip);
   }
@@ -667,7 +667,7 @@ void buildViewGui() {
       view::moveScale = moveScaleF;
 
       bool isOrthoViewF = view::isOrthoView;
-      if(ImGui::Checkbox(" Orthogonal View", &isOrthoViewF)){
+      if (ImGui::Checkbox(" Orthogonal View", &isOrthoViewF)) {
         isOrthoView = isOrthoViewF;
         requestRedraw();
       }

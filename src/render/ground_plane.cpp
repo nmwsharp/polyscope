@@ -221,8 +221,13 @@ void GroundPlane::draw(bool isRedraw) {
       groundPlaneProgram->setUniform("u_shadowDarkness", options::shadowDarkness);
     }
 
-    float camHeight = view::getCameraWorldPosition()[iP];
-    groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
+    if (view::isOrthoView) {
+      glm::vec4 lookDir = glm::vec4(0, 0, 1, 0) * viewMat;
+      groundPlaneProgram->setUniform("u_cameraHeight", (lookDir.y * state::lengthScale) + groundHeight);
+    } else {
+      float camHeight = view::getCameraWorldPosition()[iP];
+      groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
+    }
     groundPlaneProgram->setUniform("u_upSign", sign);
     groundPlaneProgram->setUniform("u_basisZ", baseUp);
     groundPlaneProgram->setUniform("u_groundHeight", groundHeight);
