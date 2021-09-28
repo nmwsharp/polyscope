@@ -287,6 +287,8 @@ TEST_F(PolyscopeTest, SurfaceMeshBackface) {
   // Different appearance
   psMesh->setBackFacePolicy(polyscope::BackFacePolicy::Different);
   EXPECT_EQ(psMesh->getBackFacePolicy(), polyscope::BackFacePolicy::Different);
+  psMesh->setBackfaceColor(glm::vec3(1.f, 0.f, 0.f));
+  EXPECT_EQ(psMesh->getBackFaceColor(), glm::vec3(1.f, 0.f, 0.f));
   polyscope::show(3);
 
   // Cull backfacing
