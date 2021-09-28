@@ -887,15 +887,7 @@ void SurfaceMesh::buildCustomUI() {
   }
 }
 
-SurfaceMesh* SurfaceMesh::setBackfaceColor(glm::vec3 val){
-  backFaceColor.set(val);
-  requestRedraw();
-  return this;
-}
 
-glm::vec3 SurfaceMesh::getBackfaceColor(){
-  return backFaceColor.get();
-}
 
 void SurfaceMesh::buildCustomOptionsUI() {
   if (render::buildMaterialOptionsGui(material.get())) {
@@ -1123,6 +1115,16 @@ SurfaceMesh* SurfaceMesh::setSurfaceColor(glm::vec3 val) {
   return this;
 }
 glm::vec3 SurfaceMesh::getSurfaceColor() { return surfaceColor.get(); }
+
+SurfaceMesh* SurfaceMesh::setBackfaceColor(glm::vec3 val){
+  backFaceColor.set(val);
+  requestRedraw();
+  return this;
+}
+
+glm::vec3 SurfaceMesh::getBackfaceColor(){
+  return backFaceColor.get();
+}
 
 SurfaceMesh* SurfaceMesh::setEdgeColor(glm::vec3 val) {
   edgeColor = val;
