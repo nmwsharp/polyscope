@@ -278,7 +278,7 @@ TEST_F(PolyscopeTest, SurfaceMeshPick) {
 
 TEST_F(PolyscopeTest, SurfaceMeshBackface) {
   auto psMesh = registerTriangleMesh();
-  
+
   // Same appearance
   psMesh->setBackFacePolicy(polyscope::BackFacePolicy::Identical);
   EXPECT_EQ(psMesh->getBackFacePolicy(), polyscope::BackFacePolicy::Identical);
@@ -288,7 +288,7 @@ TEST_F(PolyscopeTest, SurfaceMeshBackface) {
   psMesh->setBackFacePolicy(polyscope::BackFacePolicy::Different);
   EXPECT_EQ(psMesh->getBackFacePolicy(), polyscope::BackFacePolicy::Different);
   psMesh->setBackfaceColor(glm::vec3(1.f, 0.f, 0.f));
-  EXPECT_EQ(psMesh->getBackFaceColor(), glm::vec3(1.f, 0.f, 0.f));
+  EXPECT_EQ(psMesh->getBackfaceColor(), glm::vec3(1.f, 0.f, 0.f));
   polyscope::show(3);
 
   // Cull backfacing
@@ -816,7 +816,7 @@ TEST_F(PolyscopeTest, VolumeMeshColorVertex) {
   std::vector<std::array<int, 8>> cells;
   std::tie(verts, cells) = getVolumeMeshData();
   polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
-  
+
   std::vector<glm::vec3> vColors(verts.size(), glm::vec3{.2, .3, .4});
   auto q1 = psVol->addVertexColorQuantity("vcolor", vColors);
   q1->setEnabled(true);
@@ -829,7 +829,7 @@ TEST_F(PolyscopeTest, VolumeMeshColorCell) {
   std::vector<std::array<int, 8>> cells;
   std::tie(verts, cells) = getVolumeMeshData();
   polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
-  
+
   std::vector<glm::vec3> cColors(cells.size(), glm::vec3{.2, .3, .4});
   auto q1 = psVol->addCellColorQuantity("ccolor", cColors);
   q1->setEnabled(true);
@@ -842,7 +842,7 @@ TEST_F(PolyscopeTest, VolumeMeshScalarVertex) {
   std::vector<std::array<int, 8>> cells;
   std::tie(verts, cells) = getVolumeMeshData();
   polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
-  
+
   std::vector<float> vals(verts.size(), 0.44);
   auto q1 = psVol->addVertexScalarQuantity("vals", vals);
   q1->setEnabled(true);
@@ -855,7 +855,7 @@ TEST_F(PolyscopeTest, VolumeMeshScalarCell) {
   std::vector<std::array<int, 8>> cells;
   std::tie(verts, cells) = getVolumeMeshData();
   polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
-  
+
   std::vector<float> vals(cells.size(), 0.44);
   auto q1 = psVol->addCellScalarQuantity("vals", vals);
   q1->setEnabled(true);
@@ -868,7 +868,7 @@ TEST_F(PolyscopeTest, VolumeMeshVertexVector) {
   std::vector<std::array<int, 8>> cells;
   std::tie(verts, cells) = getVolumeMeshData();
   polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
-  
+
   std::vector<glm::vec3> vals(verts.size(), {1., 2., 3.});
   auto q1 = psVol->addVertexVectorQuantity("vals", vals);
   q1->setEnabled(true);
@@ -881,7 +881,7 @@ TEST_F(PolyscopeTest, VolumeMeshCellVector) {
   std::vector<std::array<int, 8>> cells;
   std::tie(verts, cells) = getVolumeMeshData();
   polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
-  
+
   std::vector<glm::vec3> vals(cells.size(), {1., 2., 3.});
   auto q1 = psVol->addCellVectorQuantity("vals", vals);
   q1->setEnabled(true);
