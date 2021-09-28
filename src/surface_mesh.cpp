@@ -20,14 +20,21 @@ namespace polyscope {
 const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
 
+
 SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
                          const std::vector<std::vector<size_t>>& faceIndices)
     : QuantityStructure<SurfaceMesh>(name, typeName()), vertices(vertexPositions), faces(faceIndices),
       shadeSmooth(uniquePrefix() + "shadeSmooth", false),
-      surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
       edgeWidth(uniquePrefix() + "edgeWidth", 0.),
-      backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different) {
+      backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different),
+      backFaceColor(uniquePrefix() + "backFaceColor", glm::vec3(0,0,0)),
+      surfaceColor(uniquePrefix() + "surfaceColor", glm::vec3(0,0,0)) {
+  glm::vec3 mainColor = getNextUniqueColor();
+  surfaceColor.set(mainColor);
+  backFaceColor.set(glm::vec3(1.f - mainColor.r,
+                              1.f - mainColor.g,
+                              1.f - mainColor.b));
   computeCounts();
   computeGeometryData();
 }
@@ -517,7 +524,7 @@ std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::strin
         initRules.push_back("MESH_WIREFRAME");
       }
       if (backFacePolicy.get() == BackFacePolicy::Different) {
-        initRules.push_back("MESH_BACKFACE_DARKEN");
+        initRules.push_back("MESH_BACKFACE_DIFFERENT");
       }
     }
 
@@ -540,6 +547,9 @@ void SurfaceMesh::setSurfaceMeshUniforms(render::ShaderProgram& p) {
   if (getEdgeWidth() > 0) {
     p.setUniform("u_edgeWidth", getEdgeWidth() * render::engine->getCurrentPixelScaling());
     p.setUniform("u_edgeColor", getEdgeColor());
+  }
+  if(backFacePolicy.get() == BackFacePolicy::Different){
+    p.setUniform("u_backfaceColor", getBackfaceColor());
   }
 }
 
@@ -871,6 +881,20 @@ void SurfaceMesh::buildCustomUI() {
     }
     ImGui::PopItemWidth();
   }
+  if(backFacePolicy.get() == BackFacePolicy::Different){
+     if(ImGui::ColorEdit3("Backface Color", &backFaceColor.get()[0], ImGuiColorEditFlags_NoInputs))
+       setBackfaceColor(backFaceColor.get());
+  }
+}
+
+SurfaceMesh* SurfaceMesh::setBackfaceColor(glm::vec3 val){
+  backFaceColor.set(val);
+  requestRedraw();
+  return this;
+}
+
+glm::vec3 SurfaceMesh::getBackfaceColor(){
+  return backFaceColor.get();
 }
 
 void SurfaceMesh::buildCustomOptionsUI() {

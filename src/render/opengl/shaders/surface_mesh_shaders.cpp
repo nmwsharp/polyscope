@@ -329,16 +329,22 @@ const ShaderReplacementRule MESH_BACKFACE_NORMAL_FLIP (
     /* textures */ {}
 );
 
-const ShaderReplacementRule MESH_BACKFACE_DARKEN (
-    /* rule name */ "MESH_BACKFACE_DARKEN",
+const ShaderReplacementRule MESH_BACKFACE_DIFFERENT (
+    /* rule name */ "MESH_BACKFACE_DIFFERENT",
     { /* replacement sources */
-      {"PERTURB_LIT_COLOR", R"(
+      {"FRAG_DECLARATIONS", R"(
+          uniform vec3 u_backfaceColor;
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
         if(!gl_FrontFacing) {
-          litColor *= .7;
+          albedoColor = u_backfaceColor;
         }
-        )"}
+  )"}
     },
-    /* uniforms */ {},
+    /* uniforms */ 
+    {
+      {"u_backfaceColor", DataType::Vector3Float}
+    },
     /* attributes */ {},
     /* textures */ {}
 );
