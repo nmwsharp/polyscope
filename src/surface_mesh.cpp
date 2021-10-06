@@ -524,6 +524,9 @@ std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::strin
         initRules.push_back("MESH_WIREFRAME");
       }
       if (backFacePolicy.get() == BackFacePolicy::Different) {
+        initRules.push_back("MESH_BACKFACE_DARKEN");
+      }
+      if (backFacePolicy.get() == BackFacePolicy::Custom) {
         initRules.push_back("MESH_BACKFACE_DIFFERENT");
       }
     }
@@ -533,6 +536,10 @@ std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::strin
     }
 
     if (backFacePolicy.get() == BackFacePolicy::Different) {
+      initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
+    }
+
+    if (backFacePolicy.get() == BackFacePolicy::Custom) {
       initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
     }
 
@@ -548,8 +555,8 @@ void SurfaceMesh::setSurfaceMeshUniforms(render::ShaderProgram& p) {
     p.setUniform("u_edgeWidth", getEdgeWidth() * render::engine->getCurrentPixelScaling());
     p.setUniform("u_edgeColor", getEdgeColor());
   }
-  if(backFacePolicy.get() == BackFacePolicy::Different){
-    p.setUniform("u_backfaceColor", getBackfaceColor());
+  if(backFacePolicy.get() == BackFacePolicy::Custom){
+    p.setUniform("u_backfaceColor", getBackFaceColor());
   }
 }
 
@@ -881,9 +888,9 @@ void SurfaceMesh::buildCustomUI() {
     }
     ImGui::PopItemWidth();
   }
-  if(backFacePolicy.get() == BackFacePolicy::Different){
+  if(backFacePolicy.get() == BackFacePolicy::Custom){
      if(ImGui::ColorEdit3("Backface Color", &backFaceColor.get()[0], ImGuiColorEditFlags_NoInputs))
-       setBackfaceColor(backFaceColor.get());
+       setBackFaceColor(backFaceColor.get());
   }
 }
 
@@ -901,6 +908,8 @@ void SurfaceMesh::buildCustomOptionsUI() {
       setBackFacePolicy(BackFacePolicy::Identical);
     if (ImGui::MenuItem("different shading", NULL, backFacePolicy.get() == BackFacePolicy::Different))
       setBackFacePolicy(BackFacePolicy::Different);
+    if (ImGui::MenuItem("custom shading", NULL, backFacePolicy.get() == BackFacePolicy::Custom))
+      setBackFacePolicy(BackFacePolicy::Custom);
     if (ImGui::MenuItem("cull", NULL, backFacePolicy.get() == BackFacePolicy::Cull))
       setBackFacePolicy(BackFacePolicy::Cull);
     ImGui::EndMenu();
@@ -1109,13 +1118,13 @@ SurfaceMesh* SurfaceMesh::setSmoothShade(bool isSmooth) {
 }
 bool SurfaceMesh::isSmoothShade() { return shadeSmooth.get(); }
 
-SurfaceMesh* SurfaceMesh::setBackfaceColor(glm::vec3 val){
+SurfaceMesh* SurfaceMesh::setBackFaceColor(glm::vec3 val){
   backFaceColor.set(val);
   requestRedraw();
   return this;
 }
 
-glm::vec3 SurfaceMesh::getBackfaceColor(){
+glm::vec3 SurfaceMesh::getBackFaceColor(){
   return backFaceColor.get();
 }
 
