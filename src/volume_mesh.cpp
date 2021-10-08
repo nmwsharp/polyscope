@@ -18,6 +18,7 @@ using std::endl;
 namespace polyscope {
 
 // Initialize statics
+std::shared_ptr<render::ShaderProgram> sliceProgram;
 const std::string VolumeMesh::structureTypeName = "Volume Mesh";
 
 // clang-format off
@@ -160,12 +161,14 @@ void VolumeMesh::draw() {
 
     // Set uniforms
     setStructureUniforms(*program);
+    setStructureUniforms(*sliceProgram);
     setVolumeMeshUniforms(*program);
     program->setUniform("u_baseColor1", getColor());
     program->setUniform("u_baseColor2", getInteriorColor());
 
-    program->draw();
+    // program->draw();
   }
+  sliceProgram->draw();
 
   // Draw the quantities
   for (auto& x : quantities) {
@@ -190,7 +193,27 @@ void VolumeMesh::drawPick() {
 
 void VolumeMesh::prepare() {
   program = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE"}));
-
+  sliceProgram = render::engine->requestShader("SLICE_TETS", std::vector<std::string>(),
+                                               polyscope::render::ShaderReplacementDefaults::Process);
+  std::vector<glm::vec3> point1;
+  std::vector<glm::vec3> point2;
+  std::vector<glm::vec3> point3;
+  std::vector<glm::vec3> point4;
+  point1.resize(nCells());
+  point2.resize(nCells());
+  point3.resize(nCells());
+  point4.resize(nCells());
+  for (size_t iC = 0; iC < nCells(); iC++) {
+    const std::array<int64_t, 8>& cell = cells[iC];
+    point1[iC] = vertices[cell[0]];
+    point2[iC] = vertices[cell[1]];
+    point3[iC] = vertices[cell[2]];
+    point4[iC] = vertices[cell[3]];
+  }
+  sliceProgram->setAttribute("a_point_1", point1);
+  sliceProgram->setAttribute("a_point_2", point2);
+  sliceProgram->setAttribute("a_point_3", point3);
+  sliceProgram->setAttribute("a_point_4", point4);
   // Populate draw buffers
   fillGeometryBuffers(*program);
   render::engine->setMaterial(*program, getMaterial());

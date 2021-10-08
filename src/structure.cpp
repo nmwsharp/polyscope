@@ -103,7 +103,7 @@ void Structure::buildUI() {
 
         ImGui::EndMenu();
       }
-      
+
       if (ImGui::BeginMenu("Slice plane options")) {
         if (ImGui::MenuItem("cull whole elements", NULL, getCullWholeElements()))
           setCullWholeElements(!getCullWholeElements());
@@ -187,8 +187,10 @@ void Structure::setStructureUniforms(render::ShaderProgram& p) {
   glm::mat4 viewMat = getModelView();
   p.setUniform("u_modelView", glm::value_ptr(viewMat));
 
-  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-  p.setUniform("u_projMatrix", glm::value_ptr(projMat));
+  if (p.hasUniform("u_projMatrix")) {
+    glm::mat4 projMat = view::getCameraPerspectiveMatrix();
+    p.setUniform("u_projMatrix", glm::value_ptr(projMat));
+  }
 
   if (render::engine->transparencyEnabled()) {
     if (p.hasUniform("u_transparency")) {
