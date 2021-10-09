@@ -195,6 +195,7 @@ void VolumeMesh::prepare() {
   program = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE"}));
   sliceProgram = render::engine->requestShader("SLICE_TETS", std::vector<std::string>(),
                                                polyscope::render::ShaderReplacementDefaults::Process);
+  printf("slice\n");
   std::vector<glm::vec3> point1;
   std::vector<glm::vec3> point2;
   std::vector<glm::vec3> point3;

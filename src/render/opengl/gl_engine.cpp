@@ -1578,7 +1578,6 @@ void GLShaderProgram::draw() {
     glDrawArrays(GL_POINTS, 0, drawDataLength);
     break;
   case DrawMode::Triangles:
-    printf("%d\n", drawDataLength);
     glDrawArrays(GL_TRIANGLES, 0, drawDataLength);
     break;
   case DrawMode::Lines:
