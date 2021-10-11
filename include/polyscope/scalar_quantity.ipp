@@ -6,7 +6,10 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
       cMap(quantity.name + "#cmap", defaultColorMap(dataType)),
       isolinesEnabled(quantity.name + "#isolinesEnabled", false),
       isolineWidth(quantity.name + "#isolineWidth", absoluteValue((dataRange.second - dataRange.first) * 0.02)),
-      isolineDarkness(quantity.name + "#isolineDarkness", 0.7)
+      isolineDarkness(quantity.name + "#isolineDarkness", 0.7),
+      contoursEnabled(quantity.name + "#contoursEnabled", false),
+      contourFrequency(quantity.name + "#contourFrequency", absoluteValue((dataRange.second - dataRange.first) * 0.3)),
+      contourThickness(quantity.name + "#contourThickness", 0.2)
 
 {
   hist.updateColormap(cMap.get());
@@ -88,12 +91,47 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
 
     ImGui::PopItemWidth();
   }
+
+  // Contours
+  if (contoursEnabled.get()) {
+    ImGui::PushItemWidth(100);
+
+    // Contour frequency
+    ImGui::TextUnformatted("Contour frequency");
+    ImGui::SameLine();
+    if (contourFrequency.get().isRelative()) {
+      if (ImGui::DragFloat("##Contour frequency relative", contourFrequency.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f",
+                           2.0)) {
+        contourFrequency.manuallyChanged();
+        requestRedraw();
+      }
+    } else {
+      float scaleWidth = dataRange.second - dataRange.first;
+      if (ImGui::DragFloat("##Contour frequency absolute", contourFrequency.get().getValuePtr(), scaleWidth / 1000, 0.,
+                           scaleWidth, "%.4f", 2.0)) {
+        contourFrequency.manuallyChanged();
+        requestRedraw();
+      }
+    }
+
+    // Contour thickness
+    ImGui::TextUnformatted("Contour thickness");
+    ImGui::SameLine();
+    if (ImGui::DragFloat("##Contour thickness", &contourThickness.get(), 0.01, 0., 1.)) {
+      contourThickness.manuallyChanged();
+      requestRedraw();
+    }
+
+    ImGui::PopItemWidth();
+  }
+
 }
 
 template <typename QuantityT>
 void ScalarQuantity<QuantityT>::buildScalarOptionsUI() {
   if (ImGui::MenuItem("Reset colormap range")) resetMapRange();
   if (ImGui::MenuItem("Enable isolines", NULL, isolinesEnabled.get())) setIsolinesEnabled(!isolinesEnabled.get());
+  if (ImGui::MenuItem("Enable contours", NULL, contoursEnabled.get())) setContoursEnabled(!contoursEnabled.get());
 }
 
 template <typename QuantityT>
@@ -101,6 +139,9 @@ std::vector<std::string> ScalarQuantity<QuantityT>::addScalarRules(std::vector<s
   rules.push_back("SHADE_COLORMAP_VALUE");
   if (isolinesEnabled.get()) {
     rules.push_back("ISOLINE_STRIPE_VALUECOLOR");
+  }
+  if (contoursEnabled.get()) {
+    rules.push_back("CONTOUR_VALUECOLOR");
   }
   return rules;
 }
@@ -114,6 +155,11 @@ void ScalarQuantity<QuantityT>::setScalarUniforms(render::ShaderProgram& p) {
   if (isolinesEnabled.get()) {
     p.setUniform("u_modLen", getIsolineWidth());
     p.setUniform("u_modDarkness", getIsolineDarkness());
+  }
+
+  if (contoursEnabled.get()) {
+    p.setUniform("u_modFrequency", getContourFrequency());
+    p.setUniform("u_modThickness", getContourThickness());
   }
 }
 
@@ -199,6 +245,46 @@ QuantityT* ScalarQuantity<QuantityT>::setIsolinesEnabled(bool newEnabled) {
 template <typename QuantityT>
 bool ScalarQuantity<QuantityT>::getIsolinesEnabled() {
   return isolinesEnabled.get();
+}
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setContourFrequency(double size, bool isRelative) {
+  contourFrequency = ScaledValue<float>(size, isRelative);
+  if (!contoursEnabled.get()) {
+    setContoursEnabled(true);
+  }
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+double ScalarQuantity<QuantityT>::getContourFrequency() {
+  return contourFrequency.get().asAbsolute();
+}
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setContourThickness(double val) {
+  contourThickness = val;
+  if (!contoursEnabled.get()) {
+    setContoursEnabled(true);
+  }
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+double ScalarQuantity<QuantityT>::getContourThickness() {
+  return contourThickness.get();
+}
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setContoursEnabled(bool newEnabled) {
+  contoursEnabled = newEnabled;
+  quantity.refresh();
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+bool ScalarQuantity<QuantityT>::getContoursEnabled() {
+  return contoursEnabled.get();
 }
 
 } // namespace polyscope

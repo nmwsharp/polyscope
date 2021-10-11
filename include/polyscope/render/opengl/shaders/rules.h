@@ -24,6 +24,7 @@ extern const ShaderReplacementRule SHADE_GRID_VALUE2;           // generate a tw
 extern const ShaderReplacementRule SHADE_CHECKER_VALUE2;        // generate a two-color checker from shadeValue2
 extern const ShaderReplacementRule SHADEVALUE_MAG_VALUE2;       // generate a shadeValue from the magnitude of shadeValue2
 extern const ShaderReplacementRule ISOLINE_STRIPE_VALUECOLOR;   // modulate albedoColor based on shadeValue
+extern const ShaderReplacementRule CONTOUR_VALUECOLOR;          // modulate albedoColor based on shadeValue
 extern const ShaderReplacementRule CHECKER_VALUE2COLOR;         // modulate albedoColor based on shadeValue2
 
 // Positions, culling, etc
