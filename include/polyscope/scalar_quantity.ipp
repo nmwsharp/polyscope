@@ -9,7 +9,8 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
       isolineDarkness(quantity.name + "#isolineDarkness", 0.7),
       contoursEnabled(quantity.name + "#contoursEnabled", false),
       contourFrequency(quantity.name + "#contourFrequency", absoluteValue((dataRange.second - dataRange.first) * 0.3)),
-      contourThickness(quantity.name + "#contourThickness", 0.2)
+      contourThickness(quantity.name + "#contourThickness", 0.2),
+      contourDarkness(quantity.name + "#contourThickness", 0.5)
 
 {
   hist.updateColormap(cMap.get());
@@ -122,6 +123,14 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
       requestRedraw();
     }
 
+    // Contour darkness
+    ImGui::TextUnformatted("Contour darkness");
+    ImGui::SameLine();
+    if (ImGui::DragFloat("##Contour darkness", &contourDarkness.get(), 0.01, 0., 1.)) {
+      contourDarkness.manuallyChanged();
+      requestRedraw();
+    }
+
     ImGui::PopItemWidth();
   }
 
@@ -160,6 +169,7 @@ void ScalarQuantity<QuantityT>::setScalarUniforms(render::ShaderProgram& p) {
   if (contoursEnabled.get()) {
     p.setUniform("u_modFrequency", getContourFrequency());
     p.setUniform("u_modThickness", getContourThickness());
+    p.setUniform("u_modDarkness", getContourDarkness());
   }
 }
 
@@ -273,6 +283,20 @@ QuantityT* ScalarQuantity<QuantityT>::setContourThickness(double val) {
 template <typename QuantityT>
 double ScalarQuantity<QuantityT>::getContourThickness() {
   return contourThickness.get();
+}
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setContourDarkness(double val) {
+  contourDarkness = val;
+  if (!contoursEnabled.get()) {
+    setContoursEnabled(true);
+  }
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+double ScalarQuantity<QuantityT>::getContourDarkness() {
+  return contourDarkness.get();
 }
 
 template <typename QuantityT>

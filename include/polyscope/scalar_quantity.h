@@ -55,6 +55,8 @@ public:
   double getContourFrequency();
   QuantityT* setContourThickness(double val);
   double getContourThickness();
+  QuantityT* setContourDarkness(double val);
+  double getContourDarkness();
 
 protected:
   // === Visualization parameters
@@ -72,6 +74,7 @@ protected:
   PersistentValue<bool> contoursEnabled;
   PersistentValue<ScaledValue<float>> contourFrequency;
   PersistentValue<float> contourThickness;
+  PersistentValue<float> contourDarkness;
 };
 
 } // namespace polyscope

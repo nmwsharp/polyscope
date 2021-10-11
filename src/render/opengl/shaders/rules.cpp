@@ -249,18 +249,20 @@ const ShaderReplacementRule CONTOUR_VALUECOLOR (
       {"FRAG_DECLARATIONS", R"(
           uniform float u_modFrequency;
           uniform float u_modThickness;
+          uniform float u_modDarkness;
         )"},
       {"GENERATE_SHADE_COLOR", R"(
         /* TODO: get rid of arbitrary constants */
         vec2 gradF = vec2( dFdx(shadeValue), dFdy(shadeValue) );
         float w = 1./( 1000. * u_modFrequency * u_modThickness * length(gradF) );
-        float s = 1. - exp( -pow( w*(fract(abs(100.0*u_modFrequency*shadeValue))-0.5), 8.0 ));
-        albedoColor *= s;
+        float s = u_modDarkness * exp( -pow( w*(fract(abs(100.0*u_modFrequency*shadeValue))-0.5), 8.0 ));
+        albedoColor *= 1.-s;
       )"}
     },
     /* uniforms */ {
         {"u_modFrequency", DataType::Float},
         {"u_modThickness", DataType::Float},
+        {"u_modDarkness", DataType::Float},
     },
     /* attributes */ {},
     /* textures */ {}
