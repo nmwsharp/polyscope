@@ -1007,10 +1007,20 @@ void updateStructureExtents() {
     }
   }
 
+  // If we got a non-finite bounding box, fix it
   if (!isFinite(minBbox) || !isFinite(maxBbox)) {
     minBbox = -glm::vec3{1, 1, 1};
     maxBbox = glm::vec3{1, 1, 1};
   }
+
+  // If we got a degenerate bounding box, perturb it slightly
+  if (minBbox == maxBbox) {
+    double offsetScale = (state::lengthScale == 0) ? 1e-5 : state::lengthScale*1e-5;
+    glm::vec3 offset{offsetScale, offsetScale, offsetScale};
+    minBbox = minBbox - offset / 2.f;
+    maxBbox = maxBbox + offset / 2.f;
+  }
+
   std::get<0>(state::boundingBox) = minBbox;
   std::get<1>(state::boundingBox) = maxBbox;
 
