@@ -161,14 +161,17 @@ void VolumeMesh::draw() {
 
     // Set uniforms
     setStructureUniforms(*program);
-    setStructureUniforms(*sliceProgram);
-    setVolumeMeshUniforms(*program);
+    // setStructureUniforms(*sliceProgram);
+    glm::mat4 viewMat = getModelView();
+    sliceProgram->setUniform("u_modelView", glm::value_ptr(viewMat));
+    glm::mat4 projMat = view::getCameraPerspectiveMatrix();
+    sliceProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
     program->setUniform("u_baseColor1", getColor());
     program->setUniform("u_baseColor2", getInteriorColor());
 
-    // program->draw();
+    sliceProgram->draw();
+    program->draw();
   }
-  sliceProgram->draw();
 
   // Draw the quantities
   for (auto& x : quantities) {
@@ -195,7 +198,7 @@ void VolumeMesh::prepare() {
   program = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE"}));
   sliceProgram = render::engine->requestShader("SLICE_TETS", std::vector<std::string>(),
                                                polyscope::render::ShaderReplacementDefaults::Process);
-  printf("slice\n");
+
   std::vector<glm::vec3> point1;
   std::vector<glm::vec3> point2;
   std::vector<glm::vec3> point3;
@@ -211,6 +214,10 @@ void VolumeMesh::prepare() {
     point3[iC] = vertices[cell[2]];
     point4[iC] = vertices[cell[3]];
   }
+  glm::vec3 normal = glm::vec3(-1, 0, 0);
+  //  render::engine->setBackfaceCull(true);
+  sliceProgram->setUniform("u_sliceNormal", glm::normalize(normal));
+  sliceProgram->setUniform("u_slicePoint", 0.0f);
   sliceProgram->setAttribute("a_point_1", point1);
   sliceProgram->setAttribute("a_point_2", point2);
   sliceProgram->setAttribute("a_point_3", point3);
