@@ -18,7 +18,7 @@ using std::endl;
 namespace polyscope {
 
 // Initialize statics
-std::shared_ptr<render::ShaderProgram> sliceProgram;
+std::vector<std::shared_ptr<render::ShaderProgram>> slicePrograms;
 const std::string VolumeMesh::structureTypeName = "Volume Mesh";
 
 // clang-format off
@@ -161,15 +161,21 @@ void VolumeMesh::draw() {
 
     // Set uniforms
     setStructureUniforms(*program);
+    if (state::slicePlanes.size() != slicePrograms.size()) {
+      fillSlicePlaneGeometryBuffers();
+    }
     // setStructureUniforms(*sliceProgram);
     glm::mat4 viewMat = getModelView();
-    sliceProgram->setUniform("u_modelView", glm::value_ptr(viewMat));
     glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-    sliceProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
+    for (int planeIdx = 0; planeIdx < slicePrograms.size(); planeIdx++) {
+      slicePrograms[planeIdx]->setUniform("u_modelView", glm::value_ptr(viewMat));
+      slicePrograms[planeIdx]->setUniform("u_projMatrix", glm::value_ptr(projMat));
+      state::slicePlanes[planeIdx]->setSliceGeomUniforms(*slicePrograms[planeIdx]);
+      slicePrograms[planeIdx]->draw();
+    }
     program->setUniform("u_baseColor1", getColor());
     program->setUniform("u_baseColor2", getInteriorColor());
 
-    sliceProgram->draw();
     program->draw();
   }
 
@@ -194,10 +200,14 @@ void VolumeMesh::drawPick() {
   pickProgram->draw();
 }
 
-void VolumeMesh::prepare() {
-  program = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE"}));
-  sliceProgram = render::engine->requestShader("SLICE_TETS", std::vector<std::string>(),
-                                               polyscope::render::ShaderReplacementDefaults::Process);
+void VolumeMesh::fillSlicePlaneGeometryBuffers() {
+  slicePrograms = std::vector<std::shared_ptr<render::ShaderProgram>>();
+  size_t planeCount = state::slicePlanes.size();
+  printf("filling\n");
+  slicePrograms.resize(planeCount);
+  if (planeCount == 0) {
+    return;
+  }
 
   std::vector<glm::vec3> point1;
   std::vector<glm::vec3> point2;
@@ -216,12 +226,20 @@ void VolumeMesh::prepare() {
   }
   glm::vec3 normal = glm::vec3(-1, 0, 0);
   //  render::engine->setBackfaceCull(true);
-  sliceProgram->setUniform("u_sliceNormal", glm::normalize(normal));
-  sliceProgram->setUniform("u_slicePoint", 0.0f);
-  sliceProgram->setAttribute("a_point_1", point1);
-  sliceProgram->setAttribute("a_point_2", point2);
-  sliceProgram->setAttribute("a_point_3", point3);
-  sliceProgram->setAttribute("a_point_4", point4);
+
+  for (size_t planeIdx = 0; planeIdx < planeCount; planeIdx++) {
+    slicePrograms[planeIdx] = render::engine->requestShader("SLICE_TETS", std::vector<std::string>(),
+                                                            polyscope::render::ShaderReplacementDefaults::Process);
+    slicePrograms[planeIdx]->setAttribute("a_point_1", point1);
+    slicePrograms[planeIdx]->setAttribute("a_point_2", point2);
+    slicePrograms[planeIdx]->setAttribute("a_point_3", point3);
+    slicePrograms[planeIdx]->setAttribute("a_point_4", point4);
+  }
+}
+
+void VolumeMesh::prepare() {
+  program = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE"}));
+  fillSlicePlaneGeometryBuffers();
   // Populate draw buffers
   fillGeometryBuffers(*program);
   render::engine->setMaterial(*program, getMaterial());

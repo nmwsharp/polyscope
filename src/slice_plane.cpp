@@ -24,7 +24,7 @@ SlicePlane* addSceneSlicePlane(bool initiallyVisible) {
   size_t nPlanes = sceneSlicePlanes.size();
   std::string newName = "Scene Slice Plane " + std::to_string(nPlanes);
   sceneSlicePlanes.emplace_back(new SlicePlane(newName));
-  if(!initiallyVisible) {
+  if (!initiallyVisible) {
     sceneSlicePlanes.back()->setDrawPlane(false);
     sceneSlicePlanes.back()->setDrawWidget(false);
   }
@@ -162,6 +162,14 @@ void SlicePlane::setSceneObjectUniforms(render::ShaderProgram& p, bool alwaysPas
   p.setUniform("u_slicePlaneCenter_" + postfix, center);
 }
 
+void SlicePlane::setSliceGeomUniforms(render::ShaderProgram& p) {
+  glm::vec3 normal = glm::vec3(glm::vec4(getNormal(), 0.));
+  glm::vec3 center = glm::vec3(glm::vec4(getCenter(), 1.));
+  printf("%f\n", glm::dot(center, normal));
+  p.setUniform("u_sliceNormal", normal);
+  p.setUniform("u_slicePoint", glm::dot(center, normal));
+}
+
 glm::vec3 SlicePlane::getCenter() {
   if (active.get()) {
     glm::vec3 center{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
@@ -187,7 +195,7 @@ void SlicePlane::updateWidgetEnabled() {
   bool enabled = getActive() && getDrawWidget();
   transformGizmo.enabled = enabled;
 }
-  
+
 void SlicePlane::setPose(glm::vec3 planePosition, glm::vec3 planeNormal) {
 
   // Choose the other axes to be most similar to the current ones, which will make animations look smoother
@@ -197,18 +205,18 @@ void SlicePlane::setPose(glm::vec3 planePosition, glm::vec3 planeNormal) {
 
   glm::vec3 normal = glm::normalize(planeNormal);
   glm::vec3 basisX = currBasisX - normal * glm::dot(normal, currBasisX);
-  if(glm::length(basisX) < 0.01) basisX = currBasisY - normal * glm::dot(normal, currBasisY);
+  if (glm::length(basisX) < 0.01) basisX = currBasisY - normal * glm::dot(normal, currBasisY);
   basisX = glm::normalize(basisX);
   glm::vec3 basisY = glm::cross(normal, basisX);
 
   // Build the rotation component
   glm::mat4x4 newTransform = glm::mat4x4(1.0);
-  for(int i = 0; i < 3; i++) newTransform[0][i] = normal[i];
-  for(int i = 0; i < 3; i++) newTransform[1][i] = basisX[i];
-  for(int i = 0; i < 3; i++) newTransform[2][i] = basisY[i];
-  
+  for (int i = 0; i < 3; i++) newTransform[0][i] = normal[i];
+  for (int i = 0; i < 3; i++) newTransform[1][i] = basisX[i];
+  for (int i = 0; i < 3; i++) newTransform[2][i] = basisY[i];
+
   // Build the translation component
-  for(int i = 0; i < 3; i++) newTransform[3][i] = planePosition[i];
+  for (int i = 0; i < 3; i++) newTransform[3][i] = planePosition[i];
 
   objectTransform = newTransform;
   polyscope::requestRedraw();

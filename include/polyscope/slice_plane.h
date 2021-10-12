@@ -27,13 +27,14 @@ public:
   void setSceneObjectUniforms(render::ShaderProgram& p,
                               bool alwaysPass = false); // if alwaysPass, fake values are given so the plane does
                                                         // nothing (regardless of this plane's active setting)
+  void setSliceGeomUniforms(render::ShaderProgram& p);
 
   const std::string name;
   const std::string postfix;
-  
+
   // Set the position and orientation of the plane
   // planePosition is any 3D position which the plane touches (the center of the plane)
-  // planeNormal is a vector giving the normal direction of the plane, objects 
+  // planeNormal is a vector giving the normal direction of the plane, objects
   // in this negative side of the plane will be culled
   void setPose(glm::vec3 planePosition, glm::vec3 planeNormal);
 
@@ -44,18 +45,18 @@ public:
 
   bool getDrawPlane();
   void setDrawPlane(bool newVal);
-  
+
   bool getDrawWidget();
   void setDrawWidget(bool newVal);
 
   glm::mat4 getTransform();
   void setTransform(glm::mat4 newTransform);
-  
+
 
 protected:
   // = State
-  PersistentValue<bool> active;    // is it actually slicing?
-  PersistentValue<bool> drawPlane; // do we draw the plane onscreen?
+  PersistentValue<bool> active;     // is it actually slicing?
+  PersistentValue<bool> drawPlane;  // do we draw the plane onscreen?
   PersistentValue<bool> drawWidget; // do we draw the widget onscreen?
   PersistentValue<glm::mat4> objectTransform;
   PersistentValue<glm::vec3> color;
@@ -73,7 +74,7 @@ protected:
   void updateWidgetEnabled();
 };
 
-SlicePlane* addSceneSlicePlane(bool initiallyVisible=false);
+SlicePlane* addSceneSlicePlane(bool initiallyVisible = false);
 void removeLastSceneSlicePlane();
 void buildSlicePlaneGUI();
 

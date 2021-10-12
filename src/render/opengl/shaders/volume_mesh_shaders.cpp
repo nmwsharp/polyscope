@@ -117,11 +117,11 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
                 q[1] = q[2];
                 q[2] = temp;
             }
-
+            vec3 offset = u_sliceNormal * 1e-4;
             // Emit the vertices as a triangle strip
             mat4 toScreen = u_projMatrix * u_modelView;
             for (int i = 0; i < n; i++){
-                gl_Position = toScreen * vec4(q[i], 1.0); 
+                gl_Position = toScreen * vec4(q[i] + offset, 1.0); 
                 EmitVertex();
             }
             EndPrimitive();

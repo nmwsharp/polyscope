@@ -80,7 +80,7 @@ public:
   
 	// = Vectors (expect vector array, inner type must be indexable with correct dimension (3 for extrinsic, 2 for intrinsic) 
 	template <class T> VolumeMeshVertexVectorQuantity* addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
-	template <class T> VolumeMeshCellVectorQuantity* addCellVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
+	template <class T> VolumeMeshCellVectorQuantity* addCellVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
 
   // clang-format on
 
@@ -198,6 +198,7 @@ private:
   void initializeMeshTriangulation();
 
   void fillGeometryBuffersFlat(render::ShaderProgram& p);
+  void fillSlicePlaneGeometryBuffers();
 
   // stencils for looping over cells
   // (each is a list of faces, which is itself a list of 1 or more triangles)
