@@ -170,13 +170,14 @@ void VolumeMesh::draw() {
       for (int planeIdx = 0; planeIdx < slicePrograms.size(); planeIdx++) {
         state::slicePlanes[planeIdx]->setSliceGeomUniforms(*slicePrograms[planeIdx]);
         setStructureUniforms(*slicePrograms[planeIdx]);
+        slicePrograms[planeIdx]->setUniform("u_baseColor1", getColor());
         slicePrograms[planeIdx]->draw();
       }
     }
     program->setUniform("u_baseColor1", getColor());
     program->setUniform("u_baseColor2", getInteriorColor());
 
-    // program->draw();
+    program->draw();
   }
 
   // Draw the quantities
@@ -227,12 +228,12 @@ void VolumeMesh::fillSlicePlaneGeometryBuffers() {
   //  render::engine->setBackfaceCull(true);
 
   for (size_t planeIdx = 0; planeIdx < planeCount; planeIdx++) {
-    slicePrograms[planeIdx] = render::engine->requestShader("SLICE_TETS", {}, polyscope::render::ShaderReplacementDefaults::Process);
+    slicePrograms[planeIdx] = render::engine->requestShader("SLICE_TETS", addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}));
     slicePrograms[planeIdx]->setAttribute("a_point_1", point1);
     slicePrograms[planeIdx]->setAttribute("a_point_2", point2);
     slicePrograms[planeIdx]->setAttribute("a_point_3", point3);
     slicePrograms[planeIdx]->setAttribute("a_point_4", point4);
-    //render::engine->setMaterial(*slicePrograms[planeIdx], getMaterial());
+    render::engine->setMaterial(*slicePrograms[planeIdx], getMaterial());
   }
 }
 

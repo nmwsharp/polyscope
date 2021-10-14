@@ -124,13 +124,6 @@ const ShaderReplacementRule MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE (
       {"VERT_ASSIGNMENTS", R"(
           a_faceColorTypeToFrag = a_faceColorType;
         )"},
-      {"GEOM_DECLARATIONS", R"(
-          in float a_faceColorType[];
-          out float a_faceColorTypeToFrag;
-      )"},
-      {"GEOM_ASSIGNMENTS", R"(
-          a_faceColorTypeToFrag = 0.;
-        )"},
       {"FRAG_DECLARATIONS", R"(
           uniform vec3 u_baseColor1;
           uniform vec3 u_baseColor2;

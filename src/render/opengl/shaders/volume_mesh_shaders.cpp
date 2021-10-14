@@ -24,6 +24,7 @@ const ShaderStageSpecification SLICE_TETS_VERT_SHADER = {
     // source
     R"(
         ${ GLSL_VERSION }$
+        ${ VERT_DECLARATIONS }$
 
         in vec3 a_point_1;
         in vec3 a_point_2;
@@ -40,6 +41,7 @@ const ShaderStageSpecification SLICE_TETS_VERT_SHADER = {
             point_2 = a_point_2;
             point_3 = a_point_3;
             point_4 = a_point_4;
+            ${ VERT_ASSIGNMENTS }$
         }
 )"};
 
@@ -77,6 +79,7 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
         in vec3 point_4[];
         out vec3 a_barycoordToFrag;
         out vec3 a_normalToFrag;
+        ${ GEOM_DECLARATIONS }$
 
         void main() {
 
@@ -125,7 +128,8 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
             for (int i = 0; i < n; i++){
                 a_normalToFrag = u_sliceNormal;
                 a_barycoordToFrag = vec3(1, 0, 0);
-                gl_Position = toScreen * vec4(q[i] - offset, 1.0); 
+                ${ GEOM_ASSIGNMENTS }$
+                gl_Position = toScreen * vec4(q[i] + offset, 1.0); 
                 EmitVertex();
             }
             EndPrimitive();
@@ -153,22 +157,62 @@ const ShaderStageSpecification SLICE_TETS_FRAG_SHADER = {
         in vec3 a_barycoordToFrag;
         layout(location = 0) out vec4 outputF;
 
+        ${ FRAG_DECLARATIONS }$
+        ${ SLICE_TETS_FRAG_DECLARATIONS }$ 
+
         void main()
         {
            float depth = gl_FragCoord.z;
-
+           ${ GLOBAL_FRAGMENT_FILTER_PREP }$
+           ${ SLICE_TETS_GLOBAL_FRAGMENT_FILTER_PREP }$
+           ${ GLOBAL_FRAGMENT_FILTER }$
+        
+          
            // Shading
+           ${ GENERATE_SHADE_VALUE }$
+           ${ GENERATE_SHADE_COLOR }$
+           
+           // Handle the wireframe
+           ${ APPLY_WIREFRAME }$
 
-           vec3 albedoColor = vec3(1, 0, 0);
+           // Lighting
            vec3 shadeNormal = a_normalToFrag;
-           vec2 uv = vec2(1, 1);
+           ${ PERTURB_SHADE_NORMAL }$
+           ${ GENERATE_LIT_COLOR }$
 
+           // Set alpha
+           float alphaOut = 1.0;
+           ${ GENERATE_ALPHA }$
+           
+           // silly dummy usage to ensure normal and barycoords are always used; otherwise we get errors
+           float dummyVal = a_normalToFrag.x + a_barycoordToFrag.x;
+           alphaOut = alphaOut + dummyVal * (1e-12);
 
+           ${ PERTURB_LIT_COLOR }$
 
-
-           outputF = vec4(albedoColor, 1.0);
+           // Write output
+           outputF = vec4(litColor, alphaOut);
         }
 )"};
+
+const ShaderReplacementRule SLICE_TETS_BASECOLOR_SHADE (
+    /* rule name */ "SLICE_TETS_BASECOLOR_SHADE",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform vec3 u_baseColor1;
+          in float a_faceColorTypeToFrag;
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+          vec3 albedoColor = u_baseColor1;
+        )"}
+    },
+    /* uniforms */ {
+      {"u_baseColor1", DataType::Vector3Float},
+    },
+    /* attributes */ {
+    },
+    /* textures */ {}
+);
 
 } // namespace backend_openGL3_glfw
 } // namespace render

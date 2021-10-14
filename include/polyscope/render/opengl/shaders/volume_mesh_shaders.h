@@ -10,6 +10,7 @@ namespace backend_openGL3_glfw {
 extern const ShaderStageSpecification SLICE_TETS_VERT_SHADER;
 extern const ShaderStageSpecification SLICE_TETS_GEOM_SHADER;
 extern const ShaderStageSpecification SLICE_TETS_FRAG_SHADER;
+extern const ShaderReplacementRule SLICE_TETS_BASECOLOR_SHADE;
 
 
 } // namespace backend_openGL3_glfw

@@ -147,6 +147,10 @@ void SlicePlane::buildGUI() {
 }
 
 void SlicePlane::setSceneObjectUniforms(render::ShaderProgram& p, bool alwaysPass) {
+  if(!p.hasUniform("u_slicePlaneNormal_" + postfix)){
+    return;
+  }
+
   glm::vec3 normal, center;
 
   if (alwaysPass) {
