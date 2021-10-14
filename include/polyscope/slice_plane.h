@@ -8,6 +8,7 @@
 
 namespace polyscope {
 
+
 class SlicePlane {
 
 public:
@@ -28,6 +29,7 @@ public:
                               bool alwaysPass = false); // if alwaysPass, fake values are given so the plane does
                                                         // nothing (regardless of this plane's active setting)
   void setSliceGeomUniforms(render::ShaderProgram& p);
+  void setVolumeMeshToSlice(std::string meshName);
 
   const std::string name;
   const std::string postfix;
@@ -62,9 +64,15 @@ protected:
   PersistentValue<glm::vec3> color;
   PersistentValue<float> transparency;
 
+  std::shared_ptr<render::ShaderProgram> volumeSliceProgram;
+  void fillSliceVolumeGeometryBuffers();
+
+
   // Widget that wraps the transform
   TransformationGizmo transformGizmo;
 
+  bool shouldSliceMesh;
+  std::string slicedMeshName;
   std::shared_ptr<render::ShaderProgram> planeProgram;
 
   // Helpers

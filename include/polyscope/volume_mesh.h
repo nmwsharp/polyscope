@@ -6,7 +6,6 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
-#include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
@@ -198,7 +197,6 @@ private:
   void initializeMeshTriangulation();
 
   void fillGeometryBuffersFlat(render::ShaderProgram& p);
-  void fillSlicePlaneGeometryBuffers();
 
   // stencils for looping over cells
   // (each is a list of faces, which is itself a list of 1 or more triangles)

@@ -1,6 +1,7 @@
 #include "polyscope/slice_plane.h"
 
 #include "polyscope/polyscope.h"
+#include "polyscope/volume_mesh.h"
 
 namespace polyscope {
 
@@ -66,7 +67,9 @@ SlicePlane::SlicePlane(std::string name_)
       objectTransform("SlicePlane#" + name + "#object_transform", glm::mat4(1.0)),
       color("SlicePlane#" + name + "#color", getNextUniqueColor()),
       transparency("SlicePlane#" + name + "#transparency", 0.5),
-      transformGizmo("SlicePlane#" + name + "#transform_gizmo", objectTransform.get(), &objectTransform) {
+      transformGizmo("SlicePlane#" + name + "#transform_gizmo", objectTransform.get(), &objectTransform),
+      shouldSliceMesh(false),
+      slicedMeshName("") {
   state::slicePlanes.push_back(this);
   render::engine->addSlicePlane(postfix);
   transformGizmo.enabled = true;
@@ -104,6 +107,42 @@ void SlicePlane::prepare() {
   planeProgram->setAttribute("a_position", positions);
 }
 
+void SlicePlane::setVolumeMeshToSlice(std::string meshname){
+  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(meshname);
+  slicedMeshName = meshname;
+  if(!meshToSlice){
+    shouldSliceMesh = false;
+    return;
+  }
+  shouldSliceMesh = true;
+  volumeSliceProgram = render::engine->requestShader("SLICE_TETS", meshToSlice->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}));
+
+  std::vector<glm::vec3> point1;
+  std::vector<glm::vec3> point2;
+  std::vector<glm::vec3> point3;
+  std::vector<glm::vec3> point4;
+  int cellCount = meshToSlice->nCells();
+  point1.resize(cellCount);
+  point2.resize(cellCount);
+  point3.resize(cellCount);
+  point4.resize(cellCount);
+  for (size_t iC = 0; iC < cellCount; iC++) {
+    const std::array<int64_t, 8>& cell = meshToSlice->cells[iC];
+    point1[iC] = meshToSlice->vertices[cell[0]];
+    point2[iC] = meshToSlice->vertices[cell[1]];
+    point3[iC] = meshToSlice->vertices[cell[2]];
+    point4[iC] = meshToSlice->vertices[cell[3]];
+  }
+  glm::vec3 normal = glm::vec3(-1, 0, 0);
+
+  volumeSliceProgram->setAttribute("a_point_1", point1);
+  volumeSliceProgram->setAttribute("a_point_2", point2);
+  volumeSliceProgram->setAttribute("a_point_3", point3);
+  volumeSliceProgram->setAttribute("a_point_4", point4);
+  render::engine->setMaterial(*volumeSliceProgram, meshToSlice->getMaterial());
+}
+
+
 void SlicePlane::draw() {
   if (!drawPlane.get() || !active.get()) return;
 
@@ -124,6 +163,14 @@ void SlicePlane::draw() {
   render::engine->setDepthMode(DepthMode::Less);
   render::engine->setBackfaceCull(false);
   render::engine->applyTransparencySettings();
+  if(shouldSliceMesh && volumeSliceProgram){
+    volumeSliceProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+    for(int i = 0; i < sceneSlicePlanes.size(); i++){
+      sceneSlicePlanes[i]->setSceneObjectUniforms(*volumeSliceProgram, sceneSlicePlanes[i] == this);
+    }
+    volumeSliceProgram->setUniform("u_baseColor1", glm::vec3(1, 0, 0));
+    volumeSliceProgram->draw();
+  }
   planeProgram->draw();
 }
 
@@ -140,6 +187,22 @@ void SlicePlane::buildGUI() {
   ImGui::SameLine();
   if (ImGui::Checkbox("draw widget", &drawWidget.get())) {
     setDrawWidget(getDrawWidget());
+  }
+  if(state::structures.size() > 0){
+    if(ImGui::BeginMenu("Slice VolumeMesh")){
+      std::map<std::string, Structure*>::iterator it;
+      for(it = state::structures["Volume Mesh"].begin(); it != state::structures["Volume Mesh"].end(); it++){
+        std::string vMeshName = it->first;
+         if (ImGui::MenuItem(vMeshName.c_str(), NULL, slicedMeshName == vMeshName)){
+           setVolumeMeshToSlice(vMeshName);
+         }
+      }
+      if (ImGui::MenuItem("None", NULL, slicedMeshName == "")){
+       setVolumeMeshToSlice("");
+      }
+
+      ImGui::EndMenu();
+    }
   }
   ImGui::Unindent(16.);
 
@@ -164,13 +227,6 @@ void SlicePlane::setSceneObjectUniforms(render::ShaderProgram& p, bool alwaysPas
 
   p.setUniform("u_slicePlaneNormal_" + postfix, normal);
   p.setUniform("u_slicePlaneCenter_" + postfix, center);
-}
-
-void SlicePlane::setSliceGeomUniforms(render::ShaderProgram& p) {
-  glm::vec3 normal = glm::vec3(glm::vec4(getNormal(), 0.));
-  glm::vec3 center = glm::vec3(glm::vec4(getCenter(), 1.));
-  p.setUniform("u_sliceNormal", normal);
-  p.setUniform("u_slicePoint", glm::dot(center, normal));
 }
 
 glm::vec3 SlicePlane::getCenter() {

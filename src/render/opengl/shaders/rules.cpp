@@ -301,15 +301,8 @@ const ShaderReplacementRule CULL_POS_FROM_VIEW (
       {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
         vec3 cullPos = viewPos;
       )"},
-      {"SLICE_TETS_FRAG_DECLARATIONS", R"(
-        uniform vec3 u_sliceNormal;
-      )"},
-      {"SLICE_TETS_GLOBAL_FRAGMENT_FILTER_PREP", R"(
-        vec3 cullPos = viewPos + (u_sliceNormal * 1-e3);
-      )"}
     },
     /* uniforms */ {
-      {"u_sliceNormal", DataType::Vector3Float}
     },
     /* attributes */ {},
     /* textures */ {}
