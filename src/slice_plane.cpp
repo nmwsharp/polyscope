@@ -165,7 +165,6 @@ void SlicePlane::setSceneObjectUniforms(render::ShaderProgram& p, bool alwaysPas
 void SlicePlane::setSliceGeomUniforms(render::ShaderProgram& p) {
   glm::vec3 normal = glm::vec3(glm::vec4(getNormal(), 0.));
   glm::vec3 center = glm::vec3(glm::vec4(getCenter(), 1.));
-  printf("%f\n", glm::dot(center, normal));
   p.setUniform("u_sliceNormal", normal);
   p.setUniform("u_slicePoint", glm::dot(center, normal));
 }

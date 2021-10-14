@@ -75,6 +75,8 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
         in vec3 point_2[];
         in vec3 point_3[];
         in vec3 point_4[];
+        out vec3 a_barycoordToFrag;
+        out vec3 a_normalToFrag;
 
         void main() {
 
@@ -117,11 +119,13 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
                 q[1] = q[2];
                 q[2] = temp;
             }
-            vec3 offset = u_sliceNormal * 1e-4;
+            vec3 offset = u_sliceNormal * 1e-3;
             // Emit the vertices as a triangle strip
             mat4 toScreen = u_projMatrix * u_modelView;
             for (int i = 0; i < n; i++){
-                gl_Position = toScreen * vec4(q[i] + offset, 1.0); 
+                a_normalToFrag = u_sliceNormal;
+                a_barycoordToFrag = vec3(1, 0, 0);
+                gl_Position = toScreen * vec4(q[i] - offset, 1.0); 
                 EmitVertex();
             }
             EndPrimitive();
@@ -145,11 +149,24 @@ const ShaderStageSpecification SLICE_TETS_FRAG_SHADER = {
     // source
     R"(
         ${ GLSL_VERSION }$
+        in vec3 a_normalToFrag;
+        in vec3 a_barycoordToFrag;
         layout(location = 0) out vec4 outputF;
 
         void main()
         {
-           outputF = vec4(1, 0, 0, 1);
+           float depth = gl_FragCoord.z;
+
+           // Shading
+
+           vec3 albedoColor = vec3(1, 0, 0);
+           vec3 shadeNormal = a_normalToFrag;
+           vec2 uv = vec2(1, 1);
+
+
+
+
+           outputF = vec4(albedoColor, 1.0);
         }
 )"};
 

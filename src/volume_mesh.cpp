@@ -50,7 +50,7 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
       interiorColor(uniquePrefix() + "interiorColor", color.get()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
       edgeWidth(uniquePrefix() + "edgeWidth", 0.) {
-  cullWholeElements.setPassive(true);
+  cullWholeElements.setPassive(false);
 
   // set the interior color to be a desaturated version of the normal one
   glm::vec3 desatColorHSV = RGBtoHSV(color.get());
@@ -164,19 +164,19 @@ void VolumeMesh::draw() {
     if (state::slicePlanes.size() != slicePrograms.size()) {
       fillSlicePlaneGeometryBuffers();
     }
-    // setStructureUniforms(*sliceProgram);
     glm::mat4 viewMat = getModelView();
     glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-    for (int planeIdx = 0; planeIdx < slicePrograms.size(); planeIdx++) {
-      slicePrograms[planeIdx]->setUniform("u_modelView", glm::value_ptr(viewMat));
-      slicePrograms[planeIdx]->setUniform("u_projMatrix", glm::value_ptr(projMat));
-      state::slicePlanes[planeIdx]->setSliceGeomUniforms(*slicePrograms[planeIdx]);
-      slicePrograms[planeIdx]->draw();
+    if(!wantsCullPosition()){
+      for (int planeIdx = 0; planeIdx < slicePrograms.size(); planeIdx++) {
+        state::slicePlanes[planeIdx]->setSliceGeomUniforms(*slicePrograms[planeIdx]);
+        setStructureUniforms(*slicePrograms[planeIdx]);
+        slicePrograms[planeIdx]->draw();
+      }
     }
     program->setUniform("u_baseColor1", getColor());
     program->setUniform("u_baseColor2", getInteriorColor());
 
-    program->draw();
+    // program->draw();
   }
 
   // Draw the quantities
@@ -203,7 +203,6 @@ void VolumeMesh::drawPick() {
 void VolumeMesh::fillSlicePlaneGeometryBuffers() {
   slicePrograms = std::vector<std::shared_ptr<render::ShaderProgram>>();
   size_t planeCount = state::slicePlanes.size();
-  printf("filling\n");
   slicePrograms.resize(planeCount);
   if (planeCount == 0) {
     return;
@@ -228,12 +227,12 @@ void VolumeMesh::fillSlicePlaneGeometryBuffers() {
   //  render::engine->setBackfaceCull(true);
 
   for (size_t planeIdx = 0; planeIdx < planeCount; planeIdx++) {
-    slicePrograms[planeIdx] = render::engine->requestShader("SLICE_TETS", std::vector<std::string>(),
-                                                            polyscope::render::ShaderReplacementDefaults::Process);
+    slicePrograms[planeIdx] = render::engine->requestShader("SLICE_TETS", {}, polyscope::render::ShaderReplacementDefaults::Process);
     slicePrograms[planeIdx]->setAttribute("a_point_1", point1);
     slicePrograms[planeIdx]->setAttribute("a_point_2", point2);
     slicePrograms[planeIdx]->setAttribute("a_point_3", point3);
     slicePrograms[planeIdx]->setAttribute("a_point_4", point4);
+    //render::engine->setMaterial(*slicePrograms[planeIdx], getMaterial());
   }
 }
 
@@ -782,7 +781,7 @@ VolumeMesh* VolumeMesh::setEdgeWidth(double newVal) {
 double VolumeMesh::getEdgeWidth() { return edgeWidth.get(); }
 
 
-// === Quantity adders
+// === Quantity adder}
 
 VolumeMeshVertexColorQuantity* VolumeMesh::addVertexColorQuantityImpl(std::string name,
                                                                       const std::vector<glm::vec3>& colors) {
