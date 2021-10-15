@@ -129,7 +129,7 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
                 a_normalToFrag = u_sliceNormal;
                 a_barycoordToFrag = vec3(1, 0, 0);
                 ${ GEOM_ASSIGNMENTS }$
-                gl_Position = toScreen * vec4(q[i] + offset, 1.0); 
+                gl_Position = toScreen * vec4(q[i] - offset, 1.0); 
                 EmitVertex();
             }
             EndPrimitive();
@@ -164,7 +164,6 @@ const ShaderStageSpecification SLICE_TETS_FRAG_SHADER = {
         {
            float depth = gl_FragCoord.z;
            ${ GLOBAL_FRAGMENT_FILTER_PREP }$
-           ${ SLICE_TETS_GLOBAL_FRAGMENT_FILTER_PREP }$
            ${ GLOBAL_FRAGMENT_FILTER }$
         
           
@@ -195,24 +194,22 @@ const ShaderStageSpecification SLICE_TETS_FRAG_SHADER = {
         }
 )"};
 
-const ShaderReplacementRule SLICE_TETS_BASECOLOR_SHADE (
+const ShaderReplacementRule SLICE_TETS_BASECOLOR_SHADE(
     /* rule name */ "SLICE_TETS_BASECOLOR_SHADE",
-    { /* replacement sources */
-      {"FRAG_DECLARATIONS", R"(
+    {/* replacement sources */
+     {"FRAG_DECLARATIONS", R"(
           uniform vec3 u_baseColor1;
           in float a_faceColorTypeToFrag;
         )"},
-      {"GENERATE_SHADE_COLOR", R"(
+     {"GENERATE_SHADE_COLOR", R"(
           vec3 albedoColor = u_baseColor1;
-        )"}
+        )"}},
+    /* uniforms */
+    {
+        {"u_baseColor1", DataType::Vector3Float},
     },
-    /* uniforms */ {
-      {"u_baseColor1", DataType::Vector3Float},
-    },
-    /* attributes */ {
-    },
-    /* textures */ {}
-);
+    /* attributes */ {},
+    /* textures */ {});
 
 } // namespace backend_openGL3_glfw
 } // namespace render

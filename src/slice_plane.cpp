@@ -61,6 +61,14 @@ void buildSlicePlaneGUI() {
   }
 }
 
+void SlicePlane::setSliceGeomUniforms(render::ShaderProgram& p) {
+  glm::vec3 normal = glm::vec3(glm::vec4(getNormal(), 0.));
+  glm::vec3 center = glm::vec3(glm::vec4(getCenter(), 1.));
+  p.setUniform("u_sliceNormal", normal);
+  p.setUniform("u_slicePoint", glm::dot(center, normal));
+}
+
+
 SlicePlane::SlicePlane(std::string name_)
     : name(name_), postfix(std::to_string(state::slicePlanes.size())), active("SlicePlane#" + name + "#active", true),
       drawPlane("SlicePlane#" + name + "#drawPlane", true), drawWidget("SlicePlane#" + name + "#drawWidget", true),
@@ -68,8 +76,7 @@ SlicePlane::SlicePlane(std::string name_)
       color("SlicePlane#" + name + "#color", getNextUniqueColor()),
       transparency("SlicePlane#" + name + "#transparency", 0.5),
       transformGizmo("SlicePlane#" + name + "#transform_gizmo", objectTransform.get(), &objectTransform),
-      shouldSliceMesh(false),
-      slicedMeshName("") {
+      shouldSliceMesh(false), slicedMeshName("") {
   state::slicePlanes.push_back(this);
   render::engine->addSlicePlane(postfix);
   transformGizmo.enabled = true;
@@ -107,15 +114,16 @@ void SlicePlane::prepare() {
   planeProgram->setAttribute("a_position", positions);
 }
 
-void SlicePlane::setVolumeMeshToSlice(std::string meshname){
+void SlicePlane::setVolumeMeshToSlice(std::string meshname) {
   VolumeMesh* meshToSlice = polyscope::getVolumeMesh(meshname);
   slicedMeshName = meshname;
-  if(!meshToSlice){
+  if (!meshToSlice) {
     shouldSliceMesh = false;
     return;
   }
   shouldSliceMesh = true;
-  volumeSliceProgram = render::engine->requestShader("SLICE_TETS", meshToSlice->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}));
+  volumeSliceProgram =
+      render::engine->requestShader("SLICE_TETS", meshToSlice->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}));
 
   std::vector<glm::vec3> point1;
   std::vector<glm::vec3> point2;
@@ -144,34 +152,40 @@ void SlicePlane::setVolumeMeshToSlice(std::string meshname){
 
 
 void SlicePlane::draw() {
-  if (!drawPlane.get() || !active.get()) return;
+  if (!active.get()) return;
 
-  // Set uniforms
-  glm::mat4 viewMat = view::getCameraViewMatrix();
-  planeProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
-  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-  planeProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
+  if (drawPlane.get()) {
+    // Set uniforms
+    glm::mat4 viewMat = view::getCameraViewMatrix();
+    planeProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+    glm::mat4 projMat = view::getCameraPerspectiveMatrix();
+    planeProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-  planeProgram->setUniform("u_objectMatrix", glm::value_ptr(objectTransform.get()));
-  planeProgram->setUniform("u_lengthScale", state::lengthScale);
-  planeProgram->setUniform("u_color", color.get());
-  planeProgram->setUniform("u_transparency", transparency.get());
+    planeProgram->setUniform("u_objectMatrix", glm::value_ptr(objectTransform.get()));
+    planeProgram->setUniform("u_lengthScale", state::lengthScale);
+    planeProgram->setUniform("u_color", color.get());
+    planeProgram->setUniform("u_transparency", transparency.get());
 
-  // glm::vec3 center{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
-  // planeProgram->setUniform("u_center", center);
+    // glm::vec3 center{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
+    // planeProgram->setUniform("u_center", center);
 
-  render::engine->setDepthMode(DepthMode::Less);
-  render::engine->setBackfaceCull(false);
-  render::engine->applyTransparencySettings();
-  if(shouldSliceMesh && volumeSliceProgram){
-    volumeSliceProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
-    for(int i = 0; i < sceneSlicePlanes.size(); i++){
+    render::engine->setDepthMode(DepthMode::Less);
+    render::engine->setBackfaceCull(false);
+    render::engine->applyTransparencySettings();
+    planeProgram->draw();
+  }
+
+  if (shouldSliceMesh && volumeSliceProgram) {
+    VolumeMesh* vMesh = polyscope::getVolumeMesh(slicedMeshName);
+    vMesh->setStructureUniforms(*volumeSliceProgram);
+
+    for (int i = 0; i < sceneSlicePlanes.size(); i++) {
       sceneSlicePlanes[i]->setSceneObjectUniforms(*volumeSliceProgram, sceneSlicePlanes[i] == this);
     }
-    volumeSliceProgram->setUniform("u_baseColor1", glm::vec3(1, 0, 0));
+    setSliceGeomUniforms(*volumeSliceProgram);
+    volumeSliceProgram->setUniform("u_baseColor1", vMesh->getColor());
     volumeSliceProgram->draw();
   }
-  planeProgram->draw();
 }
 
 void SlicePlane::buildGUI() {
@@ -188,17 +202,17 @@ void SlicePlane::buildGUI() {
   if (ImGui::Checkbox("draw widget", &drawWidget.get())) {
     setDrawWidget(getDrawWidget());
   }
-  if(state::structures.size() > 0){
-    if(ImGui::BeginMenu("Slice VolumeMesh")){
+  if (state::structures.size() > 0) {
+    if (ImGui::BeginMenu("Slice VolumeMesh")) {
       std::map<std::string, Structure*>::iterator it;
-      for(it = state::structures["Volume Mesh"].begin(); it != state::structures["Volume Mesh"].end(); it++){
+      for (it = state::structures["Volume Mesh"].begin(); it != state::structures["Volume Mesh"].end(); it++) {
         std::string vMeshName = it->first;
-         if (ImGui::MenuItem(vMeshName.c_str(), NULL, slicedMeshName == vMeshName)){
-           setVolumeMeshToSlice(vMeshName);
-         }
+        if (ImGui::MenuItem(vMeshName.c_str(), NULL, slicedMeshName == vMeshName)) {
+          setVolumeMeshToSlice(vMeshName);
+        }
       }
-      if (ImGui::MenuItem("None", NULL, slicedMeshName == "")){
-       setVolumeMeshToSlice("");
+      if (ImGui::MenuItem("None", NULL, slicedMeshName == "")) {
+        setVolumeMeshToSlice("");
       }
 
       ImGui::EndMenu();
@@ -210,7 +224,7 @@ void SlicePlane::buildGUI() {
 }
 
 void SlicePlane::setSceneObjectUniforms(render::ShaderProgram& p, bool alwaysPass) {
-  if(!p.hasUniform("u_slicePlaneNormal_" + postfix)){
+  if (!p.hasUniform("u_slicePlaneNormal_" + postfix)) {
     return;
   }
 
