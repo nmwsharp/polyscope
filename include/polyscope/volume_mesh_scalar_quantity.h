@@ -38,10 +38,25 @@ public:
                               DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
+  virtual void draw() override;
+
+  void setLevelSetUniforms(render::ShaderProgram &p);
+  void fillLevelSetData(render::ShaderProgram &p);
+  std::shared_ptr<render::ShaderProgram> levelSetProgram;
+  virtual std::shared_ptr<render::ShaderProgram> tryCreateSliceProgram() override;
+  virtual void setSliceUniforms(render::ShaderProgram& p, glm::vec3 sliceVector, float slicePoint) override;
 
   void fillColorBuffers(render::ShaderProgram& p);
 
+  void fillGeomColorBuffers(render::ShaderProgram& p);
+
+  virtual void buildCustomUI() override;
   void buildVertexInfoGUI(size_t vInd) override;
+  virtual void refresh() override;
+
+  float levelSetValue;
+  bool isDrawingLevelSet;
+
 };
 
 

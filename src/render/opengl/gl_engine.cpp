@@ -2104,6 +2104,7 @@ void GLEngine::populateDefaultShadersAndRules() {
 
   // marching tets things
   registeredShaderRules.insert({"SLICE_TETS_BASECOLOR_SHADE", SLICE_TETS_BASECOLOR_SHADE});
+  registeredShaderRules.insert({"SLICE_TETS_PROPAGATE_VALUE", SLICE_TETS_PROPAGATE_VALUE});
 
   // clang-format on
 };

@@ -14,9 +14,13 @@ const ShaderStageSpecification SLICE_TETS_VERT_SHADER = {
     // attributes
     {
         {"a_point_1", DataType::Vector3Float},
+        {"a_slice_1", DataType::Vector3Float},
         {"a_point_2", DataType::Vector3Float},
+        {"a_slice_2", DataType::Vector3Float},
         {"a_point_3", DataType::Vector3Float},
+        {"a_slice_3", DataType::Vector3Float},
         {"a_point_4", DataType::Vector3Float},
+        {"a_slice_4", DataType::Vector3Float},
     },
 
     {}, // textures
@@ -30,17 +34,29 @@ const ShaderStageSpecification SLICE_TETS_VERT_SHADER = {
         in vec3 a_point_2;
         in vec3 a_point_3;
         in vec3 a_point_4;
+        in vec3 a_slice_1;
+        in vec3 a_slice_2;
+        in vec3 a_slice_3;
+        in vec3 a_slice_4;
         out vec3 point_1;
         out vec3 point_2;
         out vec3 point_3;
         out vec3 point_4;
-        
+        out vec3 slice_1;
+        out vec3 slice_2;
+        out vec3 slice_3;
+        out vec3 slice_4;
+
         void main()
         {
             point_1 = a_point_1;
             point_2 = a_point_2;
             point_3 = a_point_3;
             point_4 = a_point_4;
+            slice_1 = a_slice_1;
+            slice_2 = a_slice_2;
+            slice_3 = a_slice_3;
+            slice_4 = a_slice_4;
             ${ VERT_ASSIGNMENTS }$
         }
 )"};
@@ -55,7 +71,7 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
         {"u_modelView", DataType::Matrix44Float},
         {"u_projMatrix", DataType::Matrix44Float},
         {"u_slicePoint", DataType::Float},
-        {"u_sliceNormal", DataType::Vector3Float},
+        {"u_sliceVector", DataType::Vector3Float},
     },
 
     // attributes
@@ -72,21 +88,28 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
         uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
         uniform float u_slicePoint;
-        uniform vec3 u_sliceNormal;
+        uniform vec3 u_sliceVector;
         in vec3 point_1[];
         in vec3 point_2[];
         in vec3 point_3[];
         in vec3 point_4[];
+        in vec3 slice_1[];
+        in vec3 slice_2[];
+        in vec3 slice_3[];
+        in vec3 slice_4[];
         out vec3 a_barycoordToFrag;
         out vec3 a_normalToFrag;
         ${ GEOM_DECLARATIONS }$
 
         void main() {
 
+            vec3 s[4] = vec3[](slice_1[0], slice_2[0], slice_3[0], slice_4[0]);
             vec3 p[4] = vec3[](point_1[0], point_2[0], point_3[0], point_4[0]);
+            ${ GEOM_INIT_DECLARATIONS }$
+            int ordering[4] = int[](0, 1, 2, 3);
             
             float d[4]; 
-            for (int i = 0; i < 4; i++ ) d[i] = dot(u_sliceNormal, p[i]) - u_slicePoint;
+            for (int i = 0; i < 4; i++ ) d[i] = dot(u_sliceVector, s[i]) - u_slicePoint;
 
             vec3 q[4];
             int n = 0;
@@ -94,6 +117,7 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
                 for( int j = i+1; j < 4; j++ ) {
                     if( d[i]*d[j] < 0. ) {
                         float t = (0-d[i])/(d[j]-d[i]);
+                        ${ GEOM_INTERPOLATE }$
                         q[n] = ( (1.-t)*p[i] + t*p[j] );
                         n++;
                     }
@@ -105,31 +129,31 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
                 vec3 cross23 = cross(q[2] - q[0], q[3] - q[0]);
                 if(dot(cross13, cross23) > 0){
                     if(dot(cross23, cross23) < dot(cross13, cross13)){
-                        vec3 temp = q[2];
-                        q[2] = q[3];
-                        q[3] = temp;
+                        ordering[2] = 3;
+                        ordering[3] = 2;
                     }else{
-                        vec3 temp = q[1];
-                        q[1] = q[3];
-                        q[3] = temp;
+                        ordering[1] = 3;
+                        ordering[3] = 1;
                     }
                 }
             }
 
             vec3 cross12 = cross(q[1] - q[0], q[2] - q[0]);
-            if(dot(cross12, u_sliceNormal) < 0){
-                vec3 temp = q[1];
-                q[1] = q[2];
-                q[2] = temp;
+            if(dot(cross12, u_sliceVector) < 0){
+                int temp = ordering[1];
+                ordering[1] = ordering[2];
+                ordering[2] = temp;
+                cross12 *= -1;
             }
-            vec3 offset = u_sliceNormal * 1e-3;
+            vec3 offset = u_sliceVector * 1e-3;
             // Emit the vertices as a triangle strip
             mat4 toScreen = u_projMatrix * u_modelView;
             for (int i = 0; i < n; i++){
-                a_normalToFrag = u_sliceNormal;
-                a_barycoordToFrag = vec3(1, 0, 0);
+                a_normalToFrag = cross12;
+                a_barycoordToFrag = vec3(0, 0, 0);
+                a_barycoordToFrag[i % 3] = 1.0;
                 ${ GEOM_ASSIGNMENTS }$
-                gl_Position = toScreen * vec4(q[i] - offset, 1.0); 
+                gl_Position = toScreen * vec4(q[ordering[i]] - offset, 1.0); 
                 EmitVertex();
             }
             EndPrimitive();
@@ -210,6 +234,60 @@ const ShaderReplacementRule SLICE_TETS_BASECOLOR_SHADE(
     },
     /* attributes */ {},
     /* textures */ {});
+
+
+const ShaderReplacementRule SLICE_TETS_PROPAGATE_VALUE (
+    /* rule name */ "SLICE_TETS_PROPAGATE_VALUE",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in float a_value_1;
+          in float a_value_2;
+          in float a_value_3;
+          in float a_value_4;
+          out float value_1;
+          out float value_2;
+          out float value_3;
+          out float value_4;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          value_1 = a_value_1;
+          value_2 = a_value_2;
+          value_3 = a_value_3;
+          value_4 = a_value_4;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in float value_1[];
+          in float value_2[];
+          in float value_3[];
+          in float value_4[];
+          out float a_valueToFrag;
+      )"},
+      {"GEOM_INIT_DECLARATIONS", R"(
+          float v[4] = float[](value_1[0], value_2[0], value_3[0], value_4[0]);
+          float out_v[4] = float[](0, 0, 0, 0);
+      )"},
+      {"GEOM_INTERPOLATE", R"(
+          out_v[n] = ( (1.-t)*v[i] + t*v[j] );
+      )"},
+      {"GEOM_ASSIGNMENTS", R"(
+          a_valueToFrag = out_v[ordering[i]];
+      )"},
+      {"FRAG_DECLARATIONS", R"(
+          in float a_valueToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float shadeValue = a_valueToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_value_1", DataType::Float},
+      {"a_value_2", DataType::Float},
+      {"a_value_3", DataType::Float},
+      {"a_value_4", DataType::Float},
+    },
+    /* textures */ {}
+);
 
 } // namespace backend_openGL3_glfw
 } // namespace render

@@ -58,10 +58,93 @@ std::string VolumeMeshScalarQuantity::niceName() { return name + " (" + definedO
 
 VolumeMeshVertexScalarQuantity::VolumeMeshVertexScalarQuantity(std::string name, const std::vector<double>& values_,
                                                                VolumeMesh& mesh_, DataType dataType_)
-    : VolumeMeshScalarQuantity(name, mesh_, "vertex", values_, dataType_)
+    : VolumeMeshScalarQuantity(name, mesh_, "vertex", values_, dataType_), isDrawingLevelSet(false), levelSetValue(0) 
 
 {
   hist.buildHistogram(values, parent.vertexAreas); // rebuild to incorporate weights
+}
+void VolumeMeshVertexScalarQuantity::fillLevelSetData(render::ShaderProgram &p){
+  std::vector<glm::vec3> point1;
+  std::vector<glm::vec3> point2;
+  std::vector<glm::vec3> point3;
+  std::vector<glm::vec3> point4;
+  std::vector<glm::vec3> slice1;
+  std::vector<glm::vec3> slice2;
+  std::vector<glm::vec3> slice3;
+  std::vector<glm::vec3> slice4;
+  int cellCount = parent.nCells();
+  point1.resize(cellCount);
+  point2.resize(cellCount);
+  point3.resize(cellCount);
+  point4.resize(cellCount);
+  slice1.resize(cellCount);
+  slice2.resize(cellCount);
+  slice3.resize(cellCount);
+  slice4.resize(cellCount);
+  for (size_t iC = 0; iC < cellCount; iC++) {
+    const std::array<int64_t, 8>& cell = parent.cells[iC];
+    point1[iC] = parent.vertices[cell[0]];
+    point2[iC] = parent.vertices[cell[1]];
+    point3[iC] = parent.vertices[cell[2]];
+    point4[iC] = parent.vertices[cell[3]];
+    slice1[iC] = glm::vec3(values[cell[0]], 0, 0);
+    slice2[iC] = glm::vec3(values[cell[1]], 0, 0);
+    slice3[iC] = glm::vec3(values[cell[2]], 0, 0);
+    slice4[iC] = glm::vec3(values[cell[3]], 0, 0);
+  }
+  glm::vec3 normal = glm::vec3(-1, 0, 0);
+
+  p.setAttribute("a_point_1", point1);
+  p.setAttribute("a_point_2", point2);
+  p.setAttribute("a_point_3", point3);
+  p.setAttribute("a_point_4", point4);
+  p.setAttribute("a_slice_1", slice1);
+  p.setAttribute("a_slice_2", slice2);
+  p.setAttribute("a_slice_3", slice3);
+  p.setAttribute("a_slice_4", slice4);
+}
+
+void VolumeMeshVertexScalarQuantity::setLevelSetUniforms(render::ShaderProgram &p){
+  p.setUniform("u_sliceVector", glm::vec3(1, 0, 0));
+  p.setUniform("u_slicePoint", levelSetValue);
+}
+
+void VolumeMeshVertexScalarQuantity::draw() {
+  if (!isEnabled()) return;
+
+  auto programToDraw = program;
+  if(isDrawingLevelSet){
+    if(levelSetProgram == nullptr){
+      levelSetProgram = tryCreateSliceProgram();
+      fillLevelSetData(*levelSetProgram);
+    }
+    setLevelSetUniforms(*levelSetProgram);
+    programToDraw = levelSetProgram;
+  }else
+  if (program == nullptr) {
+    createProgram();
+    programToDraw = program;
+  }
+
+  // Set uniforms
+  parent.setStructureUniforms(*programToDraw);
+  parent.setVolumeMeshUniforms(*programToDraw);
+  setScalarUniforms(*programToDraw);
+
+  programToDraw->draw();
+}
+
+void VolumeMeshVertexScalarQuantity::buildCustomUI() {
+  VolumeMeshScalarQuantity::buildCustomUI();
+  ImGui::Checkbox("Level Set", &isDrawingLevelSet);
+  if(isDrawingLevelSet){
+    ImGui::DragFloat("Level Set Value", &levelSetValue, 0.01f, (float)hist.colormapRange.first, (float)hist.colormapRange.second);
+  }
+}
+
+void VolumeMeshVertexScalarQuantity::refresh() {
+  VolumeMeshScalarQuantity::refresh();
+  levelSetProgram.reset();
 }
 
 void VolumeMeshVertexScalarQuantity::createProgram() {
@@ -72,6 +155,16 @@ void VolumeMeshVertexScalarQuantity::createProgram() {
   parent.fillGeometryBuffers(*program);
   fillColorBuffers(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
+}
+
+std::shared_ptr<render::ShaderProgram> VolumeMeshVertexScalarQuantity::tryCreateSliceProgram() {
+  std::shared_ptr<render::ShaderProgram> p = render::engine->requestShader("SLICE_TETS", parent.addVolumeMeshRules(addScalarRules({"SLICE_TETS_PROPAGATE_VALUE"})));
+
+  // Fill color buffers
+  parent.fillSliceGeometryBuffers(*p);
+  fillGeomColorBuffers(*p);
+  render::engine->setMaterial(*p, parent.getMaterial());
+  return p;
 }
 
 
@@ -114,11 +207,43 @@ void VolumeMeshVertexScalarQuantity::fillColorBuffers(render::ShaderProgram& p) 
   p.setTextureFromColormap("t_colormap", cMap.get());
 }
 
+void VolumeMeshVertexScalarQuantity::fillGeomColorBuffers(render::ShaderProgram& p) {
+  std::vector<double> colorval_1;
+  colorval_1.resize(parent.nCells());
+  std::vector<double> colorval_2;
+  colorval_2.resize(parent.nCells());
+  std::vector<double> colorval_3;
+  colorval_3.resize(parent.nCells());
+  std::vector<double> colorval_4;
+  colorval_4.resize(parent.nCells());
+
+  for (size_t iC = 0; iC < parent.nCells(); iC++) {
+    const std::array<int64_t, 8>& cell = parent.cells[iC];
+    colorval_1[iC] = values[cell[0]];
+    colorval_2[iC] = values[cell[1]];
+    colorval_3[iC] = values[cell[2]];
+    colorval_4[iC] = values[cell[3]];
+  }
+
+  // Store data in buffers
+  p.setAttribute("a_value_1", colorval_1);
+  p.setAttribute("a_value_2", colorval_2);
+  p.setAttribute("a_value_3", colorval_3);
+  p.setAttribute("a_value_4", colorval_4);
+  p.setTextureFromColormap("t_colormap", cMap.get());
+}
+
 void VolumeMeshVertexScalarQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
   ImGui::Text("%g", values[vInd]);
   ImGui::NextColumn();
+}
+
+void VolumeMeshVertexScalarQuantity::setSliceUniforms(render::ShaderProgram &p, glm::vec3 sliceVector, float slicePoint){
+  parent.setStructureUniforms(p);
+  parent.setVolumeMeshUniforms(p);
+  setScalarUniforms(p);
 }
 
 // ========================================================

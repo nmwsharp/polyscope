@@ -103,6 +103,7 @@ public:
   size_t cellDataSize;
 
 
+
   // === Manage the mesh itself
 
   // Core data
@@ -155,9 +156,12 @@ public:
   VolumeMesh* setEdgeWidth(double newVal);
   double getEdgeWidth();
 
+  void setLevelSetQuantity(std::shared_ptr<VolumeMeshVertexScalarQuantity> _levelSet);
+
   // Rendering helpers used by quantities
   void setVolumeMeshUniforms(render::ShaderProgram& p);
   void fillGeometryBuffers(render::ShaderProgram& p);
+  void fillSliceGeometryBuffers(render::ShaderProgram& p);
   static const std::vector<std::vector<std::array<size_t, 3>>>& cellStencil(VolumeCellType type);
 
 private:
@@ -167,6 +171,9 @@ private:
   PersistentValue<glm::vec3> edgeColor;
   PersistentValue<std::string> material;
   PersistentValue<float> edgeWidth;
+
+  std::shared_ptr<VolumeMeshVertexScalarQuantity> activeLevelSetQuantity;
+  float activeLevelSetValue;
 
   // Do setup work related to drawing, including allocating openGL data
   void prepare();

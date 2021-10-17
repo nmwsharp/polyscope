@@ -15,6 +15,8 @@ class VolumeMeshQuantity : public Quantity<VolumeMesh> {
 public:
   VolumeMeshQuantity(std::string name, VolumeMesh& parentStructure, bool dominates = false);
   ~VolumeMeshQuantity() {};
+  virtual void setSliceUniforms(render::ShaderProgram& p, glm::vec3 sliceVector, float slicePoint){};
+  virtual std::shared_ptr<render::ShaderProgram> tryCreateSliceProgram(){ return nullptr; }; 
 
 public:
   // Build GUI info about this element

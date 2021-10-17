@@ -6,6 +6,7 @@
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/volume_mesh_quantity.h"
 
 #include "imgui.h"
 
@@ -61,6 +62,30 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
   computeGeometryData();
 }
 
+void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
+  std::vector<glm::vec3> point1;
+  std::vector<glm::vec3> point2;
+  std::vector<glm::vec3> point3;
+  std::vector<glm::vec3> point4;
+  int cellCount = nCells();
+  point1.resize(cellCount);
+  point2.resize(cellCount);
+  point3.resize(cellCount);
+  point4.resize(cellCount);
+  for (size_t iC = 0; iC < cellCount; iC++) {
+    const std::array<int64_t, 8>& cell = cells[iC];
+    point1[iC] = vertices[cell[0]];
+    point2[iC] = vertices[cell[1]];
+    point3[iC] = vertices[cell[2]];
+    point4[iC] = vertices[cell[3]];
+  }
+  glm::vec3 normal = glm::vec3(-1, 0, 0);
+
+  program.setAttribute("a_point_1", point1);
+  program.setAttribute("a_point_2", point2);
+  program.setAttribute("a_point_3", point3);
+  program.setAttribute("a_point_4", point4);
+}
 
 void VolumeMesh::computeCounts() {
 
@@ -141,6 +166,7 @@ void VolumeMesh::computeCounts() {
 void VolumeMesh::computeGeometryData() {}
 
 
+
 void VolumeMesh::draw() {
   if (!isEnabled()) {
     return;
@@ -168,10 +194,23 @@ void VolumeMesh::draw() {
     program->draw();
   }
 
+  // if(activeLevelSetQuantity != nullptr){
+  //   // Draw the quantities
+  //   for (auto& x : quantities) {
+  //     auto quant = x.second;
+  //     VolumeMeshVertexScalarQuantity *vmvsq = dynamic_cast<VolumeMeshVertexScalarQuantity*>(x.second);
+  //     x.second->draw();
+  //   }
+
+
+  //   return;
+  // }
+
   // Draw the quantities
   for (auto& x : quantities) {
     x.second->draw();
   }
+
 }
 
 void VolumeMesh::drawPick() {

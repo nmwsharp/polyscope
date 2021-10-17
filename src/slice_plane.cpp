@@ -63,9 +63,9 @@ void buildSlicePlaneGUI() {
 
 void SlicePlane::setSliceGeomUniforms(render::ShaderProgram& p) {
   glm::vec3 normal = glm::vec3(glm::vec4(getNormal(), 0.));
-  glm::vec3 center = glm::vec3(glm::vec4(getCenter(), 1.));
-  p.setUniform("u_sliceNormal", normal);
-  p.setUniform("u_slicePoint", glm::dot(center, normal));
+  float center = glm::dot(glm::vec3(glm::vec4(getCenter(), 1.)), normal);
+  p.setUniform("u_sliceVector", normal);
+  p.setUniform("u_slicePoint", center);
 }
 
 
@@ -115,16 +115,23 @@ void SlicePlane::prepare() {
 }
 
 void SlicePlane::setVolumeMeshToSlice(std::string meshname) {
-  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(meshname);
   slicedMeshName = meshname;
-  if (!meshToSlice) {
+  if (meshname == "") {
     shouldSliceMesh = false;
     return;
   }
+  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(meshname);
   shouldSliceMesh = true;
   volumeSliceProgram =
       render::engine->requestShader("SLICE_TETS", meshToSlice->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}));
+  render::engine->setMaterial(*volumeSliceProgram, meshToSlice->getMaterial());
+  meshToSlice->fillSliceGeometryBuffers(*volumeSliceProgram);
+  setSliceAttributes(*volumeSliceProgram);
+  volumeSliceQuantityPrograms = std::map<std::string, std::shared_ptr<render::ShaderProgram>>();
+}
 
+void SlicePlane::setSliceAttributes(render::ShaderProgram &p){
+  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName);
   std::vector<glm::vec3> point1;
   std::vector<glm::vec3> point2;
   std::vector<glm::vec3> point3;
@@ -143,11 +150,10 @@ void SlicePlane::setVolumeMeshToSlice(std::string meshname) {
   }
   glm::vec3 normal = glm::vec3(-1, 0, 0);
 
-  volumeSliceProgram->setAttribute("a_point_1", point1);
-  volumeSliceProgram->setAttribute("a_point_2", point2);
-  volumeSliceProgram->setAttribute("a_point_3", point3);
-  volumeSliceProgram->setAttribute("a_point_4", point4);
-  render::engine->setMaterial(*volumeSliceProgram, meshToSlice->getMaterial());
+  p.setAttribute("a_slice_1", point1);
+  p.setAttribute("a_slice_2", point2);
+  p.setAttribute("a_slice_3", point3);
+  p.setAttribute("a_slice_4", point4);
 }
 
 
@@ -177,14 +183,41 @@ void SlicePlane::draw() {
 
   if (shouldSliceMesh && volumeSliceProgram) {
     VolumeMesh* vMesh = polyscope::getVolumeMesh(slicedMeshName);
+    glm::vec3 normal = glm::vec3(glm::vec4(getNormal(), 0.));
+    float center = glm::dot(glm::vec3(glm::vec4(getCenter(), 1.)), normal);
     vMesh->setStructureUniforms(*volumeSliceProgram);
 
-    for (int i = 0; i < sceneSlicePlanes.size(); i++) {
-      sceneSlicePlanes[i]->setSceneObjectUniforms(*volumeSliceProgram, sceneSlicePlanes[i] == this);
+    if(vMesh->dominantQuantity == nullptr){
+      for (int i = 0; i < sceneSlicePlanes.size(); i++) {
+        sceneSlicePlanes[i]->setSceneObjectUniforms(*volumeSliceProgram, sceneSlicePlanes[i] == this);
+      }
+      setSliceGeomUniforms(*volumeSliceProgram);
+      volumeSliceProgram->setUniform("u_baseColor1", vMesh->getColor());
+      volumeSliceProgram->draw();
     }
-    setSliceGeomUniforms(*volumeSliceProgram);
-    volumeSliceProgram->setUniform("u_baseColor1", vMesh->getColor());
-    volumeSliceProgram->draw();
+
+    for(auto it = vMesh->quantities.begin(); it != vMesh->quantities.end(); it++){
+      if(!it->second->isEnabled())
+        continue;
+
+      auto programPair = volumeSliceQuantityPrograms.find(it->first);
+      std::shared_ptr<render::ShaderProgram> program = nullptr;
+      if(programPair == volumeSliceQuantityPrograms.end()){
+        program = it->second->tryCreateSliceProgram();
+        if(program != nullptr){
+          setSliceAttributes(*program);
+          volumeSliceQuantityPrograms[it->first] = program;
+        }
+      }else{
+        program = programPair->second;
+      }
+      if(program != nullptr){
+        setSliceGeomUniforms(*program);
+        it->second->setSliceUniforms(*program, normal, center);
+        setSceneObjectUniforms(*program, true);
+        program->draw();
+      }
+    }
   }
 }
 

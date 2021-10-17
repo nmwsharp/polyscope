@@ -64,6 +64,7 @@ protected:
   PersistentValue<glm::vec3> color;
   PersistentValue<float> transparency;
 
+  std::map<std::string, std::shared_ptr<render::ShaderProgram>> volumeSliceQuantityPrograms;
   std::shared_ptr<render::ShaderProgram> volumeSliceProgram;
   void fillSliceVolumeGeometryBuffers();
 
@@ -76,6 +77,7 @@ protected:
   std::shared_ptr<render::ShaderProgram> planeProgram;
 
   // Helpers
+  void setSliceAttributes(render::ShaderProgram &p);
   void prepare();
   glm::vec3 getCenter();
   glm::vec3 getNormal();
