@@ -68,7 +68,7 @@ void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
   std::vector<glm::vec3> point2;
   std::vector<glm::vec3> point3;
   std::vector<glm::vec3> point4;
-  int cellCount = nCells();
+  size_t cellCount = nCells();
   point1.resize(cellCount);
   point2.resize(cellCount);
   point3.resize(cellCount);

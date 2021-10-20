@@ -29,7 +29,7 @@ SlicePlane* addSceneSlicePlane(bool initiallyVisible) {
     sceneSlicePlanes.back()->setDrawPlane(false);
     sceneSlicePlanes.back()->setDrawWidget(false);
   }
-  for(int i = 0; i < sceneSlicePlanes.size(); i++){
+  for(uint i = 0; i < sceneSlicePlanes.size(); i++){
     sceneSlicePlanes[i]->resetVolumeSliceProgram();
   }
   return sceneSlicePlanes.back();
@@ -39,7 +39,7 @@ void removeLastSceneSlicePlane() {
   if (sceneSlicePlanes.empty()) return;
   delete sceneSlicePlanes.back();
   sceneSlicePlanes.pop_back();
-  for(int i = 0; i < sceneSlicePlanes.size(); i++){
+  for(uint i = 0; i < sceneSlicePlanes.size(); i++){
     sceneSlicePlanes[i]->resetVolumeSliceProgram();
   }
 }
@@ -143,7 +143,7 @@ void SlicePlane::setSliceAttributes(render::ShaderProgram &p){
   std::vector<glm::vec3> point2;
   std::vector<glm::vec3> point3;
   std::vector<glm::vec3> point4;
-  int cellCount = meshToSlice->nCells();
+  size_t cellCount = meshToSlice->nCells();
   point1.resize(cellCount);
   point2.resize(cellCount);
   point3.resize(cellCount);

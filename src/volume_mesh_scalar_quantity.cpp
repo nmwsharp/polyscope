@@ -59,7 +59,7 @@ std::string VolumeMeshScalarQuantity::niceName() { return name + " (" + definedO
 
 VolumeMeshVertexScalarQuantity::VolumeMeshVertexScalarQuantity(std::string name, const std::vector<double>& values_,
                                                                VolumeMesh& mesh_, DataType dataType_)
-    : VolumeMeshScalarQuantity(name, mesh_, "vertex", values_, dataType_), isDrawingLevelSet(false), levelSetValue(0), showQuantity(this) 
+    : VolumeMeshScalarQuantity(name, mesh_, "vertex", values_, dataType_), levelSetValue(0), isDrawingLevelSet(false), showQuantity(this) 
 
 {
   hist.buildHistogram(values, parent.vertexAreas); // rebuild to incorporate weights
@@ -73,7 +73,7 @@ void VolumeMeshVertexScalarQuantity::fillLevelSetData(render::ShaderProgram &p){
   std::vector<glm::vec3> slice2;
   std::vector<glm::vec3> slice3;
   std::vector<glm::vec3> slice4;
-  int cellCount = parent.nCells();
+  size_t cellCount = parent.nCells();
   point1.resize(cellCount);
   point2.resize(cellCount);
   point3.resize(cellCount);
