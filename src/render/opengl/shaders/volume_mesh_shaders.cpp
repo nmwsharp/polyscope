@@ -145,7 +145,8 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
                 ordering[2] = temp;
                 cross12 *= -1;
             }
-            vec3 offset = u_sliceVector * 1e-3;
+            // Offset slice so that tet edges don't clip through
+            vec3 offset = u_sliceVector * 1e-4;
             // Emit the vertices as a triangle strip
             mat4 toScreen = u_projMatrix * u_modelView;
             for (int i = 0; i < n; i++){

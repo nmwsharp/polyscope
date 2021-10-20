@@ -49,7 +49,8 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
       color(uniquePrefix() + "color", getNextUniqueColor()),
       interiorColor(uniquePrefix() + "interiorColor", color.get()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
-      edgeWidth(uniquePrefix() + "edgeWidth", 0.) {
+      edgeWidth(uniquePrefix() + "edgeWidth", 0.),
+      activeLevelSetQuantity(nullptr) {
   cullWholeElements.setPassive(false);
 
   // set the interior color to be a desaturated version of the normal one
@@ -85,6 +86,10 @@ void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
   program.setAttribute("a_point_2", point2);
   program.setAttribute("a_point_3", point3);
   program.setAttribute("a_point_4", point4);
+  program.setAttribute("a_slice_1", point1);
+  program.setAttribute("a_slice_2", point2);
+  program.setAttribute("a_slice_3", point3);
+  program.setAttribute("a_slice_4", point4);
 }
 
 void VolumeMesh::computeCounts() {
@@ -165,6 +170,16 @@ void VolumeMesh::computeCounts() {
 
 void VolumeMesh::computeGeometryData() {}
 
+VolumeMeshVertexScalarQuantity* VolumeMesh::getLevelSetQuantity(){
+  return activeLevelSetQuantity;
+}
+
+void VolumeMesh::setLevelSetQuantity(VolumeMeshVertexScalarQuantity *quantity){
+  if(activeLevelSetQuantity != nullptr && activeLevelSetQuantity != quantity){
+    activeLevelSetQuantity->isDrawingLevelSet = false;
+  }
+  activeLevelSetQuantity = quantity;
+}
 
 
 void VolumeMesh::draw() {
@@ -194,17 +209,12 @@ void VolumeMesh::draw() {
     program->draw();
   }
 
-  // if(activeLevelSetQuantity != nullptr){
-  //   // Draw the quantities
-  //   for (auto& x : quantities) {
-  //     auto quant = x.second;
-  //     VolumeMeshVertexScalarQuantity *vmvsq = dynamic_cast<VolumeMeshVertexScalarQuantity*>(x.second);
-  //     x.second->draw();
-  //   }
+  if(activeLevelSetQuantity != nullptr && activeLevelSetQuantity->isEnabled()){
+    // Draw the quantities
+    activeLevelSetQuantity->draw();
 
-
-  //   return;
-  // }
+    return;
+  }
 
   // Draw the quantities
   for (auto& x : quantities) {

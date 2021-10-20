@@ -23,6 +23,8 @@ public:
 protected:
   const std::string definedOn;
   std::shared_ptr<render::ShaderProgram> program;
+  std::shared_ptr<render::ShaderProgram> sliceProgram;
+  virtual std::shared_ptr<render::ShaderProgram> createSliceProgram(){ return nullptr; };
 
   // Helpers
   virtual void createProgram() = 0;
@@ -38,13 +40,13 @@ public:
                               DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
+  virtual std::shared_ptr<render::ShaderProgram> createSliceProgram() override;
   virtual void draw() override;
+  virtual void drawSlice(polyscope::SlicePlane *sp) override;
 
   void setLevelSetUniforms(render::ShaderProgram &p);
   void fillLevelSetData(render::ShaderProgram &p);
   std::shared_ptr<render::ShaderProgram> levelSetProgram;
-  virtual std::shared_ptr<render::ShaderProgram> tryCreateSliceProgram() override;
-  virtual void setSliceUniforms(render::ShaderProgram& p, glm::vec3 sliceVector, float slicePoint) override;
 
   void fillColorBuffers(render::ShaderProgram& p);
 
@@ -56,6 +58,7 @@ public:
 
   float levelSetValue;
   bool isDrawingLevelSet;
+  VolumeMeshVertexScalarQuantity* showQuantity;
 
 };
 

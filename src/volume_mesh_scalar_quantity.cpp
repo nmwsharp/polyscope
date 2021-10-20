@@ -47,6 +47,7 @@ void VolumeMeshScalarQuantity::buildCustomUI() {
 
 void VolumeMeshScalarQuantity::refresh() {
   program.reset();
+  sliceProgram.reset();
   Quantity::refresh();
 }
 
@@ -58,7 +59,7 @@ std::string VolumeMeshScalarQuantity::niceName() { return name + " (" + definedO
 
 VolumeMeshVertexScalarQuantity::VolumeMeshVertexScalarQuantity(std::string name, const std::vector<double>& values_,
                                                                VolumeMesh& mesh_, DataType dataType_)
-    : VolumeMeshScalarQuantity(name, mesh_, "vertex", values_, dataType_), isDrawingLevelSet(false), levelSetValue(0) 
+    : VolumeMeshScalarQuantity(name, mesh_, "vertex", values_, dataType_), isDrawingLevelSet(false), levelSetValue(0), showQuantity(this) 
 
 {
   hist.buildHistogram(values, parent.vertexAreas); // rebuild to incorporate weights
@@ -115,7 +116,7 @@ void VolumeMeshVertexScalarQuantity::draw() {
   auto programToDraw = program;
   if(isDrawingLevelSet){
     if(levelSetProgram == nullptr){
-      levelSetProgram = tryCreateSliceProgram();
+      levelSetProgram = createSliceProgram();
       fillLevelSetData(*levelSetProgram);
     }
     setLevelSetUniforms(*levelSetProgram);
@@ -134,11 +135,53 @@ void VolumeMeshVertexScalarQuantity::draw() {
   programToDraw->draw();
 }
 
+void VolumeMeshVertexScalarQuantity::drawSlice(polyscope::SlicePlane *sp){
+  if(!isEnabled()) return;
+
+  if(sliceProgram == nullptr){
+    sliceProgram = createSliceProgram();
+  }
+  parent.setStructureUniforms(*sliceProgram);
+  //Ignore current slice plane
+  sp->setSceneObjectUniforms(*sliceProgram, true);
+  sp->setSliceGeomUniforms(*sliceProgram);
+  parent.setVolumeMeshUniforms(*sliceProgram);
+  setScalarUniforms(*sliceProgram);
+  sliceProgram->draw();
+}
+
 void VolumeMeshVertexScalarQuantity::buildCustomUI() {
   VolumeMeshScalarQuantity::buildCustomUI();
-  ImGui::Checkbox("Level Set", &isDrawingLevelSet);
+  if(ImGui::Checkbox("Level Set", &isDrawingLevelSet)){
+    if(isDrawingLevelSet){
+      setEnabled(true);
+      parent.setLevelSetQuantity(this);
+    }else{
+      parent.setLevelSetQuantity(nullptr);
+    }
+  }
   if(isDrawingLevelSet){
     ImGui::DragFloat("Level Set Value", &levelSetValue, 0.01f, (float)hist.colormapRange.first, (float)hist.colormapRange.second);
+    if (ImGui::BeginMenu("Show Quantity")) {
+      std::map<std::string, std::unique_ptr<polyscope::VolumeMeshQuantity>>::iterator it;
+      for (it = parent.quantities.begin(); it != parent.quantities.end(); it++) {
+        std::string quantityName = it->first;
+        VolumeMeshQuantity *vmq = it->second.get();
+        VolumeMeshVertexScalarQuantity *vmvsq = dynamic_cast<VolumeMeshVertexScalarQuantity*>(vmq);
+        if (vmvsq != nullptr && ImGui::MenuItem(quantityName.c_str(), NULL, showQuantity == it->second.get())) {
+          levelSetProgram = render::engine->requestShader("SLICE_TETS", parent.addVolumeMeshRules(addScalarRules({"SLICE_TETS_PROPAGATE_VALUE"})));
+
+          // Fill color buffers
+          parent.fillSliceGeometryBuffers(*levelSetProgram);
+          vmvsq->fillGeomColorBuffers(*levelSetProgram);
+          render::engine->setMaterial(*levelSetProgram, parent.getMaterial());
+          fillLevelSetData(*levelSetProgram);
+          setLevelSetUniforms(*levelSetProgram);
+          showQuantity = vmvsq;
+        }
+      }
+      ImGui::EndMenu();
+    }
   }
 }
 
@@ -157,7 +200,7 @@ void VolumeMeshVertexScalarQuantity::createProgram() {
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
-std::shared_ptr<render::ShaderProgram> VolumeMeshVertexScalarQuantity::tryCreateSliceProgram() {
+std::shared_ptr<render::ShaderProgram> VolumeMeshVertexScalarQuantity::createSliceProgram() {
   std::shared_ptr<render::ShaderProgram> p = render::engine->requestShader("SLICE_TETS", parent.addVolumeMeshRules(addScalarRules({"SLICE_TETS_PROPAGATE_VALUE"})));
 
   // Fill color buffers
@@ -240,11 +283,6 @@ void VolumeMeshVertexScalarQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::NextColumn();
 }
 
-void VolumeMeshVertexScalarQuantity::setSliceUniforms(render::ShaderProgram &p, glm::vec3 sliceVector, float slicePoint){
-  parent.setStructureUniforms(p);
-  parent.setVolumeMeshUniforms(p);
-  setScalarUniforms(p);
-}
 
 // ========================================================
 // ==========            Cell Scalar             ==========

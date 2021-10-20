@@ -156,7 +156,8 @@ public:
   VolumeMesh* setEdgeWidth(double newVal);
   double getEdgeWidth();
 
-  void setLevelSetQuantity(std::shared_ptr<VolumeMeshVertexScalarQuantity> _levelSet);
+  VolumeMeshVertexScalarQuantity *getLevelSetQuantity();
+  void setLevelSetQuantity(VolumeMeshVertexScalarQuantity *_levelSet);
 
   // Rendering helpers used by quantities
   void setVolumeMeshUniforms(render::ShaderProgram& p);
@@ -172,7 +173,7 @@ private:
   PersistentValue<std::string> material;
   PersistentValue<float> edgeWidth;
 
-  std::shared_ptr<VolumeMeshVertexScalarQuantity> activeLevelSetQuantity;
+  VolumeMeshVertexScalarQuantity *activeLevelSetQuantity;
   float activeLevelSetValue;
 
   // Do setup work related to drawing, including allocating openGL data

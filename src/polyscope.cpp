@@ -328,6 +328,12 @@ void processInputEvents() {
   }
 }
 
+void renderSlicePlaneGeometry(){
+  for (SlicePlane* s : state::slicePlanes) {
+    s->drawGeometry();
+  }
+}
+
 void renderSlicePlanes() {
   for (SlicePlane* s : state::slicePlanes) {
     s->draw();
@@ -371,6 +377,7 @@ void renderScene() {
 
       render::engine->applyTransparencySettings();
       drawStructures();
+      renderSlicePlaneGeometry();
 
       // Draw ground plane, slicers, etc
       bool isRedraw = iPass > 0;
@@ -396,6 +403,7 @@ void renderScene() {
     render::engine->applyTransparencySettings();
 
     drawStructures();
+    renderSlicePlaneGeometry();
 
     render::engine->groundPlane.draw();
     renderSlicePlanes();

@@ -24,6 +24,8 @@ public:
 
   void buildGUI();
   void draw();
+  void drawGeometry();
+  void resetVolumeSliceProgram();
 
   void setSceneObjectUniforms(render::ShaderProgram& p,
                               bool alwaysPass = false); // if alwaysPass, fake values are given so the plane does
@@ -78,6 +80,7 @@ protected:
 
   // Helpers
   void setSliceAttributes(render::ShaderProgram &p);
+  void createVolumeSliceProgram();
   void prepare();
   glm::vec3 getCenter();
   glm::vec3 getNormal();
