@@ -206,6 +206,11 @@ void drawStructures() {
   }
 }
 
+void renderSlicePlaneGeometry(){
+  for (SlicePlane* s : state::slicePlanes) {
+    s->drawGeometry();
+  }
+}
 
 namespace {
 
@@ -328,11 +333,6 @@ void processInputEvents() {
   }
 }
 
-void renderSlicePlaneGeometry(){
-  for (SlicePlane* s : state::slicePlanes) {
-    s->drawGeometry();
-  }
-}
 
 void renderSlicePlanes() {
   for (SlicePlane* s : state::slicePlanes) {

@@ -118,6 +118,7 @@ void popContext();
 void mainLoopIteration();
 void initializeImGUIContext();
 void drawStructures();
+void renderSlicePlaneGeometry();
 
 // Called to check any options that might have been changed and perform appropriate updates. Users generally should not
 // need to call this directly.
