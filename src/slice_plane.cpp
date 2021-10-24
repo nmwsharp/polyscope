@@ -121,8 +121,19 @@ void SlicePlane::prepare() {
 
 void SlicePlane::setVolumeMeshToSlice(std::string meshname) {
   slicedMeshName = meshname;
-  shouldSliceMesh = meshname != "";
+  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName);
+  if(meshToSlice == nullptr){
+    slicedMeshName = "";
+    shouldSliceMesh = false;
+    volumeSliceProgram.reset();
+    return;
+  }
+  shouldSliceMesh = true;
   volumeSliceProgram.reset();
+}
+
+std::string SlicePlane::getVolumeMeshToSlice(){
+  return slicedMeshName;
 }
 
 void SlicePlane::createVolumeSliceProgram(){

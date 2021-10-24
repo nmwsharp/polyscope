@@ -32,6 +32,8 @@ public:
                                                         // nothing (regardless of this plane's active setting)
   void setSliceGeomUniforms(render::ShaderProgram& p);
   void setVolumeMeshToSlice(std::string meshName);
+  std::string getVolumeMeshToSlice();
+
 
   const std::string name;
   const std::string postfix;
