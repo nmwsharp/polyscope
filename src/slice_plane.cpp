@@ -250,7 +250,7 @@ void SlicePlane::buildGUI() {
     setDrawWidget(getDrawWidget());
   }
   if (state::structures.size() > 0) {
-    if (ImGui::BeginMenu("Slice VolumeMesh")) {
+    if (ImGui::BeginMenu("Slice Volume Mesh")) {
       std::map<std::string, Structure*>::iterator it;
       for (it = state::structures["Volume Mesh"].begin(); it != state::structures["Volume Mesh"].end(); it++) {
         std::string vMeshName = it->first;
