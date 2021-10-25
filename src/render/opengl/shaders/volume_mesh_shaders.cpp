@@ -243,13 +243,7 @@ const ShaderReplacementRule SLICE_TETS_MESH_WIREFRAME(
           out vec3 a_edgeIsRealToFrag;
         )"},
       {"GEOM_ASSIGNMENTS", R"(
-          vec3 edgeRealV = vec3(0, 1, 0);
-          if (i == 0) {
-            edgeRealV.x = 1.;
-          }
-          if (i == 2) {
-            edgeRealV.z = 1.;
-          }
+          vec3 edgeRealV = vec3(1, 1, 1);
           a_edgeIsRealToFrag = edgeRealV;
         )"},
       {"FRAG_DECLARATIONS", R"(

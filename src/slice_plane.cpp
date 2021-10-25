@@ -120,6 +120,10 @@ void SlicePlane::prepare() {
 }
 
 void SlicePlane::setVolumeMeshToSlice(std::string meshname) {
+  VolumeMesh* oldMeshToSlice = polyscope::getVolumeMesh(slicedMeshName);
+  if(oldMeshToSlice != nullptr){
+    oldMeshToSlice->removeSlicePlaneListener(this);
+  }
   slicedMeshName = meshname;
   VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName);
   if(meshToSlice == nullptr){
@@ -128,6 +132,7 @@ void SlicePlane::setVolumeMeshToSlice(std::string meshname) {
     volumeSliceProgram.reset();
     return;
   }
+  meshToSlice->addSlicePlaneListener(this);
   shouldSliceMesh = true;
   volumeSliceProgram.reset();
 }

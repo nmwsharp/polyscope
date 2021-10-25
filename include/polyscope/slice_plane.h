@@ -59,6 +59,7 @@ public:
   void setTransform(glm::mat4 newTransform);
 
 
+
 protected:
   // = State
   PersistentValue<bool> active;     // is it actually slicing?

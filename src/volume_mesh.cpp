@@ -50,7 +50,8 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
       interiorColor(uniquePrefix() + "interiorColor", color.get()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
       edgeWidth(uniquePrefix() + "edgeWidth", 0.),
-      activeLevelSetQuantity(nullptr) {
+      activeLevelSetQuantity(nullptr),
+      volumeSlicePlaneListeners() {
   cullWholeElements.setPassive(false);
 
   // set the interior color to be a desaturated version of the normal one
@@ -61,6 +62,19 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
 
   computeCounts();
   computeGeometryData();
+}
+
+void VolumeMesh::addSlicePlaneListener(polyscope::SlicePlane* sp){
+  volumeSlicePlaneListeners.push_back(sp);
+}
+
+void VolumeMesh::removeSlicePlaneListener(polyscope::SlicePlane* sp){
+  for(int i = 0; i < volumeSlicePlaneListeners.size(); i++){
+    if(volumeSlicePlaneListeners[i] == sp){
+      volumeSlicePlaneListeners.erase(volumeSlicePlaneListeners.begin() + i);
+      break;
+    }
+  }
 }
 
 void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
@@ -721,6 +735,9 @@ void VolumeMesh::refresh() {
   computeGeometryData();
   program.reset();
   pickProgram.reset();
+  for(int i = 0; i < volumeSlicePlaneListeners.size(); i++){
+    volumeSlicePlaneListeners[i]->resetVolumeSliceProgram();
+  }
   requestRedraw();
   QuantityStructure<VolumeMesh>::refresh(); // call base class version, which refreshes quantities
 }

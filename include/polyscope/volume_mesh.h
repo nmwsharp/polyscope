@@ -165,6 +165,9 @@ public:
   void fillSliceGeometryBuffers(render::ShaderProgram& p);
   static const std::vector<std::vector<std::array<size_t, 3>>>& cellStencil(VolumeCellType type);
 
+  void addSlicePlaneListener(polyscope::SlicePlane* sp);
+  void removeSlicePlaneListener(polyscope::SlicePlane* sp);
+
 private:
   // Visualization settings
   PersistentValue<glm::vec3> color;
@@ -174,6 +177,7 @@ private:
   PersistentValue<float> edgeWidth;
 
   VolumeMeshVertexScalarQuantity *activeLevelSetQuantity;
+  std::vector<polyscope::SlicePlane*> volumeSlicePlaneListeners;
   float activeLevelSetValue;
 
   // Do setup work related to drawing, including allocating openGL data
