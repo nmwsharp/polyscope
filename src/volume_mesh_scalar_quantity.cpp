@@ -135,6 +135,21 @@ void VolumeMeshVertexScalarQuantity::draw() {
   programToDraw->draw();
 }
 
+void VolumeMeshVertexScalarQuantity::setLevelSetValue(float f){
+  levelSetValue = f;
+}
+
+void VolumeMeshVertexScalarQuantity::setEnabledLevelSet(bool v){
+  if(v){
+    isDrawingLevelSet = true;
+    setEnabled(true);
+    parent.setLevelSetQuantity(this);
+  }else{
+    isDrawingLevelSet = false;
+    parent.setLevelSetQuantity(nullptr);
+  }
+}
+
 void VolumeMeshVertexScalarQuantity::drawSlice(polyscope::SlicePlane *sp){
   if(!isEnabled()) return;
 
@@ -153,12 +168,7 @@ void VolumeMeshVertexScalarQuantity::drawSlice(polyscope::SlicePlane *sp){
 void VolumeMeshVertexScalarQuantity::buildCustomUI() {
   VolumeMeshScalarQuantity::buildCustomUI();
   if(ImGui::Checkbox("Level Set", &isDrawingLevelSet)){
-    if(isDrawingLevelSet){
-      setEnabled(true);
-      parent.setLevelSetQuantity(this);
-    }else{
-      parent.setLevelSetQuantity(nullptr);
-    }
+    setEnabledLevelSet(isDrawingLevelSet);
   }
   if(isDrawingLevelSet){
     ImGui::DragFloat("Level Set Value", &levelSetValue, 0.01f, (float)hist.colormapRange.first, (float)hist.colormapRange.second);

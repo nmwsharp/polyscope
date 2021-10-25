@@ -45,6 +45,8 @@ public:
   virtual void drawSlice(polyscope::SlicePlane *sp) override;
 
 
+  void setLevelSetValue(float f);
+  void setEnabledLevelSet(bool v);
   void setLevelSetUniforms(render::ShaderProgram &p);
   void fillLevelSetData(render::ShaderProgram &p);
   std::shared_ptr<render::ShaderProgram> levelSetProgram;
