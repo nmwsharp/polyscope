@@ -127,7 +127,7 @@ public:
   VolumeCellType cellType(size_t i) const;
   void computeCounts();       // call to populate counts and indices
   void computeGeometryData(); // call to populate normals/areas/lengths
-  std::vector<std::string> addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade = true);
+  std::vector<std::string> addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade = true, bool isSlice = false);
   glm::vec3 cellCenter(size_t iC);
 
   // === Member variables ===

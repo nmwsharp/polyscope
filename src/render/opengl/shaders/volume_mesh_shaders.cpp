@@ -236,6 +236,56 @@ const ShaderReplacementRule SLICE_TETS_BASECOLOR_SHADE(
     /* attributes */ {},
     /* textures */ {});
 
+const ShaderReplacementRule SLICE_TETS_MESH_WIREFRAME(
+    /* rule name */ "SLICE_TETS_MESH_WIREFRAME",
+    { /* replacement sources */
+      {"GEOM_DECLARATIONS", R"(
+          out vec3 a_edgeIsRealToFrag;
+        )"},
+      {"GEOM_ASSIGNMENTS", R"(
+          vec3 edgeRealV = vec3(0, 1, 0);
+          if (i == 0) {
+            edgeRealV.x = 1.;
+          }
+          if (i == 2) {
+            edgeRealV.z = 1.;
+          }
+          a_edgeIsRealToFrag = edgeRealV;
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec3 a_edgeIsRealToFrag;
+
+          uniform float u_edgeWidth;
+          uniform vec3 u_edgeColor;
+      
+          float getEdgeFactor(vec3 UVW, vec3 edgeReal, float width) {
+            // The Nick Sharp Edge Function. There are many like it, but this one is mine.
+            float slopeWidth = 1.;
+            
+            vec3 fw = fwidth(UVW);
+            vec3 realUVW = max(UVW, 1.0 - edgeReal.yzx);
+            vec3 baryWidth = slopeWidth * fw;
+
+            vec3 end = width*fw;
+            vec3 dist = smoothstep(end - baryWidth, end, realUVW);
+
+            float e = 1.0 - min(min(dist.x, dist.y), dist.z);
+            return e;
+          }
+        )"},
+      {"APPLY_WIREFRAME", R"(
+          float edgeFactor = getEdgeFactor(a_barycoordToFrag, a_edgeIsRealToFrag, u_edgeWidth);
+          albedoColor = mix(albedoColor, u_edgeColor, edgeFactor);
+      )"},
+    },
+    /* uniforms */ {
+      {"u_edgeColor", DataType::Vector3Float},
+      {"u_edgeWidth", DataType::Float},
+    },
+    /* attributes */ {
+    },
+    /* textures */ {}
+);
 
 const ShaderReplacementRule SLICE_TETS_PROPAGATE_VALUE (
     /* rule name */ "SLICE_TETS_PROPAGATE_VALUE",

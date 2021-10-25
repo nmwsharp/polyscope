@@ -1452,6 +1452,12 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registeredShaderRules.insert({"CYLINDER_PROPAGATE_PICK", CYLINDER_PROPAGATE_PICK});
   registeredShaderRules.insert({"CYLINDER_CULLPOS_FROM_MID", CYLINDER_CULLPOS_FROM_MID});
 
+  // marching tets things
+  registeredShaderRules.insert({"SLICE_TETS_BASECOLOR_SHADE", SLICE_TETS_BASECOLOR_SHADE});
+  registeredShaderRules.insert({"SLICE_TETS_PROPAGATE_VALUE", SLICE_TETS_PROPAGATE_VALUE});
+  registeredShaderRules.insert({"SLICE_TETS_MESH_WIREFRAME", SLICE_TETS_MESH_WIREFRAME});
+
+
   // clang-format on
 };
 

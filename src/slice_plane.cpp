@@ -139,7 +139,7 @@ std::string SlicePlane::getVolumeMeshToSlice(){
 void SlicePlane::createVolumeSliceProgram(){
   VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName);
   volumeSliceProgram =
-      render::engine->requestShader("SLICE_TETS", meshToSlice->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}));
+      render::engine->requestShader("SLICE_TETS", meshToSlice->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}, true, true));
   meshToSlice->fillSliceGeometryBuffers(*volumeSliceProgram);
   render::engine->setMaterial(*volumeSliceProgram, meshToSlice->getMaterial());
 }

@@ -201,6 +201,7 @@ void VolumeMesh::draw() {
 
     // Set uniforms
     setStructureUniforms(*program);
+    setVolumeMeshUniforms(*program);
     glm::mat4 viewMat = getModelView();
     glm::mat4 projMat = view::getCameraPerspectiveMatrix();
     program->setUniform("u_baseColor1", getColor());
@@ -233,6 +234,7 @@ void VolumeMesh::drawPick() {
   }
 
   // Set uniforms
+  setVolumeMeshUniforms(*pickProgram);
   setStructureUniforms(*pickProgram);
 
   pickProgram->draw();
@@ -248,7 +250,7 @@ void VolumeMesh::prepare() {
 void VolumeMesh::preparePick() {
 
   // Create a new program
-  pickProgram = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_PICK"}, false),
+  pickProgram = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_PICK"}),
                                               render::ShaderReplacementDefaults::Pick);
 
   // == Sort out element counts and index ranges
@@ -270,10 +272,12 @@ void VolumeMesh::preparePick() {
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
+  std::vector<glm::vec3> edgeReal;
   std::vector<std::array<glm::vec3, 3>> vertexColors, edgeColors, halfedgeColors;
   std::vector<glm::vec3> faceColor;
   std::vector<glm::vec3> barycenters;
 
+  bool wantsEdge = (getEdgeWidth() > 0);
   bool wantsBarycenters = wantsCullPosition();
 
   // Reserve space
@@ -286,6 +290,9 @@ void VolumeMesh::preparePick() {
   normals.resize(3 * nFacesTriangulation());
   if (wantsBarycenters) {
     barycenters.resize(3 * nFacesTriangulation());
+  }
+  if (wantsEdge) {
+    edgeReal.resize(3 * nFacesTriangulation());
   }
 
 
@@ -359,6 +366,18 @@ void VolumeMesh::preparePick() {
             barycenters[iData + k] = barycenter;
           }
         }
+        if (wantsEdge) {
+          glm::vec3 edgeRealV{0., 1., 0.};
+          if (j == 0) {
+            edgeRealV.x = 1.;
+          }
+          if (j + 1 == face.size()) {
+            edgeRealV.z = 1.;
+          }
+          for (int k = 0; k < 3; k++) {
+            edgeReal[iData + k] = edgeRealV;
+          }
+        }
       }
 
       iF++;
@@ -374,18 +393,21 @@ void VolumeMesh::preparePick() {
   pickProgram->setAttribute<glm::vec3, 3>("a_edgeColors", edgeColors);
   pickProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", halfedgeColors);
   pickProgram->setAttribute("a_faceColor", faceColor);
-  if (wantsCullPosition()) {
+  if (wantsBarycenters) {
     pickProgram->setAttribute("a_cullPos", barycenters);
+  }
+  if (wantsEdge) {
+    pickProgram->setAttribute("a_edgeIsReal", edgeReal);
   }
 }
 
-std::vector<std::string> VolumeMesh::addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade) {
+std::vector<std::string> VolumeMesh::addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade, bool isSlice) {
 
   initRules = addStructureRules(initRules);
 
   if (withSurfaceShade) {
     if (getEdgeWidth() > 0) {
-      initRules.push_back("MESH_WIREFRAME");
+      initRules.push_back(isSlice ? "SLICE_TETS_MESH_WIREFRAME" : "MESH_WIREFRAME");
     }
   }
 

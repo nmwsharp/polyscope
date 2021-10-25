@@ -169,7 +169,7 @@ void VolumeMeshVertexScalarQuantity::buildCustomUI() {
         VolumeMeshQuantity *vmq = it->second.get();
         VolumeMeshVertexScalarQuantity *vmvsq = dynamic_cast<VolumeMeshVertexScalarQuantity*>(vmq);
         if (vmvsq != nullptr && ImGui::MenuItem(quantityName.c_str(), NULL, showQuantity == it->second.get())) {
-          levelSetProgram = render::engine->requestShader("SLICE_TETS", parent.addVolumeMeshRules(addScalarRules({"SLICE_TETS_PROPAGATE_VALUE"})));
+          levelSetProgram = render::engine->requestShader("SLICE_TETS", parent.addVolumeMeshRules(addScalarRules({"SLICE_TETS_PROPAGATE_VALUE"}), true, true));
 
           // Fill color buffers
           parent.fillSliceGeometryBuffers(*levelSetProgram);
@@ -201,7 +201,7 @@ void VolumeMeshVertexScalarQuantity::createProgram() {
 }
 
 std::shared_ptr<render::ShaderProgram> VolumeMeshVertexScalarQuantity::createSliceProgram() {
-  std::shared_ptr<render::ShaderProgram> p = render::engine->requestShader("SLICE_TETS", parent.addVolumeMeshRules(addScalarRules({"SLICE_TETS_PROPAGATE_VALUE"})));
+  std::shared_ptr<render::ShaderProgram> p = render::engine->requestShader("SLICE_TETS", parent.addVolumeMeshRules(addScalarRules({"SLICE_TETS_PROPAGATE_VALUE"}), true, true));
 
   // Fill color buffers
   parent.fillSliceGeometryBuffers(*p);
