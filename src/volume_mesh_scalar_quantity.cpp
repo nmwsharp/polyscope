@@ -165,13 +165,34 @@ void VolumeMeshVertexScalarQuantity::drawSlice(polyscope::SlicePlane *sp){
   sliceProgram->draw();
 }
 
+void VolumeMeshVertexScalarQuantity::setLevelSetVisibleQuantity(std::string name){
+  auto pair = parent.quantities.find(name);
+  if(pair == parent.quantities.end()){
+    return;
+  }
+  VolumeMeshQuantity *vmq = pair->second.get();
+  VolumeMeshVertexScalarQuantity *q = dynamic_cast<VolumeMeshVertexScalarQuantity*>(vmq);
+  if(q == nullptr){
+    return;
+  }
+  levelSetProgram = render::engine->requestShader("SLICE_TETS", parent.addVolumeMeshRules(addScalarRules({"SLICE_TETS_PROPAGATE_VALUE"}), true, true));
+
+  // Fill color buffers
+  parent.fillSliceGeometryBuffers(*levelSetProgram);
+  q->fillGeomColorBuffers(*levelSetProgram);
+  render::engine->setMaterial(*levelSetProgram, parent.getMaterial());
+  fillLevelSetData(*levelSetProgram);
+  setLevelSetUniforms(*levelSetProgram);
+  showQuantity = q;
+}
+
 void VolumeMeshVertexScalarQuantity::buildCustomUI() {
   VolumeMeshScalarQuantity::buildCustomUI();
   if(ImGui::Checkbox("Level Set", &isDrawingLevelSet)){
     setEnabledLevelSet(isDrawingLevelSet);
   }
   if(isDrawingLevelSet){
-    ImGui::DragFloat("Level Set Value", &levelSetValue, 0.01f, (float)hist.colormapRange.first, (float)hist.colormapRange.second);
+    ImGui::DragFloat("", &levelSetValue, 0.01f, (float)hist.colormapRange.first, (float)hist.colormapRange.second);
     if (ImGui::BeginMenu("Show Quantity")) {
       std::map<std::string, std::unique_ptr<polyscope::VolumeMeshQuantity>>::iterator it;
       for (it = parent.quantities.begin(); it != parent.quantities.end(); it++) {
@@ -179,15 +200,7 @@ void VolumeMeshVertexScalarQuantity::buildCustomUI() {
         VolumeMeshQuantity *vmq = it->second.get();
         VolumeMeshVertexScalarQuantity *vmvsq = dynamic_cast<VolumeMeshVertexScalarQuantity*>(vmq);
         if (vmvsq != nullptr && ImGui::MenuItem(quantityName.c_str(), NULL, showQuantity == it->second.get())) {
-          levelSetProgram = render::engine->requestShader("SLICE_TETS", parent.addVolumeMeshRules(addScalarRules({"SLICE_TETS_PROPAGATE_VALUE"}), true, true));
-
-          // Fill color buffers
-          parent.fillSliceGeometryBuffers(*levelSetProgram);
-          vmvsq->fillGeomColorBuffers(*levelSetProgram);
-          render::engine->setMaterial(*levelSetProgram, parent.getMaterial());
-          fillLevelSetData(*levelSetProgram);
-          setLevelSetUniforms(*levelSetProgram);
-          showQuantity = vmvsq;
+          setLevelSetVisibleQuantity(quantityName);
         }
       }
       ImGui::EndMenu();

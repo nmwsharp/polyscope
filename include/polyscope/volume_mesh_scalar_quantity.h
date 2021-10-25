@@ -47,6 +47,7 @@ public:
 
   void setLevelSetValue(float f);
   void setEnabledLevelSet(bool v);
+  void setLevelSetVisibleQuantity(std::string name);
   void setLevelSetUniforms(render::ShaderProgram &p);
   void fillLevelSetData(render::ShaderProgram &p);
   std::shared_ptr<render::ShaderProgram> levelSetProgram;
