@@ -28,7 +28,8 @@ const double defaultFov = 45.;
 double fov = defaultFov;
 double nearClipRatio = defaultNearClipRatio;
 double farClipRatio = defaultFarClipRatio;
-bool isOrthoView = false;
+ProjectionMode projectionMode = ProjectionMode::Perspective;
+
 double distanceToFocus = 0.;
 double minOrthoZoom = 0.1;
 // Multiply ortho scale by zoom distance to get reasonable
@@ -360,13 +361,19 @@ glm::mat4 getCameraPerspectiveMatrix() {
   double nearClip = nearClipRatio * state::lengthScale;
   double fovRad = glm::radians(fov);
   double aspectRatio = (float)bufferWidth / bufferHeight;
-  glm::mat4 perspective = glm::perspective(fovRad, aspectRatio, nearClip, farClip);
-  if (isOrthoView) {
+  switch (projectionMode) {
+  case ProjectionMode::Perspective: {
+    return glm::perspective(fovRad, aspectRatio, nearClip, farClip);
+    break;
+  }
+  case ProjectionMode::Orthographic: {
     double vert = orthoViewMultipler * std::max(minOrthoZoom, distanceToFocus) * tan(fovRad);
     double horiz = vert * aspectRatio;
     return glm::ortho(-horiz, horiz, -vert, vert, nearClip, farClip);
+    break;
   }
-  return perspective;
+  }
+  return glm::mat4(1.0f); // unreachable
 }
 
 
@@ -666,11 +673,25 @@ void buildViewGui() {
       ImGui::SliderFloat(" Move Speed", &moveScaleF, 0.0, 1.0, "%.5f", 3.);
       view::moveScale = moveScaleF;
 
-      bool isOrthoViewF = view::isOrthoView;
-      if (ImGui::Checkbox(" Orthogonal View", &isOrthoViewF)) {
-        isOrthoView = isOrthoViewF;
-        requestRedraw();
+
+      std::string projectionModeStr =
+          (view::projectionMode == ProjectionMode::Perspective) ? "Perspective" : "Orthographic";
+      if (ImGui::BeginCombo("##ProjectionMode", projectionModeStr.c_str())) {
+        if (ImGui::Selectable("Perspective", view::projectionMode == ProjectionMode::Perspective)) {
+          view::projectionMode = ProjectionMode::Perspective;
+          requestRedraw();
+          ImGui::SetItemDefaultFocus();
+        }
+        if (ImGui::Selectable("Orthographic", view::projectionMode == ProjectionMode::Orthographic)) {
+          view::projectionMode = ProjectionMode::Orthographic;
+          requestRedraw();
+          ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
       }
+      ImGui::SameLine();
+      ImGui::Text("Projection");
+
 
       ImGui::TreePop();
     }

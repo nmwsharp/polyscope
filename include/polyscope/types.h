@@ -6,6 +6,7 @@
 
 namespace polyscope {
 enum class BackgroundView { None = 0 };
+enum class ProjectionMode { Perspective = 0, Orthographic };
 enum class TransparencyMode { None = 0, Simple, Pretty };
 enum class GroundPlaneMode { None, Tile, TileReflection, ShadowOnly };
 enum class BackFacePolicy { Identical, Different, Cull };
