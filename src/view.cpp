@@ -43,6 +43,18 @@ glm::vec3 flightTargetViewT, flightInitialViewT;
 float flightTargetFov, flightInitialFov;
 
 
+// Small helpers
+std::string to_string(ProjectionMode mode) {
+  switch (mode) {
+  case ProjectionMode::Perspective:
+    return "Perspective";
+  case ProjectionMode::Orthographic:
+    return "Orthographic";
+  }
+  return ""; // unreachable
+}
+
+
 void processRotate(glm::vec2 startP, glm::vec2 endP) {
 
   if (startP == endP) {
@@ -491,6 +503,7 @@ std::string getCameraJson() {
       {"viewMat", viewMatFlat},
       {"nearClipRatio", nearClipRatio},
       {"farClipRatio", farClipRatio},
+      {"projectionMode", to_string(view::projectionMode)},
   };
 
   std::string outString = j.dump();
@@ -529,6 +542,16 @@ void setCameraFromJson(std::string jsonData, bool flyTo) {
     }
     if (j.find("farClipRatio") != j.end()) {
       newFarClipRatio = j["farClipRatio"];
+    }
+    
+    if (j.find("projectionMode") != j.end()) {
+      std::string projectionModeStr = j["projectionMode"];
+      if(projectionModeStr == to_string(ProjectionMode::Perspective)) {
+        view::projectionMode = ProjectionMode::Perspective;
+      }
+      else if(projectionModeStr == to_string(ProjectionMode::Orthographic)) {
+        view::projectionMode = ProjectionMode::Orthographic;
+      }
     }
 
   } catch (...) {
@@ -680,8 +703,7 @@ void buildViewGui() {
       view::moveScale = moveScaleF;
 
 
-      std::string projectionModeStr =
-          (view::projectionMode == ProjectionMode::Perspective) ? "Perspective" : "Orthographic";
+      std::string projectionModeStr = to_string(view::projectionMode);
       if (ImGui::BeginCombo("##ProjectionMode", projectionModeStr.c_str())) {
         if (ImGui::Selectable("Perspective", view::projectionMode == ProjectionMode::Perspective)) {
           view::projectionMode = ProjectionMode::Perspective;
