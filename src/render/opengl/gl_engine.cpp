@@ -1755,6 +1755,14 @@ void GLEngine::updateWindowSize(bool force) {
       newWindowHeight != view::windowHeight || newWindowWidth != view::windowWidth) {
     // Basically a resize callback
     requestRedraw();
+
+    // prevent any division by zero for e.g. aspect ratio calcs
+    if (newBufferHeight == 0)
+      newBufferHeight = 1;
+
+    if (newWindowHeight == 0)
+      newWindowHeight = 1;
+
     view::bufferWidth = newBufferWidth;
     view::bufferHeight = newBufferHeight;
     view::windowWidth = newWindowWidth;
