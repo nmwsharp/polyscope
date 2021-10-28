@@ -25,16 +25,12 @@ double moveScale = 1.0;
 const double defaultNearClipRatio = 0.005;
 const double defaultFarClipRatio = 20.0;
 const double defaultFov = 45.;
+const double minFov = 5.;
+const double maxFov = 160.;
 double fov = defaultFov;
 double nearClipRatio = defaultNearClipRatio;
 double farClipRatio = defaultFarClipRatio;
 ProjectionMode projectionMode = ProjectionMode::Perspective;
-
-double distanceToFocus = 0.;
-double minOrthoZoom = 0.1;
-// Multiply ortho scale by zoom distance to get reasonable
-// transitions to and from perspective
-const double orthoViewMultipler = 0.35;
 std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 0.0}};
 
 glm::mat4x4 viewMat;
@@ -200,10 +196,22 @@ void processZoom(double amount) {
   if (amount == 0.0) return;
 
   // Translate the camera forwards and backwards
-  float movementScale = state::lengthScale * 0.1 * moveScale;
-  glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), glm::vec3(0., 0., movementScale * amount));
-  viewMat = camSpaceT * viewMat;
-  distanceToFocus -= amount * movementScale;
+
+  switch (projectionMode) {
+  case ProjectionMode::Perspective: {
+    float movementScale = state::lengthScale * 0.1 * moveScale;
+    glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), glm::vec3(0., 0., movementScale * amount));
+    viewMat = camSpaceT * viewMat;
+    break;
+  }
+  case ProjectionMode::Orthographic: {
+    double fovScale = std::min(fov - minFov, maxFov - fov) / (maxFov - minFov);
+    fov += -fovScale * amount;
+    fov = glm::clamp(fov, minFov, maxFov);
+    break;
+  }
+  }
+
 
   immediatelyEndFlight();
   requestRedraw();
@@ -293,7 +301,6 @@ void resetCameraToHomeView() {
 
   viewMat = computeHomeView();
 
-  distanceToFocus = 1.5 * state::lengthScale;
   fov = defaultFov;
   nearClipRatio = defaultNearClipRatio;
   farClipRatio = defaultFarClipRatio;
@@ -307,7 +314,6 @@ void flyToHomeView() {
 
   glm::mat4x4 T = computeHomeView();
 
-  distanceToFocus = 1.5 * state::lengthScale;
   float Tfov = defaultFov;
   nearClipRatio = defaultNearClipRatio;
   farClipRatio = defaultFarClipRatio;
@@ -367,7 +373,7 @@ glm::mat4 getCameraPerspectiveMatrix() {
     break;
   }
   case ProjectionMode::Orthographic: {
-    double vert = orthoViewMultipler * std::max(minOrthoZoom, distanceToFocus) * tan(fovRad);
+    double vert = tan(fovRad / 2.) * state::lengthScale * 2.;
     double horiz = vert * aspectRatio;
     return glm::ortho(-horiz, horiz, -vert, vert, nearClip, farClip);
     break;
@@ -651,7 +657,7 @@ void buildViewGui() {
 
       // Field of view
       float fovF = fov;
-      if (ImGui::SliderFloat(" Field of View", &fovF, 5.0, 160.0, "%.2f deg")) {
+      if (ImGui::SliderFloat(" Field of View", &fovF, minFov, maxFov, "%.2f deg")) {
         fov = fovF;
         requestRedraw();
       };
