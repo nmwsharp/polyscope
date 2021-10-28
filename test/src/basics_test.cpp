@@ -17,9 +17,6 @@
 #include <vector>
 
 
-using std::cout;
-using std::endl;
-
 class PolyscopeTest : public ::testing::Test {
 protected:
   // Per-test-suite set-up.
@@ -1011,6 +1008,41 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
 
   // remove the last plane so we don't leave it around for future tests
   polyscope::removeLastSceneSlicePlane();
+
+  polyscope::removeAllStructures();
+}
+
+// Register a handful of quantities / structures, then call refresh
+TEST_F(PolyscopeTest, OrthoViewTest) {
+
+  // Add some stuff
+
+  { // Surface mesh
+    auto psMesh = registerTriangleMesh();
+    std::vector<double> vScalar(psMesh->nVertices(), 7.);
+    auto q1 = psMesh->addVertexDistanceQuantity("distance", vScalar);
+  }
+
+  { // Point cloud
+    auto psPoints = registerPointCloud();
+    std::vector<double> vScalar(psPoints->nPoints(), 7.);
+    auto q2 = psPoints->addScalarQuantity("vScalar", vScalar);
+    q2->setEnabled(true);
+  }
+
+  { // Curve network
+    auto psCurve = registerCurveNetwork();
+    std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
+    auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
+    q3->setEnabled(true);
+  }
+
+  // Enable the orthographic view
+  polyscope::view::projectionMode = polyscope::ProjectionMode::Orthographic;
+  polyscope::show(3);
+
+  // Go back to default perspective
+  polyscope::view::projectionMode = polyscope::ProjectionMode::Perspective;
 
   polyscope::removeAllStructures();
 }
