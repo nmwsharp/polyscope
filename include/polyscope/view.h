@@ -5,6 +5,7 @@
 #include <string>
 
 #include "polyscope/camera_parameters.h"
+#include "polyscope/types.h"
 //#include "polyscope/gl/gl_utils.h"
 
 // GLM for view matrices
@@ -42,6 +43,7 @@ extern std::array<float, 4> bgColor;
 // Current view camera parameters
 extern glm::mat4x4 viewMat;
 extern double fov; // in the y direction
+extern ProjectionMode projectionMode;
 
 // "Flying" view
 extern bool midflight;

@@ -25,9 +25,12 @@ double moveScale = 1.0;
 const double defaultNearClipRatio = 0.005;
 const double defaultFarClipRatio = 20.0;
 const double defaultFov = 45.;
+const double minFov = 5.;
+const double maxFov = 160.;
 double fov = defaultFov;
 double nearClipRatio = defaultNearClipRatio;
 double farClipRatio = defaultFarClipRatio;
+ProjectionMode projectionMode = ProjectionMode::Perspective;
 std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 0.0}};
 
 glm::mat4x4 viewMat;
@@ -38,6 +41,18 @@ float flightEndTime = -1;
 glm::dualquat flightTargetViewR, flightInitialViewR;
 glm::vec3 flightTargetViewT, flightInitialViewT;
 float flightTargetFov, flightInitialFov;
+
+
+// Small helpers
+std::string to_string(ProjectionMode mode) {
+  switch (mode) {
+  case ProjectionMode::Perspective:
+    return "Perspective";
+  case ProjectionMode::Orthographic:
+    return "Orthographic";
+  }
+  return ""; // unreachable
+}
 
 
 void processRotate(glm::vec2 startP, glm::vec2 endP) {
@@ -193,9 +208,22 @@ void processZoom(double amount) {
   if (amount == 0.0) return;
 
   // Translate the camera forwards and backwards
-  float movementScale = state::lengthScale * 0.1 * moveScale;
-  glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), glm::vec3(0., 0., movementScale * amount));
-  viewMat = camSpaceT * viewMat;
+
+  switch (projectionMode) {
+  case ProjectionMode::Perspective: {
+    float movementScale = state::lengthScale * 0.1 * moveScale;
+    glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), glm::vec3(0., 0., movementScale * amount));
+    viewMat = camSpaceT * viewMat;
+    break;
+  }
+  case ProjectionMode::Orthographic: {
+    double fovScale = std::min(fov - minFov, maxFov - fov) / (maxFov - minFov);
+    fov += -fovScale * amount;
+    fov = glm::clamp(fov, minFov, maxFov);
+    break;
+  }
+  }
+
 
   immediatelyEndFlight();
   requestRedraw();
@@ -323,7 +351,7 @@ void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool fl
       }
     }
   }
-  if(!isFinite) { 
+  if (!isFinite) {
     warning("lookAt() yielded an invalid view. Is the look direction collinear with the up direction?");
     // just continue after; our view handling will take care of the NaN and set it to the default view
   }
@@ -351,8 +379,19 @@ glm::mat4 getCameraPerspectiveMatrix() {
   double nearClip = nearClipRatio * state::lengthScale;
   double fovRad = glm::radians(fov);
   double aspectRatio = (float)bufferWidth / bufferHeight;
-
-  return glm::perspective(fovRad, aspectRatio, nearClip, farClip);
+  switch (projectionMode) {
+  case ProjectionMode::Perspective: {
+    return glm::perspective(fovRad, aspectRatio, nearClip, farClip);
+    break;
+  }
+  case ProjectionMode::Orthographic: {
+    double vert = tan(fovRad / 2.) * state::lengthScale * 2.;
+    double horiz = vert * aspectRatio;
+    return glm::ortho(-horiz, horiz, -vert, vert, nearClip, farClip);
+    break;
+  }
+  }
+  return glm::mat4(1.0f); // unreachable
 }
 
 
@@ -464,6 +503,7 @@ std::string getCameraJson() {
       {"viewMat", viewMatFlat},
       {"nearClipRatio", nearClipRatio},
       {"farClipRatio", farClipRatio},
+      {"projectionMode", to_string(view::projectionMode)},
   };
 
   std::string outString = j.dump();
@@ -502,6 +542,16 @@ void setCameraFromJson(std::string jsonData, bool flyTo) {
     }
     if (j.find("farClipRatio") != j.end()) {
       newFarClipRatio = j["farClipRatio"];
+    }
+    
+    if (j.find("projectionMode") != j.end()) {
+      std::string projectionModeStr = j["projectionMode"];
+      if(projectionModeStr == to_string(ProjectionMode::Perspective)) {
+        view::projectionMode = ProjectionMode::Perspective;
+      }
+      else if(projectionModeStr == to_string(ProjectionMode::Orthographic)) {
+        view::projectionMode = ProjectionMode::Orthographic;
+      }
     }
 
   } catch (...) {
@@ -630,7 +680,7 @@ void buildViewGui() {
 
       // Field of view
       float fovF = fov;
-      if (ImGui::SliderFloat(" Field of View", &fovF, 5.0, 160.0, "%.2f deg")) {
+      if (ImGui::SliderFloat(" Field of View", &fovF, minFov, maxFov, "%.2f deg")) {
         fov = fovF;
         requestRedraw();
       };
@@ -651,6 +701,25 @@ void buildViewGui() {
       float moveScaleF = view::moveScale;
       ImGui::SliderFloat(" Move Speed", &moveScaleF, 0.0, 1.0, "%.5f", 3.);
       view::moveScale = moveScaleF;
+
+
+      std::string projectionModeStr = to_string(view::projectionMode);
+      if (ImGui::BeginCombo("##ProjectionMode", projectionModeStr.c_str())) {
+        if (ImGui::Selectable("Perspective", view::projectionMode == ProjectionMode::Perspective)) {
+          view::projectionMode = ProjectionMode::Perspective;
+          requestRedraw();
+          ImGui::SetItemDefaultFocus();
+        }
+        if (ImGui::Selectable("Orthographic", view::projectionMode == ProjectionMode::Orthographic)) {
+          view::projectionMode = ProjectionMode::Orthographic;
+          requestRedraw();
+          ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+      }
+      ImGui::SameLine();
+      ImGui::Text("Projection");
+
 
       ImGui::TreePop();
     }
