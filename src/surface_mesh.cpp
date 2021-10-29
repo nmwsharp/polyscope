@@ -11,14 +11,10 @@
 #include <unordered_map>
 #include <utility>
 
-using std::cout;
-using std::endl;
-
 namespace polyscope {
 
 // Initialize statics
 const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
-
 
 
 SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
@@ -30,10 +26,7 @@ SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexP
       edgeWidth(uniquePrefix() + "edgeWidth", 0.),
       backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different),
       backFaceColor(uniquePrefix() + "backFaceColor",
-                    glm::vec3(1.f - surfaceColor.get().r,
-                              1.f - surfaceColor.get().g,
-                              1.f - surfaceColor.get().b)) 
-{
+                    glm::vec3(1.f - surfaceColor.get().r, 1.f - surfaceColor.get().g, 1.f - surfaceColor.get().b)) {
   computeCounts();
   computeGeometryData();
 }
@@ -554,7 +547,7 @@ void SurfaceMesh::setSurfaceMeshUniforms(render::ShaderProgram& p) {
     p.setUniform("u_edgeWidth", getEdgeWidth() * render::engine->getCurrentPixelScaling());
     p.setUniform("u_edgeColor", getEdgeColor());
   }
-  if(backFacePolicy.get() == BackFacePolicy::Custom){
+  if (backFacePolicy.get() == BackFacePolicy::Custom) {
     p.setUniform("u_backfaceColor", getBackFaceColor());
   }
 }
@@ -887,12 +880,11 @@ void SurfaceMesh::buildCustomUI() {
     }
     ImGui::PopItemWidth();
   }
-  if(backFacePolicy.get() == BackFacePolicy::Custom){
-     if(ImGui::ColorEdit3("Backface Color", &backFaceColor.get()[0], ImGuiColorEditFlags_NoInputs))
-       setBackFaceColor(backFaceColor.get());
+  if (backFacePolicy.get() == BackFacePolicy::Custom) {
+    if (ImGui::ColorEdit3("Backface Color", &backFaceColor.get()[0], ImGuiColorEditFlags_NoInputs))
+      setBackFaceColor(backFaceColor.get());
   }
 }
-
 
 
 void SurfaceMesh::buildCustomOptionsUI() {
@@ -1117,15 +1109,13 @@ SurfaceMesh* SurfaceMesh::setSmoothShade(bool isSmooth) {
 }
 bool SurfaceMesh::isSmoothShade() { return shadeSmooth.get(); }
 
-SurfaceMesh* SurfaceMesh::setBackFaceColor(glm::vec3 val){
+SurfaceMesh* SurfaceMesh::setBackFaceColor(glm::vec3 val) {
   backFaceColor.set(val);
   requestRedraw();
   return this;
 }
 
-glm::vec3 SurfaceMesh::getBackFaceColor(){
-  return backFaceColor.get();
-}
+glm::vec3 SurfaceMesh::getBackFaceColor() { return backFaceColor.get(); }
 
 SurfaceMesh* SurfaceMesh::setSurfaceColor(glm::vec3 val) {
   surfaceColor = val;
