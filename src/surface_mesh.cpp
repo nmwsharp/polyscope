@@ -11,9 +11,6 @@
 #include <unordered_map>
 #include <utility>
 
-using std::cout;
-using std::endl;
-
 namespace polyscope {
 
 // Initialize statics
@@ -27,7 +24,9 @@ SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexP
       surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
       edgeWidth(uniquePrefix() + "edgeWidth", 0.),
-      backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different) {
+      backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different),
+      backFaceColor(uniquePrefix() + "backFaceColor",
+                    glm::vec3(1.f - surfaceColor.get().r, 1.f - surfaceColor.get().g, 1.f - surfaceColor.get().b)) {
   computeCounts();
   computeGeometryData();
 }
@@ -519,6 +518,9 @@ std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::strin
       if (backFacePolicy.get() == BackFacePolicy::Different) {
         initRules.push_back("MESH_BACKFACE_DARKEN");
       }
+      if (backFacePolicy.get() == BackFacePolicy::Custom) {
+        initRules.push_back("MESH_BACKFACE_DIFFERENT");
+      }
     }
 
     if (backFacePolicy.get() == BackFacePolicy::Identical) {
@@ -526,6 +528,10 @@ std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::strin
     }
 
     if (backFacePolicy.get() == BackFacePolicy::Different) {
+      initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
+    }
+
+    if (backFacePolicy.get() == BackFacePolicy::Custom) {
       initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
     }
 
@@ -540,6 +546,9 @@ void SurfaceMesh::setSurfaceMeshUniforms(render::ShaderProgram& p) {
   if (getEdgeWidth() > 0) {
     p.setUniform("u_edgeWidth", getEdgeWidth() * render::engine->getCurrentPixelScaling());
     p.setUniform("u_edgeColor", getEdgeColor());
+  }
+  if (backFacePolicy.get() == BackFacePolicy::Custom) {
+    p.setUniform("u_backfaceColor", getBackFaceColor());
   }
 }
 
@@ -871,7 +880,12 @@ void SurfaceMesh::buildCustomUI() {
     }
     ImGui::PopItemWidth();
   }
+  if (backFacePolicy.get() == BackFacePolicy::Custom) {
+    if (ImGui::ColorEdit3("Backface Color", &backFaceColor.get()[0], ImGuiColorEditFlags_NoInputs))
+      setBackFaceColor(backFaceColor.get());
+  }
 }
+
 
 void SurfaceMesh::buildCustomOptionsUI() {
   if (render::buildMaterialOptionsGui(material.get())) {
@@ -885,6 +899,8 @@ void SurfaceMesh::buildCustomOptionsUI() {
       setBackFacePolicy(BackFacePolicy::Identical);
     if (ImGui::MenuItem("different shading", NULL, backFacePolicy.get() == BackFacePolicy::Different))
       setBackFacePolicy(BackFacePolicy::Different);
+    if (ImGui::MenuItem("custom shading", NULL, backFacePolicy.get() == BackFacePolicy::Custom))
+      setBackFacePolicy(BackFacePolicy::Custom);
     if (ImGui::MenuItem("cull", NULL, backFacePolicy.get() == BackFacePolicy::Cull))
       setBackFacePolicy(BackFacePolicy::Cull);
     ImGui::EndMenu();
@@ -1092,6 +1108,14 @@ SurfaceMesh* SurfaceMesh::setSmoothShade(bool isSmooth) {
   return this;
 }
 bool SurfaceMesh::isSmoothShade() { return shadeSmooth.get(); }
+
+SurfaceMesh* SurfaceMesh::setBackFaceColor(glm::vec3 val) {
+  backFaceColor.set(val);
+  requestRedraw();
+  return this;
+}
+
+glm::vec3 SurfaceMesh::getBackFaceColor() { return backFaceColor.get(); }
 
 SurfaceMesh* SurfaceMesh::setSurfaceColor(glm::vec3 val) {
   surfaceColor = val;

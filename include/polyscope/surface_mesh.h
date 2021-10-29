@@ -293,6 +293,9 @@ public:
   SurfaceMesh* setMaterial(std::string name);
   std::string getMaterial();
 
+  // Backface color
+  SurfaceMesh* setBackFaceColor(glm::vec3 val);
+  glm::vec3 getBackFaceColor();
 
   // Width of the edges. Scaled such that 1 is a reasonable weight for visible edges, but values  1 can be used for
   // bigger edges. Use 0. to disable.
@@ -317,6 +320,7 @@ private:
   PersistentValue<std::string> material;
   PersistentValue<float> edgeWidth;
   PersistentValue<BackFacePolicy> backFacePolicy;
+  PersistentValue<glm::vec3> backFaceColor;
 
   // Do setup work related to drawing, including allocating openGL data
   void prepare();

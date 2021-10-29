@@ -9,7 +9,7 @@ enum class BackgroundView { None = 0 };
 enum class ProjectionMode { Perspective = 0, Orthographic };
 enum class TransparencyMode { None = 0, Simple, Pretty };
 enum class GroundPlaneMode { None, Tile, TileReflection, ShadowOnly };
-enum class BackFacePolicy { Identical, Different, Cull };
+enum class BackFacePolicy { Identical, Different, Custom, Cull };
 enum class ShadeStyle { FLAT = 0, SMOOTH };
 
 enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE, CORNER };
