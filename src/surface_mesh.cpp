@@ -25,16 +25,15 @@ SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexP
                          const std::vector<std::vector<size_t>>& faceIndices)
     : QuantityStructure<SurfaceMesh>(name, typeName()), vertices(vertexPositions), faces(faceIndices),
       shadeSmooth(uniquePrefix() + "shadeSmooth", false),
-      surfaceColor(uniquePrefix() + "surfaceColor", glm::vec3(0,0,0)) ,
+      surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
       edgeWidth(uniquePrefix() + "edgeWidth", 0.),
       backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different),
-      backFaceColor(uniquePrefix() + "backFaceColor", glm::vec3(0,0,0)) {
-  glm::vec3 mainColor = getNextUniqueColor();
-  surfaceColor.set(mainColor);
-  backFaceColor.set(glm::vec3(1.f - mainColor.r,
-                              1.f - mainColor.g,
-                              1.f - mainColor.b));
+      backFaceColor(uniquePrefix() + "backFaceColor",
+                    glm::vec3(1.f - surfaceColor.get().r,
+                              1.f - surfaceColor.get().g,
+                              1.f - surfaceColor.get().b)) 
+{
   computeCounts();
   computeGeometryData();
 }
