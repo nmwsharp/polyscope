@@ -54,8 +54,8 @@ void PointCloud::draw() {
     return;
   }
 
-  // If the users creates a very big point cloud using sphere mode, print a warning
-  // (this warning is only printed once, and if verbosity is high enough)
+  // If the user creates a very big point cloud using sphere mode, print a warning
+  // (this warning is only printed once, and only if verbosity is high enough)
   if (points.size() > 500000 && getPointRenderMode() == PointRenderMode::Sphere &&
       !internal::pointCloudEfficiencyWarningReported && options::verbosity > 1) {
     info("To render large point clouds efficiently, set their render mode to 'square' instead of 'sphere'. (disable "
