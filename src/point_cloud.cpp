@@ -156,9 +156,9 @@ std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string>
       initRules.push_back("SPHERE_VARIABLE_SIZE");
     }
     if (wantsCullPosition()) {
-      if (pointRenderMode.get() == "sphere")
+      if (getPointRenderMode() == PointRenderMode::Sphere)
         initRules.push_back("SPHERE_CULLPOS_FROM_CENTER");
-      else if (pointRenderMode.get() == "quad")
+      else if (getPointRenderMode() == PointRenderMode::Quad)
         initRules.push_back("SPHERE_CULLPOS_FROM_CENTER_QUAD");
     }
   }
