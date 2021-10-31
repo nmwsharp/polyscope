@@ -5,7 +5,7 @@ namespace polyscope {
 namespace options {
 
 std::string programName = "Polyscope";
-int verbosity = 1;
+int verbosity = 2;
 std::string printPrefix = "[polyscope] ";
 bool errorsThrowExceptions = false;
 bool debugDrawPickBuffer = false;

@@ -68,7 +68,7 @@ public:
 
   void setFilterMode(FilterMode newMode) override;
   void* getNativeHandle() override;
-  
+
   std::vector<float> getDataScalar() override;
   std::vector<glm::vec2> getDataVector2() override;
   std::vector<glm::vec3> getDataVector3() override;
@@ -195,16 +195,16 @@ protected:
   struct GLShaderUniform {
     std::string name;
     DataType type;
-    bool isSet; // has a value been assigned to this uniform?
-    UniformLocation location;
+    bool isSet;               // has a value been assigned to this uniform?
+    UniformLocation location; // -1 means "no location", usually because it was optimized out
   };
 
   struct GLShaderAttribute {
     std::string name;
     DataType type;
     int arrayCount;
-    long int dataSize; // the size of the data currently stored in this attribute (-1 if nothing)
-    AttributeLocation location;
+    long int dataSize;          // the size of the data currently stored in this attribute (-1 if nothing)
+    AttributeLocation location; // -1 means "no location", usually because it was optimized out
     VertexBufferHandle VBOLoc;
   };
 
@@ -215,7 +215,7 @@ protected:
     bool isSet;
     GLTextureBuffer* textureBuffer;
     std::shared_ptr<GLTextureBuffer> textureBufferOwned; // might be empty, if texture isn't owned
-    TextureLocation location;
+    TextureLocation location;                            // -1 means "no location", usually because it was optimized out
   };
 
   // Lists of attributes and uniforms that need to be set
@@ -312,7 +312,7 @@ public:
 
   // Transparency
   virtual void applyTransparencySettings() override;
-  
+
   virtual void setFrontFaceCCW(bool newVal) override;
 
 protected:
@@ -327,10 +327,9 @@ protected:
   std::unordered_map<std::string, std::pair<std::vector<ShaderStageSpecification>, DrawMode>> registeredShaderPrograms;
   std::unordered_map<std::string, ShaderReplacementRule> registeredShaderRules;
   void populateDefaultShadersAndRules();
-  
+
   std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
                                                        DrawMode dm) override;
-
 };
 
 } // namespace backend_openGL3_glfw

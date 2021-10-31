@@ -58,7 +58,7 @@ void PointCloudScalarQuantity::buildCustomUI() {
 void PointCloudScalarQuantity::createPointProgram() {
   // Create the program to draw this quantity
 
-  pointProgram = render::engine->requestShader("RAYCAST_SPHERE",
+  pointProgram = render::engine->requestShader(parent.getShaderNameForRenderMode(),
                                                parent.addPointCloudRules(addScalarRules({"SPHERE_PROPAGATE_VALUE"})));
 
   // Fill buffers

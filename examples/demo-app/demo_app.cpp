@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "args/args.hxx"
+#include "happly.h"
 #include "json/json.hpp"
 
 #include "simple_dot_mesh_parser.h"
@@ -494,6 +495,30 @@ void addDataToPointCloud(string pointCloudName, const std::vector<glm::vec3>& po
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("to zero", toZeroVec, polyscope::VectorType::AMBIENT);
 }
 
+// PLY files get loaded as point clouds
+void processFilePLY(string filename) {
+
+  // load the data
+  happly::PLYData plyIn(filename);
+  std::vector<std::array<double, 3>> vPos = plyIn.getVertexPositions();
+
+  polyscope::PointCloud* psCloud = polyscope::registerPointCloud(polyscope::guessNiceNameFromPath(filename), vPos);
+  // psCloud->setPointRenderMode(polyscope::PointRenderMode::Square);
+
+  // Try to add colors if we have them
+  try {
+    std::vector<std::array<unsigned char, 3>> vColor = plyIn.getVertexColors();
+    std::vector<std::array<float, 3>> vColorF(vColor.size());
+    for (size_t i = 0; i < vColorF.size(); i++) {
+      for (int j = 0; j < 3; j++) {
+        vColorF[i][j] = vColor[i][j] / 255.;
+      }
+    }
+    psCloud->addColorQuantity("color", vColorF)->setEnabled(true);
+  } catch (const std::exception& e) {
+  }
+}
+
 
 void processFile(string filename) {
   // Dispatch to correct varient
@@ -501,6 +526,9 @@ void processFile(string filename) {
     processFileOBJ(filename);
   } else if (endsWith(filename, ".mesh")) {
     processFileDotMesh(filename);
+  } else if (endsWith(filename, ".ply")) {
+    // PLY files get loaded as point clouds
+    processFilePLY(filename);
   } else {
     cerr << "Unrecognized file type for " << filename << endl;
   }
@@ -553,8 +581,6 @@ int main(int argc, char** argv) {
   // polyscope::view::windowWidth = 600;
   // polyscope::view::windowHeight = 800;
   // polyscope::options::maxFPS = -1;
-  // polyscope::options::alwaysRedraw = true;
-
 
   // Initialize polyscope
   polyscope::init();

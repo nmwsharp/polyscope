@@ -15,9 +15,6 @@
 #include <fstream>
 #include <iostream>
 
-using std::cout;
-using std::endl;
-
 namespace polyscope {
 
 // Initialize statics
@@ -26,6 +23,7 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 // Constructor
 PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
     : QuantityStructure<PointCloud>(name, structureTypeName), points(std::move(points_)),
+      pointRenderMode(uniquePrefix() + "#pointRenderMode", "sphere"),
       pointColor(uniquePrefix() + "#pointColor", getNextUniqueColor()),
       pointRadius(uniquePrefix() + "#pointRadius", relativeValue(0.005)),
       material(uniquePrefix() + "#material", "clay") {
@@ -36,8 +34,11 @@ PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
 void PointCloud::setPointCloudUniforms(render::ShaderProgram& p) {
   glm::mat4 P = view::getCameraPerspectiveMatrix();
   glm::mat4 Pinv = glm::inverse(P);
-  p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
-  p.setUniform("u_viewport", render::engine->getCurrentViewport());
+
+  if (getPointRenderMode() == PointRenderMode::Sphere) {
+    p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+    p.setUniform("u_viewport", render::engine->getCurrentViewport());
+  }
 
   if (pointRadiusQuantityName != "" && !pointRadiusQuantityAutoscale) {
     // special case: ignore radius uniform
@@ -52,6 +53,16 @@ void PointCloud::draw() {
   if (!isEnabled()) {
     return;
   }
+
+  // If the user creates a very big point cloud using sphere mode, print a warning
+  // (this warning is only printed once, and only if verbosity is high enough)
+  if (points.size() > 500000 && getPointRenderMode() == PointRenderMode::Sphere &&
+      !internal::pointCloudEfficiencyWarningReported && options::verbosity > 1) {
+    info("To render large point clouds efficiently, set their render mode to 'quad' instead of 'sphere'. (disable "
+         "these warnings by setting Polyscope's verbosity < 2)");
+    internal::pointCloudEfficiencyWarningReported = true;
+  }
+
 
   // If there is no dominant quantity, then this class is responsible for drawing points
   if (dominantQuantity == nullptr) {
@@ -99,7 +110,7 @@ void PointCloud::prepare() {
     return;
   }
 
-  program = render::engine->requestShader("RAYCAST_SPHERE", addPointCloudRules({"SHADE_BASECOLOR"}));
+  program = render::engine->requestShader(getShaderNameForRenderMode(), addPointCloudRules({"SHADE_BASECOLOR"}));
   render::engine->setMaterial(*program, material.get());
 
   // Fill out the geometry data for the program
@@ -113,8 +124,9 @@ void PointCloud::preparePick() {
   size_t pickStart = pick::requestPickBufferRange(this, pickCount);
 
   // Create a new pick program
-  pickProgram = render::engine->requestShader("RAYCAST_SPHERE", addPointCloudRules({"SPHERE_PROPAGATE_COLOR"}, true),
-                                              render::ShaderReplacementDefaults::Pick);
+  pickProgram =
+      render::engine->requestShader(getShaderNameForRenderMode(), addPointCloudRules({"SPHERE_PROPAGATE_COLOR"}, true),
+                                    render::ShaderReplacementDefaults::Pick);
 
   // Fill color buffer with packed point indices
   std::vector<glm::vec3> pickColors;
@@ -128,6 +140,14 @@ void PointCloud::preparePick() {
   pickProgram->setAttribute("a_color", pickColors);
 }
 
+std::string PointCloud::getShaderNameForRenderMode() {
+  if (getPointRenderMode() == PointRenderMode::Sphere)
+    return "RAYCAST_SPHERE";
+  else if (getPointRenderMode() == PointRenderMode::Quad)
+    return "POINT_QUAD";
+  return "ERROR";
+}
+
 
 std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud) {
   initRules = addStructureRules(initRules);
@@ -136,7 +156,10 @@ std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string>
       initRules.push_back("SPHERE_VARIABLE_SIZE");
     }
     if (wantsCullPosition()) {
-      initRules.push_back("SPHERE_CULLPOS_FROM_CENTER");
+      if (getPointRenderMode() == PointRenderMode::Sphere)
+        initRules.push_back("SPHERE_CULLPOS_FROM_CENTER");
+      else if (getPointRenderMode() == PointRenderMode::Quad)
+        initRules.push_back("SPHERE_CULLPOS_FROM_CENTER_QUAD");
     }
   }
   return initRules;
@@ -228,6 +251,28 @@ void PointCloud::buildCustomUI() {
 }
 
 void PointCloud::buildCustomOptionsUI() {
+
+
+  if (ImGui::BeginMenu("Point Render Mode")) {
+
+    for (const PointRenderMode& m : {PointRenderMode::Sphere, PointRenderMode::Quad}) {
+      bool selected = (m == getPointRenderMode());
+      std::string fancyName;
+      switch (m) {
+      case PointRenderMode::Sphere:
+        fancyName = "sphere (pretty)";
+        break;
+      case PointRenderMode::Quad:
+        fancyName = "quad (fast)";
+        break;
+      }
+      if (ImGui::MenuItem(fancyName.c_str(), NULL, selected)) {
+        setPointRenderMode(m);
+      }
+    }
+
+    ImGui::EndMenu();
+  }
 
   if (ImGui::BeginMenu("Variable Radius")) {
 
@@ -359,6 +404,28 @@ PointCloudVectorQuantity* PointCloud::addVectorQuantityImpl(std::string name, co
   PointCloudVectorQuantity* q = new PointCloudVectorQuantity(name, vectors, *this, vectorType);
   addQuantity(q);
   return q;
+}
+
+PointCloud* PointCloud::setPointRenderMode(PointRenderMode newVal) {
+  switch (newVal) {
+  case PointRenderMode::Sphere:
+    pointRenderMode = "sphere";
+    break;
+  case PointRenderMode::Quad:
+    pointRenderMode = "quad";
+    break;
+  }
+  refresh();
+  polyscope::requestRedraw();
+  return this;
+}
+PointRenderMode PointCloud::getPointRenderMode() {
+  // The point render mode is stored as string internally to simplify persistent value handling
+  if (pointRenderMode.get() == "sphere")
+    return PointRenderMode::Sphere;
+  else if (pointRenderMode.get() == "quad")
+    return PointRenderMode::Quad;
+  return PointRenderMode::Sphere; // should never happen
 }
 
 PointCloud* PointCloud::setPointColor(glm::vec3 newVal) {

@@ -47,23 +47,26 @@ void PointCloudParameterizationQuantity::createProgram() {
 
   switch (getStyle()) {
   case ParamVizStyle::CHECKER:
-    program = render::engine->requestShader(
-        "RAYCAST_SPHERE", parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_CHECKER_VALUE2"}));
+    program =
+        render::engine->requestShader(parent.getShaderNameForRenderMode(),
+                                      parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_CHECKER_VALUE2"}));
     break;
   case ParamVizStyle::GRID:
-    program = render::engine->requestShader(
-        "RAYCAST_SPHERE", parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}));
+    program =
+        render::engine->requestShader(parent.getShaderNameForRenderMode(),
+                                      parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}));
     break;
   case ParamVizStyle::LOCAL_CHECK:
     program = render::engine->requestShader(
-        "RAYCAST_SPHERE",
+        parent.getShaderNameForRenderMode(),
         parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"}));
     program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   case ParamVizStyle::LOCAL_RAD:
     program = render::engine->requestShader(
-        "RAYCAST_SPHERE", parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2",
-                                                     "SHADEVALUE_MAG_VALUE2", "ISOLINE_STRIPE_VALUECOLOR"}));
+        parent.getShaderNameForRenderMode(),
+        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "SHADEVALUE_MAG_VALUE2",
+                                   "ISOLINE_STRIPE_VALUECOLOR"}));
     program->setTextureFromColormap("t_colormap", cMap.get());
     break;
   }

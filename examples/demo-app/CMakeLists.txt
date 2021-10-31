@@ -68,6 +68,7 @@ add_executable(
 
 target_include_directories(polyscopedemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../deps/args")
 target_include_directories(polyscopedemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../deps/json/include")
+target_include_directories(polyscopedemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../deps/happly")
 target_include_directories(polyscopedemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 target_link_libraries(polyscopedemo polyscope)
