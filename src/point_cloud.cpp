@@ -141,9 +141,9 @@ void PointCloud::preparePick() {
 }
 
 std::string PointCloud::getShaderNameForRenderMode() {
-  if (pointRenderMode.get() == "sphere")
+  if (getPointRenderMode() == PointRenderMode::Sphere)
     return "RAYCAST_SPHERE";
-  else if (pointRenderMode.get() == "quad")
+  else if (getPointRenderMode() == PointRenderMode::Quad)
     return "POINT_QUAD";
   return "ERROR";
 }
