@@ -58,7 +58,7 @@ void PointCloud::draw() {
   // (this warning is only printed once, and only if verbosity is high enough)
   if (points.size() > 500000 && getPointRenderMode() == PointRenderMode::Sphere &&
       !internal::pointCloudEfficiencyWarningReported && options::verbosity > 1) {
-    info("To render large point clouds efficiently, set their render mode to 'square' instead of 'sphere'. (disable "
+    info("To render large point clouds efficiently, set their render mode to 'quad' instead of 'sphere'. (disable "
          "these warnings by setting Polyscope's verbosity < 2)");
     internal::pointCloudEfficiencyWarningReported = true;
   }
@@ -143,7 +143,7 @@ void PointCloud::preparePick() {
 std::string PointCloud::getShaderNameForRenderMode() {
   if (pointRenderMode.get() == "sphere")
     return "RAYCAST_SPHERE";
-  else if (pointRenderMode.get() == "square")
+  else if (pointRenderMode.get() == "quad")
     return "POINT_QUAD";
   return "ERROR";
 }
@@ -158,7 +158,7 @@ std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string>
     if (wantsCullPosition()) {
       if (pointRenderMode.get() == "sphere")
         initRules.push_back("SPHERE_CULLPOS_FROM_CENTER");
-      else if (pointRenderMode.get() == "square")
+      else if (pointRenderMode.get() == "quad")
         initRules.push_back("SPHERE_CULLPOS_FROM_CENTER_QUAD");
     }
   }
@@ -255,15 +255,15 @@ void PointCloud::buildCustomOptionsUI() {
 
   if (ImGui::BeginMenu("Point Render Mode")) {
 
-    for (const PointRenderMode& m : {PointRenderMode::Sphere, PointRenderMode::Square}) {
+    for (const PointRenderMode& m : {PointRenderMode::Sphere, PointRenderMode::Quad}) {
       bool selected = (m == getPointRenderMode());
       std::string fancyName;
       switch (m) {
       case PointRenderMode::Sphere:
         fancyName = "sphere (pretty)";
         break;
-      case PointRenderMode::Square:
-        fancyName = "square (fast)";
+      case PointRenderMode::Quad:
+        fancyName = "quad (fast)";
         break;
       }
       if (ImGui::MenuItem(fancyName.c_str(), NULL, selected)) {
@@ -411,8 +411,8 @@ PointCloud* PointCloud::setPointRenderMode(PointRenderMode newVal) {
   case PointRenderMode::Sphere:
     pointRenderMode = "sphere";
     break;
-  case PointRenderMode::Square:
-    pointRenderMode = "square";
+  case PointRenderMode::Quad:
+    pointRenderMode = "quad";
     break;
   }
   refresh();
@@ -420,10 +420,11 @@ PointCloud* PointCloud::setPointRenderMode(PointRenderMode newVal) {
   return this;
 }
 PointRenderMode PointCloud::getPointRenderMode() {
+  // The point render mode is stored as string internally to simplify persistent value handling
   if (pointRenderMode.get() == "sphere")
     return PointRenderMode::Sphere;
-  else if (pointRenderMode.get() == "square")
-    return PointRenderMode::Square;
+  else if (pointRenderMode.get() == "quad")
+    return PointRenderMode::Quad;
   return PointRenderMode::Sphere; // should never happen
 }
 

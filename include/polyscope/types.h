@@ -12,7 +12,7 @@ enum class GroundPlaneMode { None, Tile, TileReflection, ShadowOnly };
 enum class BackFacePolicy { Identical, Different, Custom, Cull };
 enum class ShadeStyle { FLAT = 0, SMOOTH };
 
-enum class PointRenderMode { Sphere = 0, Square };
+enum class PointRenderMode { Sphere = 0, Quad};
 enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE, CORNER };
 enum class VolumeMeshElement { VERTEX = 0, EDGE, FACE, CELL };
 enum class VolumeCellType { TET = 0, HEX };

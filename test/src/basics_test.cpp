@@ -112,7 +112,7 @@ TEST_F(PolyscopeTest, PointCloudAppearance) {
   EXPECT_EQ(psPoints->getMaterial(), "wax");
   polyscope::show(3);
   
-  psPoints->setPointRenderMode(polyscope::PointRenderMode::Square);
+  psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
 
   polyscope::removeAllStructures();
@@ -124,7 +124,7 @@ TEST_F(PolyscopeTest, PointCloudPick) {
   // Don't bother trying to actually click on anything, but make sure this doesn't crash
   polyscope::pick::evaluatePickQuery(77, 88);
   
-  psPoints->setPointRenderMode(polyscope::PointRenderMode::Square);
+  psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::pick::evaluatePickQuery(77, 88);
 
   polyscope::removeAllStructures();
@@ -138,7 +138,7 @@ TEST_F(PolyscopeTest, PointCloudColor) {
   q1->setEnabled(true);
   polyscope::show(3);
   
-  psPoints->setPointRenderMode(polyscope::PointRenderMode::Square);
+  psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
 
   polyscope::removeAllStructures();
@@ -150,7 +150,7 @@ TEST_F(PolyscopeTest, PointCloudScalar) {
   auto q1 = psPoints->addScalarQuantity("vScalar", vScalar);
   q1->setEnabled(true);
   polyscope::show(3);
-  psPoints->setPointRenderMode(polyscope::PointRenderMode::Square);
+  psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
@@ -173,7 +173,7 @@ TEST_F(PolyscopeTest, PointCloudParam) {
   q1->setEnabled(true);
   polyscope::show(3);
   
-  psPoints->setPointRenderMode(polyscope::PointRenderMode::Square);
+  psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
 
   auto q2 = psPoints->addLocalParameterizationQuantity("local param", param);
@@ -181,7 +181,7 @@ TEST_F(PolyscopeTest, PointCloudParam) {
   q2->setEnabled(true);
   polyscope::show(3);
   
-  psPoints->setPointRenderMode(polyscope::PointRenderMode::Square);
+  psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
 
   polyscope::removeAllStructures();
@@ -198,7 +198,7 @@ TEST_F(PolyscopeTest, PointCloudScalarRadius) {
   psPoints->setPointRadiusQuantity(q1);
   polyscope::show(3);
   
-  psPoints->setPointRenderMode(polyscope::PointRenderMode::Square);
+  psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
 
   psPoints->setPointRadiusQuantity("vScalar2");
@@ -1052,7 +1052,7 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
   psPoints->setCullWholeElements(false);
   polyscope::show(3);
   psPoints->setCullWholeElements(true);
-  psPoints->setPointRenderMode(polyscope::PointRenderMode::Square);
+  psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
   psPoints->setCullWholeElements(false);
   polyscope::show(3);
