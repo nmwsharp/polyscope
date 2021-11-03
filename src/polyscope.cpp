@@ -155,6 +155,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Make sure the window is visible
   render::engine->showWindow();
+  render::engine->focusWindow();
 
   // Re-enter main loop until the context has been popped
   size_t currentContextStackSize = contextStack.size();
@@ -1015,7 +1016,7 @@ void updateStructureExtents() {
 
   // If we got a degenerate bounding box, perturb it slightly
   if (minBbox == maxBbox) {
-    double offsetScale = (state::lengthScale == 0) ? 1e-5 : state::lengthScale*1e-5;
+    double offsetScale = (state::lengthScale == 0) ? 1e-5 : state::lengthScale * 1e-5;
     glm::vec3 offset{offsetScale, offsetScale, offsetScale};
     minBbox = minBbox - offset / 2.f;
     maxBbox = maxBbox + offset / 2.f;

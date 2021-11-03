@@ -345,6 +345,7 @@ public:
 
   // === Windowing and framework things
   virtual void makeContextCurrent() = 0;
+  virtual void focusWindow() = 0;
   virtual void showWindow() = 0;
   virtual void hideWindow() = 0;
   virtual void updateWindowSize(bool force = false) = 0;
@@ -413,7 +414,7 @@ public:
   virtual void applyTransparencySettings() = 0;
   void addSlicePlane(std::string uniquePostfix);
   void removeSlicePlane(std::string uniquePostfix);
-  bool slicePlanesEnabled(); // true if there is at least one slice plane in the scene
+  bool slicePlanesEnabled();                     // true if there is at least one slice plane in the scene
   virtual void setFrontFaceCCW(bool newVal) = 0; // true if CCW triangles are considered front-facing; false otherwise
   bool getFrontFaceCCW();
 

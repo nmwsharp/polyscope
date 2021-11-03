@@ -265,6 +265,7 @@ public:
 
   // === Windowing and framework things
   void makeContextCurrent() override;
+  void focusWindow() override;
   void showWindow() override;
   void hideWindow() override;
   void updateWindowSize(bool force = false) override;
