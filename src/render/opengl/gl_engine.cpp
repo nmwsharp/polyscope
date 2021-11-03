@@ -1731,8 +1731,10 @@ void GLEngine::initializeImGui(std::function<void()> callback) {
 
   if (!callback)
     configureImGui();
-  else
+  else {
     callback();
+    globalFontAtlas = ImGui::GetIO().Fonts;
+  }
 }
 
 void GLEngine::shutdownImGui() {
