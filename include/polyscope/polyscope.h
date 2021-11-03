@@ -60,6 +60,9 @@ extern std::vector<SlicePlane*> slicePlanes;
 // a callback function used to render a "user" gui
 extern std::function<void()> userCallback;
 
+// a callback function used to set ImGui specific settings (style, font, etc.)
+extern std::function<void()> userGuiCallback;
+
 // representative center for all registered structures
 glm::vec3 center();
 

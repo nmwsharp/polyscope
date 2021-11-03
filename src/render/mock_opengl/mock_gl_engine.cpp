@@ -1172,7 +1172,7 @@ void MockGLEngine::initialize() {
   populateDefaultShadersAndRules();
 }
 
-void MockGLEngine::initializeImGui() {
+void MockGLEngine::initializeImGui(std::function<void()> callback) {
   ImGui::CreateContext(); // must call once at start
   configureImGui();
 }

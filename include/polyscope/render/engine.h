@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <functional>
 
 #include "polyscope/render/color_maps.h"
 #include "polyscope/render/ground_plane.h"
@@ -356,7 +357,7 @@ public:
   virtual void setClipboardText(std::string text) = 0;
 
   // ImGui
-  virtual void initializeImGui() = 0;
+  virtual void initializeImGui(std::function<void()> callback) = 0;
   virtual void shutdownImGui() = 0;
   void setImGuiStyle();
   ImFontAtlas* getImGuiGlobalFontAtlas();

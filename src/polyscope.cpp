@@ -123,7 +123,7 @@ void init(std::string backend) {
 
   // Initialie ImGUI
   IMGUI_CHECKVERSION();
-  render::engine->initializeImGui();
+  render::engine->initializeImGui(state::userGuiCallback);
   // push a fake context which will never be used (but dodges some invalidation issues)
   contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr, false});
 

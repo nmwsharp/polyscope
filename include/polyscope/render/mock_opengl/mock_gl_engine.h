@@ -229,7 +229,7 @@ public:
   void setClipboardText(std::string text) override;
 
   // ImGui
-  void initializeImGui() override;
+  void initializeImGui(std::function<void()> callback) override;
   void shutdownImGui() override;
   void ImGuiNewFrame() override;
   void ImGuiRender() override;

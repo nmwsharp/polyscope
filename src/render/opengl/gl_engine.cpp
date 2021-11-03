@@ -1719,7 +1719,7 @@ void GLEngine::initialize() {
 }
 
 
-void GLEngine::initializeImGui() {
+void GLEngine::initializeImGui(std::function<void()> callback) {
   bindDisplay();
 
   ImGui::CreateContext(); // must call once at start
@@ -1729,7 +1729,10 @@ void GLEngine::initializeImGui() {
   const char* glsl_version = "#version 150";
   ImGui_ImplOpenGL3_Init(glsl_version);
 
-  configureImGui();
+  if (!callback)
+    configureImGui();
+  else
+    callback();
 }
 
 void GLEngine::shutdownImGui() {
@@ -1789,11 +1792,9 @@ void GLEngine::updateWindowSize(bool force) {
     requestRedraw();
 
     // prevent any division by zero for e.g. aspect ratio calcs
-    if (newBufferHeight == 0)
-      newBufferHeight = 1;
+    if (newBufferHeight == 0) newBufferHeight = 1;
 
-    if (newWindowHeight == 0)
-      newWindowHeight = 1;
+    if (newWindowHeight == 0) newWindowHeight = 1;
 
     view::bufferWidth = newBufferWidth;
     view::bufferHeight = newBufferHeight;
