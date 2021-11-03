@@ -20,6 +20,26 @@ public:
   
   virtual std::string niceName() override;
 
+  // == Getters and setters
+
+  // Point viz
+  
+  VolumeGridScalarQuantity* setPointVizEnabled(bool val);
+  bool getPointVizEnabled();
+
+
+  // Isosurface viz
+
+  VolumeGridScalarQuantity* setIsosurfaceVizEnabled(bool val);
+  bool getIsosurfaceVizEnabled();
+
+  VolumeGridScalarQuantity* setIsosurfaceLevel(float value);
+  float getIsosurfaceLevel();
+  
+  VolumeGridScalarQuantity* setIsosurfaceColor(glm::vec3 val);
+  glm::vec3 getIsosurfaceColor();
+
+
 protected:
   void createProgram();
   void fillPositions();
@@ -36,6 +56,11 @@ protected:
   
   // Visualize as isosurface
   // TODO
+  PersistentValue<bool> isosurfaceVizEnabled;
+  PersistentValue<float> isosurfaceLevel;
+  PersistentValue<glm::vec3> isosurfaceColor;
+  std::shared_ptr<render::ShaderProgram> isosurfaceProgram;
+  void createIsosurfaceProgram();
 
   // Visualize as raymarched volume
 };
