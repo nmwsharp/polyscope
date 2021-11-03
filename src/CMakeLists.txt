@@ -181,6 +181,12 @@ SET(SRCS
   # volume_mesh_scalar_quantity.cpp
   # volume_mesh_vector_quantity.cpp
   
+  # Volume grid
+  volume_grid.cpp
+  #volume_mesh_color_quantity.cpp
+  volume_grid_scalar_quantity.cpp
+  volume_grid_vector_quantity.cpp
+  
   # Rendering utilities
   imgui_config.cpp
   vector_artist.cpp
@@ -279,6 +285,15 @@ SET(HEADERS
   ${INCLUDE_ROOT}/volume_mesh.h
   ${INCLUDE_ROOT}/volume_mesh.ipp
   ${INCLUDE_ROOT}/volume_mesh_quantity.h
+  ${INCLUDE_ROOT}/volume_mesh_scalar_quantity.h
+  ${INCLUDE_ROOT}/volume_mesh_color_quantity.h
+  ${INCLUDE_ROOT}/volume_mesh_vector_quantity.h
+  ${INCLUDE_ROOT}/volume_grid.h
+  ${INCLUDE_ROOT}/volume_grid.ipp
+  ${INCLUDE_ROOT}/volume_grid_quantity.h
+  ${INCLUDE_ROOT}/volume_grid_scalar_quantity.h
+  #${INCLUDE_ROOT}/volume_grid_color_quantity.h
+  ${INCLUDE_ROOT}/volume_grid_vector_quantity.h
 )
 
 # Create a single library for the project
