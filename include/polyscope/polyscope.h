@@ -96,8 +96,9 @@ void refresh();
 
 // === Handle draw flow, interrupts, and popups
 
-// Main draw call . Note that due to cached drawing, this will draw the 3D structures
-void draw(bool withUI = true);
+// Main draw call, which handles all 3D rendering & UI management.
+// End users generally should not call this function. Consider requestRedraw() or screenshot().
+void draw(bool withUI = true, bool withContextCallback = true);
 
 // Request that the 3D scene be redrawn for the next frame. Should be called anytime something changes in the scene.
 void requestRedraw();

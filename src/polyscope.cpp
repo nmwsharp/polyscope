@@ -610,7 +610,7 @@ auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 
 } // namespace
 
-void draw(bool withUI) {
+void draw(bool withUI, bool withContextCallback) {
   processLazyProperties();
 
   // Update buffer and context
@@ -645,7 +645,7 @@ void draw(bool withUI) {
 
   // Execute the context callback, if there is one.
   // This callback is Polyscope implementation detail, which is distinct from the userCallback (which gets called below)
-  if (contextStack.back().callback) {
+  if (withContextCallback && contextStack.back().callback) {
     (contextStack.back().callback)();
   }
 
@@ -709,6 +709,9 @@ void show(size_t forFrames) {
     throw std::logic_error(options::printPrefix +
                            "must initialize Polyscope with polyscope::init() before calling polyscope::show().");
   }
+
+  // the popContext() doesn't quit until _after_ the last frame, so we need to decrement by 1 to get the count right
+  if(forFrames > 0) forFrames--;
 
   auto checkFrames = [&]() {
     if (forFrames == 0) {
@@ -1015,7 +1018,7 @@ void updateStructureExtents() {
 
   // If we got a degenerate bounding box, perturb it slightly
   if (minBbox == maxBbox) {
-    double offsetScale = (state::lengthScale == 0) ? 1e-5 : state::lengthScale*1e-5;
+    double offsetScale = (state::lengthScale == 0) ? 1e-5 : state::lengthScale * 1e-5;
     glm::vec3 offset{offsetScale, offsetScale, offsetScale};
     minBbox = minBbox - offset / 2.f;
     maxBbox = maxBbox + offset / 2.f;
