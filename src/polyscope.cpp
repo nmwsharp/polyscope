@@ -562,9 +562,9 @@ void buildUserGuiAndInvokeCallback() {
   }
 
   if (state::userCallback) {
-    ImGui::PushID("user_callback");
 
-    if (options::openImGuiWindowForUserCallback) {
+    if (options::buildGui && options::openImGuiWindowForUserCallback) {
+      ImGui::PushID("user_callback");
       ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin), imguiStackMargin));
       ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
 
@@ -573,15 +573,15 @@ void buildUserGuiAndInvokeCallback() {
 
     state::userCallback();
 
-    if (options::openImGuiWindowForUserCallback) {
+    if (options::buildGui && options::openImGuiWindowForUserCallback) {
       rightWindowsWidth = ImGui::GetWindowWidth();
       lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
       ImGui::End();
+      ImGui::PopID();
     } else {
       lastWindowHeightUser = imguiStackMargin;
     }
 
-    ImGui::PopID();
   } else {
     lastWindowHeightUser = imguiStackMargin;
   }
@@ -633,12 +633,14 @@ void draw(bool withUI, bool withContextCallback) {
       // is necessary when ImGui::Render() happens below.
       buildUserGuiAndInvokeCallback();
 
-      buildPolyscopeGui();
-      buildStructureGui();
-      buildPickGui();
+      if (options::buildGui) {
+        buildPolyscopeGui();
+        buildStructureGui();
+        buildPickGui();
 
-      for (Widget* w : state::widgets) {
-        w->buildGUI();
+        for (Widget* w : state::widgets) {
+          w->buildGUI();
+        }
       }
     }
   }
@@ -711,7 +713,7 @@ void show(size_t forFrames) {
   }
 
   // the popContext() doesn't quit until _after_ the last frame, so we need to decrement by 1 to get the count right
-  if(forFrames > 0) forFrames--;
+  if (forFrames > 0) forFrames--;
 
   auto checkFrames = [&]() {
     if (forFrames == 0) {

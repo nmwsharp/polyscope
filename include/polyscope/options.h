@@ -37,6 +37,9 @@ extern bool alwaysRedraw;
 extern bool autocenterStructures;
 extern bool autoscaleStructures;
 
+// If false, Polyscope will not create any ImGui UIs at all, but will still set up ImGui and invoke its render steps each frame. The allows advanced users to create their own UIs totally from scratch and circumvent the standard Polyscope UIs. (default: true)
+extern bool buildGui;
+
 // Should the user call back start out with an imgui window context open (default: true)
 extern bool openImGuiWindowForUserCallback;
 
