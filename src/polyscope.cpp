@@ -732,7 +732,7 @@ void show(size_t forFrames) {
   }
 }
 
-void shutdown(int exitCode) {
+void shutdown() {
 
   // TODO should we make an effort to destruct everything here?
   if (options::usePrefsFile) {

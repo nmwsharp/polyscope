@@ -32,8 +32,8 @@ void init(std::string backend = "");
 // the GUI, possibly by exiting the window.
 void show(size_t forFrames = std::numeric_limits<size_t>::max());
 
-// Do shutdown work and quit the entire program. Can be called in other situations due to errors (etc)
-void shutdown(int exitCode = 0);
+// Do shutdown work and de-initialize Polyscope
+void shutdown();
 
 // === Global variables ===
 namespace state {
