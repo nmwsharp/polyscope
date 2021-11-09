@@ -740,8 +740,6 @@ void shutdown(int exitCode) {
   }
 
   render::engine->shutdownImGui();
-
-  std::exit(exitCode);
 }
 
 bool registerStructure(Structure* s, bool replaceIfPresent) {
