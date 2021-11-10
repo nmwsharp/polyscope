@@ -67,6 +67,7 @@ public:
   void rescaleToUnit();
   void resetTransform();
   void setTransform(glm::mat4x4 transform);
+  void translate(glm::vec3 vec);
   glm::mat4x4 getTransform();
 
   void setStructureUniforms(render::ShaderProgram& p);

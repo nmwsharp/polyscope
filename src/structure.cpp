@@ -172,7 +172,12 @@ float Structure::lengthScale() {
 }
 
 void Structure::setTransform(glm::mat4x4 transform) {
-  objectTransform = transform * objectTransform.get();
+  objectTransform = transform;
+  updateStructureExtents();
+}
+
+void Structure::translate(glm::vec3 vec) {
+  objectTransform = glm::translate(objectTransform.get(), vec);
   updateStructureExtents();
 }
 
