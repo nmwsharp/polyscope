@@ -996,6 +996,14 @@ void processLazyProperties() {
 };
 
 void updateStructureExtents() {
+
+  if (!options::automaticallyComputeSceneExtents) {
+    return;
+  }
+
+  // Note: the cost multiple calls to this function scales only with the number of structures, not the size of the data
+  // in those structures, because structures internally cache the extents of their data.
+
   // Compute length scale and bbox as the max of all structures
   state::lengthScale = 0.0;
   glm::vec3 minBbox = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
@@ -1034,9 +1042,11 @@ void updateStructureExtents() {
     state::lengthScale = glm::length(maxBbox - minBbox);
   }
 
-  // Center is center of bounding box
-  state::center = 0.5f * (minBbox + maxBbox);
+  requestRedraw();
 }
 
+namespace state {
+glm::vec3 center() { return 0.5f * (std::get<0>(state::boundingBox) + std::get<1>(state::boundingBox)); }
+} // namespace state
 
 } // namespace polyscope

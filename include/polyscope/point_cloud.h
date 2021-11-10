@@ -52,8 +52,7 @@ public:
   // Standard structure overrides
   virtual void draw() override;
   virtual void drawPick() override;
-  virtual double lengthScale() override;
-  virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
+  virtual void updateObjectSpaceBounds() override;
   virtual std::string typeName() override;
   virtual void refresh() override;
 

@@ -73,7 +73,7 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
     float delPhi = 2.0 * dragDelta.y * moveScale;
 
     // Translate to center
-    viewMat = glm::translate(viewMat, state::center);
+    viewMat = glm::translate(viewMat, state::center());
 
     // Rotation about the horizontal axis
     glm::mat4x4 phiCamR = glm::rotate(glm::mat4x4(1.0), -delPhi, frameRightDir);
@@ -105,7 +105,7 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
     viewMat = viewMat * thetaCamR;
 
     // Undo centering
-    viewMat = glm::translate(viewMat, -state::center);
+    viewMat = glm::translate(viewMat, -state::center());
     break;
   }
   case NavigateStyle::Free: {
@@ -114,7 +114,7 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
     float delPhi = 2.0 * dragDelta.y * moveScale;
 
     // Translate to center
-    viewMat = glm::translate(viewMat, state::center);
+    viewMat = glm::translate(viewMat, state::center());
 
     // Rotation about the vertical axis
     glm::mat4x4 thetaCamR = glm::rotate(glm::mat4x4(1.0), delTheta, frameUpDir);
@@ -125,7 +125,7 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
     viewMat = viewMat * phiCamR;
 
     // Undo centering
-    viewMat = glm::translate(viewMat, -state::center);
+    viewMat = glm::translate(viewMat, -state::center());
     break;
   }
   case NavigateStyle::Planar: {
@@ -295,7 +295,7 @@ glm::mat4 computeHomeView() {
   // Rotate around the up axis, since our camera looks down -Z
   R = glm::rotate(R, static_cast<float>(PI), baseUp);
 
-  glm::mat4x4 Tobj = glm::translate(glm::mat4x4(1.0), -state::center);
+  glm::mat4x4 Tobj = glm::translate(glm::mat4x4(1.0), -state::center());
   glm::mat4x4 Tcam =
       glm::translate(glm::mat4x4(1.0), glm::vec3(0.0, -0.1 * state::lengthScale, -1.5 * state::lengthScale));
 
@@ -543,13 +543,12 @@ void setCameraFromJson(std::string jsonData, bool flyTo) {
     if (j.find("farClipRatio") != j.end()) {
       newFarClipRatio = j["farClipRatio"];
     }
-    
+
     if (j.find("projectionMode") != j.end()) {
       std::string projectionModeStr = j["projectionMode"];
-      if(projectionModeStr == to_string(ProjectionMode::Perspective)) {
+      if (projectionModeStr == to_string(ProjectionMode::Perspective)) {
         view::projectionMode = ProjectionMode::Perspective;
-      }
-      else if(projectionModeStr == to_string(ProjectionMode::Orthographic)) {
+      } else if (projectionModeStr == to_string(ProjectionMode::Orthographic)) {
         view::projectionMode = ProjectionMode::Orthographic;
       }
     }
@@ -674,6 +673,41 @@ void buildViewGui() {
     }
     ImGui::SameLine();
     ImGui::Text("Up Direction");
+
+    if (ImGui::TreeNode("Scene Extents")) {
+
+      if (ImGui::Checkbox("Set automatically", &options::automaticallyComputeSceneExtents)) {
+        updateStructureExtents();
+      }
+
+      if (!options::automaticallyComputeSceneExtents) {
+
+        static float lengthScaleUpper = -777;
+        if (lengthScaleUpper == -777) lengthScaleUpper = 2. * state::lengthScale;
+        if (ImGui::SliderFloat("Length Scale", &state::lengthScale, 0, lengthScaleUpper, "%.5f")) {
+          requestRedraw();
+        }
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+          // the upper bound for the slider is dynamically adjust to be a bit bigger than the lower bound, but only does
+          // so on release of the widget (so it doesn't scaleo off to infinity), and only ever gets larger (so you don't
+          // get stuck at 0)
+          lengthScaleUpper = std::fmax(2. * state::lengthScale, lengthScaleUpper);
+        }
+
+
+        ImGui::TextUnformatted("Bounding Box:");
+        ImGui::PushItemWidth(200);
+        glm::vec3& bboxMin = std::get<0>(state::boundingBox);
+        glm::vec3& bboxMax = std::get<1>(state::boundingBox);
+        if (ImGui::InputFloat3("min", &bboxMin[0])) updateStructureExtents();
+        if (ImGui::InputFloat3("max", &bboxMax[0])) updateStructureExtents();
+        ImGui::PopItemWidth();
+      }
+
+
+      ImGui::TreePop();
+    }
+
 
     ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
     if (ImGui::TreeNode("Camera Parameters")) {
