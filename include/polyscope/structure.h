@@ -62,10 +62,12 @@ public:
 
   // = Scene transform
   glm::mat4 getModelView();
-  void setTransform(glm::mat4x4 transform);
   void centerBoundingBox();
   void rescaleToUnit();
   void resetTransform();
+  void setTransform(glm::mat4x4 transform);
+  glm::mat4x4 getTransform();
+
   void setStructureUniforms(render::ShaderProgram& p);
   bool wantsCullPosition();
 

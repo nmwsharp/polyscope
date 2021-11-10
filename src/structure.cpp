@@ -155,6 +155,10 @@ void Structure::setTransform(glm::mat4x4 transform)
   updateStructureExtents();
 }
 
+glm::mat4x4 Structure::getTransform() {
+  return objectTransform.get();
+}
+
 void Structure::resetTransform() {
   objectTransform = glm::mat4(1.0);
   updateStructureExtents();
