@@ -27,6 +27,7 @@ SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexP
       backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different),
       backFaceColor(uniquePrefix() + "backFaceColor",
                     glm::vec3(1.f - surfaceColor.get().r, 1.f - surfaceColor.get().g, 1.f - surfaceColor.get().b)) {
+  updateObjectSpaceBounds();
   computeCounts();
   computeGeometryData();
 }
@@ -916,33 +917,28 @@ void SurfaceMesh::refresh() {
   QuantityStructure<SurfaceMesh>::refresh(); // call base class version, which refreshes quantities
 }
 
-void SurfaceMesh::geometryChanged() { refresh(); }
-
-double SurfaceMesh::lengthScale() {
-  // Measure length scale as twice the radius from the center of the bounding box
-  auto bound = boundingBox();
-  glm::vec3 center = 0.5f * (std::get<0>(bound) + std::get<1>(bound));
-
-  double lengthScale = 0.0;
-  for (glm::vec3 p : vertices) {
-    glm::vec3 transPos = glm::vec3(objectTransform.get() * glm::vec4(p.x, p.y, p.z, 1.0));
-    lengthScale = std::max(lengthScale, (double)glm::length2(transPos - center));
-  }
-
-  return 2 * std::sqrt(lengthScale);
+void SurfaceMesh::geometryChanged() {
+  // TODO this is overkill
+  refresh();
 }
 
-std::tuple<glm::vec3, glm::vec3> SurfaceMesh::boundingBox() {
+void SurfaceMesh::updateObjectSpaceBounds() {
+  // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
-
-  for (glm::vec3 pOrig : vertices) {
-    glm::vec3 p = glm::vec3(objectTransform.get() * glm::vec4(pOrig, 1.0));
+  for (const glm::vec3& p : vertices) {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
+  objectSpaceBoundingBox = std::make_tuple(min, max);
 
-  return std::make_tuple(min, max);
+  // length scale, as twice the radius from the center of the bounding box
+  glm::vec3 center = 0.5f * (min + max);
+  float lengthScale = 0.0;
+  for (const glm::vec3& p : vertices) {
+    lengthScale = std::max(lengthScale, glm::length2(p - center));
+  }
+  objectSpaceLengthScale = 2 * std::sqrt(lengthScale);
 }
 
 std::string SurfaceMesh::typeName() { return structureTypeName; }

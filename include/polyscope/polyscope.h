@@ -48,7 +48,7 @@ extern std::string backend;
 extern std::map<std::string, std::map<std::string, Structure*>> structures;
 
 // representative length scale for all registered structures
-extern double lengthScale;
+extern float lengthScale;
 
 // axis-aligned bounding box for all registered structures
 extern std::tuple<glm::vec3, glm::vec3> boundingBox;

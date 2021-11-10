@@ -7,7 +7,7 @@ namespace state {
 
 bool initialized = false;
 std::string backend;
-double lengthScale = 1.0;
+float lengthScale = 1.0;
 std::tuple<glm::vec3, glm::vec3> boundingBox;
 glm::vec3 center{0, 0, 0};
 std::map<std::string, std::map<std::string, Structure*>> structures;
