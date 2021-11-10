@@ -53,15 +53,15 @@ extern float lengthScale;
 // axis-aligned bounding box for all registered structures
 extern std::tuple<glm::vec3, glm::vec3> boundingBox;
 
-// representative center for all registered structures
-extern glm::vec3 center;
-
 // a list of widgets and other more specific doodads in the scene
 extern std::set<Widget*> widgets;
 extern std::vector<SlicePlane*> slicePlanes;
 
 // a callback function used to render a "user" gui
 extern std::function<void()> userCallback;
+
+// representative center for all registered structures
+glm::vec3 center();
 
 } // namespace state
 

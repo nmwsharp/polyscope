@@ -37,7 +37,15 @@ extern bool alwaysRedraw;
 extern bool autocenterStructures;
 extern bool autoscaleStructures;
 
-// If false, Polyscope will not create any ImGui UIs at all, but will still set up ImGui and invoke its render steps each frame. The allows advanced users to create their own UIs totally from scratch and circumvent the standard Polyscope UIs. (default: true)
+// If true, Polyscope will automatically compute state::boundingBox and state::lengthScale parameters according to the
+// registered structures, and update them whenever structures are added chagned. If false, the bounding box and length
+// scale are left unchanged. If set to flast before the first structure is registered, the user is required to set the
+// bounding box and length scale manually. (default: true)
+extern bool automaticallyComputeSceneExtents;
+
+// If false, Polyscope will not create any ImGui UIs at all, but will still set up ImGui and invoke its render steps
+// each frame. The allows advanced users to create their own UIs totally from scratch and circumvent the standard
+// Polyscope UIs. (default: true)
 extern bool buildGui;
 
 // Should the user call back start out with an imgui window context open (default: true)
