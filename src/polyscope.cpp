@@ -155,7 +155,10 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Make sure the window is visible
   render::engine->showWindow();
-  render::engine->focusWindow();
+
+  if (options::giveFocusOnShow) {
+    render::engine->focusWindow();
+  }
 
   // Re-enter main loop until the context has been popped
   size_t currentContextStackSize = contextStack.size();
