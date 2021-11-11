@@ -15,6 +15,8 @@ bool initializeWithDefaultStructures = true;
 bool alwaysRedraw = false;
 bool autocenterStructures = false;
 bool autoscaleStructures = false;
+bool automaticallyComputeSceneExtents = true;
+bool buildGui = true;
 bool openImGuiWindowForUserCallback = true;
 bool invokeUserCallbackForNestedShow = false;
 

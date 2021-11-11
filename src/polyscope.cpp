@@ -563,9 +563,9 @@ void buildUserGuiAndInvokeCallback() {
   }
 
   if (state::userCallback) {
-    ImGui::PushID("user_callback");
 
-    if (options::openImGuiWindowForUserCallback) {
+    if (options::buildGui && options::openImGuiWindowForUserCallback) {
+      ImGui::PushID("user_callback");
       ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin), imguiStackMargin));
       ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
 
@@ -574,15 +574,15 @@ void buildUserGuiAndInvokeCallback() {
 
     state::userCallback();
 
-    if (options::openImGuiWindowForUserCallback) {
+    if (options::buildGui && options::openImGuiWindowForUserCallback) {
       rightWindowsWidth = ImGui::GetWindowWidth();
       lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
       ImGui::End();
+      ImGui::PopID();
     } else {
       lastWindowHeightUser = imguiStackMargin;
     }
 
-    ImGui::PopID();
   } else {
     lastWindowHeightUser = imguiStackMargin;
   }
@@ -611,7 +611,7 @@ auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 
 } // namespace
 
-void draw(bool withUI) {
+void draw(bool withUI, bool withContextCallback) {
   processLazyProperties();
 
   // Update buffer and context
@@ -634,19 +634,21 @@ void draw(bool withUI) {
       // is necessary when ImGui::Render() happens below.
       buildUserGuiAndInvokeCallback();
 
-      buildPolyscopeGui();
-      buildStructureGui();
-      buildPickGui();
+      if (options::buildGui) {
+        buildPolyscopeGui();
+        buildStructureGui();
+        buildPickGui();
 
-      for (Widget* w : state::widgets) {
-        w->buildGUI();
+        for (Widget* w : state::widgets) {
+          w->buildGUI();
+        }
       }
     }
   }
 
   // Execute the context callback, if there is one.
   // This callback is Polyscope implementation detail, which is distinct from the userCallback (which gets called below)
-  if (contextStack.back().callback) {
+  if (withContextCallback && contextStack.back().callback) {
     (contextStack.back().callback)();
   }
 
@@ -711,6 +713,9 @@ void show(size_t forFrames) {
                            "must initialize Polyscope with polyscope::init() before calling polyscope::show().");
   }
 
+  // the popContext() doesn't quit until _after_ the last frame, so we need to decrement by 1 to get the count right
+  if (forFrames > 0) forFrames--;
+
   auto checkFrames = [&]() {
     if (forFrames == 0) {
       popContext();
@@ -730,7 +735,7 @@ void show(size_t forFrames) {
   }
 }
 
-void shutdown(int exitCode) {
+void shutdown() {
 
   // TODO should we make an effort to destruct everything here?
   if (options::usePrefsFile) {
@@ -738,8 +743,6 @@ void shutdown(int exitCode) {
   }
 
   render::engine->shutdownImGui();
-
-  std::exit(exitCode);
 }
 
 bool registerStructure(Structure* s, bool replaceIfPresent) {
@@ -994,6 +997,14 @@ void processLazyProperties() {
 };
 
 void updateStructureExtents() {
+
+  if (!options::automaticallyComputeSceneExtents) {
+    return;
+  }
+
+  // Note: the cost multiple calls to this function scales only with the number of structures, not the size of the data
+  // in those structures, because structures internally cache the extents of their data.
+
   // Compute length scale and bbox as the max of all structures
   state::lengthScale = 0.0;
   glm::vec3 minBbox = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
@@ -1032,9 +1043,11 @@ void updateStructureExtents() {
     state::lengthScale = glm::length(maxBbox - minBbox);
   }
 
-  // Center is center of bounding box
-  state::center = 0.5f * (minBbox + maxBbox);
+  requestRedraw();
 }
 
+namespace state {
+glm::vec3 center() { return 0.5f * (std::get<0>(state::boundingBox) + std::get<1>(state::boundingBox)); }
+} // namespace state
 
 } // namespace polyscope

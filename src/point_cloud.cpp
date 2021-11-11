@@ -28,6 +28,7 @@ PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
       pointRadius(uniquePrefix() + "#pointRadius", relativeValue(0.005)),
       material(uniquePrefix() + "#material", "clay") {
   cullWholeElements.setPassive(true);
+  updateObjectSpaceBounds();
 }
 
 // Helper to set uniforms
@@ -213,7 +214,10 @@ void PointCloud::fillGeometryBuffers(render::ShaderProgram& p) {
   }
 }
 
-void PointCloud::geometryChanged() { refresh(); }
+void PointCloud::geometryChanged() {
+  // TODO this is overkill
+  refresh();
+}
 
 void PointCloud::buildPickUI(size_t localPickID) {
 
@@ -296,34 +300,24 @@ void PointCloud::buildCustomOptionsUI() {
   }
 }
 
-double PointCloud::lengthScale() {
-  // TODO cache
+void PointCloud::updateObjectSpaceBounds() {
 
-  // Measure length scale as twice the radius from the center of the bounding box
-  auto bound = boundingBox();
-  glm::vec3 center = 0.5f * (std::get<0>(bound) + std::get<1>(bound));
-
-  double lengthScale = 0.0;
-  for (glm::vec3& rawP : points) {
-    glm::vec3 p = glm::vec3(objectTransform.get() * glm::vec4(rawP, 1.0));
-    lengthScale = std::max(lengthScale, (double)glm::length2(p - center));
-  }
-
-  return 2 * std::sqrt(lengthScale);
-}
-
-std::tuple<glm::vec3, glm::vec3> PointCloud::boundingBox() {
-
+  // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
-
-  for (glm::vec3& rawP : points) {
-    glm::vec3 p = glm::vec3(objectTransform.get() * glm::vec4(rawP, 1.0));
+  for (const glm::vec3& p : points) {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
+  objectSpaceBoundingBox = std::make_tuple(min, max);
 
-  return std::make_tuple(min, max);
+  // length scale, as twice the radius from the center of the bounding box
+  glm::vec3 center = 0.5f * (min + max);
+  float lengthScale = 0.0;
+  for (const glm::vec3& p : points) {
+    lengthScale = std::max(lengthScale, glm::length2(p - center));
+  }
+  objectSpaceLengthScale = 2 * std::sqrt(lengthScale);
 }
 
 

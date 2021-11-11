@@ -32,8 +32,8 @@ void init(std::string backend = "");
 // the GUI, possibly by exiting the window.
 void show(size_t forFrames = std::numeric_limits<size_t>::max());
 
-// Do shutdown work and quit the entire program. Can be called in other situations due to errors (etc)
-void shutdown(int exitCode = 0);
+// Do shutdown work and de-initialize Polyscope
+void shutdown();
 
 // === Global variables ===
 namespace state {
@@ -48,13 +48,10 @@ extern std::string backend;
 extern std::map<std::string, std::map<std::string, Structure*>> structures;
 
 // representative length scale for all registered structures
-extern double lengthScale;
+extern float lengthScale;
 
 // axis-aligned bounding box for all registered structures
 extern std::tuple<glm::vec3, glm::vec3> boundingBox;
-
-// representative center for all registered structures
-extern glm::vec3 center;
 
 // a list of widgets and other more specific doodads in the scene
 extern std::set<Widget*> widgets;
@@ -62,6 +59,9 @@ extern std::vector<SlicePlane*> slicePlanes;
 
 // a callback function used to render a "user" gui
 extern std::function<void()> userCallback;
+
+// representative center for all registered structures
+glm::vec3 center();
 
 } // namespace state
 
@@ -96,8 +96,9 @@ void refresh();
 
 // === Handle draw flow, interrupts, and popups
 
-// Main draw call . Note that due to cached drawing, this will draw the 3D structures
-void draw(bool withUI = true);
+// Main draw call, which handles all 3D rendering & UI management.
+// End users generally should not call this function. Consider requestRedraw() or screenshot().
+void draw(bool withUI = true, bool withContextCallback = true);
 
 // Request that the 3D scene be redrawn for the next frame. Should be called anytime something changes in the scene.
 void requestRedraw();

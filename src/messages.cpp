@@ -228,7 +228,8 @@ void terminatingError(std::string message) {
   pushContext(func, false);
 
   // Quit the program
-  shutdown(-1);
+  shutdown();
+  std::exit(-1);
 }
 
 void warning(std::string baseMessage, std::string detailMessage) {
