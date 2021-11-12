@@ -54,6 +54,9 @@ extern bool openImGuiWindowForUserCallback;
 // If true, the user callback will be invoked for nested calls to polyscope::show(), otherwise not (default: false)
 extern bool invokeUserCallbackForNestedShow;
 
+// If true, focus the Polyscope window when shown (default: false)
+extern bool giveFocusOnShow;
+
 // === Scene options
 
 // Behavior of the ground plane

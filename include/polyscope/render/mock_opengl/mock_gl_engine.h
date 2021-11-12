@@ -218,6 +218,7 @@ public:
 
   // === Windowing and framework things
   void makeContextCurrent() override;
+  void focusWindow() override;
   void showWindow() override;
   void hideWindow() override;
   void updateWindowSize(bool force = false) override;
@@ -259,11 +260,10 @@ public:
 
   // Transparency
   virtual void applyTransparencySettings() override;
- 
+
   virtual void setFrontFaceCCW(bool newVal) override;
 
 protected:
-  
   // Helpers
   virtual void createSlicePlaneFliterRule(std::string name) override;
 

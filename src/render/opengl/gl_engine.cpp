@@ -1776,6 +1776,8 @@ void GLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
 void GLEngine::makeContextCurrent() { glfwMakeContextCurrent(mainWindow); }
 
+void GLEngine::focusWindow() { glfwFocusWindow(mainWindow); }
+
 void GLEngine::showWindow() { glfwShowWindow(mainWindow); }
 
 void GLEngine::hideWindow() {
@@ -1794,11 +1796,9 @@ void GLEngine::updateWindowSize(bool force) {
     requestRedraw();
 
     // prevent any division by zero for e.g. aspect ratio calcs
-    if (newBufferHeight == 0)
-      newBufferHeight = 1;
+    if (newBufferHeight == 0) newBufferHeight = 1;
 
-    if (newWindowHeight == 0)
-      newWindowHeight = 1;
+    if (newWindowHeight == 0) newWindowHeight = 1;
 
     view::bufferWidth = newBufferWidth;
     view::bufferHeight = newBufferHeight;
