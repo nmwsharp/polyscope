@@ -722,6 +722,11 @@ void show(size_t forFrames) {
       forFrames--;
     }
   };
+
+  if (options::giveFocusOnShow) {
+    render::engine->focusWindow();
+  }
+
   pushContext(checkFrames);
 
   if (options::usePrefsFile) {
