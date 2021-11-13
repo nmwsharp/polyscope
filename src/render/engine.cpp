@@ -1,4 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+//
+// // re-bind the default buffer
 #include "polyscope/render/engine.h"
 
 #include "polyscope/polyscope.h"
@@ -659,6 +661,20 @@ uint64_t Engine::getNextUniqueID() {
   uint64_t thisID = uniqueID;
   uniqueID++;
   return thisID;
+}
+
+void Engine::pushBindFramebufferForRendering(FrameBuffer& f) {
+  if (currRenderFramebuffer == nullptr)
+    throw std::runtime_error("tried to push current framebuff on to stack, but it is null");
+  renderFramebufferStack.push_back(currRenderFramebuffer);
+  f.bindForRendering();
+}
+
+void Engine::popBindFramebufferForRendering() {
+  if (renderFramebufferStack.empty())
+    throw std::runtime_error("called popBindFramebufferForRendering() on empty stack. Forgot to push?");
+  renderFramebufferStack.back()->bindForRendering();
+  renderFramebufferStack.pop_back();
 }
 
 void Engine::addSlicePlane(std::string uniquePostfix) {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "polyscope/histogram.h"
+#include "polyscope/affine_remapper.h"
 #include "polyscope/persistent_value.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"

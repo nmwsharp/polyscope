@@ -284,6 +284,7 @@ void GLFrameBuffer::setDrawBuffers() {
 
 bool GLFrameBuffer::bindForRendering() {
   bind();
+  render::engine->currRenderFramebuffer = this;
   render::engine->setCurrentViewport({0, 0, 400, 600});
   checkGLError();
   return true;

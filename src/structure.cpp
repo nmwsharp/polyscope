@@ -215,6 +215,8 @@ void Structure::rescaleToUnit() {
   updateStructureExtents();
 }
 
+bool Structure::hasExtents() { return true; }
+
 glm::mat4 Structure::getModelView() { return view::getCameraViewMatrix() * objectTransform.get(); }
 
 std::vector<std::string> Structure::addStructureRules(std::vector<std::string> initRules) {

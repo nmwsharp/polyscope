@@ -976,6 +976,8 @@ bool GLFrameBuffer::bindForRendering() {
     return false;
   }
 
+  render::engine->currRenderFramebuffer = this;
+
   // Set the viewport
   if (!viewportSet) {
     throw std::runtime_error(

@@ -186,13 +186,17 @@ SET(SRCS
   #volume_mesh_color_quantity.cpp
   volume_grid_scalar_quantity.cpp
   volume_grid_vector_quantity.cpp
+ 
+  # Floating quantities
+  floating_quantity_structure.cpp
+  floating_scalar_image.cpp
+  floating_color_image.cpp
   
   # Rendering utilities
   imgui_config.cpp
   vector_artist.cpp
   trace_vector_field.cpp
   ribbon_artist.cpp
-  image_scalar_artist.cpp
   
   ## Embedded binary data 
   render/bindata/bindata_font_lato_regular.cpp
@@ -227,10 +231,16 @@ SET(HEADERS
   ${INCLUDE_ROOT}/curve_network_vector_quantity.h
   ${INCLUDE_ROOT}/disjoint_sets.h
   ${INCLUDE_ROOT}/file_helpers.h
+  ${INCLUDE_ROOT}/floating_quantity_structure.h
+  ${INCLUDE_ROOT}/floating_quantity.h
+  ${INCLUDE_ROOT}/floating_scalar_image.h
+  ${INCLUDE_ROOT}/floating_color_image.h
+  ${INCLUDE_ROOT}/floating_image.h
   ${INCLUDE_ROOT}/group.h
   ${INCLUDE_ROOT}/histogram.h
   ${INCLUDE_ROOT}/image_scalar_artist.h
   ${INCLUDE_ROOT}/imgui_config.h
+  ${INCLUDE_ROOT}/image_scalar_artist.ipp
   ${INCLUDE_ROOT}/messages.h
   ${INCLUDE_ROOT}/options.h
   ${INCLUDE_ROOT}/persistent_value.h

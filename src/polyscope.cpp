@@ -1174,6 +1174,9 @@ void updateStructureExtents() {
 
   for (auto cat : state::structures) {
     for (auto x : cat.second) {
+      if (!x.second->hasExtents()) {
+        continue;
+      }
       state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
       auto bbox = x.second->boundingBox();
       minBbox = componentwiseMin(minBbox, std::get<0>(bbox));

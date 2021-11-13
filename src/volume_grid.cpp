@@ -29,6 +29,7 @@ void VolumeGrid::buildPickUI(size_t localPickID) {
 
 void VolumeGrid::draw() {
   // For now, do nothing for the actual grid
+  if(!enabled.get()) return;
 
   // Draw the quantities
   for (auto& x : quantities) {

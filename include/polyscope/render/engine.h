@@ -402,6 +402,9 @@ public:
   virtual void clearDisplay();
   virtual void bindDisplay();
   virtual void swapDisplayBuffers() = 0;
+  void pushBindFramebufferForRendering(
+      FrameBuffer& f); // push the existing rendering framebuffer on to a stack and bind to f for rendering
+  void popBindFramebufferForRendering(); // pop the old framebuffer off the stack and bind to it
   virtual std::vector<unsigned char> readDisplayBuffer() = 0;
 
   virtual void clearSceneBuffer();
@@ -555,6 +558,7 @@ public:
   ImFontAtlas* globalFontAtlas = nullptr;
   ImFont* regularFont = nullptr;
   ImFont* monoFont = nullptr;
+  FrameBuffer* currRenderFramebuffer = nullptr;
 
 protected:
   // TODO Manage a cache of compiled shaders?
@@ -568,6 +572,7 @@ protected:
   TransparencyMode transparencyMode = TransparencyMode::None;
   int slicePlaneCount = 0;
   bool frontFaceCCW = true;
+  std::vector<FrameBuffer*> renderFramebufferStack; // supports push/popBindFramebufferForRendering
 
   // Cached lazy seettings for the resolve and relight program
   int currLightingSampleLevel = -1;

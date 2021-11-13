@@ -1,64 +1,52 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
-#include "polyscope/affine_remapper.h"
-#include "polyscope/persistent_value.h"
-#include "polyscope/render/color_maps.h"
 #include "polyscope/render/engine.h"
-#include "polyscope/scaled_value.h"
+#include "polyscope/scalar_quantity.h"
+
 
 #include <vector>
 
 
 namespace polyscope {
 
-class ImageScalarArtist {
+template <typename QuantityT>
+class ImageScalarArtist : public ScalarQuantity<QuantityT> {
 
 public:
   // ImageScalarArtist(, DataType dataType);
-  ImageScalarArtist(std::string name, const std::vector<float>& data, size_t dimX, size_t dimY,
-                    DataType dataType = DataType::STANDARD);
+  ImageScalarArtist(QuantityT& parentQ, std::string displayName, size_t dimX, size_t dimY,
+                    const std::vector<double>& data, DataType dataType);
 
   // An alternate constructor which bypasses the float array and just reads directly from the texture. Limits will be
   // set arbitrarily. This is a bit of a hack, and mainly used for visualizing internal rendering buffers.
-  ImageScalarArtist(std::string name, std::shared_ptr<render::Texture>& texture, size_t dimX, size_t dimY,
-                    DataType dataType = DataType::STANDARD);
+  // ImageScalarArtist(std::string name, std::shared_ptr<render::TextureBuffer>& texturebuffer, size_t dimX, size_t
+  // dimY, DataType dataType = DataType::STANDARD);
 
-  void draw(); // (re-)render the data to the internal texture
+  void renderSource();      // (re-)render the data to the internal texture
+  void showFullscreen();  // render the image fullscreen
+  void showInImGuiWindow(); // build a floating imgui window showing the texture
+  void refresh();           // clear out and reinitialze
 
-  void buildImGUIWindow(); // build a floating imgui window showing the texture
-
-  const std::string name;
-  std::vector<float> data;
+  const std::string displayName;
   const size_t dimX, dimY;
-  const DataType dataType;
   const bool readFromTex = false; // hack to also support pulling directly from a texture
 
 
   // === Get/set visualization parameters
 
-  // The color map
-  ImageScalarArtist* setColorMap(std::string val);
-  std::string getColorMap();
-
-  // Data limits mapped in to colormap
-  ImageScalarArtist* setMapRange(std::pair<double, double> val);
-  std::pair<double, double> getMapRange();
-  ImageScalarArtist* resetMapRange(); // reset to full range
 
 private:
-  // Affine data maps and limits
-  std::pair<float, float> vizRange;
-  std::pair<double, double> dataRange;
-
   // UI internals
-  PersistentValue<std::string> cMap;
-  std::shared_ptr<render::Texture> textureRaw, textureRendered;
+  std::shared_ptr<render::TextureBuffer> textureRaw, textureRendered;
   std::shared_ptr<render::FrameBuffer> framebuffer;
-  std::shared_ptr<render::ShaderProgram> program;
+  std::shared_ptr<render::ShaderProgram> sourceProgram, fullscreenProgram;
 
   void prepare();
   void prepareSource();
+  //void prepareFullscreen();
 };
 
 } // namespace polyscope
+
+#include "polyscope/image_scalar_artist.ipp"
