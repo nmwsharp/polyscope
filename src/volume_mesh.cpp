@@ -82,19 +82,61 @@ void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
   std::vector<glm::vec3> point2;
   std::vector<glm::vec3> point3;
   std::vector<glm::vec3> point4;
-  size_t cellCount = nCells();
-  point1.resize(cellCount);
-  point2.resize(cellCount);
-  point3.resize(cellCount);
-  point4.resize(cellCount);
-  for (size_t iC = 0; iC < cellCount; iC++) {
-    const std::array<int64_t, 8>& cell = cells[iC];
-    point1[iC] = vertices[cell[0]];
-    point2[iC] = vertices[cell[1]];
-    point3[iC] = vertices[cell[2]];
-    point4[iC] = vertices[cell[3]];
+  size_t tetCount = 0;
+  for (size_t iC = 0; iC < nCells(); iC++) {
+    switch (cellType(iC)){
+      case VolumeCellType::HEX:
+        tetCount += 5;
+        break;
+      case VolumeCellType::TET:
+        tetCount += 1;
+        break;
+    }
   }
-  glm::vec3 normal = glm::vec3(-1, 0, 0);
+  point1.resize(tetCount);
+  point2.resize(tetCount);
+  point3.resize(tetCount);
+  point4.resize(tetCount);
+  size_t tetIdx = 0;
+  for (size_t iC = 0; iC < nCells(); iC++) {
+    const std::array<int64_t, 8>& cell = cells[iC];
+    switch (cellType(iC)){
+      case VolumeCellType::HEX:
+        point1[tetIdx] = vertices[cell[0]];
+        point2[tetIdx] = vertices[cell[4]];
+        point3[tetIdx] = vertices[cell[5]];
+        point4[tetIdx] = vertices[cell[6]];
+        tetIdx += 1;
+        point1[tetIdx] = vertices[cell[0]];
+        point2[tetIdx] = vertices[cell[1]];
+        point3[tetIdx] = vertices[cell[5]];
+        point4[tetIdx] = vertices[cell[3]];
+        tetIdx += 1;
+        point1[tetIdx] = vertices[cell[0]];
+        point2[tetIdx] = vertices[cell[3]];
+        point3[tetIdx] = vertices[cell[6]];
+        point4[tetIdx] = vertices[cell[5]];
+        tetIdx += 1;
+        point1[tetIdx] = vertices[cell[0]];
+        point2[tetIdx] = vertices[cell[2]];
+        point3[tetIdx] = vertices[cell[6]];
+        point4[tetIdx] = vertices[cell[3]];
+        tetIdx += 1;
+        point1[tetIdx] = vertices[cell[7]];
+        point2[tetIdx] = vertices[cell[6]];
+        point3[tetIdx] = vertices[cell[5]];
+        point4[tetIdx] = vertices[cell[3]];
+        tetIdx += 1;
+        break;
+      case VolumeCellType::TET:
+        point1[tetIdx] = vertices[cell[0]];
+        point2[tetIdx] = vertices[cell[1]];
+        point3[tetIdx] = vertices[cell[2]];
+        point4[tetIdx] = vertices[cell[3]];
+        tetIdx += 1;
+        break;
+    }
+  }
 
   program.setAttribute("a_point_1", point1);
   program.setAttribute("a_point_2", point2);
