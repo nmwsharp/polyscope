@@ -238,15 +238,16 @@ const ShaderReplacementRule SLICE_TETS_BASECOLOR_SHADE(
 
 const ShaderReplacementRule SLICE_TETS_MESH_WIREFRAME(
     /* rule name */ "SLICE_TETS_MESH_WIREFRAME",
-    { /* replacement sources */
-      {"GEOM_DECLARATIONS", R"(
+    {
+        /* replacement sources */
+        {"GEOM_DECLARATIONS", R"(
           out vec3 a_edgeIsRealToFrag;
         )"},
-      {"GEOM_ASSIGNMENTS", R"(
+        {"GEOM_ASSIGNMENTS", R"(
           vec3 edgeRealV = vec3(1, 1, 1);
           a_edgeIsRealToFrag = edgeRealV;
         )"},
-      {"FRAG_DECLARATIONS", R"(
+        {"FRAG_DECLARATIONS", R"(
           in vec3 a_edgeIsRealToFrag;
 
           uniform float u_edgeWidth;
@@ -267,24 +268,24 @@ const ShaderReplacementRule SLICE_TETS_MESH_WIREFRAME(
             return e;
           }
         )"},
-      {"APPLY_WIREFRAME", R"(
+        {"APPLY_WIREFRAME", R"(
           float edgeFactor = getEdgeFactor(a_barycoordToFrag, a_edgeIsRealToFrag, u_edgeWidth);
           albedoColor = mix(albedoColor, u_edgeColor, edgeFactor);
       )"},
     },
-    /* uniforms */ {
-      {"u_edgeColor", DataType::Vector3Float},
-      {"u_edgeWidth", DataType::Float},
+    /* uniforms */
+    {
+        {"u_edgeColor", DataType::Vector3Float},
+        {"u_edgeWidth", DataType::Float},
     },
-    /* attributes */ {
-    },
-    /* textures */ {}
-);
+    /* attributes */ {},
+    /* textures */ {});
 
-const ShaderReplacementRule SLICE_TETS_PROPAGATE_VALUE (
+const ShaderReplacementRule SLICE_TETS_PROPAGATE_VALUE(
     /* rule name */ "SLICE_TETS_PROPAGATE_VALUE",
-    { /* replacement sources */
-      {"VERT_DECLARATIONS", R"(
+    {
+        /* replacement sources */
+        {"VERT_DECLARATIONS", R"(
           in float a_value_1;
           in float a_value_2;
           in float a_value_3;
@@ -294,45 +295,45 @@ const ShaderReplacementRule SLICE_TETS_PROPAGATE_VALUE (
           out float value_3;
           out float value_4;
         )"},
-      {"VERT_ASSIGNMENTS", R"(
+        {"VERT_ASSIGNMENTS", R"(
           value_1 = a_value_1;
           value_2 = a_value_2;
           value_3 = a_value_3;
           value_4 = a_value_4;
         )"},
-      {"GEOM_DECLARATIONS", R"(
+        {"GEOM_DECLARATIONS", R"(
           in float value_1[];
           in float value_2[];
           in float value_3[];
           in float value_4[];
           out float a_valueToFrag;
       )"},
-      {"GEOM_INIT_DECLARATIONS", R"(
+        {"GEOM_INIT_DECLARATIONS", R"(
           float v[4] = float[](value_1[0], value_2[0], value_3[0], value_4[0]);
           float out_v[4] = float[](0, 0, 0, 0);
       )"},
-      {"GEOM_INTERPOLATE", R"(
+        {"GEOM_INTERPOLATE", R"(
           out_v[n] = ( (1.-t)*v[i] + t*v[j] );
       )"},
-      {"GEOM_ASSIGNMENTS", R"(
+        {"GEOM_ASSIGNMENTS", R"(
           a_valueToFrag = out_v[ordering[i]];
       )"},
-      {"FRAG_DECLARATIONS", R"(
+        {"FRAG_DECLARATIONS", R"(
           in float a_valueToFrag;
         )"},
-      {"GENERATE_SHADE_VALUE", R"(
+        {"GENERATE_SHADE_VALUE", R"(
           float shadeValue = a_valueToFrag;
         )"},
     },
     /* uniforms */ {},
-    /* attributes */ {
-      {"a_value_1", DataType::Float},
-      {"a_value_2", DataType::Float},
-      {"a_value_3", DataType::Float},
-      {"a_value_4", DataType::Float},
+    /* attributes */
+    {
+        {"a_value_1", DataType::Float},
+        {"a_value_2", DataType::Float},
+        {"a_value_3", DataType::Float},
+        {"a_value_4", DataType::Float},
     },
-    /* textures */ {}
-);
+    /* textures */ {});
 
 } // namespace backend_openGL3_glfw
 } // namespace render

@@ -30,6 +30,14 @@ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilTet =
    {{1,2,3}},
  };
 
+const std::vector<std::array<size_t, 4>> VolumeMesh::hexToTet = {
+  {0, 4, 1, 3},
+  {2, 1, 3, 6},
+  {4, 1, 6, 5},
+  {7, 6, 4, 3},
+  {1, 3, 6, 4}
+};
+
 const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilHex = 
   // numbered like in this diagram, except with 6/7 swapped
   // https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf
@@ -49,9 +57,7 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
       color(uniquePrefix() + "color", getNextUniqueColor()),
       interiorColor(uniquePrefix() + "interiorColor", color.get()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
-      edgeWidth(uniquePrefix() + "edgeWidth", 0.),
-      activeLevelSetQuantity(nullptr),
-      volumeSlicePlaneListeners() {
+      edgeWidth(uniquePrefix() + "edgeWidth", 0.), activeLevelSetQuantity(nullptr), volumeSlicePlaneListeners() {
   cullWholeElements.setPassive(false);
 
   // set the interior color to be a desaturated version of the normal one
@@ -64,17 +70,30 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
   computeGeometryData();
 }
 
-void VolumeMesh::addSlicePlaneListener(polyscope::SlicePlane* sp){
-  volumeSlicePlaneListeners.push_back(sp);
-}
+void VolumeMesh::addSlicePlaneListener(polyscope::SlicePlane* sp) { volumeSlicePlaneListeners.push_back(sp); }
 
-void VolumeMesh::removeSlicePlaneListener(polyscope::SlicePlane* sp){
-  for(int i = 0; i < volumeSlicePlaneListeners.size(); i++){
-    if(volumeSlicePlaneListeners[i] == sp){
+void VolumeMesh::removeSlicePlaneListener(polyscope::SlicePlane* sp) {
+  for (uint i = 0; i < volumeSlicePlaneListeners.size(); i++) {
+    if (volumeSlicePlaneListeners[i] == sp) {
       volumeSlicePlaneListeners.erase(volumeSlicePlaneListeners.begin() + i);
       break;
     }
   }
+}
+
+size_t VolumeMesh::nTets() {
+  size_t tetCount = 0;
+  for (size_t iC = 0; iC < nCells(); iC++) {
+    switch (cellType(iC)) {
+    case VolumeCellType::HEX:
+      tetCount += 5;
+      break;
+    case VolumeCellType::TET:
+      tetCount += 1;
+      break;
+    }
+  }
+  return tetCount;
 }
 
 void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
@@ -84,13 +103,13 @@ void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
   std::vector<glm::vec3> point4;
   size_t tetCount = 0;
   for (size_t iC = 0; iC < nCells(); iC++) {
-    switch (cellType(iC)){
-      case VolumeCellType::HEX:
-        tetCount += 5;
-        break;
-      case VolumeCellType::TET:
-        tetCount += 1;
-        break;
+    switch (cellType(iC)) {
+    case VolumeCellType::HEX:
+      tetCount += 5;
+      break;
+    case VolumeCellType::TET:
+      tetCount += 1;
+      break;
     }
   }
   point1.resize(tetCount);
@@ -100,41 +119,23 @@ void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
   size_t tetIdx = 0;
   for (size_t iC = 0; iC < nCells(); iC++) {
     const std::array<int64_t, 8>& cell = cells[iC];
-    switch (cellType(iC)){
-      case VolumeCellType::HEX:
-        point1[tetIdx] = vertices[cell[0]];
-        point2[tetIdx] = vertices[cell[4]];
-        point3[tetIdx] = vertices[cell[5]];
-        point4[tetIdx] = vertices[cell[6]];
-        tetIdx += 1;
-        point1[tetIdx] = vertices[cell[0]];
-        point2[tetIdx] = vertices[cell[1]];
-        point3[tetIdx] = vertices[cell[5]];
-        point4[tetIdx] = vertices[cell[3]];
-        tetIdx += 1;
-        point1[tetIdx] = vertices[cell[0]];
-        point2[tetIdx] = vertices[cell[3]];
-        point3[tetIdx] = vertices[cell[6]];
-        point4[tetIdx] = vertices[cell[5]];
-        tetIdx += 1;
-        point1[tetIdx] = vertices[cell[0]];
-        point2[tetIdx] = vertices[cell[2]];
-        point3[tetIdx] = vertices[cell[6]];
-        point4[tetIdx] = vertices[cell[3]];
-        tetIdx += 1;
-        point1[tetIdx] = vertices[cell[7]];
-        point2[tetIdx] = vertices[cell[6]];
-        point3[tetIdx] = vertices[cell[5]];
-        point4[tetIdx] = vertices[cell[3]];
-        tetIdx += 1;
-        break;
-      case VolumeCellType::TET:
-        point1[tetIdx] = vertices[cell[0]];
-        point2[tetIdx] = vertices[cell[1]];
-        point3[tetIdx] = vertices[cell[2]];
-        point4[tetIdx] = vertices[cell[3]];
-        tetIdx += 1;
-        break;
+    switch (cellType(iC)) {
+    case VolumeCellType::HEX:
+      for (size_t i = 0; i < hexToTet.size(); i++) {
+        point1[tetIdx + i] = vertices[cell[hexToTet[i][0]]];
+        point2[tetIdx + i] = vertices[cell[hexToTet[i][1]]];
+        point3[tetIdx + i] = vertices[cell[hexToTet[i][2]]];
+        point4[tetIdx + i] = vertices[cell[hexToTet[i][3]]];
+      }
+      tetIdx += hexToTet.size();
+      break;
+    case VolumeCellType::TET:
+      point1[tetIdx] = vertices[cell[0]];
+      point2[tetIdx] = vertices[cell[1]];
+      point3[tetIdx] = vertices[cell[2]];
+      point4[tetIdx] = vertices[cell[3]];
+      tetIdx += 1;
+      break;
     }
   }
 
@@ -226,12 +227,10 @@ void VolumeMesh::computeCounts() {
 
 void VolumeMesh::computeGeometryData() {}
 
-VolumeMeshVertexScalarQuantity* VolumeMesh::getLevelSetQuantity(){
-  return activeLevelSetQuantity;
-}
+VolumeMeshVertexScalarQuantity* VolumeMesh::getLevelSetQuantity() { return activeLevelSetQuantity; }
 
-void VolumeMesh::setLevelSetQuantity(VolumeMeshVertexScalarQuantity *quantity){
-  if(activeLevelSetQuantity != nullptr && activeLevelSetQuantity != quantity){
+void VolumeMesh::setLevelSetQuantity(VolumeMeshVertexScalarQuantity* quantity) {
+  if (activeLevelSetQuantity != nullptr && activeLevelSetQuantity != quantity) {
     activeLevelSetQuantity->isDrawingLevelSet = false;
   }
   activeLevelSetQuantity = quantity;
@@ -266,7 +265,7 @@ void VolumeMesh::draw() {
     program->draw();
   }
 
-  if(activeLevelSetQuantity != nullptr && activeLevelSetQuantity->isEnabled()){
+  if (activeLevelSetQuantity != nullptr && activeLevelSetQuantity->isEnabled()) {
     // Draw the quantities
     activeLevelSetQuantity->draw();
 
@@ -277,7 +276,6 @@ void VolumeMesh::draw() {
   for (auto& x : quantities) {
     x.second->draw();
   }
-
 }
 
 void VolumeMesh::drawPick() {
@@ -457,7 +455,8 @@ void VolumeMesh::preparePick() {
   }
 }
 
-std::vector<std::string> VolumeMesh::addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade, bool isSlice) {
+std::vector<std::string> VolumeMesh::addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade,
+                                                        bool isSlice) {
 
   initRules = addStructureRules(initRules);
 
@@ -777,7 +776,7 @@ void VolumeMesh::refresh() {
   computeGeometryData();
   program.reset();
   pickProgram.reset();
-  for(int i = 0; i < volumeSlicePlaneListeners.size(); i++){
+  for (uint i = 0; i < volumeSlicePlaneListeners.size(); i++) {
     volumeSlicePlaneListeners[i]->resetVolumeSliceProgram();
   }
   requestRedraw();

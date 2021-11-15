@@ -103,6 +103,9 @@ public:
   size_t cellDataSize;
 
 
+  // Map Hex indicies to Tet indicies
+  static const std::vector<std::array<size_t, 4>> hexToTet;
+
 
   // === Manage the mesh itself
 
@@ -113,6 +116,9 @@ public:
   // Counts
   size_t nVertices() const { return vertices.size(); }
   size_t nCells() const { return cells.size(); }
+
+  // Total tet count (same as nCells unless a hex mesh)
+  size_t nTets();
 
   size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
   size_t nFaces() const { return nFacesCount; }
@@ -127,7 +133,8 @@ public:
   VolumeCellType cellType(size_t i) const;
   void computeCounts();       // call to populate counts and indices
   void computeGeometryData(); // call to populate normals/areas/lengths
-  std::vector<std::string> addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade = true, bool isSlice = false);
+  std::vector<std::string> addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade = true,
+                                              bool isSlice = false);
   glm::vec3 cellCenter(size_t iC);
 
   // === Member variables ===
@@ -156,8 +163,8 @@ public:
   VolumeMesh* setEdgeWidth(double newVal);
   double getEdgeWidth();
 
-  VolumeMeshVertexScalarQuantity *getLevelSetQuantity();
-  void setLevelSetQuantity(VolumeMeshVertexScalarQuantity *_levelSet);
+  VolumeMeshVertexScalarQuantity* getLevelSetQuantity();
+  void setLevelSetQuantity(VolumeMeshVertexScalarQuantity* _levelSet);
 
   // Rendering helpers used by quantities
   void setVolumeMeshUniforms(render::ShaderProgram& p);
@@ -176,7 +183,7 @@ private:
   PersistentValue<std::string> material;
   PersistentValue<float> edgeWidth;
 
-  VolumeMeshVertexScalarQuantity *activeLevelSetQuantity;
+  VolumeMeshVertexScalarQuantity* activeLevelSetQuantity;
   std::vector<polyscope::SlicePlane*> volumeSlicePlaneListeners;
   float activeLevelSetValue;
 
