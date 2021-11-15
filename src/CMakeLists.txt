@@ -197,6 +197,8 @@ SET(SRCS
   vector_artist.cpp
   trace_vector_field.cpp
   ribbon_artist.cpp
+  image_color_artist.cpp
+  fullscreen_artist.cpp
   
   ## Embedded binary data 
   render/bindata/bindata_font_lato_regular.cpp

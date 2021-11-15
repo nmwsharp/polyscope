@@ -58,6 +58,23 @@ void FloatingScalarImageQuantity::refresh() {
 
 std::string FloatingScalarImageQuantity::niceName() { return name + " (scalar image)"; }
 
+FloatingScalarImageQuantity* FloatingScalarImageQuantity::setEnabled(bool newEnabled) {
+  if (newEnabled == isEnabled()) return this;
+  if (newEnabled == true && getShowFullscreen()) {
+    // if drawing fullscreen, disable anything else which was already drawing fullscreen
+    disableAllFullscreenArtists();
+  }
+  enabled = newEnabled;
+  requestRedraw();
+  return this;
+}
+
+void FloatingScalarImageQuantity::disableFullscreenDrawing() {
+  if (getShowFullscreen() && isEnabled() && parent.isEnabled()) {
+    setEnabled(false);
+  }
+}
+
 
 void FloatingScalarImageQuantity::setShowFullscreen(bool newVal) {
   showFullscreen = newVal;

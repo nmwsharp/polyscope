@@ -23,6 +23,7 @@ class FloatingQuantityStructure;
 
 // Forward declare quantity types
 class FloatingScalarImageQuantity;
+class FloatingColorImageQuantity;
 
 
 template <> // Specialize the quantity type
@@ -56,6 +57,9 @@ public:
   FloatingScalarImageQuantity* addFloatingScalarImageImpl(std::string name, size_t dimX, size_t dimY,
                                                           const std::vector<double>& values, DataType type);
 
+  FloatingColorImageQuantity* addFloatingColorImageImpl(std::string name, size_t dimX, size_t dimY,
+                                                        const std::vector<glm::vec4>& values);
+
   // Misc data
   static const std::string structureTypeName;
 };
@@ -71,6 +75,10 @@ template <class T>
 FloatingScalarImageQuantity* addFloatingScalarImage(std::string name, size_t dimX, size_t dimY, const T& values,
                                                     DataType type = DataType::STANDARD);
 void removeFloatingScalarImage(std::string name);
+
+template <class T>
+FloatingColorImageQuantity* addFloatingColorImage(std::string name, size_t dimX, size_t dimY, const T& values_rgb);
+void removeFloatingColorImage(std::string name);
 
 } // namespace polyscope
 

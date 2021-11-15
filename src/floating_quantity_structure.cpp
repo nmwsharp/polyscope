@@ -20,7 +20,7 @@ FloatingQuantityStructure::FloatingQuantityStructure(std::string name)
     : QuantityStructure<FloatingQuantityStructure>(name, structureTypeName) {}
 
 
-void FloatingQuantityStructure::buildCustomUI() { }
+void FloatingQuantityStructure::buildCustomUI() {}
 
 void FloatingQuantityStructure::buildCustomOptionsUI() {}
 
@@ -36,98 +36,16 @@ void FloatingQuantityStructure::buildUI() {
                                // identically-named labels
 
 
-  //if (ImGui::TreeNode(name.c_str())) {
+  bool currEnabled = isEnabled();
+  ImGui::Checkbox("Enable All", &currEnabled);
+  setEnabled(currEnabled);
 
-    bool currEnabled = isEnabled();
-    ImGui::Checkbox("Enable All", &currEnabled);
-    setEnabled(currEnabled);
-    //ImGui::SameLine();
+  // Do any structure-specific stuff here
+  this->buildCustomUI();
 
-    // Options popup
-    /*
-    if (ImGui::Button("Options")) {
-      ImGui::OpenPopup("OptionsPopup");
-    }
-    if (ImGui::BeginPopup("OptionsPopup")) {
+  // Build quantities list, in the common case of a QuantityStructure
+  this->buildQuantitiesUI();
 
-      // Transform
-      if (ImGui::BeginMenu("Transform")) {
-        if (ImGui::MenuItem("Center")) centerBoundingBox();
-        if (ImGui::MenuItem("Unit Scale")) rescaleToUnit();
-        if (ImGui::MenuItem("Reset")) resetTransform();
-        if (ImGui::MenuItem("Show Gizmo", NULL, &transformGizmo.enabled.get()))
-          transformGizmo.enabled.manuallyChanged();
-        ImGui::EndMenu();
-      }
-
-      if (ImGui::BeginMenu("Transparency")) {
-        if (ImGui::SliderFloat("Alpha", &transparency.get(), 0., 1., "%.3f")) setTransparency(transparency.get());
-        ImGui::TextUnformatted("Note: Change the transparency mode");
-        ImGui::TextUnformatted("      in Appearance --> Transparency.");
-        ImGui::TextUnformatted("Current mode: ");
-        ImGui::SameLine();
-        ImGui::TextUnformatted(modeName(render::engine->getTransparencyMode()).c_str());
-        ImGui::EndMenu();
-      }
-
-      // Toggle whether slice planes apply
-      if (ImGui::BeginMenu("Slice planes")) {
-        if (state::slicePlanes.empty()) {
-          // if there are none, show a helpful message
-          if (ImGui::Button("Add slice plane")) {
-            openSlicePlaneMenu = true;
-            addSceneSlicePlane(true);
-          }
-        } else {
-          // otherwise, show toggles for each
-          ImGui::TextUnformatted("Applies to this structure:");
-          ImGui::Indent(20);
-          for (SlicePlane* s : state::slicePlanes) {
-            bool ignorePlane = getIgnoreSlicePlane(s->name);
-            if (ImGui::MenuItem(s->name.c_str(), NULL, !ignorePlane)) setIgnoreSlicePlane(s->name, !ignorePlane);
-          }
-          ImGui::Indent(-20);
-        }
-        ImGui::TextUnformatted("");
-        ImGui::Separator();
-        ImGui::TextUnformatted("Note: Manage slice planes in");
-        ImGui::TextUnformatted("      View --> Slice Planes.");
-
-        ImGui::EndMenu();
-      }
-
-      if (ImGui::BeginMenu("Slice plane options")) {
-        if (ImGui::MenuItem("cull whole elements", NULL, getCullWholeElements()))
-          setCullWholeElements(!getCullWholeElements());
-        ImGui::EndMenu();
-      }
-
-
-      // Selection
-      if (ImGui::BeginMenu("Structure Selection")) {
-        if (ImGui::MenuItem("Enable all of type")) setEnabledAllOfType(true);
-        if (ImGui::MenuItem("Disable all of type")) setEnabledAllOfType(false);
-        if (ImGui::MenuItem("Isolate")) enableIsolate();
-        ImGui::EndMenu();
-      }
-
-      buildStructureOptionsUI();
-
-      // Do any structure-specific stuff here
-      this->buildCustomOptionsUI();
-
-      ImGui::EndPopup();
-    }
-  */
-
-    // Do any structure-specific stuff here
-    this->buildCustomUI();
-
-    // Build quantities list, in the common case of a QuantityStructure
-    this->buildQuantitiesUI();
-
-    //ImGui::TreePop();
-  //}
   ImGui::PopID();
 }
 
@@ -151,6 +69,19 @@ FloatingScalarImageQuantity* FloatingQuantityStructure::addFloatingScalarImageIm
   return q;
 }
 void removeFloatingScalarImage(std::string name) {
+  if (!globalFloatingQuantityStructure) return;
+  globalFloatingQuantityStructure->removeQuantity(name);
+}
+
+
+FloatingColorImageQuantity* FloatingQuantityStructure::addFloatingColorImageImpl(std::string name, size_t dimX,
+                                                                                   size_t dimY,
+                                                                                   const std::vector<glm::vec4>& values) {
+  FloatingColorImageQuantity* q = new FloatingColorImageQuantity(*this, name, dimX, dimY, values);
+  addQuantity(q);
+  return q;
+}
+void removeFloatingColorImage(std::string name) {
   if (!globalFloatingQuantityStructure) return;
   globalFloatingQuantityStructure->removeQuantity(name);
 }

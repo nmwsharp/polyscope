@@ -5,25 +5,22 @@
 #include "polyscope/scalar_quantity.h"
 
 
+#include <string>
 #include <vector>
 
 
 namespace polyscope {
 
-// This class being templated on a quantity is an annoyance inherited from ScalarQuantity... would be nice to redesign
-// to avoid it, but for now it's okay.
-template <typename QuantityT>
-class ImageScalarArtist : public ScalarQuantity<QuantityT> {
+class ImageColorArtist {
 
 public:
-  // ImageScalarArtist(, DataType dataType);
-  ImageScalarArtist(QuantityT& parentQ, std::string displayName, size_t dimX, size_t dimY,
-                    const std::vector<double>& data, DataType dataType);
+  // ImageColorArtist(, DataType dataType);
+  ImageColorArtist(std::string displayName, size_t dimX, size_t dimY, const std::vector<glm::vec4>& data);
 
   // An alternate constructor which bypasses the float array and just reads directly from the texture. Limits will be
   // set arbitrarily. This is a bit of a hack, and mainly used for visualizing internal rendering buffers.
-  // ImageScalarArtist(std::string name, std::shared_ptr<render::TextureBuffer>& texturebuffer, size_t dimX, size_t
-  // dimY, DataType dataType = DataType::STANDARD);
+  // ImageColorArtist(std::string name, std::shared_ptr<render::TextureBuffer>& texturebuffer, size_t dimX, size_t
+  // dimY);
 
   void renderSource();      // (re-)render the data to the internal texture
   void showFullscreen();    // render the image fullscreen
@@ -32,6 +29,7 @@ public:
 
   const std::string displayName;
   const size_t dimX, dimY;
+  const std::vector<glm::vec4> data;
   const bool readFromTex = false; // hack to also support pulling directly from a texture
 
 
@@ -46,9 +44,6 @@ private:
 
   void prepare();
   void prepareSource();
-  // void prepareFullscreen();
 };
 
 } // namespace polyscope
-
-#include "polyscope/image_scalar_artist.ipp"

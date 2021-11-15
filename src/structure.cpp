@@ -25,6 +25,7 @@ Structure::~Structure(){};
 Structure* Structure::setEnabled(bool newEnabled) {
   if (newEnabled == isEnabled()) return this;
   enabled = newEnabled;
+  requestRedraw();
   return this;
 };
 

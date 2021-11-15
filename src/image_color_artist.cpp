@@ -1,6 +1,5 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
-#pragma once
-#include "polyscope/image_scalar_artist.h"
+#include "polyscope/image_color_artist.h"
 
 #include "polyscope/polyscope.h"
 
@@ -8,14 +7,12 @@
 
 namespace polyscope {
 
-template <typename QuantityT>
-ImageScalarArtist<QuantityT>::ImageScalarArtist(QuantityT& parentQ_, std::string displayName_, size_t dimX_,
-                                                size_t dimY_, const std::vector<double>& data_, DataType dataType_)
-    : ScalarQuantity<QuantityT>(parentQ_, data_, dataType_), displayName(displayName_), dimX(dimX_), dimY(dimY_) {}
+ImageColorArtist::ImageColorArtist(std::string displayName_, size_t dimX_, size_t dimY_,
+                                   const std::vector<glm::vec4>& data_)
+    : displayName(displayName_), dimX(dimX_), dimY(dimY_), data(data_) {}
 
 /*
-template <typename QuantityT>
-ImageScalarArtist<QuantityT>::ImageScalarArtist(std::string name_,
+ImageColorArtist::ImageColorArtist(std::string name_,
                                                 std::shared_ptr<render::TextureBuffer>& texturebuffer, size_t dimX_,
                                                 size_t dimY_, DataType dataType_)
 
@@ -31,46 +28,43 @@ ImageScalarArtist<QuantityT>::ImageScalarArtist(std::string name_,
 */
 
 
-template <typename QuantityT>
-void ImageScalarArtist<QuantityT>::prepareSource() {
+void ImageColorArtist::prepareSource() {
   // Fill a texture with the raw data
   if (!readFromTex) {
-    // copy to float
-    const std::vector<double>& src = ScalarQuantity<QuantityT>::values;
-    std::vector<float> floatValues(src.size());
-    for (size_t i = 0; i < src.size(); i++) {
-      floatValues[i] = static_cast<float>(src[i]);
+    // copy to flat float buffer, just to be safe
+    std::vector<float> floatValues(4 * data.size());
+    for (size_t i = 0; i < data.size(); i++) {
+      for (size_t j = 0; j < 4; j++) {
+        floatValues[4 * i + j] = static_cast<float>(data[i][j]);
+      }
     }
 
     // common case
-    textureRaw = render::engine->generateTextureBuffer(TextureFormat::R32F, dimX, dimY, &floatValues.front());
+    textureRaw = render::engine->generateTextureBuffer(TextureFormat::RGBA32F, dimX, dimY, &floatValues.front());
   }
 
   // Texture and sourceProgram for rendering in
   framebuffer = render::engine->generateFrameBuffer(dimX, dimY);
-  textureRendered = render::engine->generateTextureBuffer(TextureFormat::RGB16F, dimX, dimY);
+  textureRendered = render::engine->generateTextureBuffer(TextureFormat::RGBA16F, dimX, dimY);
   framebuffer->addColorBuffer(textureRendered);
   framebuffer->setViewport(0, 0, dimX, dimY);
 }
 
-template <typename QuantityT>
-void ImageScalarArtist<QuantityT>::prepare() {
+void ImageColorArtist::prepare() {
   if (textureRaw == nullptr) {
     // the first time, we need to also allocate the buffers for the raw source data
     prepareSource();
   }
 
   // Create the sourceProgram
-  sourceProgram = render::engine->requestShader("SCALAR_TEXTURE_COLORMAP", this->addScalarRules({}),
-                                                render::ShaderReplacementDefaults::Process);
+  sourceProgram =
+      render::engine->requestShader("TEXTURE_DRAW_PLAIN", {}, render::ShaderReplacementDefaults::Process);
   sourceProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  sourceProgram->setTextureFromBuffer("t_scalar", textureRaw.get());
-  sourceProgram->setTextureFromColormap("t_colormap", this->cMap.get());
+  sourceProgram->setTextureFromBuffer("t_image", textureRaw.get());
 }
 
 
-template <typename QuantityT>
-void ImageScalarArtist<QuantityT>::refresh() {
+void ImageColorArtist::refresh() {
   sourceProgram.reset();
   fullscreenProgram.reset();
   textureRendered.reset();
@@ -81,8 +75,7 @@ void ImageScalarArtist<QuantityT>::refresh() {
   }
 }
 
-template <typename QuantityT>
-void ImageScalarArtist<QuantityT>::renderSource() {
+void ImageColorArtist::renderSource() {
   // === Render the raw data to the texture
 
   // Make the sourceProgram if we don't have one already
@@ -91,7 +84,6 @@ void ImageScalarArtist<QuantityT>::renderSource() {
   }
 
   // Set uniforms
-  this->setScalarUniforms(*sourceProgram);
 
   // Render to the intermediate "source" texture for the image
   render::engine->pushBindFramebufferForRendering(*framebuffer);
@@ -100,8 +92,7 @@ void ImageScalarArtist<QuantityT>::renderSource() {
 }
 
 
-template <typename QuantityT>
-void ImageScalarArtist<QuantityT>::showFullscreen() {
+void ImageColorArtist::showFullscreen() {
   // === Render the raw data to the texture
 
   // Make the sourceProgram if we don't have one already
@@ -110,18 +101,13 @@ void ImageScalarArtist<QuantityT>::showFullscreen() {
     prepare();
   }
 
-  // Set uniforms
-  sourceProgram->setUniform("u_rangeLow", this->vizRange.first);
-  sourceProgram->setUniform("u_rangeHigh", this->vizRange.second);
-
   // render::engine->pushBindFramebufferForRendering(*framebuffer);
   sourceProgram->draw();
   // render::engine->popBindFramebufferForRendering();
 }
 
 
-template <typename QuantityT>
-void ImageScalarArtist<QuantityT>::showInImGuiWindow() {
+void ImageColorArtist::showInImGuiWindow() {
   if (!sourceProgram) return;
 
   ImGui::Begin(displayName.c_str(), nullptr, ImGuiWindowFlags_NoScrollbar);
