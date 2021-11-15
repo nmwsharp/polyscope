@@ -57,8 +57,7 @@ void ImageColorArtist::prepare() {
   }
 
   // Create the sourceProgram
-  sourceProgram =
-      render::engine->requestShader("TEXTURE_DRAW_PLAIN", {}, render::ShaderReplacementDefaults::Process);
+  sourceProgram = render::engine->requestShader("TEXTURE_DRAW_PLAIN", {}, render::ShaderReplacementDefaults::Process);
   sourceProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
   sourceProgram->setTextureFromBuffer("t_image", textureRaw.get());
 }
