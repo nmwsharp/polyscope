@@ -67,8 +67,10 @@ public:
   void rescaleToUnit();
   void resetTransform();
   void setTransform(glm::mat4x4 transform);
-  void translate(glm::vec3 vec);
+  void setPosition(glm::vec3 vec);   // set the transform translation to be vec
+  void translate(glm::vec3 vec); // *adds* vec to the position
   glm::mat4x4 getTransform();
+  glm::vec3 getPosition();
 
   void setStructureUniforms(render::ShaderProgram& p);
   bool wantsCullPosition();

@@ -176,12 +176,23 @@ void Structure::setTransform(glm::mat4x4 transform) {
   updateStructureExtents();
 }
 
+void Structure::setPosition(glm::vec3 vec) {
+  objectTransform.get()[3][0] = vec.x;
+  objectTransform.get()[3][1] = vec.y;
+  objectTransform.get()[3][2] = vec.z;
+  updateStructureExtents();
+}
+
 void Structure::translate(glm::vec3 vec) {
   objectTransform = glm::translate(objectTransform.get(), vec);
   updateStructureExtents();
 }
 
 glm::mat4x4 Structure::getTransform() { return objectTransform.get(); }
+
+glm::vec3 Structure::getPosition() {
+  return glm::vec3{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
+}
 
 void Structure::resetTransform() {
   objectTransform = glm::mat4(1.0);
