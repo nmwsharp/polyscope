@@ -39,7 +39,7 @@ extern bool autoscaleStructures;
 
 // If true, Polyscope will automatically compute state::boundingBox and state::lengthScale parameters according to the
 // registered structures, and update them whenever structures are added chagned. If false, the bounding box and length
-// scale are left unchanged. If set to flast before the first structure is registered, the user is required to set the
+// scale are left unchanged. If set to false before the first structure is registered, the user is required to set the
 // bounding box and length scale manually. (default: true)
 extern bool automaticallyComputeSceneExtents;
 
