@@ -280,7 +280,7 @@ std::string Structure::uniquePrefix() { return typeName() + "#" + name + "#"; }
 void Structure::remove() { removeStructure(typeName(), name); }
 
 
-Structure* Structure::setTransparency(double newVal) {
+Structure* Structure::setTransparency(float newVal) {
   transparency = newVal;
 
   if (newVal < 1. && options::transparencyMode == TransparencyMode::None) {
@@ -290,7 +290,7 @@ Structure* Structure::setTransparency(double newVal) {
 
   return this;
 }
-double Structure::getTransparency() { return transparency.get(); }
+float Structure::getTransparency() { return transparency.get(); }
 
 Structure* Structure::setCullWholeElements(bool newVal) {
   cullWholeElements = newVal;

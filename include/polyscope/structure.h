@@ -88,8 +88,8 @@ public:
   void setEnabledAllOfType(bool newEnabled); // enable/disable all structures of this type
 
   // Options
-  Structure* setTransparency(double newVal); // also enables transparency if <1 and transparency is not enabled
-  double getTransparency();
+  Structure* setTransparency(float newVal); // also enables transparency if <1 and transparency is not enabled
+  float getTransparency();
 
   Structure* setCullWholeElements(bool newVal);
   bool getCullWholeElements();
