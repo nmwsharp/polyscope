@@ -116,6 +116,15 @@ bool redrawRequested();
 void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI = true);
 void popContext();
 
+// These helpers are called internally by Polyscope to render and build the UI.
+// Normally, applications should not need to call them, but in advanced settings when making custom UIs, they may be
+// useful to manually build pieces of the interface.
+void buildPolyscopeGui();
+void buildStructureGui();
+void buildPickGui();
+void buildUserGuiAndInvokeCallback();
+
+
 // === Utility
 
 // Execute one iteration of the main loop
