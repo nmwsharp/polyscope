@@ -418,6 +418,10 @@ void renderSceneToScreen() {
   }
 }
 
+auto lastMainLoopIterTime = std::chrono::steady_clock::now();
+
+} // namespace
+
 void buildPolyscopeGui() {
 
   // Create window
@@ -558,6 +562,25 @@ void buildStructureGui() {
   ImGui::End();
 }
 
+void buildPickGui() {
+  if (pick::haveSelection()) {
+
+    ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin),
+                                   2 * imguiStackMargin + lastWindowHeightUser));
+    ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
+
+    ImGui::Begin("Selection", nullptr);
+    std::pair<Structure*, size_t> selection = pick::getSelection();
+
+    ImGui::TextUnformatted((selection.first->typeName() + ": " + selection.first->name).c_str());
+    ImGui::Separator();
+    selection.first->buildPickUI(selection.second);
+
+    rightWindowsWidth = ImGui::GetWindowWidth();
+    ImGui::End();
+  }
+}
+
 void buildUserGuiAndInvokeCallback() {
 
   if (!options::invokeUserCallbackForNestedShow && contextStack.size() > 2) {
@@ -589,29 +612,6 @@ void buildUserGuiAndInvokeCallback() {
     lastWindowHeightUser = imguiStackMargin;
   }
 }
-
-void buildPickGui() {
-  if (pick::haveSelection()) {
-
-    ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin),
-                                   2 * imguiStackMargin + lastWindowHeightUser));
-    ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
-
-    ImGui::Begin("Selection", nullptr);
-    std::pair<Structure*, size_t> selection = pick::getSelection();
-
-    ImGui::TextUnformatted((selection.first->typeName() + ": " + selection.first->name).c_str());
-    ImGui::Separator();
-    selection.first->buildPickUI(selection.second);
-
-    rightWindowsWidth = ImGui::GetWindowWidth();
-    ImGui::End();
-  }
-}
-
-auto lastMainLoopIterTime = std::chrono::steady_clock::now();
-
-} // namespace
 
 void draw(bool withUI, bool withContextCallback) {
   processLazyProperties();
