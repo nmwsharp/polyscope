@@ -468,7 +468,7 @@ std::vector<std::string> VolumeMesh::addVolumeMeshRules(std::vector<std::string>
 
   initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
 
-  if (wantsCullPosition()) {
+  if (wantsCullPosition() && !isSlice) {
     initRules.push_back("MESH_PROPAGATE_CULLPOS");
   }
 
