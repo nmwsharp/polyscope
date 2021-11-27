@@ -293,7 +293,10 @@ glm::mat4 computeHomeView() {
   }
 
   // Rotate around the up axis, since our camera looks down -Z
-  R = glm::rotate(R, static_cast<float>(PI), baseUp);
+  // (except in planar mode, where we look down +Z so default axes are as-expected)
+  if (style != NavigateStyle::Planar) {
+    R = glm::rotate(R, static_cast<float>(PI), baseUp);
+  }
 
   glm::mat4x4 Tobj = glm::translate(glm::mat4x4(1.0), -state::center());
   glm::mat4x4 Tcam =
