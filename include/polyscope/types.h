@@ -5,6 +5,8 @@
 
 namespace polyscope {
 
+enum class NavigateStyle { Turntable = 0, Free, Planar, Arcball };
+enum class UpDir { XUp = 0, YUp, ZUp, NegXUp, NegYUp, NegZUp};
 enum class BackgroundView { None = 0 };
 enum class ProjectionMode { Perspective = 0, Orthographic };
 enum class TransparencyMode { None = 0, Simple, Pretty };

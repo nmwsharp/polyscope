@@ -23,8 +23,11 @@
 namespace polyscope {
 namespace view {
 
-enum class NavigateStyle { Turntable = 0, Free, Planar, Arcball };
-enum class UpDir { XUp = 0, YUp, ZUp, NegXUp, NegYUp, NegZUp};
+// Previously, these enums were defined here in the `view` namespace, but now for consistency we define all enums in the
+// top-level `polyscope` namespace. For backwards compatability, we import the enums so existing code like
+// polyscope::view::NavigateStyle::Planar still works.
+using polyscope::NavigateStyle;
+using polyscope::UpDir;
 
 // === View state
 extern int bufferWidth;
@@ -109,7 +112,7 @@ void updateFlight(); // Note: uses wall-clock time, so should generally be calle
 
 
 // Setters, getters, etc
-void setUpDir(UpDir newUpDir, bool animateFlight=false);
+void setUpDir(UpDir newUpDir, bool animateFlight = false);
 UpDir getUpDir();
 glm::vec3 getUpVec();
 
