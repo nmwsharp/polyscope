@@ -102,10 +102,8 @@ public:
   size_t faceDataSize;
   size_t cellDataSize;
 
-
-  // Map Hex indicies to Tet indicies
-  static const std::vector<std::array<size_t, 4>> hexToTet;
-
+  // Tetrahedral representation
+  std::vector<std::array<int64_t, 4>> tets;
 
   // === Manage the mesh itself
 
@@ -118,7 +116,7 @@ public:
   size_t nCells() const { return cells.size(); }
 
   // Total tet count (same as nCells unless a hex mesh)
-  size_t nTets();
+  size_t nTets() const { return tets.size(); };
 
   size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
   size_t nFaces() const { return nFacesCount; }
@@ -133,6 +131,7 @@ public:
   VolumeCellType cellType(size_t i) const;
   void computeCounts();       // call to populate counts and indices
   void computeGeometryData(); // call to populate normals/areas/lengths
+  void computeTets(); // call to populate tets
   std::vector<std::string> addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade = true,
                                               bool isSlice = false);
   glm::vec3 cellCenter(size_t iC);
@@ -222,6 +221,8 @@ private:
   // clang-format off
   static const std::vector<std::vector<std::array<size_t, 3>>> stencilTet;
   static const std::vector<std::vector<std::array<size_t, 3>>> stencilHex;
+  static const std::array<std::array<size_t, 8>, 8> rotationMap;
+  static const std::array<std::array<std::array<size_t, 4>, 6>, 4> diagonalMap;
 
   // clang-format off
 

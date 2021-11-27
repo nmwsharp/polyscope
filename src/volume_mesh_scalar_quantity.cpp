@@ -74,17 +74,7 @@ void VolumeMeshVertexScalarQuantity::fillLevelSetData(render::ShaderProgram& p) 
   std::vector<glm::vec3> slice2;
   std::vector<glm::vec3> slice3;
   std::vector<glm::vec3> slice4;
-  size_t tetCount = 0;
-  for (size_t iC = 0; iC < parent.nCells(); iC++) {
-    switch (parent.cellType(iC)) {
-    case VolumeCellType::HEX:
-      tetCount += 5;
-      break;
-    case VolumeCellType::TET:
-      tetCount += 1;
-      break;
-    }
-  }
+  size_t tetCount = parent.nTets();
   slice1.resize(tetCount);
   slice2.resize(tetCount);
   slice3.resize(tetCount);
@@ -94,36 +84,15 @@ void VolumeMeshVertexScalarQuantity::fillLevelSetData(render::ShaderProgram& p) 
   point3.resize(tetCount);
   point4.resize(tetCount);
   auto vertices = parent.vertices;
-  auto hexToTet = VolumeMesh::hexToTet;
-  size_t tetIdx = 0;
-  for (size_t iC = 0; iC < parent.nCells(); iC++) {
-    const std::array<int64_t, 8>& cell = parent.cells[iC];
-    switch (parent.cellType(iC)) {
-    case VolumeCellType::HEX:
-      for (size_t i = 0; i < hexToTet.size(); i++) {
-        point1[tetIdx + i] = vertices[cell[hexToTet[i][0]]];
-        point2[tetIdx + i] = vertices[cell[hexToTet[i][1]]];
-        point3[tetIdx + i] = vertices[cell[hexToTet[i][2]]];
-        point4[tetIdx + i] = vertices[cell[hexToTet[i][3]]];
-        slice1[tetIdx + i] = glm::vec3(values[cell[hexToTet[i][0]]], 0, 0);
-        slice2[tetIdx + i] = glm::vec3(values[cell[hexToTet[i][1]]], 0, 0);
-        slice3[tetIdx + i] = glm::vec3(values[cell[hexToTet[i][2]]], 0, 0);
-        slice4[tetIdx + i] = glm::vec3(values[cell[hexToTet[i][3]]], 0, 0);
-      }
-      tetIdx += hexToTet.size();
-      break;
-    case VolumeCellType::TET:
-      point1[tetIdx] = vertices[cell[0]];
-      point2[tetIdx] = vertices[cell[1]];
-      point3[tetIdx] = vertices[cell[2]];
-      point4[tetIdx] = vertices[cell[3]];
-      slice1[tetIdx] = glm::vec3(values[cell[0]], 0, 0);
-      slice2[tetIdx] = glm::vec3(values[cell[1]], 0, 0);
-      slice3[tetIdx] = glm::vec3(values[cell[2]], 0, 0);
-      slice4[tetIdx] = glm::vec3(values[cell[3]], 0, 0);
-      tetIdx += 1;
-      break;
-    }
+  for (size_t i = 0; i < parent.nTets(); i++) {
+    point1[i] = vertices[parent.tets[i][0]];
+    point2[i] = vertices[parent.tets[i][1]];
+    point3[i] = vertices[parent.tets[i][2]];
+    point4[i] = vertices[parent.tets[i][3]];
+    slice1[i] = glm::vec3(values[parent.tets[i][0]], 0, 0);
+    slice2[i] = glm::vec3(values[parent.tets[i][1]], 0, 0);
+    slice3[i] = glm::vec3(values[parent.tets[i][2]], 0, 0);
+    slice4[i] = glm::vec3(values[parent.tets[i][3]], 0, 0);
   }
   p.setAttribute("a_point_1", point1);
   p.setAttribute("a_point_2", point2);
@@ -315,28 +284,11 @@ void VolumeMeshVertexScalarQuantity::fillGeomColorBuffers(render::ShaderProgram&
   colorval_4.resize(tetCount);
 
   auto vertices = parent.vertices;
-  auto hexToTet = VolumeMesh::hexToTet;
-  size_t tetIdx = 0;
-  for (size_t iC = 0; iC < parent.nCells(); iC++) {
-    const std::array<int64_t, 8>& cell = parent.cells[iC];
-    switch (parent.cellType(iC)) {
-    case VolumeCellType::HEX:
-      for (size_t i = 0; i < hexToTet.size(); i++) {
-        colorval_1[tetIdx + i] = values[cell[hexToTet[i][0]]];
-        colorval_2[tetIdx + i] = values[cell[hexToTet[i][1]]];
-        colorval_3[tetIdx + i] = values[cell[hexToTet[i][2]]];
-        colorval_4[tetIdx + i] = values[cell[hexToTet[i][3]]];
-      }
-      tetIdx += hexToTet.size();
-      break;
-    case VolumeCellType::TET:
-      colorval_1[tetIdx] = values[cell[0]];
-      colorval_2[tetIdx] = values[cell[1]];
-      colorval_3[tetIdx] = values[cell[2]];
-      colorval_4[tetIdx] = values[cell[3]];
-      tetIdx += 1;
-      break;
-    }
+  for (size_t iT = 0; iT < parent.tets.size(); iT++) {
+    colorval_1[iT] = values[parent.tets[iT][0]];
+    colorval_2[iT] = values[parent.tets[iT][1]];
+    colorval_3[iT] = values[parent.tets[iT][2]];
+    colorval_4[iT] = values[parent.tets[iT][3]];
   }
 
   // Store data in buffers
