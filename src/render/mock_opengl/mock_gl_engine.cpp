@@ -1455,6 +1455,8 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   // marching tets things
   registeredShaderRules.insert({"SLICE_TETS_BASECOLOR_SHADE", SLICE_TETS_BASECOLOR_SHADE});
   registeredShaderRules.insert({"SLICE_TETS_PROPAGATE_VALUE", SLICE_TETS_PROPAGATE_VALUE});
+  registeredShaderRules.insert({"SLICE_TETS_PROPAGATE_VECTOR", SLICE_TETS_PROPAGATE_VECTOR});
+  registeredShaderRules.insert({"SLICE_TETS_VECTOR_COLOR", SLICE_TETS_VECTOR_COLOR});
   registeredShaderRules.insert({"SLICE_TETS_MESH_WIREFRAME", SLICE_TETS_MESH_WIREFRAME});
 
 

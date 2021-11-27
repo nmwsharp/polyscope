@@ -302,7 +302,7 @@ const ShaderReplacementRule MESH_WIREFRAME(
         )"},
       {"APPLY_WIREFRAME", R"(
           float edgeFactor = getEdgeFactor(a_barycoordToFrag, a_edgeIsRealToFrag, u_edgeWidth);
-          albedoColor = mix(albedoColor * 1e-12 + fwidth(a_barycoordToFrag), u_edgeColor, 0.0f + edgeFactor * 1e-12);
+          albedoColor = mix(albedoColor, u_edgeColor, edgeFactor);
       )"},
     },
     /* uniforms */ {

@@ -24,6 +24,7 @@ protected:
   // UI internals
   const std::string definedOn;
   std::shared_ptr<render::ShaderProgram> program;
+  std::shared_ptr<render::ShaderProgram> sliceProgram;
 
   // Helpers
   virtual void createProgram() = 0;
@@ -38,7 +39,11 @@ public:
   VolumeMeshVertexColorQuantity(std::string name, std::vector<glm::vec3> values_, VolumeMesh& mesh_);
 
   virtual void createProgram() override;
+  virtual std::shared_ptr<render::ShaderProgram> createSliceProgram() override;
+  void fillSliceColorBuffers(render::ShaderProgram& p);
   void fillColorBuffers(render::ShaderProgram& p);
+
+  virtual void drawSlice(polyscope::SlicePlane *sp) override;
 
   void buildVertexInfoGUI(size_t vInd) override;
 

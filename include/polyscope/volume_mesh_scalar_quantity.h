@@ -24,7 +24,6 @@ protected:
   const std::string definedOn;
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> sliceProgram;
-  virtual std::shared_ptr<render::ShaderProgram> createSliceProgram(){ return nullptr; };
 
   // Helpers
   virtual void createProgram() = 0;
@@ -54,7 +53,7 @@ public:
 
   void fillColorBuffers(render::ShaderProgram& p);
 
-  void fillGeomColorBuffers(render::ShaderProgram& p);
+  void fillSliceColorBuffers(render::ShaderProgram& p);
 
   virtual void buildCustomUI() override;
   void buildVertexInfoGUI(size_t vInd) override;

@@ -167,13 +167,6 @@ void VolumeMesh::computeTets(){
   tets.resize(tetCount);
   realEdges.resize(tetCount);
   size_t tetIdx = 0;
-  std::vector<std::array<int64_t, 4>> hexToTet = {
-    {0, 1, 2, 5},
-    {0, 2, 7, 5},
-    {0, 2, 3, 7},
-    {0, 5, 7, 4},
-    {2, 7, 5, 6}
-  };
   for (size_t iC = 0; iC < nCells(); iC++) {
     switch (cellType(iC)) {
     case VolumeCellType::HEX: {

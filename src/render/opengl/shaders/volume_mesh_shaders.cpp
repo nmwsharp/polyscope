@@ -280,6 +280,71 @@ const ShaderReplacementRule SLICE_TETS_MESH_WIREFRAME(
     },
     /* attributes */ {},
     /* textures */ {});
+const ShaderReplacementRule SLICE_TETS_PROPAGATE_VECTOR(
+    /* rule name */ "SLICE_TETS_PROPAGATE_VECTOR",
+    {
+        /* replacement sources */
+        {"VERT_DECLARATIONS", R"(
+          in vec3 a_value_1;
+          in vec3 a_value_2;
+          in vec3 a_value_3;
+          in vec3 a_value_4;
+          out vec3 value_1;
+          out vec3 value_2;
+          out vec3 value_3;
+          out vec3 value_4;
+        )"},
+        {"VERT_ASSIGNMENTS", R"(
+          value_1 = a_value_1;
+          value_2 = a_value_2;
+          value_3 = a_value_3;
+          value_4 = a_value_4;
+        )"},
+        {"GEOM_DECLARATIONS", R"(
+          in vec3 value_1[];
+          in vec3 value_2[];
+          in vec3 value_3[];
+          in vec3 value_4[];
+          out vec3 a_valueToFrag;
+      )"},
+        {"GEOM_INIT_DECLARATIONS", R"(
+          vec3 v[4] = vec3[](value_1[0], value_2[0], value_3[0], value_4[0]);
+          vec3 out_v[4] = vec3[](vec3(0), vec3(0), vec3(0), vec3(0));
+      )"},
+        {"GEOM_INTERPOLATE", R"(
+          out_v[n] = ( (1.-t)*v[i] + t*v[j] );
+      )"},
+        {"GEOM_ASSIGNMENTS", R"(
+          a_valueToFrag = out_v[ordering[i]];
+      )"},
+        {"FRAG_DECLARATIONS", R"(
+          in vec3 a_valueToFrag;
+        )"},
+        {"GENERATE_SHADE_VALUE", R"(
+          vec3 shadeValue = a_valueToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */
+    {
+        {"a_value_1", DataType::Vector3Float},
+        {"a_value_2", DataType::Vector3Float},
+        {"a_value_3", DataType::Vector3Float},
+        {"a_value_4", DataType::Vector3Float},
+    },
+    /* textures */ {});
+
+const ShaderReplacementRule SLICE_TETS_VECTOR_COLOR(
+    /* rule name */ "SLICE_TETS_VECTOR_COLOR",
+    {/* replacement sources */
+     {"GENERATE_SHADE_COLOR", R"(
+          vec3 albedoColor = shadeValue;
+        )"}},
+    /* uniforms */
+    {
+    },
+    /* attributes */ {},
+    /* textures */ {});
 
 const ShaderReplacementRule SLICE_TETS_PROPAGATE_VALUE(
     /* rule name */ "SLICE_TETS_PROPAGATE_VALUE",

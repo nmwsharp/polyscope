@@ -132,6 +132,7 @@ void SlicePlane::setVolumeMeshToSlice(std::string meshname) {
     volumeSliceProgram.reset();
     return;
   }
+  drawPlane.set(false);
   meshToSlice->addSlicePlaneListener(this);
   shouldSliceMesh = true;
   volumeSliceProgram.reset();
@@ -183,12 +184,13 @@ void SlicePlane::drawGeometry(){
   if(!active.get()) return;
 
   if (shouldSliceMesh) {
+    VolumeMesh* vMesh = polyscope::getVolumeMesh(slicedMeshName);
+    if(vMesh->wantsCullPosition()) return;
+
     if(volumeSliceProgram == nullptr){
       createVolumeSliceProgram();
     }
-    VolumeMesh* vMesh = polyscope::getVolumeMesh(slicedMeshName);
 
-    if(vMesh->wantsCullPosition()) return;
 
     if(vMesh->dominantQuantity == nullptr){
       vMesh->setStructureUniforms(*volumeSliceProgram);
@@ -250,7 +252,7 @@ void SlicePlane::buildGUI() {
     setDrawWidget(getDrawWidget());
   }
   if (state::structures.size() > 0) {
-    if (ImGui::BeginMenu("Slice Volume Mesh")) {
+    if (ImGui::BeginMenu("Inspect")) {
       std::map<std::string, Structure*>::iterator it;
       for (it = state::structures["Volume Mesh"].begin(); it != state::structures["Volume Mesh"].end(); it++) {
         std::string vMeshName = it->first;

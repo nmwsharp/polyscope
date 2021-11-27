@@ -176,7 +176,7 @@ void VolumeMeshVertexScalarQuantity::setLevelSetVisibleQuantity(std::string name
 
   // Fill color buffers
   parent.fillSliceGeometryBuffers(*levelSetProgram);
-  q->fillGeomColorBuffers(*levelSetProgram);
+  q->fillSliceColorBuffers(*levelSetProgram);
   render::engine->setMaterial(*levelSetProgram, parent.getMaterial());
   fillLevelSetData(*levelSetProgram);
   setLevelSetUniforms(*levelSetProgram);
@@ -226,7 +226,7 @@ std::shared_ptr<render::ShaderProgram> VolumeMeshVertexScalarQuantity::createSli
 
   // Fill color buffers
   parent.fillSliceGeometryBuffers(*p);
-  fillGeomColorBuffers(*p);
+  fillSliceColorBuffers(*p);
   render::engine->setMaterial(*p, parent.getMaterial());
   return p;
 }
@@ -271,7 +271,7 @@ void VolumeMeshVertexScalarQuantity::fillColorBuffers(render::ShaderProgram& p) 
   p.setTextureFromColormap("t_colormap", cMap.get());
 }
 
-void VolumeMeshVertexScalarQuantity::fillGeomColorBuffers(render::ShaderProgram& p) {
+void VolumeMeshVertexScalarQuantity::fillSliceColorBuffers(render::ShaderProgram& p) {
   size_t tetCount = parent.nTets();
   std::vector<double> colorval_1;
   std::vector<double> colorval_2;

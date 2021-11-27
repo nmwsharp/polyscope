@@ -13,6 +13,8 @@ extern const ShaderStageSpecification SLICE_TETS_FRAG_SHADER;
 extern const ShaderReplacementRule SLICE_TETS_BASECOLOR_SHADE;
 extern const ShaderReplacementRule SLICE_TETS_MESH_WIREFRAME;
 extern const ShaderReplacementRule SLICE_TETS_PROPAGATE_VALUE;
+extern const ShaderReplacementRule SLICE_TETS_PROPAGATE_VECTOR;
+extern const ShaderReplacementRule SLICE_TETS_VECTOR_COLOR;
 
 
 } // namespace backend_openGL3_glfw

@@ -16,6 +16,7 @@ public:
   VolumeMeshQuantity(std::string name, VolumeMesh& parentStructure, bool dominates = false);
   ~VolumeMeshQuantity() {};
   // virtual std::shared_ptr<render::ShaderProgram> tryCreateSliceProgram(){ return nullptr; }; 
+  virtual std::shared_ptr<render::ShaderProgram> createSliceProgram(){ return nullptr; };
   virtual void drawSlice(polyscope::SlicePlane *sp){};
 
 public:
