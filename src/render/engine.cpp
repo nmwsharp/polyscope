@@ -966,6 +966,8 @@ void Engine::loadDefaultColorMap(std::string name) {
     buff = &CM_RAINBOW;
   } else if (name == "jet") {
     buff = &CM_JET;
+  } else if (name == "turbo") {
+    buff = &CM_TURBO;
   } else {
     throw std::runtime_error("unrecognized default colormap " + name);
   }
@@ -986,6 +988,7 @@ void Engine::loadDefaultColorMaps() {
   loadDefaultColorMap("spectral");
   loadDefaultColorMap("rainbow");
   loadDefaultColorMap("jet");
+  loadDefaultColorMap("turbo");
 }
 
 

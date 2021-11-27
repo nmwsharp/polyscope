@@ -17,6 +17,7 @@ extern const std::vector<glm::vec3> CM_PIYG;
 extern const std::vector<glm::vec3> CM_SPECTRAL;
 extern const std::vector<glm::vec3> CM_RAINBOW;
 extern const std::vector<glm::vec3> CM_JET;
+extern const std::vector<glm::vec3> CM_TURBO;
 extern const std::vector<glm::vec3> CM_REDS;
 extern const std::vector<glm::vec3> CM_PHASE;
 
