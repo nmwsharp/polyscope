@@ -64,8 +64,8 @@ public:
   void setTransparency(double newVal);
   double getTransparency();
   
-  void setVolumeMeshToSlice(std::string meshName);
-  std::string getVolumeMeshToSlice();
+  void setVolumeMeshToInspect(std::string meshName);
+  std::string getVolumeMeshToInspect();
 
 protected:
   // = State

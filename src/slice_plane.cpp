@@ -91,7 +91,7 @@ SlicePlane::SlicePlane(std::string name_)
 }
 
 SlicePlane::~SlicePlane() {
-  setVolumeMeshToSlice(""); // disable any slicing
+  setVolumeMeshToInspect(""); // disable any slicing
   render::engine->removeSlicePlane(postfix);
   auto pos = std::find(state::slicePlanes.begin(), state::slicePlanes.end(), this);
   if (pos == state::slicePlanes.end()) return;
@@ -122,55 +122,55 @@ void SlicePlane::prepare() {
   planeProgram->setAttribute("a_position", positions);
 }
 
-void SlicePlane::setVolumeMeshToSlice(std::string meshname) {
-  VolumeMesh* oldMeshToSlice = polyscope::getVolumeMesh(slicedMeshName.get());
-  if (oldMeshToSlice != nullptr) {
-    oldMeshToSlice->removeSlicePlaneListener(this);
+void SlicePlane::setVolumeMeshToInspect(std::string meshname) {
+  VolumeMesh* oldMeshToInspect = polyscope::getVolumeMesh(slicedMeshName.get());
+  if (oldMeshToInspect != nullptr) {
+    oldMeshToInspect->removeSlicePlaneListener(this);
   }
   slicedMeshName = meshname;
-  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName.get());
-  if (meshToSlice == nullptr) {
+  VolumeMesh* meshToInspect = polyscope::getVolumeMesh(slicedMeshName.get());
+  if (meshToInspect == nullptr) {
     slicedMeshName = "";
     shouldSliceMesh = false;
     volumeSliceProgram.reset();
     return;
   }
   drawPlane = false;
-  meshToSlice->addSlicePlaneListener(this);
-  meshToSlice->setCullWholeElements(false);
+  meshToInspect->addSlicePlaneListener(this);
+  meshToInspect->setCullWholeElements(false);
   shouldSliceMesh = true;
   volumeSliceProgram.reset();
 }
 
-std::string SlicePlane::getVolumeMeshToSlice() { return slicedMeshName.get(); }
+std::string SlicePlane::getVolumeMeshToInspect() { return slicedMeshName.get(); }
 
 void SlicePlane::createVolumeSliceProgram() {
-  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName.get());
+  VolumeMesh* meshToInspect = polyscope::getVolumeMesh(slicedMeshName.get());
   volumeSliceProgram = render::engine->requestShader(
-      "SLICE_TETS", meshToSlice->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}, true, true));
-  meshToSlice->fillSliceGeometryBuffers(*volumeSliceProgram);
-  render::engine->setMaterial(*volumeSliceProgram, meshToSlice->getMaterial());
+      "SLICE_TETS", meshToInspect->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}, true, true));
+  meshToInspect->fillSliceGeometryBuffers(*volumeSliceProgram);
+  render::engine->setMaterial(*volumeSliceProgram, meshToInspect->getMaterial());
 }
 
 void SlicePlane::resetVolumeSliceProgram() { volumeSliceProgram.reset(); }
 
 void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
-  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName.get());
+  VolumeMesh* meshToInspect = polyscope::getVolumeMesh(slicedMeshName.get());
   std::vector<glm::vec3> point1;
   std::vector<glm::vec3> point2;
   std::vector<glm::vec3> point3;
   std::vector<glm::vec3> point4;
-  size_t cellCount = meshToSlice->nCells();
+  size_t cellCount = meshToInspect->nCells();
   point1.resize(cellCount);
   point2.resize(cellCount);
   point3.resize(cellCount);
   point4.resize(cellCount);
   for (size_t iC = 0; iC < cellCount; iC++) {
-    const std::array<int64_t, 8>& cell = meshToSlice->cells[iC];
-    point1[iC] = meshToSlice->vertices[cell[0]];
-    point2[iC] = meshToSlice->vertices[cell[1]];
-    point3[iC] = meshToSlice->vertices[cell[2]];
-    point4[iC] = meshToSlice->vertices[cell[3]];
+    const std::array<int64_t, 8>& cell = meshToInspect->cells[iC];
+    point1[iC] = meshToInspect->vertices[cell[0]];
+    point2[iC] = meshToInspect->vertices[cell[1]];
+    point3[iC] = meshToInspect->vertices[cell[2]];
+    point4[iC] = meshToInspect->vertices[cell[3]];
   }
   glm::vec3 normal = glm::vec3(-1, 0, 0);
 
@@ -188,7 +188,7 @@ void SlicePlane::drawGeometry() {
 
     // guard against situations where the volume mesh we are slicing has been deleted
     if (vMesh == nullptr) {
-      setVolumeMeshToSlice("");
+      setVolumeMeshToInspect("");
       return;
     }
 
@@ -289,13 +289,13 @@ void SlicePlane::buildGUI() {
       for (it = state::structures["Volume Mesh"].begin(); it != state::structures["Volume Mesh"].end(); it++) {
         std::string vMeshName = it->first;
         if (ImGui::MenuItem(vMeshName.c_str(), NULL, slicedMeshName.get() == vMeshName)) {
-          setVolumeMeshToSlice(vMeshName);
+          setVolumeMeshToInspect(vMeshName);
         }
       }
 
       // "None" option
       if (ImGui::MenuItem("None", NULL, slicedMeshName.get() == "")) {
-        setVolumeMeshToSlice("");
+        setVolumeMeshToInspect("");
       }
 
       ImGui::EndPopup();
