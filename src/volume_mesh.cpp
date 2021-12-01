@@ -12,9 +12,7 @@
 
 #include <unordered_map>
 #include <utility>
-
-using std::cout;
-using std::endl;
+#include <algorithm>
 
 namespace polyscope {
 
@@ -101,7 +99,7 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
       interiorColor(uniquePrefix() + "interiorColor", color.get()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
       edgeWidth(uniquePrefix() + "edgeWidth", 0.), activeLevelSetQuantity(nullptr), volumeSlicePlaneListeners() {
-  cullWholeElements.setPassive(false);
+  cullWholeElements.setPassive(true);
 
   // set the interior color to be a desaturated version of the normal one
   glm::vec3 desatColorHSV = RGBtoHSV(color.get());
@@ -111,48 +109,48 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
   updateObjectSpaceBounds();
   computeCounts();
   computeGeometryData();
-  computeTets();
 }
 
-void VolumeMesh::computeTets(){
-  // Algorithm from https://www.researchgate.net/profile/Julien-Dompierre/publication/221561839_How_to_Subdivide_Pyramids_Prisms_and_Hexahedra_into_Tetrahedra/links/0912f509c0b7294059000000/How-to-Subdivide-Pyramids-Prisms-and-Hexahedra-into-Tetrahedra.pdf?origin=publication_detail
+void VolumeMesh::computeTets() {
+  // Algorithm from
+  // https://www.researchgate.net/profile/Julien-Dompierre/publication/221561839_How_to_Subdivide_Pyramids_Prisms_and_Hexahedra_into_Tetrahedra/links/0912f509c0b7294059000000/How-to-Subdivide-Pyramids-Prisms-and-Hexahedra-into-Tetrahedra.pdf?origin=publication_detail
   // It's a bit hard to look at but it works
   // Uses vertex numberings to ensure consistent diagonals between faces, and keeps tet counts to 5 or 6 per hex
   size_t tetCount = 0;
   // Get number of tets first
   for (size_t iC = 0; iC < nCells(); iC++) {
     switch (cellType(iC)) {
-    case VolumeCellType::HEX:{
+    case VolumeCellType::HEX: {
       std::array<size_t, 8> sortedNumbering;
       std::iota(sortedNumbering.begin(), sortedNumbering.end(), 0);
-      std::sort(sortedNumbering.begin(), sortedNumbering.end(), [this, iC](size_t a, size_t b) -> bool {
-        return cells[iC][a] < cells[iC][b];
-      });
+      std::sort(sortedNumbering.begin(), sortedNumbering.end(),
+                [this, iC](size_t a, size_t b) -> bool { return cells[iC][a] < cells[iC][b]; });
       std::array<size_t, 8> rotatedNumbering;
-      std::copy(rotationMap[sortedNumbering[0]].begin(), rotationMap[sortedNumbering[0]].end(), rotatedNumbering.begin());
+      std::copy(rotationMap[sortedNumbering[0]].begin(), rotationMap[sortedNumbering[0]].end(),
+                rotatedNumbering.begin());
       size_t n = 0;
       size_t diagCount = 0;
-      auto checkDiagonal = [this, rotatedNumbering, iC](size_t a1, size_t a2, size_t b1, size_t b2){
-        return (cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b1]]
-            && cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b2]])
-            || (cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b1]]
-            && cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b2]]);
+      auto checkDiagonal = [this, rotatedNumbering, iC](size_t a1, size_t a2, size_t b1, size_t b2) {
+        return (cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b1]] &&
+                cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b2]]) ||
+               (cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b1]] &&
+                cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b2]]);
       };
-      if(checkDiagonal(1, 7, 2, 5)){
-        n+=4;
+      if (checkDiagonal(1, 7, 2, 5)) {
+        n += 4;
         diagCount++;
       }
-      if(checkDiagonal(3, 7, 2, 6)){
-        n+=2;
+      if (checkDiagonal(3, 7, 2, 6)) {
+        n += 2;
         diagCount++;
       }
-      if(checkDiagonal(4, 7, 5, 6)){
-        n+=1;
+      if (checkDiagonal(4, 7, 5, 6)) {
+        n += 1;
         diagCount++;
       }
-      if(diagCount == 0){
+      if (diagCount == 0) {
         tetCount += 5;
-      }else{
+      } else {
         tetCount += 6;
       }
       break;
@@ -173,35 +171,35 @@ void VolumeMesh::computeTets(){
     case VolumeCellType::HEX: {
       std::array<size_t, 8> sortedNumbering;
       std::iota(sortedNumbering.begin(), sortedNumbering.end(), 0);
-      std::sort(sortedNumbering.begin(), sortedNumbering.end(), [this, iC](size_t a, size_t b) -> bool {
-        return cells[iC][a] < cells[iC][b];
-      });
+      std::sort(sortedNumbering.begin(), sortedNumbering.end(),
+                [this, iC](size_t a, size_t b) -> bool { return cells[iC][a] < cells[iC][b]; });
       std::array<size_t, 8> rotatedNumbering;
-      std::copy(rotationMap[sortedNumbering[0]].begin(), rotationMap[sortedNumbering[0]].end(), rotatedNumbering.begin());
+      std::copy(rotationMap[sortedNumbering[0]].begin(), rotationMap[sortedNumbering[0]].end(),
+                rotatedNumbering.begin());
       size_t n = 0;
       size_t diagCount = 0;
       // Diagonal exists on the pair of vertices which contain the minimum vertex number
-      auto checkDiagonal = [this, rotatedNumbering, iC](size_t a1, size_t a2, size_t b1, size_t b2){
-        return (cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b1]]
-            && cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b2]])
-            || (cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b1]]
-            && cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b2]]);
+      auto checkDiagonal = [this, rotatedNumbering, iC](size_t a1, size_t a2, size_t b1, size_t b2) {
+        return (cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b1]] &&
+                cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b2]]) ||
+               (cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b1]] &&
+                cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b2]]);
       };
       // Minimum vertex will always have 3 diagonals, check other three faces
-      if(checkDiagonal(1, 7, 2, 5)){
-        n+=4;
+      if (checkDiagonal(1, 7, 2, 5)) {
+        n += 4;
         diagCount++;
       }
-      if(checkDiagonal(3, 7, 2, 6)){
-        n+=2;
+      if (checkDiagonal(3, 7, 2, 6)) {
+        n += 2;
         diagCount++;
       }
-      if(checkDiagonal(4, 7, 5, 6)){
-        n+=1;
+      if (checkDiagonal(4, 7, 5, 6)) {
+        n += 1;
         diagCount++;
       }
       // Rotate by 120 or 240 degrees depending on diagonal positions
-      if(n == 1 || n == 6){
+      if (n == 1 || n == 6) {
         size_t temp = rotatedNumbering[1];
         rotatedNumbering[1] = rotatedNumbering[4];
         rotatedNumbering[4] = rotatedNumbering[3];
@@ -210,7 +208,7 @@ void VolumeMesh::computeTets(){
         rotatedNumbering[5] = rotatedNumbering[6];
         rotatedNumbering[6] = rotatedNumbering[2];
         rotatedNumbering[2] = temp;
-      }else if(n == 2 || n == 5){
+      } else if (n == 2 || n == 5) {
         size_t temp = rotatedNumbering[1];
         rotatedNumbering[1] = rotatedNumbering[3];
         rotatedNumbering[3] = rotatedNumbering[4];
@@ -223,8 +221,8 @@ void VolumeMesh::computeTets(){
 
       // Map final tets according to diagonalMap and the number of diagonals not incident to V_0
       std::array<std::array<size_t, 4>, 6> tetMap = diagonalMap[diagCount];
-      for (size_t k = 0; k < (diagCount == 0 ? 5 : 6); k++){
-        for (size_t i = 0; i < 4; i++){
+      for (size_t k = 0; k < (diagCount == 0 ? 5 : 6); k++) {
+        for (size_t i = 0; i < 4; i++) {
           tets[tetIdx][i] = cells[iC][rotatedNumbering[tetMap[k][i]]];
         }
         tetIdx++;
@@ -232,13 +230,24 @@ void VolumeMesh::computeTets(){
       break;
     }
     case VolumeCellType::TET:
-      for (size_t i = 0; i < 4; i++){
+      for (size_t i = 0; i < 4; i++) {
         tets[tetIdx][i] = cells[iC][i];
       }
       tetIdx++;
       break;
     }
   }
+}
+
+void VolumeMesh::ensureHaveTets() {
+  if (tets.empty()) {
+    computeTets();
+  }
+}
+
+size_t VolumeMesh::nTets() {
+  ensureHaveTets();
+  return tets.size();
 }
 
 void VolumeMesh::addSlicePlaneListener(polyscope::SlicePlane* sp) { volumeSlicePlaneListeners.push_back(sp); }
@@ -253,6 +262,9 @@ void VolumeMesh::removeSlicePlaneListener(polyscope::SlicePlane* sp) {
 }
 
 void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
+
+  ensureHaveTets();
+
   std::vector<glm::vec3> point1;
   std::vector<glm::vec3> point2;
   std::vector<glm::vec3> point3;
@@ -262,7 +274,7 @@ void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
   point2.resize(tetCount);
   point3.resize(tetCount);
   point4.resize(tetCount);
-  for(size_t tetIdx = 0; tetIdx < tets.size(); tetIdx++){
+  for (size_t tetIdx = 0; tetIdx < tets.size(); tetIdx++) {
     point1[tetIdx] = vertices[tets[tetIdx][0]];
     point2[tetIdx] = vertices[tets[tetIdx][1]];
     point3[tetIdx] = vertices[tets[tetIdx][2]];
@@ -913,9 +925,9 @@ void VolumeMesh::refresh() {
   QuantityStructure<VolumeMesh>::refresh(); // call base class version, which refreshes quantities
 }
 
-void VolumeMesh::geometryChanged() { 
+void VolumeMesh::geometryChanged() {
   // TODO overkill
-  refresh(); 
+  refresh();
 }
 
 VolumeCellType VolumeMesh::cellType(size_t i) const {

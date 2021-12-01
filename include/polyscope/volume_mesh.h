@@ -98,9 +98,6 @@ public:
   size_t faceDataSize;
   size_t cellDataSize;
 
-  // Tetrahedral representation
-  std::vector<std::array<int64_t, 4>> tets;
-
   // === Manage the mesh itself
 
   // Core data
@@ -110,9 +107,6 @@ public:
   // Counts
   size_t nVertices() const { return vertices.size(); }
   size_t nCells() const { return cells.size(); }
-
-  // Total tet count (same as nCells unless a hex mesh)
-  size_t nTets() const { return tets.size(); };
 
   size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
   size_t nFaces() const { return nFacesCount; }
@@ -127,10 +121,16 @@ public:
   VolumeCellType cellType(size_t i) const;
   void computeCounts();       // call to populate counts and indices
   void computeGeometryData(); // call to populate normals/areas/lengths
-  void computeTets(); // call to populate tets
   std::vector<std::string> addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade = true,
                                               bool isSlice = false);
   glm::vec3 cellCenter(size_t iC);
+
+  // Manage a separate tetrahedral representation used for volumetric visualizations
+  // (for a pure-tet mesh this will be the same as the cells array)
+  std::vector<std::array<int64_t, 4>> tets;
+  size_t nTets();
+  void computeTets();    // fills tet buffer
+  void ensureHaveTets(); //  ensure the tet buffer is filled (but don't rebuild if already done)
 
   // === Member variables ===
   static const std::string structureTypeName;
