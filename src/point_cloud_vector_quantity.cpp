@@ -9,10 +9,6 @@
 #include <fstream>
 #include <iostream>
 
-
-using std::cout;
-using std::endl;
-
 namespace polyscope {
 
 PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,

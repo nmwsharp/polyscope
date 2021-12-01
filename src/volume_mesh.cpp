@@ -108,6 +108,7 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
   desatColorHSV.y *= 0.3;
   interiorColor.setPassive(HSVtoRGB(desatColorHSV));
 
+  updateObjectSpaceBounds();
   computeCounts();
   computeGeometryData();
   computeTets();
@@ -912,7 +913,10 @@ void VolumeMesh::refresh() {
   QuantityStructure<VolumeMesh>::refresh(); // call base class version, which refreshes quantities
 }
 
-void VolumeMesh::geometryChanged() { refresh(); }
+void VolumeMesh::geometryChanged() { 
+  // TODO overkill
+  refresh(); 
+}
 
 VolumeCellType VolumeMesh::cellType(size_t i) const {
   bool isTet = cells[i][4] < 0;
@@ -920,31 +924,23 @@ VolumeCellType VolumeMesh::cellType(size_t i) const {
   return VolumeCellType::HEX;
 };
 
-double VolumeMesh::lengthScale() {
-  // Measure length scale as twice the radius from the center of the bounding box
-  auto bound = boundingBox();
-  glm::vec3 center = 0.5f * (std::get<0>(bound) + std::get<1>(bound));
-
-  double lengthScale = 0.0;
-  for (glm::vec3 p : vertices) {
-    glm::vec3 transPos = glm::vec3(objectTransform.get() * glm::vec4(p.x, p.y, p.z, 1.0));
-    lengthScale = std::max(lengthScale, (double)glm::length2(transPos - center));
-  }
-
-  return 2 * std::sqrt(lengthScale);
-}
-
-std::tuple<glm::vec3, glm::vec3> VolumeMesh::boundingBox() {
+void VolumeMesh::updateObjectSpaceBounds() {
+  // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
-
-  for (glm::vec3 pOrig : vertices) {
-    glm::vec3 p = glm::vec3(objectTransform.get() * glm::vec4(pOrig, 1.0));
+  for (const glm::vec3& p : vertices) {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
+  objectSpaceBoundingBox = std::make_tuple(min, max);
 
-  return std::make_tuple(min, max);
+  // length scale, as twice the radius from the center of the bounding box
+  glm::vec3 center = 0.5f * (min + max);
+  float lengthScale = 0.0;
+  for (const glm::vec3& p : vertices) {
+    lengthScale = std::max(lengthScale, glm::length2(p - center));
+  }
+  objectSpaceLengthScale = 2 * std::sqrt(lengthScale);
 }
 
 std::string VolumeMesh::typeName() { return structureTypeName; }

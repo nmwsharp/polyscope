@@ -1,15 +1,18 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include <string>
+#include <functional>
+#include <tuple>
+
+#include "imgui.h"
+
 #include "polyscope/scaled_value.h"
 #include "polyscope/types.h"
 
-#include <string>
 
 namespace polyscope {
-namespace options {
-
-// A general name to use when referring to the program in window headings.
+namespace options { // A general name to use when referring to the program in window headings.
 extern std::string programName;
 
 // How much should polyscope print to std::out?
@@ -37,11 +40,17 @@ extern bool alwaysRedraw;
 extern bool autocenterStructures;
 extern bool autoscaleStructures;
 
-// Should the user call back start out with an imgui window context open (default: true)
-extern bool openImGuiWindowForUserCallback;
+// If true, Polyscope will automatically compute state::boundingBox and state::lengthScale parameters according to the
+// registered structures, and update them whenever structures are added chagned. If false, the bounding box and length
+// scale are left unchanged. If set to false before the first structure is registered, the user is required to set the
+// bounding box and length scale manually. (default: true)
+extern bool automaticallyComputeSceneExtents;
 
 // If true, the user callback will be invoked for nested calls to polyscope::show(), otherwise not (default: false)
 extern bool invokeUserCallbackForNestedShow;
+
+// If true, focus the Polyscope window when shown (default: false)
+extern bool giveFocusOnShow;
 
 // === Scene options
 
@@ -65,6 +74,28 @@ extern int ssaaFactor;
 // Transparency settings for the renderer
 extern TransparencyMode transparencyMode;
 extern int transparencyRenderPasses;
+
+// === Advanced ImGui configuration
+
+// If false, Polyscope will not create any ImGui UIs at all, but will still set up ImGui and invoke its render steps
+// each frame. The allows advanced users to create their own UIs totally from scratch and circumvent the standard
+// Polyscope UIs. (default: true)
+extern bool buildGui;
+
+// Should the user call back start out with an imgui window context open (default: true)
+extern bool openImGuiWindowForUserCallback;
+
+// A callback function which will be invoked when an ImGui context is created (which may happen several times as
+// Polyscope runs). By default, this is set to invoke `configureImGuiStyle()` from Polyscope's imgui_config.cpp, but you
+// may assign your own function to create custom styles. If this callback is null, the default ImGui style will be used.
+extern std::function<void()> configureImGuiStyleCallback;
+
+// A callback function which will be invoked exactly once during initialization to construct a font atlas for ImGui to
+// use. The callback should return a tuple of three pointers: a newly created global shared font atlas, a regular font,
+// and a mono font. By default, this is set to invoke prepareImGuiFonts() from Polyscope's imgui_config.cpp, but you may
+// assign your own function to create custom styles. If this callback is null, default fonts will be used.
+extern std::function<std::tuple<ImFontAtlas*, ImFont*, ImFont*>()> prepareImGuiFontsCallback;
+
 
 // === Debug options
 

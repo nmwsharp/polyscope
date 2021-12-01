@@ -212,7 +212,7 @@ void GroundPlane::draw(bool isRedraw) {
 
     if (options::groundPlaneMode == GroundPlaneMode::Tile ||
         options::groundPlaneMode == GroundPlaneMode::TileReflection) {
-      groundPlaneProgram->setUniform("u_center", state::center);
+      groundPlaneProgram->setUniform("u_center", state::center());
       groundPlaneProgram->setUniform("u_basisX", baseForward);
       groundPlaneProgram->setUniform("u_basisY", baseRight);
     }
@@ -221,8 +221,19 @@ void GroundPlane::draw(bool isRedraw) {
       groundPlaneProgram->setUniform("u_shadowDarkness", options::shadowDarkness);
     }
 
-    float camHeight = view::getCameraWorldPosition()[iP];
-    groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
+    switch (view::projectionMode) {
+    case ProjectionMode::Perspective: {
+      float camHeight = view::getCameraWorldPosition()[iP];
+      groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
+      break;
+    }
+    case ProjectionMode::Orthographic: {
+      glm::vec4 lookDir = glm::vec4(0, 0, 1, 0) * viewMat;
+      groundPlaneProgram->setUniform("u_cameraHeight", (lookDir.y * state::lengthScale) + groundHeight);
+      break;
+    }
+    }
+
     groundPlaneProgram->setUniform("u_upSign", sign);
     groundPlaneProgram->setUniform("u_basisZ", baseUp);
     groundPlaneProgram->setUniform("u_groundHeight", groundHeight);

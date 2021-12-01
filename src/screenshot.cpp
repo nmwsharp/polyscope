@@ -74,7 +74,7 @@ void screenshot(std::string filename, bool transparentBG) {
   bool requestedAlready = redrawRequested();
   requestRedraw();
 
-  draw(false);
+  draw(false, false);
 
   if (requestedAlready) {
     requestRedraw();

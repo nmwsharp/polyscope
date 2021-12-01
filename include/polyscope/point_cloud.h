@@ -52,8 +52,7 @@ public:
   // Standard structure overrides
   virtual void draw() override;
   virtual void drawPick() override;
-  virtual double lengthScale() override;
-  virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
+  virtual void updateObjectSpaceBounds() override;
   virtual std::string typeName() override;
   virtual void refresh() override;
 
@@ -108,6 +107,10 @@ public:
   void deleteProgram();
 
   // === Get/set visualization parameters
+  
+  // set the base color of the points
+  PointCloud* setPointRenderMode(PointRenderMode newVal);
+  PointRenderMode getPointRenderMode();
 
   // set the base color of the points
   PointCloud* setPointColor(glm::vec3 newVal);
@@ -125,10 +128,13 @@ public:
   void setPointCloudUniforms(render::ShaderProgram& p);
   void fillGeometryBuffers(render::ShaderProgram& p);
   std::vector<std::string> addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud = true);
+  std::string getShaderNameForRenderMode();
 
 
 private:
+
   // === Visualization parameters
+  PersistentValue<std::string> pointRenderMode;
   PersistentValue<glm::vec3> pointColor;
   PersistentValue<ScaledValue<float>> pointRadius;
   PersistentValue<std::string> material;
@@ -143,7 +149,6 @@ private:
   void prepare();
   void preparePick();
   void geometryChanged();
-
 
   // === Quantity adder implementations
   PointCloudScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);

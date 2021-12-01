@@ -29,7 +29,7 @@ SlicePlane* addSceneSlicePlane(bool initiallyVisible) {
     sceneSlicePlanes.back()->setDrawPlane(false);
     sceneSlicePlanes.back()->setDrawWidget(false);
   }
-  for(uint i = 0; i < sceneSlicePlanes.size(); i++){
+  for (uint i = 0; i < sceneSlicePlanes.size(); i++) {
     sceneSlicePlanes[i]->resetVolumeSliceProgram();
   }
   return sceneSlicePlanes.back();
@@ -39,7 +39,7 @@ void removeLastSceneSlicePlane() {
   if (sceneSlicePlanes.empty()) return;
   delete sceneSlicePlanes.back();
   sceneSlicePlanes.pop_back();
-  for(uint i = 0; i < sceneSlicePlanes.size(); i++){
+  for (uint i = 0; i < sceneSlicePlanes.size(); i++) {
     sceneSlicePlanes[i]->resetVolumeSliceProgram();
   }
 }
@@ -79,6 +79,7 @@ SlicePlane::SlicePlane(std::string name_)
       drawPlane("SlicePlane#" + name + "#drawPlane", true), drawWidget("SlicePlane#" + name + "#drawWidget", true),
       objectTransform("SlicePlane#" + name + "#object_transform", glm::mat4(1.0)),
       color("SlicePlane#" + name + "#color", getNextUniqueColor()),
+      gridLineColor("SlicePlane#" + name + "#gridLineColor", glm::vec3{.97, .97, .97}),
       transparency("SlicePlane#" + name + "#transparency", 0.5),
       transformGizmo("SlicePlane#" + name + "#transform_gizmo", objectTransform.get(), &objectTransform),
       shouldSliceMesh(false), slicedMeshName("") {
@@ -121,12 +122,12 @@ void SlicePlane::prepare() {
 
 void SlicePlane::setVolumeMeshToSlice(std::string meshname) {
   VolumeMesh* oldMeshToSlice = polyscope::getVolumeMesh(slicedMeshName);
-  if(oldMeshToSlice != nullptr){
+  if (oldMeshToSlice != nullptr) {
     oldMeshToSlice->removeSlicePlaneListener(this);
   }
   slicedMeshName = meshname;
   VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName);
-  if(meshToSlice == nullptr){
+  if (meshToSlice == nullptr) {
     slicedMeshName = "";
     shouldSliceMesh = false;
     volumeSliceProgram.reset();
@@ -138,23 +139,19 @@ void SlicePlane::setVolumeMeshToSlice(std::string meshname) {
   volumeSliceProgram.reset();
 }
 
-std::string SlicePlane::getVolumeMeshToSlice(){
-  return slicedMeshName;
-}
+std::string SlicePlane::getVolumeMeshToSlice() { return slicedMeshName; }
 
-void SlicePlane::createVolumeSliceProgram(){
+void SlicePlane::createVolumeSliceProgram() {
   VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName);
-  volumeSliceProgram =
-      render::engine->requestShader("SLICE_TETS", meshToSlice->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}, true, true));
+  volumeSliceProgram = render::engine->requestShader(
+      "SLICE_TETS", meshToSlice->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}, true, true));
   meshToSlice->fillSliceGeometryBuffers(*volumeSliceProgram);
   render::engine->setMaterial(*volumeSliceProgram, meshToSlice->getMaterial());
 }
 
-void SlicePlane::resetVolumeSliceProgram(){
-  volumeSliceProgram.reset();
-}
+void SlicePlane::resetVolumeSliceProgram() { volumeSliceProgram.reset(); }
 
-void SlicePlane::setSliceAttributes(render::ShaderProgram &p){
+void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
   VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName);
   std::vector<glm::vec3> point1;
   std::vector<glm::vec3> point2;
@@ -180,19 +177,19 @@ void SlicePlane::setSliceAttributes(render::ShaderProgram &p){
   p.setAttribute("a_slice_4", point4);
 }
 
-void SlicePlane::drawGeometry(){
-  if(!active.get()) return;
+void SlicePlane::drawGeometry() {
+  if (!active.get()) return;
 
   if (shouldSliceMesh) {
     VolumeMesh* vMesh = polyscope::getVolumeMesh(slicedMeshName);
-    if(vMesh->wantsCullPosition()) return;
+    if (vMesh->wantsCullPosition()) return;
 
-    if(volumeSliceProgram == nullptr){
+    if (volumeSliceProgram == nullptr) {
       createVolumeSliceProgram();
     }
 
 
-    if(vMesh->dominantQuantity == nullptr){
+    if (vMesh->dominantQuantity == nullptr) {
       vMesh->setStructureUniforms(*volumeSliceProgram);
       setSceneObjectUniforms(*volumeSliceProgram, true);
       setSliceGeomUniforms(*volumeSliceProgram);
@@ -201,9 +198,8 @@ void SlicePlane::drawGeometry(){
       volumeSliceProgram->draw();
     }
 
-    for(auto it = vMesh->quantities.begin(); it != vMesh->quantities.end(); it++){
-      if(!it->second->isEnabled())
-        continue;
+    for (auto it = vMesh->quantities.begin(); it != vMesh->quantities.end(); it++) {
+      if (!it->second->isEnabled()) continue;
       it->second->drawSlice(this);
     }
   }
@@ -223,6 +219,7 @@ void SlicePlane::draw() {
     planeProgram->setUniform("u_objectMatrix", glm::value_ptr(objectTransform.get()));
     planeProgram->setUniform("u_lengthScale", state::lengthScale);
     planeProgram->setUniform("u_color", color.get());
+    planeProgram->setUniform("u_gridLineColor", getGridLineColor());
     planeProgram->setUniform("u_transparency", transparency.get());
 
     // glm::vec3 center{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
@@ -233,8 +230,6 @@ void SlicePlane::draw() {
     render::engine->applyTransparencySettings();
     planeProgram->draw();
   }
-
-
 }
 
 void SlicePlane::buildGUI() {
@@ -243,6 +238,24 @@ void SlicePlane::buildGUI() {
   if (ImGui::Checkbox(name.c_str(), &active.get())) {
     setActive(getActive());
   }
+
+  ImGui::SameLine();
+
+  { // Color transparency box
+    // Pack the color & transparency in to a vec4
+    glm::vec3 colorBefore = getColor();
+    float transparencyBefore = getTransparency();
+    std::array<float, 4> color{colorBefore.x, colorBefore.y, colorBefore.z, transparencyBefore};
+    if (ImGui::ColorEdit4("##color and trans", &color[0], ImGuiColorEditFlags_NoInputs)) {
+      if (color[0] != colorBefore[0] || color[1] != colorBefore[1] || color[2] != colorBefore[2]) {
+        setColor(glm::vec3{color[0], color[1], color[2]});
+      }
+      if (color[3] != transparencyBefore) {
+        setTransparency(color[3]);
+      }
+    }
+  }
+
   ImGui::Indent(16.);
   if (ImGui::Checkbox("draw plane", &drawPlane.get())) {
     setDrawPlane(getDrawPlane());
@@ -369,5 +382,23 @@ void SlicePlane::setTransform(glm::mat4 newTransform) {
   objectTransform = newTransform;
   polyscope::requestRedraw();
 }
+
+void SlicePlane::setColor(glm::vec3 newVal) {
+  color = newVal;
+  polyscope::requestRedraw();
+}
+glm::vec3 SlicePlane::getColor() { return color.get(); }
+
+void SlicePlane::setGridLineColor(glm::vec3 newVal) {
+  gridLineColor = newVal;
+  polyscope::requestRedraw();
+}
+glm::vec3 SlicePlane::getGridLineColor() { return gridLineColor.get(); }
+
+void SlicePlane::setTransparency(double newVal) {
+  transparency = newVal;
+  requestRedraw();
+}
+double SlicePlane::getTransparency() { return transparency.get(); }
 
 } // namespace polyscope

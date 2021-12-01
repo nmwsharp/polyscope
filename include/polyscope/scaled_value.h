@@ -10,7 +10,7 @@ namespace polyscope {
 
 // forward declare
 namespace state {
-extern double lengthScale;
+extern float lengthScale;
 }
 
 template <typename T>

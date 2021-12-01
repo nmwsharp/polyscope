@@ -11,9 +11,6 @@
 #include <unordered_map>
 #include <utility>
 
-using std::cout;
-using std::endl;
-
 namespace polyscope {
 
 // Initialize statics
@@ -27,7 +24,10 @@ SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexP
       surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
       edgeWidth(uniquePrefix() + "edgeWidth", 0.),
-      backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different) {
+      backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different),
+      backFaceColor(uniquePrefix() + "backFaceColor",
+                    glm::vec3(1.f - surfaceColor.get().r, 1.f - surfaceColor.get().g, 1.f - surfaceColor.get().b)) {
+  updateObjectSpaceBounds();
   computeCounts();
   computeGeometryData();
 }
@@ -519,6 +519,9 @@ std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::strin
       if (backFacePolicy.get() == BackFacePolicy::Different) {
         initRules.push_back("MESH_BACKFACE_DARKEN");
       }
+      if (backFacePolicy.get() == BackFacePolicy::Custom) {
+        initRules.push_back("MESH_BACKFACE_DIFFERENT");
+      }
     }
 
     if (backFacePolicy.get() == BackFacePolicy::Identical) {
@@ -526,6 +529,10 @@ std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::strin
     }
 
     if (backFacePolicy.get() == BackFacePolicy::Different) {
+      initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
+    }
+
+    if (backFacePolicy.get() == BackFacePolicy::Custom) {
       initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
     }
 
@@ -540,6 +547,9 @@ void SurfaceMesh::setSurfaceMeshUniforms(render::ShaderProgram& p) {
   if (getEdgeWidth() > 0) {
     p.setUniform("u_edgeWidth", getEdgeWidth() * render::engine->getCurrentPixelScaling());
     p.setUniform("u_edgeColor", getEdgeColor());
+  }
+  if (backFacePolicy.get() == BackFacePolicy::Custom) {
+    p.setUniform("u_backfaceColor", getBackFaceColor());
   }
 }
 
@@ -871,7 +881,12 @@ void SurfaceMesh::buildCustomUI() {
     }
     ImGui::PopItemWidth();
   }
+  if (backFacePolicy.get() == BackFacePolicy::Custom) {
+    if (ImGui::ColorEdit3("Backface Color", &backFaceColor.get()[0], ImGuiColorEditFlags_NoInputs))
+      setBackFaceColor(backFaceColor.get());
+  }
 }
+
 
 void SurfaceMesh::buildCustomOptionsUI() {
   if (render::buildMaterialOptionsGui(material.get())) {
@@ -885,6 +900,8 @@ void SurfaceMesh::buildCustomOptionsUI() {
       setBackFacePolicy(BackFacePolicy::Identical);
     if (ImGui::MenuItem("different shading", NULL, backFacePolicy.get() == BackFacePolicy::Different))
       setBackFacePolicy(BackFacePolicy::Different);
+    if (ImGui::MenuItem("custom shading", NULL, backFacePolicy.get() == BackFacePolicy::Custom))
+      setBackFacePolicy(BackFacePolicy::Custom);
     if (ImGui::MenuItem("cull", NULL, backFacePolicy.get() == BackFacePolicy::Cull))
       setBackFacePolicy(BackFacePolicy::Cull);
     ImGui::EndMenu();
@@ -900,33 +917,28 @@ void SurfaceMesh::refresh() {
   QuantityStructure<SurfaceMesh>::refresh(); // call base class version, which refreshes quantities
 }
 
-void SurfaceMesh::geometryChanged() { refresh(); }
-
-double SurfaceMesh::lengthScale() {
-  // Measure length scale as twice the radius from the center of the bounding box
-  auto bound = boundingBox();
-  glm::vec3 center = 0.5f * (std::get<0>(bound) + std::get<1>(bound));
-
-  double lengthScale = 0.0;
-  for (glm::vec3 p : vertices) {
-    glm::vec3 transPos = glm::vec3(objectTransform.get() * glm::vec4(p.x, p.y, p.z, 1.0));
-    lengthScale = std::max(lengthScale, (double)glm::length2(transPos - center));
-  }
-
-  return 2 * std::sqrt(lengthScale);
+void SurfaceMesh::geometryChanged() {
+  // TODO this is overkill
+  refresh();
 }
 
-std::tuple<glm::vec3, glm::vec3> SurfaceMesh::boundingBox() {
+void SurfaceMesh::updateObjectSpaceBounds() {
+  // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
-
-  for (glm::vec3 pOrig : vertices) {
-    glm::vec3 p = glm::vec3(objectTransform.get() * glm::vec4(pOrig, 1.0));
+  for (const glm::vec3& p : vertices) {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
+  objectSpaceBoundingBox = std::make_tuple(min, max);
 
-  return std::make_tuple(min, max);
+  // length scale, as twice the radius from the center of the bounding box
+  glm::vec3 center = 0.5f * (min + max);
+  float lengthScale = 0.0;
+  for (const glm::vec3& p : vertices) {
+    lengthScale = std::max(lengthScale, glm::length2(p - center));
+  }
+  objectSpaceLengthScale = 2 * std::sqrt(lengthScale);
 }
 
 std::string SurfaceMesh::typeName() { return structureTypeName; }
@@ -1092,6 +1104,14 @@ SurfaceMesh* SurfaceMesh::setSmoothShade(bool isSmooth) {
   return this;
 }
 bool SurfaceMesh::isSmoothShade() { return shadeSmooth.get(); }
+
+SurfaceMesh* SurfaceMesh::setBackFaceColor(glm::vec3 val) {
+  backFaceColor.set(val);
+  requestRedraw();
+  return this;
+}
+
+glm::vec3 SurfaceMesh::getBackFaceColor() { return backFaceColor.get(); }
 
 SurfaceMesh* SurfaceMesh::setSurfaceColor(glm::vec3 val) {
   surfaceColor = val;

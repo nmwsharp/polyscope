@@ -9,6 +9,8 @@ imgui.ini
 *.swp
 tags
 *.blend1
+.cache
+compile_commands.json
 
 # Prerequisites
 *.d

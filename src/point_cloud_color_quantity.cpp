@@ -42,7 +42,7 @@ std::string PointCloudColorQuantity::niceName() { return name + " (color)"; }
 
 void PointCloudColorQuantity::createPointProgram() {
   // Create the program to draw this quantity
-  pointProgram = render::engine->requestShader("RAYCAST_SPHERE", parent.addPointCloudRules({"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"}));
+  pointProgram = render::engine->requestShader(parent.getShaderNameForRenderMode(), parent.addPointCloudRules({"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"}));
 
   // Fill buffers
   parent.fillGeometryBuffers(*pointProgram);

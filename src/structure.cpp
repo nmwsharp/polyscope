@@ -13,7 +13,10 @@ Structure::Structure(std::string name_, std::string subtypeName)
       transparency(subtypeName + "#" + name + "#transparency", 1.0),
       transformGizmo(subtypeName + "#" + name + "#transform_gizmo", objectTransform.get(), &objectTransform),
       cullWholeElements(subtypeName + "#" + name + "#cullWholeElements", false),
-      ignoredSlicePlaneNames(subtypeName + "#" + name + "#ignored_slice_planes", {}) {
+      ignoredSlicePlaneNames(subtypeName + "#" + name + "#ignored_slice_planes", {}),
+      objectSpaceBoundingBox(
+          std::tuple<glm::vec3, glm::vec3>{glm::vec3{-777, -777, -777}, glm::vec3{-777, -777, -777}}),
+      objectSpaceLengthScale(-777) {
   validateName(name);
 }
 
@@ -147,7 +150,49 @@ void Structure::buildStructureOptionsUI() {}
 
 void Structure::buildCustomOptionsUI() {}
 
-void Structure::refresh() { requestRedraw(); }
+void Structure::refresh() {
+  updateObjectSpaceBounds();
+  requestRedraw();
+}
+
+std::tuple<glm::vec3, glm::vec3> Structure::boundingBox() {
+  const glm::mat4x4& T = objectTransform.get();
+  glm::vec4 lh = T * glm::vec4(std::get<0>(objectSpaceBoundingBox), 1.);
+  glm::vec3 l = glm::vec3(lh) / lh.w;
+  glm::vec4 uh = T * glm::vec4(std::get<1>(objectSpaceBoundingBox), 1.);
+  glm::vec3 u = glm::vec3(uh) / uh.w;
+  return std::tuple<glm::vec3, glm::vec3>{l, u};
+}
+
+float Structure::lengthScale() {
+  // compute the scaling caused by the object transform
+  const glm::mat4x4& T = objectTransform.get();
+  float transScale = (T[0][0] + T[1][1] + T[2][2]) / (3. * T[3][3]);
+  return transScale * objectSpaceLengthScale;
+}
+
+void Structure::setTransform(glm::mat4x4 transform) {
+  objectTransform = transform;
+  updateStructureExtents();
+}
+
+void Structure::setPosition(glm::vec3 vec) {
+  objectTransform.get()[3][0] = vec.x;
+  objectTransform.get()[3][1] = vec.y;
+  objectTransform.get()[3][2] = vec.z;
+  updateStructureExtents();
+}
+
+void Structure::translate(glm::vec3 vec) {
+  objectTransform = glm::translate(objectTransform.get(), vec);
+  updateStructureExtents();
+}
+
+glm::mat4x4 Structure::getTransform() { return objectTransform.get(); }
+
+glm::vec3 Structure::getPosition() {
+  return glm::vec3{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
+}
 
 void Structure::resetTransform() {
   objectTransform = glm::mat4(1.0);
@@ -237,7 +282,7 @@ std::string Structure::uniquePrefix() { return typeName() + "#" + name + "#"; }
 void Structure::remove() { removeStructure(typeName(), name); }
 
 
-Structure* Structure::setTransparency(double newVal) {
+Structure* Structure::setTransparency(float newVal) {
   transparency = newVal;
 
   if (newVal < 1. && options::transparencyMode == TransparencyMode::None) {
@@ -247,7 +292,7 @@ Structure* Structure::setTransparency(double newVal) {
 
   return this;
 }
-double Structure::getTransparency() { return transparency.get(); }
+float Structure::getTransparency() { return transparency.get(); }
 
 Structure* Structure::setCullWholeElements(bool newVal) {
   cullWholeElements = newVal;

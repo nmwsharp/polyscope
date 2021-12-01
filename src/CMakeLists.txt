@@ -116,6 +116,7 @@ SET(SRCS
   # Core functionality 
   polyscope.cpp
   options.cpp
+  internal.cpp
   state.cpp
   structure.cpp
   utilities.cpp
@@ -179,6 +180,7 @@ SET(SRCS
   volume_mesh_vector_quantity.cpp
   
   # Rendering utilities
+  imgui_config.cpp
   vector_artist.cpp
   trace_vector_field.cpp
   ribbon_artist.cpp
@@ -217,6 +219,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/file_helpers.h
   ${INCLUDE_ROOT}/histogram.h
   ${INCLUDE_ROOT}/image_scalar_artist.h
+  ${INCLUDE_ROOT}/imgui_config.h
   ${INCLUDE_ROOT}/messages.h
   ${INCLUDE_ROOT}/options.h
   ${INCLUDE_ROOT}/persistent_value.h

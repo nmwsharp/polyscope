@@ -54,13 +54,9 @@ public:
   // Render for picking
   virtual void drawPick() override;
 
-  // A characteristic length for the structure
-  virtual double lengthScale() override;
-
-  // Axis-aligned bounding box for the structure
-  virtual std::tuple<glm::vec3, glm::vec3> boundingBox() override;
+  virtual void updateObjectSpaceBounds() override;
   virtual std::string typeName() override;
-  
+
   virtual void refresh() override;
 
   // === Quantities
@@ -131,11 +127,10 @@ public:
   // set the radius of the points
   CurveNetwork* setRadius(float newVal, bool isRelative = true);
   float getRadius();
-  
+
   // Material
   CurveNetwork* setMaterial(std::string name);
   std::string getMaterial();
-  
 
 
 private:
@@ -158,7 +153,7 @@ private:
   void prepare();
   void preparePick();
 
-	void geometryChanged();
+  void geometryChanged();
 
   // Pick helpers
   void buildNodePickUI(size_t nodeInd);

@@ -1,5 +1,7 @@
 # Polyscope's documentation is hosted at [polyscope.run](http://polyscope.run)
 
+To contribute, check out the [instructions here](https://polyscope.run/about/contributing/).
+
 ![Polyscope](http://polyscope.run/media/teaser.svg)
 
 [![actions status linux](https://github.com/nmwsharp/polyscope/workflows/linux/badge.svg)](https://github.com/nmwsharp/polyscope/actions)
