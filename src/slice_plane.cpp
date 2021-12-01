@@ -278,7 +278,11 @@ void SlicePlane::buildGUI() {
   bool haveVolumeMeshes = state::structures.find("Volume Mesh") != state::structures.end();
 
   if (haveVolumeMeshes) {
-    if (ImGui::BeginMenu("Inspect")) {
+
+    if (ImGui::Button("Inspect")) {
+      ImGui::OpenPopup("InspectPopup");
+    }
+    if (ImGui::BeginPopup("InspectPopup")) {
 
       //  Loop over volume meshes and offer them to be inspected
       std::map<std::string, Structure*>::iterator it;
@@ -294,7 +298,7 @@ void SlicePlane::buildGUI() {
         setVolumeMeshToSlice("");
       }
 
-      ImGui::EndMenu();
+      ImGui::EndPopup();
     }
   }
 
