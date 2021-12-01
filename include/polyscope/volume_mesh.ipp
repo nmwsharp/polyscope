@@ -92,6 +92,17 @@ inline VolumeMesh* getVolumeMesh(std::string name) {
 }
 inline bool hasVolumeMesh(std::string name) { return hasStructure(VolumeMesh::structureTypeName, name); }
 inline void removeVolumeMesh(std::string name, bool errorIfAbsent) {
+
+  // Clear out any slice plane listeners.
+  // Note: this is not great design; it's really destructor logic, but because of how removeStructure() works we don't
+  // want to wait until the destructor to do it
+  if (hasVolumeMesh(name)) {
+    VolumeMesh* v = getVolumeMesh(name);
+    while (!v->volumeSlicePlaneListeners.empty()) {
+      v->volumeSlicePlaneListeners.back()->setVolumeMeshToInspect("");
+    }
+  }
+
   removeStructure(VolumeMesh::structureTypeName, name, errorIfAbsent);
 }
 

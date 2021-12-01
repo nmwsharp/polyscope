@@ -26,6 +26,7 @@ public:
   void draw();
   void drawGeometry();
   void resetVolumeSliceProgram();
+  void ensureVolumeInspectValid();
 
   void setSceneObjectUniforms(render::ShaderProgram& p,
                               bool alwaysPass = false); // if alwaysPass, fake values are given so the plane does
@@ -54,16 +55,16 @@ public:
 
   glm::mat4 getTransform();
   void setTransform(glm::mat4 newTransform);
-  
+
   void setColor(glm::vec3 newVal);
   glm::vec3 getColor();
-  
+
   void setGridLineColor(glm::vec3 newVal);
   glm::vec3 getGridLineColor();
 
   void setTransparency(double newVal);
   double getTransparency();
-  
+
   void setVolumeMeshToInspect(std::string meshName);
   std::string getVolumeMeshToInspect();
 
@@ -76,13 +77,13 @@ protected:
   PersistentValue<glm::vec3> color;
   PersistentValue<glm::vec3> gridLineColor;
   PersistentValue<float> transparency;
-  PersistentValue<bool> shouldSliceMesh;
-  PersistentValue<std::string> slicedMeshName;
 
-  std::map<std::string, std::shared_ptr<render::ShaderProgram>> volumeSliceQuantityPrograms;
-  std::shared_ptr<render::ShaderProgram> volumeSliceProgram;
-  void fillSliceVolumeGeometryBuffers();
+  // DON'T make these persistent, because it is unintitive to re-add a scene slice plane and have it immediately start
+  // slicing
+  bool shouldInspectMesh;
+  std::string inspectedMeshName;
 
+  std::shared_ptr<render::ShaderProgram> volumeInspectProgram;
 
   // Widget that wraps the transform
   TransformationGizmo transformGizmo;
@@ -90,7 +91,7 @@ protected:
   std::shared_ptr<render::ShaderProgram> planeProgram;
 
   // Helpers
-  void setSliceAttributes(render::ShaderProgram &p);
+  void setSliceAttributes(render::ShaderProgram& p);
   void createVolumeSliceProgram();
   void prepare();
   glm::vec3 getCenter();

@@ -80,9 +80,7 @@ SlicePlane::SlicePlane(std::string name_)
       objectTransform("SlicePlane#" + name + "#object_transform", glm::mat4(1.0)),
       color("SlicePlane#" + name + "#color", getNextUniqueColor()),
       gridLineColor("SlicePlane#" + name + "#gridLineColor", glm::vec3{.97, .97, .97}),
-      transparency("SlicePlane#" + name + "#transparency", 0.5),
-      shouldSliceMesh("SlicePlane#" + name + "#shouldSliceMesh", false),
-      slicedMeshName("SlicePlane#" + name + "#slicedMeshName", ""),
+      transparency("SlicePlane#" + name + "#transparency", 0.5), shouldInspectMesh(false), inspectedMeshName(""),
       transformGizmo("SlicePlane#" + name + "#transformGizmo", objectTransform.get(), &objectTransform) {
   state::slicePlanes.push_back(this);
   render::engine->addSlicePlane(postfix);
@@ -91,6 +89,7 @@ SlicePlane::SlicePlane(std::string name_)
 }
 
 SlicePlane::~SlicePlane() {
+  ensureVolumeInspectValid();
   setVolumeMeshToInspect(""); // disable any slicing
   render::engine->removeSlicePlane(postfix);
   auto pos = std::find(state::slicePlanes.begin(), state::slicePlanes.end(), this);
@@ -123,39 +122,53 @@ void SlicePlane::prepare() {
 }
 
 void SlicePlane::setVolumeMeshToInspect(std::string meshname) {
-  VolumeMesh* oldMeshToInspect = polyscope::getVolumeMesh(slicedMeshName.get());
+  VolumeMesh* oldMeshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
   if (oldMeshToInspect != nullptr) {
     oldMeshToInspect->removeSlicePlaneListener(this);
   }
-  slicedMeshName = meshname;
-  VolumeMesh* meshToInspect = polyscope::getVolumeMesh(slicedMeshName.get());
+  inspectedMeshName = meshname;
+  VolumeMesh* meshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
   if (meshToInspect == nullptr) {
-    slicedMeshName = "";
-    shouldSliceMesh = false;
-    volumeSliceProgram.reset();
+    inspectedMeshName = "";
+    shouldInspectMesh = false;
+    volumeInspectProgram.reset();
     return;
   }
   drawPlane = false;
   meshToInspect->addSlicePlaneListener(this);
   meshToInspect->setCullWholeElements(false);
-  shouldSliceMesh = true;
-  volumeSliceProgram.reset();
+  meshToInspect->ensureHaveTets(); // do this as early as possible because it is expensive
+  shouldInspectMesh = true;
+  volumeInspectProgram.reset();
 }
 
-std::string SlicePlane::getVolumeMeshToInspect() { return slicedMeshName.get(); }
+std::string SlicePlane::getVolumeMeshToInspect() { return inspectedMeshName; }
+
+void SlicePlane::ensureVolumeInspectValid() {
+  if (!shouldInspectMesh) return;
+
+  // This method exists to save us in any cases where we might be inspecting a volume mesh when that mesh is deleted. We
+  // can't just call setVolumeMeshToInspect(""), because that tries to look up the volume mesh.
+
+  if (!hasVolumeMesh(inspectedMeshName)) {
+    inspectedMeshName = "";
+    shouldInspectMesh = false;
+    volumeInspectProgram = nullptr;
+  }
+}
 
 void SlicePlane::createVolumeSliceProgram() {
-  VolumeMesh* meshToInspect = polyscope::getVolumeMesh(slicedMeshName.get());
-  volumeSliceProgram = render::engine->requestShader(
+  VolumeMesh* meshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
+  volumeInspectProgram = render::engine->requestShader(
       "SLICE_TETS", meshToInspect->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}, true, true));
-  meshToInspect->fillSliceGeometryBuffers(*volumeSliceProgram);
-  render::engine->setMaterial(*volumeSliceProgram, meshToInspect->getMaterial());
+  meshToInspect->fillSliceGeometryBuffers(*volumeInspectProgram);
+  render::engine->setMaterial(*volumeInspectProgram, meshToInspect->getMaterial());
 }
 
-void SlicePlane::resetVolumeSliceProgram() { volumeSliceProgram.reset(); }
+void SlicePlane::resetVolumeSliceProgram() { volumeInspectProgram.reset(); }
 
 void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
-  VolumeMesh* meshToInspect = polyscope::getVolumeMesh(slicedMeshName.get());
+  VolumeMesh* meshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
   std::vector<glm::vec3> point1;
   std::vector<glm::vec3> point2;
   std::vector<glm::vec3> point3;
@@ -183,8 +196,10 @@ void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
 void SlicePlane::drawGeometry() {
   if (!active.get()) return;
 
-  if (shouldSliceMesh.get()) {
-    VolumeMesh* vMesh = polyscope::getVolumeMesh(slicedMeshName.get());
+  ensureVolumeInspectValid();
+
+  if (shouldInspectMesh) {
+    VolumeMesh* vMesh = polyscope::getVolumeMesh(inspectedMeshName);
 
     // guard against situations where the volume mesh we are slicing has been deleted
     if (vMesh == nullptr) {
@@ -194,18 +209,18 @@ void SlicePlane::drawGeometry() {
 
     if (vMesh->wantsCullPosition()) return;
 
-    if (volumeSliceProgram == nullptr) {
+    if (volumeInspectProgram == nullptr) {
       createVolumeSliceProgram();
     }
 
 
     if (vMesh->dominantQuantity == nullptr) {
-      vMesh->setStructureUniforms(*volumeSliceProgram);
-      setSceneObjectUniforms(*volumeSliceProgram, true);
-      setSliceGeomUniforms(*volumeSliceProgram);
-      vMesh->setVolumeMeshUniforms(*volumeSliceProgram);
-      volumeSliceProgram->setUniform("u_baseColor1", vMesh->getColor());
-      volumeSliceProgram->draw();
+      vMesh->setStructureUniforms(*volumeInspectProgram);
+      setSceneObjectUniforms(*volumeInspectProgram, true);
+      setSliceGeomUniforms(*volumeInspectProgram);
+      vMesh->setVolumeMeshUniforms(*volumeInspectProgram);
+      volumeInspectProgram->setUniform("u_baseColor1", vMesh->getColor());
+      volumeInspectProgram->draw();
     }
 
     for (auto it = vMesh->quantities.begin(); it != vMesh->quantities.end(); it++) {
@@ -288,13 +303,13 @@ void SlicePlane::buildGUI() {
       std::map<std::string, Structure*>::iterator it;
       for (it = state::structures["Volume Mesh"].begin(); it != state::structures["Volume Mesh"].end(); it++) {
         std::string vMeshName = it->first;
-        if (ImGui::MenuItem(vMeshName.c_str(), NULL, slicedMeshName.get() == vMeshName)) {
+        if (ImGui::MenuItem(vMeshName.c_str(), NULL, inspectedMeshName == vMeshName)) {
           setVolumeMeshToInspect(vMeshName);
         }
       }
 
       // "None" option
-      if (ImGui::MenuItem("None", NULL, slicedMeshName.get() == "")) {
+      if (ImGui::MenuItem("None", NULL, inspectedMeshName == "")) {
         setVolumeMeshToInspect("");
       }
 

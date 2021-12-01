@@ -115,7 +115,7 @@ public:
   std::vector<double> cellAreas;
   std::vector<double> faceAreas;
   std::vector<double> vertexAreas;
-  std::vector<char> faceIsInterior; // a flat array whos order matches the iteration order of the mesh
+  std::vector<char> faceIsInterior; // a flat array whose order matches the iteration order of the mesh
 
   // = Mesh helpers
   VolumeCellType cellType(size_t i) const;
@@ -167,9 +167,12 @@ public:
   void fillSliceGeometryBuffers(render::ShaderProgram& p);
   static const std::vector<std::vector<std::array<size_t, 3>>>& cellStencil(VolumeCellType type);
 
+  // Slice plane listeners
+  std::vector<polyscope::SlicePlane*> volumeSlicePlaneListeners;
   void addSlicePlaneListener(polyscope::SlicePlane* sp);
   void removeSlicePlaneListener(polyscope::SlicePlane* sp);
   void refreshVolumeMeshListeners();
+
 
 private:
   // Visualization settings
@@ -179,9 +182,10 @@ private:
   PersistentValue<std::string> material;
   PersistentValue<float> edgeWidth;
 
-  VolumeMeshVertexScalarQuantity* activeLevelSetQuantity;
-  std::vector<polyscope::SlicePlane*> volumeSlicePlaneListeners;
+  // Level sets
+  // TODO: not currently really supported
   float activeLevelSetValue;
+  VolumeMeshVertexScalarQuantity* activeLevelSetQuantity;
 
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
@@ -234,8 +238,8 @@ private:
 
   // === Helper implementations
 
-  void setVertexTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
-  void setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
+  //void setVertexTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
+  //void setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
   // clang-format on
 };
 

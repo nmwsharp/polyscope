@@ -99,7 +99,7 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
       color(uniquePrefix() + "color", getNextUniqueColor()),
       interiorColor(uniquePrefix() + "interiorColor", color.get()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
-      edgeWidth(uniquePrefix() + "edgeWidth", 0.), activeLevelSetQuantity(nullptr), volumeSlicePlaneListeners() {
+      edgeWidth(uniquePrefix() + "edgeWidth", 0.), activeLevelSetQuantity(nullptr) {
   cullWholeElements.setPassive(true);
 
   // set the interior color to be a desaturated version of the normal one
