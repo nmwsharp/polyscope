@@ -29,7 +29,7 @@ SlicePlane* addSceneSlicePlane(bool initiallyVisible) {
     sceneSlicePlanes.back()->setDrawPlane(false);
     sceneSlicePlanes.back()->setDrawWidget(false);
   }
-  for (uint i = 0; i < sceneSlicePlanes.size(); i++) {
+  for (size_t i = 0; i < sceneSlicePlanes.size(); i++) {
     sceneSlicePlanes[i]->resetVolumeSliceProgram();
   }
   return sceneSlicePlanes.back();
@@ -39,7 +39,7 @@ void removeLastSceneSlicePlane() {
   if (sceneSlicePlanes.empty()) return;
   delete sceneSlicePlanes.back();
   sceneSlicePlanes.pop_back();
-  for (uint i = 0; i < sceneSlicePlanes.size(); i++) {
+  for (size_t i = 0; i < sceneSlicePlanes.size(); i++) {
     sceneSlicePlanes[i]->resetVolumeSliceProgram();
   }
 }
