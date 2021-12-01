@@ -139,7 +139,10 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   ImGuiIO& oldIO = ImGui::GetIO(); // used to copy below, see note
   ImGui::SetCurrentContext(newContext);
 
-  render::engine->setImGuiStyle();
+  if (options::configureImGuiStyleCallback) {
+    options::configureImGuiStyleCallback();
+  }
+
   ImGui::GetIO() = oldIO; // Copy all of the old IO values to new. With ImGUI 1.76 (and some previous versions), this
                           // was necessary to fix a bug where keys like delete, etc would break in subcontexts. The
                           // problem was that the key mappings (e.g. GLFW_KEY_BACKSPACE --> ImGuiKey_Backspace) need to
