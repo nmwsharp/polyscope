@@ -254,7 +254,7 @@ size_t VolumeMesh::nTets() {
 void VolumeMesh::addSlicePlaneListener(polyscope::SlicePlane* sp) { volumeSlicePlaneListeners.push_back(sp); }
 
 void VolumeMesh::removeSlicePlaneListener(polyscope::SlicePlane* sp) {
-  for (uint i = 0; i < volumeSlicePlaneListeners.size(); i++) {
+  for (size_t i = 0; i < volumeSlicePlaneListeners.size(); i++) {
     if (volumeSlicePlaneListeners[i] == sp) {
       volumeSlicePlaneListeners.erase(volumeSlicePlaneListeners.begin() + i);
       break;
@@ -916,7 +916,7 @@ void VolumeMesh::buildCustomOptionsUI() {
 
 
 void VolumeMesh::refreshVolumeMeshListeners() {
-  for (uint i = 0; i < volumeSlicePlaneListeners.size(); i++) {
+  for (size_t i = 0; i < volumeSlicePlaneListeners.size(); i++) {
     volumeSlicePlaneListeners[i]->resetVolumeSliceProgram();
   }
 }
