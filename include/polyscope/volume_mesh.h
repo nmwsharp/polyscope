@@ -6,7 +6,6 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
-#include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
@@ -76,7 +75,7 @@ public:
   
 	// = Vectors (expect vector array, inner type must be indexable with correct dimension (3 for extrinsic, 2 for intrinsic) 
 	template <class T> VolumeMeshVertexVectorQuantity* addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
-	template <class T> VolumeMeshCellVectorQuantity* addCellVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
+	template <class T> VolumeMeshCellVectorQuantity* addCellVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
 
   // clang-format on
 
@@ -99,7 +98,6 @@ public:
   size_t faceDataSize;
   size_t cellDataSize;
 
-
   // === Manage the mesh itself
 
   // Core data
@@ -117,14 +115,22 @@ public:
   std::vector<double> cellAreas;
   std::vector<double> faceAreas;
   std::vector<double> vertexAreas;
-  std::vector<char> faceIsInterior; // a flat array whos order matches the iteration order of the mesh
+  std::vector<char> faceIsInterior; // a flat array whose order matches the iteration order of the mesh
 
   // = Mesh helpers
   VolumeCellType cellType(size_t i) const;
   void computeCounts();       // call to populate counts and indices
   void computeGeometryData(); // call to populate normals/areas/lengths
-  std::vector<std::string> addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade = true);
+  std::vector<std::string> addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade = true,
+                                              bool isSlice = false);
   glm::vec3 cellCenter(size_t iC);
+
+  // Manage a separate tetrahedral representation used for volumetric visualizations
+  // (for a pure-tet mesh this will be the same as the cells array)
+  std::vector<std::array<int64_t, 4>> tets;
+  size_t nTets();
+  void computeTets();    // fills tet buffer
+  void ensureHaveTets(); //  ensure the tet buffer is filled (but don't rebuild if already done)
 
   // === Member variables ===
   static const std::string structureTypeName;
@@ -152,10 +158,21 @@ public:
   VolumeMesh* setEdgeWidth(double newVal);
   double getEdgeWidth();
 
+  VolumeMeshVertexScalarQuantity* getLevelSetQuantity();
+  void setLevelSetQuantity(VolumeMeshVertexScalarQuantity* _levelSet);
+
   // Rendering helpers used by quantities
   void setVolumeMeshUniforms(render::ShaderProgram& p);
   void fillGeometryBuffers(render::ShaderProgram& p);
+  void fillSliceGeometryBuffers(render::ShaderProgram& p);
   static const std::vector<std::vector<std::array<size_t, 3>>>& cellStencil(VolumeCellType type);
+
+  // Slice plane listeners
+  std::vector<polyscope::SlicePlane*> volumeSlicePlaneListeners;
+  void addSlicePlaneListener(polyscope::SlicePlane* sp);
+  void removeSlicePlaneListener(polyscope::SlicePlane* sp);
+  void refreshVolumeMeshListeners();
+
 
 private:
   // Visualization settings
@@ -164,6 +181,11 @@ private:
   PersistentValue<glm::vec3> edgeColor;
   PersistentValue<std::string> material;
   PersistentValue<float> edgeWidth;
+
+  // Level sets
+  // TODO: not currently really supported
+  float activeLevelSetValue;
+  VolumeMeshVertexScalarQuantity* activeLevelSetQuantity;
 
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
@@ -200,6 +222,8 @@ private:
   // clang-format off
   static const std::vector<std::vector<std::array<size_t, 3>>> stencilTet;
   static const std::vector<std::vector<std::array<size_t, 3>>> stencilHex;
+  static const std::array<std::array<size_t, 8>, 8> rotationMap;
+  static const std::array<std::array<std::array<size_t, 4>, 6>, 4> diagonalMap;
 
   // clang-format off
 
@@ -214,8 +238,8 @@ private:
 
   // === Helper implementations
 
-  void setVertexTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
-  void setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
+  //void setVertexTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
+  //void setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
   // clang-format on
 };
 

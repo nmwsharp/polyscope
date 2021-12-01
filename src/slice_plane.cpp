@@ -1,6 +1,7 @@
 #include "polyscope/slice_plane.h"
 
 #include "polyscope/polyscope.h"
+#include "polyscope/volume_mesh.h"
 
 namespace polyscope {
 
@@ -28,6 +29,9 @@ SlicePlane* addSceneSlicePlane(bool initiallyVisible) {
     sceneSlicePlanes.back()->setDrawPlane(false);
     sceneSlicePlanes.back()->setDrawWidget(false);
   }
+  for (size_t i = 0; i < sceneSlicePlanes.size(); i++) {
+    sceneSlicePlanes[i]->resetVolumeSliceProgram();
+  }
   return sceneSlicePlanes.back();
 }
 
@@ -35,6 +39,9 @@ void removeLastSceneSlicePlane() {
   if (sceneSlicePlanes.empty()) return;
   delete sceneSlicePlanes.back();
   sceneSlicePlanes.pop_back();
+  for (size_t i = 0; i < sceneSlicePlanes.size(); i++) {
+    sceneSlicePlanes[i]->resetVolumeSliceProgram();
+  }
 }
 
 void buildSlicePlaneGUI() {
@@ -60,14 +67,21 @@ void buildSlicePlaneGUI() {
   }
 }
 
+void SlicePlane::setSliceGeomUniforms(render::ShaderProgram& p) {
+  glm::vec3 norm = getNormal();
+  p.setUniform("u_sliceVector", norm);
+  p.setUniform("u_slicePoint", glm::dot(getCenter(), norm));
+}
+
+
 SlicePlane::SlicePlane(std::string name_)
     : name(name_), postfix(std::to_string(state::slicePlanes.size())), active("SlicePlane#" + name + "#active", true),
       drawPlane("SlicePlane#" + name + "#drawPlane", true), drawWidget("SlicePlane#" + name + "#drawWidget", true),
       objectTransform("SlicePlane#" + name + "#object_transform", glm::mat4(1.0)),
       color("SlicePlane#" + name + "#color", getNextUniqueColor()),
       gridLineColor("SlicePlane#" + name + "#gridLineColor", glm::vec3{.97, .97, .97}),
-      transparency("SlicePlane#" + name + "#transparency", 0.5),
-      transformGizmo("SlicePlane#" + name + "#transform_gizmo", objectTransform.get(), &objectTransform) {
+      transparency("SlicePlane#" + name + "#transparency", 0.5), shouldInspectMesh(false), inspectedMeshName(""),
+      transformGizmo("SlicePlane#" + name + "#transformGizmo", objectTransform.get(), &objectTransform) {
   state::slicePlanes.push_back(this);
   render::engine->addSlicePlane(postfix);
   transformGizmo.enabled = true;
@@ -75,6 +89,8 @@ SlicePlane::SlicePlane(std::string name_)
 }
 
 SlicePlane::~SlicePlane() {
+  ensureVolumeInspectValid();
+  setVolumeMeshToInspect(""); // disable any slicing
   render::engine->removeSlicePlane(postfix);
   auto pos = std::find(state::slicePlanes.begin(), state::slicePlanes.end(), this);
   if (pos == state::slicePlanes.end()) return;
@@ -105,28 +121,140 @@ void SlicePlane::prepare() {
   planeProgram->setAttribute("a_position", positions);
 }
 
+void SlicePlane::setVolumeMeshToInspect(std::string meshname) {
+  VolumeMesh* oldMeshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
+  if (oldMeshToInspect != nullptr) {
+    oldMeshToInspect->removeSlicePlaneListener(this);
+  }
+  inspectedMeshName = meshname;
+  VolumeMesh* meshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
+  if (meshToInspect == nullptr) {
+    inspectedMeshName = "";
+    shouldInspectMesh = false;
+    volumeInspectProgram.reset();
+    return;
+  }
+  drawPlane = false;
+  meshToInspect->addSlicePlaneListener(this);
+  meshToInspect->setCullWholeElements(false);
+  meshToInspect->ensureHaveTets(); // do this as early as possible because it is expensive
+  shouldInspectMesh = true;
+  volumeInspectProgram.reset();
+}
+
+std::string SlicePlane::getVolumeMeshToInspect() { return inspectedMeshName; }
+
+void SlicePlane::ensureVolumeInspectValid() {
+  if (!shouldInspectMesh) return;
+
+  // This method exists to save us in any cases where we might be inspecting a volume mesh when that mesh is deleted. We
+  // can't just call setVolumeMeshToInspect(""), because that tries to look up the volume mesh.
+
+  if (!hasVolumeMesh(inspectedMeshName)) {
+    inspectedMeshName = "";
+    shouldInspectMesh = false;
+    volumeInspectProgram = nullptr;
+  }
+}
+
+void SlicePlane::createVolumeSliceProgram() {
+  VolumeMesh* meshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
+  volumeInspectProgram = render::engine->requestShader(
+      "SLICE_TETS", meshToInspect->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}, true, true));
+  meshToInspect->fillSliceGeometryBuffers(*volumeInspectProgram);
+  render::engine->setMaterial(*volumeInspectProgram, meshToInspect->getMaterial());
+}
+
+void SlicePlane::resetVolumeSliceProgram() { volumeInspectProgram.reset(); }
+
+void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
+  VolumeMesh* meshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
+  std::vector<glm::vec3> point1;
+  std::vector<glm::vec3> point2;
+  std::vector<glm::vec3> point3;
+  std::vector<glm::vec3> point4;
+  size_t cellCount = meshToInspect->nCells();
+  point1.resize(cellCount);
+  point2.resize(cellCount);
+  point3.resize(cellCount);
+  point4.resize(cellCount);
+  for (size_t iC = 0; iC < cellCount; iC++) {
+    const std::array<int64_t, 8>& cell = meshToInspect->cells[iC];
+    point1[iC] = meshToInspect->vertices[cell[0]];
+    point2[iC] = meshToInspect->vertices[cell[1]];
+    point3[iC] = meshToInspect->vertices[cell[2]];
+    point4[iC] = meshToInspect->vertices[cell[3]];
+  }
+  glm::vec3 normal = glm::vec3(-1, 0, 0);
+
+  p.setAttribute("a_slice_1", point1);
+  p.setAttribute("a_slice_2", point2);
+  p.setAttribute("a_slice_3", point3);
+  p.setAttribute("a_slice_4", point4);
+}
+
+void SlicePlane::drawGeometry() {
+  if (!active.get()) return;
+
+  ensureVolumeInspectValid();
+
+  if (shouldInspectMesh) {
+    VolumeMesh* vMesh = polyscope::getVolumeMesh(inspectedMeshName);
+
+    // guard against situations where the volume mesh we are slicing has been deleted
+    if (vMesh == nullptr) {
+      setVolumeMeshToInspect("");
+      return;
+    }
+
+    if (vMesh->wantsCullPosition()) return;
+
+    if (volumeInspectProgram == nullptr) {
+      createVolumeSliceProgram();
+    }
+
+
+    if (vMesh->dominantQuantity == nullptr) {
+      vMesh->setStructureUniforms(*volumeInspectProgram);
+      setSceneObjectUniforms(*volumeInspectProgram, true);
+      setSliceGeomUniforms(*volumeInspectProgram);
+      vMesh->setVolumeMeshUniforms(*volumeInspectProgram);
+      volumeInspectProgram->setUniform("u_baseColor1", vMesh->getColor());
+      volumeInspectProgram->draw();
+    }
+
+    for (auto it = vMesh->quantities.begin(); it != vMesh->quantities.end(); it++) {
+      if (!it->second->isEnabled()) continue;
+      it->second->drawSlice(this);
+    }
+  }
+}
+
+
 void SlicePlane::draw() {
-  if (!drawPlane.get() || !active.get()) return;
+  if (!active.get()) return;
 
-  // Set uniforms
-  glm::mat4 viewMat = view::getCameraViewMatrix();
-  planeProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
-  glm::mat4 projMat = view::getCameraPerspectiveMatrix();
-  planeProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
+  if (drawPlane.get()) {
+    // Set uniforms
+    glm::mat4 viewMat = view::getCameraViewMatrix();
+    planeProgram->setUniform("u_viewMatrix", glm::value_ptr(viewMat));
+    glm::mat4 projMat = view::getCameraPerspectiveMatrix();
+    planeProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
-  planeProgram->setUniform("u_objectMatrix", glm::value_ptr(objectTransform.get()));
-  planeProgram->setUniform("u_lengthScale", state::lengthScale);
-  planeProgram->setUniform("u_color", getColor());
-  planeProgram->setUniform("u_gridLineColor", getGridLineColor());
-  planeProgram->setUniform("u_transparency", transparency.get());
+    planeProgram->setUniform("u_objectMatrix", glm::value_ptr(objectTransform.get()));
+    planeProgram->setUniform("u_lengthScale", state::lengthScale);
+    planeProgram->setUniform("u_color", color.get());
+    planeProgram->setUniform("u_gridLineColor", getGridLineColor());
+    planeProgram->setUniform("u_transparency", transparency.get());
 
-  // glm::vec3 center{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
-  // planeProgram->setUniform("u_center", center);
+    // glm::vec3 center{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
+    // planeProgram->setUniform("u_center", center);
 
-  render::engine->setDepthMode(DepthMode::Less);
-  render::engine->setBackfaceCull(false);
-  render::engine->applyTransparencySettings();
-  planeProgram->draw();
+    render::engine->setDepthMode(DepthMode::Less);
+    render::engine->setBackfaceCull(false);
+    render::engine->applyTransparencySettings();
+    planeProgram->draw();
+  }
 }
 
 void SlicePlane::buildGUI() {
@@ -135,7 +263,7 @@ void SlicePlane::buildGUI() {
   if (ImGui::Checkbox(name.c_str(), &active.get())) {
     setActive(getActive());
   }
-  
+
   ImGui::SameLine();
 
   { // Color transparency box
@@ -161,12 +289,45 @@ void SlicePlane::buildGUI() {
   if (ImGui::Checkbox("draw widget", &drawWidget.get())) {
     setDrawWidget(getDrawWidget());
   }
+
+  bool haveVolumeMeshes = state::structures.find("Volume Mesh") != state::structures.end();
+
+  if (haveVolumeMeshes) {
+
+    if (ImGui::Button("Inspect")) {
+      ImGui::OpenPopup("InspectPopup");
+    }
+    if (ImGui::BeginPopup("InspectPopup")) {
+
+      //  Loop over volume meshes and offer them to be inspected
+      std::map<std::string, Structure*>::iterator it;
+      for (it = state::structures["Volume Mesh"].begin(); it != state::structures["Volume Mesh"].end(); it++) {
+        std::string vMeshName = it->first;
+        if (ImGui::MenuItem(vMeshName.c_str(), NULL, inspectedMeshName == vMeshName)) {
+          setVolumeMeshToInspect(vMeshName);
+        }
+      }
+
+      // "None" option
+      if (ImGui::MenuItem("None", NULL, inspectedMeshName == "")) {
+        setVolumeMeshToInspect("");
+      }
+
+      ImGui::EndPopup();
+    }
+  }
+
+
   ImGui::Unindent(16.);
 
   ImGui::PopID();
 }
 
 void SlicePlane::setSceneObjectUniforms(render::ShaderProgram& p, bool alwaysPass) {
+  if (!p.hasUniform("u_slicePlaneNormal_" + postfix)) {
+    return;
+  }
+
   glm::vec3 normal, center;
 
   if (alwaysPass) {

@@ -32,7 +32,61 @@ VolumeMeshVertexColorQuantity::VolumeMeshVertexColorQuantity(std::string name, s
                                                              VolumeMesh& mesh_)
     : VolumeMeshColorQuantity(name, mesh_, "vertex"), values(std::move(values_))
 
-{}
+{
+  parent.refreshVolumeMeshListeners(); // just in case this quantity is being drawn
+}
+
+void VolumeMeshVertexColorQuantity::drawSlice(polyscope::SlicePlane* sp) {
+  if (!isEnabled()) return;
+
+  if (sliceProgram == nullptr) {
+    sliceProgram = createSliceProgram();
+  }
+  parent.setStructureUniforms(*sliceProgram);
+  // Ignore current slice plane
+  sp->setSceneObjectUniforms(*sliceProgram, true);
+  sp->setSliceGeomUniforms(*sliceProgram);
+  parent.setVolumeMeshUniforms(*sliceProgram);
+  sliceProgram->draw();
+}
+
+std::shared_ptr<render::ShaderProgram> VolumeMeshVertexColorQuantity::createSliceProgram() {
+  std::shared_ptr<render::ShaderProgram> p = render::engine->requestShader(
+      "SLICE_TETS", parent.addVolumeMeshRules({"SLICE_TETS_PROPAGATE_VECTOR", "SLICE_TETS_VECTOR_COLOR"}, true, true));
+
+  // Fill color buffers
+  parent.fillSliceGeometryBuffers(*p);
+  fillSliceColorBuffers(*p);
+  render::engine->setMaterial(*p, parent.getMaterial());
+  return p;
+}
+
+void VolumeMeshVertexColorQuantity::fillSliceColorBuffers(render::ShaderProgram& p) {
+  size_t tetCount = parent.nTets();
+  std::vector<glm::vec3> colorval_1;
+  std::vector<glm::vec3> colorval_2;
+  std::vector<glm::vec3> colorval_3;
+  std::vector<glm::vec3> colorval_4;
+
+  colorval_1.resize(tetCount);
+  colorval_2.resize(tetCount);
+  colorval_3.resize(tetCount);
+  colorval_4.resize(tetCount);
+
+  auto vertices = parent.vertices;
+  for (size_t iT = 0; iT < parent.tets.size(); iT++) {
+    colorval_1[iT] = values[parent.tets[iT][0]];
+    colorval_2[iT] = values[parent.tets[iT][1]];
+    colorval_3[iT] = values[parent.tets[iT][2]];
+    colorval_4[iT] = values[parent.tets[iT][3]];
+  }
+
+  // Store data in buffers
+  p.setAttribute("a_value_1", colorval_1);
+  p.setAttribute("a_value_2", colorval_2);
+  p.setAttribute("a_value_3", colorval_3);
+  p.setAttribute("a_value_4", colorval_4);
+}
 
 void VolumeMeshVertexColorQuantity::createProgram() {
   // Create the program to draw this quantity
@@ -97,6 +151,9 @@ std::string VolumeMeshColorQuantity::niceName() { return name + " (" + definedOn
 
 void VolumeMeshColorQuantity::refresh() {
   program.reset();
+  if (sliceProgram) {
+    sliceProgram.reset();
+  }
   Quantity::refresh();
 }
 

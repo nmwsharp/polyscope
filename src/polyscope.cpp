@@ -207,8 +207,12 @@ void drawStructures() {
       s.second->draw();
     }
   }
+ 
+  // Also render any slice plane geometry
+  for (SlicePlane* s : state::slicePlanes) {
+    s->drawGeometry();
+  }
 }
-
 
 namespace {
 
@@ -330,6 +334,7 @@ void processInputEvents() {
     }
   }
 }
+
 
 void renderSlicePlanes() {
   for (SlicePlane* s : state::slicePlanes) {
@@ -790,6 +795,8 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
 }
 
 Structure* getStructure(std::string type, std::string name) {
+
+  if (type == "" || name == "") return nullptr;
 
   // If there are no structures of that type it is an automatic fail
   if (state::structures.find(type) == state::structures.end()) {

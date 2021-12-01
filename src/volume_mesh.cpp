@@ -6,14 +6,14 @@
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/volume_mesh_quantity.h"
 
 #include "imgui.h"
 
+#include <algorithm>
+#include <numeric>
 #include <unordered_map>
 #include <utility>
-
-using std::cout;
-using std::endl;
 
 namespace polyscope {
 
@@ -28,6 +28,57 @@ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilTet =
    {{0,3,2}}, 
    {{1,2,3}},
  };
+
+// Indirection to place vertex 0 always in the bottom left corner
+const std::array<std::array<size_t, 8>, 8> VolumeMesh::rotationMap = 
+ {{
+   {0, 1, 2, 3, 4, 5, 7, 6}, 
+   {1, 0, 4, 5, 2, 3, 6, 7}, 
+   {2, 1, 5, 6, 3, 0, 7, 4}, 
+   {3, 0, 1, 2, 7, 4, 6, 5}, 
+   {4, 0, 3, 7, 5, 1, 6, 2}, 
+   {5, 1, 0, 4, 7, 2, 6, 3}, 
+   {7, 3, 2, 6, 4, 0, 5, 1},
+   {6, 2, 1, 5, 7, 3, 4, 0} 
+ }};
+
+// Map indirected cube to tets
+const std::array<std::array<std::array<size_t, 4>, 6>, 4> VolumeMesh::diagonalMap = 
+ {{
+    {{
+      {0, 1, 2, 5},
+      {0, 2, 6, 5},
+      {0, 2, 3, 6},
+      {0, 5, 6, 4},
+      {2, 6, 5, 7},
+      {0, 0, 0, 0}
+    }},
+    {{
+      {0, 5, 6, 4},
+      {0, 1, 6, 5},
+      {1, 7, 6, 5},
+      {0, 6, 2, 3},
+      {0, 6, 1, 2},
+      {1, 6, 7, 2}
+    }},
+    {{
+      {0, 4, 5, 7},
+      {0, 3, 6, 7},
+      {0, 6, 4, 7},
+      {0, 1, 2, 5},
+      {0, 3, 7, 2},
+      {0, 7, 5, 2}
+    }},
+    {{
+      {0, 2, 3, 7},
+      {0, 3, 6, 7},
+      {0, 6, 4, 7},
+      {0, 5, 7, 4},
+      {1, 5, 7, 0},
+      {1, 7, 2, 0}
+    }}
+ }};
+
 
 const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilHex = 
   // numbered like in this diagram, except with 6/7 swapped
@@ -48,7 +99,7 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
       color(uniquePrefix() + "color", getNextUniqueColor()),
       interiorColor(uniquePrefix() + "interiorColor", color.get()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
-      edgeWidth(uniquePrefix() + "edgeWidth", 0.) {
+      edgeWidth(uniquePrefix() + "edgeWidth", 0.), activeLevelSetQuantity(nullptr) {
   cullWholeElements.setPassive(true);
 
   // set the interior color to be a desaturated version of the normal one
@@ -56,12 +107,190 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
   desatColorHSV.y *= 0.3;
   interiorColor.setPassive(HSVtoRGB(desatColorHSV));
 
-
   updateObjectSpaceBounds();
   computeCounts();
   computeGeometryData();
 }
 
+void VolumeMesh::computeTets() {
+  // Algorithm from
+  // https://www.researchgate.net/profile/Julien-Dompierre/publication/221561839_How_to_Subdivide_Pyramids_Prisms_and_Hexahedra_into_Tetrahedra/links/0912f509c0b7294059000000/How-to-Subdivide-Pyramids-Prisms-and-Hexahedra-into-Tetrahedra.pdf?origin=publication_detail
+  // It's a bit hard to look at but it works
+  // Uses vertex numberings to ensure consistent diagonals between faces, and keeps tet counts to 5 or 6 per hex
+  size_t tetCount = 0;
+  // Get number of tets first
+  for (size_t iC = 0; iC < nCells(); iC++) {
+    switch (cellType(iC)) {
+    case VolumeCellType::HEX: {
+      std::array<size_t, 8> sortedNumbering;
+      std::iota(sortedNumbering.begin(), sortedNumbering.end(), 0);
+      std::sort(sortedNumbering.begin(), sortedNumbering.end(),
+                [this, iC](size_t a, size_t b) -> bool { return cells[iC][a] < cells[iC][b]; });
+      std::array<size_t, 8> rotatedNumbering;
+      std::copy(rotationMap[sortedNumbering[0]].begin(), rotationMap[sortedNumbering[0]].end(),
+                rotatedNumbering.begin());
+      size_t n = 0;
+      size_t diagCount = 0;
+      auto checkDiagonal = [this, rotatedNumbering, iC](size_t a1, size_t a2, size_t b1, size_t b2) {
+        return (cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b1]] &&
+                cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b2]]) ||
+               (cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b1]] &&
+                cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b2]]);
+      };
+      if (checkDiagonal(1, 7, 2, 5)) {
+        n += 4;
+        diagCount++;
+      }
+      if (checkDiagonal(3, 7, 2, 6)) {
+        n += 2;
+        diagCount++;
+      }
+      if (checkDiagonal(4, 7, 5, 6)) {
+        n += 1;
+        diagCount++;
+      }
+      if (diagCount == 0) {
+        tetCount += 5;
+      } else {
+        tetCount += 6;
+      }
+      break;
+    }
+    case VolumeCellType::TET:
+      tetCount += 1;
+      break;
+    }
+  }
+  // Mark each edge as real or not (in the original mesh)
+  std::vector<std::array<bool, 6>> realEdges;
+  // Each hex can make up to 6 tets
+  tets.resize(tetCount);
+  realEdges.resize(tetCount);
+  size_t tetIdx = 0;
+  for (size_t iC = 0; iC < nCells(); iC++) {
+    switch (cellType(iC)) {
+    case VolumeCellType::HEX: {
+      std::array<size_t, 8> sortedNumbering;
+      std::iota(sortedNumbering.begin(), sortedNumbering.end(), 0);
+      std::sort(sortedNumbering.begin(), sortedNumbering.end(),
+                [this, iC](size_t a, size_t b) -> bool { return cells[iC][a] < cells[iC][b]; });
+      std::array<size_t, 8> rotatedNumbering;
+      std::copy(rotationMap[sortedNumbering[0]].begin(), rotationMap[sortedNumbering[0]].end(),
+                rotatedNumbering.begin());
+      size_t n = 0;
+      size_t diagCount = 0;
+      // Diagonal exists on the pair of vertices which contain the minimum vertex number
+      auto checkDiagonal = [this, rotatedNumbering, iC](size_t a1, size_t a2, size_t b1, size_t b2) {
+        return (cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b1]] &&
+                cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b2]]) ||
+               (cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b1]] &&
+                cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b2]]);
+      };
+      // Minimum vertex will always have 3 diagonals, check other three faces
+      if (checkDiagonal(1, 7, 2, 5)) {
+        n += 4;
+        diagCount++;
+      }
+      if (checkDiagonal(3, 7, 2, 6)) {
+        n += 2;
+        diagCount++;
+      }
+      if (checkDiagonal(4, 7, 5, 6)) {
+        n += 1;
+        diagCount++;
+      }
+      // Rotate by 120 or 240 degrees depending on diagonal positions
+      if (n == 1 || n == 6) {
+        size_t temp = rotatedNumbering[1];
+        rotatedNumbering[1] = rotatedNumbering[4];
+        rotatedNumbering[4] = rotatedNumbering[3];
+        rotatedNumbering[3] = temp;
+        temp = rotatedNumbering[5];
+        rotatedNumbering[5] = rotatedNumbering[6];
+        rotatedNumbering[6] = rotatedNumbering[2];
+        rotatedNumbering[2] = temp;
+      } else if (n == 2 || n == 5) {
+        size_t temp = rotatedNumbering[1];
+        rotatedNumbering[1] = rotatedNumbering[3];
+        rotatedNumbering[3] = rotatedNumbering[4];
+        rotatedNumbering[4] = temp;
+        temp = rotatedNumbering[5];
+        rotatedNumbering[5] = rotatedNumbering[2];
+        rotatedNumbering[2] = rotatedNumbering[6];
+        rotatedNumbering[6] = temp;
+      }
+
+      // Map final tets according to diagonalMap and the number of diagonals not incident to V_0
+      std::array<std::array<size_t, 4>, 6> tetMap = diagonalMap[diagCount];
+      for (size_t k = 0; k < (diagCount == 0 ? 5 : 6); k++) {
+        for (size_t i = 0; i < 4; i++) {
+          tets[tetIdx][i] = cells[iC][rotatedNumbering[tetMap[k][i]]];
+        }
+        tetIdx++;
+      }
+      break;
+    }
+    case VolumeCellType::TET:
+      for (size_t i = 0; i < 4; i++) {
+        tets[tetIdx][i] = cells[iC][i];
+      }
+      tetIdx++;
+      break;
+    }
+  }
+}
+
+void VolumeMesh::ensureHaveTets() {
+  if (tets.empty()) {
+    computeTets();
+  }
+}
+
+size_t VolumeMesh::nTets() {
+  ensureHaveTets();
+  return tets.size();
+}
+
+void VolumeMesh::addSlicePlaneListener(polyscope::SlicePlane* sp) { volumeSlicePlaneListeners.push_back(sp); }
+
+void VolumeMesh::removeSlicePlaneListener(polyscope::SlicePlane* sp) {
+  for (size_t i = 0; i < volumeSlicePlaneListeners.size(); i++) {
+    if (volumeSlicePlaneListeners[i] == sp) {
+      volumeSlicePlaneListeners.erase(volumeSlicePlaneListeners.begin() + i);
+      break;
+    }
+  }
+}
+
+void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
+
+  ensureHaveTets();
+
+  std::vector<glm::vec3> point1;
+  std::vector<glm::vec3> point2;
+  std::vector<glm::vec3> point3;
+  std::vector<glm::vec3> point4;
+  size_t tetCount = tets.size();
+  point1.resize(tetCount);
+  point2.resize(tetCount);
+  point3.resize(tetCount);
+  point4.resize(tetCount);
+  for (size_t tetIdx = 0; tetIdx < tets.size(); tetIdx++) {
+    point1[tetIdx] = vertices[tets[tetIdx][0]];
+    point2[tetIdx] = vertices[tets[tetIdx][1]];
+    point3[tetIdx] = vertices[tets[tetIdx][2]];
+    point4[tetIdx] = vertices[tets[tetIdx][3]];
+  }
+
+  program.setAttribute("a_point_1", point1);
+  program.setAttribute("a_point_2", point2);
+  program.setAttribute("a_point_3", point3);
+  program.setAttribute("a_point_4", point4);
+  program.setAttribute("a_slice_1", point1);
+  program.setAttribute("a_slice_2", point2);
+  program.setAttribute("a_slice_3", point3);
+  program.setAttribute("a_slice_4", point4);
+}
 
 void VolumeMesh::computeCounts() {
 
@@ -141,6 +370,15 @@ void VolumeMesh::computeCounts() {
 
 void VolumeMesh::computeGeometryData() {}
 
+VolumeMeshVertexScalarQuantity* VolumeMesh::getLevelSetQuantity() { return activeLevelSetQuantity; }
+
+void VolumeMesh::setLevelSetQuantity(VolumeMeshVertexScalarQuantity* quantity) {
+  if (activeLevelSetQuantity != nullptr && activeLevelSetQuantity != quantity) {
+    activeLevelSetQuantity->isDrawingLevelSet = false;
+  }
+  activeLevelSetQuantity = quantity;
+}
+
 
 void VolumeMesh::draw() {
   if (!isEnabled()) {
@@ -162,10 +400,19 @@ void VolumeMesh::draw() {
     // Set uniforms
     setStructureUniforms(*program);
     setVolumeMeshUniforms(*program);
+    glm::mat4 viewMat = getModelView();
+    glm::mat4 projMat = view::getCameraPerspectiveMatrix();
     program->setUniform("u_baseColor1", getColor());
     program->setUniform("u_baseColor2", getInteriorColor());
 
     program->draw();
+  }
+
+  if (activeLevelSetQuantity != nullptr && activeLevelSetQuantity->isEnabled()) {
+    // Draw the quantities
+    activeLevelSetQuantity->draw();
+
+    return;
   }
 
   // Draw the quantities
@@ -184,6 +431,7 @@ void VolumeMesh::drawPick() {
   }
 
   // Set uniforms
+  setVolumeMeshUniforms(*pickProgram);
   setStructureUniforms(*pickProgram);
 
   pickProgram->draw();
@@ -191,7 +439,6 @@ void VolumeMesh::drawPick() {
 
 void VolumeMesh::prepare() {
   program = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE"}));
-
   // Populate draw buffers
   fillGeometryBuffers(*program);
   render::engine->setMaterial(*program, getMaterial());
@@ -200,7 +447,7 @@ void VolumeMesh::prepare() {
 void VolumeMesh::preparePick() {
 
   // Create a new program
-  pickProgram = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_PICK"}, false),
+  pickProgram = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_PICK"}),
                                               render::ShaderReplacementDefaults::Pick);
 
   // == Sort out element counts and index ranges
@@ -222,10 +469,12 @@ void VolumeMesh::preparePick() {
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
+  std::vector<glm::vec3> edgeReal;
   std::vector<std::array<glm::vec3, 3>> vertexColors, edgeColors, halfedgeColors;
   std::vector<glm::vec3> faceColor;
   std::vector<glm::vec3> barycenters;
 
+  bool wantsEdge = (getEdgeWidth() > 0);
   bool wantsBarycenters = wantsCullPosition();
 
   // Reserve space
@@ -238,6 +487,9 @@ void VolumeMesh::preparePick() {
   normals.resize(3 * nFacesTriangulation());
   if (wantsBarycenters) {
     barycenters.resize(3 * nFacesTriangulation());
+  }
+  if (wantsEdge) {
+    edgeReal.resize(3 * nFacesTriangulation());
   }
 
 
@@ -311,6 +563,18 @@ void VolumeMesh::preparePick() {
             barycenters[iData + k] = barycenter;
           }
         }
+        if (wantsEdge) {
+          glm::vec3 edgeRealV{0., 1., 0.};
+          if (j == 0) {
+            edgeRealV.x = 1.;
+          }
+          if (j + 1 == face.size()) {
+            edgeRealV.z = 1.;
+          }
+          for (int k = 0; k < 3; k++) {
+            edgeReal[iData + k] = edgeRealV;
+          }
+        }
       }
 
       iF++;
@@ -326,24 +590,28 @@ void VolumeMesh::preparePick() {
   pickProgram->setAttribute<glm::vec3, 3>("a_edgeColors", edgeColors);
   pickProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", halfedgeColors);
   pickProgram->setAttribute("a_faceColor", faceColor);
-  if (wantsCullPosition()) {
+  if (wantsBarycenters) {
     pickProgram->setAttribute("a_cullPos", barycenters);
+  }
+  if (wantsEdge) {
+    pickProgram->setAttribute("a_edgeIsReal", edgeReal);
   }
 }
 
-std::vector<std::string> VolumeMesh::addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade) {
+std::vector<std::string> VolumeMesh::addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade,
+                                                        bool isSlice) {
 
   initRules = addStructureRules(initRules);
 
   if (withSurfaceShade) {
     if (getEdgeWidth() > 0) {
-      initRules.push_back("MESH_WIREFRAME");
+      initRules.push_back(isSlice ? "SLICE_TETS_MESH_WIREFRAME" : "MESH_WIREFRAME");
     }
   }
 
   initRules.push_back("MESH_BACKFACE_NORMAL_FLIP");
 
-  if (wantsCullPosition()) {
+  if (wantsCullPosition() && !isSlice) {
     initRules.push_back("MESH_PROPAGATE_CULLPOS");
   }
 
@@ -647,17 +915,24 @@ void VolumeMesh::buildCustomOptionsUI() {
 }
 
 
+void VolumeMesh::refreshVolumeMeshListeners() {
+  for (size_t i = 0; i < volumeSlicePlaneListeners.size(); i++) {
+    volumeSlicePlaneListeners[i]->resetVolumeSliceProgram();
+  }
+}
+
 void VolumeMesh::refresh() {
   computeGeometryData();
   program.reset();
   pickProgram.reset();
+  refreshVolumeMeshListeners();
   requestRedraw();
   QuantityStructure<VolumeMesh>::refresh(); // call base class version, which refreshes quantities
 }
 
-void VolumeMesh::geometryChanged() { 
+void VolumeMesh::geometryChanged() {
   // TODO overkill
-  refresh(); 
+  refresh();
 }
 
 VolumeCellType VolumeMesh::cellType(size_t i) const {
@@ -729,7 +1004,7 @@ VolumeMesh* VolumeMesh::setEdgeWidth(double newVal) {
 double VolumeMesh::getEdgeWidth() { return edgeWidth.get(); }
 
 
-// === Quantity adders
+// === Quantity adder}
 
 VolumeMeshVertexColorQuantity* VolumeMesh::addVertexColorQuantityImpl(std::string name,
                                                                       const std::vector<glm::vec3>& colors) {

@@ -300,9 +300,10 @@ const ShaderReplacementRule CULL_POS_FROM_VIEW (
     { /* replacement sources */
       {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
         vec3 cullPos = viewPos;
-      )"}
+      )"},
     },
-    /* uniforms */ {},
+    /* uniforms */ {
+    },
     /* attributes */ {},
     /* textures */ {}
 );

@@ -910,6 +910,28 @@ TEST_F(PolyscopeTest, VolumeMeshCellVector) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, VolumeMeshInspect) {
+  std::vector<glm::vec3> verts;
+  std::vector<std::array<int, 8>> cells;
+  std::tie(verts, cells) = getVolumeMeshData();
+  polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
+
+  // plain old inspecting
+  polyscope::SlicePlane* p = polyscope::addSceneSlicePlane();
+  p->setVolumeMeshToInspect("vol");
+  polyscope::show(3);
+
+  // with a scalar quantity
+  std::vector<float> vals(verts.size(), 0.44);
+  auto q1 = psVol->addVertexScalarQuantity("vals", vals);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+
+  polyscope::removeLastSceneSlicePlane();
+}
+
+
 // ============================================================
 // =============== Ground plane tests
 // ============================================================

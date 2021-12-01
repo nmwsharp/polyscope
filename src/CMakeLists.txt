@@ -28,6 +28,7 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
     render/opengl/shaders/gizmo_shaders.cpp  
     render/opengl/shaders/histogram_shaders.cpp  
     render/opengl/shaders/surface_mesh_shaders.cpp  
+    render/opengl/shaders/volume_mesh_shaders.cpp  
     render/opengl/shaders/vector_shaders.cpp  
     render/opengl/shaders/sphere_shaders.cpp  
     render/opengl/shaders/ribbon_shaders.cpp  
@@ -85,6 +86,7 @@ if("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
     render/opengl/shaders/gizmo_shaders.cpp  
     render/opengl/shaders/histogram_shaders.cpp  
     render/opengl/shaders/surface_mesh_shaders.cpp  
+    render/opengl/shaders/volume_mesh_shaders.cpp  
     render/opengl/shaders/vector_shaders.cpp  
     render/opengl/shaders/sphere_shaders.cpp  
     render/opengl/shaders/ribbon_shaders.cpp  
