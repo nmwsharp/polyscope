@@ -11,6 +11,7 @@
 #include "imgui.h"
 
 #include <algorithm>
+#include <numeric>
 #include <unordered_map>
 #include <utility>
 
