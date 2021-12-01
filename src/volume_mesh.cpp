@@ -10,9 +10,9 @@
 
 #include "imgui.h"
 
+#include <algorithm>
 #include <unordered_map>
 #include <utility>
-#include <algorithm>
 
 namespace polyscope {
 
@@ -914,13 +914,17 @@ void VolumeMesh::buildCustomOptionsUI() {
 }
 
 
+void VolumeMesh::refreshVolumeMeshListeners() {
+  for (uint i = 0; i < volumeSlicePlaneListeners.size(); i++) {
+    volumeSlicePlaneListeners[i]->resetVolumeSliceProgram();
+  }
+}
+
 void VolumeMesh::refresh() {
   computeGeometryData();
   program.reset();
   pickProgram.reset();
-  for (uint i = 0; i < volumeSlicePlaneListeners.size(); i++) {
-    volumeSlicePlaneListeners[i]->resetVolumeSliceProgram();
-  }
+  refreshVolumeMeshListeners();
   requestRedraw();
   QuantityStructure<VolumeMesh>::refresh(); // call base class version, which refreshes quantities
 }

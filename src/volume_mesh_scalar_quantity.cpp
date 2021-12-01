@@ -64,6 +64,7 @@ VolumeMeshVertexScalarQuantity::VolumeMeshVertexScalarQuantity(std::string name,
 
 {
   hist.buildHistogram(values, parent.vertexAreas); // rebuild to incorporate weights
+  parent.refreshVolumeMeshListeners();             // just in case this quantity is being drawn
 }
 void VolumeMeshVertexScalarQuantity::fillLevelSetData(render::ShaderProgram& p) {
   std::vector<glm::vec3> point1;

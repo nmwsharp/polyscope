@@ -291,7 +291,6 @@ void GroundPlane::draw(bool isRedraw) {
     // Draw everything
     if (!render::engine->transparencyEnabled()) { // skip when transparency is turned on
       drawStructures();
-      renderSlicePlaneGeometry();
     }
 
     // Restore original values
@@ -333,7 +332,6 @@ void GroundPlane::draw(bool isRedraw) {
     render::engine->setDepthMode();
     render::engine->setBlendMode(BlendMode::Disable);
     drawStructures();
-    renderSlicePlaneGeometry();
 
     // Copy the depth buffer to a texture (while upsampling)
     render::engine->setBlendMode(BlendMode::Disable);

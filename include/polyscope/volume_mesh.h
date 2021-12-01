@@ -169,6 +169,7 @@ public:
 
   void addSlicePlaneListener(polyscope::SlicePlane* sp);
   void removeSlicePlaneListener(polyscope::SlicePlane* sp);
+  void refreshVolumeMeshListeners();
 
 private:
   // Visualization settings

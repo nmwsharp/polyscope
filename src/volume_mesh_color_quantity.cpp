@@ -32,7 +32,9 @@ VolumeMeshVertexColorQuantity::VolumeMeshVertexColorQuantity(std::string name, s
                                                              VolumeMesh& mesh_)
     : VolumeMeshColorQuantity(name, mesh_, "vertex"), values(std::move(values_))
 
-{}
+{
+  parent.refreshVolumeMeshListeners(); // just in case this quantity is being drawn
+}
 
 void VolumeMeshVertexColorQuantity::drawSlice(polyscope::SlicePlane* sp) {
   if (!isEnabled()) return;
@@ -149,7 +151,7 @@ std::string VolumeMeshColorQuantity::niceName() { return name + " (" + definedOn
 
 void VolumeMeshColorQuantity::refresh() {
   program.reset();
-  if(sliceProgram){
+  if (sliceProgram) {
     sliceProgram.reset();
   }
   Quantity::refresh();

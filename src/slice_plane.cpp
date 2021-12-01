@@ -91,6 +91,7 @@ SlicePlane::SlicePlane(std::string name_)
 }
 
 SlicePlane::~SlicePlane() {
+  setVolumeMeshToSlice(""); // disable any slicing
   render::engine->removeSlicePlane(postfix);
   auto pos = std::find(state::slicePlanes.begin(), state::slicePlanes.end(), this);
   if (pos == state::slicePlanes.end()) return;
@@ -136,6 +137,7 @@ void SlicePlane::setVolumeMeshToSlice(std::string meshname) {
   }
   drawPlane = false;
   meshToSlice->addSlicePlaneListener(this);
+  meshToSlice->setCullWholeElements(false);
   shouldSliceMesh = true;
   volumeSliceProgram.reset();
 }
