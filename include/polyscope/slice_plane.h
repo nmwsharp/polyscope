@@ -31,9 +31,6 @@ public:
                               bool alwaysPass = false); // if alwaysPass, fake values are given so the plane does
                                                         // nothing (regardless of this plane's active setting)
   void setSliceGeomUniforms(render::ShaderProgram& p);
-  void setVolumeMeshToSlice(std::string meshName);
-  std::string getVolumeMeshToSlice();
-
 
   const std::string name;
   const std::string postfix;
@@ -66,6 +63,9 @@ public:
 
   void setTransparency(double newVal);
   double getTransparency();
+  
+  void setVolumeMeshToSlice(std::string meshName);
+  std::string getVolumeMeshToSlice();
 
 protected:
   // = State
@@ -76,6 +76,8 @@ protected:
   PersistentValue<glm::vec3> color;
   PersistentValue<glm::vec3> gridLineColor;
   PersistentValue<float> transparency;
+  PersistentValue<bool> shouldSliceMesh;
+  PersistentValue<std::string> slicedMeshName;
 
   std::map<std::string, std::shared_ptr<render::ShaderProgram>> volumeSliceQuantityPrograms;
   std::shared_ptr<render::ShaderProgram> volumeSliceProgram;
@@ -85,8 +87,6 @@ protected:
   // Widget that wraps the transform
   TransformationGizmo transformGizmo;
 
-  bool shouldSliceMesh;
-  std::string slicedMeshName;
   std::shared_ptr<render::ShaderProgram> planeProgram;
 
   // Helpers

@@ -81,8 +81,9 @@ SlicePlane::SlicePlane(std::string name_)
       color("SlicePlane#" + name + "#color", getNextUniqueColor()),
       gridLineColor("SlicePlane#" + name + "#gridLineColor", glm::vec3{.97, .97, .97}),
       transparency("SlicePlane#" + name + "#transparency", 0.5),
-      transformGizmo("SlicePlane#" + name + "#transform_gizmo", objectTransform.get(), &objectTransform),
-      shouldSliceMesh(false), slicedMeshName("") {
+      shouldSliceMesh("SlicePlane#" + name + "#shouldSliceMesh", false),
+      slicedMeshName("SlicePlane#" + name + "#slicedMeshName", ""),
+      transformGizmo("SlicePlane#" + name + "#transformGizmo", objectTransform.get(), &objectTransform) {
   state::slicePlanes.push_back(this);
   render::engine->addSlicePlane(postfix);
   transformGizmo.enabled = true;
@@ -121,28 +122,28 @@ void SlicePlane::prepare() {
 }
 
 void SlicePlane::setVolumeMeshToSlice(std::string meshname) {
-  VolumeMesh* oldMeshToSlice = polyscope::getVolumeMesh(slicedMeshName);
+  VolumeMesh* oldMeshToSlice = polyscope::getVolumeMesh(slicedMeshName.get());
   if (oldMeshToSlice != nullptr) {
     oldMeshToSlice->removeSlicePlaneListener(this);
   }
   slicedMeshName = meshname;
-  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName);
+  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName.get());
   if (meshToSlice == nullptr) {
     slicedMeshName = "";
     shouldSliceMesh = false;
     volumeSliceProgram.reset();
     return;
   }
-  drawPlane.set(false);
+  drawPlane = false;
   meshToSlice->addSlicePlaneListener(this);
   shouldSliceMesh = true;
   volumeSliceProgram.reset();
 }
 
-std::string SlicePlane::getVolumeMeshToSlice() { return slicedMeshName; }
+std::string SlicePlane::getVolumeMeshToSlice() { return slicedMeshName.get(); }
 
 void SlicePlane::createVolumeSliceProgram() {
-  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName);
+  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName.get());
   volumeSliceProgram = render::engine->requestShader(
       "SLICE_TETS", meshToSlice->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}, true, true));
   meshToSlice->fillSliceGeometryBuffers(*volumeSliceProgram);
@@ -152,7 +153,7 @@ void SlicePlane::createVolumeSliceProgram() {
 void SlicePlane::resetVolumeSliceProgram() { volumeSliceProgram.reset(); }
 
 void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
-  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName);
+  VolumeMesh* meshToSlice = polyscope::getVolumeMesh(slicedMeshName.get());
   std::vector<glm::vec3> point1;
   std::vector<glm::vec3> point2;
   std::vector<glm::vec3> point3;
@@ -180,8 +181,15 @@ void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
 void SlicePlane::drawGeometry() {
   if (!active.get()) return;
 
-  if (shouldSliceMesh) {
-    VolumeMesh* vMesh = polyscope::getVolumeMesh(slicedMeshName);
+  if (shouldSliceMesh.get()) {
+    VolumeMesh* vMesh = polyscope::getVolumeMesh(slicedMeshName.get());
+
+    // guard against situations where the volume mesh we are slicing has been deleted
+    if (vMesh == nullptr) {
+      setVolumeMeshToSlice("");
+      return;
+    }
+
     if (vMesh->wantsCullPosition()) return;
 
     if (volumeSliceProgram == nullptr) {
@@ -264,22 +272,31 @@ void SlicePlane::buildGUI() {
   if (ImGui::Checkbox("draw widget", &drawWidget.get())) {
     setDrawWidget(getDrawWidget());
   }
-  if (state::structures.size() > 0) {
+
+  bool haveVolumeMeshes = state::structures.find("Volume Mesh") != state::structures.end();
+
+  if (haveVolumeMeshes) {
     if (ImGui::BeginMenu("Inspect")) {
+
+      //  Loop over volume meshes and offer them to be inspected
       std::map<std::string, Structure*>::iterator it;
       for (it = state::structures["Volume Mesh"].begin(); it != state::structures["Volume Mesh"].end(); it++) {
         std::string vMeshName = it->first;
-        if (ImGui::MenuItem(vMeshName.c_str(), NULL, slicedMeshName == vMeshName)) {
+        if (ImGui::MenuItem(vMeshName.c_str(), NULL, slicedMeshName.get() == vMeshName)) {
           setVolumeMeshToSlice(vMeshName);
         }
       }
-      if (ImGui::MenuItem("None", NULL, slicedMeshName == "")) {
+
+      // "None" option
+      if (ImGui::MenuItem("None", NULL, slicedMeshName.get() == "")) {
         setVolumeMeshToSlice("");
       }
 
       ImGui::EndMenu();
     }
   }
+
+
   ImGui::Unindent(16.);
 
   ImGui::PopID();
