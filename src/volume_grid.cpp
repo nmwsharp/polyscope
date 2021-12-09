@@ -12,6 +12,7 @@ const std::string VolumeGrid::structureTypeName = "Volume Grid";
 VolumeGrid::VolumeGrid(std::string name, std::array<size_t, 3> steps_, glm::vec3 bound_min_, glm::vec3 bound_max_)
     : QuantityStructure<VolumeGrid>(name, typeName()), steps(steps_), bound_min(bound_min_), bound_max(bound_max_),
       material(uniquePrefix() + "#material", "clay") {
+  updateObjectSpaceBounds();
   populateGeometry();
 }
 
