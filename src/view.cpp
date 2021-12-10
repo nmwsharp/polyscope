@@ -367,6 +367,11 @@ void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool fl
   }
 }
 
+void setWindowSize(int width, int height) {
+  view::windowWidth = width;
+  view::windowHeight = height;
+}
+
 void setViewToCamera(const CameraParameters& p) {
   viewMat = p.E;
   // fov = glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y)));
