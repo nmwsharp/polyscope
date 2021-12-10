@@ -120,6 +120,10 @@ private:
 VolumeGrid* registerVolumeGrid(std::string name, std::array<size_t, 3> steps, glm::vec3 bound_min, glm::vec3 bound_max);
 VolumeGrid* registerVolumeGrid(std::string name, size_t steps, glm::vec3 bound_min, glm::vec3 bound_max);
 
+// Shorthand to get a point cloud from polyscope
+inline VolumeGrid* getVolumeGrid(std::string name = "");
+inline bool hasVolumeGrid(std::string name = "");
+inline void removeVolumeGrid(std::string name = "", bool errorIfAbsent = false);
 
 } // namespace polyscope
 

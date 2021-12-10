@@ -257,7 +257,7 @@ VolumeMesh* registerTetHexMesh(std::string name, const V& vertexPositions, const
 // Shorthand to get a mesh from polyscope
 inline VolumeMesh* getVolumeMesh(std::string name = "");
 inline bool hasVolumeMesh(std::string name = "");
-inline void removeVolumeMesh(std::string name = "", bool errorIfAbsent = true);
+inline void removeVolumeMesh(std::string name = "", bool errorIfAbsent = false);
 
 
 } // namespace polyscope

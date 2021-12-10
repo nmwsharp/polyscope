@@ -45,6 +45,19 @@ inline float VolumeGrid::minGridSpacing() const {
   return std::fmin(std::fmin(spacing[0], spacing[1]), spacing[2]);
 }
 
+// Shorthand to get a volume grid from polyscope
+inline VolumeGrid* getVolumeGrid(std::string name) {
+  return dynamic_cast<VolumeGrid*>(getStructure(VolumeGrid::structureTypeName, name));
+}
+inline bool hasVolumeGrid(std::string name) { return hasStructure(VolumeGrid::structureTypeName, name); }
+inline void removeVolumeGrid(std::string name, bool errorIfAbsent) {
+  removeStructure(VolumeGrid::structureTypeName, name, errorIfAbsent);
+}
+
+
+// =====================================================
+// ============== Quantities
+// =====================================================
 
 template <class T>
 VolumeGridScalarQuantity* VolumeGrid::addScalarQuantity(std::string name, const T& values, DataType dataType_) {

@@ -208,7 +208,7 @@ CurveNetwork* registerCurveNetworkLoop2D(std::string name, const P& points);
 // Shorthand to get a curve network from polyscope
 inline CurveNetwork* getCurveNetwork(std::string name = "");
 inline bool hasCurveNetwork(std::string name = "");
-inline void removeCurveNetwork(std::string name = "", bool errorIfAbsent = true);
+inline void removeCurveNetwork(std::string name = "", bool errorIfAbsent = false);
 
 
 } // namespace polyscope
