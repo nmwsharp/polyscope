@@ -105,6 +105,21 @@ void removeFloatingQuantityStructureIfEmpty() {
   }
 }
 
+void removeFloatingQuantity(std::string name, bool errorIfAbsent) {
+  if (!globalFloatingQuantityStructure) {
+    if (errorIfAbsent) {
+      error("No floating quantity named " + name + " added.");
+    }
+    return;
+  }
+
+  globalFloatingQuantityStructure->removeQuantity(name, errorIfAbsent);
+}
+
+void removeAllFloatingQuantities() {
+  if (!globalFloatingQuantityStructure) return;
+  globalFloatingQuantityStructure->removeAllQuantities();
+}
 
 // Quantity default methods
 FloatingQuantity::FloatingQuantity(std::string name_, FloatingQuantityStructure& parent_, bool dominates_)

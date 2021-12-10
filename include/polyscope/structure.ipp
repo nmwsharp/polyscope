@@ -59,8 +59,11 @@ void QuantityStructure<S>::refresh() {
 }
 
 template <typename S>
-void QuantityStructure<S>::removeQuantity(std::string name) {
+void QuantityStructure<S>::removeQuantity(std::string name, bool errorIfAbsent) {
   if (quantities.find(name) == quantities.end()) {
+    if (errorIfAbsent) {
+      error("No quantity named " + name + " added to structure " + name);
+    }
     return;
   }
 
@@ -126,8 +129,8 @@ void QuantityStructure<S>::buildQuantitiesUI() {
 template <typename S>
 void QuantityStructure<S>::buildStructureOptionsUI() {
   if (ImGui::BeginMenu("Quantity Selection")) {
-  if (ImGui::MenuItem("Enable all")) setAllQuantitiesEnabled(true);
-  if (ImGui::MenuItem("Disable all")) setAllQuantitiesEnabled(false);
+    if (ImGui::MenuItem("Enable all")) setAllQuantitiesEnabled(true);
+    if (ImGui::MenuItem("Disable all")) setAllQuantitiesEnabled(false);
     ImGui::EndMenu();
   }
 }

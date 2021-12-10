@@ -69,8 +69,11 @@ static FloatingQuantityStructure* globalFloatingQuantityStructure = nullptr;
 FloatingQuantityStructure* getGlobalFloatingQuantityStructure(); // creates it if it doesn't exit yet
 void removeFloatingQuantityStructureIfEmpty();
 
+// manage all quantities
+void removeFloatingQuantity(std::string name, bool errorIfAbsent = false);
+void removeAllFloatingQuantities();
 
-// add/remove quantities
+// add/remove particular quantities
 template <class T>
 FloatingScalarImageQuantity* addFloatingScalarImage(std::string name, size_t dimX, size_t dimY, const T& values,
                                                     DataType type = DataType::STANDARD);

@@ -157,7 +157,7 @@ public:
   void addQuantity(QuantityType* q, bool allowReplacement = true);
 
   QuantityType* getQuantity(std::string name);
-  void removeQuantity(std::string name);
+  void removeQuantity(std::string name, bool errorIfAbsent = false);
   void removeAllQuantities();
 
   void setDominantQuantity(Quantity<S>* q);
