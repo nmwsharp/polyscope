@@ -66,7 +66,7 @@ VolumeGridScalarQuantity* VolumeGrid::addScalarQuantity(std::string name, const 
 }
 
 template <class Func>
-VolumeGridScalarQuantity* VolumeGrid::addScalarQuantity(std::string name, Func&& func, DataType dataType_) {
+VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityFromCallable(std::string name, Func&& func, DataType dataType_) {
 
   // Sample to grid
   std::vector<double> values(nValues());
@@ -76,6 +76,24 @@ VolumeGridScalarQuantity* VolumeGrid::addScalarQuantity(std::string name, Func&&
   }
 
   return addScalarQuantityImpl(name, values, dataType_);
+}
+
+
+template <class Func>
+VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityFromBatchCallable(std::string name, Func&& func, DataType dataType_) {
+
+  // Build list of points to query
+  std::vector<std::array<double, 3>> queries(nValues());
+
+  // Sample to grid
+  for (size_t i = 0; i < queries.size(); i++) {
+    glm::vec3 pos = positionOfIndex(i);
+    queries[i][0] = pos.x;
+    queries[i][1] = pos.y;
+    queries[i][2] = pos.z;
+  }
+
+  return addScalarQuantity(name, func(queries), dataType_);
 }
 
 

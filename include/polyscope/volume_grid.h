@@ -70,8 +70,10 @@ public:
   VolumeGridScalarQuantity* addScalarQuantity(std::string name, const T& values, DataType dataType_ = DataType::STANDARD);
   
   template <class Func>
-  VolumeGridScalarQuantity* addScalarQuantity(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
+  VolumeGridScalarQuantity* addScalarQuantityFromCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
 
+  template <class Func>
+  VolumeGridScalarQuantity* addScalarQuantityFromBatchCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
 
   template <class T>
   VolumeGridVectorQuantity* addVectorQuantity(std::string name, const T& vecValues, VectorType dataType_ = VectorType::STANDARD);

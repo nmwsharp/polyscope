@@ -12,7 +12,8 @@ VolumeGridScalarQuantity::VolumeGridScalarQuantity(std::string name, VolumeGrid&
     : VolumeGridQuantity(name, grid_, true), ScalarQuantity(*this, values_, dataType_), dataType(dataType_),
       values(std::move(values_)), pointVizEnabled(parent.uniquePrefix() + "#" + name + "#pointVizEnabled", true),
       isosurfaceVizEnabled(parent.uniquePrefix() + "#" + name + "#isosurfaceVizEnabled", true),
-      isosurfaceLevel(parent.uniquePrefix() + "#" + name + "#isosurfaceLevel", 0.),
+      isosurfaceLevel(parent.uniquePrefix() + "#" + name + "#isosurfaceLevel",
+                      0.5 * (vizRange.second + vizRange.first)),
       isosurfaceColor(uniquePrefix() + "#" + name + "#isosurfaceColor", getNextUniqueColor())
 
 {
@@ -52,12 +53,9 @@ void VolumeGridScalarQuantity::buildCustomUI() {
     ImGui::EndPopup();
   }
 
-  buildScalarUI();
-
   if (pointVizEnabled.get()) {
-    // ImGui::TextUnformatted("Points:");
+    buildScalarUI();
   }
-
 
   if (isosurfaceVizEnabled.get()) {
     ImGui::TextUnformatted("Isosurface:");
