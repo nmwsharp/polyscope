@@ -167,7 +167,7 @@ std::tuple<glm::vec3, glm::vec3> Structure::boundingBox() {
 float Structure::lengthScale() {
   // compute the scaling caused by the object transform
   const glm::mat4x4& T = objectTransform.get();
-  float transScale = (T[0][0] + T[1][1] + T[2][2]) / (3. * T[3][3]);
+  float transScale = abs(glm::determinant(glm::mat3x3(T))) / T[3][3];
   return transScale * objectSpaceLengthScale;
 }
 
