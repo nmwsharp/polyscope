@@ -561,7 +561,7 @@ void SurfaceMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   std::vector<glm::vec3> barycenters;
 
   bool wantsBary = p.hasAttribute("a_barycoord");
-  bool wantsEdge = (getEdgeWidth() > 0);
+  bool wantsEdge = p.hasAttribute("a_edgeIsReal");
   bool wantsBarycenters = wantsCullPosition();
 
   positions.reserve(3 * nFacesTriangulation());
