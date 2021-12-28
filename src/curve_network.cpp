@@ -251,8 +251,25 @@ void CurveNetwork::refresh() {
 }
 
 void CurveNetwork::geometryChanged() {
-  // TODO this is overkill
-  refresh();
+   
+   if (nodeProgram) 
+   {
+    fillNodeGeometryBuffers(*nodeProgram);
+   }
+   if (edgeProgram)
+   {
+     fillEdgeGeometryBuffers(*edgeProgram);
+   }
+   if (nodePickProgram)
+   {
+     fillNodeGeometryBuffers(*nodePickProgram);
+   }
+   if (edgePickProgram)
+   {
+     fillEdgeGeometryBuffers(*edgePickProgram);
+   }
+   requestRedraw();
+  
 }
 
 void CurveNetwork::buildPickUI(size_t localPickID) {
