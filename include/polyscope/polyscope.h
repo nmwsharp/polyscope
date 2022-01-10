@@ -9,7 +9,7 @@
 #include "polyscope/structure.h"
 #include "polyscope/utilities.h"
 #include "polyscope/widget.h"
-
+#include "polyscope/transformation_gizmo.h"
 #include "imgui.h"
 
 #include <functional>
@@ -57,12 +57,18 @@ extern std::tuple<glm::vec3, glm::vec3> boundingBox;
 extern std::set<Widget*> widgets;
 extern std::vector<SlicePlane*> slicePlanes;
 
+// a list of gizmos accessible by key value pairs with string names
+extern std::map<std::string, TransformationGizmo*> gizmos;
+
 // should we allow default trackball mouse camera interaction? 
 // Needs more interactions on when to turn this on/off
 extern bool doDefaultMouseInteraction;
 
 // a callback function used to render a "user" gui
 extern std::function<void()> userCallback;
+
+
+
 
 // representative center for all registered structures
 glm::vec3 center();
