@@ -18,5 +18,7 @@ bool doDefaultMouseInteraction = true;
 std::set<Widget*> widgets;
 std::vector<SlicePlane*> slicePlanes;
 
+std::map<std::string, TransformationGizmo*> gizmos;
+
 } // namespace state
 } // namespace polyscope

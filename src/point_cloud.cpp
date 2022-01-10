@@ -226,6 +226,7 @@ void PointCloud::geometryChanged() {
     fillGeometryBuffers(*pickProgram);
   }
   requestRedraw();
+  QuantityStructure<PointCloud>::refresh();
 }
 
 void PointCloud::buildPickUI(size_t localPickID) {

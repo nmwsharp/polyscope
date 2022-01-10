@@ -929,6 +929,7 @@ void SurfaceMesh::geometryChanged() {
      fillGeometryBuffers(*pickProgram);
    }
    requestRedraw();
+   QuantityStructure<SurfaceMesh>::refresh();
   
 }
 /*

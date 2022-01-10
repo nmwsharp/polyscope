@@ -269,6 +269,8 @@ void CurveNetwork::geometryChanged() {
      fillEdgeGeometryBuffers(*edgePickProgram);
    }
    requestRedraw();
+   QuantityStructure<CurveNetwork>::refresh();
+
   
 }
 

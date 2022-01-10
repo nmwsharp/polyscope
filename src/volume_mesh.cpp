@@ -940,6 +940,7 @@ void VolumeMesh::geometryChanged() {
     fillGeometryBuffers(*pickProgram);
   }
   requestRedraw();
+  QuantityStructure<VolumeMesh>::refresh();
 }
 
 VolumeCellType VolumeMesh::cellType(size_t i) const {
