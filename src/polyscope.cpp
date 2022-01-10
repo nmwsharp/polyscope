@@ -130,65 +130,66 @@ void init(std::string backend) {
   view::invalidateView();
 
   state::initialized = true;
+  state::doDefaultMouseInteraction = true;
 }
 
 void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Create a new context and push it on to the stack
   ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
-  ImGuiIO& oldIO = ImGui::GetIO(); // used to copy below, see note
-  ImGui::SetCurrentContext(newContext);
+ImGuiIO& oldIO = ImGui::GetIO(); // used to copy below, see note
+ImGui::SetCurrentContext(newContext);
 
-  if (options::configureImGuiStyleCallback) {
+if (options::configureImGuiStyleCallback) {
     options::configureImGuiStyleCallback();
-  }
+}
 
-  ImGui::GetIO() = oldIO; // Copy all of the old IO values to new. With ImGUI 1.76 (and some previous versions), this
-                          // was necessary to fix a bug where keys like delete, etc would break in subcontexts. The
-                          // problem was that the key mappings (e.g. GLFW_KEY_BACKSPACE --> ImGuiKey_Backspace) need to
-                          // be populated in io.KeyMap, and these entries would get lost on creating a new context.
-  contextStack.push_back(ContextEntry{newContext, callbackFunction, drawDefaultUI});
+ImGui::GetIO() = oldIO; // Copy all of the old IO values to new. With ImGUI 1.76 (and some previous versions), this
+                        // was necessary to fix a bug where keys like delete, etc would break in subcontexts. The
+                        // problem was that the key mappings (e.g. GLFW_KEY_BACKSPACE --> ImGuiKey_Backspace) need to
+                        // be populated in io.KeyMap, and these entries would get lost on creating a new context.
+contextStack.push_back(ContextEntry{ newContext, callbackFunction, drawDefaultUI });
 
-  if (contextStack.size() > 50) {
+if (contextStack.size() > 50) {
     // Catch bugs with nested show()
     throw std::runtime_error(
         "Uh oh, polyscope::show() was recusively MANY times (depth > 50), this is probably a bug. Perhaps "
         "you are accidentally calling show every time polyscope::userCallback executes?");
-  };
+};
 
-  // Make sure the window is visible
-  render::engine->showWindow();
+// Make sure the window is visible
+render::engine->showWindow();
 
-  // Re-enter main loop until the context has been popped
-  size_t currentContextStackSize = contextStack.size();
-  while (contextStack.size() >= currentContextStackSize) {
+// Re-enter main loop until the context has been popped
+size_t currentContextStackSize = contextStack.size();
+while (contextStack.size() >= currentContextStackSize) {
 
     mainLoopIteration();
 
     // auto-exit if the window is closed
     if (render::engine->windowRequestsClose()) {
-      popContext();
+        popContext();
     }
-  }
+}
 
-  oldIO = ImGui::GetIO(); // Copy new IO values to old. I haven't encountered anything that strictly requires this, but
-                          // it feels like we should mirror the behavior from pushing.
+oldIO = ImGui::GetIO(); // Copy new IO values to old. I haven't encountered anything that strictly requires this, but
+                        // it feels like we should mirror the behavior from pushing.
 
-  ImGui::DestroyContext(newContext);
+ImGui::DestroyContext(newContext);
 
-  // Restore the previous context, if there was one
-  if (!contextStack.empty()) {
+// Restore the previous context, if there was one
+if (!contextStack.empty()) {
     ImGui::SetCurrentContext(contextStack.back().context);
-  }
+}
 }
 
 
 void popContext() {
-  if (contextStack.empty()) {
-    error("Called popContext() too many times");
-    return;
-  }
-  contextStack.pop_back();
+    if (contextStack.empty()) {
+        error("Called popContext() too many times");
+        return;
+    }
+    contextStack.pop_back();
 }
 
 void requestRedraw() { redrawNextFrame = true; }
@@ -196,127 +197,130 @@ bool redrawRequested() { return redrawNextFrame; }
 
 void drawStructures() {
 
-  // Draw all off the structures registered with polyscope
+    // Draw all off the structures registered with polyscope
 
-  for (auto catMap : state::structures) {
-    for (auto s : catMap.second) {
-      // make sure the right settings are active
-      // render::engine->setDepthMode();
-      // render::engine->applyTransparencySettings();
+    for (auto catMap : state::structures) {
+        for (auto s : catMap.second) {
+            // make sure the right settings are active
+            // render::engine->setDepthMode();
+            // render::engine->applyTransparencySettings();
 
-      s.second->draw();
+            s.second->draw();
+        }
     }
-  }
- 
-  // Also render any slice plane geometry
-  for (SlicePlane* s : state::slicePlanes) {
-    s->drawGeometry();
-  }
+
+    // Also render any slice plane geometry
+    for (SlicePlane* s : state::slicePlanes) {
+        s->drawGeometry();
+    }
 }
 
 namespace {
 
-float dragDistSinceLastRelease = 0.0;
+    float dragDistSinceLastRelease = 0.0;
 
-void processInputEvents() {
-  ImGuiIO& io = ImGui::GetIO();
+    void processInputEvents() {
+        ImGuiIO& io = ImGui::GetIO();
 
-  // If any mouse button is pressed, trigger a redraw
-  if (ImGui::IsAnyMouseDown()) {
-    requestRedraw();
-  }
-
-  bool widgetCapturedMouse = false;
-  for (Widget* w : state::widgets) {
-    widgetCapturedMouse = w->interact();
-    if (widgetCapturedMouse) {
-      break;
-    }
-  }
-
-  // Handle scroll events for 3D view
-  if (!io.WantCaptureMouse && !widgetCapturedMouse) {
-    double xoffset = io.MouseWheelH;
-    double yoffset = io.MouseWheel;
-
-    if (xoffset != 0 || yoffset != 0) {
-      requestRedraw();
-
-      // On some setups, shift flips the scroll direction, so take the max
-      // scrolling in any direction
-      double maxScroll = xoffset;
-      if (std::abs(yoffset) > std::abs(xoffset)) {
-        maxScroll = yoffset;
-      }
-
-      // Pass camera commands to the camera
-      if (maxScroll != 0.0) {
-        bool scrollClipPlane = io.KeyShift;
-
-        if (scrollClipPlane) {
-          view::processClipPlaneShift(maxScroll);
-        } else {
-          view::processZoom(maxScroll);
+        // If any mouse button is pressed, trigger a redraw
+        if (ImGui::IsAnyMouseDown()) {
+            requestRedraw();
         }
-      }
-    }
-  }
 
-  // === Mouse inputs
-  if (!io.WantCaptureMouse && !widgetCapturedMouse) {
-
-    // Process drags
-    bool dragLeft = ImGui::IsMouseDragging(0);
-    bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
-    if (dragLeft || dragRight) {
-
-      glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
-      dragDistSinceLastRelease += std::abs(dragDelta.x);
-      dragDistSinceLastRelease += std::abs(dragDelta.y);
-
-      // exactly one of these will be true
-      bool isRotate = dragLeft && !io.KeyShift && !io.KeyCtrl;
-      bool isTranslate = (dragLeft && io.KeyShift && !io.KeyCtrl) || dragRight;
-      bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
-
-      if (isDragZoom) {
-        view::processZoom(dragDelta.y * 5);
-      }
-      if (isRotate) {
-        glm::vec2 currPos{io.MousePos.x / view::windowWidth, (view::windowHeight - io.MousePos.y) / view::windowHeight};
-        currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
-        if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
-          view::processRotate(currPos - 2.0f * dragDelta, currPos);
+        bool widgetCapturedMouse = false;
+        for (Widget* w : state::widgets) {
+            widgetCapturedMouse = w->interact();
+            if (widgetCapturedMouse) {
+                break;
+            }
         }
-      }
-      if (isTranslate) {
-        view::processTranslate(dragDelta);
-      }
-    }
 
-    // Click picks
-    float dragIgnoreThreshold = 0.01;
-    if (ImGui::IsMouseReleased(0)) {
+        // Handle scroll events for 3D view
+        if (state::doDefaultMouseInteraction)
+         {
+          if (!io.WantCaptureMouse && !widgetCapturedMouse) {
+            double xoffset = io.MouseWheelH;
+            double yoffset = io.MouseWheel;
 
-      // Don't pick at the end of a long drag
-      if (dragDistSinceLastRelease < dragIgnoreThreshold) {
-        ImVec2 p = ImGui::GetMousePos();
-        std::pair<Structure*, size_t> pickResult =
-            pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
-        pick::setSelection(pickResult);
-      }
+            if (xoffset != 0 || yoffset != 0) {
+              requestRedraw();
 
-      // Reset the drag distance after any release
-      dragDistSinceLastRelease = 0.0;
-    }
-    // Clear pick
-    if (ImGui::IsMouseReleased(1)) {
-      if (dragDistSinceLastRelease < dragIgnoreThreshold) {
-        pick::resetSelection();
-      }
-      dragDistSinceLastRelease = 0.0;
-    }
-  }
+              // On some setups, shift flips the scroll direction, so take the max
+              // scrolling in any direction
+              double maxScroll = xoffset;
+              if (std::abs(yoffset) > std::abs(xoffset)) {
+                maxScroll = yoffset;
+              }
+
+              // Pass camera commands to the camera
+              if (maxScroll != 0.0) {
+                bool scrollClipPlane = io.KeyShift;
+
+                if (scrollClipPlane) {
+                  view::processClipPlaneShift(maxScroll);
+                } else {
+                  view::processZoom(maxScroll);
+                }
+              }
+            }
+          }
+
+          // === Mouse inputs
+          if (!io.WantCaptureMouse && !widgetCapturedMouse) {
+
+            // Process drags
+            bool dragLeft = ImGui::IsMouseDragging(0);
+            bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
+            if (dragLeft || dragRight) {
+
+              glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
+              dragDistSinceLastRelease += std::abs(dragDelta.x);
+              dragDistSinceLastRelease += std::abs(dragDelta.y);
+
+              // exactly one of these will be true
+              bool isRotate = dragLeft && !io.KeyShift && !io.KeyCtrl;
+              bool isTranslate = (dragLeft && io.KeyShift && !io.KeyCtrl) || dragRight;
+              bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
+
+              if (isDragZoom) {
+                view::processZoom(dragDelta.y * 5);
+              }
+              if (isRotate) {
+                glm::vec2 currPos{io.MousePos.x / view::windowWidth, (view::windowHeight - io.MousePos.y) / view::windowHeight};
+                currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
+                if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
+                  view::processRotate(currPos - 2.0f * dragDelta, currPos);
+                }
+              }
+              if (isTranslate) {
+                view::processTranslate(dragDelta);
+              }
+            }
+
+            // Click picks
+            float dragIgnoreThreshold = 0.01;
+            if (ImGui::IsMouseReleased(0)) {
+
+              // Don't pick at the end of a long drag
+              if (dragDistSinceLastRelease < dragIgnoreThreshold) {
+                ImVec2 p = ImGui::GetMousePos();
+                std::pair<Structure*, size_t> pickResult =
+                    pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+                pick::setSelection(pickResult);
+              }
+
+              // Reset the drag distance after any release
+              dragDistSinceLastRelease = 0.0;
+            }
+            // Clear pick
+            if (ImGui::IsMouseReleased(1)) {
+              if (dragDistSinceLastRelease < dragIgnoreThreshold) {
+                pick::resetSelection();
+              }
+              dragDistSinceLastRelease = 0.0;
+            }
+          }
+        }
 
   // === Key-press inputs
   if (!io.WantCaptureKeyboard) {

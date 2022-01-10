@@ -57,6 +57,10 @@ extern std::tuple<glm::vec3, glm::vec3> boundingBox;
 extern std::set<Widget*> widgets;
 extern std::vector<SlicePlane*> slicePlanes;
 
+// should we allow default trackball mouse camera interaction? 
+// Needs more interactions on when to turn this on/off
+extern bool doDefaultMouseInteraction;
+
 // a callback function used to render a "user" gui
 extern std::function<void()> userCallback;
 
