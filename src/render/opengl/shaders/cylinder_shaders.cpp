@@ -384,9 +384,9 @@ const ShaderReplacementRule CYLINDER_PROPAGATE_PICK (
           in vec3 a_colorTailToGeom[];
           in vec3 a_colorTipToGeom[];
           in vec3 a_colorEdgeToGeom[];
-          out vec3 a_colorTailToFrag;
-          out vec3 a_colorTipToFrag;
-          out vec3 a_colorEdgeToFrag;
+          flat out vec3 a_colorTailToFrag;
+          flat out vec3 a_colorTipToFrag;
+          flat out vec3 a_colorEdgeToFrag;
         )"},
       {"GEOM_PER_EMIT", R"(
           a_colorTailToFrag = a_colorTailToGeom[0]; 
@@ -394,9 +394,9 @@ const ShaderReplacementRule CYLINDER_PROPAGATE_PICK (
           a_colorEdgeToFrag = a_colorEdgeToGeom[0]; 
         )"},
       {"FRAG_DECLARATIONS", R"(
-          in vec3 a_colorTailToFrag;
-          in vec3 a_colorTipToFrag;
-          in vec3 a_colorEdgeToFrag;
+          flat in vec3 a_colorTailToFrag;
+          flat in vec3 a_colorTipToFrag;
+          flat in vec3 a_colorEdgeToFrag;
           float length2(vec3 x);
         )"},
       {"GENERATE_SHADE_VALUE", R"(
