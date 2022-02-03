@@ -32,10 +32,6 @@
 #	endif
 #endif
 
-#if(GLM_COMPILER & GLM_COMPILER_CUDA)
-#	error "GLM_GTX_string_cast is not supported on CUDA compiler"
-#endif
-
 namespace glm
 {
 	/// @addtogroup gtx_string_cast
