@@ -425,13 +425,13 @@ const ShaderReplacementRule SPHERE_PROPAGATE_COLOR (
         )"},
       {"GEOM_DECLARATIONS", R"(
           in vec3 a_colorToGeom[];
-          out vec3 a_colorToFrag;
+          flat out vec3 a_colorToFrag;
         )"},
       {"GEOM_PER_EMIT", R"(
           a_colorToFrag = a_colorToGeom[0]; 
         )"},
       {"FRAG_DECLARATIONS", R"(
-          in vec3 a_colorToFrag;
+          flat in vec3 a_colorToFrag;
         )"},
       {"GENERATE_SHADE_VALUE", R"(
           vec3 shadeColor = a_colorToFrag;
