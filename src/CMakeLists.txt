@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.1)
-
 # Maybe stop from CMAKEing in the wrong place
 if (CMAKE_BINARY_DIR STREQUAL CMAKE_SOURCE_DIR)
     message(FATAL_ERROR "Source and build directories cannot be the same. Go use the /build directory.")

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.10.0...3.22)
 
 # Set up testing
 enable_testing()
