@@ -59,17 +59,22 @@ void readPrefsFile() {
       inStream >> prefsJSON;
 
       // Set values
+      // Do some basic validation on the sizes first to work around bugs with bogus values getting written to init file
       if (prefsJSON.count("windowWidth") > 0) {
-        view::windowWidth = prefsJSON["windowWidth"];
+        int val = prefsJSON["windowWidth"];
+        if (val >= 64 && val < 10000) view::windowWidth = val;
       }
       if (prefsJSON.count("windowHeight") > 0) {
-        view::windowHeight = prefsJSON["windowHeight"];
+        int val = prefsJSON["windowHeight"];
+        if (val >= 64 && val < 10000) view::windowHeight = val;
       }
       if (prefsJSON.count("windowPosX") > 0) {
-        view::initWindowPosX = prefsJSON["windowPosX"];
+        int val = prefsJSON["windowPosX"];
+        if (val >= 0 && val < 10000) view::initWindowPosX = val;
       }
       if (prefsJSON.count("windowPosY") > 0) {
-        view::initWindowPosY = prefsJSON["windowPosY"];
+        int val = prefsJSON["windowPosY"];
+        if (val >= 0 && val < 10000) view::initWindowPosY = val;
       }
     }
 
@@ -85,11 +90,22 @@ void writePrefsFile() {
   // Update values as needed
   int posX, posY;
   std::tie(posX, posY) = render::engine->getWindowPos();
+  int windowWidth = view::windowWidth;
+  int windowHeight = view::windowHeight;
+
+  // Validate values. Don't write the prefs file if any of these values are obviously bogus (this seems to happen at
+  // least on Windows when the application is minimzed)
+  bool valuesValid = true;
+  valuesValid &= posX >= 0 && posX < 10000;
+  valuesValid &= posY >= 0 && posY < 10000;
+  valuesValid &= windowWidth >= 64 && windowWidth < 10000;
+  valuesValid &= windowHeight >= 64 && windowHeight < 10000;
+  if (!valuesValid) return;
 
   // Build json object
   json prefsJSON = {
-      {"windowWidth", view::windowWidth},
-      {"windowHeight", view::windowHeight},
+      {"windowWidth", windowWidth},
+      {"windowHeight", windowHeight},
       {"windowPosX", posX},
       {"windowPosY", posY},
   };
@@ -207,7 +223,7 @@ void drawStructures() {
       s.second->draw();
     }
   }
- 
+
   // Also render any slice plane geometry
   for (SlicePlane* s : state::slicePlanes) {
     s->drawGeometry();
