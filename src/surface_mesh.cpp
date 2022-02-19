@@ -561,7 +561,7 @@ void SurfaceMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   std::vector<glm::vec3> barycenters;
 
   bool wantsBary = p.hasAttribute("a_barycoord");
-  bool wantsEdge = (getEdgeWidth() > 0);
+  bool wantsEdge = p.hasAttribute("a_edgeIsReal");
   bool wantsBarycenters = wantsCullPosition();
 
   positions.reserve(3 * nFacesTriangulation());
@@ -918,8 +918,16 @@ void SurfaceMesh::refresh() {
 }
 
 void SurfaceMesh::geometryChanged() {
-  // TODO this is overkill
-  refresh();
+
+  computeGeometryData();
+  if (program) {
+    fillGeometryBuffers(*program);
+  }
+  if (pickProgram) {
+    fillGeometryBuffers(*pickProgram);
+  }
+  requestRedraw();
+  QuantityStructure<SurfaceMesh>::refresh();
 }
 
 void SurfaceMesh::updateObjectSpaceBounds() {

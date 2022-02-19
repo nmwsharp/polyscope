@@ -146,6 +146,7 @@ void init(std::string backend) {
   view::invalidateView();
 
   state::initialized = true;
+  state::doDefaultMouseInteraction = true;
 }
 
 void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
@@ -251,86 +252,89 @@ void processInputEvents() {
   }
 
   // Handle scroll events for 3D view
-  if (!io.WantCaptureMouse && !widgetCapturedMouse) {
-    double xoffset = io.MouseWheelH;
-    double yoffset = io.MouseWheel;
+  if (state::doDefaultMouseInteraction) {
+    if (!io.WantCaptureMouse && !widgetCapturedMouse) {
+      double xoffset = io.MouseWheelH;
+      double yoffset = io.MouseWheel;
 
-    if (xoffset != 0 || yoffset != 0) {
-      requestRedraw();
+      if (xoffset != 0 || yoffset != 0) {
+        requestRedraw();
 
-      // On some setups, shift flips the scroll direction, so take the max
-      // scrolling in any direction
-      double maxScroll = xoffset;
-      if (std::abs(yoffset) > std::abs(xoffset)) {
-        maxScroll = yoffset;
-      }
+        // On some setups, shift flips the scroll direction, so take the max
+        // scrolling in any direction
+        double maxScroll = xoffset;
+        if (std::abs(yoffset) > std::abs(xoffset)) {
+          maxScroll = yoffset;
+        }
 
-      // Pass camera commands to the camera
-      if (maxScroll != 0.0) {
-        bool scrollClipPlane = io.KeyShift;
+        // Pass camera commands to the camera
+        if (maxScroll != 0.0) {
+          bool scrollClipPlane = io.KeyShift;
 
-        if (scrollClipPlane) {
-          view::processClipPlaneShift(maxScroll);
-        } else {
-          view::processZoom(maxScroll);
+          if (scrollClipPlane) {
+            view::processClipPlaneShift(maxScroll);
+          } else {
+            view::processZoom(maxScroll);
+          }
         }
       }
     }
-  }
 
-  // === Mouse inputs
-  if (!io.WantCaptureMouse && !widgetCapturedMouse) {
+    // === Mouse inputs
+    if (!io.WantCaptureMouse && !widgetCapturedMouse) {
 
-    // Process drags
-    bool dragLeft = ImGui::IsMouseDragging(0);
-    bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
-    if (dragLeft || dragRight) {
+      // Process drags
+      bool dragLeft = ImGui::IsMouseDragging(0);
+      bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
+      if (dragLeft || dragRight) {
 
-      glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
-      dragDistSinceLastRelease += std::abs(dragDelta.x);
-      dragDistSinceLastRelease += std::abs(dragDelta.y);
+        glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
+        dragDistSinceLastRelease += std::abs(dragDelta.x);
+        dragDistSinceLastRelease += std::abs(dragDelta.y);
 
-      // exactly one of these will be true
-      bool isRotate = dragLeft && !io.KeyShift && !io.KeyCtrl;
-      bool isTranslate = (dragLeft && io.KeyShift && !io.KeyCtrl) || dragRight;
-      bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
+        // exactly one of these will be true
+        bool isRotate = dragLeft && !io.KeyShift && !io.KeyCtrl;
+        bool isTranslate = (dragLeft && io.KeyShift && !io.KeyCtrl) || dragRight;
+        bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
 
-      if (isDragZoom) {
-        view::processZoom(dragDelta.y * 5);
-      }
-      if (isRotate) {
-        glm::vec2 currPos{io.MousePos.x / view::windowWidth, (view::windowHeight - io.MousePos.y) / view::windowHeight};
-        currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
-        if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
-          view::processRotate(currPos - 2.0f * dragDelta, currPos);
+        if (isDragZoom) {
+          view::processZoom(dragDelta.y * 5);
+        }
+        if (isRotate) {
+          glm::vec2 currPos{io.MousePos.x / view::windowWidth,
+                            (view::windowHeight - io.MousePos.y) / view::windowHeight};
+          currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
+          if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
+            view::processRotate(currPos - 2.0f * dragDelta, currPos);
+          }
+        }
+        if (isTranslate) {
+          view::processTranslate(dragDelta);
         }
       }
-      if (isTranslate) {
-        view::processTranslate(dragDelta);
-      }
-    }
 
-    // Click picks
-    float dragIgnoreThreshold = 0.01;
-    if (ImGui::IsMouseReleased(0)) {
+      // Click picks
+      float dragIgnoreThreshold = 0.01;
+      if (ImGui::IsMouseReleased(0)) {
 
-      // Don't pick at the end of a long drag
-      if (dragDistSinceLastRelease < dragIgnoreThreshold) {
-        ImVec2 p = ImGui::GetMousePos();
-        std::pair<Structure*, size_t> pickResult =
-            pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
-        pick::setSelection(pickResult);
-      }
+        // Don't pick at the end of a long drag
+        if (dragDistSinceLastRelease < dragIgnoreThreshold) {
+          ImVec2 p = ImGui::GetMousePos();
+          std::pair<Structure*, size_t> pickResult =
+              pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+          pick::setSelection(pickResult);
+        }
 
-      // Reset the drag distance after any release
-      dragDistSinceLastRelease = 0.0;
-    }
-    // Clear pick
-    if (ImGui::IsMouseReleased(1)) {
-      if (dragDistSinceLastRelease < dragIgnoreThreshold) {
-        pick::resetSelection();
+        // Reset the drag distance after any release
+        dragDistSinceLastRelease = 0.0;
       }
-      dragDistSinceLastRelease = 0.0;
+      // Clear pick
+      if (ImGui::IsMouseReleased(1)) {
+        if (dragDistSinceLastRelease < dragIgnoreThreshold) {
+          pick::resetSelection();
+        }
+        dragDistSinceLastRelease = 0.0;
+      }
     }
   }
 

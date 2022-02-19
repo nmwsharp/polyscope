@@ -215,8 +215,16 @@ void PointCloud::fillGeometryBuffers(render::ShaderProgram& p) {
 }
 
 void PointCloud::geometryChanged() {
-  // TODO this is overkill
-  refresh();
+  if (program) 
+  {
+    fillGeometryBuffers(*program);
+  }
+  if (pickProgram) 
+  {
+    fillGeometryBuffers(*pickProgram);
+  }
+  requestRedraw();
+  QuantityStructure<PointCloud>::refresh();
 }
 
 void PointCloud::buildPickUI(size_t localPickID) {
