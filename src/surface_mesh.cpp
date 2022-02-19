@@ -919,36 +919,16 @@ void SurfaceMesh::refresh() {
 
 void SurfaceMesh::geometryChanged() {
 
-   computeGeometryData();
-   if (program) 
-   {
+  computeGeometryData();
+  if (program) {
     fillGeometryBuffers(*program);
-   }
-   if (pickProgram)
-   {
-     fillGeometryBuffers(*pickProgram);
-   }
-   requestRedraw();
-   QuantityStructure<SurfaceMesh>::refresh();
-  
-}
-/*
-template <class V>
-void SurfaceMesh::updateVertexPositionsFast(const V& newPositions) {
-  vertices = standardizeVectorArray<glm::vec3, 3>(newPositions);
-
-  if (program == nullptr) {
-
-    geometryChanged();
-
-  } else {
-    computeGeometryData();
-    fillGeometryBuffers(*program);
-    requestRedraw();
-    QuantityStructure<SurfaceMesh>::refresh();
   }
+  if (pickProgram) {
+    fillGeometryBuffers(*pickProgram);
+  }
+  requestRedraw();
+  QuantityStructure<SurfaceMesh>::refresh();
 }
-*/
 
 void SurfaceMesh::updateObjectSpaceBounds() {
   // bounding box

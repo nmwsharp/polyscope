@@ -215,8 +215,6 @@ void PointCloud::fillGeometryBuffers(render::ShaderProgram& p) {
 }
 
 void PointCloud::geometryChanged() {
-  // TODO this is overkill
-  // refresh();
   if (program) 
   {
     fillGeometryBuffers(*program);
