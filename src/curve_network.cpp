@@ -45,7 +45,7 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
     nodeDegrees[nA]++;
     nodeDegrees[nB]++;
   }
-  
+
   updateObjectSpaceBounds();
 }
 
@@ -251,27 +251,21 @@ void CurveNetwork::refresh() {
 }
 
 void CurveNetwork::geometryChanged() {
-   
-   if (nodeProgram) 
-   {
-    fillNodeGeometryBuffers(*nodeProgram);
-   }
-   if (edgeProgram)
-   {
-     fillEdgeGeometryBuffers(*edgeProgram);
-   }
-   if (nodePickProgram)
-   {
-     fillNodeGeometryBuffers(*nodePickProgram);
-   }
-   if (edgePickProgram)
-   {
-     fillEdgeGeometryBuffers(*edgePickProgram);
-   }
-   requestRedraw();
-   QuantityStructure<CurveNetwork>::refresh();
 
-  
+  if (nodeProgram) {
+    fillNodeGeometryBuffers(*nodeProgram);
+  }
+  if (edgeProgram) {
+    fillEdgeGeometryBuffers(*edgeProgram);
+  }
+  if (nodePickProgram) {
+    fillNodeGeometryBuffers(*nodePickProgram);
+  }
+  if (edgePickProgram) {
+    fillEdgeGeometryBuffers(*edgePickProgram);
+  }
+  requestRedraw();
+  QuantityStructure<CurveNetwork>::refresh();
 }
 
 void CurveNetwork::buildPickUI(size_t localPickID) {
