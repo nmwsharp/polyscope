@@ -448,7 +448,7 @@ std::string CurveNetwork::typeName() { return structureTypeName; }
 // === Quantities
 
 CurveNetworkQuantity::CurveNetworkQuantity(std::string name_, CurveNetwork& curveNetwork_, bool dominates_)
-    : Quantity<CurveNetwork>(name_, curveNetwork_, dominates_) {}
+    : QuantityS<CurveNetwork>(name_, curveNetwork_, dominates_) {}
 
 
 void CurveNetworkQuantity::buildNodeInfoGUI(size_t nodeInd) {}

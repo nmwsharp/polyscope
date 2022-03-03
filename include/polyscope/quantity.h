@@ -11,10 +11,16 @@ namespace polyscope {
 // quantities. For instance a mesh structure might have a scalar quantity associated with it, or a point cloud might
 // have a vector field quantity associated with it.
 
-template <typename S>
+// forward decalaration
+class Structure;
+
+// === General Quantities
+// (subclasses could be a structure-specific quantity or a floating quantity)
+
 class Quantity {
+
 public:
-  Quantity(std::string name, S& parentStructure, bool dominates = false);
+  Quantity(std::string name, Structure& parentStructure);
   virtual ~Quantity();
 
   // Draw the quantity.
@@ -28,7 +34,7 @@ public:
 
   // Enable and disable the quantity
   bool isEnabled();
-  virtual Quantity<S>* setEnabled(bool newEnabled);
+  // there is no setEnabled() here, only in subclasses, because subclasses have different return types
 
   // = Utility
 
@@ -41,11 +47,29 @@ public:
   std::string uniquePrefix();
 
   // === Member variables ===
-  S& parent;              // the parent structure with which this quantity is associated
+  Structure& parent;      // the parent structure with which this quantity is associated
   const std::string name; // a name for this quantity, which must be unique amongst quantities on `parent`
 
   // Is this quantity currently being displayed?
   PersistentValue<bool> enabled; // should be set by setEnabled()
+};
+
+// === Structure-specific Quantities
+
+template <typename S>
+class QuantityS : public Quantity {
+public:
+  QuantityS(std::string name, S& parentStructure, bool dominates = false);
+  virtual ~QuantityS();
+
+  // Enable and disable the quantity
+  virtual QuantityS<S>* setEnabled(bool newEnabled);
+  
+  virtual void buildUI() override;
+
+  S& parent; // note: this HIDES the more general member of the same name in the parent class
+
+  // Track dominating quantities
   bool dominates = false;
 };
 

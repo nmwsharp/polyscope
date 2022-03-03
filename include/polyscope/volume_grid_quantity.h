@@ -11,7 +11,7 @@ namespace polyscope {
 class VolumeGrid;
 
 // Extend Quantity<VolumeGrid> to add a few extra functions
-class VolumeGridQuantity : public Quantity<VolumeGrid> {
+class VolumeGridQuantity : public QuantityS<VolumeGrid> {
 public:
   VolumeGridQuantity(std::string name, VolumeGrid& parentStructure, bool dominates = false);
   ~VolumeGridQuantity() {};

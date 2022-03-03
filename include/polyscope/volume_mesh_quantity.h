@@ -11,7 +11,7 @@ namespace polyscope {
 class VolumeMesh;
 
 // Extend Quantity<VolumeMesh> to add a few extra functions
-class VolumeMeshQuantity : public Quantity<VolumeMesh> {
+class VolumeMeshQuantity : public QuantityS<VolumeMesh> {
 public:
   VolumeMeshQuantity(std::string name, VolumeMesh& parentStructure, bool dominates = false);
   ~VolumeMeshQuantity() {};

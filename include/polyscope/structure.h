@@ -2,7 +2,6 @@
 #pragma once
 
 #include "polyscope/persistent_value.h"
-#include "polyscope/quantity.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/transformation_gizmo.h"
 
@@ -127,10 +126,17 @@ protected:
 
 // Can also manage quantities
 
+
+// forward declarations
+class Quantity;
+template <typename S>
+class QuantityS;
+class FloatingQuantity;
+
 // Helper used to define quantity types
 template <typename T>
 struct QuantityTypeHelper {
-  typedef Quantity<T> type; // default values
+  typedef QuantityS<T> type; // default values
 };
 
 template <typename S> // template on the derived type
@@ -155,21 +161,31 @@ public:
 
   // Note: takes ownership of pointer after it is passed in
   void addQuantity(QuantityType* q, bool allowReplacement = true);
+  void addQuantity(FloatingQuantity* q, bool allowReplacement = true);
 
-  QuantityType* getQuantity(std::string name);
+  QuantityType*
+  getQuantity(std::string name); // NOTE: will _not_ return floating quantities, must use other version below
+  FloatingQuantity* getFloatingQuantity(std::string name);
   void removeQuantity(std::string name, bool errorIfAbsent = false);
   void removeAllQuantities();
 
-  void setDominantQuantity(Quantity<S>* q);
+  void setDominantQuantity(QuantityS<S>* q);
   void clearDominantQuantity();
 
   void setAllQuantitiesEnabled(bool newEnabled);
 
   // = Quantities
   std::map<std::string, std::unique_ptr<QuantityType>> quantities;
-  Quantity<S>* dominantQuantity = nullptr; // If non-null, a special quantity of which only one can be drawn for
-                                           // the structure. Handles common case of a surface color, e.g. color of
-                                           // a mesh or point cloud. The dominant quantity must always be enabled.
+  QuantityS<S>* dominantQuantity = nullptr; // If non-null, a special quantity of which only one can be drawn for
+                                            // the structure. Handles common case of a surface color, e.g. color of
+                                            // a mesh or point cloud. The dominant quantity must always be enabled.
+
+  // floating quantities are tracked separately from normal quantities, though names should still be unique etc
+  std::map<std::string, std::unique_ptr<FloatingQuantity>> floatingQuantities;
+
+protected:
+  // helper
+  bool checkForQuantityWithNameAndDeleteOrError(std::string name, bool allowReplacement);
 };
 
 

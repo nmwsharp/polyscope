@@ -129,7 +129,7 @@ void removeAllFloatingQuantities() {
 }
 
 // Quantity default methods
-FloatingQuantity::FloatingQuantity(std::string name_, FloatingQuantityStructure& parent_, bool dominates_)
-    : Quantity<FloatingQuantityStructure>(name_, parent_, dominates_) {}
+FloatingQuantity::FloatingQuantity(std::string name_, FloatingQuantityStructure& parent_)
+    : Quantity(name_, parent_) {}
 
 } // namespace polyscope

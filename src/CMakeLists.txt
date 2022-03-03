@@ -117,6 +117,7 @@ SET(SRCS
   internal.cpp
   state.cpp
   structure.cpp
+  quantity.cpp
   group.cpp
   utilities.cpp
   view.cpp

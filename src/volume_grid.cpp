@@ -91,7 +91,7 @@ VolumeGrid* VolumeGrid::setMaterial(std::string m) {
 std::string VolumeGrid::getMaterial() { return material.get(); }
 
 VolumeGridQuantity::VolumeGridQuantity(std::string name_, VolumeGrid& curveNetwork_, bool dominates_)
-    : Quantity<VolumeGrid>(name_, curveNetwork_, dominates_) {}
+    : QuantityS<VolumeGrid>(name_, curveNetwork_, dominates_) {}
 
 
 VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityImpl(std::string name, const std::vector<double>& data,

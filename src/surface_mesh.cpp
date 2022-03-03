@@ -1778,7 +1778,7 @@ void SurfaceMesh::setFaceTangentBasisXImpl(const std::vector<glm::vec3>& inputBa
 
 
 SurfaceMeshQuantity::SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates)
-    : Quantity<SurfaceMesh>(name, parentStructure, dominates) {}
+    : QuantityS<SurfaceMesh>(name, parentStructure, dominates) {}
 void SurfaceMeshQuantity::buildVertexInfoGUI(size_t vInd) {}
 void SurfaceMeshQuantity::buildFaceInfoGUI(size_t fInd) {}
 void SurfaceMeshQuantity::buildEdgeInfoGUI(size_t eInd) {}

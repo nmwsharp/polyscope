@@ -11,10 +11,12 @@ class FloatingQuantityStructure;
 FloatingQuantityStructure* getGlobalFloatingQuantityStructure();
 
 // Extend Quantity<> to add a few extra functions
-class FloatingQuantity : public Quantity<FloatingQuantityStructure> {
+class FloatingQuantity : public Quantity {
 public:
-  FloatingQuantity(std::string name, FloatingQuantityStructure& parentStructure, bool dominates = false);
-  virtual ~FloatingQuantity() {};
+  FloatingQuantity(std::string name, FloatingQuantityStructure& parentStructure);
+  virtual ~FloatingQuantity(){};
+
+  virtual FloatingQuantity* setEnabled(bool newEnabled) = 0;
 };
 
 

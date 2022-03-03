@@ -348,7 +348,7 @@ void PointCloud::clearPointRadiusQuantity() {
 
 // Quantity default methods
 PointCloudQuantity::PointCloudQuantity(std::string name_, PointCloud& pointCloud_, bool dominates_)
-    : Quantity<PointCloud>(name_, pointCloud_, dominates_) {}
+    : QuantityS<PointCloud>(name_, pointCloud_, dominates_) {}
 
 
 void PointCloudQuantity::buildInfoGUI(size_t pointInd) {}

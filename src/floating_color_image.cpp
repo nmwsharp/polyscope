@@ -10,7 +10,7 @@ namespace polyscope {
 
 FloatingColorImageQuantity::FloatingColorImageQuantity(FloatingQuantityStructure& parent_, std::string name,
                                                        size_t dimX, size_t dimY, const std::vector<glm::vec4>& data)
-    : FloatingQuantity(name, parent_, false), ImageColorArtist(name, dimX, dimY, data), parent(parent_),
+    : FloatingQuantity(name, parent_), ImageColorArtist(name, dimX, dimY, data), parent(parent_),
       showFullscreen(uniquePrefix() + "showFullscreen", false) {}
 
 size_t FloatingColorImageQuantity::nPix() { return dimX * dimY; }

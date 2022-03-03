@@ -11,7 +11,7 @@ namespace polyscope {
 FloatingScalarImageQuantity::FloatingScalarImageQuantity(FloatingQuantityStructure& parent_, std::string name,
                                                          size_t dimX, size_t dimY, const std::vector<double>& data,
                                                          DataType dataType)
-    : FloatingQuantity(name, parent_, false), ImageScalarArtist(*this, name, dimX, dimY, data, dataType),
+    : FloatingQuantity(name, parent_), ImageScalarArtist(*this, name, dimX, dimY, data, dataType),
       showFullscreen(uniquePrefix() + "showFullscreen", false) {}
 
 size_t FloatingScalarImageQuantity::nPix() { return dimX * dimY; }

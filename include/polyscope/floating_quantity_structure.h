@@ -22,14 +22,15 @@ namespace polyscope {
 class FloatingQuantityStructure;
 
 // Forward declare quantity types
+class FloatingQuantity;
 class FloatingScalarImageQuantity;
 class FloatingColorImageQuantity;
 
 
-template <> // Specialize the quantity type
-struct QuantityTypeHelper<FloatingQuantityStructure> {
-  typedef FloatingQuantity type;
-};
+// template <> // Specialize the quantity type
+// struct QuantityTypeHelper<FloatingQuantityStructure> {
+// typedef FloatingQuantity type;
+//};
 
 class FloatingQuantityStructure : public QuantityStructure<FloatingQuantityStructure> {
 public:
