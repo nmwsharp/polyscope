@@ -19,6 +19,8 @@ const std::string FloatingQuantityStructure::structureTypeName = "Floating Quant
 FloatingQuantityStructure::FloatingQuantityStructure(std::string name)
     : QuantityStructure<FloatingQuantityStructure>(name, structureTypeName) {}
 
+FloatingQuantityStructure::~FloatingQuantityStructure() {}
+
 
 void FloatingQuantityStructure::buildCustomUI() {}
 
@@ -29,6 +31,8 @@ void FloatingQuantityStructure::draw() {
     qp.second->draw();
   }
 }
+
+void FloatingQuantityStructure::drawPick() {}
 
 // override the structure UI, since this one is a bit different
 void FloatingQuantityStructure::buildUI() {
@@ -49,12 +53,15 @@ void FloatingQuantityStructure::buildUI() {
   ImGui::PopID();
 }
 
+
+void FloatingQuantityStructure::buildPickUI(size_t localPickID) {}
+
 // since hasExtents is false, the length scale and bbox value should never be used
 bool FloatingQuantityStructure::hasExtents() { return false; }
-double FloatingQuantityStructure::lengthScale() { return std::numeric_limits<double>::quiet_NaN(); }
-std::tuple<glm::vec3, glm::vec3> FloatingQuantityStructure::boundingBox() {
+void FloatingQuantityStructure::updateObjectSpaceBounds() {
+  objectSpaceLengthScale = std::numeric_limits<double>::quiet_NaN();
   float nan = std::numeric_limits<float>::quiet_NaN();
-  return std::make_tuple(glm::vec3{nan, nan, nan}, glm::vec3{nan, nan, nan});
+  objectSpaceBoundingBox = std::make_tuple(glm::vec3{nan, nan, nan}, glm::vec3{nan, nan, nan});
 }
 
 std::string FloatingQuantityStructure::typeName() { return structureTypeName; }
@@ -75,8 +82,8 @@ void removeFloatingScalarImage(std::string name) {
 
 
 FloatingColorImageQuantity* FloatingQuantityStructure::addFloatingColorImageImpl(std::string name, size_t dimX,
-                                                                                   size_t dimY,
-                                                                                   const std::vector<glm::vec4>& values) {
+                                                                                 size_t dimY,
+                                                                                 const std::vector<glm::vec4>& values) {
   FloatingColorImageQuantity* q = new FloatingColorImageQuantity(*this, name, dimX, dimY, values);
   addQuantity(q);
   return q;

@@ -30,7 +30,7 @@ void VolumeGrid::buildPickUI(size_t localPickID) {
 
 void VolumeGrid::draw() {
   // For now, do nothing for the actual grid
-  if(!enabled.get()) return;
+  if (!enabled.get()) return;
 
   // Draw the quantities
   for (auto& x : quantities) {
@@ -42,16 +42,14 @@ void VolumeGrid::drawPick() {
   // For now do nothing
 }
 
-
-double VolumeGrid::lengthScale() { return glm::length(bound_max - bound_min); }
-
-std::tuple<glm::vec3, glm::vec3> VolumeGrid::boundingBox() { return std::make_tuple(bound_min, bound_max); }
+void VolumeGrid::updateObjectSpaceBounds() {
+  objectSpaceBoundingBox = std::make_tuple(bound_min, bound_max);
+  objectSpaceLengthScale = glm::length(bound_max - bound_min);
+}
 
 std::string VolumeGrid::typeName() { return structureTypeName; }
 
 void VolumeGrid::refresh() {
-  // program.reset();
-  // pickProgram.reset();
   QuantityStructure<VolumeGrid>::refresh(); // call base class version, which refreshes quantities
 }
 

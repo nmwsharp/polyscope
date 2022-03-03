@@ -34,20 +34,20 @@ public:
   virtual ~Structure() = 0;
 
   // == Render the the structure on screen
-  virtual void draw();
-  virtual void drawPick();
+  virtual void draw() = 0;
+  virtual void drawPick() = 0;
 
   // == Add rendering rules
   std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
 
   // == Build the ImGUI ui elements
   virtual void buildUI();
-  virtual void buildCustomUI() = 0;             // overridden by childen to add custom UI data
-  virtual void buildCustomOptionsUI();          // overridden by childen to add to the options menu
-  virtual void buildStructureOptionsUI();       // overridden by structure quantities to add to the options menu
-  virtual void buildQuantitiesUI();             // build quantities, if they exist. Overridden by QuantityStructure.
-  virtual void buildSharedStructureUI();        // Draw any UI elements shared between all instances of the structure
-  virtual void buildPickUI(size_t localPickID); // Draw pick UI elements when index localPickID is selected
+  virtual void buildCustomUI() = 0;       // overridden by childen to add custom UI data
+  virtual void buildCustomOptionsUI();    // overridden by childen to add to the options menu
+  virtual void buildStructureOptionsUI(); // overridden by structure quantities to add to the options menu
+  virtual void buildQuantitiesUI();       // build quantities, if they exist. Overridden by QuantityStructure.
+  virtual void buildSharedStructureUI();  // Draw any UI elements shared between all instances of the structure
+  virtual void buildPickUI(size_t localPickID) = 0; // Draw pick UI elements when index localPickID is selected
 
   // = Identifying data
   const std::string name; // should be unique amongst registered structures with this type
@@ -58,8 +58,8 @@ public:
   // = Length and bounding box
   // (returned in world coordinates, after the object transform is applied)
   std::tuple<glm::vec3, glm::vec3> boundingBox(); // get axis-aligned bounding box
-  float lengthScale();                           // get characteristic length
-  virtual bool hasExtents(); // bounding box and length scale are only meaningful if true
+  float lengthScale();                            // get characteristic length
+  virtual bool hasExtents();                      // bounding box and length scale are only meaningful if true
 
   // = Basic state
   virtual std::string typeName() = 0;
@@ -70,8 +70,8 @@ public:
   void rescaleToUnit();
   void resetTransform();
   void setTransform(glm::mat4x4 transform);
-  void setPosition(glm::vec3 vec);   // set the transform translation to be vec
-  void translate(glm::vec3 vec); // *adds* vec to the position
+  void setPosition(glm::vec3 vec); // set the transform translation to be vec
+  void translate(glm::vec3 vec);   // *adds* vec to the position
   glm::mat4x4 getTransform();
   glm::vec3 getPosition();
 
