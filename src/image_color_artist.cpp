@@ -1,15 +1,16 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
-#include "polyscope/image_color_artist.h"
-
 #include "polyscope/polyscope.h"
+
+#include "polyscope/image_color_artist.h"
 
 #include <vector>
 
 namespace polyscope {
 
-ImageColorArtist::ImageColorArtist(std::string displayName_, size_t dimX_, size_t dimY_,
+ImageColorArtist::ImageColorArtist(std::string displayName_, std::string uniquePrefix_, size_t dimX_, size_t dimY_,
                                    const std::vector<glm::vec4>& data_)
-    : displayName(displayName_), dimX(dimX_), dimY(dimY_), data(data_) {}
+    : displayName(displayName_), dimX(dimX_), dimY(dimY_), data(data_),
+      transparency(uniquePrefix_ + "#" + displayName_, 1.0f) {}
 
 /*
 ImageColorArtist::ImageColorArtist(std::string name_,
@@ -57,7 +58,9 @@ void ImageColorArtist::prepare() {
   }
 
   // Create the sourceProgram
-  sourceProgram = render::engine->requestShader("TEXTURE_DRAW_PLAIN", {}, render::ShaderReplacementDefaults::Process);
+  sourceProgram =
+      render::engine->requestShader("TEXTURE_DRAW_PLAIN", {"TEXTURE_ORIGIN_UPPERLEFT", "TEXTURE_SET_TRANSPARENCY"},
+                                    render::ShaderReplacementDefaults::Process);
   sourceProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
   sourceProgram->setTextureFromBuffer("t_image", textureRaw.get());
 }
@@ -86,6 +89,8 @@ void ImageColorArtist::renderSource() {
 
   // Render to the intermediate "source" texture for the image
   render::engine->pushBindFramebufferForRendering(*framebuffer);
+  sourceProgram->setUniform("u_transparency", 1.0f);
+  framebuffer->clear();
   sourceProgram->draw();
   render::engine->popBindFramebufferForRendering();
 }
@@ -99,10 +104,13 @@ void ImageColorArtist::showFullscreen() {
     // prepareFullscreen();
     prepare();
   }
+  
+  // Set uniforms
+  sourceProgram->setUniform("u_transparency", getTransparency());
 
-  // render::engine->pushBindFramebufferForRendering(*framebuffer);
   sourceProgram->draw();
-  // render::engine->popBindFramebufferForRendering();
+
+  render::engine->applyTransparencySettings();
 }
 
 
@@ -121,5 +129,11 @@ void ImageColorArtist::showInImGuiWindow() {
   ImGui::End();
 }
 
+void ImageColorArtist::setTransparency(float newVal) {
+  transparency = newVal;
+  requestRedraw();
+}
+
+float ImageColorArtist::getTransparency() { return transparency.get(); }
 
 } // namespace polyscope

@@ -8,6 +8,7 @@ namespace polyscope {
 namespace render{
 namespace backend_openGL3_glfw {
 
+// this uses the default openGL convention of origin in the lower left
 const ShaderStageSpecification  TEXTURE_DRAW_VERT_SHADER =  {
 
     // stage
@@ -33,6 +34,7 @@ R"(
       void main()
       {
           tCoord = (a_position.xy+vec2(1.0,1.0))/2.0;
+          ${ TCOORD_ADJUST }$
           gl_Position = vec4(a_position,1.);
       }
 )"
@@ -99,10 +101,16 @@ R"(
       in vec2 tCoord;
       uniform sampler2D t_image;
       layout(location = 0) out vec4 outputF;
+      
+      ${ FRAG_DECLARATIONS }$
 
       void main()
       {
-        outputF = vec4(texture(t_image, tCoord).rgba);
+        vec4 textureOut = texture(t_image, tCoord).rgba;
+
+        ${ TEXTURE_OUT_ADJUST }$ 
+
+        outputF = textureOut;
       }
 )"
 };
@@ -341,7 +349,11 @@ R"(
 
         ${ GENERATE_SHADE_COLOR }$
 
-        outputF = vec4(albedoColor, 1.);
+        vec4 textureOut = vec4(albedoColor, 1.);
+
+        ${ TEXTURE_OUT_ADJUST }$ 
+
+        outputF = textureOut;
       }
 )"
 };
@@ -398,6 +410,36 @@ R"(
       }
 )"
 };
+
+const ShaderReplacementRule TEXTURE_ORIGIN_UPPERLEFT (
+    /* rule name */ "TEXTURE_ORIGIN_UPPERLEFT",
+    { /* replacement sources */
+      {"TCOORD_ADJUST", R"(
+        tCoord = vec2(tCoord.x, 1. - tCoord.y);
+      )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY(
+    /* rule name */ "TEXTURE_SET_TRANSPARENCY",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_transparency;
+        )" },
+      {"TEXTURE_OUT_ADJUST", R"(
+        textureOut = vec4(textureOut.rgb, textureOut.a * u_transparency);
+      )"}
+    },
+    /* uniforms */ {
+        {"u_transparency", DataType::Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
 
 // clang-format on
 

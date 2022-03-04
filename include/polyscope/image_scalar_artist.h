@@ -37,6 +37,11 @@ public:
 
   // === Get/set visualization parameters
 
+  void setTransparency(float newVal);
+  float getTransparency();
+
+protected:
+  PersistentValue<float> transparency;
 
 private:
   // UI internals

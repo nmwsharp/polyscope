@@ -15,7 +15,7 @@ class ImageColorArtist {
 
 public:
   // ImageColorArtist(, DataType dataType);
-  ImageColorArtist(std::string displayName, size_t dimX, size_t dimY, const std::vector<glm::vec4>& data);
+  ImageColorArtist(std::string displayName, std::string uniquePrefix,  size_t dimX, size_t dimY, const std::vector<glm::vec4>& data);
 
   // An alternate constructor which bypasses the float array and just reads directly from the texture. Limits will be
   // set arbitrarily. This is a bit of a hack, and mainly used for visualizing internal rendering buffers.
@@ -35,6 +35,11 @@ public:
 
   // === Get/set visualization parameters
 
+  void setTransparency(float newVal);
+  float getTransparency();
+
+protected:
+  PersistentValue<float> transparency;
 
 private:
   // UI internals

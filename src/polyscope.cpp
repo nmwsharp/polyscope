@@ -227,10 +227,6 @@ void drawStructures() {
 
   for (auto catMap : state::structures) {
     for (auto s : catMap.second) {
-      // make sure the right settings are active
-      // render::engine->setDepthMode();
-      // render::engine->applyTransparencySettings();
-
       s.second->draw();
     }
   }
@@ -238,6 +234,16 @@ void drawStructures() {
   // Also render any slice plane geometry
   for (SlicePlane* s : state::slicePlanes) {
     s->drawGeometry();
+  }
+}
+
+void drawStructuresDelayed() {
+  // "delayed" drawing allows structures to render things which should be rendered after most of the scene has been
+  // drawn
+  for (auto catMap : state::structures) {
+    for (auto s : catMap.second) {
+      s.second->drawDelayed();
+    }
   }
 }
 
@@ -416,6 +422,8 @@ void renderScene() {
       if (!isRedraw) {
         // Only on first pass (kinda weird, but works out, and doesn't really matter)
         renderSlicePlanes();
+        render::engine->applyTransparencySettings();
+        drawStructuresDelayed();
       }
 
       // Composite the result of this pass in to the result buffer
@@ -431,12 +439,15 @@ void renderScene() {
 
   } else {
     // Normal case: single render pass
-    render::engine->applyTransparencySettings();
 
+    render::engine->applyTransparencySettings();
     drawStructures();
 
     render::engine->groundPlane.draw();
     renderSlicePlanes();
+
+    render::engine->applyTransparencySettings();
+    drawStructuresDelayed();
 
     render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
   }

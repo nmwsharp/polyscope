@@ -419,6 +419,23 @@ void VolumeMesh::draw() {
   for (auto& x : quantities) {
     x.second->draw();
   }
+  for (auto& x : floatingQuantities) {
+    x.second->draw();
+  }
+}
+
+void VolumeMesh::drawDelayed() {
+  if (!isEnabled()) {
+    return;
+  }
+
+  // Draw the quantities
+  for (auto& x : quantities) {
+    x.second->drawDelayed();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawDelayed();
+  }
 }
 
 void VolumeMesh::drawPick() {

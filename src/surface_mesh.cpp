@@ -665,6 +665,28 @@ void SurfaceMesh::draw() {
   }
 
   render::engine->setBackfaceCull(); // return to default setting
+
+  for (auto& x : floatingQuantities) {
+    x.second->draw();
+  }
+}
+
+void SurfaceMesh::drawDelayed() {
+  if (!isEnabled()) {
+    return;
+  }
+
+  render::engine->setBackfaceCull(backFacePolicy.get() == BackFacePolicy::Cull);
+
+  for (auto& x : quantities) {
+    x.second->drawDelayed();
+  }
+
+  render::engine->setBackfaceCull(); // return to default setting
+
+  for (auto& x : floatingQuantities) {
+    x.second->drawDelayed();
+  }
 }
 
 void SurfaceMesh::drawPick() {

@@ -5,6 +5,7 @@
 
 #include "polyscope/curve_network.h"
 #include "polyscope/file_helpers.h"
+#include "polyscope/floating_quantity_structure.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_io.h"
@@ -19,6 +20,18 @@
 #include "json/json.hpp"
 
 #include "simple_dot_mesh_parser.h"
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/string_cast.hpp"
+
+#include "stb_image.h"
+
+
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::string;
+
 
 bool endsWith(const std::string& str, const std::string& suffix) {
   return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
@@ -434,6 +447,63 @@ polyscope::warning("Some problems come in groups", "detail = " + std::to_string(
   */
 }
 
+
+void loadFloatingImageData(polyscope::PointCloud* targetCloud = nullptr) {
+
+  // load an image from disk as example data
+  std::string imagePath = "test_image.png";
+
+  int width, height, nComp;
+  unsigned char* data = stbi_load(imagePath.c_str(), &width, &height, &nComp, 4);
+  if (!data) {
+    polyscope::warning("failed to load image from " + imagePath);
+    return;
+  }
+  bool hasAlpha = (nComp == 4);
+
+  // Parse the data in to a float array
+  std::vector<std::array<float, 3>> imageColor(width * height);
+  std::vector<std::array<float, 4>> imageColorAlpha(width * height);
+  std::vector<float> imageScalar(width * height);
+  for (int j = 0; j < height; j++) {
+    for (int i = 0; i < width; i++) {
+      int pixInd = (j * width + i) * nComp;
+      unsigned char pR = data[pixInd + 0];
+      unsigned char pG = data[pixInd + 1];
+      unsigned char pB = data[pixInd + 2];
+      unsigned char pA = 255;
+      if (nComp == 4) pA = data[pixInd + 3];
+
+      // color
+      std::array<float, 3> val{pR / 255.f, pG / 255.f, pB / 255.f};
+      imageColor[j * width + i] = val;
+
+      // scalar
+      imageScalar[j * width + i] = (val[0] + val[1] + val[2]) / 3.;
+
+      // color alpha
+      std::array<float, 4> valA{pR / 255.f, pG / 255.f, pB / 255.f, pA / 255.f};
+      imageColorAlpha[j * width + i] = valA;
+    }
+  }
+
+  if (targetCloud == nullptr) {
+    polyscope::addFloatingColorImage("test color image", width, height, imageColor);
+    polyscope::addFloatingScalarImage("test scalar image", width, height, imageScalar);
+
+    if (hasAlpha) {
+      polyscope::addFloatingColorAlphaImage("test color alpha image", width, height, imageColorAlpha);
+    }
+  } else {
+    targetCloud->addFloatingColorImage("test color image", width, height, imageColor);
+    targetCloud->addFloatingScalarImage("test scalar image", width, height, imageScalar);
+
+    if (hasAlpha) {
+      targetCloud->addFloatingColorAlphaImage("test color alpha image", width, height, imageColorAlpha);
+    }
+  }
+}
+
 void processFileDotMesh(std::string filename) {
   std::vector<std::array<double, 3>> verts;
   std::vector<std::array<int64_t, 8>> cells;
@@ -498,6 +568,8 @@ void addDataToPointCloud(std::string pointCloudName, const std::vector<glm::vec3
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("random vector", randVec);
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("unit 'normal' vector", centerNormalVec);
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("to zero", toZeroVec, polyscope::VectorType::AMBIENT);
+
+  loadFloatingImageData(polyscope::getPointCloud(pointCloudName));
 }
 
 // PLY files get loaded as point clouds
@@ -604,6 +676,8 @@ int main(int argc, char** argv) {
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
     addDataToPointCloud("really great points" + std::to_string(j), points);
   }
+
+  loadFloatingImageData();
 
   // Add a few gui elements
   polyscope::state::userCallback = callback;

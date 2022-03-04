@@ -91,6 +91,22 @@ void PointCloud::draw() {
   for (auto& x : quantities) {
     x.second->draw();
   }
+  for (auto& x : floatingQuantities) {
+    x.second->draw();
+  }
+}
+
+void PointCloud::drawDelayed() {
+  if (!isEnabled()) {
+    return;
+  }
+
+  for (auto& x : quantities) {
+    x.second->drawDelayed();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawDelayed();
+  }
 }
 
 void PointCloud::drawPick() {

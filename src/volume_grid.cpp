@@ -36,6 +36,22 @@ void VolumeGrid::draw() {
   for (auto& x : quantities) {
     x.second->draw();
   }
+  for (auto& x : floatingQuantities) {
+    x.second->draw();
+  }
+}
+
+void VolumeGrid::drawDelayed() {
+  // For now, do nothing for the actual grid
+  if (!enabled.get()) return;
+
+  // Draw the quantities
+  for (auto& x : quantities) {
+    x.second->drawDelayed();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawDelayed();
+  }
 }
 
 void VolumeGrid::drawPick() {

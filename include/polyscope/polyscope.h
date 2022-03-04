@@ -1,9 +1,15 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include <functional>
+#include <map>
+#include <set>
+#include <unordered_set>
+
 #include "imgui.h"
-#include "polyscope/group.h"
+
 #include "polyscope/internal.h"
+#include "polyscope/group.h"
 #include "polyscope/messages.h"
 #include "polyscope/options.h" 
 #include "polyscope/screenshot.h"
@@ -14,10 +20,7 @@
 #include "polyscope/widget.h"
 
 
-#include <functional>
-#include <map>
-#include <set>
-#include <unordered_set>
+#include "polyscope/structure.h"
 
 
 namespace polyscope {
@@ -83,10 +86,6 @@ glm::vec3 center();
 } // namespace state
 
 // === Manage structures tracked by polyscope
-
-// Register a structure with polyscope
-// Structure name must be a globally unique identifier for the structure.
-bool registerStructure(Structure* structure, bool replaceIfPresent = true);
 
 // Get a reference to a structure that has been registered
 // The default version with name="" arbitrarily returns any structure of that type. This is useful as a shorthand when
@@ -161,6 +160,7 @@ void buildUserGuiAndInvokeCallback();
 void mainLoopIteration();
 void initializeImGUIContext();
 void drawStructures();
+void drawStructuresDelayed();
 
 // Called to check any options that might have been changed and perform appropriate updates. Users generally should not
 // need to call this directly.

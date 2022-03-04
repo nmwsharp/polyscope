@@ -27,8 +27,24 @@ void FloatingQuantityStructure::buildCustomUI() {}
 void FloatingQuantityStructure::buildCustomOptionsUI() {}
 
 void FloatingQuantityStructure::draw() {
+  if(!isEnabled()) return;
+
   for (auto& qp : quantities) {
     qp.second->draw();
+  }
+  for (auto& qp : floatingQuantities) {
+    qp.second->draw();
+  }
+}
+
+void FloatingQuantityStructure::drawDelayed() {
+  if(!isEnabled()) return;
+
+  for (auto& qp : quantities) {
+    qp.second->drawDelayed();
+  }
+  for (auto& qp : floatingQuantities) {
+    qp.second->drawDelayed();
   }
 }
 
@@ -66,34 +82,6 @@ void FloatingQuantityStructure::updateObjectSpaceBounds() {
 
 std::string FloatingQuantityStructure::typeName() { return structureTypeName; }
 
-
-FloatingScalarImageQuantity* FloatingQuantityStructure::addFloatingScalarImageImpl(std::string name, size_t dimX,
-                                                                                   size_t dimY,
-                                                                                   const std::vector<double>& values,
-                                                                                   DataType type) {
-  FloatingScalarImageQuantity* q = new FloatingScalarImageQuantity(*this, name, dimX, dimY, values, type);
-  addQuantity(q);
-  return q;
-}
-void removeFloatingScalarImage(std::string name) {
-  if (!globalFloatingQuantityStructure) return;
-  globalFloatingQuantityStructure->removeQuantity(name);
-}
-
-
-FloatingColorImageQuantity* FloatingQuantityStructure::addFloatingColorImageImpl(std::string name, size_t dimX,
-                                                                                 size_t dimY,
-                                                                                 const std::vector<glm::vec4>& values) {
-  FloatingColorImageQuantity* q = new FloatingColorImageQuantity(*this, name, dimX, dimY, values);
-  addQuantity(q);
-  return q;
-}
-void removeFloatingColorImage(std::string name) {
-  if (!globalFloatingQuantityStructure) return;
-  globalFloatingQuantityStructure->removeQuantity(name);
-}
-
-
 FloatingQuantityStructure* getGlobalFloatingQuantityStructure() {
   if (!globalFloatingQuantityStructure) {
     globalFloatingQuantityStructure = new FloatingQuantityStructure("global");
@@ -104,6 +92,7 @@ FloatingQuantityStructure* getGlobalFloatingQuantityStructure() {
   }
   return globalFloatingQuantityStructure;
 }
+
 
 void removeFloatingQuantityStructureIfEmpty() {
   if (globalFloatingQuantityStructure && globalFloatingQuantityStructure->quantities.empty()) {
@@ -129,7 +118,7 @@ void removeAllFloatingQuantities() {
 }
 
 // Quantity default methods
-FloatingQuantity::FloatingQuantity(std::string name_, FloatingQuantityStructure& parent_)
+FloatingQuantity::FloatingQuantity(std::string name_, Structure& parent_)
     : Quantity(name_, parent_) {}
 
 } // namespace polyscope

@@ -1,6 +1,8 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include "polyscope/polyscope.h"
+
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
 #include "polyscope/persistent_value.h"
@@ -50,18 +52,11 @@ public:
 
   // Standard structure overrides
   virtual void draw() override;
+  virtual void drawDelayed() override;
   virtual void drawPick() override;
   virtual bool hasExtents() override;
   virtual void updateObjectSpaceBounds() override;
   virtual std::string typeName() override;
-
-  // === Quantities
-  // public here unlke other structures, since we add to the global class from free functions
-  FloatingScalarImageQuantity* addFloatingScalarImageImpl(std::string name, size_t dimX, size_t dimY,
-                                                          const std::vector<double>& values, DataType type);
-
-  FloatingColorImageQuantity* addFloatingColorImageImpl(std::string name, size_t dimX, size_t dimY,
-                                                        const std::vector<glm::vec4>& values);
 
   // Misc data
   static const std::string structureTypeName;
@@ -72,19 +67,21 @@ static FloatingQuantityStructure* globalFloatingQuantityStructure = nullptr;
 FloatingQuantityStructure* getGlobalFloatingQuantityStructure(); // creates it if it doesn't exit yet
 void removeFloatingQuantityStructureIfEmpty();
 
-// manage all quantities
+// globals to manage all quantities
 void removeFloatingQuantity(std::string name, bool errorIfAbsent = false);
 void removeAllFloatingQuantities();
 
-// add/remove particular quantities
+// globals to add/remove particular quantities
 template <class T>
 FloatingScalarImageQuantity* addFloatingScalarImage(std::string name, size_t dimX, size_t dimY, const T& values,
                                                     DataType type = DataType::STANDARD);
-void removeFloatingScalarImage(std::string name);
 
 template <class T>
 FloatingColorImageQuantity* addFloatingColorImage(std::string name, size_t dimX, size_t dimY, const T& values_rgb);
-void removeFloatingColorImage(std::string name);
+
+template <class T>
+FloatingColorImageQuantity* addFloatingColorAlphaImage(std::string name, size_t dimX, size_t dimY, const T& values_rgba);
+
 
 } // namespace polyscope
 

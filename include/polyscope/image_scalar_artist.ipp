@@ -11,7 +11,8 @@ namespace polyscope {
 template <typename QuantityT>
 ImageScalarArtist<QuantityT>::ImageScalarArtist(QuantityT& parentQ_, std::string displayName_, size_t dimX_,
                                                 size_t dimY_, const std::vector<double>& data_, DataType dataType_)
-    : ScalarQuantity<QuantityT>(parentQ_, data_, dataType_), displayName(displayName_), dimX(dimX_), dimY(dimY_) {}
+    : ScalarQuantity<QuantityT>(parentQ_, data_, dataType_), displayName(displayName_), dimX(dimX_), dimY(dimY_),
+      transparency(parentQ_.uniquePrefix() + "#" + displayName_, 1.0f) {}
 
 /*
 template <typename QuantityT>
@@ -61,8 +62,9 @@ void ImageScalarArtist<QuantityT>::prepare() {
   }
 
   // Create the sourceProgram
-  sourceProgram = render::engine->requestShader("SCALAR_TEXTURE_COLORMAP", this->addScalarRules({}),
-                                                render::ShaderReplacementDefaults::Process);
+  sourceProgram = render::engine->requestShader(
+      "SCALAR_TEXTURE_COLORMAP", this->addScalarRules({"TEXTURE_ORIGIN_UPPERLEFT", "TEXTURE_SET_TRANSPARENCY"}),
+      render::ShaderReplacementDefaults::Process);
   sourceProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
   sourceProgram->setTextureFromBuffer("t_scalar", textureRaw.get());
   sourceProgram->setTextureFromColormap("t_colormap", this->cMap.get());
@@ -95,6 +97,7 @@ void ImageScalarArtist<QuantityT>::renderSource() {
 
   // Render to the intermediate "source" texture for the image
   render::engine->pushBindFramebufferForRendering(*framebuffer);
+  sourceProgram->setUniform("u_transparency", 1.0f);
   sourceProgram->draw();
   render::engine->popBindFramebufferForRendering();
 }
@@ -113,10 +116,11 @@ void ImageScalarArtist<QuantityT>::showFullscreen() {
   // Set uniforms
   sourceProgram->setUniform("u_rangeLow", this->vizRange.first);
   sourceProgram->setUniform("u_rangeHigh", this->vizRange.second);
+  sourceProgram->setUniform("u_transparency", getTransparency());
 
-  // render::engine->pushBindFramebufferForRendering(*framebuffer);
   sourceProgram->draw();
-  // render::engine->popBindFramebufferForRendering();
+
+  render::engine->applyTransparencySettings();
 }
 
 
@@ -136,5 +140,15 @@ void ImageScalarArtist<QuantityT>::showInImGuiWindow() {
   ImGui::End();
 }
 
+template <typename QuantityT>
+void ImageScalarArtist<QuantityT>::setTransparency(float newVal) {
+  transparency = newVal;
+  requestRedraw();
+}
+
+template <typename QuantityT>
+float ImageScalarArtist<QuantityT>::getTransparency() {
+  return transparency.get();
+}
 
 } // namespace polyscope

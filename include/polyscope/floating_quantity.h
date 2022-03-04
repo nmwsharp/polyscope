@@ -6,15 +6,13 @@
 
 namespace polyscope {
 
-// Forward delcare structure (& global getter)
-class FloatingQuantityStructure;
-FloatingQuantityStructure* getGlobalFloatingQuantityStructure();
-
 // Extend Quantity<> to add a few extra functions
 class FloatingQuantity : public Quantity {
 public:
-  FloatingQuantity(std::string name, FloatingQuantityStructure& parentStructure);
+  FloatingQuantity(std::string name, Structure& parentStructure);
   virtual ~FloatingQuantity(){};
+  
+  virtual void buildUI() override;
 
   virtual FloatingQuantity* setEnabled(bool newEnabled) = 0;
 };

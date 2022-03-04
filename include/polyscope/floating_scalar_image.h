@@ -1,6 +1,5 @@
 #pragma once
 
-#include "polyscope/floating_quantity_structure.h"
 #include "polyscope/fullscreen_artist.h"
 #include "polyscope/image_scalar_artist.h"
 #include "polyscope/render/color_maps.h"
@@ -15,10 +14,11 @@ class FloatingScalarImageQuantity : public FloatingQuantity,
                                     public FullscreenArtist {
 
 public:
-  FloatingScalarImageQuantity(FloatingQuantityStructure& parent_, std::string name, size_t dimX, size_t dimY,
+  FloatingScalarImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                               const std::vector<double>& data, DataType dataType);
 
   virtual void draw() override;
+  virtual void drawDelayed() override;
   virtual void buildCustomUI() override;
 
   virtual void refresh() override;

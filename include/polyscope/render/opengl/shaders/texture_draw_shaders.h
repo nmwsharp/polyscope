@@ -7,6 +7,7 @@ namespace render {
 namespace backend_openGL3_glfw {
 
 extern const ShaderStageSpecification TEXTURE_DRAW_VERT_SHADER;
+extern const ShaderStageSpecification TEXTURE_DRAW_UPPERLEFT_VERT_SHADER;
 extern const ShaderStageSpecification SPHEREBG_DRAW_VERT_SHADER;
 extern const ShaderStageSpecification SPHEREBG_DRAW_FRAG_SHADER;
 extern const ShaderStageSpecification PLAIN_TEXTURE_DRAW_FRAG_SHADER;
@@ -22,6 +23,10 @@ extern const ShaderStageSpecification SCALAR_TEXTURE_COLORMAP;
 
 // Rules
 // extern const ShaderReplacementRule RULE_NAME;
+extern const ShaderReplacementRule TEXTURE_ORIGIN_UPPERLEFT;    // sample textures with (0,0) in the upper left, instead of the usual openGL lower left
+extern const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY;    // apply a transparency uniform to the texture
+
+
 
 // Shaders (which are used elsewhere)
 extern const ShaderStageSpecification TEXTURE_DRAW_VERT_SHADER;

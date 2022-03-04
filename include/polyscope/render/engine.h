@@ -36,7 +36,7 @@ enum class DrawMode {
 enum class FilterMode { Nearest = 0, Linear };
 enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F, R16F, DEPTH24 };
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
-enum class DepthMode { Less, LEqual, LEqualReadOnly, Greater, Disable };
+enum class DepthMode { Less, LEqual, LEqualReadOnly, Greater, Disable, PassReadOnly };
 enum class BlendMode { Over, AlphaOver, OverNoWrite, Under, Zero, WeightedAdd, Source, Disable };
 enum class RenderDataType {
   Vector2Float,

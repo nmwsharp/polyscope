@@ -2340,6 +2340,11 @@ void GLEngine::setDepthMode(DepthMode newMode) {
     glDepthFunc(GL_LEQUAL);
     glDepthMask(GL_FALSE);
     break;
+  case DepthMode::PassReadOnly:
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_ALWAYS);
+    glDepthMask(GL_FALSE);
+    break;
   case DepthMode::Greater:
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_GREATER);
@@ -2599,6 +2604,10 @@ void GLEngine::populateDefaultShadersAndRules() {
   registeredShaderRules.insert({"SHADEVALUE_MAG_VALUE2", SHADEVALUE_MAG_VALUE2});
   registeredShaderRules.insert({"ISOLINE_STRIPE_VALUECOLOR", ISOLINE_STRIPE_VALUECOLOR});
   registeredShaderRules.insert({"CHECKER_VALUE2COLOR", CHECKER_VALUE2COLOR});
+ 
+  // Texture and image things
+  registeredShaderRules.insert({"TEXTURE_ORIGIN_UPPERLEFT", TEXTURE_ORIGIN_UPPERLEFT});
+  registeredShaderRules.insert({"TEXTURE_SET_TRANSPARENCY", TEXTURE_SET_TRANSPARENCY});
 
   // mesh things
   registeredShaderRules.insert({"MESH_WIREFRAME", MESH_WIREFRAME});

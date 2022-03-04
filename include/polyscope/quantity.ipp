@@ -51,6 +51,7 @@ QuantityS<S>* QuantityS<S>::setEnabled(bool newEnabled) {
 
 template <typename S>
 void QuantityS<S>::buildUI() {
+  // NOTE: duplicated here and in the FloatingQuantity version
 
   if (ImGui::TreeNode(niceName().c_str())) {
 

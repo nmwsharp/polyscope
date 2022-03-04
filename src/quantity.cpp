@@ -20,6 +20,8 @@ Quantity::~Quantity(){};
 
 void Quantity::draw() {}
 
+void Quantity::drawDelayed() {}
+
 void Quantity::buildUI() {}
 
 void Quantity::buildCustomUI() {}
@@ -27,9 +29,6 @@ void Quantity::buildCustomUI() {}
 void Quantity::buildPickUI(size_t localPickInd) {}
 
 bool Quantity::isEnabled() { return enabled.get(); }
-
-// forward declaration
-void requestRedraw();
 
 void Quantity::refresh() { requestRedraw(); }
 

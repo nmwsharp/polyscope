@@ -1,14 +1,15 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
-#include "polyscope/floating_scalar_image.h"
 
 #include "polyscope/polyscope.h"
+
+#include "polyscope/floating_scalar_image.h"
 
 #include "imgui.h"
 
 namespace polyscope {
 
 
-FloatingScalarImageQuantity::FloatingScalarImageQuantity(FloatingQuantityStructure& parent_, std::string name,
+FloatingScalarImageQuantity::FloatingScalarImageQuantity(Structure& parent_, std::string name,
                                                          size_t dimX, size_t dimY, const std::vector<double>& data,
                                                          DataType dataType)
     : FloatingQuantity(name, parent_), ImageScalarArtist(*this, name, dimX, dimY, data, dataType),
@@ -19,11 +20,14 @@ size_t FloatingScalarImageQuantity::nPix() { return dimX * dimY; }
 void FloatingScalarImageQuantity::draw() {
   if (!isEnabled()) return;
   ImageScalarArtist::renderSource();
+}
+
+void FloatingScalarImageQuantity::drawDelayed() {
+  if (!isEnabled()) return;
   if (getShowFullscreen()) {
     ImageScalarArtist::showFullscreen();
   }
 }
-
 
 void FloatingScalarImageQuantity::buildCustomUI() {
   ImGui::SameLine();
@@ -42,6 +46,13 @@ void FloatingScalarImageQuantity::buildCustomUI() {
   }
 
   buildScalarUI();
+
+  if (getShowFullscreen()) {
+    if (ImGui::SliderFloat("transparency", &transparency.get(), 0.f, 1.f)) {
+      transparency.manuallyChanged();
+      requestRedraw();
+    }
+  }
 
   if (isEnabled() && parent.isEnabled()) {
     if (!getShowFullscreen()) {
@@ -77,6 +88,10 @@ void FloatingScalarImageQuantity::disableFullscreenDrawing() {
 
 
 void FloatingScalarImageQuantity::setShowFullscreen(bool newVal) {
+  if (newVal && isEnabled()) {
+    // if drawing fullscreen, disable anything else which was already drawing fullscreen
+    disableAllFullscreenArtists();
+  }
   showFullscreen = newVal;
   requestRedraw();
 }

@@ -48,10 +48,8 @@ public:
   virtual void buildCustomOptionsUI() override;
   virtual void buildPickUI(size_t localPickID) override;
 
-  // Render the the structure on screen
   virtual void draw() override;
-
-  // Render for picking
+  virtual void drawDelayed() override;
   virtual void drawPick() override;
 
   virtual void updateObjectSpaceBounds() override;

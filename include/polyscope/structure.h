@@ -1,16 +1,16 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
-#include "polyscope/persistent_value.h"
-#include "polyscope/render/engine.h"
-#include "polyscope/transformation_gizmo.h"
-
-#include "glm/glm.hpp"
-
 #include <iostream>
 #include <map>
 #include <memory>
 #include <string>
+
+#include "glm/glm.hpp"
+
+#include "polyscope/persistent_value.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/transformation_gizmo.h"
 
 
 namespace polyscope {
@@ -34,6 +34,7 @@ public:
 
   // == Render the the structure on screen
   virtual void draw() = 0;
+  virtual void drawDelayed() = 0;
   virtual void drawPick() = 0;
 
   // == Add rendering rules
@@ -124,6 +125,10 @@ protected:
 };
 
 
+// Register a structure with polyscope
+// Structure name must be a globally unique identifier for the structure.
+bool registerStructure(Structure* structure, bool replaceIfPresent = true);
+
 // Can also manage quantities
 
 
@@ -132,6 +137,10 @@ class Quantity;
 template <typename S>
 class QuantityS;
 class FloatingQuantity;
+
+class FloatingQuantity;
+class FloatingScalarImageQuantity;
+class FloatingColorImageQuantity;
 
 // Helper used to define quantity types
 template <typename T>
@@ -182,6 +191,25 @@ public:
 
   // floating quantities are tracked separately from normal quantities, though names should still be unique etc
   std::map<std::string, std::unique_ptr<FloatingQuantity>> floatingQuantities;
+
+  // === Floating Quantities
+  template <class T>
+  FloatingScalarImageQuantity* addFloatingScalarImage(std::string name, size_t dimX, size_t dimY, const T& values,
+                                                      DataType type = DataType::STANDARD);
+
+  template <class T>
+  FloatingColorImageQuantity* addFloatingColorImage(std::string name, size_t dimX, size_t dimY, const T& values_rgb);
+
+  template <class T>
+  FloatingColorImageQuantity* addFloatingColorAlphaImage(std::string name, size_t dimX, size_t dimY,
+                                                         const T& values_rgba);
+
+  // === Floating Quantity impls
+  FloatingScalarImageQuantity* addFloatingScalarImageImpl(std::string name, size_t dimX, size_t dimY,
+                                                          const std::vector<double>& values, DataType type);
+
+  FloatingColorImageQuantity* addFloatingColorImageImpl(std::string name, size_t dimX, size_t dimY,
+                                                        const std::vector<glm::vec4>& values);
 
 protected:
   // helper
