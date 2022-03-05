@@ -48,10 +48,14 @@ void FloatingScalarImageQuantity::buildCustomUI() {
   buildScalarUI();
 
   if (getShowFullscreen()) {
+
+    ImGui::PushItemWidth(100);
     if (ImGui::SliderFloat("transparency", &transparency.get(), 0.f, 1.f)) {
       transparency.manuallyChanged();
       requestRedraw();
     }
+    ImGui::PopItemWidth();
+
   }
 
   if (isEnabled() && parent.isEnabled()) {
