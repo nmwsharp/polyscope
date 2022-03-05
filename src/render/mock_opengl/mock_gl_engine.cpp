@@ -1201,6 +1201,14 @@ void MockGLEngine::updateWindowSize(bool force) {
   }
 }
 
+
+void MockGLEngine::applyWindowSize() { updateWindowSize(true); }
+
+
+void MockGLEngine::setWindowResizable(bool newVal) {}
+
+bool MockGLEngine::getWindowResizable() { return true; }
+
 std::tuple<int, int> MockGLEngine::getWindowPos() {
   int x = 20;
   int y = 40;

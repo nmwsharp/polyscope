@@ -446,6 +446,9 @@ public:
   virtual void showWindow() = 0;
   virtual void hideWindow() = 0;
   virtual void updateWindowSize(bool force = false) = 0;
+  virtual void applyWindowSize() = 0; // forces the current window size to match view::windowWidth/Height
+  virtual void setWindowResizable(bool newVal) = 0; // whether the user can manually resize by dragging the window frame
+  virtual bool getWindowResizable() = 0; 
   virtual std::tuple<int, int> getWindowPos() = 0;
   virtual bool windowRequestsClose() = 0;
   virtual void pollEvents() = 0;

@@ -370,6 +370,7 @@ void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool fl
 void setWindowSize(int width, int height) {
   view::windowWidth = width;
   view::windowHeight = height;
+  render::engine->applyWindowSize();
 }
 
 void setViewToCamera(const CameraParameters& p) {
@@ -769,6 +770,41 @@ void buildViewGui() {
       ImGui::TreePop();
     }
 
+    if (ImGui::TreeNode("Window")) {
+
+      {
+        ImGui::TextUnformatted("Dim:");
+        ImGui::SameLine();
+        ImGui::PushItemWidth(50);
+        bool changed = false;
+        int currWidth = view::windowWidth;
+        int currHeight = view::windowHeight;
+        ImGui::InputInt("##width", &currWidth, 0);
+        changed |= ImGui::IsItemDeactivatedAfterEdit();
+        ImGui::SameLine();
+        ImGui::InputInt("##height", &currHeight, 0);
+        changed |= ImGui::IsItemDeactivatedAfterEdit();
+        if (changed) {
+          // make sure it's at least 32 pixels, anything less is surely a mistake and might break things
+          currWidth = std::max(currWidth, 32);
+          currHeight = std::max(currHeight, 32);
+          view::setWindowSize(currWidth, currHeight);
+        }
+        ImGui::PopItemWidth();
+      }
+
+      {
+        ImGui::SameLine();
+        bool sizeLocked = !render::engine->getWindowResizable();
+        bool changed = ImGui::Checkbox("lock", &sizeLocked);
+        if (changed) {
+          render::engine->setWindowResizable(!sizeLocked);
+        }
+      }
+
+
+      ImGui::TreePop();
+    }
 
     buildSlicePlaneGUI();
 

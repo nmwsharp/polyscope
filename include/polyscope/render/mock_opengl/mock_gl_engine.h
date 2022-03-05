@@ -288,6 +288,9 @@ public:
   void showWindow() override;
   void hideWindow() override;
   void updateWindowSize(bool force = false) override;
+  void applyWindowSize() override;
+  void setWindowResizable(bool newVal) override;
+  bool getWindowResizable() override;
   std::tuple<int, int> getWindowPos() override;
   bool windowRequestsClose() override;
   void pollEvents() override;

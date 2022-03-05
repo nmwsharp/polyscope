@@ -2274,7 +2274,6 @@ void GLEngine::updateWindowSize(bool force) {
 
     // prevent any division by zero for e.g. aspect ratio calcs
     if (newBufferHeight == 0) newBufferHeight = 1;
-
     if (newWindowHeight == 0) newWindowHeight = 1;
 
     view::bufferWidth = newBufferWidth;
@@ -2285,6 +2284,21 @@ void GLEngine::updateWindowSize(bool force) {
     render::engine->resizeScreenBuffers();
     render::engine->setScreenBufferViewports();
   }
+}
+
+
+void GLEngine::applyWindowSize() {
+  glfwSetWindowSize(mainWindow, view::windowWidth, view::windowHeight);
+  updateWindowSize(true);
+}
+
+
+void GLEngine::setWindowResizable(bool newVal) {
+  glfwSetWindowAttrib(mainWindow, GLFW_RESIZABLE, newVal ? GLFW_TRUE : GLFW_FALSE);
+}
+
+bool GLEngine::getWindowResizable() {
+  return glfwGetWindowAttrib(mainWindow, GLFW_RESIZABLE);
 }
 
 std::tuple<int, int> GLEngine::getWindowPos() {
