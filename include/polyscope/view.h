@@ -38,6 +38,7 @@ extern int initWindowPosX;
 extern int initWindowPosY;
 extern NavigateStyle style;
 extern UpDir upDir;
+extern FrontDir frontDir;
 extern double moveScale;
 extern double nearClipRatio;
 extern double farClipRatio;
@@ -111,10 +112,15 @@ void updateFlight(); // Note: uses wall-clock time, so should generally be calle
                      // iteration
 
 
-// Setters, getters, etc
+// == Setters, getters, etc
+
 void setUpDir(UpDir newUpDir, bool animateFlight = false);
 UpDir getUpDir();
 glm::vec3 getUpVec();
+
+void setFrontDir(FrontDir newFrontDir, bool animateFlight = false);
+FrontDir getFrontDir();
+glm::vec3 getFrontVec();
 
 } // namespace view
 } // namespace polyscope

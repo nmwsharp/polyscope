@@ -68,7 +68,10 @@ inline glm::vec3 componentwiseMin(const glm::vec3& vA, const glm::vec3& vB) {
 inline glm::vec3 componentwiseMax(const glm::vec3& vA, const glm::vec3& vB) {
   return glm::vec3{std::max(vA.x, vB.x), std::max(vA.y, vB.y), std::max(vA.z, vB.z)};
 }
-
+inline glm::vec3 circularPermuteEntries(const glm::vec3& v) {
+  // (could be prettier with swizzel)
+  return glm::vec3{v.z, v.x, v.y};
+}
 
 // Transformation utilities
 void splitTransform(const glm::mat4& trans, glm::mat3x4& R, glm::vec3& T);
