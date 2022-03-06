@@ -479,6 +479,8 @@ std::string getCameraJson() {
       {"viewMat", viewMatFlat},
       {"nearClipRatio", nearClipRatio},
       {"farClipRatio", farClipRatio},
+      {"windowWidth", view::windowWidth},
+      {"windowHeight", view::windowHeight},
       {"projectionMode", to_string(view::projectionMode)},
   };
 
@@ -492,6 +494,9 @@ void setCameraFromJson(std::string jsonData, bool flyTo) {
   double newFov = -777;
   double newNearClipRatio = -777;
   double newFarClipRatio = -777;
+
+  int windowWidth = view::windowWidth;
+  int windowHeight = view::windowHeight;
 
   try {
 
@@ -519,6 +524,14 @@ void setCameraFromJson(std::string jsonData, bool flyTo) {
     if (j.find("farClipRatio") != j.end()) {
       newFarClipRatio = j["farClipRatio"];
     }
+    
+    // Get the window sizes, if present
+    if (j.find("windowWidth") != j.end()) {
+      windowWidth = j["windowWidth"];
+    }
+    if (j.find("windowHeight") != j.end()) {
+      windowHeight = j["windowHeight"];
+    }
 
     if (j.find("projectionMode") != j.end()) {
       std::string projectionModeStr = j["projectionMode"];
@@ -534,7 +547,10 @@ void setCameraFromJson(std::string jsonData, bool flyTo) {
     return;
   }
 
-  // Assign the new values
+  // === Assign the new values
+
+  view::setWindowSize(windowWidth, windowHeight);
+
   if (newNearClipRatio > 0) nearClipRatio = newNearClipRatio;
   if (newFarClipRatio > 0) farClipRatio = newFarClipRatio;
 
