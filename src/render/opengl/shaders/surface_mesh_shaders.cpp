@@ -4,9 +4,9 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+    namespace backend_openGL3_glfw {
 
-// clang-format off
+        // clang-format off
 
 const ShaderStageSpecification FLEX_MESH_VERT_SHADER = {
 
@@ -373,10 +373,12 @@ const ShaderReplacementRule MESH_PROPAGATE_PICK (
           in vec3 a_vertexColors[3];
           in vec3 a_edgeColors[3];
           in vec3 a_halfedgeColors[3];
+          in vec3 a_cornerColors[3];
           in vec3 a_faceColor;
           flat out vec3 vertexColors[3];
           flat out vec3 edgeColors[3];
           flat out vec3 halfedgeColors[3];
+          flat out vec3 cornerColors[3];
           flat out vec3 faceColor;
         )"},
       {"VERT_ASSIGNMENTS", R"(
@@ -384,6 +386,7 @@ const ShaderReplacementRule MESH_PROPAGATE_PICK (
               vertexColors[i] = a_vertexColors[i];
               edgeColors[i] = a_edgeColors[i];
               halfedgeColors[i] = a_halfedgeColors[i];
+              cornerColors[i] = a_cornerColors[i];
           }
           faceColor = a_faceColor;
         )"},
@@ -391,21 +394,28 @@ const ShaderReplacementRule MESH_PROPAGATE_PICK (
           flat in vec3 vertexColors[3];
           flat in vec3 edgeColors[3];
           flat in vec3 halfedgeColors[3];
+          flat in vec3 cornerColors[3];
           flat in vec3 faceColor;
         )"},
       {"GENERATE_SHADE_VALUE", R"(
           // Parameters defining the pick shape (in barycentric 0-1 units)
           float vertRadius = 0.2;
+          float cornerRadius = 0.3;
           float edgeRadius = 0.1;
           float halfedgeRadius = 0.2;
           
           vec3 shadeColor = faceColor;
           bool colorSet = false;
 
-          // Test vertices
+          // Test vertices and corners
           for(int i = 0; i < 3; i++) {
               if(a_barycoordToFrag[i] > 1.0-vertRadius) {
                 shadeColor = vertexColors[i];
+                colorSet = true;
+                continue;
+              }
+              if(a_barycoordToFrag[i] > 1.0-cornerRadius) {
+                shadeColor = cornerColors[i];
                 colorSet = true;
               }
           }
@@ -431,14 +441,15 @@ const ShaderReplacementRule MESH_PROPAGATE_PICK (
       {"a_vertexColors", DataType::Vector3Float, 3},
       {"a_edgeColors", DataType::Vector3Float, 3},
       {"a_halfedgeColors", DataType::Vector3Float, 3},
+      {"a_cornerColors", DataType::Vector3Float, 3},
       {"a_faceColor", DataType::Vector3Float},
     },
     /* textures */ {}
 );
 
 
-// clang-format on
+        // clang-format on
 
-} // namespace backend_openGL3_glfw
+    } // namespace backend_openGL3_glfw
 } // namespace render
 } // namespace polyscope
