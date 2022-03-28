@@ -4,9 +4,9 @@
 
 namespace polyscope {
 namespace render {
-    namespace backend_openGL3_glfw {
+namespace backend_openGL3_glfw {
 
-        // clang-format off
+// clang-format off
 
 const ShaderStageSpecification FLEX_MESH_VERT_SHADER = {
 
@@ -448,8 +448,8 @@ const ShaderReplacementRule MESH_PROPAGATE_PICK (
 );
 
 
-        // clang-format on
+// clang-format on
 
-    } // namespace backend_openGL3_glfw
+} // namespace backend_openGL3_glfw
 } // namespace render
 } // namespace polyscope

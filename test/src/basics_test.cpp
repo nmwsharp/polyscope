@@ -374,6 +374,15 @@ TEST_F(PolyscopeTest, SurfaceMeshScalarHalfedge) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, SurfaceMeshScalarCorner) {
+  auto psMesh = registerTriangleMesh();
+  std::vector<double> cScalar(psMesh->nCorners(), 11.);
+  auto q5 = psMesh->addCornerScalarQuantity("cScalar", cScalar);
+  q5->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, SurfaceMeshDistance) {
   auto psMesh = registerTriangleMesh();
   std::vector<double> vScalar(psMesh->nVertices(), 7.);
@@ -1078,7 +1087,7 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
   polyscope::show(3);
   psPoints->setCullWholeElements(false);
   polyscope::show(3);
-  
+
   polyscope::show(3);
 
   // add another and rotate it
