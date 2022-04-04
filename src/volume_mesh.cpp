@@ -470,7 +470,7 @@ void VolumeMesh::preparePick() {
   std::vector<glm::vec3> normals;
   std::vector<glm::vec3> bcoord;
   std::vector<glm::vec3> edgeReal;
-  std::vector<std::array<glm::vec3, 3>> vertexColors, edgeColors, halfedgeColors;
+  std::vector<std::array<glm::vec3, 3>> vertexColors, edgeColors, halfedgeColors, cornerColors;
   std::vector<glm::vec3> faceColor;
   std::vector<glm::vec3> barycenters;
 
@@ -483,6 +483,7 @@ void VolumeMesh::preparePick() {
   vertexColors.resize(3 * nFacesTriangulation());
   edgeColors.resize(3 * nFacesTriangulation());
   halfedgeColors.resize(3 * nFacesTriangulation());
+  cornerColors.resize(3 * nFacesTriangulation());
   faceColor.resize(3 * nFacesTriangulation());
   normals.resize(3 * nFacesTriangulation());
   if (wantsBarycenters) {
@@ -552,6 +553,7 @@ void VolumeMesh::preparePick() {
           vertexColors[iData + k] = vColor;
           edgeColors[iData + k] = cellColorArr;
           halfedgeColors[iData + k] = cellColorArr;
+          cornerColors[iData + k] = vColor;
         }
 
         bcoord[iData + 0] = glm::vec3{1., 0., 0.};
@@ -589,6 +591,7 @@ void VolumeMesh::preparePick() {
   pickProgram->setAttribute<glm::vec3, 3>("a_vertexColors", vertexColors);
   pickProgram->setAttribute<glm::vec3, 3>("a_edgeColors", edgeColors);
   pickProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", halfedgeColors);
+  pickProgram->setAttribute<glm::vec3, 3>("a_cornerColors", cornerColors);
   pickProgram->setAttribute("a_faceColor", faceColor);
   if (wantsBarycenters) {
     pickProgram->setAttribute("a_cullPos", barycenters);
