@@ -38,9 +38,6 @@ public:
 protected:
   // === Visualization parameters
   PersistentValue<bool> showFullscreen;
-
-  void createPointProgram();
-  std::shared_ptr<render::ShaderProgram> pointProgram;
 };
 
 
