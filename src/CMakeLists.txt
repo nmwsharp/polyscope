@@ -193,6 +193,8 @@ SET(SRCS
   floating_quantity.cpp
   floating_scalar_image.cpp
   floating_color_image.cpp
+  render_image_quantity_base.cpp
+  depth_render_image.cpp
   
   # Rendering utilities
   imgui_config.cpp
@@ -234,6 +236,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/curve_network_scalar_quantity.h
   ${INCLUDE_ROOT}/curve_network_vector_quantity.h
   ${INCLUDE_ROOT}/disjoint_sets.h
+  ${INCLUDE_ROOT}/depth_render_image.h
   ${INCLUDE_ROOT}/file_helpers.h
   ${INCLUDE_ROOT}/floating_quantity_structure.h
   ${INCLUDE_ROOT}/floating_quantity.h
@@ -243,8 +246,10 @@ SET(HEADERS
   ${INCLUDE_ROOT}/group.h
   ${INCLUDE_ROOT}/histogram.h
   ${INCLUDE_ROOT}/image_scalar_artist.h
-  ${INCLUDE_ROOT}/imgui_config.h
   ${INCLUDE_ROOT}/image_scalar_artist.ipp
+  ${INCLUDE_ROOT}/imgui_config.h
+  ${INCLUDE_ROOT}/implicit_surface.h
+  ${INCLUDE_ROOT}/implicit_surface.ipp
   ${INCLUDE_ROOT}/messages.h
   ${INCLUDE_ROOT}/options.h
   ${INCLUDE_ROOT}/persistent_value.h
@@ -267,6 +272,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/render/ground_plane.h
   ${INCLUDE_ROOT}/render/material_defs.h
   ${INCLUDE_ROOT}/render/materials.h
+  ${INCLUDE_ROOT}/render_image_quantity_base.h
   ${INCLUDE_ROOT}/ribbon_artist.h
   ${INCLUDE_ROOT}/scaled_value.h
   ${INCLUDE_ROOT}/scalar_quantity.h

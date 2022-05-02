@@ -115,6 +115,86 @@ R"(
 )"
 };
 
+const ShaderStageSpecification PLAIN_RENDERIMAGE_TEXTURE_DRAW_FRAG_SHADER = {
+    
+    // stage
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    { 
+        {"u_projMatrix", DataType::Matrix44Float},
+        {"u_invProjMatrix", DataType::Matrix44Float},
+        {"u_viewport", DataType::Vector4Float},
+    }, 
+
+    // attributes
+    { },
+    
+    // textures 
+    { 
+      {"t_depth", 2},
+      {"t_normal", 2},
+    },
+    
+    // source 
+R"(
+
+  ${ GLSL_VERSION }$
+  uniform mat4 u_projMatrix; 
+  uniform mat4 u_invProjMatrix;
+  uniform vec4 u_viewport;
+
+  in vec2 tCoord;
+  uniform sampler2D t_depth;
+  uniform sampler2D t_normal;
+  layout(location = 0) out vec4 outputF;
+    
+  float LARGE_FLOAT();
+  vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
+  float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
+
+  ${ FRAG_DECLARATIONS }$
+
+  void main() {
+
+    // Fetch values from texture
+    float depth = texture(t_depth, tCoord).r;
+    vec3 normal = normalize(texture(t_normal, tCoord).rgb);
+
+    if(depth > LARGE_FLOAT()) {
+      discard;
+    }
+
+    // Set the depth of the fragment from the stored texture data
+    // TODO: this a wasteful way to convert ray depth to gl_FragDepth, I am sure it can be done with much less arithmetic... figure it out 
+    // Build a ray corresponding to this fragment
+    vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
+    vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
+    // (source is implicit at origin)
+    vec3 viewPos = normalize(viewRay) * depth;
+    float fragdepth = fragDepthFromView(u_projMatrix, depthRange, viewPos);
+    gl_FragDepth = fragdepth;
+
+    
+    // Shading
+    ${ GENERATE_SHADE_VALUE }$
+    ${ GENERATE_SHADE_COLOR }$
+
+    // Lighting
+    vec3 shadeNormal = normal;
+    ${ GENERATE_LIT_COLOR }$
+
+     // Set alpha
+    float alphaOut = 1.0;
+    ${ GENERATE_ALPHA }$
+
+    // Write output
+    outputF = vec4(litColor, alphaOut);
+
+  }
+)"
+};
+
 const ShaderStageSpecification DOT3_TEXTURE_DRAW_FRAG_SHADER = {
     
     // stage

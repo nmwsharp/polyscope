@@ -243,6 +243,21 @@ FloatingColorImageQuantity* QuantityStructure<S>::addFloatingColorAlphaImage(std
   return this->addFloatingColorImageImpl(name, dimX, dimY, standardVals);
 }
 
+template <typename S>
+template <class T1, class T2>
+DepthRenderImage* QuantityStructure<S>::addDepthRenderImage(std::string name, size_t dimX, size_t dimY,
+                                                            const T1& depthData, const T1& normalData) {
+
+  validateSize(depthData, dimX * dimY, "depth render image depth data " + name);
+  validateSize(normalData, dimX * dimY, "depth render image normal data " + name);
+
+  // standardize
+  std::vector<float> standardDepth(standardizeArray<float>(depthData));
+  std::vector<glm::vec3> standardNormal(standardizeVectorArray<glm::vec3, 3>(normalData));
+
+  return this->addDepthRenderImageImpl(name, dimX, dimY, standardDepth, standardNormal);
+}
+
 // === Floating Quantity Impls ===
 
 // Forward declare helper functions, which wrap the constructors for the floating quantities below.
@@ -253,6 +268,8 @@ FloatingScalarImageQuantity* createFloatingScalarImageQuantity(Structure& parent
                                                                DataType dataType);
 FloatingColorImageQuantity* createFloatingColorImageQuantity(Structure& parent, std::string name, size_t dimX,
                                                              size_t dimY, const std::vector<glm::vec4>& data);
+DepthRenderImage* createDepthRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
+                                         const std::vector<float>& depthData, const std::vector<glm::vec3>& data);
 
 template <typename S>
 FloatingScalarImageQuantity*
@@ -267,6 +284,15 @@ template <typename S>
 FloatingColorImageQuantity* QuantityStructure<S>::addFloatingColorImageImpl(std::string name, size_t dimX, size_t dimY,
                                                                             const std::vector<glm::vec4>& values) {
   FloatingColorImageQuantity* q = createFloatingColorImageQuantity(*this, name, dimX, dimY, values);
+  addQuantity(q);
+  return q;
+}
+
+template <typename S>
+DepthRenderImage* QuantityStructure<S>::addDepthRenderImageImpl(std::string name, size_t dimX, size_t dimY,
+                                                                const std::vector<float>& depthData,
+                                                                const std::vector<glm::vec3>& normalData) {
+  DepthRenderImage* q = createDepthRenderImage(*this, name, dimX, dimY, depthData, normalData);
   addQuantity(q);
   return q;
 }

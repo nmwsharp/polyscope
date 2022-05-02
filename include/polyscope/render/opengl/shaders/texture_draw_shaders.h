@@ -11,6 +11,7 @@ extern const ShaderStageSpecification TEXTURE_DRAW_UPPERLEFT_VERT_SHADER;
 extern const ShaderStageSpecification SPHEREBG_DRAW_VERT_SHADER;
 extern const ShaderStageSpecification SPHEREBG_DRAW_FRAG_SHADER;
 extern const ShaderStageSpecification PLAIN_TEXTURE_DRAW_FRAG_SHADER;
+extern const ShaderStageSpecification PLAIN_RENDERIMAGE_TEXTURE_DRAW_FRAG_SHADER;
 extern const ShaderStageSpecification DOT3_TEXTURE_DRAW_FRAG_SHADER;
 extern const ShaderStageSpecification MAP3_TEXTURE_DRAW_FRAG_SHADER;
 extern const ShaderStageSpecification COMPOSITE_PEEL;
