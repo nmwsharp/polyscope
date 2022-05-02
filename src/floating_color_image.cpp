@@ -9,8 +9,8 @@
 namespace polyscope {
 
 
-FloatingColorImageQuantity::FloatingColorImageQuantity(Structure& parent_, std::string name,
-                                                       size_t dimX, size_t dimY, const std::vector<glm::vec4>& data)
+FloatingColorImageQuantity::FloatingColorImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
+                                                       const std::vector<glm::vec4>& data)
     : FloatingQuantity(name, parent_), ImageColorArtist(name, uniquePrefix(), dimX, dimY, data), parent(parent_),
       showFullscreen(uniquePrefix() + "showFullscreen", false) {}
 
@@ -42,7 +42,7 @@ void FloatingColorImageQuantity::buildCustomUI() {
 
     ImGui::EndPopup();
   }
-  
+
   if (getShowFullscreen()) {
     ImGui::PushItemWidth(100);
     if (ImGui::SliderFloat("transparency", &transparency.get(), 0.f, 1.f)) {
@@ -94,5 +94,15 @@ void FloatingColorImageQuantity::setShowFullscreen(bool newVal) {
   requestRedraw();
 }
 bool FloatingColorImageQuantity::getShowFullscreen() { return showFullscreen.get(); }
+
+
+// Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
+// structure.ipp.
+FloatingColorImageQuantity* createFloatingColorImageQuantity(Structure& parent, std::string name, size_t dimX,
+                                                             size_t dimY, const std::vector<glm::vec4>& data,
+                                                             DataType dataType) {
+  return new FloatingColorImageQuantity(parent, name, dimX, dimY, data);
+}
+
 
 } // namespace polyscope

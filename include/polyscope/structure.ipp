@@ -6,7 +6,6 @@
 #include "polyscope/structure.h"
 
 #include "polyscope/floating_quantity.h"
-#include "polyscope/floating_image.h"
 
 namespace polyscope {
 
@@ -246,11 +245,20 @@ FloatingColorImageQuantity* QuantityStructure<S>::addFloatingColorAlphaImage(std
 
 // === Floating Quantity Impls ===
 
+// Forward declare helper functions, which wrap the constructors for the floating quantities below.
+// Otherwise, we would have to include their respective headers here, and create some really gnarly header dependency
+// chains.
+FloatingScalarImageQuantity* createFloatingScalarImageQuantity(Structure& parent, std::string name, size_t dimX,
+                                                               size_t dimY, const std::vector<double>& data,
+                                                               DataType dataType);
+FloatingColorImageQuantity* createFloatingColorImageQuantity(Structure& parent, std::string name, size_t dimX,
+                                                             size_t dimY, const std::vector<glm::vec4>& data);
+
 template <typename S>
 FloatingScalarImageQuantity*
 QuantityStructure<S>::addFloatingScalarImageImpl(std::string name, size_t dimX, size_t dimY,
                                                  const std::vector<double>& values, DataType type) {
-  FloatingScalarImageQuantity* q = new FloatingScalarImageQuantity(*this, name, dimX, dimY, values, type);
+  FloatingScalarImageQuantity* q = createFloatingScalarImageQuantity(*this, name, dimX, dimY, values, type);
   addQuantity(q);
   return q;
 }
@@ -258,7 +266,7 @@ QuantityStructure<S>::addFloatingScalarImageImpl(std::string name, size_t dimX, 
 template <typename S>
 FloatingColorImageQuantity* QuantityStructure<S>::addFloatingColorImageImpl(std::string name, size_t dimX, size_t dimY,
                                                                             const std::vector<glm::vec4>& values) {
-  FloatingColorImageQuantity* q = new FloatingColorImageQuantity(*this, name, dimX, dimY, values);
+  FloatingColorImageQuantity* q = createFloatingColorImageQuantity(*this, name, dimX, dimY, values);
   addQuantity(q);
   return q;
 }

@@ -9,9 +9,8 @@
 namespace polyscope {
 
 
-FloatingScalarImageQuantity::FloatingScalarImageQuantity(Structure& parent_, std::string name,
-                                                         size_t dimX, size_t dimY, const std::vector<double>& data,
-                                                         DataType dataType)
+FloatingScalarImageQuantity::FloatingScalarImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
+                                                         const std::vector<double>& data, DataType dataType)
     : FloatingQuantity(name, parent_), ImageScalarArtist(*this, name, dimX, dimY, data, dataType),
       showFullscreen(uniquePrefix() + "showFullscreen", false) {}
 
@@ -100,5 +99,13 @@ void FloatingScalarImageQuantity::setShowFullscreen(bool newVal) {
   requestRedraw();
 }
 bool FloatingScalarImageQuantity::getShowFullscreen() { return showFullscreen.get(); }
+
+// Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
+// structure.ipp.
+FloatingScalarImageQuantity* createFloatingScalarImageQuantity(Structure& parent, std::string name, size_t dimX,
+                                                               size_t dimY, const std::vector<double>& data,
+                                                               DataType dataType) {
+  return new FloatingScalarImageQuantity(parent, name, dimX, dimY, data, dataType);
+}
 
 } // namespace polyscope
