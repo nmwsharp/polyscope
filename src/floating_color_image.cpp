@@ -99,8 +99,7 @@ bool FloatingColorImageQuantity::getShowFullscreen() { return showFullscreen.get
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
 // structure.ipp.
 FloatingColorImageQuantity* createFloatingColorImageQuantity(Structure& parent, std::string name, size_t dimX,
-                                                             size_t dimY, const std::vector<glm::vec4>& data,
-                                                             DataType dataType) {
+                                                             size_t dimY, const std::vector<glm::vec4>& data) {
   return new FloatingColorImageQuantity(parent, name, dimX, dimY, data);
 }
 
