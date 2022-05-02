@@ -533,8 +533,13 @@ void addImplicitRendersFromCurrentView() {
     return out * scale;
   };
 
-  polyscope::DepthRenderImage* img = polyscope::renderImplictSurfaceSphereMarch("torus sdf", torusSDF);
-  polyscope::DepthRenderImage* img2 = polyscope::renderImplictSurfaceSphereMarch("box sdf", boxFrameSDF);
+  polyscope::ImplictRenderOpts opts;
+  //opts.mode = polyscope::ImplicitRenderMode::FixedStep;
+  opts.mode = polyscope::ImplicitRenderMode::SphereMarch;
+  opts.subsampleFactor = 4;
+
+  polyscope::DepthRenderImage* img = polyscope::renderImplictSurface("torus sdf", torusSDF, opts);
+  polyscope::DepthRenderImage* img2 = polyscope::renderImplictSurface("box sdf", boxFrameSDF, opts);
 }
 
 void processFileDotMesh(std::string filename) {

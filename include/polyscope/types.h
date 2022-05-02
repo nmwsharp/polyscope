@@ -20,6 +20,8 @@ enum class MeshShadeStyle { Smooth = 0, Flat, AutoFlat};
 enum class VolumeMeshElement { VERTEX = 0, EDGE, FACE, CELL };
 enum class VolumeCellType { TET = 0, HEX };
 
+enum class ImplicitRenderMode { SphereMarch, FixedStep};
+
 // What is the meaningful range of these values?
 // Used to set meaningful colormaps
 // STANDARD: [-inf, inf], zero does not mean anything special (ie, position)

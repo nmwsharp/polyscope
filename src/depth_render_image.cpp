@@ -31,9 +31,10 @@ void DepthRenderImage::drawDelayed() {
   program->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   program->setUniform("u_viewport", render::engine->getCurrentViewport());
   program->setUniform("u_baseColor", color.get());
+  program->setUniform("u_transparency", transparency.get());
 
   // make sure we have actual depth testing enabled
-  render::engine->setDepthMode(); 
+  render::engine->setDepthMode();
 
   // draw
   program->draw();
@@ -60,7 +61,10 @@ void DepthRenderImage::buildCustomUI() {
 }
 
 
-void DepthRenderImage::refresh() { RenderImageQuantityBase::refresh(); }
+void DepthRenderImage::refresh() {
+  program = nullptr;
+  RenderImageQuantityBase::refresh();
+}
 
 
 void DepthRenderImage::prepare() {
@@ -70,7 +74,7 @@ void DepthRenderImage::prepare() {
 
   // Create the sourceProgram
   program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-                                          {"TEXTURE_ORIGIN_UPPERLEFT", "TEXTURE_SET_TRANSPARENCY", "SHADE_BASECOLOR"});
+                                          {"TEXTURE_ORIGIN_UPPERLEFT", "SHADE_BASECOLOR", "TRANSPARENCY_STRUCTURE"});
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
   program->setTextureFromBuffer("t_depth", textureDepth.get());

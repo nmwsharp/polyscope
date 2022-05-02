@@ -14,12 +14,14 @@ namespace polyscope {
 // A collection of functions for rendering implicit surfaces
 
 struct ImplictRenderOpts {
+  ImplicitRenderMode mode = ImplicitRenderMode::SphereMarch;
   ScaledValue<float> missDist = ScaledValue<float>::relative(20.);
   ScaledValue<float> hitDist = ScaledValue<float>::relative(1e-4);
-  float stepFactor = 0.95; // used for sphere marching
+  float stepFactor = 0.99; // used for sphere marching
   float normalSampleEps = 1e-3;
   ScaledValue<float> stepSize = ScaledValue<float>::relative(1e-2); // used for fixed-size stepping
-  size_t nMaxSteps = 512;
+  size_t nMaxSteps = 1024;
+  int subsampleFactor = 1;
 };
 
 // Renders an implicit surface via sphere marching rays from the current Polyscope camera view.
@@ -29,21 +31,17 @@ struct ImplictRenderOpts {
 // distance to the surface (or technically, an upper bound on that distance). The "fixed step" version below handles
 // more general implicit functions
 template <class Func, class S>
-DepthRenderImage* renderImplictSurfaceSphereMarch(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                                  ImplictRenderOpts opts = ImplictRenderOpts());
+DepthRenderImage* renderImplictSurface(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                       ImplictRenderOpts opts = ImplictRenderOpts());
 template <class Func>
-DepthRenderImage* renderImplictSurfaceSphereMarch(std::string name, Func&& func,
-                                                  ImplictRenderOpts opts = ImplictRenderOpts()) {
-  return renderImplictSurfaceSphereMarch(getGlobalFloatingQuantityStructure(), name, func, opts);
-}
+DepthRenderImage* renderImplictSurface(std::string name, Func&& func, ImplictRenderOpts opts = ImplictRenderOpts());
 template <class Func, class S>
-DepthRenderImage* renderImplictSurfaceSphereMarchBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                                       ImplictRenderOpts opts = ImplictRenderOpts());
+DepthRenderImage* renderImplictSurfaceBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                            ImplictRenderOpts opts = ImplictRenderOpts());
 template <class Func>
-DepthRenderImage* renderImplictSurfaceSphereMarchBatch(std::string name, Func&& func,
-                                                       ImplictRenderOpts opts = ImplictRenderOpts()) {
-  return renderImplictSurfaceSphereMarchBatch(getGlobalFloatingQuantityStructure(), name, func, opts);
-}
+DepthRenderImage* renderImplictSurfaceBatch(std::string name, Func&& func,
+                                            ImplictRenderOpts opts = ImplictRenderOpts());
+
 
 } // namespace polyscope
 
