@@ -525,14 +525,19 @@ const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY(
 const ShaderReplacementRule TEXTURE_SHADE_COLOR(
     /* rule name */ "TEXTURE_SHADE_COLOR",
     { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform sampler2D t_color;
+        )" },
       {"GENERATE_SHADE_COLOR", R"(
         vec3 sampledTextureColor = texture(t_color, tCoord).rgb;
         vec3 albedoColor = sampledTextureColor;
-    )"}
+        )"}
     },
     /* uniforms */ {},
     /* attributes */ {},
-    /* textures */ {}
+    /* textures */ {
+      {"t_color", 2},
+    }
 );
 
 // clang-format on

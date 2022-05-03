@@ -2634,6 +2634,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   // Texture and image things
   registeredShaderRules.insert({"TEXTURE_ORIGIN_UPPERLEFT", TEXTURE_ORIGIN_UPPERLEFT});
   registeredShaderRules.insert({"TEXTURE_SET_TRANSPARENCY", TEXTURE_SET_TRANSPARENCY});
+  registeredShaderRules.insert({"TEXTURE_SHADE_COLOR", TEXTURE_SHADE_COLOR});
 
   // mesh things
   registeredShaderRules.insert({"MESH_WIREFRAME", MESH_WIREFRAME});

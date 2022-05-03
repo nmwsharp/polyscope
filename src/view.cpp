@@ -404,6 +404,19 @@ glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords) {
   return worldRayDir;
 }
 
+glm::vec3 bufferCoordsToWorldRay(glm::vec2 screenCoords) {
+
+  glm::mat4 view = getCameraViewMatrix();
+  glm::mat4 proj = getCameraPerspectiveMatrix();
+  glm::vec4 viewport = {0., 0., view::bufferWidth, view::bufferHeight};
+
+  glm::vec3 screenPos3{screenCoords.x, view::bufferHeight - screenCoords.y, 0.};
+  glm::vec3 worldPos = glm::unProject(screenPos3, view, proj, viewport);
+  glm::vec3 worldRayDir = glm::normalize(glm::vec3(worldPos) - getCameraWorldPosition());
+
+  return worldRayDir;
+}
+
 float screenCoordsToDepth(glm::vec2 screenCoords) {
 
   /*

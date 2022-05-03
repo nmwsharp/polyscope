@@ -51,7 +51,7 @@ renderImplictSurfaceFromCurrentView(Func&& func, ImplictRenderOpts opts) {
     for (size_t iX = 0; iX < dimXsub; iX++) {
       size_t ind = iY * dimXsub + iX;
       rayRoots[ind] = cameraLoc;
-      rayDirs[ind] = view::screenCoordsToWorldRay(glm::vec2{iX * subsampleFactor, iY * subsampleFactor});
+      rayDirs[ind] = view::bufferCoordsToWorldRay(glm::vec2{iX * subsampleFactor, iY * subsampleFactor});
       rayInds[ind] = ind;
     }
   }
@@ -94,7 +94,7 @@ renderImplictSurfaceFromCurrentView(Func&& func, ImplictRenderOpts opts) {
 
       } else {
         // Take a step
-        float rayStepSize;
+        float rayStepSize = -1.;
         if (mode == ImplicitRenderMode::SphereMarch) {
           rayStepSize = std::abs(currVals[iP]) * stepFactor;
         } else if (mode == ImplicitRenderMode::FixedStep) {
@@ -236,9 +236,9 @@ ColorRenderImage* renderImplictSurfaceColor(std::string name, Func&& func, FuncC
   return renderImplictSurfaceColor(getGlobalFloatingQuantityStructure(), name, func, funcColor, opts);
 }
 
-template <class Func, class FuncColor, class S>
-ColorRenderImage* renderImplictSurfaceColorBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                                 FuncColor&& funcColor, ImplictRenderOpts opts) {
+template <class Func, class FuncColor>
+ColorRenderImage* renderImplictSurfaceColorBatch(std::string name, Func&& func, FuncColor&& funcColor,
+                                                 ImplictRenderOpts opts) {
   return renderImplictSurfaceColorBatch(getGlobalFloatingQuantityStructure(), name, func, funcColor, opts);
 }
 
@@ -267,8 +267,34 @@ ColorRenderImage* renderImplictSurfaceColor(QuantityStructure<S>* parent, std::s
   return renderImplictSurfaceColorBatch(parent, name, batchFunc, batchFuncColor, opts);
 }
 
-template <class Func, class FuncColor>
-ColorRenderImage* renderImplictSurfaceColorBatch(std::string name, Func&& func, FuncColor&& funcColor,
-                                                 ImplictRenderOpts opts) {}
+
+template <class Func, class FuncColor, class S>
+ColorRenderImage* renderImplictSurfaceColorBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                 FuncColor&& funcColor, ImplictRenderOpts opts) {
+
+  // Call the function which does all the hard work
+  size_t dimXsub, dimYsub;
+  std::vector<float> rayDepthOut;
+  std::vector<glm::vec3> rayPosOut;
+  std::vector<glm::vec3> normalOut;
+  std::tie(dimXsub, dimYsub, rayDepthOut, rayPosOut, normalOut) = renderImplictSurfaceFromCurrentView(func, opts);
+
+  // Batch evaluate the color function
+  std::vector<glm::vec3> colorOut = funcColor(rayPosOut);
+
+  // Set colors for miss rays to 0
+  for (size_t iP = 0; iP < rayPosOut.size(); iP++) {
+    if (rayDepthOut[iP] == std::numeric_limits<float>::infinity()) {
+      colorOut[iP] = glm::vec3{0.f, 0.f, 0.f};
+    }
+  }
+
+
+  // TODO check if there is an existing quantity of the same type/size to replace, and if so re-fill its buffers rather
+  // than creating a whole new one
+
+  // here, we bypass the conversion adaptor since we have explicitly filled matching types
+  return parent->addColorRenderImageImpl(name, dimXsub, dimYsub, rayDepthOut, normalOut, colorOut);
+}
 
 } // namespace polyscope

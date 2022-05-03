@@ -97,6 +97,7 @@ glm::mat4 getCameraPerspectiveMatrix();
 glm::vec3 getCameraWorldPosition();
 void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
 glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords);
+glm::vec3 bufferCoordsToWorldRay(glm::vec2 screenCoords);
 glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords);
 float screenCoordsToDepth(glm::vec2 screenCoords);
 

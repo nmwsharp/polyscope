@@ -533,6 +533,20 @@ void addImplicitRendersFromCurrentView() {
     return out * scale;
   };
 
+  auto colorFunc = [](glm::vec3 p) {
+    glm::vec3 color{0., 0., 0.};
+    if (p.x > 0) {
+      color += glm::vec3{1.0, 0.0, 0.0};
+    }
+    if (p.y > 0) {
+      color += glm::vec3{0.0, 1.0, 0.0};
+    }
+    if (p.z > 0) {
+      color += glm::vec3{0.0, 0.0, 1.0};
+    }
+    return color;
+  };
+
   polyscope::ImplictRenderOpts opts;
   //opts.mode = polyscope::ImplicitRenderMode::FixedStep;
   opts.mode = polyscope::ImplicitRenderMode::SphereMarch;
@@ -540,6 +554,8 @@ void addImplicitRendersFromCurrentView() {
 
   polyscope::DepthRenderImage* img = polyscope::renderImplictSurface("torus sdf", torusSDF, opts);
   polyscope::DepthRenderImage* img2 = polyscope::renderImplictSurface("box sdf", boxFrameSDF, opts);
+  polyscope::ColorRenderImage* img2Color =
+      polyscope::renderImplictSurfaceColor("box sdf color", boxFrameSDF, colorFunc, opts);
 }
 
 void processFileDotMesh(std::string filename) {
