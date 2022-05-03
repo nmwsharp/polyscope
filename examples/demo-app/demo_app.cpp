@@ -6,6 +6,7 @@
 #include "polyscope/curve_network.h"
 #include "polyscope/file_helpers.h"
 #include "polyscope/floating_quantity_structure.h"
+#include "polyscope/pick.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_io.h"
@@ -616,6 +617,7 @@ void callback() {
   static int numPoints = 2000;
   static float param = 3.14;
   static int loadedMat = 1;
+  static bool depthClick = false;
 
   ImGui::PushItemWidth(100);
 
@@ -629,6 +631,48 @@ void callback() {
   if (ImGui::Button("hi")) {
     polyscope::warning("hi");
   }
+
+
+  // some depth & picking stuff
+  ImGui::Checkbox("test scene click", &depthClick);
+  if (depthClick) {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.MouseClicked[0]) {
+      glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
+
+      glm::vec3 worldRay = polyscope::view::screenCoordsToWorldRay(screenCoords);
+      glm::vec3 worldPos = polyscope::view::screenCoordsToWorldPosition(screenCoords);
+      float depth = polyscope::view::screenCoordsToDepth(screenCoords);
+      std::pair<polyscope::Structure*, size_t> pickPair =
+          polyscope::pick::evaluatePickQuery(screenCoords.x, screenCoords.y);
+
+      std::cout << "Polyscope scene test click " << std::endl;
+      std::cout << "    io.MousePos.x: " << io.MousePos.x << " io.MousePos.y: " << io.MousePos.y << std::endl;
+      std::cout << "    screenCoords.x: " << screenCoords.x << " screenCoords.y: " << screenCoords.y << std::endl;
+      std::cout << "    worldRay: " << to_string(worldRay) << std::endl;
+      std::cout << "    worldPos: " << to_string(worldPos) << std::endl;
+      std::cout << "    depth: " << depth << std::endl;
+      if (pickPair.first == nullptr) {
+        std::cout << "    structure: "
+                  << "none" << std::endl;
+      } else {
+        std::cout << "    structure: " << pickPair.first << " element id: " << pickPair.second << std::endl;
+      }
+
+      // Construct point at click location
+      polyscope::registerPointCloud("click point", std::vector<glm::vec3>({worldPos}));
+
+      // Construct unit-length vector pointing in the direction of the click
+      // (this depends only on the camera parameters, and does not require accessing the depth buffer)
+      glm::vec3 root = polyscope::view::getCameraWorldPosition();
+      glm::vec3 target = root + worldRay;
+      polyscope::registerCurveNetworkLine("click dir", std::vector<glm::vec3>({root, target}));
+
+
+      depthClick = false;
+    }
+  }
+
 
   ImGui::PopItemWidth();
 }

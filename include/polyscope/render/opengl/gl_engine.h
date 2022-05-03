@@ -183,6 +183,7 @@ public:
   // Query pixels
   std::vector<unsigned char> readBuffer() override;
   std::array<float, 4> readFloat4(int xPos, int yPos) override;
+  float readDepth(int xPos, int yPos) override;
   void blitTo(FrameBuffer* other) override;
 
   // Getters

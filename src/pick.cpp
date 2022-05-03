@@ -121,7 +121,7 @@ size_t localIndexToGlobal(std::pair<Structure*, size_t> localPick) {
 
 std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
 
-  // NOTE: hack used for debugging: if xPos == yPos == 1 we do a pick render but do not query the value.
+  // NOTE: hack used for debugging: if xPos == yPos == -1 we do a pick render but do not query the value.
 
   // Be sure not to pick outside of buffer
   if (xPos < -1 || xPos >= view::bufferWidth || yPos < -1 || yPos >= view::bufferHeight) {

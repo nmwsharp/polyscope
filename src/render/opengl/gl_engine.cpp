@@ -1015,7 +1015,6 @@ std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
 
   glFlush();
   glFinish();
-
   bind();
 
   // Read from the buffer
@@ -1025,6 +1024,20 @@ std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
   return result;
 }
 
+float GLFrameBuffer::readDepth(int xPos, int yPos) {
+
+  // TODO does no error checking for the case where no depth buffer is attached
+
+  glFlush();
+  glFinish();
+  bind();
+
+  // Read from the buffer
+  float result;
+  glReadPixels(xPos, yPos, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &result);
+
+  return result;
+}
 
 std::vector<unsigned char> GLFrameBuffer::readBuffer() {
 
@@ -2297,9 +2310,7 @@ void GLEngine::setWindowResizable(bool newVal) {
   glfwSetWindowAttrib(mainWindow, GLFW_RESIZABLE, newVal ? GLFW_TRUE : GLFW_FALSE);
 }
 
-bool GLEngine::getWindowResizable() {
-  return glfwGetWindowAttrib(mainWindow, GLFW_RESIZABLE);
-}
+bool GLEngine::getWindowResizable() { return glfwGetWindowAttrib(mainWindow, GLFW_RESIZABLE); }
 
 std::tuple<int, int> GLEngine::getWindowPos() {
   int x, y;

@@ -301,6 +301,12 @@ std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
   return result;
 }
 
+float GLFrameBuffer::readDepth(int xPos, int yPos) {
+  // Read from the buffer
+  float result = 0.5;
+  return result;
+}
+
 std::vector<unsigned char> GLFrameBuffer::readBuffer() {
   bind();
 

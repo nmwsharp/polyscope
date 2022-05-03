@@ -404,6 +404,65 @@ glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords) {
   return worldRayDir;
 }
 
+float screenCoordsToDepth(glm::vec2 screenCoords) {
+
+  /*
+
+  glm::mat4 proj = getCameraPerspectiveMatrix();
+  glm::vec3 viewPoint = getCameraWorldPosition();
+  glm::vec2 depthRange = {0., 1.}; // no support for nonstandard depth range, currently
+  glm::vec2 screenCoords{screenCoords.x / static_cast<float>(view::windowWidth),
+                         1.f - screenCoords.y / static_cast<float>(view::windowHeight)};
+
+  // query the depth buffer to get depth
+  render::FrameBuffer* sceneFramebuffer = render::engine->sceneBuffer.get();
+  float depth = sceneFramebuffer->readDepth(screenCoords.x, view::windowHeight - screenCoords.y);
+  if (depth == 1.) depth = std::numeric_limits<float>::infinity();
+
+  // convert depth to world units
+  float z = depth * 2.0f - 1.0f;
+  vec4 clipPos = glm::vec4(screeCoords * 2.0f - 1.0f, z, 1.0f);
+  vec4 viewPos = projMatrixInv * clipPos;
+  viewPos /= viewPos.w;
+
+
+  return worldRayDir;
+  */
+
+  return -1.;
+}
+
+glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords) {
+
+  glm::mat4 view = getCameraViewMatrix();
+  glm::mat4 viewInv = glm::inverse(view);
+  glm::mat4 proj = getCameraPerspectiveMatrix();
+  glm::mat4 projInv = glm::inverse(proj);
+  glm::vec2 depthRange = {0., 1.}; // no support for nonstandard depth range, currently
+  glm::vec2 screenPos{screenCoords.x / static_cast<float>(view::windowWidth),
+                      1.f - screenCoords.y / static_cast<float>(view::windowHeight)};
+
+  // query the depth buffer to get depth
+  render::FrameBuffer* sceneFramebuffer = render::engine->sceneBuffer.get();
+  float depth = sceneFramebuffer->readDepth(screenCoords.x, view::windowHeight - screenCoords.y);
+  if (depth == 1.) {
+    // if we didn't hit anything in the depth buffer, just return infinity
+    float inf = std::numeric_limits<float>::infinity();
+    return glm::vec3{inf, inf, inf};
+  }
+
+  // convert depth to world units
+  float z = depth * 2.0f - 1.0f;
+  glm::vec4 clipPos = glm::vec4(screenPos * 2.0f - 1.0f, z, 1.0f);
+  glm::vec4 viewPos = projInv * clipPos;
+  viewPos /= viewPos.w;
+
+  glm::vec4 worldPos = viewInv * viewPos;
+  worldPos /= worldPos.w;
+
+  return glm::vec3(worldPos);
+}
+
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds) {
   // startFlightTo(p.E, glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y))),
   //               flightLengthInSeconds);
@@ -524,7 +583,7 @@ void setCameraFromJson(std::string jsonData, bool flyTo) {
     if (j.find("farClipRatio") != j.end()) {
       newFarClipRatio = j["farClipRatio"];
     }
-    
+
     // Get the window sizes, if present
     if (j.find("windowWidth") != j.end()) {
       windowWidth = j["windowWidth"];

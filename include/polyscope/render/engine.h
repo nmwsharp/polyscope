@@ -223,6 +223,7 @@ public:
 
   // Query pixel
   virtual std::array<float, 4> readFloat4(int xPos, int yPos) = 0;
+  virtual float readDepth(int xPos, int yPos) = 0;
   virtual void blitTo(FrameBuffer* other) = 0;
   virtual std::vector<unsigned char> readBuffer() = 0;
 

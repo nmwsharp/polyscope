@@ -92,10 +92,13 @@ void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool fl
 
 // Get various camera matrices and data
 glm::mat4 getCameraViewMatrix();
+void setCameraViewMatrix(glm::mat4 newMat);
 glm::mat4 getCameraPerspectiveMatrix();
 glm::vec3 getCameraWorldPosition();
 void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
 glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords);
+glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords);
+float screenCoordsToDepth(glm::vec2 screenCoords);
 
 // Flight-related
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds = .4);
