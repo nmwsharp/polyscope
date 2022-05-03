@@ -24,9 +24,10 @@ extern const ShaderStageSpecification SCALAR_TEXTURE_COLORMAP;
 
 // Rules
 // extern const ShaderReplacementRule RULE_NAME;
-extern const ShaderReplacementRule TEXTURE_ORIGIN_UPPERLEFT;    // sample textures with (0,0) in the upper left, instead of the usual openGL lower left
-extern const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY;    // apply a transparency uniform to the texture
-
+extern const ShaderReplacementRule
+    TEXTURE_ORIGIN_UPPERLEFT; // sample textures with (0,0) in the upper left, instead of the usual openGL lower left
+extern const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY; // apply a transparency uniform to the texture
+extern const ShaderReplacementRule TEXTURE_SHADE_COLOR;       // sample a color from a texture and use it for shading
 
 
 // Shaders (which are used elsewhere)

@@ -14,8 +14,6 @@ DepthRenderImage::DepthRenderImage(Structure& parent_, std::string name, size_t 
     : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData),
       color(uniquePrefix() + "#color", getNextUniqueColor()) {}
 
-size_t DepthRenderImage::nPix() { return dimX * dimY; }
-
 void DepthRenderImage::draw() {}
 
 void DepthRenderImage::drawDelayed() {

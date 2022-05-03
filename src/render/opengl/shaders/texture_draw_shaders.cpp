@@ -520,6 +520,20 @@ const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY(
     /* textures */ {}
 );
 
+// input: vec2 tcoord, 2d --> 3d texture t_color
+// output: vec3 albedoColor
+const ShaderReplacementRule TEXTURE_SHADE_COLOR(
+    /* rule name */ "TEXTURE_SHADE_COLOR",
+    { /* replacement sources */
+      {"GENERATE_SHADE_COLOR", R"(
+        vec3 sampledTextureColor = texture(t_color, tCoord).rgb;
+        vec3 albedoColor = sampledTextureColor;
+    )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
 
 // clang-format on
 

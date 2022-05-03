@@ -6,37 +6,34 @@
 
 namespace polyscope {
 
-class DepthRenderImage : public RenderImageQuantityBase {
+class ColorRenderImage : public RenderImageQuantityBase {
 
 public:
-  DepthRenderImage(Structure& parent_, std::string name, size_t dimX, size_t dimY, const std::vector<float>& depthData,
-                   const std::vector<glm::vec3>& normalData);
+  ColorRenderImage(Structure& parent_, std::string name, size_t dimX, size_t dimY, const std::vector<float>& depthData,
+                   const std::vector<glm::vec3>& normalData, const std::vector<glm::vec3>& colorData);
 
   virtual void draw() override;
   virtual void drawDelayed() override;
   virtual void buildCustomUI() override;
 
   virtual void refresh() override;
-  virtual DepthRenderImage* setEnabled(bool newEnabled) override;
+  virtual ColorRenderImage* setEnabled(bool newEnabled) override;
 
   virtual std::string niceName() override;
 
   // == Setters and getters
 
-  // set the base color of the rendered geometry
-  DepthRenderImage* setColor(glm::vec3 newVal);
-  glm::vec3 getColor();
-
 
 protected:
-
   // === Visualization parameters
-  PersistentValue<glm::vec3> color;
-  
+
+  // Store the raw data
+  std::vector<glm::vec3> colorData;
 
   // === Render data
+  std::shared_ptr<render::TextureBuffer> textureColor;
   std::shared_ptr<render::ShaderProgram> program;
-  
+
   // === Helpers
   void prepare();
 };

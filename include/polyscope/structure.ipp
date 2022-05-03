@@ -269,7 +269,11 @@ FloatingScalarImageQuantity* createFloatingScalarImageQuantity(Structure& parent
 FloatingColorImageQuantity* createFloatingColorImageQuantity(Structure& parent, std::string name, size_t dimX,
                                                              size_t dimY, const std::vector<glm::vec4>& data);
 DepthRenderImage* createDepthRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
-                                         const std::vector<float>& depthData, const std::vector<glm::vec3>& data);
+                                         const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData);
+
+ColorRenderImage* createColorRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
+                                         const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData,
+                                         const std::vector<glm::vec3>& colorData);
 
 template <typename S>
 FloatingScalarImageQuantity*
@@ -297,5 +301,14 @@ DepthRenderImage* QuantityStructure<S>::addDepthRenderImageImpl(std::string name
   return q;
 }
 
+template <typename S>
+ColorRenderImage* QuantityStructure<S>::addColorRenderImageImpl(std::string name, size_t dimX, size_t dimY,
+                                                                const std::vector<float>& depthData,
+                                                                const std::vector<glm::vec3>& normalData,
+                                                                const std::vector<glm::vec3>& colorData) {
+  ColorRenderImage* q = createColorRenderImage(*this, name, dimX, dimY, depthData, normalData, colorData);
+  addQuantity(q);
+  return q;
+}
 
 } // namespace polyscope

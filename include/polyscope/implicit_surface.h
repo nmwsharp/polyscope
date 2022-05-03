@@ -1,6 +1,7 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include "polyscope/color_render_image.h"
 #include "polyscope/depth_render_image.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/scaled_value.h"
@@ -24,6 +25,10 @@ struct ImplictRenderOpts {
   int subsampleFactor = 1;
 };
 
+// =======================================================
+// === Depth/geometry/shape only render functions
+// =======================================================
+
 // Renders an implicit surface via sphere marching rays from the current Polyscope camera view.
 // The `func` argument is your implicit function, which takes a simple input `glm::vec3` in world-space coordinates,
 // returns the value of the implicit function. For this version, the implicit function MUST be a "signed distance
@@ -42,6 +47,25 @@ template <class Func>
 DepthRenderImage* renderImplictSurfaceBatch(std::string name, Func&& func,
                                             ImplictRenderOpts opts = ImplictRenderOpts());
 
+// =======================================================
+// === Colored surface render functions
+// =======================================================
+
+// Like the implicit surface renderers above, but additionally take a color
+
+template <class Func, class FuncColor, class S>
+ColorRenderImage* renderImplictSurfaceColor(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                            FuncColor&& funcColor, ImplictRenderOpts opts = ImplictRenderOpts());
+template <class Func, class FuncColor>
+ColorRenderImage* renderImplictSurfaceColor(std::string name, Func&& func, FuncColor&& funcColor,
+                                            ImplictRenderOpts opts = ImplictRenderOpts());
+
+template <class Func, class FuncColor, class S>
+ColorRenderImage* renderImplictSurfaceColorBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                 FuncColor&& funcColor, ImplictRenderOpts opts = ImplictRenderOpts());
+template <class Func, class FuncColor>
+ColorRenderImage* renderImplictSurfaceColorBatch(std::string name, Func&& func, FuncColor&& funcColor,
+                                                 ImplictRenderOpts opts = ImplictRenderOpts());
 
 } // namespace polyscope
 

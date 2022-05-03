@@ -176,6 +176,9 @@ renderImplictSurfaceFromCurrentView(Func&& func, ImplictRenderOpts opts) {
       dimXsub, dimYsub, rayDepthOut, rayPosOut, normalOut};
 }
 
+// =======================================================
+// === Depth/geometry/shape only render functions
+// =======================================================
 
 template <class Func>
 DepthRenderImage* renderImplictSurface(std::string name, Func&& func, ImplictRenderOpts opts) {
@@ -221,5 +224,51 @@ DepthRenderImage* renderImplictSurfaceBatch(QuantityStructure<S>* parent, std::s
   // here, we bypass the conversion adaptor since we have explicitly filled matching types
   return parent->addDepthRenderImageImpl(name, dimXsub, dimYsub, rayDepthOut, normalOut);
 }
+
+// =======================================================
+// === Colored surface render functions
+// =======================================================
+
+
+template <class Func, class FuncColor>
+ColorRenderImage* renderImplictSurfaceColor(std::string name, Func&& func, FuncColor&& funcColor,
+                                            ImplictRenderOpts opts) {
+  return renderImplictSurfaceColor(getGlobalFloatingQuantityStructure(), name, func, funcColor, opts);
+}
+
+template <class Func, class FuncColor, class S>
+ColorRenderImage* renderImplictSurfaceColorBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                 FuncColor&& funcColor, ImplictRenderOpts opts) {
+  return renderImplictSurfaceColorBatch(getGlobalFloatingQuantityStructure(), name, func, funcColor, opts);
+}
+
+
+template <class Func, class FuncColor, class S>
+ColorRenderImage* renderImplictSurfaceColor(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                            FuncColor&& funcColor, ImplictRenderOpts opts) {
+
+  // Bootstrap on the batch version
+  auto batchFunc = [&](std::vector<glm::vec3> inPos) {
+    std::vector<float> outVals(inPos.size());
+    for (size_t i = 0; i < inPos.size(); i++) {
+      outVals[i] = func(inPos[i]);
+    }
+    return outVals;
+  };
+
+  auto batchFuncColor = [&](std::vector<glm::vec3> inPos) {
+    std::vector<glm::vec3> outVals(inPos.size());
+    for (size_t i = 0; i < inPos.size(); i++) {
+      outVals[i] = funcColor(inPos[i]);
+    }
+    return outVals;
+  };
+
+  return renderImplictSurfaceColorBatch(parent, name, batchFunc, batchFuncColor, opts);
+}
+
+template <class Func, class FuncColor>
+ColorRenderImage* renderImplictSurfaceColorBatch(std::string name, Func&& func, FuncColor&& funcColor,
+                                                 ImplictRenderOpts opts) {}
 
 } // namespace polyscope
