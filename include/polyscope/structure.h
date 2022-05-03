@@ -143,6 +143,7 @@ class FloatingScalarImageQuantity;
 class FloatingColorImageQuantity;
 class DepthRenderImage;
 class ColorRenderImage;
+class ScalarRenderImage;
 
 // Helper used to define quantity types
 template <typename T>
@@ -208,11 +209,18 @@ public:
 
   template <class T1, class T2>
   DepthRenderImage* addDepthRenderImage(std::string name, size_t dimX, size_t dimY, const T1& depthData,
-                                        const T1& normalData);
+                                        const T2& normalData);
 
   template <class T1, class T2, class T3>
   ColorRenderImage* addColorRenderImage(std::string name, size_t dimX, size_t dimY, const T1& depthData,
-                                        const T1& normalData, const T1& colorData);
+                                        const T2& normalData, const T3& colorData);
+
+
+  template <class T1, class T2, class T3>
+  ScalarRenderImage* addScalarRenderImage(std::string name, size_t dimX, size_t dimY, const T1& depthData,
+                                          const T2& normalData, const T3& scalarData,
+                                          DataType type = DataType::STANDARD);
+
 
   // === Floating Quantity impls
   FloatingScalarImageQuantity* addFloatingScalarImageImpl(std::string name, size_t dimX, size_t dimY,
@@ -229,6 +237,11 @@ public:
                                             const std::vector<float>& depthData,
                                             const std::vector<glm::vec3>& normalData,
                                             const std::vector<glm::vec3>& colorData);
+
+  ScalarRenderImage* addScalarRenderImageImpl(std::string name, size_t dimX, size_t dimY,
+                                              const std::vector<float>& depthData,
+                                              const std::vector<glm::vec3>& normalData,
+                                              const std::vector<double>& scalarData, DataType type);
 
 protected:
   // helper

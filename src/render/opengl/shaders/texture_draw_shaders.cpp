@@ -540,6 +540,25 @@ const ShaderReplacementRule TEXTURE_SHADE_COLOR(
     }
 );
 
+// input: vec2 tcoord, 1d --> 3d texture t_scalar
+// output: vec3 albedoColor
+const ShaderReplacementRule TEXTURE_PROPAGATE_VALUE(
+    /* rule name */ "TEXTURE_PROPAGATE_VALUE",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform sampler2D t_scalar;
+        )" },
+      {"GENERATE_SHADE_VALUE", R"(
+        float shadeValue = texture(t_scalar, tCoord).r;
+        )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {
+      {"t_scalar", 2},
+    }
+);
+
 // clang-format on
 
 } // namespace backend_openGL3_glfw

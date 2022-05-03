@@ -1424,6 +1424,7 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registeredShaderRules.insert({"TEXTURE_ORIGIN_UPPERLEFT", TEXTURE_ORIGIN_UPPERLEFT});
   registeredShaderRules.insert({"TEXTURE_SET_TRANSPARENCY", TEXTURE_SET_TRANSPARENCY});
   registeredShaderRules.insert({"TEXTURE_SHADE_COLOR", TEXTURE_SHADE_COLOR});
+  registeredShaderRules.insert({"TEXTURE_PROPAGATE_VALUE", TEXTURE_PROPAGATE_VALUE});
   
   // mesh things
   registeredShaderRules.insert({"MESH_WIREFRAME", MESH_WIREFRAME});

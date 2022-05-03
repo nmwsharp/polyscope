@@ -198,7 +198,7 @@ DepthRenderImage* renderImplictSurface(QuantityStructure<S>* parent, std::string
   auto batchFunc = [&](std::vector<glm::vec3> inPos) {
     std::vector<float> outVals(inPos.size());
     for (size_t i = 0; i < inPos.size(); i++) {
-      outVals[i] = func(inPos[i]);
+      outVals[i] = static_cast<float>(func(inPos[i]));
     }
     return outVals;
   };
@@ -251,7 +251,7 @@ ColorRenderImage* renderImplictSurfaceColor(QuantityStructure<S>* parent, std::s
   auto batchFunc = [&](std::vector<glm::vec3> inPos) {
     std::vector<float> outVals(inPos.size());
     for (size_t i = 0; i < inPos.size(); i++) {
-      outVals[i] = func(inPos[i]);
+      outVals[i] = static_cast<float>(func(inPos[i]));
     }
     return outVals;
   };
@@ -296,5 +296,78 @@ ColorRenderImage* renderImplictSurfaceColorBatch(QuantityStructure<S>* parent, s
   // here, we bypass the conversion adaptor since we have explicitly filled matching types
   return parent->addColorRenderImageImpl(name, dimXsub, dimYsub, rayDepthOut, normalOut, colorOut);
 }
+
+
+// =======================================================
+// === Scalar surface render functions
+// =======================================================
+//
+template <class Func, class FuncScalar>
+ScalarRenderImage* renderImplictSurfaceScalar(std::string name, Func&& func, FuncScalar&& funcScalar,
+                                              ImplictRenderOpts opts, DataType dataType) {
+  return renderImplictSurfaceScalar(getGlobalFloatingQuantityStructure(), name, func, funcScalar, opts, dataType);
+}
+
+template <class Func, class FuncScalar>
+ScalarRenderImage* renderImplictSurfaceScalarBatch(std::string name, Func&& func, FuncScalar&& funcScalar,
+                                                   ImplictRenderOpts opts, DataType dataType) {
+
+  return renderImplictSurfaceScalarBatch(getGlobalFloatingQuantityStructure(), name, func, funcScalar, opts, dataType);
+}
+
+template <class Func, class FuncScalar, class S>
+ScalarRenderImage* renderImplictSurfaceScalar(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                              FuncScalar&& funcScalar, ImplictRenderOpts opts, DataType dataType) {
+
+  // Bootstrap on the batch version
+  auto batchFunc = [&](std::vector<glm::vec3> inPos) {
+    std::vector<float> outVals(inPos.size());
+    for (size_t i = 0; i < inPos.size(); i++) {
+      outVals[i] = static_cast<float>(func(inPos[i]));
+    }
+    return outVals;
+  };
+
+  auto batchFuncScalar = [&](std::vector<glm::vec3> inPos) {
+    std::vector<double> outVals(inPos.size());
+    for (size_t i = 0; i < inPos.size(); i++) {
+      outVals[i] = static_cast<double>(funcScalar(inPos[i]));
+    }
+    return outVals;
+  };
+
+  return renderImplictSurfaceScalarBatch(parent, name, batchFunc, batchFuncScalar, opts, dataType);
+}
+
+template <class Func, class FuncScalar, class S>
+ScalarRenderImage* renderImplictSurfaceScalarBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                   FuncScalar&& funcScalar, ImplictRenderOpts opts, DataType dataType) {
+
+  // Call the function which does all the hard work
+  size_t dimXsub, dimYsub;
+  std::vector<float> rayDepthOut;
+  std::vector<glm::vec3> rayPosOut;
+  std::vector<glm::vec3> normalOut;
+  std::tie(dimXsub, dimYsub, rayDepthOut, rayPosOut, normalOut) = renderImplictSurfaceFromCurrentView(func, opts);
+
+  // Batch evaluate the color function
+  std::vector<double> scalarOut = funcScalar(rayPosOut);
+
+  // Set scalars for miss rays to NaN
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  for (size_t iP = 0; iP < rayPosOut.size(); iP++) {
+    if (rayDepthOut[iP] == std::numeric_limits<float>::infinity()) {
+      scalarOut[iP] = nan;
+    }
+  }
+
+
+  // TODO check if there is an existing quantity of the same type/size to replace, and if so re-fill its buffers rather
+  // than creating a whole new one
+
+  // here, we bypass the conversion adaptor since we have explicitly filled matching types
+  return parent->addScalarRenderImageImpl(name, dimXsub, dimYsub, rayDepthOut, normalOut, scalarOut, dataType);
+}
+
 
 } // namespace polyscope

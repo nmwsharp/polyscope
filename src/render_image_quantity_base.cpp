@@ -9,8 +9,8 @@ namespace polyscope {
 
 
 RenderImageQuantityBase::RenderImageQuantityBase(Structure& parent_, std::string name, size_t dimX_, size_t dimY_,
-                                         const std::vector<float>& depthData_,
-                                         const std::vector<glm::vec3>& normalData_)
+                                                 const std::vector<float>& depthData_,
+                                                 const std::vector<glm::vec3>& normalData_)
     : FloatingQuantity(name, parent_), dimX(dimX_), dimY(dimY_), depthData(depthData_), normalData(normalData_),
       material(uniquePrefix() + "#material", "clay"), transparency(uniquePrefix() + "#transparency", 1.0) {}
 
@@ -18,9 +18,14 @@ size_t RenderImageQuantityBase::nPix() { return dimX * dimY; }
 
 void RenderImageQuantityBase::addOptionsPopupEntries() {
 
-  if (ImGui::SliderFloat("transparency", &transparency.get(), 0.f, 1.f)) {
-    transparency.manuallyChanged();
-    requestRedraw();
+  if (ImGui::BeginMenu("Transparency")) {
+    if (ImGui::SliderFloat("Alpha", &transparency.get(), 0., 1., "%.3f")) setTransparency(transparency.get());
+    ImGui::TextUnformatted("Note: Change the transparency mode");
+    ImGui::TextUnformatted("      in Appearance --> Transparency.");
+    ImGui::TextUnformatted("Current mode: ");
+    ImGui::SameLine();
+    ImGui::TextUnformatted(modeName(render::engine->getTransparencyMode()).c_str());
+    ImGui::EndMenu();
   }
 
   if (render::buildMaterialOptionsGui(material.get())) {
@@ -30,7 +35,7 @@ void RenderImageQuantityBase::addOptionsPopupEntries() {
 }
 
 void RenderImageQuantityBase::updateGeometryBuffers(const std::vector<float>& newDepthData,
-                                                const std::vector<glm::vec3>& newNormalData) {
+                                                    const std::vector<glm::vec3>& newNormalData) {
   depthData = newDepthData;
   normalData = newNormalData;
 
@@ -51,8 +56,8 @@ void RenderImageQuantityBase::prepareGeometryBuffers() {
   // sanity check for glm struct layout
   static_assert(sizeof(glm::vec3) == sizeof(float) * 3, "glm vec padding breaks direct copy");
 
-  textureNormal =
-      render::engine->generateTextureBuffer(TextureFormat::RGB32F, dimX, dimY, static_cast<float*>(&normalData.front()[0]));
+  textureNormal = render::engine->generateTextureBuffer(TextureFormat::RGB32F, dimX, dimY,
+                                                        static_cast<float*>(&normalData.front()[0]));
 }
 
 void RenderImageQuantityBase::refresh() {

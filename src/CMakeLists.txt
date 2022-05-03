@@ -196,6 +196,7 @@ SET(SRCS
   render_image_quantity_base.cpp
   depth_render_image.cpp
   color_render_image.cpp
+  scalar_render_image.cpp
   
   # Rendering utilities
   imgui_config.cpp

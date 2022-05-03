@@ -4,6 +4,7 @@
 #include "polyscope/color_render_image.h"
 #include "polyscope/depth_render_image.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/scalar_render_image.h"
 #include "polyscope/scaled_value.h"
 #include "polyscope/structure.h"
 
@@ -66,6 +67,32 @@ ColorRenderImage* renderImplictSurfaceColorBatch(QuantityStructure<S>* parent, s
 template <class Func, class FuncColor>
 ColorRenderImage* renderImplictSurfaceColorBatch(std::string name, Func&& func, FuncColor&& funcColor,
                                                  ImplictRenderOpts opts = ImplictRenderOpts());
+
+// =======================================================
+// === Scalar surface render functions
+// =======================================================
+
+// Like the implicit surface renderers above, but additionally take a scalar and colormap it, etc
+
+template <class Func, class FuncScalar, class S>
+ScalarRenderImage* renderImplictSurfaceScalar(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                              FuncScalar&& funcScalar, ImplictRenderOpts opts = ImplictRenderOpts(),
+                                              DataType dataType = DataType::STANDARD);
+template <class Func, class FuncScalar>
+ScalarRenderImage* renderImplictSurfaceScalar(std::string name, Func&& func, FuncScalar&& funcScalar,
+                                              ImplictRenderOpts opts = ImplictRenderOpts(),
+                                              DataType dataType = DataType::STANDARD);
+
+template <class Func, class FuncScalar, class S>
+ScalarRenderImage*
+renderImplictSurfaceScalarBatch(QuantityStructure<S>* parent, std::string name, Func&& func, FuncScalar&& funcScalar,
+                                ImplictRenderOpts opts = ImplictRenderOpts(), DataType dataType = DataType::STANDARD);
+
+template <class Func, class FuncScalar>
+ScalarRenderImage* renderImplictSurfaceScalarBatch(std::string name, Func&& func, FuncScalar&& funcScalar,
+                                                   ImplictRenderOpts opts = ImplictRenderOpts(),
+                                                   DataType dataType = DataType::STANDARD);
+
 
 } // namespace polyscope
 
