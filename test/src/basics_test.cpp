@@ -7,6 +7,7 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/volume_mesh.h"
+#include "polyscope/implicit_surface.h"
 
 #include "gtest/gtest.h"
 
@@ -1303,6 +1304,71 @@ TEST_F(PolyscopeTest, GroundPlaneTest) {
   polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::ShadowOnly;
   polyscope::refresh();
   polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+// ============================================================
+// =============== Implicit tests
+// ============================================================
+
+// These also end up testing the image & render image functionality
+
+TEST_F(PolyscopeTest, ImplicitSurfaceRenderImageTest) {
+
+  // sample sdf & color functions
+  auto torusSDF = [](glm::vec3 p) {
+    float scale = 0.5;
+    p /= scale;
+    p += glm::vec3{1., 0., 1.};
+    glm::vec2 t{1., 0.3};
+    glm::vec2 pxz{p.x, p.z};
+    glm::vec2 q = glm::vec2(glm::length(pxz) - t.x, p.y);
+    return (glm::length(q) - t.y) * scale;
+  };
+  auto colorFunc = [](glm::vec3 p) {
+    glm::vec3 color{0., 0., 0.};
+    if (p.x > 0) {
+      color += glm::vec3{1.0, 0.0, 0.0};
+    }
+    if (p.y > 0) {
+      color += glm::vec3{0.0, 1.0, 0.0};
+    }
+    if (p.z > 0) {
+      color += glm::vec3{0.0, 0.0, 1.0};
+    }
+    return color;
+  };
+
+  auto scalarFunc = [](glm::vec3 p) { return p.x; };
+
+  polyscope::ImplictRenderOpts opts;
+  opts.mode = polyscope::ImplicitRenderMode::SphereMarch;
+  opts.subsampleFactor = 16; // real small, don't want to use much compute
+
+  // plain depth-only implicit surface
+  polyscope::DepthRenderImage* img = polyscope::renderImplictSurface("torus sdf", torusSDF, opts);
+  polyscope::show(3);
+
+  // colored implicit surface
+  polyscope::ColorRenderImage* imgColor =
+      polyscope::renderImplictSurfaceColor("torus sdf color", torusSDF, colorFunc, opts);
+  polyscope::show(3);
+
+  // scalar value implicit surface
+  polyscope::ScalarRenderImage* imgScalar =
+      polyscope::renderImplictSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, opts);
+  polyscope::show(3);
+
+
+  // make sure it doesn't blow up with transparancy
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
 
   polyscope::removeAllStructures();
 }

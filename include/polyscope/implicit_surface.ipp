@@ -4,6 +4,7 @@
 
 #include "polyscope/messages.h"
 #include "polyscope/view.h"
+#include "polyscope/floating_quantity_structure.h"
 
 #include <tuple>
 #include <vector>
