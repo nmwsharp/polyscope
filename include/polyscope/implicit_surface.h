@@ -1,9 +1,12 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include "polyscope/polyscope.h"
+
+#include "polyscope/floating_quantity.h"
+
 #include "polyscope/color_render_image.h"
 #include "polyscope/depth_render_image.h"
-#include "polyscope/polyscope.h"
 #include "polyscope/scalar_render_image.h"
 #include "polyscope/scaled_value.h"
 #include "polyscope/structure.h"
@@ -32,10 +35,13 @@ struct ImplicitRenderOpts {
 
 // Renders an implicit surface via sphere marching rays from the current Polyscope camera view.
 // The `func` argument is your implicit function, which takes a simple input `glm::vec3` in world-space coordinates,
-// returns the value of the implicit function. For this version, the implicit function MUST be a "signed distance
+// returns the value of the implicit function. For the "batch" variants, your function must take a
+// std::vector<glm::vec3>, and produce a std::vector<float>.
+//
+// If using ImplicitRenderOpts::SphereMarch, the implicit function MUST be a "signed distance
 // function", i.e. function is positive outside the surface, negative inside the surface, and the magnitude gives the
-// distance to the surface (or technically, an upper bound on that distance). The "fixed step" version below handles
-// more general implicit functions
+// distance to the surface (or technically, an upper bound on that distance). Alternately, ImplicitRenderOpts::FixedStep
+// handles more general implicit functions. See the options struct for other options.
 template <class Func, class S>
 DepthRenderImage* renderImplicitSurface(QuantityStructure<S>* parent, std::string name, Func&& func,
                                         ImplicitRenderOpts opts = ImplicitRenderOpts());

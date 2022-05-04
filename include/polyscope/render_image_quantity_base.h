@@ -1,5 +1,7 @@
 #pragma once
 
+#include "polyscope/polyscope.h"
+
 #include "polyscope/floating_quantity.h"
 
 #include <vector>
