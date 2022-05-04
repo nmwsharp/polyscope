@@ -2,12 +2,12 @@
 #include "polyscope_test.h"
 
 #include "polyscope/curve_network.h"
+#include "polyscope/implicit_surface.h"
 #include "polyscope/pick.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/volume_mesh.h"
-#include "polyscope/implicit_surface.h"
 
 #include "gtest/gtest.h"
 
@@ -1342,22 +1342,22 @@ TEST_F(PolyscopeTest, ImplicitSurfaceRenderImageTest) {
 
   auto scalarFunc = [](glm::vec3 p) { return p.x; };
 
-  polyscope::ImplictRenderOpts opts;
+  polyscope::ImplicitRenderOpts opts;
   opts.mode = polyscope::ImplicitRenderMode::SphereMarch;
   opts.subsampleFactor = 16; // real small, don't want to use much compute
 
   // plain depth-only implicit surface
-  polyscope::DepthRenderImage* img = polyscope::renderImplictSurface("torus sdf", torusSDF, opts);
+  polyscope::DepthRenderImage* img = polyscope::renderImplicitSurface("torus sdf", torusSDF, opts);
   polyscope::show(3);
 
   // colored implicit surface
   polyscope::ColorRenderImage* imgColor =
-      polyscope::renderImplictSurfaceColor("torus sdf color", torusSDF, colorFunc, opts);
+      polyscope::renderImplicitSurfaceColor("torus sdf color", torusSDF, colorFunc, opts);
   polyscope::show(3);
 
   // scalar value implicit surface
   polyscope::ScalarRenderImage* imgScalar =
-      polyscope::renderImplictSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, opts);
+      polyscope::renderImplicitSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, opts);
   polyscope::show(3);
 
 

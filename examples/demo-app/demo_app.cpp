@@ -549,17 +549,17 @@ void addImplicitRendersFromCurrentView() {
 
   auto scalarFunc = [](glm::vec3 p) { return p.x; };
 
-  polyscope::ImplictRenderOpts opts;
-  //opts.mode = polyscope::ImplicitRenderMode::FixedStep;
+  polyscope::ImplicitRenderOpts opts;
+  // opts.mode = polyscope::ImplicitRenderMode::FixedStep;
   opts.mode = polyscope::ImplicitRenderMode::SphereMarch;
   opts.subsampleFactor = 4;
 
-  polyscope::DepthRenderImage* img = polyscope::renderImplictSurface("torus sdf", torusSDF, opts);
-  polyscope::DepthRenderImage* img2 = polyscope::renderImplictSurface("box sdf", boxFrameSDF, opts);
+  polyscope::DepthRenderImage* img = polyscope::renderImplicitSurface("torus sdf", torusSDF, opts);
+  polyscope::DepthRenderImage* img2 = polyscope::renderImplicitSurface("box sdf", boxFrameSDF, opts);
   polyscope::ColorRenderImage* img2Color =
-      polyscope::renderImplictSurfaceColor("box sdf color", boxFrameSDF, colorFunc, opts);
+      polyscope::renderImplicitSurfaceColor("box sdf color", boxFrameSDF, colorFunc, opts);
   polyscope::ScalarRenderImage* imgScalar =
-      polyscope::renderImplictSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, opts);
+      polyscope::renderImplicitSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, opts);
 }
 
 void processFileDotMesh(std::string filename) {
