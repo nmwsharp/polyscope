@@ -125,6 +125,7 @@ const ShaderStageSpecification PLAIN_RENDERIMAGE_TEXTURE_DRAW_FRAG_SHADER = {
         {"u_projMatrix", DataType::Matrix44Float},
         {"u_invProjMatrix", DataType::Matrix44Float},
         {"u_viewport", DataType::Vector4Float},
+        {"u_transparency", DataType::Float},
     }, 
 
     // attributes
@@ -143,6 +144,7 @@ R"(
   uniform mat4 u_projMatrix; 
   uniform mat4 u_invProjMatrix;
   uniform vec4 u_viewport;
+  uniform float u_transparency;
 
   in vec2 tCoord;
   uniform sampler2D t_depth;
@@ -185,7 +187,7 @@ R"(
     ${ GENERATE_LIT_COLOR }$
 
      // Set alpha
-    float alphaOut = 1.0;
+    float alphaOut = u_transparency;
     ${ GENERATE_ALPHA }$
 
     // Write output

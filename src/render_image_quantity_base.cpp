@@ -79,9 +79,10 @@ std::string RenderImageQuantityBase::getMaterial() { return material.get(); }
 RenderImageQuantityBase* RenderImageQuantityBase::setTransparency(float newVal) {
   transparency = newVal;
 
-  if (newVal < 1. && options::transparencyMode == TransparencyMode::None) {
-    options::transparencyMode = TransparencyMode::Pretty;
-  }
+  // DON'T do this for images, unlike other structures, because they just get drawn on top anyway
+  //if (newVal < 1. && options::transparencyMode == TransparencyMode::None) {
+    //options::transparencyMode = TransparencyMode::Pretty;
+  //}
   requestRedraw();
 
   return this;

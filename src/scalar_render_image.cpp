@@ -34,7 +34,8 @@ void ScalarRenderImage::drawDelayed() {
   setScalarUniforms(*program);
 
   // make sure we have actual depth testing enabled
-  render::engine->setDepthMode();
+  render::engine->setDepthMode(DepthMode::LEqual);
+  render::engine->setBlendMode(BlendMode::Over);
 
   // draw
   program->draw();
@@ -82,7 +83,8 @@ void ScalarRenderImage::prepare() {
   // Create the sourceProgram
   program = render::engine->requestShader(
       "TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-      {"TEXTURE_ORIGIN_UPPERLEFT", "TEXTURE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE", "TRANSPARENCY_STRUCTURE"});
+      addScalarRules({"TEXTURE_ORIGIN_UPPERLEFT", "LIGHT_MATCAP", "TEXTURE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"}),
+      render::ShaderReplacementDefaults::Process);
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
   program->setTextureFromBuffer("t_depth", textureDepth.get());

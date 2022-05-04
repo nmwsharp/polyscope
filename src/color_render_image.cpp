@@ -31,7 +31,9 @@ void ColorRenderImage::drawDelayed() {
   program->setUniform("u_transparency", transparency.get());
 
   // make sure we have actual depth testing enabled
-  render::engine->setDepthMode();
+  render::engine->setDepthMode(DepthMode::LEqual);
+  //render::engine->applyTransparencySettings();
+  render::engine->setBlendMode(BlendMode::Over);
 
   // draw
   program->draw();
@@ -70,8 +72,9 @@ void ColorRenderImage::prepare() {
                                                        static_cast<float*>(&colorData.front()[0]));
 
   // Create the sourceProgram
-  program = render::engine->requestShader(
-      "TEXTURE_DRAW_RENDERIMAGE_PLAIN", {"TEXTURE_ORIGIN_UPPERLEFT", "TEXTURE_SHADE_COLOR", "TRANSPARENCY_STRUCTURE"});
+  program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
+                                          {"TEXTURE_ORIGIN_UPPERLEFT", "LIGHT_MATCAP", "TEXTURE_SHADE_COLOR"},
+                                          render::ShaderReplacementDefaults::Process);
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
   program->setTextureFromBuffer("t_depth", textureDepth.get());
