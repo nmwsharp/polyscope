@@ -330,7 +330,8 @@ void CurveNetwork::buildCustomUI() {
   }
   ImGui::SameLine();
   ImGui::PushItemWidth(100);
-  if (ImGui::SliderFloat("Radius", radius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+  if (ImGui::SliderFloat("Radius", radius.get().getValuePtr(), 0.0, .1, "%.5f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     radius.manuallyChanged();
     requestRedraw();
   }
