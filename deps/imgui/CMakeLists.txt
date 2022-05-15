@@ -36,7 +36,6 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
       # On macOS, get openGL & friends from Frameworks; do not use GLAD at all
 
       add_definitions(-DGLFW_INCLUDE_GLCOREARB)
-      add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=<GLFW/glfw3.h>)
 
       # NOTE: This code is essentially duplicated here and in polyscope/src/CMakeLists.txt
 
