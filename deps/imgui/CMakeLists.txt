@@ -59,7 +59,7 @@ elseif("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
   add_definitions(-DIMGUI_DISABLE_WIN32_DEFAULT_CLIPBOARD_FUNCTIONS)
   add_definitions(-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCTIONS)
   
-  set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp)
+  set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/imgui_demo.cpp)
 
   add_library(
           imgui
