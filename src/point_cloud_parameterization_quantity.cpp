@@ -149,7 +149,8 @@ void PointCloudParameterizationQuantity::buildCustomUI() {
 
 
   // Modulo stripey width
-  if (ImGui::DragFloat("period", &checkerSize.get(), .001, 0.0001, 1.0, "%.4f", 2.0)) {
+  if (ImGui::DragFloat("period", &checkerSize.get(), .001, 0.0001, 1.0, "%.4f", 
+                       ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     setCheckerSize(getCheckerSize());
   }
 

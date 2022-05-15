@@ -101,7 +101,8 @@ void SurfaceGraphQuantity::buildCustomUI() {
   ImGui::SameLine();
   if (ImGui::ColorEdit3("Color", &color.get()[0], ImGuiColorEditFlags_NoInputs)) setColor(getColor());
   ImGui::Text("Nodes: %lu  Edges: %lu", nodes.size(), edges.size());
-  if (ImGui::SliderFloat("Radius", radius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+  if (ImGui::SliderFloat("Radius", radius.get().getValuePtr(), 0.0, .1, "%.5f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     radius.manuallyChanged();
     requestRedraw();
   }

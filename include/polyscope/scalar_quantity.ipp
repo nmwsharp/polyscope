@@ -65,14 +65,14 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
     ImGui::SameLine();
     if (isolineWidth.get().isRelative()) {
       if (ImGui::DragFloat("##Isoline width relative", isolineWidth.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f",
-                           2.0)) {
+                           ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
         isolineWidth.manuallyChanged();
         requestRedraw();
       }
     } else {
       float scaleWidth = dataRange.second - dataRange.first;
       if (ImGui::DragFloat("##Isoline width absolute", isolineWidth.get().getValuePtr(), scaleWidth / 1000, 0.,
-                           scaleWidth, "%.4f", 2.0)) {
+                           scaleWidth, "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
         isolineWidth.manuallyChanged();
         requestRedraw();
       }
@@ -81,7 +81,7 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
     // Isoline darkness
     ImGui::TextUnformatted("Isoline darkness");
     ImGui::SameLine();
-    if (ImGui::DragFloat("##Isoline darkness", &isolineDarkness.get(), 0.01, 0., 1.)) {
+    if (ImGui::DragFloat("##Isoline darkness", &isolineDarkness.get(), 0.01, 0.)) {
       isolineDarkness.manuallyChanged();
       requestRedraw();
     }

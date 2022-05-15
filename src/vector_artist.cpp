@@ -90,13 +90,15 @@ void VectorArtist::buildParametersUI() {
 
   // Only get to set length for non-ambient vectors
   if (vectorType != VectorType::AMBIENT) {
-    if (ImGui::SliderFloat("Length", vectorLengthMult.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+    if (ImGui::SliderFloat("Length", vectorLengthMult.get().getValuePtr(), 0.0, .1, "%.5f",
+                           ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
       vectorLengthMult.manuallyChanged();
       requestRedraw();
     }
   }
 
-  if (ImGui::SliderFloat("Radius", vectorRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+  if (ImGui::SliderFloat("Radius", vectorRadius.get().getValuePtr(), 0.0, .1, "%.5f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     vectorRadius.manuallyChanged();
     requestRedraw();
   }

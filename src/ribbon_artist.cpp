@@ -152,7 +152,8 @@ void RibbonArtist::buildParametersGUI() {
   }
 
   ImGui::PushItemWidth(150);
-  if (ImGui::SliderFloat("Ribbon width", ribbonWidth.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+  if (ImGui::SliderFloat("Ribbon width", ribbonWidth.get().getValuePtr(), 0.0, .1, "%.5f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     ribbonWidth.manuallyChanged();
     requestRedraw();
   }

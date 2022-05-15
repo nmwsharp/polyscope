@@ -19,7 +19,7 @@ endif()
 
 if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 
-  set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp imgui/imgui_demo.cpp imgui/examples/imgui_impl_glfw.cpp imgui/examples/imgui_impl_opengl3.cpp)
+  set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/imgui_demo.cpp imgui/backends/imgui_impl_glfw.cpp imgui/backends/imgui_impl_opengl3.cpp)
 
   add_library(
           imgui
@@ -36,7 +36,6 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
       # On macOS, get openGL & friends from Frameworks; do not use GLAD at all
 
       add_definitions(-DGLFW_INCLUDE_GLCOREARB)
-      add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=<GLFW/glfw3.h>)
 
       # NOTE: This code is essentially duplicated here and in polyscope/src/CMakeLists.txt
 
@@ -60,7 +59,7 @@ elseif("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
   add_definitions(-DIMGUI_DISABLE_WIN32_DEFAULT_CLIPBOARD_FUNCTIONS)
   add_definitions(-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCTIONS)
   
-  set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp)
+  set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/imgui_demo.cpp)
 
   add_library(
           imgui

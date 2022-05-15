@@ -255,7 +255,8 @@ void PointCloud::buildCustomUI() {
   }
   ImGui::SameLine();
   ImGui::PushItemWidth(70);
-  if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+  if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     pointRadius.manuallyChanged();
     requestRedraw();
   }

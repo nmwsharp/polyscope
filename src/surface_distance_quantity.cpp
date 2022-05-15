@@ -93,7 +93,8 @@ void SurfaceDistanceQuantity::buildCustomUI() {
   }
 
   // Modulo stripey width
-  if (ImGui::DragFloat("Stripe size", stripeSize.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f", 2.0)) {
+  if (ImGui::DragFloat("Stripe size", stripeSize.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f", 
+                       ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     stripeSize.manuallyChanged();
     requestRedraw();
   }

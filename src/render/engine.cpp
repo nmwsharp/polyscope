@@ -208,9 +208,12 @@ void Engine::buildEngineGui() {
 
     ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
     if (ImGui::TreeNode("Tone Mapping")) {
-      ImGui::SliderFloat("exposure", &exposure, 0.1, 2.0, "%.3f", 2.);
-      ImGui::SliderFloat("white level", &whiteLevel, 0.0, 2.0, "%.3f", 2.);
-      ImGui::SliderFloat("gamma", &gamma, 0.5, 3.0, "%.3f", 2.);
+      ImGui::SliderFloat("exposure", &exposure, 0.1, 2.0, "%.3f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+      ImGui::SliderFloat("white level", &whiteLevel, 0.0, 2.0, "%.3f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+      ImGui::SliderFloat("gamma", &gamma, 0.5, 3.0, "%.3f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
 
       ImGui::TreePop();
     }
