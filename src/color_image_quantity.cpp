@@ -1,27 +1,27 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2018-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 
 #include "polyscope/polyscope.h"
 
-#include "polyscope/floating_color_image.h"
+#include "polyscope/color_image_quantity.h"
 
 #include "imgui.h"
 
 namespace polyscope {
 
 
-FloatingColorImageQuantity::FloatingColorImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                                                       const std::vector<glm::vec4>& data)
+ColorImageQuantity::ColorImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
+                                       const std::vector<glm::vec4>& data)
     : FloatingQuantity(name, parent_), ImageColorArtist(name, uniquePrefix(), dimX, dimY, data), parent(parent_),
       showFullscreen(uniquePrefix() + "showFullscreen", false) {}
 
-size_t FloatingColorImageQuantity::nPix() { return dimX * dimY; }
+size_t ColorImageQuantity::nPix() { return dimX * dimY; }
 
-void FloatingColorImageQuantity::draw() {
+void ColorImageQuantity::draw() {
   if (!isEnabled()) return;
   ImageColorArtist::renderSource();
 }
 
-void FloatingColorImageQuantity::drawDelayed() {
+void ColorImageQuantity::drawDelayed() {
   if (!isEnabled()) return;
   if (getShowFullscreen()) {
     ImageColorArtist::showFullscreen();
@@ -29,7 +29,7 @@ void FloatingColorImageQuantity::drawDelayed() {
 }
 
 
-void FloatingColorImageQuantity::buildCustomUI() {
+void ColorImageQuantity::buildCustomUI() {
   ImGui::SameLine();
 
   // == Options popup
@@ -60,14 +60,14 @@ void FloatingColorImageQuantity::buildCustomUI() {
 }
 
 
-void FloatingColorImageQuantity::refresh() {
+void ColorImageQuantity::refresh() {
   ImageColorArtist::refresh();
   Quantity::refresh();
 }
 
-std::string FloatingColorImageQuantity::niceName() { return name + " (color image)"; }
+std::string ColorImageQuantity::niceName() { return name + " (color image)"; }
 
-FloatingColorImageQuantity* FloatingColorImageQuantity::setEnabled(bool newEnabled) {
+ColorImageQuantity* ColorImageQuantity::setEnabled(bool newEnabled) {
   if (newEnabled == isEnabled()) return this;
   if (newEnabled == true && getShowFullscreen()) {
     // if drawing fullscreen, disable anything else which was already drawing fullscreen
@@ -78,14 +78,14 @@ FloatingColorImageQuantity* FloatingColorImageQuantity::setEnabled(bool newEnabl
   return this;
 }
 
-void FloatingColorImageQuantity::disableFullscreenDrawing() {
+void ColorImageQuantity::disableFullscreenDrawing() {
   if (getShowFullscreen() && isEnabled() && parent.isEnabled()) {
     setEnabled(false);
   }
 }
 
 
-void FloatingColorImageQuantity::setShowFullscreen(bool newVal) {
+void ColorImageQuantity::setShowFullscreen(bool newVal) {
   if (newVal && isEnabled()) {
     // if drawing fullscreen, disable anything else which was already drawing fullscreen
     disableAllFullscreenArtists();
@@ -93,14 +93,14 @@ void FloatingColorImageQuantity::setShowFullscreen(bool newVal) {
   showFullscreen = newVal;
   requestRedraw();
 }
-bool FloatingColorImageQuantity::getShowFullscreen() { return showFullscreen.get(); }
+bool ColorImageQuantity::getShowFullscreen() { return showFullscreen.get(); }
 
 
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
 // structure.ipp.
-FloatingColorImageQuantity* createFloatingColorImageQuantity(Structure& parent, std::string name, size_t dimX,
-                                                             size_t dimY, const std::vector<glm::vec4>& data) {
-  return new FloatingColorImageQuantity(parent, name, dimX, dimY, data);
+ColorImageQuantity* createColorImageQuantity(Structure& parent, std::string name, size_t dimX, size_t dimY,
+                                                     const std::vector<glm::vec4>& data) {
+  return new ColorImageQuantity(parent, name, dimX, dimY, data);
 }
 
 

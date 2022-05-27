@@ -2,22 +2,22 @@
 
 #include "polyscope/polyscope.h"
 
-#include "polyscope/scalar_render_image.h"
+#include "polyscope/scalar_render_image_quantity.h"
 
 #include "imgui.h"
 
 namespace polyscope {
 
 
-ScalarRenderImage::ScalarRenderImage(Structure& parent_, std::string name, size_t dimX, size_t dimY,
+ScalarRenderImageQuantity::ScalarRenderImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                                      const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData,
                                      const std::vector<double>& scalarData_, DataType dataType_)
     : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData),
       ScalarQuantity(*this, scalarData_, dataType_) {}
 
-void ScalarRenderImage::draw() {}
+void ScalarRenderImageQuantity::draw() {}
 
-void ScalarRenderImage::drawDelayed() {
+void ScalarRenderImageQuantity::drawDelayed() {
   if (!isEnabled()) return;
 
   if (!program) prepare();
@@ -41,7 +41,7 @@ void ScalarRenderImage::drawDelayed() {
   program->draw();
 }
 
-void ScalarRenderImage::buildCustomUI() {
+void ScalarRenderImageQuantity::buildCustomUI() {
   ImGui::SameLine();
 
   // == Options popup
@@ -61,14 +61,14 @@ void ScalarRenderImage::buildCustomUI() {
 }
 
 
-void ScalarRenderImage::refresh() {
+void ScalarRenderImageQuantity::refresh() {
   program = nullptr;
   textureScalar = nullptr;
   RenderImageQuantityBase::refresh();
 }
 
 
-void ScalarRenderImage::prepare() {
+void ScalarRenderImageQuantity::prepare() {
   prepareGeometryBuffers();
 
   // push the color data to the buffer
@@ -95,9 +95,9 @@ void ScalarRenderImage::prepare() {
 }
 
 
-std::string ScalarRenderImage::niceName() { return name + " (scalar render image)"; }
+std::string ScalarRenderImageQuantity::niceName() { return name + " (scalar render image)"; }
 
-ScalarRenderImage* ScalarRenderImage::setEnabled(bool newEnabled) {
+ScalarRenderImageQuantity* ScalarRenderImageQuantity::setEnabled(bool newEnabled) {
   enabled = newEnabled;
   requestRedraw();
   return this;
@@ -106,12 +106,12 @@ ScalarRenderImage* ScalarRenderImage::setEnabled(bool newEnabled) {
 
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
 // structure.ipp.
-ScalarRenderImage* createScalarRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
+ScalarRenderImageQuantity* createScalarRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
                                            const std::vector<float>& depthData,
                                            const std::vector<glm::vec3>& normalData,
                                            const std::vector<double>& scalarData, DataType dataType) {
 
-  return new ScalarRenderImage(parent, name, dimX, dimY, depthData, normalData, scalarData, dataType);
+  return new ScalarRenderImageQuantity(parent, name, dimX, dimY, depthData, normalData, scalarData, dataType);
 }
 
 } // namespace polyscope

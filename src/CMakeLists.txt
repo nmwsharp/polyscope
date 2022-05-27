@@ -191,12 +191,12 @@ SET(SRCS
   # Floating quantities
   floating_quantity_structure.cpp
   floating_quantity.cpp
-  floating_scalar_image.cpp
-  floating_color_image.cpp
+  scalar_image_quantity.cpp
+  color_image_quantity.cpp
   render_image_quantity_base.cpp
-  depth_render_image.cpp
-  color_render_image.cpp
-  scalar_render_image.cpp
+  depth_render_image_quantity.cpp
+  color_render_image_quantity.cpp
+  scalar_render_image_quantity.cpp
   
   # Rendering utilities
   imgui_config.cpp
@@ -227,6 +227,8 @@ SET(HEADERS
   ${INCLUDE_ROOT}/affine_remapper.ipp
   ${INCLUDE_ROOT}/camera_parameters.h
   ${INCLUDE_ROOT}/color_management.h
+  ${INCLUDE_ROOT}/color_image_quantity.h
+  ${INCLUDE_ROOT}/color_render_image_quantity.h
   ${INCLUDE_ROOT}/colors.h
   ${INCLUDE_ROOT}/color_quantity.h
   ${INCLUDE_ROOT}/color_quantity.ipp
@@ -238,7 +240,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/curve_network_scalar_quantity.h
   ${INCLUDE_ROOT}/curve_network_vector_quantity.h
   ${INCLUDE_ROOT}/disjoint_sets.h
-  ${INCLUDE_ROOT}/depth_render_image.h
+  ${INCLUDE_ROOT}/depth_render_image_quantity.h
   ${INCLUDE_ROOT}/file_helpers.h
   ${INCLUDE_ROOT}/floating_quantity_structure.h
   ${INCLUDE_ROOT}/floating_quantity.h
@@ -249,6 +251,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/histogram.h
   ${INCLUDE_ROOT}/image_scalar_artist.h
   ${INCLUDE_ROOT}/image_scalar_artist.ipp
+  ${INCLUDE_ROOT}/image_quantity.h
   ${INCLUDE_ROOT}/imgui_config.h
   ${INCLUDE_ROOT}/implicit_surface.h
   ${INCLUDE_ROOT}/implicit_surface.ipp

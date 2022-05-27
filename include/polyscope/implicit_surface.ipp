@@ -182,18 +182,18 @@ renderImplicitSurfaceFromCurrentView(Func&& func, ImplicitRenderOpts opts) {
 // =======================================================
 
 template <class Func>
-DepthRenderImage* renderImplicitSurface(std::string name, Func&& func, ImplicitRenderOpts opts) {
+DepthRenderImageQuantity* renderImplicitSurface(std::string name, Func&& func, ImplicitRenderOpts opts) {
   return renderImplicitSurface(getGlobalFloatingQuantityStructure(), name, func, opts);
 }
 
 template <class Func>
-DepthRenderImage* renderImplicitSurfaceBatch(std::string name, Func&& func, ImplicitRenderOpts opts) {
+DepthRenderImageQuantity* renderImplicitSurfaceBatch(std::string name, Func&& func, ImplicitRenderOpts opts) {
   return renderImplicitSurfaceBatch(getGlobalFloatingQuantityStructure(), name, func, opts);
 }
 
 template <class Func, class S>
-DepthRenderImage* renderImplicitSurface(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                        ImplicitRenderOpts opts) {
+DepthRenderImageQuantity* renderImplicitSurface(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                ImplicitRenderOpts opts) {
 
   // Bootstrap on the batch version
   auto batchFunc = [&](std::vector<glm::vec3> inPos) {
@@ -209,8 +209,8 @@ DepthRenderImage* renderImplicitSurface(QuantityStructure<S>* parent, std::strin
 
 
 template <class Func, class S>
-DepthRenderImage* renderImplicitSurfaceBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                             ImplicitRenderOpts opts) {
+DepthRenderImageQuantity* renderImplicitSurfaceBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                     ImplicitRenderOpts opts) {
 
   // Call the function which does all the hard work
   size_t dimXsub, dimYsub;
@@ -232,21 +232,21 @@ DepthRenderImage* renderImplicitSurfaceBatch(QuantityStructure<S>* parent, std::
 
 
 template <class Func, class FuncColor>
-ColorRenderImage* renderImplicitSurfaceColor(std::string name, Func&& func, FuncColor&& funcColor,
-                                             ImplicitRenderOpts opts) {
+ColorRenderImageQuantity* renderImplicitSurfaceColor(std::string name, Func&& func, FuncColor&& funcColor,
+                                                     ImplicitRenderOpts opts) {
   return renderImplicitSurfaceColor(getGlobalFloatingQuantityStructure(), name, func, funcColor, opts);
 }
 
 template <class Func, class FuncColor>
-ColorRenderImage* renderImplicitSurfaceColorBatch(std::string name, Func&& func, FuncColor&& funcColor,
-                                                  ImplicitRenderOpts opts) {
+ColorRenderImageQuantity* renderImplicitSurfaceColorBatch(std::string name, Func&& func, FuncColor&& funcColor,
+                                                          ImplicitRenderOpts opts) {
   return renderImplicitSurfaceColorBatch(getGlobalFloatingQuantityStructure(), name, func, funcColor, opts);
 }
 
 
 template <class Func, class FuncColor, class S>
-ColorRenderImage* renderImplicitSurfaceColor(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                             FuncColor&& funcColor, ImplicitRenderOpts opts) {
+ColorRenderImageQuantity* renderImplicitSurfaceColor(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                     FuncColor&& funcColor, ImplicitRenderOpts opts) {
 
   // Bootstrap on the batch version
   auto batchFunc = [&](std::vector<glm::vec3> inPos) {
@@ -270,8 +270,8 @@ ColorRenderImage* renderImplicitSurfaceColor(QuantityStructure<S>* parent, std::
 
 
 template <class Func, class FuncColor, class S>
-ColorRenderImage* renderImplicitSurfaceColorBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                                  FuncColor&& funcColor, ImplicitRenderOpts opts) {
+ColorRenderImageQuantity* renderImplicitSurfaceColorBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                          FuncColor&& funcColor, ImplicitRenderOpts opts) {
 
   // Call the function which does all the hard work
   size_t dimXsub, dimYsub;
@@ -304,21 +304,22 @@ ColorRenderImage* renderImplicitSurfaceColorBatch(QuantityStructure<S>* parent, 
 // =======================================================
 //
 template <class Func, class FuncScalar>
-ScalarRenderImage* renderImplicitSurfaceScalar(std::string name, Func&& func, FuncScalar&& funcScalar,
-                                               ImplicitRenderOpts opts, DataType dataType) {
+ScalarRenderImageQuantity* renderImplicitSurfaceScalar(std::string name, Func&& func, FuncScalar&& funcScalar,
+                                                       ImplicitRenderOpts opts, DataType dataType) {
   return renderImplicitSurfaceScalar(getGlobalFloatingQuantityStructure(), name, func, funcScalar, opts, dataType);
 }
 
 template <class Func, class FuncScalar>
-ScalarRenderImage* renderImplicitSurfaceScalarBatch(std::string name, Func&& func, FuncScalar&& funcScalar,
-                                                    ImplicitRenderOpts opts, DataType dataType) {
+ScalarRenderImageQuantity* renderImplicitSurfaceScalarBatch(std::string name, Func&& func, FuncScalar&& funcScalar,
+                                                            ImplicitRenderOpts opts, DataType dataType) {
 
   return renderImplicitSurfaceScalarBatch(getGlobalFloatingQuantityStructure(), name, func, funcScalar, opts, dataType);
 }
 
 template <class Func, class FuncScalar, class S>
-ScalarRenderImage* renderImplicitSurfaceScalar(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                               FuncScalar&& funcScalar, ImplicitRenderOpts opts, DataType dataType) {
+ScalarRenderImageQuantity* renderImplicitSurfaceScalar(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                       FuncScalar&& funcScalar, ImplicitRenderOpts opts,
+                                                       DataType dataType) {
 
   // Bootstrap on the batch version
   auto batchFunc = [&](std::vector<glm::vec3> inPos) {
@@ -341,9 +342,9 @@ ScalarRenderImage* renderImplicitSurfaceScalar(QuantityStructure<S>* parent, std
 }
 
 template <class Func, class FuncScalar, class S>
-ScalarRenderImage* renderImplicitSurfaceScalarBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                                    FuncScalar&& funcScalar, ImplicitRenderOpts opts,
-                                                    DataType dataType) {
+ScalarRenderImageQuantity* renderImplicitSurfaceScalarBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                            FuncScalar&& funcScalar, ImplicitRenderOpts opts,
+                                                            DataType dataType) {
 
   // Call the function which does all the hard work
   size_t dimXsub, dimYsub;

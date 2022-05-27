@@ -12,9 +12,9 @@
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
 
-#include "polyscope/floating_color_image.h"
+#include "polyscope/color_image_quantity.h"
 #include "polyscope/floating_quantity.h"
-#include "polyscope/floating_scalar_image.h"
+#include "polyscope/scalar_image_quantity.h"
 
 #include <vector>
 
@@ -24,15 +24,10 @@ namespace polyscope {
 class FloatingQuantityStructure;
 
 // Forward declare quantity types
-class FloatingQuantity;
-class FloatingScalarImageQuantity;
-class FloatingColorImageQuantity;
+class Quantity;
+class ScalarImageQuantity;
+class ColorImageQuantity;
 
-
-// template <> // Specialize the quantity type
-// struct QuantityTypeHelper<FloatingQuantityStructure> {
-// typedef FloatingQuantity type;
-//};
 
 class FloatingQuantityStructure : public QuantityStructure<FloatingQuantityStructure> {
 public:
@@ -73,14 +68,14 @@ void removeAllFloatingQuantities();
 
 // globals to add/remove particular quantities
 template <class T>
-FloatingScalarImageQuantity* addFloatingScalarImage(std::string name, size_t dimX, size_t dimY, const T& values,
-                                                    DataType type = DataType::STANDARD);
+ScalarImageQuantity* addScalarImage(std::string name, size_t dimX, size_t dimY, const T& values,
+                                    DataType type = DataType::STANDARD);
 
 template <class T>
-FloatingColorImageQuantity* addFloatingColorImage(std::string name, size_t dimX, size_t dimY, const T& values_rgb);
+ColorImageQuantity* addColorImage(std::string name, size_t dimX, size_t dimY, const T& values_rgb);
 
 template <class T>
-FloatingColorImageQuantity* addFloatingColorAlphaImage(std::string name, size_t dimX, size_t dimY, const T& values_rgba);
+ColorImageQuantity* addColorAlphaImage(std::string name, size_t dimX, size_t dimY, const T& values_rgba);
 
 
 } // namespace polyscope

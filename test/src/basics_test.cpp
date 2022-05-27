@@ -1314,7 +1314,7 @@ TEST_F(PolyscopeTest, GroundPlaneTest) {
 
 // These also end up testing the image & render image functionality
 
-TEST_F(PolyscopeTest, ImplicitSurfaceRenderImageTest) {
+TEST_F(PolyscopeTest, ImplicitSurfaceRenderImageQuantityTest) {
 
   // sample sdf & color functions
   auto torusSDF = [](glm::vec3 p) {
@@ -1347,16 +1347,16 @@ TEST_F(PolyscopeTest, ImplicitSurfaceRenderImageTest) {
   opts.subsampleFactor = 16; // real small, don't want to use much compute
 
   // plain depth-only implicit surface
-  polyscope::DepthRenderImage* img = polyscope::renderImplicitSurface("torus sdf", torusSDF, opts);
+  polyscope::DepthRenderImageQuantity* img = polyscope::renderImplicitSurface("torus sdf", torusSDF, opts);
   polyscope::show(3);
 
   // colored implicit surface
-  polyscope::ColorRenderImage* imgColor =
+  polyscope::ColorRenderImageQuantity* imgColor =
       polyscope::renderImplicitSurfaceColor("torus sdf color", torusSDF, colorFunc, opts);
   polyscope::show(3);
 
   // scalar value implicit surface
-  polyscope::ScalarRenderImage* imgScalar =
+  polyscope::ScalarRenderImageQuantity* imgScalar =
       polyscope::renderImplicitSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, opts);
   polyscope::show(3);
 

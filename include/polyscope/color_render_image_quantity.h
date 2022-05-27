@@ -6,18 +6,19 @@
 
 namespace polyscope {
 
-class ColorRenderImage : public RenderImageQuantityBase {
+class ColorRenderImageQuantity : public RenderImageQuantityBase {
 
 public:
-  ColorRenderImage(Structure& parent_, std::string name, size_t dimX, size_t dimY, const std::vector<float>& depthData,
-                   const std::vector<glm::vec3>& normalData, const std::vector<glm::vec3>& colorData);
+  ColorRenderImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
+                           const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData,
+                           const std::vector<glm::vec3>& colorData);
 
   virtual void draw() override;
   virtual void drawDelayed() override;
   virtual void buildCustomUI() override;
 
   virtual void refresh() override;
-  virtual ColorRenderImage* setEnabled(bool newEnabled) override;
+  virtual ColorRenderImageQuantity* setEnabled(bool newEnabled) override;
 
   virtual std::string niceName() override;
 

@@ -2,21 +2,22 @@
 
 #include "polyscope/polyscope.h"
 
-#include "polyscope/depth_render_image.h"
+#include "polyscope/depth_render_image_quantity.h"
 
 #include "imgui.h"
 
 namespace polyscope {
 
 
-DepthRenderImage::DepthRenderImage(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                                   const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData)
+DepthRenderImageQuantity::DepthRenderImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
+                                                   const std::vector<float>& depthData,
+                                                   const std::vector<glm::vec3>& normalData)
     : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData),
       color(uniquePrefix() + "#color", getNextUniqueColor()) {}
 
-void DepthRenderImage::draw() {}
+void DepthRenderImageQuantity::draw() {}
 
-void DepthRenderImage::drawDelayed() {
+void DepthRenderImageQuantity::drawDelayed() {
   if (!isEnabled()) return;
 
   if (!program) prepare();
@@ -33,14 +34,14 @@ void DepthRenderImage::drawDelayed() {
 
   // make sure we have actual depth testing enabled
   render::engine->setDepthMode(DepthMode::LEqual);
-  //render::engine->applyTransparencySettings();
+  // render::engine->applyTransparencySettings();
   render::engine->setBlendMode(BlendMode::Over);
 
   // draw
   program->draw();
 }
 
-void DepthRenderImage::buildCustomUI() {
+void DepthRenderImageQuantity::buildCustomUI() {
   ImGui::SameLine();
 
   if (ImGui::ColorEdit3("color", &color.get()[0], ImGuiColorEditFlags_NoInputs)) {
@@ -61,13 +62,13 @@ void DepthRenderImage::buildCustomUI() {
 }
 
 
-void DepthRenderImage::refresh() {
+void DepthRenderImageQuantity::refresh() {
   program = nullptr;
   RenderImageQuantityBase::refresh();
 }
 
 
-void DepthRenderImage::prepare() {
+void DepthRenderImageQuantity::prepare() {
   prepareGeometryBuffers();
 
   // no extra data to push for this one
@@ -84,28 +85,28 @@ void DepthRenderImage::prepare() {
 }
 
 
-std::string DepthRenderImage::niceName() { return name + " (render image)"; }
+std::string DepthRenderImageQuantity::niceName() { return name + " (render image)"; }
 
-DepthRenderImage* DepthRenderImage::setEnabled(bool newEnabled) {
+DepthRenderImageQuantity* DepthRenderImageQuantity::setEnabled(bool newEnabled) {
   enabled = newEnabled;
   requestRedraw();
   return this;
 }
 
-DepthRenderImage* DepthRenderImage::setColor(glm::vec3 newVal) {
+DepthRenderImageQuantity* DepthRenderImageQuantity::setColor(glm::vec3 newVal) {
   color = newVal;
   polyscope::requestRedraw();
   return this;
 }
-glm::vec3 DepthRenderImage::getColor() { return color.get(); }
+glm::vec3 DepthRenderImageQuantity::getColor() { return color.get(); }
 
 
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
 // structure.ipp.
-DepthRenderImage* createDepthRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
-                                         const std::vector<float>& depthData,
-                                         const std::vector<glm::vec3>& normalData) {
-  return new DepthRenderImage(parent, name, dimX, dimY, depthData, normalData);
+DepthRenderImageQuantity* createDepthRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
+                                                 const std::vector<float>& depthData,
+                                                 const std::vector<glm::vec3>& normalData) {
+  return new DepthRenderImageQuantity(parent, name, dimX, dimY, depthData, normalData);
 }
 
 } // namespace polyscope

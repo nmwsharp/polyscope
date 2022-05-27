@@ -2,21 +2,22 @@
 
 #include "polyscope/polyscope.h"
 
-#include "polyscope/color_render_image.h"
+#include "polyscope/color_render_image_quantity.h"
 
 #include "imgui.h"
 
 namespace polyscope {
 
 
-ColorRenderImage::ColorRenderImage(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                                   const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData,
-                                   const std::vector<glm::vec3>& colorData_)
+ColorRenderImageQuantity::ColorRenderImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
+                                                   const std::vector<float>& depthData,
+                                                   const std::vector<glm::vec3>& normalData,
+                                                   const std::vector<glm::vec3>& colorData_)
     : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData), colorData(colorData_) {}
 
-void ColorRenderImage::draw() {}
+void ColorRenderImageQuantity::draw() {}
 
-void ColorRenderImage::drawDelayed() {
+void ColorRenderImageQuantity::drawDelayed() {
   if (!isEnabled()) return;
 
   if (!program) prepare();
@@ -32,14 +33,14 @@ void ColorRenderImage::drawDelayed() {
 
   // make sure we have actual depth testing enabled
   render::engine->setDepthMode(DepthMode::LEqual);
-  //render::engine->applyTransparencySettings();
+  // render::engine->applyTransparencySettings();
   render::engine->setBlendMode(BlendMode::Over);
 
   // draw
   program->draw();
 }
 
-void ColorRenderImage::buildCustomUI() {
+void ColorRenderImageQuantity::buildCustomUI() {
   ImGui::SameLine();
 
   // == Options popup
@@ -55,14 +56,14 @@ void ColorRenderImage::buildCustomUI() {
 }
 
 
-void ColorRenderImage::refresh() {
+void ColorRenderImageQuantity::refresh() {
   program = nullptr;
   textureColor = nullptr;
   RenderImageQuantityBase::refresh();
 }
 
 
-void ColorRenderImage::prepare() {
+void ColorRenderImageQuantity::prepare() {
   prepareGeometryBuffers();
 
   // push the color data to the buffer
@@ -84,9 +85,9 @@ void ColorRenderImage::prepare() {
 }
 
 
-std::string ColorRenderImage::niceName() { return name + " (color render image)"; }
+std::string ColorRenderImageQuantity::niceName() { return name + " (color render image)"; }
 
-ColorRenderImage* ColorRenderImage::setEnabled(bool newEnabled) {
+ColorRenderImageQuantity* ColorRenderImageQuantity::setEnabled(bool newEnabled) {
   enabled = newEnabled;
   requestRedraw();
   return this;
@@ -95,10 +96,11 @@ ColorRenderImage* ColorRenderImage::setEnabled(bool newEnabled) {
 
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
 // structure.ipp.
-ColorRenderImage* createColorRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
-                                         const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData,
-                                         const std::vector<glm::vec3>& colorData) {
-  return new ColorRenderImage(parent, name, dimX, dimY, depthData, normalData, colorData);
+ColorRenderImageQuantity* createColorRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
+                                                 const std::vector<float>& depthData,
+                                                 const std::vector<glm::vec3>& normalData,
+                                                 const std::vector<glm::vec3>& colorData) {
+  return new ColorRenderImageQuantity(parent, name, dimX, dimY, depthData, normalData, colorData);
 }
 
 } // namespace polyscope

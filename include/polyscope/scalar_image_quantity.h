@@ -9,20 +9,20 @@
 
 namespace polyscope {
 
-class FloatingScalarImageQuantity : public FloatingQuantity,
-                                    public ImageScalarArtist<FloatingScalarImageQuantity>,
-                                    public FullscreenArtist {
+class ScalarImageQuantity : public FloatingQuantity,
+                            public ImageScalarArtist<ScalarImageQuantity>,
+                            public FullscreenArtist {
 
 public:
-  FloatingScalarImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                              const std::vector<double>& data, DataType dataType);
+  ScalarImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY, const std::vector<double>& data,
+                      DataType dataType);
 
   virtual void draw() override;
   virtual void drawDelayed() override;
   virtual void buildCustomUI() override;
 
   virtual void refresh() override;
-  virtual FloatingScalarImageQuantity* setEnabled(bool newEnabled) override;
+  virtual ScalarImageQuantity* setEnabled(bool newEnabled) override;
 
   virtual std::string niceName() override;
 

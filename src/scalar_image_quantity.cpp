@@ -2,33 +2,33 @@
 
 #include "polyscope/polyscope.h"
 
-#include "polyscope/floating_scalar_image.h"
+#include "polyscope/scalar_image_quantity.h"
 
 #include "imgui.h"
 
 namespace polyscope {
 
 
-FloatingScalarImageQuantity::FloatingScalarImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                                                         const std::vector<double>& data, DataType dataType)
+ScalarImageQuantity::ScalarImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
+                                         const std::vector<double>& data, DataType dataType)
     : FloatingQuantity(name, parent_), ImageScalarArtist(*this, name, dimX, dimY, data, dataType),
       showFullscreen(uniquePrefix() + "showFullscreen", false) {}
 
-size_t FloatingScalarImageQuantity::nPix() { return dimX * dimY; }
+size_t ScalarImageQuantity::nPix() { return dimX * dimY; }
 
-void FloatingScalarImageQuantity::draw() {
+void ScalarImageQuantity::draw() {
   if (!isEnabled()) return;
   ImageScalarArtist::renderSource();
 }
 
-void FloatingScalarImageQuantity::drawDelayed() {
+void ScalarImageQuantity::drawDelayed() {
   if (!isEnabled()) return;
   if (getShowFullscreen()) {
     ImageScalarArtist::showFullscreen();
   }
 }
 
-void FloatingScalarImageQuantity::buildCustomUI() {
+void ScalarImageQuantity::buildCustomUI() {
   ImGui::SameLine();
 
   // == Options popup
@@ -54,7 +54,6 @@ void FloatingScalarImageQuantity::buildCustomUI() {
       requestRedraw();
     }
     ImGui::PopItemWidth();
-
   }
 
   if (isEnabled() && parent.isEnabled()) {
@@ -65,14 +64,14 @@ void FloatingScalarImageQuantity::buildCustomUI() {
 }
 
 
-void FloatingScalarImageQuantity::refresh() {
+void ScalarImageQuantity::refresh() {
   ImageScalarArtist::refresh();
   Quantity::refresh();
 }
 
-std::string FloatingScalarImageQuantity::niceName() { return name + " (scalar image)"; }
+std::string ScalarImageQuantity::niceName() { return name + " (scalar image)"; }
 
-FloatingScalarImageQuantity* FloatingScalarImageQuantity::setEnabled(bool newEnabled) {
+ScalarImageQuantity* ScalarImageQuantity::setEnabled(bool newEnabled) {
   if (newEnabled == isEnabled()) return this;
   if (newEnabled == true && getShowFullscreen()) {
     // if drawing fullscreen, disable anything else which was already drawing fullscreen
@@ -83,14 +82,14 @@ FloatingScalarImageQuantity* FloatingScalarImageQuantity::setEnabled(bool newEna
   return this;
 }
 
-void FloatingScalarImageQuantity::disableFullscreenDrawing() {
+void ScalarImageQuantity::disableFullscreenDrawing() {
   if (getShowFullscreen() && isEnabled() && parent.isEnabled()) {
     setEnabled(false);
   }
 }
 
 
-void FloatingScalarImageQuantity::setShowFullscreen(bool newVal) {
+void ScalarImageQuantity::setShowFullscreen(bool newVal) {
   if (newVal && isEnabled()) {
     // if drawing fullscreen, disable anything else which was already drawing fullscreen
     disableAllFullscreenArtists();
@@ -98,14 +97,13 @@ void FloatingScalarImageQuantity::setShowFullscreen(bool newVal) {
   showFullscreen = newVal;
   requestRedraw();
 }
-bool FloatingScalarImageQuantity::getShowFullscreen() { return showFullscreen.get(); }
+bool ScalarImageQuantity::getShowFullscreen() { return showFullscreen.get(); }
 
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
 // structure.ipp.
-FloatingScalarImageQuantity* createFloatingScalarImageQuantity(Structure& parent, std::string name, size_t dimX,
-                                                               size_t dimY, const std::vector<double>& data,
-                                                               DataType dataType) {
-  return new FloatingScalarImageQuantity(parent, name, dimX, dimY, data, dataType);
+ScalarImageQuantity* createScalarImageQuantity(Structure& parent, std::string name, size_t dimX, size_t dimY,
+                                               const std::vector<double>& data, DataType dataType) {
+  return new ScalarImageQuantity(parent, name, dimX, dimY, data, dataType);
 }
 
 } // namespace polyscope

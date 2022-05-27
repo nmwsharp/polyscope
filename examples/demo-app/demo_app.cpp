@@ -490,18 +490,18 @@ void loadFloatingImageData(polyscope::PointCloud* targetCloud = nullptr) {
   }
 
   if (targetCloud == nullptr) {
-    polyscope::addFloatingColorImage("test color image", width, height, imageColor);
-    polyscope::addFloatingScalarImage("test scalar image", width, height, imageScalar);
+    polyscope::addColorImage("test color image", width, height, imageColor);
+    polyscope::addScalarImage("test scalar image", width, height, imageScalar);
 
     if (hasAlpha) {
-      polyscope::addFloatingColorAlphaImage("test color alpha image", width, height, imageColorAlpha);
+      polyscope::addColorAlphaImage("test color alpha image", width, height, imageColorAlpha);
     }
   } else {
-    targetCloud->addFloatingColorImage("test color image", width, height, imageColor);
-    targetCloud->addFloatingScalarImage("test scalar image", width, height, imageScalar);
+    targetCloud->addColorImage("test color image", width, height, imageColor);
+    targetCloud->addScalarImage("test scalar image", width, height, imageScalar);
 
     if (hasAlpha) {
-      targetCloud->addFloatingColorAlphaImage("test color alpha image", width, height, imageColorAlpha);
+      targetCloud->addColorAlphaImage("test color alpha image", width, height, imageColorAlpha);
     }
   }
 }
@@ -552,13 +552,13 @@ void addImplicitRendersFromCurrentView() {
   polyscope::ImplicitRenderOpts opts;
   // opts.mode = polyscope::ImplicitRenderMode::FixedStep;
   opts.mode = polyscope::ImplicitRenderMode::SphereMarch;
-  opts.subsampleFactor = 4;
+  opts.subsampleFactor = 2;
 
-  polyscope::DepthRenderImage* img = polyscope::renderImplicitSurface("torus sdf", torusSDF, opts);
-  polyscope::DepthRenderImage* img2 = polyscope::renderImplicitSurface("box sdf", boxFrameSDF, opts);
-  polyscope::ColorRenderImage* img2Color =
+  polyscope::DepthRenderImageQuantity* img = polyscope::renderImplicitSurface("torus sdf", torusSDF, opts);
+  polyscope::DepthRenderImageQuantity* img2 = polyscope::renderImplicitSurface("box sdf", boxFrameSDF, opts);
+  polyscope::ColorRenderImageQuantity* img2Color =
       polyscope::renderImplicitSurfaceColor("box sdf color", boxFrameSDF, colorFunc, opts);
-  polyscope::ScalarRenderImage* imgScalar =
+  polyscope::ScalarRenderImageQuantity* imgScalar =
       polyscope::renderImplicitSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, opts);
 }
 

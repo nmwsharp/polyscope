@@ -5,9 +5,9 @@
 
 #include "polyscope/floating_quantity.h"
 
-#include "polyscope/color_render_image.h"
-#include "polyscope/depth_render_image.h"
-#include "polyscope/scalar_render_image.h"
+#include "polyscope/color_render_image_quantity.h"
+#include "polyscope/depth_render_image_quantity.h"
+#include "polyscope/scalar_render_image_quantity.h"
 #include "polyscope/scaled_value.h"
 #include "polyscope/structure.h"
 
@@ -43,16 +43,17 @@ struct ImplicitRenderOpts {
 // distance to the surface (or technically, an upper bound on that distance). Alternately, ImplicitRenderOpts::FixedStep
 // handles more general implicit functions. See the options struct for other options.
 template <class Func, class S>
-DepthRenderImage* renderImplicitSurface(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                        ImplicitRenderOpts opts = ImplicitRenderOpts());
+DepthRenderImageQuantity* renderImplicitSurface(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                ImplicitRenderOpts opts = ImplicitRenderOpts());
 template <class Func>
-DepthRenderImage* renderImplicitSurface(std::string name, Func&& func, ImplicitRenderOpts opts = ImplicitRenderOpts());
+DepthRenderImageQuantity* renderImplicitSurface(std::string name, Func&& func,
+                                                ImplicitRenderOpts opts = ImplicitRenderOpts());
 template <class Func, class S>
-DepthRenderImage* renderImplicitSurfaceBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                             ImplicitRenderOpts opts = ImplicitRenderOpts());
+DepthRenderImageQuantity* renderImplicitSurfaceBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                     ImplicitRenderOpts opts = ImplicitRenderOpts());
 template <class Func>
-DepthRenderImage* renderImplicitSurfaceBatch(std::string name, Func&& func,
-                                             ImplicitRenderOpts opts = ImplicitRenderOpts());
+DepthRenderImageQuantity* renderImplicitSurfaceBatch(std::string name, Func&& func,
+                                                     ImplicitRenderOpts opts = ImplicitRenderOpts());
 
 // =======================================================
 // === Colored surface render functions
@@ -61,19 +62,20 @@ DepthRenderImage* renderImplicitSurfaceBatch(std::string name, Func&& func,
 // Like the implicit surface renderers above, but additionally take a color
 
 template <class Func, class FuncColor, class S>
-ColorRenderImage* renderImplicitSurfaceColor(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                             FuncColor&& funcColor, ImplicitRenderOpts opts = ImplicitRenderOpts());
+ColorRenderImageQuantity* renderImplicitSurfaceColor(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                     FuncColor&& funcColor,
+                                                     ImplicitRenderOpts opts = ImplicitRenderOpts());
 template <class Func, class FuncColor>
-ColorRenderImage* renderImplicitSurfaceColor(std::string name, Func&& func, FuncColor&& funcColor,
-                                             ImplicitRenderOpts opts = ImplicitRenderOpts());
+ColorRenderImageQuantity* renderImplicitSurfaceColor(std::string name, Func&& func, FuncColor&& funcColor,
+                                                     ImplicitRenderOpts opts = ImplicitRenderOpts());
 
 template <class Func, class FuncColor, class S>
-ColorRenderImage* renderImplicitSurfaceColorBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                                  FuncColor&& funcColor,
-                                                  ImplicitRenderOpts opts = ImplicitRenderOpts());
+ColorRenderImageQuantity* renderImplicitSurfaceColorBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                          FuncColor&& funcColor,
+                                                          ImplicitRenderOpts opts = ImplicitRenderOpts());
 template <class Func, class FuncColor>
-ColorRenderImage* renderImplicitSurfaceColorBatch(std::string name, Func&& func, FuncColor&& funcColor,
-                                                  ImplicitRenderOpts opts = ImplicitRenderOpts());
+ColorRenderImageQuantity* renderImplicitSurfaceColorBatch(std::string name, Func&& func, FuncColor&& funcColor,
+                                                          ImplicitRenderOpts opts = ImplicitRenderOpts());
 
 // =======================================================
 // === Scalar surface render functions
@@ -82,24 +84,24 @@ ColorRenderImage* renderImplicitSurfaceColorBatch(std::string name, Func&& func,
 // Like the implicit surface renderers above, but additionally take a scalar and colormap it, etc
 
 template <class Func, class FuncScalar, class S>
-ScalarRenderImage* renderImplicitSurfaceScalar(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                               FuncScalar&& funcScalar, ImplicitRenderOpts opts = ImplicitRenderOpts(),
-                                               DataType dataType = DataType::STANDARD);
+ScalarRenderImageQuantity*
+renderImplicitSurfaceScalar(QuantityStructure<S>* parent, std::string name, Func&& func, FuncScalar&& funcScalar,
+                            ImplicitRenderOpts opts = ImplicitRenderOpts(), DataType dataType = DataType::STANDARD);
 template <class Func, class FuncScalar>
-ScalarRenderImage* renderImplicitSurfaceScalar(std::string name, Func&& func, FuncScalar&& funcScalar,
-                                               ImplicitRenderOpts opts = ImplicitRenderOpts(),
-                                               DataType dataType = DataType::STANDARD);
+ScalarRenderImageQuantity* renderImplicitSurfaceScalar(std::string name, Func&& func, FuncScalar&& funcScalar,
+                                                       ImplicitRenderOpts opts = ImplicitRenderOpts(),
+                                                       DataType dataType = DataType::STANDARD);
 
 template <class Func, class FuncScalar, class S>
-ScalarRenderImage* renderImplicitSurfaceScalarBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                                    FuncScalar&& funcScalar,
-                                                    ImplicitRenderOpts opts = ImplicitRenderOpts(),
-                                                    DataType dataType = DataType::STANDARD);
+ScalarRenderImageQuantity* renderImplicitSurfaceScalarBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                            FuncScalar&& funcScalar,
+                                                            ImplicitRenderOpts opts = ImplicitRenderOpts(),
+                                                            DataType dataType = DataType::STANDARD);
 
 template <class Func, class FuncScalar>
-ScalarRenderImage* renderImplicitSurfaceScalarBatch(std::string name, Func&& func, FuncScalar&& funcScalar,
-                                                    ImplicitRenderOpts opts = ImplicitRenderOpts(),
-                                                    DataType dataType = DataType::STANDARD);
+ScalarRenderImageQuantity* renderImplicitSurfaceScalarBatch(std::string name, Func&& func, FuncScalar&& funcScalar,
+                                                            ImplicitRenderOpts opts = ImplicitRenderOpts(),
+                                                            DataType dataType = DataType::STANDARD);
 
 
 } // namespace polyscope
