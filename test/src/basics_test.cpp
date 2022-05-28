@@ -1327,6 +1327,52 @@ TEST_F(PolyscopeTest, FloatingImageTest) {
 
   // make sure removing works
   polyscope::removeFloatingQuantity("im color", true);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, FloatingRenderImageTest) {
+
+
+  size_t dimX = 300;
+  size_t dimY = 200;
+
+  std::vector<float> depthVals(dimX * dimY, 0.44);
+  std::vector<std::array<float, 3>> normalVals(dimX * dimY, std::array<float, 3>{0.44, 0.55, 0.66});
+  std::vector<std::array<float, 3>> colorVals(dimX * dimY, std::array<float, 3>{0.44, 0.55, 0.66});
+  std::vector<float> scalarVals(dimX * dimY, 0.44);
+
+  { // DepthRenderImageQuantity
+    polyscope::DepthRenderImageQuantity* im =
+        polyscope::addDepthRenderImageQuantity("render im depth", dimX, dimY, depthVals, normalVals);
+    polyscope::show(3);
+  }
+
+  { // ColorImageQuantity
+    polyscope::ColorRenderImageQuantity* im =
+        polyscope::addColorRenderImageQuantity("render im depth", dimX, dimY, depthVals, normalVals, colorVals);
+    polyscope::show(3);
+  }
+
+  { // ScalarRenderImageQuantity
+    polyscope::ScalarRenderImageQuantity* im =
+        polyscope::addScalarRenderImageQuantity("render im scalar", dimX, dimY, depthVals, normalVals, scalarVals);
+    polyscope::show(3);
+  }
+
+  // make sure it doesn't blow up with transparancy
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
+
+  // make sure removing works
+  polyscope::removeFloatingQuantity("render im depth", true);
+  polyscope::show(3);
 
   polyscope::removeAllStructures();
 }

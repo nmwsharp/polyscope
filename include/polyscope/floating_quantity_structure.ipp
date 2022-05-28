@@ -26,17 +26,18 @@ ColorImageQuantity* addColorAlphaImageQuantity(std::string name, size_t dimX, si
 
 
 template <class T1, class T2>
-DepthRenderImageQuantity* addDepthRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData) {
+DepthRenderImageQuantity* addDepthRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData,
+                                                      const T2& normalData) {
 
   FloatingQuantityStructure* q = getGlobalFloatingQuantityStructure();
-  return q->addDepthRenderImageQuantity(name, dimX, dimY, depthData);
+  return q->addDepthRenderImageQuantity(name, dimX, dimY, depthData, normalData);
 }
 
 template <class T1, class T2, class T3>
 ColorRenderImageQuantity* addColorRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData,
-                                                      const T2& normalData) {
+                                                      const T2& normalData, const T3& colorData) {
   FloatingQuantityStructure* q = getGlobalFloatingQuantityStructure();
-  return q->addColorRenderImageQuantity(name, dimX, dimY, depthData, normalData);
+  return q->addColorRenderImageQuantity(name, dimX, dimY, depthData, normalData, colorData);
 }
 
 
