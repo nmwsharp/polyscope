@@ -5,6 +5,7 @@ namespace polyscope {
 namespace internal {
 
 bool pointCloudEfficiencyWarningReported = false;
+FloatingQuantityStructure* globalFloatingQuantityStructure = nullptr;
 
 } // namespace internal
 } // namespace polyscope

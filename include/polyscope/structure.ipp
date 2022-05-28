@@ -208,17 +208,17 @@ void QuantityStructure<S>::buildStructureOptionsUI() {
 
 template <typename S>
 template <class T>
-ScalarImageQuantity* QuantityStructure<S>::addScalarImage(std::string name, size_t dimX, size_t dimY, const T& values,
-                                                          DataType type) {
+ScalarImageQuantity* QuantityStructure<S>::addScalarImageQuantity(std::string name, size_t dimX, size_t dimY,
+                                                                  const T& values, DataType type) {
   validateSize(values, dimX * dimY, "floating scalar image " + name);
-  return this->addScalarImageImpl(name, dimX, dimY, standardizeArray<double, T>(values), type);
+  return this->addScalarImageQuantityImpl(name, dimX, dimY, standardizeArray<double, T>(values), type);
 }
 
 
 template <typename S>
 template <class T>
-ColorImageQuantity* QuantityStructure<S>::addColorImage(std::string name, size_t dimX, size_t dimY,
-                                                        const T& values_rgb) {
+ColorImageQuantity* QuantityStructure<S>::addColorImageQuantity(std::string name, size_t dimX, size_t dimY,
+                                                                const T& values_rgb) {
   validateSize(values_rgb, dimX * dimY, "floating color image " + name);
 
   // standardize and pad out the alpha component
@@ -227,26 +227,26 @@ ColorImageQuantity* QuantityStructure<S>::addColorImage(std::string name, size_t
     v.a = 1.;
   }
 
-  return this->addColorImageImpl(name, dimX, dimY, standardVals);
+  return this->addColorImageQuantityImpl(name, dimX, dimY, standardVals);
 }
 
 
 template <typename S>
 template <class T>
-ColorImageQuantity* QuantityStructure<S>::addColorAlphaImage(std::string name, size_t dimX, size_t dimY,
-                                                             const T& values_rgba) {
+ColorImageQuantity* QuantityStructure<S>::addColorAlphaImageQuantity(std::string name, size_t dimX, size_t dimY,
+                                                                     const T& values_rgba) {
   validateSize(values_rgba, dimX * dimY, "floating color alpha image " + name);
 
   // standardize
   std::vector<glm::vec4> standardVals(standardizeVectorArray<glm::vec4, 4>(values_rgba));
 
-  return this->addColorImageImpl(name, dimX, dimY, standardVals);
+  return this->addColorImageQuantityImpl(name, dimX, dimY, standardVals);
 }
 
 template <typename S>
 template <class T1, class T2>
-DepthRenderImageQuantity* QuantityStructure<S>::addDepthRenderImage(std::string name, size_t dimX, size_t dimY,
-                                                                    const T1& depthData, const T2& normalData) {
+DepthRenderImageQuantity* QuantityStructure<S>::addDepthRenderImageQuantity(std::string name, size_t dimX, size_t dimY,
+                                                                            const T1& depthData, const T2& normalData) {
 
   validateSize(depthData, dimX * dimY, "depth render image depth data " + name);
   validateSize(normalData, dimX * dimY, "depth render image normal data " + name);
@@ -255,14 +255,14 @@ DepthRenderImageQuantity* QuantityStructure<S>::addDepthRenderImage(std::string 
   std::vector<float> standardDepth(standardizeArray<float>(depthData));
   std::vector<glm::vec3> standardNormal(standardizeVectorArray<glm::vec3, 3>(normalData));
 
-  return this->addDepthRenderImageImpl(name, dimX, dimY, standardDepth, standardNormal);
+  return this->addDepthRenderImageQuantityImpl(name, dimX, dimY, standardDepth, standardNormal);
 }
 
 template <typename S>
 template <class T1, class T2, class T3>
-ColorRenderImageQuantity* QuantityStructure<S>::addColorRenderImage(std::string name, size_t dimX, size_t dimY,
-                                                                    const T1& depthData, const T2& normalData,
-                                                                    const T3& colorData) {
+ColorRenderImageQuantity* QuantityStructure<S>::addColorRenderImageQuantity(std::string name, size_t dimX, size_t dimY,
+                                                                            const T1& depthData, const T2& normalData,
+                                                                            const T3& colorData) {
 
   validateSize(depthData, dimX * dimY, "depth render image depth data " + name);
   validateSize(normalData, dimX * dimY, "depth render image normal data " + name);
@@ -273,14 +273,14 @@ ColorRenderImageQuantity* QuantityStructure<S>::addColorRenderImage(std::string 
   std::vector<glm::vec3> standardNormal(standardizeVectorArray<glm::vec3, 3>(normalData));
   std::vector<glm::vec3> standardColor(standardizeVectorArray<glm::vec3, 3>(colorData));
 
-  return this->addColorRenderImageImpl(name, dimX, dimY, standardDepth, standardNormal, standardColor);
+  return this->addColorRenderImageQuantityImpl(name, dimX, dimY, standardDepth, standardNormal, standardColor);
 }
 
 template <typename S>
 template <class T1, class T2, class T3>
-ScalarRenderImageQuantity* QuantityStructure<S>::addScalarRenderImage(std::string name, size_t dimX, size_t dimY,
-                                                                      const T1& depthData, const T2& normalData,
-                                                                      const T3& scalarData, DataType type) {
+ScalarRenderImageQuantity*
+QuantityStructure<S>::addScalarRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData,
+                                                   const T2& normalData, const T3& scalarData, DataType type) {
 
   validateSize(depthData, dimX * dimY, "depth render image depth data " + name);
   validateSize(normalData, dimX * dimY, "depth render image normal data " + name);
@@ -291,7 +291,7 @@ ScalarRenderImageQuantity* QuantityStructure<S>::addScalarRenderImage(std::strin
   std::vector<glm::vec3> standardNormal(standardizeVectorArray<glm::vec3, 3>(normalData));
   std::vector<double> standardScalar(standardizeArray<double>(scalarData));
 
-  return this->addScalarRenderImageImpl(name, dimX, dimY, standardDepth, standardNormal, standardScalar, type);
+  return this->addScalarRenderImageQuantityImpl(name, dimX, dimY, standardDepth, standardNormal, standardScalar, type);
 }
 
 // === Floating Quantity Impls ===
@@ -319,46 +319,45 @@ ScalarRenderImageQuantity* createScalarRenderImage(Structure& parent, std::strin
                                                    const std::vector<double>& scalarData, DataType type);
 
 template <typename S>
-ScalarImageQuantity* QuantityStructure<S>::addScalarImageImpl(std::string name, size_t dimX, size_t dimY,
-                                                              const std::vector<double>& values, DataType type) {
+ScalarImageQuantity* QuantityStructure<S>::addScalarImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
+                                                                      const std::vector<double>& values,
+                                                                      DataType type) {
   ScalarImageQuantity* q = createScalarImageQuantity(*this, name, dimX, dimY, values, type);
   addQuantity(q);
   return q;
 }
 
 template <typename S>
-ColorImageQuantity* QuantityStructure<S>::addColorImageImpl(std::string name, size_t dimX, size_t dimY,
-                                                            const std::vector<glm::vec4>& values) {
+ColorImageQuantity* QuantityStructure<S>::addColorImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
+                                                                    const std::vector<glm::vec4>& values) {
   ColorImageQuantity* q = createColorImageQuantity(*this, name, dimX, dimY, values);
   addQuantity(q);
   return q;
 }
 
 template <typename S>
-DepthRenderImageQuantity* QuantityStructure<S>::addDepthRenderImageImpl(std::string name, size_t dimX, size_t dimY,
-                                                                        const std::vector<float>& depthData,
-                                                                        const std::vector<glm::vec3>& normalData) {
+DepthRenderImageQuantity*
+QuantityStructure<S>::addDepthRenderImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
+                                                      const std::vector<float>& depthData,
+                                                      const std::vector<glm::vec3>& normalData) {
   DepthRenderImageQuantity* q = createDepthRenderImage(*this, name, dimX, dimY, depthData, normalData);
   addQuantity(q);
   return q;
 }
 
 template <typename S>
-ColorRenderImageQuantity* QuantityStructure<S>::addColorRenderImageImpl(std::string name, size_t dimX, size_t dimY,
-                                                                        const std::vector<float>& depthData,
-                                                                        const std::vector<glm::vec3>& normalData,
-                                                                        const std::vector<glm::vec3>& colorData) {
+ColorRenderImageQuantity* QuantityStructure<S>::addColorRenderImageQuantityImpl(
+    std::string name, size_t dimX, size_t dimY, const std::vector<float>& depthData,
+    const std::vector<glm::vec3>& normalData, const std::vector<glm::vec3>& colorData) {
   ColorRenderImageQuantity* q = createColorRenderImage(*this, name, dimX, dimY, depthData, normalData, colorData);
   addQuantity(q);
   return q;
 }
 
 template <typename S>
-ScalarRenderImageQuantity* QuantityStructure<S>::addScalarRenderImageImpl(std::string name, size_t dimX, size_t dimY,
-                                                                          const std::vector<float>& depthData,
-                                                                          const std::vector<glm::vec3>& normalData,
-                                                                          const std::vector<double>& scalarData,
-                                                                          DataType type) {
+ScalarRenderImageQuantity* QuantityStructure<S>::addScalarRenderImageQuantityImpl(
+    std::string name, size_t dimX, size_t dimY, const std::vector<float>& depthData,
+    const std::vector<glm::vec3>& normalData, const std::vector<double>& scalarData, DataType type) {
   ScalarRenderImageQuantity* q =
       createScalarRenderImage(*this, name, dimX, dimY, depthData, normalData, scalarData, type);
   addQuantity(q);

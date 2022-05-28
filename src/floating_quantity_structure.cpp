@@ -27,7 +27,7 @@ void FloatingQuantityStructure::buildCustomUI() {}
 void FloatingQuantityStructure::buildCustomOptionsUI() {}
 
 void FloatingQuantityStructure::draw() {
-  if(!isEnabled()) return;
+  if (!isEnabled()) return;
 
   for (auto& qp : quantities) {
     qp.second->draw();
@@ -38,7 +38,7 @@ void FloatingQuantityStructure::draw() {
 }
 
 void FloatingQuantityStructure::drawDelayed() {
-  if(!isEnabled()) return;
+  if (!isEnabled()) return;
 
   for (auto& qp : quantities) {
     qp.second->drawDelayed();
@@ -83,42 +83,41 @@ void FloatingQuantityStructure::updateObjectSpaceBounds() {
 std::string FloatingQuantityStructure::typeName() { return structureTypeName; }
 
 FloatingQuantityStructure* getGlobalFloatingQuantityStructure() {
-  if (!globalFloatingQuantityStructure) {
-    globalFloatingQuantityStructure = new FloatingQuantityStructure("global");
-    bool success = registerStructure(globalFloatingQuantityStructure);
+  if (!internal::globalFloatingQuantityStructure) {
+    internal::globalFloatingQuantityStructure = new FloatingQuantityStructure("global");
+    bool success = registerStructure(internal::globalFloatingQuantityStructure);
     if (!success) {
-      safeDelete(globalFloatingQuantityStructure);
+      safeDelete(internal::globalFloatingQuantityStructure);
     }
   }
-  return globalFloatingQuantityStructure;
+  return internal::globalFloatingQuantityStructure;
 }
 
 
 void removeFloatingQuantityStructureIfEmpty() {
-  if (globalFloatingQuantityStructure && globalFloatingQuantityStructure->quantities.empty()) {
-    globalFloatingQuantityStructure->remove();
-    globalFloatingQuantityStructure = nullptr;
+  if (internal::globalFloatingQuantityStructure && internal::globalFloatingQuantityStructure->quantities.empty()) {
+    internal::globalFloatingQuantityStructure->remove();
+    internal::globalFloatingQuantityStructure = nullptr;
   }
 }
 
 void removeFloatingQuantity(std::string name, bool errorIfAbsent) {
-  if (!globalFloatingQuantityStructure) {
+  if (!internal::globalFloatingQuantityStructure) {
     if (errorIfAbsent) {
       error("No floating quantity named " + name + " added.");
     }
     return;
   }
 
-  globalFloatingQuantityStructure->removeQuantity(name, errorIfAbsent);
+  internal::globalFloatingQuantityStructure->removeQuantity(name, errorIfAbsent);
 }
 
 void removeAllFloatingQuantities() {
-  if (!globalFloatingQuantityStructure) return;
-  globalFloatingQuantityStructure->removeAllQuantities();
+  if (!internal::globalFloatingQuantityStructure) return;
+  internal::globalFloatingQuantityStructure->removeAllQuantities();
 }
 
 // Quantity default methods
-FloatingQuantity::FloatingQuantity(std::string name_, Structure& parent_)
-    : Quantity(name_, parent_) {}
+FloatingQuantity::FloatingQuantity(std::string name_, Structure& parent_) : Quantity(name_, parent_) {}
 
 } // namespace polyscope

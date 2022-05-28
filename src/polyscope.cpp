@@ -1021,6 +1021,9 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
 
   // Structure exists, remove it
   Structure* s = sMap[name];
+  if (static_cast<void*>(s) == static_cast<void*>(internal::globalFloatingQuantityStructure)) {
+    internal::globalFloatingQuantityStructure = nullptr;
+  }
   // remove it from all existing groups
   for (auto& g : state::groups) {
     g.second->removeChildStructure(s);

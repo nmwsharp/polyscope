@@ -1281,6 +1281,58 @@ TEST_F(PolyscopeTest, TestGroupCycleError) {
 }
 
 // ============================================================
+// =============== Floating image
+// ============================================================
+
+// Add floating images
+
+TEST_F(PolyscopeTest, FloatingImageTest) {
+
+
+  size_t dimX = 300;
+  size_t dimY = 200;
+
+  { // ScalarImageQuantity
+    std::vector<float> vals(dimX * dimY, 0.44);
+    polyscope::ScalarImageQuantity* im = polyscope::addScalarImageQuantity("im scalar", dimX, dimY, vals);
+    polyscope::show(3);
+    im->setShowFullscreen(true);
+    polyscope::show(3);
+  }
+
+  { // ColorImageQuantity
+    std::vector<std::array<float, 3>> valsRGB(dimX * dimY, std::array<float, 3>{0.44, 0.55, 0.66});
+    polyscope::ColorImageQuantity* im = polyscope::addColorImageQuantity("im color", dimX, dimY, valsRGB);
+    polyscope::show(3);
+    im->setShowFullscreen(true);
+    polyscope::show(3);
+  }
+
+  { // ColorAlphaImageQuantity
+    std::vector<std::array<float, 4>> valsRGBA(dimX * dimY, std::array<float, 4>{0.44, 0.55, 0.66, 0.77});
+    polyscope::ColorImageQuantity* im = polyscope::addColorAlphaImageQuantity("im color alpha", dimX, dimY, valsRGBA);
+    polyscope::show(3);
+    im->setShowFullscreen(true);
+    polyscope::show(3);
+  }
+
+  // make sure it doesn't blow up with transparancy
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
+
+  // make sure removing works
+  polyscope::removeFloatingQuantity("im color", true);
+
+  polyscope::removeAllStructures();
+}
+
+
+// ============================================================
 // =============== Ground plane tests
 // ============================================================
 

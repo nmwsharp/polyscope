@@ -3,13 +3,21 @@
 
 #include <string>
 
+
 namespace polyscope {
+
+// forward declaration
+class FloatingQuantityStructure;
+
 namespace internal {
 
 
 // Various nitty-gritty internal details of Polyscope, which end users certainly should not touch or depend on.
 
 extern bool pointCloudEfficiencyWarningReported;
+
+
+extern FloatingQuantityStructure* globalFloatingQuantityStructure;
 
 
 } // namespace internal

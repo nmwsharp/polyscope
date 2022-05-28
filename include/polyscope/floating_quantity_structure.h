@@ -11,6 +11,7 @@
 #include "polyscope/scaled_value.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
+#include "polyscope/internal.h"
 
 #include "polyscope/color_image_quantity.h"
 #include "polyscope/floating_quantity.h"
@@ -58,7 +59,7 @@ public:
 };
 
 // There is a single, globally shared floating quantity structure to which all floating quantities get registered.
-static FloatingQuantityStructure* globalFloatingQuantityStructure = nullptr;
+// The pointer lives in internal.h/cpp
 FloatingQuantityStructure* getGlobalFloatingQuantityStructure(); // creates it if it doesn't exit yet
 void removeFloatingQuantityStructureIfEmpty();
 
@@ -68,14 +69,29 @@ void removeAllFloatingQuantities();
 
 // globals to add/remove particular quantities
 template <class T>
-ScalarImageQuantity* addScalarImage(std::string name, size_t dimX, size_t dimY, const T& values,
-                                    DataType type = DataType::STANDARD);
+ScalarImageQuantity* addScalarImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values,
+                                            DataType type = DataType::STANDARD);
 
 template <class T>
-ColorImageQuantity* addColorImage(std::string name, size_t dimX, size_t dimY, const T& values_rgb);
+ColorImageQuantity* addColorImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values_rgb);
 
 template <class T>
-ColorImageQuantity* addColorAlphaImage(std::string name, size_t dimX, size_t dimY, const T& values_rgba);
+ColorImageQuantity* addColorAlphaImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values_rgba);
+
+
+template <class T1, class T2>
+DepthRenderImageQuantity* addDepthRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData,
+                                                      const T2& normalData);
+
+template <class T1, class T2, class T3>
+ColorRenderImageQuantity* addColorRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData,
+                                                      const T2& normalData, const T3& colorData);
+
+
+template <class T1, class T2, class T3>
+ScalarRenderImageQuantity* addScalarRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData,
+                                                        const T2& normalData, const T3& scalarData,
+                                                        DataType type = DataType::STANDARD);
 
 
 } // namespace polyscope
