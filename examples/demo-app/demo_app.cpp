@@ -490,18 +490,18 @@ void loadFloatingImageData(polyscope::PointCloud* targetCloud = nullptr) {
   }
 
   if (targetCloud == nullptr) {
-    polyscope::addColorImage("test color image", width, height, imageColor);
-    polyscope::addScalarImage("test scalar image", width, height, imageScalar);
+    polyscope::addColorImageQuantity("test color image", width, height, imageColor);
+    polyscope::addScalarImageQuantity("test scalar image", width, height, imageScalar);
 
     if (hasAlpha) {
-      polyscope::addColorAlphaImage("test color alpha image", width, height, imageColorAlpha);
+      polyscope::addColorAlphaImageQuantity("test color alpha image", width, height, imageColorAlpha);
     }
   } else {
-    targetCloud->addColorImage("test color image", width, height, imageColor);
-    targetCloud->addScalarImage("test scalar image", width, height, imageScalar);
+    targetCloud->addColorImageQuantity("test color image", width, height, imageColor);
+    targetCloud->addScalarImageQuantity("test scalar image", width, height, imageScalar);
 
     if (hasAlpha) {
-      targetCloud->addColorAlphaImage("test color alpha image", width, height, imageColorAlpha);
+      targetCloud->addColorAlphaImageQuantity("test color alpha image", width, height, imageColorAlpha);
     }
   }
 }
