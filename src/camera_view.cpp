@@ -24,7 +24,9 @@ const std::string CameraView::structureTypeName = "Camera View";
 CameraView::CameraView(std::string name, const CameraParameters& params_)
     : QuantityStructure<CameraView>(name, structureTypeName), params(std::move(params_)),
       displayFocalLength(uniquePrefix() + "#displayFocalLength", relativeValue(0.1)),
-      displayThickness(uniquePrefix() + "#displayThickness", 2.) {
+      displayThickness(uniquePrefix() + "#displayThickness", 0.02),
+      widgetColor(uniquePrefix() + "#widgetColor", glm::vec3{0., 0., 0.}) {
+
   updateObjectSpaceBounds();
 }
 
@@ -35,28 +37,38 @@ void CameraView::draw() {
   }
 
   // Ensure we have prepared buffers
-  if (nodeProgram == nullptr || frameProgram == nullptr) {
+  if (nodeProgram == nullptr || edgeProgram == nullptr) {
     prepare();
   }
 
   // Set program uniforms
   setStructureUniforms(*nodeProgram);
-  setStructureUniforms(*frameProgram);
+  setStructureUniforms(*edgeProgram);
   glm::mat4 P = view::getCameraPerspectiveMatrix();
   glm::mat4 Pinv = glm::inverse(P);
   nodeProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   nodeProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
-  nodeProgram->setUniform("u_pointRadius", getDisplayFocalLength() * 0.05);
-  nodeProgram->setUniform("u_baseColor", cameraFrameColor);
+  nodeProgram->setUniform("u_pointRadius", getDisplayFocalLength() * getDisplayThickness());
+  nodeProgram->setUniform("u_baseColor", widgetColor.get());
 
-  frameProgram->setUniform("u_baseColor", cameraFrameColor);
+
+  edgeProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  edgeProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
+  edgeProgram->setUniform("u_radius", getDisplayFocalLength() * getDisplayThickness());
+  edgeProgram->setUniform("u_baseColor", widgetColor.get());
+
+  /*
+  frameProgram->setUniform("u_baseColor", widgetColor.get());
   frameProgram->setUniform("u_edgeWidth", displayThickness.get());
-  frameProgram->setUniform("u_edgeColor", cameraFrameColor);
+  frameProgram->setUniform("u_edgeColor", widgetColor.get());
+  */
+
 
   // Draw the camera view wireframe
   nodeProgram->draw();
-  frameProgram->draw();
+  edgeProgram->draw();
 
+  render::engine->applyTransparencySettings();
 
   // Draw the quantities
   for (auto& x : quantities) {
@@ -86,14 +98,14 @@ void CameraView::drawPick() {
   }
 
   // Ensure we have prepared buffers
-  if (pickProgram == nullptr) {
+  if (pickFrameProgram == nullptr) {
     preparePick();
   }
 
   // Set uniforms
-  setStructureUniforms(*pickProgram);
+  setStructureUniforms(*pickFrameProgram);
 
-  pickProgram->draw();
+  pickFrameProgram->draw();
 }
 
 void CameraView::prepare() {
@@ -104,26 +116,39 @@ void CameraView::prepare() {
   }
 
   {
-    frameProgram = render::engine->requestShader("MESH", {"SHADE_BASECOLOR", "MESH_WIREFRAME", "MESH_WIREFRAME_ONLY"});
-    render::engine->setMaterial(*frameProgram, "flat");
+    // frameProgram = render::engine->requestShader("MESH", {"SHADE_BASECOLOR", "MESH_WIREFRAME",
+    // "MESH_WIREFRAME_ONLY"});
+    edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"SHADE_BASECOLOR"});
+    render::engine->setMaterial(*edgeProgram, "flat");
   }
 
   // Fill out the geometry data for the programs
-  fillCameraWidgetNodeGeometry(*nodeProgram);
-  fillCameraWidgetFrameGeometry(*frameProgram);
+  fillCameraWidgetGeometry(nodeProgram.get(), edgeProgram.get(), nullptr);
 }
 
-void CameraView::fillCameraWidgetNodeGeometry(render::ShaderProgram& nodeProgram) {
 
-  glm::vec3 root = params.getPosition();
+void CameraView::preparePick() {
 
-  { // Nodes
-    std::vector<glm::vec3> allPos{root};
-    nodeProgram.setAttribute("a_position", allPos);
+  // Request pick indices if we don't already have them
+  if (pickStart == INVALID_IND) {
+    size_t pickCount = 1;
+    pickStart = pick::requestPickBufferRange(this, pickCount);
+    pickColor = pick::indToVec(pickStart);
   }
+
+  // Create a new pick program
+  pickFrameProgram =
+      render::engine->requestShader("MESH", {"MESH_PROPAGATE_PICK"}, render::ShaderReplacementDefaults::Pick);
+
+
+  // Store data in buffers
+  fillCameraWidgetGeometry(nullptr, nullptr, pickFrameProgram.get());
 }
 
-void CameraView::fillCameraWidgetFrameGeometry(render::ShaderProgram& p) {
+
+void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, render::ShaderProgram* edgeProgram,
+                                          render::ShaderProgram* pickFrameProgram) {
+
   // NOTE: this coullllld be done with uniforms, so we don't have to ever edit the geometry at all.
   // FOV slightly tricky though.
 
@@ -147,13 +172,43 @@ void CameraView::fillCameraWidgetFrameGeometry(render::ShaderProgram& p) {
   glm::vec3 triangleRight = frameCenter + 1.2f * frameUp - 0.7f * frameLeft;
   glm::vec3 triangleTop = frameCenter + 2.f * frameUp;
 
+  if (nodeProgram) {
+    std::vector<glm::vec3> allPos{root,        frameUpperLeft, frameUpperRight, frameLowerLeft, frameLowerRight,
+                                  triangleTop, triangleLeft,   triangleRight};
+    nodeProgram->setAttribute("a_position", allPos);
+  }
 
-  { // Frame
+  if (edgeProgram) {
+    // Fill edges
+    std::vector<glm::vec3> posTail(11);
+    std::vector<glm::vec3> posTip(11);
+    auto addEdge = [&](glm::vec3 a, glm::vec3 b) {
+      posTail.push_back(a);
+      posTip.push_back(b);
+    };
+
+    addEdge(root, frameUpperLeft);
+    addEdge(root, frameUpperRight);
+    addEdge(root, frameLowerLeft);
+    addEdge(root, frameLowerRight);
+    addEdge(frameUpperLeft, frameUpperRight);
+    addEdge(frameUpperRight, frameLowerRight);
+    addEdge(frameLowerRight, frameLowerLeft);
+    addEdge(frameLowerLeft, frameUpperLeft);
+    addEdge(triangleLeft, triangleRight);
+    addEdge(triangleRight, triangleTop);
+    addEdge(triangleTop, triangleLeft);
+
+    edgeProgram->setAttribute("a_position_tail", posTail);
+    edgeProgram->setAttribute("a_position_tip", posTip);
+  }
+
+  if (pickFrameProgram) {
 
     std::vector<glm::vec3> positions;
     std::vector<glm::vec3> normals;
     std::vector<glm::vec3> bcoord;
-    std::vector<glm::vec3> edgeReal;
+    // std::vector<glm::vec3> edgeReal;
 
     auto addPolygon = [&](std::vector<glm::vec3> vertices) {
       size_t D = vertices.size();
@@ -181,16 +236,16 @@ void CameraView::fillCameraWidgetFrameGeometry(render::ShaderProgram& p) {
         bcoord.push_back(glm::vec3{0., 0., 1.});
 
         // Set which edges are real
-        glm::vec3 edgeRealV{0., 1., 0.};
-        if (j == 1) {
-          edgeRealV.x = 1.;
-        }
-        if (j + 2 == D) {
-          edgeRealV.z = 1.;
-        }
-        edgeReal.push_back(edgeRealV);
-        edgeReal.push_back(edgeRealV);
-        edgeReal.push_back(edgeRealV);
+        // glm::vec3 edgeRealV{0., 1., 0.};
+        // if (j == 1) {
+        // edgeRealV.x = 1.;
+        //}
+        // if (j + 2 == D) {
+        // edgeRealV.z = 1.;
+        //}
+        // edgeReal.push_back(edgeRealV);
+        // edgeReal.push_back(edgeRealV);
+        // edgeReal.push_back(edgeRealV);
       }
     };
 
@@ -201,41 +256,31 @@ void CameraView::fillCameraWidgetFrameGeometry(render::ShaderProgram& p) {
     addPolygon({frameUpperLeft, frameUpperRight, frameLowerRight, frameLowerLeft});
     addPolygon({triangleTop, triangleRight, triangleLeft});
 
-    p.setAttribute("a_position", positions);
-    p.setAttribute("a_normal", normals);
-    p.setAttribute("a_barycoord", bcoord);
-    p.setAttribute("a_edgeIsReal", edgeReal);
+    pickFrameProgram->setAttribute("a_position", positions);
+    pickFrameProgram->setAttribute("a_normal", normals);
+    pickFrameProgram->setAttribute("a_barycoord", bcoord);
+    // pickFrameProgram->setAttribute("a_edgeIsReal", edgeReal);
+
+    size_t nFaces = 7;
+    std::vector<glm::vec3> faceColor(3 * nFaces, pickColor);
+    std::vector<std::array<glm::vec3, 3>> tripleColors(3 * nFaces,
+                                                       std::array<glm::vec3, 3>{pickColor, pickColor, pickColor});
+    pickFrameProgram->setAttribute<glm::vec3, 3>("a_vertexColors", tripleColors);
+    pickFrameProgram->setAttribute<glm::vec3, 3>("a_edgeColors", tripleColors);
+    pickFrameProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", tripleColors);
+    pickFrameProgram->setAttribute("a_faceColor", faceColor);
   }
 }
-
-void CameraView::preparePick() {
-  // TODO
-  /*
-
-  // Request pick indices
-  size_t pickCount = points.size();
-  size_t pickStart = pick::requestPickBufferRange(this, pickCount);
-
-  // Create a new pick program
-  pickProgram =
-      render::engine->requestShader(getShaderNameForRenderMode(), addCameraViewRules({"SPHERE_PROPAGATE_COLOR"}, true),
-                                    render::ShaderReplacementDefaults::Pick);
-
-  // Fill color buffer with packed point indices
-  std::vector<glm::vec3> pickColors;
-  for (size_t i = pickStart; i < pickStart + pickCount; i++) {
-    glm::vec3 val = pick::indToVec(i);
-    pickColors.push_back(pick::indToVec(i));
-  }
-
-  // Store data in buffers
-  fillGeometryBuffers(*pickProgram);
-  pickProgram->setAttribute("a_color", pickColors);
-  */
-}
-
 
 void CameraView::geometryChanged() {
+  // if the programs are populated, repopulate them
+  if (nodeProgram) {
+    fillCameraWidgetGeometry(nodeProgram.get(), edgeProgram.get(), nullptr);
+  }
+  if (pickFrameProgram) {
+    fillCameraWidgetGeometry(nodeProgram.get(), edgeProgram.get(), nullptr);
+  }
+
   requestRedraw();
   QuantityStructure<CameraView>::refresh();
 }
@@ -264,16 +309,28 @@ void CameraView::buildPickUI(size_t localPickID) {
   */
 }
 
-void CameraView::buildCustomUI() {}
+void CameraView::buildCustomUI() {
+
+
+  ImGui::SameLine();
+
+  { // colors
+    if (ImGui::ColorEdit3("Color", &widgetColor.get()[0], ImGuiColorEditFlags_NoInputs))
+      setWidgetColor(widgetColor.get());
+  }
+
+  ImGui::Text("fov: %0.1f deg   aspect: %.2f", params.fov, params.aspectRatio);
+}
 
 void CameraView::buildCustomOptionsUI() {
 
+  ImGui::PushItemWidth(150);
+
   if (displayFocalLengthUpper == -777) displayFocalLengthUpper = 2. * (*displayFocalLength.get().getValuePtr());
-  if (ImGui::SliderFloat("widget thickness", displayFocalLength.get().getValuePtr(), 0, displayFocalLengthUpper,
+  if (ImGui::SliderFloat("widget focal length", displayFocalLength.get().getValuePtr(), 0, displayFocalLengthUpper,
                          "%.5f")) {
     displayFocalLength.manuallyChanged();
-    if (nodeProgram) fillCameraWidgetNodeGeometry(*nodeProgram);
-    if (frameProgram) fillCameraWidgetFrameGeometry(*frameProgram);
+    geometryChanged();
     requestRedraw();
   }
   if (ImGui::IsItemDeactivatedAfterEdit()) {
@@ -282,10 +339,12 @@ void CameraView::buildCustomOptionsUI() {
     displayFocalLengthUpper = std::fmax(2. * (*displayFocalLength.get().getValuePtr()), 0.0001);
   }
 
-  // if (ImGui::BeginMenu("Back Face Policy")) {
-  // if (ImGui::MenuItem("identical shading", NULL, backFacePolicy.get() == BackFacePolicy::Identical))
-  // setBackFacePolicy(BackFacePolicy::Identical);
-  // ImGui::EndMenu();
+  if (ImGui::SliderFloat("widget thickness", &displayThickness.get(), 0, 0.2, "%.5f")) {
+    displayThickness.manuallyChanged();
+    requestRedraw();
+  }
+
+  ImGui::PopItemWidth();
 }
 
 void CameraView::updateObjectSpaceBounds() {
@@ -305,8 +364,8 @@ std::string CameraView::typeName() { return structureTypeName; }
 
 void CameraView::refresh() {
   nodeProgram.reset();
-  frameProgram.reset();
-  pickProgram.reset();
+  edgeProgram.reset();
+  pickFrameProgram.reset();
   QuantityStructure<CameraView>::refresh(); // call base class version, which refreshes quantities
 }
 
@@ -326,6 +385,7 @@ void CameraViewQuantity::buildInfoGUI(size_t pointInd) {}
 
 CameraView* CameraView::setDisplayFocalLength(double newVal, bool isRelative) {
   displayFocalLength = ScaledValue<float>(newVal, isRelative);
+  geometryChanged();
   polyscope::requestRedraw();
   return this;
 }
@@ -337,5 +397,12 @@ CameraView* CameraView::setDisplayThickness(double newVal) {
   return this;
 }
 double CameraView::getDisplayThickness() { return displayThickness.get(); }
+
+CameraView* CameraView::setWidgetColor(glm::vec3 val) {
+  widgetColor = val;
+  requestRedraw();
+  return this;
+}
+glm::vec3 CameraView::getWidgetColor() { return widgetColor.get(); }
 
 } // namespace polyscope

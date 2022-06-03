@@ -80,6 +80,10 @@ public:
   // Set the thickness of the wireframe used to draw the camera (in relative units)
   CameraView* setDisplayThickness(double newVal);
   double getDisplayThickness();
+  
+  // Color of the widget
+  CameraView* setWidgetColor(glm::vec3 val);
+  glm::vec3 getWidgetColor();
 
   // Rendering helpers used by quantities
   void setCameraViewUniforms(render::ShaderProgram& p);
@@ -91,21 +95,24 @@ private:
   // === Visualization parameters
   PersistentValue<ScaledValue<float>> displayFocalLength;
   PersistentValue<float> displayThickness;
+  PersistentValue<glm::vec3> widgetColor;
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
-  std::shared_ptr<render::ShaderProgram> nodeProgram, frameProgram;
-  std::shared_ptr<render::ShaderProgram> pickProgram;
+  std::shared_ptr<render::ShaderProgram> nodeProgram, edgeProgram;
+  std::shared_ptr<render::ShaderProgram> pickFrameProgram;
 
   // === Helpers
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
   void preparePick();
   void geometryChanged();
-  void fillCameraWidgetNodeGeometry(render::ShaderProgram& nodeProgram);
-  void fillCameraWidgetFrameGeometry(render::ShaderProgram& frameProgram);
-  glm::vec3 cameraFrameColor{0., 0., 0.};
+  void fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, render::ShaderProgram* edgeProgram,
+                                render::ShaderProgram* pickFrameProgram);
+
   float displayFocalLengthUpper = -777;
+  size_t pickStart = INVALID_IND;
+  glm::vec3 pickColor;
 
   // === Quantity adder implementations
   /*

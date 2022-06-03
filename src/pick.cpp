@@ -26,6 +26,11 @@ std::vector<std::tuple<size_t, size_t, Structure*>> structureRanges;
 // == Set up picking
 size_t requestPickBufferRange(Structure* requestingStructure, size_t count) {
 
+  // TODO: there is a problem with the way we use this function curently, though it has 
+  // not yet mattered in practice.
+  // Whenever a structure refresh()'s, it requests a brand new range of pick indices. This
+  // means that the ranges just grow and grow with lots of unused ranges left behind!
+
   // Check if we can satisfy the request
   size_t maxPickInd = std::numeric_limits<size_t>::max();
 #pragma GCC diagnostic push
