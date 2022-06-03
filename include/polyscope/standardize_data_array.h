@@ -12,9 +12,9 @@
 
 // clang-format off
 
-// == "How do these work", quick guide
-//
-// Nicholas Sharp (nsharp@cs.cmu.edu)
+// == "How do these work", 
+// Quick guide assuming only a basic knowledge of C++ & templates
+// // Nicholas Sharp (nsharp@cs.cmu.edu)
 //
 // These templates use a technique called SFINAE, which abuses C++'s function 
 // resolution rules to consider many version of a function, and pick the one 
@@ -1009,6 +1009,30 @@ void validateSize(const T& inputData, size_t expectedSize, std::string errorName
   validateSize<T>(inputData, std::vector<size_t>{expectedSize}, errorName);
 }
 
+// Convert a single fixed-size 2D vector
+// class O: output vector type to put the result in. Will be bracket-indexed.
+//          (Polyscope pretty much always uses glm::vec2/3 or std::array<>)
+// class T: input array type (must be a 2D vector)
+template <class O, class T>
+O standardizeVector2D(const T& inputVec) {
+  O out;
+  out[0] = adaptorF_accessVector2Value<decltype(out[0]),0,T>(inputVec);
+  out[1] = adaptorF_accessVector2Value<decltype(out[0]),1,T>(inputVec);
+  return out;
+}
+
+// Convert a single fixed-size 2D vector
+// class O: output vector type to put the result in. Will be bracket-indexed.
+//          (Polyscope pretty much always uses glm::vec2/3 or std::array<>)
+// class T: input array type (must be a 3D vector)
+template <class O, class T>
+O standardizeVector3D(const T& inputVec) {
+  O out;
+  out[0] = adaptorF_accessVector3Value<decltype(out[0]),0,T>(inputVec);
+  out[1] = adaptorF_accessVector3Value<decltype(out[0]),1,T>(inputVec);
+  out[2] = adaptorF_accessVector3Value<decltype(out[0]),2,T>(inputVec);
+  return out;
+}
 
 // Convert an array of scalar types
 // class D: scalar data type
