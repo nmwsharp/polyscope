@@ -320,6 +320,19 @@ const ShaderReplacementRule MESH_WIREFRAME(
     /* textures */ {}
 );
 
+const ShaderReplacementRule MESH_WIREFRAME_ONLY( 
+    // Must always be used in conjunction with MESH_WIREFRAME
+    /* rule name */ "MESH_WIREFRAME_ONLY",
+    { /* replacement sources */
+      {"GENERATE_ALPHA", R"(
+          alphaOut *= edgeFactor;
+      )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
 const ShaderReplacementRule MESH_BACKFACE_NORMAL_FLIP (
     /* rule name */ "MESH_BACKFACE_NORMAL_FLIP",
     { /* replacement sources */

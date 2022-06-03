@@ -12,6 +12,7 @@
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_io.h"
 #include "polyscope/volume_mesh.h"
+#include "polyscope/camera_view.h"
 
 #include <iostream>
 #include <unordered_set>
@@ -562,6 +563,10 @@ void addImplicitRendersFromCurrentView() {
       polyscope::renderImplicitSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, opts);
 }
 
+void addCameraViews() {
+  polyscope::CameraView* cam1 = polyscope::registerCameraView("cam1", glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.}, glm::vec3{0., 1., 0.}, 60, 2.);
+}
+
 void processFileDotMesh(std::string filename) {
   std::vector<std::array<double, 3>> verts;
   std::vector<std::array<int64_t, 8>> cells;
@@ -733,6 +738,14 @@ void callback() {
     }
   }
 
+
+  if (ImGui::Button("add implicits")) {
+    addImplicitRendersFromCurrentView();
+  }
+  
+  if (ImGui::Button("add camera views")) {
+    addCameraViews();
+  }
 
   ImGui::PopItemWidth();
 }

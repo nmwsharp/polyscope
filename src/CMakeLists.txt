@@ -187,6 +187,9 @@ SET(SRCS
   #volume_mesh_color_quantity.cpp
   volume_grid_scalar_quantity.cpp
   volume_grid_vector_quantity.cpp
+  
+  # Camera view
+  camera_view.cpp
  
   # Floating quantities
   floating_quantity_structure.cpp
@@ -226,6 +229,8 @@ SET(HEADERS
   ${INCLUDE_ROOT}/affine_remapper.h
   ${INCLUDE_ROOT}/affine_remapper.ipp
   ${INCLUDE_ROOT}/camera_parameters.h
+  ${INCLUDE_ROOT}/camera_view.h
+  ${INCLUDE_ROOT}/camera_view.ipp
   ${INCLUDE_ROOT}/color_management.h
   ${INCLUDE_ROOT}/color_image_quantity.h
   ${INCLUDE_ROOT}/color_render_image_quantity.h

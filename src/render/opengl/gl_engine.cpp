@@ -2639,6 +2639,7 @@ void GLEngine::populateDefaultShadersAndRules() {
 
   // mesh things
   registeredShaderRules.insert({"MESH_WIREFRAME", MESH_WIREFRAME});
+  registeredShaderRules.insert({"MESH_WIREFRAME_ONLY", MESH_WIREFRAME_ONLY});
   registeredShaderRules.insert({"MESH_BACKFACE_NORMAL_FLIP", MESH_BACKFACE_NORMAL_FLIP});
   registeredShaderRules.insert({"MESH_BACKFACE_DIFFERENT", MESH_BACKFACE_DIFFERENT});
   registeredShaderRules.insert({"MESH_BACKFACE_DARKEN", MESH_BACKFACE_DARKEN});
