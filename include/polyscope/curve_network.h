@@ -132,9 +132,6 @@ public:
   void setNodeRadiusQuantity(CurveNetworkNodeScalarQuantity* quantity, bool autoScale = true);
   void setNodeRadiusQuantity(std::string name, bool autoScale = true);
   void clearNodeRadiusQuantity();
-  // void setNodeRadiusQuantity(CurveNetworkNodeScalarQuantity* quantity, bool autoScale = true);
-  // void setNodeRadiusQuantity(std::string name, bool autoScale = true);
-  // void clearNodeRadiusQuantity();
 
   // void setEdgeRadiusQuantity(CurveNetworkEdgeScalarQuantity* quantity, bool autoScale = true);
   // void setEdgeRadiusQuantity(std::string name, bool autoScale = true);
@@ -143,12 +140,6 @@ public:
   // set the radius of the points
   CurveNetwork* setRadius(float newVal, bool isRelative = true);
   float getRadius();
-
-  // CurveNetwork* setNodeRadius(float newVal, bool isRelative = true);
-  // float getNodeRadius();
-
-  // CurveNetwork* setEdgeRadius(float newVal, bool isRelative = true);
-  // float getEdgeRadius();
 
   // Material
   CurveNetwork* setMaterial(std::string name);

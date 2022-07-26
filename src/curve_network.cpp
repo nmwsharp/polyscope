@@ -420,26 +420,10 @@ void CurveNetwork::clearNodeRadiusQuantity() {
 
 CurveNetwork* CurveNetwork::setRadius(float newVal, bool isRelative) {
   radius = ScaledValue<float>(newVal, isRelative);
-  // nodeRadius = ScaledValue<float>(newVal, isRelative);
-  // edgeRadius = ScaledValue<float>(newVal, isRelative);
   polyscope::requestRedraw();
   return this;
 }
 float CurveNetwork::getRadius() { return radius.get().asAbsolute(); } // TODO: what should we return?
-
-// CurveNetwork* CurveNetwork::setNodeRadius(float newVal, bool isRelative) {
-//   nodeRadius = ScaledValue<float>(newVal, isRelative);
-//   polyscope::requestRedraw();
-//   return this;
-// }
-// float CurveNetwork::getNodeRadius() { return nodeRadius.get().asAbsolute(); }
-//
-// CurveNetwork* CurveNetwork::setEdgeRadius(float newVal, bool isRelative) {
-//   edgeRadius = ScaledValue<float>(newVal, isRelative);
-//   polyscope::requestRedraw();
-//   return this;
-// }
-// float CurveNetwork::getEdgeRadius() { return edgeRadius.get().asAbsolute(); }
 
 CurveNetwork* CurveNetwork::setMaterial(std::string m) {
   material = m;
