@@ -56,7 +56,12 @@ void CurveNetwork::setCurveNetworkNodeUniforms(render::ShaderProgram& p) {
   glm::mat4 Pinv = glm::inverse(P);
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
-  p.setUniform("u_pointRadius", getRadius());
+  if (nodeRadiusQuantityName != "" && nodeRadiusQuantityAutoscale) {
+    p.setUniform("u_pointRadius", 1.); // u_pointRadius in sphere shader
+  } else {
+    p.setUniform("u_pointRadius", getRadius());
+  }
+  // p.setUniform("u_pointRadius", getRadius());
 }
 
 void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) {
@@ -64,7 +69,7 @@ void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) {
   glm::mat4 Pinv = glm::inverse(P);
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
-  p.setUniform("u_radius", getRadius());
+  p.setUniform("u_radius", getRadius()); // u_radius in cylinder shader
 }
 
 void CurveNetwork::draw() {
@@ -124,6 +129,9 @@ void CurveNetwork::drawPick() {
 
 std::vector<std::string> CurveNetwork::addCurveNetworkNodeRules(std::vector<std::string> initRules) {
   initRules = addStructureRules(initRules);
+  if (nodeRadiusQuantityName != "") {
+    initRules.push_back("SPHERE_VARIABLE_SIZE");
+  }
   if (wantsCullPosition()) {
     initRules.push_back("SPHERE_CULLPOS_FROM_CENTER");
   }
@@ -223,6 +231,12 @@ void CurveNetwork::preparePick() {
 
 void CurveNetwork::fillNodeGeometryBuffers(render::ShaderProgram& program) {
   program.setAttribute("a_position", nodes);
+
+  if (nodeRadiusQuantityName != "") {
+    // Resolve the quantity
+    std::vector<double> nodeRadiusQuantityVals = resolveNodeRadiusQuantity();
+    program.setAttribute("a_pointRadius", nodeRadiusQuantityVals);
+  }
 }
 
 void CurveNetwork::fillEdgeGeometryBuffers(render::ShaderProgram& program) {
@@ -371,12 +385,61 @@ CurveNetwork* CurveNetwork::setColor(glm::vec3 newVal) {
 }
 glm::vec3 CurveNetwork::getColor() { return color.get(); }
 
+void CurveNetwork::setNodeRadiusQuantity(CurveNetworkNodeScalarQuantity* quantity, bool autoScale) {
+  setNodeRadiusQuantity(quantity->name, autoScale);
+}
+void CurveNetwork::setNodeRadiusQuantity(std::string name, bool autoScale) {
+  nodeRadiusQuantityName = name;
+  nodeRadiusQuantityAutoscale = autoScale;
+
+  resolveNodeRadiusQuantity(); // do it once, just so we fail fast if it doesn't exist
+
+  refresh(); // TODO this is a bit overkill
+}
+void CurveNetwork::clearNodeRadiusQuantity() {
+  nodeRadiusQuantityName = "";
+  refresh();
+};
+// void CurveNetwork::setEdgeRadiusQuantity(CurveNetworkEdgeScalarQuantity* quantity, bool autoScale) {
+//   setEdgeRadiusQuantity(quantity->name, autoScale);
+// }
+//
+// void CurveNetwork::setEdgeRadiusQuantity(std::string name, bool autoScale) {
+//   edgeRadiusQuantityName = name;
+//   edgeRadiusQuantityAutoscale = autoScale;
+//
+//   resolveEdgeRadiusQuantity(); // do it once, just so we fail fast if it doesn't exist
+//
+//   refresh(); // TODO this is a bit overkill
+// }
+//
+// void CurveNetwork::clearEdgeRadiusQuantity() {
+//   edgeRadiusQuantityName = "";
+//   refresh();
+// }
+
 CurveNetwork* CurveNetwork::setRadius(float newVal, bool isRelative) {
   radius = ScaledValue<float>(newVal, isRelative);
+  // nodeRadius = ScaledValue<float>(newVal, isRelative);
+  // edgeRadius = ScaledValue<float>(newVal, isRelative);
   polyscope::requestRedraw();
   return this;
 }
-float CurveNetwork::getRadius() { return radius.get().asAbsolute(); }
+float CurveNetwork::getRadius() { return radius.get().asAbsolute(); } // TODO: what should we return?
+
+// CurveNetwork* CurveNetwork::setNodeRadius(float newVal, bool isRelative) {
+//   nodeRadius = ScaledValue<float>(newVal, isRelative);
+//   polyscope::requestRedraw();
+//   return this;
+// }
+// float CurveNetwork::getNodeRadius() { return nodeRadius.get().asAbsolute(); }
+//
+// CurveNetwork* CurveNetwork::setEdgeRadius(float newVal, bool isRelative) {
+//   edgeRadius = ScaledValue<float>(newVal, isRelative);
+//   polyscope::requestRedraw();
+//   return this;
+// }
+// float CurveNetwork::getEdgeRadius() { return edgeRadius.get().asAbsolute(); }
 
 CurveNetwork* CurveNetwork::setMaterial(std::string m) {
   material = m;
@@ -445,5 +508,80 @@ CurveNetworkEdgeVectorQuantity* CurveNetwork::addEdgeVectorQuantityImpl(std::str
   return q;
 }
 
+std::vector<double> CurveNetwork::resolveNodeRadiusQuantity() {
+  CurveNetworkScalarQuantity* sizeScalarQ = nullptr;
+  CurveNetworkQuantity* sizeQ = getQuantity(nodeRadiusQuantityName);
+  if (sizeQ != nullptr) {
+    sizeScalarQ = dynamic_cast<CurveNetworkScalarQuantity*>(sizeQ);
+    if (sizeScalarQ == nullptr) {
+      polyscope::error("Cannot populate point size from quantity [" + name + "], it is not a scalar quantity");
+    }
+  } else {
+    polyscope::error("Cannot populate point size from quantity [" + name + "], it does not exist");
+  }
+
+  std::vector<double> sizes;
+  if (sizeScalarQ == nullptr || sizeScalarQ->values.size() != nNodes()) {
+    // we failed to resolve above; populate with dummy data so we can continue processing
+    std::vector<double> ones(nNodes(), 1.);
+    sizes = ones;
+    polyscope::error("quantity # != node #");
+  } else {
+    sizes = sizeScalarQ->values;
+  }
+
+  // clamp to nonnegative and autoscale (if requested)
+  double max = 0;
+  for (double& x : sizes) {
+    if (!(x > 0)) x = 0; // ensure all nonnegative
+    max = std::fmax(max, x);
+  }
+  if (max == 0) max = 1e-6;
+  if (nodeRadiusQuantityAutoscale) {
+    for (double& x : sizes) {
+      x /= max;
+    }
+  }
+
+  return sizes;
+}
+
+// std::vector<double> CurveNetwork::resolveEdgeRadiusQuantity() {
+//   CurveNetworkScalarQuantity* sizeScalarQ = nullptr;
+//   CurveNetworkQuantity* sizeQ = getQuantity(nodeRadiusQuantityName);
+//   if (sizeQ != nullptr) {
+//     sizeScalarQ = dynamic_cast<CurveNetworkScalarQuantity*>(sizeQ);
+//     if (sizeScalarQ == nullptr) {
+//       polyscope::error("Cannot populate point size from quantity [" + name + "], it is not a scalar quantity");
+//     }
+//   } else {
+//     polyscope::error("Cannot populate point size from quantity [" + name + "], it does not exist");
+//   }
+//
+//   std::vector<double> sizes;
+//   if (sizeScalarQ == nullptr || sizeScalarQ->values.size() != nEdges()) {
+//     // we failed to resolve above; populate with dummy data so we can continue processing
+//     std::vector<double> ones(nEdges(), 1.);
+//     sizes = ones;
+//     polyscope::error("quantity # != edge #");
+//   } else {
+//     sizes = sizeScalarQ->values;
+//   }
+//
+//   // clamp to nonnegative and autoscale (if requested)
+//   double max = 0;
+//   for (double& x : sizes) {
+//     if (!(x > 0)) x = 0; // ensure all nonnegative
+//     max = std::fmax(max, x);
+//   }
+//   if (max == 0) max = 1e-6;
+//   if (nodeRadiusQuantityAutoscale) {
+//     for (double& x : sizes) {
+//       x /= max;
+//     }
+//   }
+//
+//   return sizes;
+// }
 
 } // namespace polyscope
