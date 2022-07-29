@@ -4,7 +4,7 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw { 
+namespace backend_openGL3_glfw {
 
 // clang-format off
 
@@ -71,6 +71,8 @@ R"(
         in vec4 position_tip[];
         uniform mat4 u_projMatrix;
         uniform float u_radius;
+        //uniform float u_tipRadius;
+        //uniform float u_tailRadius;
         out vec3 tipView;
         out vec3 tailView;
 
@@ -79,6 +81,9 @@ R"(
         void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
 
         void main() {
+            float tipRadius = u_radius;
+            float tailRadius = u_radius;
+            ${ CYLINDER_SET_RADIUS_GEOM }$
 
             // Build an orthogonal basis
             vec3 tailViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
@@ -89,17 +94,19 @@ R"(
             // Compute corners of cube
             vec4 tailProj = u_projMatrix * gl_in[0].gl_Position;
             vec4 tipProj = u_projMatrix * position_tip[0];
-            vec4 dx = u_projMatrix * vec4(basisX * u_radius, 0.);
-            vec4 dy = u_projMatrix * vec4(basisY * u_radius, 0.);
+            vec4 dxTip = u_projMatrix * vec4(basisX * tipRadius, 0.);
+            vec4 dyTip = u_projMatrix * vec4(basisY * tipRadius, 0.);
+            vec4 dxTail = u_projMatrix * vec4(basisX * tailRadius, 0.);
+            vec4 dyTail = u_projMatrix * vec4(basisY * tailRadius, 0.);
 
-            vec4 p1 = tailProj - dx - dy;
-            vec4 p2 = tailProj + dx - dy;
-            vec4 p3 = tailProj - dx + dy;
-            vec4 p4 = tailProj + dx + dy;
-            vec4 p5 = tipProj - dx - dy;
-            vec4 p6 = tipProj + dx - dy;
-            vec4 p7 = tipProj - dx + dy;
-            vec4 p8 = tipProj + dx + dy;
+            vec4 p1 = tailProj - dxTail - dyTail;
+            vec4 p2 = tailProj + dxTail - dyTail;
+            vec4 p3 = tailProj - dxTail + dyTail;
+            vec4 p4 = tailProj + dxTail + dyTail;
+            vec4 p5 = tipProj - dxTip - dyTip;
+            vec4 p6 = tipProj + dxTip - dyTip;
+            vec4 p7 = tipProj - dxTip + dyTip;
+            vec4 p8 = tipProj + dxTip + dyTip;
             
             // Other data to emit   
     
@@ -152,13 +159,15 @@ R"(
         uniform mat4 u_invProjMatrix;
         uniform vec4 u_viewport;
         uniform float u_radius;
+        //uniform float u_tipRadius;
+        //uniform float u_tailRadius;
         in vec3 tailView;
         in vec3 tipView;
         layout(location = 0) out vec4 outputF;
 
         float LARGE_FLOAT();
         vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
-        bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
+        bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylTipRad, float cylTailRad, out float tHit, out vec3 pHit, out vec3 nHit);
         float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
         
         ${ FRAG_DECLARATIONS }$
@@ -169,11 +178,16 @@ R"(
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
            vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
 
+           
+           float tipRadius = u_radius;
+           float tailRadius = u_radius;
+           ${ CYLINDER_SET_RADIUS_FRAG }$
+
            // Raycast to the cylinder
            float tHit;
            vec3 pHit;
            vec3 nHit;
-           rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, u_radius, tHit, pHit, nHit);
+           rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, tipRadius, tailRadius, tHit, pHit, nHit);
            if(tHit >= LARGE_FLOAT()) {
               discard;
            }
@@ -421,6 +435,49 @@ const ShaderReplacementRule CYLINDER_PROPAGATE_PICK (
     /* textures */ {}
 );
 
+const ShaderReplacementRule CYLINDER_VARIABLE_SIZE (
+    /* rule name */ "CYLINDER_VARIABLE_SIZE",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in float a_tipRadius;
+          in float a_tailRadius;
+          out float a_tipRadiusToGeom;
+          out float a_tailRadiusToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_tipRadiusToGeom = a_tipRadius;
+          a_tailRadiusToGeom = a_tailRadius;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in float a_tipRadiusToGeom[];
+          in float a_tailRadiusToGeom[];
+          out float a_tipRadiusToFrag;
+          out float a_tailRadiusToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_tipRadiusToFrag = a_tipRadiusToGeom[0]; 
+          a_tailRadiusToFrag = a_tailRadiusToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in float a_tipRadiusToFrag;
+          in float a_tailRadiusToFrag;
+        )"},
+      {"CYLINDER_SET_RADIUS_GEOM", R"(
+          tipRadius *= a_tipRadiusToGeom[0];
+          tailRadius *= a_tailRadiusToGeom[0];
+        )"},
+      {"CYLINDER_SET_RADIUS_FRAG", R"(
+          tipRadius *= a_tipRadiusToFrag;
+          tailRadius *= a_tailRadiusToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_tipRadius", DataType::Float},
+      {"a_tailRadius", DataType::Float},
+    },
+    /* textures */ {}
+);
 
 // clang-format on
 
