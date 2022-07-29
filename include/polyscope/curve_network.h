@@ -133,10 +133,6 @@ public:
   void setNodeRadiusQuantity(std::string name, bool autoScale = true);
   void clearNodeRadiusQuantity();
 
-  // void setEdgeRadiusQuantity(CurveNetworkEdgeScalarQuantity* quantity, bool autoScale = true);
-  // void setEdgeRadiusQuantity(std::string name, bool autoScale = true);
-  // void clearEdgeRadiusQuantity();
-
   // set the radius of the points
   CurveNetwork* setRadius(float newVal, bool isRelative = true);
   float getRadius();
@@ -150,8 +146,6 @@ private:
   // === Visualization parameters
   PersistentValue<glm::vec3> color;
   PersistentValue<ScaledValue<float>> radius;
-  // PersistentValue<ScaledValue<float>> nodeRadius;
-  // PersistentValue<ScaledValue<float>> edgeRadius;
   PersistentValue<std::string> material;
 
 
