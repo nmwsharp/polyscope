@@ -182,10 +182,6 @@ private:
   std::string nodeRadiusQuantityName = ""; // e empty string means none
   bool nodeRadiusQuantityAutoscale = true;
   std::vector<double> resolveNodeRadiusQuantity(); // helper
-
-  // std::string edgeRadiusQuantityName = ""; // e empty string means none
-  // bool edgeRadiusQuantityAutoscale = true;
-  // std::vector<double> resolveEdgeRadiusQuantity(); // helper
 };
 
 

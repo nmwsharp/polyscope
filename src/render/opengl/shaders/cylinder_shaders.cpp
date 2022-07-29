@@ -71,8 +71,6 @@ R"(
         in vec4 position_tip[];
         uniform mat4 u_projMatrix;
         uniform float u_radius;
-        //uniform float u_tipRadius;
-        //uniform float u_tailRadius;
         out vec3 tipView;
         out vec3 tailView;
 
@@ -159,8 +157,6 @@ R"(
         uniform mat4 u_invProjMatrix;
         uniform vec4 u_viewport;
         uniform float u_radius;
-        //uniform float u_tipRadius;
-        //uniform float u_tailRadius;
         in vec3 tailView;
         in vec3 tipView;
         layout(location = 0) out vec4 outputF;
