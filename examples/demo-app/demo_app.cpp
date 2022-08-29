@@ -3,6 +3,7 @@
 #include "polyscope/combining_hash_functions.h"
 #include "polyscope/messages.h"
 
+#include "polyscope/camera_view.h"
 #include "polyscope/curve_network.h"
 #include "polyscope/file_helpers.h"
 #include "polyscope/floating_quantity_structure.h"
@@ -12,7 +13,6 @@
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_io.h"
 #include "polyscope/volume_mesh.h"
-#include "polyscope/camera_view.h"
 
 #include <iostream>
 #include <unordered_set>
@@ -564,7 +564,8 @@ void addImplicitRendersFromCurrentView() {
 }
 
 void addCameraViews() {
-  polyscope::CameraView* cam1 = polyscope::registerCameraView("cam1", glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.}, glm::vec3{0., 1., 0.}, 60, 2.);
+  polyscope::CameraView* cam1 = polyscope::registerCameraView("cam1", glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.},
+                                                              glm::vec3{0., 1., 0.}, 60, 2.);
 }
 
 void processFileDotMesh(std::string filename) {
@@ -742,7 +743,7 @@ void callback() {
   if (ImGui::Button("add implicits")) {
     addImplicitRendersFromCurrentView();
   }
-  
+
   if (ImGui::Button("add camera views")) {
     addCameraViews();
   }
@@ -801,6 +802,11 @@ int main(int argc, char** argv) {
 
   // Show the gui
   polyscope::show();
+
+  // main loop using manual frameTick() instead
+  // while (true) {
+  //   polyscope::frameTick();
+  // }
 
   return 0;
 }

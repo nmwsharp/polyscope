@@ -45,6 +45,7 @@ float lastWindowHeightUser = 200;
 float leftWindowsWidth = 305;
 float rightWindowsWidth = 500;
 
+auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 
 const std::string prefsFilename = ".polyscope.ini";
 
@@ -140,8 +141,19 @@ void init(std::string backend) {
   // Initialie ImGUI
   IMGUI_CHECKVERSION();
   render::engine->initializeImGui();
-  // push a fake context which will never be used (but dodges some invalidation issues)
-  contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr, false});
+
+  { // Create an initial context based context. Note that calling show() never actually uses this context, because it
+    // pushes a new one each time. But using frameTick() may use this context.
+
+    // Create a new context and push it on to the stack
+    ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
+    ImGui::SetCurrentContext(newContext);
+    if (options::configureImGuiStyleCallback) {
+      options::configureImGuiStyleCallback();
+    }
+
+    contextStack.push_back(ContextEntry{newContext, nullptr, true});
+  }
 
   view::invalidateView();
 
@@ -188,6 +200,19 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   size_t currentContextStackSize = contextStack.size();
   while (contextStack.size() >= currentContextStackSize) {
 
+    // The windowing system will let the main loop busy-loop on some platforms. Make sure that doesn't happen.
+    if (options::maxFPS != -1) {
+      auto currTime = std::chrono::steady_clock::now();
+      long microsecPerLoop = 1000000 / options::maxFPS;
+      microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
+      while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
+             microsecPerLoop) {
+        std::this_thread::yield();
+        currTime = std::chrono::steady_clock::now();
+      }
+    }
+    lastMainLoopIterTime = std::chrono::steady_clock::now();
+
     mainLoopIteration();
 
     // auto-exit if the window is closed
@@ -217,6 +242,19 @@ void popContext() {
 }
 
 ImGuiContext* getCurrentContext() { return contextStack.empty() ? nullptr : contextStack.back().context; }
+
+void frameTick() {
+
+  // Make sure we're initialized
+  if (!state::initialized) {
+    throw std::logic_error(options::printPrefix +
+                           "must initialize Polyscope with polyscope::init() before calling polyscope::frameTick().");
+  }
+
+  render::engine->showWindow();
+
+  mainLoopIteration();
+}
 
 void requestRedraw() { redrawNextFrame = true; }
 bool redrawRequested() { return redrawNextFrame; }
@@ -464,8 +502,6 @@ void renderSceneToScreen() {
   }
 }
 
-auto lastMainLoopIterTime = std::chrono::steady_clock::now();
-
 } // namespace
 
 void buildPolyscopeGui() {
@@ -644,6 +680,7 @@ void buildPickGui() {
 void buildUserGuiAndInvokeCallback() {
 
   if (!options::invokeUserCallbackForNestedShow && contextStack.size() > 2) {
+    // NOTE: this may have funky interactions with manually calling frameTick()
     return;
   }
 
@@ -740,19 +777,6 @@ void draw(bool withUI, bool withContextCallback) {
 void mainLoopIteration() {
 
   processLazyProperties();
-
-  // The windowing system will let this busy-loop in some situations, unfortunately. Make sure that doesn't happen.
-  if (options::maxFPS != -1) {
-    auto currTime = std::chrono::steady_clock::now();
-    long microsecPerLoop = 1000000 / options::maxFPS;
-    microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
-    while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
-           microsecPerLoop) {
-      std::this_thread::yield();
-      currTime = std::chrono::steady_clock::now();
-    }
-  }
-  lastMainLoopIterTime = std::chrono::steady_clock::now();
 
   render::engine->makeContextCurrent();
   render::engine->updateWindowSize();

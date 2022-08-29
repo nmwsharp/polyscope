@@ -44,6 +44,9 @@ bool isInitialized();
 // the GUI, possibly by exiting the window.
 void show(size_t forFrames = std::numeric_limits<size_t>::max());
 
+// An alternate method to execute the Polyscope graphical loop. Instead of calling show(), call frameTick() frequently in the user program's loop.
+void frameTick();
+
 // Do shutdown work and de-initialize Polyscope
 void shutdown();
 
