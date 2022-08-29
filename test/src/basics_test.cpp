@@ -1,4 +1,3 @@
-
 #include "polyscope_test.h"
 
 #include "polyscope/curve_network.h"
@@ -56,6 +55,12 @@ protected:
 
 // Show the gui. Note that the pre-suite script calls Polyscope::init() before
 TEST_F(PolyscopeTest, InitializeAndShow) { polyscope::show(3); }
+
+TEST_F(PolyscopeTest, FrameTick) {
+  for (int = 0; i < 5; i++) {
+    polyscope::frameTick();
+  }
+}
 
 // We should be able to nest calls to show() via the callback. ImGUI causes headaches here
 TEST_F(PolyscopeTest, NestedShow) {
