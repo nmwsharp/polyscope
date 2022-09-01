@@ -45,7 +45,7 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
     nodeDegrees[nA]++;
     nodeDegrees[nB]++;
   }
-  
+
   updateObjectSpaceBounds();
 }
 
@@ -251,8 +251,21 @@ void CurveNetwork::refresh() {
 }
 
 void CurveNetwork::geometryChanged() {
-  // TODO this is overkill
-  refresh();
+
+  if (nodeProgram) {
+    fillNodeGeometryBuffers(*nodeProgram);
+  }
+  if (edgeProgram) {
+    fillEdgeGeometryBuffers(*edgeProgram);
+  }
+  if (nodePickProgram) {
+    fillNodeGeometryBuffers(*nodePickProgram);
+  }
+  if (edgePickProgram) {
+    fillEdgeGeometryBuffers(*edgePickProgram);
+  }
+  requestRedraw();
+  QuantityStructure<CurveNetwork>::refresh();
 }
 
 void CurveNetwork::buildPickUI(size_t localPickID) {
@@ -317,7 +330,8 @@ void CurveNetwork::buildCustomUI() {
   }
   ImGui::SameLine();
   ImGui::PushItemWidth(100);
-  if (ImGui::SliderFloat("Radius", radius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+  if (ImGui::SliderFloat("Radius", radius.get().getValuePtr(), 0.0, .1, "%.5f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     radius.manuallyChanged();
     requestRedraw();
   }

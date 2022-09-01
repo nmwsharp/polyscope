@@ -931,8 +931,16 @@ void VolumeMesh::refresh() {
 }
 
 void VolumeMesh::geometryChanged() {
-  // TODO overkill
-  refresh();
+  computeGeometryData();
+  refreshVolumeMeshListeners();
+  if (program) {
+    fillGeometryBuffers(*program);
+  }
+  if (pickProgram) {
+    fillGeometryBuffers(*pickProgram);
+  }
+  requestRedraw();
+  QuantityStructure<VolumeMesh>::refresh();
 }
 
 VolumeCellType VolumeMesh::cellType(size_t i) const {

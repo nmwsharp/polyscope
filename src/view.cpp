@@ -725,18 +725,21 @@ void buildViewGui() {
       // Clip planes
       float nearClipRatioF = nearClipRatio;
       float farClipRatioF = farClipRatio;
-      if (ImGui::SliderFloat(" Clip Near", &nearClipRatioF, 0., 10., "%.5f", 3.)) {
+      if (ImGui::SliderFloat(" Clip Near", &nearClipRatioF, 0., 10., "%.5f",
+                             ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
         nearClipRatio = nearClipRatioF;
         requestRedraw();
       }
-      if (ImGui::SliderFloat(" Clip Far", &farClipRatioF, 1., 1000., "%.2f", 3.)) {
+      if (ImGui::SliderFloat(" Clip Far", &farClipRatioF, 1., 1000., "%.2f",
+                             ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
         farClipRatio = farClipRatioF;
         requestRedraw();
       }
 
       // Move speed
       float moveScaleF = view::moveScale;
-      ImGui::SliderFloat(" Move Speed", &moveScaleF, 0.0, 1.0, "%.5f", 3.);
+      ImGui::SliderFloat(" Move Speed", &moveScaleF, 0.0, 1.0, "%.5f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
       view::moveScale = moveScaleF;
 
 

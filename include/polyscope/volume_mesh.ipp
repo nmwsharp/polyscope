@@ -82,7 +82,7 @@ void VolumeMesh::updateVertexPositions(const V& newPositions) {
   vertices = standardizeVectorArray<glm::vec3, 3>(newPositions);
 
   // Rebuild any necessary quantities
-  refresh();
+  geometryChanged();
 }
 
 

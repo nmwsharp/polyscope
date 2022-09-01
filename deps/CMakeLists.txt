@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.5)
-
 if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 
   ## Glad

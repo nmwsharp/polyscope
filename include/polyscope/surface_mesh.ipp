@@ -47,9 +47,11 @@ template <class V>
 void SurfaceMesh::updateVertexPositions(const V& newPositions) {
   vertices = standardizeVectorArray<glm::vec3, 3>(newPositions);
 
+
   // Rebuild any necessary quantities
   geometryChanged();
 }
+
 
 template <class V>
 void SurfaceMesh::updateVertexPositions2D(const V& newPositions2D) {

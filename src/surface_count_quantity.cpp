@@ -104,7 +104,8 @@ void SurfaceCountQuantity::buildCustomUI() {
   ImGui::DragFloatRange2("Color Range", &vizRangeLow, &vizRangeHigh, (dataRangeHigh - dataRangeLow) / 100.,
                          dataRangeLow, dataRangeHigh, "Min: %.3e", "Max: %.3e");
 
-  if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f", 3.)) {
+  if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     pointRadius.manuallyChanged();
     requestRedraw();
   }
