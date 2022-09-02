@@ -20,10 +20,6 @@
 
 #include "simple_dot_mesh_parser.h"
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include "glm/gtx/string_cast.hpp"
-
-
 using std::cerr;
 using std::cout;
 using std::endl;
