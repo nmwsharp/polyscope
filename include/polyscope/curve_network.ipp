@@ -7,6 +7,8 @@ namespace polyscope {
 // Shorthand to add a curve network to polyscope
 template <class P, class E>
 CurveNetwork* registerCurveNetwork(std::string name, const P& nodes, const E& edges) {
+  checkInitialized();
+  
   CurveNetwork* s = new CurveNetwork(name, standardizeVectorArray<glm::vec3, 3>(nodes),
                                      standardizeVectorArray<std::array<size_t, 2>, 2>(edges));
   bool success = registerStructure(s);
@@ -17,6 +19,8 @@ CurveNetwork* registerCurveNetwork(std::string name, const P& nodes, const E& ed
 }
 template <class P, class E>
 CurveNetwork* registerCurveNetwork2D(std::string name, const P& nodes, const E& edges) {
+  checkInitialized();
+  
   std::vector<glm::vec3> points3D(standardizeVectorArray<glm::vec3, 2>(nodes));
   for (auto& v : points3D) {
     v.z = 0.;
@@ -33,6 +37,7 @@ CurveNetwork* registerCurveNetwork2D(std::string name, const P& nodes, const E& 
 // Shorthand to add curve from a line of points
 template <class P>
 CurveNetwork* registerCurveNetworkLine(std::string name, const P& nodes) {
+  checkInitialized();
 
   std::vector<std::array<size_t, 2>> edges;
   size_t N = adaptorF_size(nodes);
@@ -49,6 +54,7 @@ CurveNetwork* registerCurveNetworkLine(std::string name, const P& nodes) {
 }
 template <class P>
 CurveNetwork* registerCurveNetworkLine2D(std::string name, const P& nodes) {
+  checkInitialized();
 
   std::vector<std::array<size_t, 2>> edges;
   size_t N = adaptorF_size(nodes);
@@ -71,6 +77,7 @@ CurveNetwork* registerCurveNetworkLine2D(std::string name, const P& nodes) {
 // Shorthand to add curve from a loop of points
 template <class P>
 CurveNetwork* registerCurveNetworkLoop(std::string name, const P& nodes) {
+  checkInitialized();
 
   std::vector<std::array<size_t, 2>> edges;
   size_t N = adaptorF_size(nodes);
@@ -87,6 +94,7 @@ CurveNetwork* registerCurveNetworkLoop(std::string name, const P& nodes) {
 }
 template <class P>
 CurveNetwork* registerCurveNetworkLoop2D(std::string name, const P& nodes) {
+  checkInitialized();
 
   std::vector<std::array<size_t, 2>> edges;
   size_t N = adaptorF_size(nodes);

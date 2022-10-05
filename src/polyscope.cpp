@@ -149,6 +149,12 @@ void init(std::string backend) {
   state::doDefaultMouseInteraction = true;
 }
 
+void checkInitialized() {
+  if (!state::initialized) {
+    throw std::runtime_error("Polyscope has not been initialized");
+  }
+}
+
 void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Create a new context and push it on to the stack

@@ -28,6 +28,9 @@ class Structure;
 // The backend string sets which rendering backend to use. If "", a reasonable default backend will be chosen.
 void init(std::string backend = "");
 
+// Check that polyscope has been initialized. If not, an exception is thrown to prevent further problems.
+void checkInitialized();
+
 // Give control to the polyscope GUI. Blocks until the user returns control via
 // the GUI, possibly by exiting the window.
 void show(size_t forFrames = std::numeric_limits<size_t>::max());

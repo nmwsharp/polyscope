@@ -5,6 +5,7 @@ namespace polyscope {
 
 template <class V, class F>
 VolumeMesh* registerTetMesh(std::string name, const V& vertexPositions, const F& tetIndices) {
+  checkInitialized();
 
   // Standardize the array, and pad out extra indices with -1 for our representation
   std::vector<std::array<int64_t, 8>> tetIndsArr = standardizeVectorArray<std::array<int64_t, 8>, 4>(tetIndices);
@@ -27,6 +28,8 @@ VolumeMesh* registerTetMesh(std::string name, const V& vertexPositions, const F&
 
 template <class V, class F>
 VolumeMesh* registerHexMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
+  checkInitialized();
+  
   VolumeMesh* s = new VolumeMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
                                  standardizeVectorArray<std::array<int64_t, 8>, 8>(faceIndices));
 
@@ -40,6 +43,8 @@ VolumeMesh* registerHexMesh(std::string name, const V& vertexPositions, const F&
 
 template <class V, class F>
 VolumeMesh* registerVolumeMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
+  checkInitialized();
+  
   VolumeMesh* s = new VolumeMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
                                  standardizeVectorArray<std::array<int64_t, 8>, 8>(faceIndices));
 
@@ -53,6 +58,7 @@ VolumeMesh* registerVolumeMesh(std::string name, const V& vertexPositions, const
 
 template <class V, class Ft, class Fh>
 VolumeMesh* registerTetHexMesh(std::string name, const V& vertexPositions, const Ft& tetIndices, const Fh& hexIndices) {
+  checkInitialized();
 
   // Standardize the array, and pad out extra indices with -1 for our representation
   std::vector<std::array<int64_t, 8>> tetIndsArr = standardizeVectorArray<std::array<int64_t, 8>, 4>(tetIndices);
