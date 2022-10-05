@@ -31,6 +31,9 @@ void init(std::string backend = "");
 // Check that polyscope has been initialized. If not, an exception is thrown to prevent further problems.
 void checkInitialized();
 
+// Returns a bool indicating whether or not polyscope has been initialized
+bool isInitialized();
+
 // Give control to the polyscope GUI. Blocks until the user returns control via
 // the GUI, possibly by exiting the window.
 void show(size_t forFrames = std::numeric_limits<size_t>::max());

@@ -120,7 +120,7 @@ void writePrefsFile() {
 // === Core global functions
 
 void init(std::string backend) {
-  if (state::initialized) {
+  if (isInitialized()) {
     if (backend != state::backend) {
       throw std::runtime_error("re-initializing with different backend is not supported");
     }
@@ -153,6 +153,10 @@ void checkInitialized() {
   if (!state::initialized) {
     throw std::runtime_error("Polyscope has not been initialized");
   }
+}
+
+bool isInitialized() {
+  return state::initialized;
 }
 
 void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
