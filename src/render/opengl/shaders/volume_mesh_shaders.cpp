@@ -150,7 +150,7 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
             // Emit the vertices as a triangle strip
             mat4 toScreen = u_projMatrix * u_modelView;
             for (int i = 0; i < n; i++){
-                a_normalToFrag = cross12;
+                a_normalToFrag = vec3(toScreen * vec4(cross12, 0.0));
                 a_barycoordToFrag = vec3(0, 0, 0);
                 a_barycoordToFrag[i % 3] = 1.0;
                 ${ GEOM_ASSIGNMENTS }$
@@ -341,8 +341,7 @@ const ShaderReplacementRule SLICE_TETS_VECTOR_COLOR(
           vec3 albedoColor = shadeValue;
         )"}},
     /* uniforms */
-    {
-    },
+    {},
     /* attributes */ {},
     /* textures */ {});
 
