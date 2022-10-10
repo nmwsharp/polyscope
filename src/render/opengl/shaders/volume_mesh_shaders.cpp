@@ -138,8 +138,18 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
                 }
             }
 
+            // compute gradient of d to orient our sliced faces
+            vec3 vN[4]; // tet face normal times volume
+            vN[0] = cross(p[2]-p[1], p[3]-p[1]);
+            vN[1] = cross(p[3]-p[0], p[2]-p[0]);
+            vN[2] = cross(p[1]-p[0], p[3]-p[0]);
+            vN[3] = cross(p[0]-p[1], p[2]-p[1]);
+
+            // actually gradient times tet volume, but since we only want the sign, that doesn't really matter
+            // TODO: fix for inverted tets?
+            vec3 grad = d[0] * vN[0] + d[1] * vN[1] + d[2] * vN[2] + d[3] * vN[3];
             vec3 cross12 = cross(q[1] - q[0], q[2] - q[0]);
-            if(dot(cross12, u_sliceVector) < 0){
+            if(dot(cross12, grad) < 0){
                 int temp = ordering[1];
                 ordering[1] = ordering[2];
                 ordering[2] = temp;
