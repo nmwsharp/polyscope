@@ -14,15 +14,15 @@ const ShaderStageSpecification GROUND_PLANE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", DataType::Matrix44Float},
-       {"u_projMatrix", DataType::Matrix44Float},
-       {"u_groundHeight", DataType::Float},
-       {"u_basisZ", DataType::Vector3Float},
+       {"u_viewMatrix", RenderDataType::Matrix44Float},
+       {"u_projMatrix", RenderDataType::Matrix44Float},
+       {"u_groundHeight", RenderDataType::Float},
+       {"u_basisZ", RenderDataType::Vector3Float},
     },
 
     // attributes
     {
-        {"a_position", DataType::Vector4Float},
+        {"a_position", RenderDataType::Vector4Float},
     },
     
     {}, // textures
@@ -53,14 +53,14 @@ const ShaderStageSpecification GROUND_PLANE_TILE_FRAG_SHADER= {
     ShaderStageType::Fragment,
 
     { // uniforms
-      {"u_lengthScale", DataType::Float},
-      {"u_center", DataType::Vector3Float},
-      {"u_basisX", DataType::Vector3Float},
-      {"u_basisY", DataType::Vector3Float},
-      {"u_viewportDim", DataType::Vector2Float},
-      {"u_cameraHeight", DataType::Float},
-      {"u_groundHeight", DataType::Float},
-      {"u_upSign", DataType::Float}
+      {"u_lengthScale", RenderDataType::Float},
+      {"u_center", RenderDataType::Vector3Float},
+      {"u_basisX", RenderDataType::Vector3Float},
+      {"u_basisY", RenderDataType::Vector3Float},
+      {"u_viewportDim", RenderDataType::Vector2Float},
+      {"u_cameraHeight", RenderDataType::Float},
+      {"u_groundHeight", RenderDataType::Float},
+      {"u_upSign", RenderDataType::Float}
     }, 
 
     // attributes
@@ -145,14 +145,14 @@ const ShaderStageSpecification GROUND_PLANE_TILE_REFLECT_FRAG_SHADER = {
     ShaderStageType::Fragment,
 
     { // uniforms
-      {"u_lengthScale", DataType::Float},
-      {"u_center", DataType::Vector3Float},
-      {"u_basisX", DataType::Vector3Float},
-      {"u_basisY", DataType::Vector3Float},
-      {"u_viewportDim", DataType::Vector2Float},
-      {"u_cameraHeight", DataType::Float},
-      {"u_groundHeight", DataType::Float},
-      {"u_upSign", DataType::Float}
+      {"u_lengthScale", RenderDataType::Float},
+      {"u_center", RenderDataType::Vector3Float},
+      {"u_basisX", RenderDataType::Vector3Float},
+      {"u_basisY", RenderDataType::Vector3Float},
+      {"u_viewportDim", RenderDataType::Vector2Float},
+      {"u_cameraHeight", RenderDataType::Float},
+      {"u_groundHeight", RenderDataType::Float},
+      {"u_upSign", RenderDataType::Float}
     }, 
 
     // attributes
@@ -250,12 +250,12 @@ const ShaderStageSpecification GROUND_PLANE_SHADOW_FRAG_SHADER = {
     ShaderStageType::Fragment,
 
     { // uniforms
-      {"u_lengthScale", DataType::Float},
-      {"u_viewportDim", DataType::Vector2Float},
-      {"u_shadowDarkness", DataType::Float},
-      {"u_cameraHeight", DataType::Float},
-      {"u_groundHeight", DataType::Float},
-      {"u_upSign", DataType::Float}
+      {"u_lengthScale", RenderDataType::Float},
+      {"u_viewportDim", RenderDataType::Vector2Float},
+      {"u_shadowDarkness", RenderDataType::Float},
+      {"u_cameraHeight", RenderDataType::Float},
+      {"u_groundHeight", RenderDataType::Float},
+      {"u_upSign", RenderDataType::Float}
     }, 
 
     // attributes

@@ -18,7 +18,7 @@ const ShaderStageSpecification  TEXTURE_DRAW_VERT_SHADER =  {
 
     // attributes
     {
-        {"a_position", DataType::Vector3Float},
+        {"a_position", RenderDataType::Vector3Float},
     },
 
     // textures
@@ -45,13 +45,13 @@ const ShaderStageSpecification  SPHEREBG_DRAW_VERT_SHADER =  {
     
     // uniforms
     { 
-       {"u_viewMatrix", DataType::Matrix44Float},
-       {"u_projMatrix", DataType::Matrix44Float},
+       {"u_viewMatrix", RenderDataType::Matrix44Float},
+       {"u_projMatrix", RenderDataType::Matrix44Float},
     },
 
     // attributes
     {
-        {"a_position", DataType::Vector4Float},
+        {"a_position", RenderDataType::Vector4Float},
     },
 
     // textures
@@ -114,7 +114,7 @@ const ShaderStageSpecification DOT3_TEXTURE_DRAW_FRAG_SHADER = {
     
     // uniforms
     { 
-        {"u_mapDot", DataType::Vector3Float},
+        {"u_mapDot", RenderDataType::Vector3Float},
     }, 
 
     // attributes
@@ -147,8 +147,8 @@ const ShaderStageSpecification MAP3_TEXTURE_DRAW_FRAG_SHADER = {
     
     // uniforms
     { 
-        {"u_scale", DataType::Vector3Float},
-        {"u_shift", DataType::Vector3Float},
+        {"u_scale", RenderDataType::Vector3Float},
+        {"u_shift", RenderDataType::Vector3Float},
     }, 
 
     // attributes
@@ -355,7 +355,7 @@ const ShaderStageSpecification BLUR_RGB = {
     
     // uniforms
     { 
-      {"u_horizontal", DataType::Int},
+      {"u_horizontal", RenderDataType::Int},
     }, 
 
     // attributes

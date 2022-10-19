@@ -14,15 +14,15 @@ const ShaderStageSpecification FLEX_MESH_VERT_SHADER = {
 
     // uniforms
     {
-        {"u_modelView", DataType::Matrix44Float},
-        {"u_projMatrix", DataType::Matrix44Float},
+        {"u_modelView", RenderDataType::Matrix44Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
     }, 
 
     // attributes
     {
-        {"a_position", DataType::Vector3Float},
-        {"a_normal", DataType::Vector3Float},
-        {"a_barycoord", DataType::Vector3Float},
+        {"a_position", RenderDataType::Vector3Float},
+        {"a_normal", RenderDataType::Vector3Float},
+        {"a_barycoord", RenderDataType::Vector3Float},
     },
 
     {}, // textures
@@ -134,11 +134,11 @@ const ShaderReplacementRule MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE (
         )"}
     },
     /* uniforms */ {
-      {"u_baseColor1", DataType::Vector3Float},
-      {"u_baseColor2", DataType::Vector3Float},
+      {"u_baseColor1", RenderDataType::Vector3Float},
+      {"u_baseColor2", RenderDataType::Vector3Float},
     },
     /* attributes */ {
-      {"a_faceColorType", DataType::Float},
+      {"a_faceColorType", RenderDataType::Float},
     },
     /* textures */ {}
 );
@@ -162,7 +162,7 @@ const ShaderReplacementRule MESH_PROPAGATE_VALUE (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_value", DataType::Float},
+      {"a_value", RenderDataType::Float},
     },
     /* textures */ {}
 );
@@ -192,7 +192,7 @@ const ShaderReplacementRule MESH_PROPAGATE_HALFEDGE_VALUE (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_value3", DataType::Vector3Float},
+      {"a_value3", RenderDataType::Vector3Float},
     },
     /* textures */ {}
 );
@@ -216,7 +216,7 @@ const ShaderReplacementRule MESH_PROPAGATE_COLOR (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_color", DataType::Vector3Float},
+      {"a_color", RenderDataType::Vector3Float},
     },
     /* textures */ {}
 );
@@ -240,7 +240,7 @@ const ShaderReplacementRule MESH_PROPAGATE_VALUE2 (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_value2", DataType::Vector2Float},
+      {"a_value2", RenderDataType::Vector2Float},
     },
     /* textures */ {}
 );
@@ -264,7 +264,7 @@ const ShaderReplacementRule MESH_PROPAGATE_CULLPOS (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_cullPos", DataType::Vector3Float},
+      {"a_cullPos", RenderDataType::Vector3Float},
     },
     /* textures */ {}
 );
@@ -306,11 +306,11 @@ const ShaderReplacementRule MESH_WIREFRAME(
       )"},
     },
     /* uniforms */ {
-      {"u_edgeColor", DataType::Vector3Float},
-      {"u_edgeWidth", DataType::Float},
+      {"u_edgeColor", RenderDataType::Vector3Float},
+      {"u_edgeWidth", RenderDataType::Float},
     },
     /* attributes */ {
-      {"a_edgeIsReal", DataType::Vector3Float},
+      {"a_edgeIsReal", RenderDataType::Vector3Float},
     },
     /* textures */ {}
 );
@@ -358,7 +358,7 @@ const ShaderReplacementRule MESH_BACKFACE_DIFFERENT (
     },
     /* uniforms */ 
     {
-      {"u_backfaceColor", DataType::Vector3Float}
+      {"u_backfaceColor", RenderDataType::Vector3Float}
     },
     /* attributes */ {},
     /* textures */ {}
@@ -428,10 +428,10 @@ const ShaderReplacementRule MESH_PROPAGATE_PICK (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_vertexColors", DataType::Vector3Float, 3},
-      {"a_edgeColors", DataType::Vector3Float, 3},
-      {"a_halfedgeColors", DataType::Vector3Float, 3},
-      {"a_faceColor", DataType::Vector3Float},
+      {"a_vertexColors", RenderDataType::Vector3Float, 3},
+      {"a_edgeColors", RenderDataType::Vector3Float, 3},
+      {"a_halfedgeColors", RenderDataType::Vector3Float, 3},
+      {"a_faceColor", RenderDataType::Vector3Float},
     },
     /* textures */ {}
 );

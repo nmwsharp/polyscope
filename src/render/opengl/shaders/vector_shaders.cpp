@@ -14,13 +14,13 @@ const ShaderStageSpecification FLEX_VECTOR_VERT_SHADER = {
 
     // uniforms
     {
-        {"u_modelView", DataType::Matrix44Float},
+        {"u_modelView", RenderDataType::Matrix44Float},
     }, 
 
     // attributes
     {
-        {"a_position", DataType::Vector3Float},
-        {"a_vector", DataType::Vector3Float},
+        {"a_position", RenderDataType::Vector3Float},
+        {"a_vector", RenderDataType::Vector3Float},
     },
 
     {}, // textures
@@ -53,9 +53,9 @@ const ShaderStageSpecification FLEX_VECTOR_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_lengthMult", DataType::Float},
-        {"u_radius", DataType::Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_lengthMult", RenderDataType::Float},
+        {"u_radius", RenderDataType::Float},
     }, 
 
     // attributes
@@ -137,10 +137,10 @@ const ShaderStageSpecification FLEX_VECTOR_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_invProjMatrix", DataType::Matrix44Float},
-        {"u_viewport", DataType::Vector4Float},
-        {"u_radius", DataType::Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_invProjMatrix", RenderDataType::Matrix44Float},
+        {"u_viewport", RenderDataType::Vector4Float},
+        {"u_radius", RenderDataType::Float},
     }, 
 
     { }, // attributes
@@ -255,7 +255,7 @@ const ShaderReplacementRule VECTOR_PROPAGATE_COLOR (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_color", DataType::Vector3Float},
+      {"a_color", RenderDataType::Vector3Float},
     },
     /* textures */ {}
 );
