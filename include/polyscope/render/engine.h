@@ -42,6 +42,7 @@ enum class RenderDataType { Vector2Float, Vector3Float, Vector4Float, Matrix44Fl
 
 int dimension(const TextureFormat& x);
 std::string modeName(const TransparencyMode& m);
+std::string renderDataTypeName(const RenderDataType& r);
 
 namespace render {
 
@@ -67,17 +68,15 @@ public:
   virtual uint32_t getNativeBufferID() = 0; // used to interop with external things, e.g. ImGui
 
   // == Getters
-  std::string getName() const { return name; }
-  RenderDataType getType() const { return type; }
+  RenderDataType getType() const { return dataType; }
   int getArrayCount() const { return arrayCount; }
   long int getDataSize() const { return dataSize; }
   bool isSet() const { return dataSize > 0; }
 
 protected:
-  std::string name;
-  RenderDataType type;
+  RenderDataType dataType;
   int arrayCount;
-  long int dataSize; // the size of the data currently stored in this attribute (-1 if nothing)
+  long int dataSize = -1; // the size of the data currently stored in this attribute (-1 if nothing)
 };
 
 class TextureBuffer {

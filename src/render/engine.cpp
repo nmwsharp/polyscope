@@ -28,6 +28,28 @@ int dimension(const TextureFormat& x) {
   throw std::runtime_error("bad enum");
 }
 
+std::string renderDataTypeName(const RenderDataType& r) {
+  switch (r) {
+  case RenderDataType::Vector2Float:
+    return "Vector2Float";
+  case RenderDataType::Vector3Float:
+    return "Vector3Float";
+  case RenderDataType::Vector4Float:
+    return "Vector4Float";
+  case RenderDataType::Matrix44Float:
+    return "Matrix44Float";
+  case RenderDataType::Float:
+    return "Float";
+  case RenderDataType::Int:
+    return "Int";
+  case RenderDataType::UInt:
+    return "UInt";
+  case RenderDataType::Index:
+    return "Index";
+  }
+  return "";
+}
+
 std::string modeName(const TransparencyMode& m) {
   switch (m) {
   case TransparencyMode::None:
@@ -40,8 +62,12 @@ std::string modeName(const TransparencyMode& m) {
   return "";
 }
 
-
 namespace render {
+
+AttributeBuffer::AttributeBuffer(RenderDataType dataType_, int arrayCount_)
+    : dataType(dataType_), arrayCount(arrayCount_) {}
+
+AttributeBuffer::~AttributeBuffer() {}
 
 TextureBuffer::TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_)
     : dim(dim_), format(format_), sizeX(sizeX_), sizeY(sizeY_) {

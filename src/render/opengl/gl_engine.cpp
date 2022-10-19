@@ -228,10 +228,9 @@ GLAttributeBuffer::~GLAttributeBuffer() {
 void GLAttributeBuffer::bind() { glBindBuffer(GL_ARRAY_BUFFER, VBOLoc); }
 
 void GLAttributeBuffer::checkType(RenderDataType targetType) {
-  if (type != targetType) {
-    throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
-                                " with wrong type. Actual type: " + std::to_string(static_cast<int>(type)) +
-                                "  Attempted type: " + std::to_string(static_cast<int>(targetType)));
+  if (dataType != targetType) {
+    throw std::invalid_argument("Tried to set GLAttributeBuffer with wrong type. Actual type: " +
+                                renderDataTypeName(dataType) + "  Attempted type: " + renderDataTypeName(targetType));
   }
 }
 
@@ -292,8 +291,6 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data, bool update,
                  GL_STATIC_DRAW);
     dataSize = data.size();
   }
-
-  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
 void GLAttributeBuffer::setData(const std::vector<glm::vec4>& data, bool update, size_t offset, size_t size) {
