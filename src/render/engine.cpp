@@ -144,6 +144,7 @@ ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages
   }
 }
 
+
 void Engine::buildEngineGui() {
 
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
@@ -603,6 +604,13 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     loadDefaultMaterials();
     loadDefaultColorMaps();
   }
+}
+
+
+std::shared_ptr<ShaderProgram> Engine::requestShader(const std::string& programName,
+                                                     const std::vector<std::string>& customRules,
+                                                     ShaderReplacementDefaults defaults) {
+  return requestShader(programName, customRules, {}, defaults);
 }
 
 void Engine::addSlicePlane(std::string uniquePostfix) {

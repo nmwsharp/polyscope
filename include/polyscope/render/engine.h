@@ -38,11 +38,47 @@ enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
 enum class DepthMode { Less, LEqual, LEqualReadOnly, Greater, Disable };
 enum class BlendMode { Over, AlphaOver, OverNoWrite, Under, Zero, WeightedAdd, Source, Disable };
+enum class RenderDataType { Vector2Float, Vector3Float, Vector4Float, Matrix44Float, Float, Int, UInt, Index };
 
 int dimension(const TextureFormat& x);
 std::string modeName(const TransparencyMode& m);
 
 namespace render {
+
+class AttributeBuffer {
+public:
+  AttributeBuffer(RenderDataType dataType_, int arrayCount = 1);
+
+  virtual ~AttributeBuffer();
+
+  virtual void setData(const std::vector<glm::vec2>& data, bool update = false, size_t offset = 0,
+                       size_t size = INVALID_IND) = 0;
+  virtual void setData(const std::vector<glm::vec3>& data, bool update = false, size_t offset = 0,
+                       size_t size = INVALID_IND) = 0;
+  virtual void setData(const std::vector<glm::vec4>& data, bool update = false, size_t offset = 0,
+                       size_t size = INVALID_IND) = 0;
+  virtual void setData(const std::vector<double>& data, bool update = false, size_t offset = 0,
+                       size_t size = INVALID_IND) = 0;
+  virtual void setData(const std::vector<int>& data, bool update = false, size_t offset = 0,
+                       size_t size = INVALID_IND) = 0;
+  virtual void setData(const std::vector<uint32_t>& data, bool update = false, size_t offset = 0,
+                       size_t size = INVALID_IND) = 0;
+
+  virtual uint32_t getNativeBufferID() = 0; // used to interop with external things, e.g. ImGui
+
+  // == Getters
+  std::string getName() const { return name; }
+  RenderDataType getType() const { return type; }
+  int getArrayCount() const { return arrayCount; }
+  long int getDataSize() const { return dataSize; }
+  bool isSet() const { return dataSize > 0; }
+
+protected:
+  std::string name;
+  RenderDataType type;
+  int arrayCount;
+  long int dataSize; // the size of the data currently stored in this attribute (-1 if nothing)
+};
 
 class TextureBuffer {
 public:
@@ -159,17 +195,16 @@ protected:
 
 // == Shaders
 
-enum class DataType { Vector2Float, Vector3Float, Vector4Float, Matrix44Float, Float, Int, UInt, Index };
 struct ShaderSpecUniform {
   const std::string name;
-  const DataType type;
+  const RenderDataType type;
 };
 struct ShaderSpecAttribute {
-  ShaderSpecAttribute(std::string name_, DataType type_) : name(name_), type(type_), arrayCount(1) {}
-  ShaderSpecAttribute(std::string name_, DataType type_, int arrayCount_)
+  ShaderSpecAttribute(std::string name_, RenderDataType type_) : name(name_), type(type_), arrayCount(1) {}
+  ShaderSpecAttribute(std::string name_, RenderDataType type_, int arrayCount_)
       : name(name_), type(type_), arrayCount(arrayCount_) {}
   const std::string name;
-  const DataType type;
+  const RenderDataType type;
   const int arrayCount; // number of times this element is repeated in an array
 };
 struct ShaderSpecTexture {
@@ -242,6 +277,7 @@ public:
   // clang-format off
   virtual bool hasAttribute(std::string name) = 0;
   virtual bool attributeIsSet(std::string name) = 0;
+  virtual std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0, int size = -1) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) = 0;
@@ -368,6 +404,10 @@ public:
 
   // === Factory methods
 
+  // create attribute buffers
+  virtual std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, int arrayCount_ = 1) = 0;
+
+
   // create textures
   virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
                                                                unsigned char* data = nullptr) = 0; // 1d
@@ -389,7 +429,11 @@ public:
   // == create shader programs
   virtual std::shared_ptr<ShaderProgram>
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
+                const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers,
                 ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) = 0;
+  std::shared_ptr<ShaderProgram>
+  requestShader(const std::string& programName, const std::vector<std::string>& customRules,
+                ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject);
 
   // === The frame buffers used in the rendering pipeline
   // The size of these buffers is always kept in sync with the screen size
@@ -486,8 +530,9 @@ protected:
   virtual void createSlicePlaneFliterRule(std::string name) = 0;
 
   // low-level interface for creating shader programs
-  virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                               DrawMode dm) = 0;
+  virtual std::shared_ptr<ShaderProgram> generateShaderProgram(
+      const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
+      const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers) = 0;
 
   // Default rule lists (see enum for explanation)
   std::vector<std::string> defaultRules_sceneObject{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "LIGHT_MATCAP"};

@@ -13,6 +13,34 @@ namespace polyscope {
 namespace render {
 namespace backend_openGL_mock {
 
+  class GLAttributeBuffer : public AttributeBuffer {
+public:
+  GLAttributeBuffer(RenderDataType dataType_, int arrayCount_ = 1);
+  virtual ~GLAttributeBuffer();
+
+  void bind();
+
+  void setData(const std::vector<glm::vec2>& data, bool update = false, size_t offset = 0,
+               size_t size = INVALID_IND) override;
+  void setData(const std::vector<glm::vec3>& data, bool update = false, size_t offset = 0,
+               size_t size = INVALID_IND) override;
+  void setData(const std::vector<glm::vec4>& data, bool update = false, size_t offset = 0,
+               size_t size = INVALID_IND) override;
+  void setData(const std::vector<double>& data, bool update = false, size_t offset = 0,
+               size_t size = INVALID_IND) override;
+  void setData(const std::vector<int>& data, bool update = false, size_t offset = 0,
+               size_t size = INVALID_IND) override;
+  void setData(const std::vector<uint32_t>& data, bool update = false, size_t offset = 0,
+               size_t size = INVALID_IND) override;
+
+  uint32_t getNativeBufferID() override;
+
+protected:
+
+private:
+  void checkType(RenderDataType targetType);
+};
+
 class GLTextureBuffer : public TextureBuffer {
 public:
   // create a 1D texture from data
@@ -114,6 +142,7 @@ public:
   // clang-format off
   bool hasAttribute(std::string name) override;
   bool attributeIsSet(std::string name) override;
+  std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) override;
   void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0, int size = -1) override;
   void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) override;
   void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) override;
@@ -151,18 +180,17 @@ protected:
   // Classes to keep track of attributes and uniforms
   struct GLShaderUniform {
     std::string name;
-    DataType type;
+    RenderDataType type;
     bool isSet; // has a value been assigned to this uniform?
     int location;
   };
 
   struct GLShaderAttribute {
     std::string name;
-    DataType type;
+    RenderDataType type;
     int arrayCount;
-    long int dataSize; // the size of the data currently stored in this attribute (-1 if nothing)
     int location;
-    int VBOLoc;
+    std::shared_ptr<GLAttributeBuffer> buff; // the buffer that we will actually use
   };
 
   struct GLShaderTexture {
@@ -236,6 +264,9 @@ public:
   void ImGuiRender() override;
 
   // === Factory methods
+  
+  // create attribute buffers
+  std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, int arrayCount_ = 1) override;
 
   // create textures
   std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
@@ -256,6 +287,7 @@ public:
   // create shader programs
   std::shared_ptr<ShaderProgram>
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
+                const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers,
                 ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) override;
 
   // Transparency
@@ -272,8 +304,9 @@ protected:
   std::unordered_map<std::string, ShaderReplacementRule> registeredShaderRules;
   void populateDefaultShadersAndRules();
 
-  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                       DrawMode dm) override;
+  std::shared_ptr<ShaderProgram> generateShaderProgram(
+      const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
+      const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers) override;
 };
 
 } // namespace backend_openGL_mock

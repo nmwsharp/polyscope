@@ -150,6 +150,23 @@ std::string PointCloud::getShaderNameForRenderMode() {
 }
 
 
+uint32_t PointCloud::getPositionBufferID() {
+
+  // make sure that the class is initialized and be buffer is allocated
+  if (program == nullptr) {
+    prepare();
+  }
+
+  // TODO handle case where some other dominant quantity is drawing the point cloud
+  
+  return program->getAttributeBuffer("a_position")->getNativeBufferID();
+}
+
+void PointCloud::bufferDataUpdated() {
+  requestRedraw();
+}
+
+
 std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud) {
   initRules = addStructureRules(initRules);
   if (withPointCloud) {
@@ -215,12 +232,10 @@ void PointCloud::fillGeometryBuffers(render::ShaderProgram& p) {
 }
 
 void PointCloud::geometryChanged() {
-  if (program) 
-  {
+  if (program) {
     fillGeometryBuffers(*program);
   }
-  if (pickProgram) 
-  {
+  if (pickProgram) {
     fillGeometryBuffers(*pickProgram);
   }
   requestRedraw();

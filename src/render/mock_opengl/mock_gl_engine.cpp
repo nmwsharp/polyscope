@@ -424,17 +424,17 @@ void GLShaderProgram::createBuffers() {
     // Choose the correct type for the buffer
     for (int iArrInd = 0; iArrInd < a.arrayCount; iArrInd++) {
       switch (a.type) {
-      case DataType::Float:
+      case RenderDataType::Float:
         break;
-      case DataType::Int:
+      case RenderDataType::Int:
         break;
-      case DataType::UInt:
+      case RenderDataType::UInt:
         break;
-      case DataType::Vector2Float:
+      case RenderDataType::Vector2Float:
         break;
-      case DataType::Vector3Float:
+      case RenderDataType::Vector3Float:
         break;
-      case DataType::Vector4Float:
+      case RenderDataType::Vector4Float:
         break;
       default:
         throw std::invalid_argument("Unrecognized GLShaderAttribute type");
@@ -468,7 +468,7 @@ void GLShaderProgram::setUniform(std::string name, int val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Int) {
+      if (u.type == RenderDataType::Int) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -483,7 +483,7 @@ void GLShaderProgram::setUniform(std::string name, int val) {
 void GLShaderProgram::setUniform(std::string name, unsigned int val) {
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::UInt) {
+      if (u.type == RenderDataType::UInt) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -499,7 +499,7 @@ void GLShaderProgram::setUniform(std::string name, float val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Float) {
+      if (u.type == RenderDataType::Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -515,7 +515,7 @@ void GLShaderProgram::setUniform(std::string name, double val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Float) {
+      if (u.type == RenderDataType::Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -531,7 +531,7 @@ void GLShaderProgram::setUniform(std::string name, float* val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Matrix44Float) {
+      if (u.type == RenderDataType::Matrix44Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -547,7 +547,7 @@ void GLShaderProgram::setUniform(std::string name, glm::vec2 val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Vector2Float) {
+      if (u.type == RenderDataType::Vector2Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -563,7 +563,7 @@ void GLShaderProgram::setUniform(std::string name, glm::vec3 val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Vector3Float) {
+      if (u.type == RenderDataType::Vector3Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -579,7 +579,7 @@ void GLShaderProgram::setUniform(std::string name, glm::vec4 val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Vector4Float) {
+      if (u.type == RenderDataType::Vector4Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -595,7 +595,7 @@ void GLShaderProgram::setUniform(std::string name, std::array<float, 3> val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Vector3Float) {
+      if (u.type == RenderDataType::Vector3Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -611,7 +611,7 @@ void GLShaderProgram::setUniform(std::string name, float x, float y, float z, fl
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Vector4Float) {
+      if (u.type == RenderDataType::Vector4Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -653,7 +653,7 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2
 
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      if (a.type == DataType::Vector2Float) {
+      if (a.type == RenderDataType::Vector2Float) {
         if (update) {
           // TODO: Allow modifications to non-contiguous memory
           offset *= 2 * sizeof(float);
@@ -665,9 +665,9 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(DataType::Vector2Float)));
+        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name + " with wrong type. Actual type: " +
+                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
+                                    std::to_string(static_cast<int>(RenderDataType::Vector2Float)));
       }
       return;
     }
@@ -690,7 +690,7 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec3
 
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      if (a.type == DataType::Vector3Float) {
+      if (a.type == RenderDataType::Vector3Float) {
         if (update) {
           // TODO: Allow modifications to non-contiguous memory
           offset *= 3 * sizeof(float);
@@ -703,9 +703,9 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec3
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(DataType::Vector3Float)));
+        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name + " with wrong type. Actual type: " +
+                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
+                                    std::to_string(static_cast<int>(RenderDataType::Vector3Float)));
       }
       return;
     }
@@ -729,7 +729,7 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4
 
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      if (a.type == DataType::Vector4Float) {
+      if (a.type == RenderDataType::Vector4Float) {
         if (update) {
           // TODO: Allow modifications to non-contiguous memory
           offset *= 4 * sizeof(float);
@@ -742,9 +742,9 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4
           a.dataSize = data.size();
         }
       } else {
-        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(DataType::Vector4Float)));
+        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name + " with wrong type. Actual type: " +
+                                    std::to_string(static_cast<int>(a.type)) + "  Attempted type: " +
+                                    std::to_string(static_cast<int>(RenderDataType::Vector4Float)));
       }
       return;
     }
@@ -763,7 +763,7 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& 
 
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      if (a.type == DataType::Float) {
+      if (a.type == RenderDataType::Float) {
         if (update) {
           // TODO: Allow modifications to non-contiguous memory
           offset *= sizeof(float);
@@ -778,7 +778,7 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& 
       } else {
         throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
                                     " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<float>(DataType::Float)));
+                                    "  Attempted type: " + std::to_string(static_cast<float>(RenderDataType::Float)));
       }
       return;
     }
@@ -799,7 +799,7 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<int>& dat
 
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      if (a.type == DataType::Int) {
+      if (a.type == RenderDataType::Int) {
         if (update) {
           // TODO: Allow modifications to non-contiguous memory
           offset *= sizeof(int);
@@ -814,7 +814,7 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<int>& dat
       } else {
         throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
                                     " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(DataType::Int)));
+                                    "  Attempted type: " + std::to_string(static_cast<int>(RenderDataType::Int)));
       }
       return;
     }
@@ -836,7 +836,7 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<uint32_t>
 
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      if (a.type == DataType::UInt) {
+      if (a.type == RenderDataType::UInt) {
         if (update) {
           // TODO: Allow modifications to non-contiguous memory
           offset *= sizeof(unsigned int);
@@ -851,7 +851,7 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<uint32_t>
       } else {
         throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
                                     " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(DataType::UInt)));
+                                    "  Attempted type: " + std::to_string(static_cast<int>(RenderDataType::UInt)));
       }
       return;
     }

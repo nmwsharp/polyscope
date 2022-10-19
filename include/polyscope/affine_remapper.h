@@ -18,6 +18,8 @@ namespace polyscope {
 // STANDARD: [-inf, inf], zero does not mean anything special (ie, position)
 // SYMMETRIC: [-inf, inf], zero is special (ie, net profit/loss)
 // MAGNITUDE: [0, inf], zero is special (ie, length of a vector)
+//
+// TODO this is a bad name but we're stuck with it because it's user-facing...
 enum class DataType { STANDARD = 0, SYMMETRIC, MAGNITUDE };
 
 inline std::string defaultColorMap(DataType type);
