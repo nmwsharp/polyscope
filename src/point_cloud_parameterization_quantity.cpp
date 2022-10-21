@@ -30,81 +30,151 @@ PointCloudParameterizationQuantity::PointCloudParameterizationQuantity(std::stri
 void PointCloudParameterizationQuantity::draw() {
   if (!isEnabled()) return;
 
-  if (program == nullptr) {
+  if (pointProgram == nullptr) {
     createProgram();
   }
 
   // Set uniforms
-  parent.setStructureUniforms(*program);
-  setProgramUniforms(*program);
-  parent.setPointCloudUniforms(*program);
+  parent.setStructureUniforms(*pointProgram);
+  setProgramUniforms(*pointProgram);
+  parent.setPointCloudUniforms(*pointProgram);
 
-  program->draw();
+  pointProgram->draw();
 }
 
 void PointCloudParameterizationQuantity::createProgram() {
-  // Create the program to draw this quantity
+  // Create the pointProgram to draw this quantity
 
   switch (getStyle()) {
   case ParamVizStyle::CHECKER:
-    program =
-        render::engine->requestShader(parent.getShaderNameForRenderMode(),
-                                      parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_CHECKER_VALUE2"}));
+
+    // clang-format off
+    pointProgram = render::engine->requestShader(
+        parent.getShaderNameForRenderMode(), 
+        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_CHECKER_VALUE2"}),
+        { 
+          {"a_position", parent.getPositionRenderBuffer()}, 
+          {"a_pointRadius", parent.getPointRadiusRenderBuffer()},
+          {"a_value2", getCoordRenderBuffer()},
+        }
+    );
+    // clang-format on
+
     break;
   case ParamVizStyle::GRID:
-    program =
-        render::engine->requestShader(parent.getShaderNameForRenderMode(),
-                                      parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}));
+
+    // clang-format off
+    pointProgram = render::engine->requestShader(
+        parent.getShaderNameForRenderMode(), 
+        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}),
+        { 
+          {"a_position", parent.getPositionRenderBuffer()}, 
+          {"a_pointRadius", parent.getPointRadiusRenderBuffer()},
+          {"a_value2", getCoordRenderBuffer()},
+        }
+    );
+    // clang-format on
+
     break;
   case ParamVizStyle::LOCAL_CHECK:
-    program = render::engine->requestShader(
-        parent.getShaderNameForRenderMode(),
-        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"}));
-    program->setTextureFromColormap("t_colormap", cMap.get());
+
+    // clang-format off
+    pointProgram = render::engine->requestShader(
+        parent.getShaderNameForRenderMode(), 
+        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"}),
+        { 
+          {"a_position", parent.getPositionRenderBuffer()}, 
+          {"a_pointRadius", parent.getPointRadiusRenderBuffer()},
+          {"a_value2", getCoordRenderBuffer()},
+        }
+    );
+    // clang-format on
+
+    pointProgram->setTextureFromColormap("t_colormap", cMap.get());
+
     break;
   case ParamVizStyle::LOCAL_RAD:
-    program = render::engine->requestShader(
-        parent.getShaderNameForRenderMode(),
-        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "SHADEVALUE_MAG_VALUE2",
-                                   "ISOLINE_STRIPE_VALUECOLOR"}));
-    program->setTextureFromColormap("t_colormap", cMap.get());
+
+    // clang-format off
+    pointProgram = render::engine->requestShader(
+        parent.getShaderNameForRenderMode(), 
+        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "SHADEVALUE_MAG_VALUE2", "ISOLINE_STRIPE_VALUECOLOR"}),
+        { 
+          {"a_position", parent.getPositionRenderBuffer()}, 
+          {"a_pointRadius", parent.getPointRadiusRenderBuffer()},
+          {"a_value2", getCoordRenderBuffer()},
+        }
+    );
+    // clang-format on
+
+    pointProgram->setTextureFromColormap("t_colormap", cMap.get());
+
     break;
   }
 
-  // Fill buffers
-  parent.fillGeometryBuffers(*program);
-  program->setAttribute("a_value2", coords);
-
-  render::engine->setMaterial(*program, parent.getMaterial());
+  render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
+
+void PointCloudParameterizationQuantity::ensureRenderBuffersFilled(bool forceRefill) {
+
+  // ## create the buffers if they don't already exist
+
+  bool createdBuffer = false;
+  if (!coordRenderBuffer) {
+    coordRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector2Float);
+    createdBuffer = true;
+  }
+
+  // If the buffers already existed (and thus are presumably filled), quick-out. Otherwise, fill the buffers.
+  if (createdBuffer || forceRefill) {
+    coordRenderBuffer->setData(coords);
+  }
+}
+
+void PointCloudParameterizationQuantity::dataUpdated() {
+  ensureRenderBuffersFilled(false);
+  requestRedraw();
+}
+
+std::shared_ptr<render::AttributeBuffer> PointCloudParameterizationQuantity::getCoordRenderBuffer() {
+  ensureRenderBuffersFilled();
+  return coordRenderBuffer;
+}
+
+uint32_t PointCloudParameterizationQuantity::getCoordBufferID() {
+  ensureRenderBuffersFilled();
+  return coordRenderBuffer->getNativeBufferID();
+}
+
+void PointCloudParameterizationQuantity::bufferDataExternallyUpdated() { requestRedraw(); }
 
 
 // Update range uniforms
-void PointCloudParameterizationQuantity::setProgramUniforms(render::ShaderProgram& program) {
+void PointCloudParameterizationQuantity::setProgramUniforms(render::ShaderProgram& pointProgram) {
   // Interpretatin of modulo parameter depends on data type
   switch (coordsType) {
   case ParamCoordsType::UNIT:
-    program.setUniform("u_modLen", getCheckerSize());
+    pointProgram.setUniform("u_modLen", getCheckerSize());
     break;
   case ParamCoordsType::WORLD:
-    program.setUniform("u_modLen", getCheckerSize() * state::lengthScale);
+    pointProgram.setUniform("u_modLen", getCheckerSize() * state::lengthScale);
     break;
   }
 
   // Set other uniforms needed
   switch (getStyle()) {
   case ParamVizStyle::CHECKER:
-    program.setUniform("u_color1", getCheckerColors().first);
-    program.setUniform("u_color2", getCheckerColors().second);
+    pointProgram.setUniform("u_color1", getCheckerColors().first);
+    pointProgram.setUniform("u_color2", getCheckerColors().second);
     break;
   case ParamVizStyle::GRID:
-    program.setUniform("u_gridLineColor", getGridColors().first);
-    program.setUniform("u_gridBackgroundColor", getGridColors().second);
+    pointProgram.setUniform("u_gridLineColor", getGridColors().first);
+    pointProgram.setUniform("u_gridBackgroundColor", getGridColors().second);
     break;
   case ParamVizStyle::LOCAL_CHECK:
   case ParamVizStyle::LOCAL_RAD:
-    program.setUniform("u_angle", localRot);
-    program.setUniform("u_modDarkness", getAltDarkness());
+    pointProgram.setUniform("u_angle", localRot);
+    pointProgram.setUniform("u_modDarkness", getAltDarkness());
     break;
   }
 }
@@ -149,7 +219,7 @@ void PointCloudParameterizationQuantity::buildCustomUI() {
 
 
   // Modulo stripey width
-  if (ImGui::DragFloat("period", &checkerSize.get(), .001, 0.0001, 1.0, "%.4f", 
+  if (ImGui::DragFloat("period", &checkerSize.get(), .001, 0.0001, 1.0, "%.4f",
                        ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     setCheckerSize(getCheckerSize());
   }
@@ -196,7 +266,7 @@ void PointCloudParameterizationQuantity::buildCustomUI() {
 
 PointCloudParameterizationQuantity* PointCloudParameterizationQuantity::setStyle(ParamVizStyle newStyle) {
   vizStyle = newStyle;
-  program.reset();
+  pointProgram.reset();
   requestRedraw();
   return this;
 }
@@ -237,7 +307,7 @@ double PointCloudParameterizationQuantity::getCheckerSize() { return checkerSize
 
 PointCloudParameterizationQuantity* PointCloudParameterizationQuantity::setColorMap(std::string name) {
   cMap = name;
-  program.reset();
+  pointProgram.reset();
   requestRedraw();
   return this;
 }
@@ -253,7 +323,7 @@ double PointCloudParameterizationQuantity::getAltDarkness() { return altDarkness
 
 
 void PointCloudParameterizationQuantity::refresh() {
-  program.reset();
+  pointProgram.reset();
   Quantity::refresh();
 }
 

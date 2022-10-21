@@ -34,6 +34,11 @@ void PointCloudVectorQuantity::refresh() {
   Quantity::refresh();
 }
 
+void PointCloudVectorQuantity::dataUpdated() {
+  //ensureRenderBuffersFilled(false);
+  requestRedraw();
+}
+
 void PointCloudVectorQuantity::buildCustomUI() {
   ImGui::SameLine();
   vectorArtist->buildParametersUI();

@@ -20,14 +20,31 @@ public:
   virtual void refresh() override;
 
   virtual std::string niceName() override;
+  
+  template <class V>
+  void updateData(const V& newColors);
+
+  void ensureRenderBuffersFilled(bool forceRefill=false);
+
+  std::shared_ptr<render::AttributeBuffer> getColorRenderBuffer();
 
   // === Members
   std::vector<glm::vec3> values;
+  
+  // === ~DANGER~ experimental/unsupported functions
+
+  uint32_t getColorBufferID();
+  void bufferDataExternallyUpdated();
 
 protected:
   void createPointProgram();
+  void dataUpdated();
+
+  std::shared_ptr<render::AttributeBuffer> colorBuffer;
   std::shared_ptr<render::ShaderProgram> pointProgram;
 };
 
 
 } // namespace polyscope
+
+#include "polyscope/point_cloud_color_quantity.ipp"

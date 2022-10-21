@@ -228,10 +228,14 @@ SET(HEADERS
   ${INCLUDE_ROOT}/point_cloud.h
   ${INCLUDE_ROOT}/point_cloud.ipp
   ${INCLUDE_ROOT}/point_cloud_color_quantity.h
+  ${INCLUDE_ROOT}/point_cloud_color_quantity.ipp
   ${INCLUDE_ROOT}/point_cloud_quantity.h
   ${INCLUDE_ROOT}/point_cloud_scalar_quantity.h
+  ${INCLUDE_ROOT}/point_cloud_scalar_quantity.ipp
   ${INCLUDE_ROOT}/point_cloud_parameterization_quantity.h
+  ${INCLUDE_ROOT}/point_cloud_parameterization_quantity.ipp
   ${INCLUDE_ROOT}/point_cloud_vector_quantity.h
+  ${INCLUDE_ROOT}/point_cloud_vector_quantity.ipp
   ${INCLUDE_ROOT}/polyscope.h
   ${INCLUDE_ROOT}/quantity.h
   ${INCLUDE_ROOT}/quantity.ipp

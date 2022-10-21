@@ -958,9 +958,10 @@ void GLShaderProgram::resolveExternalBuffers(
 
     for (auto& tup : externalBuffers) {
       std::string extName = std::get<0>(tup);
-      std::shared_ptr<AttributeBuffer> extBuff = std::get<1>(tup);
 
       if (a.name == extName) {
+
+        std::shared_ptr<AttributeBuffer> extBuff = std::get<1>(tup);
 
         // check multiple-set errors (duplicates in externalBuffers list?)
         if (a.buff) throw std::invalid_argument("attribute " + extName + " is already set");
@@ -1655,6 +1656,7 @@ void GLShaderProgram::activateTextures() {
     // Point the uniform at this texture
 
     // Bind to the texture buffer
+    /*
     GLenum targetType;
     switch (t.dim) {
     case 1:
@@ -1664,6 +1666,7 @@ void GLShaderProgram::activateTextures() {
       targetType = GL_TEXTURE_2D;
       break;
     }
+    */
 
     glActiveTexture(GL_TEXTURE0 + t.index);
     t.textureBuffer->bind();

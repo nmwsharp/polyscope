@@ -22,16 +22,30 @@ public:
 
   virtual void buildPickUI(size_t ind) override;
   virtual void refresh() override;
+  
+  template <class V>
+  void updateData(const V& newScalars);
+
+  void ensureRenderBuffersFilled(bool forceRefill=false);
+
+  std::shared_ptr<render::AttributeBuffer> getScalarRenderBuffer();
 
   virtual std::string niceName() override;
 
+  // === ~DANGER~ experimental/unsupported functions
+
+  uint32_t getScalarBufferID();
+  void bufferDataExternallyUpdated();
 
 protected:
-  // === Visualization parameters
+  void createProgram();
+  void dataUpdated();
 
-  void createPointProgram();
+  std::shared_ptr<render::AttributeBuffer> scalarRenderBuffer;
   std::shared_ptr<render::ShaderProgram> pointProgram;
 };
 
 
 } // namespace polyscope
+
+#include "polyscope/point_cloud_scalar_quantity.ipp"

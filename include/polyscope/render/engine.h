@@ -426,6 +426,8 @@ public:
   virtual std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) = 0;
 
   // == create shader programs
+  //   - externalBuffers is a list of (name,bufferPtr) tuples will will be used by the program. If any are not needed,
+  //   they will be ignored.
   virtual std::shared_ptr<ShaderProgram>
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
                 const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers,

@@ -19,7 +19,7 @@ PointCloud* registerPointCloud(std::string name, const T& points) {
 template <class T>
 PointCloud* registerPointCloud2D(std::string name, const T& points) {
   checkInitialized();
-  
+
   std::vector<glm::vec3> points3D(standardizeVectorArray<glm::vec3, 2>(points));
   for (auto& v : points3D) {
     v.z = 0.;
@@ -35,7 +35,7 @@ PointCloud* registerPointCloud2D(std::string name, const T& points) {
 template <class V>
 void PointCloud::updatePointPositions(const V& newPositions) {
   points = standardizeVectorArray<glm::vec3, 3>(newPositions);
-  geometryChanged();
+  dataUpdated();
 }
 
 template <class V>
@@ -70,7 +70,6 @@ PointCloudColorQuantity* PointCloud::addColorQuantity(std::string name, const T&
   validateSize(colors, nPoints(), "point cloud color quantity " + name);
   return addColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(colors));
 }
-
 
 template <class T>
 PointCloudScalarQuantity* PointCloud::addScalarQuantity(std::string name, const T& data, DataType type) {

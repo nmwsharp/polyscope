@@ -41,18 +41,59 @@ void PointCloudColorQuantity::draw() {
 std::string PointCloudColorQuantity::niceName() { return name + " (color)"; }
 
 void PointCloudColorQuantity::createPointProgram() {
+
   // Create the program to draw this quantity
-  pointProgram = render::engine->requestShader(parent.getShaderNameForRenderMode(), parent.addPointCloudRules({"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"}));
+  // clang-format off
+  pointProgram = render::engine->requestShader(
+      parent.getShaderNameForRenderMode(), 
+      parent.addPointCloudRules({"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"}),
+      { 
+        {"a_position", parent.getPositionRenderBuffer()}, 
+        {"a_pointRadius", parent.getPointRadiusRenderBuffer()},
+        {"a_color", getColorRenderBuffer()},
+      }
+  );
+  // clang-format on
 
   // Fill buffers
-  parent.fillGeometryBuffers(*pointProgram);
-  pointProgram->setAttribute("a_color", values);
-
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
 
-void PointCloudColorQuantity::refresh() { 
-  pointProgram.reset(); 
+void PointCloudColorQuantity::ensureRenderBuffersFilled(bool forceRefill) {
+
+  // ## create the buffers if they don't already exist
+
+  bool createdBuffer = false;
+  if (!colorBuffer) {
+    colorBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
+    createdBuffer = true;
+  }
+
+  // If the buffers already existed (and thus are presumably filled), quick-out. Otherwise, fill the buffers.
+  if (createdBuffer || forceRefill) {
+    colorBuffer->setData(values);
+  }
+}
+
+void PointCloudColorQuantity::dataUpdated() {
+  ensureRenderBuffersFilled(false);
+  requestRedraw();
+}
+
+std::shared_ptr<render::AttributeBuffer> PointCloudColorQuantity::getColorRenderBuffer() {
+  ensureRenderBuffersFilled();
+  return colorBuffer;
+}
+
+uint32_t PointCloudColorQuantity::getColorBufferID() {
+  ensureRenderBuffersFilled();
+  return colorBuffer->getNativeBufferID();
+}
+
+void PointCloudColorQuantity::bufferDataExternallyUpdated() { requestRedraw(); }
+
+void PointCloudColorQuantity::refresh() {
+  pointProgram.reset();
   Quantity::refresh();
 }
 

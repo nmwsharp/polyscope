@@ -25,7 +25,7 @@ void PointCloudScalarQuantity::draw() {
 
   // Make the program if we don't have one already
   if (pointProgram == nullptr) {
-    createPointProgram();
+    createProgram();
   }
 
   // Set uniforms
@@ -55,19 +55,58 @@ void PointCloudScalarQuantity::buildCustomUI() {
 }
 
 
-void PointCloudScalarQuantity::createPointProgram() {
-  // Create the program to draw this quantity
+void PointCloudScalarQuantity::createProgram() {
 
-  pointProgram = render::engine->requestShader(parent.getShaderNameForRenderMode(),
-                                               parent.addPointCloudRules(addScalarRules({"SPHERE_PROPAGATE_VALUE"})));
+  // Create the program to draw this quantity
+  // clang-format off
+  pointProgram = render::engine->requestShader(
+      parent.getShaderNameForRenderMode(), 
+      parent.addPointCloudRules(addScalarRules({"SPHERE_PROPAGATE_VALUE"})),
+      { 
+        {"a_position", parent.getPositionRenderBuffer()}, 
+        {"a_pointRadius", parent.getPointRadiusRenderBuffer()},
+        {"a_value", getScalarRenderBuffer()},
+      }
+  );
+  // clang-format on
 
   // Fill buffers
-  parent.fillGeometryBuffers(*pointProgram);
-  pointProgram->setAttribute("a_value", values);
   pointProgram->setTextureFromColormap("t_colormap", cMap.get());
-
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
+
+void PointCloudScalarQuantity::ensureRenderBuffersFilled(bool forceRefill) {
+
+  // ## create the buffers if they don't already exist
+
+  bool createdBuffer = false;
+  if (!scalarRenderBuffer) {
+    scalarRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Float);
+    createdBuffer = true;
+  }
+
+  // If the buffers already existed (and thus are presumably filled), quick-out. Otherwise, fill the buffers.
+  if (createdBuffer || forceRefill) {
+    scalarRenderBuffer->setData(values);
+  }
+}
+
+void PointCloudScalarQuantity::dataUpdated() {
+  ensureRenderBuffersFilled(false);
+  requestRedraw();
+}
+
+std::shared_ptr<render::AttributeBuffer> PointCloudScalarQuantity::getScalarRenderBuffer() {
+  ensureRenderBuffersFilled();
+  return scalarRenderBuffer;
+}
+
+uint32_t PointCloudScalarQuantity::getScalarBufferID() {
+  ensureRenderBuffersFilled();
+  return scalarRenderBuffer->getNativeBufferID();
+}
+
+void PointCloudScalarQuantity::bufferDataExternallyUpdated() { requestRedraw(); }
 
 void PointCloudScalarQuantity::refresh() {
   pointProgram.reset();

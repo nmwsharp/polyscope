@@ -91,7 +91,7 @@ public:
   // === Set point size from a scalar quantity
   // effect is multiplicative with pointRadius
   // negative values are always clamped to 0
-  // if autoScale==true, values are rescaled such that the largest has size pointRadius
+  // if autoScale==true, values are rescaled such that the largest has size 1
   void setPointRadiusQuantity(PointCloudScalarQuantity* quantity, bool autoScale = true);
   void setPointRadiusQuantity(std::string name, bool autoScale = true);
   void clearPointRadiusQuantity();
@@ -107,7 +107,7 @@ public:
   void deleteProgram();
 
   // === Get/set visualization parameters
-  
+
   // set the base color of the points
   PointCloud* setPointRenderMode(PointRenderMode newVal);
   PointRenderMode getPointRenderMode();
@@ -126,27 +126,26 @@ public:
 
   // Rendering helpers used by quantities
   void setPointCloudUniforms(render::ShaderProgram& p);
-  void fillGeometryBuffers(render::ShaderProgram& p);
+  void ensureRenderBuffersFilled(bool forceRefill = false);
   std::vector<std::string> addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud = true);
   std::string getShaderNameForRenderMode();
+  std::shared_ptr<render::AttributeBuffer> getPositionRenderBuffer();
+  std::shared_ptr<render::AttributeBuffer> getPointRadiusRenderBuffer();
 
   // === ~DANGER~ experimental/unsupported functions
 
-  // Get a raw GPU-side buffer index for the position buffer. This buffer 
-  // can be written to to update the data (e.g., from a CUDA buffer), 
-  // without transferring to the CPU. 
-  // The meaining of this value is graphics backend-dependent, and 
-  // it may not be available on all backends (in openGL this returns 
-  // the VBO GLuint identifier).
-  // Be sure to call the *updated() function below after writing to the buffer.
-  uint32_t getPositionBufferID();
+  // Get a raw GPU-side data buffer IDs. This buffer can be written to to update the data (e.g., from a CUDA buffer),
+  // without transferring to the CPU. The meaining of this value is graphics backend-dependent, and it may not be
+  // available on all backends. In openGL this returns the VBO GLuint identifier. Be sure to call the *updated()
+  // function below after writing to the buffer.
+  uint32_t getPositionRenderBufferID();
 
-  // After updating any data via the buffer above, 
-  // call this function to let Polyscope know 
-  void bufferDataUpdated();
+  // After updating any data via the buffer above, call this function to let
+  // Polyscope know.
+  void renderBufferDataExternallyUpdated();
+
 
 private:
-
   // === Visualization parameters
   PersistentValue<std::string> pointRenderMode;
   PersistentValue<glm::vec3> pointColor;
@@ -155,14 +154,16 @@ private:
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
+  std::shared_ptr<render::AttributeBuffer> positionBuffer;
+  std::shared_ptr<render::AttributeBuffer> pointRadiusBuffer;
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> pickProgram;
 
   // === Helpers
   // Do setup work related to drawing, including allocating openGL data
-  void prepare();
-  void preparePick();
-  void geometryChanged();
+  void ensureRenderProgramPrepared();
+  void ensurePickProgramPrepared();
+  void dataUpdated();
 
   // === Quantity adder implementations
   PointCloudScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);

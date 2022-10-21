@@ -100,6 +100,16 @@ TEST_F(PolyscopeTest, ShowPointCloud) {
   EXPECT_FALSE(polyscope::hasPointCloud("test1"));
 }
 
+TEST_F(PolyscopeTest, PointCloudUpdateGeometry) {
+  auto psPoints = registerPointCloud();
+  polyscope::show(3);
+
+  psPoints->updatePointPositions(getPoints());
+  polyscope::show(3);
+  
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, PointCloudAppearance) {
   auto psPoints = registerPointCloud();
 
@@ -140,27 +150,41 @@ TEST_F(PolyscopeTest, PointCloudColor) {
   
   psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
+  
+  q1->updateData(vColors);
+  polyscope::show(3);
 
   polyscope::removeAllStructures();
 }
 
 TEST_F(PolyscopeTest, PointCloudScalar) {
   auto psPoints = registerPointCloud();
+
   std::vector<double> vScalar(psPoints->nPoints(), 7.);
   auto q1 = psPoints->addScalarQuantity("vScalar", vScalar);
   q1->setEnabled(true);
   polyscope::show(3);
+
   psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
+
+  q1->updateData(vScalar);
+  polyscope::show(3);
+
   polyscope::removeAllStructures();
 }
 
 TEST_F(PolyscopeTest, PointCloudVector) {
   auto psPoints = registerPointCloud();
+
   std::vector<glm::vec3> vals(psPoints->nPoints(), {1., 2., 3.});
   auto q1 = psPoints->addVectorQuantity("vals", vals);
   q1->setEnabled(true);
   polyscope::show(3);
+
+  q1->updateData(vals);
+  polyscope::show(3);
+
   polyscope::removeAllStructures();
 }
 
@@ -182,6 +206,9 @@ TEST_F(PolyscopeTest, PointCloudParam) {
   polyscope::show(3);
   
   psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
+  polyscope::show(3);
+  
+  q1->updateData(param);
   polyscope::show(3);
 
   polyscope::removeAllStructures();
@@ -205,6 +232,9 @@ TEST_F(PolyscopeTest, PointCloudScalarRadius) {
   polyscope::show(3);
 
   psPoints->setPointRadiusQuantity("vScalar2", false); // no autoscaling
+  polyscope::show(3);
+  
+  q2->updateData(vScalar2);
   polyscope::show(3);
 
   psPoints->clearPointRadiusQuantity();

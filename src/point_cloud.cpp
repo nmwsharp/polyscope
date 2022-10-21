@@ -69,9 +69,7 @@ void PointCloud::draw() {
   if (dominantQuantity == nullptr) {
 
     // Ensure we have prepared buffers
-    if (program == nullptr) {
-      prepare();
-    }
+    ensureRenderProgramPrepared();
 
     // Set program uniforms
     setStructureUniforms(*program);
@@ -94,9 +92,7 @@ void PointCloud::drawPick() {
   }
 
   // Ensure we have prepared buffers
-  if (pickProgram == nullptr) {
-    preparePick();
-  }
+  ensurePickProgramPrepared();
 
   // Set uniforms
   setStructureUniforms(*pickProgram);
@@ -105,29 +101,48 @@ void PointCloud::drawPick() {
   pickProgram->draw();
 }
 
-void PointCloud::prepare() {
-  // It not quantity is coloring the points, draw with a default color
-  if (dominantQuantity != nullptr) {
-    return;
-  }
+void PointCloud::ensureRenderProgramPrepared() {
 
-  program = render::engine->requestShader(getShaderNameForRenderMode(), addPointCloudRules({"SHADE_BASECOLOR"}));
-  render::engine->setMaterial(*program, material.get());
+  // If already prepared, do nothing
+  if (program) return;
 
   // Fill out the geometry data for the program
-  fillGeometryBuffers(*program);
+  // (ensure the positionBuffer is populated)
+  ensureRenderBuffersFilled();
+
+  // clang-format off
+  program = render::engine->requestShader(
+      getShaderNameForRenderMode(), 
+      addPointCloudRules({"SHADE_BASECOLOR"}),
+      {
+        {"a_position", getPositionRenderBuffer()}, 
+        {"a_pointRadius", getPointRadiusRenderBuffer()}
+      }
+  );
+  // clang-format on
+
+  render::engine->setMaterial(*program, material.get());
 }
 
-void PointCloud::preparePick() {
+void PointCloud::ensurePickProgramPrepared() {
+  ensureRenderProgramPrepared();
 
   // Request pick indices
   size_t pickCount = points.size();
   size_t pickStart = pick::requestPickBufferRange(this, pickCount);
 
   // Create a new pick program
-  pickProgram =
-      render::engine->requestShader(getShaderNameForRenderMode(), addPointCloudRules({"SPHERE_PROPAGATE_COLOR"}, true),
-                                    render::ShaderReplacementDefaults::Pick);
+  // clang-format off
+  pickProgram = render::engine->requestShader(
+      getShaderNameForRenderMode(), 
+      addPointCloudRules({"SPHERE_PROPAGATE_COLOR"}, true),
+      {
+        {"a_position", positionBuffer}, 
+        {"a_pointRadius", pointRadiusBuffer}
+      }, 
+      render::ShaderReplacementDefaults::Pick
+  );
+  // clang-format on
 
   // Fill color buffer with packed point indices
   std::vector<glm::vec3> pickColors;
@@ -137,7 +152,6 @@ void PointCloud::preparePick() {
   }
 
   // Store data in buffers
-  fillGeometryBuffers(*pickProgram);
   pickProgram->setAttribute("a_color", pickColors);
 }
 
@@ -149,22 +163,24 @@ std::string PointCloud::getShaderNameForRenderMode() {
   return "ERROR";
 }
 
-
-uint32_t PointCloud::getPositionBufferID() {
-
-  // make sure that the class is initialized and be buffer is allocated
-  if (program == nullptr) {
-    prepare();
-  }
-
-  // TODO handle case where some other dominant quantity is drawing the point cloud
-  
-  return program->getAttributeBuffer("a_position")->getNativeBufferID();
+std::shared_ptr<render::AttributeBuffer> PointCloud::getPositionRenderBuffer() {
+  ensureRenderBuffersFilled();
+  return positionBuffer;
+}
+std::shared_ptr<render::AttributeBuffer> PointCloud::getPointRadiusRenderBuffer() {
+  ensureRenderBuffersFilled();
+  // TODO use the buffer from the scalar quantity
+  return pointRadiusBuffer;
+  ;
 }
 
-void PointCloud::bufferDataUpdated() {
-  requestRedraw();
+uint32_t PointCloud::getPositionRenderBufferID() {
+  ensureRenderBuffersFilled();
+  return getPositionRenderBuffer()->getNativeBufferID();
 }
+
+
+void PointCloud::renderBufferDataExternallyUpdated() { requestRedraw(); }
 
 
 std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud) {
@@ -221,25 +237,39 @@ std::vector<double> PointCloud::resolvePointRadiusQuantity() {
   return sizes;
 }
 
-void PointCloud::fillGeometryBuffers(render::ShaderProgram& p) {
-  p.setAttribute("a_position", points);
+void PointCloud::ensureRenderBuffersFilled(bool forceRefill) {
+
+  // ## create the buffers if they don't already exist
+
+  bool createdBuffer = false;
+  if (!positionBuffer) {
+    positionBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
+    createdBuffer = true;
+  }
+  if (!pointRadiusBuffer) {
+    pointRadiusBuffer = render::engine->generateAttributeBuffer(RenderDataType::Float);
+    createdBuffer = true;
+  }
+
+  // if the buffers already existed (and thus are presumably filled), quick-out
+  if (!createdBuffer && !forceRefill) {
+    return;
+  }
+
+  // ## otherwise, fill the buffers
+
+  positionBuffer->setData(points);
 
   if (pointRadiusQuantityName != "") {
     // Resolve the quantity
     std::vector<double> pointRadiusQuantityVals = resolvePointRadiusQuantity();
-    p.setAttribute("a_pointRadius", pointRadiusQuantityVals);
+    pointRadiusBuffer->setData(pointRadiusQuantityVals);
   }
 }
 
-void PointCloud::geometryChanged() {
-  if (program) {
-    fillGeometryBuffers(*program);
-  }
-  if (pickProgram) {
-    fillGeometryBuffers(*pickProgram);
-  }
+void PointCloud::dataUpdated() {
+  ensureRenderBuffersFilled(true);
   requestRedraw();
-  QuantityStructure<PointCloud>::refresh();
 }
 
 void PointCloud::buildPickUI(size_t localPickID) {

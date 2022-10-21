@@ -24,6 +24,13 @@ public:
   virtual void refresh() override;
 
   virtual std::string niceName() override;
+ 
+  template <class V>
+  void updateData(const V& newCoords);
+
+  void ensureRenderBuffersFilled(bool forceRefill=false);
+
+  std::shared_ptr<render::AttributeBuffer> getCoordRenderBuffer();
 
   // === Members
   std::vector<glm::vec2> coords;
@@ -54,6 +61,12 @@ public:
   // Darkness for checkers (etc)
   PointCloudParameterizationQuantity* setAltDarkness(double newVal);
   double getAltDarkness();
+  
+  // === ~DANGER~ experimental/unsupported functions
+
+  uint32_t getCoordBufferID();
+  void bufferDataExternallyUpdated();
+
 
 protected:
   // === Visualiztion options
@@ -67,9 +80,14 @@ protected:
   float localRot = 0.; // for LOCAL (angular shift, in radians)
 
   void createProgram();
+  void dataUpdated();
   void setProgramUniforms(render::ShaderProgram& program);
-  std::shared_ptr<render::ShaderProgram> program;
+
+  std::shared_ptr<render::AttributeBuffer> coordRenderBuffer;
+  std::shared_ptr<render::ShaderProgram> pointProgram;
 };
 
 
 } // namespace polyscope
+
+#include "polyscope/point_cloud_parameterization_quantity.ipp"
