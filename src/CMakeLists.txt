@@ -271,6 +271,8 @@ SET(HEADERS
   ${INCLUDE_ROOT}/types.h
   ${INCLUDE_ROOT}/utilities.h
   ${INCLUDE_ROOT}/view.h
+  ${INCLUDE_ROOT}/vector_quantity.h
+  ${INCLUDE_ROOT}/vector_quantity.ipp
   ${INCLUDE_ROOT}/volume_mesh.h
   ${INCLUDE_ROOT}/volume_mesh.ipp
   ${INCLUDE_ROOT}/volume_mesh_quantity.h
