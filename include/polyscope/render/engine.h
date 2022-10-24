@@ -569,13 +569,20 @@ inline void ShaderProgram::setAttribute(std::string name, const std::vector<std:
 // === Public API
 // Callers should basically only interact via these methods and variables
 
+// The global render engine
+// Gets initialized by initializeRenderEngine() in polyscope::init();
+extern Engine* engine;
+
+// The backend type of the engine, as initialized above
+extern std::string engineBackendName;
+
 // Call once to initialize
 // (see render/initialize_backend.cpp)
 void initializeRenderEngine(std::string backend = "");
 
-// The global render engine
-// Gets initialized by initializeRenderEngine() in polyscope::init();
-extern Engine* engine;
+// Get the backend name above
+inline std::string getRenderEngineBackendName() { return engineBackendName; }
+
 
 } // namespace render
 } // namespace polyscope
