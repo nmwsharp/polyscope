@@ -1,204 +1,207 @@
 namespace polyscope {
 
 template <typename QuantityT>
-VectorQuantity<QuantityT>::VectorQuantity(QuantityT& quantity_, const std::vector<double>& values_, DataType dataType_)
-    : quantity(quantity_), values(values_), dataType(dataType_), dataRange(robustMinMax(values, 1e-5)),
-      cMap(quantity.name + "#cmap", defaultColorMap(dataType)),
-      isolinesEnabled(quantity.name + "#isolinesEnabled", false),
-      isolineWidth(quantity.name + "#isolineWidth", absoluteValue((dataRange.second - dataRange.first) * 0.02)),
-      isolineDarkness(quantity.name + "#isolineDarkness", 0.7)
-
-{
-  hist.updateColormap(cMap.get());
-  hist.buildHistogram(values);
-  resetMapRange();
-}
+VectorQuantity<QuantityT>::VectorQuantity(QuantityT& quantity_, const std::vector<glm::vec3>& vectors_,
+                                          VectorType vectorType_)
+    : quantity(quantity_), vectors(vectors_), vectorType(vectorType_),
+      vectorLengthMult(quantity.uniquePrefix() + "#vectorLengthMult",
+                       vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
+      vectorRadius(quantity.uniquePrefix() + "#vectorRadius", relativeValue(0.0025)),
+      vectorColor(quantity.uniquePrefix() + "#vectorColor", getNextUniqueColor()),
+      material(quantity.uniquePrefix() + "#material", "clay") {}
 
 template <typename QuantityT>
-void VectorQuantity<QuantityT>::buildScalarUI() {
+void VectorQuantity<QuantityT>::buildVectorUI() {
 
-  if (render::buildColormapSelector(cMap.get())) {
-    quantity.refresh();
-    hist.updateColormap(cMap.get());
-    setColorMap(getColorMap());
-  }
 
-  // Reset button
+  if (ImGui::ColorEdit3("Color", &vectorColor.get()[0], ImGuiColorEditFlags_NoInputs)) setVectorColor(getVectorColor());
   ImGui::SameLine();
-  if (ImGui::Button("Reset")) {
-    resetMapRange();
+
+  // === Options popup
+  if (ImGui::Button("Options")) {
+    ImGui::OpenPopup("OptionsPopup");
   }
-
-  // Draw the histogram of values
-  hist.colormapRange = vizRange;
-  hist.buildUI();
-
-  // Data range
-  // Note: %g specifiers are generally nicer than %e, but here we don't acutally have a choice. ImGui (for somewhat
-  // valid reasons) links the resolution of the slider to the decimal width of the formatted number. When %g formats a
-  // number with few decimal places, sliders can break. There is no way to set a minimum number of decimal places with
-  // %g, unfortunately.
-  {
-    switch (dataType) {
-    case DataType::STANDARD:
-      ImGui::DragFloatRange2("", &vizRange.first, &vizRange.second, (dataRange.second - dataRange.first) / 100.,
-                             dataRange.first, dataRange.second, "Min: %.3e", "Max: %.3e");
-      break;
-    case DataType::SYMMETRIC: {
-      float absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
-      ImGui::DragFloatRange2("##range_symmetric", &vizRange.first, &vizRange.second, absRange / 100., -absRange,
-                             absRange, "Min: %.3e", "Max: %.3e");
-    } break;
-    case DataType::MAGNITUDE: {
-      ImGui::DragFloatRange2("##range_mag", &vizRange.first, &vizRange.second, vizRange.second / 100., 0.0,
-                             dataRange.second, "Min: %.3e", "Max: %.3e");
-    } break;
+  if (ImGui::BeginPopup("OptionsPopup")) {
+    if (render::buildMaterialOptionsGui(material.get())) {
+      material.manuallyChanged();
+      setMaterial(material.get()); // trigger the other updates that happen on set()
     }
+    ImGui::EndPopup();
   }
 
-  // Isolines
-  if (isolinesEnabled.get()) {
-    ImGui::PushItemWidth(100);
-
-    // Isoline width
-    ImGui::TextUnformatted("Isoline width");
-    ImGui::SameLine();
-    if (isolineWidth.get().isRelative()) {
-      if (ImGui::DragFloat("##Isoline width relative", isolineWidth.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f",
+  // Only get to set length for non-ambient vectors
+  if (vectorType != VectorType::AMBIENT) {
+    if (ImGui::SliderFloat("Length", vectorLengthMult.get().getValuePtr(), 0.0, .1, "%.5f",
                            ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
-        isolineWidth.manuallyChanged();
-        requestRedraw();
-      }
-    } else {
-      float scaleWidth = dataRange.second - dataRange.first;
-      if (ImGui::DragFloat("##Isoline width absolute", isolineWidth.get().getValuePtr(), scaleWidth / 1000, 0.,
-                           scaleWidth, "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
-        isolineWidth.manuallyChanged();
-        requestRedraw();
-      }
-    }
-
-    // Isoline darkness
-    ImGui::TextUnformatted("Isoline darkness");
-    ImGui::SameLine();
-    if (ImGui::DragFloat("##Isoline darkness", &isolineDarkness.get(), 0.01, 0.)) {
-      isolineDarkness.manuallyChanged();
+      vectorLengthMult.manuallyChanged();
       requestRedraw();
     }
+  }
 
-    ImGui::PopItemWidth();
+  if (ImGui::SliderFloat("Radius", vectorRadius.get().getValuePtr(), 0.0, .1, "%.5f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
+    vectorRadius.manuallyChanged();
+    requestRedraw();
+  }
+
+  //{ // Draw max and min magnitude
+  // ImGui::TextUnformatted(mapper.printBounds().c_str());
+  //}
+}
+
+template <typename QuantityT>
+void VectorQuantity<QuantityT>::buildVectorOptionsUI() {}
+
+
+template <typename QuantityT>
+void VectorQuantity<QuantityT>::drawVectors() {
+  if (!vectorProgram) {
+    createProgram();
+  }
+
+  // Set uniforms
+  quantity.parent.setStructureUniforms(*vectorProgram);
+  vectorProgram->setUniform("u_radius", vectorRadius.get().asAbsolute());
+  vectorProgram->setUniform("u_baseColor", vectorColor.get());
+
+  if (vectorType == VectorType::AMBIENT) {
+    vectorProgram->setUniform("u_lengthMult", 1.0);
+  } else {
+    vectorProgram->setUniform("u_lengthMult", vectorLengthMult.get().asAbsolute() / maxLength);
+  }
+
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+  vectorProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  vectorProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
+
+  vectorProgram->draw();
+}
+
+template <typename QuantityT>
+void VectorQuantity<QuantityT>::createProgram() {
+
+  std::vector<std::string> rules = quantity.parent.addStructureRules({"SHADE_BASECOLOR"});
+  if (quantity.parent.wantsCullPosition()) {
+    rules.push_back("VECTOR_CULLPOS_FROM_TAIL");
+  }
+
+
+  // Create the vectorProgram to draw this quantity
+  // clang-format off
+  vectorProgram = render::engine->requestShader(
+      "RAYCAST_VECTOR",
+      rules,
+      { 
+        {"a_vector", getVectorRenderBuffer()}, 
+        {"a_position", baseRenderBuffer}, // concrete class must have populated this
+      }
+  );
+  // clang-format on
+
+  render::engine->setMaterial(*vectorProgram, material.get());
+}
+
+
+template <typename QuantityT>
+void VectorQuantity<QuantityT>::ensureRenderBuffersFilled(bool forceRefill) {
+  // ## create the buffers if they don't already exist
+
+  bool createdBuffer = false;
+  if (!vectorRenderBuffer) {
+    vectorRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
+    createdBuffer = true;
+  }
+
+  // If the buffers already existed (and thus are presumably filled), quick-out. Otherwise, fill the buffers.
+  if (createdBuffer || forceRefill) {
+    vectorRenderBuffer->setData(vectors);
   }
 }
 
 template <typename QuantityT>
-void VectorQuantity<QuantityT>::buildScalarOptionsUI() {
-  if (ImGui::MenuItem("Reset colormap range")) resetMapRange();
-  if (ImGui::MenuItem("Enable isolines", NULL, isolinesEnabled.get())) setIsolinesEnabled(!isolinesEnabled.get());
+std::shared_ptr<render::AttributeBuffer> VectorQuantity<QuantityT>::getVectorRenderBuffer() {
+  ensureRenderBuffersFilled();
+  return vectorRenderBuffer;
 }
 
 template <typename QuantityT>
-std::vector<std::string> VectorQuantity<QuantityT>::addScalarRules(std::vector<std::string> rules) {
-  rules.push_back("SHADE_COLORMAP_VALUE");
-  if (isolinesEnabled.get()) {
-    rules.push_back("ISOLINE_STRIPE_VALUECOLOR");
+void VectorQuantity<QuantityT>::refreshVectors() {
+  vectorProgram.reset();
+}
+
+
+template <typename QuantityT>
+void VectorQuantity<QuantityT>::dataUpdated() {
+  ensureRenderBuffersFilled(false);
+  requestRedraw();
+}
+
+
+template <typename QuantityT>
+template <class T>
+void VectorQuantity<QuantityT>::updateData(const T& newVectors) {
+  validateSize(newVectors, vectors.size(), "point cloud vector quantity " + quantity.name);
+  vectors = standardizeVectorArray<glm::vec3, 3>(newVectors);
+  dataUpdated();
+}
+
+template <typename QuantityT>
+template <class T>
+void VectorQuantity<QuantityT>::updateData2D(const T& newVectors) {
+  validateSize(newVectors, vectors.size(), "point cloud vector quantity " + quantity.name);
+  vectors = standardizeVectorArray<glm::vec3, 2>(newVectors);
+  for (auto& v : vectors) {
+    v.z = 0.;
   }
-  return rules;
+  dataUpdated();
 }
 
 
 template <typename QuantityT>
-void VectorQuantity<QuantityT>::setScalarUniforms(render::ShaderProgram& p) {
-  p.setUniform("u_rangeLow", vizRange.first);
-  p.setUniform("u_rangeHigh", vizRange.second);
-
-  if (isolinesEnabled.get()) {
-    p.setUniform("u_modLen", getIsolineWidth());
-    p.setUniform("u_modDarkness", getIsolineDarkness());
-  }
-}
-
-template <typename QuantityT>
-QuantityT* VectorQuantity<QuantityT>::resetMapRange() {
-  switch (dataType) {
-  case DataType::STANDARD:
-    vizRange = dataRange;
-    break;
-  case DataType::SYMMETRIC: {
-    double absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
-    vizRange = std::make_pair(-absRange, absRange);
-  } break;
-  case DataType::MAGNITUDE:
-    vizRange = std::make_pair(0., dataRange.second);
-    break;
-  }
-
-  requestRedraw();
-  return &quantity;
-}
-
-
-template <typename QuantityT>
-QuantityT* VectorQuantity<QuantityT>::setColorMap(std::string val) {
-  cMap = val;
-  hist.updateColormap(cMap.get());
-  quantity.refresh();
+QuantityT* VectorQuantity<QuantityT>::setVectorLengthScale(double newLength, bool isRelative) {
+  vectorLengthMult = ScaledValue<double>(newLength, isRelative);
   requestRedraw();
   return &quantity;
 }
 template <typename QuantityT>
-std::string VectorQuantity<QuantityT>::getColorMap() {
-  return cMap.get();
+double VectorQuantity<QuantityT>::getVectorLengthScale() {
+  return vectorLengthMult.get().asAbsolute();
 }
 
 template <typename QuantityT>
-QuantityT* VectorQuantity<QuantityT>::setMapRange(std::pair<double, double> val) {
-  vizRange = val;
+QuantityT* VectorQuantity<QuantityT>::setVectorRadius(double val, bool isRelative) {
+  vectorRadius = ScaledValue<double>(val, isRelative);
   requestRedraw();
   return &quantity;
 }
 template <typename QuantityT>
-std::pair<double, double> VectorQuantity<QuantityT>::getMapRange() {
-  return vizRange;
+double VectorQuantity<QuantityT>::getVectorRadius() {
+  return vectorRadius.get().asAbsolute();
 }
 
 template <typename QuantityT>
-QuantityT* VectorQuantity<QuantityT>::setIsolineWidth(double size, bool isRelative) {
-  isolineWidth = ScaledValue<float>(size, isRelative);
-  if (!isolinesEnabled.get()) {
-    setIsolinesEnabled(true);
-  }
+QuantityT* VectorQuantity<QuantityT>::setVectorColor(glm::vec3 color) {
+  vectorColor = color;
   requestRedraw();
   return &quantity;
 }
 template <typename QuantityT>
-double VectorQuantity<QuantityT>::getIsolineWidth() {
-  return isolineWidth.get().asAbsolute();
+glm::vec3 VectorQuantity<QuantityT>::getVectorColor() {
+  return vectorColor.get();
 }
 
 template <typename QuantityT>
-QuantityT* VectorQuantity<QuantityT>::setIsolineDarkness(double val) {
-  isolineDarkness = val;
-  if (!isolinesEnabled.get()) {
-    setIsolinesEnabled(true);
-  }
+QuantityT* VectorQuantity<QuantityT>::setMaterial(std::string m) {
+  material = m;
+  if (vectorProgram) render::engine->setMaterial(*vectorProgram, getMaterial());
   requestRedraw();
   return &quantity;
 }
 template <typename QuantityT>
-double VectorQuantity<QuantityT>::getIsolineDarkness() {
-  return isolineDarkness.get();
+std::string VectorQuantity<QuantityT>::getMaterial() {
+  return material.get();
 }
 
-template <typename QuantityT>
-QuantityT* VectorQuantity<QuantityT>::setIsolinesEnabled(bool newEnabled) {
-  isolinesEnabled = newEnabled;
-  quantity.refresh();
-  requestRedraw();
-  return &quantity;
-}
-template <typename QuantityT>
-bool VectorQuantity<QuantityT>::getIsolinesEnabled() {
-  return isolinesEnabled.get();
-}
 
 } // namespace polyscope

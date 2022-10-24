@@ -12,22 +12,29 @@ namespace polyscope {
 template <typename QuantityT>
 class VectorQuantity {
 public:
-  VectorQuantity(QuantityT& parent, const std::vector<double>& values, DataType dataType);
+  VectorQuantity(QuantityT& parent, const std::vector<glm::vec3>& vectors, VectorType vectorType);
 
   // Build the ImGUI UIs for scalars
-  void buildScalarUI();
-  void buildScalarOptionsUI(); // called inside of an options menu
+  void buildVectorUI();
+  void buildVectorOptionsUI(); // called inside of an options menu
 
-  // Add rules to rendering programs for scalars
-  std::vector<std::string> addScalarRules(std::vector<std::string> rules);
+  void drawVectors();
+  void refreshVectors();
 
-  // Set uniforms in rendering programs for scalars
-  void setScalarUniforms(render::ShaderProgram& p);
+  template <class V>
+  void updateData(const V& newVectors);
+  template <class V>
+  void updateData2D(const V& newVectors);
 
   // === Members
   QuantityT& quantity;
+  std::function<std::shared_ptr<render::AttributeBuffer>()> basesBufferCallback;
   std::vector<glm::vec3> vectors;
-  const DataType dataType;
+  const VectorType vectorType;
+
+  void ensureRenderBuffersFilled(bool forceRefill = false);
+  std::shared_ptr<render::AttributeBuffer> getVectorRenderBuffer();
+
 
   // === Option accessors
 
@@ -48,9 +55,13 @@ public:
   std::string getMaterial();
 
 
-protected:
+  // === ~DANGER~ experimental/unsupported functions
 
-  const VectorType vectorType;
+  uint32_t getVectorBufferID();
+  void bufferDataExternallyUpdated();
+
+
+protected:
   double maxLength = -1;
 
   // === Visualization options
@@ -60,9 +71,12 @@ protected:
   PersistentValue<std::string> material;
 
 
-  std::shared_ptr<render::ShaderProgram> program;
+  std::shared_ptr<render::AttributeBuffer> vectorRenderBuffer;
+  std::shared_ptr<render::AttributeBuffer> baseRenderBuffer;
+  std::shared_ptr<render::ShaderProgram> vectorProgram;
 
   // helpers
+  void dataUpdated();
   void createProgram();
   void updateMaxLength();
 };

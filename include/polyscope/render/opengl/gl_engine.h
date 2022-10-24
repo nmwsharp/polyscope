@@ -71,6 +71,14 @@ public:
   void setData(const std::vector<uint32_t>& data, bool update = false, size_t offset = 0,
                size_t size = INVALID_IND) override;
 
+
+  double getData_double(size_t ind) override;
+  glm::vec2 getData_vec2(size_t ind) override;
+  glm::vec3 getData_vec3(size_t ind) override;
+  glm::vec4 getData_vec4(size_t ind) override;
+  int getData_int(size_t ind) override;
+  uint32_t getData_uint32(size_t ind) override;
+
   uint32_t getNativeBufferID() override;
 
 protected:

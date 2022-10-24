@@ -46,7 +46,14 @@ void PointCloud::setPointCloudUniforms(render::ShaderProgram& p) {
     p.setUniform("u_pointRadius", 1.);
   } else {
     // common case
-    p.setUniform("u_pointRadius", pointRadius.get().asAbsolute());
+
+    float scalarQScale = 1.;
+    if (pointRadiusQuantityName != "") {
+      PointCloudScalarQuantity& radQ = resolvePointRadiusQuantity();
+      scalarQScale = std::max(0., radQ.getDataRange().second);
+    }
+
+    p.setUniform("u_pointRadius", pointRadius.get().asAbsolute() / scalarQScale);
   }
 }
 
@@ -57,7 +64,7 @@ void PointCloud::draw() {
 
   // If the user creates a very big point cloud using sphere mode, print a warning
   // (this warning is only printed once, and only if verbosity is high enough)
-  if (points.size() > 500000 && getPointRenderMode() == PointRenderMode::Sphere &&
+  if (nPoints() > 500000 && getPointRenderMode() == PointRenderMode::Sphere &&
       !internal::pointCloudEfficiencyWarningReported && options::verbosity > 1) {
     info("To render large point clouds efficiently, set their render mode to 'quad' instead of 'sphere'. (disable "
          "these warnings by setting Polyscope's verbosity < 2)");
@@ -128,7 +135,7 @@ void PointCloud::ensurePickProgramPrepared() {
   ensureRenderProgramPrepared();
 
   // Request pick indices
-  size_t pickCount = points.size();
+  size_t pickCount = nPoints();
   size_t pickStart = pick::requestPickBufferRange(this, pickCount);
 
   // Create a new pick program
@@ -138,7 +145,7 @@ void PointCloud::ensurePickProgramPrepared() {
       addPointCloudRules({"SPHERE_PROPAGATE_COLOR"}, true),
       {
         {"a_position", positionBuffer}, 
-        {"a_pointRadius", pointRadiusBuffer}
+        {"a_pointRadius", getPointRadiusRenderBuffer()}
       }, 
       render::ShaderReplacementDefaults::Pick
   );
@@ -168,10 +175,33 @@ std::shared_ptr<render::AttributeBuffer> PointCloud::getPositionRenderBuffer() {
   return positionBuffer;
 }
 std::shared_ptr<render::AttributeBuffer> PointCloud::getPointRadiusRenderBuffer() {
-  ensureRenderBuffersFilled();
-  // TODO use the buffer from the scalar quantity
-  return pointRadiusBuffer;
-  ;
+  if (pointRadiusQuantityName != "") {
+    // Resolve the quantity
+    PointCloudScalarQuantity& radQ = resolvePointRadiusQuantity();
+    return radQ.getScalarRenderBuffer();
+  }
+  return nullptr;
+}
+
+bool PointCloud::pointsStoredInMemory() { return !points.empty(); }
+
+size_t PointCloud::nPoints() {
+  if (pointsStoredInMemory()) {
+    return points.size();
+  } else {
+    if (!positionBuffer || !positionBuffer->isSet()) {
+      throw std::runtime_error("buffer is not allocated when it should be");
+    }
+    return static_cast<size_t>(positionBuffer->getDataSize());
+  }
+}
+
+glm::vec3 PointCloud::getPointPosition(size_t iPt) {
+  if (pointsStoredInMemory()) {
+    return points[iPt];
+  } else {
+    return positionBuffer->getData_vec3(iPt);
+  }
 }
 
 uint32_t PointCloud::getPositionRenderBufferID() {
@@ -181,7 +211,6 @@ uint32_t PointCloud::getPositionRenderBufferID() {
 
 
 void PointCloud::renderBufferDataExternallyUpdated() { requestRedraw(); }
-
 
 std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud) {
   initRules = addStructureRules(initRules);
@@ -200,7 +229,7 @@ std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string>
 }
 
 // helper
-std::vector<double> PointCloud::resolvePointRadiusQuantity() {
+PointCloudScalarQuantity& PointCloud::resolvePointRadiusQuantity() {
   PointCloudScalarQuantity* sizeScalarQ = nullptr;
   PointCloudQuantity* sizeQ = getQuantity(pointRadiusQuantityName);
   if (sizeQ != nullptr) {
@@ -212,29 +241,7 @@ std::vector<double> PointCloud::resolvePointRadiusQuantity() {
     polyscope::error("Cannot populate point size from quantity [" + name + "], it does not exist");
   }
 
-  std::vector<double> sizes;
-  if (sizeScalarQ == nullptr) {
-    // we failed to resolve above; populate with dummy data so we can continue processing
-    std::vector<double> ones(nPoints(), 1.);
-    sizes = ones;
-  } else {
-    sizes = sizeScalarQ->values;
-  }
-
-  // clamp to nonnegative and autoscale (if requested)
-  double max = 0;
-  for (double& x : sizes) {
-    if (!(x > 0)) x = 0; // ensure all nonnegative
-    max = std::fmax(max, x);
-  }
-  if (max == 0) max = 1e-6;
-  if (pointRadiusQuantityAutoscale) {
-    for (double& x : sizes) {
-      x /= max;
-    }
-  }
-
-  return sizes;
+  return *sizeScalarQ;
 }
 
 void PointCloud::ensureRenderBuffersFilled(bool forceRefill) {
@@ -246,10 +253,6 @@ void PointCloud::ensureRenderBuffersFilled(bool forceRefill) {
     positionBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
     createdBuffer = true;
   }
-  if (!pointRadiusBuffer) {
-    pointRadiusBuffer = render::engine->generateAttributeBuffer(RenderDataType::Float);
-    createdBuffer = true;
-  }
 
   // if the buffers already existed (and thus are presumably filled), quick-out
   if (!createdBuffer && !forceRefill) {
@@ -257,14 +260,7 @@ void PointCloud::ensureRenderBuffersFilled(bool forceRefill) {
   }
 
   // ## otherwise, fill the buffers
-
   positionBuffer->setData(points);
-
-  if (pointRadiusQuantityName != "") {
-    // Resolve the quantity
-    std::vector<double> pointRadiusQuantityVals = resolvePointRadiusQuantity();
-    pointRadiusBuffer->setData(pointRadiusQuantityVals);
-  }
 }
 
 void PointCloud::dataUpdated() {
@@ -276,7 +272,7 @@ void PointCloud::buildPickUI(size_t localPickID) {
 
   ImGui::TextUnformatted(("#" + std::to_string(localPickID) + "  ").c_str());
   ImGui::SameLine();
-  ImGui::TextUnformatted(to_string(points[localPickID]).c_str());
+  ImGui::TextUnformatted(to_string(getPointPosition(localPickID)).c_str());
 
   ImGui::Spacing();
   ImGui::Spacing();
@@ -294,7 +290,7 @@ void PointCloud::buildPickUI(size_t localPickID) {
 }
 
 void PointCloud::buildCustomUI() {
-  ImGui::Text("# points: %lld", static_cast<long long int>(points.size()));
+  ImGui::Text("# points: %lld", static_cast<long long int>(nPoints()));
   if (ImGui::ColorEdit3("Point color", &pointColor.get()[0], ImGuiColorEditFlags_NoInputs)) {
     setPointColor(getPointColor());
   }
@@ -355,6 +351,9 @@ void PointCloud::buildCustomOptionsUI() {
 }
 
 void PointCloud::updateObjectSpaceBounds() {
+
+  // TODO actually handle this case
+  if (!pointsStoredInMemory()) return;
 
   // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();

@@ -97,8 +97,13 @@ public:
   void clearPointRadiusQuantity();
 
   // The points that make up this point cloud
+  // Normally, the values are stored here. But if the render buffer
+  // is being manually updated, they will live only in the render buffer
+  // and this will be empty.
   std::vector<glm::vec3> points;
-  size_t nPoints() const { return points.size(); }
+  size_t nPoints(); 
+  bool pointsStoredInMemory();
+  glm::vec3 getPointPosition(size_t iPt);
 
   // Misc data
   static const std::string structureTypeName;
@@ -179,7 +184,7 @@ private:
   // which (scalar) quantity to set point size from
   std::string pointRadiusQuantityName = ""; // empty string means none
   bool pointRadiusQuantityAutoscale = true;
-  std::vector<double> resolvePointRadiusQuantity(); // helper
+  PointCloudScalarQuantity& resolvePointRadiusQuantity(); // helper
 };
 
 

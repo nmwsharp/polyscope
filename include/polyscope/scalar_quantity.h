@@ -39,6 +39,7 @@ public:
   QuantityT* setMapRange(std::pair<double, double> val);
   std::pair<double, double> getMapRange();
   QuantityT* resetMapRange(); // reset to full range
+  std::pair<double, double> getDataRange();
 
   // Isolines
   QuantityT* setIsolinesEnabled(bool newEnabled);

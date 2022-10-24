@@ -73,6 +73,14 @@ public:
   long int getDataSize() const { return dataSize; }
   bool isSet() const { return dataSize > 0; }
 
+  // get data at a single index from the buffer
+  virtual double getData_double(size_t ind) = 0;
+  virtual glm::vec2 getData_vec2(size_t ind) = 0;
+  virtual glm::vec3 getData_vec3(size_t ind) = 0;
+  virtual glm::vec4 getData_vec4(size_t ind) = 0;
+  virtual int getData_int(size_t ind) = 0;
+  virtual uint32_t getData_uint32(size_t ind) = 0;
+
 protected:
   RenderDataType dataType;
   int arrayCount;

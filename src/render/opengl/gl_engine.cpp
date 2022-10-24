@@ -407,6 +407,51 @@ void GLAttributeBuffer::setData(const std::vector<uint32_t>& data, bool update, 
   }
 }
 
+
+double GLAttributeBuffer::getData_double(size_t ind) {
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::Float) throw std::runtime_error("bad getData type");
+  float readValue;
+  glGetBufferSubData(GL_ARRAY_BUFFER, ind * sizeof(float), sizeof(float), &readValue);
+  return readValue;
+}
+glm::vec2 GLAttributeBuffer::getData_vec2(size_t ind) {
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::Vector2Float) throw std::runtime_error("bad getData type");
+  glm::vec2 readValue;
+  glGetBufferSubData(GL_ARRAY_BUFFER, ind * sizeof(glm::vec2), sizeof(glm::vec2), &readValue);
+  return readValue;
+}
+glm::vec3 GLAttributeBuffer::getData_vec3(size_t ind) {
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::Vector3Float) throw std::runtime_error("bad getData type");
+  glm::vec3 readValue;
+  glGetBufferSubData(GL_ARRAY_BUFFER, ind * sizeof(glm::vec3), sizeof(glm::vec3), &readValue);
+  return readValue;
+}
+glm::vec4 GLAttributeBuffer::getData_vec4(size_t ind) {
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::Vector4Float) throw std::runtime_error("bad getData type");
+  glm::vec4 readValue;
+  glGetBufferSubData(GL_ARRAY_BUFFER, ind * sizeof(glm::vec4), sizeof(glm::vec4), &readValue);
+  return readValue;
+}
+int GLAttributeBuffer::getData_int(size_t ind) {
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::Int) throw std::runtime_error("bad getData type");
+  GLint readValue;
+  glGetBufferSubData(GL_ARRAY_BUFFER, ind * sizeof(GLint), sizeof(GLint), &readValue);
+  return static_cast<int>(readValue);
+}
+uint32_t GLAttributeBuffer::getData_uint32(size_t ind) {
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::UInt) throw std::runtime_error("bad getData type");
+  uint32_t readValue;
+  glGetBufferSubData(GL_ARRAY_BUFFER, ind * sizeof(uint32_t), sizeof(uint32_t), &readValue);
+  return readValue;
+}
+
+
 uint32_t GLAttributeBuffer::getNativeBufferID() { return static_cast<uint32_t>(VBOLoc); }
 
 // =============================================================

@@ -14,8 +14,7 @@ namespace polyscope {
 PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                    PointCloud& pointCloud_, VectorType vectorType_)
 
-    : PointCloudQuantity(name, pointCloud_), vectors(vectors_), vectorType(vectorType_),
-      vectorArtist(new VectorArtist(parent, name + "#vectorartist", parent.points, vectors, vectorType)) {
+    : PointCloudQuantity(name, pointCloud_), VectorQuantity(*this, vectors_, vectorType_) {
 
   if (vectors.size() != parent.points.size()) {
     polyscope::error("Point cloud vector quantity " + name + " does not have same number of values (" +
@@ -26,23 +25,27 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
 
 void PointCloudVectorQuantity::draw() {
   if (!isEnabled()) return;
-  vectorArtist->draw();
+
+  // ensure that the base buffer has been populated from the parent
+  ensureBaseRenderBufferResolved();
+
+  drawVectors();
+}
+
+void PointCloudVectorQuantity::ensureBaseRenderBufferResolved() {
+  if (!baseRenderBuffer) {
+    baseRenderBuffer = parent.getPositionRenderBuffer();
+  }
 }
 
 void PointCloudVectorQuantity::refresh() {
-  vectorArtist.reset(new VectorArtist(parent, name + "#vectorartist", parent.points, vectors, vectorType));
+  refreshVectors();
   Quantity::refresh();
 }
 
-void PointCloudVectorQuantity::dataUpdated() {
-  //ensureRenderBuffersFilled(false);
-  requestRedraw();
-}
+void PointCloudVectorQuantity::buildCustomUI() { buildVectorUI(); }
 
-void PointCloudVectorQuantity::buildCustomUI() {
-  ImGui::SameLine();
-  vectorArtist->buildParametersUI();
-}
+// TODO buildVectorOptionsUI();
 
 void PointCloudVectorQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
@@ -58,27 +61,6 @@ void PointCloudVectorQuantity::buildPickUI(size_t ind) {
   ImGui::NextColumn();
 }
 
-PointCloudVectorQuantity* PointCloudVectorQuantity::setVectorLengthScale(double newLength, bool isRelative) {
-  vectorArtist->setVectorLengthScale(newLength, isRelative);
-  return this;
-}
-double PointCloudVectorQuantity::getVectorLengthScale() { return vectorArtist->getVectorLengthScale(); }
-PointCloudVectorQuantity* PointCloudVectorQuantity::setVectorRadius(double val, bool isRelative) {
-  vectorArtist->setVectorRadius(val, isRelative);
-  return this;
-}
-double PointCloudVectorQuantity::getVectorRadius() { return vectorArtist->getVectorRadius(); }
-PointCloudVectorQuantity* PointCloudVectorQuantity::setVectorColor(glm::vec3 color) {
-  vectorArtist->setVectorColor(color);
-  return this;
-}
-glm::vec3 PointCloudVectorQuantity::getVectorColor() { return vectorArtist->getVectorColor(); }
-
-PointCloudVectorQuantity* PointCloudVectorQuantity::setMaterial(std::string m) {
-  vectorArtist->setMaterial(m);
-  return this;
-}
-std::string PointCloudVectorQuantity::getMaterial() { return vectorArtist->getMaterial(); }
 
 std::string PointCloudVectorQuantity::niceName() { return name + " (vector)"; }
 

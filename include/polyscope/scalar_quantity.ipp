@@ -3,10 +3,11 @@ namespace polyscope {
 template <typename QuantityT>
 ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vector<double>& values_, DataType dataType_)
     : quantity(quantity_), values(values_), dataType(dataType_), dataRange(robustMinMax(values, 1e-5)),
-      cMap(quantity.name + "#cmap", defaultColorMap(dataType)),
-      isolinesEnabled(quantity.name + "#isolinesEnabled", false),
-      isolineWidth(quantity.name + "#isolineWidth", absoluteValue((dataRange.second - dataRange.first) * 0.02)),
-      isolineDarkness(quantity.name + "#isolineDarkness", 0.7)
+      cMap(quantity.uniquePrefix() + "#cmap", defaultColorMap(dataType)),
+      isolinesEnabled(quantity.uniquePrefix() + "#isolinesEnabled", false),
+      isolineWidth(quantity.uniquePrefix() + "#isolineWidth",
+                   absoluteValue((dataRange.second - dataRange.first) * 0.02)),
+      isolineDarkness(quantity.uniquePrefix() + "#isolineDarkness", 0.7)
 
 {
   hist.updateColormap(cMap.get());
@@ -159,6 +160,10 @@ QuantityT* ScalarQuantity<QuantityT>::setMapRange(std::pair<double, double> val)
 template <typename QuantityT>
 std::pair<double, double> ScalarQuantity<QuantityT>::getMapRange() {
   return vizRange;
+}
+template <typename QuantityT>
+std::pair<double, double> ScalarQuantity<QuantityT>::getDataRange() {
+  return dataRange;
 }
 
 template <typename QuantityT>
