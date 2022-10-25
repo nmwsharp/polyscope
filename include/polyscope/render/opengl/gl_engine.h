@@ -60,7 +60,7 @@ public:
 
   void setData(const std::vector<glm::vec2>& data, bool update = false, size_t offset = 0,
                size_t size = INVALID_IND) override;
-  void setData(const std::vector<glm::vec3>& data, bool update = false, size_t offset = 0,
+  void setData(const std::vector<glm::vec3>& data, size_t offset = 0,
                size_t size = INVALID_IND) override;
   void setData(const std::vector<glm::vec4>& data, bool update = false, size_t offset = 0,
                size_t size = INVALID_IND) override;

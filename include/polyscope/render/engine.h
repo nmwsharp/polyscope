@@ -54,7 +54,7 @@ public:
 
   virtual void setData(const std::vector<glm::vec2>& data, bool update = false, size_t offset = 0,
                        size_t size = INVALID_IND) = 0;
-  virtual void setData(const std::vector<glm::vec3>& data, bool update = false, size_t offset = 0,
+  virtual void setData(const std::vector<glm::vec3>& data, size_t offset = 0,
                        size_t size = INVALID_IND) = 0;
   virtual void setData(const std::vector<glm::vec4>& data, bool update = false, size_t offset = 0,
                        size_t size = INVALID_IND) = 0;
@@ -191,7 +191,7 @@ public:
   virtual std::array<float, 4> readFloat4(int xPos, int yPos) = 0;
   virtual void blitTo(FrameBuffer* other) = 0;
   virtual std::vector<unsigned char> readBuffer() = 0;
-  
+
   uint64_t getUniqueID() const { return uniqueID; }
 
 protected:
@@ -331,7 +331,7 @@ public:
   virtual void draw() = 0;
 
   virtual void validateData() = 0;
-  
+
   uint64_t getUniqueID() const { return uniqueID; }
 
 protected:

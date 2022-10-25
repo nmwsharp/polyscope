@@ -263,7 +263,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec2>& data, bool update,
   }
 }
 
-void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data, bool update, size_t offset, size_t size) {
+void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data, size_t offset, size_t size) {
   checkType(RenderDataType::Vector3Float);
 
   // Reshape the vector
@@ -278,14 +278,19 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data, bool update,
 
   bind();
 
-  if (update) {
+  if (isSet()) {
+
+    if(static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+
+    /*
     offset *= 3 * sizeof(float);
     if (size == INVALID_IND)
       size = 3 * dataSize * sizeof(float);
     else
       size *= 3 * sizeof(float);
+    */
 
-    glBufferSubData(GL_ARRAY_BUFFER, offset, size, rawData.empty() ? nullptr : &rawData[0]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, 3*size*sizeof(float), &rawData[0]);
   } else {
     glBufferData(GL_ARRAY_BUFFER, 3 * data.size() * sizeof(float), rawData.empty() ? nullptr : &rawData[0],
                  GL_STATIC_DRAW);
