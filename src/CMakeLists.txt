@@ -235,7 +235,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/point_cloud_parameterization_quantity.h
   ${INCLUDE_ROOT}/point_cloud_parameterization_quantity.ipp
   ${INCLUDE_ROOT}/point_cloud_vector_quantity.h
-  ${INCLUDE_ROOT}/point_cloud_vector_quantity.ipp
   ${INCLUDE_ROOT}/polyscope.h
   ${INCLUDE_ROOT}/quantity.h
   ${INCLUDE_ROOT}/quantity.ipp
