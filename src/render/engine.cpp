@@ -65,12 +65,12 @@ std::string modeName(const TransparencyMode& m) {
 namespace render {
 
 AttributeBuffer::AttributeBuffer(RenderDataType dataType_, int arrayCount_)
-    : dataType(dataType_), arrayCount(arrayCount_) {}
+    : dataType(dataType_), arrayCount(arrayCount_), uniqueID(render::engine->getNextUniqueID()) {}
 
 AttributeBuffer::~AttributeBuffer() {}
 
 TextureBuffer::TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_)
-    : dim(dim_), format(format_), sizeX(sizeX_), sizeY(sizeY_) {
+    : dim(dim_), format(format_), sizeX(sizeX_), sizeY(sizeY_), uniqueID(render::engine->getNextUniqueID()) {
   if (sizeX > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
   if (dim > 1 && sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
 }
@@ -99,7 +99,7 @@ unsigned int TextureBuffer::getTotalSize() const {
 }
 
 RenderBuffer::RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_)
-    : type(type_), sizeX(sizeX_), sizeY(sizeY_) {
+    : type(type_), sizeX(sizeX_), sizeY(sizeY_), uniqueID(render::engine->getNextUniqueID()) {
   if (sizeX > (1 << 22) || sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid renderbuffer dimensions");
 }
 
@@ -108,7 +108,7 @@ void RenderBuffer::resize(unsigned int newX, unsigned int newY) {
   sizeY = newY;
 }
 
-FrameBuffer::FrameBuffer() {}
+FrameBuffer::FrameBuffer() : uniqueID(render::engine->getNextUniqueID()) {}
 
 void FrameBuffer::setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
   viewportX = startX;
@@ -157,7 +157,8 @@ ShaderReplacementRule::ShaderReplacementRule(std::string ruleName_,
     : ruleName(ruleName_), replacements(replacements_), uniforms(uniforms_), attributes(attributes_),
       textures(textures_) {}
 
-ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm) : drawMode(dm) {
+ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm)
+    : drawMode(dm), uniqueID(render::engine->getNextUniqueID()) {
 
   drawMode = dm;
   if (dm == DrawMode::IndexedLines || dm == DrawMode::IndexedLineStrip || dm == DrawMode::IndexedLineStripAdjacency ||
@@ -632,6 +633,11 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   }
 }
 
+uint64_t Engine::getNextUniqueID() {
+  uint64_t thisID = uniqueID;
+  uniqueID++;
+  return thisID;
+}
 
 std::shared_ptr<ShaderProgram> Engine::requestShader(const std::string& programName,
                                                      const std::vector<std::string>& customRules,

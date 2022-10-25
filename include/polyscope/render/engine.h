@@ -71,6 +71,7 @@ public:
   RenderDataType getType() const { return dataType; }
   int getArrayCount() const { return arrayCount; }
   long int getDataSize() const { return dataSize; }
+  uint64_t getUniqueID() const { return uniqueID; }
   bool isSet() const { return dataSize > 0; }
 
   // get data at a single index from the buffer
@@ -85,6 +86,7 @@ protected:
   RenderDataType dataType;
   int arrayCount;
   long int dataSize = -1; // the size of the data currently stored in this attribute (-1 if nothing)
+  uint64_t uniqueID;
 };
 
 class TextureBuffer {
@@ -102,6 +104,7 @@ public:
   unsigned int getSizeY() const { return sizeY; }
   int getDimension() const { return dim; }
   unsigned int getTotalSize() const; // product of dimensions
+  uint64_t getUniqueID() const { return uniqueID; }
 
   virtual void setFilterMode(FilterMode newMode);
 
@@ -123,6 +126,7 @@ protected:
   int dim;
   TextureFormat format;
   unsigned int sizeX, sizeY;
+  uint64_t uniqueID;
 };
 
 class RenderBuffer {
@@ -136,10 +140,12 @@ public:
   RenderBufferType getType() const { return type; }
   unsigned int getSizeX() const { return sizeX; }
   unsigned int getSizeY() const { return sizeY; }
+  uint64_t getUniqueID() const { return uniqueID; }
 
 protected:
   RenderBufferType type;
   unsigned int sizeX, sizeY;
+  uint64_t uniqueID;
 };
 
 
@@ -185,9 +191,12 @@ public:
   virtual std::array<float, 4> readFloat4(int xPos, int yPos) = 0;
   virtual void blitTo(FrameBuffer* other) = 0;
   virtual std::vector<unsigned char> readBuffer() = 0;
+  
+  uint64_t getUniqueID() const { return uniqueID; }
 
 protected:
   unsigned int sizeX, sizeY;
+  uint64_t uniqueID;
 
   // Viewport
   bool viewportSet = false;
@@ -322,6 +331,8 @@ public:
   virtual void draw() = 0;
 
   virtual void validateData() = 0;
+  
+  uint64_t getUniqueID() const { return uniqueID; }
 
 protected:
   // What mode does this program draw in?
@@ -336,6 +347,7 @@ protected:
   bool usePrimitiveRestart = false;
   bool primitiveRestartIndexSet = false;
   unsigned int restartIndex = -1;
+  uint64_t uniqueID;
 };
 
 
@@ -500,6 +512,7 @@ public:
   std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen
   std::vector<glm::vec4> distantCubeCoords();     // cube with vertices at infinity
 
+  uint64_t getNextUniqueID();
 
   // ==  Implementation details and hacks
   bool lightCopy = false; // if true, when applying lighting transform does a copy instead of an alpha blend. Used
@@ -537,6 +550,9 @@ protected:
   void loadDefaultColorMap(std::string name);
   void loadDefaultColorMaps();
   virtual void createSlicePlaneFliterRule(std::string name) = 0;
+
+  // Manage a unique ID, incremented on lots of operations. Used to distinguish updates to buffers/shaders/etc
+  uint64_t uniqueID = 500;
 
   // low-level interface for creating shader programs
   virtual std::shared_ptr<ShaderProgram> generateShaderProgram(
