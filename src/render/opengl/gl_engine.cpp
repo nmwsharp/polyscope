@@ -37,8 +37,8 @@ GLEngine* glEngine = nullptr; // alias for global engine pointer
 
 void initializeRenderEngine() {
   glEngine = new GLEngine();
-  glEngine->initialize();
   engine = glEngine;
+  glEngine->initialize();
   engine->allocateGlobalBuffersAndPrograms();
 }
 
