@@ -55,8 +55,9 @@ public:
   virtual void setData(const std::vector<glm::vec2>& data) = 0;
   virtual void setData(const std::vector<glm::vec3>& data) = 0;
   virtual void setData(const std::vector<glm::vec4>& data) = 0;
+  virtual void setData(const std::vector<float>& data) = 0;
   virtual void setData(const std::vector<double>& data) = 0;
-  virtual void setData(const std::vector<int>& data) = 0;
+  virtual void setData(const std::vector<int32_t>& data) = 0;
   virtual void setData(const std::vector<uint32_t>& data) = 0;
 
   virtual uint32_t getNativeBufferID() = 0; // used to interop with external things, e.g. ImGui
@@ -291,8 +292,9 @@ public:
   virtual void setAttribute(std::string name, const std::vector<glm::vec2>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec3>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec4>& data) = 0;
+  virtual void setAttribute(std::string name, const std::vector<float>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<double>& data) = 0;
-  virtual void setAttribute(std::string name, const std::vector<int>& data) = 0;
+  virtual void setAttribute(std::string name, const std::vector<int32_t>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<uint32_t>& data) = 0;
   // clang-format on
 

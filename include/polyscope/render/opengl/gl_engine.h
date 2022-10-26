@@ -60,8 +60,9 @@ public:
   void setData(const std::vector<glm::vec2>& data) override;
   void setData(const std::vector<glm::vec3>& data) override;
   void setData(const std::vector<glm::vec4>& data) override;
+  void setData(const std::vector<float>& data) override;
   void setData(const std::vector<double>& data) override;
-  void setData(const std::vector<int>& data) override;
+  void setData(const std::vector<int32_t>& data) override;
   void setData(const std::vector<uint32_t>& data) override;
 
   double getData_double(size_t ind) override;
@@ -193,8 +194,9 @@ public:
   void setAttribute(std::string name, const std::vector<glm::vec2>& data) override;
   void setAttribute(std::string name, const std::vector<glm::vec3>& data) override;
   void setAttribute(std::string name, const std::vector<glm::vec4>& data) override;
+  void setAttribute(std::string name, const std::vector<float>& data) override;
   void setAttribute(std::string name, const std::vector<double>& data) override;
-  void setAttribute(std::string name, const std::vector<int>& data) override; 
+  void setAttribute(std::string name, const std::vector<int32_t>& data) override; 
   void setAttribute(std::string name, const std::vector<uint32_t>& data) override;
   // clang-format on
 

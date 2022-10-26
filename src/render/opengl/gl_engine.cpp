@@ -237,14 +237,8 @@ void GLAttributeBuffer::checkType(RenderDataType targetType) {
 void GLAttributeBuffer::setData(const std::vector<glm::vec2>& data) {
   checkType(RenderDataType::Vector2Float);
 
-  // Reshape the vector
-  // Right now, the data is probably laid out in this form already... but let's
-  // not be overly clever and just reshape it.
-  std::vector<float> rawData(2 * data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
-    rawData[2 * i + 0] = static_cast<float>(data[i].x);
-    rawData[2 * i + 1] = static_cast<float>(data[i].y);
-  }
+  // sanity check that the data array has the expected layout for the memcopy below
+  static_assert(sizeof(glm::vec2) == 2 * sizeof(float), "glm::vec2 has unexpected size/layout on this platform");
 
   bind();
 
@@ -252,12 +246,11 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec2>& data) {
 
     if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
 
-    glBufferSubData(GL_ARRAY_BUFFER, 0, 2 * dataSize * sizeof(float), &rawData[0]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, 2 * dataSize * sizeof(float), &data[0]);
 
   } else {
 
-    glBufferData(GL_ARRAY_BUFFER, 2 * data.size() * sizeof(float), rawData.empty() ? nullptr : &rawData[0],
-                 GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 2 * data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
   }
 }
@@ -265,15 +258,8 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec2>& data) {
 void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data) {
   checkType(RenderDataType::Vector3Float);
 
-  // Reshape the vector
-  // Right now, the data is probably laid out in this form already... but let's
-  // not be overly clever and just reshape it.
-  std::vector<float> rawData(3 * data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
-    rawData[3 * i + 0] = static_cast<float>(data[i].x);
-    rawData[3 * i + 1] = static_cast<float>(data[i].y);
-    rawData[3 * i + 2] = static_cast<float>(data[i].z);
-  }
+  // sanity check that the data array has the expected layout for the memcopy below
+  static_assert(sizeof(glm::vec3) == 3 * sizeof(float), "glm::vec3 has unexpected size/layout on this platform");
 
   bind();
 
@@ -281,11 +267,10 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data) {
 
     if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
 
-    glBufferSubData(GL_ARRAY_BUFFER, 0, 3 * dataSize * sizeof(float), &rawData[0]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, 3 * dataSize * sizeof(float), &data[0]);
 
   } else {
-    glBufferData(GL_ARRAY_BUFFER, 3 * data.size() * sizeof(float), rawData.empty() ? nullptr : &rawData[0],
-                 GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 3 * data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
   }
 }
@@ -293,16 +278,8 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data) {
 void GLAttributeBuffer::setData(const std::vector<glm::vec4>& data) {
   checkType(RenderDataType::Vector4Float);
 
-  // Reshape the vector
-  // Right now, the data is probably laid out in this form already... but let's
-  // not be overly clever and just reshape it.
-  std::vector<float> rawData(4 * data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
-    rawData[4 * i + 0] = static_cast<float>(data[i].x);
-    rawData[4 * i + 1] = static_cast<float>(data[i].y);
-    rawData[4 * i + 2] = static_cast<float>(data[i].z);
-    rawData[4 * i + 3] = static_cast<float>(data[i].w);
-  }
+  // sanity check that the data array has the expected layout for the memcopy below
+  static_assert(sizeof(glm::vec4) == 4 * sizeof(float), "glm::vec4 has unexpected size/layout on this platform");
 
   bind();
 
@@ -310,11 +287,27 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec4>& data) {
 
     if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
 
-    glBufferSubData(GL_ARRAY_BUFFER, 0, 4 * dataSize * sizeof(float), &rawData[0]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, 4 * dataSize * sizeof(float), &data[0]);
 
   } else {
-    glBufferData(GL_ARRAY_BUFFER, 4 * data.size() * sizeof(float), rawData.empty() ? nullptr : &rawData[0],
-                 GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 4 * data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
+    dataSize = data.size();
+  }
+}
+
+void GLAttributeBuffer::setData(const std::vector<float>& data) {
+  checkType(RenderDataType::Float);
+
+  bind();
+
+  if (isSet()) {
+
+    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+
+    glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize * sizeof(float), &data[0]);
+
+  } else {
+    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
   }
 }
@@ -337,23 +330,19 @@ void GLAttributeBuffer::setData(const std::vector<double>& data) {
     glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize * sizeof(float), &floatData[0]);
 
   } else {
-    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), floatData.empty() ? nullptr : &floatData[0],
-                 GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), &floatData[0], GL_STATIC_DRAW);
     dataSize = data.size();
   }
 }
 
-void GLAttributeBuffer::setData(const std::vector<int>& data) {
+void GLAttributeBuffer::setData(const std::vector<int32_t>& data) {
   checkType(RenderDataType::Int);
 
   // TODO I've seen strange bugs when using int's in shaders. Need to figure
   // out it it's my shaders or something wrong with this function
 
-  // Convert data to GL_INT (probably does nothing)
-  std::vector<GLint> intData(data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
-    intData[i] = static_cast<GLint>(data[i]);
-  }
+  // sanity check that the data array has the expected layout for the memcopy below
+  static_assert(sizeof(int32_t) == sizeof(GLint), "int has unexpected size/layout on this platform");
 
   bind();
 
@@ -361,11 +350,11 @@ void GLAttributeBuffer::setData(const std::vector<int>& data) {
 
     if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
 
-    glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize * sizeof(GLint), &intData[0]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize * sizeof(GLint), &data[0]);
 
   } else {
 
-    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLint), intData.empty() ? nullptr : &intData[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLint), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
   }
 }
@@ -376,11 +365,7 @@ void GLAttributeBuffer::setData(const std::vector<uint32_t>& data) {
   // TODO I've seen strange bugs when using int's in shaders. Need to figure
   // out it it's my shaders or something wrong with this function
 
-  // Convert data to GL_UINT (probably does nothing)
-  std::vector<GLuint> intData(data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
-    intData[i] = static_cast<GLuint>(data[i]);
-  }
+  static_assert(sizeof(uint32_t) == sizeof(GLuint), "int has unexpected size/layout on this platform");
 
   bind();
 
@@ -388,11 +373,10 @@ void GLAttributeBuffer::setData(const std::vector<uint32_t>& data) {
 
     if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
 
-    glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize * sizeof(GLuint), &intData[0]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize * sizeof(GLuint), &data[0]);
 
   } else {
-    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLuint), intData.empty() ? nullptr : &intData[0],
-                 GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLuint), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
   }
 }
@@ -1368,6 +1352,21 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
+void GLShaderProgram::setAttribute(std::string name, const std::vector<float>& data) {
+
+  glBindVertexArray(vaoHandle);
+
+  // pass-through to the buffer
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name) {
+      a.buff->setData(data);
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
 void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& data) {
 
   glBindVertexArray(vaoHandle);
@@ -1383,7 +1382,7 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& 
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLShaderProgram::setAttribute(std::string name, const std::vector<int>& data) {
+void GLShaderProgram::setAttribute(std::string name, const std::vector<int32_t>& data) {
   glBindVertexArray(vaoHandle);
 
   // pass-through to the buffer
