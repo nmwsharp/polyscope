@@ -52,18 +52,12 @@ public:
 
   virtual ~AttributeBuffer();
 
-  virtual void setData(const std::vector<glm::vec2>& data, bool update = false, size_t offset = 0,
-                       size_t size = INVALID_IND) = 0;
-  virtual void setData(const std::vector<glm::vec3>& data, size_t offset = 0,
-                       size_t size = INVALID_IND) = 0;
-  virtual void setData(const std::vector<glm::vec4>& data, bool update = false, size_t offset = 0,
-                       size_t size = INVALID_IND) = 0;
-  virtual void setData(const std::vector<double>& data, bool update = false, size_t offset = 0,
-                       size_t size = INVALID_IND) = 0;
-  virtual void setData(const std::vector<int>& data, bool update = false, size_t offset = 0,
-                       size_t size = INVALID_IND) = 0;
-  virtual void setData(const std::vector<uint32_t>& data, bool update = false, size_t offset = 0,
-                       size_t size = INVALID_IND) = 0;
+  virtual void setData(const std::vector<glm::vec2>& data) = 0;
+  virtual void setData(const std::vector<glm::vec3>& data) = 0;
+  virtual void setData(const std::vector<glm::vec4>& data) = 0;
+  virtual void setData(const std::vector<double>& data) = 0;
+  virtual void setData(const std::vector<int>& data) = 0;
+  virtual void setData(const std::vector<uint32_t>& data) = 0;
 
   virtual uint32_t getNativeBufferID() = 0; // used to interop with external things, e.g. ImGui
 
@@ -294,19 +288,18 @@ public:
   virtual bool hasAttribute(std::string name) = 0;
   virtual bool attributeIsSet(std::string name) = 0;
   virtual std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) = 0;
-  virtual void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0, int size = -1) = 0;
-  virtual void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) = 0;
-  virtual void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) = 0;
-  virtual void setAttribute(std::string name, const std::vector<double>& data, bool update = false, int offset = 0, int size = -1) = 0;
-  virtual void setAttribute(std::string name, const std::vector<int>& data, bool update = false, int offset = 0, int size = -1) = 0;
-  virtual void setAttribute(std::string name, const std::vector<uint32_t>& data, bool update = false, int offset = 0, int size = -1) = 0;
+  virtual void setAttribute(std::string name, const std::vector<glm::vec2>& data) = 0;
+  virtual void setAttribute(std::string name, const std::vector<glm::vec3>& data) = 0;
+  virtual void setAttribute(std::string name, const std::vector<glm::vec4>& data) = 0;
+  virtual void setAttribute(std::string name, const std::vector<double>& data) = 0;
+  virtual void setAttribute(std::string name, const std::vector<int>& data) = 0;
+  virtual void setAttribute(std::string name, const std::vector<uint32_t>& data) = 0;
   // clang-format on
 
   // Convenience method to set an array-valued attrbute, such as 'in vec3 vertexVal[3]'. Applies interleaving then
   // forwards to the usual setAttribute
   template <typename T, unsigned int C>
-  void setAttribute(std::string name, const std::vector<std::array<T, C>>& data, bool update = false, int offset = 0,
-                    int size = -1);
+  void setAttribute(std::string name, const std::vector<std::array<T, C>>& data);
 
 
   // Textures
@@ -568,8 +561,7 @@ protected:
 
 // Implementation of template functions
 template <typename T, unsigned int C>
-inline void ShaderProgram::setAttribute(std::string name, const std::vector<std::array<T, C>>& data, bool update,
-                                        int offset, int size) {
+inline void ShaderProgram::setAttribute(std::string name, const std::vector<std::array<T, C>>& data) {
 
   // Unpack and forward
   std::vector<T> entryData;
@@ -579,7 +571,7 @@ inline void ShaderProgram::setAttribute(std::string name, const std::vector<std:
       entryData.push_back(x[i]);
     }
   }
-  setAttribute(name, entryData, update, offset, size);
+  setAttribute(name, entryData);
 }
 
 // === Public API

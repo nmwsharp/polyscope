@@ -57,20 +57,12 @@ public:
   void bind();
   VertexBufferHandle getHandle() const { return VBOLoc; }
 
-
-  void setData(const std::vector<glm::vec2>& data, bool update = false, size_t offset = 0,
-               size_t size = INVALID_IND) override;
-  void setData(const std::vector<glm::vec3>& data, size_t offset = 0,
-               size_t size = INVALID_IND) override;
-  void setData(const std::vector<glm::vec4>& data, bool update = false, size_t offset = 0,
-               size_t size = INVALID_IND) override;
-  void setData(const std::vector<double>& data, bool update = false, size_t offset = 0,
-               size_t size = INVALID_IND) override;
-  void setData(const std::vector<int>& data, bool update = false, size_t offset = 0,
-               size_t size = INVALID_IND) override;
-  void setData(const std::vector<uint32_t>& data, bool update = false, size_t offset = 0,
-               size_t size = INVALID_IND) override;
-
+  void setData(const std::vector<glm::vec2>& data) override;
+  void setData(const std::vector<glm::vec3>& data) override;
+  void setData(const std::vector<glm::vec4>& data) override;
+  void setData(const std::vector<double>& data) override;
+  void setData(const std::vector<int>& data) override;
+  void setData(const std::vector<uint32_t>& data) override;
 
   double getData_double(size_t ind) override;
   glm::vec2 getData_vec2(size_t ind) override;
@@ -198,12 +190,12 @@ public:
   bool hasAttribute(std::string name) override;
   bool attributeIsSet(std::string name) override;
   std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) override;
-  void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0, int size = -1) override;
-  void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) override;
-  void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) override;
-  void setAttribute(std::string name, const std::vector<double>& data, bool update = false, int offset = 0, int size = -1) override;
-  void setAttribute(std::string name, const std::vector<int>& data, bool update = false, int offset = 0, int size = -1) override; 
-  void setAttribute(std::string name, const std::vector<uint32_t>& data, bool update = false, int offset = 0, int size = -1) override;
+  void setAttribute(std::string name, const std::vector<glm::vec2>& data) override;
+  void setAttribute(std::string name, const std::vector<glm::vec3>& data) override;
+  void setAttribute(std::string name, const std::vector<glm::vec4>& data) override;
+  void setAttribute(std::string name, const std::vector<double>& data) override;
+  void setAttribute(std::string name, const std::vector<int>& data) override; 
+  void setAttribute(std::string name, const std::vector<uint32_t>& data) override;
   // clang-format on
 
   // Convenience method to set an array-valued attrbute, such as 'in vec3 vertexVal[3]'. Applies interleaving then

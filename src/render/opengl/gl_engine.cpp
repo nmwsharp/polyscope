@@ -234,7 +234,7 @@ void GLAttributeBuffer::checkType(RenderDataType targetType) {
   }
 }
 
-void GLAttributeBuffer::setData(const std::vector<glm::vec2>& data, bool update, size_t offset, size_t size) {
+void GLAttributeBuffer::setData(const std::vector<glm::vec2>& data) {
   checkType(RenderDataType::Vector2Float);
 
   // Reshape the vector
@@ -248,22 +248,21 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec2>& data, bool update,
 
   bind();
 
-  if (update) {
-    offset *= 2 * sizeof(float);
-    if (size == INVALID_IND)
-      size = 2 * dataSize * sizeof(float);
-    else
-      size *= 2 * sizeof(float);
+  if (isSet()) {
 
-    glBufferSubData(GL_ARRAY_BUFFER, offset, size, rawData.empty() ? nullptr : &rawData[0]);
+    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+
+    glBufferSubData(GL_ARRAY_BUFFER, 0, 2 * dataSize * sizeof(float), &rawData[0]);
+
   } else {
+
     glBufferData(GL_ARRAY_BUFFER, 2 * data.size() * sizeof(float), rawData.empty() ? nullptr : &rawData[0],
                  GL_STATIC_DRAW);
     dataSize = data.size();
   }
 }
 
-void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data, size_t offset, size_t size) {
+void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data) {
   checkType(RenderDataType::Vector3Float);
 
   // Reshape the vector
@@ -280,17 +279,10 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data, size_t offse
 
   if (isSet()) {
 
-    if(static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
 
-    /*
-    offset *= 3 * sizeof(float);
-    if (size == INVALID_IND)
-      size = 3 * dataSize * sizeof(float);
-    else
-      size *= 3 * sizeof(float);
-    */
+    glBufferSubData(GL_ARRAY_BUFFER, 0, 3 * dataSize * sizeof(float), &rawData[0]);
 
-    glBufferSubData(GL_ARRAY_BUFFER, 0, 3*size*sizeof(float), &rawData[0]);
   } else {
     glBufferData(GL_ARRAY_BUFFER, 3 * data.size() * sizeof(float), rawData.empty() ? nullptr : &rawData[0],
                  GL_STATIC_DRAW);
@@ -298,7 +290,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data, size_t offse
   }
 }
 
-void GLAttributeBuffer::setData(const std::vector<glm::vec4>& data, bool update, size_t offset, size_t size) {
+void GLAttributeBuffer::setData(const std::vector<glm::vec4>& data) {
   checkType(RenderDataType::Vector4Float);
 
   // Reshape the vector
@@ -314,14 +306,12 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec4>& data, bool update,
 
   bind();
 
-  if (update) {
-    offset *= 4 * sizeof(float);
-    if (size == INVALID_IND)
-      size = 4 * dataSize * sizeof(float);
-    else
-      size *= 4 * sizeof(float);
+  if (isSet()) {
 
-    glBufferSubData(GL_ARRAY_BUFFER, offset, size, rawData.empty() ? nullptr : &rawData[0]);
+    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+
+    glBufferSubData(GL_ARRAY_BUFFER, 0, 4 * dataSize * sizeof(float), &rawData[0]);
+
   } else {
     glBufferData(GL_ARRAY_BUFFER, 4 * data.size() * sizeof(float), rawData.empty() ? nullptr : &rawData[0],
                  GL_STATIC_DRAW);
@@ -329,7 +319,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec4>& data, bool update,
   }
 }
 
-void GLAttributeBuffer::setData(const std::vector<double>& data, bool update, size_t offset, size_t size) {
+void GLAttributeBuffer::setData(const std::vector<double>& data) {
   checkType(RenderDataType::Float);
 
   // Convert input data to floats
@@ -340,14 +330,12 @@ void GLAttributeBuffer::setData(const std::vector<double>& data, bool update, si
 
   bind();
 
-  if (update) {
-    offset *= sizeof(float);
-    if (size == INVALID_IND)
-      size = dataSize * sizeof(float);
-    else
-      size *= sizeof(float);
+  if (isSet()) {
 
-    glBufferSubData(GL_ARRAY_BUFFER, offset, size, floatData.empty() ? nullptr : &floatData[0]);
+    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+
+    glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize * sizeof(float), &floatData[0]);
+
   } else {
     glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), floatData.empty() ? nullptr : &floatData[0],
                  GL_STATIC_DRAW);
@@ -355,7 +343,7 @@ void GLAttributeBuffer::setData(const std::vector<double>& data, bool update, si
   }
 }
 
-void GLAttributeBuffer::setData(const std::vector<int>& data, bool update, size_t offset, size_t size) {
+void GLAttributeBuffer::setData(const std::vector<int>& data) {
   checkType(RenderDataType::Int);
 
   // TODO I've seen strange bugs when using int's in shaders. Need to figure
@@ -369,21 +357,20 @@ void GLAttributeBuffer::setData(const std::vector<int>& data, bool update, size_
 
   bind();
 
-  if (update) {
-    offset *= sizeof(GLint);
-    if (size == INVALID_IND)
-      size = dataSize * sizeof(GLint);
-    else
-      size *= sizeof(GLint);
+  if (isSet()) {
 
-    glBufferSubData(GL_ARRAY_BUFFER, offset, size, intData.empty() ? nullptr : &intData[0]);
+    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+
+    glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize * sizeof(GLint), &intData[0]);
+
   } else {
+
     glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLint), intData.empty() ? nullptr : &intData[0], GL_STATIC_DRAW);
     dataSize = data.size();
   }
 }
 
-void GLAttributeBuffer::setData(const std::vector<uint32_t>& data, bool update, size_t offset, size_t size) {
+void GLAttributeBuffer::setData(const std::vector<uint32_t>& data) {
   checkType(RenderDataType::UInt);
 
   // TODO I've seen strange bugs when using int's in shaders. Need to figure
@@ -397,14 +384,12 @@ void GLAttributeBuffer::setData(const std::vector<uint32_t>& data, bool update, 
 
   bind();
 
-  if (update) {
-    offset *= sizeof(GLuint);
-    if (size == INVALID_IND)
-      size = dataSize * sizeof(GLuint);
-    else
-      size *= sizeof(GLuint);
+  if (isSet()) {
 
-    glBufferSubData(GL_ARRAY_BUFFER, offset, size, intData.empty() ? nullptr : &intData[0]);
+    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+
+    glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize * sizeof(GLuint), &intData[0]);
+
   } else {
     glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLuint), intData.empty() ? nullptr : &intData[0],
                  GL_STATIC_DRAW);
@@ -1340,13 +1325,12 @@ std::shared_ptr<AttributeBuffer> GLShaderProgram::getAttributeBuffer(std::string
   return nullptr;
 };
 
-void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update, int offset,
-                                   int size) {
+void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2>& data) {
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      a.buff->setData(data, update, size);
+      a.buff->setData(data);
       return;
     }
   }
@@ -1354,15 +1338,14 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update, int offset,
-                                   int size) {
+void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec3>& data) {
 
   glBindVertexArray(vaoHandle);
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      a.buff->setData(data, update, size);
+      a.buff->setData(data);
       return;
     }
   }
@@ -1370,15 +1353,14 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec3
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update, int offset,
-                                   int size) {
+void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4>& data) {
 
   glBindVertexArray(vaoHandle);
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      a.buff->setData(data, update, size);
+      a.buff->setData(data);
       return;
     }
   }
@@ -1386,15 +1368,14 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& data, bool update, int offset,
-                                   int size) {
+void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& data) {
 
   glBindVertexArray(vaoHandle);
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      a.buff->setData(data, update, size);
+      a.buff->setData(data);
       return;
     }
   }
@@ -1402,14 +1383,13 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& 
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLShaderProgram::setAttribute(std::string name, const std::vector<int>& data, bool update, int offset, int size) {
-
+void GLShaderProgram::setAttribute(std::string name, const std::vector<int>& data) {
   glBindVertexArray(vaoHandle);
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      a.buff->setData(data, update, size);
+      a.buff->setData(data);
       return;
     }
   }
@@ -1417,15 +1397,14 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<int>& dat
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLShaderProgram::setAttribute(std::string name, const std::vector<uint32_t>& data, bool update, int offset,
-                                   int size) {
+void GLShaderProgram::setAttribute(std::string name, const std::vector<uint32_t>& data) {
 
   glBindVertexArray(vaoHandle);
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      a.buff->setData(data, update, size);
+      a.buff->setData(data);
       return;
     }
   }
