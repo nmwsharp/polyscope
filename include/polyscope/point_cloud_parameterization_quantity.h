@@ -34,8 +34,6 @@ public:
 
   std::shared_ptr<render::AttributeBuffer> getCoordRenderBuffer();
 
-  // === Members
-  const ParamCoordsType coordsType;
 
   // === Getters and setters for visualization options
 
@@ -70,7 +68,10 @@ public:
 
 
 protected:
+  
+  // === Members
   std::vector<glm::vec2> coords;
+  const ParamCoordsType coordsType;
 
   // === Visualiztion options
   PersistentValue<float> checkerSize;

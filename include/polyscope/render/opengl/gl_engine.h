@@ -37,7 +37,7 @@ namespace render {
 namespace backend_openGL3_glfw {
 
 // Some very nice typdefs
-typedef GLuint TextureBufferHandle;
+typedef GLuint TextureHandle;
 typedef GLuint RenderBufferHandle;
 typedef GLuint FrameBufferHandle;
 typedef GLuint ShaderHandle;
@@ -82,17 +82,17 @@ private:
   void checkType(RenderDataType targetType);
 };
 
-class GLTextureBuffer : public TextureBuffer {
+class GLTexture : public Texture {
 public:
   // create a 1D texture from data
-  GLTextureBuffer(TextureFormat format, unsigned int size1D, unsigned char* data = nullptr);
-  GLTextureBuffer(TextureFormat format, unsigned int size1D, float* data);
+  GLTexture(TextureFormat format, unsigned int size1D, unsigned char* data = nullptr);
+  GLTexture(TextureFormat format, unsigned int size1D, float* data);
 
   // create a 2D texture from data
-  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data = nullptr);
-  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, float* data);
+  GLTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data = nullptr);
+  GLTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, float* data);
 
-  ~GLTextureBuffer() override;
+  ~GLTexture() override;
 
 
   // Resize the underlying buffer (contents are lost)
@@ -108,11 +108,11 @@ public:
 
   void bind();
   GLenum textureType();
-  TextureBufferHandle getHandle() const { return handle; }
+  TextureHandle getHandle() const { return handle; }
 
 
 protected:
-  TextureBufferHandle handle;
+  TextureHandle handle;
 };
 
 class GLRenderBuffer : public RenderBuffer {
@@ -146,9 +146,9 @@ public:
 
   // Bind to textures/renderbuffers for output
   void addColorBuffer(std::shared_ptr<RenderBuffer> renderBuffer) override;
-  void addColorBuffer(std::shared_ptr<TextureBuffer> textureBuffer) override;
+  void addColorBuffer(std::shared_ptr<Texture> textureBuffer) override;
   void addDepthBuffer(std::shared_ptr<RenderBuffer> renderBuffer) override;
-  void addDepthBuffer(std::shared_ptr<TextureBuffer> textureBuffer) override;
+  void addDepthBuffer(std::shared_ptr<Texture> textureBuffer) override;
 
   void setDrawBuffers() override;
 
@@ -220,7 +220,7 @@ public:
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                     bool withAlpha = true, bool useMipMap = false, bool repeat = false) override;
   void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) override;
-  void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) override;
+  void setTextureFromBuffer(std::string name, Texture* textureBuffer) override;
 
   // Draw!
   void draw() override;
@@ -248,8 +248,8 @@ protected:
     int dim;
     unsigned int index;
     bool isSet;
-    GLTextureBuffer* textureBuffer;
-    std::shared_ptr<GLTextureBuffer> textureBufferOwned; // might be empty, if texture isn't owned
+    GLTexture* textureBuffer;
+    std::shared_ptr<GLTexture> textureBufferOwned; // might be empty, if texture isn't owned
     TextureLocation location;                            // -1 means "no location", usually because it was optimized out
   };
 
@@ -327,13 +327,13 @@ public:
   std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, int arrayCount_ = 1) override;
 
   // create textures
-  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
+  std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int size1D,
                                                        unsigned char* data = nullptr) override; // 1d
-  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
+  std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int size1D,
                                                        float* data) override; // 1d
-  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+  std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
                                                        unsigned char* data = nullptr) override; // 2d
-  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+  std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
                                                        float* data) override; // 2d
 
   // create render buffers

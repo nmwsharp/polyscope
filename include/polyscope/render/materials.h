@@ -23,13 +23,13 @@ namespace polyscope {
 namespace render {
 
 // forward declare
-class TextureBuffer;
+class Texture;
 
 // Materials have _r, _g, _b, _k textures for blending with arbitrary surface colors.
 struct Material {
   std::string name;
   bool supportsRGB = false;
-  std::array<std::shared_ptr<TextureBuffer>, 4> textureBuffers;
+  std::array<std::shared_ptr<Texture>, 4> textureBuffers;
 };
 
 // Build an ImGui option picker in a dropdown ui

@@ -21,7 +21,13 @@ PointCloudParameterizationQuantity::PointCloudParameterizationQuantity(std::stri
       gridBackgroundColor(uniquePrefix() + "#gridBackgroundColor", render::RGB_PINK),
       altDarkness(uniquePrefix() + "#altDarkness", 0.5), cMap(uniquePrefix() + "#cMap", "phase")
 
-{}
+{
+  if (coords_.size() != parent.nPoints()) {
+    polyscope::error("Point cloud param quantity " + name + " does not have same number of values (" +
+                     std::to_string(coords_.size()) + ") as point cloud size (" + std::to_string(parent.nPoints()) +
+                     ")");
+  }
+}
 
 
 void PointCloudParameterizationQuantity::draw() {

@@ -162,7 +162,7 @@ SurfaceVertexCountQuantity::SurfaceVertexCountQuantity(std::string name, std::ve
 
   for (auto& t : values_) {
     values[t.first] = t.second;
-    entries.push_back(std::make_pair(parent.vertices[t.first], t.second));
+    entries.push_back(std::make_pair(parent.vertexPositions[t.first], t.second));
   }
 
   initializeLimits();
@@ -212,7 +212,7 @@ SurfaceVertexIsolatedScalarQuantity::SurfaceVertexIsolatedScalarQuantity(std::st
 
   for (auto& t : values_) {
     values[t.first] = t.second;
-    entries.push_back(std::make_pair(parent.vertices[t.first], t.second));
+    entries.push_back(std::make_pair(parent.vertexPositions[t.first], t.second));
   }
 
   initializeLimits();
@@ -265,7 +265,7 @@ SurfaceFaceCountQuantity::SurfaceFaceCountQuantity(std::string name, std::vector
     size_t D = face.size();
     glm::vec3 faceCenter = glm::vec3{0., 0., 0.};
     for (size_t j = 0; j < D; j++) {
-      faceCenter += parent.vertices[face[j]];
+      faceCenter += parent.vertexPositions[face[j]];
     }
     faceCenter /= static_cast<double>(D);
 

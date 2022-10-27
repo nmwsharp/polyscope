@@ -108,11 +108,11 @@ void GroundPlane::prepare() {
     if (options::groundPlaneMode == GroundPlaneMode::TileReflection) {
       // only use color buffer for reflection
       sceneAltColorTexture =
-          render::engine->generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+          render::engine->generateTexture(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
       sceneAltColorTexture->setFilterMode(FilterMode::Linear);
     }
     sceneAltDepthTexture =
-        render::engine->generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
+        render::engine->generateTexture(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
 
 
     sceneAltFrameBuffer = render::engine->generateFrameBuffer(view::bufferWidth, view::bufferHeight);
@@ -136,7 +136,7 @@ void GroundPlane::prepare() {
     // Blur buffers and program
     for (int i = 0; i < 2; i++) {
       blurColorTextures[i] =
-          render::engine->generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+          render::engine->generateTexture(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
       blurColorTextures[i]->setFilterMode(FilterMode::Linear);
       blurFrameBuffers[i] = render::engine->generateFrameBuffer(view::bufferWidth, view::bufferHeight);
 

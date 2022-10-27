@@ -95,13 +95,13 @@ public:
       glm::vec3 X = mesh.faceTangentSpaces[iF][0];
       glm::vec3 Y = mesh.faceTangentSpaces[iF][1];
 
-      // Find each of the vertices as a point in the basis
+      // Find each of the vertexPositions as a point in the basis
       // The first vertex is implicitly at (0,0)
       size_t v0 = face[0];
       size_t v1 = face[1];
       size_t v2 = face[2];
-      glm::vec3 pos1 = mesh.vertices[v1] - mesh.vertices[v0];
-      glm::vec3 pos2 = mesh.vertices[v2] - mesh.vertices[v0];
+      glm::vec3 pos1 = mesh.vertexPositions[v1] - mesh.vertexPositions[v0];
+      glm::vec3 pos2 = mesh.vertexPositions[v2] - mesh.vertexPositions[v0];
       glm::vec2 p1{dot(X, pos1), dot(Y, pos1)};
       glm::vec2 p2{dot(X, pos2), dot(Y, pos2)};
 
@@ -120,8 +120,8 @@ public:
     size_t v1 = mesh.faces[p.f][1];
     size_t v2 = mesh.faces[p.f][2];
 
-    return p.baryWeights[0] * mesh.vertices[v0] + p.baryWeights[1] * mesh.vertices[v1] +
-           p.baryWeights[2] * mesh.vertices[v2];
+    return p.baryWeights[0] * mesh.vertexPositions[v0] + p.baryWeights[1] * mesh.vertexPositions[v1] +
+           p.baryWeights[2] * mesh.vertexPositions[v2];
   }
 
 
@@ -218,7 +218,7 @@ public:
       if (tRay > lengthRemaining) {
         tRay = lengthRemaining;
         glm::vec2 endingPos = pointPos + tRay * traceDir;
-        glm::vec3 endingPosR3 = mesh.vertices[mesh.faces[currFace][0]] +
+        glm::vec3 endingPosR3 = mesh.vertexPositions[mesh.faces[currFace][0]] +
                                 endingPos.x * mesh.faceTangentSpaces[currFace][0] +
                                 endingPos.y * mesh.faceTangentSpaces[currFace][1];
         points.push_back({{endingPosR3, mesh.faceNormals[currFace]}});
@@ -227,7 +227,7 @@ public:
 
       // Generate a point for this intersection
       glm::vec2 newPointLocal = pointPos + tRay * traceDir;
-      glm::vec3 newPointR3 = mesh.vertices[mesh.faces[currFace][0]] +
+      glm::vec3 newPointR3 = mesh.vertexPositions[mesh.faces[currFace][0]] +
                              newPointLocal.x * mesh.faceTangentSpaces[currFace][0] +
                              newPointLocal.y * mesh.faceTangentSpaces[currFace][1];
       glm::vec3 newNormal = mesh.faceNormals[currFace];

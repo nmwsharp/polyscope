@@ -18,13 +18,13 @@ ImageScalarArtist::ImageScalarArtist(std::string name_, const std::vector<float>
   std::cout << "data range: " << dataRange.first << " -- " << dataRange.second << "\n";
   resetMapRange();
 }
-ImageScalarArtist::ImageScalarArtist(std::string name_, std::shared_ptr<render::TextureBuffer>& texturebuffer,
-                                     size_t dimX_, size_t dimY_, DataType dataType_)
+ImageScalarArtist::ImageScalarArtist(std::string name_, std::shared_ptr<render::Texture>& texture, size_t dimX_,
+                                     size_t dimY_, DataType dataType_)
 
     : name(name_), dimX(dimX_), dimY(dimY_), dataType(dataType_), readFromTex(true),
       cMap(name + "#cmap", defaultColorMap(dataType)) {
 
-  textureRaw = texturebuffer;
+  textureRaw = texture;
   dataRange.first = 0.;
   dataRange.second = 1.;
   resetMapRange();
@@ -53,12 +53,12 @@ void ImageScalarArtist::prepareSource() {
   // Fill a texture with the raw data
   if (!readFromTex) {
     // common case
-    textureRaw = render::engine->generateTextureBuffer(TextureFormat::R32F, dimX, dimY, &data.front());
+    textureRaw = render::engine->generateTexture(TextureFormat::R32F, dimX, dimY, &data.front());
   }
 
   // Texture and program for rendering in
   framebuffer = render::engine->generateFrameBuffer(dimX, dimY);
-  textureRendered = render::engine->generateTextureBuffer(TextureFormat::RGB16F, dimX, dimY);
+  textureRendered = render::engine->generateTexture(TextureFormat::RGB16F, dimX, dimY);
   framebuffer->addColorBuffer(textureRendered);
   framebuffer->setViewport(0, 0, dimX, dimY);
 }
@@ -92,7 +92,7 @@ void ImageScalarArtist::draw() {
 }
 
 void ImageScalarArtist::buildImGUIWindow() {
-  //draw();
+  // draw();
 
   ImGui::Begin(name.c_str());
 

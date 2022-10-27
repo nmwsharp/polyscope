@@ -9,9 +9,6 @@
 #include <algorithm>
 #include <limits>
 
-using std::cout;
-using std::endl;
-
 namespace polyscope {
 
 // TODO make histograms lazy. There's no need to prepare here rather than on first draw.
@@ -232,8 +229,8 @@ void Histogram::fillBuffers() {
 void Histogram::prepare() {
 
   framebuffer = render::engine->generateFrameBuffer(texDim, texDim);
-  texturebuffer = render::engine->generateTextureBuffer(TextureFormat::RGBA8, texDim, texDim);
-  framebuffer->addColorBuffer(texturebuffer);
+  texture = render::engine->generateTexture(TextureFormat::RGBA8, texDim, texDim);
+  framebuffer->addColorBuffer(texture);
 
   // Create the program
   program = render::engine->requestShader("HISTOGRAM", {}, render::ShaderReplacementDefaults::Process);
@@ -279,7 +276,7 @@ void Histogram::buildUI(float width) {
   float h = w / aspect;
 
   // Render image
-  ImGui::Image(texturebuffer->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+  ImGui::Image(texture->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
 
   // Draw a cursor popup on mouseover
   if (ImGui::IsItemHovered()) {

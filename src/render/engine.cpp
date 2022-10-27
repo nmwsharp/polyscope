@@ -69,23 +69,23 @@ AttributeBuffer::AttributeBuffer(RenderDataType dataType_, int arrayCount_)
 
 AttributeBuffer::~AttributeBuffer() {}
 
-TextureBuffer::TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_)
+Texture::Texture(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_)
     : dim(dim_), format(format_), sizeX(sizeX_), sizeY(sizeY_), uniqueID(render::engine->getNextUniqueID()) {
   if (sizeX > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
   if (dim > 1 && sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
 }
 
-TextureBuffer::~TextureBuffer() {}
+Texture::~Texture() {}
 
-void TextureBuffer::setFilterMode(FilterMode newMode) {}
+void Texture::setFilterMode(FilterMode newMode) {}
 
-void TextureBuffer::resize(unsigned int newLen) { sizeX = newLen; }
-void TextureBuffer::resize(unsigned int newX, unsigned int newY) {
+void Texture::resize(unsigned int newLen) { sizeX = newLen; }
+void Texture::resize(unsigned int newX, unsigned int newY) {
   sizeX = newX;
   sizeY = newY;
 }
 
-unsigned int TextureBuffer::getTotalSize() const {
+unsigned int Texture::getTotalSize() const {
   switch (dim) {
   case 1:
     return getSizeX();
@@ -126,10 +126,10 @@ void FrameBuffer::resize(unsigned int newXSize, unsigned int newYSize) {
   for (auto& b : renderBuffersDepth) {
     b->resize(newXSize, newYSize);
   }
-  for (auto& b : textureBuffersColor) {
+  for (auto& b : texturesColor) {
     b->resize(newXSize, newYSize);
   }
-  for (auto& b : textureBuffersDepth) {
+  for (auto& b : texturesDepth) {
     b->resize(newXSize, newYSize);
   }
   sizeX = newXSize;
@@ -376,7 +376,7 @@ bool Engine::bindSceneBuffer() {
   return sceneBuffer->bindForRendering();
 }
 
-void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
+void Engine::applyLightingTransform(std::shared_ptr<Texture>& texture) {
 
   glm::vec4 currV = getCurrentViewport();
 
@@ -543,9 +543,9 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   { // Scene buffer
 
     // Note that this is basically duplicated in ground_plane.cpp, changes here should probably be reflected there
-    sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    sceneColor = generateTexture(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
     // sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
-    sceneDepth = generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
+    sceneDepth = generateTexture(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
 
     sceneBuffer = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     sceneBuffer->addColorBuffer(sceneColor);
@@ -557,7 +557,7 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   }
 
   { // Alternate depth texture used for some effects
-    sceneDepthMin = generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
+    sceneDepthMin = generateTexture(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
 
     sceneDepthMinFrame = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     sceneDepthMinFrame->addDepthBuffer(sceneDepthMin);
@@ -565,7 +565,7 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   }
 
   { // "Final" scene buffer (after resolving)
-    sceneColorFinal = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    sceneColorFinal = generateTexture(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
 
     sceneBufferFinal = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     sceneBufferFinal->addColorBuffer(sceneColorFinal);
@@ -876,8 +876,8 @@ void Engine::loadBlendableMaterial(std::string matName, std::string filenameBase
   loadBlendableMaterial(matName, names);
 }
 
-std::shared_ptr<TextureBuffer> Engine::loadMaterialTexture(float* data, int width, int height) {
-  std::shared_ptr<TextureBuffer> t = engine->generateTextureBuffer(TextureFormat::RGB16F, width, height, data);
+std::shared_ptr<Texture> Engine::loadMaterialTexture(float* data, int width, int height) {
+  std::shared_ptr<Texture> t = engine->generateTexture(TextureFormat::RGB16F, width, height, data);
   t->setFilterMode(FilterMode::Linear);
   return t;
 }
@@ -1009,7 +1009,7 @@ void Engine::loadDefaultColorMaps() {
 }
 
 
-void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer) {
+void Engine::showTextureInImGuiWindow(std::string windowName, Texture* buffer) {
   ImGui::Begin(windowName.c_str());
 
   if (buffer->getDimension() != 2) error("only know how to show 2D textures");

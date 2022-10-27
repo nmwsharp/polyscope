@@ -16,9 +16,9 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
 
     : PointCloudQuantity(name, pointCloud_), VectorQuantity(*this, vectors_, vectorType_) {
 
-  if (vectors.size() != parent.points.size()) {
+  if (vectors.size() != parent.nPoints()) {
     polyscope::error("Point cloud vector quantity " + name + " does not have same number of values (" +
-                     std::to_string(vectors.size()) + ") as point cloud size (" + std::to_string(parent.points.size()) +
+                     std::to_string(vectors.size()) + ") as point cloud size (" + std::to_string(parent.nPoints()) +
                      ")");
   }
 }

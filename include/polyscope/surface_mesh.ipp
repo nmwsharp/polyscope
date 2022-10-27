@@ -5,7 +5,7 @@ namespace polyscope {
 template <class V, class F>
 SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
   checkInitialized();
-  
+
   SurfaceMesh* s = new SurfaceMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
                                    standardizeNestedList<size_t, F>(faceIndices));
   bool success = registerStructure(s);
@@ -38,7 +38,7 @@ template <class V, class F, class P>
 SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
                                  const std::array<std::pair<P, size_t>, 5>& perms) {
   checkInitialized();
-  
+
   SurfaceMesh* s = registerSurfaceMesh(name, vertexPositions, faceIndices);
 
   if (s) {
@@ -50,8 +50,7 @@ SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, con
 
 template <class V>
 void SurfaceMesh::updateVertexPositions(const V& newPositions) {
-  vertices = standardizeVectorArray<glm::vec3, 3>(newPositions);
-
+  vertexPositions = standardizeVectorArray<glm::vec3, 3>(newPositions);
 
   // Rebuild any necessary quantities
   geometryChanged();
@@ -74,7 +73,7 @@ inline glm::vec3 SurfaceMesh::faceCenter(size_t iF) {
   const auto& face = faces[iF];
   size_t D = face.size();
   for (size_t j = 0; j < D; j++) {
-    faceCenter += vertices[face[j]];
+    faceCenter += vertexPositions[face[j]];
   }
   faceCenter /= D;
   return faceCenter;

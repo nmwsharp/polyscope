@@ -11,9 +11,9 @@ namespace polyscope {
 PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::vector<double>& values_,
                                                    PointCloud& pointCloud_, DataType dataType_)
     : PointCloudQuantity(name, pointCloud_, true), ScalarQuantity(*this, values_, dataType_) {
-  if (values_.size() != parent.points.size()) {
+  if (values_.size() != parent.nPoints()) {
     polyscope::error("Point cloud scalar quantity " + name + " does not have same number of values (" +
-                     std::to_string(values_.size()) + ") as point cloud size (" + std::to_string(parent.points.size()) +
+                     std::to_string(values_.size()) + ") as point cloud size (" + std::to_string(parent.nPoints()) +
                      ")");
   }
 }

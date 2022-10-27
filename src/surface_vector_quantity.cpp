@@ -108,7 +108,7 @@ SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, std::
 }
 
 void SurfaceVertexVectorQuantity::refresh() {
-  vectorRoots = parent.vertices;
+  vectorRoots = parent.vertexPositions;
   prepareVectorArtist();
 }
 
@@ -286,7 +286,7 @@ void SurfaceVertexIntrinsicVectorQuantity::refresh() {
     Complex angle = std::pow(Complex(vec.x, vec.y), 1.0 / nSym);
 
     for (int iRot = 0; iRot < nSym; iRot++) {
-      vectorRoots.push_back(parent.vertices[iV]);
+      vectorRoots.push_back(parent.vertexPositions[iV]);
 
       glm::vec3 vec = basisX * (float)angle.real() + basisY * (float)angle.imag();
       vectors.push_back(vec);
@@ -437,7 +437,7 @@ void SurfaceOneFormIntrinsicVectorQuantity::refresh() {
 
       formValues[j] = orientationSign * oneForm[iE];
 
-      glm::vec3 heVec = parent.vertices[vB] - parent.vertices[vA];
+      glm::vec3 heVec = parent.vertexPositions[vB] - parent.vertexPositions[vA];
       vecValues[j] = glm::cross(heVec, parent.faceNormals[iF]);
     }
 

@@ -21,7 +21,7 @@ public:
 
   // An alternate constructor which bypasses the float array and just reads directly from the texture. Limits will be
   // set arbitrarily. This is a bit of a hack, and mainly used for visualizing internal rendering buffers.
-  ImageScalarArtist(std::string name, std::shared_ptr<render::TextureBuffer>& texturebuffer, size_t dimX, size_t dimY,
+  ImageScalarArtist(std::string name, std::shared_ptr<render::Texture>& texture, size_t dimX, size_t dimY,
                     DataType dataType = DataType::STANDARD);
 
   void draw(); // (re-)render the data to the internal texture
@@ -53,7 +53,7 @@ private:
 
   // UI internals
   PersistentValue<std::string> cMap;
-  std::shared_ptr<render::TextureBuffer> textureRaw, textureRendered;
+  std::shared_ptr<render::Texture> textureRaw, textureRendered;
   std::shared_ptr<render::FrameBuffer> framebuffer;
   std::shared_ptr<render::ShaderProgram> program;
 
