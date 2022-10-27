@@ -207,13 +207,11 @@ glm::vec3 PointCloud::getPointPosition(size_t iPt) {
   }
 }
 
-uint32_t PointCloud::getPositionRenderBufferID() {
-  ensureRenderBuffersFilled();
-  return getPositionRenderBuffer()->getNativeBufferID();
+
+void PointCloud::renderBufferDataExternallyUpdated() {
+  points.clear();
+  requestRedraw();
 }
-
-
-void PointCloud::renderBufferDataExternallyUpdated() { requestRedraw(); }
 
 std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud) {
   initRules = addStructureRules(initRules);

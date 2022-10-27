@@ -140,12 +140,6 @@ public:
 
   // === ~DANGER~ experimental/unsupported functions
 
-  // Get a raw GPU-side data buffer IDs. This buffer can be written to to update the data (e.g., from a CUDA buffer),
-  // without transferring to the CPU. The meaining of this value is graphics backend-dependent, and it may not be
-  // available on all backends. In openGL this returns the VBO GLuint identifier. Be sure to call the *updated()
-  // function below after writing to the buffer.
-  uint32_t getPositionRenderBufferID();
-
   // After updating any data via the buffer above, call this function to let
   // Polyscope know.
   void renderBufferDataExternallyUpdated();

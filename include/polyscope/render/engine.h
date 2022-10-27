@@ -65,7 +65,7 @@ public:
   // == Getters
   RenderDataType getType() const { return dataType; }
   int getArrayCount() const { return arrayCount; }
-  long int getDataSize() const { return dataSize; }
+  int64_t getDataSize() const { return dataSize; }
   uint64_t getUniqueID() const { return uniqueID; }
   bool isSet() const { return dataSize > 0; }
 
@@ -80,7 +80,7 @@ public:
 protected:
   RenderDataType dataType;
   int arrayCount;
-  long int dataSize = -1; // the size of the data currently stored in this attribute (-1 if nothing)
+  int64_t dataSize = -1; // the size of the data currently stored in this attribute (-1 if nothing)
   uint64_t uniqueID;
 };
 

@@ -7,9 +7,6 @@
 
 #include "imgui.h"
 
-using std::cout;
-using std::endl;
-
 namespace polyscope {
 
 PointCloudParameterizationQuantity::PointCloudParameterizationQuantity(std::string name,

@@ -244,7 +244,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec2>& data) {
 
   if (isSet()) {
 
-    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
 
     glBufferSubData(GL_ARRAY_BUFFER, 0, 2 * dataSize * sizeof(float), &data[0]);
 
@@ -265,7 +265,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data) {
 
   if (isSet()) {
 
-    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
 
     glBufferSubData(GL_ARRAY_BUFFER, 0, 3 * dataSize * sizeof(float), &data[0]);
 
@@ -285,7 +285,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec4>& data) {
 
   if (isSet()) {
 
-    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
 
     glBufferSubData(GL_ARRAY_BUFFER, 0, 4 * dataSize * sizeof(float), &data[0]);
 
@@ -302,7 +302,7 @@ void GLAttributeBuffer::setData(const std::vector<float>& data) {
 
   if (isSet()) {
 
-    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
 
     glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize * sizeof(float), &data[0]);
 
@@ -325,7 +325,7 @@ void GLAttributeBuffer::setData(const std::vector<double>& data) {
 
   if (isSet()) {
 
-    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
 
     glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize * sizeof(float), &floatData[0]);
 
@@ -348,7 +348,7 @@ void GLAttributeBuffer::setData(const std::vector<int32_t>& data) {
 
   if (isSet()) {
 
-    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
 
     glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize * sizeof(GLint), &data[0]);
 
@@ -371,7 +371,7 @@ void GLAttributeBuffer::setData(const std::vector<uint32_t>& data) {
 
   if (isSet()) {
 
-    if (static_cast<long int>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
 
     glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize * sizeof(GLuint), &data[0]);
 
@@ -385,6 +385,7 @@ void GLAttributeBuffer::setData(const std::vector<uint32_t>& data) {
 double GLAttributeBuffer::getData_double(size_t ind) {
   if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
   if (getType() != RenderDataType::Float) throw std::runtime_error("bad getData type");
+  bind();
   float readValue;
   glGetBufferSubData(GL_ARRAY_BUFFER, ind * sizeof(float), sizeof(float), &readValue);
   return readValue;
@@ -392,6 +393,7 @@ double GLAttributeBuffer::getData_double(size_t ind) {
 glm::vec2 GLAttributeBuffer::getData_vec2(size_t ind) {
   if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
   if (getType() != RenderDataType::Vector2Float) throw std::runtime_error("bad getData type");
+  bind();
   glm::vec2 readValue;
   glGetBufferSubData(GL_ARRAY_BUFFER, ind * sizeof(glm::vec2), sizeof(glm::vec2), &readValue);
   return readValue;
@@ -399,6 +401,7 @@ glm::vec2 GLAttributeBuffer::getData_vec2(size_t ind) {
 glm::vec3 GLAttributeBuffer::getData_vec3(size_t ind) {
   if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
   if (getType() != RenderDataType::Vector3Float) throw std::runtime_error("bad getData type");
+  bind();
   glm::vec3 readValue;
   glGetBufferSubData(GL_ARRAY_BUFFER, ind * sizeof(glm::vec3), sizeof(glm::vec3), &readValue);
   return readValue;
@@ -406,6 +409,7 @@ glm::vec3 GLAttributeBuffer::getData_vec3(size_t ind) {
 glm::vec4 GLAttributeBuffer::getData_vec4(size_t ind) {
   if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
   if (getType() != RenderDataType::Vector4Float) throw std::runtime_error("bad getData type");
+  bind();
   glm::vec4 readValue;
   glGetBufferSubData(GL_ARRAY_BUFFER, ind * sizeof(glm::vec4), sizeof(glm::vec4), &readValue);
   return readValue;
@@ -413,6 +417,7 @@ glm::vec4 GLAttributeBuffer::getData_vec4(size_t ind) {
 int GLAttributeBuffer::getData_int(size_t ind) {
   if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
   if (getType() != RenderDataType::Int) throw std::runtime_error("bad getData type");
+  bind();
   GLint readValue;
   glGetBufferSubData(GL_ARRAY_BUFFER, ind * sizeof(GLint), sizeof(GLint), &readValue);
   return static_cast<int>(readValue);
@@ -420,6 +425,7 @@ int GLAttributeBuffer::getData_int(size_t ind) {
 uint32_t GLAttributeBuffer::getData_uint32(size_t ind) {
   if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
   if (getType() != RenderDataType::UInt) throw std::runtime_error("bad getData type");
+  bind();
   uint32_t readValue;
   glGetBufferSubData(GL_ARRAY_BUFFER, ind * sizeof(uint32_t), sizeof(uint32_t), &readValue);
   return readValue;
@@ -1664,7 +1670,7 @@ void GLShaderProgram::validateData() {
   }
 
   // Check attributes
-  long int attributeSize = -1;
+  int64_t attributeSize = -1;
   for (GLShaderAttribute a : attributes) {
     if (a.location == -1) continue;
     if (!a.buff) {
