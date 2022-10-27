@@ -45,19 +45,18 @@ void PointCloudVectorQuantity::refresh() {
 
 void PointCloudVectorQuantity::buildCustomUI() { buildVectorUI(); }
 
-// TODO buildVectorOptionsUI();
-
 void PointCloudVectorQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
   std::stringstream buffer;
-  buffer << vectors[ind];
+  glm::vec3 vec = getVector(ind);
+  buffer << vec;
   ImGui::TextUnformatted(buffer.str().c_str());
 
   ImGui::NextColumn();
   ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", glm::length(vectors[ind]));
+  ImGui::Text("magnitude: %g", glm::length(vec));
   ImGui::NextColumn();
 }
 

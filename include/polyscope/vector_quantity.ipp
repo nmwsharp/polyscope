@@ -12,7 +12,7 @@ VectorQuantity<QuantityT>::VectorQuantity(QuantityT& quantity_, const std::vecto
 
 template <typename QuantityT>
 void VectorQuantity<QuantityT>::buildVectorUI() {
-
+  ImGui::SameLine();
 
   if (ImGui::ColorEdit3("Color", &vectorColor.get()[0], ImGuiColorEditFlags_NoInputs)) setVectorColor(getVectorColor());
   ImGui::SameLine();
@@ -48,9 +48,6 @@ void VectorQuantity<QuantityT>::buildVectorUI() {
   // ImGui::TextUnformatted(mapper.printBounds().c_str());
   //}
 }
-
-template <typename QuantityT>
-void VectorQuantity<QuantityT>::buildVectorOptionsUI() {}
 
 
 template <typename QuantityT>
@@ -156,6 +153,38 @@ void VectorQuantity<QuantityT>::updateData2D(const T& newVectors) {
   dataUpdated();
 }
 
+
+template <typename QuantityT>
+bool VectorQuantity<QuantityT>::vectorsStoredInMemory() {
+  return !vectors.empty();
+}
+
+template <typename QuantityT>
+size_t VectorQuantity<QuantityT>::nVectorSize() {
+  if (vectorsStoredInMemory()) {
+    return vectors.size();
+  } else {
+    if (!vectorRenderBuffer || !vectorRenderBuffer->isSet()) {
+      throw std::runtime_error("buffer is not allocated when it should be");
+    }
+    return static_cast<size_t>(vectorRenderBuffer->getDataSize());
+  }
+}
+
+template <typename QuantityT>
+glm::vec3 VectorQuantity<QuantityT>::getVector(size_t ind) {
+  if (vectorsStoredInMemory()) {
+    return vectors[ind];
+  } else {
+    return vectorRenderBuffer->getData_vec3(ind);
+  }
+}
+
+template <typename QuantityT>
+void VectorQuantity<QuantityT>::renderBufferDataExternallyUpdated() {
+  vectors.clear();
+  requestRedraw();
+}
 
 template <typename QuantityT>
 QuantityT* VectorQuantity<QuantityT>::setVectorLengthScale(double newLength, bool isRelative) {

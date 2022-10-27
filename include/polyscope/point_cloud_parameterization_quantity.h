@@ -12,6 +12,8 @@
 
 namespace polyscope {
 
+// TODO make a ParameterizationQuantity.h
+
 class PointCloudParameterizationQuantity : public PointCloudQuantity {
 public:
   PointCloudParameterizationQuantity(std::string name, const std::vector<glm::vec2>& coords_, ParamCoordsType type_,
@@ -24,16 +26,15 @@ public:
   virtual void refresh() override;
 
   virtual std::string niceName() override;
- 
+
   template <class V>
   void updateData(const V& newCoords);
 
-  void ensureRenderBuffersFilled(bool forceRefill=false);
+  void ensureRenderBuffersFilled(bool forceRefill = false);
 
   std::shared_ptr<render::AttributeBuffer> getCoordRenderBuffer();
 
   // === Members
-  std::vector<glm::vec2> coords;
   const ParamCoordsType coordsType;
 
   // === Getters and setters for visualization options
@@ -57,11 +58,11 @@ public:
   // Color map for radial visualization
   PointCloudParameterizationQuantity* setColorMap(std::string val);
   std::string getColorMap();
-  
+
   // Darkness for checkers (etc)
   PointCloudParameterizationQuantity* setAltDarkness(double newVal);
   double getAltDarkness();
-  
+
   // === ~DANGER~ experimental/unsupported functions
 
   uint32_t getCoordBufferID();
@@ -69,6 +70,8 @@ public:
 
 
 protected:
+  std::vector<glm::vec2> coords;
+
   // === Visualiztion options
   PersistentValue<float> checkerSize;
   PersistentValue<ParamVizStyle> vizStyle;

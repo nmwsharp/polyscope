@@ -10,9 +10,7 @@ namespace polyscope {
 
 PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::vector<double>& values_,
                                                    PointCloud& pointCloud_, DataType dataType_)
-    : PointCloudQuantity(name, pointCloud_, true), ScalarQuantity(*this, values_, dataType_)
-
-{
+    : PointCloudQuantity(name, pointCloud_, true), ScalarQuantity(*this, values_, dataType_) {
   if (values_.size() != parent.points.size()) {
     polyscope::error("Point cloud scalar quantity " + name + " does not have same number of values (" +
                      std::to_string(values_.size()) + ") as point cloud size (" + std::to_string(parent.points.size()) +
@@ -73,38 +71,6 @@ void PointCloudScalarQuantity::createProgram() {
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
 
-void PointCloudScalarQuantity::ensureRenderBuffersFilled(bool forceRefill) {
-
-  // ## create the buffers if they don't already exist
-
-  bool createdBuffer = false;
-  if (!scalarRenderBuffer) {
-    scalarRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Float);
-    createdBuffer = true;
-  }
-
-  // If the buffers already existed (and thus are presumably filled), quick-out. Otherwise, fill the buffers.
-  if (createdBuffer || forceRefill) {
-    scalarRenderBuffer->setData(values);
-  }
-}
-
-void PointCloudScalarQuantity::dataUpdated() {
-  ensureRenderBuffersFilled(false);
-  requestRedraw();
-}
-
-std::shared_ptr<render::AttributeBuffer> PointCloudScalarQuantity::getScalarRenderBuffer() {
-  ensureRenderBuffersFilled();
-  return scalarRenderBuffer;
-}
-
-uint32_t PointCloudScalarQuantity::getScalarBufferID() {
-  ensureRenderBuffersFilled();
-  return scalarRenderBuffer->getNativeBufferID();
-}
-
-void PointCloudScalarQuantity::bufferDataExternallyUpdated() { requestRedraw(); }
 
 void PointCloudScalarQuantity::refresh() {
   pointProgram.reset();
@@ -114,7 +80,7 @@ void PointCloudScalarQuantity::refresh() {
 void PointCloudScalarQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", values[ind]);
+  ImGui::Text("%g", getValue(ind));
   ImGui::NextColumn();
 }
 

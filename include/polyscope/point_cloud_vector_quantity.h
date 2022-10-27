@@ -20,11 +20,6 @@ public:
   virtual std::string niceName() override;
   virtual void refresh() override;
 
-  std::shared_ptr<render::AttributeBuffer> getVectorRenderBuffer();
-
-  // Note: all of the actual work is done by the VectorQuantity class
-
-
 private:
   void dataUpdated();
   void ensureBaseRenderBufferResolved();

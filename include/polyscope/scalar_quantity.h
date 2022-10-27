@@ -4,6 +4,7 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/scaled_value.h"
+#include "polyscope/standardize_data_array.h"
 
 namespace polyscope {
 
@@ -24,10 +25,15 @@ public:
   // Set uniforms in rendering programs for scalars
   void setScalarUniforms(render::ShaderProgram& p);
 
+  template <class V>
+  void updateData(const V& newValues);
+
   // === Members
   QuantityT& quantity;
-  std::vector<double> values;
-  const DataType dataType;
+  
+  bool valuesStoredInMemory();
+  size_t nValueSize();
+  float getValue(size_t ind);
 
   // === Get/set visualization parameters
 
@@ -49,9 +55,21 @@ public:
   QuantityT* setIsolineDarkness(double val);
   double getIsolineDarkness();
 
+  // === ~DANGER~ experimental/unsupported functions
+
+  std::shared_ptr<render::AttributeBuffer> getScalarRenderBuffer();
+  void renderBufferDataExternallyUpdated();
 
 protected:
+  // Helpers
+  void dataUpdated();
+  void ensureRenderBuffersFilled(bool forceRefill = false);
+
+  std::vector<double> values;
+  const DataType dataType;
+
   // === Visualization parameters
+  std::shared_ptr<render::AttributeBuffer> scalarRenderBuffer;
 
   // Affine data maps and limits
   std::pair<float, float> vizRange; // TODO make these persistent

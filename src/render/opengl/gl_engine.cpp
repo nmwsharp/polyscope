@@ -382,13 +382,16 @@ void GLAttributeBuffer::setData(const std::vector<uint32_t>& data) {
 }
 
 
-double GLAttributeBuffer::getData_double(size_t ind) {
+float GLAttributeBuffer::getData_float(size_t ind) {
   if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
   if (getType() != RenderDataType::Float) throw std::runtime_error("bad getData type");
   bind();
   float readValue;
   glGetBufferSubData(GL_ARRAY_BUFFER, ind * sizeof(float), sizeof(float), &readValue);
   return readValue;
+}
+double GLAttributeBuffer::getData_double(size_t ind) {
+  return getData_float(ind);
 }
 glm::vec2 GLAttributeBuffer::getData_vec2(size_t ind) {
   if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");

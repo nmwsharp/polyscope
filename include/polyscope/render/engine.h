@@ -70,6 +70,7 @@ public:
   bool isSet() const { return dataSize > 0; }
 
   // get data at a single index from the buffer
+  virtual float getData_float(size_t ind) = 0;
   virtual double getData_double(size_t ind) = 0;
   virtual glm::vec2 getData_vec2(size_t ind) = 0;
   virtual glm::vec3 getData_vec3(size_t ind) = 0;

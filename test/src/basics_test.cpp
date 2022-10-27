@@ -156,6 +156,10 @@ TEST_F(PolyscopeTest, PointCloudColor) {
   
   q1->updateData(vColors);
   polyscope::show(3);
+  
+  q1->renderBufferDataExternallyUpdated();
+  q1->getColorValue(0);
+  polyscope::show(3);
 
   polyscope::removeAllStructures();
 }
@@ -173,6 +177,10 @@ TEST_F(PolyscopeTest, PointCloudScalar) {
 
   q1->updateData(vScalar);
   polyscope::show(3);
+  
+  q1->renderBufferDataExternallyUpdated();
+  q1->getValue(0);
+  polyscope::show(3);
 
   polyscope::removeAllStructures();
 }
@@ -186,6 +194,10 @@ TEST_F(PolyscopeTest, PointCloudVector) {
   polyscope::show(3);
 
   q1->updateData(vals);
+  polyscope::show(3);
+  
+  q1->renderBufferDataExternallyUpdated();
+  q1->getVector(0);
   polyscope::show(3);
 
   polyscope::removeAllStructures();

@@ -65,6 +65,7 @@ public:
   void setData(const std::vector<int32_t>& data) override;
   void setData(const std::vector<uint32_t>& data) override;
 
+  float getData_float(size_t ind) override;
   double getData_double(size_t ind) override;
   glm::vec2 getData_vec2(size_t ind) override;
   glm::vec3 getData_vec3(size_t ind) override;

@@ -10,18 +10,12 @@ namespace polyscope {
 
 PointCloudColorQuantity::PointCloudColorQuantity(std::string name, const std::vector<glm::vec3>& values_,
                                                  PointCloud& pointCloud_)
-    : PointCloudQuantity(name, pointCloud_, true)
-
-{
-
+    : PointCloudQuantity(name, pointCloud_, true), ColorQuantity(*this, values_) {
   if (values_.size() != parent.points.size()) {
     polyscope::error("Point cloud color quantity " + name + " does not have same number of values (" +
                      std::to_string(values_.size()) + ") as point cloud size (" + std::to_string(parent.points.size()) +
                      ")");
   }
-
-  // Copy the raw data
-  values = values_;
 }
 
 void PointCloudColorQuantity::draw() {
@@ -34,6 +28,7 @@ void PointCloudColorQuantity::draw() {
 
   parent.setStructureUniforms(*pointProgram);
   parent.setPointCloudUniforms(*pointProgram);
+  setColorUniforms(*pointProgram);
 
   pointProgram->draw();
 }
@@ -57,38 +52,6 @@ void PointCloudColorQuantity::createPointProgram() {
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
 
-void PointCloudColorQuantity::ensureRenderBuffersFilled(bool forceRefill) {
-
-  // ## create the buffers if they don't already exist
-
-  bool createdBuffer = false;
-  if (!colorBuffer) {
-    colorBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
-    createdBuffer = true;
-  }
-
-  // If the buffers already existed (and thus are presumably filled), quick-out. Otherwise, fill the buffers.
-  if (createdBuffer || forceRefill) {
-    colorBuffer->setData(values);
-  }
-}
-
-void PointCloudColorQuantity::dataUpdated() {
-  ensureRenderBuffersFilled(false);
-  requestRedraw();
-}
-
-std::shared_ptr<render::AttributeBuffer> PointCloudColorQuantity::getColorRenderBuffer() {
-  ensureRenderBuffersFilled();
-  return colorBuffer;
-}
-
-uint32_t PointCloudColorQuantity::getColorBufferID() {
-  ensureRenderBuffersFilled();
-  return colorBuffer->getNativeBufferID();
-}
-
-void PointCloudColorQuantity::bufferDataExternallyUpdated() { requestRedraw(); }
 
 void PointCloudColorQuantity::refresh() {
   pointProgram.reset();
@@ -100,7 +63,7 @@ void PointCloudColorQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
-  glm::vec3 tempColor = values[ind];
+  glm::vec3 tempColor = getColorValue(ind);
   ImGui::ColorEdit3("", &tempColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
   ImGui::SameLine();
   std::string colorStr = to_string_short(tempColor);

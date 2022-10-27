@@ -16,7 +16,6 @@ public:
 
   // Build the ImGUI UIs for scalars
   void buildVectorUI();
-  void buildVectorOptionsUI(); // called inside of an options menu
 
   void drawVectors();
   void refreshVectors();
@@ -28,13 +27,10 @@ public:
 
   // === Members
   QuantityT& quantity;
-  std::function<std::shared_ptr<render::AttributeBuffer>()> basesBufferCallback;
-  std::vector<glm::vec3> vectors;
-  const VectorType vectorType;
 
-  void ensureRenderBuffersFilled(bool forceRefill = false);
-  std::shared_ptr<render::AttributeBuffer> getVectorRenderBuffer();
-
+  bool vectorsStoredInMemory();
+  size_t nVectorSize();
+  glm::vec3 getVector(size_t ind);
 
   // === Option accessors
 
@@ -57,11 +53,19 @@ public:
 
   // === ~DANGER~ experimental/unsupported functions
 
-  uint32_t getVectorBufferID();
-  void bufferDataExternallyUpdated();
+  std::shared_ptr<render::AttributeBuffer> getVectorRenderBuffer();
+  void renderBufferDataExternallyUpdated();
 
 
 protected:
+  // helpers
+  void ensureRenderBuffersFilled(bool forceRefill = false);
+  void dataUpdated();
+  void createProgram();
+  void updateMaxLength();
+
+  std::vector<glm::vec3> vectors;
+  const VectorType vectorType;
   double maxLength = -1;
 
   // === Visualization options
@@ -74,11 +78,6 @@ protected:
   std::shared_ptr<render::AttributeBuffer> vectorRenderBuffer;
   std::shared_ptr<render::AttributeBuffer> baseRenderBuffer;
   std::shared_ptr<render::ShaderProgram> vectorProgram;
-
-  // helpers
-  void dataUpdated();
-  void createProgram();
-  void updateMaxLength();
 };
 
 } // namespace polyscope

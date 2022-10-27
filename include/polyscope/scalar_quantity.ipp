@@ -119,6 +119,24 @@ void ScalarQuantity<QuantityT>::setScalarUniforms(render::ShaderProgram& p) {
 }
 
 template <typename QuantityT>
+void ScalarQuantity<QuantityT>::ensureRenderBuffersFilled(bool forceRefill) {
+
+  // ## create the buffers if they don't already exist
+
+  bool createdBuffer = false;
+  if (!scalarRenderBuffer) {
+    scalarRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Float);
+    createdBuffer = true;
+  }
+
+  // If the buffers already existed (and thus are presumably filled), quick-out. Otherwise, fill the buffers.
+  if (createdBuffer || forceRefill) {
+    scalarRenderBuffer->setData(values);
+  }
+}
+
+
+template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::resetMapRange() {
   switch (dataType) {
   case DataType::STANDARD:
@@ -137,6 +155,46 @@ QuantityT* ScalarQuantity<QuantityT>::resetMapRange() {
   return &quantity;
 }
 
+template <typename QuantityT>
+bool ScalarQuantity<QuantityT>::valuesStoredInMemory() {
+  return !values.empty();
+}
+
+template <typename QuantityT>
+size_t ScalarQuantity<QuantityT>::nValueSize() {
+  if (valuesStoredInMemory()) {
+    return values.size();
+  } else {
+    if (!scalarRenderBuffer || !scalarRenderBuffer->isSet()) {
+      throw std::runtime_error("buffer is not allocated when it should be");
+    }
+    return static_cast<size_t>(scalarRenderBuffer->getDataSize());
+  }
+}
+
+template <typename QuantityT>
+float ScalarQuantity<QuantityT>::getValue(size_t ind) {
+  if (valuesStoredInMemory()) {
+    return values[ind];
+  } else {
+    return scalarRenderBuffer->getData_float(ind);
+  }
+}
+
+template <typename QuantityT>
+template <class V>
+void ScalarQuantity<QuantityT>::updateData(const V& newValues) {
+  validateSize(newValues, nValueSize(), "scalar quantity");
+  values = standardizeArray<double, V>(newValues);
+  dataUpdated();
+}
+
+template <typename QuantityT>
+void ScalarQuantity<QuantityT>::dataUpdated() {
+  // TODO make this do _something_ with the histogram
+  ensureRenderBuffersFilled(false);
+  requestRedraw();
+}
 
 template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::setColorMap(std::string val) {
@@ -204,6 +262,20 @@ QuantityT* ScalarQuantity<QuantityT>::setIsolinesEnabled(bool newEnabled) {
 template <typename QuantityT>
 bool ScalarQuantity<QuantityT>::getIsolinesEnabled() {
   return isolinesEnabled.get();
+}
+
+
+template <typename QuantityT>
+std::shared_ptr<render::AttributeBuffer> ScalarQuantity<QuantityT>::getScalarRenderBuffer() {
+  ensureRenderBuffersFilled();
+  return scalarRenderBuffer;
+}
+
+template <typename QuantityT>
+void ScalarQuantity<QuantityT>::renderBufferDataExternallyUpdated() {
+  // TODO make this do _something_ with the histogram
+  values.clear();
+  requestRedraw();
 }
 
 } // namespace polyscope
