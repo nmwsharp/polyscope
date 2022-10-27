@@ -287,6 +287,7 @@ public:
   // = Attributes
   // clang-format off
   virtual bool hasAttribute(std::string name) = 0;
+  virtual void setExternalBuffer(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) = 0; 
   virtual bool attributeIsSet(std::string name) = 0;
   virtual std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec2>& data) = 0;
@@ -441,15 +442,9 @@ public:
   virtual std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) = 0;
 
   // == create shader programs
-  //   - externalBuffers is a list of (name,bufferPtr) tuples will will be used by the program. If any are not needed,
-  //   they will be ignored.
   virtual std::shared_ptr<ShaderProgram>
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
-                const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers,
                 ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) = 0;
-  std::shared_ptr<ShaderProgram>
-  requestShader(const std::string& programName, const std::vector<std::string>& customRules,
-                ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject);
 
   // === The frame buffers used in the rendering pipeline
   // The size of these buffers is always kept in sync with the screen size
@@ -550,9 +545,8 @@ protected:
   uint64_t uniqueID = 500;
 
   // low-level interface for creating shader programs
-  virtual std::shared_ptr<ShaderProgram> generateShaderProgram(
-      const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-      const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers) = 0;
+  virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
+                                                               DrawMode dm) = 0;
 
   // Default rule lists (see enum for explanation)
   std::vector<std::string> defaultRules_sceneObject{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "LIGHT_MATCAP"};

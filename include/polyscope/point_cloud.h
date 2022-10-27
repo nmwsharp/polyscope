@@ -131,6 +131,7 @@ public:
 
   // Rendering helpers used by quantities
   void setPointCloudUniforms(render::ShaderProgram& p);
+  void setPointProgramGeometryBuffers(render::ShaderProgram& p);
   void ensureRenderBuffersFilled(bool forceRefill = false);
   std::vector<std::string> addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud = true);
   std::string getShaderNameForRenderMode();

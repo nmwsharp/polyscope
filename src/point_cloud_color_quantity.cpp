@@ -46,14 +46,12 @@ void PointCloudColorQuantity::createPointProgram() {
   // clang-format off
   pointProgram = render::engine->requestShader(
       parent.getShaderNameForRenderMode(), 
-      parent.addPointCloudRules({"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"}),
-      { 
-        {"a_position", parent.getPositionRenderBuffer()}, 
-        {"a_pointRadius", parent.getPointRadiusRenderBuffer()},
-        {"a_color", getColorRenderBuffer()},
-      }
+      parent.addPointCloudRules({"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"})
   );
   // clang-format on
+
+  parent.setPointProgramGeometryBuffers(*pointProgram);
+  pointProgram->setExternalBuffer("a_color", getColorRenderBuffer());
 
   // Fill buffers
   render::engine->setMaterial(*pointProgram, parent.getMaterial());

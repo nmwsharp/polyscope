@@ -51,14 +51,10 @@ void PointCloudParameterizationQuantity::createProgram() {
     // clang-format off
     pointProgram = render::engine->requestShader(
         parent.getShaderNameForRenderMode(), 
-        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_CHECKER_VALUE2"}),
-        { 
-          {"a_position", parent.getPositionRenderBuffer()}, 
-          {"a_pointRadius", parent.getPointRadiusRenderBuffer()},
-          {"a_value2", getCoordRenderBuffer()},
-        }
+        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_CHECKER_VALUE2"})
     );
     // clang-format on
+
 
     break;
   case ParamVizStyle::GRID:
@@ -66,12 +62,7 @@ void PointCloudParameterizationQuantity::createProgram() {
     // clang-format off
     pointProgram = render::engine->requestShader(
         parent.getShaderNameForRenderMode(), 
-        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}),
-        { 
-          {"a_position", parent.getPositionRenderBuffer()}, 
-          {"a_pointRadius", parent.getPointRadiusRenderBuffer()},
-          {"a_value2", getCoordRenderBuffer()},
-        }
+        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"})
     );
     // clang-format on
 
@@ -81,12 +72,7 @@ void PointCloudParameterizationQuantity::createProgram() {
     // clang-format off
     pointProgram = render::engine->requestShader(
         parent.getShaderNameForRenderMode(), 
-        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"}),
-        { 
-          {"a_position", parent.getPositionRenderBuffer()}, 
-          {"a_pointRadius", parent.getPointRadiusRenderBuffer()},
-          {"a_value2", getCoordRenderBuffer()},
-        }
+        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"})
     );
     // clang-format on
 
@@ -98,12 +84,7 @@ void PointCloudParameterizationQuantity::createProgram() {
     // clang-format off
     pointProgram = render::engine->requestShader(
         parent.getShaderNameForRenderMode(), 
-        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "SHADEVALUE_MAG_VALUE2", "ISOLINE_STRIPE_VALUECOLOR"}),
-        { 
-          {"a_position", parent.getPositionRenderBuffer()}, 
-          {"a_pointRadius", parent.getPointRadiusRenderBuffer()},
-          {"a_value2", getCoordRenderBuffer()},
-        }
+        parent.addPointCloudRules({"SPHERE_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "SHADEVALUE_MAG_VALUE2", "ISOLINE_STRIPE_VALUECOLOR"})
     );
     // clang-format on
 
@@ -111,6 +92,9 @@ void PointCloudParameterizationQuantity::createProgram() {
 
     break;
   }
+
+  parent.setPointProgramGeometryBuffers(*pointProgram);
+  pointProgram->setExternalBuffer("a_value2", getCoordRenderBuffer());
 
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }

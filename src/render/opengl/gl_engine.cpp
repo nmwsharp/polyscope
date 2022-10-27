@@ -825,9 +825,7 @@ void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
 // ==================  Shader Program  =========================
 // =============================================================
 
-GLShaderProgram::GLShaderProgram(
-    const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-    const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers)
+GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm)
     : ShaderProgram(stages, dm) {
 
   // Collect attributes and uniforms from all of the shaders
@@ -850,9 +848,16 @@ GLShaderProgram::GLShaderProgram(
 
   // Perform setup tasks
   compileGLProgram(stages);
+  checkGLError();
+
   setDataLocations();
-  resolveExternalBuffers(externalBuffers);
-  createBuffers();
+  checkGLError();
+
+  // Create a VAO
+  glGenVertexArrays(1, &vaoHandle);
+  checkGLError();
+
+  createBuffers(); // only handles texture & index things, attributes are lazily created
   checkGLError();
 }
 
@@ -969,90 +974,11 @@ void GLShaderProgram::setDataLocations() {
   checkGLError();
 }
 
-void GLShaderProgram::resolveExternalBuffers(
-    const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers) {
-
-  for (GLShaderAttribute& a : attributes) {
-    if (a.location == -1) continue; // attributes which were optimized out or something
-
-    for (auto& tup : externalBuffers) {
-      std::string extName = std::get<0>(tup);
-
-      if (a.name == extName) {
-
-        std::shared_ptr<AttributeBuffer> extBuff = std::get<1>(tup);
-
-        // check multiple-set errors (duplicates in externalBuffers list?)
-        if (a.buff) throw std::invalid_argument("attribute " + extName + " is already set");
-        if (!extBuff) throw std::invalid_argument("attribute " + extName + " external buffer should not be null");
-
-        // cast to the engine type (booooooo)
-        std::shared_ptr<GLAttributeBuffer> engineExtBuff = std::dynamic_pointer_cast<GLAttributeBuffer>(extBuff);
-        if (!engineExtBuff)
-          throw std::invalid_argument("attribute " + extName + " external buffer engine type cast failed");
-
-        a.buff = engineExtBuff;
-      }
-    }
-  }
-}
+void GLShaderProgram::bindVAO() { glBindVertexArray(vaoHandle); }
 
 void GLShaderProgram::createBuffers() {
 
-  // Create a VAO
-  glGenVertexArrays(1, &vaoHandle);
-  glBindVertexArray(vaoHandle);
-
-  // Create buffers for each attributes
-  for (GLShaderAttribute& a : attributes) {
-    if (a.location == -1) continue;
-
-    // generate the buffer if needed
-    if (!a.buff) {
-      std::shared_ptr<AttributeBuffer> newBuff = glEngine->generateAttributeBuffer(a.type, a.arrayCount);
-      std::shared_ptr<GLAttributeBuffer> engineNewBuff = std::dynamic_pointer_cast<GLAttributeBuffer>(newBuff);
-      if (!engineNewBuff) throw std::invalid_argument("buffer type cast failed");
-      a.buff = engineNewBuff;
-    }
-
-    a.buff->bind();
-
-    // Choose the correct type for the buffer
-    for (int iArrInd = 0; iArrInd < a.arrayCount; iArrInd++) {
-
-      glEnableVertexAttribArray(a.location + iArrInd);
-
-      switch (a.type) {
-      case RenderDataType::Float:
-        glVertexAttribPointer(a.location + iArrInd, 1, GL_FLOAT, GL_FALSE, sizeof(float) * 1 * a.arrayCount,
-                              reinterpret_cast<void*>(sizeof(float) * 1 * iArrInd));
-        break;
-      case RenderDataType::Int:
-        glVertexAttribPointer(a.location + iArrInd, 1, GL_INT, GL_FALSE, sizeof(int) * 1 * a.arrayCount,
-                              reinterpret_cast<void*>(sizeof(int) * 1 * iArrInd));
-        break;
-      case RenderDataType::UInt:
-        glVertexAttribPointer(a.location + iArrInd, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(uint32_t) * 1 * a.arrayCount,
-                              reinterpret_cast<void*>(sizeof(uint32_t) * 1 * iArrInd));
-        break;
-      case RenderDataType::Vector2Float:
-        glVertexAttribPointer(a.location + iArrInd, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2 * a.arrayCount,
-                              reinterpret_cast<void*>(sizeof(float) * 2 * iArrInd));
-        break;
-      case RenderDataType::Vector3Float:
-        glVertexAttribPointer(a.location + iArrInd, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3 * a.arrayCount,
-                              reinterpret_cast<void*>(sizeof(float) * 3 * iArrInd));
-        break;
-      case RenderDataType::Vector4Float:
-        glVertexAttribPointer(a.location + iArrInd, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * a.arrayCount,
-                              reinterpret_cast<void*>(sizeof(float) * 4 * iArrInd));
-        break;
-      default:
-        throw std::invalid_argument("Unrecognized GLShaderAttribute type");
-        break;
-      }
-    }
-  }
+  bindVAO();
 
   // Create an index buffer, if we're using one
   if (useIndex) {
@@ -1078,6 +1004,105 @@ void GLShaderProgram::createBuffers() {
   }
 
   checkGLError();
+}
+
+void GLShaderProgram::setExternalBuffer(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) {
+
+  bindVAO();
+  checkGLError();
+
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name) {
+      if (a.location == -1)
+        return; // attributes which were optimized out or something, do nothing
+                //
+      // check multiple-set errors (duplicates in externalBuffers list?)
+      if (a.buff) throw std::invalid_argument("attribute " + name + " is already set");
+      if (!externalBuffer) throw std::invalid_argument("attribute " + name + " external buffer should not be null");
+
+      // cast to the engine type (booooooo)
+      std::shared_ptr<GLAttributeBuffer> engineExtBuff = std::dynamic_pointer_cast<GLAttributeBuffer>(externalBuffer);
+      if (!engineExtBuff) throw std::invalid_argument("attribute " + name + " external buffer engine type cast failed");
+
+      a.buff = engineExtBuff;
+      checkGLError();
+
+      a.buff->bind();
+      checkGLError();
+
+      assignBufferToVAO(a);
+      checkGLError();
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
+void GLShaderProgram::assignBufferToVAO(GLShaderAttribute& a) {
+
+  bindVAO();
+  a.buff->bind();
+  checkGLError();
+
+  // Choose the correct type for the buffer
+  for (int iArrInd = 0; iArrInd < a.arrayCount; iArrInd++) {
+
+    glEnableVertexAttribArray(a.location + iArrInd);
+
+    switch (a.type) {
+    case RenderDataType::Float:
+      glVertexAttribPointer(a.location + iArrInd, 1, GL_FLOAT, GL_FALSE, sizeof(float) * 1 * a.arrayCount,
+                            reinterpret_cast<void*>(sizeof(float) * 1 * iArrInd));
+      break;
+    case RenderDataType::Int:
+      glVertexAttribPointer(a.location + iArrInd, 1, GL_INT, GL_FALSE, sizeof(int) * 1 * a.arrayCount,
+                            reinterpret_cast<void*>(sizeof(int) * 1 * iArrInd));
+      break;
+    case RenderDataType::UInt:
+      glVertexAttribPointer(a.location + iArrInd, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(uint32_t) * 1 * a.arrayCount,
+                            reinterpret_cast<void*>(sizeof(uint32_t) * 1 * iArrInd));
+      break;
+    case RenderDataType::Vector2Float:
+      glVertexAttribPointer(a.location + iArrInd, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2 * a.arrayCount,
+                            reinterpret_cast<void*>(sizeof(float) * 2 * iArrInd));
+      break;
+    case RenderDataType::Vector3Float:
+      glVertexAttribPointer(a.location + iArrInd, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3 * a.arrayCount,
+                            reinterpret_cast<void*>(sizeof(float) * 3 * iArrInd));
+      break;
+    case RenderDataType::Vector4Float:
+      glVertexAttribPointer(a.location + iArrInd, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * a.arrayCount,
+                            reinterpret_cast<void*>(sizeof(float) * 4 * iArrInd));
+      break;
+    default:
+      throw std::invalid_argument("Unrecognized GLShaderAttribute type");
+      break;
+    }
+  }
+
+  checkGLError();
+}
+
+void GLShaderProgram::createBuffer(GLShaderAttribute& a) {
+
+  if (a.location == -1) return;
+
+  // generate the buffer if needed
+  std::shared_ptr<AttributeBuffer> newBuff = glEngine->generateAttributeBuffer(a.type, a.arrayCount);
+  std::shared_ptr<GLAttributeBuffer> engineNewBuff = std::dynamic_pointer_cast<GLAttributeBuffer>(newBuff);
+  if (!engineNewBuff) throw std::invalid_argument("buffer type cast failed");
+  a.buff = engineNewBuff;
+
+  assignBufferToVAO(a);
+
+  checkGLError();
+}
+
+void GLShaderProgram::ensureBufferExists(GLShaderAttribute& a) {
+  if (a.location != -1 && !a.buff) {
+    createBuffer(a);
+  }
 }
 
 bool GLShaderProgram::hasUniform(std::string name) {
@@ -1313,7 +1338,8 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
-    if (a.name == name) {
+    if (a.name == name && a.location != -1) {
+      ensureBufferExists(a);
       a.buff->setData(data);
       return;
     }
@@ -1324,11 +1350,12 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2
 
 void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec3>& data) {
 
-  glBindVertexArray(vaoHandle);
+  glBindVertexArray(vaoHandle); // TODO remove these?
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
-    if (a.name == name) {
+    if (a.name == name && a.location != -1) {
+      ensureBufferExists(a);
       a.buff->setData(data);
       return;
     }
@@ -1343,7 +1370,8 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
-    if (a.name == name) {
+    if (a.name == name && a.location != -1) {
+      ensureBufferExists(a);
       a.buff->setData(data);
       return;
     }
@@ -1358,7 +1386,8 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<float>& d
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
-    if (a.name == name) {
+    if (a.name == name && a.location != -1) {
+      ensureBufferExists(a);
       a.buff->setData(data);
       return;
     }
@@ -1373,7 +1402,8 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& 
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
-    if (a.name == name) {
+    if (a.name == name && a.location != -1) {
+      ensureBufferExists(a);
       a.buff->setData(data);
       return;
     }
@@ -1387,7 +1417,8 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<int32_t>&
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
-    if (a.name == name) {
+    if (a.name == name && a.location != -1) {
+      ensureBufferExists(a);
       a.buff->setData(data);
       return;
     }
@@ -1402,7 +1433,8 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<uint32_t>
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
-    if (a.name == name) {
+    if (a.name == name && a.location != -1) {
+      ensureBufferExists(a);
       a.buff->setData(data);
       return;
     }
@@ -1879,7 +1911,6 @@ std::vector<unsigned char> GLEngine::readDisplayBuffer() {
 
 void GLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
-
 void GLEngine::makeContextCurrent() { glfwMakeContextCurrent(mainWindow); }
 
 void GLEngine::focusWindow() { glfwFocusWindow(mainWindow); }
@@ -2107,18 +2138,15 @@ std::shared_ptr<FrameBuffer> GLEngine::generateFrameBuffer(unsigned int sizeX_, 
   return std::shared_ptr<FrameBuffer>(newF);
 }
 
-std::shared_ptr<ShaderProgram> GLEngine::generateShaderProgram(
-    const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-    const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers) {
-
-  GLShaderProgram* newP = new GLShaderProgram(stages, dm, externalBuffers);
+std::shared_ptr<ShaderProgram> GLEngine::generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
+                                                               DrawMode dm) {
+  GLShaderProgram* newP = new GLShaderProgram(stages, dm);
   return std::shared_ptr<ShaderProgram>(newP);
 }
 
-std::shared_ptr<ShaderProgram>
-GLEngine::requestShader(const std::string& programName, const std::vector<std::string>& customRules,
-                        const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers,
-                        ShaderReplacementDefaults defaults) {
+std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& programName,
+                                                       const std::vector<std::string>& customRules,
+                                                       ShaderReplacementDefaults defaults) {
 
   // Get the program
   if (registeredShaderPrograms.find(programName) == registeredShaderPrograms.end()) {
@@ -2165,7 +2193,7 @@ GLEngine::requestShader(const std::string& programName, const std::vector<std::s
   }
 
   std::vector<ShaderStageSpecification> updatedStages = applyShaderReplacements(stages, rules);
-  return generateShaderProgram(updatedStages, dm, externalBuffers);
+  return generateShaderProgram(updatedStages, dm);
 }
 
 void GLEngine::populateDefaultShadersAndRules() {

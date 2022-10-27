@@ -61,14 +61,12 @@ void PointCloudScalarQuantity::createProgram() {
   // clang-format off
   pointProgram = render::engine->requestShader(
       parent.getShaderNameForRenderMode(), 
-      parent.addPointCloudRules(addScalarRules({"SPHERE_PROPAGATE_VALUE"})),
-      { 
-        {"a_position", parent.getPositionRenderBuffer()}, 
-        {"a_pointRadius", parent.getPointRadiusRenderBuffer()},
-        {"a_value", getScalarRenderBuffer()},
-      }
+      parent.addPointCloudRules(addScalarRules({"SPHERE_PROPAGATE_VALUE"}))
   );
   // clang-format on
+
+  parent.setPointProgramGeometryBuffers(*pointProgram);
+  pointProgram->setExternalBuffer("a_value", getScalarRenderBuffer());
 
   // Fill buffers
   pointProgram->setTextureFromColormap("t_colormap", cMap.get());

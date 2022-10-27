@@ -120,13 +120,11 @@ void PointCloud::ensureRenderProgramPrepared() {
   // clang-format off
   program = render::engine->requestShader(
       getShaderNameForRenderMode(), 
-      addPointCloudRules({"SHADE_BASECOLOR"}),
-      {
-        {"a_position", getPositionRenderBuffer()}, 
-        {"a_pointRadius", getPointRadiusRenderBuffer()}
-      }
+      addPointCloudRules({"SHADE_BASECOLOR"})
   );
   // clang-format on
+
+  setPointProgramGeometryBuffers(*program);
 
   render::engine->setMaterial(*program, material.get());
 }
@@ -143,13 +141,11 @@ void PointCloud::ensurePickProgramPrepared() {
   pickProgram = render::engine->requestShader(
       getShaderNameForRenderMode(), 
       addPointCloudRules({"SPHERE_PROPAGATE_COLOR"}, true),
-      {
-        {"a_position", positionBuffer}, 
-        {"a_pointRadius", getPointRadiusRenderBuffer()}
-      }, 
       render::ShaderReplacementDefaults::Pick
   );
   // clang-format on
+
+  setPointProgramGeometryBuffers(*pickProgram);
 
   // Fill color buffer with packed point indices
   std::vector<glm::vec3> pickColors;
@@ -160,6 +156,13 @@ void PointCloud::ensurePickProgramPrepared() {
 
   // Store data in buffers
   pickProgram->setAttribute("a_color", pickColors);
+}
+
+void PointCloud::setPointProgramGeometryBuffers(render::ShaderProgram& p) {
+  p.setExternalBuffer("a_position", getPositionRenderBuffer());
+  if (pointRadiusQuantityName != "") {
+    p.setExternalBuffer("a_pointRadius", getPointRadiusRenderBuffer());
+  }
 }
 
 std::string PointCloud::getShaderNameForRenderMode() {

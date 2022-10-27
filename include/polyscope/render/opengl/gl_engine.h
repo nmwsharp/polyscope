@@ -166,8 +166,7 @@ public:
 class GLShaderProgram : public ShaderProgram {
 
 public:
-  GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-                  const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers);
+  GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm);
   ~GLShaderProgram() override;
 
   // === Store data
@@ -189,6 +188,7 @@ public:
   // = Attributes
   // clang-format off
   bool hasAttribute(std::string name) override;
+  void setExternalBuffer(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) override; 
   bool attributeIsSet(std::string name) override;
   std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) override;
   void setAttribute(std::string name, const std::vector<glm::vec2>& data) override;
@@ -265,9 +265,11 @@ private:
   // Setup routines
   void compileGLProgram(const std::vector<ShaderStageSpecification>& stages);
   void setDataLocations();
-  void
-  resolveExternalBuffers(const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers);
+  void bindVAO();
   void createBuffers();
+  void ensureBufferExists(GLShaderAttribute& a);
+  void createBuffer(GLShaderAttribute& a);
+  void assignBufferToVAO(GLShaderAttribute& a);
 
   void deleteAttributeBuffer(GLShaderAttribute& attribute);
 
@@ -342,7 +344,6 @@ public:
   // general flexible interface
   std::shared_ptr<ShaderProgram>
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
-                const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers,
                 ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) override;
 
   // === Implementation details
@@ -369,9 +370,8 @@ protected:
   std::unordered_map<std::string, ShaderReplacementRule> registeredShaderRules;
   void populateDefaultShadersAndRules();
 
-  std::shared_ptr<ShaderProgram> generateShaderProgram(
-      const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-      const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers) override;
+  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
+                                                       DrawMode dm) override;
 };
 
 } // namespace backend_openGL3_glfw

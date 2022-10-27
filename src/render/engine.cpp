@@ -639,12 +639,6 @@ uint64_t Engine::getNextUniqueID() {
   return thisID;
 }
 
-std::shared_ptr<ShaderProgram> Engine::requestShader(const std::string& programName,
-                                                     const std::vector<std::string>& customRules,
-                                                     ShaderReplacementDefaults defaults) {
-  return requestShader(programName, customRules, {}, defaults);
-}
-
 void Engine::addSlicePlane(std::string uniquePostfix) {
 
   // NOTE: Unfortunately, the logic here and in slice_plane.cpp depends on the names constructed from the postfix being

@@ -91,13 +91,12 @@ void VectorQuantity<QuantityT>::createProgram() {
   // clang-format off
   vectorProgram = render::engine->requestShader(
       "RAYCAST_VECTOR",
-      rules,
-      { 
-        {"a_vector", getVectorRenderBuffer()}, 
-        {"a_position", baseRenderBuffer}, // concrete class must have populated this
-      }
+      rules
   );
   // clang-format on
+
+  vectorProgram->setExternalBuffer("a_vector", getVectorRenderBuffer());
+  vectorProgram->setExternalBuffer("a_position", baseRenderBuffer);
 
   render::engine->setMaterial(*vectorProgram, material.get());
 }
