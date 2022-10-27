@@ -17,9 +17,9 @@ namespace polyscope {
 const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
 
-SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
+SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions_,
                          const std::vector<std::vector<size_t>>& faceIndices)
-    : QuantityStructure<SurfaceMesh>(name, typeName()), vertices(vertexPositions), faces(faceIndices),
+    : QuantityStructure<SurfaceMesh>(name, typeName()), vertexPositions(vertexPositions_), faces(faceIndices),
       shadeSmooth(uniquePrefix() + "shadeSmooth", false),
       surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
@@ -56,8 +56,8 @@ void SurfaceMesh::computeCounts() {
       size_t vA = face[i];
       size_t vB = face[(i + 1) % face.size()];
 
-      if (vA >= vertices.size()) {
-        warning(name + " has face with vertex index out of vertices range",
+      if (vA >= vertexPositions.size()) {
+        warning(name + " has face with vertex index out of vertexPositions range",
                 "face " + std::to_string(iF) + " has vertex index " + std::to_string(vA));
 
         // zero out the face index
@@ -119,19 +119,19 @@ void SurfaceMesh::computeGeometryData() {
     glm::vec3 fN = zero;
     double fA = 0;
     if (face.size() == 3) {
-      glm::vec3 pA = vertices[face[0]];
-      glm::vec3 pB = vertices[face[1]];
-      glm::vec3 pC = vertices[face[2]];
+      glm::vec3 pA = vertexPositions[face[0]];
+      glm::vec3 pB = vertexPositions[face[1]];
+      glm::vec3 pC = vertexPositions[face[2]];
 
       fN = glm::cross(pB - pA, pC - pA);
       fA = 0.5 * glm::length(fN);
     } else if (face.size() > 3) {
 
-      glm::vec3 pRoot = vertices[face[0]];
+      glm::vec3 pRoot = vertexPositions[face[0]];
       for (size_t j = 0; j < D; j++) {
-        glm::vec3 pA = vertices[face[j]];
-        glm::vec3 pB = vertices[face[(j + 1) % D]];
-        glm::vec3 pC = vertices[face[(j + 2) % D]];
+        glm::vec3 pA = vertexPositions[face[j]];
+        glm::vec3 pB = vertexPositions[face[(j + 1) % D]];
+        glm::vec3 pC = vertexPositions[face[(j + 2) % D]];
 
         fN += glm::cross(pC - pB, pA - pB);
 
@@ -147,11 +147,11 @@ void SurfaceMesh::computeGeometryData() {
     faceNormals[iF] = fN;
     faceAreas[iF] = fA;
 
-    // Update incident vertices
+    // Update incident vertexPositions
     for (size_t j = 0; j < D; j++) {
-      glm::vec3 pA = vertices[face[j]];
-      glm::vec3 pB = vertices[face[(j + 1) % D]];
-      glm::vec3 pC = vertices[face[(j + 2) % D]];
+      glm::vec3 pA = vertexPositions[face[j]];
+      glm::vec3 pB = vertexPositions[face[(j + 1) % D]];
+      glm::vec3 pC = vertexPositions[face[(j + 2) % D]];
 
       vertexAreas[face[j]] += fA / D;
 
@@ -266,8 +266,8 @@ void SurfaceMesh::generateDefaultFaceTangentSpaces() {
     size_t D = face.size();
     if (D < 2) continue;
 
-    glm::vec3 pA = vertices[face[0]];
-    glm::vec3 pB = vertices[face[1]];
+    glm::vec3 pA = vertexPositions[face[0]];
+    glm::vec3 pB = vertexPositions[face[1]];
     glm::vec3 N = faceNormals[iF];
 
     glm::vec3 basisX = pB - pA;
@@ -296,8 +296,8 @@ void SurfaceMesh::generateDefaultVertexTangentSpaces() {
 
       if (hasTangent[vA]) continue;
 
-      glm::vec3 pA = vertices[vA];
-      glm::vec3 pB = vertices[vB];
+      glm::vec3 pA = vertexPositions[vA];
+      glm::vec3 pB = vertexPositions[vB];
       glm::vec3 N = vertexNormals[vA];
 
       glm::vec3 basisX = pB - pA;
@@ -428,12 +428,12 @@ void SurfaceMesh::preparePick() {
 
     // implicitly triangulate from root
     size_t vRoot = face[0];
-    glm::vec3 pRoot = vertices[vRoot];
+    glm::vec3 pRoot = vertexPositions[vRoot];
     for (size_t j = 1; (j + 1) < D; j++) {
       size_t vB = face[j];
-      glm::vec3 pB = vertices[vB];
+      glm::vec3 pB = vertexPositions[vB];
       size_t vC = face[(j + 1) % D];
-      glm::vec3 pC = vertices[vC];
+      glm::vec3 pC = vertexPositions[vC];
 
       glm::vec3 fColor = pick::indToVec(iF + faceGlobalPickIndStart);
       std::array<size_t, 3> vertexInds = {vRoot, vB, vC};
@@ -503,6 +503,38 @@ void SurfaceMesh::preparePick() {
   if (wantsCullPosition()) {
     pickProgram->setAttribute("a_cullPos", barycenters);
   }
+}
+
+bool SurfaceMesh::vertexPositionsStoredInMemory() const { return !vertexPositions.empty(); }
+
+size_t SurfaceMesh::nVertices() const {
+  if (vertexPositionsStoredInMemory()) {
+    return vertexPositions.size();
+  } else {
+    if (!vertexPositionsRenderBuffer || !vertexPositionsRenderBuffer->isSet()) {
+      throw std::runtime_error("buffer is not allocated when it should be");
+    }
+    return static_cast<size_t>(vertexPositionsRenderBuffer->getDataSize());
+  }
+}
+
+glm::vec3 SurfaceMesh::getVertexPosition(size_t ind) {
+  if (vertexPositionsStoredInMemory()) {
+    return vertexPositions[ind];
+  } else {
+    return vertexPositionsRenderBuffer->getData_vec3(ind);
+  }
+}
+
+
+void SurfaceMesh::renderBufferDataExternallyUpdated() {
+  vertexPositions.clear();
+  requestRedraw();
+}
+
+std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getVertexPositionsRenderBuffer() {
+  ensureRenderBuffersFilled();
+  return vertexPositionsRenderBuffer;
 }
 
 std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::string> initRules, bool withMesh,
@@ -588,12 +620,12 @@ void SurfaceMesh::fillGeometryBuffers(render::ShaderProgram& p) {
 
     // implicitly triangulate from root
     size_t vRoot = face[0];
-    glm::vec3 pRoot = vertices[vRoot];
+    glm::vec3 pRoot = vertexPositions[vRoot];
     for (size_t j = 1; (j + 1) < D; j++) {
       size_t vB = face[j];
-      glm::vec3 pB = vertices[vB];
+      glm::vec3 pB = vertexPositions[vB];
       size_t vC = face[(j + 1) % D];
-      glm::vec3 pC = vertices[vC];
+      glm::vec3 pC = vertexPositions[vC];
 
       positions.push_back(pRoot);
       positions.push_back(pB);
@@ -743,7 +775,7 @@ void SurfaceMesh::buildVertexInfoGui(size_t vInd) {
   ImGui::TextUnformatted(("Vertex #" + std::to_string(displayInd)).c_str());
 
   std::stringstream buffer;
-  buffer << vertices[vInd];
+  buffer << vertexPositions[vInd];
   ImGui::TextUnformatted(("Position: " + buffer.str()).c_str());
 
   ImGui::Spacing();
@@ -934,7 +966,7 @@ void SurfaceMesh::updateObjectSpaceBounds() {
   // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
-  for (const glm::vec3& p : vertices) {
+  for (const glm::vec3& p : vertexPositions) {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
@@ -943,7 +975,7 @@ void SurfaceMesh::updateObjectSpaceBounds() {
   // length scale, as twice the radius from the center of the bounding box
   glm::vec3 center = 0.5f * (min + max);
   float lengthScale = 0.0;
-  for (const glm::vec3& p : vertices) {
+  for (const glm::vec3& p : vertexPositions) {
     lengthScale = std::max(lengthScale, glm::length2(p - center));
   }
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);

@@ -100,9 +100,7 @@ public:
   // Normally, the values are stored here. But if the render buffer
   // is being manually updated, they will live only in the render buffer
   // and this will be empty.
-  std::vector<glm::vec3> points;
-  size_t nPoints(); 
-  bool pointsStoredInMemory();
+  size_t nPoints();
   glm::vec3 getPointPosition(size_t iPt);
 
   // Misc data
@@ -132,7 +130,6 @@ public:
   // Rendering helpers used by quantities
   void setPointCloudUniforms(render::ShaderProgram& p);
   void setPointProgramGeometryBuffers(render::ShaderProgram& p);
-  void ensureRenderBuffersFilled(bool forceRefill = false);
   std::vector<std::string> addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud = true);
   std::string getShaderNameForRenderMode();
   std::shared_ptr<render::AttributeBuffer> getPositionRenderBuffer();
@@ -146,6 +143,8 @@ public:
 
 
 private:
+  std::vector<glm::vec3> points;
+
   // === Visualization parameters
   PersistentValue<std::string> pointRenderMode;
   PersistentValue<glm::vec3> pointColor;
@@ -154,13 +153,15 @@ private:
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
-  std::shared_ptr<render::AttributeBuffer> positionBuffer;
-  std::shared_ptr<render::AttributeBuffer> pointRadiusBuffer;
+  std::shared_ptr<render::AttributeBuffer> positionRenderBuffer;
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> pickProgram;
 
+  bool pointsStoredInMemory();
+
   // === Helpers
   // Do setup work related to drawing, including allocating openGL data
+  void ensureRenderBuffersFilled(bool forceRefill = false);
   void ensureRenderProgramPrepared();
   void ensurePickProgramPrepared();
   void dataUpdated();

@@ -114,7 +114,7 @@ void PointCloud::ensureRenderProgramPrepared() {
   if (program) return;
 
   // Fill out the geometry data for the program
-  // (ensure the positionBuffer is populated)
+  // (ensure the positionRenderBuffer is populated)
   ensureRenderBuffersFilled();
 
   // clang-format off
@@ -175,8 +175,9 @@ std::string PointCloud::getShaderNameForRenderMode() {
 
 std::shared_ptr<render::AttributeBuffer> PointCloud::getPositionRenderBuffer() {
   ensureRenderBuffersFilled();
-  return positionBuffer;
+  return positionRenderBuffer;
 }
+
 std::shared_ptr<render::AttributeBuffer> PointCloud::getPointRadiusRenderBuffer() {
   if (pointRadiusQuantityName != "") {
     // Resolve the quantity
@@ -192,10 +193,10 @@ size_t PointCloud::nPoints() {
   if (pointsStoredInMemory()) {
     return points.size();
   } else {
-    if (!positionBuffer || !positionBuffer->isSet()) {
+    if (!positionRenderBuffer || !positionRenderBuffer->isSet()) {
       throw std::runtime_error("buffer is not allocated when it should be");
     }
-    return static_cast<size_t>(positionBuffer->getDataSize());
+    return static_cast<size_t>(positionRenderBuffer->getDataSize());
   }
 }
 
@@ -203,7 +204,7 @@ glm::vec3 PointCloud::getPointPosition(size_t iPt) {
   if (pointsStoredInMemory()) {
     return points[iPt];
   } else {
-    return positionBuffer->getData_vec3(iPt);
+    return positionRenderBuffer->getData_vec3(iPt);
   }
 }
 
@@ -250,8 +251,8 @@ void PointCloud::ensureRenderBuffersFilled(bool forceRefill) {
   // ## create the buffers if they don't already exist
 
   bool createdBuffer = false;
-  if (!positionBuffer) {
-    positionBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
+  if (!positionRenderBuffer) {
+    positionRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
     createdBuffer = true;
   }
 
@@ -261,7 +262,7 @@ void PointCloud::ensureRenderBuffersFilled(bool forceRefill) {
   }
 
   // ## otherwise, fill the buffers
-  positionBuffer->setData(points);
+  positionRenderBuffer->setData(points);
 }
 
 void PointCloud::dataUpdated() {

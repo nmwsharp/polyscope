@@ -22,8 +22,8 @@
 #include "polyscope/surface_parameterization_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
-//#include "polyscope/surface_selection_quantity.h"
-//#include "polyscope/surface_subset_quantity.h"
+// #include "polyscope/surface_selection_quantity.h"
+// #include "polyscope/surface_subset_quantity.h"
 
 
 namespace polyscope {
@@ -83,6 +83,13 @@ public:
 
   virtual void refresh() override;
 
+
+  // Access the data
+  // Normally, the values are stored here. But if the render buffer
+  // is being manually updated, they will live only in the render buffer
+  // and this will be empty.
+  glm::vec3 getVertexPosition(size_t ind);
+
   // === Quantity-related
   // clang-format off
 
@@ -115,7 +122,7 @@ public:
 	template <class T, class O> SurfaceOneFormIntrinsicVectorQuantity* addOneFormIntrinsicVectorQuantity(std::string name, const T& data, const O& orientations);
 
 
-  // = Counts/Values on isolated vertices (expect index/value pairs)
+  // = Counts/Values on isolated vertexPositions (expect index/value pairs)
   SurfaceVertexCountQuantity* addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>&
   values); 
 	SurfaceFaceCountQuantity* addFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>&
@@ -195,7 +202,7 @@ public:
   // === Manage the mesh itself
 
   // Core data
-  std::vector<glm::vec3> vertices;
+  std::vector<glm::vec3> vertexPositions;
   std::vector<std::vector<size_t>> faces;
 
   // Derived indices
@@ -203,7 +210,7 @@ public:
   std::vector<std::vector<size_t>> halfedgeIndices;
 
   // Counts
-  size_t nVertices() const { return vertices.size(); }
+  size_t nVertices() const;
   size_t nFaces() const { return faces.size(); }
 
   size_t nFacesTriangulationCount = 0;
@@ -248,7 +255,7 @@ public:
   void generateDefaultFaceTangentSpaces();
   void generateDefaultVertexTangentSpaces();
 
-  // Set tangent space coordinates for vertices
+  // Set tangent space coordinates for vertexPositions
   template <class T>
   void setVertexTangentBasisX(const T& vectors);
   template <class T>
@@ -307,6 +314,13 @@ public:
   void fillGeometryBuffers(render::ShaderProgram& p);
   std::vector<std::string> addSurfaceMeshRules(std::vector<std::string> initRules, bool withMesh = true,
                                                bool withSurfaceShade = true);
+  std::shared_ptr<render::AttributeBuffer> getVertexPositionsRenderBuffer();
+
+  // === ~DANGER~ experimental/unsupported functions
+
+  // After updating any data via the buffer above, call this function to let
+  // Polyscope know.
+  void renderBufferDataExternallyUpdated();
 
 private:
   // Visualization settings
@@ -324,7 +338,7 @@ private:
   void geometryChanged(); // call whenever geometry changed
 
   // Picking-related
-  // Order of indexing: vertices, faces, edges, halfedges
+  // Order of indexing: vertexPositions, faces, edges, halfedges
   // Within each set, uses the implicit ordering from the mesh data structure
   // These starts are LOCAL indices, indexing elements only with the mesh
   size_t facePickIndStart, edgePickIndStart, halfedgePickIndStart;
@@ -336,14 +350,18 @@ private:
   // Gui implementation details
 
   // Drawing related things
+  std::shared_ptr<render::AttributeBuffer> vertexPositionsRenderBuffer;
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> pickProgram;
 
+  bool vertexPositionsStoredInMemory() const;
 
   // === Helper functions
 
   // Initialization work
   void initializeMeshTriangulation();
+
+  void ensureRenderBuffersFilled(bool forceRefill = false);
 
   void fillGeometryBuffersSmooth(render::ShaderProgram& p);
   void fillGeometryBuffersFlat(render::ShaderProgram& p);
