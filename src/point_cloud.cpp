@@ -159,9 +159,9 @@ void PointCloud::ensurePickProgramPrepared() {
 }
 
 void PointCloud::setPointProgramGeometryBuffers(render::ShaderProgram& p) {
-  p.setExternalBuffer("a_position", getPositionRenderBuffer());
+  p.setAttribute("a_position", getPositionRenderBuffer());
   if (pointRadiusQuantityName != "") {
-    p.setExternalBuffer("a_pointRadius", getPointRadiusRenderBuffer());
+    p.setAttribute("a_pointRadius", getPointRadiusRenderBuffer());
   }
 }
 

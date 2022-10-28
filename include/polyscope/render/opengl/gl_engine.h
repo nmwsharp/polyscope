@@ -51,7 +51,7 @@ typedef GLint TextureLocation;
 
 class GLAttributeBuffer : public AttributeBuffer {
 public:
-  GLAttributeBuffer(RenderDataType dataType_, int arrayCount_ = 1);
+  GLAttributeBuffer(RenderDataType dataType_, AttributeAccessType access_, int arrayCount_);
   virtual ~GLAttributeBuffer();
 
   void bind();
@@ -64,6 +64,9 @@ public:
   void setData(const std::vector<double>& data) override;
   void setData(const std::vector<int32_t>& data) override;
   void setData(const std::vector<uint32_t>& data) override;
+  void setData(const std::vector<glm::uvec2>& data) override;
+  void setData(const std::vector<glm::uvec3>& data) override;
+  void setData(const std::vector<glm::uvec4>& data) override;
 
   float getData_float(size_t ind) override;
   double getData_double(size_t ind) override;
@@ -72,14 +75,23 @@ public:
   glm::vec4 getData_vec4(size_t ind) override;
   int getData_int(size_t ind) override;
   uint32_t getData_uint32(size_t ind) override;
+  glm::uvec2 getData_uvec2(size_t ind) override;
+  glm::uvec3 getData_uvec3(size_t ind) override;
+  glm::uvec4 getData_uvec4(size_t ind) override;
 
   uint32_t getNativeBufferID() override;
 
 protected:
   VertexBufferHandle VBOLoc;
 
+  // Only used in the cased of AttributeAccessType::Indexed, which corresponds to a Buffer Texture in openGL. It's
+  // managed by this GLAttributeBuffer class because semanitically it is more like an attribute buffer, and it is still
+  // backed by a VBO.
+  TextureHandle texHandle = -1;
+
 private:
   void checkType(RenderDataType targetType);
+  GLenum getTarget();
 };
 
 class GLTexture : public Texture {
@@ -185,13 +197,16 @@ public:
   void setUniform(std::string name, glm::vec4 val) override;
   void setUniform(std::string name, std::array<float, 3> val) override;
   void setUniform(std::string name, float x, float y, float z, float w) override;
+  void setUniform(std::string name, glm::uvec2 val) override;
+  void setUniform(std::string name, glm::uvec3 val) override;
+  void setUniform(std::string name, glm::uvec4 val) override;
 
   // = Attributes
   // clang-format off
   bool hasAttribute(std::string name) override;
-  void setExternalBuffer(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) override; 
   bool attributeIsSet(std::string name) override;
   std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) override;
+  void setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) override; 
   void setAttribute(std::string name, const std::vector<glm::vec2>& data) override;
   void setAttribute(std::string name, const std::vector<glm::vec3>& data) override;
   void setAttribute(std::string name, const std::vector<glm::vec4>& data) override;
@@ -211,6 +226,7 @@ public:
   // Indices
   void setIndex(std::vector<std::array<unsigned int, 3>>& indices) override;
   void setIndex(std::vector<unsigned int>& indices) override;
+  void setIndex(std::vector<glm::uvec3>& indices) override;
   void setPrimitiveRestartIndex(unsigned int restartIndex) override;
 
   // Textures
@@ -238,19 +254,21 @@ protected:
   struct GLShaderAttribute {
     std::string name;
     RenderDataType type;
+    AttributeAccessType access;
     int arrayCount;
     AttributeLocation location;              // -1 means "no location", usually because it was optimized out
+    uint32_t textureIndex; // only used in the case of Indexed Access / Texture Buffer 
     std::shared_ptr<GLAttributeBuffer> buff; // the buffer that we will actually use
   };
 
   struct GLShaderTexture {
     std::string name;
     int dim;
-    unsigned int index;
+    uint32_t index;
     bool isSet;
     GLTexture* textureBuffer;
     std::shared_ptr<GLTexture> textureBufferOwned; // might be empty, if texture isn't owned
-    TextureLocation location;                            // -1 means "no location", usually because it was optimized out
+    TextureLocation location;                      // -1 means "no location", usually because it was optimized out
   };
 
   // Lists of attributes and uniforms that need to be set
@@ -324,17 +342,18 @@ public:
   // === Factory methods
 
   // create attribute buffers
-  std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, int arrayCount_ = 1) override;
+  std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, AttributeAccessType access,
+                                                           int arrayCount_) override;
 
   // create textures
   std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int size1D,
-                                                       unsigned char* data = nullptr) override; // 1d
+                                           unsigned char* data = nullptr) override; // 1d
   std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int size1D,
-                                                       float* data) override; // 1d
+                                           float* data) override; // 1d
   std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
-                                                       unsigned char* data = nullptr) override; // 2d
+                                           unsigned char* data = nullptr) override; // 2d
   std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
-                                                       float* data) override; // 2d
+                                           float* data) override; // 2d
 
   // create render buffers
   std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,

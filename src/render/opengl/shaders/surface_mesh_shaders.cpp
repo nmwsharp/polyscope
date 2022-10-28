@@ -20,9 +20,10 @@ const ShaderStageSpecification FLEX_MESH_VERT_SHADER = {
 
     // attributes
     {
-        {"a_position", RenderDataType::Vector3Float},
-        {"a_normal", RenderDataType::Vector3Float},
+        {"a_vertexPositions", RenderDataType::Vector3Float},
+        {"a_vertexNormals", RenderDataType::Vector3Float},
         {"a_barycoord", RenderDataType::Vector3Float},
+        {"a_faceInds", RenderDataType::UInt, AttributeAccessType::Indexed},
     },
 
     {}, // textures
@@ -33,19 +34,26 @@ R"(
 
         uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
-        in vec3 a_position;
-        in vec3 a_normal;
-        in vec3 a_barycoord;
-        out vec3 a_barycoordToFrag;
-        out vec3 a_normalToFrag;
+        
+        in uint a_faceInds;
+        out uint a_faceIndsToFrag;
+        
+        in vec3 a_vertexPositions;
+        in vec3 a_vertexNormals;
+        // in vec3 a_barycoord;
+        // out vec3 a_barycoordToFrag;
+        out vec3 a_vertexNormalToFrag;
         
         ${ VERT_DECLARATIONS }$
         
         void main()
         {
-            gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
-            a_normalToFrag = mat3(u_modelView) * a_normal;
-            a_barycoordToFrag = a_barycoord;
+            gl_Position = u_projMatrix * u_modelView * vec4(a_vertexPositions,1.);
+
+            a_faceIndsToFrag = a_faceInds;
+            
+            a_vertexNormalToFrag = mat3(u_modelView) * a_vertexNormals;
+            // a_barycoordToFrag = a_barycoord;
 
             ${ VERT_ASSIGNMENTS }$
         }
@@ -69,8 +77,11 @@ const ShaderStageSpecification FLEX_MESH_FRAG_SHADER = {
     // source
 R"(
         ${ GLSL_VERSION }$
-        in vec3 a_normalToFrag;
-        in vec3 a_barycoordToFrag;
+        in vec3 a_vertexNormalToFrag;
+        // in vec3 a_barycoordToFrag;
+
+        // uniform samplerBuffer a_vertexPositions;
+
         layout(location = 0) out vec4 outputF;
 
         ${ FRAG_DECLARATIONS }$
@@ -89,7 +100,7 @@ R"(
            ${ APPLY_WIREFRAME }$
 
            // Lighting
-           vec3 shadeNormal = a_normalToFrag;
+           vec3 shadeNormal = a_vertexNormalToFrag;
            ${ PERTURB_SHADE_NORMAL }$
            ${ GENERATE_LIT_COLOR }$
 
@@ -98,8 +109,8 @@ R"(
            ${ GENERATE_ALPHA }$
            
            // silly dummy usage to ensure normal and barycoords are always used; otherwise we get errors
-           float dummyVal = a_normalToFrag.x + a_barycoordToFrag.x;
-           alphaOut = alphaOut + dummyVal * (1e-12);
+           // float dummyVal = a_normalToFrag.x + a_barycoordToFrag.x;
+           // alphaOut = alphaOut + dummyVal * (1e-12);
 
            ${ PERTURB_LIT_COLOR }$
 

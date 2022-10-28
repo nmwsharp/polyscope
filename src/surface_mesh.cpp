@@ -111,6 +111,22 @@ void SurfaceMesh::computeGeometryData() {
   // Reset edge-valued
   edgeLengths.resize(nEdges());
 
+  // Populate face-vertex inds
+  faceVertexInds.clear();
+  faceVertexInds.reserve(nFacesTriangulation());
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    auto& face = faces[iF];
+    size_t D = face.size();
+
+    // implicitly triangulate from root
+    uint32_t vRoot = face[0];
+    for (size_t j = 1; (j + 1) < D; j++) {
+      uint32_t vB = face[j];
+      uint32_t vC = face[(j + 1) % D];
+      faceVertexInds.emplace_back(glm::uvec3{vRoot, vB, vC});
+    }
+  }
+
   // Loop over faces to compute face-valued quantities
   for (size_t iF = 0; iF < nFaces(); iF++) {
     auto& face = faces[iF];
@@ -327,7 +343,8 @@ void SurfaceMesh::draw() {
       prepare();
 
       // do this now to reduce lag when picking later, etc
-      preparePick();
+      // FIXME
+      // preparePick();
     }
 
     // Set uniforms
@@ -350,6 +367,7 @@ void SurfaceMesh::drawPick() {
   if (!isEnabled()) {
     return;
   }
+  return; // FIXME
 
   if (pickProgram == nullptr) {
     preparePick();
@@ -366,10 +384,17 @@ void SurfaceMesh::drawPick() {
 }
 
 void SurfaceMesh::prepare() {
-  program = render::engine->requestShader("MESH", addSurfaceMeshRules({"SHADE_BASECOLOR"}));
+  // clang-format off
+  program = render::engine->requestShader(
+      "MESH", 
+      addSurfaceMeshRules({"SHADE_BASECOLOR"})
+  );
+  // clang-format on
 
   // Populate draw buffers
   fillGeometryBuffers(*program);
+  setMeshIndexAttribues(*program);
+  setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, getMaterial());
 }
 
@@ -505,6 +530,75 @@ void SurfaceMesh::preparePick() {
   }
 }
 
+void SurfaceMesh::setMeshIndexAttribues(render::ShaderProgram& p) {
+
+  // Set the index buffer which is used for indexed drawing
+  p.setIndex(faceVertexInds);
+
+  // Set the triangle vertex indices
+  if (p.hasAttribute("a_vertexInds")) {
+    p.setAttribute("a_vertexInds", getVertexIndicesRenderBuffer());
+  }
+}
+
+void SurfaceMesh::setMeshGeometryAttributes(render::ShaderProgram& p) {
+  if (p.hasAttribute("a_vertexPositions")) {
+    p.setAttribute("a_vertexPositions", getVertexPositionsRenderBuffer());
+  }
+  if (p.hasAttribute("a_vertexNormals")) {
+    p.setAttribute("a_vertexNormals", getVertexNormalsRenderBuffer());
+  }
+}
+
+void SurfaceMesh::ensureVertexIndexRenderBufferFilled(bool forceRefill) {
+  if (vertexIndicesRenderBuffer && !forceRefill) return; // if it exists (and we're not refilling), quick-out
+
+  // ## create the buffers if it doesn't already exist
+  if (!vertexIndicesRenderBuffer) {
+    vertexIndicesRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3UInt);
+  }
+
+  // ## otherwise, fill the buffer
+  vertexIndicesRenderBuffer->setData(faceVertexInds);
+}
+std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getVertexIndicesRenderBuffer() {
+  ensureVertexIndexRenderBufferFilled();
+  return vertexIndicesRenderBuffer;
+}
+
+void SurfaceMesh::ensureVertexNormalsRenderBufferFilled(bool forceRefill) {
+  if (vertexNormalsRenderBuffer && !forceRefill) return; // if it exists (and we're not refilling), quick-out
+
+  // ## create the buffers if it doesn't already exist
+  if (!vertexNormalsRenderBuffer) {
+    vertexNormalsRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
+  }
+
+
+  // ## otherwise, fill the buffer
+  std::cout << "vertex normal size = " << vertexNormals.size() << std::endl;
+  vertexNormalsRenderBuffer->setData(vertexNormals);
+}
+std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getVertexNormalsRenderBuffer() {
+  ensureVertexNormalsRenderBufferFilled();
+  return vertexNormalsRenderBuffer;
+}
+
+void SurfaceMesh::ensureVertexPositionsRenderBufferFilled(bool forceRefill) {
+  if (vertexPositionsRenderBuffer && !forceRefill) return; // if it exists (and we're not refilling), quick-out
+
+  // ## create the buffers if it doesn't already exist
+  if (!vertexPositionsRenderBuffer) {
+    vertexPositionsRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
+  }
+
+  // ## otherwise, fill the buffer
+  vertexPositionsRenderBuffer->setData(vertexPositions);
+}
+std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getVertexPositionsRenderBuffer() {
+  ensureVertexPositionsRenderBufferFilled();
+  return vertexPositionsRenderBuffer;
+}
 bool SurfaceMesh::vertexPositionsStoredInMemory() const { return !vertexPositions.empty(); }
 
 size_t SurfaceMesh::nVertices() const {
@@ -528,14 +622,14 @@ glm::vec3 SurfaceMesh::getVertexPosition(size_t ind) {
 
 
 void SurfaceMesh::renderBufferDataExternallyUpdated() {
+  // TODO
+  /*
   vertexPositions.clear();
+  vertexNormals.clear();
+  */
   requestRedraw();
 }
 
-std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getVertexPositionsRenderBuffer() {
-  ensureRenderBuffersFilled();
-  return vertexPositionsRenderBuffer;
-}
 
 std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::string> initRules, bool withMesh,
                                                           bool withSurfaceShade) {
@@ -669,8 +763,12 @@ void SurfaceMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   }
 
   // Store data in buffers
-  p.setAttribute("a_position", positions);
-  p.setAttribute("a_normal", normals);
+  if (p.hasAttribute("a_position")) {
+    p.setAttribute("a_position", positions);
+  }
+  if (p.hasAttribute("a_normal")) {
+    p.setAttribute("a_normal", normals);
+  }
   if (wantsBary) {
     p.setAttribute("a_barycoord", bcoord);
   }
@@ -902,10 +1000,9 @@ void SurfaceMesh::buildCustomUI() {
       ImGui::SameLine();
       ImGui::PushItemWidth(60);
       if (ImGui::SliderFloat("Width", &edgeWidth.get(), 0.001, 2.)) {
-        // NOTE: this intentionally circumvents the setEdgeWidth() setter to avoid repopulating the buffer as the slider
-        // is dragged---otherwise we repopulate the buffer on every change, which mostly works fine. This is a lazy
-        // solution instead of better state/buffer management.
-        // setEdgeWidth(getEdgeWidth());
+        // NOTE: this intentionally circumvents the setEdgeWidth() setter to avoid repopulating the buffer as the
+        // slider is dragged---otherwise we repopulate the buffer on every change, which mostly works fine. This is a
+        // lazy solution instead of better state/buffer management. setEdgeWidth(getEdgeWidth());
         edgeWidth.manuallyChanged();
         requestRedraw();
       }

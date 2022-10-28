@@ -38,17 +38,31 @@ enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
 enum class DepthMode { Less, LEqual, LEqualReadOnly, Greater, Disable };
 enum class BlendMode { Over, AlphaOver, OverNoWrite, Under, Zero, WeightedAdd, Source, Disable };
-enum class RenderDataType { Vector2Float, Vector3Float, Vector4Float, Matrix44Float, Float, Int, UInt, Index };
+enum class RenderDataType {
+  Vector2Float,
+  Vector3Float,
+  Vector4Float,
+  Matrix44Float,
+  Float,
+  Int,
+  UInt,
+  Index,
+  Vector2UInt,
+  Vector3UInt,
+  Vector4UInt
+};
+enum class AttributeAccessType { Sequential, Indexed };
 
 int dimension(const TextureFormat& x);
 std::string modeName(const TransparencyMode& m);
 std::string renderDataTypeName(const RenderDataType& r);
+std::string accessTypeName(const AttributeAccessType& t);
 
 namespace render {
 
 class AttributeBuffer {
 public:
-  AttributeBuffer(RenderDataType dataType_, int arrayCount = 1);
+  AttributeBuffer(RenderDataType dataType_, AttributeAccessType access, int arrayCount);
 
   virtual ~AttributeBuffer();
 
@@ -59,11 +73,15 @@ public:
   virtual void setData(const std::vector<double>& data) = 0;
   virtual void setData(const std::vector<int32_t>& data) = 0;
   virtual void setData(const std::vector<uint32_t>& data) = 0;
+  virtual void setData(const std::vector<glm::uvec2>& data) = 0;
+  virtual void setData(const std::vector<glm::uvec3>& data) = 0;
+  virtual void setData(const std::vector<glm::uvec4>& data) = 0;
 
   virtual uint32_t getNativeBufferID() = 0; // used to interop with external things, e.g. ImGui
 
   // == Getters
   RenderDataType getType() const { return dataType; }
+  AttributeAccessType getAccessType() const { return access; }
   int getArrayCount() const { return arrayCount; }
   int64_t getDataSize() const { return dataSize; }
   uint64_t getUniqueID() const { return uniqueID; }
@@ -77,9 +95,13 @@ public:
   virtual glm::vec4 getData_vec4(size_t ind) = 0;
   virtual int getData_int(size_t ind) = 0;
   virtual uint32_t getData_uint32(size_t ind) = 0;
+  virtual glm::uvec2 getData_uvec2(size_t ind) = 0;
+  virtual glm::uvec3 getData_uvec3(size_t ind) = 0;
+  virtual glm::uvec4 getData_uvec4(size_t ind) = 0;
 
 protected:
   RenderDataType dataType;
+  AttributeAccessType access;
   int arrayCount;
   int64_t dataSize = -1; // the size of the data currently stored in this attribute (-1 if nothing)
   uint64_t uniqueID;
@@ -212,11 +234,17 @@ struct ShaderSpecUniform {
   const RenderDataType type;
 };
 struct ShaderSpecAttribute {
-  ShaderSpecAttribute(std::string name_, RenderDataType type_) : name(name_), type(type_), arrayCount(1) {}
+  ShaderSpecAttribute(std::string name_, RenderDataType type_)
+      : name(name_), type(type_), access(AttributeAccessType::Sequential), arrayCount(1) {}
+  ShaderSpecAttribute(std::string name_, RenderDataType type_, AttributeAccessType access_)
+      : name(name_), type(type_), access(access_), arrayCount(1) {}
   ShaderSpecAttribute(std::string name_, RenderDataType type_, int arrayCount_)
-      : name(name_), type(type_), arrayCount(arrayCount_) {}
+      : name(name_), type(type_), access(AttributeAccessType::Sequential), arrayCount(arrayCount_) {}
+  ShaderSpecAttribute(std::string name_, RenderDataType type_, AttributeAccessType access_, int arrayCount_)
+      : name(name_), type(type_), access(access_), arrayCount(arrayCount_) {}
   const std::string name;
   const RenderDataType type;
+  const AttributeAccessType access;
   const int arrayCount; // number of times this element is repeated in an array
 };
 struct ShaderSpecTexture {
@@ -284,13 +312,16 @@ public:
   virtual void setUniform(std::string name, glm::vec4 val) = 0;
   virtual void setUniform(std::string name, std::array<float, 3> val) = 0;
   virtual void setUniform(std::string name, float x, float y, float z, float w) = 0;
+  virtual void setUniform(std::string name, glm::uvec2 val) = 0;
+  virtual void setUniform(std::string name, glm::uvec3 val) = 0;
+  virtual void setUniform(std::string name, glm::uvec4 val) = 0;
 
   // = Attributes
   // clang-format off
   virtual bool hasAttribute(std::string name) = 0;
-  virtual void setExternalBuffer(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) = 0; 
   virtual bool attributeIsSet(std::string name) = 0;
   virtual std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) = 0;
+  virtual void setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) = 0; 
   virtual void setAttribute(std::string name, const std::vector<glm::vec2>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec3>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec4>& data) = 0;
@@ -319,6 +350,7 @@ public:
   // Indices
   virtual void setIndex(std::vector<std::array<unsigned int, 3>>& indices) = 0;
   virtual void setIndex(std::vector<unsigned int>& indices) = 0;
+  virtual void setIndex(std::vector<glm::uvec3>& indices) = 0;
   virtual void setPrimitiveRestartIndex(unsigned int restartIndex) = 0;
 
   // Call once to initialize GLSL code used by multiple shaders
@@ -421,20 +453,21 @@ public:
   // === Factory methods
 
   // create attribute buffers
-  virtual std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, int arrayCount_ = 1) = 0;
+  virtual std::shared_ptr<AttributeBuffer>
+  generateAttributeBuffer(RenderDataType dataType_, AttributeAccessType access = AttributeAccessType::Sequential,
+                          int arrayCount_ = 1) = 0;
+  std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, int arrayCount_);
 
 
   // create textures
   virtual std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int size1D,
-                                                               unsigned char* data = nullptr) = 0; // 1d
+                                                   unsigned char* data = nullptr) = 0; // 1d
   virtual std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int size1D,
-                                                               float* data) = 0; // 1d
-  virtual std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_,
-                                                               unsigned int sizeY_,
-                                                               unsigned char* data = nullptr) = 0; // 2d
-  virtual std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_,
-                                                               unsigned int sizeY_,
-                                                               float* data) = 0; // 2d
+                                                   float* data) = 0; // 1d
+  virtual std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+                                                   unsigned char* data = nullptr) = 0; // 2d
+  virtual std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+                                                   float* data) = 0; // 2d
 
   // create render buffers
   virtual std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,

@@ -206,6 +206,7 @@ public:
   std::vector<std::vector<size_t>> faces;
 
   // Derived indices
+  std::vector<glm::uvec3> faceVertexInds;
   std::vector<std::vector<size_t>> edgeIndices;
   std::vector<std::vector<size_t>> halfedgeIndices;
 
@@ -314,7 +315,13 @@ public:
   void fillGeometryBuffers(render::ShaderProgram& p);
   std::vector<std::string> addSurfaceMeshRules(std::vector<std::string> initRules, bool withMesh = true,
                                                bool withSurfaceShade = true);
+  
+  void setMeshIndexAttribues(render::ShaderProgram& p);
+  void setMeshGeometryAttributes(render::ShaderProgram& p);
+
+  std::shared_ptr<render::AttributeBuffer> getVertexIndicesRenderBuffer();
   std::shared_ptr<render::AttributeBuffer> getVertexPositionsRenderBuffer();
+  std::shared_ptr<render::AttributeBuffer> getVertexNormalsRenderBuffer();
 
   // === ~DANGER~ experimental/unsupported functions
 
@@ -350,7 +357,16 @@ private:
   // Gui implementation details
 
   // Drawing related things
+  
+  void ensureVertexIndexRenderBufferFilled(bool forceRefill = false);
+  std::shared_ptr<render::AttributeBuffer> vertexIndicesRenderBuffer;
+  
+  void ensureVertexPositionsRenderBufferFilled(bool forceRefill = false);
   std::shared_ptr<render::AttributeBuffer> vertexPositionsRenderBuffer;
+  
+  void ensureVertexNormalsRenderBufferFilled(bool forceRefill = false);
+  std::shared_ptr<render::AttributeBuffer> vertexNormalsRenderBuffer;
+
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> pickProgram;
 
@@ -361,7 +377,6 @@ private:
   // Initialization work
   void initializeMeshTriangulation();
 
-  void ensureRenderBuffersFilled(bool forceRefill = false);
 
   void fillGeometryBuffersSmooth(render::ShaderProgram& p);
   void fillGeometryBuffersFlat(render::ShaderProgram& p);

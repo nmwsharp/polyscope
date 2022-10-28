@@ -97,7 +97,7 @@ void PointCloudParameterizationQuantity::createProgram() {
   }
 
   parent.setPointProgramGeometryBuffers(*pointProgram);
-  pointProgram->setExternalBuffer("a_value2", getCoordRenderBuffer());
+  pointProgram->setAttribute("a_value2", getCoordRenderBuffer());
 
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }

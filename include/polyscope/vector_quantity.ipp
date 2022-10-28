@@ -92,8 +92,8 @@ void VectorQuantity<QuantityT>::createProgram() {
   );
   // clang-format on
 
-  vectorProgram->setExternalBuffer("a_vector", getVectorRenderBuffer());
-  vectorProgram->setExternalBuffer("a_position", baseRenderBuffer);
+  vectorProgram->setAttribute("a_vector", getVectorRenderBuffer());
+  vectorProgram->setAttribute("a_position", baseRenderBuffer);
 
   render::engine->setMaterial(*vectorProgram, material.get());
 }

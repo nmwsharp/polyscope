@@ -46,6 +46,12 @@ std::string renderDataTypeName(const RenderDataType& r) {
     return "UInt";
   case RenderDataType::Index:
     return "Index";
+  case RenderDataType::Vector2UInt:
+    return "Vector2UInt";
+  case RenderDataType::Vector3UInt:
+    return "Vector3UInt";
+  case RenderDataType::Vector4UInt:
+    return "Vector4UInt";
   }
   return "";
 }
@@ -62,10 +68,20 @@ std::string modeName(const TransparencyMode& m) {
   return "";
 }
 
+std::string accessTypeName(const AttributeAccessType& t) {
+  switch (t) {
+  case AttributeAccessType::Sequential:
+    return "Sequential";
+  case AttributeAccessType::Indexed:
+    return "Indexed";
+  }
+  return "";
+}
+
 namespace render {
 
-AttributeBuffer::AttributeBuffer(RenderDataType dataType_, int arrayCount_)
-    : dataType(dataType_), arrayCount(arrayCount_), uniqueID(render::engine->getNextUniqueID()) {}
+AttributeBuffer::AttributeBuffer(RenderDataType dataType_, AttributeAccessType access_, int arrayCount_)
+    : dataType(dataType_), access(access_), arrayCount(arrayCount_), uniqueID(render::engine->getNextUniqueID()) {}
 
 AttributeBuffer::~AttributeBuffer() {}
 
@@ -171,6 +187,9 @@ ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages
   }
 }
 
+std::shared_ptr<AttributeBuffer> Engine::generateAttributeBuffer(RenderDataType dataType_, int arrayCount_) {
+  return generateAttributeBuffer(dataType_, AttributeAccessType::Sequential, arrayCount_);
+}
 
 void Engine::buildEngineGui() {
 

@@ -46,7 +46,7 @@ void PointCloudColorQuantity::createPointProgram() {
   // clang-format on
 
   parent.setPointProgramGeometryBuffers(*pointProgram);
-  pointProgram->setExternalBuffer("a_color", getColorRenderBuffer());
+  pointProgram->setAttribute("a_color", getColorRenderBuffer());
 
   // Fill buffers
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
