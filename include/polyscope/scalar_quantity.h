@@ -63,7 +63,8 @@ public:
 protected:
   // Helpers
   void dataUpdated();
-  void ensureRenderBuffersFilled(bool forceRefill = false);
+  void ensureRenderBuffersFilled();
+  void updateRenderBuffersIfAllocated();
 
   std::vector<double> values;
   const DataType dataType;

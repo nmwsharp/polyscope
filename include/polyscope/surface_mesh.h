@@ -83,13 +83,6 @@ public:
 
   virtual void refresh() override;
 
-
-  // Access the data
-  // Normally, the values are stored here. But if the render buffer
-  // is being manually updated, they will live only in the render buffer
-  // and this will be empty.
-  glm::vec3 getVertexPosition(size_t ind);
-
   // === Quantity-related
   // clang-format off
 
@@ -128,11 +121,6 @@ public:
 	SurfaceFaceCountQuantity* addFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>&
   values); 
 	SurfaceVertexIsolatedScalarQuantity* addVertexIsolatedScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>>& values);
-
-  // = Subsets (expect char array)
-  // template <class T>
-  // void addEdgeSubsetQuantity(std::string name, const T& subset);
-
 
 
   // = Misc quantities
@@ -175,17 +163,11 @@ public:
 
   // Set permutations
   template <class T>
-  void setVertexPermutation(const T& perm, size_t expectedSize = 0);
-  template <class T>
-  void setFacePermutation(const T& perm, size_t expectedSize = 0);
-  template <class T>
   void setEdgePermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
   void setHalfedgePermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
   void setCornerPermutation(const T& perm, size_t expectedSize = 0);
-  template <class T>
-  void setAllPermutations(const std::array<std::pair<T, size_t>, 5>& perms);
 
   // Get the expected data length, either using the default convention or a permutation as above
   size_t vertexDataSize;
@@ -196,17 +178,19 @@ public:
 
 
   // === Helpers
-  void setShadeStyle(ShadeStyle newShadeStyle);
-
 
   // === Manage the mesh itself
 
   // Core data
-  std::vector<glm::vec3> vertexPositions;
-  std::vector<std::vector<size_t>> faces;
+  std::vector<std::vector<size_t>> faces; // TODO delete
+
+  // Face indices
+  std::vector<uint32_t> faceInds_start;
+  std::vector<uint32_t> faceInds_entries;
+  std::vector<glm::uvec3> triangleInds; // always triangulated
 
   // Derived indices
-  std::vector<glm::uvec3> faceVertexInds;
+  std::vector<glm::uvec3> faceVertexInds; // TODO delete
   std::vector<std::vector<size_t>> edgeIndices;
   std::vector<std::vector<size_t>> halfedgeIndices;
 
@@ -215,7 +199,7 @@ public:
   size_t nFaces() const { return faces.size(); }
 
   size_t nFacesTriangulationCount = 0;
-  size_t nFacesTriangulation() const { return faces.size(); }
+  size_t nFacesTriangulation() const { return faces.size(); } // TODO
 
   size_t nEdgesCount = 0;
   size_t nEdges() const { return nEdgesCount; }
@@ -224,16 +208,78 @@ public:
   size_t nCorners() const { return nCornersCount; }
   size_t nHalfedges() const { return nCornersCount; }
 
-  // Derived geometric quantities
-  std::vector<glm::vec3> faceNormals;
-  std::vector<glm::vec3> vertexNormals;
-  std::vector<double> faceAreas;
-  std::vector<double> vertexAreas;
-  std::vector<double> edgeLengths;
+  // =================================================
+  // ========    Geometric Quantities      ==========
+  // =================================================
+  //
+  // Neeeded for various visualization purposes. These all
+  // follow the same pattern of:
+  //   - a CPU buffer where the value is originally calculated
+  //   - a GPU attribute where the value is stored to render
+  //   - ensureHave___(), which makes sure the CPU buffer is filled,
+  //     call it before any use. It will NOT update it if already full;
+  //     empty the buffer if it needs to be updated.
+  //   - get___RenderBuffer(), which returns a ref to the GPU buffer,
+  //     populating it if needed
+  //
+  //  NOTE: if a buffer is being manually updated on-device via the renderBuffer
+  //  pointer, then the corresponding CPU buffer will be empty.
+  //
+  //  NOTE: geometric quantities are derived from positions. If the positions are manually updated, the other quantities
+  //  must also be manually updated, or they will become stale.
 
-  // Not necessarily populated by default. Call ensureHaveFaceTangentSpaces() etc to be sure they are populated.
+  // Vertex positions
+  std::vector<glm::vec3> vertexPositions;
+  glm::vec3 getVertexPosition(size_t ind);
+  std::shared_ptr<render::AttributeBuffer> getVertexPositionsRenderBuffer();
+  bool vertexPositionsStoredInMemory() const;
+  void checkIfVertexPositionsAreInMemory() const;
+  void vertexPositionRenderBufferDataExternallyUpdated(); // After updating any data via the buffer above, call this
+                                                          // function to let Polyscope know.
+
+  // Face normals
+  std::vector<glm::vec3> faceNormals; // TODO make all of these private?
+  void ensureHaveFaceNormals(bool updateRenderBuffer = true);
+  std::shared_ptr<render::AttributeBuffer> getFaceNormalsRenderBuffer();
+
+  // Face centers
+  std::vector<glm::vec3> faceCenters;
+  void ensureHaveFaceCenters(bool updateRenderBuffer = true);
+  std::shared_ptr<render::AttributeBuffer> getFaceCentersRenderBuffer();
+
+  // Face areas
+  std::vector<double> faceAreas;
+  void ensureHaveFaceAreas(bool updateRenderBuffer = true);
+  std::shared_ptr<render::AttributeBuffer> getFaceAreasRenderBuffer();
+
+  // Vertex normals
+  std::vector<glm::vec3> vertexNormals;
+  void ensureHaveVertexNormals(bool updateRenderBuffer = true);
+  std::shared_ptr<render::AttributeBuffer> getVertexNormalsRenderBuffer();
+
+  // Vertex areas
+  std::vector<double> vertexAreas;
+  void ensureHaveVertexAreas(bool updateRenderBuffer = true);
+  std::shared_ptr<render::AttributeBuffer> getVertexAreasRenderBuffer();
+
+  // Edge lengths
+  std::vector<double> edgeLengths;
+  void ensureHaveEdgeLengths(bool updateRenderBuffer = true);
+  std::shared_ptr<render::AttributeBuffer> getEdgeLengthsRenderBuffer();
+
+  // Face tangent spaces
+  // The user
+  // own, set them with setFaceTangentBasisX()
   std::vector<std::array<glm::vec3, 2>> faceTangentSpaces;
+  void ensureHaveFaceTangentSpaces(bool updateRenderBuffer = true);
+  std::shared_ptr<render::AttributeBuffer> getFaceTangentSpacesRenderBuffer();
+
+  // Face tangent spaces
+  // Polyscope automatically generates default tangent spaces. If you to use your
+  // own, set them with setFaceTangentBasisX()
   std::vector<std::array<glm::vec3, 2>> vertexTangentSpaces;
+  void ensureHaveVertexTangentSpaces(bool updateRenderBuffer = true);
+  std::shared_ptr<render::AttributeBuffer> getVertexTangentSpacesRenderBuffer();
 
   // Derived connectivity quantities
   // Not necessarily populated by default. Call ensureHaveManifoldConnectivity() to be sure they are populated.
@@ -246,17 +292,8 @@ public:
   void computeCounts();       // call to populate counts and indices
   void computeGeometryData(); // call to populate normals/areas/lengths
   void ensureHaveManifoldConnectivity();
-  glm::vec3 faceCenter(size_t iF);
 
-  // if there are no tangent spaces, builds the default ones
-  bool hasFaceTangentSpaces();
-  bool hasVertexTangentSpaces();
-  void ensureHaveFaceTangentSpaces();   // sanity-check which errors if not present
-  void ensureHaveVertexTangentSpaces(); // sanity-check which errors if not present
-  void generateDefaultFaceTangentSpaces();
-  void generateDefaultVertexTangentSpaces();
-
-  // Set tangent space coordinates for vertexPositions
+  // Set tangent space coordinates for vertices
   template <class T>
   void setVertexTangentBasisX(const T& vectors);
   template <class T>
@@ -268,11 +305,6 @@ public:
   template <class T>
   void setFaceTangentBasisX2D(const T& vectors);
 
-
-  // Set tangent space coordinates for faces
-
-
-  // === Member variables ===
   static const std::string structureTypeName;
 
   // Picking helpers
@@ -280,10 +312,6 @@ public:
   // void getPickedElement(size_t localPickID, size_t& vOut, size_t& fOut, size_t& eOut, size_t& heOut);
 
   // === Getters and setters for visualization settings
-
-  // Flat or smooth shading
-  SurfaceMesh* setSmoothShade(bool isSmooth);
-  bool isSmoothShade();
 
   // Color of the mesh
   SurfaceMesh* setSurfaceColor(glm::vec3 val);
@@ -310,34 +338,38 @@ public:
   SurfaceMesh* setBackFacePolicy(BackFacePolicy newPolicy);
   BackFacePolicy getBackFacePolicy();
 
-  // Rendering helpers used by quantities
+  // Face normal type
+  SurfaceMesh* setShadeStyle(MeshShadeStyle newStyle);
+  MeshShadeStyle getShadeStyle();
+
+  // == Rendering helpers used by quantities
+
   void setSurfaceMeshUniforms(render::ShaderProgram& p);
   void fillGeometryBuffers(render::ShaderProgram& p);
   std::vector<std::string> addSurfaceMeshRules(std::vector<std::string> initRules, bool withMesh = true,
                                                bool withSurfaceShade = true);
-  
+
   void setMeshIndexAttribues(render::ShaderProgram& p);
   void setMeshGeometryAttributes(render::ShaderProgram& p);
 
-  std::shared_ptr<render::AttributeBuffer> getVertexIndicesRenderBuffer();
-  std::shared_ptr<render::AttributeBuffer> getVertexPositionsRenderBuffer();
-  std::shared_ptr<render::AttributeBuffer> getVertexNormalsRenderBuffer();
-
   // === ~DANGER~ experimental/unsupported functions
 
-  // After updating any data via the buffer above, call this function to let
-  // Polyscope know.
-  void renderBufferDataExternallyUpdated();
+  // === DEPRECATED
+
+  // Deprecated: use shadeType instead
+  SurfaceMesh* setSmoothShade(bool isSmooth);
+  bool isSmoothShade();
+
 
 private:
   // Visualization settings
-  PersistentValue<bool> shadeSmooth;
   PersistentValue<glm::vec3> surfaceColor;
   PersistentValue<glm::vec3> edgeColor;
   PersistentValue<std::string> material;
   PersistentValue<float> edgeWidth;
   PersistentValue<BackFacePolicy> backFacePolicy;
   PersistentValue<glm::vec3> backFaceColor;
+  PersistentValue<MeshShadeStyle> shadeStyle;
 
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
@@ -354,29 +386,58 @@ private:
   void buildEdgeInfoGui(size_t eInd);
   void buildHalfedgeInfoGui(size_t heInd);
 
-  // Gui implementation details
+  // ==== Gui implementation details
 
-  // Drawing related things
-  
-  void ensureVertexIndexRenderBufferFilled(bool forceRefill = false);
+  // == Buffers for geometry quantities
+
+  void ensureVertexIndexRenderBufferFilled();
+  void updateVertexIndexRenderBufferIfAllocated();
   std::shared_ptr<render::AttributeBuffer> vertexIndicesRenderBuffer;
-  
-  void ensureVertexPositionsRenderBufferFilled(bool forceRefill = false);
+
+  void ensureVertexPositionsRenderBufferFilled();
+  void updateVertexPositionsRenderBufferIfAllocated();
   std::shared_ptr<render::AttributeBuffer> vertexPositionsRenderBuffer;
-  
-  void ensureVertexNormalsRenderBufferFilled(bool forceRefill = false);
+
+  void ensureFaceNormalsRenderBufferFilled();
+  void updateFaceNormalsRenderBufferIfAllocated();
+  std::shared_ptr<render::AttributeBuffer> faceNormalsRenderBuffer;
+
+  void ensureFaceCentersRenderBufferFilled();
+  void updateFaceCentersRenderBufferIfAllocated();
+  std::shared_ptr<render::AttributeBuffer> faceCentersRenderBuffer;
+
+  void ensureFaceAreasRenderBufferFilled();
+  void updateFaceAreasRenderBufferIfAllocated();
+  std::shared_ptr<render::AttributeBuffer> faceAreasRenderBuffer;
+
+  void ensureVertexNormalsRenderBufferFilled();
+  void updateVertexNormalsRenderBufferIfAllocated();
   std::shared_ptr<render::AttributeBuffer> vertexNormalsRenderBuffer;
+
+  void ensureVertexAreasRenderBufferFilled();
+  void updateVertexAreasRenderBufferIfAllocated();
+  std::shared_ptr<render::AttributeBuffer> vertexAreasRenderBuffer;
+
+  void ensureEdgeLengthsRenderBufferFilled();
+  void updateEdgeLengthsRenderBufferIfAllocated();
+  std::shared_ptr<render::AttributeBuffer> edgeLengthsRenderBuffer;
+
+  void ensureFaceTangentSpacesRenderBufferFilled();
+  void updateFaceTangentSpacesRenderBufferIfAllocated();
+  std::shared_ptr<render::AttributeBuffer> faceTangentSpacesRenderBuffer;
+
+  void ensureVertexTangentSpacesRenderBufferFilled();
+  void updateVertexTangentSpacesRenderBufferIfAllocated();
+  std::shared_ptr<render::AttributeBuffer> vertexTangentSpacesRenderBuffer;
 
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> pickProgram;
 
-  bool vertexPositionsStoredInMemory() const;
 
   // === Helper functions
 
   // Initialization work
   void initializeMeshTriangulation();
-
 
   void fillGeometryBuffersSmooth(render::ShaderProgram& p);
   void fillGeometryBuffersFlat(render::ShaderProgram& p);

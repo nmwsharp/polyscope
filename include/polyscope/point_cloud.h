@@ -161,7 +161,8 @@ private:
 
   // === Helpers
   // Do setup work related to drawing, including allocating openGL data
-  void ensureRenderBuffersFilled(bool forceRefill = false);
+  void ensureRenderBuffersFilled();
+  void updateRenderBuffersIfAllocated();
   void ensureRenderProgramPrepared();
   void ensurePickProgramPrepared();
   void dataUpdated();

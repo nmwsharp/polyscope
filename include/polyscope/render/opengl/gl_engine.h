@@ -67,6 +67,11 @@ public:
   void setData(const std::vector<glm::uvec2>& data) override;
   void setData(const std::vector<glm::uvec3>& data) override;
   void setData(const std::vector<glm::uvec4>& data) override;
+  
+  // Array-valued attributes
+  // (adding these lazily as we need them)
+  // (sadly we cannot template the virtual function)
+  void setData(const std::vector<std::array<glm::vec3, 2>>& data) override;
 
   float getData_float(size_t ind) override;
   double getData_double(size_t ind) override;
@@ -91,6 +96,7 @@ protected:
 
 private:
   void checkType(RenderDataType targetType);
+  void checkArray(int arrayCount);
   GLenum getTarget();
 };
 

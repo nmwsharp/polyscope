@@ -250,6 +250,13 @@ void GLAttributeBuffer::checkType(RenderDataType targetType) {
   }
 }
 
+void GLAttributeBuffer::checkArray(int testArrayCount) {
+  if (testArrayCount != arrayCount) {
+    throw std::invalid_argument("Tried to set GLAttributeBuffer with wrong array count. Actual count: " +
+                                std::to_string(arrayCount) + "  Attempted count: " + std::to_string(testArrayCount));
+  }
+}
+
 GLenum GLAttributeBuffer::getTarget() {
   switch (access) {
   case AttributeAccessType::Sequential:
@@ -297,6 +304,24 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data) {
 
   } else {
     glBufferData(getTarget(), 3 * data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
+    dataSize = data.size();
+  }
+}
+
+void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data) {
+  checkType(RenderDataType::Vector3Float);
+  checkArray(2);
+
+  bind();
+
+  if (isSet()) {
+
+    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+
+    glBufferSubData(getTarget(), 0, 2 * 3 * dataSize * sizeof(float), &data[0]);
+
+  } else {
+    glBufferData(getTarget(), 2 * 3 * data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
   }
 }

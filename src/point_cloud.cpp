@@ -246,27 +246,18 @@ PointCloudScalarQuantity& PointCloud::resolvePointRadiusQuantity() {
   return *sizeScalarQ;
 }
 
-void PointCloud::ensureRenderBuffersFilled(bool forceRefill) {
-
-  // ## create the buffers if they don't already exist
-
-  bool createdBuffer = false;
-  if (!positionRenderBuffer) {
-    positionRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
-    createdBuffer = true;
-  }
-
-  // if the buffers already existed (and thus are presumably filled), quick-out
-  if (!createdBuffer && !forceRefill) {
-    return;
-  }
-
-  // ## otherwise, fill the buffers
+void PointCloud::updateRenderBuffersIfAllocated() {
+  if (!positionRenderBuffer) return;
   positionRenderBuffer->setData(points);
+}
+void PointCloud::ensureRenderBuffersFilled() {
+  if (positionRenderBuffer) return; // if it already exists, quick-out
+  positionRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
+  updateRenderBuffersIfAllocated();
 }
 
 void PointCloud::dataUpdated() {
-  ensureRenderBuffersFilled(true);
+  updateRenderBuffersIfAllocated();
   requestRedraw();
 }
 

@@ -44,7 +44,8 @@ public:
 protected:
   // Helpers
   void dataUpdated();
-  void ensureRenderBuffersFilled(bool forceRefill = false);
+  void ensureRenderBuffersFilled();
+  void updateRenderBuffersIfAllocated();
 
   std::vector<glm::vec3> colors;
 

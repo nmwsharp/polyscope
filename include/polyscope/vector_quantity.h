@@ -59,7 +59,9 @@ public:
 
 protected:
   // helpers
-  void ensureRenderBuffersFilled(bool forceRefill = false);
+  void ensureRenderBuffersFilled();
+  void updateRenderBuffersIfAllocated();
+
   void dataUpdated();
   void createProgram();
   void updateMaxLength();

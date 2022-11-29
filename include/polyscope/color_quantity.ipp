@@ -16,20 +16,16 @@ std::vector<std::string> ColorQuantity<QuantityT>::addColorRules(std::vector<std
 }
 
 template <typename QuantityT>
-void ColorQuantity<QuantityT>::ensureRenderBuffersFilled(bool forceRefill) {
+void ColorQuantity<QuantityT>::updateRenderBuffersIfAllocated() {
+  if (!colorRenderBuffer) return;
+  colorRenderBuffer->setData(colors);
+}
 
-  // ## create the buffers if they don't already exist
-
-  bool createdBuffer = false;
-  if (!colorRenderBuffer) {
-    colorRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
-    createdBuffer = true;
-  }
-
-  // If the buffers already existed (and thus are presumably filled), quick-out. Otherwise, fill the buffers.
-  if (createdBuffer || forceRefill) {
-    colorRenderBuffer->setData(colors);
-  }
+template <typename QuantityT>
+void ColorQuantity<QuantityT>::ensureRenderBuffersFilled() {
+  if (colorRenderBuffer) return; // if it already exists, quick-out
+  colorRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
+  updateRenderBuffersIfAllocated();
 }
 
 
@@ -49,7 +45,7 @@ std::shared_ptr<render::AttributeBuffer> ColorQuantity<QuantityT>::getColorRende
 
 template <typename QuantityT>
 void ColorQuantity<QuantityT>::dataUpdated() {
-  ensureRenderBuffersFilled(false);
+  updateRenderBuffersIfAllocated();
   requestRedraw();
 }
 

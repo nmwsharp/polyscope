@@ -98,21 +98,16 @@ void VectorQuantity<QuantityT>::createProgram() {
   render::engine->setMaterial(*vectorProgram, material.get());
 }
 
-
 template <typename QuantityT>
-void VectorQuantity<QuantityT>::ensureRenderBuffersFilled(bool forceRefill) {
-  // ## create the buffers if they don't already exist
-
-  bool createdBuffer = false;
-  if (!vectorRenderBuffer) {
-    vectorRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
-    createdBuffer = true;
-  }
-
-  // If the buffers already existed (and thus are presumably filled), quick-out. Otherwise, fill the buffers.
-  if (createdBuffer || forceRefill) {
-    vectorRenderBuffer->setData(vectors);
-  }
+void VectorQuantity<QuantityT>::updateRenderBuffersIfAllocated() {
+  if (!vectorRenderBuffer) return;
+  vectorRenderBuffer->setData(vectors);
+}
+template <typename QuantityT>
+void VectorQuantity<QuantityT>::ensureRenderBuffersFilled() {
+  if (vectorRenderBuffer) return; // if it already exists, quick-out
+  vectorRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
+  updateRenderBuffersIfAllocated();
 }
 
 template <typename QuantityT>
@@ -129,7 +124,7 @@ void VectorQuantity<QuantityT>::refreshVectors() {
 
 template <typename QuantityT>
 void VectorQuantity<QuantityT>::dataUpdated() {
-  ensureRenderBuffersFilled(false);
+  updateRenderBuffersIfAllocated();
   requestRedraw();
 }
 

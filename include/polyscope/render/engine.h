@@ -77,6 +77,11 @@ public:
   virtual void setData(const std::vector<glm::uvec3>& data) = 0;
   virtual void setData(const std::vector<glm::uvec4>& data) = 0;
 
+  // Array-valued attributes
+  // (adding these lazily as we need them)
+  // (sadly we cannot template the virtual function)
+  virtual void setData(const std::vector<std::array<glm::vec3, 2>>& data) = 0;
+
   virtual uint32_t getNativeBufferID() = 0; // used to interop with external things, e.g. ImGui
 
   // == Getters

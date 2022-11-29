@@ -68,17 +68,6 @@ void SurfaceMesh::updateVertexPositions2D(const V& newPositions2D) {
   updateVertexPositions(positions3D);
 }
 
-inline glm::vec3 SurfaceMesh::faceCenter(size_t iF) {
-  glm::vec3 faceCenter = glm::vec3{0., 0., 0.};
-  const auto& face = faces[iF];
-  size_t D = face.size();
-  for (size_t j = 0; j < D; j++) {
-    faceCenter += vertexPositions[face[j]];
-  }
-  faceCenter /= D;
-  return faceCenter;
-}
-
 // Shorthand to get a mesh from polyscope
 inline SurfaceMesh* getSurfaceMesh(std::string name) {
   return dynamic_cast<SurfaceMesh*>(getStructure(SurfaceMesh::structureTypeName, name));

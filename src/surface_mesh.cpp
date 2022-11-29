@@ -20,13 +20,15 @@ const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 SurfaceMesh::SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions_,
                          const std::vector<std::vector<size_t>>& faceIndices)
     : QuantityStructure<SurfaceMesh>(name, typeName()), vertexPositions(vertexPositions_), faces(faceIndices),
-      shadeSmooth(uniquePrefix() + "shadeSmooth", false),
       surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
       edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
       edgeWidth(uniquePrefix() + "edgeWidth", 0.),
       backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different),
       backFaceColor(uniquePrefix() + "backFaceColor",
-                    glm::vec3(1.f - surfaceColor.get().r, 1.f - surfaceColor.get().g, 1.f - surfaceColor.get().b)) {
+                    glm::vec3(1.f - surfaceColor.get().r, 1.f - surfaceColor.get().g, 1.f - surfaceColor.get().b)),
+      shadeStyle(uniquePrefix() + "shadeStyle", MeshShadeStyle::Flat),
+      shouldGenerateFaceTangents(uniquePrefix() + "shouldGenerateFaceTangents", false),
+      shouldGenerateVertexTangents(uniquePrefix() + "shouldGenerateVertexTangents", false) {
   updateObjectSpaceBounds();
   computeCounts();
   computeGeometryData();
@@ -87,12 +89,407 @@ void SurfaceMesh::computeCounts() {
     iF++;
   }
 
+  // TODO delete old stuff above
+
+  // Build the flat list
+  faceInds_start.clear();
+  faceInds_entries.clear();
+  triangleInds.clear();
+  faceInds_start.push_back(0);
+  for (size_t iF = 0; iF < faces.size(); iF++) {
+    std::vector<size_t>& face = faces[iF];
+    size_t D = face.size();
+
+    faceInds_start.push_back(faceInds_start[iF] + face.size());
+
+    uint32_t vRoot = face[0];
+    faceInds_entries.push_back(vRoot);
+
+    // implicitly triangulate from root
+    for (size_t j = 1; (j + 1) < D; j++) {
+      uint32_t vB = face[j];
+      uint32_t vC = face[(j + 1) % D];
+      triangleInds.emplace_back(glm::uvec3{vRoot, vB, vC});
+      faceInds_entries.push_back(face[j]);
+    }
+    faceInds_entries.push_back(face[D - 1]);
+  }
+
   // Default data sizes
   vertexDataSize = nVertices();
   faceDataSize = nFaces();
   edgeDataSize = nEdges();
   halfedgeDataSize = nHalfedges();
   cornerDataSize = nCorners();
+}
+
+// =================================================
+// ========    Geometric Quantities      ==========
+// =================================================
+
+
+size_t SurfaceMesh::nVertices() const {
+  if (vertexPositionsStoredInMemory()) {
+    return vertexPositions.size();
+  } else {
+    if (!vertexPositionsRenderBuffer || !vertexPositionsRenderBuffer->isSet()) {
+      terminatingError("buffer is not allocated when it should be");
+    }
+    return static_cast<size_t>(vertexPositionsRenderBuffer->getDataSize());
+  }
+}
+void SurfaceMesh::updateVertexPositionsRenderBufferIfAllocated() {
+  if (!vertexPositionsRenderBuffer) return;
+  vertexPositionsRenderBuffer->setData(vertexPositions);
+}
+void SurfaceMesh::ensureVertexPositionsRenderBufferFilled() {
+  if (vertexPositionsRenderBuffer) return;
+  vertexPositionsRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
+  updateVertexPositionsRenderBufferIfAllocated();
+}
+std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getVertexPositionsRenderBuffer() {
+  ensureVertexPositionsRenderBufferFilled();
+  return vertexPositionsRenderBuffer;
+}
+bool SurfaceMesh::vertexPositionsStoredInMemory() { return !vertexPositions.empty(); }
+glm::vec3 SurfaceMesh::getVertexPosition(size_t ind) {
+  if (vertexPositionsStoredInMemory()) {
+    return vertexPositions[ind];
+  } else {
+    return vertexPositionsRenderBuffer->getData_vec3(ind);
+  }
+}
+void SurfaceMesh::vertexPositionRenderBufferDataExternallyUpdated() {
+  // TODO
+  /*
+  vertexPositions.clear();
+  vertexNormals.clear();
+  */
+  requestRedraw();
+}
+
+void SurfaceMesh::checkIfVertexPositionsAreInMemory() const {
+  if (!vertexPositionsStoredInMemory()) {
+    terminatingError("An operation was called which requires surface mesh vertex positions, but vertex positions are "
+                     "not currently stored in memory, perhaps because they have been externally updated from the "
+                     "render buffer. When externally updating position data, the user must also update dependent "
+                     "quantities such as vertex normals, if they wish to use them. Alternately, avoid directly "
+                     "updating the render buffer and instead call updateVertexPositions().");
+  }
+}
+
+// === Face normals ===
+
+void SurfaceMesh::ensureHaveFaceNormals(bool updateRenderBuffer) {
+  if (!faceNormals.empty()) return;
+
+  checkIfVertexPositionsAreInMemory();
+  faceNormals.resize(nFaces());
+
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    size_t start = faceInds_start[iF];
+    size_t D = faceInds_start[iF + 1] - start;
+
+    glm::vec3 fN{0., 0., 0.};
+    if (D == 3) {
+      glm::vec3 pA = vertexPositions[faceInds_entries[start + 0]];
+      glm::vec3 pB = vertexPositions[faceInds_entries[start + 1]];
+      glm::vec3 pC = vertexPositions[faceInds_entries[start + 2]];
+      fN = glm::cross(pB - pA, pC - pA);
+    } else {
+      for (size_t j = 0; j < D; j++) {
+        glm::vec3 pA = vertexPositions[faceInds_entries[start + j]];
+        glm::vec3 pB = vertexPositions[faceInds_entries[start + (j + 1) % D]];
+        glm::vec3 pC = vertexPositions[faceInds_entries[start + (j + 2) % D]];
+        fN += glm::cross(pC - pB, pA - pB);
+      }
+    }
+    fN = glm::normalize(fN);
+    faceNormals[iF] = fN;
+  }
+
+  if (updateRenderBuffer) {
+    updateFaceNormalsRenderBufferIfAllocated();
+  }
+}
+void SurfaceMesh::updateFaceNormalsRenderBufferIfAllocated() {
+  if (!faceNormalsRenderBuffer) return;
+  ensureHaveFaceNormals(false);
+  faceNormalsRenderBuffer->setData(faceNormals);
+}
+void SurfaceMesh::ensureFaceNormalsRenderBufferFilled() {
+  if (faceNormalsRenderBuffer) return;
+  faceNormalsRenderBuffer =
+      render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, AttributeAccessType::Indexed);
+  updateFaceNormalsRenderBufferIfAllocated();
+}
+std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getFaceNormalsRenderBuffer() {
+  ensureFaceNormalsRenderBufferFilled();
+  return faceNormalsRenderBuffer;
+}
+
+// === Face centers ===
+
+void SurfaceMesh::ensureHaveFaceCenters(bool updateRenderBuffer) {
+  if (!faceCenters.empty()) return;
+
+  checkIfVertexPositionsAreInMemory();
+  faceCenters.resize(nFaces());
+
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    size_t start = faceInds_start[iF];
+    size_t D = faceInds_start[iF + 1] - start;
+    glm::vec3 faceCenter{0., 0., 0.};
+    for (size_t j = 0; j < D; j++) {
+      glm::vec3 pA = vertexPositions[faceInds_entries[start + j]];
+      faceCenter += pA
+    }
+    faceCenter /= D;
+    faceCenters[iF] = faceCenter;
+  }
+
+  if (updateRenderBuffer) {
+    updateFaceCentersRenderBufferIfAllocated();
+  }
+}
+void SurfaceMesh::updateFaceCentersRenderBufferIfAllocated() {
+  if (!faceCentersRenderBuffer) return;
+  ensureHaveFaceCenters(false);
+  faceCentersRenderBuffer->setData(faceCenters);
+}
+void SurfaceMesh::ensureFaceCentersRenderBufferFilled() {
+  if (faceCentersRenderBuffer) return;
+  faceCentersRenderBuffer =
+      render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, AttributeAccessType::Indexed);
+  updateFaceCentersRenderBufferIfAllocated();
+}
+std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getFaceCentersRenderBuffer() {
+  ensureFaceCentersRenderBufferFilled();
+  return faceCentersRenderBuffer;
+}
+
+// === Face Areas ===
+
+void SurfaceMesh::ensureHaveFaceAreas(bool updateRenderBuffer) {
+  if (!faceAreas.empty()) return;
+
+  checkIfVertexPositionsAreInMemory();
+  faceAreas.resize(nFaces());
+
+  // Loop over faces to compute face-valued quantities
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    size_t start = faceInds_start[iF];
+    size_t D = faceInds_start[iF + 1] - start;
+
+    // Compute a face normal
+    double fA;
+    if (D == 3) {
+      glm::vec3 pA = vertexPositions[faceInds_entries[start + 0]];
+      glm::vec3 pB = vertexPositions[faceInds_entries[start + 1]];
+      glm::vec3 pC = vertexPositions[faceInds_entries[start + 2]];
+      glm::vec3 fN = glm::cross(pB - pA, pC - pA);
+      fA = 0.5 * glm::length(fN);
+    } else {
+      fA = 0;
+      glm::vec3 pRoot = vertexPositions[faceInds_start[start]];
+      for (size_t j = 1; j + 1 < D; j++) {
+        glm::vec3 pA = vertexPositions[faceInds_entries[start + j]];
+        glm::vec3 pB = vertexPositions[faceInds_entries[start + j + 1]];
+        fA += 0.5 * glm::length(glm::cross(pA - pRoot, pB - pRoot));
+      }
+    }
+
+    faceAreas[iF] = fA;
+  }
+
+  if (updateRenderBuffer) {
+    updateFaceAreasRenderBufferIfAllocated();
+  }
+}
+void SurfaceMesh::updateFaceAreasRenderBufferIfAllocated() {
+  if (!faceAreasRenderBuffer) return;
+  ensureHaveFaceAreas(false);
+  faceAreasRenderBuffer->setData(faceAreas);
+}
+void SurfaceMesh::ensureFaceAreasRenderBufferFilled() {
+  if (faceAreasRenderBuffer) return; // if it already exists, quick-out
+  faceAreasRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Float, AttributeAccessType::Indexed);
+  updateFaceAreasRenderBufferIfAllocated();
+}
+std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getFaceAreasRenderBuffer() {
+  ensureFaceAreasRenderBufferFilled();
+  return faceAreasRenderBuffer;
+}
+
+// === Vertex Normals ===
+
+void SurfaceMesh::ensureHaveVertexNormals(bool updateRenderBuffer) {
+  if (!vertexNormals.empty()) return;
+  ensureHaveFaceNormals();
+  const glm::vec3 zero{0., 0., 0.};
+
+  vertexNormals.resize(nVertices());
+  std::fill(vertexNormals.begin(), vertexNormals.end(), zero);
+
+  // Accumulate quantities from each face
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    size_t D = faceInds_start[iF + 1] - faceInds_start[iF];
+    size_t start = faceInds_start[iF];
+    for (size_t j = 0; j < D; j++) {
+      size_t iV = faceInds_entries[start + j];
+      vertexNormals[iV] += faceNormals[iF];
+    }
+  }
+
+  // Normalize
+  for (size_t iV = 0; iV < nVertices(); iV++) {
+    vertexNormals[iV] = glm::normalize(vertexNormals[iV]);
+  }
+
+  if (updateRenderBuffer) {
+    updateVertexNormalsRenderBufferIfAllocated();
+  }
+}
+void SurfaceMesh::updateVertexNormalsRenderBufferIfAllocated() {
+  if (!vertexNormalsRenderBuffer) return;
+  ensureHaveVertexNormals(false);
+  vertexNormalsRenderBuffer->setData(vertexNormals);
+}
+void SurfaceMesh::ensureVertexNormalsRenderBufferFilled() {
+  if (vertexNormalsRenderBuffer) return;
+  vertexNormalsRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
+  updateVertexNormalsRenderBufferIfAllocated();
+}
+std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getVertexNormalsRenderBuffer() {
+  ensureVertexNormalsRenderBufferFilled();
+  return vertexNormalsRenderBuffer;
+}
+
+// === Vertex Areas ===
+
+void SurfaceMesh::ensureHaveVertexAreas(bool updateRenderBuffer) {
+  if (!vertexAreas.empty()) return;
+  ensureHaveFaceAreas();
+
+  vertexAreas.resize(nVertices());
+  std::fill(vertexAreas.begin(), vertexAreas.end(), 0.);
+
+  // Accumulate quantities from each face
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    size_t D = faceInds_start[iF + 1] - faceInds_start[iF];
+    size_t start = faceInds_start[iF];
+    for (size_t j = 0; j < D; j++) {
+      size_t iV = faceInds_entries[start + j];
+      vertexAreas[iV] += faceAreas[iF] / D;
+    }
+  }
+
+  if (updateRenderBuffer) {
+    updateVertexAreasRenderBufferIfAllocated();
+  }
+}
+void SurfaceMesh::updateVertexAreasRenderBufferIfAllocated() {
+  if (!vertexAreasRenderBuffer) return;
+  ensureHaveVertexAreas(false);
+  vertexAreasRenderBuffer->setData(vertexAreas);
+}
+void SurfaceMesh::ensureVertexAreasRenderBufferFilled() {
+  if (vertexAreasRenderBuffer) return;
+  vertexAreasRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Float);
+  updateVertexAreasRenderBufferIfAllocated();
+}
+std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getVertexAreasRenderBuffer() {
+  ensureVertexAreasRenderBufferFilled();
+  return vertexAreasRenderBuffer;
+}
+
+// === Edge Lengths ===
+
+void SurfaceMesh::ensureHaveEdgeLengths(bool updateRenderBuffer) {
+  if (!edgeLengths.empty()) return;
+
+  checkIfVertexPositionsAreInMemory();
+  edgeLengths.resize(nEdges());
+
+  // Compute edge lengths
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    size_t D = faceInds_start[iF + 1] - faceInds_start[iF];
+    size_t start = faceInds_start[iF];
+    for (size_t j = 0; j < D; j++) {
+      size_t iA = faceInds_entries[start + j];
+      size_t iB = faceInds_entries[start + (j + 1) % D];
+      glm::vec3 pA = vertexPositions[iA];
+      glm::vec3 pB = vertexPositions[iB];
+      edgeLengths[edgeIndices[iF][j]] = glm::length(pA - pB);
+    }
+  }
+
+  if (updateRenderBuffer) {
+    updateEdgeLengthsRenderBufferIfAllocated();
+  }
+}
+void SurfaceMesh::updateEdgeLengthsRenderBufferIfAllocated() {
+  if (!edgeLengthsRenderBuffer) return;
+  ensureHaveEdgeLengths(false);
+  edgeLengthsRenderBuffer->setData(edgeLengths);
+}
+void SurfaceMesh::ensureEdgeLengthsRenderBufferFilled() {
+  if (edgeLengthsRenderBuffer) return;
+  edgeLengthsRenderBuffer =
+      render::engine->generateAttributeBuffer(RenderDataType::Float, AttributeAccessType::Indexed);
+  updateEdgeLengthsRenderBufferIfAllocated();
+}
+std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getEdgeLengthsRenderBuffer() {
+  ensureEdgeLengthsRenderBufferFilled();
+  return edgeLengthsRenderBuffer;
+}
+
+
+// === Face tangent spaces ===
+
+void SurfaceMesh::ensureHaveFaceTangentSpaces(bool updateRenderBuffer) {
+  if (!faceTangentSpaces.empty()) return;
+  if (!shouldGenerateFaceTangents.get()) {
+    terminatingError("No face tangent bases registered. see setFaceTangentBasisX()");
+  }
+}
+void SurfaceMesh::updateFaceTangentSpacesRenderBufferIfAllocated() {
+  if (!faceTangentSpacesRenderBuffer) return;
+  ensureHaveFaceTangentSpaces(false);
+  faceTangentSpacesRenderBuffer->setData(faceTangentSpaces);
+}
+void SurfaceMesh::ensureFaceTangentSpacesRenderBufferFilled() {
+  if (faceTangentSpacesRenderBuffer) return;
+  faceTangentSpacesRenderBuffer =
+      render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, AttributeAccessType::Indexed);
+  updateFaceTangentSpacesRenderBufferIfAllocated();
+}
+std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getFaceTangentSpacesRenderBuffer() {
+  ensureFaceTangentSpacesRenderBufferFilled();
+  return faceTangentSpacesRenderBuffer;
+}
+
+// === Vertex tangent spaces ===
+
+void SurfaceMesh::ensureHaveVertexTangentSpaces(bool updateRenderBuffer) {
+  if (!vertexTangentSpaces.empty()) return;
+  if (!shouldGenerateVertexTangents.get()) {
+    terminatingError("No vertex tangent bases registered. see setVertexTangentBasisX()");
+  }
+}
+void SurfaceMesh::updateVertexTangentSpacesRenderBufferIfAllocated() {
+  if (!vertexTangentSpacesRenderBuffer) return;
+  ensureHaveVertexTangentSpaces(false);
+  vertexTangentSpacesRenderBuffer->setData(vertexTangentSpaces);
+}
+void SurfaceMesh::ensureVertexTangentSpacesRenderBufferFilled() {
+  if (vertexTangentSpacesRenderBuffer) return;
+  vertexTangentSpacesRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
+  updateVertexTangentSpacesRenderBufferIfAllocated();
+}
+std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getVertexTangentSpacesRenderBuffer() {
+  ensureVertexTangentSpacesRenderBufferFilled();
+  return vertexTangentSpacesRenderBuffer;
 }
 
 void SurfaceMesh::computeGeometryData() {
@@ -103,45 +500,29 @@ void SurfaceMesh::computeGeometryData() {
   faceAreas.resize(nFaces());
 
   // Reset vertex-valued
-  vertexNormals.resize(nVertices());
-  std::fill(vertexNormals.begin(), vertexNormals.end(), zero);
   vertexAreas.resize(nVertices());
   std::fill(vertexAreas.begin(), vertexAreas.end(), 0);
 
   // Reset edge-valued
   edgeLengths.resize(nEdges());
 
-  // Populate face-vertex inds
-  faceVertexInds.clear();
-  faceVertexInds.reserve(nFacesTriangulation());
-  for (size_t iF = 0; iF < nFaces(); iF++) {
-    auto& face = faces[iF];
-    size_t D = face.size();
-
-    // implicitly triangulate from root
-    uint32_t vRoot = face[0];
-    for (size_t j = 1; (j + 1) < D; j++) {
-      uint32_t vB = face[j];
-      uint32_t vC = face[(j + 1) % D];
-      faceVertexInds.emplace_back(glm::uvec3{vRoot, vB, vC});
-    }
-  }
 
   // Loop over faces to compute face-valued quantities
   for (size_t iF = 0; iF < nFaces(); iF++) {
-    auto& face = faces[iF];
-    size_t D = face.size();
-
+    size_t D = faceInds_start[iF + 1] - faceInds_start[iF];
     glm::vec3 fN = zero;
     double fA = 0;
-    if (face.size() == 3) {
+
+    std::vector<size_t>& face = faces[iF];
+
+    if (D == 3) {
       glm::vec3 pA = vertexPositions[face[0]];
       glm::vec3 pB = vertexPositions[face[1]];
       glm::vec3 pC = vertexPositions[face[2]];
 
       fN = glm::cross(pB - pA, pC - pA);
       fA = 0.5 * glm::length(fN);
-    } else if (face.size() > 3) {
+    } else if (D > 3) {
 
       glm::vec3 pRoot = vertexPositions[face[0]];
       for (size_t j = 0; j < D; j++) {
@@ -255,76 +636,6 @@ void SurfaceMesh::ensureHaveManifoldConnectivity() {
       }
 
       twinHalfedge[iHe] = myTwin;
-    }
-  }
-}
-
-bool SurfaceMesh::hasFaceTangentSpaces() { return (faceTangentSpaces.size() > 0); }
-
-bool SurfaceMesh::hasVertexTangentSpaces() { return (vertexTangentSpaces.size() > 0); }
-
-
-void SurfaceMesh::ensureHaveFaceTangentSpaces() {
-  if (hasFaceTangentSpaces()) return;
-  throw std::runtime_error("No face tangent bases registered. see setFaceTangentBasisX()");
-}
-
-void SurfaceMesh::ensureHaveVertexTangentSpaces() {
-  if (hasVertexTangentSpaces()) return;
-  throw std::runtime_error("No vertex tangent bases registered. see setVertexTangentBasisX()");
-}
-
-void SurfaceMesh::generateDefaultFaceTangentSpaces() {
-  faceTangentSpaces.resize(nFaces());
-
-  for (size_t iF = 0; iF < nFaces(); iF++) {
-    auto& face = faces[iF];
-    size_t D = face.size();
-    if (D < 2) continue;
-
-    glm::vec3 pA = vertexPositions[face[0]];
-    glm::vec3 pB = vertexPositions[face[1]];
-    glm::vec3 N = faceNormals[iF];
-
-    glm::vec3 basisX = pB - pA;
-    basisX = glm::normalize(basisX - N * glm::dot(N, basisX));
-
-    glm::vec3 basisY = glm::normalize(-glm::cross(basisX, N));
-
-    faceTangentSpaces[iF][0] = basisX;
-    faceTangentSpaces[iF][1] = basisY;
-  }
-}
-
-void SurfaceMesh::generateDefaultVertexTangentSpaces() {
-  vertexTangentSpaces.resize(nVertices());
-  std::vector<char> hasTangent(nVertices(), false);
-
-  for (size_t iF = 0; iF < nFaces(); iF++) {
-    auto& face = faces[iF];
-    size_t D = face.size();
-    if (D < 2) continue;
-
-    for (size_t j = 0; j < D; j++) {
-
-      size_t vA = face[j];
-      size_t vB = face[(j + 1) % D];
-
-      if (hasTangent[vA]) continue;
-
-      glm::vec3 pA = vertexPositions[vA];
-      glm::vec3 pB = vertexPositions[vB];
-      glm::vec3 N = vertexNormals[vA];
-
-      glm::vec3 basisX = pB - pA;
-      basisX = basisX - N * glm::dot(N, basisX);
-
-      glm::vec3 basisY = -glm::cross(basisX, N);
-
-      vertexTangentSpaces[vA][0] = basisX;
-      vertexTangentSpaces[vA][1] = basisY;
-
-      hasTangent[vA] = true;
     }
   }
 }
@@ -536,9 +847,9 @@ void SurfaceMesh::setMeshIndexAttribues(render::ShaderProgram& p) {
   p.setIndex(faceVertexInds);
 
   // Set the triangle vertex indices
-  if (p.hasAttribute("a_vertexInds")) {
-    p.setAttribute("a_vertexInds", getVertexIndicesRenderBuffer());
-  }
+  // if (p.hasAttribute("a_vertexInds")) {
+  //   p.setAttribute("a_vertexInds", getVertexIndicesRenderBuffer());
+  // }
 }
 
 void SurfaceMesh::setMeshGeometryAttributes(render::ShaderProgram& p) {
@@ -550,7 +861,7 @@ void SurfaceMesh::setMeshGeometryAttributes(render::ShaderProgram& p) {
   }
 }
 
-void SurfaceMesh::ensureVertexIndexRenderBufferFilled(bool forceRefill) {
+void SurfaceMesh::ensureVertexIndexRenderBufferFilled() {
   if (vertexIndicesRenderBuffer && !forceRefill) return; // if it exists (and we're not refilling), quick-out
 
   // ## create the buffers if it doesn't already exist
@@ -559,75 +870,11 @@ void SurfaceMesh::ensureVertexIndexRenderBufferFilled(bool forceRefill) {
   }
 
   // ## otherwise, fill the buffer
-  vertexIndicesRenderBuffer->setData(faceVertexInds);
+  vertexIndicesRenderBuffer->setData(triangleInds);
 }
 std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getVertexIndicesRenderBuffer() {
   ensureVertexIndexRenderBufferFilled();
   return vertexIndicesRenderBuffer;
-}
-
-void SurfaceMesh::ensureVertexNormalsRenderBufferFilled(bool forceRefill) {
-  if (vertexNormalsRenderBuffer && !forceRefill) return; // if it exists (and we're not refilling), quick-out
-
-  // ## create the buffers if it doesn't already exist
-  if (!vertexNormalsRenderBuffer) {
-    vertexNormalsRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
-  }
-
-
-  // ## otherwise, fill the buffer
-  std::cout << "vertex normal size = " << vertexNormals.size() << std::endl;
-  vertexNormalsRenderBuffer->setData(vertexNormals);
-}
-std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getVertexNormalsRenderBuffer() {
-  ensureVertexNormalsRenderBufferFilled();
-  return vertexNormalsRenderBuffer;
-}
-
-void SurfaceMesh::ensureVertexPositionsRenderBufferFilled(bool forceRefill) {
-  if (vertexPositionsRenderBuffer && !forceRefill) return; // if it exists (and we're not refilling), quick-out
-
-  // ## create the buffers if it doesn't already exist
-  if (!vertexPositionsRenderBuffer) {
-    vertexPositionsRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
-  }
-
-  // ## otherwise, fill the buffer
-  vertexPositionsRenderBuffer->setData(vertexPositions);
-}
-std::shared_ptr<render::AttributeBuffer> SurfaceMesh::getVertexPositionsRenderBuffer() {
-  ensureVertexPositionsRenderBufferFilled();
-  return vertexPositionsRenderBuffer;
-}
-bool SurfaceMesh::vertexPositionsStoredInMemory() const { return !vertexPositions.empty(); }
-
-size_t SurfaceMesh::nVertices() const {
-  if (vertexPositionsStoredInMemory()) {
-    return vertexPositions.size();
-  } else {
-    if (!vertexPositionsRenderBuffer || !vertexPositionsRenderBuffer->isSet()) {
-      throw std::runtime_error("buffer is not allocated when it should be");
-    }
-    return static_cast<size_t>(vertexPositionsRenderBuffer->getDataSize());
-  }
-}
-
-glm::vec3 SurfaceMesh::getVertexPosition(size_t ind) {
-  if (vertexPositionsStoredInMemory()) {
-    return vertexPositions[ind];
-  } else {
-    return vertexPositionsRenderBuffer->getData_vec3(ind);
-  }
-}
-
-
-void SurfaceMesh::renderBufferDataExternallyUpdated() {
-  // TODO
-  /*
-  vertexPositions.clear();
-  vertexNormals.clear();
-  */
-  requestRedraw();
 }
 
 
@@ -965,7 +1212,7 @@ void SurfaceMesh::buildCustomUI() {
   long long int nFacesL = static_cast<long long int>(nFaces());
   ImGui::Text("#verts: %lld  #faces: %lld", nVertsL, nFacesL);
 
-  { // colors
+  { // Colors
     if (ImGui::ColorEdit3("Color", &surfaceColor.get()[0], ImGuiColorEditFlags_NoInputs))
       setSurfaceColor(surfaceColor.get());
     ImGui::SameLine();
@@ -973,7 +1220,28 @@ void SurfaceMesh::buildCustomUI() {
 
   { // Flat shading or smooth shading?
     ImGui::SameLine();
-    if (ImGui::Checkbox("Smooth", &shadeSmooth.get())) setSmoothShade(shadeSmooth.get());
+
+    auto styleName = [](const MeshShadeStyle& m) -> std::string {
+      switch (m) {
+      case MeshShadeStyle::Smooth:
+        return "Smooth";
+      case MeshShadeStyle::Flat:
+        return "Flat";
+      case MeshShadeStyle::AutoFlat:
+        return "Flat Reflection";
+      }
+      return "";
+    };
+
+    if (ImGui::BeginCombo("Mode", styleName(getShadeStyle()).c_str())) {
+      for (MeshShadeStyle s : {MeshShadeStyle::Smooth, MeshShadeStyle::Flat, MeshShadeStyle::AutoFlat}) {
+        std::string sName = styleName(s);
+        if (ImGui::Selectable(sName.c_str(), getShadeStyle() == s)) {
+          setShadeStyle(s);
+        }
+      }
+      ImGui::EndCombo();
+    }
   }
 
   ImGui::SameLine();
@@ -1232,15 +1500,22 @@ FacePtr SurfaceMesh::selectFace() {
 }
 */
 
+
+void SurfaceMesh::generateDefaultFaceTangentSpaces() { shouldGenerateVertexTangents = true; }
+void SurfaceMesh::generateDefaultVertexTangentSpaces() { shouldGenerateFaceTangents = true; }
+
 // === Option getters and setters
 
+// DEPRECATED!
 SurfaceMesh* SurfaceMesh::setSmoothShade(bool isSmooth) {
-  shadeSmooth = isSmooth;
-  refresh();
-  requestRedraw();
-  return this;
+  if (isSmooth) {
+    return setShadeStyle(MeshShadeStyle::Smooth);
+  } else {
+    return setShadeStyle(MeshShadeStyle::Flat);
+  }
 }
-bool SurfaceMesh::isSmoothShade() { return shadeSmooth.get(); }
+// DEPRECATED!
+bool SurfaceMesh::isSmoothShade() { return getShadeStyle() == MeshShadeStyle::Smooth; }
 
 SurfaceMesh* SurfaceMesh::setBackFaceColor(glm::vec3 val) {
   backFaceColor.set(val);
@@ -1287,6 +1562,14 @@ SurfaceMesh* SurfaceMesh::setBackFacePolicy(BackFacePolicy newPolicy) {
   return this;
 }
 BackFacePolicy SurfaceMesh::getBackFacePolicy() { return backFacePolicy.get(); }
+
+SurfaceMesh* SurfaceMesh::setShadeStyle(MeshShadeStyle newStyle) {
+  shadeStyle = newStyle;
+  refresh();
+  requestRedraw();
+  return this;
+}
+MeshShadeStyle SurfaceMesh::getShadeStyle() { return shadeStyle.get(); }
 
 // === Quantity adders
 
@@ -1493,9 +1776,7 @@ void SurfaceMesh::setVertexTangentBasisXImpl(const std::vector<glm::vec3>& vecto
     vertexTangentSpaces[iV][1] = basisY;
   }
 
-  // Regenerate all data, in case stored data depends on tangent spaces.
-  // NOTE: This is overkill. We really only need to regenrate the handful of things which depend on tangent spaces.
-  refresh();
+  updateVertexTangentSpacesRenderBufferIfAllocated();
 }
 
 void SurfaceMesh::setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors) {
@@ -1518,9 +1799,7 @@ void SurfaceMesh::setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors
     faceTangentSpaces[iF][1] = basisY;
   }
 
-  // Regenerate all data, in case stored data depends on tangent spaces.
-  // NOTE: This is overkill. We really only need to regenrate the handful of things which depend on tangent spaces.
-  refresh();
+  updateFaceTangentSpacesRenderBufferIfAllocated();
 }
 
 

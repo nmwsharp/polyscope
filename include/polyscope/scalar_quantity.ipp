@@ -119,20 +119,16 @@ void ScalarQuantity<QuantityT>::setScalarUniforms(render::ShaderProgram& p) {
 }
 
 template <typename QuantityT>
-void ScalarQuantity<QuantityT>::ensureRenderBuffersFilled(bool forceRefill) {
+void ScalarQuantity<QuantityT>::updateRenderBuffersIfAllocated() {
+  if (!scalarRenderBuffer) return;
+  scalarRenderBuffer->setData(values);
+}
 
-  // ## create the buffers if they don't already exist
-
-  bool createdBuffer = false;
-  if (!scalarRenderBuffer) {
-    scalarRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Float);
-    createdBuffer = true;
-  }
-
-  // If the buffers already existed (and thus are presumably filled), quick-out. Otherwise, fill the buffers.
-  if (createdBuffer || forceRefill) {
-    scalarRenderBuffer->setData(values);
-  }
+template <typename QuantityT>
+void ScalarQuantity<QuantityT>::ensureRenderBuffersFilled() {
+  if (scalarRenderBuffer) return; // if it already exists, quick-out
+  scalarRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Float);
+  updateRenderBuffersIfAllocated();
 }
 
 
@@ -192,7 +188,7 @@ void ScalarQuantity<QuantityT>::updateData(const V& newValues) {
 template <typename QuantityT>
 void ScalarQuantity<QuantityT>::dataUpdated() {
   // TODO make this do _something_ with the histogram
-  ensureRenderBuffersFilled(false);
+  updateRenderBuffersIfAllocated();
   requestRedraw();
 }
 
