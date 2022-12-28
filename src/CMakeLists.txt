@@ -132,6 +132,7 @@ SET(SRCS
   render/materials.cpp
   render/initialize_backend.cpp  
   render/shader_builder.cpp  
+  render/managed_buffer.cpp  
 
   # General utilities
   disjoint_sets.cpp
