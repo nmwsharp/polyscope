@@ -104,6 +104,18 @@ public:
   virtual glm::uvec3 getData_uvec3(size_t ind) = 0;
   virtual glm::uvec4 getData_uvec4(size_t ind) = 0;
 
+  // get data at a range of indices from the buffer
+  virtual std::vector<float> getDataRange_float(size_t ind, size_t count) = 0;
+  virtual std::vector<double> getDataRange_double(size_t ind, size_t count) = 0;
+  virtual std::vector<glm::vec2> getDataRange_vec2(size_t ind, size_t count) = 0;
+  virtual std::vector<glm::vec3> getDataRange_vec3(size_t ind, size_t count) = 0;
+  virtual std::vector<glm::vec4> getDataRange_vec4(size_t ind, size_t count) = 0;
+  virtual std::vector<int> getDataRange_int(size_t ind, size_t count) = 0;
+  virtual std::vector<uint32_t> getDataRange_uint32(size_t ind, size_t count) = 0;
+  virtual std::vector<glm::uvec2> getDataRange_uvec2(size_t ind, size_t count) = 0;
+  virtual std::vector<glm::uvec3> getDataRange_uvec3(size_t ind, size_t count) = 0;
+  virtual std::vector<glm::uvec4> getDataRange_uvec4(size_t ind, size_t count) = 0;
+
 protected:
   RenderDataType dataType;
   AttributeAccessType access;

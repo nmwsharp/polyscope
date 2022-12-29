@@ -482,6 +482,8 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data) {
   }
 }
 
+// get single data values
+
 float GLAttributeBuffer::getData_float(size_t ind) {
   if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
   if (getType() != RenderDataType::Float) throw std::runtime_error("bad getData type");
@@ -554,6 +556,98 @@ glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
   glm::uvec4 readValue;
   glGetBufferSubData(getTarget(), ind * sizeof(glm::uvec4), sizeof(glm::uvec4), &readValue);
   return readValue;
+}
+
+// get ranges of data
+
+std::vector<float> GLAttributeBuffer::getDataRange_float(size_t ind, size_t count) {
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::Float) throw std::runtime_error("bad getData type");
+  bind();
+  std::vector<float> readValues;
+  glGetBufferSubData(getTarget(), ind * sizeof(float), count * sizeof(float), &readValues.front());
+  return readValues;
+}
+
+std::vector<double> GLAttributeBuffer::getDataRange_double(size_t ind, size_t count) {
+  std::vector<float> floatValues = getDataRange_float(ind, count);
+  std::vector<double> values(count);
+  for (size_t i = 0; i < count; i++) {
+    values[i] = static_cast<double>(floatValues[i]);
+  }
+  return values;
+}
+
+std::vector<glm::vec2> GLAttributeBuffer::getDataRange_vec2(size_t ind, size_t count) {
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::Vector2Float) throw std::runtime_error("bad getData type");
+  bind();
+  std::vector<glm::vec2> readValues;
+  glGetBufferSubData(getTarget(), ind * sizeof(glm::vec2), count * sizeof(glm::vec2), &readValues.front());
+  return readValues;
+}
+std::vector<glm::vec3> GLAttributeBuffer::getDataRange_vec3(size_t ind, size_t count) {
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::Vector3Float) throw std::runtime_error("bad getData type");
+  bind();
+  std::vector<glm::vec3> readValues;
+  glGetBufferSubData(getTarget(), ind * sizeof(glm::vec3), count * sizeof(glm::vec3), &readValues.front());
+  return readValues;
+}
+std::vector<glm::vec4> GLAttributeBuffer::getDataRange_vec4(size_t ind, size_t count) {
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::Vector4Float) throw std::runtime_error("bad getData type");
+  bind();
+  std::vector<glm::vec4> readValues;
+  glGetBufferSubData(getTarget(), ind * sizeof(glm::vec4), count * sizeof(glm::vec4), &readValues.front());
+  return readValues;
+}
+std::vector<int> GLAttributeBuffer::getDataRange_int(size_t ind, size_t count) {
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::Int) throw std::runtime_error("bad getData type");
+  bind();
+  std::vector<GLint> readValues;
+  glGetBufferSubData(getTarget(), ind * sizeof(GLint), count * sizeof(GLint), &readValues.front());
+
+  // probably does nothing
+  std::vector<int> intValues(count);
+  for (size_t i = 0; i < count; i++) {
+    intValues[i] = static_cast<int>(readValues[i]);
+  }
+
+  return intValues;
+}
+std::vector<uint32_t> GLAttributeBuffer::getDataRange_uint32(size_t ind, size_t count) {
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::UInt) throw std::runtime_error("bad getData type");
+  bind();
+  std::vector<uint32_t> readValues;
+  glGetBufferSubData(getTarget(), ind * sizeof(uint32_t), count * sizeof(uint32_t), &readValues.front());
+  return readValues;
+}
+std::vector<glm::uvec2> GLAttributeBuffer::getDataRange_uvec2(size_t ind, size_t count) {
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::Vector2Float) throw std::runtime_error("bad getData type");
+  bind();
+  std::vector<glm::uvec2> readValues;
+  glGetBufferSubData(getTarget(), ind * sizeof(glm::uvec2), count * sizeof(glm::uvec2), &readValues.front());
+  return readValues;
+}
+std::vector<glm::uvec3> GLAttributeBuffer::getDataRange_uvec3(size_t ind, size_t count) {
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::Vector3Float) throw std::runtime_error("bad getData type");
+  bind();
+  std::vector<glm::uvec3> readValues;
+  glGetBufferSubData(getTarget(), ind * sizeof(glm::uvec3), count * sizeof(glm::uvec3), &readValues.front());
+  return readValues;
+}
+std::vector<glm::uvec4> GLAttributeBuffer::getDataRange_uvec4(size_t ind, size_t count) {
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
+  if (getType() != RenderDataType::Vector4Float) throw std::runtime_error("bad getData type");
+  bind();
+  std::vector<glm::uvec4> readValues;
+  glGetBufferSubData(getTarget(), ind * sizeof(glm::uvec4), count * sizeof(glm::uvec4), &readValues.front());
+  return readValues;
 }
 
 

@@ -1,5 +1,4 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
-#pragma once
 
 #include <vector>
 
@@ -25,17 +24,42 @@ ManagedBuffer<T>::ManagedBuffer(const std::string& name_, std::vector<T>& data_,
 
 template <typename T>
 void ManagedBuffer<T>::ensureHostBufferPopulated() {
-  // TODO
+
+  switch (currentCanonicalDataSource()) {
+  case CanonicalDataSource::HostData:
+    // good to go, nothing needs to be done
+    break;
+
+  case CanonicalDataSource::NeedsCompute:
+
+    // compute it
+    computeFunc();
+
+    break;
+
+  case CanonicalDataSource::RenderBuffer:
+
+    // sanity check
+    if (!renderBuffer) terminatingError("render buffer should be allocated but isn't");
+
+    // copy the data back from the renderBuffer
+    data = getAttributeBufferDataRange<T>(*renderBuffer, 0, renderBuffer->getDataSize());
+
+    break;
+  };
 }
 
 template <typename T>
 void ManagedBuffer<T>::markHostBufferUpdated() {
+
+  // If the data is stored in any device-side buffers, update it as needed
 
   if (indices == nullptr) {
     // Non-indexed case.
     // There is only possibly one buffer; update it if it exists
     // (even if the renderBuffer ptr is non-null, it points to the same underlying buffer)
     if (drawBuffer) {
+      drawBuffer->setData(data);
     }
   } else {
     // Indexed case.
@@ -43,9 +67,13 @@ void ManagedBuffer<T>::markHostBufferUpdated() {
     if (renderBuffer) {
       // If the render buffer is active, immediately copy the data there and trigger a new re-indexing render pass
 
-      // TODO
+      renderBuffer->setData(data);
+      invokeBufferIndexCopyProgram();
+
     } else if (drawBuffer) {
       // If the draw buffer is active but the render buffer is not, copy the new data to it with the permutation
+
+      copyHostDataToDrawBuffer();
 
     } else {
       // Otherwise, the data has not be pushed to any device buffer yet. Do nothing.
@@ -59,27 +87,32 @@ T ManagedBuffer<T>::getValue(size_t ind) {
   switch (currentCanonicalDataSource()) {
   case CanonicalDataSource::HostData:
     if (ind >= data.size())
-      error("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
+      terminatingError("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
     return data[ind];
     break;
 
   case CanonicalDataSource::NeedsCompute:
     computeFunc();
     if (ind >= data.size())
-      error("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
+      terminatingError("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
     return data[ind];
     break;
 
   case CanonicalDataSource::RenderBuffer:
-    // TODO
+    if (static_cast<int64_t>(ind) >= renderBuffer->getDataSize())
+      terminatingError("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
+    T val = getAttributeBufferData<T>(*renderBuffer, ind);
+    return val;
     break;
   };
+
+  return T(); // dummy return
 }
 
 template <typename T>
 void ManagedBuffer<T>::recomputeIfPopulated() {
-  if (!dataGetsComputed) {
-    error("called recomputeIfPopulated() on buffer which does not get computed");
+  if (!dataGetsComputed) { // sanity check
+    terminatingError("called recomputeIfPopulated() on buffer which does not get computed");
   }
 
   // if not populated, quick out
@@ -99,9 +132,26 @@ template <typename T>
 std::shared_ptr<render::AttributeBuffer> ManagedBuffer<T>::getRenderBuffer() {
   if (renderBuffer) return renderBuffer; // if it has already been set, just return the pointer
 
-  // TODO ensure that if the renderBuffer exists, the drawBuffer does too
+  // Ensure that if the renderBuffer exists, the drawBuffer does too.
+  // We ignore the return, but after calling, the drawBuffer member must be populated.
+  getDrawBuffer();
 
   // TODO
+  if (indices == nullptr) {
+    // If there is no indexing to apply, then we don't need a separate buffer. The
+    // drawBuffer is the renderBuffer and we can just directly write to it.
+    renderBuffer = drawBuffer;
+  } else {
+    // Create the render buffer
+    renderBuffer = generateAttributeBuffer<T>(render::engine);
+
+    // Initially populate the render buffer with data (in its canonical form)
+    ensureHostBufferPopulated();
+    renderBuffer->setData(data);
+
+    // Create a program which will apply indexing and copy updated renderBuffer data to the drawBuffer
+    ensureHaveBufferIndexCopyProgram();
+  }
 
   return renderBuffer;
 }
@@ -109,6 +159,9 @@ std::shared_ptr<render::AttributeBuffer> ManagedBuffer<T>::getRenderBuffer() {
 template <typename T>
 void ManagedBuffer<T>::markRenderBufferUpdated() {
   invalidateHostBuffer();
+  if (indices) {
+    invokeBufferIndexCopyProgram();
+  }
   requestRedraw();
 }
 
@@ -124,17 +177,7 @@ std::shared_ptr<render::AttributeBuffer> ManagedBuffer<T>::getDrawBuffer() {
 
   // NOTE: we should not need to worry about the case where the renderBuffer exists and data exists there but not on the
   // host---in that case, the draw buffer must already exist/be filled and thus have been quick-out returned above.
-  
-  if(indices) {
-    // Expand out the array with the gather indexing applied
-    indices->ensureHostBufferPopulated();
-    std::vector<T> expandData = applyPermutation(data, indices->data);
-
-    drawBuffer->setData(expandData);
-  } else {
-    // Plain old ordinary copy
-    drawBuffer->setData(data);
-  }
+  copyHostDataToDrawBuffer();
 
   return drawBuffer;
 }
@@ -162,8 +205,43 @@ typename ManagedBuffer<T>::CanonicalDataSource ManagedBuffer<T>::currentCanonica
   }
 
   // error! should always be one of the above
-  error("ManagedBuffer " + name + " is in an invalid state");
+  terminatingError("ManagedBuffer " + name + " is in an invalid state");
   return CanonicalDataSource::HostData; // dummy return
+}
+
+
+template <typename T>
+void ManagedBuffer<T>::ensureHaveBufferIndexCopyProgram() {
+  if (bufferIndexCopyProgram) return;
+
+  // sanity check
+  if (!drawBuffer || !renderBuffer)
+    terminatingError("ManagedBuffer " + name + " asked to copy indices, but has no buffers");
+
+  // TODO allocate the transform feedback program
+}
+
+template <typename T>
+void ManagedBuffer<T>::invokeBufferIndexCopyProgram() {
+  ensureHaveBufferIndexCopyProgram();
+  bufferIndexCopyProgram->draw();
+}
+
+template <typename T>
+void ManagedBuffer<T>::copyHostDataToDrawBuffer() {
+
+  // sanity check
+  if (!drawBuffer) terminatingError("ManagedBuffer " + name + " asked to copy to drawBuffer, but it is not allocated");
+
+  if (indices) {
+    // Expand out the array with the gather indexing applied
+    indices->ensureHostBufferPopulated();
+    std::vector<T> expandData = applyPermutation(data, indices->data);
+    drawBuffer->setData(expandData);
+  } else {
+    // Plain old ordinary copy
+    drawBuffer->setData(data);
+  }
 }
 
 // === Explicit template instantiation for the supported types

@@ -8,6 +8,21 @@
 namespace polyscope {
 namespace render {
 
+/*
+ * This class is a wrapper which sits on top of data buffers in Polyscope, and handles common data-management concerns
+ * of:
+ *
+ *      (a) mirroring the buffer to the GPU/rendering framework
+ *      (b) allowing external users to update data either on the CPU- or GPU-side, and updating mirrored copies
+ * appropriately
+ *      (c) managed _indexed_ data, which gts expanded according to some index set for access at rendering time.
+ *
+ * Most often this class is used to wrap structure/quantity data passed in by the user, such as a scalar quantity, but
+ * it is also somtimes automatically-computed values within Polyscope, suchas a vertex normal buffer for rendering.
+ *
+ * This class offers functions and accessors which can (and generally, MUST) be used to interact with the underlying
+ * data buffer.
+ */
 template <typename T>
 class ManagedBuffer {
 public:
@@ -15,9 +30,10 @@ public:
 
   // Manage a buffer of data which has been explicitly set externally
   ManagedBuffer(const std::string& name, std::vector<T>& data, ManagedBuffer<size_t>* indices = nullptr);
-  
+
   // Manage a buffer of data which gets computed lazily
-  ManagedBuffer(const std::string& name, std::vector<T>& data, std::function<void()> computeFunc, ManagedBuffer<size_t>* indices = nullptr);
+  ManagedBuffer(const std::string& name, std::vector<T>& data, std::function<void()> computeFunc,
+                ManagedBuffer<size_t>* indices = nullptr);
 
   // === Core members
 
@@ -25,6 +41,10 @@ public:
   std::string name;
 
   // The raw underlying buffer which this class wraps that holds the data.
+  // It is assumed that it never changes length.
+  // External users can write directly for this buffer, but must call markHostBufferUpdated() afterward.
+  // data.size() == 0 if the data is lazily computed and has not been computed yet, or if this host-side buffer is
+  // invalidated because it is being updated externally directly on the render device.
   std::vector<T>& data;
 
   // == Members for computed data
@@ -108,18 +128,29 @@ public:
   std::shared_ptr<render::AttributeBuffer> getDrawBuffer();
 
 protected:
-
   // == Internal members
 
-  std::shared_ptr<render::AttributeBuffer> renderBuffer;
+  // The buffer Polyscope programs actually use to draw. External users should _not_ write to this.
   std::shared_ptr<render::AttributeBuffer> drawBuffer;
-  
-  // == Internal helper functions
-  void invalidateHostBuffer();
 
-  enum class CanonicalDataSource { HostData=0, NeedsCompute, RenderBuffer};
+  // An auxiliary buffer which external users can write to to update the data. May or may not be an alias for
+  // drawBuffer. The class internally handles mirroring data to drawBuffer. This exists to support indexing; if the data
+  // has an index associated to it, it can be externally written here in canonical order, but then the index will be
+  // applied when it is mirrored to drawBuffer.
+  std::shared_ptr<render::AttributeBuffer> renderBuffer;
+
+  // == Internal helper functions
+
+  void invalidateHostBuffer();
+  void copyHostDataToDrawBuffer();
+
+  enum class CanonicalDataSource { HostData = 0, NeedsCompute, RenderBuffer };
   CanonicalDataSource currentCanonicalDataSource();
 
+  // Manage the program which copies indexed data from the renderBuffer to the drawBuffer
+  void ensureHaveBufferIndexCopyProgram();
+  void invokeBufferIndexCopyProgram();
+  std::shared_ptr<render::ShaderProgram> bufferIndexCopyProgram;
 };
 
 

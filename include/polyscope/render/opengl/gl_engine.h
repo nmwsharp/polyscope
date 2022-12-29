@@ -67,12 +67,13 @@ public:
   void setData(const std::vector<glm::uvec2>& data) override;
   void setData(const std::vector<glm::uvec3>& data) override;
   void setData(const std::vector<glm::uvec4>& data) override;
-  
+
   // Array-valued attributes
   // (adding these lazily as we need them)
   // (sadly we cannot template the virtual function)
   void setData(const std::vector<std::array<glm::vec3, 2>>& data) override;
 
+  // get data at a single index from the buffer
   float getData_float(size_t ind) override;
   double getData_double(size_t ind) override;
   glm::vec2 getData_vec2(size_t ind) override;
@@ -83,6 +84,18 @@ public:
   glm::uvec2 getData_uvec2(size_t ind) override;
   glm::uvec3 getData_uvec3(size_t ind) override;
   glm::uvec4 getData_uvec4(size_t ind) override;
+
+  // get data at a range of indices from the buffer
+  std::vector<float> getDataRange_float(size_t ind, size_t count) override;
+  std::vector<double> getDataRange_double(size_t ind, size_t count) override;
+  std::vector<glm::vec2> getDataRange_vec2(size_t ind, size_t count) override;
+  std::vector<glm::vec3> getDataRange_vec3(size_t ind, size_t count) override;
+  std::vector<glm::vec4> getDataRange_vec4(size_t ind, size_t count) override;
+  std::vector<int> getDataRange_int(size_t ind, size_t count) override;
+  std::vector<uint32_t> getDataRange_uint32(size_t ind, size_t count) override;
+  std::vector<glm::uvec2> getDataRange_uvec2(size_t ind, size_t count) override;
+  std::vector<glm::uvec3> getDataRange_uvec3(size_t ind, size_t count) override;
+  std::vector<glm::uvec4> getDataRange_uvec4(size_t ind, size_t count) override;
 
   uint32_t getNativeBufferID() override;
 
@@ -263,7 +276,7 @@ protected:
     AttributeAccessType access;
     int arrayCount;
     AttributeLocation location;              // -1 means "no location", usually because it was optimized out
-    uint32_t textureIndex; // only used in the case of Indexed Access / Texture Buffer 
+    uint32_t textureIndex;                   // only used in the case of Indexed Access / Texture Buffer
     std::shared_ptr<GLAttributeBuffer> buff; // the buffer that we will actually use
   };
 
