@@ -10,58 +10,73 @@ namespace render {
 // == Generate Buffer
 
 template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<float>(Engine* engine, int arrayCount) {
-  return engine->generateAttributeBuffer(RenderDataType::Float, arrayCount);
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<float>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Float);
 }
 
 template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<double>(Engine* engine, int arrayCount) {
-  return engine->generateAttributeBuffer(RenderDataType::Float, arrayCount);
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<double>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Float);
 }
 
 template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::vec2>(Engine* engine, int arrayCount) {
-  return engine->generateAttributeBuffer(RenderDataType::Vector2Float, arrayCount);
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::vec2>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Vector2Float);
 }
 
 template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::vec3>(Engine* engine, int arrayCount) {
-  return engine->generateAttributeBuffer(RenderDataType::Vector3Float, arrayCount);
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::vec3>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Vector3Float);
 }
 
 template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::vec4>(Engine* engine, int arrayCount) {
-  return engine->generateAttributeBuffer(RenderDataType::Vector4Float, arrayCount);
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<std::array<glm::vec3, 2>>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Vector3Float, 2);
 }
 
 template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<size_t>(Engine* engine, int arrayCount) {
-  return engine->generateAttributeBuffer(RenderDataType::UInt, arrayCount);
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<std::array<glm::vec3, 3>>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Vector3Float, 3);
 }
 
 template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<uint32_t>(Engine* engine, int arrayCount) {
-  return engine->generateAttributeBuffer(RenderDataType::UInt, arrayCount);
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<std::array<glm::vec3, 4>>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Vector3Float, 4);
 }
 
 template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<int32_t>(Engine* engine, int arrayCount) {
-  return engine->generateAttributeBuffer(RenderDataType::Int, arrayCount);
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::vec4>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Vector4Float);
 }
 
 template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::uvec2>(Engine* engine, int arrayCount) {
-  return engine->generateAttributeBuffer(RenderDataType::Vector2UInt, arrayCount);
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<size_t>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::UInt);
 }
 
 template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::uvec3>(Engine* engine, int arrayCount) {
-  return engine->generateAttributeBuffer(RenderDataType::Vector3UInt, arrayCount);
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<uint32_t>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::UInt);
 }
 
 template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::uvec4>(Engine* engine, int arrayCount) {
-  return engine->generateAttributeBuffer(RenderDataType::Vector4UInt, arrayCount);
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<int32_t>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Int);
+}
+
+template <>
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::uvec2>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Vector2UInt);
+}
+
+template <>
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::uvec3>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Vector3UInt);
+}
+
+template <>
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::uvec4>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Vector4UInt);
 }
 
 // == Get buffer data at a single location
@@ -84,6 +99,30 @@ glm::vec2 getAttributeBufferData<glm::vec2>(AttributeBuffer& buff, size_t ind) {
 template <>
 glm::vec3 getAttributeBufferData<glm::vec3>(AttributeBuffer& buff, size_t ind) {
   return buff.getData_vec3(ind);
+}
+
+template <>
+std::array<glm::vec3, 2> getAttributeBufferData<std::array<glm::vec3, 2>>(AttributeBuffer& buff, size_t ind) {
+  std::array<glm::vec3, 2> out;
+  std::vector<glm::vec3> fetch = buff.getDataRange_vec3(2 * ind, 2);
+  for (size_t i = 0; i < 2; i++) out[i] = fetch[i];
+  return out;
+}
+
+template <>
+std::array<glm::vec3, 3> getAttributeBufferData<std::array<glm::vec3, 3>>(AttributeBuffer& buff, size_t ind) {
+  std::array<glm::vec3, 3> out;
+  std::vector<glm::vec3> fetch = buff.getDataRange_vec3(3 * ind, 3);
+  for (size_t i = 0; i < 3; i++) out[i] = fetch[i];
+  return out;
+}
+
+template <>
+std::array<glm::vec3, 4> getAttributeBufferData<std::array<glm::vec3, 4>>(AttributeBuffer& buff, size_t ind) {
+  std::array<glm::vec3, 4> out;
+  std::vector<glm::vec3> fetch = buff.getDataRange_vec3(4 * ind, 4);
+  for (size_t i = 0; i < 4; i++) out[i] = fetch[i];
+  return out;
 }
 
 template <>
@@ -141,6 +180,45 @@ std::vector<glm::vec2> getAttributeBufferDataRange<glm::vec2>(AttributeBuffer& b
 template <>
 std::vector<glm::vec3> getAttributeBufferDataRange<glm::vec3>(AttributeBuffer& buff, size_t ind, size_t count) {
   return buff.getDataRange_vec3(ind, count);
+}
+
+template <>
+std::vector<std::array<glm::vec3, 2>> getAttributeBufferDataRange<std::array<glm::vec3, 2>>(AttributeBuffer& buff,
+                                                                                            size_t ind, size_t count) {
+  std::vector<glm::vec3> fetch = buff.getDataRange_vec3(2 * ind, 2 * count);
+  std::vector<std::array<glm::vec3, 2>> out(count);
+  for (size_t i = 0; i < count; i++) {
+    for (size_t j = 0; j < 2; j++) {
+      out[i][j] = fetch[2 * i + j];
+    }
+  }
+  return out;
+}
+
+template <>
+std::vector<std::array<glm::vec3, 3>> getAttributeBufferDataRange<std::array<glm::vec3, 3>>(AttributeBuffer& buff,
+                                                                                            size_t ind, size_t count) {
+  std::vector<glm::vec3> fetch = buff.getDataRange_vec3(3 * ind, 3 * count);
+  std::vector<std::array<glm::vec3, 3>> out(count);
+  for (size_t i = 0; i < count; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      out[i][j] = fetch[3 * i + j];
+    }
+  }
+  return out;
+}
+
+template <>
+std::vector<std::array<glm::vec3, 4>> getAttributeBufferDataRange<std::array<glm::vec3, 4>>(AttributeBuffer& buff,
+                                                                                            size_t ind, size_t count) {
+  std::vector<glm::vec3> fetch = buff.getDataRange_vec3(4 * ind, 4 * count);
+  std::vector<std::array<glm::vec3, 4>> out(count);
+  for (size_t i = 0; i < count; i++) {
+    for (size_t j = 0; j < 4; j++) {
+      out[i][j] = fetch[4 * i + j];
+    }
+  }
+  return out;
 }
 
 template <>

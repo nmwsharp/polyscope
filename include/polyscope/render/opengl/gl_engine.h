@@ -51,7 +51,7 @@ typedef GLint TextureLocation;
 
 class GLAttributeBuffer : public AttributeBuffer {
 public:
-  GLAttributeBuffer(RenderDataType dataType_, AttributeAccessType access_, int arrayCount_);
+  GLAttributeBuffer(RenderDataType dataType_, int arrayCount_);
   virtual ~GLAttributeBuffer();
 
   void bind();
@@ -72,6 +72,8 @@ public:
   // (adding these lazily as we need them)
   // (sadly we cannot template the virtual function)
   void setData(const std::vector<std::array<glm::vec3, 2>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 3>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 4>>& data) override;
 
   // get data at a single index from the buffer
   float getData_float(size_t ind) override;
@@ -101,11 +103,6 @@ public:
 
 protected:
   VertexBufferHandle VBOLoc;
-
-  // Only used in the cased of AttributeAccessType::Indexed, which corresponds to a Buffer Texture in openGL. It's
-  // managed by this GLAttributeBuffer class because semanitically it is more like an attribute buffer, and it is still
-  // backed by a VBO.
-  TextureHandle texHandle = -1;
 
 private:
   void checkType(RenderDataType targetType);
@@ -273,10 +270,8 @@ protected:
   struct GLShaderAttribute {
     std::string name;
     RenderDataType type;
-    AttributeAccessType access;
     int arrayCount;
     AttributeLocation location;              // -1 means "no location", usually because it was optimized out
-    uint32_t textureIndex;                   // only used in the case of Indexed Access / Texture Buffer
     std::shared_ptr<GLAttributeBuffer> buff; // the buffer that we will actually use
   };
 
@@ -361,8 +356,7 @@ public:
   // === Factory methods
 
   // create attribute buffers
-  std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, AttributeAccessType access,
-                                                           int arrayCount_) override;
+  std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, int arrayCount_) override;
 
   // create textures
   std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int size1D,

@@ -51,18 +51,16 @@ enum class RenderDataType {
   Vector3UInt,
   Vector4UInt
 };
-enum class AttributeAccessType { Sequential, Indexed };
 
 int dimension(const TextureFormat& x);
 std::string modeName(const TransparencyMode& m);
 std::string renderDataTypeName(const RenderDataType& r);
-std::string accessTypeName(const AttributeAccessType& t);
 
 namespace render {
 
 class AttributeBuffer {
 public:
-  AttributeBuffer(RenderDataType dataType_, AttributeAccessType access, int arrayCount);
+  AttributeBuffer(RenderDataType dataType_, int arrayCount);
 
   virtual ~AttributeBuffer();
 
@@ -81,12 +79,13 @@ public:
   // (adding these lazily as we need them)
   // (sadly we cannot template the virtual function)
   virtual void setData(const std::vector<std::array<glm::vec3, 2>>& data) = 0;
+  virtual void setData(const std::vector<std::array<glm::vec3, 3>>& data) = 0;
+  virtual void setData(const std::vector<std::array<glm::vec3, 4>>& data) = 0;
 
   virtual uint32_t getNativeBufferID() = 0; // used to interop with external things, e.g. ImGui
 
   // == Getters
   RenderDataType getType() const { return dataType; }
-  AttributeAccessType getAccessType() const { return access; }
   int getArrayCount() const { return arrayCount; }
   int64_t getDataSize() const { return dataSize; }
   uint64_t getUniqueID() const { return uniqueID; }
@@ -118,7 +117,6 @@ public:
 
 protected:
   RenderDataType dataType;
-  AttributeAccessType access;
   int arrayCount;
   int64_t dataSize = -1; // the size of the data currently stored in this attribute (-1 if nothing)
   uint64_t uniqueID;
@@ -251,17 +249,11 @@ struct ShaderSpecUniform {
   const RenderDataType type;
 };
 struct ShaderSpecAttribute {
-  ShaderSpecAttribute(std::string name_, RenderDataType type_)
-      : name(name_), type(type_), access(AttributeAccessType::Sequential), arrayCount(1) {}
-  ShaderSpecAttribute(std::string name_, RenderDataType type_, AttributeAccessType access_)
-      : name(name_), type(type_), access(access_), arrayCount(1) {}
+  ShaderSpecAttribute(std::string name_, RenderDataType type_) : name(name_), type(type_), arrayCount(1) {}
   ShaderSpecAttribute(std::string name_, RenderDataType type_, int arrayCount_)
-      : name(name_), type(type_), access(AttributeAccessType::Sequential), arrayCount(arrayCount_) {}
-  ShaderSpecAttribute(std::string name_, RenderDataType type_, AttributeAccessType access_, int arrayCount_)
-      : name(name_), type(type_), access(access_), arrayCount(arrayCount_) {}
+      : name(name_), type(type_), arrayCount(arrayCount_) {}
   const std::string name;
   const RenderDataType type;
-  const AttributeAccessType access;
   const int arrayCount; // number of times this element is repeated in an array
 };
 struct ShaderSpecTexture {
@@ -470,10 +462,7 @@ public:
   // === Factory methods
 
   // create attribute buffers
-  virtual std::shared_ptr<AttributeBuffer>
-  generateAttributeBuffer(RenderDataType dataType_, AttributeAccessType access = AttributeAccessType::Sequential,
-                          int arrayCount_ = 1) = 0;
-  std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, int arrayCount_);
+  virtual std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, int arrayCount_ = 1) = 0;
 
 
   // create textures

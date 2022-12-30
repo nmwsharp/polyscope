@@ -13,45 +13,73 @@ namespace polyscope {
 namespace render {
 namespace backend_openGL_mock {
 
-  class GLAttributeBuffer : public AttributeBuffer {
+class GLAttributeBuffer : public AttributeBuffer {
 public:
   GLAttributeBuffer(RenderDataType dataType_, int arrayCount_ = 1);
   virtual ~GLAttributeBuffer();
 
   void bind();
 
-  void setData(const std::vector<glm::vec2>& data, bool update = false, size_t offset = 0,
-               size_t size = INVALID_IND) override;
-  void setData(const std::vector<glm::vec3>& data, bool update = false, size_t offset = 0,
-               size_t size = INVALID_IND) override;
-  void setData(const std::vector<glm::vec4>& data, bool update = false, size_t offset = 0,
-               size_t size = INVALID_IND) override;
-  void setData(const std::vector<double>& data, bool update = false, size_t offset = 0,
-               size_t size = INVALID_IND) override;
-  void setData(const std::vector<int>& data, bool update = false, size_t offset = 0,
-               size_t size = INVALID_IND) override;
-  void setData(const std::vector<uint32_t>& data, bool update = false, size_t offset = 0,
-               size_t size = INVALID_IND) override;
+  void setData(const std::vector<glm::vec2>& data) override;
+  void setData(const std::vector<glm::vec3>& data) override;
+  void setData(const std::vector<glm::vec4>& data) override;
+  void setData(const std::vector<float>& data) override;
+  void setData(const std::vector<double>& data) override;
+  void setData(const std::vector<int32_t>& data) override;
+  void setData(const std::vector<uint32_t>& data) override;
+  void setData(const std::vector<glm::uvec2>& data) override;
+  void setData(const std::vector<glm::uvec3>& data) override;
+  void setData(const std::vector<glm::uvec4>& data) override;
+
+  // Array-valued attributes
+  // (adding these lazily as we need them)
+  // (sadly we cannot template the virtual function)
+  void setData(const std::vector<std::array<glm::vec3, 2>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 3>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 4>>& data) override;
+
+  // get data at a single index from the buffer
+  float getData_float(size_t ind) override;
+  double getData_double(size_t ind) override;
+  glm::vec2 getData_vec2(size_t ind) override;
+  glm::vec3 getData_vec3(size_t ind) override;
+  glm::vec4 getData_vec4(size_t ind) override;
+  int getData_int(size_t ind) override;
+  uint32_t getData_uint32(size_t ind) override;
+  glm::uvec2 getData_uvec2(size_t ind) override;
+  glm::uvec3 getData_uvec3(size_t ind) override;
+  glm::uvec4 getData_uvec4(size_t ind) override;
+
+  // get data at a range of indices from the buffer
+  std::vector<float> getDataRange_float(size_t ind, size_t count) override;
+  std::vector<double> getDataRange_double(size_t ind, size_t count) override;
+  std::vector<glm::vec2> getDataRange_vec2(size_t ind, size_t count) override;
+  std::vector<glm::vec3> getDataRange_vec3(size_t ind, size_t count) override;
+  std::vector<glm::vec4> getDataRange_vec4(size_t ind, size_t count) override;
+  std::vector<int> getDataRange_int(size_t ind, size_t count) override;
+  std::vector<uint32_t> getDataRange_uint32(size_t ind, size_t count) override;
+  std::vector<glm::uvec2> getDataRange_uvec2(size_t ind, size_t count) override;
+  std::vector<glm::uvec3> getDataRange_uvec3(size_t ind, size_t count) override;
+  std::vector<glm::uvec4> getDataRange_uvec4(size_t ind, size_t count) override;
 
   uint32_t getNativeBufferID() override;
 
 protected:
-
 private:
   void checkType(RenderDataType targetType);
 };
 
-class GLTextureBuffer : public TextureBuffer {
+class GLTexture : public Texture {
 public:
   // create a 1D texture from data
-  GLTextureBuffer(TextureFormat format, unsigned int size1D, unsigned char* data = nullptr);
-  GLTextureBuffer(TextureFormat format, unsigned int size1D, float* data);
+  GLTexture(TextureFormat format, unsigned int size1D, unsigned char* data = nullptr);
+  GLTexture(TextureFormat format, unsigned int size1D, float* data);
 
   // create a 2D texture from data
-  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data = nullptr);
-  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, float* data);
+  GLTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data = nullptr);
+  GLTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, float* data);
 
-  ~GLTextureBuffer() override;
+  ~GLTexture() override;
 
 
   // Resize the underlying buffer (contents are lost)
@@ -98,9 +126,9 @@ public:
 
   // Bind to textures/renderbuffers for output
   void addColorBuffer(std::shared_ptr<RenderBuffer> renderBuffer) override;
-  void addColorBuffer(std::shared_ptr<TextureBuffer> textureBuffer) override;
+  void addColorBuffer(std::shared_ptr<Texture> textureBuffer) override;
   void addDepthBuffer(std::shared_ptr<RenderBuffer> renderBuffer) override;
-  void addDepthBuffer(std::shared_ptr<TextureBuffer> textureBuffer) override;
+  void addDepthBuffer(std::shared_ptr<Texture> textureBuffer) override;
 
   void setDrawBuffers() override;
 
@@ -137,18 +165,23 @@ public:
   void setUniform(std::string name, glm::vec4 val) override;
   void setUniform(std::string name, std::array<float, 3> val) override;
   void setUniform(std::string name, float x, float y, float z, float w) override;
+  void setUniform(std::string name, glm::uvec2 val) override;
+  void setUniform(std::string name, glm::uvec3 val) override;
+  void setUniform(std::string name, glm::uvec4 val) override;
 
   // = Attributes
   // clang-format off
   bool hasAttribute(std::string name) override;
   bool attributeIsSet(std::string name) override;
   std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) override;
-  void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0, int size = -1) override;
-  void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) override;
-  void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) override;
-  void setAttribute(std::string name, const std::vector<double>& data, bool update = false, int offset = 0, int size = -1) override;
-  void setAttribute(std::string name, const std::vector<int>& data, bool update = false, int offset = 0, int size = -1) override; 
-  void setAttribute(std::string name, const std::vector<uint32_t>& data, bool update = false, int offset = 0, int size = -1) override;
+  void setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) override; 
+  void setAttribute(std::string name, const std::vector<glm::vec2>& data) override;
+  void setAttribute(std::string name, const std::vector<glm::vec3>& data) override;
+  void setAttribute(std::string name, const std::vector<glm::vec4>& data) override;
+  void setAttribute(std::string name, const std::vector<float>& data) override;
+  void setAttribute(std::string name, const std::vector<double>& data) override;
+  void setAttribute(std::string name, const std::vector<int32_t>& data) override; 
+  void setAttribute(std::string name, const std::vector<uint32_t>& data) override;
   // clang-format on
 
   // Convenience method to set an array-valued attrbute, such as 'in vec3 vertexVal[3]'. Applies interleaving then
@@ -161,6 +194,7 @@ public:
   // Indices
   void setIndex(std::vector<std::array<unsigned int, 3>>& indices) override;
   void setIndex(std::vector<unsigned int>& indices) override;
+  void setIndex(std::vector<glm::uvec3>& indices) override;
   void setPrimitiveRestartIndex(unsigned int restartIndex) override;
 
   // Textures
@@ -170,7 +204,7 @@ public:
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                     bool withAlpha = true, bool useMipMap = false, bool repeat = false) override;
   void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) override;
-  void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) override;
+  void setTextureFromBuffer(std::string name, Texture* textureBuffer) override;
 
   // Draw!
   void draw() override;
@@ -198,8 +232,8 @@ protected:
     int dim;
     unsigned int index;
     bool isSet;
-    GLTextureBuffer* textureBuffer;
-    std::shared_ptr<GLTextureBuffer> textureBufferOwned; // might be empty, if texture isn't owned
+    GLTexture* textureBuffer;
+    std::shared_ptr<GLTexture> textureBufferOwned; // might be empty, if texture isn't owned
     int location;
   };
 
@@ -216,7 +250,11 @@ private:
   // Setup routines
   void compileGLProgram(const std::vector<ShaderStageSpecification>& stages);
   void setDataLocations();
+  void bindVAO();
   void createBuffers();
+  void ensureBufferExists(GLShaderAttribute& a);
+  void createBuffer(GLShaderAttribute& a);
+  void assignBufferToVAO(GLShaderAttribute& a);
 
   void deleteAttributeBuffer(GLShaderAttribute& attribute);
 
@@ -264,19 +302,19 @@ public:
   void ImGuiRender() override;
 
   // === Factory methods
-  
+
   // create attribute buffers
   std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, int arrayCount_ = 1) override;
 
   // create textures
-  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
-                                                       unsigned char* data = nullptr) override; // 1d
-  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
-                                                       float* data) override; // 1d
-  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
-                                                       unsigned char* data = nullptr) override; // 2d
-  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
-                                                       float* data) override; // 2d
+  std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int size1D,
+                                           unsigned char* data = nullptr) override; // 1d
+  std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int size1D,
+                                           float* data) override; // 1d
+  std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+                                           unsigned char* data = nullptr) override; // 2d
+  std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+                                           float* data) override; // 2d
 
   // create render buffers
   std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
@@ -287,7 +325,6 @@ public:
   // create shader programs
   std::shared_ptr<ShaderProgram>
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
-                const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers,
                 ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) override;
 
   // Transparency
@@ -304,9 +341,8 @@ protected:
   std::unordered_map<std::string, ShaderReplacementRule> registeredShaderRules;
   void populateDefaultShadersAndRules();
 
-  std::shared_ptr<ShaderProgram> generateShaderProgram(
-      const std::vector<ShaderStageSpecification>& stages, DrawMode dm,
-      const std::vector<std::tuple<std::string, std::shared_ptr<AttributeBuffer>>>& externalBuffers) override;
+  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
+                                                       DrawMode dm) override;
 };
 
 } // namespace backend_openGL_mock
