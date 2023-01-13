@@ -186,7 +186,6 @@ void VolumeMeshVertexScalarQuantity::setLevelSetVisibleQuantity(std::string name
 
 void VolumeMeshVertexScalarQuantity::buildCustomUI() {
   VolumeMeshScalarQuantity::buildCustomUI();
-  /* TODO disabled for now
   if (ImGui::Checkbox("Level Set", &isDrawingLevelSet)) {
     setEnabledLevelSet(isDrawingLevelSet);
   }
@@ -205,7 +204,6 @@ void VolumeMeshVertexScalarQuantity::buildCustomUI() {
       ImGui::EndMenu();
     }
   }
-  */
 }
 
 void VolumeMeshVertexScalarQuantity::refresh() {
