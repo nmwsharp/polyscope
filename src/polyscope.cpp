@@ -218,6 +218,14 @@ void popContext() {
   contextStack.pop_back();
 }
 
+// Get current ImGui context
+// When linking to Polyscope as a shared library, we must set the current context
+// explicitly before making calls to ImGui in host application
+ImGuiContext* getCurrentContext()
+{
+  return contextStack.empty() ? nullptr : contextStack.back().context;
+}
+
 void requestRedraw() { redrawNextFrame = true; }
 bool redrawRequested() { return redrawNextFrame; }
 
