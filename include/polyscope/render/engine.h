@@ -55,6 +55,7 @@ enum class RenderDataType {
 int dimension(const TextureFormat& x);
 std::string modeName(const TransparencyMode& m);
 std::string renderDataTypeName(const RenderDataType& r);
+int renderDataTypeCountCompatbility(const RenderDataType r1, const RenderDataType r2);
 
 namespace render {
 

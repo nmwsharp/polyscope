@@ -8,6 +8,7 @@
 #include "polyscope/color_management.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/render/managed_buffer.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
 #include "polyscope/surface_mesh_quantity.h"
@@ -16,7 +17,6 @@
 // Alllll the quantities
 #include "polyscope/surface_color_quantity.h"
 #include "polyscope/surface_count_quantity.h"
-#include "polyscope/surface_distance_quantity.h"
 #include "polyscope/surface_graph_quantity.h"
 #include "polyscope/surface_parameterization_enums.h"
 #include "polyscope/surface_parameterization_quantity.h"
@@ -61,11 +61,18 @@ class SurfaceMesh : public QuantityStructure<SurfaceMesh> {
 public:
   typedef SurfaceMeshQuantity QuantityType;
 
-  // === Member functions ===
+  // == Constructors
 
-  // Construct a new surface mesh structure
+  // initializes members
+  SurfaceMesh(std::string name);
+
+  // Construct from a nested face list
   SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
               const std::vector<std::vector<size_t>>& faceIndices);
+
+  // TODO add constructors & adaptors without intermediate nested list
+
+  // Construct from a flat nested face list
 
   // Build the imgui display
   virtual void buildCustomUI() override;
@@ -77,11 +84,41 @@ public:
 
   // Render for picking
   virtual void drawPick() override;
-
   virtual void updateObjectSpaceBounds() override;
   virtual std::string typeName() override;
-
   virtual void refresh() override;
+
+  // == Geometric quantities
+  // (actually, these are wrappers around the private raw data members, but external users should interact with these
+  // wrappers)
+
+  // positions
+  render::ManagedBuffer<glm::vec3> vertexPositions;
+
+  // connectivity / indices
+  render::ManagedBuffer<uint32_t> triangleVertexInds;   // on the split, triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleFaceInds;     // on the split, triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleEdgeInds;     // on the split, triangulated mesh [3 * 3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleHalfedgeInds; // on the split, triangulated mesh [3 * 3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleCornerInds;   // on the split, triangulated mesh [3 * 3 * nTriFace]
+
+  // internal triangle data for rendering
+  render::ManagedBuffer<glm::vec3> baryCoord;
+  render::ManagedBuffer<glm::vec3> edgeIsReal;
+
+  // other internally-computed geometry
+  render::ManagedBuffer<glm::vec3> faceNormals;
+  render::ManagedBuffer<glm::vec3> faceCenters;
+  render::ManagedBuffer<double> faceAreas;
+  render::ManagedBuffer<glm::vec3> vertexNormals;
+  render::ManagedBuffer<double> vertexAreas;
+  // render::ManagedBuffer<double> edgeLengths;
+
+  // tangent spaces
+  render::ManagedBuffer<std::array<glm::vec3, 2>> faceTangentSpaces;        // set by user
+  render::ManagedBuffer<std::array<glm::vec3, 2>> vertexTangentSpaces;      // set by user
+  render::ManagedBuffer<std::array<glm::vec3, 2>> defaultFaceTangentSpaces; // automatically computed, used internally
+
 
   // === Quantity-related
   // clang-format off
@@ -110,20 +147,27 @@ public:
 	template <class T> SurfaceVertexVectorQuantity* addVertexVectorQuantity2D(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
 	template <class T> SurfaceFaceVectorQuantity* addFaceVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
 	template <class T> SurfaceFaceVectorQuantity* addFaceVectorQuantity2D(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
-	template <class T> SurfaceFaceIntrinsicVectorQuantity* addFaceIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym = 1, VectorType vectorType = VectorType::STANDARD); 
-	template <class T> SurfaceVertexIntrinsicVectorQuantity* addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym = 1, VectorType vectorType = VectorType::STANDARD); 
+	template <class T> SurfaceFaceIntrinsicVectorQuantity* addFaceIntrinsicVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
+	template <class T> SurfaceVertexIntrinsicVectorQuantity* addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
 	template <class T, class O> SurfaceOneFormIntrinsicVectorQuantity* addOneFormIntrinsicVectorQuantity(std::string name, const T& data, const O& orientations);
+
+  // these are old versions kept only for backward-compatibility, nsym is no longer supported
+  template <class T> SurfaceFaceIntrinsicVectorQuantity* addFaceIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym, VectorType vectorType = VectorType::STANDARD); 
+	template <class T> SurfaceVertexIntrinsicVectorQuantity* addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym, VectorType vectorType = VectorType::STANDARD); 
 
 
   // = Counts/Values on isolated vertexPositions (expect index/value pairs)
+  /* 
   SurfaceVertexCountQuantity* addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>&
   values); 
 	SurfaceFaceCountQuantity* addFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>&
   values); 
 	SurfaceVertexIsolatedScalarQuantity* addVertexIsolatedScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>>& values);
+  */
 
 
   // = Misc quantities
+  /*
   template <class P, class E>
   SurfaceGraphQuantity* addSurfaceGraphQuantity(std::string name, const P& nodes, const E& edges);
   template <class P, class E>
@@ -134,9 +178,10 @@ public:
   SurfaceGraphQuantity* addSurfaceGraphQuantity2D(std::string name, const std::vector<P>& paths);
 
   // = I/O Selections
-  template <class T>
-  void addVertexSelectionQuantity(std::string name, const T& initialMembership);
+  // template <class T>
+  // void addVertexSelectionQuantity(std::string name, const T& initialMembership);
   // void addInputCurveQuantity(std::string name);
+  */
 
   // clang-format on
 
@@ -146,6 +191,8 @@ public:
   // size_t selectFace();
 
   // === Mutate
+
+  // NOTE: these DO NOT automatically recompute der
   template <class V>
   void updateVertexPositions(const V& newPositions);
   template <class V>
@@ -155,26 +202,33 @@ public:
   // === Indexing conventions
 
   // Permutation arrays. Empty == default ordering
-  std::vector<size_t> vertexPerm;
-  std::vector<size_t> facePerm;
   std::vector<size_t> edgePerm;
   std::vector<size_t> halfedgePerm;
   std::vector<size_t> cornerPerm;
 
   // Set permutations
+  // template <class T>
+  // void setVertexPermutation(const T& perm, size_t expectedSize = 0);
+  // template <class T>
+  // void setFacePermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
   void setEdgePermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
   void setHalfedgePermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
   void setCornerPermutation(const T& perm, size_t expectedSize = 0);
+  template <class T>
+  void setAllPermutations(const std::array<std::pair<T, size_t>, 3>& perms);
+
+  template <class T> // deprecated, for backward compatability only
+  void setAllPermutations(const std::array<std::pair<T, size_t>, 5>& perms);
 
   // Get the expected data length, either using the default convention or a permutation as above
-  size_t vertexDataSize;
-  size_t faceDataSize;
-  size_t edgeDataSize;
-  size_t halfedgeDataSize;
-  size_t cornerDataSize;
+  size_t vertexDataSize = INVALID_IND;
+  size_t faceDataSize = INVALID_IND;
+  size_t edgeDataSize = INVALID_IND;
+  size_t halfedgeDataSize = INVALID_IND;
+  size_t cornerDataSize = INVALID_IND;
 
 
   // === Helpers
@@ -182,116 +236,50 @@ public:
   // === Manage the mesh itself
 
   // Core data
-  std::vector<std::vector<size_t>> faces; // TODO delete
+  // std::vector<std::vector<size_t>> faces; // TODO delete
 
   // Face indices
-  std::vector<uint32_t> faceInds_start;
-  std::vector<uint32_t> faceInds_entries;
-  std::vector<glm::uvec3> triangleInds; // always triangulated
+  // std::vector<uint32_t> faceInds_start;
+  // std::vector<uint32_t> faceInds_entries;
+  // std::vector<glm::uvec3> triangleInds; // always triangulated
 
   // Derived indices
-  std::vector<glm::uvec3> faceVertexInds; // TODO delete
-  std::vector<std::vector<size_t>> edgeIndices;
-  std::vector<std::vector<size_t>> halfedgeIndices;
+  // std::vector<glm::uvec3> faceVertexInds; // TODO delete
+  // std::vector<std::vector<size_t>> edgeIndices;
+  // std::vector<std::vector<size_t>> halfedgeIndices;
 
   // Counts
-  size_t nVertices() const;
-  size_t nFaces() const { return faces.size(); }
+  size_t nVertices();
+  size_t nFaces() const { return faceIndsStart.size() - 1; }
 
   size_t nFacesTriangulationCount = 0;
-  size_t nFacesTriangulation() const { return faces.size(); } // TODO
+  size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
 
-  size_t nEdgesCount = 0;
-  size_t nEdges() const { return nEdgesCount; }
+  // size_t nEdgesCount = 0; // populating this is expensive...
+  // size_t nEdges() const { return nEdgesCount; }
 
   size_t nCornersCount = 0; // = nHalfedges = sum face degree
   size_t nCorners() const { return nCornersCount; }
   size_t nHalfedges() const { return nCornersCount; }
 
-  // =================================================
-  // ========    Geometric Quantities      ==========
-  // =================================================
-  //
-  // Neeeded for various visualization purposes. These all
-  // follow the same pattern of:
-  //   - a CPU buffer where the value is originally calculated
-  //   - a GPU attribute where the value is stored to render
-  //   - ensureHave___(), which makes sure the CPU buffer is filled,
-  //     call it before any use. It will NOT update it if already full;
-  //     empty the buffer if it needs to be updated.
-  //   - get___RenderBuffer(), which returns a ref to the GPU buffer,
-  //     populating it if needed
-  //
-  //  NOTE: if a buffer is being manually updated on-device via the renderBuffer
-  //  pointer, then the corresponding CPU buffer will be empty.
-  //
-  //  NOTE: geometric quantities are derived from positions. If the positions are manually updated, the other quantities
-  //  must also be manually updated, or they will become stale.
+  // = Mesh helpers
+  void nestedFacesToFlat(const std::vector<std::vector<size_t>>& nestedInds);
+  void computeConnectivityData(); // call to populate counts and indices
+  void checkTriangular();         // check if the mesh is triangular, print a helpful error if not
 
-  // Vertex positions
-  std::vector<glm::vec3> vertexPositions;
-  glm::vec3 getVertexPosition(size_t ind);
-  std::shared_ptr<render::AttributeBuffer> getVertexPositionsRenderBuffer();
-  bool vertexPositionsStoredInMemory() const;
-  void checkIfVertexPositionsAreInMemory() const;
-  void vertexPositionRenderBufferDataExternallyUpdated(); // After updating any data via the buffer above, call this
-                                                          // function to let Polyscope know.
-
-  // Face normals
-  std::vector<glm::vec3> faceNormals; // TODO make all of these private?
-  void ensureHaveFaceNormals(bool updateRenderBuffer = true);
-  std::shared_ptr<render::AttributeBuffer> getFaceNormalsRenderBuffer();
-
-  // Face centers
-  std::vector<glm::vec3> faceCenters;
-  void ensureHaveFaceCenters(bool updateRenderBuffer = true);
-  std::shared_ptr<render::AttributeBuffer> getFaceCentersRenderBuffer();
-
-  // Face areas
-  std::vector<double> faceAreas;
-  void ensureHaveFaceAreas(bool updateRenderBuffer = true);
-  std::shared_ptr<render::AttributeBuffer> getFaceAreasRenderBuffer();
-
-  // Vertex normals
-  std::vector<glm::vec3> vertexNormals;
-  void ensureHaveVertexNormals(bool updateRenderBuffer = true);
-  std::shared_ptr<render::AttributeBuffer> getVertexNormalsRenderBuffer();
-
-  // Vertex areas
-  std::vector<double> vertexAreas;
-  void ensureHaveVertexAreas(bool updateRenderBuffer = true);
-  std::shared_ptr<render::AttributeBuffer> getVertexAreasRenderBuffer();
-
-  // Edge lengths
-  std::vector<double> edgeLengths;
-  void ensureHaveEdgeLengths(bool updateRenderBuffer = true);
-  std::shared_ptr<render::AttributeBuffer> getEdgeLengthsRenderBuffer();
-
-  // Face tangent spaces
-  // The user
-  // own, set them with setFaceTangentBasisX()
-  std::vector<std::array<glm::vec3, 2>> faceTangentSpaces;
-  void ensureHaveFaceTangentSpaces(bool updateRenderBuffer = true);
-  std::shared_ptr<render::AttributeBuffer> getFaceTangentSpacesRenderBuffer();
-
-  // Face tangent spaces
-  // Polyscope automatically generates default tangent spaces. If you to use your
-  // own, set them with setFaceTangentBasisX()
-  std::vector<std::array<glm::vec3, 2>> vertexTangentSpaces;
-  void ensureHaveVertexTangentSpaces(bool updateRenderBuffer = true);
-  std::shared_ptr<render::AttributeBuffer> getVertexTangentSpacesRenderBuffer();
-
-  // Derived connectivity quantities
+  // = Manifold connectivity
+  // These are always defined on the triangulated mesh.
   // Not necessarily populated by default. Call ensureHaveManifoldConnectivity() to be sure they are populated.
-  std::vector<size_t> faceForHalfedge; // for halfedge i, the index of the face it is in
-  // Note that these are only really well-defined on a manifold mesh. On a non-manifold mesh, mesh, they will just
-  // point to _some_ sane entry
+  void ensureHaveManifoldConnectivity();
+  // Halfedges are implicitly indexed in order on the triangulated face list
+  // (note that this may not match the halfedge perm that the user specifies)
   std::vector<size_t> twinHalfedge; // for halfedge i, the index of a twin halfedge
 
-  // = Mesh helpers
-  void computeCounts();       // call to populate counts and indices
-  void computeGeometryData(); // call to populate normals/areas/lengths
-  void ensureHaveManifoldConnectivity();
+  // == Manage tangent spaces
+
+  // check if the user has set tangent spaces, and print a helpful error if not
+  void checkHaveVertexTangentSpaces();
+  void checkHaveFaceTangentSpaces();
 
   // Set tangent space coordinates for vertices
   template <class T>
@@ -344,13 +332,12 @@ public:
 
   // == Rendering helpers used by quantities
 
-  void setSurfaceMeshUniforms(render::ShaderProgram& p);
-  void fillGeometryBuffers(render::ShaderProgram& p);
+  // void fillGeometryBuffers(render::ShaderProgram& p);
   std::vector<std::string> addSurfaceMeshRules(std::vector<std::string> initRules, bool withMesh = true,
                                                bool withSurfaceShade = true);
-
-  void setMeshIndexAttribues(render::ShaderProgram& p);
   void setMeshGeometryAttributes(render::ShaderProgram& p);
+  void setSurfaceMeshUniforms(render::ShaderProgram& p);
+
 
   // === ~DANGER~ experimental/unsupported functions
 
@@ -362,6 +349,43 @@ public:
 
 
 private:
+  // == Mesh geometry buffers
+  // (you should mainly interact with these via the ManagedBuffer wrappers above)
+
+  // positions
+  std::vector<glm::vec3> vertexPositionsData;
+
+  // connectivity / indices
+  std::vector<uint32_t> faceIndsStart;
+  std::vector<uint32_t> faceIndsEntries;
+  // std::vector<glm::uvec3> triangleIndsData;       // always triangulated
+  std::vector<uint32_t> triangleVertexIndsData;   // to the split, triangulated mesh
+  std::vector<uint32_t> triangleFaceIndsData;     // to the split, triangulated mesh
+  std::vector<uint32_t> triangleEdgeIndsData;     // to the split, triangulated mesh
+  std::vector<uint32_t> triangleHalfedgeIndsData; // to the split, triangulated mesh
+  std::vector<uint32_t> triangleCornerIndsData;   // to the split, triangulated mesh
+
+  // internal triangle data for rendering
+  std::vector<glm::vec3> baryCoordData;  // always triangulated
+  std::vector<glm::vec3> edgeIsRealData; // always triangulated
+
+  // other internally-computed geometry
+  std::vector<glm::vec3> faceNormalsData;
+  std::vector<glm::vec3> faceCentersData;
+  std::vector<double> faceAreasData;
+  std::vector<glm::vec3> vertexNormalsData;
+  std::vector<double> vertexAreasData;
+  // std::vector<double> edgeLengthsData;
+
+  // tangent spaces
+  std::vector<std::array<glm::vec3, 2>> faceTangentSpacesData;
+  std::vector<std::array<glm::vec3, 2>> vertexTangentSpacesData;
+  std::vector<std::array<glm::vec3, 2>> defaultFaceTangentSpacesData;
+
+
+  // Derived connectivity quantities
+
+
   // Visualization settings
   PersistentValue<glm::vec3> surfaceColor;
   PersistentValue<glm::vec3> edgeColor;
@@ -374,7 +398,19 @@ private:
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
   void preparePick();
-  void geometryChanged(); // call whenever geometry changed
+
+
+  /// == Compute indices & geometry data
+  void computeTriangleEdgeInds();
+  void computeTriangleHalfedgeInds();
+  void computeTriangleCornerInds();
+  void computeFaceNormals();
+  void computeFaceCenters();
+  void computeFaceAreas();
+  void computeVertexNormals();
+  void computeVertexAreas();
+  void computeEdgeLengths();
+  void computeDefaultFaceTangentSpaces();
 
   // Picking-related
   // Order of indexing: vertexPositions, faces, edges, halfedges
@@ -388,59 +424,17 @@ private:
 
   // ==== Gui implementation details
 
-  // == Buffers for geometry quantities
-
-  void ensureVertexIndexRenderBufferFilled();
-  void updateVertexIndexRenderBufferIfAllocated();
-  std::shared_ptr<render::AttributeBuffer> vertexIndicesRenderBuffer;
-
-  void ensureVertexPositionsRenderBufferFilled();
-  void updateVertexPositionsRenderBufferIfAllocated();
-  std::shared_ptr<render::AttributeBuffer> vertexPositionsRenderBuffer;
-
-  void ensureFaceNormalsRenderBufferFilled();
-  void updateFaceNormalsRenderBufferIfAllocated();
-  std::shared_ptr<render::AttributeBuffer> faceNormalsRenderBuffer;
-
-  void ensureFaceCentersRenderBufferFilled();
-  void updateFaceCentersRenderBufferIfAllocated();
-  std::shared_ptr<render::AttributeBuffer> faceCentersRenderBuffer;
-
-  void ensureFaceAreasRenderBufferFilled();
-  void updateFaceAreasRenderBufferIfAllocated();
-  std::shared_ptr<render::AttributeBuffer> faceAreasRenderBuffer;
-
-  void ensureVertexNormalsRenderBufferFilled();
-  void updateVertexNormalsRenderBufferIfAllocated();
-  std::shared_ptr<render::AttributeBuffer> vertexNormalsRenderBuffer;
-
-  void ensureVertexAreasRenderBufferFilled();
-  void updateVertexAreasRenderBufferIfAllocated();
-  std::shared_ptr<render::AttributeBuffer> vertexAreasRenderBuffer;
-
-  void ensureEdgeLengthsRenderBufferFilled();
-  void updateEdgeLengthsRenderBufferIfAllocated();
-  std::shared_ptr<render::AttributeBuffer> edgeLengthsRenderBuffer;
-
-  void ensureFaceTangentSpacesRenderBufferFilled();
-  void updateFaceTangentSpacesRenderBufferIfAllocated();
-  std::shared_ptr<render::AttributeBuffer> faceTangentSpacesRenderBuffer;
-
-  void ensureVertexTangentSpacesRenderBufferFilled();
-  void updateVertexTangentSpacesRenderBufferIfAllocated();
-  std::shared_ptr<render::AttributeBuffer> vertexTangentSpacesRenderBuffer;
-
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> pickProgram;
 
 
   // === Helper functions
 
-  // Initialization work
   void initializeMeshTriangulation();
+  void recomputeGeometryIfPopulated();
 
-  void fillGeometryBuffersSmooth(render::ShaderProgram& p);
-  void fillGeometryBuffersFlat(render::ShaderProgram& p);
+  // void fillGeometryBuffersSmooth(render::ShaderProgram& p);
+  // void fillGeometryBuffersFlat(render::ShaderProgram& p);
   glm::vec2 projectToScreenSpace(glm::vec3 coord);
   // bool screenSpaceTriangleTest(size_t fInd, glm::vec2 testCoords, glm::vec3& bCoordOut);
 
@@ -462,13 +456,17 @@ private:
   SurfaceVertexParameterizationQuantity* addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
   SurfaceVertexVectorQuantity* addVertexVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
   SurfaceFaceVectorQuantity* addFaceVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
-  SurfaceFaceIntrinsicVectorQuantity* addFaceIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym, VectorType vectorType);
-  SurfaceVertexIntrinsicVectorQuantity* addVertexIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym, VectorType vectorType);
+  SurfaceFaceIntrinsicVectorQuantity* addFaceIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, VectorType vectorType);
+  SurfaceVertexIntrinsicVectorQuantity* addVertexIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, VectorType vectorType);
   SurfaceOneFormIntrinsicVectorQuantity* addOneFormIntrinsicVectorQuantityImpl(std::string name, const std::vector<double>& data, const std::vector<char>& orientations);
+
+  /*
   SurfaceVertexCountQuantity* addVertexCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
   SurfaceVertexIsolatedScalarQuantity* addVertexIsolatedScalarQuantityImpl(std::string name, const std::vector<std::pair<size_t, double>>& values);
   SurfaceFaceCountQuantity* addFaceCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
 	SurfaceGraphQuantity* addSurfaceGraphQuantityImpl(std::string name, const std::vector<glm::vec3>& nodes, const std::vector<std::array<size_t, 2>>& edges);
+  */
+
 
   // === Helper implementations
 

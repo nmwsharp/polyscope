@@ -47,6 +47,48 @@ R"(
 )"
 };
 
+const ShaderStageSpecification FLEX_TANGENT_VECTOR_VERT_SHADER = {
+
+    ShaderStageType::Vertex,
+
+    // uniforms
+    {
+        {"u_modelView", RenderDataType::Matrix44Float},
+    }, 
+
+    // attributes
+    {
+        {"a_position", RenderDataType::Vector3Float},
+        {"a_tangentVector", RenderDataType::Vector2Float},
+        {"a_basisVectors", RenderDataType::Vector3Float, 2},
+    },
+
+    {}, // textures
+
+    // source
+R"(
+        ${ GLSL_VERSION }$
+
+        in vec3 a_position;
+        in vec2 a_tangentVector;
+        in vec3 a_basisVectors[2];
+        uniform mat4 u_modelView;
+        out vec4 vector;
+        
+        ${ VERT_DECLARATIONS }$
+        
+
+        void main()
+        {
+            gl_Position = u_modelView * vec4(a_position,1.0);
+            vec3 worldVector = a_tangentVector.x * a_basisVectors[0] + a_tangentVector.y * a_basisVectors[1];
+            vector = u_modelView * vec4(worldVector, .0);
+            
+            ${ VERT_ASSIGNMENTS }$
+        }
+)"
+};
+
 const ShaderStageSpecification FLEX_VECTOR_GEOM_SHADER = {
     
     ShaderStageType::Geometry,

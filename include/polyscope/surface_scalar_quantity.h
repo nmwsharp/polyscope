@@ -39,8 +39,6 @@ public:
 
   virtual void createProgram() override;
 
-  void fillColorBuffers(render::ShaderProgram& p);
-
   void buildVertexInfoGUI(size_t vInd) override;
 };
 
@@ -56,8 +54,6 @@ public:
 
   virtual void createProgram() override;
 
-  void fillColorBuffers(render::ShaderProgram& p);
-
   void buildFaceInfoGUI(size_t fInd) override;
 };
 
@@ -70,11 +66,8 @@ class SurfaceEdgeScalarQuantity : public SurfaceScalarQuantity {
 public:
   SurfaceEdgeScalarQuantity(std::string name, const std::vector<double>& values_, SurfaceMesh& mesh_,
                             DataType dataType_ = DataType::STANDARD);
-  //   ~SurfaceVertexScalarQuantity();
 
   virtual void createProgram() override;
-
-  void fillColorBuffers(render::ShaderProgram& p);
 
   void buildEdgeInfoGUI(size_t edgeInd) override;
 };
@@ -87,14 +80,13 @@ class SurfaceHalfedgeScalarQuantity : public SurfaceScalarQuantity {
 public:
   SurfaceHalfedgeScalarQuantity(std::string name, const std::vector<double>& values_, SurfaceMesh& mesh_,
                                 DataType dataType_ = DataType::STANDARD);
-  //   ~SurfaceVertexScalarQuantity();
 
   virtual void createProgram() override;
 
-  void fillColorBuffers(render::ShaderProgram& p);
-
   void buildHalfedgeInfoGUI(size_t heInd) override;
 };
+
+// TODO add corner scalar
 
 
 } // namespace polyscope

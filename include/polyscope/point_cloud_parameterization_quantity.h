@@ -27,12 +27,13 @@ public:
 
   virtual std::string niceName() override;
 
+
+  // Wrapper around the actual buffer of coord data stored in the class.
+  // Interaction with the data (updating it on CPU or GPU side, accessing it, etc) happens through this wrapper.
+  render::ManagedBuffer<glm::vec2> coords;
+
   template <class V>
   void updateData(const V& newCoords);
-
-  void ensureRenderBuffersFilled(bool forceRefill = false);
-
-  std::shared_ptr<render::AttributeBuffer> getCoordRenderBuffer();
 
 
   // === Getters and setters for visualization options
@@ -63,14 +64,10 @@ public:
 
   // === ~DANGER~ experimental/unsupported functions
 
-  uint32_t getCoordBufferID();
-  void bufferDataExternallyUpdated();
-
-
 protected:
   
   // === Members
-  std::vector<glm::vec2> coords;
+  std::vector<glm::vec2> coordsData;
   const ParamCoordsType coordsType;
 
   // === Visualiztion options
@@ -87,7 +84,6 @@ protected:
   void dataUpdated();
   void setProgramUniforms(render::ShaderProgram& program);
 
-  std::shared_ptr<render::AttributeBuffer> coordRenderBuffer;
   std::shared_ptr<render::ShaderProgram> pointProgram;
 };
 

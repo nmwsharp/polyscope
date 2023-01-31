@@ -1,9 +1,16 @@
+#include "polyscope/vector_quantity.h"
+
+#include "polyscope/standardize_data_array.h"
+
 namespace polyscope {
 
+// ================================================
+// === Base Vector Quantity
+// ================================================
+
 template <typename QuantityT>
-VectorQuantity<QuantityT>::VectorQuantity(QuantityT& quantity_, const std::vector<glm::vec3>& vectors_,
-                                          VectorType vectorType_)
-    : quantity(quantity_), vectors(vectors_), vectorType(vectorType_),
+VectorQuantityBase<QuantityT>::VectorQuantityBase(QuantityT& quantity_, VectorType vectorType_)
+    : quantity(quantity_), vectorType(vectorType_),
       vectorLengthMult(quantity.uniquePrefix() + "#vectorLengthMult",
                        vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
       vectorRadius(quantity.uniquePrefix() + "#vectorRadius", relativeValue(0.0025)),
@@ -11,7 +18,7 @@ VectorQuantity<QuantityT>::VectorQuantity(QuantityT& quantity_, const std::vecto
       material(quantity.uniquePrefix() + "#material", "clay") {}
 
 template <typename QuantityT>
-void VectorQuantity<QuantityT>::buildVectorUI() {
+void VectorQuantityBase<QuantityT>::buildVectorUI() {
   ImGui::SameLine();
 
   if (ImGui::ColorEdit3("Color", &vectorColor.get()[0], ImGuiColorEditFlags_NoInputs)) setVectorColor(getVectorColor());
@@ -51,180 +58,208 @@ void VectorQuantity<QuantityT>::buildVectorUI() {
 
 
 template <typename QuantityT>
-void VectorQuantity<QuantityT>::drawVectors() {
-  if (!vectorProgram) {
-    createProgram();
-  }
-
-  // Set uniforms
-  quantity.parent.setStructureUniforms(*vectorProgram);
-  vectorProgram->setUniform("u_radius", vectorRadius.get().asAbsolute());
-  vectorProgram->setUniform("u_baseColor", vectorColor.get());
-
-  if (vectorType == VectorType::AMBIENT) {
-    vectorProgram->setUniform("u_lengthMult", 1.0);
-  } else {
-    vectorProgram->setUniform("u_lengthMult", vectorLengthMult.get().asAbsolute() / maxLength);
-  }
-
-  glm::mat4 P = view::getCameraPerspectiveMatrix();
-  glm::mat4 Pinv = glm::inverse(P);
-  vectorProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
-  vectorProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
-
-  vectorProgram->draw();
-}
-
-template <typename QuantityT>
-void VectorQuantity<QuantityT>::createProgram() {
-
-  std::vector<std::string> rules = quantity.parent.addStructureRules({"SHADE_BASECOLOR"});
-  if (quantity.parent.wantsCullPosition()) {
-    rules.push_back("VECTOR_CULLPOS_FROM_TAIL");
-  }
-
-
-  // Create the vectorProgram to draw this quantity
-  // clang-format off
-  vectorProgram = render::engine->requestShader(
-      "RAYCAST_VECTOR",
-      rules
-  );
-  // clang-format on
-
-  vectorProgram->setAttribute("a_vector", getVectorRenderBuffer());
-  vectorProgram->setAttribute("a_position", baseRenderBuffer);
-
-  render::engine->setMaterial(*vectorProgram, material.get());
-}
-
-template <typename QuantityT>
-void VectorQuantity<QuantityT>::updateRenderBuffersIfAllocated() {
-  if (!vectorRenderBuffer) return;
-  vectorRenderBuffer->setData(vectors);
-}
-template <typename QuantityT>
-void VectorQuantity<QuantityT>::ensureRenderBuffersFilled() {
-  if (vectorRenderBuffer) return; // if it already exists, quick-out
-  vectorRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
-  updateRenderBuffersIfAllocated();
-}
-
-template <typename QuantityT>
-std::shared_ptr<render::AttributeBuffer> VectorQuantity<QuantityT>::getVectorRenderBuffer() {
-  ensureRenderBuffersFilled();
-  return vectorRenderBuffer;
-}
-
-template <typename QuantityT>
-void VectorQuantity<QuantityT>::refreshVectors() {
-  vectorProgram.reset();
-}
-
-
-template <typename QuantityT>
-void VectorQuantity<QuantityT>::dataUpdated() {
-  updateRenderBuffersIfAllocated();
-  requestRedraw();
-}
-
-
-template <typename QuantityT>
-template <class T>
-void VectorQuantity<QuantityT>::updateData(const T& newVectors) {
-  validateSize(newVectors, vectors.size(), "point cloud vector quantity " + quantity.name);
-  vectors = standardizeVectorArray<glm::vec3, 3>(newVectors);
-  dataUpdated();
-}
-
-template <typename QuantityT>
-template <class T>
-void VectorQuantity<QuantityT>::updateData2D(const T& newVectors) {
-  validateSize(newVectors, vectors.size(), "point cloud vector quantity " + quantity.name);
-  vectors = standardizeVectorArray<glm::vec3, 2>(newVectors);
-  for (auto& v : vectors) {
-    v.z = 0.;
-  }
-  dataUpdated();
-}
-
-
-template <typename QuantityT>
-bool VectorQuantity<QuantityT>::vectorsStoredInMemory() {
-  return !vectors.empty();
-}
-
-template <typename QuantityT>
-size_t VectorQuantity<QuantityT>::nVectorSize() {
-  if (vectorsStoredInMemory()) {
-    return vectors.size();
-  } else {
-    if (!vectorRenderBuffer || !vectorRenderBuffer->isSet()) {
-      throw std::runtime_error("buffer is not allocated when it should be");
-    }
-    return static_cast<size_t>(vectorRenderBuffer->getDataSize());
-  }
-}
-
-template <typename QuantityT>
-glm::vec3 VectorQuantity<QuantityT>::getVector(size_t ind) {
-  if (vectorsStoredInMemory()) {
-    return vectors[ind];
-  } else {
-    return vectorRenderBuffer->getData_vec3(ind);
-  }
-}
-
-template <typename QuantityT>
-void VectorQuantity<QuantityT>::renderBufferDataExternallyUpdated() {
-  vectors.clear();
-  requestRedraw();
-}
-
-template <typename QuantityT>
-QuantityT* VectorQuantity<QuantityT>::setVectorLengthScale(double newLength, bool isRelative) {
+QuantityT* VectorQuantityBase<QuantityT>::setVectorLengthScale(double newLength, bool isRelative) {
   vectorLengthMult = ScaledValue<double>(newLength, isRelative);
   requestRedraw();
   return &quantity;
 }
 template <typename QuantityT>
-double VectorQuantity<QuantityT>::getVectorLengthScale() {
+double VectorQuantityBase<QuantityT>::getVectorLengthScale() {
   return vectorLengthMult.get().asAbsolute();
 }
 
 template <typename QuantityT>
-QuantityT* VectorQuantity<QuantityT>::setVectorRadius(double val, bool isRelative) {
+QuantityT* VectorQuantityBase<QuantityT>::setVectorRadius(double val, bool isRelative) {
   vectorRadius = ScaledValue<double>(val, isRelative);
   requestRedraw();
   return &quantity;
 }
 template <typename QuantityT>
-double VectorQuantity<QuantityT>::getVectorRadius() {
+double VectorQuantityBase<QuantityT>::getVectorRadius() {
   return vectorRadius.get().asAbsolute();
 }
 
 template <typename QuantityT>
-QuantityT* VectorQuantity<QuantityT>::setVectorColor(glm::vec3 color) {
+QuantityT* VectorQuantityBase<QuantityT>::setVectorColor(glm::vec3 color) {
   vectorColor = color;
   requestRedraw();
   return &quantity;
 }
 template <typename QuantityT>
-glm::vec3 VectorQuantity<QuantityT>::getVectorColor() {
+glm::vec3 VectorQuantityBase<QuantityT>::getVectorColor() {
   return vectorColor.get();
 }
 
 template <typename QuantityT>
-QuantityT* VectorQuantity<QuantityT>::setMaterial(std::string m) {
+QuantityT* VectorQuantityBase<QuantityT>::setMaterial(std::string m) {
   material = m;
   if (vectorProgram) render::engine->setMaterial(*vectorProgram, getMaterial());
   requestRedraw();
   return &quantity;
 }
 template <typename QuantityT>
-std::string VectorQuantity<QuantityT>::getMaterial() {
+std::string VectorQuantityBase<QuantityT>::getMaterial() {
   return material.get();
 }
 
+// ================================================
+// === (3D) Vector Quantity
+// ================================================
+
+template <typename QuantityT>
+VectorQuantity<QuantityT>::VectorQuantity(QuantityT& quantity_, const std::vector<glm::vec3>& vectors_,
+                                          render::ManagedBuffer<glm::vec3>& vectorRoots_, VectorType vectorType_)
+    : VectorQuantityBase<QuantityT>(quantity_, vectorType_), vectors(quantity_.uniquePrefix() + "#values", vectorsData),
+      vectorRoots(vectorRoots_), vectorsData(vectors_) {}
+
+template <typename QuantityT>
+void VectorQuantity<QuantityT>::drawVectors() {
+  if (!this->vectorProgram) {
+    createProgram();
+  }
+
+  // Set uniforms
+  this->quantity.parent.setStructureUniforms(*(this->vectorProgram));
+  this->vectorProgram->setUniform("u_radius", this->vectorRadius.get().asAbsolute());
+  this->vectorProgram->setUniform("u_baseColor", this->vectorColor.get());
+
+  if (this->vectorType == VectorType::AMBIENT) {
+    this->vectorProgram->setUniform("u_lengthMult", 1.0);
+  } else {
+    this->vectorProgram->setUniform("u_lengthMult", this->vectorLengthMult.get().asAbsolute() / this->maxLength);
+  }
+
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+  this->vectorProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  this->vectorProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
+
+  this->vectorProgram->draw();
+}
+
+template <typename QuantityT>
+void VectorQuantity<QuantityT>::createProgram() {
+
+  std::vector<std::string> rules = this->quantity.parent.addStructureRules({"SHADE_BASECOLOR"});
+  if (this->quantity.parent.wantsCullPosition()) {
+    rules.push_back("VECTOR_CULLPOS_FROM_TAIL");
+  }
+
+
+  // Create the vectorProgram to draw this quantity
+  // clang-format off
+  this->vectorProgram = render::engine->requestShader(
+      "RAYCAST_VECTOR",
+      rules
+  );
+  // clang-format on
+
+  this->vectorProgram->setAttribute("a_vector", vectors.getRenderAttributeBuffer());
+  this->vectorProgram->setAttribute("a_position", vectorRoots.getRenderAttributeBuffer());
+
+  render::engine->setMaterial(*(this->vectorProgram), this->material.get());
+}
+
+
+template <typename QuantityT>
+void VectorQuantity<QuantityT>::refreshVectors() {
+  this->vectorProgram.reset();
+}
+
+template <typename QuantityT>
+template <class T>
+void VectorQuantity<QuantityT>::updateData(const T& newVectors) {
+  validateSize(newVectors, this->vectors.size(), "vector quantity " + this->quantity.name);
+  this->vectors.data = standardizeVectorArray<glm::vec3, 3>(newVectors);
+  this->vectors.markHostBufferUpdated();
+}
+
+template <typename QuantityT>
+template <class T>
+void VectorQuantity<QuantityT>::updateData2D(const T& newVectors) {
+  validateSize(newVectors, this->vectors.size(), "vector quantity " + this->quantity.name);
+  this->vectors.data = standardizeVectorArray<glm::vec3, 2>(newVectors);
+  for (auto& v : this->vectors.data) {
+    v.z = 0.;
+  }
+  this->vectors.markHostBufferUpdated();
+}
+
+// ================================================
+// === Tangent Vector Quantity
+// ================================================
+
+template <typename QuantityT>
+TangentVectorQuantity<QuantityT>::TangentVectorQuantity(QuantityT& quantity_,
+                                                        const std::vector<glm::vec2>& tangentVectors_,
+                                                        render::ManagedBuffer<glm::vec3>& vectorRoots_,
+                                                        render::ManagedBuffer<std::array<glm::vec3, 2>>& tangentBasis_,
+                                                        VectorType vectorType_)
+
+    : VectorQuantityBase<QuantityT>(quantity_, vectorType_),
+      tangentVectors(quantity_.uniquePrefix() + "#values", tangentVectorsData), vectorRoots(vectorRoots_),
+      tangentBasis(tangentBasis_), tangentVectorsData(tangentVectors_) {}
+
+template <typename QuantityT>
+void TangentVectorQuantity<QuantityT>::drawVectors() {
+  if (!this->vectorProgram) {
+    createProgram();
+  }
+
+  // Set uniforms
+  this->quantity.parent.setStructureUniforms(*(this->vectorProgram));
+  this->vectorProgram->setUniform("u_radius", this->vectorRadius.get().asAbsolute());
+  this->vectorProgram->setUniform("u_baseColor", this->vectorColor.get());
+
+  if (this->vectorType == VectorType::AMBIENT) {
+    this->vectorProgram->setUniform("u_lengthMult", 1.0);
+  } else {
+    this->vectorProgram->setUniform("u_lengthMult", this->vectorLengthMult.get().asAbsolute() / this->maxLength);
+  }
+
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+  this->vectorProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  this->vectorProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
+
+  this->vectorProgram->draw();
+}
+
+template <typename QuantityT>
+void TangentVectorQuantity<QuantityT>::createProgram() {
+
+  std::vector<std::string> rules = this->quantity.parent.addStructureRules({"SHADE_BASECOLOR"});
+  if (this->quantity.parent.wantsCullPosition()) {
+    rules.push_back("VECTOR_CULLPOS_FROM_TAIL");
+  }
+
+  // Create the vectorProgram to draw this quantity
+  // clang-format off
+  this->vectorProgram = render::engine->requestShader(
+      "RAYCAST_TANGENT_VECTOR",
+      rules
+  );
+  // clang-format on
+
+  this->vectorProgram->setAttribute("a_tangentVector", tangentVectors.getRenderAttributeBuffer());
+  this->vectorProgram->setAttribute("a_basisVectors", tangentBasis.getRenderAttributeBuffer());
+  this->vectorProgram->setAttribute("a_position", vectorRoots.getRenderAttributeBuffer());
+
+  render::engine->setMaterial(*(this->vectorProgram), this->material.get());
+}
+
+
+template <typename QuantityT>
+void TangentVectorQuantity<QuantityT>::refreshVectors() {
+  this->vectorProgram.reset();
+}
+
+template <typename QuantityT>
+template <class T>
+void TangentVectorQuantity<QuantityT>::updateData(const T& newVectors) {
+  validateSize(newVectors, this->tangentVectors.size(), "tangent vector quantity " + this->quantity.name);
+  this->tangentVectors.data = standardizeVectorArray<glm::vec2, 2>(newVectors);
+  this->tangentVectors.markHostBufferUpdated();
+}
 
 } // namespace polyscope

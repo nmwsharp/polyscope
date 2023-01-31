@@ -29,11 +29,10 @@ public:
   // === Constructors
 
   // Manage a buffer of data which has been explicitly set externally
-  ManagedBuffer(const std::string& name, std::vector<T>& data, ManagedBuffer<size_t>* indices = nullptr);
+  ManagedBuffer(const std::string& name, std::vector<T>& data);
 
   // Manage a buffer of data which gets computed lazily
-  ManagedBuffer(const std::string& name, std::vector<T>& data, std::function<void()> computeFunc,
-                ManagedBuffer<size_t>* indices = nullptr);
+  ManagedBuffer(const std::string& name, std::vector<T>& data, std::function<void()> computeFunc);
 
   // === Core members
 
@@ -61,22 +60,6 @@ public:
 
   // == Members for indexed data
 
-  // For some data (e.g. values a vertices of a mesh), we store the data in a canonical ordering (one value per vertex),
-  // but need to index it at render time according to some specified list of indices (one value per triangle corner).
-  // Rendering frameworks _do_ have explicit support for this case (e.g. IndexedArray DrawMode in openGL), but for
-  // various reasons it does not make sense to use those features. Instead, we explicitly expand out the data into a
-  // render buffer for drawing as `drawbuff[i] = data[inds[i]]`.
-  //
-  // If such an index is used, it should be set to the `indices` argument below, and this class will automatically
-  // handle expanding out the indexed data to populate the drawBuffer. External callers can still update the data
-  // directly on the host, and this class will handle updating an indexed version of the data for drawing.
-  //
-  // If we are NOT using an index, and the draw buffer is laid out in the same order as the canonical data description,
-  // then `indices == nullptr` and all of this functionality does nothing.
-
-  // The buffer of indices to access the data with at draw time
-  ManagedBuffer<size_t>* indices = nullptr;
-
   // == Basic interactions
 
   // Ensure that the `data` member vector reference is populated with the current values. In the common-case where the
@@ -98,6 +81,9 @@ public:
   // re-fill the buffer if necessary. This function is only meaningful in the case where `dataGetsComputed = true`.
   void recomputeIfPopulated();
 
+  bool hasData(); // true if there is valid data on either the host or device
+  size_t size();  // size of the data (number of entries)
+
   // == Direct access to the GPU (device-side) render buffer
 
   // NOTE: This class follows the policy that once the render buffer is allocated, it is always immediately kept updated
@@ -111,43 +97,47 @@ public:
 
   // Get a reference to the underlying GPU-side attribute buffer
   // Once this reference is created, it will always be immediately updated to reflect any external changes to the data.
-  // (note that if you write to this buffer externally, you MUST call markRenderBufferUpdated() below)
-  std::shared_ptr<render::AttributeBuffer> getRenderBuffer();
+  // (note that if you write to this buffer externally, you MUST call markRenderAttributeBufferUpdated() below)
+  std::shared_ptr<render::AttributeBuffer> getRenderAttributeBuffer();
 
   // Tell Polyscope that you wrote updated data into the render buffer. This MUST be called after externally writing to
   // the buffer from getRenderBuffer() above.
-  void markRenderBufferUpdated();
+  void markRenderAttributeBufferUpdated();
 
+  // == Indexed views
 
-  // == Internal API
-
-  // POLYSCOPE INTERNAL ONLY. Outside users should not touch these functions, and they may change without warning.
-
-  // Get a reference to the buffer we draw from. This may or may not be the same buffer as returned by
-  // `getRenderBuffer()`. External users should NOT write to this buffer, use `getRenderBuffer()` instead.
-  std::shared_ptr<render::AttributeBuffer> getDrawBuffer();
+  // For some data (e.g. values a vertices of a mesh), we store the data in a canonical ordering (one value per vertex),
+  // but need to index it at render time according to some specified list of indices (one value per triangle corner).
+  // Rendering frameworks _do_ have explicit support for this case (e.g. IndexedArray DrawMode in openGL), but for
+  // various reasons it does not make sense to use those features. Instead, we explicitly expand out the data into a
+  // render buffer for drawing as view[i] = data[indices[i]].
+  //
+  // If such an index is used, it should be set to the `indices` argument below, and this class will automatically
+  // handle expanding out the indexed data to populate the returned buffer. External callers can still update the data
+  // directly on the host, and this class will handle updating an indexed version of the data for drawing.
+  //
+  // In internally, these indexed views are cached. It is safe to call this function many times, after the first the
+  // same view will be returned repeatedly at no additional cost.
+  std::shared_ptr<render::AttributeBuffer> getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>* indices);
 
 protected:
   // == Internal members
 
-  // The buffer Polyscope programs actually use to draw. External users should _not_ write to this.
-  std::shared_ptr<render::AttributeBuffer> drawBuffer;
+  // A mirror of the
+  std::shared_ptr<render::AttributeBuffer> renderAttributeBuffer;
 
-  // An auxiliary buffer which external users can write to to update the data. May or may not be an alias for
-  // drawBuffer. The class internally handles mirroring data to drawBuffer. This exists to support indexing; if the data
-  // has an index associated to it, it can be externally written here in canonical order, but then the index will be
-  // applied when it is mirrored to drawBuffer.
-  std::shared_ptr<render::AttributeBuffer> renderBuffer;
+  // == Internal representation of indexed views
+  std::vector<std::tuple<ManagedBuffer<uint32_t>*, std::shared_ptr<render::AttributeBuffer>>> existingIndexedViews;
+  void updateIndexedViews();
 
   // == Internal helper functions
 
   void invalidateHostBuffer();
-  void copyHostDataToDrawBuffer();
 
   enum class CanonicalDataSource { HostData = 0, NeedsCompute, RenderBuffer };
   CanonicalDataSource currentCanonicalDataSource();
 
-  // Manage the program which copies indexed data from the renderBuffer to the drawBuffer
+  // Manage the program which copies indexed data from the renderBuffer to the indexed views
   void ensureHaveBufferIndexCopyProgram();
   void invokeBufferIndexCopyProgram();
   std::shared_ptr<render::ShaderProgram> bufferIndexCopyProgram;

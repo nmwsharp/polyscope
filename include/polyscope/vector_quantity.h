@@ -1,36 +1,34 @@
 #pragma once
 
+#include "polyscope/affine_remapper.h"
 #include "polyscope/persistent_value.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/render/managed_buffer.h"
 #include "polyscope/scaled_value.h"
+#include "polyscope/types.h"
+
 
 namespace polyscope {
 
-// Encapsulates logic which is common to all scalar quantities
+// These classes encapsulate logic which is common to all vector quantities
+
+// ================================================
+// === Base Vector Quantity
+// ================================================
+
+// Common base class for the 3D and 2D/tangent sub-cases below
 
 template <typename QuantityT>
-class VectorQuantity {
+class VectorQuantityBase {
 public:
-  VectorQuantity(QuantityT& parent, const std::vector<glm::vec3>& vectors, VectorType vectorType);
+  VectorQuantityBase(QuantityT& parent, VectorType vectorType);
 
-  // Build the ImGUI UIs for scalars
+  // Build the ImGUI UIs for vectors
   void buildVectorUI();
-
-  void drawVectors();
-  void refreshVectors();
-
-  template <class V>
-  void updateData(const V& newVectors);
-  template <class V>
-  void updateData2D(const V& newVectors);
 
   // === Members
   QuantityT& quantity;
-
-  bool vectorsStoredInMemory();
-  size_t nVectorSize();
-  glm::vec3 getVector(size_t ind);
 
   // === Option accessors
 
@@ -51,24 +49,8 @@ public:
   std::string getMaterial();
 
 
-  // === ~DANGER~ experimental/unsupported functions
-
-  std::shared_ptr<render::AttributeBuffer> getVectorRenderBuffer();
-  void renderBufferDataExternallyUpdated();
-
-
 protected:
-  // helpers
-  void ensureRenderBuffersFilled();
-  void updateRenderBuffersIfAllocated();
-
-  void dataUpdated();
-  void createProgram();
-  void updateMaxLength();
-
-  std::vector<glm::vec3> vectors;
   const VectorType vectorType;
-  double maxLength = -1;
 
   // === Visualization options
   PersistentValue<ScaledValue<float>> vectorLengthMult;
@@ -76,10 +58,100 @@ protected:
   PersistentValue<glm::vec3> vectorColor;
   PersistentValue<std::string> material;
 
-
-  std::shared_ptr<render::AttributeBuffer> vectorRenderBuffer;
-  std::shared_ptr<render::AttributeBuffer> baseRenderBuffer;
   std::shared_ptr<render::ShaderProgram> vectorProgram;
+
+  // Manages _actually_ drawing the vectors, generating gui.
+  // TODO
+  // std::unique_ptr<VectorArtist> vectorArtist;
+  // void prepareVectorArtist();
+};
+
+// ================================================
+// === (3D) Vector Quantity
+// ================================================
+
+// 3D vectors sitting in space
+
+template <typename QuantityT>
+class VectorQuantity : public VectorQuantityBase<QuantityT> {
+public:
+  VectorQuantity(QuantityT& parent, const std::vector<glm::vec3>& vectors,
+                 render::ManagedBuffer<glm::vec3>& vectorRoots, VectorType vectorType);
+
+  void drawVectors();
+  void refreshVectors();
+
+  template <class V>
+  void updateData(const V& newVectors);
+  template <class V>
+  void updateData2D(const V& newVectors);
+
+  // === Members
+
+  // Wrapper around the actual buffer of vector data stored in the class.
+  // Interaction with the data (updating it on CPU or GPU side, accessing it, etc) happens through this wrapper.
+  render::ManagedBuffer<glm::vec3> vectors;
+
+
+  // A buffer of root locations at which to draw the vectors. Not that this is _not_ owned by this class, it is just a
+  // reference.
+  render::ManagedBuffer<glm::vec3>& vectorRoots;
+
+
+  // === ~DANGER~ experimental/unsupported functions
+
+
+protected:
+  // helpers
+  void createProgram();
+  void updateMaxLength();
+
+  std::vector<glm::vec3> vectorsData;
+  double maxLength = -1;
+};
+
+
+// ================================================
+// === Tangent Vector Quantity
+// ================================================
+
+// Tangent vectors defined in some tangent space
+
+template <typename QuantityT>
+class TangentVectorQuantity : public VectorQuantityBase<QuantityT> {
+public:
+  TangentVectorQuantity(QuantityT& parent, const std::vector<glm::vec2>& tangentVectors,
+                        render::ManagedBuffer<glm::vec3>& vectorRoots,
+                        render::ManagedBuffer<std::array<glm::vec3, 2>>& tangentBasis, VectorType vectorType);
+
+  void drawVectors();
+  void refreshVectors();
+
+  template <class V>
+  void updateData(const V& newVectors);
+
+  // === Members
+
+  // Wrapper around the actual buffer of vector data stored in the class.
+  // Interaction with the data (updating it on CPU or GPU side, accessing it, etc) happens through this wrapper.
+  render::ManagedBuffer<glm::vec2> tangentVectors;
+
+  // A buffer of root locations at which to draw the vectors. Not that this is _not_ owned by this class, it is just a
+  // reference.
+  render::ManagedBuffer<glm::vec3>& vectorRoots;
+
+  // A buffer of (orthonormal) tangent frames at which to draw the vectors. Again, just a reference.
+  render::ManagedBuffer<std::array<glm::vec3, 2>>& tangentBasis;
+
+  // === ~DANGER~ experimental/unsupported functions
+
+protected:
+  // helpers
+  void createProgram();
+  void updateMaxLength();
+
+  std::vector<glm::vec2> tangentVectorsData;
+  double maxLength = -1;
 };
 
 } // namespace polyscope

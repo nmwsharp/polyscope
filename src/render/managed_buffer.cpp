@@ -13,13 +13,12 @@ namespace polyscope {
 namespace render {
 
 template <typename T>
-ManagedBuffer<T>::ManagedBuffer(const std::string& name_, std::vector<T>& data_, ManagedBuffer<size_t>* indices_)
-    : name(name_), data(data_), dataGetsComputed(false), indices(indices_) {}
+ManagedBuffer<T>::ManagedBuffer(const std::string& name_, std::vector<T>& data_)
+    : name(name_), data(data_), dataGetsComputed(false) {}
 
 template <typename T>
-ManagedBuffer<T>::ManagedBuffer(const std::string& name_, std::vector<T>& data_, std::function<void()> computeFunc_,
-                                ManagedBuffer<size_t>* indices_)
-    : name(name_), data(data_), dataGetsComputed(true), computeFunc(computeFunc_), indices(indices_) {}
+ManagedBuffer<T>::ManagedBuffer(const std::string& name_, std::vector<T>& data_, std::function<void()> computeFunc_)
+    : name(name_), data(data_), dataGetsComputed(true), computeFunc(computeFunc_) {}
 
 
 template <typename T>
@@ -40,10 +39,10 @@ void ManagedBuffer<T>::ensureHostBufferPopulated() {
   case CanonicalDataSource::RenderBuffer:
 
     // sanity check
-    if (!renderBuffer) terminatingError("render buffer should be allocated but isn't");
+    if (!renderAttributeBuffer) terminatingError("render buffer should be allocated but isn't");
 
     // copy the data back from the renderBuffer
-    data = getAttributeBufferDataRange<T>(*renderBuffer, 0, renderBuffer->getDataSize());
+    data = getAttributeBufferDataRange<T>(*renderAttributeBuffer, 0, renderAttributeBuffer->getDataSize());
 
     break;
   };
@@ -51,33 +50,10 @@ void ManagedBuffer<T>::ensureHostBufferPopulated() {
 
 template <typename T>
 void ManagedBuffer<T>::markHostBufferUpdated() {
-
-  // If the data is stored in any device-side buffers, update it as needed
-
-  if (indices == nullptr) {
-    // Non-indexed case.
-    // There is only possibly one buffer; update it if it exists
-    // (even if the renderBuffer ptr is non-null, it points to the same underlying buffer)
-    if (drawBuffer) {
-      drawBuffer->setData(data);
-    }
-  } else {
-    // Indexed case.
-
-    if (renderBuffer) {
-      // If the render buffer is active, immediately copy the data there and trigger a new re-indexing render pass
-
-      renderBuffer->setData(data);
-      invokeBufferIndexCopyProgram();
-
-    } else if (drawBuffer) {
-      // If the draw buffer is active but the render buffer is not, copy the new data to it with the permutation
-
-      copyHostDataToDrawBuffer();
-
-    } else {
-      // Otherwise, the data has not be pushed to any device buffer yet. Do nothing.
-    }
+  // If the data is stored in the device-side buffers, update it as needed
+  if (renderAttributeBuffer) {
+    renderAttributeBuffer->setData(data);
+    requestRedraw();
   }
 }
 
@@ -99,14 +75,42 @@ T ManagedBuffer<T>::getValue(size_t ind) {
     break;
 
   case CanonicalDataSource::RenderBuffer:
-    if (static_cast<int64_t>(ind) >= renderBuffer->getDataSize())
+    if (static_cast<int64_t>(ind) >= renderAttributeBuffer->getDataSize())
       terminatingError("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
-    T val = getAttributeBufferData<T>(*renderBuffer, ind);
+    T val = getAttributeBufferData<T>(*renderAttributeBuffer, ind);
     return val;
     break;
   };
 
   return T(); // dummy return
+}
+
+template <typename T>
+size_t ManagedBuffer<T>::size() {
+
+  switch (currentCanonicalDataSource()) {
+  case CanonicalDataSource::HostData:
+    return data.size();
+    break;
+
+  case CanonicalDataSource::NeedsCompute:
+    return 0;
+    break;
+
+  case CanonicalDataSource::RenderBuffer:
+    return renderAttributeBuffer->getDataSize();
+    break;
+  };
+
+  return INVALID_IND;
+}
+
+template <typename T>
+bool ManagedBuffer<T>::hasData() {
+  if (!data.empty() || renderAttributeBuffer) {
+    return true;
+  }
+  return false;
 }
 
 template <typename T>
@@ -125,61 +129,61 @@ void ManagedBuffer<T>::recomputeIfPopulated() {
   markHostBufferUpdated();
 }
 
-// template <typename T>
-// void ManagedBuffer<T>::ensureRenderBufferPopulated() {}
-
 template <typename T>
-std::shared_ptr<render::AttributeBuffer> ManagedBuffer<T>::getRenderBuffer() {
-  if (renderBuffer) return renderBuffer; // if it has already been set, just return the pointer
-
-  // Ensure that if the renderBuffer exists, the drawBuffer does too.
-  // We ignore the return, but after calling, the drawBuffer member must be populated.
-  getDrawBuffer();
-
-  // TODO
-  if (indices == nullptr) {
-    // If there is no indexing to apply, then we don't need a separate buffer. The
-    // drawBuffer is the renderBuffer and we can just directly write to it.
-    renderBuffer = drawBuffer;
-  } else {
-    // Create the render buffer
-    renderBuffer = generateAttributeBuffer<T>(render::engine);
-
-    // Initially populate the render buffer with data (in its canonical form)
-    ensureHostBufferPopulated();
-    renderBuffer->setData(data);
-
-    // Create a program which will apply indexing and copy updated renderBuffer data to the drawBuffer
-    ensureHaveBufferIndexCopyProgram();
+std::shared_ptr<render::AttributeBuffer> ManagedBuffer<T>::getRenderAttributeBuffer() {
+  if (!renderAttributeBuffer) {
+    ensureHostBufferPopulated(); // warning: the order of these matters because of how hostBufferPopulated works
+    renderAttributeBuffer = generateAttributeBuffer<T>(render::engine);
+    renderAttributeBuffer->setData(data);
   }
-
-  return renderBuffer;
+  return renderAttributeBuffer;
 }
 
 template <typename T>
-void ManagedBuffer<T>::markRenderBufferUpdated() {
+void ManagedBuffer<T>::markRenderAttributeBufferUpdated() {
   invalidateHostBuffer();
-  if (indices) {
-    invokeBufferIndexCopyProgram();
-  }
+  updateIndexedViews();
   requestRedraw();
 }
 
 template <typename T>
-std::shared_ptr<render::AttributeBuffer> ManagedBuffer<T>::getDrawBuffer() {
-  if (drawBuffer) return drawBuffer; // if it has already been set, just return the pointer
+std::shared_ptr<render::AttributeBuffer>
+ManagedBuffer<T>::getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>* indices) {
 
-  // Allocate it
-  drawBuffer = generateAttributeBuffer<T>(render::engine);
+  // Check if we have already created this indexed view, and if so just return it
+  for (std::tuple<ManagedBuffer<uint32_t>*, std::shared_ptr<render::AttributeBuffer>>& existingViewTup :
+       existingIndexedViews) {
+    if (std::get<0>(existingViewTup) == indices) return std::get<1>(existingViewTup);
+  }
 
-  // Fill with initial data
+  // We don't have it. Create a new one and return that.
   ensureHostBufferPopulated();
+  std::shared_ptr<render::AttributeBuffer> newBuffer = generateAttributeBuffer<T>(render::engine);
+  indices->ensureHostBufferPopulated();
+  std::vector<T> expandData = gather(data, indices->data);
+  newBuffer->setData(expandData); // initially popualte
+  existingIndexedViews.emplace_back(indices, newBuffer);
 
-  // NOTE: we should not need to worry about the case where the renderBuffer exists and data exists there but not on the
-  // host---in that case, the draw buffer must already exist/be filled and thus have been quick-out returned above.
-  copyHostDataToDrawBuffer();
+  return newBuffer;
+}
 
-  return drawBuffer;
+template <typename T>
+void ManagedBuffer<T>::updateIndexedViews() {
+  for (std::tuple<ManagedBuffer<uint32_t>*, std::shared_ptr<render::AttributeBuffer>>& existingViewTup :
+       existingIndexedViews) {
+
+    // gather values
+    ManagedBuffer<uint32_t>& indices = *std::get<0>(existingViewTup);
+    render::AttributeBuffer& viewBuffer = *std::get<1>(existingViewTup);
+
+    // apply the indexing and set the data
+    indices.ensureHostBufferPopulated();
+    std::vector<T> expandData = gather(data, indices.data);
+    viewBuffer.setData(expandData);
+
+    // TODO fornow, only CPU-side updating is supported. Add direct GPU-side support using the bufferIndexCopyProgram
+    // below.
+  }
 }
 
 template <typename T>
@@ -196,7 +200,7 @@ typename ManagedBuffer<T>::CanonicalDataSource ManagedBuffer<T>::currentCanonica
   }
 
   // Check if either the render or draw buffer contains the canonical data
-  if (renderBuffer) {
+  if (renderAttributeBuffer) {
     return CanonicalDataSource::RenderBuffer;
   }
 
@@ -205,7 +209,8 @@ typename ManagedBuffer<T>::CanonicalDataSource ManagedBuffer<T>::currentCanonica
   }
 
   // error! should always be one of the above
-  terminatingError("ManagedBuffer " + name + " is in an invalid state");
+  terminatingError("ManagedBuffer " + name +
+                   " does not have a data in either host or device buffers, nor a compute function.");
   return CanonicalDataSource::HostData; // dummy return
 }
 
@@ -215,8 +220,7 @@ void ManagedBuffer<T>::ensureHaveBufferIndexCopyProgram() {
   if (bufferIndexCopyProgram) return;
 
   // sanity check
-  if (!drawBuffer || !renderBuffer)
-    terminatingError("ManagedBuffer " + name + " asked to copy indices, but has no buffers");
+  if (!renderAttributeBuffer) terminatingError("ManagedBuffer " + name + " asked to copy indices, but has no buffers");
 
   // TODO allocate the transform feedback program
 }
@@ -227,26 +231,25 @@ void ManagedBuffer<T>::invokeBufferIndexCopyProgram() {
   bufferIndexCopyProgram->draw();
 }
 
-template <typename T>
-void ManagedBuffer<T>::copyHostDataToDrawBuffer() {
-
-  // sanity check
-  if (!drawBuffer) terminatingError("ManagedBuffer " + name + " asked to copy to drawBuffer, but it is not allocated");
-
-  if (indices) {
-    // Expand out the array with the gather indexing applied
-    indices->ensureHostBufferPopulated();
-    std::vector<T> expandData = applyPermutation(data, indices->data);
-    drawBuffer->setData(expandData);
-  } else {
-    // Plain old ordinary copy
-    drawBuffer->setData(data);
-  }
-}
-
 // === Explicit template instantiation for the supported types
 
+template class ManagedBuffer<float>;
 template class ManagedBuffer<double>;
+
+template class ManagedBuffer<glm::vec2>;
+template class ManagedBuffer<glm::vec3>;
+template class ManagedBuffer<glm::vec4>;
+
+template class ManagedBuffer<std::array<glm::vec3, 2>>;
+template class ManagedBuffer<std::array<glm::vec3, 3>>;
+template class ManagedBuffer<std::array<glm::vec3, 4>>;
+
+template class ManagedBuffer<uint32_t>;
+template class ManagedBuffer<int32_t>;
+
+template class ManagedBuffer<glm::uvec2>;
+template class ManagedBuffer<glm::uvec3>;
+template class ManagedBuffer<glm::uvec4>;
 
 
 } // namespace render

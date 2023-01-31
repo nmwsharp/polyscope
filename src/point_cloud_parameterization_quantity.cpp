@@ -13,9 +13,9 @@ PointCloudParameterizationQuantity::PointCloudParameterizationQuantity(std::stri
                                                                        const std::vector<glm::vec2>& coords_,
                                                                        ParamCoordsType type_, ParamVizStyle style_,
                                                                        PointCloud& cloud_)
-    : PointCloudQuantity(name, cloud_, true), coords(coords_), coordsType(type_),
-      checkerSize(uniquePrefix() + "#checkerSize", 0.02), vizStyle(uniquePrefix() + "#vizStyle", style_),
-      checkColor1(uniquePrefix() + "#checkColor1", render::RGB_PINK),
+    : PointCloudQuantity(name, cloud_, true), coords(uniquePrefix() + "#coords", coordsData), coordsData(coords_),
+      coordsType(type_), checkerSize(uniquePrefix() + "#checkerSize", 0.02),
+      vizStyle(uniquePrefix() + "#vizStyle", style_), checkColor1(uniquePrefix() + "#checkColor1", render::RGB_PINK),
       checkColor2(uniquePrefix() + "#checkColor2", glm::vec3(.976, .856, .885)),
       gridLineColor(uniquePrefix() + "#gridLineColor", render::RGB_WHITE),
       gridBackgroundColor(uniquePrefix() + "#gridBackgroundColor", render::RGB_PINK),
@@ -96,44 +96,11 @@ void PointCloudParameterizationQuantity::createProgram() {
     break;
   }
 
-  parent.setPointProgramGeometryBuffers(*pointProgram);
-  pointProgram->setAttribute("a_value2", getCoordRenderBuffer());
+  parent.setPointProgramGeometryAttributes(*pointProgram);
+  pointProgram->setAttribute("a_value2", coords.getDrawBuffer());
 
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
-
-void PointCloudParameterizationQuantity::ensureRenderBuffersFilled(bool forceRefill) {
-
-  // ## create the buffers if they don't already exist
-
-  bool createdBuffer = false;
-  if (!coordRenderBuffer) {
-    coordRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector2Float);
-    createdBuffer = true;
-  }
-
-  // If the buffers already existed (and thus are presumably filled), quick-out. Otherwise, fill the buffers.
-  if (createdBuffer || forceRefill) {
-    coordRenderBuffer->setData(coords);
-  }
-}
-
-void PointCloudParameterizationQuantity::dataUpdated() {
-  ensureRenderBuffersFilled(false);
-  requestRedraw();
-}
-
-std::shared_ptr<render::AttributeBuffer> PointCloudParameterizationQuantity::getCoordRenderBuffer() {
-  ensureRenderBuffersFilled();
-  return coordRenderBuffer;
-}
-
-uint32_t PointCloudParameterizationQuantity::getCoordBufferID() {
-  ensureRenderBuffersFilled();
-  return coordRenderBuffer->getNativeBufferID();
-}
-
-void PointCloudParameterizationQuantity::bufferDataExternallyUpdated() { requestRedraw(); }
 
 
 // Update range uniforms
@@ -319,7 +286,8 @@ std::string PointCloudParameterizationQuantity::niceName() { return name + " (po
 void PointCloudParameterizationQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("<%g,%g>", coords[ind].x, coords[ind].y);
+  glm::vec2 vec = coords.getValue(ind);
+  ImGui::Text("<%g,%g>", vec.x, vec.y);
   ImGui::NextColumn();
 }
 

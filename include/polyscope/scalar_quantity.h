@@ -3,6 +3,7 @@
 #include "polyscope/persistent_value.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/render/managed_buffer.h"
 #include "polyscope/scaled_value.h"
 #include "polyscope/standardize_data_array.h"
 
@@ -30,10 +31,10 @@ public:
 
   // === Members
   QuantityT& quantity;
-  
-  bool valuesStoredInMemory();
-  size_t nValueSize();
-  float getValue(size_t ind);
+
+  // Wrapper around the actual buffer of scalar data stored in the class.
+  // Interaction with the data (updating it on CPU or GPU side, accessing it, etc) happens through this wrapper.
+  render::ManagedBuffer<double> values;
 
   // === Get/set visualization parameters
 
@@ -55,23 +56,13 @@ public:
   QuantityT* setIsolineDarkness(double val);
   double getIsolineDarkness();
 
-  // === ~DANGER~ experimental/unsupported functions
-
-  std::shared_ptr<render::AttributeBuffer> getScalarRenderBuffer();
-  void renderBufferDataExternallyUpdated();
-
 protected:
-  // Helpers
-  void dataUpdated();
-  void ensureRenderBuffersFilled();
-  void updateRenderBuffersIfAllocated();
 
-  std::vector<double> values;
+  std::vector<double> valuesData;
   const DataType dataType;
 
   // === Visualization parameters
-  std::shared_ptr<render::AttributeBuffer> scalarRenderBuffer;
-
+  
   // Affine data maps and limits
   std::pair<float, float> vizRange; // TODO make these persistent
   std::pair<double, double> dataRange;

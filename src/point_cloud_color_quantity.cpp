@@ -45,8 +45,8 @@ void PointCloudColorQuantity::createPointProgram() {
   );
   // clang-format on
 
-  parent.setPointProgramGeometryBuffers(*pointProgram);
-  pointProgram->setAttribute("a_color", getColorRenderBuffer());
+  parent.setPointProgramGeometryAttributes(*pointProgram);
+  pointProgram->setAttribute("a_color", colors.getRenderAttributeBuffer());
 
   // Fill buffers
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
@@ -63,10 +63,10 @@ void PointCloudColorQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
-  glm::vec3 tempColor = getColorValue(ind);
-  ImGui::ColorEdit3("", &tempColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
+  glm::vec3 color = colors.getValue(ind);
+  ImGui::ColorEdit3("", &color[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
   ImGui::SameLine();
-  std::string colorStr = to_string_short(tempColor);
+  std::string colorStr = to_string_short(color);
   ImGui::TextUnformatted(colorStr.c_str());
   ImGui::NextColumn();
 }

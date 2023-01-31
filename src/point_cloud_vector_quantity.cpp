@@ -14,7 +14,8 @@ namespace polyscope {
 PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                    PointCloud& pointCloud_, VectorType vectorType_)
 
-    : PointCloudQuantity(name, pointCloud_), VectorQuantity(*this, vectors_, vectorType_) {
+    : PointCloudQuantity(name, pointCloud_), VectorQuantity<PointCloudVectorQuantity>(*this, vectors_, parent.points,
+                                                                                      vectorType_) {
 
   if (vectors.size() != parent.nPoints()) {
     polyscope::error("Point cloud vector quantity " + name + " does not have same number of values (" +
@@ -25,17 +26,7 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
 
 void PointCloudVectorQuantity::draw() {
   if (!isEnabled()) return;
-
-  // ensure that the base buffer has been populated from the parent
-  ensureBaseRenderBufferResolved();
-
   drawVectors();
-}
-
-void PointCloudVectorQuantity::ensureBaseRenderBufferResolved() {
-  if (!baseRenderBuffer) {
-    baseRenderBuffer = parent.getPositionRenderBuffer();
-  }
 }
 
 void PointCloudVectorQuantity::refresh() {
@@ -50,7 +41,7 @@ void PointCloudVectorQuantity::buildPickUI(size_t ind) {
   ImGui::NextColumn();
 
   std::stringstream buffer;
-  glm::vec3 vec = getVector(ind);
+  glm::vec3 vec = vectors.getValue(ind);
   buffer << vec;
   ImGui::TextUnformatted(buffer.str().c_str());
 

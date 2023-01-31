@@ -2,7 +2,8 @@ namespace polyscope {
 
 template <typename QuantityT>
 ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vector<double>& values_, DataType dataType_)
-    : quantity(quantity_), values(values_), dataType(dataType_), dataRange(robustMinMax(values, 1e-5)),
+    : quantity(quantity_), values(quantity.uniquePrefix() + "#values", valuesData), valuesData(values_),
+      dataType(dataType_), dataRange(robustMinMax(values.data, 1e-5)),
       cMap(quantity.uniquePrefix() + "#cmap", defaultColorMap(dataType)),
       isolinesEnabled(quantity.uniquePrefix() + "#isolinesEnabled", false),
       isolineWidth(quantity.uniquePrefix() + "#isolineWidth",
@@ -11,7 +12,7 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
 
 {
   hist.updateColormap(cMap.get());
-  hist.buildHistogram(values);
+  hist.buildHistogram(values.data);
   resetMapRange();
 }
 
@@ -119,20 +120,6 @@ void ScalarQuantity<QuantityT>::setScalarUniforms(render::ShaderProgram& p) {
 }
 
 template <typename QuantityT>
-void ScalarQuantity<QuantityT>::updateRenderBuffersIfAllocated() {
-  if (!scalarRenderBuffer) return;
-  scalarRenderBuffer->setData(values);
-}
-
-template <typename QuantityT>
-void ScalarQuantity<QuantityT>::ensureRenderBuffersFilled() {
-  if (scalarRenderBuffer) return; // if it already exists, quick-out
-  scalarRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Float);
-  updateRenderBuffersIfAllocated();
-}
-
-
-template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::resetMapRange() {
   switch (dataType) {
   case DataType::STANDARD:
@@ -152,45 +139,13 @@ QuantityT* ScalarQuantity<QuantityT>::resetMapRange() {
 }
 
 template <typename QuantityT>
-bool ScalarQuantity<QuantityT>::valuesStoredInMemory() {
-  return !values.empty();
-}
-
-template <typename QuantityT>
-size_t ScalarQuantity<QuantityT>::nValueSize() {
-  if (valuesStoredInMemory()) {
-    return values.size();
-  } else {
-    if (!scalarRenderBuffer || !scalarRenderBuffer->isSet()) {
-      throw std::runtime_error("buffer is not allocated when it should be");
-    }
-    return static_cast<size_t>(scalarRenderBuffer->getDataSize());
-  }
-}
-
-template <typename QuantityT>
-float ScalarQuantity<QuantityT>::getValue(size_t ind) {
-  if (valuesStoredInMemory()) {
-    return values[ind];
-  } else {
-    return scalarRenderBuffer->getData_float(ind);
-  }
-}
-
-template <typename QuantityT>
 template <class V>
 void ScalarQuantity<QuantityT>::updateData(const V& newValues) {
-  validateSize(newValues, nValueSize(), "scalar quantity");
-  values = standardizeArray<double, V>(newValues);
-  dataUpdated();
+  validateSize(newValues, values.size(), "scalar quantity");
+  values.data = standardizeArray<double, V>(newValues);
+  values.markHostBufferUpdated();
 }
 
-template <typename QuantityT>
-void ScalarQuantity<QuantityT>::dataUpdated() {
-  // TODO make this do _something_ with the histogram
-  updateRenderBuffersIfAllocated();
-  requestRedraw();
-}
 
 template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::setColorMap(std::string val) {
@@ -258,20 +213,6 @@ QuantityT* ScalarQuantity<QuantityT>::setIsolinesEnabled(bool newEnabled) {
 template <typename QuantityT>
 bool ScalarQuantity<QuantityT>::getIsolinesEnabled() {
   return isolinesEnabled.get();
-}
-
-
-template <typename QuantityT>
-std::shared_ptr<render::AttributeBuffer> ScalarQuantity<QuantityT>::getScalarRenderBuffer() {
-  ensureRenderBuffersFilled();
-  return scalarRenderBuffer;
-}
-
-template <typename QuantityT>
-void ScalarQuantity<QuantityT>::renderBufferDataExternallyUpdated() {
-  // TODO make this do _something_ with the histogram
-  values.clear();
-  requestRedraw();
 }
 
 } // namespace polyscope

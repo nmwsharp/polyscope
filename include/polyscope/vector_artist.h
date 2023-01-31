@@ -13,7 +13,11 @@ namespace polyscope {
 // Note: Does not actually take ownership of memory buffers for vectors; just keeps a reference to the buffer, which
 // must stay valid.
 
+// TODO delete me
+
 class VectorArtist {
+
+  /*
 
 public:
   VectorArtist(Structure& parentStructure_, std::string uniqueName_, const std::vector<glm::vec3>& bases_,
@@ -62,6 +66,9 @@ private:
   // helpers
   void createProgram();
   void updateMaxLength();
+
+*/
+
 };
 
 

@@ -35,8 +35,8 @@ PointCloud* registerPointCloud2D(std::string name, const T& points) {
 template <class V>
 void PointCloud::updatePointPositions(const V& newPositions) {
   validateSize(newPositions, nPoints(), "point cloud updated positions " + name);
-  points = standardizeVectorArray<glm::vec3, 3>(newPositions);
-  dataUpdated();
+  points.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  points.markHostBufferUpdated();
 }
 
 template <class V>

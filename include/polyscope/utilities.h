@@ -114,6 +114,20 @@ std::vector<T> applyPermutation(const std::vector<T>& input, const std::vector<s
   return result;
 }
 
+// Same as applyPermutation() above, but on 32-bit indices, and we gave it a more accurate name
+template <typename T>
+std::vector<T> gather(const std::vector<T>& input, const std::vector<uint32_t>& perm) {
+  // TODO figure out if there's a copy to be avoided here
+  if (perm.size() == 0) {
+    return input;
+  }
+  std::vector<T> result(perm.size());
+  for (size_t i = 0; i < perm.size(); i++) {
+    result[i] = input[perm[i]];
+  }
+  return result;
+}
+
 
 // === Random number generation
 extern std::random_device util_random_device;

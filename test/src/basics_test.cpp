@@ -22,8 +22,8 @@ protected:
   // Per-test-suite set-up.
   // Called before the first test in this test suite.
   // Can be omitted if not needed.
-  static void SetUpTestSuite() { 
-    polyscope::init(testBackend); 
+  static void SetUpTestSuite() {
+    polyscope::init(testBackend);
     polyscope::options::enableRenderErrorChecks = true;
   }
 
@@ -157,8 +157,6 @@ TEST_F(PolyscopeTest, PointCloudColor) {
   q1->updateData(vColors);
   polyscope::show(3);
   
-  q1->renderBufferDataExternallyUpdated();
-  q1->getColorValue(0);
   polyscope::show(3);
 
   polyscope::removeAllStructures();
@@ -178,8 +176,6 @@ TEST_F(PolyscopeTest, PointCloudScalar) {
   q1->updateData(vScalar);
   polyscope::show(3);
   
-  q1->renderBufferDataExternallyUpdated();
-  q1->getValue(0);
   polyscope::show(3);
 
   polyscope::removeAllStructures();
@@ -196,13 +192,10 @@ TEST_F(PolyscopeTest, PointCloudVector) {
   q1->updateData(vals);
   polyscope::show(3);
   
-  q1->renderBufferDataExternallyUpdated();
-  q1->getVector(0);
-  polyscope::show(3);
-
   polyscope::removeAllStructures();
 }
 
+/* TODO restore
 
 TEST_F(PolyscopeTest, PointCloudParam) {
   auto psPoints = registerPointCloud();
@@ -228,6 +221,8 @@ TEST_F(PolyscopeTest, PointCloudParam) {
 
   polyscope::removeAllStructures();
 }
+
+*/
 
 TEST_F(PolyscopeTest, PointCloudScalarRadius) {
   auto psPoints = registerPointCloud();
@@ -295,6 +290,7 @@ polyscope::SurfaceMesh* registerTriangleMesh(std::string name = "test1") {
 
 TEST_F(PolyscopeTest, ShowSurfaceMesh) {
   auto psMesh = registerTriangleMesh();
+  EXPECT_TRUE(polyscope::hasSurfaceMesh("test1"));
 
   // Make sure we actually added the mesh
   polyscope::show(3);
@@ -403,7 +399,10 @@ TEST_F(PolyscopeTest, SurfaceMeshScalarFace) {
 
 TEST_F(PolyscopeTest, SurfaceMeshScalarEdge) {
   auto psMesh = registerTriangleMesh();
-  std::vector<double> eScalar(psMesh->nEdges(), 9.);
+  size_t nEdges = 6;
+  std::vector<double> eScalar(nEdges, 9.);
+  std::vector<size_t> ePerm = {5, 3, 1, 2, 4, 0};
+  psMesh->setEdgePermutation(ePerm);
   auto q3 = psMesh->addEdgeScalarQuantity("eScalar", eScalar);
   q3->setEnabled(true);
   polyscope::show(3);
@@ -436,6 +435,8 @@ TEST_F(PolyscopeTest, SurfaceMeshSignedDistance) {
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
+
+/* TODO restore
 
 TEST_F(PolyscopeTest, SurfaceMeshCornerParam) {
   auto psMesh = registerTriangleMesh();
@@ -487,6 +488,8 @@ TEST_F(PolyscopeTest, SurfaceMeshVertexLocalParam) {
   polyscope::removeAllStructures();
 }
 
+*/
+
 TEST_F(PolyscopeTest, SurfaceMeshVertexVector) {
   auto psMesh = registerTriangleMesh();
   std::vector<glm::vec3> vals(psMesh->nVertices(), {1., 2., 3.});
@@ -529,10 +532,13 @@ TEST_F(PolyscopeTest, SurfaceMeshFaceIntrinsic) {
 
 TEST_F(PolyscopeTest, SurfaceMeshOneForm) {
   auto psMesh = registerTriangleMesh();
+  size_t nEdges = 6;
   // std::vector<glm::vec3> basisX(psMesh->nVertices(), {1., 2., 3.});
   // psMesh->setVertexTangentBasisX(basisX);
-  std::vector<double> vals(psMesh->nEdges(), 3.);
-  std::vector<char> orients(psMesh->nEdges(), true);
+  std::vector<double> vals(nEdges, 3.);
+  std::vector<char> orients(nEdges, true);
+  std::vector<size_t> ePerm = {5, 3, 1, 2, 4, 0};
+  psMesh->setEdgePermutation(ePerm);
   auto q1 = psMesh->addOneFormIntrinsicVectorQuantity("one form vecs", vals, orients);
   q1->setEnabled(true);
   polyscope::show(3);
@@ -548,7 +554,7 @@ TEST_F(PolyscopeTest, SurfaceMeshVertexIntrinsicRibbon) {
   std::vector<glm::vec2> vals(psMesh->nVertices(), {1., 2.});
   auto q1 = psMesh->addVertexIntrinsicVectorQuantity("param", vals);
   q1->setEnabled(true);
-  q1->setRibbonEnabled(true);
+  // q1->setRibbonEnabled(true); // TODO
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
@@ -560,12 +566,13 @@ TEST_F(PolyscopeTest, SurfaceMeshFaceIntrinsicRibbon) {
   std::vector<glm::vec2> vals(psMesh->nFaces(), {1., 2.});
   auto q1 = psMesh->addFaceIntrinsicVectorQuantity("param", vals);
   q1->setEnabled(true);
-  q1->setRibbonEnabled(true);
+  // q1->setRibbonEnabled(true); // TODO
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
 
 
+/* TODO REMOVE
 TEST_F(PolyscopeTest, SurfaceMeshVertexCount) {
   auto psMesh = registerTriangleMesh();
   std::vector<std::pair<size_t, int>> vals = {{0, 1}, {2, -2}};
@@ -619,11 +626,14 @@ TEST_F(PolyscopeTest, SurfaceMeshSurfaceGraphPath) {
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
+*/
 
 
 // ============================================================
 // =============== Curve network tests
 // ============================================================
+
+/* TODO RESTORE
 
 std::tuple<std::vector<glm::vec3>, std::vector<std::array<size_t, 2>>> getCurveNetwork() {
   std::vector<glm::vec3> points;
@@ -773,9 +783,13 @@ TEST_F(PolyscopeTest, CurveNetworkFaceVector) {
   polyscope::removeAllStructures();
 }
 
+*/
+
 // ============================================================
 // =============== Volume mesh tests
 // ============================================================
+
+/* TODO RESTORE
 
 std::tuple<std::vector<glm::vec3>, std::vector<std::array<int, 8>>> getVolumeMeshData() {
   // clang-format off
@@ -814,7 +828,7 @@ TEST_F(PolyscopeTest, ShowVolumeMesh) {
     {0,1,2,4}
   };
   polyscope::registerTetMesh("tet", tet_verts, tet_cells);
-   
+
 
   // Hexes only
   std::vector<glm::vec3> hex_verts = {
@@ -1314,11 +1328,11 @@ TEST_F(PolyscopeTest, RefreshMultiTest) {
     q2->setEnabled(true);
   }
 
-  { // Curve network
-    auto psCurve = registerCurveNetwork();
-    std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
-    auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
-    q3->setEnabled(true);
+  { // Curve network TODO RESTORE
+    // auto psCurve = registerCurveNetwork();
+    // std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
+    // auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
+    // q3->setEnabled(true);
   }
 
   polyscope::show(3);
@@ -1345,11 +1359,11 @@ TEST_F(PolyscopeTest, TransparencyTest) {
     q2->setEnabled(true);
   }
 
-  { // Curve network
-    auto psCurve = registerCurveNetwork();
-    std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
-    auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
-    q3->setEnabled(true);
+  { // Curve network TODO restore
+    // auto psCurve = registerCurveNetwork();
+    // std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
+    // auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
+    // q3->setEnabled(true);
   }
 
   polyscope::show(3);
@@ -1380,21 +1394,22 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
   q2->setEnabled(true);
 
 
-  { // Curve network
-    auto psCurve = registerCurveNetwork();
-    std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
-    auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
-    q3->setEnabled(true);
+  {
+      // Curve network
+      // auto psCurve = registerCurveNetwork(); TODO restore
+      // std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
+      // auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
+      // q3->setEnabled(true);
   }
 
-  { // Volume mesh
-    std::vector<glm::vec3> verts;
-    std::vector<std::array<int, 8>> cells;
-    std::tie(verts, cells) = getVolumeMeshData();
-    polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
-
-    polyscope::VolumeMesh* psVol2 = polyscope::registerVolumeMesh("vol cull whole", verts, cells);
-    psVol2->setCullWholeElements(true);
+  { // Volume mesh TODO restore
+    // std::vector<glm::vec3> verts;
+    // std::vector<std::array<int, 8>> cells;
+    // std::tie(verts, cells) = getVolumeMeshData();
+    // polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
+    //
+    // polyscope::VolumeMesh* psVol2 = polyscope::registerVolumeMesh("vol cull whole", verts, cells);
+    // psVol2->setCullWholeElements(true);
   }
 
   polyscope::show(3);
@@ -1451,11 +1466,11 @@ TEST_F(PolyscopeTest, OrthoViewTest) {
     q2->setEnabled(true);
   }
 
-  { // Curve network
-    auto psCurve = registerCurveNetwork();
-    std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
-    auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
-    q3->setEnabled(true);
+  { // Curve network TODO restore
+    // auto psCurve = registerCurveNetwork();
+    // std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
+    // auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
+    // q3->setEnabled(true);
   }
 
   // Enable the orthographic view

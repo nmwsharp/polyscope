@@ -3,10 +3,10 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/render/engine.h"
-#include "polyscope/ribbon_artist.h"
+// #include "polyscope/ribbon_artist.h"
 #include "polyscope/surface_mesh.h"
-#include "polyscope/types.h"
-#include "polyscope/vector_artist.h"
+// #include "polyscope/vector_artist.h"
+#include "polyscope/vector_quantity.h"
 
 namespace polyscope {
 
@@ -14,77 +14,48 @@ namespace polyscope {
 
 // Represents a general vector field associated with a surface mesh, including
 // R3 fields in the ambient space and R2 fields embedded in the surface
+//
+// NOTE: This intermediate class is not really necessary anymore; it is subsumed by the VectorQuantity<> classes which
+// serve as common bases for ALL vector types. At this point it is just kept around for backward compatibility, to not
+// break user code which holds a reference to it.
 class SurfaceVectorQuantity : public SurfaceMeshQuantity {
 public:
-  SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh_, MeshElement definedOn_,
-                        VectorType vectorType_ = VectorType::STANDARD);
-
-  virtual void draw() override;
-  virtual void buildCustomUI() override;
-
-  // Allow children to append to the UI
-  virtual void drawSubUI();
+  SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh_, MeshElement definedOn_);
 
   // === Members
 
-  // Note: these vectors are not the raw vectors passed in by the user, but have been rescaled such that the longest has
-  // length 1 (unless type is VectorType::Ambient)
-  const VectorType vectorType;
-
-  // The actual data
-  std::vector<glm::vec3> vectors;
-  std::vector<glm::vec3> vectorRoots;
-
   // === Option accessors
 
-  //  The vectors will be scaled such that the longest vector is this long
-  SurfaceVectorQuantity* setVectorLengthScale(double newLength, bool isRelative = true);
-  double getVectorLengthScale();
-
-  // The radius of the vectors
-  SurfaceVectorQuantity* setVectorRadius(double val, bool isRelative = true);
-  double getVectorRadius();
-
-  // The color of the vectors
-  SurfaceVectorQuantity* setVectorColor(glm::vec3 color);
-  glm::vec3 getVectorColor();
-
-  // Material
-  SurfaceVectorQuantity* setMaterial(std::string name);
-  std::string getMaterial();
-
-  // Enable the ribbon visualization
-  SurfaceVectorQuantity* setRibbonEnabled(bool newVal);
-  bool isRibbonEnabled();
-  
-  // Ribbon width
-  SurfaceVectorQuantity* setRibbonWidth(double val, bool isRelative);
-  double getRibbonWidth();
-  
-  // Ribbon material
-  SurfaceVectorQuantity* setRibbonMaterial(std::string name);
-  std::string getRibbonMaterial();
+  // // Enable the ribbon visualization
+  // SurfaceVectorQuantity* setRibbonEnabled(bool newVal);
+  // bool isRibbonEnabled();
+  //
+  // // Ribbon width
+  // SurfaceVectorQuantity* setRibbonWidth(double val, bool isRelative);
+  // double getRibbonWidth();
+  //
+  // // Ribbon material
+  // SurfaceVectorQuantity* setRibbonMaterial(std::string name);
+  // std::string getRibbonMaterial();
 
 protected:
-  // Manages _actually_ drawing the vectors, generating gui.
-  std::unique_ptr<VectorArtist> vectorArtist;
-  void prepareVectorArtist();
-
   MeshElement definedOn;
 
   // A ribbon viz that is appropriate for some fields
-  std::unique_ptr<RibbonArtist> ribbonArtist;
-  PersistentValue<bool> ribbonEnabled;
+  // std::unique_ptr<RibbonArtist> ribbonArtist;
+  // PersistentValue<bool> ribbonEnabled;
 };
 
 
 // ==== R3 vectors at vertices
 
-class SurfaceVertexVectorQuantity : public SurfaceVectorQuantity {
+class SurfaceVertexVectorQuantity : public SurfaceVectorQuantity, public VectorQuantity<SurfaceVertexVectorQuantity> {
 public:
   SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh& mesh_,
                               VectorType vectorType_ = VectorType::STANDARD);
 
+  virtual void draw() override;
+  virtual void buildCustomUI() override;
   virtual void refresh() override;
   virtual std::string niceName() override;
   virtual void buildVertexInfoGUI(size_t vInd) override;
@@ -93,11 +64,13 @@ public:
 
 // ==== R3 vectors at faces
 
-class SurfaceFaceVectorQuantity : public SurfaceVectorQuantity {
+class SurfaceFaceVectorQuantity : public SurfaceVectorQuantity, public VectorQuantity<SurfaceFaceVectorQuantity> {
 public:
   SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, SurfaceMesh& mesh_,
                             VectorType vectorType_ = VectorType::STANDARD);
 
+  virtual void draw() override;
+  virtual void buildCustomUI() override;
   virtual void refresh() override;
   virtual std::string niceName() override;
   virtual void buildFaceInfoGUI(size_t fInd) override;
@@ -106,18 +79,14 @@ public:
 
 // ==== Intrinsic vectors at faces
 
-class SurfaceFaceIntrinsicVectorQuantity : public SurfaceVectorQuantity {
+class SurfaceFaceIntrinsicVectorQuantity : public SurfaceVectorQuantity,
+                                           public TangentVectorQuantity<SurfaceFaceIntrinsicVectorQuantity> {
 public:
   SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_,
-                                     int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
-
-  int nSym;
-  std::vector<glm::vec2> vectorField;
+                                     VectorType vectorType_ = VectorType::STANDARD);
 
   virtual void draw() override;
-
-  void drawSubUI() override;
-
+  virtual void buildCustomUI() override;
   virtual void refresh() override;
   virtual std::string niceName() override;
   void buildFaceInfoGUI(size_t fInd) override;
@@ -126,17 +95,14 @@ public:
 
 // ==== Intrinsic vectors at vertices
 
-class SurfaceVertexIntrinsicVectorQuantity : public SurfaceVectorQuantity {
+class SurfaceVertexIntrinsicVectorQuantity : public SurfaceVectorQuantity,
+                                             public TangentVectorQuantity<SurfaceVertexIntrinsicVectorQuantity> {
 public:
   SurfaceVertexIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_,
-                                       int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
-
-  int nSym;
-  std::vector<glm::vec2> vectorField;
+                                       VectorType vectorType_ = VectorType::STANDARD);
 
   virtual void draw() override;
-
-  void drawSubUI() override;
+  virtual void buildCustomUI() override;
 
   virtual void refresh() override;
   virtual std::string niceName() override;
@@ -146,23 +112,21 @@ public:
 
 // ==== Intrinsic one form on edges
 
-class SurfaceOneFormIntrinsicVectorQuantity : public SurfaceVectorQuantity {
+class SurfaceOneFormIntrinsicVectorQuantity : public SurfaceVectorQuantity,
+                                              public TangentVectorQuantity<SurfaceOneFormIntrinsicVectorQuantity> {
 public:
   SurfaceOneFormIntrinsicVectorQuantity(std::string name, std::vector<double> oneForm_, std::vector<char> orientations_,
                                         SurfaceMesh& mesh_);
 
-  std::vector<double> oneForm;
-  std::vector<glm::vec2> mappedVectorField;
-  std::vector<char> canonicalOrientation;
-
   virtual void draw() override;
-
-  void drawSubUI() override;
-
+  virtual void buildCustomUI() override;
   virtual void refresh() override;
   virtual std::string niceName() override;
+
+  std::vector<double> oneForm;
+  std::vector<char> canonicalOrientation;
+
   void buildEdgeInfoGUI(size_t eInd) override;
-  void buildFaceInfoGUI(size_t fInd) override;
 };
 
 } // namespace polyscope

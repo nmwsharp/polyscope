@@ -6,8 +6,8 @@ namespace polyscope {
 template <class T>
 void PointCloudParameterizationQuantity::updateData(const T& newCoords) {
   validateSize(newCoords, coords.size(), "point cloud vector quantity " + name);
-  coords = standardizeVectorArray<glm::vec2, 2>(newCoords);
-  dataUpdated();
+  coords.data = standardizeVectorArray<glm::vec2, 2>(newCoords);
+  coords.markHostBufferUpdated();
 }
 
 

@@ -63,8 +63,8 @@ void PointCloudScalarQuantity::createProgram() {
   );
   // clang-format on
 
-  parent.setPointProgramGeometryBuffers(*pointProgram);
-  pointProgram->setAttribute("a_value", getScalarRenderBuffer());
+  parent.setPointProgramGeometryAttributes(*pointProgram);
+  pointProgram->setAttribute("a_value", values.getRenderAttributeBuffer());
 
   // Fill buffers
   pointProgram->setTextureFromColormap("t_colormap", cMap.get());
@@ -80,7 +80,7 @@ void PointCloudScalarQuantity::refresh() {
 void PointCloudScalarQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", getValue(ind));
+  ImGui::Text("%g", values.getValue(ind));
   ImGui::NextColumn();
 }
 

@@ -56,6 +56,23 @@ std::string renderDataTypeName(const RenderDataType& r) {
   return "";
 }
 
+int renderDataTypeCountCompatbility(const RenderDataType r1, const RenderDataType r2) {
+
+  if (r1 == r2) return 1;
+
+  if (r1 == RenderDataType::Vector2Float && r2 == RenderDataType::Float) return 2;
+  if (r1 == RenderDataType::Vector3Float && r2 == RenderDataType::Float) return 3;
+  if (r1 == RenderDataType::Vector4Float && r2 == RenderDataType::Float) return 4;
+
+  if (r1 == RenderDataType::Vector2UInt && r2 == RenderDataType::UInt) return 2;
+  if (r1 == RenderDataType::Vector3UInt && r2 == RenderDataType::UInt) return 3;
+  if (r1 == RenderDataType::Vector4UInt && r2 == RenderDataType::UInt) return 4;
+
+  // there are other combinations of types which could be compatible, we don't handle them yet
+  //
+  return 0;
+}
+
 std::string modeName(const TransparencyMode& m) {
   switch (m) {
   case TransparencyMode::None:
@@ -68,20 +85,10 @@ std::string modeName(const TransparencyMode& m) {
   return "";
 }
 
-std::string accessTypeName(const AttributeAccessType& t) {
-  switch (t) {
-  case AttributeAccessType::Sequential:
-    return "Sequential";
-  case AttributeAccessType::Indexed:
-    return "Indexed";
-  }
-  return "";
-}
-
 namespace render {
 
-AttributeBuffer::AttributeBuffer(RenderDataType dataType_, AttributeAccessType access_, int arrayCount_)
-    : dataType(dataType_), access(access_), arrayCount(arrayCount_), uniqueID(render::engine->getNextUniqueID()) {}
+AttributeBuffer::AttributeBuffer(RenderDataType dataType_, int arrayCount_)
+    : dataType(dataType_), arrayCount(arrayCount_), uniqueID(render::engine->getNextUniqueID()) {}
 
 AttributeBuffer::~AttributeBuffer() {}
 
@@ -185,10 +192,6 @@ ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages
   if (dm == DrawMode::IndexedLineStripAdjacency) {
     usePrimitiveRestart = true;
   }
-}
-
-std::shared_ptr<AttributeBuffer> Engine::generateAttributeBuffer(RenderDataType dataType_, int arrayCount_) {
-  return generateAttributeBuffer(dataType_, AttributeAccessType::Sequential, arrayCount_);
 }
 
 void Engine::buildEngineGui() {

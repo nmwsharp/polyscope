@@ -152,32 +152,34 @@ SET(SRCS
   point_cloud_color_quantity.cpp
   point_cloud_scalar_quantity.cpp
   point_cloud_vector_quantity.cpp
-  point_cloud_parameterization_quantity.cpp
+  # point_cloud_parameterization_quantity.cpp TODO restore
 
   # Surface
   surface_mesh.cpp
   surface_mesh_io.cpp
   surface_scalar_quantity.cpp
   surface_color_quantity.cpp
-  surface_parameterization_quantity.cpp
+  # surface_parameterization_quantity.cpp TODO restore
   surface_vector_quantity.cpp
-  surface_count_quantity.cpp
-  surface_graph_quantity.cpp
+  # surface_count_quantity.cpp # TODO delete these old files
+  # surface_graph_quantity.cpp
   #surface_subset_quantity.cpp
   #surface_selection_quantity.cpp
   #surface_input_curve_quantity.cpp
   
   # Curve network
-  curve_network.cpp
-  curve_network_scalar_quantity.cpp
-  curve_network_color_quantity.cpp
-  curve_network_vector_quantity.cpp
+  # TODO restore
+  # curve_network.cpp
+  # curve_network_scalar_quantity.cpp
+  # curve_network_color_quantity.cpp
+  # curve_network_vector_quantity.cpp
   
   # Volume mesh
-  volume_mesh.cpp
-  volume_mesh_color_quantity.cpp
-  volume_mesh_scalar_quantity.cpp
-  volume_mesh_vector_quantity.cpp
+  # TODO restore
+  # volume_mesh.cpp
+  # volume_mesh_color_quantity.cpp
+  # volume_mesh_scalar_quantity.cpp
+  # volume_mesh_vector_quantity.cpp
   
   # Rendering utilities
   imgui_config.cpp

@@ -49,7 +49,6 @@ glm::vec3 unitSum(glm::vec3 v) {
 }
 
 
-
 class FieldTracer {
 
 public:
@@ -71,8 +70,13 @@ public:
   // Input should be identified (raised to power), not disambiguated
   FieldTracer(SurfaceMesh& mesh_, const std::vector<glm::vec2>& field, int nSym_ = 1) : mesh(mesh_), nSym(nSym_) {
 
-    mesh.ensureHaveFaceTangentSpaces();
+    mesh.checkTriangular();
     mesh.ensureHaveManifoldConnectivity();
+    mesh.checkHaveFaceTangentSpaces();
+    mesh.faceTangentSpaces.ensureHostBufferPopulated();
+    mesh.vertexPositions.ensureHostBufferPopulated();
+    mesh.faceAreas.ensureHostBufferPopulated();
+    mesh.faceNormals.ensureHostBufferPopulated();
 
     // Prepare the field
     faceVectors.resize(mesh.nFaces());
@@ -87,21 +91,19 @@ public:
     vert2InFaceBasis.resize(mesh.nFaces());
     totalArea = 0;
     for (size_t iF = 0; iF < mesh.nFaces(); iF++) {
-      std::vector<size_t>& face = mesh.faces[iF];
-
-      totalArea += mesh.faceAreas[iF];
+      totalArea += mesh.faceAreas.data[iF];
 
       // Face basis
-      glm::vec3 X = mesh.faceTangentSpaces[iF][0];
-      glm::vec3 Y = mesh.faceTangentSpaces[iF][1];
+      glm::vec3 X = mesh.faceTangentSpaces.data[iF][0];
+      glm::vec3 Y = mesh.faceTangentSpaces.data[iF][1];
 
       // Find each of the vertexPositions as a point in the basis
       // The first vertex is implicitly at (0,0)
-      size_t v0 = face[0];
-      size_t v1 = face[1];
-      size_t v2 = face[2];
-      glm::vec3 pos1 = mesh.vertexPositions[v1] - mesh.vertexPositions[v0];
-      glm::vec3 pos2 = mesh.vertexPositions[v2] - mesh.vertexPositions[v0];
+      size_t v0 = mesh.triangleVertexInds.data[3 * iF + 0];
+      size_t v1 = mesh.triangleVertexInds.data[3 * iF + 1];
+      size_t v2 = mesh.triangleVertexInds.data[3 * iF + 2];
+      glm::vec3 pos1 = mesh.vertexPositions.data[v1] - mesh.vertexPositions.data[v0];
+      glm::vec3 pos2 = mesh.vertexPositions.data[v2] - mesh.vertexPositions.data[v0];
       glm::vec2 p1{dot(X, pos1), dot(Y, pos1)};
       glm::vec2 p2{dot(X, pos2), dot(Y, pos2)};
 
@@ -116,12 +118,14 @@ public:
 
   glm::vec3 facePointInR3(FacePoint p) {
 
-    size_t v0 = mesh.faces[p.f][0];
-    size_t v1 = mesh.faces[p.f][1];
-    size_t v2 = mesh.faces[p.f][2];
 
-    return p.baryWeights[0] * mesh.vertexPositions[v0] + p.baryWeights[1] * mesh.vertexPositions[v1] +
-           p.baryWeights[2] * mesh.vertexPositions[v2];
+    size_t iF = p.f;
+    size_t v0 = mesh.triangleVertexInds.data[3 * iF + 0];
+    size_t v1 = mesh.triangleVertexInds.data[3 * iF + 1];
+    size_t v2 = mesh.triangleVertexInds.data[3 * iF + 2];
+
+    return p.baryWeights[0] * mesh.vertexPositions.data[v0] + p.baryWeights[1] * mesh.vertexPositions.data[v1] +
+           p.baryWeights[2] * mesh.vertexPositions.data[v2];
   }
 
 
@@ -138,7 +142,7 @@ public:
 
     // Add the initial point
     glm::vec3 initPoint = facePointInR3(startPoint);
-    points.push_back({{initPoint, mesh.faceNormals[startPoint.f]}});
+    points.push_back({{initPoint, mesh.faceNormals.data[startPoint.f]}});
 
     // Trace!
     FacePoint currPoint = startPoint;
@@ -146,7 +150,7 @@ public:
     size_t nFaces = 0;
     float lengthRemaining = maxLineLength;
     size_t prevFace = INVALID_IND;
-	size_t prevPrevFace = INVALID_IND;
+    size_t prevPrevFace = INVALID_IND;
     while (lengthRemaining > 0 && currPoint.f != prevPrevFace && nFaces < maxFaceCount) {
 
       nFaces++;
@@ -192,19 +196,19 @@ public:
       float tCross, tRay;
       if (hit0.tRay <= hit1.tRay && hit0.tRay <= hit2.tRay) {
         exitHeLocalIndex = 0;
-        exitHe = mesh.halfedgeIndices[currFace][0];
+        exitHe = 3 * currFace + 0;
         nextHe = mesh.twinHalfedge[exitHe];
         tCross = 1.0 - hit0.tLine;
         tRay = hit0.tRay;
       } else if (hit1.tRay <= hit0.tRay && hit1.tRay <= hit2.tRay) {
         exitHeLocalIndex = 1;
-        exitHe = mesh.halfedgeIndices[currFace][1];
+        exitHe = 3 * currFace + 1;
         nextHe = mesh.twinHalfedge[exitHe];
         tCross = 1.0 - hit1.tLine;
         tRay = hit1.tRay;
       } else if (hit2.tRay <= hit0.tRay && hit2.tRay <= hit1.tRay) {
         exitHeLocalIndex = 2;
-        exitHe = mesh.halfedgeIndices[currFace][2];
+        exitHe = 3 * currFace + 2;
         nextHe = mesh.twinHalfedge[exitHe];
         tCross = 1.0 - hit2.tLine;
         tRay = hit2.tRay;
@@ -218,22 +222,25 @@ public:
       if (tRay > lengthRemaining) {
         tRay = lengthRemaining;
         glm::vec2 endingPos = pointPos + tRay * traceDir;
-        glm::vec3 endingPosR3 = mesh.vertexPositions[mesh.faces[currFace][0]] +
-                                endingPos.x * mesh.faceTangentSpaces[currFace][0] +
-                                endingPos.y * mesh.faceTangentSpaces[currFace][1];
-        points.push_back({{endingPosR3, mesh.faceNormals[currFace]}});
+        size_t ind0 = mesh.triangleVertexInds.data[3 * currFace + 0];
+        glm::vec3 endingPosR3 = mesh.vertexPositions.data[ind0] +
+                                endingPos.x * mesh.faceTangentSpaces.data[currFace][0] +
+                                endingPos.y * mesh.faceTangentSpaces.data[currFace][1];
+        points.push_back({{endingPosR3, mesh.faceNormals.data[currFace]}});
         break;
       }
 
       // Generate a point for this intersection
       glm::vec2 newPointLocal = pointPos + tRay * traceDir;
-      glm::vec3 newPointR3 = mesh.vertexPositions[mesh.faces[currFace][0]] +
-                             newPointLocal.x * mesh.faceTangentSpaces[currFace][0] +
-                             newPointLocal.y * mesh.faceTangentSpaces[currFace][1];
-      glm::vec3 newNormal = mesh.faceNormals[currFace];
+
+      size_t ind0 = mesh.triangleVertexInds.data[3 * currFace + 0];
+      glm::vec3 newPointR3 = mesh.vertexPositions.data[ind0] +
+                             newPointLocal.x * mesh.faceTangentSpaces.data[currFace][0] +
+                             newPointLocal.y * mesh.faceTangentSpaces.data[currFace][1];
+      glm::vec3 newNormal = mesh.faceNormals.data[currFace];
       if (nextHe != INVALID_IND) {
-        nextFace = mesh.faceForHalfedge[nextHe];
-        newNormal = glm::normalize(newNormal + mesh.faceNormals[nextFace]);
+        nextFace = nextHe / 3; // indexing convention
+        newNormal = glm::normalize(newNormal + mesh.faceNormals.data[nextFace]);
       }
       points.push_back({{newPointR3, newNormal}});
 
@@ -249,19 +256,17 @@ public:
 
 
       // Find a direction of travel in the new face
-      currDir = rotateToTangentBasis(traceDir, mesh.faceTangentSpaces[currFace][0], mesh.faceTangentSpaces[currFace][1],
-                                     mesh.faceTangentSpaces[nextFace][0], mesh.faceTangentSpaces[nextFace][1]);
+      currDir = rotateToTangentBasis(traceDir, mesh.faceTangentSpaces.data[currFace][0],
+                                     mesh.faceTangentSpaces.data[currFace][1], mesh.faceTangentSpaces.data[nextFace][0],
+                                     mesh.faceTangentSpaces.data[nextFace][1]);
 
       // Figure out which halfedge in the next face is nextHe
-      unsigned int nextHeLocalIndex = 0;
-      while (mesh.halfedgeIndices[nextFace][nextHeLocalIndex] != nextHe) {
-        nextHeLocalIndex++;
-      }
+      unsigned int nextHeLocalIndex = nextHe - 3 * nextFace;
 
       // On a non-manifold / not oriented mesh, the halfedges we're transitioning between might actually point the same
       // way. If so, flip tCross.
-      size_t currTailVert = mesh.faces[currFace][exitHeLocalIndex];
-      size_t nextTailVert = mesh.faces[nextFace][nextHeLocalIndex];
+      size_t currTailVert = mesh.triangleVertexInds.data[3 * currFace + exitHeLocalIndex];
+      size_t nextTailVert = mesh.triangleVertexInds.data[3 * nextFace + nextHeLocalIndex];
       if (currTailVert == nextTailVert) {
         tCross = 1.0 - tCross;
       }
@@ -330,12 +335,7 @@ std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(SurfaceMesh& mesh,
                                                               int nSym, size_t nLines) {
 
   // Only works on triangle meshes
-  for (auto& face : mesh.faces) {
-    if (face.size() != 3) {
-      polyscope::warning("field tracing only supports triangular meshes");
-      return std::vector<std::vector<std::array<glm::vec3, 2>>>();
-    }
-  }
+  mesh.checkTriangular();
 
   // Preliminaries
 
@@ -348,6 +348,8 @@ std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(SurfaceMesh& mesh,
     nLines = static_cast<size_t>(std::ceil(lineFactor * std::sqrt(mesh.nFaces())));
   }
 
+  mesh.faceAreas.ensureHostBufferPopulated();
+
   // Shuffle the list of faces to get a reasonable distribution of starting points
   // Build a list of faces to start lines in. Unusually large faces get listed multiple times so we start more lines in
   // them. This roughly approximates a uniform sampling of the mesh. Small faces get oversampled, but that's much less
@@ -357,7 +359,7 @@ std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(SurfaceMesh& mesh,
     float meanArea = tracer.totalArea / mesh.nFaces();
     for (size_t iF = 0; iF < mesh.nFaces(); iF++) {
       faceQueue.push_back(iF);
-      float faceArea = mesh.faceAreas[iF];
+      float faceArea = mesh.faceAreas.data[iF];
       while (faceArea > meanArea) {
         faceQueue.push_back(iF);
         faceArea -= meanArea;
@@ -396,7 +398,7 @@ std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(SurfaceMesh& mesh,
     float r1 = unitRand();
     float r2 = unitRand();
     glm::vec3 randPoint{1.0 - std::sqrt(r1), std::sqrt(r1) * (1.0 - r2),
-                        r2 * std::sqrt(r1)};                           // uniform sampling in triangle
+                        r2 * std::sqrt(r1)};                             // uniform sampling in triangle
     randPoint = unitSum(10000.f * randPoint + glm::vec3{1, 1, 1} / 3.f); // pull slightly towards center
 
     // trace half of lines backwards through field, reduces concentration near areas of convergence

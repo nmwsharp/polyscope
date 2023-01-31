@@ -7,6 +7,7 @@
 #include "polyscope/point_cloud_quantity.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/render/managed_buffer.h"
 #include "polyscope/scaled_value.h"
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
@@ -55,6 +56,9 @@ public:
   virtual void updateObjectSpaceBounds() override;
   virtual std::string typeName() override;
   virtual void refresh() override;
+
+  // === Geometry members
+  render::ManagedBuffer<glm::vec3> points;
 
   // === Quantities
 
@@ -129,21 +133,16 @@ public:
 
   // Rendering helpers used by quantities
   void setPointCloudUniforms(render::ShaderProgram& p);
-  void setPointProgramGeometryBuffers(render::ShaderProgram& p);
+  void setPointProgramGeometryAttributes(render::ShaderProgram& p);
   std::vector<std::string> addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud = true);
   std::string getShaderNameForRenderMode();
-  std::shared_ptr<render::AttributeBuffer> getPositionRenderBuffer();
-  std::shared_ptr<render::AttributeBuffer> getPointRadiusRenderBuffer();
+  std::shared_ptr<render::AttributeBuffer> getPointRadiusDrawBuffer();
 
   // === ~DANGER~ experimental/unsupported functions
 
-  // After updating any data via the buffer above, call this function to let
-  // Polyscope know.
-  void renderBufferDataExternallyUpdated();
-
 
 private:
-  std::vector<glm::vec3> points;
+  std::vector<glm::vec3> pointsData;
 
   // === Visualization parameters
   PersistentValue<std::string> pointRenderMode;
@@ -157,15 +156,10 @@ private:
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> pickProgram;
 
-  bool pointsStoredInMemory();
-
   // === Helpers
   // Do setup work related to drawing, including allocating openGL data
-  void ensureRenderBuffersFilled();
-  void updateRenderBuffersIfAllocated();
   void ensureRenderProgramPrepared();
   void ensurePickProgramPrepared();
-  void dataUpdated();
 
   // === Quantity adder implementations
   PointCloudScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);

@@ -12,61 +12,15 @@
 #include <fstream>
 #include <iostream>
 
-using std::cout;
-using std::endl;
-
 namespace polyscope {
 
-SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh_, MeshElement definedOn_,
-                                             VectorType vectorType_)
-    : SurfaceMeshQuantity(name, mesh_), vectorType(vectorType_),
-      ribbonEnabled(uniquePrefix() + "#ribbonEnabled", false) {}
+SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh_, MeshElement definedOn_)
+    : SurfaceMeshQuantity(name, mesh_)
+// ribbonEnabled(uniquePrefix() + "#ribbonEnabled", false)
+{}
 
 
-void SurfaceVectorQuantity::prepareVectorArtist() {
-  vectorArtist.reset(new VectorArtist(parent, name + "#vectorartist", vectorRoots, vectors, vectorType));
-}
-
-void SurfaceVectorQuantity::draw() {
-  if (!isEnabled()) return;
-  vectorArtist->draw();
-}
-
-void SurfaceVectorQuantity::buildCustomUI() {
-  ImGui::SameLine();
-  vectorArtist->buildParametersUI();
-  drawSubUI();
-}
-
-void SurfaceVectorQuantity::drawSubUI() {}
-
-SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorLengthScale(double newLength, bool isRelative) {
-  vectorArtist->setVectorLengthScale(newLength, isRelative);
-  return this;
-}
-double SurfaceVectorQuantity::getVectorLengthScale() { return vectorArtist->getVectorLengthScale(); }
-SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorRadius(double val, bool isRelative) {
-  vectorArtist->setVectorRadius(val, isRelative);
-  return this;
-}
-double SurfaceVectorQuantity::getVectorRadius() { return vectorArtist->getVectorRadius(); }
-SurfaceVectorQuantity* SurfaceVectorQuantity::setVectorColor(glm::vec3 color) {
-  vectorArtist->setVectorColor(color);
-  return this;
-}
-glm::vec3 SurfaceVectorQuantity::getVectorColor() { return vectorArtist->getVectorColor(); }
-
-SurfaceVectorQuantity* SurfaceVectorQuantity::setMaterial(std::string m) {
-  vectorArtist->setMaterial(m);
-  return this;
-}
-std::string SurfaceVectorQuantity::getMaterial() { return vectorArtist->getMaterial(); }
-
-SurfaceVectorQuantity* SurfaceVectorQuantity::setRibbonEnabled(bool val) {
-  ribbonEnabled = val;
-  requestRedraw();
-  return this;
-}
+/*
 bool SurfaceVectorQuantity::isRibbonEnabled() { return ribbonEnabled.get(); }
 
 SurfaceVectorQuantity* SurfaceVectorQuantity::setRibbonWidth(double val, bool isRelative) {
@@ -94,6 +48,7 @@ std::string SurfaceVectorQuantity::getRibbonMaterial() {
   }
   return "";
 }
+*/
 
 // ========================================================
 // ==========           Vertex Vector            ==========
@@ -101,28 +56,38 @@ std::string SurfaceVectorQuantity::getRibbonMaterial() {
 
 SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                          SurfaceMesh& mesh_, VectorType vectorType_)
-
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_) {
-  vectors = vectors_;
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX), VectorQuantity<SurfaceVertexVectorQuantity>(
+                                                                   *this, vectors_, parent.vertexPositions,
+                                                                   vectorType_) {
   refresh();
 }
 
 void SurfaceVertexVectorQuantity::refresh() {
-  vectorRoots = parent.vertexPositions;
-  prepareVectorArtist();
+  refreshVectors();
+  Quantity::refresh();
 }
+
+void SurfaceVertexVectorQuantity::draw() {
+  if (!isEnabled()) return;
+  drawVectors();
+}
+
+void SurfaceVertexVectorQuantity::buildCustomUI() { buildVectorUI(); }
+
 
 void SurfaceVertexVectorQuantity::buildVertexInfoGUI(size_t iV) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
+  glm::vec3 vec = vectors.getValue(iV);
+
   std::stringstream buffer;
-  buffer << vectors[iV];
+  buffer << vec;
   ImGui::TextUnformatted(buffer.str().c_str());
 
   ImGui::NextColumn();
   ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", glm::length(vectors[iV]));
+  ImGui::Text("magnitude: %g", glm::length(vec));
   ImGui::NextColumn();
 }
 
@@ -134,30 +99,36 @@ std::string SurfaceVertexVectorQuantity::niceName() { return name + " (vertex ve
 
 SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                      SurfaceMesh& mesh_, VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_) {
-  vectors = vectors_;
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE), VectorQuantity<SurfaceFaceVectorQuantity>(
+                                                                 *this, vectors_, parent.faceCenters, vectorType_) {
   refresh();
 }
 
 void SurfaceFaceVectorQuantity::refresh() {
-  vectorRoots.resize(parent.nFaces());
-  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
-    vectorRoots[iF] = parent.faceCenter(iF);
-  }
-  prepareVectorArtist();
+  refreshVectors();
+  Quantity::refresh();
 }
+
+void SurfaceFaceVectorQuantity::draw() {
+  if (!isEnabled()) return;
+  drawVectors();
+}
+
+void SurfaceFaceVectorQuantity::buildCustomUI() { buildVectorUI(); }
 
 void SurfaceFaceVectorQuantity::buildFaceInfoGUI(size_t iF) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
+  glm::vec3 vec = vectors.getValue(iF);
+
   std::stringstream buffer;
-  buffer << vectors[iF];
+  buffer << vec;
   ImGui::TextUnformatted(buffer.str().c_str());
 
   ImGui::NextColumn();
   ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", glm::length(vectors[iF]));
+  ImGui::Text("magnitude: %g", glm::length(vec));
   ImGui::NextColumn();
 }
 
@@ -170,66 +141,24 @@ std::string SurfaceFaceVectorQuantity::niceName() { return name + " (face vector
 
 SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::string name,
                                                                        std::vector<glm::vec2> vectors_,
-                                                                       SurfaceMesh& mesh_, int nSym_,
-                                                                       VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, vectorType_), nSym(nSym_), vectorField(vectors_) {
-  refresh();
+                                                                       SurfaceMesh& mesh_, VectorType vectorType_)
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE), TangentVectorQuantity<SurfaceFaceIntrinsicVectorQuantity>(
+                                                                 *this, vectors_, parent.faceCenters,
+                                                                 parent.faceTangentSpaces, vectorType_) {
+  parent.checkHaveFaceTangentSpaces();
+  refresh(); // TODO
 }
 
 void SurfaceFaceIntrinsicVectorQuantity::refresh() {
-  parent.ensureHaveFaceTangentSpaces();
-
-  double rotAngle = 2.0 * PI / nSym;
-  Complex rot = std::exp(Complex(0, 1) * rotAngle);
-
-  // Copy the vectors
-  vectors.clear();
-  vectorRoots.clear();
-  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
-
-    glm::vec3 normal = parent.faceNormals[iF];
-    glm::vec3 basisX = parent.faceTangentSpaces[iF][0];
-    glm::vec3 basisY = parent.faceTangentSpaces[iF][1];
-
-    glm::vec2 vec = vectorField[iF];
-    Complex angle = std::pow(Complex(vec.x, vec.y), 1.0 / nSym);
-
-    // Face center
-    auto& face = parent.faces[iF];
-    size_t D = face.size();
-    glm::vec3 faceCenter = parent.faceCenter(iF);
-
-    for (int iRot = 0; iRot < nSym; iRot++) {
-      vectorRoots.push_back(faceCenter);
-
-      glm::vec3 vec = basisX * (float)angle.real() + basisY * (float)angle.imag();
-      vectors.push_back(vec);
-
-      angle *= rot;
-    }
-  }
-
-  prepareVectorArtist();
-  ribbonArtist.reset();
-}
-
-void SurfaceFaceIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
-  ImGui::TextUnformatted(name.c_str());
-  ImGui::NextColumn();
-
-  std::stringstream buffer;
-  buffer << "<" << vectorField[iF].x << "," << vectorField[iF].y << ">";
-  ImGui::TextUnformatted(buffer.str().c_str());
-
-  ImGui::NextColumn();
-  ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", glm::length(vectorField[iF]));
-  ImGui::NextColumn();
+  refreshVectors();
+  Quantity::refresh();
 }
 
 void SurfaceFaceIntrinsicVectorQuantity::draw() {
-  SurfaceVectorQuantity::draw();
+  if (!isEnabled()) return;
+  drawVectors();
 
+  /*
   if (ribbonEnabled.get() && isEnabled()) {
 
     // Make sure we have a ribbon artist
@@ -241,15 +170,35 @@ void SurfaceFaceIntrinsicVectorQuantity::draw() {
     // Update transform matrix from parent
     ribbonArtist->draw();
   }
+  */
 }
 
-void SurfaceFaceIntrinsicVectorQuantity::drawSubUI() {
+void SurfaceFaceIntrinsicVectorQuantity::buildCustomUI() {
+  buildVectorUI();
 
+  /*
   if (ImGui::Checkbox("Draw ribbon", &ribbonEnabled.get())) setRibbonEnabled(isRibbonEnabled());
   if (ribbonEnabled.get() && ribbonArtist != nullptr) {
     ImGui::SameLine();
     ribbonArtist->buildParametersGUI();
   }
+  */
+}
+
+void SurfaceFaceIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+
+  glm::vec2 vec = tangentVectors.getValue(iF);
+
+  std::stringstream buffer;
+  buffer << vec;
+  ImGui::TextUnformatted(buffer.str().c_str());
+
+  ImGui::NextColumn();
+  ImGui::NextColumn();
+  ImGui::Text("magnitude: %g", glm::length(vec));
+  ImGui::NextColumn();
 }
 
 std::string SurfaceFaceIntrinsicVectorQuantity::niceName() { return name + " (face intrinsic vector)"; }
@@ -261,61 +210,24 @@ std::string SurfaceFaceIntrinsicVectorQuantity::niceName() { return name + " (fa
 
 SurfaceVertexIntrinsicVectorQuantity::SurfaceVertexIntrinsicVectorQuantity(std::string name,
                                                                            std::vector<glm::vec2> vectors_,
-                                                                           SurfaceMesh& mesh_, int nSym_,
-                                                                           VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX, vectorType_), nSym(nSym_), vectorField(vectors_) {
-  refresh();
+                                                                           SurfaceMesh& mesh_, VectorType vectorType_)
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX),
+      TangentVectorQuantity<SurfaceVertexIntrinsicVectorQuantity>(*this, vectors_, parent.vertexPositions,
+                                                                  parent.vertexTangentSpaces, vectorType_) {
+  parent.checkHaveVertexTangentSpaces();
+  refresh(); // TODO
 }
 
 void SurfaceVertexIntrinsicVectorQuantity::refresh() {
-  parent.ensureHaveVertexTangentSpaces();
-
-  double rotAngle = 2.0 * PI / nSym;
-  Complex rot = std::exp(Complex(0, 1) * rotAngle);
-
-  // Copy the vectors
-  vectors.clear();
-  vectorRoots.clear();
-  for (size_t iV = 0; iV < parent.nVertices(); iV++) {
-
-    glm::vec3 normal = parent.vertexNormals[iV];
-    glm::vec3 basisX = parent.vertexTangentSpaces[iV][0];
-    glm::vec3 basisY = parent.vertexTangentSpaces[iV][1];
-
-    glm::vec2 vec = vectorField[iV];
-    Complex angle = std::pow(Complex(vec.x, vec.y), 1.0 / nSym);
-
-    for (int iRot = 0; iRot < nSym; iRot++) {
-      vectorRoots.push_back(parent.vertexPositions[iV]);
-
-      glm::vec3 vec = basisX * (float)angle.real() + basisY * (float)angle.imag();
-      vectors.push_back(vec);
-
-      angle *= rot;
-    }
-  }
-
-  prepareVectorArtist();
-  ribbonArtist.reset();
-}
-
-void SurfaceVertexIntrinsicVectorQuantity::buildVertexInfoGUI(size_t iV) {
-  ImGui::TextUnformatted(name.c_str());
-  ImGui::NextColumn();
-
-  std::stringstream buffer;
-  buffer << "<" << vectorField[iV].x << "," << vectorField[iV].y << ">";
-  ImGui::TextUnformatted(buffer.str().c_str());
-
-  ImGui::NextColumn();
-  ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", glm::length(vectorField[iV]));
-  ImGui::NextColumn();
+  refreshVectors();
+  Quantity::refresh();
 }
 
 void SurfaceVertexIntrinsicVectorQuantity::draw() {
-  SurfaceVectorQuantity::draw();
+  if (!isEnabled()) return;
+  drawVectors();
 
+  /* Ribbons
   if (isEnabled() && ribbonEnabled.get()) {
 
     // Make sure we have a ribbon artist
@@ -365,15 +277,36 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
     // Update transform matrix from parent
     ribbonArtist->draw();
   }
+  */
 }
 
-void SurfaceVertexIntrinsicVectorQuantity::drawSubUI() {
+void SurfaceVertexIntrinsicVectorQuantity::buildCustomUI() {
+  buildVectorUI();
 
+  /*
   if (ImGui::Checkbox("Draw ribbon", &ribbonEnabled.get())) setRibbonEnabled(isRibbonEnabled());
   if (ribbonEnabled.get() && ribbonArtist != nullptr) {
     ImGui::SameLine();
     ribbonArtist->buildParametersGUI();
   }
+  */
+}
+
+
+void SurfaceVertexIntrinsicVectorQuantity::buildVertexInfoGUI(size_t iV) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+
+  glm::vec2 vec = tangentVectors.getValue(iV);
+
+  std::stringstream buffer;
+  buffer << vec;
+  ImGui::TextUnformatted(buffer.str().c_str());
+
+  ImGui::NextColumn();
+  ImGui::NextColumn();
+  ImGui::Text("magnitude: %g", glm::length(vec));
+  ImGui::NextColumn();
 }
 
 std::string SurfaceVertexIntrinsicVectorQuantity::niceName() { return name + " (vertex intrinsic vector)"; }
@@ -382,111 +315,85 @@ std::string SurfaceVertexIntrinsicVectorQuantity::niceName() { return name + " (
 // ==========        Intrinsic One Form          ==========
 // ========================================================
 
+namespace {
+// helper function used below
 
-SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std::string name,
-                                                                             std::vector<double> oneForm_,
-                                                                             std::vector<char> canonicalOrientation_,
-                                                                             SurfaceMesh& mesh_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE, VectorType::STANDARD), oneForm(oneForm_),
-      canonicalOrientation(canonicalOrientation_) {
-  refresh();
-}
+std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std::vector<double>& oneForm, std::vector<char>& canonicalOrientation) {
 
-void SurfaceOneFormIntrinsicVectorQuantity::refresh() {
+  mesh.vertexPositions.ensureHostBufferPopulated();
+  mesh.faceAreas.ensureHostBufferPopulated();
+  mesh.faceNormals.ensureHostBufferPopulated();
+  mesh.defaultFaceTangentSpaces.ensureHostBufferPopulated();
+  mesh.triangleEdgeInds.ensureHostBufferPopulated();
+  mesh.triangleFaceInds.ensureHostBufferPopulated();
 
-  // If the parent doesn't have face tangent spaces, auto-generate them
-  // (since the user shouldn't have to think about face tangent spaces to specify a 1-form)
-  if (!parent.hasFaceTangentSpaces()) {
-    parent.generateDefaultFaceTangentSpaces();
-  }
+  std::vector<glm::vec2> mappedVectorField(mesh.nFaces());
 
-  parent.ensureHaveFaceTangentSpaces();
-  vectorRoots = std::vector<glm::vec3>(parent.nFaces(), glm::vec3{0., 0., 0.});
-  vectors = std::vector<glm::vec3>(parent.nFaces(), glm::vec3{0., 0., 0.});
-  mappedVectorField = std::vector<glm::vec2>(parent.nFaces(), glm::vec3{0., 0., 0.});
-
-  // Remap to faces
-  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
-    auto& face = parent.faces[iF];
-    size_t D = face.size();
-
-    // sorry, need triangles
-    if (D != 3) {
-      warning("tried to visualize 1-form with non-triangular face");
-      continue;
-    }
-
-    // find the face center
-    glm::vec3 faceCenter = parent.faceCenter(iF);
-    vectorRoots[iF] = faceCenter;
+  for (size_t iF = 0; iF < mesh.nFaces(); iF++) {
 
     std::array<float, 3> formValues;
     std::array<glm::vec3, 3> vecValues;
-    for (size_t j = 0; j < D; j++) {
-      size_t vA = face[j];
-      size_t vB = face[(j + 1) % D];
-      size_t iE = parent.edgeIndices[iF][j];
+    for (size_t j = 0; j < 3; j++) {
+      size_t vA = mesh.triangleFaceInds.data[3 * iF + j];
+      size_t vB = mesh.triangleFaceInds.data[3 * iF + ((j + 1) % 3)];
+      size_t iE = mesh.triangleEdgeInds.data[3 * iF + j];
 
-      bool isCanonicalOriented;
-      if (parent.vertexPerm.size() > 0) {
-        isCanonicalOriented = ((parent.vertexPerm[vB] > parent.vertexPerm[vA]) != canonicalOrientation[iE]);
-      } else {
-        isCanonicalOriented = ((vB > vA) != canonicalOrientation[iE]);
-      }
+      bool isCanonicalOriented = vB > vA != (canonicalOrientation[iE]); // TODO double check convention
       double orientationSign = isCanonicalOriented ? 1. : -1.;
 
       formValues[j] = orientationSign * oneForm[iE];
 
-      glm::vec3 heVec = parent.vertexPositions[vB] - parent.vertexPositions[vA];
-      vecValues[j] = glm::cross(heVec, parent.faceNormals[iF]);
+      glm::vec3 heVec = mesh.vertexPositions.data[vB] - mesh.vertexPositions.data[vA];
+      vecValues[j] = glm::cross(heVec, mesh.faceNormals.data[iF]);
     }
-
 
     // Whitney interpolation at center
     glm::vec3 result{0., 0., 0.};
     for (int j = 0; j < 3; j++) {
       result += (formValues[(j + 1) % 3] - formValues[(j + 2) % 3]) * vecValues[j];
     }
-    result /= static_cast<float>(6. * parent.faceAreas[iF]);
+    result /= static_cast<float>(6. * mesh.faceAreas.data[iF]);
 
-    glm::vec2 approxVec{glm::dot(result, parent.faceTangentSpaces[iF][0]),
-                        glm::dot(result, parent.faceTangentSpaces[iF][1])};
+    glm::vec2 approxVec{glm::dot(result, mesh.defaultFaceTangentSpaces.data[iF][0]),
+                        glm::dot(result, mesh.defaultFaceTangentSpaces.data[iF][1])};
     mappedVectorField[iF] = approxVec;
 
     // Fill out data for the little arrows
-    vectors[iF] = result;
+    mappedVectorField[iF] = result;
   }
 
-  prepareVectorArtist();
-  ribbonArtist.reset();
+  return mappedVectorField;
 }
 
-void SurfaceOneFormIntrinsicVectorQuantity::buildEdgeInfoGUI(size_t iE) {
-  ImGui::TextUnformatted(name.c_str());
-  ImGui::NextColumn();
+} // namespace
 
-  ImGui::Text("%g", oneForm[iE]);
+SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std::string name,
+                                                                             std::vector<double> oneForm_,
+                                                                             std::vector<char> canonicalOrientation_,
+                                                                             SurfaceMesh& mesh_)
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE),
+      TangentVectorQuantity<SurfaceOneFormIntrinsicVectorQuantity>(*this, oneFormToFaceTangentVectors(mesh_, oneForm_, canonicalOrientation_),
+                                                                   parent.faceCenters, parent.defaultFaceTangentSpaces,
+                                                                   VectorType::STANDARD),
+      oneForm(oneForm_),
+      canonicalOrientation(canonicalOrientation_)
 
-  ImGui::NextColumn();
+
+{
+  refresh(); // TODO
 }
 
-void SurfaceOneFormIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
-  ImGui::TextUnformatted((name + " (remapped)").c_str());
-  ImGui::NextColumn();
-
-  std::stringstream buffer;
-  buffer << "<" << mappedVectorField[iF].x << "," << mappedVectorField[iF].y << ">";
-  ImGui::TextUnformatted(buffer.str().c_str());
-
-  ImGui::NextColumn();
-  ImGui::NextColumn();
-  ImGui::Text("magnitude: %g", glm::length(mappedVectorField[iF]));
-  ImGui::NextColumn();
+void SurfaceOneFormIntrinsicVectorQuantity::refresh() {
+  // Remap to faces
+  tangentVectors.data = oneFormToFaceTangentVectors(parent, oneForm, canonicalOrientation);
+  tangentVectors.markHostBufferUpdated();
 }
 
 void SurfaceOneFormIntrinsicVectorQuantity::draw() {
-  SurfaceVectorQuantity::draw();
+  if (!isEnabled()) return;
+  drawVectors();
 
+  /*
   if (isEnabled() && ribbonEnabled.get()) {
 
     // Make sure we have a ribbon artist
@@ -504,15 +411,28 @@ void SurfaceOneFormIntrinsicVectorQuantity::draw() {
     // Update transform matrix from parent
     ribbonArtist->draw();
   }
+  */
 }
 
-void SurfaceOneFormIntrinsicVectorQuantity::drawSubUI() {
+void SurfaceOneFormIntrinsicVectorQuantity::buildCustomUI() {
+  buildVectorUI();
 
+  /*
   if (ImGui::Checkbox("Draw ribbon", &ribbonEnabled.get())) setRibbonEnabled(isRibbonEnabled());
   if (ribbonEnabled.get() && ribbonArtist != nullptr) {
     ImGui::SameLine();
     ribbonArtist->buildParametersGUI();
   }
+  */
+}
+
+void SurfaceOneFormIntrinsicVectorQuantity::buildEdgeInfoGUI(size_t iE) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+
+  ImGui::Text("%g", oneForm[iE]);
+
+  ImGui::NextColumn();
 }
 
 std::string SurfaceOneFormIntrinsicVectorQuantity::niceName() { return name + " (1-form intrinsic vector)"; }

@@ -122,6 +122,7 @@ void SlicePlane::prepare() {
 }
 
 void SlicePlane::setVolumeMeshToInspect(std::string meshname) {
+  /* TODO restore
   VolumeMesh* oldMeshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
   if (oldMeshToInspect != nullptr) {
     oldMeshToInspect->removeSlicePlaneListener(this);
@@ -140,11 +141,13 @@ void SlicePlane::setVolumeMeshToInspect(std::string meshname) {
   meshToInspect->ensureHaveTets(); // do this as early as possible because it is expensive
   shouldInspectMesh = true;
   volumeInspectProgram.reset();
+   */
 }
 
 std::string SlicePlane::getVolumeMeshToInspect() { return inspectedMeshName; }
 
 void SlicePlane::ensureVolumeInspectValid() {
+  /* TODO restore
   if (!shouldInspectMesh) return;
 
   // This method exists to save us in any cases where we might be inspecting a volume mesh when that mesh is deleted. We
@@ -155,19 +158,23 @@ void SlicePlane::ensureVolumeInspectValid() {
     shouldInspectMesh = false;
     volumeInspectProgram = nullptr;
   }
+  */
 }
 
 void SlicePlane::createVolumeSliceProgram() {
+  /* TODO RESTORE
   VolumeMesh* meshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
   volumeInspectProgram = render::engine->requestShader(
       "SLICE_TETS", meshToInspect->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}, true, true));
   meshToInspect->fillSliceGeometryBuffers(*volumeInspectProgram);
   render::engine->setMaterial(*volumeInspectProgram, meshToInspect->getMaterial());
+  */
 }
 
 void SlicePlane::resetVolumeSliceProgram() { volumeInspectProgram.reset(); }
 
 void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
+  /* TODO restore
   VolumeMesh* meshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
   std::vector<glm::vec3> point1;
   std::vector<glm::vec3> point2;
@@ -191,9 +198,11 @@ void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
   p.setAttribute("a_slice_2", point2);
   p.setAttribute("a_slice_3", point3);
   p.setAttribute("a_slice_4", point4);
-}
+  */
+  }
 
 void SlicePlane::drawGeometry() {
+  /* TODO restore
   if (!active.get()) return;
 
   ensureVolumeInspectValid();
@@ -228,6 +237,7 @@ void SlicePlane::drawGeometry() {
       it->second->drawSlice(this);
     }
   }
+  */
 }
 
 

@@ -22,8 +22,8 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 
 // Constructor
 PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
-    : QuantityStructure<PointCloud>(name, structureTypeName), points(std::move(points_)),
-      pointRenderMode(uniquePrefix() + "#pointRenderMode", "sphere"),
+    : QuantityStructure<PointCloud>(name, structureTypeName), points(uniquePrefix() + "#points", pointsData),
+      pointsData(std::move(points_)), pointRenderMode(uniquePrefix() + "#pointRenderMode", "sphere"),
       pointColor(uniquePrefix() + "#pointColor", getNextUniqueColor()),
       pointRadius(uniquePrefix() + "#pointRadius", relativeValue(0.005)),
       material(uniquePrefix() + "#material", "clay") {
@@ -109,13 +109,8 @@ void PointCloud::drawPick() {
 }
 
 void PointCloud::ensureRenderProgramPrepared() {
-
   // If already prepared, do nothing
   if (program) return;
-
-  // Fill out the geometry data for the program
-  // (ensure the positionRenderBuffer is populated)
-  ensureRenderBuffersFilled();
 
   // clang-format off
   program = render::engine->requestShader(
@@ -124,7 +119,7 @@ void PointCloud::ensureRenderProgramPrepared() {
   );
   // clang-format on
 
-  setPointProgramGeometryBuffers(*program);
+  setPointProgramGeometryAttributes(*program);
 
   render::engine->setMaterial(*program, material.get());
 }
@@ -145,7 +140,7 @@ void PointCloud::ensurePickProgramPrepared() {
   );
   // clang-format on
 
-  setPointProgramGeometryBuffers(*pickProgram);
+  setPointProgramGeometryAttributes(*pickProgram);
 
   // Fill color buffer with packed point indices
   std::vector<glm::vec3> pickColors;
@@ -158,10 +153,10 @@ void PointCloud::ensurePickProgramPrepared() {
   pickProgram->setAttribute("a_color", pickColors);
 }
 
-void PointCloud::setPointProgramGeometryBuffers(render::ShaderProgram& p) {
-  p.setAttribute("a_position", getPositionRenderBuffer());
+void PointCloud::setPointProgramGeometryAttributes(render::ShaderProgram& p) {
+  p.setAttribute("a_position", points.getRenderAttributeBuffer());
   if (pointRadiusQuantityName != "") {
-    p.setAttribute("a_pointRadius", getPointRadiusRenderBuffer());
+    p.setAttribute("a_pointRadius", getPointRadiusDrawBuffer());
   }
 }
 
@@ -173,46 +168,19 @@ std::string PointCloud::getShaderNameForRenderMode() {
   return "ERROR";
 }
 
-std::shared_ptr<render::AttributeBuffer> PointCloud::getPositionRenderBuffer() {
-  ensureRenderBuffersFilled();
-  return positionRenderBuffer;
-}
-
-std::shared_ptr<render::AttributeBuffer> PointCloud::getPointRadiusRenderBuffer() {
+std::shared_ptr<render::AttributeBuffer> PointCloud::getPointRadiusDrawBuffer() {
   if (pointRadiusQuantityName != "") {
     // Resolve the quantity
     PointCloudScalarQuantity& radQ = resolvePointRadiusQuantity();
-    return radQ.getScalarRenderBuffer();
+    return radQ.values.getRenderAttributeBuffer();
   }
   return nullptr;
 }
 
-bool PointCloud::pointsStoredInMemory() { return !points.empty(); }
+size_t PointCloud::nPoints() { return points.size(); }
 
-size_t PointCloud::nPoints() {
-  if (pointsStoredInMemory()) {
-    return points.size();
-  } else {
-    if (!positionRenderBuffer || !positionRenderBuffer->isSet()) {
-      throw std::runtime_error("buffer is not allocated when it should be");
-    }
-    return static_cast<size_t>(positionRenderBuffer->getDataSize());
-  }
-}
+glm::vec3 PointCloud::getPointPosition(size_t iPt) { return points.getValue(iPt); }
 
-glm::vec3 PointCloud::getPointPosition(size_t iPt) {
-  if (pointsStoredInMemory()) {
-    return points[iPt];
-  } else {
-    return positionRenderBuffer->getData_vec3(iPt);
-  }
-}
-
-
-void PointCloud::renderBufferDataExternallyUpdated() {
-  points.clear();
-  requestRedraw();
-}
 
 std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud) {
   initRules = addStructureRules(initRules);
@@ -246,23 +214,7 @@ PointCloudScalarQuantity& PointCloud::resolvePointRadiusQuantity() {
   return *sizeScalarQ;
 }
 
-void PointCloud::updateRenderBuffersIfAllocated() {
-  if (!positionRenderBuffer) return;
-  positionRenderBuffer->setData(points);
-}
-void PointCloud::ensureRenderBuffersFilled() {
-  if (positionRenderBuffer) return; // if it already exists, quick-out
-  positionRenderBuffer = render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
-  updateRenderBuffersIfAllocated();
-}
-
-void PointCloud::dataUpdated() {
-  updateRenderBuffersIfAllocated();
-  requestRedraw();
-}
-
 void PointCloud::buildPickUI(size_t localPickID) {
-
   ImGui::TextUnformatted(("#" + std::to_string(localPickID) + "  ").c_str());
   ImGui::SameLine();
   ImGui::TextUnformatted(to_string(getPointPosition(localPickID)).c_str());
@@ -298,8 +250,6 @@ void PointCloud::buildCustomUI() {
 }
 
 void PointCloud::buildCustomOptionsUI() {
-
-
   if (ImGui::BeginMenu("Point Render Mode")) {
 
     for (const PointRenderMode& m : {PointRenderMode::Sphere, PointRenderMode::Quad}) {
@@ -344,14 +294,12 @@ void PointCloud::buildCustomOptionsUI() {
 }
 
 void PointCloud::updateObjectSpaceBounds() {
-
-  // TODO actually handle this case
-  if (!pointsStoredInMemory()) return;
+  points.ensureHostBufferPopulated();
 
   // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
-  for (const glm::vec3& p : points) {
+  for (const glm::vec3& p : points.data) {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
@@ -360,7 +308,7 @@ void PointCloud::updateObjectSpaceBounds() {
   // length scale, as twice the radius from the center of the bounding box
   glm::vec3 center = 0.5f * (min + max);
   float lengthScale = 0.0;
-  for (const glm::vec3& p : points) {
+  for (const glm::vec3& p : points.data) {
     lengthScale = std::max(lengthScale, glm::length2(p - center));
   }
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);
@@ -424,19 +372,26 @@ PointCloudScalarQuantity* PointCloud::addScalarQuantityImpl(std::string name, co
 PointCloudParameterizationQuantity* PointCloud::addParameterizationQuantityImpl(std::string name,
                                                                                 const std::vector<glm::vec2>& param,
                                                                                 ParamCoordsType type) {
+  /*
   PointCloudParameterizationQuantity* q =
       new PointCloudParameterizationQuantity(name, param, type, ParamVizStyle::CHECKER, *this);
   addQuantity(q);
   return q;
+  */
+
+  return nullptr; // TODO restore
 }
 
 PointCloudParameterizationQuantity*
 PointCloud::addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param,
                                                  ParamCoordsType type) {
+  /*
   PointCloudParameterizationQuantity* q =
       new PointCloudParameterizationQuantity(name, param, type, ParamVizStyle::LOCAL_CHECK, *this);
   addQuantity(q);
   return q;
+  */
+  return nullptr; // TODO restore
 }
 
 PointCloudVectorQuantity* PointCloud::addVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors,

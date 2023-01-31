@@ -3,6 +3,7 @@
 #include "polyscope/persistent_value.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/render/managed_buffer.h"
 #include "polyscope/standardize_data_array.h"
 
 namespace polyscope {
@@ -28,29 +29,17 @@ public:
 
   // === Members
   QuantityT& quantity;
-
-  bool colorsStoredInMemory();
-  size_t nColorSize();
-  glm::vec3 getColorValue(size_t ind);
+  render::ManagedBuffer<glm::vec3> colors; 
 
   // === Get/set visualization parameters
 
-
   // === ~DANGER~ experimental/unsupported functions
 
-  std::shared_ptr<render::AttributeBuffer> getColorRenderBuffer();
-  void renderBufferDataExternallyUpdated();
-
 protected:
-  // Helpers
-  void dataUpdated();
-  void ensureRenderBuffersFilled();
-  void updateRenderBuffersIfAllocated();
 
-  std::vector<glm::vec3> colors;
+  std::vector<glm::vec3> colorsData;
 
   // === Visualization parameters
-  std::shared_ptr<render::AttributeBuffer> colorRenderBuffer;
 
   // Parameters
 };

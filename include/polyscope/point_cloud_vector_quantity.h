@@ -19,10 +19,6 @@ public:
   virtual void buildPickUI(size_t ind) override;
   virtual std::string niceName() override;
   virtual void refresh() override;
-
-private:
-  void dataUpdated();
-  void ensureBaseRenderBufferResolved();
 };
 
 } // namespace polyscope

@@ -23,7 +23,6 @@ const ShaderStageSpecification FLEX_MESH_VERT_SHADER = {
         {"a_vertexPositions", RenderDataType::Vector3Float},
         {"a_vertexNormals", RenderDataType::Vector3Float},
         {"a_barycoord", RenderDataType::Vector3Float},
-        {"a_faceInds", RenderDataType::UInt, AttributeAccessType::Indexed},
     },
 
     {}, // textures
@@ -36,12 +35,11 @@ R"(
         uniform mat4 u_projMatrix;
         
         in uint a_faceInds;
-        out uint a_faceIndsToFrag;
         
         in vec3 a_vertexPositions;
         in vec3 a_vertexNormals;
-        // in vec3 a_barycoord;
-        // out vec3 a_barycoordToFrag;
+        in vec3 a_barycoord;
+        out vec3 a_barycoordToFrag;
         out vec3 a_vertexNormalToFrag;
         
         ${ VERT_DECLARATIONS }$
@@ -49,11 +47,9 @@ R"(
         void main()
         {
             gl_Position = u_projMatrix * u_modelView * vec4(a_vertexPositions,1.);
-
-            a_faceIndsToFrag = a_faceInds;
             
             a_vertexNormalToFrag = mat3(u_modelView) * a_vertexNormals;
-            // a_barycoordToFrag = a_barycoord;
+            a_barycoordToFrag = a_barycoord;
 
             ${ VERT_ASSIGNMENTS }$
         }
@@ -78,9 +74,7 @@ const ShaderStageSpecification FLEX_MESH_FRAG_SHADER = {
 R"(
         ${ GLSL_VERSION }$
         in vec3 a_vertexNormalToFrag;
-        // in vec3 a_barycoordToFrag;
-
-        // uniform samplerBuffer a_vertexPositions;
+        in vec3 a_barycoordToFrag;
 
         layout(location = 0) out vec4 outputF;
 
