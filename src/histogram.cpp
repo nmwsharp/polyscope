@@ -229,7 +229,7 @@ void Histogram::fillBuffers() {
 void Histogram::prepare() {
 
   framebuffer = render::engine->generateFrameBuffer(texDim, texDim);
-  texture = render::engine->generateTexture(TextureFormat::RGBA8, texDim, texDim);
+  texture = render::engine->generateTextureBuffer(TextureFormat::RGBA8, texDim, texDim);
   framebuffer->addColorBuffer(texture);
 
   // Create the program

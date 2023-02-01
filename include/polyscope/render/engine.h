@@ -123,12 +123,12 @@ protected:
   uint64_t uniqueID;
 };
 
-class Texture {
+class TextureBuffer {
 public:
   // abstract class: use the factory methods from the Engine class
-  Texture(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_ = -1);
+  TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_ = -1);
 
-  virtual ~Texture();
+  virtual ~TextureBuffer();
 
   // Resize the underlying buffer (contents are lost)
   virtual void resize(unsigned int newLen);
@@ -204,9 +204,9 @@ public:
   // Bind to textures/renderbuffers for output
   // note: currently no way to remove buffers
   virtual void addColorBuffer(std::shared_ptr<RenderBuffer> renderBuffer) = 0;
-  virtual void addColorBuffer(std::shared_ptr<Texture> Texture) = 0;
+  virtual void addColorBuffer(std::shared_ptr<TextureBuffer> textureBuffer) = 0;
   virtual void addDepthBuffer(std::shared_ptr<RenderBuffer> renderBuffer) = 0;
-  virtual void addDepthBuffer(std::shared_ptr<Texture> Texture) = 0;
+  virtual void addDepthBuffer(std::shared_ptr<TextureBuffer> textureBuffer) = 0;
 
   virtual void setDrawBuffers() = 0;
 
@@ -241,7 +241,7 @@ protected:
   // Buffers
   int nColorBuffers = 0;
   std::vector<std::shared_ptr<RenderBuffer>> renderBuffersColor, renderBuffersDepth;
-  std::vector<std::shared_ptr<Texture>> texturesColor, texturesDepth;
+  std::vector<std::shared_ptr<TextureBuffer>> textureBuffersColor, textureBuffersDepth;
 };
 
 // == Shaders
@@ -355,7 +355,7 @@ public:
   virtual void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                             bool withAlpha = true, bool useMipMap = false, bool repeat = false) = 0;
   virtual void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) = 0;
-  virtual void setTextureFromBuffer(std::string name, Texture* Texture) = 0;
+  virtual void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) = 0;
 
 
   // Indices
@@ -413,7 +413,7 @@ public:
   virtual void resizeScreenBuffers(); // applies to all buffers tied to display size
   virtual void setScreenBufferViewports();
   virtual void
-  applyLightingTransform(std::shared_ptr<Texture>& texture); // tonemap and gamma correct, render to active buffer
+  applyLightingTransform(std::shared_ptr<TextureBuffer>& texture); // tonemap and gamma correct, render to active buffer
   void updateMinDepthTexture();
   void renderBackground(); // respects background setting
 
@@ -447,9 +447,9 @@ public:
   virtual void showWindow() = 0;
   virtual void hideWindow() = 0;
   virtual void updateWindowSize(bool force = false) = 0;
-  virtual void applyWindowSize() = 0; // forces the current window size to match view::windowWidth/Height
+  virtual void applyWindowSize() = 0;               // forces the current window size to match view::windowWidth/Height
   virtual void setWindowResizable(bool newVal) = 0; // whether the user can manually resize by dragging the window frame
-  virtual bool getWindowResizable() = 0; 
+  virtual bool getWindowResizable() = 0;
   virtual std::tuple<int, int> getWindowPos() = 0;
   virtual bool windowRequestsClose() = 0;
   virtual void pollEvents() = 0;
@@ -464,7 +464,7 @@ public:
   ImFontAtlas* getImGuiGlobalFontAtlas();
   virtual void ImGuiNewFrame() = 0;
   virtual void ImGuiRender() = 0;
-  virtual void showTextureInImGuiWindow(std::string windowName, Texture* buffer);
+  virtual void showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer);
 
 
   // === Factory methods
@@ -474,14 +474,16 @@ public:
 
 
   // create textures
-  virtual std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int size1D,
-                                                   unsigned char* data = nullptr) = 0; // 1d
-  virtual std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int size1D,
-                                                   float* data) = 0; // 1d
-  virtual std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
-                                                   unsigned char* data = nullptr) = 0; // 2d
-  virtual std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
-                                                   float* data) = 0; // 2d
+  virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
+                                                               unsigned char* data = nullptr) = 0; // 1d
+  virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
+                                                               float* data) = 0; // 1d
+  virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
+                                                               unsigned int sizeY_,
+                                                               unsigned char* data = nullptr) = 0; // 2d
+  virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
+                                                               unsigned int sizeY_,
+                                                               float* data) = 0; // 2d
 
   // create render buffers
   virtual std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
@@ -503,7 +505,7 @@ public:
 
   // Main buffers for rendering
   // sceneDepthMin is an optional texture copy of the depth buffe used for some effects
-  std::shared_ptr<Texture> sceneColor, sceneColorFinal, sceneDepth, sceneDepthMin;
+  std::shared_ptr<TextureBuffer> sceneColor, sceneColorFinal, sceneDepth, sceneDepthMin;
   std::shared_ptr<RenderBuffer> pickColorBuffer, pickDepthBuffer;
 
   // General-use programs used by the engine
@@ -586,7 +588,7 @@ protected:
   void configureImGui();
   void loadDefaultMaterials();
   void loadDefaultMaterial(std::string name);
-  std::shared_ptr<Texture> loadMaterialTexture(float* data, int width, int height);
+  std::shared_ptr<TextureBuffer> loadMaterialTexture(float* data, int width, int height);
   void loadDefaultColorMap(std::string name);
   void loadDefaultColorMaps();
   virtual void createSlicePlaneFliterRule(std::string name) = 0;

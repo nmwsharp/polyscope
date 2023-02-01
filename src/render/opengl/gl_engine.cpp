@@ -925,7 +925,7 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<Texture> textureBufferIn) {
   glFramebufferTexture2D(GL_FRAMEBUFFER, colorAttachNum(nColorBuffers), GL_TEXTURE_2D, textureBuffer->getHandle(), 0);
 
   checkGLError();
-  texturesColor.push_back(textureBuffer);
+  textureBuffersColor.push_back(textureBuffer);
   nColorBuffers++;
 }
 
@@ -945,7 +945,7 @@ void GLFrameBuffer::addDepthBuffer(std::shared_ptr<Texture> textureBufferIn) {
 
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, textureBuffer->getHandle(), 0);
   checkGLError();
-  texturesDepth.push_back(textureBuffer);
+  textureBuffersDepth.push_back(textureBuffer);
 }
 
 void GLFrameBuffer::setDrawBuffers() {

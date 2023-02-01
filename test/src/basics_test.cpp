@@ -57,7 +57,7 @@ protected:
 TEST_F(PolyscopeTest, InitializeAndShow) { polyscope::show(3); }
 
 TEST_F(PolyscopeTest, FrameTick) {
-  for (int = 0; i < 5; i++) {
+  for (int i = 0; i < 5; i++) {
     polyscope::frameTick();
   }
 }

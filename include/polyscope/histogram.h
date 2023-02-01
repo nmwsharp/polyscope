@@ -57,7 +57,7 @@ private:
   bool prepared = false;
 
   unsigned int texDim = 600;
-  std::shared_ptr<render::Texture> texture= nullptr;
+  std::shared_ptr<render::TextureBuffer> texture = nullptr;
   std::shared_ptr<render::FrameBuffer> framebuffer = nullptr;
   std::shared_ptr<render::ShaderProgram> program = nullptr;
   std::string colormap = "viridis";

@@ -12,7 +12,7 @@ namespace render {
 // Forward declare necessary types
 // TODO get this out of the engine so this isn't necessary
 class ShaderProgram;
-class Texture;
+class TextureBuffer;
 class FrameBuffer;
 class RenderBuffer;
 
@@ -47,13 +47,13 @@ private:
   // note: these buffers/programs are only optionally populated based on the mode
 
   std::shared_ptr<render::ShaderProgram> groundPlaneProgram;
-  std::shared_ptr<render::Texture> sceneAltColorTexture;
-  std::shared_ptr<render::Texture> sceneAltDepthTexture;
+  std::shared_ptr<render::TextureBuffer> sceneAltColorTexture;
+  std::shared_ptr<render::TextureBuffer> sceneAltDepthTexture;
   std::shared_ptr<render::FrameBuffer> sceneAltFrameBuffer;
 
   // alternating blurring
   // result starts and ends in the first buffer
-  std::array<std::shared_ptr<render::Texture>, 2> blurColorTextures;
+  std::array<std::shared_ptr<render::TextureBuffer>, 2> blurColorTextures;
   std::array<std::shared_ptr<render::FrameBuffer>, 2> blurFrameBuffers;
   std::shared_ptr<render::ShaderProgram> blurProgram, copyTexProgram;
 

@@ -72,9 +72,10 @@ void ScalarRenderImageQuantity::prepare() {
   prepareGeometryBuffers();
 
   // push the color data to the buffer
-  std::vector<float> floatData(values.size());
-  for (size_t i = 0; i < values.size(); i++) {
-    floatData[i] = static_cast<float>(values[i]);
+  values.ensureHostBufferPopulated();
+  std::vector<float> floatData(values.data.size());
+  for (size_t i = 0; i < values.data.size(); i++) {
+    floatData[i] = static_cast<float>(values.data[i]);
   }
 
   textureScalar =

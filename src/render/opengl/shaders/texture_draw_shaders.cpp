@@ -122,10 +122,10 @@ const ShaderStageSpecification PLAIN_RENDERIMAGE_TEXTURE_DRAW_FRAG_SHADER = {
     
     // uniforms
     { 
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_invProjMatrix", DataType::Matrix44Float},
-        {"u_viewport", DataType::Vector4Float},
-        {"u_transparency", DataType::Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_invProjMatrix", RenderDataType::Matrix44Float},
+        {"u_viewport", RenderDataType::Vector4Float},
+        {"u_transparency", RenderDataType::Float},
     }, 
 
     // attributes
@@ -516,7 +516,7 @@ const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY(
       )"}
     },
     /* uniforms */ {
-        {"u_transparency", DataType::Float},
+        {"u_transparency", RenderDataType::Float},
     },
     /* attributes */ {},
     /* textures */ {}

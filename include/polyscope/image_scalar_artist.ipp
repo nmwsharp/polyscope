@@ -37,7 +37,8 @@ void ImageScalarArtist<QuantityT>::prepareSource() {
   // Fill a texture with the raw data
   if (!readFromTex) {
     // copy to float
-    const std::vector<double>& src = ScalarQuantity<QuantityT>::values;
+    ScalarQuantity<QuantityT>::values.ensureHostBufferPopulated();
+    const std::vector<double>& src = ScalarQuantity<QuantityT>::values.data;
     std::vector<float> floatValues(src.size());
     for (size_t i = 0; i < src.size(); i++) {
       floatValues[i] = static_cast<float>(src[i]);
