@@ -17,6 +17,7 @@
 #include "json/json.hpp"
 using json = nlohmann::json;
 
+#include "backends/imgui_impl_opengl3.h"
 
 namespace polyscope {
 
@@ -142,18 +143,9 @@ void init(std::string backend) {
   IMGUI_CHECKVERSION();
   render::engine->initializeImGui();
 
-  { // Create an initial context based context. Note that calling show() never actually uses this context, because it
-    // pushes a new one each time. But using frameTick() may use this context.
-
-    // Create a new context and push it on to the stack
-    ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
-    ImGui::SetCurrentContext(newContext);
-    if (options::configureImGuiStyleCallback) {
-      options::configureImGuiStyleCallback();
-    }
-
-    contextStack.push_back(ContextEntry{newContext, nullptr, true});
-  }
+  // Create an initial context based context. Note that calling show() never actually uses this context, because it
+  // pushes a new one each time. But using frameTick() may use this context.
+  contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr, true});
 
   view::invalidateView();
 

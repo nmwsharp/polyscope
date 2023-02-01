@@ -1,4 +1,5 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+#include "backends/imgui_impl_opengl3.h"
 #include "polyscope/render/engine.h"
 #ifdef POLYSCOPE_BACKEND_OPENGL3_GLFW_ENABLED
 #include "polyscope/render/opengl/gl_engine.h"
@@ -672,7 +673,8 @@ uint32_t GLAttributeBuffer::getNativeBufferID() { return static_cast<uint32_t>(V
 
 
 // create a 1D texture from data
-GLTexture::GLTexture(TextureFormat format_, unsigned int size1D, unsigned char* data) : Texture(1, format_, size1D) {
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, unsigned char* data)
+    : TextureBuffer(1, format_, size1D) {
 
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_1D, handle);
@@ -681,7 +683,8 @@ GLTexture::GLTexture(TextureFormat format_, unsigned int size1D, unsigned char* 
 
   setFilterMode(FilterMode::Nearest);
 }
-GLTexture::GLTexture(TextureFormat format_, unsigned int size1D, float* data) : Texture(1, format_, size1D) {
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, float* data)
+    : TextureBuffer(1, format_, size1D) {
 
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_1D, handle);
@@ -2476,24 +2479,22 @@ std::shared_ptr<AttributeBuffer> GLEngine::generateAttributeBuffer(RenderDataTyp
   return std::shared_ptr<AttributeBuffer>(newA);
 }
 
-std::shared_ptr<Texture> GLEngine::generateTexture(TextureFormat format, unsigned int size1D, unsigned char* data) {
-  GLTexture* newT = new GLTexture(format, size1D, data);
-  return std::shared_ptr<Texture>(newT);
+std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat format, unsigned int size1D,
+                                                               unsigned char* data) {
+  GLTextureBuffer* newT = new GLTextureBuffer(format, size1D, data);
+  return std::shared_ptr<TextureBuffer>(newT);
 }
 
-std::shared_ptr<Texture> GLEngine::generateTexture(TextureFormat format, unsigned int size1D, float* data) {
-  GLTexture* newT = new GLTexture(format, size1D, data);
-  return std::shared_ptr<Texture>(newT);
+
+std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
+                                                               unsigned int sizeY_, unsigned char* data) {
+  GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, data);
+  return std::shared_ptr<TextureBuffer>(newT);
 }
-std::shared_ptr<Texture> GLEngine::generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
-                                                   unsigned char* data) {
-  GLTexture* newT = new GLTexture(format, sizeX_, sizeY_, data);
-  return std::shared_ptr<Texture>(newT);
-}
-std::shared_ptr<Texture> GLEngine::generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
-                                                   float* data) {
-  GLTexture* newT = new GLTexture(format, sizeX_, sizeY_, data);
-  return std::shared_ptr<Texture>(newT);
+std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
+                                                               unsigned int sizeY_, float* data) {
+  GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, data);
+  return std::shared_ptr<TextureBuffer>(newT);
 }
 
 std::shared_ptr<RenderBuffer> GLEngine::generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
