@@ -5,9 +5,7 @@
 
 #include <limits>
 #include <tuple>
-
-using std::cout;
-using std::endl;
+#include <unordered_map>
 
 namespace polyscope {
 namespace pick {
@@ -19,17 +17,14 @@ bool haveSelectionVal = false;
 // The next pick index that a structure can use to identify its elements
 // (get it by calling request pickBufferRange())
 size_t nextPickBufferInd = 1; // 0 reserved for "none"
+                              //
 // Track which ranges have been allocated to which structures
-std::vector<std::tuple<size_t, size_t, Structure*>> structureRanges;
+// std::vector<std::tuple<size_t, size_t, Structure*>> structureRanges;
+std::unordered_map<Structure*, std::tuple<size_t, size_t>> structureRanges;
 
 
 // == Set up picking
 size_t requestPickBufferRange(Structure* requestingStructure, size_t count) {
-
-  // TODO: there is a problem with the way we use this function curently, though it has 
-  // not yet mattered in practice.
-  // Whenever a structure refresh()'s, it requests a brand new range of pick indices. This
-  // means that the ranges just grow and grow with lots of unused ranges left behind!
 
   // Check if we can satisfy the request
   size_t maxPickInd = std::numeric_limits<size_t>::max();
@@ -44,13 +39,14 @@ size_t requestPickBufferRange(Structure* requestingStructure, size_t count) {
 #pragma GCC diagnostic pop
 
   if (count > maxPickInd || maxPickInd - count < nextPickBufferInd) {
-    error("Wow, you sure do have a lot of stuff, Polyscope can't even count it all. (Ran out of indices while "
-          "enumerating structure elements for pick buffer.)");
+    throw std::runtime_error(
+        "Wow, you sure do have a lot of stuff, Polyscope can't even count it all. (Ran out of indices while "
+        "enumerating structure elements for pick buffer.)");
   }
 
   size_t ret = nextPickBufferInd;
   nextPickBufferInd += count;
-  structureRanges.push_back(std::make_tuple(ret, nextPickBufferInd, requestingStructure));
+  structureRanges[requestingStructure] = std::make_tuple(ret, nextPickBufferInd);
   return ret;
 }
 
@@ -91,12 +87,15 @@ void setSelection(std::pair<Structure*, size_t> newPick) {
 // == Helpers
 
 std::pair<Structure*, size_t> globalIndexToLocal(size_t globalInd) {
+
+  // ONEDAY: this could be asymptotically better if we cared
+
   // Loop through the ranges that we have allocated to find the one correpsonding to this structure.
   for (const auto& x : structureRanges) {
 
-    size_t rangeStart = std::get<0>(x);
-    size_t rangeEnd = std::get<1>(x);
-    Structure* structure = std::get<2>(x);
+    Structure* structure = x.first;
+    size_t rangeStart = std::get<0>(x.second);
+    size_t rangeEnd = std::get<1>(x.second);
 
     if (globalInd >= rangeStart && globalInd < rangeEnd) {
       return {structure, globalInd - rangeStart};
@@ -109,18 +108,14 @@ std::pair<Structure*, size_t> globalIndexToLocal(size_t globalInd) {
 size_t localIndexToGlobal(std::pair<Structure*, size_t> localPick) {
   if (localPick.first == nullptr) return 0;
 
-  for (const auto& x : structureRanges) {
-    size_t rangeStart = std::get<0>(x);
-    size_t rangeEnd = std::get<1>(x);
-    Structure* structure = std::get<2>(x);
-
-    if (structure == localPick.first) {
-      return rangeStart + localPick.second;
-    }
+  if (structureRanges.find(localPick.first) == structureRanges.end()) {
+    throw std::runtime_error("structure does not match any allocated pick range");
   }
 
-  throw std::runtime_error("structure does not match any allocated pick range");
-  return 0;
+  std::tuple<size_t, size_t> range = structureRanges[localPick.first];
+  size_t rangeStart = std::get<0>(range);
+  size_t rangeEnd = std::get<1>(range);
+  return rangeStart + localPick.second;
 }
 
 
