@@ -102,8 +102,8 @@ public:
   render::ManagedBuffer<uint32_t> triangleCornerInds;   // on the split, triangulated mesh [3 * 3 * nTriFace]
 
   // internal triangle data for rendering
-  render::ManagedBuffer<glm::vec3> baryCoord;
-  render::ManagedBuffer<glm::vec3> edgeIsReal;
+  render::ManagedBuffer<glm::vec3> baryCoord;   // on the split, triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<glm::vec3> edgeIsReal;  // on the split, triangulated mesh [3 * nTriFace]
 
   // other internally-computed geometry
   render::ManagedBuffer<glm::vec3> faceNormals;
@@ -254,8 +254,8 @@ public:
   size_t nFacesTriangulationCount = 0;
   size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
 
-  // size_t nEdgesCount = 0; // populating this is expensive...
-  // size_t nEdges() const { return nEdgesCount; }
+  size_t nEdgesCount = 0; // populating this is expensive...
+  size_t nEdges() const { return nEdgesCount; } // WARNING: returns 0 until something involving edges has been done
 
   size_t nCornersCount = 0; // = nHalfedges = sum face degree
   size_t nCorners() const { return nCornersCount; }
@@ -335,6 +335,7 @@ public:
   std::vector<std::string> addSurfaceMeshRules(std::vector<std::string> initRules, bool withMesh = true,
                                                bool withSurfaceShade = true);
   void setMeshGeometryAttributes(render::ShaderProgram& p);
+  void setMeshPickAttributes(render::ShaderProgram& p);
   void setSurfaceMeshUniforms(render::ShaderProgram& p);
 
 
@@ -383,6 +384,10 @@ private:
 
 
   // Derived connectivity quantities
+  bool halfedgesHaveBeenUsed = false;
+  bool edgesHaveBeenUsed = false;
+  void markEdgesAsUsed();
+  void markHalfedgesAsUsed();
 
 
   // Visualization settings

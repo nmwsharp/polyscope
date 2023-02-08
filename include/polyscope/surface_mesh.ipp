@@ -121,6 +121,9 @@ void SurfaceMesh::setEdgePermutation(const T& perm, size_t expectedSize) {
       edgeDataSize = std::max(edgeDataSize, i + 1);
     }
   }
+
+  // now that we have edge indexing, enable edge-related stuff
+  markEdgesAsUsed();
 }
 
 template <class T>
@@ -146,6 +149,8 @@ void SurfaceMesh::setHalfedgePermutation(const T& perm, size_t expectedSize) {
       halfedgeDataSize = std::max(halfedgeDataSize, i + 1);
     }
   }
+  
+  markHalfedgesAsUsed();
 }
 
 template <class T>

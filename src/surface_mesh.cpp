@@ -8,6 +8,7 @@
 #include "polyscope/render/engine.h"
 
 #include "imgui.h"
+#include "polyscope/utilities.h"
 
 #include <unordered_map>
 #include <utility>
@@ -281,6 +282,7 @@ void SurfaceMesh::computeTriangleEdgeInds() {
     }
   }
 
+  nEdgesCount = psEdgeInd;
   triangleEdgeInds.markHostBufferUpdated();
 }
 
@@ -693,7 +695,6 @@ void SurfaceMesh::drawPick() {
   if (!isEnabled()) {
     return;
   }
-  return; // FIXME
 
   if (pickProgram == nullptr) {
     preparePick();
@@ -724,140 +725,17 @@ void SurfaceMesh::prepare() {
 
 void SurfaceMesh::preparePick() {
 
-  // FIXME
+  // clang-format off
+  pickProgram = render::engine->requestShader(
+      "MESH", 
+      addSurfaceMeshRules({"MESH_PROPAGATE_PICK"}, true, false),
+      render::ShaderReplacementDefaults::Pick
+  );
+  // clang-format on
 
-  /*
-
-  // Create a new program
-  pickProgram = render::engine->requestShader("MESH", addSurfaceMeshRules({"MESH_PROPAGATE_PICK"}, true, false),
-                                              render::ShaderReplacementDefaults::Pick);
-
-  // Get element indices
-  size_t totalPickElements = nVertices() + nFaces() + nEdges() + nHalfedges();
-
-  // In "local" indices, indexing elements only within this triMesh, used for reading later
-  facePickIndStart = nVertices();
-  edgePickIndStart = facePickIndStart + nFaces();
-  halfedgePickIndStart = edgePickIndStart + nEdges();
-
-  // In "global" indices, indexing all elements in the scene, used to fill buffers for drawing here
-  size_t pickStart = pick::requestPickBufferRange(this, totalPickElements);
-  size_t faceGlobalPickIndStart = pickStart + nVertices();
-  size_t edgeGlobalPickIndStart = faceGlobalPickIndStart + nFaces();
-  size_t halfedgeGlobalPickIndStart = edgeGlobalPickIndStart + nEdges();
-
-  // == Fill buffers
-  bool wantsBarycenters = wantsCullPosition();
-
-  std::vector<glm::vec3> positions;
-  std::vector<glm::vec3> normals;
-  std::vector<glm::vec3> baryCoord;
-  std::vector<std::array<glm::vec3, 3>> vertexColors, edgeColors, halfedgeColors;
-  std::vector<glm::vec3> faceColor;
-  std::vector<glm::vec3> barycenters;
-
-  // Reserve space
-  positions.reserve(3 * nFacesTriangulation());
-  baryCoord.reserve(3 * nFacesTriangulation());
-  vertexColors.reserve(3 * nFacesTriangulation());
-  edgeColors.reserve(3 * nFacesTriangulation());
-  halfedgeColors.reserve(3 * nFacesTriangulation());
-  faceColor.reserve(3 * nFacesTriangulation());
-  normals.reserve(3 * nFacesTriangulation());
-  if (wantsBarycenters) {
-    barycenters.reserve(3 * nFacesTriangulation());
-  }
-
-  // Build all quantities in each face
-  for (size_t iF = 0; iF < nFaces(); iF++) {
-    auto& face = faces[iF];
-    size_t D = face.size();
-    glm::vec3 faceN = faceNormals[iF];
-
-    glm::vec3 barycenter;
-    if (wantsBarycenters) {
-      barycenter = faceCenter(iF);
-    }
-
-    // implicitly triangulate from root
-    size_t vRoot = face[0];
-    glm::vec3 pRoot = vertexPositions[vRoot];
-    for (size_t j = 1; (j + 1) < D; j++) {
-      size_t vB = face[j];
-      glm::vec3 pB = vertexPositions[vB];
-      size_t vC = face[(j + 1) % D];
-      glm::vec3 pC = vertexPositions[vC];
-
-      glm::vec3 fColor = pick::indToVec(iF + faceGlobalPickIndStart);
-      std::array<size_t, 3> vertexInds = {vRoot, vB, vC};
-
-      positions.push_back(pRoot);
-      positions.push_back(pB);
-      positions.push_back(pC);
-
-      normals.push_back(faceN);
-      normals.push_back(faceN);
-      normals.push_back(faceN);
-
-      if (wantsBarycenters) {
-        barycenters.push_back(barycenter);
-        barycenters.push_back(barycenter);
-        barycenters.push_back(barycenter);
-      }
-
-      // Build all quantities
-      std::array<glm::vec3, 3> vColor;
-
-      for (size_t i = 0; i < 3; i++) {
-        // Want just one copy of face color, so we can build it in the usual way
-        faceColor.push_back(fColor);
-
-        // Vertex index color
-        vColor[i] = pick::indToVec(vertexInds[i] + pickStart);
-      }
-
-      std::array<glm::vec3, 3> eColor = {fColor, pick::indToVec(edgeIndices[iF][j] + edgeGlobalPickIndStart), fColor};
-      std::array<glm::vec3, 3> heColor = {fColor, pick::indToVec(halfedgeIndices[iF][j] + halfedgeGlobalPickIndStart),
-                                          fColor};
-
-      // First edge is a real edge
-      if (j == 1) {
-        eColor[0] = pick::indToVec(edgeIndices[iF][0] + edgeGlobalPickIndStart);
-        heColor[0] = pick::indToVec(halfedgeIndices[iF][0] + halfedgeGlobalPickIndStart);
-      }
-      // Last is a real edge
-      if (j + 2 == D) {
-        eColor[2] = pick::indToVec(edgeIndices[iF].back() + edgeGlobalPickIndStart);
-        heColor[2] = pick::indToVec(halfedgeIndices[iF].back() + halfedgeGlobalPickIndStart);
-      }
-
-      // Push three copies of the values needed at each vertex
-      for (int j = 0; j < 3; j++) {
-        vertexColors.push_back(vColor);
-        edgeColors.push_back(eColor);
-        halfedgeColors.push_back(heColor);
-      }
-
-      // Barycoords
-      baryCoord.push_back(glm::vec3{1.0, 0.0, 0.0});
-      baryCoord.push_back(glm::vec3{0.0, 1.0, 0.0});
-      baryCoord.push_back(glm::vec3{0.0, 0.0, 1.0});
-    }
-  }
-
-  // Store data in buffers
-  pickProgram->setAttribute("a_position", positions);
-  pickProgram->setAttribute("a_barycoord", baryCoord);
-  pickProgram->setAttribute("a_normal", normals);
-  pickProgram->setAttribute<glm::vec3, 3>("a_vertexColors", vertexColors);
-  pickProgram->setAttribute<glm::vec3, 3>("a_edgeColors", edgeColors);
-  pickProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", halfedgeColors);
-  pickProgram->setAttribute("a_faceColor", faceColor);
-  if (wantsCullPosition()) {
-    pickProgram->setAttribute("a_cullPos", barycenters);
-  }
-
-  */
+  // Populate draw buffers
+  setMeshGeometryAttributes(*pickProgram);
+  setMeshPickAttributes(*pickProgram);
 }
 
 void SurfaceMesh::setMeshGeometryAttributes(render::ShaderProgram& p) {
@@ -879,6 +757,122 @@ void SurfaceMesh::setMeshGeometryAttributes(render::ShaderProgram& p) {
   if (wantsCullPosition()) {
     p.setAttribute("a_cullPos", faceCenters.getIndexedRenderAttributeBuffer(&triangleFaceInds));
   }
+}
+
+void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
+
+  // TODO in principle all of the data this shader needs is already available on the GPU via the [...]Inds attribute
+  // buffers. We could move the encoding / offsetting logic to happen in a shader with some uniforms, and avoid any
+  // CPU-side processing. Maybe the solution is to directly render ints?
+
+  // make sure we have the relevant indexing data
+  triangleVertexInds.ensureHostBufferPopulated();
+  triangleFaceInds.ensureHostBufferPopulated();
+  if (edgesHaveBeenUsed) triangleEdgeInds.ensureHostBufferPopulated();
+  if (halfedgesHaveBeenUsed) triangleHalfedgeInds.ensureHostBufferPopulated();
+
+  // Get element indices
+  size_t totalPickElements = nVertices() + nFaces();
+  if (edgesHaveBeenUsed) totalPickElements += nEdges();
+  if (halfedgesHaveBeenUsed) totalPickElements += nHalfedges();
+
+  // In "local" indices, indexing elements only within this mesh, used for reading later
+  facePickIndStart = nVertices();
+  edgePickIndStart = facePickIndStart + nFaces();
+  halfedgePickIndStart = edgePickIndStart;
+  if (edgesHaveBeenUsed) {
+    halfedgePickIndStart += nEdges();
+  }
+
+  // In "global" indices, indexing all elements in the scene, used to fill buffers for drawing here
+  size_t pickStart = pick::requestPickBufferRange(this, totalPickElements);
+  size_t vertexGlobalPickIndStart = pickStart;
+  size_t faceGlobalPickIndStart = pickStart + facePickIndStart;
+  size_t edgeGlobalPickIndStart = pickStart + edgePickIndStart;
+  size_t halfedgeGlobalPickIndStart = pickStart + halfedgePickIndStart;
+
+  // == Fill buffers
+  std::vector<std::array<glm::vec3, 3>> vertexColors, edgeColors, halfedgeColors;
+  std::vector<glm::vec3> faceColor;
+
+  // Reserve space
+  vertexColors.reserve(3 * nFacesTriangulation());
+  edgeColors.reserve(3 * nFacesTriangulation());
+  halfedgeColors.reserve(3 * nFacesTriangulation());
+  faceColor.reserve(3 * nFacesTriangulation());
+
+
+  // Build all quantities in each face
+  size_t iFTri = 0;
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    size_t D = faceIndsStart[iF + 1] - faceIndsStart[iF];
+
+    glm::vec3 fColor = pick::indToVec(iF + faceGlobalPickIndStart);
+
+    for (size_t j = 1; (j + 1) < D; j++) {
+
+      // == Build face & vertex index data
+
+      // clang-format off
+      std::array<glm::vec3, 3> vColor = {
+        pick::indToVec(triangleVertexInds.data[3*iFTri + 0] + vertexGlobalPickIndStart),
+        pick::indToVec(triangleVertexInds.data[3*iFTri + 1] + vertexGlobalPickIndStart),
+        pick::indToVec(triangleVertexInds.data[3*iFTri + 2] + vertexGlobalPickIndStart),
+      };
+      // clang-format on
+
+      for (int j = 0; j < 3; j++) {
+        faceColor.push_back(fColor);
+        vertexColors.push_back(vColor);
+      }
+
+
+      // == Build edge index data, if needed
+
+      if (edgesHaveBeenUsed) {
+        // clang-format off
+        std::array<glm::vec3, 3> eColor = { 
+          fColor, 
+          pick::indToVec(triangleEdgeInds.data[3*iFTri + 1] + edgeGlobalPickIndStart), 
+          fColor
+        };
+        // clang-format on
+        if (j == 1) eColor[0] = pick::indToVec(triangleEdgeInds.data[3 * iFTri + 0] + edgeGlobalPickIndStart);
+        if (j + 2 == D) eColor[2] = pick::indToVec(triangleEdgeInds.data[3 * iFTri + 2] + edgeGlobalPickIndStart);
+
+        for (int j = 0; j < 3; j++) edgeColors.push_back(eColor);
+      } else {
+        for (int j = 0; j < 3; j++) edgeColors.push_back({fColor, fColor, fColor});
+      }
+
+      // == Build halfedge index data, if needed
+
+      if (halfedgesHaveBeenUsed) {
+        // clang-format off
+        std::array<glm::vec3, 3> heColor = { 
+          fColor, 
+          pick::indToVec(triangleHalfedgeInds.data[3*iFTri + 1] + halfedgeGlobalPickIndStart), 
+          fColor
+        };
+        // clang-format on
+        if (j == 1) heColor[0] = pick::indToVec(triangleHalfedgeInds.data[3 * iFTri + 0] + halfedgeGlobalPickIndStart);
+        if (j + 2 == D)
+          heColor[2] = pick::indToVec(triangleHalfedgeInds.data[3 * iFTri + 2] + halfedgeGlobalPickIndStart);
+
+        for (int j = 0; j < 3; j++) halfedgeColors.push_back(heColor);
+      } else {
+        for (int j = 0; j < 3; j++) halfedgeColors.push_back({fColor, fColor, fColor});
+      }
+
+      iFTri++;
+    }
+  }
+
+  // Store data in buffers
+  pickProgram->setAttribute<glm::vec3, 3>("a_vertexColors", vertexColors);
+  pickProgram->setAttribute<glm::vec3, 3>("a_edgeColors", edgeColors);
+  pickProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", halfedgeColors);
+  pickProgram->setAttribute("a_faceColor", faceColor);
 }
 
 
@@ -1500,6 +1494,19 @@ FacePtr SurfaceMesh::selectFace() {
 */
 
 
+void SurfaceMesh::markEdgesAsUsed() {
+  edgesHaveBeenUsed = true;
+  // immediately compute edge-related connectivity info, and also repopulate the pick buffer so edges can be picked
+  computeTriangleEdgeInds();
+  pickProgram.reset();
+}
+
+void SurfaceMesh::markHalfedgesAsUsed() {
+  halfedgesHaveBeenUsed = true;
+  // repopulate the pick buffer so halfedges can be picked
+  pickProgram.reset();
+}
+
 // === Option getters and setters
 
 // DEPRECATED!
@@ -1692,6 +1699,7 @@ SurfaceEdgeScalarQuantity* SurfaceMesh::addEdgeScalarQuantityImpl(std::string na
                                                                   DataType type) {
   SurfaceEdgeScalarQuantity* q = new SurfaceEdgeScalarQuantity(name, applyPermutation(data, edgePerm), *this, type);
   addQuantity(q);
+  markEdgesAsUsed();
   return q;
 }
 
@@ -1700,6 +1708,7 @@ SurfaceMesh::addHalfedgeScalarQuantityImpl(std::string name, const std::vector<d
   SurfaceHalfedgeScalarQuantity* q =
       new SurfaceHalfedgeScalarQuantity(name, applyPermutation(data, halfedgePerm), *this, type);
   addQuantity(q);
+  markHalfedgesAsUsed();
   return q;
 }
 
