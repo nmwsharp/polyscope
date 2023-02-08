@@ -90,62 +90,6 @@ void SurfaceMesh::nestedFacesToFlat(const std::vector<std::vector<size_t>>& nest
 
 void SurfaceMesh::computeConnectivityData() {
 
-  /*
-  nFacesTriangulationCount = 0;
-  nCornersCount = 0;
-  nEdgesCount = 0;
-  edgeIndices.resize(nFaces());
-  halfedgeIndices.resize(nFaces());
-  std::unordered_map<std::pair<size_t, size_t>, size_t, polyscope::hash_combine::hash<std::pair<size_t, size_t>>>
-      edgeInds;
-  size_t iF = 0;
-  for (auto& face : faces) {
-    if (face.size() < 3) {
-      warning(name + " has face with degree < 3!");
-      face = {0, 0, 0}; // (just to do _something_ so we don't crash in subsequent code)
-    }
-    nFacesTriangulationCount += std::max(static_cast<int>(face.size()) - 2, 0);
-    edgeIndices[iF].resize(face.size());
-    halfedgeIndices[iF].resize(face.size());
-
-    for (size_t i = 0; i < face.size(); i++) {
-      size_t vA = face[i];
-      size_t vB = face[(i + 1) % face.size()];
-
-      if (vA >= vertexPositions.size()) {
-        warning(name + " has face with vertex index out of vertexPositions range",
-                "face " + std::to_string(iF) + " has vertex index " + std::to_string(vA));
-
-        // zero out the face index
-        // (just to do _something_ so we don't crash in subsequent code)
-        for (size_t j = 0; j < face.size(); j++) {
-          face[j] = 0;
-        }
-        vA = face[i];
-        vB = face[(i + 1) % face.size()];
-      }
-
-      std::pair<size_t, size_t> edgeKey(std::min(vA, vB), std::max(vA, vB));
-      auto it = edgeInds.find(edgeKey);
-      size_t edgeInd = 0;
-      if (it == edgeInds.end()) {
-        edgeInd = nEdgesCount;
-        edgeInds.insert(it, {edgeKey, edgeInd});
-        nEdgesCount++;
-      } else {
-        edgeInd = it->second;
-      }
-
-      edgeIndices[iF][i] = edgeInd;
-      halfedgeIndices[iF][i] = nCornersCount++;
-    }
-
-    iF++;
-  }
-  */
-
-  // TODO delete old stuff above
-
   // some number-of-elements arithmetic
   size_t numFaces = faceIndsStart.size() - 1;
   nCornersCount = faceIndsEntries.size();
@@ -560,7 +504,7 @@ void SurfaceMesh::computeDefaultFaceTangentSpaces() {
 //
 //   edgeLengths.markHostBufferUpdated();
 // }
-//
+
 void SurfaceMesh::checkHaveVertexTangentSpaces() {
   if (vertexTangentSpaces.hasData()) return;
   throw std::logic_error("[polyscope] Operation requires vertex tangent spaces for SurfaceMesh " + name +
@@ -924,108 +868,6 @@ void SurfaceMesh::setSurfaceMeshUniforms(render::ShaderProgram& p) {
   }
 }
 
-/*
-void SurfaceMesh::fillGeometryBuffers(render::ShaderProgram& p) {
-  std::vector<glm::vec3> positions;
-  std::vector<glm::vec3> normals;
-  std::vector<glm::vec3> baryCoord;
-  std::vector<glm::vec3> edgeIsReal;
-  std::vector<glm::vec3> barycenters;
-
-  bool wantsBary = p.hasAttribute("a_barycoord");
-  bool wantsEdge = p.hasAttribute("a_edgeIsReal");
-  bool wantsBarycenters = wantsCullPosition();
-
-  positions.reserve(3 * nFacesTriangulation());
-  normals.reserve(3 * nFacesTriangulation());
-  if (wantsBary) {
-    baryCoord.reserve(3 * nFacesTriangulation());
-  }
-  if (wantsEdge) {
-    edgeIsReal.reserve(3 * nFacesTriangulation());
-  }
-  if (wantsBarycenters) {
-    barycenters.reserve(3 * nFacesTriangulation());
-  }
-
-  for (size_t iF = 0; iF < nFaces(); iF++) {
-    auto& face = faces[iF];
-    size_t D = face.size();
-    glm::vec3 faceN = faceNormals[iF];
-
-    glm::vec3 barycenter;
-    if (wantsBarycenters) {
-      barycenter = faceCenter(iF);
-    }
-
-    // implicitly triangulate from root
-    size_t vRoot = face[0];
-    glm::vec3 pRoot = vertexPositions[vRoot];
-    for (size_t j = 1; (j + 1) < D; j++) {
-      size_t vB = face[j];
-      glm::vec3 pB = vertexPositions[vB];
-      size_t vC = face[(j + 1) % D];
-      glm::vec3 pC = vertexPositions[vC];
-
-      positions.push_back(pRoot);
-      positions.push_back(pB);
-      positions.push_back(pC);
-
-      if (isSmoothShade()) {
-        normals.push_back(vertexNormals[vRoot]);
-        normals.push_back(vertexNormals[vB]);
-        normals.push_back(vertexNormals[vC]);
-      } else {
-        normals.push_back(faceN);
-        normals.push_back(faceN);
-        normals.push_back(faceN);
-      }
-
-      if (wantsBary) {
-        baryCoord.push_back(glm::vec3{1., 0., 0.});
-        baryCoord.push_back(glm::vec3{0., 1., 0.});
-        baryCoord.push_back(glm::vec3{0., 0., 1.});
-      }
-
-      if (wantsBarycenters) {
-        barycenters.push_back(barycenter);
-        barycenters.push_back(barycenter);
-        barycenters.push_back(barycenter);
-      }
-
-      if (wantsEdge) {
-        glm::vec3 edgeRealV{0., 1., 0.};
-        if (j == 1) {
-          edgeRealV.x = 1.;
-        }
-        if (j + 2 == D) {
-          edgeRealV.z = 1.;
-        }
-        edgeIsReal.push_back(edgeRealV);
-        edgeIsReal.push_back(edgeRealV);
-        edgeIsReal.push_back(edgeRealV);
-      }
-    }
-  }
-
-  // Store data in buffers
-  if (p.hasAttribute("a_position")) {
-    p.setAttribute("a_position", positions);
-  }
-  if (p.hasAttribute("a_normal")) {
-    p.setAttribute("a_normal", normals);
-  }
-  if (wantsBary) {
-    p.setAttribute("a_barycoord", baryCoord);
-  }
-  if (wantsEdge) {
-    p.setAttribute("a_edgeIsReal", edgeIsReal);
-  }
-  if (wantsCullPosition()) {
-    p.setAttribute("a_cullPos", barycenters);
-  }
-}
-*/
 
 void SurfaceMesh::buildPickUI(size_t localPickID) {
 
@@ -1041,26 +883,6 @@ void SurfaceMesh::buildPickUI(size_t localPickID) {
   }
 }
 
-// void SurfaceMesh::getPickedElement(size_t localPickID, VertexPtr& vOut, FacePtr& fOut, EdgePtr& eOut,
-// HalfedgePtr& heOut) {
-
-// vOut = VertexPtr();
-// fOut = FacePtr();
-// eOut = EdgePtr();
-// heOut = HalfedgePtr();
-
-// if (localPickID < facePickIndStart) {
-// vOut = mesh->vertex(localPickID);
-//} else if (localPickID < edgePickIndStart) {
-// fOut = mesh->face(localPickID - facePickIndStart);
-//} else if (localPickID < halfedgePickIndStart) {
-// eOut = mesh->edge(localPickID - edgePickIndStart);
-//} else {
-// heOut = mesh->allHalfedge(localPickID - halfedgePickIndStart);
-//}
-//}
-
-
 glm::vec2 SurfaceMesh::projectToScreenSpace(glm::vec3 coord) {
 
   glm::mat4 viewMat = getModelView();
@@ -1070,46 +892,6 @@ glm::vec2 SurfaceMesh::projectToScreenSpace(glm::vec3 coord) {
 
   return glm::vec2{screenPoint.x, screenPoint.y} / screenPoint.w;
 }
-
-// TODO fix up all of these
-// bool SurfaceMesh::screenSpaceTriangleTest(size_t fInd, glm::vec2 testCoords, glm::vec3& bCoordOut) {
-
-//// Get points in screen space
-// glm::vec2 p0 = projectToScreenSpace(geometry->position(f.halfedge().vertex()));
-// glm::vec2 p1 = projectToScreenSpace(geometry->position(f.halfedge().next().vertex()));
-// glm::vec2 p2 = projectToScreenSpace(geometry->position(f.halfedge().next().next().vertex()));
-
-//// Make sure triangle is positively oriented
-// if (glm::cross(p1 - p0, p2 - p0).z < 0) {
-// cout << "triangle not positively oriented" << endl;
-// return false;
-//}
-
-//// Test the point
-// glm::vec2 v0 = p1 - p0;
-// glm::vec2 v1 = p2 - p0;
-// glm::vec2 vT = testCoords - p0;
-
-// double dot00 = dot(v0, v0);
-// double dot01 = dot(v0, v1);
-// double dot0T = dot(v0, vT);
-// double dot11 = dot(v1, v1);
-// double dot1T = dot(v1, vT);
-
-// double denom = 1.0 / (dot00 * dot11 - dot01 * dot01);
-// double v = (dot11 * dot0T - dot01 * dot1T) * denom;
-// double w = (dot00 * dot1T - dot01 * dot0T) * denom;
-
-//// Check if point is in triangle
-// bool inTri = (v >= 0) && (w >= 0) && (v + w < 1);
-// if (!inTri) {
-// return false;
-//}
-
-// bCoordOut = glm::vec3{1.0 - v - w, v, w};
-// return true;
-//}
-
 
 void SurfaceMesh::buildVertexInfoGui(size_t vInd) {
 
@@ -1409,89 +1191,6 @@ long long int SurfaceMesh::selectVertex() {
 
   return returnVertInd;
 }
-
-/*
-FacePtr SurfaceMesh::selectFace() {
-
-  // Make sure we can see edges
-  edgeWidth = 1.;
-  enabled = true;
-
-  // Create a new context
-  ImGuiContext* oldContext = ImGui::GetCurrentContext();
-  ImGuiContext* newContext = ImGui::CreateContext(getGlobalFontAtlas());
-  ImGui::SetCurrentContext(newContext);
-  initializeImGUIContext();
-  FacePtr returnFace;
-  int iF = 0;
-
-  // Register the callback which creates the UI and does the hard work
-  focusedPopupUI = [&]() {
-    { // Create a window with instruction and a close button.
-      static bool showWindow = true;
-      ImGui::SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
-      ImGui::Begin("Select face", &showWindow);
-
-      ImGui::PushItemWidth(300);
-      ImGui::TextUnformatted("Hold ctrl and left-click to select a face");
-      ImGui::Separator();
-
-      // Pick by number
-      ImGui::PushItemWidth(300);
-      ImGui::InputInt("index", &iF);
-      if (ImGui::Button("Select by index")) {
-        if (iF >= 0 && (size_t)iF < mesh->nFaces()) {
-          returnFace = mesh->face(iF);
-          focusedPopupUI = nullptr;
-        }
-      }
-      ImGui::PopItemWidth();
-
-      ImGui::Separator();
-      if (ImGui::Button("Abort")) {
-        focusedPopupUI = nullptr;
-      }
-    }
-
-    ImGuiIO& io = ImGui::GetIO();
-    if (io.KeyCtrl && !io.WantCaptureMouse && ImGui::IsMouseClicked(0)) {
-      if (pick::pickIsFromThisFrame) {
-        size_t pickInd;
-        Structure* pickS = pick::getCurrentPickElement(pickInd);
-
-        if (pickS == this) {
-          VertexPtr v;
-          EdgePtr e;
-          FacePtr f;
-          HalfedgePtr he;
-          getPickedElement(pickInd, v, f, e, he);
-
-          if (f != FacePtr()) {
-            returnFace = f;
-            focusedPopupUI = nullptr;
-          }
-        }
-      }
-    }
-
-    ImGui::End();
-  };
-
-
-  // Re-enter main loop
-  while (focusedPopupUI) {
-    mainLoopIteration();
-  }
-
-  // Restore the old context
-  ImGui::SetCurrentContext(oldContext);
-  ImGui::DestroyContext(newContext);
-
-  if (returnFace == FacePtr()) return returnFace;
-
-  return transfer.fMapBack[returnFace];
-}
-*/
 
 
 void SurfaceMesh::markEdgesAsUsed() {

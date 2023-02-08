@@ -234,19 +234,6 @@ public:
 
   // === Manage the mesh itself
 
-  // Core data
-  // std::vector<std::vector<size_t>> faces; // TODO delete
-
-  // Face indices
-  // std::vector<uint32_t> faceInds_start;
-  // std::vector<uint32_t> faceInds_entries;
-  // std::vector<glm::uvec3> triangleInds; // always triangulated
-
-  // Derived indices
-  // std::vector<glm::uvec3> faceVertexInds; // TODO delete
-  // std::vector<std::vector<size_t>> edgeIndices;
-  // std::vector<std::vector<size_t>> halfedgeIndices;
-
   // Counts
   size_t nVertices();
   size_t nFaces() const { return faceIndsStart.size() - 1; }
@@ -294,9 +281,6 @@ public:
 
   static const std::string structureTypeName;
 
-  // Picking helpers
-  // One of these will be non-null on return
-  // void getPickedElement(size_t localPickID, size_t& vOut, size_t& fOut, size_t& eOut, size_t& heOut);
 
   // === Getters and setters for visualization settings
 
@@ -437,10 +421,7 @@ private:
   void initializeMeshTriangulation();
   void recomputeGeometryIfPopulated();
 
-  // void fillGeometryBuffersSmooth(render::ShaderProgram& p);
-  // void fillGeometryBuffersFlat(render::ShaderProgram& p);
   glm::vec2 projectToScreenSpace(glm::vec3 coord);
-  // bool screenSpaceTriangleTest(size_t fInd, glm::vec2 testCoords, glm::vec3& bCoordOut);
 
 
   // clang-format off
