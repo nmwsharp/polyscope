@@ -11,6 +11,7 @@
 #include "polyscope/point_cloud_vector_quantity.h"
 
 #include "imgui.h"
+#include "polyscope/view.h"
 
 #include <fstream>
 #include <iostream>
@@ -56,13 +57,6 @@ void CameraView::draw() {
   edgeProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
   edgeProgram->setUniform("u_radius", getDisplayFocalLength() * getDisplayThickness());
   edgeProgram->setUniform("u_baseColor", widgetColor.get());
-
-  /*
-  frameProgram->setUniform("u_baseColor", widgetColor.get());
-  frameProgram->setUniform("u_edgeWidth", displayThickness.get());
-  frameProgram->setUniform("u_edgeColor", widgetColor.get());
-  */
-
 
   // Draw the camera view wireframe
   nodeProgram->draw();
@@ -111,14 +105,16 @@ void CameraView::drawPick() {
 void CameraView::prepare() {
 
   {
-    nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SHADE_BASECOLOR"});
+    std::vector<std::string> rules = addStructureRules({"SHADE_BASECOLOR"});
+    if (wantsCullPosition()) rules.push_back("SPHERE_CULLPOS_FROM_CENTER");
+    nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", rules);
     render::engine->setMaterial(*nodeProgram, "flat");
   }
 
   {
-    // frameProgram = render::engine->requestShader("MESH", {"SHADE_BASECOLOR", "MESH_WIREFRAME",
-    // "MESH_WIREFRAME_ONLY"});
-    edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", {"SHADE_BASECOLOR"});
+    std::vector<std::string> rules = addStructureRules({"SHADE_BASECOLOR"});
+    if (wantsCullPosition()) rules.push_back("CYLINDER_CULLPOS_FROM_MID");
+    edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", rules);
     render::engine->setMaterial(*edgeProgram, "flat");
   }
 
@@ -137,9 +133,9 @@ void CameraView::preparePick() {
   }
 
   // Create a new pick program
-  pickFrameProgram =
-      render::engine->requestShader("MESH", {"MESH_PROPAGATE_PICK"}, render::ShaderReplacementDefaults::Pick);
-
+  std::vector<std::string> rules = addStructureRules({"MESH_PROPAGATE_PICK"});
+  if (wantsCullPosition()) rules.push_back("MESH_PROPAGATE_CULLPOS");
+  pickFrameProgram = render::engine->requestShader("MESH", rules, render::ShaderReplacementDefaults::Pick);
 
   // Store data in buffers
   fillCameraWidgetGeometry(nullptr, nullptr, pickFrameProgram.get());
@@ -208,6 +204,7 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
     std::vector<glm::vec3> positions;
     std::vector<glm::vec3> normals;
     std::vector<glm::vec3> bcoord;
+    std::vector<glm::vec3> cullPos;
 
     auto addPolygon = [&](std::vector<glm::vec3> vertices) {
       size_t D = vertices.size();
@@ -233,6 +230,11 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
         bcoord.push_back(glm::vec3{1., 0., 0.});
         bcoord.push_back(glm::vec3{0., 1., 0.});
         bcoord.push_back(glm::vec3{0., 0., 1.});
+
+        // Cull position
+        cullPos.push_back(root);
+        cullPos.push_back(root);
+        cullPos.push_back(root);
       }
     };
 
@@ -255,6 +257,9 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
     pickFrameProgram->setAttribute<glm::vec3, 3>("a_edgeColors", tripleColors);
     pickFrameProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", tripleColors);
     pickFrameProgram->setAttribute("a_faceColor", faceColor);
+    if (wantsCullPosition()) {
+      pickFrameProgram->setAttribute("a_cullPos", cullPos);
+    }
   }
 }
 
@@ -264,7 +269,7 @@ void CameraView::geometryChanged() {
     fillCameraWidgetGeometry(nodeProgram.get(), edgeProgram.get(), nullptr);
   }
   if (pickFrameProgram) {
-    fillCameraWidgetGeometry(nodeProgram.get(), edgeProgram.get(), nullptr);
+    fillCameraWidgetGeometry(nullptr, nullptr, pickFrameProgram.get());
   }
 
   requestRedraw();
@@ -272,15 +277,17 @@ void CameraView::geometryChanged() {
 }
 
 void CameraView::buildPickUI(size_t localPickID) {
+  ImGui::Text("center: %s", to_string(params.getPosition()).c_str());
+  ImGui::Text("look dir: %s", to_string(params.getLookDir()).c_str());
+  ImGui::Text("up dir: %s", to_string(params.getUpDir()).c_str());
+  ImGui::Text("fov: %0.1f deg   aspect ratio: %.2f", params.fov, params.aspectRatio);
+  if (ImGui::Button("fly to")) {
+    setViewToThisCamera(true);
+  }
+
   // TODO
-
   /*
-  ImGui::TextUnformatted(("#" + std::to_string(localPickID) + "  ").c_str());
-  ImGui::SameLine();
-  ImGui::TextUnformatted(to_string(points[localPickID]).c_str());
 
-  ImGui::Spacing();
-  ImGui::Spacing();
   ImGui::Spacing();
   ImGui::Indent(20.);
 
@@ -305,6 +312,10 @@ void CameraView::buildCustomUI() {
       setWidgetColor(widgetColor.get());
   }
 
+  if (ImGui::Button("fly to")) {
+    setViewToThisCamera(true);
+  }
+  ImGui::SameLine();
   ImGui::Text("fov: %0.1f deg   aspect: %.2f", params.fov, params.aspectRatio);
 }
 
@@ -355,6 +366,13 @@ void CameraView::refresh() {
   QuantityStructure<CameraView>::refresh(); // call base class version, which refreshes quantities
 }
 
+void CameraView::setViewToThisCamera(bool withFlight) {
+  if (withFlight) {
+    view::startFlightTo(params);
+  } else {
+    view::setViewToCamera(params);
+  }
+}
 
 // === Quantities
 

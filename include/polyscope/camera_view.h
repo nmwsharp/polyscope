@@ -56,7 +56,7 @@ public:
 
 
   // === Mutate
- 
+
   // TODO oneday
   // void updateCameraParameters(const CameraParameters& newParams);
   // template <class V>
@@ -70,7 +70,9 @@ public:
 
   // Small utilities
   void deleteProgram();
-  
+
+  // Update the current viewer to look through this camer
+  void setViewToThisCamera(bool withFlight = false);
 
   // === Get/set visualization parameters
 
@@ -82,7 +84,7 @@ public:
   // Set the thickness of the wireframe used to draw the camera (in relative units)
   CameraView* setDisplayThickness(double newVal);
   double getDisplayThickness();
-  
+
   // Color of the widget
   CameraView* setWidgetColor(glm::vec3 val);
   glm::vec3 getWidgetColor();
@@ -94,7 +96,6 @@ public:
 
 
 private:
-
   // The actual camera data being visualized
   CameraParameters params;
 
