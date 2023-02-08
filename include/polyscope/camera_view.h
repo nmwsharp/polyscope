@@ -56,19 +56,21 @@ public:
 
 
   // === Mutate
-  // TODO
-  void updateCameraParameters(const CameraParameters& newParams);
-  template <class V>
-  void updateCameraParameters(const V& newParameters);
+ 
+  // TODO oneday
+  // void updateCameraParameters(const CameraParameters& newParams);
+  // template <class V>
+  // void updateCameraParameters(const V& newParameters);
 
-  // The points that make up the structure
-  CameraParameters params;
+  // get the params object
+  CameraParameters getCameraParameters();
 
   // Misc data
   static const std::string structureTypeName;
 
   // Small utilities
   void deleteProgram();
+  
 
   // === Get/set visualization parameters
 
@@ -92,6 +94,10 @@ public:
 
 
 private:
+
+  // The actual camera data being visualized
+  CameraParameters params;
+
   // === Visualization parameters
   PersistentValue<ScaledValue<float>> displayFocalLength;
   PersistentValue<float> displayThickness;

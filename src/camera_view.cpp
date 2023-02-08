@@ -383,6 +383,8 @@ void CameraViewQuantity::buildInfoGUI(size_t pointInd) {}
 
 // === Setters and getters
 
+CameraParameters CameraView::getCameraParameters() { return params; }
+
 CameraView* CameraView::setDisplayFocalLength(double newVal, bool isRelative) {
   displayFocalLength = ScaledValue<float>(newVal, isRelative);
   geometryChanged();
