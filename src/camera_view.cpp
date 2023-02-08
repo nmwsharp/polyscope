@@ -208,7 +208,6 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
     std::vector<glm::vec3> positions;
     std::vector<glm::vec3> normals;
     std::vector<glm::vec3> bcoord;
-    // std::vector<glm::vec3> edgeReal;
 
     auto addPolygon = [&](std::vector<glm::vec3> vertices) {
       size_t D = vertices.size();
@@ -234,18 +233,6 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
         bcoord.push_back(glm::vec3{1., 0., 0.});
         bcoord.push_back(glm::vec3{0., 1., 0.});
         bcoord.push_back(glm::vec3{0., 0., 1.});
-
-        // Set which edges are real
-        // glm::vec3 edgeRealV{0., 1., 0.};
-        // if (j == 1) {
-        // edgeRealV.x = 1.;
-        //}
-        // if (j + 2 == D) {
-        // edgeRealV.z = 1.;
-        //}
-        // edgeReal.push_back(edgeRealV);
-        // edgeReal.push_back(edgeRealV);
-        // edgeReal.push_back(edgeRealV);
       }
     };
 
@@ -256,10 +243,9 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
     addPolygon({frameUpperLeft, frameUpperRight, frameLowerRight, frameLowerLeft});
     addPolygon({triangleTop, triangleRight, triangleLeft});
 
-    pickFrameProgram->setAttribute("a_position", positions);
-    pickFrameProgram->setAttribute("a_normal", normals);
+    pickFrameProgram->setAttribute("a_vertexPositions", positions);
+    pickFrameProgram->setAttribute("a_vertexNormals", normals); // unused
     pickFrameProgram->setAttribute("a_barycoord", bcoord);
-    // pickFrameProgram->setAttribute("a_edgeIsReal", edgeReal);
 
     size_t nFaces = 7;
     std::vector<glm::vec3> faceColor(3 * nFaces, pickColor);
