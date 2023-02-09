@@ -10,9 +10,11 @@ namespace polyscope {
 
 
 ScalarRenderImageQuantity::ScalarRenderImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                                     const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData,
-                                     const std::vector<double>& scalarData_, DataType dataType_)
-    : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData),
+                                                     const std::vector<float>& depthData,
+                                                     const std::vector<glm::vec3>& normalData,
+                                                     const std::vector<double>& scalarData_, ImageOrigin imageOrigin,
+                                                     DataType dataType_)
+    : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData, imageOrigin),
       ScalarQuantity(*this, scalarData_, dataType_) {}
 
 void ScalarRenderImageQuantity::draw() {}
@@ -82,10 +84,10 @@ void ScalarRenderImageQuantity::prepare() {
       render::engine->generateTextureBuffer(TextureFormat::R32F, dimX, dimY, static_cast<float*>(&floatData.front()));
 
   // Create the sourceProgram
-  program = render::engine->requestShader(
-      "TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-      addScalarRules({"TEXTURE_ORIGIN_UPPERLEFT", "LIGHT_MATCAP", "TEXTURE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"}),
-      render::ShaderReplacementDefaults::Process);
+  program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
+                                          addScalarRules({getImageOriginRule(imageOrigin), "LIGHT_MATCAP",
+                                                          "TEXTURE_PROPAGATE_VALUE", "SHADE_COLORMAP_VALUE"}),
+                                          render::ShaderReplacementDefaults::Process);
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
   program->setTextureFromBuffer("t_depth", textureDepth.get());
@@ -108,11 +110,13 @@ ScalarRenderImageQuantity* ScalarRenderImageQuantity::setEnabled(bool newEnabled
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
 // structure.ipp.
 ScalarRenderImageQuantity* createScalarRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
-                                           const std::vector<float>& depthData,
-                                           const std::vector<glm::vec3>& normalData,
-                                           const std::vector<double>& scalarData, DataType dataType) {
+                                                   const std::vector<float>& depthData,
+                                                   const std::vector<glm::vec3>& normalData,
+                                                   const std::vector<double>& scalarData, ImageOrigin imageOrigin,
+                                                   DataType dataType) {
 
-  return new ScalarRenderImageQuantity(parent, name, dimX, dimY, depthData, normalData, scalarData, dataType);
+  return new ScalarRenderImageQuantity(parent, name, dimX, dimY, depthData, normalData, scalarData, imageOrigin,
+                                       dataType);
 }
 
 } // namespace polyscope

@@ -7,45 +7,49 @@ namespace polyscope {
 
 template <class T>
 ScalarImageQuantity* addScalarImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values,
-                                            DataType type) {
+                                            ImageOrigin imageOrigin, DataType type) {
   FloatingQuantityStructure* q = getGlobalFloatingQuantityStructure();
-  return q->addScalarImageQuantity(name, dimX, dimY, values, type);
+  return q->addScalarImageQuantity(name, dimX, dimY, values, imageOrigin, type);
 }
 
 template <class T>
-ColorImageQuantity* addColorImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values_rgb) {
+ColorImageQuantity* addColorImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values_rgb,
+                                          ImageOrigin imageOrigin) {
   FloatingQuantityStructure* q = getGlobalFloatingQuantityStructure();
-  return q->addColorImageQuantity(name, dimX, dimY, values_rgb);
+  return q->addColorImageQuantity(name, dimX, dimY, values_rgb, imageOrigin);
 }
 
 template <class T>
-ColorImageQuantity* addColorAlphaImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values_rgba) {
+ColorImageQuantity* addColorAlphaImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values_rgba,
+                                               ImageOrigin imageOrigin) {
   FloatingQuantityStructure* q = getGlobalFloatingQuantityStructure();
-  return q->addColorImageQuantity(name, dimX, dimY, values_rgba);
+  return q->addColorImageQuantity(name, dimX, dimY, values_rgba, imageOrigin);
 }
 
 
 template <class T1, class T2>
 DepthRenderImageQuantity* addDepthRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData,
-                                                      const T2& normalData) {
+                                                      const T2& normalData, ImageOrigin imageOrigin) {
 
   FloatingQuantityStructure* q = getGlobalFloatingQuantityStructure();
-  return q->addDepthRenderImageQuantity(name, dimX, dimY, depthData, normalData);
+  return q->addDepthRenderImageQuantity(name, dimX, dimY, depthData, normalData, imageOrigin);
 }
 
 template <class T1, class T2, class T3>
 ColorRenderImageQuantity* addColorRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData,
-                                                      const T2& normalData, const T3& colorData) {
+                                                      const T2& normalData, const T3& colorData,
+                                                      ImageOrigin imageOrigin) {
   FloatingQuantityStructure* q = getGlobalFloatingQuantityStructure();
-  return q->addColorRenderImageQuantity(name, dimX, dimY, depthData, normalData, colorData);
+  return q->addColorRenderImageQuantity(name, dimX, dimY, depthData, normalData, imageOrigin, colorData);
 }
 
 
 template <class T1, class T2, class T3>
 ScalarRenderImageQuantity* addScalarRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData,
-                                                        const T2& normalData, const T3& scalarData, DataType type) {
+                                                        const T2& normalData, const T3& scalarData,
+                                                        ImageOrigin imageOrigin, DataType type) {
   FloatingQuantityStructure* q = getGlobalFloatingQuantityStructure();
-  return q->addScalarRenderImageQuantity(name, dimX, dimY, depthData, normalData, scalarData, type);
+  return q->addScalarRenderImageQuantity(name, dimX, dimY, depthData, normalData, scalarData, imageOrigin, type);
 }
 
 

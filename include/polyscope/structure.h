@@ -198,49 +198,59 @@ public:
   // === Floating Quantities
   template <class T>
   ScalarImageQuantity* addScalarImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values,
+                                              ImageOrigin imageOrigin = ImageOrigin::UpperLeft,
                                               DataType type = DataType::STANDARD);
 
   template <class T>
-  ColorImageQuantity* addColorImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values_rgb);
+  ColorImageQuantity* addColorImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values_rgb,
+                                            ImageOrigin imageOrigin = ImageOrigin::UpperLeft);
 
   template <class T>
-  ColorImageQuantity* addColorAlphaImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values_rgba);
+  ColorImageQuantity* addColorAlphaImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values_rgba,
+                                                 ImageOrigin imageOrigin = ImageOrigin::UpperLeft);
 
   template <class T1, class T2>
   DepthRenderImageQuantity* addDepthRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData,
-                                                        const T2& normalData);
+                                                        const T2& normalData,
+                                                        ImageOrigin imageOrigin = ImageOrigin::UpperLeft);
 
   template <class T1, class T2, class T3>
   ColorRenderImageQuantity* addColorRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData,
-                                                        const T2& normalData, const T3& colorData);
+                                                        const T2& normalData, const T3& colorData,
+                                                        ImageOrigin imageOrigin = ImageOrigin::UpperLeft);
 
 
   template <class T1, class T2, class T3>
-  ScalarRenderImageQuantity* addScalarRenderImageQuantity(std::string name, size_t dimX, size_t dimY,
-                                                          const T1& depthData, const T2& normalData,
-                                                          const T3& scalarData, DataType type = DataType::STANDARD);
+  ScalarRenderImageQuantity*
+  addScalarRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData, const T2& normalData,
+                               const T3& scalarData, ImageOrigin imageOrigin = ImageOrigin::UpperLeft,
+                               DataType type = DataType::STANDARD);
 
 
   // === Floating Quantity impls
   ScalarImageQuantity* addScalarImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
-                                                  const std::vector<double>& values, DataType type);
+                                                  const std::vector<double>& values, ImageOrigin imageOrigin,
+                                                  DataType type);
 
   ColorImageQuantity* addColorImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
-                                                const std::vector<glm::vec4>& values);
+                                                const std::vector<glm::vec4>& values, ImageOrigin imageOrigin);
 
   DepthRenderImageQuantity* addDepthRenderImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
                                                             const std::vector<float>& depthData,
-                                                            const std::vector<glm::vec3>& normalData);
+                                                            const std::vector<glm::vec3>& normalData,
+                                                            ImageOrigin imageOrigin);
 
   ColorRenderImageQuantity* addColorRenderImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
                                                             const std::vector<float>& depthData,
                                                             const std::vector<glm::vec3>& normalData,
-                                                            const std::vector<glm::vec3>& colorData);
+                                                            const std::vector<glm::vec3>& colorData,
+                                                            ImageOrigin imageOrigin);
 
   ScalarRenderImageQuantity* addScalarRenderImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
                                                               const std::vector<float>& depthData,
                                                               const std::vector<glm::vec3>& normalData,
-                                                              const std::vector<double>& scalarData, DataType type);
+                                                              const std::vector<double>& scalarData,
+                                                              ImageOrigin imageOrigin, DataType type);
 
 protected:
   // helper

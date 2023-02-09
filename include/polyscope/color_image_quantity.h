@@ -11,7 +11,7 @@ class ColorImageQuantity : public FloatingQuantity, public ImageColorArtist, pub
 
 public:
   ColorImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                             const std::vector<glm::vec4>& data);
+                             const std::vector<glm::vec4>& data, ImageOrigin imageOrigin);
 
   virtual void draw() override;
   virtual void drawDelayed() override;

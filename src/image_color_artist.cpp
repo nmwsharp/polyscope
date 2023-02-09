@@ -2,120 +2,82 @@
 #include "polyscope/polyscope.h"
 
 #include "polyscope/image_color_artist.h"
+#include "polyscope/render/engine.h"
+#include "polyscope/types.h"
 
 #include <vector>
 
 namespace polyscope {
 
 ImageColorArtist::ImageColorArtist(std::string displayName_, std::string uniquePrefix_, size_t dimX_, size_t dimY_,
-                                   const std::vector<glm::vec4>& data_)
+                                   const std::vector<glm::vec4>& data_, ImageOrigin imageOrigin_)
     : displayName(displayName_), dimX(dimX_), dimY(dimY_), data(data_),
-      transparency(uniquePrefix_ + "#" + displayName_, 1.0f) {}
+      transparency(uniquePrefix_ + "#" + displayName_, 1.0f), imageOrigin(imageOrigin_) {}
 
-/*
-ImageColorArtist::ImageColorArtist(std::string name_,
-                                                std::shared_ptr<render::TextureBuffer>& texturebuffer, size_t dimX_,
-                                                size_t dimY_, DataType dataType_)
+void ImageColorArtist::ensureRawTexturePopulated() {
+  if (textureRaw) return; // already populated, nothing to do
 
-    : name(name_), dimX(dimX_), dimY(dimY_), dataType(dataType_), readFromTex(true),
-      cMap(name + "#cmap", defaultColorMap(dataType)) {
-
-  textureRaw = texturebuffer;
-  dataRange.first = 0.;
-  dataRange.second = 1.;
-  resetMapRange();
-  prepareSource();
-}
-*/
-
-
-void ImageColorArtist::prepareSource() {
-  // Fill a texture with the raw data
-  if (!readFromTex) {
-    // copy to flat float buffer, just to be safe
-    std::vector<float> floatValues(4 * data.size());
-    for (size_t i = 0; i < data.size(); i++) {
-      for (size_t j = 0; j < 4; j++) {
-        floatValues[4 * i + j] = static_cast<float>(data[i][j]);
-      }
-    }
-
-    // common case
-    textureRaw = render::engine->generateTextureBuffer(TextureFormat::RGBA32F, dimX, dimY, &floatValues.front());
+  if (readFromTex) {
+    // sanity check for the special case of rendering an existing buffer
+    throw std::runtime_error("image artist should be rendering from texture, but texture is null");
   }
 
-  // Texture and sourceProgram for rendering in
-  framebuffer = render::engine->generateFrameBuffer(dimX, dimY);
-  textureRendered = render::engine->generateTextureBuffer(TextureFormat::RGBA16F, dimX, dimY);
-  framebuffer->addColorBuffer(textureRendered);
-  framebuffer->setViewport(0, 0, dimX, dimY);
+  // Must be rendering from a buffer of data, copy it over (common case)
+
+  textureRaw = render::engine->generateTextureBuffer(TextureFormat::RGBA32F, dimX, dimY, &(data.front()[0]));
 }
 
-void ImageColorArtist::prepare() {
-  if (textureRaw == nullptr) {
-    // the first time, we need to also allocate the buffers for the raw source data
-    prepareSource();
-  }
+
+void ImageColorArtist::prepareFullscreen() {
+
+  ensureRawTexturePopulated();
 
   // Create the sourceProgram
-  sourceProgram =
-      render::engine->requestShader("TEXTURE_DRAW_PLAIN", {"TEXTURE_ORIGIN_UPPERLEFT", "TEXTURE_SET_TRANSPARENCY"},
+  fullscreenProgram =
+      render::engine->requestShader("TEXTURE_DRAW_PLAIN", {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY"},
                                     render::ShaderReplacementDefaults::Process);
-  sourceProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  sourceProgram->setTextureFromBuffer("t_image", textureRaw.get());
+  fullscreenProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
+  fullscreenProgram->setTextureFromBuffer("t_image", textureRaw.get());
+}
+
+void ImageColorArtist::prepareBillboard() {
+
+  ensureRawTexturePopulated();
+
+  // Create the sourceProgram
+  billboardProgram = render::engine->requestShader(
+      "TEXTURE_DRAW_PLAIN",
+      {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY", "TEXTURE_BILLBOARD_FROM_UNIFORMS"},
+      render::ShaderReplacementDefaults::Process);
+  billboardProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
+  billboardProgram->setTextureFromBuffer("t_image", textureRaw.get());
 }
 
 
 void ImageColorArtist::refresh() {
-  sourceProgram.reset();
   fullscreenProgram.reset();
-  textureRendered.reset();
-  framebuffer.reset();
-  if (!readFromTex) {
-    // TODO will this actually work out okay in the "view texture" case?
-    textureRaw.reset();
-  }
-}
-
-void ImageColorArtist::renderSource() {
-  // === Render the raw data to the texture
-
-  // Make the sourceProgram if we don't have one already
-  if (sourceProgram == nullptr) {
-    prepare();
-  }
-
-  // Set uniforms
-
-  // Render to the intermediate "source" texture for the image
-  render::engine->pushBindFramebufferForRendering(*framebuffer);
-  sourceProgram->setUniform("u_transparency", 1.0f);
-  framebuffer->clear();
-  sourceProgram->draw();
-  render::engine->popBindFramebufferForRendering();
+  billboardProgram.reset();
 }
 
 
 void ImageColorArtist::showFullscreen() {
-  // === Render the raw data to the texture
 
-  // Make the sourceProgram if we don't have one already
-  if (sourceProgram == nullptr) {
-    // prepareFullscreen();
-    prepare();
+  if (!fullscreenProgram) {
+    prepareFullscreen();
   }
-  
-  // Set uniforms
-  sourceProgram->setUniform("u_transparency", getTransparency());
 
-  sourceProgram->draw();
+  // Set uniforms
+  fullscreenProgram->setUniform("u_transparency", getTransparency());
+
+  fullscreenProgram->draw();
 
   render::engine->applyTransparencySettings();
 }
 
 
 void ImageColorArtist::showInImGuiWindow() {
-  if (!sourceProgram) return;
+  if (!fullscreenProgram) prepareFullscreen();
+  ensureRawTexturePopulated();
 
   ImGui::Begin(displayName.c_str(), nullptr, ImGuiWindowFlags_NoScrollbar);
 
@@ -123,10 +85,33 @@ void ImageColorArtist::showInImGuiWindow() {
   float h = w * dimY / dimX;
 
   ImGui::Text("Dimensions: %zux%zu", dimX, dimY);
-  ImGui::Image(textureRendered->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
 
+  // since we are showing directly from the user's texture, we need to resposect the upper left ordering
+  if (imageOrigin == ImageOrigin::LowerLeft) {
+    ImGui::Image(textureRaw->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+  } else if (imageOrigin == ImageOrigin::UpperLeft) {
+    ImGui::Image(textureRaw->getNativeHandle(), ImVec2(w, h));
+  }
 
   ImGui::End();
+}
+
+void ImageColorArtist::showInBillboard(glm::vec3 center, glm::vec3 upVec, glm::vec3 rightVec) {
+
+  if (!billboardProgram) {
+    prepareBillboard();
+  }
+
+  // ensure the scale of rightVec matches the aspect ratio of the image
+  rightVec = glm::normalize(rightVec) * glm::length(upVec) * ((float)dimX / dimY);
+
+  // set uniforms
+  billboardProgram->setUniform("u_transparency", getTransparency());
+  billboardProgram->setUniform("u_billboardCenter", center);
+  billboardProgram->setUniform("u_billboardUp", upVec);
+  billboardProgram->setUniform("u_billboardRight", rightVec);
+
+  billboardProgram->draw();
 }
 
 void ImageColorArtist::setTransparency(float newVal) {

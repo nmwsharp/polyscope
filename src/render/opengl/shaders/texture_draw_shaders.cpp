@@ -1,6 +1,7 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 
 #include "polyscope/render/opengl/shaders/texture_draw_shaders.h"
+#include "polyscope/render/engine.h"
 
 // clang-format off
 
@@ -30,11 +31,14 @@ R"(
       ${ GLSL_VERSION }$
       in vec3 a_position;
       out vec2 tCoord;
+      
+      ${ VERT_DECLARATIONS }$
 
       void main()
       {
           tCoord = (a_position.xy+vec2(1.0,1.0))/2.0;
           ${ TCOORD_ADJUST }$
+          ${ POSITION_ADJUST }$
           gl_Position = vec4(a_position,1.);
       }
 )"
@@ -505,6 +509,16 @@ const ShaderReplacementRule TEXTURE_ORIGIN_UPPERLEFT (
     /* textures */ {}
 );
 
+const ShaderReplacementRule TEXTURE_ORIGIN_LOWERLEFT (
+    // nothing needs to be done, this is already the default
+    
+    /* rule name */ "TEXTURE_ORIGIN_UPPERLEFT",
+    /* replacement sources */ {}, 
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
 const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY(
     /* rule name */ "TEXTURE_SET_TRANSPARENCY",
     { /* replacement sources */
@@ -559,6 +573,27 @@ const ShaderReplacementRule TEXTURE_PROPAGATE_VALUE(
     /* textures */ {
       {"t_scalar", 2},
     }
+);
+
+const ShaderReplacementRule TEXTURE_BILLBOARD_FROM_UNIFORMS(
+    /* rule name */ "TEXTURE_BILLBOARD_FROM_UNIFORMS",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          uniform vec3 u_billboardCenter;
+          uniform vec3 u_billboardUp;
+          uniform vec3 u_billboardRight;
+        )" },
+      {"POSITION_ADJUST", R"(
+        a_position = a_position.x * u_billboardRight + a_position.y * u_billboardUp + u_billboardCenter;
+      )"}
+    },
+    /* uniforms */ {
+      {"u_billboardCenter", RenderDataType::Vector3Float},
+      {"u_billboardUp", RenderDataType::Vector3Float},
+      {"u_billboardRight", RenderDataType::Vector3Float}
+    },
+    /* attributes */ {},
+    /* textures */ {}
 );
 
 // clang-format on

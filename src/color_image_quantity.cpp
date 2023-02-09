@@ -10,15 +10,15 @@ namespace polyscope {
 
 
 ColorImageQuantity::ColorImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                                       const std::vector<glm::vec4>& data)
-    : FloatingQuantity(name, parent_), ImageColorArtist(name, uniquePrefix(), dimX, dimY, data), parent(parent_),
-      showFullscreen(uniquePrefix() + "showFullscreen", false) {}
+                                       const std::vector<glm::vec4>& data, ImageOrigin imageOrigin_)
+    : FloatingQuantity(name, parent_), ImageColorArtist(name, uniquePrefix(), dimX, dimY, data, imageOrigin_),
+      parent(parent_), showFullscreen(uniquePrefix() + "showFullscreen", false) {}
 
 size_t ColorImageQuantity::nPix() { return dimX * dimY; }
 
 void ColorImageQuantity::draw() {
   if (!isEnabled()) return;
-  ImageColorArtist::renderSource();
+  // ImageColorArtist::renderSource(); TODO
 }
 
 void ColorImageQuantity::drawDelayed() {
@@ -99,8 +99,8 @@ bool ColorImageQuantity::getShowFullscreen() { return showFullscreen.get(); }
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
 // structure.ipp.
 ColorImageQuantity* createColorImageQuantity(Structure& parent, std::string name, size_t dimX, size_t dimY,
-                                                     const std::vector<glm::vec4>& data) {
-  return new ColorImageQuantity(parent, name, dimX, dimY, data);
+                                             const std::vector<glm::vec4>& data, ImageOrigin imageOrigin) {
+  return new ColorImageQuantity(parent, name, dimX, dimY, data, imageOrigin);
 }
 
 

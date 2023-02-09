@@ -10,19 +10,23 @@ namespace polyscope {
 
 
 ScalarImageQuantity::ScalarImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                                         const std::vector<double>& data, DataType dataType)
-    : FloatingQuantity(name, parent_), ImageScalarArtist(*this, name, dimX, dimY, data, dataType),
+                                         const std::vector<double>& data, ImageOrigin imageOrigin_, DataType dataType)
+    : FloatingQuantity(name, parent_), ImageScalarArtist(*this, name, dimX, dimY, data, imageOrigin_, dataType),
       showFullscreen(uniquePrefix() + "showFullscreen", false) {}
 
 size_t ScalarImageQuantity::nPix() { return dimX * dimY; }
 
 void ScalarImageQuantity::draw() {
   if (!isEnabled()) return;
-  ImageScalarArtist::renderSource();
+
+  if (!getShowFullscreen()) {
+    renderIntermediate();
+  }
 }
 
 void ScalarImageQuantity::drawDelayed() {
   if (!isEnabled()) return;
+
   if (getShowFullscreen()) {
     ImageScalarArtist::showFullscreen();
   }
@@ -102,8 +106,9 @@ bool ScalarImageQuantity::getShowFullscreen() { return showFullscreen.get(); }
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
 // structure.ipp.
 ScalarImageQuantity* createScalarImageQuantity(Structure& parent, std::string name, size_t dimX, size_t dimY,
-                                               const std::vector<double>& data, DataType dataType) {
-  return new ScalarImageQuantity(parent, name, dimX, dimY, data, dataType);
+                                               const std::vector<double>& data, ImageOrigin imageOrigin,
+                                               DataType dataType) {
+  return new ScalarImageQuantity(parent, name, dimX, dimY, data, imageOrigin, dataType);
 }
 
 } // namespace polyscope

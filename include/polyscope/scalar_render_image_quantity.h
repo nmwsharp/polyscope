@@ -15,7 +15,7 @@ class ScalarRenderImageQuantity : public RenderImageQuantityBase, public ScalarQ
 public:
   ScalarRenderImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                             const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData,
-                            const std::vector<double>& scalarData, DataType dataType);
+                            const std::vector<double>& scalarData, ImageOrigin imageOrigin, DataType dataType);
 
   virtual void draw() override;
   virtual void drawDelayed() override;

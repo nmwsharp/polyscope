@@ -10,7 +10,8 @@ class DepthRenderImageQuantity : public RenderImageQuantityBase {
 
 public:
   DepthRenderImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                           const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData);
+                           const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData,
+                           ImageOrigin imageOrigin);
 
   virtual void draw() override;
   virtual void drawDelayed() override;

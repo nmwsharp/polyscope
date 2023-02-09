@@ -223,7 +223,8 @@ DepthRenderImageQuantity* renderImplicitSurfaceBatch(QuantityStructure<S>* paren
   // than creating a whole new one
 
   // here, we bypass the conversion adaptor since we have explicitly filled matching types
-  return parent->addDepthRenderImageQuantityImpl(name, dimXsub, dimYsub, rayDepthOut, normalOut);
+  return parent->addDepthRenderImageQuantityImpl(name, dimXsub, dimYsub, rayDepthOut, normalOut,
+                                                 ImageOrigin::UpperLeft);
 }
 
 // =======================================================
@@ -295,7 +296,8 @@ ColorRenderImageQuantity* renderImplicitSurfaceColorBatch(QuantityStructure<S>* 
   // than creating a whole new one
 
   // here, we bypass the conversion adaptor since we have explicitly filled matching types
-  return parent->addColorRenderImageQuantityImpl(name, dimXsub, dimYsub, rayDepthOut, normalOut, colorOut);
+  return parent->addColorRenderImageQuantityImpl(name, dimXsub, dimYsub, rayDepthOut, normalOut, colorOut,
+                                                 ImageOrigin::UpperLeft);
 }
 
 
@@ -369,7 +371,8 @@ ScalarRenderImageQuantity* renderImplicitSurfaceScalarBatch(QuantityStructure<S>
   // than creating a whole new one
 
   // here, we bypass the conversion adaptor since we have explicitly filled matching types
-  return parent->addScalarRenderImageQuantityImpl(name, dimXsub, dimYsub, rayDepthOut, normalOut, scalarOut, dataType);
+  return parent->addScalarRenderImageQuantityImpl(name, dimXsub, dimYsub, rayDepthOut, normalOut, scalarOut,
+                                                  ImageOrigin::UpperLeft, dataType);
 }
 
 

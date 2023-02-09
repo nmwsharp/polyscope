@@ -1,6 +1,7 @@
 #pragma once
 
 #include "polyscope/render_image_quantity_base.h"
+#include "polyscope/types.h"
 
 #include <vector>
 
@@ -11,7 +12,7 @@ class ColorRenderImageQuantity : public RenderImageQuantityBase {
 public:
   ColorRenderImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                            const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData,
-                           const std::vector<glm::vec3>& colorData);
+                           const std::vector<glm::vec3>& colorData, ImageOrigin imageOrigin);
 
   virtual void draw() override;
   virtual void drawDelayed() override;

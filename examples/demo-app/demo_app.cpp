@@ -12,6 +12,7 @@
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_io.h"
+#include "polyscope/types.h"
 #include "polyscope/volume_mesh.h"
 
 #include <iostream>
@@ -28,12 +29,6 @@
 #include "glm/gtx/string_cast.hpp"
 
 #include "stb_image.h"
-
-
-using std::cerr;
-using std::cout;
-using std::endl;
-using std::string;
 
 
 bool endsWith(const std::string& str, const std::string& suffix) {
@@ -166,7 +161,7 @@ void processFileOBJ(std::string filename) {
   polyscope::getSurfaceMesh(niceName)->addFaceColorQuantity("fColor", fColor);
 
   /*
-  
+
   // size_t nEdges = psMesh->nEdges();
 
   // Edge length
@@ -268,13 +263,13 @@ polyscope::warning("Some problems come in groups", "detail = " + std::to_string(
       float zComp = C * std::sin(p.y) + B * std::cos(p.x);
       return glm::vec3{xComp, yComp, zComp};
     };
-    
+
     // TODO commented out for now, need to manually construct tangent bases
-  
+
     /*
 
     // At vertices
-    
+
     std::vector<glm::vec2> vertexIntrinsicVec(nVertices, glm::vec3{0., 0., 0.});
     psMesh->generateDefaultVertexTangentSpaces();
     psMesh->ensureHaveVertexTangentSpaces();
@@ -337,7 +332,7 @@ polyscope::warning("Some problems come in groups", "detail = " + std::to_string(
     if (isTriangle) {
       psMesh->addOneFormIntrinsicVectorQuantity("intrinsic 1-form", edgeForm, edgeOrient);
     }
-    
+
     */
   }
 
@@ -500,18 +495,23 @@ void loadFloatingImageData(polyscope::PointCloud* targetCloud = nullptr) {
   }
 
   if (targetCloud == nullptr) {
-    polyscope::addColorImageQuantity("test color image", width, height, imageColor);
-    polyscope::addScalarImageQuantity("test scalar image", width, height, imageScalar);
+    polyscope::addColorImageQuantity("test color image", width, height, imageColor, polyscope::ImageOrigin::UpperLeft);
+    polyscope::addScalarImageQuantity("test scalar image", width, height, imageScalar,
+                                      polyscope::ImageOrigin::UpperLeft);
 
     if (hasAlpha) {
-      polyscope::addColorAlphaImageQuantity("test color alpha image", width, height, imageColorAlpha);
+      polyscope::addColorAlphaImageQuantity("test color alpha image", width, height, imageColorAlpha,
+                                            polyscope::ImageOrigin::UpperLeft);
     }
   } else {
-    targetCloud->addColorImageQuantity("test color image", width, height, imageColor);
-    targetCloud->addScalarImageQuantity("test scalar image", width, height, imageScalar);
+    targetCloud->addColorImageQuantity("test color image", width, height, imageColor,
+                                       polyscope::ImageOrigin::UpperLeft);
+    targetCloud->addScalarImageQuantity("test scalar image", width, height, imageScalar,
+                                        polyscope::ImageOrigin::UpperLeft);
 
     if (hasAlpha) {
-      targetCloud->addColorAlphaImageQuantity("test color alpha image", width, height, imageColorAlpha);
+      targetCloud->addColorAlphaImageQuantity("test color alpha image", width, height, imageColorAlpha,
+                                              polyscope::ImageOrigin::UpperLeft);
     }
   }
 }
@@ -812,7 +812,7 @@ int main(int argc, char** argv) {
     addDataToPointCloud("really great points" + std::to_string(j), points);
   }
 
-  // loadFloatingImageData();
+  loadFloatingImageData();
 
   // Add a few gui elements
   polyscope::state::userCallback = callback;

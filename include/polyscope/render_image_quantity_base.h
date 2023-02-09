@@ -18,7 +18,7 @@ class RenderImageQuantityBase : public FloatingQuantity {
 
 public:
   RenderImageQuantityBase(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                      const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData);
+                      const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData, ImageOrigin imageOrigin);
 
   // virtual void draw() override;
   // virtual void drawDelayed() override;
@@ -42,6 +42,7 @@ public:
 
 protected:
   const size_t dimX, dimY;
+  ImageOrigin imageOrigin;
 
   // Store the raw data
   std::vector<float> depthData;

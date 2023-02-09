@@ -10,9 +10,10 @@ namespace polyscope {
 
 RenderImageQuantityBase::RenderImageQuantityBase(Structure& parent_, std::string name, size_t dimX_, size_t dimY_,
                                                  const std::vector<float>& depthData_,
-                                                 const std::vector<glm::vec3>& normalData_)
-    : FloatingQuantity(name, parent_), dimX(dimX_), dimY(dimY_), depthData(depthData_), normalData(normalData_),
-      material(uniquePrefix() + "#material", "clay"), transparency(uniquePrefix() + "#transparency", 1.0) {}
+                                                 const std::vector<glm::vec3>& normalData_, ImageOrigin imageOrigin_)
+    : FloatingQuantity(name, parent_), dimX(dimX_), dimY(dimY_), imageOrigin(imageOrigin_), depthData(depthData_),
+      normalData(normalData_), material(uniquePrefix() + "#material", "clay"),
+      transparency(uniquePrefix() + "#transparency", 1.0) {}
 
 size_t RenderImageQuantityBase::nPix() { return dimX * dimY; }
 
@@ -80,8 +81,8 @@ RenderImageQuantityBase* RenderImageQuantityBase::setTransparency(float newVal) 
   transparency = newVal;
 
   // DON'T do this for images, unlike other structures, because they just get drawn on top anyway
-  //if (newVal < 1. && options::transparencyMode == TransparencyMode::None) {
-    //options::transparencyMode = TransparencyMode::Pretty;
+  // if (newVal < 1. && options::transparencyMode == TransparencyMode::None) {
+  // options::transparencyMode = TransparencyMode::Pretty;
   //}
   requestRedraw();
 

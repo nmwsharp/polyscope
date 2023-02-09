@@ -15,7 +15,7 @@ class ScalarImageQuantity : public FloatingQuantity,
 
 public:
   ScalarImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY, const std::vector<double>& data,
-                      DataType dataType);
+                      ImageOrigin imageOrigin, DataType dataType);
 
   virtual void draw() override;
   virtual void drawDelayed() override;

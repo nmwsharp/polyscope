@@ -5,6 +5,7 @@
 #include "polyscope/color_render_image_quantity.h"
 
 #include "imgui.h"
+#include "polyscope/render/engine.h"
 
 namespace polyscope {
 
@@ -12,8 +13,8 @@ namespace polyscope {
 ColorRenderImageQuantity::ColorRenderImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                                                    const std::vector<float>& depthData,
                                                    const std::vector<glm::vec3>& normalData,
-                                                   const std::vector<glm::vec3>& colorData_)
-    : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData), colorData(colorData_) {}
+                                                   const std::vector<glm::vec3>& colorData_, ImageOrigin imageOrigin)
+    : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData, imageOrigin), colorData(colorData_) {}
 
 void ColorRenderImageQuantity::draw() {}
 
@@ -74,7 +75,7 @@ void ColorRenderImageQuantity::prepare() {
 
   // Create the sourceProgram
   program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-                                          {"TEXTURE_ORIGIN_UPPERLEFT", "LIGHT_MATCAP", "TEXTURE_SHADE_COLOR"},
+                                          {getImageOriginRule(imageOrigin), "LIGHT_MATCAP", "TEXTURE_SHADE_COLOR"},
                                           render::ShaderReplacementDefaults::Process);
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
@@ -99,8 +100,8 @@ ColorRenderImageQuantity* ColorRenderImageQuantity::setEnabled(bool newEnabled) 
 ColorRenderImageQuantity* createColorRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
                                                  const std::vector<float>& depthData,
                                                  const std::vector<glm::vec3>& normalData,
-                                                 const std::vector<glm::vec3>& colorData) {
-  return new ColorRenderImageQuantity(parent, name, dimX, dimY, depthData, normalData, colorData);
+                                                 const std::vector<glm::vec3>& colorData, ImageOrigin imageOrigin) {
+  return new ColorRenderImageQuantity(parent, name, dimX, dimY, depthData, normalData, colorData, imageOrigin);
 }
 
 } // namespace polyscope

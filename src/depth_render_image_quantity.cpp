@@ -11,8 +11,8 @@ namespace polyscope {
 
 DepthRenderImageQuantity::DepthRenderImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                                                    const std::vector<float>& depthData,
-                                                   const std::vector<glm::vec3>& normalData)
-    : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData),
+                                                   const std::vector<glm::vec3>& normalData, ImageOrigin imageOrigin_)
+    : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData, imageOrigin_),
       color(uniquePrefix() + "#color", getNextUniqueColor()) {}
 
 void DepthRenderImageQuantity::draw() {}
@@ -75,7 +75,7 @@ void DepthRenderImageQuantity::prepare() {
 
   // Create the sourceProgram
   program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-                                          {"TEXTURE_ORIGIN_UPPERLEFT", "LIGHT_MATCAP", "SHADE_BASECOLOR"},
+                                          {getImageOriginRule(imageOrigin), "LIGHT_MATCAP", "SHADE_BASECOLOR"},
                                           render::ShaderReplacementDefaults::Process);
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
@@ -105,8 +105,8 @@ glm::vec3 DepthRenderImageQuantity::getColor() { return color.get(); }
 // structure.ipp.
 DepthRenderImageQuantity* createDepthRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
                                                  const std::vector<float>& depthData,
-                                                 const std::vector<glm::vec3>& normalData) {
-  return new DepthRenderImageQuantity(parent, name, dimX, dimY, depthData, normalData);
+                                                 const std::vector<glm::vec3>& normalData, ImageOrigin imageOrigin) {
+  return new DepthRenderImageQuantity(parent, name, dimX, dimY, depthData, normalData, imageOrigin);
 }
 
 } // namespace polyscope
