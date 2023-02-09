@@ -154,10 +154,10 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
   std::tie(lookDir, upDir, rightDir) = params.getCameraFrame();
 
   glm::vec3 frameCenter = root + lookDir * displayFocalLength.get().asAbsolute();
-  float halfHeight =
-      static_cast<float>(displayFocalLength.get().asAbsolute() * std::tan(glm::radians(params.fov) / 2.));
+  float halfHeight = static_cast<float>(displayFocalLength.get().asAbsolute() *
+                                        std::tan(glm::radians(params.getFoVVerticalDegrees()) / 2.));
   glm::vec3 frameUp = upDir * halfHeight;
-  float halfWidth = params.aspectRatio * halfHeight;
+  float halfWidth = params.getAspectRatioWidthOverHeight() * halfHeight;
   glm::vec3 frameLeft = glm::cross(lookDir, upDir) * halfWidth;
 
   glm::vec3 frameUpperLeft = frameCenter + frameUp + frameLeft;
@@ -280,7 +280,8 @@ void CameraView::buildPickUI(size_t localPickID) {
   ImGui::Text("center: %s", to_string(params.getPosition()).c_str());
   ImGui::Text("look dir: %s", to_string(params.getLookDir()).c_str());
   ImGui::Text("up dir: %s", to_string(params.getUpDir()).c_str());
-  ImGui::Text("fov: %0.1f deg   aspect ratio: %.2f", params.fov, params.aspectRatio);
+  ImGui::Text("FoV (vert): %0.1f deg   aspect ratio: %.2f", params.getFoVVerticalDegrees(),
+              params.getAspectRatioWidthOverHeight());
   if (ImGui::Button("fly to")) {
     setViewToThisCamera(true);
   }
@@ -316,7 +317,7 @@ void CameraView::buildCustomUI() {
     setViewToThisCamera(true);
   }
   ImGui::SameLine();
-  ImGui::Text("fov: %0.1f deg   aspect: %.2f", params.fov, params.aspectRatio);
+  ImGui::Text("FoV: %0.1f deg   aspect: %.2f", params.getFoVVerticalDegrees(), params.getAspectRatioWidthOverHeight());
 }
 
 void CameraView::buildCustomOptionsUI() {

@@ -341,9 +341,8 @@ void setWindowSize(int width, int height) {
 }
 
 void setViewToCamera(const CameraParameters& p) {
-  viewMat = p.E;
-  // fov = glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y)));
-  fov = p.fov;
+  viewMat = p.getE();
+  fov = p.getFoVVerticalDegrees();
   // aspectRatio = p.focalLengths.x / p.focalLengths.y; // TODO should be
   // flipped?
 }
@@ -479,7 +478,7 @@ glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords) {
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds) {
   // startFlightTo(p.E, glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y))),
   //               flightLengthInSeconds);
-  startFlightTo(p.E, p.fov, flightLengthInSeconds);
+  startFlightTo(p.getE(), p.getFoVVerticalDegrees(), flightLengthInSeconds);
 }
 
 void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeconds) {

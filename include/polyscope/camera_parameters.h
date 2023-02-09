@@ -18,25 +18,32 @@ class CameraParameters {
   //
 public:
   CameraParameters();
+  CameraParameters(glm::vec3 root, glm::vec3 lookDir, glm::vec3 upDir, float fovVertDeg, float aspectRatioWidthOverHeight);
 
-  CameraParameters(glm::vec3 root, glm::vec3 lookDir, glm::vec3 upDir, float fov, float aspectRatio);
 
-  // Extrinsic transform
-  glm::mat4x4 E; // E * p maps p to eye space, where the camera is at the origin and looks down the -Z axis,
-
-  // Intrinsics
-  float fov;         // the angle, in degrees from the top to bottom of the viewing frustum
-  float aspectRatio; // the ratio of the viewing frustum width / height
-
-  // Get various derived quantities
+  // == Extrinsic getters
   // TODO make sure all of these are implemented
   glm::vec3 getT() const;
   glm::mat3x3 getR() const;
+  glm::mat4x4 getE() const;
   glm::vec3 getPosition() const;
   glm::vec3 getLookDir() const;
   glm::vec3 getUpDir() const;
   glm::vec3 getRightDir() const;
   std::tuple<glm::vec3, glm::vec3, glm::vec3> getCameraFrame() const; // <look, up, right>
+
+  // == Intrinsic getters
+  float getFoVVerticalDegrees() const;
+  float getAspectRatioWidthOverHeight() const;
+
+private:
+  // Extrinsic transform
+  glm::mat4x4 E; // E * p maps p to eye space, where the camera is at the origin and looks down the -Z axis,
+
+  // Intrinsics
+  float fovVerticalDegrees;         // the angle, in degrees from the top to bottom of the viewing frustum
+  float aspectRatioWidthOverHeight; // the ratio of the viewing frustum width / height
+
 };
 
 } // namespace polyscope
