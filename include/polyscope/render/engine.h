@@ -56,6 +56,7 @@ int dimension(const TextureFormat& x);
 std::string modeName(const TransparencyMode& m);
 std::string renderDataTypeName(const RenderDataType& r);
 int renderDataTypeCountCompatbility(const RenderDataType r1, const RenderDataType r2);
+std::string getImageOriginRule(ImageOrigin imageOrigin);
 
 namespace render {
 
@@ -475,15 +476,15 @@ public:
 
   // create textures
   virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
-                                                               unsigned char* data = nullptr) = 0; // 1d
+                                                               const unsigned char* data = nullptr) = 0; // 1d
   virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
-                                                               float* data) = 0; // 1d
+                                                               const float* data) = 0; // 1d
   virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
                                                                unsigned int sizeY_,
-                                                               unsigned char* data = nullptr) = 0; // 2d
+                                                               const unsigned char* data = nullptr) = 0; // 2d
   virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
                                                                unsigned int sizeY_,
-                                                               float* data) = 0; // 2d
+                                                               const float* data) = 0; // 2d
 
   // create render buffers
   virtual std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,

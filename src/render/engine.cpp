@@ -87,6 +87,17 @@ std::string modeName(const TransparencyMode& m) {
   return "";
 }
 
+std::string getImageOriginRule(ImageOrigin imageOrigin) {
+  switch (imageOrigin) {
+  case ImageOrigin::UpperLeft:
+    return "TEXTURE_ORIGIN_UPPERLEFT";
+    break;
+  case ImageOrigin::LowerLeft:
+    return "TEXTURE_ORIGIN_LOWERLEFT";
+    break;
+  }
+}
+
 namespace render {
 
 AttributeBuffer::AttributeBuffer(RenderDataType dataType_, int arrayCount_)

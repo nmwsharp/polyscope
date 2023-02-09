@@ -6,8 +6,8 @@
 namespace polyscope {
 
 enum class NavigateStyle { Turntable = 0, Free, Planar, Arcball };
-enum class UpDir { XUp = 0, YUp, ZUp, NegXUp, NegYUp, NegZUp};
-enum class FrontDir { XFront = 0, YFront, ZFront, NegXFront, NegYFront, NegZFront};
+enum class UpDir { XUp = 0, YUp, ZUp, NegXUp, NegYUp, NegZUp };
+enum class FrontDir { XFront = 0, YFront, ZFront, NegXFront, NegYFront, NegZFront };
 enum class BackgroundView { None = 0 };
 enum class ProjectionMode { Perspective = 0, Orthographic };
 enum class TransparencyMode { None = 0, Simple, Pretty };
@@ -16,11 +16,12 @@ enum class BackFacePolicy { Identical, Different, Custom, Cull };
 
 enum class PointRenderMode { Sphere = 0, Quad };
 enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE, CORNER };
-enum class MeshShadeStyle { Smooth = 0, Flat, AutoFlat};
+enum class MeshShadeStyle { Smooth = 0, Flat, AutoFlat };
 enum class VolumeMeshElement { VERTEX = 0, EDGE, FACE, CELL };
 enum class VolumeCellType { TET = 0, HEX };
 
-enum class ImplicitRenderMode { SphereMarch, FixedStep};
+enum class ImplicitRenderMode { SphereMarch, FixedStep };
+enum class ImageOrigin { LowerLeft, UpperLeft };
 
 // What is the meaningful range of these values?
 // Used to set meaningful colormaps
