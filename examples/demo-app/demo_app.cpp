@@ -793,6 +793,7 @@ int main(int argc, char** argv) {
   // polyscope::view::windowWidth = 600;
   // polyscope::view::windowHeight = 800;
   // polyscope::options::maxFPS = -1;
+  // polyscope::options::verbosity = 100;
 
   // Initialize polyscope
   polyscope::init();
@@ -802,7 +803,7 @@ int main(int argc, char** argv) {
   }
 
   // Create a point cloud
-  for (int j = 0; j < 1; j++) {
+  for (int j = 0; j < 2; j++) {
     std::vector<glm::vec3> points;
     for (size_t i = 0; i < 3000; i++) {
       points.push_back(

@@ -428,7 +428,10 @@ protected:
   std::unordered_map<std::string, ShaderReplacementRule> registeredShaderRules;
   void populateDefaultShadersAndRules();
 
-  std::shared_ptr<GLCompiledProgram> getCompiledProgram(std::string programName,
+  std::unordered_map<std::string, std::shared_ptr<GLCompiledProgram>> compiledProgamCache;
+  std::string programKeyFromRules(const std::string& programName, const std::vector<std::string>& rules,
+                                  ShaderReplacementDefaults defaults);
+  std::shared_ptr<GLCompiledProgram> getCompiledProgram(const std::string& programName,
                                                         const std::vector<std::string>& customRules,
                                                         ShaderReplacementDefaults defaults);
 };

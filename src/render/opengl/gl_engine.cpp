@@ -208,8 +208,6 @@ void printProgramInfoLog(GLuint handle) {
     glGetProgramInfoLog(handle, logLen, &chars, log);
     printf("Program info log:\n%s\n", log);
     free(log);
-
-    throw std::runtime_error("shader program compile failed");
   }
 }
 
@@ -1123,7 +1121,20 @@ void GLCompiledProgram::compileGLProgram(const std::vector<ShaderStageSpecificat
 
     // Catch the error here, so we can print shader source before re-throwing
     try {
-      printShaderInfoLog(h);
+
+      GLint status;
+      glGetShaderiv(h, GL_COMPILE_STATUS, &status);
+      if (!status) {
+        printShaderInfoLog(h);
+        std::cout << "Program text:" << std::endl;
+        std::cout << s.src.c_str() << std::endl;
+        throw std::runtime_error("[polyscope] GL shader compile failed");
+      }
+
+      if (options::verbosity > 2) {
+        printShaderInfoLog(h);
+      }
+
       checkGLError();
     } catch (...) {
       std::cout << "GLError() after shader compilation! Program text:" << std::endl;
@@ -2503,32 +2514,32 @@ std::shared_ptr<FrameBuffer> GLEngine::generateFrameBuffer(unsigned int sizeX_, 
   return std::shared_ptr<FrameBuffer>(newF);
 }
 
+std::string GLEngine::programKeyFromRules(const std::string& programName, const std::vector<std::string>& rules,
+                                          ShaderReplacementDefaults defaults) {
 
-std::shared_ptr<GLCompiledProgram> GLEngine::getCompiledProgram(std::string programName,
-                                                                const std::vector<std::string>& customRules,
-                                                                ShaderReplacementDefaults defaults) {
-  // == Compile the program
+  std::stringstream builder;
 
-  // Get the list of shaders comprising the program from the global cache
-  if (registeredShaderPrograms.find(programName) == registeredShaderPrograms.end()) {
-    throw std::runtime_error("No shader program with name [" + programName + "] registered.");
-  }
-  const std::vector<ShaderStageSpecification>& stages = registeredShaderPrograms[programName].first;
-  DrawMode dm = registeredShaderPrograms[programName].second;
+  // program name comes first
+  builder << "$PROGRAMNAME: ";
+  builder << programName << "#";
 
-  // Add in the default rules
-  std::vector<std::string> fullCustomRules = customRules;
+  // then rules
+  builder << "  $RULES: ";
+  for (const std::string& s : rules) builder << s << "# ";
+
+  // then rules from the defaults
+  builder << "  $DEFAULTS: ";
   switch (defaults) {
   case ShaderReplacementDefaults::SceneObject: {
-    fullCustomRules.insert(fullCustomRules.begin(), defaultRules_sceneObject.begin(), defaultRules_sceneObject.end());
+    for (const std::string& s : defaultRules_sceneObject) builder << s << "# ";
     break;
   }
   case ShaderReplacementDefaults::Pick: {
-    fullCustomRules.insert(fullCustomRules.begin(), defaultRules_pick.begin(), defaultRules_pick.end());
+    for (const std::string& s : defaultRules_pick) builder << s << "# ";
     break;
   }
   case ShaderReplacementDefaults::Process: {
-    fullCustomRules.insert(fullCustomRules.begin(), defaultRules_process.begin(), defaultRules_process.end());
+    for (const std::string& s : defaultRules_process) builder << s << "# ";
     break;
   }
   case ShaderReplacementDefaults::None: {
@@ -2536,28 +2547,77 @@ std::shared_ptr<GLCompiledProgram> GLEngine::getCompiledProgram(std::string prog
   }
   }
 
-  // Prepare rule substitutions
-  std::vector<ShaderReplacementRule> rules;
-  for (auto it = fullCustomRules.begin(); it < fullCustomRules.end(); it++) {
-    std::string& ruleName = *it;
+  return builder.str();
+}
 
-    // Only process each rule the first time it is seen
-    if (std::find(fullCustomRules.begin(), it, ruleName) != it) {
-      continue;
+std::shared_ptr<GLCompiledProgram> GLEngine::getCompiledProgram(const std::string& programName,
+                                                                const std::vector<std::string>& customRules,
+                                                                ShaderReplacementDefaults defaults) {
+
+  // Build a cache key for the program
+  std::string progKey = programKeyFromRules(programName, customRules, defaults);
+
+
+  // If the cache doesn't already contain the program, create it and add to cache
+  if (compiledProgamCache.find(progKey) == compiledProgamCache.end()) {
+
+    if (polyscope::options::verbosity > 3) polyscope::info("compiling shader program " + progKey);
+
+    // == Compile the program
+
+    // Get the list of shaders comprising the program from the global cache
+    if (registeredShaderPrograms.find(programName) == registeredShaderPrograms.end()) {
+      throw std::runtime_error("No shader program with name [" + programName + "] registered.");
+    }
+    const std::vector<ShaderStageSpecification>& stages = registeredShaderPrograms[programName].first;
+    DrawMode dm = registeredShaderPrograms[programName].second;
+
+    // Add in the default rules
+    std::vector<std::string> fullCustomRules = customRules;
+    switch (defaults) {
+    case ShaderReplacementDefaults::SceneObject: {
+      fullCustomRules.insert(fullCustomRules.begin(), defaultRules_sceneObject.begin(), defaultRules_sceneObject.end());
+      break;
+    }
+    case ShaderReplacementDefaults::Pick: {
+      fullCustomRules.insert(fullCustomRules.begin(), defaultRules_pick.begin(), defaultRules_pick.end());
+      break;
+    }
+    case ShaderReplacementDefaults::Process: {
+      fullCustomRules.insert(fullCustomRules.begin(), defaultRules_process.begin(), defaultRules_process.end());
+      break;
+    }
+    case ShaderReplacementDefaults::None: {
+      break;
+    }
     }
 
-    if (registeredShaderRules.find(ruleName) == registeredShaderRules.end()) {
-      throw std::runtime_error("No shader replacement rule with name [" + ruleName + "] registered.");
+    // Prepare rule substitutions
+    std::vector<ShaderReplacementRule> rules;
+    for (auto it = fullCustomRules.begin(); it < fullCustomRules.end(); it++) {
+      std::string& ruleName = *it;
+
+      // Only process each rule the first time it is seen
+      if (std::find(fullCustomRules.begin(), it, ruleName) != it) {
+        continue;
+      }
+
+      if (registeredShaderRules.find(ruleName) == registeredShaderRules.end()) {
+        throw std::runtime_error("No shader replacement rule with name [" + ruleName + "] registered.");
+      }
+      ShaderReplacementRule& thisRule = registeredShaderRules[ruleName];
+      rules.push_back(thisRule);
     }
-    ShaderReplacementRule& thisRule = registeredShaderRules[ruleName];
-    rules.push_back(thisRule);
+
+    // Actually apply rule substitutions
+    std::vector<ShaderStageSpecification> updatedStages = applyShaderReplacements(stages, rules);
+
+    // Create a new compiled program (GL work happens in the constructor)
+    compiledProgamCache[progKey] = std::shared_ptr<GLCompiledProgram>(new GLCompiledProgram(updatedStages, dm));
   }
 
-  // Actually apply rule substitutions
-  std::vector<ShaderStageSpecification> updatedStages = applyShaderReplacements(stages, rules);
-
-  // Create a new compiled program (GL work happens in the constructor)
-  return std::shared_ptr<GLCompiledProgram>(new GLCompiledProgram(updatedStages, dm));
+  // Now that the cache must contain the compiled program, just return it
+  return compiledProgamCache[progKey];
 }
 
 std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& programName,
