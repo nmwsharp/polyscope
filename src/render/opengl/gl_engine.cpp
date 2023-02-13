@@ -1080,8 +1080,8 @@ void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
 // ==================  Shader Program  =========================
 // =============================================================
 
-GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm)
-    : ShaderProgram(stages, dm) {
+
+GLCompiledProgram::GLCompiledProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm) : drawMode(dm) {
 
   // Collect attributes and uniforms from all of the shaders
   for (const ShaderStageSpecification& s : stages) {
@@ -1100,73 +1100,17 @@ GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& st
     throw std::invalid_argument("Uh oh... GLProgram has no attributes");
   }
 
-
   // Perform setup tasks
   compileGLProgram(stages);
   checkGLError();
 
   setDataLocations();
   checkGLError();
-
-  // Create a VAO
-  glGenVertexArrays(1, &vaoHandle);
-  checkGLError();
-
-  createBuffers(); // only handles texture & index things, attributes are lazily created
-  checkGLError();
 }
 
-GLShaderProgram::~GLShaderProgram() {
-  // Buffers will be freed by their desctructor, assuming this is the last ref on the shared_ptr
+GLCompiledProgram::~GLCompiledProgram() { glDeleteProgram(programHandle); }
 
-  // Free the program
-  glDeleteProgram(programHandle);
-}
-
-void GLShaderProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
-  for (GLShaderAttribute& a : attributes) {
-    if (a.name == newAttribute.name) {
-
-      // if it occurs twice, confirm that the occurences match
-      if (a.type != newAttribute.type)
-        throw std::runtime_error("attribute " + a.name + " appears twice in program with different types");
-
-      return;
-    }
-  }
-  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, -1, nullptr});
-}
-
-void GLShaderProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
-  for (GLShaderUniform& u : uniforms) {
-    if (u.name == newUniform.name) {
-
-      // if it occurs twice, confirm that the occurences match
-      if (u.type != newUniform.type)
-        throw std::runtime_error("uniform " + u.name + " appears twice in program with different types");
-
-      return;
-    }
-  }
-  uniforms.push_back(GLShaderUniform{newUniform.name, newUniform.type, false, 777});
-}
-
-void GLShaderProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
-  for (GLShaderTexture& t : textures) {
-    if (t.name == newTexture.name) {
-
-      // if it occurs twice, confirm that the occurences match
-      if (t.dim != newTexture.dim)
-        throw std::runtime_error("texture " + t.name + " appears twice in program with different dimensions");
-
-      return;
-    }
-  }
-  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr, 777});
-}
-
-
-void GLShaderProgram::compileGLProgram(const std::vector<ShaderStageSpecification>& stages) {
+void GLCompiledProgram::compileGLProgram(const std::vector<ShaderStageSpecification>& stages) {
 
 
   // Compile all of the shaders
@@ -1214,9 +1158,9 @@ void GLShaderProgram::compileGLProgram(const std::vector<ShaderStageSpecificatio
   }
 
   checkGLError();
-} // namespace backend_openGL3_glfw
+}
 
-void GLShaderProgram::setDataLocations() {
+void GLCompiledProgram::setDataLocations() {
   glUseProgram(programHandle);
 
   // Uniforms
@@ -1251,10 +1195,69 @@ void GLShaderProgram::setDataLocations() {
   checkGLError();
 }
 
+void GLCompiledProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == newAttribute.name) {
+
+      // if it occurs twice, confirm that the occurences match
+      if (a.type != newAttribute.type)
+        throw std::runtime_error("attribute " + a.name + " appears twice in program with different types");
+
+      return;
+    }
+  }
+  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, -1, nullptr});
+}
+
+void GLCompiledProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
+  for (GLShaderUniform& u : uniforms) {
+    if (u.name == newUniform.name) {
+
+      // if it occurs twice, confirm that the occurences match
+      if (u.type != newUniform.type)
+        throw std::runtime_error("uniform " + u.name + " appears twice in program with different types");
+
+      return;
+    }
+  }
+  uniforms.push_back(GLShaderUniform{newUniform.name, newUniform.type, false, 777});
+}
+
+void GLCompiledProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
+  for (GLShaderTexture& t : textures) {
+    if (t.name == newTexture.name) {
+
+      // if it occurs twice, confirm that the occurences match
+      if (t.dim != newTexture.dim)
+        throw std::runtime_error("texture " + t.name + " appears twice in program with different dimensions");
+
+      return;
+    }
+  }
+  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr, 777});
+}
+
+
+GLShaderProgram::GLShaderProgram(const std::shared_ptr<GLCompiledProgram>& compiledProgram_)
+    : ShaderProgram(compiledProgram_->getDrawMode()), uniforms(compiledProgram_->getUniforms()),
+      attributes(compiledProgram_->getAttributes()), textures(compiledProgram_->getTextures()),
+      compiledProgram(compiledProgram_) {
+
+  // Create a VAO
+  glGenVertexArrays(1, &vaoHandle);
+  checkGLError();
+
+  createBuffers(); // only handles texture & index things, attributes are lazily created
+  checkGLError();
+}
+
+GLShaderProgram::~GLShaderProgram() {
+  // TODO delete the vao and index VBO?
+}
+
 void GLShaderProgram::bindVAO() { glBindVertexArray(vaoHandle); }
 
 void GLShaderProgram::createBuffers() {
-
   bindVAO();
 
   // Create an index buffer, if we're using one
@@ -1284,7 +1287,6 @@ void GLShaderProgram::createBuffers() {
 }
 
 void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) {
-
   bindVAO();
   checkGLError();
 
@@ -1323,7 +1325,6 @@ void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBu
 }
 
 void GLShaderProgram::assignBufferToVAO(GLShaderAttribute& a) {
-
   bindVAO();
   a.buff->bind();
   checkGLError();
@@ -1380,7 +1381,6 @@ void GLShaderProgram::assignBufferToVAO(GLShaderAttribute& a) {
 }
 
 void GLShaderProgram::createBuffer(GLShaderAttribute& a) {
-
   if (a.location == -1) return;
 
   // generate the buffer if needed
@@ -1411,7 +1411,7 @@ bool GLShaderProgram::hasUniform(std::string name) {
 
 // Set an integer
 void GLShaderProgram::setUniform(std::string name, int val) {
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1430,7 +1430,7 @@ void GLShaderProgram::setUniform(std::string name, int val) {
 
 // Set an unsigned integer
 void GLShaderProgram::setUniform(std::string name, unsigned int val) {
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1449,7 +1449,7 @@ void GLShaderProgram::setUniform(std::string name, unsigned int val) {
 
 // Set a float
 void GLShaderProgram::setUniform(std::string name, float val) {
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1468,7 +1468,7 @@ void GLShaderProgram::setUniform(std::string name, float val) {
 
 // Set a double --- WARNING casts down to float
 void GLShaderProgram::setUniform(std::string name, double val) {
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1488,7 +1488,7 @@ void GLShaderProgram::setUniform(std::string name, double val) {
 // Set a 4x4 uniform matrix
 // TODO why do we use a pointer here... makes no sense
 void GLShaderProgram::setUniform(std::string name, float* val) {
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1507,7 +1507,7 @@ void GLShaderProgram::setUniform(std::string name, float* val) {
 
 // Set a vector2 uniform
 void GLShaderProgram::setUniform(std::string name, glm::vec2 val) {
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1526,7 +1526,7 @@ void GLShaderProgram::setUniform(std::string name, glm::vec2 val) {
 
 // Set a vector3 uniform
 void GLShaderProgram::setUniform(std::string name, glm::vec3 val) {
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1545,7 +1545,7 @@ void GLShaderProgram::setUniform(std::string name, glm::vec3 val) {
 
 // Set a vector4 uniform
 void GLShaderProgram::setUniform(std::string name, glm::vec4 val) {
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1564,7 +1564,7 @@ void GLShaderProgram::setUniform(std::string name, glm::vec4 val) {
 
 // Set a vector3 uniform from a float array
 void GLShaderProgram::setUniform(std::string name, std::array<float, 3> val) {
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1583,7 +1583,7 @@ void GLShaderProgram::setUniform(std::string name, std::array<float, 3> val) {
 
 // Set a vec4 uniform
 void GLShaderProgram::setUniform(std::string name, float x, float y, float z, float w) {
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1602,7 +1602,7 @@ void GLShaderProgram::setUniform(std::string name, float x, float y, float z, fl
 
 // Set a uint vector2 uniform
 void GLShaderProgram::setUniform(std::string name, glm::uvec2 val) {
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1621,7 +1621,7 @@ void GLShaderProgram::setUniform(std::string name, glm::uvec2 val) {
 
 // Set a uint vector3 uniform
 void GLShaderProgram::setUniform(std::string name, glm::uvec3 val) {
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1640,7 +1640,7 @@ void GLShaderProgram::setUniform(std::string name, glm::uvec3 val) {
 
 // Set a uint vector4 uniform
 void GLShaderProgram::setUniform(std::string name, glm::uvec4 val) {
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
@@ -1687,7 +1687,6 @@ std::shared_ptr<AttributeBuffer> GLShaderProgram::getAttributeBuffer(std::string
 };
 
 void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2>& data) {
-
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name && a.location != -1) {
@@ -1701,7 +1700,6 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2
 }
 
 void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec3>& data) {
-
   glBindVertexArray(vaoHandle); // TODO remove these?
 
   // pass-through to the buffer
@@ -1717,7 +1715,6 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec3
 }
 
 void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4>& data) {
-
   glBindVertexArray(vaoHandle);
 
   // pass-through to the buffer
@@ -1733,7 +1730,6 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4
 }
 
 void GLShaderProgram::setAttribute(std::string name, const std::vector<float>& data) {
-
   glBindVertexArray(vaoHandle);
 
   // pass-through to the buffer
@@ -1749,7 +1745,6 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<float>& d
 }
 
 void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& data) {
-
   glBindVertexArray(vaoHandle);
 
   // pass-through to the buffer
@@ -1780,7 +1775,6 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<int32_t>&
 }
 
 void GLShaderProgram::setAttribute(std::string name, const std::vector<uint32_t>& data) {
-
   glBindVertexArray(vaoHandle);
 
   // pass-through to the buffer
@@ -1847,8 +1841,6 @@ void GLShaderProgram::setTexture1D(std::string name, unsigned char* texData, uns
 
 void GLShaderProgram::setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                                    bool withAlpha, bool useMipMap, bool repeat) {
-
-
   // Find the right texture
   for (GLShaderTexture& t : textures) {
     if (t.name != name || t.location == -1) continue;
@@ -1894,8 +1886,8 @@ void GLShaderProgram::setTexture2D(std::string name, unsigned char* texData, uns
   throw std::invalid_argument("No texture with name " + name);
 }
 
-void GLShaderProgram::setTextureFromBuffer(std::string name, Texture* textureBuffer) {
-  glUseProgram(programHandle);
+void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) {
+  glUseProgram(compiledProgram->getHandle());
 
   // Find the right texture
   for (GLShaderTexture& t : textures) {
@@ -2094,7 +2086,7 @@ void GLShaderProgram::activateTextures() {
 void GLShaderProgram::draw() {
   validateData();
 
-  glUseProgram(programHandle);
+  glUseProgram(compiledProgram->getHandle());
   glBindVertexArray(vaoHandle);
 
   if (usePrimitiveRestart) {
@@ -2152,7 +2144,6 @@ void GLShaderProgram::draw() {
 GLEngine::GLEngine() {}
 
 void GLEngine::initialize() {
-
   // Small callback function for GLFW errors
   auto error_print_callback = [](int error, const char* description) {
     std::cerr << "GLFW emitted error: " << description << std::endl;
@@ -2245,7 +2236,6 @@ void GLEngine::swapDisplayBuffers() {
 }
 
 std::vector<unsigned char> GLEngine::readDisplayBuffer() {
-
   // TODO do we need to bind here?
 
   glFlush();
@@ -2513,17 +2503,13 @@ std::shared_ptr<FrameBuffer> GLEngine::generateFrameBuffer(unsigned int sizeX_, 
   return std::shared_ptr<FrameBuffer>(newF);
 }
 
-std::shared_ptr<ShaderProgram> GLEngine::generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                               DrawMode dm) {
-  GLShaderProgram* newP = new GLShaderProgram(stages, dm);
-  return std::shared_ptr<ShaderProgram>(newP);
-}
 
-std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& programName,
-                                                       const std::vector<std::string>& customRules,
-                                                       ShaderReplacementDefaults defaults) {
+std::shared_ptr<GLCompiledProgram> GLEngine::getCompiledProgram(std::string programName,
+                                                                const std::vector<std::string>& customRules,
+                                                                ShaderReplacementDefaults defaults) {
+  // == Compile the program
 
-  // Get the program
+  // Get the list of shaders comprising the program from the global cache
   if (registeredShaderPrograms.find(programName) == registeredShaderPrograms.end()) {
     throw std::runtime_error("No shader program with name [" + programName + "] registered.");
   }
@@ -2550,7 +2536,7 @@ std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& progra
   }
   }
 
-  // Get the rules
+  // Prepare rule substitutions
   std::vector<ShaderReplacementRule> rules;
   for (auto it = fullCustomRules.begin(); it < fullCustomRules.end(); it++) {
     std::string& ruleName = *it;
@@ -2567,8 +2553,18 @@ std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& progra
     rules.push_back(thisRule);
   }
 
+  // Actually apply rule substitutions
   std::vector<ShaderStageSpecification> updatedStages = applyShaderReplacements(stages, rules);
-  return generateShaderProgram(updatedStages, dm);
+
+  // Create a new compiled program (GL work happens in the constructor)
+  return std::shared_ptr<GLCompiledProgram>(new GLCompiledProgram(updatedStages, dm));
+}
+
+std::shared_ptr<ShaderProgram> GLEngine::requestShader(const std::string& programName,
+                                                       const std::vector<std::string>& customRules,
+                                                       ShaderReplacementDefaults defaults) {
+  GLShaderProgram* newP = new GLShaderProgram(getCompiledProgram(programName, customRules, defaults));
+  return std::shared_ptr<ShaderProgram>(newP);
 }
 
 void GLEngine::populateDefaultShadersAndRules() {

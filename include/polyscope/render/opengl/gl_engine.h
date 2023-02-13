@@ -192,11 +192,64 @@ public:
   FrameBufferHandle handle;
 };
 
+// Classes to keep track of attributes and uniforms
+struct GLShaderUniform {
+  std::string name;
+  RenderDataType type;
+  bool isSet;               // has a value been assigned to this uniform?
+  UniformLocation location; // -1 means "no location", usually because it was optimized out
+};
+
+struct GLShaderAttribute {
+  std::string name;
+  RenderDataType type;
+  int arrayCount;
+  AttributeLocation location;              // -1 means "no location", usually because it was optimized out
+  std::shared_ptr<GLAttributeBuffer> buff; // the buffer that we will actually use
+};
+
+struct GLShaderTexture {
+  std::string name;
+  int dim;
+  uint32_t index;
+  bool isSet;
+  GLTextureBuffer* textureBuffer;
+  std::shared_ptr<GLTextureBuffer> textureBufferOwned; // might be empty, if texture isn't owned
+  TextureLocation location;                            // -1 means "no location", usually because it was optimized out
+};
+
+// A thin wrapper around a program handle.
+// This class takes ownership and handles program deletion in its destructor
+class GLCompiledProgram {
+public:
+  GLCompiledProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm);
+  ~GLCompiledProgram();
+
+  ProgramHandle getHandle() const { return programHandle; }
+  DrawMode getDrawMode() const { return drawMode; }
+  std::vector<GLShaderUniform> getUniforms() const { return uniforms; }
+  std::vector<GLShaderAttribute> getAttributes() const { return attributes; }
+  std::vector<GLShaderTexture> getTextures() const { return textures; }
+
+private:
+  ProgramHandle programHandle;
+  DrawMode drawMode;
+  std::vector<GLShaderUniform> uniforms;
+  std::vector<GLShaderAttribute> attributes;
+  std::vector<GLShaderTexture> textures;
+
+  void compileGLProgram(const std::vector<ShaderStageSpecification>& stages);
+  void setDataLocations();
+
+  void addUniqueAttribute(ShaderSpecAttribute attribute);
+  void addUniqueUniform(ShaderSpecUniform uniform);
+  void addUniqueTexture(ShaderSpecTexture texture);
+};
 
 class GLShaderProgram : public ShaderProgram {
 
 public:
-  GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm);
+  GLShaderProgram(const std::shared_ptr<GLCompiledProgram>& compiledProgram);
   ~GLShaderProgram() override;
 
   // === Store data
@@ -260,40 +313,10 @@ public:
   void validateData() override;
 
 protected:
-  // Classes to keep track of attributes and uniforms
-  struct GLShaderUniform {
-    std::string name;
-    RenderDataType type;
-    bool isSet;               // has a value been assigned to this uniform?
-    UniformLocation location; // -1 means "no location", usually because it was optimized out
-  };
-
-  struct GLShaderAttribute {
-    std::string name;
-    RenderDataType type;
-    int arrayCount;
-    AttributeLocation location;              // -1 means "no location", usually because it was optimized out
-    std::shared_ptr<GLAttributeBuffer> buff; // the buffer that we will actually use
-  };
-
-  struct GLShaderTexture {
-    std::string name;
-    int dim;
-    uint32_t index;
-    bool isSet;
-    GLTextureBuffer* textureBuffer;
-    std::shared_ptr<GLTextureBuffer> textureBufferOwned; // might be empty, if texture isn't owned
-    TextureLocation location;                            // -1 means "no location", usually because it was optimized out
-  };
-
   // Lists of attributes and uniforms that need to be set
   std::vector<GLShaderUniform> uniforms;
   std::vector<GLShaderAttribute> attributes;
   std::vector<GLShaderTexture> textures;
-
-  void addUniqueAttribute(ShaderSpecAttribute attribute);
-  void addUniqueUniform(ShaderSpecUniform uniform);
-  void addUniqueTexture(ShaderSpecTexture texture);
 
 private:
   // Setup routines
@@ -309,7 +332,7 @@ private:
   void activateTextures();
 
   // GL pointers for various useful things
-  ProgramHandle programHandle = 0;
+  std::shared_ptr<GLCompiledProgram> compiledProgram;
   AttributeHandle vaoHandle;
   AttributeHandle indexVBO;
 };
@@ -405,8 +428,9 @@ protected:
   std::unordered_map<std::string, ShaderReplacementRule> registeredShaderRules;
   void populateDefaultShadersAndRules();
 
-  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                       DrawMode dm) override;
+  std::shared_ptr<GLCompiledProgram> getCompiledProgram(std::string programName,
+                                                        const std::vector<std::string>& customRules,
+                                                        ShaderReplacementDefaults defaults);
 };
 
 } // namespace backend_openGL3_glfw

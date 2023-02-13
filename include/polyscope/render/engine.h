@@ -305,7 +305,7 @@ enum class ShaderReplacementDefaults {
 class ShaderProgram {
 
 public:
-  ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm);
+  ShaderProgram(DrawMode dm);
   virtual ~ShaderProgram(){};
 
 
@@ -596,10 +596,6 @@ protected:
 
   // Manage a unique ID, incremented on lots of operations. Used to distinguish updates to buffers/shaders/etc
   uint64_t uniqueID = 500;
-
-  // low-level interface for creating shader programs
-  virtual std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                               DrawMode dm) = 0;
 
   // Default rule lists (see enum for explanation)
   std::vector<std::string> defaultRules_sceneObject{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "LIGHT_MATCAP"};

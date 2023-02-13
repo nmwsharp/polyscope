@@ -193,8 +193,7 @@ ShaderReplacementRule::ShaderReplacementRule(std::string ruleName_,
     : ruleName(ruleName_), replacements(replacements_), uniforms(uniforms_), attributes(attributes_),
       textures(textures_) {}
 
-ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm)
-    : drawMode(dm), uniqueID(render::engine->getNextUniqueID()) {
+ShaderProgram::ShaderProgram(DrawMode dm) : drawMode(dm), uniqueID(render::engine->getNextUniqueID()) {
 
   drawMode = dm;
   if (dm == DrawMode::IndexedLines || dm == DrawMode::IndexedLineStrip || dm == DrawMode::IndexedLineStripAdjacency ||
