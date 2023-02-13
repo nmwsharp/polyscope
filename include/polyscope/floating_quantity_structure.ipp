@@ -40,7 +40,7 @@ ColorRenderImageQuantity* addColorRenderImageQuantity(std::string name, size_t d
                                                       const T2& normalData, const T3& colorData,
                                                       ImageOrigin imageOrigin) {
   FloatingQuantityStructure* q = getGlobalFloatingQuantityStructure();
-  return q->addColorRenderImageQuantity(name, dimX, dimY, depthData, normalData, imageOrigin, colorData);
+  return q->addColorRenderImageQuantity(name, dimX, dimY, depthData, normalData, colorData, imageOrigin);
 }
 
 
