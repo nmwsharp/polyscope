@@ -1,3 +1,4 @@
+#include "polyscope/types.h"
 #include "polyscope_test.h"
 
 #include "polyscope/curve_network.h"
@@ -1299,7 +1300,8 @@ TEST_F(PolyscopeTest, FloatingImageTest) {
 
   { // ScalarImageQuantity
     std::vector<float> vals(dimX * dimY, 0.44);
-    polyscope::ScalarImageQuantity* im = polyscope::addScalarImageQuantity("im scalar", dimX, dimY, vals);
+    polyscope::ScalarImageQuantity* im =
+        polyscope::addScalarImageQuantity("im scalar", dimX, dimY, vals, polyscope::ImageOrigin::UpperLeft);
     polyscope::show(3);
     im->setShowFullscreen(true);
     polyscope::show(3);
@@ -1307,7 +1309,8 @@ TEST_F(PolyscopeTest, FloatingImageTest) {
 
   { // ColorImageQuantity
     std::vector<std::array<float, 3>> valsRGB(dimX * dimY, std::array<float, 3>{0.44, 0.55, 0.66});
-    polyscope::ColorImageQuantity* im = polyscope::addColorImageQuantity("im color", dimX, dimY, valsRGB);
+    polyscope::ColorImageQuantity* im =
+        polyscope::addColorImageQuantity("im color", dimX, dimY, valsRGB, polyscope::ImageOrigin::UpperLeft);
     polyscope::show(3);
     im->setShowFullscreen(true);
     polyscope::show(3);
@@ -1315,7 +1318,8 @@ TEST_F(PolyscopeTest, FloatingImageTest) {
 
   { // ColorAlphaImageQuantity
     std::vector<std::array<float, 4>> valsRGBA(dimX * dimY, std::array<float, 4>{0.44, 0.55, 0.66, 0.77});
-    polyscope::ColorImageQuantity* im = polyscope::addColorAlphaImageQuantity("im color alpha", dimX, dimY, valsRGBA);
+    polyscope::ColorImageQuantity* im = polyscope::addColorAlphaImageQuantity("im color alpha", dimX, dimY, valsRGBA,
+                                                                              polyscope::ImageOrigin::UpperLeft);
     polyscope::show(3);
     im->setShowFullscreen(true);
     polyscope::show(3);
@@ -1349,20 +1353,20 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
   std::vector<float> scalarVals(dimX * dimY, 0.44);
 
   { // DepthRenderImageQuantity
-    polyscope::DepthRenderImageQuantity* im =
-        polyscope::addDepthRenderImageQuantity("render im depth", dimX, dimY, depthVals, normalVals);
+    polyscope::DepthRenderImageQuantity* im = polyscope::addDepthRenderImageQuantity(
+        "render im depth", dimX, dimY, depthVals, normalVals, polyscope::ImageOrigin::UpperLeft);
     polyscope::show(3);
   }
 
   { // ColorImageQuantity
-    polyscope::ColorRenderImageQuantity* im =
-        polyscope::addColorRenderImageQuantity("render im depth", dimX, dimY, depthVals, normalVals, colorVals);
+    polyscope::ColorRenderImageQuantity* im = polyscope::addColorRenderImageQuantity(
+        "render im depth", dimX, dimY, depthVals, normalVals, colorVals, polyscope::ImageOrigin::UpperLeft);
     polyscope::show(3);
   }
 
   { // ScalarRenderImageQuantity
-    polyscope::ScalarRenderImageQuantity* im =
-        polyscope::addScalarRenderImageQuantity("render im scalar", dimX, dimY, depthVals, normalVals, scalarVals);
+    polyscope::ScalarRenderImageQuantity* im = polyscope::addScalarRenderImageQuantity(
+        "render im scalar", dimX, dimY, depthVals, normalVals, scalarVals, polyscope::ImageOrigin::UpperLeft);
     polyscope::show(3);
   }
 
