@@ -12,7 +12,7 @@ ImageQuantity::ImageQuantity(Structure& parent_, std::string name_, size_t dimX_
     : FloatingQuantity(name_, parent_), parent(parent_), dimX(dimX_), dimY(dimY_), imageOrigin(imageOrigin_),
       transparency(uniquePrefix() + "transparency", 1.0),
       isShowingFullscreen(uniquePrefix() + "isShowingFullscreen", false),
-      isShowingImGuiWindow(uniquePrefix() + "isShowingImGuiWindow", false) {}
+      isShowingImGuiWindow(uniquePrefix() + "isShowingImGuiWindow", true) {}
 
 void ImageQuantity::draw() {
   if (!isEnabled()) return;
