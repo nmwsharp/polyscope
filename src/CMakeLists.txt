@@ -206,7 +206,6 @@ SET(SRCS
   imgui_config.cpp
   vector_artist.cpp
   trace_vector_field.cpp
-  image_color_artist.cpp
   ribbon_artist.cpp
   fullscreen_artist.cpp
   
@@ -256,9 +255,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/group.h
   ${INCLUDE_ROOT}/histogram.h
   ${INCLUDE_ROOT}/image_quantity.h
-  ${INCLUDE_ROOT}/image_color_artist.h
-  ${INCLUDE_ROOT}/image_scalar_artist.h
-  ${INCLUDE_ROOT}/image_scalar_artist.ipp
   ${INCLUDE_ROOT}/imgui_config.h
   ${INCLUDE_ROOT}/implicit_surface.h
   ${INCLUDE_ROOT}/implicit_surface.ipp

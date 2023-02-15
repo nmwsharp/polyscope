@@ -4,7 +4,6 @@
 
 #include "polyscope/floating_quantity.h"
 #include "polyscope/fullscreen_artist.h"
-#include "polyscope/image_color_artist.h"
 
 #include <vector>
 
