@@ -1,42 +1,43 @@
 #pragma once
 
-#include "polyscope/fullscreen_artist.h"
-#include "polyscope/image_color_artist.h"
+#include "polyscope/image_quantity.h"
 
 #include <vector>
 
 namespace polyscope {
 
-class ColorImageQuantity : public FloatingQuantity, public ImageColorArtist, public FullscreenArtist {
+class ColorImageQuantity : public ImageQuantity {
 
 public:
-  ColorImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                             const std::vector<glm::vec4>& data, ImageOrigin imageOrigin);
 
-  virtual void draw() override;
-  virtual void drawDelayed() override;
+  ColorImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY, const std::vector<glm::vec4>& data,
+                     ImageOrigin imageOrigin);
+
   virtual void buildCustomUI() override;
 
   virtual void refresh() override;
-  virtual ColorImageQuantity* setEnabled(bool newEnabled) override;
 
   virtual std::string niceName() override;
 
-  virtual void disableFullscreenDrawing() override;
+  virtual void showInBillboard(glm::vec3 center, glm::vec3 upVec, glm::vec3 rightVec) override;
 
-
-  size_t nPix();
-
-  Structure& parent;
+  const std::vector<glm::vec4> data;
 
   // == Setters and getters
+  
+  virtual ColorImageQuantity* setEnabled(bool newEnabled) override;
 
-  void setShowFullscreen(bool newVal);
-  bool getShowFullscreen();
 
 protected:
-  // === Visualization parameters
-  PersistentValue<bool> showFullscreen;
+  // rendering internals
+  std::shared_ptr<render::TextureBuffer> textureRaw;
+  std::shared_ptr<render::ShaderProgram> fullscreenProgram, billboardProgram;
+  void prepareFullscreen();
+  void prepareBillboard();
+  void ensureRawTexturePopulated();
+  
+  virtual void showFullscreen() override;
+  virtual void showInImGuiWindow() override;
 };
 
 

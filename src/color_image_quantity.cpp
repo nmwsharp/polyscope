@@ -10,23 +10,8 @@ namespace polyscope {
 
 
 ColorImageQuantity::ColorImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                                       const std::vector<glm::vec4>& data, ImageOrigin imageOrigin_)
-    : FloatingQuantity(name, parent_), ImageColorArtist(name, uniquePrefix(), dimX, dimY, data, imageOrigin_),
-      parent(parent_), showFullscreen(uniquePrefix() + "showFullscreen", false) {}
-
-size_t ColorImageQuantity::nPix() { return dimX * dimY; }
-
-void ColorImageQuantity::draw() {
-  if (!isEnabled()) return;
-  // ImageColorArtist::renderSource(); TODO
-}
-
-void ColorImageQuantity::drawDelayed() {
-  if (!isEnabled()) return;
-  if (getShowFullscreen()) {
-    ImageColorArtist::showFullscreen();
-  }
-}
+                                       const std::vector<glm::vec4>& data_, ImageOrigin imageOrigin_)
+    : ImageQuantity(parent_, name, dimX, dimY, imageOrigin_), data(data_) {}
 
 
 void ColorImageQuantity::buildCustomUI() {
@@ -38,7 +23,9 @@ void ColorImageQuantity::buildCustomUI() {
   }
   if (ImGui::BeginPopup("OptionsPopup")) {
 
-    if (ImGui::MenuItem("Show fullscreen", NULL, showFullscreen.get())) setShowFullscreen(!getShowFullscreen());
+    if (ImGui::MenuItem("Show in ImGui window", NULL, getShowInImGuiWindow()))
+      setShowInImGuiWindow(!getShowInImGuiWindow());
+    if (ImGui::MenuItem("Show fullscreen", NULL, getShowFullscreen())) setShowFullscreen(!getShowFullscreen());
 
     ImGui::EndPopup();
   }
@@ -53,19 +40,108 @@ void ColorImageQuantity::buildCustomUI() {
   }
 
   if (isEnabled() && parent.isEnabled()) {
-    if (!getShowFullscreen()) {
-      ImageColorArtist::showInImGuiWindow();
+    if (getShowInImGuiWindow()) {
+      ColorImageQuantity::showInImGuiWindow();
     }
   }
 }
 
+std::string ColorImageQuantity::niceName() { return name + " (color image)"; }
+
+void ColorImageQuantity::ensureRawTexturePopulated() {
+  if (textureRaw) return; // already populated, nothing to do
+
+  // Must be rendering from a buffer of data, copy it over (common case)
+
+  textureRaw = render::engine->generateTextureBuffer(TextureFormat::RGBA32F, dimX, dimY, &(data.front()[0]));
+}
+
+void ColorImageQuantity::prepareFullscreen() {
+
+  ensureRawTexturePopulated();
+
+  // Create the sourceProgram
+  fullscreenProgram =
+      render::engine->requestShader("TEXTURE_DRAW_PLAIN", {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY"},
+                                    render::ShaderReplacementDefaults::Process);
+  fullscreenProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
+  fullscreenProgram->setTextureFromBuffer("t_image", textureRaw.get());
+}
+
+void ColorImageQuantity::prepareBillboard() {
+
+  ensureRawTexturePopulated();
+
+  // Create the sourceProgram
+  billboardProgram = render::engine->requestShader(
+      "TEXTURE_DRAW_PLAIN",
+      {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY", "TEXTURE_BILLBOARD_FROM_UNIFORMS"},
+      render::ShaderReplacementDefaults::Process);
+  billboardProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
+  billboardProgram->setTextureFromBuffer("t_image", textureRaw.get());
+}
+
+void ColorImageQuantity::showFullscreen() {
+
+  if (!fullscreenProgram) {
+    prepareFullscreen();
+  }
+
+  // Set uniforms
+  fullscreenProgram->setUniform("u_transparency", getTransparency());
+
+  fullscreenProgram->draw();
+
+  render::engine->applyTransparencySettings();
+}
+
+
+void ColorImageQuantity::showInImGuiWindow() {
+  if (!fullscreenProgram) prepareFullscreen();
+  ensureRawTexturePopulated();
+
+  ImGui::Begin(name.c_str(), nullptr, ImGuiWindowFlags_NoScrollbar);
+
+  float w = ImGui::GetWindowWidth();
+  float h = w * dimY / dimX;
+
+  ImGui::Text("Dimensions: %zux%zu", dimX, dimY);
+
+  // since we are showing directly from the user's texture, we need to resposect the upper left ordering
+  if (imageOrigin == ImageOrigin::LowerLeft) {
+    ImGui::Image(textureRaw->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+  } else if (imageOrigin == ImageOrigin::UpperLeft) {
+    ImGui::Image(textureRaw->getNativeHandle(), ImVec2(w, h));
+  }
+
+  ImGui::End();
+}
+
+void ColorImageQuantity::showInBillboard(glm::vec3 center, glm::vec3 upVec, glm::vec3 rightVec) {
+
+  if (!billboardProgram) {
+    prepareBillboard();
+  }
+
+  // ensure the scale of rightVec matches the aspect ratio of the image
+  rightVec = glm::normalize(rightVec) * glm::length(upVec) * ((float)dimX / dimY);
+
+  // set uniforms
+  billboardProgram->setUniform("u_transparency", getTransparency());
+  billboardProgram->setUniform("u_billboardCenter", center);
+  billboardProgram->setUniform("u_billboardUp", upVec);
+  billboardProgram->setUniform("u_billboardRight", rightVec);
+
+  billboardProgram->draw();
+}
+
 
 void ColorImageQuantity::refresh() {
-  ImageColorArtist::refresh();
+  fullscreenProgram.reset();
+  billboardProgram.reset();
   Quantity::refresh();
 }
 
-std::string ColorImageQuantity::niceName() { return name + " (color image)"; }
 
 ColorImageQuantity* ColorImageQuantity::setEnabled(bool newEnabled) {
   if (newEnabled == isEnabled()) return this;
@@ -77,23 +153,6 @@ ColorImageQuantity* ColorImageQuantity::setEnabled(bool newEnabled) {
   requestRedraw();
   return this;
 }
-
-void ColorImageQuantity::disableFullscreenDrawing() {
-  if (getShowFullscreen() && isEnabled() && parent.isEnabled()) {
-    setEnabled(false);
-  }
-}
-
-
-void ColorImageQuantity::setShowFullscreen(bool newVal) {
-  if (newVal && isEnabled()) {
-    // if drawing fullscreen, disable anything else which was already drawing fullscreen
-    disableAllFullscreenArtists();
-  }
-  showFullscreen = newVal;
-  requestRedraw();
-}
-bool ColorImageQuantity::getShowFullscreen() { return showFullscreen.get(); }
 
 
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
