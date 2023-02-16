@@ -338,7 +338,7 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
       size_t vB = mesh.triangleFaceInds.data[3 * iF + ((j + 1) % 3)];
       size_t iE = mesh.triangleEdgeInds.data[3 * iF + j];
 
-      bool isCanonicalOriented = vB > vA != (canonicalOrientation[iE]); // TODO double check convention
+      bool isCanonicalOriented = (vB > vA) != (canonicalOrientation[iE]); // TODO double check convention
       double orientationSign = isCanonicalOriented ? 1. : -1.;
 
       formValues[j] = orientationSign * oneForm[iE];

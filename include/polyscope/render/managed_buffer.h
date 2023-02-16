@@ -2,6 +2,7 @@
 #pragma once
 
 #include <vector>
+#include <functional>
 
 #include "polyscope/render/engine.h"
 
