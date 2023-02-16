@@ -592,6 +592,14 @@ void buildStructureGui() {
     ImGui::PopID();
   }
 
+  if(ImGui::CollapsingHeader("Groups")) {
+    for (auto x : state::groups) {
+      if (x.second->isRootGroup()) {
+        x.second->buildUI();
+      }
+    }
+  }
+
   leftWindowsWidth = ImGui::GetWindowWidth();
 
   ImGui::End();
@@ -787,6 +795,71 @@ void shutdown() {
   render::engine->shutdownImGui();
 }
 
+bool registerGroup(std::string name) {
+  // check if group already exists
+  bool inUse = state::groups.find(name) != state::groups.end();
+  if (inUse) {
+    polyscope::error("Attempted to register group with name " + name + ", but a group with that name already exists");
+    return false;
+  }
+
+  checkInitialized();
+  Group* g = new Group(name);
+  // add to the group map
+  state::groups[g->name] = g;
+
+  return true;
+}
+
+bool setParentGroupOfGroup(std::string child, std::string parent) {
+  // check if child exists
+  bool childExists = state::groups.find(child) != state::groups.end();
+  if (!childExists) {
+    polyscope::error("Attempted to set parent of group " + child + ", but no group with that name exists");
+    return false;
+  }
+
+  // check if parent exists
+  bool parentExists = state::groups.find(parent) != state::groups.end();
+  if (!parentExists) {
+    polyscope::error("Attempted to set parent of group " + child + " to " + parent +
+                     ", but no group with that name exists");
+    return false;
+  }
+
+  // set the parent
+  state::groups[parent]->addChildGroup(state::groups[child]);
+  return true;
+}
+
+bool setParentGroupOfStructure(std::string typeName, std::string child, std::string parent) {
+  // check if parent exists
+  bool parentExists = state::groups.find(parent) != state::groups.end();
+  if (!parentExists) {
+    polyscope::error("Attempted to set parent of curve network " + child + " to " + parent +
+                     ", but no group with that name exists");
+    return false;
+  }
+
+  // Make sure a map for the type exists
+  // std::string typeName = "Curve Network";
+  if (state::structures.find(typeName) == state::structures.end()) {
+    state::structures[typeName] = std::map<std::string, Structure*>();
+  }
+  std::map<std::string, Structure*>& sMap = state::structures[typeName];
+
+  // check if child exists
+  bool childExists = sMap.find(child) != sMap.end();
+  if (!childExists) {
+    polyscope::error("Attempted to set parent of curve network " + child + ", but no curve network with that name exists");
+    return false;
+  }
+
+  // set the parent
+  state::groups[parent]->addChildStructure(sMap[child]);
+  return true;
+}
+
 bool registerStructure(Structure* s, bool replaceIfPresent) {
 
   // Make sure a map for the type exists
@@ -871,6 +944,21 @@ bool hasStructure(std::string type, std::string name) {
   return sMap.find(name) != sMap.end();
 }
 
+void removeGroup(std::string name, bool errorIfAbsent) {
+  // Check if group exists
+  if (state::groups.find(name) == state::groups.end()) {
+    if (errorIfAbsent) {
+      error("No group with name " + name + " registered");
+    }
+    return;
+  }
+
+  // Group exists, remove it
+  Group* g = state::groups[name];
+  state::groups.erase(g->name);
+  delete g;
+  return;
+}
 
 void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
 

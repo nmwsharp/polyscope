@@ -7,6 +7,7 @@
 #include "polyscope/screenshot.h"
 #include "polyscope/slice_plane.h"
 #include "polyscope/structure.h"
+#include "polyscope/group.h"
 #include "polyscope/utilities.h"
 #include "polyscope/widget.h"
 #include "polyscope/transformation_gizmo.h"
@@ -53,6 +54,9 @@ extern std::string backend;
 // lists of all structures in Polyscope, by category
 extern std::map<std::string, std::map<std::string, Structure*>> structures;
 
+// lists of all groups in Polyscope
+extern std::map<std::string, Group*> groups;
+
 // representative length scale for all registered structures
 extern float lengthScale;
 
@@ -91,6 +95,13 @@ Structure* getStructure(std::string type, std::string name = "");
 
 // True if such a structure exists
 bool hasStructure(std::string type, std::string name = "");
+
+// register a structure with polyscope
+bool registerGroup(std::string name);
+bool setParentGroupOfGroup(std::string child, std::string parent);
+bool setParentGroupOfStructure(std::string typeName, std::string child, std::string parent);
+// De-register a group
+void removeGroup(std::string name, bool errorIfAbsent = true);
 
 // De-register a structure, of any type. Also removes any quantities associated with the structure
 void removeStructure(Structure* structure, bool errorIfAbsent = true);
