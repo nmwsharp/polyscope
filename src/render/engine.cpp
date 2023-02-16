@@ -96,6 +96,7 @@ std::string getImageOriginRule(ImageOrigin imageOrigin) {
     return "TEXTURE_ORIGIN_LOWERLEFT";
     break;
   }
+  return "";
 }
 
 namespace render {
