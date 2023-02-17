@@ -53,13 +53,18 @@ Group::~Group(){
 
 void Group::buildUI() {
 
+  // Set this treenode to open if there's children
+  if (childrenGroups.size() > 0 || childrenStructures.size() > 0) {
+    ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+  }
+
   if (ImGui::TreeNode(niceName().c_str())) {
 
     // Enabled checkbox
     int enabledLocal = isEnabled();
     if (ImGui::CheckboxTristate("Enabled", &enabledLocal)) {
       setEnabled(enabledLocal);
-    }
+    }  
 
     // Call children buildUI
     for (Group* child : childrenGroups) {
