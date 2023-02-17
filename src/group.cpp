@@ -72,12 +72,45 @@ void Group::addChildStructure(Structure* newChild) {
 }
 
 int Group::isEnabled() {
-  // TODO
-  return 2;
+  // TODO: fix enabling / disabling behavior
+  bool any_children_enabled = false;
+  bool any_children_disabled = false;
+  // check all structure children
+  for (Structure* child : childrenStructures) {
+    if (child->isEnabled()) {
+      any_children_enabled = true;
+    } else {
+      any_children_disabled = true;
+    }
+  }
+  // check all group children
+  for (Group* child : childrenGroups) {
+    if (child->isEnabled() != 0) {
+      any_children_enabled = true;
+    } else {
+      any_children_disabled = true;
+    }
+  }
+
+  int result = 0;
+  if (any_children_enabled) {
+    result = 1;
+    if (!any_children_disabled) {
+      result = 2;
+    }
+  }
+  return result;
 }
 
 Group* Group::setEnabled(bool newEnabled) {
-  // TODO
+  // set all structure children to enabled
+  for (Structure* child : childrenStructures) {
+    child->setEnabled(newEnabled);
+  }
+  // set all group children to enabled
+  for (Group* child : childrenGroups) {
+    child->setEnabled(newEnabled);
+  }
   return this;
 }
 

@@ -566,6 +566,14 @@ void buildStructureGui() {
 
   ImGui::Begin("Structures", &showStructureWindow);
 
+  if(ImGui::CollapsingHeader("Groups", ImGuiTreeNodeFlags_DefaultOpen)) {
+    for (auto x : state::groups) {
+      if (x.second->isRootGroup()) {
+        x.second->buildUI();
+      }
+    }
+  }
+
   for (auto catMapEntry : state::structures) {
     std::string catName = catMapEntry.first;
 
@@ -590,14 +598,6 @@ void buildStructureGui() {
     }
 
     ImGui::PopID();
-  }
-
-  if(ImGui::CollapsingHeader("Groups")) {
-    for (auto x : state::groups) {
-      if (x.second->isRootGroup()) {
-        x.second->buildUI();
-      }
-    }
   }
 
   leftWindowsWidth = ImGui::GetWindowWidth();
