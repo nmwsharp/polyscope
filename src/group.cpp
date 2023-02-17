@@ -3,6 +3,34 @@
 #include "polyscope/polyscope.h"
 #include "polyscope/group.h"
 
+#include "imgui_internal.h"
+
+namespace ImGui
+{
+    bool CheckboxTristate(const char* label, int* v_tristate)
+    {
+        bool ret;
+        if (*v_tristate == -1)
+        {
+            ImGui::PushItemFlag(ImGuiItemFlags_MixedValue, true);
+            bool b = false;
+            ret = ImGui::Checkbox(label, &b);
+            if (ret)
+                *v_tristate = 1;
+            ImGui::PopItemFlag();
+        }
+        else
+        {
+            bool b = (*v_tristate != 0);
+            ret = ImGui::Checkbox(label, &b);
+            if (ret)
+                *v_tristate = (int)b;
+        }
+        return ret;
+    }
+};
+
+
 namespace polyscope {
 
 Group::Group(std::string name_)
@@ -28,9 +56,10 @@ void Group::buildUI() {
   if (ImGui::TreeNode(niceName().c_str())) {
 
     // Enabled checkbox
-    bool enabledLocal = isEnabled();
-    ImGui::Checkbox("Enabled", &enabledLocal);
-    setEnabled(enabledLocal);
+    int enabledLocal = isEnabled();
+    if (ImGui::CheckboxTristate("Enabled", &enabledLocal)) {
+      setEnabled(enabledLocal);
+    }
 
     // Call children buildUI
     for (Group* child : childrenGroups) {
@@ -85,18 +114,21 @@ int Group::isEnabled() {
   }
   // check all group children
   for (Group* child : childrenGroups) {
-    if (child->isEnabled() != 0) {
+    if (child->isEnabled() == 1) {
       any_children_enabled = true;
+    } else if (child->isEnabled() == 0) {
+      any_children_disabled = true;
     } else {
+      any_children_enabled = true;
       any_children_disabled = true;
     }
   }
 
   int result = 0;
   if (any_children_enabled) {
-    result = 1;
+    result = -1;
     if (!any_children_disabled) {
-      result = 2;
+      result = 1;
     }
   }
   return result;
