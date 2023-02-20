@@ -30,6 +30,7 @@ public:
   void unparent();
 
   bool isRootGroup();
+  Group* getTopLevelGrandparent();
 
   std::string niceName();
 

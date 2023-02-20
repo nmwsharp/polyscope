@@ -96,11 +96,12 @@ Structure* getStructure(std::string type, std::string name = "");
 // True if such a structure exists
 bool hasStructure(std::string type, std::string name = "");
 
-// register a structure with polyscope
+// Group management - TODO: Daniel, add entries for documentation
 bool registerGroup(std::string name);
 bool setParentGroupOfGroup(std::string child, std::string parent);
 bool setParentGroupOfStructure(std::string typeName, std::string child, std::string parent);
 // De-register a group
+void setGroupEnabled(std::string name, bool enabled);
 void removeGroup(std::string name, bool errorIfAbsent = true);
 
 // De-register a structure, of any type. Also removes any quantities associated with the structure

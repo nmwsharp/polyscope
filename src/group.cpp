@@ -45,7 +45,10 @@ Group::~Group(){
   for (Group* child : childrenGroups) {
     child->parentGroup = nullptr;
   }
-  // remove onselves from parent
+  // clear vectors
+  childrenGroups.clear();
+  childrenStructures.clear();
+  // remove oneself from parent
   if (parentGroup != nullptr) {
     parentGroup->removeChildGroup(this);
   }
@@ -95,10 +98,23 @@ void Group::removeChildGroup(Group* child) {
 }
 
 void Group::addChildGroup(Group* newChild) {
-  // TODO: check cycles
-  // TODO: if child is already in a group, remove it from that group
+  // TODO: Daniel - check for cycles
+  if (getTopLevelGrandparent() == newChild) {
+    polyscope::error("Attempted to make group " + newChild->name + " a child of " + name + ", but this would create a cycle (group " + name + " is already a descendant of " + newChild->name + ")");
+    return;
+  }
+  // if child is already in a group, remove it from that group
+  newChild->unparent();
   newChild->parentGroup = this;
   childrenGroups.push_back(newChild);
+}
+
+Group* Group::getTopLevelGrandparent() {
+  Group* current = this;
+  while (current->parentGroup != nullptr) {
+    current = current->parentGroup;
+  }
+  return current;
 }
 
 void Group::addChildStructure(Structure* newChild) {
@@ -106,7 +122,6 @@ void Group::addChildStructure(Structure* newChild) {
 }
 
 int Group::isEnabled() {
-  // TODO: fix enabling / disabling behavior
   bool any_children_enabled = false;
   bool any_children_disabled = false;
   // check all structure children

@@ -944,6 +944,18 @@ bool hasStructure(std::string type, std::string name) {
   return sMap.find(name) != sMap.end();
 }
 
+void setGroupEnabled(std::string name, bool enabled) {
+  // Check if group exists
+  if (state::groups.find(name) == state::groups.end()) {
+    error("No group with name " + name + " registered");
+    return;
+  }
+
+  // Group exists, set it
+  state::groups[name]->setEnabled(enabled);
+  return;
+}
+
 void removeGroup(std::string name, bool errorIfAbsent) {
   // Check if group exists
   if (state::groups.find(name) == state::groups.end()) {
