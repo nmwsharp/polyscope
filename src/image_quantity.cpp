@@ -2,6 +2,8 @@
 
 #include "polyscope/image_quantity.h"
 
+#include "polyscope/camera_view.h"
+
 #include "imgui.h"
 
 namespace polyscope {
@@ -12,7 +14,16 @@ ImageQuantity::ImageQuantity(Structure& parent_, std::string name_, size_t dimX_
     : FloatingQuantity(name_, parent_), parent(parent_), dimX(dimX_), dimY(dimY_), imageOrigin(imageOrigin_),
       transparency(uniquePrefix() + "transparency", 1.0),
       isShowingFullscreen(uniquePrefix() + "isShowingFullscreen", false),
-      isShowingImGuiWindow(uniquePrefix() + "isShowingImGuiWindow", true) {}
+      isShowingImGuiWindow(uniquePrefix() + "isShowingImGuiWindow", true),
+      isShowingCameraBillboard(uniquePrefix() + "isCameraBillboard", false) {
+
+  parentStructureCameraView = dynamic_cast<CameraView*>(&parent);
+  if (parentIsCameraView()) {
+    // different defaults for camera views
+    isShowingCameraBillboard.setPassive(true);
+    isShowingImGuiWindow.setPassive(false);
+  }
+}
 
 void ImageQuantity::draw() {
   if (!isEnabled()) return;
@@ -26,6 +37,13 @@ void ImageQuantity::drawDelayed() {
   if (!isEnabled()) return;
   if (getShowFullscreen()) {
     showFullscreen();
+  }
+
+  if (getShowInCameraBillboard()) {
+    glm::vec3 billboardCenter, billboardUp, billboardRight;
+    std::tie(billboardCenter, billboardUp, billboardRight) = parentStructureCameraView->getFrameBillboardGeometry();
+
+    showInBillboard(billboardCenter, billboardUp, billboardRight);
   }
 }
 
@@ -57,12 +75,21 @@ void ImageQuantity::setShowInImGuiWindow(bool newVal) {
 }
 bool ImageQuantity::getShowInImGuiWindow() { return isShowingImGuiWindow.get(); }
 
+void ImageQuantity::setShowInCameraBillboard(bool newVal) {
+  if (!parentIsCameraView()) newVal = false; // don't allow setting to true if parent is not camera
+  isShowingCameraBillboard = newVal;
+  requestRedraw();
+}
+bool ImageQuantity::getShowInCameraBillboard() { return isShowingCameraBillboard.get(); }
+
 void ImageQuantity::setTransparency(float newVal) {
   transparency = newVal;
   requestRedraw();
 }
 
 float ImageQuantity::getTransparency() { return transparency.get(); }
+
+bool ImageQuantity::parentIsCameraView() { return parentStructureCameraView != nullptr; }
 
 
 } // namespace polyscope

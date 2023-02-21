@@ -29,6 +29,11 @@ void ScalarImageQuantity::buildCustomUI() {
       setShowInImGuiWindow(!getShowInImGuiWindow());
     if (ImGui::MenuItem("Show fullscreen", NULL, getShowFullscreen())) setShowFullscreen(!getShowFullscreen());
 
+    if (parentIsCameraView()) {
+      if (ImGui::MenuItem("Show in camera billboard", NULL, getShowInCameraBillboard()))
+        setShowInCameraBillboard(!getShowInCameraBillboard());
+    }
+
     ImGui::EndPopup();
   }
 
@@ -151,7 +156,7 @@ void ScalarImageQuantity::showInImGuiWindow() {
 }
 
 void ScalarImageQuantity::showInBillboard(glm::vec3 center, glm::vec3 upVec, glm::vec3 rightVec) {
-
+  
   if (!billboardProgram) {
     prepareBillboard();
   }
@@ -160,12 +165,16 @@ void ScalarImageQuantity::showInBillboard(glm::vec3 center, glm::vec3 upVec, glm
   rightVec = glm::normalize(rightVec) * glm::length(upVec) * ((float)dimX / dimY);
 
   // set uniforms
+  parent.setStructureUniforms(*billboardProgram);
   billboardProgram->setUniform("u_transparency", getTransparency());
   billboardProgram->setUniform("u_billboardCenter", center);
   billboardProgram->setUniform("u_billboardUp", upVec);
   billboardProgram->setUniform("u_billboardRight", rightVec);
 
+  render::engine->setBackfaceCull(false);
   billboardProgram->draw();
+  render::engine->setBackfaceCull(); // return to default setting
+
 }
 
 void ScalarImageQuantity::refresh() {

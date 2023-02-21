@@ -5,6 +5,7 @@
 #include "polyscope/color_image_quantity.h"
 
 #include "imgui.h"
+#include "polyscope/render/engine.h"
 
 namespace polyscope {
 
@@ -27,8 +28,14 @@ void ColorImageQuantity::buildCustomUI() {
       setShowInImGuiWindow(!getShowInImGuiWindow());
     if (ImGui::MenuItem("Show fullscreen", NULL, getShowFullscreen())) setShowFullscreen(!getShowFullscreen());
 
+    if (parentIsCameraView()) {
+      if (ImGui::MenuItem("Show in camera billboard", NULL, getShowInCameraBillboard()))
+        setShowInCameraBillboard(!getShowInCameraBillboard());
+    }
+
     ImGui::EndPopup();
   }
+
 
   if (getShowFullscreen()) {
     ImGui::PushItemWidth(100);
@@ -127,12 +134,18 @@ void ColorImageQuantity::showInBillboard(glm::vec3 center, glm::vec3 upVec, glm:
   rightVec = glm::normalize(rightVec) * glm::length(upVec) * ((float)dimX / dimY);
 
   // set uniforms
+  parent.setStructureUniforms(*billboardProgram);
   billboardProgram->setUniform("u_transparency", getTransparency());
   billboardProgram->setUniform("u_billboardCenter", center);
   billboardProgram->setUniform("u_billboardUp", upVec);
   billboardProgram->setUniform("u_billboardRight", rightVec);
 
+  render::engine->setBackfaceCull(false);
+  render::engine->setBlendMode(
+      BlendMode::AlphaOver); // WARNING: I never really thought through this, may cause problems
   billboardProgram->draw();
+  render::engine->setBackfaceCull(); // return to default setting
+  render::engine->applyTransparencySettings();
 }
 
 

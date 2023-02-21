@@ -9,6 +9,9 @@
 
 namespace polyscope {
 
+// forward declaration since it appears as a class member below
+class CameraView;
+
 class ImageQuantity : public FloatingQuantity, public FullscreenArtist {
 
 public:
@@ -32,9 +35,12 @@ public:
 
   void setShowFullscreen(bool newVal);
   bool getShowFullscreen();
-  
+
   void setShowInImGuiWindow(bool newVal);
   bool getShowInImGuiWindow();
+  
+  void setShowInCameraBillboard(bool newVal);
+  bool getShowInCameraBillboard();
 
   void setTransparency(float newVal);
   float getTransparency();
@@ -44,7 +50,8 @@ protected:
   const size_t dimX, dimY;
   ImageOrigin imageOrigin;
   PersistentValue<float> transparency;
-  PersistentValue<bool> isShowingFullscreen, isShowingImGuiWindow;
+  PersistentValue<bool> isShowingFullscreen, isShowingImGuiWindow, isShowingCameraBillboard;
+  CameraView* parentStructureCameraView = nullptr; // a ptr to the parent structure ONLY if it is a CameraView
 
   // render the image fullscreen
   virtual void showFullscreen() = 0;
@@ -54,6 +61,8 @@ protected:
 
   // you MUST call this at draw time if you intend to call showInImGuiWindow() later
   virtual void renderIntermediate();
+
+  bool parentIsCameraView();
 };
 
 } // namespace polyscope

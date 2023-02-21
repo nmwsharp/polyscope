@@ -38,8 +38,11 @@ R"(
       {
           tCoord = (a_position.xy+vec2(1.0,1.0))/2.0;
           ${ TCOORD_ADJUST }$
+
+          vec4 position = vec4(a_position,1.0);
           ${ POSITION_ADJUST }$
-          gl_Position = vec4(a_position,1.);
+
+          gl_Position = position;
       }
 )"
 };
@@ -579,15 +582,20 @@ const ShaderReplacementRule TEXTURE_BILLBOARD_FROM_UNIFORMS(
     /* rule name */ "TEXTURE_BILLBOARD_FROM_UNIFORMS",
     { /* replacement sources */
       {"VERT_DECLARATIONS", R"(
+          uniform mat4 u_modelView;
+          uniform mat4 u_projMatrix;
           uniform vec3 u_billboardCenter;
           uniform vec3 u_billboardUp;
           uniform vec3 u_billboardRight;
         )" },
       {"POSITION_ADJUST", R"(
-        a_position = a_position.x * u_billboardRight + a_position.y * u_billboardUp + u_billboardCenter;
+        vec3 positionWorld = position.x * u_billboardRight + position.y * u_billboardUp + u_billboardCenter;
+        position = u_projMatrix * u_modelView * vec4(positionWorld, 1.0);
       )"}
     },
     /* uniforms */ {
+      {"u_modelView", RenderDataType::Matrix44Float},
+      {"u_projMatrix", RenderDataType::Matrix44Float},
       {"u_billboardCenter", RenderDataType::Vector3Float},
       {"u_billboardUp", RenderDataType::Vector3Float},
       {"u_billboardRight", RenderDataType::Vector3Float}

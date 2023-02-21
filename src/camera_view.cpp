@@ -148,7 +148,9 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
   // NOTE: this coullllld be done with uniforms, so we don't have to ever edit the geometry at all.
   // FOV slightly tricky though.
 
+
   // Camera frame geometry
+  // NOTE: some of this is duplicated in getFrameBillboardGeometry()
   glm::vec3 root = params.getPosition();
   glm::vec3 lookDir, upDir, rightDir;
   std::tie(lookDir, upDir, rightDir) = params.getCameraFrame();
@@ -158,7 +160,7 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
                                         std::tan(glm::radians(params.getFoVVerticalDegrees()) / 2.));
   glm::vec3 frameUp = upDir * halfHeight;
   float halfWidth = params.getAspectRatioWidthOverHeight() * halfHeight;
-  glm::vec3 frameLeft = glm::cross(lookDir, upDir) * halfWidth;
+  glm::vec3 frameLeft = -glm::cross(lookDir, upDir) * halfWidth;
 
   glm::vec3 frameUpperLeft = frameCenter + frameUp + frameLeft;
   glm::vec3 frameUpperRight = frameCenter + frameUp - frameLeft;
@@ -411,5 +413,22 @@ CameraView* CameraView::setWidgetColor(glm::vec3 val) {
   return this;
 }
 glm::vec3 CameraView::getWidgetColor() { return widgetColor.get(); }
+
+
+std::tuple<glm::vec3, glm::vec3, glm::vec3> CameraView::getFrameBillboardGeometry() {
+
+  // NOTE: duplicated from fillCameraWidgetGeometry()
+  glm::vec3 root = params.getPosition();
+  glm::vec3 lookDir, upDir, rightDir;
+  std::tie(lookDir, upDir, rightDir) = params.getCameraFrame();
+  glm::vec3 frameCenter = root + lookDir * displayFocalLength.get().asAbsolute();
+  float halfHeight = static_cast<float>(displayFocalLength.get().asAbsolute() *
+                                        std::tan(glm::radians(params.getFoVVerticalDegrees()) / 2.));
+  glm::vec3 frameUp = upDir * halfHeight;
+  float halfWidth = params.getAspectRatioWidthOverHeight() * halfHeight;
+  glm::vec3 frameRight = glm::cross(lookDir, upDir) * halfWidth;
+
+  return std::tuple<glm::vec3, glm::vec3, glm::vec3>(frameCenter, frameUp, frameRight);
+}
 
 } // namespace polyscope

@@ -94,6 +94,9 @@ public:
   std::vector<std::string> addCameraViewRules(std::vector<std::string> initRules, bool withCameraView = true);
   std::string getShaderNameForRenderMode();
 
+  // Get info related to how the frame is drawn (billboard center vector, center-to-top vector, center-to-right vector)
+  std::tuple<glm::vec3, glm::vec3, glm::vec3> getFrameBillboardGeometry();
+
 
 private:
   // The actual camera data being visualized
