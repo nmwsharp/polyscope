@@ -973,6 +973,16 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
   throw std::invalid_argument("No texture with name " + name);
 }
 
+void GLShaderProgram::copyTextures(std::shared_ptr<ShaderProgram> other){
+  GLShaderProgram* otherShaderProgram = dynamic_cast<GLShaderProgram*>(other.get());
+
+  if (!otherShaderProgram) {
+    throw std::invalid_argument("Invalid shader program!");
+  }
+
+  textures = otherShaderProgram->textures;
+}
+
 void GLShaderProgram::setTextureFromColormap(std::string name, const std::string& colormapName, bool allowUpdate) {
   const ValueColorMap& colormap = render::engine->getColorMap(colormapName);
 
@@ -1400,12 +1410,12 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_2", DOWNSAMPLE_RESOLVE_2});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_3", DOWNSAMPLE_RESOLVE_3});
   registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_4", DOWNSAMPLE_RESOLVE_4});
-  
+
   registeredShaderRules.insert({"TRANSPARENCY_STRUCTURE", TRANSPARENCY_STRUCTURE});
   registeredShaderRules.insert({"TRANSPARENCY_RESOLVE_SIMPLE", TRANSPARENCY_RESOLVE_SIMPLE});
   registeredShaderRules.insert({"TRANSPARENCY_PEEL_STRUCTURE", TRANSPARENCY_PEEL_STRUCTURE});
   registeredShaderRules.insert({"TRANSPARENCY_PEEL_GROUND", TRANSPARENCY_PEEL_GROUND});
-  
+
   registeredShaderRules.insert({"GENERATE_VIEW_POS", GENERATE_VIEW_POS});
   registeredShaderRules.insert({"CULL_POS_FROM_VIEW", CULL_POS_FROM_VIEW});
   //registeredShaderRules.insert({"CULL_POS_FROM_ATTR", CULL_POS_FROM_ATTR});
@@ -1422,7 +1432,8 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registeredShaderRules.insert({"SHADEVALUE_MAG_VALUE2", SHADEVALUE_MAG_VALUE2});
   registeredShaderRules.insert({"ISOLINE_STRIPE_VALUECOLOR", ISOLINE_STRIPE_VALUECOLOR});
   registeredShaderRules.insert({"CHECKER_VALUE2COLOR", CHECKER_VALUE2COLOR});
-  
+  registeredShaderRules.insert({"SHADE_TEXTURE2COLOR", SHADE_TEXTURE2COLOR});
+
   // mesh things
   registeredShaderRules.insert({"MESH_WIREFRAME", MESH_WIREFRAME});
   registeredShaderRules.insert({"MESH_BACKFACE_NORMAL_FLIP", MESH_BACKFACE_NORMAL_FLIP});

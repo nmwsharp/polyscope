@@ -11,7 +11,7 @@ const ShaderReplacementRule GLSL_VERSION(
     /* rule name */ "GLSL_VERSION",
     /* replacement sources */
     {
-        {"GLSL_VERSION", "#version 330 core"}, 
+        {"GLSL_VERSION", "#version 330 core"},
     }
 );
 
@@ -20,7 +20,7 @@ const ShaderReplacementRule GLOBAL_FRAGMENT_FILTER(
     /* rule name */ "GLOBAL_FRAGMENT_FILTER",
     /* replacement sources */
     {
-        {"GLOBAL_FRAGMENT_FILTER", "// do nothing, for now"}, 
+        {"GLOBAL_FRAGMENT_FILTER", "// do nothing, for now"},
     }
 );
 
@@ -52,7 +52,7 @@ const ShaderReplacementRule LIGHT_MATCAP (
     }
 );
 
-// "light" by just copying the value 
+// "light" by just copying the value
 // input: vec3 albedoColor;
 // output: vec3 litColor after lighting
 const ShaderReplacementRule LIGHT_PASSTHRU (
@@ -84,7 +84,7 @@ const ShaderReplacementRule SHADE_BASECOLOR (
 );
 
 
-// input: vec3 shadeColor 
+// input: vec3 shadeColor
 // output: vec3 albedoColor
 const ShaderReplacementRule SHADE_COLOR(
     /* rule name */ "SHADE_COLOR",
@@ -270,6 +270,20 @@ const ShaderReplacementRule CHECKER_VALUE2COLOR (
     /* textures */ {}
 );
 
+const ShaderReplacementRule SHADE_TEXTURE2COLOR (
+    /* rule name */ "SHADE_TEXTURE2COLOR",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform sampler2D t_image;
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+        vec3 albedoColor = texture(t_image, shadeValue2).rgb;
+      )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {{"t_image", 2}}
+);
 
 const ShaderReplacementRule GENERATE_VIEW_POS (
     /* rule name */ "GENERATE_VIEW_POS",
@@ -319,7 +333,7 @@ ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix) {
       /* rule name */ "SLICE_PLANE_CULL_" + uniquePostfix,
       { /* replacement sources */
         {"FRAG_DECLARATIONS", "uniform vec3 " + centerUniformName + "; uniform vec3 " + normalUniformName + ";"},
-        {"GLOBAL_FRAGMENT_FILTER", 
+        {"GLOBAL_FRAGMENT_FILTER",
          "if(dot(cullPos, " + normalUniformName + ") < dot( " + centerUniformName + " , " + normalUniformName + ")) { discard; }"}
       },
       /* uniforms */ {

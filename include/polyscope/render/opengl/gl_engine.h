@@ -161,7 +161,7 @@ public:
   void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) override;
   void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) override;
   void setAttribute(std::string name, const std::vector<double>& data, bool update = false, int offset = 0, int size = -1) override;
-  void setAttribute(std::string name, const std::vector<int>& data, bool update = false, int offset = 0, int size = -1) override; 
+  void setAttribute(std::string name, const std::vector<int>& data, bool update = false, int offset = 0, int size = -1) override;
   void setAttribute(std::string name, const std::vector<uint32_t>& data, bool update = false, int offset = 0, int size = -1) override;
   // clang-format on
 
@@ -185,6 +185,7 @@ public:
                     bool withAlpha = true, bool useMipMap = false, bool repeat = false) override;
   void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) override;
   void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) override;
+  void copyTextures(std::shared_ptr<ShaderProgram> other) override;
 
   // Draw!
   void draw() override;

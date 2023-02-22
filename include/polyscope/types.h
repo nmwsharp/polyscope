@@ -19,4 +19,10 @@ enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE, CORNER };
 enum class VolumeMeshElement { VERTEX = 0, EDGE, FACE, CELL };
 enum class VolumeCellType { TET = 0, HEX };
 
+struct Texture {
+  unsigned char* data;
+  int width;
+  int height;
+};
+
 }; // namespace polyscope

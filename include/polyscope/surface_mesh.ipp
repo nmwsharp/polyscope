@@ -5,7 +5,7 @@ namespace polyscope {
 template <class V, class F>
 SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
   checkInitialized();
-  
+
   SurfaceMesh* s = new SurfaceMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
                                    standardizeNestedList<size_t, F>(faceIndices));
   bool success = registerStructure(s);
@@ -38,7 +38,7 @@ template <class V, class F, class P>
 SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
                                  const std::array<std::pair<P, size_t>, 5>& perms) {
   checkInitialized();
-  
+
   SurfaceMesh* s = registerSurfaceMesh(name, vertexPositions, faceIndices);
 
   if (s) {
@@ -260,6 +260,11 @@ SurfaceVertexParameterizationQuantity* SurfaceMesh::addLocalParameterizationQuan
   return addLocalParameterizationQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(coords), type);
 }
 
+template <class T>
+SurfaceTextureQuantity* SurfaceMesh::addTextureQuantity(std::string name, const T& uvs, const Texture& texture) {
+  validateSize(uvs, vertexDataSize, "texture quantity " + name);
+  return addSurfaceTextureQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(uvs), texture);
+}
 
 inline SurfaceVertexCountQuantity*
 SurfaceMesh::addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values) {

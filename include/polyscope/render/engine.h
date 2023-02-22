@@ -265,6 +265,7 @@ public:
                             bool withAlpha = true, bool useMipMap = false, bool repeat = false) = 0;
   virtual void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) = 0;
   virtual void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) = 0;
+  virtual void copyTextures(std::shared_ptr<ShaderProgram> other) = 0;
 
 
   // Indices

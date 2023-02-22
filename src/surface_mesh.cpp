@@ -1231,6 +1231,15 @@ SurfaceMesh::addLocalParameterizationQuantityImpl(std::string name, const std::v
 }
 
 
+SurfaceTextureQuantity*
+SurfaceMesh::addSurfaceTextureQuantityImpl(std::string name, const std::vector<glm::vec2>& uvs, const Texture& texture) {
+  SurfaceTextureQuantity* q = new SurfaceTextureQuantity(
+      name, applyPermutation(uvs, vertexPerm), texture, *this);
+  addQuantity(q);
+
+  return q;
+}
+
 SurfaceVertexCountQuantity* SurfaceMesh::addVertexCountQuantityImpl(std::string name,
                                                                     const std::vector<std::pair<size_t, int>>& values) {
 
