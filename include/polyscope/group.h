@@ -27,6 +27,7 @@ public:
   void addChildGroup(Group* newChild);
   void addChildStructure(Structure* newChild);
   void removeChildGroup(Group* child);
+  void removeChildStructure(Structure* child);
   void unparent();
 
   bool isRootGroup();

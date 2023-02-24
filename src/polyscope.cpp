@@ -566,10 +566,13 @@ void buildStructureGui() {
 
   ImGui::Begin("Structures", &showStructureWindow);
 
-  if(ImGui::CollapsingHeader("Groups", ImGuiTreeNodeFlags_DefaultOpen)) {
-    for (auto x : state::groups) {
-      if (x.second->isRootGroup()) {
-        x.second->buildUI();
+  // only show groups if there are any
+  if (state::groups.size() > 0) {
+    if(ImGui::CollapsingHeader("Groups", ImGuiTreeNodeFlags_DefaultOpen)) {
+      for (auto x : state::groups) {
+        if (x.second->isRootGroup()) {
+          x.second->buildUI();
+        }
       }
     }
   }
@@ -860,6 +863,10 @@ bool setParentGroupOfStructure(std::string typeName, std::string child, std::str
   return true;
 }
 
+bool setParentGroupOfStructure(Structure* child, std::string parent) {
+  return setParentGroupOfStructure(child->typeName(), child->name, parent);
+}
+
 bool registerStructure(Structure* s, bool replaceIfPresent) {
 
   // Make sure a map for the type exists
@@ -972,6 +979,13 @@ void removeGroup(std::string name, bool errorIfAbsent) {
   return;
 }
 
+void removeAllGroups() {
+  for (auto& g : state::groups) {
+    delete g.second;
+  }
+  state::groups.clear();
+}
+
 void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
 
   // If there are no structures of that type it is an automatic fail
@@ -993,6 +1007,10 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
 
   // Structure exists, remove it
   Structure* s = sMap[name];
+  // remove it from all existing groups
+  for (auto& g : state::groups) {
+    g.second->removeChildStructure(s);
+  }
   pick::resetSelectionIfStructure(s);
   sMap.erase(s->name);
   delete s;

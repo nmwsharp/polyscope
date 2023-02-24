@@ -65,9 +65,14 @@ void Group::buildUI() {
 
     // Enabled checkbox
     int enabledLocal = isEnabled();
-    if (ImGui::CheckboxTristate("Enabled", &enabledLocal)) {
-      setEnabled(enabledLocal);
-    }  
+    if (enabledLocal == -2) {
+      // no children, add greyed out text
+      ImGui::TextDisabled("no child structures");
+    } else {
+      if (ImGui::CheckboxTristate("Enabled", &enabledLocal)) {
+        setEnabled(enabledLocal);
+      }  
+    }
 
     // Call children buildUI
     for (Group* child : childrenGroups) {
@@ -89,14 +94,6 @@ void Group::unparent() {
   parentGroup = nullptr; // redundant, but explicit
 }
 
-void Group::removeChildGroup(Group* child) {
-  auto it = std::find(childrenGroups.begin(), childrenGroups.end(), child);
-  if (it != childrenGroups.end()) {
-    (*it)->parentGroup = nullptr; // mark child as not having a parent anymore
-    childrenGroups.erase(it);
-  }
-}
-
 void Group::addChildGroup(Group* newChild) {
   // TODO: Daniel - check for cycles
   if (getTopLevelGrandparent() == newChild) {
@@ -109,6 +106,25 @@ void Group::addChildGroup(Group* newChild) {
   childrenGroups.push_back(newChild);
 }
 
+void Group::addChildStructure(Structure* newChild) {
+  childrenStructures.push_back(newChild);
+}
+
+void Group::removeChildGroup(Group* child) {
+  auto it = std::find(childrenGroups.begin(), childrenGroups.end(), child);
+  if (it != childrenGroups.end()) {
+    (*it)->parentGroup = nullptr; // mark child as not having a parent anymore
+    childrenGroups.erase(it);
+  }
+}
+
+void Group::removeChildStructure(Structure* child) {
+  auto it = std::find(childrenStructures.begin(), childrenStructures.end(), child);
+  if (it != childrenStructures.end()) {
+    childrenStructures.erase(it);
+  }
+}
+
 Group* Group::getTopLevelGrandparent() {
   Group* current = this;
   while (current->parentGroup != nullptr) {
@@ -117,11 +133,14 @@ Group* Group::getTopLevelGrandparent() {
   return current;
 }
 
-void Group::addChildStructure(Structure* newChild) {
-  childrenStructures.push_back(newChild);
-}
-
 int Group::isEnabled() {
+  // return values: 
+  // 0: all children disabled
+  // 1: all children enabled
+  // -1: some children enabled, some disabled
+  // -2: no children
+  // (these -2 groups should not have a checkbox in the UI - there's nothing to enable / disable -
+  // unless we added a is_enabled state for empty groups, but this could lead to edge cases)
   bool any_children_enabled = false;
   bool any_children_disabled = false;
   // check all structure children
@@ -138,18 +157,29 @@ int Group::isEnabled() {
       any_children_enabled = true;
     } else if (child->isEnabled() == 0) {
       any_children_disabled = true;
-    } else {
+    } else if (child->isEnabled() == -1) {
       any_children_enabled = true;
       any_children_disabled = true;
+    } else if (child->isEnabled() == -2) {
+      any_children_enabled = false;
+      any_children_disabled = false;
+    } else { // huh?
+      polyscope::error("Unexpected return value from Group::isEnabled()");
     }
   }
 
   int result = 0;
-  if (any_children_enabled) {
+  if (!any_children_enabled && any_children_disabled) {
+    result = 0;
+  }
+  if (any_children_enabled && !any_children_disabled) {
+    result = 1;
+  }
+  if (any_children_enabled && any_children_disabled) {
     result = -1;
-    if (!any_children_disabled) {
-      result = 1;
-    }
+  }
+  if (!any_children_enabled && !any_children_disabled) {
+    result = -2;
   }
   return result;
 }
