@@ -1119,6 +1119,56 @@ TEST_F(PolyscopeTest, TestRepeatAddAndRemoveGroup) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, TestDocsExample) {
+  // make a point cloud
+  std::vector<glm::vec3> points;
+  for (size_t i = 0; i < 3000; i++) {
+    points.push_back(
+        glm::vec3{polyscope::randomUnit() - .5,
+                  polyscope::randomUnit() - .5,
+                  polyscope::randomUnit() - .5});
+  }
+  polyscope::PointCloud* psCloud = polyscope::registerPointCloud("my cloud", points);
+  psCloud->setPointRadius(0.02);
+  psCloud->setPointRenderMode(polyscope::PointRenderMode::Quad);
+
+  // make a curve network
+  std::vector<glm::vec3> nodes;
+  std::vector<std::array<size_t, 2>> edges;
+  nodes = {
+  {1, 0, 0},
+  {0, 1, 0},
+  {0, 0, 1},
+  {0, 0, 0},
+  };
+  edges = {
+  {1, 3},
+  {3, 0},
+  {1, 0},
+  {0, 2}
+  };
+  polyscope::CurveNetwork* psCurve = polyscope::registerCurveNetwork("my network", nodes, edges);
+
+  // group them together
+  std::string groupName = "my group";
+  polyscope::registerGroup(groupName);
+  polyscope::setParentGroupOfStructure(psCloud, groupName);
+  polyscope::setParentGroupOfStructure(psCurve, groupName);
+
+  // put that group in another group
+  std::string parentGroupName = "my parent group";
+  std::string emptyGroupName = "my empty group";
+  polyscope::registerGroup(parentGroupName);
+  polyscope::registerGroup(emptyGroupName);
+  polyscope::setParentGroupOfGroup(groupName, parentGroupName);
+  polyscope::setParentGroupOfGroup(emptyGroupName, parentGroupName);
+
+  polyscope::show(3);
+
+  polyscope::removeAllGroups();
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, TestDeletedGroupReferenceError) {
   // don't run this because we can't catch UI errors
   if (true) return;

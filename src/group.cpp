@@ -161,8 +161,6 @@ int Group::isEnabled() {
       any_children_enabled = true;
       any_children_disabled = true;
     } else if (child->isEnabled() == -2) {
-      any_children_enabled = false;
-      any_children_disabled = false;
     } else { // huh?
       polyscope::error("Unexpected return value from Group::isEnabled()");
     }
