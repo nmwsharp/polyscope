@@ -266,6 +266,10 @@ SurfaceTextureQuantity* SurfaceMesh::addTextureQuantity(std::string name, const 
   return addSurfaceTextureQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(uvs), texture);
 }
 
+inline SurfaceTextureQuantity* SurfaceMesh::addTextureQuantity(std::string name, const Texture& texture, SurfaceParameterizationQuantity* surfaceParameterizationQuantity) {
+  return addSurfaceTextureQuantityImpl(name, surfaceParameterizationQuantity, texture);
+}
+
 inline SurfaceVertexCountQuantity*
 SurfaceMesh::addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values) {
   for (auto p : values) {

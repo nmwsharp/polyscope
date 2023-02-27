@@ -20,7 +20,7 @@ namespace polyscope {
 class SurfaceParameterizationQuantity : public SurfaceMeshQuantity {
 
 public:
-  SurfaceParameterizationQuantity(std::string name, ParamCoordsType type_, ParamVizStyle style, SurfaceMesh& mesh_);
+  SurfaceParameterizationQuantity(std::string name, std::vector<glm::vec2> coords_, ParamCoordsType type_, ParamVizStyle style, SurfaceMesh& mesh_);
 
   void draw() override;
   virtual void buildCustomUI() override;
@@ -29,6 +29,7 @@ public:
 
 
   // === Members
+  std::vector<glm::vec2> coords;
   const ParamCoordsType coordsType;
 
   // === Viz stuff
@@ -60,7 +61,9 @@ public:
   // Darkness for checkers (etc)
   SurfaceParameterizationQuantity* setAltDarkness(double newVal);
   double getAltDarkness();
-    
+
+  std::vector<glm::vec2>& getCoords();
+
 
 protected:
   // === Visualiztion options
@@ -94,9 +97,6 @@ public:
   virtual void buildHalfedgeInfoGUI(size_t heInd) override;
   virtual std::string niceName() override;
 
-  // === Members
-  std::vector<glm::vec2> coords; // on corners
-
 protected:
   virtual void fillColorBuffers(render::ShaderProgram& p) override;
 };
@@ -113,9 +113,6 @@ public:
 
   virtual void buildVertexInfoGUI(size_t vInd) override;
   virtual std::string niceName() override;
-
-  // === Members
-  std::vector<glm::vec2> coords; // on vertices
 
 protected:
   virtual void fillColorBuffers(render::ShaderProgram& p) override;

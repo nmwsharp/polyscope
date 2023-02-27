@@ -1240,6 +1240,15 @@ SurfaceMesh::addSurfaceTextureQuantityImpl(std::string name, const std::vector<g
   return q;
 }
 
+SurfaceTextureQuantity*
+SurfaceMesh::addSurfaceTextureQuantityImpl(std::string name, SurfaceParameterizationQuantity* surfaceParameterizationQuantity, const Texture& texture) {
+  SurfaceTextureQuantity* q = new SurfaceTextureQuantity(
+      name, surfaceParameterizationQuantity, texture, *this);
+  addQuantity(q);
+
+  return q;
+}
+
 SurfaceVertexCountQuantity* SurfaceMesh::addVertexCountQuantityImpl(std::string name,
                                                                     const std::vector<std::pair<size_t, int>>& values) {
 

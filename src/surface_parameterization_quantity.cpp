@@ -16,9 +16,9 @@ namespace polyscope {
 // ================  Base Parameterization  =====================
 // ==============================================================
 
-SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string name, ParamCoordsType type_,
+SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string name, std::vector<glm::vec2> coords_, ParamCoordsType type_,
                                                                  ParamVizStyle style_, SurfaceMesh& mesh_)
-    : SurfaceMeshQuantity(name, mesh_, true), coordsType(type_), checkerSize(uniquePrefix() + "#checkerSize", 0.02),
+    : SurfaceMeshQuantity(name, mesh_, true), coords(std::move(coords_)), coordsType(type_), checkerSize(uniquePrefix() + "#checkerSize", 0.02),
       vizStyle(uniquePrefix() + "#vizStyle", style_), checkColor1(uniquePrefix() + "#checkColor1", render::RGB_PINK),
       checkColor2(uniquePrefix() + "#checkColor2", glm::vec3(.976, .856, .885)),
       gridLineColor(uniquePrefix() + "#gridLineColor", render::RGB_WHITE),
@@ -154,7 +154,7 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
 
 
   // Modulo stripey width
-  if (ImGui::DragFloat("period", &checkerSize.get(), .001, 0.0001, 1.0, "%.4f", 
+  if (ImGui::DragFloat("period", &checkerSize.get(), .001, 0.0001, 1.0, "%.4f",
                        ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     setCheckerSize(getCheckerSize());
   }
@@ -262,6 +262,8 @@ void SurfaceParameterizationQuantity::refresh() {
   Quantity::refresh();
 }
 
+std::vector<glm::vec2>& SurfaceParameterizationQuantity::getCoords() { return coords; }
+
 // ==============================================================
 // ===============  Corner Parameterization  ====================
 // ==============================================================
@@ -271,7 +273,7 @@ SurfaceCornerParameterizationQuantity::SurfaceCornerParameterizationQuantity(std
                                                                              std::vector<glm::vec2> coords_,
                                                                              ParamCoordsType type_,
                                                                              ParamVizStyle style_, SurfaceMesh& mesh_)
-    : SurfaceParameterizationQuantity(name, type_, style_, mesh_), coords(std::move(coords_)) {}
+    : SurfaceParameterizationQuantity(name, std::move(coords_), type_, style_, mesh_) {}
 
 std::string SurfaceCornerParameterizationQuantity::niceName() { return name + " (corner parameterization)"; }
 
@@ -320,7 +322,7 @@ SurfaceVertexParameterizationQuantity::SurfaceVertexParameterizationQuantity(std
                                                                              std::vector<glm::vec2> coords_,
                                                                              ParamCoordsType type_,
                                                                              ParamVizStyle style_, SurfaceMesh& mesh_)
-    : SurfaceParameterizationQuantity(name, type_, style_, mesh_), coords(std::move(coords_)) {}
+    : SurfaceParameterizationQuantity(name, std::move(coords_), type_, style_, mesh_) {}
 
 std::string SurfaceVertexParameterizationQuantity::niceName() { return name + " (vertex parameterization)"; }
 

@@ -16,10 +16,16 @@ using std::endl;
 
 namespace polyscope {
 
-SurfaceTextureQuantity::SurfaceTextureQuantity(std::string name, std::vector<glm::vec2> uvs, const Texture& texture, SurfaceMesh& mesh)
-  : SurfaceMeshQuantity(name, mesh, true), uvs_(std::move(uvs)) {
+SurfaceTextureQuantity::SurfaceTextureQuantity(std::string name, std::vector<glm::vec2> uvs_, const Texture& texture, SurfaceMesh& mesh)
+  : SurfaceMeshQuantity(name, mesh, true), uvs(std::move(uvs_)) {
     setTexture(texture);
   }
+
+  SurfaceTextureQuantity::SurfaceTextureQuantity(std::string name, SurfaceParameterizationQuantity* surfaceParameterizationQuantity_, const Texture& texture, SurfaceMesh& mesh)
+: SurfaceMeshQuantity(name, mesh, true) {
+    surfaceParameterizationQuantity = surfaceParameterizationQuantity_;
+    setTexture(texture);
+}
 
 void SurfaceTextureQuantity::draw() {
   if (!isEnabled()) return;
@@ -65,6 +71,8 @@ std::string SurfaceTextureQuantity::niceName() { return name; }
 void SurfaceTextureQuantity::fillColorBuffers(render::ShaderProgram& p) {
   std::vector<glm::vec2> coordVal;
   coordVal.reserve(3 * parent.nFacesTriangulation());
+
+  std::vector<glm::vec2> uvs_ = surfaceParameterizationQuantity ? surfaceParameterizationQuantity->getCoords() : uvs;
 
   for (size_t iF = 0; iF < parent.nFaces(); iF++) {
     auto& face = parent.faces[iF];
