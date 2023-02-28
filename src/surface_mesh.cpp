@@ -777,12 +777,12 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
         // clang-format off
         std::array<glm::vec3, 3> eColor = { 
           fColor, 
-          pick::indToVec(triangleEdgeInds.data[3*iFTri + 1] + edgeGlobalPickIndStart), 
+          pick::indToVec(triangleEdgeInds.data[9*iFTri + 1] + edgeGlobalPickIndStart), 
           fColor
         };
         // clang-format on
-        if (j == 1) eColor[0] = pick::indToVec(triangleEdgeInds.data[3 * iFTri + 0] + edgeGlobalPickIndStart);
-        if (j + 2 == D) eColor[2] = pick::indToVec(triangleEdgeInds.data[3 * iFTri + 2] + edgeGlobalPickIndStart);
+        if (j == 1) eColor[0] = pick::indToVec(triangleEdgeInds.data[9 * iFTri + 0] + edgeGlobalPickIndStart);
+        if (j + 2 == D) eColor[2] = pick::indToVec(triangleEdgeInds.data[9 * iFTri + 2] + edgeGlobalPickIndStart);
 
         for (int j = 0; j < 3; j++) edgeColors.push_back(eColor);
       } else {
@@ -795,18 +795,20 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
         // clang-format off
         std::array<glm::vec3, 3> heColor = { 
           fColor, 
-          pick::indToVec(triangleHalfedgeInds.data[3*iFTri + 1] + halfedgeGlobalPickIndStart), 
+          pick::indToVec(triangleHalfedgeInds.data[9*iFTri + 1] + halfedgeGlobalPickIndStart), 
           fColor
         };
         // clang-format on
-        if (j == 1) heColor[0] = pick::indToVec(triangleHalfedgeInds.data[3 * iFTri + 0] + halfedgeGlobalPickIndStart);
+        if (j == 1) heColor[0] = pick::indToVec(triangleHalfedgeInds.data[9 * iFTri + 0] + halfedgeGlobalPickIndStart);
         if (j + 2 == D)
-          heColor[2] = pick::indToVec(triangleHalfedgeInds.data[3 * iFTri + 2] + halfedgeGlobalPickIndStart);
+          heColor[2] = pick::indToVec(triangleHalfedgeInds.data[9 * iFTri + 2] + halfedgeGlobalPickIndStart);
 
         for (int j = 0; j < 3; j++) halfedgeColors.push_back(heColor);
       } else {
         for (int j = 0; j < 3; j++) halfedgeColors.push_back({fColor, fColor, fColor});
       }
+
+      // TODO corners?
 
       iFTri++;
     }
