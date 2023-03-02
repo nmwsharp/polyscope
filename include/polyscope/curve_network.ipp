@@ -8,7 +8,7 @@ namespace polyscope {
 template <class P, class E>
 CurveNetwork* registerCurveNetwork(std::string name, const P& nodes, const E& edges) {
   checkInitialized();
-  
+
   CurveNetwork* s = new CurveNetwork(name, standardizeVectorArray<glm::vec3, 3>(nodes),
                                      standardizeVectorArray<std::array<size_t, 2>, 2>(edges));
   bool success = registerStructure(s);
@@ -20,7 +20,7 @@ CurveNetwork* registerCurveNetwork(std::string name, const P& nodes, const E& ed
 template <class P, class E>
 CurveNetwork* registerCurveNetwork2D(std::string name, const P& nodes, const E& edges) {
   checkInitialized();
-  
+
   std::vector<glm::vec3> points3D(standardizeVectorArray<glm::vec3, 2>(nodes));
   for (auto& v : points3D) {
     v.z = 0.;
@@ -117,13 +117,16 @@ CurveNetwork* registerCurveNetworkLoop2D(std::string name, const P& nodes) {
 
 template <class V>
 void CurveNetwork::updateNodePositions(const V& newPositions) {
-  nodes = standardizeVectorArray<glm::vec3, 3>(newPositions);
-  geometryChanged();
+  validateSize(newPositions, nNodes(), "newPositions");
+  nodePositions.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  nodePositions.markHostBufferUpdated();
+  recomputeGeometryIfPopulated();
 }
 
 
 template <class V>
 void CurveNetwork::updateNodePositions2D(const V& newPositions2D) {
+  validateSize(newPositions2D, nNodes(), "newPositions2D");
   std::vector<glm::vec3> positions3D = standardizeVectorArray<glm::vec3, 2>(newPositions2D);
   for (glm::vec3& v : positions3D) {
     v.z = 0.;
@@ -137,9 +140,7 @@ void CurveNetwork::updateNodePositions2D(const V& newPositions2D) {
 inline CurveNetwork* getCurveNetwork(std::string name) {
   return dynamic_cast<CurveNetwork*>(getStructure(CurveNetwork::structureTypeName, name));
 }
-inline bool hasCurveNetwork(std::string name) {
-  return hasStructure(CurveNetwork::structureTypeName, name);
-}
+inline bool hasCurveNetwork(std::string name) { return hasStructure(CurveNetwork::structureTypeName, name); }
 inline void removeCurveNetwork(std::string name, bool errorIfAbsent) {
   removeStructure(CurveNetwork::structureTypeName, name, errorIfAbsent);
 }

@@ -158,8 +158,8 @@ SET(SRCS
   # Surface
   surface_mesh.cpp
   surface_mesh_io.cpp
-  surface_scalar_quantity.cpp
   surface_color_quantity.cpp
+  surface_scalar_quantity.cpp
   # surface_parameterization_quantity.cpp TODO restore
   surface_vector_quantity.cpp
   # surface_count_quantity.cpp # TODO delete these old files
@@ -169,11 +169,10 @@ SET(SRCS
   #surface_input_curve_quantity.cpp
   
   # Curve network
-  # TODO restore
-  # curve_network.cpp
-  # curve_network_scalar_quantity.cpp
-  # curve_network_color_quantity.cpp
-  # curve_network_vector_quantity.cpp
+  curve_network.cpp
+  curve_network_color_quantity.cpp
+  curve_network_scalar_quantity.cpp
+  curve_network_vector_quantity.cpp
   
   # Volume mesh
   # TODO restore

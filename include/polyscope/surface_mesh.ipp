@@ -53,6 +53,7 @@ SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, con
 
 template <class V>
 void SurfaceMesh::updateVertexPositions(const V& newPositions) {
+  validateSize(newPositions, vertexDataSize, "newPositions");
   vertexPositions.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
   vertexPositions.markHostBufferUpdated();
   recomputeGeometryIfPopulated();
@@ -61,6 +62,7 @@ void SurfaceMesh::updateVertexPositions(const V& newPositions) {
 
 template <class V>
 void SurfaceMesh::updateVertexPositions2D(const V& newPositions2D) {
+  validateSize(newPositions2D, vertexDataSize, "newPositions2D");
   std::vector<glm::vec3> positions3D = standardizeVectorArray<glm::vec3, 2>(newPositions2D);
   for (glm::vec3& v : positions3D) {
     v.z = 0.;
@@ -149,7 +151,7 @@ void SurfaceMesh::setHalfedgePermutation(const T& perm, size_t expectedSize) {
       halfedgeDataSize = std::max(halfedgeDataSize, i + 1);
     }
   }
-  
+
   markHalfedgesAsUsed();
 }
 

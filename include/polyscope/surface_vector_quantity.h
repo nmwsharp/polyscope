@@ -14,7 +14,7 @@ namespace polyscope {
 
 // Represents a general vector field associated with a surface mesh, including
 // R3 fields in the ambient space and R2 fields embedded in the surface
-//
+
 // NOTE: This intermediate class is not really necessary anymore; it is subsumed by the VectorQuantity<> classes which
 // serve as common bases for ALL vector types. At this point it is just kept around for backward compatibility, to not
 // break user code which holds a reference to it.

@@ -1,7 +1,6 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
-#include "polyscope/affine_remapper.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/vector_quantity.h"
 

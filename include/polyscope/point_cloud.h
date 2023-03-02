@@ -143,6 +143,8 @@ public:
 
 
 private:
+
+  // Storage for the managed buffers above. You should generally interact with this directly through them.
   std::vector<glm::vec3> pointsData;
 
   // === Visualization parameters
@@ -153,7 +155,6 @@ private:
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
-  std::shared_ptr<render::AttributeBuffer> positionRenderBuffer;
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> pickProgram;
 

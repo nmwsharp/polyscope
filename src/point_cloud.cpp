@@ -21,12 +21,17 @@ namespace polyscope {
 const std::string PointCloud::structureTypeName = "Point Cloud";
 
 // Constructor
-PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
-    : QuantityStructure<PointCloud>(name, structureTypeName), points(uniquePrefix() + "#points", pointsData),
-      pointsData(std::move(points_)), pointRenderMode(uniquePrefix() + "#pointRenderMode", "sphere"),
+PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_) :
+  // clang-format off
+    QuantityStructure<PointCloud>(name, structureTypeName), 
+      points(uniquePrefix() + "#points", pointsData),
+      pointsData(std::move(points_)), 
+      pointRenderMode(uniquePrefix() + "#pointRenderMode", "sphere"),
       pointColor(uniquePrefix() + "#pointColor", getNextUniqueColor()),
       pointRadius(uniquePrefix() + "#pointRadius", relativeValue(0.005)),
-      material(uniquePrefix() + "#material", "clay") {
+      material(uniquePrefix() + "#material", "clay") 
+  // clang-format on
+  {
   cullWholeElements.setPassive(true);
   updateObjectSpaceBounds();
 }

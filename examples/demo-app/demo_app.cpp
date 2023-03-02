@@ -37,15 +37,15 @@ bool endsWith(const std::string& str, const std::string& suffix) {
 
 void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nodes,
                                std::vector<std::array<size_t, 2>> edges) {
-  /* TODO restore
 
   // Add the curve
   if (edges.size() > 0) {
     polyscope::registerCurveNetwork(curveName, nodes, edges);
-  } else {
-    polyscope::registerCurveNetworkLine(curveName, nodes);
-    edges = polyscope::getCurveNetwork(curveName)->edges;
   }
+  // else {
+  //   polyscope::registerCurveNetworkLine(curveName, nodes);
+  //   edges = polyscope::getCurveNetwork(curveName)->edges;
+  // }
 
   // Useful data
   size_t nNodes = nodes.size();
@@ -88,7 +88,7 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
 
   // set a node radius quantity from above
   polyscope::getCurveNetwork(curveName)->setNodeRadiusQuantity("nXabs");
-  */
+
 }
 
 void processFileOBJ(std::string filename) {
@@ -413,6 +413,7 @@ polyscope::warning("Some problems come in groups", "detail = " + std::to_string(
     polyscope::getSurfaceMesh(niceName)->addSurfaceGraphQuantity("surface graph", vertexPositionsGLM, edges);
   }
 
+  */
 
   { // Add a curve network from the edges
     std::vector<std::array<size_t, 2>> edges;
@@ -432,7 +433,6 @@ polyscope::warning("Some problems come in groups", "detail = " + std::to_string(
     constructDemoCurveNetwork(curveName, vertexPositionsGLM, edges);
   }
 
-  */
 
   /*
 

@@ -334,7 +334,7 @@ public:
 
 private:
   // == Mesh geometry buffers
-  // (you should mainly interact with these via the ManagedBuffer wrappers above)
+  // Storage for the managed buffers above. You should generally interact with these through the managed buffers, not these members.
 
   // positions
   std::vector<glm::vec3> vertexPositionsData;

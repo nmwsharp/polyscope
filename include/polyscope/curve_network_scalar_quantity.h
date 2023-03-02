@@ -56,6 +56,12 @@ public:
   virtual void createProgram() override;
 
   void buildEdgeInfoGUI(size_t edgeInd) override;
+
+  render::ManagedBuffer<float> nodeAverageValues;
+  void updateNodeAverageValues();
+
+private:
+  std::vector<float> nodeAverageValuesData;
 };
 
 
