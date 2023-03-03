@@ -8,6 +8,7 @@
 #include "polyscope/render/engine.h"
 
 #include "imgui.h"
+#include "polyscope/types.h"
 #include "polyscope/utilities.h"
 
 #include <unordered_map>
@@ -687,7 +688,12 @@ void SurfaceMesh::setMeshGeometryAttributes(render::ShaderProgram& p) {
     p.setAttribute("a_vertexPositions", vertexPositions.getIndexedRenderAttributeBuffer(&triangleVertexInds));
   }
   if (p.hasAttribute("a_vertexNormals")) {
-    p.setAttribute("a_vertexNormals", vertexNormals.getIndexedRenderAttributeBuffer(&triangleVertexInds));
+
+    if (getShadeStyle() == MeshShadeStyle::Flat) {
+      p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(&triangleFaceInds));
+    } else if (getShadeStyle() == MeshShadeStyle::Smooth) {
+      p.setAttribute("a_vertexNormals", vertexNormals.getIndexedRenderAttributeBuffer(&triangleVertexInds));
+    }
   }
   if (p.hasAttribute("a_normal")) {
     p.setAttribute("a_normal", faceNormals.getIndexedRenderAttributeBuffer(&triangleFaceInds));
@@ -996,8 +1002,10 @@ void SurfaceMesh::buildCustomUI() {
     ImGui::SameLine();
   }
 
+
   { // Flat shading or smooth shading?
     ImGui::SameLine();
+    ImGui::PushItemWidth(85);
 
     auto styleName = [](const MeshShadeStyle& m) -> std::string {
       switch (m) {
@@ -1006,13 +1014,13 @@ void SurfaceMesh::buildCustomUI() {
       case MeshShadeStyle::Flat:
         return "Flat";
       case MeshShadeStyle::AutoFlat:
-        return "Flat Reflection";
+        return "Simple Flat";
       }
       return "";
     };
 
-    if (ImGui::BeginCombo("Mode", styleName(getShadeStyle()).c_str())) {
-      for (MeshShadeStyle s : {MeshShadeStyle::Smooth, MeshShadeStyle::Flat, MeshShadeStyle::AutoFlat}) {
+    if (ImGui::BeginCombo("##Mode", styleName(getShadeStyle()).c_str())) {
+      for (MeshShadeStyle s : {MeshShadeStyle::Flat, MeshShadeStyle::Smooth, MeshShadeStyle::AutoFlat}) {
         std::string sName = styleName(s);
         if (ImGui::Selectable(sName.c_str(), getShadeStyle() == s)) {
           setShadeStyle(s);
@@ -1020,10 +1028,12 @@ void SurfaceMesh::buildCustomUI() {
       }
       ImGui::EndCombo();
     }
+
+    ImGui::PopItemWidth();
   }
 
-  ImGui::SameLine();
   { // Edge options
+    ImGui::SameLine();
     ImGui::PushItemWidth(100);
     if (edgeWidth.get() == 0.) {
       bool showEdges = false;
@@ -1044,7 +1054,7 @@ void SurfaceMesh::buildCustomUI() {
 
       // Edge width
       ImGui::SameLine();
-      ImGui::PushItemWidth(60);
+      ImGui::PushItemWidth(75);
       if (ImGui::SliderFloat("Width", &edgeWidth.get(), 0.001, 2.)) {
         // NOTE: this intentionally circumvents the setEdgeWidth() setter to avoid repopulating the buffer as the
         // slider is dragged---otherwise we repopulate the buffer on every change, which mostly works fine. This is a
@@ -1056,9 +1066,13 @@ void SurfaceMesh::buildCustomUI() {
     }
     ImGui::PopItemWidth();
   }
-  if (backFacePolicy.get() == BackFacePolicy::Custom) {
-    if (ImGui::ColorEdit3("Backface Color", &backFaceColor.get()[0], ImGuiColorEditFlags_NoInputs))
-      setBackFaceColor(backFaceColor.get());
+
+
+  { // Backface color (only visible if policy is selected)
+    if (backFacePolicy.get() == BackFacePolicy::Custom) {
+      if (ImGui::ColorEdit3("Backface Color", &backFaceColor.get()[0], ImGuiColorEditFlags_NoInputs))
+        setBackFaceColor(backFaceColor.get());
+    }
   }
 }
 
