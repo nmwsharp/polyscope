@@ -16,7 +16,7 @@ enum class BackFacePolicy { Identical, Different, Custom, Cull };
 
 enum class PointRenderMode { Sphere = 0, Quad };
 enum class MeshElement { VERTEX = 0, FACE, EDGE, HALFEDGE, CORNER };
-enum class MeshShadeStyle { Smooth = 0, Flat, AutoFlat };
+enum class MeshShadeStyle { Smooth = 0, Flat, TriFlat };
 enum class VolumeMeshElement { VERTEX = 0, EDGE, FACE, CELL };
 enum class VolumeCellType { TET = 0, HEX };
 

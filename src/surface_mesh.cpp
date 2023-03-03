@@ -842,7 +842,7 @@ std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::strin
         initRules.push_back("MESH_WIREFRAME");
       }
 
-      if (shadeStyle.get() == MeshShadeStyle::AutoFlat) {
+      if (shadeStyle.get() == MeshShadeStyle::TriFlat) {
         initRules.push_back("MESH_COMPUTE_NORMAL_FROM_POSITION");
       }
 
@@ -881,7 +881,7 @@ void SurfaceMesh::setSurfaceMeshUniforms(render::ShaderProgram& p) {
   if (backFacePolicy.get() == BackFacePolicy::Custom) {
     p.setUniform("u_backfaceColor", getBackFaceColor());
   }
-  if (shadeStyle.get() == MeshShadeStyle::AutoFlat) {
+  if (shadeStyle.get() == MeshShadeStyle::TriFlat) {
     glm::mat4 P = view::getCameraPerspectiveMatrix();
     glm::mat4 Pinv = glm::inverse(P);
     p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
@@ -1026,14 +1026,14 @@ void SurfaceMesh::buildCustomUI() {
         return "Smooth";
       case MeshShadeStyle::Flat:
         return "Flat";
-      case MeshShadeStyle::AutoFlat:
-        return "Simple Flat";
+      case MeshShadeStyle::TriFlat:
+        return "Tri Flat";
       }
       return "";
     };
 
     if (ImGui::BeginCombo("##Mode", styleName(getShadeStyle()).c_str())) {
-      for (MeshShadeStyle s : {MeshShadeStyle::Flat, MeshShadeStyle::Smooth, MeshShadeStyle::AutoFlat}) {
+      for (MeshShadeStyle s : {MeshShadeStyle::Flat, MeshShadeStyle::Smooth, MeshShadeStyle::TriFlat}) {
         std::string sName = styleName(s);
         if (ImGui::Selectable(sName.c_str(), getShadeStyle() == s)) {
           setShadeStyle(s);
