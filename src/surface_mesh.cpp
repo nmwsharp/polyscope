@@ -689,10 +689,12 @@ void SurfaceMesh::setMeshGeometryAttributes(render::ShaderProgram& p) {
   }
   if (p.hasAttribute("a_vertexNormals")) {
 
-    if (getShadeStyle() == MeshShadeStyle::Flat) {
-      p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(&triangleFaceInds));
-    } else if (getShadeStyle() == MeshShadeStyle::Smooth) {
+    if (getShadeStyle() == MeshShadeStyle::Smooth) {
       p.setAttribute("a_vertexNormals", vertexNormals.getIndexedRenderAttributeBuffer(&triangleVertexInds));
+    } else {
+      // these aren't actually used in in the automatically-generated case, but the shader is set up in a lazy way so it
+      // is still needed
+      p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(&triangleFaceInds));
     }
   }
   if (p.hasAttribute("a_normal")) {
@@ -839,6 +841,11 @@ std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::strin
       if (getEdgeWidth() > 0) {
         initRules.push_back("MESH_WIREFRAME");
       }
+
+      if (shadeStyle.get() == MeshShadeStyle::AutoFlat) {
+        initRules.push_back("MESH_COMPUTE_NORMAL_FROM_POSITION");
+      }
+
       if (backFacePolicy.get() == BackFacePolicy::Different) {
         initRules.push_back("MESH_BACKFACE_DARKEN");
       }
@@ -873,6 +880,12 @@ void SurfaceMesh::setSurfaceMeshUniforms(render::ShaderProgram& p) {
   }
   if (backFacePolicy.get() == BackFacePolicy::Custom) {
     p.setUniform("u_backfaceColor", getBackFaceColor());
+  }
+  if (shadeStyle.get() == MeshShadeStyle::AutoFlat) {
+    glm::mat4 P = view::getCameraPerspectiveMatrix();
+    glm::mat4 Pinv = glm::inverse(P);
+    p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+    p.setUniform("u_viewport", render::engine->getCurrentViewport());
   }
 }
 

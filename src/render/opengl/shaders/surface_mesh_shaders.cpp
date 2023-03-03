@@ -102,10 +102,6 @@ R"(
            float alphaOut = 1.0;
            ${ GENERATE_ALPHA }$
            
-           // silly dummy usage to ensure normal and barycoords are always used; otherwise we get errors
-           // float dummyVal = a_normalToFrag.x + a_barycoordToFrag.x;
-           // alphaOut = alphaOut + dummyVal * (1e-12);
-
            ${ PERTURB_LIT_COLOR }$
 
            // Write output
@@ -333,6 +329,28 @@ const ShaderReplacementRule MESH_WIREFRAME_ONLY(
     /* textures */ {}
 );
 
+const ShaderReplacementRule MESH_COMPUTE_NORMAL_FROM_POSITION (
+    /* rule name */ "MESH_COMPUTE_NORMAL_FROM_POSITION",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+        uniform mat4 u_invProjMatrix;
+        uniform vec4 u_viewport;
+        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
+        )"},
+      {"PERTURB_SHADE_NORMAL", R"(
+        vec2 depthRange_fornormal = vec2(gl_DepthRange.near, gl_DepthRange.far);
+        vec3 viewPos_fornormal = fragmentViewPosition(u_viewport, depthRange_fornormal, u_invProjMatrix, gl_FragCoord);
+        shadeNormal = normalize(cross(dFdx(viewPos_fornormal),dFdy(viewPos_fornormal)));
+        )"}
+    },
+    /* uniforms */ {
+        {"u_invProjMatrix", RenderDataType::Matrix44Float},
+        {"u_viewport", RenderDataType::Vector4Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
 const ShaderReplacementRule MESH_BACKFACE_NORMAL_FLIP (
     /* rule name */ "MESH_BACKFACE_NORMAL_FLIP",
     { /* replacement sources */
@@ -346,6 +364,8 @@ const ShaderReplacementRule MESH_BACKFACE_NORMAL_FLIP (
     /* attributes */ {},
     /* textures */ {}
 );
+
+
 
 const ShaderReplacementRule MESH_BACKFACE_DARKEN (
     /* rule name */ "MESH_BACKFACE_DARKEN",
