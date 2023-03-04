@@ -110,13 +110,13 @@ void SurfaceMesh::computeConnectivityData() {
 
   // fill out these buffers as we construct the triangulation
   triangleVertexIndsData.clear();
-  triangleVertexIndsData.reserve(3 * nFacesTriangulationCount);
+  triangleVertexIndsData.resize(3 * nFacesTriangulationCount);
   triangleFaceIndsData.clear();
-  triangleFaceIndsData.reserve(3 * nFacesTriangulationCount);
+  triangleFaceIndsData.resize(3 * nFacesTriangulationCount);
   baryCoordData.clear();
-  baryCoordData.reserve(3 * nFacesTriangulationCount);
+  baryCoordData.resize(3 * nFacesTriangulationCount);
   edgeIsRealData.clear();
-  edgeIsRealData.reserve(3 * nFacesTriangulationCount);
+  edgeIsRealData.resize(3 * nFacesTriangulationCount);
 
   // validate the face-vertex indices
   for (size_t iV : faceIndsEntries) {
@@ -126,6 +126,7 @@ void SurfaceMesh::computeConnectivityData() {
   }
 
   // construct the triangualted draw list and all other related data
+  size_t iTriFace = 0;
   for (size_t iF = 0; iF < numFaces; iF++) {
     size_t D = faceIndsStart[iF + 1] - faceIndsStart[iF];
 
@@ -138,17 +139,17 @@ void SurfaceMesh::computeConnectivityData() {
       uint32_t vC = faceIndsEntries[iStart + ((j + 1) % D)];
 
       // triangle vertex indices
-      triangleVertexIndsData.push_back(vRoot);
-      triangleVertexIndsData.push_back(vB);
-      triangleVertexIndsData.push_back(vC);
+      triangleVertexIndsData[3 * iTriFace + 0] = vRoot;
+      triangleVertexIndsData[3 * iTriFace + 1] = vB;
+      triangleVertexIndsData[3 * iTriFace + 2] = vC;
 
       // triangle face indices
-      for (size_t k = 0; k < 3; k++) triangleFaceIndsData.push_back(iF);
+      for (size_t k = 0; k < 3; k++) triangleFaceIndsData[3 * iTriFace + k] = iF;
 
       // barycentric coordinates
-      baryCoord.data.push_back(glm::vec3{1., 0., 0.});
-      baryCoord.data.push_back(glm::vec3{0., 1., 0.});
-      baryCoord.data.push_back(glm::vec3{0., 0., 1.});
+      baryCoordData[3 * iTriFace + 0] = glm::vec3{1., 0., 0.};
+      baryCoordData[3 * iTriFace + 1] = glm::vec3{0., 1., 0.};
+      baryCoordData[3 * iTriFace + 2] = glm::vec3{0., 0., 1.};
 
       // internal edges for triangulated polygons
       glm::vec3 edgeRealV{0., 1., 0.};
@@ -158,9 +159,9 @@ void SurfaceMesh::computeConnectivityData() {
       if (j + 2 == D) {
         edgeRealV.z = 1.;
       }
-      edgeIsRealData.push_back(edgeRealV);
-      edgeIsRealData.push_back(edgeRealV);
-      edgeIsRealData.push_back(edgeRealV);
+      for (size_t k = 0; k < 3; k++) edgeIsRealData[3 * iTriFace + k] = edgeRealV;
+
+      iTriFace++;
     }
   }
 
@@ -400,7 +401,7 @@ void SurfaceMesh::computeFaceAreas() {
       fA = 0.5 * glm::length(fN);
     } else {
       fA = 0;
-      glm::vec3 pRoot = vertexPositions.data[faceIndsStart[start]];
+      glm::vec3 pRoot = vertexPositions.data[faceIndsEntries[start]];
       for (size_t j = 1; j + 1 < D; j++) {
         glm::vec3 pA = vertexPositions.data[faceIndsEntries[start + j]];
         glm::vec3 pB = vertexPositions.data[faceIndsEntries[start + j + 1]];
@@ -428,8 +429,8 @@ void SurfaceMesh::computeVertexNormals() {
 
   // Accumulate quantities from each face
   for (size_t iF = 0; iF < nFaces(); iF++) {
-    size_t D = faceIndsStart[iF + 1] - faceIndsStart[iF];
     size_t start = faceIndsStart[iF];
+    size_t D = faceIndsStart[iF + 1] - start;
     for (size_t j = 0; j < D; j++) {
       size_t iV = faceIndsEntries[start + j];
       vertexNormals.data[iV] += faceNormals.data[iF] * static_cast<float>(faceAreas.data[iF]);
