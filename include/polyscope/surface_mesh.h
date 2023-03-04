@@ -66,6 +66,10 @@ public:
   // initializes members
   SurfaceMesh(std::string name);
 
+  // From flattened list
+  SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
+              const std::vector<uint32_t>& faceIndsEntries, const std::vector<uint32_t>& faceIndsStart);
+
   // Construct from a nested face list
   SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
               const std::vector<std::vector<size_t>>& faceIndices);
@@ -102,8 +106,8 @@ public:
   render::ManagedBuffer<uint32_t> triangleCornerInds;   // on the split, triangulated mesh [3 * 3 * nTriFace]
 
   // internal triangle data for rendering
-  render::ManagedBuffer<glm::vec3> baryCoord;   // on the split, triangulated mesh [3 * nTriFace]
-  render::ManagedBuffer<glm::vec3> edgeIsReal;  // on the split, triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<glm::vec3> baryCoord;  // on the split, triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<glm::vec3> edgeIsReal; // on the split, triangulated mesh [3 * nTriFace]
 
   // other internally-computed geometry
   render::ManagedBuffer<glm::vec3> faceNormals;
@@ -241,7 +245,7 @@ public:
   size_t nFacesTriangulationCount = 0;
   size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
 
-  size_t nEdgesCount = 0; // populating this is expensive...
+  size_t nEdgesCount = 0;                       // populating this is expensive...
   size_t nEdges() const { return nEdgesCount; } // WARNING: returns 0 until something involving edges has been done
 
   size_t nCornersCount = 0; // = nHalfedges = sum face degree
@@ -334,7 +338,8 @@ public:
 
 private:
   // == Mesh geometry buffers
-  // Storage for the managed buffers above. You should generally interact with these through the managed buffers, not these members.
+  // Storage for the managed buffers above. You should generally interact with these through the managed buffers, not
+  // these members.
 
   // positions
   std::vector<glm::vec3> vertexPositionsData;

@@ -65,12 +65,24 @@ shadeStyle(             uniquePrefix() + "shadeStyle",      MeshShadeStyle::Flat
 {}
 
 SurfaceMesh::SurfaceMesh(std::string name_, const std::vector<glm::vec3>& vertexPositions_,
+                         const std::vector<uint32_t>& faceIndsEntries_, const std::vector<uint32_t>& faceIndsStart_)
+    : SurfaceMesh(name_) {
+
+  vertexPositionsData = vertexPositions_;
+  faceIndsEntries = faceIndsEntries_;
+  faceIndsStart = faceIndsStart_;
+
+  computeConnectivityData();
+  updateObjectSpaceBounds();
+}
+
+SurfaceMesh::SurfaceMesh(std::string name_, const std::vector<glm::vec3>& vertexPositions_,
                          const std::vector<std::vector<size_t>>& facesIn)
     : SurfaceMesh(name_) {
 
   vertexPositionsData = vertexPositions_;
-
   nestedFacesToFlat(facesIn);
+
   computeConnectivityData();
   updateObjectSpaceBounds();
 }

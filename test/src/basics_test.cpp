@@ -307,6 +307,67 @@ TEST_F(PolyscopeTest, ShowSurfaceMesh) {
   EXPECT_FALSE(polyscope::hasSurfaceMesh("test1"));
 }
 
+TEST_F(PolyscopeTest, SurfaceMesh2D) {
+  // test meshes with 2D vertex positions
+
+  std::vector<glm::vec2> points;
+  std::vector<std::vector<size_t>> faces;
+
+  // clang-format off
+  points = {
+    {1, 0},
+    {0, 1},
+    {0, 0},
+    {0, 0},
+  };
+
+  faces = {
+    {1, 3, 2},
+    {3, 1, 0},
+    {2, 0, 1},
+    {0, 2, 3}
+   };
+  // clang-format on
+
+  polyscope::registerSurfaceMesh2D("mesh2d", points, faces);
+
+  // Make sure we actually added the mesh
+  polyscope::show(3);
+  EXPECT_TRUE(polyscope::hasSurfaceMesh("mesh2d"));
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SurfaceMeshPolygon) {
+  // meshes with polygonal (greater-than-triangular) faces
+  std::vector<glm::vec2> points;
+  std::vector<std::vector<size_t>> faces;
+
+  // clang-format off
+  points = {
+    {1, 0},
+    {0, 1},
+    {0, 0},
+    {0, 0},
+  };
+
+  faces = {
+    {1, 3, 2, 0},
+    {3, 1, 0},
+    {2, 0, 1, 3},
+    {0, 2, 3}
+   };
+  // clang-format on
+
+  polyscope::registerSurfaceMesh2D("mesh poly", points, faces);
+
+  // Make sure we actually added the mesh
+  polyscope::show(3);
+  EXPECT_TRUE(polyscope::hasSurfaceMesh("mesh poly"));
+
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, SurfaceMeshAppearance) {
   auto psMesh = registerTriangleMesh();
 

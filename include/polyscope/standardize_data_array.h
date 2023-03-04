@@ -14,7 +14,7 @@
 
 // == "How do these work", 
 // Quick guide assuming only a basic knowledge of C++ & templates
-// // Nicholas Sharp (nsharp@cs.cmu.edu)
+// Nicholas Sharp (nsharp@cs.cmu.edu)
 //
 // These templates use a technique called SFINAE, which abuses C++'s function 
 // resolution rules to consider many version of a function, and pick the one 
@@ -246,7 +246,7 @@ template <class T, class S,
   /* condition: user defined function exists and returns something that can be bracket-indexed to get an S */
   typename C1 = typename std::enable_if< std::is_same<decltype((S)adaptorF_custom_convertToStdVector(std::declval<T>())[0]), S>::value>::type>
 
-std::vector<S> adaptorF_convertToStdVectorImpl(PreferenceT<4>, const T& inputData) {
+void adaptorF_convertToStdVectorImpl(PreferenceT<4>, const T& inputData, std::vector<S>& out) {
   auto userVec = adaptorF_custom_convertToStdVector(inputData);
 
   // If the user-provided function returns something else, try to convert it to a std::vector<S>.
@@ -254,11 +254,11 @@ std::vector<S> adaptorF_convertToStdVectorImpl(PreferenceT<4>, const T& inputDat
   // In the case where the user function already returns what we want, this costs us an extra copy...
   // maybe one day we can dive back in to template land to remedy.
   
-  std::vector<S> out(userVec.size());
+  out.resize(userVec.size());
+
   for (size_t i = 0; i < out.size(); i++) {
     out[i] = userVec[i];
   }
-  return out;
 }
 
 
@@ -267,13 +267,12 @@ template <class T, class S,
   /* condition: input can be bracket-indexed to get an S */
   typename C1 = typename std::enable_if<std::is_same<decltype((S)(std::declval<T>())[(size_t)0]), S>::value>::type>
 
-std::vector<S> adaptorF_convertToStdVectorImpl(PreferenceT<3>, const T& inputData) {
+void adaptorF_convertToStdVectorImpl(PreferenceT<3>, const T& inputData, std::vector<S>& dataOut) {
   size_t dataSize = adaptorF_size(inputData);
-  std::vector<S> dataOut(dataSize);
+  dataOut.resize(dataSize);
   for (size_t i = 0; i < dataSize; i++) {
     dataOut[i] = inputData[i];
   }
-  return dataOut;
 }
 
 
@@ -282,13 +281,12 @@ template <class T, class S,
   /* condition: input can be called (aka parenthesis-indexed) to get an S */
   typename C1 = typename std::enable_if<std::is_same<decltype((S)(std::declval<T>())((size_t)0)), S>::value>::type>
 
-std::vector<S> adaptorF_convertToStdVectorImpl(PreferenceT<2>, const T& inputData) {
+void adaptorF_convertToStdVectorImpl(PreferenceT<2>, const T& inputData, std::vector<S>& dataOut) {
   size_t dataSize = adaptorF_size(inputData);
-  std::vector<S> dataOut(dataSize);
+  dataOut.resize(dataSize);
   for (size_t i = 0; i < dataSize; i++) {
     dataOut[i] = inputData(i);
   }
-  return dataOut;
 }
 
 
@@ -299,15 +297,14 @@ template <class T, class S,
   typename C1 = typename std::enable_if<std::is_same<decltype((S)*std::begin(std::declval<T>())), S>::value &&
                                         std::is_same<decltype((S)*std::end(std::declval<T>())), S>::value>::type>
 
-std::vector<S> adaptorF_convertToStdVectorImpl(PreferenceT<1>, const T& inputData) {
+void adaptorF_convertToStdVectorImpl(PreferenceT<1>, const T& inputData, std::vector<S>& dataOut) {
   size_t dataSize = adaptorF_size(inputData);
-  std::vector<S> dataOut(dataSize);
+  dataOut.resize(dataSize);
   size_t i = 0;
   for (auto v : inputData) {
     dataOut[i] = v;
     i++;
   }
-  return dataOut;
 }
 
 
@@ -315,17 +312,16 @@ std::vector<S> adaptorF_convertToStdVectorImpl(PreferenceT<1>, const T& inputDat
 // We use this to print a slightly less scary error message.
 #ifndef POLYSCOPE_NO_STANDARDIZE_FALLTHROUGH
 template <class T, class S>
-std::vector<S> adaptorF_convertToStdVectorImpl(PreferenceT<0>, const T& inputData) {
+void adaptorF_convertToStdVectorImpl(PreferenceT<0>, const T& inputData, std::vector<S>& dataOut) {
   static_assert(WillBeFalseT<T>::value, "could not resolve valid adaptor for accessing array-like data");
-  return std::vector<S>();
 }
 #endif
 
 
 // General version, which will attempt to substitute in to the variants above
 template <class S, class T>
-std::vector<S> adaptorF_convertToStdVector(const T& inputData) {
-  return adaptorF_convertToStdVectorImpl<T, S>(PreferenceT<4>{}, inputData);
+void adaptorF_convertToStdVector(const T& inputData, std::vector<S>& dataOut) {
+  adaptorF_convertToStdVectorImpl<T, S>(PreferenceT<4>{}, inputData, dataOut);
 }
 
 
@@ -811,38 +807,40 @@ inline void adaptorF_custom_convertNestedArrayToStdVector(void* dont_use) {
 }
 
 // Highest priority: user-specified function
-template <class S, class T,
-    /* condition: user function must be return a nested std::vector of S */
-    typename C1 = typename std::enable_if<std::is_same<
-                                          decltype((S)(adaptorF_custom_convertNestedArrayToStdVector(std::declval<T>()))[0][0]), 
-                                          S>::value>::type>
+template <class S, class I, class T,
+    /* condition: user function must be return a tuple of vectors with the compatible type (techincally this just checks for bracket-indexible-thing */
+    typename C1 = typename std::enable_if<std::is_same<decltype((S)std::get<0>(adaptorF_custom_convertNestedArrayToStdVector(std::declval<T>()))[0]), S>::value>::type,
+    typename C2 = typename std::enable_if<std::is_same<decltype((I)std::get<1>(adaptorF_custom_convertNestedArrayToStdVector(std::declval<T>()))[0]), I>::value>::type
+  >
 
-std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<5>, const T& inputData) {
+std::tuple<std::vector<S>, std::vector<I>>
+adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<5>, const T& inputData) {
 
-  // should be std::vector<std::vector<USER_SCALAR>>
-  auto userArr = adaptorF_custom_convertNestedArrayToStdVector(inputData);
+  // should be std::tuple<std::vector<S>, std::vector<I>>
+  auto userArrTuple = adaptorF_custom_convertNestedArrayToStdVector(inputData);
+  auto userDataArr = std::get<0>(userArrTuple);
+  auto userDataStartArr = std::get<1>(userArrTuple);
 
-  // This results in an extra copy, which isn't reallllly necessary
+  // TODO: question for past Nick, why do we do this copy for every custom function?
 
-  size_t outerSize = userArr.size();
-  std::vector<std::vector<S>> dataOut(outerSize);
+  // create output tuples
+  size_t dataSize = userDataArr.size();
+  size_t dataStartSize = userDataStartArr.size();
+  std::tuple<std::vector<S>, std::vector<I>> outTuple;
+  std::vector<S>& dataOut = std::get<0>(outTuple);
+  std::vector<I>& dataStartOut = std::get<1>(outTuple);
+  dataOut.resize(dataSize);
+  dataStartOut.resize(dataStartSize);
 
-  for (size_t i = 0; i < outerSize; i++) {
-
-    size_t innerSize = userArr[i].size();
-    dataOut[i].resize(innerSize);
-
-    for (size_t j = 0; j < innerSize; j++) {
-      dataOut[i][j] = userArr[i][j];
-    }
-  }
-
-  return dataOut;
+  // copy data over
+  for (size_t i = 0; i < dataSize; i++) dataOut[i] = userDataArr[i];
+  for (size_t i = 0; i < dataStartSize; i++) dataStartOut[i] = userDataStartArr[i];
+  return std::move(outTuple);
 }
 
 
 // Next: any dense callable (parenthesis) access operator
-template <class S, class T,
+template <class S, class I, class T,
     /* condition: must have .rows() function which return something like size_t */
     typename C1 = typename std::enable_if<std::is_same<decltype((size_t)(std::declval<T>()).rows()), size_t>::value>::type,
     /* condition: must have .cols() function which return something like size_t */
@@ -850,111 +848,146 @@ template <class S, class T,
     /* condition: must have be able to call with two size_t arguments to get something that can be cast to S */
     typename C3 = typename std::enable_if<std::is_same<decltype((S)(std::declval<T>())((size_t)0, (size_t)0)), S>::value>::type>
 
-std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<4>, const T& inputData) {
+std::tuple<std::vector<S>, std::vector<I>>
+adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<4>, const T& inputData) {
 
   size_t outerSize = (size_t)inputData.rows();
   size_t innerSize = (size_t)inputData.cols();
+  
+  std::tuple<std::vector<S>, std::vector<I>> outTuple;
+  std::vector<S>& dataOut = std::get<0>(outTuple);
+  std::vector<I>& dataStartOut = std::get<1>(outTuple);
+  dataOut.resize(outerSize*innerSize);
+  dataStartOut.resize(outerSize+1);
 
-  std::vector<std::vector<S>> dataOut(outerSize);
-  for (size_t i = 0; i < outerSize; i++) {
-    dataOut[i].resize(innerSize);
-  }
+  dataStartOut[0] = 0;
 
   for (size_t i = 0; i < outerSize; i++) {
     for (size_t j = 0; j < innerSize; j++) {
-      dataOut[i][j] = inputData(i, j);
+      dataOut[innerSize * i + j] = inputData(i, j);
     }
+    dataStartOut[i+1] = innerSize * (i + 1);
   }
 
-  return dataOut;
+  return std::move(outTuple);
 }
 
 
 // Next: recusive unpacking with bracket
-template <class S, class T, 
+template <class S, class I, class T,
     /* helper type: the result of bracket access on the outer type */
     typename T_INNER = typename std::remove_reference<decltype((std::declval<T>())[0])>::type,
-    /* helper type: the result of running array conversion to S on the inner type */
-    typename T_INNER_RES = typename std::remove_reference<decltype(adaptorF_convertToStdVector<S>(std::declval<T_INNER>())[0])>::type,
-    /* condition: T_INNER_RES must be castable to the inner output type S */
-    typename C1 = typename std::enable_if<std::is_same<decltype((S)(std::declval<T_INNER_RES>())), S>::value>::type>
-
-std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<3>, const T& inputData) {
+    /* condition: ensure that calling the inner array adaptor works */
+    typename C1 = decltype(adaptorF_convertToStdVector<S>(std::declval<T_INNER>(), std::declval<std::vector<S>&>()))
+  >
+std::tuple<std::vector<S>, std::vector<I>>
+adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<3>, const T& inputData) {
 
   size_t outerSize = adaptorF_size(inputData);
-  std::vector<std::vector<S>> dataOut(outerSize);
+  
+  std::tuple<std::vector<S>, std::vector<I>> outTuple;
+  std::vector<S>& dataOut = std::get<0>(outTuple);
+  std::vector<I>& dataStartOut = std::get<1>(outTuple);
+  dataStartOut.resize(outerSize+1);
+
+  std::vector<S> tempVec;
 
   for (size_t i = 0; i < outerSize; i++) {
-    dataOut[i] = adaptorF_convertToStdVector<S>(inputData[i]);
+    adaptorF_convertToStdVector<S>(inputData[i], tempVec);
+    for(auto& s : tempVec) {
+      dataOut.push_back(s);
+    }
+    dataStartOut[i+1] = dataOut.size();
   }
 
-  return dataOut;
+  return std::move(outTuple);
 }
 
 // Next: recusive unpacking with paren
-template <class S, class T, 
+template <class S, class I, class T,
     /* helper type: the result of paren access on the outer type */
     typename T_INNER = typename std::remove_reference<decltype((std::declval<T>())(0))>::type,
-    /* helper type: the result of running array conversion to S on the inner type */
-    typename T_INNER_RES = typename std::remove_reference<decltype(adaptorF_convertToStdVector<S>(std::declval<T_INNER>())[0])>::type,
-    /* condition: T_INNER_RES must be castable to the inner output type S */
-    typename C1 = typename std::enable_if<std::is_same<decltype((S)(std::declval<T_INNER_RES>())), S>::value>::type>
+    /* condition: ensure that calling the inner array adaptor works */
+    typename C1 = decltype(adaptorF_convertToStdVector<S>(std::declval<T_INNER>(), std::declval<std::vector<S>&>()))
+  >
 
-std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<2>, const T& inputData) {
+std::tuple<std::vector<S>, std::vector<I>>
+adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<2>, const T& inputData) {
 
   size_t outerSize = adaptorF_size(inputData);
-  std::vector<std::vector<S>> dataOut(outerSize);
+  
+  std::tuple<std::vector<S>, std::vector<I>> outTuple;
+  std::vector<S>& dataOut = std::get<0>(outTuple);
+  std::vector<I>& dataStartOut = std::get<1>(outTuple);
+  dataStartOut.resize(outerSize+1);
+  
+  std::vector<S> tempVec;
 
   for (size_t i = 0; i < outerSize; i++) {
-    dataOut[i] = adaptorF_convertToStdVector<S>(inputData(i));
+    adaptorF_convertToStdVector<S>(inputData(i), tempVec);
+    for(auto& s : tempVec) {
+      dataOut.push_back(s);
+    }
+    dataStartOut[i+1] = dataOut.size();
   }
 
-  return dataOut;
+  return std::move(outTuple);
 }
 
 
 // Next: recusive unpacking with iterable
-template <class S, class T, 
+template <class S, class I, class T,
     /* helper type: the result of dereferencing begin() on the outer type */
     typename T_INNER = typename std::remove_reference<decltype(*(std::declval<T>()).begin())>::type,
     /* helper type: the result of dereferencing end() on the outer type */
     typename T_INNER_END = typename std::remove_reference<decltype(*(std::declval<T>()).end())>::type,
-    /* helper type: the result of running array conversion to S on the inner type */
-    typename T_INNER_RES = typename std::remove_reference<decltype(adaptorF_convertToStdVector<S>(std::declval<T_INNER>())[0])>::type,
-    /* condition: T_INNER_RES must be castable to the inner output type S */
-    typename C1 = typename std::enable_if< std::is_same<T_INNER, T_INNER_END>::value>::type,
-    /* condition: T_INNER_RES must be castable to the inner output type S */
-    typename C2 = typename std::enable_if<std::is_same<decltype((S)(std::declval<T_INNER_RES>())), S>::value>::type>
+    /* condition: ensure that calling the inner array adaptor works */
+    typename C1 = decltype(adaptorF_convertToStdVector<S>(std::declval<T_INNER>(), std::declval<std::vector<S>&>())),
+    /* condition: T_INNER must match T_INNER_END */
+    typename C2 = typename std::enable_if< std::is_same<T_INNER, T_INNER_END>::value>::type
+  >
 
-std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<1>, const T& inputData) {
+std::tuple<std::vector<S>, std::vector<I>>
+adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<1>, const T& inputData) {
 
   size_t outerSize = adaptorF_size(inputData);
-  std::vector<std::vector<S>> dataOut(outerSize);
+  
+  std::tuple<std::vector<S>, std::vector<I>> outTuple;
+  std::vector<S>& dataOut = std::get<0>(outTuple);
+  std::vector<I>& dataStartOut = std::get<1>(outTuple);
+  dataStartOut.resize(outerSize+1);
+
+  std::vector<S> tempVec;
 
   size_t i = 0;
   for (const auto& n : inputData) {
-    dataOut[i] = adaptorF_convertToStdVector<S>(n);
+    adaptorF_convertToStdVector<S>(n, tempVec);
+    for(auto& s : tempVec) {
+      dataOut.push_back(s);
+    }
+    dataStartOut[i+1] = dataOut.size();
     i++;
   }
 
-  return dataOut;
+  return std::move(outTuple);
 }
 
 // Fall-through case: no overload found :(
 // We use this to print a slightly less scary error message.
 #ifndef POLYSCOPE_NO_STANDARDIZE_FALLTHROUGH
-template <class S, class T>
-std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVector(PreferenceT<0>, const T& inputData) {
+template <class S, class I, class T>
+std::tuple<std::vector<S>, std::vector<I>>
+adaptorF_convertNestedArrayToStdVector(PreferenceT<0>, const T& inputData) {
   static_assert(WillBeFalseT<T>::value, "could not resolve valid adaptor for accessing nested-array-like input data");
-  return std::vector<std::vector<S>>();
+  return std::tuple<std::vector<S>, std::vector<I>>();
 }
 #endif
 
 
 // General version, which will attempt to substitute in to the variants above
-template <class S, class T>
-std::vector<std::vector<S>> adaptorF_convertNestedArrayToStdVector(const T& inputData) {
-  return adaptorF_convertNestedArrayToStdVectorImpl<S, T>(PreferenceT<5>{}, inputData);
+template <class S, class I, class T>
+std::tuple<std::vector<S>, std::vector<I>> adaptorF_convertNestedArrayToStdVector(const T& inputData) {
+  return adaptorF_convertNestedArrayToStdVectorImpl<S, I, T>(PreferenceT<5>{}, inputData);
 }
 
 // clang-format on
@@ -1040,7 +1073,9 @@ O standardizeVector3D(const T& inputVec) {
 // class T: input array type
 template <class D, class T>
 std::vector<D> standardizeArray(const T& inputData) {
-  return adaptorF_convertToStdVector<D, T>(inputData);
+  std::vector<D> out;
+  adaptorF_convertToStdVector<D, T>(inputData, out);
+  return out;
 }
 
 // Convert an array of vector types
@@ -1056,9 +1091,9 @@ std::vector<O> standardizeVectorArray(const T& inputData) {
 // Convert a nested array where the inner types have variable length.
 // class S: innermost scalar type for output
 // class T: input nested array type
-template <class S, class T>
-std::vector<std::vector<S>> standardizeNestedList(const T& inputData) {
-  return adaptorF_convertNestedArrayToStdVector<S>(inputData);
+template <class S, class I, class T>
+std::tuple<std::vector<S>, std::vector<I>> standardizeNestedList(const T& inputData) {
+  return adaptorF_convertNestedArrayToStdVector<S, I>(inputData);
 }
 
 } // namespace polyscope

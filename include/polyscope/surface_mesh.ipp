@@ -9,8 +9,15 @@ template <class V, class F>
 SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
   checkInitialized();
 
-  SurfaceMesh* s = new SurfaceMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
-                                   standardizeNestedList<size_t, F>(faceIndices));
+  std::tuple<std::vector<uint32_t>, std::vector<uint32_t>> nestedListTup =
+      standardizeNestedList<uint32_t, uint32_t, F>(faceIndices);
+
+  std::vector<uint32_t>& faceIndsEntries = std::get<0>(nestedListTup);
+  std::vector<uint32_t>& faceIndsStart = std::get<1>(nestedListTup);
+
+  SurfaceMesh* s =
+      new SurfaceMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions), faceIndsEntries, faceIndsStart);
+
   bool success = registerStructure(s);
   if (!success) {
     safeDelete(s);
@@ -27,28 +34,7 @@ SurfaceMesh* registerSurfaceMesh2D(std::string name, const V& vertexPositions, c
     v.z = 0.;
   }
 
-  SurfaceMesh* s = new SurfaceMesh(name, positions3D, standardizeNestedList<size_t, F>(faceIndices));
-  bool success = registerStructure(s);
-  if (!success) {
-    safeDelete(s);
-  }
-
-  return s;
-}
-
-// Shorthand to add a mesh to polyscope while also setting permutations
-template <class V, class F, class P>
-SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
-                                 const std::array<std::pair<P, size_t>, 5>& perms) {
-  checkInitialized();
-
-  SurfaceMesh* s = registerSurfaceMesh(name, vertexPositions, faceIndices);
-
-  if (s) {
-    s->setAllPermutations(perms);
-  }
-
-  return s;
+  return registerSurfaceMesh(name, positions3D, faceIndices);
 }
 
 template <class V>
