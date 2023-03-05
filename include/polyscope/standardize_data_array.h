@@ -572,7 +572,7 @@ template <
     typename C1 = typename std::enable_if<std::is_same< 
                                           decltype((typename InnerType<O>::type)(adaptorF_custom_convertArrayOfVectorToStdVector(std::declval<T>()))[0][0]), 
                                           typename InnerType<O>::type>::value>::type>
-std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<8>, const T& inputData) {
+std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<9>, const T& inputData) {
 
   // should be std::vector<std::array<SCALAR,D>>
   auto userArr = adaptorF_custom_convertArrayOfVectorToStdVector(inputData);
@@ -586,6 +586,30 @@ std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<8>, cons
       dataOut[i][j] = userArr[i][j];
     }
   }
+  return dataOut;
+}
+
+// Next: tuple {data_ptr, size} (size is number of vector entries, so ptr should point to D*size valid entries)
+template <class O, unsigned int D, class T,
+    /* condition: first entry of input can be dereferenced to get a type castable to the scalar type O */
+    typename C_DATA = decltype(static_cast<typename InnerType<O>::type>(*std::get<0>(std::declval<T>()))),
+    /* condition: second entry of input is castable to an index type */
+    typename C_COUNT = decltype(static_cast<size_t>(std::get<1>(std::declval<T>())))
+  >
+
+std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<8>, const T& inputData) {
+
+  size_t dataSize = static_cast<size_t>(std::get<1>(inputData));
+  auto* dataPtr = std::get<0>(inputData);
+
+  std::vector<O> dataOut(dataSize);
+
+  for (size_t i = 0; i < dataSize; i++) {
+    for (size_t j = 0; j < D; j++) {
+      dataOut[i][j] = dataPtr[D * i + j];
+    }
+  }
+
   return dataOut;
 }
 
@@ -772,7 +796,7 @@ std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<0>, cons
 // General version, which will attempt to substitute in to the variants above
 template <class O, unsigned int D, class T>
 std::vector<O> adaptorF_convertArrayOfVectorToStdVector(const T& inputData) {
-  return adaptorF_convertArrayOfVectorToStdVectorImpl<O, D, T>(PreferenceT<8>{}, inputData);
+  return adaptorF_convertArrayOfVectorToStdVectorImpl<O, D, T>(PreferenceT<9>{}, inputData);
 }
 
 
@@ -814,7 +838,7 @@ template <class S, class I, class T,
   >
 
 std::tuple<std::vector<S>, std::vector<I>>
-adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<5>, const T& inputData) {
+adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<6>, const T& inputData) {
 
   // should be std::tuple<std::vector<S>, std::vector<I>>
   auto userArrTuple = adaptorF_custom_convertNestedArrayToStdVector(inputData);
@@ -835,6 +859,43 @@ adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<5>, const T& inputData) {
   // copy data over
   for (size_t i = 0; i < dataSize; i++) dataOut[i] = userDataArr[i];
   for (size_t i = 0; i < dataStartSize; i++) dataStartOut[i] = userDataStartArr[i];
+  return std::move(outTuple);
+}
+
+// Next: tuple {data_ptr, outer_size, inner_size}
+// This is LIMITED to rectangular data only
+// A Fx3 array would be passed as {ptr, F, 3}
+template <class S, class I, class T,
+    /* condition: first entry of input can be dereferenced to get a type castable to the scalar type O */
+    typename C_DATA = decltype(static_cast<S>(*std::get<0>(std::declval<T>()))),
+    /* condition: second & third entry of input is castable to an index type */
+    typename C_OUTER_COUNT = decltype(static_cast<size_t>(std::get<1>(std::declval<T>()))),
+    typename C_INNER_COUNT = decltype(static_cast<size_t>(std::get<2>(std::declval<T>())))
+  >
+
+std::tuple<std::vector<S>, std::vector<I>>
+adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<5>, const T& inputData) {
+
+  auto* dataPtr = std::get<0>(inputData);
+  size_t outerSize = static_cast<size_t>(std::get<1>(inputData));
+  size_t innerSize = static_cast<size_t>(std::get<2>(inputData));
+  
+  std::tuple<std::vector<S>, std::vector<I>> outTuple;
+  std::vector<S>& dataOut = std::get<0>(outTuple);
+  std::vector<I>& dataStartOut = std::get<1>(outTuple);
+
+  dataOut.resize(outerSize * innerSize);
+  dataStartOut.resize(outerSize+1);
+  
+  dataStartOut[0] = 0;
+
+  for (size_t i = 0; i < outerSize * innerSize; i++) {
+    dataOut[i] = dataPtr[i];
+  }
+  for (size_t i = 1; i <= outerSize; i++) {
+      dataStartOut[i] = i * innerSize;
+  }
+
   return std::move(outTuple);
 }
 
@@ -987,7 +1048,7 @@ adaptorF_convertNestedArrayToStdVector(PreferenceT<0>, const T& inputData) {
 // General version, which will attempt to substitute in to the variants above
 template <class S, class I, class T>
 std::tuple<std::vector<S>, std::vector<I>> adaptorF_convertNestedArrayToStdVector(const T& inputData) {
-  return adaptorF_convertNestedArrayToStdVectorImpl<S, I, T>(PreferenceT<5>{}, inputData);
+  return adaptorF_convertNestedArrayToStdVectorImpl<S, I, T>(PreferenceT<6>{}, inputData);
 }
 
 // clang-format on

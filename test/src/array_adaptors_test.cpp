@@ -290,6 +290,11 @@ TEST(ArrayAdaptorTests, adaptor_vector3) {
 // Test that access array of vectors works.
 TEST(ArrayAdaptorTests, adaptor_array_vectors) {
 
+
+  // {ptr, size} access
+  std::vector<std::array<double, 3>> data{{0.1, 0.2, 0.3}, {0.4, 0.5, 0.6}};
+  EXPECT_NEAR((polyscope::standardizeVectorArray<glm::vec3, 3>(std::make_tuple(&data[0][0], 2))[1][1]), 0.5, 1e-5);
+
   // bracket-bracket access
   EXPECT_NEAR(
       (polyscope::standardizeVectorArray<glm::vec3, 3>(std::vector<std::array<double, 3>>{{0.1, 0.2, 0.3}}))[0][0], 0.1,
@@ -344,6 +349,13 @@ TEST(ArrayAdaptorTests, adaptor_nested_array) {
   std::tuple<std::vector<int>, std::vector<size_t>> nestedListTup;
   std::vector<int>& dataEntries = std::get<0>(nestedListTup);
   std::vector<size_t>& dataStarts = std::get<1>(nestedListTup);
+  
+
+  // Test {ptr, outer, inner} access
+  std::vector<std::array<double, 3>> ptrData{{1, 2, 3}, {4, 5, 6}};
+  nestedListTup = polyscope::standardizeNestedList<int, size_t>(std::make_tuple(&ptrData[0][0], 2, 3));
+  EXPECT_EQ(dataEntries[4], 5);
+  EXPECT_EQ(dataStarts[1], 3);
 
   // Test matrix-style access
   nestedListTup = polyscope::standardizeNestedList<int, size_t>(fakeMatrix_int);
