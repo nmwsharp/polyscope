@@ -14,8 +14,8 @@ namespace polyscope {
 
 class VolumeMeshScalarQuantity : public VolumeMeshQuantity, public ScalarQuantity<VolumeMeshScalarQuantity> {
 public:
-  VolumeMeshScalarQuantity(std::string name, VolumeMesh& mesh_, std::string definedOn, const std::vector<double>& values_,
-                        DataType dataType);
+  VolumeMeshScalarQuantity(std::string name, VolumeMesh& mesh_, std::string definedOn,
+                           const std::vector<double>& values_, DataType dataType);
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
@@ -38,34 +38,32 @@ protected:
 class VolumeMeshVertexScalarQuantity : public VolumeMeshScalarQuantity {
 public:
   VolumeMeshVertexScalarQuantity(std::string name, const std::vector<double>& values_, VolumeMesh& mesh_,
-                              DataType dataType_ = DataType::STANDARD);
+                                 DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
   virtual std::shared_ptr<render::ShaderProgram> createSliceProgram() override;
   virtual void draw() override;
-  virtual void drawSlice(polyscope::SlicePlane *sp) override;
-
+  virtual void drawSlice(polyscope::SlicePlane* sp) override;
 
   void setLevelSetValue(float f);
   void setEnabledLevelSet(bool v);
   void setLevelSetVisibleQuantity(std::string name);
-  void setLevelSetUniforms(render::ShaderProgram &p);
-  void fillLevelSetData(render::ShaderProgram &p);
+  void setLevelSetUniforms(render::ShaderProgram& p);
+  void fillLevelSetData(render::ShaderProgram& p);
   std::shared_ptr<render::ShaderProgram> levelSetProgram;
-
-  void fillColorBuffers(render::ShaderProgram& p);
 
   void fillSliceColorBuffers(render::ShaderProgram& p);
 
   virtual void buildCustomUI() override;
+  virtual void buildScalarOptionsUI() override;
   void buildVertexInfoGUI(size_t vInd) override;
   virtual void refresh() override;
+
+  // TODO make these persistent values
 
   float levelSetValue;
   bool isDrawingLevelSet;
   VolumeMeshVertexScalarQuantity* showQuantity;
-
-
 };
 
 
@@ -76,13 +74,15 @@ public:
 class VolumeMeshCellScalarQuantity : public VolumeMeshScalarQuantity {
 public:
   VolumeMeshCellScalarQuantity(std::string name, const std::vector<double>& values_, VolumeMesh& mesh_,
-                            DataType dataType_ = DataType::STANDARD);
+                               DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
 
   void fillColorBuffers(render::ShaderProgram& p);
 
   void buildCellInfoGUI(size_t fInd) override;
+
+  // TODO support level set things like in the scalar case above
 };
 
 

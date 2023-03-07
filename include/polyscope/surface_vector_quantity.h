@@ -5,7 +5,6 @@
 #include "polyscope/render/engine.h"
 // #include "polyscope/ribbon_artist.h"
 #include "polyscope/surface_mesh.h"
-// #include "polyscope/vector_artist.h"
 #include "polyscope/vector_quantity.h"
 
 namespace polyscope {

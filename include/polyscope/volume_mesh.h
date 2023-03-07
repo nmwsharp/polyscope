@@ -43,21 +43,43 @@ public:
 
   // Construct a new volume mesh structure
   VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
-             const std::vector<std::array<int64_t, 8>>& cellIndices);
+             const std::vector<std::array<uint32_t, 8>>& cellIndices);
+
+  // TODO add constructors & adaptors without intermediate nested list
 
   // Build the imgui display
   virtual void buildCustomUI() override;
   virtual void buildCustomOptionsUI() override;
   virtual void buildPickUI(size_t localPickID) override;
 
+  // Render the the structure on screen
   virtual void draw() override;
   virtual void drawDelayed() override;
   virtual void drawPick() override;
-
   virtual void updateObjectSpaceBounds() override;
   virtual std::string typeName() override;
-
   virtual void refresh() override;
+
+  // == Geometric quantities
+  // (actually, these are wrappers around the private raw data members, but external users should interact with these
+  // wrappers)
+
+  // positions
+  render::ManagedBuffer<glm::vec3> vertexPositions;
+
+  // connectivity / indices
+  render::ManagedBuffer<uint32_t> triangleVertexInds; // on the split, triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleFaceInds;   // on the split, triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleCellInds;   // on the split, triangulated mesh [3 * nTriFace]
+
+  // internal triangle data for rendering
+  render::ManagedBuffer<glm::vec3> baryCoord;  // on the split, triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<glm::vec3> edgeIsReal; // on the split, triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<float> faceType;       // on the split, triangulated mesh [3 * nTriFace]
+
+  // other internally-computed geometry
+  render::ManagedBuffer<glm::vec3> faceNormals;
+  render::ManagedBuffer<glm::vec3> cellCenters;
 
   // === Quantity-related
   // clang-format off
@@ -82,50 +104,34 @@ public:
   void updateVertexPositions(const V& newPositions);
 
 
-  // === Indexing conventions
+  // === Indexing conventions & data
 
-  // Permutation arrays. Empty == default ordering
-  std::vector<size_t> vertexPerm;
-  std::vector<size_t> edgePerm;
-  std::vector<size_t> facePerm;
-  std::vector<size_t> cellPerm;
-
-  // Get the expected data length, either using the default convention or a permutation as above
-  size_t vertexDataSize;
-  size_t edgeDataSize;
-  size_t faceDataSize;
-  size_t cellDataSize;
+  std::vector<std::array<uint32_t, 8>> cells; // unused entries hold INVALID_IND
 
   // === Manage the mesh itself
 
-  // Core data
-  std::vector<glm::vec3> vertices;
-  std::vector<std::array<int64_t, 8>> cells; // holds unused indices hold INVALID_IND
-
   // Counts
-  size_t nVertices() const { return vertices.size(); }
-  size_t nCells() const { return cells.size(); }
+  size_t nVertices() { return vertexPositions.size(); }
+  size_t nCells() { return cells.size(); }
 
+  // In these face counts, the shared face between two cells is counted twice. (really it should face-side or half-face or something)
   size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
   size_t nFaces() const { return nFacesCount; }
 
   // Derived geometric quantities
-  std::vector<double> cellAreas;
-  std::vector<double> faceAreas;
-  std::vector<double> vertexAreas;
   std::vector<char> faceIsInterior; // a flat array whose order matches the iteration order of the mesh
 
   // = Mesh helpers
   VolumeCellType cellType(size_t i) const;
-  void computeCounts();       // call to populate counts and indices
-  void computeGeometryData(); // call to populate normals/areas/lengths
+  void computeCounts();           // call to populate counts and indices
+  void computeConnectivityData(); // call to populate indexing arrays
   std::vector<std::string> addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade = true,
                                               bool isSlice = false);
-  glm::vec3 cellCenter(size_t iC);
 
   // Manage a separate tetrahedral representation used for volumetric visualizations
   // (for a pure-tet mesh this will be the same as the cells array)
-  std::vector<std::array<int64_t, 4>> tets;
+  // TODO use a managed buffer for this
+  std::vector<std::array<uint32_t, 4>> tets;
   size_t nTets();
   void computeTets();    // fills tet buffer
   void ensureHaveTets(); //  ensure the tet buffer is filled (but don't rebuild if already done)
@@ -173,6 +179,27 @@ public:
 
 
 private:
+  // == Mesh geometry buffers
+  // Storage for the managed buffers above. You should generally interact with these through the managed buffers, not
+  // these members.
+
+  // positions
+  std::vector<glm::vec3> vertexPositionsData;
+
+  // connectivity / indices
+  std::vector<uint32_t> triangleVertexIndsData; // to the split, triangulated mesh
+  std::vector<uint32_t> triangleFaceIndsData;   // to the split, triangulated mesh
+  std::vector<uint32_t> triangleCellIndsData;   // to the split, triangulated mesh
+
+  // internal triangle data for rendering
+  std::vector<glm::vec3> baryCoordData;
+  std::vector<glm::vec3> edgeIsRealData;
+  std::vector<float> faceTypeData;
+
+  // other internally-computed geometry
+  std::vector<glm::vec3> faceNormalsData;
+  std::vector<glm::vec3> cellCentersData;
+
   // Visualization settings
   PersistentValue<glm::vec3> color;
   PersistentValue<glm::vec3> interiorColor;
@@ -188,7 +215,8 @@ private:
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
   void preparePick();
-  void geometryChanged(); // call whenever geometry changed
+  void geometryChanged();
+  void recomputeGeometryIfPopulated();
 
   // Picking-related
   // Order of indexing: vertices, cells
@@ -197,6 +225,10 @@ private:
   size_t cellPickIndStart;
   void buildVertexInfoGui(size_t vInd);
   void buildCellInfoGUI(size_t cInd);
+
+  /// == Compute indices & geometry data
+  void computeFaceNormals();
+  void computeCellCenters();
 
   // Gui implementation details
 
@@ -238,7 +270,7 @@ private:
 
   //void setVertexTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
   //void setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
-  // clang-format on
+  //  clang-format on
 };
 
 // Register functions

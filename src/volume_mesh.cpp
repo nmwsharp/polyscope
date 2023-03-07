@@ -6,6 +6,7 @@
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/utilities.h"
 #include "polyscope/volume_mesh_quantity.h"
 
 #include "imgui.h"
@@ -93,13 +94,47 @@ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilHex =
  };
 // clang-format on
 
-VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
-                       const std::vector<std::array<int64_t, 8>>& cellIndices)
-    : QuantityStructure<VolumeMesh>(name, typeName()), vertices(vertexPositions), cells(cellIndices),
-      color(uniquePrefix() + "color", getNextUniqueColor()),
-      interiorColor(uniquePrefix() + "interiorColor", color.get()),
-      edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
-      edgeWidth(uniquePrefix() + "edgeWidth", 0.), activeLevelSetQuantity(nullptr) {
+VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPositions_,
+                       const std::vector<std::array<uint32_t, 8>>& cellIndices_)
+    : QuantityStructure<VolumeMesh>(name, typeName()),
+      // clang-format off
+
+// == managed quantities
+
+// positions
+vertexPositions(        uniquePrefix() + "vertexPositions",     vertexPositionsData),
+
+// connectivity / indices
+triangleVertexInds(     uniquePrefix() + "triangleVertexInds",  triangleVertexIndsData),
+triangleFaceInds(       uniquePrefix() + "triangleFaceInds",    triangleFaceIndsData),
+triangleCellInds(       uniquePrefix() + "triangleCellInds",    triangleCellIndsData),
+
+// internal triangle data for rendering
+baryCoord(              uniquePrefix() + "baryCoord",           baryCoordData),
+edgeIsReal(             uniquePrefix() + "edgeIsReal",          edgeIsRealData),
+faceType(               uniquePrefix() + "faceType",            faceTypeData),
+
+// other internally-computed geometry
+faceNormals(            uniquePrefix() + "faceNormals",         faceNormalsData,        std::bind(&VolumeMesh::computeFaceNormals, this)),
+cellCenters(            uniquePrefix() + "cellCenters",         cellCentersData,        std::bind(&VolumeMesh::computeCellCenters, this)),         
+
+
+// == core input data
+cells(cellIndices_),
+vertexPositionsData(vertexPositions_), 
+
+// == persistent options
+color(uniquePrefix() + "color", getNextUniqueColor()),
+interiorColor(uniquePrefix() + "interiorColor", color.get()),
+edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}), 
+material(uniquePrefix() + "material", "clay"),
+edgeWidth(uniquePrefix() + "edgeWidth", 0.), 
+
+// == misc values
+activeLevelSetQuantity(nullptr) 
+{
+  // clang-format on
+
   cullWholeElements.setPassive(true);
 
   // set the interior color to be a desaturated version of the normal one
@@ -107,10 +142,82 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
   desatColorHSV.y *= 0.3;
   interiorColor.setPassive(HSVtoRGB(desatColorHSV));
 
-  updateObjectSpaceBounds();
   computeCounts();
-  computeGeometryData();
+  computeConnectivityData();
+  updateObjectSpaceBounds();
 }
+
+void VolumeMesh::computeCounts() {
+
+  // == Populate counts
+  nFacesCount = 0;
+  nFacesTriangulationCount = 0;
+
+  // == Populate interior/exterior faces
+  for (size_t iC = 0; iC < nCells(); iC++) {
+    const std::array<uint32_t, 8>& cell = cells[iC];
+    VolumeCellType cellT = cellType(iC);
+    // Iterate over faces
+    for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
+      nFacesCount++;
+      nFacesTriangulationCount += face.size();
+    }
+  }
+
+  // == Step 1: count occurences of each face
+  std::unordered_map<std::array<uint32_t, 4>, int, polyscope::hash_combine::hash<std::array<uint32_t, 4>>> faceCounts;
+
+  std::set<size_t> faceInds; // Scratch map
+
+  // Build a sorted list of the indices of this face
+
+  // Helper to build a sorted-index array for a face
+  auto generateSortedFace = [&](const std::array<uint32_t, 8>& cell, const std::vector<std::array<size_t, 3>>& face) {
+    faceInds.clear();
+    for (const std::array<size_t, 3>& tri : face) {
+      for (int j = 0; j < 3; j++) {
+        faceInds.insert(cell[tri[j]]);
+      }
+    }
+    std::array<uint32_t, 4> sortedFace{7777, 7777, 7777, 7777};
+    int j = 0;
+    for (size_t ind : faceInds) {
+      sortedFace[j] = ind;
+      j++;
+    }
+    return sortedFace;
+  };
+
+  // Iterate over cells
+  for (size_t iC = 0; iC < nCells(); iC++) {
+    const std::array<uint32_t, 8>& cell = cells[iC];
+    VolumeCellType cellT = cellType(iC);
+
+    // Iterate over faces
+    for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
+      std::array<uint32_t, 4> sortedFace = generateSortedFace(cell, face);
+      // Add to the count
+      if (faceCounts.find(sortedFace) == faceCounts.end()) {
+        faceCounts[sortedFace] = 0;
+      }
+      faceCounts[sortedFace]++;
+    }
+  }
+
+  // Iterate a second time; all faces which were seen more than once are inteior
+  faceIsInterior.clear();
+  for (size_t iC = 0; iC < nCells(); iC++) {
+    const std::array<uint32_t, 8>& cell = cells[iC];
+    VolumeCellType cellT = cellType(iC);
+
+    // Iterate over faces
+    for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
+      std::array<uint32_t, 4> sortedFace = generateSortedFace(cell, face);
+      faceIsInterior.push_back(faceCounts[sortedFace] > 1);
+    }
+  }
+}
+
 
 void VolumeMesh::computeTets() {
   // Algorithm from
@@ -129,7 +236,6 @@ void VolumeMesh::computeTets() {
       std::array<size_t, 8> rotatedNumbering;
       std::copy(rotationMap[sortedNumbering[0]].begin(), rotationMap[sortedNumbering[0]].end(),
                 rotatedNumbering.begin());
-      size_t n = 0;
       size_t diagCount = 0;
       auto checkDiagonal = [this, rotatedNumbering, iC](size_t a1, size_t a2, size_t b1, size_t b2) {
         return (cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b1]] &&
@@ -138,15 +244,12 @@ void VolumeMesh::computeTets() {
                 cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b2]]);
       };
       if (checkDiagonal(1, 7, 2, 5)) {
-        n += 4;
         diagCount++;
       }
       if (checkDiagonal(3, 7, 2, 6)) {
-        n += 2;
         diagCount++;
       }
       if (checkDiagonal(4, 7, 5, 6)) {
-        n += 1;
         diagCount++;
       }
       if (diagCount == 0) {
@@ -264,7 +367,12 @@ void VolumeMesh::removeSlicePlaneListener(polyscope::SlicePlane* sp) {
 
 void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
 
+  // TODO update this to use new standalone buffers
+
   ensureHaveTets();
+  vertexPositions.ensureHostBufferPopulated();
+
+  // TODO port this to managed buffers
 
   std::vector<glm::vec3> point1;
   std::vector<glm::vec3> point2;
@@ -276,10 +384,10 @@ void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
   point3.resize(tetCount);
   point4.resize(tetCount);
   for (size_t tetIdx = 0; tetIdx < tets.size(); tetIdx++) {
-    point1[tetIdx] = vertices[tets[tetIdx][0]];
-    point2[tetIdx] = vertices[tets[tetIdx][1]];
-    point3[tetIdx] = vertices[tets[tetIdx][2]];
-    point4[tetIdx] = vertices[tets[tetIdx][3]];
+    point1[tetIdx] = vertexPositions.data[tets[tetIdx][0]];
+    point2[tetIdx] = vertexPositions.data[tets[tetIdx][1]];
+    point3[tetIdx] = vertexPositions.data[tets[tetIdx][2]];
+    point4[tetIdx] = vertexPositions.data[tets[tetIdx][3]];
   }
 
   program.setAttribute("a_point_1", point1);
@@ -292,83 +400,6 @@ void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
   program.setAttribute("a_slice_4", point4);
 }
 
-void VolumeMesh::computeCounts() {
-
-  // ==== Populate counts
-  nFacesCount = 0;
-  nFacesTriangulationCount = 0;
-
-  vertexDataSize = nVertices();
-  edgeDataSize = 0; // TODO
-  faceDataSize = 0; // TODO
-  cellDataSize = nCells();
-
-  // ==== Populate interior/exterior faces
-  for (size_t iC = 0; iC < nCells(); iC++) {
-    const std::array<int64_t, 8>& cell = cells[iC];
-    VolumeCellType cellT = cellType(iC);
-    // Iterate over faces
-    for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
-      nFacesCount++;
-      nFacesTriangulationCount += face.size();
-    }
-  }
-
-  // == Step 1: count occurences of each face
-  std::unordered_map<std::array<int64_t, 4>, int, polyscope::hash_combine::hash<std::array<int64_t, 4>>> faceCounts;
-
-  std::set<size_t> faceInds; // Scratch map
-
-  // Build a sorted list of the indices of this face
-
-  // Helper to build a sorted-index array for a face
-  auto generateSortedFace = [&](const std::array<int64_t, 8>& cell, const std::vector<std::array<size_t, 3>>& face) {
-    faceInds.clear();
-    for (const std::array<size_t, 3>& tri : face) {
-      for (int j = 0; j < 3; j++) {
-        faceInds.insert(cell[tri[j]]);
-      }
-    }
-    std::array<int64_t, 4> sortedFace{-1, -1, -1, -1};
-    int j = 0;
-    for (size_t ind : faceInds) {
-      sortedFace[j] = ind;
-      j++;
-    }
-    return sortedFace;
-  };
-
-  // Iterate over cells
-  for (size_t iC = 0; iC < nCells(); iC++) {
-    const std::array<int64_t, 8>& cell = cells[iC];
-    VolumeCellType cellT = cellType(iC);
-
-    // Iterate over faces
-    for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
-      std::array<int64_t, 4> sortedFace = generateSortedFace(cell, face);
-      // Add to the count
-      if (faceCounts.find(sortedFace) == faceCounts.end()) {
-        faceCounts[sortedFace] = 0;
-      }
-      faceCounts[sortedFace]++;
-    }
-  }
-
-  // Iterate a second time; all faces which were seen more than once are inteior
-  faceIsInterior.clear();
-  for (size_t iC = 0; iC < nCells(); iC++) {
-    const std::array<int64_t, 8>& cell = cells[iC];
-    VolumeCellType cellT = cellType(iC);
-
-    // Iterate over faces
-    for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
-      std::array<int64_t, 4> sortedFace = generateSortedFace(cell, face);
-      faceIsInterior.push_back(faceCounts[sortedFace] > 1);
-    }
-  }
-}
-
-void VolumeMesh::computeGeometryData() {}
 
 VolumeMeshVertexScalarQuantity* VolumeMesh::getLevelSetQuantity() { return activeLevelSetQuantity; }
 
@@ -467,6 +498,8 @@ void VolumeMesh::preparePick() {
   pickProgram = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_PICK"}),
                                               render::ShaderReplacementDefaults::Pick);
 
+  fillGeometryBuffers(*pickProgram);
+
   // == Sort out element counts and index ranges
 
   // TODO for now only picking cells and vertices
@@ -483,69 +516,33 @@ void VolumeMesh::preparePick() {
 
   // == Fill buffers
 
-  std::vector<glm::vec3> positions;
-  std::vector<glm::vec3> normals;
-  std::vector<glm::vec3> bcoord;
-  std::vector<glm::vec3> edgeReal;
   std::vector<std::array<glm::vec3, 3>> vertexColors, edgeColors, halfedgeColors;
   std::vector<glm::vec3> faceColor;
-  std::vector<glm::vec3> barycenters;
-
-  bool wantsEdge = (getEdgeWidth() > 0);
-  bool wantsBarycenters = wantsCullPosition();
 
   // Reserve space
-  positions.resize(3 * nFacesTriangulation());
-  bcoord.resize(3 * nFacesTriangulation());
   vertexColors.resize(3 * nFacesTriangulation());
   edgeColors.resize(3 * nFacesTriangulation());
   halfedgeColors.resize(3 * nFacesTriangulation());
   faceColor.resize(3 * nFacesTriangulation());
-  normals.resize(3 * nFacesTriangulation());
-  if (wantsBarycenters) {
-    barycenters.resize(3 * nFacesTriangulation());
-  }
-  if (wantsEdge) {
-    edgeReal.resize(3 * nFacesTriangulation());
-  }
-
 
   size_t iFront = 0;
-  size_t iBack = 3 * nFacesTriangulation() - 3;
+  size_t iBack = nFacesTriangulation() - 1;
   size_t iF = 0;
   for (size_t iC = 0; iC < nCells(); iC++) {
-    const std::array<int64_t, 8>& cell = cells[iC];
+    const std::array<uint32_t, 8>& cell = cells[iC];
     VolumeCellType cellT = cellType(iC);
 
     glm::vec3 cellColor = pick::indToVec(cellGlobalPickIndStart + iC);
     std::array<glm::vec3, 3> cellColorArr{cellColor, cellColor, cellColor};
 
-    glm::vec3 barycenter;
-    if (wantsBarycenters) {
-      barycenter = cellCenter(iC);
-    }
-
     for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
-
-      // Do a first pass to compute a normal
-      glm::vec3 normal{0., 0., 0.};
-      for (const std::array<size_t, 3>& tri : face) {
-        glm::vec3 pA = vertices[cell[tri[0]]];
-        glm::vec3 pB = vertices[cell[tri[1]]];
-        glm::vec3 pC = vertices[cell[tri[2]]];
-        normal += glm::cross(pC - pB, pA - pB);
-      }
-      normal = glm::normalize(normal);
-
 
       // Emit the actual face in the triangulation
       for (size_t j = 0; j < face.size(); j++) {
         const std::array<size_t, 3>& tri = face[j];
 
-        std::array<glm::vec3, 3> vPos;
         std::array<glm::vec3, 3> vColor;
         for (int k = 0; k < 3; k++) {
-          vPos[k] = vertices[cell[tri[k]]];
           vColor[k] = pick::indToVec(static_cast<size_t>(cell[tri[k]]) + pickStart);
         }
 
@@ -554,44 +551,16 @@ void VolumeMesh::preparePick() {
         size_t iData;
         if (faceIsInterior[iF]) {
           iData = iBack;
-          iBack -= 3;
+          iBack--;
         } else {
           iData = iFront;
-          iFront += 3;
+          iFront++;
         }
 
-        for (int k = 0; k < 3; k++) {
-          positions[iData + k] = vPos[k];
-          normals[iData + k] = normal;
-          faceColor[iData + k] = cellColor;
-
-          // need to pass each per-vertex value for these, since they will be interpolated
-          vertexColors[iData + k] = vColor;
-          edgeColors[iData + k] = cellColorArr;
-          halfedgeColors[iData + k] = cellColorArr;
-        }
-
-        bcoord[iData + 0] = glm::vec3{1., 0., 0.};
-        bcoord[iData + 1] = glm::vec3{0., 1., 0.};
-        bcoord[iData + 2] = glm::vec3{0., 0., 1.};
-
-        if (wantsBarycenters) {
-          for (int k = 0; k < 3; k++) {
-            barycenters[iData + k] = barycenter;
-          }
-        }
-        if (wantsEdge) {
-          glm::vec3 edgeRealV{0., 1., 0.};
-          if (j == 0) {
-            edgeRealV.x = 1.;
-          }
-          if (j + 1 == face.size()) {
-            edgeRealV.z = 1.;
-          }
-          for (int k = 0; k < 3; k++) {
-            edgeReal[iData + k] = edgeRealV;
-          }
-        }
+        for (int k = 0; k < 3; k++) faceColor[3 * iData + k] = cellColor;
+        for (int k = 0; k < 3; k++) vertexColors[3 * iData + k] = vColor;
+        for (int k = 0; k < 3; k++) edgeColors[3 * iData + k] = cellColorArr;
+        for (int k = 0; k < 3; k++) halfedgeColors[3 * iData + k] = cellColorArr;
       }
 
       iF++;
@@ -600,19 +569,10 @@ void VolumeMesh::preparePick() {
 
 
   // Store data in buffers
-  pickProgram->setAttribute("a_position", positions);
-  pickProgram->setAttribute("a_barycoord", bcoord);
-  pickProgram->setAttribute("a_normal", normals);
   pickProgram->setAttribute<glm::vec3, 3>("a_vertexColors", vertexColors);
   pickProgram->setAttribute<glm::vec3, 3>("a_edgeColors", edgeColors);
   pickProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", halfedgeColors);
   pickProgram->setAttribute("a_faceColor", faceColor);
-  if (wantsBarycenters) {
-    pickProgram->setAttribute("a_cullPos", barycenters);
-  }
-  if (wantsEdge) {
-    pickProgram->setAttribute("a_edgeIsReal", edgeReal);
-  }
 }
 
 std::vector<std::string> VolumeMesh::addVolumeMeshRules(std::vector<std::string> initRules, bool withSurfaceShade,
@@ -644,6 +604,31 @@ void VolumeMesh::setVolumeMeshUniforms(render::ShaderProgram& p) {
 
 void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
 
+  p.setAttribute("a_vertexPositions", vertexPositions.getIndexedRenderAttributeBuffer(&triangleVertexInds));
+
+  p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(&triangleFaceInds));
+
+  bool wantsBary = p.hasAttribute("a_barycoord");
+  bool wantsEdge = (getEdgeWidth() > 0);
+  bool wantsAttrCullPosition = wantsCullPosition();
+  bool wantsFaceType = p.hasAttribute("a_faceColorType");
+
+  if (wantsBary) {
+    p.setAttribute("a_barycoord", baryCoord.getRenderAttributeBuffer());
+  }
+  if (wantsEdge) {
+    p.setAttribute("a_edgeIsReal", edgeIsReal.getRenderAttributeBuffer());
+  }
+  if (wantsAttrCullPosition) {
+    p.setAttribute("a_cullPos", cellCenters.getIndexedRenderAttributeBuffer(&triangleCellInds));
+  }
+  if (wantsFaceType) {
+    p.setAttribute("a_faceColorType", faceType.getIndexedRenderAttributeBuffer(&triangleFaceInds));
+  }
+}
+
+void VolumeMesh::computeConnectivityData() {
+
   // NOTE: If we were to fill buffers naively via a loop over cells, we get pretty bad z-fighting artifacts where
   // interior edges ever-so-slightly show through the exterior boundary (more generally, any place 3 faces meet at an
   // edge, which happens everywhere in a tet mesh).
@@ -652,136 +637,77 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   // that exterior faces always win depth ties. This doesn't totally eliminate the problem, but greatly improves the
   // most egregious cases.
 
-  std::vector<glm::vec3> positions;
-  std::vector<glm::vec3> normals;
-  std::vector<glm::vec3> bcoord;
-  std::vector<glm::vec3> edgeReal;
-  std::vector<double> faceTypes;
-  std::vector<glm::vec3> barycenters;
-
-  bool wantsBary = p.hasAttribute("a_barycoord");
-  bool wantsEdge = (getEdgeWidth() > 0);
-  bool wantsBarycenters = wantsCullPosition();
-  bool wantsFaceType = p.hasAttribute("a_faceColorType");
-
-  positions.resize(3 * nFacesTriangulation());
-  normals.resize(3 * nFacesTriangulation());
-  if (wantsBary) {
-    bcoord.resize(3 * nFacesTriangulation());
-  }
-  if (wantsEdge) {
-    edgeReal.resize(3 * nFacesTriangulation());
-  }
-  if (wantsBarycenters) {
-    barycenters.resize(3 * nFacesTriangulation());
-  }
-  if (wantsFaceType) {
-    faceTypes.resize(3 * nFacesTriangulation());
-  }
+  // == Allocate buffers
+  triangleVertexInds.data.clear();
+  triangleVertexInds.data.resize(3 * nFacesTriangulation());
+  triangleFaceInds.data.clear();
+  triangleFaceInds.data.resize(3 * nFacesTriangulation());
+  triangleCellInds.data.clear();
+  triangleCellInds.data.resize(3 * nFacesTriangulation());
+  triangleCellInds.data.clear();
+  triangleCellInds.data.resize(3 * nFacesTriangulation());
+  baryCoord.data.clear();
+  baryCoord.data.resize(3 * nFacesTriangulation());
+  edgeIsReal.data.clear();
+  edgeIsReal.data.resize(3 * nFacesTriangulation());
+  faceType.data.clear();
+  faceType.data.resize(nFaces());
 
   size_t iF = 0;
   size_t iFront = 0;
-  size_t iBack = 3 * nFacesTriangulation() - 3;
+  size_t iBack = nFacesTriangulation() - 1;
   for (size_t iC = 0; iC < nCells(); iC++) {
-    const std::array<int64_t, 8>& cell = cells[iC];
+    const std::array<uint32_t, 8>& cell = cells[iC];
     VolumeCellType cellT = cellType(iC);
 
-    glm::vec3 barycenter;
-    if (wantsBarycenters) {
-      barycenter = cellCenter(iC);
-    }
-
+    // Loop over all faces of the cell
     for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
 
-      // Do a first pass to compute a normal
-      glm::vec3 normal{0., 0., 0.};
-      for (const std::array<size_t, 3>& tri : face) {
-        glm::vec3 pA = vertices[cell[tri[0]]];
-        glm::vec3 pB = vertices[cell[tri[1]]];
-        glm::vec3 pC = vertices[cell[tri[2]]];
-        normal += glm::cross(pC - pB, pA - pB);
-      }
-      normal = glm::normalize(normal);
-
-      // Emit the actual face triangulation
+      // Loop over the face's triangulation
       for (size_t j = 0; j < face.size(); j++) {
         const std::array<size_t, 3>& tri = face[j];
 
-        // Push exterior faces to the front of the draw buffer, and interior faces to the back.
+        // Enumerate exterior faces in the front of the draw buffer, and interior faces in the back.
         // (see note above)
         size_t iData;
         if (faceIsInterior[iF]) {
           iData = iBack;
-          iBack -= 3;
+          iBack--;
         } else {
           iData = iFront;
-          iFront += 3;
+          iFront++;
         }
 
-        glm::vec3 pA = vertices[cell[tri[0]]];
-        glm::vec3 pB = vertices[cell[tri[1]]];
-        glm::vec3 pC = vertices[cell[tri[2]]];
-
-        positions[iData] = pA;
-        positions[iData + 1] = pB;
-        positions[iData + 2] = pC;
-
-        for (int k = 0; k < 3; k++) {
-          normals[iData + k] = normal;
+        for (size_t k = 0; k < 3; k++) {
+          triangleVertexInds.data[3 * iData + k] = cell[tri[k]];
         }
+        for (size_t k = 0; k < 3; k++) triangleFaceInds.data[3 * iData + k] = iF;
+        for (size_t k = 0; k < 3; k++) triangleCellInds.data[3 * iData + k] = iC;
 
-        if (wantsFaceType) {
-          float faceType = faceIsInterior[iF] ? 1. : 0.;
-          for (int k = 0; k < 3; k++) {
-            faceTypes[iData + k] = faceType;
-          }
-        }
+        baryCoord.data[3 * iData + 0] = glm::vec3{1., 0., 0.};
+        baryCoord.data[3 * iData + 1] = glm::vec3{0., 1., 0.};
+        baryCoord.data[3 * iData + 2] = glm::vec3{0., 0., 1.};
 
-        if (wantsBary) {
-          bcoord[iData + 0] = glm::vec3{1., 0., 0.};
-          bcoord[iData + 1] = glm::vec3{0., 1., 0.};
-          bcoord[iData + 2] = glm::vec3{0., 0., 1.};
-        }
-
-        if (wantsBarycenters) {
-          for (int k = 0; k < 3; k++) {
-            barycenters[iData + k] = barycenter;
-          }
-        }
-
-        if (wantsEdge) {
-          glm::vec3 edgeRealV{0., 1., 0.};
-          if (j == 0) {
-            edgeRealV.x = 1.;
-          }
-          if (j + 1 == face.size()) {
-            edgeRealV.z = 1.;
-          }
-          for (int k = 0; k < 3; k++) {
-            edgeReal[iData + k] = edgeRealV;
-          }
-        }
+        glm::vec3 edgeRealV{0., 1., 0.};
+        if (j == 0) edgeRealV.x = 1.;
+        if (j + 1 == face.size()) edgeRealV.z = 1.;
+        for (int k = 0; k < 3; k++) edgeIsReal.data[3 * iData + k] = edgeRealV;
       }
+
+      float faceTypeFloat = faceIsInterior[iF] ? 1. : 0.;
+      for (int k = 0; k < 3; k++) faceType.data[iF] = faceTypeFloat;
 
       iF++;
     }
   }
 
-  // Store data in buffers
-  p.setAttribute("a_position", positions);
-  p.setAttribute("a_normal", normals);
-  if (wantsBary) {
-    p.setAttribute("a_barycoord", bcoord);
-  }
-  if (wantsEdge) {
-    p.setAttribute("a_edgeIsReal", edgeReal);
-  }
-  if (wantsCullPosition()) {
-    p.setAttribute("a_cullPos", barycenters);
-  }
-  if (wantsFaceType) {
-    p.setAttribute("a_faceColorType", faceTypes);
-  }
+  triangleVertexInds.markHostBufferUpdated();
+  triangleFaceInds.markHostBufferUpdated();
+  triangleCellInds.markHostBufferUpdated();
+  triangleCellInds.markHostBufferUpdated();
+  baryCoord.markHostBufferUpdated();
+  edgeIsReal.markHostBufferUpdated();
+  faceType.markHostBufferUpdated();
 }
 
 const std::vector<std::vector<std::array<size_t, 3>>>& VolumeMesh::cellStencil(VolumeCellType type) {
@@ -796,21 +722,63 @@ const std::vector<std::vector<std::array<size_t, 3>>>& VolumeMesh::cellStencil(V
   return stencilTet;
 }
 
-glm::vec3 VolumeMesh::cellCenter(size_t iC) {
 
-  glm::vec3 center{0., 0., 0};
+void VolumeMesh::computeFaceNormals() {
 
-  int count = 0;
-  const std::array<int64_t, 8>& cell = cells[iC];
-  for (int j = 0; j < 8; j++) {
-    if (cell[j] >= 0) {
-      center += vertices[cell[j]];
-      count++;
+  vertexPositions.ensureHostBufferPopulated();
+
+  faceNormals.data.resize(nFaces());
+
+  size_t iF = 0;
+  for (size_t iC = 0; iC < nCells(); iC++) {
+    const std::array<uint32_t, 8>& cell = cells[iC];
+    VolumeCellType cellT = cellType(iC);
+
+    for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
+
+      // Do a first pass to compute a normal
+      glm::vec3 normal{0., 0., 0.};
+      for (const std::array<size_t, 3>& tri : face) {
+        glm::vec3 pA = vertexPositions.data[cell[tri[0]]];
+        glm::vec3 pB = vertexPositions.data[cell[tri[1]]];
+        glm::vec3 pC = vertexPositions.data[cell[tri[2]]];
+        normal += glm::cross(pC - pB, pA - pB);
+      }
+      normal = glm::normalize(normal);
+
+      faceNormals.data[iF] = normal;
+      iF++;
     }
   }
-  center /= count;
 
-  return center;
+  faceNormals.markHostBufferUpdated();
+}
+
+
+void VolumeMesh::computeCellCenters() {
+
+  vertexPositions.ensureHostBufferPopulated();
+
+  cellCenters.data.resize(nCells());
+
+  for (size_t iC = 0; iC < nCells(); iC++) {
+
+    glm::vec3 center{0., 0., 0};
+
+    int count = 0;
+    const std::array<uint32_t, 8>& cell = cells[iC];
+    for (int j = 0; j < 8; j++) {
+      if (cell[j] < INVALID_IND_32) {
+        center += vertexPositions.data[cell[j]];
+        count++;
+      }
+    }
+    center /= count;
+
+    cellCenters.data[iC] = center;
+  }
+
+  cellCenters.markHostBufferUpdated();
 }
 
 void VolumeMesh::buildPickUI(size_t localPickID) {
@@ -818,9 +786,7 @@ void VolumeMesh::buildPickUI(size_t localPickID) {
   // Selection type
   if (localPickID < cellPickIndStart) {
     buildVertexInfoGui(localPickID);
-  }
-  // TODO faces and edges
-  else {
+  } else {
     buildCellInfoGUI(localPickID - cellPickIndStart);
   }
 }
@@ -828,13 +794,10 @@ void VolumeMesh::buildPickUI(size_t localPickID) {
 void VolumeMesh::buildVertexInfoGui(size_t vInd) {
 
   size_t displayInd = vInd;
-  if (vertexPerm.size() > 0) {
-    displayInd = vertexPerm[vInd];
-  }
   ImGui::TextUnformatted(("Vertex #" + std::to_string(displayInd)).c_str());
 
   std::stringstream buffer;
-  buffer << vertices[vInd];
+  buffer << vertexPositions.getValue(vInd);
   ImGui::TextUnformatted(("Position: " + buffer.str()).c_str());
 
   ImGui::Spacing();
@@ -939,7 +902,6 @@ void VolumeMesh::refreshVolumeMeshListeners() {
 }
 
 void VolumeMesh::refresh() {
-  computeGeometryData();
   program.reset();
   pickProgram.reset();
   refreshVolumeMeshListeners();
@@ -948,29 +910,36 @@ void VolumeMesh::refresh() {
 }
 
 void VolumeMesh::geometryChanged() {
-  computeGeometryData();
+  recomputeGeometryIfPopulated();
+  if (program) fillGeometryBuffers(*program);
+  if (pickProgram) fillGeometryBuffers(*pickProgram);
   refreshVolumeMeshListeners();
-  if (program) {
-    fillGeometryBuffers(*program);
-  }
-  if (pickProgram) {
-    fillGeometryBuffers(*pickProgram);
-  }
   requestRedraw();
   QuantityStructure<VolumeMesh>::refresh();
 }
 
+void VolumeMesh::recomputeGeometryIfPopulated() {
+  faceNormals.recomputeIfPopulated();
+  cellCenters.recomputeIfPopulated();
+}
+
 VolumeCellType VolumeMesh::cellType(size_t i) const {
-  bool isTet = cells[i][4] < 0;
-  if (isTet) return VolumeCellType::TET;
-  return VolumeCellType::HEX;
+  bool isHex = cells[i][4] < INVALID_IND_32;
+  if (isHex) {
+    return VolumeCellType::HEX;
+  } else {
+    return VolumeCellType::TET;
+  }
 };
 
 void VolumeMesh::updateObjectSpaceBounds() {
+
+  vertexPositions.ensureHostBufferPopulated();
+
   // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
-  for (const glm::vec3& p : vertices) {
+  for (const glm::vec3& p : vertexPositions.data) {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
@@ -979,7 +948,7 @@ void VolumeMesh::updateObjectSpaceBounds() {
   // length scale, as twice the radius from the center of the bounding box
   glm::vec3 center = 0.5f * (min + max);
   float lengthScale = 0.0;
-  for (const glm::vec3& p : vertices) {
+  for (const glm::vec3& p : vertexPositions.data) {
     lengthScale = std::max(lengthScale, glm::length2(p - center));
   }
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);
@@ -1033,31 +1002,28 @@ double VolumeMesh::getEdgeWidth() { return edgeWidth.get(); }
 
 VolumeMeshVertexColorQuantity* VolumeMesh::addVertexColorQuantityImpl(std::string name,
                                                                       const std::vector<glm::vec3>& colors) {
-  VolumeMeshVertexColorQuantity* q =
-      new VolumeMeshVertexColorQuantity(name, applyPermutation(colors, vertexPerm), *this);
+  VolumeMeshVertexColorQuantity* q = new VolumeMeshVertexColorQuantity(name, *this, colors);
   addQuantity(q);
   return q;
 }
 
 VolumeMeshCellColorQuantity* VolumeMesh::addCellColorQuantityImpl(std::string name,
                                                                   const std::vector<glm::vec3>& colors) {
-  VolumeMeshCellColorQuantity* q = new VolumeMeshCellColorQuantity(name, applyPermutation(colors, cellPerm), *this);
+  VolumeMeshCellColorQuantity* q = new VolumeMeshCellColorQuantity(name, *this, colors);
   addQuantity(q);
   return q;
 }
 
 VolumeMeshVertexScalarQuantity*
 VolumeMesh::addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type) {
-  VolumeMeshVertexScalarQuantity* q =
-      new VolumeMeshVertexScalarQuantity(name, applyPermutation(data, vertexPerm), *this, type);
+  VolumeMeshVertexScalarQuantity* q = new VolumeMeshVertexScalarQuantity(name, data, *this, type);
   addQuantity(q);
   return q;
 }
 
 VolumeMeshCellScalarQuantity* VolumeMesh::addCellScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                     DataType type) {
-  VolumeMeshCellScalarQuantity* q =
-      new VolumeMeshCellScalarQuantity(name, applyPermutation(data, cellPerm), *this, type);
+  VolumeMeshCellScalarQuantity* q = new VolumeMeshCellScalarQuantity(name, data, *this, type);
   addQuantity(q);
   return q;
 }
@@ -1065,8 +1031,7 @@ VolumeMeshCellScalarQuantity* VolumeMesh::addCellScalarQuantityImpl(std::string 
 VolumeMeshVertexVectorQuantity* VolumeMesh::addVertexVectorQuantityImpl(std::string name,
                                                                         const std::vector<glm::vec3>& vectors,
                                                                         VectorType vectorType) {
-  VolumeMeshVertexVectorQuantity* q =
-      new VolumeMeshVertexVectorQuantity(name, applyPermutation(vectors, vertexPerm), *this, vectorType);
+  VolumeMeshVertexVectorQuantity* q = new VolumeMeshVertexVectorQuantity(name, vectors, *this, vectorType);
   addQuantity(q);
   return q;
 }
@@ -1074,8 +1039,7 @@ VolumeMeshVertexVectorQuantity* VolumeMesh::addVertexVectorQuantityImpl(std::str
 VolumeMeshCellVectorQuantity*
 VolumeMesh::addCellVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType) {
 
-  VolumeMeshCellVectorQuantity* q =
-      new VolumeMeshCellVectorQuantity(name, applyPermutation(vectors, cellPerm), *this, vectorType);
+  VolumeMeshCellVectorQuantity* q = new VolumeMeshCellVectorQuantity(name, vectors, *this, vectorType);
   addQuantity(q);
   return q;
 }

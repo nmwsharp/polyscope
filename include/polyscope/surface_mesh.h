@@ -74,9 +74,6 @@ public:
   SurfaceMesh(std::string name, const std::vector<glm::vec3>& vertexPositions,
               const std::vector<std::vector<size_t>>& faceIndices);
 
-  // TODO add constructors & adaptors without intermediate nested list
-
-  // Construct from a flat nested face list
 
   // Build the imgui display
   virtual void buildCustomUI() override;
@@ -341,20 +338,23 @@ private:
   // Storage for the managed buffers above. You should generally interact with these through the managed buffers, not
   // these members.
 
-  // positions
+  // = positions
   std::vector<glm::vec3> vertexPositionsData;
 
-  // connectivity / indices
+  // = connectivity / indices
+
+  // these two form a flattened list giving the polygons of the mesh
   std::vector<uint32_t> faceIndsStart;
   std::vector<uint32_t> faceIndsEntries;
-  // std::vector<glm::uvec3> triangleIndsData;       // always triangulated
-  std::vector<uint32_t> triangleVertexIndsData;   // to the split, triangulated mesh
-  std::vector<uint32_t> triangleFaceIndsData;     // to the split, triangulated mesh
-  std::vector<uint32_t> triangleEdgeIndsData;     // to the split, triangulated mesh
-  std::vector<uint32_t> triangleHalfedgeIndsData; // to the split, triangulated mesh
-  std::vector<uint32_t> triangleCornerIndsData;   // to the split, triangulated mesh
 
-  // internal triangle data for rendering
+  // other derived indices, all defined per corner of the triangulated mesh
+  std::vector<uint32_t> triangleVertexIndsData;   // index of the corresponding vertex
+  std::vector<uint32_t> triangleFaceIndsData;     // index of the corresponding original face
+  std::vector<uint32_t> triangleEdgeIndsData;     // index of the corresponding original edge
+  std::vector<uint32_t> triangleHalfedgeIndsData; // index of the corresponding original halfedge
+  std::vector<uint32_t> triangleCornerIndsData;   // index of the corresponding original corner
+
+  // internal triangle data for rendering, defined per corner of the triangulated mesh
   std::vector<glm::vec3> baryCoordData;  // always triangulated
   std::vector<glm::vec3> edgeIsRealData; // always triangulated
 

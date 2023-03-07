@@ -24,7 +24,7 @@ SurfaceMesh::SurfaceMesh(std::string name_)
     : QuantityStructure<SurfaceMesh>(name_, typeName()),
       // clang-format off
 
-// = geometric quantities
+// == managed quantities
 
 // positions
 vertexPositions(        uniquePrefix() + "vertexPositions",     vertexPositionsData),
@@ -53,7 +53,7 @@ faceTangentSpaces(          uniquePrefix() + "faceTangentSpaces",   faceTangentS
 vertexTangentSpaces(        uniquePrefix() + "vertexTangentSpace",  vertexTangentSpacesData),
 defaultFaceTangentSpaces(   uniquePrefix() + "defaultFaceTangentSpace",  defaultFaceTangentSpacesData,  std::bind(&SurfaceMesh::computeDefaultFaceTangentSpaces, this)),
 
-// = persistent options
+// == persistent options
 surfaceColor(           uniquePrefix() + "surfaceColor",    getNextUniqueColor()),
 edgeColor(              uniquePrefix() + "edgeColor",       glm::vec3{0., 0., 0.}), material(uniquePrefix() + "material", "clay"),
 edgeWidth(              uniquePrefix() + "edgeWidth",       0.),
@@ -170,6 +170,11 @@ void SurfaceMesh::computeConnectivityData() {
   // edgeDataSize = ... we don't know this yet, gets set below
   halfedgeDataSize = nHalfedges();
   cornerDataSize = nCorners();
+
+  triangleVertexInds.markHostBufferUpdated();
+  triangleFaceInds.markHostBufferUpdated();
+  baryCoord.markHostBufferUpdated();
+  edgeIsReal.markHostBufferUpdated();
 }
 
 // =================================================

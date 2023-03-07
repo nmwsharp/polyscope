@@ -578,8 +578,6 @@ void addCameraViews() {
 }
 
 void processFileDotMesh(std::string filename) {
-  /*
-   * TODO restore
   std::vector<std::array<double, 3>> verts;
   std::vector<std::array<int64_t, 8>> cells;
   parseVolumeDotMesh(filename, verts, cells);
@@ -613,7 +611,6 @@ void processFileDotMesh(std::string filename) {
   polyscope::getVolumeMesh(niceName)->addCellScalarQuantity("scalar Q2", scalarC);
   polyscope::getVolumeMesh(niceName)->addVertexVectorQuantity("random vec", randVecV);
   polyscope::getVolumeMesh(niceName)->addCellVectorQuantity("random vec2", randVecC);
-  */
 }
 
 void addDataToPointCloud(std::string pointCloudName, const std::vector<glm::vec3>& points) {

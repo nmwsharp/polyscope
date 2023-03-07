@@ -20,7 +20,7 @@ public:
 
   // Build the ImGUI UIs for scalars
   void buildScalarUI();
-  void buildScalarOptionsUI(); // called inside of an options menu
+  virtual void buildScalarOptionsUI(); // called inside of an options menu
 
   // Add rules to rendering programs for scalars
   std::vector<std::string> addScalarRules(std::vector<std::string> rules);

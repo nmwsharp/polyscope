@@ -63,10 +63,15 @@ VolumeMeshVertexScalarQuantity::VolumeMeshVertexScalarQuantity(std::string name,
       showQuantity(this)
 
 {
-  hist.buildHistogram(values, parent.vertexAreas); // rebuild to incorporate weights
-  parent.refreshVolumeMeshListeners();             // just in case this quantity is being drawn
+  parent.refreshVolumeMeshListeners(); // just in case this quantity is being drawn
 }
 void VolumeMeshVertexScalarQuantity::fillLevelSetData(render::ShaderProgram& p) {
+
+  // TODO refactor to use new attribute buffers
+
+  parent.vertexPositions.ensureHostBufferPopulated();
+  values.ensureHostBufferPopulated();
+
   std::vector<glm::vec3> point1;
   std::vector<glm::vec3> point2;
   std::vector<glm::vec3> point3;
@@ -84,16 +89,15 @@ void VolumeMeshVertexScalarQuantity::fillLevelSetData(render::ShaderProgram& p) 
   point2.resize(tetCount);
   point3.resize(tetCount);
   point4.resize(tetCount);
-  auto vertices = parent.vertices;
   for (size_t i = 0; i < parent.nTets(); i++) {
-    point1[i] = vertices[parent.tets[i][0]];
-    point2[i] = vertices[parent.tets[i][1]];
-    point3[i] = vertices[parent.tets[i][2]];
-    point4[i] = vertices[parent.tets[i][3]];
-    slice1[i] = glm::vec3(values[parent.tets[i][0]], 0, 0);
-    slice2[i] = glm::vec3(values[parent.tets[i][1]], 0, 0);
-    slice3[i] = glm::vec3(values[parent.tets[i][2]], 0, 0);
-    slice4[i] = glm::vec3(values[parent.tets[i][3]], 0, 0);
+    point1[i] = parent.vertexPositions.data[parent.tets[i][0]];
+    point2[i] = parent.vertexPositions.data[parent.tets[i][1]];
+    point3[i] = parent.vertexPositions.data[parent.tets[i][2]];
+    point4[i] = parent.vertexPositions.data[parent.tets[i][3]];
+    slice1[i] = glm::vec3(values.data[parent.tets[i][0]], 0, 0);
+    slice2[i] = glm::vec3(values.data[parent.tets[i][1]], 0, 0);
+    slice3[i] = glm::vec3(values.data[parent.tets[i][2]], 0, 0);
+    slice4[i] = glm::vec3(values.data[parent.tets[i][3]], 0, 0);
   }
   p.setAttribute("a_point_1", point1);
   p.setAttribute("a_point_2", point2);
@@ -184,13 +188,24 @@ void VolumeMeshVertexScalarQuantity::setLevelSetVisibleQuantity(std::string name
   showQuantity = q;
 }
 
-void VolumeMeshVertexScalarQuantity::buildCustomUI() {
-  VolumeMeshScalarQuantity::buildCustomUI();
+
+void VolumeMeshVertexScalarQuantity::buildScalarOptionsUI() {
+  // call the parent version to add all of the usual menu options
+  ScalarQuantity<VolumeMeshScalarQuantity>::buildScalarOptionsUI();
+
+  // add our own options
   if (ImGui::Checkbox("Level Set", &isDrawingLevelSet)) {
     setEnabledLevelSet(isDrawingLevelSet);
   }
+}
+
+void VolumeMeshVertexScalarQuantity::buildCustomUI() {
+
+  VolumeMeshScalarQuantity::buildCustomUI();
+
   if (isDrawingLevelSet) {
-    ImGui::DragFloat("", &levelSetValue, 0.01f, (float)hist.colormapRange.first, (float)hist.colormapRange.second);
+    ImGui::DragFloat("##value", &levelSetValue, 0.01f, (float)hist.colormapRange.first,
+                     (float)hist.colormapRange.second);
     if (ImGui::BeginMenu("Show Quantity")) {
       std::map<std::string, std::unique_ptr<polyscope::VolumeMeshQuantity>>::iterator it;
       for (it = parent.quantities.begin(); it != parent.quantities.end(); it++) {
@@ -217,7 +232,8 @@ void VolumeMeshVertexScalarQuantity::createProgram() {
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
-  fillColorBuffers(*program);
+  program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(&parent.triangleVertexInds));
+  program->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
@@ -232,47 +248,12 @@ std::shared_ptr<render::ShaderProgram> VolumeMeshVertexScalarQuantity::createSli
   return p;
 }
 
-
-void VolumeMeshVertexScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
-  std::vector<double> colorval;
-  colorval.resize(3 * parent.nFacesTriangulation());
-
-  size_t iF = 0;
-  size_t iFront = 0;
-  size_t iBack = 3 * parent.nFacesTriangulation() - 3;
-  for (size_t iC = 0; iC < parent.nCells(); iC++) {
-    const std::array<int64_t, 8>& cell = parent.cells[iC];
-    VolumeCellType cellT = parent.cellType(iC);
-    for (const std::vector<std::array<size_t, 3>>& face : parent.cellStencil(cellT)) {
-
-      for (size_t j = 0; j < face.size(); j++) {
-        const std::array<size_t, 3>& tri = face[j];
-
-        // (see note in VolumeMesh.cpp about sorting the buffer outside-first)
-        size_t iData;
-        if (parent.faceIsInterior[iF]) {
-          iData = iBack;
-          iBack -= 3;
-        } else {
-          iData = iFront;
-          iFront += 3;
-        }
-
-        for (int k = 0; k < 3; k++) {
-          colorval[iData + k] = values[cell[tri[k]]];
-        }
-      }
-
-      iF++;
-    }
-  }
-
-  // Store data in buffers
-  p.setAttribute("a_value", colorval);
-  p.setTextureFromColormap("t_colormap", cMap.get());
-}
-
 void VolumeMeshVertexScalarQuantity::fillSliceColorBuffers(render::ShaderProgram& p) {
+
+  // TODO use new attribute buffers
+
+  values.ensureHostBufferPopulated();
+
   size_t tetCount = parent.nTets();
   std::vector<double> colorval_1;
   std::vector<double> colorval_2;
@@ -284,12 +265,11 @@ void VolumeMeshVertexScalarQuantity::fillSliceColorBuffers(render::ShaderProgram
   colorval_3.resize(tetCount);
   colorval_4.resize(tetCount);
 
-  auto vertices = parent.vertices;
   for (size_t iT = 0; iT < parent.tets.size(); iT++) {
-    colorval_1[iT] = values[parent.tets[iT][0]];
-    colorval_2[iT] = values[parent.tets[iT][1]];
-    colorval_3[iT] = values[parent.tets[iT][2]];
-    colorval_4[iT] = values[parent.tets[iT][3]];
+    colorval_1[iT] = values.data[parent.tets[iT][0]];
+    colorval_2[iT] = values.data[parent.tets[iT][1]];
+    colorval_3[iT] = values.data[parent.tets[iT][2]];
+    colorval_4[iT] = values.data[parent.tets[iT][3]];
   }
 
   // Store data in buffers
@@ -303,7 +283,7 @@ void VolumeMeshVertexScalarQuantity::fillSliceColorBuffers(render::ShaderProgram
 void VolumeMeshVertexScalarQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", values[vInd]);
+  ImGui::Text("%g", values.getValue(vInd));
   ImGui::NextColumn();
 }
 
@@ -316,9 +296,7 @@ VolumeMeshCellScalarQuantity::VolumeMeshCellScalarQuantity(std::string name, con
                                                            VolumeMesh& mesh_, DataType dataType_)
     : VolumeMeshScalarQuantity(name, mesh_, "cell", values_, dataType_)
 
-{
-  hist.buildHistogram(values, parent.faceAreas); // rebuild to incorporate weights
-}
+{}
 
 void VolumeMeshCellScalarQuantity::createProgram() {
   // Create the program to draw this quantity
@@ -326,53 +304,15 @@ void VolumeMeshCellScalarQuantity::createProgram() {
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
-  fillColorBuffers(*program);
+  program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(&parent.triangleCellInds));
+  program->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*program, parent.getMaterial());
-}
-
-void VolumeMeshCellScalarQuantity::fillColorBuffers(render::ShaderProgram& p) {
-  std::vector<double> colorval;
-  colorval.resize(3 * parent.nFacesTriangulation());
-
-  size_t iF = 0;
-  size_t iFront = 0;
-  size_t iBack = 3 * parent.nFacesTriangulation() - 3;
-  for (size_t iC = 0; iC < parent.nCells(); iC++) {
-    const std::array<int64_t, 8>& cell = parent.cells[iC];
-    VolumeCellType cellT = parent.cellType(iC);
-    for (const std::vector<std::array<size_t, 3>>& face : parent.cellStencil(cellT)) {
-
-      for (size_t j = 0; j < face.size(); j++) {
-        const std::array<size_t, 3>& tri = face[j];
-
-        // (see note in VolumeMesh.cpp about sorting the buffer outside-first)
-        size_t iData;
-        if (parent.faceIsInterior[iF]) {
-          iData = iBack;
-          iBack -= 3;
-        } else {
-          iData = iFront;
-          iFront += 3;
-        }
-
-        for (int k = 0; k < 3; k++) {
-          colorval[iData + k] = values[iC];
-        }
-      }
-
-      iF++;
-    }
-  }
-
-  // Store data in buffers
-  p.setAttribute("a_value", colorval);
-  p.setTextureFromColormap("t_colormap", cMap.get());
 }
 
 void VolumeMeshCellScalarQuantity::buildCellInfoGUI(size_t cInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", values[cInd]);
+  ImGui::Text("%g", values.getValue(cInd));
   ImGui::NextColumn();
 }
 

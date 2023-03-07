@@ -41,7 +41,7 @@ void safeDeleteArray(T*& x) {
 // Attempt to get a user-friendly name for a file from its base name
 std::string guessNiceNameFromPath(std::string fullname);
 
-// Ensure that a string satisfies polyscope requirements for structure and quantity names. 
+// Ensure that a string satisjies polyscope requirements for structure and quantity names.
 // Raises an error on failure.
 void validateName(const std::string& name);
 
@@ -103,6 +103,8 @@ inline std::string to_string_short(const glm::vec3& v) { return str_printf("<%1.
 
 // === Index management
 const size_t INVALID_IND = std::numeric_limits<size_t>::max();
+const uint32_t INVALID_IND_32 = std::numeric_limits<uint32_t>::max();
+const uint64_t INVALID_IND_64 = std::numeric_limits<uint64_t>::max();
 
 template <typename T>
 std::vector<T> applyPermutation(const std::vector<T>& input, const std::vector<size_t>& perm) {
