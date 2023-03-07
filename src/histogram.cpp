@@ -23,23 +23,12 @@ Histogram::Histogram(std::vector<double>& values) {
   buildHistogram(values);
 }
 
-Histogram::Histogram(std::vector<double>& values, const std::vector<double>& weights) {
-  prepare();
-  buildHistogram(values, weights);
-}
-
 Histogram::~Histogram() {}
 
-void Histogram::buildHistogram(std::vector<double>& values, const std::vector<double>& weights) {
-
-  hasWeighted = weights.size() > 0;
-  useWeighted = hasWeighted;
+void Histogram::buildHistogram(std::vector<double>& values) {
 
   // Build weighed and unweighted arrays of values
   size_t N = values.size();
-  if (weights.size() != 0 && weights.size() != N) {
-    throw std::logic_error("values and weights are not same size");
-  }
 
   // == Build histogram
   dataRange = robustMinMax(values);
@@ -62,11 +51,7 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
       // NaN values and finite values near the bottom of float range lead to craziness, so only increment bins if we got
       // something reasonable
       if (iBin < binCount) {
-        if (weighted) {
-          sumBin[iBin] += weights[iData];
-        } else {
-          sumBin[iBin] += 1.0;
-        }
+        sumBin[iBin] += 1.0;
       }
     }
 
@@ -108,15 +93,7 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
     }
   };
 
-  // Build the four variants of the curve
-  buildCurve(rawHistBinCount, false, false, rawHistCurveX, unweightedRawHistCurveY);
-  buildCurve(smoothedHistBinCount, false, true, smoothedHistCurveX, unweightedSmoothedHistCurveY);
-  if (hasWeighted) {
-    buildCurve(rawHistBinCount, true, false, rawHistCurveX, weightedRawHistCurveY);
-    buildCurve(smoothedHistBinCount, true, true, smoothedHistCurveX, weightedSmoothedHistCurveY);
-  }
-
-
+  buildCurve(rawHistBinCount, false, false, rawHistCurveX, rawHistCurveY);
   fillBuffers();
 }
 
@@ -164,23 +141,8 @@ void Histogram::fillBuffers() {
   // (does unecessary copy as written)
   std::vector<double> histCurveY;
   std::vector<std::array<double, 2>> histCurveX;
-  bool smoothBins = false; // draw trapezoids rather than rectangles
-  if (useSmoothed) {
-    if (useWeighted) {
-      histCurveY = weightedSmoothedHistCurveY;
-    } else {
-      histCurveY = unweightedSmoothedHistCurveY;
-    }
-    histCurveX = smoothedHistCurveX;
-    smoothBins = true;
-  } else {
-    if (useWeighted) {
-      histCurveY = weightedRawHistCurveY;
-    } else {
-      histCurveY = unweightedRawHistCurveY;
-    }
-    histCurveX = rawHistCurveX;
-  }
+  histCurveY = rawHistCurveY;
+  histCurveX = rawHistCurveX;
 
   // Push to buffer
   std::vector<glm::vec2> coords;
@@ -198,14 +160,6 @@ void Histogram::fillBuffers() {
 
     double leftY = histCurveY[i];
     double rightY = histCurveY[i];
-    if (smoothBins) {
-      if (i > 0) {
-        leftY = 0.5 * (histCurveY[i - 1] + histCurveY[i]);
-      }
-      if (i < histCurveX.size() - 1) {
-        rightY = 0.5 * (histCurveY[i] + histCurveY[i + 1]);
-      }
-    }
 
     // = Lower triangle (lower left, lower right, upper left)
     coords.push_back(glm::vec2{leftX, 0.0});
@@ -220,10 +174,6 @@ void Histogram::fillBuffers() {
 
   program->setAttribute("a_coord", coords);
   program->setTextureFromColormap("t_colormap", colormap, true);
-
-  // Update current buffer settings
-  currBufferWeighted = useWeighted;
-  currBufferSmoothed = useSmoothed;
 }
 
 void Histogram::prepare() {
@@ -240,12 +190,6 @@ void Histogram::prepare() {
 
 
 void Histogram::renderToTexture() {
-
-  // Refill buffer if needed
-  if (currBufferWeighted != useWeighted || currBufferSmoothed != useSmoothed) {
-    fillBuffers();
-  }
-
   framebuffer->clearColor = {0.0, 0.0, 0.0};
   framebuffer->clearAlpha = 0.2;
   framebuffer->setViewport(0, 0, texDim, texDim);
@@ -294,15 +238,6 @@ void Histogram::buildUI(float width) {
     ImVec2 lineEnd(imageUpperLeft.x + mouseX, imageUpperLeft.y - 4);
     ImGui::GetWindowDrawList()->AddLine(lineStart, lineEnd,
                                         ImGui::ColorConvertFloat4ToU32(ImVec4(254 / 255., 221 / 255., 66 / 255., 1.0)));
-  }
-
-  // Right-click combobox to select weighted/unweighted
-  if (ImGui::BeginPopupContextItem("select type")) {
-    if (hasWeighted) {
-      ImGui::Checkbox("Weighted", &useWeighted);
-    }
-    ImGui::Checkbox("Smoothed", &useSmoothed);
-    ImGui::EndPopup();
   }
 }
 

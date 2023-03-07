@@ -64,7 +64,7 @@ SurfaceVertexScalarQuantity::SurfaceVertexScalarQuantity(std::string name, const
 {
   values.ensureHostBufferPopulated();
   parent.vertexAreas.ensureHostBufferPopulated();
-  hist.buildHistogram(values.data, parent.vertexAreas.data); // rebuild to incorporate weights
+  hist.buildHistogram(values.data); // rebuild to incorporate weights
 }
 
 void SurfaceVertexScalarQuantity::createProgram() {
@@ -96,7 +96,7 @@ SurfaceFaceScalarQuantity::SurfaceFaceScalarQuantity(std::string name, const std
 {
   values.ensureHostBufferPopulated();
   parent.faceAreas.ensureHostBufferPopulated();
-  hist.buildHistogram(values.data, parent.faceAreas.data); // rebuild to incorporate weights
+  hist.buildHistogram(values.data); // rebuild to incorporate weights
 }
 
 void SurfaceFaceScalarQuantity::createProgram() {
