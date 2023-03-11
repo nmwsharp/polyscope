@@ -164,6 +164,10 @@ inline double randomNormal(double mean = 0.0, double stddev = 1.0) {
   return dist(util_mersenne_twister);
 }
 
+// === ImGui utilities
+
+// Displays a little helper icon which shows the text on hover
+void ImGuiHelperMarker(const char* text);
 
 // === Math utilities
 const double PI = 3.14159265358979323;
