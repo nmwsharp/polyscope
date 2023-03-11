@@ -1,3 +1,5 @@
+#include "imgui.h"
+#include "polyscope/utilities.h"
 namespace polyscope {
 
 template <typename QuantityT>
@@ -31,9 +33,37 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
     resetMapRange();
   }
 
+
+  // == Build the help box for the scalar quantity.
+  std::string extraText = "";
+  switch (dataType) {
+  case DataType::STANDARD: {
+  } break;
+  case DataType::SYMMETRIC: {
+    extraText = "This quantity was added as **symmetric** scalar quantity, so only a "
+                "single symmetric range control can be adjusted.";
+  } break;
+  case DataType::MAGNITUDE: {
+    extraText = "This quantity was added as **magnitude** scalar quantity, so only a "
+                "single symmetric range control can be adjusted, and it must be positive.";
+  } break;
+  }
+  ImGui::SameLine();
+  ImGuiHelperMarker(("The window below shows the colormap used to visualize this scalar, "
+                     "and a histogram of the the data values. The text boxes below show the "
+                     "range limits for the color map."
+                     "\n\n"
+                     "To adjust the limit range for the color map, click-and-drag on the text "
+                     "box. Control-click to type a value, even one outside the visible range." +
+                     extraText)
+                        .c_str());
+
+
   // Draw the histogram of values
   hist.colormapRange = vizRange;
-  hist.buildUI();
+  float windowWidth = ImGui::GetWindowWidth();
+  float histWidth = 0.75 * windowWidth;
+  hist.buildUI(histWidth);
 
   // Data range
   // Note: %g specifiers are generally nicer than %e, but here we don't acutally have a choice. ImGui (for somewhat
@@ -41,21 +71,41 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
   // number with few decimal places, sliders can break. There is no way to set a minimum number of decimal places with
   // %g, unfortunately.
   {
+
+    float imPad = ImGui::GetStyle().ItemSpacing.x;
+    ImGui::PushItemWidth((histWidth - imPad) / 2);
+    float speed = (dataRange.second - dataRange.first) / 100.;
+
     switch (dataType) {
-    case DataType::STANDARD:
-      ImGui::DragFloatRange2("", &vizRange.first, &vizRange.second, (dataRange.second - dataRange.first) / 100.,
-                             dataRange.first, dataRange.second, "Min: %.3e", "Max: %.3e");
-      break;
+    case DataType::STANDARD: {
+
+      ImGui::DragFloat("##min", &vizRange.first, speed, dataRange.first, vizRange.second, "%.5g",
+                       ImGuiSliderFlags_NoRoundToFormat);
+      ImGui::SameLine();
+      ImGui::DragFloat("##max", &vizRange.second, speed, vizRange.first, dataRange.second, "%.5g",
+                       ImGuiSliderFlags_NoRoundToFormat);
+
+    } break;
     case DataType::SYMMETRIC: {
       float absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
-      ImGui::DragFloatRange2("##range_symmetric", &vizRange.first, &vizRange.second, absRange / 100., -absRange,
-                             absRange, "Min: %.3e", "Max: %.3e");
+
+      if (ImGui::DragFloat("##min", &vizRange.first, speed, -absRange, 0.f, "%.5g", ImGuiSliderFlags_NoRoundToFormat)) {
+        vizRange.second = -vizRange.first;
+      }
+      ImGui::SameLine();
+      if (ImGui::DragFloat("##max", &vizRange.second, speed, 0.f, absRange, "%.5g", ImGuiSliderFlags_NoRoundToFormat)) {
+        vizRange.first = -vizRange.second;
+      }
+
     } break;
     case DataType::MAGNITUDE: {
-      ImGui::DragFloatRange2("##range_mag", &vizRange.first, &vizRange.second, vizRange.second / 100., 0.0,
-                             dataRange.second, "Min: %.3e", "Max: %.3e");
+      ImGui::DragFloat("##max", &vizRange.second, speed, 0.f, dataRange.second, "%.5g",
+                       ImGuiSliderFlags_NoRoundToFormat);
+
     } break;
     }
+
+    ImGui::PopItemWidth();
   }
 
   // Isolines

@@ -12,12 +12,12 @@ namespace polyscope {
 // A histogram that shows up in ImGUI
 class Histogram {
 public:
-  Histogram();
-  Histogram(std::vector<double>& values);
+  Histogram();                            // must call buildHistogram() with data after
+  Histogram(std::vector<double>& values); // internally calls buildHistogram()
 
   ~Histogram();
 
-  void buildHistogram(std::vector<double>& values);
+  void buildHistogram(const std::vector<double>& values);
   void updateColormap(const std::string& newColormap);
 
   // Width = -1 means set automatically
@@ -30,26 +30,25 @@ private:
 
   // Manage the actual histogram
   void fillBuffers();
-  void smoothCurve(std::vector<std::array<double, 2>>& xVals, std::vector<double>& yVals);
-  size_t smoothedHistBinCount = 201;
   size_t rawHistBinCount = 51;
 
-  // There are 4 combinations of {weighted/unweighed}, {smoothed/raw} histograms that might be displaced.
-  // We just generate them all initially
-  std::vector<double> rawHistCurveY;
-  std::vector<std::array<double, 2>> rawHistCurveX;
+  std::vector<float> rawHistCurveY;
+  std::vector<std::array<float, 2>> rawHistCurveX;
   std::pair<double, double> dataRange;
 
   // Render to texture
   void renderToTexture();
   void prepare();
-  bool prepared = false;
 
   unsigned int texDim = 600;
   std::shared_ptr<render::TextureBuffer> texture = nullptr;
   std::shared_ptr<render::FrameBuffer> framebuffer = nullptr;
   std::shared_ptr<render::ShaderProgram> program = nullptr;
   std::string colormap = "viridis";
+
+  // A few parameters which control appearance
+  float bottomBarHeight = 0.35;
+  float bottomBarGap = 0.1;
 };
 
 
