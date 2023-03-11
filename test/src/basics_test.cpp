@@ -854,7 +854,6 @@ TEST_F(PolyscopeTest, CurveNetworkFaceVector) {
 // =============== Volume mesh tests
 // ============================================================
 
-/* TODO RESTORE
 
 std::tuple<std::vector<glm::vec3>, std::vector<std::array<int, 8>>> getVolumeMeshData() {
   // clang-format off
@@ -1626,21 +1625,21 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
 
 
   {
-      // Curve network
-      // auto psCurve = registerCurveNetwork(); TODO restore
-      // std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
-      // auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
-      // q3->setEnabled(true);
+    // Curve network
+    auto psCurve = registerCurveNetwork();
+    std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
+    auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
+    q3->setEnabled(true);
   }
 
-  { // Volume mesh TODO restore
-    // std::vector<glm::vec3> verts;
-    // std::vector<std::array<int, 8>> cells;
-    // std::tie(verts, cells) = getVolumeMeshData();
-    // polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
-    //
-    // polyscope::VolumeMesh* psVol2 = polyscope::registerVolumeMesh("vol cull whole", verts, cells);
-    // psVol2->setCullWholeElements(true);
+  { // Volume mesh
+    std::vector<glm::vec3> verts;
+    std::vector<std::array<int, 8>> cells;
+    std::tie(verts, cells) = getVolumeMeshData();
+    polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
+
+    polyscope::VolumeMesh* psVol2 = polyscope::registerVolumeMesh("vol cull whole", verts, cells);
+    psVol2->setCullWholeElements(true);
   }
 
   polyscope::show(3);
@@ -1697,11 +1696,11 @@ TEST_F(PolyscopeTest, OrthoViewTest) {
     q2->setEnabled(true);
   }
 
-  { // Curve network TODO restore
-    // auto psCurve = registerCurveNetwork();
-    // std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
-    // auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
-    // q3->setEnabled(true);
+  { // Curve network
+    auto psCurve = registerCurveNetwork();
+    std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
+    auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
+    q3->setEnabled(true);
   }
 
   // Enable the orthographic view
