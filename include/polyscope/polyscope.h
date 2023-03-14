@@ -140,6 +140,11 @@ bool redrawRequested();
 void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI = true);
 void popContext();
 
+// Get current ImGui context
+// When linking to Polyscope as a shared library, we must set the current context
+// explicitly before making calls to ImGui in host application
+ImGuiContext* getCurrentContext();
+
 // These helpers are called internally by Polyscope to render and build the UI.
 // Normally, applications should not need to call them, but in advanced settings when making custom UIs, they may be
 // useful to manually build pieces of the interface.

@@ -218,6 +218,11 @@ void popContext() {
   contextStack.pop_back();
 }
 
+ImGuiContext* getCurrentContext()
+{
+  return contextStack.empty() ? nullptr : contextStack.back().context;
+}
+
 void requestRedraw() { redrawNextFrame = true; }
 bool redrawRequested() { return redrawNextFrame; }
 

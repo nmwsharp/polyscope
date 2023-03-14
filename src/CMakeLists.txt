@@ -275,6 +275,10 @@ SET(HEADERS
 # Create a single library for the project
 add_library(polyscope ${SRCS} ${BACKEND_SRCS} ${HEADERS} ${BACKEND_HEADERS})
 
+# Mark the library target and its headers as installable
+install(TARGETS polyscope)
+install(FILES ${HEADERS} DESTINATION "${CMAKE_INSTALL_PREFIX}/include/polyscope")
+
 # Required compiler settings
 set_property(TARGET polyscope PROPERTY CXX_STANDARD 11)
 set_property(TARGET polyscope PROPERTY CXX_STANDARD_REQUIRED TRUE)
