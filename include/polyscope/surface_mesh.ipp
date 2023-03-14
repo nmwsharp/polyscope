@@ -93,7 +93,7 @@ template <class T>
 void SurfaceMesh::setEdgePermutation(const T& perm, size_t expectedSize) {
 
   // try to catch cases where it is set twice
-  if (triangleEdgeInds.size() > 0) {
+  if (triangleAllEdgeInds.size() > 0) {
     polyscope::error("Attempting to set an edge permutation for SurfaceMesh " + name +
                      ", but one is already set. Must be set exactly once.");
     return;
@@ -119,7 +119,7 @@ void SurfaceMesh::setHalfedgePermutation(const T& perm, size_t expectedSize) {
 
   // attempt to catch cases where the user sets a permutation after already adding quantities which would use the
   // permutation (this is unsupported and will cause bad things)
-  if (triangleHalfedgeInds.size() > 0) {
+  if (triangleAllHalfedgeInds.size() > 0) {
     polyscope::error(
         "SurfaceMesh " + name +
         ": a halfedge index permutation was set after quantities have already used the default permutation. This is "
@@ -146,7 +146,7 @@ void SurfaceMesh::setCornerPermutation(const T& perm, size_t expectedSize) {
 
   // attempt to catch cases where the user sets a permutation after already adding quantities which would use the
   // permutation (this is unsupported and will cause bad things)
-  if (triangleCornerInds.size() > 0) {
+  if (triangleAllCornerInds.size() > 0) {
     polyscope::error(
         "SurfaceMesh " + name +
         ": a corner index permutation was set after quantities have already used the default permutation. This is "

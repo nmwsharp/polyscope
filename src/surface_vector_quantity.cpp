@@ -318,13 +318,14 @@ std::string SurfaceVertexIntrinsicVectorQuantity::niceName() { return name + " (
 namespace {
 // helper function used below
 
-std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std::vector<double>& oneForm, std::vector<char>& canonicalOrientation) {
+std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std::vector<double>& oneForm,
+                                                   std::vector<char>& canonicalOrientation) {
 
   mesh.vertexPositions.ensureHostBufferPopulated();
   mesh.faceAreas.ensureHostBufferPopulated();
   mesh.faceNormals.ensureHostBufferPopulated();
   mesh.defaultFaceTangentSpaces.ensureHostBufferPopulated();
-  mesh.triangleEdgeInds.ensureHostBufferPopulated();
+  mesh.triangleAllEdgeInds.ensureHostBufferPopulated();
   mesh.triangleFaceInds.ensureHostBufferPopulated();
 
   std::vector<glm::vec2> mappedVectorField(mesh.nFaces());
@@ -336,7 +337,7 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
     for (size_t j = 0; j < 3; j++) {
       size_t vA = mesh.triangleFaceInds.data[3 * iF + j];
       size_t vB = mesh.triangleFaceInds.data[3 * iF + ((j + 1) % 3)];
-      size_t iE = mesh.triangleEdgeInds.data[3 * iF + j];
+      size_t iE = mesh.triangleAllEdgeInds.data[3 * iF + j];
 
       bool isCanonicalOriented = (vB > vA) != (canonicalOrientation[iE]); // TODO double check convention
       double orientationSign = isCanonicalOriented ? 1. : -1.;
@@ -372,11 +373,10 @@ SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std
                                                                              std::vector<char> canonicalOrientation_,
                                                                              SurfaceMesh& mesh_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE),
-      TangentVectorQuantity<SurfaceOneFormIntrinsicVectorQuantity>(*this, oneFormToFaceTangentVectors(mesh_, oneForm_, canonicalOrientation_),
-                                                                   parent.faceCenters, parent.defaultFaceTangentSpaces,
-                                                                   VectorType::STANDARD),
-      oneForm(oneForm_),
-      canonicalOrientation(canonicalOrientation_)
+      TangentVectorQuantity<SurfaceOneFormIntrinsicVectorQuantity>(
+          *this, oneFormToFaceTangentVectors(mesh_, oneForm_, canonicalOrientation_), parent.faceCenters,
+          parent.defaultFaceTangentSpaces, VectorType::STANDARD),
+      oneForm(oneForm_), canonicalOrientation(canonicalOrientation_)
 
 
 {

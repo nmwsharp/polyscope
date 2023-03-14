@@ -31,11 +31,12 @@ vertexPositions(        uniquePrefix() + "vertexPositions",     vertexPositionsD
 
 // connectivity / indices
 // (triangle and face inds are always computed initially when we triangulate the mesh)
-triangleVertexInds(     uniquePrefix() + "triangleVertexInds",  triangleVertexIndsData),
-triangleFaceInds(       uniquePrefix() + "triangleFaceInds",    triangleFaceIndsData),
-triangleEdgeInds(       uniquePrefix() + "triangleEdgeInds",    triangleEdgeIndsData,       std::bind(&SurfaceMesh::computeTriangleEdgeInds, this)),
-triangleHalfedgeInds(   uniquePrefix() + "triangleHalfedgeInds",triangleHalfedgeIndsData,   std::bind(&SurfaceMesh::computeTriangleHalfedgeInds, this)),
-triangleCornerInds(     uniquePrefix() + "triangleCornerInds",  triangleCornerIndsData,     std::bind(&SurfaceMesh::computeTriangleCornerInds, this)),
+triangleVertexInds(     uniquePrefix() + "triangleVertexInds",          triangleVertexIndsData),
+triangleFaceInds(       uniquePrefix() + "triangleFaceInds",            triangleFaceIndsData),
+triangleCornerInds(     uniquePrefix() + "triangleCornerInds",          triangleCornerIndsData,         std::bind(&SurfaceMesh::computeTriangleCornerInds, this)),
+triangleAllEdgeInds(    uniquePrefix() + "triangleAllEdgeInds",         triangleAllEdgeIndsData,        std::bind(&SurfaceMesh::computeTriangleAllEdgeInds, this)),
+triangleAllHalfedgeInds(   uniquePrefix() + "triangleHalfedgeInds",     triangleAllHalfedgeIndsData,    std::bind(&SurfaceMesh::computeTriangleAllHalfedgeInds, this)),
+triangleAllCornerInds(     uniquePrefix() + "triangleCornerInds",       triangleAllCornerIndsData,      std::bind(&SurfaceMesh::computeTriangleAllCornerInds, this)),
 
 // internal triangle data for rendering
 baryCoord(              uniquePrefix() + "baryCoord",           baryCoordData),
@@ -181,7 +182,7 @@ void SurfaceMesh::computeConnectivityData() {
 // =====    Lazily-Populated Connectivity   ========
 // =================================================
 
-void SurfaceMesh::computeTriangleEdgeInds() {
+void SurfaceMesh::computeTriangleAllEdgeInds() {
 
   if (edgePerm.empty())
     throw std::logic_error(
@@ -190,7 +191,7 @@ void SurfaceMesh::computeTriangleEdgeInds() {
         "Call setEdgePermutation().");
 
   triangleFaceInds.ensureHostBufferPopulated();
-  triangleEdgeInds.data.resize(3 * 3 * nFaces());
+  triangleAllEdgeInds.data.resize(3 * 3 * nFacesTriangulation());
 
   // used to loop over edges
   std::unordered_map<std::pair<size_t, size_t>, size_t, polyscope::hash_combine::hash<std::pair<size_t, size_t>>>
@@ -240,19 +241,51 @@ void SurfaceMesh::computeTriangleEdgeInds() {
 
     for (size_t j = 0; j < 3; j++) {
       for (size_t k = 0; k < 3; k++) {
-        triangleEdgeInds.data[9 * iF + 3 * j + k] = thisTriInds[k];
+        triangleAllEdgeInds.data[9 * iF + 3 * j + k] = thisTriInds[k];
       }
     }
   }
 
   nEdgesCount = psEdgeInd;
-  triangleEdgeInds.markHostBufferUpdated();
+  triangleAllEdgeInds.markHostBufferUpdated();
 }
 
-void SurfaceMesh::computeTriangleHalfedgeInds() {
+void SurfaceMesh::computeTriangleCornerInds() {
 
-  triangleHalfedgeInds.data.clear();
-  triangleHalfedgeInds.data.reserve(3 * nFacesTriangulation());
+  triangleCornerInds.data.clear();
+  triangleCornerInds.data.reserve(3 * nFacesTriangulation());
+
+  bool haveCustomIndex = !cornerPerm.empty();
+
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    size_t iStart = faceIndsStart[iF];
+    size_t D = faceIndsStart[iF + 1] - iStart;
+
+    // emit the data for triangles triangulating this face
+    for (size_t j = 1; (j + 1) < D; j++) {
+      uint32_t c0 = iStart;
+      uint32_t c1 = iStart + j;
+      uint32_t c2 = iStart + j + 1;
+
+      if (haveCustomIndex) {
+        c0 = cornerPerm[c0];
+        c1 = cornerPerm[c1];
+        c2 = cornerPerm[c2];
+      }
+
+      triangleCornerInds.data.push_back(c0);
+      triangleCornerInds.data.push_back(c1);
+      triangleCornerInds.data.push_back(c2);
+    }
+  }
+
+  triangleCornerInds.markHostBufferUpdated();
+}
+
+void SurfaceMesh::computeTriangleAllHalfedgeInds() {
+
+  triangleAllHalfedgeInds.data.clear();
+  triangleAllHalfedgeInds.data.reserve(3 * 3 * nFacesTriangulation());
 
   bool haveCustomIndex = !halfedgePerm.empty();
 
@@ -280,20 +313,20 @@ void SurfaceMesh::computeTriangleHalfedgeInds() {
       }
 
       for (size_t k = 0; k < 3; k++) {
-        triangleHalfedgeInds.data.push_back(he0);
-        triangleHalfedgeInds.data.push_back(he1);
-        triangleHalfedgeInds.data.push_back(he2);
+        triangleAllHalfedgeInds.data.push_back(he0);
+        triangleAllHalfedgeInds.data.push_back(he1);
+        triangleAllHalfedgeInds.data.push_back(he2);
       }
     }
   }
 
-  triangleHalfedgeInds.markHostBufferUpdated();
+  triangleAllHalfedgeInds.markHostBufferUpdated();
 }
 
-void SurfaceMesh::computeTriangleCornerInds() {
+void SurfaceMesh::computeTriangleAllCornerInds() {
 
-  triangleCornerInds.data.clear();
-  triangleCornerInds.data.reserve(3 * nFacesTriangulation());
+  triangleAllCornerInds.data.clear();
+  triangleAllCornerInds.data.reserve(3 * nFacesTriangulation());
 
   bool haveCustomIndex = !cornerPerm.empty();
 
@@ -315,14 +348,16 @@ void SurfaceMesh::computeTriangleCornerInds() {
 
 
       for (size_t k = 0; k < 3; k++) {
-        triangleCornerInds.data.push_back(c0);
-        triangleCornerInds.data.push_back(c1);
-        triangleCornerInds.data.push_back(c2);
+        triangleAllCornerInds.data.push_back(c0);
+        triangleAllCornerInds.data.push_back(c1);
+        triangleAllCornerInds.data.push_back(c2);
       }
     }
   }
 
-  triangleCornerInds.markHostBufferUpdated();
+  std::cout << "triangle cornerInds.size() " << triangleAllCornerInds.size() << std::endl;
+
+  triangleAllCornerInds.markHostBufferUpdated();
 }
 
 
@@ -738,8 +773,8 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
   // make sure we have the relevant indexing data
   triangleVertexInds.ensureHostBufferPopulated();
   triangleFaceInds.ensureHostBufferPopulated();
-  if (edgesHaveBeenUsed) triangleEdgeInds.ensureHostBufferPopulated();
-  if (halfedgesHaveBeenUsed) triangleHalfedgeInds.ensureHostBufferPopulated();
+  if (edgesHaveBeenUsed) triangleAllEdgeInds.ensureHostBufferPopulated();
+  if (halfedgesHaveBeenUsed) triangleAllHalfedgeInds.ensureHostBufferPopulated();
 
   // Get element indices
   size_t totalPickElements = nVertices() + nFaces();
@@ -803,12 +838,12 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
         // clang-format off
         std::array<glm::vec3, 3> eColor = { 
           fColor, 
-          pick::indToVec(triangleEdgeInds.data[9*iFTri + 1] + edgeGlobalPickIndStart), 
+          pick::indToVec(triangleAllEdgeInds.data[9*iFTri + 1] + edgeGlobalPickIndStart), 
           fColor
         };
         // clang-format on
-        if (j == 1) eColor[0] = pick::indToVec(triangleEdgeInds.data[9 * iFTri + 0] + edgeGlobalPickIndStart);
-        if (j + 2 == D) eColor[2] = pick::indToVec(triangleEdgeInds.data[9 * iFTri + 2] + edgeGlobalPickIndStart);
+        if (j == 1) eColor[0] = pick::indToVec(triangleAllEdgeInds.data[9 * iFTri + 0] + edgeGlobalPickIndStart);
+        if (j + 2 == D) eColor[2] = pick::indToVec(triangleAllEdgeInds.data[9 * iFTri + 2] + edgeGlobalPickIndStart);
 
         for (int j = 0; j < 3; j++) edgeColors.push_back(eColor);
       } else {
@@ -821,13 +856,14 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
         // clang-format off
         std::array<glm::vec3, 3> heColor = { 
           fColor, 
-          pick::indToVec(triangleHalfedgeInds.data[9*iFTri + 1] + halfedgeGlobalPickIndStart), 
+          pick::indToVec(triangleAllHalfedgeInds.data[9*iFTri + 1] + halfedgeGlobalPickIndStart), 
           fColor
         };
         // clang-format on
-        if (j == 1) heColor[0] = pick::indToVec(triangleHalfedgeInds.data[9 * iFTri + 0] + halfedgeGlobalPickIndStart);
+        if (j == 1)
+          heColor[0] = pick::indToVec(triangleAllHalfedgeInds.data[9 * iFTri + 0] + halfedgeGlobalPickIndStart);
         if (j + 2 == D)
-          heColor[2] = pick::indToVec(triangleHalfedgeInds.data[9 * iFTri + 2] + halfedgeGlobalPickIndStart);
+          heColor[2] = pick::indToVec(triangleAllHalfedgeInds.data[9 * iFTri + 2] + halfedgeGlobalPickIndStart);
 
         for (int j = 0; j < 3; j++) halfedgeColors.push_back(heColor);
       } else {
@@ -1243,7 +1279,7 @@ long long int SurfaceMesh::selectVertex() {
 void SurfaceMesh::markEdgesAsUsed() {
   edgesHaveBeenUsed = true;
   // immediately compute edge-related connectivity info, and also repopulate the pick buffer so edges can be picked
-  computeTriangleEdgeInds();
+  computeTriangleAllEdgeInds();
   pickProgram.reset();
 }
 
@@ -1362,33 +1398,31 @@ SurfaceVertexScalarQuantity* SurfaceMesh::addVertexSignedDistanceQuantityImpl(st
 SurfaceCornerParameterizationQuantity*
 SurfaceMesh::addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
                                              ParamCoordsType type) {
-  // SurfaceCornerParameterizationQuantity* q = new SurfaceCornerParameterizationQuantity(
-  //     name, applyPermutation(coords, cornerPerm), type, ParamVizStyle::CHECKER, *this);
-  // addQuantity(q);
-  //
-  // return q;
-  return nullptr; // TODO restore
+  SurfaceCornerParameterizationQuantity* q = new SurfaceCornerParameterizationQuantity(
+      name, *this, applyPermutation(coords, cornerPerm), type, ParamVizStyle::CHECKER);
+  addQuantity(q);
+
+  return q;
 }
 
 SurfaceVertexParameterizationQuantity*
 SurfaceMesh::addVertexParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
                                                    ParamCoordsType type) {
-  // SurfaceVertexParameterizationQuantity* q =
-  //     new SurfaceVertexParameterizationQuantity(name, coords, type, ParamVizStyle::CHECKER, *this);
-  // addQuantity(q);
-  //
-  // return q;
-  return nullptr; // TODO restore
+  SurfaceVertexParameterizationQuantity* q =
+      new SurfaceVertexParameterizationQuantity(name, *this, coords, type, ParamVizStyle::CHECKER);
+  addQuantity(q);
+
+  return q;
 }
 
 SurfaceVertexParameterizationQuantity*
 SurfaceMesh::addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
                                                   ParamCoordsType type) {
-  // SurfaceVertexParameterizationQuantity* q =
-  //     new SurfaceVertexParameterizationQuantity(name, coords, type, ParamVizStyle::LOCAL_CHECK, *this);
-  // addQuantity(q);
-  //
-  // return q;
+  SurfaceVertexParameterizationQuantity* q =
+      new SurfaceVertexParameterizationQuantity(name, *this, coords, type, ParamVizStyle::LOCAL_CHECK);
+  addQuantity(q);
+
+  return q;
   return nullptr; // TODO restore
 }
 

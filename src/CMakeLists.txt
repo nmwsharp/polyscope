@@ -153,15 +153,15 @@ SET(SRCS
   point_cloud_color_quantity.cpp
   point_cloud_scalar_quantity.cpp
   point_cloud_vector_quantity.cpp
-  # point_cloud_parameterization_quantity.cpp TODO restore
+  point_cloud_parameterization_quantity.cpp
 
   # Surface
   surface_mesh.cpp
   surface_mesh_io.cpp
   surface_color_quantity.cpp
   surface_scalar_quantity.cpp
-  # surface_parameterization_quantity.cpp TODO restore
   surface_vector_quantity.cpp
+  surface_parameterization_quantity.cpp
   # surface_count_quantity.cpp # TODO delete these old files
   # surface_graph_quantity.cpp
   #surface_subset_quantity.cpp
@@ -259,6 +259,8 @@ SET(HEADERS
   ${INCLUDE_ROOT}/implicit_surface.ipp
   ${INCLUDE_ROOT}/messages.h
   ${INCLUDE_ROOT}/options.h
+  ${INCLUDE_ROOT}/parameterization_quantity.h
+  ${INCLUDE_ROOT}/parameterization_quantity.ipp
   ${INCLUDE_ROOT}/persistent_value.h
   ${INCLUDE_ROOT}/pick.h
   ${INCLUDE_ROOT}/pick.ipp
@@ -268,7 +270,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/point_cloud_quantity.h
   ${INCLUDE_ROOT}/point_cloud_scalar_quantity.h
   ${INCLUDE_ROOT}/point_cloud_parameterization_quantity.h
-  ${INCLUDE_ROOT}/point_cloud_parameterization_quantity.ipp
   ${INCLUDE_ROOT}/point_cloud_vector_quantity.h
   ${INCLUDE_ROOT}/polyscope.h
   ${INCLUDE_ROOT}/quantity.h
@@ -297,7 +298,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/surface_mesh.ipp
   ${INCLUDE_ROOT}/surface_mesh_io.h
   ${INCLUDE_ROOT}/surface_mesh_quantity.h
-  ${INCLUDE_ROOT}/surface_parameterization_enums.h
   ${INCLUDE_ROOT}/surface_parameterization_quantity.h
   ${INCLUDE_ROOT}/surface_scalar_quantity.h
   ${INCLUDE_ROOT}/surface_selection_quantity.h

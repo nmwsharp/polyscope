@@ -21,17 +21,17 @@ namespace polyscope {
 const std::string PointCloud::structureTypeName = "Point Cloud";
 
 // Constructor
-PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_) :
-  // clang-format off
+PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
+    : // clang-format off
     QuantityStructure<PointCloud>(name, structureTypeName), 
       points(uniquePrefix() + "#points", pointsData),
       pointsData(std::move(points_)), 
       pointRenderMode(uniquePrefix() + "#pointRenderMode", "sphere"),
       pointColor(uniquePrefix() + "#pointColor", getNextUniqueColor()),
       pointRadius(uniquePrefix() + "#pointRadius", relativeValue(0.005)),
-      material(uniquePrefix() + "#material", "clay") 
-  // clang-format on
-  {
+      material(uniquePrefix() + "#material", "clay")
+// clang-format on
+{
   cullWholeElements.setPassive(true);
   updateObjectSpaceBounds();
 }
@@ -393,26 +393,19 @@ PointCloudScalarQuantity* PointCloud::addScalarQuantityImpl(std::string name, co
 PointCloudParameterizationQuantity* PointCloud::addParameterizationQuantityImpl(std::string name,
                                                                                 const std::vector<glm::vec2>& param,
                                                                                 ParamCoordsType type) {
-  /*
   PointCloudParameterizationQuantity* q =
-      new PointCloudParameterizationQuantity(name, param, type, ParamVizStyle::CHECKER, *this);
+      new PointCloudParameterizationQuantity(name, *this, param, type, ParamVizStyle::CHECKER);
   addQuantity(q);
   return q;
-  */
-
-  return nullptr; // TODO restore
 }
 
 PointCloudParameterizationQuantity*
 PointCloud::addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param,
                                                  ParamCoordsType type) {
-  /*
   PointCloudParameterizationQuantity* q =
-      new PointCloudParameterizationQuantity(name, param, type, ParamVizStyle::LOCAL_CHECK, *this);
+      new PointCloudParameterizationQuantity(name, *this, param, type, ParamVizStyle::LOCAL_CHECK);
   addQuantity(q);
   return q;
-  */
-  return nullptr; // TODO restore
 }
 
 PointCloudVectorQuantity* PointCloud::addVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors,

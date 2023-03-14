@@ -7,7 +7,6 @@
 #include "glm/glm.hpp"
 #include "polyscope/render/color_maps.h"
 #include "polyscope/render/materials.h"
-#include "polyscope/surface_parameterization_enums.h"
 
 #include <iostream>
 #include <string>

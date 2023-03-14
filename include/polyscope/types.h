@@ -23,6 +23,9 @@ enum class VolumeCellType { TET = 0, HEX };
 enum class ImplicitRenderMode { SphereMarch, FixedStep };
 enum class ImageOrigin { LowerLeft, UpperLeft };
 
+enum class ParamCoordsType { UNIT = 0, WORLD };                         // UNIT -> [0,1], WORLD -> length-valued
+enum class ParamVizStyle { CHECKER = 0, GRID, LOCAL_CHECK, LOCAL_RAD }; // TODO add "UV" with test UV map
+
 // What is the meaningful range of these values?
 // Used to set meaningful colormaps
 // STANDARD: [-inf, inf], zero does not mean anything special (ie, position)

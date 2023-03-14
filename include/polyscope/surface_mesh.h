@@ -18,7 +18,6 @@
 #include "polyscope/surface_color_quantity.h"
 #include "polyscope/surface_count_quantity.h"
 #include "polyscope/surface_graph_quantity.h"
-#include "polyscope/surface_parameterization_enums.h"
 #include "polyscope/surface_parameterization_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
@@ -96,11 +95,12 @@ public:
   render::ManagedBuffer<glm::vec3> vertexPositions;
 
   // connectivity / indices
-  render::ManagedBuffer<uint32_t> triangleVertexInds;   // on the split, triangulated mesh [3 * nTriFace]
-  render::ManagedBuffer<uint32_t> triangleFaceInds;     // on the split, triangulated mesh [3 * nTriFace]
-  render::ManagedBuffer<uint32_t> triangleEdgeInds;     // on the split, triangulated mesh [3 * 3 * nTriFace]
-  render::ManagedBuffer<uint32_t> triangleHalfedgeInds; // on the split, triangulated mesh [3 * 3 * nTriFace]
-  render::ManagedBuffer<uint32_t> triangleCornerInds;   // on the split, triangulated mesh [3 * 3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleVertexInds;      // on triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleFaceInds;        // on triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleCornerInds;      // on triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleAllEdgeInds;     // on triangulated mesh, all 3 [3 * 3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleAllHalfedgeInds; // on triangulated mesh, all 3 [3 * 3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleAllCornerInds;   // on triangulated mesh, all 3 [3 * 3 * nTriFace]
 
   // internal triangle data for rendering
   render::ManagedBuffer<glm::vec3> baryCoord;  // on the split, triangulated mesh [3 * nTriFace]
@@ -348,11 +348,12 @@ private:
   std::vector<uint32_t> faceIndsEntries;
 
   // other derived indices, all defined per corner of the triangulated mesh
-  std::vector<uint32_t> triangleVertexIndsData;   // index of the corresponding vertex
-  std::vector<uint32_t> triangleFaceIndsData;     // index of the corresponding original face
-  std::vector<uint32_t> triangleEdgeIndsData;     // index of the corresponding original edge
-  std::vector<uint32_t> triangleHalfedgeIndsData; // index of the corresponding original halfedge
-  std::vector<uint32_t> triangleCornerIndsData;   // index of the corresponding original corner
+  std::vector<uint32_t> triangleVertexIndsData;      // index of the corresponding vertex
+  std::vector<uint32_t> triangleFaceIndsData;        // index of the corresponding original face
+  std::vector<uint32_t> triangleCornerIndsData;      // index of the corresponding original corner
+  std::vector<uint32_t> triangleAllEdgeIndsData;     // index of the corresponding original edge
+  std::vector<uint32_t> triangleAllHalfedgeIndsData; // index of the corresponding original halfedge
+  std::vector<uint32_t> triangleAllCornerIndsData;   // index of the corresponding original corner
 
   // internal triangle data for rendering, defined per corner of the triangulated mesh
   std::vector<glm::vec3> baryCoordData;  // always triangulated
@@ -394,9 +395,10 @@ private:
 
 
   /// == Compute indices & geometry data
-  void computeTriangleEdgeInds();
-  void computeTriangleHalfedgeInds();
   void computeTriangleCornerInds();
+  void computeTriangleAllEdgeInds();
+  void computeTriangleAllHalfedgeInds();
+  void computeTriangleAllCornerInds();
   void computeFaceNormals();
   void computeFaceCenters();
   void computeFaceAreas();

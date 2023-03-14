@@ -1,93 +1,36 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
-#include "polyscope/affine_remapper.h"
-#include "polyscope/histogram.h"
+#include "polyscope/parameterization_quantity.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/point_cloud_quantity.h"
-
-#include "polyscope/surface_parameterization_enums.h"
 
 #include <vector>
 
 namespace polyscope {
 
-// TODO make a ParameterizationQuantity.h
-
-class PointCloudParameterizationQuantity : public PointCloudQuantity {
+class PointCloudParameterizationQuantity : public PointCloudQuantity,
+                                           public ParameterizationQuantity<PointCloudParameterizationQuantity> {
 public:
-  PointCloudParameterizationQuantity(std::string name, const std::vector<glm::vec2>& coords_, ParamCoordsType type_,
-                                     ParamVizStyle style_, PointCloud& cloud_);
+  PointCloudParameterizationQuantity(std::string name, PointCloud& cloud_, const std::vector<glm::vec2>& coords_,
+                                     ParamCoordsType type_, ParamVizStyle style_);
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
-
   virtual void buildPickUI(size_t ind) override;
   virtual void refresh() override;
-
   virtual std::string niceName() override;
 
 
-  // Wrapper around the actual buffer of coord data stored in the class.
-  // Interaction with the data (updating it on CPU or GPU side, accessing it, etc) happens through this wrapper.
-  render::ManagedBuffer<glm::vec2> coords;
-
-  template <class V>
-  void updateData(const V& newCoords);
-
-
-  // === Getters and setters for visualization options
-
-  // What visualization scheme to use
-  PointCloudParameterizationQuantity* setStyle(ParamVizStyle newStyle);
-  ParamVizStyle getStyle();
-
-  // Colors for checkers
-  PointCloudParameterizationQuantity* setCheckerColors(std::pair<glm::vec3, glm::vec3> colors);
-  std::pair<glm::vec3, glm::vec3> getCheckerColors();
-
-  // Colors for checkers
-  PointCloudParameterizationQuantity* setGridColors(std::pair<glm::vec3, glm::vec3> colors);
-  std::pair<glm::vec3, glm::vec3> getGridColors();
-
-  // The size of checkers / stripes
-  PointCloudParameterizationQuantity* setCheckerSize(double newVal);
-  double getCheckerSize();
-
-  // Color map for radial visualization
-  PointCloudParameterizationQuantity* setColorMap(std::string val);
-  std::string getColorMap();
-
-  // Darkness for checkers (etc)
-  PointCloudParameterizationQuantity* setAltDarkness(double newVal);
-  double getAltDarkness();
-
-  // === ~DANGER~ experimental/unsupported functions
-
 protected:
   
-  // === Members
-  std::vector<glm::vec2> coordsData;
-  const ParamCoordsType coordsType;
+  std::shared_ptr<render::ShaderProgram> program;
 
-  // === Visualiztion options
-  PersistentValue<float> checkerSize;
-  PersistentValue<ParamVizStyle> vizStyle;
-  PersistentValue<glm::vec3> checkColor1, checkColor2;           // for checker (two colors to use)
-  PersistentValue<glm::vec3> gridLineColor, gridBackgroundColor; // for GRID (two colors to use)
-  PersistentValue<float> altDarkness;
-
-  PersistentValue<std::string> cMap;
-  float localRot = 0.; // for LOCAL (angular shift, in radians)
-
+  // Helpers
   void createProgram();
-  void dataUpdated();
-  void setProgramUniforms(render::ShaderProgram& program);
+  void fillCoordBuffers(render::ShaderProgram& p);
 
-  std::shared_ptr<render::ShaderProgram> pointProgram;
 };
 
 
 } // namespace polyscope
-
-#include "polyscope/point_cloud_parameterization_quantity.ipp"

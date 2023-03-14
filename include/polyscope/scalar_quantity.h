@@ -16,7 +16,7 @@ namespace polyscope {
 template <typename QuantityT>
 class ScalarQuantity {
 public:
-  ScalarQuantity(QuantityT& parent, const std::vector<double>& values, DataType dataType);
+  ScalarQuantity(QuantityT& quantity, const std::vector<double>& values, DataType dataType);
 
   // Build the ImGUI UIs for scalars
   void buildScalarUI();

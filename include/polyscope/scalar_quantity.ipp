@@ -191,7 +191,7 @@ QuantityT* ScalarQuantity<QuantityT>::resetMapRange() {
 template <typename QuantityT>
 template <class V>
 void ScalarQuantity<QuantityT>::updateData(const V& newValues) {
-  validateSize(newValues, values.size(), "scalar quantity");
+  validateSize(newValues, values.size(), "scalar quantity " + quantity.name);
   values.data = standardizeArray<double, V>(newValues);
   values.markHostBufferUpdated();
 }

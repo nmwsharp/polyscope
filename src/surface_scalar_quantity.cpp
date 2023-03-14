@@ -138,7 +138,7 @@ void SurfaceEdgeScalarQuantity::createProgram() {
   program = render::engine->requestShader(
       "MESH", parent.addSurfaceMeshRules(addScalarRules({"MESH_PROPAGATE_HALFEDGE_VALUE"})));
 
-  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(&parent.triangleEdgeInds));
+  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(&parent.triangleAllEdgeInds));
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());
@@ -170,7 +170,7 @@ void SurfaceHalfedgeScalarQuantity::createProgram() {
   program = render::engine->requestShader(
       "MESH", parent.addSurfaceMeshRules(addScalarRules({"MESH_PROPAGATE_HALFEDGE_VALUE"})));
 
-  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(&parent.triangleHalfedgeInds));
+  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(&parent.triangleAllHalfedgeInds));
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());

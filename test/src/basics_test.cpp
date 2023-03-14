@@ -202,7 +202,6 @@ TEST_F(PolyscopeTest, PointCloudVector) {
   polyscope::removeAllStructures();
 }
 
-/* TODO restore
 
 TEST_F(PolyscopeTest, PointCloudParam) {
   auto psPoints = registerPointCloud();
@@ -223,13 +222,12 @@ TEST_F(PolyscopeTest, PointCloudParam) {
   psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
   
-  q1->updateData(param);
+  q1->updateCoords(param);
   polyscope::show(3);
 
   polyscope::removeAllStructures();
 }
 
-*/
 
 TEST_F(PolyscopeTest, PointCloudScalarRadius) {
   auto psPoints = registerPointCloud();
@@ -504,7 +502,6 @@ TEST_F(PolyscopeTest, SurfaceMeshSignedDistance) {
   polyscope::removeAllStructures();
 }
 
-/* TODO restore
 
 TEST_F(PolyscopeTest, SurfaceMeshCornerParam) {
   auto psMesh = registerTriangleMesh();
@@ -555,8 +552,6 @@ TEST_F(PolyscopeTest, SurfaceMeshVertexLocalParam) {
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
-
-*/
 
 TEST_F(PolyscopeTest, SurfaceMeshVertexVector) {
   auto psMesh = registerTriangleMesh();
