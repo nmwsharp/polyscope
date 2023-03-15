@@ -679,6 +679,37 @@ TEST_F(PolyscopeTest, CurveNetworkScalarEdge) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, CurveNetworkScalarRadius) {
+  auto psCurve = registerCurveNetwork();
+
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> dis(0.1, 10);
+
+  std::vector<double> vScalar(psCurve->nNodes(), 0.1);
+  std::vector<double> vScalar2(psCurve->nNodes(), 0.1);
+  std::generate(vScalar.begin(), vScalar.end(), [&]() { return dis(gen); });
+  std::generate(vScalar2.begin(), vScalar2.end(), [&]() { return dis(gen); });
+
+  auto q1 = psCurve->addNodeScalarQuantity("vScalar", vScalar);
+  auto q2 = psCurve->addNodeScalarQuantity("vScalar2", vScalar2);
+  q1->setEnabled(true);
+
+  psCurve->setNodeRadiusQuantity(q1);
+  polyscope::show(3);
+
+  psCurve->setNodeRadiusQuantity("vScalar2");
+  polyscope::show(3);
+
+  psCurve->setNodeRadiusQuantity("vScalar2", false); // no autoscaling
+  polyscope::show(3);
+
+  psCurve->clearNodeRadiusQuantity();
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, CurveNetworkVertexVector) {
   auto psCurve = registerCurveNetwork();
   std::vector<glm::vec3> vals(psCurve->nNodes(), {1., 2., 3.});
@@ -1078,7 +1109,7 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
   polyscope::show(3);
   psPoints->setCullWholeElements(false);
   polyscope::show(3);
-  
+
   polyscope::show(3);
 
   // add another and rotate it
