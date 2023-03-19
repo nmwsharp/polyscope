@@ -79,8 +79,8 @@ void CurveNetworkNodeScalarQuantity::createProgram() {
       "RAYCAST_CYLINDER", addScalarRules(parent.addCurveNetworkEdgeRules({"CYLINDER_PROPAGATE_BLEND_VALUE"})));
 
   // Fill geometry buffers
-  parent.fillEdgeGeometryBuffers(*edgeProgram);
   parent.fillNodeGeometryBuffers(*nodeProgram);
+  parent.fillEdgeGeometryBuffers(*edgeProgram);
 
   { // Fill node color buffers
     nodeProgram->setAttribute("a_value", values);

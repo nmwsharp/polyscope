@@ -124,6 +124,15 @@ public:
   CurveNetwork* setColor(glm::vec3 newVal);
   glm::vec3 getColor();
 
+
+  // === Set radius from a scalar quantity
+  // effect is multiplicative with pointRadius
+  // negative values are always clamped to 0
+  // if autoScale==true, values are rescaled such that the largest has size pointRadius
+  void setNodeRadiusQuantity(CurveNetworkNodeScalarQuantity* quantity, bool autoScale = true);
+  void setNodeRadiusQuantity(std::string name, bool autoScale = true);
+  void clearNodeRadiusQuantity();
+
   // set the radius of the points
   CurveNetwork* setRadius(float newVal, bool isRelative = true);
   float getRadius();
@@ -168,6 +177,11 @@ private:
   CurveNetworkNodeVectorQuantity* addNodeVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
   CurveNetworkEdgeVectorQuantity* addEdgeVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
   // clang-format on
+
+  // Manage varying node, edge size
+  std::string nodeRadiusQuantityName = ""; // e empty string means none
+  bool nodeRadiusQuantityAutoscale = true;
+  std::vector<double> resolveNodeRadiusQuantity(); // helper
 };
 
 

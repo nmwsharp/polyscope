@@ -197,7 +197,7 @@ bool rayDiskIntersection(vec3 rayStart, vec3 rayDir, vec3 planePos, vec3 planeDi
   return true;
 }
 
-bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit) {
+bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylTipRad, float cylTailRad, out float tHit, out vec3 pHit, out vec3 nHit) {
     
     rayDir = normalize(rayDir);
     float cylLen = max(length(cylTip - cylTail), 1e-6);
@@ -209,7 +209,7 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
     vec3 pVec = o - dot(o, cylDir)*cylDir;
     float a = length2(qVec);
     float b = 2.0 * dot(qVec, pVec);
-    float c = length2(pVec) - cylRad*cylRad;
+    float c = length2(pVec) - cylTipRad*cylTailRad; // not sure about here. What are we doing in this section? Need comment for the root-solving.
     float disc = b*b - 4*a*c;
     if(disc < 0){
       tHit = LARGE_FLOAT();
@@ -240,7 +240,7 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
     float tHitTail;
     vec3 pHitTail;
     vec3 nHitTail;
-    rayDiskIntersection(rayStart, rayDir, cylTail, -cylDir, cylRad, tHitTail, pHitTail, nHitTail);
+    rayDiskIntersection(rayStart, rayDir, cylTail, -cylDir, cylTipRad, tHitTail, pHitTail, nHitTail);
     if(tHitTail < tHit) {
       tHit = tHitTail;
       pHit = pHitTail;
@@ -251,7 +251,7 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
     float tHitTip;
     vec3 pHitTip;
     vec3 nHitTip;
-    rayDiskIntersection(rayStart, rayDir, cylTip, cylDir, cylRad, tHitTip, pHitTip, nHitTip);
+    rayDiskIntersection(rayStart, rayDir, cylTip, cylDir, cylTailRad, tHitTip, pHitTip, nHitTip);
     if(tHitTip < tHit) {
       tHit = tHitTip;
       pHit = pHitTip;

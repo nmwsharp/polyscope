@@ -18,6 +18,7 @@ extern const ShaderReplacementRule CYLINDER_PROPAGATE_COLOR;
 extern const ShaderReplacementRule CYLINDER_PROPAGATE_BLEND_COLOR;
 extern const ShaderReplacementRule CYLINDER_PROPAGATE_PICK;
 extern const ShaderReplacementRule CYLINDER_CULLPOS_FROM_MID;
+extern const ShaderReplacementRule CYLINDER_VARIABLE_SIZE;
 
 
 } // namespace backend_openGL3_glfw
