@@ -56,7 +56,7 @@ void CurveNetwork::setCurveNetworkNodeUniforms(render::ShaderProgram& p) {
   glm::mat4 Pinv = glm::inverse(P);
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
-  if (nodeRadiusQuantityName != "" && nodeRadiusQuantityAutoscale) {
+  if (nodeRadiusQuantityName != "" && !nodeRadiusQuantityAutoscale) {
     p.setUniform("u_pointRadius", 1.); // u_pointRadius in sphere shader
   } else {
     p.setUniform("u_pointRadius", getRadius());
