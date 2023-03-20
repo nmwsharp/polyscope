@@ -117,6 +117,7 @@ SET(SRCS
   internal.cpp
   state.cpp
   structure.cpp
+  group.cpp
   utilities.cpp
   view.cpp
   screenshot.cpp
@@ -215,6 +216,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/curve_network_vector_quantity.h
   ${INCLUDE_ROOT}/disjoint_sets.h
   ${INCLUDE_ROOT}/file_helpers.h
+  ${INCLUDE_ROOT}/group.h
   ${INCLUDE_ROOT}/histogram.h
   ${INCLUDE_ROOT}/image_scalar_artist.h
   ${INCLUDE_ROOT}/imgui_config.h

@@ -1,16 +1,18 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include "imgui.h"
+#include "polyscope/group.h"
 #include "polyscope/internal.h"
 #include "polyscope/messages.h"
 #include "polyscope/options.h"
 #include "polyscope/screenshot.h"
 #include "polyscope/slice_plane.h"
 #include "polyscope/structure.h"
+#include "polyscope/transformation_gizmo.h"
 #include "polyscope/utilities.h"
 #include "polyscope/widget.h"
-#include "polyscope/transformation_gizmo.h"
-#include "imgui.h"
+
 
 #include <functional>
 #include <map>
@@ -22,6 +24,7 @@ namespace polyscope {
 
 // forward declarations
 class Structure;
+class Group;
 
 // Initialize polyscope, including windowing system and openGL. Should be called exactly once at the beginning of a
 // program. If initialization fails in any way, an exception will be thrown.
@@ -53,6 +56,9 @@ extern std::string backend;
 // lists of all structures in Polyscope, by category
 extern std::map<std::string, std::map<std::string, Structure*>> structures;
 
+// lists of all groups in Polyscope
+extern std::map<std::string, Group*> groups;
+
 // representative length scale for all registered structures
 extern float lengthScale;
 
@@ -63,14 +69,12 @@ extern std::tuple<glm::vec3, glm::vec3> boundingBox;
 extern std::set<Widget*> widgets;
 extern std::vector<SlicePlane*> slicePlanes;
 
-// should we allow default trackball mouse camera interaction? 
+// should we allow default trackball mouse camera interaction?
 // Needs more interactions on when to turn this on/off
 extern bool doDefaultMouseInteraction;
 
 // a callback function used to render a "user" gui
 extern std::function<void()> userCallback;
-
-
 
 
 // representative center for all registered structures
@@ -91,6 +95,16 @@ Structure* getStructure(std::string type, std::string name = "");
 
 // True if such a structure exists
 bool hasStructure(std::string type, std::string name = "");
+
+// Group management
+bool registerGroup(std::string name);
+bool setParentGroupOfGroup(std::string child, std::string parent);
+bool setParentGroupOfStructure(std::string typeName, std::string child, std::string parent);
+bool setParentGroupOfStructure(Structure* child, std::string parent);
+// De-register a group
+void setGroupEnabled(std::string name, bool enabled);
+void removeGroup(std::string name, bool errorIfAbsent = true);
+void removeAllGroups();
 
 // De-register a structure, of any type. Also removes any quantities associated with the structure
 void removeStructure(Structure* structure, bool errorIfAbsent = true);
