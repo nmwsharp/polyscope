@@ -47,7 +47,16 @@ public:
   double getIsolineWidth();
   QuantityT* setIsolineDarkness(double val);
   double getIsolineDarkness();
-
+  
+  // Contours
+  QuantityT* setContoursEnabled(bool newEnabled);
+  bool getContoursEnabled();
+  QuantityT* setContourFrequency(double size, bool isRelative);
+  double getContourFrequency();
+  QuantityT* setContourThickness(double val);
+  double getContourThickness();
+  QuantityT* setContourDarkness(double val);
+  double getContourDarkness();
 
 protected:
   // === Visualization parameters
@@ -62,6 +71,10 @@ protected:
   PersistentValue<bool> isolinesEnabled;
   PersistentValue<ScaledValue<float>> isolineWidth;
   PersistentValue<float> isolineDarkness;
+  PersistentValue<bool> contoursEnabled;
+  PersistentValue<ScaledValue<float>> contourFrequency;
+  PersistentValue<float> contourThickness;
+  PersistentValue<float> contourDarkness;
 };
 
 } // namespace polyscope
