@@ -213,6 +213,12 @@ CurveNetwork* registerCurveNetworkLine(std::string name, const P& points);
 template <class P>
 CurveNetwork* registerCurveNetworkLine2D(std::string name, const P& points);
 
+// Shorthand to add a curve network, automatically constructing a collection of line segments
+// (connecting point 0to1, 2to3, etc)
+template <class P>
+CurveNetwork* registerCurveNetworkSegments(std::string name, const P& points);
+template <class P>
+CurveNetwork* registerCurveNetworkSegments2D(std::string name, const P& points);
 
 // Shorthand to add a curve network, automatically constructing the connectivity of a loop
 template <class P>

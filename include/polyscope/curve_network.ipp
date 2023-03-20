@@ -74,6 +74,57 @@ CurveNetwork* registerCurveNetworkLine2D(std::string name, const P& nodes) {
   return s;
 }
 
+
+template <class P>
+CurveNetwork* registerCurveNetworkSegments(std::string name, const P& nodes) {
+  checkInitialized();
+
+  std::vector<std::array<size_t, 2>> edges;
+  size_t N = adaptorF_size(nodes);
+
+  if (N % 2 != 0) {
+    throw std::runtime_error("[polyscope] registerCurveNetworkSegments should have an even number of nodes");
+  }
+
+  for (size_t iE = 0; iE < N; iE += 2) {
+    edges.push_back({iE, iE + 1});
+  }
+
+  CurveNetwork* s = new CurveNetwork(name, standardizeVectorArray<glm::vec3, 3>(nodes), edges);
+  bool success = registerStructure(s);
+  if (!success) {
+    safeDelete(s);
+  }
+  return s;
+}
+template <class P>
+CurveNetwork* registerCurveNetworkSegments2D(std::string name, const P& nodes) {
+  checkInitialized();
+
+  std::vector<std::array<size_t, 2>> edges;
+  size_t N = adaptorF_size(nodes);
+
+  if (N % 2 != 0) {
+    throw std::runtime_error("[polyscope] registerCurveNetworkSegments2D should have an even number of nodes");
+  }
+
+  for (size_t iE = 0; iE < N; iE += 2) {
+    edges.push_back({iE, iE + 1});
+  }
+
+  std::vector<glm::vec3> points3D(standardizeVectorArray<glm::vec3, 2>(nodes));
+  for (auto& v : points3D) {
+    v.z = 0.;
+  }
+
+  CurveNetwork* s = new CurveNetwork(name, points3D, edges);
+  bool success = registerStructure(s);
+  if (!success) {
+    safeDelete(s);
+  }
+  return s;
+}
+
 // Shorthand to add curve from a loop of points
 template <class P>
 CurveNetwork* registerCurveNetworkLoop(std::string name, const P& nodes) {
