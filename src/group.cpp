@@ -5,8 +5,7 @@
 
 #include "imgui_internal.h"
 
-namespace ImGui
-{
+namespace {
     bool CheckboxTristate(const char* label, int* v_tristate)
     {
         bool ret;
@@ -69,7 +68,7 @@ void Group::buildUI() {
       // no children, add greyed out text
       ImGui::TextDisabled("no child structures");
     } else {
-      if (ImGui::CheckboxTristate("Enabled", &enabledLocal)) {
+      if (CheckboxTristate("Enabled", &enabledLocal)) {
         setEnabled(enabledLocal);
       }  
     }
