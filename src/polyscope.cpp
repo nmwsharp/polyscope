@@ -839,13 +839,12 @@ bool setParentGroupOfStructure(std::string typeName, std::string child, std::str
   // check if parent exists
   bool parentExists = state::groups.find(parent) != state::groups.end();
   if (!parentExists) {
-    polyscope::error("Attempted to set parent of curve network " + child + " to " + parent +
+    polyscope::error("Attempted to set parent of " + typeName + " " + child + " to " + parent +
                      ", but no group with that name exists");
     return false;
   }
 
   // Make sure a map for the type exists
-  // std::string typeName = "Curve Network";
   if (state::structures.find(typeName) == state::structures.end()) {
     state::structures[typeName] = std::map<std::string, Structure*>();
   }
@@ -854,8 +853,8 @@ bool setParentGroupOfStructure(std::string typeName, std::string child, std::str
   // check if child exists
   bool childExists = sMap.find(child) != sMap.end();
   if (!childExists) {
-    polyscope::error("Attempted to set parent of curve network " + child +
-                     ", but no curve network with that name exists");
+    polyscope::error("Attempted to set parent of " + typeName + " " + child + ", but no " + typeName +
+                     "with that name exists");
     return false;
   }
 
