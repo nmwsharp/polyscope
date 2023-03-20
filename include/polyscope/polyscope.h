@@ -13,6 +13,7 @@
 #include "polyscope/utilities.h"
 #include "polyscope/widget.h"
 
+
 #include <functional>
 #include <map>
 #include <set>
@@ -23,6 +24,7 @@ namespace polyscope {
 
 // forward declarations
 class Structure;
+class Group;
 
 // Initialize polyscope, including windowing system and openGL. Should be called exactly once at the beginning of a
 // program. If initialization fails in any way, an exception will be thrown.
