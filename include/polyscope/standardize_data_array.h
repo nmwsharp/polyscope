@@ -859,7 +859,7 @@ adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<6>, const T& inputData) {
   // copy data over
   for (size_t i = 0; i < dataSize; i++) dataOut[i] = userDataArr[i];
   for (size_t i = 0; i < dataStartSize; i++) dataStartOut[i] = userDataStartArr[i];
-  return std::move(outTuple);
+  return outTuple;
 }
 
 // Next: tuple {data_ptr, outer_size, inner_size}
@@ -896,7 +896,7 @@ adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<5>, const T& inputData) {
       dataStartOut[i] = i * innerSize;
   }
 
-  return std::move(outTuple);
+  return outTuple;
 }
 
 
@@ -930,7 +930,7 @@ adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<4>, const T& inputData) {
     dataStartOut[i+1] = innerSize * (i + 1);
   }
 
-  return std::move(outTuple);
+  return outTuple;
 }
 
 
@@ -961,7 +961,7 @@ adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<3>, const T& inputData) {
     dataStartOut[i+1] = dataOut.size();
   }
 
-  return std::move(outTuple);
+  return outTuple;
 }
 
 // Next: recusive unpacking with paren
@@ -992,7 +992,7 @@ adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<2>, const T& inputData) {
     dataStartOut[i+1] = dataOut.size();
   }
 
-  return std::move(outTuple);
+  return outTuple;
 }
 
 
@@ -1030,7 +1030,7 @@ adaptorF_convertNestedArrayToStdVectorImpl(PreferenceT<1>, const T& inputData) {
     i++;
   }
 
-  return std::move(outTuple);
+  return outTuple;
 }
 
 // Fall-through case: no overload found :(
