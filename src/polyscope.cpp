@@ -155,9 +155,7 @@ void checkInitialized() {
   }
 }
 
-bool isInitialized() {
-  return state::initialized;
-}
+bool isInitialized() { return state::initialized; }
 
 void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
@@ -218,10 +216,7 @@ void popContext() {
   contextStack.pop_back();
 }
 
-ImGuiContext* getCurrentContext()
-{
-  return contextStack.empty() ? nullptr : contextStack.back().context;
-}
+ImGuiContext* getCurrentContext() { return contextStack.empty() ? nullptr : contextStack.back().context; }
 
 void requestRedraw() { redrawNextFrame = true; }
 bool redrawRequested() { return redrawNextFrame; }
@@ -573,7 +568,7 @@ void buildStructureGui() {
 
   // only show groups if there are any
   if (state::groups.size() > 0) {
-    if(ImGui::CollapsingHeader("Groups", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::CollapsingHeader("Groups", ImGuiTreeNodeFlags_DefaultOpen)) {
       for (auto x : state::groups) {
         if (x.second->isRootGroup()) {
           x.second->buildUI();
@@ -859,7 +854,8 @@ bool setParentGroupOfStructure(std::string typeName, std::string child, std::str
   // check if child exists
   bool childExists = sMap.find(child) != sMap.end();
   if (!childExists) {
-    polyscope::error("Attempted to set parent of curve network " + child + ", but no curve network with that name exists");
+    polyscope::error("Attempted to set parent of curve network " + child +
+                     ", but no curve network with that name exists");
     return false;
   }
 
