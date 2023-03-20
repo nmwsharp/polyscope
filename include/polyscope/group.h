@@ -7,9 +7,11 @@
 
 namespace polyscope {
 
-// A 'quantity' (in Polyscope terminology) is data which is associated with a structure; any structure might have many
-// quantities. For instance a mesh structure might have a scalar quantity associated with it, or a point cloud might
-// have a vector field quantity associated with it.
+// Groups track collections of structures (or other groups) which can be toggled together.
+//
+// Groups are non-owning. Any contained structures continue their normal lifetime unaffected
+// by the group. A structure can be in 0, 1, or multiple groups, and removing it from a group 
+// does not destroy the structure.
 
 class Group {
 public:
