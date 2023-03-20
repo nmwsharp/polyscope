@@ -47,14 +47,17 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
 
   { // Add some node values
     std::vector<double> valX(nNodes);
+    std::vector<double> valXabs(nNodes);
     std::vector<std::array<double, 3>> randColor(nNodes);
     std::vector<glm::vec3> randVec(nNodes);
     for (size_t iN = 0; iN < nNodes; iN++) {
       valX[iN] = nodes[iN].x;
+      valXabs[iN] = std::fabs(nodes[iN].x);
       randColor[iN] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
       randVec[iN] = glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5};
     }
     polyscope::getCurveNetwork(curveName)->addNodeScalarQuantity("nX", valX);
+    polyscope::getCurveNetwork(curveName)->addNodeScalarQuantity("nXabs", valXabs);
     polyscope::getCurveNetwork(curveName)->addNodeColorQuantity("nColor", randColor);
     polyscope::getCurveNetwork(curveName)->addNodeVectorQuantity("randVecN", randVec);
   }
@@ -76,6 +79,9 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
     polyscope::getCurveNetwork(curveName)->addEdgeColorQuantity("eColor", randColor);
     polyscope::getCurveNetwork(curveName)->addEdgeVectorQuantity("randVecE", randVec);
   }
+
+  // set a node radius quantity from above
+  polyscope::getCurveNetwork(curveName)->setNodeRadiusQuantity("nXabs");
 }
 
 void processFileOBJ(string filename) {
