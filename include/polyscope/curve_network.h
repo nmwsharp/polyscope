@@ -179,7 +179,7 @@ private:
   // clang-format on
 
   // Manage varying node, edge size
-  std::string nodeRadiusQuantityName = ""; // e empty string means none
+  std::string nodeRadiusQuantityName = ""; // empty string means none
   bool nodeRadiusQuantityAutoscale = true;
   std::vector<double> resolveNodeRadiusQuantity(); // helper
 };
