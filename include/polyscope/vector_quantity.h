@@ -107,7 +107,7 @@ protected:
   void updateMaxLength();
 
   std::vector<glm::vec3> vectorsData;
-  double maxLength = -1;
+  float maxLength = -777;
 };
 
 
@@ -151,7 +151,7 @@ protected:
   void updateMaxLength();
 
   std::vector<glm::vec2> tangentVectorsData;
-  double maxLength = -1;
+  float maxLength = -777;
 };
 
 } // namespace polyscope

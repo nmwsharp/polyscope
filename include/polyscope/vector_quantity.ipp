@@ -110,7 +110,9 @@ template <typename QuantityT>
 VectorQuantity<QuantityT>::VectorQuantity(QuantityT& quantity_, const std::vector<glm::vec3>& vectors_,
                                           render::ManagedBuffer<glm::vec3>& vectorRoots_, VectorType vectorType_)
     : VectorQuantityBase<QuantityT>(quantity_, vectorType_), vectors(quantity_.uniquePrefix() + "#values", vectorsData),
-      vectorRoots(vectorRoots_), vectorsData(vectors_) {}
+      vectorRoots(vectorRoots_), vectorsData(vectors_) {
+  this->updateMaxLength();
+}
 
 template <typename QuantityT>
 void VectorQuantity<QuantityT>::drawVectors() {
@@ -160,6 +162,14 @@ void VectorQuantity<QuantityT>::createProgram() {
   render::engine->setMaterial(*(this->vectorProgram), this->material.get());
 }
 
+template <typename QuantityT>
+void VectorQuantity<QuantityT>::updateMaxLength() {
+  vectors.ensureHostBufferPopulated();
+  maxLength = 0.;
+  for (const glm::vec3& vec : vectors.data) {
+    maxLength = std::max(maxLength, glm::length(vec));
+  }
+}
 
 template <typename QuantityT>
 void VectorQuantity<QuantityT>::refreshVectors() {
@@ -172,6 +182,7 @@ void VectorQuantity<QuantityT>::updateData(const T& newVectors) {
   validateSize(newVectors, this->vectors.size(), "vector quantity " + this->quantity.name);
   this->vectors.data = standardizeVectorArray<glm::vec3, 3>(newVectors);
   this->vectors.markHostBufferUpdated();
+  this->updateMaxLength();
 }
 
 template <typename QuantityT>
@@ -183,6 +194,7 @@ void VectorQuantity<QuantityT>::updateData2D(const T& newVectors) {
     v.z = 0.;
   }
   this->vectors.markHostBufferUpdated();
+  this->updateMaxLength();
 }
 
 // ================================================
@@ -198,7 +210,9 @@ TangentVectorQuantity<QuantityT>::TangentVectorQuantity(QuantityT& quantity_,
 
     : VectorQuantityBase<QuantityT>(quantity_, vectorType_),
       tangentVectors(quantity_.uniquePrefix() + "#values", tangentVectorsData), vectorRoots(vectorRoots_),
-      tangentBasis(tangentBasis_), tangentVectorsData(tangentVectors_) {}
+      tangentBasis(tangentBasis_), tangentVectorsData(tangentVectors_) {
+  this->updateMaxLength();
+}
 
 template <typename QuantityT>
 void TangentVectorQuantity<QuantityT>::drawVectors() {
@@ -248,6 +262,14 @@ void TangentVectorQuantity<QuantityT>::createProgram() {
   render::engine->setMaterial(*(this->vectorProgram), this->material.get());
 }
 
+template <typename QuantityT>
+void TangentVectorQuantity<QuantityT>::updateMaxLength() {
+  tangentVectors.ensureHostBufferPopulated();
+  maxLength = 0.;
+  for (const glm::vec2& vec : tangentVectors.data) {
+    maxLength = std::max(maxLength, glm::length(vec));
+  }
+}
 
 template <typename QuantityT>
 void TangentVectorQuantity<QuantityT>::refreshVectors() {
@@ -260,6 +282,7 @@ void TangentVectorQuantity<QuantityT>::updateData(const T& newVectors) {
   validateSize(newVectors, this->tangentVectors.size(), "tangent vector quantity " + this->quantity.name);
   this->tangentVectors.data = standardizeVectorArray<glm::vec2, 2>(newVectors);
   this->tangentVectors.markHostBufferUpdated();
+  this->updateMaxLength();
 }
 
 } // namespace polyscope
