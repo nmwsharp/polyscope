@@ -175,7 +175,6 @@ SET(SRCS
   curve_network_vector_quantity.cpp
   
   # Volume mesh
-  # TODO restore
   volume_mesh.cpp
   volume_mesh_color_quantity.cpp
   volume_mesh_scalar_quantity.cpp

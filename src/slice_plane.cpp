@@ -67,21 +67,21 @@ void buildSlicePlaneGUI() {
   }
 }
 
-void SlicePlane::setSliceGeomUniforms(render::ShaderProgram& p) {
-  glm::vec3 norm = getNormal();
-  p.setUniform("u_sliceVector", norm);
-  p.setUniform("u_slicePoint", glm::dot(getCenter(), norm));
-}
-
 
 SlicePlane::SlicePlane(std::string name_)
-    : name(name_), postfix(std::to_string(state::slicePlanes.size())), active("SlicePlane#" + name + "#active", true),
-      drawPlane("SlicePlane#" + name + "#drawPlane", true), drawWidget("SlicePlane#" + name + "#drawWidget", true),
-      objectTransform("SlicePlane#" + name + "#object_transform", glm::mat4(1.0)),
-      color("SlicePlane#" + name + "#color", getNextUniqueColor()),
-      gridLineColor("SlicePlane#" + name + "#gridLineColor", glm::vec3{.97, .97, .97}),
-      transparency("SlicePlane#" + name + "#transparency", 0.5), shouldInspectMesh(false), inspectedMeshName(""),
-      transformGizmo("SlicePlane#" + name + "#transformGizmo", objectTransform.get(), &objectTransform) {
+    : name(name_), postfix(std::to_string(state::slicePlanes.size())), active(uniquePrefix() + "#active", true),
+      drawPlane(uniquePrefix() + "#drawPlane", true), drawWidget(uniquePrefix() + "#drawWidget", true),
+      objectTransform(uniquePrefix() + "#object_transform", glm::mat4(1.0)),
+      color(uniquePrefix() + "#color", getNextUniqueColor()),
+      gridLineColor(uniquePrefix() + "#gridLineColor", glm::vec3{.97, .97, .97}),
+      transparency(uniquePrefix() + "#transparency", 0.5), shouldInspectMesh(false), inspectedMeshName(""),
+      transformGizmo(uniquePrefix() + "#transformGizmo", objectTransform.get(), &objectTransform),
+      sliceBufferArr{{{uniquePrefix() + "#slice1", sliceBufferDataArr[0]},
+                      {uniquePrefix() + "#slice2", sliceBufferDataArr[1]},
+                      {uniquePrefix() + "#slice3", sliceBufferDataArr[2]},
+                      {uniquePrefix() + "#slice4", sliceBufferDataArr[3]}}}
+
+{
   state::slicePlanes.push_back(this);
   render::engine->addSlicePlane(postfix);
   transformGizmo.enabled = true;
@@ -97,6 +97,7 @@ SlicePlane::~SlicePlane() {
   state::slicePlanes.erase(pos);
 }
 
+std::string SlicePlane::uniquePrefix() { return "SlicePlane#" + name + "#"; }
 
 void SlicePlane::prepare() {
 
@@ -121,8 +122,14 @@ void SlicePlane::prepare() {
   planeProgram->setAttribute("a_position", positions);
 }
 
+void SlicePlane::setSliceGeomUniforms(render::ShaderProgram& p) {
+  glm::vec3 norm = getNormal();
+  p.setUniform("u_sliceVector", norm);
+  p.setUniform("u_slicePoint", glm::dot(getCenter(), norm));
+}
+
+
 void SlicePlane::setVolumeMeshToInspect(std::string meshname) {
-  /* TODO restore
   VolumeMesh* oldMeshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
   if (oldMeshToInspect != nullptr) {
     oldMeshToInspect->removeSlicePlaneListener(this);
@@ -141,13 +148,11 @@ void SlicePlane::setVolumeMeshToInspect(std::string meshname) {
   meshToInspect->ensureHaveTets(); // do this as early as possible because it is expensive
   shouldInspectMesh = true;
   volumeInspectProgram.reset();
-   */
 }
 
 std::string SlicePlane::getVolumeMeshToInspect() { return inspectedMeshName; }
 
 void SlicePlane::ensureVolumeInspectValid() {
-  /* TODO restore
   if (!shouldInspectMesh) return;
 
   // This method exists to save us in any cases where we might be inspecting a volume mesh when that mesh is deleted. We
@@ -158,51 +163,44 @@ void SlicePlane::ensureVolumeInspectValid() {
     shouldInspectMesh = false;
     volumeInspectProgram = nullptr;
   }
-  */
 }
 
 void SlicePlane::createVolumeSliceProgram() {
-  /* TODO RESTORE
   VolumeMesh* meshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
   volumeInspectProgram = render::engine->requestShader(
       "SLICE_TETS", meshToInspect->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}, true, true));
   meshToInspect->fillSliceGeometryBuffers(*volumeInspectProgram);
   render::engine->setMaterial(*volumeInspectProgram, meshToInspect->getMaterial());
-  */
 }
 
 void SlicePlane::resetVolumeSliceProgram() { volumeInspectProgram.reset(); }
 
 void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
-  /* TODO restore
   VolumeMesh* meshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
-  std::vector<glm::vec3> point1;
-  std::vector<glm::vec3> point2;
-  std::vector<glm::vec3> point3;
-  std::vector<glm::vec3> point4;
-  size_t cellCount = meshToInspect->nCells();
-  point1.resize(cellCount);
-  point2.resize(cellCount);
-  point3.resize(cellCount);
-  point4.resize(cellCount);
-  for (size_t iC = 0; iC < cellCount; iC++) {
-    const std::array<int64_t, 8>& cell = meshToInspect->cells[iC];
-    point1[iC] = meshToInspect->vertices[cell[0]];
-    point2[iC] = meshToInspect->vertices[cell[1]];
-    point3[iC] = meshToInspect->vertices[cell[2]];
-    point4[iC] = meshToInspect->vertices[cell[3]];
-  }
-  glm::vec3 normal = glm::vec3(-1, 0, 0);
 
-  p.setAttribute("a_slice_1", point1);
-  p.setAttribute("a_slice_2", point2);
-  p.setAttribute("a_slice_3", point3);
-  p.setAttribute("a_slice_4", point4);
-  */
+
+  size_t cellCount = meshToInspect->nCells();
+  for (int i = 0; i < 4; i++) {
+    sliceBufferDataArr[i].resize(cellCount);
   }
+  for (size_t iC = 0; iC < cellCount; iC++) {
+    const std::array<uint32_t, 8>& cell = meshToInspect->cells[iC];
+    for (int i = 0; i < 4; i++) {
+      sliceBufferDataArr[i][iC] = cell[i];
+    }
+  }
+
+  for (int i = 0; i < 4; i++) {
+    sliceBufferArr[i].markHostBufferUpdated();
+  }
+
+  p.setAttribute("a_slice_1", meshToInspect->vertexPositions.getIndexedRenderAttributeBuffer(&sliceBufferArr[0]));
+  p.setAttribute("a_slice_2", meshToInspect->vertexPositions.getIndexedRenderAttributeBuffer(&sliceBufferArr[1]));
+  p.setAttribute("a_slice_3", meshToInspect->vertexPositions.getIndexedRenderAttributeBuffer(&sliceBufferArr[2]));
+  p.setAttribute("a_slice_4", meshToInspect->vertexPositions.getIndexedRenderAttributeBuffer(&sliceBufferArr[3]));
+}
 
 void SlicePlane::drawGeometry() {
-  /* TODO restore
   if (!active.get()) return;
 
   ensureVolumeInspectValid();
@@ -237,7 +235,6 @@ void SlicePlane::drawGeometry() {
       it->second->drawSlice(this);
     }
   }
-  */
 }
 
 
