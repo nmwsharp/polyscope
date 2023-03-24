@@ -1553,11 +1553,11 @@ TEST_F(PolyscopeTest, RefreshMultiTest) {
     q2->setEnabled(true);
   }
 
-  { // Curve network TODO RESTORE
-    // auto psCurve = registerCurveNetwork();
-    // std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
-    // auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
-    // q3->setEnabled(true);
+  { // Curve network 
+    auto psCurve = registerCurveNetwork();
+    std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
+    auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
+    q3->setEnabled(true);
   }
 
   polyscope::show(3);
@@ -1584,11 +1584,11 @@ TEST_F(PolyscopeTest, TransparencyTest) {
     q2->setEnabled(true);
   }
 
-  { // Curve network TODO restore
-    // auto psCurve = registerCurveNetwork();
-    // std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
-    // auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
-    // q3->setEnabled(true);
+  { // Curve network 
+    auto psCurve = registerCurveNetwork();
+    std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
+    auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);
+    q3->setEnabled(true);
   }
 
   polyscope::show(3);
