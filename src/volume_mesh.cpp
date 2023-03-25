@@ -604,9 +604,9 @@ void VolumeMesh::setVolumeMeshUniforms(render::ShaderProgram& p) {
 
 void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
 
-  p.setAttribute("a_vertexPositions", vertexPositions.getIndexedRenderAttributeBuffer(&triangleVertexInds));
+  p.setAttribute("a_vertexPositions", vertexPositions.getIndexedRenderAttributeBuffer(triangleVertexInds));
 
-  p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(&triangleFaceInds));
+  p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(triangleFaceInds));
 
   bool wantsBary = p.hasAttribute("a_barycoord");
   bool wantsEdge = (getEdgeWidth() > 0);
@@ -620,10 +620,10 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
     p.setAttribute("a_edgeIsReal", edgeIsReal.getRenderAttributeBuffer());
   }
   if (wantsAttrCullPosition) {
-    p.setAttribute("a_cullPos", cellCenters.getIndexedRenderAttributeBuffer(&triangleCellInds));
+    p.setAttribute("a_cullPos", cellCenters.getIndexedRenderAttributeBuffer(triangleCellInds));
   }
   if (wantsFaceType) {
-    p.setAttribute("a_faceColorType", faceType.getIndexedRenderAttributeBuffer(&triangleFaceInds));
+    p.setAttribute("a_faceColorType", faceType.getIndexedRenderAttributeBuffer(triangleFaceInds));
   }
 }
 

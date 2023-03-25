@@ -87,8 +87,8 @@ void CurveNetworkNodeScalarQuantity::createProgram() {
   }
 
   { // Fill edge color buffers
-    edgeProgram->setAttribute("a_value_tail", values.getIndexedRenderAttributeBuffer(&parent.edgeTailInds));
-    edgeProgram->setAttribute("a_value_tip", values.getIndexedRenderAttributeBuffer(&parent.edgeTipInds));
+    edgeProgram->setAttribute("a_value_tail", values.getIndexedRenderAttributeBuffer(parent.edgeTailInds));
+    edgeProgram->setAttribute("a_value_tip", values.getIndexedRenderAttributeBuffer(parent.edgeTipInds));
   }
 
   edgeProgram->setTextureFromColormap("t_colormap", cMap.get());

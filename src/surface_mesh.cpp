@@ -738,20 +738,20 @@ void SurfaceMesh::preparePick() {
 
 void SurfaceMesh::setMeshGeometryAttributes(render::ShaderProgram& p) {
   if (p.hasAttribute("a_vertexPositions")) {
-    p.setAttribute("a_vertexPositions", vertexPositions.getIndexedRenderAttributeBuffer(&triangleVertexInds));
+    p.setAttribute("a_vertexPositions", vertexPositions.getIndexedRenderAttributeBuffer(triangleVertexInds));
   }
   if (p.hasAttribute("a_vertexNormals")) {
 
     if (getShadeStyle() == MeshShadeStyle::Smooth) {
-      p.setAttribute("a_vertexNormals", vertexNormals.getIndexedRenderAttributeBuffer(&triangleVertexInds));
+      p.setAttribute("a_vertexNormals", vertexNormals.getIndexedRenderAttributeBuffer(triangleVertexInds));
     } else {
       // these aren't actually used in in the automatically-generated case, but the shader is set up in a lazy way so it
       // is still needed
-      p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(&triangleFaceInds));
+      p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(triangleFaceInds));
     }
   }
   if (p.hasAttribute("a_normal")) {
-    p.setAttribute("a_normal", faceNormals.getIndexedRenderAttributeBuffer(&triangleFaceInds));
+    p.setAttribute("a_normal", faceNormals.getIndexedRenderAttributeBuffer(triangleFaceInds));
   }
   if (p.hasAttribute("a_barycoord")) {
     p.setAttribute("a_barycoord", baryCoord.getRenderAttributeBuffer());
@@ -760,7 +760,7 @@ void SurfaceMesh::setMeshGeometryAttributes(render::ShaderProgram& p) {
     p.setAttribute("a_edgeIsReal", edgeIsReal.getRenderAttributeBuffer());
   }
   if (wantsCullPosition()) {
-    p.setAttribute("a_cullPos", faceCenters.getIndexedRenderAttributeBuffer(&triangleFaceInds));
+    p.setAttribute("a_cullPos", faceCenters.getIndexedRenderAttributeBuffer(triangleFaceInds));
   }
 }
 

@@ -232,7 +232,7 @@ void VolumeMeshVertexScalarQuantity::createProgram() {
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
-  program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(&parent.triangleVertexInds));
+  program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
   program->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*program, parent.getMaterial());
 }
@@ -304,7 +304,7 @@ void VolumeMeshCellScalarQuantity::createProgram() {
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
-  program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(&parent.triangleCellInds));
+  program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(parent.triangleCellInds));
   program->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*program, parent.getMaterial());
 }

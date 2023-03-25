@@ -71,7 +71,7 @@ void SurfaceVertexScalarQuantity::createProgram() {
   // Create the program to draw this quantity
   program = render::engine->requestShader("MESH", parent.addSurfaceMeshRules(addScalarRules({"MESH_PROPAGATE_VALUE"})));
 
-  program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(&parent.triangleVertexInds));
+  program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());
@@ -103,7 +103,7 @@ void SurfaceFaceScalarQuantity::createProgram() {
   // Create the program to draw this quantity
   program = render::engine->requestShader("MESH", parent.addSurfaceMeshRules(addScalarRules({"MESH_PROPAGATE_VALUE"})));
 
-  program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(&parent.triangleFaceInds));
+  program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(parent.triangleFaceInds));
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());
@@ -138,7 +138,7 @@ void SurfaceEdgeScalarQuantity::createProgram() {
   program = render::engine->requestShader(
       "MESH", parent.addSurfaceMeshRules(addScalarRules({"MESH_PROPAGATE_HALFEDGE_VALUE"})));
 
-  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(&parent.triangleAllEdgeInds));
+  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(parent.triangleAllEdgeInds));
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());
@@ -170,7 +170,7 @@ void SurfaceHalfedgeScalarQuantity::createProgram() {
   program = render::engine->requestShader(
       "MESH", parent.addSurfaceMeshRules(addScalarRules({"MESH_PROPAGATE_HALFEDGE_VALUE"})));
 
-  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(&parent.triangleAllHalfedgeInds));
+  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(parent.triangleAllHalfedgeInds));
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());

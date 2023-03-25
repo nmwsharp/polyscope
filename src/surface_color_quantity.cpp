@@ -40,7 +40,7 @@ void SurfaceVertexColorQuantity::createProgram() {
   program = render::engine->requestShader("MESH", parent.addSurfaceMeshRules({"MESH_PROPAGATE_COLOR", "SHADE_COLOR"}));
 
   parent.setMeshGeometryAttributes(*program);
-  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(&parent.triangleVertexInds));
+  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
@@ -78,7 +78,7 @@ void SurfaceFaceColorQuantity::createProgram() {
   program = render::engine->requestShader("MESH", parent.addSurfaceMeshRules({"MESH_PROPAGATE_COLOR", "SHADE_COLOR"}));
 
   parent.setMeshGeometryAttributes(*program);
-  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(&parent.triangleFaceInds));
+  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(parent.triangleFaceInds));
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 

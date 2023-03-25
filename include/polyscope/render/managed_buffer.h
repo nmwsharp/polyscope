@@ -1,8 +1,8 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
-#include <vector>
 #include <functional>
+#include <vector>
 
 #include "polyscope/render/engine.h"
 
@@ -39,6 +39,7 @@ public:
 
   // A meaningful name for the buffer
   std::string name;
+  const uint64_t uniqueID;
 
   // The raw underlying buffer which this class wraps that holds the data.
   // It is assumed that it never changes length.
@@ -90,12 +91,6 @@ public:
   // NOTE: This class follows the policy that once the render buffer is allocated, it is always immediately kept updated
   // to reflect any external changes.
 
-  // This function rarely needs to be called externally. It ensures that the device-side render buffer has been
-  // allocated and filled with data. This gets called automatically when you call getRenderBuffer(), which is why you
-  // usually won't need to call this. The render buffer data is automatically eagerly kept updated after creation.
-  // TODO not sure we actually need this
-  // void ensureRenderBufferPopulated();
-
   // Get a reference to the underlying GPU-side attribute buffer
   // Once this reference is created, it will always be immediately updated to reflect any external changes to the data.
   // (note that if you write to this buffer externally, you MUST call markRenderAttributeBufferUpdated() below)
@@ -119,17 +114,23 @@ public:
   //
   // In internally, these indexed views are cached. It is safe to call this function many times, after the first the
   // same view will be returned repeatedly at no additional cost.
-  std::shared_ptr<render::AttributeBuffer> getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>* indices);
+  std::shared_ptr<render::AttributeBuffer> getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>& indices);
 
 protected:
   // == Internal members
+
+  bool hostBufferIsPopulated; // true if the host buffer contains currently-valid data
 
   // A mirror of the
   std::shared_ptr<render::AttributeBuffer> renderAttributeBuffer;
 
   // == Internal representation of indexed views
-  std::vector<std::tuple<ManagedBuffer<uint32_t>*, std::shared_ptr<render::AttributeBuffer>>> existingIndexedViews;
+  // NOTE: this seems like a problem, we are storing pointers as keys in a cache. Here, it works out because if the key
+  // ptr becomes invalid, the value weak_ptr must also be invalid, and we check that before dereferencing the key.
+  std::vector<std::tuple<render::ManagedBuffer<uint32_t>*, std::weak_ptr<render::AttributeBuffer>>>
+      existingIndexedViews;
   void updateIndexedViews();
+  void removeDeletedIndexedViews();
 
   // == Internal helper functions
 

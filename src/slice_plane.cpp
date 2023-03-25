@@ -194,10 +194,10 @@ void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
     sliceBufferArr[i].markHostBufferUpdated();
   }
 
-  p.setAttribute("a_slice_1", meshToInspect->vertexPositions.getIndexedRenderAttributeBuffer(&sliceBufferArr[0]));
-  p.setAttribute("a_slice_2", meshToInspect->vertexPositions.getIndexedRenderAttributeBuffer(&sliceBufferArr[1]));
-  p.setAttribute("a_slice_3", meshToInspect->vertexPositions.getIndexedRenderAttributeBuffer(&sliceBufferArr[2]));
-  p.setAttribute("a_slice_4", meshToInspect->vertexPositions.getIndexedRenderAttributeBuffer(&sliceBufferArr[3]));
+  p.setAttribute("a_slice_1", meshToInspect->vertexPositions.getIndexedRenderAttributeBuffer(sliceBufferArr[0]));
+  p.setAttribute("a_slice_2", meshToInspect->vertexPositions.getIndexedRenderAttributeBuffer(sliceBufferArr[1]));
+  p.setAttribute("a_slice_3", meshToInspect->vertexPositions.getIndexedRenderAttributeBuffer(sliceBufferArr[2]));
+  p.setAttribute("a_slice_4", meshToInspect->vertexPositions.getIndexedRenderAttributeBuffer(sliceBufferArr[3]));
 }
 
 void SlicePlane::drawGeometry() {

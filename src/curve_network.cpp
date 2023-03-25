@@ -274,8 +274,8 @@ void CurveNetwork::fillNodeGeometryBuffers(render::ShaderProgram& program) {
 }
 
 void CurveNetwork::fillEdgeGeometryBuffers(render::ShaderProgram& program) {
-  program.setAttribute("a_position_tail", nodePositions.getIndexedRenderAttributeBuffer(&edgeTailInds));
-  program.setAttribute("a_position_tip", nodePositions.getIndexedRenderAttributeBuffer(&edgeTipInds));
+  program.setAttribute("a_position_tail", nodePositions.getIndexedRenderAttributeBuffer(edgeTailInds));
+  program.setAttribute("a_position_tip", nodePositions.getIndexedRenderAttributeBuffer(edgeTipInds));
 
   /* TODO unbreak this
   // blend the cylinder's tip/tail radii from the node radii

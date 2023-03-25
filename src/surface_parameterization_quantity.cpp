@@ -85,7 +85,7 @@ std::string SurfaceCornerParameterizationQuantity::niceName() { return name + " 
 
 
 void SurfaceCornerParameterizationQuantity::fillCoordBuffers(render::ShaderProgram& p) {
-  p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(&parent.triangleCornerInds));
+  p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
 }
 
 void SurfaceCornerParameterizationQuantity::buildHalfedgeInfoGUI(size_t heInd) {
@@ -112,7 +112,7 @@ SurfaceVertexParameterizationQuantity::SurfaceVertexParameterizationQuantity(std
 std::string SurfaceVertexParameterizationQuantity::niceName() { return name + " (vertex parameterization)"; }
 
 void SurfaceVertexParameterizationQuantity::fillCoordBuffers(render::ShaderProgram& p) {
-  p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(&parent.triangleVertexInds));
+  p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
 }
 
 void SurfaceVertexParameterizationQuantity::buildVertexInfoGUI(size_t vInd) {

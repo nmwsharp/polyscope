@@ -54,8 +54,8 @@ void CurveNetworkNodeColorQuantity::createProgram() {
   }
 
   { // Fill edge color buffers
-    edgeProgram->setAttribute("a_color_tail", colors.getIndexedRenderAttributeBuffer(&parent.edgeTailInds));
-    edgeProgram->setAttribute("a_color_tip", colors.getIndexedRenderAttributeBuffer(&parent.edgeTipInds));
+    edgeProgram->setAttribute("a_color_tail", colors.getIndexedRenderAttributeBuffer(parent.edgeTailInds));
+    edgeProgram->setAttribute("a_color_tip", colors.getIndexedRenderAttributeBuffer(parent.edgeTipInds));
   }
 
   render::engine->setMaterial(*nodeProgram, parent.getMaterial());

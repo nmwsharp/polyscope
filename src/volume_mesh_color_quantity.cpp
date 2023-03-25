@@ -101,7 +101,7 @@ void VolumeMeshVertexColorQuantity::createProgram() {
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
-  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(&parent.triangleVertexInds));
+  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
@@ -143,7 +143,7 @@ void VolumeMeshCellColorQuantity::createProgram() {
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
-  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(&parent.triangleCellInds));
+  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(parent.triangleCellInds));
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
