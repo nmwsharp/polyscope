@@ -1,6 +1,5 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
-//
-// // re-bind the default buffer
+
 #include "polyscope/render/engine.h"
 
 #include "polyscope/polyscope.h"
@@ -106,23 +105,23 @@ AttributeBuffer::AttributeBuffer(RenderDataType dataType_, int arrayCount_)
 
 AttributeBuffer::~AttributeBuffer() {}
 
-Texture::Texture(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_)
+TextureBuffer::TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_)
     : dim(dim_), format(format_), sizeX(sizeX_), sizeY(sizeY_), uniqueID(render::engine->getNextUniqueID()) {
   if (sizeX > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
   if (dim > 1 && sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
 }
 
-Texture::~Texture() {}
+TextureBuffer::~TextureBuffer() {}
 
-void Texture::setFilterMode(FilterMode newMode) {}
+void TextureBuffer::setFilterMode(FilterMode newMode) {}
 
-void Texture::resize(unsigned int newLen) { sizeX = newLen; }
-void Texture::resize(unsigned int newX, unsigned int newY) {
+void TextureBuffer::resize(unsigned int newLen) { sizeX = newLen; }
+void TextureBuffer::resize(unsigned int newX, unsigned int newY) {
   sizeX = newX;
   sizeY = newY;
 }
 
-unsigned int Texture::getTotalSize() const {
+unsigned int TextureBuffer::getTotalSize() const {
   switch (dim) {
   case 1:
     return getSizeX();
@@ -163,10 +162,10 @@ void FrameBuffer::resize(unsigned int newXSize, unsigned int newYSize) {
   for (auto& b : renderBuffersDepth) {
     b->resize(newXSize, newYSize);
   }
-  for (auto& b : texturesColor) {
+  for (auto& b : textureBuffersColor) {
     b->resize(newXSize, newYSize);
   }
-  for (auto& b : texturesDepth) {
+  for (auto& b : textureBuffersDepth) {
     b->resize(newXSize, newYSize);
   }
   sizeX = newXSize;
@@ -577,9 +576,9 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   { // Scene buffer
 
     // Note that this is basically duplicated in ground_plane.cpp, changes here should probably be reflected there
-    sceneColor = generateTexture(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
     // sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
-    sceneDepth = generateTexture(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
+    sceneDepth = generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
 
     sceneBuffer = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     sceneBuffer->addColorBuffer(sceneColor);
@@ -591,7 +590,7 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   }
 
   { // Alternate depth texture used for some effects
-    sceneDepthMin = generateTexture(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
+    sceneDepthMin = generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
 
     sceneDepthMinFrame = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     sceneDepthMinFrame->addDepthBuffer(sceneDepthMin);
@@ -599,7 +598,7 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   }
 
   { // "Final" scene buffer (after resolving)
-    sceneColorFinal = generateTexture(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
+    sceneColorFinal = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
 
     sceneBufferFinal = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
     sceneBufferFinal->addColorBuffer(sceneColorFinal);
@@ -1057,7 +1056,7 @@ void Engine::loadDefaultColorMaps() {
 }
 
 
-void Engine::showTextureInImGuiWindow(std::string windowName, Texture* buffer) {
+void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer) {
   ImGui::Begin(windowName.c_str());
 
   if (buffer->getDimension() != 2) error("only know how to show 2D textures");

@@ -247,9 +247,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/file_helpers.h
   ${INCLUDE_ROOT}/floating_quantity_structure.h
   ${INCLUDE_ROOT}/floating_quantity.h
-  ${INCLUDE_ROOT}/floating_scalar_image.h
-  ${INCLUDE_ROOT}/floating_color_image.h
-  ${INCLUDE_ROOT}/floating_image.h
   ${INCLUDE_ROOT}/group.h
   ${INCLUDE_ROOT}/histogram.h
   ${INCLUDE_ROOT}/image_quantity.h

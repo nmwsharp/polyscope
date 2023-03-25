@@ -469,8 +469,8 @@ const ShaderReplacementRule CYLINDER_VARIABLE_SIZE (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_tipRadius", DataType::Float},
-      {"a_tailRadius", DataType::Float},
+      {"a_tipRadius", RenderDataType::Float},
+      {"a_tailRadius", RenderDataType::Float},
     },
     /* textures */ {}
 );

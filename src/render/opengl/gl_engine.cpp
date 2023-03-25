@@ -1,6 +1,7 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #include "backends/imgui_impl_opengl3.h"
 #include "polyscope/render/engine.h"
+
 #ifdef POLYSCOPE_BACKEND_OPENGL3_GLFW_ENABLED
 #include "polyscope/render/opengl/gl_engine.h"
 
@@ -716,11 +717,11 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
   setFilterMode(FilterMode::Nearest);
 }
 
-GLTexture::~GLTexture() { glDeleteTextures(1, &handle); }
+GLTextureBuffer::~GLTextureBuffer() { glDeleteTextures(1, &handle); }
 
-void GLTexture::resize(unsigned int newLen) {
+void GLTextureBuffer::resize(unsigned int newLen) {
 
-  Texture::resize(newLen);
+  TextureBuffer::resize(newLen);
 
   bind();
   if (dim == 1) {
@@ -732,9 +733,9 @@ void GLTexture::resize(unsigned int newLen) {
   checkGLError();
 }
 
-void GLTexture::resize(unsigned int newX, unsigned int newY) {
+void GLTextureBuffer::resize(unsigned int newX, unsigned int newY) {
 
-  Texture::resize(newX, newY);
+  TextureBuffer::resize(newX, newY);
 
   bind();
   if (dim == 1) {
@@ -746,7 +747,7 @@ void GLTexture::resize(unsigned int newX, unsigned int newY) {
   checkGLError();
 }
 
-void GLTexture::setFilterMode(FilterMode newMode) {
+void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 
   bind();
 
@@ -768,9 +769,9 @@ void GLTexture::setFilterMode(FilterMode newMode) {
   checkGLError();
 }
 
-void* GLTexture::getNativeHandle() { return reinterpret_cast<void*>(getHandle()); }
+void* GLTextureBuffer::getNativeHandle() { return reinterpret_cast<void*>(getHandle()); }
 
-std::vector<float> GLTexture::getDataScalar() {
+std::vector<float> GLTextureBuffer::getDataScalar() {
   if (dimension(format) != 1)
     throw std::runtime_error("called getDataScalar on texture which does not have a 1 dimensional format");
 
@@ -784,7 +785,7 @@ std::vector<float> GLTexture::getDataScalar() {
   return outData;
 }
 
-std::vector<glm::vec2> GLTexture::getDataVector2() {
+std::vector<glm::vec2> GLTextureBuffer::getDataVector2() {
   if (dimension(format) != 2)
     throw std::runtime_error("called getDataVector2 on texture which does not have a 2 dimensional format");
 
@@ -798,7 +799,7 @@ std::vector<glm::vec2> GLTexture::getDataVector2() {
   return outData;
 }
 
-std::vector<glm::vec3> GLTexture::getDataVector3() {
+std::vector<glm::vec3> GLTextureBuffer::getDataVector3() {
   if (dimension(format) != 3)
     throw std::runtime_error("called getDataVector3 on texture which does not have a 3 dimensional format");
   throw std::runtime_error("not implemented");
@@ -813,7 +814,7 @@ std::vector<glm::vec3> GLTexture::getDataVector3() {
   return outData;
 }
 
-GLenum GLTexture::textureType() {
+GLenum GLTextureBuffer::textureType() {
   if (dim == 1) {
     return GL_TEXTURE_1D;
   } else if (dim == 2) {
@@ -822,7 +823,7 @@ GLenum GLTexture::textureType() {
   throw std::runtime_error("bad texture type");
 }
 
-void GLTexture::bind() {
+void GLTextureBuffer::bind() {
   glBindTexture(textureType(), handle);
   checkGLError();
 }
@@ -914,10 +915,10 @@ void GLFrameBuffer::addDepthBuffer(std::shared_ptr<RenderBuffer> renderBufferIn)
   renderBuffersDepth.push_back(renderBuffer);
 }
 
-void GLFrameBuffer::addColorBuffer(std::shared_ptr<Texture> textureBufferIn) {
+void GLFrameBuffer::addColorBuffer(std::shared_ptr<TextureBuffer> textureBufferIn) {
 
   // it _better_ be a GL buffer
-  std::shared_ptr<GLTexture> textureBuffer = std::dynamic_pointer_cast<GLTexture>(textureBufferIn);
+  std::shared_ptr<GLTextureBuffer> textureBuffer = std::dynamic_pointer_cast<GLTextureBuffer>(textureBufferIn);
   if (!textureBuffer) throw std::runtime_error("tried to bind to non-GL texture buffer");
 
   textureBuffer->bind();
@@ -931,10 +932,10 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<Texture> textureBufferIn) {
   nColorBuffers++;
 }
 
-void GLFrameBuffer::addDepthBuffer(std::shared_ptr<Texture> textureBufferIn) {
+void GLFrameBuffer::addDepthBuffer(std::shared_ptr<TextureBuffer> textureBufferIn) {
 
   // it _better_ be a GL buffer
-  std::shared_ptr<GLTexture> textureBuffer = std::dynamic_pointer_cast<GLTexture>(textureBufferIn);
+  std::shared_ptr<GLTextureBuffer> textureBuffer = std::dynamic_pointer_cast<GLTextureBuffer>(textureBufferIn);
   if (!textureBuffer) throw std::runtime_error("tried to bind to non-GL texture buffer");
 
   textureBuffer->bind();
@@ -1697,6 +1698,7 @@ std::shared_ptr<AttributeBuffer> GLShaderProgram::getAttributeBuffer(std::string
   return nullptr;
 };
 
+
 void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2>& data) {
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
@@ -1834,7 +1836,7 @@ void GLShaderProgram::setTexture1D(std::string name, unsigned char* texData, uns
     }
 
     // Create a new texture object
-    t.textureBufferOwned.reset(new GLTexture(TextureFormat::RGB8, length, texData));
+    t.textureBufferOwned.reset(new GLTextureBuffer(TextureFormat::RGB8, length, texData));
     t.textureBuffer = t.textureBufferOwned.get();
 
 
@@ -1865,9 +1867,9 @@ void GLShaderProgram::setTexture2D(std::string name, unsigned char* texData, uns
     }
 
     if (withAlpha) {
-      t.textureBufferOwned.reset(new GLTexture(TextureFormat::RGBA8, width, height, texData));
+      t.textureBufferOwned.reset(new GLTextureBuffer(TextureFormat::RGBA8, width, height, texData));
     } else {
-      t.textureBufferOwned.reset(new GLTexture(TextureFormat::RGB8, width, height, texData));
+      t.textureBufferOwned.reset(new GLTextureBuffer(TextureFormat::RGB8, width, height, texData));
     }
     t.textureBuffer = t.textureBufferOwned.get();
 
@@ -1908,7 +1910,7 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
       throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
     }
 
-    t.textureBuffer = dynamic_cast<GLTexture*>(textureBuffer);
+    t.textureBuffer = dynamic_cast<GLTextureBuffer*>(textureBuffer);
     if (!t.textureBuffer) {
       throw std::invalid_argument("Bad texture in setTextureFromBuffer()");
     }
@@ -1947,8 +1949,8 @@ void GLShaderProgram::setTextureFromColormap(std::string name, const std::string
     }
 
     // glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, colormap.values.size(), 0, GL_RGB, GL_FLOAT, &(colorBuffer[0]));
-    t.textureBufferOwned = std::dynamic_pointer_cast<GLTexture>(
-        engine->generateTexture(TextureFormat::RGB32F, colormap.values.size(), &(colorBuffer[0])));
+    t.textureBufferOwned = std::dynamic_pointer_cast<GLTextureBuffer>(
+        engine->generateTextureBuffer(TextureFormat::RGB32F, colormap.values.size(), &(colorBuffer[0])));
     t.textureBufferOwned->setFilterMode(FilterMode::Linear);
     t.textureBuffer = t.textureBufferOwned.get();
 
