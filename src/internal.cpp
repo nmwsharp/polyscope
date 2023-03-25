@@ -4,6 +4,10 @@
 namespace polyscope {
 namespace internal {
 
+uint64_t uniqueID = 42;
+
+uint64_t getNextUniqueID() { return uniqueID++; }
+
 bool pointCloudEfficiencyWarningReported = false;
 FloatingQuantityStructure* globalFloatingQuantityStructure = nullptr;
 
