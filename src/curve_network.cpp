@@ -395,6 +395,24 @@ void CurveNetwork::buildCustomUI() {
 }
 
 void CurveNetwork::buildCustomOptionsUI() {
+
+  if (ImGui::BeginMenu("Variable Radius")) {
+
+    if (ImGui::MenuItem("none", nullptr, nodeRadiusQuantityName == "")) clearNodeRadiusQuantity();
+    ImGui::Separator();
+
+    for (auto& q : quantities) {
+      CurveNetworkNodeScalarQuantity* scalarQ = dynamic_cast<CurveNetworkNodeScalarQuantity*>(q.second.get());
+      if (scalarQ != nullptr) {
+        if (ImGui::MenuItem(scalarQ->name.c_str(), nullptr, nodeRadiusQuantityName == scalarQ->name))
+          setNodeRadiusQuantity(scalarQ);
+      }
+    }
+
+    ImGui::EndMenu();
+  }
+
+
   if (render::buildMaterialOptionsGui(material.get())) {
     material.manuallyChanged();
     setMaterial(material.get()); // trigger the other updates that happen on set()
@@ -527,10 +545,10 @@ CurveNetworkNodeScalarQuantity& CurveNetwork::resolveNodeRadiusQuantity() {
   if (sizeQ != nullptr) {
     sizeScalarQ = dynamic_cast<CurveNetworkNodeScalarQuantity*>(sizeQ);
     if (sizeScalarQ == nullptr) {
-      polyscope::error("Cannot populate point size from quantity [" + name + "], it is not a scalar quantity");
+      polyscope::error("Cannot populate node size from quantity [" + name + "], it is not a scalar quantity");
     }
   } else {
-    polyscope::error("Cannot populate point size from quantity [" + name + "], it does not exist");
+    polyscope::error("Cannot populate node size from quantity [" + name + "], it does not exist");
   }
 
   return *sizeScalarQ;
