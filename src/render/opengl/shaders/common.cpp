@@ -209,7 +209,7 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
     vec3 pVec = o - dot(o, cylDir)*cylDir;
     float a = length2(qVec);
     float b = 2.0 * dot(qVec, pVec);
-    float c = length2(pVec) - cylTipRad*cylTailRad; // not sure about here. What are we doing in this section? Need comment for the root-solving.
+    float c = length2(pVec) - cylTipRad*cylTailRad;
     float disc = b*b - 4*a*c;
     if(disc < 0){
       tHit = LARGE_FLOAT();
