@@ -357,7 +357,7 @@ void PointCloud::setPointRadiusQuantity(std::string name, bool autoScale) {
 
   resolvePointRadiusQuantity(); // do it once, just so we fail fast if it doesn't exist
 
-  refresh(); // TODO this is a bit overkill
+  refresh();
 }
 
 void PointCloud::clearPointRadiusQuantity() {
