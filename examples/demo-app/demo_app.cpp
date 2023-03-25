@@ -104,8 +104,6 @@ void processFileOBJ(std::string filename) {
     vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]});
   }
   auto psMesh = polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
-  return; // FIXME
-
 
   // Useful data
   size_t nVertices = psMesh->nVertices();
