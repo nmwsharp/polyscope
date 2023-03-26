@@ -163,7 +163,7 @@ R"(
 
         float LARGE_FLOAT();
         vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
-        bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylTailRad, float cylTipRad, out float tHit, out vec3 pHit, out vec3 nHit);
+        bool rayTaperedCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRadTail, float cylRadTip, out float tHit, out vec3 pHit, out vec3 nHit);
         float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
         
         ${ FRAG_DECLARATIONS }$
@@ -183,7 +183,7 @@ R"(
            float tHit;
            vec3 pHit;
            vec3 nHit;
-           rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, tailRadius, tipRadius, tHit, pHit, nHit);
+           rayTaperedCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, tailRadius, tipRadius, tHit, pHit, nHit);
            if(tHit >= LARGE_FLOAT()) {
               discard;
            }
