@@ -42,10 +42,6 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
   if (edges.size() > 0) {
     polyscope::registerCurveNetwork(curveName, nodes, edges);
   }
-  // else {
-  //   polyscope::registerCurveNetworkLine(curveName, nodes);
-  //   edges = polyscope::getCurveNetwork(curveName)->edges;
-  // }
 
   // Useful data
   size_t nNodes = nodes.size();
@@ -88,7 +84,6 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
 
   // set a node radius quantity from above
   polyscope::getCurveNetwork(curveName)->setNodeRadiusQuantity("nXabs");
-
 }
 
 void processFileOBJ(std::string filename) {
@@ -158,7 +153,6 @@ void processFileOBJ(std::string filename) {
   polyscope::getSurfaceMesh(niceName)->addFaceScalarQuantity("zero", zero);
   polyscope::getSurfaceMesh(niceName)->addFaceColorQuantity("fColor", fColor);
 
-  /*
 
   // size_t nEdges = psMesh->nEdges();
 
@@ -166,6 +160,7 @@ void processFileOBJ(std::string filename) {
   std::vector<double> eLen;
   std::vector<double> heLen;
   std::unordered_set<std::pair<size_t, size_t>, polyscope::hash_combine::hash<std::pair<size_t, size_t>>> seenEdges;
+  std::vector<uint32_t> edgeOrdering;
   for (size_t iF = 0; iF < nFaces; iF++) {
     std::vector<size_t>& face = faceIndices[iF];
 
@@ -182,41 +177,51 @@ void processFileOBJ(std::string filename) {
       auto p = std::make_pair(iMin, iMax);
       if (seenEdges.find(p) == seenEdges.end()) {
         eLen.push_back(len);
+        edgeOrdering.push_back(edgeOrdering.size()); // totally coincidentally, this is the trivial ordering
         seenEdges.insert(p);
       }
       heLen.push_back(len);
     }
   }
+  size_t nEdges = edgeOrdering.size();
+  polyscope::getSurfaceMesh(niceName)->setEdgePermutation(edgeOrdering);
   polyscope::getSurfaceMesh(niceName)->addEdgeScalarQuantity("edge length", eLen);
   polyscope::getSurfaceMesh(niceName)->addHalfedgeScalarQuantity("halfedge length", heLen);
-
-  */
 
 
   // Test error
   /*
-polyscope::error("Resistance is futile.");
-polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we "
-             "share this crisis in a way which looks right while properly wrapping text in some form or other?");
-polyscope::terminatingError("and that was all");
+  polyscope::error("Resistance is futile.");
+  polyscope::error("I'm a really, really, frustrating long error. What are you going to do with me? How ever will we "
+               "share this crisis in a way which looks right while properly wrapping text in some form or other?");
+  polyscope::terminatingError("and that was all");
 
-// Test warning
-polyscope::warning("Something went slightly wrong", "it was bad");
+  // Test warning
+  polyscope::warning("Something went slightly wrong", "it was bad");
 
-polyscope::warning("Something else went slightly wrong", "it was also bad");
-polyscope::warning("Something went slightly wrong", "it was still bad");
-for (int i = 0; i < 5000; i++) {
-polyscope::warning("Some problems come in groups", "detail = " + std::to_string(i));
-}
+  polyscope::warning("Something else went slightly wrong", "it was also bad");
+  polyscope::warning("Something went slightly wrong", "it was still bad");
+  for (int i = 0; i < 5000; i++) {
+  polyscope::warning("Some problems come in groups", "detail = " + std::to_string(i));
+  }
   */
 
   // === Add some vectors
 
   // Face & vertex normals
   std::vector<glm::vec3> fNormals(nFaces);
+  std::vector<glm::vec3> fCenters(nFaces);
   std::vector<glm::vec3> vNormals(nVertices, glm::vec3{0., 0., 0.});
   for (size_t iF = 0; iF < nFaces; iF++) {
     std::vector<size_t>& face = faceIndices[iF];
+
+    // Compute a center (used below)
+    glm::vec3 C = {0., 0., 0.};
+    for (size_t iV = 0; iV < face.size(); iV++) {
+      C += vertexPositionsGLM[face[iV]];
+    }
+    C /= face.size();
+    fCenters[iF] = C;
 
     // Compute something like a normal
     glm::vec3 N = {0., 0., 0.};
@@ -262,19 +267,40 @@ polyscope::warning("Some problems come in groups", "detail = " + std::to_string(
       return glm::vec3{xComp, yComp, zComp};
     };
 
-    // TODO commented out for now, need to manually construct tangent bases
+    auto constructBasis = [&](glm::vec3 unitNormal) -> std::tuple<glm::vec3, glm::vec3> {
+      glm::vec3 basisX{1., 0., 0.};
+      basisX -= dot(basisX, unitNormal) * unitNormal;
+      if (std::abs(basisX.x) < 0.1) {
+        basisX = glm::vec3{0., 1., 0.};
+        basisX -= glm::dot(basisX, unitNormal) * unitNormal;
+      }
+      basisX = glm::normalize(basisX);
+      glm::vec3 basisY = glm::normalize(glm::cross(unitNormal, basisX));
+      return std::make_tuple(basisX, basisY);
+    };
 
-    /*
+    // vertex tangent bases
+    std::vector<glm::vec3> vertexBasisX(nVertices);
+    std::vector<glm::vec3> vertexBasisY(nVertices);
+    for (size_t i = 0; i < nVertices; i++) {
+      std::tie(vertexBasisX[i], vertexBasisY[i]) = constructBasis(vNormals[i]);
+    }
+    psMesh->setVertexTangentBasisX(vertexBasisX);
+
+    // face tangent bases
+    std::vector<glm::vec3> faceBasisX(nFaces);
+    std::vector<glm::vec3> faceBasisY(nFaces);
+    for (size_t i = 0; i < nFaces; i++) {
+      std::tie(faceBasisX[i], faceBasisY[i]) = constructBasis(fNormals[i]);
+    }
+    psMesh->setFaceTangentBasisX(faceBasisX);
 
     // At vertices
-
     std::vector<glm::vec2> vertexIntrinsicVec(nVertices, glm::vec3{0., 0., 0.});
-    psMesh->generateDefaultVertexTangentSpaces();
-    psMesh->ensureHaveVertexTangentSpaces();
     for (size_t iV = 0; iV < nVertices; iV++) {
       glm::vec3 pos = vertexPositionsGLM[iV];
-      glm::vec3 basisX = psMesh->vertexTangentSpaces[iV][0];
-      glm::vec3 basisY = psMesh->vertexTangentSpaces[iV][1];
+      glm::vec3 basisX = vertexBasisX[iV];
+      glm::vec3 basisY = vertexBasisY[iV];
 
       glm::vec3 v = spatialFunc(pos);
       glm::vec2 vTangent{glm::dot(v, basisX), glm::dot(v, basisY)};
@@ -282,16 +308,13 @@ polyscope::warning("Some problems come in groups", "detail = " + std::to_string(
     }
     psMesh->addVertexIntrinsicVectorQuantity("intrinsic vertex vec", vertexIntrinsicVec);
 
-
     // At faces
     std::vector<glm::vec2> faceIntrinsicVec(nFaces, glm::vec3{0., 0., 0.});
-    psMesh->generateDefaultFaceTangentSpaces();
-    psMesh->ensureHaveFaceTangentSpaces();
     for (size_t iF = 0; iF < nFaces; iF++) {
 
-      glm::vec3 pos = psMesh->faceCenter(iF);
-      glm::vec3 basisX = psMesh->faceTangentSpaces[iF][0];
-      glm::vec3 basisY = psMesh->faceTangentSpaces[iF][1];
+      glm::vec3 pos = fCenters[iF];
+      glm::vec3 basisX = faceBasisX[iF];
+      glm::vec3 basisY = faceBasisY[iF];
 
       glm::vec3 v = spatialFunc(pos);
       glm::vec2 vTangent{glm::dot(v, basisX), glm::dot(v, basisY)};
@@ -304,54 +327,38 @@ polyscope::warning("Some problems come in groups", "detail = " + std::to_string(
     std::vector<double> edgeForm(nEdges, 0.);
     std::vector<char> edgeOrient(nEdges, false);
     bool isTriangle = true;
-    psMesh->ensureHaveFaceTangentSpaces();
+    size_t iEdge = 0;
+    seenEdges.clear();
     for (size_t iF = 0; iF < nFaces; iF++) {
-      std::vector<size_t>& face = psMesh->faces[iF];
+      std::vector<size_t>& face = faceIndices[iF];
 
       if (face.size() != 3) {
         isTriangle = false;
         break;
       }
 
-      glm::vec3 pos = psMesh->faceCenter(iF);
+      glm::vec3 pos = fCenters[iF];
 
       for (size_t j = 0; j < face.size(); j++) {
-
         size_t vA = face[j];
         size_t vB = face[(j + 1) % face.size()];
-        size_t iE = psMesh->edgeIndices[iF][j];
-
-        glm::vec3 v = spatialFunc(pos);
-        glm::vec3 edgeVec = vertexPositionsGLM[vB] - vertexPositionsGLM[vA];
-        edgeForm[iE] = glm::dot(edgeVec, v);
-        edgeOrient[iE] = (vB > vA);
+        size_t iMin = std::min(vA, vB);
+        size_t iMax = std::max(vA, vB);
+        auto p = std::make_pair(iMin, iMax);
+        if (seenEdges.find(p) == seenEdges.end()) { // use the hashset again to iterate over edges in order
+          glm::vec3 v = spatialFunc(pos);
+          glm::vec3 edgeVec = vertexPositionsGLM[vB] - vertexPositionsGLM[vA];
+          edgeForm[iEdge] = glm::dot(edgeVec, v);
+          edgeOrient[iEdge] = (vB > vA);
+          seenEdges.insert(p);
+          iEdge++;
+        }
       }
     }
     if (isTriangle) {
       psMesh->addOneFormIntrinsicVectorQuantity("intrinsic 1-form", edgeForm, edgeOrient);
     }
-
-    */
   }
-
-  /*
-
-  // Add count quantities
-  std::vector<std::pair<size_t, int>> vCount;
-  std::vector<std::pair<size_t, double>> vVal;
-  for (size_t iV = 0; iV < nVertices; iV++) {
-    if (polyscope::randomUnit() > 0.8) {
-      vCount.push_back(std::make_pair(iV, 2));
-    }
-    if (polyscope::randomUnit() > 0.8) {
-      vVal.push_back(std::make_pair(iV, polyscope::randomUnit()));
-    }
-  }
-  polyscope::getSurfaceMesh(niceName)->addVertexCountQuantity("sample count", vCount);
-  polyscope::getSurfaceMesh(niceName)->addVertexIsolatedScalarQuantity("sample isolated", vVal);
-
-  */
-
 
   { // Parameterizations
     std::vector<std::array<double, 2>> cornerParam;
@@ -397,26 +404,6 @@ polyscope::warning("Some problems come in groups", "detail = " + std::to_string(
     polyscope::getSurfaceMesh(niceName)->addLocalParameterizationQuantity("param vert local test", vertParamLocal);
   }
 
-  /*
-
-  { // Add a surface graph quantity
-
-    std::vector<std::array<size_t, 2>> edges;
-    for (size_t iF = 0; iF < nFaces; iF++) {
-      std::vector<size_t>& face = faceIndices[iF];
-
-      for (size_t iV = 0; iV < face.size(); iV++) {
-        size_t i0 = face[iV];
-        size_t i1 = face[(iV + 1) % face.size()];
-
-        edges.push_back({i0, i1});
-      }
-    }
-
-    polyscope::getSurfaceMesh(niceName)->addSurfaceGraphQuantity("surface graph", vertexPositionsGLM, edges);
-  }
-
-  */
 
   { // Add a curve network from the edges
     std::vector<std::array<size_t, 2>> edges;
@@ -435,26 +422,6 @@ polyscope::warning("Some problems come in groups", "detail = " + std::to_string(
     std::string curveName = niceName + " curves";
     constructDemoCurveNetwork(curveName, vertexPositionsGLM, edges);
   }
-
-
-  /*
-
-  // === Input quantities
-  // TODO restore
-
-  //// Add a selection quantity
-  // VertexData<char> vSelection(mesh, false);
-  // for (VertexPtr v : mesh->vertices()) {
-  // if (randomUnit() < 0.05) {
-  // vSelection[v] = true;
-  //}
-  //}
-  // polyscope::getSurfaceMesh(niceName)->addVertexSelectionQuantity("v select", vSelection);
-
-  //// Curve quantity
-  // polyscope::getSurfaceMesh(niceName)->addInputCurveQuantity("input curve");
-
-  */
 }
 
 
