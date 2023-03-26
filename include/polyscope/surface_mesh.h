@@ -78,6 +78,11 @@ public:
   virtual std::string typeName() override;
   virtual void refresh() override;
 
+  // Mesh connectivity
+  // (end users probably should not mess with theses)
+  std::vector<uint32_t> faceIndsStart;
+  std::vector<uint32_t> faceIndsEntries;
+
   // == Geometric quantities
   // (actually, these are wrappers around the private raw data members, but external users should interact with these
   // wrappers)
@@ -300,10 +305,6 @@ private:
   std::vector<glm::vec3> vertexPositionsData;
 
   // = connectivity / indices
-
-  // these two form a flattened list giving the polygons of the mesh
-  std::vector<uint32_t> faceIndsStart;
-  std::vector<uint32_t> faceIndsEntries;
 
   // other derived indices, all defined per corner of the triangulated mesh
   std::vector<uint32_t> triangleVertexIndsData;      // index of the corresponding vertex
