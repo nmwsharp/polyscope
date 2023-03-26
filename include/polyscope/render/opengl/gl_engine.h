@@ -348,7 +348,6 @@ public:
 
   void swapDisplayBuffers() override;
   std::vector<unsigned char> readDisplayBuffer() override;
-  // void blitFinalSceneToScreen() override;
 
   // Manage render state
   void setDepthMode(DepthMode newMode = DepthMode::Less) override;
@@ -423,7 +422,6 @@ protected:
   GLFWwindow* mainWindow = nullptr;
 
   // Shader program & rule caches
-  // TODO oneday make these caches of precompiled programs which are shared, rather than caches of the sources
   std::unordered_map<std::string, std::pair<std::vector<ShaderStageSpecification>, DrawMode>> registeredShaderPrograms;
   std::unordered_map<std::string, ShaderReplacementRule> registeredShaderRules;
   void populateDefaultShadersAndRules();
