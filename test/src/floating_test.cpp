@@ -1,3 +1,5 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope_test.h"
 
 // ============================================================
@@ -165,4 +167,3 @@ TEST_F(PolyscopeTest, ImplicitSurfaceRenderImageQuantityTest) {
 
   polyscope::removeAllStructures();
 }
-
