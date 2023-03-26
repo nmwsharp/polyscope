@@ -596,8 +596,6 @@ TEST_F(PolyscopeTest, SurfaceMeshFaceIntrinsic) {
 TEST_F(PolyscopeTest, SurfaceMeshOneForm) {
   auto psMesh = registerTriangleMesh();
   size_t nEdges = 6;
-  // std::vector<glm::vec3> basisX(psMesh->nVertices(), {1., 2., 3.});
-  // psMesh->setVertexTangentBasisX(basisX);
   std::vector<double> vals(nEdges, 3.);
   std::vector<char> orients(nEdges, true);
   std::vector<size_t> ePerm = {5, 3, 1, 2, 4, 0};
@@ -607,89 +605,6 @@ TEST_F(PolyscopeTest, SurfaceMeshOneForm) {
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
-
-TEST_F(PolyscopeTest, SurfaceMeshVertexIntrinsicRibbon) {
-  auto psMesh = registerTriangleMesh();
-  std::vector<glm::vec3> basisX(psMesh->nVertices(), {1., 2., 3.});
-  psMesh->setVertexTangentBasisX(basisX);
-  std::vector<glm::vec3> basisXF(psMesh->nFaces(), {1., 2., 3.});
-  psMesh->setFaceTangentBasisX(basisXF);
-  std::vector<glm::vec2> vals(psMesh->nVertices(), {1., 2.});
-  auto q1 = psMesh->addVertexIntrinsicVectorQuantity("param", vals);
-  q1->setEnabled(true);
-  // q1->setRibbonEnabled(true); // TODO
-  polyscope::show(3);
-  polyscope::removeAllStructures();
-}
-
-TEST_F(PolyscopeTest, SurfaceMeshFaceIntrinsicRibbon) {
-  auto psMesh = registerTriangleMesh();
-  std::vector<glm::vec3> basisX(psMesh->nFaces(), {1., 2., 3.});
-  psMesh->setFaceTangentBasisX(basisX);
-  std::vector<glm::vec2> vals(psMesh->nFaces(), {1., 2.});
-  auto q1 = psMesh->addFaceIntrinsicVectorQuantity("param", vals);
-  q1->setEnabled(true);
-  // q1->setRibbonEnabled(true); // TODO
-  polyscope::show(3);
-  polyscope::removeAllStructures();
-}
-
-
-/* TODO REMOVE
-TEST_F(PolyscopeTest, SurfaceMeshVertexCount) {
-  auto psMesh = registerTriangleMesh();
-  std::vector<std::pair<size_t, int>> vals = {{0, 1}, {2, -2}};
-  auto q1 = psMesh->addVertexCountQuantity("vals", vals);
-  q1->setEnabled(true);
-  polyscope::show(3);
-  polyscope::removeAllStructures();
-}
-
-TEST_F(PolyscopeTest, SurfaceMeshFaceCount) {
-  auto psMesh = registerTriangleMesh();
-  std::vector<std::pair<size_t, int>> vals = {{0, 1}, {2, -2}};
-  auto q1 = psMesh->addFaceCountQuantity("vals", vals);
-  q1->setEnabled(true);
-  polyscope::show(3);
-  polyscope::removeAllStructures();
-}
-
-TEST_F(PolyscopeTest, SurfaceMeshVertexIsolated) {
-  auto psMesh = registerTriangleMesh();
-  std::vector<std::pair<size_t, double>> vals = {{0, 1.1}, {2, -2.3}};
-  auto q1 = psMesh->addVertexIsolatedScalarQuantity("vals", vals);
-  q1->setEnabled(true);
-  polyscope::show(3);
-  polyscope::removeAllStructures();
-}
-
-TEST_F(PolyscopeTest, SurfaceMeshSurfaceGraph) {
-  auto psMesh = registerTriangleMesh();
-  std::vector<glm::vec3> nodes = {
-      {1., 2., 3.},
-      {3., 4., 5.},
-      {5., 6., 7.},
-  };
-  std::vector<std::array<size_t, 2>> edges = {{0, 1}, {1, 2}, {2, 0}};
-  auto q1 = psMesh->addSurfaceGraphQuantity("vals", nodes, edges);
-  q1->setEnabled(true);
-  polyscope::show(3);
-  polyscope::removeAllStructures();
-}
-
-TEST_F(PolyscopeTest, SurfaceMeshSurfaceGraphPath) {
-  auto psMesh = registerTriangleMesh();
-  std::vector<glm::vec3> nodes = {
-      {1., 2., 3.},
-      {3., 4., 5.},
-      {5., 6., 7.},
-  };
-  auto q1 = psMesh->addSurfaceGraphQuantity("vals", std::vector<std::vector<glm::vec3>>({nodes, nodes}));
-  q1->setEnabled(true);
-  polyscope::show(3);
-  polyscope::removeAllStructures();
-}
-*/
 
 
 // ============================================================
