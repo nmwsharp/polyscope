@@ -16,14 +16,9 @@
 
 // Alllll the quantities
 #include "polyscope/surface_color_quantity.h"
-#include "polyscope/surface_count_quantity.h"
-#include "polyscope/surface_graph_quantity.h"
 #include "polyscope/surface_parameterization_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
-// #include "polyscope/surface_selection_quantity.h"
-// #include "polyscope/surface_subset_quantity.h"
-
 
 namespace polyscope {
 
@@ -42,10 +37,6 @@ class SurfaceFaceVectorQuantity;
 class SurfaceVertexIntrinsicVectorQuantity;
 class SurfaceFaceIntrinsicVectorQuantity;
 class SurfaceOneFormIntrinsicVectorQuantity;
-class SurfaceVertexCountQuantity;
-class SurfaceVertexIsolatedScalarQuantity;
-class SurfaceFaceCountQuantity;
-class SurfaceGraphQuantity;
 
 
 template <> // Specialize the quantity type
@@ -153,42 +144,13 @@ public:
 
   // these are old versions kept only for backward-compatibility, nsym is no longer supported
   template <class T> SurfaceFaceIntrinsicVectorQuantity* addFaceIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym, VectorType vectorType = VectorType::STANDARD); 
-	template <class T> SurfaceVertexIntrinsicVectorQuantity* addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym, VectorType vectorType = VectorType::STANDARD); 
-
-
-  // = Counts/Values on isolated vertexPositions (expect index/value pairs)
-  /* 
-  SurfaceVertexCountQuantity* addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>&
-  values); 
-	SurfaceFaceCountQuantity* addFaceCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>&
-  values); 
-	SurfaceVertexIsolatedScalarQuantity* addVertexIsolatedScalarQuantity(std::string name, const std::vector<std::pair<size_t, double>>& values);
-  */
-
-
-  // = Misc quantities
-  /*
-  template <class P, class E>
-  SurfaceGraphQuantity* addSurfaceGraphQuantity(std::string name, const P& nodes, const E& edges);
-  template <class P, class E>
-  SurfaceGraphQuantity* addSurfaceGraphQuantity2D(std::string name, const P& nodes, const E& edges);
-  template <class P>
-  SurfaceGraphQuantity* addSurfaceGraphQuantity(std::string name, const std::vector<P>& paths);
-  template <class P>
-  SurfaceGraphQuantity* addSurfaceGraphQuantity2D(std::string name, const std::vector<P>& paths);
-
-  // = I/O Selections
-  // template <class T>
-  // void addVertexSelectionQuantity(std::string name, const T& initialMembership);
-  // void addInputCurveQuantity(std::string name);
-  */
+	template <class T> SurfaceVertexIntrinsicVectorQuantity* addVertexIntrinsicVectorQuantity(std::string name, const T& vectors, int nSym, VectorType vectorType = VectorType::STANDARD);
 
   // clang-format on
 
 
   // === Make a one-time selection
   long long int selectVertex();
-  // size_t selectFace();
 
   // === Mutate
 
@@ -207,10 +169,6 @@ public:
   std::vector<size_t> cornerPerm;
 
   // Set permutations
-  // template <class T>
-  // void setVertexPermutation(const T& perm, size_t expectedSize = 0);
-  // template <class T>
-  // void setFacePermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
   void setEdgePermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
@@ -451,14 +409,6 @@ private:
   SurfaceFaceIntrinsicVectorQuantity* addFaceIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, VectorType vectorType);
   SurfaceVertexIntrinsicVectorQuantity* addVertexIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, VectorType vectorType);
   SurfaceOneFormIntrinsicVectorQuantity* addOneFormIntrinsicVectorQuantityImpl(std::string name, const std::vector<double>& data, const std::vector<char>& orientations);
-
-  /*
-  SurfaceVertexCountQuantity* addVertexCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
-  SurfaceVertexIsolatedScalarQuantity* addVertexIsolatedScalarQuantityImpl(std::string name, const std::vector<std::pair<size_t, double>>& values);
-  SurfaceFaceCountQuantity* addFaceCountQuantityImpl(std::string name, const std::vector<std::pair<size_t, int>>& values);
-	SurfaceGraphQuantity* addSurfaceGraphQuantityImpl(std::string name, const std::vector<glm::vec3>& nodes, const std::vector<std::array<size_t, 2>>& edges);
-  */
-
 
   // === Helper implementations
 

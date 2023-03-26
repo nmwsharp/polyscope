@@ -162,11 +162,6 @@ SET(SRCS
   surface_scalar_quantity.cpp
   surface_vector_quantity.cpp
   surface_parameterization_quantity.cpp
-  # surface_count_quantity.cpp # TODO delete these old files
-  # surface_graph_quantity.cpp
-  #surface_subset_quantity.cpp
-  #surface_selection_quantity.cpp
-  #surface_input_curve_quantity.cpp
   
   # Curve network
   curve_network.cpp
@@ -287,17 +282,12 @@ SET(HEADERS
   ${INCLUDE_ROOT}/structure.h
   ${INCLUDE_ROOT}/structure.ipp
   ${INCLUDE_ROOT}/surface_color_quantity.h
-  ${INCLUDE_ROOT}/surface_count_quantity.h
-  ${INCLUDE_ROOT}/surface_graph_quantity.h
-  ${INCLUDE_ROOT}/surface_input_curve_quantity.h
   ${INCLUDE_ROOT}/surface_mesh.h
   ${INCLUDE_ROOT}/surface_mesh.ipp
   ${INCLUDE_ROOT}/surface_mesh_io.h
   ${INCLUDE_ROOT}/surface_mesh_quantity.h
   ${INCLUDE_ROOT}/surface_parameterization_quantity.h
   ${INCLUDE_ROOT}/surface_scalar_quantity.h
-  ${INCLUDE_ROOT}/surface_selection_quantity.h
-  ${INCLUDE_ROOT}/surface_subset_quantity.h
   ${INCLUDE_ROOT}/surface_vector_quantity.h
   ${INCLUDE_ROOT}/trace_vector_field.h
   ${INCLUDE_ROOT}/types.h
