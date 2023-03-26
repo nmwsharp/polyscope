@@ -15,7 +15,7 @@ namespace backend_openGL_mock {
 
 class GLAttributeBuffer : public AttributeBuffer {
 public:
-  GLAttributeBuffer(RenderDataType dataType_, int arrayCount_ = 1);
+  GLAttributeBuffer(RenderDataType dataType_, int arrayCount_);
   virtual ~GLAttributeBuffer();
 
   void bind();
@@ -67,19 +67,20 @@ public:
 protected:
 private:
   void checkType(RenderDataType targetType);
+  void checkArray(int arrayCount);
 };
 
-class GLTexture : public Texture {
+class GLTextureBuffer : public TextureBuffer {
 public:
   // create a 1D texture from data
-  GLTexture(TextureFormat format, unsigned int size1D, unsigned char* data = nullptr);
-  GLTexture(TextureFormat format, unsigned int size1D, float* data);
+  GLTextureBuffer(TextureFormat format, unsigned int size1D, const unsigned char* data = nullptr);
+  GLTextureBuffer(TextureFormat format, unsigned int size1D, const float* data);
 
   // create a 2D texture from data
-  GLTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data = nullptr);
-  GLTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, float* data);
+  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, const unsigned char* data = nullptr);
+  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, const float* data);
 
-  ~GLTexture() override;
+  ~GLTextureBuffer() override;
 
 
   // Resize the underlying buffer (contents are lost)
@@ -117,6 +118,8 @@ public:
   GLFrameBuffer(unsigned int sizeX_, unsigned int sizeY_, bool isDefault = false);
   ~GLFrameBuffer() override;
 
+  void bind() override;
+
   // Bind to this framebuffer so subsequent draw calls will go to it
   // If return is false, binding failed and the framebuffer should not be used.
   bool bindForRendering() override;
@@ -126,9 +129,9 @@ public:
 
   // Bind to textures/renderbuffers for output
   void addColorBuffer(std::shared_ptr<RenderBuffer> renderBuffer) override;
-  void addColorBuffer(std::shared_ptr<Texture> textureBuffer) override;
+  void addColorBuffer(std::shared_ptr<TextureBuffer> textureBuffer) override;
   void addDepthBuffer(std::shared_ptr<RenderBuffer> renderBuffer) override;
-  void addDepthBuffer(std::shared_ptr<Texture> textureBuffer) override;
+  void addDepthBuffer(std::shared_ptr<TextureBuffer> textureBuffer) override;
 
   void setDrawBuffers() override;
 
@@ -141,14 +144,61 @@ public:
   // Getters
 
 protected:
-  void bind() override;
 };
 
+// Classes to keep track of attributes and uniforms
+struct GLShaderUniform {
+  std::string name;
+  RenderDataType type;
+  bool isSet;               // has a value been assigned to this uniform?
+};
+
+struct GLShaderAttribute {
+  std::string name;
+  RenderDataType type;
+  int arrayCount;
+  std::shared_ptr<GLAttributeBuffer> buff; // the buffer that we will actually use
+};
+
+struct GLShaderTexture {
+  std::string name;
+  int dim;
+  uint32_t index;
+  bool isSet;
+  GLTextureBuffer* textureBuffer;
+  std::shared_ptr<GLTextureBuffer> textureBufferOwned; // might be empty, if texture isn't owned
+};
+
+// A thin wrapper around a program handle.
+// This class takes ownership and handles program deletion in its destructor
+class GLCompiledProgram {
+public:
+  GLCompiledProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm);
+  ~GLCompiledProgram();
+
+  DrawMode getDrawMode() const { return drawMode; }
+  std::vector<GLShaderUniform> getUniforms() const { return uniforms; }
+  std::vector<GLShaderAttribute> getAttributes() const { return attributes; }
+  std::vector<GLShaderTexture> getTextures() const { return textures; }
+
+private:
+  DrawMode drawMode;
+  std::vector<GLShaderUniform> uniforms;
+  std::vector<GLShaderAttribute> attributes;
+  std::vector<GLShaderTexture> textures;
+
+  void compileGLProgram(const std::vector<ShaderStageSpecification>& stages);
+  void setDataLocations();
+
+  void addUniqueAttribute(ShaderSpecAttribute attribute);
+  void addUniqueUniform(ShaderSpecUniform uniform);
+  void addUniqueTexture(ShaderSpecTexture texture);
+};
 
 class GLShaderProgram : public ShaderProgram {
 
 public:
-  GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm);
+  GLShaderProgram(const std::shared_ptr<GLCompiledProgram>& compiledProgram);
   ~GLShaderProgram() override;
 
   // === Store data
@@ -205,47 +255,17 @@ public:
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                     bool withAlpha = true, bool useMipMap = false, bool repeat = false) override;
   void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) override;
-  void setTextureFromBuffer(std::string name, Texture* textureBuffer) override;
+  void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) override;
 
   // Draw!
   void draw() override;
   void validateData() override;
 
 protected:
-  // Classes to keep track of attributes and uniforms
-  struct GLShaderUniform {
-    std::string name;
-    RenderDataType type;
-    bool isSet; // has a value been assigned to this uniform?
-    int location;
-  };
-
-  struct GLShaderAttribute {
-    std::string name;
-    RenderDataType type;
-    int arrayCount;
-    int location;
-    std::shared_ptr<GLAttributeBuffer> buff; // the buffer that we will actually use
-  };
-
-  struct GLShaderTexture {
-    std::string name;
-    int dim;
-    unsigned int index;
-    bool isSet;
-    GLTexture* textureBuffer;
-    std::shared_ptr<GLTexture> textureBufferOwned; // might be empty, if texture isn't owned
-    int location;
-  };
-
   // Lists of attributes and uniforms that need to be set
   std::vector<GLShaderUniform> uniforms;
   std::vector<GLShaderAttribute> attributes;
   std::vector<GLShaderTexture> textures;
-
-  void addUniqueAttribute(ShaderSpecAttribute attribute);
-  void addUniqueUniform(ShaderSpecUniform uniform);
-  void addUniqueTexture(ShaderSpecTexture texture);
 
 private:
   // Setup routines
@@ -257,10 +277,10 @@ private:
   void createBuffer(GLShaderAttribute& a);
   void assignBufferToVAO(GLShaderAttribute& a);
 
-  void deleteAttributeBuffer(GLShaderAttribute& attribute);
-
   // Drawing related
   void activateTextures();
+
+  std::shared_ptr<GLCompiledProgram> compiledProgram;
 };
 
 
@@ -272,8 +292,6 @@ public:
   void initialize();
   void checkError(bool fatal = false) override;
 
-  void clearDisplay() override;
-  void bindDisplay() override;
   void swapDisplayBuffers() override;
   std::vector<unsigned char> readDisplayBuffer() override;
 
@@ -308,17 +326,17 @@ public:
   // === Factory methods
 
   // create attribute buffers
-  std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, int arrayCount_ = 1) override;
+  std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, int arrayCount_) override;
 
   // create textures
-  std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int size1D,
-                                           unsigned char* data = nullptr) override; // 1d
-  std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int size1D,
-                                           float* data) override; // 1d
-  std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
-                                           unsigned char* data = nullptr) override; // 2d
-  std::shared_ptr<Texture> generateTexture(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
-                                           float* data) override; // 2d
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
+                                                       const unsigned char* data = nullptr) override; // 1d
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
+                                                       const float* data) override; // 1d
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+                                                       const unsigned char* data = nullptr) override; // 2d
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+                                                       const float* data) override; // 2d
 
   // create render buffers
   std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
@@ -326,10 +344,16 @@ public:
   // create frame buffers
   std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) override;
 
-  // create shader programs
+  // general flexible interface
   std::shared_ptr<ShaderProgram>
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
                 ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) override;
+
+  // === Implementation details
+
+  // Add a shader programs/rules so that they can be requested above
+  void registerShaderProgram(const std::string& name, const std::vector<ShaderStageSpecification>& stages);
+  void registerShaderRule(const std::string& name, const ShaderReplacementRule& rule);
 
   // Transparency
   virtual void applyTransparencySettings() override;
@@ -345,8 +369,12 @@ protected:
   std::unordered_map<std::string, ShaderReplacementRule> registeredShaderRules;
   void populateDefaultShadersAndRules();
 
-  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                       DrawMode dm) override;
+  std::unordered_map<std::string, std::shared_ptr<GLCompiledProgram>> compiledProgamCache;
+  std::string programKeyFromRules(const std::string& programName, const std::vector<std::string>& rules,
+                                  ShaderReplacementDefaults defaults);
+  std::shared_ptr<GLCompiledProgram> getCompiledProgram(const std::string& programName,
+                                                        const std::vector<std::string>& customRules,
+                                                        ShaderReplacementDefaults defaults);
 };
 
 } // namespace backend_openGL_mock
