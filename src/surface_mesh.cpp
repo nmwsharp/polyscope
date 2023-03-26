@@ -190,7 +190,7 @@ void SurfaceMesh::computeTriangleAllEdgeInds() {
         " performed an operation which requires edge indices to be specified, but none have been set. "
         "Call setEdgePermutation().");
 
-  triangleFaceInds.ensureHostBufferPopulated();
+  triangleVertexInds.ensureHostBufferPopulated();
   triangleAllEdgeInds.data.resize(3 * 3 * nFacesTriangulation());
 
   // used to loop over edges
@@ -206,6 +206,8 @@ void SurfaceMesh::computeTriangleAllEdgeInds() {
     size_t start = faceIndsStart[iF];
     size_t D = faceIndsStart[iF + 1] - start;
 
+    // TODO why can't we use edges on non triangular meshes? Implement it.
+
     if (D != 3) {
       throw std::logic_error(
           "[polyscope] SurfaceMesh " + name +
@@ -213,11 +215,10 @@ void SurfaceMesh::computeTriangleAllEdgeInds() {
           "only well-defined on a pure-triangular mesh.");
     }
 
-
     glm::uvec3 thisTriInds{0, 0, 0};
     for (size_t j = 0; j < 3; j++) {
-      size_t vA = triangleFaceInds.data[3 * iF + j];
-      size_t vB = triangleFaceInds.data[3 * iF + ((j + 1) % 3)];
+      size_t vA = triangleVertexInds.data[3 * iF + j];
+      size_t vB = triangleVertexInds.data[3 * iF + ((j + 1) % 3)];
 
       std::pair<size_t, size_t> key = createEdgeKey(vA, vB);
 
