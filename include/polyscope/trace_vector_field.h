@@ -9,8 +9,9 @@ namespace polyscope {
 // Return is a list of lines, each entry is (position, normal)
 // Input field should be identified (raised to power), not disambiguated
 // Settings 0 for nLines results in an automatically computed value
-std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(SurfaceMesh& mesh, const std::vector<glm::vec2>& field,
-                                                              int nSym = 1, size_t nLines = 0);
+std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(SurfaceMesh& mesh, bool useDefaultBasis,
+                                                              const std::vector<glm::vec2>& field, int nSym = 1,
+                                                              size_t nLines = 0);
 
 // Rotate in to a new basis in R3. Vector is rotated in to new tangent plane, then a change of basis is performed to
 // the new basis. Basis vectors MUST be unit and orthogonal -- this function doesn't check.

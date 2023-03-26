@@ -15,40 +15,8 @@
 namespace polyscope {
 
 SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh_, MeshElement definedOn_)
-    : SurfaceMeshQuantity(name, mesh_)
-// ribbonEnabled(uniquePrefix() + "#ribbonEnabled", false)
-{}
+    : SurfaceMeshQuantity(name, mesh_) {}
 
-
-/*
-bool SurfaceVectorQuantity::isRibbonEnabled() { return ribbonEnabled.get(); }
-
-SurfaceVectorQuantity* SurfaceVectorQuantity::setRibbonWidth(double val, bool isRelative) {
-  if (ribbonArtist) {
-    ribbonArtist->setWidth(val, isRelative);
-  }
-  return this;
-}
-double SurfaceVectorQuantity::getRibbonWidth() {
-  if (ribbonArtist) {
-    return ribbonArtist->getWidth();
-  }
-  return -1;
-}
-
-SurfaceVectorQuantity* SurfaceVectorQuantity::setRibbonMaterial(std::string name) {
-  if (ribbonArtist) {
-    ribbonArtist->setMaterial(name);
-  }
-  return this;
-}
-std::string SurfaceVectorQuantity::getRibbonMaterial() {
-  if (ribbonArtist) {
-    return ribbonArtist->getMaterial();
-  }
-  return "";
-}
-*/
 
 // ========================================================
 // ==========           Vertex Vector            ==========
@@ -134,6 +102,51 @@ void SurfaceFaceVectorQuantity::buildFaceInfoGUI(size_t iF) {
 
 std::string SurfaceFaceVectorQuantity::niceName() { return name + " (face vector)"; }
 
+
+// ========================================================
+// ==========         Ribbon Interface           ==========
+// ========================================================
+
+SurfaceRibbonInterface::SurfaceRibbonInterface(std::string uniqueName)
+    : ribbonEnabled(uniqueName + "#ribbonEnabled", false) {}
+
+
+SurfaceRibbonInterface* SurfaceRibbonInterface::setRibbonEnabled(bool newVal) {
+  ribbonEnabled = newVal;
+  requestRedraw();
+  return this;
+}
+bool SurfaceRibbonInterface::isRibbonEnabled() { return ribbonEnabled.get(); }
+
+SurfaceRibbonInterface* SurfaceRibbonInterface::setRibbonWidth(double val, bool isRelative) {
+  if (ribbonArtist) {
+    ribbonArtist->setWidth(val, isRelative);
+    requestRedraw();
+  }
+  return this;
+}
+double SurfaceRibbonInterface::getRibbonWidth() {
+  if (ribbonArtist) {
+    return ribbonArtist->getWidth();
+  }
+  return -1;
+}
+
+SurfaceRibbonInterface* SurfaceRibbonInterface::setRibbonMaterial(std::string name) {
+  if (ribbonArtist) {
+    ribbonArtist->setMaterial(name);
+    requestRedraw();
+  }
+  return this;
+}
+std::string SurfaceRibbonInterface::getRibbonMaterial() {
+  if (ribbonArtist) {
+    return ribbonArtist->getMaterial();
+  }
+  return "";
+}
+
+
 // ========================================================
 // ==========        Intrinsic Face Vector       ==========
 // ========================================================
@@ -144,7 +157,8 @@ SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::stri
                                                                        SurfaceMesh& mesh_, VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE), TangentVectorQuantity<SurfaceFaceIntrinsicVectorQuantity>(
                                                                  *this, vectors_, parent.faceCenters,
-                                                                 parent.faceTangentSpaces, vectorType_) {
+                                                                 parent.faceTangentSpaces, vectorType_),
+      SurfaceRibbonInterface(parent.uniquePrefix() + "#" + name) {
   parent.checkHaveFaceTangentSpaces();
   refresh(); // TODO
 }
@@ -158,31 +172,28 @@ void SurfaceFaceIntrinsicVectorQuantity::draw() {
   if (!isEnabled()) return;
   drawVectors();
 
-  /*
   if (ribbonEnabled.get() && isEnabled()) {
 
     // Make sure we have a ribbon artist
     if (ribbonArtist == nullptr) {
       // Warning: expensive... Creates noticeable UI lag
-      ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, vectorField, nSym, 2500)));
+      tangentVectors.ensureHostBufferPopulated();
+      ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, false, tangentVectors.data, 1, 2500)));
     }
 
     // Update transform matrix from parent
     ribbonArtist->draw();
   }
-  */
 }
 
 void SurfaceFaceIntrinsicVectorQuantity::buildCustomUI() {
   buildVectorUI();
 
-  /*
   if (ImGui::Checkbox("Draw ribbon", &ribbonEnabled.get())) setRibbonEnabled(isRibbonEnabled());
   if (ribbonEnabled.get() && ribbonArtist != nullptr) {
     ImGui::SameLine();
     ribbonArtist->buildParametersGUI();
   }
-  */
 }
 
 void SurfaceFaceIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
@@ -213,7 +224,9 @@ SurfaceVertexIntrinsicVectorQuantity::SurfaceVertexIntrinsicVectorQuantity(std::
                                                                            SurfaceMesh& mesh_, VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX),
       TangentVectorQuantity<SurfaceVertexIntrinsicVectorQuantity>(*this, vectors_, parent.vertexPositions,
-                                                                  parent.vertexTangentSpaces, vectorType_) {
+                                                                  parent.vertexTangentSpaces, vectorType_),
+      SurfaceRibbonInterface(parent.uniquePrefix() + "#" + name) {
+
   parent.checkHaveVertexTangentSpaces();
   refresh(); // TODO
 }
@@ -227,7 +240,6 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
   if (!isEnabled()) return;
   drawVectors();
 
-  /* Ribbons
   if (isEnabled() && ribbonEnabled.get()) {
 
     // Make sure we have a ribbon artist
@@ -235,61 +247,57 @@ void SurfaceVertexIntrinsicVectorQuantity::draw() {
 
       // Remap to center of each face (extrinsically)
 
-      // Generate default tangent spaces if necessary
-      if (!parent.hasFaceTangentSpaces()) {
-        // TODO this could technically cause a problem if the user tries to register some other tangent spaces after
-        // enabling the ribbon. This should really be an entirely internal implementation detail.
-        parent.generateDefaultFaceTangentSpaces();
-      }
-      parent.ensureHaveFaceTangentSpaces();
+      tangentVectors.ensureHostBufferPopulated();
+      parent.defaultFaceTangentSpaces.ensureHostBufferPopulated();
+      parent.vertexTangentSpaces.ensureHostBufferPopulated();
 
-      parent.ensureHaveVertexTangentSpaces();
       std::vector<glm::vec2> unitFaceVecs(parent.nFaces());
-      for (size_t iF = 0; iF < parent.nFaces(); iF++) {
-        std::vector<size_t>& face = parent.faces[iF];
 
-        glm::vec3 faceBasisX = parent.faceTangentSpaces[iF][0];
-        glm::vec3 faceBasisY = parent.faceTangentSpaces[iF][1];
+      for (size_t iF = 0; iF < parent.nFaces(); iF++) {
+        size_t start = parent.faceIndsStart[iF];
+        size_t D = parent.faceIndsStart[iF + 1] - parent.faceIndsStart[iF];
+
+        glm::vec3 faceBasisX = parent.defaultFaceTangentSpaces.data[iF][0];
+        glm::vec3 faceBasisY = parent.defaultFaceTangentSpaces.data[iF][1];
 
         glm::vec2 sum{0.0, 0.0};
-        for (size_t iV : face) {
-          glm::vec2 vertVec = vectorField[iV];
-          Complex angle = std::pow(Complex(vertVec.x, vertVec.y), 1.0 / nSym);
-          vertVec = glm::vec2{angle.real(), angle.imag()};
 
+        for (size_t j = 0; j < D; j++) {
+          size_t iV = parent.faceIndsEntries[start + j];
 
-          glm::vec3 vertexBasisX = parent.vertexTangentSpaces[iV][0];
-          glm::vec3 vertexBasisY = parent.vertexTangentSpaces[iV][1];
+          glm::vec2 vertVec = tangentVectors.data[iV];
+          // Complex angle = std::pow(Complex(vertVec.x, vertVec.y), 1.0 / nSym);
+          // vertVec = glm::vec2{angle.real(), angle.imag()};
+          glm::vec3 vertexBasisX = parent.vertexTangentSpaces.data[iV][0];
+          glm::vec3 vertexBasisY = parent.vertexTangentSpaces.data[iV][1];
 
           // Rotate in to the basis of the face
-          glm::vec2 faceVec = rotateToTangentBasis(vertVec, vertexBasisX, vertexBasisY, faceBasisX, faceBasisY);
-          angle = std::pow(Complex(faceVec.x, faceVec.y), nSym);
-          faceVec = glm::vec2{angle.real(), angle.imag()};
-          sum += faceVec;
+          glm::vec2 faceVecRot = rotateToTangentBasis(vertVec, vertexBasisX, vertexBasisY, faceBasisX, faceBasisY);
+          // angle = std::pow(Complex(faceVec.x, faceVec.y), nSym);
+          // faceVec = glm::vec2{angle.real(), angle.imag()};
+          sum += faceVecRot;
         }
+
         unitFaceVecs[iF] = glm::normalize(sum);
       }
 
       // Warning: expensive... Creates noticeable UI lag
-      ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, unitFaceVecs, nSym, 2500)));
+      ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, true, unitFaceVecs, 1, 2500)));
     }
 
     // Update transform matrix from parent
     ribbonArtist->draw();
   }
-  */
 }
 
 void SurfaceVertexIntrinsicVectorQuantity::buildCustomUI() {
   buildVectorUI();
 
-  /*
   if (ImGui::Checkbox("Draw ribbon", &ribbonEnabled.get())) setRibbonEnabled(isRibbonEnabled());
   if (ribbonEnabled.get() && ribbonArtist != nullptr) {
     ImGui::SameLine();
     ribbonArtist->buildParametersGUI();
   }
-  */
 }
 
 
@@ -335,9 +343,9 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
     std::array<float, 3> formValues;
     std::array<glm::vec3, 3> vecValues;
     for (size_t j = 0; j < 3; j++) {
-      size_t vA = mesh.triangleFaceInds.data[3 * iF + j];
-      size_t vB = mesh.triangleFaceInds.data[3 * iF + ((j + 1) % 3)];
-      size_t iE = mesh.triangleAllEdgeInds.data[3 * iF + j];
+      size_t vA = mesh.triangleVertexInds.data[3 * iF + j];
+      size_t vB = mesh.triangleVertexInds.data[3 * iF + ((j + 1) % 3)];
+      size_t iE = mesh.triangleAllEdgeInds.data[9 * iF + j];
 
       bool isCanonicalOriented = (vB > vA) != (canonicalOrientation[iE]); // TODO double check convention
       double orientationSign = isCanonicalOriented ? 1. : -1.;
@@ -358,9 +366,6 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
     glm::vec2 approxVec{glm::dot(result, mesh.defaultFaceTangentSpaces.data[iF][0]),
                         glm::dot(result, mesh.defaultFaceTangentSpaces.data[iF][1])};
     mappedVectorField[iF] = approxVec;
-
-    // Fill out data for the little arrows
-    mappedVectorField[iF] = result;
   }
 
   return mappedVectorField;
@@ -376,10 +381,8 @@ SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std
       TangentVectorQuantity<SurfaceOneFormIntrinsicVectorQuantity>(
           *this, oneFormToFaceTangentVectors(mesh_, oneForm_, canonicalOrientation_), parent.faceCenters,
           parent.defaultFaceTangentSpaces, VectorType::STANDARD),
-      oneForm(oneForm_), canonicalOrientation(canonicalOrientation_)
-
-
-{
+      SurfaceRibbonInterface(parent.uniquePrefix() + "#" + name), oneForm(oneForm_),
+      canonicalOrientation(canonicalOrientation_) {
   refresh(); // TODO
 }
 
@@ -393,37 +396,34 @@ void SurfaceOneFormIntrinsicVectorQuantity::draw() {
   if (!isEnabled()) return;
   drawVectors();
 
-  /*
   if (isEnabled() && ribbonEnabled.get()) {
 
     // Make sure we have a ribbon artist
     if (ribbonArtist == nullptr) {
+      tangentVectors.ensureHostBufferPopulated();
 
       std::vector<glm::vec2> unitMappedField(parent.nFaces());
       for (size_t iF = 0; iF < parent.nFaces(); iF++) {
-        unitMappedField[iF] = glm::normalize(mappedVectorField[iF]);
+        unitMappedField[iF] = glm::normalize(tangentVectors.data[iF]);
       }
       // Warning: expensive... Creates noticeable UI lag
-      ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, unitMappedField, 1, 2500)));
+      ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, true, unitMappedField, 1, 2500)));
     }
 
 
     // Update transform matrix from parent
     ribbonArtist->draw();
   }
-  */
 }
 
 void SurfaceOneFormIntrinsicVectorQuantity::buildCustomUI() {
   buildVectorUI();
 
-  /*
   if (ImGui::Checkbox("Draw ribbon", &ribbonEnabled.get())) setRibbonEnabled(isRibbonEnabled());
   if (ribbonEnabled.get() && ribbonArtist != nullptr) {
     ImGui::SameLine();
     ribbonArtist->buildParametersGUI();
   }
-  */
 }
 
 void SurfaceOneFormIntrinsicVectorQuantity::buildEdgeInfoGUI(size_t iE) {

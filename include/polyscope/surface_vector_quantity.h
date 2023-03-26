@@ -3,7 +3,7 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/render/engine.h"
-// #include "polyscope/ribbon_artist.h"
+#include "polyscope/ribbon_artist.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/vector_quantity.h"
 
@@ -25,24 +25,8 @@ public:
 
   // === Option accessors
 
-  // // Enable the ribbon visualization
-  // SurfaceVectorQuantity* setRibbonEnabled(bool newVal);
-  // bool isRibbonEnabled();
-  //
-  // // Ribbon width
-  // SurfaceVectorQuantity* setRibbonWidth(double val, bool isRelative);
-  // double getRibbonWidth();
-  //
-  // // Ribbon material
-  // SurfaceVectorQuantity* setRibbonMaterial(std::string name);
-  // std::string getRibbonMaterial();
-
 protected:
   MeshElement definedOn;
-
-  // A ribbon viz that is appropriate for some fields
-  // std::unique_ptr<RibbonArtist> ribbonArtist;
-  // PersistentValue<bool> ribbonEnabled;
 };
 
 
@@ -75,11 +59,37 @@ public:
   virtual void buildFaceInfoGUI(size_t fInd) override;
 };
 
+class SurfaceRibbonInterface {
+public:
+  // === Option accessors
+  SurfaceRibbonInterface(std::string uniqueName);
+
+  // Enable the ribbon visualization
+  SurfaceRibbonInterface* setRibbonEnabled(bool newVal);
+  bool isRibbonEnabled();
+
+  // Ribbon width
+  SurfaceRibbonInterface* setRibbonWidth(double val, bool isRelative);
+  double getRibbonWidth();
+
+  // Ribbon material
+  SurfaceRibbonInterface* setRibbonMaterial(std::string name);
+  std::string getRibbonMaterial();
+
+protected:
+  MeshElement definedOn;
+
+  // A ribbon viz
+  std::unique_ptr<RibbonArtist> ribbonArtist;
+  PersistentValue<bool> ribbonEnabled;
+};
+
 
 // ==== Intrinsic vectors at faces
 
 class SurfaceFaceIntrinsicVectorQuantity : public SurfaceVectorQuantity,
-                                           public TangentVectorQuantity<SurfaceFaceIntrinsicVectorQuantity> {
+                                           public TangentVectorQuantity<SurfaceFaceIntrinsicVectorQuantity>,
+                                           public SurfaceRibbonInterface {
 public:
   SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_,
                                      VectorType vectorType_ = VectorType::STANDARD);
@@ -95,7 +105,8 @@ public:
 // ==== Intrinsic vectors at vertices
 
 class SurfaceVertexIntrinsicVectorQuantity : public SurfaceVectorQuantity,
-                                             public TangentVectorQuantity<SurfaceVertexIntrinsicVectorQuantity> {
+                                             public TangentVectorQuantity<SurfaceVertexIntrinsicVectorQuantity>,
+                                             public SurfaceRibbonInterface {
 public:
   SurfaceVertexIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_,
                                        VectorType vectorType_ = VectorType::STANDARD);
@@ -112,7 +123,8 @@ public:
 // ==== Intrinsic one form on edges
 
 class SurfaceOneFormIntrinsicVectorQuantity : public SurfaceVectorQuantity,
-                                              public TangentVectorQuantity<SurfaceOneFormIntrinsicVectorQuantity> {
+                                              public TangentVectorQuantity<SurfaceOneFormIntrinsicVectorQuantity>,
+                                              public SurfaceRibbonInterface {
 public:
   SurfaceOneFormIntrinsicVectorQuantity(std::string name, std::vector<double> oneForm_, std::vector<char> orientations_,
                                         SurfaceMesh& mesh_);

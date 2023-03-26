@@ -54,6 +54,7 @@ class FieldTracer {
 public:
   // Core members
   SurfaceMesh& mesh;
+  std::vector<std::array<glm::vec3, 2>>& meshFaceTangentSpaces;
   std::vector<glm::vec2> faceVectors; // disambiguated
   int nSym;
 
@@ -68,12 +69,19 @@ public:
   // Cached connectivity data
 
   // Input should be identified (raised to power), not disambiguated
-  FieldTracer(SurfaceMesh& mesh_, const std::vector<glm::vec2>& field, int nSym_ = 1) : mesh(mesh_), nSym(nSym_) {
+  FieldTracer(SurfaceMesh& mesh_, bool useDefaultBasis, const std::vector<glm::vec2>& field, int nSym_ = 1)
+      : mesh(mesh_),
+        meshFaceTangentSpaces(useDefaultBasis ? mesh_.defaultFaceTangentSpaces.data : mesh_.faceTangentSpaces.data),
+        nSym(nSym_) {
 
     mesh.checkTriangular();
     mesh.ensureHaveManifoldConnectivity();
     mesh.checkHaveFaceTangentSpaces();
-    mesh.faceTangentSpaces.ensureHostBufferPopulated();
+    if (useDefaultBasis) {
+      mesh.defaultFaceTangentSpaces.ensureHostBufferPopulated();
+    } else {
+      mesh.faceTangentSpaces.ensureHostBufferPopulated();
+    }
     mesh.vertexPositions.ensureHostBufferPopulated();
     mesh.faceAreas.ensureHostBufferPopulated();
     mesh.faceNormals.ensureHostBufferPopulated();
@@ -94,8 +102,8 @@ public:
       totalArea += mesh.faceAreas.data[iF];
 
       // Face basis
-      glm::vec3 X = mesh.faceTangentSpaces.data[iF][0];
-      glm::vec3 Y = mesh.faceTangentSpaces.data[iF][1];
+      glm::vec3 X = meshFaceTangentSpaces[iF][0];
+      glm::vec3 Y = meshFaceTangentSpaces[iF][1];
 
       // Find each of the vertexPositions as a point in the basis
       // The first vertex is implicitly at (0,0)
@@ -223,9 +231,8 @@ public:
         tRay = lengthRemaining;
         glm::vec2 endingPos = pointPos + tRay * traceDir;
         size_t ind0 = mesh.triangleVertexInds.data[3 * currFace + 0];
-        glm::vec3 endingPosR3 = mesh.vertexPositions.data[ind0] +
-                                endingPos.x * mesh.faceTangentSpaces.data[currFace][0] +
-                                endingPos.y * mesh.faceTangentSpaces.data[currFace][1];
+        glm::vec3 endingPosR3 = mesh.vertexPositions.data[ind0] + endingPos.x * meshFaceTangentSpaces[currFace][0] +
+                                endingPos.y * meshFaceTangentSpaces[currFace][1];
         points.push_back({{endingPosR3, mesh.faceNormals.data[currFace]}});
         break;
       }
@@ -234,9 +241,8 @@ public:
       glm::vec2 newPointLocal = pointPos + tRay * traceDir;
 
       size_t ind0 = mesh.triangleVertexInds.data[3 * currFace + 0];
-      glm::vec3 newPointR3 = mesh.vertexPositions.data[ind0] +
-                             newPointLocal.x * mesh.faceTangentSpaces.data[currFace][0] +
-                             newPointLocal.y * mesh.faceTangentSpaces.data[currFace][1];
+      glm::vec3 newPointR3 = mesh.vertexPositions.data[ind0] + newPointLocal.x * meshFaceTangentSpaces[currFace][0] +
+                             newPointLocal.y * meshFaceTangentSpaces[currFace][1];
       glm::vec3 newNormal = mesh.faceNormals.data[currFace];
       if (nextHe != INVALID_IND) {
         nextFace = nextHe / 3; // indexing convention
@@ -256,9 +262,8 @@ public:
 
 
       // Find a direction of travel in the new face
-      currDir = rotateToTangentBasis(traceDir, mesh.faceTangentSpaces.data[currFace][0],
-                                     mesh.faceTangentSpaces.data[currFace][1], mesh.faceTangentSpaces.data[nextFace][0],
-                                     mesh.faceTangentSpaces.data[nextFace][1]);
+      currDir = rotateToTangentBasis(traceDir, meshFaceTangentSpaces[currFace][0], meshFaceTangentSpaces[currFace][1],
+                                     meshFaceTangentSpaces[nextFace][0], meshFaceTangentSpaces[nextFace][1]);
 
       // Figure out which halfedge in the next face is nextHe
       unsigned int nextHeLocalIndex = nextHe - 3 * nextFace;
@@ -304,7 +309,7 @@ glm::vec2 rotateToTangentBasis(glm::vec2 v, const glm::vec3& oldBasisX, const gl
   // If the vectors are nearly in plane, no rotation is needed
   // (can't just go through the same code path as below because cross
   // yields a degenerate direction)
-  float EPS = 0.0000001;
+  float EPS = 0.0001;
   float dotVal = dot(oldNormal, newNormal);
   glm::vec3 oldBasisInPlaneX, oldBasisInPlaneY;
   if (dotVal > (1.0 - EPS)) {
@@ -321,8 +326,6 @@ glm::vec2 rotateToTangentBasis(glm::vec2 v, const glm::vec3& oldBasisX, const gl
     float angle = atan2(dot(edgeV, cross(oldNormal, newNormal)), dot(oldNormal, newNormal));
     oldBasisInPlaneX = glm::rotate(oldBasisX, angle, edgeV);
     oldBasisInPlaneY = glm::rotate(oldBasisY, angle, edgeV);
-    // oldBasisInPlaneX = oldBasisX.rotate_around(edgeV, angle);
-    // oldBasisInPlaneY = oldBasisY.rotate_around(edgeV, angle);
   }
 
   // Now it's just a goood old-fashioned change of basis
@@ -331,7 +334,7 @@ glm::vec2 rotateToTangentBasis(glm::vec2 v, const glm::vec3& oldBasisX, const gl
   return glm::vec2{xComp, yComp};
 }
 
-std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(SurfaceMesh& mesh, const std::vector<glm::vec2>& field,
+std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(SurfaceMesh& mesh, bool useDefaultBasis, const std::vector<glm::vec2>& field,
                                                               int nSym, size_t nLines) {
 
   // Only works on triangle meshes
@@ -340,7 +343,7 @@ std::vector<std::vector<std::array<glm::vec3, 2>>> traceField(SurfaceMesh& mesh,
   // Preliminaries
 
   // Create a tracer
-  FieldTracer tracer(mesh, field, nSym);
+  FieldTracer tracer(mesh, useDefaultBasis, field, nSym);
 
   // Compute a reasonable number of lines if no count was specified
   if (nLines == 0) {
