@@ -58,13 +58,13 @@ public:
   virtual void buildFaceInfoGUI(size_t fInd) override;
 };
 
-// ==== Intrinsic vectors at faces
+// ==== Tangent vectors at faces
 
-class SurfaceFaceIntrinsicVectorQuantity : public SurfaceVectorQuantity,
-                                           public TangentVectorQuantity<SurfaceFaceIntrinsicVectorQuantity> {
+class SurfaceFaceTangentVectorQuantity : public SurfaceVectorQuantity,
+                                         public TangentVectorQuantity<SurfaceFaceTangentVectorQuantity> {
 public:
-  SurfaceFaceIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_,
-                                     VectorType vectorType_ = VectorType::STANDARD);
+  SurfaceFaceTangentVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_, int nSym = 1,
+                                   VectorType vectorType_ = VectorType::STANDARD);
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
@@ -74,13 +74,13 @@ public:
 };
 
 
-// ==== Intrinsic vectors at vertices
+// ==== Tangent vectors at vertices
 
-class SurfaceVertexIntrinsicVectorQuantity : public SurfaceVectorQuantity,
-                                             public TangentVectorQuantity<SurfaceVertexIntrinsicVectorQuantity> {
+class SurfaceVertexTangentVectorQuantity : public SurfaceVectorQuantity,
+                                           public TangentVectorQuantity<SurfaceVertexTangentVectorQuantity> {
 public:
-  SurfaceVertexIntrinsicVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_,
-                                       VectorType vectorType_ = VectorType::STANDARD);
+  SurfaceVertexTangentVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_,
+                                     int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
@@ -91,13 +91,13 @@ public:
 };
 
 
-// ==== Intrinsic one form on edges
+// ==== Tangent one form on edges
 
-class SurfaceOneFormIntrinsicVectorQuantity : public SurfaceVectorQuantity,
-                                              public TangentVectorQuantity<SurfaceOneFormIntrinsicVectorQuantity> {
+class SurfaceOneFormTangentVectorQuantity : public SurfaceVectorQuantity,
+                                            public TangentVectorQuantity<SurfaceOneFormTangentVectorQuantity> {
 public:
-  SurfaceOneFormIntrinsicVectorQuantity(std::string name, std::vector<double> oneForm_, std::vector<char> orientations_,
-                                        SurfaceMesh& mesh_);
+  SurfaceOneFormTangentVectorQuantity(std::string name, std::vector<double> oneForm_, std::vector<char> orientations_,
+                                      SurfaceMesh& mesh_);
 
   virtual void draw() override;
   virtual void buildCustomUI() override;

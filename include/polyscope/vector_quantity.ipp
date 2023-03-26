@@ -206,11 +206,11 @@ TangentVectorQuantity<QuantityT>::TangentVectorQuantity(QuantityT& quantity_,
                                                         const std::vector<glm::vec2>& tangentVectors_,
                                                         render::ManagedBuffer<glm::vec3>& vectorRoots_,
                                                         render::ManagedBuffer<std::array<glm::vec3, 2>>& tangentBasis_,
-                                                        VectorType vectorType_)
+                                                        int nSym_, VectorType vectorType_)
 
     : VectorQuantityBase<QuantityT>(quantity_, vectorType_),
       tangentVectors(quantity_.uniquePrefix() + "#values", tangentVectorsData), vectorRoots(vectorRoots_),
-      tangentBasis(tangentBasis_), tangentVectorsData(tangentVectors_) {
+      tangentBasis(tangentBasis_), tangentVectorsData(tangentVectors_), nSym(nSym_) {
   this->updateMaxLength();
 }
 
@@ -220,23 +220,29 @@ void TangentVectorQuantity<QuantityT>::drawVectors() {
     createProgram();
   }
 
-  // Set uniforms
-  this->quantity.parent.setStructureUniforms(*(this->vectorProgram));
-  this->vectorProgram->setUniform("u_radius", this->vectorRadius.get().asAbsolute());
-  this->vectorProgram->setUniform("u_baseColor", this->vectorColor.get());
+  for (int iSym = 0; iSym < nSym; iSym++) { // for drawing symmetric vectors, does nothing in the common case nSym == 1
 
-  if (this->vectorType == VectorType::AMBIENT) {
-    this->vectorProgram->setUniform("u_lengthMult", 1.0);
-  } else {
-    this->vectorProgram->setUniform("u_lengthMult", this->vectorLengthMult.get().asAbsolute() / this->maxLength);
+    float symRotRad = (iSym * 2. * PI) / nSym;
+    this->vectorProgram->setUniform("u_vectorRotRad", symRotRad);
+
+    // Set uniforms
+    this->quantity.parent.setStructureUniforms(*(this->vectorProgram));
+    this->vectorProgram->setUniform("u_radius", this->vectorRadius.get().asAbsolute());
+    this->vectorProgram->setUniform("u_baseColor", this->vectorColor.get());
+
+    if (this->vectorType == VectorType::AMBIENT) {
+      this->vectorProgram->setUniform("u_lengthMult", 1.0);
+    } else {
+      this->vectorProgram->setUniform("u_lengthMult", this->vectorLengthMult.get().asAbsolute() / this->maxLength);
+    }
+
+    glm::mat4 P = view::getCameraPerspectiveMatrix();
+    glm::mat4 Pinv = glm::inverse(P);
+    this->vectorProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+    this->vectorProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
+
+    this->vectorProgram->draw();
   }
-
-  glm::mat4 P = view::getCameraPerspectiveMatrix();
-  glm::mat4 Pinv = glm::inverse(P);
-  this->vectorProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
-  this->vectorProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
-
-  this->vectorProgram->draw();
 }
 
 template <typename QuantityT>

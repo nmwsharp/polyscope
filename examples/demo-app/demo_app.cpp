@@ -296,7 +296,7 @@ void processFileOBJ(std::string filename) {
     psMesh->setFaceTangentBasisX(faceBasisX);
 
     // At vertices
-    std::vector<glm::vec2> vertexIntrinsicVec(nVertices, glm::vec3{0., 0., 0.});
+    std::vector<glm::vec2> vertexTangentVec(nVertices, glm::vec3{0., 0., 0.});
     for (size_t iV = 0; iV < nVertices; iV++) {
       glm::vec3 pos = vertexPositionsGLM[iV];
       glm::vec3 basisX = vertexBasisX[iV];
@@ -304,12 +304,13 @@ void processFileOBJ(std::string filename) {
 
       glm::vec3 v = spatialFunc(pos);
       glm::vec2 vTangent{glm::dot(v, basisX), glm::dot(v, basisY)};
-      vertexIntrinsicVec[iV] = vTangent;
+      vertexTangentVec[iV] = vTangent;
     }
-    psMesh->addVertexIntrinsicVectorQuantity("intrinsic vertex vec", vertexIntrinsicVec);
+    psMesh->addVertexTangentVectorQuantity("tangent vertex vec", vertexTangentVec);
+    psMesh->addVertexTangentVectorQuantity("tangent vertex vec line", vertexTangentVec, 2);
 
     // At faces
-    std::vector<glm::vec2> faceIntrinsicVec(nFaces, glm::vec3{0., 0., 0.});
+    std::vector<glm::vec2> faceTangentVec(nFaces, glm::vec3{0., 0., 0.});
     for (size_t iF = 0; iF < nFaces; iF++) {
 
       glm::vec3 pos = fCenters[iF];
@@ -318,9 +319,10 @@ void processFileOBJ(std::string filename) {
 
       glm::vec3 v = spatialFunc(pos);
       glm::vec2 vTangent{glm::dot(v, basisX), glm::dot(v, basisY)};
-      faceIntrinsicVec[iF] = vTangent;
+      faceTangentVec[iF] = vTangent;
     }
-    psMesh->addFaceIntrinsicVectorQuantity("intrinsic face vec", faceIntrinsicVec);
+    psMesh->addFaceTangentVectorQuantity("tangent face vec", faceTangentVec);
+    psMesh->addFaceTangentVectorQuantity("tangent face vec cross", faceTangentVec, 4);
 
 
     // 1-form
@@ -356,7 +358,7 @@ void processFileOBJ(std::string filename) {
       }
     }
     if (isTriangle) {
-      psMesh->addOneFormIntrinsicVectorQuantity("intrinsic 1-form", edgeForm, edgeOrient);
+      psMesh->addOneFormTangentVectorQuantity("intrinsic 1-form", edgeForm, edgeOrient);
     }
   }
 

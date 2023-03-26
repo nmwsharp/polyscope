@@ -556,7 +556,7 @@ TEST_F(PolyscopeTest, SurfaceMeshVertexLocalParam) {
 TEST_F(PolyscopeTest, SurfaceMeshVertexVector) {
   auto psMesh = registerTriangleMesh();
   std::vector<glm::vec3> vals(psMesh->nVertices(), {1., 2., 3.});
-  auto q1 = psMesh->addVertexVectorQuantity("param", vals);
+  auto q1 = psMesh->addVertexVectorQuantity("vecs", vals);
   q1->setEnabled(true);
   polyscope::show(3);
   polyscope::removeAllStructures();
@@ -565,30 +565,39 @@ TEST_F(PolyscopeTest, SurfaceMeshVertexVector) {
 TEST_F(PolyscopeTest, SurfaceMeshFaceVector) {
   auto psMesh = registerTriangleMesh();
   std::vector<glm::vec3> vals(psMesh->nFaces(), {1., 2., 3.});
-  auto q1 = psMesh->addFaceVectorQuantity("param", vals);
+  auto q1 = psMesh->addFaceVectorQuantity("vecs", vals);
   q1->setEnabled(true);
+  // symmetric case
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
 
-TEST_F(PolyscopeTest, SurfaceMeshVertexIntrinsic) {
+TEST_F(PolyscopeTest, SurfaceMeshVertexTangent) {
   auto psMesh = registerTriangleMesh();
   std::vector<glm::vec3> basisX(psMesh->nVertices(), {1., 2., 3.});
   psMesh->setVertexTangentBasisX(basisX);
   std::vector<glm::vec2> vals(psMesh->nVertices(), {1., 2.});
-  auto q1 = psMesh->addVertexIntrinsicVectorQuantity("param", vals);
+  auto q1 = psMesh->addVertexTangentVectorQuantity("vecs", vals);
   q1->setEnabled(true);
+  polyscope::show(3);
+  // symmetric case
+  auto q2 = psMesh->addVertexTangentVectorQuantity("sym vecs", vals, 4);
+  q2->setEnabled(true);
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
 
-TEST_F(PolyscopeTest, SurfaceMeshFaceIntrinsic) {
+TEST_F(PolyscopeTest, SurfaceMeshFaceTangent) {
   auto psMesh = registerTriangleMesh();
   std::vector<glm::vec3> basisX(psMesh->nFaces(), {1., 2., 3.});
   psMesh->setFaceTangentBasisX(basisX);
   std::vector<glm::vec2> vals(psMesh->nFaces(), {1., 2.});
-  auto q1 = psMesh->addFaceIntrinsicVectorQuantity("param", vals);
+  auto q1 = psMesh->addFaceTangentVectorQuantity("vecs", vals);
   q1->setEnabled(true);
+  polyscope::show(3);
+  // symmetric case
+  auto q2 = psMesh->addFaceTangentVectorQuantity("sym vecs", vals, 4);
+  q2->setEnabled(true);
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
@@ -600,7 +609,7 @@ TEST_F(PolyscopeTest, SurfaceMeshOneForm) {
   std::vector<char> orients(nEdges, true);
   std::vector<size_t> ePerm = {5, 3, 1, 2, 4, 0};
   psMesh->setEdgePermutation(ePerm);
-  auto q1 = psMesh->addOneFormIntrinsicVectorQuantity("one form vecs", vals, orients);
+  auto q1 = psMesh->addOneFormTangentVectorQuantity("one form vecs", vals, orients);
   q1->setEnabled(true);
   polyscope::show(3);
   polyscope::removeAllStructures();
@@ -1174,7 +1183,7 @@ TEST_F(PolyscopeTest, TestRepeatAddAndRemoveGroup) {
     polyscope::setParentGroupOfGroup("test_child_group", "test_group");
     polyscope::setParentGroupOfStructure(psCurve1, "test_child_group");
     if (i != 9) {
-    polyscope::removeGroup("test_child_group");
+      polyscope::removeGroup("test_child_group");
     }
   }
   polyscope::show(3);
@@ -1188,9 +1197,7 @@ TEST_F(PolyscopeTest, TestDocsExample) {
   std::vector<glm::vec3> points;
   for (size_t i = 0; i < 3000; i++) {
     points.push_back(
-        glm::vec3{polyscope::randomUnit() - .5,
-                  polyscope::randomUnit() - .5,
-                  polyscope::randomUnit() - .5});
+        glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
   }
   polyscope::PointCloud* psCloud = polyscope::registerPointCloud("my cloud", points);
   psCloud->setPointRadius(0.02);
@@ -1200,17 +1207,12 @@ TEST_F(PolyscopeTest, TestDocsExample) {
   std::vector<glm::vec3> nodes;
   std::vector<std::array<size_t, 2>> edges;
   nodes = {
-  {1, 0, 0},
-  {0, 1, 0},
-  {0, 0, 1},
-  {0, 0, 0},
+      {1, 0, 0},
+      {0, 1, 0},
+      {0, 0, 1},
+      {0, 0, 0},
   };
-  edges = {
-  {1, 3},
-  {3, 0},
-  {1, 0},
-  {0, 2}
-  };
+  edges = {{1, 3}, {3, 0}, {1, 0}, {0, 2}};
   polyscope::CurveNetwork* psCurve = polyscope::registerCurveNetwork("my network", nodes, edges);
 
   // group them together

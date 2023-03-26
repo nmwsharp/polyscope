@@ -307,55 +307,36 @@ SurfaceFaceVectorQuantity* SurfaceMesh::addFaceVectorQuantity2D(std::string name
 }
 
 template <class T>
-SurfaceFaceIntrinsicVectorQuantity* SurfaceMesh::addFaceIntrinsicVectorQuantity(std::string name, const T& vectors,
-                                                                                VectorType vectorType) {
-  validateSize(vectors, faceDataSize, "face intrinsic vector quantity " + name);
-  return addFaceIntrinsicVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), vectorType);
+SurfaceFaceTangentVectorQuantity* SurfaceMesh::addFaceTangentVectorQuantity(std::string name, const T& vectors,
+                                                                            int nSym, VectorType vectorType) {
+
+  validateSize(vectors, faceDataSize, "face tangent vector quantity " + name);
+  return addFaceTangentVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), nSym, vectorType);
 }
 
 
 template <class T>
-SurfaceVertexIntrinsicVectorQuantity* SurfaceMesh::addVertexIntrinsicVectorQuantity(std::string name, const T& vectors,
-                                                                                    VectorType vectorType) {
-  validateSize(vectors, vertexDataSize, "vertex intrinsic vector quantity " + name);
-  return addVertexIntrinsicVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), vectorType);
-}
-
-template <class T>
-SurfaceFaceIntrinsicVectorQuantity* SurfaceMesh::addFaceIntrinsicVectorQuantity(std::string name, const T& vectors,
+SurfaceVertexTangentVectorQuantity* SurfaceMesh::addVertexTangentVectorQuantity(std::string name, const T& vectors,
                                                                                 int nSym, VectorType vectorType) {
 
-  if (nSym > 1) throw std::invalid_argument("nSym > 1 not allowed, nSym is no longer supported");
-
-  validateSize(vectors, faceDataSize, "face intrinsic vector quantity " + name);
-  return addFaceIntrinsicVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), nSym, vectorType);
-}
-
-
-template <class T>
-SurfaceVertexIntrinsicVectorQuantity* SurfaceMesh::addVertexIntrinsicVectorQuantity(std::string name, const T& vectors,
-                                                                                    int nSym, VectorType vectorType) {
-
-  if (nSym > 1) throw std::invalid_argument("nSym > 1 not allowed, nSym is no longer supported");
-
-  validateSize(vectors, vertexDataSize, "vertex intrinsic vector quantity " + name);
-  return addVertexIntrinsicVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), nSym, vectorType);
+  validateSize(vectors, vertexDataSize, "vertex tangent vector quantity " + name);
+  return addVertexTangentVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), nSym, vectorType);
 }
 
 
 // Orientations is `true` if the canonical orientation of the edge points from the lower-indexed vertex to the
 // higher-indexed vertex, and `false` otherwise.
 template <class T, class O>
-SurfaceOneFormIntrinsicVectorQuantity* SurfaceMesh::addOneFormIntrinsicVectorQuantity(std::string name, const T& data,
-                                                                                      const O& orientations) {
+SurfaceOneFormTangentVectorQuantity* SurfaceMesh::addOneFormTangentVectorQuantity(std::string name, const T& data,
+                                                                                  const O& orientations) {
   if (edgeDataSize == INVALID_IND) {
     throw std::logic_error(
         "[polyscope] SurfaceMesh " + name +
         " attempted to set edge-valued data, but this requires an edge ordering. Call setEdgePermutation().");
   }
-  validateSize(data, edgeDataSize, "one form intrinsic vector quantity " + name);
-  return addOneFormIntrinsicVectorQuantityImpl(name, standardizeArray<double, T>(data),
-                                               standardizeArray<char, O>(orientations));
+  validateSize(data, edgeDataSize, "one form tangent vector quantity " + name);
+  return addOneFormTangentVectorQuantityImpl(name, standardizeArray<double, T>(data),
+                                             standardizeArray<char, O>(orientations));
 }
 
 

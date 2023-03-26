@@ -99,32 +99,32 @@ std::string SurfaceFaceVectorQuantity::niceName() { return name + " (face vector
 
 
 // ========================================================
-// ==========        Intrinsic Face Vector       ==========
+// ==========        Tangent Face Vector       ==========
 // ========================================================
 
 
-SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::string name,
-                                                                       std::vector<glm::vec2> vectors_,
-                                                                       SurfaceMesh& mesh_, VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE), TangentVectorQuantity<SurfaceFaceIntrinsicVectorQuantity>(
+SurfaceFaceTangentVectorQuantity::SurfaceFaceTangentVectorQuantity(std::string name, std::vector<glm::vec2> vectors_,
+                                                                   SurfaceMesh& mesh_, int nSym_,
+                                                                   VectorType vectorType_)
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE), TangentVectorQuantity<SurfaceFaceTangentVectorQuantity>(
                                                                  *this, vectors_, parent.faceCenters,
-                                                                 parent.faceTangentSpaces, vectorType_) {
+                                                                 parent.faceTangentSpaces, nSym_, vectorType_) {
   parent.checkHaveFaceTangentSpaces();
 }
 
-void SurfaceFaceIntrinsicVectorQuantity::refresh() {
+void SurfaceFaceTangentVectorQuantity::refresh() {
   refreshVectors();
   Quantity::refresh();
 }
 
-void SurfaceFaceIntrinsicVectorQuantity::draw() {
+void SurfaceFaceTangentVectorQuantity::draw() {
   if (!isEnabled()) return;
   drawVectors();
 }
 
-void SurfaceFaceIntrinsicVectorQuantity::buildCustomUI() { buildVectorUI(); }
+void SurfaceFaceTangentVectorQuantity::buildCustomUI() { buildVectorUI(); }
 
-void SurfaceFaceIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
+void SurfaceFaceTangentVectorQuantity::buildFaceInfoGUI(size_t iF) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
@@ -140,37 +140,44 @@ void SurfaceFaceIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
   ImGui::NextColumn();
 }
 
-std::string SurfaceFaceIntrinsicVectorQuantity::niceName() { return name + " (face intrinsic vector)"; }
+std::string SurfaceFaceTangentVectorQuantity::niceName() {
+  if (nSym == 1) {
+    return name + " (face tangent vector)";
+  } else {
+    return name + " (face tangent vector sym=" + std::to_string(nSym) + ")";
+  }
+}
 
 // ========================================================
-// ==========       Intrinsic Vertex Vector      ==========
+// ==========       Tangent Vertex Vector      ==========
 // ========================================================
 
 
-SurfaceVertexIntrinsicVectorQuantity::SurfaceVertexIntrinsicVectorQuantity(std::string name,
-                                                                           std::vector<glm::vec2> vectors_,
-                                                                           SurfaceMesh& mesh_, VectorType vectorType_)
+SurfaceVertexTangentVectorQuantity::SurfaceVertexTangentVectorQuantity(std::string name,
+                                                                       std::vector<glm::vec2> vectors_,
+                                                                       SurfaceMesh& mesh_, int nSym_,
+                                                                       VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX),
-      TangentVectorQuantity<SurfaceVertexIntrinsicVectorQuantity>(*this, vectors_, parent.vertexPositions,
-                                                                  parent.vertexTangentSpaces, vectorType_) {
+      TangentVectorQuantity<SurfaceVertexTangentVectorQuantity>(*this, vectors_, parent.vertexPositions,
+                                                                parent.vertexTangentSpaces, nSym_, vectorType_) {
 
   parent.checkHaveVertexTangentSpaces();
 }
 
-void SurfaceVertexIntrinsicVectorQuantity::refresh() {
+void SurfaceVertexTangentVectorQuantity::refresh() {
   refreshVectors();
   Quantity::refresh();
 }
 
-void SurfaceVertexIntrinsicVectorQuantity::draw() {
+void SurfaceVertexTangentVectorQuantity::draw() {
   if (!isEnabled()) return;
   drawVectors();
 }
 
-void SurfaceVertexIntrinsicVectorQuantity::buildCustomUI() { buildVectorUI(); }
+void SurfaceVertexTangentVectorQuantity::buildCustomUI() { buildVectorUI(); }
 
 
-void SurfaceVertexIntrinsicVectorQuantity::buildVertexInfoGUI(size_t iV) {
+void SurfaceVertexTangentVectorQuantity::buildVertexInfoGUI(size_t iV) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
@@ -186,10 +193,16 @@ void SurfaceVertexIntrinsicVectorQuantity::buildVertexInfoGUI(size_t iV) {
   ImGui::NextColumn();
 }
 
-std::string SurfaceVertexIntrinsicVectorQuantity::niceName() { return name + " (vertex intrinsic vector)"; }
+std::string SurfaceVertexTangentVectorQuantity::niceName() {
+  if (nSym == 1) {
+    return name + " (vertex tangent vector)";
+  } else {
+    return name + " (vertex tangent vector sym=" + std::to_string(nSym) + ")";
+  }
+}
 
 // ========================================================
-// ==========        Intrinsic One Form          ==========
+// ==========        Tangent One Form          ============
 // ========================================================
 
 namespace {
@@ -241,39 +254,38 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
 
 } // namespace
 
-SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std::string name,
-                                                                             std::vector<double> oneForm_,
-                                                                             std::vector<char> canonicalOrientation_,
-                                                                             SurfaceMesh& mesh_)
+SurfaceOneFormTangentVectorQuantity::SurfaceOneFormTangentVectorQuantity(std::string name, std::vector<double> oneForm_,
+                                                                         std::vector<char> canonicalOrientation_,
+                                                                         SurfaceMesh& mesh_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE),
-      TangentVectorQuantity<SurfaceOneFormIntrinsicVectorQuantity>(
+      TangentVectorQuantity<SurfaceOneFormTangentVectorQuantity>(
           *this, oneFormToFaceTangentVectors(mesh_, oneForm_, canonicalOrientation_), parent.faceCenters,
-          parent.defaultFaceTangentSpaces, VectorType::STANDARD),
+          parent.defaultFaceTangentSpaces, 1, VectorType::STANDARD),
       oneForm(oneForm_), canonicalOrientation(canonicalOrientation_) {
 
   tangentVectors.data = oneFormToFaceTangentVectors(parent, oneForm, canonicalOrientation);
   tangentVectors.markHostBufferUpdated();
 }
 
-void SurfaceOneFormIntrinsicVectorQuantity::refresh() {
+void SurfaceOneFormTangentVectorQuantity::refresh() {
   refreshVectors();
   Quantity::refresh();
 }
 
-void SurfaceOneFormIntrinsicVectorQuantity::draw() {
+void SurfaceOneFormTangentVectorQuantity::draw() {
   if (!isEnabled()) return;
   drawVectors();
 }
 
-void SurfaceOneFormIntrinsicVectorQuantity::buildCustomUI() { buildVectorUI(); }
+void SurfaceOneFormTangentVectorQuantity::buildCustomUI() { buildVectorUI(); }
 
-void SurfaceOneFormIntrinsicVectorQuantity::buildEdgeInfoGUI(size_t iE) {
+void SurfaceOneFormTangentVectorQuantity::buildEdgeInfoGUI(size_t iE) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
   ImGui::Text("%g", oneForm[iE]);
   ImGui::NextColumn();
 }
 
-std::string SurfaceOneFormIntrinsicVectorQuantity::niceName() { return name + " (1-form intrinsic vector)"; }
+std::string SurfaceOneFormTangentVectorQuantity::niceName() { return name + " (1-form tangent vector)"; }
 
 } // namespace polyscope

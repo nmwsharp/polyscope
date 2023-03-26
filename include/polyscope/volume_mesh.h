@@ -93,7 +93,7 @@ public:
   template <class T> VolumeMeshCellColorQuantity* addCellColorQuantity(std::string name, const T& data);
 
   
-	// = Vectors (expect vector array, inner type must be indexable with correct dimension (3 for extrinsic, 2 for intrinsic) 
+	// = Vectors (expect vector array, inner type must be indexable with correct dimension (3 for extrinsic)
 	template <class T> VolumeMeshVertexVectorQuantity* addVertexVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
 	template <class T> VolumeMeshCellVectorQuantity* addCellVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD);
 

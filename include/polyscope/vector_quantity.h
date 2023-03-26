@@ -117,7 +117,7 @@ class TangentVectorQuantity : public VectorQuantityBase<QuantityT> {
 public:
   TangentVectorQuantity(QuantityT& parent, const std::vector<glm::vec2>& tangentVectors,
                         render::ManagedBuffer<glm::vec3>& vectorRoots,
-                        render::ManagedBuffer<std::array<glm::vec3, 2>>& tangentBasis, VectorType vectorType);
+                        render::ManagedBuffer<std::array<glm::vec3, 2>>& tangentBasis, int nSym, VectorType vectorType);
 
   void drawVectors();
   void refreshVectors();
@@ -146,6 +146,7 @@ protected:
   void updateMaxLength();
 
   std::vector<glm::vec2> tangentVectorsData;
+  int nSym;
   float maxLength = -777;
 };
 

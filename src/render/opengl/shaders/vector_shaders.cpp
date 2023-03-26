@@ -54,6 +54,7 @@ const ShaderStageSpecification FLEX_TANGENT_VECTOR_VERT_SHADER = {
     // uniforms
     {
         {"u_modelView", RenderDataType::Matrix44Float},
+        {"u_vectorRotRad", RenderDataType::Float},
     }, 
 
     // attributes
@@ -73,6 +74,7 @@ R"(
         in vec2 a_tangentVector;
         in vec3 a_basisVectors[2];
         uniform mat4 u_modelView;
+        uniform float u_vectorRotRad;
         out vec4 vector;
         
         ${ VERT_DECLARATIONS }$
@@ -81,7 +83,16 @@ R"(
         void main()
         {
             gl_Position = u_modelView * vec4(a_position,1.0);
-            vec3 worldVector = a_tangentVector.x * a_basisVectors[0] + a_tangentVector.y * a_basisVectors[1];
+          
+            vec2 rotTangentVector = a_tangentVector;
+            if(u_vectorRotRad != 0.) {
+              float cR = cos(u_vectorRotRad);
+              float sR = sin(u_vectorRotRad);
+              mat2 rotMat = mat2(cR, sR, -sR, cR);
+              rotTangentVector = rotMat * rotTangentVector;
+            }
+
+            vec3 worldVector = rotTangentVector.x * a_basisVectors[0] + rotTangentVector.y * a_basisVectors[1];
             vector = u_modelView * vec4(worldVector, .0);
             
             ${ VERT_ASSIGNMENTS }$

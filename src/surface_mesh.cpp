@@ -1510,30 +1510,31 @@ SurfaceMesh::addFaceVectorQuantityImpl(std::string name, const std::vector<glm::
   return q;
 }
 
-SurfaceFaceIntrinsicVectorQuantity*
-SurfaceMesh::addFaceIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors,
-                                                VectorType vectorType) {
+SurfaceFaceTangentVectorQuantity* SurfaceMesh::addFaceTangentVectorQuantityImpl(std::string name,
+                                                                                const std::vector<glm::vec2>& vectors,
+                                                                                int nSym, VectorType vectorType) {
 
-  SurfaceFaceIntrinsicVectorQuantity* q = new SurfaceFaceIntrinsicVectorQuantity(name, vectors, *this, vectorType);
+  SurfaceFaceTangentVectorQuantity* q = new SurfaceFaceTangentVectorQuantity(name, vectors, *this, nSym, vectorType);
   addQuantity(q);
   return q;
 }
 
 
-SurfaceVertexIntrinsicVectorQuantity*
-SurfaceMesh::addVertexIntrinsicVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors,
-                                                  VectorType vectorType) {
-  SurfaceVertexIntrinsicVectorQuantity* q = new SurfaceVertexIntrinsicVectorQuantity(name, vectors, *this, vectorType);
+SurfaceVertexTangentVectorQuantity*
+SurfaceMesh::addVertexTangentVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym,
+                                                VectorType vectorType) {
+  SurfaceVertexTangentVectorQuantity* q =
+      new SurfaceVertexTangentVectorQuantity(name, vectors, *this, nSym, vectorType);
   addQuantity(q);
   return q;
 }
 
 // Orientations is `true` if the canonical orientation of the edge points from the lower-indexed vertex to the
 // higher-indexed vertex, and `false` otherwise.
-SurfaceOneFormIntrinsicVectorQuantity*
-SurfaceMesh::addOneFormIntrinsicVectorQuantityImpl(std::string name, const std::vector<double>& data,
-                                                   const std::vector<char>& orientations) {
-  SurfaceOneFormIntrinsicVectorQuantity* q = new SurfaceOneFormIntrinsicVectorQuantity(
+SurfaceOneFormTangentVectorQuantity*
+SurfaceMesh::addOneFormTangentVectorQuantityImpl(std::string name, const std::vector<double>& data,
+                                                 const std::vector<char>& orientations) {
+  SurfaceOneFormTangentVectorQuantity* q = new SurfaceOneFormTangentVectorQuantity(
       name, applyPermutation(data, edgePerm), applyPermutation(orientations, edgePerm), *this);
   addQuantity(q);
   return q;
