@@ -21,4 +21,13 @@ CameraView* registerCameraView(std::string name, const T1& root, const T2& lookD
   return s;
 }
 
+CameraView* registerCameraView(std::string name, CameraParameters params) {
+  CameraView* s = new CameraView(name, params);
+  bool success = registerStructure(s);
+  if (!success) {
+    safeDelete(s);
+  }
+  return s;
+}
+
 } // namespace polyscope
