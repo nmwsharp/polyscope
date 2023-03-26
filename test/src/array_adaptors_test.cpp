@@ -13,9 +13,6 @@
 
 #include "polyscope/standardize_data_array.h"
 
-using std::cout;
-using std::endl;
-
 // ============================================================
 // =============== Array adaptor tests
 // ============================================================

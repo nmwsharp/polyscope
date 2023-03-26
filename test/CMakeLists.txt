@@ -101,6 +101,13 @@ set(TEST_SRCS
   src/main_test.cpp
   src/array_adaptors_test.cpp
   src/basics_test.cpp
+  src/point_cloud_test.cpp
+  src/curve_network_test.cpp
+  src/surface_mesh_test.cpp
+  src/volume_mesh_test.cpp
+  src/group_test.cpp
+  src/floating_test.cpp
+  src/combo_test.cpp
 )
 
 add_executable(polyscope-test "${TEST_SRCS}")
