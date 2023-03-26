@@ -177,7 +177,8 @@ void PointCloud::ensurePickProgramPrepared() {
 void PointCloud::setPointProgramGeometryAttributes(render::ShaderProgram& p) {
   p.setAttribute("a_position", points.getRenderAttributeBuffer());
   if (pointRadiusQuantityName != "") {
-    p.setAttribute("a_pointRadius", getPointRadiusDrawBuffer());
+    PointCloudScalarQuantity& radQ = resolvePointRadiusQuantity();
+    p.setAttribute("a_pointRadius", radQ.values.getRenderAttributeBuffer());
   }
 }
 
@@ -187,15 +188,6 @@ std::string PointCloud::getShaderNameForRenderMode() {
   else if (getPointRenderMode() == PointRenderMode::Quad)
     return "POINT_QUAD";
   return "ERROR";
-}
-
-std::shared_ptr<render::AttributeBuffer> PointCloud::getPointRadiusDrawBuffer() {
-  if (pointRadiusQuantityName != "") {
-    // Resolve the quantity
-    PointCloudScalarQuantity& radQ = resolvePointRadiusQuantity();
-    return radQ.values.getRenderAttributeBuffer();
-  }
-  return nullptr;
 }
 
 size_t PointCloud::nPoints() { return points.size(); }

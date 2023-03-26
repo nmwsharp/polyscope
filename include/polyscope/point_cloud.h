@@ -137,7 +137,6 @@ public:
   void setPointProgramGeometryAttributes(render::ShaderProgram& p);
   std::vector<std::string> addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud = true);
   std::string getShaderNameForRenderMode();
-  std::shared_ptr<render::AttributeBuffer> getPointRadiusDrawBuffer();
 
   // === ~DANGER~ experimental/unsupported functions
 
