@@ -353,7 +353,8 @@ public:
   // === Implementation details
 
   // Add a shader programs/rules so that they can be requested above
-  void registerShaderProgram(const std::string& name, const std::vector<ShaderStageSpecification>& stages);
+  void registerShaderProgram(const std::string& name, const std::vector<ShaderStageSpecification>& spec,
+                             const DrawMode& dm);
   void registerShaderRule(const std::string& name, const ShaderReplacementRule& rule);
 
   // Transparency
