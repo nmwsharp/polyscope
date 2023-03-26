@@ -198,8 +198,6 @@ SET(SRCS
   # Rendering utilities
   imgui_config.cpp
   vector_artist.cpp
-  trace_vector_field.cpp
-  ribbon_artist.cpp
   fullscreen_artist.cpp
   
   ## Embedded binary data 
@@ -272,7 +270,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/render/material_defs.h
   ${INCLUDE_ROOT}/render/materials.h
   ${INCLUDE_ROOT}/render_image_quantity_base.h
-  ${INCLUDE_ROOT}/ribbon_artist.h
   ${INCLUDE_ROOT}/scaled_value.h
   ${INCLUDE_ROOT}/scalar_quantity.h
   ${INCLUDE_ROOT}/scalar_quantity.ipp
@@ -289,7 +286,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/surface_parameterization_quantity.h
   ${INCLUDE_ROOT}/surface_scalar_quantity.h
   ${INCLUDE_ROOT}/surface_vector_quantity.h
-  ${INCLUDE_ROOT}/trace_vector_field.h
   ${INCLUDE_ROOT}/types.h
   ${INCLUDE_ROOT}/utilities.h
   ${INCLUDE_ROOT}/view.h

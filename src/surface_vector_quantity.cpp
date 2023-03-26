@@ -4,7 +4,6 @@
 #include "polyscope/file_helpers.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
-#include "polyscope/trace_vector_field.h"
 
 #include "imgui.h"
 
@@ -26,9 +25,7 @@ SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, std::
                                                          SurfaceMesh& mesh_, VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX), VectorQuantity<SurfaceVertexVectorQuantity>(
                                                                    *this, vectors_, parent.vertexPositions,
-                                                                   vectorType_) {
-  refresh();
-}
+                                                                   vectorType_) {}
 
 void SurfaceVertexVectorQuantity::refresh() {
   refreshVectors();
@@ -68,9 +65,7 @@ std::string SurfaceVertexVectorQuantity::niceName() { return name + " (vertex ve
 SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                      SurfaceMesh& mesh_, VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE), VectorQuantity<SurfaceFaceVectorQuantity>(
-                                                                 *this, vectors_, parent.faceCenters, vectorType_) {
-  refresh();
-}
+                                                                 *this, vectors_, parent.faceCenters, vectorType_) {}
 
 void SurfaceFaceVectorQuantity::refresh() {
   refreshVectors();
@@ -104,50 +99,6 @@ std::string SurfaceFaceVectorQuantity::niceName() { return name + " (face vector
 
 
 // ========================================================
-// ==========         Ribbon Interface           ==========
-// ========================================================
-
-SurfaceRibbonInterface::SurfaceRibbonInterface(std::string uniqueName)
-    : ribbonEnabled(uniqueName + "#ribbonEnabled", false) {}
-
-
-SurfaceRibbonInterface* SurfaceRibbonInterface::setRibbonEnabled(bool newVal) {
-  ribbonEnabled = newVal;
-  requestRedraw();
-  return this;
-}
-bool SurfaceRibbonInterface::isRibbonEnabled() { return ribbonEnabled.get(); }
-
-SurfaceRibbonInterface* SurfaceRibbonInterface::setRibbonWidth(double val, bool isRelative) {
-  if (ribbonArtist) {
-    ribbonArtist->setWidth(val, isRelative);
-    requestRedraw();
-  }
-  return this;
-}
-double SurfaceRibbonInterface::getRibbonWidth() {
-  if (ribbonArtist) {
-    return ribbonArtist->getWidth();
-  }
-  return -1;
-}
-
-SurfaceRibbonInterface* SurfaceRibbonInterface::setRibbonMaterial(std::string name) {
-  if (ribbonArtist) {
-    ribbonArtist->setMaterial(name);
-    requestRedraw();
-  }
-  return this;
-}
-std::string SurfaceRibbonInterface::getRibbonMaterial() {
-  if (ribbonArtist) {
-    return ribbonArtist->getMaterial();
-  }
-  return "";
-}
-
-
-// ========================================================
 // ==========        Intrinsic Face Vector       ==========
 // ========================================================
 
@@ -157,10 +108,8 @@ SurfaceFaceIntrinsicVectorQuantity::SurfaceFaceIntrinsicVectorQuantity(std::stri
                                                                        SurfaceMesh& mesh_, VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE), TangentVectorQuantity<SurfaceFaceIntrinsicVectorQuantity>(
                                                                  *this, vectors_, parent.faceCenters,
-                                                                 parent.faceTangentSpaces, vectorType_),
-      SurfaceRibbonInterface(parent.uniquePrefix() + "#" + name) {
+                                                                 parent.faceTangentSpaces, vectorType_) {
   parent.checkHaveFaceTangentSpaces();
-  refresh(); // TODO
 }
 
 void SurfaceFaceIntrinsicVectorQuantity::refresh() {
@@ -171,30 +120,9 @@ void SurfaceFaceIntrinsicVectorQuantity::refresh() {
 void SurfaceFaceIntrinsicVectorQuantity::draw() {
   if (!isEnabled()) return;
   drawVectors();
-
-  if (ribbonEnabled.get() && isEnabled()) {
-
-    // Make sure we have a ribbon artist
-    if (ribbonArtist == nullptr) {
-      // Warning: expensive... Creates noticeable UI lag
-      tangentVectors.ensureHostBufferPopulated();
-      ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, false, tangentVectors.data, 1, 2500)));
-    }
-
-    // Update transform matrix from parent
-    ribbonArtist->draw();
-  }
 }
 
-void SurfaceFaceIntrinsicVectorQuantity::buildCustomUI() {
-  buildVectorUI();
-
-  if (ImGui::Checkbox("Draw ribbon", &ribbonEnabled.get())) setRibbonEnabled(isRibbonEnabled());
-  if (ribbonEnabled.get() && ribbonArtist != nullptr) {
-    ImGui::SameLine();
-    ribbonArtist->buildParametersGUI();
-  }
-}
+void SurfaceFaceIntrinsicVectorQuantity::buildCustomUI() { buildVectorUI(); }
 
 void SurfaceFaceIntrinsicVectorQuantity::buildFaceInfoGUI(size_t iF) {
   ImGui::TextUnformatted(name.c_str());
@@ -224,11 +152,9 @@ SurfaceVertexIntrinsicVectorQuantity::SurfaceVertexIntrinsicVectorQuantity(std::
                                                                            SurfaceMesh& mesh_, VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX),
       TangentVectorQuantity<SurfaceVertexIntrinsicVectorQuantity>(*this, vectors_, parent.vertexPositions,
-                                                                  parent.vertexTangentSpaces, vectorType_),
-      SurfaceRibbonInterface(parent.uniquePrefix() + "#" + name) {
+                                                                  parent.vertexTangentSpaces, vectorType_) {
 
   parent.checkHaveVertexTangentSpaces();
-  refresh(); // TODO
 }
 
 void SurfaceVertexIntrinsicVectorQuantity::refresh() {
@@ -239,66 +165,9 @@ void SurfaceVertexIntrinsicVectorQuantity::refresh() {
 void SurfaceVertexIntrinsicVectorQuantity::draw() {
   if (!isEnabled()) return;
   drawVectors();
-
-  if (isEnabled() && ribbonEnabled.get()) {
-
-    // Make sure we have a ribbon artist
-    if (ribbonArtist == nullptr) {
-
-      // Remap to center of each face (extrinsically)
-
-      tangentVectors.ensureHostBufferPopulated();
-      parent.defaultFaceTangentSpaces.ensureHostBufferPopulated();
-      parent.vertexTangentSpaces.ensureHostBufferPopulated();
-
-      std::vector<glm::vec2> unitFaceVecs(parent.nFaces());
-
-      for (size_t iF = 0; iF < parent.nFaces(); iF++) {
-        size_t start = parent.faceIndsStart[iF];
-        size_t D = parent.faceIndsStart[iF + 1] - parent.faceIndsStart[iF];
-
-        glm::vec3 faceBasisX = parent.defaultFaceTangentSpaces.data[iF][0];
-        glm::vec3 faceBasisY = parent.defaultFaceTangentSpaces.data[iF][1];
-
-        glm::vec2 sum{0.0, 0.0};
-
-        for (size_t j = 0; j < D; j++) {
-          size_t iV = parent.faceIndsEntries[start + j];
-
-          glm::vec2 vertVec = tangentVectors.data[iV];
-          // Complex angle = std::pow(Complex(vertVec.x, vertVec.y), 1.0 / nSym);
-          // vertVec = glm::vec2{angle.real(), angle.imag()};
-          glm::vec3 vertexBasisX = parent.vertexTangentSpaces.data[iV][0];
-          glm::vec3 vertexBasisY = parent.vertexTangentSpaces.data[iV][1];
-
-          // Rotate in to the basis of the face
-          glm::vec2 faceVecRot = rotateToTangentBasis(vertVec, vertexBasisX, vertexBasisY, faceBasisX, faceBasisY);
-          // angle = std::pow(Complex(faceVec.x, faceVec.y), nSym);
-          // faceVec = glm::vec2{angle.real(), angle.imag()};
-          sum += faceVecRot;
-        }
-
-        unitFaceVecs[iF] = glm::normalize(sum);
-      }
-
-      // Warning: expensive... Creates noticeable UI lag
-      ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, true, unitFaceVecs, 1, 2500)));
-    }
-
-    // Update transform matrix from parent
-    ribbonArtist->draw();
-  }
 }
 
-void SurfaceVertexIntrinsicVectorQuantity::buildCustomUI() {
-  buildVectorUI();
-
-  if (ImGui::Checkbox("Draw ribbon", &ribbonEnabled.get())) setRibbonEnabled(isRibbonEnabled());
-  if (ribbonEnabled.get() && ribbonArtist != nullptr) {
-    ImGui::SameLine();
-    ribbonArtist->buildParametersGUI();
-  }
-}
+void SurfaceVertexIntrinsicVectorQuantity::buildCustomUI() { buildVectorUI(); }
 
 
 void SurfaceVertexIntrinsicVectorQuantity::buildVertexInfoGUI(size_t iV) {
@@ -334,7 +203,6 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
   mesh.faceNormals.ensureHostBufferPopulated();
   mesh.defaultFaceTangentSpaces.ensureHostBufferPopulated();
   mesh.triangleAllEdgeInds.ensureHostBufferPopulated();
-  mesh.triangleFaceInds.ensureHostBufferPopulated();
 
   std::vector<glm::vec2> mappedVectorField(mesh.nFaces());
 
@@ -381,57 +249,28 @@ SurfaceOneFormIntrinsicVectorQuantity::SurfaceOneFormIntrinsicVectorQuantity(std
       TangentVectorQuantity<SurfaceOneFormIntrinsicVectorQuantity>(
           *this, oneFormToFaceTangentVectors(mesh_, oneForm_, canonicalOrientation_), parent.faceCenters,
           parent.defaultFaceTangentSpaces, VectorType::STANDARD),
-      SurfaceRibbonInterface(parent.uniquePrefix() + "#" + name), oneForm(oneForm_),
-      canonicalOrientation(canonicalOrientation_) {
-  refresh(); // TODO
+      oneForm(oneForm_), canonicalOrientation(canonicalOrientation_) {
+
+  tangentVectors.data = oneFormToFaceTangentVectors(parent, oneForm, canonicalOrientation);
+  tangentVectors.markHostBufferUpdated();
 }
 
 void SurfaceOneFormIntrinsicVectorQuantity::refresh() {
-  // Remap to faces
-  tangentVectors.data = oneFormToFaceTangentVectors(parent, oneForm, canonicalOrientation);
-  tangentVectors.markHostBufferUpdated();
+  refreshVectors();
+  Quantity::refresh();
 }
 
 void SurfaceOneFormIntrinsicVectorQuantity::draw() {
   if (!isEnabled()) return;
   drawVectors();
-
-  if (isEnabled() && ribbonEnabled.get()) {
-
-    // Make sure we have a ribbon artist
-    if (ribbonArtist == nullptr) {
-      tangentVectors.ensureHostBufferPopulated();
-
-      std::vector<glm::vec2> unitMappedField(parent.nFaces());
-      for (size_t iF = 0; iF < parent.nFaces(); iF++) {
-        unitMappedField[iF] = glm::normalize(tangentVectors.data[iF]);
-      }
-      // Warning: expensive... Creates noticeable UI lag
-      ribbonArtist.reset(new RibbonArtist(parent, traceField(parent, true, unitMappedField, 1, 2500)));
-    }
-
-
-    // Update transform matrix from parent
-    ribbonArtist->draw();
-  }
 }
 
-void SurfaceOneFormIntrinsicVectorQuantity::buildCustomUI() {
-  buildVectorUI();
-
-  if (ImGui::Checkbox("Draw ribbon", &ribbonEnabled.get())) setRibbonEnabled(isRibbonEnabled());
-  if (ribbonEnabled.get() && ribbonArtist != nullptr) {
-    ImGui::SameLine();
-    ribbonArtist->buildParametersGUI();
-  }
-}
+void SurfaceOneFormIntrinsicVectorQuantity::buildCustomUI() { buildVectorUI(); }
 
 void SurfaceOneFormIntrinsicVectorQuantity::buildEdgeInfoGUI(size_t iE) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-
   ImGui::Text("%g", oneForm[iE]);
-
   ImGui::NextColumn();
 }
 
