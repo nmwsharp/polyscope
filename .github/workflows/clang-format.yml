@@ -20,6 +20,6 @@ jobs:
       # These are optional (defaults displayed)
       with:
         scandir: '.'
-        excludedirs: 'build,deps,test,src/render/bindata'
+        excludedirs: 'build,deps,misc,src/render/bindata'
         extensions: 'c,cpp,h,hpp,ipp'
         style: 'file'
