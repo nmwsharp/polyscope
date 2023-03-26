@@ -10,18 +10,12 @@ namespace polyscope {
 
 PointCloudColorQuantity::PointCloudColorQuantity(std::string name, const std::vector<glm::vec3>& values_,
                                                  PointCloud& pointCloud_)
-    : PointCloudQuantity(name, pointCloud_, true)
-
-{
-
-  if (values_.size() != parent.points.size()) {
+    : PointCloudQuantity(name, pointCloud_, true), ColorQuantity(*this, values_) {
+  if (values_.size() != parent.nPoints()) {
     polyscope::error("Point cloud color quantity " + name + " does not have same number of values (" +
-                     std::to_string(values_.size()) + ") as point cloud size (" + std::to_string(parent.points.size()) +
+                     std::to_string(values_.size()) + ") as point cloud size (" + std::to_string(parent.nPoints()) +
                      ")");
   }
-
-  // Copy the raw data
-  values = values_;
 }
 
 void PointCloudColorQuantity::draw() {
@@ -34,6 +28,7 @@ void PointCloudColorQuantity::draw() {
 
   parent.setStructureUniforms(*pointProgram);
   parent.setPointCloudUniforms(*pointProgram);
+  setColorUniforms(*pointProgram);
 
   pointProgram->draw();
 }
@@ -41,18 +36,25 @@ void PointCloudColorQuantity::draw() {
 std::string PointCloudColorQuantity::niceName() { return name + " (color)"; }
 
 void PointCloudColorQuantity::createPointProgram() {
+
   // Create the program to draw this quantity
-  pointProgram = render::engine->requestShader(parent.getShaderNameForRenderMode(), parent.addPointCloudRules({"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"}));
+  // clang-format off
+  pointProgram = render::engine->requestShader(
+      parent.getShaderNameForRenderMode(), 
+      parent.addPointCloudRules({"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"})
+  );
+  // clang-format on
+
+  parent.setPointProgramGeometryAttributes(*pointProgram);
+  pointProgram->setAttribute("a_color", colors.getRenderAttributeBuffer());
 
   // Fill buffers
-  parent.fillGeometryBuffers(*pointProgram);
-  pointProgram->setAttribute("a_color", values);
-
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
 
-void PointCloudColorQuantity::refresh() { 
-  pointProgram.reset(); 
+
+void PointCloudColorQuantity::refresh() {
+  pointProgram.reset();
   Quantity::refresh();
 }
 
@@ -61,10 +63,10 @@ void PointCloudColorQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
 
-  glm::vec3 tempColor = values[ind];
-  ImGui::ColorEdit3("", &tempColor[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
+  glm::vec3 color = colors.getValue(ind);
+  ImGui::ColorEdit3("", &color[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
   ImGui::SameLine();
-  std::string colorStr = to_string_short(tempColor);
+  std::string colorStr = to_string_short(color);
   ImGui::TextUnformatted(colorStr.c_str());
   ImGui::NextColumn();
 }

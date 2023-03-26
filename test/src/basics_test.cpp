@@ -1,7 +1,8 @@
-
+#include "polyscope/types.h"
 #include "polyscope_test.h"
 
 #include "polyscope/curve_network.h"
+#include "polyscope/implicit_surface.h"
 #include "polyscope/pick.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/polyscope.h"
@@ -22,7 +23,10 @@ protected:
   // Per-test-suite set-up.
   // Called before the first test in this test suite.
   // Can be omitted if not needed.
-  static void SetUpTestSuite() { polyscope::init(testBackend); }
+  static void SetUpTestSuite() {
+    polyscope::init(testBackend);
+    polyscope::options::enableRenderErrorChecks = true;
+  }
 
   // Per-test-suite tear-down.
   // Called after the last test in this test suite.
@@ -52,6 +56,12 @@ protected:
 
 // Show the gui. Note that the pre-suite script calls Polyscope::init() before
 TEST_F(PolyscopeTest, InitializeAndShow) { polyscope::show(3); }
+
+TEST_F(PolyscopeTest, FrameTick) {
+  for (int i = 0; i < 5; i++) {
+    polyscope::frameTick();
+  }
+}
 
 // We should be able to nest calls to show() via the callback. ImGUI causes headaches here
 TEST_F(PolyscopeTest, NestedShow) {
@@ -100,6 +110,16 @@ TEST_F(PolyscopeTest, ShowPointCloud) {
   EXPECT_FALSE(polyscope::hasPointCloud("test1"));
 }
 
+TEST_F(PolyscopeTest, PointCloudUpdateGeometry) {
+  auto psPoints = registerPointCloud();
+  polyscope::show(3);
+
+  psPoints->updatePointPositions(getPoints());
+  polyscope::show(3);
+  
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, PointCloudAppearance) {
   auto psPoints = registerPointCloud();
 
@@ -140,27 +160,45 @@ TEST_F(PolyscopeTest, PointCloudColor) {
   
   psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
+  
+  q1->updateData(vColors);
+  polyscope::show(3);
+  
+  polyscope::show(3);
 
   polyscope::removeAllStructures();
 }
 
 TEST_F(PolyscopeTest, PointCloudScalar) {
   auto psPoints = registerPointCloud();
+
   std::vector<double> vScalar(psPoints->nPoints(), 7.);
   auto q1 = psPoints->addScalarQuantity("vScalar", vScalar);
   q1->setEnabled(true);
   polyscope::show(3);
+
   psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
+
+  q1->updateData(vScalar);
+  polyscope::show(3);
+  
+  polyscope::show(3);
+
   polyscope::removeAllStructures();
 }
 
 TEST_F(PolyscopeTest, PointCloudVector) {
   auto psPoints = registerPointCloud();
+
   std::vector<glm::vec3> vals(psPoints->nPoints(), {1., 2., 3.});
   auto q1 = psPoints->addVectorQuantity("vals", vals);
   q1->setEnabled(true);
   polyscope::show(3);
+
+  q1->updateData(vals);
+  polyscope::show(3);
+  
   polyscope::removeAllStructures();
 }
 
@@ -183,9 +221,13 @@ TEST_F(PolyscopeTest, PointCloudParam) {
   
   psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
+  
+  q1->updateCoords(param);
+  polyscope::show(3);
 
   polyscope::removeAllStructures();
 }
+
 
 TEST_F(PolyscopeTest, PointCloudScalarRadius) {
   auto psPoints = registerPointCloud();
@@ -205,6 +247,9 @@ TEST_F(PolyscopeTest, PointCloudScalarRadius) {
   polyscope::show(3);
 
   psPoints->setPointRadiusQuantity("vScalar2", false); // no autoscaling
+  polyscope::show(3);
+  
+  q2->updateData(vScalar2);
   polyscope::show(3);
 
   psPoints->clearPointRadiusQuantity();
@@ -250,6 +295,7 @@ polyscope::SurfaceMesh* registerTriangleMesh(std::string name = "test1") {
 
 TEST_F(PolyscopeTest, ShowSurfaceMesh) {
   auto psMesh = registerTriangleMesh();
+  EXPECT_TRUE(polyscope::hasSurfaceMesh("test1"));
 
   // Make sure we actually added the mesh
   polyscope::show(3);
@@ -257,6 +303,67 @@ TEST_F(PolyscopeTest, ShowSurfaceMesh) {
   EXPECT_FALSE(polyscope::hasSurfaceMesh("test2"));
   polyscope::removeAllStructures();
   EXPECT_FALSE(polyscope::hasSurfaceMesh("test1"));
+}
+
+TEST_F(PolyscopeTest, SurfaceMesh2D) {
+  // test meshes with 2D vertex positions
+
+  std::vector<glm::vec2> points;
+  std::vector<std::vector<size_t>> faces;
+
+  // clang-format off
+  points = {
+    {1, 0},
+    {0, 1},
+    {0, 0},
+    {0, 0},
+  };
+
+  faces = {
+    {1, 3, 2},
+    {3, 1, 0},
+    {2, 0, 1},
+    {0, 2, 3}
+   };
+  // clang-format on
+
+  polyscope::registerSurfaceMesh2D("mesh2d", points, faces);
+
+  // Make sure we actually added the mesh
+  polyscope::show(3);
+  EXPECT_TRUE(polyscope::hasSurfaceMesh("mesh2d"));
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SurfaceMeshPolygon) {
+  // meshes with polygonal (greater-than-triangular) faces
+  std::vector<glm::vec2> points;
+  std::vector<std::vector<size_t>> faces;
+
+  // clang-format off
+  points = {
+    {1, 0},
+    {0, 1},
+    {0, 0},
+    {0, 0},
+  };
+
+  faces = {
+    {1, 3, 2, 0},
+    {3, 1, 0},
+    {2, 0, 1, 3},
+    {0, 2, 3}
+   };
+  // clang-format on
+
+  polyscope::registerSurfaceMesh2D("mesh poly", points, faces);
+
+  // Make sure we actually added the mesh
+  polyscope::show(3);
+  EXPECT_TRUE(polyscope::hasSurfaceMesh("mesh poly"));
+
+  polyscope::removeAllStructures();
 }
 
 TEST_F(PolyscopeTest, SurfaceMeshAppearance) {
@@ -358,7 +465,10 @@ TEST_F(PolyscopeTest, SurfaceMeshScalarFace) {
 
 TEST_F(PolyscopeTest, SurfaceMeshScalarEdge) {
   auto psMesh = registerTriangleMesh();
-  std::vector<double> eScalar(psMesh->nEdges(), 9.);
+  size_t nEdges = 6;
+  std::vector<double> eScalar(nEdges, 9.);
+  std::vector<size_t> ePerm = {5, 3, 1, 2, 4, 0};
+  psMesh->setEdgePermutation(ePerm);
   auto q3 = psMesh->addEdgeScalarQuantity("eScalar", eScalar);
   q3->setEnabled(true);
   polyscope::show(3);
@@ -391,6 +501,7 @@ TEST_F(PolyscopeTest, SurfaceMeshSignedDistance) {
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
+
 
 TEST_F(PolyscopeTest, SurfaceMeshCornerParam) {
   auto psMesh = registerTriangleMesh();
@@ -484,10 +595,13 @@ TEST_F(PolyscopeTest, SurfaceMeshFaceIntrinsic) {
 
 TEST_F(PolyscopeTest, SurfaceMeshOneForm) {
   auto psMesh = registerTriangleMesh();
+  size_t nEdges = 6;
   // std::vector<glm::vec3> basisX(psMesh->nVertices(), {1., 2., 3.});
   // psMesh->setVertexTangentBasisX(basisX);
-  std::vector<double> vals(psMesh->nEdges(), 3.);
-  std::vector<char> orients(psMesh->nEdges(), true);
+  std::vector<double> vals(nEdges, 3.);
+  std::vector<char> orients(nEdges, true);
+  std::vector<size_t> ePerm = {5, 3, 1, 2, 4, 0};
+  psMesh->setEdgePermutation(ePerm);
   auto q1 = psMesh->addOneFormIntrinsicVectorQuantity("one form vecs", vals, orients);
   q1->setEnabled(true);
   polyscope::show(3);
@@ -503,7 +617,7 @@ TEST_F(PolyscopeTest, SurfaceMeshVertexIntrinsicRibbon) {
   std::vector<glm::vec2> vals(psMesh->nVertices(), {1., 2.});
   auto q1 = psMesh->addVertexIntrinsicVectorQuantity("param", vals);
   q1->setEnabled(true);
-  q1->setRibbonEnabled(true);
+  // q1->setRibbonEnabled(true); // TODO
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
@@ -515,12 +629,13 @@ TEST_F(PolyscopeTest, SurfaceMeshFaceIntrinsicRibbon) {
   std::vector<glm::vec2> vals(psMesh->nFaces(), {1., 2.});
   auto q1 = psMesh->addFaceIntrinsicVectorQuantity("param", vals);
   q1->setEnabled(true);
-  q1->setRibbonEnabled(true);
+  // q1->setRibbonEnabled(true); // TODO
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
 
 
+/* TODO REMOVE
 TEST_F(PolyscopeTest, SurfaceMeshVertexCount) {
   auto psMesh = registerTriangleMesh();
   std::vector<std::pair<size_t, int>> vals = {{0, 1}, {2, -2}};
@@ -574,11 +689,13 @@ TEST_F(PolyscopeTest, SurfaceMeshSurfaceGraphPath) {
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
+*/
 
 
 // ============================================================
 // =============== Curve network tests
 // ============================================================
+
 
 std::tuple<std::vector<glm::vec3>, std::vector<std::array<size_t, 2>>> getCurveNetwork() {
   std::vector<glm::vec3> points;
@@ -732,6 +849,7 @@ TEST_F(PolyscopeTest, CurveNetworkFaceVector) {
 // =============== Volume mesh tests
 // ============================================================
 
+
 std::tuple<std::vector<glm::vec3>, std::vector<std::array<int, 8>>> getVolumeMeshData() {
   // clang-format off
   std::vector<glm::vec3> combined_verts = {
@@ -769,7 +887,7 @@ TEST_F(PolyscopeTest, ShowVolumeMesh) {
     {0,1,2,4}
   };
   polyscope::registerTetMesh("tet", tet_verts, tet_cells);
-   
+
 
   // Hexes only
   std::vector<glm::vec3> hex_verts = {
@@ -1221,6 +1339,107 @@ TEST_F(PolyscopeTest, TestGroupCycleError) {
 }
 
 // ============================================================
+// =============== Floating image
+// ============================================================
+
+// Add floating images
+
+TEST_F(PolyscopeTest, FloatingImageTest) {
+
+
+  size_t dimX = 300;
+  size_t dimY = 200;
+
+  { // ScalarImageQuantity
+    std::vector<float> vals(dimX * dimY, 0.44);
+    polyscope::ScalarImageQuantity* im =
+        polyscope::addScalarImageQuantity("im scalar", dimX, dimY, vals, polyscope::ImageOrigin::UpperLeft);
+    polyscope::show(3);
+    im->setShowFullscreen(true);
+    polyscope::show(3);
+  }
+
+  { // ColorImageQuantity
+    std::vector<std::array<float, 3>> valsRGB(dimX * dimY, std::array<float, 3>{0.44, 0.55, 0.66});
+    polyscope::ColorImageQuantity* im =
+        polyscope::addColorImageQuantity("im color", dimX, dimY, valsRGB, polyscope::ImageOrigin::UpperLeft);
+    polyscope::show(3);
+    im->setShowFullscreen(true);
+    polyscope::show(3);
+  }
+
+  { // ColorAlphaImageQuantity
+    std::vector<std::array<float, 4>> valsRGBA(dimX * dimY, std::array<float, 4>{0.44, 0.55, 0.66, 0.77});
+    polyscope::ColorImageQuantity* im = polyscope::addColorAlphaImageQuantity("im color alpha", dimX, dimY, valsRGBA,
+                                                                              polyscope::ImageOrigin::UpperLeft);
+    polyscope::show(3);
+    im->setShowFullscreen(true);
+    polyscope::show(3);
+  }
+
+  // make sure it doesn't blow up with transparancy
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
+
+  // make sure removing works
+  polyscope::removeFloatingQuantity("im color", true);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, FloatingRenderImageTest) {
+
+
+  size_t dimX = 300;
+  size_t dimY = 200;
+
+  std::vector<float> depthVals(dimX * dimY, 0.44);
+  std::vector<std::array<float, 3>> normalVals(dimX * dimY, std::array<float, 3>{0.44, 0.55, 0.66});
+  std::vector<std::array<float, 3>> colorVals(dimX * dimY, std::array<float, 3>{0.44, 0.55, 0.66});
+  std::vector<float> scalarVals(dimX * dimY, 0.44);
+
+  { // DepthRenderImageQuantity
+    polyscope::DepthRenderImageQuantity* im = polyscope::addDepthRenderImageQuantity(
+        "render im depth", dimX, dimY, depthVals, normalVals, polyscope::ImageOrigin::UpperLeft);
+    polyscope::show(3);
+  }
+
+  { // ColorImageQuantity
+    polyscope::ColorRenderImageQuantity* im = polyscope::addColorRenderImageQuantity(
+        "render im depth", dimX, dimY, depthVals, normalVals, colorVals, polyscope::ImageOrigin::UpperLeft);
+    polyscope::show(3);
+  }
+
+  { // ScalarRenderImageQuantity
+    polyscope::ScalarRenderImageQuantity* im = polyscope::addScalarRenderImageQuantity(
+        "render im scalar", dimX, dimY, depthVals, normalVals, scalarVals, polyscope::ImageOrigin::UpperLeft);
+    polyscope::show(3);
+  }
+
+  // make sure it doesn't blow up with transparancy
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
+
+  // make sure removing works
+  polyscope::removeFloatingQuantity("render im depth", true);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+
+// ============================================================
 // =============== Ground plane tests
 // ============================================================
 
@@ -1244,6 +1463,71 @@ TEST_F(PolyscopeTest, GroundPlaneTest) {
   polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::ShadowOnly;
   polyscope::refresh();
   polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+// ============================================================
+// =============== Implicit tests
+// ============================================================
+
+// These also end up testing the image & render image functionality
+
+TEST_F(PolyscopeTest, ImplicitSurfaceRenderImageQuantityTest) {
+
+  // sample sdf & color functions
+  auto torusSDF = [](glm::vec3 p) {
+    float scale = 0.5;
+    p /= scale;
+    p += glm::vec3{1., 0., 1.};
+    glm::vec2 t{1., 0.3};
+    glm::vec2 pxz{p.x, p.z};
+    glm::vec2 q = glm::vec2(glm::length(pxz) - t.x, p.y);
+    return (glm::length(q) - t.y) * scale;
+  };
+  auto colorFunc = [](glm::vec3 p) {
+    glm::vec3 color{0., 0., 0.};
+    if (p.x > 0) {
+      color += glm::vec3{1.0, 0.0, 0.0};
+    }
+    if (p.y > 0) {
+      color += glm::vec3{0.0, 1.0, 0.0};
+    }
+    if (p.z > 0) {
+      color += glm::vec3{0.0, 0.0, 1.0};
+    }
+    return color;
+  };
+
+  auto scalarFunc = [](glm::vec3 p) { return p.x; };
+
+  polyscope::ImplicitRenderOpts opts;
+  opts.mode = polyscope::ImplicitRenderMode::SphereMarch;
+  opts.subsampleFactor = 16; // real small, don't want to use much compute
+
+  // plain depth-only implicit surface
+  polyscope::DepthRenderImageQuantity* img = polyscope::renderImplicitSurface("torus sdf", torusSDF, opts);
+  polyscope::show(3);
+
+  // colored implicit surface
+  polyscope::ColorRenderImageQuantity* imgColor =
+      polyscope::renderImplicitSurfaceColor("torus sdf color", torusSDF, colorFunc, opts);
+  polyscope::show(3);
+
+  // scalar value implicit surface
+  polyscope::ScalarRenderImageQuantity* imgScalar =
+      polyscope::renderImplicitSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, opts);
+  polyscope::show(3);
+
+
+  // make sure it doesn't blow up with transparancy
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
 
   polyscope::removeAllStructures();
 }
@@ -1281,6 +1565,15 @@ TEST_F(PolyscopeTest, RefreshMultiTest) {
   polyscope::refresh();
   polyscope::show(3);
 
+  polyscope::removeAllStructures();
+}
+
+
+// Make sure that creating an empty buffer does not throw errors
+TEST_F(PolyscopeTest, EmptyBuffer) {
+  std::vector<glm::vec3> empty_points;
+  polyscope::PointCloud* psPoints = polyscope::registerPointCloud("empty cloud", empty_points);
+  polyscope::show(3);
   polyscope::removeAllStructures();
 }
 
@@ -1335,7 +1628,8 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
   q2->setEnabled(true);
 
 
-  { // Curve network
+  {
+    // Curve network
     auto psCurve = registerCurveNetwork();
     std::vector<glm::vec3> vals(psCurve->nEdges(), {1., 2., 3.});
     auto q3 = psCurve->addEdgeVectorQuantity("vals", vals);

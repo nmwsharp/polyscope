@@ -16,7 +16,7 @@ const ShaderStageSpecification HISTOGRAM_VERT_SHADER =  {
 
     // attributes
     {
-        {"a_coord", DataType::Vector2Float},
+        {"a_coord", RenderDataType::Vector2Float},
     },
 
     {}, // textures
@@ -43,8 +43,8 @@ const ShaderStageSpecification HISTOGRAM_FRAG_SHADER = {
     
     // uniforms
     {
-      {"u_cmapRangeMin", DataType::Float},
-      {"u_cmapRangeMax", DataType::Float}
+      {"u_cmapRangeMin", RenderDataType::Float},
+      {"u_cmapRangeMax", RenderDataType::Float}
     }, 
 
     // attributes

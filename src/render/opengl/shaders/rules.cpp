@@ -77,7 +77,7 @@ const ShaderReplacementRule SHADE_BASECOLOR (
       {"GENERATE_SHADE_COLOR", "vec3 albedoColor = u_baseColor;"}
     },
     /* uniforms */ {
-      {"u_baseColor", DataType::Vector3Float},
+      {"u_baseColor", RenderDataType::Vector3Float},
     },
     /* attributes */ {},
     /* textures */ {}
@@ -113,8 +113,8 @@ const ShaderReplacementRule SHADE_COLORMAP_VALUE(
       )"}
     },
     /* uniforms */ {
-        {"u_rangeLow", DataType::Float},
-        {"u_rangeHigh", DataType::Float},
+        {"u_rangeLow", RenderDataType::Float},
+        {"u_rangeHigh", RenderDataType::Float},
     },
     /* attributes */ {},
     /* textures */ {
@@ -139,7 +139,7 @@ const ShaderReplacementRule SHADE_COLORMAP_ANGULAR2(
       )"}
     },
     /* uniforms */ {
-        {"u_angle", DataType::Float},
+        {"u_angle", RenderDataType::Float},
     },
     /* attributes */ {},
     /* textures */ {
@@ -169,9 +169,9 @@ const ShaderReplacementRule SHADE_GRID_VALUE2 (
       )"}
     },
     /* uniforms */ {
-       {"u_modLen", DataType::Float},
-       {"u_gridLineColor", DataType::Vector3Float},
-       {"u_gridBackgroundColor", DataType::Vector3Float},
+       {"u_modLen", RenderDataType::Float},
+       {"u_gridLineColor", RenderDataType::Vector3Float},
+       {"u_gridBackgroundColor", RenderDataType::Vector3Float},
     },
     /* attributes */ {},
     /* textures */ {}
@@ -199,9 +199,9 @@ const ShaderReplacementRule SHADE_CHECKER_VALUE2 (
       )"}
     },
     /* uniforms */ {
-       {"u_modLen", DataType::Float},
-       {"u_color1", DataType::Vector3Float},
-       {"u_color2", DataType::Vector3Float},
+       {"u_modLen", RenderDataType::Float},
+       {"u_color1", RenderDataType::Vector3Float},
+       {"u_color2", RenderDataType::Vector3Float},
     },
     /* attributes */ {},
     /* textures */ {}
@@ -235,8 +235,8 @@ const ShaderReplacementRule ISOLINE_STRIPE_VALUECOLOR (
       )"}
     },
     /* uniforms */ {
-        {"u_modLen", DataType::Float},
-        {"u_modDarkness", DataType::Float},
+        {"u_modLen", RenderDataType::Float},
+        {"u_modDarkness", RenderDataType::Float},
     },
     /* attributes */ {},
     /* textures */ {}
@@ -263,8 +263,8 @@ const ShaderReplacementRule CHECKER_VALUE2COLOR (
       )"}
     },
     /* uniforms */ {
-       {"u_modLen", DataType::Float},
-       {"u_modDarkness", DataType::Float},
+       {"u_modLen", RenderDataType::Float},
+       {"u_modDarkness", RenderDataType::Float},
     },
     /* attributes */ {},
     /* textures */ {}
@@ -287,8 +287,8 @@ const ShaderReplacementRule GENERATE_VIEW_POS (
       )"}
     },
     /* uniforms */ {
-      {"u_invProjMatrix_viewPos", DataType::Matrix44Float},
-      {"u_viewport_viewPos", DataType::Vector4Float},
+      {"u_invProjMatrix_viewPos", RenderDataType::Matrix44Float},
+      {"u_viewport_viewPos", RenderDataType::Vector4Float},
     },
     /* attributes */ {},
     /* textures */ {}
@@ -323,8 +323,8 @@ ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix) {
          "if(dot(cullPos, " + normalUniformName + ") < dot( " + centerUniformName + " , " + normalUniformName + ")) { discard; }"}
       },
       /* uniforms */ {
-        {centerUniformName, DataType::Vector3Float},
-        {normalUniformName, DataType::Vector3Float},
+        {centerUniformName, RenderDataType::Vector3Float},
+        {normalUniformName, RenderDataType::Vector3Float},
       },
       /* attributes */ {},
       /* textures */ {}

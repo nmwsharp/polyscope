@@ -117,6 +117,7 @@ SET(SRCS
   internal.cpp
   state.cpp
   structure.cpp
+  quantity.cpp
   group.cpp
   utilities.cpp
   view.cpp
@@ -132,6 +133,8 @@ SET(SRCS
   render/materials.cpp
   render/initialize_backend.cpp  
   render/shader_builder.cpp  
+  render/managed_buffer.cpp  
+  render/templated_buffers.cpp  
 
   # General utilities
   disjoint_sets.cpp
@@ -155,21 +158,20 @@ SET(SRCS
   # Surface
   surface_mesh.cpp
   surface_mesh_io.cpp
-  surface_scalar_quantity.cpp
   surface_color_quantity.cpp
-  surface_distance_quantity.cpp
-  surface_parameterization_quantity.cpp
+  surface_scalar_quantity.cpp
   surface_vector_quantity.cpp
-  surface_count_quantity.cpp
-  surface_graph_quantity.cpp
+  surface_parameterization_quantity.cpp
+  # surface_count_quantity.cpp # TODO delete these old files
+  # surface_graph_quantity.cpp
   #surface_subset_quantity.cpp
   #surface_selection_quantity.cpp
   #surface_input_curve_quantity.cpp
   
   # Curve network
   curve_network.cpp
-  curve_network_scalar_quantity.cpp
   curve_network_color_quantity.cpp
+  curve_network_scalar_quantity.cpp
   curve_network_vector_quantity.cpp
   
   # Volume mesh
@@ -178,12 +180,32 @@ SET(SRCS
   volume_mesh_scalar_quantity.cpp
   volume_mesh_vector_quantity.cpp
   
+  # Volume grid
+  volume_grid.cpp
+  #volume_mesh_color_quantity.cpp
+  volume_grid_scalar_quantity.cpp
+  volume_grid_vector_quantity.cpp
+  
+  # Camera view
+  camera_view.cpp
+ 
+  # Floating quantities
+  floating_quantity_structure.cpp
+  floating_quantity.cpp
+  image_quantity.cpp
+  scalar_image_quantity.cpp
+  color_image_quantity.cpp
+  render_image_quantity_base.cpp
+  depth_render_image_quantity.cpp
+  color_render_image_quantity.cpp
+  scalar_render_image_quantity.cpp
+  
   # Rendering utilities
   imgui_config.cpp
   vector_artist.cpp
   trace_vector_field.cpp
   ribbon_artist.cpp
-  image_scalar_artist.cpp
+  fullscreen_artist.cpp
   
   ## Embedded binary data 
   render/bindata/bindata_font_lato_regular.cpp
@@ -205,8 +227,14 @@ SET(HEADERS
   ${INCLUDE_ROOT}/affine_remapper.h
   ${INCLUDE_ROOT}/affine_remapper.ipp
   ${INCLUDE_ROOT}/camera_parameters.h
+  ${INCLUDE_ROOT}/camera_view.h
+  ${INCLUDE_ROOT}/camera_view.ipp
   ${INCLUDE_ROOT}/color_management.h
+  ${INCLUDE_ROOT}/color_image_quantity.h
+  ${INCLUDE_ROOT}/color_render_image_quantity.h
   ${INCLUDE_ROOT}/colors.h
+  ${INCLUDE_ROOT}/color_quantity.h
+  ${INCLUDE_ROOT}/color_quantity.ipp
   ${INCLUDE_ROOT}/combining_hash_functions.h
   ${INCLUDE_ROOT}/curve_network.h
   ${INCLUDE_ROOT}/curve_network.ipp
@@ -215,13 +243,20 @@ SET(HEADERS
   ${INCLUDE_ROOT}/curve_network_scalar_quantity.h
   ${INCLUDE_ROOT}/curve_network_vector_quantity.h
   ${INCLUDE_ROOT}/disjoint_sets.h
+  ${INCLUDE_ROOT}/depth_render_image_quantity.h
   ${INCLUDE_ROOT}/file_helpers.h
+  ${INCLUDE_ROOT}/floating_quantity_structure.h
+  ${INCLUDE_ROOT}/floating_quantity.h
   ${INCLUDE_ROOT}/group.h
   ${INCLUDE_ROOT}/histogram.h
-  ${INCLUDE_ROOT}/image_scalar_artist.h
+  ${INCLUDE_ROOT}/image_quantity.h
   ${INCLUDE_ROOT}/imgui_config.h
+  ${INCLUDE_ROOT}/implicit_surface.h
+  ${INCLUDE_ROOT}/implicit_surface.ipp
   ${INCLUDE_ROOT}/messages.h
   ${INCLUDE_ROOT}/options.h
+  ${INCLUDE_ROOT}/parameterization_quantity.h
+  ${INCLUDE_ROOT}/parameterization_quantity.ipp
   ${INCLUDE_ROOT}/persistent_value.h
   ${INCLUDE_ROOT}/pick.h
   ${INCLUDE_ROOT}/pick.ipp
@@ -241,8 +276,11 @@ SET(HEADERS
   ${INCLUDE_ROOT}/render/ground_plane.h
   ${INCLUDE_ROOT}/render/material_defs.h
   ${INCLUDE_ROOT}/render/materials.h
+  ${INCLUDE_ROOT}/render_image_quantity_base.h
   ${INCLUDE_ROOT}/ribbon_artist.h
   ${INCLUDE_ROOT}/scaled_value.h
+  ${INCLUDE_ROOT}/scalar_quantity.h
+  ${INCLUDE_ROOT}/scalar_quantity.ipp
   ${INCLUDE_ROOT}/screenshot.h
   ${INCLUDE_ROOT}/slice_plane.h
   ${INCLUDE_ROOT}/standardize_data_array.h
@@ -250,14 +288,12 @@ SET(HEADERS
   ${INCLUDE_ROOT}/structure.ipp
   ${INCLUDE_ROOT}/surface_color_quantity.h
   ${INCLUDE_ROOT}/surface_count_quantity.h
-  ${INCLUDE_ROOT}/surface_distance_quantity.h
   ${INCLUDE_ROOT}/surface_graph_quantity.h
   ${INCLUDE_ROOT}/surface_input_curve_quantity.h
   ${INCLUDE_ROOT}/surface_mesh.h
   ${INCLUDE_ROOT}/surface_mesh.ipp
   ${INCLUDE_ROOT}/surface_mesh_io.h
   ${INCLUDE_ROOT}/surface_mesh_quantity.h
-  ${INCLUDE_ROOT}/surface_parameterization_enums.h
   ${INCLUDE_ROOT}/surface_parameterization_quantity.h
   ${INCLUDE_ROOT}/surface_scalar_quantity.h
   ${INCLUDE_ROOT}/surface_selection_quantity.h
@@ -267,9 +303,20 @@ SET(HEADERS
   ${INCLUDE_ROOT}/types.h
   ${INCLUDE_ROOT}/utilities.h
   ${INCLUDE_ROOT}/view.h
+  ${INCLUDE_ROOT}/vector_quantity.h
+  ${INCLUDE_ROOT}/vector_quantity.ipp
   ${INCLUDE_ROOT}/volume_mesh.h
   ${INCLUDE_ROOT}/volume_mesh.ipp
   ${INCLUDE_ROOT}/volume_mesh_quantity.h
+  ${INCLUDE_ROOT}/volume_mesh_scalar_quantity.h
+  ${INCLUDE_ROOT}/volume_mesh_color_quantity.h
+  ${INCLUDE_ROOT}/volume_mesh_vector_quantity.h
+  ${INCLUDE_ROOT}/volume_grid.h
+  ${INCLUDE_ROOT}/volume_grid.ipp
+  ${INCLUDE_ROOT}/volume_grid_quantity.h
+  ${INCLUDE_ROOT}/volume_grid_scalar_quantity.h
+  #${INCLUDE_ROOT}/volume_grid_color_quantity.h
+  ${INCLUDE_ROOT}/volume_grid_vector_quantity.h
 )
 
 # Create a single library for the project
@@ -292,8 +339,9 @@ target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../deps
 target_include_directories(polyscope PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../deps/happly")
 target_include_directories(polyscope PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../deps/json/include")
 target_include_directories(polyscope PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../deps/stb")
+target_include_directories(polyscope PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../deps/MarchingCubeCpp/include")
 target_include_directories(polyscope PRIVATE "${BACKEND_INCLUDE_DIRS}")
         
 # Link settings
 target_link_libraries(polyscope PUBLIC imgui)
-target_link_libraries(polyscope PRIVATE "${BACKEND_LIBS}" stb)
+target_link_libraries(polyscope PRIVATE "${BACKEND_LIBS}" stb MarchingCube)

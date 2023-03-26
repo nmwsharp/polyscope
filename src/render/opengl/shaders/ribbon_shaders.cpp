@@ -16,9 +16,9 @@ const ShaderStageSpecification RIBBON_VERT_SHADER = {
 
     // attributes
     {
-        {"a_position", DataType::Vector3Float},
-        {"a_color", DataType::Vector3Float},
-        {"a_normal", DataType::Vector3Float},
+        {"a_position", RenderDataType::Vector3Float},
+        {"a_color", RenderDataType::Vector3Float},
+        {"a_normal", RenderDataType::Vector3Float},
     },
     
     {}, // textures
@@ -48,10 +48,10 @@ const ShaderStageSpecification RIBBON_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_modelView", DataType::Matrix44Float},
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_ribbonWidth", DataType::Float},
-        {"u_depthOffset", DataType::Float},
+        {"u_modelView", RenderDataType::Matrix44Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_ribbonWidth", RenderDataType::Float},
+        {"u_depthOffset", RenderDataType::Float},
     }, 
 
     // attributes

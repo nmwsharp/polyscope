@@ -12,17 +12,17 @@ const ShaderStageSpecification TRANSFORMATION_GIZMO_ROT_VERT = {
 
     // uniforms
     {
-        {"u_modelView", DataType::Matrix44Float},
-        {"u_projMatrix", DataType::Matrix44Float},
+        {"u_modelView", RenderDataType::Matrix44Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
     }, 
 
     // attributes
     {
-        {"a_position", DataType::Vector3Float},
-        {"a_normal", DataType::Vector3Float},
-        {"a_color", DataType::Vector3Float},
-        {"a_texcoord", DataType::Vector2Float},
-        {"a_component", DataType::Vector3Float}, // holds 1 for which axis it is
+        {"a_position", RenderDataType::Vector3Float},
+        {"a_normal", RenderDataType::Vector3Float},
+        {"a_color", RenderDataType::Vector3Float},
+        {"a_texcoord", RenderDataType::Vector2Float},
+        {"a_component", RenderDataType::Vector3Float}, // holds 1 for which axis it is
     },
 
     {}, // textures
@@ -60,8 +60,8 @@ const ShaderStageSpecification TRANSFORMATION_GIZMO_ROT_FRAG = {
     
     // uniforms
     {
-        {"u_diskWidthRel", DataType::Float},
-        {"u_active", DataType::Vector3Float},
+        {"u_diskWidthRel", RenderDataType::Float},
+        {"u_active", RenderDataType::Vector3Float},
     }, 
 
     { }, // attributes
@@ -152,10 +152,10 @@ const ShaderReplacementRule TRANSFORMATION_GIZMO_VEC (
         )"},
     },
     /* uniforms */ {
-      {"u_active", DataType::Vector3Float},
+      {"u_active", RenderDataType::Vector3Float},
     },
     /* attributes */ {
-      {"a_component", DataType::Vector3Float}
+      {"a_component", RenderDataType::Vector3Float}
     },
     /* textures */ {}
 );
@@ -166,14 +166,14 @@ const ShaderStageSpecification SLICE_PLANE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", DataType::Matrix44Float},
-       {"u_projMatrix", DataType::Matrix44Float},
-       {"u_objectMatrix", DataType::Matrix44Float},
+       {"u_viewMatrix", RenderDataType::Matrix44Float},
+       {"u_projMatrix", RenderDataType::Matrix44Float},
+       {"u_objectMatrix", RenderDataType::Matrix44Float},
     },
 
     // attributes
     {
-        {"a_position", DataType::Vector4Float},
+        {"a_position", RenderDataType::Vector4Float},
     },
     
     {}, // textures
@@ -201,12 +201,12 @@ const ShaderStageSpecification SLICE_PLANE_FRAG_SHADER= {
     ShaderStageType::Fragment,
 
     { // uniforms
-      {"u_objectMatrix", DataType::Matrix44Float},
-      {"u_viewMatrix", DataType::Matrix44Float},
-      {"u_lengthScale", DataType::Float},
-      {"u_transparency", DataType::Float},
-      {"u_color", DataType::Vector3Float},
-      {"u_gridLineColor", DataType::Vector3Float},
+      {"u_objectMatrix", RenderDataType::Matrix44Float},
+      {"u_viewMatrix", RenderDataType::Matrix44Float},
+      {"u_lengthScale", RenderDataType::Float},
+      {"u_transparency", RenderDataType::Float},
+      {"u_color", RenderDataType::Vector3Float},
+      {"u_gridLineColor", RenderDataType::Vector3Float},
     }, 
 
     // attributes

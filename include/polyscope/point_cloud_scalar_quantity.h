@@ -22,14 +22,12 @@ public:
 
   virtual void buildPickUI(size_t ind) override;
   virtual void refresh() override;
-
+  
   virtual std::string niceName() override;
 
-
 protected:
-  // === Visualization parameters
+  void createProgram();
 
-  void createPointProgram();
   std::shared_ptr<render::ShaderProgram> pointProgram;
 };
 

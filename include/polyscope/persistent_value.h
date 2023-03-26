@@ -7,7 +7,6 @@
 #include "glm/glm.hpp"
 #include "polyscope/render/color_maps.h"
 #include "polyscope/render/materials.h"
-#include "polyscope/surface_parameterization_enums.h"
 
 #include <iostream>
 #include <string>
@@ -126,6 +125,7 @@ extern PersistentCache<ScaledValue<float>> persistentCache_scaledfloat;
 extern PersistentCache<std::vector<std::string>> persistentCache_vectorstring;
 extern PersistentCache<ParamVizStyle> persistentCache_paramVizStyle;
 extern PersistentCache<BackFacePolicy> persistentCache_BackFacePolicy;
+extern PersistentCache<MeshShadeStyle> persistentCache_MeshNormalType;
 
 template<> inline PersistentCache<double>&                   getPersistentCacheRef<double>()                   { return persistentCache_double; }
 template<> inline PersistentCache<float>&                    getPersistentCacheRef<float>()                    { return persistentCache_float; }
@@ -138,6 +138,7 @@ template<> inline PersistentCache<ScaledValue<float>>&       getPersistentCacheR
 template<> inline PersistentCache<std::vector<std::string>>& getPersistentCacheRef<std::vector<std::string>>() { return persistentCache_vectorstring; }
 template<> inline PersistentCache<ParamVizStyle>&            getPersistentCacheRef<ParamVizStyle>()            { return persistentCache_paramVizStyle; }
 template<> inline PersistentCache<BackFacePolicy>&           getPersistentCacheRef<BackFacePolicy>()           { return persistentCache_BackFacePolicy; }
+template<> inline PersistentCache<MeshShadeStyle>&           getPersistentCacheRef<MeshShadeStyle>()           { return persistentCache_MeshNormalType; }
 }
 // clang-format on
 

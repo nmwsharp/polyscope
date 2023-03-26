@@ -48,16 +48,26 @@ public:
   virtual void buildCustomOptionsUI() override;
   virtual void buildPickUI(size_t localPickID) override;
 
-  // Render the the structure on screen
   virtual void draw() override;
-
-  // Render for picking
+  virtual void drawDelayed() override;
   virtual void drawPick() override;
 
   virtual void updateObjectSpaceBounds() override;
   virtual std::string typeName() override;
 
   virtual void refresh() override;
+
+  // === Geometry members
+
+  // node positions
+  render::ManagedBuffer<glm::vec3> nodePositions;
+
+  // connectivity / indices
+  render::ManagedBuffer<uint32_t> edgeTailInds; // E indices into the node list
+  render::ManagedBuffer<uint32_t> edgeTipInds;  // E indices into the node list
+
+  // internally-computed geometry
+  render::ManagedBuffer<glm::vec3> edgeCenters;
 
   // === Quantities
 
@@ -93,12 +103,9 @@ public:
   // === Members and utilities
 
   // The nodes that make up this curve network
-  std::vector<glm::vec3> nodes;
   std::vector<size_t> nodeDegrees; // populated on construction
-  size_t nNodes() const { return nodes.size(); }
-
-  std::vector<std::array<size_t, 2>> edges;
-  size_t nEdges() const { return edges.size(); }
+  size_t nNodes() { return nodePositions.size(); }
+  size_t nEdges() { return edgeTailInds.size(); }
 
 
   // Misc data
@@ -143,11 +150,19 @@ public:
 
 
 private:
+  // Storage for the managed buffers above. You should generally interact with these through the managed buffers, not
+  // these members.
+  std::vector<glm::vec3> nodePositionsData;
+  std::vector<uint32_t> edgeTailIndsData;
+  std::vector<uint32_t> edgeTipIndsData;
+  std::vector<glm::vec3> edgeCentersData;
+
+  void computeEdgeCenters();
+
   // === Visualization parameters
   PersistentValue<glm::vec3> color;
   PersistentValue<ScaledValue<float>> radius;
   PersistentValue<std::string> material;
-
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
@@ -162,7 +177,8 @@ private:
   void prepare();
   void preparePick();
 
-  void geometryChanged();
+  void recomputeGeometryIfPopulated();
+  float computeRadiusMultiplierUniform();
 
   // Pick helpers
   void buildNodePickUI(size_t nodeInd);
@@ -181,7 +197,7 @@ private:
   // Manage varying node, edge size
   std::string nodeRadiusQuantityName = ""; // empty string means none
   bool nodeRadiusQuantityAutoscale = true;
-  std::vector<double> resolveNodeRadiusQuantity(); // helper
+  CurveNetworkNodeScalarQuantity& resolveNodeRadiusQuantity(); // helper
 };
 
 
@@ -198,6 +214,12 @@ CurveNetwork* registerCurveNetworkLine(std::string name, const P& points);
 template <class P>
 CurveNetwork* registerCurveNetworkLine2D(std::string name, const P& points);
 
+// Shorthand to add a curve network, automatically constructing a collection of line segments
+// (connecting point 0to1, 2to3, etc)
+template <class P>
+CurveNetwork* registerCurveNetworkSegments(std::string name, const P& points);
+template <class P>
+CurveNetwork* registerCurveNetworkSegments2D(std::string name, const P& points);
 
 // Shorthand to add a curve network, automatically constructing the connectivity of a loop
 template <class P>
@@ -208,7 +230,7 @@ CurveNetwork* registerCurveNetworkLoop2D(std::string name, const P& points);
 // Shorthand to get a curve network from polyscope
 inline CurveNetwork* getCurveNetwork(std::string name = "");
 inline bool hasCurveNetwork(std::string name = "");
-inline void removeCurveNetwork(std::string name = "", bool errorIfAbsent = true);
+inline void removeCurveNetwork(std::string name = "", bool errorIfAbsent = false);
 
 
 } // namespace polyscope

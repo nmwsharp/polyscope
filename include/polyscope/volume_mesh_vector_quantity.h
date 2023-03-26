@@ -5,6 +5,7 @@
 #include "polyscope/render/engine.h"
 #include "polyscope/types.h"
 #include "polyscope/vector_artist.h"
+#include "polyscope/vector_quantity.h"
 #include "polyscope/volume_mesh.h"
 
 namespace polyscope {
@@ -13,61 +14,29 @@ namespace polyscope {
 
 // Represents a general vector field associated with a surface mesh, including
 // R3 fields in the ambient space and R2 fields embedded in the surface
+
+// NOTE: This intermediate class is not really necessary anymore; it is subsumed by the VectorQuantity<> classes which
+// serve as common bases for ALL vector types. At this point it is just kept around for backward compatibility, to not
+// break user code which holds a reference to it.
 class VolumeMeshVectorQuantity : public VolumeMeshQuantity {
 public:
-  VolumeMeshVectorQuantity(std::string name, VolumeMesh& mesh_, VolumeMeshElement definedOn_,
-                           VectorType vectorType_ = VectorType::STANDARD);
-
-  virtual void draw() override;
-  virtual void buildCustomUI() override;
-
-  // Allow children to append to the UI
-  virtual void drawSubUI();
-
-  // === Members
-
-  // Note: these vectors are not the raw vectors passed in by the user, but have been rescaled such that the longest has
-  // length 1 (unless type is VectorType::Ambient)
-  const VectorType vectorType;
-
-  // The actual data
-  std::vector<glm::vec3> vectors;
-  std::vector<glm::vec3> vectorRoots;
-
-  // === Option accessors
-
-  //  The vectors will be scaled such that the longest vector is this long
-  VolumeMeshVectorQuantity* setVectorLengthScale(double newLength, bool isRelative = true);
-  double getVectorLengthScale();
-
-  // The radius of the vectors
-  VolumeMeshVectorQuantity* setVectorRadius(double val, bool isRelative = true);
-  double getVectorRadius();
-
-  // The color of the vectors
-  VolumeMeshVectorQuantity* setVectorColor(glm::vec3 color);
-  glm::vec3 getVectorColor();
-
-  // Material
-  VolumeMeshVectorQuantity* setMaterial(std::string name);
-  std::string getMaterial();
+  VolumeMeshVectorQuantity(std::string name, VolumeMesh& mesh_, VolumeMeshElement definedOn_);
 
 protected:
-  // Manages _actually_ drawing the vectors, generating gui.
-  std::unique_ptr<VectorArtist> vectorArtist;
-  void prepareVectorArtist();
-
   VolumeMeshElement definedOn;
 };
 
 
 // ==== R3 vectors at vertices
 
-class VolumeMeshVertexVectorQuantity : public VolumeMeshVectorQuantity {
+class VolumeMeshVertexVectorQuantity : public VolumeMeshVectorQuantity,
+                                       public VectorQuantity<VolumeMeshVertexVectorQuantity> {
 public:
   VolumeMeshVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, VolumeMesh& mesh_,
                                  VectorType vectorType_ = VectorType::STANDARD);
 
+  virtual void draw() override;
+  virtual void buildCustomUI() override;
   virtual void refresh() override;
   virtual std::string niceName() override;
   virtual void buildVertexInfoGUI(size_t vInd) override;
@@ -76,11 +45,14 @@ public:
 
 // ==== R3 vectors at cells
 
-class VolumeMeshCellVectorQuantity : public VolumeMeshVectorQuantity {
+class VolumeMeshCellVectorQuantity : public VolumeMeshVectorQuantity,
+                                     public VectorQuantity<VolumeMeshCellVectorQuantity> {
 public:
   VolumeMeshCellVectorQuantity(std::string name, std::vector<glm::vec3> vectors_, VolumeMesh& mesh_,
                                VectorType vectorType_ = VectorType::STANDARD);
 
+  virtual void draw() override;
+  virtual void buildCustomUI() override;
   virtual void refresh() override;
   virtual std::string niceName() override;
   virtual void buildCellInfoGUI(size_t cInd) override;

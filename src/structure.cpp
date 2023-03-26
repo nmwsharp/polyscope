@@ -25,6 +25,7 @@ Structure::~Structure(){};
 Structure* Structure::setEnabled(bool newEnabled) {
   if (newEnabled == isEnabled()) return this;
   enabled = newEnabled;
+  requestRedraw();
   return this;
 };
 
@@ -214,6 +215,8 @@ void Structure::rescaleToUnit() {
   objectTransform = newTrans * objectTransform.get();
   updateStructureExtents();
 }
+
+bool Structure::hasExtents() { return true; }
 
 glm::mat4 Structure::getModelView() { return view::getCameraViewMatrix() * objectTransform.get(); }
 

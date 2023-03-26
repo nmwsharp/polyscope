@@ -21,6 +21,7 @@ int initWindowPosX = 20;
 int initWindowPosY = 20;
 NavigateStyle style = NavigateStyle::Turntable;
 UpDir upDir = UpDir::YUp;
+FrontDir frontDir = FrontDir::NegZFront; // TODO change this to ZFront next breaking version
 double moveScale = 1.0;
 const double defaultNearClipRatio = 0.005;
 const double defaultFarClipRatio = 20.0;
@@ -258,51 +259,17 @@ void ensureViewValid() {
 
 glm::mat4 computeHomeView() {
 
-  glm::mat4x4 R(1.0);
-  glm::vec3 baseUp;
-  switch (upDir) {
-  case UpDir::XUp:
-  case UpDir::NegXUp:
-    baseUp = glm::vec3(1., 0., 0.);
-    R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI / 2), glm::vec3(0., 0., 1.));
-    if (upDir == UpDir::NegXUp) {
-      baseUp *= -1;
-      R = glm::rotate(R, static_cast<float>(PI), glm::vec3(0., 0., 1.));
-    }
-    break;
-  case UpDir::YUp:
-  case UpDir::NegYUp:
-    baseUp = glm::vec3(0., 1., 0.);
-    // this is our camera's default
-    if (upDir == UpDir::NegYUp) {
-      baseUp *= -1;
-      R = glm::rotate(R, static_cast<float>(PI), glm::vec3(0., 0., 1.));
-    }
-    break;
-  case UpDir::ZUp:
-  case UpDir::NegZUp:
-    baseUp = glm::vec3(0., 0., 1.);
-    R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI / 2), glm::vec3(-1., 0., 0.));
-    R = glm::rotate(glm::mat4x4(1.0), static_cast<float>(PI), glm::vec3(0., 1., 0.)) *
-        R; // follow common convention for "front"
-    if (upDir == UpDir::NegZUp) {
-      baseUp *= -1;
-      R = glm::rotate(R, static_cast<float>(PI), glm::vec3(0., 1., 0.));
-    }
-    break;
+  glm::vec3 target = state::center();
+  glm::vec3 upDir = getUpVec();
+  glm::vec3 frontDir = getFrontVec();
+  if (std::fabs(glm::dot(upDir, frontDir)) > 0.01) {
+    // if the user has foolishly set upDir and frontDir to be along the same axis,
+    // change front dir so lookAt can do something sane
+    frontDir = circularPermuteEntries(frontDir);
   }
-
-  // Rotate around the up axis, since our camera looks down -Z
-  // (except in planar mode, where we look down +Z so default axes are as-expected)
-  if (style != NavigateStyle::Planar) {
-    R = glm::rotate(R, static_cast<float>(PI), baseUp);
-  }
-
-  glm::mat4x4 Tobj = glm::translate(glm::mat4x4(1.0), -state::center());
-  glm::mat4x4 Tcam =
-      glm::translate(glm::mat4x4(1.0), glm::vec3(0.0, -0.1 * state::lengthScale, -1.5 * state::lengthScale));
-
-  return Tcam * R * Tobj;
+  float L = state::lengthScale;
+  glm::vec3 cameraLoc = state::center() + 0.1f * L * upDir + 1.5f * L * frontDir;
+  return glm::lookAt(cameraLoc, target, upDir);
 }
 
 void resetCameraToHomeView() {
@@ -367,10 +334,15 @@ void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool fl
   }
 }
 
+void setWindowSize(int width, int height) {
+  view::windowWidth = width;
+  view::windowHeight = height;
+  render::engine->applyWindowSize();
+}
+
 void setViewToCamera(const CameraParameters& p) {
-  viewMat = p.E;
-  // fov = glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y)));
-  fov = p.fov;
+  viewMat = p.getE();
+  fov = p.getFoVVerticalDegrees();
   // aspectRatio = p.focalLengths.x / p.focalLengths.y; // TODO should be
   // flipped?
 }
@@ -431,10 +403,82 @@ glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords) {
   return worldRayDir;
 }
 
+glm::vec3 bufferCoordsToWorldRay(glm::vec2 screenCoords) {
+
+  glm::mat4 view = getCameraViewMatrix();
+  glm::mat4 proj = getCameraPerspectiveMatrix();
+  glm::vec4 viewport = {0., 0., view::bufferWidth, view::bufferHeight};
+
+  glm::vec3 screenPos3{screenCoords.x, view::bufferHeight - screenCoords.y, 0.};
+  glm::vec3 worldPos = glm::unProject(screenPos3, view, proj, viewport);
+  glm::vec3 worldRayDir = glm::normalize(glm::vec3(worldPos) - getCameraWorldPosition());
+
+  return worldRayDir;
+}
+
+float screenCoordsToDepth(glm::vec2 screenCoords) {
+
+  /*
+
+  glm::mat4 proj = getCameraPerspectiveMatrix();
+  glm::vec3 viewPoint = getCameraWorldPosition();
+  glm::vec2 depthRange = {0., 1.}; // no support for nonstandard depth range, currently
+  glm::vec2 screenCoords{screenCoords.x / static_cast<float>(view::windowWidth),
+                         1.f - screenCoords.y / static_cast<float>(view::windowHeight)};
+
+  // query the depth buffer to get depth
+  render::FrameBuffer* sceneFramebuffer = render::engine->sceneBuffer.get();
+  float depth = sceneFramebuffer->readDepth(screenCoords.x, view::windowHeight - screenCoords.y);
+  if (depth == 1.) depth = std::numeric_limits<float>::infinity();
+
+  // convert depth to world units
+  float z = depth * 2.0f - 1.0f;
+  vec4 clipPos = glm::vec4(screeCoords * 2.0f - 1.0f, z, 1.0f);
+  vec4 viewPos = projMatrixInv * clipPos;
+  viewPos /= viewPos.w;
+
+
+  return worldRayDir;
+  */
+
+  return -1.;
+}
+
+glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords) {
+
+  glm::mat4 view = getCameraViewMatrix();
+  glm::mat4 viewInv = glm::inverse(view);
+  glm::mat4 proj = getCameraPerspectiveMatrix();
+  glm::mat4 projInv = glm::inverse(proj);
+  glm::vec2 depthRange = {0., 1.}; // no support for nonstandard depth range, currently
+  glm::vec2 screenPos{screenCoords.x / static_cast<float>(view::windowWidth),
+                      1.f - screenCoords.y / static_cast<float>(view::windowHeight)};
+
+  // query the depth buffer to get depth
+  render::FrameBuffer* sceneFramebuffer = render::engine->sceneBuffer.get();
+  float depth = sceneFramebuffer->readDepth(screenCoords.x, view::windowHeight - screenCoords.y);
+  if (depth == 1.) {
+    // if we didn't hit anything in the depth buffer, just return infinity
+    float inf = std::numeric_limits<float>::infinity();
+    return glm::vec3{inf, inf, inf};
+  }
+
+  // convert depth to world units
+  float z = depth * 2.0f - 1.0f;
+  glm::vec4 clipPos = glm::vec4(screenPos * 2.0f - 1.0f, z, 1.0f);
+  glm::vec4 viewPos = projInv * clipPos;
+  viewPos /= viewPos.w;
+
+  glm::vec4 worldPos = viewInv * viewPos;
+  worldPos /= worldPos.w;
+
+  return glm::vec3(worldPos);
+}
+
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds) {
   // startFlightTo(p.E, glm::degrees(2 * std::atan(1. / (2. * p.focalLengths.y))),
   //               flightLengthInSeconds);
-  startFlightTo(p.E, p.fov, flightLengthInSeconds);
+  startFlightTo(p.getE(), p.getFoVVerticalDegrees(), flightLengthInSeconds);
 }
 
 void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeconds) {
@@ -506,6 +550,8 @@ std::string getCameraJson() {
       {"viewMat", viewMatFlat},
       {"nearClipRatio", nearClipRatio},
       {"farClipRatio", farClipRatio},
+      {"windowWidth", view::windowWidth},
+      {"windowHeight", view::windowHeight},
       {"projectionMode", to_string(view::projectionMode)},
   };
 
@@ -519,6 +565,9 @@ void setCameraFromJson(std::string jsonData, bool flyTo) {
   double newFov = -777;
   double newNearClipRatio = -777;
   double newFarClipRatio = -777;
+
+  int windowWidth = view::windowWidth;
+  int windowHeight = view::windowHeight;
 
   try {
 
@@ -547,6 +596,14 @@ void setCameraFromJson(std::string jsonData, bool flyTo) {
       newFarClipRatio = j["farClipRatio"];
     }
 
+    // Get the window sizes, if present
+    if (j.find("windowWidth") != j.end()) {
+      windowWidth = j["windowWidth"];
+    }
+    if (j.find("windowHeight") != j.end()) {
+      windowHeight = j["windowHeight"];
+    }
+
     if (j.find("projectionMode") != j.end()) {
       std::string projectionModeStr = j["projectionMode"];
       if (projectionModeStr == to_string(ProjectionMode::Perspective)) {
@@ -561,7 +618,10 @@ void setCameraFromJson(std::string jsonData, bool flyTo) {
     return;
   }
 
-  // Assign the new values
+  // === Assign the new values
+
+  view::setWindowSize(windowWidth, windowHeight);
+
   if (newNearClipRatio > 0) nearClipRatio = newNearClipRatio;
   if (newFarClipRatio > 0) farClipRatio = newFarClipRatio;
 
@@ -623,59 +683,124 @@ void buildViewGui() {
 
     ImGui::Text("Camera Style");
 
-    // == Up direction
-    ImGui::PushItemWidth(120);
-    std::string upStyleName;
-    switch (upDir) {
-    case UpDir::XUp:
-      upStyleName = "X Up";
-      break;
-    case UpDir::NegXUp:
-      upStyleName = "-X Up";
-      break;
-    case UpDir::YUp:
-      upStyleName = "Y Up";
-      break;
-    case UpDir::NegYUp:
-      upStyleName = "-Y Up";
-      break;
-    case UpDir::ZUp:
-      upStyleName = "Z Up";
-      break;
-    case UpDir::NegZUp:
-      upStyleName = "-Z Up";
-      break;
+    { // == Up direction
+      ImGui::PushItemWidth(120);
+      std::string upStyleName;
+      switch (upDir) {
+      case UpDir::XUp:
+        upStyleName = "X Up";
+        break;
+      case UpDir::NegXUp:
+        upStyleName = "-X Up";
+        break;
+      case UpDir::YUp:
+        upStyleName = "Y Up";
+        break;
+      case UpDir::NegYUp:
+        upStyleName = "-Y Up";
+        break;
+      case UpDir::ZUp:
+        upStyleName = "Z Up";
+        break;
+      case UpDir::NegZUp:
+        upStyleName = "-Z Up";
+        break;
+      }
+
+      if (ImGui::BeginCombo("##Up Direction", upStyleName.c_str())) {
+        if (ImGui::Selectable("X Up", view::upDir == view::UpDir::XUp)) {
+          view::setUpDir(view::UpDir::XUp, true);
+          ImGui::SetItemDefaultFocus();
+        }
+        if (ImGui::Selectable("-X Up", view::upDir == view::UpDir::NegXUp)) {
+          view::setUpDir(view::UpDir::NegXUp, true);
+          ImGui::SetItemDefaultFocus();
+        }
+        if (ImGui::Selectable("Y Up", view::upDir == view::UpDir::YUp)) {
+          view::setUpDir(view::UpDir::YUp, true);
+          ImGui::SetItemDefaultFocus();
+        }
+        if (ImGui::Selectable("-Y Up", view::upDir == view::UpDir::NegYUp)) {
+          view::setUpDir(view::UpDir::NegYUp, true);
+          ImGui::SetItemDefaultFocus();
+        }
+        if (ImGui::Selectable("Z Up", view::upDir == view::UpDir::ZUp)) {
+          view::setUpDir(view::UpDir::ZUp, true);
+          ImGui::SetItemDefaultFocus();
+        }
+        if (ImGui::Selectable("-Z Up", view::upDir == view::UpDir::NegZUp)) {
+          view::setUpDir(view::UpDir::NegZUp, true);
+          ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+      }
+      ImGui::SameLine();
+      ImGui::Text("Up Direction");
     }
 
-    if (ImGui::BeginCombo("##Up Direction", upStyleName.c_str())) {
-      if (ImGui::Selectable("X Up", view::upDir == view::UpDir::XUp)) {
-        view::setUpDir(view::UpDir::XUp, true);
-        ImGui::SetItemDefaultFocus();
+    { // == Front direction
+      ImGui::PushItemWidth(120);
+      std::string frontStyleName;
+      switch (frontDir) {
+      case FrontDir::XFront:
+        frontStyleName = "X Front";
+        break;
+      case FrontDir::NegXFront:
+        frontStyleName = "-X Front";
+        break;
+      case FrontDir::YFront:
+        frontStyleName = "Y Front";
+        break;
+      case FrontDir::NegYFront:
+        frontStyleName = "-Y Front";
+        break;
+      case FrontDir::ZFront:
+        frontStyleName = "Z Front";
+        break;
+      case FrontDir::NegZFront:
+        frontStyleName = "-Z Front";
+        break;
       }
-      if (ImGui::Selectable("-X Up", view::upDir == view::UpDir::NegXUp)) {
-        view::setUpDir(view::UpDir::NegXUp, true);
-        ImGui::SetItemDefaultFocus();
+
+      if (ImGui::BeginCombo("##Front Direction", frontStyleName.c_str())) {
+        if (ImGui::Selectable("X Front", view::frontDir == FrontDir::XFront)) {
+          view::setFrontDir(FrontDir::XFront, true);
+          ImGui::SetItemDefaultFocus();
+        }
+        if (ImGui::Selectable("-X Front", view::frontDir == FrontDir::NegXFront)) {
+          view::setFrontDir(FrontDir::NegXFront, true);
+          ImGui::SetItemDefaultFocus();
+        }
+        if (ImGui::Selectable("Y Front", view::frontDir == FrontDir::YFront)) {
+          view::setFrontDir(FrontDir::YFront, true);
+          ImGui::SetItemDefaultFocus();
+        }
+        if (ImGui::Selectable("-Y Front", view::frontDir == FrontDir::NegYFront)) {
+          view::setFrontDir(FrontDir::NegYFront, true);
+          ImGui::SetItemDefaultFocus();
+        }
+        if (ImGui::Selectable("Z Front", view::frontDir == FrontDir::ZFront)) {
+          view::setFrontDir(FrontDir::ZFront, true);
+          ImGui::SetItemDefaultFocus();
+        }
+        if (ImGui::Selectable("-Z Front", view::frontDir == FrontDir::NegZFront)) {
+          view::setFrontDir(FrontDir::NegZFront, true);
+          ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
       }
-      if (ImGui::Selectable("Y Up", view::upDir == view::UpDir::YUp)) {
-        view::setUpDir(view::UpDir::YUp, true);
-        ImGui::SetItemDefaultFocus();
-      }
-      if (ImGui::Selectable("-Y Up", view::upDir == view::UpDir::NegYUp)) {
-        view::setUpDir(view::UpDir::NegYUp, true);
-        ImGui::SetItemDefaultFocus();
-      }
-      if (ImGui::Selectable("Z Up", view::upDir == view::UpDir::ZUp)) {
-        view::setUpDir(view::UpDir::ZUp, true);
-        ImGui::SetItemDefaultFocus();
-      }
-      if (ImGui::Selectable("-Z Up", view::upDir == view::UpDir::NegZUp)) {
-        view::setUpDir(view::UpDir::NegZUp, true);
-        ImGui::SetItemDefaultFocus();
-      }
-      ImGui::EndCombo();
+      ImGui::SameLine();
+      ImGui::Text("Front Direction");
     }
-    ImGui::SameLine();
-    ImGui::Text("Up Direction");
+
+    {
+      // Show a warning if up and front are co-linear
+      glm::vec3 upDir = getUpVec();
+      glm::vec3 frontDir = getFrontVec();
+      if (std::fabs(glm::dot(upDir, frontDir)) > 0.01) {
+        ImGui::TextUnformatted("WARNING: Up and Front directions\nare degenerate.");
+      }
+    }
 
     if (ImGui::TreeNode("Scene Extents")) {
 
@@ -764,6 +889,41 @@ void buildViewGui() {
       ImGui::TreePop();
     }
 
+    if (ImGui::TreeNode("Window")) {
+
+      {
+        ImGui::TextUnformatted("Dim:");
+        ImGui::SameLine();
+        ImGui::PushItemWidth(50);
+        bool changed = false;
+        int currWidth = view::windowWidth;
+        int currHeight = view::windowHeight;
+        ImGui::InputInt("##width", &currWidth, 0);
+        changed |= ImGui::IsItemDeactivatedAfterEdit();
+        ImGui::SameLine();
+        ImGui::InputInt("##height", &currHeight, 0);
+        changed |= ImGui::IsItemDeactivatedAfterEdit();
+        if (changed) {
+          // make sure it's at least 32 pixels, anything less is surely a mistake and might break things
+          currWidth = std::max(currWidth, 32);
+          currHeight = std::max(currHeight, 32);
+          view::setWindowSize(currWidth, currHeight);
+        }
+        ImGui::PopItemWidth();
+      }
+
+      {
+        ImGui::SameLine();
+        bool sizeLocked = !render::engine->getWindowResizable();
+        bool changed = ImGui::Checkbox("lock", &sizeLocked);
+        if (changed) {
+          render::engine->setWindowResizable(!sizeLocked);
+        }
+      }
+
+
+      ImGui::TreePop();
+    }
 
     buildSlicePlaneGUI();
 
@@ -796,6 +956,37 @@ glm::vec3 getUpVec() {
   case UpDir::NegZUp:
     return glm::vec3{0., 0., -1.};
   case UpDir::ZUp:
+    return glm::vec3{0., 0., 1.};
+  }
+
+  // unused fallthrough
+  return glm::vec3{0., 0., 0.};
+}
+
+void setFrontDir(FrontDir newFrontDir, bool animateFlight) {
+  frontDir = newFrontDir;
+  if (animateFlight) {
+    flyToHomeView();
+  } else {
+    resetCameraToHomeView();
+  }
+}
+
+FrontDir getFrontDir() { return frontDir; }
+
+glm::vec3 getFrontVec() {
+  switch (frontDir) {
+  case FrontDir::NegXFront:
+    return glm::vec3{-1., 0., 0.};
+  case FrontDir::XFront:
+    return glm::vec3{1., 0., 0.};
+  case FrontDir::NegYFront:
+    return glm::vec3{0., -1., 0.};
+  case FrontDir::YFront:
+    return glm::vec3{0., 1., 0.};
+  case FrontDir::NegZFront:
+    return glm::vec3{0., 0., -1.};
+  case FrontDir::ZFront:
     return glm::vec3{0., 0., 1.};
   }
 

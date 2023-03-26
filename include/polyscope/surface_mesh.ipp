@@ -1,13 +1,23 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+
+#include "polyscope/utilities.h"
+#include <stdexcept>
 namespace polyscope {
 
 // Shorthand to add a mesh to polyscope
 template <class V, class F>
 SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
   checkInitialized();
-  
-  SurfaceMesh* s = new SurfaceMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
-                                   standardizeNestedList<size_t, F>(faceIndices));
+
+  std::tuple<std::vector<uint32_t>, std::vector<uint32_t>> nestedListTup =
+      standardizeNestedList<uint32_t, uint32_t, F>(faceIndices);
+
+  std::vector<uint32_t>& faceIndsEntries = std::get<0>(nestedListTup);
+  std::vector<uint32_t>& faceIndsStart = std::get<1>(nestedListTup);
+
+  SurfaceMesh* s =
+      new SurfaceMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions), faceIndsEntries, faceIndsStart);
+
   bool success = registerStructure(s);
   if (!success) {
     safeDelete(s);
@@ -24,42 +34,21 @@ SurfaceMesh* registerSurfaceMesh2D(std::string name, const V& vertexPositions, c
     v.z = 0.;
   }
 
-  SurfaceMesh* s = new SurfaceMesh(name, positions3D, standardizeNestedList<size_t, F>(faceIndices));
-  bool success = registerStructure(s);
-  if (!success) {
-    safeDelete(s);
-  }
-
-  return s;
-}
-
-// Shorthand to add a mesh to polyscope while also setting permutations
-template <class V, class F, class P>
-SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
-                                 const std::array<std::pair<P, size_t>, 5>& perms) {
-  checkInitialized();
-  
-  SurfaceMesh* s = registerSurfaceMesh(name, vertexPositions, faceIndices);
-
-  if (s) {
-    s->setAllPermutations(perms);
-  }
-
-  return s;
+  return registerSurfaceMesh(name, positions3D, faceIndices);
 }
 
 template <class V>
 void SurfaceMesh::updateVertexPositions(const V& newPositions) {
-  vertices = standardizeVectorArray<glm::vec3, 3>(newPositions);
-
-
-  // Rebuild any necessary quantities
-  geometryChanged();
+  validateSize(newPositions, vertexDataSize, "newPositions");
+  vertexPositions.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  vertexPositions.markHostBufferUpdated();
+  recomputeGeometryIfPopulated();
 }
 
 
 template <class V>
 void SurfaceMesh::updateVertexPositions2D(const V& newPositions2D) {
+  validateSize(newPositions2D, vertexDataSize, "newPositions2D");
   std::vector<glm::vec3> positions3D = standardizeVectorArray<glm::vec3, 2>(newPositions2D);
   for (glm::vec3& v : positions3D) {
     v.z = 0.;
@@ -67,17 +56,6 @@ void SurfaceMesh::updateVertexPositions2D(const V& newPositions2D) {
 
   // Call the main version
   updateVertexPositions(positions3D);
-}
-
-inline glm::vec3 SurfaceMesh::faceCenter(size_t iF) {
-  glm::vec3 faceCenter = glm::vec3{0., 0., 0.};
-  const auto& face = faces[iF];
-  size_t D = face.size();
-  for (size_t j = 0; j < D; j++) {
-    faceCenter += vertices[face[j]];
-  }
-  faceCenter /= D;
-  return faceCenter;
 }
 
 // Shorthand to get a mesh from polyscope
@@ -112,39 +90,16 @@ inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
 
 
 template <class T>
-void SurfaceMesh::setVertexPermutation(const T& perm, size_t expectedSize) {
-
-  validateSize(perm, vertexDataSize, "vertex permutation for " + name);
-  vertexPerm = standardizeArray<size_t, T>(perm);
-
-  vertexDataSize = expectedSize;
-  if (vertexDataSize == 0) {
-    // Find max element to set the data size
-    for (size_t i : vertexPerm) {
-      vertexDataSize = std::max(vertexDataSize, i + 1);
-    }
-  }
-}
-
-template <class T>
-void SurfaceMesh::setFacePermutation(const T& perm, size_t expectedSize) {
-
-  validateSize(perm, faceDataSize, "face permutation for " + name);
-  facePerm = standardizeArray<size_t, T>(perm);
-
-  faceDataSize = expectedSize;
-  if (faceDataSize == 0) {
-    // Find max element to set the data size
-    for (size_t i : facePerm) {
-      faceDataSize = std::max(faceDataSize, i + 1);
-    }
-  }
-}
-
-template <class T>
 void SurfaceMesh::setEdgePermutation(const T& perm, size_t expectedSize) {
 
-  validateSize(perm, edgeDataSize, "edge permutation for " + name);
+  // try to catch cases where it is set twice
+  if (triangleAllEdgeInds.size() > 0) {
+    polyscope::error("Attempting to set an edge permutation for SurfaceMesh " + name +
+                     ", but one is already set. Must be set exactly once.");
+    return;
+  }
+
+  // validateSize(perm, edgeDataSize, "edge permutation for " + name);
   edgePerm = standardizeArray<size_t, T>(perm);
 
   edgeDataSize = expectedSize;
@@ -154,10 +109,23 @@ void SurfaceMesh::setEdgePermutation(const T& perm, size_t expectedSize) {
       edgeDataSize = std::max(edgeDataSize, i + 1);
     }
   }
+
+  // now that we have edge indexing, enable edge-related stuff
+  markEdgesAsUsed();
 }
 
 template <class T>
 void SurfaceMesh::setHalfedgePermutation(const T& perm, size_t expectedSize) {
+
+  // attempt to catch cases where the user sets a permutation after already adding quantities which would use the
+  // permutation (this is unsupported and will cause bad things)
+  if (triangleAllHalfedgeInds.size() > 0) {
+    polyscope::error(
+        "SurfaceMesh " + name +
+        ": a halfedge index permutation was set after quantities have already used the default permutation. This is "
+        "not supported, the halfedge index must be specified before any halfedge-value data is added.");
+    return;
+  }
 
   validateSize(perm, halfedgeDataSize, "halfedge permutation for " + name);
   halfedgePerm = standardizeArray<size_t, T>(perm);
@@ -169,10 +137,22 @@ void SurfaceMesh::setHalfedgePermutation(const T& perm, size_t expectedSize) {
       halfedgeDataSize = std::max(halfedgeDataSize, i + 1);
     }
   }
+
+  markHalfedgesAsUsed();
 }
 
 template <class T>
 void SurfaceMesh::setCornerPermutation(const T& perm, size_t expectedSize) {
+
+  // attempt to catch cases where the user sets a permutation after already adding quantities which would use the
+  // permutation (this is unsupported and will cause bad things)
+  if (triangleAllCornerInds.size() > 0) {
+    polyscope::error(
+        "SurfaceMesh " + name +
+        ": a corner index permutation was set after quantities have already used the default permutation. This is "
+        "not supported, the corner index must be specified before any corner-value data is added.");
+    return;
+  }
 
   validateSize(perm, cornerDataSize, "corner permutation for " + name);
   cornerPerm = standardizeArray<size_t, T>(perm);
@@ -188,20 +168,21 @@ void SurfaceMesh::setCornerPermutation(const T& perm, size_t expectedSize) {
 
 template <class T>
 void SurfaceMesh::setAllPermutations(const std::array<std::pair<T, size_t>, 5>& perms) {
+  // (kept for backward compatbility only)
+  // forward to the 3-arg version, ignoring first two
+  setAllPermutations(std::array<std::pair<T, size_t>, 3>{perms[2], perms[3], perms[4]});
+}
+
+template <class T>
+void SurfaceMesh::setAllPermutations(const std::array<std::pair<T, size_t>, 3>& perms) {
   if (perms[0].first.size() > 0) {
-    setVertexPermutation(perms[0].first, perms[0].second);
+    setEdgePermutation(perms[0].first, perms[0].second);
   }
   if (perms[1].first.size() > 0) {
-    setFacePermutation(perms[1].first, perms[1].second);
+    setHalfedgePermutation(perms[1].first, perms[1].second);
   }
   if (perms[2].first.size() > 0) {
-    setEdgePermutation(perms[2].first, perms[2].second);
-  }
-  if (perms[3].first.size() > 0) {
-    setHalfedgePermutation(perms[3].first, perms[3].second);
-  }
-  if (perms[4].first.size() > 0) {
-    setCornerPermutation(perms[4].first, perms[4].second);
+    setCornerPermutation(perms[2].first, perms[2].second);
   }
 }
 
@@ -260,6 +241,7 @@ SurfaceVertexParameterizationQuantity* SurfaceMesh::addLocalParameterizationQuan
   return addLocalParameterizationQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(coords), type);
 }
 
+/*
 
 inline SurfaceVertexCountQuantity*
 SurfaceMesh::addVertexCountQuantity(std::string name, const std::vector<std::pair<size_t, int>>& values) {
@@ -356,6 +338,7 @@ SurfaceGraphQuantity* SurfaceMesh::addSurfaceGraphQuantity2D(std::string name, c
   return addSurfaceGraphQuantity(name, paths3D);
 }
 
+*/
 
 template <class T>
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexScalarQuantity(std::string name, const T& data, DataType type) {
@@ -372,6 +355,11 @@ SurfaceFaceScalarQuantity* SurfaceMesh::addFaceScalarQuantity(std::string name, 
 
 template <class T>
 SurfaceEdgeScalarQuantity* SurfaceMesh::addEdgeScalarQuantity(std::string name, const T& data, DataType type) {
+  if (edgeDataSize == INVALID_IND) {
+    throw std::logic_error(
+        "[polyscope] SurfaceMesh " + name +
+        " attempted to set edge-valued data, but this requires an edge ordering. Call setEdgePermutation().");
+  }
   validateSize(data, edgeDataSize, "edge scalar quantity " + name);
   return addEdgeScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
 }
@@ -419,7 +407,25 @@ SurfaceFaceVectorQuantity* SurfaceMesh::addFaceVectorQuantity2D(std::string name
 
 template <class T>
 SurfaceFaceIntrinsicVectorQuantity* SurfaceMesh::addFaceIntrinsicVectorQuantity(std::string name, const T& vectors,
+                                                                                VectorType vectorType) {
+  validateSize(vectors, faceDataSize, "face intrinsic vector quantity " + name);
+  return addFaceIntrinsicVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), vectorType);
+}
+
+
+template <class T>
+SurfaceVertexIntrinsicVectorQuantity* SurfaceMesh::addVertexIntrinsicVectorQuantity(std::string name, const T& vectors,
+                                                                                    VectorType vectorType) {
+  validateSize(vectors, vertexDataSize, "vertex intrinsic vector quantity " + name);
+  return addVertexIntrinsicVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), vectorType);
+}
+
+template <class T>
+SurfaceFaceIntrinsicVectorQuantity* SurfaceMesh::addFaceIntrinsicVectorQuantity(std::string name, const T& vectors,
                                                                                 int nSym, VectorType vectorType) {
+
+  if (nSym > 1) throw std::invalid_argument("nSym > 1 not allowed, nSym is no longer supported");
+
   validateSize(vectors, faceDataSize, "face intrinsic vector quantity " + name);
   return addFaceIntrinsicVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), nSym, vectorType);
 }
@@ -428,6 +434,9 @@ SurfaceFaceIntrinsicVectorQuantity* SurfaceMesh::addFaceIntrinsicVectorQuantity(
 template <class T>
 SurfaceVertexIntrinsicVectorQuantity* SurfaceMesh::addVertexIntrinsicVectorQuantity(std::string name, const T& vectors,
                                                                                     int nSym, VectorType vectorType) {
+
+  if (nSym > 1) throw std::invalid_argument("nSym > 1 not allowed, nSym is no longer supported");
+
   validateSize(vectors, vertexDataSize, "vertex intrinsic vector quantity " + name);
   return addVertexIntrinsicVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), nSym, vectorType);
 }
@@ -438,6 +447,11 @@ SurfaceVertexIntrinsicVectorQuantity* SurfaceMesh::addVertexIntrinsicVectorQuant
 template <class T, class O>
 SurfaceOneFormIntrinsicVectorQuantity* SurfaceMesh::addOneFormIntrinsicVectorQuantity(std::string name, const T& data,
                                                                                       const O& orientations) {
+  if (edgeDataSize == INVALID_IND) {
+    throw std::logic_error(
+        "[polyscope] SurfaceMesh " + name +
+        " attempted to set edge-valued data, but this requires an edge ordering. Call setEdgePermutation().");
+  }
   validateSize(data, edgeDataSize, "one form intrinsic vector quantity " + name);
   return addOneFormIntrinsicVectorQuantityImpl(name, standardizeArray<double, T>(data),
                                                standardizeArray<char, O>(orientations));

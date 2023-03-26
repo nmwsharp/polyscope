@@ -1,11 +1,17 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
 #pragma once
 
+#include <functional>
+#include <map>
+#include <set>
+#include <unordered_set>
+
 #include "imgui.h"
-#include "polyscope/group.h"
+
 #include "polyscope/internal.h"
+#include "polyscope/group.h"
 #include "polyscope/messages.h"
-#include "polyscope/options.h"
+#include "polyscope/options.h" 
 #include "polyscope/screenshot.h"
 #include "polyscope/slice_plane.h"
 #include "polyscope/structure.h"
@@ -14,10 +20,7 @@
 #include "polyscope/widget.h"
 
 
-#include <functional>
-#include <map>
-#include <set>
-#include <unordered_set>
+#include "polyscope/structure.h"
 
 
 namespace polyscope {
@@ -40,6 +43,9 @@ bool isInitialized();
 // Give control to the polyscope GUI. Blocks until the user returns control via
 // the GUI, possibly by exiting the window.
 void show(size_t forFrames = std::numeric_limits<size_t>::max());
+
+// An alternate method to execute the Polyscope graphical loop. Instead of calling show(), call frameTick() frequently in the user program's loop.
+void frameTick();
 
 // Do shutdown work and de-initialize Polyscope
 void shutdown();
@@ -84,10 +90,6 @@ glm::vec3 center();
 
 // === Manage structures tracked by polyscope
 
-// Register a structure with polyscope
-// Structure name must be a globally unique identifier for the structure.
-bool registerStructure(Structure* structure, bool replaceIfPresent = true);
-
 // Get a reference to a structure that has been registered
 // The default version with name="" arbitrarily returns any structure of that type. This is useful as a shorthand when
 // only using a single structure.
@@ -107,9 +109,9 @@ void removeGroup(std::string name, bool errorIfAbsent = true);
 void removeAllGroups();
 
 // De-register a structure, of any type. Also removes any quantities associated with the structure
-void removeStructure(Structure* structure, bool errorIfAbsent = true);
-void removeStructure(std::string type, std::string name, bool errorIfAbsent = true);
-void removeStructure(std::string name, bool errorIfAbsent = true);
+void removeStructure(Structure* structure, bool errorIfAbsent = false);
+void removeStructure(std::string type, std::string name, bool errorIfAbsent = false);
+void removeStructure(std::string name, bool errorIfAbsent = false);
 
 // De-register all structures, of any type. Also removes any quantities associated with the structure
 void removeAllStructures();
@@ -161,6 +163,7 @@ void buildUserGuiAndInvokeCallback();
 void mainLoopIteration();
 void initializeImGUIContext();
 void drawStructures();
+void drawStructuresDelayed();
 
 // Called to check any options that might have been changed and perform appropriate updates. Users generally should not
 // need to call this directly.

@@ -10,9 +10,6 @@
 #include <fstream>
 #include <iostream>
 
-using std::cout;
-using std::endl;
-
 namespace polyscope {
 
 // Initialize statics
@@ -20,19 +17,34 @@ const std::string CurveNetwork::structureTypeName = "Curve Network";
 
 // Constructor
 CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std::vector<std::array<size_t, 2>> edges_)
-    : QuantityStructure<CurveNetwork>(name, typeName()), nodes(std::move(nodes_)), edges(std::move(edges_)),
-      color(uniquePrefix() + "#color", getNextUniqueColor()), radius(uniquePrefix() + "#radius", relativeValue(0.005)),
+    : // clang-format off
+      QuantityStructure<CurveNetwork>(name, typeName()), 
+      nodePositions(uniquePrefix() + "nodePositions", nodePositionsData),
+      edgeTailInds(uniquePrefix() + "edgeTailInds", edgeTailIndsData),
+      edgeTipInds(uniquePrefix() + "edgeTipInds", edgeTipIndsData),
+      edgeCenters(uniquePrefix() + "edgeCenters", edgeCentersData, std::bind(&CurveNetwork::computeEdgeCenters, this)),         
+      nodePositionsData(std::move(nodes_)), 
+      color(uniquePrefix() + "#color", getNextUniqueColor()), 
+      radius(uniquePrefix() + "#radius", relativeValue(0.005)),
       material(uniquePrefix() + "#material", "clay")
-
+// clang-format on
 {
 
+  // Copy interleaved data in to tip and tails buffers below
+  edgeTailIndsData.resize(edges_.size());
+  edgeTipIndsData.resize(edges_.size());
+
+  // Compute node degrees; some quantities want them for visualizations
   nodeDegrees = std::vector<size_t>(nNodes(), 0);
 
-  size_t maxInd = nodes.size();
-  for (size_t iE = 0; iE < edges.size(); iE++) {
-    auto edge = edges[iE];
+  size_t maxInd = nodePositions.size();
+  for (size_t iE = 0; iE < edges_.size(); iE++) {
+    auto edge = edges_[iE];
     size_t nA = std::get<0>(edge);
     size_t nB = std::get<1>(edge);
+
+    edgeTailIndsData[iE] = nA;
+    edgeTipIndsData[iE] = nB;
 
     // Make sure there are no out of bounds indices
     if (nA >= maxInd || nB >= maxInd) {
@@ -49,6 +61,22 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
   updateObjectSpaceBounds();
 }
 
+float CurveNetwork::computeRadiusMultiplierUniform() {
+  if (nodeRadiusQuantityName != "" && !nodeRadiusQuantityAutoscale) {
+    // special case: ignore radius uniform
+    return 1.;
+  } else {
+    // common case
+
+    float scalarQScale = 1.;
+    if (nodeRadiusQuantityName != "") {
+      CurveNetworkNodeScalarQuantity& radQ = resolveNodeRadiusQuantity();
+      scalarQScale = std::max(0., radQ.getDataRange().second);
+    }
+
+    return getRadius() / scalarQScale;
+  }
+}
 
 // Helper to set uniforms
 void CurveNetwork::setCurveNetworkNodeUniforms(render::ShaderProgram& p) {
@@ -56,11 +84,7 @@ void CurveNetwork::setCurveNetworkNodeUniforms(render::ShaderProgram& p) {
   glm::mat4 Pinv = glm::inverse(P);
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
-  if (nodeRadiusQuantityName != "" && !nodeRadiusQuantityAutoscale) {
-    p.setUniform("u_pointRadius", 1.); // u_pointRadius in sphere shader
-  } else {
-    p.setUniform("u_pointRadius", getRadius());
-  }
+  p.setUniform("u_pointRadius", computeRadiusMultiplierUniform());
 }
 
 void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) {
@@ -68,7 +92,7 @@ void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) {
   glm::mat4 Pinv = glm::inverse(P);
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
-  p.setUniform("u_radius", getRadius());
+  p.setUniform("u_radius", computeRadiusMultiplierUniform());
 }
 
 void CurveNetwork::draw() {
@@ -102,6 +126,22 @@ void CurveNetwork::draw() {
   // Draw the quantities
   for (auto& x : quantities) {
     x.second->draw();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->draw();
+  }
+}
+
+void CurveNetwork::drawDelayed() {
+  if (!isEnabled()) {
+    return;
+  }
+
+  for (auto& x : quantities) {
+    x.second->drawDelayed();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawDelayed();
   }
 }
 
@@ -174,6 +214,8 @@ void CurveNetwork::prepare() {
 }
 
 void CurveNetwork::preparePick() {
+  edgeTailInds.ensureHostBufferPopulated();
+  edgeTipInds.ensureHostBufferPopulated();
 
   // Pick index layout (local indices):
   //   |     --- nodes ---     |      --- edges ---      |
@@ -197,7 +239,6 @@ void CurveNetwork::preparePick() {
       pickColors.push_back(pick::indToVec(i));
     }
 
-
     // Store data in buffers
     nodePickProgram->setAttribute("a_color", pickColors);
 
@@ -216,9 +257,8 @@ void CurveNetwork::preparePick() {
 
     // Fill posiiton and pick index buffers
     for (size_t iE = 0; iE < nEdges(); iE++) {
-      auto& edge = edges[iE];
-      size_t eTail = std::get<0>(edge);
-      size_t eTip = std::get<1>(edge);
+      size_t eTail = edgeTailInds.data[iE];
+      size_t eTip = edgeTipInds.data[iE];
 
       glm::vec3 colorValTail = pick::indToVec(pickStart + eTail);
       glm::vec3 colorValTip = pick::indToVec(pickStart + eTip);
@@ -236,52 +276,45 @@ void CurveNetwork::preparePick() {
 }
 
 void CurveNetwork::fillNodeGeometryBuffers(render::ShaderProgram& program) {
-  program.setAttribute("a_position", nodes);
+  program.setAttribute("a_position", nodePositions.getRenderAttributeBuffer());
 
   if (nodeRadiusQuantityName != "") {
-    // Resolve the quantity
-    std::vector<double> nodeRadiusQuantityVals = resolveNodeRadiusQuantity();
-    program.setAttribute("a_pointRadius", nodeRadiusQuantityVals);
+    CurveNetworkNodeScalarQuantity& nodeRadQ = resolveNodeRadiusQuantity();
+    program.setAttribute("a_pointRadius", nodeRadQ.values.getRenderAttributeBuffer());
   }
 }
 
 void CurveNetwork::fillEdgeGeometryBuffers(render::ShaderProgram& program) {
+  program.setAttribute("a_position_tail", nodePositions.getIndexedRenderAttributeBuffer(edgeTailInds));
+  program.setAttribute("a_position_tip", nodePositions.getIndexedRenderAttributeBuffer(edgeTipInds));
 
-  // Positions at either end of edges
-  std::vector<glm::vec3> posTail(nEdges());
-  std::vector<glm::vec3> posTip(nEdges());
-  for (size_t iE = 0; iE < nEdges(); iE++) {
-    auto& edge = edges[iE];
-    size_t eTail = std::get<0>(edge);
-    size_t eTip = std::get<1>(edge);
-    posTail[iE] = nodes[eTail];
-    posTip[iE] = nodes[eTip];
-  }
-  program.setAttribute("a_position_tail", posTail);
-  program.setAttribute("a_position_tip", posTip);
-
-
-  // blend the cylinder's tip/tail radii from the node radii
   if (nodeRadiusQuantityName != "") {
-    // Resolve the quantity
-    std::vector<double> nodeRadiusQuantityVals = resolveNodeRadiusQuantity();
-    std::vector<double> cylinderTipRadiusQuantityVals(nEdges());
-    std::vector<double> cylinderTailRadiusQuantityVals(nEdges());
-
-    for (size_t iE = 0; iE < nEdges(); iE++) {
-      auto& edge = edges[iE];
-      size_t eTip = std::get<0>(edge);
-      size_t eTail = std::get<1>(edge);
-      cylinderTipRadiusQuantityVals[iE] = nodeRadiusQuantityVals[eTip];
-      cylinderTailRadiusQuantityVals[iE] = nodeRadiusQuantityVals[eTail];
-    }
-
-    program.setAttribute("a_tipRadius", cylinderTipRadiusQuantityVals);
-    program.setAttribute("a_tailRadius", cylinderTailRadiusQuantityVals);
+    CurveNetworkNodeScalarQuantity& nodeRadQ = resolveNodeRadiusQuantity();
+    program.setAttribute("a_tailRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTailInds));
+    program.setAttribute("a_tipRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTipInds));
   }
 }
 
+void CurveNetwork::computeEdgeCenters() {
+  nodePositions.ensureHostBufferPopulated();
+  edgeTailInds.ensureHostBufferPopulated();
+  edgeTipInds.ensureHostBufferPopulated();
+
+  edgeCenters.data.resize(nEdges());
+
+  for (size_t iE = 0; iE < nEdges(); iE++) {
+    size_t eTail = edgeTailInds.data[iE];
+    size_t eTip = edgeTipInds.data[iE];
+    glm::vec3 p = 0.5f * (nodePositions.data[eTail] + nodePositions.data[eTip]);
+    edgeCenters.data[iE] = p;
+  }
+
+  edgeCenters.markHostBufferUpdated();
+}
+
 void CurveNetwork::refresh() {
+  recomputeGeometryIfPopulated();
+
   nodeProgram.reset();
   edgeProgram.reset();
   nodePickProgram.reset();
@@ -290,23 +323,7 @@ void CurveNetwork::refresh() {
   QuantityStructure<CurveNetwork>::refresh(); // call base class version, which refreshes quantities
 }
 
-void CurveNetwork::geometryChanged() {
-
-  if (nodeProgram) {
-    fillNodeGeometryBuffers(*nodeProgram);
-  }
-  if (edgeProgram) {
-    fillEdgeGeometryBuffers(*edgeProgram);
-  }
-  if (nodePickProgram) {
-    fillNodeGeometryBuffers(*nodePickProgram);
-  }
-  if (edgePickProgram) {
-    fillEdgeGeometryBuffers(*edgePickProgram);
-  }
-  requestRedraw();
-  QuantityStructure<CurveNetwork>::refresh();
-}
+void CurveNetwork::recomputeGeometryIfPopulated() { edgeCenters.recomputeIfPopulated(); }
 
 void CurveNetwork::buildPickUI(size_t localPickID) {
 
@@ -323,7 +340,7 @@ void CurveNetwork::buildNodePickUI(size_t nodeInd) {
 
   ImGui::TextUnformatted(("node #" + std::to_string(nodeInd) + "  ").c_str());
   ImGui::SameLine();
-  ImGui::TextUnformatted(to_string(nodes[nodeInd]).c_str());
+  ImGui::TextUnformatted(to_string(nodePositions.getValue(nodeInd)).c_str());
 
   ImGui::Spacing();
   ImGui::Spacing();
@@ -343,8 +360,8 @@ void CurveNetwork::buildNodePickUI(size_t nodeInd) {
 void CurveNetwork::buildEdgePickUI(size_t edgeInd) {
   ImGui::TextUnformatted(("edge #" + std::to_string(edgeInd) + "  ").c_str());
   ImGui::SameLine();
-  size_t n0 = std::get<0>(edges[edgeInd]);
-  size_t n1 = std::get<1>(edges[edgeInd]);
+  size_t n0 = edgeTailInds.getValue(edgeInd);
+  size_t n1 = edgeTipInds.getValue(edgeInd);
   ImGui::TextUnformatted(("  " + std::to_string(n0) + " -- " + std::to_string(n1)).c_str());
 
   ImGui::Spacing();
@@ -378,6 +395,24 @@ void CurveNetwork::buildCustomUI() {
 }
 
 void CurveNetwork::buildCustomOptionsUI() {
+
+  if (ImGui::BeginMenu("Variable Radius")) {
+
+    if (ImGui::MenuItem("none", nullptr, nodeRadiusQuantityName == "")) clearNodeRadiusQuantity();
+    ImGui::Separator();
+
+    for (auto& q : quantities) {
+      CurveNetworkNodeScalarQuantity* scalarQ = dynamic_cast<CurveNetworkNodeScalarQuantity*>(q.second.get());
+      if (scalarQ != nullptr) {
+        if (ImGui::MenuItem(scalarQ->name.c_str(), nullptr, nodeRadiusQuantityName == scalarQ->name))
+          setNodeRadiusQuantity(scalarQ);
+      }
+    }
+
+    ImGui::EndMenu();
+  }
+
+
   if (render::buildMaterialOptionsGui(material.get())) {
     material.manuallyChanged();
     setMaterial(material.get()); // trigger the other updates that happen on set()
@@ -385,10 +420,12 @@ void CurveNetwork::buildCustomOptionsUI() {
 }
 
 void CurveNetwork::updateObjectSpaceBounds() {
+  nodePositions.ensureHostBufferPopulated();
+
   // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
-  for (const glm::vec3& p : nodes) {
+  for (const glm::vec3& p : nodePositions.data) {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
@@ -397,7 +434,7 @@ void CurveNetwork::updateObjectSpaceBounds() {
   // length scale, as twice the radius from the center of the bounding box
   glm::vec3 center = 0.5f * (min + max);
   float lengthScale = 0.0;
-  for (const glm::vec3& p : nodes) {
+  for (const glm::vec3& p : nodePositions.data) {
     lengthScale = std::max(lengthScale, glm::length2(p - center));
   }
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);
@@ -420,7 +457,7 @@ void CurveNetwork::setNodeRadiusQuantity(std::string name, bool autoScale) {
 
   resolveNodeRadiusQuantity(); // do it once, just so we fail fast if it doesn't exist
 
-  refresh(); // TODO this is a bit overkill
+  refresh();
 }
 
 void CurveNetwork::clearNodeRadiusQuantity() {
@@ -448,7 +485,7 @@ std::string CurveNetwork::typeName() { return structureTypeName; }
 // === Quantities
 
 CurveNetworkQuantity::CurveNetworkQuantity(std::string name_, CurveNetwork& curveNetwork_, bool dominates_)
-    : Quantity<CurveNetwork>(name_, curveNetwork_, dominates_) {}
+    : QuantityS<CurveNetwork>(name_, curveNetwork_, dominates_) {}
 
 
 void CurveNetworkQuantity::buildNodeInfoGUI(size_t nodeInd) {}
@@ -502,42 +539,19 @@ CurveNetworkEdgeVectorQuantity* CurveNetwork::addEdgeVectorQuantityImpl(std::str
   return q;
 }
 
-std::vector<double> CurveNetwork::resolveNodeRadiusQuantity() {
-  CurveNetworkScalarQuantity* sizeScalarQ = nullptr;
+CurveNetworkNodeScalarQuantity& CurveNetwork::resolveNodeRadiusQuantity() {
+  CurveNetworkNodeScalarQuantity* sizeScalarQ = nullptr;
   CurveNetworkQuantity* sizeQ = getQuantity(nodeRadiusQuantityName);
   if (sizeQ != nullptr) {
-    sizeScalarQ = dynamic_cast<CurveNetworkScalarQuantity*>(sizeQ);
+    sizeScalarQ = dynamic_cast<CurveNetworkNodeScalarQuantity*>(sizeQ);
     if (sizeScalarQ == nullptr) {
-      polyscope::error("Cannot populate point size from quantity [" + name + "], it is not a scalar quantity");
+      polyscope::error("Cannot populate node size from quantity [" + name + "], it is not a scalar quantity");
     }
   } else {
-    polyscope::error("Cannot populate point size from quantity [" + name + "], it does not exist");
+    polyscope::error("Cannot populate node size from quantity [" + name + "], it does not exist");
   }
 
-  std::vector<double> sizes;
-  if (sizeScalarQ == nullptr || sizeScalarQ->values.size() != nNodes()) {
-    // we failed to resolve above; populate with dummy data so we can continue processing
-    std::vector<double> ones(nNodes(), 1.);
-    sizes = ones;
-    polyscope::error("quantity # != node #");
-  } else {
-    sizes = sizeScalarQ->values;
-  }
-
-  // clamp to nonnegative and autoscale (if requested)
-  double max = 0;
-  for (double& x : sizes) {
-    if (!(x > 0)) x = 0; // ensure all nonnegative
-    max = std::fmax(max, x);
-  }
-  if (max == 0) max = 1e-6;
-  if (nodeRadiusQuantityAutoscale) {
-    for (double& x : sizes) {
-      x /= max;
-    }
-  }
-
-  return sizes;
+  return *sizeScalarQ;
 }
 
 } // namespace polyscope

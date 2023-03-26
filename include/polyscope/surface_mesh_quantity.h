@@ -11,7 +11,7 @@ namespace polyscope {
 class SurfaceMesh;
 
 // Extend Quantity<SurfaceMesh> to add a few extra functions
-class SurfaceMeshQuantity : public Quantity<SurfaceMesh> {
+class SurfaceMeshQuantity : public QuantityS<SurfaceMesh> {
 public:
   SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates = false);
   ~SurfaceMeshQuantity() {};

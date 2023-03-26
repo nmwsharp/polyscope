@@ -10,7 +10,7 @@ namespace polyscope {
 class PointCloud;
 
 // Extend Quantity<PointCloud> to add a few extra functions
-class PointCloudQuantity : public Quantity<PointCloud> {
+class PointCloudQuantity : public QuantityS<PointCloud> {
 public:
   PointCloudQuantity(std::string name, PointCloud& parentStructure, bool dominates = false);
   virtual ~PointCloudQuantity() {};

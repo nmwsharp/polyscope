@@ -13,14 +13,14 @@ const ShaderStageSpecification SLICE_TETS_VERT_SHADER = {
 
     // attributes
     {
-        {"a_point_1", DataType::Vector3Float},
-        {"a_slice_1", DataType::Vector3Float},
-        {"a_point_2", DataType::Vector3Float},
-        {"a_slice_2", DataType::Vector3Float},
-        {"a_point_3", DataType::Vector3Float},
-        {"a_slice_3", DataType::Vector3Float},
-        {"a_point_4", DataType::Vector3Float},
-        {"a_slice_4", DataType::Vector3Float},
+        {"a_point_1", RenderDataType::Vector3Float},
+        {"a_slice_1", RenderDataType::Vector3Float},
+        {"a_point_2", RenderDataType::Vector3Float},
+        {"a_slice_2", RenderDataType::Vector3Float},
+        {"a_point_3", RenderDataType::Vector3Float},
+        {"a_slice_3", RenderDataType::Vector3Float},
+        {"a_point_4", RenderDataType::Vector3Float},
+        {"a_slice_4", RenderDataType::Vector3Float},
     },
 
     {}, // textures
@@ -68,10 +68,10 @@ const ShaderStageSpecification SLICE_TETS_GEOM_SHADER = {
 
     // uniforms
     {
-        {"u_modelView", DataType::Matrix44Float},
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_slicePoint", DataType::Float},
-        {"u_sliceVector", DataType::Vector3Float},
+        {"u_modelView", RenderDataType::Matrix44Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_slicePoint", RenderDataType::Float},
+        {"u_sliceVector", RenderDataType::Vector3Float},
     },
 
     // attributes
@@ -241,7 +241,7 @@ const ShaderReplacementRule SLICE_TETS_BASECOLOR_SHADE(
         )"}},
     /* uniforms */
     {
-        {"u_baseColor1", DataType::Vector3Float},
+        {"u_baseColor1", RenderDataType::Vector3Float},
     },
     /* attributes */ {},
     /* textures */ {});
@@ -285,8 +285,8 @@ const ShaderReplacementRule SLICE_TETS_MESH_WIREFRAME(
     },
     /* uniforms */
     {
-        {"u_edgeColor", DataType::Vector3Float},
-        {"u_edgeWidth", DataType::Float},
+        {"u_edgeColor", RenderDataType::Vector3Float},
+        {"u_edgeWidth", RenderDataType::Float},
     },
     /* attributes */ {},
     /* textures */ {});
@@ -337,10 +337,10 @@ const ShaderReplacementRule SLICE_TETS_PROPAGATE_VECTOR(
     /* uniforms */ {},
     /* attributes */
     {
-        {"a_value_1", DataType::Vector3Float},
-        {"a_value_2", DataType::Vector3Float},
-        {"a_value_3", DataType::Vector3Float},
-        {"a_value_4", DataType::Vector3Float},
+        {"a_value_1", RenderDataType::Vector3Float},
+        {"a_value_2", RenderDataType::Vector3Float},
+        {"a_value_3", RenderDataType::Vector3Float},
+        {"a_value_4", RenderDataType::Vector3Float},
     },
     /* textures */ {});
 
@@ -402,10 +402,10 @@ const ShaderReplacementRule SLICE_TETS_PROPAGATE_VALUE(
     /* uniforms */ {},
     /* attributes */
     {
-        {"a_value_1", DataType::Float},
-        {"a_value_2", DataType::Float},
-        {"a_value_3", DataType::Float},
-        {"a_value_4", DataType::Float},
+        {"a_value_1", RenderDataType::Float},
+        {"a_value_2", RenderDataType::Float},
+        {"a_value_3", RenderDataType::Float},
+        {"a_value_4", RenderDataType::Float},
     },
     /* textures */ {});
 

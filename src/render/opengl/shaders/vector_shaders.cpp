@@ -14,13 +14,13 @@ const ShaderStageSpecification FLEX_VECTOR_VERT_SHADER = {
 
     // uniforms
     {
-        {"u_modelView", DataType::Matrix44Float},
+        {"u_modelView", RenderDataType::Matrix44Float},
     }, 
 
     // attributes
     {
-        {"a_position", DataType::Vector3Float},
-        {"a_vector", DataType::Vector3Float},
+        {"a_position", RenderDataType::Vector3Float},
+        {"a_vector", RenderDataType::Vector3Float},
     },
 
     {}, // textures
@@ -47,15 +47,57 @@ R"(
 )"
 };
 
+const ShaderStageSpecification FLEX_TANGENT_VECTOR_VERT_SHADER = {
+
+    ShaderStageType::Vertex,
+
+    // uniforms
+    {
+        {"u_modelView", RenderDataType::Matrix44Float},
+    }, 
+
+    // attributes
+    {
+        {"a_position", RenderDataType::Vector3Float},
+        {"a_tangentVector", RenderDataType::Vector2Float},
+        {"a_basisVectors", RenderDataType::Vector3Float, 2},
+    },
+
+    {}, // textures
+
+    // source
+R"(
+        ${ GLSL_VERSION }$
+
+        in vec3 a_position;
+        in vec2 a_tangentVector;
+        in vec3 a_basisVectors[2];
+        uniform mat4 u_modelView;
+        out vec4 vector;
+        
+        ${ VERT_DECLARATIONS }$
+        
+
+        void main()
+        {
+            gl_Position = u_modelView * vec4(a_position,1.0);
+            vec3 worldVector = a_tangentVector.x * a_basisVectors[0] + a_tangentVector.y * a_basisVectors[1];
+            vector = u_modelView * vec4(worldVector, .0);
+            
+            ${ VERT_ASSIGNMENTS }$
+        }
+)"
+};
+
 const ShaderStageSpecification FLEX_VECTOR_GEOM_SHADER = {
     
     ShaderStageType::Geometry,
     
     // uniforms
     {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_lengthMult", DataType::Float},
-        {"u_radius", DataType::Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_lengthMult", RenderDataType::Float},
+        {"u_radius", RenderDataType::Float},
     }, 
 
     // attributes
@@ -137,10 +179,10 @@ const ShaderStageSpecification FLEX_VECTOR_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_invProjMatrix", DataType::Matrix44Float},
-        {"u_viewport", DataType::Vector4Float},
-        {"u_radius", DataType::Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_invProjMatrix", RenderDataType::Matrix44Float},
+        {"u_viewport", RenderDataType::Vector4Float},
+        {"u_radius", RenderDataType::Float},
     }, 
 
     { }, // attributes
@@ -184,7 +226,8 @@ R"(
            vec3 pHit = vec3(777,777,777);
            vec3 nHit =  vec3(777,777,777);
            vec3 cylEnd = tailView + (1. - tipLengthFrac) * (tipView - tailView);
-           rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, cylEnd, tipWidthFrac * adjRadius, tHit, pHit, nHit);
+           float cylRad = tipWidthFrac * adjRadius;
+           rayCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, cylEnd, cylRad, tHit, pHit, nHit);
            
            // Raycast to cone
            float tHitCone;
@@ -255,7 +298,7 @@ const ShaderReplacementRule VECTOR_PROPAGATE_COLOR (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_color", DataType::Vector3Float},
+      {"a_color", RenderDataType::Vector3Float},
     },
     /* textures */ {}
 );

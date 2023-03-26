@@ -17,6 +17,7 @@
 #include "json/json.hpp"
 using json = nlohmann::json;
 
+#include "backends/imgui_impl_opengl3.h"
 
 namespace polyscope {
 
@@ -45,6 +46,7 @@ float lastWindowHeightUser = 200;
 float leftWindowsWidth = 305;
 float rightWindowsWidth = 500;
 
+auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 
 const std::string prefsFilename = ".polyscope.ini";
 
@@ -81,7 +83,7 @@ void readPrefsFile() {
   }
   // We never really care if something goes wrong while loading preferences, so eat all exceptions
   catch (...) {
-    polyscope::warning("Parsing of prefs file failed");
+    polyscope::warning("Parsing of prefs file .polyscope.ini failed");
   }
 }
 
@@ -140,8 +142,10 @@ void init(std::string backend) {
   // Initialie ImGUI
   IMGUI_CHECKVERSION();
   render::engine->initializeImGui();
-  // push a fake context which will never be used (but dodges some invalidation issues)
-  contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr, false});
+
+  // Create an initial context based context. Note that calling show() never actually uses this context, because it
+  // pushes a new one each time. But using frameTick() may use this context.
+  contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr, true});
 
   view::invalidateView();
 
@@ -188,6 +192,19 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   size_t currentContextStackSize = contextStack.size();
   while (contextStack.size() >= currentContextStackSize) {
 
+    // The windowing system will let the main loop busy-loop on some platforms. Make sure that doesn't happen.
+    if (options::maxFPS != -1) {
+      auto currTime = std::chrono::steady_clock::now();
+      long microsecPerLoop = 1000000 / options::maxFPS;
+      microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
+      while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
+             microsecPerLoop) {
+        std::this_thread::yield();
+        currTime = std::chrono::steady_clock::now();
+      }
+    }
+    lastMainLoopIterTime = std::chrono::steady_clock::now();
+
     mainLoopIteration();
 
     // auto-exit if the window is closed
@@ -218,6 +235,19 @@ void popContext() {
 
 ImGuiContext* getCurrentContext() { return contextStack.empty() ? nullptr : contextStack.back().context; }
 
+void frameTick() {
+
+  // Make sure we're initialized
+  if (!state::initialized) {
+    throw std::logic_error(options::printPrefix +
+                           "must initialize Polyscope with polyscope::init() before calling polyscope::frameTick().");
+  }
+
+  render::engine->showWindow();
+
+  mainLoopIteration();
+}
+
 void requestRedraw() { redrawNextFrame = true; }
 bool redrawRequested() { return redrawNextFrame; }
 
@@ -227,10 +257,6 @@ void drawStructures() {
 
   for (auto catMap : state::structures) {
     for (auto s : catMap.second) {
-      // make sure the right settings are active
-      // render::engine->setDepthMode();
-      // render::engine->applyTransparencySettings();
-
       s.second->draw();
     }
   }
@@ -238,6 +264,16 @@ void drawStructures() {
   // Also render any slice plane geometry
   for (SlicePlane* s : state::slicePlanes) {
     s->drawGeometry();
+  }
+}
+
+void drawStructuresDelayed() {
+  // "delayed" drawing allows structures to render things which should be rendered after most of the scene has been
+  // drawn
+  for (auto catMap : state::structures) {
+    for (auto s : catMap.second) {
+      s.second->drawDelayed();
+    }
   }
 }
 
@@ -416,6 +452,8 @@ void renderScene() {
       if (!isRedraw) {
         // Only on first pass (kinda weird, but works out, and doesn't really matter)
         renderSlicePlanes();
+        render::engine->applyTransparencySettings();
+        drawStructuresDelayed();
       }
 
       // Composite the result of this pass in to the result buffer
@@ -431,12 +469,15 @@ void renderScene() {
 
   } else {
     // Normal case: single render pass
-    render::engine->applyTransparencySettings();
 
+    render::engine->applyTransparencySettings();
     drawStructures();
 
     render::engine->groundPlane.draw();
     renderSlicePlanes();
+
+    render::engine->applyTransparencySettings();
+    drawStructuresDelayed();
 
     render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
   }
@@ -452,8 +493,6 @@ void renderSceneToScreen() {
     render::engine->applyLightingTransform(render::engine->sceneColorFinal);
   }
 }
-
-auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 
 } // namespace
 
@@ -532,6 +571,11 @@ void buildPolyscopeGui() {
   // Debug options tree
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Debug")) {
+
+    // fps
+    ImGui::Text("Rolling: %.1f ms/frame (%.1f fps)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::Text("Last: %.1f ms/frame (%.1f fps)", ImGui::GetIO().DeltaTime * 1000.f, 1.f / ImGui::GetIO().DeltaTime);
+
     if (ImGui::Button("Force refresh")) {
       refresh();
     }
@@ -547,8 +591,6 @@ void buildPolyscopeGui() {
     ImGui::TreePop();
   }
 
-  // fps
-  ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
   lastWindowHeightPolyscope = imguiStackMargin + ImGui::GetWindowHeight();
   leftWindowsWidth = ImGui::GetWindowWidth();
@@ -630,6 +672,7 @@ void buildPickGui() {
 void buildUserGuiAndInvokeCallback() {
 
   if (!options::invokeUserCallbackForNestedShow && contextStack.size() > 2) {
+    // NOTE: this may have funky interactions with manually calling frameTick()
     return;
   }
 
@@ -726,19 +769,6 @@ void draw(bool withUI, bool withContextCallback) {
 void mainLoopIteration() {
 
   processLazyProperties();
-
-  // The windowing system will let this busy-loop in some situations, unfortunately. Make sure that doesn't happen.
-  if (options::maxFPS != -1) {
-    auto currTime = std::chrono::steady_clock::now();
-    long microsecPerLoop = 1000000 / options::maxFPS;
-    microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
-    while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
-           microsecPerLoop) {
-      std::this_thread::yield();
-      currTime = std::chrono::steady_clock::now();
-    }
-  }
-  lastMainLoopIterTime = std::chrono::steady_clock::now();
 
   render::engine->makeContextCurrent();
   render::engine->updateWindowSize();
@@ -1007,6 +1037,9 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
 
   // Structure exists, remove it
   Structure* s = sMap[name];
+  if (static_cast<void*>(s) == static_cast<void*>(internal::globalFloatingQuantityStructure)) {
+    internal::globalFloatingQuantityStructure = nullptr;
+  }
   // remove it from all existing groups
   for (auto& g : state::groups) {
     g.second->removeChildStructure(s);
@@ -1174,6 +1207,9 @@ void updateStructureExtents() {
 
   for (auto cat : state::structures) {
     for (auto x : cat.second) {
+      if (!x.second->hasExtents()) {
+        continue;
+      }
       state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
       auto bbox = x.second->boundingBox();
       minBbox = componentwiseMin(minBbox, std::get<0>(bbox));

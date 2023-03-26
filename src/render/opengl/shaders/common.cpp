@@ -197,7 +197,7 @@ bool rayDiskIntersection(vec3 rayStart, vec3 rayDir, vec3 planePos, vec3 planeDi
   return true;
 }
 
-bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylTipRad, float cylTailRad, out float tHit, out vec3 pHit, out vec3 nHit) {
+bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit) {
     
     rayDir = normalize(rayDir);
     float cylLen = max(length(cylTip - cylTail), 1e-6);
@@ -209,7 +209,7 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
     vec3 pVec = o - dot(o, cylDir)*cylDir;
     float a = length2(qVec);
     float b = 2.0 * dot(qVec, pVec);
-    float c = length2(pVec) - cylTipRad*cylTailRad; // not sure about here. What are we doing in this section? Need comment for the root-solving.
+    float c = length2(pVec) - cylRad*cylRad;
     float disc = b*b - 4*a*c;
     if(disc < 0){
       tHit = LARGE_FLOAT();
@@ -240,7 +240,7 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
     float tHitTail;
     vec3 pHitTail;
     vec3 nHitTail;
-    rayDiskIntersection(rayStart, rayDir, cylTail, -cylDir, cylTipRad, tHitTail, pHitTail, nHitTail);
+    rayDiskIntersection(rayStart, rayDir, cylTail, -cylDir, cylRad, tHitTail, pHitTail, nHitTail);
     if(tHitTail < tHit) {
       tHit = tHitTail;
       pHit = pHitTail;
@@ -251,7 +251,85 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
     float tHitTip;
     vec3 pHitTip;
     vec3 nHitTip;
-    rayDiskIntersection(rayStart, rayDir, cylTip, cylDir, cylTailRad, tHitTip, pHitTip, nHitTip);
+    rayDiskIntersection(rayStart, rayDir, cylTip, cylDir, cylRad, tHitTip, pHitTip, nHitTip);
+    if(tHitTip < tHit) {
+      tHit = tHitTip;
+      pHit = pHitTip;
+      nHit = nHitTip;
+    }
+
+    return tHit >= 0;
+}
+
+bool rayTaperedCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRadTail, float cylRadTip, out float tHit, out vec3 pHit, out vec3 nHit) {
+    
+    rayDir = normalize(rayDir);
+    float cylLen = max(length(cylTip - cylTail), 1e-6);
+    vec3 cylDir = (cylTip - cylTail) / cylLen;
+
+    // use notation from the blog post
+    vec3 p = rayStart;
+    vec3 r = rayDir;
+    vec3 c0 = cylTail;
+    vec3 c1 = cylTip;
+    float l0 = cylRadTail;
+    float l1 = cylRadTip;
+    vec3 cHat = cylDir;
+
+    vec3 alpha = p - c0 - cHat * dot(cHat, p - c0);
+    vec3 beta = r - cHat * dot(cHat, r);
+    float lcoef = (l1 - l0) / length(c1 - c0);
+    float gamma = l0 + lcoef * dot(cHat, p-c0);
+    float delta = lcoef * dot(cHat,r);
+
+    float a = dot(beta, beta) - delta*delta;
+    float b = 2 * dot(alpha, beta) - 2*gamma*delta;
+    float c = dot(alpha, alpha) - gamma*gamma;
+
+    float disc = b*b - 4*a*c;
+    if(disc < 0){
+      tHit = LARGE_FLOAT();
+      pHit = vec3(777, 777, 777);
+      nHit = vec3(777, 777, 777);
+      return false;
+    } 
+
+    // Compute intersection with infinite cylinder
+    tHit = (-b - sqrt(disc)) / (2.0*a);
+    if(tHit < 0) tHit = (-b + sqrt(disc)) / (2.0*a); // try second intersection
+    if(tHit < 0) {
+      tHit = LARGE_FLOAT();
+      pHit = vec3(777, 777, 777);
+      nHit = vec3(777, 777, 777);
+      return false;
+    }
+    pHit = rayStart + tHit * rayDir;
+    nHit = pHit - cylTail;
+    nHit = normalize(nHit - dot(cylDir, nHit)*cylDir); 
+    // (seems to look better without this, either it's wrong or there's some perceptual thing going no)
+    // nHit = normalize(nHit + lcoef * cylDir); // account for the slope of the cylinder due to different cap sizes
+
+    // Check if intersection was outside finite cylinder
+    if(dot(cylDir, pHit - cylTail) < 0 || dot(-cylDir, pHit - cylTip) < 0) {
+      tHit = LARGE_FLOAT();
+    }
+    
+    // Test start endcap
+    float tHitTail;
+    vec3 pHitTail;
+    vec3 nHitTail;
+    rayDiskIntersection(rayStart, rayDir, cylTail, -cylDir, cylRadTail, tHitTail, pHitTail, nHitTail);
+    if(tHitTail < tHit) {
+      tHit = tHitTail;
+      pHit = pHitTail;
+      nHit = nHitTail;
+    }
+
+    // Test end endcap
+    float tHitTip;
+    vec3 pHitTip;
+    vec3 nHitTip;
+    rayDiskIntersection(rayStart, rayDir, cylTip, cylDir, cylRadTip, tHitTip, pHitTip, nHitTip);
     if(tHitTip < tHit) {
       tHit = tHitTip;
       pHit = pHitTip;

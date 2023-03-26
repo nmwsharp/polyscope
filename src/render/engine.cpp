@@ -1,4 +1,5 @@
 // Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+
 #include "polyscope/render/engine.h"
 
 #include "polyscope/polyscope.h"
@@ -28,6 +29,51 @@ int dimension(const TextureFormat& x) {
   throw std::runtime_error("bad enum");
 }
 
+std::string renderDataTypeName(const RenderDataType& r) {
+  switch (r) {
+  case RenderDataType::Vector2Float:
+    return "Vector2Float";
+  case RenderDataType::Vector3Float:
+    return "Vector3Float";
+  case RenderDataType::Vector4Float:
+    return "Vector4Float";
+  case RenderDataType::Matrix44Float:
+    return "Matrix44Float";
+  case RenderDataType::Float:
+    return "Float";
+  case RenderDataType::Int:
+    return "Int";
+  case RenderDataType::UInt:
+    return "UInt";
+  case RenderDataType::Index:
+    return "Index";
+  case RenderDataType::Vector2UInt:
+    return "Vector2UInt";
+  case RenderDataType::Vector3UInt:
+    return "Vector3UInt";
+  case RenderDataType::Vector4UInt:
+    return "Vector4UInt";
+  }
+  return "";
+}
+
+int renderDataTypeCountCompatbility(const RenderDataType r1, const RenderDataType r2) {
+
+  if (r1 == r2) return 1;
+
+  if (r1 == RenderDataType::Vector2Float && r2 == RenderDataType::Float) return 2;
+  if (r1 == RenderDataType::Vector3Float && r2 == RenderDataType::Float) return 3;
+  if (r1 == RenderDataType::Vector4Float && r2 == RenderDataType::Float) return 4;
+
+  if (r1 == RenderDataType::Vector2UInt && r2 == RenderDataType::UInt) return 2;
+  if (r1 == RenderDataType::Vector3UInt && r2 == RenderDataType::UInt) return 3;
+  if (r1 == RenderDataType::Vector4UInt && r2 == RenderDataType::UInt) return 4;
+
+  // there are other combinations of types which could be compatible, we don't handle them yet
+  //
+  return 0;
+}
+
 std::string modeName(const TransparencyMode& m) {
   switch (m) {
   case TransparencyMode::None:
@@ -40,11 +86,27 @@ std::string modeName(const TransparencyMode& m) {
   return "";
 }
 
+std::string getImageOriginRule(ImageOrigin imageOrigin) {
+  switch (imageOrigin) {
+  case ImageOrigin::UpperLeft:
+    return "TEXTURE_ORIGIN_UPPERLEFT";
+    break;
+  case ImageOrigin::LowerLeft:
+    return "TEXTURE_ORIGIN_LOWERLEFT";
+    break;
+  }
+  return "";
+}
 
 namespace render {
 
+AttributeBuffer::AttributeBuffer(RenderDataType dataType_, int arrayCount_)
+    : dataType(dataType_), arrayCount(arrayCount_), uniqueID(render::engine->getNextUniqueID()) {}
+
+AttributeBuffer::~AttributeBuffer() {}
+
 TextureBuffer::TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_)
-    : dim(dim_), format(format_), sizeX(sizeX_), sizeY(sizeY_) {
+    : dim(dim_), format(format_), sizeX(sizeX_), sizeY(sizeY_), uniqueID(render::engine->getNextUniqueID()) {
   if (sizeX > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
   if (dim > 1 && sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
 }
@@ -73,7 +135,7 @@ unsigned int TextureBuffer::getTotalSize() const {
 }
 
 RenderBuffer::RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_)
-    : type(type_), sizeX(sizeX_), sizeY(sizeY_) {
+    : type(type_), sizeX(sizeX_), sizeY(sizeY_), uniqueID(render::engine->getNextUniqueID()) {
   if (sizeX > (1 << 22) || sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid renderbuffer dimensions");
 }
 
@@ -82,7 +144,7 @@ void RenderBuffer::resize(unsigned int newX, unsigned int newY) {
   sizeY = newY;
 }
 
-FrameBuffer::FrameBuffer() {}
+FrameBuffer::FrameBuffer() : uniqueID(render::engine->getNextUniqueID()) {}
 
 void FrameBuffer::setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
   viewportX = startX;
@@ -131,7 +193,7 @@ ShaderReplacementRule::ShaderReplacementRule(std::string ruleName_,
     : ruleName(ruleName_), replacements(replacements_), uniforms(uniforms_), attributes(attributes_),
       textures(textures_) {}
 
-ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm) : drawMode(dm) {
+ShaderProgram::ShaderProgram(DrawMode dm) : drawMode(dm), uniqueID(render::engine->getNextUniqueID()) {
 
   drawMode = dm;
   if (dm == DrawMode::IndexedLines || dm == DrawMode::IndexedLineStrip || dm == DrawMode::IndexedLineStripAdjacency ||
@@ -214,7 +276,6 @@ void Engine::buildEngineGui() {
                          ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
       ImGui::SliderFloat("gamma", &gamma, 0.5, 3.0, "%.3f",
                          ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
-
       ImGui::TreePop();
     }
 
@@ -603,6 +664,26 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     loadDefaultMaterials();
     loadDefaultColorMaps();
   }
+}
+
+uint64_t Engine::getNextUniqueID() {
+  uint64_t thisID = uniqueID;
+  uniqueID++;
+  return thisID;
+}
+
+void Engine::pushBindFramebufferForRendering(FrameBuffer& f) {
+  if (currRenderFramebuffer == nullptr)
+    throw std::runtime_error("tried to push current framebuff on to stack, but it is null");
+  renderFramebufferStack.push_back(currRenderFramebuffer);
+  f.bindForRendering();
+}
+
+void Engine::popBindFramebufferForRendering() {
+  if (renderFramebufferStack.empty())
+    throw std::runtime_error("called popBindFramebufferForRendering() on empty stack. Forgot to push?");
+  renderFramebufferStack.back()->bindForRendering();
+  renderFramebufferStack.pop_back();
 }
 
 void Engine::addSlicePlane(std::string uniquePostfix) {

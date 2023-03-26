@@ -8,6 +8,7 @@ namespace backend_openGL3_glfw {
 
 // High level pipeline
 extern const ShaderStageSpecification FLEX_VECTOR_VERT_SHADER;
+extern const ShaderStageSpecification FLEX_TANGENT_VECTOR_VERT_SHADER;
 extern const ShaderStageSpecification FLEX_VECTOR_GEOM_SHADER;
 extern const ShaderStageSpecification FLEX_VECTOR_FRAG_SHADER;
 

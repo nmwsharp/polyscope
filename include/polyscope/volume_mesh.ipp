@@ -8,10 +8,10 @@ VolumeMesh* registerTetMesh(std::string name, const V& vertexPositions, const F&
   checkInitialized();
 
   // Standardize the array, and pad out extra indices with -1 for our representation
-  std::vector<std::array<int64_t, 8>> tetIndsArr = standardizeVectorArray<std::array<int64_t, 8>, 4>(tetIndices);
+  std::vector<std::array<uint32_t, 8>> tetIndsArr = standardizeVectorArray<std::array<uint32_t, 8>, 4>(tetIndices);
   for (size_t iC = 0; iC < tetIndsArr.size(); iC++) {
     for (size_t j = 4; j < 8; j++) {
-      tetIndsArr[iC][j] = -1;
+      tetIndsArr[iC][j] = INVALID_IND_32;
     }
   }
 
@@ -29,9 +29,9 @@ VolumeMesh* registerTetMesh(std::string name, const V& vertexPositions, const F&
 template <class V, class F>
 VolumeMesh* registerHexMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
   checkInitialized();
-  
+
   VolumeMesh* s = new VolumeMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
-                                 standardizeVectorArray<std::array<int64_t, 8>, 8>(faceIndices));
+                                 standardizeVectorArray<std::array<uint32_t, 8>, 8>(faceIndices));
 
   bool success = registerStructure(s);
   if (!success) {
@@ -44,9 +44,9 @@ VolumeMesh* registerHexMesh(std::string name, const V& vertexPositions, const F&
 template <class V, class F>
 VolumeMesh* registerVolumeMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
   checkInitialized();
-  
+
   VolumeMesh* s = new VolumeMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
-                                 standardizeVectorArray<std::array<int64_t, 8>, 8>(faceIndices));
+                                 standardizeVectorArray<std::array<uint32_t, 8>, 8>(faceIndices));
 
   bool success = registerStructure(s);
   if (!success) {
@@ -61,13 +61,13 @@ VolumeMesh* registerTetHexMesh(std::string name, const V& vertexPositions, const
   checkInitialized();
 
   // Standardize the array, and pad out extra indices with -1 for our representation
-  std::vector<std::array<int64_t, 8>> tetIndsArr = standardizeVectorArray<std::array<int64_t, 8>, 4>(tetIndices);
+  std::vector<std::array<uint32_t, 8>> tetIndsArr = standardizeVectorArray<std::array<uint32_t, 8>, 4>(tetIndices);
   for (size_t iC = 0; iC < tetIndsArr.size(); iC++) {
     for (size_t j = 4; j < 8; j++) {
-      tetIndsArr[iC][j] = -1;
+      tetIndsArr[iC][j] = INVALID_IND_32;
     }
   }
-  std::vector<std::array<int64_t, 8>> hexIndsArr = standardizeVectorArray<std::array<int64_t, 8>, 8>(hexIndices);
+  std::vector<std::array<uint32_t, 8>> hexIndsArr = standardizeVectorArray<std::array<uint32_t, 8>, 8>(hexIndices);
 
   // combine the arrays
   tetIndsArr.insert(tetIndsArr.end(), hexIndsArr.begin(), hexIndsArr.end());
@@ -85,9 +85,9 @@ VolumeMesh* registerTetHexMesh(std::string name, const V& vertexPositions, const
 
 template <class V>
 void VolumeMesh::updateVertexPositions(const V& newPositions) {
-  vertices = standardizeVectorArray<glm::vec3, 3>(newPositions);
-
-  // Rebuild any necessary quantities
+  validateSize(newPositions, nVertices(), "newPositions");
+  vertexPositions.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  vertexPositions.markHostBufferUpdated();
   geometryChanged();
 }
 
@@ -129,26 +129,26 @@ inline std::ostream& operator<<(std::ostream& out, const VolumeMeshElement value
 
 template <class T>
 VolumeMeshVertexColorQuantity* VolumeMesh::addVertexColorQuantity(std::string name, const T& colors) {
-  validateSize<T>(colors, vertexDataSize, "vertex color quantity " + name);
+  validateSize<T>(colors, nVertices(), "vertex color quantity " + name);
   return addVertexColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(colors));
 }
 
 
 template <class T>
 VolumeMeshCellColorQuantity* VolumeMesh::addCellColorQuantity(std::string name, const T& colors) {
-  validateSize<T>(colors, cellDataSize, "cell color quantity " + name);
+  validateSize<T>(colors, nCells(), "cell color quantity " + name);
   return addCellColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(colors));
 }
 
 template <class T>
 VolumeMeshVertexScalarQuantity* VolumeMesh::addVertexScalarQuantity(std::string name, const T& data, DataType type) {
-  validateSize(data, vertexDataSize, "vertex scalar quantity " + name);
+  validateSize(data, nVertices(), "vertex scalar quantity " + name);
   return addVertexScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
 }
 
 template <class T>
 VolumeMeshCellScalarQuantity* VolumeMesh::addCellScalarQuantity(std::string name, const T& data, DataType type) {
-  validateSize(data, cellDataSize, "cell scalar quantity " + name);
+  validateSize(data, nCells(), "cell scalar quantity " + name);
   return addCellScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
 }
 
@@ -156,14 +156,14 @@ VolumeMeshCellScalarQuantity* VolumeMesh::addCellScalarQuantity(std::string name
 template <class T>
 VolumeMeshVertexVectorQuantity* VolumeMesh::addVertexVectorQuantity(std::string name, const T& vectors,
                                                                     VectorType vectorType) {
-  validateSize(vectors, vertexDataSize, "vertex vector quantity " + name);
+  validateSize(vectors, nVertices(), "vertex vector quantity " + name);
   return addVertexVectorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(vectors), vectorType);
 }
 
 template <class T>
 VolumeMeshCellVectorQuantity* VolumeMesh::addCellVectorQuantity(std::string name, const T& vectors,
                                                                 VectorType vectorType) {
-  validateSize(vectors, cellDataSize, "cell vector quantity " + name);
+  validateSize(vectors, nCells(), "cell vector quantity " + name);
   return addCellVectorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(vectors), vectorType);
 }
 

@@ -14,15 +14,15 @@ const ShaderStageSpecification FLEX_MESH_VERT_SHADER = {
 
     // uniforms
     {
-        {"u_modelView", DataType::Matrix44Float},
-        {"u_projMatrix", DataType::Matrix44Float},
+        {"u_modelView", RenderDataType::Matrix44Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
     }, 
 
     // attributes
     {
-        {"a_position", DataType::Vector3Float},
-        {"a_normal", DataType::Vector3Float},
-        {"a_barycoord", DataType::Vector3Float},
+        {"a_vertexPositions", RenderDataType::Vector3Float},
+        {"a_vertexNormals", RenderDataType::Vector3Float},
+        {"a_barycoord", RenderDataType::Vector3Float},
     },
 
     {}, // textures
@@ -33,18 +33,22 @@ R"(
 
         uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
-        in vec3 a_position;
-        in vec3 a_normal;
+        
+        in uint a_faceInds;
+        
+        in vec3 a_vertexPositions;
+        in vec3 a_vertexNormals;
         in vec3 a_barycoord;
         out vec3 a_barycoordToFrag;
-        out vec3 a_normalToFrag;
+        out vec3 a_vertexNormalToFrag;
         
         ${ VERT_DECLARATIONS }$
         
         void main()
         {
-            gl_Position = u_projMatrix * u_modelView * vec4(a_position,1.);
-            a_normalToFrag = mat3(u_modelView) * a_normal;
+            gl_Position = u_projMatrix * u_modelView * vec4(a_vertexPositions,1.);
+            
+            a_vertexNormalToFrag = mat3(u_modelView) * a_vertexNormals;
             a_barycoordToFrag = a_barycoord;
 
             ${ VERT_ASSIGNMENTS }$
@@ -69,8 +73,9 @@ const ShaderStageSpecification FLEX_MESH_FRAG_SHADER = {
     // source
 R"(
         ${ GLSL_VERSION }$
-        in vec3 a_normalToFrag;
+        in vec3 a_vertexNormalToFrag;
         in vec3 a_barycoordToFrag;
+
         layout(location = 0) out vec4 outputF;
 
         ${ FRAG_DECLARATIONS }$
@@ -89,7 +94,7 @@ R"(
            ${ APPLY_WIREFRAME }$
 
            // Lighting
-           vec3 shadeNormal = a_normalToFrag;
+           vec3 shadeNormal = a_vertexNormalToFrag;
            ${ PERTURB_SHADE_NORMAL }$
            ${ GENERATE_LIT_COLOR }$
 
@@ -97,10 +102,6 @@ R"(
            float alphaOut = 1.0;
            ${ GENERATE_ALPHA }$
            
-           // silly dummy usage to ensure normal and barycoords are always used; otherwise we get errors
-           float dummyVal = a_normalToFrag.x + a_barycoordToFrag.x;
-           alphaOut = alphaOut + dummyVal * (1e-12);
-
            ${ PERTURB_LIT_COLOR }$
 
            // Write output
@@ -134,11 +135,11 @@ const ShaderReplacementRule MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE (
         )"}
     },
     /* uniforms */ {
-      {"u_baseColor1", DataType::Vector3Float},
-      {"u_baseColor2", DataType::Vector3Float},
+      {"u_baseColor1", RenderDataType::Vector3Float},
+      {"u_baseColor2", RenderDataType::Vector3Float},
     },
     /* attributes */ {
-      {"a_faceColorType", DataType::Float},
+      {"a_faceColorType", RenderDataType::Float},
     },
     /* textures */ {}
 );
@@ -162,7 +163,7 @@ const ShaderReplacementRule MESH_PROPAGATE_VALUE (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_value", DataType::Float},
+      {"a_value", RenderDataType::Float},
     },
     /* textures */ {}
 );
@@ -192,7 +193,7 @@ const ShaderReplacementRule MESH_PROPAGATE_HALFEDGE_VALUE (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_value3", DataType::Vector3Float},
+      {"a_value3", RenderDataType::Vector3Float},
     },
     /* textures */ {}
 );
@@ -216,7 +217,7 @@ const ShaderReplacementRule MESH_PROPAGATE_COLOR (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_color", DataType::Vector3Float},
+      {"a_color", RenderDataType::Vector3Float},
     },
     /* textures */ {}
 );
@@ -240,7 +241,7 @@ const ShaderReplacementRule MESH_PROPAGATE_VALUE2 (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_value2", DataType::Vector2Float},
+      {"a_value2", RenderDataType::Vector2Float},
     },
     /* textures */ {}
 );
@@ -264,7 +265,7 @@ const ShaderReplacementRule MESH_PROPAGATE_CULLPOS (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_cullPos", DataType::Vector3Float},
+      {"a_cullPos", RenderDataType::Vector3Float},
     },
     /* textures */ {}
 );
@@ -306,12 +307,47 @@ const ShaderReplacementRule MESH_WIREFRAME(
       )"},
     },
     /* uniforms */ {
-      {"u_edgeColor", DataType::Vector3Float},
-      {"u_edgeWidth", DataType::Float},
+      {"u_edgeColor", RenderDataType::Vector3Float},
+      {"u_edgeWidth", RenderDataType::Float},
     },
     /* attributes */ {
-      {"a_edgeIsReal", DataType::Vector3Float},
+      {"a_edgeIsReal", RenderDataType::Vector3Float},
     },
+    /* textures */ {}
+);
+
+const ShaderReplacementRule MESH_WIREFRAME_ONLY( 
+    // Must always be used in conjunction with MESH_WIREFRAME
+    /* rule name */ "MESH_WIREFRAME_ONLY",
+    { /* replacement sources */
+      {"GENERATE_ALPHA", R"(
+          alphaOut *= edgeFactor;
+      )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule MESH_COMPUTE_NORMAL_FROM_POSITION (
+    /* rule name */ "MESH_COMPUTE_NORMAL_FROM_POSITION",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+        uniform mat4 u_invProjMatrix;
+        uniform vec4 u_viewport;
+        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
+        )"},
+      {"PERTURB_SHADE_NORMAL", R"(
+        vec2 depthRange_fornormal = vec2(gl_DepthRange.near, gl_DepthRange.far);
+        vec3 viewPos_fornormal = fragmentViewPosition(u_viewport, depthRange_fornormal, u_invProjMatrix, gl_FragCoord);
+        shadeNormal = normalize(cross(dFdx(viewPos_fornormal),dFdy(viewPos_fornormal)));
+        )"}
+    },
+    /* uniforms */ {
+        {"u_invProjMatrix", RenderDataType::Matrix44Float},
+        {"u_viewport", RenderDataType::Vector4Float},
+    },
+    /* attributes */ {},
     /* textures */ {}
 );
 
@@ -328,6 +364,8 @@ const ShaderReplacementRule MESH_BACKFACE_NORMAL_FLIP (
     /* attributes */ {},
     /* textures */ {}
 );
+
+
 
 const ShaderReplacementRule MESH_BACKFACE_DARKEN (
     /* rule name */ "MESH_BACKFACE_DARKEN",
@@ -358,7 +396,7 @@ const ShaderReplacementRule MESH_BACKFACE_DIFFERENT (
     },
     /* uniforms */ 
     {
-      {"u_backfaceColor", DataType::Vector3Float}
+      {"u_backfaceColor", RenderDataType::Vector3Float}
     },
     /* attributes */ {},
     /* textures */ {}
@@ -428,10 +466,10 @@ const ShaderReplacementRule MESH_PROPAGATE_PICK (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_vertexColors", DataType::Vector3Float, 3},
-      {"a_edgeColors", DataType::Vector3Float, 3},
-      {"a_halfedgeColors", DataType::Vector3Float, 3},
-      {"a_faceColor", DataType::Vector3Float},
+      {"a_vertexColors", RenderDataType::Vector3Float, 3},
+      {"a_edgeColors", RenderDataType::Vector3Float, 3},
+      {"a_halfedgeColors", RenderDataType::Vector3Float, 3},
+      {"a_faceColor", RenderDataType::Vector3Float},
     },
     /* textures */ {}
 );

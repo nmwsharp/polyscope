@@ -16,7 +16,7 @@ namespace render {
 bool buildColormapSelector(std::string& cm, std::string fieldName) {
   bool changed = false;
 
-  ImGui::PushItemWidth(100);
+  ImGui::PushItemWidth(125);
 
   if (ImGui::BeginCombo(fieldName.c_str(), cm.c_str())) {
     for (auto& c : render::engine->colorMaps) {

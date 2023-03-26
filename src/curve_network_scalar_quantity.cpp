@@ -83,22 +83,12 @@ void CurveNetworkNodeScalarQuantity::createProgram() {
   parent.fillEdgeGeometryBuffers(*edgeProgram);
 
   { // Fill node color buffers
-    nodeProgram->setAttribute("a_value", values);
+    nodeProgram->setAttribute("a_value", values.getRenderAttributeBuffer());
   }
 
   { // Fill edge color buffers
-    std::vector<double> valueTail(parent.nEdges());
-    std::vector<double> valueTip(parent.nEdges());
-    for (size_t iE = 0; iE < parent.nEdges(); iE++) {
-      auto& edge = parent.edges[iE];
-      size_t eTail = std::get<0>(edge);
-      size_t eTip = std::get<1>(edge);
-      valueTail[iE] = values[eTail];
-      valueTip[iE] = values[eTip];
-    }
-
-    edgeProgram->setAttribute("a_value_tail", valueTail);
-    edgeProgram->setAttribute("a_value_tip", valueTip);
+    edgeProgram->setAttribute("a_value_tail", values.getIndexedRenderAttributeBuffer(parent.edgeTailInds));
+    edgeProgram->setAttribute("a_value_tip", values.getIndexedRenderAttributeBuffer(parent.edgeTipInds));
   }
 
   edgeProgram->setTextureFromColormap("t_colormap", cMap.get());
@@ -111,7 +101,7 @@ void CurveNetworkNodeScalarQuantity::createProgram() {
 void CurveNetworkNodeScalarQuantity::buildNodeInfoGUI(size_t nInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", values[nInd]);
+  ImGui::Text("%g", values.getValue(nInd));
   ImGui::NextColumn();
 }
 
@@ -122,9 +112,8 @@ void CurveNetworkNodeScalarQuantity::buildNodeInfoGUI(size_t nInd) {
 
 CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name, const std::vector<double>& values_,
                                                                CurveNetwork& network_, DataType dataType_)
-    : CurveNetworkScalarQuantity(name, network_, "edge", values_, dataType_)
-
-{}
+    : CurveNetworkScalarQuantity(name, network_, "edge", values_, dataType_),
+      nodeAverageValues(uniquePrefix() + "#nodeAverageValues", nodeAverageValuesData) {}
 
 void CurveNetworkEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
@@ -138,25 +127,12 @@ void CurveNetworkEdgeScalarQuantity::createProgram() {
   parent.fillNodeGeometryBuffers(*nodeProgram);
 
   { // Fill node color buffers
-    // Compute an average color at each node
-    std::vector<double> averageValueNode(parent.nNodes(), 0.);
-    for (size_t iE = 0; iE < parent.nEdges(); iE++) {
-      auto& edge = parent.edges[iE];
-      size_t eTail = std::get<0>(edge);
-      size_t eTip = std::get<1>(edge);
-      averageValueNode[eTail] += values[iE];
-      averageValueNode[eTip] += values[iE];
-    }
-
-    for (size_t iN = 0; iN < parent.nNodes(); iN++) {
-      averageValueNode[iN] /= parent.nodeDegrees[iN];
-    }
-
-    nodeProgram->setAttribute("a_value", averageValueNode);
+    updateNodeAverageValues();
+    nodeProgram->setAttribute("a_value", nodeAverageValues.getRenderAttributeBuffer());
   }
 
   { // Fill edge color buffers
-    edgeProgram->setAttribute("a_value", values);
+    edgeProgram->setAttribute("a_value", values.getRenderAttributeBuffer());
   }
 
   edgeProgram->setTextureFromColormap("t_colormap", cMap.get());
@@ -165,11 +141,34 @@ void CurveNetworkEdgeScalarQuantity::createProgram() {
   render::engine->setMaterial(*edgeProgram, parent.getMaterial());
 }
 
+void CurveNetworkEdgeScalarQuantity::updateNodeAverageValues() {
+  parent.edgeTailInds.ensureHostBufferPopulated();
+  parent.edgeTipInds.ensureHostBufferPopulated();
+  values.ensureHostBufferPopulated();
+  nodeAverageValues.data.resize(parent.nNodes());
+
+  for (size_t iE = 0; iE < parent.nEdges(); iE++) {
+    size_t eTail = parent.edgeTailInds.data[iE];
+    size_t eTip = parent.edgeTipInds.data[iE];
+
+    nodeAverageValues.data[eTail] += values.data[iE];
+    nodeAverageValues.data[eTip] += values.data[iE];
+  }
+
+  for (size_t iN = 0; iN < parent.nNodes(); iN++) {
+    nodeAverageValues.data[iN] /= parent.nodeDegrees[iN];
+    if (parent.nodeDegrees[iN] == 0) {
+      nodeAverageValues.data[iN] = 0.;
+    }
+  }
+
+  nodeAverageValues.markHostBufferUpdated();
+}
 
 void CurveNetworkEdgeScalarQuantity::buildEdgeInfoGUI(size_t eInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", values[eInd]);
+  ImGui::Text("%g", values.getValue(eInd));
   ImGui::NextColumn();
 }
 

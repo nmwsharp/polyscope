@@ -2,6 +2,7 @@
 #pragma once
 
 #include "polyscope/affine_remapper.h"
+#include "polyscope/color_quantity.h"
 #include "polyscope/histogram.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/point_cloud_quantity.h"
@@ -10,7 +11,7 @@
 
 namespace polyscope {
 
-class PointCloudColorQuantity : public PointCloudQuantity {
+class PointCloudColorQuantity : public PointCloudQuantity, public ColorQuantity<PointCloudColorQuantity> {
 public:
   PointCloudColorQuantity(std::string name, const std::vector<glm::vec3>& values, PointCloud& pointCloud_);
 
@@ -22,10 +23,10 @@ public:
   virtual std::string niceName() override;
 
   // === Members
-  std::vector<glm::vec3> values;
 
 protected:
   void createPointProgram();
+
   std::shared_ptr<render::ShaderProgram> pointProgram;
 };
 

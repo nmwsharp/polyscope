@@ -6,6 +6,9 @@ namespace render {
 // Storage for the global engine pointer
 Engine* engine = nullptr;
 
+// Backend we initialized with; written once below
+std::string engineBackendName = "";
+
 // Forward-declaration of initialize routines
 // we don't want to just include the appropriate headers, because they may define conflicting symbols
 namespace backend_openGL3_glfw {
@@ -35,6 +38,8 @@ void initializeRenderEngine(std::string backend) {
       throw std::runtime_error("no Polyscope backends available");
     }
   }
+
+  engineBackendName = backend;
 
   // Initialize the appropriate backend
   if (backend == "openGL3_glfw") {

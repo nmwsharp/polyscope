@@ -6,6 +6,10 @@
 
 namespace polyscope {
 
+// TODO delete me
+
+/*
+
 VectorArtist::VectorArtist(Structure& parentStructure_, std::string uniqueName_, const std::vector<glm::vec3>& bases_,
                            const std::vector<glm::vec3>& vectors_, const VectorType& vectorType_)
     : parentStructure(parentStructure_), uniqueName(uniqueName_),
@@ -133,5 +137,6 @@ void VectorArtist::setMaterial(std::string m) {
 }
 std::string VectorArtist::getMaterial() { return material.get(); }
 
+*/
 
 } // namespace polyscope
