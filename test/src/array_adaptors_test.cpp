@@ -1,3 +1,5 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "gtest/gtest.h"
 
 
@@ -346,7 +348,7 @@ TEST(ArrayAdaptorTests, adaptor_nested_array) {
   std::tuple<std::vector<int>, std::vector<size_t>> nestedListTup;
   std::vector<int>& dataEntries = std::get<0>(nestedListTup);
   std::vector<size_t>& dataStarts = std::get<1>(nestedListTup);
-  
+
 
   // Test {ptr, outer, inner} access
   std::vector<std::array<double, 3>> ptrData{{1, 2, 3}, {4, 5, 6}};

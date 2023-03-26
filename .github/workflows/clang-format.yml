@@ -1,0 +1,25 @@
+# Run clang-format
+# https://github.com/HorstBaerbel/action-clang-format
+
+name: format-checker-with-clang-format
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  checkout-and-check-formatting:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run clang-format
+      uses: HorstBaerbel/action-clang-format@master
+      # These are optional (defaults displayed)
+      with:
+        scandir: '.'
+        excludedirs: 'build,deps,misc,src/render/bindata'
+        extensions: 'c,cpp,h,hpp,ipp'
+        style: 'file'
