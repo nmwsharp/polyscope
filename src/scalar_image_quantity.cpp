@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 
 #include "polyscope/polyscope.h"
 
@@ -156,7 +157,7 @@ void ScalarImageQuantity::showInImGuiWindow() {
 }
 
 void ScalarImageQuantity::showInBillboard(glm::vec3 center, glm::vec3 upVec, glm::vec3 rightVec) {
-  
+
   if (!billboardProgram) {
     prepareBillboard();
   }
@@ -174,7 +175,6 @@ void ScalarImageQuantity::showInBillboard(glm::vec3 center, glm::vec3 upVec, glm
   render::engine->setBackfaceCull(false);
   billboardProgram->draw();
   render::engine->setBackfaceCull(); // return to default setting
-
 }
 
 void ScalarImageQuantity::refresh() {

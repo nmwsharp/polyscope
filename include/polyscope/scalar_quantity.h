@@ -1,7 +1,9 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
-#include "polyscope/histogram.h"
 #include "polyscope/affine_remapper.h"
+#include "polyscope/histogram.h"
 #include "polyscope/persistent_value.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
@@ -59,12 +61,11 @@ public:
   double getIsolineDarkness();
 
 protected:
-
   std::vector<double> valuesData;
   const DataType dataType;
 
   // === Visualization parameters
-  
+
   // Affine data maps and limits
   std::pair<float, float> vizRange; // TODO make these persistent
   std::pair<double, double> dataRange;

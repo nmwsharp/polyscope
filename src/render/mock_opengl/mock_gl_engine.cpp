@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #ifdef POLYSCOPE_BACKEND_OPENGL_MOCK_ENABLED
 #include "polyscope/render/mock_opengl/mock_gl_engine.h"
 
@@ -1481,7 +1482,7 @@ void GLShaderProgram::validateData() {
     if (a.buff->getDataSize() < 0) {
       throw std::invalid_argument("Attribute " + a.name + " has not been set");
     }
-    
+
     int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
 
     if (attributeSize == -1) { // first one we've seen

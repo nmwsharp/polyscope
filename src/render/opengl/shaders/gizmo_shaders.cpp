@@ -1,3 +1,5 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/render/opengl/shaders/gizmo_shaders.h"
 
 namespace polyscope {

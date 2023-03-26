@@ -1,3 +1,5 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/vector_quantity.h"
 
 #include "polyscope/standardize_data_array.h"

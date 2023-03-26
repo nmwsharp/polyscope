@@ -1,3 +1,5 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include "polyscope/render/opengl/gl_shaders.h"
@@ -10,7 +12,7 @@ namespace backend_openGL3_glfw {
 extern const ShaderStageSpecification FLEX_MESH_VERT_SHADER;
 extern const ShaderStageSpecification FLEX_MESH_FRAG_SHADER;
 
-// Rules specific to meshes 
+// Rules specific to meshes
 extern const ShaderReplacementRule MESH_WIREFRAME;
 extern const ShaderReplacementRule MESH_WIREFRAME_ONLY;
 extern const ShaderReplacementRule MESH_COMPUTE_NORMAL_FROM_POSITION;

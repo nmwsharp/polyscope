@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include "polyscope/parameterization_quantity.h"
@@ -23,13 +24,11 @@ public:
 
 
 protected:
-  
   std::shared_ptr<render::ShaderProgram> program;
 
   // Helpers
   void createProgram();
   void fillCoordBuffers(render::ShaderProgram& p);
-
 };
 
 

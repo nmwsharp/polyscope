@@ -1,3 +1,5 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 namespace polyscope {
@@ -80,7 +82,8 @@ VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityFromCallable(std::string 
 
 
 template <class Func>
-VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityFromBatchCallable(std::string name, Func&& func, DataType dataType_) {
+VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityFromBatchCallable(std::string name, Func&& func,
+                                                                         DataType dataType_) {
 
   // Build list of points to query
   std::vector<std::array<double, 3>> queries(nValues());

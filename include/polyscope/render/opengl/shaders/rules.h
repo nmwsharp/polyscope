@@ -1,3 +1,5 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include "polyscope/render/engine.h"
@@ -34,6 +36,6 @@ ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix);
 
 // clang-format on
 
-}
+} // namespace backend_openGL3_glfw
 } // namespace render
 } // namespace polyscope

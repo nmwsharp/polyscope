@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include "polyscope/persistent_value.h"
@@ -65,7 +66,7 @@ public:
 
   // Enable and disable the quantity
   virtual QuantityS<S>* setEnabled(bool newEnabled);
-  
+
   virtual void buildUI() override;
 
   S& parent; // note: this HIDES the more general member of the same name in the parent class

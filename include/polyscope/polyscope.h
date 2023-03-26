@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include <functional>
@@ -8,10 +9,10 @@
 
 #include "imgui.h"
 
-#include "polyscope/internal.h"
 #include "polyscope/group.h"
+#include "polyscope/internal.h"
 #include "polyscope/messages.h"
-#include "polyscope/options.h" 
+#include "polyscope/options.h"
 #include "polyscope/screenshot.h"
 #include "polyscope/slice_plane.h"
 #include "polyscope/structure.h"
@@ -44,7 +45,8 @@ bool isInitialized();
 // the GUI, possibly by exiting the window.
 void show(size_t forFrames = std::numeric_limits<size_t>::max());
 
-// An alternate method to execute the Polyscope graphical loop. Instead of calling show(), call frameTick() frequently in the user program's loop.
+// An alternate method to execute the Polyscope graphical loop. Instead of calling show(), call frameTick() frequently
+// in the user program's loop.
 void frameTick();
 
 // Do shutdown work and de-initialize Polyscope

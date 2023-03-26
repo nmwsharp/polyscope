@@ -1,8 +1,11 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 
 namespace polyscope {
 
 template <class T1, class T2, class T3>
-CameraView* registerCameraView(std::string name, const T1& root, const T2& lookDir, const T3& upDir, double fovVertDeg, double aspectRatio) {
+CameraView* registerCameraView(std::string name, const T1& root, const T2& lookDir, const T3& upDir, double fovVertDeg,
+                               double aspectRatio) {
 
   glm::vec3 rootGLM = standardizeVector3D<glm::vec3, T1>(root);
   glm::vec3 lookDirGLM = standardizeVector3D<glm::vec3, T1>(lookDir);
@@ -18,4 +21,4 @@ CameraView* registerCameraView(std::string name, const T1& root, const T2& lookD
   return s;
 }
 
-}
+} // namespace polyscope

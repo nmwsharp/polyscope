@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include "polyscope/quantity.h"
@@ -14,7 +15,7 @@ class SurfaceMesh;
 class SurfaceMeshQuantity : public QuantityS<SurfaceMesh> {
 public:
   SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates = false);
-  ~SurfaceMeshQuantity() {};
+  ~SurfaceMeshQuantity(){};
 
 public:
   // Build GUI info about this element

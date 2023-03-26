@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include "polyscope/affine_remapper.h"
@@ -14,7 +15,7 @@
 
 #include <vector>
 
-//#include "marchingcubes/mesh_implicit_surface.h"
+// #include "marchingcubes/mesh_implicit_surface.h"
 
 namespace polyscope {
 
@@ -35,7 +36,7 @@ public:
   VolumeGrid(std::string name, std::array<size_t, 3> steps_, glm::vec3 bound_min_, glm::vec3 bound_max_);
 
   // === Overloads
-  
+
   // Standard structure overrides
   virtual void draw() override;
   virtual void drawDelayed() override;

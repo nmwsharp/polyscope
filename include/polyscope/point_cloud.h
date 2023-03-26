@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include "polyscope/affine_remapper.h"
@@ -142,7 +143,6 @@ public:
 
 
 private:
-
   // Storage for the managed buffers above. You should generally interact with this directly through them.
   std::vector<glm::vec3> pointsData;
 

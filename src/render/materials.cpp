@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/render/materials.h"
 
 #include "polyscope/messages.h"
@@ -17,7 +18,7 @@ bool buildMaterialOptionsGui(std::string& mat) {
     for (const std::unique_ptr<Material>& o : render::engine->materials) {
       bool selected = (o->name == mat);
       std::string fancyName = o->name;
-      if(o->supportsRGB) {
+      if (o->supportsRGB) {
         fancyName += " (rgb)";
       }
       if (ImGui::MenuItem(fancyName.c_str(), NULL, selected)) {

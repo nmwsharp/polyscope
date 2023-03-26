@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include <tuple>
@@ -18,7 +19,8 @@ class CameraParameters {
   //
 public:
   CameraParameters();
-  CameraParameters(glm::vec3 root, glm::vec3 lookDir, glm::vec3 upDir, float fovVertDeg, float aspectRatioWidthOverHeight);
+  CameraParameters(glm::vec3 root, glm::vec3 lookDir, glm::vec3 upDir, float fovVertDeg,
+                   float aspectRatioWidthOverHeight);
 
 
   // == Extrinsic getters
@@ -43,7 +45,6 @@ private:
   // Intrinsics
   float fovVerticalDegrees;         // the angle, in degrees from the top to bottom of the viewing frustum
   float aspectRatioWidthOverHeight; // the ratio of the viewing frustum width / height
-
 };
 
 } // namespace polyscope

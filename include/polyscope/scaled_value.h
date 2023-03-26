@@ -1,3 +1,5 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 namespace polyscope {
@@ -36,7 +38,7 @@ public:
   bool isRelative() const { return relativeFlag; }
 
   // Explicit setters
-  void set(T value_, bool relativeFlag_= true) {
+  void set(T value_, bool relativeFlag_ = true) {
     value = value_;
     relativeFlag = relativeFlag_;
   }

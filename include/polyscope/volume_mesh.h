@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include <memory>
@@ -114,7 +115,8 @@ public:
   size_t nVertices() { return vertexPositions.size(); }
   size_t nCells() { return cells.size(); }
 
-  // In these face counts, the shared face between two cells is counted twice. (really it should face-side or half-face or something)
+  // In these face counts, the shared face between two cells is counted twice. (really it should face-side or half-face
+  // or something)
   size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
   size_t nFaces() const { return nFacesCount; }
 

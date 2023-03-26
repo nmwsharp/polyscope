@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/histogram.h"
 
 #include "polyscope/affine_remapper.h"
@@ -208,7 +209,7 @@ void Histogram::buildUI(float width) {
 
   /* This is pretty neat, but ultimately I decided I don't like the look of it. It has
    * some value as a more obvious user widget than dragging imgui's sliders, however.
-  
+
   { // Draw triangles that indicate where the colormap is
 
     // clang-format off
@@ -225,29 +226,29 @@ void Histogram::buildUI(float width) {
 
     // left triangle
     ImGui::GetWindowDrawList()->AddTriangleFilled(
-        {imageLeft + w*(leftX - markerTriWidth) , imageTop}, 
+        {imageLeft + w*(leftX - markerTriWidth) , imageTop},
         {imageLeft + w*(leftX + markerTriWidth) , imageTop},
-        {imageLeft + w*leftX                    , imageTop - h*markerTriHeight}, 
+        {imageLeft + w*leftX                    , imageTop - h*markerTriHeight},
         annoColor
       );
     ImGui::GetWindowDrawList()->AddTriangle(
-        {imageLeft + w*(leftX - markerTriWidth) , imageTop}, 
+        {imageLeft + w*(leftX - markerTriWidth) , imageTop},
         {imageLeft + w*(leftX + markerTriWidth) , imageTop},
-        {imageLeft + w*leftX                    , imageTop - h*markerTriHeight}, 
+        {imageLeft + w*leftX                    , imageTop - h*markerTriHeight},
         annoColorDark
       );
-    
+
     // right triangle
     ImGui::GetWindowDrawList()->AddTriangleFilled(
-        {imageLeft + w*(rightX - markerTriWidth) , imageTop}, 
+        {imageLeft + w*(rightX - markerTriWidth) , imageTop},
         {imageLeft + w*(rightX + markerTriWidth) , imageTop},
-        {imageLeft + w*rightX                    , imageTop - h*markerTriHeight}, 
+        {imageLeft + w*rightX                    , imageTop - h*markerTriHeight},
         annoColor
       );
     ImGui::GetWindowDrawList()->AddTriangle(
-        {imageLeft + w*(rightX - markerTriWidth) , imageTop}, 
+        {imageLeft + w*(rightX - markerTriWidth) , imageTop},
         {imageLeft + w*(rightX + markerTriWidth) , imageTop},
-        {imageLeft + w*rightX                    , imageTop - h*markerTriHeight}, 
+        {imageLeft + w*rightX                    , imageTop - h*markerTriHeight},
         annoColorDark
       );
 

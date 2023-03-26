@@ -1,3 +1,5 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/render/engine.h"
 
 namespace polyscope {
@@ -53,4 +55,3 @@ void initializeRenderEngine(std::string backend) {
 
 } // namespace render
 } // namespace polyscope
-

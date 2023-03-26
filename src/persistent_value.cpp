@@ -1,3 +1,5 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/persistent_value.h"
 
 #include "polyscope/render/color_maps.h"

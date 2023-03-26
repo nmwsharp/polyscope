@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include <array>
@@ -6,7 +7,7 @@
 
 #include "polyscope/camera_parameters.h"
 #include "polyscope/types.h"
-//#include "polyscope/gl/gl_utils.h"
+// #include "polyscope/gl/gl_utils.h"
 
 // GLM for view matrices
 #include "glm/gtc/constants.hpp"
