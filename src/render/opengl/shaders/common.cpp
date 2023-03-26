@@ -197,7 +197,7 @@ bool rayDiskIntersection(vec3 rayStart, vec3 rayDir, vec3 planePos, vec3 planeDi
   return true;
 }
 
-bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylTipRad, float cylTailRad, out float tHit, out vec3 pHit, out vec3 nHit) {
+bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylTailRad, float cylTipRad, out float tHit, out vec3 pHit, out vec3 nHit) {
     
     rayDir = normalize(rayDir);
     float cylLen = max(length(cylTip - cylTail), 1e-6);
