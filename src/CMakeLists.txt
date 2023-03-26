@@ -197,7 +197,6 @@ SET(SRCS
   
   # Rendering utilities
   imgui_config.cpp
-  vector_artist.cpp
   fullscreen_artist.cpp
   
   ## Embedded binary data 

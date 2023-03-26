@@ -4,7 +4,6 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/types.h"
-#include "polyscope/vector_artist.h"
 #include "polyscope/vector_quantity.h"
 #include "polyscope/volume_mesh.h"
 

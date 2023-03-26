@@ -59,11 +59,6 @@ protected:
   PersistentValue<std::string> material;
 
   std::shared_ptr<render::ShaderProgram> vectorProgram;
-
-  // Manages _actually_ drawing the vectors, generating gui.
-  // TODO
-  // std::unique_ptr<VectorArtist> vectorArtist;
-  // void prepareVectorArtist();
 };
 
 // ================================================
