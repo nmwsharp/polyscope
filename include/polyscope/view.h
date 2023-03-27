@@ -83,7 +83,7 @@ CameraParameters getCameraParametersForCurrentView();
 void invalidateView();
 void ensureViewValid();
 
-// The "home" view looks at the center of the scenes bounding box.
+// The "home" view looks at the center of the scene's bounding box.
 glm::mat4 computeHomeView();
 void resetCameraToHomeView();
 void flyToHomeView();
@@ -92,16 +92,17 @@ void flyToHomeView();
 void lookAt(glm::vec3 cameraLocation, glm::vec3 target, bool flyTo = false);
 void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool flyTo = false);
 
-// Get various camera matrices and data
+// Get various camera matrices and data for the current view
 glm::mat4 getCameraViewMatrix();
 void setCameraViewMatrix(glm::mat4 newMat);
 glm::mat4 getCameraPerspectiveMatrix();
 glm::vec3 getCameraWorldPosition();
 void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
+
+// Get world geometry corresponding to a screen pixel (e.g. from a mouse click)
 glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords);
 glm::vec3 bufferCoordsToWorldRay(glm::vec2 screenCoords);
-glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords);
-float screenCoordsToDepth(glm::vec2 screenCoords);
+glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords); // queries the depth buffer to get full position
 
 // Flight-related
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds = .4);

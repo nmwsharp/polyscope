@@ -692,7 +692,6 @@ void callback() {
 
       glm::vec3 worldRay = polyscope::view::screenCoordsToWorldRay(screenCoords);
       glm::vec3 worldPos = polyscope::view::screenCoordsToWorldPosition(screenCoords);
-      float depth = polyscope::view::screenCoordsToDepth(screenCoords);
       std::pair<polyscope::Structure*, size_t> pickPair =
           polyscope::pick::evaluatePickQuery(screenCoords.x, screenCoords.y);
 
@@ -703,7 +702,6 @@ void callback() {
       polyscope::operator<<(std::cout, worldRay) << std::endl;
       std::cout << "    worldPos: ";
       polyscope::operator<<(std::cout, worldPos) << std::endl;
-      std::cout << "    depth: " << depth << std::endl;
       if (pickPair.first == nullptr) {
         std::cout << "    structure: "
                   << "none" << std::endl;
@@ -716,13 +714,9 @@ void callback() {
 
       // Construct unit-length vector pointing in the direction of the click
       // (this depends only on the camera parameters, and does not require accessing the depth buffer)
-      /*
-      TODO restore
       glm::vec3 root = polyscope::view::getCameraWorldPosition();
       glm::vec3 target = root + worldRay;
       polyscope::registerCurveNetworkLine("click dir", std::vector<glm::vec3>({root, target}));
-      */
-
 
       depthClick = false;
     }
