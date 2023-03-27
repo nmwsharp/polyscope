@@ -157,7 +157,6 @@ SET(SRCS
 
   # Surface
   surface_mesh.cpp
-  surface_mesh_io.cpp
   surface_color_quantity.cpp
   surface_scalar_quantity.cpp
   surface_vector_quantity.cpp
@@ -280,7 +279,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/surface_color_quantity.h
   ${INCLUDE_ROOT}/surface_mesh.h
   ${INCLUDE_ROOT}/surface_mesh.ipp
-  ${INCLUDE_ROOT}/surface_mesh_io.h
   ${INCLUDE_ROOT}/surface_mesh_quantity.h
   ${INCLUDE_ROOT}/surface_parameterization_quantity.h
   ${INCLUDE_ROOT}/surface_scalar_quantity.h
