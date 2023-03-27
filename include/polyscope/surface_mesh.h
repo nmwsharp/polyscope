@@ -31,6 +31,7 @@ class SurfaceFaceScalarQuantity;
 class SurfaceEdgeScalarQuantity;
 class SurfaceHalfedgeScalarQuantity;
 class SurfaceVertexScalarQuantity;
+class SurfaceCornerScalarQuantity;
 class SurfaceCornerParameterizationQuantity;
 class SurfaceVertexParameterizationQuantity;
 class SurfaceVertexVectorQuantity;
@@ -125,6 +126,7 @@ public:
   template <class T> SurfaceFaceScalarQuantity* addFaceScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD); 
   template <class T> SurfaceEdgeScalarQuantity* addEdgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD); 
   template <class T> SurfaceHalfedgeScalarQuantity* addHalfedgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
+  template <class T> SurfaceCornerScalarQuantity* addCornerScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
 
   // = Distance (expect scalar array)
   template <class T> SurfaceVertexScalarQuantity* addVertexDistanceQuantity(std::string name, const T& data);
@@ -169,7 +171,6 @@ public:
   // Permutation arrays. Empty == default ordering
   std::vector<size_t> edgePerm;
   std::vector<size_t> halfedgePerm;
-  std::vector<size_t> cornerPerm;
 
   // Set permutations
   template <class T>
@@ -177,9 +178,7 @@ public:
   template <class T>
   void setHalfedgePermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
-  void setCornerPermutation(const T& perm, size_t expectedSize = 0);
-  template <class T>
-  void setAllPermutations(const std::array<std::pair<T, size_t>, 3>& perms);
+  void setAllPermutations(const std::array<std::pair<T, size_t>, 2>& perms);
 
   template <class T> // deprecated, for backward compatability only
   void setAllPermutations(const std::array<std::pair<T, size_t>, 5>& perms);
@@ -332,9 +331,13 @@ private:
 
   // Derived connectivity quantities
   bool halfedgesHaveBeenUsed = false;
+  bool cornersHaveBeenUsed = false;
   bool edgesHaveBeenUsed = false;
+  std::vector<uint32_t>
+      halfedgeEdgeCorrespondence; // ugly hack used to save a pick buffer attr, filled out lazily w/ edge indices
   void markEdgesAsUsed();
   void markHalfedgesAsUsed();
+  void markCornersAsUsed();
 
 
   // Visualization settings
@@ -368,11 +371,12 @@ private:
   // Order of indexing: vertexPositions, faces, edges, halfedges
   // Within each set, uses the implicit ordering from the mesh data structure
   // These starts are LOCAL indices, indexing elements only with the mesh
-  size_t facePickIndStart, edgePickIndStart, halfedgePickIndStart;
+  size_t facePickIndStart, edgePickIndStart, halfedgePickIndStart, cornerPickIndStart;
   void buildVertexInfoGui(size_t vInd);
   void buildFaceInfoGui(size_t fInd);
   void buildEdgeInfoGui(size_t eInd);
   void buildHalfedgeInfoGui(size_t heInd);
+  void buildCornerInfoGui(size_t heInd);
 
   // ==== Gui implementation details
 
@@ -398,6 +402,7 @@ private:
   SurfaceFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   SurfaceEdgeScalarQuantity* addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   SurfaceHalfedgeScalarQuantity* addHalfedgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
+  SurfaceCornerScalarQuantity* addCornerScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   SurfaceVertexScalarQuantity* addVertexDistanceQuantityImpl(std::string name, const std::vector<double>& data);
   SurfaceVertexScalarQuantity* addVertexSignedDistanceQuantityImpl(std::string name, const std::vector<double>& data);
   SurfaceCornerParameterizationQuantity* addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);

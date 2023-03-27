@@ -134,7 +134,7 @@ void CameraView::preparePick() {
   }
 
   // Create a new pick program
-  std::vector<std::string> rules = addStructureRules({"MESH_PROPAGATE_PICK"});
+  std::vector<std::string> rules = addStructureRules({"MESH_PROPAGATE_PICK_SIMPLE"});
   if (wantsCullPosition()) rules.push_back("MESH_PROPAGATE_CULLPOS");
   pickFrameProgram = render::engine->requestShader("MESH", rules, render::ShaderReplacementDefaults::Pick);
 
@@ -257,8 +257,6 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
     std::vector<std::array<glm::vec3, 3>> tripleColors(3 * nFaces,
                                                        std::array<glm::vec3, 3>{pickColor, pickColor, pickColor});
     pickFrameProgram->setAttribute<glm::vec3, 3>("a_vertexColors", tripleColors);
-    pickFrameProgram->setAttribute<glm::vec3, 3>("a_edgeColors", tripleColors);
-    pickFrameProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", tripleColors);
     pickFrameProgram->setAttribute("a_faceColor", faceColor);
     if (wantsCullPosition()) {
       pickFrameProgram->setAttribute("a_cullPos", cullPos);

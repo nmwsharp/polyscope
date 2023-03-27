@@ -157,9 +157,10 @@ void processFileOBJ(std::string filename) {
 
   // size_t nEdges = psMesh->nEdges();
 
-  // Edge length
+  // Edge/halfedge/corner data
   std::vector<double> eLen;
   std::vector<double> heLen;
+  std::vector<double> cAngle;
   std::unordered_set<std::pair<size_t, size_t>, polyscope::hash_combine::hash<std::pair<size_t, size_t>>> seenEdges;
   std::vector<uint32_t> edgeOrdering;
   for (size_t iF = 0; iF < nFaces; iF++) {
@@ -168,9 +169,14 @@ void processFileOBJ(std::string filename) {
     for (size_t iV = 0; iV < face.size(); iV++) {
       size_t i0 = face[iV];
       size_t i1 = face[(iV + 1) % face.size()];
+      size_t im1 = face[(iV + face.size() - 1) % face.size()];
       glm::vec3 p0 = vertexPositionsGLM[i0];
       glm::vec3 p1 = vertexPositionsGLM[i1];
+      glm::vec3 pm1 = vertexPositionsGLM[im1];
+
       double len = glm::length(p0 - p1);
+
+      double angle = glm::acos(glm::dot(glm::normalize(p1 - p0), glm::normalize(pm1 - p0)));
 
       size_t iMin = std::min(i0, i1);
       size_t iMax = std::max(i0, i1);
@@ -182,12 +188,14 @@ void processFileOBJ(std::string filename) {
         seenEdges.insert(p);
       }
       heLen.push_back(len);
+      cAngle.push_back(angle);
     }
   }
   size_t nEdges = edgeOrdering.size();
   polyscope::getSurfaceMesh(niceName)->setEdgePermutation(edgeOrdering);
   polyscope::getSurfaceMesh(niceName)->addEdgeScalarQuantity("edge length", eLen);
   polyscope::getSurfaceMesh(niceName)->addHalfedgeScalarQuantity("halfedge length", heLen);
+  polyscope::getSurfaceMesh(niceName)->addCornerScalarQuantity("corner angle", cAngle);
 
 
   // Test error

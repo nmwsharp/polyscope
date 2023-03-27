@@ -89,7 +89,19 @@ public:
   void buildHalfedgeInfoGUI(size_t heInd) override;
 };
 
-// TODO add corner scalar
+// ========================================================
+// ==========          Corner Scalar           ==========
+// ========================================================
+
+class SurfaceCornerScalarQuantity : public SurfaceScalarQuantity {
+public:
+  SurfaceCornerScalarQuantity(std::string name, const std::vector<double>& values_, SurfaceMesh& mesh_,
+                              DataType dataType_ = DataType::STANDARD);
+
+  virtual void createProgram() override;
+
+  void buildCornerInfoGUI(size_t heInd) override;
+};
 
 
 } // namespace polyscope
