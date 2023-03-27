@@ -73,6 +73,7 @@ add_executable(
         polyscopedemo
         demo_app.cpp
         simple_dot_mesh_parser.cpp
+        surface_mesh_io.cpp
         )
 
 target_include_directories(polyscopedemo PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../deps/args")

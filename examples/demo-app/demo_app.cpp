@@ -11,7 +11,6 @@
 #include "polyscope/pick.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
-#include "polyscope/surface_mesh_io.h"
 #include "polyscope/types.h"
 #include "polyscope/view.h"
 #include "polyscope/volume_mesh.h"
@@ -25,6 +24,7 @@
 #include "json/json.hpp"
 
 #include "simple_dot_mesh_parser.h"
+#include "surface_mesh_io.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/string_cast.hpp"
