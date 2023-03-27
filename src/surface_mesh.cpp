@@ -1311,7 +1311,7 @@ long long int SurfaceMesh::selectVertex() {
 
 
 void SurfaceMesh::markEdgesAsUsed() {
-  if(edgesHaveBeenUsed) return;
+  if (edgesHaveBeenUsed) return;
   edgesHaveBeenUsed = true;
   // immediately compute edge-related connectivity info, and also repopulate the pick buffer so edges can be picked
   computeTriangleAllEdgeInds();
@@ -1319,14 +1319,14 @@ void SurfaceMesh::markEdgesAsUsed() {
 }
 
 void SurfaceMesh::markHalfedgesAsUsed() {
-  if(halfedgesHaveBeenUsed) return;
+  if (halfedgesHaveBeenUsed) return;
   halfedgesHaveBeenUsed = true;
   // repopulate the pick buffer so halfedges can be picked
   pickProgram.reset();
 }
 
 void SurfaceMesh::markCornersAsUsed() {
-  if(cornersHaveBeenUsed) return;
+  if (cornersHaveBeenUsed) return;
   cornersHaveBeenUsed = true;
   // repopulate the pick buffer so corners can be picked
   pickProgram.reset();
