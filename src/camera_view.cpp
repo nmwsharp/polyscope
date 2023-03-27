@@ -25,8 +25,8 @@ const std::string CameraView::structureTypeName = "Camera View";
 // Constructor
 CameraView::CameraView(std::string name, const CameraParameters& params_)
     : QuantityStructure<CameraView>(name, structureTypeName), params(std::move(params_)),
-      displayFocalLength(uniquePrefix() + "#displayFocalLength", relativeValue(0.1)),
-      displayThickness(uniquePrefix() + "#displayThickness", 0.02),
+      widgetFocalLength(uniquePrefix() + "#widgetFocalLength", relativeValue(0.1)),
+      widgetThickness(uniquePrefix() + "#widgetThickness", 0.02),
       widgetColor(uniquePrefix() + "#widgetColor", glm::vec3{0., 0., 0.}) {
 
   updateObjectSpaceBounds();
@@ -50,13 +50,13 @@ void CameraView::draw() {
   glm::mat4 Pinv = glm::inverse(P);
   nodeProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   nodeProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
-  nodeProgram->setUniform("u_pointRadius", getDisplayFocalLength() * getDisplayThickness());
+  nodeProgram->setUniform("u_pointRadius", getWidgetFocalLength() * getWidgetThickness());
   nodeProgram->setUniform("u_baseColor", widgetColor.get());
 
 
   edgeProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   edgeProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
-  edgeProgram->setUniform("u_radius", getDisplayFocalLength() * getDisplayThickness());
+  edgeProgram->setUniform("u_radius", getWidgetFocalLength() * getWidgetThickness());
   edgeProgram->setUniform("u_baseColor", widgetColor.get());
 
   // Draw the camera view wireframe
@@ -156,8 +156,8 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
   glm::vec3 lookDir, upDir, rightDir;
   std::tie(lookDir, upDir, rightDir) = params.getCameraFrame();
 
-  glm::vec3 frameCenter = root + lookDir * displayFocalLength.get().asAbsolute();
-  float halfHeight = static_cast<float>(displayFocalLength.get().asAbsolute() *
+  glm::vec3 frameCenter = root + lookDir * widgetFocalLength.get().asAbsolute();
+  float halfHeight = static_cast<float>(widgetFocalLength.get().asAbsolute() *
                                         std::tan(glm::radians(params.getFoVVerticalDegrees()) / 2.));
   glm::vec3 frameUp = upDir * halfHeight;
   float halfWidth = params.getAspectRatioWidthOverHeight() * halfHeight;
@@ -266,6 +266,11 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
   }
 }
 
+void CameraView::updateCameraParameters(const CameraParameters& newParams) {
+  params = newParams;
+  geometryChanged();
+}
+
 void CameraView::geometryChanged() {
   // if the programs are populated, repopulate them
   if (nodeProgram) {
@@ -289,8 +294,6 @@ void CameraView::buildPickUI(size_t localPickID) {
     setViewToThisCamera(true);
   }
 
-  // TODO
-  /*
 
   ImGui::Spacing();
   ImGui::Indent(20.);
@@ -303,7 +306,6 @@ void CameraView::buildPickUI(size_t localPickID) {
   }
 
   ImGui::Indent(-20.);
-  */
 }
 
 void CameraView::buildCustomUI() {
@@ -327,21 +329,21 @@ void CameraView::buildCustomOptionsUI() {
 
   ImGui::PushItemWidth(150);
 
-  if (displayFocalLengthUpper == -777) displayFocalLengthUpper = 2. * (*displayFocalLength.get().getValuePtr());
-  if (ImGui::SliderFloat("widget focal length", displayFocalLength.get().getValuePtr(), 0, displayFocalLengthUpper,
+  if (widgetFocalLengthUpper == -777) widgetFocalLengthUpper = 2. * (*widgetFocalLength.get().getValuePtr());
+  if (ImGui::SliderFloat("widget focal length", widgetFocalLength.get().getValuePtr(), 0, widgetFocalLengthUpper,
                          "%.5f")) {
-    displayFocalLength.manuallyChanged();
+    widgetFocalLength.manuallyChanged();
     geometryChanged();
     requestRedraw();
   }
   if (ImGui::IsItemDeactivatedAfterEdit()) {
     // the upper bound for the slider is dynamically adjust to be a bit bigger than the lower bound, but only does
     // so on release of the widget (so it doesn't scaleo off to infinity)
-    displayFocalLengthUpper = std::fmax(2. * (*displayFocalLength.get().getValuePtr()), 0.0001);
+    widgetFocalLengthUpper = std::fmax(2. * (*widgetFocalLength.get().getValuePtr()), 0.0001);
   }
 
-  if (ImGui::SliderFloat("widget thickness", &displayThickness.get(), 0, 0.2, "%.5f")) {
-    displayThickness.manuallyChanged();
+  if (ImGui::SliderFloat("widget thickness", &widgetThickness.get(), 0, 0.2, "%.5f")) {
+    widgetThickness.manuallyChanged();
     requestRedraw();
   }
 
@@ -371,42 +373,42 @@ void CameraView::refresh() {
 }
 
 void CameraView::setViewToThisCamera(bool withFlight) {
+
+  // Adjust the params to push the view forward by eps so it doesn't clip into the frame
+  glm::vec3 look, up, right;
+  std::tie(look, up, right) = params.getCameraFrame();
+  glm::vec3 root = params.getPosition();
+  root += look * getWidgetFocalLength() * 0.01f;
+  CameraParameters adjParams(root, look, up, params.getFoVVerticalDegrees(), params.getAspectRatioWidthOverHeight());
+
   if (withFlight) {
-    view::startFlightTo(params);
+    view::startFlightTo(adjParams);
   } else {
-    view::setViewToCamera(params);
+    view::setViewToCamera(adjParams);
   }
 }
 
 // === Quantities
 
-// Quantity default methods
-/*
-CameraViewQuantity::CameraViewQuantity(std::string name_, CameraView& pointCloud_, bool dominates_)
-    : QuantityS<CameraView>(name_, pointCloud_, dominates_) {}
-
-
-void CameraViewQuantity::buildInfoGUI(size_t pointInd) {}
-*/
 
 // === Setters and getters
 
 CameraParameters CameraView::getCameraParameters() { return params; }
 
-CameraView* CameraView::setDisplayFocalLength(double newVal, bool isRelative) {
-  displayFocalLength = ScaledValue<float>(newVal, isRelative);
+CameraView* CameraView::setWidgetFocalLength(float newVal, bool isRelative) {
+  widgetFocalLength = ScaledValue<float>(newVal, isRelative);
   geometryChanged();
   polyscope::requestRedraw();
   return this;
 }
-double CameraView::getDisplayFocalLength() { return displayFocalLength.get().asAbsolute(); }
+float CameraView::getWidgetFocalLength() { return widgetFocalLength.get().asAbsolute(); }
 
-CameraView* CameraView::setDisplayThickness(double newVal) {
-  displayThickness = newVal;
+CameraView* CameraView::setWidgetThickness(float newVal) {
+  widgetThickness = newVal;
   polyscope::requestRedraw();
   return this;
 }
-double CameraView::getDisplayThickness() { return displayThickness.get(); }
+float CameraView::getWidgetThickness() { return widgetThickness.get(); }
 
 CameraView* CameraView::setWidgetColor(glm::vec3 val) {
   widgetColor = val;
@@ -422,8 +424,8 @@ std::tuple<glm::vec3, glm::vec3, glm::vec3> CameraView::getFrameBillboardGeometr
   glm::vec3 root = params.getPosition();
   glm::vec3 lookDir, upDir, rightDir;
   std::tie(lookDir, upDir, rightDir) = params.getCameraFrame();
-  glm::vec3 frameCenter = root + lookDir * displayFocalLength.get().asAbsolute();
-  float halfHeight = static_cast<float>(displayFocalLength.get().asAbsolute() *
+  glm::vec3 frameCenter = root + lookDir * widgetFocalLength.get().asAbsolute();
+  float halfHeight = static_cast<float>(widgetFocalLength.get().asAbsolute() *
                                         std::tan(glm::radians(params.getFoVVerticalDegrees()) / 2.));
   glm::vec3 frameUp = upDir * halfHeight;
   float halfWidth = params.getAspectRatioWidthOverHeight() * halfHeight;

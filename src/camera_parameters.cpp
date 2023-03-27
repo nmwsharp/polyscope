@@ -15,6 +15,9 @@ namespace polyscope {
 // CameraParameters::CameraParameters() : E(1.0), focalLengths(1.0) {}
 CameraParameters::CameraParameters() : E(1.0), fovVerticalDegrees(60.) {}
 
+CameraParameters::CameraParameters(glm::mat4 E_, float fovVertDeg_, float aspectRatioWidthOverHeight_)
+    : E(E_), fovVerticalDegrees(fovVertDeg_), aspectRatioWidthOverHeight(aspectRatioWidthOverHeight_) {}
+
 CameraParameters::CameraParameters(glm::vec3 root, glm::vec3 lookDir, glm::vec3 upDir, float fovVertDeg_,
                                    float aspectRatioWidthOverHeight_)
     : fovVerticalDegrees(fovVertDeg_), aspectRatioWidthOverHeight(aspectRatioWidthOverHeight_) {

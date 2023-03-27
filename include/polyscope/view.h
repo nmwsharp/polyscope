@@ -73,6 +73,7 @@ void processZoom(double amount);
 
 void setWindowSize(int width, int height);
 void setViewToCamera(const CameraParameters& p);
+CameraParameters getCameraParametersForCurrentView();
 
 // Invalidating the view:
 // The view is invalid if the viewMat has NaN entries.

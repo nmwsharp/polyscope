@@ -19,12 +19,12 @@ class CameraParameters {
   //
 public:
   CameraParameters();
+  CameraParameters(glm::mat4 E, float fovVertDeg, float aspectRatioWidthOverHeight);
   CameraParameters(glm::vec3 root, glm::vec3 lookDir, glm::vec3 upDir, float fovVertDeg,
                    float aspectRatioWidthOverHeight);
 
 
   // == Extrinsic getters
-  // TODO make sure all of these are implemented
   glm::vec3 getT() const;
   glm::mat3x3 getR() const;
   glm::mat4x4 getE() const;

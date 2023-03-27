@@ -49,19 +49,17 @@ public:
 
   // === Quantities
 
-  // Scalars
-  /*
-  template <class T>
-  CameraViewScalarQuantity* addScalarQuantity(std::string name, const T& values, DataType type = DataType::STANDARD);
-  */
+  // To add images to the camera, use the add***ImageQuantity() functions
+  // These are 'floating' quantaties that can be used with any structure, although they have extra features when used
+  // with camera views.
 
 
   // === Mutate
 
-  // TODO oneday
-  // void updateCameraParameters(const CameraParameters& newParams);
-  // template <class V>
-  // void updateCameraParameters(const V& newParameters);
+  // Update the camera's location / parameters
+  template <class T1, class T2, class T3>
+  void updateCameraParameters(const T1& root, const T2& lookDir, const T3& upDir, float fovVertDeg, float aspectRatio);
+  void updateCameraParameters(const CameraParameters& newParams);
 
   // get the params object
   CameraParameters getCameraParameters();
@@ -79,12 +77,12 @@ public:
 
   // Set focal length of the camera. This only effects how it the camera widget is rendered
   // in the 3D view, it has nothing to do with the actual data stored or camera transform.
-  CameraView* setDisplayFocalLength(double newVal, bool isRelative = true);
-  double getDisplayFocalLength();
+  CameraView* setWidgetFocalLength(float newVal, bool isRelative = true);
+  float getWidgetFocalLength();
 
   // Set the thickness of the wireframe used to draw the camera (in relative units)
-  CameraView* setDisplayThickness(double newVal);
-  double getDisplayThickness();
+  CameraView* setWidgetThickness(float newVal);
+  float getWidgetThickness();
 
   // Color of the widget
   CameraView* setWidgetColor(glm::vec3 val);
@@ -104,8 +102,8 @@ private:
   CameraParameters params;
 
   // === Visualization parameters
-  PersistentValue<ScaledValue<float>> displayFocalLength;
-  PersistentValue<float> displayThickness;
+  PersistentValue<ScaledValue<float>> widgetFocalLength;
+  PersistentValue<float> widgetThickness;
   PersistentValue<glm::vec3> widgetColor;
 
   // Drawing related things
@@ -121,21 +119,20 @@ private:
   void fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, render::ShaderProgram* edgeProgram,
                                 render::ShaderProgram* pickFrameProgram);
 
-  float displayFocalLengthUpper = -777;
+  float widgetFocalLengthUpper = -777;
   size_t pickStart = INVALID_IND;
   glm::vec3 pickColor;
 
   // === Quantity adder implementations
-  /*
-  CameraViewScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  */
 };
 
 
 // Shorthand to add a camera view to Polyscope
 template <class T1, class T2, class T3>
-CameraView* registerCameraView(std::string name, const T1& root, const T2& lookDir, const T3& upDir, double fovVertDeg,
-                               double aspectRatio);
+CameraView* registerCameraView(std::string name, const T1& root, const T2& lookDir, const T3& upDir, float fovVertDeg,
+                               float aspectRatio);
+
+CameraView* registerCameraView(std::string name, CameraParameters params);
 
 // Shorthand to get a point cloud from polyscope
 inline CameraView* getCameraView(std::string name = "");

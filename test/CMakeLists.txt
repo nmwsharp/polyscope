@@ -105,6 +105,7 @@ set(TEST_SRCS
   src/curve_network_test.cpp
   src/surface_mesh_test.cpp
   src/volume_mesh_test.cpp
+  src/camera_view_test.cpp
   src/group_test.cpp
   src/floating_test.cpp
   src/combo_test.cpp

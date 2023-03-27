@@ -7,6 +7,7 @@
 
 #include "gtest/gtest.h"
 
+#include "polyscope/camera_view.h"
 #include "polyscope/curve_network.h"
 #include "polyscope/implicit_surface.h"
 #include "polyscope/pick.h"

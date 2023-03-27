@@ -171,6 +171,7 @@ void ScalarImageQuantity::showInBillboard(glm::vec3 center, glm::vec3 upVec, glm
   billboardProgram->setUniform("u_billboardCenter", center);
   billboardProgram->setUniform("u_billboardUp", upVec);
   billboardProgram->setUniform("u_billboardRight", rightVec);
+  this->setScalarUniforms(*billboardProgram);
 
   render::engine->setBackfaceCull(false);
   billboardProgram->draw();
