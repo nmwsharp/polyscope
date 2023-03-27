@@ -214,6 +214,11 @@ public:
   void computeConnectivityData(); // call to populate counts and indices
   void checkTriangular();         // check if the mesh is triangular, print a helpful error if not
 
+  // Force the mesh to act as if the specified elements are in use (aka enable them for picking, etc)
+  void markEdgesAsUsed();
+  void markHalfedgesAsUsed();
+  void markCornersAsUsed();
+
   // = Manifold connectivity
   // These are always defined on the triangulated mesh.
   // Not necessarily populated by default. Call ensureHaveManifoldConnectivity() to be sure they are populated.
@@ -335,9 +340,6 @@ private:
   bool edgesHaveBeenUsed = false;
   std::vector<uint32_t>
       halfedgeEdgeCorrespondence; // ugly hack used to save a pick buffer attr, filled out lazily w/ edge indices
-  void markEdgesAsUsed();
-  void markHalfedgesAsUsed();
-  void markCornersAsUsed();
 
 
   // Visualization settings
