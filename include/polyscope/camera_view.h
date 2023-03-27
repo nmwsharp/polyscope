@@ -56,10 +56,10 @@ public:
 
   // === Mutate
 
-  // TODO oneday
-  // void updateCameraParameters(const CameraParameters& newParams);
-  // template <class V>
-  // void updateCameraParameters(const V& newParameters);
+  // Update the camera's location / parameters
+  template <class T1, class T2, class T3>
+  void updateCameraParameters(const T1& root, const T2& lookDir, const T3& upDir, float fovVertDeg, float aspectRatio);
+  void updateCameraParameters(const CameraParameters& newParams);
 
   // get the params object
   CameraParameters getCameraParameters();
@@ -124,9 +124,6 @@ private:
   glm::vec3 pickColor;
 
   // === Quantity adder implementations
-  /*
-  CameraViewScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  */
 };
 
 

@@ -30,4 +30,17 @@ inline CameraView* registerCameraView(std::string name, CameraParameters params)
   return s;
 }
 
+template <class T1, class T2, class T3>
+void CameraView::updateCameraParameters(const T1& root, const T2& lookDir, const T3& upDir, float fovVertDeg,
+                                        float aspectRatio) {
+
+  glm::vec3 rootGLM = standardizeVector3D<glm::vec3, T1>(root);
+  glm::vec3 lookDirGLM = standardizeVector3D<glm::vec3, T1>(lookDir);
+  glm::vec3 upDirGLM = standardizeVector3D<glm::vec3, T1>(upDir);
+
+  CameraParameters params(rootGLM, lookDirGLM, upDirGLM, fovVertDeg, aspectRatio);
+
+  updateCameraParameters(params);
+}
+
 } // namespace polyscope

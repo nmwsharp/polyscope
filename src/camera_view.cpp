@@ -266,6 +266,11 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
   }
 }
 
+void CameraView::updateCameraParameters(const CameraParameters& newParams) {
+  params = newParams;
+  geometryChanged();
+}
+
 void CameraView::geometryChanged() {
   // if the programs are populated, repopulate them
   if (nodeProgram) {
