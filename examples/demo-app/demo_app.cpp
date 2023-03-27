@@ -13,6 +13,7 @@
 #include "polyscope/surface_mesh.h"
 #include "polyscope/surface_mesh_io.h"
 #include "polyscope/types.h"
+#include "polyscope/view.h"
 #include "polyscope/volume_mesh.h"
 
 #include <iostream>
@@ -427,7 +428,7 @@ void processFileOBJ(std::string filename) {
 }
 
 
-void loadFloatingImageData(polyscope::PointCloud* targetCloud = nullptr) {
+void loadFloatingImageData(polyscope::CameraView* targetView = nullptr) {
 
   // load an image from disk as example data
   std::string imagePath = "test_image.png";
@@ -466,7 +467,7 @@ void loadFloatingImageData(polyscope::PointCloud* targetCloud = nullptr) {
     }
   }
 
-  if (targetCloud == nullptr) {
+  if (targetView == nullptr) {
     polyscope::addColorImageQuantity("test color image", width, height, imageColor, polyscope::ImageOrigin::UpperLeft);
     polyscope::addScalarImageQuantity("test scalar image", width, height, imageScalar,
                                       polyscope::ImageOrigin::UpperLeft);
@@ -476,14 +477,13 @@ void loadFloatingImageData(polyscope::PointCloud* targetCloud = nullptr) {
                                             polyscope::ImageOrigin::UpperLeft);
     }
   } else {
-    targetCloud->addColorImageQuantity("test color image", width, height, imageColor,
+    targetView->addColorImageQuantity("test color image", width, height, imageColor, polyscope::ImageOrigin::UpperLeft);
+    targetView->addScalarImageQuantity("test scalar image", width, height, imageScalar,
                                        polyscope::ImageOrigin::UpperLeft);
-    targetCloud->addScalarImageQuantity("test scalar image", width, height, imageScalar,
-                                        polyscope::ImageOrigin::UpperLeft);
 
     if (hasAlpha) {
-      targetCloud->addColorAlphaImageQuantity("test color alpha image", width, height, imageColorAlpha,
-                                              polyscope::ImageOrigin::UpperLeft);
+      targetView->addColorAlphaImageQuantity("test color alpha image", width, height, imageColorAlpha,
+                                             polyscope::ImageOrigin::UpperLeft);
     }
   }
 }
@@ -507,6 +507,7 @@ void addImplicitRendersFromCurrentView() {
     float e = 0.1;
     p = glm::abs(p) - b;
     glm::vec3 q = glm::abs(p + e) - e;
+
     float out = glm::min(
         glm::min(
             glm::length(glm::max(glm::vec3(p.x, q.y, q.z), 0.0f)) + glm::min(glm::max(p.x, glm::max(q.y, q.z)), 0.0f),
@@ -544,9 +545,11 @@ void addImplicitRendersFromCurrentView() {
       polyscope::renderImplicitSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, opts);
 }
 
-void addCameraViews() {
-  polyscope::CameraView* cam1 = polyscope::registerCameraView("cam1", glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.},
-                                                              glm::vec3{0., 1., 0.}, 60, 2.);
+void dropCameraView() {
+  polyscope::CameraView* cam1 =
+      polyscope::registerCameraView("dropped cam", polyscope::view::getCameraParametersForCurrentView());
+
+  loadFloatingImageData(cam1);
 }
 
 void processFileDotMesh(std::string filename) {
@@ -730,8 +733,8 @@ void callback() {
     addImplicitRendersFromCurrentView();
   }
 
-  if (ImGui::Button("add camera views")) {
-    addCameraViews();
+  if (ImGui::Button("drop camera view here")) {
+    dropCameraView();
   }
 
   ImGui::PopItemWidth();
