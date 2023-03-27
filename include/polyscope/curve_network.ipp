@@ -84,7 +84,7 @@ CurveNetwork* registerCurveNetworkSegments(std::string name, const P& nodes) {
   size_t N = adaptorF_size(nodes);
 
   if (N % 2 != 0) {
-    throw std::runtime_error("[polyscope] registerCurveNetworkSegments should have an even number of nodes");
+    exception("registerCurveNetworkSegments should have an even number of nodes");
   }
 
   for (size_t iE = 0; iE < N; iE += 2) {
@@ -106,7 +106,7 @@ CurveNetwork* registerCurveNetworkSegments2D(std::string name, const P& nodes) {
   size_t N = adaptorF_size(nodes);
 
   if (N % 2 != 0) {
-    throw std::runtime_error("[polyscope] registerCurveNetworkSegments2D should have an even number of nodes");
+    exception("registerCurveNetworkSegments2D should have an even number of nodes");
   }
 
   for (size_t iE = 0; iE < N; iE += 2) {

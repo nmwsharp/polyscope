@@ -125,7 +125,7 @@ void writePrefsFile() {
 void init(std::string backend) {
   if (isInitialized()) {
     if (backend != state::backend) {
-      throw std::runtime_error("re-initializing with different backend is not supported");
+      exception("re-initializing with different backend is not supported");
     }
     // otherwise silently allow multiple-init
     return;
@@ -156,7 +156,7 @@ void init(std::string backend) {
 
 void checkInitialized() {
   if (!state::initialized) {
-    throw std::runtime_error("Polyscope has not been initialized");
+    exception("Polyscope has not been initialized");
   }
 }
 
@@ -181,9 +181,8 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   if (contextStack.size() > 50) {
     // Catch bugs with nested show()
-    throw std::runtime_error(
-        "Uh oh, polyscope::show() was recusively MANY times (depth > 50), this is probably a bug. Perhaps "
-        "you are accidentally calling show every time polyscope::userCallback executes?");
+    exception("Uh oh, polyscope::show() was recusively MANY times (depth > 50), this is probably a bug. Perhaps "
+              "you are accidentally calling show every time polyscope::userCallback executes?");
   };
 
   // Make sure the window is visible
@@ -228,7 +227,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
 void popContext() {
   if (contextStack.empty()) {
-    error("Called popContext() too many times");
+    exception("Called popContext() too many times");
     return;
   }
   contextStack.pop_back();
@@ -240,8 +239,7 @@ void frameTick() {
 
   // Make sure we're initialized
   if (!state::initialized) {
-    throw std::logic_error(options::printPrefix +
-                           "must initialize Polyscope with polyscope::init() before calling polyscope::frameTick().");
+    exception("must initialize Polyscope with polyscope::init() before calling polyscope::frameTick().");
   }
 
   render::engine->showWindow();
@@ -788,8 +786,7 @@ void mainLoopIteration() {
 void show(size_t forFrames) {
 
   if (!state::initialized) {
-    throw std::logic_error(options::printPrefix +
-                           "must initialize Polyscope with polyscope::init() before calling polyscope::show().");
+    exception("must initialize Polyscope with polyscope::init() before calling polyscope::show().");
   }
 
   // the popContext() doesn't quit until _after_ the last frame, so we need to decrement by 1 to get the count right
@@ -833,7 +830,7 @@ bool registerGroup(std::string name) {
   // check if group already exists
   bool inUse = state::groups.find(name) != state::groups.end();
   if (inUse) {
-    polyscope::error("Attempted to register group with name " + name + ", but a group with that name already exists");
+    exception("Attempted to register group with name " + name + ", but a group with that name already exists");
     return false;
   }
 
@@ -849,15 +846,14 @@ bool setParentGroupOfGroup(std::string child, std::string parent) {
   // check if child exists
   bool childExists = state::groups.find(child) != state::groups.end();
   if (!childExists) {
-    polyscope::error("Attempted to set parent of group " + child + ", but no group with that name exists");
+    exception("Attempted to set parent of group " + child + ", but no group with that name exists");
     return false;
   }
 
   // check if parent exists
   bool parentExists = state::groups.find(parent) != state::groups.end();
   if (!parentExists) {
-    polyscope::error("Attempted to set parent of group " + child + " to " + parent +
-                     ", but no group with that name exists");
+    exception("Attempted to set parent of group " + child + " to " + parent + ", but no group with that name exists");
     return false;
   }
 
@@ -870,8 +866,8 @@ bool setParentGroupOfStructure(std::string typeName, std::string child, std::str
   // check if parent exists
   bool parentExists = state::groups.find(parent) != state::groups.end();
   if (!parentExists) {
-    polyscope::error("Attempted to set parent of " + typeName + " " + child + " to " + parent +
-                     ", but no group with that name exists");
+    exception("Attempted to set parent of " + typeName + " " + child + " to " + parent +
+              ", but no group with that name exists");
     return false;
   }
 
@@ -884,8 +880,8 @@ bool setParentGroupOfStructure(std::string typeName, std::string child, std::str
   // check if child exists
   bool childExists = sMap.find(child) != sMap.end();
   if (!childExists) {
-    polyscope::error("Attempted to set parent of " + typeName + " " + child + ", but no " + typeName +
-                     "with that name exists");
+    exception("Attempted to set parent of " + typeName + " " + child + ", but no " + typeName +
+              "with that name exists");
     return false;
   }
 
@@ -913,8 +909,8 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
     if (replaceIfPresent) {
       removeStructure(s->name);
     } else {
-      polyscope::error("Attempted to register structure with name " + s->name +
-                       ", but a structure with that name already exists");
+      exception("Attempted to register structure with name " + s->name +
+                ", but a structure with that name already exists");
       return false;
     }
   }
@@ -941,7 +937,7 @@ Structure* getStructure(std::string type, std::string name) {
 
   // If there are no structures of that type it is an automatic fail
   if (state::structures.find(type) == state::structures.end()) {
-    error("No structures of type " + type + " registered");
+    exception("No structures of type " + type + " registered");
     return nullptr;
   }
   std::map<std::string, Structure*>& sMap = state::structures[type];
@@ -949,8 +945,8 @@ Structure* getStructure(std::string type, std::string name) {
   // Special automatic case, return any
   if (name == "") {
     if (sMap.size() != 1) {
-      error("Cannot use automatic structure get with empty name unless there is exactly one structure of that type "
-            "registered");
+      exception("Cannot use automatic structure get with empty name unless there is exactly one structure of that type "
+                "registered");
       return nullptr;
     }
     return sMap.begin()->second;
@@ -958,7 +954,7 @@ Structure* getStructure(std::string type, std::string name) {
 
   // General case
   if (sMap.find(name) == sMap.end()) {
-    error("No structure of type " + type + " with name " + name + " registered");
+    exception("No structure of type " + type + " with name " + name + " registered");
     return nullptr;
   }
   return sMap[name];
@@ -974,8 +970,8 @@ bool hasStructure(std::string type, std::string name) {
   // Special automatic case, return any
   if (name == "") {
     if (sMap.size() != 1) {
-      error("Cannot use automatic structure get with empty name unless there is exactly one structure of that type "
-            "registered");
+      exception("Cannot use automatic structure get with empty name unless there is exactly one structure of that type "
+                "registered");
     }
     return true;
   }
@@ -985,7 +981,7 @@ bool hasStructure(std::string type, std::string name) {
 void setGroupEnabled(std::string name, bool enabled) {
   // Check if group exists
   if (state::groups.find(name) == state::groups.end()) {
-    error("No group with name " + name + " registered");
+    exception("No group with name " + name + " registered");
     return;
   }
 
@@ -998,7 +994,7 @@ void removeGroup(std::string name, bool errorIfAbsent) {
   // Check if group exists
   if (state::groups.find(name) == state::groups.end()) {
     if (errorIfAbsent) {
-      error("No group with name " + name + " registered");
+      exception("No group with name " + name + " registered");
     }
     return;
   }
@@ -1022,7 +1018,7 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
   // If there are no structures of that type it is an automatic fail
   if (state::structures.find(type) == state::structures.end()) {
     if (errorIfAbsent) {
-      error("No structures of type " + type + " registered");
+      exception("No structures of type " + type + " registered");
     }
     return;
   }
@@ -1031,7 +1027,7 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
   // Check if structure exists
   if (sMap.find(name) == sMap.end()) {
     if (errorIfAbsent) {
-      error("No structure of type " + type + " and name " + name + " registered");
+      exception("No structure of type " + type + " and name " + name + " registered");
     }
     return;
   }
@@ -1068,9 +1064,10 @@ void removeStructure(std::string name, bool errorIfAbsent) {
         if (targetStruct == nullptr) {
           targetStruct = entry.second;
         } else {
-          error("Cannot use automatic structure remove with empty name unless there is exactly one structure of that "
-                "type registered. Found two structures of different types with that name: " +
-                targetStruct->typeName() + " and " + typeMap.first + ".");
+          exception(
+              "Cannot use automatic structure remove with empty name unless there is exactly one structure of that "
+              "type registered. Found two structures of different types with that name: " +
+              targetStruct->typeName() + " and " + typeMap.first + ".");
           return;
         }
       }
@@ -1080,7 +1077,7 @@ void removeStructure(std::string name, bool errorIfAbsent) {
   // Error if none found.
   if (targetStruct == nullptr) {
     if (errorIfAbsent) {
-      error("No structure named: " + name + " to remove.");
+      exception("No structure named: " + name + " to remove.");
     }
     return;
   }

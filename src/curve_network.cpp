@@ -49,9 +49,9 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
 
     // Make sure there are no out of bounds indices
     if (nA >= maxInd || nB >= maxInd) {
-      polyscope::error("CurveNetwork [" + name + "] edge " + std::to_string(iE) + " has bad node indices { " +
-                       std::to_string(nA) + " , " + std::to_string(nB) + " } but there are " + std::to_string(maxInd) +
-                       " nodes.");
+      exception("CurveNetwork [" + name + "] edge " + std::to_string(iE) + " has bad node indices { " +
+                std::to_string(nA) + " , " + std::to_string(nB) + " } but there are " + std::to_string(maxInd) +
+                " nodes.");
     }
 
     // Increment degree
@@ -333,7 +333,7 @@ void CurveNetwork::buildPickUI(size_t localPickID) {
   } else if (localPickID < nNodes() + nEdges()) {
     buildEdgePickUI(localPickID - nNodes());
   } else {
-    error("Bad pick index in curve network");
+    exception("Bad pick index in curve network");
   }
 }
 
@@ -546,10 +546,10 @@ CurveNetworkNodeScalarQuantity& CurveNetwork::resolveNodeRadiusQuantity() {
   if (sizeQ != nullptr) {
     sizeScalarQ = dynamic_cast<CurveNetworkNodeScalarQuantity*>(sizeQ);
     if (sizeScalarQ == nullptr) {
-      polyscope::error("Cannot populate node size from quantity [" + name + "], it is not a scalar quantity");
+      exception("Cannot populate node size from quantity [" + name + "], it is not a scalar quantity");
     }
   } else {
-    polyscope::error("Cannot populate node size from quantity [" + name + "], it does not exist");
+    exception("Cannot populate node size from quantity [" + name + "], it does not exist");
   }
 
   return *sizeScalarQ;

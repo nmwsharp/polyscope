@@ -27,9 +27,9 @@ bool QuantityStructure<S>::checkForQuantityWithNameAndDeleteOrError(std::string 
 
   // if it already exists and we cannot replace, throw an error
   if (!allowReplacement && (quantityExists || floatingQuantityExists)) {
-    error("Tried to add quantity with name: [" + name +
-          "], but a quantity with that name already exists on the structure [" + name +
-          "]. Use the allowReplacement option like addQuantity(..., true) to replace.");
+    exception("Tried to add quantity with name: [" + name +
+              "], but a quantity with that name already exists on the structure [" + name +
+              "]. Use the allowReplacement option like addQuantity(..., true) to replace.");
     return false;
   }
 
@@ -116,7 +116,7 @@ void QuantityStructure<S>::removeQuantity(std::string name, bool errorIfAbsent) 
   bool floatingQuantityExists = floatingQuantities.find(name) != floatingQuantities.end();
 
   if (errorIfAbsent && !(quantityExists || floatingQuantityExists)) {
-    error("No quantity named " + name + " added to structure " + name);
+    exception("No quantity named " + name + " added to structure " + name);
     return;
   }
 
@@ -151,7 +151,7 @@ void QuantityStructure<S>::removeAllQuantities() {
 template <typename S>
 void QuantityStructure<S>::setDominantQuantity(QuantityS<S>* q) {
   if (!q->dominates) {
-    error("tried to set dominant quantity with quantity that has dominates=false");
+    exception("tried to set dominant quantity with quantity that has dominates=false");
     return;
   }
 

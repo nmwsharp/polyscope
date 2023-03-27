@@ -43,8 +43,8 @@ std::string guessNiceNameFromPath(std::string fullname) {
 }
 
 void validateName(const std::string& name) {
-  if (name == "") throw std::logic_error("[polyscope] name must not be the empty string");
-  if (name.find("#") != std::string::npos) throw std::logic_error("[polyscope] name must not contain '#' characters");
+  if (name == "") exception("name must not be the empty string");
+  if (name.find("#") != std::string::npos) exception("name must not contain '#' characters");
 }
 
 std::tuple<std::string, std::string> splitExt(std::string f) {

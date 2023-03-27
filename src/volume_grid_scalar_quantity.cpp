@@ -18,12 +18,6 @@ VolumeGridScalarQuantity::VolumeGridScalarQuantity(std::string name, VolumeGrid&
       isosurfaceColor(uniquePrefix() + "#" + name + "#isosurfaceColor", getNextUniqueColor())
 
 {
-
-  if (values_.size() != parent.nValues()) {
-    polyscope::error("Volume grid scalar quantity " + name + " does not have same number of values (" +
-                     std::to_string(values_.size()) + ") as volume grid (" + std::to_string(parent.nValues()) + ")");
-  }
-
   fillPositions();
 }
 void VolumeGridScalarQuantity::buildCustomUI() {

@@ -89,7 +89,7 @@ void Histogram::updateColormap(const std::string& newColormap) {
 void Histogram::fillBuffers() {
 
   if (rawHistCurveY.size() == 0) {
-    throw std::logic_error("[polyscope] histogram fillBuffers() called before buildHistogram");
+    exception("histogram fillBuffers() called before buildHistogram");
   }
 
   // Push to buffer

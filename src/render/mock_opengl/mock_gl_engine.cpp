@@ -81,7 +81,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec2>& data) {
 
   if (isSet()) {
 
-    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
 
   } else {
 
@@ -99,7 +99,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data) {
 
   if (isSet()) {
 
-    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
 
   } else {
     dataSize = data.size();
@@ -114,7 +114,7 @@ void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& dat
 
   if (isSet()) {
 
-    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
 
   } else {
     dataSize = 2 * data.size();
@@ -129,7 +129,7 @@ void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& dat
 
   if (isSet()) {
 
-    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
 
   } else {
     dataSize = 3 * data.size();
@@ -144,7 +144,7 @@ void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& dat
 
   if (isSet()) {
 
-    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
 
   } else {
     dataSize = 4 * data.size();
@@ -161,7 +161,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec4>& data) {
 
   if (isSet()) {
 
-    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
 
   } else {
     dataSize = data.size();
@@ -175,7 +175,7 @@ void GLAttributeBuffer::setData(const std::vector<float>& data) {
 
   if (isSet()) {
 
-    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
 
   } else {
     dataSize = data.size();
@@ -195,7 +195,7 @@ void GLAttributeBuffer::setData(const std::vector<double>& data) {
 
   if (isSet()) {
 
-    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
 
   } else {
     dataSize = data.size();
@@ -212,7 +212,7 @@ void GLAttributeBuffer::setData(const std::vector<int32_t>& data) {
 
   if (isSet()) {
 
-    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
 
   } else {
 
@@ -230,7 +230,7 @@ void GLAttributeBuffer::setData(const std::vector<uint32_t>& data) {
 
   if (isSet()) {
 
-    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
 
   } else {
     dataSize = data.size();
@@ -244,7 +244,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec2>& data) {
   bind();
 
   if (isSet()) {
-    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
   } else {
     dataSize = data.size();
   }
@@ -255,7 +255,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec3>& data) {
   bind();
 
   if (isSet()) {
-    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
   } else {
     dataSize = data.size();
   }
@@ -267,7 +267,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data) {
   bind();
 
   if (isSet()) {
-    if (static_cast<int64_t>(data.size()) != dataSize) throw std::runtime_error("updated data must have same size");
+    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
   } else {
     dataSize = data.size();
   }
@@ -276,65 +276,65 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data) {
 // get single data values
 
 float GLAttributeBuffer::getData_float(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Float) exception("bad getData type");
   bind();
   float readValue = 777.;
   return readValue;
 }
 double GLAttributeBuffer::getData_double(size_t ind) { return getData_float(ind); }
 glm::vec2 GLAttributeBuffer::getData_vec2(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Vector2Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
   bind();
   glm::vec2 readValue{777., 777.};
   return readValue;
 }
 glm::vec3 GLAttributeBuffer::getData_vec3(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Vector3Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
   bind();
   glm::vec3 readValue{777., 777., 777.};
   return readValue;
 }
 glm::vec4 GLAttributeBuffer::getData_vec4(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Vector4Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
   bind();
   glm::vec4 readValue{777., 777., 777., 777.};
   return readValue;
 }
 int GLAttributeBuffer::getData_int(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Int) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Int) exception("bad getData type");
   bind();
   int readValue = 777;
   return static_cast<int>(readValue);
 }
 uint32_t GLAttributeBuffer::getData_uint32(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::UInt) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::UInt) exception("bad getData type");
   bind();
   uint32_t readValue = 777;
   return readValue;
 }
 glm::uvec2 GLAttributeBuffer::getData_uvec2(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Vector2Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
   bind();
   glm::uvec2 readValue{777, 777};
   return readValue;
 }
 glm::uvec3 GLAttributeBuffer::getData_uvec3(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Vector3Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
   bind();
   glm::uvec3 readValue{777, 777, 777};
   return readValue;
 }
 glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Vector4Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
   bind();
   glm::uvec4 readValue{777, 777, 777, 777};
   return readValue;
@@ -343,8 +343,8 @@ glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
 // get ranges of data
 
 std::vector<float> GLAttributeBuffer::getDataRange_float(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Float) exception("bad getData type");
   bind();
   std::vector<float> readValues(count);
   return readValues;
@@ -360,29 +360,29 @@ std::vector<double> GLAttributeBuffer::getDataRange_double(size_t ind, size_t co
 }
 
 std::vector<glm::vec2> GLAttributeBuffer::getDataRange_vec2(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Vector2Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
   bind();
   std::vector<glm::vec2> readValues(count);
   return readValues;
 }
 std::vector<glm::vec3> GLAttributeBuffer::getDataRange_vec3(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Vector3Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
   bind();
   std::vector<glm::vec3> readValues(count);
   return readValues;
 }
 std::vector<glm::vec4> GLAttributeBuffer::getDataRange_vec4(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Vector4Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
   bind();
   std::vector<glm::vec4> readValues(count);
   return readValues;
 }
 std::vector<int> GLAttributeBuffer::getDataRange_int(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Int) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Int) exception("bad getData type");
   bind();
   std::vector<int> readValues(count);
 
@@ -395,29 +395,29 @@ std::vector<int> GLAttributeBuffer::getDataRange_int(size_t ind, size_t count) {
   return intValues;
 }
 std::vector<uint32_t> GLAttributeBuffer::getDataRange_uint32(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::UInt) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::UInt) exception("bad getData type");
   bind();
   std::vector<uint32_t> readValues(count);
   return readValues;
 }
 std::vector<glm::uvec2> GLAttributeBuffer::getDataRange_uvec2(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Vector2Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
   bind();
   std::vector<glm::uvec2> readValues(count);
   return readValues;
 }
 std::vector<glm::uvec3> GLAttributeBuffer::getDataRange_uvec3(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Vector3Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
   bind();
   std::vector<glm::uvec3> readValues(count);
   return readValues;
 }
 std::vector<glm::uvec4> GLAttributeBuffer::getDataRange_uvec4(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) throw std::runtime_error("bad getData");
-  if (getType() != RenderDataType::Vector4Float) throw std::runtime_error("bad getData type");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
   bind();
   std::vector<glm::uvec4> readValues(count);
   return readValues;
@@ -473,7 +473,7 @@ void GLTextureBuffer::resize(unsigned int newLen) {
   if (dim == 1) {
   }
   if (dim == 2) {
-    throw std::runtime_error("OpenGL error: called 1D resize on 2D texture");
+    exception("OpenGL error: called 1D resize on 2D texture");
   }
   checkGLError();
 }
@@ -484,7 +484,7 @@ void GLTextureBuffer::resize(unsigned int newX, unsigned int newY) {
 
   bind();
   if (dim == 1) {
-    throw std::runtime_error("OpenGL error: called 2D resize on 1D texture");
+    exception("OpenGL error: called 2D resize on 1D texture");
   }
   if (dim == 2) {
   }
@@ -518,8 +518,7 @@ void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 void* GLTextureBuffer::getNativeHandle() { return nullptr; }
 
 std::vector<float> GLTextureBuffer::getDataScalar() {
-  if (dimension(format) != 1)
-    throw std::runtime_error("called getDataScalar on texture which does not have a 1 dimensional format");
+  if (dimension(format) != 1) exception("called getDataScalar on texture which does not have a 1 dimensional format");
   std::vector<float> outData;
   outData.resize(getSizeX() * getSizeY());
 
@@ -527,8 +526,7 @@ std::vector<float> GLTextureBuffer::getDataScalar() {
 }
 
 std::vector<glm::vec2> GLTextureBuffer::getDataVector2() {
-  if (dimension(format) != 2)
-    throw std::runtime_error("called getDataVector2 on texture which does not have a 2 dimensional format");
+  if (dimension(format) != 2) exception("called getDataVector2 on texture which does not have a 2 dimensional format");
 
   std::vector<glm::vec2> outData;
   outData.resize(getSizeX() * getSizeY());
@@ -537,9 +535,8 @@ std::vector<glm::vec2> GLTextureBuffer::getDataVector2() {
 }
 
 std::vector<glm::vec3> GLTextureBuffer::getDataVector3() {
-  if (dimension(format) != 3)
-    throw std::runtime_error("called getDataVector3 on texture which does not have a 3 dimensional format");
-  throw std::runtime_error("not implemented");
+  if (dimension(format) != 3) exception("called getDataVector3 on texture which does not have a 3 dimensional format");
+  exception("not implemented");
 
   std::vector<glm::vec3> outData;
   outData.resize(getSizeX() * getSizeY());
@@ -597,7 +594,7 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<RenderBuffer> renderBufferIn)
 
   // it _better_ be a GL buffer
   std::shared_ptr<GLRenderBuffer> renderBuffer = std::dynamic_pointer_cast<GLRenderBuffer>(renderBufferIn);
-  if (!renderBuffer) throw std::runtime_error("tried to bind to non-GL render buffer");
+  if (!renderBuffer) exception("tried to bind to non-GL render buffer");
 
   renderBuffer->bind();
   bind();
@@ -610,14 +607,14 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<RenderBuffer> renderBufferIn)
 void GLFrameBuffer::addDepthBuffer(std::shared_ptr<RenderBuffer> renderBufferIn) {
   // it _better_ be a GL buffer
   std::shared_ptr<GLRenderBuffer> renderBuffer = std::dynamic_pointer_cast<GLRenderBuffer>(renderBufferIn);
-  if (!renderBuffer) throw std::runtime_error("tried to bind to non-GL render buffer");
+  if (!renderBuffer) exception("tried to bind to non-GL render buffer");
 
   renderBuffer->bind();
   bind();
 
   // Sanity checks
-  // if (depthRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
-  // if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+  // if (depthRenderBuffer != nullptr) exception("OpenGL error: already bound to render buffer");
+  // if (depthTextureBuffer != nullptr) exception("OpenGL error: already bound to texture buffer");
 
   checkGLError();
   renderBuffersDepth.push_back(renderBuffer);
@@ -627,15 +624,15 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<TextureBuffer> textureBufferI
 
   // it _better_ be a GL buffer
   std::shared_ptr<GLTextureBuffer> textureBuffer = std::dynamic_pointer_cast<GLTextureBuffer>(textureBufferIn);
-  if (!textureBuffer) throw std::runtime_error("tried to bind to non-GL texture buffer");
+  if (!textureBuffer) exception("tried to bind to non-GL texture buffer");
 
   textureBuffer->bind();
   bind();
   checkGLError();
 
   // Sanity checks
-  // if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
-  // if (colorTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+  // if (colorRenderBuffer != nullptr) exception("OpenGL error: already bound to render buffer");
+  // if (colorTextureBuffer != nullptr) exception("OpenGL error: already bound to texture buffer");
 
   checkGLError();
   textureBuffersColor.push_back(textureBuffer);
@@ -646,15 +643,15 @@ void GLFrameBuffer::addDepthBuffer(std::shared_ptr<TextureBuffer> textureBufferI
 
   // it _better_ be a GL buffer
   std::shared_ptr<GLTextureBuffer> textureBuffer = std::dynamic_pointer_cast<GLTextureBuffer>(textureBufferIn);
-  if (!textureBuffer) throw std::runtime_error("tried to bind to non-GL texture buffer");
+  if (!textureBuffer) exception("tried to bind to non-GL texture buffer");
 
   textureBuffer->bind();
   bind();
   checkGLError();
 
   // Sanity checks
-  // if (depthRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
-  // if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+  // if (depthRenderBuffer != nullptr) exception("OpenGL error: already bound to render buffer");
+  // if (depthTextureBuffer != nullptr) exception("OpenGL error: already bound to texture buffer");
 
   checkGLError();
   textureBuffersDepth.push_back(textureBuffer);
@@ -707,7 +704,7 @@ void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
 
   // it _better_ be a GL buffer
   GLFrameBuffer* target = dynamic_cast<GLFrameBuffer*>(targetIn);
-  if (!target) throw std::runtime_error("tried to blitTo() non-GL framebuffer");
+  if (!target) exception("tried to blitTo() non-GL framebuffer");
 
   // target->bindForRendering();
   bindForRendering();
@@ -766,7 +763,7 @@ void GLCompiledProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
 
       // if it occurs twice, confirm that the occurences match
       if (a.type != newAttribute.type)
-        throw std::runtime_error("attribute " + a.name + " appears twice in program with different types");
+        exception("attribute " + a.name + " appears twice in program with different types");
 
       return;
     }
@@ -779,8 +776,7 @@ void GLCompiledProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
     if (u.name == newUniform.name) {
 
       // if it occurs twice, confirm that the occurences match
-      if (u.type != newUniform.type)
-        throw std::runtime_error("uniform " + u.name + " appears twice in program with different types");
+      if (u.type != newUniform.type) exception("uniform " + u.name + " appears twice in program with different types");
 
       return;
     }
@@ -794,7 +790,7 @@ void GLCompiledProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
 
       // if it occurs twice, confirm that the occurences match
       if (t.dim != newTexture.dim)
-        throw std::runtime_error("texture " + t.name + " appears twice in program with different dimensions");
+        exception("texture " + t.name + " appears twice in program with different dimensions");
 
       return;
     }
@@ -1515,7 +1511,7 @@ void GLShaderProgram::validateData() {
 
 void GLShaderProgram::setPrimitiveRestartIndex(unsigned int restartIndex_) {
   if (!usePrimitiveRestart) {
-    throw std::runtime_error("setPrimitiveRestartIndex() called, but draw mode does not support restart indices.");
+    exception("setPrimitiveRestartIndex() called, but draw mode does not support restart indices.");
   }
   restartIndex = restartIndex_;
   primitiveRestartIndexSet = true;
@@ -1797,7 +1793,7 @@ std::shared_ptr<GLCompiledProgram> MockGLEngine::getCompiledProgram(const std::s
 
     // Get the list of shaders comprising the program from the global cache
     if (registeredShaderPrograms.find(programName) == registeredShaderPrograms.end()) {
-      throw std::runtime_error("No shader program with name [" + programName + "] registered.");
+      exception("No shader program with name [" + programName + "] registered.");
     }
     const std::vector<ShaderStageSpecification>& stages = registeredShaderPrograms[programName].first;
     DrawMode dm = registeredShaderPrograms[programName].second;
@@ -1833,7 +1829,7 @@ std::shared_ptr<GLCompiledProgram> MockGLEngine::getCompiledProgram(const std::s
       }
 
       if (registeredShaderRules.find(ruleName) == registeredShaderRules.end()) {
-        throw std::runtime_error("No shader replacement rule with name [" + ruleName + "] registered.");
+        exception("No shader replacement rule with name [" + ruleName + "] registered.");
       }
       ShaderReplacementRule& thisRule = registeredShaderRules[ruleName];
       rules.push_back(thisRule);
@@ -2003,12 +1999,12 @@ void MockGLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
 
 #include <stdexcept>
 
+#include "polyscope/messages.h"
+
 namespace polyscope {
 namespace render {
 namespace backend_openGL_mock {
-void initializeRenderEngine() {
-  throw std::runtime_error("Polyscope was not compiled with support for backend: openGL_mock");
-}
+void initializeRenderEngine() { exception("Polyscope was not compiled with support for backend: openGL_mock"); }
 } // namespace backend_openGL_mock
 } // namespace render
 } // namespace polyscope

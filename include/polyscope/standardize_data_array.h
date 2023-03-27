@@ -1073,8 +1073,8 @@ void validateSize(const T& inputData, std::vector<size_t> expectedSizes, std::st
   // Simpler error if only one size
   if (expectedSizes.size() == 1) {
     if (dataSize != expectedSizes[0]) {
-      error("Size validation failed on data array [" + errorName + "]. Expected size " +
-            std::to_string(expectedSizes[0]) + " but has size " + std::to_string(dataSize));
+      exception("Size validation failed on data array [" + errorName + "]. Expected size " +
+                std::to_string(expectedSizes[0]) + " but has size " + std::to_string(dataSize));
     }
   }
   // General case
@@ -1094,8 +1094,8 @@ void validateSize(const T& inputData, std::vector<size_t> expectedSizes, std::st
     }
     sizesStr += "}";
 
-    error("Size validation failed on data array [" + errorName + "]. Expected size in " + sizesStr + " but has size " +
-          std::to_string(dataSize));
+    exception("Size validation failed on data array [" + errorName + "]. Expected size in " + sizesStr +
+              " but has size " + std::to_string(dataSize));
   }
 }
 

@@ -16,14 +16,7 @@ PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector
                                                    PointCloud& pointCloud_, VectorType vectorType_)
 
     : PointCloudQuantity(name, pointCloud_), VectorQuantity<PointCloudVectorQuantity>(*this, vectors_, parent.points,
-                                                                                      vectorType_) {
-
-  if (vectors.size() != parent.nPoints()) {
-    polyscope::error("Point cloud vector quantity " + name + " does not have same number of values (" +
-                     std::to_string(vectors.size()) + ") as point cloud size (" + std::to_string(parent.nPoints()) +
-                     ")");
-  }
-}
+                                                                                      vectorType_) {}
 
 void PointCloudVectorQuantity::draw() {
   if (!isEnabled()) return;

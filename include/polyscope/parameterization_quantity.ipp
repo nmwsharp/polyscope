@@ -24,7 +24,8 @@ std::string styleName(ParamVizStyle v) {
     return "local dist";
     break;
   }
-  throw std::runtime_error("broken");
+  exception("broken");
+  return "";
 }
 
 } // namespace

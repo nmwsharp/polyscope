@@ -105,7 +105,7 @@ void removeFloatingQuantityStructureIfEmpty() {
 void removeFloatingQuantity(std::string name, bool errorIfAbsent) {
   if (!internal::globalFloatingQuantityStructure) {
     if (errorIfAbsent) {
-      error("No floating quantity named " + name + " added.");
+      exception("No floating quantity named " + name + " added.");
     }
     return;
   }

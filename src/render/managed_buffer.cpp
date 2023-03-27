@@ -43,7 +43,7 @@ void ManagedBuffer<T>::ensureHostBufferPopulated() {
   case CanonicalDataSource::RenderBuffer:
 
     // sanity check
-    if (!renderAttributeBuffer) terminatingError("render buffer should be allocated but isn't");
+    if (!renderAttributeBuffer) exception("render buffer should be allocated but isn't");
 
     // copy the data back from the renderBuffer
     data = getAttributeBufferDataRange<T>(*renderAttributeBuffer, 0, renderAttributeBuffer->getDataSize());
@@ -69,20 +69,20 @@ T ManagedBuffer<T>::getValue(size_t ind) {
   switch (currentCanonicalDataSource()) {
   case CanonicalDataSource::HostData:
     if (ind >= data.size())
-      terminatingError("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
+      exception("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
     return data[ind];
     break;
 
   case CanonicalDataSource::NeedsCompute:
     computeFunc();
     if (ind >= data.size())
-      terminatingError("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
+      exception("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
     return data[ind];
     break;
 
   case CanonicalDataSource::RenderBuffer:
     if (static_cast<int64_t>(ind) >= renderAttributeBuffer->getDataSize())
-      terminatingError("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
+      exception("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
     T val = getAttributeBufferData<T>(*renderAttributeBuffer, ind);
     return val;
     break;
@@ -122,7 +122,7 @@ bool ManagedBuffer<T>::hasData() {
 template <typename T>
 void ManagedBuffer<T>::recomputeIfPopulated() {
   if (!dataGetsComputed) { // sanity check
-    terminatingError("called recomputeIfPopulated() on buffer which does not get computed");
+    exception("called recomputeIfPopulated() on buffer which does not get computed");
   }
 
   // if not populated, quick out
@@ -245,8 +245,8 @@ typename ManagedBuffer<T>::CanonicalDataSource ManagedBuffer<T>::currentCanonica
   }
 
   // error! should always be one of the above
-  terminatingError("ManagedBuffer " + name +
-                   " does not have a data in either host or device buffers, nor a compute function.");
+  exception("ManagedBuffer " + name +
+            " does not have a data in either host or device buffers, nor a compute function.");
   return CanonicalDataSource::HostData; // dummy return
 }
 
@@ -256,7 +256,7 @@ void ManagedBuffer<T>::ensureHaveBufferIndexCopyProgram() {
   if (bufferIndexCopyProgram) return;
 
   // sanity check
-  if (!renderAttributeBuffer) terminatingError("ManagedBuffer " + name + " asked to copy indices, but has no buffers");
+  if (!renderAttributeBuffer) exception("ManagedBuffer " + name + " asked to copy indices, but has no buffers");
 
   // TODO allocate the transform feedback program
 }

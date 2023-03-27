@@ -123,8 +123,8 @@ void SurfaceMesh::computeConnectivityData() {
   // validate the face-vertex indices
   for (size_t iV : faceIndsEntries) {
     if (iV >= vertexPositions.size())
-      throw std::logic_error("[polyscope] SurfaceMesh " + name + " has face vertex index " + std::to_string(iV) +
-                             " out of bounds for number of vertices " + std::to_string(vertexPositions.size()));
+      exception("SurfaceMesh " + name + " has face vertex index " + std::to_string(iV) +
+                " out of bounds for number of vertices " + std::to_string(vertexPositions.size()));
   }
 
   // construct the triangualted draw list and all other related data
@@ -186,10 +186,9 @@ void SurfaceMesh::computeConnectivityData() {
 void SurfaceMesh::computeTriangleAllEdgeInds() {
 
   if (edgePerm.empty())
-    throw std::logic_error(
-        "[polyscope] SurfaceMesh " + name +
-        " performed an operation which requires edge indices to be specified, but none have been set. "
-        "Call setEdgePermutation().");
+    exception("SurfaceMesh " + name +
+              " performed an operation which requires edge indices to be specified, but none have been set. "
+              "Call setEdgePermutation().");
 
   triangleVertexInds.ensureHostBufferPopulated();
   triangleAllEdgeInds.data.resize(3 * 3 * nFacesTriangulation());
@@ -210,10 +209,9 @@ void SurfaceMesh::computeTriangleAllEdgeInds() {
     // TODO why can't we use edges on non triangular meshes? Implement it.
 
     if (D != 3) {
-      throw std::logic_error(
-          "[polyscope] SurfaceMesh " + name +
-          " attempted to access triangle-edge indices, but it has non-triangular faces. These indices are "
-          "only well-defined on a pure-triangular mesh.");
+      exception("SurfaceMesh " + name +
+                " attempted to access triangle-edge indices, but it has non-triangular faces. These indices are "
+                "only well-defined on a pure-triangular mesh.");
     }
 
     glm::uvec3 thisTriInds{0, 0, 0};
@@ -227,8 +225,8 @@ void SurfaceMesh::computeTriangleAllEdgeInds() {
       if (seenEdgeInds.find(key) == seenEdgeInds.end()) {
         // process a new edge in the canonical ordering
         if (psEdgeInd >= edgePerm.size()) {
-          throw std::logic_error("[polyscope] SurfaceMesh " + name +
-                                 " edge indexing out of bounds. Did you pass an edge ordering that is too short?");
+          exception("SurfaceMesh " + name +
+                    " edge indexing out of bounds. Did you pass an edge ordering that is too short?");
         }
         thisEdgeInd = edgePerm[psEdgeInd];
         seenEdgeInds[key] = thisEdgeInd;
@@ -516,8 +514,7 @@ void SurfaceMesh::computeDefaultFaceTangentSpaces() {
 
   for (size_t iF = 0; iF < nFaces(); iF++) {
     size_t D = faceIndsStart[iF + 1] - faceIndsStart[iF];
-    if (D != 3)
-      throw std::logic_error("[polyscope] Default face tangent spaces only available for pure-triangular meshes");
+    if (D != 3) exception("Default face tangent spaces only available for pure-triangular meshes");
 
     size_t start = faceIndsStart[iF];
 
@@ -563,18 +560,18 @@ void SurfaceMesh::computeDefaultFaceTangentSpaces() {
 
 void SurfaceMesh::checkHaveVertexTangentSpaces() {
   if (vertexTangentSpaces.hasData()) return;
-  throw std::logic_error("[polyscope] Operation requires vertex tangent spaces for SurfaceMesh " + name +
-                         ", but no tangent spaces have been set. Set them with setVertexTangentBasisX() to continue.");
+  exception("Operation requires vertex tangent spaces for SurfaceMesh " + name +
+            ", but no tangent spaces have been set. Set them with setVertexTangentBasisX() to continue.");
 }
 void SurfaceMesh::checkHaveFaceTangentSpaces() {
   if (faceTangentSpaces.hasData()) return;
-  throw std::logic_error("[polyscope] Operation requires face tangent spaces for SurfaceMesh " + name +
-                         ", but no tangent spaces have been set. Set them with setFaceTangentBasisX() to continue.");
+  exception("Operation requires face tangent spaces for SurfaceMesh " + name +
+            ", but no tangent spaces have been set. Set them with setFaceTangentBasisX() to continue.");
 }
 
 void SurfaceMesh::checkTriangular() {
   if (nFacesTriangulation() != nFaces()) {
-    throw std::logic_error("[polyscope] Cannot proceed, SurfaceMesh " + name + " is not a triangular mesh.");
+    exception("Cannot proceed, SurfaceMesh " + name + " is not a triangular mesh.");
   }
 }
 

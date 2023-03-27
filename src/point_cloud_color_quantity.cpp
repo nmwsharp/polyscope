@@ -11,13 +11,7 @@ namespace polyscope {
 
 PointCloudColorQuantity::PointCloudColorQuantity(std::string name, const std::vector<glm::vec3>& values_,
                                                  PointCloud& pointCloud_)
-    : PointCloudQuantity(name, pointCloud_, true), ColorQuantity(*this, values_) {
-  if (values_.size() != parent.nPoints()) {
-    polyscope::error("Point cloud color quantity " + name + " does not have same number of values (" +
-                     std::to_string(values_.size()) + ") as point cloud size (" + std::to_string(parent.nPoints()) +
-                     ")");
-  }
-}
+    : PointCloudQuantity(name, pointCloud_, true), ColorQuantity(*this, values_) {}
 
 void PointCloudColorQuantity::draw() {
   if (!isEnabled()) return;

@@ -27,7 +27,7 @@ int dimension(const TextureFormat& x) {
     case TextureFormat::DEPTH24:  return 1;
   }
   // clang-format on
-  throw std::runtime_error("bad enum");
+  exception("bad enum");
 }
 
 std::string renderDataTypeName(const RenderDataType& r) {
@@ -108,8 +108,8 @@ AttributeBuffer::~AttributeBuffer() {}
 
 TextureBuffer::TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_)
     : dim(dim_), format(format_), sizeX(sizeX_), sizeY(sizeY_), uniqueID(render::engine->getNextUniqueID()) {
-  if (sizeX > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
-  if (dim > 1 && sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
+  if (sizeX > (1 << 22)) exception("OpenGL error: invalid texture dimensions");
+  if (dim > 1 && sizeY > (1 << 22)) exception("OpenGL error: invalid texture dimensions");
 }
 
 TextureBuffer::~TextureBuffer() {}
@@ -129,7 +129,7 @@ unsigned int TextureBuffer::getTotalSize() const {
   case 2:
     return getSizeX() * getSizeY();
   case 3:
-    throw std::runtime_error("not implemented");
+    exception("not implemented");
     return -1;
   }
   return -1;
@@ -137,7 +137,7 @@ unsigned int TextureBuffer::getTotalSize() const {
 
 RenderBuffer::RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_)
     : type(type_), sizeX(sizeX_), sizeY(sizeY_), uniqueID(render::engine->getNextUniqueID()) {
-  if (sizeX > (1 << 22) || sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid renderbuffer dimensions");
+  if (sizeX > (1 << 22) || sizeY > (1 << 22)) exception("OpenGL error: invalid renderbuffer dimensions");
 }
 
 void RenderBuffer::resize(unsigned int newX, unsigned int newY) {
@@ -176,7 +176,7 @@ void FrameBuffer::resize(unsigned int newXSize, unsigned int newYSize) {
 void FrameBuffer::verifyBufferSizes() {
   for (auto& b : renderBuffersColor) {
     if (b->getSizeX() != getSizeX() || b->getSizeY() != getSizeY())
-      throw std::runtime_error("render buffer size does not match framebuffer size");
+      exception("render buffer size does not match framebuffer size");
   }
 }
 
@@ -422,15 +422,14 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
   // compute downsampling rate
   float sampleX = texture->getSizeX() / currV[2];
   float sampleY = texture->getSizeY() / currV[3];
-  if (sampleX != sampleY) throw std::runtime_error("lighting downsampling should have same aspect");
+  if (sampleX != sampleY) exception("lighting downsampling should have same aspect");
   int sampleLevel;
   if (sampleX < 1.) {
     sampleLevel = 1;
   } else {
-    if (sampleX != static_cast<int>(sampleX))
-      throw std::runtime_error("lighting downsampling should have integer ratio");
+    if (sampleX != static_cast<int>(sampleX)) exception("lighting downsampling should have integer ratio");
     sampleLevel = static_cast<int>(sampleX);
-    if (sampleLevel > 4) throw std::runtime_error("lighting downsampling only implemented up to 4x");
+    if (sampleLevel > 4) exception("lighting downsampling only implemented up to 4x");
   }
 
   // == Lazily regnerate the mapper if it doesn't match the current settings
@@ -561,7 +560,7 @@ bool Engine::transparencyEnabled() {
 }
 
 void Engine::setSSAAFactor(int newVal) {
-  if (newVal < 1 || newVal > 4) throw std::runtime_error("ssaaFactor must be one of 1,2,3,4");
+  if (newVal < 1 || newVal > 4) exception("ssaaFactor must be one of 1,2,3,4");
   ssaaFactor = newVal;
   updateWindowSize(true);
 }
@@ -674,15 +673,14 @@ uint64_t Engine::getNextUniqueID() {
 }
 
 void Engine::pushBindFramebufferForRendering(FrameBuffer& f) {
-  if (currRenderFramebuffer == nullptr)
-    throw std::runtime_error("tried to push current framebuff on to stack, but it is null");
+  if (currRenderFramebuffer == nullptr) exception("tried to push current framebuff on to stack, but it is null");
   renderFramebufferStack.push_back(currRenderFramebuffer);
   f.bindForRendering();
 }
 
 void Engine::popBindFramebufferForRendering() {
   if (renderFramebufferStack.empty())
-    throw std::runtime_error("called popBindFramebufferForRendering() on empty stack. Forgot to push?");
+    exception("called popBindFramebufferForRendering() on empty stack. Forgot to push?");
   renderFramebufferStack.back()->bindForRendering();
   renderFramebufferStack.pop_back();
 }
@@ -846,14 +844,14 @@ void Engine::loadDefaultMaterial(std::string name) {
     newMaterial->supportsRGB = false;
     for(int i = 0; i < 4; i++) {buff[i] = &bindata_normal[0]; buffSize[i] = bindata_normal.size();}
 	} else {
-    throw std::runtime_error("unrecognized default material name " + name);
+    exception("unrecognized default material name " + name);
   }
   // clang-format on
 
   for (int i = 0; i < 4; i++) {
     int width, height, nComp;
     float* data = stbi_loadf_from_memory(buff[i], buffSize[i], &width, &height, &nComp, 3);
-    if (!data) polyscope::error("failed to load material");
+    if (!data) exception("failed to load material");
     newMaterial->textureBuffers[i] = loadMaterialTexture(data, width, height);
     stbi_image_free(data);
   }
@@ -947,7 +945,7 @@ Material& Engine::getMaterial(const std::string& name) {
     if (name == m->name) return *m;
   }
 
-  throw std::runtime_error("unrecognized material name: " + name);
+  exception("unrecognized material name: " + name);
   return *materials[0];
 }
 
@@ -993,7 +991,7 @@ const ValueColorMap& Engine::getColorMap(const std::string& name) {
     if (name == cmap->name) return *cmap;
   }
 
-  throw std::runtime_error("unrecognized colormap name: " + name);
+  exception("unrecognized colormap name: " + name);
   return *colorMaps[0];
 }
 
@@ -1034,7 +1032,7 @@ void Engine::loadDefaultColorMap(std::string name) {
   } else if (name == "turbo") {
     buff = &CM_TURBO;
   } else {
-    throw std::runtime_error("unrecognized default colormap " + name);
+    exception("unrecognized default colormap " + name);
   }
 
   ValueColorMap* newMap = new ValueColorMap();
@@ -1060,7 +1058,7 @@ void Engine::loadDefaultColorMaps() {
 void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer) {
   ImGui::Begin(windowName.c_str());
 
-  if (buffer->getDimension() != 2) error("only know how to show 2D textures");
+  if (buffer->getDimension() != 2) exception("only know how to show 2D textures");
 
   float w = ImGui::GetWindowWidth();
   float h = w * buffer->getSizeY() / buffer->getSizeX();

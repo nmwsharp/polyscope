@@ -40,9 +40,8 @@ size_t requestPickBufferRange(Structure* requestingStructure, size_t count) {
 #pragma GCC diagnostic pop
 
   if (count > maxPickInd || maxPickInd - count < nextPickBufferInd) {
-    throw std::runtime_error(
-        "Wow, you sure do have a lot of stuff, Polyscope can't even count it all. (Ran out of indices while "
-        "enumerating structure elements for pick buffer.)");
+    exception("Wow, you sure do have a lot of stuff, Polyscope can't even count it all. (Ran out of indices while "
+              "enumerating structure elements for pick buffer.)");
   }
 
   size_t ret = nextPickBufferInd;
@@ -110,7 +109,7 @@ size_t localIndexToGlobal(std::pair<Structure*, size_t> localPick) {
   if (localPick.first == nullptr) return 0;
 
   if (structureRanges.find(localPick.first) == structureRanges.end()) {
-    throw std::runtime_error("structure does not match any allocated pick range");
+    exception("structure does not match any allocated pick range");
   }
 
   std::tuple<size_t, size_t> range = structureRanges[localPick.first];

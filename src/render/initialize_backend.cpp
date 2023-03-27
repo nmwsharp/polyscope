@@ -1,5 +1,6 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
+#include "polyscope/messages.h"
 #include "polyscope/render/engine.h"
 
 namespace polyscope {
@@ -37,7 +38,7 @@ void initializeRenderEngine(std::string backend) {
 #endif
 
     if (backend == "") {
-      throw std::runtime_error("no Polyscope backends available");
+      exception("no Polyscope backends available");
     }
   }
 
@@ -49,7 +50,7 @@ void initializeRenderEngine(std::string backend) {
   } else if (backend == "openGL_mock") {
     backend_openGL_mock::initializeRenderEngine();
   } else {
-    throw std::runtime_error("unrecognized Polyscope backend " + backend);
+    exception("unrecognized Polyscope backend " + backend);
   }
 }
 

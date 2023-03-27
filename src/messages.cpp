@@ -213,11 +213,17 @@ void error(std::string message) {
   if (options::errorsThrowExceptions) {
     throw std::logic_error(options::printPrefix + message);
   }
+}
 
-  auto func = std::bind(buildErrorUI, message, false);
+void exception(std::string message) {
 
-  render::engine->showWindow();
-  pushContext(func, false);
+  message = options::printPrefix + " [EXCEPTION] " + message;
+
+  if (options::verbosity > 0) {
+    std::cout << message << std::endl;
+  }
+
+  throw std::runtime_error(message);
 }
 
 void terminatingError(std::string message) {

@@ -115,7 +115,8 @@ inline std::string getMeshElementTypeName(VolumeMeshElement type) {
   case VolumeMeshElement::CELL:
     return "cell";
   }
-  throw std::runtime_error("broken");
+  exception("broken");
+  return "";
 }
 inline std::ostream& operator<<(std::ostream& out, const VolumeMeshElement value) {
   return out << getMeshElementTypeName(value);

@@ -83,7 +83,8 @@ inline std::string getMeshElementTypeName(MeshElement type) {
   case MeshElement::CORNER:
     return "corner";
   }
-  throw std::runtime_error("broken");
+  exception("broken");
+  return "";
 }
 inline std::ostream& operator<<(std::ostream& out, const MeshElement value) {
   return out << getMeshElementTypeName(value);
@@ -95,8 +96,8 @@ void SurfaceMesh::setEdgePermutation(const T& perm, size_t expectedSize) {
 
   // try to catch cases where it is set twice
   if (triangleAllEdgeInds.size() > 0) {
-    polyscope::error("Attempting to set an edge permutation for SurfaceMesh " + name +
-                     ", but one is already set. Must be set exactly once.");
+    exception("Attempting to set an edge permutation for SurfaceMesh " + name +
+              ", but one is already set. Must be set exactly once.");
     return;
   }
 
@@ -121,7 +122,7 @@ void SurfaceMesh::setHalfedgePermutation(const T& perm, size_t expectedSize) {
   // attempt to catch cases where the user sets a permutation after already adding quantities which would use the
   // permutation (this is unsupported and will cause bad things)
   if (triangleAllHalfedgeInds.size() > 0) {
-    polyscope::error(
+    exception(
         "SurfaceMesh " + name +
         ": a halfedge index permutation was set after quantities have already used the default permutation. This is "
         "not supported, the halfedge index must be specified before any halfedge-value data is added.");
@@ -148,7 +149,7 @@ void SurfaceMesh::setCornerPermutation(const T& perm, size_t expectedSize) {
   // attempt to catch cases where the user sets a permutation after already adding quantities which would use the
   // permutation (this is unsupported and will cause bad things)
   if (triangleAllCornerInds.size() > 0) {
-    polyscope::error(
+    exception(
         "SurfaceMesh " + name +
         ": a corner index permutation was set after quantities have already used the default permutation. This is "
         "not supported, the corner index must be specified before any corner-value data is added.");
@@ -258,9 +259,8 @@ SurfaceFaceScalarQuantity* SurfaceMesh::addFaceScalarQuantity(std::string name, 
 template <class T>
 SurfaceEdgeScalarQuantity* SurfaceMesh::addEdgeScalarQuantity(std::string name, const T& data, DataType type) {
   if (edgeDataSize == INVALID_IND) {
-    throw std::logic_error(
-        "[polyscope] SurfaceMesh " + name +
-        " attempted to set edge-valued data, but this requires an edge ordering. Call setEdgePermutation().");
+    exception("SurfaceMesh " + name +
+              " attempted to set edge-valued data, but this requires an edge ordering. Call setEdgePermutation().");
   }
   validateSize(data, edgeDataSize, "edge scalar quantity " + name);
   return addEdgeScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
@@ -331,9 +331,8 @@ template <class T, class O>
 SurfaceOneFormTangentVectorQuantity* SurfaceMesh::addOneFormTangentVectorQuantity(std::string name, const T& data,
                                                                                   const O& orientations) {
   if (edgeDataSize == INVALID_IND) {
-    throw std::logic_error(
-        "[polyscope] SurfaceMesh " + name +
-        " attempted to set edge-valued data, but this requires an edge ordering. Call setEdgePermutation().");
+    exception("SurfaceMesh " + name +
+              " attempted to set edge-valued data, but this requires an edge ordering. Call setEdgePermutation().");
   }
   validateSize(data, edgeDataSize, "one form tangent vector quantity " + name);
   return addOneFormTangentVectorQuantityImpl(name, standardizeArray<double, T>(data),

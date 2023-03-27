@@ -219,10 +219,10 @@ PointCloudScalarQuantity& PointCloud::resolvePointRadiusQuantity() {
   if (sizeQ != nullptr) {
     sizeScalarQ = dynamic_cast<PointCloudScalarQuantity*>(sizeQ);
     if (sizeScalarQ == nullptr) {
-      polyscope::error("Cannot populate point size from quantity [" + name + "], it is not a scalar quantity");
+      exception("Cannot populate point size from quantity [" + name + "], it is not a scalar quantity");
     }
   } else {
-    polyscope::error("Cannot populate point size from quantity [" + name + "], it does not exist");
+    exception("Cannot populate point size from quantity [" + name + "], it does not exist");
   }
 
   return *sizeScalarQ;
