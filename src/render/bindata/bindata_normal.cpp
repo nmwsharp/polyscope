@@ -1,9 +1,9 @@
-#include <array>
 #include "polyscope/render/material_defs.h"
-namespace polyscope { 
-namespace render { 
+#include <array>
+namespace polyscope {
+namespace render {
 
-// clang-format off 
+// clang-format off
 const std::array<unsigned char, 29444> bindata_normal = {
 0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 
 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 

@@ -1,9 +1,9 @@
-#include <array>
 #include "polyscope/render/material_defs.h"
-namespace polyscope { 
-namespace render { 
+#include <array>
+namespace polyscope {
+namespace render {
 
-// clang-format off 
+// clang-format off
 const std::array<unsigned char, 101212> bindata_wax_r = {
 0x23, 0x3f, 0x52, 0x41, 0x44, 0x49, 0x41, 0x4e, 0x43, 0x45, 
 0x0a, 0x23, 0x20, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 
