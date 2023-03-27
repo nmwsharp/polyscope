@@ -184,4 +184,34 @@ void SurfaceHalfedgeScalarQuantity::buildHalfedgeInfoGUI(size_t heInd) {
   ImGui::NextColumn();
 }
 
+// ========================================================
+// ==========          Corner Scalar           ==========
+// ========================================================
+
+SurfaceCornerScalarQuantity::SurfaceCornerScalarQuantity(std::string name, const std::vector<double>& values_,
+                                                         SurfaceMesh& mesh_, DataType dataType_)
+    : SurfaceScalarQuantity(name, mesh_, "corner", values_, dataType_)
+
+{
+  values.ensureHostBufferPopulated();
+  hist.buildHistogram(values.data);
+}
+
+void SurfaceCornerScalarQuantity::createProgram() {
+  // Create the program to draw this quantity
+  program = render::engine->requestShader("MESH", parent.addSurfaceMeshRules(addScalarRules({"MESH_PROPAGATE_VALUE"})));
+
+  program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
+  parent.setMeshGeometryAttributes(*program);
+  render::engine->setMaterial(*program, parent.getMaterial());
+  program->setTextureFromColormap("t_colormap", cMap.get());
+}
+
+void SurfaceCornerScalarQuantity::buildCornerInfoGUI(size_t cInd) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  ImGui::Text("%g", values.getValue(cInd));
+  ImGui::NextColumn();
+}
+
 } // namespace polyscope

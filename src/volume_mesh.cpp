@@ -496,7 +496,7 @@ void VolumeMesh::prepare() {
 void VolumeMesh::preparePick() {
 
   // Create a new program
-  pickProgram = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_PICK"}),
+  pickProgram = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_PICK_SIMPLE"}),
                                               render::ShaderReplacementDefaults::Pick);
 
   fillGeometryBuffers(*pickProgram);
@@ -517,13 +517,14 @@ void VolumeMesh::preparePick() {
 
   // == Fill buffers
 
-  std::vector<std::array<glm::vec3, 3>> vertexColors, edgeColors, halfedgeColors;
+  std::vector<std::array<glm::vec3, 3>> vertexColors, edgeColors, halfedgeColors, cornerColors;
   std::vector<glm::vec3> faceColor;
 
   // Reserve space
   vertexColors.resize(3 * nFacesTriangulation());
   edgeColors.resize(3 * nFacesTriangulation());
   halfedgeColors.resize(3 * nFacesTriangulation());
+  cornerColors.resize(3 * nFacesTriangulation());
   faceColor.resize(3 * nFacesTriangulation());
 
   size_t iFront = 0;
@@ -560,8 +561,6 @@ void VolumeMesh::preparePick() {
 
         for (int k = 0; k < 3; k++) faceColor[3 * iData + k] = cellColor;
         for (int k = 0; k < 3; k++) vertexColors[3 * iData + k] = vColor;
-        for (int k = 0; k < 3; k++) edgeColors[3 * iData + k] = cellColorArr;
-        for (int k = 0; k < 3; k++) halfedgeColors[3 * iData + k] = cellColorArr;
       }
 
       iF++;
@@ -571,8 +570,6 @@ void VolumeMesh::preparePick() {
 
   // Store data in buffers
   pickProgram->setAttribute<glm::vec3, 3>("a_vertexColors", vertexColors);
-  pickProgram->setAttribute<glm::vec3, 3>("a_edgeColors", edgeColors);
-  pickProgram->setAttribute<glm::vec3, 3>("a_halfedgeColors", halfedgeColors);
   pickProgram->setAttribute("a_faceColor", faceColor);
 }
 

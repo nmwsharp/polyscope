@@ -143,48 +143,21 @@ void SurfaceMesh::setHalfedgePermutation(const T& perm, size_t expectedSize) {
   markHalfedgesAsUsed();
 }
 
-template <class T>
-void SurfaceMesh::setCornerPermutation(const T& perm, size_t expectedSize) {
-
-  // attempt to catch cases where the user sets a permutation after already adding quantities which would use the
-  // permutation (this is unsupported and will cause bad things)
-  if (triangleAllCornerInds.size() > 0) {
-    exception(
-        "SurfaceMesh " + name +
-        ": a corner index permutation was set after quantities have already used the default permutation. This is "
-        "not supported, the corner index must be specified before any corner-value data is added.");
-    return;
-  }
-
-  validateSize(perm, cornerDataSize, "corner permutation for " + name);
-  cornerPerm = standardizeArray<size_t, T>(perm);
-
-  cornerDataSize = expectedSize;
-  if (cornerDataSize == 0) {
-    // Find max element to set the data size
-    for (size_t i : cornerPerm) {
-      cornerDataSize = std::max(cornerDataSize, i + 1);
-    }
-  }
-}
 
 template <class T>
 void SurfaceMesh::setAllPermutations(const std::array<std::pair<T, size_t>, 5>& perms) {
   // (kept for backward compatbility only)
-  // forward to the 3-arg version, ignoring first two
-  setAllPermutations(std::array<std::pair<T, size_t>, 3>{perms[2], perms[3], perms[4]});
+  // forward to the 3-arg version, ignoring the unused ones
+  setAllPermutations(std::array<std::pair<T, size_t>, 2>{perms[2], perms[3]});
 }
 
 template <class T>
-void SurfaceMesh::setAllPermutations(const std::array<std::pair<T, size_t>, 3>& perms) {
+void SurfaceMesh::setAllPermutations(const std::array<std::pair<T, size_t>, 2>& perms) {
   if (perms[0].first.size() > 0) {
     setEdgePermutation(perms[0].first, perms[0].second);
   }
   if (perms[1].first.size() > 0) {
     setHalfedgePermutation(perms[1].first, perms[1].second);
-  }
-  if (perms[2].first.size() > 0) {
-    setCornerPermutation(perms[2].first, perms[2].second);
   }
 }
 
@@ -270,6 +243,12 @@ template <class T>
 SurfaceHalfedgeScalarQuantity* SurfaceMesh::addHalfedgeScalarQuantity(std::string name, const T& data, DataType type) {
   validateSize(data, halfedgeDataSize, "halfedge scalar quantity " + name);
   return addHalfedgeScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
+}
+
+template <class T>
+SurfaceCornerScalarQuantity* SurfaceMesh::addCornerScalarQuantity(std::string name, const T& data, DataType type) {
+  validateSize(data, cornerDataSize, "corner scalar quantity " + name);
+  return addCornerScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
 }
 
 
