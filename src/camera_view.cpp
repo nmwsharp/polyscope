@@ -289,8 +289,6 @@ void CameraView::buildPickUI(size_t localPickID) {
     setViewToThisCamera(true);
   }
 
-  // TODO
-  /*
 
   ImGui::Spacing();
   ImGui::Indent(20.);
@@ -303,7 +301,6 @@ void CameraView::buildPickUI(size_t localPickID) {
   }
 
   ImGui::Indent(-20.);
-  */
 }
 
 void CameraView::buildCustomUI() {
@@ -371,42 +368,42 @@ void CameraView::refresh() {
 }
 
 void CameraView::setViewToThisCamera(bool withFlight) {
+
+  // Adjust the params to push the view forward by eps so it doesn't clip into the frame
+  glm::vec3 look, up, right;
+  std::tie(look, up, right) = params.getCameraFrame();
+  glm::vec3 root = params.getPosition();
+  root += look * getWidgetFocalLength() * 0.01f;
+  CameraParameters adjParams(root, look, up, params.getFoVVerticalDegrees(), params.getAspectRatioWidthOverHeight());
+
   if (withFlight) {
-    view::startFlightTo(params);
+    view::startFlightTo(adjParams);
   } else {
-    view::setViewToCamera(params);
+    view::setViewToCamera(adjParams);
   }
 }
 
 // === Quantities
 
-// Quantity default methods
-/*
-CameraViewQuantity::CameraViewQuantity(std::string name_, CameraView& pointCloud_, bool dominates_)
-    : QuantityS<CameraView>(name_, pointCloud_, dominates_) {}
-
-
-void CameraViewQuantity::buildInfoGUI(size_t pointInd) {}
-*/
 
 // === Setters and getters
 
 CameraParameters CameraView::getCameraParameters() { return params; }
 
-CameraView* CameraView::setWidgetFocalLength(double newVal, bool isRelative) {
+CameraView* CameraView::setWidgetFocalLength(float newVal, bool isRelative) {
   widgetFocalLength = ScaledValue<float>(newVal, isRelative);
   geometryChanged();
   polyscope::requestRedraw();
   return this;
 }
-double CameraView::getWidgetFocalLength() { return widgetFocalLength.get().asAbsolute(); }
+float CameraView::getWidgetFocalLength() { return widgetFocalLength.get().asAbsolute(); }
 
-CameraView* CameraView::setWidgetThickness(double newVal) {
+CameraView* CameraView::setWidgetThickness(float newVal) {
   widgetThickness = newVal;
   polyscope::requestRedraw();
   return this;
 }
-double CameraView::getWidgetThickness() { return widgetThickness.get(); }
+float CameraView::getWidgetThickness() { return widgetThickness.get(); }
 
 CameraView* CameraView::setWidgetColor(glm::vec3 val) {
   widgetColor = val;

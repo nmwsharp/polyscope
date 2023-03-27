@@ -77,12 +77,12 @@ public:
 
   // Set focal length of the camera. This only effects how it the camera widget is rendered
   // in the 3D view, it has nothing to do with the actual data stored or camera transform.
-  CameraView* setWidgetFocalLength(double newVal, bool isRelative = true);
-  double getWidgetFocalLength();
+  CameraView* setWidgetFocalLength(float newVal, bool isRelative = true);
+  float getWidgetFocalLength();
 
   // Set the thickness of the wireframe used to draw the camera (in relative units)
-  CameraView* setWidgetThickness(double newVal);
-  double getWidgetThickness();
+  CameraView* setWidgetThickness(float newVal);
+  float getWidgetThickness();
 
   // Color of the widget
   CameraView* setWidgetColor(glm::vec3 val);
@@ -132,8 +132,8 @@ private:
 
 // Shorthand to add a camera view to Polyscope
 template <class T1, class T2, class T3>
-CameraView* registerCameraView(std::string name, const T1& root, const T2& lookDir, const T3& upDir, double fovVertDeg,
-                               double aspectRatio);
+CameraView* registerCameraView(std::string name, const T1& root, const T2& lookDir, const T3& upDir, float fovVertDeg,
+                               float aspectRatio);
 
 CameraView* registerCameraView(std::string name, CameraParameters params);
 
