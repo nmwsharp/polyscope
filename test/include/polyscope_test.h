@@ -7,6 +7,7 @@
 
 #include "gtest/gtest.h"
 
+#include "polyscope/camera_view.h"
 #include "polyscope/curve_network.h"
 #include "polyscope/implicit_surface.h"
 #include "polyscope/pick.h"
@@ -15,7 +16,6 @@
 #include "polyscope/surface_mesh.h"
 #include "polyscope/types.h"
 #include "polyscope/volume_mesh.h"
-#include "polyscope/camera_view.h"
 
 // Which polyscope backend to use for testing
 extern std::string testBackend;
