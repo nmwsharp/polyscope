@@ -15,6 +15,7 @@
 #include "polyscope/surface_mesh.h"
 #include "polyscope/types.h"
 #include "polyscope/volume_mesh.h"
+#include "polyscope/camera_view.h"
 
 // Which polyscope backend to use for testing
 extern std::string testBackend;

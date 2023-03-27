@@ -32,6 +32,15 @@ TEST_F(PolyscopeTest, FloatingImageTest) {
     polyscope::show(3);
   }
 
+  { // ColorImageQuantity lower left
+    std::vector<std::array<float, 3>> valsRGB(dimX * dimY, std::array<float, 3>{0.44, 0.55, 0.66});
+    polyscope::ColorImageQuantity* im =
+        polyscope::addColorImageQuantity("im color lower left", dimX, dimY, valsRGB, polyscope::ImageOrigin::LowerLeft);
+    polyscope::show(3);
+    im->setShowFullscreen(true);
+    polyscope::show(3);
+  }
+
   { // ColorAlphaImageQuantity
     std::vector<std::array<float, 4>> valsRGBA(dimX * dimY, std::array<float, 4>{0.44, 0.55, 0.66, 0.77});
     polyscope::ColorImageQuantity* im = polyscope::addColorAlphaImageQuantity("im color alpha", dimX, dimY, valsRGBA,
