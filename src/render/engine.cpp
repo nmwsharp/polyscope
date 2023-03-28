@@ -28,6 +28,7 @@ int dimension(const TextureFormat& x) {
   }
   // clang-format on
   exception("bad enum");
+  return 0;
 }
 
 std::string renderDataTypeName(const RenderDataType& r) {
