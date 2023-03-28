@@ -174,7 +174,7 @@ void ParameterizationQuantity<QuantityT>::fillParameterizationBuffers(render::Sh
 template <typename QuantityT>
 void ParameterizationQuantity<QuantityT>::setParameterizationUniforms(render::ShaderProgram& p) {
 
-  // Interpretatin of modulo parameter depends on data type
+  // Interpretation of modulo parameter depends on data type
   switch (coordsType) {
   case ParamCoordsType::UNIT:
     p.setUniform("u_modLen", getCheckerSize());
@@ -297,6 +297,7 @@ QuantityT* ParameterizationQuantity<QuantityT>::setTexture(unsigned int sizeX, u
                                                            TextureFormat format) {
   textureData = textureData_;
   texture = render::engine->generateTextureBuffer(format, sizeX, sizeY, textureData.data());
+  texture->setFilterMode(FilterMode::Linear);
   return &quantity;
 }
 
