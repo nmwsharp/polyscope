@@ -23,6 +23,9 @@ std::string styleName(ParamVizStyle v) {
   case ParamVizStyle::LOCAL_RAD:
     return "local dist";
     break;
+  case ParamVizStyle::TEXTURE:
+    return "texture";
+    break;
   }
   exception("broken");
   return "";
@@ -56,8 +59,8 @@ void ParameterizationQuantity<QuantityT>::buildParameterizationUI() {
 
   // Choose viz style
   if (ImGui::BeginCombo("style", styleName(getStyle()).c_str())) {
-    for (ParamVizStyle s :
-         {ParamVizStyle::CHECKER, ParamVizStyle::GRID, ParamVizStyle::LOCAL_CHECK, ParamVizStyle::LOCAL_RAD}) {
+    for (ParamVizStyle s : {ParamVizStyle::CHECKER, ParamVizStyle::GRID, ParamVizStyle::LOCAL_CHECK,
+                            ParamVizStyle::LOCAL_RAD, ParamVizStyle::TEXTURE}) {
       if (ImGui::Selectable(styleName(s).c_str(), s == getStyle())) {
         setStyle(s);
       }
@@ -76,6 +79,11 @@ void ParameterizationQuantity<QuantityT>::buildParameterizationUI() {
   ImGui::PopItemWidth();
 
   switch (getStyle()) {
+  case ParamVizStyle::TEXTURE:
+    if (texture) {
+
+      break;
+    }
   case ParamVizStyle::CHECKER:
     if (ImGui::ColorEdit3("##colors2", &checkColor1.get()[0], ImGuiColorEditFlags_NoInputs))
       setCheckerColors(getCheckerColors());
@@ -119,6 +127,11 @@ template <typename QuantityT>
 std::vector<std::string> ParameterizationQuantity<QuantityT>::addParameterizationRules(std::vector<std::string> rules) {
 
   switch (getStyle()) {
+  case ParamVizStyle::TEXTURE:
+    if (texture) {
+      rules.insert(rules.end(), {"SHADE_TEXTURE_VALUE2"});
+      break;
+    }
   case ParamVizStyle::CHECKER:
     rules.insert(rules.end(), {"SHADE_CHECKER_VALUE2"});
     break;
@@ -139,6 +152,11 @@ std::vector<std::string> ParameterizationQuantity<QuantityT>::addParameterizatio
 template <typename QuantityT>
 void ParameterizationQuantity<QuantityT>::fillParameterizationBuffers(render::ShaderProgram& p) {
   switch (getStyle()) {
+  case ParamVizStyle::TEXTURE:
+    if (texture) {
+      p.setTextureFromBuffer("t_tex", texture.get());
+      break;
+    }
   case ParamVizStyle::CHECKER:
     break;
   case ParamVizStyle::GRID:
@@ -168,6 +186,11 @@ void ParameterizationQuantity<QuantityT>::setParameterizationUniforms(render::Sh
 
   // Set other uniforms needed
   switch (getStyle()) {
+  case ParamVizStyle::TEXTURE:
+    if (texture) {
+
+      break;
+    }
   case ParamVizStyle::CHECKER:
     p.setUniform("u_color1", getCheckerColors().first);
     p.setUniform("u_color2", getCheckerColors().second);
@@ -266,6 +289,15 @@ QuantityT* ParameterizationQuantity<QuantityT>::setAltDarkness(double newVal) {
 template <typename QuantityT>
 double ParameterizationQuantity<QuantityT>::getAltDarkness() {
   return altDarkness.get();
+}
+
+template <typename QuantityT>
+QuantityT* ParameterizationQuantity<QuantityT>::setTexture(unsigned int sizeX, unsigned int sizeY,
+                                                           const std::vector<unsigned char>& textureData_,
+                                                           TextureFormat format) {
+  textureData = textureData_;
+  texture = render::engine->generateTextureBuffer(format, sizeX, sizeY, textureData.data());
+  return &quantity;
 }
 
 

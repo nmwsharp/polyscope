@@ -1929,6 +1929,7 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("SHADEVALUE_MAG_VALUE2", SHADEVALUE_MAG_VALUE2);
   registerShaderRule("ISOLINE_STRIPE_VALUECOLOR", ISOLINE_STRIPE_VALUECOLOR);
   registerShaderRule("CHECKER_VALUE2COLOR", CHECKER_VALUE2COLOR);
+  registerShaderRule("SHADE_TEXTURE_VALUE2", SHADE_TEXTURE_VALUE2);
  
   // Texture and image things
   registerShaderRule("TEXTURE_ORIGIN_UPPERLEFT", TEXTURE_ORIGIN_UPPERLEFT);

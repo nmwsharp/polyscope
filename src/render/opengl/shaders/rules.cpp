@@ -272,6 +272,26 @@ const ShaderReplacementRule CHECKER_VALUE2COLOR (
     /* textures */ {}
 );
 
+const ShaderReplacementRule SHADE_TEXTURE_VALUE2 (
+    /* rule name */ "CHECKER_TEXTURE_VALUE2",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_modLen;
+          uniform sampler2D t_tex;
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+        vec3 albedoColor = texture(t_tex, shadeValue2 * u_modLen).rgb;
+      )"}
+    },
+    /* uniforms */ {
+       {"u_modLen", RenderDataType::Float},
+    },
+    /* attributes */ {},
+    /* textures */ {
+       {"t_tex", 2},
+    }
+);
+
 
 const ShaderReplacementRule GENERATE_VIEW_POS (
     /* rule name */ "GENERATE_VIEW_POS",

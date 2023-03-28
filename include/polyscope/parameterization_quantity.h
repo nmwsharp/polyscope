@@ -32,8 +32,9 @@ public:
   // Wrapper around the actual buffer of scalar data stored in the class.
   // Interaction with the data (updating it on CPU or GPU side, accessing it, etc) happens through this wrapper.
   render::ManagedBuffer<glm::vec2> coords;
-
   const ParamCoordsType coordsType;
+
+  std::shared_ptr<render::TextureBuffer> texture;
 
   // === Get/set visualization parameters
 
@@ -63,6 +64,10 @@ public:
   QuantityT* setAltDarkness(double newVal);
   double getAltDarkness();
 
+  // Texture
+  QuantityT* setTexture(unsigned int sizeX, unsigned int sizeY, const std::vector<unsigned char>& textureData,
+                        TextureFormat format = TextureFormat::RGB32F);
+
   // === Helpers for rendering
   std::vector<std::string> addParameterizationRules(std::vector<std::string> rules);
   void fillParameterizationBuffers(render::ShaderProgram& p);
@@ -71,6 +76,7 @@ public:
 protected:
   // Raw storage for the data. You should only interact with this via the managed buffer above
   std::vector<glm::vec2> coordsData;
+  std::vector<unsigned char> textureData;
 
   // === Visualization parameters
 

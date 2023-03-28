@@ -1143,7 +1143,16 @@ void GLCompiledProgram::compileGLProgram(const std::vector<ShaderStageSpecificat
       checkGLError();
     } catch (...) {
       std::cout << "GLError() after shader compilation! Program text:" << std::endl;
-      std::cout << s.src.c_str() << std::endl;
+      // std::cout << s.src.c_str() << std::endl;
+
+      // process shader line-by-line to print line numbers:
+      std::stringstream ss(s.src);
+      std::string line;
+      size_t lineNo = 0;
+      while (std::getline(ss, line, '\n')) {
+        std::cout << std::setw(4) << lineNo << ": " << line << std::endl;
+        lineNo++;
+      }
       throw;
     }
 
@@ -2707,6 +2716,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("SHADEVALUE_MAG_VALUE2", SHADEVALUE_MAG_VALUE2);
   registerShaderRule("ISOLINE_STRIPE_VALUECOLOR", ISOLINE_STRIPE_VALUECOLOR);
   registerShaderRule("CHECKER_VALUE2COLOR", CHECKER_VALUE2COLOR);
+  registerShaderRule("SHADE_TEXTURE_VALUE2", SHADE_TEXTURE_VALUE2);
  
   // Texture and image things
   registerShaderRule("TEXTURE_ORIGIN_UPPERLEFT", TEXTURE_ORIGIN_UPPERLEFT);
