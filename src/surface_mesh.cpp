@@ -1527,6 +1527,7 @@ SurfaceMesh::addFaceVectorQuantityImpl(std::string name, const std::vector<glm::
 SurfaceFaceTangentVectorQuantity* SurfaceMesh::addFaceTangentVectorQuantityImpl(std::string name,
                                                                                 const std::vector<glm::vec2>& vectors,
                                                                                 int nSym, VectorType vectorType) {
+
   SurfaceFaceTangentVectorQuantity* q = new SurfaceFaceTangentVectorQuantity(name, vectors, *this, nSym, vectorType);
   addQuantity(q);
   return q;
