@@ -53,6 +53,12 @@ void ManagedBuffer<T>::ensureHostBufferPopulated() {
 }
 
 template <typename T>
+std::vector<T>& ManagedBuffer<T>::getPopulatedHostBufferRef() {
+  ensureHostBufferPopulated();
+  return data;
+}
+
+template <typename T>
 void ManagedBuffer<T>::markHostBufferUpdated() {
   hostBufferIsPopulated = true;
 

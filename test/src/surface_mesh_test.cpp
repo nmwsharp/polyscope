@@ -289,13 +289,13 @@ TEST_F(PolyscopeTest, SurfaceMeshFaceVector) {
 TEST_F(PolyscopeTest, SurfaceMeshVertexTangent) {
   auto psMesh = registerTriangleMesh();
   std::vector<glm::vec3> basisX(psMesh->nVertices(), {1., 2., 3.});
-  psMesh->setVertexTangentBasisX(basisX);
+  std::vector<glm::vec3> basisY(psMesh->nVertices(), {1., 2., 3.});
   std::vector<glm::vec2> vals(psMesh->nVertices(), {1., 2.});
-  auto q1 = psMesh->addVertexTangentVectorQuantity("vecs", vals);
+  auto q1 = psMesh->addVertexTangentVectorQuantity("vecs", vals, basisX, basisY);
   q1->setEnabled(true);
   polyscope::show(3);
   // symmetric case
-  auto q2 = psMesh->addVertexTangentVectorQuantity("sym vecs", vals, 4);
+  auto q2 = psMesh->addVertexTangentVectorQuantity("sym vecs", vals, basisX, basisY, 4);
   q2->setEnabled(true);
   polyscope::show(3);
   polyscope::removeAllStructures();
@@ -304,13 +304,13 @@ TEST_F(PolyscopeTest, SurfaceMeshVertexTangent) {
 TEST_F(PolyscopeTest, SurfaceMeshFaceTangent) {
   auto psMesh = registerTriangleMesh();
   std::vector<glm::vec3> basisX(psMesh->nFaces(), {1., 2., 3.});
-  psMesh->setFaceTangentBasisX(basisX);
+  std::vector<glm::vec3> basisY(psMesh->nFaces(), {1., 2., 3.});
   std::vector<glm::vec2> vals(psMesh->nFaces(), {1., 2.});
-  auto q1 = psMesh->addFaceTangentVectorQuantity("vecs", vals);
+  auto q1 = psMesh->addFaceTangentVectorQuantity("vecs", vals, basisX, basisY);
   q1->setEnabled(true);
   polyscope::show(3);
   // symmetric case
-  auto q2 = psMesh->addFaceTangentVectorQuantity("sym vecs", vals, 4);
+  auto q2 = psMesh->addFaceTangentVectorQuantity("sym vecs", vals, basisX, basisY, 4);
   q2->setEnabled(true);
   polyscope::show(3);
   polyscope::removeAllStructures();

@@ -105,13 +105,12 @@ std::string SurfaceFaceVectorQuantity::niceName() { return name + " (face vector
 
 
 SurfaceFaceTangentVectorQuantity::SurfaceFaceTangentVectorQuantity(std::string name, std::vector<glm::vec2> vectors_,
-                                                                   SurfaceMesh& mesh_, int nSym_,
-                                                                   VectorType vectorType_)
+                                                                   std::vector<glm::vec3> basisX_,
+                                                                   std::vector<glm::vec3> basisY_, SurfaceMesh& mesh_,
+                                                                   int nSym_, VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE), TangentVectorQuantity<SurfaceFaceTangentVectorQuantity>(
-                                                                 *this, vectors_, parent.faceCenters,
-                                                                 parent.faceTangentSpaces, nSym_, vectorType_) {
-  parent.checkHaveFaceTangentSpaces();
-}
+                                                                 *this, vectors_, basisX_, basisY_, parent.faceCenters,
+                                                                 nSym_, vectorType_) {}
 
 void SurfaceFaceTangentVectorQuantity::refresh() {
   refreshVectors();
@@ -154,16 +153,12 @@ std::string SurfaceFaceTangentVectorQuantity::niceName() {
 // ========================================================
 
 
-SurfaceVertexTangentVectorQuantity::SurfaceVertexTangentVectorQuantity(std::string name,
-                                                                       std::vector<glm::vec2> vectors_,
-                                                                       SurfaceMesh& mesh_, int nSym_,
-                                                                       VectorType vectorType_)
+SurfaceVertexTangentVectorQuantity::SurfaceVertexTangentVectorQuantity(
+    std::string name, std::vector<glm::vec2> vectors_, std::vector<glm::vec3> basisX_, std::vector<glm::vec3> basisY_,
+    SurfaceMesh& mesh_, int nSym_, VectorType vectorType_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX),
-      TangentVectorQuantity<SurfaceVertexTangentVectorQuantity>(*this, vectors_, parent.vertexPositions,
-                                                                parent.vertexTangentSpaces, nSym_, vectorType_) {
-
-  parent.checkHaveVertexTangentSpaces();
-}
+      TangentVectorQuantity<SurfaceVertexTangentVectorQuantity>(*this, vectors_, basisX_, basisY_,
+                                                                parent.vertexPositions, nSym_, vectorType_) {}
 
 void SurfaceVertexTangentVectorQuantity::refresh() {
   refreshVectors();
@@ -215,7 +210,8 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
   mesh.vertexPositions.ensureHostBufferPopulated();
   mesh.faceAreas.ensureHostBufferPopulated();
   mesh.faceNormals.ensureHostBufferPopulated();
-  mesh.defaultFaceTangentSpaces.ensureHostBufferPopulated();
+  mesh.defaultFaceTangentBasisX.ensureHostBufferPopulated();
+  mesh.defaultFaceTangentBasisY.ensureHostBufferPopulated();
   mesh.triangleAllEdgeInds.ensureHostBufferPopulated();
 
   std::vector<glm::vec2> mappedVectorField(mesh.nFaces());
@@ -245,8 +241,8 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
     }
     result /= static_cast<float>(6. * mesh.faceAreas.data[iF]);
 
-    glm::vec2 approxVec{glm::dot(result, mesh.defaultFaceTangentSpaces.data[iF][0]),
-                        glm::dot(result, mesh.defaultFaceTangentSpaces.data[iF][1])};
+    glm::vec2 approxVec{glm::dot(result, mesh.defaultFaceTangentBasisX.data[iF]),
+                        glm::dot(result, mesh.defaultFaceTangentBasisY.data[iF])};
     mappedVectorField[iF] = approxVec;
   }
 
@@ -260,13 +256,10 @@ SurfaceOneFormTangentVectorQuantity::SurfaceOneFormTangentVectorQuantity(std::st
                                                                          SurfaceMesh& mesh_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE),
       TangentVectorQuantity<SurfaceOneFormTangentVectorQuantity>(
-          *this, oneFormToFaceTangentVectors(mesh_, oneForm_, canonicalOrientation_), parent.faceCenters,
-          parent.defaultFaceTangentSpaces, 1, VectorType::STANDARD),
-      oneForm(oneForm_), canonicalOrientation(canonicalOrientation_) {
-
-  tangentVectors.data = oneFormToFaceTangentVectors(parent, oneForm, canonicalOrientation);
-  tangentVectors.markHostBufferUpdated();
-}
+          *this, oneFormToFaceTangentVectors(mesh_, oneForm_, canonicalOrientation_),
+          mesh_.defaultFaceTangentBasisX.getPopulatedHostBufferRef(),
+          mesh_.defaultFaceTangentBasisY.getPopulatedHostBufferRef(), parent.faceCenters, 1, VectorType::STANDARD),
+      oneForm(oneForm_), canonicalOrientation(canonicalOrientation_) {}
 
 void SurfaceOneFormTangentVectorQuantity::refresh() {
   refreshVectors();

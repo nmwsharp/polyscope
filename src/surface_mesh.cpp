@@ -51,9 +51,8 @@ vertexNormals(          uniquePrefix() + "vertexNormals",       vertexNormalsDat
 vertexAreas(            uniquePrefix() + "vertexAreas",         vertexAreasData,        std::bind(&SurfaceMesh::computeVertexAreas, this)),
 
 // tangent spaces
-faceTangentSpaces(          uniquePrefix() + "faceTangentSpaces",   faceTangentSpacesData),
-vertexTangentSpaces(        uniquePrefix() + "vertexTangentSpace",  vertexTangentSpacesData),
-defaultFaceTangentSpaces(   uniquePrefix() + "defaultFaceTangentSpace",  defaultFaceTangentSpacesData,  std::bind(&SurfaceMesh::computeDefaultFaceTangentSpaces, this)),
+defaultFaceTangentBasisX(   uniquePrefix() + "defaultFaceTangentBasisX",  defaultFaceTangentBasisXData,  std::bind(&SurfaceMesh::computeDefaultFaceTangentBasisX, this)),
+defaultFaceTangentBasisY(   uniquePrefix() + "defaultFaceTangentBasisY",  defaultFaceTangentBasisYData,  std::bind(&SurfaceMesh::computeDefaultFaceTangentBasisY, this)),
 
 // == persistent options
 surfaceColor(           uniquePrefix() + "surfaceColor",    getNextUniqueColor()),
@@ -488,12 +487,15 @@ void SurfaceMesh::computeVertexAreas() {
   vertexAreas.markHostBufferUpdated();
 }
 
-void SurfaceMesh::computeDefaultFaceTangentSpaces() {
+void SurfaceMesh::computeDefaultFaceTangentBasisX() {
+
+  // NOTE: this function is weirdly duplicated into an 'X' and 'Y' paradigm to fit the compute-function-per-buffer
+  // paradigm
 
   vertexPositions.ensureHostBufferPopulated();
   faceNormals.ensureHostBufferPopulated();
 
-  defaultFaceTangentSpaces.data.resize(nFaces());
+  defaultFaceTangentBasisX.data.resize(nFaces());
 
   for (size_t iF = 0; iF < nFaces(); iF++) {
     size_t D = faceIndsStart[iF + 1] - faceIndsStart[iF];
@@ -510,11 +512,41 @@ void SurfaceMesh::computeDefaultFaceTangentSpaces() {
 
     glm::vec3 basisY = glm::normalize(-glm::cross(basisX, N));
 
-    defaultFaceTangentSpaces.data[iF][0] = basisX;
-    defaultFaceTangentSpaces.data[iF][1] = basisY;
+    defaultFaceTangentBasisX.data[iF] = basisX;
   }
 
-  defaultFaceTangentSpaces.markHostBufferUpdated();
+  defaultFaceTangentBasisX.markHostBufferUpdated();
+}
+
+void SurfaceMesh::computeDefaultFaceTangentBasisY() {
+
+  // NOTE: this function is weirdly duplicated into an 'X' and 'Y' paradigm to fit the compute-function-per-buffer
+  // paradigm
+
+  vertexPositions.ensureHostBufferPopulated();
+  faceNormals.ensureHostBufferPopulated();
+
+  defaultFaceTangentBasisY.data.resize(nFaces());
+
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    size_t D = faceIndsStart[iF + 1] - faceIndsStart[iF];
+    if (D != 3) exception("Default face tangent spaces only available for pure-triangular meshes");
+
+    size_t start = faceIndsStart[iF];
+
+    glm::vec3 pA = vertexPositions.data[faceIndsEntries[start + 0]];
+    glm::vec3 pB = vertexPositions.data[faceIndsEntries[start + 1]];
+    glm::vec3 N = faceNormals.data[iF];
+
+    glm::vec3 basisX = pB - pA;
+    basisX = glm::normalize(basisX - N * glm::dot(N, basisX));
+
+    glm::vec3 basisY = glm::normalize(-glm::cross(basisX, N));
+
+    defaultFaceTangentBasisY.data[iF] = basisY;
+  }
+
+  defaultFaceTangentBasisY.markHostBufferUpdated();
 }
 
 // === Edge Lengths ===
@@ -540,17 +572,6 @@ void SurfaceMesh::computeDefaultFaceTangentSpaces() {
 //
 //   edgeLengths.markHostBufferUpdated();
 // }
-
-void SurfaceMesh::checkHaveVertexTangentSpaces() {
-  if (vertexTangentSpaces.hasData()) return;
-  exception("Operation requires vertex tangent spaces for SurfaceMesh " + name +
-            ", but no tangent spaces have been set. Set them with setVertexTangentBasisX() to continue.");
-}
-void SurfaceMesh::checkHaveFaceTangentSpaces() {
-  if (faceTangentSpaces.hasData()) return;
-  exception("Operation requires face tangent spaces for SurfaceMesh " + name +
-            ", but no tangent spaces have been set. Set them with setFaceTangentBasisX() to continue.");
-}
 
 void SurfaceMesh::checkTriangular() {
   if (nFacesTriangulation() != nFaces()) {
@@ -1526,19 +1547,23 @@ SurfaceMesh::addFaceVectorQuantityImpl(std::string name, const std::vector<glm::
 
 SurfaceFaceTangentVectorQuantity* SurfaceMesh::addFaceTangentVectorQuantityImpl(std::string name,
                                                                                 const std::vector<glm::vec2>& vectors,
+                                                                                const std::vector<glm::vec3>& basisX,
+                                                                                const std::vector<glm::vec3>& basisY,
                                                                                 int nSym, VectorType vectorType) {
 
-  SurfaceFaceTangentVectorQuantity* q = new SurfaceFaceTangentVectorQuantity(name, vectors, *this, nSym, vectorType);
+  SurfaceFaceTangentVectorQuantity* q =
+      new SurfaceFaceTangentVectorQuantity(name, vectors, basisX, basisY, *this, nSym, vectorType);
   addQuantity(q);
   return q;
 }
 
 
 SurfaceVertexTangentVectorQuantity*
-SurfaceMesh::addVertexTangentVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym,
-                                                VectorType vectorType) {
+SurfaceMesh::addVertexTangentVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors,
+                                                const std::vector<glm::vec3>& basisX,
+                                                const std::vector<glm::vec3>& basisY, int nSym, VectorType vectorType) {
   SurfaceVertexTangentVectorQuantity* q =
-      new SurfaceVertexTangentVectorQuantity(name, vectors, *this, nSym, vectorType);
+      new SurfaceVertexTangentVectorQuantity(name, vectors, basisX, basisY, *this, nSym, vectorType);
   addQuantity(q);
   return q;
 }
@@ -1554,56 +1579,6 @@ SurfaceMesh::addOneFormTangentVectorQuantityImpl(std::string name, const std::ve
   markEdgesAsUsed();
   return q;
 }
-
-
-void SurfaceMesh::setVertexTangentBasisXImpl(const std::vector<glm::vec3>& inputBasisX) {
-
-  vertexNormals.ensureHostBufferPopulated();
-
-  vertexTangentSpaces.data.resize(nVertices());
-
-  for (size_t iV = 0; iV < nVertices(); iV++) {
-
-    glm::vec3 basisX = inputBasisX[iV];
-    glm::vec3 normal = vertexNormals.data[iV];
-
-    // Project in to tangent defined by our normals
-    basisX = glm::normalize(basisX - normal * glm::dot(normal, basisX));
-
-    // Let basis Y complete the frame
-    glm::vec3 basisY = glm::cross(normal, basisX);
-
-    vertexTangentSpaces.data[iV][0] = basisX;
-    vertexTangentSpaces.data[iV][1] = basisY;
-  }
-
-  vertexTangentSpaces.markHostBufferUpdated();
-}
-
-void SurfaceMesh::setFaceTangentBasisXImpl(const std::vector<glm::vec3>& inputBasisX) {
-
-  faceNormals.ensureHostBufferPopulated();
-
-  faceTangentSpaces.data.resize(nFaces());
-
-  for (size_t iF = 0; iF < nFaces(); iF++) {
-
-    glm::vec3 basisX = inputBasisX[iF];
-    glm::vec3 normal = faceNormals.data[iF];
-
-    // Project in to tangent defined by our normals
-    basisX = glm::normalize(basisX - normal * glm::dot(normal, basisX));
-
-    // Let basis Y complete the frame
-    glm::vec3 basisY = glm::cross(normal, basisX);
-
-    faceTangentSpaces.data[iF][0] = basisX;
-    faceTangentSpaces.data[iF][1] = basisY;
-  }
-
-  faceTangentSpaces.markHostBufferUpdated();
-}
-
 
 SurfaceMeshQuantity::SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates)
     : QuantityS<SurfaceMesh>(name, parentStructure, dominates) {}

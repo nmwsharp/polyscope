@@ -64,7 +64,8 @@ public:
 class SurfaceFaceTangentVectorQuantity : public SurfaceVectorQuantity,
                                          public TangentVectorQuantity<SurfaceFaceTangentVectorQuantity> {
 public:
-  SurfaceFaceTangentVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_, int nSym = 1,
+  SurfaceFaceTangentVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, std::vector<glm::vec3> basisX_,
+                                   std::vector<glm::vec3> basisY_, SurfaceMesh& mesh_, int nSym = 1,
                                    VectorType vectorType_ = VectorType::STANDARD);
 
   virtual void draw() override;
@@ -80,8 +81,9 @@ public:
 class SurfaceVertexTangentVectorQuantity : public SurfaceVectorQuantity,
                                            public TangentVectorQuantity<SurfaceVertexTangentVectorQuantity> {
 public:
-  SurfaceVertexTangentVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, SurfaceMesh& mesh_,
-                                     int nSym = 1, VectorType vectorType_ = VectorType::STANDARD);
+  SurfaceVertexTangentVectorQuantity(std::string name, std::vector<glm::vec2> vectors_, std::vector<glm::vec3> basisX_,
+                                     std::vector<glm::vec3> basisY_, SurfaceMesh& mesh_, int nSym = 1,
+                                     VectorType vectorType_ = VectorType::STANDARD);
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
