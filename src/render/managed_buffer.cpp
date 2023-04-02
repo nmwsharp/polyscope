@@ -17,7 +17,7 @@ namespace render {
 template <typename T>
 ManagedBuffer<T>::ManagedBuffer(const std::string& name_, std::vector<T>& data_)
     : name(name_), uniqueID(internal::getNextUniqueID()), data(data_), dataGetsComputed(false),
-      hostBufferIsPopulated(true) {}
+      hostBufferIsPopulated(false) {}
 
 template <typename T>
 ManagedBuffer<T>::ManagedBuffer(const std::string& name_, std::vector<T>& data_, std::function<void()> computeFunc_)

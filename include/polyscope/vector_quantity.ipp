@@ -113,6 +113,7 @@ VectorQuantity<QuantityT>::VectorQuantity(QuantityT& quantity_, const std::vecto
                                           render::ManagedBuffer<glm::vec3>& vectorRoots_, VectorType vectorType_)
     : VectorQuantityBase<QuantityT>(quantity_, vectorType_), vectors(quantity_.uniquePrefix() + "#values", vectorsData),
       vectorRoots(vectorRoots_), vectorsData(vectors_) {
+  vectors.markHostBufferUpdated();
   this->updateMaxLength();
 }
 
@@ -213,6 +214,7 @@ TangentVectorQuantity<QuantityT>::TangentVectorQuantity(QuantityT& quantity_,
     : VectorQuantityBase<QuantityT>(quantity_, vectorType_),
       tangentVectors(quantity_.uniquePrefix() + "#values", tangentVectorsData), vectorRoots(vectorRoots_),
       tangentBasis(tangentBasis_), tangentVectorsData(tangentVectors_), nSym(nSym_) {
+  tangentVectors.markHostBufferUpdated();
   this->updateMaxLength();
 }
 
