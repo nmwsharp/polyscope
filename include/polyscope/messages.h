@@ -16,11 +16,11 @@ void info(std::string message);
 void warning(std::string baseMessage, std::string detailMessage = "");
 
 // Errors which are certainly big problems, and we may or may not be able to recover from. Blocks the UI
-// void error(std::string message);
+void error(std::string message);
 
 // Errors which are so bad we won't even try to recover from them. Displays to the user before exiting the program.
 // Internally used for uncaught exceptions.
-// void terminatingError(std::string message);
+void terminatingError(std::string message);
 
 // Wrapper used by polyscope to throw exceptions
 void exception(std::string message);
