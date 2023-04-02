@@ -101,7 +101,7 @@ void SurfaceMesh::setEdgePermutation(const T& perm, size_t expectedSize) {
     return;
   }
 
-  // validateSize(perm, edgeDataSize, "edge permutation for " + name);
+  validateSize(perm, nEdges(), "edge permutation for " + name);
   edgePerm = standardizeArray<size_t, T>(perm);
 
   edgeDataSize = expectedSize;
@@ -129,7 +129,7 @@ void SurfaceMesh::setHalfedgePermutation(const T& perm, size_t expectedSize) {
     return;
   }
 
-  validateSize(perm, halfedgeDataSize, "halfedge permutation for " + name);
+  validateSize(perm, nHalfedges(), "halfedge permutation for " + name);
   halfedgePerm = standardizeArray<size_t, T>(perm);
 
   halfedgeDataSize = expectedSize;
@@ -156,7 +156,7 @@ void SurfaceMesh::setCornerPermutation(const T& perm, size_t expectedSize) {
     return;
   }
 
-  validateSize(perm, cornerDataSize, "corner permutation for " + name);
+  validateSize(perm, nCorners(), "corner permutation for " + name);
   cornerPerm = standardizeArray<size_t, T>(perm);
 
   cornerDataSize = expectedSize;
