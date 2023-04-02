@@ -20,6 +20,7 @@
 #include "polyscope/surface_parameterization_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
+#include "polyscope/utilities.h"
 
 namespace polyscope {
 
@@ -205,8 +206,8 @@ public:
   size_t nFacesTriangulationCount = 0;
   size_t nFacesTriangulation() const { return nFacesTriangulationCount; }
 
-  size_t nEdgesCount = 0;                       // populating this is expensive...
-  size_t nEdges() const { return nEdgesCount; } // WARNING: returns 0 until something involving edges has been done
+  size_t nEdgesCount = INVALID_IND; // populating this is expensive...
+  size_t nEdges();                  // NOTE causes population of nEdgesCount
 
   size_t nCornersCount = 0; // = nHalfedges = sum face degree
   size_t nCorners() const { return nCornersCount; }
@@ -352,6 +353,7 @@ private:
   void computeEdgeLengths();
   void computeDefaultFaceTangentBasisX();
   void computeDefaultFaceTangentBasisY();
+  void countEdges();
 
   // Picking-related
   // Order of indexing: vertexPositions, faces, edges, halfedges
@@ -402,8 +404,6 @@ private:
 
   // === Helper implementations
 
-  void setVertexTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
-  void setFaceTangentBasisXImpl(const std::vector<glm::vec3>& vectors);
   // clang-format on
 };
 

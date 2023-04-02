@@ -184,6 +184,8 @@ void SurfaceMesh::computeConnectivityData() {
 
 void SurfaceMesh::computeTriangleAllEdgeInds() {
 
+  // WARNING: logic duplicated in countEdges()
+
   if (edgePerm.empty())
     exception("SurfaceMesh " + name +
               " performed an operation which requires edge indices to be specified, but none have been set. "
@@ -249,6 +251,51 @@ void SurfaceMesh::computeTriangleAllEdgeInds() {
 
   nEdgesCount = psEdgeInd;
   triangleAllEdgeInds.markHostBufferUpdated();
+}
+
+void SurfaceMesh::countEdges() {
+
+  // WARNING: logic duplicated in computeTriangleAllEdgeInds()
+
+  // used to loop over edges
+  std::unordered_map<std::pair<size_t, size_t>, size_t, polyscope::hash_combine::hash<std::pair<size_t, size_t>>>
+      seenEdgeInds;
+
+  auto createEdgeKey = [&](size_t a, size_t b) -> std::pair<size_t, size_t> {
+    return std::make_pair(std::min(a, b), std::max(a, b));
+  };
+
+  size_t psEdgeInd = 0; // polyscope's edge index, iterated according to Polyscope's canonical ordering
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    size_t start = faceIndsStart[iF];
+    size_t D = faceIndsStart[iF + 1] - start;
+
+    if (D != 3) {
+      exception("SurfaceMesh " + name +
+                " attempted to count edges, but mesh has non-triangular faces. Edge functions are only implemented on "
+                "a pure-triangular mesh.");
+    }
+
+    for (size_t j = 0; j < 3; j++) {
+      size_t vA = triangleVertexInds.data[3 * iF + j];
+      size_t vB = triangleVertexInds.data[3 * iF + ((j + 1) % 3)];
+
+      std::pair<size_t, size_t> key = createEdgeKey(vA, vB);
+
+      if (seenEdgeInds.find(key) == seenEdgeInds.end()) {
+        size_t thisEdgeInd = edgePerm[psEdgeInd];
+        seenEdgeInds[key] = thisEdgeInd;
+        psEdgeInd++;
+      }
+    }
+  }
+
+  nEdgesCount = psEdgeInd;
+}
+
+size_t SurfaceMesh::nEdges() {
+  if (nEdgesCount == INVALID_IND) countEdges();
+  return nEdgesCount;
 }
 
 void SurfaceMesh::computeTriangleCornerInds() {
