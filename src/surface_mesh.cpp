@@ -283,7 +283,7 @@ void SurfaceMesh::countEdges() {
       std::pair<size_t, size_t> key = createEdgeKey(vA, vB);
 
       if (seenEdgeInds.find(key) == seenEdgeInds.end()) {
-        size_t thisEdgeInd = edgePerm[psEdgeInd];
+        size_t thisEdgeInd = psEdgeInd;
         seenEdgeInds[key] = thisEdgeInd;
         psEdgeInd++;
       }
