@@ -294,7 +294,6 @@ void processFileOBJ(std::string filename) {
     for (size_t i = 0; i < nVertices; i++) {
       std::tie(vertexBasisX[i], vertexBasisY[i]) = constructBasis(vNormals[i]);
     }
-    psMesh->setVertexTangentBasisX(vertexBasisX);
 
     // face tangent bases
     std::vector<glm::vec3> faceBasisX(nFaces);
@@ -302,7 +301,6 @@ void processFileOBJ(std::string filename) {
     for (size_t i = 0; i < nFaces; i++) {
       std::tie(faceBasisX[i], faceBasisY[i]) = constructBasis(fNormals[i]);
     }
-    psMesh->setFaceTangentBasisX(faceBasisX);
 
     // At vertices
     std::vector<glm::vec2> vertexTangentVec(nVertices, glm::vec3{0., 0., 0.});
@@ -315,8 +313,8 @@ void processFileOBJ(std::string filename) {
       glm::vec2 vTangent{glm::dot(v, basisX), glm::dot(v, basisY)};
       vertexTangentVec[iV] = vTangent;
     }
-    psMesh->addVertexTangentVectorQuantity("tangent vertex vec", vertexTangentVec);
-    psMesh->addVertexTangentVectorQuantity("tangent vertex vec line", vertexTangentVec, 2);
+    psMesh->addVertexTangentVectorQuantity("tangent vertex vec", vertexTangentVec, vertexBasisX, vertexBasisY);
+    psMesh->addVertexTangentVectorQuantity("tangent vertex vec line", vertexTangentVec, vertexBasisX, vertexBasisY, 2);
 
     // At faces
     std::vector<glm::vec2> faceTangentVec(nFaces, glm::vec3{0., 0., 0.});
@@ -330,8 +328,8 @@ void processFileOBJ(std::string filename) {
       glm::vec2 vTangent{glm::dot(v, basisX), glm::dot(v, basisY)};
       faceTangentVec[iF] = vTangent;
     }
-    psMesh->addFaceTangentVectorQuantity("tangent face vec", faceTangentVec);
-    psMesh->addFaceTangentVectorQuantity("tangent face vec cross", faceTangentVec, 4);
+    psMesh->addFaceTangentVectorQuantity("tangent face vec", faceTangentVec, faceBasisX, faceBasisY);
+    psMesh->addFaceTangentVectorQuantity("tangent face vec cross", faceTangentVec, faceBasisX, faceBasisY, 4);
 
 
     // 1-form

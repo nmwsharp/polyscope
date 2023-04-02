@@ -118,8 +118,8 @@ template <typename QuantityT>
 class TangentVectorQuantity : public VectorQuantityBase<QuantityT> {
 public:
   TangentVectorQuantity(QuantityT& parent, const std::vector<glm::vec2>& tangentVectors,
-                        render::ManagedBuffer<glm::vec3>& vectorRoots,
-                        render::ManagedBuffer<std::array<glm::vec3, 2>>& tangentBasis, int nSym, VectorType vectorType);
+                        const std::vector<glm::vec3>& tangentBasisX, const std::vector<glm::vec3>& tangentBasisY,
+                        render::ManagedBuffer<glm::vec3>& vectorRoots, int nSym, VectorType vectorType);
 
   void drawVectors();
   void refreshVectors();
@@ -133,14 +133,14 @@ public:
   // Interaction with the data (updating it on CPU or GPU side, accessing it, etc) happens through this wrapper.
   render::ManagedBuffer<glm::vec2> tangentVectors;
 
+  // Wrapper around the actual buffer of basis data stored in the class.
+  // Interaction with the data (updating it on CPU or GPU side, accessing it, etc) happens through this wrapper.
+  render::ManagedBuffer<glm::vec3> tangentBasisX;
+  render::ManagedBuffer<glm::vec3> tangentBasisY;
+
   // A buffer of root locations at which to draw the vectors. Not that this is _not_ owned by this class, it is just a
   // reference.
   render::ManagedBuffer<glm::vec3>& vectorRoots;
-
-  // A buffer of (orthonormal) tangent frames at which to draw the vectors. Again, just a reference.
-  render::ManagedBuffer<std::array<glm::vec3, 2>>& tangentBasis;
-
-  // === ~DANGER~ experimental/unsupported functions
 
 protected:
   // helpers
@@ -148,6 +148,8 @@ protected:
   void updateMaxLength();
 
   std::vector<glm::vec2> tangentVectorsData;
+  std::vector<glm::vec3> tangentBasisXData;
+  std::vector<glm::vec3> tangentBasisYData;
   int nSym;
   float maxLength = -777;
 };

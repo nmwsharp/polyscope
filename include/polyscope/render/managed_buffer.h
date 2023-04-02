@@ -71,6 +71,9 @@ public:
   // computed by computeFunc(), it ensures that that function has been called.
   void ensureHostBufferPopulated();
 
+  // Combines calling ensureHostBufferPopulated() and returning a reference to the `data` member
+  std::vector<T>& getPopulatedHostBufferRef();
+
   // If the contents of `data` are updated, this function MUST be called. It internally handles concerns like reflecting
   // updates to the render buffer.
   void markHostBufferUpdated();

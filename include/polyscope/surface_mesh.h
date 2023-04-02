@@ -113,9 +113,8 @@ public:
   // render::ManagedBuffer<double> edgeLengths;
 
   // tangent spaces
-  render::ManagedBuffer<std::array<glm::vec3, 2>> faceTangentSpaces;        // set by user
-  render::ManagedBuffer<std::array<glm::vec3, 2>> vertexTangentSpaces;      // set by user
-  render::ManagedBuffer<std::array<glm::vec3, 2>> defaultFaceTangentSpaces; // automatically computed, used internally
+  render::ManagedBuffer<glm::vec3> defaultFaceTangentBasisX;
+  render::ManagedBuffer<glm::vec3> defaultFaceTangentBasisY;
 
 
   // === Quantity-related
@@ -146,8 +145,8 @@ public:
 	template <class T> SurfaceVertexVectorQuantity* addVertexVectorQuantity2D(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
 	template <class T> SurfaceFaceVectorQuantity* addFaceVectorQuantity(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
 	template <class T> SurfaceFaceVectorQuantity* addFaceVectorQuantity2D(std::string name, const T& vectors, VectorType vectorType = VectorType::STANDARD); 
-  template <class T> SurfaceFaceTangentVectorQuantity* addFaceTangentVectorQuantity(std::string name, const T& vectors, int nSym = 1, VectorType vectorType = VectorType::STANDARD); 
-	template <class T> SurfaceVertexTangentVectorQuantity* addVertexTangentVectorQuantity(std::string name, const T& vectors, int nSym = 1, VectorType vectorType = VectorType::STANDARD);
+  template <class T, class BX, class BY> SurfaceFaceTangentVectorQuantity* addFaceTangentVectorQuantity(std::string name, const T& vectors, const BX& basisX, const BY& basisY, int nSym = 1, VectorType vectorType = VectorType::STANDARD); 
+	template <class T, class BX, class BY> SurfaceVertexTangentVectorQuantity* addVertexTangentVectorQuantity(std::string name, const T& vectors, const BX& basisX, const BY& basisY, int nSym = 1, VectorType vectorType = VectorType::STANDARD);
 	template <class T, class O> SurfaceOneFormTangentVectorQuantity* addOneFormTangentVectorQuantity(std::string name, const T& data, const O& orientations);
 
 
@@ -227,26 +226,7 @@ public:
   // (note that this may not match the halfedge perm that the user specifies)
   std::vector<size_t> twinHalfedge; // for halfedge i, the index of a twin halfedge
 
-  // == Manage tangent spaces
-
-  // check if the user has set tangent spaces, and print a helpful error if not
-  void checkHaveVertexTangentSpaces();
-  void checkHaveFaceTangentSpaces();
-
-  // Set tangent space coordinates for vertices
-  template <class T>
-  void setVertexTangentBasisX(const T& vectors);
-  template <class T>
-  void setVertexTangentBasisX2D(const T& vectors);
-
-  // Set tangent space coordinates for faces
-  template <class T>
-  void setFaceTangentBasisX(const T& vectors);
-  template <class T>
-  void setFaceTangentBasisX2D(const T& vectors);
-
   static const std::string structureTypeName;
-
 
   // === Getters and setters for visualization settings
 
@@ -329,9 +309,8 @@ private:
   // std::vector<double> edgeLengthsData;
 
   // tangent spaces
-  std::vector<std::array<glm::vec3, 2>> faceTangentSpacesData;
-  std::vector<std::array<glm::vec3, 2>> vertexTangentSpacesData;
-  std::vector<std::array<glm::vec3, 2>> defaultFaceTangentSpacesData;
+  std::vector<glm::vec3> defaultFaceTangentBasisXData;
+  std::vector<glm::vec3> defaultFaceTangentBasisYData;
 
 
   // Derived connectivity quantities
@@ -367,7 +346,8 @@ private:
   void computeVertexNormals();
   void computeVertexAreas();
   void computeEdgeLengths();
-  void computeDefaultFaceTangentSpaces();
+  void computeDefaultFaceTangentBasisX();
+  void computeDefaultFaceTangentBasisY();
 
   // Picking-related
   // Order of indexing: vertexPositions, faces, edges, halfedges
@@ -412,8 +392,8 @@ private:
   SurfaceVertexParameterizationQuantity* addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
   SurfaceVertexVectorQuantity* addVertexVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
   SurfaceFaceVectorQuantity* addFaceVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
-  SurfaceFaceTangentVectorQuantity* addFaceTangentVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym, VectorType vectorType);
-  SurfaceVertexTangentVectorQuantity* addVertexTangentVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym, VectorType vectorType);
+  SurfaceFaceTangentVectorQuantity* addFaceTangentVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, const std::vector<glm::vec3>& basisX, const std::vector<glm::vec3>& basisY, int nSym, VectorType vectorType);
+  SurfaceVertexTangentVectorQuantity* addVertexTangentVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, const std::vector<glm::vec3>& basisX, const std::vector<glm::vec3>& basisY, int nSym, VectorType vectorType);
   SurfaceOneFormTangentVectorQuantity* addOneFormTangentVectorQuantityImpl(std::string name, const std::vector<double>& data, const std::vector<char>& orientations);
 
   // === Helper implementations

@@ -62,7 +62,8 @@ const ShaderStageSpecification FLEX_TANGENT_VECTOR_VERT_SHADER = {
     {
         {"a_position", RenderDataType::Vector3Float},
         {"a_tangentVector", RenderDataType::Vector2Float},
-        {"a_basisVectors", RenderDataType::Vector3Float, 2},
+        {"a_basisVectorX", RenderDataType::Vector3Float},
+        {"a_basisVectorY", RenderDataType::Vector3Float},
     },
 
     {}, // textures
@@ -73,7 +74,8 @@ R"(
 
         in vec3 a_position;
         in vec2 a_tangentVector;
-        in vec3 a_basisVectors[2];
+        in vec3 a_basisVectorX;
+        in vec3 a_basisVectorY;
         uniform mat4 u_modelView;
         uniform float u_vectorRotRad;
         out vec4 vector;
@@ -93,7 +95,7 @@ R"(
               rotTangentVector = rotMat * rotTangentVector;
             }
 
-            vec3 worldVector = rotTangentVector.x * a_basisVectors[0] + rotTangentVector.y * a_basisVectors[1];
+            vec3 worldVector = rotTangentVector.x * a_basisVectorX + rotTangentVector.y * a_basisVectorY;
             vector = u_modelView * vec4(worldVector, .0);
             
             ${ VERT_ASSIGNMENTS }$

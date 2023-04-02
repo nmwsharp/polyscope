@@ -286,21 +286,30 @@ SurfaceFaceVectorQuantity* SurfaceMesh::addFaceVectorQuantity2D(std::string name
   return addFaceVectorQuantityImpl(name, vectors3D, vectorType);
 }
 
-template <class T>
+template <class T, class BX, class BY>
 SurfaceFaceTangentVectorQuantity* SurfaceMesh::addFaceTangentVectorQuantity(std::string name, const T& vectors,
+                                                                            const BX& basisX, const BY& basisY,
                                                                             int nSym, VectorType vectorType) {
+  validateSize(vectors, faceDataSize, "face tangent vector data " + name);
+  validateSize(basisX, faceDataSize, "face tangent vector basisX " + name);
+  validateSize(basisY, faceDataSize, "face tangent vector basisY " + name);
 
-  validateSize(vectors, faceDataSize, "face tangent vector quantity " + name);
-  return addFaceTangentVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), nSym, vectorType);
+  return addFaceTangentVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors),
+                                          standardizeVectorArray<glm::vec3, 3>(basisX),
+                                          standardizeVectorArray<glm::vec3, 3>(basisY), nSym, vectorType);
 }
-
-
-template <class T>
+template <class T, class BX, class BY>
 SurfaceVertexTangentVectorQuantity* SurfaceMesh::addVertexTangentVectorQuantity(std::string name, const T& vectors,
+                                                                                const BX& basisX, const BY& basisY,
                                                                                 int nSym, VectorType vectorType) {
 
-  validateSize(vectors, vertexDataSize, "vertex tangent vector quantity " + name);
-  return addVertexTangentVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors), nSym, vectorType);
+  validateSize(vectors, vertexDataSize, "vertex tangent vector data " + name);
+  validateSize(basisX, vertexDataSize, "vertex tangent vector basisX " + name);
+  validateSize(basisY, vertexDataSize, "vertex tangent vector basisY " + name);
+
+  return addVertexTangentVectorQuantityImpl(name, standardizeVectorArray<glm::vec2, 2>(vectors),
+                                            standardizeVectorArray<glm::vec3, 3>(basisX),
+                                            standardizeVectorArray<glm::vec3, 3>(basisY), nSym, vectorType);
 }
 
 
@@ -316,43 +325,6 @@ SurfaceOneFormTangentVectorQuantity* SurfaceMesh::addOneFormTangentVectorQuantit
   validateSize(data, edgeDataSize, "one form tangent vector quantity " + name);
   return addOneFormTangentVectorQuantityImpl(name, standardizeArray<double, T>(data),
                                              standardizeArray<char, O>(orientations));
-}
-
-
-template <class T>
-void SurfaceMesh::setVertexTangentBasisX(const T& vectors) {
-  validateSize(vectors, vertexDataSize, "vertex tangent basis X");
-  setVertexTangentBasisXImpl(standardizeVectorArray<glm::vec3, 3>(vectors));
-}
-
-template <class T>
-void SurfaceMesh::setVertexTangentBasisX2D(const T& vectors) {
-  validateSize(vectors, vertexDataSize, "vertex tangent basis X");
-
-  std::vector<glm::vec3> vec3D = standardizeVectorArray<glm::vec3, 2>(vectors);
-  for (glm::vec3& v : vec3D) {
-    v.z = 0.;
-  }
-
-  setVertexTangentBasisXImpl(vec3D);
-}
-
-template <class T>
-void SurfaceMesh::setFaceTangentBasisX(const T& vectors) {
-  validateSize(vectors, faceDataSize, "face tangent basis X");
-  setFaceTangentBasisXImpl(standardizeVectorArray<glm::vec3, 3>(vectors));
-}
-
-template <class T>
-void SurfaceMesh::setFaceTangentBasisX2D(const T& vectors) {
-  validateSize(vectors, faceDataSize, "face tangent basis X");
-
-  std::vector<glm::vec3> vec3D = standardizeVectorArray<glm::vec3, 2>(vectors);
-  for (glm::vec3& v : vec3D) {
-    v.z = 0.;
-  }
-
-  setFaceTangentBasisXImpl(vec3D);
 }
 
 
