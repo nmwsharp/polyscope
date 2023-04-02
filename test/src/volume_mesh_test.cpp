@@ -63,6 +63,22 @@ TEST_F(PolyscopeTest, ShowVolumeMesh) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, VolumeMeshUpdatePositions) {
+  std::vector<glm::vec3> verts;
+  std::vector<std::array<int, 8>> cells;
+  std::tie(verts, cells) = getVolumeMeshData();
+  polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
+
+  polyscope::show(3);
+
+  psVol->updateVertexPositions(verts);
+
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+
 TEST_F(PolyscopeTest, VolumeMeshAppearance) {
   std::vector<glm::vec3> verts;
   std::vector<std::array<int, 8>> cells;

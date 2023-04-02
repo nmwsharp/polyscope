@@ -909,9 +909,6 @@ void VolumeMesh::refresh() {
 
 void VolumeMesh::geometryChanged() {
   recomputeGeometryIfPopulated();
-  if (program) fillGeometryBuffers(*program);
-  if (pickProgram) fillGeometryBuffers(*pickProgram);
-  refreshVolumeMeshListeners();
   requestRedraw();
   QuantityStructure<VolumeMesh>::refresh();
 }
