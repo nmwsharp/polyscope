@@ -198,6 +198,43 @@ TEST_F(PolyscopeTest, SurfaceMeshScalarHalfedge) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, SurfaceMeshScalarHalfedgePerm) {
+  auto psMesh = registerTriangleMesh();
+  std::vector<double> heScalar(5 + psMesh->nHalfedges(), 10.);
+  std::vector<size_t> hePerm;
+  for (size_t i = 0; i < psMesh->nCorners(); i++) {
+    hePerm.push_back(5 + i);
+  }
+  psMesh->setHalfedgePermutation(hePerm);
+  auto q4 = psMesh->addHalfedgeScalarQuantity("heScalar", heScalar);
+  q4->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SurfaceMeshScalarCorner) {
+  auto psMesh = registerTriangleMesh();
+  std::vector<double> cornerScalar(psMesh->nCorners(), 10.);
+  auto q4 = psMesh->addCornerScalarQuantity("cornerScalar", cornerScalar);
+  q4->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SurfaceMeshScalarCornerPerm) {
+  auto psMesh = registerTriangleMesh();
+  std::vector<double> cornerScalar(5 + psMesh->nCorners(), 10.);
+  std::vector<size_t> cPerm;
+  for (size_t i = 0; i < psMesh->nCorners(); i++) {
+    cPerm.push_back(5 + i);
+  }
+  psMesh->setCornerPermutation(cPerm);
+  auto q4 = psMesh->addCornerScalarQuantity("cornerScalar", cornerScalar);
+  q4->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, SurfaceMeshDistance) {
   auto psMesh = registerTriangleMesh();
   std::vector<double> vScalar(psMesh->nVertices(), 7.);

@@ -321,6 +321,8 @@ void SurfaceMesh::computeTriangleAllCornerInds() {
   triangleAllCornerInds.data.clear();
   triangleAllCornerInds.data.reserve(3 * nFacesTriangulation());
 
+  bool haveCustomIndex = !cornerPerm.empty();
+
   for (size_t iF = 0; iF < nFaces(); iF++) {
     size_t iStart = faceIndsStart[iF];
     size_t D = faceIndsStart[iF + 1] - iStart;
@@ -330,6 +332,12 @@ void SurfaceMesh::computeTriangleAllCornerInds() {
       uint32_t c0 = iStart;
       uint32_t c1 = iStart + j;
       uint32_t c2 = iStart + j + 1;
+
+      if (haveCustomIndex) {
+        c0 = cornerPerm[c0];
+        c1 = cornerPerm[c1];
+        c2 = cornerPerm[c2];
+      }
 
       for (size_t k = 0; k < 3; k++) {
         triangleAllCornerInds.data.push_back(c0);
@@ -1506,7 +1514,7 @@ SurfaceFaceScalarQuantity* SurfaceMesh::addFaceScalarQuantityImpl(std::string na
 
 SurfaceEdgeScalarQuantity* SurfaceMesh::addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                   DataType type) {
-  SurfaceEdgeScalarQuantity* q = new SurfaceEdgeScalarQuantity(name, applyPermutation(data, edgePerm), *this, type);
+  SurfaceEdgeScalarQuantity* q = new SurfaceEdgeScalarQuantity(name, data, *this, type);
   addQuantity(q);
   markEdgesAsUsed();
   return q;
@@ -1514,8 +1522,7 @@ SurfaceEdgeScalarQuantity* SurfaceMesh::addEdgeScalarQuantityImpl(std::string na
 
 SurfaceHalfedgeScalarQuantity*
 SurfaceMesh::addHalfedgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type) {
-  SurfaceHalfedgeScalarQuantity* q =
-      new SurfaceHalfedgeScalarQuantity(name, applyPermutation(data, halfedgePerm), *this, type);
+  SurfaceHalfedgeScalarQuantity* q = new SurfaceHalfedgeScalarQuantity(name, data, *this, type);
   addQuantity(q);
   markHalfedgesAsUsed();
   return q;
@@ -1573,8 +1580,7 @@ SurfaceMesh::addVertexTangentVectorQuantityImpl(std::string name, const std::vec
 SurfaceOneFormTangentVectorQuantity*
 SurfaceMesh::addOneFormTangentVectorQuantityImpl(std::string name, const std::vector<double>& data,
                                                  const std::vector<char>& orientations) {
-  SurfaceOneFormTangentVectorQuantity* q = new SurfaceOneFormTangentVectorQuantity(
-      name, applyPermutation(data, edgePerm), applyPermutation(orientations, edgePerm), *this);
+  SurfaceOneFormTangentVectorQuantity* q = new SurfaceOneFormTangentVectorQuantity(name, data, orientations, *this);
   addQuantity(q);
   markEdgesAsUsed();
   return q;

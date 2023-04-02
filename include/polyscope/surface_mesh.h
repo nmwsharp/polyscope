@@ -93,9 +93,10 @@ public:
   render::ManagedBuffer<glm::vec3> vertexPositions;
 
   // connectivity / indices
-  render::ManagedBuffer<uint32_t> triangleVertexInds;      // on triangulated mesh [3 * nTriFace]
-  render::ManagedBuffer<uint32_t> triangleFaceInds;        // on triangulated mesh [3 * nTriFace]
-  render::ManagedBuffer<uint32_t> triangleCornerInds;      // on triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleVertexInds; // on triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleFaceInds;   // on triangulated mesh [3 * nTriFace]
+  render::ManagedBuffer<uint32_t> triangleCornerInds; // on triangulated mesh [3 * nTriFace]
+  // these next 3 use the ***perm if it has been set
   render::ManagedBuffer<uint32_t> triangleAllEdgeInds;     // on triangulated mesh, all 3 [3 * 3 * nTriFace]
   render::ManagedBuffer<uint32_t> triangleAllHalfedgeInds; // on triangulated mesh, all 3 [3 * 3 * nTriFace]
   render::ManagedBuffer<uint32_t> triangleAllCornerInds;   // on triangulated mesh, all 3 [3 * 3 * nTriFace]
@@ -170,6 +171,7 @@ public:
   // Permutation arrays. Empty == default ordering
   std::vector<size_t> edgePerm;
   std::vector<size_t> halfedgePerm;
+  std::vector<size_t> cornerPerm;
 
   // Set permutations
   template <class T>
@@ -177,7 +179,9 @@ public:
   template <class T>
   void setHalfedgePermutation(const T& perm, size_t expectedSize = 0);
   template <class T>
-  void setAllPermutations(const std::array<std::pair<T, size_t>, 2>& perms);
+  void setCornerPermutation(const T& perm, size_t expectedSize = 0);
+  template <class T>
+  void setAllPermutations(const std::array<std::pair<T, size_t>, 3>& perms);
 
   template <class T> // deprecated, for backward compatability only
   void setAllPermutations(const std::array<std::pair<T, size_t>, 5>& perms);
