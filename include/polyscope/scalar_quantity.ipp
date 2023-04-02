@@ -15,7 +15,6 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
       isolineDarkness(quantity.uniquePrefix() + "#isolineDarkness", 0.7)
 
 {
-  values.markHostBufferUpdated();
   hist.updateColormap(cMap.get());
   hist.buildHistogram(values.data);
   resetMapRange();

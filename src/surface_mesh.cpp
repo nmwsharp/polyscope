@@ -74,8 +74,6 @@ SurfaceMesh::SurfaceMesh(std::string name_, const std::vector<glm::vec3>& vertex
   faceIndsEntries = faceIndsEntries_;
   faceIndsStart = faceIndsStart_;
 
-  vertexPositions.markHostBufferUpdated();
-
   computeConnectivityData();
   updateObjectSpaceBounds();
 }
@@ -1529,7 +1527,6 @@ SurfaceMesh::addFaceVectorQuantityImpl(std::string name, const std::vector<glm::
 SurfaceFaceTangentVectorQuantity* SurfaceMesh::addFaceTangentVectorQuantityImpl(std::string name,
                                                                                 const std::vector<glm::vec2>& vectors,
                                                                                 int nSym, VectorType vectorType) {
-  checkHaveFaceTangentSpaces();
   SurfaceFaceTangentVectorQuantity* q = new SurfaceFaceTangentVectorQuantity(name, vectors, *this, nSym, vectorType);
   addQuantity(q);
   return q;
@@ -1539,7 +1536,6 @@ SurfaceFaceTangentVectorQuantity* SurfaceMesh::addFaceTangentVectorQuantityImpl(
 SurfaceVertexTangentVectorQuantity*
 SurfaceMesh::addVertexTangentVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, int nSym,
                                                 VectorType vectorType) {
-  checkHaveVertexTangentSpaces();
   SurfaceVertexTangentVectorQuantity* q =
       new SurfaceVertexTangentVectorQuantity(name, vectors, *this, nSym, vectorType);
   addQuantity(q);
