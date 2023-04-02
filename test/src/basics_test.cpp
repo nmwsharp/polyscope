@@ -47,9 +47,16 @@ TEST_F(PolyscopeTest, NestedShow) {
 
 // Make sure that creating an empty buffer does not throw errors
 TEST_F(PolyscopeTest, EmptyBuffer) {
+
+
   std::vector<glm::vec3> empty_points;
   polyscope::PointCloud* psPoints = polyscope::registerPointCloud("empty cloud", empty_points);
   polyscope::show(3);
+
+  std::vector<std::array<uint32_t, 2>> empty_edges;
+  polyscope::CurveNetwork* psNet = polyscope::registerCurveNetwork("empty curve", empty_points, empty_edges);
+  polyscope::show(3);
+
   polyscope::removeAllStructures();
 }
 

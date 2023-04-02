@@ -30,7 +30,7 @@ class ManagedBuffer {
 public:
   // === Constructors
 
-  // Manage a buffer of data which has been explicitly set externally
+  // Manage a buffer of data which is explicitly set externally.
   ManagedBuffer(const std::string& name, std::vector<T>& data);
 
   // Manage a buffer of data which gets computed lazily
