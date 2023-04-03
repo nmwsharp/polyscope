@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.1)
 
 # Create a library for the viewer code
-add_library(
-    glad
-    glad.c
-    )
+if (NOT TARGET glad)
+  add_library(
+      glad
+      glad.c
+      )
+endif()
 
 # Are we building a shared library?
 get_target_property(library_type glad TYPE)
