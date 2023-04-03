@@ -38,6 +38,15 @@ public:
   QuantityT* setVectorLengthScale(double newLength, bool isRelative = true);
   double getVectorLengthScale();
 
+  // The upper limit for the length of vectors in the quantity, used in scaling calculations.
+  // Ordinarily this is computed as the max length of all input vectors, but it can be manually overridden,
+  // e.g. to make sure that vectors are consistently scaled across different data.
+  //
+  // Note that unlike most other getter/setters, this is NOT a persistent value. (It doesn't automatically get
+  // propagated to new quantities with the same name).
+  QuantityT* setVectorLengthRange(double newLength);
+  double getVectorLengthRange();
+
   // The radius of the vectors
   QuantityT* setVectorRadius(double val, bool isRelative = true);
   double getVectorRadius();
@@ -59,6 +68,9 @@ protected:
   PersistentValue<ScaledValue<float>> vectorRadius;
   PersistentValue<glm::vec3> vectorColor;
   PersistentValue<std::string> material;
+
+  float vectorLengthRange = -1.;
+  bool vectorLengthRangeManuallySet = false;
 
   std::shared_ptr<render::ShaderProgram> vectorProgram;
 };
@@ -104,7 +116,6 @@ protected:
   void updateMaxLength();
 
   std::vector<glm::vec3> vectorsData;
-  float maxLength = -777;
 };
 
 
@@ -151,7 +162,6 @@ protected:
   std::vector<glm::vec3> tangentBasisXData;
   std::vector<glm::vec3> tangentBasisYData;
   int nSym;
-  float maxLength = -777;
 };
 
 } // namespace polyscope
