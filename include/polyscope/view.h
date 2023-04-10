@@ -129,5 +129,8 @@ void setFrontDir(FrontDir newFrontDir, bool animateFlight = false);
 FrontDir getFrontDir();
 glm::vec3 getFrontVec();
 
+void setNavigateStyle(NavigateStyle newNavigateStyle, bool animateFlight = false);
+NavigateStyle getNavigateStyle();
+
 } // namespace view
 } // namespace polyscope
