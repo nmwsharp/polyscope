@@ -110,6 +110,9 @@ void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeco
 void immediatelyEndFlight();
 
 // Get and set camera from json string
+std::string getViewAsJson();
+void setViewFromJson(std::string jsonData, bool flyTo);
+// DEPRACTED: old names for avove
 std::string getCameraJson();
 void setCameraFromJson(std::string jsonData, bool flyTo);
 

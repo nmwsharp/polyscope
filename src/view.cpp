@@ -514,7 +514,7 @@ void updateFlight() {
   }
 }
 
-std::string getCameraJson() {
+std::string getViewAsJson() {
 
   // Get the view matrix (note weird glm indexing, glm is [col][row])
   glm::mat4 viewMat = getCameraViewMatrix();
@@ -539,8 +539,9 @@ std::string getCameraJson() {
   std::string outString = j.dump();
   return outString;
 }
+std::string getCameraJson() { return getViewAsJson(); }
 
-void setCameraFromJson(std::string jsonData, bool flyTo) {
+void setViewFromJson(std::string jsonData, bool flyTo) {
   // Values will go here
   glm::mat4 newViewMat;
   double newFov = -777;
@@ -614,6 +615,7 @@ void setCameraFromJson(std::string jsonData, bool flyTo) {
     requestRedraw();
   }
 }
+void setCameraFromJson(std::string jsonData, bool flyTo) { setViewFromJson(jsonData, flyTo); }
 
 void buildViewGui() {
 
