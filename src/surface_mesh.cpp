@@ -895,7 +895,10 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
       }
 
       // Second half does halfedges/edges/corners, not used for simple mode
-      if (simplePick) continue;
+      if (simplePick) {
+        iFTri++;
+        continue;
+      }
 
 
       // Fill the halfedge buffer with edge or halfedge data, depending on which are in use
