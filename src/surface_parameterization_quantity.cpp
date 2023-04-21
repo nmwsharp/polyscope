@@ -89,9 +89,9 @@ void SurfaceCornerParameterizationQuantity::fillCoordBuffers(render::ShaderProgr
   p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
 }
 
-void SurfaceCornerParameterizationQuantity::buildHalfedgeInfoGUI(size_t heInd) {
+void SurfaceCornerParameterizationQuantity::buildCornerInfoGUI(size_t cInd) {
 
-  glm::vec2 coord = coords.getValue(heInd);
+  glm::vec2 coord = coords.getValue(cInd);
 
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();

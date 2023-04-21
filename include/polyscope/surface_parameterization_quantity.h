@@ -49,7 +49,7 @@ public:
   SurfaceCornerParameterizationQuantity(std::string name, SurfaceMesh& mesh_, const std::vector<glm::vec2>& coords_,
                                         ParamCoordsType type_, ParamVizStyle style);
 
-  virtual void buildHalfedgeInfoGUI(size_t heInd) override;
+  virtual void buildCornerInfoGUI(size_t cInd) override;
   virtual std::string niceName() override;
 
 protected:
