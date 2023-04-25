@@ -3,7 +3,7 @@
 #pragma once
 
 #include "polyscope/fullscreen_artist.h"
-#include "polyscope/image_quantity.h"
+#include "polyscope/image_quantity_base.h"
 #include "polyscope/render/color_maps.h"
 #include "polyscope/scalar_quantity.h"
 

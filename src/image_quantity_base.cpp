@@ -1,7 +1,7 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
 
-#include "polyscope/image_quantity.h"
+#include "polyscope/image_quantity_base.h"
 
 #include "polyscope/camera_view.h"
 

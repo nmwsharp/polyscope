@@ -186,7 +186,7 @@ SET(SRCS
   # Floating quantities
   floating_quantity_structure.cpp
   floating_quantity.cpp
-  image_quantity.cpp
+  image_quantity_base.cpp
   scalar_image_quantity.cpp
   color_image_quantity.cpp
   render_image_quantity_base.cpp

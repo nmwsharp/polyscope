@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "polyscope/image_quantity.h"
+#include "polyscope/image_quantity_base.h"
 
 #include <vector>
 
