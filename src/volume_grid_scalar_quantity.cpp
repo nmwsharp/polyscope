@@ -153,13 +153,15 @@ void VolumeGridScalarQuantity::createIsosurfaceProgram() {
   isosurfaceProgram = render::engine->requestShader("INDEXED_MESH", parent.addStructureRules({"SHADE_BASECOLOR"}));
 
   // Populate the program buffers with the extracted mesh
-  isosurfaceProgram->setAttribute("a_position", mesh.vertices);
-  isosurfaceProgram->setAttribute("a_normal", mesh.normals);
+  isosurfaceProgram->setAttribute("a_vertexPositions", mesh.vertices);
+  isosurfaceProgram->setAttribute("a_vertexNormals", mesh.normals);
   isosurfaceProgram->setIndex(mesh.indices);
 
   // Fill out some barycoords
   // TODO: extract barycoords from surface mesh shader to rule so we don't have to add a useless quantity
-  isosurfaceProgram->setAttribute("a_barycoord", mesh.normals); // unused
+  if (isosurfaceProgram->hasAttribute("a_barycoord")) {
+    isosurfaceProgram->setAttribute("a_barycoord", mesh.normals); // unused
+  }
 
   render::engine->setMaterial(*isosurfaceProgram, parent.getMaterial());
 }
