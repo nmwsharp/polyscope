@@ -43,4 +43,14 @@ void CameraView::updateCameraParameters(const T1& root, const T2& lookDir, const
   updateCameraParameters(params);
 }
 
+// Shorthand to get a camera view from polyscope
+inline CameraView* getCameraView(std::string name) {
+  return dynamic_cast<CameraView*>(getStructure(CameraView::structureTypeName, name));
+}
+inline bool hasCameraView(std::string name) { return hasStructure(CameraView::structureTypeName, name); }
+inline void removeCameraView(std::string name, bool errorIfAbsent) {
+  removeStructure(CameraView::structureTypeName, name, errorIfAbsent);
+}
+
+
 } // namespace polyscope

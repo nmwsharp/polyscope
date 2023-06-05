@@ -14,7 +14,11 @@ TEST_F(PolyscopeTest, AddCameraView) {
   polyscope::CameraView* cam1 = polyscope::registerCameraView("cam1", glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.},
                                                               glm::vec3{0., 1., 0.}, 60, 2.);
 
+  EXPECT_TRUE(polyscope::hasCameraView("cam1"));
+  EXPECT_TRUE(polyscope::getCameraView("cam1") != nullptr);
+
   polyscope::show(3);
+
   polyscope::removeAllStructures();
 }
 
