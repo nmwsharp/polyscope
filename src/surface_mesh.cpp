@@ -840,13 +840,17 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
   if (halfedgesHaveBeenUsed) triangleAllHalfedgeInds.ensureHostBufferPopulated();
   if (cornersHaveBeenUsed) triangleCornerInds.ensureHostBufferPopulated();
 
+  // nEdges() requires computing number of edges, which is expensive and might not even be implemented for polygonal
+  // meshes. This way we only call it if actually needed, and use 0 otherwise.
+  size_t nEdgesSafe = edgesHaveBeenUsed ? nEdges() : 0;
+
   // Get element indices
-  size_t totalPickElements = nVertices() + nFaces() + nEdges() + nHalfedges() + nCorners();
+  size_t totalPickElements = nVertices() + nFaces() + nEdgesSafe + nHalfedges() + nCorners();
 
   // In "local" indices, indexing elements only within this mesh, used for reading later
   facePickIndStart = nVertices();
   edgePickIndStart = facePickIndStart + nFaces();
-  halfedgePickIndStart = edgePickIndStart + nEdges();
+  halfedgePickIndStart = edgePickIndStart + nEdgesSafe;
   cornerPickIndStart = halfedgePickIndStart + nHalfedges();
 
   // In "global" indices, indexing all elements in the scene, used to fill buffers for drawing here
