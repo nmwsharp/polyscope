@@ -10,7 +10,7 @@ class Widget {
 
 public:
   Widget();
-  ~Widget();
+  virtual ~Widget();
 
   // No copy constructor/assignment
   Widget(const Widget&) = delete;
