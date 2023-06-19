@@ -350,7 +350,8 @@ void setViewToCamera(const CameraParameters& p) {
 
 CameraParameters getCameraParametersForCurrentView() {
   double aspectRatio = (float)bufferWidth / bufferHeight;
-  return CameraParameters(viewMat, fov, aspectRatio);
+  return CameraParameters(CameraIntrinsics::fromFoVDegVerticalAndAspect(fov, aspectRatio),
+                          CameraExtrinsics::fromMatrix(viewMat));
 }
 
 glm::mat4 getCameraViewMatrix() { return viewMat; }

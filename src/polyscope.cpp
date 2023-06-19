@@ -33,7 +33,7 @@ namespace {
 // initialization.
 struct ContextEntry {
   ImGuiContext* context;
-  std::function<void()> callback;
+  std ::function<void()> callback;
   bool drawDefaultUI;
 };
 std::vector<ContextEntry> contextStack;

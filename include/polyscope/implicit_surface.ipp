@@ -72,7 +72,7 @@ renderImplicitSurfaceFromCurrentView(Func&& func, ImplicitRenderOpts opts) {
   std::vector<glm::vec3> currPos(nPix);
   std::vector<float> rayDepthOut(nPix, -1.);                        // output values
   std::vector<glm::vec3> rayPosOut(nPix, glm::vec3{0.f, 0.f, 0.f}); // output values
-  size_t iFinished = 0;
+  // size_t iFinished = 0;
   for (size_t iStep = 0; iStep < nMaxSteps; iStep++) {
 
     // Check for convergence & write/compact
@@ -92,7 +92,7 @@ renderImplicitSurfaceFromCurrentView(Func&& func, ImplicitRenderOpts opts) {
         rayDepthOut[outInd] = outDepth;
         rayPosOut[outInd] = finalPos;
 
-        iFinished++;
+        // iFinished++;
 
       } else {
         // Take a step

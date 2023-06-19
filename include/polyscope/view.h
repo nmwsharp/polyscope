@@ -46,6 +46,8 @@ extern double farClipRatio;
 extern std::array<float, 4> bgColor;
 
 // Current view camera parameters
+// TODO deprecate these one day, and just use a CameraParameters member instead. But this would break existing code, so
+// for now we leave these as-is and wrap inputs/outputs to a CameraParameters
 extern glm::mat4x4 viewMat;
 extern double fov; // in the y direction
 extern ProjectionMode projectionMode;
