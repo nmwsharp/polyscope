@@ -57,8 +57,6 @@ public:
   // === Mutate
 
   // Update the camera's location / parameters
-  template <class T1, class T2, class T3>
-  void updateCameraParameters(const T1& root, const T2& lookDir, const T3& upDir, float fovVertDeg, float aspectRatio);
   void updateCameraParameters(const CameraParameters& newParams);
 
   // get the params object
@@ -128,10 +126,6 @@ private:
 
 
 // Shorthand to add a camera view to Polyscope
-template <class T1, class T2, class T3>
-CameraView* registerCameraView(std::string name, const T1& root, const T2& lookDir, const T3& upDir, float fovVertDeg,
-                               float aspectRatio);
-
 CameraView* registerCameraView(std::string name, CameraParameters params);
 
 // Shorthand to get a point cloud from polyscope

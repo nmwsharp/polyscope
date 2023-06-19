@@ -1,5 +1,6 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
+#include "polyscope/camera_parameters.h"
 #include "polyscope/color_image_quantity.h"
 #include "polyscope_test.h"
 
@@ -11,8 +12,10 @@
 
 TEST_F(PolyscopeTest, AddCameraView) {
 
-  polyscope::CameraView* cam1 = polyscope::registerCameraView("cam1", glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.},
-                                                              glm::vec3{0., 1., 0.}, 60, 2.);
+  polyscope::CameraView* cam1 = polyscope::registerCameraView(
+      "cam1", polyscope::CameraParameters(polyscope::CameraIntrinsics::fromFoVDegVerticalAndAspect(60, 2.),
+                                          polyscope::CameraExtrinsics::fromVectors(
+                                              glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.}, glm::vec3{0., 1., 0.})));
 
   EXPECT_TRUE(polyscope::hasCameraView("cam1"));
   EXPECT_TRUE(polyscope::getCameraView("cam1") != nullptr);
@@ -24,8 +27,10 @@ TEST_F(PolyscopeTest, AddCameraView) {
 
 TEST_F(PolyscopeTest, CameraViewOptions) {
 
-  polyscope::CameraView* cam1 = polyscope::registerCameraView("cam1", glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.},
-                                                              glm::vec3{0., 1., 0.}, 60, 2.);
+  polyscope::CameraView* cam1 = polyscope::registerCameraView(
+      "cam1", polyscope::CameraParameters(polyscope::CameraIntrinsics::fromFoVDegVerticalAndAspect(60, 2.),
+                                          polyscope::CameraExtrinsics::fromVectors(
+                                              glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.}, glm::vec3{0., 1., 0.})));
 
   cam1->setWidgetFocalLength(0.75, false);
   EXPECT_EQ(cam1->getWidgetFocalLength(), 0.75);
@@ -44,12 +49,17 @@ TEST_F(PolyscopeTest, CameraViewOptions) {
 
 TEST_F(PolyscopeTest, CameraViewUpdate) {
 
-  polyscope::CameraView* cam1 = polyscope::registerCameraView("cam1", glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.},
-                                                              glm::vec3{0., 1., 0.}, 60, 2.);
+  polyscope::CameraView* cam1 = polyscope::registerCameraView(
+      "cam1", polyscope::CameraParameters(polyscope::CameraIntrinsics::fromFoVDegVerticalAndAspect(60, 2.),
+                                          polyscope::CameraExtrinsics::fromVectors(
+                                              glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.}, glm::vec3{0., 1., 0.})));
 
   polyscope::show(3);
 
-  cam1->updateCameraParameters(glm::vec3{3., 2., 2.}, glm::vec3{-1., -1., -2.}, glm::vec3{1., 1., 0.}, 65, 3.);
+  cam1->updateCameraParameters(
+      polyscope::CameraParameters(polyscope::CameraIntrinsics::fromFoVDegVerticalAndAspect(65, 3.),
+                                  polyscope::CameraExtrinsics::fromVectors(
+                                      glm::vec3{3., 2., 2.}, glm::vec3{-1., -1., -2.}, glm::vec3{1., 1., 0.})));
 
   polyscope::show(3);
 
@@ -58,8 +68,10 @@ TEST_F(PolyscopeTest, CameraViewUpdate) {
 
 TEST_F(PolyscopeTest, AddCameraViewColorImage) {
 
-  polyscope::CameraView* cam1 = polyscope::registerCameraView("cam1", glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.},
-                                                              glm::vec3{0., 1., 0.}, 60, 2.);
+  polyscope::CameraView* cam1 = polyscope::registerCameraView(
+      "cam1", polyscope::CameraParameters(polyscope::CameraIntrinsics::fromFoVDegVerticalAndAspect(60, 2.),
+                                          polyscope::CameraExtrinsics::fromVectors(
+                                              glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.}, glm::vec3{0., 1., 0.})));
 
   int width = 300;
   int height = 400;
@@ -87,8 +99,10 @@ TEST_F(PolyscopeTest, AddCameraViewColorImage) {
 
 TEST_F(PolyscopeTest, AddCameraViewColorAlphaImage) {
 
-  polyscope::CameraView* cam1 = polyscope::registerCameraView("cam1", glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.},
-                                                              glm::vec3{0., 1., 0.}, 60, 2.);
+  polyscope::CameraView* cam1 = polyscope::registerCameraView(
+      "cam1", polyscope::CameraParameters(polyscope::CameraIntrinsics::fromFoVDegVerticalAndAspect(60, 2.),
+                                          polyscope::CameraExtrinsics::fromVectors(
+                                              glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.}, glm::vec3{0., 1., 0.})));
 
   int width = 300;
   int height = 400;
@@ -116,8 +130,10 @@ TEST_F(PolyscopeTest, AddCameraViewColorAlphaImage) {
 
 TEST_F(PolyscopeTest, AddCameraViewScalarImage) {
 
-  polyscope::CameraView* cam1 = polyscope::registerCameraView("cam1", glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.},
-                                                              glm::vec3{0., 1., 0.}, 60, 2.);
+  polyscope::CameraView* cam1 = polyscope::registerCameraView(
+      "cam1", polyscope::CameraParameters(polyscope::CameraIntrinsics::fromFoVDegVerticalAndAspect(60, 2.),
+                                          polyscope::CameraExtrinsics::fromVectors(
+                                              glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.}, glm::vec3{0., 1., 0.})));
 
   int width = 300;
   int height = 400;

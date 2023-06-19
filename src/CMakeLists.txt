@@ -218,6 +218,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/affine_remapper.h
   ${INCLUDE_ROOT}/affine_remapper.ipp
   ${INCLUDE_ROOT}/camera_parameters.h
+  ${INCLUDE_ROOT}/camera_parameters.ipp
   ${INCLUDE_ROOT}/camera_view.h
   ${INCLUDE_ROOT}/camera_view.ipp
   ${INCLUDE_ROOT}/color_management.h
