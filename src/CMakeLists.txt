@@ -309,7 +309,7 @@ add_library(polyscope ${SRCS} ${BACKEND_SRCS} ${HEADERS} ${BACKEND_HEADERS})
 
 # Mark the library target and its headers as installable
 install(TARGETS polyscope)
-install(FILES ${HEADERS} DESTINATION "${CMAKE_INSTALL_PREFIX}/include/polyscope")
+install(DIRECTORY ${INCLUDE_ROOT}/ DESTINATION "${CMAKE_INSTALL_PREFIX}/include/polyscope")
 
 # Required compiler settings
 set_property(TARGET polyscope PROPERTY CXX_STANDARD 11)
