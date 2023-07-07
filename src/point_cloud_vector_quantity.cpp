@@ -15,8 +15,8 @@ namespace polyscope {
 PointCloudVectorQuantity::PointCloudVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                    PointCloud& pointCloud_, VectorType vectorType_)
 
-    : PointCloudQuantity(name, pointCloud_), VectorQuantity<PointCloudVectorQuantity>(*this, vectors_, parent.points,
-                                                                                      vectorType_) {}
+    : PointCloudQuantity(name, pointCloud_),
+      VectorQuantity<PointCloudVectorQuantity>(*this, vectors_, parent.points, vectorType_) {}
 
 void PointCloudVectorQuantity::draw() {
   if (!isEnabled()) return;

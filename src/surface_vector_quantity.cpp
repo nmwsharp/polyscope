@@ -24,9 +24,8 @@ SurfaceVectorQuantity::SurfaceVectorQuantity(std::string name, SurfaceMesh& mesh
 
 SurfaceVertexVectorQuantity::SurfaceVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                          SurfaceMesh& mesh_, VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX), VectorQuantity<SurfaceVertexVectorQuantity>(
-                                                                   *this, vectors_, parent.vertexPositions,
-                                                                   vectorType_) {}
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::VERTEX),
+      VectorQuantity<SurfaceVertexVectorQuantity>(*this, vectors_, parent.vertexPositions, vectorType_) {}
 
 void SurfaceVertexVectorQuantity::refresh() {
   refreshVectors();
@@ -65,8 +64,8 @@ std::string SurfaceVertexVectorQuantity::niceName() { return name + " (vertex ve
 
 SurfaceFaceVectorQuantity::SurfaceFaceVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                      SurfaceMesh& mesh_, VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE), VectorQuantity<SurfaceFaceVectorQuantity>(
-                                                                 *this, vectors_, parent.faceCenters, vectorType_) {}
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE),
+      VectorQuantity<SurfaceFaceVectorQuantity>(*this, vectors_, parent.faceCenters, vectorType_) {}
 
 void SurfaceFaceVectorQuantity::refresh() {
   refreshVectors();
@@ -108,9 +107,9 @@ SurfaceFaceTangentVectorQuantity::SurfaceFaceTangentVectorQuantity(std::string n
                                                                    std::vector<glm::vec3> basisX_,
                                                                    std::vector<glm::vec3> basisY_, SurfaceMesh& mesh_,
                                                                    int nSym_, VectorType vectorType_)
-    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE), TangentVectorQuantity<SurfaceFaceTangentVectorQuantity>(
-                                                                 *this, vectors_, basisX_, basisY_, parent.faceCenters,
-                                                                 nSym_, vectorType_) {}
+    : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE),
+      TangentVectorQuantity<SurfaceFaceTangentVectorQuantity>(*this, vectors_, basisX_, basisY_, parent.faceCenters,
+                                                              nSym_, vectorType_) {}
 
 void SurfaceFaceTangentVectorQuantity::refresh() {
   refreshVectors();

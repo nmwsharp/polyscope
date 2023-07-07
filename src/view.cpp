@@ -341,13 +341,9 @@ void setWindowSize(int width, int height) {
   render::engine->applyWindowSize();
 }
 
-std::tuple<int,int> getWindowSize() {
-  return std::tuple<int,int>(view::windowWidth, view::windowHeight);
-}
+std::tuple<int, int> getWindowSize() { return std::tuple<int, int>(view::windowWidth, view::windowHeight); }
 
-std::tuple<int,int> getBufferSize() {
-  return std::tuple<int,int>(view::bufferWidth, view::bufferWidth);
-}
+std::tuple<int, int> getBufferSize() { return std::tuple<int, int>(view::bufferWidth, view::bufferWidth); }
 
 void setViewToCamera(const CameraParameters& p) {
   viewMat = p.getE();
@@ -996,13 +992,9 @@ void setNavigateStyle(NavigateStyle newNavigateStyle, bool animateFlight) {
 }
 NavigateStyle getNavigateStyle() { return style; }
 
-void setWindowResizable(bool isResizable) {
-  return render::engine->setWindowResizable(isResizable);
-}
+void setWindowResizable(bool isResizable) { return render::engine->setWindowResizable(isResizable); }
 
-bool getWindowResizable() {
-  return render::engine->getWindowResizable();
-}
+bool getWindowResizable() { return render::engine->getWindowResizable(); }
 
 
 } // namespace view

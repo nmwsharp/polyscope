@@ -23,9 +23,8 @@ VolumeMeshVectorQuantity::VolumeMeshVectorQuantity(std::string name, VolumeMesh&
 VolumeMeshVertexVectorQuantity::VolumeMeshVertexVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                                VolumeMesh& mesh_, VectorType vectorType_)
 
-    : VolumeMeshVectorQuantity(name, mesh_, VolumeMeshElement::VERTEX), VectorQuantity<VolumeMeshVertexVectorQuantity>(
-                                                                            *this, vectors_, parent.vertexPositions,
-                                                                            vectorType_) {}
+    : VolumeMeshVectorQuantity(name, mesh_, VolumeMeshElement::VERTEX),
+      VectorQuantity<VolumeMeshVertexVectorQuantity>(*this, vectors_, parent.vertexPositions, vectorType_) {}
 
 void VolumeMeshVertexVectorQuantity::refresh() {
   refreshVectors();
@@ -62,9 +61,8 @@ std::string VolumeMeshVertexVectorQuantity::niceName() { return name + " (vertex
 
 VolumeMeshCellVectorQuantity::VolumeMeshCellVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                            VolumeMesh& mesh_, VectorType vectorType_)
-    : VolumeMeshVectorQuantity(name, mesh_, VolumeMeshElement::CELL), VectorQuantity<VolumeMeshCellVectorQuantity>(
-                                                                          *this, vectors_, parent.cellCenters,
-                                                                          vectorType_) {
+    : VolumeMeshVectorQuantity(name, mesh_, VolumeMeshElement::CELL),
+      VectorQuantity<VolumeMeshCellVectorQuantity>(*this, vectors_, parent.cellCenters, vectorType_) {
   refresh();
 }
 

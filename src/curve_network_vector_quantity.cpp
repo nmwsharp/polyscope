@@ -24,8 +24,8 @@ CurveNetworkVectorQuantity::CurveNetworkVectorQuantity(std::string name, CurveNe
 CurveNetworkNodeVectorQuantity::CurveNetworkNodeVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                                CurveNetwork& network_, VectorType vectorType_)
 
-    : CurveNetworkVectorQuantity(name, network_), VectorQuantity<CurveNetworkNodeVectorQuantity>(
-                                                      *this, vectors_, parent.nodePositions, vectorType_) {
+    : CurveNetworkVectorQuantity(name, network_),
+      VectorQuantity<CurveNetworkNodeVectorQuantity>(*this, vectors_, parent.nodePositions, vectorType_) {
   refresh();
 }
 
@@ -65,8 +65,8 @@ std::string CurveNetworkNodeVectorQuantity::niceName() { return name + " (node v
 
 CurveNetworkEdgeVectorQuantity::CurveNetworkEdgeVectorQuantity(std::string name, std::vector<glm::vec3> vectors_,
                                                                CurveNetwork& network_, VectorType vectorType_)
-    : CurveNetworkVectorQuantity(name, network_), VectorQuantity<CurveNetworkEdgeVectorQuantity>(
-                                                      *this, vectors_, parent.edgeCenters, vectorType_) {
+    : CurveNetworkVectorQuantity(name, network_),
+      VectorQuantity<CurveNetworkEdgeVectorQuantity>(*this, vectors_, parent.edgeCenters, vectorType_) {
   refresh();
 }
 
