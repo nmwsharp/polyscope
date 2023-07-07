@@ -74,6 +74,8 @@ void processClipPlaneShift(double amount);
 void processZoom(double amount);
 
 void setWindowSize(int width, int height);
+std::tuple<int, int> getWindowSize();
+std::tuple<int, int> getBufferSize();
 void setViewToCamera(const CameraParameters& p);
 CameraParameters getCameraParametersForCurrentView();
 
@@ -136,6 +138,9 @@ glm::vec3 getFrontVec();
 
 void setNavigateStyle(NavigateStyle newNavigateStyle, bool animateFlight = false);
 NavigateStyle getNavigateStyle();
+
+void setWindowResizable(bool isResizable);
+bool getWindowResizable();
 
 } // namespace view
 } // namespace polyscope
