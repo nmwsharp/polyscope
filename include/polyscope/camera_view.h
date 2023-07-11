@@ -60,7 +60,7 @@ public:
   void updateCameraParameters(const CameraParameters& newParams);
 
   // get the params object
-  CameraParameters getCameraParameters();
+  CameraParameters getCameraParameters() const;
 
   // Misc data
   static const std::string structureTypeName;
@@ -120,6 +120,10 @@ private:
   float widgetFocalLengthUpper = -777;
   size_t pickStart = INVALID_IND;
   glm::vec3 pickColor;
+
+  // track the length scale which was used to generate the camera geometry, in case it needs to be regenerated
+  float preparedLengthScale = -1.;
+  float pickPreparedLengthScale = -1.;
 
   // === Quantity adder implementations
 };

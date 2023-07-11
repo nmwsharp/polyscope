@@ -24,8 +24,8 @@ const std::string CameraView::structureTypeName = "Camera View";
 
 // Constructor
 CameraView::CameraView(std::string name, const CameraParameters& params_)
-    : QuantityStructure<CameraView>(name, structureTypeName), params(std::move(params_)),
-      widgetFocalLength(uniquePrefix() + "#widgetFocalLength", relativeValue(0.1)),
+    : QuantityStructure<CameraView>(name, structureTypeName), params(params_),
+      widgetFocalLength(uniquePrefix() + "#widgetFocalLength", relativeValue(0.05)),
       widgetThickness(uniquePrefix() + "#widgetThickness", 0.02),
       widgetColor(uniquePrefix() + "#widgetColor", glm::vec3{0., 0., 0.}) {
 
@@ -41,6 +41,14 @@ void CameraView::draw() {
   // Ensure we have prepared buffers
   if (nodeProgram == nullptr || edgeProgram == nullptr) {
     prepare();
+  }
+
+
+  // The camera frame geometry attributes depend on the scene length scale. If the length scale has changed, regenerate
+  // those attributes. (It would be better if we could implement the frame geometry in uniforms only, so we don't have
+  // to do this)
+  if (preparedLengthScale != state::lengthScale) {
+    fillCameraWidgetGeometry(nodeProgram.get(), edgeProgram.get(), nullptr);
   }
 
   // Set program uniforms
@@ -95,6 +103,13 @@ void CameraView::drawPick() {
   // Ensure we have prepared buffers
   if (pickFrameProgram == nullptr) {
     preparePick();
+  }
+
+  // The camera frame geometry attributes depend on the scene length scale. If the length scale has changed, regenerate
+  // those attributes. (It would be better if we could implement the frame geometry in uniforms only, so we don't have
+  // to do this)
+  if (pickPreparedLengthScale != state::lengthScale) {
+    fillCameraWidgetGeometry(nullptr, nullptr, pickFrameProgram.get());
   }
 
   // Set uniforms
@@ -175,6 +190,7 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
     std::vector<glm::vec3> allPos{root,        frameUpperLeft, frameUpperRight, frameLowerLeft, frameLowerRight,
                                   triangleTop, triangleLeft,   triangleRight};
     nodeProgram->setAttribute("a_position", allPos);
+    preparedLengthScale = state::lengthScale;
   }
 
   if (edgeProgram) {
@@ -239,6 +255,8 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
         cullPos.push_back(root);
         cullPos.push_back(root);
       }
+
+      pickPreparedLengthScale = state::lengthScale;
     };
 
     addPolygon({root, frameUpperRight, frameUpperLeft});
@@ -249,7 +267,7 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
     addPolygon({triangleTop, triangleRight, triangleLeft});
 
     pickFrameProgram->setAttribute("a_vertexPositions", positions);
-    pickFrameProgram->setAttribute("a_vertexNormals", normals); // unused
+    // pickFrameProgram->setAttribute("a_vertexNormals", normals); // unused
     pickFrameProgram->setAttribute("a_barycoord", bcoord);
 
     size_t nFaces = 7;
@@ -392,7 +410,7 @@ void CameraView::setViewToThisCamera(bool withFlight) {
 
 // === Setters and getters
 
-CameraParameters CameraView::getCameraParameters() { return params; }
+CameraParameters CameraView::getCameraParameters() const { return params; }
 
 CameraView* CameraView::setWidgetFocalLength(float newVal, bool isRelative) {
   widgetFocalLength = ScaledValue<float>(newVal, isRelative);

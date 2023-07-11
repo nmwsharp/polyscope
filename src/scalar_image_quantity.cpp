@@ -35,6 +35,11 @@ void ScalarImageQuantity::buildCustomUI() {
         setShowInCameraBillboard(!getShowInCameraBillboard());
     }
 
+    if (ImGui::SliderFloat("transparency", &transparency.get(), 0, 1., "%.3f")) {
+      transparency.manuallyChanged();
+      requestRedraw();
+    }
+
     ImGui::EndPopup();
   }
 
