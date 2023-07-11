@@ -20,8 +20,6 @@ public:
 
   virtual std::string niceName() override;
 
-  virtual void showInBillboard(glm::vec3 center, glm::vec3 upVec, glm::vec3 rightVec) override;
-
   const std::vector<glm::vec4> data;
 
   // == Setters and getters
@@ -39,6 +37,7 @@ protected:
 
   virtual void showFullscreen() override;
   virtual void showInImGuiWindow() override;
+  virtual void showInBillboard(glm::vec3 center, glm::vec3 upVec, glm::vec3 rightVec) override;
 };
 
 

@@ -23,8 +23,6 @@ public:
 
   virtual std::string niceName() override;
 
-  virtual void showInBillboard(glm::vec3 center, glm::vec3 upVec, glm::vec3 rightVec) override;
-
   // == Setters and getters
 
   virtual ScalarImageQuantity* setEnabled(bool newEnabled) override;
@@ -42,6 +40,7 @@ protected:
 
   virtual void showFullscreen() override;
   virtual void showInImGuiWindow() override;
+  virtual void showInBillboard(glm::vec3 center, glm::vec3 upVec, glm::vec3 rightVec) override;
   virtual void renderIntermediate() override;
 };
 

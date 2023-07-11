@@ -92,5 +92,41 @@ float ImageQuantity::getTransparency() { return transparency.get(); }
 
 bool ImageQuantity::parentIsCameraView() { return parentStructureCameraView != nullptr; }
 
+void ImageQuantity::buildImageOptionsUI() {
+
+  if (ImGui::MenuItem("Show in ImGui window", NULL, getShowInImGuiWindow()))
+    setShowInImGuiWindow(!getShowInImGuiWindow());
+  if (ImGui::MenuItem("Show fullscreen", NULL, getShowFullscreen())) setShowFullscreen(!getShowFullscreen());
+
+  if (parentIsCameraView()) {
+    if (ImGui::MenuItem("Show in camera billboard", NULL, getShowInCameraBillboard()))
+      setShowInCameraBillboard(!getShowInCameraBillboard());
+  }
+
+  if (ImGui::SliderFloat("transparency", &transparency.get(), 0, 1., "%.3f")) {
+    transparency.manuallyChanged();
+    requestRedraw();
+  }
+}
+
+void ImageQuantity::buildImageUI() {
+
+  if (getShowFullscreen()) {
+
+    ImGui::PushItemWidth(100);
+    if (ImGui::SliderFloat("transparency", &transparency.get(), 0.f, 1.f)) {
+      transparency.manuallyChanged();
+      requestRedraw();
+    }
+    ImGui::PopItemWidth();
+  }
+
+  if (isEnabled() && parent.isEnabled()) {
+    if (getShowInImGuiWindow()) {
+      showInImGuiWindow();
+    }
+  }
+}
+
 
 } // namespace polyscope

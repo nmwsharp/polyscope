@@ -24,11 +24,6 @@ public:
   virtual void drawDelayed() override;
   virtual void disableFullscreenDrawing() override;
 
-  // render to a rectangle in 3D
-  // note that the magnitudes of upVec matters, it determines the size of the billboard in world space
-  // the magnitude of rightVec is ignored and scaled to match the aspect ratio of the image
-  virtual void showInBillboard(glm::vec3 center, glm::vec3 upVec, glm::vec3 rightVec) = 0;
-
   Structure& parent;
 
   // == Setters and getters
@@ -61,10 +56,17 @@ protected:
   // build a floating imgui window showing the texture
   virtual void showInImGuiWindow() = 0;
 
+  // render to a rectangle in 3D
+  // note that the magnitudes of upVec matters, it determines the size of the billboard in world space
+  // the magnitude of rightVec is ignored and scaled to match the aspect ratio of the image
+  virtual void showInBillboard(glm::vec3 center, glm::vec3 upVec, glm::vec3 rightVec) = 0;
+
   // you MUST call this at draw time if you intend to call showInImGuiWindow() later
   virtual void renderIntermediate();
 
   bool parentIsCameraView();
+  void buildImageUI();
+  void buildImageOptionsUI();
 };
 
 } // namespace polyscope
