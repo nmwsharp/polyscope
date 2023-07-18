@@ -7,7 +7,7 @@
 #include "polyscope/curve_network.h"
 #include "polyscope/file_helpers.h"
 #include "polyscope/floating_quantity_structure.h"
-#include "polyscope/implicit_surface.h"
+#include "polyscope/implicit_helpers.h"
 #include "polyscope/pick.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
@@ -540,15 +540,16 @@ void addImplicitRendersFromCurrentView() {
 
   polyscope::ImplicitRenderOpts opts;
   // opts.mode = polyscope::ImplicitRenderMode::FixedStep;
-  opts.mode = polyscope::ImplicitRenderMode::SphereMarch;
+  polyscope::ImplicitRenderMode mode = polyscope::ImplicitRenderMode::SphereMarch;
+  // polyscope::ImplicitRenderMode mode = polyscope::ImplicitRenderMode::FixedStep;
   opts.subsampleFactor = 2;
 
-  polyscope::DepthRenderImageQuantity* img = polyscope::renderImplicitSurface("torus sdf", torusSDF, opts);
-  polyscope::DepthRenderImageQuantity* img2 = polyscope::renderImplicitSurface("box sdf", boxFrameSDF, opts);
+  polyscope::DepthRenderImageQuantity* img = polyscope::renderImplicitSurface("torus sdf", torusSDF, mode, opts);
+  polyscope::DepthRenderImageQuantity* img2 = polyscope::renderImplicitSurface("box sdf", boxFrameSDF, mode, opts);
   polyscope::ColorRenderImageQuantity* img2Color =
-      polyscope::renderImplicitSurfaceColor("box sdf color", boxFrameSDF, colorFunc, opts);
+      polyscope::renderImplicitSurfaceColor("box sdf color", boxFrameSDF, colorFunc, mode, opts);
   polyscope::ScalarRenderImageQuantity* imgScalar =
-      polyscope::renderImplicitSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, opts);
+      polyscope::renderImplicitSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, mode, opts);
 }
 
 void dropCameraView() {

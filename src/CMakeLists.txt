@@ -244,8 +244,8 @@ SET(HEADERS
   ${INCLUDE_ROOT}/histogram.h
   ${INCLUDE_ROOT}/image_quantity.h
   ${INCLUDE_ROOT}/imgui_config.h
-  ${INCLUDE_ROOT}/implicit_surface.h
-  ${INCLUDE_ROOT}/implicit_surface.ipp
+  ${INCLUDE_ROOT}/implicit_helpers.h
+  ${INCLUDE_ROOT}/implicit_helpers.ipp
   ${INCLUDE_ROOT}/messages.h
   ${INCLUDE_ROOT}/options.h
   ${INCLUDE_ROOT}/parameterization_quantity.h
