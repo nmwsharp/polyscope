@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iostream>
 
+#include "glm/gtc/constants.hpp"
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
@@ -12,9 +13,11 @@ namespace polyscope {
 
 // == Intrinsics
 
-CameraIntrinsics::CameraIntrinsics() {}
+CameraIntrinsics::CameraIntrinsics() : fovVerticalDegrees(-1), aspectRatioWidthOverHeight(-1), isValidFlag(true) {}
+
 CameraIntrinsics::CameraIntrinsics(const float& fovVerticalDegrees_, const float& aspectRatioWidthOverHeight_)
-    : fovVerticalDegrees(fovVerticalDegrees_), aspectRatioWidthOverHeight(aspectRatioWidthOverHeight_){};
+    : fovVerticalDegrees(fovVerticalDegrees_), aspectRatioWidthOverHeight(aspectRatioWidthOverHeight_),
+      isValidFlag(true) {}
 
 CameraIntrinsics CameraIntrinsics::fromFoVDegVerticalAndAspect(const float& fovVertDeg,
                                                                const float& aspectRatioWidthOverHeight) {
@@ -32,16 +35,22 @@ CameraIntrinsics CameraIntrinsics::fromFoVDegHorizontalAndVertical(const float& 
   return CameraIntrinsics(fovVertDeg, aspectRatioWidthOverHeight);
 }
 
+CameraIntrinsics CameraIntrinsics::createInvalid() { return CameraIntrinsics(); }
+bool CameraIntrinsics::isValid() const { return isValidFlag; }
+
 float CameraIntrinsics::getFoVVerticalDegrees() const { return fovVerticalDegrees; }
 float CameraIntrinsics::getAspectRatioWidthOverHeight() const { return aspectRatioWidthOverHeight; }
 
 
 // == Extrinsics
 
-CameraExtrinsics::CameraExtrinsics() {}
-CameraExtrinsics::CameraExtrinsics(const glm::mat4& E_) : E(E_) {}
+CameraExtrinsics::CameraExtrinsics() : E(-777.f), isValidFlag(false) {}
+CameraExtrinsics::CameraExtrinsics(const glm::mat4& E_) : E(E_), isValidFlag(true) {}
 
 CameraExtrinsics CameraExtrinsics::fromMatrix(const glm::mat4& E) { return CameraExtrinsics(E); }
+
+CameraExtrinsics CameraExtrinsics::createInvalid() { return CameraExtrinsics(); }
+bool CameraExtrinsics::isValid() const { return isValidFlag; }
 
 glm::mat4x4 CameraExtrinsics::getViewMat() const { return E; }
 glm::mat4x4 CameraExtrinsics::getE() const { return E; }
@@ -87,6 +96,54 @@ CameraParameters::CameraParameters() {}
 CameraParameters::CameraParameters(const CameraIntrinsics& intrinsics_, const CameraExtrinsics& extrinsics_)
     : intrinsics(intrinsics_), extrinsics(extrinsics_) {}
 
+std::vector<glm::vec3> CameraParameters::generateCameraRays(size_t dimX, size_t dimY, ImageOrigin origin) const {
+
+  // TODO this has not been tested for the case where dimX/dimY do not match the aspectRatio for the cameraParams
+
+  // prep values
+  glm::mat4x4 viewMat = getViewMat();
+  glm::mat4 projMat =
+      glm::infinitePerspective(glm::radians(getFoVVerticalDegrees()), getAspectRatioWidthOverHeight(), 1.f);
+  glm::vec4 viewport = {0., 0., dimX, dimY};
+  glm::vec3 rootPos = getPosition();
+  size_t nPix = dimX * dimY;
+
+  // allocate output
+  std::vector<glm::vec3> result(dimX * dimY);
+
+  // populate the rays
+  for (size_t iY = 0; iY < dimY; iY++) {
+    for (size_t iX = 0; iX < dimX; iX++) {
+
+      // populate the rays
+      // (this arithmetic could certainly be optimized)
+
+      glm::vec3 screenPos3;
+      switch (origin) {
+      case ImageOrigin::UpperLeft:
+        screenPos3 = glm::vec3{iX, dimY - iY, 0.};
+        break;
+      case ImageOrigin::LowerLeft:
+        screenPos3 = glm::vec3{iX, iY, 0.};
+        break;
+      }
+
+      glm::vec3 worldPos = glm::unProject(screenPos3, viewMat, projMat, viewport);
+      glm::vec3 worldRayDir = glm::normalize(worldPos - rootPos);
+
+      size_t ind = iY * dimX + iX;
+      result[ind] = worldRayDir;
+    }
+  }
+
+  return result;
+}
+
+// create/test 'invalid' params
+CameraParameters CameraParameters::createInvalid() {
+  return CameraParameters(CameraIntrinsics::createInvalid(), CameraExtrinsics::createInvalid());
+}
+bool CameraParameters::isValid() const { return intrinsics.isValid() && extrinsics.isValid(); }
 
 // == Forwarding getters for the camera class
 
