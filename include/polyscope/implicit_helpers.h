@@ -11,6 +11,7 @@
 #include "polyscope/scalar_render_image_quantity.h"
 #include "polyscope/scaled_value.h"
 #include "polyscope/structure.h"
+#include "polyscope/utilities.h"
 
 #include <string>
 #include <vector>
@@ -25,26 +26,72 @@ namespace polyscope {
 // =======================================================
 
 struct ImplicitRenderOpts {
-  ScaledValue<float> missDist = ScaledValue<float>::relative(20.);
-  ScaledValue<float> hitDist = ScaledValue<float>::relative(1e-4);
-  float stepFactor = 0.99; // used for sphere marching
-  float normalSampleEps = 1e-3;
-  ScaledValue<float> stepSize = ScaledValue<float>::relative(1e-2); // used for fixed-size stepping
-  size_t nMaxSteps = 1024;
+
+  // = Options for how the image is defined
+
+  // (1) If camera parameters & resolution are passed, in these options, they will always be respected.
+  //
+  // (2) Otherwise, if the parent structure is null (or the global floating struct), we will render from the current
+  // polyscope camera view, and take the resolution etc from that.
+  //
+  // (3) Otherwise, if the parent structure is a camera view, we will take the camera parameters from that, but the
+  // dimensions must be specified.
+  //
+  // (4) Otherwise, if the parent structure is a structure other than the camera view, the parameters should have been
+  // explicitly specified as in (1), and an error will be thrown.
+
+  // The camera parameters to use.
+  // If left as the default uninitialized camera, it will be overwritten according to the policies above.
+  CameraParameters cameraParameters = CameraParameters::createInvalid();
+
+  // The dimensions at which to render the image.
+  // These normally must be set explicitly, unless we are rendering from the current view as specified above.
+  int32_t dimX = -1;
+  int32_t dimY = -1;
+
+  // If dimX and dimY are being set automatically, downscale them by this factor (e.g. subsampleFactor=2 means use
+  // dimX/2 and dimY/2)
   int subsampleFactor = 1;
+
+  // = Options for the rendering computation itself
+
+  // How far the ray must go before it is abandoned as a miss
+  ScaledValue<float> missDist = ScaledValue<float>::relative(20.);
+
+  // How small the the value of the implicit function must be to be considered a hit
+  ScaledValue<float> hitDist = ScaledValue<float>::relative(1e-4);
+
+  // For mode == SphereMarch, a small tolerance factor applied to step sizes
+  float stepFactor = 0.99;
+
+  // Used to estimate normals via finite differences, also used relative value times the hit distance.
+  float normalSampleEps = 1e-3;
+
+  // The size of the steps used for mode == FixedStep
+  ScaledValue<float> stepSize = ScaledValue<float>::relative(1e-2);
+
+  // The maximum number of steps to take
+  size_t nMaxSteps = 1024;
 };
 
+// Populate the custom-filled entries of opts according to the policy above.
+template <class S>
+void resolveImplicitRenderOpts(QuantityStructure<S>* parent, ImplicitRenderOpts& opts);
+
 // === Depth/geometry/shape only render functions
+
+// TODO update function description in this text
 
 // Renders an implicit surface via sphere marching rays from the current Polyscope camera view.
 // The `func` argument is your implicit function, which takes a simple input `glm::vec3` in world-space coordinates,
 // returns the value of the implicit function. For the "batch" variants, your function must take a
 // std::vector<glm::vec3>, and produce a std::vector<float>.
 //
-// If using ImplicitRenderOpts::SphereMarch, the implicit function MUST be a "signed distance
+// If using ImplicitRenderMode::SphereMarch, the implicit function MUST be a "signed distance
 // function", i.e. function is positive outside the surface, negative inside the surface, and the magnitude gives the
-// distance to the surface (or technically, an upper bound on that distance). Alternately, ImplicitRenderOpts::FixedStep
+// distance to the surface (or technically, an upper bound on that distance). Alternately, ImplicitRenderMode::FixedStep
 // handles more general implicit functions. See the options struct for other options.
+
 template <class Func, class S>
 DepthRenderImageQuantity* renderImplicitSurface(QuantityStructure<S>* parent, std::string name, Func&& func,
                                                 ImplicitRenderMode mode,
