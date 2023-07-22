@@ -166,7 +166,9 @@ renderImplicitSurfaceTracer(Func&& func, ImplicitRenderMode mode, ImplicitRender
     currVals.resize(iPack);
 
     // Evaluate the remaining rays
-    func(&currPos.front().x, &currVals.front(), currPos.size());
+    if (iPack > 0) {
+      func(&currPos.front().x, &currVals.front(), currPos.size());
+    }
   }
 
   // == Compute normals
