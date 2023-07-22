@@ -10,6 +10,7 @@
 #include "glm/vec3.hpp"
 
 #include "polyscope/standardize_data_array.h"
+#include "polyscope/types.h"
 
 namespace polyscope {
 
@@ -32,6 +33,10 @@ public:
                                                         const float& aspectRatioWidthOverHeight);
   static CameraIntrinsics fromFoVDegHorizontalAndVertical(const float& fovHorzDeg, const float& forV);
 
+  // create/test 'invalid' params
+  static CameraIntrinsics createInvalid();
+  bool isValid() const;
+
   // == Intrinsic getters
   float getFoVVerticalDegrees() const;
   float getAspectRatioWidthOverHeight() const;
@@ -39,6 +44,7 @@ public:
 private:
   float fovVerticalDegrees;         // the angle, in degrees from the top to bottom of the viewing frustum
   float aspectRatioWidthOverHeight; // the ratio of the viewing frustum width / height
+  bool isValidFlag;
 };
 
 class CameraExtrinsics {
@@ -51,6 +57,10 @@ public:
   template <class T1, class T2, class T3>
   static CameraExtrinsics fromVectors(const T1& root, const T2& lookDir, const T3& upDir);
   static CameraExtrinsics fromMatrix(const glm::mat4& E);
+
+  // create/test 'invalid' params
+  static CameraExtrinsics createInvalid();
+  bool isValid() const;
 
   // == Extrinsic getters
   glm::vec3 getT() const;
@@ -65,6 +75,7 @@ public:
 
 private:
   glm::mat4x4 E; // E * p maps p to eye space, where the camera is at the origin and looks down the -Z axis,
+  bool isValidFlag;
 };
 
 class CameraParameters {
@@ -72,9 +83,19 @@ public:
   CameraParameters();
   CameraParameters(const CameraIntrinsics& intrinsics, const CameraExtrinsics& extrinsics);
 
+  // create/test 'invalid' params
+  static CameraParameters createInvalid();
+  bool isValid() const;
+
   // The intrinsic & extrinsics parameters that define the camera
   CameraIntrinsics intrinsics;
   CameraExtrinsics extrinsics;
+
+  // Fill a buffer with rays corresponding to an image with the given resolution
+  // The result is a dimX*dimY-length buffer.
+  // Ray origins are all implicitly given by this->getPosition()
+  std::vector<glm::vec3> generateCameraRays(size_t dimX, size_t dimY,
+                                            ImageOrigin origin = ImageOrigin::UpperLeft) const;
 
   // (these getters are just forwarded from the intrinsics/extrinsics, for convenience)
 

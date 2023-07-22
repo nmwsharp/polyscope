@@ -9,7 +9,7 @@
 
 #include "polyscope/camera_view.h"
 #include "polyscope/curve_network.h"
-#include "polyscope/implicit_surface.h"
+#include "polyscope/implicit_helpers.h"
 #include "polyscope/pick.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/polyscope.h"

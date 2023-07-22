@@ -149,21 +149,21 @@ TEST_F(PolyscopeTest, ImplicitSurfaceRenderImageQuantityTest) {
   auto scalarFunc = [](glm::vec3 p) { return p.x; };
 
   polyscope::ImplicitRenderOpts opts;
-  opts.mode = polyscope::ImplicitRenderMode::SphereMarch;
+  polyscope::ImplicitRenderMode mode = polyscope::ImplicitRenderMode::SphereMarch;
   opts.subsampleFactor = 16; // real small, don't want to use much compute
 
   // plain depth-only implicit surface
-  polyscope::DepthRenderImageQuantity* img = polyscope::renderImplicitSurface("torus sdf", torusSDF, opts);
+  polyscope::DepthRenderImageQuantity* img = polyscope::renderImplicitSurface("torus sdf", torusSDF, mode, opts);
   polyscope::show(3);
 
   // colored implicit surface
   polyscope::ColorRenderImageQuantity* imgColor =
-      polyscope::renderImplicitSurfaceColor("torus sdf color", torusSDF, colorFunc, opts);
+      polyscope::renderImplicitSurfaceColor("torus sdf color", torusSDF, colorFunc, mode, opts);
   polyscope::show(3);
 
   // scalar value implicit surface
   polyscope::ScalarRenderImageQuantity* imgScalar =
-      polyscope::renderImplicitSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, opts);
+      polyscope::renderImplicitSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, mode, opts);
   polyscope::show(3);
 
 

@@ -353,6 +353,8 @@ void setViewToCamera(const CameraParameters& p) {
 }
 
 CameraParameters getCameraParametersForCurrentView() {
+  ensureViewValid();
+
   double aspectRatio = (float)bufferWidth / bufferHeight;
   return CameraParameters(CameraIntrinsics::fromFoVDegVerticalAndAspect(fov, aspectRatio),
                           CameraExtrinsics::fromMatrix(viewMat));
