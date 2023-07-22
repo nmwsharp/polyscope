@@ -80,12 +80,18 @@ void resolveImplicitRenderOpts(QuantityStructure<S>* parent, ImplicitRenderOpts&
 
 // === Depth/geometry/shape only render functions
 
-// TODO update function description in this text
-
-// Renders an implicit surface via sphere marching rays from the current Polyscope camera view.
+// Renders an implicit surface by shooting a ray for each pixel and querying the implicit function along the ray.
+// Supports sphere marching (for implicit functions which are SDFs), and fixed step marching (for general implicit
+// functions). Renering can be performed from the current GUI viewport, from a specified set of camera parameters, or
+// from a give CameraView object. See docs for the `opts` parameter for details.
+//
 // The `func` argument is your implicit function, which takes a simple input `glm::vec3` in world-space coordinates,
-// returns the value of the implicit function. For the "batch" variants, your function must take a
-// std::vector<glm::vec3>, and produce a std::vector<float>.
+// returns the value of the implicit function.
+//
+// For the "batch" variants, your function must have the signature
+// void(float* in_pos_ptr, float* out_val_ptr, size_t N). The first arg is a length-3N array of positions for queries,
+// and the second is a length-N (already-allocated) array of values which you should write to. The color and scalar
+// variants below are similar, except that for color the output array has length 3N.
 //
 // If using ImplicitRenderMode::SphereMarch, the implicit function MUST be a "signed distance
 // function", i.e. function is positive outside the surface, negative inside the surface, and the magnitude gives the
