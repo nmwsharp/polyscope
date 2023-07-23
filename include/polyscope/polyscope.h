@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <map>
+#include <memory>
 #include <set>
 #include <unordered_set>
 
@@ -62,10 +63,10 @@ extern bool initialized;
 extern std::string backend;
 
 // lists of all structures in Polyscope, by category
-extern std::map<std::string, std::map<std::string, Structure*>> structures;
+extern std::map<std::string, std::map<std::string, std::shared_ptr<Structure>>> structures;
 
 // lists of all groups in Polyscope
-extern std::map<std::string, Group*> groups;
+extern std::map<std::string, std::shared_ptr<Group>> groups;
 
 // representative length scale for all registered structures
 extern float lengthScale;

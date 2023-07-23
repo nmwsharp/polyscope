@@ -4,6 +4,7 @@
 
 #include "polyscope/structure.h"
 
+#include <memory>
 #include <string>
 
 namespace polyscope {
@@ -27,8 +28,8 @@ public:
   int isEnabled();
   Group* setEnabled(bool newEnabled);
 
-  void addChildGroup(Group* newChild);
-  void addChildStructure(Structure* newChild);
+  void addChildGroup(std::weak_ptr<Group> newChild);
+  void addChildStructure(std::weak_ptr<Structure> newChild);
   void removeChildGroup(Group* child);
   void removeChildStructure(Structure* child);
   void unparent();
@@ -39,10 +40,13 @@ public:
   std::string niceName();
 
   // === Member variables ===
-  Group* parentGroup;     // the parent group of this group (if null, this is a root group)
-  const std::string name; // a name for this group, which must be unique amongst groups on `parent`
-  std::vector<Group*> childrenGroups;
-  std::vector<Structure*> childrenStructures;
+  std::weak_ptr<Group> parentGroup; // the parent group of this group (if null, this is a root group)
+  const std::string name;           // a name for this group, which must be unique amongst groups on `parent`
+  std::vector<std::weak_ptr<Group>> childrenGroups;
+  std::vector<std::weak_ptr<Structure>> childrenStructures;
+
+protected:
+  void cullExpiredChildren(); // remove any child
 };
 
 
