@@ -118,7 +118,16 @@ void writePrefsFile() {
   o << std::setw(4) << prefsJSON << std::endl;
 }
 
-}; // namespace
+// Helper to get a structure map
+
+std::map<std::string, std::shared_ptr<Structure>>& getStructureMapCreateIfNeeded(std::string typeName) {
+  if (state::structures.find(typeName) == state::structures.end()) {
+    state::structures[typeName] = std::map<std::string, std::shared_ptr<Structure>>();
+  }
+  return state::structures[typeName];
+}
+
+} // namespace
 
 // === Core global functions
 
@@ -480,7 +489,7 @@ void renderScene() {
 
     render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
   }
-} // namespace
+}
 
 void renderSceneToScreen() {
   render::engine->bindDisplay();
@@ -621,7 +630,7 @@ void buildStructureGui() {
   for (auto catMapEntry : state::structures) {
     std::string catName = catMapEntry.first;
 
-    std::map<std::string, Structure*>& structureMap = catMapEntry.second;
+    std::map<std::string, std::shared_ptr<Structure>>& structureMap = catMapEntry.second;
 
     ImGui::PushID(catName.c_str()); // ensure there are no conflicts with
                                     // identically-named labels
@@ -827,6 +836,8 @@ void shutdown() {
 }
 
 bool registerGroup(std::string name) {
+  checkInitialized();
+
   // check if group already exists
   bool inUse = state::groups.find(name) != state::groups.end();
   if (inUse) {
@@ -834,10 +845,8 @@ bool registerGroup(std::string name) {
     return false;
   }
 
-  checkInitialized();
-  Group* g = new Group(name);
   // add to the group map
-  state::groups[g->name] = g;
+  state::groups[name] = std::shared_ptr<Group>(new Group(name));
 
   return true;
 }
@@ -871,11 +880,7 @@ bool setParentGroupOfStructure(std::string typeName, std::string child, std::str
     return false;
   }
 
-  // Make sure a map for the type exists
-  if (state::structures.find(typeName) == state::structures.end()) {
-    state::structures[typeName] = std::map<std::string, Structure*>();
-  }
-  std::map<std::string, Structure*>& sMap = state::structures[typeName];
+  std::map<std::string, std::shared_ptr<Structure>>& sMap = getStructureMapCreateIfNeeded(typeName);
 
   // check if child exists
   bool childExists = sMap.find(child) != sMap.end();
@@ -896,12 +901,8 @@ bool setParentGroupOfStructure(Structure* child, std::string parent) {
 
 bool registerStructure(Structure* s, bool replaceIfPresent) {
 
-  // Make sure a map for the type exists
   std::string typeName = s->typeName();
-  if (state::structures.find(typeName) == state::structures.end()) {
-    state::structures[typeName] = std::map<std::string, Structure*>();
-  }
-  std::map<std::string, Structure*>& sMap = state::structures[typeName];
+  std::map<std::string, std::shared_ptr<Structure>>& sMap = getStructureMapCreateIfNeeded(typeName);
 
   // Check if the structure name is in use
   bool inUse = sMap.find(s->name) != sMap.end();
@@ -924,7 +925,7 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
   }
 
   // Add the new structure
-  sMap[s->name] = s;
+  sMap[s->name] = std::shared_ptr<Structure>(s); // take ownership with a shared pointer
   updateStructureExtents();
   requestRedraw();
 
@@ -940,7 +941,7 @@ Structure* getStructure(std::string type, std::string name) {
     exception("No structures of type " + type + " registered");
     return nullptr;
   }
-  std::map<std::string, Structure*>& sMap = state::structures[type];
+  std::map<std::string, std::shared_ptr<Structure>>& sMap = state::structures[type];
 
   // Special automatic case, return any
   if (name == "") {
@@ -949,7 +950,7 @@ Structure* getStructure(std::string type, std::string name) {
                 "registered");
       return nullptr;
     }
-    return sMap.begin()->second;
+    return sMap.begin()->second.get();
   }
 
   // General case
@@ -957,7 +958,7 @@ Structure* getStructure(std::string type, std::string name) {
     exception("No structure of type " + type + " with name " + name + " registered");
     return nullptr;
   }
-  return sMap[name];
+  return sMap[name].get();
 }
 
 bool hasStructure(std::string type, std::string name) {
@@ -965,7 +966,7 @@ bool hasStructure(std::string type, std::string name) {
   if (state::structures.find(type) == state::structures.end()) {
     return false;
   }
-  std::map<std::string, Structure*>& sMap = state::structures[type];
+  std::map<std::string, std::shared_ptr<Structure>>& sMap = state::structures[type];
 
   // Special automatic case, return any
   if (name == "") {
@@ -1000,18 +1001,11 @@ void removeGroup(std::string name, bool errorIfAbsent) {
   }
 
   // Group exists, remove it
-  Group* g = state::groups[name];
-  state::groups.erase(g->name);
-  delete g;
+  state::groups.erase(name);
   return;
 }
 
-void removeAllGroups() {
-  for (auto& g : state::groups) {
-    delete g.second;
-  }
-  state::groups.clear();
-}
+void removeAllGroups() { state::groups.clear(); }
 
 void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
 
@@ -1022,7 +1016,7 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
     }
     return;
   }
-  std::map<std::string, Structure*>& sMap = state::structures[type];
+  std::map<std::string, std::shared_ptr<Structure>>& sMap = state::structures[type];
 
   // Check if structure exists
   if (sMap.find(name) == sMap.end()) {
@@ -1033,7 +1027,7 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
   }
 
   // Structure exists, remove it
-  Structure* s = sMap[name];
+  Structure* s = sMap[name].get();
   if (static_cast<void*>(s) == static_cast<void*>(internal::globalFloatingQuantityStructure)) {
     internal::globalFloatingQuantityStructure = nullptr;
   }
@@ -1043,7 +1037,6 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
   }
   pick::resetSelectionIfStructure(s);
   sMap.erase(s->name);
-  delete s;
   updateStructureExtents();
   return;
 }
@@ -1062,7 +1055,7 @@ void removeStructure(std::string name, bool errorIfAbsent) {
       // Found a matching structure
       if (entry.first == name) {
         if (targetStruct == nullptr) {
-          targetStruct = entry.second;
+          targetStruct = entry.second.get();
         } else {
           exception(
               "Cannot use automatic structure remove with empty name unless there is exactly one structure of that "
