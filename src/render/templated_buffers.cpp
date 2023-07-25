@@ -3,10 +3,15 @@
 
 #include <vector>
 
+#include "polyscope/render/engine.h"
 #include "polyscope/render/templated_buffers.h"
 
 namespace polyscope {
 namespace render {
+
+// ==========================================================
+// === Attribute buffers
+// ==========================================================
 
 // == Generate Buffer
 
@@ -261,6 +266,58 @@ template <>
 std::vector<glm::uvec4> getAttributeBufferDataRange<glm::uvec4>(AttributeBuffer& buff, size_t ind, size_t count) {
   return buff.getDataRange_uvec4(ind, count);
 }
+
+// ==========================================================
+// === Texture buffers
+// ==========================================================
+
+// == Generate Buffer
+
+template <>
+std::shared_ptr<TextureBuffer> generateTextureBuffer<float, DeviceBufferType::Texture1d>(Engine* engine) {
+  return engine->generateTextureBuffer(TextureFormat::R32F, 0, (float*)nullptr);
+}
+
+template <>
+std::shared_ptr<TextureBuffer> generateTextureBuffer<float, DeviceBufferType::Texture2d>(Engine* engine) {
+  return engine->generateTextureBuffer(TextureFormat::R32F, 0, 0, (float*)nullptr);
+}
+
+template <>
+std::shared_ptr<TextureBuffer> generateTextureBuffer<float, DeviceBufferType::Texture3d>(Engine* engine) {
+  return engine->generateTextureBuffer(TextureFormat::R32F, 0, 0, 0, (float*)nullptr);
+}
+
+template <>
+std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::vec3, DeviceBufferType::Texture1d>(Engine* engine) {
+  return engine->generateTextureBuffer(TextureFormat::RGB32F, 0, (float*)nullptr);
+}
+
+template <>
+std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::vec3, DeviceBufferType::Texture2d>(Engine* engine) {
+  return engine->generateTextureBuffer(TextureFormat::RGB32F, 0, 0, (float*)nullptr);
+}
+
+template <>
+std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::vec3, DeviceBufferType::Texture3d>(Engine* engine) {
+  return engine->generateTextureBuffer(TextureFormat::RGB32F, 0, 0, 0, (float*)nullptr);
+}
+
+template <>
+std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::vec4, DeviceBufferType::Texture1d>(Engine* engine) {
+  return engine->generateTextureBuffer(TextureFormat::RGBA32F, 0, (float*)nullptr);
+}
+
+template <>
+std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::vec4, DeviceBufferType::Texture2d>(Engine* engine) {
+  return engine->generateTextureBuffer(TextureFormat::RGBA32F, 0, 0, (float*)nullptr);
+}
+
+template <>
+std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::vec4, DeviceBufferType::Texture3d>(Engine* engine) {
+  return engine->generateTextureBuffer(TextureFormat::RGBA32F, 0, 0, 0, (float*)nullptr);
+}
+
 
 } // namespace render
 } // namespace polyscope

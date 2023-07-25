@@ -100,6 +100,20 @@ std::string getImageOriginRule(ImageOrigin imageOrigin) {
   return "";
 }
 
+std::string deviceBufferTypeName(const DeviceBufferType& d) {
+  switch (d) {
+  case DeviceBufferType::Attribute:
+    return "Attribute";
+  case DeviceBufferType::Texture1d:
+    return "Texture1d";
+  case DeviceBufferType::Texture2d:
+    return "Texture2d";
+  case DeviceBufferType::Texture3d:
+    return "Texture3d";
+  }
+  return "";
+}
+
 namespace render {
 
 AttributeBuffer::AttributeBuffer(RenderDataType dataType_, int arrayCount_)
@@ -107,8 +121,10 @@ AttributeBuffer::AttributeBuffer(RenderDataType dataType_, int arrayCount_)
 
 AttributeBuffer::~AttributeBuffer() {}
 
-TextureBuffer::TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_)
-    : dim(dim_), format(format_), sizeX(sizeX_), sizeY(sizeY_), uniqueID(render::engine->getNextUniqueID()) {
+TextureBuffer::TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_,
+                             unsigned int sizeZ_)
+    : dim(dim_), format(format_), sizeX(sizeX_), sizeY(sizeY_), sizeZ(sizeZ_),
+      uniqueID(render::engine->getNextUniqueID()) {
   if (sizeX > (1 << 22)) exception("OpenGL error: invalid texture dimensions");
   if (dim > 1 && sizeY > (1 << 22)) exception("OpenGL error: invalid texture dimensions");
 }
@@ -122,6 +138,11 @@ void TextureBuffer::resize(unsigned int newX, unsigned int newY) {
   sizeX = newX;
   sizeY = newY;
 }
+void TextureBuffer::resize(unsigned int newX, unsigned int newY, unsigned int newZ) {
+  sizeX = newX;
+  sizeY = newY;
+  sizeZ = newZ;
+}
 
 unsigned int TextureBuffer::getTotalSize() const {
   switch (dim) {
@@ -130,8 +151,7 @@ unsigned int TextureBuffer::getTotalSize() const {
   case 2:
     return getSizeX() * getSizeY();
   case 3:
-    exception("not implemented");
-    return -1;
+    return getSizeX() * getSizeY() * getSizeZ();
   }
   return -1;
 }
