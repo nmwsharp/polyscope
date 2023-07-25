@@ -863,7 +863,36 @@ void GLTextureBuffer::setData(const std::vector<float>& data) {
 
   checkGLError();
 };
-void GLTextureBuffer::setData(const std::vector<double>& data) { exception("not implemented"); };
+
+
+void GLTextureBuffer::setData(const std::vector<double>& data) {
+
+  // Convert to float
+  std::vector<float> dataFloat(data.size());
+  for (size_t i = 0; i < data.size(); i++) {
+    dataFloat[i] = static_cast<float>(data[i]);
+  }
+
+  bind();
+
+  if (data.size() != getTotalSize()) {
+    exception("OpenGL error: texture buffer data is not the right size.");
+  }
+
+  switch (dim) {
+  case 1:
+    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sizeX, formatF(format), type(format), &dataFloat.front());
+    break;
+  case 2:
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizeX, sizeY, formatF(format), type(format), &dataFloat.front());
+    break;
+  case 3:
+    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, sizeX, sizeY, sizeZ, formatF(format), type(format), &dataFloat.front());
+    break;
+  }
+
+  checkGLError();
+};
 void GLTextureBuffer::setData(const std::vector<int32_t>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<uint32_t>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data) { exception("not implemented"); };

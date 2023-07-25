@@ -26,7 +26,7 @@ namespace render {
  * This class offers functions and accessors which can (and generally, MUST) be used to interact with the underlying
  * data buffer.
  */
-template <typename T, DeviceBufferType D = DeviceBufferType::Attribute>
+template <typename T>
 class ManagedBuffer {
 public:
   // === Constructors
@@ -34,13 +34,10 @@ public:
 
   // Manage a buffer of data which is explicitly set externally.
   ManagedBuffer(const std::string& name, std::vector<T>& data);
-  ManagedBuffer(const std::string& name, std::vector<T>& data, DeviceBufferType deviceBufferType, uint32_t sizeX = 1,
-                uint32_t sizeY = 1, uint32_t sizeZ = 1);
+
 
   // Manage a buffer of data which gets computed lazily
   ManagedBuffer(const std::string& name, std::vector<T>& data, std::function<void()> computeFunc);
-  ManagedBuffer(const std::string& name, std::vector<T>& data, std::function<void()> computeFunc,
-                DeviceBufferType deviceBufferType, uint32_t sizeX = 1, uint32_t sizeY = 1, uint32_t sizeZ = 1);
 
 
   // === Core members
@@ -48,7 +45,7 @@ public:
   // A meaningful name for the buffer
   std::string name;
   const uint64_t uniqueID;
-  const uint32_t sizeX, sizeY, sizeZ;
+
 
   // The raw underlying buffer which this class wraps that holds the data.
   // It is assumed that it never changes length.
@@ -68,6 +65,13 @@ public:
 
   bool dataGetsComputed;             // if true, the value gets computed on-demand by calling computeFunc()
   std::function<void()> computeFunc; // (optional) callback which populates the `data` buffer
+
+
+  // mark as texture, set size
+  void setTextureSize(uint32_t sizeX);
+  void setTextureSize(uint32_t sizeX, uint32_t sizeY);
+  void setTextureSize(uint32_t sizeX, uint32_t sizeY, uint32_t sizeZ);
+
 
   // == Members for indexed data
 
@@ -157,6 +161,15 @@ protected:
 
   std::shared_ptr<render::AttributeBuffer> renderAttributeBuffer;
   std::shared_ptr<render::TextureBuffer> renderTextureBuffer;
+
+  // For storing as textures
+
+  // For data that can be interpreted as a 1/2/3 dimensional texture
+  DeviceBufferType deviceBufferType = DeviceBufferType::Attribute; // this gets set when you call setTextureSize
+  uint32_t sizeX = 1;
+  uint32_t sizeY = 1;
+  uint32_t sizeZ = 1;
+
 
   // == Internal representation of indexed views
   // NOTE: this seems like a problem, we are storing pointers as keys in a cache. Here, it works out because if the
