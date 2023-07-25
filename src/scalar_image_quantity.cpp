@@ -12,7 +12,9 @@ namespace polyscope {
 
 ScalarImageQuantity::ScalarImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                                          const std::vector<double>& data_, ImageOrigin imageOrigin_, DataType dataType_)
-    : ImageQuantity(parent_, name, dimX, dimY, imageOrigin_), ScalarQuantity(*this, data_, dataType_) {}
+    : ImageQuantity(parent_, name, dimX, dimY, imageOrigin_), ScalarQuantity(*this, data_, dataType_) {
+  values.setTextureSize(dimX, dimY);
+}
 
 
 void ScalarImageQuantity::buildCustomUI() {
@@ -34,20 +36,6 @@ void ScalarImageQuantity::buildCustomUI() {
   buildImageUI();
 }
 
-void ScalarImageQuantity::ensureRawTexturePopulated() {
-  if (textureRaw) return; // already populated, nothing to do
-
-  // Must be rendering from a buffer of data, copy it over (common case)
-
-  values.ensureHostBufferPopulated();
-  const std::vector<double>& srcData = values.data;
-  std::vector<float> srcDataFloat(srcData.size());
-  for (size_t i = 0; i < srcData.size(); i++) {
-    srcDataFloat[i] = static_cast<float>(srcData[i]);
-  }
-  textureRaw = render::engine->generateTextureBuffer(TextureFormat::R32F, dimX, dimY, &(srcDataFloat.front()));
-}
-
 void ScalarImageQuantity::prepareIntermediateRender() {
   // Texture and sourceProgram for rendering in
   framebufferIntermediate = render::engine->generateFrameBuffer(dimX, dimY);
@@ -58,20 +46,16 @@ void ScalarImageQuantity::prepareIntermediateRender() {
 
 void ScalarImageQuantity::prepareFullscreen() {
 
-  ensureRawTexturePopulated();
-
   // Create the sourceProgram
   fullscreenProgram = render::engine->requestShader(
       "SCALAR_TEXTURE_COLORMAP", this->addScalarRules({getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY"}),
       render::ShaderReplacementDefaults::Process);
   fullscreenProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  fullscreenProgram->setTextureFromBuffer("t_scalar", textureRaw.get());
+  fullscreenProgram->setTextureFromBuffer("t_scalar", values.getRenderTextureBuffer().get());
   fullscreenProgram->setTextureFromColormap("t_colormap", this->cMap.get());
 }
 
 void ScalarImageQuantity::prepareBillboard() {
-
-  ensureRawTexturePopulated();
 
   // Create the sourceProgram
   billboardProgram =
@@ -80,7 +64,7 @@ void ScalarImageQuantity::prepareBillboard() {
                                                           "TEXTURE_BILLBOARD_FROM_UNIFORMS"}),
                                     render::ShaderReplacementDefaults::Process);
   billboardProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  billboardProgram->setTextureFromBuffer("t_scalar", textureRaw.get());
+  billboardProgram->setTextureFromBuffer("t_scalar", values.getRenderTextureBuffer().get());
   billboardProgram->setTextureFromColormap("t_colormap", this->cMap.get());
 }
 
@@ -102,7 +86,6 @@ void ScalarImageQuantity::showFullscreen() {
 void ScalarImageQuantity::renderIntermediate() {
   if (!fullscreenProgram) prepareFullscreen();
   if (!textureIntermediateRendered) prepareIntermediateRender();
-  ensureRawTexturePopulated();
 
   // Set uniforms
   this->setScalarUniforms(*fullscreenProgram);

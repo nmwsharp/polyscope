@@ -29,14 +29,13 @@ public:
 
 protected:
   // rendering internals
-  std::shared_ptr<render::TextureBuffer> textureRaw, textureIntermediateRendered;
+  std::shared_ptr<render::TextureBuffer> textureIntermediateRendered;
   std::shared_ptr<render::ShaderProgram> fullscreenProgram, billboardProgram;
   std::shared_ptr<render::FrameBuffer> framebufferIntermediate;
 
   void prepareFullscreen();
   void prepareIntermediateRender();
   void prepareBillboard();
-  void ensureRawTexturePopulated();
 
   virtual void showFullscreen() override;
   virtual void showInImGuiWindow() override;

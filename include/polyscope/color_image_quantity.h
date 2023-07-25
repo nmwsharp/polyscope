@@ -20,7 +20,7 @@ public:
 
   virtual std::string niceName() override;
 
-  const std::vector<glm::vec4> data;
+  render::ManagedBuffer<glm::vec4> colors;
 
   // == Setters and getters
 
@@ -28,12 +28,12 @@ public:
 
 
 protected:
+  std::vector<glm::vec4> colorsData;
+
   // rendering internals
-  std::shared_ptr<render::TextureBuffer> textureRaw;
   std::shared_ptr<render::ShaderProgram> fullscreenProgram, billboardProgram;
   void prepareFullscreen();
   void prepareBillboard();
-  void ensureRawTexturePopulated();
 
   virtual void showFullscreen() override;
   virtual void showInImGuiWindow() override;

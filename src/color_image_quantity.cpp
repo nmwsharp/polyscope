@@ -13,7 +13,9 @@ namespace polyscope {
 
 ColorImageQuantity::ColorImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                                        const std::vector<glm::vec4>& data_, ImageOrigin imageOrigin_)
-    : ImageQuantity(parent_, name, dimX, dimY, imageOrigin_), data(data_) {}
+    : ImageQuantity(parent_, name, dimX, dimY, imageOrigin_), colors("colors", colorsData), colorsData(data_) {
+  colors.setTextureSize(dimX, dimY);
+}
 
 
 void ColorImageQuantity::buildCustomUI() {
@@ -35,29 +37,19 @@ void ColorImageQuantity::buildCustomUI() {
 
 std::string ColorImageQuantity::niceName() { return name + " (color image)"; }
 
-void ColorImageQuantity::ensureRawTexturePopulated() {
-  if (textureRaw) return; // already populated, nothing to do
-
-  // Must be rendering from a buffer of data, copy it over (common case)
-
-  textureRaw = render::engine->generateTextureBuffer(TextureFormat::RGBA32F, dimX, dimY, &(data.front()[0]));
-}
-
 void ColorImageQuantity::prepareFullscreen() {
-
-  ensureRawTexturePopulated();
 
   // Create the sourceProgram
   fullscreenProgram =
       render::engine->requestShader("TEXTURE_DRAW_PLAIN", {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY"},
                                     render::ShaderReplacementDefaults::Process);
   fullscreenProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  fullscreenProgram->setTextureFromBuffer("t_image", textureRaw.get());
+  // TODO throughout polyscope we discard the shared pointer when adding textures/attributes to programs... should we
+  // just track the shared pointer?
+  fullscreenProgram->setTextureFromBuffer("t_image", colors.getRenderTextureBuffer().get());
 }
 
 void ColorImageQuantity::prepareBillboard() {
-
-  ensureRawTexturePopulated();
 
   // Create the sourceProgram
   billboardProgram = render::engine->requestShader(
@@ -65,7 +57,7 @@ void ColorImageQuantity::prepareBillboard() {
       {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY", "TEXTURE_BILLBOARD_FROM_UNIFORMS"},
       render::ShaderReplacementDefaults::Process);
   billboardProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  billboardProgram->setTextureFromBuffer("t_image", textureRaw.get());
+  billboardProgram->setTextureFromBuffer("t_image", colors.getRenderTextureBuffer().get());
 }
 
 void ColorImageQuantity::showFullscreen() {
@@ -73,6 +65,9 @@ void ColorImageQuantity::showFullscreen() {
   if (!fullscreenProgram) {
     prepareFullscreen();
   }
+
+  render::engine->setBlendMode(
+      BlendMode::AlphaOver); // WARNING: I never really thought through this, may cause problems
 
   // Set uniforms
   fullscreenProgram->setUniform("u_transparency", getTransparency());
@@ -85,7 +80,6 @@ void ColorImageQuantity::showFullscreen() {
 
 void ColorImageQuantity::showInImGuiWindow() {
   if (!fullscreenProgram) prepareFullscreen();
-  ensureRawTexturePopulated();
 
   ImGui::Begin(name.c_str(), nullptr, ImGuiWindowFlags_NoScrollbar);
 
@@ -96,9 +90,9 @@ void ColorImageQuantity::showInImGuiWindow() {
 
   // since we are showing directly from the user's texture, we need to resposect the upper left ordering
   if (imageOrigin == ImageOrigin::LowerLeft) {
-    ImGui::Image(textureRaw->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+    ImGui::Image(colors.getRenderTextureBuffer()->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
   } else if (imageOrigin == ImageOrigin::UpperLeft) {
-    ImGui::Image(textureRaw->getNativeHandle(), ImVec2(w, h));
+    ImGui::Image(colors.getRenderTextureBuffer()->getNativeHandle(), ImVec2(w, h));
   }
 
   ImGui::End();
