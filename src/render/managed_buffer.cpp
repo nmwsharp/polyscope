@@ -230,6 +230,23 @@ std::shared_ptr<render::TextureBuffer> ManagedBuffer<T>::getRenderTextureBuffer(
     ensureHostBufferPopulated(); // warning: the order of these matters because of how hostBufferPopulated works
 
     renderTextureBuffer = generateTextureBuffer<T>(deviceBufferType, render::engine);
+
+    // templatize this?
+    switch (deviceBufferType) {
+    case DeviceBufferType::Attribute:
+      exception("bad call");
+      break;
+    case DeviceBufferType::Texture1d:
+      renderTextureBuffer->resize(sizeX);
+      break;
+    case DeviceBufferType::Texture2d:
+      renderTextureBuffer->resize(sizeX, sizeY);
+      break;
+    case DeviceBufferType::Texture3d:
+      renderTextureBuffer->resize(sizeX, sizeY, sizeZ);
+      break;
+    }
+
     renderTextureBuffer->setData(data);
   }
   return renderTextureBuffer;
