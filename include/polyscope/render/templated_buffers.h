@@ -41,6 +41,9 @@ std::shared_ptr<TextureBuffer> generateTextureBuffer(Engine* engine) {
   exception("bad call"); // default implementation, should be specialized to use
   return nullptr;
 }
+// this one dispatches dynamically on D
+template <typename T>
+std::shared_ptr<TextureBuffer> generateTextureBuffer(DeviceBufferType D, Engine* engine);
 
 // Get a single data value from a texturebuffer of a templated type
 // (use std::array<T>s to get arraycount repeated attributes)
@@ -56,6 +59,29 @@ std::vector<T> getTextureBufferData(TextureBuffer& buff) {
   exception("bad call"); // default implementation, should be specialized to use
   return std::vector<T>();
 }
+
+
+// ==== Implementations
+
+template <typename T>
+std::shared_ptr<TextureBuffer> generateTextureBuffer(DeviceBufferType D, Engine* engine) {
+  switch (D) {
+  case DeviceBufferType::Attribute:
+    exception("bad call");
+    break;
+  case DeviceBufferType::Texture1d:
+    return generateTextureBuffer<T, DeviceBufferType::Texture1d>(engine);
+    break;
+  case DeviceBufferType::Texture2d:
+    return generateTextureBuffer<T, DeviceBufferType::Texture2d>(engine);
+    break;
+  case DeviceBufferType::Texture3d:
+    return generateTextureBuffer<T, DeviceBufferType::Texture2d>(engine);
+    break;
+  }
+  return nullptr;
+}
+
 
 } // namespace render
 } // namespace polyscope
