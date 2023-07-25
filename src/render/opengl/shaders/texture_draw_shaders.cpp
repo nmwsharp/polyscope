@@ -516,7 +516,7 @@ const ShaderReplacementRule TEXTURE_ORIGIN_UPPERLEFT (
 const ShaderReplacementRule TEXTURE_ORIGIN_LOWERLEFT (
     // nothing needs to be done, this is already the default
     
-    /* rule name */ "TEXTURE_ORIGIN_UPPERLEFT",
+    /* rule name */ "TEXTURE_ORIGIN_LOWERLEFT",
     /* replacement sources */ {}, 
     /* uniforms */ {},
     /* attributes */ {},
