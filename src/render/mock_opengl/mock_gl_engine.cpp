@@ -463,6 +463,25 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
   setFilterMode(FilterMode::Nearest);
 }
 
+// create a 3D texture from data
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, unsigned int sizeZ_,
+                                 const unsigned char* data)
+    : TextureBuffer(3, format_, sizeX_, sizeY_, sizeZ_) {
+
+  checkGLError();
+
+  setFilterMode(FilterMode::Nearest);
+}
+
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, unsigned int sizeZ_,
+                                 const float* data)
+    : TextureBuffer(3, format_, sizeX_, sizeY_, sizeZ_) {
+
+  checkGLError();
+
+  setFilterMode(FilterMode::Nearest);
+}
+
 GLTextureBuffer::~GLTextureBuffer() {}
 
 void GLTextureBuffer::resize(unsigned int newLen) {
@@ -471,9 +490,8 @@ void GLTextureBuffer::resize(unsigned int newLen) {
 
   bind();
   if (dim == 1) {
-  }
-  if (dim == 2) {
-    exception("OpenGL error: called 1D resize on 2D texture");
+  } else {
+    exception("OpenGL error: called 1D resize on not-1D texture");
   }
   checkGLError();
 }
@@ -483,13 +501,93 @@ void GLTextureBuffer::resize(unsigned int newX, unsigned int newY) {
   TextureBuffer::resize(newX, newY);
 
   bind();
-  if (dim == 1) {
-    exception("OpenGL error: called 2D resize on 1D texture");
-  }
   if (dim == 2) {
+  } else {
+    exception("OpenGL error: called 2D resize on not-2D texture");
   }
   checkGLError();
 }
+
+void GLTextureBuffer::resize(unsigned int newX, unsigned int newY, unsigned int newZ) {
+
+  TextureBuffer::resize(newX, newY, newZ);
+
+  bind();
+  if (dim == 3) {
+  } else {
+    exception("OpenGL error: called 3D resize on not-3D texture");
+  }
+  checkGLError();
+}
+
+void GLTextureBuffer::setData(const std::vector<glm::vec2>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::vec3>& data) {
+
+  bind();
+
+  if (data.size() != getTotalSize()) {
+    exception("OpenGL error: texture buffer data is not the right size.");
+  }
+
+  switch (dim) {
+  case 1:
+    break;
+  case 2:
+    break;
+  case 3:
+    break;
+  }
+
+  checkGLError();
+};
+
+void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
+
+  bind();
+
+  if (data.size() != getTotalSize()) {
+    exception("OpenGL error: texture buffer data is not the right size.");
+  }
+
+  switch (dim) {
+  case 1:
+    break;
+  case 2:
+    break;
+  case 3:
+    break;
+  }
+
+  checkGLError();
+};
+
+void GLTextureBuffer::setData(const std::vector<float>& data) {
+  bind();
+
+  if (data.size() != getTotalSize()) {
+    exception("OpenGL error: texture buffer data is not the right size.");
+  }
+
+  switch (dim) {
+  case 1:
+    break;
+  case 2:
+    break;
+  case 3:
+    break;
+  }
+
+  checkGLError();
+};
+void GLTextureBuffer::setData(const std::vector<double>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<int32_t>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<uint32_t>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::uvec3>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::uvec4>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data) { exception("not implemented"); };
 
 void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 
@@ -1724,6 +1822,18 @@ std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat
 std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
                                                                    unsigned int sizeY_, const float* data) {
   GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, data);
+  return std::shared_ptr<TextureBuffer>(newT);
+}
+std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
+                                                                   unsigned int sizeY_, unsigned int sizeZ_,
+                                                                   const unsigned char* data) {
+  GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, sizeZ_, data);
+  return std::shared_ptr<TextureBuffer>(newT);
+}
+std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
+                                                                   unsigned int sizeY_, unsigned int sizeZ_,
+                                                                   const float* data) {
+  GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, sizeZ_, data);
   return std::shared_ptr<TextureBuffer>(newT);
 }
 

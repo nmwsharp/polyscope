@@ -53,11 +53,14 @@ enum class RenderDataType {
   Vector4UInt
 };
 
+enum class DeviceBufferType { Attribute, Texture1d, Texture2d, Texture3d };
+
 int dimension(const TextureFormat& x);
 std::string modeName(const TransparencyMode& m);
 std::string renderDataTypeName(const RenderDataType& r);
 int renderDataTypeCountCompatbility(const RenderDataType r1, const RenderDataType r2);
 std::string getImageOriginRule(ImageOrigin imageOrigin);
+std::string deviceBufferTypeName(const DeviceBufferType& d);
 
 namespace render {
 
@@ -128,16 +131,40 @@ protected:
 class TextureBuffer {
 public:
   // abstract class: use the factory methods from the Engine class
-  TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_ = -1);
+  TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_ = -1,
+                unsigned int sizeZ_ = -1);
 
   virtual ~TextureBuffer();
 
   // Resize the underlying buffer (contents are lost)
   virtual void resize(unsigned int newLen);
   virtual void resize(unsigned int newX, unsigned int newY);
+  virtual void resize(unsigned int newX, unsigned int newY, unsigned int newZ);
+
+  // Fill with data
+  // NOTE: some of these are not implemented yet
+  virtual void setData(const std::vector<glm::vec2>& data) = 0;
+  virtual void setData(const std::vector<glm::vec3>& data) = 0;
+  virtual void setData(const std::vector<glm::vec4>& data) = 0;
+  virtual void setData(const std::vector<float>& data) = 0;
+  virtual void setData(const std::vector<double>& data) = 0;
+  virtual void setData(const std::vector<int32_t>& data) = 0;
+  virtual void setData(const std::vector<uint32_t>& data) = 0;
+  virtual void setData(const std::vector<glm::uvec2>& data) = 0;
+  virtual void setData(const std::vector<glm::uvec3>& data) = 0;
+  virtual void setData(const std::vector<glm::uvec4>& data) = 0;
+
+  // Array-valued
+  // NOTE: some of these are not implemented yet
+  // (adding these lazily as we need them)
+  // (sadly we cannot template the virtual function)
+  virtual void setData(const std::vector<std::array<glm::vec3, 2>>& data) = 0;
+  virtual void setData(const std::vector<std::array<glm::vec3, 3>>& data) = 0;
+  virtual void setData(const std::vector<std::array<glm::vec3, 4>>& data) = 0;
 
   unsigned int getSizeX() const { return sizeX; }
   unsigned int getSizeY() const { return sizeY; }
+  unsigned int getSizeZ() const { return sizeZ; }
   int getDimension() const { return dim; }
   unsigned int getTotalSize() const; // product of dimensions
   uint64_t getUniqueID() const { return uniqueID; }
@@ -161,7 +188,7 @@ public:
 protected:
   int dim;
   TextureFormat format;
-  unsigned int sizeX, sizeY;
+  unsigned int sizeX, sizeY, sizeZ;
   uint64_t uniqueID;
 };
 
@@ -486,6 +513,12 @@ public:
   virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
                                                                unsigned int sizeY_,
                                                                const float* data) = 0; // 2d
+  virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
+                                                               unsigned int sizeY_, unsigned int sizeZ_,
+                                                               const unsigned char* data = nullptr) = 0; // 3d
+  virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
+                                                               unsigned int sizeY_, unsigned int sizeZ_,
+                                                               const float* data) = 0; // 3d
 
   // create render buffers
   virtual std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,

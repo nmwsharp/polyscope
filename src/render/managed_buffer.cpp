@@ -14,19 +14,30 @@
 namespace polyscope {
 namespace render {
 
-template <typename T>
-ManagedBuffer<T>::ManagedBuffer(const std::string& name_, std::vector<T>& data_)
-    : name(name_), uniqueID(internal::getNextUniqueID()), data(data_), dataGetsComputed(false),
-      hostBufferIsPopulated(true) {}
+template <typename T, DeviceBufferType D>
+ManagedBuffer<T, D>::ManagedBuffer(const std::string& name_, std::vector<T>& data_, DeviceBufferType deviceBufferType_,
+                                   uint32_t sizeX_, uint32_t sizeY_, uint32_t sizeZ_)
+    : name(name_), uniqueID(internal::getNextUniqueID()), sizeX(sizeX_), sizeY(sizeY_), sizeZ(sizeZ_), data(data_),
+      dataGetsComputed(false), hostBufferIsPopulated(true) {}
 
-template <typename T>
-ManagedBuffer<T>::ManagedBuffer(const std::string& name_, std::vector<T>& data_, std::function<void()> computeFunc_)
-    : name(name_), uniqueID(internal::getNextUniqueID()), data(data_), dataGetsComputed(true),
-      computeFunc(computeFunc_), hostBufferIsPopulated(false) {}
+template <typename T, DeviceBufferType D>
+ManagedBuffer<T, D>::ManagedBuffer(const std::string& name_, std::vector<T>& data_)
+    : ManagedBuffer<T, D>(name_, data_, DeviceBufferType::Attribute) {}
+
+template <typename T, DeviceBufferType D>
+ManagedBuffer<T, D>::ManagedBuffer(const std::string& name_, std::vector<T>& data_, std::function<void()> computeFunc_,
+                                   DeviceBufferType deviceBufferType_, uint32_t sizeX_, uint32_t sizeY_,
+                                   uint32_t sizeZ_)
+    : name(name_), uniqueID(internal::getNextUniqueID()), sizeX(sizeX_), sizeY(sizeY_), sizeZ(sizeZ_), data(data_),
+      dataGetsComputed(true), computeFunc(computeFunc_), hostBufferIsPopulated(false) {}
+
+template <typename T, DeviceBufferType D>
+ManagedBuffer<T, D>::ManagedBuffer(const std::string& name_, std::vector<T>& data_, std::function<void()> computeFunc_)
+    : ManagedBuffer<T, D>(name_, data_, computeFunc_, DeviceBufferType::Attribute) {}
 
 
-template <typename T>
-void ManagedBuffer<T>::ensureHostBufferPopulated() {
+template <typename T, DeviceBufferType D>
+void ManagedBuffer<T, D>::ensureHostBufferPopulated() {
 
   switch (currentCanonicalDataSource()) {
   case CanonicalDataSource::HostData:
@@ -42,24 +53,32 @@ void ManagedBuffer<T>::ensureHostBufferPopulated() {
 
   case CanonicalDataSource::RenderBuffer:
 
-    // sanity check
-    if (!renderAttributeBuffer) exception("render buffer should be allocated but isn't");
+    if (deviceBufferTypeIsTexture()) {
+      if (!renderTextureBuffer) exception("render buffer should be allocated but isn't");
 
-    // copy the data back from the renderBuffer
-    data = getAttributeBufferDataRange<T>(*renderAttributeBuffer, 0, renderAttributeBuffer->getDataSize());
+      // copy the data back from the renderBuffer
+      // TODO not implemented yet
+      exception("copy-back from texture not implemented yet");
+    } else {
+      // sanity check
+      if (!renderAttributeBuffer) exception("render buffer should be allocated but isn't");
+
+      // copy the data back from the renderBuffer
+      data = getAttributeBufferDataRange<T>(*renderAttributeBuffer, 0, renderAttributeBuffer->getDataSize());
+    }
 
     break;
   };
 }
 
-template <typename T>
-std::vector<T>& ManagedBuffer<T>::getPopulatedHostBufferRef() {
+template <typename T, DeviceBufferType D>
+std::vector<T>& ManagedBuffer<T, D>::getPopulatedHostBufferRef() {
   ensureHostBufferPopulated();
   return data;
 }
 
-template <typename T>
-void ManagedBuffer<T>::markHostBufferUpdated() {
+template <typename T, DeviceBufferType D>
+void ManagedBuffer<T, D>::markHostBufferUpdated() {
   hostBufferIsPopulated = true;
 
   // If the data is stored in the device-side buffers, update it as needed
@@ -69,8 +88,13 @@ void ManagedBuffer<T>::markHostBufferUpdated() {
   }
 }
 
-template <typename T>
-T ManagedBuffer<T>::getValue(size_t ind) {
+template <typename T, DeviceBufferType D>
+T ManagedBuffer<T, D>::getValue(size_t ind) {
+
+  // For the texture case, always copy to the host and pull from there
+  if (deviceBufferTypeIsTexture()) {
+    ensureHostBufferPopulated();
+  }
 
   switch (currentCanonicalDataSource()) {
   case CanonicalDataSource::HostData:
@@ -87,8 +111,14 @@ T ManagedBuffer<T>::getValue(size_t ind) {
     break;
 
   case CanonicalDataSource::RenderBuffer:
+
+    // NOTE: right now this case should never happen unless D == DeviceBufferType::Attribute.
+    // In the texture case, we cannot get a single pixel from the backend anyway, so we always
+    // call ensureHostBufferPopulated() above and do the host access.
+
     if (static_cast<int64_t>(ind) >= renderAttributeBuffer->getDataSize())
       exception("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
+
     T val = getAttributeBufferData<T>(*renderAttributeBuffer, ind);
     return val;
     break;
@@ -97,8 +127,24 @@ T ManagedBuffer<T>::getValue(size_t ind) {
   return T(); // dummy return
 }
 
-template <typename T>
-size_t ManagedBuffer<T>::size() {
+template <typename T, DeviceBufferType D>
+T ManagedBuffer<T, D>::getValue(size_t indX, size_t indY) {
+  checkDeviceBufferTypeIs(DeviceBufferType::Texture2d);
+  // always call the single-indexed version, which will default to a host copy and host lookup
+  // we can't grab a single texture pixel from the openGL backend anyway
+  return getValue(sizeY * indX + indY);
+}
+
+template <typename T, DeviceBufferType D>
+T ManagedBuffer<T, D>::getValue(size_t indX, size_t indY, size_t indZ) {
+  checkDeviceBufferTypeIs(DeviceBufferType::Texture3d);
+  // always call the single-indexed version, which will default to a host copy and host lookup
+  // we can't grab a single texture pixel from the openGL backend anyway
+  return getValue(sizeZ * sizeY * indX + sizeZ * indY + indZ);
+}
+
+template <typename T, DeviceBufferType D>
+size_t ManagedBuffer<T, D>::size() {
 
   switch (currentCanonicalDataSource()) {
   case CanonicalDataSource::HostData:
@@ -110,23 +156,30 @@ size_t ManagedBuffer<T>::size() {
     break;
 
   case CanonicalDataSource::RenderBuffer:
-    return renderAttributeBuffer->getDataSize();
+    if (D == DeviceBufferType::Attribute) {
+      return renderAttributeBuffer->getDataSize();
+    } else {
+      return sizeX * sizeY * sizeZ;
+    }
     break;
   };
 
   return INVALID_IND;
 }
 
-template <typename T>
-bool ManagedBuffer<T>::hasData() {
-  if (hostBufferIsPopulated || renderAttributeBuffer) {
-    return true;
-  }
+template <typename T, DeviceBufferType D>
+bool ManagedBuffer<T, D>::hasData() {
+
+  if (hostBufferIsPopulated) return true;
+  if (D == DeviceBufferType::Attribute && renderAttributeBuffer) return true;
+  if (D == DeviceBufferType::Texture1d && renderTextureBuffer) return true;
+  if (D == DeviceBufferType::Texture2d && renderTextureBuffer) return true;
+  if (D == DeviceBufferType::Texture3d && renderTextureBuffer) return true;
   return false;
 }
 
-template <typename T>
-void ManagedBuffer<T>::recomputeIfPopulated() {
+template <typename T, DeviceBufferType D>
+void ManagedBuffer<T, D>::recomputeIfPopulated() {
   if (!dataGetsComputed) { // sanity check
     exception("called recomputeIfPopulated() on buffer which does not get computed");
   }
@@ -141,8 +194,10 @@ void ManagedBuffer<T>::recomputeIfPopulated() {
   markHostBufferUpdated();
 }
 
-template <typename T>
-std::shared_ptr<render::AttributeBuffer> ManagedBuffer<T>::getRenderAttributeBuffer() {
+template <typename T, DeviceBufferType D>
+std::shared_ptr<render::AttributeBuffer> ManagedBuffer<T, D>::getRenderAttributeBuffer() {
+  checkDeviceBufferTypeIs(DeviceBufferType::Attribute);
+
   if (!renderAttributeBuffer) {
     ensureHostBufferPopulated(); // warning: the order of these matters because of how hostBufferPopulated works
     renderAttributeBuffer = generateAttributeBuffer<T>(render::engine);
@@ -151,16 +206,33 @@ std::shared_ptr<render::AttributeBuffer> ManagedBuffer<T>::getRenderAttributeBuf
   return renderAttributeBuffer;
 }
 
-template <typename T>
-void ManagedBuffer<T>::markRenderAttributeBufferUpdated() {
+template <typename T, DeviceBufferType D>
+std::shared_ptr<render::TextureBuffer> ManagedBuffer<T, D>::getRenderTextureBuffer() {
+  checkDeviceBufferTypeIsTexture();
+
+  if (!renderTextureBuffer) {
+    ensureHostBufferPopulated(); // warning: the order of these matters because of how hostBufferPopulated works
+
+    renderTextureBuffer = generateTextureBuffer<T, D>(render::engine);
+    renderTextureBuffer->setData(data);
+  }
+  return renderTextureBuffer;
+}
+
+template <typename T, DeviceBufferType D>
+void ManagedBuffer<T, D>::markRenderAttributeBufferUpdated() {
+  checkDeviceBufferTypeIs(DeviceBufferType::Attribute);
+
   invalidateHostBuffer();
   updateIndexedViews();
   requestRedraw();
 }
 
-template <typename T>
+template <typename T, DeviceBufferType D>
 std::shared_ptr<render::AttributeBuffer>
-ManagedBuffer<T>::getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>& indices) {
+ManagedBuffer<T, D>::getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>& indices) {
+  checkDeviceBufferTypeIs(DeviceBufferType::Attribute);
+
   removeDeletedIndexedViews(); // periodic filtering
 
   // Check if we have already created this indexed view, and if so just return it
@@ -190,8 +262,10 @@ ManagedBuffer<T>::getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>& indic
   return newBuffer;
 }
 
-template <typename T>
-void ManagedBuffer<T>::updateIndexedViews() {
+template <typename T, DeviceBufferType D>
+void ManagedBuffer<T, D>::updateIndexedViews() {
+  checkDeviceBufferTypeIs(DeviceBufferType::Attribute);
+
   removeDeletedIndexedViews(); // periodic filtering
 
   for (std::tuple<render::ManagedBuffer<uint32_t>*, std::weak_ptr<render::AttributeBuffer>>& existingViewTup :
@@ -215,8 +289,10 @@ void ManagedBuffer<T>::updateIndexedViews() {
   }
 }
 
-template <typename T>
-void ManagedBuffer<T>::removeDeletedIndexedViews() {
+template <typename T, DeviceBufferType D>
+void ManagedBuffer<T, D>::removeDeletedIndexedViews() {
+  checkDeviceBufferTypeIs(DeviceBufferType::Attribute);
+
   // "erase-remove idiom"
   // (remove list entries for which the view weak_ptr has .expired() == true
   existingIndexedViews.erase(
@@ -227,14 +303,36 @@ void ManagedBuffer<T>::removeDeletedIndexedViews() {
       existingIndexedViews.end());
 }
 
-template <typename T>
-void ManagedBuffer<T>::invalidateHostBuffer() {
+template <typename T, DeviceBufferType D>
+void ManagedBuffer<T, D>::invalidateHostBuffer() {
   hostBufferIsPopulated = false;
   data.clear();
 }
 
-template <typename T>
-typename ManagedBuffer<T>::CanonicalDataSource ManagedBuffer<T>::currentCanonicalDataSource() {
+template <typename T, DeviceBufferType D>
+bool ManagedBuffer<T, D>::deviceBufferTypeIsTexture() {
+  return ((D == DeviceBufferType::Texture1d) || (D == DeviceBufferType::Texture2d) ||
+          (D == DeviceBufferType::Texture3d));
+}
+
+template <typename T, DeviceBufferType D>
+void ManagedBuffer<T, D>::checkDeviceBufferTypeIs(DeviceBufferType targetType) {
+  if (targetType != D) {
+    exception("ManagedBuffer has wrong type for this operation. Expected " + deviceBufferTypeName(targetType) +
+              " but is " + deviceBufferTypeName(D));
+  }
+}
+
+template <typename T, DeviceBufferType D>
+void ManagedBuffer<T, D>::checkDeviceBufferTypeIsTexture() {
+  if (!deviceBufferTypeIsTexture()) {
+    exception("ManagedBuffer has wrong type for this operation. Expected a Texture1d/2d/3d but is " +
+              deviceBufferTypeName(D));
+  }
+}
+
+template <typename T, DeviceBufferType D>
+typename ManagedBuffer<T, D>::CanonicalDataSource ManagedBuffer<T, D>::currentCanonicalDataSource() {
 
   // Always prefer the host data if it is up to date
   if (hostBufferIsPopulated) {
@@ -257,8 +355,8 @@ typename ManagedBuffer<T>::CanonicalDataSource ManagedBuffer<T>::currentCanonica
 }
 
 
-template <typename T>
-void ManagedBuffer<T>::ensureHaveBufferIndexCopyProgram() {
+template <typename T, DeviceBufferType D>
+void ManagedBuffer<T, D>::ensureHaveBufferIndexCopyProgram() {
   if (bufferIndexCopyProgram) return;
 
   // sanity check
@@ -267,13 +365,15 @@ void ManagedBuffer<T>::ensureHaveBufferIndexCopyProgram() {
   // TODO allocate the transform feedback program
 }
 
-template <typename T>
-void ManagedBuffer<T>::invokeBufferIndexCopyProgram() {
+template <typename T, DeviceBufferType D>
+void ManagedBuffer<T, D>::invokeBufferIndexCopyProgram() {
   ensureHaveBufferIndexCopyProgram();
   bufferIndexCopyProgram->draw();
 }
 
 // === Explicit template instantiation for the supported types
+
+// Attribute versions
 
 template class ManagedBuffer<float>;
 template class ManagedBuffer<double>;
@@ -293,6 +393,20 @@ template class ManagedBuffer<glm::uvec2>;
 template class ManagedBuffer<glm::uvec3>;
 template class ManagedBuffer<glm::uvec4>;
 
+
+// Texture versions
+
+template class ManagedBuffer<float, DeviceBufferType::Texture1d>;
+template class ManagedBuffer<glm::vec3, DeviceBufferType::Texture1d>;
+template class ManagedBuffer<glm::vec4, DeviceBufferType::Texture1d>;
+
+template class ManagedBuffer<float, DeviceBufferType::Texture2d>;
+template class ManagedBuffer<glm::vec3, DeviceBufferType::Texture2d>;
+template class ManagedBuffer<glm::vec4, DeviceBufferType::Texture2d>;
+
+template class ManagedBuffer<float, DeviceBufferType::Texture3d>;
+template class ManagedBuffer<glm::vec3, DeviceBufferType::Texture3d>;
+template class ManagedBuffer<glm::vec4, DeviceBufferType::Texture3d>;
 
 } // namespace render
 } // namespace polyscope

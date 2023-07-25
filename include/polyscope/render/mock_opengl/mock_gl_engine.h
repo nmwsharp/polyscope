@@ -81,12 +81,40 @@ public:
   GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, const unsigned char* data = nullptr);
   GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, const float* data);
 
+  // create a 3D texture from data
+  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned int sizeZ_,
+                  const unsigned char* data = nullptr);
+  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned int sizeZ_,
+                  const float* data);
+
   ~GLTextureBuffer() override;
 
 
   // Resize the underlying buffer (contents are lost)
   void resize(unsigned int newLen) override;
   void resize(unsigned int newX, unsigned int newY) override;
+  void resize(unsigned int newX, unsigned int newY, unsigned int newZ) override;
+  
+  // Fill with data
+  // NOTE: some of these are not implemented yet
+  void setData(const std::vector<glm::vec2>& data) override;
+  void setData(const std::vector<glm::vec3>& data) override;
+  void setData(const std::vector<glm::vec4>& data) override;
+  void setData(const std::vector<float>& data) override;
+  void setData(const std::vector<double>& data) override;
+  void setData(const std::vector<int32_t>& data) override;
+  void setData(const std::vector<uint32_t>& data) override;
+  void setData(const std::vector<glm::uvec2>& data) override;
+  void setData(const std::vector<glm::uvec3>& data) override;
+  void setData(const std::vector<glm::uvec4>& data) override;
+
+  // Array-valued
+  // NOTE: some of these are not implemented yet
+  // (adding these lazily as we need them)
+  // (sadly we cannot template the virtual function)
+  void setData(const std::vector<std::array<glm::vec3, 2>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 3>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 4>>& data) override;
 
   void setFilterMode(FilterMode newMode) override;
   void* getNativeHandle() override;
@@ -338,6 +366,12 @@ public:
                                                        const unsigned char* data = nullptr) override; // 2d
   std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
                                                        const float* data) override; // 2d
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+                                                       unsigned int sizeZ_,
+                                                       const unsigned char* data = nullptr) override; // 3d
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+                                                       unsigned int sizeZ_,
+                                                       const float* data) override; // 3d
 
   // create render buffers
   std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,

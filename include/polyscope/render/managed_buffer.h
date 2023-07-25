@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "polyscope/render/engine.h"
+#include "polyscope/utilities.h"
 
 namespace polyscope {
 namespace render {
@@ -25,22 +26,29 @@ namespace render {
  * This class offers functions and accessors which can (and generally, MUST) be used to interact with the underlying
  * data buffer.
  */
-template <typename T>
+template <typename T, DeviceBufferType D = DeviceBufferType::Attribute>
 class ManagedBuffer {
 public:
   // === Constructors
+  // (second variants are advanced versions which allow creation of multi-dimensional texture values)
 
   // Manage a buffer of data which is explicitly set externally.
   ManagedBuffer(const std::string& name, std::vector<T>& data);
+  ManagedBuffer(const std::string& name, std::vector<T>& data, DeviceBufferType deviceBufferType, uint32_t sizeX = 1,
+                uint32_t sizeY = 1, uint32_t sizeZ = 1);
 
   // Manage a buffer of data which gets computed lazily
   ManagedBuffer(const std::string& name, std::vector<T>& data, std::function<void()> computeFunc);
+  ManagedBuffer(const std::string& name, std::vector<T>& data, std::function<void()> computeFunc,
+                DeviceBufferType deviceBufferType, uint32_t sizeX = 1, uint32_t sizeY = 1, uint32_t sizeZ = 1);
+
 
   // === Core members
 
   // A meaningful name for the buffer
   std::string name;
   const uint64_t uniqueID;
+  const uint32_t sizeX, sizeY, sizeZ;
 
   // The raw underlying buffer which this class wraps that holds the data.
   // It is assumed that it never changes length.
@@ -55,8 +63,8 @@ public:
   //    A) Values directly stored in `data` by an external source
   //    B) Values that get computed lazily by some function when needed
   //
-  // When `dataGetsComputed = true`, we are in Case B, and computeFunc() must be set to a callback that does the lazy
-  // computing.
+  // When `dataGetsComputed = true`, we are in Case B, and computeFunc() must be set to a callback that does the
+  // lazy computing.
 
   bool dataGetsComputed;             // if true, the value gets computed on-demand by calling computeFunc()
   std::function<void()> computeFunc; // (optional) callback which populates the `data` buffer
@@ -65,23 +73,26 @@ public:
 
   // == Basic interactions
 
-  // Ensure that the `data` member vector reference is populated with the current values. In the common-case where the
-  // user sets data and it never changes, then this function will do nothing. However, if e.g. the value is being
-  // updated directly from GPU memory, this will mirror the updates to the cpu-side vector. Also, if the value is lazily
-  // computed by computeFunc(), it ensures that that function has been called.
+  // Ensure that the `data` member vector reference is populated with the current values. In the common-case where
+  // the user sets data and it never changes, then this function will do nothing. However, if e.g. the value is
+  // being updated directly from GPU memory, this will mirror the updates to the cpu-side vector. Also, if the value
+  // is lazily computed by computeFunc(), it ensures that that function has been called.
   void ensureHostBufferPopulated();
 
   // Combines calling ensureHostBufferPopulated() and returning a reference to the `data` member
   std::vector<T>& getPopulatedHostBufferRef();
 
-  // If the contents of `data` are updated, this function MUST be called. It internally handles concerns like reflecting
-  // updates to the render buffer.
+  // If the contents of `data` are updated, this function MUST be called. It internally handles concerns like
+  // reflecting updates to the render buffer.
   void markHostBufferUpdated();
 
   // Get the value at index `i`. It may be dynamically fetched from either the cpu-side `data` member or the render
   // buffer, depending on where the data currently lives.
-  // If the data lives only on the device-side render buffer, this function is expensive, so don't call it in a loop.
+  // If the data lives only on the device-side render buffer, this function is expensive, so don't call it in a
+  // loop.
   T getValue(size_t ind);
+  T getValue(size_t indX, size_t indY);              // only valid for 2d texture data
+  T getValue(size_t indX, size_t indY, size_t indZ); // only valid for 3d texture data
 
   // If computeFunc() has already been called to populate the stored data, call it again to recompute the data, and
   // re-fill the buffer if necessary. This function is only meaningful in the case where `dataGetsComputed = true`.
@@ -90,47 +101,67 @@ public:
   bool hasData(); // true if there is valid data on either the host or device
   size_t size();  // size of the data (number of entries)
 
-  // == Direct access to the GPU (device-side) render buffer
+  // ========================================================================
+  // == Direct access to the GPU (device-side) render attribute buffer
+  // ========================================================================
 
-  // NOTE: This class follows the policy that once the render buffer is allocated, it is always immediately kept updated
-  // to reflect any external changes.
+  // NOTE: this is only for attribute-accessed buffers (DeviceBufferType::Attribute). See the variants below for
+  // textures.
+
+  // NOTE: This class follows the policy that once the render buffer is allocated, it is always immediately kept
+  // updated to reflect any external changes.
 
   // Get a reference to the underlying GPU-side attribute buffer
-  // Once this reference is created, it will always be immediately updated to reflect any external changes to the data.
-  // (note that if you write to this buffer externally, you MUST call markRenderAttributeBufferUpdated() below)
+  // Once this reference is created, it will always be immediately updated to reflect any external changes to the
+  // data. (note that if you write to this buffer externally, you MUST call markRenderAttributeBufferUpdated()
+  // below)
   std::shared_ptr<render::AttributeBuffer> getRenderAttributeBuffer();
 
-  // Tell Polyscope that you wrote updated data into the render buffer. This MUST be called after externally writing to
-  // the buffer from getRenderBuffer() above.
+  // Tell Polyscope that you wrote updated data into the render buffer. This MUST be called after externally writing
+  // to the buffer from getRenderBuffer() above.
   void markRenderAttributeBufferUpdated();
 
+  // ========================================================================
   // == Indexed views
+  // ========================================================================
 
-  // For some data (e.g. values a vertices of a mesh), we store the data in a canonical ordering (one value per vertex),
-  // but need to index it at render time according to some specified list of indices (one value per triangle corner).
-  // Rendering frameworks _do_ have explicit support for this case (e.g. IndexedArray DrawMode in openGL), but for
-  // various reasons it does not make sense to use those features. Instead, we explicitly expand out the data into a
-  // render buffer for drawing as view[i] = data[indices[i]].
+  // For some data (e.g. values a vertices of a mesh), we store the data in a canonical ordering (one value per
+  // vertex), but need to index it at render time according to some specified list of indices (one value per
+  // triangle corner). Rendering frameworks _do_ have explicit support for this case (e.g. IndexedArray DrawMode in
+  // openGL), but for various reasons it does not make sense to use those features. Instead, we explicitly expand
+  // out the data into a render buffer for drawing as view[i] = data[indices[i]].
   //
   // If such an index is used, it should be set to the `indices` argument below, and this class will automatically
-  // handle expanding out the indexed data to populate the returned buffer. External callers can still update the data
-  // directly on the host, and this class will handle updating an indexed version of the data for drawing.
+  // handle expanding out the indexed data to populate the returned buffer. External callers can still update the
+  // data directly on the host, and this class will handle updating an indexed version of the data for drawing.
   //
   // In internally, these indexed views are cached. It is safe to call this function many times, after the first the
   // same view will be returned repeatedly at no additional cost.
   std::shared_ptr<render::AttributeBuffer> getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>& indices);
+
+  // ========================================================================
+  // == Direct access to the GPU (device-side) render texture buffer
+  // ========================================================================
+  //
+  // NOTE: these follow the same semantics as the attribute version above, but these apply when the buffer is a texture
+  // (DeviceBufferType::Texture1d, etc).
+
+  std::shared_ptr<render::TextureBuffer> getRenderTextureBuffer();
+  void markRenderTextureBufferUpdated();
+
 
 protected:
   // == Internal members
 
   bool hostBufferIsPopulated; // true if the host buffer contains currently-valid data
 
-  // A mirror of the
   std::shared_ptr<render::AttributeBuffer> renderAttributeBuffer;
+  std::shared_ptr<render::TextureBuffer> renderTextureBuffer;
 
   // == Internal representation of indexed views
-  // NOTE: this seems like a problem, we are storing pointers as keys in a cache. Here, it works out because if the key
-  // ptr becomes invalid, the value weak_ptr must also be invalid, and we check that before dereferencing the key.
+  // NOTE: this seems like a problem, we are storing pointers as keys in a cache. Here, it works out because if the
+  // key ptr becomes invalid, the value weak_ptr must also be invalid, and we check that before dereferencing the
+  // key.
   std::vector<std::tuple<render::ManagedBuffer<uint32_t>*, std::weak_ptr<render::AttributeBuffer>>>
       existingIndexedViews;
   void updateIndexedViews();
@@ -139,6 +170,9 @@ protected:
   // == Internal helper functions
 
   void invalidateHostBuffer();
+  bool deviceBufferTypeIsTexture();
+  void checkDeviceBufferTypeIs(DeviceBufferType targetType);
+  void checkDeviceBufferTypeIsTexture();
 
   enum class CanonicalDataSource { HostData = 0, NeedsCompute, RenderBuffer };
   CanonicalDataSource currentCanonicalDataSource();
