@@ -25,7 +25,7 @@ template <class T>
 ColorImageQuantity* addColorAlphaImageQuantity(std::string name, size_t dimX, size_t dimY, const T& values_rgba,
                                                ImageOrigin imageOrigin) {
   FloatingQuantityStructure* q = getGlobalFloatingQuantityStructure();
-  return q->addColorImageQuantity(name, dimX, dimY, values_rgba, imageOrigin);
+  return q->addColorAlphaImageQuantity(name, dimX, dimY, values_rgba, imageOrigin);
 }
 
 
