@@ -70,7 +70,6 @@ void DepthRenderImageQuantity::refresh() {
 
 
 void DepthRenderImageQuantity::prepare() {
-  prepareGeometryBuffers();
 
   // no extra data to push for this one
 
@@ -80,8 +79,8 @@ void DepthRenderImageQuantity::prepare() {
                                           render::ShaderReplacementDefaults::Process);
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  program->setTextureFromBuffer("t_depth", textureDepth.get());
-  program->setTextureFromBuffer("t_normal", textureNormal.get());
+  program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_normal", normals.getRenderTextureBuffer().get());
   render::engine->setMaterial(*program, material.get());
 }
 

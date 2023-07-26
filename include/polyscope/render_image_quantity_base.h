@@ -5,6 +5,7 @@
 #include "polyscope/polyscope.h"
 
 #include "polyscope/floating_quantity.h"
+#include "polyscope/render/managed_buffer.h"
 
 #include <vector>
 
@@ -30,6 +31,9 @@ public:
 
   size_t nPix();
 
+  render::ManagedBuffer<float> depths;
+  render::ManagedBuffer<glm::vec3> normals;
+
   void updateGeometryBuffers(const std::vector<float>& newDepthData, const std::vector<glm::vec3>& newNormalData);
 
   // == Setters and getters
@@ -48,14 +52,12 @@ protected:
   ImageOrigin imageOrigin;
 
   // Store the raw data
-  std::vector<float> depthData;
-  std::vector<glm::vec3> normalData;
+  std::vector<float> depthsData;
+  std::vector<glm::vec3> normalsData;
 
   // === Visualization parameters
   PersistentValue<std::string> material;
   PersistentValue<float> transparency;
-
-  std::shared_ptr<render::TextureBuffer> textureDepth, textureNormal;
 
   // Helpers
   void prepareGeometryBuffers();

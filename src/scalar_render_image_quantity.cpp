@@ -16,7 +16,9 @@ ScalarRenderImageQuantity::ScalarRenderImageQuantity(Structure& parent_, std::st
                                                      const std::vector<double>& scalarData_, ImageOrigin imageOrigin,
                                                      DataType dataType_)
     : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData, imageOrigin),
-      ScalarQuantity(*this, scalarData_, dataType_) {}
+      ScalarQuantity(*this, scalarData_, dataType_) {
+  values.setTextureSize(dimX, dimY);
+}
 
 void ScalarRenderImageQuantity::draw() {}
 
@@ -66,13 +68,11 @@ void ScalarRenderImageQuantity::buildCustomUI() {
 
 void ScalarRenderImageQuantity::refresh() {
   program = nullptr;
-  textureScalar = nullptr;
   RenderImageQuantityBase::refresh();
 }
 
 
 void ScalarRenderImageQuantity::prepare() {
-  prepareGeometryBuffers();
 
   // push the color data to the buffer
   values.ensureHostBufferPopulated();
@@ -81,9 +81,6 @@ void ScalarRenderImageQuantity::prepare() {
     floatData[i] = static_cast<float>(values.data[i]);
   }
 
-  textureScalar =
-      render::engine->generateTextureBuffer(TextureFormat::R32F, dimX, dimY, static_cast<float*>(&floatData.front()));
-
   // Create the sourceProgram
   program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
                                           addScalarRules({getImageOriginRule(imageOrigin), "LIGHT_MATCAP",
@@ -91,9 +88,9 @@ void ScalarRenderImageQuantity::prepare() {
                                           render::ShaderReplacementDefaults::Process);
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  program->setTextureFromBuffer("t_depth", textureDepth.get());
-  program->setTextureFromBuffer("t_normal", textureNormal.get());
-  program->setTextureFromBuffer("t_scalar", textureScalar.get());
+  program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_normal", normals.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_scalar", values.getRenderTextureBuffer().get());
   render::engine->setMaterial(*program, material.get());
   program->setTextureFromColormap("t_colormap", cMap.get());
 }
