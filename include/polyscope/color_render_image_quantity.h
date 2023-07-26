@@ -14,7 +14,7 @@ class ColorRenderImageQuantity : public RenderImageQuantityBase {
 public:
   ColorRenderImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                            const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData,
-                           const std::vector<glm::vec3>& colorData, ImageOrigin imageOrigin);
+                           const std::vector<glm::vec3>& colorsData, ImageOrigin imageOrigin);
 
   virtual void draw() override;
   virtual void drawDelayed() override;
@@ -25,6 +25,8 @@ public:
 
   virtual std::string niceName() override;
 
+  render::ManagedBuffer<glm::vec3> colors;
+
   // == Setters and getters
 
 
@@ -32,7 +34,7 @@ protected:
   // === Visualization parameters
 
   // Store the raw data
-  std::vector<glm::vec3> colorData;
+  std::vector<glm::vec3> colorsData;
 
   // === Render data
   std::shared_ptr<render::TextureBuffer> textureColor;

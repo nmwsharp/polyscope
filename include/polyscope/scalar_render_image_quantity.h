@@ -35,7 +35,6 @@ protected:
   // === Visualization parameters
 
   // === Render data
-  std::shared_ptr<render::TextureBuffer> textureScalar;
   std::shared_ptr<render::ShaderProgram> program;
 
   // === Helpers
