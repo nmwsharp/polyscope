@@ -29,6 +29,7 @@ VolumeGrid::VolumeGrid(std::string name, glm::uvec3 gridNodeDim_, glm::vec3 boun
       cubeSizeFactor(         uniquePrefix() + "cubeSizeFactor",    0.f)
 // clang-format on
 {
+  cullWholeElements.setPassive(true);
   updateObjectSpaceBounds();
 }
 
@@ -163,6 +164,10 @@ std::vector<std::string> VolumeGrid::addGridCubeRules(std::vector<std::string> i
     }
   }
 
+  if (wantsCullPosition()) {
+    initRules.push_back("GRIDCUBE_CULLPOS_FROM_CENTER");
+  }
+
   return initRules;
 }
 
@@ -172,6 +177,7 @@ void VolumeGrid::setGridCubeUniforms(render::ShaderProgram& p, bool withShade) {
   p.setUniform("u_boundMax", boundMax);
   p.setUniform("u_cubeSizeFactor", 1.f - cubeSizeFactor.get());
   p.setUniform("u_gridSpacingReference", gridSpacingReference());
+  p.setUniform("u_gridSpacing", gridSpacing());
 
   if (withShade) {
 
