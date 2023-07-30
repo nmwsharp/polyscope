@@ -71,28 +71,25 @@ public:
 
 
   template <class T>
-  VolumeGridScalarQuantity* addScalarQuantity(std::string name, const T& values, DataType dataType_ = DataType::STANDARD);
+  VolumeGridScalarQuantity* addNodeScalarQuantity(std::string name, const T& values, DataType dataType_ = DataType::STANDARD);
   
-  template <class Func>
-  VolumeGridScalarQuantity* addScalarQuantityFromCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
-
-  template <class Func>
-  VolumeGridScalarQuantity* addScalarQuantityFromBatchCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
-
   template <class T>
-  VolumeGridVectorQuantity* addVectorQuantity(std::string name, const T& vecValues, VectorType dataType_ = VectorType::STANDARD);
+  VolumeGridScalarQuantity* addCellScalarQuantity(std::string name, const T& values, DataType dataType_ = DataType::STANDARD);
+  
+  // template <class Func>
+  // VolumeGridScalarQuantity* addScalarQuantityFromCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
+  //
+  // template <class Func>
+  // VolumeGridScalarQuantity* addScalarQuantityFromBatchCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
+
 
   //template <class T> VolumeGridScalarIsosurface* addGridIsosurfaceQuantity(std::string name, double isoLevel, const T& values);
-  //template <class Funct> VolumeGridVectorQuantity* addGridVectorQuantityFromFunction(std::string name, const Funct& funct, VectorType dataType_);
-  //template <class Funct> VolumeGridScalarQuantity* addGridScalarQuantityFromFunction(std::string name, const Funct& funct, DataType dataType_);
   
   // Rendering helpers used by quantities
   // void populateGeometry();
   std::vector<std::string> addGridCubeRules(std::vector<std::string> initRules, bool withShade=true);
   void setVolumeGridUniforms(render::ShaderProgram& p);
-  // void setVolumeGridPointUniforms(render::ShaderProgram& p);
   void setGridCubeUniforms(render::ShaderProgram& p, bool withShade=true);
-  // std::vector<std::string> addVolumeGridPointRules(std::vector<std::string> initRules);
   
   // == Helpers for computing with the grid
  
@@ -176,9 +173,9 @@ private:
   // === Quantity adder implementations
   // clang-format off
   
-  VolumeGridScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
+  VolumeGridScalarQuantity* addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
+  VolumeGridScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
 
-  VolumeGridVectorQuantity* addVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& data, VectorType dataType_);
   // clang-format on
 };
 

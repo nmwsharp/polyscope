@@ -186,11 +186,6 @@ void VolumeGrid::setGridCubeUniforms(render::ShaderProgram& p, bool withShade) {
       p.setUniform("u_edgeColor", getEdgeColor());
     }
   }
-
-  // std::cout << "boundMin " << boundMin << std::endl;
-  // std::cout << "boundMax " << boundMax << std::endl;
-  // std::cout << "cubeSizeFactor " << cubeSizeFactor.get() << std::endl;
-  // std::cout << "gridSpacingRef " << refSpacing << std::endl;
 }
 
 void VolumeGrid::ensureGridCubeRenderProgramPrepared() {
@@ -246,20 +241,6 @@ void VolumeGrid::ensureGridCubePickProgramPrepared() {
     size_t cellGlobalPickIndStart = globalPickConstant + nNodes();
     pickColor = pick::indToVec(static_cast<size_t>(globalPickConstant));
   }
-
-
-  // TODO
-
-  //   // clang-format off
-  //   program = render::engine->requestShader(
-  //       "GRIDCUBE",
-  //       addGridCubeRules({""})
-  //   );
-  //   // clang-format on
-  //
-  //   setPointProgramGeometryAttributes(*program);
-  //
-  //   render::engine->setMaterial(*program, material.get());
 }
 
 
@@ -277,34 +258,8 @@ void VolumeGrid::refresh() {
   pickProgram.reset();
 }
 
-
-// void VolumeGrid::populateGeometry() {
-//   gridPointLocations.resize(nNodes());
-//   for (size_t i = 0; i < gridPointLocations.size(); i++) {
-//     gridPointLocations[i] = positionOfNodeIndex(i);
-//   }
-// }
-
-
 void VolumeGrid::setVolumeGridUniforms(render::ShaderProgram& p) {}
 
-// void VolumeGrid::setVolumeGridPointUniforms(render::ShaderProgram& p) {
-//   glm::mat4 P = view::getCameraPerspectiveMatrix();
-//   glm::mat4 Pinv = glm::inverse(P);
-//   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
-//   p.setUniform("u_viewport", render::engine->getCurrentViewport());
-//   float pointRadius = minGridSpacing() / 8;
-//   p.setUniform("u_pointRadius", pointRadius);
-// }
-
-
-// std::vector<std::string> VolumeGrid::addVolumeGridPointRules(std::vector<std::string> initRules) {
-//   initRules = addStructureRules(initRules);
-//   if (wantsCullPosition()) {
-//     initRules.push_back("SPHERE_CULLPOS_FROM_CENTER");
-//   }
-//   return initRules;
-// }
 
 void VolumeGrid::computeGridPlaneReferenceGeometry() {
 
@@ -421,8 +376,8 @@ VolumeGridQuantity::VolumeGridQuantity(std::string name_, VolumeGrid& curveNetwo
     : QuantityS<VolumeGrid>(name_, curveNetwork_, dominates_) {}
 
 
-VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityImpl(std::string name, const std::vector<double>& data,
-                                                            DataType dataType_) {
+VolumeGridScalarQuantity* VolumeGrid::addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data,
+                                                                DataType dataType_) {
 
   // TODO FIXME
 
@@ -432,14 +387,16 @@ VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityImpl(std::string name, co
   return nullptr;
 }
 
-/*
-VolumeGridVectorQuantity* VolumeGrid::addVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& data,
-                                                            VectorType dataType_) {
-  VolumeGridVectorQuantity* q = new VolumeGridVectorQuantity(name, *this, data, dataType_);
-  addQuantity(q);
-  return q;
+VolumeGridScalarQuantity* VolumeGrid::addCellScalarQuantityImpl(std::string name, const std::vector<double>& data,
+                                                                DataType dataType_) {
+
+  // TODO FIXME
+
+  // VolumeGridScalarQuantity* q = new VolumeGridScalarQuantity(name, *this, data, dataType_);
+  // addQuantity(q);
+  // return q;
+  return nullptr;
 }
-*/
 
 /*
 VolumeGridScalarIsosurface* VolumeGrid::addIsosurfaceQuantityImpl(std::string name, double isoLevel,

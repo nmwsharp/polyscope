@@ -93,13 +93,21 @@ inline void removeVolumeGrid(std::string name, bool errorIfAbsent) {
 // =====================================================
 
 template <class T>
-VolumeGridScalarQuantity* VolumeGrid::addScalarQuantity(std::string name, const T& values, DataType dataType_) {
-  validateSize(values, nNodes(), "grid scalar quantity " + name);
-  return addScalarQuantityImpl(name, standardizeArray<double, T>(values), dataType_);
+VolumeGridScalarQuantity* VolumeGrid::addNodeScalarQuantity(std::string name, const T& values, DataType dataType_) {
+  validateSize(values, nNodes(), "grid node scalar quantity " + name);
+  return addNodeScalarQuantityImpl(name, standardizeArray<double, T>(values), dataType_);
 }
 
+template <class T>
+VolumeGridScalarQuantity* VolumeGrid::addCellScalarQuantity(std::string name, const T& values, DataType dataType_) {
+  validateSize(values, nCells(), "grid cell scalar quantity " + name);
+  return addCellScalarQuantityImpl(name, standardizeArray<double, T>(values), dataType_);
+}
+
+/*
+
 template <class Func>
-VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityFromCallable(std::string name, Func&& func, DataType dataType_) {
+VolumeGridScalarQuantity* VolumeGrid::addNodeScalarQuantityFromCallable(std::string name, Func&& func, DataType dataType_) {
 
   // Sample to grid
   std::vector<double> values(nNodes());
@@ -111,7 +119,9 @@ VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityFromCallable(std::string 
   return addScalarQuantityImpl(name, values, dataType_);
 }
 
+*/
 
+/*
 template <class Func>
 VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityFromBatchCallable(std::string name, Func&& func,
                                                                          DataType dataType_) {
@@ -131,13 +141,8 @@ VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityFromBatchCallable(std::st
 
   return addScalarQuantity(name, func(queries), dataType_);
 }
+*/
 
-
-template <class T>
-VolumeGridVectorQuantity* VolumeGrid::addVectorQuantity(std::string name, const T& vecValues, VectorType dataType_) {
-  validateSize(vecValues, nNodes(), "grid vector quantity " + name);
-  return addVectorQuantityImpl(name, standardizeArray<glm::vec3, T>(vecValues), dataType_);
-}
 
 /*
 VolumeGridScalarIsosurface* VolumeGrid::addGridIsosurfaceQuantity(std::string name, double isoLevel, const T& values) {
