@@ -296,6 +296,7 @@ R"(
         {
            
            // do some coordinate arithmetic
+           // NOTE: this logic is duplicated with pick function
            vec3 coordUnit = a_coordToFrag / u_gridSpacingReference;
            vec3 coordMod = mod(coordUnit, 1.f); // [0,1] within each cell
            vec3 coordModShift = 2.f*coordMod - 1.f; // [-1,1] within each cell
@@ -349,7 +350,26 @@ const ShaderReplacementRule GRIDCUBE_WIREFRAME (
     },
     /* uniforms */ {},
     /* attributes */ {},
-    /* textures */ {});
+    /* textures */ {}
+);
+
+const ShaderReplacementRule GRIDCUBE_CONSTANT_PICK(
+    /* rule name */ "GRIDCUBE_CONSTANT_PICK",
+    {
+        /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform vec3 u_pickColor;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          vec3 shadeColor = u_pickColor;
+        )"},
+    },
+    /* uniforms */ {
+      {"u_pickColor", RenderDataType::Vector3Float}
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
 
 }
 }

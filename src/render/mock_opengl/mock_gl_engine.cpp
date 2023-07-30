@@ -2071,6 +2071,7 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   
   // volume gridcube things
   registerShaderRule("GRIDCUBE_WIREFRAME", GRIDCUBE_WIREFRAME);
+  registerShaderRule("GRIDCUBE_CONSTANT_PICK", GRIDCUBE_CONSTANT_PICK);
 
   // sphere things
   registerShaderRule("SPHERE_PROPAGATE_VALUE", SPHERE_PROPAGATE_VALUE);

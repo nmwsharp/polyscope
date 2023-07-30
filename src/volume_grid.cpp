@@ -1,7 +1,8 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
-
 #include "polyscope/volume_grid.h"
+
+#include "polyscope/pick.h"
 
 #include "imgui.h"
 
@@ -31,8 +32,9 @@ VolumeGrid::VolumeGrid(std::string name, glm::uvec3 gridNodeDim_, glm::vec3 boun
   updateObjectSpaceBounds();
 }
 
+
 void VolumeGrid::buildCustomUI() {
-  ImGui::Text("dim (%lld, %lld, %lld)", static_cast<long long int>(gridNodeDim.x),
+  ImGui::Text("node dim (%lld, %lld, %lld)", static_cast<long long int>(gridNodeDim.x),
               static_cast<long long int>(gridNodeDim.y), static_cast<long long int>(gridNodeDim.z));
 
   // these all take up too much space
@@ -92,10 +94,6 @@ void VolumeGrid::buildCustomUI() {
   }
 }
 
-void VolumeGrid::buildPickUI(size_t localPickID) {
-  // For now do nothing
-}
-
 void VolumeGrid::draw() {
   // For now, do nothing for the actual grid
   if (!enabled.get()) return;
@@ -106,14 +104,13 @@ void VolumeGrid::draw() {
     // Ensure we have prepared buffers
     ensureGridCubeRenderProgramPrepared();
 
-    render::engine->setBackfaceCull(true);
-
     // Set program uniforms
     setStructureUniforms(*program);
     setGridCubeUniforms(*program);
     program->setUniform("u_baseColor", color.get());
 
     // Draw the actual grid
+    render::engine->setBackfaceCull(true);
     program->draw();
   }
 
@@ -140,31 +137,48 @@ void VolumeGrid::drawDelayed() {
 }
 
 void VolumeGrid::drawPick() {
-  // For now do nothing
+  if (!isEnabled()) {
+    return;
+  }
+
+  ensureGridCubePickProgramPrepared();
+
+  // Set program uniforms
+  setStructureUniforms(*pickProgram);
+  setGridCubeUniforms(*pickProgram, false);
+  pickProgram->setUniform("u_pickColor", pickColor);
+
+  // Draw the actual grid
+  render::engine->setBackfaceCull(true);
+  pickProgram->draw();
 }
 
-std::vector<std::string> VolumeGrid::addGridCubeRules(std::vector<std::string> initRules) {
+std::vector<std::string> VolumeGrid::addGridCubeRules(std::vector<std::string> initRules, bool withShade) {
   initRules = addStructureRules(initRules);
 
-  if (getEdgeWidth() > 0) {
-    initRules.push_back("GRIDCUBE_WIREFRAME");
-    initRules.push_back("WIREFRAME_SIMPLE");
+  if (withShade) {
+    if (getEdgeWidth() > 0) {
+      initRules.push_back("GRIDCUBE_WIREFRAME");
+      initRules.push_back("WIREFRAME_SIMPLE");
+    }
   }
 
   return initRules;
 }
 
-void VolumeGrid::setGridCubeUniforms(render::ShaderProgram& p) {
+void VolumeGrid::setGridCubeUniforms(render::ShaderProgram& p, bool withShade) {
 
   p.setUniform("u_boundMin", boundMin);
   p.setUniform("u_boundMax", boundMax);
   p.setUniform("u_cubeSizeFactor", 1.f - cubeSizeFactor.get());
-  glm::vec3 refSpacing{1.f / gridCellDim.x, 1.f / gridCellDim.y, 1.f / gridCellDim.z};
-  p.setUniform("u_gridSpacingReference", refSpacing);
+  p.setUniform("u_gridSpacingReference", gridSpacingReference());
 
-  if (getEdgeWidth() > 0) {
-    p.setUniform("u_edgeWidth", getEdgeWidth() * render::engine->getCurrentPixelScaling());
-    p.setUniform("u_edgeColor", getEdgeColor());
+  if (withShade) {
+
+    if (getEdgeWidth() > 0) {
+      p.setUniform("u_edgeWidth", getEdgeWidth() * render::engine->getCurrentPixelScaling());
+      p.setUniform("u_edgeColor", getEdgeColor());
+    }
   }
 
   // std::cout << "boundMin " << boundMin << std::endl;
@@ -180,7 +194,7 @@ void VolumeGrid::ensureGridCubeRenderProgramPrepared() {
   // clang-format off
   program = render::engine->requestShader(
       "GRIDCUBE_PLANE", 
-      addGridCubeRules({"SHADE_BASECOLOR"})
+      addGridCubeRules({"SHADE_BASECOLOR"}, true)
   );
   // clang-format on
 
@@ -192,8 +206,41 @@ void VolumeGrid::ensureGridCubeRenderProgramPrepared() {
 }
 
 void VolumeGrid::ensureGridCubePickProgramPrepared() {
+
   // If already prepared, do nothing
-  if (program) return;
+  if (pickProgram) return;
+
+  // clang-format off
+  pickProgram = render::engine->requestShader(
+      "GRIDCUBE_PLANE", 
+      addGridCubeRules({"GRIDCUBE_CONSTANT_PICK"}, false), 
+      render::ShaderReplacementDefaults::Pick
+  );
+  // clang-format on
+
+
+  pickProgram->setAttribute("a_referencePosition", gridPlaneReferencePositions.getRenderAttributeBuffer());
+  pickProgram->setAttribute("a_referenceNormal", gridPlaneReferenceNormals.getRenderAttributeBuffer());
+  pickProgram->setAttribute("a_axisInd", gridPlaneAxisInds.getRenderAttributeBuffer());
+
+
+  if (globalPickConstant == INVALID_IND_64) {
+    // request a pick range
+
+    // NOTE: Picking for this structure works a bit differently than others.
+    //
+    // The usual approach of packing a 64bit in to 3 floats doesn't play nice
+    // with the way the grid is implicitly represented: we would need to do all the
+    // packing logic in the shader.
+    //
+    // Instead, we only shade with a single constant pick ind, then compute which
+    // element was actually clicked CPU-side afterwards
+
+    globalPickConstant = pick::requestPickBufferRange(this, 1);
+    size_t cellGlobalPickIndStart = globalPickConstant + nNodes();
+    pickColor = pick::indToVec(static_cast<size_t>(globalPickConstant));
+  }
+
 
   // TODO
 
@@ -221,6 +268,7 @@ void VolumeGrid::refresh() {
   QuantityStructure<VolumeGrid>::refresh(); // call base class version, which refreshes quantities
 
   program.reset();
+  pickProgram.reset();
 }
 
 
@@ -397,7 +445,100 @@ VolumeGridScalarIsosurface* VolumeGrid::addIsosurfaceQuantityImpl(std::string na
 }
 */
 
-void VolumeGridQuantity::buildPointInfoGUI(size_t vInd) {}
+void VolumeGrid::buildPickUI(size_t localPickID) {
+
+  // See note in ensurePickProgramPrepared().
+  // Picking for this structure works different, and identifies which element with a depth query CPU side.
+
+  float nodePickRad = 0.3;
+
+  ImGuiIO& io = ImGui::GetIO();
+  glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
+  glm::vec3 pickPos = view::screenCoordsToWorldPosition(screenCoords);
+  glm::vec3 localPickPos = (pickPos - boundMin) / (boundMax - boundMin);
+  localPickPos = clamp(localPickPos, glm::vec3(0.), glm::vec3(1.)); // on [0,1.]
+
+  // NOTE: this logic is duplicated with shader
+  glm::vec3 coordUnit = localPickPos / gridSpacingReference();
+  glm::vec3 coordMod = mod(coordUnit, 1.f);
+  glm::vec3 coordModShift = 2.f * coordMod - 1.f;
+  glm::vec3 coordLocal = coordModShift / (1.f - cubeSizeFactor.get()); // [-1,1] within each scaled cell
+  float distFromCorner = glm::length(1.f - abs(coordLocal));
+
+  if (distFromCorner < nodePickRad) {
+    // Pick a node
+
+    glm::uvec3 nodeInd3{std::round(coordUnit.x), std::round(coordUnit.y), std::round(coordUnit.z)};
+    uint64_t nodeInd = flattenNodeIndex(nodeInd3);
+
+    buildNodeInfoGUI(nodeInd);
+
+  } else {
+    // Pick a cell
+
+    glm::uvec3 cellInd3{std::floor(coordUnit.x), std::floor(coordUnit.y), std::floor(coordUnit.z)};
+    cellInd3 = clamp(cellInd3, glm::uvec3(0), gridCellDim - 1u);
+    uint64_t cellInd = flattenCellIndex(cellInd3);
+
+    buildCellInfoGUI(cellInd);
+  }
+}
+
+
+void VolumeGrid::buildNodeInfoGUI(size_t nInd) {
+
+  size_t displayInd = nInd;
+  glm::uvec3 nodeInd3 = unflattenNodeIndex(nInd);
+
+  ImGui::TextUnformatted(("Node #" + std::to_string(displayInd)).c_str());
+  ImGui::TextUnformatted(("Node index: (" + std::to_string(nodeInd3.x) + "," + std::to_string(nodeInd3.y) + "," +
+                          std::to_string(nodeInd3.z) + ")")
+                             .c_str());
+
+
+  std::stringstream buffer;
+  buffer << positionOfNodeIndex(nInd);
+  ImGui::TextUnformatted(("Position: " + buffer.str()).c_str());
+
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::Indent(20.);
+
+  // Build GUI to show the quantities
+  ImGui::Columns(2);
+  ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
+  for (auto& x : quantities) {
+    x.second->buildNodeInfoGUI(nInd);
+  }
+
+  ImGui::Indent(-20.);
+}
+
+void VolumeGrid::buildCellInfoGUI(size_t cellInd) {
+
+  size_t displayInd = cellInd;
+  glm::uvec3 cellInd3 = unflattenCellIndex(cellInd);
+
+  ImGui::TextUnformatted(("Cell #" + std::to_string(displayInd)).c_str());
+  ImGui::TextUnformatted(("Cell index: (" + std::to_string(cellInd3.x) + "," + std::to_string(cellInd3.y) + "," +
+                          std::to_string(cellInd3.z) + ")")
+                             .c_str());
+
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::Spacing();
+  ImGui::Indent(20.);
+
+  // Build GUI to show the quantities
+  ImGui::Columns(2);
+  ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
+  for (auto& x : quantities) {
+    x.second->buildCellInfoGUI(cellInd);
+  }
+
+  ImGui::Indent(-20.);
+}
 
 VolumeGrid* registerVolumeGrid(std::string name, glm::uvec3 gridNodeDim, glm::vec3 boundMin, glm::vec3 boundMax) {
   VolumeGrid* s = new VolumeGrid(name, gridNodeDim, boundMin, boundMax);
@@ -411,5 +552,10 @@ VolumeGrid* registerVolumeGrid(std::string name, glm::uvec3 gridNodeDim, glm::ve
 VolumeGrid* registerVolumeGrid(std::string name, size_t gridNodeDim, glm::vec3 boundMin, glm::vec3 boundMax) {
   return registerVolumeGrid(name, {gridNodeDim, gridNodeDim, gridNodeDim}, boundMin, boundMax);
 }
+
+
+// Default implementations
+void VolumeGridQuantity::buildNodeInfoGUI(size_t vInd) {}
+void VolumeGridQuantity::buildCellInfoGUI(size_t vInd) {}
 
 } // namespace polyscope

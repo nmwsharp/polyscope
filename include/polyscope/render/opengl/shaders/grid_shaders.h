@@ -18,6 +18,7 @@ extern const ShaderStageSpecification FLEX_GRIDCUBE_PLANE_FRAG_SHADER;
 
 // Rules 
 extern const ShaderReplacementRule GRIDCUBE_WIREFRAME;
+extern const ShaderReplacementRule GRIDCUBE_CONSTANT_PICK;
 
 
 } // namespace backend_openGL3_glfw

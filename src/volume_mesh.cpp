@@ -916,7 +916,7 @@ void VolumeMesh::refresh() {
 void VolumeMesh::geometryChanged() {
   recomputeGeometryIfPopulated();
   requestRedraw();
-  QuantityStructure<VolumeMesh>::refresh();
+  QuantityStructure<VolumeMesh>::refresh(); // TODO fixme unneeded, right?
 }
 
 void VolumeMesh::recomputeGeometryIfPopulated() {

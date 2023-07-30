@@ -88,10 +88,10 @@ public:
   
   // Rendering helpers used by quantities
   // void populateGeometry();
-  std::vector<std::string> addGridCubeRules(std::vector<std::string> initRules);
+  std::vector<std::string> addGridCubeRules(std::vector<std::string> initRules, bool withShade=true);
   void setVolumeGridUniforms(render::ShaderProgram& p);
   // void setVolumeGridPointUniforms(render::ShaderProgram& p);
-  void setGridCubeUniforms(render::ShaderProgram& p);
+  void setGridCubeUniforms(render::ShaderProgram& p, bool withShade=true);
   // std::vector<std::string> addVolumeGridPointRules(std::vector<std::string> initRules);
   
   // == Helpers for computing with the grid
@@ -100,15 +100,18 @@ public:
   uint64_t nNodes() const;
   uint64_t nCells() const;
   glm::vec3 gridSpacing() const;
+  glm::vec3 gridSpacingReference() const;
   float minGridSpacing() const;
 
   // nodes
-  glm::uvec3 flattenNodeIndex(uint64_t i) const;
+  uint64_t flattenNodeIndex(glm::uvec3 inds) const;
+  glm::uvec3 unflattenNodeIndex(uint64_t i) const;
   glm::vec3 positionOfNodeIndex(uint64_t i) const;
   glm::vec3 positionOfNodeIndex(glm::uvec3 inds) const;
   
   // cells
-  glm::uvec3 flattenCellIndex(uint64_t i) const;
+  uint64_t flattenCellIndex(glm::uvec3 inds) const;
+  glm::uvec3 unflattenCellIndex(uint64_t i) const;
   glm::vec3 positionOfCellIndex(uint64_t i) const;
   glm::vec3 positionOfCellIndex(glm::uvec3 inds) const;
 
@@ -149,6 +152,15 @@ private:
   
   // == Compute indices & geometry data
   void computeGridPlaneReferenceGeometry();
+  
+  // Picking-related
+  // Order of indexing: vertices, cells
+  // Within each set, uses the implicit ordering from the mesh data structure
+  // These starts are LOCAL indices, indexing elements only with the mesh
+  size_t globalPickConstant = INVALID_IND_64;
+  glm::vec3 pickColor;
+  void buildNodeInfoGUI(size_t vInd);
+  void buildCellInfoGUI(size_t cInd);
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called

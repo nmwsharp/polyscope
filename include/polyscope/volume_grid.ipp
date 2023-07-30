@@ -12,8 +12,11 @@ inline uint64_t VolumeGrid::nCells() const {
   return static_cast<uint64_t>(gridCellDim.x) * gridCellDim.y * gridCellDim.z;
 }
 
+inline uint64_t VolumeGrid::flattenNodeIndex(glm::uvec3 inds) const {
+  return static_cast<uint64_t>(gridNodeDim[1]) * gridNodeDim[2] * inds.x + gridNodeDim[2] * inds.y + inds.z;
+}
 
-inline glm::uvec3 VolumeGrid::flattenNodeIndex(uint64_t i) const {
+inline glm::uvec3 VolumeGrid::unflattenNodeIndex(uint64_t i) const {
   uint64_t nYZ = gridNodeDim[1] * gridNodeDim[2];
   uint64_t iX = i / nYZ;
   i -= iX * nYZ;
@@ -25,7 +28,7 @@ inline glm::uvec3 VolumeGrid::flattenNodeIndex(uint64_t i) const {
 }
 
 inline glm::vec3 VolumeGrid::positionOfNodeIndex(uint64_t i) const {
-  glm::uvec3 inds = flattenNodeIndex(i);
+  glm::uvec3 inds = unflattenNodeIndex(i);
   return positionOfNodeIndex(inds);
 }
 
@@ -34,7 +37,11 @@ inline glm::vec3 VolumeGrid::positionOfNodeIndex(glm::uvec3 inds) const {
   return (1.f - tVals) * boundMin + tVals * boundMax;
 }
 
-inline glm::uvec3 VolumeGrid::flattenCellIndex(uint64_t i) const {
+inline uint64_t VolumeGrid::flattenCellIndex(glm::uvec3 inds) const {
+  return static_cast<uint64_t>(gridCellDim[1]) * gridCellDim[2] * inds.x + gridCellDim[2] * inds.y + inds.z;
+}
+
+inline glm::uvec3 VolumeGrid::unflattenCellIndex(uint64_t i) const {
   uint64_t nYZ = gridCellDim[1] * gridCellDim[2];
   uint64_t iX = i / nYZ;
   i -= iX * nYZ;
@@ -46,7 +53,7 @@ inline glm::uvec3 VolumeGrid::flattenCellIndex(uint64_t i) const {
 }
 
 inline glm::vec3 VolumeGrid::positionOfCellIndex(uint64_t i) const {
-  glm::uvec3 inds = flattenCellIndex(i);
+  glm::uvec3 inds = unflattenCellIndex(i);
   return positionOfCellIndex(inds);
 }
 
@@ -55,11 +62,15 @@ inline glm::vec3 VolumeGrid::positionOfCellIndex(glm::uvec3 inds) const {
   return (1.f - tVals) * boundMin + tVals * boundMax + gridSpacing() / 2.f;
 }
 
-
 inline glm::vec3 VolumeGrid::gridSpacing() const {
   glm::vec3 width = boundMax - boundMin;
   glm::vec3 spacing = width / (glm::vec3(gridCellDim));
   return spacing;
+}
+
+inline glm::vec3 VolumeGrid::gridSpacingReference() const {
+  glm::vec3 refSpacing{1.f / gridCellDim.x, 1.f / gridCellDim.y, 1.f / gridCellDim.z};
+  return refSpacing;
 }
 
 inline float VolumeGrid::minGridSpacing() const {
