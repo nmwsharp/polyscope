@@ -17,6 +17,7 @@
 #include "polyscope/render/opengl/shaders/common.h"
 #include "polyscope/render/opengl/shaders/cylinder_shaders.h"
 #include "polyscope/render/opengl/shaders/gizmo_shaders.h"
+#include "polyscope/render/opengl/shaders/grid_shaders.h"
 #include "polyscope/render/opengl/shaders/ground_plane_shaders.h"
 #include "polyscope/render/opengl/shaders/histogram_shaders.h"
 #include "polyscope/render/opengl/shaders/lighting_shaders.h"
@@ -2821,6 +2822,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderProgram("INDEXED_MESH", {FLEX_MESH_VERT_SHADER, FLEX_MESH_FRAG_SHADER}, DrawMode::IndexedTriangles);
   registerShaderProgram("RAYCAST_SPHERE", {FLEX_SPHERE_VERT_SHADER, FLEX_SPHERE_GEOM_SHADER, FLEX_SPHERE_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("POINT_QUAD", {FLEX_POINTQUAD_VERT_SHADER, FLEX_POINTQUAD_GEOM_SHADER, FLEX_POINTQUAD_FRAG_SHADER}, DrawMode::Points);
+  registerShaderProgram("GRIDCUBE", {FLEX_GRIDCUBE_VERT_SHADER, FLEX_GRIDCUBE_GEOM_SHADER, FLEX_GRIDCUBE_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("RAYCAST_VECTOR", {FLEX_VECTOR_VERT_SHADER, FLEX_VECTOR_GEOM_SHADER, FLEX_VECTOR_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("RAYCAST_TANGENT_VECTOR", {FLEX_TANGENT_VECTOR_VERT_SHADER, FLEX_VECTOR_GEOM_SHADER, FLEX_VECTOR_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("RAYCAST_CYLINDER", {FLEX_CYLINDER_VERT_SHADER, FLEX_CYLINDER_GEOM_SHADER, FLEX_CYLINDER_FRAG_SHADER}, DrawMode::Points);

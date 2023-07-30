@@ -33,7 +33,7 @@ struct QuantityTypeHelper<VolumeGrid> {
 class VolumeGrid : public QuantityStructure<VolumeGrid> {
 public:
   // Construct a new volume grid structure
-  VolumeGrid(std::string name, std::array<size_t, 3> steps_, glm::vec3 bound_min_, glm::vec3 bound_max_);
+  VolumeGrid(std::string name, glm::uvec3 gridNodeDim_, glm::vec3 bound_min_, glm::vec3 bound_max_);
 
   // === Overloads
 
@@ -50,11 +50,17 @@ public:
   virtual void buildPickUI(size_t localPickID) override;
 
   // Field data
-  std::array<size_t, 3> steps;
+  glm::uvec3 gridNodeDim;
+  glm::uvec3 gridCellDim;
   glm::vec3 bound_min, bound_max;
 
   // Misc data
   static const std::string structureTypeName;
+
+  // === Geometry members
+  render::ManagedBuffer<glm::vec3> cellCenters;
+  render::ManagedBuffer<glm::uvec3> cellInds;
+
 
   // === Quantity-related
   // clang-format off
@@ -76,32 +82,80 @@ public:
   //template <class Funct> VolumeGridVectorQuantity* addGridVectorQuantityFromFunction(std::string name, const Funct& funct, VectorType dataType_);
   //template <class Funct> VolumeGridScalarQuantity* addGridScalarQuantityFromFunction(std::string name, const Funct& funct, DataType dataType_);
   
-  // === Get/set visualization parameters
+  // Rendering helpers used by quantities
+  // void populateGeometry();
+  std::vector<std::string> addGridCubeRules(std::vector<std::string> initRules);
+  void setVolumeGridUniforms(render::ShaderProgram& p);
+  // void setVolumeGridPointUniforms(render::ShaderProgram& p);
+  void setGridCubeUniforms(render::ShaderProgram& p);
+  // std::vector<std::string> addVolumeGridPointRules(std::vector<std::string> initRules);
+  
+  // == Helpers for computing with the grid
+ 
+  // whole grid
+  uint64_t nNodes() const;
+  uint64_t nCells() const;
+  glm::vec3 gridSpacing() const;
+  float minGridSpacing() const;
+
+  // nodes
+  glm::uvec3 flattenNodeIndex(uint64_t i) const;
+  glm::vec3 positionOfNodeIndex(uint64_t i) const;
+  glm::vec3 positionOfNodeIndex(glm::uvec3 inds) const;
+  
+  // cells
+  glm::uvec3 flattenCellIndex(uint64_t i) const;
+  glm::vec3 positionOfCellIndex(uint64_t i) const;
+  glm::vec3 positionOfCellIndex(glm::uvec3 inds) const;
+
+
+  // === Getters and setters for visualization settings
+
+  // Color of the mesh
+  VolumeGrid* setColor(glm::vec3 val);
+  glm::vec3 getColor();
+
+  // Color of edges
+  VolumeGrid* setEdgeColor(glm::vec3 val);
+  glm::vec3 getEdgeColor();
 
   // Material
   VolumeGrid* setMaterial(std::string name);
   std::string getMaterial();
 
-  // Rendering helpers used by quantities
-  std::vector<glm::vec3> gridPointLocations; // always populated
-  void populateGeometry();
-  void setVolumeGridUniforms(render::ShaderProgram& p);
-  void setVolumeGridPointUniforms(render::ShaderProgram& p);
-  std::vector<std::string> addVolumeGridPointRules(std::vector<std::string> initRules);
-  
-  // Helpers for computing with the grid
-  size_t nValues() const;
-  std::array<size_t, 3> flattenIndex(size_t i) const;
-  glm::vec3 positionOfIndex(size_t i) const;
-  glm::vec3 positionOfIndex(std::array<size_t, 3> inds) const;
-  glm::vec3 gridSpacing() const;
-  float minGridSpacing() const;
+  // Width of the edges. Scaled such that 1 is a reasonable weight for visible edges, but values  1 can be used for
+  // bigger edges. Use 0. to disable.
+  VolumeGrid* setEdgeWidth(double newVal);
+  double getEdgeWidth();
 
 
 private:
+ 
+  // === Storage for managed quantities
+  std::vector<glm::vec3> cellCentersData;
+  std::vector<glm::uvec3> cellIndsData;
   
   // === Visualization parameters
+  PersistentValue<glm::vec3> color;
+  PersistentValue<glm::vec3> edgeColor;
   PersistentValue<std::string> material;
+  PersistentValue<float> edgeWidth;
+  PersistentValue<float> cubeSizeFactor;
+  
+  // == Compute indices & geometry data
+  void computeCellCenters();
+  void computeCellInds();
+
+  // Drawing related things
+  // if nullptr, prepare() (resp. preparePick()) needs to be called
+  std::shared_ptr<render::ShaderProgram> program;
+  std::shared_ptr<render::ShaderProgram> pickProgram;
+
+  // === Helpers
+  
+  // Do setup work related to drawing, including allocating openGL data
+  void ensureGridCubeRenderProgramPrepared();
+  void ensureGridCubePickProgramPrepared();
   
   // === Quantity adder implementations
   // clang-format off
@@ -113,8 +167,8 @@ private:
 };
 
 
-VolumeGrid* registerVolumeGrid(std::string name, std::array<size_t, 3> steps, glm::vec3 bound_min, glm::vec3 bound_max);
-VolumeGrid* registerVolumeGrid(std::string name, size_t steps, glm::vec3 bound_min, glm::vec3 bound_max);
+VolumeGrid* registerVolumeGrid(std::string name, glm::uvec3 gridNodeDim, glm::vec3 bound_min, glm::vec3 bound_max);
+VolumeGrid* registerVolumeGrid(std::string name, uint64_t gridNodeDim, glm::vec3 bound_min, glm::vec3 bound_max);
 
 // Shorthand to get a point cloud from polyscope
 inline VolumeGrid* getVolumeGrid(std::string name = "");
