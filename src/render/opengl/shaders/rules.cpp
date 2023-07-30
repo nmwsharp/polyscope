@@ -310,6 +310,38 @@ const ShaderReplacementRule CULL_POS_FROM_VIEW (
     /* textures */ {}
 );
 
+const ShaderReplacementRule WIREFRAME_SIMPLE(
+    /* rule name */ "WIREFRAME_SIMPLE",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+
+          uniform float u_edgeWidth;
+          uniform vec3 u_edgeColor;
+      
+          float getEdgeFactor(vec3 wireframe_UVW, float width) {
+            float slopeWidth = 1.;
+            vec3 fw = fwidth(wireframe_UVW);
+            vec3 baryWidth = slopeWidth * fw;
+            vec3 end = width*fw;
+            vec3 dist = smoothstep(end - baryWidth, end, wireframe_UVW);
+            float e = 1.0 - min(min(dist.x, dist.y), dist.z);
+            return e;
+          }
+        )"},
+      {"APPLY_WIREFRAME", R"(
+          /* the wireframe_ should be populated by something else, such as the helper rule above */
+          float edgeFactor = getEdgeFactor(wireframe_UVW, u_edgeWidth);
+          albedoColor = mix(albedoColor, u_edgeColor, edgeFactor);
+      )"},
+    },
+    /* uniforms */ {
+      {"u_edgeColor", RenderDataType::Vector3Float},
+      {"u_edgeWidth", RenderDataType::Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
 
 ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix) {
 
