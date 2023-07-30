@@ -580,7 +580,13 @@ std::vector<std::string> VolumeMesh::addVolumeMeshRules(std::vector<std::string>
 
   if (withSurfaceShade) {
     if (getEdgeWidth() > 0) {
-      initRules.push_back(isSlice ? "SLICE_TETS_MESH_WIREFRAME" : "MESH_WIREFRAME");
+      if (isSlice) {
+        initRules.push_back("SLICE_TETS_MESH_WIREFRAME");
+        initRules.push_back("MESH_WIREFRAME");
+      } else {
+        initRules.push_back("MESH_WIREFRAME_FROM_BARY");
+        initRules.push_back("MESH_WIREFRAME");
+      }
     }
   }
 

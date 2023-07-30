@@ -31,7 +31,7 @@ inline glm::vec3 VolumeGrid::positionOfNodeIndex(uint64_t i) const {
 
 inline glm::vec3 VolumeGrid::positionOfNodeIndex(glm::uvec3 inds) const {
   glm::vec3 tVals = glm::vec3(inds) / glm::vec3(gridNodeDim - 1u);
-  return (1.f - tVals) * bound_min + tVals * bound_max;
+  return (1.f - tVals) * boundMin + tVals * boundMax;
 }
 
 inline glm::uvec3 VolumeGrid::flattenCellIndex(uint64_t i) const {
@@ -52,12 +52,12 @@ inline glm::vec3 VolumeGrid::positionOfCellIndex(uint64_t i) const {
 
 inline glm::vec3 VolumeGrid::positionOfCellIndex(glm::uvec3 inds) const {
   glm::vec3 tVals = (glm::vec3(inds) / glm::vec3(gridCellDim));
-  return (1.f - tVals) * bound_min + tVals * bound_max + gridSpacing() / 2.f;
+  return (1.f - tVals) * boundMin + tVals * boundMax + gridSpacing() / 2.f;
 }
 
 
 inline glm::vec3 VolumeGrid::gridSpacing() const {
-  glm::vec3 width = bound_max - bound_min;
+  glm::vec3 width = boundMax - boundMin;
   glm::vec3 spacing = width / (glm::vec3(gridCellDim));
   return spacing;
 }
