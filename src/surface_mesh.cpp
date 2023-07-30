@@ -972,6 +972,7 @@ std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::strin
     if (withSurfaceShade) {
       // rules that only get used when we're shading the surface of the mesh
       if (getEdgeWidth() > 0) {
+        initRules.push_back("MESH_WIREFRAME_FROM_BARY");
         initRules.push_back("MESH_WIREFRAME");
       }
 

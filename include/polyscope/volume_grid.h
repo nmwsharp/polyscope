@@ -33,7 +33,7 @@ struct QuantityTypeHelper<VolumeGrid> {
 class VolumeGrid : public QuantityStructure<VolumeGrid> {
 public:
   // Construct a new volume grid structure
-  VolumeGrid(std::string name, glm::uvec3 gridNodeDim_, glm::vec3 bound_min_, glm::vec3 bound_max_);
+  VolumeGrid(std::string name, glm::uvec3 gridNodeDim_, glm::vec3 boundMin_, glm::vec3 boundMax_);
 
   // === Overloads
 
@@ -52,14 +52,18 @@ public:
   // Field data
   glm::uvec3 gridNodeDim;
   glm::uvec3 gridCellDim;
-  glm::vec3 bound_min, bound_max;
+  glm::vec3 boundMin, boundMax;
 
   // Misc data
   static const std::string structureTypeName;
 
   // === Geometry members
-  render::ManagedBuffer<glm::vec3> cellCenters;
-  render::ManagedBuffer<glm::uvec3> cellInds;
+
+  // The define the grid cube visualization
+  // The are propeties of the resolution only, the geometry is in a reference space.
+  render::ManagedBuffer<glm::vec3> gridPlaneReferencePositions;
+  render::ManagedBuffer<glm::vec3> gridPlaneReferenceNormals;
+  render::ManagedBuffer<int32_t> gridPlaneAxisInds;
 
 
   // === Quantity-related
@@ -132,9 +136,10 @@ public:
 private:
  
   // === Storage for managed quantities
-  std::vector<glm::vec3> cellCentersData;
-  std::vector<glm::uvec3> cellIndsData;
-  
+  std::vector<glm::vec3> gridPlaneReferencePositionsData;
+  std::vector<glm::vec3> gridPlaneReferenceNormalsData;
+  std::vector<int32_t> gridPlaneAxisIndsData;
+
   // === Visualization parameters
   PersistentValue<glm::vec3> color;
   PersistentValue<glm::vec3> edgeColor;
@@ -143,8 +148,7 @@ private:
   PersistentValue<float> cubeSizeFactor;
   
   // == Compute indices & geometry data
-  void computeCellCenters();
-  void computeCellInds();
+  void computeGridPlaneReferenceGeometry();
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
@@ -167,8 +171,8 @@ private:
 };
 
 
-VolumeGrid* registerVolumeGrid(std::string name, glm::uvec3 gridNodeDim, glm::vec3 bound_min, glm::vec3 bound_max);
-VolumeGrid* registerVolumeGrid(std::string name, uint64_t gridNodeDim, glm::vec3 bound_min, glm::vec3 bound_max);
+VolumeGrid* registerVolumeGrid(std::string name, glm::uvec3 gridNodeDim, glm::vec3 boundMin, glm::vec3 boundMax);
+VolumeGrid* registerVolumeGrid(std::string name, uint64_t gridNodeDim, glm::vec3 boundMin, glm::vec3 boundMax);
 
 // Shorthand to get a point cloud from polyscope
 inline VolumeGrid* getVolumeGrid(std::string name = "");
