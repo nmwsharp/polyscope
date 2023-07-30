@@ -19,7 +19,8 @@ public:
 
 public:
   // Build GUI info about this element
-  virtual void buildPointInfoGUI(size_t vInd);
+  virtual void buildNodeInfoGUI(size_t vInd);
+  virtual void buildCellInfoGUI(size_t vInd);
 };
 
 } // namespace polyscope
