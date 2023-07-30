@@ -13,6 +13,7 @@
 #include "polyscope/surface_mesh.h"
 #include "polyscope/types.h"
 #include "polyscope/view.h"
+#include "polyscope/volume_grid.h"
 #include "polyscope/volume_mesh.h"
 
 #include <iostream>
@@ -433,11 +434,33 @@ void processFileOBJ(std::string filename) {
   }
 }
 
+void addVolumeGrid() {
+
+  // uint32_t dimX = 4;
+  // uint32_t dimY = 5;
+  // uint32_t dimZ = 6;
+  // glm::vec3 bound_low{-1., -2., -3.};
+  // glm::vec3 bound_high{3., 2., 1.};
+
+  uint32_t dimX = 50;
+  uint32_t dimY = 50;
+  uint32_t dimZ = 50;
+  glm::vec3 bound_low{0., 0., 0.};
+  glm::vec3 bound_high{1., 1., 1.};
+
+
+  polyscope::VolumeGrid* psGrid = polyscope::registerVolumeGrid("test grid", {dimX, dimY, dimZ}, bound_low, bound_high);
+
+
+  polyscope::registerPointCloud("corners", std::vector<glm::vec3>{bound_low, bound_high});
+}
+
 
 void loadFloatingImageData(polyscope::CameraView* targetView = nullptr) {
 
   // load an image from disk as example data
   std::string imagePath = "test_image.png";
+  // std::string imagePath = "test_image_transparent.png";
 
   int width, height, nComp;
   unsigned char* data = stbi_load(imagePath.c_str(), &width, &height, &nComp, 4);
@@ -744,7 +767,7 @@ void callback() {
 int main(int argc, char** argv) {
   // Configure the argument parser
   args::ArgumentParser parser("A simple demo of Polyscope.\nBy "
-                              "Nick Sharp (nsharp@cs.cmu.edu)",
+                              "Nick Sharp (nmwsharp@gmail.com)",
                               "");
   args::PositionalList<std::string> files(parser, "files", "One or more files to visualize");
 
@@ -766,7 +789,8 @@ int main(int argc, char** argv) {
   // polyscope::view::windowWidth = 600;
   // polyscope::view::windowHeight = 800;
   // polyscope::options::maxFPS = -1;
-  // polyscope::options::verbosity = 100;
+  polyscope::options::verbosity = 100;
+  polyscope::options::enableRenderErrorChecks = true;
 
   // Initialize polyscope
   polyscope::init();
@@ -776,7 +800,7 @@ int main(int argc, char** argv) {
   }
 
   // Create a point cloud
-  for (int j = 0; j < 2; j++) {
+  for (int j = 0; j < 0; j++) {
     std::vector<glm::vec3> points;
     for (size_t i = 0; i < 3000; i++) {
       points.push_back(
@@ -787,6 +811,7 @@ int main(int argc, char** argv) {
   }
 
   loadFloatingImageData();
+  addVolumeGrid();
 
   // Add a few gui elements
   polyscope::state::userCallback = callback;

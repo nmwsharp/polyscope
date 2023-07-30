@@ -4,41 +4,61 @@
 
 namespace polyscope {
 
-inline size_t VolumeGrid::nValues() const { return steps[0] * steps[1] * steps[2]; }
+inline uint64_t VolumeGrid::nNodes() const {
+  return static_cast<uint64_t>(gridNodeDim.x) * gridNodeDim.y * gridNodeDim.z;
+}
+
+inline uint64_t VolumeGrid::nCells() const {
+  return static_cast<uint64_t>(gridCellDim.x) * gridCellDim.y * gridCellDim.z;
+}
 
 
-inline std::array<size_t, 3> VolumeGrid::flattenIndex(size_t i) const {
-  size_t nYZ = steps[1] * steps[2];
-  size_t iX = i / nYZ;
+inline glm::uvec3 VolumeGrid::flattenNodeIndex(uint64_t i) const {
+  uint64_t nYZ = gridNodeDim[1] * gridNodeDim[2];
+  uint64_t iX = i / nYZ;
   i -= iX * nYZ;
-  size_t nZ = steps[2];
-  size_t iY = i / nZ;
+  uint64_t nZ = gridNodeDim[2];
+  uint64_t iY = i / nZ;
   i -= iY * nZ;
-  size_t iZ = i;
-  return std::array<size_t, 3>{iX, iY, iZ};
+  uint64_t iZ = i;
+  return glm::uvec3{static_cast<uint32_t>(iX), static_cast<uint32_t>(iY), static_cast<uint32_t>(iZ)};
 }
 
-inline glm::vec3 VolumeGrid::positionOfIndex(size_t i) const {
-  std::array<size_t, 3> inds = flattenIndex(i);
-  return positionOfIndex(inds);
+inline glm::vec3 VolumeGrid::positionOfNodeIndex(uint64_t i) const {
+  glm::uvec3 inds = flattenNodeIndex(i);
+  return positionOfNodeIndex(inds);
 }
 
-inline glm::vec3 VolumeGrid::positionOfIndex(std::array<size_t, 3> inds) const {
-  glm::vec3 tVals{
-      static_cast<float>(inds[0]) / (steps[0] - 1),
-      static_cast<float>(inds[1]) / (steps[1] - 1),
-      static_cast<float>(inds[2]) / (steps[2] - 1),
-  };
+inline glm::vec3 VolumeGrid::positionOfNodeIndex(glm::uvec3 inds) const {
+  glm::vec3 tVals = glm::vec3(inds) / glm::vec3(gridNodeDim - 1u);
   return (1.f - tVals) * bound_min + tVals * bound_max;
 }
 
+inline glm::uvec3 VolumeGrid::flattenCellIndex(uint64_t i) const {
+  uint64_t nYZ = gridCellDim[1] * gridCellDim[2];
+  uint64_t iX = i / nYZ;
+  i -= iX * nYZ;
+  uint64_t nZ = gridCellDim[2];
+  uint64_t iY = i / nZ;
+  i -= iY * nZ;
+  uint64_t iZ = i;
+  return glm::uvec3{static_cast<uint32_t>(iX), static_cast<uint32_t>(iY), static_cast<uint32_t>(iZ)};
+}
+
+inline glm::vec3 VolumeGrid::positionOfCellIndex(uint64_t i) const {
+  glm::uvec3 inds = flattenCellIndex(i);
+  return positionOfCellIndex(inds);
+}
+
+inline glm::vec3 VolumeGrid::positionOfCellIndex(glm::uvec3 inds) const {
+  glm::vec3 tVals = (glm::vec3(inds) / glm::vec3(gridCellDim));
+  return (1.f - tVals) * bound_min + tVals * bound_max + gridSpacing() / 2.f;
+}
+
+
 inline glm::vec3 VolumeGrid::gridSpacing() const {
   glm::vec3 width = bound_max - bound_min;
-  glm::vec3 spacing = width / glm::vec3{
-                                  steps[0] - 1.f,
-                                  steps[1] - 1.f,
-                                  steps[2] - 1.f,
-                              };
+  glm::vec3 spacing = width / (glm::vec3(gridCellDim));
   return spacing;
 }
 
@@ -63,7 +83,7 @@ inline void removeVolumeGrid(std::string name, bool errorIfAbsent) {
 
 template <class T>
 VolumeGridScalarQuantity* VolumeGrid::addScalarQuantity(std::string name, const T& values, DataType dataType_) {
-  validateSize(values, nValues(), "grid scalar quantity " + name);
+  validateSize(values, nNodes(), "grid scalar quantity " + name);
   return addScalarQuantityImpl(name, standardizeArray<double, T>(values), dataType_);
 }
 
@@ -71,9 +91,9 @@ template <class Func>
 VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityFromCallable(std::string name, Func&& func, DataType dataType_) {
 
   // Sample to grid
-  std::vector<double> values(nValues());
+  std::vector<double> values(nNodes());
   for (size_t i = 0; i < values.size(); i++) {
-    glm::vec3 pos = positionOfIndex(i);
+    glm::vec3 pos = positionOfNodeIndex(i);
     values[i] = func(pos.x, pos.y, pos.z);
   }
 
@@ -85,12 +105,14 @@ template <class Func>
 VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityFromBatchCallable(std::string name, Func&& func,
                                                                          DataType dataType_) {
 
+  // TODO make this API match the other implicit callables
+
   // Build list of points to query
-  std::vector<std::array<double, 3>> queries(nValues());
+  std::vector<std::array<double, 3>> queries(nNodes());
 
   // Sample to grid
   for (size_t i = 0; i < queries.size(); i++) {
-    glm::vec3 pos = positionOfIndex(i);
+    glm::vec3 pos = positionOfNodeIndex(i);
     queries[i][0] = pos.x;
     queries[i][1] = pos.y;
     queries[i][2] = pos.z;
@@ -102,13 +124,13 @@ VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityFromBatchCallable(std::st
 
 template <class T>
 VolumeGridVectorQuantity* VolumeGrid::addVectorQuantity(std::string name, const T& vecValues, VectorType dataType_) {
-  validateSize(vecValues, nValues(), "grid vector quantity " + name);
+  validateSize(vecValues, nNodes(), "grid vector quantity " + name);
   return addVectorQuantityImpl(name, standardizeArray<glm::vec3, T>(vecValues), dataType_);
 }
 
 /*
 VolumeGridScalarIsosurface* VolumeGrid::addGridIsosurfaceQuantity(std::string name, double isoLevel, const T& values) {
-  validateSize(values, nValues(), "grid isosurface quantity " + name);
+  validateSize(values, nNodes(), "grid isosurface quantity " + name);
   return addIsosurfaceQuantityImpl(name, isoLevel, standardizeArray<double, T>(values));
 }
 
