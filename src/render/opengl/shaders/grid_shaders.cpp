@@ -266,6 +266,7 @@ const ShaderStageSpecification FLEX_GRIDCUBE_PLANE_FRAG_SHADER = {
     
     // uniforms
     {
+        {"u_gridSpacing", RenderDataType::Vector3Float},
         {"u_gridSpacingReference", RenderDataType::Vector3Float},
         {"u_cubeSizeFactor", RenderDataType::Float},
     }, 
@@ -285,6 +286,7 @@ R"(
         in vec3 a_refNormalToFrag;
         flat in int a_axisIndToFrag;
         
+        uniform vec3 u_gridSpacing;
         uniform vec3 u_gridSpacingReference;
         uniform float u_cubeSizeFactor;
 
@@ -303,6 +305,8 @@ R"(
            vec3 coordLocal = coordModShift / u_cubeSizeFactor; // [-1,1] within each scaled cell
            vec3 coordLocalAbs = abs(coordLocal) * (1.f - abs(a_refNormalToFrag));
            float maxCoord = max(max(coordLocalAbs.x, coordLocalAbs.y), coordLocalAbs.z);
+
+           vec3 cellInd3f = floor(coordUnit - 0.0001f*a_refNormalToFrag);
 
            // discard the gaps in the cubes
            if(maxCoord > 1.0001f) { // note the threshold here, hacky but seems okay
@@ -366,6 +370,29 @@ const ShaderReplacementRule GRIDCUBE_CONSTANT_PICK(
     },
     /* uniforms */ {
       {"u_pickColor", RenderDataType::Vector3Float}
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule GRIDCUBE_CULLPOS_FROM_CENTER(
+    /* rule name */ "GRIDCUBE_CULLPOS_FROM_CENTER",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform mat4 u_modelView;
+          uniform vec3 u_boundMin;
+          uniform vec3 u_boundMax;
+        )"},
+      {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
+          vec3 cullPosRef = (0.5f + cellInd3f) * u_gridSpacingReference;
+          vec3 cullPosWorld = mix(u_boundMin, u_boundMax, cullPosRef);
+          vec3 cullPos = (u_modelView * vec4(cullPosWorld, 1.f)).xyz;
+        )"},
+    },
+    /* uniforms */ {
+      {"u_modelView", RenderDataType::Matrix44Float},
+      {"u_boundMin", RenderDataType::Vector3Float},
+      {"u_boundMax", RenderDataType::Vector3Float},
     },
     /* attributes */ {},
     /* textures */ {}
