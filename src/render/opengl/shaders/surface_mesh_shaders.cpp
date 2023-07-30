@@ -271,8 +271,8 @@ const ShaderReplacementRule MESH_PROPAGATE_CULLPOS (
     /* textures */ {}
 );
 
-const ShaderReplacementRule MESH_WIREFRAME(
-    /* rule name */ "MESH_WIREFRAME",
+const ShaderReplacementRule MESH_WIREFRAME_FROM_BARY(
+    /* rule name */ "MESH_WIREFRAME_FROM_BARY",
     { /* replacement sources */
       {"VERT_DECLARATIONS", R"(
           in vec3 a_edgeIsReal;
@@ -283,6 +283,23 @@ const ShaderReplacementRule MESH_WIREFRAME(
         )"},
       {"FRAG_DECLARATIONS", R"(
           in vec3 a_edgeIsRealToFrag;
+        )"},
+      {"APPLY_WIREFRAME", R"(
+          vec3 wireframe_UVW = a_barycoordToFrag;
+          vec3 wireframe_mask = a_edgeIsRealToFrag;
+      )"},
+    },
+    /* uniforms */ { },
+    /* attributes */ {
+      {"a_edgeIsReal", RenderDataType::Vector3Float},
+    },
+    /* textures */ {}
+);
+
+const ShaderReplacementRule MESH_WIREFRAME(
+    /* rule name */ "MESH_WIREFRAME",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
 
           uniform float u_edgeWidth;
           uniform vec3 u_edgeColor;
@@ -303,7 +320,8 @@ const ShaderReplacementRule MESH_WIREFRAME(
           }
         )"},
       {"APPLY_WIREFRAME", R"(
-          float edgeFactor = getEdgeFactor(a_barycoordToFrag, a_edgeIsRealToFrag, u_edgeWidth);
+          /* these wireframe_ should be populated by something else, such as the helper rule above */
+          float edgeFactor = getEdgeFactor(wireframe_UVW, wireframe_mask, u_edgeWidth);
           albedoColor = mix(albedoColor, u_edgeColor, edgeFactor);
       )"},
     },
@@ -311,11 +329,10 @@ const ShaderReplacementRule MESH_WIREFRAME(
       {"u_edgeColor", RenderDataType::Vector3Float},
       {"u_edgeWidth", RenderDataType::Float},
     },
-    /* attributes */ {
-      {"a_edgeIsReal", RenderDataType::Vector3Float},
-    },
+    /* attributes */ {},
     /* textures */ {}
 );
+
 
 const ShaderReplacementRule MESH_WIREFRAME_ONLY( 
     // Must always be used in conjunction with MESH_WIREFRAME

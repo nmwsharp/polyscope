@@ -13,13 +13,11 @@ extern const ShaderStageSpecification FLEX_GRIDCUBE_VERT_SHADER;
 extern const ShaderStageSpecification FLEX_GRIDCUBE_GEOM_SHADER;
 extern const ShaderStageSpecification FLEX_GRIDCUBE_FRAG_SHADER;
 
+extern const ShaderStageSpecification FLEX_GRIDCUBE_PLANE_VERT_SHADER;
+extern const ShaderStageSpecification FLEX_GRIDCUBE_PLANE_FRAG_SHADER;
+
 // Rules 
-// extern const ShaderReplacementRule SPHERE_PROPAGATE_VALUE;
-// extern const ShaderReplacementRule SPHERE_PROPAGATE_VALUE2;
-// extern const ShaderReplacementRule SPHERE_PROPAGATE_COLOR;
-// extern const ShaderReplacementRule SPHERE_VARIABLE_SIZE;
-// extern const ShaderReplacementRule SPHERE_CULLPOS_FROM_CENTER;
-// extern const ShaderReplacementRule SPHERE_CULLPOS_FROM_CENTER_QUAD;
+extern const ShaderReplacementRule GRIDCUBE_WIREFRAME;
 
 
 } // namespace backend_openGL3_glfw

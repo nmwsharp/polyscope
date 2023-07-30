@@ -194,6 +194,162 @@ R"(
 )"
 };
 
+const ShaderStageSpecification FLEX_GRIDCUBE_PLANE_VERT_SHADER = {
+
+    ShaderStageType::Vertex,
+
+    // uniforms
+    {
+        {"u_modelView", RenderDataType::Matrix44Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_boundMin", RenderDataType::Vector3Float},
+        {"u_boundMax", RenderDataType::Vector3Float},
+        {"u_cubeSizeFactor", RenderDataType::Float},
+        {"u_gridSpacingReference", RenderDataType::Vector3Float},
+    }, 
+
+    // attributes
+    {
+        {"a_referencePosition", RenderDataType::Vector3Float},
+        {"a_referenceNormal", RenderDataType::Vector3Float},
+        {"a_axisInd", RenderDataType::Int},
+    },
+
+    {}, // textures
+
+    // source
+R"(
+        ${ GLSL_VERSION }$
+        
+        uniform mat4 u_modelView;
+        uniform mat4 u_projMatrix;
+        uniform vec3 u_boundMin;
+        uniform vec3 u_boundMax;
+        uniform float u_cubeSizeFactor;
+        uniform vec3 u_gridSpacingReference;
+
+        in vec3 a_referencePosition;
+        in vec3 a_referenceNormal;
+        in int a_axisInd;
+        
+        out vec3 a_coordToFrag;
+        out vec3 a_normalToFrag;
+        out vec3 a_refNormalToFrag;
+        flat out int a_axisIndToFrag;
+        
+        ${ VERT_DECLARATIONS }$
+        
+        void main()
+        {
+
+            // first apply any scale shrinking 
+            vec3 startPos = a_referencePosition;
+            vec3 adjPosition = a_referencePosition - a_referenceNormal * (1.f - (0.5 + u_cubeSizeFactor/2.)) * u_gridSpacingReference;
+
+            // apply box shift
+            vec3 boxPos = mix(u_boundMin, u_boundMax, adjPosition);
+
+            a_coordToFrag = adjPosition;
+            a_normalToFrag = mat3(u_modelView) * a_referenceNormal;
+            a_refNormalToFrag = a_referenceNormal;
+            a_axisIndToFrag = a_axisInd;
+            gl_Position = u_projMatrix * u_modelView * vec4(boxPos,1.);
+
+            ${ VERT_ASSIGNMENTS }$
+        }
+)"
+};
+
+const ShaderStageSpecification FLEX_GRIDCUBE_PLANE_FRAG_SHADER = {
+    
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    {
+        {"u_gridSpacingReference", RenderDataType::Vector3Float},
+        {"u_cubeSizeFactor", RenderDataType::Float},
+    }, 
+
+    { }, // attributes
+    
+    // textures 
+    {
+    },
+ 
+    // source
+R"(
+        ${ GLSL_VERSION }$
+        
+        in vec3 a_coordToFrag;
+        in vec3 a_normalToFrag;
+        in vec3 a_refNormalToFrag;
+        flat in int a_axisIndToFrag;
+        
+        uniform vec3 u_gridSpacingReference;
+        uniform float u_cubeSizeFactor;
+
+        layout(location = 0) out vec4 outputF;
+
+        ${ FRAG_DECLARATIONS }$
+
+        void main()
+        {
+           
+           // do some coordinate arithmetic
+           vec3 coordUnit = a_coordToFrag / u_gridSpacingReference;
+           vec3 coordMod = mod(coordUnit, 1.f); // [0,1] within each cell
+           vec3 coordModShift = 2.f*coordMod - 1.f; // [-1,1] within each cell
+           vec3 coordLocal = coordModShift / u_cubeSizeFactor; // [-1,1] within each scaled cell
+           vec3 coordLocalAbs = abs(coordLocal) * (1.f - abs(a_refNormalToFrag));
+           float maxCoord = max(max(coordLocalAbs.x, coordLocalAbs.y), coordLocalAbs.z);
+
+           // discard the gaps in the cubes
+           if(maxCoord > 1.0001f) { // note the threshold here, hacky but seems okay
+             discard;
+           }
+
+
+           float depth = gl_FragCoord.z;
+           ${ GLOBAL_FRAGMENT_FILTER_PREP }$
+           ${ GLOBAL_FRAGMENT_FILTER }$
+
+           // Shading
+           ${ GENERATE_SHADE_VALUE }$
+           ${ GENERATE_SHADE_COLOR }$
+           
+           // Handle the wireframe
+           ${ APPLY_WIREFRAME }$
+
+           // Lighting
+           vec3 shadeNormal = a_normalToFrag;
+           ${ PERTURB_SHADE_NORMAL }$
+           ${ GENERATE_LIT_COLOR }$
+
+           // Set alpha
+           float alphaOut = 1.0;
+           ${ GENERATE_ALPHA }$
+           
+           ${ PERTURB_LIT_COLOR }$
+
+
+           // Write output
+           outputF = vec4(litColor, alphaOut);
+        }
+)"
+};
+
+
+const ShaderReplacementRule GRIDCUBE_WIREFRAME (
+    /* rule name */ "GRIDCUBE_WIREFRAME",
+    {
+        /* replacement sources */
+        {"APPLY_WIREFRAME", R"(
+          vec3 wireframe_UVW = 1. - coordLocalAbs;
+      )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {});
 
 }
 }

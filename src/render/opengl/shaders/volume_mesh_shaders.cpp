@@ -261,37 +261,16 @@ const ShaderReplacementRule SLICE_TETS_MESH_WIREFRAME(
         )"},
         {"FRAG_DECLARATIONS", R"(
           in vec3 a_edgeIsRealToFrag;
-
-          uniform float u_edgeWidth;
-          uniform vec3 u_edgeColor;
-      
-          float getEdgeFactor(vec3 UVW, vec3 edgeReal, float width) {
-            // The Nick Sharp Edge Function. There are many like it, but this one is mine.
-            float slopeWidth = 1.;
-            
-            vec3 fw = fwidth(UVW);
-            vec3 realUVW = max(UVW, 1.0 - edgeReal.yzx);
-            vec3 baryWidth = slopeWidth * fw;
-
-            vec3 end = width*fw;
-            vec3 dist = smoothstep(end - baryWidth, end, realUVW);
-
-            float e = 1.0 - min(min(dist.x, dist.y), dist.z);
-            return e;
-          }
         )"},
         {"APPLY_WIREFRAME", R"(
-          float edgeFactor = getEdgeFactor(a_barycoordToFrag, a_edgeIsRealToFrag, u_edgeWidth);
-          albedoColor = mix(albedoColor, u_edgeColor, edgeFactor);
+          vec3 wireframe_UVW = a_barycoordToFrag;
+          vec3 wireframe_mask = a_edgeIsRealToFrag;
       )"},
     },
-    /* uniforms */
-    {
-        {"u_edgeColor", RenderDataType::Vector3Float},
-        {"u_edgeWidth", RenderDataType::Float},
-    },
+    /* uniforms */ {},
     /* attributes */ {},
     /* textures */ {});
+
 const ShaderReplacementRule SLICE_TETS_PROPAGATE_VECTOR(
     /* rule name */ "SLICE_TETS_PROPAGATE_VECTOR",
     {
