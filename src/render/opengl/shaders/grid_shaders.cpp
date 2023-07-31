@@ -343,6 +343,22 @@ R"(
 )"
 };
 
+const ShaderReplacementRule GRIDCUBE_PROPAGATE_VALUE (
+    /* rule name */ "GRIDCUBE_PROPAGATE_VALUE",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform sampler3D t_value;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float shadeValue = texture(t_value, a_coordToFrag).r;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ { },
+    /* textures */ {
+      {"t_value", 3},
+    }
+);
 
 const ShaderReplacementRule GRIDCUBE_WIREFRAME (
     /* rule name */ "GRIDCUBE_WIREFRAME",

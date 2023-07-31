@@ -384,6 +384,7 @@ public:
   virtual void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                             bool withAlpha = true, bool useMipMap = false, bool repeat = false) = 0;
   virtual void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) = 0;
+  // TODO make this one take a shared pointer and have the same semantics as the attribute version
   virtual void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) = 0;
 
 

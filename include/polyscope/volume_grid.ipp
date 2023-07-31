@@ -93,55 +93,55 @@ inline void removeVolumeGrid(std::string name, bool errorIfAbsent) {
 // =====================================================
 
 template <class T>
-VolumeGridScalarQuantity* VolumeGrid::addNodeScalarQuantity(std::string name, const T& values, DataType dataType_) {
+VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantity(std::string name, const T& values, DataType dataType_) {
   validateSize(values, nNodes(), "grid node scalar quantity " + name);
   return addNodeScalarQuantityImpl(name, standardizeArray<double, T>(values), dataType_);
 }
 
+/*
 template <class T>
-VolumeGridScalarQuantity* VolumeGrid::addCellScalarQuantity(std::string name, const T& values, DataType dataType_) {
+VolumeGridNodeScalarQuantity* VolumeGrid::addCellScalarQuantity(std::string name, const T& values, DataType dataType_) {
   validateSize(values, nCells(), "grid cell scalar quantity " + name);
   return addCellScalarQuantityImpl(name, standardizeArray<double, T>(values), dataType_);
 }
-
-/*
-
-template <class Func>
-VolumeGridScalarQuantity* VolumeGrid::addNodeScalarQuantityFromCallable(std::string name, Func&& func, DataType dataType_) {
-
-  // Sample to grid
-  std::vector<double> values(nNodes());
-  for (size_t i = 0; i < values.size(); i++) {
-    glm::vec3 pos = positionOfNodeIndex(i);
-    values[i] = func(pos.x, pos.y, pos.z);
-  }
-
-  return addScalarQuantityImpl(name, values, dataType_);
-}
-
 */
 
-/*
+
 template <class Func>
-VolumeGridScalarQuantity* VolumeGrid::addScalarQuantityFromBatchCallable(std::string name, Func&& func,
-                                                                         DataType dataType_) {
+VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityFromCallable(std::string name, Func&& func,
+                                                                            DataType dataType_) {
 
-  // TODO make this API match the other implicit callables
+  // Boostrap off the batch version
+  auto batchFunc = [&](float* pos_ptr, float* result_ptr, size_t N) {
+    for (size_t i = 0; i < N; i++) {
+      glm::vec3 pos{pos_ptr[3 * i + 0], pos_ptr[3 * i + 1], pos_ptr[3 * i + 2]};
+      result_ptr[i] = func(pos);
+    }
+  };
 
+  return addNodeScalarQuantityFromBatchCallable(name, batchFunc, dataType_);
+}
+
+
+template <class Func>
+VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityFromBatchCallable(std::string name, Func&& func,
+                                                                                 DataType dataType_) {
   // Build list of points to query
-  std::vector<std::array<double, 3>> queries(nNodes());
+  std::vector<float> queries(3 * nNodes());
+  std::vector<float> result(nNodes());
 
   // Sample to grid
-  for (size_t i = 0; i < queries.size(); i++) {
+  for (size_t i = 0; i < nNodes(); i++) {
     glm::vec3 pos = positionOfNodeIndex(i);
-    queries[i][0] = pos.x;
-    queries[i][1] = pos.y;
-    queries[i][2] = pos.z;
+    queries[3 * i + 0] = pos.x;
+    queries[3 * i + 1] = pos.y;
+    queries[3 * i + 2] = pos.z;
   }
 
-  return addScalarQuantity(name, func(queries), dataType_);
+  func(&queries.front(), &result.front(), static_cast<size_t>(nNodes()));
+
+  return addNodeScalarQuantity(name, result, dataType_);
 }
-*/
 
 
 /*
@@ -151,7 +151,7 @@ VolumeGridScalarIsosurface* VolumeGrid::addGridIsosurfaceQuantity(std::string na
 }
 
 template <class Funct>
-VolumeGridScalarQuantity* VolumeGrid::addGridScalarQuantityFromFunction(std::string name, const Funct& funct,
+VolumeGridNodeScalarQuantity* VolumeGrid::addGridScalarQuantityFromFunction(std::string name, const Funct& funct,
                                                                         DataType dataType_) {
   size_t totalValues = nCornersPerSide * nCornersPerSide * nCornersPerSide;
   std::vector<double> field(totalValues);

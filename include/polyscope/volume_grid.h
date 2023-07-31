@@ -11,7 +11,6 @@
 
 #include "polyscope/volume_grid_quantity.h"
 #include "polyscope/volume_grid_scalar_quantity.h"
-#include "polyscope/volume_grid_vector_quantity.h"
 
 #include <vector>
 
@@ -20,9 +19,7 @@
 namespace polyscope {
 
 class VolumeGrid;
-class VolumeGridScalarIsosurface;
-class VolumeGridScalarQuantity;
-class VolumeGridVectorQuantity;
+class VolumeGridNodeScalarQuantity;
 
 template <> // Specialize the quantity type
 struct QuantityTypeHelper<VolumeGrid> {
@@ -47,6 +44,7 @@ public:
 
   // Build the imgui display
   virtual void buildCustomUI() override;
+  virtual void buildCustomOptionsUI() override;
   virtual void buildPickUI(size_t localPickID) override;
 
   // Field data
@@ -71,16 +69,16 @@ public:
 
 
   template <class T>
-  VolumeGridScalarQuantity* addNodeScalarQuantity(std::string name, const T& values, DataType dataType_ = DataType::STANDARD);
+  VolumeGridNodeScalarQuantity* addNodeScalarQuantity(std::string name, const T& values, DataType dataType_ = DataType::STANDARD);
   
-  template <class T>
-  VolumeGridScalarQuantity* addCellScalarQuantity(std::string name, const T& values, DataType dataType_ = DataType::STANDARD);
+  // template <class T>
+  // VolumeGridCellScalarQuantity* addCellScalarQuantity(std::string name, const T& values, DataType dataType_ = DataType::STANDARD);
   
-  // template <class Func>
-  // VolumeGridScalarQuantity* addScalarQuantityFromCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
-  //
-  // template <class Func>
-  // VolumeGridScalarQuantity* addScalarQuantityFromBatchCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
+  template <class Func>
+  VolumeGridNodeScalarQuantity* addNodeScalarQuantityFromCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
+  
+  template <class Func>
+  VolumeGridNodeScalarQuantity* addNodeScalarQuantityFromBatchCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
 
 
   //template <class T> VolumeGridScalarIsosurface* addGridIsosurfaceQuantity(std::string name, double isoLevel, const T& values);
@@ -173,8 +171,8 @@ private:
   // === Quantity adder implementations
   // clang-format off
   
-  VolumeGridScalarQuantity* addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
-  VolumeGridScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
+  VolumeGridNodeScalarQuantity* addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
+  VolumeGridNodeScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
 
   // clang-format on
 };

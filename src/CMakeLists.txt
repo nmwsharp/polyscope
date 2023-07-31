@@ -178,9 +178,7 @@ SET(SRCS
   
   # Volume grid
   volume_grid.cpp
-  #volume_mesh_color_quantity.cpp
-  # volume_grid_scalar_quantity.cpp
-  # volume_grid_vector_quantity.cpp
+  volume_grid_scalar_quantity.cpp
   
   # Camera view
   camera_view.cpp
@@ -302,8 +300,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/volume_grid.ipp
   ${INCLUDE_ROOT}/volume_grid_quantity.h
   ${INCLUDE_ROOT}/volume_grid_scalar_quantity.h
-  #${INCLUDE_ROOT}/volume_grid_color_quantity.h
-  ${INCLUDE_ROOT}/volume_grid_vector_quantity.h
 )
 
 # Create a single library for the project

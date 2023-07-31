@@ -2905,6 +2905,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("MESH_PROPAGATE_PICK_SIMPLE", MESH_PROPAGATE_PICK_SIMPLE);
 
   // volume gridcube things
+  registerShaderRule("GRIDCUBE_PROPAGATE_VALUE", GRIDCUBE_PROPAGATE_VALUE);
   registerShaderRule("GRIDCUBE_WIREFRAME", GRIDCUBE_WIREFRAME);
   registerShaderRule("GRIDCUBE_CONSTANT_PICK", GRIDCUBE_CONSTANT_PICK);
   registerShaderRule("GRIDCUBE_CULLPOS_FROM_CENTER", GRIDCUBE_CULLPOS_FROM_CENTER);

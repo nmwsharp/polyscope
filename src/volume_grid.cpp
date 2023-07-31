@@ -49,16 +49,6 @@ void VolumeGrid::buildCustomUI() {
   }
 
 
-  { // Flat shading or smooth shading?
-    ImGui::SameLine();
-    ImGui::PushItemWidth(65);
-    if (ImGui::SliderFloat("Shrink", &cubeSizeFactor.get(), 0.0, 1., "%.3f", ImGuiSliderFlags_Logarithmic)) {
-      cubeSizeFactor.manuallyChanged();
-      requestRedraw();
-    }
-    ImGui::PopItemWidth();
-  }
-
   { // Edge options
     ImGui::SameLine();
     ImGui::PushItemWidth(100);
@@ -92,6 +82,20 @@ void VolumeGrid::buildCustomUI() {
       ImGui::PopItemWidth();
     }
     ImGui::PopItemWidth();
+  }
+}
+
+
+void VolumeGrid::buildCustomOptionsUI() {
+  if (render::buildMaterialOptionsGui(material.get())) {
+    material.manuallyChanged();
+    setMaterial(material.get()); // trigger the other updates that happen on set()
+  }
+
+  // Shrinky effect
+  if (ImGui::SliderFloat("Cell Shrink", &cubeSizeFactor.get(), 0.0, 1., "%.3f", ImGuiSliderFlags_Logarithmic)) {
+    cubeSizeFactor.manuallyChanged();
+    requestRedraw();
   }
 }
 
@@ -376,17 +380,15 @@ VolumeGridQuantity::VolumeGridQuantity(std::string name_, VolumeGrid& curveNetwo
     : QuantityS<VolumeGrid>(name_, curveNetwork_, dominates_) {}
 
 
-VolumeGridScalarQuantity* VolumeGrid::addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data,
-                                                                DataType dataType_) {
+VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data,
+                                                                    DataType dataType_) {
 
-  // TODO FIXME
-
-  // VolumeGridScalarQuantity* q = new VolumeGridScalarQuantity(name, *this, data, dataType_);
-  // addQuantity(q);
-  // return q;
-  return nullptr;
+  VolumeGridNodeScalarQuantity* q = new VolumeGridNodeScalarQuantity(name, *this, data, dataType_);
+  addQuantity(q);
+  return q;
 }
 
+/*
 VolumeGridScalarQuantity* VolumeGrid::addCellScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                 DataType dataType_) {
 
@@ -397,6 +399,7 @@ VolumeGridScalarQuantity* VolumeGrid::addCellScalarQuantityImpl(std::string name
   // return q;
   return nullptr;
 }
+*/
 
 /*
 VolumeGridScalarIsosurface* VolumeGrid::addIsosurfaceQuantityImpl(std::string name, double isoLevel,
