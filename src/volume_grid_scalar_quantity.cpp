@@ -7,20 +7,20 @@
 
 namespace polyscope {
 
-VolumeGridScalarQuantity::VolumeGridScalarQuantity(std::string name, VolumeGrid& grid_,
-                                                   const std::vector<double>& values_, DataType dataType_)
-
-    : VolumeGridQuantity(name, grid_, true), ScalarQuantity(*this, values_, dataType_), dataType(dataType_),
-      values(std::move(values_)), pointVizEnabled(parent.uniquePrefix() + "#" + name + "#pointVizEnabled", true),
-      isosurfaceVizEnabled(parent.uniquePrefix() + "#" + name + "#isosurfaceVizEnabled", true),
+VolumeGridNodeScalarQuantity::VolumeGridNodeScalarQuantity(std::string name, VolumeGrid& grid_,
+                                                           const std::vector<double>& values_, DataType dataType_)
+    : VolumeGridQuantity(name, grid_, true), ScalarQuantity(*this, values_, dataType_),
+      gridcubeVizEnabled(parent.uniquePrefix() + "#" + name + "#gridcubeVizEnabled", true),
+      isosurfaceVizEnabled(parent.uniquePrefix() + "#" + name + "#isosurfaceVizEnabled", false),
       isosurfaceLevel(parent.uniquePrefix() + "#" + name + "#isosurfaceLevel",
                       0.5 * (vizRange.second + vizRange.first)),
-      isosurfaceColor(uniquePrefix() + "#" + name + "#isosurfaceColor", getNextUniqueColor())
+      isosurfaceColor(uniquePrefix() + "#" + name + "#isosurfaceColor", getNextUniqueColor()) {
 
-{
-  fillPositions();
+  values.setTextureSize(parent.gridNodeDim.x, parent.gridNodeDim.y, parent.gridNodeDim.z);
 }
-void VolumeGridScalarQuantity::buildCustomUI() {
+
+
+void VolumeGridNodeScalarQuantity::buildCustomUI() {
 
   // Select which viz to use
   ImGui::SameLine();
@@ -30,7 +30,7 @@ void VolumeGridScalarQuantity::buildCustomUI() {
   if (ImGui::BeginPopup("ModePopup")) {
     // show toggles for each
     // ImGui::Indent(20);
-    if (ImGui::MenuItem("Points", NULL, &pointVizEnabled.get())) setPointVizEnabled(getPointVizEnabled());
+    if (ImGui::MenuItem("Gridcube", NULL, &gridcubeVizEnabled.get())) setGridcubeVizEnabled(getGridcubeVizEnabled());
     if (ImGui::MenuItem("Isosurface", NULL, &isosurfaceVizEnabled.get()))
       setIsosurfaceVizEnabled(getIsosurfaceVizEnabled());
     // ImGui::Indent(-20);
@@ -48,7 +48,7 @@ void VolumeGridScalarQuantity::buildCustomUI() {
     ImGui::EndPopup();
   }
 
-  if (pointVizEnabled.get()) {
+  if (gridcubeVizEnabled.get()) {
     buildScalarUI();
   }
 
@@ -75,36 +75,30 @@ void VolumeGridScalarQuantity::buildCustomUI() {
   }
 }
 
-std::string VolumeGridScalarQuantity::niceName() { return name + " (scalar)"; }
+std::string VolumeGridNodeScalarQuantity::niceName() { return name + " (scalar)"; }
 
-void VolumeGridScalarQuantity::refresh() {
-  pointProgram.reset();
+void VolumeGridNodeScalarQuantity::refresh() {
+  gridcubeProgram.reset();
   isosurfaceProgram.reset();
 }
 
-void VolumeGridScalarQuantity::fillPositions() {
-  positions.clear();
-  // Fill the positions vector with each grid corner position
-  size_t nValues = parent.nValues();
-  positions.resize(nValues);
-  for (size_t i = 0; i < nValues; i++) {
-    positions[i] = parent.positionOfIndex(i);
-  }
-}
-
-void VolumeGridScalarQuantity::draw() {
+void VolumeGridNodeScalarQuantity::draw() {
   if (!isEnabled()) return;
 
   // Draw the point viz
-  if (pointVizEnabled.get()) {
-    if (pointProgram == nullptr) {
-      createPointProgram();
+  if (gridcubeVizEnabled.get()) {
+    if (gridcubeProgram == nullptr) {
+      createGridcubeProgram();
     }
-    parent.setStructureUniforms(*pointProgram);
-    parent.setVolumeGridUniforms(*pointProgram);
-    parent.setVolumeGridPointUniforms(*pointProgram);
-    setScalarUniforms(*pointProgram);
-    pointProgram->draw();
+
+    // Set program uniforms
+    parent.setStructureUniforms(*gridcubeProgram);
+    parent.setGridCubeUniforms(*gridcubeProgram);
+    setScalarUniforms(*gridcubeProgram);
+
+    // Draw the actual grid
+    render::engine->setBackfaceCull(true);
+    gridcubeProgram->draw();
   }
 
   // Draw the isosurface program
@@ -113,39 +107,46 @@ void VolumeGridScalarQuantity::draw() {
       createIsosurfaceProgram();
     }
     parent.setStructureUniforms(*isosurfaceProgram);
-    // parent.setVolumeGridPointUniforms(*isosurfaceProgram);
     // setScalarUniforms(*isosurfaceProgram);
     isosurfaceProgram->setUniform("u_baseColor", getIsosurfaceColor());
-
     isosurfaceProgram->draw();
   }
 }
 
-void VolumeGridScalarQuantity::createPointProgram() {
+void VolumeGridNodeScalarQuantity::createGridcubeProgram() {
 
-  pointProgram = render::engine->requestShader(
-      "RAYCAST_SPHERE", parent.addVolumeGridPointRules(addScalarRules({"SPHERE_PROPAGATE_VALUE"})));
 
-  // Fill buffers
-  pointProgram->setAttribute("a_position", parent.gridPointLocations);
-  pointProgram->setAttribute("a_value", values);
-  pointProgram->setTextureFromColormap("t_colormap", cMap.get());
+  // clang-format off
+  gridcubeProgram = render::engine->requestShader(
+      "GRIDCUBE_PLANE", 
+      parent.addGridCubeRules(addScalarRules({"GRIDCUBE_PROPAGATE_VALUE"}), true)
+  );
+  // clang-format on
 
-  render::engine->setMaterial(*pointProgram, parent.getMaterial());
+  gridcubeProgram->setAttribute("a_referencePosition", parent.gridPlaneReferencePositions.getRenderAttributeBuffer());
+  gridcubeProgram->setAttribute("a_referenceNormal", parent.gridPlaneReferenceNormals.getRenderAttributeBuffer());
+  gridcubeProgram->setAttribute("a_axisInd", parent.gridPlaneAxisInds.getRenderAttributeBuffer());
+
+  gridcubeProgram->setTextureFromColormap("t_colormap", cMap.get());
+  render::engine->setMaterial(*gridcubeProgram, parent.getMaterial());
+
+  gridcubeProgram->setTextureFromBuffer("t_value", values.getRenderTextureBuffer().get());
+  values.getRenderTextureBuffer().get()->setFilterMode(FilterMode::Linear);
 }
 
-void VolumeGridScalarQuantity::createIsosurfaceProgram() {
+void VolumeGridNodeScalarQuantity::createIsosurfaceProgram() {
+
+  values.ensureHostBufferPopulated();
 
   // Extract the isosurface from the level set of the scalar field
   MC::mcMesh mesh;
-  MC::marching_cube(&values.front(), isosurfaceLevel.get(), parent.steps[0], parent.steps[1], parent.steps[2], mesh);
+  MC::marching_cube(&values.data.front(), isosurfaceLevel.get(), parent.gridSpacing().x, parent.gridSpacing().y,
+                    parent.gridSpacing().z, mesh);
 
   // Transform the result to be aligned with our volume's spatial layout
-  glm::vec3 scale{(parent.bound_max[0] - parent.bound_min[0]) / (parent.steps[0] - 1),
-                  (parent.bound_max[1] - parent.bound_min[1]) / (parent.steps[1] - 1),
-                  (parent.bound_max[2] - parent.bound_min[2]) / (parent.steps[2] - 1)};
+  glm::vec3 scale = parent.gridSpacing();
   for (auto& p : mesh.vertices) {
-    p = p * scale + parent.bound_min;
+    p = p * scale + parent.boundMin;
   }
 
 
@@ -166,33 +167,33 @@ void VolumeGridScalarQuantity::createIsosurfaceProgram() {
 
 // === Getters and setters
 
-VolumeGridScalarQuantity* VolumeGridScalarQuantity::setPointVizEnabled(bool val) {
-  pointVizEnabled = val;
+VolumeGridNodeScalarQuantity* VolumeGridNodeScalarQuantity::setGridcubeVizEnabled(bool val) {
+  gridcubeVizEnabled = val;
   requestRedraw();
   return this;
 }
-bool VolumeGridScalarQuantity::getPointVizEnabled() { return pointVizEnabled.get(); }
+bool VolumeGridNodeScalarQuantity::getGridcubeVizEnabled() { return gridcubeVizEnabled.get(); }
 
-VolumeGridScalarQuantity* VolumeGridScalarQuantity::setIsosurfaceVizEnabled(bool val) {
+VolumeGridNodeScalarQuantity* VolumeGridNodeScalarQuantity::setIsosurfaceVizEnabled(bool val) {
   isosurfaceVizEnabled = val;
   requestRedraw();
   return this;
 }
-bool VolumeGridScalarQuantity::getIsosurfaceVizEnabled() { return isosurfaceVizEnabled.get(); }
+bool VolumeGridNodeScalarQuantity::getIsosurfaceVizEnabled() { return isosurfaceVizEnabled.get(); }
 
-VolumeGridScalarQuantity* VolumeGridScalarQuantity::setIsosurfaceLevel(float val) {
+VolumeGridNodeScalarQuantity* VolumeGridNodeScalarQuantity::setIsosurfaceLevel(float val) {
   isosurfaceLevel = val;
   isosurfaceProgram.reset(); // delete the program so it gets recreated with the new value
   requestRedraw();
   return this;
 }
-float VolumeGridScalarQuantity::getIsosurfaceLevel() { return isosurfaceLevel.get(); }
+float VolumeGridNodeScalarQuantity::getIsosurfaceLevel() { return isosurfaceLevel.get(); }
 
-VolumeGridScalarQuantity* VolumeGridScalarQuantity::setIsosurfaceColor(glm::vec3 val) {
+VolumeGridNodeScalarQuantity* VolumeGridNodeScalarQuantity::setIsosurfaceColor(glm::vec3 val) {
   isosurfaceColor = val;
   requestRedraw();
   return this;
 }
-glm::vec3 VolumeGridScalarQuantity::getIsosurfaceColor() { return isosurfaceColor.get(); }
+glm::vec3 VolumeGridNodeScalarQuantity::getIsosurfaceColor() { return isosurfaceColor.get(); }
 
 } // namespace polyscope

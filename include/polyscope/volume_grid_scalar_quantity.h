@@ -12,10 +12,14 @@
 
 namespace polyscope {
 
-class VolumeGridScalarQuantity : public VolumeGridQuantity, public ScalarQuantity<VolumeGridScalarQuantity> {
+// ========================================================
+// ==========            Node Scalar             ==========
+// ========================================================
+
+class VolumeGridNodeScalarQuantity : public VolumeGridQuantity, public ScalarQuantity<VolumeGridNodeScalarQuantity> {
 
 public:
-  VolumeGridScalarQuantity(std::string name, VolumeGrid& grid_, const std::vector<double>& values_, DataType dataType_);
+  VolumeGridNodeScalarQuantity(std::string name, VolumeGrid& grid_, const std::vector<double>& values_, DataType dataType_);
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
@@ -25,37 +29,30 @@ public:
 
   // == Getters and setters
 
-  // Point viz
+  // Gridcube viz
 
-  VolumeGridScalarQuantity* setPointVizEnabled(bool val);
-  bool getPointVizEnabled();
+  VolumeGridNodeScalarQuantity* setGridcubeVizEnabled(bool val);
+  bool getGridcubeVizEnabled();
 
 
   // Isosurface viz
 
-  VolumeGridScalarQuantity* setIsosurfaceVizEnabled(bool val);
+  VolumeGridNodeScalarQuantity* setIsosurfaceVizEnabled(bool val);
   bool getIsosurfaceVizEnabled();
 
-  VolumeGridScalarQuantity* setIsosurfaceLevel(float value);
+  VolumeGridNodeScalarQuantity* setIsosurfaceLevel(float value);
   float getIsosurfaceLevel();
 
-  VolumeGridScalarQuantity* setIsosurfaceColor(glm::vec3 val);
+  VolumeGridNodeScalarQuantity* setIsosurfaceColor(glm::vec3 val);
   glm::vec3 getIsosurfaceColor();
 
 
 protected:
-  void createProgram();
-  void fillPositions();
-  void resetMapRange();
-
-  const DataType dataType;
-  std::vector<double> values;
-  std::vector<glm::vec3> positions;
 
   // Visualize as points
-  PersistentValue<bool> pointVizEnabled;
-  std::shared_ptr<render::ShaderProgram> pointProgram;
-  void createPointProgram();
+  PersistentValue<bool> gridcubeVizEnabled;
+  std::shared_ptr<render::ShaderProgram> gridcubeProgram;
+  void createGridcubeProgram();
 
   // Visualize as isosurface
   // TODO
@@ -66,6 +63,7 @@ protected:
   void createIsosurfaceProgram();
 
   // Visualize as raymarched volume
+  // TODO
 };
 
 } // namespace polyscope
