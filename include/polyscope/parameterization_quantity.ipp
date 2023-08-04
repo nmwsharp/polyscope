@@ -298,6 +298,7 @@ QuantityT* ParameterizationQuantity<QuantityT>::setTexture(unsigned int sizeX, u
   textureData = textureData_;
   texture = render::engine->generateTextureBuffer(format, sizeX, sizeY, textureData.data());
   texture->setFilterMode(FilterMode::Linear);
+  // texture->setFilterMode(FilterMode::Nearest);
   return &quantity;
 }
 
