@@ -37,13 +37,6 @@ SurfaceMesh* registerSurfaceMesh2D(std::string name, const V& vertexPositions, c
 
   return registerSurfaceMesh(name, positions3D, faceIndices);
 }
-template <class V, class F, class P>
-SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
-                                 const std::array<std::pair<P, size_t>, 5>& perms) {
-  SurfaceMesh* s = registerSurfaceMesh(name, vertexPositions, faceIndices);
-  s->setAllPermutations(perms);
-  return s;
-}
 
 template <class V>
 void SurfaceMesh::updateVertexPositions(const V& newPositions) {
@@ -182,7 +175,7 @@ template <class T>
 void SurfaceMesh::setAllPermutations(const std::array<std::pair<T, size_t>, 5>& perms) {
   // (kept for backward compatbility only)
   // forward to the 3-arg version, ignoring the unused ones
-  setAllPermutations(std::array<std::pair<T, size_t>, 3>{perms[2], perms[3], perms[4]});
+  setAllPermutations(std::array<std::pair<T, size_t>, 2>{perms[2], perms[3], perms[4]});
 }
 
 template <class T>
