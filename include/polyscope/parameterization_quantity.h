@@ -66,7 +66,7 @@ public:
 
   // Texture
   QuantityT* setTexture(unsigned int sizeX, unsigned int sizeY, const std::vector<unsigned char>& textureData,
-                        TextureFormat format = TextureFormat::RGB32F);
+                        TextureFormat format = TextureFormat::RGB32F, FilterMode filterMode = FilterMode::Linear);
 
   // === Helpers for rendering
   std::vector<std::string> addParameterizationRules(std::vector<std::string> rules);

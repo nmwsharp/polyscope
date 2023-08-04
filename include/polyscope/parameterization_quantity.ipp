@@ -294,11 +294,10 @@ double ParameterizationQuantity<QuantityT>::getAltDarkness() {
 template <typename QuantityT>
 QuantityT* ParameterizationQuantity<QuantityT>::setTexture(unsigned int sizeX, unsigned int sizeY,
                                                            const std::vector<unsigned char>& textureData_,
-                                                           TextureFormat format) {
+                                                           TextureFormat format, FilterMode filterMode) {
   textureData = textureData_;
   texture = render::engine->generateTextureBuffer(format, sizeX, sizeY, textureData.data());
-  texture->setFilterMode(FilterMode::Linear);
-  // texture->setFilterMode(FilterMode::Nearest);
+  texture->setFilterMode(filterMode);
   return &quantity;
 }
 
