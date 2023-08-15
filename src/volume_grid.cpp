@@ -2,6 +2,7 @@
 
 #include "polyscope/volume_grid.h"
 
+#include "polyscope/messages.h"
 #include "polyscope/pick.h"
 
 #include "imgui.h"
@@ -17,9 +18,9 @@ VolumeGrid::VolumeGrid(std::string name, glm::uvec3 gridNodeDim_, glm::vec3 boun
 
       // clang-format off
       // == managed quantities
-      gridPlaneReferencePositions(uniquePrefix() +  "#gridPlaneReferencePositions",     gridPlaneReferencePositionsData,    std::bind(&VolumeGrid::computeGridPlaneReferenceGeometry, this)),
-      gridPlaneReferenceNormals(uniquePrefix() +    "#gridPlaneReferenceNormals",       gridPlaneReferenceNormalsData,      [](){/* do nothing, gets handled by position func */} ),
-      gridPlaneAxisInds(uniquePrefix() +            "#gridPlaneAxisInds",               gridPlaneAxisIndsData,              [](){/* do nothing, gets handled by position func */} ),
+      gridCubeReferencePosition(uniquePrefix() +  "#gridCubeReferencePosition",     gridPlaneReferencePositionsData,    std::bind(&VolumeGrid::computeGridPlaneReferenceGeometry, this)),
+      // gridCubeInds(uniquePrefix() +    "#gridCubeInds",       gridPlaneReferenceNormalsData,      [](){/* do nothing, gets handled by position func */} ),
+      // gridPlaneAxisInds(uniquePrefix() +            "#gridPlaneAxisInds",               gridPlaneAxisIndsData,              [](){/* do nothing, gets handled by position func */} ),
 
       // == persistent options
       color(                  uniquePrefix() + "color",             getNextUniqueColor()),
@@ -29,6 +30,13 @@ VolumeGrid::VolumeGrid(std::string name, glm::uvec3 gridNodeDim_, glm::vec3 boun
       cubeSizeFactor(         uniquePrefix() + "cubeSizeFactor",    0.f)
 // clang-format on
 {
+
+  // some sanity checks
+  if (gridNodeDim.x < 2 || gridNodeDim.y < 2 || gridNodeDim.z < 2) {
+    error(
+        "volume grid node dim must be at least 2 in all axes (equivalently, cell dim must be at least 1 in all axes)");
+  }
+
   cullWholeElements.setPassive(true);
   updateObjectSpaceBounds();
 }
@@ -106,17 +114,22 @@ void VolumeGrid::draw() {
   // If there is no dominant quantity, then this class is responsible for the grid
   if (dominantQuantity == nullptr) {
 
-    // Ensure we have prepared buffers
-    ensureGridCubeRenderProgramPrepared();
+    bool useCubeProgram = true;
 
-    // Set program uniforms
-    setStructureUniforms(*program);
-    setGridCubeUniforms(*program);
-    program->setUniform("u_baseColor", color.get());
+    if (useCubeProgram) {
 
-    // Draw the actual grid
-    render::engine->setBackfaceCull(true);
-    program->draw();
+      // Ensure we have prepared buffers
+      ensureGridCubeRenderProgramPrepared();
+
+      // Set program uniforms
+      setStructureUniforms(*cubeProgram);
+      setGridCubeUniforms(*cubeProgram);
+      cubeProgram->setUniform("u_baseColor", color.get());
+
+      // Draw the actual grid
+      render::engine->setBackfaceCull(true);
+      cubeProgram->draw();
+    }
   }
 
   // Draw the quantities
@@ -146,16 +159,18 @@ void VolumeGrid::drawPick() {
     return;
   }
 
+  return; // FIXME
+
   ensureGridCubePickProgramPrepared();
 
   // Set program uniforms
-  setStructureUniforms(*pickProgram);
-  setGridCubeUniforms(*pickProgram, false);
-  pickProgram->setUniform("u_pickColor", pickColor);
+  setStructureUniforms(*cubePickProgram);
+  setGridCubeUniforms(*cubePickProgram, false);
+  cubePickProgram->setUniform("u_pickColor", pickColor);
 
   // Draw the actual grid
   render::engine->setBackfaceCull(true);
-  pickProgram->draw();
+  cubePickProgram->draw();
 }
 
 std::vector<std::string> VolumeGrid::addGridCubeRules(std::vector<std::string> initRules, bool withShade) {
@@ -182,6 +197,7 @@ void VolumeGrid::setGridCubeUniforms(render::ShaderProgram& p, bool withShade) {
   p.setUniform("u_cubeSizeFactor", 1.f - cubeSizeFactor.get());
   p.setUniform("u_gridSpacingReference", gridSpacingReference());
   p.setUniform("u_gridSpacing", gridSpacing());
+  p.setUniform("u_gridCubeCounts", gridCellDim);
 
   if (withShade) {
 
@@ -193,30 +209,54 @@ void VolumeGrid::setGridCubeUniforms(render::ShaderProgram& p, bool withShade) {
 }
 
 void VolumeGrid::ensureGridCubeRenderProgramPrepared() {
+
+  /*
+
   // If already prepared, do nothing
   if (program) return;
 
   // clang-format off
   program = render::engine->requestShader(
-      "GRIDCUBE_PLANE", 
+      "GRIDCUBE_PLANE",
       addGridCubeRules({"SHADE_BASECOLOR"}, true)
   );
   // clang-format on
 
-  program->setAttribute("a_referencePosition", gridPlaneReferencePositions.getRenderAttributeBuffer());
-  program->setAttribute("a_referenceNormal", gridPlaneReferenceNormals.getRenderAttributeBuffer());
+  program->setAttribute("a_referencePosition", gridCubeReferencePosition.getRenderAttributeBuffer());
+  program->setAttribute("a_referenceNormal", gridCubeInds.getRenderAttributeBuffer());
   program->setAttribute("a_axisInd", gridPlaneAxisInds.getRenderAttributeBuffer());
 
   render::engine->setMaterial(*program, material.get());
+  */
+
+  // If already prepared, do nothing
+  if (cubeProgram) return;
+
+  // clang-format off
+  cubeProgram = render::engine->requestShader(
+      "GRIDCUBE_NAIVE", 
+      addGridCubeRules({"SHADE_BASECOLOR"}, true)
+  );
+  // clang-format on
+
+  cubeProgram->setInstanceCount(nCells());
+
+  cubeProgram->setAttribute("a_referencePosition", gridCubeReferencePosition.getRenderAttributeBuffer());
+  // cubeProgram->setAttribute("a_referenceNormal", gridCubeInds.getRenderAttributeBuffer());
+  // cubeProgram->setAttribute("a_axisInd", gridPlaneAxisInds.getRenderAttributeBuffer());
+
+  render::engine->setMaterial(*cubeProgram, material.get());
 }
 
 void VolumeGrid::ensureGridCubePickProgramPrepared() {
 
   // If already prepared, do nothing
-  if (pickProgram) return;
+  if (cubePickProgram) return;
+
+  return; // FIXME
 
   // clang-format off
-  pickProgram = render::engine->requestShader(
+  cubePickProgram = render::engine->requestShader(
       "GRIDCUBE_PLANE", 
       addGridCubeRules({"GRIDCUBE_CONSTANT_PICK"}, false), 
       render::ShaderReplacementDefaults::Pick
@@ -224,9 +264,9 @@ void VolumeGrid::ensureGridCubePickProgramPrepared() {
   // clang-format on
 
 
-  pickProgram->setAttribute("a_referencePosition", gridPlaneReferencePositions.getRenderAttributeBuffer());
-  pickProgram->setAttribute("a_referenceNormal", gridPlaneReferenceNormals.getRenderAttributeBuffer());
-  pickProgram->setAttribute("a_axisInd", gridPlaneAxisInds.getRenderAttributeBuffer());
+  cubePickProgram->setAttribute("a_referencePosition", gridCubeReferencePosition.getRenderAttributeBuffer());
+  // cubePickProgram->setAttribute("a_referenceNormal", gridCubeInds.getRenderAttributeBuffer());
+  // cubePickProgram->setAttribute("a_axisInd", gridPlaneAxisInds.getRenderAttributeBuffer());
 
 
   if (globalPickConstant == INVALID_IND_64) {
@@ -258,8 +298,8 @@ std::string VolumeGrid::typeName() { return structureTypeName; }
 void VolumeGrid::refresh() {
   QuantityStructure<VolumeGrid>::refresh(); // call base class version, which refreshes quantities
 
-  program.reset();
-  pickProgram.reset();
+  cubeProgram.reset();
+  cubePickProgram.reset();
 }
 
 void VolumeGrid::setVolumeGridUniforms(render::ShaderProgram& p) {}
@@ -273,28 +313,30 @@ void VolumeGrid::computeGridPlaneReferenceGeometry() {
 
   // Geometry is defined in the reference [0,1] cube
 
-  gridPlaneReferencePositions.data.clear();
-  gridPlaneReferenceNormals.data.clear();
+  /*
+
+  gridCubeReferencePosition.data.clear();
+  gridCubeInds.data.clear();
   gridPlaneAxisInds.data.clear();
 
   auto addPlane = [&](std::array<glm::vec3, 4> corners, glm::vec3 normal, uint32_t axInd) {
     // first triangle
-    gridPlaneReferencePositions.data.push_back(corners[0]);
-    gridPlaneReferencePositions.data.push_back(corners[1]);
-    gridPlaneReferencePositions.data.push_back(corners[2]);
-    for (int32_t j = 0; j < 3; j++) gridPlaneReferenceNormals.data.push_back(normal);
+    gridCubeReferencePosition.data.push_back(corners[0]);
+    gridCubeReferencePosition.data.push_back(corners[1]);
+    gridCubeReferencePosition.data.push_back(corners[2]);
+    for (int32_t j = 0; j < 3; j++) gridCubeInds.data.push_back(normal);
     for (int32_t j = 0; j < 3; j++) gridPlaneAxisInds.data.push_back(axInd);
 
     // second triangle
-    gridPlaneReferencePositions.data.push_back(corners[1]);
-    gridPlaneReferencePositions.data.push_back(corners[3]);
-    gridPlaneReferencePositions.data.push_back(corners[2]);
-    for (int32_t j = 0; j < 3; j++) gridPlaneReferenceNormals.data.push_back(normal);
+    gridCubeReferencePosition.data.push_back(corners[1]);
+    gridCubeReferencePosition.data.push_back(corners[3]);
+    gridCubeReferencePosition.data.push_back(corners[2]);
+    for (int32_t j = 0; j < 3; j++) gridCubeInds.data.push_back(normal);
     for (int32_t j = 0; j < 3; j++) gridPlaneAxisInds.data.push_back(axInd);
   };
 
   // The planes are intentionally added in order such that the outermost planes come first, and we don't massively
-  // overshade from back to front. Note that fthe first look runs backwards.
+  // overshade from back to front. Note that fthe first loop runs backwards.
 
   // Forward facing planes
   for (uint32_t d = 0; d < 3; d++) { // x/y/z dimension (plane is perpendicular)
@@ -333,11 +375,39 @@ void VolumeGrid::computeGridPlaneReferenceGeometry() {
       addPlane({ul, uu, ll, lu}, n, i); // winding is opposite here
     }
   }
+  */
 
 
-  gridPlaneReferencePositions.markHostBufferUpdated();
-  gridPlaneReferenceNormals.markHostBufferUpdated();
-  gridPlaneAxisInds.markHostBufferUpdated();
+  gridCubeReferencePosition.data.clear();
+  // gridCubeInds.data.clear();
+  // gridPlaneAxisInds.data.clear();
+
+  gridCubeReferencePosition.data.resize(14 * nCells());
+  // gridCubeInds.data.resize(14 * nCells());
+  // gridPlaneAxisInds.data.resize(14 * nCells());
+
+  // clang-format off
+  std::array<glm::vec3, 8> refPos {
+    glm::vec3{0.f, 0.f, 0.f},
+    glm::vec3{0.f, 0.f, 1.f},
+    glm::vec3{0.f, 1.f, 0.f},
+    glm::vec3{0.f, 1.f, 1.f},
+    glm::vec3{1.f, 0.f, 0.f},
+    glm::vec3{1.f, 0.f, 1.f},
+    glm::vec3{1.f, 1.f, 0.f},
+    glm::vec3{1.f, 1.f, 1.f},
+  };
+  std::array<uint32_t,14> cubeStripInd{3, 7, 1, 5, 4, 7, 6, 3, 2, 1, 0, 4, 2, 6};
+  // clang-format on
+
+  for (uint32_t c = 0; c < cubeStripInd.size(); c++) {
+    gridCubeReferencePosition.data[c] = refPos[cubeStripInd[c]];
+  }
+
+
+  gridCubeReferencePosition.markHostBufferUpdated();
+  // gridCubeInds.markHostBufferUpdated();
+  // gridPlaneAxisInds.markHostBufferUpdated();
 }
 
 // === Option getters and setters
@@ -383,9 +453,10 @@ VolumeGridQuantity::VolumeGridQuantity(std::string name_, VolumeGrid& curveNetwo
 VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                     DataType dataType_) {
 
-  VolumeGridNodeScalarQuantity* q = new VolumeGridNodeScalarQuantity(name, *this, data, dataType_);
-  addQuantity(q);
-  return q;
+  // VolumeGridNodeScalarQuantity* q = new VolumeGridNodeScalarQuantity(name, *this, data, dataType_);
+  // addQuantity(q)
+  // return q;
+  return nullptr; // FIXME
 }
 
 /*
