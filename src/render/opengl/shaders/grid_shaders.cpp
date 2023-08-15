@@ -343,6 +343,182 @@ R"(
 )"
 };
 
+const ShaderStageSpecification FLEX_GRIDCUBE_NAIVE_VERT_SHADER = {
+
+    ShaderStageType::Vertex,
+
+    // uniforms
+    {
+        {"u_modelView", RenderDataType::Matrix44Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_boundMin", RenderDataType::Vector3Float},
+        {"u_boundMax", RenderDataType::Vector3Float},
+        {"u_cubeSizeFactor", RenderDataType::Float},
+        {"u_gridSpacingReference", RenderDataType::Vector3Float},
+        {"u_gridCubeCounts", RenderDataType::Vector3UInt},
+    }, 
+
+    // attributes
+    {
+        {"a_referencePosition", RenderDataType::Vector3Float},
+    },
+
+    {}, // textures
+
+    // source
+R"(
+        ${ GLSL_VERSION }$
+        
+        uniform mat4 u_modelView;
+        uniform mat4 u_projMatrix;
+        uniform vec3 u_boundMin;
+        uniform vec3 u_boundMax;
+        uniform float u_cubeSizeFactor;
+        uniform vec3 u_gridSpacingReference;
+        uniform uvec3 u_gridCubeCounts;
+
+        in vec3 a_referencePosition;
+        
+        out vec3 f_cartesianPos;    // vertex position in corners of [-1,1], identical for all instances
+        out vec3 f_refPos;          // vertex position [0,1] texture space, includes shrinking if used
+        out uvec3 f_gridCubeInds;   // integer indices of cell (flat)
+        out vec3 f_centerViewPos;   // cell center position in view space (flat)
+        
+        ${ VERT_DECLARATIONS }$
+        
+        void main()
+        {
+
+            // compute the grid index for this (instanced) primitive
+            uint flatID = uint(gl_InstanceID);
+            uint sizeYZ = u_gridCubeCounts.y * u_gridCubeCounts.z;
+            uint idX = flatID / sizeYZ;
+            flatID = flatID - idX * sizeYZ;
+            uint idY = flatID / u_gridCubeCounts.z;
+            flatID = flatID - idY * u_gridCubeCounts.z;
+            uint idZ = flatID;
+            uvec3 gridCubeInds = uvec3(idX, idY, idZ);
+
+
+            vec3 unitPos = a_referencePosition; // cube corners in [0,1], identical for all instances
+            // f_unitPosScaled = u_cubeSizeFactor * a_referencePosition;
+
+            vec3 centerRef = u_gridSpacingReference * (0.5f + gridCubeInds); // cell center in tex on [0,1]
+            vec3 centerWorld = mix(u_boundMin, u_boundMax, centerRef); // cell center in object world
+
+            vec3 posRef = u_gridSpacingReference * (gridCubeInds + unitPos); // vertex pos in tex on [0,1]
+            vec3 posWorld = mix(u_boundMin, u_boundMax, posRef); // vertex pos in object world
+
+            gl_Position = u_projMatrix * u_modelView * vec4(posWorld, 1.f);
+          
+            
+            f_cartesianPos = 2.f * unitPos - 1.f; // on [-1,1], identical for all verts
+            f_refPos = posRef;
+            f_gridCubeInds = gridCubeInds;
+            f_centerViewPos = (u_modelView * vec4(centerWorld, 1.f)).xyz;
+
+
+
+            ${ VERT_ASSIGNMENTS }$
+        }
+)"
+};
+
+const ShaderStageSpecification FLEX_GRIDCUBE_NAIVE_FRAG_SHADER = {
+    
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    {
+        {"u_gridSpacing", RenderDataType::Vector3Float},
+        {"u_gridSpacingReference", RenderDataType::Vector3Float},
+        {"u_cubeSizeFactor", RenderDataType::Float},
+        {"u_modelView", RenderDataType::Matrix44Float},
+    }, 
+
+    { }, // attributes
+    
+    // textures 
+    {
+    },
+ 
+    // source
+R"(
+        ${ GLSL_VERSION }$
+
+        in vec3 f_cartesianPos;    // vertex position in corners of [-1,1], identical for all instances
+        in vec3 f_refPos;          // vertex position [0,1] texture space, includes shrinking if used
+        flat in uvec3 f_gridCubeInds;   // integer indices of cell (flat)
+        flat in vec3 f_centerViewPos;   // cell center position in view space (flat)
+        
+        uniform mat4 u_modelView;
+        uniform vec3 u_gridSpacing;
+        uniform vec3 u_gridSpacingReference;
+        uniform float u_cubeSizeFactor;
+
+        layout(location = 0) out vec4 outputF;
+
+        ${ FRAG_DECLARATIONS }$
+
+        void main()
+        {
+
+           // do some coordinate arithmetic
+           // NOTE: this logic is duplicated with pick function
+           // vec3 coordUnit = a_coordToFrag / u_gridSpacingReference;
+           // vec3 coordMod = mod(coordUnit, 1.f); // [0,1] within each cell
+           // vec3 coordModShift = 2.f*coordMod - 1.f; // [-1,1] within each cell
+           // vec3 coordLocal = coordModShift / u_cubeSizeFactor; // [-1,1] within each scaled cell
+           // vec3 coordLocalAbs = abs(coordLocal) * (1.f - abs(a_refNormalToFrag));
+           // float maxCoord = max(max(abs(f_cartesianPos.x), abs(f_cartesianPos.y)), abs(f_cartesianPos.z));
+         
+           // compute a normal
+           // TODO could use mesh normal-from-position rule instead, benchmark it
+           vec3 worldNormal = f_cartesianPos;
+           // if(abs(worldNormal.x) == 1.f) { worldNormal.y = 0.f; worldNormal.z = 0.f; } 
+           // if(abs(worldNormal.y) == 1.f) { worldNormal.z = 0.f; worldNormal.x = 0.f; }
+           // if(abs(worldNormal.z) == 1.f) { worldNormal.x = 0.f; worldNormal.y = 0.f; }
+          
+           // vec3 coordLocalAbs = (1.f - abs(f_cartesianPos)) + abs(worldNormal);
+           vec3 coordLocalAbs = vec3(0.f, 0.f, 0.f);
+
+           // vec3 cellInd3f = floor(coordUnit - 0.0001f*a_refNormalToFrag);
+
+           // discard the gaps in the cubes
+           // if(maxCoord > 1.0001f) { // note the threshold here, hacky but seems okay
+             // discard;
+           // }
+
+
+           float depth = gl_FragCoord.z;
+           ${ GLOBAL_FRAGMENT_FILTER_PREP }$
+           ${ GLOBAL_FRAGMENT_FILTER }$
+
+           // Shading
+           ${ GENERATE_SHADE_VALUE }$
+           ${ GENERATE_SHADE_COLOR }$
+           
+           // Handle the wireframe
+           ${ APPLY_WIREFRAME }$
+
+           // Lighting
+           vec3 shadeNormal = mat3(u_modelView) * worldNormal;
+           ${ PERTURB_SHADE_NORMAL }$
+           ${ GENERATE_LIT_COLOR }$
+
+           // Set alpha
+           float alphaOut = 1.0;
+           ${ GENERATE_ALPHA }$
+           
+           ${ PERTURB_LIT_COLOR }$
+
+
+           // Write output
+           outputF = vec4(litColor, alphaOut);
+        }
+)"
+};
+
 const ShaderReplacementRule GRIDCUBE_PROPAGATE_VALUE (
     /* rule name */ "GRIDCUBE_PROPAGATE_VALUE",
     { /* replacement sources */
@@ -365,7 +541,7 @@ const ShaderReplacementRule GRIDCUBE_WIREFRAME (
     {
         /* replacement sources */
         {"APPLY_WIREFRAME", R"(
-          vec3 wireframe_UVW = 1. - coordLocalAbs;
+          vec3 wireframe_UVW = coordLocalAbs;
       )"},
     },
     /* uniforms */ {},

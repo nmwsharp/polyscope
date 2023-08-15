@@ -2186,6 +2186,9 @@ void GLShaderProgram::setIndex(std::vector<unsigned int>& indices) {
 
 // Check that uniforms and attributes are all set and of consistent size
 void GLShaderProgram::validateData() {
+
+  // WARNING: this function is poorly named, it doesn't just do sanity checks, it also sets important values
+
   // Check uniforms
   for (GLShaderUniform& u : uniforms) {
     if (u.location == -1) continue;
@@ -2234,6 +2237,13 @@ void GLShaderProgram::validateData() {
     }
     drawDataLength = static_cast<unsigned int>(indexSize);
   }
+
+  // Check instanced (if applicable)
+  if (drawMode == DrawMode::TrianglesInstanced || drawMode == DrawMode::TriangleStripInstanced) {
+    if (instanceCount == INVALID_IND_32) {
+      throw std::invalid_argument("Must set instance count to use instanced drawing");
+    }
+  }
 }
 
 void GLShaderProgram::setPrimitiveRestartIndex(unsigned int restartIndex_) {
@@ -2243,6 +2253,8 @@ void GLShaderProgram::setPrimitiveRestartIndex(unsigned int restartIndex_) {
   restartIndex = restartIndex_;
   primitiveRestartIndexSet = true;
 }
+
+void GLShaderProgram::setInstanceCount(uint32_t instanceCount_) { instanceCount = instanceCount_; }
 
 void GLShaderProgram::activateTextures() {
   for (GLShaderTexture& t : textures) {
@@ -2302,6 +2314,12 @@ void GLShaderProgram::draw() {
   case DrawMode::IndexedTriangles:
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
     glDrawElements(GL_TRIANGLES, drawDataLength, GL_UNSIGNED_INT, 0);
+    break;
+  case DrawMode::TrianglesInstanced:
+    glDrawArraysInstanced(GL_TRIANGLES, 0, drawDataLength, instanceCount);
+    break;
+  case DrawMode::TriangleStripInstanced:
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, drawDataLength, instanceCount);
     break;
   }
 
@@ -2824,6 +2842,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderProgram("POINT_QUAD", {FLEX_POINTQUAD_VERT_SHADER, FLEX_POINTQUAD_GEOM_SHADER, FLEX_POINTQUAD_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("GRIDCUBE", {FLEX_GRIDCUBE_VERT_SHADER, FLEX_GRIDCUBE_GEOM_SHADER, FLEX_GRIDCUBE_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("GRIDCUBE_PLANE", {FLEX_GRIDCUBE_PLANE_VERT_SHADER, FLEX_GRIDCUBE_PLANE_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("GRIDCUBE_NAIVE", {FLEX_GRIDCUBE_NAIVE_VERT_SHADER, FLEX_GRIDCUBE_NAIVE_FRAG_SHADER}, DrawMode::TriangleStripInstanced);
   registerShaderProgram("RAYCAST_VECTOR", {FLEX_VECTOR_VERT_SHADER, FLEX_VECTOR_GEOM_SHADER, FLEX_VECTOR_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("RAYCAST_TANGENT_VECTOR", {FLEX_TANGENT_VECTOR_VERT_SHADER, FLEX_VECTOR_GEOM_SHADER, FLEX_VECTOR_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("RAYCAST_CYLINDER", {FLEX_CYLINDER_VERT_SHADER, FLEX_CYLINDER_GEOM_SHADER, FLEX_CYLINDER_FRAG_SHADER}, DrawMode::Points);

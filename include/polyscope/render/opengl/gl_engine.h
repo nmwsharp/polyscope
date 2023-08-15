@@ -328,6 +328,9 @@ public:
   void setIndex(std::vector<glm::uvec3>& indices) override;
   void setPrimitiveRestartIndex(unsigned int restartIndex) override;
 
+  // Instancing 
+  void setInstanceCount(uint32_t instanceCount) override;
+
   // Textures
   bool hasTexture(std::string name) override;
   bool textureIsSet(std::string name) override;
