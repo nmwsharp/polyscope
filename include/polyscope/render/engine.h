@@ -31,7 +31,9 @@ enum class DrawMode {
   IndexedLines,
   IndexedLineStrip,
   IndexedLinesAdjacency,
-  IndexedLineStripAdjacency
+  IndexedLineStripAdjacency,
+  TrianglesInstanced,
+  TriangleStripInstanced,
 };
 
 enum class FilterMode { Nearest = 0, Linear };
@@ -394,6 +396,9 @@ public:
   virtual void setIndex(std::vector<glm::uvec3>& indices) = 0;
   virtual void setPrimitiveRestartIndex(unsigned int restartIndex) = 0;
 
+  // Indices
+  virtual void setInstanceCount(uint32_t instanceCount) = 0;
+
   // Call once to initialize GLSL code used by multiple shaders
   static void initCommonShaders(); // TODO
 
@@ -409,7 +414,7 @@ protected:
   DrawMode drawMode;
 
   // How much data is there to draw
-  unsigned int drawDataLength;
+  uint32_t drawDataLength;
 
   // Does this program use indexed drawing?
   bool useIndex = false;
@@ -418,6 +423,9 @@ protected:
   bool primitiveRestartIndexSet = false;
   unsigned int restartIndex = -1;
   uint64_t uniqueID;
+ 
+  // instancing
+  uint32_t instanceCount = INVALID_IND_32;
 };
 
 
