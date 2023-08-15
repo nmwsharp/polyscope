@@ -439,20 +439,44 @@ void addVolumeGrid() {
   // uint32_t dimX = 4;
   // uint32_t dimY = 5;
   // uint32_t dimZ = 6;
-  // glm::vec3 bound_low{-1., -2., -3.};
-  // glm::vec3 bound_high{3., 2., 1.};
+  // glm::vec3 bound_low{-1., -2., -5.};
+  // glm::vec3 bound_high{3., -1., 1.};
 
-  uint32_t dimX = 50;
-  uint32_t dimY = 50;
-  uint32_t dimZ = 50;
+  // uint32_t dimX = 256;
+  // uint32_t dimY = 256;
+  // uint32_t dimZ = 256;
+  // uint32_t dimX = 128;
+  // uint32_t dimY = 128;
+  // uint32_t dimZ = 128;
+  // uint32_t dimX = 2;
+  // uint32_t dimY = 2;
+  // uint32_t dimZ = 2;
+  uint32_t dimX = 20;
+  uint32_t dimY = 20;
+  uint32_t dimZ = 20;
   glm::vec3 bound_low{0., 0., 0.};
   glm::vec3 bound_high{1., 1., 1.};
+  // glm::vec3 bound_low{-3., -3., -3.};
+  // glm::vec3 bound_high{3., 3., 3.};
 
 
   polyscope::VolumeGrid* psGrid = polyscope::registerVolumeGrid("test grid", {dimX, dimY, dimZ}, bound_low, bound_high);
-
-
   polyscope::registerPointCloud("corners", std::vector<glm::vec3>{bound_low, bound_high});
+
+  psGrid->setEdgeWidth(1.0);
+
+  // Scalar quantities
+  auto torusSDF = [](glm::vec3 p) {
+    float scale = 0.5;
+    p /= scale;
+    p += glm::vec3{1., 0., 1.};
+    glm::vec2 t{1., 0.3};
+    glm::vec2 pxz{p.x, p.z};
+    glm::vec2 q = glm::vec2(glm::length(pxz) - t.x, p.y);
+    return (glm::length(q) - t.y) * scale;
+  };
+  polyscope::VolumeGridNodeScalarQuantity* q = psGrid->addNodeScalarQuantityFromCallable("torus sdf", torusSDF);
+  q->setEnabled(true);
 }
 
 

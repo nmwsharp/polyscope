@@ -715,7 +715,8 @@ void Engine::addSlicePlane(std::string uniquePostfix) {
   slicePlaneCount++;
 
   // Add rules
-  std::vector<std::string> newRules{"SLICE_PLANE_CULL_" + uniquePostfix};
+  std::vector<std::string> newRules{"SLICE_PLANE_CULL_" + uniquePostfix,
+                                    "SLICE_PLANE_VOLUMEGRID_CULL_" + uniquePostfix};
   defaultRules_sceneObject.insert(defaultRules_sceneObject.end(), newRules.begin(), newRules.end());
   defaultRules_pick.insert(defaultRules_pick.end(), newRules.begin(), newRules.end());
 

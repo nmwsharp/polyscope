@@ -37,6 +37,7 @@ extern const ShaderReplacementRule CULL_POS_FROM_VIEW;
 extern const ShaderReplacementRule WIREFRAME_SIMPLE;
 
 ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix);
+ShaderReplacementRule generateVolumeGridSlicePlaneRule(std::string uniquePostfix);
 
 // clang-format on
 

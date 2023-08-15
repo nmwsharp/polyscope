@@ -367,6 +367,32 @@ ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix) {
   return slicePlaneRule;
 }
 
+ShaderReplacementRule generateVolumeGridSlicePlaneRule(std::string uniquePostfix) {
+
+  std::string centerUniformName = "u_slicePlaneCenter_" + uniquePostfix;
+  std::string normalUniformName = "u_slicePlaneNormal_" + uniquePostfix;
+
+  // This takes what is otherwise a simple rule, and substitues uniquely named uniforms so that we can have multiple slice planes
+  ShaderReplacementRule slicePlaneRule (
+      /* rule name */ "SLICE_PLANE_VOLUMEGRID_CULL_" + uniquePostfix,
+      { /* replacement sources */
+        // skip the frag declarations, we will already have them from the other rule
+        // {"FRAG_DECLARATIONS", "uniform vec3 " + centerUniformName + "; uniform vec3 " + normalUniformName + ";"},
+        {"GRID_PLANE_NEIGHBOR_FILTER",
+         "if(dot(neighCullPos, " + normalUniformName + ") < dot( " + centerUniformName + " , " + normalUniformName + ")) { neighIsVisible = false; }"
+        }
+      },
+      /* uniforms */ {
+        {centerUniformName, RenderDataType::Vector3Float},
+        {normalUniformName, RenderDataType::Vector3Float},
+      },
+      /* attributes */ {},
+      /* textures */ {}
+  );
+
+  return slicePlaneRule;
+}
+
 // clang-format on
 
 } // namespace backend_openGL3_glfw

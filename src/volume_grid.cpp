@@ -164,7 +164,8 @@ std::vector<std::string> VolumeGrid::addGridCubeRules(std::vector<std::string> i
   if (withShade) {
     if (getEdgeWidth() > 0) {
       initRules.push_back("GRIDCUBE_WIREFRAME");
-      initRules.push_back("WIREFRAME_SIMPLE");
+      // initRules.push_back("WIREFRAME_SIMPLE");
+      initRules.push_back("MESH_WIREFRAME");
     }
   }
 
