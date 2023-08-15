@@ -59,9 +59,9 @@ public:
 
   // The define the grid cube visualization
   // The are propeties of the resolution only, the geometry is in a reference space.
-  render::ManagedBuffer<glm::vec3> gridPlaneReferencePositions;
-  render::ManagedBuffer<glm::vec3> gridPlaneReferenceNormals;
-  render::ManagedBuffer<int32_t> gridPlaneAxisInds;
+  render::ManagedBuffer<glm::vec3> gridCubeReferencePosition;
+  // render::ManagedBuffer<glm::vec3> gridPlaneReferenceNormals; // TODO remove
+  // render::ManagedBuffer<int32_t> gridPlaneAxisInds; // TODO remove
 
 
   // === Quantity-related
@@ -159,8 +159,8 @@ private:
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
-  std::shared_ptr<render::ShaderProgram> program;
-  std::shared_ptr<render::ShaderProgram> pickProgram;
+  std::shared_ptr<render::ShaderProgram> cubeProgram;
+  std::shared_ptr<render::ShaderProgram> cubePickProgram;
 
   // === Helpers
   

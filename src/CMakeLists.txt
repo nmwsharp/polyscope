@@ -178,7 +178,7 @@ SET(SRCS
   
   # Volume grid
   volume_grid.cpp
-  volume_grid_scalar_quantity.cpp
+  # volume_grid_scalar_quantity.cpp
   
   # Camera view
   camera_view.cpp
