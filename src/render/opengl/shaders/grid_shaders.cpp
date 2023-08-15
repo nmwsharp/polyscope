@@ -296,6 +296,7 @@ R"(
 
         void main()
         {
+           float REF_EPS = 0.0001;
            
            // do some coordinate arithmetic
            // NOTE: this logic is duplicated with pick function
@@ -306,17 +307,31 @@ R"(
            vec3 coordLocalAbs = abs(coordLocal) * (1.f - abs(a_refNormalToFrag));
            float maxCoord = max(max(coordLocalAbs.x, coordLocalAbs.y), coordLocalAbs.z);
 
-           vec3 cellInd3f = floor(coordUnit - 0.0001f*a_refNormalToFrag);
+           vec3 cellInd3f = floor(coordUnit - REF_EPS*a_refNormalToFrag);
 
            // discard the gaps in the cubes
-           if(maxCoord > 1.0001f) { // note the threshold here, hacky but seems okay
+           if(maxCoord > 1.f + REF_EPS) { // note the threshold here, hacky but seems okay
              discard;
            }
-
-
+           
            float depth = gl_FragCoord.z;
            ${ GLOBAL_FRAGMENT_FILTER_PREP }$
            ${ GLOBAL_FRAGMENT_FILTER }$
+
+           // == test visibility for this and neighbor
+           // as an optimization, we discard faces of cubes which will no be visible: if a cube and 
+           // its neighbor are both visible, there is no need to render a face between them
+           // (note that this actually means almost all faces get discarded!)
+           vec3 neighCoordUnit = a_coordToFrag + a_refNormalToFrag * u_gridSpacingReference;
+           bool neighIsVisible = (all(greaterThan(neighCoordUnit, vec3(-REF_EPS))) && all(lessThan(neighCoordUnit, vec3(1.f + REF_EPS))));
+
+           // catch additional neighbors which are visible due to slice planes
+           ${ GRID_PLANE_NEIGHBOR_FILTER }$
+
+           if(neighIsVisible) {
+             discard;
+           }
+           
 
            // Shading
            ${ GENERATE_SHADE_VALUE }$
@@ -541,7 +556,8 @@ const ShaderReplacementRule GRIDCUBE_WIREFRAME (
     {
         /* replacement sources */
         {"APPLY_WIREFRAME", R"(
-          vec3 wireframe_UVW = coordLocalAbs;
+          vec3 wireframe_UVW = 1.f - coordLocalAbs;
+          vec3 wireframe_mask = (1.f - abs(a_refNormalToFrag)).zxy;
       )"},
     },
     /* uniforms */ {},
@@ -579,6 +595,12 @@ const ShaderReplacementRule GRIDCUBE_CULLPOS_FROM_CENTER(
           vec3 cullPosRef = (0.5f + cellInd3f) * u_gridSpacingReference;
           vec3 cullPosWorld = mix(u_boundMin, u_boundMax, cullPosRef);
           vec3 cullPos = (u_modelView * vec4(cullPosWorld, 1.f)).xyz;
+         
+          // compute the same data for the neighboring cell too
+          // we need this due to the neighbor visibiilty filtering
+          vec3 neighCullPosRef = (0.5f + cellInd3f + a_refNormalToFrag) * u_gridSpacingReference;
+          vec3 neighCullPosWorld = mix(u_boundMin, u_boundMax, neighCullPosRef);
+          vec3 neighCullPos = (u_modelView * vec4(neighCullPosWorld, 1.f)).xyz;
         )"},
     },
     /* uniforms */ {

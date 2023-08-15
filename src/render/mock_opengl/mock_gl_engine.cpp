@@ -1670,6 +1670,10 @@ void GLShaderProgram::draw() {
     break;
   case DrawMode::IndexedTriangles:
     break;
+  case DrawMode::TrianglesInstanced:
+    break;
+  case DrawMode::TriangleStripInstanced:
+    break;
   }
 
   if (usePrimitiveRestart) {
@@ -2121,6 +2125,8 @@ void MockGLEngine::populateDefaultShadersAndRules() {
 void MockGLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
   using namespace backend_openGL3_glfw;
   registeredShaderRules.insert({"SLICE_PLANE_CULL_" + uniquePostfix, generateSlicePlaneRule(uniquePostfix)});
+  registeredShaderRules.insert(
+      {"SLICE_PLANE_VOLUMEGRID_CULL_" + uniquePostfix, generateVolumeGridSlicePlaneRule(uniquePostfix)});
 }
 
 } // namespace backend_openGL_mock

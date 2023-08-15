@@ -2963,6 +2963,8 @@ void GLEngine::populateDefaultShadersAndRules() {
 
 void GLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
   registeredShaderRules.insert({"SLICE_PLANE_CULL_" + uniquePostfix, generateSlicePlaneRule(uniquePostfix)});
+  registeredShaderRules.insert(
+      {"SLICE_PLANE_VOLUMEGRID_CULL_" + uniquePostfix, generateVolumeGridSlicePlaneRule(uniquePostfix)});
 }
 
 
