@@ -37,7 +37,7 @@ triangleFaceInds(       uniquePrefix() + "triangleFaceInds",            triangle
 triangleCornerInds(     uniquePrefix() + "triangleCornerInds",          triangleCornerIndsData,         std::bind(&SurfaceMesh::computeTriangleCornerInds, this)),
 triangleAllEdgeInds(    uniquePrefix() + "triangleAllEdgeInds",         triangleAllEdgeIndsData,        std::bind(&SurfaceMesh::computeTriangleAllEdgeInds, this)),
 triangleAllHalfedgeInds(   uniquePrefix() + "triangleHalfedgeInds",     triangleAllHalfedgeIndsData,    std::bind(&SurfaceMesh::computeTriangleAllHalfedgeInds, this)),
-triangleAllCornerInds(     uniquePrefix() + "triangleCornerInds",       triangleAllCornerIndsData,      std::bind(&SurfaceMesh::computeTriangleAllCornerInds, this)),
+triangleAllCornerInds(     uniquePrefix() + "triangleAllCornerInds",    triangleAllCornerIndsData,      std::bind(&SurfaceMesh::computeTriangleAllCornerInds, this)),
 
 // internal triangle data for rendering
 baryCoord(              uniquePrefix() + "baryCoord",           baryCoordData),
