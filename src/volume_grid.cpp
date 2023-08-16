@@ -182,7 +182,6 @@ void VolumeGrid::setGridCubeUniforms(render::ShaderProgram& p, bool withShade) {
   p.setUniform("u_boundMax", boundMax);
   p.setUniform("u_cubeSizeFactor", 1.f - cubeSizeFactor.get());
   p.setUniform("u_gridSpacingReference", gridSpacingReference());
-  p.setUniform("u_gridSpacing", gridSpacing());
 
   if (withShade) {
 
@@ -386,38 +385,30 @@ VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityImpl(std::string 
 
   VolumeGridNodeScalarQuantity* q = new VolumeGridNodeScalarQuantity(name, *this, data, dataType_);
   addQuantity(q);
+  markNodesAsUsed();
   return q;
 }
 
-/*
-VolumeGridScalarQuantity* VolumeGrid::addCellScalarQuantityImpl(std::string name, const std::vector<double>& data,
-                                                                DataType dataType_) {
+VolumeGridCellScalarQuantity* VolumeGrid::addCellScalarQuantityImpl(std::string name, const std::vector<double>& data,
+                                                                    DataType dataType_) {
 
-  // TODO FIXME
-
-  // VolumeGridScalarQuantity* q = new VolumeGridScalarQuantity(name, *this, data, dataType_);
-  // addQuantity(q);
-  // return q;
-  return nullptr;
-}
-*/
-
-/*
-VolumeGridScalarIsosurface* VolumeGrid::addIsosurfaceQuantityImpl(std::string name, double isoLevel,
-                                                                  const std::vector<double>& data) {
-  VolumeGridScalarIsosurface* q = new VolumeGridScalarIsosurface(name, *this, data, isoLevel);
+  VolumeGridCellScalarQuantity* q = new VolumeGridCellScalarQuantity(name, *this, data, dataType_);
   addQuantity(q);
-  q->setEnabled(true);
+  markCellsAsUsed();
   return q;
 }
-*/
+
+void VolumeGrid::markNodesAsUsed() { nodesHaveBeenUsed = true; }
+
+void VolumeGrid::markCellsAsUsed() { cellsHaveBeenUsed = true; }
+
 
 void VolumeGrid::buildPickUI(size_t localPickID) {
 
   // See note in ensurePickProgramPrepared().
   // Picking for this structure works different, and identifies which element with a depth query CPU side.
 
-  float nodePickRad = 0.3;
+  float nodePickRad = 0.8; // measured in a [-1,1] cube
 
   ImGuiIO& io = ImGui::GetIO();
   glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
@@ -432,7 +423,20 @@ void VolumeGrid::buildPickUI(size_t localPickID) {
   glm::vec3 coordLocal = coordModShift / (1.f - cubeSizeFactor.get()); // [-1,1] within each scaled cell
   float distFromCorner = glm::length(1.f - abs(coordLocal));
 
-  if (distFromCorner < nodePickRad) {
+  // logic to only allow picking nodes/cells (e.g. if no cell data is registered, only pick nodes)
+  // if neither has been used, allow picking both
+  bool doPickNodes;
+  if (nodesHaveBeenUsed == cellsHaveBeenUsed) {
+    // both or neither used (choose based on radius)
+    doPickNodes = distFromCorner < nodePickRad;
+  } else if (nodesHaveBeenUsed) {
+    doPickNodes = true;
+  } else /* cellsHaveBeenUsed == true */ {
+    doPickNodes = false;
+  }
+
+
+  if (doPickNodes) {
     // Pick a node
 
     glm::uvec3 nodeInd3{std::round(coordUnit.x), std::round(coordUnit.y), std::round(coordUnit.z)};
