@@ -7,6 +7,10 @@
 
 namespace polyscope {
 
+// ========================================================
+// ==========            Node Scalar             ==========
+// ========================================================
+
 VolumeGridNodeScalarQuantity::VolumeGridNodeScalarQuantity(std::string name, VolumeGrid& grid_,
                                                            const std::vector<double>& values_, DataType dataType_)
     : VolumeGridQuantity(name, grid_, true), ScalarQuantity(*this, values_, dataType_),
@@ -75,7 +79,7 @@ void VolumeGridNodeScalarQuantity::buildCustomUI() {
   }
 }
 
-std::string VolumeGridNodeScalarQuantity::niceName() { return name + " (scalar)"; }
+std::string VolumeGridNodeScalarQuantity::niceName() { return name + " (node scalar)"; }
 
 void VolumeGridNodeScalarQuantity::refresh() {
   gridcubeProgram.reset();
@@ -119,7 +123,7 @@ void VolumeGridNodeScalarQuantity::createGridcubeProgram() {
   // clang-format off
   gridcubeProgram = render::engine->requestShader(
       "GRIDCUBE_PLANE", 
-      parent.addGridCubeRules(addScalarRules({"GRIDCUBE_PROPAGATE_VALUE"}), true)
+      parent.addGridCubeRules(addScalarRules({"GRIDCUBE_PROPAGATE_NODE_VALUE"}), true)
   );
   // clang-format on
 
@@ -165,6 +169,13 @@ void VolumeGridNodeScalarQuantity::createIsosurfaceProgram() {
   render::engine->setMaterial(*isosurfaceProgram, parent.getMaterial());
 }
 
+void VolumeGridNodeScalarQuantity::buildNodeInfoGUI(size_t ind) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  ImGui::Text("%g", values.getValue(ind));
+  ImGui::NextColumn();
+}
+
 // === Getters and setters
 
 VolumeGridNodeScalarQuantity* VolumeGridNodeScalarQuantity::setGridcubeVizEnabled(bool val) {
@@ -195,5 +206,112 @@ VolumeGridNodeScalarQuantity* VolumeGridNodeScalarQuantity::setIsosurfaceColor(g
   return this;
 }
 glm::vec3 VolumeGridNodeScalarQuantity::getIsosurfaceColor() { return isosurfaceColor.get(); }
+
+
+// ========================================================
+// ==========            Cell Scalar             ==========
+// ========================================================
+
+VolumeGridCellScalarQuantity::VolumeGridCellScalarQuantity(std::string name, VolumeGrid& grid_,
+                                                           const std::vector<double>& values_, DataType dataType_)
+    : VolumeGridQuantity(name, grid_, true), ScalarQuantity(*this, values_, dataType_),
+      gridcubeVizEnabled(parent.uniquePrefix() + "#" + name + "#gridcubeVizEnabled", true) {
+
+  values.setTextureSize(parent.gridCellDim.x, parent.gridCellDim.y, parent.gridCellDim.z);
+}
+
+
+void VolumeGridCellScalarQuantity::buildCustomUI() {
+
+  // Select which viz to use
+  ImGui::SameLine();
+  if (ImGui::Button("Mode")) {
+    ImGui::OpenPopup("ModePopup");
+  }
+  if (ImGui::BeginPopup("ModePopup")) {
+    // show toggles for each
+    // ImGui::Indent(20);
+    if (ImGui::MenuItem("Gridcube", NULL, &gridcubeVizEnabled.get())) setGridcubeVizEnabled(getGridcubeVizEnabled());
+    // ImGui::Indent(-20);
+    ImGui::EndPopup();
+  }
+
+
+  // == Options popup
+  ImGui::SameLine();
+  if (ImGui::Button("Options")) {
+    ImGui::OpenPopup("OptionsPopup");
+  }
+  if (ImGui::BeginPopup("OptionsPopup")) {
+    buildScalarOptionsUI();
+    ImGui::EndPopup();
+  }
+
+  if (gridcubeVizEnabled.get()) {
+    buildScalarUI();
+  }
+}
+
+std::string VolumeGridCellScalarQuantity::niceName() { return name + " (cell scalar)"; }
+
+void VolumeGridCellScalarQuantity::refresh() { gridcubeProgram.reset(); }
+
+void VolumeGridCellScalarQuantity::draw() {
+  if (!isEnabled()) return;
+
+  // Draw the point viz
+  if (gridcubeVizEnabled.get()) {
+    if (gridcubeProgram == nullptr) {
+      createGridcubeProgram();
+    }
+
+    // Set program uniforms
+    parent.setStructureUniforms(*gridcubeProgram);
+    parent.setGridCubeUniforms(*gridcubeProgram);
+    setScalarUniforms(*gridcubeProgram);
+
+    // Draw the actual grid
+    render::engine->setBackfaceCull(true);
+    gridcubeProgram->draw();
+  }
+}
+
+void VolumeGridCellScalarQuantity::createGridcubeProgram() {
+
+
+  // clang-format off
+  gridcubeProgram = render::engine->requestShader(
+      "GRIDCUBE_PLANE", 
+      parent.addGridCubeRules(addScalarRules({"GRIDCUBE_PROPAGATE_CELL_VALUE"}), true)
+  );
+  // clang-format on
+
+  gridcubeProgram->setAttribute("a_referencePosition", parent.gridPlaneReferencePositions.getRenderAttributeBuffer());
+  gridcubeProgram->setAttribute("a_referenceNormal", parent.gridPlaneReferenceNormals.getRenderAttributeBuffer());
+  gridcubeProgram->setAttribute("a_axisInd", parent.gridPlaneAxisInds.getRenderAttributeBuffer());
+
+  gridcubeProgram->setTextureFromColormap("t_colormap", cMap.get());
+  render::engine->setMaterial(*gridcubeProgram, parent.getMaterial());
+
+  gridcubeProgram->setTextureFromBuffer("t_value", values.getRenderTextureBuffer().get());
+  values.getRenderTextureBuffer().get()->setFilterMode(FilterMode::Linear);
+}
+
+void VolumeGridCellScalarQuantity::buildCellInfoGUI(size_t ind) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  ImGui::Text("%g", values.getValue(ind));
+  ImGui::NextColumn();
+}
+
+// === Getters and setters
+
+VolumeGridCellScalarQuantity* VolumeGridCellScalarQuantity::setGridcubeVizEnabled(bool val) {
+  gridcubeVizEnabled = val;
+  requestRedraw();
+  return this;
+}
+bool VolumeGridCellScalarQuantity::getGridcubeVizEnabled() { return gridcubeVizEnabled.get(); }
+
 
 } // namespace polyscope

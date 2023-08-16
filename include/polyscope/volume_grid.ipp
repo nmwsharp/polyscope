@@ -98,14 +98,6 @@ VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantity(std::string name
   return addNodeScalarQuantityImpl(name, standardizeArray<double, T>(values), dataType_);
 }
 
-/*
-template <class T>
-VolumeGridNodeScalarQuantity* VolumeGrid::addCellScalarQuantity(std::string name, const T& values, DataType dataType_) {
-  validateSize(values, nCells(), "grid cell scalar quantity " + name);
-  return addCellScalarQuantityImpl(name, standardizeArray<double, T>(values), dataType_);
-}
-*/
-
 
 template <class Func>
 VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityFromCallable(std::string name, Func&& func,
@@ -143,41 +135,48 @@ VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityFromBatchCallable
   return addNodeScalarQuantity(name, result, dataType_);
 }
 
-
-/*
-VolumeGridScalarIsosurface* VolumeGrid::addGridIsosurfaceQuantity(std::string name, double isoLevel, const T& values) {
-  validateSize(values, nNodes(), "grid isosurface quantity " + name);
-  return addIsosurfaceQuantityImpl(name, isoLevel, standardizeArray<double, T>(values));
+template <class T>
+VolumeGridCellScalarQuantity* VolumeGrid::addCellScalarQuantity(std::string name, const T& values, DataType dataType_) {
+  validateSize(values, nCells(), "grid cell scalar quantity " + name);
+  return addCellScalarQuantityImpl(name, standardizeArray<double, T>(values), dataType_);
 }
 
-template <class Funct>
-VolumeGridNodeScalarQuantity* VolumeGrid::addGridScalarQuantityFromFunction(std::string name, const Funct& funct,
-                                                                        DataType dataType_) {
-  size_t totalValues = nCornersPerSide * nCornersPerSide * nCornersPerSide;
-  std::vector<double> field(totalValues);
-  marchingcubes::SampleFunctionToGrid(funct, nCornersPerSide, gridCenter, sideLength, field);
-  return addGridScalarQuantity(name, field, dataType_);
+
+template <class Func>
+VolumeGridCellScalarQuantity* VolumeGrid::addCellScalarQuantityFromCallable(std::string name, Func&& func,
+                                                                            DataType dataType_) {
+
+  // Boostrap off the batch version
+  auto batchFunc = [&](float* pos_ptr, float* result_ptr, size_t N) {
+    for (size_t i = 0; i < N; i++) {
+      glm::vec3 pos{pos_ptr[3 * i + 0], pos_ptr[3 * i + 1], pos_ptr[3 * i + 2]};
+      result_ptr[i] = func(pos);
+    }
+  };
+
+  return addCellScalarQuantityFromBatchCallable(name, batchFunc, dataType_);
 }
 
-template <class Funct>
-VolumeGridVectorQuantity* VolumeGrid::addGridVectorQuantityFromFunction(std::string name, const Funct& funct,
-                                                                        VectorType dataType_) {
-  size_t totalValues = nCornersPerSide * nCornersPerSide * nCornersPerSide;
-  std::vector<glm::vec3> field(totalValues);
-  marchingcubes::SampleFunctionToGrid(funct, nCornersPerSide, gridCenter, sideLength, field);
-  return addGridVectorQuantity(name, field, dataType_);
-}
-*/
 
-/*
-template <typename Implicit>
-VolumeGrid* registerIsosurfaceFromFunction(std::string name, const Implicit& funct, size_t nValuesPerSide,
-                                           glm::vec3 center, double sideLen, bool meshImmediately = true) {
+template <class Func>
+VolumeGridCellScalarQuantity* VolumeGrid::addCellScalarQuantityFromBatchCallable(std::string name, Func&& func,
+                                                                                 DataType dataType_) {
+  // Build list of points to query
+  std::vector<float> queries(3 * nCells());
+  std::vector<float> result(nCells());
 
-  VolumeGrid* outputSurface = registerVolumeGrid(name, nValuesPerSide, center, sideLen);
-  outputSurface->addGridIsosurfaceQuantityFromFunction("isosurface", 0, funct);
-  return outputSurface;
+  // Sample to grid
+  for (size_t i = 0; i < nCells(); i++) {
+    glm::vec3 pos = positionOfCellIndex(i);
+    queries[3 * i + 0] = pos.x;
+    queries[3 * i + 1] = pos.y;
+    queries[3 * i + 2] = pos.z;
+  }
+
+  func(&queries.front(), &result.front(), static_cast<size_t>(nCells()));
+
+  return addCellScalarQuantity(name, result, dataType_);
 }
-*/
+
 
 } // namespace polyscope

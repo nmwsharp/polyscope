@@ -14,12 +14,11 @@
 
 #include <vector>
 
-// #include "marchingcubes/mesh_implicit_surface.h"
-
 namespace polyscope {
 
 class VolumeGrid;
 class VolumeGridNodeScalarQuantity;
+class VolumeGridCellScalarQuantity;
 
 template <> // Specialize the quantity type
 struct QuantityTypeHelper<VolumeGrid> {
@@ -71,14 +70,20 @@ public:
   template <class T>
   VolumeGridNodeScalarQuantity* addNodeScalarQuantity(std::string name, const T& values, DataType dataType_ = DataType::STANDARD);
   
-  // template <class T>
-  // VolumeGridCellScalarQuantity* addCellScalarQuantity(std::string name, const T& values, DataType dataType_ = DataType::STANDARD);
-  
   template <class Func>
   VolumeGridNodeScalarQuantity* addNodeScalarQuantityFromCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
   
   template <class Func>
   VolumeGridNodeScalarQuantity* addNodeScalarQuantityFromBatchCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
+  
+  template <class T>
+  VolumeGridCellScalarQuantity* addCellScalarQuantity(std::string name, const T& values, DataType dataType_ = DataType::STANDARD);
+  
+  template <class Func>
+  VolumeGridCellScalarQuantity* addCellScalarQuantityFromCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
+  
+  template <class Func>
+  VolumeGridCellScalarQuantity* addCellScalarQuantityFromBatchCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
 
 
   //template <class T> VolumeGridScalarIsosurface* addGridIsosurfaceQuantity(std::string name, double isoLevel, const T& values);
@@ -110,6 +115,9 @@ public:
   glm::vec3 positionOfCellIndex(uint64_t i) const;
   glm::vec3 positionOfCellIndex(glm::uvec3 inds) const;
 
+  // force the grid to act as if the specified elements are in use (aka enable them for picking, etc)
+  void markNodesAsUsed();
+  void markCellsAsUsed();
 
   // === Getters and setters for visualization settings
 
@@ -144,7 +152,7 @@ private:
   PersistentValue<std::string> material;
   PersistentValue<float> edgeWidth;
   PersistentValue<float> cubeSizeFactor;
-  
+
   // == Compute indices & geometry data
   void computeGridPlaneReferenceGeometry();
   
@@ -156,6 +164,9 @@ private:
   glm::vec3 pickColor;
   void buildNodeInfoGUI(size_t vInd);
   void buildCellInfoGUI(size_t cInd);
+  bool nodesHaveBeenUsed = false;
+  bool cellsHaveBeenUsed = false;
+  
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
@@ -172,7 +183,7 @@ private:
   // clang-format off
   
   VolumeGridNodeScalarQuantity* addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
-  VolumeGridNodeScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
+  VolumeGridCellScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
 
   // clang-format on
 };

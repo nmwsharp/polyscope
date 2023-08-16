@@ -454,10 +454,10 @@ void addVolumeGrid() {
   uint32_t dimX = 20;
   uint32_t dimY = 20;
   uint32_t dimZ = 20;
-  glm::vec3 bound_low{0., 0., 0.};
-  glm::vec3 bound_high{1., 1., 1.};
-  // glm::vec3 bound_low{-3., -3., -3.};
-  // glm::vec3 bound_high{3., 3., 3.};
+  // glm::vec3 bound_low{0., 0., 0.};
+  // glm::vec3 bound_high{1., 1., 1.};
+  glm::vec3 bound_low{-3., -3., -3.};
+  glm::vec3 bound_high{3., 3., 3.};
 
 
   polyscope::VolumeGrid* psGrid = polyscope::registerVolumeGrid("test grid", {dimX, dimY, dimZ}, bound_low, bound_high);
@@ -475,8 +475,12 @@ void addVolumeGrid() {
     glm::vec2 q = glm::vec2(glm::length(pxz) - t.x, p.y);
     return (glm::length(q) - t.y) * scale;
   };
-  polyscope::VolumeGridNodeScalarQuantity* q = psGrid->addNodeScalarQuantityFromCallable("torus sdf", torusSDF);
-  q->setEnabled(true);
+
+  polyscope::VolumeGridNodeScalarQuantity* qNode = psGrid->addNodeScalarQuantityFromCallable("torus sdf", torusSDF);
+  qNode->setEnabled(true);
+  
+  polyscope::VolumeGridCellScalarQuantity* qCell = psGrid->addCellScalarQuantityFromCallable("torus sdf", torusSDF);
+  qCell->setEnabled(true);
 }
 
 

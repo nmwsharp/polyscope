@@ -266,7 +266,6 @@ const ShaderStageSpecification FLEX_GRIDCUBE_PLANE_FRAG_SHADER = {
     
     // uniforms
     {
-        {"u_gridSpacing", RenderDataType::Vector3Float},
         {"u_gridSpacingReference", RenderDataType::Vector3Float},
         {"u_cubeSizeFactor", RenderDataType::Float},
     }, 
@@ -286,7 +285,6 @@ R"(
         in vec3 a_refNormalToFrag;
         flat in int a_axisIndToFrag;
         
-        uniform vec3 u_gridSpacing;
         uniform vec3 u_gridSpacingReference;
         uniform float u_cubeSizeFactor;
 
@@ -308,6 +306,7 @@ R"(
            float maxCoord = max(max(coordLocalAbs.x, coordLocalAbs.y), coordLocalAbs.z);
 
            vec3 cellInd3f = floor(coordUnit - REF_EPS*a_refNormalToFrag);
+           uvec3 cellInd = uvec3(cellInd3f);
 
            // discard the gaps in the cubes
            if(maxCoord > 1.f + REF_EPS) { // note the threshold here, hacky but seems okay
@@ -322,14 +321,16 @@ R"(
            // as an optimization, we discard faces of cubes which will no be visible: if a cube and 
            // its neighbor are both visible, there is no need to render a face between them
            // (note that this actually means almost all faces get discarded!)
-           vec3 neighCoordUnit = a_coordToFrag + a_refNormalToFrag * u_gridSpacingReference;
-           bool neighIsVisible = (all(greaterThan(neighCoordUnit, vec3(-REF_EPS))) && all(lessThan(neighCoordUnit, vec3(1.f + REF_EPS))));
+           if(u_cubeSizeFactor == 1.f) { // don't discard if there are gaps between the cubes
+             vec3 neighCoordUnit = a_coordToFrag + a_refNormalToFrag * u_gridSpacingReference;
+             bool neighIsVisible = (all(greaterThan(neighCoordUnit, vec3(-REF_EPS))) && all(lessThan(neighCoordUnit, vec3(1.f + REF_EPS))));
 
-           // catch additional neighbors which are visible due to slice planes
-           ${ GRID_PLANE_NEIGHBOR_FILTER }$
+             // catch additional neighbors which are visible due to slice planes
+             ${ GRID_PLANE_NEIGHBOR_FILTER }$
 
-           if(neighIsVisible) {
-             discard;
+             if(neighIsVisible) {
+               discard;
+             }
            }
            
 
@@ -359,14 +360,31 @@ R"(
 };
 
 
-const ShaderReplacementRule GRIDCUBE_PROPAGATE_VALUE (
-    /* rule name */ "GRIDCUBE_PROPAGATE_VALUE",
+const ShaderReplacementRule GRIDCUBE_PROPAGATE_NODE_VALUE (
+    /* rule name */ "GRIDCUBE_PROPAGATE_NODE_VALUE",
     { /* replacement sources */
       {"FRAG_DECLARATIONS", R"(
           uniform sampler3D t_value;
         )"},
       {"GENERATE_SHADE_VALUE", R"(
           float shadeValue = texture(t_value, a_coordToFrag).r;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ { },
+    /* textures */ {
+      {"t_value", 3},
+    }
+);
+
+const ShaderReplacementRule GRIDCUBE_PROPAGATE_CELL_VALUE (
+    /* rule name */ "GRIDCUBE_PROPAGATE_CELL_VALUE",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform sampler3D t_value;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float shadeValue = texelFetch(t_value, ivec3(cellInd), 0).r;
         )"},
     },
     /* uniforms */ {},

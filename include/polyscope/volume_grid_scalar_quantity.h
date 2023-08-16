@@ -24,6 +24,7 @@ public:
   virtual void draw() override;
   virtual void buildCustomUI() override;
   virtual void refresh() override;
+  virtual void buildNodeInfoGUI(size_t ind) override;
 
   virtual std::string niceName() override;
 
@@ -49,7 +50,7 @@ public:
 
 protected:
 
-  // Visualize as points
+  // Visualize as a grid of cubes
   PersistentValue<bool> gridcubeVizEnabled;
   std::shared_ptr<render::ShaderProgram> gridcubeProgram;
   void createGridcubeProgram();
@@ -64,6 +65,40 @@ protected:
 
   // Visualize as raymarched volume
   // TODO
+};
+
+
+// ========================================================
+// ==========            Cell Scalar             ==========
+// ========================================================
+
+class VolumeGridCellScalarQuantity : public VolumeGridQuantity, public ScalarQuantity<VolumeGridCellScalarQuantity> {
+
+public:
+  VolumeGridCellScalarQuantity(std::string name, VolumeGrid& grid_, const std::vector<double>& values_, DataType dataType_);
+
+  virtual void draw() override;
+  virtual void buildCustomUI() override;
+  virtual void refresh() override;
+  virtual void buildCellInfoGUI(size_t ind) override;
+
+  virtual std::string niceName() override;
+
+  // == Getters and setters
+
+  // Gridcube viz
+
+  VolumeGridCellScalarQuantity* setGridcubeVizEnabled(bool val);
+  bool getGridcubeVizEnabled();
+
+
+protected:
+
+  // Visualize as a grid of cubes
+  PersistentValue<bool> gridcubeVizEnabled;
+  std::shared_ptr<render::ShaderProgram> gridcubeProgram;
+  void createGridcubeProgram();
+
 };
 
 } // namespace polyscope
