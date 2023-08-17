@@ -12,9 +12,10 @@ namespace polyscope {
 RenderImageQuantityBase::RenderImageQuantityBase(Structure& parent_, std::string name, size_t dimX_, size_t dimY_,
                                                  const std::vector<float>& depthData_,
                                                  const std::vector<glm::vec3>& normalData_, ImageOrigin imageOrigin_)
-    : FloatingQuantity(name, parent_), depths("depths", depthsData), normals("normals", normalsData), dimX(dimX_),
-      dimY(dimY_), imageOrigin(imageOrigin_), depthsData(depthData_), normalsData(normalData_),
-      material(uniquePrefix() + "#material", "clay"), transparency(uniquePrefix() + "#transparency", 1.0) {
+    : FloatingQuantity(name, parent_), depths(uniquePrefix() + "depths", depthsData),
+      normals(uniquePrefix() + "normals", normalsData), dimX(dimX_), dimY(dimY_), imageOrigin(imageOrigin_),
+      depthsData(depthData_), normalsData(normalData_), material(uniquePrefix() + "#material", "clay"),
+      transparency(uniquePrefix() + "#transparency", 1.0) {
   depths.setTextureSize(dimX, dimY);
   normals.setTextureSize(dimX, dimY);
 }

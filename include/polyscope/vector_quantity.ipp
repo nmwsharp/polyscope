@@ -12,11 +12,11 @@ namespace polyscope {
 template <typename QuantityT>
 VectorQuantityBase<QuantityT>::VectorQuantityBase(QuantityT& quantity_, VectorType vectorType_)
     : quantity(quantity_), vectorType(vectorType_),
-      vectorLengthMult(quantity.uniquePrefix() + "#vectorLengthMult",
+      vectorLengthMult(quantity.uniquePrefix() + "vectorLengthMult",
                        vectorType == VectorType::AMBIENT ? absoluteValue(1.0) : relativeValue(0.02)),
-      vectorRadius(quantity.uniquePrefix() + "#vectorRadius", relativeValue(0.0025)),
-      vectorColor(quantity.uniquePrefix() + "#vectorColor", getNextUniqueColor()),
-      material(quantity.uniquePrefix() + "#material", "clay") {}
+      vectorRadius(quantity.uniquePrefix() + "vectorRadius", relativeValue(0.0025)),
+      vectorColor(quantity.uniquePrefix() + "vectorColor", getNextUniqueColor()),
+      material(quantity.uniquePrefix() + "material", "clay") {}
 
 template <typename QuantityT>
 void VectorQuantityBase<QuantityT>::buildVectorUI() {
