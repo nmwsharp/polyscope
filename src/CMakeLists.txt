@@ -267,6 +267,8 @@ SET(HEADERS
   ${INCLUDE_ROOT}/render/engine.h
   ${INCLUDE_ROOT}/render/engine.ipp
   ${INCLUDE_ROOT}/render/ground_plane.h
+  ${INCLUDE_ROOT}/render/managed_buffer.h
+  ${INCLUDE_ROOT}/render/managed_buffer.ipp
   ${INCLUDE_ROOT}/render/material_defs.h
   ${INCLUDE_ROOT}/render/materials.h
   ${INCLUDE_ROOT}/render_image_quantity_base.h

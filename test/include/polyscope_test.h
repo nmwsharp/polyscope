@@ -29,6 +29,7 @@ protected:
   static void SetUpTestSuite() {
     polyscope::init(testBackend);
     polyscope::options::enableRenderErrorChecks = true;
+    polyscope::options::errorsThrowExceptions = true;
   }
 
   // Per-test-suite tear-down.

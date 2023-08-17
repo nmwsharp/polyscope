@@ -3,6 +3,7 @@
 #pragma once
 
 #include <functional>
+#include <unordered_map>
 #include <vector>
 
 #include "polyscope/render/engine.h"
@@ -38,6 +39,9 @@ public:
 
   // Manage a buffer of data which gets computed lazily
   ManagedBuffer(const std::string& name, std::vector<T>& data, std::function<void()> computeFunc);
+
+
+  ~ManagedBuffer();
 
 
   // === Core members
@@ -196,6 +200,59 @@ protected:
   std::shared_ptr<render::ShaderProgram> bufferIndexCopyProgram;
 };
 
+// == Manage a global store of all registered managed buffers
+
+
+// Get a reference to any buffer that currently exists in Polyscope, by name
+// (this one fetches buffers associated with structures)
+template <typename T>
+ManagedBuffer<T>& getManagedBuffer(std::string structureName, std::string bufferName);
+
+// Get a reference to any buffer that currently exists in Polyscope, by name
+// (this one fetches buffers associated with quantities)
+template <typename T>
+ManagedBuffer<T>& getManagedBuffer(std::string structureName, std::string quantityName, std::string bufferName);
+
+
+// NOTE: a vector is a 'bad' choice, we pay O(n) for finds and removals.
+// But it'll probably never matter, and using a map is not easy because sometimes string keys are briefly nonunique when
+// a structure with a duplicate name is being added.
+template <typename T>
+struct ManagedBufferRegistry {
+public:
+  // the actual store
+  std::vector<ManagedBuffer<T>*> allBuffers;
+
+  // helpers
+  ManagedBuffer<T>& getManagedBuffer(std::string structureName, std::string bufferName);
+  ManagedBuffer<T>& getManagedBuffer(std::string structureName, std::string quantityName, std::string bufferName);
+};
+
+
+  // Helper to get the global cache for a particular type of persistent value
+template <typename T>
+ManagedBufferRegistry<T>& getManagedBufferRegistryRef();
+
+// clang-format off
+namespace detail {
+
+extern ManagedBufferRegistry<float>        managedBufferRegistry_float;
+extern ManagedBufferRegistry<double>       managedBufferRegistry_double;
+extern ManagedBufferRegistry<glm::vec2>    managedBufferRegistry_vec2;
+extern ManagedBufferRegistry<glm::vec3>    managedBufferRegistry_vec3;
+extern ManagedBufferRegistry<glm::vec4>    managedBufferRegistry_vec4;
+extern ManagedBufferRegistry<std::array<glm::vec3,2>> managedBufferRegistry_arr2vec3;
+extern ManagedBufferRegistry<std::array<glm::vec3,3>> managedBufferRegistry_arr3vec3;
+extern ManagedBufferRegistry<std::array<glm::vec3,4>> managedBufferRegistry_arr4vec3;
+extern ManagedBufferRegistry<uint32_t>     managedBufferRegistry_uint32;
+extern ManagedBufferRegistry<int32_t>      managedBufferRegistry_int32;
+extern ManagedBufferRegistry<glm::uvec2>   managedBufferRegistry_uvec2;
+extern ManagedBufferRegistry<glm::uvec3>   managedBufferRegistry_uvec3;
+extern ManagedBufferRegistry<glm::uvec4>   managedBufferRegistry_uvec4;
+
+}
 
 } // namespace render
 } // namespace polyscope
+
+#include "polyscope/render/managed_buffer.ipp"
