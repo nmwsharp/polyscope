@@ -28,31 +28,31 @@ SurfaceMesh::SurfaceMesh(std::string name_)
 // == managed quantities
 
 // positions
-vertexPositions(        uniquePrefix() + "vertexPositions",     vertexPositionsData),
+vertexPositions(           this, uniquePrefix() + "vertexPositions",     vertexPositionsData),
 
 // connectivity / indices
 // (triangle and face inds are always computed initially when we triangulate the mesh)
-triangleVertexInds(     uniquePrefix() + "triangleVertexInds",          triangleVertexIndsData),
-triangleFaceInds(       uniquePrefix() + "triangleFaceInds",            triangleFaceIndsData),
-triangleCornerInds(     uniquePrefix() + "triangleCornerInds",          triangleCornerIndsData,         std::bind(&SurfaceMesh::computeTriangleCornerInds, this)),
-triangleAllEdgeInds(    uniquePrefix() + "triangleAllEdgeInds",         triangleAllEdgeIndsData,        std::bind(&SurfaceMesh::computeTriangleAllEdgeInds, this)),
-triangleAllHalfedgeInds(   uniquePrefix() + "triangleHalfedgeInds",     triangleAllHalfedgeIndsData,    std::bind(&SurfaceMesh::computeTriangleAllHalfedgeInds, this)),
-triangleAllCornerInds(     uniquePrefix() + "triangleAllCornerInds",    triangleAllCornerIndsData,      std::bind(&SurfaceMesh::computeTriangleAllCornerInds, this)),
+triangleVertexInds(        this, uniquePrefix() + "triangleVertexInds",          triangleVertexIndsData),
+triangleFaceInds(          this, uniquePrefix() + "triangleFaceInds",            triangleFaceIndsData),
+triangleCornerInds(        this, uniquePrefix() + "triangleCornerInds",          triangleCornerIndsData,         std::bind(&SurfaceMesh::computeTriangleCornerInds, this)),
+triangleAllEdgeInds(       this, uniquePrefix() + "triangleAllEdgeInds",         triangleAllEdgeIndsData,        std::bind(&SurfaceMesh::computeTriangleAllEdgeInds, this)),
+triangleAllHalfedgeInds(   this, uniquePrefix() + "triangleHalfedgeInds",     triangleAllHalfedgeIndsData,    std::bind(&SurfaceMesh::computeTriangleAllHalfedgeInds, this)),
+triangleAllCornerInds(     this, uniquePrefix() + "triangleAllCornerInds",    triangleAllCornerIndsData,      std::bind(&SurfaceMesh::computeTriangleAllCornerInds, this)),
 
 // internal triangle data for rendering
-baryCoord(              uniquePrefix() + "baryCoord",           baryCoordData),
-edgeIsReal(             uniquePrefix() + "edgeIsReal",          edgeIsRealData),
+baryCoord(              this, uniquePrefix() + "baryCoord",           baryCoordData),
+edgeIsReal(             this, uniquePrefix() + "edgeIsReal",          edgeIsRealData),
 
 // other internally-computed geometry
-faceNormals(            uniquePrefix() + "faceNormals",         faceNormalsData,        std::bind(&SurfaceMesh::computeFaceNormals, this)),
-faceCenters(            uniquePrefix() + "faceCenters",         faceCentersData,        std::bind(&SurfaceMesh::computeFaceCenters, this)),         
-faceAreas(              uniquePrefix() + "faceAreas",           faceAreasData,          std::bind(&SurfaceMesh::computeFaceAreas, this)),
-vertexNormals(          uniquePrefix() + "vertexNormals",       vertexNormalsData,      std::bind(&SurfaceMesh::computeVertexNormals, this)),
-vertexAreas(            uniquePrefix() + "vertexAreas",         vertexAreasData,        std::bind(&SurfaceMesh::computeVertexAreas, this)),
+faceNormals(            this, uniquePrefix() + "faceNormals",         faceNormalsData,        std::bind(&SurfaceMesh::computeFaceNormals, this)),
+faceCenters(            this, uniquePrefix() + "faceCenters",         faceCentersData,        std::bind(&SurfaceMesh::computeFaceCenters, this)),         
+faceAreas(              this, uniquePrefix() + "faceAreas",           faceAreasData,          std::bind(&SurfaceMesh::computeFaceAreas, this)),
+vertexNormals(          this, uniquePrefix() + "vertexNormals",       vertexNormalsData,      std::bind(&SurfaceMesh::computeVertexNormals, this)),
+vertexAreas(            this, uniquePrefix() + "vertexAreas",         vertexAreasData,        std::bind(&SurfaceMesh::computeVertexAreas, this)),
 
 // tangent spaces
-defaultFaceTangentBasisX(   uniquePrefix() + "defaultFaceTangentBasisX",  defaultFaceTangentBasisXData,  std::bind(&SurfaceMesh::computeDefaultFaceTangentBasisX, this)),
-defaultFaceTangentBasisY(   uniquePrefix() + "defaultFaceTangentBasisY",  defaultFaceTangentBasisYData,  std::bind(&SurfaceMesh::computeDefaultFaceTangentBasisY, this)),
+defaultFaceTangentBasisX(   this, uniquePrefix() + "defaultFaceTangentBasisX",  defaultFaceTangentBasisXData,  std::bind(&SurfaceMesh::computeDefaultFaceTangentBasisX, this)),
+defaultFaceTangentBasisY(   this, uniquePrefix() + "defaultFaceTangentBasisY",  defaultFaceTangentBasisYData,  std::bind(&SurfaceMesh::computeDefaultFaceTangentBasisY, this)),
 
 // == persistent options
 surfaceColor(           uniquePrefix() + "surfaceColor",    getNextUniqueColor()),

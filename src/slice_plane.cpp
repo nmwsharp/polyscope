@@ -78,10 +78,10 @@ SlicePlane::SlicePlane(std::string name_)
       gridLineColor(uniquePrefix() + "#gridLineColor", glm::vec3{.97, .97, .97}),
       transparency(uniquePrefix() + "#transparency", 0.5), shouldInspectMesh(false), inspectedMeshName(""),
       transformGizmo(uniquePrefix() + "#transformGizmo", objectTransform.get(), &objectTransform),
-      sliceBufferArr{{{uniquePrefix() + "#slice1", sliceBufferDataArr[0]},
-                      {uniquePrefix() + "#slice2", sliceBufferDataArr[1]},
-                      {uniquePrefix() + "#slice3", sliceBufferDataArr[2]},
-                      {uniquePrefix() + "#slice4", sliceBufferDataArr[3]}}}
+      sliceBufferArr{{{nullptr, uniquePrefix() + "#slice1", sliceBufferDataArr[0]},
+                      {nullptr, uniquePrefix() + "#slice2", sliceBufferDataArr[1]},
+                      {nullptr, uniquePrefix() + "#slice3", sliceBufferDataArr[2]},
+                      {nullptr, uniquePrefix() + "#slice4", sliceBufferDataArr[3]}}}
 
 {
   state::slicePlanes.push_back(this);

@@ -103,21 +103,21 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
 // == managed quantities
 
 // positions
-vertexPositions(        uniquePrefix() + "vertexPositions",     vertexPositionsData),
+vertexPositions(        this, uniquePrefix() + "vertexPositions",     vertexPositionsData),
 
 // connectivity / indices
-triangleVertexInds(     uniquePrefix() + "triangleVertexInds",  triangleVertexIndsData),
-triangleFaceInds(       uniquePrefix() + "triangleFaceInds",    triangleFaceIndsData),
-triangleCellInds(       uniquePrefix() + "triangleCellInds",    triangleCellIndsData),
+triangleVertexInds(     this, uniquePrefix() + "triangleVertexInds",  triangleVertexIndsData),
+triangleFaceInds(       this, uniquePrefix() + "triangleFaceInds",    triangleFaceIndsData),
+triangleCellInds(       this, uniquePrefix() + "triangleCellInds",    triangleCellIndsData),
 
 // internal triangle data for rendering
-baryCoord(              uniquePrefix() + "baryCoord",           baryCoordData),
-edgeIsReal(             uniquePrefix() + "edgeIsReal",          edgeIsRealData),
-faceType(               uniquePrefix() + "faceType",            faceTypeData),
+baryCoord(              this, uniquePrefix() + "baryCoord",           baryCoordData),
+edgeIsReal(             this, uniquePrefix() + "edgeIsReal",          edgeIsRealData),
+faceType(               this, uniquePrefix() + "faceType",            faceTypeData),
 
 // other internally-computed geometry
-faceNormals(            uniquePrefix() + "faceNormals",         faceNormalsData,        std::bind(&VolumeMesh::computeFaceNormals, this)),
-cellCenters(            uniquePrefix() + "cellCenters",         cellCentersData,        std::bind(&VolumeMesh::computeCellCenters, this)),         
+faceNormals(            this, uniquePrefix() + "faceNormals",         faceNormalsData,        std::bind(&VolumeMesh::computeFaceNormals, this)),
+cellCenters(            this, uniquePrefix() + "cellCenters",         cellCentersData,        std::bind(&VolumeMesh::computeCellCenters, this)),         
 
 
 // == core input data

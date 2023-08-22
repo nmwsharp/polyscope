@@ -91,7 +91,7 @@ void CurveNetworkColorQuantity::refresh() {
 CurveNetworkEdgeColorQuantity::CurveNetworkEdgeColorQuantity(std::string name, std::vector<glm::vec3> values_,
                                                              CurveNetwork& network_)
     : CurveNetworkColorQuantity(name, network_, "edge", values_),
-      nodeAverageColors(uniquePrefix() + "#nodeAverageColors", nodeAverageColorsData) {}
+      nodeAverageColors(this, uniquePrefix() + "#nodeAverageColors", nodeAverageColorsData) {}
 
 void CurveNetworkEdgeColorQuantity::createProgram() {
 

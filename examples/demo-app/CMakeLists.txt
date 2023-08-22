@@ -28,6 +28,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STR
     SET(CMAKE_CXX_FLAGS_DEBUG          "-fsanitize=address -fno-limit-debug-info")
   elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     SET(BASE_CXX_FLAGS "${BASE_CXX_FLAGS} -fmax-errors=5")
+    SET(CMAKE_CXX_FLAGS_DEBUG          "-fsanitize=address")
     message("Setting gcc-specific options")
     SET(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-maybe-uninitialized -Wno-format-zero-length -Wno-unused-but-set-parameter -Wno-unused-but-set-variable")
   endif()

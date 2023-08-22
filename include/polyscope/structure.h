@@ -13,6 +13,8 @@
 #include "polyscope/render/engine.h"
 #include "polyscope/transformation_gizmo.h"
 
+#include "polyscope/render/managed_buffer.h"
+
 
 namespace polyscope {
 
@@ -27,7 +29,7 @@ namespace polyscope {
 // user to utilize and access custom structures with little code.
 
 
-class Structure {
+class Structure : public render::ManagedBufferRegistry {
 
 public:
   Structure(std::string name, std::string subtypeName);
