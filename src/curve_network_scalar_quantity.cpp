@@ -114,7 +114,7 @@ void CurveNetworkNodeScalarQuantity::buildNodeInfoGUI(size_t nInd) {
 CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name, const std::vector<double>& values_,
                                                                CurveNetwork& network_, DataType dataType_)
     : CurveNetworkScalarQuantity(name, network_, "edge", values_, dataType_),
-      nodeAverageValues(uniquePrefix() + "#nodeAverageValues", nodeAverageValuesData) {}
+      nodeAverageValues(this, uniquePrefix() + "#nodeAverageValues", nodeAverageValuesData) {}
 
 void CurveNetworkEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity

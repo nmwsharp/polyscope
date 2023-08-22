@@ -10,6 +10,7 @@
 #include "polyscope/implicit_helpers.h"
 #include "polyscope/pick.h"
 #include "polyscope/point_cloud.h"
+#include "polyscope/render/managed_buffer.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/types.h"
 #include "polyscope/view.h"
@@ -478,7 +479,7 @@ void addVolumeGrid() {
 
   polyscope::VolumeGridNodeScalarQuantity* qNode = psGrid->addNodeScalarQuantityFromCallable("torus sdf", torusSDF);
   qNode->setEnabled(true);
-  
+
   polyscope::VolumeGridCellScalarQuantity* qCell = psGrid->addCellScalarQuantityFromCallable("torus sdf", torusSDF);
   qCell->setEnabled(true);
 }
@@ -789,6 +790,14 @@ void callback() {
     dropCameraView();
   }
 
+  if (ImGui::Button("load floating image data")) {
+    loadFloatingImageData();
+  }
+
+  if (ImGui::Button("add volume grid")) {
+    addVolumeGrid();
+  }
+
   ImGui::PopItemWidth();
 }
 
@@ -828,7 +837,7 @@ int main(int argc, char** argv) {
   }
 
   // Create a point cloud
-  for (int j = 0; j < 0; j++) {
+  for (int j = 0; j < 1; j++) {
     std::vector<glm::vec3> points;
     for (size_t i = 0; i < 3000; i++) {
       points.push_back(
@@ -838,8 +847,8 @@ int main(int argc, char** argv) {
     addDataToPointCloud("really great points" + std::to_string(j), points);
   }
 
-  loadFloatingImageData();
-  addVolumeGrid();
+  // loadFloatingImageData();
+  // addVolumeGrid();
 
   // Add a few gui elements
   polyscope::state::userCallback = callback;
@@ -852,5 +861,7 @@ int main(int argc, char** argv) {
   //   polyscope::frameTick();
   // }
 
+  std::cout << "!!!! shutdown time" << std::endl;
+  
   return 0;
 }

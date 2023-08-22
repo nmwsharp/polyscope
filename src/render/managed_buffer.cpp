@@ -15,53 +15,29 @@ namespace polyscope {
 namespace render {
 
 template <typename T>
-ManagedBuffer<T>::ManagedBuffer(const std::string& name_, std::vector<T>& data_)
-    : name(name_), uniqueID(internal::getNextUniqueID()), data(data_), dataGetsComputed(false),
+ManagedBuffer<T>::ManagedBuffer(ManagedBufferRegistry* registry_, const std::string& name_, std::vector<T>& data_)
+    : name(name_), uniqueID(internal::getNextUniqueID()), registry(registry_), data(data_), dataGetsComputed(false),
       hostBufferIsPopulated(true) {
 
-  // add it to the registry
-  ManagedBufferRegistry<T>& registry = getManagedBufferRegistryRef<T>();
-
-  // these are briefly nonunique when structures with duplicate names are added
-  // if (registry.find(name) != registry.end()) {
-  //   exception("internal error: tried to create managed buffer with non-unique duplicate name: " + name);
-  // }
-
-  registry.allBuffers.push_back(this);
+  if (registry) {
+    registry->addManagedBuffer<T>(this);
+  }
 }
 
 
 template <typename T>
-ManagedBuffer<T>::ManagedBuffer(const std::string& name_, std::vector<T>& data_, std::function<void()> computeFunc_)
-    : name(name_), uniqueID(internal::getNextUniqueID()), data(data_), dataGetsComputed(true),
+ManagedBuffer<T>::ManagedBuffer(ManagedBufferRegistry* registry_, const std::string& name_, std::vector<T>& data_,
+                                std::function<void()> computeFunc_)
+    : name(name_), uniqueID(internal::getNextUniqueID()), registry(registry_), data(data_), dataGetsComputed(true),
       computeFunc(computeFunc_), hostBufferIsPopulated(false) {
 
-  // add it to the registry
-  ManagedBufferRegistry<T>& registry = getManagedBufferRegistryRef<T>();
-
-  // these are briefly nonunique when structures with duplicate names are added
-  // if (registry.find(name) != registry.end()) {
-  //   exception("internal error: tried to create managed buffer with non-unique duplicate name: " + name);
-  // }
-
-  registry.allBuffers.push_back(this);
+  if (registry) {
+    registry->addManagedBuffer<T>(this);
+  }
 }
 
 template <typename T>
-ManagedBuffer<T>::~ManagedBuffer() {
-
-  // remove it from the registry
-  ManagedBufferRegistry<T>& registry = getManagedBufferRegistryRef<T>();
-
-  if (std::find(registry.allBuffers.begin(), registry.allBuffers.end(), this) == registry.allBuffers.end()) {
-    exception("internal error: managed buffer is not in registry: " + name);
-  }
-
-  // erase-remvoe idiom
-  registry.allBuffers.erase(std::remove_if(registry.allBuffers.begin(), registry.allBuffers.end(),
-                                           [&](const ManagedBuffer<T>* b) { return b == this; }),
-                            registry.allBuffers.end());
-}
+ManagedBuffer<T>::~ManagedBuffer() {}
 
 template <typename T>
 void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_) {
@@ -231,6 +207,45 @@ bool ManagedBuffer<T>::hasData() {
   if (deviceBufferType == DeviceBufferType::Texture3d && renderTextureBuffer) return true;
   return false;
 }
+
+template <typename T>
+std::string ManagedBuffer<T>::summaryString() {
+
+  std::string str = "";
+
+  str += "[" + name + "]";
+  str += "   status: ";
+  switch (currentCanonicalDataSource()) {
+  case CanonicalDataSource::HostData:
+    str += "HostData";
+    break;
+  case CanonicalDataSource::NeedsCompute:
+    str += "NeedsCompute";
+    break;
+  case CanonicalDataSource::RenderBuffer:
+    str += "Renderbuffer";
+    break;
+  };
+  str += " size: " + std::to_string(size());
+  str += " device type: ";
+  switch (deviceBufferType) {
+  case DeviceBufferType::Attribute:
+    str += "Attribute";
+    break;
+  case DeviceBufferType::Texture1d:
+    str += "Texture1d";
+    break;
+  case DeviceBufferType::Texture2d:
+    str += "Texture2d";
+    break;
+  case DeviceBufferType::Texture3d:
+    str += "Texture3d";
+    break;
+  }
+
+  return str;
+}
+
 
 template <typename T>
 void ManagedBuffer<T>::recomputeIfPopulated() {
@@ -444,93 +459,20 @@ void ManagedBuffer<T>::invokeBufferIndexCopyProgram() {
 
 // === Interact with the buffer registry
 
-namespace {
-// helper function for string bashing below
-void splitString(std::string str, const std::string& delim, std::vector<std::string>& output) {
-  output.clear();
-  size_t pos = 0;
-  std::string token;
-  while ((pos = str.find(delim)) != std::string::npos) {
-    token = str.substr(0, pos);
-    output.push_back(token);
-    str.erase(0, pos + delim.length());
-  }
-  output.push_back(str);
-}
-} // namespace
-
-template <typename T>
-ManagedBuffer<T>& ManagedBufferRegistry<T>::getManagedBuffer(std::string structureName, std::string bufferName) {
-
-  std::vector<std::string> tokens;
-
-  // store the result here
-  ManagedBuffer<T>* res = nullptr;
-
-  // iterate buffers looking for the desired one
-  for (ManagedBuffer<T>* bufferPtr : allBuffers) {
-    splitString(bufferPtr->name, "#", tokens);
-
-    // check if it's a match
-    // (we don't require the structure name because the user probably doesn't know it)
-    if (tokens.size() == 3 && tokens[1] == structureName && tokens[2] == bufferName) {
-      if (res) { // if this is the second match, throw an error
-        exception("getManagedBuffer() found multple matching buffers: " + res->name + " " + bufferPtr->name);
-      } else {
-        res = bufferPtr;
-      }
-    }
-  }
-
-  if (res == nullptr) {
-
-    info("All managed buffers:");
-    for (ManagedBuffer<T>* bufferPtr : allBuffers) {
-      info("  " + bufferPtr->name);
-    }
-
-    exception("getManagedBuffer() no buffer found matching " + structureName + "," + bufferName);
-  }
-
-  return *res;
-}
-
-template <typename T>
-ManagedBuffer<T>& ManagedBufferRegistry<T>::getManagedBuffer(std::string structureName, std::string quantityName,
-                                                             std::string bufferName) {
-
-  std::vector<std::string> tokens;
-
-  // store the result here
-  ManagedBuffer<T>* res = nullptr;
-
-  // iterate buffers looking for the desired one
-  for (ManagedBuffer<T>* bufferPtr : allBuffers) {
-    splitString(bufferPtr->name, "#", tokens);
-
-    // check if it's a match
-    // (we don't require the structure name because the user probably doesn't know it)
-    if (tokens.size() == 4 && tokens[1] == structureName && tokens[2] == quantityName && tokens[3] == bufferName) {
-      if (res) { // if this is the second match, throw an error
-        exception("getManagedBuffer() found multple matching buffers: " + res->name + " " + bufferPtr->name);
-      } else {
-        res = bufferPtr;
-      }
-    }
-  }
-
-  if (res == nullptr) {
-
-    info("All managed buffers:");
-    for (ManagedBuffer<T>* bufferPtr : allBuffers) {
-      info("  " + bufferPtr->name);
-    }
-
-    exception("getManagedBuffer() no buffer found matching " + structureName + "," + quantityName + "," + bufferName);
-  }
-
-  return *res;
-}
+// namespace {
+// // helper function for string bashing below
+// void splitString(std::string str, const std::string& delim, std::vector<std::string>& output) {
+//   output.clear();
+//   size_t pos = 0;
+//   std::string token;
+//   while ((pos = str.find(delim)) != std::string::npos) {
+//     token = str.substr(0, pos);
+//     output.push_back(token);
+//     str.erase(0, pos + delim.length());
+//   }
+//   output.push_back(str);
+// }
+// } // namespace
 
 // === Explicit template instantiation for the supported types
 
@@ -554,45 +496,44 @@ template class ManagedBuffer<glm::uvec2>;
 template class ManagedBuffer<glm::uvec3>;
 template class ManagedBuffer<glm::uvec4>;
 
+// Buffer maps
 
-// == Manage a global store of all registered managed buffers
+template struct ManagedBufferMap<float>;
+template struct ManagedBufferMap<double>;
 
-template struct ManagedBufferRegistry<float>;
-template struct ManagedBufferRegistry<double>;
+template struct ManagedBufferMap<glm::vec2>;
+template struct ManagedBufferMap<glm::vec3>;
+template struct ManagedBufferMap<glm::vec4>;
 
-template struct ManagedBufferRegistry<glm::vec2>;
-template struct ManagedBufferRegistry<glm::vec3>;
-template struct ManagedBufferRegistry<glm::vec4>;
+template struct ManagedBufferMap<std::array<glm::vec3, 2>>;
+template struct ManagedBufferMap<std::array<glm::vec3, 3>>;
+template struct ManagedBufferMap<std::array<glm::vec3, 4>>;
 
-template struct ManagedBufferRegistry<std::array<glm::vec3, 2>>;
-template struct ManagedBufferRegistry<std::array<glm::vec3, 3>>;
-template struct ManagedBufferRegistry<std::array<glm::vec3, 4>>;
+template struct ManagedBufferMap<uint32_t>;
+template struct ManagedBufferMap<int32_t>;
 
-template struct ManagedBufferRegistry<uint32_t>;
-template struct ManagedBufferRegistry<int32_t>;
+template struct ManagedBufferMap<glm::uvec2>;
+template struct ManagedBufferMap<glm::uvec3>;
+template struct ManagedBufferMap<glm::uvec4>;
 
-template struct ManagedBufferRegistry<glm::uvec2>;
-template struct ManagedBufferRegistry<glm::uvec3>;
-template struct ManagedBufferRegistry<glm::uvec4>;
 
-namespace detail {
-// storage for managed buffer global registeries
 // clang-format off
-ManagedBufferRegistry<float>        managedBufferRegistry_float;
-ManagedBufferRegistry<double>       managedBufferRegistry_double;
-ManagedBufferRegistry<glm::vec2>    managedBufferRegistry_vec2;
-ManagedBufferRegistry<glm::vec3>    managedBufferRegistry_vec3;
-ManagedBufferRegistry<glm::vec4>    managedBufferRegistry_vec4;
-ManagedBufferRegistry<std::array<glm::vec3,2>> managedBufferRegistry_arr2vec3;
-ManagedBufferRegistry<std::array<glm::vec3,3>> managedBufferRegistry_arr3vec3;
-ManagedBufferRegistry<std::array<glm::vec3,4>> managedBufferRegistry_arr4vec3;
-ManagedBufferRegistry<uint32_t>     managedBufferRegistry_uint32;
-ManagedBufferRegistry<int32_t>      managedBufferRegistry_int32;
-ManagedBufferRegistry<glm::uvec2>   managedBufferRegistry_uvec2;
-ManagedBufferRegistry<glm::uvec3>   managedBufferRegistry_uvec3;
-ManagedBufferRegistry<glm::uvec4>   managedBufferRegistry_uvec4;
+
+template<> ManagedBufferMap<float>&                    ManagedBufferMap<float>::getManagedBufferMapRef                   (ManagedBufferRegistry* r) { return r->managedBufferMap_float; }
+template<> ManagedBufferMap<double>&                   ManagedBufferMap<double>::getManagedBufferMapRef                  (ManagedBufferRegistry* r) { return r->managedBufferMap_double; }
+template<> ManagedBufferMap<glm::vec2>&                ManagedBufferMap<glm::vec2>::getManagedBufferMapRef               (ManagedBufferRegistry* r) { return r->managedBufferMap_vec2; }
+template<> ManagedBufferMap<glm::vec3>&                ManagedBufferMap<glm::vec3>::getManagedBufferMapRef               (ManagedBufferRegistry* r) { return r->managedBufferMap_vec3; }
+template<> ManagedBufferMap<glm::vec4>&                ManagedBufferMap<glm::vec4>::getManagedBufferMapRef               (ManagedBufferRegistry* r) { return r->managedBufferMap_vec4; }
+template<> ManagedBufferMap<std::array<glm::vec3,2>>&  ManagedBufferMap<std::array<glm::vec3,2>>::getManagedBufferMapRef (ManagedBufferRegistry* r) { return r->managedBufferMap_arr2vec3; }
+template<> ManagedBufferMap<std::array<glm::vec3,3>>&  ManagedBufferMap<std::array<glm::vec3,3>>::getManagedBufferMapRef (ManagedBufferRegistry* r) { return r->managedBufferMap_arr3vec3; }
+template<> ManagedBufferMap<std::array<glm::vec3,4>>&  ManagedBufferMap<std::array<glm::vec3,4>>::getManagedBufferMapRef (ManagedBufferRegistry* r) { return r->managedBufferMap_arr4vec3; }
+template<> ManagedBufferMap<uint32_t>&                 ManagedBufferMap<uint32_t>::getManagedBufferMapRef                (ManagedBufferRegistry* r) { return r->managedBufferMap_uint32; }
+template<> ManagedBufferMap<int32_t>&                  ManagedBufferMap<int32_t>::getManagedBufferMapRef                 (ManagedBufferRegistry* r) { return r->managedBufferMap_int32; }
+template<> ManagedBufferMap<glm::uvec2>&               ManagedBufferMap<glm::uvec2>::getManagedBufferMapRef              (ManagedBufferRegistry* r) { return r->managedBufferMap_uvec2; }
+template<> ManagedBufferMap<glm::uvec3>&               ManagedBufferMap<glm::uvec3>::getManagedBufferMapRef              (ManagedBufferRegistry* r) { return r->managedBufferMap_uvec3; }
+template<> ManagedBufferMap<glm::uvec4>&               ManagedBufferMap<glm::uvec4>::getManagedBufferMapRef              (ManagedBufferRegistry* r) { return r->managedBufferMap_uvec4; }
+
 // clang-format on
-} // namespace detail
 
 } // namespace render
 } // namespace polyscope

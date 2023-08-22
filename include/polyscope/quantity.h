@@ -4,6 +4,8 @@
 
 #include "polyscope/persistent_value.h"
 
+#include "polyscope/render/managed_buffer.h"
+
 #include <string>
 
 namespace polyscope {
@@ -18,7 +20,7 @@ class Structure;
 // === General Quantities
 // (subclasses could be a structure-specific quantity or a floating quantity)
 
-class Quantity {
+class Quantity : public render::ManagedBufferRegistry {
 
 public:
   Quantity(std::string name, Structure& parentStructure);

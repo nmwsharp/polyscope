@@ -122,8 +122,9 @@ std::string VectorQuantityBase<QuantityT>::getMaterial() {
 template <typename QuantityT>
 VectorQuantity<QuantityT>::VectorQuantity(QuantityT& quantity_, const std::vector<glm::vec3>& vectors_,
                                           render::ManagedBuffer<glm::vec3>& vectorRoots_, VectorType vectorType_)
-    : VectorQuantityBase<QuantityT>(quantity_, vectorType_), vectors(quantity_.uniquePrefix() + "#values", vectorsData),
-      vectorRoots(vectorRoots_), vectorsData(vectors_) {
+    : VectorQuantityBase<QuantityT>(quantity_, vectorType_),
+      vectors(&quantity_, quantity_.uniquePrefix() + "#values", vectorsData), vectorRoots(vectorRoots_),
+      vectorsData(vectors_) {
   this->updateMaxLength();
 }
 
@@ -227,9 +228,9 @@ TangentVectorQuantity<QuantityT>::TangentVectorQuantity(QuantityT& quantity_,
                                                         VectorType vectorType_)
 
     : VectorQuantityBase<QuantityT>(quantity_, vectorType_),
-      tangentVectors(quantity_.uniquePrefix() + "#values", tangentVectorsData),
-      tangentBasisX(quantity_.uniquePrefix() + "#basisX", tangentBasisXData),
-      tangentBasisY(quantity_.uniquePrefix() + "#basisY", tangentBasisYData), vectorRoots(vectorRoots_),
+      tangentVectors(&quantity_, quantity_.uniquePrefix() + "#values", tangentVectorsData),
+      tangentBasisX(&quantity_, quantity_.uniquePrefix() + "#basisX", tangentBasisXData),
+      tangentBasisY(&quantity_, quantity_.uniquePrefix() + "#basisY", tangentBasisYData), vectorRoots(vectorRoots_),
       tangentVectorsData(tangentVectors_), tangentBasisXData(tangentBasisX_), tangentBasisYData(tangentBasisY_),
       nSym(nSym_) {
   this->updateMaxLength();

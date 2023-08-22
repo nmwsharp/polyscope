@@ -34,7 +34,7 @@ template <typename QuantityT>
 ParameterizationQuantity<QuantityT>::ParameterizationQuantity(QuantityT& quantity_,
                                                               const std::vector<glm::vec2>& coords_,
                                                               ParamCoordsType type_, ParamVizStyle style_)
-    : quantity(quantity_), coords(quantity.uniquePrefix() + "#coords", coordsData), coordsType(type_),
+    : quantity(quantity_), coords(&quantity, quantity.uniquePrefix() + "#coords", coordsData), coordsType(type_),
       coordsData(coords_), checkerSize(quantity.uniquePrefix() + "#checkerSize", 0.02),
       vizStyle(quantity.uniquePrefix() + "#vizStyle", style_),
       checkColor1(quantity.uniquePrefix() + "#checkColor1", render::RGB_PINK),

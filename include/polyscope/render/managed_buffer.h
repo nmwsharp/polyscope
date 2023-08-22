@@ -12,6 +12,9 @@
 namespace polyscope {
 namespace render {
 
+// forward declaration
+class ManagedBufferRegistry;
+
 /*
  * This class is a wrapper which sits on top of data buffers in Polyscope, and handles common data-management concerns
  * of:
@@ -34,11 +37,12 @@ public:
   // (second variants are advanced versions which allow creation of multi-dimensional texture values)
 
   // Manage a buffer of data which is explicitly set externally.
-  ManagedBuffer(const std::string& name, std::vector<T>& data);
+  ManagedBuffer(ManagedBufferRegistry* registry, const std::string& name, std::vector<T>& data);
 
 
   // Manage a buffer of data which gets computed lazily
-  ManagedBuffer(const std::string& name, std::vector<T>& data, std::function<void()> computeFunc);
+  ManagedBuffer(ManagedBufferRegistry* registry, const std::string& name, std::vector<T>& data,
+                std::function<void()> computeFunc);
 
 
   ~ManagedBuffer();
@@ -48,7 +52,12 @@ public:
 
   // A meaningful name for the buffer
   std::string name;
+
+  // A globally-unique ID
   const uint64_t uniqueID;
+
+  // The registry in which it is tracked (can be null)
+  ManagedBufferRegistry* registry;
 
 
   // The raw underlying buffer which this class wraps that holds the data.
@@ -108,6 +117,8 @@ public:
 
   bool hasData(); // true if there is valid data on either the host or device
   size_t size();  // size of the data (number of entries)
+
+  std::string summaryString(); // for debugging
 
   // ========================================================================
   // == Direct access to the GPU (device-side) render attribute buffer
@@ -200,57 +211,58 @@ protected:
   std::shared_ptr<render::ShaderProgram> bufferIndexCopyProgram;
 };
 
-// == Manage a global store of all registered managed buffers
 
+// == Manage a store of all registered managed buffers
 
-// Get a reference to any buffer that currently exists in Polyscope, by name
-// (this one fetches buffers associated with structures)
+// These registries are set up to be static: once a buffer is added it is never removed.
+
+// Helper class representing a map [name] --> [buffer]
 template <typename T>
-ManagedBuffer<T>& getManagedBuffer(std::string structureName, std::string bufferName);
-
-// Get a reference to any buffer that currently exists in Polyscope, by name
-// (this one fetches buffers associated with quantities)
-template <typename T>
-ManagedBuffer<T>& getManagedBuffer(std::string structureName, std::string quantityName, std::string bufferName);
-
-
-// NOTE: a vector is a 'bad' choice, we pay O(n) for finds and removals.
-// But it'll probably never matter, and using a map is not easy because sometimes string keys are briefly nonunique when
-// a structure with a duplicate name is being added.
-template <typename T>
-struct ManagedBufferRegistry {
+struct ManagedBufferMap {
 public:
-  // the actual store
-  std::vector<ManagedBuffer<T>*> allBuffers;
+  void addManagedBuffer(ManagedBuffer<T>* buffer);
 
-  // helpers
-  ManagedBuffer<T>& getManagedBuffer(std::string structureName, std::string bufferName);
-  ManagedBuffer<T>& getManagedBuffer(std::string structureName, std::string quantityName, std::string bufferName);
+  ManagedBuffer<T>& getManagedBuffer(std::string name);
+
+  // internal helper for template things
+  static ManagedBufferMap<T>& getManagedBufferMapRef(ManagedBufferRegistry* r);
+
+private:
+  // the actual store
+  // NOTE: we do NOT support removal
+  std::vector<ManagedBuffer<T>*> allBuffers;
 };
 
 
-  // Helper to get the global cache for a particular type of persistent value
-template <typename T>
-ManagedBufferRegistry<T>& getManagedBufferRegistryRef();
+// A registry of buffer of various types
+// Classes (structures, quantities) can extend this to track their own buffers
+class ManagedBufferRegistry {
+public:
+  // get a reference to any buffer that currently exists in Polyscope, by name
+  // (this one fetches buffers associated with structures)
+  template <typename T>
+  ManagedBuffer<T>& getManagedBuffer(std::string name);
 
-// clang-format off
-namespace detail {
+  template <typename T>
+  void addManagedBuffer(ManagedBuffer<T>* buffer);
 
-extern ManagedBufferRegistry<float>        managedBufferRegistry_float;
-extern ManagedBufferRegistry<double>       managedBufferRegistry_double;
-extern ManagedBufferRegistry<glm::vec2>    managedBufferRegistry_vec2;
-extern ManagedBufferRegistry<glm::vec3>    managedBufferRegistry_vec3;
-extern ManagedBufferRegistry<glm::vec4>    managedBufferRegistry_vec4;
-extern ManagedBufferRegistry<std::array<glm::vec3,2>> managedBufferRegistry_arr2vec3;
-extern ManagedBufferRegistry<std::array<glm::vec3,3>> managedBufferRegistry_arr3vec3;
-extern ManagedBufferRegistry<std::array<glm::vec3,4>> managedBufferRegistry_arr4vec3;
-extern ManagedBufferRegistry<uint32_t>     managedBufferRegistry_uint32;
-extern ManagedBufferRegistry<int32_t>      managedBufferRegistry_int32;
-extern ManagedBufferRegistry<glm::uvec2>   managedBufferRegistry_uvec2;
-extern ManagedBufferRegistry<glm::uvec3>   managedBufferRegistry_uvec3;
-extern ManagedBufferRegistry<glm::uvec4>   managedBufferRegistry_uvec4;
+  // clang-format off
+  ManagedBufferMap<float>        managedBufferMap_float;
+  ManagedBufferMap<double>       managedBufferMap_double;
+  ManagedBufferMap<glm::vec2>    managedBufferMap_vec2;
+  ManagedBufferMap<glm::vec3>    managedBufferMap_vec3;
+  ManagedBufferMap<glm::vec4>    managedBufferMap_vec4;
+  ManagedBufferMap<std::array<glm::vec3,2>> managedBufferMap_arr2vec3;
+  ManagedBufferMap<std::array<glm::vec3,3>> managedBufferMap_arr3vec3;
+  ManagedBufferMap<std::array<glm::vec3,4>> managedBufferMap_arr4vec3;
+  ManagedBufferMap<uint32_t>     managedBufferMap_uint32;
+  ManagedBufferMap<int32_t>      managedBufferMap_int32;
+  ManagedBufferMap<glm::uvec2>   managedBufferMap_uvec2;
+  ManagedBufferMap<glm::uvec3>   managedBufferMap_uvec3;
+  ManagedBufferMap<glm::uvec4>   managedBufferMap_uvec4;
+  // clang-format on
+};
 
-}
 
 } // namespace render
 } // namespace polyscope

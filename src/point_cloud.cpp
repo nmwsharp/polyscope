@@ -25,7 +25,7 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
     : // clang-format off
     QuantityStructure<PointCloud>(name, structureTypeName), 
-      points(uniquePrefix() + "points", pointsData),
+      points(this, uniquePrefix() + "points", pointsData),
       pointsData(std::move(points_)), 
       pointRenderMode(uniquePrefix() + "pointRenderMode", "sphere"),
       pointColor(uniquePrefix() + "pointColor", getNextUniqueColor()),

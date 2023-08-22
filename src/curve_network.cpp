@@ -20,10 +20,10 @@ const std::string CurveNetwork::structureTypeName = "Curve Network";
 CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std::vector<std::array<size_t, 2>> edges_)
     : // clang-format off
       QuantityStructure<CurveNetwork>(name, typeName()), 
-      nodePositions(uniquePrefix() + "nodePositions", nodePositionsData),
-      edgeTailInds(uniquePrefix() + "edgeTailInds", edgeTailIndsData),
-      edgeTipInds(uniquePrefix() + "edgeTipInds", edgeTipIndsData),
-      edgeCenters(uniquePrefix() + "edgeCenters", edgeCentersData, std::bind(&CurveNetwork::computeEdgeCenters, this)),         
+      nodePositions(this, uniquePrefix() + "nodePositions", nodePositionsData),
+      edgeTailInds(this, uniquePrefix() + "edgeTailInds", edgeTailIndsData),
+      edgeTipInds(this, uniquePrefix() + "edgeTipInds", edgeTipIndsData),
+      edgeCenters(this, uniquePrefix() + "edgeCenters", edgeCentersData, std::bind(&CurveNetwork::computeEdgeCenters, this)),         
       nodePositionsData(std::move(nodes_)), 
       color(uniquePrefix() + "#color", getNextUniqueColor()), 
       radius(uniquePrefix() + "#radius", relativeValue(0.005)),
