@@ -10,5 +10,6 @@
 #include "polyscope/color_image_quantity.h"
 #include "polyscope/color_render_image_quantity.h"
 #include "polyscope/depth_render_image_quantity.h"
+#include "polyscope/raw_color_render_image_quantity.h"
 #include "polyscope/scalar_image_quantity.h"
 #include "polyscope/scalar_render_image_quantity.h"

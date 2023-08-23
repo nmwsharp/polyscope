@@ -63,7 +63,6 @@ void ColorRenderImageQuantity::buildCustomUI() {
 
 void ColorRenderImageQuantity::refresh() {
   program = nullptr;
-  textureColor = nullptr;
   RenderImageQuantityBase::refresh();
 }
 

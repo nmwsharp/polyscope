@@ -8,6 +8,7 @@
 
 #include "polyscope/color_render_image_quantity.h"
 #include "polyscope/depth_render_image_quantity.h"
+#include "polyscope/raw_color_render_image_quantity.h"
 #include "polyscope/scalar_render_image_quantity.h"
 #include "polyscope/scaled_value.h"
 #include "polyscope/structure.h"
@@ -160,6 +161,28 @@ ScalarRenderImageQuantity* renderImplicitSurfaceScalarBatch(std::string name, Fu
                                                             ImplicitRenderMode mode,
                                                             ImplicitRenderOpts opts = ImplicitRenderOpts(),
                                                             DataType dataType = DataType::STANDARD);
+
+// === Raw colored render functions
+
+// Whereas the other functions shade based on normals, this one just renders surface depth and color directly.
+
+template <class Func, class FuncColor, class S>
+RawColorRenderImageQuantity* renderImplicitSurfaceRawColor(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                           FuncColor&& funcColor, ImplicitRenderMode mode,
+                                                           ImplicitRenderOpts opts = ImplicitRenderOpts());
+template <class Func, class FuncColor>
+RawColorRenderImageQuantity* renderImplicitSurfaceRawColor(std::string name, Func&& func, FuncColor&& funcColor,
+                                                           ImplicitRenderMode mode,
+                                                           ImplicitRenderOpts opts = ImplicitRenderOpts());
+
+template <class Func, class FuncColor, class S>
+RawColorRenderImageQuantity*
+renderImplicitSurfaceRawColorBatch(QuantityStructure<S>* parent, std::string name, Func&& func, FuncColor&& funcColor,
+                                   ImplicitRenderMode mode, ImplicitRenderOpts opts = ImplicitRenderOpts());
+template <class Func, class FuncColor>
+RawColorRenderImageQuantity* renderImplicitSurfaceRawColorBatch(std::string name, Func&& func, FuncColor&& funcColor,
+                                                                ImplicitRenderMode mode,
+                                                                ImplicitRenderOpts opts = ImplicitRenderOpts());
 
 
 } // namespace polyscope

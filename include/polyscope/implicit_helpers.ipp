@@ -65,7 +65,7 @@ void resolveImplicitRenderOpts(QuantityStructure<S>* parent, ImplicitRenderOpts&
 
 template <class Func>
 std::tuple<std::vector<float>, std::vector<glm::vec3>, std::vector<glm::vec3>>
-renderImplicitSurfaceTracer(Func&& func, ImplicitRenderMode mode, ImplicitRenderOpts opts) {
+renderImplicitSurfaceTracer(Func&& func, ImplicitRenderMode mode, ImplicitRenderOpts opts, bool withNormals = true) {
 
   // Read out option values
   const float missDist = opts.missDist.asAbsolute();
@@ -175,38 +175,44 @@ renderImplicitSurfaceTracer(Func&& func, ImplicitRenderMode mode, ImplicitRender
   // Uses finite differences on the vertices of a tetrahedron
   // (see https://iquilezles.org/articles/normalsSDF/)
 
-  std::vector<glm::vec3> normalOut(nPix, glm::vec3{0.f, 0.f, 0.f}); // output values
-  std::array<glm::vec3, 4> tetVerts({
-      glm::vec3{1.f, -1.f, -1.f},
-      glm::vec3{-1.f, -1.f, 1.f},
-      glm::vec3{-1.f, 1.f, -1.f},
-      glm::vec3{1.f, 1.f, 1.f},
-  });
+  std::vector<glm::vec3> normalOut;
 
-  currPos.resize(nPix);
-  currVals.resize(nPix);
-  for (size_t iV = 0; iV < 4; iV++) {
-    glm::vec3 vertVec = tetVerts[iV];
+  if (withNormals) {
 
-    // Set up the evaluation points for each pixel
-    for (size_t iP = 0; iP < nPix; iP++) {
-      float f = rayDepthOut[iP] * normalSampleEps;
-      currPos[iP] = rayPosOut[iP] + f * vertVec;
+    normalOut = std::vector<glm::vec3>(nPix, glm::vec3{0.f, 0.f, 0.f});
+
+    std::array<glm::vec3, 4> tetVerts({
+        glm::vec3{1.f, -1.f, -1.f},
+        glm::vec3{-1.f, -1.f, 1.f},
+        glm::vec3{-1.f, 1.f, -1.f},
+        glm::vec3{1.f, 1.f, 1.f},
+    });
+
+    currPos.resize(nPix);
+    currVals.resize(nPix);
+    for (size_t iV = 0; iV < 4; iV++) {
+      glm::vec3 vertVec = tetVerts[iV];
+
+      // Set up the evaluation points for each pixel
+      for (size_t iP = 0; iP < nPix; iP++) {
+        float f = rayDepthOut[iP] * normalSampleEps;
+        currPos[iP] = rayPosOut[iP] + f * vertVec;
+      }
+
+      // Evaluate the function at each sample point
+      func(&currPos.front().x, &currVals.front(), currPos.size());
+
+      // Accumulate the result
+      for (size_t iP = 0; iP < nPix; iP++) {
+        normalOut[iP] += vertVec * currVals[iP];
+      }
     }
 
-    // Evaluate the function at each sample point
-    func(&currPos.front().x, &currVals.front(), currPos.size());
-
-    // Accumulate the result
+    // Normalize the normal vectors and transform to view space
+    glm::mat3x3 viewMat3(viewMat);
     for (size_t iP = 0; iP < nPix; iP++) {
-      normalOut[iP] += vertVec * currVals[iP];
+      normalOut[iP] = viewMat3 * glm::normalize(normalOut[iP]);
     }
-  }
-
-  // Normalize the normal vectors and transform to view space
-  glm::mat3x3 viewMat3(viewMat);
-  for (size_t iP = 0; iP < nPix; iP++) {
-    normalOut[iP] = viewMat3 * glm::normalize(normalOut[iP]);
   }
 
   // Handle not-converged rays
@@ -214,7 +220,9 @@ renderImplicitSurfaceTracer(Func&& func, ImplicitRenderMode mode, ImplicitRender
     bool didConverge = rayDepthOut[iP] >= 0.;
     if (!didConverge) {
       rayDepthOut[iP] = std::numeric_limits<float>::infinity();
-      normalOut[iP] = glm::vec3{0.f, 0.f, 0.f};
+      if (withNormals) {
+        normalOut[iP] = glm::vec3{0.f, 0.f, 0.f};
+      }
     }
   }
 
@@ -457,6 +465,95 @@ ScalarRenderImageQuantity* renderImplicitSurfaceScalarBatch(QuantityStructure<S>
   }
   return parent->addScalarRenderImageQuantityImpl(name, opts.dimX, opts.dimY, rayDepthOut, normalOut, scalarOutD,
                                                   ImageOrigin::UpperLeft, dataType);
+}
+
+
+// =======================================================
+// === Raw Colored surface render functions
+// =======================================================
+
+
+template <class Func, class FuncColor>
+RawColorRenderImageQuantity* renderImplicitSurfaceRawColor(std::string name, Func&& func, FuncColor&& funcColor,
+                                                           ImplicitRenderMode mode, ImplicitRenderOpts opts) {
+  return renderImplicitSurfaceRawColor(getGlobalFloatingQuantityStructure(), name, func, funcColor, mode, opts);
+}
+
+template <class Func, class FuncColor>
+RawColorRenderImageQuantity* renderImplicitSurfaceRawColorBatch(std::string name, Func&& func, FuncColor&& funcColor,
+                                                                ImplicitRenderMode mode, ImplicitRenderOpts opts) {
+  return renderImplicitSurfaceRawColorBatch(getGlobalFloatingQuantityStructure(), name, func, funcColor, mode, opts);
+}
+
+
+template <class Func, class FuncColor, class S>
+RawColorRenderImageQuantity* renderImplicitSurfaceRawColor(QuantityStructure<S>* parent, std::string name, Func&& func,
+                                                           FuncColor&& funcColor, ImplicitRenderMode mode,
+                                                           ImplicitRenderOpts opts) {
+
+  // Bootstrap on the batch version
+  auto batchFunc = [&](const float* pos_ptr, float* result_ptr, size_t size) {
+    for (size_t i = 0; i < size; i++) {
+      glm::vec3 pos{
+          pos_ptr[3 * i + 0],
+          pos_ptr[3 * i + 1],
+          pos_ptr[3 * i + 2],
+      };
+      result_ptr[i] = static_cast<float>(func(pos));
+    }
+  };
+
+  auto batchFuncColor = [&](const float* pos_ptr, float* result_ptr, size_t size) {
+    for (size_t i = 0; i < size; i++) {
+      glm::vec3 pos{
+          pos_ptr[3 * i + 0],
+          pos_ptr[3 * i + 1],
+          pos_ptr[3 * i + 2],
+      };
+
+      glm::vec3 color = funcColor(pos);
+
+      result_ptr[3 * i + 0] = color.x;
+      result_ptr[3 * i + 1] = color.y;
+      result_ptr[3 * i + 2] = color.z;
+    }
+  };
+
+  return renderImplicitSurfaceRawColorBatch(parent, name, batchFunc, batchFuncColor, mode, opts);
+}
+
+
+template <class Func, class FuncColor, class S>
+RawColorRenderImageQuantity* renderImplicitSurfaceRawColorBatch(QuantityStructure<S>* parent, std::string name,
+                                                                Func&& func, FuncColor&& funcColor,
+                                                                ImplicitRenderMode mode, ImplicitRenderOpts opts) {
+
+  resolveImplicitRenderOpts(parent, opts);
+
+  // Call the function which does all the hard work
+  std::vector<float> rayDepthOut;
+  std::vector<glm::vec3> rayPosOut;
+  std::vector<glm::vec3> normalOut;
+  std::tie(rayDepthOut, rayPosOut, normalOut) = renderImplicitSurfaceTracer(func, mode, opts);
+
+  // Batch evaluate the color function
+  std::vector<glm::vec3> colorOut(rayPosOut.size());
+  funcColor(&rayPosOut.front().x, &colorOut.front().x, rayPosOut.size());
+
+  // Set colors for miss rays to 0
+  for (size_t iP = 0; iP < rayPosOut.size(); iP++) {
+    if (rayDepthOut[iP] == std::numeric_limits<float>::infinity()) {
+      colorOut[iP] = glm::vec3{0.f, 0.f, 0.f};
+    }
+  }
+
+
+  // TODO check if there is an existing quantity of the same type/size to replace, and if so re-fill its buffers
+  // rather than creating a whole new one
+
+  // here, we bypass the conversion adaptor since we have explicitly filled matching types
+  return parent->addRawColorRenderImageQuantityImpl(name, opts.dimX, opts.dimY, rayDepthOut, colorOut,
+                                                    ImageOrigin::UpperLeft);
 }
 
 

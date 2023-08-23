@@ -194,6 +194,7 @@ SET(SRCS
   depth_render_image_quantity.cpp
   color_render_image_quantity.cpp
   scalar_render_image_quantity.cpp
+  raw_color_render_image_quantity.cpp
   
   # Rendering utilities
   imgui_config.cpp
@@ -264,6 +265,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/polyscope.h
   ${INCLUDE_ROOT}/quantity.h
   ${INCLUDE_ROOT}/quantity.ipp
+  ${INCLUDE_ROOT}/raw_color_render_image_quantity.h
   ${INCLUDE_ROOT}/render/color_maps.h
   ${INCLUDE_ROOT}/render/engine.h
   ${INCLUDE_ROOT}/render/engine.ipp

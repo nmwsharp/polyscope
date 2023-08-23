@@ -277,6 +277,22 @@ QuantityStructure<S>::addScalarRenderImageQuantity(std::string name, size_t dimX
                                                 imageOrigin, type);
 }
 
+template <typename S>
+template <class T1, class T2, class T3>
+ColorRenderImageQuantity*
+QuantityStructure<S>::addRawColorRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData,
+                                                     const T3& colorData, ImageOrigin imageOrigin) {
+
+  validateSize(depthData, dimX * dimY, "depth render image depth data " + name);
+  validateSize(colorData, dimX * dimY, "depth render image color data " + name);
+
+  // standardize
+  std::vector<float> standardDepth(standardizeArray<float>(depthData));
+  std::vector<glm::vec3> standardColor(standardizeVectorArray<glm::vec3, 3>(colorData));
+
+  return this->addColorRenderImageQuantityImpl(name, dimX, dimY, standardDepth, standardColor, imageOrigin);
+}
+
 // === Floating Quantity Impls ===
 
 // Forward declare helper functions, which wrap the constructors for the floating quantities below.
@@ -295,6 +311,12 @@ ColorRenderImageQuantity* createColorRenderImage(Structure& parent, std::string 
                                                  const std::vector<float>& depthData,
                                                  const std::vector<glm::vec3>& normalData,
                                                  const std::vector<glm::vec3>& colorData, ImageOrigin imageOrigin);
+
+
+RawColorRenderImageQuantity* createRawColorRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
+                                                       const std::vector<float>& depthData,
+                                                       const std::vector<glm::vec3>& colorData,
+                                                       ImageOrigin imageOrigin);
 
 
 ScalarRenderImageQuantity* createScalarRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
@@ -352,6 +374,17 @@ ScalarRenderImageQuantity* QuantityStructure<S>::addScalarRenderImageQuantityImp
   checkForQuantityWithNameAndDeleteOrError(name);
   ScalarRenderImageQuantity* q =
       createScalarRenderImage(*this, name, dimX, dimY, depthData, normalData, scalarData, imageOrigin, type);
+  addQuantity(q);
+  return q;
+}
+
+template <typename S>
+RawColorRenderImageQuantity* QuantityStructure<S>::addRawColorRenderImageQuantityImpl(
+    std::string name, size_t dimX, size_t dimY, const std::vector<float>& depthData,
+    const std::vector<glm::vec3>& colorData, ImageOrigin imageOrigin) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  RawColorRenderImageQuantity* q =
+      createRawColorRenderImage(*this, name, dimX, dimY, depthData, colorData, imageOrigin);
   addQuantity(q);
   return q;
 }
