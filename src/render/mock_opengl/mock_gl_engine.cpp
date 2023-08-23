@@ -521,7 +521,9 @@ void GLTextureBuffer::resize(unsigned int newX, unsigned int newY, unsigned int 
   checkGLError();
 }
 
-void GLTextureBuffer::setData(const std::vector<glm::vec2>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::vec2>& data) { exception("not implemented"); }
+
+
 void GLTextureBuffer::setData(const std::vector<glm::vec3>& data) {
 
   bind();
@@ -540,7 +542,7 @@ void GLTextureBuffer::setData(const std::vector<glm::vec3>& data) {
   }
 
   checkGLError();
-};
+}
 
 void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
 
@@ -560,7 +562,7 @@ void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
   }
 
   checkGLError();
-};
+}
 
 void GLTextureBuffer::setData(const std::vector<float>& data) {
   bind();
@@ -579,8 +581,26 @@ void GLTextureBuffer::setData(const std::vector<float>& data) {
   }
 
   checkGLError();
+}
+
+void GLTextureBuffer::setData(const std::vector<double>& data) {
+  bind();
+
+  if (data.size() != getTotalSize()) {
+    exception("OpenGL error: texture buffer data is not the right size.");
+  }
+
+  switch (dim) {
+  case 1:
+    break;
+  case 2:
+    break;
+  case 3:
+    break;
+  }
+
+  checkGLError();
 };
-void GLTextureBuffer::setData(const std::vector<double>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<int32_t>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<uint32_t>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data) { exception("not implemented"); };

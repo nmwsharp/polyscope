@@ -65,10 +65,10 @@ extern std::string backend;
 
 // lists of all structures in Polyscope, by category
 // TODO unique pointer
-extern std::map<std::string, std::map<std::string, std::shared_ptr<Structure>>> structures;
+extern std::map<std::string, std::map<std::string, std::unique_ptr<Structure>>> structures;
 
 // lists of all groups in Polyscope
-extern std::map<std::string, std::shared_ptr<Group>> groups;
+extern std::map<std::string, std::unique_ptr<Group>> groups;
 
 // representative length scale for all registered structures
 extern float lengthScale;
@@ -76,10 +76,10 @@ extern float lengthScale;
 // axis-aligned bounding box for all registered structures
 extern std::tuple<glm::vec3, glm::vec3> boundingBox;
 
-// list of all slice planes in the scene (the memory is 'owned' here)
+// list of all slice planes in the scene
 extern std::vector<std::unique_ptr<SlicePlane>> slicePlanes;
 
-// list of all widgets in the scene (the memory is NOT 'owned' here, they're just refs)
+// list of all widgets in the scene (the memory is NOT owned here, they're just refs)
 extern std::vector<WeakHandle<Widget>> widgets;
 
 // should we allow default trackball mouse camera interaction?

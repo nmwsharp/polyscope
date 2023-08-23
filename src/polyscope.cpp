@@ -120,9 +120,9 @@ void writePrefsFile() {
 
 // Helper to get a structure map
 
-std::map<std::string, std::shared_ptr<Structure>>& getStructureMapCreateIfNeeded(std::string typeName) {
+std::map<std::string, std::unique_ptr<Structure>>& getStructureMapCreateIfNeeded(std::string typeName) {
   if (state::structures.find(typeName) == state::structures.end()) {
-    state::structures[typeName] = std::map<std::string, std::shared_ptr<Structure>>();
+    state::structures[typeName] = std::map<std::string, std::unique_ptr<Structure>>();
   }
   return state::structures[typeName];
 }
@@ -263,8 +263,8 @@ void drawStructures() {
 
   // Draw all off the structures registered with polyscope
 
-  for (auto catMap : state::structures) {
-    for (auto s : catMap.second) {
+  for (auto& catMap : state::structures) {
+    for (auto& s : catMap.second) {
       s.second->draw();
     }
   }
@@ -278,8 +278,8 @@ void drawStructures() {
 void drawStructuresDelayed() {
   // "delayed" drawing allows structures to render things which should be rendered after most of the scene has been
   // drawn
-  for (auto catMap : state::structures) {
-    for (auto s : catMap.second) {
+  for (auto& catMap : state::structures) {
+    for (auto& s : catMap.second) {
       s.second->drawDelayed();
     }
   }
@@ -629,7 +629,7 @@ void buildStructureGui() {
   // only show groups if there are any
   if (state::groups.size() > 0) {
     if (ImGui::CollapsingHeader("Groups", ImGuiTreeNodeFlags_DefaultOpen)) {
-      for (auto x : state::groups) {
+      for (auto& x : state::groups) {
         if (x.second->isRootGroup()) {
           x.second->buildUI();
         }
@@ -637,10 +637,10 @@ void buildStructureGui() {
     }
   }
 
-  for (auto catMapEntry : state::structures) {
+  for (auto& catMapEntry : state::structures) {
     std::string catName = catMapEntry.first;
 
-    std::map<std::string, std::shared_ptr<Structure>>& structureMap = catMapEntry.second;
+    std::map<std::string, std::unique_ptr<Structure>>& structureMap = catMapEntry.second;
 
     ImGui::PushID(catName.c_str()); // ensure there are no conflicts with
                                     // identically-named labels
@@ -653,7 +653,7 @@ void buildStructureGui() {
         structureMap.begin()->second->buildSharedStructureUI();
       }
 
-      for (auto x : structureMap) {
+      for (auto& x : structureMap) {
         ImGui::SetNextTreeNodeOpen(structureMap.size() <= 8,
                                    ImGuiCond_FirstUseEver); // closed by default if more than 8
         x.second->buildUI();
@@ -865,7 +865,7 @@ bool registerGroup(std::string name) {
   }
 
   // add to the group map
-  state::groups[name] = std::shared_ptr<Group>(new Group(name));
+  state::groups[name] = std::unique_ptr<Group>(new Group(name));
 
   return true;
 }
@@ -886,7 +886,7 @@ bool setParentGroupOfGroup(std::string child, std::string parent) {
   }
 
   // set the parent
-  state::groups[parent]->addChildGroup(state::groups[child]);
+  state::groups[parent]->addChildGroup(*state::groups[child]);
   return true;
 }
 
@@ -899,7 +899,7 @@ bool setParentGroupOfStructure(std::string typeName, std::string child, std::str
     return false;
   }
 
-  std::map<std::string, std::shared_ptr<Structure>>& sMap = getStructureMapCreateIfNeeded(typeName);
+  std::map<std::string, std::unique_ptr<Structure>>& sMap = getStructureMapCreateIfNeeded(typeName);
 
   // check if child exists
   bool childExists = sMap.find(child) != sMap.end();
@@ -910,7 +910,7 @@ bool setParentGroupOfStructure(std::string typeName, std::string child, std::str
   }
 
   // set the parent
-  state::groups[parent]->addChildStructure(sMap[child]);
+  state::groups[parent]->addChildStructure(*sMap[child]);
   return true;
 }
 
@@ -921,7 +921,7 @@ bool setParentGroupOfStructure(Structure* child, std::string parent) {
 bool registerStructure(Structure* s, bool replaceIfPresent) {
 
   std::string typeName = s->typeName();
-  std::map<std::string, std::shared_ptr<Structure>>& sMap = getStructureMapCreateIfNeeded(typeName);
+  std::map<std::string, std::unique_ptr<Structure>>& sMap = getStructureMapCreateIfNeeded(typeName);
 
   // Check if the structure name is in use
   bool inUse = sMap.find(s->name) != sMap.end();
@@ -944,7 +944,7 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
   }
 
   // Add the new structure
-  sMap[s->name] = std::shared_ptr<Structure>(s); // take ownership with a shared pointer
+  sMap[s->name] = std::unique_ptr<Structure>(s); // take ownership with a unique pointer
   updateStructureExtents();
   requestRedraw();
 
@@ -960,7 +960,7 @@ Structure* getStructure(std::string type, std::string name) {
     exception("No structures of type " + type + " registered");
     return nullptr;
   }
-  std::map<std::string, std::shared_ptr<Structure>>& sMap = state::structures[type];
+  std::map<std::string, std::unique_ptr<Structure>>& sMap = state::structures[type];
 
   // Special automatic case, return any
   if (name == "") {
@@ -985,7 +985,7 @@ bool hasStructure(std::string type, std::string name) {
   if (state::structures.find(type) == state::structures.end()) {
     return false;
   }
-  std::map<std::string, std::shared_ptr<Structure>>& sMap = state::structures[type];
+  std::map<std::string, std::unique_ptr<Structure>>& sMap = state::structures[type];
 
   // Special automatic case, return any
   if (name == "") {
@@ -1035,7 +1035,7 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
     }
     return;
   }
-  std::map<std::string, std::shared_ptr<Structure>>& sMap = state::structures[type];
+  std::map<std::string, std::unique_ptr<Structure>>& sMap = state::structures[type];
 
   // Check if structure exists
   if (sMap.find(name) == sMap.end()) {
@@ -1052,7 +1052,7 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
   }
   // remove it from all existing groups
   for (auto& g : state::groups) {
-    g.second->removeChildStructure(s);
+    g.second->removeChildStructure(*s);
   }
   pick::resetSelectionIfStructure(s);
   sMap.erase(s->name);
@@ -1068,8 +1068,8 @@ void removeStructure(std::string name, bool errorIfAbsent) {
 
   // Check if we can find exactly one structure matching the name
   Structure* targetStruct = nullptr;
-  for (auto typeMap : state::structures) {
-    for (auto entry : typeMap.second) {
+  for (auto& typeMap : state::structures) {
+    for (auto& entry : typeMap.second) {
 
       // Found a matching structure
       if (entry.first == name) {
@@ -1100,16 +1100,16 @@ void removeStructure(std::string name, bool errorIfAbsent) {
 
 void removeAllStructures() {
 
-  for (auto typeMap : state::structures) {
+  for (auto& typeMap : state::structures) {
 
     // dodge iterator invalidation
     std::vector<std::string> names;
-    for (auto entry : typeMap.second) {
+    for (auto& entry : typeMap.second) {
       names.push_back(entry.first);
     }
 
     // remove all
-    for (auto name : names) {
+    for (std::string name : names) {
       removeStructure(typeMap.first, name);
     }
   }
@@ -1124,8 +1124,8 @@ void refresh() {
   render::engine->groundPlane.prepare();
 
   // reset all of the structures
-  for (auto cat : state::structures) {
-    for (auto x : cat.second) {
+  for (auto& cat : state::structures) {
+    for (auto& x : cat.second) {
       x.second->refresh();
     }
   }
@@ -1215,8 +1215,8 @@ void updateStructureExtents() {
   glm::vec3 minBbox = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 maxBbox = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
 
-  for (auto cat : state::structures) {
-    for (auto x : cat.second) {
+  for (auto& cat : state::structures) {
+    for (auto& x : cat.second) {
       if (!x.second->hasExtents()) {
         continue;
       }

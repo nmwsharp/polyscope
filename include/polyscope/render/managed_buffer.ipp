@@ -28,11 +28,20 @@ void ManagedBufferMap<T>::addManagedBuffer(ManagedBuffer<T>* buffer) {
 
 template <typename T>
 ManagedBuffer<T>& ManagedBufferMap<T>::getManagedBuffer(std::string name) {
+
+
+  auto endsWith = [](std::string const& str, std::string const& query) -> bool {
+    if (query.size() > str.size()) return false;
+    return std::equal(query.rbegin(), query.rend(), str.rbegin());
+  };
+
+
   for (ManagedBuffer<T>* buff : allBuffers) {
-    if (buff->name == name) {
+    if (endsWith(buff->name, "#" + name)) {
       return *buff;
     }
   }
+
   exception("managed buffer map does not contain buffer of name " + name);
   return *allBuffers[0]; // invalid, never executed
 }

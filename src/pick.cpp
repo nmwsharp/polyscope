@@ -140,8 +140,8 @@ std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
   pickFramebuffer->clear();
 
   // Render pick buffer
-  for (auto cat : state::structures) {
-    for (auto x : cat.second) {
+  for (auto& cat : state::structures) {
+    for (auto& x : cat.second) {
       x.second->drawPick();
     }
   }

@@ -31,15 +31,15 @@ Group::Group(std::string name_) : name(name_) {}
 
 Group::~Group() {
   // unparent all children
-  for (std::weak_ptr<Group>& childWeak : childrenGroups) {
-    std::shared_ptr<Group> child = childWeak.lock();
-    if (child) {
-      child->parentGroup.reset();
+  for (WeakHandle<Group>& childWeak : childrenGroups) {
+    if (childWeak.isValid()) {
+      Group& child = childWeak.get();
+      child.parentGroup.reset();
     }
   }
   // remove oneself from parent
-  if (!parentGroup.expired()) {
-    parentGroup.lock()->removeChildGroup(this);
+  if (parentGroup.isValid()) {
+    parentGroup.get().removeChildGroup(*this);
   }
 };
 
@@ -65,17 +65,17 @@ void Group::buildUI() {
     }
 
     // Call children buildUI
-    for (std::weak_ptr<Group>& childWeak : childrenGroups) {
-      std::shared_ptr<Group> child = childWeak.lock();
-      if (child) {
-        child->buildUI();
+    for (WeakHandle<Group>& childWeak : childrenGroups) {
+      if (childWeak.isValid()) {
+        Group& child = childWeak.get();
+        child.buildUI();
       }
     }
 
-    for (std::weak_ptr<Structure>& childWeak : childrenStructures) {
-      std::shared_ptr<Structure> child = childWeak.lock();
-      if (child) {
-        child->buildUI();
+    for (WeakHandle<Structure>& childWeak : childrenStructures) {
+      if (childWeak.isValid()) {
+        Structure& child = childWeak.get();
+        child.buildUI();
       }
     }
 
@@ -86,53 +86,46 @@ void Group::buildUI() {
 void Group::unparent() {
   cullExpiredChildren();
 
-  if (!parentGroup.expired()) {
-    std::shared_ptr<Group> parent = parentGroup.lock();
-    if (parent) {
-      parent->buildUI();
-    }
-
-    parent->removeChildGroup(this);
+  if (parentGroup.isValid()) {
+    Group& parent = parentGroup.get();
+    parent.buildUI();
+    parent.removeChildGroup(*this);
   }
 
   parentGroup.reset(); // redundant, but explicit
 }
 
-void Group::addChildGroup(std::weak_ptr<Group> newChildWeak) {
+void Group::addChildGroup(Group& newChild) {
   cullExpiredChildren();
 
-  std::shared_ptr<Group> newChild = newChildWeak.lock();
-  if (!newChild) return;
-
   // if child is already in a group, remove it from that group
-  newChild->unparent();
+  newChild.unparent();
 
-  if (getTopLevelGrandparent() == newChild.get()) {
-    exception("Attempted to make group " + newChild->name + " a child of " + name +
-              ", but this would create a cycle (group " + name + " is already a descendant of " + newChild->name + ")");
+  if (getTopLevelGrandparent() == &newChild) {
+    exception("Attempted to make group " + newChild.name + " a child of " + name +
+              ", but this would create a cycle (group " + name + " is already a descendant of " + newChild.name + ")");
     return;
   }
 
   // assign to the new group
-  newChild->parentGroup = state::groups[name]; // we want a weak pointer to the shared ptr
-  childrenGroups.push_back(newChildWeak);
+  newChild.parentGroup = this->getWeakHandle<Group>(); // we want a weak pointer to the shared ptr
+  childrenGroups.push_back(newChild.getWeakHandle<Group>());
 }
 
-void Group::addChildStructure(std::weak_ptr<Structure> newChild) {
+void Group::addChildStructure(Structure& newChild) {
   cullExpiredChildren();
-  childrenStructures.push_back(newChild);
+  childrenStructures.push_back(newChild.getWeakHandle<Structure>());
 }
 
-void Group::removeChildGroup(Group* child) {
+void Group::removeChildGroup(Group& child) {
   cullExpiredChildren();
 
   childrenGroups.erase(std::remove_if(childrenGroups.begin(), childrenGroups.end(),
-                                      [&](const std::weak_ptr<Group>& g_weak) {
-                                        std::shared_ptr<Group> g = g_weak.lock();
-                                        if (!g) return false;
-                                        if (g.get() == child) {
+                                      [&](const WeakHandle<Group>& gWeak) {
+                                        if (!gWeak.isValid()) return false;
+                                        if (&gWeak.get() == &child) {
                                           // mark child as not having a parent anymore
-                                          g->parentGroup.reset();
+                                          gWeak.get().parentGroup.reset();
                                           return true;
                                         }
                                         return false;
@@ -140,14 +133,13 @@ void Group::removeChildGroup(Group* child) {
                        childrenGroups.end());
 }
 
-void Group::removeChildStructure(Structure* child) {
+void Group::removeChildStructure(Structure& child) {
   cullExpiredChildren();
 
   childrenStructures.erase(std::remove_if(childrenStructures.begin(), childrenStructures.end(),
-                                          [&](const std::weak_ptr<Structure>& s_weak) {
-                                            std::shared_ptr<Structure> s = s_weak.lock();
-                                            if (!s) return false;
-                                            return (s.get() == child);
+                                          [&](const WeakHandle<Structure>& sWeak) {
+                                            if (!sWeak.isValid()) return false;
+                                            return (&sWeak.get() == &child);
                                           }),
                            childrenStructures.end());
 }
@@ -155,8 +147,8 @@ void Group::removeChildStructure(Structure* child) {
 Group* Group::getTopLevelGrandparent() {
   cullExpiredChildren();
   Group* current = this;
-  while (!current->parentGroup.expired()) {
-    current = current->parentGroup.lock().get();
+  while (current->parentGroup.isValid()) {
+    current = &current->parentGroup.get();
   }
   return current;
 }
@@ -177,10 +169,10 @@ int Group::isEnabled() {
   bool any_children_disabled = false;
   // check all structure children
 
-  for (std::weak_ptr<Structure>& childWeak : childrenStructures) {
-    std::shared_ptr<Structure> child = childWeak.lock();
-    if (child) {
-      if (child->isEnabled()) {
+  for (WeakHandle<Structure>& childWeak : childrenStructures) {
+    if (childWeak.isValid()) {
+      Structure& child = childWeak.get();
+      if (child.isEnabled()) {
         any_children_enabled = true;
       } else {
         any_children_disabled = true;
@@ -189,10 +181,10 @@ int Group::isEnabled() {
   }
 
   // check all group children
-  for (std::weak_ptr<Group>& groupWeak : childrenGroups) {
-    std::shared_ptr<Group> group = groupWeak.lock();
-    if (group) {
-      switch (group->isEnabled()) {
+  for (WeakHandle<Group>& groupWeak : childrenGroups) {
+    if (groupWeak.isValid()) {
+      Group& group = groupWeak.get();
+      switch (group.isEnabled()) {
       case 1:
         any_children_enabled = true;
         break;
@@ -229,41 +221,41 @@ int Group::isEnabled() {
 
 void Group::cullExpiredChildren() {
 
-  if (parentGroup.expired()) {
+  if (!parentGroup.isValid()) {
     parentGroup.reset();
   }
 
   // remove any child groups which are expired
   // (erase-remove idiom)
   childrenGroups.erase(std::remove_if(childrenGroups.begin(), childrenGroups.end(),
-                                      [](const std::weak_ptr<Group>& g) { return g.expired(); }),
+                                      [](const WeakHandle<Group>& g) { return !g.isValid(); }),
                        childrenGroups.end());
 
   // remove any child structures which are expired
   // (erase-remove idiom)
   childrenStructures.erase(std::remove_if(childrenStructures.begin(), childrenStructures.end(),
-                                          [](const std::weak_ptr<Structure>& s) { return s.expired(); }),
+                                          [](const WeakHandle<Structure>& s) { return !s.isValid(); }),
                            childrenStructures.end());
 }
 
 Group* Group::setEnabled(bool newEnabled) {
-  for (std::weak_ptr<Group>& childWeak : childrenGroups) {
-    std::shared_ptr<Group> child = childWeak.lock();
-    if (child) {
-      child->setEnabled(newEnabled);
+  for (WeakHandle<Group>& childWeak : childrenGroups) {
+    if (childWeak.isValid()) {
+      Group& child = childWeak.get();
+      child.setEnabled(newEnabled);
     }
   }
 
-  for (std::weak_ptr<Structure>& childWeak : childrenStructures) {
-    std::shared_ptr<Structure> child = childWeak.lock();
-    if (child) {
-      child->setEnabled(newEnabled);
+  for (WeakHandle<Structure>& childWeak : childrenStructures) {
+    if (childWeak.isValid()) {
+      Structure& child = childWeak.get();
+      child.setEnabled(newEnabled);
     }
   }
   return this;
 }
 
-bool Group::isRootGroup() { return !parentGroup.expired(); }
+bool Group::isRootGroup() { return !parentGroup.isValid(); }
 
 std::string Group::niceName() { return name; }
 

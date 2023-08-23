@@ -717,6 +717,7 @@ void Engine::addSlicePlane(std::string uniquePostfix) {
   // Add rules
   std::vector<std::string> newRules{"SLICE_PLANE_CULL_" + uniquePostfix,
                                     "SLICE_PLANE_VOLUMEGRID_CULL_" + uniquePostfix};
+
   defaultRules_sceneObject.insert(defaultRules_sceneObject.end(), newRules.begin(), newRules.end());
   defaultRules_pick.insert(defaultRules_pick.end(), newRules.begin(), newRules.end());
 
@@ -728,7 +729,8 @@ void Engine::removeSlicePlane(std::string uniquePostfix) {
 
   slicePlaneCount--;
   // Remove the (last occurence of the) rules we added
-  std::vector<std::string> newRules{"SLICE_PLANE_CULL_" + uniquePostfix};
+  std::vector<std::string> newRules{"SLICE_PLANE_CULL_" + uniquePostfix,
+                                    "SLICE_PLANE_VOLUMEGRID_CULL_" + uniquePostfix};
   auto deleteLast = [&](std::vector<std::string>& vec, std::string target) {
     for (size_t i = vec.size(); i > 0; i--) {
       if (vec[i - 1] == target) {
