@@ -19,7 +19,7 @@ template <typename S>
 QuantityStructure<S>::~QuantityStructure(){};
 
 template <typename S>
-bool QuantityStructure<S>::checkForQuantityWithNameAndDeleteOrError(std::string name, bool allowReplacement) {
+void QuantityStructure<S>::checkForQuantityWithNameAndDeleteOrError(std::string name, bool allowReplacement) {
 
   // Look for an existing quantity with this name
   bool quantityExists = quantities.find(name) != quantities.end();
@@ -30,55 +30,32 @@ bool QuantityStructure<S>::checkForQuantityWithNameAndDeleteOrError(std::string 
     exception("Tried to add quantity with name: [" + name +
               "], but a quantity with that name already exists on the structure [" + name +
               "]. Use the allowReplacement option like addQuantity(..., true) to replace.");
-    return false;
-  }
-
-  // Track if the previous quantity was enabled
-  // TODO why is isn't this handled by the persistence cache like everything else?
-  bool existingQuantityWasEnabled = false;
-  if (quantityExists) {
-    existingQuantityWasEnabled = quantities.find(name)->second->isEnabled();
-  }
-  if (floatingQuantityExists) {
-    existingQuantityWasEnabled = floatingQuantities.find(name)->second->isEnabled();
   }
 
   // Remove the old quantity
   if (quantityExists || floatingQuantityExists) {
     removeQuantity(name);
   }
-
-  return existingQuantityWasEnabled;
 }
 
 template <typename S>
 void QuantityStructure<S>::addQuantity(QuantityType* q, bool allowReplacement) {
 
   // Check if a quantity with this name exists, remove it or throw and error if so
-  bool existingQuantityWasEnabled = checkForQuantityWithNameAndDeleteOrError(q->name, allowReplacement);
+  checkForQuantityWithNameAndDeleteOrError(q->name, allowReplacement);
 
   // Add the new quantity
   quantities[q->name] = std::unique_ptr<QuantityType>(q);
-
-  // Re-enable the quantity if we're replacing an enabled quantity
-  if (existingQuantityWasEnabled) {
-    q->setEnabled(true);
-  }
 }
 
 template <typename S>
 void QuantityStructure<S>::addQuantity(FloatingQuantity* q, bool allowReplacement) {
 
   // Check if a quantity with this name exists, remove it or throw and error if so
-  bool existingQuantityWasEnabled = checkForQuantityWithNameAndDeleteOrError(q->name, allowReplacement);
+  checkForQuantityWithNameAndDeleteOrError(q->name, allowReplacement);
 
   // Add the new quantity
   floatingQuantities[q->name] = std::unique_ptr<FloatingQuantity>(q);
-
-  // Re-enable the quantity if we're replacing an enabled quantity
-  if (existingQuantityWasEnabled) {
-    q->setEnabled(true);
-  }
 }
 
 template <typename S>
@@ -330,6 +307,7 @@ template <typename S>
 ScalarImageQuantity* QuantityStructure<S>::addScalarImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
                                                                       const std::vector<double>& values,
                                                                       ImageOrigin imageOrigin, DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   ScalarImageQuantity* q = createScalarImageQuantity(*this, name, dimX, dimY, values, imageOrigin, type);
   addQuantity(q);
   return q;
@@ -339,6 +317,7 @@ template <typename S>
 ColorImageQuantity* QuantityStructure<S>::addColorImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
                                                                     const std::vector<glm::vec4>& values,
                                                                     ImageOrigin imageOrigin) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   ColorImageQuantity* q = createColorImageQuantity(*this, name, dimX, dimY, values, imageOrigin);
   addQuantity(q);
   return q;
@@ -348,6 +327,7 @@ template <typename S>
 DepthRenderImageQuantity* QuantityStructure<S>::addDepthRenderImageQuantityImpl(
     std::string name, size_t dimX, size_t dimY, const std::vector<float>& depthData,
     const std::vector<glm::vec3>& normalData, ImageOrigin imageOrigin) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   DepthRenderImageQuantity* q = createDepthRenderImage(*this, name, dimX, dimY, depthData, normalData, imageOrigin);
   addQuantity(q);
   return q;
@@ -357,6 +337,7 @@ template <typename S>
 ColorRenderImageQuantity* QuantityStructure<S>::addColorRenderImageQuantityImpl(
     std::string name, size_t dimX, size_t dimY, const std::vector<float>& depthData,
     const std::vector<glm::vec3>& normalData, const std::vector<glm::vec3>& colorData, ImageOrigin imageOrigin) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   ColorRenderImageQuantity* q =
       createColorRenderImage(*this, name, dimX, dimY, depthData, normalData, colorData, imageOrigin);
   addQuantity(q);
@@ -368,6 +349,7 @@ ScalarRenderImageQuantity* QuantityStructure<S>::addScalarRenderImageQuantityImp
     std::string name, size_t dimX, size_t dimY, const std::vector<float>& depthData,
     const std::vector<glm::vec3>& normalData, const std::vector<double>& scalarData, ImageOrigin imageOrigin,
     DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   ScalarRenderImageQuantity* q =
       createScalarRenderImage(*this, name, dimX, dimY, depthData, normalData, scalarData, imageOrigin, type);
   addQuantity(q);

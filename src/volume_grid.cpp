@@ -383,6 +383,7 @@ VolumeGridQuantity::VolumeGridQuantity(std::string name_, VolumeGrid& curveNetwo
 VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                     DataType dataType_) {
 
+  checkForQuantityWithNameAndDeleteOrError(name);
   VolumeGridNodeScalarQuantity* q = new VolumeGridNodeScalarQuantity(name, *this, data, dataType_);
   addQuantity(q);
   markNodesAsUsed();
@@ -392,6 +393,7 @@ VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityImpl(std::string 
 VolumeGridCellScalarQuantity* VolumeGrid::addCellScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                     DataType dataType_) {
 
+  checkForQuantityWithNameAndDeleteOrError(name);
   VolumeGridCellScalarQuantity* q = new VolumeGridCellScalarQuantity(name, *this, data, dataType_);
   addQuantity(q);
   markCellsAsUsed();

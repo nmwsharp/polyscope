@@ -1003,6 +1003,7 @@ double VolumeMesh::getEdgeWidth() { return edgeWidth.get(); }
 
 VolumeMeshVertexColorQuantity* VolumeMesh::addVertexColorQuantityImpl(std::string name,
                                                                       const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   VolumeMeshVertexColorQuantity* q = new VolumeMeshVertexColorQuantity(name, *this, colors);
   addQuantity(q);
   return q;
@@ -1010,6 +1011,7 @@ VolumeMeshVertexColorQuantity* VolumeMesh::addVertexColorQuantityImpl(std::strin
 
 VolumeMeshCellColorQuantity* VolumeMesh::addCellColorQuantityImpl(std::string name,
                                                                   const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   VolumeMeshCellColorQuantity* q = new VolumeMeshCellColorQuantity(name, *this, colors);
   addQuantity(q);
   return q;
@@ -1017,6 +1019,7 @@ VolumeMeshCellColorQuantity* VolumeMesh::addCellColorQuantityImpl(std::string na
 
 VolumeMeshVertexScalarQuantity*
 VolumeMesh::addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   VolumeMeshVertexScalarQuantity* q = new VolumeMeshVertexScalarQuantity(name, data, *this, type);
   addQuantity(q);
   return q;
@@ -1024,6 +1027,7 @@ VolumeMesh::addVertexScalarQuantityImpl(std::string name, const std::vector<doub
 
 VolumeMeshCellScalarQuantity* VolumeMesh::addCellScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                     DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   VolumeMeshCellScalarQuantity* q = new VolumeMeshCellScalarQuantity(name, data, *this, type);
   addQuantity(q);
   return q;
@@ -1032,6 +1036,7 @@ VolumeMeshCellScalarQuantity* VolumeMesh::addCellScalarQuantityImpl(std::string 
 VolumeMeshVertexVectorQuantity* VolumeMesh::addVertexVectorQuantityImpl(std::string name,
                                                                         const std::vector<glm::vec3>& vectors,
                                                                         VectorType vectorType) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   VolumeMeshVertexVectorQuantity* q = new VolumeMeshVertexVectorQuantity(name, vectors, *this, vectorType);
   addQuantity(q);
   return q;
@@ -1040,6 +1045,7 @@ VolumeMeshVertexVectorQuantity* VolumeMesh::addVertexVectorQuantityImpl(std::str
 VolumeMeshCellVectorQuantity*
 VolumeMesh::addCellVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType) {
 
+  checkForQuantityWithNameAndDeleteOrError(name);
   VolumeMeshCellVectorQuantity* q = new VolumeMeshCellVectorQuantity(name, vectors, *this, vectorType);
   addQuantity(q);
   return q;

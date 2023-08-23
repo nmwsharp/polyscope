@@ -13,7 +13,7 @@ namespace polyscope {
 // (subclasses could be a structure-specific quantity or a floating quantity)
 
 Quantity::Quantity(std::string name_, Structure& parentStructure_)
-    : parent(parentStructure_), name(name_), enabled(parent.typeName() + "#" + parent.name + "#" + name, false) {
+    : parent(parentStructure_), name(name_), enabled(uniquePrefix() + "enabled", false) {
   validateName(name);
 }
 

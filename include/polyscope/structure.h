@@ -183,6 +183,7 @@ public:
   QuantityType*
   getQuantity(std::string name); // NOTE: will _not_ return floating quantities, must use other version below
   FloatingQuantity* getFloatingQuantity(std::string name);
+  void checkForQuantityWithNameAndDeleteOrError(std::string name, bool allowReplacement = true);
   void removeQuantity(std::string name, bool errorIfAbsent = false);
   void removeAllQuantities();
 
@@ -258,8 +259,6 @@ public:
                                                               ImageOrigin imageOrigin, DataType type);
 
 protected:
-  // helper
-  bool checkForQuantityWithNameAndDeleteOrError(std::string name, bool allowReplacement);
 };
 
 
