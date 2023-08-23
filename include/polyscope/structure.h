@@ -12,6 +12,7 @@
 #include "polyscope/persistent_value.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/transformation_gizmo.h"
+#include "polyscope/weak_handle.h"
 
 #include "polyscope/render/managed_buffer.h"
 
@@ -29,7 +30,7 @@ namespace polyscope {
 // user to utilize and access custom structures with little code.
 
 
-class Structure : public render::ManagedBufferRegistry {
+class Structure : public render::ManagedBufferRegistry, public WeakReferrable {
 
 public:
   Structure(std::string name, std::string subtypeName);
@@ -92,6 +93,7 @@ public:
   bool isEnabled();
   void enableIsolate();                      // enable this structure, disable all of same type
   void setEnabledAllOfType(bool newEnabled); // enable/disable all structures of this type
+
 
   // Options
   Structure* setTransparency(float newVal); // also enables transparency if <1 and transparency is not enabled

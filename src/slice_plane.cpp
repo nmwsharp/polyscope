@@ -296,7 +296,7 @@ void SlicePlane::buildGUI() {
     if (ImGui::BeginPopup("InspectPopup")) {
 
       //  Loop over volume meshes and offer them to be inspected
-      for (std::pair<const std::string, std::shared_ptr<Structure>>& it : state::structures["Volume Mesh"]) {
+      for (std::pair<const std::string, std::unique_ptr<Structure>>& it : state::structures["Volume Mesh"]) {
         std::string vMeshName = it.first;
         if (ImGui::MenuItem(vMeshName.c_str(), NULL, inspectedMeshName == vMeshName)) {
           setVolumeMeshToInspect(vMeshName);

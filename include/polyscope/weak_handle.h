@@ -19,6 +19,8 @@ using WeakHandleDummyType = int32_t;
 template <typename TargetType>
 struct WeakHandle {
 
+  WeakHandle() {}
+
   WeakHandle(std::shared_ptr<WeakHandleDummyType>& dummyRef, TargetType* targetPtr_)
       : sentinel(std::weak_ptr<WeakHandleDummyType>(dummyRef)), targetPtr(targetPtr_) {}
 
@@ -27,6 +29,12 @@ struct WeakHandle {
 
   // Get a reference to the object (only defined if isValid() == true)
   TargetType& get() const { return *targetPtr; };
+
+  // Clear back to null
+  void reset() {
+    sentinel.reset();
+    targetPtr = nullptr;
+  };
 
 private:
   std::weak_ptr<WeakHandleDummyType> sentinel;
