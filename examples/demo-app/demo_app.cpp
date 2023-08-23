@@ -600,6 +600,8 @@ void addImplicitRendersFromCurrentView() {
   polyscope::DepthRenderImageQuantity* img2 = polyscope::renderImplicitSurface("box sdf", boxFrameSDF, mode, opts);
   polyscope::ColorRenderImageQuantity* img2Color =
       polyscope::renderImplicitSurfaceColor("box sdf color", boxFrameSDF, colorFunc, mode, opts);
+  polyscope::RawColorRenderImageQuantity* img2rawColor =
+      polyscope::renderImplicitSurfaceRawColor("box sdf raw color", boxFrameSDF, colorFunc, mode, opts);
   polyscope::ScalarRenderImageQuantity* imgScalar =
       polyscope::renderImplicitSurfaceScalar("torus sdf scalar", torusSDF, scalarFunc, mode, opts);
 }
@@ -782,10 +784,6 @@ void callback() {
   }
 
 
-  if (ImGui::Button("add implicits")) {
-    addImplicitRendersFromCurrentView();
-  }
-
   if (ImGui::Button("drop camera view here")) {
     dropCameraView();
   }
@@ -862,6 +860,6 @@ int main(int argc, char** argv) {
   // }
 
   std::cout << "!!!! shutdown time" << std::endl;
-  
+
   return 0;
 }

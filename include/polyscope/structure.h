@@ -149,6 +149,7 @@ class ColorImageQuantity;
 class DepthRenderImageQuantity;
 class ColorRenderImageQuantity;
 class ScalarRenderImageQuantity;
+class RawColorRenderImageQuantity;
 
 // Helper used to define quantity types
 template <typename T>
@@ -225,12 +226,16 @@ public:
                                                         const T2& normalData, const T3& colorData,
                                                         ImageOrigin imageOrigin = ImageOrigin::UpperLeft);
 
-
   template <class T1, class T2, class T3>
   ScalarRenderImageQuantity*
   addScalarRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData, const T2& normalData,
                                const T3& scalarData, ImageOrigin imageOrigin = ImageOrigin::UpperLeft,
                                DataType type = DataType::STANDARD);
+
+  template <class T1, class T2, class T3>
+  ColorRenderImageQuantity* addRawColorRenderImageQuantity(std::string name, size_t dimX, size_t dimY,
+                                                           const T1& depthData, const T3& colorData,
+                                                           ImageOrigin imageOrigin = ImageOrigin::UpperLeft);
 
 
   // === Floating Quantity impls
@@ -257,6 +262,11 @@ public:
                                                               const std::vector<glm::vec3>& normalData,
                                                               const std::vector<double>& scalarData,
                                                               ImageOrigin imageOrigin, DataType type);
+
+  RawColorRenderImageQuantity* addRawColorRenderImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
+                                                               const std::vector<float>& depthData,
+                                                               const std::vector<glm::vec3>& colorData,
+                                                               ImageOrigin imageOrigin);
 
 protected:
 };
