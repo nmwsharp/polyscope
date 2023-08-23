@@ -45,6 +45,12 @@ public:
   // implicit conversion from scalar creates relative by default
   ScaledValue(const T& relativeValue) : relativeFlag(true), value(relativeValue) {}
 
+  // Comparators etc
+  bool operator==(const ScaledValue<T>& rhs) const {
+    return (value == rhs.value) && (relativeFlag == rhs.relativeFlag);
+  }
+  bool operator!=(const ScaledValue<T>& rhs) const { return !operator==(rhs); }
+
   // Make all template variants friends, so conversion can access private members
   template <typename>
   friend class ScaledValue;
