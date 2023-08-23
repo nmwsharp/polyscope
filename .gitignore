@@ -1,6 +1,7 @@
 # Build directories
 build/
 build_debug/
+misc/file2c/file2cpp
 
 # Editor and OS things
 imgui.ini
