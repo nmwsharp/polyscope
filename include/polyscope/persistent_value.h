@@ -54,7 +54,7 @@ public:
   }
 
   // Ensure in cache on deletion (see not above reference conversion)
-  ~PersistentValue() { set(value); }
+  ~PersistentValue() {}
 
   // Don't want copy or move constructors, only operators
   PersistentValue(const PersistentValue&) = delete;
@@ -82,8 +82,8 @@ public:
     return *this;
   }
 
-  // NOTE if you write via this reference, the value will not _actually_ be cached until destruction or
-  // manuallyChanged() is called, rather than immediately (ugly, but seems necessary to use with imgui)...
+  // NOTE if you write via this reference, the value will not _actually_ be cached until
+  // manuallyChanged() is called, rather than immediately (ugly, but seems necessary to use with imgui)
   T& get() { return value; }
   void manuallyChanged() { set(value); }
 
@@ -107,7 +107,6 @@ public:
   template <typename>
   friend class PersistentValue;
 
-private:
   const std::string name;
   T value;
   bool holdsDefaultValue = true; // True if the value was set on construction and never changed. False if it was pulled

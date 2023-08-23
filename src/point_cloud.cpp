@@ -371,6 +371,7 @@ void PointCloudQuantity::buildInfoGUI(size_t pointInd) {}
 
 
 PointCloudColorQuantity* PointCloud::addColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   PointCloudColorQuantity* q = new PointCloudColorQuantity(name, colors, *this);
   addQuantity(q);
   return q;
@@ -378,6 +379,7 @@ PointCloudColorQuantity* PointCloud::addColorQuantityImpl(std::string name, cons
 
 PointCloudScalarQuantity* PointCloud::addScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                             DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   PointCloudScalarQuantity* q = new PointCloudScalarQuantity(name, data, *this, type);
   addQuantity(q);
   return q;
@@ -386,6 +388,7 @@ PointCloudScalarQuantity* PointCloud::addScalarQuantityImpl(std::string name, co
 PointCloudParameterizationQuantity* PointCloud::addParameterizationQuantityImpl(std::string name,
                                                                                 const std::vector<glm::vec2>& param,
                                                                                 ParamCoordsType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   PointCloudParameterizationQuantity* q =
       new PointCloudParameterizationQuantity(name, *this, param, type, ParamVizStyle::CHECKER);
   addQuantity(q);
@@ -395,6 +398,7 @@ PointCloudParameterizationQuantity* PointCloud::addParameterizationQuantityImpl(
 PointCloudParameterizationQuantity*
 PointCloud::addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param,
                                                  ParamCoordsType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   PointCloudParameterizationQuantity* q =
       new PointCloudParameterizationQuantity(name, *this, param, type, ParamVizStyle::LOCAL_CHECK);
   addQuantity(q);
@@ -403,6 +407,7 @@ PointCloud::addLocalParameterizationQuantityImpl(std::string name, const std::ve
 
 PointCloudVectorQuantity* PointCloud::addVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors,
                                                             VectorType vectorType) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   PointCloudVectorQuantity* q = new PointCloudVectorQuantity(name, vectors, *this, vectorType);
   addQuantity(q);
   return q;

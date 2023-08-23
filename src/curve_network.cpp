@@ -497,6 +497,7 @@ void CurveNetworkQuantity::buildEdgeInfoGUI(size_t edgeInd) {}
 
 CurveNetworkNodeColorQuantity* CurveNetwork::addNodeColorQuantityImpl(std::string name,
                                                                       const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   CurveNetworkNodeColorQuantity* q = new CurveNetworkNodeColorQuantity(name, colors, *this);
   addQuantity(q);
   return q;
@@ -504,6 +505,7 @@ CurveNetworkNodeColorQuantity* CurveNetwork::addNodeColorQuantityImpl(std::strin
 
 CurveNetworkEdgeColorQuantity* CurveNetwork::addEdgeColorQuantityImpl(std::string name,
                                                                       const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   CurveNetworkEdgeColorQuantity* q = new CurveNetworkEdgeColorQuantity(name, colors, *this);
   addQuantity(q);
   return q;
@@ -512,6 +514,7 @@ CurveNetworkEdgeColorQuantity* CurveNetwork::addEdgeColorQuantityImpl(std::strin
 
 CurveNetworkNodeScalarQuantity*
 CurveNetwork::addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   CurveNetworkNodeScalarQuantity* q = new CurveNetworkNodeScalarQuantity(name, data, *this, type);
   addQuantity(q);
   return q;
@@ -519,6 +522,7 @@ CurveNetwork::addNodeScalarQuantityImpl(std::string name, const std::vector<doub
 
 CurveNetworkEdgeScalarQuantity*
 CurveNetwork::addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   CurveNetworkEdgeScalarQuantity* q = new CurveNetworkEdgeScalarQuantity(name, data, *this, type);
   addQuantity(q);
   return q;
@@ -527,6 +531,7 @@ CurveNetwork::addEdgeScalarQuantityImpl(std::string name, const std::vector<doub
 CurveNetworkNodeVectorQuantity* CurveNetwork::addNodeVectorQuantityImpl(std::string name,
                                                                         const std::vector<glm::vec3>& vectors,
                                                                         VectorType vectorType) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   CurveNetworkNodeVectorQuantity* q = new CurveNetworkNodeVectorQuantity(name, vectors, *this, vectorType);
   addQuantity(q);
   return q;
@@ -535,6 +540,7 @@ CurveNetworkNodeVectorQuantity* CurveNetwork::addNodeVectorQuantityImpl(std::str
 CurveNetworkEdgeVectorQuantity* CurveNetwork::addEdgeVectorQuantityImpl(std::string name,
                                                                         const std::vector<glm::vec3>& vectors,
                                                                         VectorType vectorType) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   CurveNetworkEdgeVectorQuantity* q = new CurveNetworkEdgeVectorQuantity(name, vectors, *this, vectorType);
   addQuantity(q);
   return q;

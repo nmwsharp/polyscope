@@ -1488,6 +1488,7 @@ MeshShadeStyle SurfaceMesh::getShadeStyle() { return shadeStyle.get(); }
 
 SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantityImpl(std::string name,
                                                                     const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceVertexColorQuantity* q = new SurfaceVertexColorQuantity(name, *this, colors);
   addQuantity(q);
   return q;
@@ -1495,6 +1496,7 @@ SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantityImpl(std::string 
 
 SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantityImpl(std::string name,
                                                                 const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceFaceColorQuantity* q = new SurfaceFaceColorQuantity(name, *this, colors);
   addQuantity(q);
   return q;
@@ -1502,6 +1504,7 @@ SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantityImpl(std::string name
 
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexDistanceQuantityImpl(std::string name,
                                                                         const std::vector<double>& data) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceVertexScalarQuantity* q = new SurfaceVertexScalarQuantity(name, data, *this, DataType::MAGNITUDE);
 
   q->setIsolinesEnabled(true);
@@ -1513,6 +1516,7 @@ SurfaceVertexScalarQuantity* SurfaceMesh::addVertexDistanceQuantityImpl(std::str
 
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexSignedDistanceQuantityImpl(std::string name,
                                                                               const std::vector<double>& data) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceVertexScalarQuantity* q = new SurfaceVertexScalarQuantity(name, data, *this, DataType::SYMMETRIC);
 
   q->setIsolinesEnabled(true);
@@ -1525,6 +1529,7 @@ SurfaceVertexScalarQuantity* SurfaceMesh::addVertexSignedDistanceQuantityImpl(st
 SurfaceCornerParameterizationQuantity*
 SurfaceMesh::addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
                                              ParamCoordsType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceCornerParameterizationQuantity* q =
       new SurfaceCornerParameterizationQuantity(name, *this, coords, type, ParamVizStyle::CHECKER);
   addQuantity(q);
@@ -1535,6 +1540,7 @@ SurfaceMesh::addParameterizationQuantityImpl(std::string name, const std::vector
 SurfaceVertexParameterizationQuantity*
 SurfaceMesh::addVertexParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
                                                    ParamCoordsType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceVertexParameterizationQuantity* q =
       new SurfaceVertexParameterizationQuantity(name, *this, coords, type, ParamVizStyle::CHECKER);
   addQuantity(q);
@@ -1545,6 +1551,7 @@ SurfaceMesh::addVertexParameterizationQuantityImpl(std::string name, const std::
 SurfaceVertexParameterizationQuantity*
 SurfaceMesh::addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords,
                                                   ParamCoordsType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceVertexParameterizationQuantity* q =
       new SurfaceVertexParameterizationQuantity(name, *this, coords, type, ParamVizStyle::LOCAL_CHECK);
   addQuantity(q);
@@ -1554,6 +1561,7 @@ SurfaceMesh::addLocalParameterizationQuantityImpl(std::string name, const std::v
 
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                       DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceVertexScalarQuantity* q = new SurfaceVertexScalarQuantity(name, data, *this, type);
   addQuantity(q);
   return q;
@@ -1561,6 +1569,7 @@ SurfaceVertexScalarQuantity* SurfaceMesh::addVertexScalarQuantityImpl(std::strin
 
 SurfaceFaceScalarQuantity* SurfaceMesh::addFaceScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                   DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceFaceScalarQuantity* q = new SurfaceFaceScalarQuantity(name, data, *this, type);
   addQuantity(q);
   return q;
@@ -1569,6 +1578,7 @@ SurfaceFaceScalarQuantity* SurfaceMesh::addFaceScalarQuantityImpl(std::string na
 
 SurfaceEdgeScalarQuantity* SurfaceMesh::addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                   DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceEdgeScalarQuantity* q = new SurfaceEdgeScalarQuantity(name, data, *this, type);
   addQuantity(q);
   markEdgesAsUsed();
@@ -1577,6 +1587,7 @@ SurfaceEdgeScalarQuantity* SurfaceMesh::addEdgeScalarQuantityImpl(std::string na
 
 SurfaceHalfedgeScalarQuantity*
 SurfaceMesh::addHalfedgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceHalfedgeScalarQuantity* q = new SurfaceHalfedgeScalarQuantity(name, data, *this, type);
   addQuantity(q);
   markHalfedgesAsUsed();
@@ -1585,6 +1596,7 @@ SurfaceMesh::addHalfedgeScalarQuantityImpl(std::string name, const std::vector<d
 
 SurfaceCornerScalarQuantity* SurfaceMesh::addCornerScalarQuantityImpl(std::string name, const std::vector<double>& data,
                                                                       DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceCornerScalarQuantity* q = new SurfaceCornerScalarQuantity(name, data, *this, type);
   addQuantity(q);
   markCornersAsUsed();
@@ -1594,6 +1606,7 @@ SurfaceCornerScalarQuantity* SurfaceMesh::addCornerScalarQuantityImpl(std::strin
 SurfaceVertexVectorQuantity* SurfaceMesh::addVertexVectorQuantityImpl(std::string name,
                                                                       const std::vector<glm::vec3>& vectors,
                                                                       VectorType vectorType) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceVertexVectorQuantity* q = new SurfaceVertexVectorQuantity(name, vectors, *this, vectorType);
   addQuantity(q);
   return q;
@@ -1602,6 +1615,7 @@ SurfaceVertexVectorQuantity* SurfaceMesh::addVertexVectorQuantityImpl(std::strin
 SurfaceFaceVectorQuantity*
 SurfaceMesh::addFaceVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType) {
 
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceFaceVectorQuantity* q = new SurfaceFaceVectorQuantity(name, vectors, *this, vectorType);
   addQuantity(q);
   return q;
@@ -1613,6 +1627,7 @@ SurfaceFaceTangentVectorQuantity* SurfaceMesh::addFaceTangentVectorQuantityImpl(
                                                                                 const std::vector<glm::vec3>& basisY,
                                                                                 int nSym, VectorType vectorType) {
 
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceFaceTangentVectorQuantity* q =
       new SurfaceFaceTangentVectorQuantity(name, vectors, basisX, basisY, *this, nSym, vectorType);
   addQuantity(q);
@@ -1624,6 +1639,7 @@ SurfaceVertexTangentVectorQuantity*
 SurfaceMesh::addVertexTangentVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors,
                                                 const std::vector<glm::vec3>& basisX,
                                                 const std::vector<glm::vec3>& basisY, int nSym, VectorType vectorType) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceVertexTangentVectorQuantity* q =
       new SurfaceVertexTangentVectorQuantity(name, vectors, basisX, basisY, *this, nSym, vectorType);
   addQuantity(q);
@@ -1635,6 +1651,7 @@ SurfaceMesh::addVertexTangentVectorQuantityImpl(std::string name, const std::vec
 SurfaceOneFormTangentVectorQuantity*
 SurfaceMesh::addOneFormTangentVectorQuantityImpl(std::string name, const std::vector<double>& data,
                                                  const std::vector<char>& orientations) {
+  checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceOneFormTangentVectorQuantity* q = new SurfaceOneFormTangentVectorQuantity(name, data, orientations, *this);
   addQuantity(q);
   markEdgesAsUsed();
