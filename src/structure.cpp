@@ -95,7 +95,7 @@ void Structure::buildUI() {
           // otherwise, show toggles for each
           ImGui::TextUnformatted("Applies to this structure:");
           ImGui::Indent(20);
-          for (SlicePlane* s : state::slicePlanes) {
+          for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
             bool ignorePlane = getIgnoreSlicePlane(s->name);
             if (ImGui::MenuItem(s->name.c_str(), NULL, !ignorePlane)) setIgnoreSlicePlane(s->name, !ignorePlane);
           }
@@ -169,7 +169,7 @@ std::tuple<glm::vec3, glm::vec3> Structure::boundingBox() {
 float Structure::lengthScale() {
   // compute the scaling caused by the object transform
   const glm::mat4x4& T = objectTransform.get();
-  float transScale = abs(glm::determinant(glm::mat3x3(T))) / T[3][3];
+  float transScale = std::abs(glm::determinant(glm::mat3x3(T))) / T[3][3];
   return transScale * objectSpaceLengthScale;
 }
 
@@ -261,7 +261,7 @@ void Structure::setStructureUniforms(render::ShaderProgram& p) {
   }
 
   // Respect any slice planes
-  for (SlicePlane* s : state::slicePlanes) {
+  for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
     bool ignoreThisPlane = getIgnoreSlicePlane(s->name);
     s->setSceneObjectUniforms(p, ignoreThisPlane);
   }

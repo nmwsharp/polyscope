@@ -17,8 +17,8 @@ std::function<void()> userCallback = nullptr;
 bool doDefaultMouseInteraction = true;
 
 // Lists of things
-std::set<Widget*> widgets;
-std::vector<SlicePlane*> slicePlanes;
+std::vector<WeakHandle<Widget>> widgets;
+std::vector<std::unique_ptr<SlicePlane>> slicePlanes;
 
 } // namespace state
 } // namespace polyscope
