@@ -6,14 +6,9 @@
 
 namespace polyscope {
 
-Widget::Widget() { state::widgets.insert(this); }
+Widget::Widget() { state::widgets.push_back(getWeakHandle<Widget>()); }
 
-Widget::~Widget() {
-  auto pos = state::widgets.find(this);
-  if (pos == state::widgets.end()) return;
-  state::widgets.erase(pos);
-}
-
+Widget::~Widget() {}
 
 void Widget::draw() {}
 bool Widget::interact() { return false; }

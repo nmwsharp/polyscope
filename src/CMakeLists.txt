@@ -147,6 +147,7 @@ SET(SRCS
   color_management.cpp
   transformation_gizmo.cpp
   slice_plane.cpp
+  weak_handle.cpp
 
   ## Structures
 
@@ -302,6 +303,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/volume_grid.ipp
   ${INCLUDE_ROOT}/volume_grid_quantity.h
   ${INCLUDE_ROOT}/volume_grid_scalar_quantity.h
+  ${INCLUDE_ROOT}/weak_handle.h
 )
 
 # Create a single library for the project

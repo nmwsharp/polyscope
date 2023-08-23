@@ -270,7 +270,7 @@ void drawStructures() {
   }
 
   // Also render any slice plane geometry
-  for (SlicePlane* s : state::slicePlanes) {
+  for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
     s->drawGeometry();
   }
 }
@@ -298,10 +298,13 @@ void processInputEvents() {
   }
 
   bool widgetCapturedMouse = false;
-  for (Widget* w : state::widgets) {
-    widgetCapturedMouse = w->interact();
-    if (widgetCapturedMouse) {
-      break;
+  for (WeakHandle<Widget> wHandle : state::widgets) {
+    if (wHandle.isValid()) {
+      Widget& w = wHandle.get();
+      widgetCapturedMouse = w.interact();
+      if (widgetCapturedMouse) {
+        break;
+      }
     }
   }
 
@@ -411,7 +414,7 @@ void processInputEvents() {
 
 
 void renderSlicePlanes() {
-  for (SlicePlane* s : state::slicePlanes) {
+  for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
     s->draw();
   }
 }
@@ -500,6 +503,13 @@ void renderSceneToScreen() {
   } else {
     render::engine->applyLightingTransform(render::engine->sceneColorFinal);
   }
+}
+
+void purgeWidgets() {
+  // remove any widget objects which are no longer defined
+  state::widgets.erase(std::remove_if(state::widgets.begin(), state::widgets.end(),
+                                      [](const WeakHandle<Widget>& w) { return !w.isValid(); }),
+                       state::widgets.end());
 }
 
 } // namespace
@@ -738,8 +748,11 @@ void draw(bool withUI, bool withContextCallback) {
         buildStructureGui();
         buildPickGui();
 
-        for (Widget* w : state::widgets) {
-          w->buildGUI();
+        for (WeakHandle<Widget> wHandle : state::widgets) {
+          if (wHandle.isValid()) {
+            Widget& w = wHandle.get();
+            w.buildGUI();
+          }
         }
       }
     }
@@ -764,8 +777,11 @@ void draw(bool withUI, bool withContextCallback) {
   if (withUI) {
     // render widgets
     render::engine->bindDisplay();
-    for (Widget* w : state::widgets) {
-      w->draw();
+    for (WeakHandle<Widget> wHandle : state::widgets) {
+      if (wHandle.isValid()) {
+        Widget& w = wHandle.get();
+        w.draw();
+      }
     }
 
     render::engine->bindDisplay();
@@ -786,6 +802,9 @@ void mainLoopIteration() {
   processInputEvents();
   view::updateFlight();
   showDelayedWarnings();
+
+  // Housekeeping
+  purgeWidgets();
 
   // Rendering
   draw();
