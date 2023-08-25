@@ -27,6 +27,9 @@ public:
 
   render::ManagedBuffer<glm::vec3> colors;
 
+  template <typename T1, typename T2>
+  void updateBuffers(const T1& depthData, const T2& colorsData);
+
   // == Setters and getters
 
 
@@ -43,5 +46,21 @@ protected:
   void prepare();
 };
 
+template <typename T1, typename T2>
+void RawColorRenderImageQuantity::updateBuffers(const T1& depthData, const T2& colorsData) {
+
+  validateSize(depthData, dimX * dimY, "color render image depth data " + name);
+  validateSize(colorsData, dimX * dimY, "color render image color data " + name);
+
+  // standardize
+  std::vector<float> standardDepth(standardizeArray<float>(depthData));
+  std::vector<glm::vec3> standardNormal;
+  std::vector<glm::vec3> standardColor(standardizeVectorArray<glm::vec3, 3>(colorsData));
+
+  colors.data = standardColor;
+  colors.markHostBufferUpdated();
+
+  updateBaseBuffers(standardDepth, standardNormal);
+}
 
 } // namespace polyscope

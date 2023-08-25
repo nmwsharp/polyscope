@@ -34,7 +34,7 @@ public:
   render::ManagedBuffer<float> depths;
   render::ManagedBuffer<glm::vec3> normals;
 
-  void updateGeometryBuffers(const std::vector<float>& newDepthData, const std::vector<glm::vec3>& newNormalData);
+  void updateBaseBuffers(const std::vector<float>& newDepthData, const std::vector<glm::vec3>& newNormalData);
 
   // == Setters and getters
 

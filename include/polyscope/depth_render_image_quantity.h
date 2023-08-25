@@ -24,6 +24,9 @@ public:
 
   virtual std::string niceName() override;
 
+  template <typename T1, typename T2>
+  void updateBuffers(const T1& depthData, const T2& normalData);
+
   // == Setters and getters
 
   // set the base color of the rendered geometry
@@ -42,6 +45,20 @@ protected:
   // === Helpers
   void prepare();
 };
+
+
+template <typename T1, typename T2>
+void DepthRenderImageQuantity::updateBuffers(const T1& depthData, const T2& normalData) {
+
+  validateSize(depthData, dimX * dimY, "depth render image depth data " + name);
+  validateSize(normalData, dimX * dimY, "depth render image normal data " + name);
+
+  // standardize
+  std::vector<float> standardDepth(standardizeArray<float>(depthData));
+  std::vector<glm::vec3> standardNormal(standardizeVectorArray<glm::vec3, 3>(normalData));
+
+  updateBaseBuffers(standardDepth, standardNormal);
+}
 
 
 } // namespace polyscope

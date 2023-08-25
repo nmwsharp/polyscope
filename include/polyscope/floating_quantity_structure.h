@@ -97,6 +97,10 @@ ScalarRenderImageQuantity* addScalarRenderImageQuantity(std::string name, size_t
                                                         const T2& normalData, const T3& scalarData,
                                                         ImageOrigin imageOrigin, DataType type = DataType::STANDARD);
 
+template <class T1, class T2>
+RawColorRenderImageQuantity* addRawColorRenderImageQuantity(std::string name, size_t dimX, size_t dimY,
+                                                            const T1& depthData, const T2& colorData,
+                                                            ImageOrigin imageOrigin);
 
 } // namespace polyscope
 

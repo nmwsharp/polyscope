@@ -40,13 +40,19 @@ void RenderImageQuantityBase::addOptionsPopupEntries() {
   }
 }
 
-void RenderImageQuantityBase::updateGeometryBuffers(const std::vector<float>& newDepthData,
-                                                    const std::vector<glm::vec3>& newNormalData) {
-  depths.data = newDepthData;
-  normals.data = newNormalData;
+void RenderImageQuantityBase::updateBaseBuffers(const std::vector<float>& newDepthData,
+                                                const std::vector<glm::vec3>& newNormalData) {
+  if (!newDepthData.empty()) {
+    depths.data = newDepthData;
+    depths.markHostBufferUpdated();
+  }
 
-  depths.markHostBufferUpdated();
-  normals.markHostBufferUpdated();
+  if (!newNormalData.empty()) {
+    normals.data = newNormalData;
+    normals.markHostBufferUpdated();
+  }
+
+  requestRedraw();
 }
 
 void RenderImageQuantityBase::refresh() { Quantity::refresh(); }
