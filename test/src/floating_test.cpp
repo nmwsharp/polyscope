@@ -82,18 +82,28 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
   { // DepthRenderImageQuantity
     polyscope::DepthRenderImageQuantity* im = polyscope::addDepthRenderImageQuantity(
         "render im depth", dimX, dimY, depthVals, normalVals, polyscope::ImageOrigin::UpperLeft);
+    im->updateBuffers(depthVals, normalVals);
     polyscope::show(3);
   }
 
   { // ColorImageQuantity
     polyscope::ColorRenderImageQuantity* im = polyscope::addColorRenderImageQuantity(
-        "render im depth", dimX, dimY, depthVals, normalVals, colorVals, polyscope::ImageOrigin::UpperLeft);
+        "render im color", dimX, dimY, depthVals, normalVals, colorVals, polyscope::ImageOrigin::UpperLeft);
+    im->updateBuffers(depthVals, normalVals, colorVals);
     polyscope::show(3);
   }
 
   { // ScalarRenderImageQuantity
     polyscope::ScalarRenderImageQuantity* im = polyscope::addScalarRenderImageQuantity(
         "render im scalar", dimX, dimY, depthVals, normalVals, scalarVals, polyscope::ImageOrigin::UpperLeft);
+    im->updateBuffers(depthVals, normalVals, scalarVals);
+    polyscope::show(3);
+  }
+
+  { // RawColorImageQuantity
+    polyscope::RawColorRenderImageQuantity* im = polyscope::addRawColorRenderImageQuantity(
+        "render im raw color", dimX, dimY, depthVals, colorVals, polyscope::ImageOrigin::UpperLeft);
+    im->updateBuffers(depthVals, colorVals);
     polyscope::show(3);
   }
 

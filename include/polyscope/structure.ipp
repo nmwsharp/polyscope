@@ -278,10 +278,10 @@ QuantityStructure<S>::addScalarRenderImageQuantity(std::string name, size_t dimX
 }
 
 template <typename S>
-template <class T1, class T2, class T3>
-ColorRenderImageQuantity*
+template <class T1, class T2>
+RawColorRenderImageQuantity*
 QuantityStructure<S>::addRawColorRenderImageQuantity(std::string name, size_t dimX, size_t dimY, const T1& depthData,
-                                                     const T3& colorData, ImageOrigin imageOrigin) {
+                                                     const T2& colorData, ImageOrigin imageOrigin) {
 
   validateSize(depthData, dimX * dimY, "depth render image depth data " + name);
   validateSize(colorData, dimX * dimY, "depth render image color data " + name);
@@ -290,7 +290,7 @@ QuantityStructure<S>::addRawColorRenderImageQuantity(std::string name, size_t di
   std::vector<float> standardDepth(standardizeArray<float>(depthData));
   std::vector<glm::vec3> standardColor(standardizeVectorArray<glm::vec3, 3>(colorData));
 
-  return this->addColorRenderImageQuantityImpl(name, dimX, dimY, standardDepth, standardColor, imageOrigin);
+  return this->addRawColorRenderImageQuantityImpl(name, dimX, dimY, standardDepth, standardColor, imageOrigin);
 }
 
 // === Floating Quantity Impls ===

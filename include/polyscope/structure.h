@@ -232,10 +232,10 @@ public:
                                const T3& scalarData, ImageOrigin imageOrigin = ImageOrigin::UpperLeft,
                                DataType type = DataType::STANDARD);
 
-  template <class T1, class T2, class T3>
-  ColorRenderImageQuantity* addRawColorRenderImageQuantity(std::string name, size_t dimX, size_t dimY,
-                                                           const T1& depthData, const T3& colorData,
-                                                           ImageOrigin imageOrigin = ImageOrigin::UpperLeft);
+  template <class T1, class T2>
+  RawColorRenderImageQuantity* addRawColorRenderImageQuantity(std::string name, size_t dimX, size_t dimY,
+                                                              const T1& depthData, const T2& colorData,
+                                                              ImageOrigin imageOrigin = ImageOrigin::UpperLeft);
 
 
   // === Floating Quantity impls
@@ -264,9 +264,9 @@ public:
                                                               ImageOrigin imageOrigin, DataType type);
 
   RawColorRenderImageQuantity* addRawColorRenderImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
-                                                               const std::vector<float>& depthData,
-                                                               const std::vector<glm::vec3>& colorData,
-                                                               ImageOrigin imageOrigin);
+                                                                  const std::vector<float>& depthData,
+                                                                  const std::vector<glm::vec3>& colorData,
+                                                                  ImageOrigin imageOrigin);
 
 protected:
 };
