@@ -512,6 +512,24 @@ void purgeWidgets() {
                        state::widgets.end());
 }
 
+void userGuiBegin() {
+
+  ImGui::PushID("user_callback");
+  ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin), imguiStackMargin));
+  ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
+
+  ImGui::Begin("Command UI", nullptr);
+}
+
+void userGuiEnd() {
+
+  rightWindowsWidth = ImGui::GetWindowWidth();
+  lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
+  ImGui::End();
+  ImGui::PopID();
+}
+
+
 } // namespace
 
 void buildPolyscopeGui() {
@@ -696,21 +714,16 @@ void buildUserGuiAndInvokeCallback() {
 
   if (state::userCallback) {
 
+    bool beganUserGUI = false;
     if (options::buildGui && options::openImGuiWindowForUserCallback) {
-      ImGui::PushID("user_callback");
-      ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin), imguiStackMargin));
-      ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
-
-      ImGui::Begin("Command UI", nullptr);
+      userGuiBegin();
+      beganUserGUI = true;
     }
 
     state::userCallback();
 
-    if (options::buildGui && options::openImGuiWindowForUserCallback) {
-      rightWindowsWidth = ImGui::GetWindowWidth();
-      lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
-      ImGui::End();
-      ImGui::PopID();
+    if (beganUserGUI) {
+      userGuiEnd();
     } else {
       lastWindowHeightUser = imguiStackMargin;
     }
