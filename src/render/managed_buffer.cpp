@@ -67,6 +67,12 @@ void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_, uint32_t sizeY_, uint32_t
 }
 
 template <typename T>
+std::array<uint32_t, 3> ManagedBuffer<T>::getTextureSize() const {
+  if (deviceBufferType != DeviceBufferType::Attribute) exception("managed buffer is not a texture");
+  return std::array<uint32_t, 3>{sizeX, sizeY, sizeZ};
+}
+
+template <typename T>
 void ManagedBuffer<T>::ensureHostBufferPopulated() {
 
   switch (currentCanonicalDataSource()) {
@@ -459,20 +465,32 @@ void ManagedBuffer<T>::invokeBufferIndexCopyProgram() {
 
 // === Interact with the buffer registry
 
-// namespace {
-// // helper function for string bashing below
-// void splitString(std::string str, const std::string& delim, std::vector<std::string>& output) {
-//   output.clear();
-//   size_t pos = 0;
-//   std::string token;
-//   while ((pos = str.find(delim)) != std::string::npos) {
-//     token = str.substr(0, pos);
-//     output.push_back(token);
-//     str.erase(0, pos + delim.length());
-//   }
-//   output.push_back(str);
-// }
-// } // namespace
+std::tuple<bool, ManagedBufferType> ManagedBufferRegistry::hasManagedBufferType(std::string name) {
+
+  // clang-format off
+
+  if (hasManagedBuffer<float>(name))  return std::make_tuple(true, ManagedBufferType::Float);
+  if (hasManagedBuffer<double>(name)) return std::make_tuple(true, ManagedBufferType::Double);
+
+  if (hasManagedBuffer<glm::vec2>(name)) return std::make_tuple(true, ManagedBufferType::Vec2);
+  if (hasManagedBuffer<glm::vec3>(name)) return std::make_tuple(true, ManagedBufferType::Vec3);
+  if (hasManagedBuffer<glm::vec4>(name)) return std::make_tuple(true, ManagedBufferType::Vec4);
+  
+  if (hasManagedBuffer<std::array<glm::vec3,2>>(name)) return std::make_tuple(true, ManagedBufferType::Arr2Vec3);
+  if (hasManagedBuffer<std::array<glm::vec3,3>>(name)) return std::make_tuple(true, ManagedBufferType::Arr3Vec3);
+  if (hasManagedBuffer<std::array<glm::vec3,4>>(name)) return std::make_tuple(true, ManagedBufferType::Arr4Vec3);
+  
+  if (hasManagedBuffer<uint32_t>(name)) return std::make_tuple(true, ManagedBufferType::UInt32);
+  if (hasManagedBuffer<int32_t>(name))  return std::make_tuple(true, ManagedBufferType::Int32);
+
+  if (hasManagedBuffer<glm::uvec2>(name)) return std::make_tuple(true, ManagedBufferType::UVec2);
+  if (hasManagedBuffer<glm::uvec3>(name)) return std::make_tuple(true, ManagedBufferType::UVec3);
+  if (hasManagedBuffer<glm::uvec4>(name)) return std::make_tuple(true, ManagedBufferType::UVec4);
+
+  // clang-format on
+
+  return std::make_tuple(false, ManagedBufferType::Float);
+}
 
 // === Explicit template instantiation for the supported types
 
@@ -534,6 +552,28 @@ template<> ManagedBufferMap<glm::uvec3>&               ManagedBufferMap<glm::uve
 template<> ManagedBufferMap<glm::uvec4>&               ManagedBufferMap<glm::uvec4>::getManagedBufferMapRef              (ManagedBufferRegistry* r) { return r->managedBufferMap_uvec4; }
 
 // clang-format on
+
+std::string typeName(ManagedBufferType type) {
+  switch (type) {
+  // clang-format off
+    case ManagedBufferType::Float     : return "Float";    
+    case ManagedBufferType::Double    : return "Double";   
+    case ManagedBufferType::Vec2      : return "Vec2";     
+    case ManagedBufferType::Vec3      : return "Vec3";     
+    case ManagedBufferType::Vec4      : return "Vec4";     
+    case ManagedBufferType::Arr2Vec3  : return "Arr2Vec3"; 
+    case ManagedBufferType::Arr3Vec3  : return "Arr3Vec3"; 
+    case ManagedBufferType::Arr4Vec3  : return "Arr4Vec3"; 
+    case ManagedBufferType::UInt32    : return "UInt32";   
+    case ManagedBufferType::Int32     : return "Int32";    
+    case ManagedBufferType::UVec2     : return "UVec2";    
+    case ManagedBufferType::UVec3     : return "UVec3";    
+    case ManagedBufferType::UVec4     : return "UVec4";
+    // clang-format on
+  }
+  exception("bad enum");
+  return 0;
+};
 
 } // namespace render
 } // namespace polyscope

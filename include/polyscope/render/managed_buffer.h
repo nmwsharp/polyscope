@@ -84,6 +84,7 @@ public:
   void setTextureSize(uint32_t sizeX);
   void setTextureSize(uint32_t sizeX, uint32_t sizeY);
   void setTextureSize(uint32_t sizeX, uint32_t sizeY, uint32_t sizeZ);
+  std::array<uint32_t,3> getTextureSize() const;
 
 
   // == Members for indexed data
@@ -223,6 +224,7 @@ public:
   void addManagedBuffer(ManagedBuffer<T>* buffer);
 
   ManagedBuffer<T>& getManagedBuffer(std::string name);
+  bool hasManagedBuffer(std::string name);
 
   // internal helper for template things
   static ManagedBufferMap<T>& getManagedBufferMapRef(ManagedBufferRegistry* r);
@@ -239,9 +241,17 @@ private:
 class ManagedBufferRegistry {
 public:
   // get a reference to any buffer that currently exists in Polyscope, by name
-  // (this one fetches buffers associated with structures)
   template <typename T>
   ManagedBuffer<T>& getManagedBuffer(std::string name);
+
+  // check for the existence of a managed buffer with a given name
+  template <typename T>
+  bool hasManagedBuffer(std::string name);
+
+  // checks for a managed buffer with the given name of any type
+  // return value is (bool, type), the bool indicates whether the buffer was found, and if so the type indicates what
+  // type it was
+  std::tuple<bool, ManagedBufferType> hasManagedBufferType(std::string name);
 
   template <typename T>
   void addManagedBuffer(ManagedBuffer<T>* buffer);
@@ -263,8 +273,10 @@ public:
   // clang-format on
 };
 
-
 } // namespace render
+
+std::string typeName(ManagedBufferType type);
+
 } // namespace polyscope
 
 #include "polyscope/render/managed_buffer.ipp"
