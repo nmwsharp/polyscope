@@ -930,6 +930,10 @@ void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 }
 
 void* GLTextureBuffer::getNativeHandle() { return reinterpret_cast<void*>(getHandle()); }
+  
+uint32_t GLTextureBuffer::getNativeBufferID() {
+  return static_cast<uint32_t>(getHandle());
+};
 
 std::vector<float> GLTextureBuffer::getDataScalar() {
   if (dimension(format) != 1) exception("called getDataScalar on texture which does not have a 1 dimensional format");

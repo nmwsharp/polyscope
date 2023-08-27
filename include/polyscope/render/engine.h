@@ -185,7 +185,9 @@ public:
   // void fillTextureData2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
   // bool withAlpha = true, bool useMipMap = false, bool repeat = false);
 
-  virtual void* getNativeHandle() = 0; // used to interop with external things, e.g. ImGui
+  // used to interop with external things, e.g. ImGui
+  virtual void* getNativeHandle() = 0; 
+  virtual uint32_t getNativeBufferID() = 0; 
 
 protected:
   int dim;
