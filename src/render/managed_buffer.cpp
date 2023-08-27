@@ -122,6 +122,11 @@ void ManagedBuffer<T>::markHostBufferUpdated() {
     renderAttributeBuffer->setData(data);
     requestRedraw();
   }
+
+  if (renderTextureBuffer) {
+    renderTextureBuffer->setData(data);
+    requestRedraw();
+  }
 }
 
 template <typename T>
@@ -317,6 +322,14 @@ void ManagedBuffer<T>::markRenderAttributeBufferUpdated() {
 
   invalidateHostBuffer();
   updateIndexedViews();
+  requestRedraw();
+}
+
+template <typename T>
+void ManagedBuffer<T>::markRenderTextureBufferUpdated() {
+  checkDeviceBufferTypeIsTexture();
+
+  invalidateHostBuffer();
   requestRedraw();
 }
 
@@ -553,6 +566,8 @@ template<> ManagedBufferMap<glm::uvec4>&               ManagedBufferMap<glm::uve
 
 // clang-format on
 
+} // namespace render
+
 std::string typeName(ManagedBufferType type) {
   switch (type) {
   // clang-format off
@@ -575,5 +590,4 @@ std::string typeName(ManagedBufferType type) {
   return 0;
 };
 
-} // namespace render
 } // namespace polyscope

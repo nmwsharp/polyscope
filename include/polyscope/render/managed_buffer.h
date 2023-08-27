@@ -25,7 +25,8 @@ class ManagedBufferRegistry;
  *      (c) managed _indexed_ data, which gts expanded according to some index set for access at rendering time.
  *
  * Most often this class is used to wrap structure/quantity data passed in by the user, such as a scalar quantity, but
- * it is also somtimes automatically-computed values within Polyscope, suchas a vertex normal buffer for rendering.
+ * it is also sometimes wraps automatically-computed values within Polyscope, such as a vertex normal buffer for
+ * rendering.
  *
  * This class offers functions and accessors which can (and generally, MUST) be used to interact with the underlying
  * data buffer.
@@ -84,7 +85,7 @@ public:
   void setTextureSize(uint32_t sizeX);
   void setTextureSize(uint32_t sizeX, uint32_t sizeY);
   void setTextureSize(uint32_t sizeX, uint32_t sizeY, uint32_t sizeZ);
-  std::array<uint32_t,3> getTextureSize() const;
+  std::array<uint32_t, 3> getTextureSize() const;
 
 
   // == Members for indexed data
