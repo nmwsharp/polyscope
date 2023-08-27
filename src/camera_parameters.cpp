@@ -139,6 +139,32 @@ std::vector<glm::vec3> CameraParameters::generateCameraRays(size_t dimX, size_t 
   return result;
 }
 
+std::array<glm::vec3, 4> CameraParameters::generateCameraRayCorners() const {
+
+  // prep values
+  glm::mat4x4 viewMat = getViewMat();
+  glm::mat4 projMat =
+      glm::infinitePerspective(glm::radians(getFoVVerticalDegrees()), getAspectRatioWidthOverHeight(), 1.f);
+  glm::vec4 viewport = {0., 0., 1., 1.};
+  glm::vec3 rootPos = getPosition();
+
+  std::array<glm::vec3, 4> outCorners;
+
+  size_t i = 0;
+  for (float iY = 0; iY <= 1.; iY++) {
+    for (float iX = 0; iX <= 1.; iX++) {
+      glm::vec3 screenPos3 = glm::vec3{iX, 1. - iY, 0.};
+      glm::vec3 worldPos = glm::unProject(screenPos3, viewMat, projMat, viewport);
+      glm::vec3 worldRayDir = glm::normalize(worldPos - rootPos);
+      outCorners[i] = worldRayDir;
+      i++;
+    }
+  }
+
+  return outCorners;
+}
+
+
 // create/test 'invalid' params
 CameraParameters CameraParameters::createInvalid() {
   return CameraParameters(CameraIntrinsics::createInvalid(), CameraExtrinsics::createInvalid());

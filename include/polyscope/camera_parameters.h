@@ -97,6 +97,12 @@ public:
   std::vector<glm::vec3> generateCameraRays(size_t dimX, size_t dimY,
                                             ImageOrigin origin = ImageOrigin::UpperLeft) const;
 
+
+  // Generate the rays corresponding to the [upperleft, upperright, lowerleft, lowerright] corners of the images. Useful
+  // for interpolating between to generate camera rays per-pixel without passing whole buffers around.
+  std::array<glm::vec3, 4> generateCameraRayCorners() const;
+
+
   // (these getters are just forwarded from the intrinsics/extrinsics, for convenience)
 
   // == Extrinsic getters
