@@ -635,6 +635,7 @@ void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 }
 
 void* GLTextureBuffer::getNativeHandle() { return nullptr; }
+uint32_t GLTextureBuffer::getNativeBufferID() { return 77; };
 
 std::vector<float> GLTextureBuffer::getDataScalar() {
   if (dimension(format) != 1) exception("called getDataScalar on texture which does not have a 1 dimensional format");

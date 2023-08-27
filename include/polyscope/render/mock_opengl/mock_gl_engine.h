@@ -118,6 +118,7 @@ public:
 
   void setFilterMode(FilterMode newMode) override;
   void* getNativeHandle() override;
+  uint32_t getNativeBufferID() override; 
 
   std::vector<float> getDataScalar() override;
   std::vector<glm::vec2> getDataVector2() override;
