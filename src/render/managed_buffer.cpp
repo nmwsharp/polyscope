@@ -68,7 +68,7 @@ void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_, uint32_t sizeY_, uint32_t
 
 template <typename T>
 std::array<uint32_t, 3> ManagedBuffer<T>::getTextureSize() const {
-  if (deviceBufferType != DeviceBufferType::Attribute) exception("managed buffer is not a texture");
+  if (deviceBufferType == DeviceBufferType::Attribute) exception("managed buffer is not a texture");
   return std::array<uint32_t, 3>{sizeX, sizeY, sizeZ};
 }
 
@@ -217,6 +217,11 @@ bool ManagedBuffer<T>::hasData() {
   if (deviceBufferType == DeviceBufferType::Texture2d && renderTextureBuffer) return true;
   if (deviceBufferType == DeviceBufferType::Texture3d && renderTextureBuffer) return true;
   return false;
+}
+
+template <typename T>
+DeviceBufferType ManagedBuffer<T>::getDeviceBufferType() {
+  return deviceBufferType;
 }
 
 template <typename T>
@@ -570,7 +575,7 @@ template<> ManagedBufferMap<glm::uvec4>&               ManagedBufferMap<glm::uve
 
 std::string typeName(ManagedBufferType type) {
   switch (type) {
-  // clang-format off
+    // clang-format off
     case ManagedBufferType::Float     : return "Float";    
     case ManagedBufferType::Double    : return "Double";   
     case ManagedBufferType::Vec2      : return "Vec2";     
