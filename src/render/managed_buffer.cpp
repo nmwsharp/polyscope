@@ -127,6 +127,8 @@ void ManagedBuffer<T>::markHostBufferUpdated() {
     renderTextureBuffer->setData(data);
     requestRedraw();
   }
+
+  updateIndexedViews();
 }
 
 template <typename T>
