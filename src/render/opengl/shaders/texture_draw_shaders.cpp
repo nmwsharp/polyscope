@@ -270,8 +270,9 @@ R"(
     ${ GENERATE_SHADE_COLOR }$
 
     // Lighting
-    // [no lighting for this shader, it is 'raw']
-    vec3 litColor = albedoColor;
+    vec3 litColor = albedoColor; // this is 'raw', the actual transform is the identity here 
+    // still include this tag to allow for other transforms
+    ${ GENERATE_LIT_COLOR }$
 
      // Set alpha
     float alphaOut = u_transparency;

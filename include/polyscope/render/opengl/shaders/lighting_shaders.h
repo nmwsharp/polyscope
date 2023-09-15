@@ -17,6 +17,8 @@ extern const ShaderReplacementRule DOWNSAMPLE_RESOLVE_2;
 extern const ShaderReplacementRule DOWNSAMPLE_RESOLVE_3;
 extern const ShaderReplacementRule DOWNSAMPLE_RESOLVE_4;
 
+extern const ShaderReplacementRule INVERSE_TONEMAP;
+
 extern const ShaderReplacementRule TRANSPARENCY_RESOLVE_SIMPLE;
 extern const ShaderReplacementRule TRANSPARENCY_STRUCTURE;
 extern const ShaderReplacementRule TRANSPARENCY_PEEL_STRUCTURE;

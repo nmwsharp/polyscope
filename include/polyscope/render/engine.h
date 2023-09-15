@@ -575,6 +575,7 @@ public:
   float exposure = 1.0;
   float whiteLevel = 0.75;
   float gamma = 2.2;
+  void setTonemapUniforms(ShaderProgram& p);
 
   void setSSAAFactor(int newVal);
   int getSSAAFactor();

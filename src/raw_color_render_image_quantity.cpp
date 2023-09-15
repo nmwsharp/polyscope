@@ -35,6 +35,7 @@ void RawColorRenderImageQuantity::drawDelayed() {
   program->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   program->setUniform("u_viewport", render::engine->getCurrentViewport());
   program->setUniform("u_transparency", transparency.get());
+  render::engine->setTonemapUniforms(*program);
 
   // make sure we have actual depth testing enabled
   render::engine->setDepthMode(DepthMode::LEqual);
@@ -70,7 +71,7 @@ void RawColorRenderImageQuantity::prepare() {
 
   // Create the sourceProgram
   program = render::engine->requestShader("TEXTURE_DRAW_RAW_RENDERIMAGE_PLAIN",
-                                          {getImageOriginRule(imageOrigin), "TEXTURE_SHADE_COLOR"},
+                                          {getImageOriginRule(imageOrigin), "TEXTURE_SHADE_COLOR", "INVERSE_TONEMAP"},
                                           render::ShaderReplacementDefaults::Process);
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
