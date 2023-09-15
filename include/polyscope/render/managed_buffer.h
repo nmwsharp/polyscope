@@ -8,6 +8,7 @@
 
 #include "polyscope/render/engine.h"
 #include "polyscope/utilities.h"
+#include "polyscope/weak_handle.h"
 
 namespace polyscope {
 namespace render {
@@ -32,7 +33,7 @@ class ManagedBufferRegistry;
  * data buffer.
  */
 template <typename T>
-class ManagedBuffer {
+class ManagedBuffer : public WeakReferrable {
 public:
   // === Constructors
   // (second variants are advanced versions which allow creation of multi-dimensional texture values)
@@ -119,6 +120,9 @@ public:
 
   bool hasData(); // true if there is valid data on either the host or device
   size_t size();  // size of the data (number of entries)
+
+  // Is it an attribute, texture1d, texture2d, etc?
+  DeviceBufferType getDeviceBufferType();
 
   std::string summaryString(); // for debugging
 
