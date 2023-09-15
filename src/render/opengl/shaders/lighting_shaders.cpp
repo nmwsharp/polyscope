@@ -70,16 +70,14 @@ R"(
         vec3 color = color4.rgb;
         float alpha = color4.a;
 
-        // "lighting"
-        color = color * u_exposure;
-
         // tonemapping (extended Reinhard)
+        color = color * u_exposure;
         vec3 num = color * (1.0f + (color / vec3(u_whiteLevel * u_whiteLevel)));
         vec3 den = (1.0f + color);
         color = num / den;
         
         // gamma correction
-        color = pow(color, vec3(1.0/u_gamma));  
+        color = pow(color, vec3(1.0f/u_gamma));  
        
         outputVal = vec4(color, alpha);
     }  
@@ -155,6 +153,32 @@ const ShaderReplacementRule DOWNSAMPLE_RESOLVE_4 (
         )"},
     },
     /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule INVERSE_TONEMAP (
+    /* rule name */ "INVERSE_TONEMAP",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_exposure;
+          uniform float u_whiteLevel;
+          uniform float u_gamma;
+        )"},
+      {"GENERATE_LIT_COLOR", R"(
+          vec3 litColorUngamma = pow(litColor, vec3(u_gamma));
+          float invtonemap_a = -1.f / (u_whiteLevel*u_whiteLevel);
+          vec3 invtonemap_b = (litColorUngamma - 1.f);
+          vec3 invtonemap_c = litColorUngamma;
+          litColor = (-invtonemap_b - sqrt(invtonemap_b * invtonemap_b - 4.f*invtonemap_a*invtonemap_c)) / (2.f * invtonemap_a);
+          litColor = litColor / u_exposure;
+        )"},
+    },
+    /* uniforms */ {
+      {"u_exposure", RenderDataType::Float},
+      {"u_whiteLevel", RenderDataType::Float},
+      {"u_gamma", RenderDataType::Float},
+    },
     /* attributes */ {},
     /* textures */ {}
 );

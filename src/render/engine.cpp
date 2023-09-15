@@ -480,9 +480,7 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
     currLightingTransparencyMode = transparencyMode;
   }
 
-  mapLight->setUniform("u_exposure", exposure);
-  mapLight->setUniform("u_whiteLevel", whiteLevel);
-  mapLight->setUniform("u_gamma", gamma);
+  setTonemapUniforms(*mapLight);
   mapLight->setTextureFromBuffer("t_image", texture.get());
 
   glm::vec2 texelSize{1. / texture->getSizeX(), 1. / texture->getSizeY()};
@@ -495,6 +493,12 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
   }
   render::engine->setDepthMode(DepthMode::Disable);
   mapLight->draw();
+}
+
+void Engine::setTonemapUniforms(ShaderProgram& p) {
+  p.setUniform("u_exposure", exposure);
+  p.setUniform("u_whiteLevel", whiteLevel);
+  p.setUniform("u_gamma", gamma);
 }
 
 void Engine::setMaterial(ShaderProgram& program, const std::string& mat) {

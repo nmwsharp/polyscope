@@ -1296,6 +1296,10 @@ void GLCompiledProgram::compileGLProgram(const std::vector<ShaderStageSpecificat
       if (options::verbosity > 2) {
         printShaderInfoLog(h);
       }
+      if (options::verbosity > 100) {
+        std::cout << "Program text:" << std::endl;
+        std::cout << s.src.c_str() << std::endl;
+      }
 
       checkGLError();
     } catch (...) {
@@ -2901,6 +2905,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("SHADEVALUE_MAG_VALUE2", SHADEVALUE_MAG_VALUE2);
   registerShaderRule("ISOLINE_STRIPE_VALUECOLOR", ISOLINE_STRIPE_VALUECOLOR);
   registerShaderRule("CHECKER_VALUE2COLOR", CHECKER_VALUE2COLOR);
+  registerShaderRule("INVERSE_TONEMAP", INVERSE_TONEMAP);
  
   // Texture and image things
   registerShaderRule("TEXTURE_ORIGIN_UPPERLEFT", TEXTURE_ORIGIN_UPPERLEFT);
