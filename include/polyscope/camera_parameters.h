@@ -3,6 +3,7 @@
 #pragma once
 
 #include <tuple>
+#include <array>
 
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/gtc/matrix_transform.hpp"
