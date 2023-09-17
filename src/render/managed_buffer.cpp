@@ -408,11 +408,11 @@ void ManagedBuffer<T>::removeDeletedIndexedViews() {
   checkDeviceBufferTypeIs(DeviceBufferType::Attribute);
 
   // "erase-remove idiom"
-  // (remove list entries for which the view weak_ptr has .expired() == true
+  // (remove list entries for which the view weak_ptr has .expired() == true)
   existingIndexedViews.erase(
       std::remove_if(
           existingIndexedViews.begin(), existingIndexedViews.end(),
-          [&](const std::tuple<render::ManagedBuffer<uint32_t>*, std::weak_ptr<render::AttributeBuffer>>& entry)
+          [](const std::tuple<render::ManagedBuffer<uint32_t>*, std::weak_ptr<render::AttributeBuffer>>& entry)
               -> bool { return std::get<1>(entry).expired(); }),
       existingIndexedViews.end());
 }
@@ -579,7 +579,7 @@ template<> ManagedBufferMap<glm::uvec4>&               ManagedBufferMap<glm::uve
 
 std::string typeName(ManagedBufferType type) {
   switch (type) {
-    // clang-format off
+  // clang-format off
     case ManagedBufferType::Float     : return "Float";    
     case ManagedBufferType::Double    : return "Double";   
     case ManagedBufferType::Vec2      : return "Vec2";     
