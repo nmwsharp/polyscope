@@ -56,11 +56,6 @@ void FloatingQuantityStructure::buildUI() {
   ImGui::PushID(name.c_str()); // ensure there are no conflicts with
                                // identically-named labels
 
-
-  bool currEnabled = isEnabled();
-  ImGui::Checkbox("Enable All", &currEnabled);
-  setEnabled(currEnabled);
-
   // Do any structure-specific stuff here
   this->buildCustomUI();
 
