@@ -6,15 +6,27 @@
 namespace polyscope {
 
 // The static list
-std::set<FullscreenArtist*> currentFullscreenArtists;
+std::vector<WeakHandle<FullscreenArtist>> existingFullscreenArtists;
 
-FullscreenArtist::FullscreenArtist() { currentFullscreenArtists.insert(this); }
+FullscreenArtist::FullscreenArtist() {
+  existingFullscreenArtists.emplace_back(this->getWeakHandle<FullscreenArtist>());
+}
 
-FullscreenArtist::~FullscreenArtist() { currentFullscreenArtists.erase(this); }
+FullscreenArtist::~FullscreenArtist() {
+  // the weak handle will become invalid, let it get lazily delete at some later time
+}
 
 void disableAllFullscreenArtists() {
-  for (FullscreenArtist* a : currentFullscreenArtists) {
-    a->disableFullscreenDrawing();
+
+  // "erase-remove idiom"
+  // (remove list entries for which the view weak_ptr has .expired() == true)
+  existingFullscreenArtists.erase(
+      std::remove_if(existingFullscreenArtists.begin(), existingFullscreenArtists.end(),
+                     [](const WeakHandle<FullscreenArtist>& entry) -> bool { return !entry.isValid(); }),
+      existingFullscreenArtists.end());
+
+  for (WeakHandle<FullscreenArtist>& a : existingFullscreenArtists) {
+    a.get().disableFullscreenDrawing();
   }
 }
 
