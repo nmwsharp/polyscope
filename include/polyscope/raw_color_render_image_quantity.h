@@ -21,7 +21,6 @@ public:
   virtual void buildCustomUI() override;
 
   virtual void refresh() override;
-  virtual RawColorRenderImageQuantity* setEnabled(bool newEnabled) override;
 
   virtual std::string niceName() override;
 

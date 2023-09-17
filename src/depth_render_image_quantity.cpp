@@ -87,12 +87,6 @@ void DepthRenderImageQuantity::prepare() {
 
 std::string DepthRenderImageQuantity::niceName() { return name + " (render image)"; }
 
-DepthRenderImageQuantity* DepthRenderImageQuantity::setEnabled(bool newEnabled) {
-  enabled = newEnabled;
-  requestRedraw();
-  return this;
-}
-
 DepthRenderImageQuantity* DepthRenderImageQuantity::setColor(glm::vec3 newVal) {
   color = newVal;
   polyscope::requestRedraw();

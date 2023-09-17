@@ -20,7 +20,6 @@ public:
   virtual void buildCustomUI() override;
 
   virtual void refresh() override;
-  virtual DepthRenderImageQuantity* setEnabled(bool newEnabled) override;
 
   virtual std::string niceName() override;
 

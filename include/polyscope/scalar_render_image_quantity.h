@@ -24,7 +24,6 @@ public:
   virtual void buildCustomUI() override;
 
   virtual void refresh() override;
-  virtual ScalarRenderImageQuantity* setEnabled(bool newEnabled) override;
 
   virtual std::string niceName() override;
 
