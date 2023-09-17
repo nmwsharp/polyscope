@@ -128,7 +128,9 @@ void ManagedBuffer<T>::markHostBufferUpdated() {
     requestRedraw();
   }
 
-  updateIndexedViews();
+  if (deviceBufferType == DeviceBufferType::Attribute) {
+    updateIndexedViews();
+  }
 }
 
 template <typename T>
