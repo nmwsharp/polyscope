@@ -82,13 +82,6 @@ void RawColorRenderImageQuantity::prepare() {
 
 std::string RawColorRenderImageQuantity::niceName() { return name + " (raw color render image)"; }
 
-RawColorRenderImageQuantity* RawColorRenderImageQuantity::setEnabled(bool newEnabled) {
-  enabled = newEnabled;
-  requestRedraw();
-  return this;
-}
-
-
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
 // structure.ipp.
 RawColorRenderImageQuantity* createRawColorRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,

@@ -98,12 +98,6 @@ void ScalarRenderImageQuantity::prepare() {
 
 std::string ScalarRenderImageQuantity::niceName() { return name + " (scalar render image)"; }
 
-ScalarRenderImageQuantity* ScalarRenderImageQuantity::setEnabled(bool newEnabled) {
-  enabled = newEnabled;
-  requestRedraw();
-  return this;
-}
-
 
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
 // structure.ipp.
