@@ -33,7 +33,7 @@ class ManagedBufferRegistry;
  * data buffer.
  */
 template <typename T>
-class ManagedBuffer : public WeakReferrable {
+class ManagedBuffer : public virtual WeakReferrable {
 public:
   // === Constructors
   // (second variants are advanced versions which allow creation of multi-dimensional texture values)

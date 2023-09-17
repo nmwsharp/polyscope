@@ -5,13 +5,15 @@
 #include <set>
 #include <string>
 
+#include "polyscope/weak_handle.h"
+
 namespace polyscope {
 
 // This is a simple class which manages global state amongs Polyscope quanties which draw directly to the whole screen.
 // It allows us to ensure only one is drawing to the screen at a time.
 
 
-class FullscreenArtist {
+class FullscreenArtist : public virtual WeakReferrable {
 public:
   FullscreenArtist();
   ~FullscreenArtist();
@@ -27,9 +29,6 @@ public:
   // fullscreen.
   virtual void disableFullscreenDrawing() = 0;
 };
-
-// Static list of all fullscreen drawers used to support the function below
-extern std::set<FullscreenArtist*> currentFullscreenArtists;
 
 // Ensure no artist is drawing fullscreen currently.
 void disableAllFullscreenArtists();

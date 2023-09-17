@@ -30,7 +30,7 @@ namespace polyscope {
 // user to utilize and access custom structures with little code.
 
 
-class Structure : public render::ManagedBufferRegistry, public WeakReferrable {
+class Structure : public render::ManagedBufferRegistry, public virtual WeakReferrable {
 
 public:
   Structure(std::string name, std::string subtypeName);

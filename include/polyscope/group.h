@@ -16,7 +16,7 @@ namespace polyscope {
 // by the group. A structure can be in 0, 1, or multiple groups, and removing it from a group
 // does not destroy the structure.
 
-class Group : public WeakReferrable {
+class Group : public virtual WeakReferrable {
 
 public:
   Group(std::string name);
