@@ -27,6 +27,7 @@ void PointCloudParameterizationQuantity::draw() {
   setParameterizationUniforms(*program);
   parent.setStructureUniforms(*program);
   parent.setPointCloudUniforms(*program);
+  render::engine->setMaterialUniforms(*program, parent.getMaterial());
 
   program->draw();
 }
@@ -34,9 +35,17 @@ void PointCloudParameterizationQuantity::draw() {
 void PointCloudParameterizationQuantity::createProgram() {
 
   // Create the program to draw this quantity
-  program =
-      render::engine->requestShader(parent.getShaderNameForRenderMode(),
-                                    parent.addPointCloudRules(addParameterizationRules({"SPHERE_PROPAGATE_VALUE2"})));
+  // clang-format off
+  program = render::engine->requestShader(parent.getShaderNameForRenderMode(),
+      render::engine->addMaterialRules(parent.getMaterial(),
+        parent.addPointCloudRules(
+          addParameterizationRules(
+            {"SPHERE_PROPAGATE_VALUE2"}
+          )
+        )
+      )
+    );
+  // clang-format on
 
   // Fill buffers
   fillCoordBuffers(*program);

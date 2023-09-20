@@ -106,7 +106,7 @@ glm::vec3 VectorQuantityBase<QuantityT>::getVectorColor() {
 template <typename QuantityT>
 QuantityT* VectorQuantityBase<QuantityT>::setMaterial(std::string m) {
   material = m;
-  if (vectorProgram) render::engine->setMaterial(*vectorProgram, getMaterial());
+  vectorProgram.reset();
   requestRedraw();
   return &quantity;
 }
@@ -138,6 +138,7 @@ void VectorQuantity<QuantityT>::drawVectors() {
   this->quantity.parent.setStructureUniforms(*(this->vectorProgram));
   this->vectorProgram->setUniform("u_radius", this->vectorRadius.get().asAbsolute());
   this->vectorProgram->setUniform("u_baseColor", this->vectorColor.get());
+  render::engine->setMaterialUniforms(*this->vectorProgram, this->material.get());
 
   if (this->vectorType == VectorType::AMBIENT) {
     this->vectorProgram->setUniform("u_lengthMult", 1.0);
@@ -167,7 +168,9 @@ void VectorQuantity<QuantityT>::createProgram() {
   // clang-format off
   this->vectorProgram = render::engine->requestShader(
       "RAYCAST_VECTOR",
-      rules
+      render::engine->addMaterialRules(this->material.get(), 
+        rules
+      )
   );
   // clang-format on
 
@@ -251,6 +254,7 @@ void TangentVectorQuantity<QuantityT>::drawVectors() {
     this->quantity.parent.setStructureUniforms(*(this->vectorProgram));
     this->vectorProgram->setUniform("u_radius", this->vectorRadius.get().asAbsolute());
     this->vectorProgram->setUniform("u_baseColor", this->vectorColor.get());
+    render::engine->setMaterialUniforms(*this->vectorProgram, this->material.get());
 
     if (this->vectorType == VectorType::AMBIENT) {
       this->vectorProgram->setUniform("u_lengthMult", 1.0);
@@ -280,7 +284,9 @@ void TangentVectorQuantity<QuantityT>::createProgram() {
   // clang-format off
   this->vectorProgram = render::engine->requestShader(
       "RAYCAST_TANGENT_VECTOR",
-      rules
+      render::engine->addMaterialRules(this->material.get(), 
+        rules
+      )
   );
   // clang-format on
 

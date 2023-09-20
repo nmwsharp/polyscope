@@ -99,6 +99,7 @@ void VolumeGridNodeScalarQuantity::draw() {
     parent.setStructureUniforms(*gridcubeProgram);
     parent.setGridCubeUniforms(*gridcubeProgram);
     setScalarUniforms(*gridcubeProgram);
+    render::engine->setMaterialUniforms(*gridcubeProgram, parent.getMaterial());
 
     // Draw the actual grid
     render::engine->setBackfaceCull(true);
@@ -112,6 +113,7 @@ void VolumeGridNodeScalarQuantity::draw() {
     }
     parent.setStructureUniforms(*isosurfaceProgram);
     // setScalarUniforms(*isosurfaceProgram);
+    render::engine->setMaterialUniforms(*isosurfaceProgram, parent.getMaterial());
     isosurfaceProgram->setUniform("u_baseColor", getIsosurfaceColor());
     isosurfaceProgram->draw();
   }
@@ -121,10 +123,15 @@ void VolumeGridNodeScalarQuantity::createGridcubeProgram() {
 
 
   // clang-format off
-  gridcubeProgram = render::engine->requestShader(
-      "GRIDCUBE_PLANE", 
-      parent.addGridCubeRules(addScalarRules({"GRIDCUBE_PROPAGATE_NODE_VALUE"}), true)
-  );
+  gridcubeProgram = render::engine->requestShader( "GRIDCUBE_PLANE", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        parent.addGridCubeRules(
+          addScalarRules(
+            {"GRIDCUBE_PROPAGATE_NODE_VALUE"}
+          ), 
+        true)
+      )
+    );
   // clang-format on
 
   gridcubeProgram->setAttribute("a_referencePosition", parent.gridPlaneReferencePositions.getRenderAttributeBuffer());
@@ -155,7 +162,11 @@ void VolumeGridNodeScalarQuantity::createIsosurfaceProgram() {
 
 
   // Create a render program to draw it
-  isosurfaceProgram = render::engine->requestShader("INDEXED_MESH", parent.addStructureRules({"SHADE_BASECOLOR"}));
+  // clang-format off
+  isosurfaceProgram = render::engine->requestShader(
+      "INDEXED_MESH",
+      render::engine->addMaterialRules(parent.getMaterial(), parent.addStructureRules({"SHADE_BASECOLOR"})));
+  // clang-format on
 
   // Populate the program buffers with the extracted mesh
   isosurfaceProgram->setAttribute("a_position", mesh.vertices);
@@ -269,6 +280,7 @@ void VolumeGridCellScalarQuantity::draw() {
     parent.setStructureUniforms(*gridcubeProgram);
     parent.setGridCubeUniforms(*gridcubeProgram);
     setScalarUniforms(*gridcubeProgram);
+    render::engine->setMaterialUniforms(*gridcubeProgram, parent.getMaterial());
 
     // Draw the actual grid
     render::engine->setBackfaceCull(true);
@@ -280,9 +292,14 @@ void VolumeGridCellScalarQuantity::createGridcubeProgram() {
 
 
   // clang-format off
-  gridcubeProgram = render::engine->requestShader(
-      "GRIDCUBE_PLANE", 
-      parent.addGridCubeRules(addScalarRules({"GRIDCUBE_PROPAGATE_CELL_VALUE"}), true)
+  gridcubeProgram = render::engine->requestShader( "GRIDCUBE_PLANE", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        parent.addGridCubeRules(
+          addScalarRules(
+            {"GRIDCUBE_PROPAGATE_CELL_VALUE"}
+          ), 
+        true)
+      )
   );
   // clang-format on
 

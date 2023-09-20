@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <tuple>
 #include <array>
+#include <tuple>
 
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/gtc/matrix_transform.hpp"

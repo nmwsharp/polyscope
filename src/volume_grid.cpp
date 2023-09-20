@@ -113,6 +113,7 @@ void VolumeGrid::draw() {
     setStructureUniforms(*program);
     setGridCubeUniforms(*program);
     program->setUniform("u_baseColor", color.get());
+    render::engine->setMaterialUniforms(*program, material.get());
 
     // Draw the actual grid
     render::engine->setBackfaceCull(true);
@@ -197,9 +198,12 @@ void VolumeGrid::ensureGridCubeRenderProgramPrepared() {
   if (program) return;
 
   // clang-format off
-  program = render::engine->requestShader(
-      "GRIDCUBE_PLANE", 
-      addGridCubeRules({"SHADE_BASECOLOR"}, true)
+  program = render::engine->requestShader( "GRIDCUBE_PLANE", 
+      render::engine->addMaterialRules(material.get(),
+        addGridCubeRules(
+          {"SHADE_BASECOLOR"}, 
+        true)
+      )
   );
   // clang-format on
 

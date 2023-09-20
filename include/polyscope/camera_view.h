@@ -120,6 +120,7 @@ private:
   float widgetFocalLengthUpper = -777;
   size_t pickStart = INVALID_IND;
   glm::vec3 pickColor;
+  const std::string material = "flat";
 
   // track the length scale which was used to generate the camera geometry, in case it needs to be regenerated
   float preparedLengthScale = -1.;

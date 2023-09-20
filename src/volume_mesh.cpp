@@ -436,6 +436,7 @@ void VolumeMesh::draw() {
     glm::mat4 projMat = view::getCameraPerspectiveMatrix();
     program->setUniform("u_baseColor1", getColor());
     program->setUniform("u_baseColor2", getInteriorColor());
+    render::engine->setMaterialUniforms(*program, getMaterial());
 
     program->draw();
   }
@@ -487,7 +488,15 @@ void VolumeMesh::drawPick() {
 }
 
 void VolumeMesh::prepare() {
-  program = render::engine->requestShader("MESH", addVolumeMeshRules({"MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE"}));
+  // clang-format off
+  program = render::engine->requestShader("MESH", 
+      render::engine->addMaterialRules(getMaterial(),
+        addVolumeMeshRules(
+          {"MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE"}
+        )
+      )
+    );
+  // clang-format on
   // Populate draw buffers
   fillGeometryBuffers(*program);
   render::engine->setMaterial(*program, getMaterial());

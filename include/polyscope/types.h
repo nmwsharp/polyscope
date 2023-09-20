@@ -27,7 +27,21 @@ enum class ImageOrigin { LowerLeft, UpperLeft };
 enum class ParamCoordsType { UNIT = 0, WORLD };                         // UNIT -> [0,1], WORLD -> length-valued
 enum class ParamVizStyle { CHECKER = 0, GRID, LOCAL_CHECK, LOCAL_RAD }; // TODO add "UV" with test UV map
 
-enum class ManagedBufferType {Float, Double, Vec2, Vec3, Vec4, Arr2Vec3, Arr3Vec3, Arr4Vec3, UInt32, Int32, UVec2, UVec3, UVec4};
+enum class ManagedBufferType {
+  Float,
+  Double,
+  Vec2,
+  Vec3,
+  Vec4,
+  Arr2Vec3,
+  Arr3Vec3,
+  Arr4Vec3,
+  UInt32,
+  Int32,
+  UVec2,
+  UVec3,
+  UVec4
+};
 
 
 // What is the meaningful range of these values?

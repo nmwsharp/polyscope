@@ -11,6 +11,8 @@ namespace polyscope {
 
 class ColorRenderImageQuantity : public RenderImageQuantityBase {
 
+  // TODO this should probably inherit from ColorQuantity
+
 public:
   ColorRenderImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                            const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData,

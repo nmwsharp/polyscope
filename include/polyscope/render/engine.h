@@ -186,8 +186,8 @@ public:
   // bool withAlpha = true, bool useMipMap = false, bool repeat = false);
 
   // used to interop with external things, e.g. ImGui
-  virtual void* getNativeHandle() = 0; 
-  virtual uint32_t getNativeBufferID() = 0; 
+  virtual void* getNativeHandle() = 0;
+  virtual uint32_t getNativeBufferID() = 0;
 
 protected:
   int dim;
@@ -425,7 +425,7 @@ protected:
   bool primitiveRestartIndexSet = false;
   unsigned int restartIndex = -1;
   uint64_t uniqueID;
- 
+
   // instancing
   uint32_t instanceCount = INVALID_IND_32;
 };
@@ -477,6 +477,8 @@ public:
 
   // Manage materials
   void setMaterial(ShaderProgram& program, const std::string& mat);
+  std::vector<std::string> addMaterialRules(std::string materialName, std::vector<std::string> initRules);
+  void setMaterialUniforms(ShaderProgram& program, const std::string& mat);
 
   // === Scene data and niceties
   GroundPlane groundPlane;
@@ -644,7 +646,7 @@ protected:
   uint64_t uniqueID = 500;
 
   // Default rule lists (see enum for explanation)
-  std::vector<std::string> defaultRules_sceneObject{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "LIGHT_MATCAP"};
+  std::vector<std::string> defaultRules_sceneObject{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER"};
   std::vector<std::string> defaultRules_pick{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "SHADE_COLOR", "LIGHT_PASSTHRU"};
   std::vector<std::string> defaultRules_process{"GLSL_VERSION"};
 };

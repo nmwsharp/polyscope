@@ -25,6 +25,7 @@ void PointCloudScalarQuantity::draw() {
   parent.setStructureUniforms(*pointProgram);
   parent.setPointCloudUniforms(*pointProgram);
   setScalarUniforms(*pointProgram);
+  render::engine->setMaterialUniforms(*pointProgram, parent.getMaterial());
 
   pointProgram->draw();
 }
@@ -54,7 +55,13 @@ void PointCloudScalarQuantity::createProgram() {
   // clang-format off
   pointProgram = render::engine->requestShader(
       parent.getShaderNameForRenderMode(), 
-      parent.addPointCloudRules(addScalarRules({"SPHERE_PROPAGATE_VALUE"}))
+      parent.addPointCloudRules(
+        render::engine->addMaterialRules(parent.getMaterial(),
+          addScalarRules(
+            {"SPHERE_PROPAGATE_VALUE"}
+          )
+        )
+      )
   );
   // clang-format on
 

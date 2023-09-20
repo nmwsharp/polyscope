@@ -713,6 +713,7 @@ void SurfaceMesh::draw() {
     setStructureUniforms(*program);
     setSurfaceMeshUniforms(*program);
     program->setUniform("u_baseColor", getSurfaceColor());
+    render::engine->setMaterialUniforms(*program, getMaterial());
 
     program->draw();
   }
@@ -768,9 +769,10 @@ void SurfaceMesh::drawPick() {
 
 void SurfaceMesh::prepare() {
   // clang-format off
-  program = render::engine->requestShader(
-      "MESH", 
-      addSurfaceMeshRules({"SHADE_BASECOLOR"})
+  program = render::engine->requestShader( "MESH", 
+      render::engine->addMaterialRules(getMaterial(),
+        addSurfaceMeshRules({"SHADE_BASECOLOR"})
+      )
   );
   // clang-format on
 

@@ -16,7 +16,7 @@ extern const ShaderStageSpecification FLEX_GRIDCUBE_FRAG_SHADER;
 extern const ShaderStageSpecification FLEX_GRIDCUBE_PLANE_VERT_SHADER;
 extern const ShaderStageSpecification FLEX_GRIDCUBE_PLANE_FRAG_SHADER;
 
-// Rules 
+// Rules
 extern const ShaderReplacementRule GRIDCUBE_PROPAGATE_NODE_VALUE;
 extern const ShaderReplacementRule GRIDCUBE_PROPAGATE_CELL_VALUE;
 extern const ShaderReplacementRule GRIDCUBE_WIREFRAME;

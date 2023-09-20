@@ -32,7 +32,6 @@ bool buildMaterialOptionsGui(std::string& mat) {
   return false;
 }
 
-
 } // namespace render
 
 void loadBlendableMaterial(std::string matName, std::array<std::string, 4> filenames) {

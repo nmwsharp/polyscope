@@ -24,6 +24,7 @@ void VolumeMeshScalarQuantity::draw() {
   parent.setStructureUniforms(*program);
   parent.setVolumeMeshUniforms(*program);
   setScalarUniforms(*program);
+  render::engine->setMaterialUniforms(*program, parent.getMaterial());
 
   program->draw();
 }
@@ -135,6 +136,7 @@ void VolumeMeshVertexScalarQuantity::draw() {
   parent.setStructureUniforms(*programToDraw);
   parent.setVolumeMeshUniforms(*programToDraw);
   setScalarUniforms(*programToDraw);
+  render::engine->setMaterialUniforms(*programToDraw, parent.getMaterial());
 
   programToDraw->draw();
 }
@@ -164,6 +166,7 @@ void VolumeMeshVertexScalarQuantity::drawSlice(polyscope::SlicePlane* sp) {
   sp->setSliceGeomUniforms(*sliceProgram);
   parent.setVolumeMeshUniforms(*sliceProgram);
   setScalarUniforms(*sliceProgram);
+  render::engine->setMaterialUniforms(*sliceProgram, parent.getMaterial());
   sliceProgram->draw();
 }
 
@@ -177,8 +180,17 @@ void VolumeMeshVertexScalarQuantity::setLevelSetVisibleQuantity(std::string name
   if (q == nullptr) {
     return;
   }
-  levelSetProgram = render::engine->requestShader(
-      "SLICE_TETS", parent.addVolumeMeshRules(addScalarRules({"SLICE_TETS_PROPAGATE_VALUE"}), true, true));
+
+  // clang-format off
+  levelSetProgram = render::engine->requestShader("SLICE_TETS", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        parent.addVolumeMeshRules(
+          addScalarRules(
+            {"SLICE_TETS_PROPAGATE_VALUE"}), 
+        true, true)
+      )
+    );
+  // clang-format on
 
   // Fill color buffers
   parent.fillSliceGeometryBuffers(*levelSetProgram);
@@ -229,7 +241,17 @@ void VolumeMeshVertexScalarQuantity::refresh() {
 
 void VolumeMeshVertexScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->requestShader("MESH", parent.addVolumeMeshRules(addScalarRules({"MESH_PROPAGATE_VALUE"})));
+  // clang-format off
+  program = render::engine->requestShader("MESH", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        parent.addVolumeMeshRules(
+          addScalarRules(
+            {"MESH_PROPAGATE_VALUE"}
+          )
+        )
+      )
+    );
+  // clang-format on
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -239,8 +261,17 @@ void VolumeMeshVertexScalarQuantity::createProgram() {
 }
 
 std::shared_ptr<render::ShaderProgram> VolumeMeshVertexScalarQuantity::createSliceProgram() {
-  std::shared_ptr<render::ShaderProgram> p = render::engine->requestShader(
-      "SLICE_TETS", parent.addVolumeMeshRules(addScalarRules({"SLICE_TETS_PROPAGATE_VALUE"}), true, true));
+  // clang-format off
+  std::shared_ptr<render::ShaderProgram> p = render::engine->requestShader("SLICE_TETS", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        parent.addVolumeMeshRules(
+          addScalarRules(
+            {"SLICE_TETS_PROPAGATE_VALUE"}
+          ), 
+        true, true)
+      )
+    );
+  // clang-format on
 
   // Fill color buffers
   parent.fillSliceGeometryBuffers(*p);
@@ -301,7 +332,17 @@ VolumeMeshCellScalarQuantity::VolumeMeshCellScalarQuantity(std::string name, con
 
 void VolumeMeshCellScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->requestShader("MESH", parent.addVolumeMeshRules(addScalarRules({"MESH_PROPAGATE_VALUE"})));
+  // clang-format off
+  program = render::engine->requestShader("MESH", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        parent.addVolumeMeshRules(
+          addScalarRules(
+            {"MESH_PROPAGATE_VALUE"}
+          )
+        )
+      )
+    );
+  // clang-format on
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
