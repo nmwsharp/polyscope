@@ -67,6 +67,10 @@ void CameraView::draw() {
   edgeProgram->setUniform("u_radius", getWidgetFocalLength() * getWidgetThickness());
   edgeProgram->setUniform("u_baseColor", widgetColor.get());
 
+
+  render::engine->setMaterialUniforms(*nodeProgram, material);
+  render::engine->setMaterialUniforms(*edgeProgram, material);
+
   // Draw the camera view wireframe
   nodeProgram->draw();
   edgeProgram->draw();
@@ -123,16 +127,19 @@ void CameraView::prepare() {
   {
     std::vector<std::string> rules = addStructureRules({"SHADE_BASECOLOR"});
     if (wantsCullPosition()) rules.push_back("SPHERE_CULLPOS_FROM_CENTER");
+    rules = render::engine->addMaterialRules(material, rules);
     nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", rules);
-    render::engine->setMaterial(*nodeProgram, "flat");
   }
 
   {
     std::vector<std::string> rules = addStructureRules({"SHADE_BASECOLOR"});
     if (wantsCullPosition()) rules.push_back("CYLINDER_CULLPOS_FROM_MID");
+    rules = render::engine->addMaterialRules(material, rules);
     edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", rules);
-    render::engine->setMaterial(*edgeProgram, "flat");
   }
+
+  render::engine->setMaterial(*nodeProgram, material);
+  render::engine->setMaterial(*edgeProgram, material);
 
   // Fill out the geometry data for the programs
   fillCameraWidgetGeometry(nodeProgram.get(), edgeProgram.get(), nullptr);

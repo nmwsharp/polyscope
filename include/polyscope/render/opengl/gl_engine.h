@@ -158,7 +158,7 @@ public:
 
   void setFilterMode(FilterMode newMode) override;
   void* getNativeHandle() override;
-  uint32_t getNativeBufferID() override; 
+  uint32_t getNativeBufferID() override;
 
   std::vector<float> getDataScalar() override;
   std::vector<glm::vec2> getDataVector2() override;
@@ -329,7 +329,7 @@ public:
   void setIndex(std::vector<glm::uvec3>& indices) override;
   void setPrimitiveRestartIndex(unsigned int restartIndex) override;
 
-  // Instancing 
+  // Instancing
   void setInstanceCount(uint32_t instanceCount) override;
 
   // Textures

@@ -119,6 +119,9 @@ void CurveNetwork::draw() {
     edgeProgram->setUniform("u_baseColor", getColor());
     nodeProgram->setUniform("u_baseColor", getColor());
 
+    render::engine->setMaterialUniforms(*edgeProgram, getMaterial());
+    render::engine->setMaterialUniforms(*nodeProgram, getMaterial());
+
     // Draw the actual curve network
     edgeProgram->draw();
     nodeProgram->draw();
@@ -199,15 +202,27 @@ void CurveNetwork::prepare() {
 
   // It no quantity is coloring the network, draw with a default color
 
-  {
-    nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", addCurveNetworkNodeRules({"SHADE_BASECOLOR"}));
-    render::engine->setMaterial(*nodeProgram, getMaterial());
-  }
+  // clang-format off
+  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE",  
+      render::engine->addMaterialRules(getMaterial(),
+        addCurveNetworkNodeRules(
+          {"SHADE_BASECOLOR"}
+        )
+      )
+    );
 
-  {
-    edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", addCurveNetworkEdgeRules({"SHADE_BASECOLOR"}));
-    render::engine->setMaterial(*edgeProgram, getMaterial());
-  }
+
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", 
+      render::engine->addMaterialRules(getMaterial(),
+        addCurveNetworkEdgeRules(
+          {"SHADE_BASECOLOR"}
+        )
+      )
+    );
+  // clang-format on
+
+  render::engine->setMaterial(*nodeProgram, getMaterial());
+  render::engine->setMaterial(*edgeProgram, getMaterial());
 
   // Fill out the geometry data for the programs
   fillNodeGeometryBuffers(*nodeProgram);

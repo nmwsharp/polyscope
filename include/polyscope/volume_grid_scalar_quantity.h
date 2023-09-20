@@ -19,7 +19,8 @@ namespace polyscope {
 class VolumeGridNodeScalarQuantity : public VolumeGridQuantity, public ScalarQuantity<VolumeGridNodeScalarQuantity> {
 
 public:
-  VolumeGridNodeScalarQuantity(std::string name, VolumeGrid& grid_, const std::vector<double>& values_, DataType dataType_);
+  VolumeGridNodeScalarQuantity(std::string name, VolumeGrid& grid_, const std::vector<double>& values_,
+                               DataType dataType_);
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
@@ -49,7 +50,6 @@ public:
 
 
 protected:
-
   // Visualize as a grid of cubes
   PersistentValue<bool> gridcubeVizEnabled;
   std::shared_ptr<render::ShaderProgram> gridcubeProgram;
@@ -75,7 +75,8 @@ protected:
 class VolumeGridCellScalarQuantity : public VolumeGridQuantity, public ScalarQuantity<VolumeGridCellScalarQuantity> {
 
 public:
-  VolumeGridCellScalarQuantity(std::string name, VolumeGrid& grid_, const std::vector<double>& values_, DataType dataType_);
+  VolumeGridCellScalarQuantity(std::string name, VolumeGrid& grid_, const std::vector<double>& values_,
+                               DataType dataType_);
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
@@ -93,12 +94,10 @@ public:
 
 
 protected:
-
   // Visualize as a grid of cubes
   PersistentValue<bool> gridcubeVizEnabled;
   std::shared_ptr<render::ShaderProgram> gridcubeProgram;
   void createGridcubeProgram();
-
 };
 
 } // namespace polyscope

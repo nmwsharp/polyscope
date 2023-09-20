@@ -87,6 +87,7 @@ void PointCloud::draw() {
     // Set program uniforms
     setStructureUniforms(*program);
     setPointCloudUniforms(*program);
+    render::engine->setMaterialUniforms(*program, material.get());
     program->setUniform("u_baseColor", pointColor.get());
 
     // Draw the actual point cloud
@@ -135,15 +136,18 @@ void PointCloud::ensureRenderProgramPrepared() {
   if (program) return;
 
   // clang-format off
-  program = render::engine->requestShader(
-      getShaderNameForRenderMode(), 
-      addPointCloudRules({"SHADE_BASECOLOR"})
+  program = render::engine->requestShader( getShaderNameForRenderMode(), 
+    render::engine->addMaterialRules(getMaterial(),
+      addPointCloudRules(
+        {"SHADE_BASECOLOR"}
+      )
+    )
   );
   // clang-format on
 
   setPointProgramGeometryAttributes(*program);
 
-  render::engine->setMaterial(*program, material.get());
+  render::engine->setMaterial(*program, getMaterial());
 }
 
 void PointCloud::ensurePickProgramPrepared() {

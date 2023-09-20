@@ -30,6 +30,7 @@ void SurfaceParameterizationQuantity::draw() {
   setParameterizationUniforms(*program);
   parent.setStructureUniforms(*program);
   parent.setSurfaceMeshUniforms(*program);
+  render::engine->setMaterialUniforms(*program, parent.getMaterial());
 
   program->draw();
 }
@@ -37,8 +38,17 @@ void SurfaceParameterizationQuantity::draw() {
 void SurfaceParameterizationQuantity::createProgram() {
 
   // Create the program to draw this quantity
-  program = render::engine->requestShader(
-      "MESH", parent.addSurfaceMeshRules(addParameterizationRules({"MESH_PROPAGATE_VALUE2"})));
+  // clang-format off
+  program = render::engine->requestShader("MESH", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        parent.addSurfaceMeshRules(
+          addParameterizationRules(
+            {"MESH_PROPAGATE_VALUE2"}
+          )
+        )
+      )
+    );
+  //
 
   // Fill buffers
   fillCoordBuffers(*program);

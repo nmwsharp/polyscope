@@ -23,6 +23,7 @@ void VolumeMeshColorQuantity::draw() {
   // Set uniforms
   parent.setStructureUniforms(*program);
   parent.setVolumeMeshUniforms(*program);
+  render::engine->setMaterialUniforms(*program, parent.getMaterial());
 
   program->draw();
 }
@@ -55,8 +56,17 @@ void VolumeMeshVertexColorQuantity::drawSlice(polyscope::SlicePlane* sp) {
 
 std::shared_ptr<render::ShaderProgram> VolumeMeshVertexColorQuantity::createSliceProgram() {
 
-  std::shared_ptr<render::ShaderProgram> p = render::engine->requestShader(
-      "SLICE_TETS", parent.addVolumeMeshRules({"SLICE_TETS_PROPAGATE_VECTOR", "SLICE_TETS_VECTOR_COLOR"}, true, true));
+  // clang-format off
+  std::shared_ptr<render::ShaderProgram> p = render::engine->requestShader("SLICE_TETS", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        addColorRules(
+          parent.addVolumeMeshRules(
+            {"SLICE_TETS_PROPAGATE_VECTOR", "SLICE_TETS_VECTOR_COLOR"}, 
+          true, true)
+        )
+      )
+    );
+  // clang-format on
 
   // Fill color buffers
   parent.fillSliceGeometryBuffers(*p);
@@ -98,7 +108,17 @@ void VolumeMeshVertexColorQuantity::fillSliceColorBuffers(render::ShaderProgram&
 
 void VolumeMeshVertexColorQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->requestShader("MESH", parent.addVolumeMeshRules({"MESH_PROPAGATE_COLOR", "SHADE_COLOR"}));
+  // clang-format off
+  program = render::engine->requestShader("MESH", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        addColorRules(
+          parent.addVolumeMeshRules(
+            {"MESH_PROPAGATE_COLOR", "SHADE_COLOR"}
+          )
+        )
+      )
+    );
+  // clang-format on
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
@@ -140,7 +160,18 @@ VolumeMeshCellColorQuantity::VolumeMeshCellColorQuantity(std::string name, Volum
 
 void VolumeMeshCellColorQuantity::createProgram() {
   // Create the program to draw this quantity
-  program = render::engine->requestShader("MESH", parent.addVolumeMeshRules({"MESH_PROPAGATE_COLOR", "SHADE_COLOR"}));
+
+  // clang-format off
+  program = render::engine->requestShader("MESH", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        addColorRules(
+          parent.addVolumeMeshRules(
+            {"MESH_PROPAGATE_COLOR", "SHADE_COLOR"}
+          )
+        )
+      )
+    );
+  // clang-format on
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);

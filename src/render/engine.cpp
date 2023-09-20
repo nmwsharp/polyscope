@@ -503,10 +503,17 @@ void Engine::setTonemapUniforms(ShaderProgram& p) {
 
 void Engine::setMaterial(ShaderProgram& program, const std::string& mat) {
   const Material& m = getMaterial(mat);
-  program.setTextureFromBuffer("t_mat_r", m.textureBuffers[0].get());
-  program.setTextureFromBuffer("t_mat_g", m.textureBuffers[1].get());
-  program.setTextureFromBuffer("t_mat_b", m.textureBuffers[2].get());
-  program.setTextureFromBuffer("t_mat_k", m.textureBuffers[3].get());
+  if (m.textureBuffers[0]) program.setTextureFromBuffer("t_mat_r", m.textureBuffers[0].get());
+  if (m.textureBuffers[1]) program.setTextureFromBuffer("t_mat_g", m.textureBuffers[1].get());
+  if (m.textureBuffers[2]) program.setTextureFromBuffer("t_mat_b", m.textureBuffers[2].get());
+  if (m.textureBuffers[3]) program.setTextureFromBuffer("t_mat_k", m.textureBuffers[3].get());
+}
+
+void Engine::setMaterialUniforms(ShaderProgram& program, const std::string& mat) {
+  const Material& m = getMaterial(mat);
+  if (m.setUniforms) {
+    m.setUniforms(program);
+  }
 }
 
 void Engine::renderBackground() {
@@ -823,9 +830,10 @@ void Engine::loadDefaultMaterial(std::string name) {
 
   Material* newMaterial = new Material();
   newMaterial->name = name;
+  newMaterial->rules = {"LIGHT_MATCAP"};
 
-  std::array<unsigned char const*, 4> buff;
-  std::array<size_t, 4> buffSize;
+  std::array<unsigned char const*, 4> buff{nullptr, nullptr, nullptr, nullptr};
+  std::array<size_t, 4> buffSize{0, 0, 0, 0};
 
   // clang-format off
   if(name == "clay") {
@@ -851,10 +859,9 @@ void Engine::loadDefaultMaterial(std::string name) {
   }
   else if(name == "flat") {
     newMaterial->supportsRGB = true;
-    buff[0] = &bindata_flat_r[0]; buffSize[0] = bindata_flat_r.size();
-    buff[1] = &bindata_flat_g[0]; buffSize[1] = bindata_flat_g.size();
-    buff[2] = &bindata_flat_b[0]; buffSize[2] = bindata_flat_b.size();
-    buff[3] = &bindata_flat_k[0]; buffSize[3] = bindata_flat_k.size();
+    newMaterial->rules = {"LIGHT_PASSTHRU", "INVERSE_TONEMAP"};
+    newMaterial->setUniforms = [&](ShaderProgram& p){ setTonemapUniforms(p); };
+
   } 
   else if(name == "mud") {
     newMaterial->supportsRGB = false;
@@ -877,11 +884,13 @@ void Engine::loadDefaultMaterial(std::string name) {
   // clang-format on
 
   for (int i = 0; i < 4; i++) {
-    int width, height, nComp;
-    float* data = stbi_loadf_from_memory(buff[i], buffSize[i], &width, &height, &nComp, 3);
-    if (!data) exception("failed to load material");
-    newMaterial->textureBuffers[i] = loadMaterialTexture(data, width, height);
-    stbi_image_free(data);
+    if (buff[i]) {
+      int width, height, nComp;
+      float* data = stbi_loadf_from_memory(buff[i], buffSize[i], &width, &height, &nComp, 3);
+      if (!data) exception("failed to load material");
+      newMaterial->textureBuffers[i] = loadMaterialTexture(data, width, height);
+      stbi_image_free(data);
+    }
   }
 
   materials.emplace_back(newMaterial);
@@ -899,6 +908,7 @@ void Engine::loadBlendableMaterial(std::string matName, std::array<std::string, 
   Material* newMaterial = new Material();
   newMaterial->name = matName;
   newMaterial->supportsRGB = true;
+  newMaterial->rules = {"LIGHT_MATCAP"};
   materials.emplace_back(newMaterial);
 
   // Load each of the four components
@@ -927,6 +937,7 @@ void Engine::loadStaticMaterial(std::string matName, std::string filename) {
   Material* newMaterial = new Material();
   newMaterial->name = matName;
   newMaterial->supportsRGB = false;
+  newMaterial->rules = {"LIGHT_MATCAP"};
   materials.emplace_back(newMaterial);
 
   // Load each of the four components
@@ -975,6 +986,16 @@ Material& Engine::getMaterial(const std::string& name) {
 
   exception("unrecognized material name: " + name);
   return *materials[0];
+}
+
+std::vector<std::string> Engine::addMaterialRules(std::string materialName, std::vector<std::string> initRules) {
+  Material& material = getMaterial(materialName);
+
+  for (const std::string& s : material.rules) {
+    initRules.push_back(s);
+  }
+
+  return initRules;
 }
 
 void Engine::loadColorMap(std::string cmapName, std::string filename) {

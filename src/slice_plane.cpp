@@ -156,8 +156,17 @@ void SlicePlane::ensureVolumeInspectValid() {
 
 void SlicePlane::createVolumeSliceProgram() {
   VolumeMesh* meshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
-  volumeInspectProgram = render::engine->requestShader(
-      "SLICE_TETS", meshToInspect->addVolumeMeshRules({"SLICE_TETS_BASECOLOR_SHADE"}, true, true));
+
+  // clang-format off
+  volumeInspectProgram = render::engine->requestShader( "SLICE_TETS", 
+      render::engine->addMaterialRules(meshToInspect->getMaterial(),
+        meshToInspect->addVolumeMeshRules(
+          {"SLICE_TETS_BASECOLOR_SHADE"}, 
+        true, true)
+      )
+    );
+  // clang-format on
+
   meshToInspect->fillSliceGeometryBuffers(*volumeInspectProgram);
   render::engine->setMaterial(*volumeInspectProgram, meshToInspect->getMaterial());
 }
@@ -216,6 +225,7 @@ void SlicePlane::drawGeometry() {
       setSliceGeomUniforms(*volumeInspectProgram);
       vMesh->setVolumeMeshUniforms(*volumeInspectProgram);
       volumeInspectProgram->setUniform("u_baseColor1", vMesh->getColor());
+      render::engine->setMaterialUniforms(*volumeInspectProgram, vMesh->getMaterial());
       volumeInspectProgram->draw();
     }
 

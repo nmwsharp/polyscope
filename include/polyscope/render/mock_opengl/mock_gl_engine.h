@@ -94,7 +94,7 @@ public:
   void resize(unsigned int newLen) override;
   void resize(unsigned int newX, unsigned int newY) override;
   void resize(unsigned int newX, unsigned int newY, unsigned int newZ) override;
-  
+
   // Fill with data
   // NOTE: some of these are not implemented yet
   void setData(const std::vector<glm::vec2>& data) override;
@@ -118,7 +118,7 @@ public:
 
   void setFilterMode(FilterMode newMode) override;
   void* getNativeHandle() override;
-  uint32_t getNativeBufferID() override; 
+  uint32_t getNativeBufferID() override;
 
   std::vector<float> getDataScalar() override;
   std::vector<glm::vec2> getDataVector2() override;

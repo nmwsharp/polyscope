@@ -10,6 +10,8 @@ namespace polyscope {
 
 class ColorImageQuantity : public ImageQuantity {
 
+  // TODO this should probably inherit from ColorQuantity
+
 public:
   ColorImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY, const std::vector<glm::vec4>& data,
                      ImageOrigin imageOrigin);

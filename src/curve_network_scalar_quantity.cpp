@@ -33,6 +33,9 @@ void CurveNetworkScalarQuantity::draw() {
   setScalarUniforms(*edgeProgram);
   setScalarUniforms(*nodeProgram);
 
+  render::engine->setMaterialUniforms(*edgeProgram, parent.getMaterial());
+  render::engine->setMaterialUniforms(*nodeProgram, parent.getMaterial());
+
   edgeProgram->draw();
   nodeProgram->draw();
 }
@@ -74,10 +77,26 @@ CurveNetworkNodeScalarQuantity::CurveNetworkNodeScalarQuantity(std::string name,
 
 void CurveNetworkNodeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  nodeProgram = render::engine->requestShader(
-      "RAYCAST_SPHERE", addScalarRules(parent.addCurveNetworkNodeRules({"SPHERE_PROPAGATE_VALUE"})));
-  edgeProgram = render::engine->requestShader(
-      "RAYCAST_CYLINDER", addScalarRules(parent.addCurveNetworkEdgeRules({"CYLINDER_PROPAGATE_BLEND_VALUE"})));
+  // clang-format off
+  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        addScalarRules(
+          parent.addCurveNetworkNodeRules(
+            {"SPHERE_PROPAGATE_VALUE"}
+          )
+        )
+      )
+    );
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        addScalarRules(
+          parent.addCurveNetworkEdgeRules(
+            {"CYLINDER_PROPAGATE_BLEND_VALUE"}
+          )
+        )
+      )
+    );
+  // clang-format on
 
   // Fill geometry buffers
   parent.fillNodeGeometryBuffers(*nodeProgram);
@@ -118,10 +137,27 @@ CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name,
 
 void CurveNetworkEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
-  nodeProgram = render::engine->requestShader(
-      "RAYCAST_SPHERE", addScalarRules(parent.addCurveNetworkNodeRules({"SPHERE_PROPAGATE_VALUE"})));
-  edgeProgram = render::engine->requestShader(
-      "RAYCAST_CYLINDER", addScalarRules(parent.addCurveNetworkEdgeRules({"CYLINDER_PROPAGATE_VALUE"})));
+
+  // clang-format off
+  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        addScalarRules(
+          parent.addCurveNetworkNodeRules(
+            {"SPHERE_PROPAGATE_VALUE"}
+          )
+        )
+      )
+    );
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        addScalarRules(
+          parent.addCurveNetworkEdgeRules(
+            {"CYLINDER_PROPAGATE_VALUE"}
+          )
+        )
+      )
+    );
+  // clang-format on
 
   // Fill geometry buffers
   parent.fillEdgeGeometryBuffers(*edgeProgram);

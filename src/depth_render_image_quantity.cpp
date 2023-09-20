@@ -32,6 +32,7 @@ void DepthRenderImageQuantity::drawDelayed() {
   program->setUniform("u_viewport", render::engine->getCurrentViewport());
   program->setUniform("u_baseColor", color.get());
   program->setUniform("u_transparency", transparency.get());
+  render::engine->setMaterialUniforms(*program, material.get());
 
   // make sure we have actual depth testing enabled
   render::engine->setDepthMode(DepthMode::LEqual);
@@ -74,9 +75,16 @@ void DepthRenderImageQuantity::prepare() {
   // no extra data to push for this one
 
   // Create the sourceProgram
+  // clang-format off
   program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-                                          {getImageOriginRule(imageOrigin), "LIGHT_MATCAP", "SHADE_BASECOLOR"},
-                                          render::ShaderReplacementDefaults::Process);
+    render::engine->addMaterialRules(material.get(),
+      {
+        getImageOriginRule(imageOrigin), 
+        "SHADE_COLOR"
+      }
+    ), 
+    render::ShaderReplacementDefaults::Process);
+  // clang-format on
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
   program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());

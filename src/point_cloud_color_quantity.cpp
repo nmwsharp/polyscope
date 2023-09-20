@@ -24,6 +24,7 @@ void PointCloudColorQuantity::draw() {
   parent.setStructureUniforms(*pointProgram);
   parent.setPointCloudUniforms(*pointProgram);
   setColorUniforms(*pointProgram);
+  render::engine->setMaterialUniforms(*pointProgram, parent.getMaterial());
 
   pointProgram->draw();
 }
@@ -34,9 +35,14 @@ void PointCloudColorQuantity::createPointProgram() {
 
   // Create the program to draw this quantity
   // clang-format off
-  pointProgram = render::engine->requestShader(
-      parent.getShaderNameForRenderMode(), 
-      parent.addPointCloudRules({"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"})
+  pointProgram = render::engine->requestShader( parent.getShaderNameForRenderMode(), 
+    render::engine->addMaterialRules(parent.getMaterial(),
+      addColorRules(
+        parent.addPointCloudRules(
+          {"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"}
+        )
+      )
+    )
   );
   // clang-format on
 

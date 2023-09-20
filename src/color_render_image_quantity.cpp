@@ -35,6 +35,7 @@ void ColorRenderImageQuantity::drawDelayed() {
   program->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   program->setUniform("u_viewport", render::engine->getCurrentViewport());
   program->setUniform("u_transparency", transparency.get());
+  render::engine->setMaterialUniforms(*program, material.get());
 
   // make sure we have actual depth testing enabled
   render::engine->setDepthMode(DepthMode::LEqual);
@@ -70,9 +71,16 @@ void ColorRenderImageQuantity::refresh() {
 void ColorRenderImageQuantity::prepare() {
 
   // Create the sourceProgram
+  // clang-format off
   program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-                                          {getImageOriginRule(imageOrigin), "LIGHT_MATCAP", "TEXTURE_SHADE_COLOR"},
-                                          render::ShaderReplacementDefaults::Process);
+    render::engine->addMaterialRules(material.get(),
+      {
+        getImageOriginRule(imageOrigin), 
+        "TEXTURE_SHADE_COLOR"
+      }
+    ), 
+    render::ShaderReplacementDefaults::Process);
+  // clang-format on
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
   program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());

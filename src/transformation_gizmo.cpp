@@ -25,8 +25,11 @@ void TransformationGizmo::markUpdated() {
 void TransformationGizmo::prepare() {
 
   { // The rotation rings, drawn via textured quads
-    ringProgram =
-        render::engine->requestShader("TRANSFORMATION_GIZMO_ROT", {}, render::ShaderReplacementDefaults::Process);
+    // clang-format off
+    ringProgram = render::engine->requestShader("TRANSFORMATION_GIZMO_ROT", 
+        {}, 
+      render::ShaderReplacementDefaults::Process);
+    // clang-format on
 
     std::vector<glm::vec3> coords;
     std::vector<glm::vec3> normals;
@@ -40,14 +43,20 @@ void TransformationGizmo::prepare() {
     ringProgram->setAttribute("a_color", colors);
     ringProgram->setAttribute("a_texcoord", texcoords);
     ringProgram->setAttribute("a_component", components);
-
-    // render::engine->setMaterial(*ringProgram, "wax");
   }
 
   { // Translation arrows
-    arrowProgram = render::engine->requestShader(
-        "RAYCAST_VECTOR", {"VECTOR_PROPAGATE_COLOR", "TRANSFORMATION_GIZMO_VEC", "SHADE_COLOR", "LIGHT_MATCAP"},
-        render::ShaderReplacementDefaults::Process);
+    // clang-format off
+    arrowProgram = render::engine->requestShader("RAYCAST_VECTOR",       
+      render::engine->addMaterialRules(material,
+        {
+          "VECTOR_PROPAGATE_COLOR", 
+          "TRANSFORMATION_GIZMO_VEC", 
+          "SHADE_COLOR", 
+        }
+      ),
+      render::ShaderReplacementDefaults::Process);
+    // clang-format on
 
     std::vector<glm::vec3> vectors;
     std::vector<glm::vec3> bases;
@@ -60,13 +69,22 @@ void TransformationGizmo::prepare() {
     arrowProgram->setAttribute("a_color", colors);
     arrowProgram->setAttribute("a_component", components);
 
-    render::engine->setMaterial(*arrowProgram, "wax");
+    render::engine->setMaterial(*arrowProgram, material);
   }
 
   { // Scale sphere
-    sphereProgram = render::engine->requestShader("RAYCAST_SPHERE", {"SHADE_BASECOLOR", "LIGHT_MATCAP"},
-                                                  render::ShaderReplacementDefaults::Process);
-    render::engine->setMaterial(*sphereProgram, "wax");
+    // clang-format off
+    sphereProgram = render::engine->requestShader("RAYCAST_SPHERE", 
+        render::engine->addMaterialRules(material,
+          {
+            "SHADE_BASECOLOR", 
+            "LIGHT_MATCAP"
+          }
+        ),
+      render::ShaderReplacementDefaults::Process);
+    // clang-format on
+
+    render::engine->setMaterial(*sphereProgram, material);
 
     std::vector<glm::vec3> center = {glm::vec3(0., 0., 0.)};
     sphereProgram->setAttribute("a_position", center);
@@ -95,6 +113,10 @@ void TransformationGizmo::draw() {
   sphereProgram->setUniform("u_projMatrix", glm::value_ptr(projMat));
 
   ringProgram->setUniform("u_diskWidthRel", diskWidthObj);
+
+
+  render::engine->setMaterialUniforms(*arrowProgram, material);
+  render::engine->setMaterialUniforms(*sphereProgram, material);
 
   // set selections
   glm::vec3 selectRot{0., 0., 0.};
