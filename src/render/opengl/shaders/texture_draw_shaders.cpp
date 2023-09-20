@@ -640,6 +640,29 @@ const ShaderReplacementRule TEXTURE_SHADE_COLOR(
     }
 );
 
+// input: vec2 tcoord, 2d --> 3d texture t_color + alpha 
+// output: vec3 albedoColor
+const ShaderReplacementRule TEXTURE_SHADE_COLORALPHA(
+    /* rule name */ "TEXTURE_SHADE_COLORALPHA",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform sampler2D t_color;
+        )" },
+      {"GENERATE_SHADE_COLOR", R"(
+        vec4 sampledTextureColorAlpha = texture(t_color, tCoord).rgba;
+        vec3 albedoColor = sampledTextureColorAlpha.rgb;
+        )"},
+      {"GENERATE_ALPHA", R"(
+        alphaOut *= sampledTextureColorAlpha.a;
+        )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {
+      {"t_color", 2},
+    }
+);
+
 // input: vec2 tcoord, 1d --> 3d texture t_scalar
 // output: vec3 albedoColor
 const ShaderReplacementRule TEXTURE_PROPAGATE_VALUE(

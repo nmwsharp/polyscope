@@ -62,5 +62,13 @@ RawColorRenderImageQuantity* addRawColorRenderImageQuantity(std::string name, si
   return q->addRawColorRenderImageQuantity(name, dimX, dimY, depthData, colorData, imageOrigin);
 }
 
+template <class T1, class T2>
+RawColorAlphaRenderImageQuantity* addRawColorAlphaRenderImageQuantity(std::string name, size_t dimX, size_t dimY,
+                                                                      const T1& depthData, const T2& colorData,
+                                                                      ImageOrigin imageOrigin) {
+  FloatingQuantityStructure* q = getGlobalFloatingQuantityStructure();
+  return q->addRawColorAlphaRenderImageQuantity(name, dimX, dimY, depthData, colorData, imageOrigin);
+}
+
 
 } // namespace polyscope
