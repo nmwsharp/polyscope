@@ -1236,6 +1236,8 @@ void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
   checkGLError();
 }
 
+uint32_t GLFrameBuffer::getNativeBufferID() { return handle; }
+
 // =============================================================
 // ==================  Shader Program  =========================
 // =============================================================
