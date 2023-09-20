@@ -80,7 +80,7 @@ void DepthRenderImageQuantity::prepare() {
     render::engine->addMaterialRules(material.get(),
       {
         getImageOriginRule(imageOrigin), 
-        "SHADE_COLOR"
+        "SHADE_BASECOLOR"
       }
     ), 
     render::ShaderReplacementDefaults::Process);

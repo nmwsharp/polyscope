@@ -77,12 +77,14 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
   std::vector<float> depthVals(dimX * dimY, 0.44);
   std::vector<std::array<float, 3>> normalVals(dimX * dimY, std::array<float, 3>{0.44, 0.55, 0.66});
   std::vector<std::array<float, 3>> colorVals(dimX * dimY, std::array<float, 3>{0.44, 0.55, 0.66});
+  std::vector<std::array<float, 4>> colorAlphaVals(dimX * dimY, std::array<float, 4>{0.44, 0.55, 0.66, 0.77});
   std::vector<float> scalarVals(dimX * dimY, 0.44);
 
   { // DepthRenderImageQuantity
     polyscope::DepthRenderImageQuantity* im = polyscope::addDepthRenderImageQuantity(
         "render im depth", dimX, dimY, depthVals, normalVals, polyscope::ImageOrigin::UpperLeft);
     im->updateBuffers(depthVals, normalVals);
+    im->setEnabled(true);
     polyscope::show(3);
   }
 
@@ -90,6 +92,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     polyscope::ColorRenderImageQuantity* im = polyscope::addColorRenderImageQuantity(
         "render im color", dimX, dimY, depthVals, normalVals, colorVals, polyscope::ImageOrigin::UpperLeft);
     im->updateBuffers(depthVals, normalVals, colorVals);
+    im->setEnabled(true);
     polyscope::show(3);
   }
 
@@ -97,6 +100,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     polyscope::ScalarRenderImageQuantity* im = polyscope::addScalarRenderImageQuantity(
         "render im scalar", dimX, dimY, depthVals, normalVals, scalarVals, polyscope::ImageOrigin::UpperLeft);
     im->updateBuffers(depthVals, normalVals, scalarVals);
+    im->setEnabled(true);
     polyscope::show(3);
   }
 
@@ -104,6 +108,15 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     polyscope::RawColorRenderImageQuantity* im = polyscope::addRawColorRenderImageQuantity(
         "render im raw color", dimX, dimY, depthVals, colorVals, polyscope::ImageOrigin::UpperLeft);
     im->updateBuffers(depthVals, colorVals);
+    im->setEnabled(true);
+    polyscope::show(3);
+  }
+
+  { // RawColorAlphaImageQuantity
+    polyscope::RawColorAlphaRenderImageQuantity* im = polyscope::addRawColorAlphaRenderImageQuantity(
+        "render im raw color alpha", dimX, dimY, depthVals, colorAlphaVals, polyscope::ImageOrigin::UpperLeft);
+    im->updateBuffers(depthVals, colorAlphaVals);
+    im->setEnabled(true);
     polyscope::show(3);
   }
 

@@ -195,6 +195,7 @@ SET(SRCS
   color_render_image_quantity.cpp
   scalar_render_image_quantity.cpp
   raw_color_render_image_quantity.cpp
+  raw_color_alpha_render_image_quantity.cpp
   
   # Rendering utilities
   imgui_config.cpp
