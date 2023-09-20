@@ -374,13 +374,15 @@ void Engine::buildEngineGui() {
   }
 }
 
+FrameBuffer& Engine::getDisplayBuffer() { return useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer; }
+
 void Engine::setBackgroundColor(glm::vec3 c) {
-  FrameBuffer& targetBuffer = useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer;
+  FrameBuffer& targetBuffer = getDisplayBuffer();
   targetBuffer.clearColor = c;
 }
 
 void Engine::setBackgroundAlpha(float newAlpha) {
-  FrameBuffer& targetBuffer = useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer;
+  FrameBuffer& targetBuffer = getDisplayBuffer();
   targetBuffer.clearAlpha = newAlpha;
 }
 
@@ -390,13 +392,13 @@ void Engine::setCurrentPixelScaling(float val) { currPixelScale = val; }
 float Engine::getCurrentPixelScaling() { return currPixelScale; }
 
 void Engine::bindDisplay() {
-  FrameBuffer& targetBuffer = useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer;
+  FrameBuffer& targetBuffer = getDisplayBuffer();
   targetBuffer.bindForRendering();
 }
 
 
 void Engine::clearDisplay() {
-  FrameBuffer& targetBuffer = useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer;
+  FrameBuffer& targetBuffer = getDisplayBuffer();
   targetBuffer.clear();
 }
 

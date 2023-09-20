@@ -218,6 +218,7 @@ public:
 
   // Getters
   FrameBufferHandle getHandle() const { return handle; }
+  uint32_t getNativeBufferID() override;
 
   FrameBufferHandle handle;
 };

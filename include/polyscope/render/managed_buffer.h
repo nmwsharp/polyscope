@@ -160,7 +160,7 @@ public:
   // handle expanding out the indexed data to populate the returned buffer. External callers can still update the
   // data directly on the host, and this class will handle updating an indexed version of the data for drawing.
   //
-  // In internally, these indexed views are cached. It is safe to call this function many times, after the first the
+  // Internally, these indexed views are cached. It is safe to call this function many times, after the first the
   // same view will be returned repeatedly at no additional cost.
   std::shared_ptr<render::AttributeBuffer> getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>& indices);
 

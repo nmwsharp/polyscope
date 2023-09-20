@@ -172,6 +172,7 @@ public:
   void blitTo(FrameBuffer* other) override;
 
   // Getters
+  uint32_t getNativeBufferID() override;
 
 protected:
 };

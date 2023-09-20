@@ -260,6 +260,7 @@ public:
   virtual void blitTo(FrameBuffer* other) = 0;
   virtual std::vector<unsigned char> readBuffer() = 0;
 
+  virtual uint32_t getNativeBufferID() = 0;
   uint64_t getUniqueID() const { return uniqueID; }
 
 protected:
@@ -550,6 +551,7 @@ public:
   std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal;
   std::shared_ptr<FrameBuffer> pickFramebuffer;
   std::shared_ptr<FrameBuffer> sceneDepthMinFrame;
+  FrameBuffer& getDisplayBuffer();
 
   // Main buffers for rendering
   // sceneDepthMin is an optional texture copy of the depth buffe used for some effects
