@@ -172,7 +172,7 @@ template <class T,
   /* condition: user function exists and returns something that can be cast to size_t */       
   typename C1 = typename std::enable_if< std::is_same<decltype((size_t)adaptorF_custom_size(std::declval<T>())), size_t>::value>::type>
 
-size_t adaptorF_sizeImpl(PreferenceT<3>, const T& inputData) {
+size_t adaptorF_sizeImpl(PreferenceT<4>, const T& inputData) {
   return adaptorF_custom_size(inputData);
 }
 
@@ -181,7 +181,7 @@ template <class T,
   /* condition: has .rows() method which returns something that can be cast to size_t */
   typename C1 = typename std::enable_if<std::is_same<decltype((size_t)(std::declval<T>()).rows()), size_t>::value>::type>
 
-size_t adaptorF_sizeImpl(PreferenceT<2>, const T& inputData) {
+size_t adaptorF_sizeImpl(PreferenceT<3>, const T& inputData) {
   return inputData.rows();
 }
 
@@ -191,10 +191,18 @@ template <class T,
   /* condition: has .size() method which returns something that can be cast to size_t */
   typename C1 = typename std::enable_if< std::is_same<decltype((size_t)(std::declval<T>()).size()), size_t>::value>::type>
 
-size_t adaptorF_sizeImpl(PreferenceT<1>, const T& inputData) {
+size_t adaptorF_sizeImpl(PreferenceT<2>, const T& inputData) {
   return inputData.size();
 }
 
+// Next: 2nd entry of tuple (for {ptr,size} data)
+template <class T, 
+  /* condition: std::get<1>() returns something that can be cast to size_t */
+  typename C1 = typename std::enable_if< std::is_same<decltype((size_t)std::get<1>(std::declval<T>())), size_t>::value>::type>
+
+size_t adaptorF_sizeImpl(PreferenceT<1>, const T& inputData) {
+  return std::get<1>(inputData);
+}
 
 // Fall-through case: no overload found :(
 // We use this to print a slightly less scary error message.
@@ -209,7 +217,7 @@ size_t adaptorF_sizeImpl(PreferenceT<0>, const T& inputData) {
 // General version, which will attempt to substitute in to the variants above
 template <class T>
 size_t adaptorF_size(const T& inputData) {
-  return adaptorF_sizeImpl(PreferenceT<3>{}, inputData);
+  return adaptorF_sizeImpl(PreferenceT<4>{}, inputData);
 }
 
 
@@ -247,7 +255,7 @@ template <class T, class S,
   /* condition: user defined function exists and returns something that can be bracket-indexed to get an S */
   typename C1 = typename std::enable_if< std::is_same<decltype((S)adaptorF_custom_convertToStdVector(std::declval<T>())[0]), S>::value>::type>
 
-void adaptorF_convertToStdVectorImpl(PreferenceT<4>, const T& inputData, std::vector<S>& out) {
+void adaptorF_convertToStdVectorImpl(PreferenceT<5>, const T& inputData, std::vector<S>& out) {
   auto userVec = adaptorF_custom_convertToStdVector(inputData);
 
   // If the user-provided function returns something else, try to convert it to a std::vector<S>.
@@ -262,6 +270,24 @@ void adaptorF_convertToStdVectorImpl(PreferenceT<4>, const T& inputData, std::ve
   }
 }
 
+// Next: tuple {data_ptr, size} (size is number of entries, so ptr should point to D*size valid entries)
+template <class T, class S,
+    /* condition: first entry of input can be dereferenced to get a type castable to the scalar type S */
+    typename C_DATA = decltype(static_cast<S>(*std::get<0>(std::declval<T>()))),
+    /* condition: second entry of input is castable to an index type */
+    typename C_COUNT = decltype(static_cast<size_t>(std::get<1>(std::declval<T>())))
+  >
+
+void adaptorF_convertToStdVectorImpl(PreferenceT<4>, const T& inputData, std::vector<S>& dataOut) {
+
+  size_t dataSize = adaptorF_size(inputData);
+  dataOut.resize(dataSize);
+  auto* dataPtr = std::get<0>(inputData);
+
+  for (size_t i = 0; i < dataSize; i++) {
+    dataOut[i] = dataPtr[i];
+  }
+}
 
 // Next: any bracket access operator
 template <class T, class S,
@@ -322,7 +348,7 @@ void adaptorF_convertToStdVectorImpl(PreferenceT<0>, const T& inputData, std::ve
 // General version, which will attempt to substitute in to the variants above
 template <class S, class T>
 void adaptorF_convertToStdVector(const T& inputData, std::vector<S>& dataOut) {
-  adaptorF_convertToStdVectorImpl<T, S>(PreferenceT<4>{}, inputData, dataOut);
+  adaptorF_convertToStdVectorImpl<T, S>(PreferenceT<5>{}, inputData, dataOut);
 }
 
 
@@ -590,7 +616,7 @@ std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<9>, cons
   return dataOut;
 }
 
-// Next: tuple {data_ptr, size} (size is number of vector entries, so ptr should point to D*size valid entries)
+// Next: tuple {data_ptr, size} (size is number of vector entries, so ptr should point to D*size valid scalar entries)
 template <class O, unsigned int D, class T,
     /* condition: first entry of input can be dereferenced to get a type castable to the scalar type O */
     typename C_DATA = decltype(static_cast<typename InnerType<O>::type>(*std::get<0>(std::declval<T>()))),
@@ -600,7 +626,7 @@ template <class O, unsigned int D, class T,
 
 std::vector<O> adaptorF_convertArrayOfVectorToStdVectorImpl(PreferenceT<8>, const T& inputData) {
 
-  size_t dataSize = static_cast<size_t>(std::get<1>(inputData));
+  size_t dataSize = adaptorF_size(inputData);
   auto* dataPtr = std::get<0>(inputData);
 
   std::vector<O> dataOut(dataSize);

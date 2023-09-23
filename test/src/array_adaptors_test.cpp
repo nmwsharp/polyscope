@@ -227,6 +227,13 @@ TEST(ArrayAdaptorTests, access_CallableOperator) {
 // Test that standardizeArray works with iterable
 TEST(ArrayAdaptorTests, access_Iterable) { EXPECT_EQ(polyscope::standardizeArray<double>(arr_listdouble)[0], .1); }
 
+// Test that standardizeArray works with ptr/size
+// (note this also tests type convesrion)
+TEST(ArrayAdaptorTests, access_ptr) {
+  EXPECT_NEAR(polyscope::standardizeArray<double>(std::make_tuple(&arr_vecfloat[0], arr_vecfloat.size()))[0], 0.1,
+              1e-5);
+}
+
 // Test that standardizeArray works with a custom accessor function
 TEST(ArrayAdaptorTests, access_FuncAccess) {
   EXPECT_EQ(polyscope::standardizeArray<double>(userArray_funcAccess)[0], .1);
