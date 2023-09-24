@@ -12,6 +12,13 @@ inline uint64_t VolumeGrid::nCells() const {
   return static_cast<uint64_t>(gridCellDim.x) * gridCellDim.y * gridCellDim.z;
 }
 
+
+// Field data
+inline glm::uvec3 VolumeGrid::getGridNodeDim() const { return gridNodeDim; }
+inline glm::uvec3 VolumeGrid::getGridCellDim() const { return gridCellDim; }
+inline glm::vec3 VolumeGrid::getBoundMin() const { return boundMin; }
+inline glm::vec3 VolumeGrid::getBoundMax() const { return boundMax; }
+
 inline uint64_t VolumeGrid::flattenNodeIndex(glm::uvec3 inds) const {
   return static_cast<uint64_t>(gridNodeDim[1]) * gridNodeDim[2] * inds.x + gridNodeDim[2] * inds.y + inds.z;
 }

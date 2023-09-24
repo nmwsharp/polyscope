@@ -8,6 +8,7 @@
 #include "polyscope/histogram.h"
 #include "polyscope/render/color_maps.h"
 #include "polyscope/scalar_quantity.h"
+#include "polyscope/surface_mesh.h"
 #include "polyscope/volume_grid.h"
 
 namespace polyscope {
@@ -29,6 +30,8 @@ public:
 
   virtual std::string niceName() override;
 
+  virtual bool isDrawingGridcubes() override;
+
   // == Getters and setters
 
   // Gridcube viz
@@ -48,6 +51,10 @@ public:
   VolumeGridNodeScalarQuantity* setIsosurfaceColor(glm::vec3 val);
   glm::vec3 getIsosurfaceColor();
 
+  VolumeGridNodeScalarQuantity* setSlicePlanesAffectIsosurface(bool val);
+  bool getSlicePlanesAffectIsosurface();
+
+  SurfaceMesh* registerIsosurfaceAsMesh(std::string structureName = "");
 
 protected:
   // Visualize as a grid of cubes
@@ -60,6 +67,7 @@ protected:
   PersistentValue<bool> isosurfaceVizEnabled;
   PersistentValue<float> isosurfaceLevel;
   PersistentValue<glm::vec3> isosurfaceColor;
+  PersistentValue<bool> slicePlanesAffectIsosurface;
   std::shared_ptr<render::ShaderProgram> isosurfaceProgram;
   void createIsosurfaceProgram();
 
@@ -84,6 +92,8 @@ public:
   virtual void buildCellInfoGUI(size_t ind) override;
 
   virtual std::string niceName() override;
+
+  virtual bool isDrawingGridcubes() override;
 
   // == Getters and setters
 

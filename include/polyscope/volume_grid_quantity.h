@@ -17,7 +17,8 @@ public:
   VolumeGridQuantity(std::string name, VolumeGrid& parentStructure, bool dominates = false);
   ~VolumeGridQuantity(){};
 
-public:
+  virtual bool isDrawingGridcubes() = 0;
+
   // Build GUI info about this element
   virtual void buildNodeInfoGUI(size_t vInd);
   virtual void buildCellInfoGUI(size_t vInd);

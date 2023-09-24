@@ -12,14 +12,15 @@ namespace polyscope {
 const std::string VolumeGrid::structureTypeName = "Volume Grid";
 
 VolumeGrid::VolumeGrid(std::string name, glm::uvec3 gridNodeDim_, glm::vec3 boundMin_, glm::vec3 boundMax_)
-    : QuantityStructure<VolumeGrid>(name, typeName()), gridNodeDim(gridNodeDim_), gridCellDim(gridNodeDim_ - 1u),
-      boundMin(boundMin_), boundMax(boundMax_),
+    : QuantityStructure<VolumeGrid>(name, typeName()),
 
       // clang-format off
       // == managed quantities
       gridPlaneReferencePositions(this, uniquePrefix() +  "#gridPlaneReferencePositions",     gridPlaneReferencePositionsData,    std::bind(&VolumeGrid::computeGridPlaneReferenceGeometry, this)),
       gridPlaneReferenceNormals(this, uniquePrefix() +    "#gridPlaneReferenceNormals",       gridPlaneReferenceNormalsData,      [](){/* do nothing, gets handled by position func */} ),
       gridPlaneAxisInds(this, uniquePrefix() +            "#gridPlaneAxisInds",               gridPlaneAxisIndsData,              [](){/* do nothing, gets handled by position func */} ),
+
+       gridNodeDim(gridNodeDim_), gridCellDim(gridNodeDim_ - 1u), boundMin(boundMin_), boundMax(boundMax_),
 
       // == persistent options
       color(                  uniquePrefix() + "color",             getNextUniqueColor()),
@@ -100,8 +101,12 @@ void VolumeGrid::buildCustomOptionsUI() {
 }
 
 void VolumeGrid::draw() {
-  // For now, do nothing for the actual grid
   if (!enabled.get()) return;
+
+  // Write now none of this class supports cullWholeElements = false, so just always force it to true
+  if (!getCullWholeElements()) {
+    setCullWholeElements(true);
+  }
 
   // If there is no dominant quantity, then this class is responsible for the grid
   if (dominantQuantity == nullptr) {
@@ -145,6 +150,14 @@ void VolumeGrid::drawDelayed() {
 void VolumeGrid::drawPick() {
   if (!isEnabled()) {
     return;
+  }
+
+  // only draw pick if the grid is actually being draw
+  if (dominantQuantity != nullptr) {
+    VolumeGridQuantity* g = dynamic_cast<VolumeGridQuantity*>(dominantQuantity);
+    if (g && !g->isDrawingGridcubes()) {
+      return;
+    }
   }
 
   ensureGridCubePickProgramPrepared();
