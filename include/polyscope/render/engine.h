@@ -328,10 +328,11 @@ public:
   std::vector<ShaderSpecTexture> textures;
 };
 enum class ShaderReplacementDefaults {
-  SceneObject, // an object in the scene, which gets lit via matcap (etc)
-  Pick,        // rendering to a pick buffer
-  Process,     // postprocessing effects, etc
-  None         // no defaults applied
+  SceneObject,        // an object in the scene, which gets lit via matcap (etc)
+  SceneObjectNoSlice, // like SceneObject, but omits slice-related rules
+  Pick,               // rendering to a pick buffer
+  Process,            // postprocessing effects, etc
+  None                // no defaults applied
 };
 
 // Encapsulate a shader program

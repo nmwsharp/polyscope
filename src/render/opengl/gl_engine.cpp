@@ -2739,6 +2739,14 @@ std::string GLEngine::programKeyFromRules(const std::string& programName, const 
     for (const std::string& s : defaultRules_sceneObject) builder << s << "# ";
     break;
   }
+  case ShaderReplacementDefaults::SceneObjectNoSlice: {
+    for (const std::string& s : defaultRules_sceneObject) {
+      if (s.rfind("SLICE_PLANE_", 0) != 0) {
+        builder << s << "# ";
+      }
+    }
+    break;
+  }
   case ShaderReplacementDefaults::Pick: {
     for (const std::string& s : defaultRules_pick) builder << s << "# ";
     break;
@@ -2779,9 +2787,18 @@ std::shared_ptr<GLCompiledProgram> GLEngine::getCompiledProgram(const std::strin
 
     // Add in the default rules
     std::vector<std::string> fullCustomRules = customRules;
+    // TODO this inefficiently inserts at front for no reason
     switch (defaults) {
     case ShaderReplacementDefaults::SceneObject: {
       fullCustomRules.insert(fullCustomRules.begin(), defaultRules_sceneObject.begin(), defaultRules_sceneObject.end());
+      break;
+    }
+    case ShaderReplacementDefaults::SceneObjectNoSlice: {
+      for (const std::string& rule : defaultRules_sceneObject) {
+        if (rule.rfind("SLICE_PLANE_", 0) != 0) {
+          fullCustomRules.insert(fullCustomRules.begin(), rule);
+        }
+      }
       break;
     }
     case ShaderReplacementDefaults::Pick: {

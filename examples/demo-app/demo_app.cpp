@@ -477,10 +477,10 @@ void addVolumeGrid() {
     return (glm::length(q) - t.y) * scale;
   };
 
-  polyscope::VolumeGridNodeScalarQuantity* qNode = psGrid->addNodeScalarQuantityFromCallable("torus sdf", torusSDF);
+  polyscope::VolumeGridNodeScalarQuantity* qNode = psGrid->addNodeScalarQuantityFromCallable("torus sdf node", torusSDF);
   qNode->setEnabled(true);
 
-  polyscope::VolumeGridCellScalarQuantity* qCell = psGrid->addCellScalarQuantityFromCallable("torus sdf", torusSDF);
+  polyscope::VolumeGridCellScalarQuantity* qCell = psGrid->addCellScalarQuantityFromCallable("torus sdf cell", torusSDF);
   qCell->setEnabled(true);
 }
 

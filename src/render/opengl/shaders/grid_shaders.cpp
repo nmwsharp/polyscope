@@ -435,7 +435,11 @@ const ShaderReplacementRule GRIDCUBE_CULLPOS_FROM_CENTER(
           uniform vec3 u_boundMax;
         )"},
       {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
-          vec3 cullPosRef = (0.5f + cellInd3f) * u_gridSpacingReference;
+          // NOTE: you would expect the constant below to be 0.5f, to cull from the center of the cell. 
+          // We intentionally use 0.667 instead and slightly shift it, to avoid common default causes 
+          // where the plane slices right through the center of the cell, and you get random patterns 
+          // of cull/not-cull based on floating point error.
+          vec3 cullPosRef = (0.667f + cellInd3f) * u_gridSpacingReference;
           vec3 cullPosWorld = mix(u_boundMin, u_boundMax, cullPosRef);
           vec3 cullPos = (u_modelView * vec4(cullPosWorld, 1.f)).xyz;
          

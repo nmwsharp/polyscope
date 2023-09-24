@@ -1906,6 +1906,14 @@ std::string MockGLEngine::programKeyFromRules(const std::string& programName, co
     for (const std::string& s : defaultRules_sceneObject) builder << s << "# ";
     break;
   }
+  case ShaderReplacementDefaults::SceneObjectNoSlice: {
+    for (const std::string& s : defaultRules_sceneObject) {
+      if (s.rfind("SLICE_PLANE_", 0) != 0) {
+        builder << s << "# ";
+      }
+    }
+    break;
+  }
   case ShaderReplacementDefaults::Pick: {
     for (const std::string& s : defaultRules_pick) builder << s << "# ";
     break;
@@ -1950,6 +1958,14 @@ std::shared_ptr<GLCompiledProgram> MockGLEngine::getCompiledProgram(const std::s
     switch (defaults) {
     case ShaderReplacementDefaults::SceneObject: {
       fullCustomRules.insert(fullCustomRules.begin(), defaultRules_sceneObject.begin(), defaultRules_sceneObject.end());
+      break;
+    }
+    case ShaderReplacementDefaults::SceneObjectNoSlice: {
+      for (const std::string& rule : defaultRules_sceneObject) {
+        if (rule.rfind("SLICE_PLANE_", 0) != 0) {
+          fullCustomRules.insert(fullCustomRules.begin(), rule);
+        }
+      }
       break;
     }
     case ShaderReplacementDefaults::Pick: {

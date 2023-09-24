@@ -46,11 +46,6 @@ public:
   virtual void buildCustomOptionsUI() override;
   virtual void buildPickUI(size_t localPickID) override;
 
-  // Field data
-  glm::uvec3 gridNodeDim;
-  glm::uvec3 gridCellDim;
-  glm::vec3 boundMin, boundMax;
-
   // Misc data
   static const std::string structureTypeName;
 
@@ -96,12 +91,17 @@ public:
   
   // == Helpers for computing with the grid
  
-  // whole grid
-  uint64_t nNodes() const;
-  uint64_t nCells() const;
-  glm::vec3 gridSpacing() const;
-  glm::vec3 gridSpacingReference() const;
-  float minGridSpacing() const;
+  uint64_t nNodes() const; // total number of nodes
+  uint64_t nCells() const; // total number of cells
+  glm::vec3 gridSpacing() const; // space between nodes/cells, in world units
+  glm::vec3 gridSpacingReference() const; // space between nodes/cells, on [0,1]^3
+  float minGridSpacing() const; // smallest coordinate of gridSpacing()
+
+  // Field data
+  glm::uvec3 getGridNodeDim() const;
+  glm::uvec3 getGridCellDim() const;
+  glm::vec3 getBoundMin() const;
+  glm::vec3 getBoundMax() const;
 
   // nodes
   uint64_t flattenNodeIndex(glm::uvec3 inds) const;
@@ -140,6 +140,11 @@ public:
 
 
 private:
+  
+  // Field data
+  glm::uvec3 gridNodeDim;
+  glm::uvec3 gridCellDim;
+  glm::vec3 boundMin, boundMax;
  
   // === Storage for managed quantities
   std::vector<glm::vec3> gridPlaneReferencePositionsData;

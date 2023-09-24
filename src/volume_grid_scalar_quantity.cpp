@@ -14,13 +14,13 @@ namespace polyscope {
 VolumeGridNodeScalarQuantity::VolumeGridNodeScalarQuantity(std::string name, VolumeGrid& grid_,
                                                            const std::vector<double>& values_, DataType dataType_)
     : VolumeGridQuantity(name, grid_, true), ScalarQuantity(*this, values_, dataType_),
-      gridcubeVizEnabled(parent.uniquePrefix() + "#" + name + "#gridcubeVizEnabled", true),
-      isosurfaceVizEnabled(parent.uniquePrefix() + "#" + name + "#isosurfaceVizEnabled", false),
-      isosurfaceLevel(parent.uniquePrefix() + "#" + name + "#isosurfaceLevel",
-                      0.5 * (vizRange.second + vizRange.first)),
-      isosurfaceColor(uniquePrefix() + "#" + name + "#isosurfaceColor", getNextUniqueColor()) {
+      gridcubeVizEnabled(uniquePrefix() + "gridcubeVizEnabled", true),
+      isosurfaceVizEnabled(uniquePrefix() + "isosurfaceVizEnabled", false),
+      isosurfaceLevel(uniquePrefix() + "isosurfaceLevel", 0.f),
+      isosurfaceColor(uniquePrefix() + "isosurfaceColor", getNextUniqueColor()),
+      slicePlanesAffectIsosurface(uniquePrefix() + "slicePlanesAffectIsosurface", false) {
 
-  values.setTextureSize(parent.gridNodeDim.x, parent.gridNodeDim.y, parent.gridNodeDim.z);
+  values.setTextureSize(parent.getGridNodeDim().x, parent.getGridNodeDim().y, parent.getGridNodeDim().z);
 }
 
 
@@ -49,6 +49,12 @@ void VolumeGridNodeScalarQuantity::buildCustomUI() {
   }
   if (ImGui::BeginPopup("OptionsPopup")) {
     buildScalarOptionsUI();
+
+    if (ImGui::MenuItem("Slice plane affects isosurface", NULL, &slicePlanesAffectIsosurface.get()))
+      setSlicePlanesAffectIsosurface(getSlicePlanesAffectIsosurface());
+
+    if (ImGui::MenuItem("Register isosurface as mesh")) registerIsosurfaceAsMesh();
+
     ImGui::EndPopup();
   }
 
@@ -80,6 +86,8 @@ void VolumeGridNodeScalarQuantity::buildCustomUI() {
 }
 
 std::string VolumeGridNodeScalarQuantity::niceName() { return name + " (node scalar)"; }
+
+bool VolumeGridNodeScalarQuantity::isDrawingGridcubes() { return isEnabled() && getGridcubeVizEnabled(); }
 
 void VolumeGridNodeScalarQuantity::refresh() {
   gridcubeProgram.reset();
@@ -115,6 +123,13 @@ void VolumeGridNodeScalarQuantity::draw() {
     // setScalarUniforms(*isosurfaceProgram);
     render::engine->setMaterialUniforms(*isosurfaceProgram, parent.getMaterial());
     isosurfaceProgram->setUniform("u_baseColor", getIsosurfaceColor());
+
+    glm::mat4 P = view::getCameraPerspectiveMatrix();
+    glm::mat4 Pinv = glm::inverse(P);
+    isosurfaceProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+    isosurfaceProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
+
+    render::engine->setBackfaceCull(false);
     isosurfaceProgram->draw();
   }
 }
@@ -150,34 +165,66 @@ void VolumeGridNodeScalarQuantity::createIsosurfaceProgram() {
   values.ensureHostBufferPopulated();
 
   // Extract the isosurface from the level set of the scalar field
-  MC::mcMesh mesh;
-  MC::marching_cube(&values.data.front(), isosurfaceLevel.get(), parent.gridSpacing().x, parent.gridSpacing().y,
-                    parent.gridSpacing().z, mesh);
+  MC::mcMesh isosurfaceMesh;
+  MC::marching_cube(&values.data.front(), isosurfaceLevel.get(), parent.getGridNodeDim().x, parent.getGridNodeDim().y,
+                    parent.getGridNodeDim().z, isosurfaceMesh);
 
   // Transform the result to be aligned with our volume's spatial layout
   glm::vec3 scale = parent.gridSpacing();
-  for (auto& p : mesh.vertices) {
-    p = p * scale + parent.boundMin;
+  for (auto& p : isosurfaceMesh.vertices) {
+    p = p * scale + parent.getBoundMin();
   }
 
+  std::vector<std::string> isoProgramRules{"SHADE_BASECOLOR", "MESH_COMPUTE_NORMAL_FROM_POSITION"};
+  if (getSlicePlanesAffectIsosurface() && render::engine->slicePlanesEnabled()) {
+    isoProgramRules.push_back("GENERATE_VIEW_POS");
+    isoProgramRules.push_back("CULL_POS_FROM_VIEW");
+  }
 
   // Create a render program to draw it
   // clang-format off
-  isosurfaceProgram = render::engine->requestShader(
-      "INDEXED_MESH",
-      render::engine->addMaterialRules(parent.getMaterial(), parent.addStructureRules({"SHADE_BASECOLOR"})));
+  isosurfaceProgram = render::engine->requestShader("INDEXED_MESH",
+      render::engine->addMaterialRules(parent.getMaterial(), 
+        parent.addStructureRules(
+          isoProgramRules
+        )
+      ),
+    getSlicePlanesAffectIsosurface() ? 
+     render::ShaderReplacementDefaults::SceneObject :
+     render::ShaderReplacementDefaults::SceneObjectNoSlice
+    );
   // clang-format on
 
   // Populate the program buffers with the extracted mesh
-  isosurfaceProgram->setAttribute("a_position", mesh.vertices);
-  isosurfaceProgram->setAttribute("a_normal", mesh.normals);
-  isosurfaceProgram->setIndex(mesh.indices);
+  isosurfaceProgram->setAttribute("a_vertexPositions", isosurfaceMesh.vertices);
+  isosurfaceProgram->setAttribute("a_vertexNormals", isosurfaceMesh.normals); // NOTE not used currently
+  isosurfaceProgram->setIndex(isosurfaceMesh.indices);
 
   // Fill out some barycoords
   // TODO: extract barycoords from surface mesh shader to rule so we don't have to add a useless quantity
-  isosurfaceProgram->setAttribute("a_barycoord", mesh.normals); // unused
+  isosurfaceProgram->setAttribute("a_barycoord", isosurfaceMesh.normals); // unused
 
   render::engine->setMaterial(*isosurfaceProgram, parent.getMaterial());
+}
+
+SurfaceMesh* VolumeGridNodeScalarQuantity::registerIsosurfaceAsMesh(std::string structureName) {
+
+  // set the name to default
+  if (structureName == "") {
+    structureName = parent.name + " - " + name + " - isosurface";
+  }
+
+  // extract the mesh
+  MC::mcMesh isosurfaceMesh;
+  MC::marching_cube(&values.data.front(), isosurfaceLevel.get(), parent.getGridNodeDim().x, parent.getGridNodeDim().y,
+                    parent.getGridNodeDim().z, isosurfaceMesh);
+  glm::vec3 scale = parent.gridSpacing();
+  for (auto& p : isosurfaceMesh.vertices) {
+    p = p * scale + parent.getBoundMin();
+  }
+
+  return registerSurfaceMesh(structureName, isosurfaceMesh.vertices,
+                             std::make_tuple(&isosurfaceMesh.indices[0], isosurfaceMesh.indices.size(), 3));
 }
 
 void VolumeGridNodeScalarQuantity::buildNodeInfoGUI(size_t ind) {
@@ -218,6 +265,13 @@ VolumeGridNodeScalarQuantity* VolumeGridNodeScalarQuantity::setIsosurfaceColor(g
 }
 glm::vec3 VolumeGridNodeScalarQuantity::getIsosurfaceColor() { return isosurfaceColor.get(); }
 
+VolumeGridNodeScalarQuantity* VolumeGridNodeScalarQuantity::setSlicePlanesAffectIsosurface(bool val) {
+  slicePlanesAffectIsosurface = val;
+  isosurfaceProgram.reset(); // delete the program so it gets recreated with the new value
+  requestRedraw();
+  return this;
+}
+bool VolumeGridNodeScalarQuantity::getSlicePlanesAffectIsosurface() { return slicePlanesAffectIsosurface.get(); }
 
 // ========================================================
 // ==========            Cell Scalar             ==========
@@ -228,7 +282,7 @@ VolumeGridCellScalarQuantity::VolumeGridCellScalarQuantity(std::string name, Vol
     : VolumeGridQuantity(name, grid_, true), ScalarQuantity(*this, values_, dataType_),
       gridcubeVizEnabled(parent.uniquePrefix() + "#" + name + "#gridcubeVizEnabled", true) {
 
-  values.setTextureSize(parent.gridCellDim.x, parent.gridCellDim.y, parent.gridCellDim.z);
+  values.setTextureSize(parent.getGridCellDim().x, parent.getGridCellDim().y, parent.getGridCellDim().z);
 }
 
 
@@ -265,6 +319,8 @@ void VolumeGridCellScalarQuantity::buildCustomUI() {
 
 std::string VolumeGridCellScalarQuantity::niceName() { return name + " (cell scalar)"; }
 
+bool VolumeGridCellScalarQuantity::isDrawingGridcubes() { return isEnabled() && getGridcubeVizEnabled(); }
+
 void VolumeGridCellScalarQuantity::refresh() { gridcubeProgram.reset(); }
 
 void VolumeGridCellScalarQuantity::draw() {
@@ -292,7 +348,7 @@ void VolumeGridCellScalarQuantity::createGridcubeProgram() {
 
 
   // clang-format off
-  gridcubeProgram = render::engine->requestShader( "GRIDCUBE_PLANE", 
+  gridcubeProgram = render::engine->requestShader("GRIDCUBE_PLANE", 
       render::engine->addMaterialRules(parent.getMaterial(),
         parent.addGridCubeRules(
           addScalarRules(
