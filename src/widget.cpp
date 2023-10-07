@@ -6,7 +6,7 @@
 
 namespace polyscope {
 
-Widget::Widget() { state::widgets.push_back(getWeakHandle<Widget>()); }
+Widget::Widget() { state::widgets.push_back(getWeakHandle<Widget>(this)); }
 
 Widget::~Widget() {}
 

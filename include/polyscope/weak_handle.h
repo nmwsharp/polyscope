@@ -62,10 +62,23 @@ public:
   virtual ~WeakReferrable() = default;
 
   // Get a handle to the class (this is specific version, which is templated but allows you to get() the actual target
-  // type)
+  // type).
+  //
+  // WARNING: this uses dynamic_cast() internally. There are complicated rules about calling inside of constructors,
+  // polymorphic base classes, etc.
+  //
+  // Optionally, if you already have a pointer of the desired type for the object, you can
+  // pass it as an argument and avoid the dynamic_cast()
   template <typename TargetType>
-  WeakHandle<TargetType> getWeakHandle() {
-    TargetType* targetPtr = dynamic_cast<TargetType*>(this); // sorry, world
+  WeakHandle<TargetType> getWeakHandle(TargetType* targetPtr = nullptr) {
+
+    // in the case where we already had a pointer to the target type, just directly generate the wrapper
+    if (targetPtr) {
+      return WeakHandle<TargetType>(weakReferrableDummyRef, weakReferableUniqueID, targetPtr);
+    }
+
+    // otherwise, dynamic_cast to resolve the desired type
+    targetPtr = dynamic_cast<TargetType*>(this); // sorry, world
     if (!targetPtr) throw std::runtime_error("[Polyscope] bad getWeakHandle() cast");
     return WeakHandle<TargetType>(weakReferrableDummyRef, weakReferableUniqueID, targetPtr);
   };
