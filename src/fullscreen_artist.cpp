@@ -10,7 +10,7 @@ namespace polyscope {
 std::vector<WeakHandle<FullscreenArtist>> existingFullscreenArtists;
 
 FullscreenArtist::FullscreenArtist() {
-  existingFullscreenArtists.emplace_back(this->getWeakHandle<FullscreenArtist>());
+  existingFullscreenArtists.emplace_back(this->getWeakHandle<FullscreenArtist>(this));
 }
 
 FullscreenArtist::~FullscreenArtist() {
