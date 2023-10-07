@@ -4,6 +4,7 @@
 
 #include <set>
 #include <string>
+#include <vector>
 
 #include "polyscope/weak_handle.h"
 

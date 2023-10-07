@@ -3,6 +3,7 @@
 #pragma once
 
 #include <memory>
+#include <stdexcept>
 
 namespace polyscope {
 

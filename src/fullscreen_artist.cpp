@@ -1,5 +1,6 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
+#include <algorithm>
 
 #include "polyscope/fullscreen_artist.h"
 
