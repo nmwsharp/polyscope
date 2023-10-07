@@ -224,7 +224,7 @@ SurfaceMesh* VolumeGridNodeScalarQuantity::registerIsosurfaceAsMesh(std::string 
   }
 
   return registerSurfaceMesh(structureName, isosurfaceMesh.vertices,
-                             std::make_tuple(&isosurfaceMesh.indices[0], isosurfaceMesh.indices.size(), 3));
+                             std::make_tuple(isosurfaceMesh.indices.data(), isosurfaceMesh.indices.size(), 3));
 }
 
 void VolumeGridNodeScalarQuantity::buildNodeInfoGUI(size_t ind) {
