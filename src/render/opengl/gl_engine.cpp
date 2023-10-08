@@ -1346,10 +1346,9 @@ void GLCompiledProgram::setDataLocations() {
   for (GLShaderUniform& u : uniforms) {
     u.location = glGetUniformLocation(programHandle, u.name.c_str());
     if (u.location == -1) {
-      if (options::verbosity > 2) {
+      if (options::verbosity > 3) {
         info("failed to get location for uniform " + u.name);
       }
-      // exception("failed to get location for uniform " + u.name);
     }
   }
 
@@ -1357,18 +1356,20 @@ void GLCompiledProgram::setDataLocations() {
   for (GLShaderAttribute& a : attributes) {
     a.location = glGetAttribLocation(programHandle, a.name.c_str());
     if (a.location == -1) {
-      info("failed to get location for attribute " + a.name);
+      if (options::verbosity > 3) {
+        info("failed to get location for attribute " + a.name);
+      }
     }
-    // exception("failed to get location for attribute " + a.name);
   }
 
   // Textures
   for (GLShaderTexture& t : textures) {
     t.location = glGetUniformLocation(programHandle, t.name.c_str());
     if (t.location == -1) {
-      info("failed to get location for texture " + t.name);
+      if (options::verbosity > 3) {
+        info("failed to get location for texture " + t.name);
+      }
     }
-    // exception("failed to get location for texture " + t.name);
   }
 
   checkGLError();
