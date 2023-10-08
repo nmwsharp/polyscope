@@ -45,6 +45,7 @@ int transparencyRenderPasses = 8;
 // === Advanced ImGui configuration
 
 bool buildGui = true;
+bool renderScene = true;
 bool openImGuiWindowForUserCallback = true;
 std::function<void()> configureImGuiStyleCallback = configureImGuiStyle;
 std::function<std::tuple<ImFontAtlas*, ImFont*, ImFont*>()> prepareImGuiFontsCallback = prepareImGuiFonts;
