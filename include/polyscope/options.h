@@ -87,6 +87,10 @@ extern int transparencyRenderPasses;
 // Polyscope UIs. (default: true)
 extern bool buildGui;
 
+// If false, Polyscope will not render the scene into the draw buffer
+// (this is useful if you are doing custom rendering and filling the draw buffer yourself)
+extern bool renderScene;
+
 // Should the user call back start out with an imgui window context open (default: true)
 extern bool openImGuiWindowForUserCallback;
 

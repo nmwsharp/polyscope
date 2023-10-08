@@ -434,6 +434,8 @@ void renderScene() {
   // If a view has never been set, this will set it to the home view
   view::ensureViewValid();
 
+  if (!options::renderScene) return;
+
   if (render::engine->getTransparencyMode() == TransparencyMode::Pretty) {
     // Special depth peeling case: multiple render passes
     // We will perform several "peeled" rounds of rendering in to the usual scene buffer. After each, we will manually
