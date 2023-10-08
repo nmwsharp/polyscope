@@ -21,4 +21,3 @@ add_subdirectory(imgui)
 
 ## Other dependencies
 add_subdirectory(stb)
-add_subdirectory(MarchingCubeCpp)

@@ -148,6 +148,7 @@ SET(SRCS
   transformation_gizmo.cpp
   slice_plane.cpp
   weak_handle.cpp
+  marching_cubes.cpp
 
   ## Structures
 
@@ -327,6 +328,7 @@ target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../incl
 target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../deps/glm")
 #target_include_directories(polyscope PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../deps/args") # not used, polyscope generates no apps directly
 target_include_directories(polyscope PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../deps/happly")
+target_include_directories(polyscope PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../deps/MarchingCubeCpp")
 target_include_directories(polyscope PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../deps/json/include")
 target_include_directories(polyscope PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../deps/stb")
 target_include_directories(polyscope PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../deps/MarchingCubeCpp/include")
@@ -334,4 +336,4 @@ target_include_directories(polyscope PRIVATE "${BACKEND_INCLUDE_DIRS}")
         
 # Link settings
 target_link_libraries(polyscope PUBLIC imgui)
-target_link_libraries(polyscope PRIVATE "${BACKEND_LIBS}" stb MarchingCube)
+target_link_libraries(polyscope PRIVATE "${BACKEND_LIBS}" stb)
