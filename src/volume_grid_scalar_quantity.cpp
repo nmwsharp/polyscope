@@ -197,12 +197,22 @@ void VolumeGridNodeScalarQuantity::createIsosurfaceProgram() {
 
   // Populate the program buffers with the extracted mesh
   isosurfaceProgram->setAttribute("a_vertexPositions", isosurfaceMesh.vertices);
-  isosurfaceProgram->setAttribute("a_vertexNormals", isosurfaceMesh.normals); // NOTE not used currently
   isosurfaceProgram->setIndex(isosurfaceMesh.indices);
+
+
+  // Neither of these are actually used currently, but on some platforms they get optimized out, and
+  // on others they do not, so here we set a value just in case to avoid errors.
+  // This should be refactored to use a simple mesh that doesn't have this problem.
+  if (isosurfaceProgram->hasAttribute("a_vertexNormals")) {
+    isosurfaceProgram->setAttribute("a_vertexNormals", isosurfaceMesh.normals);
+  }
+  if (isosurfaceProgram->hasAttribute("a_baryCoord")) {
+    // this is nonsense data, it really don't get used
+    isosurfaceProgram->setAttribute("a_barycoord", isosurfaceMesh.normals);
+  }
 
   // Fill out some barycoords
   // TODO: extract barycoords from surface mesh shader to rule so we don't have to add a useless quantity
-  isosurfaceProgram->setAttribute("a_barycoord", isosurfaceMesh.normals); // unused
 
   render::engine->setMaterial(*isosurfaceProgram, parent.getMaterial());
 }
@@ -224,7 +234,7 @@ SurfaceMesh* VolumeGridNodeScalarQuantity::registerIsosurfaceAsMesh(std::string 
   }
 
   return registerSurfaceMesh(structureName, isosurfaceMesh.vertices,
-                             std::make_tuple(isosurfaceMesh.indices.data(), isosurfaceMesh.indices.size(), 3));
+                             std::make_tuple(isosurfaceMesh.indices.data(), isosurfaceMesh.indices.size() / 3, 3));
 }
 
 void VolumeGridNodeScalarQuantity::buildNodeInfoGUI(size_t ind) {
