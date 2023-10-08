@@ -9,6 +9,7 @@
 
 #include "imgui.h"
 
+#include "polyscope/options.h"
 #include "polyscope/pick.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/view.h"
@@ -604,13 +605,25 @@ void buildPolyscopeGui() {
   // Appearance options tree
   render::engine->buildEngineGui();
 
-  // Debug options tree
+  // Render options tree
   ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
-  if (ImGui::TreeNode("Debug")) {
+  if (ImGui::TreeNode("Render")) {
 
     // fps
     ImGui::Text("Rolling: %.1f ms/frame (%.1f fps)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::Text("Last: %.1f ms/frame (%.1f fps)", ImGui::GetIO().DeltaTime * 1000.f, 1.f / ImGui::GetIO().DeltaTime);
+
+    ImGui::PushItemWidth(40);
+    ImGui::InputInt("max fps", &options::maxFPS, 0);
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+    ImGui::Checkbox("vsync", &options::enableVSync);
+
+    ImGui::TreePop();
+  }
+
+  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  if (ImGui::TreeNode("Debug")) {
 
     if (ImGui::Button("Force refresh")) {
       refresh();

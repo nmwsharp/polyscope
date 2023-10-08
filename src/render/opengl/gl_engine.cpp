@@ -2371,7 +2371,6 @@ void GLEngine::initialize() {
   glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
   mainWindow = glfwCreateWindow(view::windowWidth, view::windowHeight, options::programName.c_str(), NULL, NULL);
   glfwMakeContextCurrent(mainWindow);
-  glfwSwapInterval(1); // Enable vsync
   glfwSetWindowPos(mainWindow, view::initWindowPosX, view::initWindowPosY);
 
   // Set initial window size
@@ -2461,7 +2460,10 @@ std::vector<unsigned char> GLEngine::readDisplayBuffer() {
 
 void GLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
-void GLEngine::makeContextCurrent() { glfwMakeContextCurrent(mainWindow); }
+void GLEngine::makeContextCurrent() {
+  glfwMakeContextCurrent(mainWindow);
+  glfwSwapInterval(options::enableVSync ? 1 : 0);
+}
 
 void GLEngine::focusWindow() { glfwFocusWindow(mainWindow); }
 

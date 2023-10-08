@@ -12,6 +12,7 @@ std::string printPrefix = "[polyscope] ";
 bool errorsThrowExceptions = false;
 bool debugDrawPickBuffer = false;
 int maxFPS = 60;
+bool enableVSync = true;
 bool usePrefsFile = true;
 bool initializeWithDefaultStructures = true;
 bool alwaysRedraw = false;
