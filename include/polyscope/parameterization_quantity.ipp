@@ -52,20 +52,6 @@ void ParameterizationQuantity<QuantityT>::buildParameterizationUI() {
 
   ImGui::PushItemWidth(100);
 
-  ImGui::SameLine(); // put it next to enabled
-
-  // Choose viz style
-  if (ImGui::BeginCombo("style", styleName(getStyle()).c_str())) {
-    for (ParamVizStyle s :
-         {ParamVizStyle::CHECKER, ParamVizStyle::GRID, ParamVizStyle::LOCAL_CHECK, ParamVizStyle::LOCAL_RAD}) {
-      if (ImGui::Selectable(styleName(s).c_str(), s == getStyle())) {
-        setStyle(s);
-      }
-    }
-    ImGui::EndCombo();
-  }
-
-
   // Modulo stripey width
   if (ImGui::DragFloat("period", &checkerSize.get(), .001, 0.0001, 1.0, "%.4f",
                        ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
@@ -77,17 +63,19 @@ void ParameterizationQuantity<QuantityT>::buildParameterizationUI() {
 
   switch (getStyle()) {
   case ParamVizStyle::CHECKER:
+    ImGui::SameLine();
     if (ImGui::ColorEdit3("##colors2", &checkColor1.get()[0], ImGuiColorEditFlags_NoInputs))
       setCheckerColors(getCheckerColors());
     ImGui::SameLine();
-    if (ImGui::ColorEdit3("colors", &checkColor2.get()[0], ImGuiColorEditFlags_NoInputs))
+    if (ImGui::ColorEdit3("##colors", &checkColor2.get()[0], ImGuiColorEditFlags_NoInputs))
       setCheckerColors(getCheckerColors());
     break;
   case ParamVizStyle::GRID:
-    if (ImGui::ColorEdit3("base", &gridBackgroundColor.get()[0], ImGuiColorEditFlags_NoInputs))
+    ImGui::SameLine();
+    if (ImGui::ColorEdit3("##base", &gridBackgroundColor.get()[0], ImGuiColorEditFlags_NoInputs))
       setGridColors(getGridColors());
     ImGui::SameLine();
-    if (ImGui::ColorEdit3("line", &gridLineColor.get()[0], ImGuiColorEditFlags_NoInputs))
+    if (ImGui::ColorEdit3("##line", &gridLineColor.get()[0], ImGuiColorEditFlags_NoInputs))
       setGridColors(getGridColors());
     break;
   case ParamVizStyle::LOCAL_CHECK:
@@ -113,7 +101,22 @@ void ParameterizationQuantity<QuantityT>::buildParameterizationUI() {
 }
 
 template <typename QuantityT>
-void ParameterizationQuantity<QuantityT>::buildParameterizationOptionsUI() {}
+void ParameterizationQuantity<QuantityT>::buildParameterizationOptionsUI() {
+
+  // Choose viz style
+  if (ImGui::BeginMenu("Style")) {
+    for (ParamVizStyle s :
+         {ParamVizStyle::CHECKER, ParamVizStyle::GRID, ParamVizStyle::LOCAL_CHECK, ParamVizStyle::LOCAL_RAD}) {
+
+      bool selected = s == getStyle();
+      std::string fancyName = styleName(s);
+      if (ImGui::MenuItem(fancyName.c_str(), NULL, selected)) {
+        setStyle(s);
+      }
+    }
+    ImGui::EndMenu();
+  }
+}
 
 template <typename QuantityT>
 std::vector<std::string> ParameterizationQuantity<QuantityT>::addParameterizationRules(std::vector<std::string> rules) {
