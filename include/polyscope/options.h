@@ -31,6 +31,10 @@ extern bool errorsThrowExceptions;
 // Don't let the main loop run at more than this speed. (-1 disables) (default: 60)
 extern int maxFPS;
 
+// If enable or disable swap synchronization (limits render ray to display refresh rate). (default: true)
+// NOTE: some platforms may ignore the setting.
+extern bool enableVSync;
+
 // Read preferences (window size, etc) from startup file, write to same file on exit (default: true)
 extern bool usePrefsFile;
 
