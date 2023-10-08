@@ -206,13 +206,11 @@ void VolumeGridNodeScalarQuantity::createIsosurfaceProgram() {
   if (isosurfaceProgram->hasAttribute("a_vertexNormals")) {
     isosurfaceProgram->setAttribute("a_vertexNormals", isosurfaceMesh.normals);
   }
-  if (isosurfaceProgram->hasAttribute("a_baryCoord")) {
+  if (isosurfaceProgram->hasAttribute("a_barycoord")) {
     // this is nonsense data, it really don't get used
     isosurfaceProgram->setAttribute("a_barycoord", isosurfaceMesh.normals);
   }
 
-  // Fill out some barycoords
-  // TODO: extract barycoords from surface mesh shader to rule so we don't have to add a useless quantity
 
   render::engine->setMaterial(*isosurfaceProgram, parent.getMaterial());
 }
