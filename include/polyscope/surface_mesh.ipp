@@ -175,7 +175,7 @@ template <class T>
 void SurfaceMesh::setAllPermutations(const std::array<std::pair<T, size_t>, 5>& perms) {
   // (kept for backward compatbility only)
   // forward to the 3-arg version, ignoring the unused ones
-  setAllPermutations(std::array<std::pair<T, size_t>, 2>{perms[2], perms[3], perms[4]});
+  setAllPermutations(std::array<std::pair<T, size_t>, 3>{perms[2], perms[3], perms[4]});
 }
 
 template <class T>
