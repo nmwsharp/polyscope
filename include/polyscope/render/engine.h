@@ -558,6 +558,7 @@ public:
   // sceneDepthMin is an optional texture copy of the depth buffe used for some effects
   std::shared_ptr<TextureBuffer> sceneColor, sceneColorFinal, sceneDepth, sceneDepthMin;
   std::shared_ptr<RenderBuffer> pickColorBuffer, pickDepthBuffer;
+  TextureBuffer& getFinalSceneColorTexture();
 
   // General-use programs used by the engine
   std::shared_ptr<ShaderProgram> renderTexturePlain, renderTextureDot3, renderTextureMap3, renderTextureSphereBG;

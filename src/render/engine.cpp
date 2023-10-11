@@ -376,6 +376,8 @@ void Engine::buildEngineGui() {
 
 FrameBuffer& Engine::getDisplayBuffer() { return useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer; }
 
+TextureBuffer& Engine::getFinalSceneColorTexture() { return *sceneColorFinal; }
+
 void Engine::setBackgroundColor(glm::vec3 c) {
   FrameBuffer& targetBuffer = getDisplayBuffer();
   targetBuffer.clearColor = c;
