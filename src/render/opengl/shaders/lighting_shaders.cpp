@@ -173,6 +173,16 @@ const ShaderReplacementRule INVERSE_TONEMAP (
           litColor = (-invtonemap_b - sqrt(invtonemap_b * invtonemap_b - 4.f*invtonemap_a*invtonemap_c)) / (2.f * invtonemap_a);
           litColor = litColor / u_exposure;
         )"},
+      {"TEXTURE_OUT_ADJUST", R"(
+          vec3 adj_textureOut3 = vec3(textureOut);
+          vec3 litColorUngamma = pow(adj_textureOut3, vec3(u_gamma));
+          float invtonemap_a = -1.f / (u_whiteLevel*u_whiteLevel);
+          vec3 invtonemap_b = (litColorUngamma - 1.f);
+          vec3 invtonemap_c = litColorUngamma;
+          adj_textureOut3 = (-invtonemap_b - sqrt(invtonemap_b * invtonemap_b - 4.f*invtonemap_a*invtonemap_c)) / (2.f * invtonemap_a);
+          adj_textureOut3 = adj_textureOut3 / u_exposure;
+          textureOut.rgb = adj_textureOut3;
+        )"},
     },
     /* uniforms */ {
       {"u_exposure", RenderDataType::Float},

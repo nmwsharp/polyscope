@@ -42,7 +42,7 @@ void ColorImageQuantity::prepareFullscreen() {
 
   // Create the sourceProgram
   fullscreenProgram =
-      render::engine->requestShader("TEXTURE_DRAW_PLAIN", {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY"},
+      render::engine->requestShader("TEXTURE_DRAW_PLAIN", {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY", "INVERSE_TONEMAP"},
                                     render::ShaderReplacementDefaults::Process);
   fullscreenProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
   // TODO throughout polyscope we discard the shared pointer when adding textures/attributes to programs... should we
@@ -55,7 +55,7 @@ void ColorImageQuantity::prepareBillboard() {
   // Create the sourceProgram
   billboardProgram = render::engine->requestShader(
       "TEXTURE_DRAW_PLAIN",
-      {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY", "TEXTURE_BILLBOARD_FROM_UNIFORMS"},
+      {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY", "TEXTURE_BILLBOARD_FROM_UNIFORMS", "INVERSE_TONEMAP"},
       render::ShaderReplacementDefaults::Process);
   billboardProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
   billboardProgram->setTextureFromBuffer("t_image", colors.getRenderTextureBuffer().get());
@@ -72,6 +72,7 @@ void ColorImageQuantity::showFullscreen() {
 
   // Set uniforms
   fullscreenProgram->setUniform("u_transparency", getTransparency());
+  render::engine->setTonemapUniforms(*fullscreenProgram);
 
   fullscreenProgram->draw();
 
@@ -114,6 +115,7 @@ void ColorImageQuantity::showInBillboard(glm::vec3 center, glm::vec3 upVec, glm:
   billboardProgram->setUniform("u_billboardCenter", center);
   billboardProgram->setUniform("u_billboardUp", upVec);
   billboardProgram->setUniform("u_billboardRight", rightVec);
+  render::engine->setTonemapUniforms(*billboardProgram);
 
   render::engine->setBackfaceCull(false);
   render::engine->setBlendMode(
