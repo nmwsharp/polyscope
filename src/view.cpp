@@ -994,9 +994,17 @@ void setNavigateStyle(NavigateStyle newNavigateStyle, bool animateFlight) {
 }
 NavigateStyle getNavigateStyle() { return style; }
 
-void setWindowResizable(bool isResizable) { return render::engine->setWindowResizable(isResizable); }
+void setWindowResizable(bool isResizable) { 
+  // TODO make this a separate setting so it can be called before initialization
+  checkInitialized();
+  return render::engine->setWindowResizable(isResizable); 
+}
 
-bool getWindowResizable() { return render::engine->getWindowResizable(); }
+bool getWindowResizable() { 
+  // TODO make this a separate setting so it can be called before initialization
+  checkInitialized();
+  return render::engine->getWindowResizable(); 
+}
 
 
 } // namespace view
