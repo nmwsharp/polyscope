@@ -2501,6 +2501,12 @@ void GLEngine::updateWindowSize(bool force) {
 
 void GLEngine::applyWindowSize() {
   glfwSetWindowSize(mainWindow, view::windowWidth, view::windowHeight);
+
+  // on some platform size changes are asynchonous, need to ensure it completes
+  // we don't want to just retry until the resize has happened, because it could be impossible
+  // TODO it seems like on X11 sometimes even this isn't enough?
+  glfwWaitEvents();
+
   updateWindowSize(true);
 }
 
