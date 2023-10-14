@@ -204,7 +204,11 @@ size_t ManagedBuffer<T>::size() {
     if (deviceBufferType == DeviceBufferType::Attribute) {
       return renderAttributeBuffer->getDataSize();
     } else {
-      return sizeX * sizeY * sizeZ;
+      size_t s = 1;
+      if (sizeX > 0) s *= sizeX;
+      if (sizeY > 0) s *= sizeY;
+      if (sizeZ > 0) s *= sizeZ;
+      return s;
     }
     break;
   };
@@ -579,7 +583,7 @@ template<> ManagedBufferMap<glm::uvec4>&               ManagedBufferMap<glm::uve
 
 std::string typeName(ManagedBufferType type) {
   switch (type) {
-  // clang-format off
+    // clang-format off
     case ManagedBufferType::Float     : return "Float";    
     case ManagedBufferType::Double    : return "Double";   
     case ManagedBufferType::Vec2      : return "Vec2";     

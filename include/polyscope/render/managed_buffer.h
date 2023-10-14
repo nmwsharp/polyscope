@@ -187,9 +187,9 @@ protected:
 
   // For data that can be interpreted as a 1/2/3 dimensional texture
   DeviceBufferType deviceBufferType = DeviceBufferType::Attribute; // this gets set when you call setTextureSize
-  uint32_t sizeX = 1;
-  uint32_t sizeY = 1;
-  uint32_t sizeZ = 1;
+  uint32_t sizeX = 0;
+  uint32_t sizeY = 0; // holds 0 if texture dim < 2
+  uint32_t sizeZ = 0; // holds 0 if texture dim < 3
 
 
   // == Internal representation of indexed views

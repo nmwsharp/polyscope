@@ -58,8 +58,10 @@ enum class RenderDataType {
 enum class DeviceBufferType { Attribute, Texture1d, Texture2d, Texture3d };
 
 int dimension(const TextureFormat& x);
+int sizeInBytes(const TextureFormat& f);
 std::string modeName(const TransparencyMode& m);
 std::string renderDataTypeName(const RenderDataType& r);
+int sizeInBytes(const RenderDataType& r);
 int renderDataTypeCountCompatbility(const RenderDataType r1, const RenderDataType r2);
 std::string getImageOriginRule(ImageOrigin imageOrigin);
 std::string deviceBufferTypeName(const DeviceBufferType& d);
@@ -96,6 +98,7 @@ public:
   RenderDataType getType() const { return dataType; }
   int getArrayCount() const { return arrayCount; }
   int64_t getDataSize() const { return dataSize; }
+  int64_t getDataSizeInBytes() const { return dataSize * sizeInBytes(dataType) * getArrayCount(); }
   uint64_t getUniqueID() const { return uniqueID; }
   bool isSet() const { return dataSize > 0; }
 
@@ -169,7 +172,9 @@ public:
   unsigned int getSizeZ() const { return sizeZ; }
   int getDimension() const { return dim; }
   unsigned int getTotalSize() const; // product of dimensions
+  int64_t getSizeInBytes() const { return static_cast<int64_t>(getTotalSize()) * sizeInBytes(format); }
   uint64_t getUniqueID() const { return uniqueID; }
+  TextureFormat getFormat() const { return format; }
 
   virtual void setFilterMode(FilterMode newMode);
 

@@ -31,6 +31,24 @@ int dimension(const TextureFormat& x) {
   return 0;
 }
 
+int sizeInBytes(const TextureFormat& f) {
+  // clang-format off
+  switch (f) {
+    case TextureFormat::RGB8:     return 3*1;
+    case TextureFormat::RGBA8:    return 4*1;
+    case TextureFormat::RG16F:    return 2*2;
+    case TextureFormat::RGB16F:   return 3*2;
+    case TextureFormat::RGBA16F:  return 4*2;
+    case TextureFormat::R32F:     return 1*4;
+    case TextureFormat::R16F:     return 1*2;
+    case TextureFormat::RGB32F:   return 3*4;
+    case TextureFormat::RGBA32F:  return 4*4;
+    case TextureFormat::DEPTH24:  return 1*3;
+  }
+  // clang-format on
+  return -1;
+}
+
 std::string renderDataTypeName(const RenderDataType& r) {
   switch (r) {
   case RenderDataType::Vector2Float:
@@ -57,6 +75,34 @@ std::string renderDataTypeName(const RenderDataType& r) {
     return "Vector4UInt";
   }
   return "";
+}
+
+int sizeInBytes(const RenderDataType& r) {
+  switch (r) {
+  case RenderDataType::Vector2Float:
+    return 2 * 4;
+  case RenderDataType::Vector3Float:
+    return 3 * 4;
+  case RenderDataType::Vector4Float:
+    return 4 * 4;
+  case RenderDataType::Matrix44Float:
+    return 4 * 4 * 4;
+  case RenderDataType::Float:
+    return 4;
+  case RenderDataType::Int:
+    return 4;
+  case RenderDataType::UInt:
+    return 4;
+  case RenderDataType::Index:
+    return 4;
+  case RenderDataType::Vector2UInt:
+    return 2 * 4;
+  case RenderDataType::Vector3UInt:
+    return 3 * 4;
+  case RenderDataType::Vector4UInt:
+    return 4 * 4;
+  }
+  return -1;
 }
 
 int renderDataTypeCountCompatbility(const RenderDataType r1, const RenderDataType r2) {
