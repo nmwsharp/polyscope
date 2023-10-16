@@ -301,6 +301,8 @@ void SurfaceTextureScalarQuantity::createProgram() {
   program->setTextureFromBuffer("t_scalar", values.getRenderTextureBuffer().get());
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());
+
+  values.getRenderTextureBuffer()->setFilterMode(FilterMode::Linear);
 }
 
 

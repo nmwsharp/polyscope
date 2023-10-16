@@ -146,6 +146,8 @@ void SurfaceTextureColorQuantity::createProgram() {
   program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
   program->setTextureFromBuffer("t_color", colors.getRenderTextureBuffer().get());
   render::engine->setMaterial(*program, parent.getMaterial());
+
+  colors.getRenderTextureBuffer()->setFilterMode(FilterMode::Linear);
 }
 
 
