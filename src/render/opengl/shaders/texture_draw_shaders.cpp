@@ -38,7 +38,7 @@ R"(
       void main()
       {
           tCoord = (a_position.xy+vec2(1.0,1.0))/2.0;
-          ${ TCOORD_ADJUST }$
+          ${ VERT_ASSIGNMENTS }$
 
           vec4 position = vec4(a_position,1.0);
           ${ POSITION_ADJUST }$
@@ -584,9 +584,9 @@ R"(
 const ShaderReplacementRule TEXTURE_ORIGIN_UPPERLEFT (
     /* rule name */ "TEXTURE_ORIGIN_UPPERLEFT",
     { /* replacement sources */
-      {"TCOORD_ADJUST", R"(
+      {"VERT_ASSIGNMENTS", R"(
         tCoord = vec2(tCoord.x, 1. - tCoord.y);
-      )"}
+      )"},
     },
     /* uniforms */ {},
     /* attributes */ {},
