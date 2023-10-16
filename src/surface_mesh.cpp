@@ -1504,12 +1504,11 @@ SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantityImpl(std::string name
   return q;
 }
 
-SurfaceTextureColorQuantity* SurfaceMesh::addTextureColorQuantityImpl(std::string name,
-                                                                      SurfaceParameterizationQuantity& param,
-                                                                      size_t dimX, size_t dimY,
-                                                                      const std::vector<glm::vec3>& colors) {
+SurfaceTextureColorQuantity*
+SurfaceMesh::addTextureColorQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX,
+                                         size_t dimY, const std::vector<glm::vec3>& colors, ImageOrigin imageOrigin) {
   checkForQuantityWithNameAndDeleteOrError(name);
-  SurfaceTextureColorQuantity* q = new SurfaceTextureColorQuantity(name, *this, param, dimX, dimY, colors);
+  SurfaceTextureColorQuantity* q = new SurfaceTextureColorQuantity(name, *this, param, dimX, dimY, colors, imageOrigin);
   addQuantity(q);
   return q;
 }
@@ -1616,11 +1615,14 @@ SurfaceCornerScalarQuantity* SurfaceMesh::addCornerScalarQuantityImpl(std::strin
 }
 
 
-SurfaceTextureScalarQuantity*
-SurfaceMesh::addTextureScalarQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX,
-                                          size_t dimY, const std::vector<double>& data, DataType type) {
+SurfaceTextureScalarQuantity* SurfaceMesh::addTextureScalarQuantityImpl(std::string name,
+                                                                        SurfaceParameterizationQuantity& param,
+                                                                        size_t dimX, size_t dimY,
+                                                                        const std::vector<double>& data,
+                                                                        ImageOrigin imageOrigin, DataType type) {
   checkForQuantityWithNameAndDeleteOrError(name);
-  SurfaceTextureScalarQuantity* q = new SurfaceTextureScalarQuantity(name, *this, param, dimX, dimY, data, type);
+  SurfaceTextureScalarQuantity* q =
+      new SurfaceTextureScalarQuantity(name, *this, param, dimX, dimY, data, imageOrigin, type);
   addQuantity(q);
   return q;
 }

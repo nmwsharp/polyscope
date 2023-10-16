@@ -169,12 +169,12 @@ TEST_F(PolyscopeTest, SurfaceMeshColorTexture) {
   size_t dimY = 15;
   std::vector<glm::vec3> colorsTex(dimX * dimY, glm::vec3{.2, .3, .4});
   polyscope::SurfaceTextureColorQuantity* qColor =
-      psMesh->addTextureColorQuantity("tColor", *qParam, dimX, dimY, colorsTex);
+      psMesh->addTextureColorQuantity("tColor", *qParam, dimX, dimY, colorsTex, polyscope::ImageOrigin::UpperLeft);
   qColor->setEnabled(true);
 
   // make sure the by-name adder also works
   polyscope::SurfaceTextureColorQuantity* qColor2 =
-      psMesh->addTextureColorQuantity("tColor2", "param", dimX, dimY, colorsTex);
+      psMesh->addTextureColorQuantity("tColor2", "param", dimX, dimY, colorsTex, polyscope::ImageOrigin::UpperLeft);
 
   polyscope::show(3);
   polyscope::removeAllStructures();
@@ -266,12 +266,12 @@ TEST_F(PolyscopeTest, SurfaceMeshScalarTexture) {
   size_t dimY = 15;
   std::vector<float> valuesTex(dimX * dimY, 0.77);
   polyscope::SurfaceTextureScalarQuantity* qScalar =
-      psMesh->addTextureScalarQuantity("tScalar", *qParam, dimX, dimY, valuesTex);
+      psMesh->addTextureScalarQuantity("tScalar", *qParam, dimX, dimY, valuesTex, polyscope::ImageOrigin::UpperLeft);
   qScalar->setEnabled(true);
 
   // make sure the by-name adder also works
   polyscope::SurfaceTextureScalarQuantity* qScalar2 =
-      psMesh->addTextureScalarQuantity("tScalar2", "param", dimX, dimY, valuesTex);
+      psMesh->addTextureScalarQuantity("tScalar2", "param", dimX, dimY, valuesTex, polyscope::ImageOrigin::UpperLeft);
 
   polyscope::show(3);
   polyscope::removeAllStructures();

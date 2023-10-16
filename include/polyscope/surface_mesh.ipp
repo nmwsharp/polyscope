@@ -213,16 +213,18 @@ SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantity(std::string name, co
 }
 
 template <class T>
-SurfaceTextureColorQuantity* SurfaceMesh::addTextureColorQuantity(std::string name,
-                                                                  SurfaceParameterizationQuantity& param, size_t dimX,
-                                                                  size_t dimY, const T& colors) {
+SurfaceTextureColorQuantity*
+SurfaceMesh::addTextureColorQuantity(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY,
+                                     const T& colors, ImageOrigin imageOrigin) {
   validateSize<T>(colors, dimX * dimY, "texture color quantity " + name);
-  return addTextureColorQuantityImpl(name, param, dimX, dimY, standardizeVectorArray<glm::vec3, 3>(colors));
+  return addTextureColorQuantityImpl(name, param, dimX, dimY, standardizeVectorArray<glm::vec3, 3>(colors),
+                                     imageOrigin);
 }
 
 template <class T>
 SurfaceTextureColorQuantity* SurfaceMesh::addTextureColorQuantity(std::string name, std::string paramName, size_t dimX,
-                                                                  size_t dimY, const T& colors) {
+                                                                  size_t dimY, const T& colors,
+                                                                  ImageOrigin imageOrigin) {
 
 
   SurfaceParameterizationQuantity* param = getParameterization(paramName);
@@ -231,7 +233,7 @@ SurfaceTextureColorQuantity* SurfaceMesh::addTextureColorQuantity(std::string na
   }
 
   // call the main adder
-  return addTextureColorQuantity(name, *param, dimX, dimY, colors);
+  return addTextureColorQuantity(name, *param, dimX, dimY, colors, imageOrigin);
 }
 
 
@@ -307,18 +309,17 @@ SurfaceCornerScalarQuantity* SurfaceMesh::addCornerScalarQuantity(std::string na
 }
 
 template <class T>
-SurfaceTextureScalarQuantity* SurfaceMesh::addTextureScalarQuantity(std::string name,
-                                                                    SurfaceParameterizationQuantity& param, size_t dimX,
-                                                                    size_t dimY, const T& values, DataType type) {
+SurfaceTextureScalarQuantity*
+SurfaceMesh::addTextureScalarQuantity(std::string name, SurfaceParameterizationQuantity& param, size_t dimX,
+                                      size_t dimY, const T& values, ImageOrigin imageOrigin, DataType type) {
   validateSize<T>(values, dimX * dimY, "texture color quantity " + name);
-  return addTextureScalarQuantityImpl(name, param, dimX, dimY, standardizeArray<double, T>(values), type);
+  return addTextureScalarQuantityImpl(name, param, dimX, dimY, standardizeArray<double, T>(values), imageOrigin, type);
 }
 
 template <class T>
 SurfaceTextureScalarQuantity* SurfaceMesh::addTextureScalarQuantity(std::string name, std::string paramName,
                                                                     size_t dimX, size_t dimY, const T& values,
-                                                                    DataType type) {
-
+                                                                    ImageOrigin imageOrigin, DataType type) {
 
   SurfaceParameterizationQuantity* param = getParameterization(paramName);
   if (!param) {
@@ -326,7 +327,7 @@ SurfaceTextureScalarQuantity* SurfaceMesh::addTextureScalarQuantity(std::string 
   }
 
   // call the main adder
-  return addTextureScalarQuantity(name, *param, dimX, dimY, values, type);
+  return addTextureScalarQuantity(name, *param, dimX, dimY, values, imageOrigin, type);
 }
 
 template <class T>

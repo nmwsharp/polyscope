@@ -274,8 +274,9 @@ void SurfaceCornerScalarQuantity::buildCornerInfoGUI(size_t cInd) {
 SurfaceTextureScalarQuantity::SurfaceTextureScalarQuantity(std::string name, SurfaceMesh& mesh_,
                                                            SurfaceParameterizationQuantity& param_, size_t dimX_,
                                                            size_t dimY_, const std::vector<double>& values_,
-                                                           DataType dataType_)
-    : SurfaceScalarQuantity(name, mesh_, "vertex", values_, dataType_), param(param_), dimX(dimX_), dimY(dimY_) {
+                                                           ImageOrigin origin_, DataType dataType_)
+    : SurfaceScalarQuantity(name, mesh_, "vertex", values_, dataType_), param(param_), dimX(dimX_), dimY(dimY_),
+      imageOrigin(origin_) {
   values.setTextureSize(dimX, dimY);
   values.ensureHostBufferPopulated();
   hist.buildHistogram(values.data);
@@ -289,7 +290,7 @@ void SurfaceTextureScalarQuantity::createProgram() {
       render::engine->addMaterialRules(parent.getMaterial(),
         parent.addSurfaceMeshRules(
           addScalarRules(
-            {"MESH_PROPAGATE_TCOORD", "TEXTURE_PROPAGATE_VALUE"}
+            {"MESH_PROPAGATE_TCOORD", getImageOriginRule(imageOrigin), "TEXTURE_PROPAGATE_VALUE"}
           )
         )
       )

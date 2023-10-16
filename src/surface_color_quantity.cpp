@@ -123,8 +123,10 @@ void SurfaceFaceColorQuantity::buildFaceInfoGUI(size_t fInd) {
 
 SurfaceTextureColorQuantity::SurfaceTextureColorQuantity(std::string name, SurfaceMesh& mesh_,
                                                          SurfaceParameterizationQuantity& param_, size_t dimX_,
-                                                         size_t dimY_, std::vector<glm::vec3> colorValues_)
-    : SurfaceColorQuantity(name, mesh_, "texture", colorValues_), param(param_), dimX(dimX_), dimY(dimY_) {
+                                                         size_t dimY_, std::vector<glm::vec3> colorValues_,
+                                                         ImageOrigin origin_)
+    : SurfaceColorQuantity(name, mesh_, "texture", colorValues_), param(param_), dimX(dimX_), dimY(dimY_),
+      imageOrigin(origin_) {
   colors.setTextureSize(dimX, dimY);
 }
 
@@ -135,7 +137,7 @@ void SurfaceTextureColorQuantity::createProgram() {
       render::engine->addMaterialRules(parent.getMaterial(),
         addColorRules(
           parent.addSurfaceMeshRules(
-            {"MESH_PROPAGATE_TCOORD", "TEXTURE_PROPAGATE_COLOR", "SHADE_COLOR"}
+            {"MESH_PROPAGATE_TCOORD", getImageOriginRule(imageOrigin), "TEXTURE_PROPAGATE_COLOR", "SHADE_COLOR"}
           )
         )
       )

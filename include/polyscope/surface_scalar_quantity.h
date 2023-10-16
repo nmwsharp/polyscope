@@ -115,7 +115,7 @@ public:
 class SurfaceTextureScalarQuantity : public SurfaceScalarQuantity {
 public:
   SurfaceTextureScalarQuantity(std::string name, SurfaceMesh& mesh_, SurfaceParameterizationQuantity& param_,
-                               size_t dimX, size_t dimY, const std::vector<double>& values_,
+                               size_t dimX, size_t dimY, const std::vector<double>& values_, ImageOrigin origin_,
                                DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
@@ -123,6 +123,7 @@ public:
 protected:
   SurfaceParameterizationQuantity& param;
   size_t dimX, dimY;
+  ImageOrigin imageOrigin;
 };
 
 } // namespace polyscope

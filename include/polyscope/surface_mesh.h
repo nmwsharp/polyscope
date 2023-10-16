@@ -130,8 +130,8 @@ public:
   template <class T> SurfaceEdgeScalarQuantity* addEdgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD); 
   template <class T> SurfaceHalfedgeScalarQuantity* addHalfedgeScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
   template <class T> SurfaceCornerScalarQuantity* addCornerScalarQuantity(std::string name, const T& data, DataType type = DataType::STANDARD);
-  template <class T> SurfaceTextureScalarQuantity* addTextureScalarQuantity(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const T& data, DataType type = DataType::STANDARD);
-  template <class T> SurfaceTextureScalarQuantity* addTextureScalarQuantity(std::string name, std::string paramName, size_t dimX, size_t dimY, const T& data, DataType type = DataType::STANDARD);
+  template <class T> SurfaceTextureScalarQuantity* addTextureScalarQuantity(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const T& data, ImageOrigin imageOrigin, DataType type = DataType::STANDARD);
+  template <class T> SurfaceTextureScalarQuantity* addTextureScalarQuantity(std::string name, std::string paramName, size_t dimX, size_t dimY, const T& data, ImageOrigin imageOrigin, DataType type = DataType::STANDARD);
 
   // = Distance (expect scalar array)
   template <class T> SurfaceVertexScalarQuantity* addVertexDistanceQuantity(std::string name, const T& data);
@@ -140,8 +140,8 @@ public:
   // = Colors (expect vec3 array)
   template <class T> SurfaceVertexColorQuantity* addVertexColorQuantity(std::string name, const T& data);
   template <class T> SurfaceFaceColorQuantity* addFaceColorQuantity(std::string name, const T& data);
-  template <class T> SurfaceTextureColorQuantity* addTextureColorQuantity(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const T& colors);
-  template <class T> SurfaceTextureColorQuantity* addTextureColorQuantity(std::string name, std::string paramName, size_t dimX, size_t dimY, const T& colors);
+  template <class T> SurfaceTextureColorQuantity* addTextureColorQuantity(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const T& colors, ImageOrigin imageOrigin);
+  template <class T> SurfaceTextureColorQuantity* addTextureColorQuantity(std::string name, std::string paramName, size_t dimX, size_t dimY, const T& colors, ImageOrigin imageOrigin);
   
 	// = Parameterizations (expect vec2 array)
   template <class T> SurfaceCornerParameterizationQuantity* addParameterizationQuantity(std::string name, const T& coords, ParamCoordsType type = ParamCoordsType::UNIT); 
@@ -395,13 +395,13 @@ private:
 
   SurfaceVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   SurfaceFaceColorQuantity* addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
-  SurfaceTextureColorQuantity* addTextureColorQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const std::vector<glm::vec3>& colors);
+  SurfaceTextureColorQuantity* addTextureColorQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const std::vector<glm::vec3>& colors, ImageOrigin imageOrigin);
   SurfaceVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   SurfaceFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   SurfaceEdgeScalarQuantity* addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   SurfaceHalfedgeScalarQuantity* addHalfedgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
   SurfaceCornerScalarQuantity* addCornerScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  SurfaceTextureScalarQuantity* addTextureScalarQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const std::vector<double>& data, DataType type);
+  SurfaceTextureScalarQuantity* addTextureScalarQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const std::vector<double>& data, ImageOrigin imageOrigin, DataType type);
   SurfaceVertexScalarQuantity* addVertexDistanceQuantityImpl(std::string name, const std::vector<double>& data);
   SurfaceVertexScalarQuantity* addVertexSignedDistanceQuantityImpl(std::string name, const std::vector<double>& data);
   SurfaceCornerParameterizationQuantity* addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);

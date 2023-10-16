@@ -65,13 +65,14 @@ public:
 class SurfaceTextureColorQuantity : public SurfaceColorQuantity {
 public:
   SurfaceTextureColorQuantity(std::string name, SurfaceMesh& mesh_, SurfaceParameterizationQuantity& param_,
-                              size_t dimX, size_t dimY, std::vector<glm::vec3> values_);
+                              size_t dimX, size_t dimY, std::vector<glm::vec3> values_, ImageOrigin origin_);
 
   virtual void createProgram() override;
 
 protected:
   SurfaceParameterizationQuantity& param;
   size_t dimX, dimY;
+  ImageOrigin imageOrigin;
 };
 
 } // namespace polyscope
