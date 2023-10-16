@@ -8,9 +8,10 @@
 
 namespace polyscope {
 
-// forward declaration
+// forward declarations
 class SurfaceMeshQuantity;
 class SurfaceMesh;
+class SurfaceParameterizationQuantity;
 
 class SurfaceColorQuantity : public SurfaceMeshQuantity, public ColorQuantity<SurfaceColorQuantity> {
 public:
@@ -54,6 +55,24 @@ public:
   virtual void createProgram() override;
 
   void buildFaceInfoGUI(size_t fInd) override;
+};
+
+
+// ========================================================
+// ==========          Texture Color             ==========
+// ========================================================
+
+class SurfaceTextureColorQuantity : public SurfaceColorQuantity {
+public:
+  SurfaceTextureColorQuantity(std::string name, SurfaceMesh& mesh_, SurfaceParameterizationQuantity& param_,
+                              size_t dimX, size_t dimY, std::vector<glm::vec3> values_, ImageOrigin origin_);
+
+  virtual void createProgram() override;
+
+protected:
+  SurfaceParameterizationQuantity& param;
+  size_t dimX, dimY;
+  ImageOrigin imageOrigin;
 };
 
 } // namespace polyscope

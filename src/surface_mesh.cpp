@@ -1504,6 +1504,15 @@ SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantityImpl(std::string name
   return q;
 }
 
+SurfaceTextureColorQuantity*
+SurfaceMesh::addTextureColorQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX,
+                                         size_t dimY, const std::vector<glm::vec3>& colors, ImageOrigin imageOrigin) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SurfaceTextureColorQuantity* q = new SurfaceTextureColorQuantity(name, *this, param, dimX, dimY, colors, imageOrigin);
+  addQuantity(q);
+  return q;
+}
+
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexDistanceQuantityImpl(std::string name,
                                                                         const std::vector<double>& data) {
   checkForQuantityWithNameAndDeleteOrError(name);
@@ -1605,6 +1614,19 @@ SurfaceCornerScalarQuantity* SurfaceMesh::addCornerScalarQuantityImpl(std::strin
   return q;
 }
 
+
+SurfaceTextureScalarQuantity* SurfaceMesh::addTextureScalarQuantityImpl(std::string name,
+                                                                        SurfaceParameterizationQuantity& param,
+                                                                        size_t dimX, size_t dimY,
+                                                                        const std::vector<double>& data,
+                                                                        ImageOrigin imageOrigin, DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SurfaceTextureScalarQuantity* q =
+      new SurfaceTextureScalarQuantity(name, *this, param, dimX, dimY, data, imageOrigin, type);
+  addQuantity(q);
+  return q;
+}
+
 SurfaceVertexVectorQuantity* SurfaceMesh::addVertexVectorQuantityImpl(std::string name,
                                                                       const std::vector<glm::vec3>& vectors,
                                                                       VectorType vectorType) {
@@ -1659,6 +1681,13 @@ SurfaceMesh::addOneFormTangentVectorQuantityImpl(std::string name, const std::ve
   markEdgesAsUsed();
   return q;
 }
+
+SurfaceParameterizationQuantity* SurfaceMesh::getParameterization(std::string name) {
+  SurfaceMeshQuantity* newQ = this->getQuantity(name);
+  SurfaceParameterizationQuantity* param = dynamic_cast<SurfaceParameterizationQuantity*>(newQ);
+  return param;
+}
+
 
 SurfaceMeshQuantity::SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates)
     : QuantityS<SurfaceMesh>(name, parentStructure, dominates) {}

@@ -1306,7 +1306,15 @@ void GLCompiledProgram::compileGLProgram(const std::vector<ShaderStageSpecificat
       checkGLError();
     } catch (...) {
       std::cout << "GLError() after shader compilation! Program text:" << std::endl;
-      std::cout << s.src.c_str() << std::endl;
+
+      // process shader line-by-line to print line numbers:
+      std::stringstream ss(s.src);
+      std::string line;
+      size_t lineNo = 1;
+      while (std::getline(ss, line, '\n')) {
+        std::cout << std::setw(4) << lineNo << ": " << line << std::endl;
+        lineNo++;
+      }
       throw;
     }
 
@@ -2942,6 +2950,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("TEXTURE_SHADE_COLOR", TEXTURE_SHADE_COLOR);
   registerShaderRule("TEXTURE_SHADE_COLORALPHA", TEXTURE_SHADE_COLORALPHA);
   registerShaderRule("TEXTURE_PROPAGATE_VALUE", TEXTURE_PROPAGATE_VALUE);
+  registerShaderRule("TEXTURE_PROPAGATE_COLOR", TEXTURE_PROPAGATE_COLOR);
   registerShaderRule("TEXTURE_BILLBOARD_FROM_UNIFORMS", TEXTURE_BILLBOARD_FROM_UNIFORMS);
 
   // mesh things
@@ -2954,6 +2963,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("MESH_BACKFACE_DARKEN", MESH_BACKFACE_DARKEN);
   registerShaderRule("MESH_PROPAGATE_VALUE", MESH_PROPAGATE_VALUE);
   registerShaderRule("MESH_PROPAGATE_VALUE2", MESH_PROPAGATE_VALUE2);
+  registerShaderRule("MESH_PROPAGATE_TCOORD", MESH_PROPAGATE_TCOORD);
   registerShaderRule("MESH_PROPAGATE_COLOR", MESH_PROPAGATE_COLOR);
   registerShaderRule("MESH_PROPAGATE_HALFEDGE_VALUE", MESH_PROPAGATE_HALFEDGE_VALUE);
   registerShaderRule("MESH_PROPAGATE_CULLPOS", MESH_PROPAGATE_CULLPOS);

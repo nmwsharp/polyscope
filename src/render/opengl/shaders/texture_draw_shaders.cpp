@@ -38,7 +38,7 @@ R"(
       void main()
       {
           tCoord = (a_position.xy+vec2(1.0,1.0))/2.0;
-          ${ TCOORD_ADJUST }$
+          ${ VERT_ASSIGNMENTS }$
 
           vec4 position = vec4(a_position,1.0);
           ${ POSITION_ADJUST }$
@@ -584,9 +584,9 @@ R"(
 const ShaderReplacementRule TEXTURE_ORIGIN_UPPERLEFT (
     /* rule name */ "TEXTURE_ORIGIN_UPPERLEFT",
     { /* replacement sources */
-      {"TCOORD_ADJUST", R"(
+      {"VERT_ASSIGNMENTS", R"(
         tCoord = vec2(tCoord.x, 1. - tCoord.y);
-      )"}
+      )"},
     },
     /* uniforms */ {},
     /* attributes */ {},
@@ -663,8 +663,8 @@ const ShaderReplacementRule TEXTURE_SHADE_COLORALPHA(
     }
 );
 
-// input: vec2 tcoord, 1d --> 3d texture t_scalar
-// output: vec3 albedoColor
+// input: vec2 tcoord, scalar-valued 2D texture t_scalar
+// output: float shadeValue
 const ShaderReplacementRule TEXTURE_PROPAGATE_VALUE(
     /* rule name */ "TEXTURE_PROPAGATE_VALUE",
     { /* replacement sources */
@@ -679,6 +679,25 @@ const ShaderReplacementRule TEXTURE_PROPAGATE_VALUE(
     /* attributes */ {},
     /* textures */ {
       {"t_scalar", 2},
+    }
+);
+
+// input: vec2 tcoord, color-valued 2D texture t_scalar
+// output: float shadeValue
+const ShaderReplacementRule TEXTURE_PROPAGATE_COLOR(
+    /* rule name */ "TEXTURE_PROPAGATE_COLOR",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform sampler2D t_color;
+        )" },
+      {"GENERATE_SHADE_VALUE", R"(
+        vec3 shadeColor = texture(t_color, tCoord).rgb;
+        )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {
+      {"t_color", 2},
     }
 );
 

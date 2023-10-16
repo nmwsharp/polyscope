@@ -2,7 +2,9 @@
 
 
 #include "polyscope/utilities.h"
+
 #include <stdexcept>
+
 namespace polyscope {
 
 // Shorthand to add a mesh to polyscope
@@ -211,6 +213,31 @@ SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantity(std::string name, co
 }
 
 template <class T>
+SurfaceTextureColorQuantity*
+SurfaceMesh::addTextureColorQuantity(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY,
+                                     const T& colors, ImageOrigin imageOrigin) {
+  validateSize<T>(colors, dimX * dimY, "texture color quantity " + name);
+  return addTextureColorQuantityImpl(name, param, dimX, dimY, standardizeVectorArray<glm::vec3, 3>(colors),
+                                     imageOrigin);
+}
+
+template <class T>
+SurfaceTextureColorQuantity* SurfaceMesh::addTextureColorQuantity(std::string name, std::string paramName, size_t dimX,
+                                                                  size_t dimY, const T& colors,
+                                                                  ImageOrigin imageOrigin) {
+
+
+  SurfaceParameterizationQuantity* param = getParameterization(paramName);
+  if (!param) {
+    exception("could not find surface parameterization " + paramName);
+  }
+
+  // call the main adder
+  return addTextureColorQuantity(name, *param, dimX, dimY, colors, imageOrigin);
+}
+
+
+template <class T>
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexDistanceQuantity(std::string name, const T& distances) {
   validateSize(distances, vertexDataSize, "distance quantity " + name);
   return addVertexDistanceQuantityImpl(name, standardizeArray<double>(distances));
@@ -281,6 +308,27 @@ SurfaceCornerScalarQuantity* SurfaceMesh::addCornerScalarQuantity(std::string na
   return addCornerScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
 }
 
+template <class T>
+SurfaceTextureScalarQuantity*
+SurfaceMesh::addTextureScalarQuantity(std::string name, SurfaceParameterizationQuantity& param, size_t dimX,
+                                      size_t dimY, const T& values, ImageOrigin imageOrigin, DataType type) {
+  validateSize<T>(values, dimX * dimY, "texture color quantity " + name);
+  return addTextureScalarQuantityImpl(name, param, dimX, dimY, standardizeArray<double, T>(values), imageOrigin, type);
+}
+
+template <class T>
+SurfaceTextureScalarQuantity* SurfaceMesh::addTextureScalarQuantity(std::string name, std::string paramName,
+                                                                    size_t dimX, size_t dimY, const T& values,
+                                                                    ImageOrigin imageOrigin, DataType type) {
+
+  SurfaceParameterizationQuantity* param = getParameterization(paramName);
+  if (!param) {
+    exception("could not find surface parameterization " + paramName);
+  }
+
+  // call the main adder
+  return addTextureScalarQuantity(name, *param, dimX, dimY, values, imageOrigin, type);
+}
 
 template <class T>
 SurfaceVertexVectorQuantity* SurfaceMesh::addVertexVectorQuantity(std::string name, const T& vectors,

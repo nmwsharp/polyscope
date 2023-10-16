@@ -13,6 +13,11 @@
 
 namespace polyscope {
 
+// forward declarations
+class SurfaceMeshQuantity;
+class SurfaceMesh;
+class SurfaceParameterizationQuantity;
+
 class SurfaceScalarQuantity : public SurfaceMeshQuantity, public ScalarQuantity<SurfaceScalarQuantity> {
 public:
   SurfaceScalarQuantity(std::string name, SurfaceMesh& mesh_, std::string definedOn, const std::vector<double>& values_,
@@ -90,7 +95,7 @@ public:
 };
 
 // ========================================================
-// ==========          Corner Scalar           ==========
+// ==========          Corner Scalar             ==========
 // ========================================================
 
 class SurfaceCornerScalarQuantity : public SurfaceScalarQuantity {
@@ -103,5 +108,22 @@ public:
   void buildCornerInfoGUI(size_t heInd) override;
 };
 
+// ========================================================
+// ==========          Texture Scalar            ==========
+// ========================================================
+
+class SurfaceTextureScalarQuantity : public SurfaceScalarQuantity {
+public:
+  SurfaceTextureScalarQuantity(std::string name, SurfaceMesh& mesh_, SurfaceParameterizationQuantity& param_,
+                               size_t dimX, size_t dimY, const std::vector<double>& values_, ImageOrigin origin_,
+                               DataType dataType_ = DataType::STANDARD);
+
+  virtual void createProgram() override;
+
+protected:
+  SurfaceParameterizationQuantity& param;
+  size_t dimX, dimY;
+  ImageOrigin imageOrigin;
+};
 
 } // namespace polyscope

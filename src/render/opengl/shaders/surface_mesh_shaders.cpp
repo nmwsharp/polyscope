@@ -247,6 +247,27 @@ const ShaderReplacementRule MESH_PROPAGATE_VALUE2 (
     /* textures */ {}
 );
 
+const ShaderReplacementRule MESH_PROPAGATE_TCOORD (
+    /* rule name */ "MESH_PROPAGATE_TCOORD",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec2 a_tCoord;
+          out vec2 tCoord;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          tCoord = a_tCoord;
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec2 tCoord;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_tCoord", RenderDataType::Vector2Float},
+    },
+    /* textures */ {}
+);
+
 const ShaderReplacementRule MESH_PROPAGATE_CULLPOS (
     /* rule name */ "MESH_PROPAGATE_CULLPOS",
     { /* replacement sources */

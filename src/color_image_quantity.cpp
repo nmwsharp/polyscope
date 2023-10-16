@@ -41,9 +41,9 @@ std::string ColorImageQuantity::niceName() { return name + " (color image)"; }
 void ColorImageQuantity::prepareFullscreen() {
 
   // Create the sourceProgram
-  fullscreenProgram =
-      render::engine->requestShader("TEXTURE_DRAW_PLAIN", {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY", "INVERSE_TONEMAP"},
-                                    render::ShaderReplacementDefaults::Process);
+  fullscreenProgram = render::engine->requestShader(
+      "TEXTURE_DRAW_PLAIN", {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY", "INVERSE_TONEMAP"},
+      render::ShaderReplacementDefaults::Process);
   fullscreenProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
   // TODO throughout polyscope we discard the shared pointer when adding textures/attributes to programs... should we
   // just track the shared pointer?
@@ -53,10 +53,10 @@ void ColorImageQuantity::prepareFullscreen() {
 void ColorImageQuantity::prepareBillboard() {
 
   // Create the sourceProgram
-  billboardProgram = render::engine->requestShader(
-      "TEXTURE_DRAW_PLAIN",
-      {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY", "TEXTURE_BILLBOARD_FROM_UNIFORMS", "INVERSE_TONEMAP"},
-      render::ShaderReplacementDefaults::Process);
+  billboardProgram = render::engine->requestShader("TEXTURE_DRAW_PLAIN",
+                                                   {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY",
+                                                    "TEXTURE_BILLBOARD_FROM_UNIFORMS", "INVERSE_TONEMAP"},
+                                                   render::ShaderReplacementDefaults::Process);
   billboardProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
   billboardProgram->setTextureFromBuffer("t_image", colors.getRenderTextureBuffer().get());
 }

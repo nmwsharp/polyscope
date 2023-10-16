@@ -159,6 +159,27 @@ TEST_F(PolyscopeTest, SurfaceMeshColorFace) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, SurfaceMeshColorTexture) {
+  auto psMesh = registerTriangleMesh();
+
+  std::vector<glm::vec2> vals(psMesh->nCorners(), {1., 2.});
+  auto qParam = psMesh->addParameterizationQuantity("param", vals);
+
+  size_t dimX = 10;
+  size_t dimY = 15;
+  std::vector<glm::vec3> colorsTex(dimX * dimY, glm::vec3{.2, .3, .4});
+  polyscope::SurfaceTextureColorQuantity* qColor =
+      psMesh->addTextureColorQuantity("tColor", *qParam, dimX, dimY, colorsTex, polyscope::ImageOrigin::UpperLeft);
+  qColor->setEnabled(true);
+
+  // make sure the by-name adder also works
+  polyscope::SurfaceTextureColorQuantity* qColor2 =
+      psMesh->addTextureColorQuantity("tColor2", "param", dimX, dimY, colorsTex, polyscope::ImageOrigin::UpperLeft);
+
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, SurfaceMeshScalarVertex) {
   auto psMesh = registerTriangleMesh();
   std::vector<double> vScalar(psMesh->nVertices(), 7.);
@@ -231,6 +252,27 @@ TEST_F(PolyscopeTest, SurfaceMeshScalarCornerPerm) {
   psMesh->setCornerPermutation(cPerm);
   auto q4 = psMesh->addCornerScalarQuantity("cornerScalar", cornerScalar);
   q4->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SurfaceMeshScalarTexture) {
+  auto psMesh = registerTriangleMesh();
+
+  std::vector<glm::vec2> vals(psMesh->nCorners(), {1., 2.});
+  auto qParam = psMesh->addParameterizationQuantity("param", vals);
+
+  size_t dimX = 10;
+  size_t dimY = 15;
+  std::vector<float> valuesTex(dimX * dimY, 0.77);
+  polyscope::SurfaceTextureScalarQuantity* qScalar =
+      psMesh->addTextureScalarQuantity("tScalar", *qParam, dimX, dimY, valuesTex, polyscope::ImageOrigin::UpperLeft);
+  qScalar->setEnabled(true);
+
+  // make sure the by-name adder also works
+  polyscope::SurfaceTextureScalarQuantity* qScalar2 =
+      psMesh->addTextureScalarQuantity("tScalar2", "param", dimX, dimY, valuesTex, polyscope::ImageOrigin::UpperLeft);
+
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
