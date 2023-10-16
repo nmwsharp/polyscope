@@ -360,6 +360,8 @@ CameraParameters getCameraParametersForCurrentView() {
                           CameraExtrinsics::fromMatrix(viewMat));
 }
 
+void setCameraViewMatrix(glm::mat4 mat) { viewMat = mat; }
+
 glm::mat4 getCameraViewMatrix() { return viewMat; }
 
 glm::mat4 getCameraPerspectiveMatrix() {
