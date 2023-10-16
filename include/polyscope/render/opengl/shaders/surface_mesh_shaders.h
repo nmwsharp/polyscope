@@ -22,6 +22,7 @@ extern const ShaderReplacementRule MESH_BACKFACE_DIFFERENT;
 extern const ShaderReplacementRule MESH_BACKFACE_DARKEN;
 extern const ShaderReplacementRule MESH_PROPAGATE_VALUE;
 extern const ShaderReplacementRule MESH_PROPAGATE_VALUE2;
+extern const ShaderReplacementRule MESH_PROPAGATE_TCOORD;
 extern const ShaderReplacementRule MESH_PROPAGATE_COLOR;
 extern const ShaderReplacementRule MESH_PROPAGATE_HALFEDGE_VALUE;
 extern const ShaderReplacementRule MESH_PROPAGATE_CULLPOS;

@@ -36,6 +36,7 @@ extern const ShaderReplacementRule TEXTURE_SHADE_COLOR;      // sample a color f
 extern const ShaderReplacementRule
     TEXTURE_SHADE_COLORALPHA;                               // sample a coloralpha from a texture and use it for shading
 extern const ShaderReplacementRule TEXTURE_PROPAGATE_VALUE; // sample a scalar from a texture and use it for shading
+extern const ShaderReplacementRule TEXTURE_PROPAGATE_COLOR; // sample a color from a texture and use it for shading
 extern const ShaderReplacementRule
     TEXTURE_BILLBOARD_FROM_UNIFORMS; // adjust a texture's billboard position via uniforms
 
