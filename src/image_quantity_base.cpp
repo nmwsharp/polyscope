@@ -64,6 +64,7 @@ void ImageQuantity::setShowFullscreen(bool newVal) {
   if (newVal && isEnabled()) {
     // if drawing fullscreen, disable anything else which was already drawing fullscreen
     disableAllFullscreenArtists();
+    setEnabled(true);
   }
   isShowingFullscreen = newVal;
   requestRedraw();
