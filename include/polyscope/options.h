@@ -87,6 +87,15 @@ extern int transparencyRenderPasses;
 // Polyscope UIs. (default: true)
 extern bool buildGui;
 
+// Draw the user gui panel on the right side, if false will be drawn on the left
+// (default: true)
+extern bool userGuiIsOnRightSide;
+
+// Build the built-in gui panels (polyscope & structure menus on the left, selection menu on the right)
+// The difference between this vs. buildGui is whether or not the user gui panel is drawn, this setting does _not_
+// effect the user gui panel. (default: true)
+extern bool buildDefaultGuiPanels;
+
 // If false, Polyscope will not render the scene into the draw buffer
 // (this is useful if you are doing custom rendering and filling the draw buffer yourself)
 extern bool renderScene;

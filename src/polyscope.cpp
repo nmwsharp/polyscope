@@ -40,6 +40,7 @@ struct ContextEntry {
 std::vector<ContextEntry> contextStack;
 
 bool redrawNextFrame = true;
+bool unshowRequested = false;
 
 // Some state about imgui windows to stack them
 float imguiStackMargin = 10;
@@ -506,21 +507,37 @@ void purgeWidgets() {
 
 void userGuiBegin() {
 
+  ImVec2 userGuiLoc;
+  if (options::userGuiIsOnRightSide) {
+    // right side
+    userGuiLoc = ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin), imguiStackMargin);
+  } else {
+    // left side
+    if (options::buildDefaultGuiPanels) {
+      userGuiLoc = ImVec2(leftWindowsWidth + 3 * imguiStackMargin, imguiStackMargin);
+    } else {
+      userGuiLoc = ImVec2(imguiStackMargin, imguiStackMargin);
+    }
+  }
+
   ImGui::PushID("user_callback");
-  ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin), imguiStackMargin));
+  ImGui::SetNextWindowPos(userGuiLoc);
   ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
 
-  ImGui::Begin("Command UI", nullptr);
+  ImGui::Begin("##Command UI", nullptr);
 }
 
 void userGuiEnd() {
 
-  rightWindowsWidth = ImGui::GetWindowWidth();
-  lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
+  if (options::userGuiIsOnRightSide) {
+    rightWindowsWidth = ImGui::GetWindowWidth();
+    lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
+  } else {
+    lastWindowHeightUser = 0;
+  }
   ImGui::End();
   ImGui::PopID();
 }
-
 
 } // namespace
 
@@ -761,9 +778,11 @@ void draw(bool withUI, bool withContextCallback) {
       buildUserGuiAndInvokeCallback();
 
       if (options::buildGui) {
-        buildPolyscopeGui();
-        buildStructureGui();
-        buildPickGui();
+        if (options::buildDefaultGuiPanels) {
+          buildPolyscopeGui();
+          buildStructureGui();
+          buildPickGui();
+        }
 
         for (WeakHandle<Widget> wHandle : state::widgets) {
           if (wHandle.isValid()) {
@@ -833,12 +852,13 @@ void show(size_t forFrames) {
   if (!state::initialized) {
     exception("must initialize Polyscope with polyscope::init() before calling polyscope::show().");
   }
+  unshowRequested = false;
 
   // the popContext() doesn't quit until _after_ the last frame, so we need to decrement by 1 to get the count right
   if (forFrames > 0) forFrames--;
 
   auto checkFrames = [&]() {
-    if (forFrames == 0) {
+    if (forFrames == 0 || unshowRequested) {
       popContext();
     } else {
       forFrames--;
@@ -860,6 +880,8 @@ void show(size_t forFrames) {
     render::engine->hideWindow();
   }
 }
+
+void unshow() { unshowRequested = true; }
 
 void shutdown() {
 
