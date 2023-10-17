@@ -58,8 +58,9 @@ void QuantityS<S>::buildUI() {
 
     // Enabled checkbox
     bool enabledLocal = enabled.get();
-    ImGui::Checkbox("Enabled", &enabledLocal);
-    setEnabled(enabledLocal);
+    if (ImGui::Checkbox("Enabled", &enabledLocal)) {
+      setEnabled(enabledLocal);
+    }
 
     // Call custom UI
     this->buildCustomUI();
