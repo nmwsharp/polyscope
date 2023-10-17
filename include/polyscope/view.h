@@ -9,6 +9,8 @@
 #include "polyscope/types.h"
 // #include "polyscope/gl/gl_utils.h"
 
+#include "imgui.h"
+
 // GLM for view matrices
 #include "glm/gtc/constants.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -69,9 +71,9 @@ extern const double defaultFov;
 
 void processTranslate(glm::vec2 delta);
 void processRotate(glm::vec2 startP, glm::vec2 endP);
-
 void processClipPlaneShift(double amount);
 void processZoom(double amount);
+void processKeyboardNavigation(ImGuiIO& io);
 
 void setWindowSize(int width, int height);
 std::tuple<int, int> getWindowSize();
@@ -119,6 +121,10 @@ void setViewFromJson(std::string jsonData, bool flyTo);
 // DEPRACTED: old names for avove
 std::string getCameraJson();
 void setCameraFromJson(std::string jsonData, bool flyTo);
+
+// Other helpers
+std::string to_string(ProjectionMode mode);
+std::string to_string(NavigateStyle style);
 
 // Internal helpers. Should probably not be called in user code.
 void buildViewGui();

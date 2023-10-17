@@ -398,18 +398,7 @@ void processInputEvents() {
 
   // === Key-press inputs
   if (!io.WantCaptureKeyboard) {
-
-    // ctrl-c
-    if (io.KeyCtrl && render::engine->isKeyPressed('c')) {
-      std::string outData = view::getCameraJson();
-      render::engine->setClipboardText(outData);
-    }
-
-    // ctrl-v
-    if (io.KeyCtrl && render::engine->isKeyPressed('v')) {
-      std::string clipboardData = render::engine->getClipboardText();
-      view::setCameraFromJson(clipboardData, true);
-    }
+    view::processKeyboardNavigation(io);
   }
 }
 
