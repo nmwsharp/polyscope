@@ -2545,14 +2545,16 @@ void GLEngine::pollEvents() { glfwPollEvents(); }
 bool GLEngine::isKeyPressed(char c) {
   if (c >= '0' && c <= '9') return ImGui::IsKeyPressed(GLFW_KEY_0 + (c - '0'));
   if (c >= 'a' && c <= 'z') return ImGui::IsKeyPressed(GLFW_KEY_A + (c - 'a'));
-  exception("keyPressed only supports 0-9, a-z");
+  if (c >= 'A' && c <= 'Z') return ImGui::IsKeyPressed(GLFW_KEY_A + (c - 'A'));
+  exception("keyPressed only supports 0-9, a-z, A-Z");
   return false;
 }
 
 int GLEngine::getKeyCode(char c) {
   if (c >= '0' && c <= '9') return static_cast<int>(GLFW_KEY_0) + (c - '0');
   if (c >= 'a' && c <= 'z') return static_cast<int>(GLFW_KEY_A) + (c - 'a');
-  exception("keyPressed only supports 0-9, a-z");
+  if (c >= 'A' && c <= 'Z') return static_cast<int>(GLFW_KEY_A) + (c - 'A');
+  exception("getKeyCode only supports 0-9, a-z, A-Z");
   return -1;
 }
 
