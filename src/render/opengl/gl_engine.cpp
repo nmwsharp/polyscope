@@ -2549,6 +2549,13 @@ bool GLEngine::isKeyPressed(char c) {
   return false;
 }
 
+int GLEngine::getKeyCode(char c) {
+  if (c >= '0' && c <= '9') return static_cast<int>(GLFW_KEY_0) + (c - '0');
+  if (c >= 'a' && c <= 'z') return static_cast<int>(GLFW_KEY_A) + (c - 'a');
+  exception("keyPressed only supports 0-9, a-z");
+  return -1;
+}
+
 void GLEngine::ImGuiNewFrame() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();

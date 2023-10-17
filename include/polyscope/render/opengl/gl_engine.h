@@ -402,6 +402,7 @@ public:
   bool windowRequestsClose() override;
   void pollEvents() override;
   bool isKeyPressed(char c) override; // for lowercase a-z and 0-9 only
+  int getKeyCode(char c) override;    // for lowercase a-z and 0-9 only
   std::string getClipboardText() override;
   void setClipboardText(std::string text) override;
 
