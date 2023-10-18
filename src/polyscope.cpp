@@ -511,6 +511,7 @@ void userGuiBegin() {
   if (options::userGuiIsOnRightSide) {
     // right side
     userGuiLoc = ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin), imguiStackMargin);
+    ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
   } else {
     // left side
     if (options::buildDefaultGuiPanels) {
@@ -522,7 +523,6 @@ void userGuiBegin() {
 
   ImGui::PushID("user_callback");
   ImGui::SetNextWindowPos(userGuiLoc);
-  ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
 
   ImGui::Begin("##Command UI", nullptr);
 }

@@ -2390,6 +2390,8 @@ void GLEngine::initialize() {
   view::windowWidth = newWindowWidth;
   view::windowHeight = newWindowHeight;
 
+  setWindowResizable(view::windowResizable);
+
 // === Initialize openGL
 // Load openGL functions (using GLAD)
 #ifndef __APPLE__

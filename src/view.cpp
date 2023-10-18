@@ -20,6 +20,7 @@ int bufferWidth = -1;
 int bufferHeight = -1;
 int initWindowPosX = 20;
 int initWindowPosY = 20;
+bool windowResizable = true;
 NavigateStyle style = NavigateStyle::Turntable;
 UpDir upDir = UpDir::YUp;
 FrontDir frontDir = FrontDir::ZFront;
@@ -406,7 +407,9 @@ void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool fl
 void setWindowSize(int width, int height) {
   view::windowWidth = width;
   view::windowHeight = height;
-  render::engine->applyWindowSize();
+  if (isInitialized()) {
+    render::engine->applyWindowSize();
+  }
 }
 
 std::tuple<int, int> getWindowSize() { return std::tuple<int, int>(view::windowWidth, view::windowHeight); }
@@ -1059,16 +1062,13 @@ void setNavigateStyle(NavigateStyle newStyle, bool animateFlight) {
 NavigateStyle getNavigateStyle() { return style; }
 
 void setWindowResizable(bool isResizable) {
-  // TODO make this a separate setting so it can be called before initialization
-  checkInitialized();
-  return render::engine->setWindowResizable(isResizable);
+  windowResizable = isResizable;
+  if (isInitialized()) {
+    return render::engine->setWindowResizable(isResizable);
+  }
 }
 
-bool getWindowResizable() {
-  // TODO make this a separate setting so it can be called before initialization
-  checkInitialized();
-  return render::engine->getWindowResizable();
-}
+bool getWindowResizable() { return windowResizable; }
 
 
 } // namespace view

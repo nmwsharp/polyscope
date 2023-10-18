@@ -33,12 +33,16 @@ using polyscope::NavigateStyle;
 using polyscope::UpDir;
 
 // === View state
+
+// NOTE: users should use setters to set these if they exist, otherwise updates
+// may not be applied immediately.
 extern int bufferWidth;
 extern int bufferHeight;
 extern int windowWidth;
 extern int windowHeight;
 extern int initWindowPosX;
 extern int initWindowPosY;
+extern bool windowResizable;
 extern NavigateStyle style;
 extern UpDir upDir;
 extern FrontDir frontDir;
