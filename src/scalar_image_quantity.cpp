@@ -99,7 +99,10 @@ void ScalarImageQuantity::renderIntermediate() {
 }
 
 void ScalarImageQuantity::showInImGuiWindow() {
-  if (!textureIntermediateRendered) return;
+  // it's important to do this here, so the image is available this frame
+  // if we did it in draw(), then it wouldn't be available until next frame, which
+  // causes problems if we are updating every frame
+  renderIntermediate();
 
   ImGui::Begin(name.c_str(), nullptr, ImGuiWindowFlags_NoScrollbar);
 

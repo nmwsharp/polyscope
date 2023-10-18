@@ -81,7 +81,6 @@ void ColorImageQuantity::showFullscreen() {
 
 
 void ColorImageQuantity::showInImGuiWindow() {
-  if (!fullscreenProgram) prepareFullscreen();
 
   ImGui::Begin(name.c_str(), nullptr, ImGuiWindowFlags_NoScrollbar);
 
