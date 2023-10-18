@@ -108,6 +108,11 @@ void ManagedBuffer<T>::ensureHostBufferPopulated() {
 }
 
 template <typename T>
+void ManagedBuffer<T>::ensureHostBufferAllocated() {
+  data.resize(size());
+}
+
+template <typename T>
 std::vector<T>& ManagedBuffer<T>::getPopulatedHostBufferRef() {
   ensureHostBufferPopulated();
   return data;
@@ -458,7 +463,7 @@ typename ManagedBuffer<T>::CanonicalDataSource ManagedBuffer<T>::currentCanonica
   }
 
   // Check if the render buffer contains the canonical data
-  if (renderAttributeBuffer) {
+  if (renderAttributeBuffer || renderTextureBuffer) {
     return CanonicalDataSource::RenderBuffer;
   }
 
@@ -583,7 +588,7 @@ template<> ManagedBufferMap<glm::uvec4>&               ManagedBufferMap<glm::uve
 
 std::string typeName(ManagedBufferType type) {
   switch (type) {
-  // clang-format off
+    // clang-format off
     case ManagedBufferType::Float     : return "Float";    
     case ManagedBufferType::Double    : return "Double";   
     case ManagedBufferType::Vec2      : return "Vec2";     

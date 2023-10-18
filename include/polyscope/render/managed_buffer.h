@@ -63,10 +63,17 @@ public:
 
 
   // The raw underlying buffer which this class wraps that holds the data.
-  // It is assumed that it never changes length.
-  // External users can write directly for this buffer, but must call markHostBufferUpdated() afterward.
-  // data.size() == 0 if the data is lazily computed and has not been computed yet, or if this host-side buffer is
-  // invalidated because it is being updated externally directly on the render device.
+  // It is assumed that it never changes length (although this class may clear it to empty).
+  //
+  // It is possible that data.size() == 0 if the data is lazily computed and has not been computed yet, or if this
+  // host-side buffer is invalidated because it is being updated externally directly on the render device.
+  //
+  // External users can write directly for this buffer. The required order of operations for writing to this buffer is:
+  //    buff.ensureHostBufferAllocated();
+  //    buff.data = // fill .data with your values
+  //    buff.markHostBufferUpdated();
+  //
+  //
   std::vector<T>& data;
 
   // == Members for computed data
@@ -98,6 +105,10 @@ public:
   // being updated directly from GPU memory, this will mirror the updates to the cpu-side vector. Also, if the value
   // is lazily computed by computeFunc(), it ensures that that function has been called.
   void ensureHostBufferPopulated();
+
+  // Ensure that the `data` member has the proper size. This does _not_ populate the buffer with any particular data,
+  // just ensures it is allocated. It is useful for when an external wants to fill the buffer with data.
+  void ensureHostBufferAllocated();
 
   // Combines calling ensureHostBufferPopulated() and returning a reference to the `data` member
   std::vector<T>& getPopulatedHostBufferRef();
