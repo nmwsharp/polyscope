@@ -622,7 +622,12 @@ void buildPolyscopeGui() {
     ImGui::Text("Last: %.1f ms/frame (%.1f fps)", ImGui::GetIO().DeltaTime * 1000.f, 1.f / ImGui::GetIO().DeltaTime);
 
     ImGui::PushItemWidth(40);
-    ImGui::InputInt("max fps", &options::maxFPS, 0);
+    if (ImGui::InputInt("max fps", &options::maxFPS, 0)) {
+      if (options::maxFPS < 1 && options::maxFPS != -1) {
+        options::maxFPS = -1;
+      }
+    }
+
     ImGui::PopItemWidth();
     ImGui::SameLine();
     ImGui::Checkbox("vsync", &options::enableVSync);
@@ -795,7 +800,7 @@ void draw(bool withUI, bool withContextCallback) {
   }
 
   // Execute the context callback, if there is one.
-  // This callback is Polyscope implementation detail, which is distinct from the userCallback (which gets called below)
+  // This callback is Polyscope implementation detail, which is distinct from the userCallback (which gets called above)
   if (withContextCallback && contextStack.back().callback) {
     (contextStack.back().callback)();
   }
