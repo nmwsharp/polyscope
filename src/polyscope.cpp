@@ -882,7 +882,9 @@ void show(size_t forFrames) {
 
   // if this was the outermost show(), hide the window afterward
   if (contextStack.size() == 1) {
-    render::engine->hideWindow();
+    if (options::hideWindowAfterShow) {
+      render::engine->hideWindow();
+    }
   }
 }
 

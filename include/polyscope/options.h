@@ -57,6 +57,9 @@ extern bool invokeUserCallbackForNestedShow;
 // If true, focus the Polyscope window when shown (default: false)
 extern bool giveFocusOnShow;
 
+// If true, hide the polyscope window when a show() command finishes (default: true)
+extern bool hideWindowAfterShow;
+
 // === Scene options
 
 // Behavior of the ground plane
