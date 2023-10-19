@@ -31,6 +31,7 @@ protected:
     polyscope::init(testBackend);
     polyscope::options::enableRenderErrorChecks = true;
     polyscope::options::errorsThrowExceptions = true;
+    polyscope::options::hideWindowAfterShow = false;
   }
 
   // Per-test-suite tear-down.
