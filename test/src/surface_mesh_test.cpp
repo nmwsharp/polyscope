@@ -91,6 +91,9 @@ TEST_F(PolyscopeTest, SurfaceMeshAppearance) {
   psMesh->setSmoothShade(false);
   EXPECT_FALSE(psMesh->isSmoothShade());
   polyscope::show(3);
+  
+  psMesh->setShadeStyle(polyscope::MeshShadeStyle::TriFlat);
+  polyscope::show(3);
 
   // Wireframe
   psMesh->setEdgeWidth(1.);
