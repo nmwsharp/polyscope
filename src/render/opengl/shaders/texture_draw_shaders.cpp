@@ -177,11 +177,11 @@ R"(
 
     // Set the depth of the fragment from the stored texture data
     // TODO: this a wasteful way to convert ray depth to gl_FragDepth, I am sure it can be done with much less arithmetic... figure it out 
-    // Build a ray corresponding to this fragment
+    // WARNING this code is duplicated in other shaders
     vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
     vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
-    // (source is implicit at origin)
-    vec3 viewPos = normalize(viewRay) * depth;
+    viewRay = normalize(viewRay);
+    vec3 viewPos =  viewRay * (-1./viewRay.z*depth);
     float fragdepth = fragDepthFromView(u_projMatrix, depthRange, viewPos);
     gl_FragDepth = fragdepth;
 
@@ -256,11 +256,11 @@ R"(
 
     // Set the depth of the fragment from the stored texture data
     // TODO: this a wasteful way to convert ray depth to gl_FragDepth, I am sure it can be done with much less arithmetic... figure it out 
-    // Build a ray corresponding to this fragment
+    // WARNING this code is duplicated in other shaders
     vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
     vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
-    // (source is implicit at origin)
-    vec3 viewPos = normalize(viewRay) * depth;
+    viewRay = normalize(viewRay);
+    vec3 viewPos =  viewRay * (-1./viewRay.z*depth);
     float fragdepth = fragDepthFromView(u_projMatrix, depthRange, viewPos);
     gl_FragDepth = fragdepth;
 
