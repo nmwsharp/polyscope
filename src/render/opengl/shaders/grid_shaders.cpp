@@ -178,7 +178,7 @@ R"(
            ${ APPLY_WIREFRAME }$
 
            // Lighting
-           vec3 shadeNormal = vec3(0.f, 0.f, 0.f); // use the MESH_COMPUTE_NORMAL_FROM_POSITION rule
+           vec3 shadeNormal = vec3(0.f, 0.f, 0.f); // use the COMPUTE_SHADE_NORMAL_FROM_POSITION rule
            ${ PERTURB_SHADE_NORMAL }$
            ${ GENERATE_LIT_COLOR }$
 

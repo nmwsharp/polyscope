@@ -979,7 +979,8 @@ std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::strin
       }
 
       if (shadeStyle.get() == MeshShadeStyle::TriFlat) {
-        initRules.push_back("MESH_COMPUTE_NORMAL_FROM_POSITION");
+        initRules.push_back("COMPUTE_SHADE_NORMAL_FROM_POSITION");
+        initRules.push_back("PROJ_AND_INV_PROJ_MAT");
       }
 
       if (backFacePolicy.get() == BackFacePolicy::Different) {

@@ -46,7 +46,7 @@ template <typename T1, typename T2, typename T3>
 void ScalarRenderImageQuantity::updateBuffers(const T1& depthData, const T2& normalData, const T3& scalarData) {
 
   validateSize(depthData, dimX * dimY, "scalar render image depth data " + name);
-  validateSize(normalData, dimX * dimY, "scalar render image normal data " + name);
+  validateSize(normalData, {dimX * dimY, 0}, "scalar render image normal data " + name);
   validateSize(scalarData, dimX * dimY, "scalar render image color data " + name);
 
   // standardize

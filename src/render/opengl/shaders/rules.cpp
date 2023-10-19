@@ -296,6 +296,41 @@ const ShaderReplacementRule GENERATE_VIEW_POS (
     /* textures */ {}
 );
 
+const ShaderReplacementRule PROJ_AND_INV_PROJ_MAT (
+    /* rule name */ "PROJ_AND_INV_PROJ_MAT",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+        uniform mat4 u_invProjMatrix;
+        uniform vec4 u_viewport;
+        )"}
+    },
+    /* uniforms */ {
+        {"u_invProjMatrix", RenderDataType::Matrix44Float},
+        {"u_viewport", RenderDataType::Vector4Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule COMPUTE_SHADE_NORMAL_FROM_POSITION (
+    /* rule name */ "COMPUTE_SHADE_NORMAL_FROM_POSITION",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+        vec2 depthRange_fornormal = vec2(gl_DepthRange.near, gl_DepthRange.far);
+        vec3 viewPos_fornormal = fragmentViewPosition(u_viewport, depthRange_fornormal, u_invProjMatrix, gl_FragCoord);
+        shadeNormal = normalize(cross(dFdx(viewPos_fornormal),dFdy(viewPos_fornormal)));
+        )"}
+    },
+    /* uniforms */ {
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+
 // TODO delete me
 const ShaderReplacementRule CULL_POS_FROM_VIEW (
     /* rule name */ "CULL_POS_FROM_VIEW",

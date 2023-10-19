@@ -76,6 +76,7 @@ void ColorRenderImageQuantity::prepare() {
     render::engine->addMaterialRules(material.get(),
       {
         getImageOriginRule(imageOrigin), 
+        hasNormals ? "SHADE_NORMAL_FROM_TEXTURE" : "SHADE_NORMAL_FROM_VIEWPOS_VAR",
         "TEXTURE_SHADE_COLOR"
       }
     ), 
@@ -84,7 +85,9 @@ void ColorRenderImageQuantity::prepare() {
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
   program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
-  program->setTextureFromBuffer("t_normal", normals.getRenderTextureBuffer().get());
+  if (hasNormals) {
+    program->setTextureFromBuffer("t_normal", normals.getRenderTextureBuffer().get());
+  }
   program->setTextureFromBuffer("t_color", colors.getRenderTextureBuffer().get());
   render::engine->setMaterial(*program, material.get());
 }

@@ -76,6 +76,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
 
   std::vector<float> depthVals(dimX * dimY, 0.44);
   std::vector<std::array<float, 3>> normalVals(dimX * dimY, std::array<float, 3>{0.44, 0.55, 0.66});
+  std::vector<std::array<float, 3>> normalValsEmpty;
   std::vector<std::array<float, 3>> colorVals(dimX * dimY, std::array<float, 3>{0.44, 0.55, 0.66});
   std::vector<std::array<float, 4>> colorAlphaVals(dimX * dimY, std::array<float, 4>{0.44, 0.55, 0.66, 0.77});
   std::vector<float> scalarVals(dimX * dimY, 0.44);
@@ -87,6 +88,13 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->setEnabled(true);
     polyscope::show(3);
   }
+  { // with no normals
+    polyscope::DepthRenderImageQuantity* im = polyscope::addDepthRenderImageQuantity(
+        "render im depth no normal", dimX, dimY, depthVals, normalValsEmpty, polyscope::ImageOrigin::UpperLeft);
+    im->updateBuffers(depthVals, normalValsEmpty);
+    im->setEnabled(true);
+    polyscope::show(3);
+  }
 
   { // ColorImageQuantity
     polyscope::ColorRenderImageQuantity* im = polyscope::addColorRenderImageQuantity(
@@ -95,11 +103,25 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->setEnabled(true);
     polyscope::show(3);
   }
+  { // with no normals
+    polyscope::ColorRenderImageQuantity* im = polyscope::addColorRenderImageQuantity(
+        "render im color", dimX, dimY, depthVals, normalValsEmpty, colorVals, polyscope::ImageOrigin::UpperLeft);
+    im->updateBuffers(depthVals, normalValsEmpty, colorVals);
+    im->setEnabled(true);
+    polyscope::show(3);
+  }
 
   { // ScalarRenderImageQuantity
     polyscope::ScalarRenderImageQuantity* im = polyscope::addScalarRenderImageQuantity(
         "render im scalar", dimX, dimY, depthVals, normalVals, scalarVals, polyscope::ImageOrigin::UpperLeft);
     im->updateBuffers(depthVals, normalVals, scalarVals);
+    im->setEnabled(true);
+    polyscope::show(3);
+  }
+  { // with no normals
+    polyscope::ScalarRenderImageQuantity* im = polyscope::addScalarRenderImageQuantity(
+        "render im scalar", dimX, dimY, depthVals, normalValsEmpty, scalarVals, polyscope::ImageOrigin::UpperLeft);
+    im->updateBuffers(depthVals, normalValsEmpty, scalarVals);
     im->setEnabled(true);
     polyscope::show(3);
   }

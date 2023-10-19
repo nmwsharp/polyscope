@@ -80,7 +80,8 @@ void DepthRenderImageQuantity::prepare() {
     render::engine->addMaterialRules(material.get(),
       {
         getImageOriginRule(imageOrigin), 
-        "SHADE_BASECOLOR"
+        hasNormals ? "SHADE_NORMAL_FROM_TEXTURE" : "SHADE_NORMAL_FROM_VIEWPOS_VAR",
+        "SHADE_BASECOLOR",
       }
     ), 
     render::ShaderReplacementDefaults::Process);
@@ -88,7 +89,9 @@ void DepthRenderImageQuantity::prepare() {
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
   program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
-  program->setTextureFromBuffer("t_normal", normals.getRenderTextureBuffer().get());
+  if (hasNormals) {
+    program->setTextureFromBuffer("t_normal", normals.getRenderTextureBuffer().get());
+  }
   render::engine->setMaterial(*program, material.get());
 }
 

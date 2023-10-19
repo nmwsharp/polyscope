@@ -1988,6 +1988,11 @@ std::shared_ptr<GLCompiledProgram> MockGLEngine::getCompiledProgram(const std::s
     for (auto it = fullCustomRules.begin(); it < fullCustomRules.end(); it++) {
       std::string& ruleName = *it;
 
+      // Empty rule is a no-op
+      if (ruleName == "") {
+        continue;
+      }
+
       // Only process each rule the first time it is seen
       if (std::find(fullCustomRules.begin(), it, ruleName) != it) {
         continue;
@@ -2083,7 +2088,9 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("TRANSPARENCY_PEEL_GROUND", TRANSPARENCY_PEEL_GROUND);
   
   registerShaderRule("GENERATE_VIEW_POS", GENERATE_VIEW_POS);
+  registerShaderRule("COMPUTE_SHADE_NORMAL_FROM_POSITION", COMPUTE_SHADE_NORMAL_FROM_POSITION);
   registerShaderRule("CULL_POS_FROM_VIEW", CULL_POS_FROM_VIEW);
+  registerShaderRule("PROJ_AND_INV_PROJ_MAT", PROJ_AND_INV_PROJ_MAT);
 
   // Lighting and shading things
   registerShaderRule("LIGHT_MATCAP", LIGHT_MATCAP);
@@ -2108,12 +2115,13 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("TEXTURE_PROPAGATE_VALUE", TEXTURE_PROPAGATE_VALUE);
   registerShaderRule("TEXTURE_PROPAGATE_COLOR", TEXTURE_PROPAGATE_COLOR);
   registerShaderRule("TEXTURE_BILLBOARD_FROM_UNIFORMS", TEXTURE_BILLBOARD_FROM_UNIFORMS);
+  registerShaderRule("SHADE_NORMAL_FROM_TEXTURE", SHADE_NORMAL_FROM_TEXTURE);
+  registerShaderRule("SHADE_NORMAL_FROM_VIEWPOS_VAR", SHADE_NORMAL_FROM_VIEWPOS_VAR);
 
   // mesh things
   registerShaderRule("MESH_WIREFRAME", MESH_WIREFRAME);
   registerShaderRule("MESH_WIREFRAME_FROM_BARY", MESH_WIREFRAME_FROM_BARY);
   registerShaderRule("MESH_WIREFRAME_ONLY", MESH_WIREFRAME_ONLY);
-  registerShaderRule("MESH_COMPUTE_NORMAL_FROM_POSITION", MESH_COMPUTE_NORMAL_FROM_POSITION);
   registerShaderRule("MESH_BACKFACE_NORMAL_FLIP", MESH_BACKFACE_NORMAL_FLIP);
   registerShaderRule("MESH_BACKFACE_DIFFERENT", MESH_BACKFACE_DIFFERENT);
   registerShaderRule("MESH_BACKFACE_DARKEN", MESH_BACKFACE_DARKEN);

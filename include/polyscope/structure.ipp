@@ -229,7 +229,7 @@ DepthRenderImageQuantity* QuantityStructure<S>::addDepthRenderImageQuantity(std:
                                                                             ImageOrigin imageOrigin) {
 
   validateSize(depthData, dimX * dimY, "depth render image depth data " + name);
-  validateSize(normalData, dimX * dimY, "depth render image normal data " + name);
+  validateSize(normalData, {dimX * dimY, 0}, "depth render image normal data " + name);
 
   // standardize
   std::vector<float> standardDepth(standardizeArray<float>(depthData));
@@ -245,7 +245,7 @@ QuantityStructure<S>::addColorRenderImageQuantity(std::string name, size_t dimX,
                                                   const T2& normalData, const T3& colorData, ImageOrigin imageOrigin) {
 
   validateSize(depthData, dimX * dimY, "depth render image depth data " + name);
-  validateSize(normalData, dimX * dimY, "depth render image normal data " + name);
+  validateSize(normalData, {dimX * dimY, 0}, "depth render image normal data " + name);
   validateSize(colorData, dimX * dimY, "depth render image color data " + name);
 
   // standardize
@@ -265,7 +265,7 @@ QuantityStructure<S>::addScalarRenderImageQuantity(std::string name, size_t dimX
                                                    DataType type) {
 
   validateSize(depthData, dimX * dimY, "depth render image depth data " + name);
-  validateSize(normalData, dimX * dimY, "depth render image normal data " + name);
+  validateSize(normalData, {dimX * dimY, 0}, "depth render image normal data " + name);
   validateSize(scalarData, dimX * dimY, "depth render image scalar data " + name);
 
   // standardize

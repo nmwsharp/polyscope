@@ -175,7 +175,8 @@ void VolumeGridNodeScalarQuantity::createIsosurfaceProgram() {
     p = p * scale + parent.getBoundMin();
   }
 
-  std::vector<std::string> isoProgramRules{"SHADE_BASECOLOR", "MESH_COMPUTE_NORMAL_FROM_POSITION"};
+  std::vector<std::string> isoProgramRules{"SHADE_BASECOLOR", "PROJ_AND_INV_PROJ_MAT",
+                                           "COMPUTE_SHADE_NORMAL_FROM_POSITION"};
   if (getSlicePlanesAffectIsosurface() && render::engine->slicePlanesEnabled()) {
     isoProgramRules.push_back("GENERATE_VIEW_POS");
     isoProgramRules.push_back("CULL_POS_FROM_VIEW");

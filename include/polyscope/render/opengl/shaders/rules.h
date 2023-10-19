@@ -31,6 +31,8 @@ extern const ShaderReplacementRule SHADE_BASECOLOR;             // constant from
 
 // Positions, culling, etc
 extern const ShaderReplacementRule GENERATE_VIEW_POS;          // computes viewPos, position in viewspace for fragment
+extern const ShaderReplacementRule PROJ_AND_INV_PROJ_MAT;
+extern const ShaderReplacementRule COMPUTE_SHADE_NORMAL_FROM_POSITION;
 extern const ShaderReplacementRule CULL_POS_FROM_VIEW;
 
 ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix);

@@ -13,12 +13,14 @@ RenderImageQuantityBase::RenderImageQuantityBase(Structure& parent_, std::string
                                                  const std::vector<float>& depthData_,
                                                  const std::vector<glm::vec3>& normalData_, ImageOrigin imageOrigin_)
     : FloatingQuantity(name, parent_), depths(this, uniquePrefix() + "depths", depthsData),
-      normals(this, uniquePrefix() + "normals", normalsData), dimX(dimX_), dimY(dimY_), imageOrigin(imageOrigin_),
-      depthsData(depthData_), normalsData(normalData_), material(uniquePrefix() + "material", "clay"),
-      transparency(uniquePrefix() + "transparency", 1.0),
+      normals(this, uniquePrefix() + "normals", normalsData), dimX(dimX_), dimY(dimY_),
+      hasNormals(normalData_.size() > 0), imageOrigin(imageOrigin_), depthsData(depthData_), normalsData(normalData_),
+      material(uniquePrefix() + "material", "clay"), transparency(uniquePrefix() + "transparency", 1.0),
       allowFullscreenCompositing(uniquePrefix() + "allowFullscreenCompositing", false) {
   depths.setTextureSize(dimX, dimY);
-  normals.setTextureSize(dimX, dimY);
+  if (hasNormals) {
+    normals.setTextureSize(dimX, dimY);
+  }
 }
 
 size_t RenderImageQuantityBase::nPix() { return dimX * dimY; }
@@ -48,11 +50,13 @@ void RenderImageQuantityBase::addOptionsPopupEntries() {
 void RenderImageQuantityBase::updateBaseBuffers(const std::vector<float>& newDepthData,
                                                 const std::vector<glm::vec3>& newNormalData) {
   if (!newDepthData.empty()) {
+    depths.ensureHostBufferAllocated();
     depths.data = newDepthData;
     depths.markHostBufferUpdated();
   }
 
   if (!newNormalData.empty()) {
+    normals.ensureHostBufferAllocated();
     normals.data = newNormalData;
     normals.markHostBufferUpdated();
   }
@@ -61,7 +65,6 @@ void RenderImageQuantityBase::updateBaseBuffers(const std::vector<float>& newDep
 }
 
 void RenderImageQuantityBase::refresh() { Quantity::refresh(); }
-
 
 void RenderImageQuantityBase::disableFullscreenDrawing() {
   if (isEnabled()) {

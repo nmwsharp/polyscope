@@ -16,7 +16,6 @@ extern const ShaderStageSpecification FLEX_MESH_FRAG_SHADER;
 extern const ShaderReplacementRule MESH_WIREFRAME_FROM_BARY;
 extern const ShaderReplacementRule MESH_WIREFRAME;
 extern const ShaderReplacementRule MESH_WIREFRAME_ONLY;
-extern const ShaderReplacementRule MESH_COMPUTE_NORMAL_FROM_POSITION;
 extern const ShaderReplacementRule MESH_BACKFACE_NORMAL_FLIP;
 extern const ShaderReplacementRule MESH_BACKFACE_DIFFERENT;
 extern const ShaderReplacementRule MESH_BACKFACE_DARKEN;

@@ -89,6 +89,7 @@ void ScalarRenderImageQuantity::prepare() {
       addScalarRules(
         {
           getImageOriginRule(imageOrigin), 
+          hasNormals ? "SHADE_NORMAL_FROM_TEXTURE" : "SHADE_NORMAL_FROM_VIEWPOS_VAR",
           "TEXTURE_PROPAGATE_VALUE", 
           "SHADE_COLORMAP_VALUE"
         }
@@ -99,7 +100,9 @@ void ScalarRenderImageQuantity::prepare() {
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
   program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
-  program->setTextureFromBuffer("t_normal", normals.getRenderTextureBuffer().get());
+  if (hasNormals) {
+    program->setTextureFromBuffer("t_normal", normals.getRenderTextureBuffer().get());
+  }
   program->setTextureFromBuffer("t_scalar", values.getRenderTextureBuffer().get());
   render::engine->setMaterial(*program, material.get());
   program->setTextureFromColormap("t_colormap", cMap.get());

@@ -61,6 +61,7 @@ public:
 
 protected:
   const size_t dimX, dimY;
+  const bool hasNormals;
   ImageOrigin imageOrigin;
 
   // Store the raw data

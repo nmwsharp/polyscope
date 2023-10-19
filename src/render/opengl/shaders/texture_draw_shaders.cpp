@@ -142,7 +142,6 @@ const ShaderStageSpecification PLAIN_RENDERIMAGE_TEXTURE_DRAW_FRAG_SHADER = {
     // textures 
     { 
       {"t_depth", 2},
-      {"t_normal", 2},
     },
     
     // source 
@@ -156,7 +155,6 @@ R"(
 
   in vec2 tCoord;
   uniform sampler2D t_depth;
-  uniform sampler2D t_normal;
   layout(location = 0) out vec4 outputF;
     
   float LARGE_FLOAT();
@@ -169,7 +167,6 @@ R"(
 
     // Fetch values from texture
     float depth = texture(t_depth, tCoord).r;
-    vec3 normal = normalize(texture(t_normal, tCoord).rgb);
 
     if(depth > LARGE_FLOAT()) {
       discard;
@@ -187,11 +184,11 @@ R"(
 
     
     // Shading
+    vec3 shadeNormal = vec3(0.f, 0.f, 0.f);
     ${ GENERATE_SHADE_VALUE }$
     ${ GENERATE_SHADE_COLOR }$
 
     // Lighting
-    vec3 shadeNormal = normal;
     ${ GENERATE_LIT_COLOR }$
 
      // Set alpha
@@ -722,6 +719,36 @@ const ShaderReplacementRule TEXTURE_BILLBOARD_FROM_UNIFORMS(
       {"u_billboardCenter", RenderDataType::Vector3Float},
       {"u_billboardUp", RenderDataType::Vector3Float},
       {"u_billboardRight", RenderDataType::Vector3Float}
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule SHADE_NORMAL_FROM_TEXTURE (
+    /* rule name */ "NORMAL_FROM_TEXTURE",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform sampler2D t_normal;
+        )" },
+      {"GENERATE_LIT_COLOR", R"(
+        shadeNormal = normalize(texture(t_normal, tCoord).rgb);
+      )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {
+      {"t_normal", 2},
+    }
+);
+
+const ShaderReplacementRule SHADE_NORMAL_FROM_VIEWPOS_VAR (
+    /* rule name */ "SHADER_NORMAL_FROM_VIEWPOS_VAR",
+    { /* replacement sources */
+      {"GENERATE_SHADE_VALUE", R"(
+        shadeNormal = normalize(cross(dFdx(viewPos),dFdy(viewPos)));
+        )"}
+    },
+    /* uniforms */ {
     },
     /* attributes */ {},
     /* textures */ {}
