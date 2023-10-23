@@ -80,8 +80,6 @@ public:
   template <class Func>
   VolumeGridCellScalarQuantity* addCellScalarQuantityFromBatchCallable(std::string name, Func&& func, DataType dataType_ = DataType::STANDARD);
 
-
-  //template <class T> VolumeGridScalarIsosurface* addGridIsosurfaceQuantity(std::string name, double isoLevel, const T& values);
   
   // Rendering helpers used by quantities
   // void populateGeometry();
@@ -195,7 +193,7 @@ private:
 
 
 VolumeGrid* registerVolumeGrid(std::string name, glm::uvec3 gridNodeDim, glm::vec3 boundMin, glm::vec3 boundMax);
-VolumeGrid* registerVolumeGrid(std::string name, uint64_t gridNodeDim, glm::vec3 boundMin, glm::vec3 boundMax);
+VolumeGrid* registerVolumeGrid(std::string name, uint64_t gridNodeAxesDim, glm::vec3 boundMin, glm::vec3 boundMax);
 
 // Shorthand to get a point cloud from polyscope
 inline VolumeGrid* getVolumeGrid(std::string name = "");

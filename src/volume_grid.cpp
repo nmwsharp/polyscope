@@ -539,7 +539,7 @@ VolumeGrid* registerVolumeGrid(std::string name, glm::uvec3 gridNodeDim, glm::ve
   return s;
 }
 
-VolumeGrid* registerVolumeGrid(std::string name, size_t gridNodeDim, glm::vec3 boundMin, glm::vec3 boundMax) {
+VolumeGrid* registerVolumeGrid(std::string name, uint64_t gridNodeDim, glm::vec3 boundMin, glm::vec3 boundMax) {
   return registerVolumeGrid(name, {gridNodeDim, gridNodeDim, gridNodeDim}, boundMin, boundMax);
 }
 
