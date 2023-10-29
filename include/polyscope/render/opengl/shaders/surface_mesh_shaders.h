@@ -12,6 +12,10 @@ namespace backend_openGL3_glfw {
 extern const ShaderStageSpecification FLEX_MESH_VERT_SHADER;
 extern const ShaderStageSpecification FLEX_MESH_FRAG_SHADER;
 
+// Minimal mesh renders
+extern const ShaderStageSpecification SIMPLE_MESH_VERT_SHADER;
+extern const ShaderStageSpecification SIMPLE_MESH_FRAG_SHADER;
+
 // Rules specific to meshes
 extern const ShaderReplacementRule MESH_WIREFRAME_FROM_BARY;
 extern const ShaderReplacementRule MESH_WIREFRAME;

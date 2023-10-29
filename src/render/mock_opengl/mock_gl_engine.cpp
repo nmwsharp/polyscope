@@ -1531,55 +1531,49 @@ void GLShaderProgram::setTextureFromColormap(std::string name, const std::string
   throw std::invalid_argument("No texture with name " + name);
 }
 
-void GLShaderProgram::setIndex(std::vector<std::array<unsigned int, 3>>& indices) {
+void GLShaderProgram::setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) {
   if (!useIndex) {
     throw std::invalid_argument("Tried to setIndex() when program drawMode does not use indexed "
                                 "drawing");
   }
 
-  // Reshape the vector
-  // Right now, the data is probably laid out in this form already... but let's
-  // not be overly clever and just reshape it.
-  unsigned int* rawData = new unsigned int[3 * indices.size()];
-  indexSize = 3 * indices.size();
-  for (unsigned int i = 0; i < indices.size(); i++) {
-    rawData[3 * i + 0] = static_cast<float>(indices[i][0]);
-    rawData[3 * i + 1] = static_cast<float>(indices[i][1]);
-    rawData[3 * i + 2] = static_cast<float>(indices[i][2]);
+  // cast to the engine type (booooooo)
+  std::shared_ptr<GLAttributeBuffer> engineExtBuff = std::dynamic_pointer_cast<GLAttributeBuffer>(externalBuffer);
+  if (!engineExtBuff) throw std::invalid_argument("index attribute external buffer engine type cast failed");
+
+  switch (engineExtBuff->getType()) {
+  case RenderDataType::Int:
+    // NOTE: the render pass expects these to be unsigned.... but negative
+    // values don't make sense anyway, so I think it's okay to just let it slide
+    indexSizeMult = 1;
+    break;
+  case RenderDataType::UInt:
+    indexSizeMult = 1;
+    break;
+  case RenderDataType::Vector2UInt:
+    indexSizeMult = 2;
+    break;
+  case RenderDataType::Vector3UInt:
+    indexSizeMult = 3;
+    break;
+  case RenderDataType::Vector4UInt:
+    indexSizeMult = 4;
+    break;
+  case RenderDataType::Float:
+  case RenderDataType::Vector2Float:
+  case RenderDataType::Vector3Float:
+  case RenderDataType::Vector4Float:
+  case RenderDataType::Matrix44Float:
+    throw std::invalid_argument("index buffer should be integer type");
+    break;
   }
 
-  delete[] rawData;
-}
+  indexBuffer = engineExtBuff;
 
-void GLShaderProgram::setIndex(std::vector<glm::uvec3>& indices) {
-  if (!useIndex) {
-    throw std::invalid_argument("Tried to setIndex() when program drawMode does not use indexed "
-                                "drawing");
-  }
+  // bind it as the VAOs index buffer
+  bindVAO();
 
-  indexSize = 3 * indices.size();
-}
-
-void GLShaderProgram::setIndex(std::vector<unsigned int>& indices) {
-  // (This version is typically used for indexed lines)
-
-  if (!useIndex) {
-    throw std::invalid_argument("Tried to setIndex() when program drawMode does not use indexed "
-                                "drawing");
-  }
-
-  // Catch some cases where we forget to specify the restart index.
-  // It would be nice to do a more complete check involving the data buffer, but this is simple
-  // and catches most mistakes.
-  if (usePrimitiveRestart && !primitiveRestartIndexSet) {
-    unsigned int bigThresh = 99999999;
-    for (unsigned int x : indices) {
-      if (x > bigThresh) {
-        throw std::invalid_argument("An unusual index was passed, but setPrimitiveRestartIndex() has not been called.");
-      }
-    }
-  }
-  indexSize = indices.size();
+  checkGLError();
 }
 
 // Check that uniforms and attributes are all set and of consistent size
@@ -1623,11 +1617,15 @@ void GLShaderProgram::validateData() {
   }
 
   // Check index (if applicable)
+  if (useIndex && !indexBuffer) {
+    throw std::invalid_argument("Index buffer has not been filled");
+  }
+
+  // Set the size
   if (useIndex) {
-    if (indexSize == -1) {
-      throw std::invalid_argument("Index buffer has not been filled");
-    }
-    drawDataLength = static_cast<unsigned int>(indexSize);
+    drawDataLength = static_cast<unsigned int>(indexSizeMult * indexBuffer->getDataSize());
+  } else {
+    drawDataLength = static_cast<unsigned int>(attributeSize);
   }
 
   // Check instanced (if applicable)
@@ -1959,23 +1957,23 @@ std::shared_ptr<GLCompiledProgram> MockGLEngine::getCompiledProgram(const std::s
     std::vector<std::string> fullCustomRules = customRules;
     switch (defaults) {
     case ShaderReplacementDefaults::SceneObject: {
-      fullCustomRules.insert(fullCustomRules.begin(), defaultRules_sceneObject.begin(), defaultRules_sceneObject.end());
+      fullCustomRules.insert(fullCustomRules.end(), defaultRules_sceneObject.begin(), defaultRules_sceneObject.end());
       break;
     }
     case ShaderReplacementDefaults::SceneObjectNoSlice: {
       for (const std::string& rule : defaultRules_sceneObject) {
         if (rule.rfind("SLICE_PLANE_", 0) != 0) {
-          fullCustomRules.insert(fullCustomRules.begin(), rule);
+          fullCustomRules.insert(fullCustomRules.end(), rule);
         }
       }
       break;
     }
     case ShaderReplacementDefaults::Pick: {
-      fullCustomRules.insert(fullCustomRules.begin(), defaultRules_pick.begin(), defaultRules_pick.end());
+      fullCustomRules.insert(fullCustomRules.end(), defaultRules_pick.begin(), defaultRules_pick.end());
       break;
     }
     case ShaderReplacementDefaults::Process: {
-      fullCustomRules.insert(fullCustomRules.begin(), defaultRules_process.begin(), defaultRules_process.end());
+      fullCustomRules.insert(fullCustomRules.end(), defaultRules_process.begin(), defaultRules_process.end());
       break;
     }
     case ShaderReplacementDefaults::None: {
@@ -2042,8 +2040,9 @@ void MockGLEngine::populateDefaultShadersAndRules() {
 
   // == Load general base shaders
   registerShaderProgram("MESH", {FLEX_MESH_VERT_SHADER, FLEX_MESH_FRAG_SHADER}, DrawMode::Triangles);
-  registerShaderProgram("SLICE_TETS", {SLICE_TETS_VERT_SHADER, SLICE_TETS_GEOM_SHADER, SLICE_TETS_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("INDEXED_MESH", {FLEX_MESH_VERT_SHADER, FLEX_MESH_FRAG_SHADER}, DrawMode::IndexedTriangles);
+  registerShaderProgram("SIMPLE_MESH", {SIMPLE_MESH_VERT_SHADER, SIMPLE_MESH_FRAG_SHADER}, DrawMode::IndexedTriangles);
+  registerShaderProgram("SLICE_TETS", {SLICE_TETS_VERT_SHADER, SLICE_TETS_GEOM_SHADER, SLICE_TETS_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("RAYCAST_SPHERE", {FLEX_SPHERE_VERT_SHADER, FLEX_SPHERE_GEOM_SHADER, FLEX_SPHERE_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("POINT_QUAD", {FLEX_POINTQUAD_VERT_SHADER, FLEX_POINTQUAD_GEOM_SHADER, FLEX_POINTQUAD_FRAG_SHADER}, DrawMode::Points);
   registerShaderProgram("GRIDCUBE", {FLEX_GRIDCUBE_VERT_SHADER, FLEX_GRIDCUBE_GEOM_SHADER, FLEX_GRIDCUBE_FRAG_SHADER}, DrawMode::Points);
@@ -2097,6 +2096,7 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("LIGHT_PASSTHRU", LIGHT_PASSTHRU);
   registerShaderRule("SHADE_BASECOLOR", SHADE_BASECOLOR);
   registerShaderRule("SHADE_COLOR", SHADE_COLOR);
+  registerShaderRule("SHADECOLOR_FROM_UNIFORM", SHADECOLOR_FROM_UNIFORM);
   registerShaderRule("SHADE_COLORMAP_VALUE", SHADE_COLORMAP_VALUE);
   registerShaderRule("SHADE_COLORMAP_ANGULAR2", SHADE_COLORMAP_ANGULAR2);
   registerShaderRule("SHADE_GRID_VALUE2", SHADE_GRID_VALUE2);

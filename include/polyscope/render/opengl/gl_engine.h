@@ -325,9 +325,7 @@ public:
 
 
   // Indices
-  void setIndex(std::vector<std::array<unsigned int, 3>>& indices) override;
-  void setIndex(std::vector<unsigned int>& indices) override;
-  void setIndex(std::vector<glm::uvec3>& indices) override;
+  void setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) override;
   void setPrimitiveRestartIndex(unsigned int restartIndex) override;
 
   // Instancing
@@ -368,7 +366,6 @@ private:
   // GL pointers for various useful things
   std::shared_ptr<GLCompiledProgram> compiledProgram;
   AttributeHandle vaoHandle;
-  AttributeHandle indexVBO;
 };
 
 

@@ -274,9 +274,7 @@ public:
 
 
   // Indices
-  void setIndex(std::vector<std::array<unsigned int, 3>>& indices) override;
-  void setIndex(std::vector<unsigned int>& indices) override;
-  void setIndex(std::vector<glm::uvec3>& indices) override;
+  void setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) override;
   void setPrimitiveRestartIndex(unsigned int restartIndex) override;
 
   // Indices

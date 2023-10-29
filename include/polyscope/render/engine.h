@@ -49,7 +49,6 @@ enum class RenderDataType {
   Float,
   Int,
   UInt,
-  Index,
   Vector2UInt,
   Vector3UInt,
   Vector4UInt
@@ -400,9 +399,7 @@ public:
 
 
   // Indices
-  virtual void setIndex(std::vector<std::array<unsigned int, 3>>& indices) = 0;
-  virtual void setIndex(std::vector<unsigned int>& indices) = 0;
-  virtual void setIndex(std::vector<glm::uvec3>& indices) = 0;
+  virtual void setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) = 0;
   virtual void setPrimitiveRestartIndex(unsigned int restartIndex) = 0;
 
   // Indices
@@ -425,13 +422,16 @@ protected:
   // How much data is there to draw
   uint32_t drawDataLength;
 
-  // Does this program use indexed drawing?
+  // Indexed drawing
   bool useIndex = false;
-  long int indexSize = -1;
+  uint32_t indexSizeMult = -1;
   bool usePrimitiveRestart = false;
   bool primitiveRestartIndexSet = false;
   unsigned int restartIndex = -1;
+
   uint64_t uniqueID;
+
+  std::shared_ptr<AttributeBuffer> indexBuffer;
 
   // instancing
   uint32_t instanceCount = INVALID_IND_32;

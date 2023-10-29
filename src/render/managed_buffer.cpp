@@ -135,6 +135,7 @@ void ManagedBuffer<T>::markHostBufferUpdated() {
 
   if (deviceBufferType == DeviceBufferType::Attribute) {
     updateIndexedViews();
+    requestRedraw();
   }
 }
 
@@ -410,6 +411,8 @@ void ManagedBuffer<T>::updateIndexedViews() {
     // TODO fornow, only CPU-side updating is supported. Add direct GPU-side support using the bufferIndexCopyProgram
     // below.
   }
+
+  requestRedraw();
 }
 
 template <typename T>
