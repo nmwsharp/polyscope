@@ -227,6 +227,7 @@ const ShaderStageSpecification SLICE_TETS_FRAG_SHADER = {
            ${ PERTURB_LIT_COLOR }$
 
            // Write output
+           litColor *= alphaOut; // premultiplied alpha
            outputF = vec4(litColor, alphaOut);
         }
 )"};

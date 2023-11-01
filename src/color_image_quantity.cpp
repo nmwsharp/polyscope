@@ -14,7 +14,7 @@ namespace polyscope {
 ColorImageQuantity::ColorImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                                        const std::vector<glm::vec4>& data_, ImageOrigin imageOrigin_)
     : ImageQuantity(parent_, name, dimX, dimY, imageOrigin_), colors(this, uniquePrefix() + "colors", colorsData),
-      colorsData(data_) {
+      colorsData(data_), isPremultiplied(uniquePrefix() + "isPremultiplied", false) {
   colors.setTextureSize(dimX, dimY);
 }
 
@@ -55,7 +55,8 @@ void ColorImageQuantity::prepareBillboard() {
   // Create the sourceProgram
   billboardProgram = render::engine->requestShader("TEXTURE_DRAW_PLAIN",
                                                    {getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY",
-                                                    "TEXTURE_BILLBOARD_FROM_UNIFORMS", "INVERSE_TONEMAP"},
+                                                    "TEXTURE_BILLBOARD_FROM_UNIFORMS", "INVERSE_TONEMAP",
+                                                    getIsPremultiplied() ? "" : "TEXTURE_PREMULTIPLY_OUT"},
                                                    render::ShaderReplacementDefaults::Process);
   billboardProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
   billboardProgram->setTextureFromBuffer("t_image", colors.getRenderTextureBuffer().get());
@@ -142,6 +143,14 @@ ColorImageQuantity* ColorImageQuantity::setEnabled(bool newEnabled) {
   requestRedraw();
   return this;
 }
+
+ColorImageQuantity* ColorImageQuantity::setIsPremultiplied(bool val) {
+  isPremultiplied = val;
+  refresh();
+  return this;
+}
+
+bool ColorImageQuantity::getIsPremultiplied() { return isPremultiplied.get(); }
 
 
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in

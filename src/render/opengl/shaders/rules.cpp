@@ -324,8 +324,19 @@ const ShaderReplacementRule COMPUTE_SHADE_NORMAL_FROM_POSITION (
         shadeNormal = normalize(cross(dFdx(viewPos_fornormal),dFdy(viewPos_fornormal)));
         )"}
     },
-    /* uniforms */ {
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule PREMULTIPLY_LIT_COLOR(
+    /* rule name */ "PREMULTIPLY_LIT_COLOR",
+    { /* replacement sources */
+      {"PERTURB_LIT_COLOR", R"(
+        litColor *= alphaOut; // premultiplied alpha
+      )"}
     },
+    /* uniforms */ {},
     /* attributes */ {},
     /* textures */ {}
 );

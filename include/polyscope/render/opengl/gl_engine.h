@@ -384,8 +384,8 @@ public:
   std::vector<unsigned char> readDisplayBuffer() override;
 
   // Manage render state
-  void setDepthMode(DepthMode newMode = DepthMode::Less) override;
-  void setBlendMode(BlendMode newMode = BlendMode::Over) override;
+  void setDepthMode(DepthMode newMode) override;
+  void setBlendMode(BlendMode newMode) override;
   void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) override;
   void setBackfaceCull(bool newVal) override;
 

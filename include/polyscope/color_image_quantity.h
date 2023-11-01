@@ -3,6 +3,7 @@
 #pragma once
 
 #include "polyscope/image_quantity_base.h"
+#include "polyscope/persistent_value.h"
 
 #include <vector>
 
@@ -26,11 +27,16 @@ public:
 
   // == Setters and getters
 
-  virtual ColorImageQuantity* setEnabled(bool newEnabled) override;
+  ColorImageQuantity* setEnabled(bool newEnabled) override;
+
+  ColorImageQuantity* setIsPremultiplied(bool val);
+  bool getIsPremultiplied();
 
 
 protected:
   std::vector<glm::vec4> colorsData;
+
+  PersistentValue<bool> isPremultiplied;
 
   // rendering internals
   std::shared_ptr<render::ShaderProgram> fullscreenProgram, billboardProgram;

@@ -438,7 +438,7 @@ void renderScene() {
     render::engine->sceneBufferFinal->clearAlpha = 0;
     render::engine->sceneBufferFinal->clear();
 
-    render::engine->setDepthMode(); // we need depth to be enabled for the clear below to do anything
+    render::engine->setDepthMode(DepthMode::Less); // we need depth to be enabled for the clear below to do anything
     render::engine->sceneDepthMinFrame->clear();
 
 
@@ -463,7 +463,7 @@ void renderScene() {
       // Composite the result of this pass in to the result buffer
       render::engine->sceneBufferFinal->bind();
       render::engine->setDepthMode(DepthMode::Disable);
-      render::engine->setBlendMode(BlendMode::Under);
+      render::engine->setBlendMode(BlendMode::AlphaUnder);
       render::engine->compositePeel->draw();
 
       // Update the minimum depth texture
@@ -765,8 +765,10 @@ void draw(bool withUI, bool withContextCallback) {
   // Update buffer and context
   render::engine->makeContextCurrent();
   render::engine->bindDisplay();
-  render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
-  render::engine->setBackgroundAlpha(view::bgColor[3]);
+  // render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
+  // render::engine->setBackgroundAlpha(view::bgColor[3]);
+  render::engine->setBackgroundColor({0., 0., 0.});
+  render::engine->setBackgroundAlpha(0);
   render::engine->clearDisplay();
 
   if (withUI) {

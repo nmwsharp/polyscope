@@ -196,6 +196,7 @@ R"(
            alphaOut *= fadeFactor;
 
            // Write output
+           litColor *= alphaOut; // premultiplied alpha
            outputF = vec4(litColor, alphaOut);
         }
 )"

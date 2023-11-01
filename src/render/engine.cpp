@@ -530,17 +530,21 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
     currLightingTransparencyMode = transparencyMode;
   }
 
+  mapLight->setUniform("u_bgColor", glm::vec3{view::bgColor[0], view::bgColor[1], view::bgColor[2]});
+  mapLight->setUniform("u_bgAlpha", view::bgColor[3]);
   setTonemapUniforms(*mapLight);
   mapLight->setTextureFromBuffer("t_image", texture.get());
 
   glm::vec2 texelSize{1. / texture->getSizeX(), 1. / texture->getSizeY()};
   mapLight->setUniform("u_texelSize", texelSize);
 
-  if (lightCopy) {
-    setBlendMode(BlendMode::Disable);
-  } else {
-    setBlendMode(BlendMode::AlphaOver);
-  }
+  // TODO not needed anymore?
+  // if (lightCopy) {
+  //   setBlendMode(BlendMode::Disable);
+  // } else {
+  //   setBlendMode(BlendMode::AlphaOver);
+  // }
+  setBlendMode(BlendMode::Disable);
   render::engine->setDepthMode(DepthMode::Disable);
   mapLight->draw();
 }

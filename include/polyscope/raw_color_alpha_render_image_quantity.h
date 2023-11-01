@@ -31,12 +31,15 @@ public:
 
   // == Setters and getters
 
+  RawColorAlphaRenderImageQuantity* setIsPremultiplied(bool val);
+  bool getIsPremultiplied();
 
 protected:
-  // === Visualization parameters
-
   // Store the raw data
   std::vector<glm::vec4> colorsData;
+
+  // === Visualization parameters
+  PersistentValue<bool> isPremultiplied;
 
   // === Render data
   std::shared_ptr<render::ShaderProgram> program;

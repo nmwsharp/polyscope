@@ -194,8 +194,11 @@ R"(
      // Set alpha
     float alphaOut = u_transparency;
     ${ GENERATE_ALPHA }$
+    
+    ${ PERTURB_LIT_COLOR }$
 
     // Write output
+    litColor *= alphaOut; // premultiplied alpha
     outputF = vec4(litColor, alphaOut);
 
   }
@@ -274,6 +277,8 @@ R"(
      // Set alpha
     float alphaOut = u_transparency;
     ${ GENERATE_ALPHA }$
+           
+    ${ PERTURB_LIT_COLOR }$
 
     // Write output
     outputF = vec4(litColor, alphaOut);
@@ -412,7 +417,6 @@ R"(
       void main()
       {
         vec4 val = texture(t_image, tCoord);
-        val.rgb = val.rgb * val.a; // premultiply
         outputF = val;
       }
 )"
@@ -613,6 +617,19 @@ const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY(
     /* uniforms */ {
         {"u_transparency", RenderDataType::Float},
     },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+// remember to use this rule _after_ TEXTURE_SET_TRANSPARENCY
+const ShaderReplacementRule TEXTURE_PREMULTIPLY_OUT(
+    /* rule name */ "TEXTURE_PREMULTIPLY_OUT",
+    { /* replacement sources */
+      {"TEXTURE_OUT_ADJUST", R"(
+        textureOut = vec4(textureOut.a * textureOut.rgb, textureOut.a);
+      )"}
+    },
+    /* uniforms */ {},
     /* attributes */ {},
     /* textures */ {}
 );
