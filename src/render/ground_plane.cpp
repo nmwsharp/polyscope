@@ -367,9 +367,6 @@ void GroundPlane::draw(bool isRedraw) {
   // Render the ground plane
   render::engine->applyTransparencySettings();
   render::engine->setDepthMode(DepthMode::Less);
-  // if (options::transparencyMode != TransparencyMode::Simple) {
-  //   render::engine->setBlendMode(BlendMode::Disable);
-  // }
   setUniforms();
   groundPlaneProgram->draw();
 }

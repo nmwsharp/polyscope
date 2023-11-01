@@ -538,12 +538,6 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
   glm::vec2 texelSize{1. / texture->getSizeX(), 1. / texture->getSizeY()};
   mapLight->setUniform("u_texelSize", texelSize);
 
-  // TODO not needed anymore?
-  // if (lightCopy) {
-  //   setBlendMode(BlendMode::Disable);
-  // } else {
-  //   setBlendMode(BlendMode::AlphaOver);
-  // }
   setBlendMode(BlendMode::Disable);
   render::engine->setDepthMode(DepthMode::Disable);
   mapLight->draw();
