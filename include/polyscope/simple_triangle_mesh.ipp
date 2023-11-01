@@ -24,10 +24,20 @@ SimpleTriangleMesh* registerSimpleTriangleMesh(std::string name, const V& vertex
 
 
 template <class V>
-void SimpleTriangleMesh::updateVertexPositions(const V& newPositions) {
+void SimpleTriangleMesh::updateVertices(const V& newPositions) {
   validateSize(newPositions, vertices.size(), "newPositions");
   vertices.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
   vertices.markHostBufferUpdated();
+}
+
+template <class V, class F>
+void SimpleTriangleMesh::update(const V& newPositions, const F& newFaces) {
+
+  vertices.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  vertices.markHostBufferUpdated();
+
+  faces.data = standardizeVectorArray<glm::uvec3, 3>(newFaces);
+  faces.markHostBufferUpdated();
 }
 
 // Shorthand to get a mesh from polyscope

@@ -478,7 +478,24 @@ TEST_F(PolyscopeTest, SimpleTriangleMesUpdate) {
   polyscope::show(3); // make sure everything is populated
 
   // update just the locations
-  psMesh->updateVertexPositions(std::vector<glm::vec3>(4));
+  psMesh->updateVertices(std::vector<glm::vec3>(4));
+  polyscope::show(3);
+
+  // update the locations and faces
+  psMesh->update(std::vector<glm::vec3>(4), std::vector<glm::uvec3>(4, glm::uvec3(0, 1, 2)));
+  polyscope::show(3);
+
+  // do a bunch of resizing
+  psMesh->update(std::vector<glm::vec3>(12), std::vector<glm::uvec3>(4, glm::uvec3(0, 1, 2)));
+  polyscope::show(3);
+
+  psMesh->update(std::vector<glm::vec3>(3), std::vector<glm::uvec3>(4, glm::uvec3(0, 1, 2)));
+  polyscope::show(3);
+
+  psMesh->update(std::vector<glm::vec3>(3), std::vector<glm::uvec3>(14, glm::uvec3(0, 1, 2)));
+  polyscope::show(3);
+
+  psMesh->update(std::vector<glm::vec3>(3), std::vector<glm::uvec3>(1, glm::uvec3(0, 1, 2)));
   polyscope::show(3);
 
   polyscope::removeAllStructures();

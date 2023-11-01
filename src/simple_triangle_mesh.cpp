@@ -77,8 +77,7 @@ void SimpleTriangleMesh::buildCustomOptionsUI() {
 }
 
 void SimpleTriangleMesh::buildPickUI(size_t localPickID) {
-  // TODO
-  // buildFaceInfoGui(localPickID);
+  // Do nothing for now, we just pick a single constant for the whole structure
 }
 
 void SimpleTriangleMesh::draw() {

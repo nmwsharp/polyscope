@@ -55,7 +55,10 @@ public:
   // === Mutate
 
   template <class V>
-  void updateVertexPositions(const V& newPositions);
+  void updateVertices(const V& newPositions);
+
+  template <class V, class F>
+  void update(const V& newVertices, const F& newFaces);
 
   // Misc data
   static const std::string structureTypeName;
