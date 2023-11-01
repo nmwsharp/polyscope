@@ -99,7 +99,7 @@ public:
   int64_t getDataSize() const { return dataSize; }
   int64_t getDataSizeInBytes() const { return dataSize * sizeInBytes(dataType) * getArrayCount(); }
   uint64_t getUniqueID() const { return uniqueID; }
-  bool isSet() const { return dataSize > 0; }
+  bool isSet() const { return setFlag; }
 
   // get data at a single index from the buffer
   virtual float getData_float(size_t ind) = 0;
@@ -128,6 +128,7 @@ public:
 protected:
   RenderDataType dataType;
   int arrayCount;
+  bool setFlag = false;
   int64_t dataSize = -1;   // the size of the data currently stored in this attribute (-1 if nothing)
                            // this counts # elements of the specified type, s.t. array'd mulitpliers are still just one
   uint64_t bufferSize = 0; // the size of the allocated buffer (which might be larger than the data sixze)

@@ -69,6 +69,16 @@ protected:
 private:
   void checkType(RenderDataType targetType);
   void checkArray(int arrayCount);
+
+  // internal implementation helpers
+  template <typename T>
+  void setData_helper(const std::vector<T>& data);
+
+  template <typename T>
+  T getData_helper(size_t ind);
+
+  template <typename T>
+  std::vector<T> getDataRange_helper(size_t start, size_t count);
 };
 
 class GLTextureBuffer : public TextureBuffer {
