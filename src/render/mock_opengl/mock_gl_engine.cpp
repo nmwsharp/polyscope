@@ -1449,9 +1449,9 @@ void GLShaderProgram::validateData() {
     int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
 
     if (attributeSize == -1) { // first one we've seen
-      attributeSize = a.buff->getDataSize() / (a.arrayCount * compatCount);
+      attributeSize = a.buff->getDataSize() / (compatCount);
     } else { // not the first one we've seen
-      if (a.buff->getDataSize() / (a.arrayCount * compatCount) != attributeSize) {
+      if (a.buff->getDataSize() / (compatCount) != attributeSize) {
         throw std::invalid_argument("Attributes have inconsistent size. One attribute has size " +
                                     std::to_string(attributeSize) + " and " + a.name + " has size " +
                                     std::to_string(a.buff->getDataSize()));
