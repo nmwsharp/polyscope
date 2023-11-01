@@ -317,12 +317,6 @@ public:
   void setAttribute(std::string name, const std::vector<uint32_t>& data) override;
   // clang-format on
 
-  // Convenience method to set an array-valued attrbute, such as 'in vec3 vertexVal[3]'. Applies interleaving then
-  // forwards to the usual setAttribute
-  template <typename T, unsigned int C>
-  void setAttribute(std::string name, const std::vector<std::array<T, C>>& data, bool update = false, int offset = 0,
-                    int size = -1);
-
 
   // Indices
   void setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) override;

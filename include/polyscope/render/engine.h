@@ -128,7 +128,9 @@ public:
 protected:
   RenderDataType dataType;
   int arrayCount;
-  int64_t dataSize = -1; // the size of the data currently stored in this attribute (-1 if nothing)
+  int64_t dataSize = -1;   // the size of the data currently stored in this attribute (-1 if nothing)
+                           // this counts # elements of the specified type, s.t. array'd mulitpliers are still just one
+  uint64_t bufferSize = 0; // the size of the allocated buffer (which might be larger than the data sixze)
   uint64_t uniqueID;
 };
 
@@ -380,11 +382,6 @@ public:
   virtual void setAttribute(std::string name, const std::vector<int32_t>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<uint32_t>& data) = 0;
   // clang-format on
-
-  // Convenience method to set an array-valued attrbute, such as 'in vec3 vertexVal[3]'. Applies interleaving then
-  // forwards to the usual setAttribute
-  template <typename T, unsigned int C>
-  void setAttribute(std::string name, const std::vector<std::array<T, C>>& data);
 
 
   // Textures
@@ -661,21 +658,6 @@ protected:
   std::vector<std::string> defaultRules_process{"GLSL_VERSION"};
 };
 
-
-// Implementation of template functions
-template <typename T, unsigned int C>
-inline void ShaderProgram::setAttribute(std::string name, const std::vector<std::array<T, C>>& data) {
-
-  // Unpack and forward
-  std::vector<T> entryData;
-  entryData.reserve(C * data.size());
-  for (auto& x : data) {
-    for (size_t i = 0; i < C; i++) {
-      entryData.push_back(x[i]);
-    }
-  }
-  setAttribute(name, entryData);
-}
 
 // === Public API
 // Callers should basically only interact via these methods and variables

@@ -31,6 +31,7 @@
 
 #include "stb_image.h"
 
+#include <algorithm>
 #include <set>
 
 namespace polyscope {
@@ -260,16 +261,18 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec2>& data) {
 
   bind();
 
-  if (isSet()) {
-
-    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
+  if (isSet() && data.size() <= bufferSize) {
 
     glBufferSubData(getTarget(), 0, 2 * dataSize * sizeof(float), &data[0]);
 
   } else {
 
-    glBufferData(getTarget(), 2 * data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+
+    glBufferData(getTarget(), 2 * newSize * sizeof(float), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
+    bufferSize = newSize;
   }
 }
 
@@ -281,15 +284,18 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data) {
 
   bind();
 
-  if (isSet()) {
-
-    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
+  if (isSet() && data.size() <= bufferSize) {
 
     glBufferSubData(getTarget(), 0, 3 * dataSize * sizeof(float), &data[0]);
 
   } else {
-    glBufferData(getTarget(), 3 * data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
+
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+
+    glBufferData(getTarget(), 3 * newSize * sizeof(float), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
+    bufferSize = newSize;
   }
 }
 
@@ -299,15 +305,17 @@ void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& dat
 
   bind();
 
-  if (isSet()) {
-
-    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
-
+  if (isSet() && data.size() <= bufferSize) {
     glBufferSubData(getTarget(), 0, 2 * 3 * dataSize * sizeof(float), &data[0]);
 
   } else {
-    glBufferData(getTarget(), 2 * 3 * data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
-    dataSize = 2 * data.size();
+
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+
+    glBufferData(getTarget(), 2 * 3 * newSize * sizeof(float), &data[0], GL_STATIC_DRAW);
+    dataSize = data.size();
+    bufferSize = newSize;
   }
 }
 
@@ -317,15 +325,18 @@ void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& dat
 
   bind();
 
-  if (isSet()) {
-
-    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
+  if (isSet() && data.size() <= bufferSize) {
 
     glBufferSubData(getTarget(), 0, 3 * 3 * dataSize * sizeof(float), &data[0]);
 
   } else {
-    glBufferData(getTarget(), 3 * 3 * data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
-    dataSize = 3 * data.size();
+
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+
+    glBufferData(getTarget(), 3 * 3 * newSize * sizeof(float), &data[0], GL_STATIC_DRAW);
+    dataSize = data.size();
+    bufferSize = newSize;
   }
 }
 
@@ -335,15 +346,18 @@ void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& dat
 
   bind();
 
-  if (isSet()) {
-
-    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
+  if (isSet() && data.size() <= bufferSize) {
 
     glBufferSubData(getTarget(), 0, 4 * 3 * dataSize * sizeof(float), &data[0]);
 
   } else {
-    glBufferData(getTarget(), 4 * 3 * data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
-    dataSize = 4 * data.size();
+
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+
+    glBufferData(getTarget(), 4 * 3 * newSize * sizeof(float), &data[0], GL_STATIC_DRAW);
+    dataSize = data.size();
+    bufferSize = newSize;
   }
 }
 
@@ -355,15 +369,18 @@ void GLAttributeBuffer::setData(const std::vector<glm::vec4>& data) {
 
   bind();
 
-  if (isSet()) {
-
-    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
+  if (isSet() && data.size() <= bufferSize) {
 
     glBufferSubData(getTarget(), 0, 4 * dataSize * sizeof(float), &data[0]);
 
   } else {
-    glBufferData(getTarget(), 4 * data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
+
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+
+    glBufferData(getTarget(), 4 * newSize * sizeof(float), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
+    bufferSize = newSize;
   }
 }
 
@@ -372,15 +389,18 @@ void GLAttributeBuffer::setData(const std::vector<float>& data) {
 
   bind();
 
-  if (isSet()) {
-
-    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
+  if (isSet() && data.size() <= bufferSize) {
 
     glBufferSubData(getTarget(), 0, dataSize * sizeof(float), &data[0]);
 
   } else {
-    glBufferData(getTarget(), data.size() * sizeof(float), &data[0], GL_STATIC_DRAW);
+
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+
+    glBufferData(getTarget(), newSize * sizeof(float), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
+    bufferSize = newSize;
   }
 }
 
@@ -395,15 +415,18 @@ void GLAttributeBuffer::setData(const std::vector<double>& data) {
 
   bind();
 
-  if (isSet()) {
-
-    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
+  if (isSet() && data.size() <= bufferSize) {
 
     glBufferSubData(getTarget(), 0, dataSize * sizeof(float), &floatData[0]);
 
   } else {
-    glBufferData(getTarget(), data.size() * sizeof(float), &floatData[0], GL_STATIC_DRAW);
+
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+
+    glBufferData(getTarget(), newSize * sizeof(float), &floatData[0], GL_STATIC_DRAW);
     dataSize = data.size();
+    bufferSize = newSize;
   }
 }
 
@@ -418,16 +441,18 @@ void GLAttributeBuffer::setData(const std::vector<int32_t>& data) {
 
   bind();
 
-  if (isSet()) {
-
-    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
+  if (isSet() && data.size() <= bufferSize) {
 
     glBufferSubData(getTarget(), 0, dataSize * sizeof(GLint), &data[0]);
 
   } else {
 
-    glBufferData(getTarget(), data.size() * sizeof(GLint), &data[0], GL_STATIC_DRAW);
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+
+    glBufferData(getTarget(), newSize * sizeof(GLint), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
+    bufferSize = newSize;
   }
 }
 
@@ -441,15 +466,18 @@ void GLAttributeBuffer::setData(const std::vector<uint32_t>& data) {
 
   bind();
 
-  if (isSet()) {
-
-    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
+  if (isSet() && data.size() <= bufferSize) {
 
     glBufferSubData(getTarget(), 0, dataSize * sizeof(GLuint), &data[0]);
 
   } else {
-    glBufferData(getTarget(), data.size() * sizeof(GLuint), &data[0], GL_STATIC_DRAW);
+
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+
+    glBufferData(getTarget(), newSize * sizeof(GLuint), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
+    bufferSize = newSize;
   }
 }
 
@@ -461,12 +489,18 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec2>& data) {
 
   bind();
 
-  if (isSet()) {
-    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
+  if (isSet() && data.size() <= bufferSize) {
+
     glBufferSubData(getTarget(), 0, 2 * dataSize * sizeof(GLuint), &data[0]);
+
   } else {
-    glBufferData(getTarget(), 2 * data.size() * sizeof(GLuint), &data[0], GL_STATIC_DRAW);
+
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+
+    glBufferData(getTarget(), 2 * newSize * sizeof(GLuint), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
+    bufferSize = newSize;
   }
 }
 void GLAttributeBuffer::setData(const std::vector<glm::uvec3>& data) {
@@ -477,12 +511,18 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec3>& data) {
 
   bind();
 
-  if (isSet()) {
-    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
+  if (isSet() && data.size() <= bufferSize) {
+
     glBufferSubData(getTarget(), 0, 3 * dataSize * sizeof(GLuint), &data[0]);
+
   } else {
-    glBufferData(getTarget(), 3 * data.size() * sizeof(GLuint), &data[0], GL_STATIC_DRAW);
+
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+
+    glBufferData(getTarget(), 3 * newSize * sizeof(GLuint), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
+    bufferSize = newSize;
   }
 }
 
@@ -494,19 +534,25 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data) {
 
   bind();
 
-  if (isSet()) {
-    if (static_cast<int64_t>(data.size()) != dataSize) exception("updated data must have same size");
+  if (isSet() && data.size() <= bufferSize) {
+
     glBufferSubData(getTarget(), 0, 4 * dataSize * sizeof(GLuint), &data[0]);
+
   } else {
-    glBufferData(getTarget(), 4 * data.size() * sizeof(GLuint), &data[0], GL_STATIC_DRAW);
+
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+
+    glBufferData(getTarget(), 4 * newSize * sizeof(GLuint), &data[0], GL_STATIC_DRAW);
     dataSize = data.size();
+    bufferSize = newSize;
   }
 }
 
 // get single data values
 
 float GLAttributeBuffer::getData_float(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Float) exception("bad getData type");
   bind();
   float readValue;
@@ -515,7 +561,7 @@ float GLAttributeBuffer::getData_float(size_t ind) {
 }
 double GLAttributeBuffer::getData_double(size_t ind) { return getData_float(ind); }
 glm::vec2 GLAttributeBuffer::getData_vec2(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
   bind();
   glm::vec2 readValue;
@@ -523,7 +569,7 @@ glm::vec2 GLAttributeBuffer::getData_vec2(size_t ind) {
   return readValue;
 }
 glm::vec3 GLAttributeBuffer::getData_vec3(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
   bind();
   glm::vec3 readValue;
@@ -531,7 +577,7 @@ glm::vec3 GLAttributeBuffer::getData_vec3(size_t ind) {
   return readValue;
 }
 glm::vec4 GLAttributeBuffer::getData_vec4(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
   bind();
   glm::vec4 readValue;
@@ -539,7 +585,7 @@ glm::vec4 GLAttributeBuffer::getData_vec4(size_t ind) {
   return readValue;
 }
 int GLAttributeBuffer::getData_int(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Int) exception("bad getData type");
   bind();
   GLint readValue;
@@ -547,7 +593,7 @@ int GLAttributeBuffer::getData_int(size_t ind) {
   return static_cast<int>(readValue);
 }
 uint32_t GLAttributeBuffer::getData_uint32(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::UInt) exception("bad getData type");
   bind();
   uint32_t readValue;
@@ -555,7 +601,7 @@ uint32_t GLAttributeBuffer::getData_uint32(size_t ind) {
   return readValue;
 }
 glm::uvec2 GLAttributeBuffer::getData_uvec2(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
   bind();
   glm::uvec2 readValue;
@@ -563,7 +609,7 @@ glm::uvec2 GLAttributeBuffer::getData_uvec2(size_t ind) {
   return readValue;
 }
 glm::uvec3 GLAttributeBuffer::getData_uvec3(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
   bind();
   glm::uvec3 readValue;
@@ -571,7 +617,7 @@ glm::uvec3 GLAttributeBuffer::getData_uvec3(size_t ind) {
   return readValue;
 }
 glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
   bind();
   glm::uvec4 readValue;
@@ -582,7 +628,7 @@ glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
 // get ranges of data
 
 std::vector<float> GLAttributeBuffer::getDataRange_float(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Float) exception("bad getData type");
   bind();
   std::vector<float> readValues;
@@ -600,7 +646,7 @@ std::vector<double> GLAttributeBuffer::getDataRange_double(size_t ind, size_t co
 }
 
 std::vector<glm::vec2> GLAttributeBuffer::getDataRange_vec2(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
   bind();
   std::vector<glm::vec2> readValues;
@@ -608,7 +654,7 @@ std::vector<glm::vec2> GLAttributeBuffer::getDataRange_vec2(size_t ind, size_t c
   return readValues;
 }
 std::vector<glm::vec3> GLAttributeBuffer::getDataRange_vec3(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
   bind();
   std::vector<glm::vec3> readValues;
@@ -616,7 +662,7 @@ std::vector<glm::vec3> GLAttributeBuffer::getDataRange_vec3(size_t ind, size_t c
   return readValues;
 }
 std::vector<glm::vec4> GLAttributeBuffer::getDataRange_vec4(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
   bind();
   std::vector<glm::vec4> readValues;
@@ -624,7 +670,7 @@ std::vector<glm::vec4> GLAttributeBuffer::getDataRange_vec4(size_t ind, size_t c
   return readValues;
 }
 std::vector<int> GLAttributeBuffer::getDataRange_int(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Int) exception("bad getData type");
   bind();
   std::vector<GLint> readValues;
@@ -639,7 +685,7 @@ std::vector<int> GLAttributeBuffer::getDataRange_int(size_t ind, size_t count) {
   return intValues;
 }
 std::vector<uint32_t> GLAttributeBuffer::getDataRange_uint32(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::UInt) exception("bad getData type");
   bind();
   std::vector<uint32_t> readValues;
@@ -647,7 +693,7 @@ std::vector<uint32_t> GLAttributeBuffer::getDataRange_uint32(size_t ind, size_t 
   return readValues;
 }
 std::vector<glm::uvec2> GLAttributeBuffer::getDataRange_uvec2(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
   bind();
   std::vector<glm::uvec2> readValues;
@@ -655,7 +701,7 @@ std::vector<glm::uvec2> GLAttributeBuffer::getDataRange_uvec2(size_t ind, size_t
   return readValues;
 }
 std::vector<glm::uvec3> GLAttributeBuffer::getDataRange_uvec3(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
   bind();
   std::vector<glm::uvec3> readValues;
@@ -663,7 +709,7 @@ std::vector<glm::uvec3> GLAttributeBuffer::getDataRange_uvec3(size_t ind, size_t
   return readValues;
 }
 std::vector<glm::uvec4> GLAttributeBuffer::getDataRange_uvec4(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
   bind();
   std::vector<glm::uvec4> readValues;
@@ -1867,6 +1913,8 @@ std::shared_ptr<AttributeBuffer> GLShaderProgram::getAttributeBuffer(std::string
 
 
 void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2>& data) {
+  glBindVertexArray(vaoHandle);
+
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name && a.location != -1) {
@@ -2202,9 +2250,9 @@ void GLShaderProgram::validateData() {
     int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
 
     if (attributeSize == -1) { // first one we've seen
-      attributeSize = a.buff->getDataSize() / (a.arrayCount * compatCount);
+      attributeSize = a.buff->getDataSize() / (compatCount);
     } else { // not the first one we've seen
-      if (a.buff->getDataSize() / (a.arrayCount * compatCount) != attributeSize) {
+      if (a.buff->getDataSize() / (compatCount) != attributeSize) {
         throw std::invalid_argument("Attributes have inconsistent size. One attribute has size " +
                                     std::to_string(attributeSize) + " and " + a.name + " has size " +
                                     std::to_string(a.buff->getDataSize()));

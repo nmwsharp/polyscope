@@ -277,7 +277,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data) {
 // get single data values
 
 float GLAttributeBuffer::getData_float(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Float) exception("bad getData type");
   bind();
   float readValue = 777.;
@@ -285,56 +285,56 @@ float GLAttributeBuffer::getData_float(size_t ind) {
 }
 double GLAttributeBuffer::getData_double(size_t ind) { return getData_float(ind); }
 glm::vec2 GLAttributeBuffer::getData_vec2(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
   bind();
   glm::vec2 readValue{777., 777.};
   return readValue;
 }
 glm::vec3 GLAttributeBuffer::getData_vec3(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
   bind();
   glm::vec3 readValue{777., 777., 777.};
   return readValue;
 }
 glm::vec4 GLAttributeBuffer::getData_vec4(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
   bind();
   glm::vec4 readValue{777., 777., 777., 777.};
   return readValue;
 }
 int GLAttributeBuffer::getData_int(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Int) exception("bad getData type");
   bind();
   int readValue = 777;
   return static_cast<int>(readValue);
 }
 uint32_t GLAttributeBuffer::getData_uint32(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::UInt) exception("bad getData type");
   bind();
   uint32_t readValue = 777;
   return readValue;
 }
 glm::uvec2 GLAttributeBuffer::getData_uvec2(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
   bind();
   glm::uvec2 readValue{777, 777};
   return readValue;
 }
 glm::uvec3 GLAttributeBuffer::getData_uvec3(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
   bind();
   glm::uvec3 readValue{777, 777, 777};
   return readValue;
 }
 glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
   bind();
   glm::uvec4 readValue{777, 777, 777, 777};
@@ -344,7 +344,7 @@ glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
 // get ranges of data
 
 std::vector<float> GLAttributeBuffer::getDataRange_float(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Float) exception("bad getData type");
   bind();
   std::vector<float> readValues(count);
@@ -361,28 +361,28 @@ std::vector<double> GLAttributeBuffer::getDataRange_double(size_t ind, size_t co
 }
 
 std::vector<glm::vec2> GLAttributeBuffer::getDataRange_vec2(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
   bind();
   std::vector<glm::vec2> readValues(count);
   return readValues;
 }
 std::vector<glm::vec3> GLAttributeBuffer::getDataRange_vec3(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
   bind();
   std::vector<glm::vec3> readValues(count);
   return readValues;
 }
 std::vector<glm::vec4> GLAttributeBuffer::getDataRange_vec4(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
   bind();
   std::vector<glm::vec4> readValues(count);
   return readValues;
 }
 std::vector<int> GLAttributeBuffer::getDataRange_int(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Int) exception("bad getData type");
   bind();
   std::vector<int> readValues(count);
@@ -396,28 +396,28 @@ std::vector<int> GLAttributeBuffer::getDataRange_int(size_t ind, size_t count) {
   return intValues;
 }
 std::vector<uint32_t> GLAttributeBuffer::getDataRange_uint32(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::UInt) exception("bad getData type");
   bind();
   std::vector<uint32_t> readValues(count);
   return readValues;
 }
 std::vector<glm::uvec2> GLAttributeBuffer::getDataRange_uvec2(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
   bind();
   std::vector<glm::uvec2> readValues(count);
   return readValues;
 }
 std::vector<glm::uvec3> GLAttributeBuffer::getDataRange_uvec3(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
   bind();
   std::vector<glm::uvec3> readValues(count);
   return readValues;
 }
 std::vector<glm::uvec4> GLAttributeBuffer::getDataRange_uvec4(size_t ind, size_t count) {
-  if (!isSet() || ind + count > static_cast<size_t>(getDataSize())) exception("bad getData");
+  if (!isSet() || ind + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
   if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
   bind();
   std::vector<glm::uvec4> readValues(count);
