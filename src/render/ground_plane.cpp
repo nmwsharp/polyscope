@@ -262,8 +262,8 @@ void GroundPlane::draw(bool isRedraw) {
 
     // Prepare the alternate scene buffers
     // (use a texture 1/4 the area of the view buffer, it's supposed to be blurry anyway and this saves perf)
-    render::engine->setBlendMode();
-    render::engine->setDepthMode();
+    render::engine->setBlendMode(BlendMode::AlphaOver);
+    render::engine->setDepthMode(DepthMode::Less);
     sceneAltFrameBuffer->resize(factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
     sceneAltFrameBuffer->setViewport(0, 0, factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
     render::engine->setCurrentPixelScaling(factor / 2.);
@@ -303,8 +303,8 @@ void GroundPlane::draw(bool isRedraw) {
   if (!isRedraw && options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
 
     // Prepare the alternate scene buffers
-    render::engine->setBlendMode();
-    render::engine->setDepthMode();
+    render::engine->setBlendMode(BlendMode::AlphaOver);
+    render::engine->setDepthMode(DepthMode::Less);
     sceneAltFrameBuffer->resize(factor * view::bufferWidth, factor * view::bufferHeight);
     sceneAltFrameBuffer->setViewport(0, 0, factor * view::bufferWidth, factor * view::bufferHeight);
 
@@ -330,7 +330,7 @@ void GroundPlane::draw(bool isRedraw) {
     view::viewMat = view::viewMat * projMat;
 
     // Draw everything
-    render::engine->setDepthMode();
+    render::engine->setDepthMode(DepthMode::Less);
     render::engine->setBlendMode(BlendMode::Disable);
     drawStructures();
 
@@ -366,9 +366,7 @@ void GroundPlane::draw(bool isRedraw) {
 
   // Render the ground plane
   render::engine->applyTransparencySettings();
-  if (options::transparencyMode != TransparencyMode::Simple) {
-    render::engine->setBlendMode(BlendMode::Disable);
-  }
+  render::engine->setDepthMode(DepthMode::Less);
   setUniforms();
   groundPlaneProgram->draw();
 }

@@ -2609,21 +2609,17 @@ void GLEngine::setDepthMode(DepthMode newMode) {
 
 void GLEngine::setBlendMode(BlendMode newMode) {
   switch (newMode) {
-  case BlendMode::Over:
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    break;
   case BlendMode::AlphaOver:
     glEnable(GL_BLEND);
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA); // for premultiplied alpha
     break;
   case BlendMode::OverNoWrite:
     glEnable(GL_BLEND);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
     break;
-  case BlendMode::Under:
+  case BlendMode::AlphaUnder:
     glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+    glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE); // for premultiplied alpha
     break;
   case BlendMode::Zero:
     glEnable(GL_BLEND);
@@ -2632,6 +2628,10 @@ void GLEngine::setBlendMode(BlendMode newMode) {
   case BlendMode::WeightedAdd:
     glEnable(GL_BLEND);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ONE, GL_ONE);
+    break;
+  case BlendMode::Add:
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
     break;
   case BlendMode::Source:
     glEnable(GL_BLEND);
@@ -2666,18 +2666,18 @@ void GLEngine::applyTransparencySettings() {
   // Remove any old transparency-related rules
   switch (transparencyMode) {
   case TransparencyMode::None: {
-    setBlendMode();
-    setDepthMode();
+    setBlendMode(BlendMode::AlphaOver);
+    setDepthMode(DepthMode::Less);
     break;
   }
   case TransparencyMode::Simple: {
-    setBlendMode(BlendMode::WeightedAdd);
+    setBlendMode(BlendMode::Add);
     setDepthMode(DepthMode::Disable);
     break;
   }
   case TransparencyMode::Pretty: {
     setBlendMode(BlendMode::Disable);
-    setDepthMode();
+    setDepthMode(DepthMode::Less);
     break;
   }
   }
@@ -2944,6 +2944,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   
   registerShaderRule("GENERATE_VIEW_POS", GENERATE_VIEW_POS);
   registerShaderRule("COMPUTE_SHADE_NORMAL_FROM_POSITION", COMPUTE_SHADE_NORMAL_FROM_POSITION);
+  registerShaderRule("PREMULTIPLY_LIT_COLOR", PREMULTIPLY_LIT_COLOR);
   registerShaderRule("CULL_POS_FROM_VIEW", CULL_POS_FROM_VIEW);
   registerShaderRule("PROJ_AND_INV_PROJ_MAT", PROJ_AND_INV_PROJ_MAT);
 
@@ -2965,6 +2966,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("TEXTURE_ORIGIN_UPPERLEFT", TEXTURE_ORIGIN_UPPERLEFT);
   registerShaderRule("TEXTURE_ORIGIN_LOWERLEFT", TEXTURE_ORIGIN_LOWERLEFT);
   registerShaderRule("TEXTURE_SET_TRANSPARENCY", TEXTURE_SET_TRANSPARENCY);
+  registerShaderRule("TEXTURE_PREMULTIPLY_OUT", TEXTURE_PREMULTIPLY_OUT);
   registerShaderRule("TEXTURE_SHADE_COLOR", TEXTURE_SHADE_COLOR);
   registerShaderRule("TEXTURE_SHADE_COLORALPHA", TEXTURE_SHADE_COLORALPHA);
   registerShaderRule("TEXTURE_PROPAGATE_VALUE", TEXTURE_PROPAGATE_VALUE);

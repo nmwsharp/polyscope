@@ -16,7 +16,8 @@ RawColorAlphaRenderImageQuantity::RawColorAlphaRenderImageQuantity(Structure& pa
                                                                    const std::vector<glm::vec4>& colorsData_,
                                                                    ImageOrigin imageOrigin)
     : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, std::vector<glm::vec3>(), imageOrigin),
-      colors(this, uniquePrefix() + "colors", colorsData), colorsData(colorsData_) {
+      colors(this, uniquePrefix() + "colors", colorsData), colorsData(colorsData_),
+      isPremultiplied(uniquePrefix() + "isPremultiplied", false) {
   colors.setTextureSize(dimX, dimY);
 }
 
@@ -37,9 +38,6 @@ void RawColorAlphaRenderImageQuantity::drawDelayed() {
   program->setUniform("u_transparency", transparency.get());
   render::engine->setTonemapUniforms(*program);
 
-  // make sure we have actual depth testing enabled
-  render::engine->setDepthMode(DepthMode::LEqual);
-  render::engine->setBlendMode(BlendMode::Over);
 
   // draw
   program->draw();
@@ -69,11 +67,15 @@ void RawColorAlphaRenderImageQuantity::refresh() {
 
 void RawColorAlphaRenderImageQuantity::prepare() {
 
+  // NOTE: we use INVERSE_TONEMAP to avoid tonemapping the content, but in the presence of transparency this setup
+  // cannot exactly preserve the result, since the inversion is applied before compositing but finaltonemapping is
+  // applied after compositing.
+
   // Create the sourceProgram
-  program =
-      render::engine->requestShader("TEXTURE_DRAW_RAW_RENDERIMAGE_PLAIN",
-                                    {getImageOriginRule(imageOrigin), "TEXTURE_SHADE_COLORALPHA", "INVERSE_TONEMAP"},
-                                    render::ShaderReplacementDefaults::Process);
+  program = render::engine->requestShader("TEXTURE_DRAW_RAW_RENDERIMAGE_PLAIN",
+                                          {getImageOriginRule(imageOrigin), "TEXTURE_SHADE_COLORALPHA",
+                                           "INVERSE_TONEMAP", getIsPremultiplied() ? "" : "TEXTURE_PREMULTIPLY_OUT"},
+                                          render::ShaderReplacementDefaults::Process);
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
   program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
@@ -82,6 +84,15 @@ void RawColorAlphaRenderImageQuantity::prepare() {
 
 
 std::string RawColorAlphaRenderImageQuantity::niceName() { return name + " (raw color render image)"; }
+
+RawColorAlphaRenderImageQuantity* RawColorAlphaRenderImageQuantity::setIsPremultiplied(bool val) {
+  isPremultiplied = val;
+  refresh();
+  return this;
+}
+
+bool RawColorAlphaRenderImageQuantity::getIsPremultiplied() { return isPremultiplied.get(); }
+
 
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
 // structure.ipp.

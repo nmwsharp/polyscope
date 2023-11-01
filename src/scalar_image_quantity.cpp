@@ -48,7 +48,8 @@ void ScalarImageQuantity::prepareFullscreen() {
 
   // Create the sourceProgram
   fullscreenProgram = render::engine->requestShader(
-      "SCALAR_TEXTURE_COLORMAP", this->addScalarRules({getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY"}),
+      "SCALAR_TEXTURE_COLORMAP",
+      this->addScalarRules({getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY", "TEXTURE_PREMULTIPLY_OUT"}),
       render::ShaderReplacementDefaults::Process);
   fullscreenProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
   fullscreenProgram->setTextureFromBuffer("t_scalar", values.getRenderTextureBuffer().get());

@@ -130,7 +130,7 @@ std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
 
   render::FrameBuffer* pickFramebuffer = render::engine->pickFramebuffer.get();
 
-  render::engine->setDepthMode();
+  render::engine->setDepthMode(DepthMode::Less);
   render::engine->setBlendMode(BlendMode::Disable);
 
   pickFramebuffer->resize(view::bufferWidth, view::bufferHeight);

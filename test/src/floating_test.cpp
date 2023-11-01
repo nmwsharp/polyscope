@@ -50,6 +50,9 @@ TEST_F(PolyscopeTest, FloatingImageTest) {
     polyscope::show(3);
     im->setShowFullscreen(true);
     polyscope::show(3);
+
+    im->setIsPremultiplied(true);
+    polyscope::show(3);
   }
 
   // make sure it doesn't blow up with transparancy
@@ -139,6 +142,8 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
         "render im raw color alpha", dimX, dimY, depthVals, colorAlphaVals, polyscope::ImageOrigin::UpperLeft);
     im->updateBuffers(depthVals, colorAlphaVals);
     im->setEnabled(true);
+    polyscope::show(3);
+    im->setIsPremultiplied(true);
     polyscope::show(3);
   }
 

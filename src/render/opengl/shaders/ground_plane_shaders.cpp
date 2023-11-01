@@ -134,8 +134,12 @@ R"(
         float coloredBrightness = 1.2 * orenNayarDiffuse(eyeDir, lightDir, normalCameraSpace, .05, 1.0) + .3;
         float whiteBrightness = .25 * specular(normalCameraSpace, lightDir, eyeDir, 12.);
 
-        vec4 lightColor = vec4(color.xyz * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness, color.w);
-        outputF = lightColor;
+        float alphaOut = color.w;
+        vec3 litColor = color.xyz * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness;
+
+        // Write output
+        litColor *= alphaOut; // premultiplied alpha
+        outputF = vec4(litColor, alphaOut);
       }
 
 )"
@@ -239,8 +243,12 @@ R"(
         float coloredBrightness = 1.2 *orenNayarDiffuse(eyeDir, lightDir, normalCameraSpace, .05, 1.0) + .3;
         float whiteBrightness = .25 * specular(normalCameraSpace, lightDir, eyeDir, 12.);
 
-        vec4 lightColor = vec4(color.xyz * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness, color.w);
-        outputF = lightColor;
+        float alphaOut = color.w;
+        vec3 litColor = color.xyz * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness;
+
+        // Write output
+        litColor *= alphaOut; // premultiplied alpha
+        outputF = vec4(litColor, alphaOut);
       }
 
 )"
@@ -296,17 +304,18 @@ R"(
 
         float shadowMax = u_shadowDarkness + 0. * PositionWorldHomog.x;  // use PositionWorldHomog to prevent silly optimizing out
         vec3 groundColor = vec3(0., 0., 0.);
-        //vec3 groundColor = vec3(1., 0., 0.);
 
         // Fade off when viewed from below
         float viewFromBelowFadeFactor = smoothstep(0, .1, u_upSign * (u_cameraHeight - u_groundHeight) / u_lengthScale);
         float fadeFactor = viewFromBelowFadeFactor;
         if(fadeFactor <= 0.) discard;
 
-        outputF = vec4(groundColor, shadowMax*shadowVal*fadeFactor);
-        //outputF = vec4(groundColor, shadowMax*shadowVal);
-        //groundColor.r = shadowVal; 
-        //outputF = vec4(groundColor, 1.);
+        float alphaOut = shadowMax*shadowVal*fadeFactor;
+        vec3 litColor = groundColor;
+
+        // Write output
+        litColor *= alphaOut; // premultiplied alpha
+        outputF = vec4(litColor, alphaOut);
       }
 
 )"

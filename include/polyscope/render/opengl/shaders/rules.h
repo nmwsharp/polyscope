@@ -28,11 +28,13 @@ extern const ShaderReplacementRule SHADEVALUE_MAG_VALUE2;       // generate a sh
 extern const ShaderReplacementRule ISOLINE_STRIPE_VALUECOLOR;   // modulate albedoColor based on shadeValue
 extern const ShaderReplacementRule CHECKER_VALUE2COLOR;         // modulate albedoColor based on shadeValue2
 extern const ShaderReplacementRule SHADE_BASECOLOR;             // constant from u_baseColor
+extern const ShaderReplacementRule PREMULTIPLY_COLOR;
 
 // Positions, culling, etc
 extern const ShaderReplacementRule GENERATE_VIEW_POS;          // computes viewPos, position in viewspace for fragment
 extern const ShaderReplacementRule PROJ_AND_INV_PROJ_MAT;
 extern const ShaderReplacementRule COMPUTE_SHADE_NORMAL_FROM_POSITION;
+extern const ShaderReplacementRule PREMULTIPLY_LIT_COLOR;
 extern const ShaderReplacementRule CULL_POS_FROM_VIEW;
 
 ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix);

@@ -148,7 +148,7 @@ void TransformationGizmo::draw() {
   sphereProgram->setUniform("u_baseColor", sphereColor);
 
   render::engine->setDepthMode(DepthMode::Less);
-  render::engine->setBlendMode();
+  render::engine->setBlendMode(BlendMode::AlphaOver);
   render::engine->setBackfaceCull(false);
 
   // == draw

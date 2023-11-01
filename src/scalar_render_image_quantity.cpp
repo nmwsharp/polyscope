@@ -39,10 +39,6 @@ void ScalarRenderImageQuantity::drawDelayed() {
   setScalarUniforms(*program);
   render::engine->setMaterialUniforms(*program, material.get());
 
-  // make sure we have actual depth testing enabled
-  render::engine->setDepthMode(DepthMode::LEqual);
-  render::engine->setBlendMode(BlendMode::Over);
-
   // draw
   program->draw();
 }

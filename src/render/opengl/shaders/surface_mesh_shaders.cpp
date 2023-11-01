@@ -106,6 +106,7 @@ R"(
            ${ PERTURB_LIT_COLOR }$
 
            // Write output
+           litColor *= alphaOut; // premultiplied alpha
            outputF = vec4(litColor, alphaOut);
         }
 )"

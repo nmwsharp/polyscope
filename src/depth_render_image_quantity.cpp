@@ -34,11 +34,6 @@ void DepthRenderImageQuantity::drawDelayed() {
   program->setUniform("u_transparency", transparency.get());
   render::engine->setMaterialUniforms(*program, material.get());
 
-  // make sure we have actual depth testing enabled
-  render::engine->setDepthMode(DepthMode::LEqual);
-  // render::engine->applyTransparencySettings();
-  render::engine->setBlendMode(BlendMode::Over);
-
   // draw
   program->draw();
 }

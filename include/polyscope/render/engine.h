@@ -40,7 +40,7 @@ enum class FilterMode { Nearest = 0, Linear };
 enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F, R16F, DEPTH24 };
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
 enum class DepthMode { Less, LEqual, LEqualReadOnly, Greater, Disable, PassReadOnly };
-enum class BlendMode { Over, AlphaOver, OverNoWrite, Under, Zero, WeightedAdd, Source, Disable };
+enum class BlendMode { AlphaOver, OverNoWrite, AlphaUnder, Zero, WeightedAdd, Add, Source, Disable };
 enum class RenderDataType {
   Vector2Float,
   Vector3Float,
@@ -465,8 +465,8 @@ public:
   void renderBackground(); // respects background setting
 
   // Manage render state
-  virtual void setDepthMode(DepthMode newMode = DepthMode::Less) = 0;
-  virtual void setBlendMode(BlendMode newMode = BlendMode::Over) = 0;
+  virtual void setDepthMode(DepthMode newMode) = 0;
+  virtual void setBlendMode(BlendMode newMode) = 0;
   virtual void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) = 0;
   virtual void setBackfaceCull(bool newVal = false) = 0;
 
@@ -584,8 +584,8 @@ public:
   // == Options
   BackgroundView background = BackgroundView::None;
 
-  float exposure = 1.0;
-  float whiteLevel = 0.75;
+  float exposure = 1.1;
+  float whiteLevel = 1.0;
   float gamma = 2.2;
   void setTonemapUniforms(ShaderProgram& p);
 
