@@ -410,3 +410,93 @@ TEST_F(PolyscopeTest, SurfaceMeshOneForm) {
   polyscope::show(3);
   polyscope::removeAllStructures();
 }
+
+
+// ============================================================
+// =============== Simple Surface Mesh
+// ============================================================
+
+
+TEST_F(PolyscopeTest, ShowSimpleTriangleMesh) {
+  auto psMesh = registerSimpleTriangleMesh();
+  EXPECT_TRUE(polyscope::hasSimpleTriangleMesh("test1"));
+
+  // Make sure we actually added the mesh
+  polyscope::show(3);
+  EXPECT_TRUE(polyscope::hasSimpleTriangleMesh("test1"));
+  EXPECT_FALSE(polyscope::hasSimpleTriangleMesh("test2"));
+  polyscope::removeAllStructures();
+  EXPECT_FALSE(polyscope::hasSimpleTriangleMesh("test1"));
+}
+
+TEST_F(PolyscopeTest, SimpleTriangleMeshAppearance) {
+  auto psMesh = registerSimpleTriangleMesh();
+
+  // Material
+  psMesh->setMaterial("wax");
+  EXPECT_EQ(psMesh->getMaterial(), "wax");
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SimpleTriangleMeshPick) {
+  auto psMesh = registerSimpleTriangleMesh();
+
+  // Don't bother trying to actually click on anything, but make sure this doesn't crash
+  polyscope::pick::evaluatePickQuery(77, 88);
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SimpleTriangleMeshBackface) {
+  auto psMesh = registerSimpleTriangleMesh();
+
+  // Same appearance
+  psMesh->setBackFacePolicy(polyscope::BackFacePolicy::Identical);
+  EXPECT_EQ(psMesh->getBackFacePolicy(), polyscope::BackFacePolicy::Identical);
+  polyscope::show(3);
+
+  // Different appearance
+  psMesh->setBackFacePolicy(polyscope::BackFacePolicy::Different);
+  EXPECT_EQ(psMesh->getBackFacePolicy(), polyscope::BackFacePolicy::Different);
+  psMesh->setBackFaceColor(glm::vec3(1.f, 0.f, 0.f));
+  EXPECT_EQ(psMesh->getBackFaceColor(), glm::vec3(1.f, 0.f, 0.f));
+  polyscope::show(3);
+
+  // Cull backfacing
+  psMesh->setBackFacePolicy(polyscope::BackFacePolicy::Cull);
+  EXPECT_EQ(psMesh->getBackFacePolicy(), polyscope::BackFacePolicy::Cull);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+
+TEST_F(PolyscopeTest, SimpleTriangleMesUpdate) {
+  auto psMesh = registerSimpleTriangleMesh();
+  polyscope::show(3); // make sure everything is populated
+
+  // update just the locations
+  psMesh->updateVertices(std::vector<glm::vec3>(4));
+  polyscope::show(3);
+
+  // update the locations and faces
+  psMesh->update(std::vector<glm::vec3>(4), std::vector<glm::uvec3>(4, glm::uvec3(0, 1, 2)));
+  polyscope::show(3);
+
+  // do a bunch of resizing
+  psMesh->update(std::vector<glm::vec3>(12), std::vector<glm::uvec3>(4, glm::uvec3(0, 1, 2)));
+  polyscope::show(3);
+
+  psMesh->update(std::vector<glm::vec3>(3), std::vector<glm::uvec3>(4, glm::uvec3(0, 1, 2)));
+  polyscope::show(3);
+
+  psMesh->update(std::vector<glm::vec3>(3), std::vector<glm::uvec3>(14, glm::uvec3(0, 1, 2)));
+  polyscope::show(3);
+
+  psMesh->update(std::vector<glm::vec3>(3), std::vector<glm::uvec3>(1, glm::uvec3(0, 1, 2)));
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}

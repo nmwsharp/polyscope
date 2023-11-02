@@ -20,6 +20,7 @@ extern const ShaderReplacementRule LIGHT_PASSTHRU;
 // all of these generate or modify `vec3 albedoColor` from some other data
 extern const ShaderReplacementRule SHADE_BASECOLOR;             // constant from u_baseColor
 extern const ShaderReplacementRule SHADE_COLOR;                 // from shadeColor
+extern const ShaderReplacementRule SHADECOLOR_FROM_UNIFORM;             
 extern const ShaderReplacementRule SHADE_COLORMAP_VALUE;        // colormapped from shadeValue
 extern const ShaderReplacementRule SHADE_COLORMAP_ANGULAR2;     // colormapped from angle of shadeValue2
 extern const ShaderReplacementRule SHADE_GRID_VALUE2;           // generate a two-color grid with lines from shadeValue2

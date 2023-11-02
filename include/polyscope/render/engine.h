@@ -49,7 +49,6 @@ enum class RenderDataType {
   Float,
   Int,
   UInt,
-  Index,
   Vector2UInt,
   Vector3UInt,
   Vector4UInt
@@ -100,7 +99,7 @@ public:
   int64_t getDataSize() const { return dataSize; }
   int64_t getDataSizeInBytes() const { return dataSize * sizeInBytes(dataType) * getArrayCount(); }
   uint64_t getUniqueID() const { return uniqueID; }
-  bool isSet() const { return dataSize > 0; }
+  bool isSet() const { return setFlag; }
 
   // get data at a single index from the buffer
   virtual float getData_float(size_t ind) = 0;
@@ -129,7 +128,10 @@ public:
 protected:
   RenderDataType dataType;
   int arrayCount;
-  int64_t dataSize = -1; // the size of the data currently stored in this attribute (-1 if nothing)
+  bool setFlag = false;
+  int64_t dataSize = -1;   // the size of the data currently stored in this attribute (-1 if nothing)
+                           // this counts # elements of the specified type, s.t. array'd mulitpliers are still just one
+  uint64_t bufferSize = 0; // the size of the allocated buffer (which might be larger than the data sixze)
   uint64_t uniqueID;
 };
 
@@ -382,11 +384,6 @@ public:
   virtual void setAttribute(std::string name, const std::vector<uint32_t>& data) = 0;
   // clang-format on
 
-  // Convenience method to set an array-valued attrbute, such as 'in vec3 vertexVal[3]'. Applies interleaving then
-  // forwards to the usual setAttribute
-  template <typename T, unsigned int C>
-  void setAttribute(std::string name, const std::vector<std::array<T, C>>& data);
-
 
   // Textures
   virtual bool hasTexture(std::string name) = 0;
@@ -400,9 +397,7 @@ public:
 
 
   // Indices
-  virtual void setIndex(std::vector<std::array<unsigned int, 3>>& indices) = 0;
-  virtual void setIndex(std::vector<unsigned int>& indices) = 0;
-  virtual void setIndex(std::vector<glm::uvec3>& indices) = 0;
+  virtual void setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) = 0;
   virtual void setPrimitiveRestartIndex(unsigned int restartIndex) = 0;
 
   // Indices
@@ -425,13 +420,16 @@ protected:
   // How much data is there to draw
   uint32_t drawDataLength;
 
-  // Does this program use indexed drawing?
+  // Indexed drawing
   bool useIndex = false;
-  long int indexSize = -1;
+  uint32_t indexSizeMult = -1;
   bool usePrimitiveRestart = false;
   bool primitiveRestartIndexSet = false;
   unsigned int restartIndex = -1;
+
   uint64_t uniqueID;
+
+  std::shared_ptr<AttributeBuffer> indexBuffer;
 
   // instancing
   uint32_t instanceCount = INVALID_IND_32;
@@ -661,21 +659,6 @@ protected:
   std::vector<std::string> defaultRules_process{"GLSL_VERSION"};
 };
 
-
-// Implementation of template functions
-template <typename T, unsigned int C>
-inline void ShaderProgram::setAttribute(std::string name, const std::vector<std::array<T, C>>& data) {
-
-  // Unpack and forward
-  std::vector<T> entryData;
-  entryData.reserve(C * data.size());
-  for (auto& x : data) {
-    for (size_t i = 0; i < C; i++) {
-      entryData.push_back(x[i]);
-    }
-  }
-  setAttribute(name, entryData);
-}
 
 // === Public API
 // Callers should basically only interact via these methods and variables

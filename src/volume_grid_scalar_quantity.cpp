@@ -184,7 +184,7 @@ void VolumeGridNodeScalarQuantity::createIsosurfaceProgram() {
 
   // Create a render program to draw it
   // clang-format off
-  isosurfaceProgram = render::engine->requestShader("INDEXED_MESH",
+  isosurfaceProgram = render::engine->requestShader("SIMPLE_MESH",
       render::engine->addMaterialRules(parent.getMaterial(), 
         parent.addStructureRules(
           isoProgramRules
@@ -198,19 +198,9 @@ void VolumeGridNodeScalarQuantity::createIsosurfaceProgram() {
 
   // Populate the program buffers with the extracted mesh
   isosurfaceProgram->setAttribute("a_vertexPositions", isosurfaceMesh.vertices);
-  isosurfaceProgram->setIndex(isosurfaceMesh.indices);
-
-
-  // Neither of these are actually used currently, but on some platforms they get optimized out, and
-  // on others they do not, so here we set a value just in case to avoid errors.
-  // This should be refactored to use a simple mesh that doesn't have this problem.
-  if (isosurfaceProgram->hasAttribute("a_vertexNormals")) {
-    isosurfaceProgram->setAttribute("a_vertexNormals", isosurfaceMesh.normals);
-  }
-  if (isosurfaceProgram->hasAttribute("a_barycoord")) {
-    // this is nonsense data, it really don't get used
-    isosurfaceProgram->setAttribute("a_barycoord", isosurfaceMesh.normals);
-  }
+  std::shared_ptr<render::AttributeBuffer> indexBuff = render::engine->generateAttributeBuffer(RenderDataType::UInt);
+  indexBuff->setData(isosurfaceMesh.indices);
+  isosurfaceProgram->setIndex(indexBuff);
 
 
   render::engine->setMaterial(*isosurfaceProgram, parent.getMaterial());

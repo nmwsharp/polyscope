@@ -65,8 +65,6 @@ std::string renderDataTypeName(const RenderDataType& r) {
     return "Int";
   case RenderDataType::UInt:
     return "UInt";
-  case RenderDataType::Index:
-    return "Index";
   case RenderDataType::Vector2UInt:
     return "Vector2UInt";
   case RenderDataType::Vector3UInt:
@@ -92,8 +90,6 @@ int sizeInBytes(const RenderDataType& r) {
   case RenderDataType::Int:
     return 4;
   case RenderDataType::UInt:
-    return 4;
-  case RenderDataType::Index:
     return 4;
   case RenderDataType::Vector2UInt:
     return 2 * 4;

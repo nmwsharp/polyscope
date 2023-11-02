@@ -103,7 +103,7 @@ void VolumeGrid::buildCustomOptionsUI() {
 void VolumeGrid::draw() {
   if (!enabled.get()) return;
 
-  // Write now none of this class supports cullWholeElements = false, so just always force it to true
+  // Right now none of this class supports cullWholeElements = false, so just always force it to true
   if (!getCullWholeElements()) {
     setCullWholeElements(true);
   }

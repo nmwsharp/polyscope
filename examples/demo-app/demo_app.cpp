@@ -11,6 +11,7 @@
 #include "polyscope/pick.h"
 #include "polyscope/point_cloud.h"
 #include "polyscope/render/managed_buffer.h"
+#include "polyscope/simple_triangle_mesh.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/types.h"
 #include "polyscope/view.h"
@@ -102,6 +103,8 @@ void processFileOBJ(std::string filename) {
     vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]});
   }
   auto psMesh = polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
+
+  auto psSimpleMesh = polyscope::registerSimpleTriangleMesh(niceName, vertexPositionsGLM, faceIndices);
 
   // Useful data
   size_t nVertices = psMesh->nVertices();
@@ -477,10 +480,12 @@ void addVolumeGrid() {
     return (glm::length(q) - t.y) * scale;
   };
 
-  polyscope::VolumeGridNodeScalarQuantity* qNode = psGrid->addNodeScalarQuantityFromCallable("torus sdf node", torusSDF);
+  polyscope::VolumeGridNodeScalarQuantity* qNode =
+      psGrid->addNodeScalarQuantityFromCallable("torus sdf node", torusSDF);
   qNode->setEnabled(true);
 
-  polyscope::VolumeGridCellScalarQuantity* qCell = psGrid->addCellScalarQuantityFromCallable("torus sdf cell", torusSDF);
+  polyscope::VolumeGridCellScalarQuantity* qCell =
+      psGrid->addCellScalarQuantityFromCallable("torus sdf cell", torusSDF);
   qCell->setEnabled(true);
 }
 

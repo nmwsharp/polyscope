@@ -112,6 +112,92 @@ R"(
 )"
 };
 
+const ShaderStageSpecification SIMPLE_MESH_VERT_SHADER = {
+
+    ShaderStageType::Vertex,
+
+    // uniforms
+    {
+        {"u_modelView", RenderDataType::Matrix44Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+    }, 
+
+    // attributes
+    {
+        {"a_vertexPositions", RenderDataType::Vector3Float},
+    },
+
+    {}, // textures
+
+    // source
+R"(
+        ${ GLSL_VERSION }$
+
+        uniform mat4 u_modelView;
+        uniform mat4 u_projMatrix;
+        
+        in vec3 a_vertexPositions;
+        
+        ${ VERT_DECLARATIONS }$
+        
+        void main()
+        {
+            gl_Position = u_projMatrix * u_modelView * vec4(a_vertexPositions,1.);
+            
+            ${ VERT_ASSIGNMENTS }$
+        }
+)"
+};
+
+const ShaderStageSpecification SIMPLE_MESH_FRAG_SHADER = {
+    
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    {
+    }, 
+
+    { }, // attributes
+    
+    // textures 
+    {
+    },
+ 
+    // source
+R"(
+        ${ GLSL_VERSION }$
+
+        layout(location = 0) out vec4 outputF;
+
+        ${ FRAG_DECLARATIONS }$
+
+        void main()
+        {
+           float depth = gl_FragCoord.z;
+           ${ GLOBAL_FRAGMENT_FILTER_PREP }$
+           ${ GLOBAL_FRAGMENT_FILTER }$
+          
+           // Shading
+           vec3 shadeNormal = vec3(0., 0., 0.); // must be filled out by a rule below
+           ${ GENERATE_SHADE_VALUE }$
+           ${ GENERATE_SHADE_COLOR }$
+
+           // Lighting
+           ${ PERTURB_SHADE_NORMAL }$
+           ${ GENERATE_LIT_COLOR }$
+
+           // Set alpha
+           float alphaOut = 1.0;
+           ${ GENERATE_ALPHA }$
+           
+           ${ PERTURB_LIT_COLOR }$
+
+           // Write output
+           outputF = vec4(litColor, alphaOut);
+        }
+)"
+};
+
 
 // == Rules
 
@@ -532,6 +618,7 @@ const ShaderReplacementRule MESH_PROPAGATE_PICK_SIMPLE ( // this one does faces 
     },
     /* textures */ {}
 );
+
 
 // clang-format on
 

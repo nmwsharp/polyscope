@@ -85,6 +85,21 @@ const ShaderReplacementRule SHADE_BASECOLOR (
     /* textures */ {}
 );
 
+// input: uniform output: vec3 shadeColor
+const ShaderReplacementRule SHADECOLOR_FROM_UNIFORM (
+    /* rule name */ "SHADECOLOR_FROM_UNIFORM",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform vec3 u_color;
+        )"},
+      {"GENERATE_SHADE_COLOR", "vec3 shadeColor = u_color;"}
+    },
+    /* uniforms */ {
+      {"u_color", RenderDataType::Vector3Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
 
 // input: vec3 shadeColor 
 // output: vec3 albedoColor

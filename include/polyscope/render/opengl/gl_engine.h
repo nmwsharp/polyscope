@@ -109,6 +109,17 @@ private:
   void checkType(RenderDataType targetType);
   void checkArray(int arrayCount);
   GLenum getTarget();
+
+
+  // internal implementation helpers
+  template <typename T>
+  void setData_helper(const std::vector<T>& data);
+
+  template <typename T>
+  T getData_helper(size_t ind);
+
+  template <typename T>
+  std::vector<T> getDataRange_helper(size_t start, size_t count);
 };
 
 class GLTextureBuffer : public TextureBuffer {
@@ -317,17 +328,9 @@ public:
   void setAttribute(std::string name, const std::vector<uint32_t>& data) override;
   // clang-format on
 
-  // Convenience method to set an array-valued attrbute, such as 'in vec3 vertexVal[3]'. Applies interleaving then
-  // forwards to the usual setAttribute
-  template <typename T, unsigned int C>
-  void setAttribute(std::string name, const std::vector<std::array<T, C>>& data, bool update = false, int offset = 0,
-                    int size = -1);
-
 
   // Indices
-  void setIndex(std::vector<std::array<unsigned int, 3>>& indices) override;
-  void setIndex(std::vector<unsigned int>& indices) override;
-  void setIndex(std::vector<glm::uvec3>& indices) override;
+  void setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) override;
   void setPrimitiveRestartIndex(unsigned int restartIndex) override;
 
   // Instancing
@@ -368,7 +371,6 @@ private:
   // GL pointers for various useful things
   std::shared_ptr<GLCompiledProgram> compiledProgram;
   AttributeHandle vaoHandle;
-  AttributeHandle indexVBO;
 };
 
 
