@@ -32,8 +32,10 @@ extern const ShaderReplacementRule
 extern const ShaderReplacementRule
     TEXTURE_ORIGIN_LOWERLEFT; // sample textures with (0,0) in the lower left, which is the usual openGL rule
 extern const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY; // apply a transparency uniform to the texture
-extern const ShaderReplacementRule TEXTURE_PREMULTIPLY_OUT;  // premultiply color samples
-extern const ShaderReplacementRule TEXTURE_SHADE_COLOR;      // sample a color from a texture and use it for shading
+extern const ShaderReplacementRule
+    TEXTURE_SET_TRANSPARENCY_PREMULTIPLIED;                 // apply a transparency uniform to the texture
+extern const ShaderReplacementRule TEXTURE_PREMULTIPLY_OUT; // premultiply color samples
+extern const ShaderReplacementRule TEXTURE_SHADE_COLOR;     // sample a color from a texture and use it for shading
 extern const ShaderReplacementRule
     TEXTURE_SHADE_COLORALPHA;                               // sample a coloralpha from a texture and use it for shading
 extern const ShaderReplacementRule TEXTURE_PROPAGATE_VALUE; // sample a scalar from a texture and use it for shading

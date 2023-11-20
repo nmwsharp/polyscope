@@ -621,6 +621,23 @@ const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY(
     /* textures */ {}
 );
 
+const ShaderReplacementRule TEXTURE_SET_TRANSPARENCY_PREMULTIPLIED(
+    /* rule name */ "TEXTURE_SET_TRANSPARENCY_PREMULTIPLIED",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_transparency;
+        )" },
+      {"TEXTURE_OUT_ADJUST", R"(
+        textureOut *= u_transparency;
+      )"}
+    },
+    /* uniforms */ {
+        {"u_transparency", RenderDataType::Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
 // remember to use this rule _after_ TEXTURE_SET_TRANSPARENCY
 const ShaderReplacementRule TEXTURE_PREMULTIPLY_OUT(
     /* rule name */ "TEXTURE_PREMULTIPLY_OUT",

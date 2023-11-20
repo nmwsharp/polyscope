@@ -59,11 +59,11 @@ void ScalarImageQuantity::prepareFullscreen() {
 void ScalarImageQuantity::prepareBillboard() {
 
   // Create the sourceProgram
-  billboardProgram =
-      render::engine->requestShader("SCALAR_TEXTURE_COLORMAP",
-                                    this->addScalarRules({getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY",
-                                                          "TEXTURE_BILLBOARD_FROM_UNIFORMS"}),
-                                    render::ShaderReplacementDefaults::Process);
+  billboardProgram = render::engine->requestShader(
+      "SCALAR_TEXTURE_COLORMAP",
+      this->addScalarRules({getImageOriginRule(imageOrigin), "TEXTURE_SET_TRANSPARENCY", "TEXTURE_PREMULTIPLY_OUT",
+                            "TEXTURE_BILLBOARD_FROM_UNIFORMS"}),
+      render::ShaderReplacementDefaults::Process);
   billboardProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
   billboardProgram->setTextureFromBuffer("t_scalar", values.getRenderTextureBuffer().get());
   billboardProgram->setTextureFromColormap("t_colormap", this->cMap.get());
