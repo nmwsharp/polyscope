@@ -18,7 +18,7 @@ TEST_F(PolyscopeTest, ManagedBufferAccess) {
 
   // make sure we can get its buffers
   polyscope::render::ManagedBuffer<glm::vec3>& bufferPos = psPoints->getManagedBuffer<glm::vec3>("points");
-  polyscope::render::ManagedBuffer<double>& bufferScalar = q2->getManagedBuffer<double>("values");
+  polyscope::render::ManagedBuffer<float>& bufferScalar = q2->getManagedBuffer<float>("values");
 
 
   size_t dimX = 300;
