@@ -7,7 +7,7 @@
 // ============================================================
 
 TEST_F(PolyscopeTest, RegisterGroupTest) {
-  polyscope::registerGroup("test_group");
+  polyscope::createGroup("test_group");
   polyscope::show(3);
 
   polyscope::removeAllGroups();
@@ -23,10 +23,10 @@ TEST_F(PolyscopeTest, AddStructuresToGroupTest) {
   auto psCurve = registerCurveNetwork(curveName);
   // Add a triangle mesh structure
   auto psMesh = registerTriangleMesh(meshName);
-  polyscope::registerGroup("test_group");
-  polyscope::setParentGroupOfStructure(psCloud, "test_group");
-  polyscope::setParentGroupOfStructure(psCurve, "test_group");
-  polyscope::setParentGroupOfStructure(psMesh, "test_group");
+  polyscope::createGroup("test_group");
+  psCloud->addToGroup("test_group");
+  psMesh->addToGroup("test_group");
+  psCurve->addToGroup("test_group");
   polyscope::show(3);
 
   polyscope::removeAllGroups();
@@ -34,11 +34,11 @@ TEST_F(PolyscopeTest, AddStructuresToGroupTest) {
 }
 
 TEST_F(PolyscopeTest, AddGroupsToGroupTest) {
-  polyscope::registerGroup("test_group");
-  polyscope::registerGroup("child_test_group_1");
-  polyscope::registerGroup("child_test_group_2");
-  polyscope::setParentGroupOfGroup("child_test_group_1", "test_group");
-  polyscope::setParentGroupOfGroup("child_test_group_2", "test_group");
+  polyscope::Group* gTest = polyscope::createGroup("test_group");
+  polyscope::Group* gTest1 = polyscope::createGroup("child_test_group_1");
+  polyscope::Group* gTest2 = polyscope::createGroup("child_test_group_2");
+  gTest->addChildGroup(*gTest1);
+  gTest->addChildGroup(*gTest2);
   polyscope::show(3);
 
   polyscope::removeAllGroups();
@@ -57,23 +57,26 @@ TEST_F(PolyscopeTest, AddStructuresAndGroupsToGroupTest) {
   auto psMesh1 = registerTriangleMesh(meshName + "1");
   auto psMesh2 = registerTriangleMesh(meshName + "2");
   auto psMesh3 = registerTriangleMesh(meshName + "3");
-  polyscope::registerGroup("test_group");
-  polyscope::registerGroup("points_group");
-  polyscope::registerGroup("curves_group");
-  polyscope::registerGroup("meshes_group");
-  polyscope::setParentGroupOfStructure(psCloud1, "points_group");
-  polyscope::setParentGroupOfStructure(psCloud2, "points_group");
-  polyscope::setParentGroupOfStructure(psCloud3, "points_group");
-  polyscope::setParentGroupOfStructure(psCurve1, "curves_group");
-  polyscope::setParentGroupOfStructure(psCurve2, "curves_group");
-  polyscope::setParentGroupOfStructure(psCurve3, "curves_group");
-  polyscope::setParentGroupOfStructure(psMesh1, "meshes_group");
-  polyscope::setParentGroupOfStructure(psMesh2, "meshes_group");
-  polyscope::setParentGroupOfStructure(psMesh3, "meshes_group");
-  polyscope::setParentGroupOfGroup("points_group", "test_group");
-  polyscope::setParentGroupOfGroup("curves_group", "test_group");
-  polyscope::setParentGroupOfGroup("meshes_group", "test_group");
+  polyscope::Group* test_group = polyscope::createGroup("test_group");
+  polyscope::Group* points_group = polyscope::createGroup("points_group");
+  polyscope::Group* curves_group = polyscope::createGroup("curves_group");
+  polyscope::Group* meshes_group = polyscope::createGroup("meshes_group");
+  psCloud1->addToGroup("points_group");
+  psCloud2->addToGroup(*points_group);
+  points_group->addChildStructure(*psCloud3);
+  psCurve1->addToGroup("curves_group");
+  psCurve2->addToGroup("curves_group");
+  psCurve3->addToGroup("curves_group");
+  psMesh1->addToGroup("meshes_group");
+  psMesh2->addToGroup(*meshes_group);
+  psMesh3->addToGroup("meshes_group");
+  test_group->addChildGroup(*points_group);
+  test_group->addChildGroup(*curves_group);
+  test_group->addChildGroup(*meshes_group);
   polyscope::show(3);
+
+  // test a few options
+
 
   polyscope::removeAllGroups();
   polyscope::removeAllStructures();
@@ -89,10 +92,10 @@ TEST_F(PolyscopeTest, RemoveStructureButLeaveItInGroupTest) {
   auto psCurve = registerCurveNetwork(curveName);
   // Add a triangle mesh structure
   auto psMesh = registerTriangleMesh(meshName);
-  polyscope::registerGroup("test_group");
-  polyscope::setParentGroupOfStructure(psCloud, "test_group");
-  polyscope::setParentGroupOfStructure(psCurve, "test_group");
-  polyscope::setParentGroupOfStructure(psMesh, "test_group");
+  polyscope::createGroup("test_group");
+  psCloud->addToGroup("test_group");
+  psCurve->addToGroup("test_group");
+  psMesh->addToGroup("test_group");
   polyscope::removeStructure(cloudName);
   polyscope::show(3);
 
@@ -110,11 +113,11 @@ TEST_F(PolyscopeTest, TestDisableGroup) {
   auto psCurve = registerCurveNetwork(curveName);
   // Add a triangle mesh structure
   auto psMesh = registerTriangleMesh(meshName);
-  polyscope::registerGroup("test_group");
-  polyscope::setParentGroupOfStructure(psCloud, "test_group");
-  polyscope::setParentGroupOfStructure(psCurve, "test_group");
-  polyscope::setParentGroupOfStructure(psMesh, "test_group");
-  polyscope::setGroupEnabled("test_group", false);
+  polyscope::Group* test_group = polyscope::createGroup("test_group");
+  psCloud->addToGroup("test_group");
+  psCurve->addToGroup("test_group");
+  psMesh->addToGroup("test_group");
+  test_group->setEnabled(false);
   polyscope::show(3);
 
   polyscope::removeAllGroups();
@@ -134,23 +137,23 @@ TEST_F(PolyscopeTest, TestDisableSubgroup) {
   auto psMesh1 = registerTriangleMesh(meshName + "1");
   auto psMesh2 = registerTriangleMesh(meshName + "2");
   auto psMesh3 = registerTriangleMesh(meshName + "3");
-  polyscope::registerGroup("test_group");
-  polyscope::registerGroup("points_group");
-  polyscope::registerGroup("curves_group");
-  polyscope::registerGroup("meshes_group");
-  polyscope::setParentGroupOfStructure(psCloud1, "points_group");
-  polyscope::setParentGroupOfStructure(psCloud2, "points_group");
-  polyscope::setParentGroupOfStructure(psCloud3, "points_group");
-  polyscope::setParentGroupOfStructure(psCurve1, "curves_group");
-  polyscope::setParentGroupOfStructure(psCurve2, "curves_group");
-  polyscope::setParentGroupOfStructure(psCurve3, "curves_group");
-  polyscope::setParentGroupOfStructure(psMesh1, "meshes_group");
-  polyscope::setParentGroupOfStructure(psMesh2, "meshes_group");
-  polyscope::setParentGroupOfStructure(psMesh3, "meshes_group");
-  polyscope::setParentGroupOfGroup("points_group", "test_group");
-  polyscope::setParentGroupOfGroup("curves_group", "test_group");
-  polyscope::setParentGroupOfGroup("meshes_group", "test_group");
-  polyscope::setGroupEnabled("meshes_group", false);
+  polyscope::Group* test_group = polyscope::createGroup("test_group");
+  polyscope::Group* points_group = polyscope::createGroup("points_group");
+  polyscope::Group* curves_group = polyscope::createGroup("curves_group");
+  polyscope::Group* meshes_group = polyscope::createGroup("meshes_group");
+  psCloud1->addToGroup("points_group");
+  psCloud2->addToGroup("points_group");
+  psCloud3->addToGroup("points_group");
+  psCurve1->addToGroup("curves_group");
+  psCurve2->addToGroup("curves_group");
+  psCurve3->addToGroup("curves_group");
+  psMesh1->addToGroup("meshes_group");
+  psMesh2->addToGroup("meshes_group");
+  psMesh3->addToGroup("meshes_group");
+  test_group->addChildGroup(*points_group);
+  test_group->addChildGroup(*curves_group);
+  test_group->addChildGroup(*meshes_group);
+  test_group->setEnabled(false);
   polyscope::show(3);
 
   polyscope::removeAllGroups();
@@ -160,12 +163,12 @@ TEST_F(PolyscopeTest, TestDisableSubgroup) {
 TEST_F(PolyscopeTest, TestRemoveSubgroup) {
   // both remaining groups should remain and be root groups
   auto psCurve1 = registerCurveNetwork("test_curve");
-  polyscope::registerGroup("test_group");
-  polyscope::registerGroup("test_child_group");
-  polyscope::registerGroup("test_grandchild_group");
-  polyscope::setParentGroupOfGroup("test_child_group", "test_group");
-  polyscope::setParentGroupOfGroup("test_grandchild_group", "test_child_group");
-  polyscope::setParentGroupOfStructure(psCurve1, "test_grandchild_group");
+  polyscope::Group* test_group = polyscope::createGroup("test_group");
+  polyscope::Group* test_child_group = polyscope::createGroup("test_child_group");
+  polyscope::Group* test_grandchild_group = polyscope::createGroup("test_grandchild_group");
+  test_group->addChildGroup(*test_child_group);
+  test_child_group->addChildGroup(*test_grandchild_group);
+  psCurve1->addToGroup("test_grandchild_group");
   polyscope::removeGroup("test_child_group");
   polyscope::show(3);
 
@@ -175,13 +178,13 @@ TEST_F(PolyscopeTest, TestRemoveSubgroup) {
 
 TEST_F(PolyscopeTest, TestRepeatAddAndRemoveGroup) {
   auto psCurve1 = registerCurveNetwork("test_curve");
-  polyscope::registerGroup("test_group");
+  polyscope::Group* test_group = polyscope::createGroup("test_group");
   for (int i = 0; i < 10; i++) {
-    polyscope::registerGroup("test_child_group");
-    polyscope::setParentGroupOfGroup("test_child_group", "test_group");
-    polyscope::setParentGroupOfStructure(psCurve1, "test_child_group");
+    polyscope::Group* test_child_group = polyscope::createGroup("test_child_group");
+    test_group->addChildGroup(*test_child_group);
+    psCurve1->addToGroup("test_child_group");
     if (i != 9) {
-      polyscope::removeGroup("test_child_group");
+      polyscope::removeGroup(test_child_group);
     }
   }
   polyscope::show(3);
@@ -191,9 +194,10 @@ TEST_F(PolyscopeTest, TestRepeatAddAndRemoveGroup) {
 }
 
 TEST_F(PolyscopeTest, TestDocsExample) {
+
   // make a point cloud
   std::vector<glm::vec3> points;
-  for (size_t i = 0; i < 3000; i++) {
+  for (size_t i = 0; i < 300; i++) {
     points.push_back(
         glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
   }
@@ -213,19 +217,24 @@ TEST_F(PolyscopeTest, TestDocsExample) {
   edges = {{1, 3}, {3, 0}, {1, 0}, {0, 2}};
   polyscope::CurveNetwork* psCurve = polyscope::registerCurveNetwork("my network", nodes, edges);
 
-  // group them together
+  // create a group for these two objects
   std::string groupName = "my group";
-  polyscope::registerGroup(groupName);
-  polyscope::setParentGroupOfStructure(psCloud, groupName);
-  polyscope::setParentGroupOfStructure(psCurve, groupName);
+  polyscope::Group* group = polyscope::createGroup(groupName);
+  psCurve->addToGroup(*group);    // add by group ref
+  psCloud->addToGroup(groupName); // add by name
 
-  // put that group in another group
-  std::string parentGroupName = "my parent group";
-  std::string emptyGroupName = "my empty group";
-  polyscope::registerGroup(parentGroupName);
-  polyscope::registerGroup(emptyGroupName);
-  polyscope::setParentGroupOfGroup(groupName, parentGroupName);
-  polyscope::setParentGroupOfGroup(emptyGroupName, parentGroupName);
+  // toggle enabled for everything in the group
+  group->setEnabled(false);
+
+  // hide items in group from displaying in the UI
+  // (useful if you are registering huge numbers of structures you don't always need to see)
+  group->setHideDescendentsFromStructureLists(true);
+  group->setShowChildDetails(false);
+
+  // nest groups inside of other groups
+  std::string superGroupName = "my parent group";
+  polyscope::Group* superGroup = polyscope::createGroup(superGroupName);
+  superGroup->addChildGroup(*group);
 
   polyscope::show(3);
 
@@ -236,19 +245,19 @@ TEST_F(PolyscopeTest, TestDocsExample) {
 TEST_F(PolyscopeTest, TestDeletedGroupReferenceError) {
   // don't run this because we can't catch UI errors
   if (true) return;
-  polyscope::registerGroup("test_group");
-  polyscope::registerGroup("test_child_group");
+  polyscope::Group* test_group = polyscope::createGroup("test_group");
+  polyscope::Group* test_child_group = polyscope::createGroup("test_child_group");
   polyscope::removeGroup("test_group");
   // this should throw an error (but not segfault)
-  polyscope::setParentGroupOfGroup("test_child_group", "test_group");
+  polyscope::getGroup("test_group");
 }
 
 TEST_F(PolyscopeTest, TestGroupCycleError) {
   // don't run this because we can't catch UI errors
   if (true) return;
-  polyscope::registerGroup("test_group");
-  polyscope::registerGroup("test_child_group");
-  polyscope::setParentGroupOfGroup("test_child_group", "test_group");
+  polyscope::Group* test_group = polyscope::createGroup("test_group");
+  polyscope::Group* test_child_group = polyscope::createGroup("test_child_group");
+  test_group->addChildGroup(*test_child_group);
   // this should throw an error (but not segfault)
-  polyscope::setParentGroupOfGroup("test_group", "test_child_group");
+  test_child_group->addChildGroup(*test_group);
 }

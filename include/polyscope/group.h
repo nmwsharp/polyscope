@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_set>
 
 #include "polyscope/structure.h"
 #include "polyscope/weak_handle.h"
@@ -19,6 +20,7 @@ namespace polyscope {
 class Group : public virtual WeakReferrable {
 
 public:
+  // End-users should not call this constructure, use polyscope::createGroup()
   Group(std::string name);
   ~Group();
 
@@ -27,8 +29,8 @@ public:
                   // buildUI() for all children.
 
   // Is the group being displayed (0 no, 1 some children, 2 all children)
-  int isEnabled();
-  Group* setEnabled(bool newEnabled);
+  int isEnabled();                    // checks ALL descendents
+  Group* setEnabled(bool newEnabled); // updates setting for ALL descendents
 
   void addChildGroup(Group& newChild);
   void addChildStructure(Structure& newChild);
@@ -38,8 +40,17 @@ public:
 
   bool isRootGroup();
   Group* getTopLevelGrandparent();
+  void appendStructuresToSkip(std::unordered_set<Structure*>& skipSet);
+  void appendAllDescendents(std::unordered_set<Structure*>& skipSet);
 
   std::string niceName();
+  std::string uniqueName();
+
+  Group* setShowChildDetails(bool newVal);
+  bool getShowChildDetails();
+
+  Group* setHideDescendentsFromStructureLists(bool newVal);
+  bool getHideDescendentsFromStructureLists();
 
   // === Member variables ===
   WeakHandle<Group> parentGroup; // the parent group of this group (if null, this is a root group)
@@ -48,6 +59,12 @@ public:
   std::vector<WeakHandle<Structure>> childrenStructures;
 
 protected:
+  // = State
+
+  PersistentValue<bool> showChildDetails;
+  PersistentValue<bool> hideDescendentsFromStructureLists;
+
+  // helpers
   void cullExpiredChildren(); // remove any child
 };
 

@@ -45,6 +45,10 @@ void Structure::setEnabledAllOfType(bool newEnabled) {
   }
 }
 
+void Structure::addToGroup(std::string groupName) { addToGroup(*getGroup(groupName)); }
+
+void Structure::addToGroup(Group& group) { group.addChildStructure(*this); }
+
 void Structure::buildUI() {
   ImGui::PushID(name.c_str()); // ensure there are no conflicts with
                                // identically-named labels

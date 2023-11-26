@@ -19,6 +19,9 @@
 
 namespace polyscope {
 
+// forward declarations
+class Group;
+
 
 // A 'structure' in Polyscope terms, is an object with which we can associate data in the UI, such as a point cloud,
 // or a mesh. This in contrast to 'quantities', which we associate with the structures. For instance, a surface mesh
@@ -93,6 +96,8 @@ public:
   bool isEnabled();
   void enableIsolate();                      // enable this structure, disable all of same type
   void setEnabledAllOfType(bool newEnabled); // enable/disable all structures of this type
+  void addToGroup(std::string groupName);
+  void addToGroup(Group& group);
 
 
   // Options

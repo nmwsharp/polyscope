@@ -109,16 +109,6 @@ Structure* getStructure(std::string type, std::string name = "");
 // True if such a structure exists
 bool hasStructure(std::string type, std::string name = "");
 
-// Group management
-bool registerGroup(std::string name);
-bool setParentGroupOfGroup(std::string child, std::string parent);
-bool setParentGroupOfStructure(std::string typeName, std::string child, std::string parent);
-bool setParentGroupOfStructure(Structure* child, std::string parent);
-// De-register a group
-void setGroupEnabled(std::string name, bool enabled);
-void removeGroup(std::string name, bool errorIfAbsent = true);
-void removeAllGroups();
-
 // De-register a structure, of any type. Also removes any quantities associated with the structure
 void removeStructure(Structure* structure, bool errorIfAbsent = false);
 void removeStructure(std::string type, std::string name, bool errorIfAbsent = false);
@@ -129,6 +119,13 @@ void removeAllStructures();
 
 // Recompute the global state::lengthScale, boundingBox, and center by looping over registered structures
 void updateStructureExtents();
+
+// Group management
+Group* createGroup(std::string name);
+Group* getGroup(std::string name);
+void removeGroup(Group* group, bool errorIfAbsent = true);
+void removeGroup(std::string name, bool errorIfAbsent = true);
+void removeAllGroups();
 
 // Essentially regenerates all state and programs within Polyscope, calling refresh() recurisvely on all structures and
 // quantities

@@ -27,7 +27,9 @@ bool CheckboxTristate(const char* label, int* v_tristate) {
 
 namespace polyscope {
 
-Group::Group(std::string name_) : name(name_) {}
+Group::Group(std::string name_)
+    : name(name_), showChildDetails(uniqueName() + "showChildDetails", true),
+      hideDescendentsFromStructureLists(uniqueName() + "hideDescendentsFromStructureLists", false) {}
 
 Group::~Group() {
   // unparent all children
@@ -51,6 +53,7 @@ void Group::buildUI() {
     ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
   }
 
+
   if (ImGui::TreeNode(niceName().c_str())) {
 
     // Enabled checkbox
@@ -62,20 +65,38 @@ void Group::buildUI() {
       if (CheckboxTristate("Enabled", &enabledLocal)) {
         setEnabled(enabledLocal);
       }
-    }
 
-    // Call children buildUI
-    for (WeakHandle<Group>& childWeak : childrenGroups) {
-      if (childWeak.isValid()) {
-        Group& child = childWeak.get();
-        child.buildUI();
+      // Options popup
+      ImGui::SameLine();
+      if (ImGui::Button("Options")) {
+        ImGui::OpenPopup("OptionsPopup");
+      }
+      if (ImGui::BeginPopup("OptionsPopup")) {
+
+        if (ImGui::MenuItem("Show child details", NULL, getShowChildDetails())) {
+          setShowChildDetails(!getShowChildDetails());
+        }
+        if (ImGui::MenuItem("Hide descendents from structure lists", NULL, getHideDescendentsFromStructureLists())) {
+          setHideDescendentsFromStructureLists(!getHideDescendentsFromStructureLists());
+        }
+        ImGui::EndPopup();
       }
     }
 
-    for (WeakHandle<Structure>& childWeak : childrenStructures) {
-      if (childWeak.isValid()) {
-        Structure& child = childWeak.get();
-        child.buildUI();
+    // Call children buildUI
+    if (getShowChildDetails()) {
+      for (WeakHandle<Group>& childWeak : childrenGroups) {
+        if (childWeak.isValid()) {
+          Group& child = childWeak.get();
+          child.buildUI();
+        }
+      }
+
+      for (WeakHandle<Structure>& childWeak : childrenStructures) {
+        if (childWeak.isValid()) {
+          Structure& child = childWeak.get();
+          child.buildUI();
+        }
       }
     }
 
@@ -238,6 +259,28 @@ void Group::cullExpiredChildren() {
                            childrenStructures.end());
 }
 
+void Group::appendStructuresToSkip(std::unordered_set<Structure*>& skipSet) {
+  if (getHideDescendentsFromStructureLists()) {
+    appendAllDescendents(skipSet);
+  }
+}
+
+void Group::appendAllDescendents(std::unordered_set<Structure*>& skipSet) {
+  for (WeakHandle<Group>& childWeak : childrenGroups) {
+    if (childWeak.isValid()) {
+      Group& child = childWeak.get();
+      child.appendAllDescendents(skipSet);
+    }
+  }
+
+  for (WeakHandle<Structure>& childWeak : childrenStructures) {
+    if (childWeak.isValid()) {
+      Structure& child = childWeak.get();
+      skipSet.insert(&child);
+    }
+  }
+}
+
 Group* Group::setEnabled(bool newEnabled) {
   for (WeakHandle<Group>& childWeak : childrenGroups) {
     if (childWeak.isValid()) {
@@ -255,8 +298,22 @@ Group* Group::setEnabled(bool newEnabled) {
   return this;
 }
 
+Group* Group::setShowChildDetails(bool newVal) {
+  showChildDetails = newVal;
+  return this;
+}
+bool Group::getShowChildDetails() { return showChildDetails.get(); }
+
+Group* Group::setHideDescendentsFromStructureLists(bool newVal) {
+  hideDescendentsFromStructureLists = newVal;
+  return this;
+}
+bool Group::getHideDescendentsFromStructureLists() { return hideDescendentsFromStructureLists.get(); }
+
 bool Group::isRootGroup() { return !parentGroup.isValid(); }
 
 std::string Group::niceName() { return name; }
+
+std::string Group::uniqueName() { return "Group#" + name + "#"; }
 
 } // namespace polyscope

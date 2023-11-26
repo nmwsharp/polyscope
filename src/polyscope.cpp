@@ -667,7 +667,6 @@ void buildStructureGui() {
   ImGui::SetNextWindowPos(ImVec2(imguiStackMargin, lastWindowHeightPolyscope + 2 * imguiStackMargin));
   ImGui::SetNextWindowSize(
       ImVec2(leftWindowsWidth, view::windowHeight - lastWindowHeightPolyscope - 3 * imguiStackMargin));
-
   ImGui::Begin("Structures", &showStructureWindow);
 
   // only show groups if there are any
@@ -680,6 +679,13 @@ void buildStructureGui() {
       }
     }
   }
+
+  // groups have an option to hide structures from this list; assemble a list of structures to skip
+  std::unordered_set<Structure*> structuresToSkip;
+  for (auto& x : state::groups) {
+    x.second->appendStructuresToSkip(structuresToSkip);
+  }
+
 
   for (auto& catMapEntry : state::structures) {
     std::string catName = catMapEntry.first;
@@ -697,10 +703,21 @@ void buildStructureGui() {
         structureMap.begin()->second->buildSharedStructureUI();
       }
 
+      int32_t skipCount = 0;
       for (auto& x : structureMap) {
         ImGui::SetNextTreeNodeOpen(structureMap.size() <= 8,
                                    ImGuiCond_FirstUseEver); // closed by default if more than 8
+
+        if (structuresToSkip.find(x.second.get()) != structuresToSkip.end()) {
+          skipCount++;
+          continue;
+        }
+
         x.second->buildUI();
+      }
+
+      if (skipCount > 0) {
+        ImGui::Text("  (skipped %d hidden structures)", skipCount);
       }
     }
 
@@ -900,70 +917,6 @@ void shutdown() {
   render::engine->shutdownImGui();
 }
 
-bool registerGroup(std::string name) {
-  checkInitialized();
-
-  // check if group already exists
-  bool inUse = state::groups.find(name) != state::groups.end();
-  if (inUse) {
-    exception("Attempted to register group with name " + name + ", but a group with that name already exists");
-    return false;
-  }
-
-  // add to the group map
-  state::groups[name] = std::unique_ptr<Group>(new Group(name));
-
-  return true;
-}
-
-bool setParentGroupOfGroup(std::string child, std::string parent) {
-  // check if child exists
-  bool childExists = state::groups.find(child) != state::groups.end();
-  if (!childExists) {
-    exception("Attempted to set parent of group " + child + ", but no group with that name exists");
-    return false;
-  }
-
-  // check if parent exists
-  bool parentExists = state::groups.find(parent) != state::groups.end();
-  if (!parentExists) {
-    exception("Attempted to set parent of group " + child + " to " + parent + ", but no group with that name exists");
-    return false;
-  }
-
-  // set the parent
-  state::groups[parent]->addChildGroup(*state::groups[child]);
-  return true;
-}
-
-bool setParentGroupOfStructure(std::string typeName, std::string child, std::string parent) {
-  // check if parent exists
-  bool parentExists = state::groups.find(parent) != state::groups.end();
-  if (!parentExists) {
-    exception("Attempted to set parent of " + typeName + " " + child + " to " + parent +
-              ", but no group with that name exists");
-    return false;
-  }
-
-  std::map<std::string, std::unique_ptr<Structure>>& sMap = getStructureMapCreateIfNeeded(typeName);
-
-  // check if child exists
-  bool childExists = sMap.find(child) != sMap.end();
-  if (!childExists) {
-    exception("Attempted to set parent of " + typeName + " " + child + ", but no " + typeName +
-              "with that name exists");
-    return false;
-  }
-
-  // set the parent
-  state::groups[parent]->addChildStructure(*sMap[child]);
-  return true;
-}
-
-bool setParentGroupOfStructure(Structure* child, std::string parent) {
-  return setParentGroupOfStructure(child->typeName(), child->name, parent);
-}
-
 bool registerStructure(Structure* s, bool replaceIfPresent) {
 
   std::string typeName = s->typeName();
@@ -1044,33 +997,6 @@ bool hasStructure(std::string type, std::string name) {
   return sMap.find(name) != sMap.end();
 }
 
-void setGroupEnabled(std::string name, bool enabled) {
-  // Check if group exists
-  if (state::groups.find(name) == state::groups.end()) {
-    exception("No group with name " + name + " registered");
-    return;
-  }
-
-  // Group exists, set it
-  state::groups[name]->setEnabled(enabled);
-  return;
-}
-
-void removeGroup(std::string name, bool errorIfAbsent) {
-  // Check if group exists
-  if (state::groups.find(name) == state::groups.end()) {
-    if (errorIfAbsent) {
-      exception("No group with name " + name + " registered");
-    }
-    return;
-  }
-
-  // Group exists, remove it
-  state::groups.erase(name);
-  return;
-}
-
-void removeAllGroups() { state::groups.clear(); }
 
 void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
 
@@ -1163,6 +1089,52 @@ void removeAllStructures() {
   requestRedraw();
   pick::resetSelection();
 }
+
+
+Group* createGroup(std::string name) {
+  checkInitialized();
+
+  // check if group already exists
+  bool inUse = state::groups.find(name) != state::groups.end();
+  if (inUse) {
+    exception("Attempted to register group with name " + name + ", but a group with that name already exists");
+    return nullptr;
+  }
+
+  // add to the group map
+  state::groups[name] = std::unique_ptr<Group>(new Group(name));
+
+  return state::groups[name].get();
+}
+
+Group* getGroup(std::string groupName) {
+  // check if group exists
+  bool groupExists = state::groups.find(groupName) != state::groups.end();
+  if (!groupExists) {
+    exception("No group with name " + groupName + " exists");
+    return nullptr;
+  }
+
+  return state::groups.find(groupName)->second.get();
+}
+
+void removeGroup(std::string name, bool errorIfAbsent) {
+  // Check if group exists
+  if (state::groups.find(name) == state::groups.end()) {
+    if (errorIfAbsent) {
+      exception("No group with name " + name + " registered");
+    }
+    return;
+  }
+
+  // Group exists, remove it
+  state::groups.erase(name);
+  return;
+}
+
+void removeGroup(Group* group, bool errorIfAbsent) { removeGroup(group->name, errorIfAbsent); }
+
+void removeAllGroups() { state::groups.clear(); }
 
 void refresh() {
 
