@@ -218,13 +218,13 @@ CurveNetworkEdgeColorQuantity* CurveNetwork::addEdgeColorQuantity(std::string na
 template <class T>
 CurveNetworkNodeScalarQuantity* CurveNetwork::addNodeScalarQuantity(std::string name, const T& data, DataType type) {
   validateSize(data, nNodes(), "curve network node scalar quantity " + name);
-  return addNodeScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
+  return addNodeScalarQuantityImpl(name, standardizeArray<float, T>(data), type);
 }
 
 template <class T>
 CurveNetworkEdgeScalarQuantity* CurveNetwork::addEdgeScalarQuantity(std::string name, const T& data, DataType type) {
   validateSize(data, nEdges(), "curve network edge scalar quantity " + name);
-  return addEdgeScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
+  return addEdgeScalarQuantityImpl(name, standardizeArray<float, T>(data), type);
 }
 
 

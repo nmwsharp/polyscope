@@ -263,8 +263,8 @@ private:
 
   VolumeMeshVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   VolumeMeshCellColorQuantity* addCellColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
-  VolumeMeshVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  VolumeMeshCellScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
+  VolumeMeshVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
+  VolumeMeshCellScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
   VolumeMeshVertexVectorQuantity* addVertexVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
   VolumeMeshCellVectorQuantity* addCellVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
 

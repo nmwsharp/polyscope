@@ -9,7 +9,7 @@
 namespace polyscope {
 
 
-PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::vector<double>& values_,
+PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::vector<float>& values_,
                                                    PointCloud& pointCloud_, DataType dataType_)
     : PointCloudQuantity(name, pointCloud_, true), ScalarQuantity(*this, values_, dataType_) {}
 

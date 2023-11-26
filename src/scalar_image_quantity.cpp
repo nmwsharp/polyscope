@@ -11,7 +11,7 @@ namespace polyscope {
 
 
 ScalarImageQuantity::ScalarImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
-                                         const std::vector<double>& data_, ImageOrigin imageOrigin_, DataType dataType_)
+                                         const std::vector<float>& data_, ImageOrigin imageOrigin_, DataType dataType_)
     : ImageQuantity(parent_, name, dimX, dimY, imageOrigin_), ScalarQuantity(*this, data_, dataType_) {
   values.setTextureSize(dimX, dimY);
 }
@@ -165,7 +165,7 @@ ScalarImageQuantity* ScalarImageQuantity::setEnabled(bool newEnabled) {
 // Instantiate a construction helper which is used to avoid header dependencies. See forward declaration and note in
 // structure.ipp.
 ScalarImageQuantity* createScalarImageQuantity(Structure& parent, std::string name, size_t dimX, size_t dimY,
-                                               const std::vector<double>& data, ImageOrigin imageOrigin,
+                                               const std::vector<float>& data, ImageOrigin imageOrigin,
                                                DataType dataType) {
   return new ScalarImageQuantity(parent, name, dimX, dimY, data, imageOrigin, dataType);
 }

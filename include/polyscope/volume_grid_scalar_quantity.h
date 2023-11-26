@@ -20,7 +20,7 @@ namespace polyscope {
 class VolumeGridNodeScalarQuantity : public VolumeGridQuantity, public ScalarQuantity<VolumeGridNodeScalarQuantity> {
 
 public:
-  VolumeGridNodeScalarQuantity(std::string name, VolumeGrid& grid_, const std::vector<double>& values_,
+  VolumeGridNodeScalarQuantity(std::string name, VolumeGrid& grid_, const std::vector<float>& values_,
                                DataType dataType_);
 
   virtual void draw() override;
@@ -83,7 +83,7 @@ protected:
 class VolumeGridCellScalarQuantity : public VolumeGridQuantity, public ScalarQuantity<VolumeGridCellScalarQuantity> {
 
 public:
-  VolumeGridCellScalarQuantity(std::string name, VolumeGrid& grid_, const std::vector<double>& values_,
+  VolumeGridCellScalarQuantity(std::string name, VolumeGrid& grid_, const std::vector<float>& values_,
                                DataType dataType_);
 
   virtual void draw() override;

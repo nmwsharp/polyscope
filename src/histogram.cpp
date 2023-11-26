@@ -15,11 +15,11 @@ namespace polyscope {
 
 Histogram::Histogram() {}
 
-Histogram::Histogram(std::vector<double>& values) { buildHistogram(values); }
+Histogram::Histogram(std::vector<float>& values) { buildHistogram(values); }
 
 Histogram::~Histogram() {}
 
-void Histogram::buildHistogram(const std::vector<double>& values) {
+void Histogram::buildHistogram(const std::vector<float>& values) {
 
   // Build arrays of values
   size_t N = values.size();

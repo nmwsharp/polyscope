@@ -163,7 +163,7 @@ private:
   void ensurePickProgramPrepared();
 
   // === Quantity adder implementations
-  PointCloudScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
+  PointCloudScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
   PointCloudParameterizationQuantity*
   addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param, ParamCoordsType type);
   PointCloudParameterizationQuantity*

@@ -250,7 +250,7 @@ public:
 
   // === Floating Quantity impls
   ScalarImageQuantity* addScalarImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
-                                                  const std::vector<double>& values, ImageOrigin imageOrigin,
+                                                  const std::vector<float>& values, ImageOrigin imageOrigin,
                                                   DataType type);
 
   ColorImageQuantity* addColorImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
@@ -270,7 +270,7 @@ public:
   ScalarRenderImageQuantity* addScalarRenderImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
                                                               const std::vector<float>& depthData,
                                                               const std::vector<glm::vec3>& normalData,
-                                                              const std::vector<double>& scalarData,
+                                                              const std::vector<float>& scalarData,
                                                               ImageOrigin imageOrigin, DataType type);
 
   RawColorRenderImageQuantity* addRawColorRenderImageQuantityImpl(std::string name, size_t dimX, size_t dimY,

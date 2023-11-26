@@ -185,8 +185,8 @@ private:
   // === Quantity adder implementations
   // clang-format off
   
-  VolumeGridNodeScalarQuantity* addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
-  VolumeGridCellScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
+  VolumeGridNodeScalarQuantity* addNodeScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType dataType_);
+  VolumeGridCellScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType dataType_);
 
   // clang-format on
 };

@@ -20,7 +20,7 @@ class SurfaceParameterizationQuantity;
 
 class SurfaceScalarQuantity : public SurfaceMeshQuantity, public ScalarQuantity<SurfaceScalarQuantity> {
 public:
-  SurfaceScalarQuantity(std::string name, SurfaceMesh& mesh_, std::string definedOn, const std::vector<double>& values_,
+  SurfaceScalarQuantity(std::string name, SurfaceMesh& mesh_, std::string definedOn, const std::vector<float>& values_,
                         DataType dataType);
 
   virtual void draw() override;
@@ -42,7 +42,7 @@ protected:
 
 class SurfaceVertexScalarQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceVertexScalarQuantity(std::string name, const std::vector<double>& values_, SurfaceMesh& mesh_,
+  SurfaceVertexScalarQuantity(std::string name, const std::vector<float>& values_, SurfaceMesh& mesh_,
                               DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
@@ -57,7 +57,7 @@ public:
 
 class SurfaceFaceScalarQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceFaceScalarQuantity(std::string name, const std::vector<double>& values_, SurfaceMesh& mesh_,
+  SurfaceFaceScalarQuantity(std::string name, const std::vector<float>& values_, SurfaceMesh& mesh_,
                             DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
@@ -72,7 +72,7 @@ public:
 
 class SurfaceEdgeScalarQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceEdgeScalarQuantity(std::string name, const std::vector<double>& values_, SurfaceMesh& mesh_,
+  SurfaceEdgeScalarQuantity(std::string name, const std::vector<float>& values_, SurfaceMesh& mesh_,
                             DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
@@ -86,7 +86,7 @@ public:
 
 class SurfaceHalfedgeScalarQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceHalfedgeScalarQuantity(std::string name, const std::vector<double>& values_, SurfaceMesh& mesh_,
+  SurfaceHalfedgeScalarQuantity(std::string name, const std::vector<float>& values_, SurfaceMesh& mesh_,
                                 DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
@@ -100,7 +100,7 @@ public:
 
 class SurfaceCornerScalarQuantity : public SurfaceScalarQuantity {
 public:
-  SurfaceCornerScalarQuantity(std::string name, const std::vector<double>& values_, SurfaceMesh& mesh_,
+  SurfaceCornerScalarQuantity(std::string name, const std::vector<float>& values_, SurfaceMesh& mesh_,
                               DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
@@ -115,7 +115,7 @@ public:
 class SurfaceTextureScalarQuantity : public SurfaceScalarQuantity {
 public:
   SurfaceTextureScalarQuantity(std::string name, SurfaceMesh& mesh_, SurfaceParameterizationQuantity& param_,
-                               size_t dimX, size_t dimY, const std::vector<double>& values_, ImageOrigin origin_,
+                               size_t dimX, size_t dimY, const std::vector<float>& values_, ImageOrigin origin_,
                                DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;

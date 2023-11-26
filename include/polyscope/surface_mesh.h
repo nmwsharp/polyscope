@@ -111,9 +111,9 @@ public:
   // other internally-computed geometry
   render::ManagedBuffer<glm::vec3> faceNormals;
   render::ManagedBuffer<glm::vec3> faceCenters;
-  render::ManagedBuffer<double> faceAreas;
+  render::ManagedBuffer<float> faceAreas;
   render::ManagedBuffer<glm::vec3> vertexNormals;
-  render::ManagedBuffer<double> vertexAreas;
+  render::ManagedBuffer<float> vertexAreas;
   // render::ManagedBuffer<double> edgeLengths;
 
   // tangent spaces
@@ -317,9 +317,9 @@ private:
   // other internally-computed geometry
   std::vector<glm::vec3> faceNormalsData;
   std::vector<glm::vec3> faceCentersData;
-  std::vector<double> faceAreasData;
+  std::vector<float> faceAreasData;
   std::vector<glm::vec3> vertexNormalsData;
-  std::vector<double> vertexAreasData;
+  std::vector<float> vertexAreasData;
   // std::vector<double> edgeLengthsData;
 
   // tangent spaces
@@ -396,14 +396,14 @@ private:
   SurfaceVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   SurfaceFaceColorQuantity* addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   SurfaceTextureColorQuantity* addTextureColorQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const std::vector<glm::vec3>& colors, ImageOrigin imageOrigin);
-  SurfaceVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  SurfaceFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  SurfaceEdgeScalarQuantity* addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  SurfaceHalfedgeScalarQuantity* addHalfedgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  SurfaceCornerScalarQuantity* addCornerScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  SurfaceTextureScalarQuantity* addTextureScalarQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const std::vector<double>& data, ImageOrigin imageOrigin, DataType type);
-  SurfaceVertexScalarQuantity* addVertexDistanceQuantityImpl(std::string name, const std::vector<double>& data);
-  SurfaceVertexScalarQuantity* addVertexSignedDistanceQuantityImpl(std::string name, const std::vector<double>& data);
+  SurfaceVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
+  SurfaceFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
+  SurfaceEdgeScalarQuantity* addEdgeScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
+  SurfaceHalfedgeScalarQuantity* addHalfedgeScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
+  SurfaceCornerScalarQuantity* addCornerScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
+  SurfaceTextureScalarQuantity* addTextureScalarQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const std::vector<float>& data, ImageOrigin imageOrigin, DataType type);
+  SurfaceVertexScalarQuantity* addVertexDistanceQuantityImpl(std::string name, const std::vector<float>& data);
+  SurfaceVertexScalarQuantity* addVertexSignedDistanceQuantityImpl(std::string name, const std::vector<float>& data);
   SurfaceCornerParameterizationQuantity* addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
   SurfaceVertexParameterizationQuantity* addVertexParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
   SurfaceVertexParameterizationQuantity* addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& coords, ParamCoordsType type);
@@ -411,7 +411,7 @@ private:
   SurfaceFaceVectorQuantity* addFaceVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
   SurfaceFaceTangentVectorQuantity* addFaceTangentVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, const std::vector<glm::vec3>& basisX, const std::vector<glm::vec3>& basisY, int nSym, VectorType vectorType);
   SurfaceVertexTangentVectorQuantity* addVertexTangentVectorQuantityImpl(std::string name, const std::vector<glm::vec2>& vectors, const std::vector<glm::vec3>& basisX, const std::vector<glm::vec3>& basisY, int nSym, VectorType vectorType);
-  SurfaceOneFormTangentVectorQuantity* addOneFormTangentVectorQuantityImpl(std::string name, const std::vector<double>& data, const std::vector<char>& orientations);
+  SurfaceOneFormTangentVectorQuantity* addOneFormTangentVectorQuantityImpl(std::string name, const std::vector<float>& data, const std::vector<char>& orientations);
 
   // === Helper implementations
 

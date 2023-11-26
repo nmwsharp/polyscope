@@ -459,11 +459,7 @@ ScalarRenderImageQuantity* renderImplicitSurfaceScalarBatch(QuantityStructure<S>
   // rather than creating a whole new one
 
   // here, we bypass the conversion adaptor since we have explicitly filled matching types
-  std::vector<double> scalarOutD(rayPosOut.size());
-  for (size_t i = 0; i < scalarOut.size(); i++) {
-    scalarOutD[i] = scalarOut[i];
-  }
-  return parent->addScalarRenderImageQuantityImpl(name, opts.dimX, opts.dimY, rayDepthOut, normalOut, scalarOutD,
+  return parent->addScalarRenderImageQuantityImpl(name, opts.dimX, opts.dimY, rayDepthOut, normalOut, scalarOut,
                                                   ImageOrigin::UpperLeft, dataType);
 }
 
