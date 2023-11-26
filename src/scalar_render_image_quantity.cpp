@@ -13,7 +13,7 @@ namespace polyscope {
 ScalarRenderImageQuantity::ScalarRenderImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                                                      const std::vector<float>& depthData,
                                                      const std::vector<glm::vec3>& normalData,
-                                                     const std::vector<double>& scalarData_, ImageOrigin imageOrigin,
+                                                     const std::vector<float>& scalarData_, ImageOrigin imageOrigin,
                                                      DataType dataType_)
     : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData, imageOrigin),
       ScalarQuantity(*this, scalarData_, dataType_) {
@@ -113,7 +113,7 @@ std::string ScalarRenderImageQuantity::niceName() { return name + " (scalar rend
 ScalarRenderImageQuantity* createScalarRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
                                                    const std::vector<float>& depthData,
                                                    const std::vector<glm::vec3>& normalData,
-                                                   const std::vector<double>& scalarData, ImageOrigin imageOrigin,
+                                                   const std::vector<float>& scalarData, ImageOrigin imageOrigin,
                                                    DataType dataType) {
 
   return new ScalarRenderImageQuantity(parent, name, dimX, dimY, depthData, normalData, scalarData, imageOrigin,

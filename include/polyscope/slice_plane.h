@@ -66,8 +66,8 @@ public:
   void setGridLineColor(glm::vec3 newVal);
   glm::vec3 getGridLineColor();
 
-  void setTransparency(double newVal);
-  double getTransparency();
+  void setTransparency(float newVal);
+  float getTransparency();
 
   void setVolumeMeshToInspect(std::string meshName);
   std::string getVolumeMeshToInspect();

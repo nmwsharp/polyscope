@@ -139,13 +139,13 @@ std::vector<T> gather(const std::vector<T>& input, const std::vector<uint32_t>& 
 extern std::random_device util_random_device;
 extern std::mt19937 util_mersenne_twister;
 
-inline double randomUnit() {
-  std::uniform_real_distribution<double> dist(0., 1.);
+inline float randomUnit() {
+  std::uniform_real_distribution<float> dist(0., 1.);
   return dist(util_mersenne_twister);
 }
 
-inline double randomReal(double minVal, double maxVal) {
-  std::uniform_real_distribution<double> dist(minVal, maxVal);
+inline float randomReal(float minVal, float maxVal) {
+  std::uniform_real_distribution<float> dist(minVal, maxVal);
   return dist(util_mersenne_twister);
 }
 
@@ -160,8 +160,8 @@ inline size_t randomIndex(size_t size) {
   return dist(util_mersenne_twister);
 }
 
-inline double randomNormal(double mean = 0.0, double stddev = 1.0) {
-  std::normal_distribution<double> dist{mean, stddev};
+inline float randomNormal(float mean = 0.0, float stddev = 1.0) {
+  std::normal_distribution<float> dist{mean, stddev};
   return dist(util_mersenne_twister);
 }
 
@@ -171,9 +171,9 @@ inline double randomNormal(double mean = 0.0, double stddev = 1.0) {
 void ImGuiHelperMarker(const char* text);
 
 // === Math utilities
-const double PI = 3.14159265358979323;
+const float PI = 3.14159265358979323;
 
-typedef std::complex<double> Complex;
+typedef std::complex<float> Complex;
 
 
 } // namespace polyscope

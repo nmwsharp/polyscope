@@ -126,8 +126,8 @@ public:
   glm::vec3 getPointColor();
 
   // set the radius of the points
-  PointCloud* setPointRadius(double newVal, bool isRelative = true);
-  double getPointRadius();
+  PointCloud* setPointRadius(float newVal, bool isRelative = true);
+  float getPointRadius();
 
   // Material
   PointCloud* setMaterial(std::string name);
@@ -163,7 +163,7 @@ private:
   void ensurePickProgramPrepared();
 
   // === Quantity adder implementations
-  PointCloudScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
+  PointCloudScalarQuantity* addScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
   PointCloudParameterizationQuantity*
   addParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param, ParamCoordsType type);
   PointCloudParameterizationQuantity*

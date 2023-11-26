@@ -13,7 +13,7 @@ using std::endl;
 namespace polyscope {
 
 CurveNetworkScalarQuantity::CurveNetworkScalarQuantity(std::string name, CurveNetwork& network_, std::string definedOn_,
-                                                       const std::vector<double>& values_, DataType dataType_)
+                                                       const std::vector<float>& values_, DataType dataType_)
     : CurveNetworkQuantity(name, network_, true), ScalarQuantity(*this, values_, dataType_), definedOn(definedOn_) {}
 
 void CurveNetworkScalarQuantity::draw() {
@@ -69,7 +69,7 @@ std::string CurveNetworkScalarQuantity::niceName() { return name + " (" + define
 // ==========             Node Scalar            ==========
 // ========================================================
 
-CurveNetworkNodeScalarQuantity::CurveNetworkNodeScalarQuantity(std::string name, const std::vector<double>& values_,
+CurveNetworkNodeScalarQuantity::CurveNetworkNodeScalarQuantity(std::string name, const std::vector<float>& values_,
                                                                CurveNetwork& network_, DataType dataType_)
     : CurveNetworkScalarQuantity(name, network_, "node", values_, dataType_)
 
@@ -130,7 +130,7 @@ void CurveNetworkNodeScalarQuantity::buildNodeInfoGUI(size_t nInd) {
 // ==========            Edge Scalar             ==========
 // ========================================================
 
-CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name, const std::vector<double>& values_,
+CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name, const std::vector<float>& values_,
                                                                CurveNetwork& network_, DataType dataType_)
     : CurveNetworkScalarQuantity(name, network_, "edge", values_, dataType_),
       nodeAverageValues(this, uniquePrefix() + "#nodeAverageValues", nodeAverageValuesData) {}

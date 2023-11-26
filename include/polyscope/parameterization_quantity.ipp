@@ -236,14 +236,14 @@ std::pair<glm::vec3, glm::vec3> ParameterizationQuantity<QuantityT>::getGridColo
 }
 
 template <typename QuantityT>
-QuantityT* ParameterizationQuantity<QuantityT>::setCheckerSize(double newVal) {
+QuantityT* ParameterizationQuantity<QuantityT>::setCheckerSize(float newVal) {
   checkerSize = newVal;
   requestRedraw();
   return &quantity;
 }
 
 template <typename QuantityT>
-double ParameterizationQuantity<QuantityT>::getCheckerSize() {
+float ParameterizationQuantity<QuantityT>::getCheckerSize() {
   return checkerSize.get();
 }
 
@@ -260,14 +260,14 @@ std::string ParameterizationQuantity<QuantityT>::getColorMap() {
 }
 
 template <typename QuantityT>
-QuantityT* ParameterizationQuantity<QuantityT>::setAltDarkness(double newVal) {
+QuantityT* ParameterizationQuantity<QuantityT>::setAltDarkness(float newVal) {
   altDarkness = newVal;
   requestRedraw();
   return &quantity;
 }
 
 template <typename QuantityT>
-double ParameterizationQuantity<QuantityT>::getAltDarkness() {
+float ParameterizationQuantity<QuantityT>::getAltDarkness() {
   return altDarkness.get();
 }
 

@@ -12,7 +12,7 @@ namespace polyscope {
 // ========================================================
 
 VolumeGridNodeScalarQuantity::VolumeGridNodeScalarQuantity(std::string name, VolumeGrid& grid_,
-                                                           const std::vector<double>& values_, DataType dataType_)
+                                                           const std::vector<float>& values_, DataType dataType_)
     : VolumeGridQuantity(name, grid_, true), ScalarQuantity(*this, values_, dataType_),
       gridcubeVizEnabled(uniquePrefix() + "gridcubeVizEnabled", true),
       isosurfaceVizEnabled(uniquePrefix() + "isosurfaceVizEnabled", false),
@@ -277,7 +277,7 @@ bool VolumeGridNodeScalarQuantity::getSlicePlanesAffectIsosurface() { return sli
 // ========================================================
 
 VolumeGridCellScalarQuantity::VolumeGridCellScalarQuantity(std::string name, VolumeGrid& grid_,
-                                                           const std::vector<double>& values_, DataType dataType_)
+                                                           const std::vector<float>& values_, DataType dataType_)
     : VolumeGridQuantity(name, grid_, true), ScalarQuantity(*this, values_, dataType_),
       gridcubeVizEnabled(parent.uniquePrefix() + "#" + name + "#gridcubeVizEnabled", true) {
 

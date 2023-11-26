@@ -139,7 +139,7 @@ void TransformationGizmo::draw() {
   arrowProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   arrowProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
   arrowProgram->setUniform("u_lengthMult", vecLength);
-  arrowProgram->setUniform("u_radius", 0.2 * gizmoSize);
+  arrowProgram->setUniform("u_radius", 0.2f * gizmoSize);
 
   sphereProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   sphereProgram->setUniform("u_viewport", render::engine->getCurrentViewport());

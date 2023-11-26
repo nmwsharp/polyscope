@@ -29,7 +29,6 @@ enum class ParamVizStyle { CHECKER = 0, GRID, LOCAL_CHECK, LOCAL_RAD }; // TODO 
 
 enum class ManagedBufferType {
   Float,
-  Double,
   Vec2,
   Vec3,
   Vec4,

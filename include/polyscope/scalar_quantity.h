@@ -18,7 +18,7 @@ namespace polyscope {
 template <typename QuantityT>
 class ScalarQuantity {
 public:
-  ScalarQuantity(QuantityT& quantity, const std::vector<double>& values, DataType dataType);
+  ScalarQuantity(QuantityT& quantity, const std::vector<float>& values, DataType dataType);
 
   // Build the ImGUI UIs for scalars
   void buildScalarUI();
@@ -38,7 +38,7 @@ public:
 
   // Wrapper around the actual buffer of scalar data stored in the class.
   // Interaction with the data (updating it on CPU or GPU side, accessing it, etc) happens through this wrapper.
-  render::ManagedBuffer<double> values;
+  render::ManagedBuffer<float> values;
 
   // === Get/set visualization parameters
 
@@ -47,28 +47,28 @@ public:
   std::string getColorMap();
 
   // Data limits mapped in to colormap
-  QuantityT* setMapRange(std::pair<double, double> val);
-  std::pair<double, double> getMapRange();
+  QuantityT* setMapRange(std::pair<float, float> val);
+  std::pair<float, float> getMapRange();
   QuantityT* resetMapRange(); // reset to full range
-  std::pair<double, double> getDataRange();
+  std::pair<float, float> getDataRange();
 
   // Isolines
   QuantityT* setIsolinesEnabled(bool newEnabled);
   bool getIsolinesEnabled();
-  QuantityT* setIsolineWidth(double size, bool isRelative);
-  double getIsolineWidth();
-  QuantityT* setIsolineDarkness(double val);
-  double getIsolineDarkness();
+  QuantityT* setIsolineWidth(float size, bool isRelative);
+  float getIsolineWidth();
+  QuantityT* setIsolineDarkness(float val);
+  float getIsolineDarkness();
 
 protected:
-  std::vector<double> valuesData;
+  std::vector<float> valuesData;
   const DataType dataType;
 
   // === Visualization parameters
 
   // Affine data maps and limits
   std::pair<float, float> vizRange; // TODO make these persistent
-  std::pair<double, double> dataRange;
+  std::pair<float, float> dataRange;
   Histogram hist;
 
   // Parameters

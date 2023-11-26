@@ -381,7 +381,7 @@ PointCloudColorQuantity* PointCloud::addColorQuantityImpl(std::string name, cons
   return q;
 }
 
-PointCloudScalarQuantity* PointCloud::addScalarQuantityImpl(std::string name, const std::vector<double>& data,
+PointCloudScalarQuantity* PointCloud::addScalarQuantityImpl(std::string name, const std::vector<float>& data,
                                                             DataType type) {
   checkForQuantityWithNameAndDeleteOrError(name);
   PointCloudScalarQuantity* q = new PointCloudScalarQuantity(name, data, *this, type);
@@ -454,11 +454,11 @@ PointCloud* PointCloud::setMaterial(std::string m) {
 }
 std::string PointCloud::getMaterial() { return material.get(); }
 
-PointCloud* PointCloud::setPointRadius(double newVal, bool isRelative) {
+PointCloud* PointCloud::setPointRadius(float newVal, bool isRelative) {
   pointRadius = ScaledValue<float>(newVal, isRelative);
   polyscope::requestRedraw();
   return this;
 }
-double PointCloud::getPointRadius() { return pointRadius.get().asAbsolute(); }
+float PointCloud::getPointRadius() { return pointRadius.get().asAbsolute(); }
 
 } // namespace polyscope

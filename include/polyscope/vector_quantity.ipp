@@ -59,36 +59,36 @@ void VectorQuantityBase<QuantityT>::buildVectorUI() {
 
 
 template <typename QuantityT>
-QuantityT* VectorQuantityBase<QuantityT>::setVectorLengthScale(double newLength, bool isRelative) {
-  vectorLengthMult = ScaledValue<double>(newLength, isRelative);
+QuantityT* VectorQuantityBase<QuantityT>::setVectorLengthScale(float newLength, bool isRelative) {
+  vectorLengthMult = ScaledValue<float>(newLength, isRelative);
   requestRedraw();
   return &quantity;
 }
 template <typename QuantityT>
-double VectorQuantityBase<QuantityT>::getVectorLengthScale() {
+float VectorQuantityBase<QuantityT>::getVectorLengthScale() {
   return vectorLengthMult.get().asAbsolute();
 }
 
 template <typename QuantityT>
-QuantityT* VectorQuantityBase<QuantityT>::setVectorLengthRange(double newLength) {
+QuantityT* VectorQuantityBase<QuantityT>::setVectorLengthRange(float newLength) {
   vectorLengthRange = newLength;
   vectorLengthRangeManuallySet = true;
   requestRedraw();
   return &quantity;
 }
 template <typename QuantityT>
-double VectorQuantityBase<QuantityT>::getVectorLengthRange() {
+float VectorQuantityBase<QuantityT>::getVectorLengthRange() {
   return vectorLengthRange;
 }
 
 template <typename QuantityT>
-QuantityT* VectorQuantityBase<QuantityT>::setVectorRadius(double val, bool isRelative) {
-  vectorRadius = ScaledValue<double>(val, isRelative);
+QuantityT* VectorQuantityBase<QuantityT>::setVectorRadius(float val, bool isRelative) {
+  vectorRadius = ScaledValue<float>(val, isRelative);
   requestRedraw();
   return &quantity;
 }
 template <typename QuantityT>
-double VectorQuantityBase<QuantityT>::getVectorRadius() {
+float VectorQuantityBase<QuantityT>::getVectorRadius() {
   return vectorRadius.get().asAbsolute();
 }
 

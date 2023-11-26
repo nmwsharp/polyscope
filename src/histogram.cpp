@@ -15,11 +15,11 @@ namespace polyscope {
 
 Histogram::Histogram() {}
 
-Histogram::Histogram(std::vector<double>& values) { buildHistogram(values); }
+Histogram::Histogram(std::vector<float>& values) { buildHistogram(values); }
 
 Histogram::~Histogram() {}
 
-void Histogram::buildHistogram(const std::vector<double>& values) {
+void Histogram::buildHistogram(const std::vector<float>& values) {
 
   // Build arrays of values
   size_t N = values.size();
@@ -31,15 +31,15 @@ void Histogram::buildHistogram(const std::vector<double>& values) {
   // Helper to build the four histogram variants
   auto buildCurve = [&](size_t binCount, std::vector<std::array<float, 2>>& curveX, std::vector<float>& curveY) {
     // linspace coords
-    double range = dataRange.second - dataRange.first;
-    double inc = range / binCount;
-    std::vector<double> sumBin(binCount, 0.0);
+    float range = dataRange.second - dataRange.first;
+    float inc = range / binCount;
+    std::vector<float> sumBin(binCount, 0.0);
 
     // count values in buckets
     for (size_t iData = 0; iData < N; iData++) {
 
-      double iBinf = binCount * (values[iData] - dataRange.first) / range;
-      size_t iBin = std::floor(glm::clamp(iBinf, 0.0, (double)binCount - 1));
+      float iBinf = binCount * (values[iData] - dataRange.first) / range;
+      size_t iBin = std::floor(glm::clamp(iBinf, 0.0f, (float)binCount - 1));
 
       // NaN values and finite values near the bottom of float range lead to craziness, so only increment bins if we got
       // something reasonable
@@ -52,21 +52,21 @@ void Histogram::buildHistogram(const std::vector<double>& values) {
     // build histogram coords
     curveX = std::vector<std::array<float, 2>>(binCount);
     curveY = std::vector<float>(binCount);
-    double prevSumU = 0.0;
-    double prevSumW = 0.0;
-    double prevXEnd = dataRange.first;
+    float prevSumU = 0.0;
+    float prevSumW = 0.0;
+    float prevXEnd = dataRange.first;
     for (size_t iBin = 0; iBin < binCount; iBin++) {
       // y value
       curveY[iBin] = sumBin[iBin];
 
       // x value
-      double xEnd = prevXEnd + inc;
+      float xEnd = prevXEnd + inc;
       curveX[iBin] = {{static_cast<float>(prevXEnd), static_cast<float>(xEnd)}};
       prevXEnd = xEnd;
     }
 
     { // Rescale curves to [0,1] in both dimensions
-      double maxHeight = *std::max_element(curveY.begin(), curveY.end());
+      float maxHeight = *std::max_element(curveY.begin(), curveY.end());
       for (size_t i = 0; i < binCount; i++) {
         curveX[i][0] = (curveX[i][0] - dataRange.first) / range;
         curveX[i][1] = (curveX[i][1] - dataRange.first) / range;
@@ -195,8 +195,8 @@ void Histogram::buildUI(float width) {
   if (ImGui::IsItemHovered()) {
     // Get mouse x coodinate within image
     float mouseX = ImGui::GetMousePos().x - ImGui::GetCursorScreenPos().x - ImGui::GetScrollX();
-    double mouseT = mouseX / w;
-    double val = dataRange.first + mouseT * (dataRange.second - dataRange.first);
+    float mouseT = mouseX / w;
+    float val = dataRange.first + mouseT * (dataRange.second - dataRange.first);
 
     ImGui::SetTooltip("%g", val);
 

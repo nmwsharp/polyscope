@@ -13,7 +13,7 @@ namespace polyscope {
 class CurveNetworkScalarQuantity : public CurveNetworkQuantity, public ScalarQuantity<CurveNetworkScalarQuantity> {
 public:
   CurveNetworkScalarQuantity(std::string name, CurveNetwork& network_, std::string definedOn,
-                             const std::vector<double>& values, DataType dataType);
+                             const std::vector<float>& values, DataType dataType);
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
@@ -36,7 +36,7 @@ protected:
 
 class CurveNetworkNodeScalarQuantity : public CurveNetworkScalarQuantity {
 public:
-  CurveNetworkNodeScalarQuantity(std::string name, const std::vector<double>& values_, CurveNetwork& network_,
+  CurveNetworkNodeScalarQuantity(std::string name, const std::vector<float>& values_, CurveNetwork& network_,
                                  DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
@@ -51,7 +51,7 @@ public:
 
 class CurveNetworkEdgeScalarQuantity : public CurveNetworkScalarQuantity {
 public:
-  CurveNetworkEdgeScalarQuantity(std::string name, const std::vector<double>& values_, CurveNetwork& network_,
+  CurveNetworkEdgeScalarQuantity(std::string name, const std::vector<float>& values_, CurveNetwork& network_,
                                  DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;

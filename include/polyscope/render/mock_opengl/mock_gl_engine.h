@@ -25,7 +25,6 @@ public:
   void setData(const std::vector<glm::vec3>& data) override;
   void setData(const std::vector<glm::vec4>& data) override;
   void setData(const std::vector<float>& data) override;
-  void setData(const std::vector<double>& data) override;
   void setData(const std::vector<int32_t>& data) override;
   void setData(const std::vector<uint32_t>& data) override;
   void setData(const std::vector<glm::uvec2>& data) override;
@@ -41,7 +40,6 @@ public:
 
   // get data at a single index from the buffer
   float getData_float(size_t ind) override;
-  double getData_double(size_t ind) override;
   glm::vec2 getData_vec2(size_t ind) override;
   glm::vec3 getData_vec3(size_t ind) override;
   glm::vec4 getData_vec4(size_t ind) override;
@@ -53,7 +51,6 @@ public:
 
   // get data at a range of indices from the buffer
   std::vector<float> getDataRange_float(size_t ind, size_t count) override;
-  std::vector<double> getDataRange_double(size_t ind, size_t count) override;
   std::vector<glm::vec2> getDataRange_vec2(size_t ind, size_t count) override;
   std::vector<glm::vec3> getDataRange_vec3(size_t ind, size_t count) override;
   std::vector<glm::vec4> getDataRange_vec4(size_t ind, size_t count) override;
@@ -111,7 +108,6 @@ public:
   void setData(const std::vector<glm::vec3>& data) override;
   void setData(const std::vector<glm::vec4>& data) override;
   void setData(const std::vector<float>& data) override;
-  void setData(const std::vector<double>& data) override;
   void setData(const std::vector<int32_t>& data) override;
   void setData(const std::vector<uint32_t>& data) override;
   void setData(const std::vector<glm::uvec2>& data) override;
@@ -250,7 +246,6 @@ public:
   void setUniform(std::string name, int val) override;
   void setUniform(std::string name, unsigned int val) override;
   void setUniform(std::string name, float val) override;
-  void setUniform(std::string name, double val) override; // WARNING casts down to float
   void setUniform(std::string name, float* val) override;
   void setUniform(std::string name, glm::vec2 val) override;
   void setUniform(std::string name, glm::vec3 val) override;
@@ -271,7 +266,6 @@ public:
   void setAttribute(std::string name, const std::vector<glm::vec3>& data) override;
   void setAttribute(std::string name, const std::vector<glm::vec4>& data) override;
   void setAttribute(std::string name, const std::vector<float>& data) override;
-  void setAttribute(std::string name, const std::vector<double>& data) override;
   void setAttribute(std::string name, const std::vector<int32_t>& data) override; 
   void setAttribute(std::string name, const std::vector<uint32_t>& data) override;
   // clang-format on

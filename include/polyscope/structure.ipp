@@ -190,7 +190,7 @@ ScalarImageQuantity* QuantityStructure<S>::addScalarImageQuantity(std::string na
                                                                   const T& values, ImageOrigin imageOrigin,
                                                                   DataType type) {
   validateSize(values, dimX * dimY, "floating scalar image " + name);
-  return this->addScalarImageQuantityImpl(name, dimX, dimY, standardizeArray<double, T>(values), imageOrigin, type);
+  return this->addScalarImageQuantityImpl(name, dimX, dimY, standardizeArray<float, T>(values), imageOrigin, type);
 }
 
 
@@ -271,7 +271,7 @@ QuantityStructure<S>::addScalarRenderImageQuantity(std::string name, size_t dimX
   // standardize
   std::vector<float> standardDepth(standardizeArray<float>(depthData));
   std::vector<glm::vec3> standardNormal(standardizeVectorArray<glm::vec3, 3>(normalData));
-  std::vector<double> standardScalar(standardizeArray<double>(scalarData));
+  std::vector<float> standardScalar(standardizeArray<float>(scalarData));
 
   return this->addScalarRenderImageQuantityImpl(name, dimX, dimY, standardDepth, standardNormal, standardScalar,
                                                 imageOrigin, type);
@@ -314,7 +314,7 @@ RawColorAlphaRenderImageQuantity* QuantityStructure<S>::addRawColorAlphaRenderIm
 // Otherwise, we would have to include their respective headers here, and create some really gnarly header dependency
 // chains.
 ScalarImageQuantity* createScalarImageQuantity(Structure& parent, std::string name, size_t dimX, size_t dimY,
-                                               const std::vector<double>& data, ImageOrigin imageOrigin,
+                                               const std::vector<float>& data, ImageOrigin imageOrigin,
                                                DataType dataType);
 ColorImageQuantity* createColorImageQuantity(Structure& parent, std::string name, size_t dimX, size_t dimY,
                                              const std::vector<glm::vec4>& data, ImageOrigin imageOrigin);
@@ -342,12 +342,12 @@ RawColorAlphaRenderImageQuantity* createRawColorAlphaRenderImage(Structure& pare
 ScalarRenderImageQuantity* createScalarRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
                                                    const std::vector<float>& depthData,
                                                    const std::vector<glm::vec3>& normalData,
-                                                   const std::vector<double>& scalarData, ImageOrigin imageOrigin,
+                                                   const std::vector<float>& scalarData, ImageOrigin imageOrigin,
                                                    DataType type);
 
 template <typename S>
 ScalarImageQuantity* QuantityStructure<S>::addScalarImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
-                                                                      const std::vector<double>& values,
+                                                                      const std::vector<float>& values,
                                                                       ImageOrigin imageOrigin, DataType type) {
   checkForQuantityWithNameAndDeleteOrError(name);
   ScalarImageQuantity* q = createScalarImageQuantity(*this, name, dimX, dimY, values, imageOrigin, type);
@@ -389,7 +389,7 @@ ColorRenderImageQuantity* QuantityStructure<S>::addColorRenderImageQuantityImpl(
 template <typename S>
 ScalarRenderImageQuantity* QuantityStructure<S>::addScalarRenderImageQuantityImpl(
     std::string name, size_t dimX, size_t dimY, const std::vector<float>& depthData,
-    const std::vector<glm::vec3>& normalData, const std::vector<double>& scalarData, ImageOrigin imageOrigin,
+    const std::vector<glm::vec3>& normalData, const std::vector<float>& scalarData, ImageOrigin imageOrigin,
     DataType type) {
   checkForQuantityWithNameAndDeleteOrError(name);
   ScalarRenderImageQuantity* q =

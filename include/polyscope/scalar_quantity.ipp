@@ -5,7 +5,7 @@
 namespace polyscope {
 
 template <typename QuantityT>
-ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vector<double>& values_, DataType dataType_)
+ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vector<float>& values_, DataType dataType_)
     : quantity(quantity_), values(&quantity, quantity.uniquePrefix() + "values", valuesData), valuesData(values_),
       dataType(dataType_), dataRange(robustMinMax(values.data, 1e-5)),
       cMap(quantity.uniquePrefix() + "cmap", defaultColorMap(dataType)),
@@ -178,7 +178,7 @@ QuantityT* ScalarQuantity<QuantityT>::resetMapRange() {
     vizRange = dataRange;
     break;
   case DataType::SYMMETRIC: {
-    double absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
+    float absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
     vizRange = std::make_pair(-absRange, absRange);
   } break;
   case DataType::MAGNITUDE:
@@ -194,7 +194,7 @@ template <typename QuantityT>
 template <class V>
 void ScalarQuantity<QuantityT>::updateData(const V& newValues) {
   validateSize(newValues, values.size(), "scalar quantity " + quantity.name);
-  values.data = standardizeArray<double, V>(newValues);
+  values.data = standardizeArray<float, V>(newValues);
   values.markHostBufferUpdated();
 }
 
@@ -213,22 +213,22 @@ std::string ScalarQuantity<QuantityT>::getColorMap() {
 }
 
 template <typename QuantityT>
-QuantityT* ScalarQuantity<QuantityT>::setMapRange(std::pair<double, double> val) {
+QuantityT* ScalarQuantity<QuantityT>::setMapRange(std::pair<float, float> val) {
   vizRange = val;
   requestRedraw();
   return &quantity;
 }
 template <typename QuantityT>
-std::pair<double, double> ScalarQuantity<QuantityT>::getMapRange() {
+std::pair<float, float> ScalarQuantity<QuantityT>::getMapRange() {
   return vizRange;
 }
 template <typename QuantityT>
-std::pair<double, double> ScalarQuantity<QuantityT>::getDataRange() {
+std::pair<float, float> ScalarQuantity<QuantityT>::getDataRange() {
   return dataRange;
 }
 
 template <typename QuantityT>
-QuantityT* ScalarQuantity<QuantityT>::setIsolineWidth(double size, bool isRelative) {
+QuantityT* ScalarQuantity<QuantityT>::setIsolineWidth(float size, bool isRelative) {
   isolineWidth = ScaledValue<float>(size, isRelative);
   if (!isolinesEnabled.get()) {
     setIsolinesEnabled(true);
@@ -237,12 +237,12 @@ QuantityT* ScalarQuantity<QuantityT>::setIsolineWidth(double size, bool isRelati
   return &quantity;
 }
 template <typename QuantityT>
-double ScalarQuantity<QuantityT>::getIsolineWidth() {
+float ScalarQuantity<QuantityT>::getIsolineWidth() {
   return isolineWidth.get().asAbsolute();
 }
 
 template <typename QuantityT>
-QuantityT* ScalarQuantity<QuantityT>::setIsolineDarkness(double val) {
+QuantityT* ScalarQuantity<QuantityT>::setIsolineDarkness(float val) {
   isolineDarkness = val;
   if (!isolinesEnabled.get()) {
     setIsolinesEnabled(true);
@@ -251,7 +251,7 @@ QuantityT* ScalarQuantity<QuantityT>::setIsolineDarkness(double val) {
   return &quantity;
 }
 template <typename QuantityT>
-double ScalarQuantity<QuantityT>::getIsolineDarkness() {
+float ScalarQuantity<QuantityT>::getIsolineDarkness() {
   return isolineDarkness.get();
 }
 

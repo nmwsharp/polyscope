@@ -187,8 +187,8 @@ private:
 
   // === Quantity adder implementations
   // clang-format off
-  CurveNetworkNodeScalarQuantity* addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  CurveNetworkEdgeScalarQuantity* addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
+  CurveNetworkNodeScalarQuantity* addNodeScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
+  CurveNetworkEdgeScalarQuantity* addEdgeScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
   CurveNetworkNodeColorQuantity* addNodeColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   CurveNetworkEdgeColorQuantity* addEdgeColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   CurveNetworkNodeVectorQuantity* addNodeVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);

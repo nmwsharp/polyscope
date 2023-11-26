@@ -438,10 +438,10 @@ void SlicePlane::setGridLineColor(glm::vec3 newVal) {
 }
 glm::vec3 SlicePlane::getGridLineColor() { return gridLineColor.get(); }
 
-void SlicePlane::setTransparency(double newVal) {
+void SlicePlane::setTransparency(float newVal) {
   transparency = newVal;
   requestRedraw();
 }
-double SlicePlane::getTransparency() { return transparency.get(); }
+float SlicePlane::getTransparency() { return transparency.get(); }
 
 } // namespace polyscope

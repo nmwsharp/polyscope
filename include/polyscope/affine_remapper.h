@@ -28,7 +28,7 @@ enum class VectorType { STANDARD = 0, AMBIENT };
 // Field magnitude type
 template <class P>
 struct FIELD_MAG {
-  typedef double type;
+  typedef float type;
 };
 template <>
 struct FIELD_MAG<glm::vec3> {

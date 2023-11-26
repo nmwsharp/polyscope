@@ -21,11 +21,6 @@ std::shared_ptr<AttributeBuffer> generateAttributeBuffer<float>(Engine* engine) 
 }
 
 template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<double>(Engine* engine) {
-  return engine->generateAttributeBuffer(RenderDataType::Float);
-}
-
-template <>
 std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::vec2>(Engine* engine) {
   return engine->generateAttributeBuffer(RenderDataType::Vector2Float);
 }
@@ -90,11 +85,6 @@ std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::uvec4>(Engine* eng
 template <>
 float getAttributeBufferData<float>(AttributeBuffer& buff, size_t ind) {
   return buff.getData_float(ind);
-}
-
-template <>
-double getAttributeBufferData<double>(AttributeBuffer& buff, size_t ind) {
-  return buff.getData_double(ind);
 }
 
 template <>
@@ -171,11 +161,6 @@ glm::uvec4 getAttributeBufferData<glm::uvec4>(AttributeBuffer& buff, size_t ind)
 template <>
 std::vector<float> getAttributeBufferDataRange<float>(AttributeBuffer& buff, size_t ind, size_t count) {
   return buff.getDataRange_float(ind, count);
-}
-
-template <>
-std::vector<double> getAttributeBufferDataRange<double>(AttributeBuffer& buff, size_t ind, size_t count) {
-  return buff.getDataRange_double(ind, count);
 }
 
 template <>
@@ -289,21 +274,6 @@ std::shared_ptr<TextureBuffer> generateTextureBuffer<float, DeviceBufferType::Te
 }
 
 template <>
-std::shared_ptr<TextureBuffer> generateTextureBuffer<double, DeviceBufferType::Texture1d>(Engine* engine) {
-  return engine->generateTextureBuffer(TextureFormat::R32F, 0, (float*)nullptr);
-}
-
-template <>
-std::shared_ptr<TextureBuffer> generateTextureBuffer<double, DeviceBufferType::Texture2d>(Engine* engine) {
-  return engine->generateTextureBuffer(TextureFormat::R32F, 0, 0, (float*)nullptr);
-}
-
-template <>
-std::shared_ptr<TextureBuffer> generateTextureBuffer<double, DeviceBufferType::Texture3d>(Engine* engine) {
-  return engine->generateTextureBuffer(TextureFormat::R32F, 0, 0, 0, (float*)nullptr);
-}
-
-template <>
 std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::vec3, DeviceBufferType::Texture1d>(Engine* engine) {
   return engine->generateTextureBuffer(TextureFormat::RGB32F, 0, (float*)nullptr);
 }
@@ -357,7 +327,6 @@ std::shared_ptr<TextureBuffer> generateTextureBuffer(DeviceBufferType D, Engine*
 // instantiations for the above function
 // clang-format off
 template std::shared_ptr<TextureBuffer> generateTextureBuffer<float     >(DeviceBufferType D, Engine* engine);
-template std::shared_ptr<TextureBuffer> generateTextureBuffer<double    >(DeviceBufferType D, Engine* engine);
 template std::shared_ptr<TextureBuffer> generateTextureBuffer<int32_t   >(DeviceBufferType D, Engine* engine);
 template std::shared_ptr<TextureBuffer> generateTextureBuffer<uint32_t  >(DeviceBufferType D, Engine* engine);
 

@@ -63,18 +63,18 @@ struct ValueColorMap {
 
   // Samples "val" from the colormap, where val is clamped to [0,1].
   // Returns a vector3 of rgb values, each from [0,1]
-  glm::vec3 getValue(double val) const {
+  glm::vec3 getValue(float val) const {
     if (!std::isfinite(val)) {
       return {0, 0, 0};
     }
 
-    val = glm::clamp(val, 0.0, 1.0);
+    val = glm::clamp(val, 0.0f, 1.0f);
 
     // Find the two nearest indices in to the colormap lookup table, then
     // return a linear blend between them.
-    double scaledVal = val * (values.size() - 1);
-    double lowerVal = std::floor(scaledVal);
-    double upperBlendVal = scaledVal - lowerVal;
+    float scaledVal = val * (values.size() - 1);
+    float lowerVal = std::floor(scaledVal);
+    float upperBlendVal = scaledVal - lowerVal;
     unsigned int lowerInd = static_cast<unsigned int>(lowerVal);
     unsigned int upperInd = lowerInd + 1;
 

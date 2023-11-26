@@ -10,7 +10,7 @@
 namespace polyscope {
 
 VolumeMeshScalarQuantity::VolumeMeshScalarQuantity(std::string name, VolumeMesh& mesh_, std::string definedOn_,
-                                                   const std::vector<double>& values_, DataType dataType_)
+                                                   const std::vector<float>& values_, DataType dataType_)
     : VolumeMeshQuantity(name, mesh_, true), ScalarQuantity(*this, values_, dataType_), definedOn(definedOn_) {}
 
 void VolumeMeshScalarQuantity::draw() {
@@ -59,7 +59,7 @@ std::string VolumeMeshScalarQuantity::niceName() { return name + " (" + definedO
 // ==========           Vertex Scalar            ==========
 // ========================================================
 
-VolumeMeshVertexScalarQuantity::VolumeMeshVertexScalarQuantity(std::string name, const std::vector<double>& values_,
+VolumeMeshVertexScalarQuantity::VolumeMeshVertexScalarQuantity(std::string name, const std::vector<float>& values_,
                                                                VolumeMesh& mesh_, DataType dataType_)
     : VolumeMeshScalarQuantity(name, mesh_, "vertex", values_, dataType_), levelSetValue(0), isDrawingLevelSet(false),
       showQuantity(this)
@@ -287,10 +287,10 @@ void VolumeMeshVertexScalarQuantity::fillSliceColorBuffers(render::ShaderProgram
   values.ensureHostBufferPopulated();
 
   size_t tetCount = parent.nTets();
-  std::vector<double> colorval_1;
-  std::vector<double> colorval_2;
-  std::vector<double> colorval_3;
-  std::vector<double> colorval_4;
+  std::vector<float> colorval_1;
+  std::vector<float> colorval_2;
+  std::vector<float> colorval_3;
+  std::vector<float> colorval_4;
 
   colorval_1.resize(tetCount);
   colorval_2.resize(tetCount);
@@ -324,7 +324,7 @@ void VolumeMeshVertexScalarQuantity::buildVertexInfoGUI(size_t vInd) {
 // ==========            Cell Scalar             ==========
 // ========================================================
 
-VolumeMeshCellScalarQuantity::VolumeMeshCellScalarQuantity(std::string name, const std::vector<double>& values_,
+VolumeMeshCellScalarQuantity::VolumeMeshCellScalarQuantity(std::string name, const std::vector<float>& values_,
                                                            VolumeMesh& mesh_, DataType dataType_)
     : VolumeMeshScalarQuantity(name, mesh_, "cell", values_, dataType_)
 

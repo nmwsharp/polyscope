@@ -16,7 +16,7 @@ namespace polyscope {
 class VolumeMeshScalarQuantity : public VolumeMeshQuantity, public ScalarQuantity<VolumeMeshScalarQuantity> {
 public:
   VolumeMeshScalarQuantity(std::string name, VolumeMesh& mesh_, std::string definedOn,
-                           const std::vector<double>& values_, DataType dataType);
+                           const std::vector<float>& values_, DataType dataType);
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
@@ -38,7 +38,7 @@ protected:
 
 class VolumeMeshVertexScalarQuantity : public VolumeMeshScalarQuantity {
 public:
-  VolumeMeshVertexScalarQuantity(std::string name, const std::vector<double>& values_, VolumeMesh& mesh_,
+  VolumeMeshVertexScalarQuantity(std::string name, const std::vector<float>& values_, VolumeMesh& mesh_,
                                  DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
@@ -74,7 +74,7 @@ public:
 
 class VolumeMeshCellScalarQuantity : public VolumeMeshScalarQuantity {
 public:
-  VolumeMeshCellScalarQuantity(std::string name, const std::vector<double>& values_, VolumeMesh& mesh_,
+  VolumeMeshCellScalarQuantity(std::string name, const std::vector<float>& values_, VolumeMesh& mesh_,
                                DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;

@@ -274,7 +274,6 @@ public:
 
   // clang-format off
   ManagedBufferMap<float>        managedBufferMap_float;
-  ManagedBufferMap<double>       managedBufferMap_double;
   ManagedBufferMap<glm::vec2>    managedBufferMap_vec2;
   ManagedBufferMap<glm::vec3>    managedBufferMap_vec3;
   ManagedBufferMap<glm::vec4>    managedBufferMap_vec4;

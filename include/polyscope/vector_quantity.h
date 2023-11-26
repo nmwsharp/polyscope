@@ -35,8 +35,8 @@ public:
   // === Option accessors
 
   //  The vectors will be scaled such that the longest vector is this long
-  QuantityT* setVectorLengthScale(double newLength, bool isRelative = true);
-  double getVectorLengthScale();
+  QuantityT* setVectorLengthScale(float newLength, bool isRelative = true);
+  float getVectorLengthScale();
 
   // The upper limit for the length of vectors in the quantity, used in scaling calculations.
   // Ordinarily this is computed as the max length of all input vectors, but it can be manually overridden,
@@ -44,12 +44,12 @@ public:
   //
   // Note that unlike most other getter/setters, this is NOT a persistent value. (It doesn't automatically get
   // propagated to new quantities with the same name).
-  QuantityT* setVectorLengthRange(double newLength);
-  double getVectorLengthRange();
+  QuantityT* setVectorLengthRange(float newLength);
+  float getVectorLengthRange();
 
   // The radius of the vectors
-  QuantityT* setVectorRadius(double val, bool isRelative = true);
-  double getVectorRadius();
+  QuantityT* setVectorRadius(float val, bool isRelative = true);
+  float getVectorRadius();
 
   // The color of the vectors
   QuantityT* setVectorColor(glm::vec3 color);

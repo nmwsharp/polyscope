@@ -129,18 +129,6 @@ void GLAttributeBuffer::setData(const std::vector<float>& data) {
   setData_helper(data);
 }
 
-void GLAttributeBuffer::setData(const std::vector<double>& data) {
-  checkType(RenderDataType::Float);
-
-  // Convert input data to floats
-  std::vector<float> floatData(data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
-    floatData[i] = static_cast<float>(data[i]);
-  }
-
-  setData_helper(floatData);
-}
-
 void GLAttributeBuffer::setData(const std::vector<int32_t>& data) {
   checkType(RenderDataType::Int);
   setData_helper(data);
@@ -180,8 +168,6 @@ float GLAttributeBuffer::getData_float(size_t ind) {
   if (getType() != RenderDataType::Float) exception("bad getData type");
   return getData_helper<float>(ind);
 }
-
-double GLAttributeBuffer::getData_double(size_t ind) { return getData_float(ind); }
 
 glm::vec2 GLAttributeBuffer::getData_vec2(size_t ind) {
   if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
@@ -229,15 +215,6 @@ std::vector<T> GLAttributeBuffer::getDataRange_helper(size_t start, size_t count
 std::vector<float> GLAttributeBuffer::getDataRange_float(size_t start, size_t count) {
   if (getType() != RenderDataType::Float) exception("bad getData type");
   return getDataRange_helper<float>(start, count);
-}
-
-std::vector<double> GLAttributeBuffer::getDataRange_double(size_t start, size_t count) {
-  std::vector<float> floatValues = getDataRange_float(start, count);
-  std::vector<double> values(count);
-  for (size_t i = 0; i < count; i++) {
-    values[i] = static_cast<double>(floatValues[i]);
-  }
-  return values;
 }
 
 std::vector<glm::vec2> GLAttributeBuffer::getDataRange_vec2(size_t start, size_t count) {
@@ -434,24 +411,6 @@ void GLTextureBuffer::setData(const std::vector<float>& data) {
   checkGLError();
 }
 
-void GLTextureBuffer::setData(const std::vector<double>& data) {
-  bind();
-
-  if (data.size() != getTotalSize()) {
-    exception("OpenGL error: texture buffer data is not the right size.");
-  }
-
-  switch (dim) {
-  case 1:
-    break;
-  case 2:
-    break;
-  case 3:
-    break;
-  }
-
-  checkGLError();
-};
 void GLTextureBuffer::setData(const std::vector<int32_t>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<uint32_t>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data) { exception("not implemented"); };
@@ -944,22 +903,6 @@ void GLShaderProgram::setUniform(std::string name, float val) {
   throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
-// Set a double --- WARNING casts down to float
-void GLShaderProgram::setUniform(std::string name, double val) {
-
-  for (GLShaderUniform& u : uniforms) {
-    if (u.name == name) {
-      if (u.type == RenderDataType::Float) {
-        u.isSet = true;
-      } else {
-        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
-      }
-      return;
-    }
-  }
-  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
-}
-
 // Set a 4x4 uniform matrix
 void GLShaderProgram::setUniform(std::string name, float* val) {
 
@@ -1176,20 +1119,6 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4
 }
 
 void GLShaderProgram::setAttribute(std::string name, const std::vector<float>& data) {
-
-  // pass-through to the buffer
-  for (GLShaderAttribute& a : attributes) {
-    if (a.name == name) {
-      ensureBufferExists(a);
-      a.buff->setData(data);
-      return;
-    }
-  }
-
-  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
-}
-
-void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& data) {
 
   // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {

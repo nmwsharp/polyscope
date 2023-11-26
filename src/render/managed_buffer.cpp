@@ -504,7 +504,6 @@ std::tuple<bool, ManagedBufferType> ManagedBufferRegistry::hasManagedBufferType(
   // clang-format off
 
   if (hasManagedBuffer<float>(name))  return std::make_tuple(true, ManagedBufferType::Float);
-  if (hasManagedBuffer<double>(name)) return std::make_tuple(true, ManagedBufferType::Double);
 
   if (hasManagedBuffer<glm::vec2>(name)) return std::make_tuple(true, ManagedBufferType::Vec2);
   if (hasManagedBuffer<glm::vec3>(name)) return std::make_tuple(true, ManagedBufferType::Vec3);
@@ -531,7 +530,6 @@ std::tuple<bool, ManagedBufferType> ManagedBufferRegistry::hasManagedBufferType(
 // Attribute versions
 
 template class ManagedBuffer<float>;
-template class ManagedBuffer<double>;
 
 template class ManagedBuffer<glm::vec2>;
 template class ManagedBuffer<glm::vec3>;
@@ -551,7 +549,6 @@ template class ManagedBuffer<glm::uvec4>;
 // Buffer maps
 
 template struct ManagedBufferMap<float>;
-template struct ManagedBufferMap<double>;
 
 template struct ManagedBufferMap<glm::vec2>;
 template struct ManagedBufferMap<glm::vec3>;
@@ -572,7 +569,6 @@ template struct ManagedBufferMap<glm::uvec4>;
 // clang-format off
 
 template<> ManagedBufferMap<float>&                    ManagedBufferMap<float>::getManagedBufferMapRef                   (ManagedBufferRegistry* r) { return r->managedBufferMap_float; }
-template<> ManagedBufferMap<double>&                   ManagedBufferMap<double>::getManagedBufferMapRef                  (ManagedBufferRegistry* r) { return r->managedBufferMap_double; }
 template<> ManagedBufferMap<glm::vec2>&                ManagedBufferMap<glm::vec2>::getManagedBufferMapRef               (ManagedBufferRegistry* r) { return r->managedBufferMap_vec2; }
 template<> ManagedBufferMap<glm::vec3>&                ManagedBufferMap<glm::vec3>::getManagedBufferMapRef               (ManagedBufferRegistry* r) { return r->managedBufferMap_vec3; }
 template<> ManagedBufferMap<glm::vec4>&                ManagedBufferMap<glm::vec4>::getManagedBufferMapRef               (ManagedBufferRegistry* r) { return r->managedBufferMap_vec4; }
@@ -593,7 +589,6 @@ std::string typeName(ManagedBufferType type) {
   switch (type) {
   // clang-format off
     case ManagedBufferType::Float     : return "Float";    
-    case ManagedBufferType::Double    : return "Double";   
     case ManagedBufferType::Vec2      : return "Vec2";     
     case ManagedBufferType::Vec3      : return "Vec3";     
     case ManagedBufferType::Vec4      : return "Vec4";     

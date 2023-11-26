@@ -1003,13 +1003,13 @@ VolumeMesh* VolumeMesh::setMaterial(std::string m) {
 }
 std::string VolumeMesh::getMaterial() { return material.get(); }
 
-VolumeMesh* VolumeMesh::setEdgeWidth(double newVal) {
+VolumeMesh* VolumeMesh::setEdgeWidth(float newVal) {
   edgeWidth = newVal;
   refresh();
   requestRedraw();
   return this;
 }
-double VolumeMesh::getEdgeWidth() { return edgeWidth.get(); }
+float VolumeMesh::getEdgeWidth() { return edgeWidth.get(); }
 
 
 // === Quantity adder}
@@ -1030,15 +1030,15 @@ VolumeMeshCellColorQuantity* VolumeMesh::addCellColorQuantityImpl(std::string na
   return q;
 }
 
-VolumeMeshVertexScalarQuantity*
-VolumeMesh::addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type) {
+VolumeMeshVertexScalarQuantity* VolumeMesh::addVertexScalarQuantityImpl(std::string name,
+                                                                        const std::vector<float>& data, DataType type) {
   checkForQuantityWithNameAndDeleteOrError(name);
   VolumeMeshVertexScalarQuantity* q = new VolumeMeshVertexScalarQuantity(name, data, *this, type);
   addQuantity(q);
   return q;
 }
 
-VolumeMeshCellScalarQuantity* VolumeMesh::addCellScalarQuantityImpl(std::string name, const std::vector<double>& data,
+VolumeMeshCellScalarQuantity* VolumeMesh::addCellScalarQuantityImpl(std::string name, const std::vector<float>& data,
                                                                     DataType type) {
   checkForQuantityWithNameAndDeleteOrError(name);
   VolumeMeshCellScalarQuantity* q = new VolumeMeshCellScalarQuantity(name, data, *this, type);

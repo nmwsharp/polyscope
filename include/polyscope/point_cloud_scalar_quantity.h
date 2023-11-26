@@ -15,7 +15,7 @@ namespace polyscope {
 class PointCloudScalarQuantity : public PointCloudQuantity, public ScalarQuantity<PointCloudScalarQuantity> {
 
 public:
-  PointCloudScalarQuantity(std::string name, const std::vector<double>& values, PointCloud& pointCloud_,
+  PointCloudScalarQuantity(std::string name, const std::vector<float>& values, PointCloud& pointCloud_,
                            DataType dataType);
 
   virtual void draw() override;

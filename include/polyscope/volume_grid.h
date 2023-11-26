@@ -133,8 +133,8 @@ public:
 
   // Width of the edges. Scaled such that 1 is a reasonable weight for visible edges, but values  1 can be used for
   // bigger edges. Use 0. to disable.
-  VolumeGrid* setEdgeWidth(double newVal);
-  double getEdgeWidth();
+  VolumeGrid* setEdgeWidth(float newVal);
+  float getEdgeWidth();
 
 
 private:
@@ -185,8 +185,8 @@ private:
   // === Quantity adder implementations
   // clang-format off
   
-  VolumeGridNodeScalarQuantity* addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
-  VolumeGridCellScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType dataType_);
+  VolumeGridNodeScalarQuantity* addNodeScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType dataType_);
+  VolumeGridCellScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType dataType_);
 
   // clang-format on
 };

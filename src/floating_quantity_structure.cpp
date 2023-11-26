@@ -71,7 +71,7 @@ void FloatingQuantityStructure::buildPickUI(size_t localPickID) {}
 // since hasExtents is false, the length scale and bbox value should never be used
 bool FloatingQuantityStructure::hasExtents() { return false; }
 void FloatingQuantityStructure::updateObjectSpaceBounds() {
-  objectSpaceLengthScale = std::numeric_limits<double>::quiet_NaN();
+  objectSpaceLengthScale = std::numeric_limits<float>::quiet_NaN();
   float nan = std::numeric_limits<float>::quiet_NaN();
   objectSpaceBoundingBox = std::make_tuple(glm::vec3{nan, nan, nan}, glm::vec3{nan, nan, nan});
 }

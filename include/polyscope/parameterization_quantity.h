@@ -52,16 +52,16 @@ public:
   std::pair<glm::vec3, glm::vec3> getGridColors();
 
   // The size of checkers / stripes
-  QuantityT* setCheckerSize(double newVal);
-  double getCheckerSize();
+  QuantityT* setCheckerSize(float newVal);
+  float getCheckerSize();
 
   // Color map for radial visualization
   QuantityT* setColorMap(std::string val);
   std::string getColorMap();
 
   // Darkness for checkers (etc)
-  QuantityT* setAltDarkness(double newVal);
-  double getAltDarkness();
+  QuantityT* setAltDarkness(float newVal);
+  float getAltDarkness();
 
   // === Helpers for rendering
   std::vector<std::string> addParameterizationRules(std::vector<std::string> rules);

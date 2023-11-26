@@ -193,10 +193,10 @@ void GroundPlane::draw(bool isRedraw) {
   baseRight[(iP + 2) % 3] = sign;
 
   // Location for ground plane
-  double bboxBottom = sign == 1.0 ? std::get<0>(state::boundingBox)[iP] : std::get<1>(state::boundingBox)[iP];
-  double bboxHeight = std::get<1>(state::boundingBox)[iP] - std::get<0>(state::boundingBox)[iP];
-  double heightEPS = state::lengthScale * 1e-4;
-  double groundHeight = bboxBottom - sign * (options::groundPlaneHeightFactor.asAbsolute() + heightEPS);
+  float bboxBottom = sign == 1.0 ? std::get<0>(state::boundingBox)[iP] : std::get<1>(state::boundingBox)[iP];
+  float bboxHeight = std::get<1>(state::boundingBox)[iP] - std::get<0>(state::boundingBox)[iP];
+  float heightEPS = state::lengthScale * 1e-4;
+  float groundHeight = bboxBottom - sign * (options::groundPlaneHeightFactor.asAbsolute() + heightEPS);
 
   // Viewport
   glm::vec4 viewport = render::engine->getCurrentViewport();

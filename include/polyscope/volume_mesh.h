@@ -161,8 +161,8 @@ public:
 
   // Width of the edges. Scaled such that 1 is a reasonable weight for visible edges, but values  1 can be used for
   // bigger edges. Use 0. to disable.
-  VolumeMesh* setEdgeWidth(double newVal);
-  double getEdgeWidth();
+  VolumeMesh* setEdgeWidth(float newVal);
+  float getEdgeWidth();
 
   VolumeMeshVertexScalarQuantity* getLevelSetQuantity();
   void setLevelSetQuantity(VolumeMeshVertexScalarQuantity* _levelSet);
@@ -263,8 +263,8 @@ private:
 
   VolumeMeshVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
   VolumeMeshCellColorQuantity* addCellColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
-  VolumeMeshVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
-  VolumeMeshCellScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type);
+  VolumeMeshVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
+  VolumeMeshCellScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
   VolumeMeshVertexVectorQuantity* addVertexVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
   VolumeMeshCellVectorQuantity* addCellVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors, VectorType vectorType);
 

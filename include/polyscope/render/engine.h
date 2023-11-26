@@ -77,7 +77,6 @@ public:
   virtual void setData(const std::vector<glm::vec3>& data) = 0;
   virtual void setData(const std::vector<glm::vec4>& data) = 0;
   virtual void setData(const std::vector<float>& data) = 0;
-  virtual void setData(const std::vector<double>& data) = 0;
   virtual void setData(const std::vector<int32_t>& data) = 0;
   virtual void setData(const std::vector<uint32_t>& data) = 0;
   virtual void setData(const std::vector<glm::uvec2>& data) = 0;
@@ -103,7 +102,6 @@ public:
 
   // get data at a single index from the buffer
   virtual float getData_float(size_t ind) = 0;
-  virtual double getData_double(size_t ind) = 0;
   virtual glm::vec2 getData_vec2(size_t ind) = 0;
   virtual glm::vec3 getData_vec3(size_t ind) = 0;
   virtual glm::vec4 getData_vec4(size_t ind) = 0;
@@ -115,7 +113,6 @@ public:
 
   // get data at a range of indices from the buffer
   virtual std::vector<float> getDataRange_float(size_t ind, size_t count) = 0;
-  virtual std::vector<double> getDataRange_double(size_t ind, size_t count) = 0;
   virtual std::vector<glm::vec2> getDataRange_vec2(size_t ind, size_t count) = 0;
   virtual std::vector<glm::vec3> getDataRange_vec3(size_t ind, size_t count) = 0;
   virtual std::vector<glm::vec4> getDataRange_vec4(size_t ind, size_t count) = 0;
@@ -154,7 +151,6 @@ public:
   virtual void setData(const std::vector<glm::vec3>& data) = 0;
   virtual void setData(const std::vector<glm::vec4>& data) = 0;
   virtual void setData(const std::vector<float>& data) = 0;
-  virtual void setData(const std::vector<double>& data) = 0;
   virtual void setData(const std::vector<int32_t>& data) = 0;
   virtual void setData(const std::vector<uint32_t>& data) = 0;
   virtual void setData(const std::vector<glm::uvec2>& data) = 0;
@@ -358,7 +354,6 @@ public:
   virtual void setUniform(std::string name, int val) = 0;
   virtual void setUniform(std::string name, unsigned int val) = 0;
   virtual void setUniform(std::string name, float val) = 0;
-  virtual void setUniform(std::string name, double val) = 0; // WARNING casts down to float
   virtual void setUniform(std::string name, float* val) = 0;
   virtual void setUniform(std::string name, glm::vec2 val) = 0;
   virtual void setUniform(std::string name, glm::vec3 val) = 0;
@@ -379,7 +374,6 @@ public:
   virtual void setAttribute(std::string name, const std::vector<glm::vec3>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec4>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<float>& data) = 0;
-  virtual void setAttribute(std::string name, const std::vector<double>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<int32_t>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<uint32_t>& data) = 0;
   // clang-format on

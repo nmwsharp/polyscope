@@ -46,16 +46,16 @@ extern bool windowResizable;
 extern NavigateStyle style;
 extern UpDir upDir;
 extern FrontDir frontDir;
-extern double moveScale;
-extern double nearClipRatio;
-extern double farClipRatio;
+extern float moveScale;
+extern float nearClipRatio;
+extern float farClipRatio;
 extern std::array<float, 4> bgColor;
 
 // Current view camera parameters
 // TODO deprecate these one day, and just use a CameraParameters member instead. But this would break existing code, so
 // for now we leave these as-is and wrap inputs/outputs to a CameraParameters
 extern glm::mat4x4 viewMat;
-extern double fov; // in the y direction
+extern float fov; // in the y direction
 extern ProjectionMode projectionMode;
 
 // "Flying" view
@@ -67,16 +67,16 @@ extern glm::vec3 flightTargetViewT, flightInitialViewT;
 extern float flightTargetFov, flightInitialFov;
 
 // Default values
-extern const double defaultNearClipRatio;
-extern const double defaultFarClipRatio;
-extern const double defaultFov;
+extern const float defaultNearClipRatio;
+extern const float defaultFarClipRatio;
+extern const float defaultFov;
 
 // === View methods
 
 void processTranslate(glm::vec2 delta);
 void processRotate(glm::vec2 startP, glm::vec2 endP);
-void processClipPlaneShift(double amount);
-void processZoom(double amount);
+void processClipPlaneShift(float amount);
+void processZoom(float amount);
 void processKeyboardNavigation(ImGuiIO& io);
 
 void setWindowSize(int width, int height);

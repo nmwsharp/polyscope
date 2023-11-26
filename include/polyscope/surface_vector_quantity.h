@@ -99,7 +99,7 @@ public:
 class SurfaceOneFormTangentVectorQuantity : public SurfaceVectorQuantity,
                                             public TangentVectorQuantity<SurfaceOneFormTangentVectorQuantity> {
 public:
-  SurfaceOneFormTangentVectorQuantity(std::string name, std::vector<double> oneForm_, std::vector<char> orientations_,
+  SurfaceOneFormTangentVectorQuantity(std::string name, std::vector<float> oneForm_, std::vector<char> orientations_,
                                       SurfaceMesh& mesh_);
 
   virtual void draw() override;
@@ -107,7 +107,7 @@ public:
   virtual void refresh() override;
   virtual std::string niceName() override;
 
-  std::vector<double> oneForm;
+  std::vector<float> oneForm;
   std::vector<char> canonicalOrientation;
 
   void buildEdgeInfoGUI(size_t eInd) override;

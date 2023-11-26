@@ -24,15 +24,15 @@ bool windowResizable = true;
 NavigateStyle style = NavigateStyle::Turntable;
 UpDir upDir = UpDir::YUp;
 FrontDir frontDir = FrontDir::ZFront;
-double moveScale = 1.0;
-const double defaultNearClipRatio = 0.005;
-const double defaultFarClipRatio = 20.0;
-const double defaultFov = 45.;
-const double minFov = 5.;
-const double maxFov = 160.;
-double fov = defaultFov;
-double nearClipRatio = defaultNearClipRatio;
-double farClipRatio = defaultFarClipRatio;
+float moveScale = 1.0;
+const float defaultNearClipRatio = 0.005;
+const float defaultFarClipRatio = 20.0;
+const float defaultFov = 45.;
+const float minFov = 5.;
+const float maxFov = 160.;
+float fov = defaultFov;
+float nearClipRatio = defaultNearClipRatio;
+float farClipRatio = defaultFarClipRatio;
 ProjectionMode projectionMode = ProjectionMode::Perspective;
 std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 0.0}};
 
@@ -143,9 +143,9 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
   case NavigateStyle::Arcball: {
     // Map inputs to unit sphere
     auto toSphere = [](glm::vec2 v) {
-      double x = glm::clamp(v.x, -1.0f, 1.0f);
-      double y = glm::clamp(v.y, -1.0f, 1.0f);
-      double mag = x * x + y * y;
+      float x = glm::clamp(v.x, -1.0f, 1.0f);
+      float y = glm::clamp(v.y, -1.0f, 1.0f);
+      float mag = x * x + y * y;
       if (mag <= 1.0) {
         return glm::vec3{x, y, -std::sqrt(1.0 - mag)};
       } else {
@@ -156,7 +156,7 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
     glm::vec3 sphereEnd = toSphere(endP);
 
     glm::vec3 rotAxis = -cross(sphereStart, sphereEnd);
-    double rotMag = std::acos(glm::clamp(dot(sphereStart, sphereEnd), -1.0f, 1.0f) * moveScale);
+    float rotMag = std::acos(glm::clamp(dot(sphereStart, sphereEnd), -1.0f, 1.0f) * moveScale);
 
     glm::mat4 cameraRotate = glm::rotate(glm::mat4x4(1.0), (float)rotMag, glm::vec3(rotAxis.x, rotAxis.y, rotAxis.z));
 
@@ -216,14 +216,14 @@ void processTranslate(glm::vec2 delta) {
   immediatelyEndFlight();
 }
 
-void processClipPlaneShift(double amount) {
+void processClipPlaneShift(float amount) {
   if (amount == 0.0) return;
   // Adjust the near clipping plane
   nearClipRatio += .03 * amount * nearClipRatio;
   requestRedraw();
 }
 
-void processZoom(double amount) {
+void processZoom(float amount) {
   if (amount == 0.0) return;
   if (getNavigateStyle() == NavigateStyle::None || getNavigateStyle() == NavigateStyle::FirstPerson) {
     return;
@@ -239,7 +239,7 @@ void processZoom(double amount) {
     break;
   }
   case ProjectionMode::Orthographic: {
-    double fovScale = std::min(fov - minFov, maxFov - fov) / (maxFov - minFov);
+    float fovScale = std::min(fov - minFov, maxFov - fov) / (maxFov - minFov);
     fov += -fovScale * amount;
     fov = glm::clamp(fov, minFov, maxFov);
     break;
@@ -426,7 +426,7 @@ void setViewToCamera(const CameraParameters& p) {
 CameraParameters getCameraParametersForCurrentView() {
   ensureViewValid();
 
-  double aspectRatio = (float)bufferWidth / bufferHeight;
+  float aspectRatio = (float)bufferWidth / bufferHeight;
   return CameraParameters(CameraIntrinsics::fromFoVDegVerticalAndAspect(fov, aspectRatio),
                           CameraExtrinsics::fromMatrix(viewMat));
 }
@@ -436,18 +436,18 @@ void setCameraViewMatrix(glm::mat4 mat) { viewMat = mat; }
 glm::mat4 getCameraViewMatrix() { return viewMat; }
 
 glm::mat4 getCameraPerspectiveMatrix() {
-  double farClip = farClipRatio * state::lengthScale;
-  double nearClip = nearClipRatio * state::lengthScale;
-  double fovRad = glm::radians(fov);
-  double aspectRatio = (float)bufferWidth / bufferHeight;
+  float farClip = farClipRatio * state::lengthScale;
+  float nearClip = nearClipRatio * state::lengthScale;
+  float fovRad = glm::radians(fov);
+  float aspectRatio = (float)bufferWidth / bufferHeight;
   switch (projectionMode) {
   case ProjectionMode::Perspective: {
     return glm::perspective(fovRad, aspectRatio, nearClip, farClip);
     break;
   }
   case ProjectionMode::Orthographic: {
-    double vert = tan(fovRad / 2.) * state::lengthScale * 2.;
-    double horiz = vert * aspectRatio;
+    float vert = tan(fovRad / 2.) * state::lengthScale * 2.;
+    float horiz = vert * aspectRatio;
     return glm::ortho(-horiz, horiz, -vert, vert, nearClip, farClip);
     break;
   }
@@ -598,7 +598,7 @@ std::string getViewAsJson() {
 
   // Get the view matrix (note weird glm indexing, glm is [col][row])
   glm::mat4 viewMat = getCameraViewMatrix();
-  std::array<double, 16> viewMatFlat;
+  std::array<float, 16> viewMatFlat;
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       viewMatFlat[4 * i + j] = viewMat[j][i];
@@ -624,9 +624,9 @@ std::string getCameraJson() { return getViewAsJson(); }
 void setViewFromJson(std::string jsonData, bool flyTo) {
   // Values will go here
   glm::mat4 newViewMat;
-  double newFov = -777;
-  double newNearClipRatio = -777;
-  double newFarClipRatio = -777;
+  float newFov = -777;
+  float newNearClipRatio = -777;
+  float newFarClipRatio = -777;
 
   int windowWidth = view::windowWidth;
   int windowHeight = view::windowHeight;

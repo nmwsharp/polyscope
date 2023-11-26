@@ -203,7 +203,7 @@ std::string SurfaceVertexTangentVectorQuantity::niceName() {
 namespace {
 // helper function used below
 
-std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std::vector<double>& oneForm,
+std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std::vector<float>& oneForm,
                                                    std::vector<char>& canonicalOrientation) {
 
   mesh.vertexPositions.ensureHostBufferPopulated();
@@ -224,8 +224,8 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
       size_t vB = mesh.triangleVertexInds.data[3 * iF + ((j + 1) % 3)];
       size_t iE = mesh.triangleAllEdgeInds.data[9 * iF + j];
 
-      bool isCanonicalOriented = (vB > vA) != (canonicalOrientation[iE]); // TODO double check convention
-      double orientationSign = isCanonicalOriented ? 1. : -1.;
+      bool isCanonicalOriented = (vB > vA) != (canonicalOrientation[iE]); // TODO float check convention
+      float orientationSign = isCanonicalOriented ? 1. : -1.;
 
       formValues[j] = orientationSign * oneForm[iE];
 
@@ -250,7 +250,7 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
 
 } // namespace
 
-SurfaceOneFormTangentVectorQuantity::SurfaceOneFormTangentVectorQuantity(std::string name, std::vector<double> oneForm_,
+SurfaceOneFormTangentVectorQuantity::SurfaceOneFormTangentVectorQuantity(std::string name, std::vector<float> oneForm_,
                                                                          std::vector<char> canonicalOrientation_,
                                                                          SurfaceMesh& mesh_)
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE),

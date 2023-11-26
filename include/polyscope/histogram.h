@@ -13,18 +13,18 @@ namespace polyscope {
 // A histogram that shows up in ImGUI
 class Histogram {
 public:
-  Histogram();                            // must call buildHistogram() with data after
-  Histogram(std::vector<double>& values); // internally calls buildHistogram()
+  Histogram();                           // must call buildHistogram() with data after
+  Histogram(std::vector<float>& values); // internally calls buildHistogram()
 
   ~Histogram();
 
-  void buildHistogram(const std::vector<double>& values);
+  void buildHistogram(const std::vector<float>& values);
   void updateColormap(const std::string& newColormap);
 
   // Width = -1 means set automatically
   void buildUI(float width = -1.0);
 
-  std::pair<double, double> colormapRange; // in DATA values, not [0,1]
+  std::pair<float, float> colormapRange; // in DATA values, not [0,1]
 
 private:
   // = Helpers
@@ -35,7 +35,7 @@ private:
 
   std::vector<float> rawHistCurveY;
   std::vector<std::array<float, 2>> rawHistCurveX;
-  std::pair<double, double> dataRange;
+  std::pair<float, float> dataRange;
 
   // Render to texture
   void renderToTexture();
