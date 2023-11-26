@@ -5,7 +5,7 @@
 namespace polyscope {
 
 template <typename QuantityT>
-ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vector<double>& values_, DataType dataType_)
+ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vector<float>& values_, DataType dataType_)
     : quantity(quantity_), values(&quantity, quantity.uniquePrefix() + "values", valuesData), valuesData(values_),
       dataType(dataType_), dataRange(robustMinMax(values.data, 1e-5)),
       cMap(quantity.uniquePrefix() + "cmap", defaultColorMap(dataType)),
@@ -194,7 +194,7 @@ template <typename QuantityT>
 template <class V>
 void ScalarQuantity<QuantityT>::updateData(const V& newValues) {
   validateSize(newValues, values.size(), "scalar quantity " + quantity.name);
-  values.data = standardizeArray<double, V>(newValues);
+  values.data = standardizeArray<float, V>(newValues);
   values.markHostBufferUpdated();
 }
 

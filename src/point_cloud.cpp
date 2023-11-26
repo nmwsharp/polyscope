@@ -381,7 +381,7 @@ PointCloudColorQuantity* PointCloud::addColorQuantityImpl(std::string name, cons
   return q;
 }
 
-PointCloudScalarQuantity* PointCloud::addScalarQuantityImpl(std::string name, const std::vector<double>& data,
+PointCloudScalarQuantity* PointCloud::addScalarQuantityImpl(std::string name, const std::vector<float>& data,
                                                             DataType type) {
   checkForQuantityWithNameAndDeleteOrError(name);
   PointCloudScalarQuantity* q = new PointCloudScalarQuantity(name, data, *this, type);

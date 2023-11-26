@@ -145,13 +145,13 @@ VolumeMeshCellColorQuantity* VolumeMesh::addCellColorQuantity(std::string name, 
 template <class T>
 VolumeMeshVertexScalarQuantity* VolumeMesh::addVertexScalarQuantity(std::string name, const T& data, DataType type) {
   validateSize(data, nVertices(), "vertex scalar quantity " + name);
-  return addVertexScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
+  return addVertexScalarQuantityImpl(name, standardizeArray<float, T>(data), type);
 }
 
 template <class T>
 VolumeMeshCellScalarQuantity* VolumeMesh::addCellScalarQuantity(std::string name, const T& data, DataType type) {
   validateSize(data, nCells(), "cell scalar quantity " + name);
-  return addCellScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
+  return addCellScalarQuantityImpl(name, standardizeArray<float, T>(data), type);
 }
 
 

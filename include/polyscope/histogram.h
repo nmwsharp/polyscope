@@ -13,12 +13,12 @@ namespace polyscope {
 // A histogram that shows up in ImGUI
 class Histogram {
 public:
-  Histogram();                            // must call buildHistogram() with data after
-  Histogram(std::vector<double>& values); // internally calls buildHistogram()
+  Histogram();                           // must call buildHistogram() with data after
+  Histogram(std::vector<float>& values); // internally calls buildHistogram()
 
   ~Histogram();
 
-  void buildHistogram(const std::vector<double>& values);
+  void buildHistogram(const std::vector<float>& values);
   void updateColormap(const std::string& newColormap);
 
   // Width = -1 means set automatically

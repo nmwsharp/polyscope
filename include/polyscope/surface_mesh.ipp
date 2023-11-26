@@ -240,13 +240,13 @@ SurfaceTextureColorQuantity* SurfaceMesh::addTextureColorQuantity(std::string na
 template <class T>
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexDistanceQuantity(std::string name, const T& distances) {
   validateSize(distances, vertexDataSize, "distance quantity " + name);
-  return addVertexDistanceQuantityImpl(name, standardizeArray<double>(distances));
+  return addVertexDistanceQuantityImpl(name, standardizeArray<float>(distances));
 }
 
 template <class T>
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexSignedDistanceQuantity(std::string name, const T& distances) {
   validateSize(distances, vertexDataSize, "signed distance quantity " + name);
-  return addVertexSignedDistanceQuantityImpl(name, standardizeArray<double>(distances));
+  return addVertexSignedDistanceQuantityImpl(name, standardizeArray<float>(distances));
 }
 
 // Standard a parameterization, defined at corners
@@ -276,13 +276,13 @@ SurfaceVertexParameterizationQuantity* SurfaceMesh::addLocalParameterizationQuan
 template <class T>
 SurfaceVertexScalarQuantity* SurfaceMesh::addVertexScalarQuantity(std::string name, const T& data, DataType type) {
   validateSize(data, vertexDataSize, "vertex scalar quantity " + name);
-  return addVertexScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
+  return addVertexScalarQuantityImpl(name, standardizeArray<float, T>(data), type);
 }
 
 template <class T>
 SurfaceFaceScalarQuantity* SurfaceMesh::addFaceScalarQuantity(std::string name, const T& data, DataType type) {
   validateSize(data, faceDataSize, "face scalar quantity " + name);
-  return addFaceScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
+  return addFaceScalarQuantityImpl(name, standardizeArray<float, T>(data), type);
 }
 
 
@@ -293,19 +293,19 @@ SurfaceEdgeScalarQuantity* SurfaceMesh::addEdgeScalarQuantity(std::string name, 
               " attempted to set edge-valued data, but this requires an edge ordering. Call setEdgePermutation().");
   }
   validateSize(data, edgeDataSize, "edge scalar quantity " + name);
-  return addEdgeScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
+  return addEdgeScalarQuantityImpl(name, standardizeArray<float, T>(data), type);
 }
 
 template <class T>
 SurfaceHalfedgeScalarQuantity* SurfaceMesh::addHalfedgeScalarQuantity(std::string name, const T& data, DataType type) {
   validateSize(data, halfedgeDataSize, "halfedge scalar quantity " + name);
-  return addHalfedgeScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
+  return addHalfedgeScalarQuantityImpl(name, standardizeArray<float, T>(data), type);
 }
 
 template <class T>
 SurfaceCornerScalarQuantity* SurfaceMesh::addCornerScalarQuantity(std::string name, const T& data, DataType type) {
   validateSize(data, cornerDataSize, "corner scalar quantity " + name);
-  return addCornerScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
+  return addCornerScalarQuantityImpl(name, standardizeArray<float, T>(data), type);
 }
 
 template <class T>
@@ -313,7 +313,7 @@ SurfaceTextureScalarQuantity*
 SurfaceMesh::addTextureScalarQuantity(std::string name, SurfaceParameterizationQuantity& param, size_t dimX,
                                       size_t dimY, const T& values, ImageOrigin imageOrigin, DataType type) {
   validateSize<T>(values, dimX * dimY, "texture color quantity " + name);
-  return addTextureScalarQuantityImpl(name, param, dimX, dimY, standardizeArray<double, T>(values), imageOrigin, type);
+  return addTextureScalarQuantityImpl(name, param, dimX, dimY, standardizeArray<float, T>(values), imageOrigin, type);
 }
 
 template <class T>
@@ -401,7 +401,7 @@ SurfaceOneFormTangentVectorQuantity* SurfaceMesh::addOneFormTangentVectorQuantit
               " attempted to set edge-valued data, but this requires an edge ordering. Call setEdgePermutation().");
   }
   validateSize(data, edgeDataSize, "one form tangent vector quantity " + name);
-  return addOneFormTangentVectorQuantityImpl(name, standardizeArray<double, T>(data),
+  return addOneFormTangentVectorQuantityImpl(name, standardizeArray<float, T>(data),
                                              standardizeArray<char, O>(orientations));
 }
 

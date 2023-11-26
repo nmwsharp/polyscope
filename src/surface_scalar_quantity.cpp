@@ -11,7 +11,7 @@
 namespace polyscope {
 
 SurfaceScalarQuantity::SurfaceScalarQuantity(std::string name, SurfaceMesh& mesh_, std::string definedOn_,
-                                             const std::vector<double>& values_, DataType dataType_)
+                                             const std::vector<float>& values_, DataType dataType_)
     : SurfaceMeshQuantity(name, mesh_, true), ScalarQuantity(*this, values_, dataType_), definedOn(definedOn_) {}
 
 void SurfaceScalarQuantity::draw() {
@@ -59,7 +59,7 @@ std::string SurfaceScalarQuantity::niceName() { return name + " (" + definedOn +
 // ==========           Vertex Scalar            ==========
 // ========================================================
 
-SurfaceVertexScalarQuantity::SurfaceVertexScalarQuantity(std::string name, const std::vector<double>& values_,
+SurfaceVertexScalarQuantity::SurfaceVertexScalarQuantity(std::string name, const std::vector<float>& values_,
                                                          SurfaceMesh& mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "vertex", values_, dataType_)
 
@@ -101,7 +101,7 @@ void SurfaceVertexScalarQuantity::buildVertexInfoGUI(size_t vInd) {
 // ==========            Face Scalar             ==========
 // ========================================================
 
-SurfaceFaceScalarQuantity::SurfaceFaceScalarQuantity(std::string name, const std::vector<double>& values_,
+SurfaceFaceScalarQuantity::SurfaceFaceScalarQuantity(std::string name, const std::vector<float>& values_,
                                                      SurfaceMesh& mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "face", values_, dataType_)
 
@@ -147,7 +147,7 @@ void SurfaceFaceScalarQuantity::buildFaceInfoGUI(size_t fInd) {
 
 // TODO need to do something about values for internal edges in triangulated polygons
 
-SurfaceEdgeScalarQuantity::SurfaceEdgeScalarQuantity(std::string name, const std::vector<double>& values_,
+SurfaceEdgeScalarQuantity::SurfaceEdgeScalarQuantity(std::string name, const std::vector<float>& values_,
                                                      SurfaceMesh& mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "edge", values_, dataType_)
 
@@ -189,7 +189,7 @@ void SurfaceEdgeScalarQuantity::buildEdgeInfoGUI(size_t eInd) {
 // ==========          Halfedge Scalar           ==========
 // ========================================================
 
-SurfaceHalfedgeScalarQuantity::SurfaceHalfedgeScalarQuantity(std::string name, const std::vector<double>& values_,
+SurfaceHalfedgeScalarQuantity::SurfaceHalfedgeScalarQuantity(std::string name, const std::vector<float>& values_,
                                                              SurfaceMesh& mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "halfedge", values_, dataType_)
 
@@ -230,7 +230,7 @@ void SurfaceHalfedgeScalarQuantity::buildHalfedgeInfoGUI(size_t heInd) {
 // ==========          Corner Scalar           ==========
 // ========================================================
 
-SurfaceCornerScalarQuantity::SurfaceCornerScalarQuantity(std::string name, const std::vector<double>& values_,
+SurfaceCornerScalarQuantity::SurfaceCornerScalarQuantity(std::string name, const std::vector<float>& values_,
                                                          SurfaceMesh& mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "corner", values_, dataType_)
 
@@ -273,7 +273,7 @@ void SurfaceCornerScalarQuantity::buildCornerInfoGUI(size_t cInd) {
 
 SurfaceTextureScalarQuantity::SurfaceTextureScalarQuantity(std::string name, SurfaceMesh& mesh_,
                                                            SurfaceParameterizationQuantity& param_, size_t dimX_,
-                                                           size_t dimY_, const std::vector<double>& values_,
+                                                           size_t dimY_, const std::vector<float>& values_,
                                                            ImageOrigin origin_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "vertex", values_, dataType_), param(param_), dimX(dimX_), dimY(dimY_),
       imageOrigin(origin_) {

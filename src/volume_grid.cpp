@@ -397,7 +397,7 @@ VolumeGridQuantity::VolumeGridQuantity(std::string name_, VolumeGrid& curveNetwo
     : QuantityS<VolumeGrid>(name_, curveNetwork_, dominates_) {}
 
 
-VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data,
+VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityImpl(std::string name, const std::vector<float>& data,
                                                                     DataType dataType_) {
 
   checkForQuantityWithNameAndDeleteOrError(name);
@@ -407,7 +407,7 @@ VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityImpl(std::string 
   return q;
 }
 
-VolumeGridCellScalarQuantity* VolumeGrid::addCellScalarQuantityImpl(std::string name, const std::vector<double>& data,
+VolumeGridCellScalarQuantity* VolumeGrid::addCellScalarQuantityImpl(std::string name, const std::vector<float>& data,
                                                                     DataType dataType_) {
 
   checkForQuantityWithNameAndDeleteOrError(name);

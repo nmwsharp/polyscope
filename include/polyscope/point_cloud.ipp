@@ -77,7 +77,7 @@ PointCloudColorQuantity* PointCloud::addColorQuantity(std::string name, const T&
 template <class T>
 PointCloudScalarQuantity* PointCloud::addScalarQuantity(std::string name, const T& data, DataType type) {
   validateSize(data, nPoints(), "point cloud scalar quantity " + name);
-  return addScalarQuantityImpl(name, standardizeArray<double, T>(data), type);
+  return addScalarQuantityImpl(name, standardizeArray<float, T>(data), type);
 }
 
 

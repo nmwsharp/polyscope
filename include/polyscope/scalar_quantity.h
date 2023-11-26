@@ -18,7 +18,7 @@ namespace polyscope {
 template <typename QuantityT>
 class ScalarQuantity {
 public:
-  ScalarQuantity(QuantityT& quantity, const std::vector<double>& values, DataType dataType);
+  ScalarQuantity(QuantityT& quantity, const std::vector<float>& values, DataType dataType);
 
   // Build the ImGUI UIs for scalars
   void buildScalarUI();
@@ -38,7 +38,7 @@ public:
 
   // Wrapper around the actual buffer of scalar data stored in the class.
   // Interaction with the data (updating it on CPU or GPU side, accessing it, etc) happens through this wrapper.
-  render::ManagedBuffer<double> values;
+  render::ManagedBuffer<float> values;
 
   // === Get/set visualization parameters
 
@@ -61,7 +61,7 @@ public:
   double getIsolineDarkness();
 
 protected:
-  std::vector<double> valuesData;
+  std::vector<float> valuesData;
   const DataType dataType;
 
   // === Visualization parameters

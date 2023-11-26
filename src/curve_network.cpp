@@ -527,16 +527,16 @@ CurveNetworkEdgeColorQuantity* CurveNetwork::addEdgeColorQuantityImpl(std::strin
 }
 
 
-CurveNetworkNodeScalarQuantity*
-CurveNetwork::addNodeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type) {
+CurveNetworkNodeScalarQuantity* CurveNetwork::addNodeScalarQuantityImpl(std::string name,
+                                                                        const std::vector<float>& data, DataType type) {
   checkForQuantityWithNameAndDeleteOrError(name);
   CurveNetworkNodeScalarQuantity* q = new CurveNetworkNodeScalarQuantity(name, data, *this, type);
   addQuantity(q);
   return q;
 }
 
-CurveNetworkEdgeScalarQuantity*
-CurveNetwork::addEdgeScalarQuantityImpl(std::string name, const std::vector<double>& data, DataType type) {
+CurveNetworkEdgeScalarQuantity* CurveNetwork::addEdgeScalarQuantityImpl(std::string name,
+                                                                        const std::vector<float>& data, DataType type) {
   checkForQuantityWithNameAndDeleteOrError(name);
   CurveNetworkEdgeScalarQuantity* q = new CurveNetworkEdgeScalarQuantity(name, data, *this, type);
   addQuantity(q);

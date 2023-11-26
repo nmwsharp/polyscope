@@ -102,7 +102,7 @@ inline void removeVolumeGrid(std::string name, bool errorIfAbsent) {
 template <class T>
 VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantity(std::string name, const T& values, DataType dataType_) {
   validateSize(values, nNodes(), "grid node scalar quantity " + name);
-  return addNodeScalarQuantityImpl(name, standardizeArray<double, T>(values), dataType_);
+  return addNodeScalarQuantityImpl(name, standardizeArray<float, T>(values), dataType_);
 }
 
 
@@ -145,7 +145,7 @@ VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityFromBatchCallable
 template <class T>
 VolumeGridCellScalarQuantity* VolumeGrid::addCellScalarQuantity(std::string name, const T& values, DataType dataType_) {
   validateSize(values, nCells(), "grid cell scalar quantity " + name);
-  return addCellScalarQuantityImpl(name, standardizeArray<double, T>(values), dataType_);
+  return addCellScalarQuantityImpl(name, standardizeArray<float, T>(values), dataType_);
 }
 
 

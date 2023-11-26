@@ -14,7 +14,7 @@ namespace polyscope {
 class ScalarImageQuantity : public ImageQuantity, public ScalarQuantity<ScalarImageQuantity> {
 
 public:
-  ScalarImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY, const std::vector<double>& data,
+  ScalarImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY, const std::vector<float>& data,
                       ImageOrigin imageOrigin, DataType dataType);
 
   virtual void buildCustomUI() override;
