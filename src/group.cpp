@@ -29,7 +29,7 @@ namespace polyscope {
 
 Group::Group(std::string name_)
     : name(name_), showChildDetails(uniqueName() + "showChildDetails", true),
-      hideDescendentsFromStructureLists(uniqueName() + "hideDescendentsFromStructureLists", false) {}
+      hideDescendantsFromStructureLists(uniqueName() + "hideDescendantsFromStructureLists", false) {}
 
 Group::~Group() {
   // unparent all children
@@ -76,8 +76,8 @@ void Group::buildUI() {
         if (ImGui::MenuItem("Show child details", NULL, getShowChildDetails())) {
           setShowChildDetails(!getShowChildDetails());
         }
-        if (ImGui::MenuItem("Hide descendents from structure lists", NULL, getHideDescendentsFromStructureLists())) {
-          setHideDescendentsFromStructureLists(!getHideDescendentsFromStructureLists());
+        if (ImGui::MenuItem("Hide descendants from structure lists", NULL, getHideDescendantsFromStructureLists())) {
+          setHideDescendantsFromStructureLists(!getHideDescendantsFromStructureLists());
         }
         ImGui::EndPopup();
       }
@@ -260,16 +260,16 @@ void Group::cullExpiredChildren() {
 }
 
 void Group::appendStructuresToSkip(std::unordered_set<Structure*>& skipSet) {
-  if (getHideDescendentsFromStructureLists()) {
-    appendAllDescendents(skipSet);
+  if (getHideDescendantsFromStructureLists()) {
+    appendAllDescendants(skipSet);
   }
 }
 
-void Group::appendAllDescendents(std::unordered_set<Structure*>& skipSet) {
+void Group::appendAllDescendants(std::unordered_set<Structure*>& skipSet) {
   for (WeakHandle<Group>& childWeak : childrenGroups) {
     if (childWeak.isValid()) {
       Group& child = childWeak.get();
-      child.appendAllDescendents(skipSet);
+      child.appendAllDescendants(skipSet);
     }
   }
 
@@ -304,11 +304,11 @@ Group* Group::setShowChildDetails(bool newVal) {
 }
 bool Group::getShowChildDetails() { return showChildDetails.get(); }
 
-Group* Group::setHideDescendentsFromStructureLists(bool newVal) {
-  hideDescendentsFromStructureLists = newVal;
+Group* Group::setHideDescendantsFromStructureLists(bool newVal) {
+  hideDescendantsFromStructureLists = newVal;
   return this;
 }
-bool Group::getHideDescendentsFromStructureLists() { return hideDescendentsFromStructureLists.get(); }
+bool Group::getHideDescendantsFromStructureLists() { return hideDescendantsFromStructureLists.get(); }
 
 bool Group::isRootGroup() { return !parentGroup.isValid(); }
 

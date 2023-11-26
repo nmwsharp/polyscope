@@ -228,7 +228,7 @@ TEST_F(PolyscopeTest, TestDocsExample) {
 
   // hide items in group from displaying in the UI
   // (useful if you are registering huge numbers of structures you don't always need to see)
-  group->setHideDescendentsFromStructureLists(true);
+  group->setHideDescendantsFromStructureLists(true);
   group->setShowChildDetails(false);
 
   // nest groups inside of other groups

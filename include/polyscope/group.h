@@ -29,8 +29,8 @@ public:
                   // buildUI() for all children.
 
   // Is the group being displayed (0 no, 1 some children, 2 all children)
-  int isEnabled();                    // checks ALL descendents
-  Group* setEnabled(bool newEnabled); // updates setting for ALL descendents
+  int isEnabled();                    // checks ALL descendants
+  Group* setEnabled(bool newEnabled); // updates setting for ALL descendants
 
   void addChildGroup(Group& newChild);
   void addChildStructure(Structure& newChild);
@@ -41,7 +41,7 @@ public:
   bool isRootGroup();
   Group* getTopLevelGrandparent();
   void appendStructuresToSkip(std::unordered_set<Structure*>& skipSet);
-  void appendAllDescendents(std::unordered_set<Structure*>& skipSet);
+  void appendAllDescendants(std::unordered_set<Structure*>& skipSet);
 
   std::string niceName();
   std::string uniqueName();
@@ -49,8 +49,8 @@ public:
   Group* setShowChildDetails(bool newVal);
   bool getShowChildDetails();
 
-  Group* setHideDescendentsFromStructureLists(bool newVal);
-  bool getHideDescendentsFromStructureLists();
+  Group* setHideDescendantsFromStructureLists(bool newVal);
+  bool getHideDescendantsFromStructureLists();
 
   // === Member variables ===
   WeakHandle<Group> parentGroup; // the parent group of this group (if null, this is a root group)
@@ -62,7 +62,7 @@ protected:
   // = State
 
   PersistentValue<bool> showChildDetails;
-  PersistentValue<bool> hideDescendentsFromStructureLists;
+  PersistentValue<bool> hideDescendantsFromStructureLists;
 
   // helpers
   void cullExpiredChildren(); // remove any child
