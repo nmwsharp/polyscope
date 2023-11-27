@@ -32,7 +32,7 @@ public:
   static CameraIntrinsics fromFoVDegVerticalAndAspect(const float& fovVertDeg, const float& aspectRatioWidthOverHeight);
   static CameraIntrinsics fromFoVDegHorizontalAndAspect(const float& fovHorzDeg,
                                                         const float& aspectRatioWidthOverHeight);
-  static CameraIntrinsics fromFoVDegHorizontalAndVertical(const float& fovHorzDeg, const float& forV);
+  static CameraIntrinsics fromFoVDegHorizontalAndVertical(const float& fovHorzDeg, const float& fovVertDeg);
 
   // create/test 'invalid' params
   static CameraIntrinsics createInvalid();
