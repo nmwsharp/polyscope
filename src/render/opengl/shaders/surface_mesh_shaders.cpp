@@ -256,6 +256,30 @@ const ShaderReplacementRule MESH_PROPAGATE_VALUE (
     /* textures */ {}
 );
 
+const ShaderReplacementRule MESH_PROPAGATE_INT (
+    /* rule name */ "MESH_PROPAGATE_INT",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in int a_int;
+          flat out int a_intToFrag;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_intToFrag = a_int;
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          flat in int a_intToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          int shadeInt = a_intToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_int", RenderDataType::Int},
+    },
+    /* textures */ {}
+);
+
 const ShaderReplacementRule MESH_PROPAGATE_HALFEDGE_VALUE (
     /* rule name */ "MESH_PROPAGATE_HALFEDGE_VALUE",
     { /* replacement sources */

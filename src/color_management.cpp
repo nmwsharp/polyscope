@@ -25,6 +25,8 @@ glm::vec3 unitClamp(glm::vec3 x) { return {unitClamp(x[0]), unitClamp(x[1]), uni
 // Used to sample colors. Samples a series of most-distant values from a range [0,1]
 // offset from a starting value 'start' and wrapped around. index=0 returns start
 //
+// (We also use this logic via a duplicate implementation in some shaders)
+//
 // Example: if start = 0, emits f(0, i) = {0, 1/2, 1/4, 3/4, 1/8, 5/8, 3/8, 7/8, ...}
 //          if start = 0.3 emits (0.3 + f(0, i)) % 1
 float getIndexedDistinctValue(float start, int index) {

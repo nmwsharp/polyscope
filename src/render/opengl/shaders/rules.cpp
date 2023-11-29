@@ -203,6 +203,7 @@ const ShaderReplacementRule SHADE_CHECKER_VALUE2 (
           uniform vec3 u_color2;
         )"},
       {"GENERATE_SHADE_COLOR", R"(
+        // NOTE checker math shared with other shaders
         float mX = mod(shadeValue2.x, 2.0 * u_modLen) / u_modLen - 1.f; // in [-1, 1]
         float mY = mod(shadeValue2.y, 2.0 * u_modLen) / u_modLen - 1.f;
         float minD = min( min(abs(mX), 1.0 - abs(mX)), min(abs(mY), 1.0 - abs(mY))) * 2.; // rect distace from flipping sign in [0,1]
@@ -222,6 +223,45 @@ const ShaderReplacementRule SHADE_CHECKER_VALUE2 (
     },
     /* attributes */ {},
     /* textures */ {}
+);
+
+const ShaderReplacementRule SHADE_CHECKER_CATEGORY(
+    /* rule name */ "SHADE_CHECKER_CATEGORY",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_modLen;
+          uniform float u_modDarkness;
+          uniform sampler1D t_colormap;
+
+          float intToDistinctReal(float start, int index);
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+        // sample the categorical color
+        float catVal = intToDistinctReal(0., shadeInt);
+        vec3 catColor = texture(t_colormap, catVal).rgb;
+        vec3 catColorDark = catColor * u_modDarkness;
+
+        // NOTE checker math shared with other shaders
+        float mX = mod(shadeValue2.x, 2.0 * u_modLen) / u_modLen - 1.f; // in [-1, 1]
+        float mY = mod(shadeValue2.y, 2.0 * u_modLen) / u_modLen - 1.f;
+        float minD = min( min(abs(mX), 1.0 - abs(mX)), min(abs(mY), 1.0 - abs(mY))) * 2.; // rect distace from flipping sign in [0,1]
+        float p = 6;
+        float minDSmooth = pow(minD, 1. / p);
+        // TODO do some clever screen space derivative thing to prevent aliasing
+        float v = (mX * mY); // in [-1, 1], color switches at 0
+        float adjV = sign(v) * minDSmooth;
+        float s = smoothstep(-1.f, 1.f, adjV);
+        vec3 albedoColor = mix(catColor, catColorDark, s);
+      )"}
+    },
+    /* uniforms */ {
+       {"u_modLen", RenderDataType::Float},
+       {"u_modDarkness", RenderDataType::Float},
+    },
+    /* attributes */ {},
+    /* textures */ {
+        {"t_colormap", 1}
+    }
 );
 
 // input vec2 shadeValue2

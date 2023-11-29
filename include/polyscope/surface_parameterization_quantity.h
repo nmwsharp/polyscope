@@ -29,12 +29,15 @@ public:
   virtual void refresh() override;
   virtual void buildCustomUI() override;
 
+  template <typename V>
+  void setIslandLabels(const V& newIslandLabels);
 
 protected:
   std::shared_ptr<render::ShaderProgram> program;
 
   // Helpers
   void createProgram();
+  size_t nFaces(); // works around an incomplete def of the parent mesh
   virtual void fillCoordBuffers(render::ShaderProgram& p) = 0;
 };
 
@@ -73,5 +76,16 @@ public:
 protected:
   virtual void fillCoordBuffers(render::ShaderProgram& p) override;
 };
+
+
+// == template implementations
+
+template <typename V>
+void SurfaceParameterizationQuantity::setIslandLabels(const V& newIslandLabels) {
+  validateSize(newIslandLabels, this->nFaces(), "scalar quantity " + quantity.name);
+  islandLabels.data = standardizeArray<int, V>(newIslandLabels);
+  islandLabels.markHostBufferUpdated();
+  islandLabelsPopulated = true;
+}
 
 } // namespace polyscope

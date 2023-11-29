@@ -316,6 +316,12 @@ TEST_F(PolyscopeTest, SurfaceMeshCornerParam) {
   q1->setStyle(polyscope::ParamVizStyle::LOCAL_RAD);
   polyscope::show(3);
 
+  // set islands
+  std::vector<int32_t> islandLabels(psMesh->nFaces(), 0);
+  q1->setIslandLabels(islandLabels);
+  q1->setStyle(polyscope::ParamVizStyle::CHECKER_ISLANDS);
+  polyscope::show(3);
+
   polyscope::removeAllStructures();
 }
 

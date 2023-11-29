@@ -17,7 +17,14 @@ namespace polyscope {
 SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string name, SurfaceMesh& mesh_,
                                                                  const std::vector<glm::vec2>& coords_,
                                                                  ParamCoordsType type_, ParamVizStyle style_)
-    : SurfaceMeshQuantity(name, mesh_, true), ParameterizationQuantity(*this, coords_, type_, style_) {}
+    : SurfaceMeshQuantity(name, mesh_, true), ParameterizationQuantity(*this, coords_, type_, style_) {
+
+  // sanity check, this should basically never happen, but this guards against weird edge cases such
+  // as persistent values restoring the style, device updates, etc
+  if (getStyle() == ParamVizStyle::CHECKER_ISLANDS && !haveIslandLabels()) {
+    setStyle(ParamVizStyle::CHECKER);
+  }
+}
 
 void SurfaceParameterizationQuantity::draw() {
   if (!isEnabled()) return;
@@ -37,14 +44,21 @@ void SurfaceParameterizationQuantity::draw() {
 
 void SurfaceParameterizationQuantity::createProgram() {
 
+  // sanity check, this should basically never happen, but this guards against weird edge cases such
+  // as persistent values restoring the style, device updates, etc
+  if (getStyle() == ParamVizStyle::CHECKER_ISLANDS && !haveIslandLabels()) {
+    setStyle(ParamVizStyle::CHECKER);
+  }
+
   // Create the program to draw this quantity
   // clang-format off
   program = render::engine->requestShader("MESH", 
       render::engine->addMaterialRules(parent.getMaterial(),
         parent.addSurfaceMeshRules(
-          addParameterizationRules(
-            {"MESH_PROPAGATE_VALUE2"}
-          )
+          addParameterizationRules({
+            "MESH_PROPAGATE_VALUE2",
+            getStyle() == ParamVizStyle::CHECKER_ISLANDS ? "MESH_PROPAGATE_INT" : "",
+          })
         )
       )
     );
@@ -54,6 +68,10 @@ void SurfaceParameterizationQuantity::createProgram() {
   fillCoordBuffers(*program);
   fillParameterizationBuffers(*program);
   parent.setMeshGeometryAttributes(*program);
+
+  if(getStyle() == ParamVizStyle::CHECKER_ISLANDS) {
+    program->setAttribute("a_int", islandLabels.getIndexedRenderAttributeBuffer(parent.triangleFaceInds));
+  }
 
   render::engine->setMaterial(*program, parent.getMaterial());
 }
@@ -75,6 +93,9 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
   buildParameterizationUI();
 }
 
+size_t SurfaceParameterizationQuantity::nFaces() {
+  return parent.nFaces();
+}
 
 void SurfaceParameterizationQuantity::refresh() {
   program.reset();
