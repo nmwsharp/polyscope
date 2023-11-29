@@ -2,6 +2,10 @@
 
 #include "polyscope/surface_parameterization_quantity.h"
 
+#include <map>
+#include <set>
+
+#include "polyscope/curve_network.h"
 #include "polyscope/file_helpers.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
@@ -91,6 +95,105 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
   }
 
   buildParameterizationUI();
+}
+
+CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::string structureName) {
+  
+  // set the name to default
+  if (structureName == "") {
+    structureName = parent.name + " - " + name + " - seams";
+  }
+
+  // Populate data on the host
+  coords.ensureHostBufferPopulated();
+  parent.triangleCornerInds.ensureHostBufferPopulated();
+  parent.triangleVertexInds.ensureHostBufferPopulated();
+  parent.edgeIsReal.ensureHostBufferPopulated();
+  parent.vertexPositions.ensureHostBufferPopulated();
+
+  // helper to canonicalize edge direction
+  auto canonicalizeEdge = [](std::pair<int32_t, int32_t>& inds, std::pair<glm::vec2, glm::vec2>& coords) 
+  {
+    if(inds.first > inds.second) {
+      std::swap(inds.first, inds.second);
+      std::swap(coords.first, coords.second);
+    }
+  };
+
+  // map to find matching & not-matching edges
+  // TODO set up combining hash to use unordered_map/set instead
+  std::map<std::pair<int32_t, int32_t>, std::pair<glm::vec2, glm::vec2>> edgeCoords;
+  std::map<std::pair<int32_t, int32_t>, int32_t> edgeCount;
+  std::set<std::pair<int32_t, int32_t>> seamEdges;
+
+  // loop over all edges
+  for(size_t iT = 0; iT <  parent.nFacesTriangulation(); iT++) {
+    for(size_t k = 0; k < 3; k++) {
+      if(parent.edgeIsReal.data[9*iT][k] == 0.) continue; // skip internal tesselation edges
+
+      // gather data for the edge
+      int32_t iV_tail = parent.triangleVertexInds.data[3*iT + (k+0)%3];
+      int32_t iV_tip = parent.triangleVertexInds.data[3*iT + (k+1)%3];
+      int32_t iC_tail = parent.triangleCornerInds.data[3*iT + (k+0)%3];
+      int32_t iC_tip = parent.triangleCornerInds.data[3*iT + (k+1)%3];
+      std::pair<int32_t, int32_t> eInd (iV_tail, iV_tip);
+      std::pair<glm::vec2, glm::vec2> eC (coords.data[iC_tail], coords.data[iC_tip]);
+      canonicalizeEdge(eInd, eC); // make sure ordering is consistent
+
+      // increment the count
+      if(edgeCount.find(eInd) == edgeCount.end())  {
+        edgeCount[eInd] = 1;
+      } else {
+        edgeCount[eInd] ++;
+      }
+
+      // check for a collision against a previously seen copy of this edge
+      if(edgeCoords.find(eInd) == edgeCoords.end()) { 
+        edgeCoords[eInd] = eC;
+      } else {
+        if( edgeCoords[eInd] != eC) {
+          // it's different! mark the seam
+          seamEdges.emplace(eInd);
+        }
+      }
+    }
+  }
+
+  // add all edges that appeared any number of times other than 2
+  // (boundaries and nonmanifold edges are always seams)
+  for(auto& entry : edgeCount)  {
+    if(entry.second != 2) {
+      seamEdges.emplace(entry.first);
+    }
+  }
+
+  // densely enumerate the nodes of the seam curves
+  std::vector<std::array<int32_t, 2>> seamEdgeInds;
+  std::map<int32_t, int32_t> vertexIndToDense;
+  std::vector<glm::vec3> seamEdgeNodes;
+  for(const std::pair<int32_t, int32_t>& edge: seamEdges)  {
+    int32_t vA = edge.first;
+    int32_t vB = edge.second;
+ 
+    // get unique vertices for the edges
+    if(vertexIndToDense.find(vA) == vertexIndToDense.end()) {
+      vertexIndToDense[vA] = seamEdgeNodes.size();
+      seamEdgeNodes.push_back(parent.vertexPositions.data[vA]);
+    }
+    int32_t nA = vertexIndToDense[vA];
+    if(vertexIndToDense.find(vB) == vertexIndToDense.end()) {
+      vertexIndToDense[vB] = seamEdgeNodes.size();
+      seamEdgeNodes.push_back(parent.vertexPositions.data[vB]);
+    }
+    int32_t nB = vertexIndToDense[vB];
+
+    // add the edge
+    seamEdgeInds.push_back({nA, nB});
+  }
+
+  // add the curve network
+
+  return registerCurveNetwork(structureName, seamEdgeNodes, seamEdgeInds);
 }
 
 size_t SurfaceParameterizationQuantity::nFaces() {

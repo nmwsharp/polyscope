@@ -12,6 +12,8 @@
 
 namespace polyscope {
 
+// forward declarations
+class CurveNetwork;
 
 // ==============================================================
 // ================  Base Parameterization  =====================
@@ -29,8 +31,13 @@ public:
   virtual void refresh() override;
   virtual void buildCustomUI() override;
 
+  // Set islands labels. Technically, this data is just any categorical integer labels per-face of the mesh.
+  // The intended use is to label islands (connected components in parameterization space) of the UV map.
+  // When style == CHECKER_ISLANDS, these will be use to visualize the islands with different colors.
   template <typename V>
   void setIslandLabels(const V& newIslandLabels);
+
+  CurveNetwork* createCurveNetworkFromSeams(std::string structureName = "");
 
 protected:
   std::shared_ptr<render::ShaderProgram> program;

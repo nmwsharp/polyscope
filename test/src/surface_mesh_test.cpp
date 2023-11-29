@@ -321,6 +321,11 @@ TEST_F(PolyscopeTest, SurfaceMeshCornerParam) {
   q1->setIslandLabels(islandLabels);
   q1->setStyle(polyscope::ParamVizStyle::CHECKER_ISLANDS);
   polyscope::show(3);
+  
+
+  // create the curve network
+  q1->createCurveNetworkFromSeams();
+  polyscope::show(3);
 
   polyscope::removeAllStructures();
 }
