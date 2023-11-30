@@ -24,6 +24,7 @@ extern const ShaderReplacementRule MESH_BACKFACE_NORMAL_FLIP;
 extern const ShaderReplacementRule MESH_BACKFACE_DIFFERENT;
 extern const ShaderReplacementRule MESH_BACKFACE_DARKEN;
 extern const ShaderReplacementRule MESH_PROPAGATE_VALUE;
+extern const ShaderReplacementRule MESH_PROPAGATE_FLAT_VALUE;
 extern const ShaderReplacementRule MESH_PROPAGATE_INT;
 extern const ShaderReplacementRule MESH_PROPAGATE_VALUE2;
 extern const ShaderReplacementRule MESH_PROPAGATE_TCOORD;

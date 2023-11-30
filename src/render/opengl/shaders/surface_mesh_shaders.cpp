@@ -256,26 +256,26 @@ const ShaderReplacementRule MESH_PROPAGATE_VALUE (
     /* textures */ {}
 );
 
-const ShaderReplacementRule MESH_PROPAGATE_INT (
-    /* rule name */ "MESH_PROPAGATE_INT",
+const ShaderReplacementRule MESH_PROPAGATE_FLAT_VALUE (
+    /* rule name */ "MESH_PROPAGATE_FLAT_VALUE",
     { /* replacement sources */
       {"VERT_DECLARATIONS", R"(
-          in int a_int;
-          flat out int a_intToFrag;
+          in float a_value;
+          flat out float a_valueToFrag;
         )"},
       {"VERT_ASSIGNMENTS", R"(
-          a_intToFrag = a_int;
+          a_valueToFrag = a_value;
         )"},
       {"FRAG_DECLARATIONS", R"(
-          flat in int a_intToFrag;
+          flat in float a_valueToFrag;
         )"},
       {"GENERATE_SHADE_VALUE", R"(
-          int shadeInt = a_intToFrag;
+          float shadeValue = a_valueToFrag;
         )"},
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_int", RenderDataType::Int},
+      {"a_value", RenderDataType::Float},
     },
     /* textures */ {}
 );

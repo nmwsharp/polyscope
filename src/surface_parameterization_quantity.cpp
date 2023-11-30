@@ -61,7 +61,7 @@ void SurfaceParameterizationQuantity::createProgram() {
         parent.addSurfaceMeshRules(
           addParameterizationRules({
             "MESH_PROPAGATE_VALUE2",
-            getStyle() == ParamVizStyle::CHECKER_ISLANDS ? "MESH_PROPAGATE_INT" : "",
+            getStyle() == ParamVizStyle::CHECKER_ISLANDS ? "MESH_PROPAGATE_FLAT_VALUE" : "",
           })
         )
       )
@@ -74,7 +74,7 @@ void SurfaceParameterizationQuantity::createProgram() {
   parent.setMeshGeometryAttributes(*program);
 
   if(getStyle() == ParamVizStyle::CHECKER_ISLANDS) {
-    program->setAttribute("a_int", islandLabels.getIndexedRenderAttributeBuffer(parent.triangleFaceInds));
+    program->setAttribute("a_value", islandLabels.getIndexedRenderAttributeBuffer(parent.triangleFaceInds));
   }
 
   render::engine->setMaterial(*program, parent.getMaterial());
@@ -129,7 +129,7 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
   // loop over all edges
   for(size_t iT = 0; iT <  parent.nFacesTriangulation(); iT++) {
     for(size_t k = 0; k < 3; k++) {
-      if(parent.edgeIsReal.data[9*iT][k] == 0.) continue; // skip internal tesselation edges
+      if(parent.edgeIsReal.data[3*iT][k] == 0.) continue; // skip internal tesselation edges
 
       // gather data for the edge
       int32_t iV_tail = parent.triangleVertexInds.data[3*iT + (k+0)%3];

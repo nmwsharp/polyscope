@@ -131,7 +131,7 @@ float intToDistinctReal(float start, int index) {
   float val = 0.f;
   float p = 0.5f;
   for(int iShift = 0; iShift < NBitsUntilRepeat; iShift++) { // unroll please
-    val += float(index % 2 == 1) * p;
+    val += float((index % 2) == 1) * p;
     index = index >> 1;
     p /= 2.0;
   }

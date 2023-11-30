@@ -237,8 +237,9 @@ const ShaderReplacementRule SHADE_CHECKER_CATEGORY(
         )"},
       {"GENERATE_SHADE_COLOR", R"(
         // sample the categorical color
-        float catVal = intToDistinctReal(0., shadeInt);
-        vec3 catColor = texture(t_colormap, catVal).rgb;
+        float catVal = intToDistinctReal(0., int(shadeValue));
+        float scaleFac = 1.2f; // pump up the brightness a bit, so the modDarkness doesn't make it too dark
+        vec3 catColor = scaleFac * texture(t_colormap, catVal).rgb;
         vec3 catColorDark = catColor * u_modDarkness;
 
         // NOTE checker math shared with other shaders
