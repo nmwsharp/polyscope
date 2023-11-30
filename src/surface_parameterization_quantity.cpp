@@ -90,6 +90,8 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
   if (ImGui::BeginPopup("OptionsPopup")) {
 
     buildParameterizationOptionsUI();
+    
+    if (ImGui::MenuItem("Create curve network from seams")) createCurveNetworkFromSeams();
 
     ImGui::EndPopup();
   }
