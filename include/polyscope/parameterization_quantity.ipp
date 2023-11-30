@@ -81,15 +81,15 @@ void ParameterizationQuantity<QuantityT>::buildParameterizationUI() {
       setCheckerColors(getCheckerColors());
     break;
   case ParamVizStyle::CHECKER_ISLANDS:
-    if (render::buildColormapSelector(cMap.get())) {
-      setColorMap(getColorMap());
-    }
     ImGui::PushItemWidth(100);
     if (ImGui::DragFloat("alt darkness", &altDarkness.get(), 0.01, 0., 1.)) {
       altDarkness.manuallyChanged();
       requestRedraw();
     }
     ImGui::PopItemWidth();
+    if (render::buildColormapSelector(cMap.get())) {
+      setColorMap(getColorMap());
+    }
     break;
   case ParamVizStyle::GRID:
     ImGui::SameLine();
