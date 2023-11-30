@@ -256,6 +256,30 @@ const ShaderReplacementRule MESH_PROPAGATE_VALUE (
     /* textures */ {}
 );
 
+const ShaderReplacementRule MESH_PROPAGATE_FLAT_VALUE (
+    /* rule name */ "MESH_PROPAGATE_FLAT_VALUE",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in float a_value;
+          flat out float a_valueToFrag;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_valueToFrag = a_value;
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          flat in float a_valueToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float shadeValue = a_valueToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_value", RenderDataType::Float},
+    },
+    /* textures */ {}
+);
+
 const ShaderReplacementRule MESH_PROPAGATE_HALFEDGE_VALUE (
     /* rule name */ "MESH_PROPAGATE_HALFEDGE_VALUE",
     { /* replacement sources */

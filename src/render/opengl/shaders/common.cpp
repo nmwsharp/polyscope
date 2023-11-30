@@ -113,6 +113,36 @@ vec2 sphericalTexCoords(vec3 v) {
   return uv;
 }
 
+// Used to sample colors. Samples a series of most-distant values from a range [0,1]
+// offset from a starting value 'start' and wrapped around. index=0 returns start.
+// We only actually output distinct floats for the first 10 bits, then the pattern repeats.
+//
+// (same logic appears in color_management.cpp)
+//
+// Example: if start = 0, emits f(0, i) = {0, 1/2, 1/4, 3/4, 1/8, 5/8, 3/8, 7/8, ...}
+float intToDistinctReal(float start, int index) {
+  const int NBitsUntilRepeat = 10;
+
+  if (index < 0) {
+    return 0.0f;
+  }
+
+  // Bit shifts to evaluate f()
+  float val = 0.f;
+  float p = 0.5f;
+  for(int iShift = 0; iShift < NBitsUntilRepeat; iShift++) { // unroll please
+    val += float((index % 2) == 1) * p;
+    index = index >> 1;
+    p /= 2.0;
+  }
+
+  // Apply modular offset
+  val = mod(val + start, 1.0);
+
+  return clamp(val, 0.f, 1.f);
+}
+
+
 // Two useful references:
 //   - https://stackoverflow.com/questions/38938498/how-do-i-convert-gl-fragcoord-to-a-world-space-point-in-a-fragment-shader
 //   - https://stackoverflow.com/questions/11277501/how-to-recover-view-space-position-given-view-space-depth-value-and-ndc-xy

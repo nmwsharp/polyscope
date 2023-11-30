@@ -29,9 +29,10 @@ public:
   QuantityT& quantity;
 
 
-  // Wrapper around the actual buffer of scalar data stored in the class.
+  // Wrapper around the actual buffers of data stored in the class.
   // Interaction with the data (updating it on CPU or GPU side, accessing it, etc) happens through this wrapper.
   render::ManagedBuffer<glm::vec2> coords;
+  render::ManagedBuffer<float> islandLabels; // only optionally populated. should be integers.
 
   const ParamCoordsType coordsType;
 
@@ -71,6 +72,8 @@ public:
 protected:
   // Raw storage for the data. You should only interact with this via the managed buffer above
   std::vector<glm::vec2> coordsData;
+  std::vector<float> islandLabelsData;
+  bool islandLabelsPopulated = false;
 
   // === Visualization parameters
 
@@ -82,6 +85,9 @@ protected:
   PersistentValue<float> altDarkness;
   PersistentValue<std::string> cMap;
   float localRot = 0.; // for LOCAL (angular shift, in radians)
+
+  // helpers
+  bool haveIslandLabels();
 };
 
 } // namespace polyscope
