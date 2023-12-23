@@ -33,6 +33,18 @@ TEST_F(PolyscopeTest, FrameTick) {
   }
 }
 
+TEST_F(PolyscopeTest, FrameTickWithImgui) {
+
+  auto showCallback = [&]() { ImGui::Button("do something"); };
+  polyscope::state::userCallback = showCallback;
+
+  for (int i = 0; i < 5; i++) {
+    polyscope::frameTick();
+  }
+
+  polyscope::state::userCallback = nullptr;
+}
+
 // We should be able to nest calls to show() via the callback. ImGUI causes headaches here
 TEST_F(PolyscopeTest, NestedShow) {
 
@@ -43,6 +55,17 @@ TEST_F(PolyscopeTest, NestedShow) {
   polyscope::state::userCallback = nullptr;
 }
 
+TEST_F(PolyscopeTest, NestedShowWithFrameTick) {
+
+  auto showCallback = [&]() { polyscope::show(3); };
+  polyscope::state::userCallback = showCallback;
+
+  for (int i = 0; i < 3; i++) {
+    polyscope::frameTick();
+  }
+
+  polyscope::state::userCallback = nullptr;
+}
 
 // Make sure that creating an empty buffer does not throw errors
 TEST_F(PolyscopeTest, EmptyBuffer) {
