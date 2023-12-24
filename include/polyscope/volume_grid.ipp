@@ -20,17 +20,17 @@ inline glm::vec3 VolumeGrid::getBoundMin() const { return boundMin; }
 inline glm::vec3 VolumeGrid::getBoundMax() const { return boundMax; }
 
 inline uint64_t VolumeGrid::flattenNodeIndex(glm::uvec3 inds) const {
-  return static_cast<uint64_t>(gridNodeDim[1]) * gridNodeDim[2] * inds.x + gridNodeDim[2] * inds.y + inds.z;
+  return static_cast<uint64_t>(gridNodeDim[0]) * gridNodeDim[1] * inds.z + gridNodeDim[0] * inds.y + inds.x;
 }
 
 inline glm::uvec3 VolumeGrid::unflattenNodeIndex(uint64_t i) const {
-  uint64_t nYZ = gridNodeDim[1] * gridNodeDim[2];
-  uint64_t iX = i / nYZ;
-  i -= iX * nYZ;
-  uint64_t nZ = gridNodeDim[2];
-  uint64_t iY = i / nZ;
-  i -= iY * nZ;
-  uint64_t iZ = i;
+  uint64_t nXY = gridNodeDim[0] * gridNodeDim[1];
+  uint64_t iZ = i / nXY;
+  i -= iZ * nXY;
+  uint64_t nX = gridNodeDim[0];
+  uint64_t iY = i / nX;
+  i -= iY * nX;
+  uint64_t iX = i;
   return glm::uvec3{static_cast<uint32_t>(iX), static_cast<uint32_t>(iY), static_cast<uint32_t>(iZ)};
 }
 
@@ -45,17 +45,17 @@ inline glm::vec3 VolumeGrid::positionOfNodeIndex(glm::uvec3 inds) const {
 }
 
 inline uint64_t VolumeGrid::flattenCellIndex(glm::uvec3 inds) const {
-  return static_cast<uint64_t>(gridCellDim[1]) * gridCellDim[2] * inds.x + gridCellDim[2] * inds.y + inds.z;
+  return static_cast<uint64_t>(gridCellDim[0]) * gridCellDim[1] * inds.z + gridCellDim[0] * inds.y + inds.x;
 }
 
 inline glm::uvec3 VolumeGrid::unflattenCellIndex(uint64_t i) const {
-  uint64_t nYZ = gridCellDim[1] * gridCellDim[2];
-  uint64_t iX = i / nYZ;
-  i -= iX * nYZ;
-  uint64_t nZ = gridCellDim[2];
-  uint64_t iY = i / nZ;
-  i -= iY * nZ;
-  uint64_t iZ = i;
+  uint64_t nXY = gridCellDim[0] * gridCellDim[1];
+  uint64_t iZ = i / nXY;
+  i -= iZ * nXY;
+  uint64_t nX = gridCellDim[0];
+  uint64_t iY = i / nX;
+  i -= iY * nX;
+  uint64_t iX = i;
   return glm::uvec3{static_cast<uint32_t>(iX), static_cast<uint32_t>(iY), static_cast<uint32_t>(iZ)};
 }
 
