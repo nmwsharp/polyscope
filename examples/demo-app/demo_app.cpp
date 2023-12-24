@@ -480,6 +480,7 @@ void addVolumeGrid() {
     return (glm::length(q) - t.y) * scale;
   };
 
+
   polyscope::VolumeGridNodeScalarQuantity* qNode =
       psGrid->addNodeScalarQuantityFromCallable("torus sdf node", torusSDF);
   qNode->setEnabled(true);
@@ -487,6 +488,19 @@ void addVolumeGrid() {
   polyscope::VolumeGridCellScalarQuantity* qCell =
       psGrid->addCellScalarQuantityFromCallable("torus sdf cell", torusSDF);
   qCell->setEnabled(true);
+
+  // use this to check ordering thing
+  auto xCoord = [](glm::vec3 p) { return p.x; };
+  auto yCoord = [](glm::vec3 p) { return p.y; };
+  auto zCoord = [](glm::vec3 p) { return p.z; };
+
+  polyscope::VolumeGridNodeScalarQuantity* qNode_X = psGrid->addNodeScalarQuantityFromCallable("node X", xCoord);
+  polyscope::VolumeGridNodeScalarQuantity* qNode_Y = psGrid->addNodeScalarQuantityFromCallable("node Y", yCoord);
+  polyscope::VolumeGridNodeScalarQuantity* qNode_Z = psGrid->addNodeScalarQuantityFromCallable("node Z", zCoord);
+
+  polyscope::VolumeGridCellScalarQuantity* qCell_X = psGrid->addCellScalarQuantityFromCallable("cell X", xCoord);
+  polyscope::VolumeGridCellScalarQuantity* qCell_Y = psGrid->addCellScalarQuantityFromCallable("cell Y", yCoord);
+  polyscope::VolumeGridCellScalarQuantity* qCell_Z = psGrid->addCellScalarQuantityFromCallable("cell Z", zCoord);
 }
 
 
