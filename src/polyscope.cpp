@@ -814,7 +814,8 @@ void draw(bool withUI, bool withContextCallback) {
   }
 
   // Execute the context callback, if there is one.
-  // This callback is a Polyscope implementation detail, which is distinct from the userCallback (which gets called above)
+  // This callback is a Polyscope implementation detail, which is distinct from the userCallback (which gets called
+  // above)
   if (withContextCallback && contextStack.back().callback) {
     (contextStack.back().callback)();
   }

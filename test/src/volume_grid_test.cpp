@@ -47,6 +47,10 @@ TEST_F(PolyscopeTest, VolumeGridBasicOptions) {
   // Edge width
   psGrid->setEdgeWidth(0.5);
   polyscope::show(3);
+  
+  // Grid size factor
+  psGrid->setCubeSizeFactor(0.5);
+  polyscope::show(3);
 
   polyscope::removeAllStructures();
 }

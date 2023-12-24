@@ -119,7 +119,7 @@ public:
 
   // === Getters and setters for visualization settings
 
-  // Color of the mesh
+  // Color of the grid volume
   VolumeGrid* setColor(glm::vec3 val);
   glm::vec3 getColor();
 
@@ -136,6 +136,9 @@ public:
   VolumeGrid* setEdgeWidth(double newVal);
   double getEdgeWidth();
 
+  // Scaling factor for the size of the little cubes
+  VolumeGrid* setCubeSizeFactor(double newVal);
+  double getCubeSizeFactor();
 
 private:
   

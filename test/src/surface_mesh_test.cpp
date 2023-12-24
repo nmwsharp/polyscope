@@ -121,6 +121,33 @@ TEST_F(PolyscopeTest, SurfaceMeshPick) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, SurfaceMeshMark) {
+  auto psMesh = registerTriangleMesh();
+
+  // edges
+  size_t nEdges = 6;
+  std::vector<size_t> ePerm = {5, 3, 1, 2, 4, 0};
+  psMesh->setEdgePermutation(ePerm);
+  psMesh->markEdgesAsUsed();
+  polyscope::show(3);
+
+  // halfedges
+  std::vector<size_t> hePerm;
+  for (size_t i = 0; i < psMesh->nCorners(); i++) {
+    hePerm.push_back(5 + i);
+  }
+  psMesh->setHalfedgePermutation(hePerm);
+  psMesh->markHalfedgesAsUsed();
+  polyscope::show(3);
+
+  // corners
+  // (permutation is not required for this one)
+  psMesh->markCornersAsUsed();
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, SurfaceMeshBackface) {
   auto psMesh = registerTriangleMesh();
 
@@ -321,7 +348,7 @@ TEST_F(PolyscopeTest, SurfaceMeshCornerParam) {
   q1->setIslandLabels(islandLabels);
   q1->setStyle(polyscope::ParamVizStyle::CHECKER_ISLANDS);
   polyscope::show(3);
-  
+
 
   // create the curve network
   q1->createCurveNetworkFromSeams();

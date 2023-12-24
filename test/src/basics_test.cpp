@@ -67,6 +67,23 @@ TEST_F(PolyscopeTest, NestedShowWithFrameTick) {
   polyscope::state::userCallback = nullptr;
 }
 
+TEST_F(PolyscopeTest, Unshow) {
+
+  int32_t count = 0;
+  auto showCallback = [&]() {
+    if (count > 1) {
+      polyscope::unshow();
+    }
+    count++;
+  };
+  polyscope::state::userCallback = showCallback;
+  polyscope::show(10);
+
+  EXPECT_LT(count, 4);
+
+  polyscope::state::userCallback = nullptr;
+}
+
 // Make sure that creating an empty buffer does not throw errors
 TEST_F(PolyscopeTest, EmptyBuffer) {
 

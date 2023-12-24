@@ -242,7 +242,7 @@ QuantityT* ParameterizationQuantity<QuantityT>::setStyle(ParamVizStyle newStyle)
     exception("Cannot set parameterization visualization style to 'CHECKER_ISLANDS', no islands have been set");
     newStyle = ParamVizStyle::CHECKER;
   }
-  
+
   if (newStyle == ParamVizStyle::CHECKER_ISLANDS) {
     cMap.setPassive("turbo"); // use turbo as default cmap for CHECKER_ISLANDS
   }

@@ -389,6 +389,12 @@ VolumeGrid* VolumeGrid::setEdgeWidth(double newVal) {
 }
 double VolumeGrid::getEdgeWidth() { return edgeWidth.get(); }
 
+VolumeGrid* VolumeGrid::setCubeSizeFactor(double newVal) {
+  cubeSizeFactor = newVal;
+  requestRedraw();
+  return this;
+}
+double VolumeGrid::getCubeSizeFactor() { return cubeSizeFactor.get(); }
 
 // === Register functions
 
