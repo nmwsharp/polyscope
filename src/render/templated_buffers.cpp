@@ -56,7 +56,7 @@ std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::vec4>(Engine* engi
 }
 
 template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<size_t>(Engine* engine) {
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<uint64_t>(Engine* engine) {
   return engine->generateAttributeBuffer(RenderDataType::UInt);
 }
 
@@ -137,7 +137,7 @@ glm::vec4 getAttributeBufferData<glm::vec4>(AttributeBuffer& buff, size_t ind) {
 }
 
 template <>
-size_t getAttributeBufferData<size_t>(AttributeBuffer& buff, size_t ind) {
+uint64_t getAttributeBufferData<uint64_t>(AttributeBuffer& buff, size_t ind) {
   return buff.getData_uint32(ind);
 }
 
@@ -233,13 +233,13 @@ std::vector<glm::vec4> getAttributeBufferDataRange<glm::vec4>(AttributeBuffer& b
 }
 
 template <>
-std::vector<size_t> getAttributeBufferDataRange<size_t>(AttributeBuffer& buff, size_t ind, size_t count) {
+std::vector<size_t> getAttributeBufferDataRange<uint64_t>(AttributeBuffer& buff, size_t ind, size_t count) {
   std::vector<uint32_t> uint32Vals = buff.getDataRange_uint32(ind, count);
-  std::vector<size_t> sizetVals(count);
+  std::vector<uint64_t> uint64Vals(count);
   for (size_t i = 0; i < count; i++) {
-    sizetVals[i] = static_cast<size_t>(uint32Vals[i]);
+    uint64Vals[i] = static_cast<uint64_t>(uint32Vals[i]);
   }
-  return sizetVals;
+  return uint64Vals;
 }
 
 template <>
