@@ -40,6 +40,26 @@ SurfaceMesh* registerSurfaceMesh2D(std::string name, const V& vertexPositions, c
   return registerSurfaceMesh(name, positions3D, faceIndices);
 }
 
+template <class V, class F, class P>
+SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
+                                 const std::array<std::pair<P, size_t>, 3>& perms) {
+  SurfaceMesh* mesh = registerSurfaceMesh(name, vertexPositions, faceIndices);
+  if (mesh) {
+    mesh->setAllPermutations(perms);
+  }
+  return mesh;
+}
+
+template <class V, class F, class P>
+SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, const F& faceIndices,
+                                 const std::array<std::pair<P, size_t>, 5>& perms) {
+  SurfaceMesh* mesh = registerSurfaceMesh(name, vertexPositions, faceIndices);
+  if (mesh) {
+    mesh->setAllPermutations(perms);
+  }
+  return mesh;
+}
+
 template <class V>
 void SurfaceMesh::updateVertexPositions(const V& newPositions) {
   validateSize(newPositions, vertexDataSize, "newPositions");
