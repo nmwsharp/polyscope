@@ -233,7 +233,7 @@ std::vector<glm::vec4> getAttributeBufferDataRange<glm::vec4>(AttributeBuffer& b
 }
 
 template <>
-std::vector<size_t> getAttributeBufferDataRange<uint64_t>(AttributeBuffer& buff, size_t ind, size_t count) {
+std::vector<uint64_t> getAttributeBufferDataRange<uint64_t>(AttributeBuffer& buff, size_t ind, size_t count) {
   std::vector<uint32_t> uint32Vals = buff.getDataRange_uint32(ind, count);
   std::vector<uint64_t> uint64Vals(count);
   for (size_t i = 0; i < count; i++) {
