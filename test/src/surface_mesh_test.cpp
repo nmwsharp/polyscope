@@ -61,6 +61,9 @@ TEST_F(PolyscopeTest, SurfaceMeshPolygon) {
     {0, 1},
     {0, 0},
     {0, 0},
+    {0, 0},
+    {0, 0},
+    {0, 0},
   };
 
   // faces = {
