@@ -72,11 +72,12 @@ TEST_F(PolyscopeTest, SurfaceMeshPolygon) {
   //   {2, 0, 1, 3},
   //   {0, 2, 3}
   //  };
-  faces = {
-    {0,1,2},
-    {0,1,2,4},
-    {0,1,2,4,5},
-   };
+  faces = { };
+  for(int32_t i = 0; i < 20; i++) {
+    faces.push_back({0,1,2});
+    faces.push_back({0,1,2,4});
+    faces.push_back({0,1,2,4,5});
+  }
   // clang-format on
 
   polyscope::registerSurfaceMesh2D("mesh poly", points, faces);
