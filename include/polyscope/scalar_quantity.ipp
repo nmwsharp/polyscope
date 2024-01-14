@@ -8,6 +8,8 @@ template <typename QuantityT>
 ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vector<float>& values_, DataType dataType_)
     : quantity(quantity_), values(&quantity, quantity.uniquePrefix() + "values", valuesData), valuesData(values_),
       dataType(dataType_), dataRange(robustMinMax(values.data, 1e-5)),
+      vizRangeMin(quantity.uniquePrefix() + "vizRangeMin", -777.), // set later,
+      vizRangeMax(quantity.uniquePrefix() + "vizRangeMax", -777.), // including clearing cache
       cMap(quantity.uniquePrefix() + "cmap", defaultColorMap(dataType)),
       isolinesEnabled(quantity.uniquePrefix() + "isolinesEnabled", false),
       isolineWidth(quantity.uniquePrefix() + "isolineWidth",
@@ -17,7 +19,12 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
 {
   hist.updateColormap(cMap.get());
   hist.buildHistogram(values.data);
-  resetMapRange();
+
+  if (vizRangeMin.holdsDefaultValue()) { // min and max should always have same cache state
+    // dynamically compute a viz range from the data min/max
+    // note that this also clears the persistent value's cahce, so it's like it was never set
+    resetMapRange();
+  }
 }
 
 template <typename QuantityT>
@@ -62,7 +69,7 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
 
 
   // Draw the histogram of values
-  hist.colormapRange = vizRange;
+  hist.colormapRange = std::pair<float, float>(vizRangeMin.get(), vizRangeMax.get());
   float windowWidth = ImGui::GetWindowWidth();
   float histWidth = 0.75 * windowWidth;
   hist.buildUI(histWidth);
@@ -77,34 +84,45 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
     float imPad = ImGui::GetStyle().ItemSpacing.x;
     ImGui::PushItemWidth((histWidth - imPad) / 2);
     float speed = (dataRange.second - dataRange.first) / 100.;
+    bool changed = false;
 
     switch (dataType) {
     case DataType::STANDARD: {
 
-      ImGui::DragFloat("##min", &vizRange.first, speed, dataRange.first, vizRange.second, "%.5g",
-                       ImGuiSliderFlags_NoRoundToFormat);
+      changed = changed || ImGui::DragFloat("##min", &vizRangeMin.get(), speed, dataRange.first, vizRangeMax.get(),
+                                            "%.5g", ImGuiSliderFlags_NoRoundToFormat);
       ImGui::SameLine();
-      ImGui::DragFloat("##max", &vizRange.second, speed, vizRange.first, dataRange.second, "%.5g",
-                       ImGuiSliderFlags_NoRoundToFormat);
+      changed = changed || ImGui::DragFloat("##max", &vizRangeMax.get(), speed, vizRangeMin.get(), dataRange.second,
+                                            "%.5g", ImGuiSliderFlags_NoRoundToFormat);
 
     } break;
     case DataType::SYMMETRIC: {
       float absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
 
-      if (ImGui::DragFloat("##min", &vizRange.first, speed, -absRange, 0.f, "%.5g", ImGuiSliderFlags_NoRoundToFormat)) {
-        vizRange.second = -vizRange.first;
+      if (ImGui::DragFloat("##min", &vizRangeMin.get(), speed, -absRange, 0.f, "%.5g",
+                           ImGuiSliderFlags_NoRoundToFormat)) {
+        vizRangeMax.get() = -vizRangeMin.get();
+        changed = true;
       }
       ImGui::SameLine();
-      if (ImGui::DragFloat("##max", &vizRange.second, speed, 0.f, absRange, "%.5g", ImGuiSliderFlags_NoRoundToFormat)) {
-        vizRange.first = -vizRange.second;
+      if (ImGui::DragFloat("##max", &vizRangeMax.get(), speed, 0.f, absRange, "%.5g",
+                           ImGuiSliderFlags_NoRoundToFormat)) {
+        vizRangeMin.get() = -vizRangeMax.get();
+        changed = true;
       }
 
     } break;
     case DataType::MAGNITUDE: {
-      ImGui::DragFloat("##max", &vizRange.second, speed, 0.f, dataRange.second, "%.5g",
-                       ImGuiSliderFlags_NoRoundToFormat);
+      changed = changed || ImGui::DragFloat("##max", &vizRangeMax.get(), speed, 0.f, dataRange.second, "%.5g",
+                                            ImGuiSliderFlags_NoRoundToFormat);
 
     } break;
+    }
+
+    if (changed) {
+      vizRangeMin.manuallyChanged();
+      vizRangeMax.manuallyChanged();
+      requestRedraw();
     }
 
     ImGui::PopItemWidth();
@@ -162,8 +180,8 @@ std::vector<std::string> ScalarQuantity<QuantityT>::addScalarRules(std::vector<s
 
 template <typename QuantityT>
 void ScalarQuantity<QuantityT>::setScalarUniforms(render::ShaderProgram& p) {
-  p.setUniform("u_rangeLow", vizRange.first);
-  p.setUniform("u_rangeHigh", vizRange.second);
+  p.setUniform("u_rangeLow", vizRangeMin.get());
+  p.setUniform("u_rangeHigh", vizRangeMax.get());
 
   if (isolinesEnabled.get()) {
     p.setUniform("u_modLen", getIsolineWidth());
@@ -175,16 +193,22 @@ template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::resetMapRange() {
   switch (dataType) {
   case DataType::STANDARD:
-    vizRange = dataRange;
+    vizRangeMin = dataRange.first;
+    vizRangeMax = dataRange.second;
     break;
   case DataType::SYMMETRIC: {
     double absRange = std::max(std::abs(dataRange.first), std::abs(dataRange.second));
-    vizRange = std::make_pair(-absRange, absRange);
+    vizRangeMin = -absRange;
+    vizRangeMax = absRange;
   } break;
   case DataType::MAGNITUDE:
-    vizRange = std::make_pair(0., dataRange.second);
+    vizRangeMin = 0.;
+    vizRangeMax = dataRange.second;
     break;
   }
+
+  vizRangeMin.clearCache();
+  vizRangeMax.clearCache();
 
   requestRedraw();
   return &quantity;
@@ -214,13 +238,14 @@ std::string ScalarQuantity<QuantityT>::getColorMap() {
 
 template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::setMapRange(std::pair<double, double> val) {
-  vizRange = val;
+  vizRangeMin = val.first;
+  vizRangeMax = val.second;
   requestRedraw();
   return &quantity;
 }
 template <typename QuantityT>
 std::pair<double, double> ScalarQuantity<QuantityT>::getMapRange() {
-  return vizRange;
+  return std::pair<float, float>(vizRangeMin.get(), vizRangeMax.get());
 }
 template <typename QuantityT>
 std::pair<double, double> ScalarQuantity<QuantityT>::getDataRange() {

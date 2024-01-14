@@ -46,14 +46,13 @@ public:
   PersistentValue(const std::string& name_, T value_) : name(name_), value(value_) {
     if (detail::getPersistentCacheRef<T>().cache.find(name) != detail::getPersistentCacheRef<T>().cache.end()) {
       value = detail::getPersistentCacheRef<T>().cache[name];
-      holdsDefaultValue = false;
+      holdsDefaultValue_ = false;
     } else {
       // Update cache value
       detail::getPersistentCacheRef<T>().cache[name] = value;
     }
   }
 
-  // Ensure in cache on deletion (see not above reference conversion)
   ~PersistentValue() {}
 
   // Don't want copy or move constructors, only operators
@@ -85,32 +84,48 @@ public:
   // NOTE if you write via this reference, the value will not _actually_ be cached until
   // manuallyChanged() is called, rather than immediately (ugly, but seems necessary to use with imgui)
   T& get() { return value; }
+
+  // Mark that a value has been directly written via the get() reference, and should be cached
   void manuallyChanged() { set(value); }
+
+  // clears any cached value, but does not change the current value of the variable
+  void clearCache() {
+    detail::getPersistentCacheRef<T>().cache.erase(name);
+    holdsDefaultValue_ = true;
+  }
 
   // Explicit setter, which takes care of storing in cache
   void set(T value_) {
     value = value_;
     detail::getPersistentCacheRef<T>().cache[name] = value;
-    holdsDefaultValue = false;
+    holdsDefaultValue_ = false;
   }
 
   // Passive setter, will change value without marking in cache; does nothing if some value has already been directly
   // set (equivalent to constructing with a different value).
   void setPassive(T value_) {
-    if (holdsDefaultValue) {
+    if (holdsDefaultValue_) {
       value = value_;
       detail::getPersistentCacheRef<T>().cache[name] = value;
     }
   }
 
+  bool holdsDefaultValue() const { return holdsDefaultValue_; }
+
   // Make all template variants friends, so conversion can access private members
   template <typename>
   friend class PersistentValue;
 
+protected:
+  // the name of the value
   const std::string name;
+
+  // the value
   T value;
-  bool holdsDefaultValue = true; // True if the value was set on construction and never changed. False if it was pulled
-                                 // from cache or has ever been explicitly set
+
+  // True if the value was set on construction or passively and never changed. False if
+  // it was pulled from cache or has ever been explicitly set
+  bool holdsDefaultValue_ = true;
 };
 
 // clang-format off

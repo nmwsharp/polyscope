@@ -67,8 +67,9 @@ protected:
   // === Visualization parameters
 
   // Affine data maps and limits
-  std::pair<float, float> vizRange; // TODO make these persistent
   std::pair<double, double> dataRange;
+  PersistentValue<float> vizRangeMin;
+  PersistentValue<float> vizRangeMax;
   Histogram hist;
 
   // Parameters
