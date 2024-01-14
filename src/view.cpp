@@ -7,7 +7,7 @@
 
 #include "imgui.h"
 
-#include "json/json.hpp"
+#include "nlohmann/json.hpp"
 using json = nlohmann::json;
 
 namespace polyscope {
