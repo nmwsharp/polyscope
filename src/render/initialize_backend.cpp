@@ -17,10 +17,12 @@ std::string engineBackendName = "";
 namespace backend_openGL3_glfw {
 void initializeRenderEngine();
 }
+namespace backend_openGL3_glfw_egl {
+void initializeRenderEngine();
+}
 namespace backend_openGL_mock {
 void initializeRenderEngine();
 }
-// void initializeRenderEngine_openGL_mock();
 
 void initializeRenderEngine(std::string backend) {
 
@@ -47,6 +49,8 @@ void initializeRenderEngine(std::string backend) {
   // Initialize the appropriate backend
   if (backend == "openGL3_glfw") {
     backend_openGL3_glfw::initializeRenderEngine();
+  } else if (backend == "openGL3_glfw_egl") {
+    backend_openGL3_glfw_egl::initializeRenderEngine();
   } else if (backend == "openGL_mock") {
     backend_openGL_mock::initializeRenderEngine();
   } else {
