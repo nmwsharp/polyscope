@@ -199,6 +199,8 @@ void SurfaceMesh::computeTriangleAllEdgeInds() {
   triangleAllEdgeInds.data.resize(3 * 3 * nFacesTriangulation());
   halfedgeEdgeCorrespondence.resize(nHalfedges());
 
+  bool haveCustomHalfedgeIndex = !halfedgePerm.empty();
+
   // used to loop over edges
   std::unordered_map<std::pair<size_t, size_t>, size_t, polyscope::hash_combine::hash<std::pair<size_t, size_t>>>
       seenEdgeInds;
@@ -242,7 +244,10 @@ void SurfaceMesh::computeTriangleAllEdgeInds() {
         thisEdgeInd = seenEdgeInds[key];
       }
 
-      halfedgeEdgeCorrespondence[start + j] = thisEdgeInd;
+      size_t he = start + j;
+      if (haveCustomHalfedgeIndex) he = halfedgePerm[he];
+
+      halfedgeEdgeCorrespondence[he] = thisEdgeInd;
       thisTriInds[j] = thisEdgeInd;
     }
 
@@ -1243,7 +1248,7 @@ void SurfaceMesh::buildEdgeInfoGui(const SurfaceMeshPickResult& result) {
   size_t eInd = result.index;
   size_t displayInd = eInd;
   if (edgePerm.size() > 0) {
-    displayInd = edgePerm[eInd];
+    // displayInd = edgePerm[eInd];
   }
   ImGui::TextUnformatted(("Edge #" + std::to_string(displayInd)).c_str());
 
@@ -1267,7 +1272,7 @@ void SurfaceMesh::buildHalfedgeInfoGui(const SurfaceMeshPickResult& result) {
   size_t heInd = result.index;
   size_t displayInd = heInd;
   if (halfedgePerm.size() > 0) {
-    displayInd = halfedgePerm[heInd];
+    // displayInd = halfedgePerm[heInd];
   }
   ImGui::TextUnformatted(("Halfedge #" + std::to_string(displayInd)).c_str());
 

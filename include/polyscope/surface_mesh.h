@@ -237,8 +237,8 @@ public:
   size_t nEdges();                  // NOTE causes population of nEdgesCount
 
   size_t nCornersCount = 0; // = nHalfedges = sum face degree
-  size_t nCorners() const { return nCornersCount; }
-  size_t nHalfedges() const { return nCornersCount; }
+  size_t nCorners() const { return cornerDataSize == INVALID_IND ? nCornersCount : cornerDataSize; }
+  size_t nHalfedges() const { return halfedgeDataSize == INVALID_IND ? nCornersCount : halfedgeDataSize; }
 
   // = Mesh helpers
   void nestedFacesToFlat(const std::vector<std::vector<size_t>>& nestedInds);
@@ -356,7 +356,6 @@ private:
   bool edgesHaveBeenUsed = false;
   std::vector<uint32_t>
       halfedgeEdgeCorrespondence; // ugly hack used to save a pick buffer attr, filled out lazily w/ edge indices
-
 
   // Visualization settings
   PersistentValue<glm::vec3> surfaceColor;
