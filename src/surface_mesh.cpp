@@ -1247,9 +1247,6 @@ void SurfaceMesh::buildFaceInfoGui(const SurfaceMeshPickResult& result) {
 void SurfaceMesh::buildEdgeInfoGui(const SurfaceMeshPickResult& result) {
   size_t eInd = result.index;
   size_t displayInd = eInd;
-  if (edgePerm.size() > 0) {
-    // displayInd = edgePerm[eInd];
-  }
   ImGui::TextUnformatted(("Edge #" + std::to_string(displayInd)).c_str());
 
   ImGui::Spacing();
@@ -1271,9 +1268,6 @@ void SurfaceMesh::buildEdgeInfoGui(const SurfaceMeshPickResult& result) {
 void SurfaceMesh::buildHalfedgeInfoGui(const SurfaceMeshPickResult& result) {
   size_t heInd = result.index;
   size_t displayInd = heInd;
-  if (halfedgePerm.size() > 0) {
-    // displayInd = halfedgePerm[heInd];
-  }
   ImGui::TextUnformatted(("Halfedge #" + std::to_string(displayInd)).c_str());
 
   ImGui::Spacing();
