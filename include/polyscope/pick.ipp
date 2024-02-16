@@ -24,11 +24,11 @@ inline glm::vec3 indToVec(size_t globalInd) {
   globalInd = globalInd >> bitsForPickPacking;
   uint64_t high = globalInd;
 
-  return 2500.f * glm::vec3{static_cast<double>(low) / factorF, static_cast<double>(med) / factorF,
-                            static_cast<double>(high) / factorF};
+  return glm::vec3{static_cast<double>(low) / factorF, static_cast<double>(med) / factorF,
+                   static_cast<double>(high) / factorF};
 }
 inline uint64_t vecToInd(glm::vec3 vec) {
-  vec /= 2500.f;
+
   uint64_t factor = 1 << bitsForPickPacking;
   double factorF = factor;
 
