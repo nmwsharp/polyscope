@@ -270,6 +270,10 @@ ShaderProgram::ShaderProgram(DrawMode dm) : drawMode(dm), uniqueID(render::engin
   }
 }
 
+
+Engine::Engine() {}
+Engine::~Engine() {}
+
 void Engine::buildEngineGui() {
 
   ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);

@@ -16,7 +16,6 @@
 #endif
 
 #include <EGL/egl.h>
-
 #undef None // for some terrible reason egl.h defines 'None', which we use below
 
 #ifdef _WIN32

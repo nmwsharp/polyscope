@@ -439,7 +439,9 @@ protected:
 class Engine {
 
 public:
-  // Options
+
+  Engine();
+  virtual ~Engine();
 
   // High-level control
   virtual void checkError(bool fatal = false) = 0;
@@ -505,13 +507,16 @@ public:
   virtual std::string getClipboardText() = 0;
   virtual void setClipboardText(std::string text) = 0;
 
-  // ImGui
+  // === ImGui
+  
+  // NOTE: the imgui backend depends on the window manager (e.g. GLFW), so these must be implemented by the lowest-level concrete engine implementation
   virtual void initializeImGui() = 0;
   virtual void shutdownImGui() = 0;
-  void setImGuiStyle();
-  ImFontAtlas* getImGuiGlobalFontAtlas();
   virtual void ImGuiNewFrame() = 0;
   virtual void ImGuiRender() = 0;
+
+  void setImGuiStyle();
+  ImFontAtlas* getImGuiGlobalFontAtlas();
   virtual void showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer);
 
 

@@ -19,22 +19,21 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
   message("Polyscope backend openGL3_glfw enabled")
 
   list (APPEND BACKEND_SRCS
-    render/opengl/egl_gl_engine.cpp   # TODO
-    render/opengl/gl_engine.cpp  
-    render/opengl/shaders/texture_draw_shaders.cpp  
-    render/opengl/shaders/lighting_shaders.cpp  
-    render/opengl/shaders/grid_shaders.cpp  
-    render/opengl/shaders/ground_plane_shaders.cpp  
-    render/opengl/shaders/gizmo_shaders.cpp  
-    render/opengl/shaders/histogram_shaders.cpp  
-    render/opengl/shaders/surface_mesh_shaders.cpp  
-    render/opengl/shaders/volume_mesh_shaders.cpp  
-    render/opengl/shaders/vector_shaders.cpp  
-    render/opengl/shaders/sphere_shaders.cpp  
-    render/opengl/shaders/ribbon_shaders.cpp  
-    render/opengl/shaders/cylinder_shaders.cpp  
-    render/opengl/shaders/rules.cpp  
-    render/opengl/shaders/common.cpp  
+    render/opengl/gl_engine.cpp
+    render/opengl/shaders/texture_draw_shaders.cpp
+    render/opengl/shaders/lighting_shaders.cpp
+    render/opengl/shaders/grid_shaders.cpp
+    render/opengl/shaders/ground_plane_shaders.cpp
+    render/opengl/shaders/gizmo_shaders.cpp
+    render/opengl/shaders/histogram_shaders.cpp
+    render/opengl/shaders/surface_mesh_shaders.cpp
+    render/opengl/shaders/volume_mesh_shaders.cpp
+    render/opengl/shaders/vector_shaders.cpp
+    render/opengl/shaders/sphere_shaders.cpp
+    render/opengl/shaders/ribbon_shaders.cpp
+    render/opengl/shaders/cylinder_shaders.cpp
+    render/opengl/shaders/rules.cpp
+    render/opengl/shaders/common.cpp
   )
 
   list(APPEND BACKEND_HEADERS
@@ -65,7 +64,6 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
       # On Windows/Linux, use the glad openGL loader
 
       list(APPEND BACKEND_LIBS glad)
-      list(APPEND BACKEND_LIBS EGL) # TODO
   endif()
 
   add_definitions(-DPOLYSCOPE_BACKEND_OPENGL3_GLFW_ENABLED)

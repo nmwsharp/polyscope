@@ -3,7 +3,7 @@
 #include "backends/imgui_impl_opengl3.h"
 #include "polyscope/render/engine.h"
 
-#ifdef POLYSCOPE_BACKEND_OPENGL3_GLFW_ENABLED
+#ifdef POLYSCOPE_BACKEND_OPENGL_ENABLED
 #include "polyscope/render/opengl/gl_engine.h"
 
 #include "polyscope/messages.h"
@@ -37,16 +37,9 @@
 namespace polyscope {
 namespace render {
 
-namespace backend_openGL3_glfw {
+namespace backend_openGL {
 
 GLEngine* glEngine = nullptr; // alias for global engine pointer
-
-void initializeRenderEngine() {
-  glEngine = new GLEngine();
-  engine = glEngine;
-  glEngine->initialize();
-  engine->allocateGlobalBuffersAndPrograms();
-}
 
 // == Map enums to native values
 
@@ -2114,76 +2107,7 @@ void GLShaderProgram::draw() {
 }
 
 GLEngine::GLEngine() {}
-
-void GLEngine::initialize() {
-  // Small callback function for GLFW errors
-  auto error_print_callback = [](int error, const char* description) {
-    if (polyscope::options::verbosity > 0) {
-      std::cout << "GLFW emitted error: " << description << std::endl;
-    }
-  };
-
-  // === Initialize glfw
-  glfwSetErrorCallback(error_print_callback);
-  if (!glfwInit()) {
-    exception(options::printPrefix + "ERROR: Failed to initialize glfw");
-  }
-
-  // OpenGL version things
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#if __APPLE__
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-  // Create the window with context
-  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-  glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
-  mainWindow = glfwCreateWindow(view::windowWidth, view::windowHeight, options::programName.c_str(), NULL, NULL);
-  glfwMakeContextCurrent(mainWindow);
-  glfwSetWindowPos(mainWindow, view::initWindowPosX, view::initWindowPosY);
-
-  // Set initial window size
-  int newBufferWidth, newBufferHeight, newWindowWidth, newWindowHeight;
-  glfwGetFramebufferSize(mainWindow, &newBufferWidth, &newBufferHeight);
-  glfwGetWindowSize(mainWindow, &newWindowWidth, &newWindowHeight);
-  view::bufferWidth = newBufferWidth;
-  view::bufferHeight = newBufferHeight;
-  view::windowWidth = newWindowWidth;
-  view::windowHeight = newWindowHeight;
-
-  setWindowResizable(view::windowResizable);
-
-// === Initialize openGL
-// Load openGL functions (using GLAD)
-#ifndef __APPLE__
-  if (!gladLoadGL()) {
-    exception(options::printPrefix + "ERROR: Failed to load openGL using GLAD");
-  }
-#endif
-  if (options::verbosity > 0) {
-    std::cout << options::printPrefix << "Backend: openGL3_glfw -- "
-              << "Loaded openGL version: " << glGetString(GL_VERSION) << std::endl;
-  }
-
-#ifdef __APPLE__
-  // Hack to classify the process as interactive
-  glfwPollEvents();
-#endif
-
-  { // Manually create the screen frame buffer
-    GLFrameBuffer* glScreenBuffer = new GLFrameBuffer(view::bufferWidth, view::bufferHeight, true);
-    displayBuffer.reset(glScreenBuffer);
-    glScreenBuffer->bind();
-    glClearColor(1., 1., 1., 0.);
-    // glClearColor(0., 0., 0., 0.);
-    // glClearDepth(1.);
-  }
-
-  populateDefaultShadersAndRules();
-}
-
+GLEngine::~GLEngine() {}
 
 void GLEngine::initializeImGui() {
   bindDisplay();
@@ -2805,22 +2729,8 @@ void GLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
 }
 
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL
 } // namespace render
 } // namespace polyscope
 
-#else
-
-#include <stdexcept>
-
-#include "polyscope/messages.h"
-
-namespace polyscope {
-namespace render {
-namespace backend_openGL3_glfw {
-void initializeRenderEngine() { exception("Polyscope was not compiled with support for backend: openGL3_glfw"); }
-} // namespace backend_openGL3_glfw
-} // namespace render
-} // namespace polyscope
-
-#endif
+#endif // POLYSCOPE_BACKEND_OPENGL_ENABLED
