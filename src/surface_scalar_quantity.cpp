@@ -275,7 +275,7 @@ SurfaceTextureScalarQuantity::SurfaceTextureScalarQuantity(std::string name, Sur
                                                            SurfaceParameterizationQuantity& param_, size_t dimX_,
                                                            size_t dimY_, const std::vector<float>& values_,
                                                            ImageOrigin origin_, DataType dataType_)
-    : SurfaceScalarQuantity(name, mesh_, "vertex", values_, dataType_), param(param_), dimX(dimX_), dimY(dimY_),
+    : SurfaceScalarQuantity(name, mesh_, "texture", values_, dataType_), param(param_), dimX(dimX_), dimY(dimY_),
       imageOrigin(origin_) {
   values.setTextureSize(dimX, dimY);
   values.ensureHostBufferPopulated();
