@@ -25,11 +25,13 @@ class SurfaceParameterizationQuantity : public SurfaceMeshQuantity,
 
 public:
   SurfaceParameterizationQuantity(std::string name, SurfaceMesh& mesh_, const std::vector<glm::vec2>& coords_,
-                                  ParamCoordsType type_, ParamVizStyle style_);
+                                  MeshElement definedOn, ParamCoordsType type_, ParamVizStyle style_);
 
   virtual void draw() override;
   virtual void refresh() override;
   virtual void buildCustomUI() override;
+
+  const MeshElement definedOn;
 
   // Set islands labels. Technically, this data is just any categorical integer labels per-face of the mesh.
   // The intended use is to label islands (connected components in parameterization space) of the UV map.

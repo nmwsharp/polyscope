@@ -20,8 +20,10 @@ namespace polyscope {
 
 SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string name, SurfaceMesh& mesh_,
                                                                  const std::vector<glm::vec2>& coords_,
-                                                                 ParamCoordsType type_, ParamVizStyle style_)
-    : SurfaceMeshQuantity(name, mesh_, true), ParameterizationQuantity(*this, coords_, type_, style_) {
+                                                                 MeshElement definedOn_, ParamCoordsType type_,
+                                                                 ParamVizStyle style_)
+    : SurfaceMeshQuantity(name, mesh_, true), ParameterizationQuantity(*this, coords_, type_, style_),
+      definedOn(definedOn_) {
 
   // sanity check, this should basically never happen, but this guards against weird edge cases such
   // as persistent values restoring the style, device updates, etc
@@ -216,7 +218,7 @@ SurfaceCornerParameterizationQuantity::SurfaceCornerParameterizationQuantity(std
                                                                              const std::vector<glm::vec2>& coords_,
                                                                              ParamCoordsType type_,
                                                                              ParamVizStyle style_)
-    : SurfaceParameterizationQuantity(name, mesh_, coords_, type_, style_) {}
+    : SurfaceParameterizationQuantity(name, mesh_, coords_, MeshElement::CORNER, type_, style_) {}
 
 std::string SurfaceCornerParameterizationQuantity::niceName() { return name + " (corner parameterization)"; }
 
@@ -244,7 +246,7 @@ SurfaceVertexParameterizationQuantity::SurfaceVertexParameterizationQuantity(std
                                                                              const std::vector<glm::vec2>& coords_,
                                                                              ParamCoordsType type_,
                                                                              ParamVizStyle style_)
-    : SurfaceParameterizationQuantity(name, mesh_, coords_, type_, style_) {}
+    : SurfaceParameterizationQuantity(name, mesh_, coords_, MeshElement::VERTEX, type_, style_) {}
 
 std::string SurfaceVertexParameterizationQuantity::niceName() { return name + " (vertex parameterization)"; }
 

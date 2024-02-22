@@ -275,7 +275,7 @@ SurfaceTextureScalarQuantity::SurfaceTextureScalarQuantity(std::string name, Sur
                                                            SurfaceParameterizationQuantity& param_, size_t dimX_,
                                                            size_t dimY_, const std::vector<float>& values_,
                                                            ImageOrigin origin_, DataType dataType_)
-    : SurfaceScalarQuantity(name, mesh_, "texture", values_, dataType_), param(param_), dimX(dimX_), dimY(dimY_),
+    : SurfaceScalarQuantity(name, mesh_, "vertex", values_, dataType_), param(param_), dimX(dimX_), dimY(dimY_),
       imageOrigin(origin_) {
   values.setTextureSize(dimX, dimY);
   values.ensureHostBufferPopulated();
@@ -298,7 +298,20 @@ void SurfaceTextureScalarQuantity::createProgram() {
   // clang-format on
 
   parent.setMeshGeometryAttributes(*program);
-  program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
+
+  // the indexing into the parameterization varies based on whether it is a corner or vertex quantity
+  switch (param.definedOn) {
+  case MeshElement::VERTEX:
+    program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
+    break;
+  case MeshElement::CORNER:
+    program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
+    break;
+  default:
+    // nothing
+    break;
+  }
+
   program->setTextureFromBuffer("t_scalar", values.getRenderTextureBuffer().get());
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());

@@ -145,7 +145,20 @@ void SurfaceTextureColorQuantity::createProgram() {
   // clang-format on
 
   parent.setMeshGeometryAttributes(*program);
-  program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
+
+  // the indexing into the parameterization varies based on whether it is a corner or vertex quantity
+  switch (param.definedOn) {
+  case MeshElement::VERTEX:
+    program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
+    break;
+  case MeshElement::CORNER:
+    program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
+    break;
+  default:
+    // nothing
+    break;
+  }
+
   program->setTextureFromBuffer("t_color", colors.getRenderTextureBuffer().get());
   render::engine->setMaterial(*program, parent.getMaterial());
 
