@@ -12,6 +12,7 @@
 #include "polyscope/volume_grid_quantity.h"
 #include "polyscope/volume_grid_scalar_quantity.h"
 
+#include <cstdint>
 #include <vector>
 
 namespace polyscope {

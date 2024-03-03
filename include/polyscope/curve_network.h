@@ -14,6 +14,7 @@
 #include "polyscope/curve_network_scalar_quantity.h"
 #include "polyscope/curve_network_vector_quantity.h"
 
+#include <cstdint>
 #include <vector>
 
 namespace polyscope {

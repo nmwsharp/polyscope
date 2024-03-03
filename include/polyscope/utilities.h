@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <complex>
+#include <cstdint>
 #include <cstdio>
 #include <iomanip>
 #include <iostream>

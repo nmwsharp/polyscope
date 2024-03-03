@@ -9,6 +9,8 @@
 #include "polyscope/utilities.h"
 #include "polyscope/widget.h"
 
+#include <cstdint>
+
 namespace polyscope {
 
 

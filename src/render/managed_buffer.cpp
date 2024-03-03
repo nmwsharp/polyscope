@@ -591,7 +591,7 @@ template<> ManagedBufferMap<glm::uvec4>&               ManagedBufferMap<glm::uve
 
 std::string typeName(ManagedBufferType type) {
   switch (type) {
-  // clang-format off
+    // clang-format off
     case ManagedBufferType::Float     : return "Float";    
     case ManagedBufferType::Double    : return "Double";   
     case ManagedBufferType::Vec2      : return "Vec2";     

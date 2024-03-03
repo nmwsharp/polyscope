@@ -2,9 +2,6 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
-
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
 #include "polyscope/render/engine.h"
@@ -16,6 +13,10 @@
 #include "polyscope/volume_mesh_color_quantity.h"
 #include "polyscope/volume_mesh_scalar_quantity.h"
 #include "polyscope/volume_mesh_vector_quantity.h"
+
+#include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace polyscope {
 

@@ -15,6 +15,7 @@
 #include "polyscope/structure.h"
 #include "polyscope/utilities.h"
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
