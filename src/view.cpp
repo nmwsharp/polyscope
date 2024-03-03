@@ -289,7 +289,7 @@ void processKeyboardNavigation(ImGuiIO& io) {
       hasMovement = true;
     }
 
-    float movementScale = state::lengthScale * 0.02 * moveScale;
+    float movementScale = state::lengthScale * ImGui::GetIO().DeltaTime * moveScale;
     glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), movementScale * delta);
     viewMat = camSpaceT * viewMat;
   }
