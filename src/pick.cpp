@@ -118,6 +118,13 @@ size_t localIndexToGlobal(std::pair<Structure*, size_t> localPick) {
   return rangeStart + localPick.second;
 }
 
+std::pair<Structure*, size_t> pickAtScreenCoords(glm::vec2 screenCoords) {
+  int xInd, yInd;
+  std::tie(xInd, yInd) = view::screenCoordsToBufferInds(screenCoords);
+  return pickAtBufferCoords(xInd, yInd);
+}
+
+std::pair<Structure*, size_t> pickAtBufferCoords(int xPos, int yPos) { return evaluatePickQuery(xPos, yPos); }
 
 std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
 

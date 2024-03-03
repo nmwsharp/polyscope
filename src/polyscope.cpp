@@ -376,8 +376,7 @@ void processInputEvents() {
         // Don't pick at the end of a long drag
         if (dragDistSinceLastRelease < dragIgnoreThreshold) {
           ImVec2 p = ImGui::GetMousePos();
-          std::pair<Structure*, size_t> pickResult =
-              pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+          std::pair<Structure*, size_t> pickResult = pick::pickAtScreenCoords(glm::vec2{p.x, p.y});
           pick::setSelection(pickResult);
         }
 
