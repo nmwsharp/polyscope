@@ -318,13 +318,13 @@ public:
   bool hasAttribute(std::string name) override;
   bool attributeIsSet(std::string name) override;
   std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) override;
-  void setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) override; 
+  void setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) override;
   void setAttribute(std::string name, const std::vector<glm::vec2>& data) override;
   void setAttribute(std::string name, const std::vector<glm::vec3>& data) override;
   void setAttribute(std::string name, const std::vector<glm::vec4>& data) override;
   void setAttribute(std::string name, const std::vector<float>& data) override;
   void setAttribute(std::string name, const std::vector<double>& data) override;
-  void setAttribute(std::string name, const std::vector<int32_t>& data) override; 
+  void setAttribute(std::string name, const std::vector<int32_t>& data) override;
   void setAttribute(std::string name, const std::vector<uint32_t>& data) override;
   // clang-format on
 
@@ -464,6 +464,7 @@ protected:
 
   // Internal windowing and engine details
   GLFWwindow* mainWindow = nullptr;
+  ImGuiContext* imguiContext = nullptr;
 
   // Shader program & rule caches
   std::unordered_map<std::string, std::pair<std::vector<ShaderStageSpecification>, DrawMode>> registeredShaderPrograms;

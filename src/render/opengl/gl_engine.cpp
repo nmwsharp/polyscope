@@ -2188,10 +2188,11 @@ void GLEngine::initialize() {
 void GLEngine::initializeImGui() {
   bindDisplay();
 
-  ImGui::CreateContext(); // must call once at start
+  imguiContext = ImGui::CreateContext(); // must call once at start
+  ImGui::SetCurrentContext(imguiContext);
 
   // Set up ImGUI glfw bindings
-  ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
+  assert(ImGui_ImplGlfw_InitForOpenGL(mainWindow, true));
   const char* glsl_version = "#version 150";
   ImGui_ImplOpenGL3_Init(glsl_version);
 
@@ -2324,6 +2325,7 @@ int GLEngine::getKeyCode(char c) {
 }
 
 void GLEngine::ImGuiNewFrame() {
+  ImGui::SetCurrentContext(imguiContext);
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
