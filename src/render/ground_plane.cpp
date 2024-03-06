@@ -52,7 +52,7 @@ void GroundPlane::populateGroundPlaneGeometry() {
   glm::vec4 v2{0., 0., 0., 0.}; v2[(iP+1)%3] = sign * 1.;
   glm::vec4 v3{0., 0., 0., 0.}; v3[(iP+2)%3] = sign *-1.;
   glm::vec4 v4{0., 0., 0., 0.}; v4[(iP+1)%3] = sign *-1.;
-  
+
   std::vector<glm::vec4> positions = {
     cVert, v2, v1,
     cVert, v3, v2,
@@ -387,7 +387,7 @@ void GroundPlane::buildGui() {
     return "";
   };
 
-  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Ground Plane")) {
 
     ImGui::PushItemWidth(160);

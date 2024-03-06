@@ -585,18 +585,18 @@ void buildPolyscopeGui() {
 
     // clang-format off
 		ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar);
-		ImGui::TextUnformatted("View Navigation:");			
+		ImGui::TextUnformatted("View Navigation:");
 			ImGui::TextUnformatted("      Rotate: [left click drag]");
 			ImGui::TextUnformatted("   Translate: [shift] + [left click drag] OR [right click drag]");
 			ImGui::TextUnformatted("        Zoom: [scroll] OR [ctrl] + [shift] + [left click drag]");
 			ImGui::TextUnformatted("   Use [ctrl-c] and [ctrl-v] to save and restore camera poses");
 			ImGui::TextUnformatted("     via the clipboard.");
-		ImGui::TextUnformatted("\nMenu Navigation:");			
+		ImGui::TextUnformatted("\nMenu Navigation:");
 			ImGui::TextUnformatted("   Menu headers with a '>' can be clicked to collapse and expand.");
 			ImGui::TextUnformatted("   Use [ctrl] + [left click] to manually enter any numeric value");
 			ImGui::TextUnformatted("     via the keyboard.");
 			ImGui::TextUnformatted("   Press [space] to dismiss popup dialogs.");
-		ImGui::TextUnformatted("\nSelection:");			
+		ImGui::TextUnformatted("\nSelection:");
 			ImGui::TextUnformatted("   Select elements of a structure with [left click]. Data from");
 			ImGui::TextUnformatted("     that element will be shown on the right. Use [right click]");
 			ImGui::TextUnformatted("     to clear the selection.");
@@ -611,7 +611,7 @@ void buildPolyscopeGui() {
   render::engine->buildEngineGui();
 
   // Render options tree
-  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Render")) {
 
     // fps
@@ -632,7 +632,7 @@ void buildPolyscopeGui() {
     ImGui::TreePop();
   }
 
-  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Debug")) {
 
     if (ImGui::Button("Force refresh")) {
@@ -693,7 +693,7 @@ void buildStructureGui() {
                                     // identically-named labels
 
     // Build the structure's UI
-    ImGui::SetNextTreeNodeOpen(structureMap.size() > 0, ImGuiCond_FirstUseEver);
+    ImGui::SetNextItemOpen(structureMap.size() > 0, ImGuiCond_FirstUseEver);
     if (ImGui::CollapsingHeader((catName + " (" + std::to_string(structureMap.size()) + ")").c_str())) {
       // Draw shared GUI elements for all instances of the structure
       if (structureMap.size() > 0) {
@@ -702,7 +702,7 @@ void buildStructureGui() {
 
       int32_t skipCount = 0;
       for (auto& x : structureMap) {
-        ImGui::SetNextTreeNodeOpen(structureMap.size() <= 8,
+        ImGui::SetNextItemOpen(structureMap.size() <= 8,
                                    ImGuiCond_FirstUseEver); // closed by default if more than 8
 
         if (structuresToSkip.find(x.second.get()) != structuresToSkip.end()) {
