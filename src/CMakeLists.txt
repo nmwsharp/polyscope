@@ -324,5 +324,5 @@ add_definitions(-DNOMINMAX)
 target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
 
 # Link settings
-target_link_libraries(polyscope PUBLIC imgui glm)
+target_link_libraries(polyscope PUBLIC imgui glm::glm)
 target_link_libraries(polyscope PRIVATE "${BACKEND_LIBS}" stb nlohmann_json::nlohmann_json MarchingCube::MarchingCube)
