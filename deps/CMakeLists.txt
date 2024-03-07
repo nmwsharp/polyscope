@@ -1,32 +1,43 @@
 if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 
   ## Glad
-  add_subdirectory(glad)
+  if(NOT TARGET glad)
+    add_subdirectory(glad)
+  endif()
 
   ## GLFW
-  set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-  set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-  set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-  set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
-  add_subdirectory(glfw)
-endif()
-
-if("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
+  if(NOT TARGET glfw)
+    set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+    add_subdirectory(glfw)
+  endif()
 endif()
 
 ## glm
-add_subdirectory(glm)
+if(NOT TARGET glm::glm)
+  add_subdirectory(glm)
+endif()
 
 ## Imgui
-add_subdirectory(imgui)
+if(NOT TARGET imgui)
+  add_subdirectory(imgui)
+endif()
 
 ## Json
-add_subdirectory(json)
+if(NOT TARGET nlohmann_json::nlohmann_json)
+  add_subdirectory(json)
+endif()
 
 ## MarchingCube
-add_subdirectory(MarchingCubeCpp)
+if(NOT TARGET MarchingCube::MarchingCube)
+  add_subdirectory(MarchingCubeCpp)
+endif()
 
 ## Argparse
 
 ## stb
-add_subdirectory(stb)
+if(NOT TARGET stb)
+  add_subdirectory(stb)
+endif()
