@@ -2192,7 +2192,7 @@ void GLEngine::initializeImGui() {
   ImGui::SetCurrentContext(imguiContext);
 
   // Set up ImGUI glfw bindings
-  assert(ImGui_ImplGlfw_InitForOpenGL(mainWindow, true));
+  ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
   const char* glsl_version = "#version 150";
   ImGui_ImplOpenGL3_Init(glsl_version);
 
