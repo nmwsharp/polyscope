@@ -9,3 +9,6 @@
 [submodule "deps/happly"]
 	path = deps/happly
 	url = https://github.com/nmwsharp/happly.git
+[submodule "deps/glm"]
+	path = deps/glm
+	url = https://github.com/g-truc/glm.git

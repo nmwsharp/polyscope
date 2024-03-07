@@ -14,10 +14,19 @@ endif()
 if("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
 endif()
 
+## glm
+add_subdirectory(glm)
+
 ## Imgui
 add_subdirectory(imgui)
 
+## Json
+add_subdirectory(json)
+
+## MarchingCube
+add_subdirectory(MarchingCubeCpp)
+
 ## Argparse
 
-## Other dependencies
+## stb
 add_subdirectory(stb)

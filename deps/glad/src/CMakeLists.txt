@@ -13,6 +13,6 @@ if (library_type STREQUAL SHARED_LIBRARY)
   target_compile_definitions(glad PUBLIC GLAD_GLAPI_EXPORT PRIVATE GLAD_GLAPI_EXPORT_BUILD)
 endif()
 
-target_include_directories(glad PRIVATE "../include")    
+target_include_directories(glad PUBLIC "../include")
 
 set_target_properties(glad PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
