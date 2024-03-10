@@ -1392,8 +1392,7 @@ long long int SurfaceMesh::selectVertex() {
       // API is a giant mess..
       size_t pickInd;
       ImVec2 p = ImGui::GetMousePos();
-      std::pair<Structure*, size_t> pickVal =
-          pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+      std::pair<Structure*, size_t> pickVal = pick::pickAtScreenCoords(glm::vec2{p.x, p.y});
 
       if (pickVal.first == this) {
 
