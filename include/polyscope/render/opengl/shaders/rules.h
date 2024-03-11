@@ -8,7 +8,7 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 extern const ShaderReplacementRule GLSL_VERSION;
 extern const ShaderReplacementRule GLOBAL_FRAGMENT_FILTER;
@@ -44,6 +44,6 @@ ShaderReplacementRule generateVolumeGridSlicePlaneRule(std::string uniquePostfix
 
 // clang-format on
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

@@ -5,7 +5,7 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 
 const char* shaderCommonSource = R"(

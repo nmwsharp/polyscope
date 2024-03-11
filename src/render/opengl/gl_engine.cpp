@@ -1,9 +1,8 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
-#include "backends/imgui_impl_opengl3.h"
 #include "polyscope/render/engine.h"
 
-#ifdef POLYSCOPE_BACKEND_OPENGL_ENABLED
+#ifdef POLYSCOPE_BACKEND_OPENGL3_ENABLED
 #include "polyscope/render/opengl/gl_engine.h"
 
 #include "polyscope/messages.h"
@@ -37,7 +36,7 @@
 namespace polyscope {
 namespace render {
 
-namespace backend_openGL {
+namespace backend_openGL3 {
 
 GLEngine* glEngine = nullptr; // alias for global engine pointer
 
@@ -162,11 +161,14 @@ void checkGLError(bool fatal = true) {
     case GL_INVALID_OPERATION:
       errText = "Invalid operation";
       break;
-    // case GL_STACK_OVERFLOW:    std::cerr << "Stack overflow"; break;
-    // case GL_STACK_UNDERFLOW:   std::cerr << "Stack underflow"; break;
+    case GL_INVALID_FRAMEBUFFER_OPERATION:
+      errText = "Invalid framebuffer operation";
+      break;
     case GL_OUT_OF_MEMORY:
       errText = "Out of memory";
       break;
+    // case GL_STACK_OVERFLOW:    std::cerr << "Stack overflow"; break;
+    // case GL_STACK_UNDERFLOW:   std::cerr << "Stack underflow"; break;
     default:
       errText = "Unknown error " + std::to_string(static_cast<unsigned int>(err));
     }
@@ -2109,30 +2111,7 @@ void GLShaderProgram::draw() {
 GLEngine::GLEngine() {}
 GLEngine::~GLEngine() {}
 
-void GLEngine::initializeImGui() {
-  bindDisplay();
-
-  ImGui::CreateContext(); // must call once at start
-
-  // Set up ImGUI glfw bindings
-  ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
-  const char* glsl_version = "#version 150";
-  ImGui_ImplOpenGL3_Init(glsl_version);
-
-  configureImGui();
-}
-
-void GLEngine::shutdownImGui() {
-  // ImGui shutdown things
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
-}
-
-void GLEngine::swapDisplayBuffers() {
-  bindDisplay();
-  glfwSwapBuffers(mainWindow);
-}
+void GLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
 std::vector<unsigned char> GLEngine::readDisplayBuffer() {
   // TODO do we need to bind here?
@@ -2154,111 +2133,6 @@ std::vector<unsigned char> GLEngine::readDisplayBuffer() {
   return buff;
 }
 
-
-void GLEngine::checkError(bool fatal) { checkGLError(fatal); }
-
-void GLEngine::makeContextCurrent() {
-  glfwMakeContextCurrent(mainWindow);
-  glfwSwapInterval(options::enableVSync ? 1 : 0);
-}
-
-void GLEngine::focusWindow() { glfwFocusWindow(mainWindow); }
-
-void GLEngine::showWindow() { glfwShowWindow(mainWindow); }
-
-void GLEngine::hideWindow() {
-  glfwHideWindow(mainWindow);
-  glfwPollEvents(); // this shouldn't be necessary, but seems to be needed at least on macOS. Perhaps realted to a
-                    // glfw bug? e.g. https://github.com/glfw/glfw/issues/1300 and related bugs
-}
-
-void GLEngine::updateWindowSize(bool force) {
-  int newBufferWidth, newBufferHeight, newWindowWidth, newWindowHeight;
-  glfwGetFramebufferSize(mainWindow, &newBufferWidth, &newBufferHeight);
-  glfwGetWindowSize(mainWindow, &newWindowWidth, &newWindowHeight);
-  if (force || newBufferWidth != view::bufferWidth || newBufferHeight != view::bufferHeight ||
-      newWindowHeight != view::windowHeight || newWindowWidth != view::windowWidth) {
-    // Basically a resize callback
-    requestRedraw();
-
-    // prevent any division by zero for e.g. aspect ratio calcs
-    if (newBufferHeight == 0) newBufferHeight = 1;
-    if (newWindowHeight == 0) newWindowHeight = 1;
-
-    view::bufferWidth = newBufferWidth;
-    view::bufferHeight = newBufferHeight;
-    view::windowWidth = newWindowWidth;
-    view::windowHeight = newWindowHeight;
-
-    render::engine->resizeScreenBuffers();
-    render::engine->setScreenBufferViewports();
-  }
-}
-
-
-void GLEngine::applyWindowSize() {
-  glfwSetWindowSize(mainWindow, view::windowWidth, view::windowHeight);
-
-  // on some platform size changes are asynchonous, need to ensure it completes
-  // we don't want to just retry until the resize has happened, because it could be impossible
-  // TODO it seems like on X11 sometimes even this isn't enough?
-  glfwWaitEvents();
-
-  updateWindowSize(true);
-}
-
-
-void GLEngine::setWindowResizable(bool newVal) {
-  glfwSetWindowAttrib(mainWindow, GLFW_RESIZABLE, newVal ? GLFW_TRUE : GLFW_FALSE);
-}
-
-bool GLEngine::getWindowResizable() { return glfwGetWindowAttrib(mainWindow, GLFW_RESIZABLE); }
-
-std::tuple<int, int> GLEngine::getWindowPos() {
-  int x, y;
-  glfwGetWindowPos(mainWindow, &x, &y);
-  return std::tuple<int, int>{x, y};
-}
-
-bool GLEngine::windowRequestsClose() {
-  bool shouldClose = glfwWindowShouldClose(mainWindow);
-  if (shouldClose) {
-    glfwSetWindowShouldClose(mainWindow, false); // un-set the state bit so we can close again
-    return true;
-  }
-  return false;
-}
-
-void GLEngine::pollEvents() { glfwPollEvents(); }
-
-bool GLEngine::isKeyPressed(char c) {
-  if (c >= '0' && c <= '9') return ImGui::IsKeyPressed(static_cast<ImGuiKey>(ImGuiKey_0 + (c - '0')));
-  if (c >= 'a' && c <= 'z') return ImGui::IsKeyPressed(static_cast<ImGuiKey>(ImGuiKey_A + (c - 'a')));
-  if (c >= 'A' && c <= 'Z') return ImGui::IsKeyPressed(static_cast<ImGuiKey>(ImGuiKey_A + (c - 'A')));
-  exception("keyPressed only supports 0-9, a-z, A-Z");
-  return false;
-}
-
-int GLEngine::getKeyCode(char c) {
-  if (c >= '0' && c <= '9') return static_cast<int>(ImGuiKey_0) + (c - '0');
-  if (c >= 'a' && c <= 'z') return static_cast<int>(ImGuiKey_A) + (c - 'a');
-  if (c >= 'A' && c <= 'Z') return static_cast<int>(ImGuiKey_A) + (c - 'A');
-  exception("getKeyCode only supports 0-9, a-z, A-Z");
-  return -1;
-}
-
-void GLEngine::ImGuiNewFrame() {
-  ImGui_ImplOpenGL3_NewFrame();
-  ImGui_ImplGlfw_NewFrame();
-  ImGui::NewFrame();
-
-  // ImGui::ShowDemoWindow();
-}
-
-void GLEngine::ImGuiRender() {
-  ImGui::Render();
-  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
 
 void GLEngine::setDepthMode(DepthMode newMode) {
   switch (newMode) {
@@ -2341,13 +2215,6 @@ void GLEngine::setBackfaceCull(bool newVal) {
     glDisable(GL_CULL_FACE);
   }
 }
-
-std::string GLEngine::getClipboardText() {
-  std::string clipboardData = ImGui::GetClipboardText();
-  return clipboardData;
-}
-
-void GLEngine::setClipboardText(std::string text) { ImGui::SetClipboardText(text.c_str()); }
 
 void GLEngine::applyTransparencySettings() {
   // Remove any old transparency-related rules
@@ -2729,7 +2596,7 @@ void GLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
 }
 
 
-} // namespace backend_openGL
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope
 

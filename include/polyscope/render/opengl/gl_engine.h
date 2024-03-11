@@ -11,6 +11,14 @@
 // Note: DO NOT include this header throughout polyscope, and do not directly make openGL calls. This header should only
 // be used to construct an instance of Engine. engine.h gives the render API, all render calls should pass through that.
 
+#ifdef __APPLE__
+#else
+#include "glad/glad.h"
+#endif
+
+#ifdef _WIN32
+#undef APIENTRY
+#endif
 
 namespace polyscope {
 namespace render {
@@ -355,7 +363,6 @@ private:
 
 class GLEngine : public Engine {
 public:
-
   GLEngine();
   virtual ~GLEngine();
 

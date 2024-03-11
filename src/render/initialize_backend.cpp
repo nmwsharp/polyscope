@@ -14,12 +14,10 @@ std::string engineBackendName = "";
 
 // Forward-declaration of initialize routines
 // we don't want to just include the appropriate headers, because they may define conflicting symbols
-namespace backend_openGL3_glfw {
-void initializeRenderEngine();
-}
-namespace backend_openGL3_glfw_egl {
-void initializeRenderEngine();
-}
+namespace backend_openGL3 {
+void initializeRenderEngine_glfw();
+void initializeRenderEngine_egl();
+} // namespace backend_openGL3
 namespace backend_openGL_mock {
 void initializeRenderEngine();
 }
@@ -48,9 +46,9 @@ void initializeRenderEngine(std::string backend) {
 
   // Initialize the appropriate backend
   if (backend == "openGL3_glfw") {
-    backend_openGL3_glfw::initializeRenderEngine();
-  } else if (backend == "openGL3_glfw_egl") {
-    backend_openGL3_glfw_egl::initializeRenderEngine();
+    backend_openGL3::initializeRenderEngine_glfw();
+  } else if (backend == "openGL3_egl") {
+    backend_openGL3::initializeRenderEngine_egl();
   } else if (backend == "openGL_mock") {
     backend_openGL_mock::initializeRenderEngine();
   } else {

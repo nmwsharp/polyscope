@@ -6,7 +6,7 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 // High level pipeline
 extern const ShaderStageSpecification FLEX_MESH_VERT_SHADER;
@@ -36,6 +36,6 @@ extern const ShaderReplacementRule MESH_PROPAGATE_PICK_SIMPLE;
 extern const ShaderReplacementRule MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE;
 
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

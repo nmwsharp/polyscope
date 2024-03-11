@@ -6,7 +6,7 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 // High level pipeline
 extern const ShaderStageSpecification FLEX_SPHERE_VERT_SHADER;
@@ -26,6 +26,6 @@ extern const ShaderReplacementRule SPHERE_CULLPOS_FROM_CENTER;
 extern const ShaderReplacementRule SPHERE_CULLPOS_FROM_CENTER_QUAD;
 
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

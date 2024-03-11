@@ -5,8 +5,8 @@
 #include "polyscope/render/opengl/gl_engine_glfw.h"
 
 #include "backends/imgui_impl_opengl3.h"
-#include "polyscope/render/engine.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/render/engine.h"
 
 #include "stb_image.h"
 
@@ -18,11 +18,11 @@ namespace render {
 namespace backend_openGL3 {
 
 GLEngineGLFW* glEngineGLFW = nullptr; // alias for global engine pointer
-extern GLEngine* glEngine; // defined in gl_engine.h
+extern GLEngine* glEngine;            // defined in gl_engine.h
 
-void initializeRenderEngine() {
+void initializeRenderEngine_glfw() {
 
-  glEngineGLFW = new GLEngineGLFW();// create the new global engine object
+  glEngineGLFW = new GLEngineGLFW(); // create the new global engine object
 
   engine = glEngineGLFW; // we keep a few copies of this pointer with various types
   glEngine = glEngineGLFW;
@@ -47,7 +47,7 @@ void GLEngineGLFW::initialize() {
   // === Initialize glfw
   glfwSetErrorCallback(error_print_callback);
   if (!glfwInit()) {
-    exception(options::printPrefix + "ERROR: Failed to initialize glfw");
+    exception("ERROR: Failed to initialize glfw");
   }
 
   // OpenGL version things
@@ -80,7 +80,7 @@ void GLEngineGLFW::initialize() {
 // Load openGL functions (using GLAD)
 #ifndef __APPLE__
   if (!gladLoadGL()) {
-    exception(options::printPrefix + "ERROR: Failed to load openGL using GLAD");
+    exception("ERROR: Failed to load openGL using GLAD");
   }
 #endif
   if (options::verbosity > 0) {
@@ -142,6 +142,7 @@ void GLEngineGLFW::swapDisplayBuffers() {
   bindDisplay();
   glfwSwapBuffers(mainWindow);
 }
+
 
 void GLEngineGLFW::makeContextCurrent() {
   glfwMakeContextCurrent(mainWindow);
@@ -252,7 +253,7 @@ namespace polyscope {
 namespace render {
 namespace backend_openGL3 {
 
-void initializeRenderEngine() { exception("Polyscope was not compiled with support for backend: openGL3_glfw"); }
+void initializeRenderEngine_glfw() { exception("Polyscope was not compiled with support for backend: openGL3_glfw"); }
 
 } // namespace backend_openGL3
 } // namespace render

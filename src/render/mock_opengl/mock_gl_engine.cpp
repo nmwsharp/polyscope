@@ -1883,7 +1883,7 @@ void MockGLEngine::registerShaderRule(const std::string& name, const ShaderRepla
 
 
 void MockGLEngine::populateDefaultShadersAndRules() {
-  using namespace backend_openGL3_glfw;
+  using namespace backend_openGL3;
 
   // WARNING: duplicated from gl_engine.cpp
 
@@ -2032,7 +2032,7 @@ void MockGLEngine::populateDefaultShadersAndRules() {
 
 
 void MockGLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
-  using namespace backend_openGL3_glfw;
+  using namespace backend_openGL3;
   registeredShaderRules.insert({"SLICE_PLANE_CULL_" + uniquePostfix, generateSlicePlaneRule(uniquePostfix)});
   registeredShaderRules.insert(
       {"SLICE_PLANE_VOLUMEGRID_CULL_" + uniquePostfix, generateVolumeGridSlicePlaneRule(uniquePostfix)});

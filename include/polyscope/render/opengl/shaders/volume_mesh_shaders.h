@@ -6,7 +6,7 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 // High level pipeline
 extern const ShaderStageSpecification SLICE_TETS_VERT_SHADER;
@@ -19,6 +19,6 @@ extern const ShaderReplacementRule SLICE_TETS_PROPAGATE_VECTOR;
 extern const ShaderReplacementRule SLICE_TETS_VECTOR_COLOR;
 
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope
