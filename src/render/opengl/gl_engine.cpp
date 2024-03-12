@@ -2189,7 +2189,6 @@ void GLEngine::initializeImGui() {
   bindDisplay();
 
   imguiContext = ImGui::CreateContext(); // must call once at start
-  ImGui::SetCurrentContext(imguiContext);
 
   // Set up ImGUI glfw bindings
   ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
@@ -2325,7 +2324,6 @@ int GLEngine::getKeyCode(char c) {
 }
 
 void GLEngine::ImGuiNewFrame() {
-  ImGui::SetCurrentContext(imguiContext);
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
