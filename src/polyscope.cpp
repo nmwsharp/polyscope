@@ -178,7 +178,14 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   // Create a new context and push it on to the stack
   ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
   ImGuiIO& oldIO = ImGui::GetIO(); // used to copy below, see note
+  #ifdef IMGUI_HAS_DOCK
+  ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
+  #endif
   ImGui::SetCurrentContext(newContext);
+  #ifdef IMGUI_HAS_DOCK
+  // Propagate GLFW window handle to new context
+  ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
+  #endif
 
   if (options::configureImGuiStyleCallback) {
     options::configureImGuiStyleCallback();
