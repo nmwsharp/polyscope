@@ -234,6 +234,11 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   oldIO = ImGui::GetIO(); // Copy new IO values to old. I haven't encountered anything that strictly requires this, but
                           // it feels like we should mirror the behavior from pushing.
 
+  // Workaround overzealous ImGui assertion before destroying any inner context
+  // https://github.com/ocornut/imgui/pull/7175
+  ImGui::GetIO().BackendPlatformUserData = nullptr;
+  ImGui::GetIO().BackendRendererUserData = nullptr;
+
   ImGui::DestroyContext(newContext);
 
   // Restore the previous context, if there was one
