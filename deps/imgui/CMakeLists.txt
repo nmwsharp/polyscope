@@ -73,6 +73,6 @@ elseif("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
 endif()
 
 
-target_compile_features(imgui PUBLIC cxx_std_17)
+target_compile_features(imgui PUBLIC cxx_std_11)
 
 set_target_properties(imgui PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
