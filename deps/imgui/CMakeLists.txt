@@ -32,7 +32,9 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 
   target_link_libraries(imgui PRIVATE glfw)
 
-  target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+  if(POLYSCOPE_TOPLEVEL_PROJECT)
+    target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+  endif()
 
   if(APPLE)
       # On macOS, get openGL & friends from Frameworks; do not use GLAD at all
@@ -73,6 +75,6 @@ elseif("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
 endif()
 
 
-target_compile_features(imgui PUBLIC cxx_std_17)
+target_compile_features(imgui PUBLIC cxx_std_11)
 
 set_target_properties(imgui PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
