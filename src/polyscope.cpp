@@ -177,7 +177,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Create a new context and push it on to the stack
   ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
-  ImGuiIO& oldIO = ImGui::GetIO(); // used to copy below, see note
+  ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
   #ifdef IMGUI_HAS_DOCK
   ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
   #endif
@@ -185,16 +185,15 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   #ifdef IMGUI_HAS_DOCK
   // Propagate GLFW window handle to new context
   ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
+  #else
+  ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
+  ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
   #endif
 
   if (options::configureImGuiStyleCallback) {
     options::configureImGuiStyleCallback();
   }
 
-  ImGui::GetIO() = oldIO; // Copy all of the old IO values to new. With ImGUI 1.76 (and some previous versions), this
-                          // was necessary to fix a bug where keys like delete, etc would break in subcontexts. The
-                          // problem was that the key mappings (e.g. GLFW_KEY_BACKSPACE --> ImGuiKey_Backspace) need to
-                          // be populated in io.KeyMap, and these entries would get lost on creating a new context.
   contextStack.push_back(ContextEntry{newContext, callbackFunction, drawDefaultUI});
 
   if (contextStack.size() > 50) {
@@ -231,11 +230,9 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
     }
   }
 
-  oldIO = ImGui::GetIO(); // Copy new IO values to old. I haven't encountered anything that strictly requires this, but
-                          // it feels like we should mirror the behavior from pushing.
-
   // Workaround overzealous ImGui assertion before destroying any inner context
   // https://github.com/ocornut/imgui/pull/7175
+  ImGui::SetCurrentContext(newContext);
   ImGui::GetIO().BackendPlatformUserData = nullptr;
   ImGui::GetIO().BackendRendererUserData = nullptr;
 
