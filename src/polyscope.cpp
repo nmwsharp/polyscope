@@ -185,10 +185,9 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   #ifdef IMGUI_HAS_DOCK
   // Propagate GLFW window handle to new context
   ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
-  #else
+  #endif
   ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
   ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
-  #endif
 
   if (options::configureImGuiStyleCallback) {
     options::configureImGuiStyleCallback();
