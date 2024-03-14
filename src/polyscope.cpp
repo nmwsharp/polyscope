@@ -38,6 +38,7 @@ struct ContextEntry {
   bool drawDefaultUI;
 };
 std::vector<ContextEntry> contextStack;
+int frameTickStack = 0;
 
 bool redrawNextFrame = true;
 bool unshowRequested = false;
@@ -256,11 +257,24 @@ ImGuiContext* getCurrentContext() { return contextStack.empty() ? nullptr : cont
 
 void frameTick() {
 
-  // Make sure we're initialized
+  // Do some sanity-checking around control flow and use of frameTick() / show()
+  if (contextStack.size() > 1) {
+    exception("Do not call frameTick() while show() is already looping the main loop.");
+  }
+  if (frameTickStack > 0) {
+    exception("You called frameTick() while a previous call was in the midst of executing. Do not re-enter frameTick() "
+              "or call it recursively.");
+  }
+  frameTickStack++;
+
+  // Make sure we're initialized and visible
   checkInitialized();
   render::engine->showWindow();
 
+  // All-imporant main loop iteration
   mainLoopIteration();
+
+  frameTickStack--;
 }
 
 void requestRedraw() { redrawNextFrame = true; }
@@ -754,8 +768,7 @@ void buildPickGui() {
 
 void buildUserGuiAndInvokeCallback() {
 
-  if (!options::invokeUserCallbackForNestedShow && contextStack.size() > 2) {
-    // NOTE: this may have funky interactions with manually calling frameTick()
+  if (!options::invokeUserCallbackForNestedShow && (contextStack.size() + frameTickStack) > 2) {
     return;
   }
 
