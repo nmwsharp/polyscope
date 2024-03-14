@@ -4,6 +4,7 @@
 
 #include <array>
 #include <string>
+#include <tuple>
 
 #include "polyscope/camera_parameters.h"
 #include "polyscope/types.h"
@@ -111,7 +112,7 @@ void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
 
 // Get world geometry corresponding to a screen pixel (e.g. from a mouse click)
 glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords);
-glm::vec3 bufferCoordsToWorldRay(glm::vec2 screenCoords);
+glm::vec3 bufferCoordsToWorldRay(int xPos, int yPos);
 glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords); // queries the depth buffer to get full position
 
 // Flight-related
@@ -129,6 +130,7 @@ void setCameraFromJson(std::string jsonData, bool flyTo);
 // Other helpers
 std::string to_string(ProjectionMode mode);
 std::string to_string(NavigateStyle style);
+std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords);
 
 // Internal helpers. Should probably not be called in user code.
 void buildViewGui();

@@ -177,24 +177,22 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Create a new context and push it on to the stack
   ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
-  ImGuiIO& oldIO = ImGui::GetIO(); // used to copy below, see note
-  #ifdef IMGUI_HAS_DOCK
+  ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
+#ifdef IMGUI_HAS_DOCK
   ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
-  #endif
+#endif
   ImGui::SetCurrentContext(newContext);
-  #ifdef IMGUI_HAS_DOCK
+#ifdef IMGUI_HAS_DOCK
   // Propagate GLFW window handle to new context
   ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
-  #endif
+#endif
+  ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
+  ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
 
   if (options::configureImGuiStyleCallback) {
     options::configureImGuiStyleCallback();
   }
 
-  ImGui::GetIO() = oldIO; // Copy all of the old IO values to new. With ImGUI 1.76 (and some previous versions), this
-                          // was necessary to fix a bug where keys like delete, etc would break in subcontexts. The
-                          // problem was that the key mappings (e.g. GLFW_KEY_BACKSPACE --> ImGuiKey_Backspace) need to
-                          // be populated in io.KeyMap, and these entries would get lost on creating a new context.
   contextStack.push_back(ContextEntry{newContext, callbackFunction, drawDefaultUI});
 
   if (contextStack.size() > 50) {
@@ -231,8 +229,11 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
     }
   }
 
-  oldIO = ImGui::GetIO(); // Copy new IO values to old. I haven't encountered anything that strictly requires this, but
-                          // it feels like we should mirror the behavior from pushing.
+  // Workaround overzealous ImGui assertion before destroying any inner context
+  // https://github.com/ocornut/imgui/pull/7175
+  ImGui::SetCurrentContext(newContext);
+  ImGui::GetIO().BackendPlatformUserData = nullptr;
+  ImGui::GetIO().BackendRendererUserData = nullptr;
 
   // Workaround overzealous ImGui assertion before destroying any inner context
   // https://github.com/ocornut/imgui/pull/7175
@@ -388,8 +389,7 @@ void processInputEvents() {
         // Don't pick at the end of a long drag
         if (dragDistSinceLastRelease < dragIgnoreThreshold) {
           ImVec2 p = ImGui::GetMousePos();
-          std::pair<Structure*, size_t> pickResult =
-              pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
+          std::pair<Structure*, size_t> pickResult = pick::pickAtScreenCoords(glm::vec2{p.x, p.y});
           pick::setSelection(pickResult);
         }
 
@@ -715,7 +715,11 @@ void buildStructureGui() {
       int32_t skipCount = 0;
       for (auto& x : structureMap) {
         ImGui::SetNextItemOpen(structureMap.size() <= 8,
+<<<<<<< HEAD
                                    ImGuiCond_FirstUseEver); // closed by default if more than 8
+=======
+                               ImGuiCond_FirstUseEver); // closed by default if more than 8
+>>>>>>> upstream/master
 
         if (structuresToSkip.find(x.second.get()) != structuresToSkip.end()) {
           skipCount++;
@@ -797,6 +801,10 @@ void draw(bool withUI, bool withContextCallback) {
 
   if (withUI) {
     render::engine->ImGuiNewFrame();
+
+    processInputEvents();
+    view::updateFlight();
+    showDelayedWarnings();
   }
 
   // Build the GUI components
@@ -867,9 +875,6 @@ void mainLoopIteration() {
 
   // Process UI events
   render::engine->pollEvents();
-  processInputEvents();
-  view::updateFlight();
-  showDelayedWarnings();
 
   // Housekeeping
   purgeWidgets();

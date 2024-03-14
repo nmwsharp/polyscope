@@ -83,6 +83,19 @@ std::string to_string(NavigateStyle style) {
   return ""; // unreachable
 }
 
+
+std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords) {
+
+  int xPos = (screenCoords.x * view::bufferWidth) / view::windowWidth;
+  int yPos = (screenCoords.y * view::bufferHeight) / view::windowHeight;
+
+  // clamp to lie in [0,width),[0,height)
+  xPos = std::max(std::min(xPos, view::bufferWidth - 1), 0);
+  yPos = std::max(std::min(yPos, view::bufferHeight - 1), 0);
+
+  return std::tuple<int, int>(xPos, yPos);
+}
+
 void processRotate(glm::vec2 startP, glm::vec2 endP) {
 
   if (startP == endP) {
@@ -489,13 +502,13 @@ glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords) {
   return worldRayDir;
 }
 
-glm::vec3 bufferCoordsToWorldRay(glm::vec2 screenCoords) {
+glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords) {
 
   glm::mat4 view = getCameraViewMatrix();
   glm::mat4 proj = getCameraPerspectiveMatrix();
   glm::vec4 viewport = {0., 0., view::bufferWidth, view::bufferHeight};
 
-  glm::vec3 screenPos3{screenCoords.x, view::bufferHeight - screenCoords.y, 0.};
+  glm::vec3 screenPos3{bufferCoords.x, view::bufferHeight - bufferCoords.y, 0.};
   glm::vec3 worldPos = glm::unProject(screenPos3, view, proj, viewport);
   glm::vec3 worldRayDir = glm::normalize(glm::vec3(worldPos) - getCameraWorldPosition());
 
@@ -505,9 +518,8 @@ glm::vec3 bufferCoordsToWorldRay(glm::vec2 screenCoords) {
 
 glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords) {
 
-  glm::vec2 bufferCoords{screenCoords.x * static_cast<float>(view::bufferWidth) / static_cast<float>(view::windowWidth),
-                         screenCoords.y * static_cast<float>(view::bufferHeight) /
-                             static_cast<float>(view::windowHeight)};
+  int xInd, yInd;
+  std::tie(xInd, yInd) = screenCoordsToBufferInds(screenCoords);
 
   glm::mat4 view = getCameraViewMatrix();
   glm::mat4 viewInv = glm::inverse(view);
@@ -517,7 +529,7 @@ glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords) {
 
   // query the depth buffer to get depth
   render::FrameBuffer* sceneFramebuffer = render::engine->sceneBuffer.get();
-  float depth = sceneFramebuffer->readDepth(bufferCoords.x, view::bufferHeight - bufferCoords.y);
+  float depth = sceneFramebuffer->readDepth(xInd, view::bufferHeight - yInd);
   if (depth == 1.) {
     // if we didn't hit anything in the depth buffer, just return infinity
     float inf = std::numeric_limits<float>::infinity();

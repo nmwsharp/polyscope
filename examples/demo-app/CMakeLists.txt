@@ -69,6 +69,9 @@ endif()
 # Add polyscope
 add_subdirectory(../../ "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 
+# Catch the usage of obsolete functions in imgui
+target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+
 # Create an executable
 add_executable(
         polyscopedemo
