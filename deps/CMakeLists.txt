@@ -18,6 +18,7 @@ endif()
 ## glm
 if(NOT TARGET glm::glm)
   add_subdirectory(glm)
+  target_compile_definitions(glm INTERFACE GLM_ENABLE_EXPERIMENTAL)
 endif()
 
 ## Imgui
