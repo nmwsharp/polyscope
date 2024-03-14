@@ -291,12 +291,12 @@ void processKeyboardNavigation(ImGuiIO& io) {
 
     glm::vec3 delta{0.f, 0.f, 0.f};
 
-    if (io.KeysDown[render::engine->getKeyCode('a')]) delta.x += 1.f;
-    if (io.KeysDown[render::engine->getKeyCode('d')]) delta.x += -1.f;
-    if (io.KeysDown[render::engine->getKeyCode('q')]) delta.y += 1.f;
-    if (io.KeysDown[render::engine->getKeyCode('e')]) delta.y += -1.f;
-    if (io.KeysDown[render::engine->getKeyCode('w')]) delta.z += 1.f;
-    if (io.KeysDown[render::engine->getKeyCode('s')]) delta.z += -1.f;
+    if (ImGui::IsKeyDown(static_cast<ImGuiKey>(render::engine->getKeyCode('a')))) delta.x += 1.f;
+    if (ImGui::IsKeyDown(static_cast<ImGuiKey>(render::engine->getKeyCode('d')))) delta.x += -1.f;
+    if (ImGui::IsKeyDown(static_cast<ImGuiKey>(render::engine->getKeyCode('q')))) delta.y += 1.f;
+    if (ImGui::IsKeyDown(static_cast<ImGuiKey>(render::engine->getKeyCode('e')))) delta.y += -1.f;
+    if (ImGui::IsKeyDown(static_cast<ImGuiKey>(render::engine->getKeyCode('w')))) delta.z += 1.f;
+    if (ImGui::IsKeyDown(static_cast<ImGuiKey>(render::engine->getKeyCode('s')))) delta.z += -1.f;
 
     if (glm::length(delta) > 0.) {
       hasMovement = true;
@@ -711,10 +711,10 @@ void setCameraFromJson(std::string jsonData, bool flyTo) { setViewFromJson(jsonD
 
 void buildViewGui() {
 
-  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
   if (openSlicePlaneMenu) {
     // need to recursively open this tree node to respect slice plane menu open flag
-    ImGui::SetNextTreeNodeOpen(true);
+    ImGui::SetNextItemOpen(true);
   }
   if (ImGui::TreeNode("View")) {
 
@@ -901,7 +901,7 @@ void buildViewGui() {
     }
 
 
-    ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+    ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
     if (ImGui::TreeNode("Camera Parameters")) {
 
       // Field of view

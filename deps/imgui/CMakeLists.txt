@@ -29,9 +29,9 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glfw/include/")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/")
-  
+
   target_link_libraries(imgui PRIVATE glfw)
-  
+
   if(APPLE)
       # On macOS, get openGL & friends from Frameworks; do not use GLAD at all
 
@@ -41,7 +41,7 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 
       # Apple is playing hardball and deprecating openGL... we'll cross that bridge when we come to it
       # Silence warnings about openGL deprecation
-      add_definitions(-DGL_SILENCE_DEPRECATION)  
+      add_definitions(-DGL_SILENCE_DEPRECATION)
       find_library(opengl_library OpenGL)
       target_link_libraries(imgui PRIVATE ${opengl_library})
   else()
@@ -58,7 +58,7 @@ elseif("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
   add_definitions(-DIMGUI_DISABLE_WIN32_FUNCTIONS)
   add_definitions(-DIMGUI_DISABLE_WIN32_DEFAULT_CLIPBOARD_FUNCTIONS)
   add_definitions(-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCTIONS)
-  
+
   set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/imgui_demo.cpp)
 
   add_library(
@@ -71,5 +71,6 @@ elseif("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
 endif()
 
 
+target_compile_features(imgui PUBLIC cxx_std_11)
 
 set_target_properties(imgui PROPERTIES POSITION_INDEPENDENT_CODE TRUE)

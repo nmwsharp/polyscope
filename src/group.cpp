@@ -50,7 +50,7 @@ void Group::buildUI() {
 
   // Set this treenode to open if there's children
   if (childrenGroups.size() > 0 || childrenStructures.size() > 0) {
-    ImGui::SetNextTreeNodeOpen(true, ImGuiCond_Once);
+    ImGui::SetNextItemOpen(true, ImGuiCond_Once);
   }
 
 

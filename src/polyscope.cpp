@@ -177,17 +177,22 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Create a new context and push it on to the stack
   ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
-  ImGuiIO& oldIO = ImGui::GetIO(); // used to copy below, see note
+  ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
+#ifdef IMGUI_HAS_DOCK
+  ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
+#endif
   ImGui::SetCurrentContext(newContext);
+#ifdef IMGUI_HAS_DOCK
+  // Propagate GLFW window handle to new context
+  ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
+#endif
+  ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
+  ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
 
   if (options::configureImGuiStyleCallback) {
     options::configureImGuiStyleCallback();
   }
 
-  ImGui::GetIO() = oldIO; // Copy all of the old IO values to new. With ImGUI 1.76 (and some previous versions), this
-                          // was necessary to fix a bug where keys like delete, etc would break in subcontexts. The
-                          // problem was that the key mappings (e.g. GLFW_KEY_BACKSPACE --> ImGuiKey_Backspace) need to
-                          // be populated in io.KeyMap, and these entries would get lost on creating a new context.
   contextStack.push_back(ContextEntry{newContext, callbackFunction, drawDefaultUI});
 
   if (contextStack.size() > 50) {
@@ -224,8 +229,11 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
     }
   }
 
-  oldIO = ImGui::GetIO(); // Copy new IO values to old. I haven't encountered anything that strictly requires this, but
-                          // it feels like we should mirror the behavior from pushing.
+  // Workaround overzealous ImGui assertion before destroying any inner context
+  // https://github.com/ocornut/imgui/pull/7175
+  ImGui::SetCurrentContext(newContext);
+  ImGui::GetIO().BackendPlatformUserData = nullptr;
+  ImGui::GetIO().BackendRendererUserData = nullptr;
 
   ImGui::DestroyContext(newContext);
 
@@ -584,18 +592,18 @@ void buildPolyscopeGui() {
 
     // clang-format off
 		ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar);
-		ImGui::TextUnformatted("View Navigation:");			
+		ImGui::TextUnformatted("View Navigation:");
 			ImGui::TextUnformatted("      Rotate: [left click drag]");
 			ImGui::TextUnformatted("   Translate: [shift] + [left click drag] OR [right click drag]");
 			ImGui::TextUnformatted("        Zoom: [scroll] OR [ctrl] + [shift] + [left click drag]");
 			ImGui::TextUnformatted("   Use [ctrl-c] and [ctrl-v] to save and restore camera poses");
 			ImGui::TextUnformatted("     via the clipboard.");
-		ImGui::TextUnformatted("\nMenu Navigation:");			
+		ImGui::TextUnformatted("\nMenu Navigation:");
 			ImGui::TextUnformatted("   Menu headers with a '>' can be clicked to collapse and expand.");
 			ImGui::TextUnformatted("   Use [ctrl] + [left click] to manually enter any numeric value");
 			ImGui::TextUnformatted("     via the keyboard.");
 			ImGui::TextUnformatted("   Press [space] to dismiss popup dialogs.");
-		ImGui::TextUnformatted("\nSelection:");			
+		ImGui::TextUnformatted("\nSelection:");
 			ImGui::TextUnformatted("   Select elements of a structure with [left click]. Data from");
 			ImGui::TextUnformatted("     that element will be shown on the right. Use [right click]");
 			ImGui::TextUnformatted("     to clear the selection.");
@@ -610,7 +618,7 @@ void buildPolyscopeGui() {
   render::engine->buildEngineGui();
 
   // Render options tree
-  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Render")) {
 
     // fps
@@ -631,7 +639,7 @@ void buildPolyscopeGui() {
     ImGui::TreePop();
   }
 
-  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Debug")) {
 
     if (ImGui::Button("Force refresh")) {
@@ -692,7 +700,7 @@ void buildStructureGui() {
                                     // identically-named labels
 
     // Build the structure's UI
-    ImGui::SetNextTreeNodeOpen(structureMap.size() > 0, ImGuiCond_FirstUseEver);
+    ImGui::SetNextItemOpen(structureMap.size() > 0, ImGuiCond_FirstUseEver);
     if (ImGui::CollapsingHeader((catName + " (" + std::to_string(structureMap.size()) + ")").c_str())) {
       // Draw shared GUI elements for all instances of the structure
       if (structureMap.size() > 0) {
@@ -701,8 +709,8 @@ void buildStructureGui() {
 
       int32_t skipCount = 0;
       for (auto& x : structureMap) {
-        ImGui::SetNextTreeNodeOpen(structureMap.size() <= 8,
-                                   ImGuiCond_FirstUseEver); // closed by default if more than 8
+        ImGui::SetNextItemOpen(structureMap.size() <= 8,
+                               ImGuiCond_FirstUseEver); // closed by default if more than 8
 
         if (structuresToSkip.find(x.second.get()) != structuresToSkip.end()) {
           skipCount++;
@@ -784,6 +792,10 @@ void draw(bool withUI, bool withContextCallback) {
 
   if (withUI) {
     render::engine->ImGuiNewFrame();
+
+    processInputEvents();
+    view::updateFlight();
+    showDelayedWarnings();
   }
 
   // Build the GUI components
@@ -854,9 +866,6 @@ void mainLoopIteration() {
 
   // Process UI events
   render::engine->pollEvents();
-  processInputEvents();
-  view::updateFlight();
-  showDelayedWarnings();
 
   // Housekeeping
   purgeWidgets();

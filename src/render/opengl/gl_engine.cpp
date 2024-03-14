@@ -74,7 +74,7 @@ inline GLenum formatF(const TextureFormat& x) {
     case TextureFormat::RGB8:       return GL_RGB;
     case TextureFormat::RGBA8:      return GL_RGBA;
     case TextureFormat::RG16F:      return GL_RG;
-    case TextureFormat::RGB16F:     return GL_RGB; 
+    case TextureFormat::RGB16F:     return GL_RGB;
     case TextureFormat::RGBA16F:    return GL_RGBA;
     case TextureFormat::R32F:       return GL_RED;
     case TextureFormat::R16F:       return GL_RED;
@@ -117,7 +117,7 @@ inline GLenum native(const ShaderStageType& x) {
 inline GLenum native(const RenderBufferType& x) {
   switch (x) {
     case RenderBufferType::ColorAlpha:      return GL_RGBA;
-    case RenderBufferType::Color:           return GL_RGB; 
+    case RenderBufferType::Color:           return GL_RGB;
     case RenderBufferType::Depth:           return GL_DEPTH_COMPONENT;
     case RenderBufferType::Float4:          return GL_RGBA32F;
   }
@@ -2308,17 +2308,17 @@ bool GLEngine::windowRequestsClose() {
 void GLEngine::pollEvents() { glfwPollEvents(); }
 
 bool GLEngine::isKeyPressed(char c) {
-  if (c >= '0' && c <= '9') return ImGui::IsKeyPressed(GLFW_KEY_0 + (c - '0'));
-  if (c >= 'a' && c <= 'z') return ImGui::IsKeyPressed(GLFW_KEY_A + (c - 'a'));
-  if (c >= 'A' && c <= 'Z') return ImGui::IsKeyPressed(GLFW_KEY_A + (c - 'A'));
+  if (c >= '0' && c <= '9') return ImGui::IsKeyPressed(static_cast<ImGuiKey>(ImGuiKey_0 + (c - '0')));
+  if (c >= 'a' && c <= 'z') return ImGui::IsKeyPressed(static_cast<ImGuiKey>(ImGuiKey_A + (c - 'a')));
+  if (c >= 'A' && c <= 'Z') return ImGui::IsKeyPressed(static_cast<ImGuiKey>(ImGuiKey_A + (c - 'A')));
   exception("keyPressed only supports 0-9, a-z, A-Z");
   return false;
 }
 
 int GLEngine::getKeyCode(char c) {
-  if (c >= '0' && c <= '9') return static_cast<int>(GLFW_KEY_0) + (c - '0');
-  if (c >= 'a' && c <= 'z') return static_cast<int>(GLFW_KEY_A) + (c - 'a');
-  if (c >= 'A' && c <= 'Z') return static_cast<int>(GLFW_KEY_A) + (c - 'A');
+  if (c >= '0' && c <= '9') return static_cast<int>(ImGuiKey_0) + (c - '0');
+  if (c >= 'a' && c <= 'z') return static_cast<int>(ImGuiKey_A) + (c - 'a');
+  if (c >= 'A' && c <= 'Z') return static_cast<int>(ImGuiKey_A) + (c - 'A');
   exception("getKeyCode only supports 0-9, a-z, A-Z");
   return -1;
 }
@@ -2699,12 +2699,12 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("DOWNSAMPLE_RESOLVE_2", DOWNSAMPLE_RESOLVE_2);
   registerShaderRule("DOWNSAMPLE_RESOLVE_3", DOWNSAMPLE_RESOLVE_3);
   registerShaderRule("DOWNSAMPLE_RESOLVE_4", DOWNSAMPLE_RESOLVE_4);
-  
+
   registerShaderRule("TRANSPARENCY_STRUCTURE", TRANSPARENCY_STRUCTURE);
   registerShaderRule("TRANSPARENCY_RESOLVE_SIMPLE", TRANSPARENCY_RESOLVE_SIMPLE);
   registerShaderRule("TRANSPARENCY_PEEL_STRUCTURE", TRANSPARENCY_PEEL_STRUCTURE);
   registerShaderRule("TRANSPARENCY_PEEL_GROUND", TRANSPARENCY_PEEL_GROUND);
-  
+
   registerShaderRule("GENERATE_VIEW_POS", GENERATE_VIEW_POS);
   registerShaderRule("COMPUTE_SHADE_NORMAL_FROM_POSITION", COMPUTE_SHADE_NORMAL_FROM_POSITION);
   registerShaderRule("PREMULTIPLY_LIT_COLOR", PREMULTIPLY_LIT_COLOR);
@@ -2726,7 +2726,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("ISOLINE_STRIPE_VALUECOLOR", ISOLINE_STRIPE_VALUECOLOR);
   registerShaderRule("CHECKER_VALUE2COLOR", CHECKER_VALUE2COLOR);
   registerShaderRule("INVERSE_TONEMAP", INVERSE_TONEMAP);
- 
+
   // Texture and image things
   registerShaderRule("TEXTURE_ORIGIN_UPPERLEFT", TEXTURE_ORIGIN_UPPERLEFT);
   registerShaderRule("TEXTURE_ORIGIN_LOWERLEFT", TEXTURE_ORIGIN_LOWERLEFT);

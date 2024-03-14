@@ -65,9 +65,6 @@ endif()
 
 
 
-
-
-
 ### Download and unpack googletest at configure time
 # (from the googletest docs)
 configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
@@ -122,3 +119,6 @@ target_link_libraries(polyscope-test gtest_main polyscope)
 
 # Add polyscope as a subproject
 add_subdirectory(../ "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+
+# Catch the usage of obsolete functions in imgui
+target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
