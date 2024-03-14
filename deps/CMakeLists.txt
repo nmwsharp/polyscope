@@ -35,8 +35,6 @@ if(NOT TARGET MarchingCube::MarchingCube)
   add_subdirectory(MarchingCubeCpp)
 endif()
 
-## Argparse
-
 ## stb
 if(NOT TARGET stb)
   add_subdirectory(stb)
