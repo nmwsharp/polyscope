@@ -793,6 +793,10 @@ void draw(bool withUI, bool withContextCallback) {
 
   if (withUI) {
     render::engine->ImGuiNewFrame();
+
+    processInputEvents();
+    view::updateFlight();
+    showDelayedWarnings();
   }
 
   // Build the GUI components
@@ -863,9 +867,6 @@ void mainLoopIteration() {
 
   // Process UI events
   render::engine->pollEvents();
-  processInputEvents();
-  view::updateFlight();
-  showDelayedWarnings();
 
   // Housekeeping
   purgeWidgets();
