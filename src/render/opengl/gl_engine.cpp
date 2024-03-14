@@ -2188,7 +2188,7 @@ void GLEngine::initialize() {
 void GLEngine::initializeImGui() {
   bindDisplay();
 
-  imguiContext = ImGui::CreateContext(); // must call once at start
+  ImGui::CreateContext(); // must call once at start
 
   // Set up ImGUI glfw bindings
   ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
