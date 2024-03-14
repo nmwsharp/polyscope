@@ -178,14 +178,14 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   // Create a new context and push it on to the stack
   ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
   ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
-  #ifdef IMGUI_HAS_DOCK
+#ifdef IMGUI_HAS_DOCK
   ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
-  #endif
+#endif
   ImGui::SetCurrentContext(newContext);
-  #ifdef IMGUI_HAS_DOCK
+#ifdef IMGUI_HAS_DOCK
   // Propagate GLFW window handle to new context
   ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
-  #endif
+#endif
   ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
   ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
 
@@ -711,7 +711,7 @@ void buildStructureGui() {
       int32_t skipCount = 0;
       for (auto& x : structureMap) {
         ImGui::SetNextItemOpen(structureMap.size() <= 8,
-                                   ImGuiCond_FirstUseEver); // closed by default if more than 8
+                               ImGuiCond_FirstUseEver); // closed by default if more than 8
 
         if (structuresToSkip.find(x.second.get()) != structuresToSkip.end()) {
           skipCount++;
