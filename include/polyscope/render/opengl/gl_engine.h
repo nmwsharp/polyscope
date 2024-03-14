@@ -464,7 +464,6 @@ protected:
 
   // Internal windowing and engine details
   GLFWwindow* mainWindow = nullptr;
-  ImGuiContext* imguiContext = nullptr;
 
   // Shader program & rule caches
   std::unordered_map<std::string, std::pair<std::vector<ShaderStageSpecification>, DrawMode>> registeredShaderPrograms;

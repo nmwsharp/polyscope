@@ -235,11 +235,6 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   ImGui::GetIO().BackendPlatformUserData = nullptr;
   ImGui::GetIO().BackendRendererUserData = nullptr;
 
-  // Workaround overzealous ImGui assertion before destroying any inner context
-  // https://github.com/ocornut/imgui/pull/7175
-  ImGui::GetIO().BackendPlatformUserData = nullptr;
-  ImGui::GetIO().BackendRendererUserData = nullptr;
-
   ImGui::DestroyContext(newContext);
 
   // Restore the previous context, if there was one
