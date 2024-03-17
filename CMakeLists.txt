@@ -13,7 +13,7 @@ set(POLYSCOPE_BACKEND_OPENGL_MOCK "ON" CACHE BOOL "Enable openGL_mock backend")
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
   # the EGL backend is enabled by default when building on linux, and
-  # disabled by default otherwisek
+  # disabled by default otherwise
   set(POLYSCOPE_BACKEND_OPENGL3_EGL "ON" CACHE BOOL "Enable openGL3_egl backend")
 else()
   set(POLYSCOPE_BACKEND_OPENGL3_EGL "OFF" CACHE BOOL "Enable openGL3_egl backend")

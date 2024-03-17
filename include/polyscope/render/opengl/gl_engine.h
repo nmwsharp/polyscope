@@ -12,6 +12,10 @@
 // be used to construct an instance of Engine. engine.h gives the render API, all render calls should pass through that.
 
 #ifdef __APPLE__
+// this means this file can only compile openGL on apple if we are also using glfw, but that's fine, because we only
+// ever use the two together on apple
+#define GLFW_INCLUDE_GLCOREARB
+#include "GLFW/glfw3.h"
 #else
 #include "glad/glad.h"
 #endif

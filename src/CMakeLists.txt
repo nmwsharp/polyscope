@@ -5,21 +5,23 @@ endif()
 
 SET(INCLUDE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../include/polyscope/")
 
+# We need the shared openGL backend if either of these backends are enabled
+if(POLYSCOPE_BACKEND_OPENGL3_GLFW OR POLYSCOPE_BACKEND_OPENGL3_EGL)
+  SET(POLYSCOPE_BACKEND_OPENGL3 TRUE)
+  add_definitions(-DPOLYSCOPE_BACKEND_OPENGL3_ENABLED)
+else()
+  SET(POLYSCOPE_BACKEND_OPENGL3 FALSE)
+endif()
+
 # Lists that will be populated for the render backend
 
 # Add the main _engine file no matter what. All of the interesting parts are ifdef'd out, and this
 # allows us to resolve stubs.
 list (APPEND BACKEND_SRCS
     render/opengl/gl_engine.cpp
+    render/opengl/gl_engine_glfw.cpp
+    render/opengl/gl_engine_egl.cpp
     render/mock_opengl/mock_gl_engine.cpp
-)
-
-# Configure the render backend
-if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
-  message("Polyscope backend openGL3_glfw enabled")
-
-  list (APPEND BACKEND_SRCS
-    render/opengl/gl_engine.cpp
     render/opengl/shaders/texture_draw_shaders.cpp
     render/opengl/shaders/lighting_shaders.cpp
     render/opengl/shaders/grid_shaders.cpp
@@ -34,10 +36,14 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
     render/opengl/shaders/cylinder_shaders.cpp
     render/opengl/shaders/rules.cpp
     render/opengl/shaders/common.cpp
-  )
+)
+
+# Configure the render backend(s)
+if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
+  message("Polyscope backend openGL3_glfw enabled")
 
   list(APPEND BACKEND_HEADERS
-    ${INCLUDE_ROOT}render/opengl/gl_engine.h
+    ${INCLUDE_ROOT}render/opengl/gl_engine_glfw.h
     ${INCLUDE_ROOT}render/opengl/shaders/common.h
   )
 
@@ -69,37 +75,42 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
   add_definitions(-DPOLYSCOPE_BACKEND_OPENGL3_GLFW_ENABLED)
 endif()
 
+if("${POLYSCOPE_BACKEND_OPENGL3_EGL}")
+  message("Polyscope backend openGL3_egl enabled")
+
+  list(APPEND BACKEND_HEADERS
+    ${INCLUDE_ROOT}render/opengl/gl_engine_egl.h
+    ${INCLUDE_ROOT}render/opengl/shaders/common.h
+  )
+
+  if(APPLE)
+    message(FATAL_ERROR "Compiling EGL backed on APPLE is not supported. Set POLYSCOPE_BACKEND_OPENGL3_EGL=False")
+  else()
+
+    # On Windows/Linux, use the glad openGL loader
+    list(APPEND BACKEND_LIBS glad)
+
+    if(WIN32)
+      message(FATAL_ERROR "Compiling EGL backed on Windows is not supported. Set POLYSCOPE_BACKEND_OPENGL3_EGL=False")
+    else() # linux
+      # only linux is actually supported for EGL
+      list(APPEND BACKEND_LIBS EGL)
+    endif()
+
+  endif()
+
+  add_definitions(-DPOLYSCOPE_BACKEND_OPENGL3_EGL_ENABLED)
+endif()
+
 if("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
   message("Polyscope backend openGL_mock enabled")
-
-  list (APPEND BACKEND_SRCS
-    render/mock_opengl/mock_gl_engine.cpp
-    render/opengl/shaders/texture_draw_shaders.cpp
-    render/opengl/shaders/lighting_shaders.cpp
-    render/opengl/shaders/grid_shaders.cpp
-    render/opengl/shaders/ground_plane_shaders.cpp
-    render/opengl/shaders/gizmo_shaders.cpp
-    render/opengl/shaders/histogram_shaders.cpp
-    render/opengl/shaders/surface_mesh_shaders.cpp
-    render/opengl/shaders/volume_mesh_shaders.cpp
-    render/opengl/shaders/vector_shaders.cpp
-    render/opengl/shaders/sphere_shaders.cpp
-    render/opengl/shaders/ribbon_shaders.cpp
-    render/opengl/shaders/cylinder_shaders.cpp
-    render/opengl/shaders/rules.cpp
-    render/opengl/shaders/common.cpp
-  )
 
   list(APPEND BACKEND_HEADERS
     ${INCLUDE_ROOT}render/mock_opengl/mock_gl_engine.h
     ${INCLUDE_ROOT}render/opengl/shaders/common.h
   )
 
-  # Link settings
-  list(APPEND BACKEND_LIBS
-  )
-
-add_definitions(-DPOLYSCOPE_BACKEND_OPENGL_MOCK_ENABLED)
+  add_definitions(-DPOLYSCOPE_BACKEND_OPENGL_MOCK_ENABLED)
 endif()
 
 

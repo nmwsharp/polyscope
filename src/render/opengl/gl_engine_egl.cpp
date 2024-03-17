@@ -332,7 +332,7 @@ void GLEngineEGL::setClipboardText(std::string text) {
 } // namespace render
 } // namespace polyscope
 
-#else // POLYSCOPE_BACKEND_OPENGL3_GLFW_ENABLED
+#else // POLYSCOPE_BACKEND_OPENGL3_EGL_ENABLED
 
 #include "polyscope/messages.h"
 
