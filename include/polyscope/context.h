@@ -40,7 +40,7 @@ extern const double defaultFov;
 // In theory the user could explicitly manage multiple contexts explicitly. However for now that is not supported, there
 // is always exactly one global context.
 //
-// Historically, these globals were simply `static` members scattered through a few few different files. However, this
+// Historically, these globals were simply `static` members scattered through a few different files. However, this
 // was a persistent source of bugs at shutdown time, because the order in which destructors are called during shutdown
 // is platform-dependent. Bugs often arose because one global member often depends on another; if destructed in an
 // unexpected order, they would reference one-another and cause platform-dependent errors. The global context solves
@@ -52,37 +52,16 @@ struct Context {
   // === General globals from polyscope.h
   // ======================================================
 
-  // has polyscope::init() been called?
   bool initialized = false;
-
-  // what backend was set on initialization
   std::string backend = "";
-
-  // lists of all structures in Polyscope, by category
-  // TODO unique pointer
   std::map<std::string, std::map<std::string, std::unique_ptr<Structure>>> structures;
-
-  // lists of all groups in Polyscope
   std::map<std::string, std::unique_ptr<Group>> groups;
-
-  // representative length scale for all registered structures
   float lengthScale = 1.;
-
-  // axis-aligned bounding box for all registered structures
   std::tuple<glm::vec3, glm::vec3> boundingBox =
       std::tuple<glm::vec3, glm::vec3>{glm::vec3{-1., -1., -1.}, glm::vec3{1., 1., 1.}};
-
-  // list of all slice planes in the scene
   std::vector<std::unique_ptr<SlicePlane>> slicePlanes;
-
-  // list of all widgets in the scene (the memory is NOT owned here, they're just refs)
   std::vector<WeakHandle<Widget>> widgets;
-
-  // should we allow default trackball mouse camera interaction?
-  // Needs more interactions on when to turn this on/off
   bool doDefaultMouseInteraction = true;
-
-  // a callback function used to render a "user" gui
   std::function<void()> userCallback = nullptr;
 
 
@@ -102,7 +81,7 @@ struct Context {
   int initWindowPosX = 20;
   int initWindowPosY = 20;
   bool windowResizable = true;
-  NavigateStyle style = NavigateStyle::Turntable;
+  NavigateStyle navigateStyle = NavigateStyle::Turntable;
   UpDir upDir = UpDir::YUp;
   FrontDir frontDir = FrontDir::ZFront;
   double moveScale = 1.0;
