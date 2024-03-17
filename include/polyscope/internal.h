@@ -21,10 +21,10 @@ namespace internal {
 uint64_t getNextUniqueID();
 
 // track various fire-once warnings
-extern bool pointCloudEfficiencyWarningReported;
+extern bool& pointCloudEfficiencyWarningReported;
 
 // global members
-extern FloatingQuantityStructure* globalFloatingQuantityStructure;
+extern FloatingQuantityStructure*& globalFloatingQuantityStructure;
 
 } // namespace internal
 } // namespace polyscope

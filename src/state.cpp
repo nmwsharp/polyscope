@@ -6,19 +6,20 @@ namespace polyscope {
 
 namespace state {
 
-bool initialized = false;
-std::string backend = "";
-float lengthScale = 1.0;
-std::tuple<glm::vec3, glm::vec3> boundingBox =
-    std::tuple<glm::vec3, glm::vec3>{glm::vec3{-1., -1., -1.}, glm::vec3{1., 1., 1.}};
-std::map<std::string, std::map<std::string, std::unique_ptr<Structure>>> structures;
-std::map<std::string, std::unique_ptr<Group>> groups;
-std::function<void()> userCallback = nullptr;
-bool doDefaultMouseInteraction = true;
 
-// Lists of things
-std::vector<WeakHandle<Widget>> widgets;
-std::vector<std::unique_ptr<SlicePlane>> slicePlanes;
+Context globalContext;
+
+// Map all of the named global variables as references to the context struct
+bool& initialized = globalContext.initialized;
+std::string& backend = globalContext.backend;
+std::map<std::string, std::map<std::string, std::unique_ptr<Structure>>>& structures = globalContext.structures;
+std::map<std::string, std::unique_ptr<Group>>& groups = globalContext.groups;
+float& lengthScale = globalContext.lengthScale;
+std::tuple<glm::vec3, glm::vec3>& boundingBox = globalContext.boundingBox;
+std::vector<std::unique_ptr<SlicePlane>>& slicePlanes = globalContext.slicePlanes;
+std::vector<WeakHandle<Widget>>& widgets = globalContext.widgets;
+bool& doDefaultMouseInteraction = globalContext.doDefaultMouseInteraction;
+std::function<void()>& userCallback = globalContext.userCallback;
 
 } // namespace state
 } // namespace polyscope

@@ -37,35 +37,38 @@ using polyscope::UpDir;
 
 // NOTE: users should use setters to set these if they exist, otherwise updates
 // may not be applied immediately.
-extern int bufferWidth;
-extern int bufferHeight;
-extern int windowWidth;
-extern int windowHeight;
-extern int initWindowPosX;
-extern int initWindowPosY;
-extern bool windowResizable;
-extern NavigateStyle style;
-extern UpDir upDir;
-extern FrontDir frontDir;
-extern double moveScale;
-extern double nearClipRatio;
-extern double farClipRatio;
-extern std::array<float, 4> bgColor;
+extern int& bufferWidth;
+extern int& bufferHeight;
+extern int& windowWidth;
+extern int& windowHeight;
+extern int& initWindowPosX;
+extern int& initWindowPosY;
+extern bool& windowResizable;
+extern NavigateStyle& style;
+extern UpDir& upDir;
+extern FrontDir& frontDir;
+extern double& moveScale;
+extern double& nearClipRatio;
+extern double& farClipRatio;
+extern std::array<float, 4>& bgColor;
 
 // Current view camera parameters
 // TODO deprecate these one day, and just use a CameraParameters member instead. But this would break existing code, so
 // for now we leave these as-is and wrap inputs/outputs to a CameraParameters
-extern glm::mat4x4 viewMat;
-extern double fov; // in the y direction
-extern ProjectionMode projectionMode;
+extern glm::mat4x4& viewMat;
+extern double& fov; // in the y direction
+extern ProjectionMode& projectionMode;
 
 // "Flying" view
-extern bool midflight;
-extern float flightStartTime;
-extern float flightEndTime;
-extern glm::dualquat flightTargetViewR, flightInitialViewR;
-extern glm::vec3 flightTargetViewT, flightInitialViewT;
-extern float flightTargetFov, flightInitialFov;
+extern bool& midflight;
+extern float& flightStartTime;
+extern float& flightEndTime;
+extern glm::dualquat& flightTargetViewR;
+extern glm::dualquat& flightInitialViewR;
+extern glm::vec3& flightTargetViewT;
+extern glm::vec3& flightInitialViewT;
+extern float& flightTargetFov;
+extern float& flightInitialFov;
 
 // Default values
 extern const double defaultNearClipRatio;

@@ -2,6 +2,8 @@
 
 #include "polyscope/internal.h"
 
+#include "polyscope/polyscope.h"
+
 namespace polyscope {
 namespace internal {
 
@@ -9,8 +11,8 @@ uint64_t uniqueID = 42;
 
 uint64_t getNextUniqueID() { return uniqueID++; }
 
-bool pointCloudEfficiencyWarningReported = false;
-FloatingQuantityStructure* globalFloatingQuantityStructure = nullptr;
+bool& pointCloudEfficiencyWarningReported = state::globalContext.pointCloudEfficiencyWarningReported;
+FloatingQuantityStructure*& globalFloatingQuantityStructure = state::globalContext.globalFloatingQuantityStructure;
 
 } // namespace internal
 } // namespace polyscope

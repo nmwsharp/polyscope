@@ -13,38 +13,42 @@ using json = nlohmann::json;
 namespace polyscope {
 namespace view {
 
+
 // Storage for state variables
-int windowWidth = 1280;
-int windowHeight = 720;
-int bufferWidth = -1;
-int bufferHeight = -1;
-int initWindowPosX = 20;
-int initWindowPosY = 20;
-bool windowResizable = true;
-NavigateStyle style = NavigateStyle::Turntable;
-UpDir upDir = UpDir::YUp;
-FrontDir frontDir = FrontDir::ZFront;
-double moveScale = 1.0;
+int& bufferWidth = state::globalContext.bufferWidth;
+int& bufferHeight = state::globalContext.bufferHeight;
+int& windowWidth = state::globalContext.windowWidth;
+int& windowHeight = state::globalContext.windowHeight;
+int& initWindowPosX = state::globalContext.initWindowPosX;
+int& initWindowPosY = state::globalContext.initWindowPosY;
+bool& windowResizable = state::globalContext.windowResizable;
+NavigateStyle& style = state::globalContext.style; // TODO name
+UpDir& upDir = state::globalContext.upDir;
+FrontDir& frontDir = state::globalContext.frontDir;
+double& moveScale = state::globalContext.moveScale;
+double& nearClipRatio = state::globalContext.nearClipRatio;
+double& farClipRatio = state::globalContext.farClipRatio;
+std::array<float, 4>& bgColor = state::globalContext.bgColor;
+glm::mat4x4& viewMat = state::globalContext.viewMat;
+double& fov = state::globalContext.fov;
+ProjectionMode& projectionMode = state::globalContext.projectionMode;
+bool& midflight = state::globalContext.midflight;
+float& flightStartTime = state::globalContext.flightStartTime;
+float& flightEndTime = state::globalContext.flightEndTime;
+glm::dualquat& flightTargetViewR = state::globalContext.flightTargetViewR;
+glm::dualquat& flightInitialViewR = state::globalContext.flightInitialViewR;
+glm::vec3& flightTargetViewT = state::globalContext.flightTargetViewT;
+glm::vec3& flightInitialViewT = state::globalContext.flightInitialViewT;
+float& flightTargetFov = state::globalContext.flightTargetFov;
+float& flightInitialFov = state::globalContext.flightInitialFov;
+
+
+// Default values
 const double defaultNearClipRatio = 0.005;
 const double defaultFarClipRatio = 20.0;
 const double defaultFov = 45.;
-const double minFov = 5.;
-const double maxFov = 160.;
-double fov = defaultFov;
-double nearClipRatio = defaultNearClipRatio;
-double farClipRatio = defaultFarClipRatio;
-ProjectionMode projectionMode = ProjectionMode::Perspective;
-std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 0.0}};
-
-glm::mat4x4 viewMat;
-
-bool midflight = false;
-float flightStartTime = -1;
-float flightEndTime = -1;
-glm::dualquat flightTargetViewR, flightInitialViewR;
-glm::vec3 flightTargetViewT, flightInitialViewT;
-float flightTargetFov, flightInitialFov;
-
+const double minFov = 5.;   // for UI
+const double maxFov = 160.; // for UI
 
 // Small helpers
 std::string to_string(ProjectionMode mode) {

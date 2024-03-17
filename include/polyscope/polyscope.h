@@ -10,6 +10,7 @@
 
 #include "imgui.h"
 
+#include "polyscope/context.h"
 #include "polyscope/group.h"
 #include "polyscope/internal.h"
 #include "polyscope/messages.h"
@@ -31,6 +32,8 @@ namespace polyscope {
 // forward declarations
 class Structure;
 class Group;
+class SlicePlane;
+class Widget;
 
 // Initialize polyscope, including windowing system and openGL. Should be called exactly once at the beginning of a
 // program. If initialization fails in any way, an exception will be thrown.
@@ -63,39 +66,46 @@ void shutdown();
 namespace state {
 
 // has polyscope::init() been called?
-extern bool initialized;
+extern bool& initialized;
 
 // what backend was set on initialization
-extern std::string backend;
+extern std::string& backend;
 
 // lists of all structures in Polyscope, by category
 // TODO unique pointer
-extern std::map<std::string, std::map<std::string, std::unique_ptr<Structure>>> structures;
+extern std::map<std::string, std::map<std::string, std::unique_ptr<Structure>>>& structures;
 
 // lists of all groups in Polyscope
-extern std::map<std::string, std::unique_ptr<Group>> groups;
+extern std::map<std::string, std::unique_ptr<Group>>& groups;
 
 // representative length scale for all registered structures
-extern float lengthScale;
+extern float& lengthScale;
 
 // axis-aligned bounding box for all registered structures
-extern std::tuple<glm::vec3, glm::vec3> boundingBox;
+extern std::tuple<glm::vec3, glm::vec3>& boundingBox;
 
 // list of all slice planes in the scene
-extern std::vector<std::unique_ptr<SlicePlane>> slicePlanes;
+extern std::vector<std::unique_ptr<SlicePlane>>& slicePlanes;
 
 // list of all widgets in the scene (the memory is NOT owned here, they're just refs)
-extern std::vector<WeakHandle<Widget>> widgets;
+extern std::vector<WeakHandle<Widget>>& widgets;
 
 // should we allow default trackball mouse camera interaction?
 // Needs more interactions on when to turn this on/off
-extern bool doDefaultMouseInteraction;
+extern bool& doDefaultMouseInteraction;
 
 // a callback function used to render a "user" gui
-extern std::function<void()> userCallback;
+extern std::function<void()>& userCallback;
 
 // representative center for all registered structures
 glm::vec3 center();
+
+// The global context, all of the variables above are secretly references to members of this context.
+// This is useful because it means the lists get destructed in a predictable order on shutdown, rather than the
+// platform-defined order we get if they are just static globals.
+// One day we may refactor Polyscope to explicitly track contexts and allow the use of multiple contexts. For now there
+// is always exactly one global context object.
+extern Context globalContext;
 
 } // namespace state
 
