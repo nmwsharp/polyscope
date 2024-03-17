@@ -11,6 +11,7 @@
 #include "glm/gtx/norm.hpp" // necessary for dual_quaternion below
 #undef GLM_ENABLE_EXPERIMENTAL
 
+#include <array>
 #include <map>
 #include <memory>
 #include <set>
