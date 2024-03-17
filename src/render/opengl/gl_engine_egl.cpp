@@ -128,7 +128,9 @@ void initializeRenderEngine_egl() {
 }
 
 GLEngineEGL::GLEngineEGL() {}
-GLEngineEGL::~GLEngineEGL() {}
+GLEngineEGL::~GLEngineEGL() {
+  // eglTerminate(eglDisplay) // TODO
+}
 
 void GLEngineEGL::initialize() {
 
@@ -136,6 +138,10 @@ void GLEngineEGL::initialize() {
 
   // Get the default display
   eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+  if (eglDisplay == EGL_NO_DISPLAY) {
+    checkEGLError(false);
+    exception("ERROR: Failed to initialize EGL, could not get default display");
+  }
 
   // Configure
   EGLint majorVer, minorVer;
@@ -200,7 +206,8 @@ void GLEngineEGL::initialize() {
 #endif
   if (options::verbosity > 0) {
     std::cout << options::printPrefix << "Backend: openGL3_egl -- "
-              << "Loaded openGL version: " << glGetString(GL_VERSION) << std::endl;
+              << "Loaded openGL version: " << glGetString(GL_VERSION) << " -- "
+              << "EGL version: " << majorVer << "." << minorVer << std::endl;
   }
 
   { // Manually create the screen frame buffer

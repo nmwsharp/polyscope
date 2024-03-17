@@ -76,7 +76,6 @@ public:
 protected:
   // Internal windowing and engine details
   EGLDisplay eglDisplay;
-  // EGLSurface eglSurface;
   EGLContext eglContext;
 };
 
