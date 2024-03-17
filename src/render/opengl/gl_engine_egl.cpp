@@ -139,7 +139,6 @@ void GLEngineEGL::initialize() {
   // Get the default display
   eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
   if (eglDisplay == EGL_NO_DISPLAY) {
-    checkEGLError(false);
     exception("ERROR: Failed to initialize EGL, could not get default display");
   }
 
