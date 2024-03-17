@@ -141,6 +141,7 @@ void GLEngineEGL::initialize() {
   EGLint majorVer, minorVer;
   bool success = eglInitialize(eglDisplay, &majorVer, &minorVer);
   if (!success) {
+    checkEGLError(false);
     exception("ERROR: Failed to initialize EGL");
   }
   checkEGLError();
