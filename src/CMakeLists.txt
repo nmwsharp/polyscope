@@ -227,6 +227,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/color_quantity.h
   ${INCLUDE_ROOT}/color_quantity.ipp
   ${INCLUDE_ROOT}/combining_hash_functions.h
+  ${INCLUDE_ROOT}/context.h
   ${INCLUDE_ROOT}/curve_network.h
   ${INCLUDE_ROOT}/curve_network.ipp
   ${INCLUDE_ROOT}/curve_network_color_quantity.h
