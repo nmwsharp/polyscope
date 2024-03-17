@@ -70,7 +70,8 @@ void initializeRenderEngine(std::string backend) {
       initSucces = true;
     } catch (const std::exception& e) {
       if (options::verbosity > 0) {
-        info("Attempting automatic initialization. Could not initialize backend [openGL3_egl]. Message: " + e.what());
+        info("Attempting automatic initialization. Could not initialize backend [openGL3_egl]. Message: " +
+             std::string(e.what()));
       }
     }
     if (initSucces) {
