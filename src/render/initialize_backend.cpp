@@ -79,7 +79,7 @@ void initializeRenderEngine(std::string backend) {
         info("Automatic initialization could not create an interactive backend, and created a headless backend "
              "instead. This likely means no displays are available. With the headless backend, you can still run "
              "Polyscope and even render, for instance to record screenshots. However no interactive windows can be "
-             "created.")
+             "created.");
       }
       return;
     }
