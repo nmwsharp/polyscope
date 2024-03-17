@@ -29,10 +29,10 @@ protected:
   // Called before the first test in this test suite.
   // Can be omitted if not needed.
   static void SetUpTestSuite() {
-    polyscope::init(testBackend);
     polyscope::options::enableRenderErrorChecks = true;
     polyscope::options::errorsThrowExceptions = true;
     polyscope::options::hideWindowAfterShow = false;
+    polyscope::init(testBackend);
   }
 
   // Per-test-suite tear-down.
