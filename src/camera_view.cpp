@@ -274,7 +274,10 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
     addPolygon({triangleTop, triangleRight, triangleLeft});
 
     pickFrameProgram->setAttribute("a_vertexPositions", positions);
-    // pickFrameProgram->setAttribute("a_vertexNormals", normals); // unused
+    if (pickFrameProgram->hasAttribute("a_vertexNormals")) {
+      // // this is not actually used, but it only gets optimized out on some platforms, not all
+      pickFrameProgram->setAttribute("a_vertexNormals", normals);
+    }
     pickFrameProgram->setAttribute("a_barycoord", bcoord);
 
     size_t nFaces = 7;
