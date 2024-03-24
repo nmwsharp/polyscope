@@ -7,7 +7,6 @@
 #include "polyscope/utilities.h"
 
 #ifdef __APPLE__
-// TODO should we IFDEF this away instead?
 #error "EGL backend is not supported on macOS. Disable it in the CMake build options."
 #else
 #include "glad/glad.h"
