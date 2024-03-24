@@ -78,6 +78,11 @@ endif()
 if("${POLYSCOPE_BACKEND_OPENGL3_EGL}")
   message("Polyscope backend openGL3_egl enabled")
 
+  # this only supports headless rendering, and as of Mar 2024 headless rendering seems to only be available on nvidia drivers.
+  # 
+  # This adds an additional requirement for EGL.h headers, get them on Ubuntu & friends via
+  # sudo apt-get install libegl1-mesa-dev
+
   list(APPEND BACKEND_HEADERS
     ${INCLUDE_ROOT}render/opengl/gl_engine_egl.h
     ${INCLUDE_ROOT}render/opengl/shaders/common.h
