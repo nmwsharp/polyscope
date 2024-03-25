@@ -75,13 +75,43 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
   add_definitions(-DPOLYSCOPE_BACKEND_OPENGL3_GLFW_ENABLED)
 endif()
 
+## some logic to decide whether or not EGL is available and whether we want to build with it
+include(CheckIncludeFileCXX)
+CHECK_INCLUDE_FILE_CXX("EGL/egl.h" HAVE_EGL_LIB)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  set(IS_LINUX TRUE)
+else()
+  set(IS_LINUX FALSE)
+endif()
+
+if(POLYSCOPE_BACKEND_OPENGL3_EGL STREQUAL "AUTO")
+  if(IS_LINUX AND HAVE_EGL_LIB) # "AUTO" policy: only enable if we're on linux and EGL libs seem to be present
+    set(POLYSCOPE_BACKEND_OPENGL3_EGL ON)
+  else()
+    set(POLYSCOPE_BACKEND_OPENGL3_EGL OFF)
+  endif()
+elseif(POLYSCOPE_BACKEND_OPENGL3_EGL) # if "TRUE" (or "ON" or "YES" etc etc)
+  # sanity check that we can actually use the EGL backend
+  if(NOT IS_LINUX)
+    message(FATAL_ERROR "EGL backend is only supported on linux. Disable it with POLYSCOPE_BACKEND_OPENGL3_EGL=False")
+  endif()
+  if(NOT HAVE_EGL_LIB)
+    message(FATAL_ERROR "EGL backend requires EGL headers, but 'EGL/egl.h' was not found. On Ubuntu, try 'apt-get install libegl1-mesa-dev'")
+  endif()
+
+  # we should be good-to-go for EGL
+
+else()
+  # nothing to do, already disabled
+endif()
+
+
+
+
 if("${POLYSCOPE_BACKEND_OPENGL3_EGL}")
   message("Polyscope backend openGL3_egl enabled")
 
   # this only supports headless rendering, and as of Mar 2024 headless rendering seems to only be available on nvidia drivers.
-  # 
-  # This adds an additional requirement for EGL.h headers, get them on Ubuntu & friends via
-  # sudo apt-get install libegl1-mesa-dev
 
   list(APPEND BACKEND_HEADERS
     ${INCLUDE_ROOT}render/opengl/gl_engine_egl.h
