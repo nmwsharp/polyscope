@@ -29,7 +29,6 @@
 #include "simple_dot_mesh_parser.h"
 #include "surface_mesh_io.h"
 
-#define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/string_cast.hpp"
 
 #include "stb_image.h"

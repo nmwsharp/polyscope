@@ -19,10 +19,8 @@
 #include "glm/mat4x4.hpp"
 #include "glm/vec3.hpp"
 #include "glm/vec4.hpp"
-#define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/dual_quaternion.hpp"
 #include "glm/gtx/norm.hpp" // necessary for dual_quaternion below
-#undef GLM_ENABLE_EXPERIMENTAL
 
 namespace polyscope {
 namespace view {
