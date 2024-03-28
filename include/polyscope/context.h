@@ -5,9 +5,10 @@
 #include <polyscope/types.h>
 #include <polyscope/weak_handle.h>
 
+
 #include <glm/glm.hpp>
-#include "glm/gtx/dual_quaternion.hpp"
-#include "glm/gtx/norm.hpp" // necessary for dual_quaternion below
+#include <glm/gtx/dual_quaternion.hpp>
+#include <glm/gtx/norm.hpp>
 
 #include <array>
 #include <map>

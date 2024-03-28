@@ -43,7 +43,6 @@ namespace backend_openGL3 {
 class GLEngineGLFW : public GLEngine {
 
 public:
-
   GLEngineGLFW();
   virtual ~GLEngineGLFW();
 
@@ -52,7 +51,7 @@ public:
   void swapDisplayBuffers() override;
 
   // === Windowing and framework things
-  
+
   void makeContextCurrent() override;
   void pollEvents() override;
 
@@ -73,17 +72,15 @@ public:
 
 
   // === ImGui
-  
+
   void initializeImGui() override;
   void shutdownImGui() override;
   void ImGuiNewFrame() override;
   void ImGuiRender() override;
 
 protected:
-
   // Internal windowing and engine details
   GLFWwindow* mainWindow = nullptr;
-
 };
 
 } // namespace backend_openGL3

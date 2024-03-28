@@ -439,7 +439,6 @@ protected:
 class Engine {
 
 public:
-
   Engine();
   virtual ~Engine();
 
@@ -508,8 +507,9 @@ public:
   virtual void setClipboardText(std::string text) = 0;
 
   // === ImGui
-  
-  // NOTE: the imgui backend depends on the window manager (e.g. GLFW), so these must be implemented by the lowest-level concrete engine implementation
+
+  // NOTE: the imgui backend depends on the window manager (e.g. GLFW), so these must be implemented by the lowest-level
+  // concrete engine implementation
   virtual void initializeImGui() = 0;
   virtual void shutdownImGui() = 0;
   virtual void ImGuiNewFrame() = 0;
