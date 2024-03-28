@@ -431,7 +431,7 @@ void setWindowSize(int width, int height) {
 
 std::tuple<int, int> getWindowSize() { return std::tuple<int, int>(view::windowWidth, view::windowHeight); }
 
-std::tuple<int, int> getBufferSize() { return std::tuple<int, int>(view::bufferWidth, view::bufferWidth); }
+std::tuple<int, int> getBufferSize() { return std::tuple<int, int>(view::bufferWidth, view::bufferHeight); }
 
 void setViewToCamera(const CameraParameters& p) {
   viewMat = p.getE();
