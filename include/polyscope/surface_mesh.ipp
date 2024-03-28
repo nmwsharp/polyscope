@@ -136,6 +136,8 @@ void SurfaceMesh::setEdgePermutation(const T& perm, size_t expectedSize) {
 
   // now that we have edge indexing, enable edge-related stuff
   markEdgesAsUsed();
+
+  triangleAllEdgeInds.recomputeIfPopulated();
 }
 
 template <class T>
@@ -163,6 +165,8 @@ void SurfaceMesh::setHalfedgePermutation(const T& perm, size_t expectedSize) {
   }
 
   markHalfedgesAsUsed();
+  triangleAllEdgeInds.recomputeIfPopulated();
+  triangleAllHalfedgeInds.recomputeIfPopulated();
 }
 
 template <class T>
@@ -190,6 +194,8 @@ void SurfaceMesh::setCornerPermutation(const T& perm, size_t expectedSize) {
   }
 
   markCornersAsUsed();
+  triangleAllEdgeInds.recomputeIfPopulated();
+  triangleAllCornerInds.recomputeIfPopulated();
 }
 
 
