@@ -6,7 +6,7 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 // High level pipeline
 extern const ShaderStageSpecification FLEX_GRIDCUBE_VERT_SHADER;
@@ -24,6 +24,6 @@ extern const ShaderReplacementRule GRIDCUBE_CONSTANT_PICK;
 extern const ShaderReplacementRule GRIDCUBE_CULLPOS_FROM_CENTER;
 
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

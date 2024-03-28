@@ -6,7 +6,7 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 extern const ShaderStageSpecification TEXTURE_DRAW_VERT_SHADER;
 extern const ShaderStageSpecification TEXTURE_DRAW_UPPERLEFT_VERT_SHADER;
@@ -50,6 +50,6 @@ extern const ShaderReplacementRule SHADE_NORMAL_FROM_VIEWPOS_VAR;
 extern const ShaderStageSpecification TEXTURE_DRAW_VERT_SHADER;
 extern const ShaderStageSpecification SPHEREBG_DRAW_VERT_SHADER;
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

@@ -99,6 +99,9 @@ TEST_F(PolyscopeTest, EmptyBuffer) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, Screenshot) {
+  polyscope::screenshot("test_screeshot.png");
+}
 
 // ============================================================
 // =============== Ground plane tests

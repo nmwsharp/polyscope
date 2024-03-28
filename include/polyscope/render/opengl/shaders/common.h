@@ -8,10 +8,10 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 extern const char* shaderCommonSource;
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

@@ -6,7 +6,7 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 // High level pipeline
 extern const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER;
@@ -24,6 +24,6 @@ extern const ShaderReplacementRule TRANSPARENCY_STRUCTURE;
 extern const ShaderReplacementRule TRANSPARENCY_PEEL_STRUCTURE;
 extern const ShaderReplacementRule TRANSPARENCY_PEEL_GROUND;
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

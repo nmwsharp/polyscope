@@ -6,36 +6,27 @@
 #include "polyscope/render/engine.h"
 #include "polyscope/utilities.h"
 
-#ifdef __APPLE__
-#define GLFW_INCLUDE_GLCOREARB
-#include "GLFW/glfw3.h"
-#else
-#include "glad/glad.h"
-// glad must come first
-#include "GLFW/glfw3.h"
-#endif
-
-#ifdef _WIN32
-#undef APIENTRY
-#define GLFW_EXPOSE_NATIVE_WIN32
-#define GLFW_EXPOSE_NATIVE_WGL
-#include <GLFW/glfw3native.h>
-#endif
-
-#include "imgui.h"
-#define IMGUI_IMPL_OPENGL_LOADER_GLAD
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_opengl3.h"
-
 #include <unordered_map>
 
 // Note: DO NOT include this header throughout polyscope, and do not directly make openGL calls. This header should only
 // be used to construct an instance of Engine. engine.h gives the render API, all render calls should pass through that.
 
+#ifdef __APPLE__
+// this means this file can only compile openGL on apple if we are also using glfw, but that's fine, because we only
+// ever use the two together on apple
+#define GLFW_INCLUDE_GLCOREARB
+#include "GLFW/glfw3.h"
+#else
+#include "glad/glad.h"
+#endif
+
+#ifdef _WIN32
+#undef APIENTRY
+#endif
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 // Some very nice typdefs
 typedef GLuint TextureBufferHandle;
@@ -377,12 +368,11 @@ private:
 class GLEngine : public Engine {
 public:
   GLEngine();
+  virtual ~GLEngine();
 
   // High-level control
-  void initialize();
   void checkError(bool fatal = false) override;
 
-  void swapDisplayBuffers() override;
   std::vector<unsigned char> readDisplayBuffer() override;
 
   // Manage render state
@@ -391,28 +381,6 @@ public:
   void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) override;
   void setBackfaceCull(bool newVal) override;
 
-  // === Windowing and framework things
-  void makeContextCurrent() override;
-  void focusWindow() override;
-  void showWindow() override;
-  void hideWindow() override;
-  void updateWindowSize(bool force = false) override;
-  void applyWindowSize() override;
-  void setWindowResizable(bool newVal) override;
-  bool getWindowResizable() override;
-  std::tuple<int, int> getWindowPos() override;
-  bool windowRequestsClose() override;
-  void pollEvents() override;
-  bool isKeyPressed(char c) override; // for lowercase a-z and 0-9 only
-  int getKeyCode(char c) override;    // for lowercase a-z and 0-9 only
-  std::string getClipboardText() override;
-  void setClipboardText(std::string text) override;
-
-  // ImGui
-  void initializeImGui() override;
-  void shutdownImGui() override;
-  void ImGuiNewFrame() override;
-  void ImGuiRender() override;
 
   // === Factory methods
 
@@ -462,9 +430,6 @@ protected:
   // Helpers
   virtual void createSlicePlaneFliterRule(std::string name) override;
 
-  // Internal windowing and engine details
-  GLFWwindow* mainWindow = nullptr;
-
   // Shader program & rule caches
   std::unordered_map<std::string, std::pair<std::vector<ShaderStageSpecification>, DrawMode>> registeredShaderPrograms;
   std::unordered_map<std::string, ShaderReplacementRule> registeredShaderRules;
@@ -478,6 +443,6 @@ protected:
                                                         ShaderReplacementDefaults defaults);
 };
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

@@ -8,7 +8,7 @@
 
 namespace polyscope {
 namespace render{
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 // this uses the default openGL convention of origin in the lower left
 const ShaderStageSpecification  TEXTURE_DRAW_VERT_SHADER =  {
@@ -790,6 +790,6 @@ const ShaderReplacementRule SHADE_NORMAL_FROM_VIEWPOS_VAR (
 
 // clang-format on
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

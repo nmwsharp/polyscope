@@ -8,7 +8,7 @@
 
 namespace polyscope {
 namespace render{
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER = {
     
@@ -304,6 +304,6 @@ const ShaderReplacementRule TRANSPARENCY_PEEL_GROUND (
 
 // clang-format on
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

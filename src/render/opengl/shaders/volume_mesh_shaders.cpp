@@ -4,7 +4,7 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 const ShaderStageSpecification SLICE_TETS_VERT_SHADER = {
 
@@ -391,6 +391,6 @@ const ShaderReplacementRule SLICE_TETS_PROPAGATE_VALUE(
     },
     /* textures */ {});
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 }; // namespace polyscope

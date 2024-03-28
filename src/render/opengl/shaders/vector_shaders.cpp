@@ -5,7 +5,7 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 // clang-format off
 
@@ -333,6 +333,6 @@ const ShaderReplacementRule VECTOR_CULLPOS_FROM_TAIL(
 
 // clang-format on
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

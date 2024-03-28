@@ -5,7 +5,7 @@
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 // clang-format off
 
@@ -646,6 +646,6 @@ const ShaderReplacementRule MESH_PROPAGATE_PICK_SIMPLE ( // this one does faces 
 
 // clang-format on
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope
