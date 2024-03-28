@@ -926,6 +926,14 @@ void show(size_t forFrames) {
 
 void unshow() { unshowRequested = true; }
 
+bool windowRequestsClose() {
+  if (render::engine && render::engine->windowRequestsClose()) {
+    return true;
+  }
+
+  return false;
+}
+
 void shutdown() {
 
   // TODO should we make an effort to destruct everything here?
