@@ -171,7 +171,8 @@ void VolumeGridNodeScalarQuantity::createIsosurfaceProgram() {
   // Transform the result to be aligned with our volume's spatial layout
   glm::vec3 scale = parent.gridSpacing();
   for (auto& p : isosurfaceMesh.vertices) {
-    p = p * scale + parent.getBoundMin();
+    // swizzle to account for change of coordinate/buffer ordering in the MC lib
+    p = glm::vec3{p.z, p.y, p.x} * scale + parent.getBoundMin();
   }
 
   std::vector<std::string> isoProgramRules{"SHADE_BASECOLOR", "PROJ_AND_INV_PROJ_MAT",
@@ -218,7 +219,8 @@ SurfaceMesh* VolumeGridNodeScalarQuantity::registerIsosurfaceAsMesh(std::string 
                     parent.getGridNodeDim().z, isosurfaceMesh);
   glm::vec3 scale = parent.gridSpacing();
   for (auto& p : isosurfaceMesh.vertices) {
-    p = p * scale + parent.getBoundMin();
+    // swizzle to account for change of coordinate/buffer ordering in the MC lib
+    p = glm::vec3{p.z, p.y, p.x} * scale + parent.getBoundMin();
   }
 
   return registerSurfaceMesh(structureName, isosurfaceMesh.vertices,
