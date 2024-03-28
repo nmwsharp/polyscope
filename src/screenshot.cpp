@@ -121,4 +121,44 @@ void screenshot(bool transparentBG) {
 
 void resetScreenshotIndex() { state::screenshotInd = 0; }
 
+
+std::vector<unsigned char> screenshotToBuffer(bool transparentBG) {
+
+  render::engine->useAltDisplayBuffer = true;
+  if (transparentBG) render::engine->lightCopy = true; // copy directly in to buffer without blending
+
+  // == Make sure we render first
+  processLazyProperties();
+
+  // save the redraw requested bit and restore it below
+  bool requestedAlready = redrawRequested();
+  requestRedraw();
+
+  draw(false, false);
+
+  if (requestedAlready) {
+    requestRedraw();
+  }
+
+  // these _should_ always be accurate
+  int w = view::bufferWidth;
+  int h = view::bufferHeight;
+  std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
+
+  // Set alpha to 1
+  if (!transparentBG) {
+    for (int j = 0; j < h; j++) {
+      for (int i = 0; i < w; i++) {
+        int ind = i + j * w;
+        buff[4 * ind + 3] = std::numeric_limits<unsigned char>::max();
+      }
+    }
+  }
+
+  render::engine->useAltDisplayBuffer = false;
+  if (transparentBG) render::engine->lightCopy = false;
+
+  return buff;
+}
+
 } // namespace polyscope

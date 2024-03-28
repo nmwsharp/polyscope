@@ -99,8 +99,14 @@ TEST_F(PolyscopeTest, EmptyBuffer) {
   polyscope::removeAllStructures();
 }
 
-TEST_F(PolyscopeTest, Screenshot) {
-  polyscope::screenshot("test_screeshot.png");
+TEST_F(PolyscopeTest, Screenshot) { polyscope::screenshot("test_screeshot.png"); }
+
+TEST_F(PolyscopeTest, ScreenshotBuffer) {
+  std::vector<unsigned char> buff = polyscope::screenshotToBuffer();
+  EXPECT_EQ(buff.size(), polyscope::view::bufferWidth * polyscope::view::bufferHeight * 4);
+
+  std::vector<unsigned char> buff2 = polyscope::screenshotToBuffer(false);
+  EXPECT_EQ(buff2.size(), polyscope::view::bufferWidth * polyscope::view::bufferHeight * 4);
 }
 
 // ============================================================
