@@ -129,7 +129,7 @@ void initializeRenderEngine_egl() {
 
 GLEngineEGL::GLEngineEGL() {}
 GLEngineEGL::~GLEngineEGL() {
-  // eglTerminate(eglDisplay) // TODO
+  // eglTerminate(eglDisplay) // TODO handle termination
 }
 
 void GLEngineEGL::initialize() {

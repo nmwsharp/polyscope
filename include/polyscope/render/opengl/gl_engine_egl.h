@@ -16,9 +16,6 @@
 
 
 #include "imgui.h"
-#define IMGUI_IMPL_OPENGL_LOADER_GLAD
-#include "backends/imgui_impl_glfw.h" // TODO
-#include "backends/imgui_impl_opengl3.h"
 
 #include "polyscope/render/opengl/gl_engine.h"
 
