@@ -19,6 +19,7 @@ endif()
 if(NOT TARGET glm::glm)
   add_subdirectory(glm)
   target_compile_definitions(glm INTERFACE GLM_ENABLE_EXPERIMENTAL)
+  set_target_properties(glm PROPERTIES LINKER_LANGUAGE CXX)
 endif()
 
 ## Imgui

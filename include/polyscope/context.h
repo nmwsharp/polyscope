@@ -6,10 +6,8 @@
 #include <polyscope/weak_handle.h>
 
 #include <glm/glm.hpp>
-#define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/dual_quaternion.hpp"
 #include "glm/gtx/norm.hpp" // necessary for dual_quaternion below
-#undef GLM_ENABLE_EXPERIMENTAL
 
 #include <array>
 #include <map>
