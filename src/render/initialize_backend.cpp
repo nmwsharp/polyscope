@@ -49,7 +49,7 @@ void initializeRenderEngine(std::string backend) {
 
 #ifdef POLYSCOPE_BACKEND_OPENGL3_GLFW_ENABLED
     // First try GLFW, if available
-    backend = "openGL3_glfw";
+    engineBackendName  = "openGL3_glfw";
     try {
       backend_openGL3::initializeRenderEngine_glfw();
       initSucces = true;
@@ -64,7 +64,7 @@ void initializeRenderEngine(std::string backend) {
 
 #ifdef POLYSCOPE_BACKEND_OPENGL3_EGL_ENABLED
     // Then, try EGL if available
-    backend = "openGL3_egl";
+    engineBackendName  = "openGL3_egl";
     try {
       backend_openGL3::initializeRenderEngine_egl();
       initSucces = true;
