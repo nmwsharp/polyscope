@@ -882,9 +882,16 @@ int main(int argc, char** argv) {
       randTetracolors[i] = polyscope::Tetracolor(polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit());
     }
 
+    // Debug Tetracolor white
+    std::vector<polyscope::Tetracolor> tetraWhite(points.size());
+    for (size_t i = 0; i < points.size(); i++) {
+      tetraWhite[i] = polyscope::Tetracolor(1.0, 1.0, 1.0, 1.0);
+    }
+
     // Visualize Tricolors
     // polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random color", randTricolors);
     polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random tetracolors", randTetracolors);
+    // polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random tetracolors", tetraWhite);
 
   }
 

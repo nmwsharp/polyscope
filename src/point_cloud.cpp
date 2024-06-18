@@ -381,9 +381,6 @@ PointCloudColorQuantity* PointCloud::addColorQuantity(std::string name, const st
 
 PointCloudColorQuantity* PointCloud::addColorQuantity(std::string name, const std::vector<Tetracolor>& colors) {
   validateSize(colors, nPoints(), "point cloud color quantity " + name);
-  
-  std::cout << "hello from addColorQuantity Tetracolor overload" << std::endl;
-
   return addColorQuantityImpl(name, standardizeVectorArray<glm::vec4, 4>(colors));
 }
 
@@ -404,20 +401,25 @@ PointCloudColorQuantity* PointCloud::addColorQuantityImpl(std::string name, cons
 
   // Add a scalar quantity for each channel (R, G1, G2, B)
   std::vector<float> R_channel = extract_color_channel(colors, 0);
-  addScalarQuantity(name + " R", R_channel);
+  PointCloudScalarQuantity *q_red = addScalarQuantity(name + " R", R_channel);
+  q_red->setColorMap("grayscale");
 
   std::vector<float> G1_channel = extract_color_channel(colors, 1);
-  addScalarQuantity(name + " G1", G1_channel);
+  PointCloudScalarQuantity *q_g1 = addScalarQuantity(name + " G1", G1_channel);
+  q_g1->setColorMap("grayscale");
 
   std::vector<float> G2_channel = extract_color_channel(colors, 2);
-  addScalarQuantity(name + " G2", G2_channel);
+  PointCloudScalarQuantity *q_g2 = addScalarQuantity(name + " G2", G2_channel);
+  q_g2->setColorMap("grayscale");
 
   std::vector<float> B_channel = extract_color_channel(colors, 3);
-  addScalarQuantity(name + " B", B_channel);
+  PointCloudScalarQuantity *q_blue = addScalarQuantity(name + " B", B_channel);
+  q_blue->setColorMap("grayscale");
 
   // Add a scalar quantity for the Q-values
   std::vector<float> Q_values = get_Q_values(colors);
-  addScalarQuantity(name + " Q", Q_values);
+  PointCloudScalarQuantity *q_Q = addScalarQuantity(name + " Q", Q_values);
+  q_Q->setColorMap("grayscale");
 
   return q_tricolors;
 }

@@ -4,9 +4,11 @@
 
 #include "glm/vec3.hpp"
 #include "glm/vec4.hpp"
+#include "glm/mat4x4.hpp"
 
 namespace polyscope {
 
+extern glm::mat4 tetra_maxbasis_to_cone;
 
 class Tricolor {
 public:
@@ -60,11 +62,13 @@ std::vector<glm::vec3> adaptorF_custom_convertArrayOfVectorToStdVector(const std
 
 std::vector<glm::vec4> adaptorF_custom_convertArrayOfVectorToStdVector(const std::vector<Tetracolor>& inputData);
 
+std::vector<glm::vec3> convert_tetra_to_tri_dummy(const std::vector<glm::vec4>& tetra_data);
+
 std::vector<glm::vec3> convert_tetra_to_tri(const std::vector<glm::vec4>& tetra_data);
 
 // TODO: might want to template this function
-std::vector<float> extract_color_channel(const std::vector<glm::vec4>& colors, int ch);
+std::vector<float> extract_color_channel(const std::vector<glm::vec4>& tetra_data, int ch);
 
-std::vector<float> get_Q_values(const std::vector<glm::vec4>& tetracolors);
+std::vector<float> get_Q_values(const std::vector<glm::vec4>& tetra_data);
 
 } // namespace polyscope

@@ -103,7 +103,7 @@ adaptorF_custom_convertArrayOfVectorToStdVector(const std::vector<Tetracolor>& i
 
 // Convert from RG1G2B to RGB.
 // Dummy function at the moment.
-std::vector<glm::vec3> convert_tetra_to_tri(const std::vector<glm::vec4>& tetra_data) {
+std::vector<glm::vec3> convert_tetra_to_tri_dummy(const std::vector<glm::vec4>& tetra_data) {
   std::vector<glm::vec3> tri_data(tetra_data.size());
   for (size_t i = 0; i < tetra_data.size(); i++) {
     tri_data[i] = glm::vec3(tetra_data[i]);
@@ -111,19 +111,85 @@ std::vector<glm::vec3> convert_tetra_to_tri(const std::vector<glm::vec4>& tetra_
   return tri_data;
 }
 
+glm::mat4 tetra_maxbasis_to_cone = glm::mat4(
+  1.024611997285031526417134473128e-05, 5.311379457600336889688819042021e-02, 1.403566167392598096341771451989e-01, 2.339692167721606763652886229465e-01,
+  2.242812871777761639813936200838e-04, 3.866034406628113262449630838091e-01, 4.705599399499938439994650707376e-01, 4.900264687105190808402710445080e-01,
+  8.319914273605166776803798711626e-02, 6.207455522878053688629051976022e-01, 5.023677978953242639903464805684e-01, 4.362919654283259340843414975097e-01,
+  1.025172264985438008721985170268e+00, 9.346738062565414228988203149129e-02, 7.081496318011284984983433332673e-02, 4.822367006387873883399564078900e-02
+);
+
+glm::vec4 tetra_white_LMSQ_raw = glm::vec4(1.10860594, 1.15393017, 1.18409932, 1.20851132);
+
+glm::vec3 tri_white_LMS_raw = glm::vec3(1.01197671, 0.86641569, 0.56282207);
+
+glm::mat3 LMS_to_XYZ = glm::mat3(
+  1.94735469, 0.68990272, 0.00000000,
+  -1.41445123, 0.34832189, 0.00000000,
+  0.36476327, 0.00000000, 1.93485343
+);
+
+glm::mat3 XYZ_to_linRGB = glm::mat3(
+  3.2406, -0.9689, 0.0557,
+  -1.5372, 1.8758, -0.2040,
+  -0.4986, 0.0415, 1.0570
+);
+
+std::vector<glm::vec3> convert_tetra_to_tri(const std::vector<glm::vec4>& tetra_data) {
+  std::vector<glm::vec3> buf(tetra_data.size());
+
+  for (size_t i = 0; i < tetra_data.size(); i++) {
+    // Convert RG1G2B max basis to LMSQ [0, 1].
+    glm::vec4 LMSQ = tetra_maxbasis_to_cone * tetra_data[i];
+    LMSQ = LMSQ / tetra_white_LMSQ_raw;
+
+    // Convert LMSQ [0, 1] to LMS [0, 1] by dropping the Q-values.
+    buf[i] = glm::vec3(LMSQ);
+
+    // Convert LMS [0, 1] to LMS raw by scaling.
+    buf[i] = tri_white_LMS_raw * buf[i];
+
+    // Convert LMS raw to XYZ.
+    buf[i] = LMS_to_XYZ * buf[i];
+
+    // Convert XYZ to linearized RGB.
+    buf[i] = XYZ_to_linRGB * buf[i];
+
+    // Convert linearized RGB to sRGB.
+    for (size_t ch = 0; ch < 3; ch++) {
+      if (buf[i][ch] <= 0.0031308) {
+        buf[i][ch] *= 12.92;
+      } else {
+        buf[i][ch] = 1.055 * pow(buf[i][ch], 1.0 / 2.4) - 0.055;
+      }
+      buf[i][ch] = std::max(0.0f, std::min(buf[i][ch], 1.0f)); 
+    }
+  }
+  return buf;
+}
+
+
 // Extract a single color channel from a list of color vectors.
-std::vector<float> extract_color_channel(const std::vector<glm::vec4>& colors, int ch) {
-  std::vector<float> channel(colors.size());
-  for (size_t i = 0; i < colors.size(); i++) {
-    channel[i] = colors[i][ch];
+std::vector<float> extract_color_channel(const std::vector<glm::vec4>& tetra_data, int ch) {
+  std::vector<float> channel(tetra_data.size());
+  for (size_t i = 0; i < tetra_data.size(); i++) {
+    channel[i] = tetra_data[i][ch];
   }
   return channel;
 }
 
 // Get the Q-values from RG1G2B tetracolor data.
-std::vector<float> get_Q_values(const std::vector<glm::vec4>& tetracolors) {
-  // TODO: dummy implementation
-  return extract_color_channel(tetracolors, 0);
+std::vector<float> get_Q_values(const std::vector<glm::vec4>& tetra_data) {
+  std::vector<float> Q_values(tetra_data.size());
+
+  for (size_t i = 0; i < tetra_data.size(); i++) {
+    // Convert RG1G2B max basis to LMSQ [0, 1].
+    glm::vec4 LMSQ = tetra_maxbasis_to_cone * tetra_data[i];
+    LMSQ = LMSQ / tetra_white_LMSQ_raw;
+
+    // Select just the Q-value.
+    Q_values[i] = LMSQ[3];
+  }
+  return Q_values;
 }
 
 } // namespace polyscope
