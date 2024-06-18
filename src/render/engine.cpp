@@ -1110,6 +1110,8 @@ void Engine::loadDefaultColorMap(std::string name) {
   const std::vector<glm::vec3>* buff = nullptr;
   if (name == "viridis") {
     buff = &CM_VIRIDIS;
+  } else if (name == "grayscale") {
+    buff = &CM_GRAYSCALE;
   } else if (name == "coolwarm") {
     buff = &CM_COOLWARM;
   } else if (name == "blues") {
@@ -1140,6 +1142,7 @@ void Engine::loadDefaultColorMap(std::string name) {
 
 void Engine::loadDefaultColorMaps() {
   loadDefaultColorMap("viridis");
+  loadDefaultColorMap("grayscale");
   loadDefaultColorMap("coolwarm");
   loadDefaultColorMap("blues");
   loadDefaultColorMap("reds");

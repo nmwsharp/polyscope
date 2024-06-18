@@ -696,6 +696,7 @@ void addDataToPointCloud(std::string pointCloudName, const std::vector<glm::vec3
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("unit 'normal' vector", centerNormalVec);
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("to zero", toZeroVec, polyscope::VectorType::AMBIENT);
 
+
   // loadFloatingImageData(polyscope::getPointCloud(pointCloudName));
 }
 
@@ -851,18 +852,40 @@ int main(int argc, char** argv) {
   polyscope::init();
 
   for (std::string s : files) {
-    processFile(s);
+   processFile(s);
   }
 
   // Create a point cloud
   for (int j = 0; j < 1; j++) {
+    // Generate random point positions
     std::vector<glm::vec3> points;
-    for (size_t i = 0; i < 3000; i++) {
+    for (size_t i = 0; i < 100; i++) {
       points.push_back(
           glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
     }
     polyscope::registerPointCloud("really great points" + std::to_string(j), points);
-    addDataToPointCloud("really great points" + std::to_string(j), points);
+    
+    // std::vector<std::array<double, 3>> randColor(points.size());
+    // for (size_t i = 0; i < points.size(); i++) {
+    //   randColor[i] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
+    // }
+    
+    // Generate random Tricolors
+    std::vector<polyscope::Tricolor> randTricolors(points.size());
+    for (size_t i = 0; i < points.size(); i++) {
+      randTricolors[i] = polyscope::Tricolor(polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit());
+    }
+
+    // Generate random Tetracolors
+    std::vector<polyscope::Tetracolor> randTetracolors(points.size());
+    for (size_t i = 0; i < points.size(); i++) {
+      randTetracolors[i] = polyscope::Tetracolor(polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit());
+    }
+
+    // Visualize Tricolors
+    // polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random color", randTricolors);
+    polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random tetracolors", randTetracolors);
+
   }
 
   // loadFloatingImageData();

@@ -1,6 +1,7 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
 #include "polyscope/color_management.h"
+#include "polyscope/colors.h"
 
 // Use for color conversion scripts
 #include "imgui.h"
@@ -80,5 +81,49 @@ glm::vec3 HSVtoRGB(glm::vec3 hsv) {
   return unitClamp(rgb);
 }
 
+// Custom access function for a vector of Tricolor objects.
+std::vector<glm::vec3>
+adaptorF_custom_convertArrayOfVectorToStdVector(const std::vector<Tricolor>& inputData) {
+  std::vector<glm::vec3> out;
+  for (auto v : inputData) {
+    out.push_back(glm::vec3(v[0], v[1], v[2]));
+  }
+  return out;
+}
+
+// Custom access function for a vector of Tetracolor objects.
+std::vector<glm::vec4>
+adaptorF_custom_convertArrayOfVectorToStdVector(const std::vector<Tetracolor>& inputData) {
+  std::vector<glm::vec4> out;
+  for (auto v : inputData) {
+    out.push_back(glm::vec4(v[0], v[1], v[2], v[3]));
+  }
+  return out;
+}
+
+// Convert from RG1G2B to RGB.
+// Dummy function at the moment.
+std::vector<glm::vec3> convert_tetra_to_tri(const std::vector<glm::vec4>& tetra_data) {
+  std::vector<glm::vec3> tri_data(tetra_data.size());
+  for (size_t i = 0; i < tetra_data.size(); i++) {
+    tri_data[i] = glm::vec3(tetra_data[i]);
+  }
+  return tri_data;
+}
+
+// Extract a single color channel from a list of color vectors.
+std::vector<float> extract_color_channel(const std::vector<glm::vec4>& colors, int ch) {
+  std::vector<float> channel(colors.size());
+  for (size_t i = 0; i < colors.size(); i++) {
+    channel[i] = colors[i][ch];
+  }
+  return channel;
+}
+
+// Get the Q-values from RG1G2B tetracolor data.
+std::vector<float> get_Q_values(const std::vector<glm::vec4>& tetracolors) {
+  // TODO: dummy implementation
+  return extract_color_channel(tetracolors, 0);
+}
 
 } // namespace polyscope

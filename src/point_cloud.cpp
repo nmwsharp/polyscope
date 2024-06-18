@@ -373,6 +373,19 @@ void PointCloudQuantity::buildInfoGUI(size_t pointInd) {}
 
 // === Quantity adders
 
+PointCloudColorQuantity* PointCloud::addColorQuantity(std::string name, const std::vector<Tricolor>& colors) {
+  validateSize(colors, nPoints(), "point cloud color quantity " + name);
+  std::cout << "hello from Tricolor overload" << std::endl;
+  return addColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(colors));
+}
+
+PointCloudColorQuantity* PointCloud::addColorQuantity(std::string name, const std::vector<Tetracolor>& colors) {
+  validateSize(colors, nPoints(), "point cloud color quantity " + name);
+  
+  std::cout << "hello from addColorQuantity Tetracolor overload" << std::endl;
+
+  return addColorQuantityImpl(name, standardizeVectorArray<glm::vec4, 4>(colors));
+}
 
 PointCloudColorQuantity* PointCloud::addColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors) {
   checkForQuantityWithNameAndDeleteOrError(name);
@@ -380,6 +393,35 @@ PointCloudColorQuantity* PointCloud::addColorQuantityImpl(std::string name, cons
   addQuantity(q);
   return q;
 }
+
+PointCloudColorQuantity* PointCloud::addColorQuantityImpl(std::string name, const std::vector<glm::vec4>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+
+  // Convert RG1G2B to RGB (this is the main color quantity)
+  std::vector<glm::vec3> tricolors = convert_tetra_to_tri(colors);
+  PointCloudColorQuantity* q_tricolors = new PointCloudColorQuantity(name, tricolors, *this);
+  addQuantity(q_tricolors);
+
+  // Add a scalar quantity for each channel (R, G1, G2, B)
+  std::vector<float> R_channel = extract_color_channel(colors, 0);
+  addScalarQuantity(name + " R", R_channel);
+
+  std::vector<float> G1_channel = extract_color_channel(colors, 1);
+  addScalarQuantity(name + " G1", G1_channel);
+
+  std::vector<float> G2_channel = extract_color_channel(colors, 2);
+  addScalarQuantity(name + " G2", G2_channel);
+
+  std::vector<float> B_channel = extract_color_channel(colors, 3);
+  addScalarQuantity(name + " B", B_channel);
+
+  // Add a scalar quantity for the Q-values
+  std::vector<float> Q_values = get_Q_values(colors);
+  addScalarQuantity(name + " Q", Q_values);
+
+  return q_tricolors;
+}
+
 
 PointCloudScalarQuantity* PointCloud::addScalarQuantityImpl(std::string name, const std::vector<float>& data,
                                                             DataType type) {

@@ -4,6 +4,7 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
+#include "polyscope/colors.h"
 #include "polyscope/persistent_value.h"
 #include "polyscope/point_cloud_quantity.h"
 #include "polyscope/polyscope.h"
@@ -79,6 +80,11 @@ public:
   // Colors
   template <class T>
   PointCloudColorQuantity* addColorQuantity(std::string name, const T& values);
+  
+  PointCloudColorQuantity* addColorQuantity(std::string name, const std::vector<Tricolor>& values);
+
+  PointCloudColorQuantity* addColorQuantity(std::string name, const std::vector<Tetracolor>& values);
+
 
   // Vectors
   template <class T>
@@ -169,6 +175,7 @@ private:
   PointCloudParameterizationQuantity*
   addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param, ParamCoordsType type);
   PointCloudColorQuantity* addColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
+  PointCloudColorQuantity* addColorQuantityImpl(std::string name, const std::vector<glm::vec4>& colors);
   PointCloudVectorQuantity* addVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors,
                                                   VectorType vectorType);
 
