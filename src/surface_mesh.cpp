@@ -1504,6 +1504,11 @@ MeshShadeStyle SurfaceMesh::getShadeStyle() { return shadeStyle.get(); }
 
 // === Quantity adders
 
+SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantity(std::string name,
+                                                                const std::vector<Tetracolor>& colors) {
+ validateSize(colors, vertexDataSize, "vertex color quantity " + name);
+ return addVertexColorQuantityImpl(name, standardizeVectorArray<glm::vec4, 4>(colors));
+}
 
 SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantityImpl(std::string name,
                                                                     const std::vector<glm::vec3>& colors) {
@@ -1513,12 +1518,86 @@ SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantityImpl(std::string 
   return q;
 }
 
+SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantityImpl(std::string name,
+                                                                    const std::vector<glm::vec4>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  
+  // Convert RG1G2B to RGB (this is the main color quantity)
+  std::vector<glm::vec3> tricolors = convert_tetra_to_tri(colors);
+  SurfaceVertexColorQuantity* q_tricolors = new SurfaceVertexColorQuantity(name, *this, tricolors);
+  addQuantity(q_tricolors);
+
+  // Add a scalar quantity for each channel (R, G1, G2, B)
+  std::vector<float> R_channel = extract_color_channel(colors, 0);
+  SurfaceVertexScalarQuantity *q_red = addVertexScalarQuantity(name + " R", R_channel);
+  q_red->setColorMap("grayscale");
+
+  std::vector<float> G1_channel = extract_color_channel(colors, 1);
+  SurfaceVertexScalarQuantity *q_g1 = addVertexScalarQuantity(name + " G1", G1_channel);
+  q_g1->setColorMap("grayscale");
+
+  std::vector<float> G2_channel = extract_color_channel(colors, 2);
+  SurfaceVertexScalarQuantity *q_g2 = addVertexScalarQuantity(name + " G2", G2_channel);
+  q_g2->setColorMap("grayscale");
+
+  std::vector<float> B_channel = extract_color_channel(colors, 3);
+  SurfaceVertexScalarQuantity *q_blue = addVertexScalarQuantity(name + " B", B_channel);
+  q_blue->setColorMap("grayscale");
+
+  // Add a scalar quantity for the Q-values
+  std::vector<float> Q_values = get_Q_values(colors);
+  SurfaceVertexScalarQuantity *q_Q = addVertexScalarQuantity(name + " Q", Q_values);
+  q_Q->setColorMap("grayscale");
+
+  return q_tricolors;
+}
+
+SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantity(std::string name,
+                                                            const std::vector<Tetracolor>& colors) {
+  validateSize(colors, faceDataSize, "face color quantity " + name);
+  return addFaceColorQuantityImpl(name, standardizeVectorArray<glm::vec4, 4>(colors));
+}
+
 SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantityImpl(std::string name,
                                                                 const std::vector<glm::vec3>& colors) {
   checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceFaceColorQuantity* q = new SurfaceFaceColorQuantity(name, *this, colors);
   addQuantity(q);
   return q;
+}
+
+SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantityImpl(std::string name,
+                                                                    const std::vector<glm::vec4>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  
+  // Convert RG1G2B to RGB (this is the main color quantity)
+  std::vector<glm::vec3> tricolors = convert_tetra_to_tri(colors);
+  SurfaceFaceColorQuantity* q_tricolors = new SurfaceFaceColorQuantity(name, *this, tricolors);
+  addQuantity(q_tricolors);
+
+  // Add a scalar quantity for each channel (R, G1, G2, B)
+  std::vector<float> R_channel = extract_color_channel(colors, 0);
+  SurfaceFaceScalarQuantity *q_red = addFaceScalarQuantity(name + " R", R_channel);
+  q_red->setColorMap("grayscale");
+
+  std::vector<float> G1_channel = extract_color_channel(colors, 1);
+  SurfaceFaceScalarQuantity *q_g1 = addFaceScalarQuantity(name + " G1", G1_channel);
+  q_g1->setColorMap("grayscale");
+
+  std::vector<float> G2_channel = extract_color_channel(colors, 2);
+  SurfaceFaceScalarQuantity *q_g2 = addFaceScalarQuantity(name + " G2", G2_channel);
+  q_g2->setColorMap("grayscale");
+
+  std::vector<float> B_channel = extract_color_channel(colors, 3);
+  SurfaceFaceScalarQuantity *q_blue = addFaceScalarQuantity(name + " B", B_channel);
+  q_blue->setColorMap("grayscale");
+
+  // Add a scalar quantity for the Q-values
+  std::vector<float> Q_values = get_Q_values(colors);
+  SurfaceFaceScalarQuantity *q_Q = addFaceScalarQuantity(name + " Q", Q_values);
+  q_Q->setColorMap("grayscale");
+
+  return q_tricolors;
 }
 
 SurfaceTextureColorQuantity*

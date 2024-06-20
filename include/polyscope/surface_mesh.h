@@ -8,6 +8,7 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
+#include "polyscope/colors.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/render/managed_buffer.h"
@@ -140,7 +141,11 @@ public:
 
   // = Colors (expect vec3 array)
   template <class T> SurfaceVertexColorQuantity* addVertexColorQuantity(std::string name, const T& data);
+  SurfaceVertexColorQuantity* addVertexColorQuantity(std::string name, const std::vector<Tetracolor>& data);
+
   template <class T> SurfaceFaceColorQuantity* addFaceColorQuantity(std::string name, const T& data);
+  SurfaceFaceColorQuantity* addFaceColorQuantity(std::string name, const std::vector<Tetracolor>& data);
+
   template <class T> SurfaceTextureColorQuantity* addTextureColorQuantity(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const T& colors, ImageOrigin imageOrigin);
   template <class T> SurfaceTextureColorQuantity* addTextureColorQuantity(std::string name, std::string paramName, size_t dimX, size_t dimY, const T& colors, ImageOrigin imageOrigin);
   
@@ -395,7 +400,9 @@ private:
   // === Quantity adders
 
   SurfaceVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
+  SurfaceVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec4>& colors);
   SurfaceFaceColorQuantity* addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
+  SurfaceFaceColorQuantity* addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec4>& colors);
   SurfaceTextureColorQuantity* addTextureColorQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const std::vector<glm::vec3>& colors, ImageOrigin imageOrigin);
   SurfaceVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
   SurfaceFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
