@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <string>
+#include <stdio.h>
 
 namespace polyscope {
 
@@ -35,6 +36,31 @@ bool hasExtension(std::string str, std::string ext) {
 
 } // namespace
 
+void saveVideo(std::string name, unsigned char* buffer, int w, int h) {
+  // https://blog.mmacklin.com/2013/06/11/real-time-video-capture-with-ffmpeg/
+  // Define the FFmpeg command
+  std::string cmd = "ffmpeg -r 60 "
+                    "-f rawvideo "
+                    "-pix_fmt rgba "
+                    "-s 2560x1440 "
+                    "-i - "
+                    "-threads 0 "
+                    "-preset fast "
+                    "-y "
+                    "-pix_fmt yuv420p "
+                    "-crf 21 "
+                    "-vf vflip "
+                    + name;
+
+  // Open a pipe to FFmpeg
+  FILE* ffmpeg = popen(cmd.c_str(), "w");
+
+  // Write to the pipe
+  fwrite(buffer, sizeof(unsigned char) * w * h * 4, 1, ffmpeg);
+
+  // Close the pipe to FFmpeg
+  pclose(ffmpeg);
+}
 
 void saveImage(std::string name, unsigned char* buffer, int w, int h, int channels) {
 
@@ -95,6 +121,9 @@ void screenshot(std::string filename, bool transparentBG) {
       }
     }
   }
+
+  // Putting this here temporarily for debugging, so that the screenshot button will also save a video
+  saveVideo("output.mp4", &(buff.front()), w, h);
 
   // Save to file
   saveImage(filename, &(buff.front()), w, h, 4);
