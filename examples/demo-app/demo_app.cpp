@@ -89,9 +89,28 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
   polyscope::getCurveNetwork(curveName)->setNodeRadiusQuantity("nXabs");
 }
 
+void rotate_teapot() {
+  std::string name = "teapot";
+  auto psMesh = polyscope::getSurfaceMesh(name);
+  
+  FILE* fd = polyscope::openVideoFile("teapot.mp4");
+
+  for (size_t i = 0; i < 60; i++) {
+    glm::mat4x4 currentTransform = psMesh->getTransform();
+    glm::mat4x4 nextTransform = glm::rotate(currentTransform, glm::radians(0.25f), glm::vec3(0.0, 1.0, 0.0));
+    psMesh->setTransform(nextTransform);
+
+    polyscope::writeVideoFrame(fd);
+    // polyscope::screenshot();
+  }
+  polyscope::closeVideoFile(fd);
+  exit(0);
+}
+
 void processFileOBJ(std::string filename) {
   // Get a nice name for the file
-  std::string niceName = polyscope::guessNiceNameFromPath(filename);
+  // std::string niceName = polyscope::guessNiceNameFromPath(filename);
+  std::string niceName = "teapot";
 
   // Load mesh and polygon soup data
   std::vector<std::array<double, 3>> vertexPositions;
@@ -102,6 +121,8 @@ void processFileOBJ(std::string filename) {
     vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]});
   }
   auto psMesh = polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
+
+  return;
 
   auto psSimpleMesh = polyscope::registerSimpleTriangleMesh(niceName, vertexPositionsGLM, faceIndices);
 
@@ -853,6 +874,8 @@ int main(int argc, char** argv) {
   for (std::string s : files) {
     processFile(s);
   }
+  
+  /*
 
   // Create a point cloud
   for (int j = 0; j < 1; j++) {
@@ -865,6 +888,8 @@ int main(int argc, char** argv) {
     addDataToPointCloud("really great points" + std::to_string(j), points);
   }
 
+  */
+
   // loadFloatingImageData();
   // addVolumeGrid();
 
@@ -872,10 +897,13 @@ int main(int argc, char** argv) {
   polyscope::state::userCallback = callback;
 
   // Show the gui
-  polyscope::show();
+  // polyscope::show();
+
+  rotate_teapot();
 
   // main loop using manual frameTick() instead
   // while (true) {
+  //   rotate_teapot();
   //   polyscope::frameTick();
   // }
 

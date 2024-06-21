@@ -36,9 +36,12 @@ bool hasExtension(std::string str, std::string ext) {
 
 } // namespace
 
-void saveVideo(std::string name, unsigned char* buffer, int w, int h) {
-  // https://blog.mmacklin.com/2013/06/11/real-time-video-capture-with-ffmpeg/
-  // Define the FFmpeg command
+/* Opens a FILE pipe to FFmpeg so that we can write to .mp4 video file.
+ * 
+ * @param name: The name of the .mp4 file, such as "teapot.mp4".
+ * @return FILE* file descriptor.
+ */
+FILE* openVideoFile(std::string name) {
   std::string cmd = "ffmpeg -r 60 "
                     "-f rawvideo "
                     "-pix_fmt rgba "
@@ -54,13 +57,18 @@ void saveVideo(std::string name, unsigned char* buffer, int w, int h) {
 
   // Open a pipe to FFmpeg
   FILE* ffmpeg = popen(cmd.c_str(), "w");
-
-  // Write to the pipe
-  fwrite(buffer, sizeof(unsigned char) * w * h * 4, 1, ffmpeg);
-
-  // Close the pipe to FFmpeg
-  pclose(ffmpeg);
+  return ffmpeg;
 }
+
+/* Closes a FILE pipe to FFmpeg.
+ *
+ * @param fd: This file descriptor should have been obtained from a prior call
+ *            to openVideoFile.
+ */
+void closeVideoFile(FILE* fd) {
+  pclose(fd);
+}
+
 
 void saveImage(std::string name, unsigned char* buffer, int w, int h, int channels) {
 
@@ -88,6 +96,51 @@ void saveImage(std::string name, unsigned char* buffer, int w, int h, int channe
     stbi_write_png(name.c_str(), w, h, channels, buffer, channels * w);
   }
 }
+
+
+/* Write a single video frame to .mp4 video file.
+ *
+ * @param fd: This file descriptor must have been obtained through a prior call
+ *            to openVideoFile().
+ */
+void writeVideoFrame(FILE* fd) {
+
+  // TODO: put back in logic for transparency, should write helper function to avoid repeated code
+  render::engine->useAltDisplayBuffer = true;
+  // if (transparentBG) render::engine->lightCopy = true; // copy directly in to buffer without blending
+
+  // == Make sure we render first
+  processLazyProperties();
+
+  // save the redraw requested bit and restore it below
+  bool requestedAlready = redrawRequested();
+  requestRedraw();
+
+  draw(false, false);
+
+  if (requestedAlready) {
+    requestRedraw();
+  }
+
+  // these _should_ always be accurate
+  int w = view::bufferWidth;
+  int h = view::bufferHeight;
+  std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
+
+  // Set alpha to 1
+  // if (!transparentBG) {
+  //   for (int j = 0; j < h; j++) {
+  //     for (int i = 0; i < w; i++) {
+  //       int ind = i + j * w;
+  //       buff[4 * ind + 3] = std::numeric_limits<unsigned char>::max();
+  //     }
+  //   }
+  // }
+
+  // Write to the pipe
+  fwrite(&(buff.front()), sizeof(unsigned char) * w * h * 4, 1, fd);
+}
+
 
 void screenshot(std::string filename, bool transparentBG) {
 
@@ -121,9 +174,6 @@ void screenshot(std::string filename, bool transparentBG) {
       }
     }
   }
-
-  // Putting this here temporarily for debugging, so that the screenshot button will also save a video
-  saveVideo("output.mp4", &(buff.front()), w, h);
 
   // Save to file
   saveImage(filename, &(buff.front()), w, h, 4);
