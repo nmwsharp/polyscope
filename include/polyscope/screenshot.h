@@ -13,13 +13,14 @@ void screenshot(bool transparentBG = true); // automatic file names like `screen
 void saveImage(std::string name, unsigned char* buffer, int w, int h, int channels); // helper
 void resetScreenshotIndex();
 
-FILE* openVideoFile(std::string name);
-void closeVideoFile(FILE* fd);
-void writeVideoFrame(FILE* fd);
-
 // Take a screenshot from the current view and return it as a buffer
 // the dimensions are view::bufferWidth and view::bufferHeight , with entries RGBA at 1 byte each.
 std::vector<unsigned char> screenshotToBuffer(bool transparentBG = true);
+
+// Write a video frame of the current view to .mp4 file.
+int writeVideoFrame(FILE* fd, bool transparentBG = true);
+FILE* openVideoFile(std::string name, int fps = 60);
+int closeVideoFile(FILE* fd);
 
 namespace state {
 

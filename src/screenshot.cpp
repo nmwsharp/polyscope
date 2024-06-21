@@ -41,18 +41,19 @@ bool hasExtension(std::string str, std::string ext) {
  * @param name: The name of the .mp4 file, such as "teapot.mp4".
  * @return FILE* file descriptor.
  */
-FILE* openVideoFile(std::string name) {
-  std::string cmd = "ffmpeg -r 60 "
-                    "-f rawvideo "
-                    "-pix_fmt rgba "
-                    "-s 2560x1440 "
-                    "-i - "
-                    "-threads 0 "
-                    "-preset fast "
-                    "-y "
-                    "-pix_fmt yuv420p "
-                    "-crf 21 "
-                    "-vf vflip "
+FILE* openVideoFile(std::string name, int fps) {
+  // Create the FFmpeg command
+  std::string cmd = "ffmpeg -r " + std::to_string(fps) + " "
+                    "-f rawvideo "    // expect raw video input
+                    "-pix_fmt rgba "  // expect RGBA input
+                    "-s 2560x1440 "   // video dimensions (default polyscope window size)
+                    "-i - "           // FFMpeg will read input from stdin
+                    "-threads 0 "     // use optimal number of threads
+                    "-preset fast "   // use fast encoding preset
+                    "-y "             // overwrite output file without asking
+                    "-pix_fmt yuv420p " // convert the pixel format to YUV420p for output
+                    "-crf 21 "        // set constant rate factor 
+                    "-vf vflip "      // buffer is from OpenGL, so need to vertically flip
                     + name;
 
   // Open a pipe to FFmpeg
@@ -64,9 +65,13 @@ FILE* openVideoFile(std::string name) {
  *
  * @param fd: This file descriptor should have been obtained from a prior call
  *            to openVideoFile.
+ * @return: -1 if closeVideoFile fails, not -1 if successful.
  */
-void closeVideoFile(FILE* fd) {
-  pclose(fd);
+int closeVideoFile(FILE* fd) {
+  if (!fd) {
+    return -1;
+  }
+  return pclose(fd);
 }
 
 
@@ -102,17 +107,21 @@ void saveImage(std::string name, unsigned char* buffer, int w, int h, int channe
  *
  * @param fd: This file descriptor must have been obtained through a prior call
  *            to openVideoFile().
+ * @param transparentBG: Whether or not transparency is enabled.
+ * @return: -1 if writeVideoFrame fails, 0 on success.
  */
-void writeVideoFrame(FILE* fd) {
+int writeVideoFrame(FILE* fd, bool transparentBG) {
+  if (!fd) {
+    return -1;
+  }
 
-  // TODO: put back in logic for transparency, should write helper function to avoid repeated code
   render::engine->useAltDisplayBuffer = true;
-  // if (transparentBG) render::engine->lightCopy = true; // copy directly in to buffer without blending
+  if (transparentBG) render::engine->lightCopy = true; // copy directly in to buffer without blending
 
-  // == Make sure we render first
+  // Make sure we render first
   processLazyProperties();
 
-  // save the redraw requested bit and restore it below
+  // Save the redraw requested bit and restore it below
   bool requestedAlready = redrawRequested();
   requestRedraw();
 
@@ -122,23 +131,28 @@ void writeVideoFrame(FILE* fd) {
     requestRedraw();
   }
 
-  // these _should_ always be accurate
+  // These _should_ always be accurate
   int w = view::bufferWidth;
   int h = view::bufferHeight;
   std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
 
   // Set alpha to 1
-  // if (!transparentBG) {
-  //   for (int j = 0; j < h; j++) {
-  //     for (int i = 0; i < w; i++) {
-  //       int ind = i + j * w;
-  //       buff[4 * ind + 3] = std::numeric_limits<unsigned char>::max();
-  //     }
-  //   }
-  // }
+  if (!transparentBG) {
+    for (int j = 0; j < h; j++) {
+      for (int i = 0; i < w; i++) {
+        int ind = i + j * w;
+        buff[4 * ind + 3] = std::numeric_limits<unsigned char>::max();
+      }
+    }
+  }
 
-  // Write to the pipe
-  fwrite(&(buff.front()), sizeof(unsigned char) * w * h * 4, 1, fd);
+  // Write to the FFmpeg pipe
+  size_t r = fwrite(&(buff.front()), sizeof(unsigned char) * w * h * 4, 1, fd);
+  if (r != 1) { // fwrite failed to write the full buffer
+    return -1;
+  }
+
+  return 0;
 }
 
 
@@ -199,7 +213,6 @@ void screenshot(bool transparentBG) {
 }
 
 void resetScreenshotIndex() { state::screenshotInd = 0; }
-
 
 std::vector<unsigned char> screenshotToBuffer(bool transparentBG) {
 
