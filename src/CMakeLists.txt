@@ -193,6 +193,7 @@ SET(SRCS
   # Point cloud
   point_cloud.cpp
   point_cloud_color_quantity.cpp
+  point_cloud_tetracolor_quantity.cpp
   point_cloud_scalar_quantity.cpp
   point_cloud_vector_quantity.cpp
   point_cloud_parameterization_quantity.cpp
@@ -302,6 +303,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/point_cloud.h
   ${INCLUDE_ROOT}/point_cloud.ipp
   ${INCLUDE_ROOT}/point_cloud_color_quantity.h
+  ${INCLUDE_ROOT}/point_cloud_tetracolor_quantity.h
   ${INCLUDE_ROOT}/point_cloud_quantity.h
   ${INCLUDE_ROOT}/point_cloud_scalar_quantity.h
   ${INCLUDE_ROOT}/point_cloud_parameterization_quantity.h
@@ -336,6 +338,8 @@ SET(HEADERS
   ${INCLUDE_ROOT}/surface_parameterization_quantity.h
   ${INCLUDE_ROOT}/surface_scalar_quantity.h
   ${INCLUDE_ROOT}/surface_vector_quantity.h
+  ${INCLUDE_ROOT}/tetracolor_quantity.h
+  ${INCLUDE_ROOT}/tetracolor_quantity.ipp
   ${INCLUDE_ROOT}/types.h
   ${INCLUDE_ROOT}/utilities.h
   ${INCLUDE_ROOT}/view.h
