@@ -191,6 +191,81 @@ R"(
 )"
 };
 
+const ShaderStageSpecification FLEX_SPHERE_FRAG_SHADER_TETRA = {
+    
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    {
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_invProjMatrix", RenderDataType::Matrix44Float},
+        {"u_viewport", RenderDataType::Vector4Float},
+        {"u_pointRadius", RenderDataType::Float},
+    }, 
+
+    { }, // attributes
+    
+    // textures 
+    {
+    },
+ 
+    // source
+R"(
+        ${ GLSL_VERSION }$
+        uniform mat4 u_projMatrix; 
+        uniform mat4 u_invProjMatrix;
+        uniform vec4 u_viewport;
+        uniform float u_pointRadius;
+        in vec3 sphereCenterView;
+        layout(location = 0) out vec4 outputF;
+
+        float LARGE_FLOAT();
+        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
+        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
+        bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
+        float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
+        
+        ${ FRAG_DECLARATIONS }$
+
+        void main()
+        {
+           // Build a ray corresponding to this fragment
+           vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
+           vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
+
+           float pointRadius = u_pointRadius;
+           ${ SPHERE_SET_POINT_RADIUS_FRAG }$
+
+           // Raycast to the sphere 
+           float tHit;
+           vec3 pHit;
+           vec3 nHit;
+           bool hit = raySphereIntersection(vec3(0., 0., 0), viewRay, sphereCenterView, pointRadius, tHit, pHit, nHit);
+           if(tHit >= LARGE_FLOAT()) {
+              discard;
+           }
+           float depth = fragDepthFromView(u_projMatrix, depthRange, pHit);
+
+           ${ GLOBAL_FRAGMENT_FILTER_PREP }$
+           ${ GLOBAL_FRAGMENT_FILTER }$
+           
+           // Set depth (expensive!)
+           gl_FragDepth = depth;
+          
+           // Shading
+           ${ GENERATE_SHADE_VALUE }$
+           ${ GENERATE_SHADE_COLOR }$
+
+           // Lighting
+           vec3 shadeNormal = nHit;
+           ${ GENERATE_LIT_COLOR }$
+
+           // Write output
+           outputF = litTetracolor;
+        }
+)"
+};
+
 //  These POINTQUAD shaders render a quad at the location of the point. Technically, 
 //  they don't draw spheres, but we group them here because they share a lot of logic 
 //  with the spheres & accept the same rules.
@@ -446,6 +521,37 @@ const ShaderReplacementRule SPHERE_PROPAGATE_COLOR (
       {"a_color", RenderDataType::Vector3Float},
     },
     /* textures */ {}
+);
+
+const ShaderReplacementRule SPHERE_PROPAGATE_TETRACOLOR (
+  /* rule name */ "SPHERE_PROPAGATE_TETRACOLOR",
+  { /* replacement sources */
+    {"VERT_DECLARATIONS", R"(
+        in vec4 a_tetracolor;
+        out vec4 a_tetracolorToGeom;
+      )"},
+    {"VERT_ASSIGNMENTS", R"(
+        a_tetracolorToGeom = a_tetracolor; 
+      )"},
+    {"GEOM_DECLARATIONS", R"(
+        in vec4 a_tetracolorToGeom[];
+        flat out vec4 a_tetracolorToFrag;
+      )"},
+    {"GEOM_PER_EMIT", R"(
+        a_tetracolorToFrag = a_tetracolorToGeom[0];
+      )"},
+    {"FRAG_DECLARATIONS", R"(
+        flat in vec4 a_tetracolorToFrag;
+      )"},
+    {"GENERATE_SHADE_VALUE", R"(
+        vec4 shadeTetracolor = a_tetracolorToFrag;
+      )"},
+  },
+  /* uniforms */ {},
+  /* attributes */ {
+    {"a_tetracolor", RenderDataType::Vector4Float},
+  },
+  /* textures */ {}
 );
 
 const ShaderReplacementRule SPHERE_CULLPOS_FROM_CENTER(

@@ -911,6 +911,10 @@ void Engine::loadDefaultMaterial(std::string name) {
     newMaterial->setUniforms = [&](ShaderProgram& p){ setTonemapUniforms(p); };
 
   }
+  else if (name == "flat_tetra") {
+    newMaterial->supportsRGB = true;
+    newMaterial->rules = {"LIGHT_PASSTHRU_TETRA"};
+  }
   else if(name == "mud") {
     newMaterial->supportsRGB = false;
     for(int i = 0; i < 4; i++) {buff[i] = &bindata_mud[0]; buffSize[i] = bindata_mud.size();}

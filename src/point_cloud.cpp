@@ -424,6 +424,18 @@ PointCloudColorQuantity* PointCloud::addColorQuantityImpl(std::string name, cons
   return q_tricolors;
 }
 
+// Tetracolor quantity adders:
+PointCloudTetracolorQuantity* PointCloud::addTetracolorQuantity(std::string name, const std::vector<glm::vec4>& values) {
+  validateSize(values, nPoints(), "point cloud tetracolor quantity " + name);
+  return addTetracolorQuantityImpl(name, standardizeVectorArray<glm::vec4, 4>(values));
+}
+
+PointCloudTetracolorQuantity* PointCloud::addTetracolorQuantityImpl(std::string name, const std::vector<glm::vec4>& tetracolors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  PointCloudTetracolorQuantity* q = new PointCloudTetracolorQuantity(name, tetracolors, *this);
+  addQuantity(q);
+  return q;
+}
 
 PointCloudScalarQuantity* PointCloud::addScalarQuantityImpl(std::string name, const std::vector<float>& data,
                                                             DataType type) {

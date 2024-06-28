@@ -67,6 +67,15 @@ const ShaderReplacementRule LIGHT_PASSTHRU (
     /* textures */ {}
 );
 
+const ShaderReplacementRule LIGHT_PASSTHRU_TETRA (
+  /* rule name */ "LIGHT_PASSTHRU_TETRA",
+  { /* replacement sources */
+    {"GENERATE_LIT_COLOR", "vec4 litTetracolor = albedoTetracolor;"}
+  },
+  /* uniforms */ {},
+  /* attributes */ {},
+  /* textures */ {}
+);
 
 // input: uniform
 // output: vec3 albedoColor
@@ -107,6 +116,18 @@ const ShaderReplacementRule SHADE_COLOR(
     /* rule name */ "SHADE_COLOR",
     { /* replacement sources */
       {"GENERATE_SHADE_COLOR", "vec3 albedoColor = shadeColor;"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+// input: vec4 shadeTetracolor 
+// output: vec4 albedoTetracolor
+const ShaderReplacementRule SHADE_TETRACOLOR(
+    /* rule name */ "SHADE_TETRACOLOR",
+    { /* replacement sources */
+      {"GENERATE_SHADE_COLOR", "vec4 albedoTetracolor = shadeTetracolor;"}
     },
     /* uniforms */ {},
     /* attributes */ {},

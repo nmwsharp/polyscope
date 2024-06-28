@@ -13,6 +13,12 @@ class TetracolorQuantity {
 public:
   TetracolorQuantity(QuantityT& parent, const std::vector<glm::vec4>& colors);
 
+  // Add rules to rendering programs for scalars
+  std::vector<std::string> addTetracolorRules(std::vector<std::string> rules);
+
+  // Set uniforms in rendering programs for scalars
+  void setTetracolorUniforms(render::ShaderProgram& p);
+
   // === Members
   QuantityT& quantity;
   render::ManagedBuffer<glm::vec4> tetracolors;

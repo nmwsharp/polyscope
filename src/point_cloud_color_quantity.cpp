@@ -45,6 +45,19 @@ void PointCloudColorQuantity::createPointProgram() {
     )
   );
   // clang-format on
+  std::cout << parent.getShaderNameForRenderMode() << std::endl;
+    
+  std::vector<std::string> custom_rules = render::engine->addMaterialRules(parent.getMaterial(),
+      addColorRules(
+        parent.addPointCloudRules(
+          {"SPHERE_PROPAGATE_COLOR", "SHADE_COLOR"}
+        )
+      )
+    );
+
+  for (auto rule : custom_rules) {
+    std::cout << rule << std::endl;
+  }
 
   parent.setPointProgramGeometryAttributes(*pointProgram);
   pointProgram->setAttribute("a_color", colors.getRenderAttributeBuffer());

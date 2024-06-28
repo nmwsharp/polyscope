@@ -12,6 +12,18 @@ class PointCloudTetracolorQuantity : public PointCloudQuantity, public Tetracolo
 public:
   PointCloudTetracolorQuantity(std::string name, const std::vector<glm::vec4>& values_, PointCloud& pointCloud_);
 
+  virtual void draw() override;
+  
+  virtual void buildPickUI(size_t ind) override;
+  virtual void refresh() override;
+
+  virtual std::string niceName() override;
+
+  void createPointProgram();
+
+protected:
+  std::shared_ptr<render::ShaderProgram> pointProgram;
+
 }; // class PointCloudTetracolorQuantity  
 
 } // namespace polyscope

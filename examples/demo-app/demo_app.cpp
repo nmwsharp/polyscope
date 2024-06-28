@@ -886,7 +886,7 @@ int main(int argc, char** argv) {
    processFile(s);
   }
 
-  /*
+  
 
   // Create a point cloud
   for (int j = 0; j < 1; j++) {
@@ -896,13 +896,18 @@ int main(int argc, char** argv) {
       points.push_back(
           glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
     }
-    polyscope::registerPointCloud("really great points" + std::to_string(j), points);
+    auto point_cloud = polyscope::registerPointCloud("really great points" + std::to_string(j), points);
     
     // std::vector<std::array<double, 3>> randColor(points.size());
     // for (size_t i = 0; i < points.size(); i++) {
     //   randColor[i] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
     // }
     
+    std::vector<glm::vec4> randTetracolors(points.size());
+    for (size_t i = 0; i < points.size(); i++) {
+      randTetracolors[i] = glm::vec4(polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit());
+    }
+
     // Generate random Tricolors
     std::vector<polyscope::Tricolor> randTricolors(points.size());
     for (size_t i = 0; i < points.size(); i++) {
@@ -910,24 +915,28 @@ int main(int argc, char** argv) {
     }
 
     // Generate random Tetracolors
-    std::vector<polyscope::Tetracolor> randTetracolors(points.size());
-    for (size_t i = 0; i < points.size(); i++) {
-      randTetracolors[i] = polyscope::Tetracolor(polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit());
-    }
+    // std::vector<polyscope::Tetracolor> randTetracolors(points.size());
+    // for (size_t i = 0; i < points.size(); i++) {
+    //   randTetracolors[i] = polyscope::Tetracolor(polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit());
+    // }
 
     // Debug Tetracolor white
-    std::vector<polyscope::Tetracolor> tetraWhite(points.size());
-    for (size_t i = 0; i < points.size(); i++) {
-      tetraWhite[i] = polyscope::Tetracolor(1.0, 1.0, 1.0, 1.0);
-    }
+    // std::vector<polyscope::Tetracolor> tetraWhite(points.size());
+    // for (size_t i = 0; i < points.size(); i++) {
+    //   tetraWhite[i] = polyscope::Tetracolor(1.0, 1.0, 1.0, 1.0);
+    // }
 
     // Visualize Tricolors
+    point_cloud->setMaterial("flat");
     // polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random color", randTricolors);
-    polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random tetracolors", randTetracolors);
+    // polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random tetracolors", randTetracolors);
     // polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random tetracolors", tetraWhite);
 
+    auto tetracolor_quantity = polyscope::getPointCloud("really great points" + std::to_string(j))->addTetracolorQuantity("random tetracolors", randTetracolors);
+    tetracolor_quantity->createPointProgram();
+
   }
-  */
+  
 
   // loadFloatingImageData();
   // addVolumeGrid();
@@ -936,13 +945,13 @@ int main(int argc, char** argv) {
   polyscope::state::userCallback = callback;
 
   // Show the gui
-  // polyscope::show();
+  polyscope::show();
 
   // main loop using manual frameTick() instead
-  while (true) {
-    rotateTeapot();
-    polyscope::frameTick();
-  }
+  // while (true) {
+  //   rotateTeapot();
+  //   polyscope::frameTick();
+  // }
 
   std::cout << "!!!! shutdown time" << std::endl;
 
