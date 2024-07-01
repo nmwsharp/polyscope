@@ -186,11 +186,58 @@ R"(
 
            // Write output
            litColor *= alphaOut; // premultiplied alpha
-           outputF = vec4(litColor, alphaOut);
+           // outputF = vec4(litColor, alphaOut);
+           outputF = vec4(0.5, 0.1, 0.5, 0.5);
+           // outputF = vec4(2.0, 3.0, 4.0, 5.0);
         }
 )"
 };
 
+
+const ShaderStageSpecification FLEX_SPHERE_FRAG_SHADER_TETRA = {
+    
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    {
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_invProjMatrix", RenderDataType::Matrix44Float},
+        {"u_viewport", RenderDataType::Vector4Float},
+        {"u_pointRadius", RenderDataType::Float},
+    }, 
+
+    { }, // attributes
+    
+    // textures 
+    {
+    },
+ 
+    // source
+R"(
+        ${ GLSL_VERSION }$
+        uniform mat4 u_projMatrix; 
+        uniform mat4 u_invProjMatrix;
+        uniform vec4 u_viewport;
+        uniform float u_pointRadius;
+        in vec3 sphereCenterView;
+        layout(location = 0) out vec4 outputF;
+
+        float LARGE_FLOAT();
+        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
+        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
+        bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
+        float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
+        
+        ${ FRAG_DECLARATIONS }$
+
+        void main()
+        {
+           outputF = vec4(0.5, 0.0, 0.0, 1.0);
+        }
+)"
+};
+
+/*
 const ShaderStageSpecification FLEX_SPHERE_FRAG_SHADER_TETRA = {
     
     ShaderStageType::Fragment,
@@ -265,6 +312,8 @@ R"(
         }
 )"
 };
+
+*/
 
 //  These POINTQUAD shaders render a quad at the location of the point. Technically, 
 //  they don't draw spheres, but we group them here because they share a lot of logic 

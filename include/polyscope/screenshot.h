@@ -22,6 +22,8 @@ int writeVideoFrame(FILE* fd, bool transparentBG = true);
 FILE* openVideoFile(std::string name, int fps = 60);
 int closeVideoFile(FILE* fd);
 
+void screenshotTetra();
+
 namespace state {
 
 // The current screenshot index for automatically numbered screenshots

@@ -102,6 +102,41 @@ void saveImage(std::string name, unsigned char* buffer, int w, int h, int channe
   }
 }
 
+void screenshotTetra() {
+  render::engine->useAltDisplayBuffer = true;
+  render::engine->lightCopy = true;
+
+  processLazyProperties();
+
+  bool requestedAlready = redrawRequested();
+  requestRedraw();
+
+  draw(false, false);
+
+  if (requestedAlready) {
+  requestRedraw();
+  }
+
+  int w = view::bufferWidth;
+  int h = view::bufferHeight;
+  std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
+
+  std::cout << "hello from screenshotTetra()" << std::endl;
+  for (size_t i = 0; i < 4; i++) {
+    std::cout << static_cast<int>(buff[i]) << std::endl;
+  }
+
+  // Save to file
+  stbi_flip_vertically_on_write(1);
+  stbi_write_png_compression_level = 0;
+
+  std::string name = "debug.png";
+  stbi_write_png(name.c_str(), w, h, 4, &(buff.front()), w * 4);
+
+  render::engine->useAltDisplayBuffer = false;
+  render::engine->lightCopy = false;
+} 
+
 
 /* Write a single video frame to .mp4 video file.
  *
@@ -177,7 +212,15 @@ void screenshot(std::string filename, bool transparentBG) {
   // these _should_ always be accurate
   int w = view::bufferWidth;
   int h = view::bufferHeight;
-  std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
+  // std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
+  std::vector<unsigned char> buff = render::engine->sceneBufferFinal->readBuffer();
+  // std::vector<unsigned char> buff = render::engine->sceneBuffer->readBuffer();
+
+
+  std::cout << "hello from screenshot()" << std::endl;
+  for (size_t i = 0; i < 4; i++) {
+    std::cout << static_cast<int>(buff[i]) << std::endl;
+  }
 
   // Set alpha to 1
   if (!transparentBG) {
