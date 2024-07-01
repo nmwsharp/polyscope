@@ -17,6 +17,11 @@ void resetScreenshotIndex();
 // the dimensions are view::bufferWidth and view::bufferHeight , with entries RGBA at 1 byte each.
 std::vector<unsigned char> screenshotToBuffer(bool transparentBG = true);
 
+// Write a video frame of the current view to .mp4 file.
+int writeVideoFrame(FILE* fd, bool transparentBG = true);
+FILE* openVideoFile(std::string name, int fps = 60);
+int closeVideoFile(FILE* fd);
+
 namespace state {
 
 // The current screenshot index for automatically numbered screenshots
