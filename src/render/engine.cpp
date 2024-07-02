@@ -1024,6 +1024,7 @@ void Engine::loadDefaultMaterials() {
   loadDefaultMaterial("wax");
   loadDefaultMaterial("candy");
   loadDefaultMaterial("flat");
+  loadDefaultMaterial("flat_tetra");
   loadDefaultMaterial("mud");
   loadDefaultMaterial("ceramic");
   loadDefaultMaterial("jade");

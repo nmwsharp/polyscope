@@ -959,18 +959,18 @@ int main(int argc, char** argv) {
     // polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random tetracolors", randTetracolors);
     // polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random tetracolors", tetraWhite);
     // auto tetracolor_quantity = point_cloud->addTetracolorQuantity("random tetracolors", RG1G2_randB);
-    // auto tetracolor_quantity = point_cloud->addTetracolorQuantity("one tetracolor", oneColor);
-    auto color_quantity = point_cloud->addColorQuantity("one color", oneTricolor);
+    auto tetracolor_quantity = point_cloud->addTetracolorQuantity("one tetracolor", oneColor);
+    // auto color_quantity = point_cloud->addColorQuantity("one color", oneTricolor);
     // auto tetracolor_quantity = polyscope::getPointCloud("really great points" + std::to_string(j))->addTetracolorQuantity("random tetracolors", randTetracolors);
     // tetracolor_quantity->createPointProgram();
 
-    // tetracolor_quantity->setEnabled(true);
-    color_quantity->setEnabled(true);
+    tetracolor_quantity->setEnabled(true);
+    // color_quantity->setEnabled(true);
   }
   
   
-  // polyscope::screenshotTetra();
-  polyscope::screenshot();
+  polyscope::rasterizeTetra();
+  // polyscope::screenshot();
 
   // loadFloatingImageData();
   // addVolumeGrid();

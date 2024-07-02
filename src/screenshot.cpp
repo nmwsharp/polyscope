@@ -17,6 +17,9 @@ namespace state {
 // Storage for the screenshot index
 size_t screenshotInd = 0;
 
+// Storage for the rasterizeTetra index
+size_t rasterizeTetraInd = 0;
+
 } // namespace state
 
 // Helper functions
@@ -41,7 +44,7 @@ bool hasExtension(std::string str, std::string ext) {
  * @param name: The name of the .mp4 file, such as "teapot.mp4".
  * @return FILE* file descriptor.
  */
-FILE* openVideoFile(std::string name, int fps) {
+FILE* openVideoFile(std::string filename, int fps) {
   // Create the FFmpeg command
   std::string cmd = "ffmpeg -r " + std::to_string(fps) + " "
                     "-f rawvideo "    // expect raw video input
@@ -54,7 +57,7 @@ FILE* openVideoFile(std::string name, int fps) {
                     "-pix_fmt yuv420p " // convert the pixel format to YUV420p for output
                     "-crf 21 "        // set constant rate factor 
                     "-vf vflip "      // buffer is from OpenGL, so need to vertically flip
-                    + name;
+                    + filename;
 
   // Open a pipe to FFmpeg
   FILE* ffmpeg = popen(cmd.c_str(), "w");
@@ -75,17 +78,17 @@ int closeVideoFile(FILE* fd) {
 }
 
 
-void saveImage(std::string name, unsigned char* buffer, int w, int h, int channels) {
+void saveImage(std::string filename, unsigned char* buffer, int w, int h, int channels) {
 
   // our buffers are from openGL, so they are flipped
   stbi_flip_vertically_on_write(1);
   stbi_write_png_compression_level = 0;
 
   // Auto-detect filename
-  if (hasExtension(name, ".png")) {
-    stbi_write_png(name.c_str(), w, h, channels, buffer, channels * w);
-  } else if (hasExtension(name, ".jpg") || hasExtension(name, "jpeg")) {
-    stbi_write_jpg(name.c_str(), w, h, channels, buffer, 100);
+  if (hasExtension(filename, ".png")) {
+    stbi_write_png(filename.c_str(), w, h, channels, buffer, channels * w);
+  } else if (hasExtension(filename, ".jpg") || hasExtension(filename, "jpeg")) {
+    stbi_write_jpg(filename.c_str(), w, h, channels, buffer, 100);
 
     // TGA seems to display different on different machines: our fault or theirs?
     // Both BMP and TGA need alpha channel stripped? bmp doesn't seem to work even with this
@@ -98,44 +101,9 @@ void saveImage(std::string name, unsigned char* buffer, int w, int h, int channe
 
   } else {
     // Fall back on png
-    stbi_write_png(name.c_str(), w, h, channels, buffer, channels * w);
+    stbi_write_png(filename.c_str(), w, h, channels, buffer, channels * w);
   }
 }
-
-void screenshotTetra() {
-  render::engine->useAltDisplayBuffer = true;
-  render::engine->lightCopy = true;
-
-  processLazyProperties();
-
-  bool requestedAlready = redrawRequested();
-  requestRedraw();
-
-  draw(false, false);
-
-  if (requestedAlready) {
-  requestRedraw();
-  }
-
-  int w = view::bufferWidth;
-  int h = view::bufferHeight;
-  std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
-
-  std::cout << "hello from screenshotTetra()" << std::endl;
-  for (size_t i = 0; i < 4; i++) {
-    std::cout << static_cast<int>(buff[i]) << std::endl;
-  }
-
-  // Save to file
-  stbi_flip_vertically_on_write(1);
-  stbi_write_png_compression_level = 0;
-
-  std::string name = "debug.png";
-  stbi_write_png(name.c_str(), w, h, 4, &(buff.front()), w * 4);
-
-  render::engine->useAltDisplayBuffer = false;
-  render::engine->lightCopy = false;
-} 
 
 
 /* Write a single video frame to .mp4 video file.
@@ -212,15 +180,7 @@ void screenshot(std::string filename, bool transparentBG) {
   // these _should_ always be accurate
   int w = view::bufferWidth;
   int h = view::bufferHeight;
-  // std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
-  std::vector<unsigned char> buff = render::engine->sceneBufferFinal->readBuffer();
-  // std::vector<unsigned char> buff = render::engine->sceneBuffer->readBuffer();
-
-
-  std::cout << "hello from screenshot()" << std::endl;
-  for (size_t i = 0; i < 4; i++) {
-    std::cout << static_cast<int>(buff[i]) << std::endl;
-  }
+  std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
 
   // Set alpha to 1
   if (!transparentBG) {
@@ -294,6 +254,44 @@ std::vector<unsigned char> screenshotToBuffer(bool transparentBG) {
   if (transparentBG) render::engine->lightCopy = false;
 
   return buff;
+}
+
+
+void rasterizeTetra(std::string filename) {
+  render::engine->useAltDisplayBuffer = true;
+  render::engine->lightCopy = true;
+
+  processLazyProperties();
+
+  bool requestedAlready = redrawRequested();
+  requestRedraw();
+
+  draw(false, false);
+
+  if (requestedAlready) {
+  requestRedraw();
+  }
+
+  // We will grab sceneBufferFinal, which contains scene colors before tone mapping.
+  int w = view::bufferWidth;
+  int h = view::bufferHeight;
+  std::vector<unsigned char> buff = render::engine->sceneBufferFinal->readBuffer();
+
+  // Save to file
+  saveImage(filename, &(buff.front()), w, h, 4);
+
+  render::engine->useAltDisplayBuffer = false;
+  render::engine->lightCopy = false;
+} 
+
+void rasterizeTetra() {
+  char buff[50];
+  snprintf(buff, 50, "tetra_%06zu%s", state::rasterizeTetraInd, options::screenshotExtension.c_str());
+  std::string defaultName(buff);
+
+  rasterizeTetra(defaultName);
+
+  state::rasterizeTetraInd++;
 }
 
 } // namespace polyscope

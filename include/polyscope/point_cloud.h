@@ -82,12 +82,9 @@ public:
   // Colors
   template <class T>
   PointCloudColorQuantity* addColorQuantity(std::string name, const T& values);
-  
-  PointCloudColorQuantity* addColorQuantity(std::string name, const std::vector<Tricolor>& values);
 
-  PointCloudColorQuantity* addColorQuantity(std::string name, const std::vector<Tetracolor>& values);
-
-  PointCloudTetracolorQuantity* addTetracolorQuantity(std::string name, const std::vector<glm::vec4>& values);
+  template <class T>
+  PointCloudTetracolorQuantity* addTetracolorQuantity(std::string name, const T& values);
 
   // Vectors
   template <class T>

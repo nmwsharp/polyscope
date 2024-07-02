@@ -12,16 +12,24 @@ class PointCloudTetracolorQuantity : public PointCloudQuantity, public Tetracolo
 public:
   PointCloudTetracolorQuantity(std::string name, const std::vector<glm::vec4>& values_, PointCloud& pointCloud_);
 
+  // Draw this tetracolor quantity.
   virtual void draw() override;
   
-  virtual void buildPickUI(size_t ind) override;
-  virtual void refresh() override;
-
+  // Get readable name for UI.
   virtual std::string niceName() override;
 
-  void createPointProgram();
+  virtual void buildPickUI(size_t ind) override;
+
+  virtual void refresh() override;
 
 protected:
+  // Shader name is determined by whether we are rendering spheres or quads. 
+  std::string getShaderNameForRenderMode();
+
+  // Create the ShaderProgram that will draw this tetracolor quantity.
+  void createPointProgram();
+
+  // The ShaderProgram that will draw this tetracolor quantity.
   std::shared_ptr<render::ShaderProgram> pointProgram;
 
 }; // class PointCloudTetracolorQuantity  

@@ -21,8 +21,16 @@ void PointCloudTetracolorQuantity::draw() {
   setTetracolorUniforms(*pointProgram);
 
   pointProgram->draw();
+}
 
-  return;
+std::string PointCloudTetracolorQuantity::getShaderNameForRenderMode() {
+  if (parent.getPointRenderMode() == PointRenderMode::Sphere) {
+    return "RAYCAST_SPHERE_TETRA";
+  }
+  else if (parent.getPointRenderMode() == PointRenderMode::Quad) {
+    return "POINT_QUAD_TETRA";
+  }
+  return "RAYCAST_SPHERE_TETRA"; // Should never reach this.  
 }
 
 void PointCloudTetracolorQuantity::buildPickUI(size_t ind) {
@@ -38,16 +46,19 @@ std::string PointCloudTetracolorQuantity::niceName() {
 }
 
 void PointCloudTetracolorQuantity::createPointProgram() {
-  // Create the program to draw this quantity
-  pointProgram = render::engine->requestShader( "RAYCAST_SPHERE_TETRA",
-    parent.addPointCloudRules(
-      {"LIGHT_PASSTHRU_TETRA", "SPHERE_PROPAGATE_TETRACOLOR", "SHADE_TETRACOLOR"}
+  // Create the program to draw this quantity.
+  pointProgram = render::engine->requestShader( getShaderNameForRenderMode(),
+    render::engine->addMaterialRules("flat_tetra",
+      addTetracolorRules(
+        parent.addPointCloudRules(
+          {"SPHERE_PROPAGATE_TETRACOLOR", "SHADE_TETRACOLOR"}
+        )
+      )
     )
   );
 
   parent.setPointProgramGeometryAttributes(*pointProgram);
   pointProgram->setAttribute("a_tetracolor", tetracolors.getRenderAttributeBuffer());
-
 }
 
 } // namespace polyscope
