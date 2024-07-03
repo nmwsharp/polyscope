@@ -192,7 +192,7 @@ R"(
 };
 
 
-const ShaderStageSpecification FLEX_SPHERE_FRAG_SHADER_TETRA = {
+const ShaderStageSpecification FLEX_SPHERE_TETRA_FRAG_SHADER = {
     
     ShaderStageType::Fragment,
     

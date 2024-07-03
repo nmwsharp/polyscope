@@ -225,6 +225,12 @@ SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantity(std::string name
   return addVertexColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(colors));
 }
 
+template <class T>
+SurfaceVertexTetracolorQuantity* SurfaceMesh::addVertexTetracolorQuantity(std::string name, const T& tetracolors) {
+  validateSize<T>(tetracolors, vertexDataSize, "vertex tetracolor quantity " + name);
+  return addVertexTetracolorQuantityImpl(name, standardizeVectorArray<glm::vec4, 4>(tetracolors));
+}
+
 
 template <class T>
 SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantity(std::string name, const T& colors) {

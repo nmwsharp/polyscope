@@ -112,6 +112,56 @@ R"(
 )"
 };
 
+const ShaderStageSpecification FLEX_MESH_TETRA_FRAG_SHADER = {
+    
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    {
+    }, 
+
+    { }, // attributes
+    
+    // textures 
+    {
+    },
+ 
+    // source
+R"(
+        ${ GLSL_VERSION }$
+        in vec3 a_vertexNormalToFrag;
+        in vec3 a_barycoordToFrag;
+
+        layout(location = 0) out vec4 outputF;
+
+        ${ FRAG_DECLARATIONS }$
+
+        void main()
+        {
+           float depth = gl_FragCoord.z;
+           ${ GLOBAL_FRAGMENT_FILTER_PREP }$
+           ${ GLOBAL_FRAGMENT_FILTER }$
+          
+           // Shading
+           vec3 shadeNormal = a_vertexNormalToFrag;
+           ${ GENERATE_SHADE_VALUE }$
+           ${ GENERATE_SHADE_COLOR }$
+           
+           // Handle the wireframe
+           ${ APPLY_WIREFRAME }$
+
+           // Lighting
+           ${ PERTURB_SHADE_NORMAL }$
+           ${ GENERATE_LIT_COLOR }$
+
+           ${ PERTURB_LIT_COLOR }$
+
+           // Write output
+           outputF = litTetracolor; 
+        }
+)"
+};
+
 const ShaderStageSpecification SIMPLE_MESH_VERT_SHADER = {
 
     ShaderStageType::Vertex,
@@ -330,6 +380,30 @@ const ShaderReplacementRule MESH_PROPAGATE_COLOR (
     /* uniforms */ {},
     /* attributes */ {
       {"a_color", RenderDataType::Vector3Float},
+    },
+    /* textures */ {}
+);
+
+const ShaderReplacementRule MESH_PROPAGATE_TETRACOLOR (
+    /* rule name */ "MESH_PROPAGATE_TETRACOLOR",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec4 a_tetracolor;
+          out vec4 a_tetracolorToFrag;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_tetracolorToFrag = a_tetracolor;
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec4 a_tetracolorToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          vec4 shadeTetracolor = a_tetracolorToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_tetracolor", RenderDataType::Vector4Float},
     },
     /* textures */ {}
 );

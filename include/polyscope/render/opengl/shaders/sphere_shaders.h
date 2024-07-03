@@ -12,7 +12,7 @@ namespace backend_openGL3 {
 extern const ShaderStageSpecification FLEX_SPHERE_VERT_SHADER;
 extern const ShaderStageSpecification FLEX_SPHERE_GEOM_SHADER;
 extern const ShaderStageSpecification FLEX_SPHERE_FRAG_SHADER;
-extern const ShaderStageSpecification FLEX_SPHERE_FRAG_SHADER_TETRA;
+extern const ShaderStageSpecification FLEX_SPHERE_TETRA_FRAG_SHADER;
 
 extern const ShaderStageSpecification FLEX_POINTQUAD_VERT_SHADER;
 extern const ShaderStageSpecification FLEX_POINTQUAD_GEOM_SHADER;

@@ -277,6 +277,11 @@ void rasterizeTetra(std::string filename) {
   int h = view::bufferHeight;
   std::vector<unsigned char> buff = render::engine->sceneBufferFinal->readBuffer();
 
+  // Debug
+  for (size_t i = 0; i < 4; i++) {
+    std::cout << static_cast<int>(buff[i]) << std::endl;
+  }
+
   // Save to file
   saveImage(filename, &(buff.front()), w, h, 4);
 
