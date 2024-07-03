@@ -154,8 +154,6 @@ R"(
            ${ PERTURB_SHADE_NORMAL }$
            ${ GENERATE_LIT_COLOR }$
 
-           ${ PERTURB_LIT_COLOR }$
-
            // Write output
            outputF = litTetracolor; 
         }

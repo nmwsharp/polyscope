@@ -1528,6 +1528,14 @@ SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantityImpl(std::string name
   return q;
 }
 
+SurfaceFaceTetracolorQuantity* SurfaceMesh::addFaceTetracolorQuantityImpl(std::string name,
+                                                                          const std::vector<glm::vec4>& tetracolors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SurfaceFaceTetracolorQuantity* q = new SurfaceFaceTetracolorQuantity(name, *this, tetracolors);
+  addQuantity(q);
+  return q;
+}
+
 SurfaceTextureColorQuantity*
 SurfaceMesh::addTextureColorQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX,
                                          size_t dimY, const std::vector<glm::vec3>& colors, ImageOrigin imageOrigin) {

@@ -239,6 +239,12 @@ SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantity(std::string name, co
 }
 
 template <class T>
+SurfaceFaceTetracolorQuantity* SurfaceMesh::addFaceTetracolorQuantity(std::string name, const T& tetracolors) {
+  validateSize<T>(tetracolors, faceDataSize, "face tetracolor quantity " + name);
+  return addFaceTetracolorQuantityImpl(name, standardizeVectorArray<glm::vec4, 4>(tetracolors));
+}
+
+template <class T>
 SurfaceTextureColorQuantity*
 SurfaceMesh::addTextureColorQuantity(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY,
                                      const T& colors, ImageOrigin imageOrigin) {

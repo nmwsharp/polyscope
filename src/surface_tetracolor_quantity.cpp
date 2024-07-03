@@ -17,7 +17,10 @@ void SurfaceTetracolorQuantity::draw() {
   }
 
   // Set uniforms
-  return;
+  parent.setStructureUniforms(*program);
+  parent.setSurfaceMeshUniforms(*program);
+  
+  program->draw();
 }
 
 std::string SurfaceTetracolorQuantity::niceName() {
@@ -50,6 +53,30 @@ void SurfaceVertexTetracolorQuantity::createProgram() {
 
   parent.setMeshGeometryAttributes(*program);
   program->setAttribute("a_tetracolor", tetracolors.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
+}
+
+// ========================================================
+// ==========            Face Color              ==========
+// ========================================================
+
+SurfaceFaceTetracolorQuantity::SurfaceFaceTetracolorQuantity(std::string name, SurfaceMesh& mesh_,
+                                                             std::vector<glm::vec4> tetracolorValues_)
+  : SurfaceTetracolorQuantity(name, mesh_, "face", tetracolorValues_) {}
+
+void SurfaceFaceTetracolorQuantity::createProgram() {
+  // Create the shader program to draw this quantity
+  program = render::engine->requestShader("MESH_TETRA",
+    render::engine->addMaterialRules("flat_tetra",
+      addTetracolorRules(
+        parent.addSurfaceMeshRules(
+          {"MESH_PROPAGATE_TETRACOLOR", "SHADE_TETRACOLOR"}
+        )
+      )
+    )
+  );
+
+  parent.setMeshGeometryAttributes(*program);
+  program->setAttribute("a_tetracolor", tetracolors.getIndexedRenderAttributeBuffer(parent.triangleFaceInds));
 }
 
 } // namespace polyscope
