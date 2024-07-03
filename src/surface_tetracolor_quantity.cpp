@@ -20,6 +20,7 @@ void SurfaceTetracolorQuantity::draw() {
   parent.setStructureUniforms(*program);
   parent.setSurfaceMeshUniforms(*program);
   
+  render::engine->setBlendMode(BlendMode::Disable);
   program->draw();
 }
 

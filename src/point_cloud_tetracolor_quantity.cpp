@@ -20,6 +20,7 @@ void PointCloudTetracolorQuantity::draw() {
   parent.setPointCloudUniforms(*pointProgram);
   setTetracolorUniforms(*pointProgram);
 
+  render::engine->setBlendMode(BlendMode::Disable);
   pointProgram->draw();
 }
 
