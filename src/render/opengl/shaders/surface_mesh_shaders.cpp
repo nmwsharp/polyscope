@@ -16,6 +16,7 @@ const ShaderStageSpecification FLEX_MESH_VERT_SHADER = {
     // uniforms
     {
         {"u_modelView", RenderDataType::Matrix44Float},
+        {"u_modelMatrix", RenderDataType::Matrix44Float},
         {"u_projMatrix", RenderDataType::Matrix44Float},
     }, 
 
@@ -33,6 +34,7 @@ R"(
         ${ GLSL_VERSION }$
 
         uniform mat4 u_modelView;
+        uniform mat4 u_modelMatrix;
         uniform mat4 u_projMatrix;
         
         in uint a_faceInds;
@@ -42,6 +44,7 @@ R"(
         in vec3 a_barycoord;
         out vec3 a_barycoordToFrag;
         out vec3 a_vertexNormalToFrag;
+        out vec3 a_fragPosToFrag;
         
         ${ VERT_DECLARATIONS }$
         
@@ -49,8 +52,9 @@ R"(
         {
             gl_Position = u_projMatrix * u_modelView * vec4(a_vertexPositions,1.);
             
-            a_vertexNormalToFrag = mat3(u_modelView) * a_vertexNormals;
+            a_vertexNormalToFrag = mat3(transpose(inverse(u_modelMatrix))) * a_vertexNormals;
             a_barycoordToFrag = a_barycoord;
+            a_fragPosToFrag = vec3(u_modelMatrix * vec4(a_vertexPositions, 1.0));
 
             ${ VERT_ASSIGNMENTS }$
         }
@@ -76,6 +80,9 @@ R"(
         ${ GLSL_VERSION }$
         in vec3 a_vertexNormalToFrag;
         in vec3 a_barycoordToFrag;
+        in vec3 a_fragPosToFrag;
+
+        uniform vec3 u_camWorldPos;
 
         layout(location = 0) out vec4 outputF;
 

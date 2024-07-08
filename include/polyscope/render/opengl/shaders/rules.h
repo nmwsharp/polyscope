@@ -34,6 +34,7 @@ extern const ShaderReplacementRule SHADE_BASECOLOR;             // constant from
 extern const ShaderReplacementRule PREMULTIPLY_COLOR;
 
 extern const ShaderReplacementRule SHADE_TETRACOLOR;
+extern const ShaderReplacementRule COMPUTE_PHONG_SHADING;
 
 // Positions, culling, etc
 extern const ShaderReplacementRule GENERATE_VIEW_POS;          // computes viewPos, position in viewspace for fragment

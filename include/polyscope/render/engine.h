@@ -486,6 +486,9 @@ public:
   std::vector<std::string> addMaterialRules(std::string materialName, std::vector<std::string> initRules);
   void setMaterialUniforms(ShaderProgram& program, const std::string& mat);
 
+  // Set camera uniforms for shader programs
+  void setCameraUniforms(ShaderProgram& program);
+
   // === Scene data and niceties
   GroundPlane groundPlane;
 

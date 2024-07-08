@@ -2521,6 +2521,7 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("ISOLINE_STRIPE_VALUECOLOR", ISOLINE_STRIPE_VALUECOLOR);
   registerShaderRule("CHECKER_VALUE2COLOR", CHECKER_VALUE2COLOR);
   registerShaderRule("INVERSE_TONEMAP", INVERSE_TONEMAP);
+  registerShaderRule("COMPUTE_PHONG_SHADING", COMPUTE_PHONG_SHADING);
 
   // Texture and image things
   registerShaderRule("TEXTURE_ORIGIN_UPPERLEFT", TEXTURE_ORIGIN_UPPERLEFT);

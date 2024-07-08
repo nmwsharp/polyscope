@@ -564,6 +564,13 @@ void Engine::setMaterialUniforms(ShaderProgram& program, const std::string& mat)
   }
 }
 
+void Engine::setCameraUniforms(ShaderProgram& program) {
+  if (program.hasUniform("u_camWorldPos")) {
+    glm::vec3 camWorldPos = view::getCameraWorldPosition();
+    program.setUniform("u_camWorldPos", glm::value_ptr(camWorldPos));
+  }
+}
+
 void Engine::renderBackground() {
   switch (background) {
   case BackgroundView::None:
@@ -930,7 +937,12 @@ void Engine::loadDefaultMaterial(std::string name) {
   else if(name == "normal") {
     newMaterial->supportsRGB = false;
     for(int i = 0; i < 4; i++) {buff[i] = &bindata_normal[0]; buffSize[i] = bindata_normal.size();}
-	} else {
+	} 
+  else if (name == "phong") {
+    newMaterial->supportsRGB = true;
+    newMaterial->rules = {"COMPUTE_PHONG_SHADING"};
+  }
+  else {
     exception("unrecognized default material name " + name);
   }
   // clang-format on
@@ -1029,6 +1041,7 @@ void Engine::loadDefaultMaterials() {
   loadDefaultMaterial("ceramic");
   loadDefaultMaterial("jade");
   loadDefaultMaterial("normal");
+  loadDefaultMaterial("phong");
 }
 
 

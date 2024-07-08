@@ -714,6 +714,7 @@ void SurfaceMesh::draw() {
     setSurfaceMeshUniforms(*program);
     program->setUniform("u_baseColor", getSurfaceColor());
     render::engine->setMaterialUniforms(*program, getMaterial());
+    render::engine->setCameraUniforms(*program);
 
     program->draw();
   }
