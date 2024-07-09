@@ -1,30 +1,37 @@
 
 #pragma once
 
-#include "polyscope/polyscope.h"
+#include "glm/vec3.hpp"
+#include <string>
 
 namespace polyscope {
+// Struct for data that will be passed to shader programs
+struct PointLightData {
+  glm::vec3 position;
+  glm::vec3 color;
+  bool enabled;
 
-// TODO: PointLight should eventually inherit from Light
+  PointLightData(glm::vec3 position_, glm::vec3 color_, bool val)
+    : position(position_), color(color_), enabled(val) {}
+}; // struct PointLightData
+
 class PointLight {
 public:
-  PointLight(std::string name_, glm::vec3 lightPosition_, glm::vec3 lightColor_);
+  PointLight(std::string name_, glm::vec3 position_, glm::vec3 color_);
+  ~PointLight();
+
+  void updateLightPosition(glm::vec3 newPosition);
+  void updateLightColor(glm::vec3 newColor);
+  void setEnabled(bool newVal);
+  bool isEnabled();
 
 private:
   std::string name;
-  // TODO: should these be PersistentValues?
-  glm::vec3 lightPosition;
-  glm::vec3 lightColor;
-
+  PointLightData* data;
 }; // class PointLight
 
-// Add a point light to polyscope
-PointLight* registerPointLight(std::string name, glm::vec3 lightPosition, glm::vec3 lightColor = glm::vec3{0.0, 0.0, 0.0});
-
-// Get a point light from polyscope
-inline PointLight* getPointLight(std::string name = "");
-inline bool hasPointLight(std::string name = "");
-inline void removePointLight(std::string name = "", bool errorIfAbsent = false);
+PointLight* registerPointLight(std::string name, glm::vec3 position, glm::vec3 color = glm::vec3{1.0, 1.0, 1.0});
+inline void removePointLight(std::string name);
 
 } // namespace polyscope
 

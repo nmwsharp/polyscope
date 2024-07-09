@@ -245,6 +245,9 @@ SET(SRCS
   imgui_config.cpp
   fullscreen_artist.cpp
 
+  # Lighting
+  point_light.cpp
+
   ## Embedded binary data
   render/bindata/bindata_font_lato_regular.cpp
   render/bindata/bindata_font_cousine_regular.cpp
@@ -309,6 +312,8 @@ SET(HEADERS
   ${INCLUDE_ROOT}/point_cloud_scalar_quantity.h
   ${INCLUDE_ROOT}/point_cloud_parameterization_quantity.h
   ${INCLUDE_ROOT}/point_cloud_vector_quantity.h
+  ${INCLUDE_ROOT}/point_light.h
+  ${INCLUDE_ROOT}/point_light.ipp
   ${INCLUDE_ROOT}/polyscope.h
   ${INCLUDE_ROOT}/quantity.h
   ${INCLUDE_ROOT}/quantity.ipp

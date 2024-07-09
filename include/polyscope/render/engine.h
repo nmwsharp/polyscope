@@ -10,6 +10,7 @@
 #include "polyscope/render/color_maps.h"
 #include "polyscope/render/ground_plane.h"
 #include "polyscope/render/materials.h"
+#include "polyscope/point_light.h"
 #include "polyscope/types.h"
 #include "polyscope/view.h"
 
@@ -436,6 +437,20 @@ protected:
 };
 
 
+class LightManager {
+public:
+  LightManager();
+  virtual ~LightManager();
+
+  virtual void registerLight(const PointLight& light) = 0;
+  virtual void deleteLight(std::string name) = 0;
+  
+protected:
+  const size_t MAX_LIGHTS = 10;
+  std::map<std::string, std::unique_ptr<PointLight>> pointLightsMap;
+}; // class LightManager
+
+
 class Engine {
 
 public:
@@ -665,6 +680,9 @@ protected:
   std::vector<std::string> defaultRules_sceneObject{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER"};
   std::vector<std::string> defaultRules_pick{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "SHADE_COLOR", "LIGHT_PASSTHRU"};
   std::vector<std::string> defaultRules_process{"GLSL_VERSION"};
+
+  // Light Manager
+  LightManager* lightManager;
 };
 
 
@@ -684,7 +702,6 @@ void initializeRenderEngine(std::string backend = "");
 
 // Get the backend name above
 inline std::string getRenderEngineBackendName() { return engineBackendName; }
-
 
 } // namespace render
 } // namespace polyscope

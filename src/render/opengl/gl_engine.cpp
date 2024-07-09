@@ -2108,7 +2108,24 @@ void GLShaderProgram::draw() {
   checkGLError();
 }
 
-GLEngine::GLEngine() {}
+
+GLLightManager::GLLightManager() {
+
+}
+
+GLLightManager::~GLLightManager() {}
+
+void GLLightManager::registerLight(const PointLight& light) {}
+
+void GLLightManager::deleteLight(std::string name) {}
+
+void GLLightManager::updateUBO() {}
+
+
+GLEngine::GLEngine() {
+  lightManager = new GLLightManager();
+}
+
 GLEngine::~GLEngine() {}
 
 void GLEngine::checkError(bool fatal) { checkGLError(fatal); }

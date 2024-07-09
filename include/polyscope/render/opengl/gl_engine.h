@@ -365,6 +365,23 @@ private:
 };
 
 
+class GLLightManager : public LightManager {
+public:
+  GLLightManager();
+  virtual ~GLLightManager();
+
+  void registerLight(const PointLight& light) override;
+  void deleteLight(std::string name) override;
+
+protected:
+  void updateUBO();
+
+private:
+
+  
+}; // GLLightManager
+
+
 class GLEngine : public Engine {
 public:
   GLEngine();

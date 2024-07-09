@@ -27,6 +27,7 @@ class Structure;
 class Group;
 class SlicePlane;
 class Widget;
+class LightManager;
 class FloatingQuantityStructure;
 namespace view {
 extern const double defaultNearClipRatio;
@@ -67,7 +68,6 @@ struct Context {
   // ======================================================
   // === Render engine globals from engine.h
   // ======================================================
-
 
   // ======================================================
   // === View globals from view.h
