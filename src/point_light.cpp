@@ -3,11 +3,27 @@
 
 namespace polyscope {
 
-PointLight::PointLight(std::string name_, glm::vec3 position_, glm::vec3 color_)
-  : name(name_) {
-  data = new PointLightData(position_, color_, true);
-}
+const std::string PointLight::lightTypeName = "Point Light";
+
+PointLight::PointLight(std::string name, glm::vec3 position, glm::vec3 color)
+  : Light(name, position, color) {}
 
 PointLight::~PointLight() {}
+
+std::string PointLight::getTypeName() { return lightTypeName; }
+
+
+PointLight* registerPointLight(std::string name, glm::vec3 position, glm::vec3 color) {
+  checkInitialized();
+
+  PointLight* s = new PointLight(name, position, color);
+  
+  bool success = registerLight(s);
+  if (!success) {
+    // TODO: safeDelete(s)
+  }
+
+  return s;
+}
 
 } // namespace polyscope

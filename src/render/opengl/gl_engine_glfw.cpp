@@ -30,6 +30,7 @@ void initializeRenderEngine_glfw() {
   // initialize
   glEngineGLFW->initialize();
   engine->allocateGlobalBuffersAndPrograms();
+  glEngine->createLightManager();
 }
 
 GLEngineGLFW::GLEngineGLFW() {}

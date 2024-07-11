@@ -270,9 +270,11 @@ ShaderProgram::ShaderProgram(DrawMode dm) : drawMode(dm), uniqueID(render::engin
   }
 }
 
+
 LightManager::LightManager() {
   std::cout << "hello from light manager constructor" << std::endl;
 } 
+
 LightManager::~LightManager() {}
 
 Engine::Engine() {}

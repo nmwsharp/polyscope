@@ -2108,23 +2108,30 @@ void GLShaderProgram::draw() {
   checkGLError();
 }
 
+// =============================================================
+// =====================  Lighting =============================
+// =============================================================
 
 GLLightManager::GLLightManager() {
-
+  std::cout << "hello from GLLightManager constructor" << std::endl;
 }
 
 GLLightManager::~GLLightManager() {}
 
-void GLLightManager::registerLight(const PointLight& light) {}
+bool GLLightManager::registerLight(std::string name, glm::vec3 pos, glm::vec3 col) {
+  std::cout << "hello from GLLightManager::registerLight()" << std::endl;
+  return true;
+}
 
-void GLLightManager::deleteLight(std::string name) {}
+// void GLLightManager::removeLight(std::string name) {}
 
 void GLLightManager::updateUBO() {}
 
+// =============================================================
+// =====================  Engine ===============================
+// =============================================================
 
-GLEngine::GLEngine() {
-  lightManager = new GLLightManager();
-}
+GLEngine::GLEngine() {}
 
 GLEngine::~GLEngine() {}
 
@@ -2619,6 +2626,9 @@ void GLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
       {"SLICE_PLANE_VOLUMEGRID_CULL_" + uniquePostfix, generateVolumeGridSlicePlaneRule(uniquePostfix)});
 }
 
+void GLEngine::createLightManager() {
+  lightManager = new GLLightManager();
+}
 
 } // namespace backend_openGL3
 } // namespace render

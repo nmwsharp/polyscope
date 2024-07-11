@@ -3,5 +3,4 @@
 
 namespace polyscope {
 
-
 } // namespace polyscope

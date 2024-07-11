@@ -36,6 +36,7 @@ typedef GLuint ShaderHandle;
 typedef GLuint ProgramHandle;
 typedef GLuint AttributeHandle;
 typedef GLuint VertexBufferHandle;
+typedef GLuint UBOHandle;
 
 typedef GLint UniformLocation;
 typedef GLint AttributeLocation;
@@ -364,20 +365,29 @@ private:
   AttributeHandle vaoHandle;
 };
 
+// Used to pass data to UBO for shaders
+struct PointLightData {
+  glm::vec3 position;
+  glm::vec3 color;
+  bool enabled;
+
+  PointLightData(glm::vec3 pos, glm::vec3 col, bool val)
+    : position(pos), color(col), enabled(val) {}
+}; // struct PointLightData
 
 class GLLightManager : public LightManager {
 public:
   GLLightManager();
   virtual ~GLLightManager();
 
-  void registerLight(const PointLight& light) override;
-  void deleteLight(std::string name) override;
+  bool registerLight(std::string name, glm::vec3 pos, glm::vec3 col) override;
+  // void removeLight(std::string name) override;
 
 protected:
   void updateUBO();
 
 private:
-
+  UBOHandle pointLightsUBO;
   
 }; // GLLightManager
 
@@ -443,6 +453,8 @@ public:
 
   virtual void setFrontFaceCCW(bool newVal) override;
 
+  void createLightManager();
+
 protected:
   // Helpers
   virtual void createSlicePlaneFliterRule(std::string name) override;
@@ -458,6 +470,7 @@ protected:
   std::shared_ptr<GLCompiledProgram> getCompiledProgram(const std::string& programName,
                                                         const std::vector<std::string>& customRules,
                                                         ShaderReplacementDefaults defaults);
+
 };
 
 } // namespace backend_openGL3

@@ -10,7 +10,6 @@
 #include "polyscope/render/color_maps.h"
 #include "polyscope/render/ground_plane.h"
 #include "polyscope/render/materials.h"
-#include "polyscope/point_light.h"
 #include "polyscope/types.h"
 #include "polyscope/view.h"
 
@@ -436,18 +435,17 @@ protected:
   uint32_t instanceCount = INVALID_IND_32;
 };
 
-
 class LightManager {
 public:
   LightManager();
   virtual ~LightManager();
 
-  virtual void registerLight(const PointLight& light) = 0;
-  virtual void deleteLight(std::string name) = 0;
+  virtual bool registerLight(std::string name, glm::vec3 pos, glm::vec3 col) = 0;
+  // virtual void removeLight(std::string name) = 0;
   
 protected:
   const size_t MAX_LIGHTS = 10;
-  std::map<std::string, std::unique_ptr<PointLight>> pointLightsMap;
+
 }; // class LightManager
 
 
@@ -646,6 +644,9 @@ public:
   ImFont* monoFont = nullptr;
   FrameBuffer* currRenderFramebuffer = nullptr;
 
+  // Light Manager
+  LightManager* lightManager;
+
 protected:
   // TODO Manage a cache of compiled shaders?
 
@@ -681,8 +682,6 @@ protected:
   std::vector<std::string> defaultRules_pick{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "SHADE_COLOR", "LIGHT_PASSTHRU"};
   std::vector<std::string> defaultRules_process{"GLSL_VERSION"};
 
-  // Light Manager
-  LightManager* lightManager;
 };
 
 

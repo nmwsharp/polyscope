@@ -246,6 +246,7 @@ SET(SRCS
   fullscreen_artist.cpp
 
   # Lighting
+  light.cpp
   point_light.cpp
 
   ## Embedded binary data
@@ -297,6 +298,8 @@ SET(HEADERS
   ${INCLUDE_ROOT}/imgui_config.h
   ${INCLUDE_ROOT}/implicit_helpers.h
   ${INCLUDE_ROOT}/implicit_helpers.ipp
+  ${INCLUDE_ROOT}/light.h
+  ${INCLUDE_ROOT}/light.ipp
   ${INCLUDE_ROOT}/messages.h
   ${INCLUDE_ROOT}/options.h
   ${INCLUDE_ROOT}/parameterization_quantity.h

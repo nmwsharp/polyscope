@@ -13,6 +13,7 @@
 #include "polyscope/pick.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/view.h"
+#include "polyscope/light.h"
 
 #include "stb_image.h"
 
@@ -128,6 +129,14 @@ std::map<std::string, std::unique_ptr<Structure>>& getStructureMapCreateIfNeeded
     state::structures[typeName] = std::map<std::string, std::unique_ptr<Structure>>();
   }
   return state::structures[typeName];
+}
+
+// Helper to get a light map
+std::map<std::string, std::unique_ptr<Light>>& getLightMapCreateIfNeeded(std::string typeName) {
+  if (state::lights.find(typeName) == state::lights.end()) {
+    state::lights[typeName] = std::map<std::string, std::unique_ptr<Light>>();
+  }
+  return state::lights[typeName];
 }
 
 } // namespace
@@ -1162,6 +1171,36 @@ void removeGroup(std::string name, bool errorIfAbsent) {
 void removeGroup(Group* group, bool errorIfAbsent) { removeGroup(group->name, errorIfAbsent); }
 
 void removeAllGroups() { state::groups.clear(); }
+
+bool registerLight(Light* light, bool replaceIfPresent) {
+  // Get the Light Map for this light's type (point, sun, directional)
+  std::string typeName = light->getTypeName();
+  std::map<std::string, std::unique_ptr<Light>>& lMap = getLightMapCreateIfNeeded(typeName);
+
+  // Check if the light name is in use
+  bool inUse = lMap.find(light->getLightName()) != lMap.end();
+  if (inUse) {
+    if (replaceIfPresent) {
+      // TODO: removeLight(light->name)
+    } else {
+      exception("Attempted to register light with name " + light->getLightName() + 
+                ", but a light with that name already exists");
+      return false;
+    }
+  }
+
+  // Add the new light
+  lMap[light->getLightName()] = std::unique_ptr<Light>(light); // take ownership with a unique pointer
+
+  // Update lighting information through the Light Manager
+  render::engine->lightManager->registerLight(
+      light->getLightName(), 
+      light->getLightPosition(), 
+      light->getLightColor());
+
+  requestRedraw();
+  return true;
+}
 
 void refresh() {
 
