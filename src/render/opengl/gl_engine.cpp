@@ -2142,14 +2142,17 @@ GLLightManager::~GLLightManager() {
   glDeleteBuffers(1, &pointLightUBO);
 }
 
-bool GLLightManager::registerLight(std::string name, glm::vec3 position, glm::vec3 color) {
+bool GLLightManager::registerLight(std::string name, glm::vec3 pos, glm::vec3 col) {
 
   if (pointLightDataMap.size() >= MAX_LIGHTS) {
     // TODO: some error handling
     return false;
   }
 
-  pointLightDataMap[name] = {position, color, true}; 
+  glm::vec4 position = glm::vec4(pos, 0.0f);
+  glm::vec4 color_and_enabled = glm::vec4(col, 1.0f);
+
+  pointLightDataMap[name] = {position, color_and_enabled}; 
   updatePointLightUBO();
 
   return true;
@@ -2176,7 +2179,6 @@ void GLLightManager::updatePointLightUBO() {
 
   // Update the number of lights
   int numLights = pointLightDataVector.size();
-  std::cout << numLights << std::endl;
   glBufferSubData(GL_UNIFORM_BUFFER,
                   sizeof(PointLightData) * MAX_LIGHTS,
                   sizeof(int), 

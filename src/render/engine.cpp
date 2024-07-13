@@ -572,7 +572,7 @@ void Engine::setMaterialUniforms(ShaderProgram& program, const std::string& mat)
 void Engine::setCameraUniforms(ShaderProgram& program) {
   if (program.hasUniform("u_camWorldPos")) {
     glm::vec3 camWorldPos = view::getCameraWorldPosition();
-    program.setUniform("u_camWorldPos", glm::value_ptr(camWorldPos));
+    program.setUniform("u_camWorldPos", camWorldPos); 
   }
 }
 

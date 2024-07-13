@@ -368,17 +368,15 @@ private:
 
 // Used to pass data to UBO for shaders
 struct PointLightData {
-  glm::vec3 position;
-  glm::vec3 color;
-  bool enabled;
+  glm::vec4 position;
+  glm::vec4 color_and_enabled;
 
   PointLightData()
-    : position(glm::vec3{0.0, 0.0, 0.0}),
-      color(glm::vec3{1.0, 1.0, 1.0}),
-      enabled(false) {}
+    : position(glm::vec4{0.0, 0.0, 0.0, 0.0}),
+      color_and_enabled(glm::vec4{1.0, 1.0, 1.0, 1.0}) {}
 
-  PointLightData(glm::vec3 pos, glm::vec3 col, bool val)
-    : position(pos), color(col), enabled(val) {}
+  PointLightData(glm::vec4 pos, glm::vec4 col_and_enabled)
+    : position(pos), color_and_enabled(col_and_enabled) {}
 
 }; // struct PointLightData
 

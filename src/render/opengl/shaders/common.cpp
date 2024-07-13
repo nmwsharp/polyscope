@@ -14,9 +14,8 @@ ${ GLSL_VERSION }$
 #define MAX_LIGHTS 10
 
 struct PointLightData {
-  vec3 position;
-  vec3 color;
-  bool enabled;
+  vec4 position;
+  vec4 color_and_enabled;
 };
 
 )";
@@ -37,13 +36,17 @@ float LARGE_FLOAT() { return 1e25; }
 float length2(vec3 a) { return dot(a,a); }
 
 vec3 computePointLighting(PointLightData light, vec3 normal, vec3 fragPos, vec3 viewDir) {
+  bool enabled = bool(light.color_and_enabled.w);
+  if (!enabled) return vec3(0.0);
+
   // Compute ambient component
   // TODO: property of material ?
   float ambient = 0.1;
 
   // Compute diffuse component
   vec3 N = normalize(normal);
-  vec3 lightDir = normalize(light.position - fragPos);
+  vec3 lightPos = vec3(light.position);
+  vec3 lightDir = normalize(lightPos - fragPos);
   float diffuse = max(dot(N, lightDir), 0.0);
 
   // Compute specular component
@@ -51,8 +54,9 @@ vec3 computePointLighting(PointLightData light, vec3 normal, vec3 fragPos, vec3 
   vec3 reflectDir = reflect(-lightDir, N);
   float specular = pow(max(dot(viewDir, reflectDir), 0.0), 32) * specStrength;
 
-  // return (ambient + diffuse + specular) * light.color;
-  return (ambient + diffuse + specular) * vec3(1.0, 1.0, 1.0);
+  vec3 lightCol = vec3(light.color_and_enabled);
+  // return (ambient + diffuse + specular) * lightCol;
+  return specular * lightCol;
 }
 
 void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY) {

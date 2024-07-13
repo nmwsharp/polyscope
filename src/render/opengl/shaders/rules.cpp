@@ -422,10 +422,11 @@ const ShaderReplacementRule COMPUTE_PHONG_SHADING (
     /* rule name */ "COMPUTE_PHONG_SHADING",
     { /* replacement sources */
       {"GENERATE_LIT_COLOR", R"(
-        vec3 lighting = vec3(0.0, 0.0, 0.0);
+        vec3 lighting = vec3(0.0); // Accumulate lighting contributions
         vec3 viewDir = normalize(u_camWorldPos - a_fragPosToFrag);
 
-        for (int i = 0; i < 1; i++) {
+        // Point Light contributions
+        for (int i = 0; i < MAX_LIGHTS; i++) {
           lighting += computePointLighting(pointLightData[i], a_vertexNormalToFrag, a_fragPosToFrag, viewDir);     
         }        
 

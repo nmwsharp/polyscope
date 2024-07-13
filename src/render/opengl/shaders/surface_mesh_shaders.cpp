@@ -66,6 +66,7 @@ const ShaderStageSpecification FLEX_MESH_FRAG_SHADER = {
     
     // uniforms
     {
+      {"u_camWorldPos", RenderDataType::Vector3Float},
     }, 
 
     { }, // attributes
