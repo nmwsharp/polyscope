@@ -27,7 +27,6 @@ const ShaderStageSpecification FLEX_SPHERE_VERT_SHADER = {
 
     // source
 R"(
-        ${ GLSL_VERSION }$
 
         in vec3 a_position;
         uniform mat4 u_modelView;
@@ -61,7 +60,6 @@ const ShaderStageSpecification FLEX_SPHERE_GEOM_SHADER = {
 
     // source
 R"(
-        ${ GLSL_VERSION }$
 
         layout(points) in;
         layout(triangle_strip, max_vertices=4) out;
@@ -131,7 +129,6 @@ const ShaderStageSpecification FLEX_SPHERE_FRAG_SHADER = {
  
     // source
 R"(
-        ${ GLSL_VERSION }$
         uniform mat4 u_projMatrix; 
         uniform mat4 u_invProjMatrix;
         uniform vec4 u_viewport;
@@ -212,7 +209,6 @@ const ShaderStageSpecification FLEX_SPHERE_TETRA_FRAG_SHADER = {
  
     // source
 R"(
-        ${ GLSL_VERSION }$
         uniform mat4 u_projMatrix; 
         uniform mat4 u_invProjMatrix;
         uniform vec4 u_viewport;
@@ -290,7 +286,6 @@ const ShaderStageSpecification FLEX_POINTQUAD_VERT_SHADER = {
 
     // source
 R"(
-        ${ GLSL_VERSION }$
 
         in vec3 a_position;
         uniform mat4 u_modelView;
@@ -324,7 +319,6 @@ const ShaderStageSpecification FLEX_POINTQUAD_GEOM_SHADER = {
 
     // source
 R"(
-        ${ GLSL_VERSION }$
 
         layout(points) in;
         layout(triangle_strip, max_vertices=4) out;
@@ -388,7 +382,6 @@ const ShaderStageSpecification FLEX_POINTQUAD_FRAG_SHADER = {
  
     // source
 R"(
-        ${ GLSL_VERSION }$
         uniform mat4 u_projMatrix; 
         uniform float u_pointRadius;
         layout(location = 0) out vec4 outputF;

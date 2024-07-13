@@ -422,26 +422,15 @@ const ShaderReplacementRule COMPUTE_PHONG_SHADING (
     /* rule name */ "COMPUTE_PHONG_SHADING",
     { /* replacement sources */
       {"GENERATE_LIT_COLOR", R"(
-        // TODO: read these, instead of using default values
-        vec3 lightColor = vec3(1.0, 1.0, 1.0);
-        vec3 lightPos = vec3(2.0, 0.0, 2.0);
+        vec3 lighting = vec3(0.0, 0.0, 0.0);
+        vec3 viewDir = normalize(u_camWorldPos - a_fragPosToFrag);
 
-        // Compute ambient component
-        float ambient = 0.1;
-
-        // Compute diffuse component
-        vec3 vertexNorm = normalize(a_vertexNormalToFrag);
-        vec3 lightDir = normalize(lightPos - a_fragPosToFrag);
-        float diffuse = max(dot(vertexNorm, lightDir), 0.0);
-
-        // Compute specular component
-        float specStrength = 0.5; // Should be a material property?
-        vec3 viewDir = normalize(u_camWorldPos- a_fragPosToFrag);
-        vec3 reflectDir = reflect(-lightDir, vertexNorm);
-        float specular = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+        for (int i = 0; i < 1; i++) {
+          lighting += computePointLighting(pointLightData[i], a_vertexNormalToFrag, a_fragPosToFrag, viewDir);     
+        }        
 
         // Use albedoColor for the object color
-        vec3 litColor = (ambient + diffuse + specular) * lightColor * albedoColor;
+        vec3 litColor = lighting * albedoColor;
       )"}
     },
     /* uniforms */ {},

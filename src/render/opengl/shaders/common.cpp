@@ -7,6 +7,19 @@ namespace polyscope {
 namespace render {
 namespace backend_openGL3 {
 
+std::string shaderCommonDefs = R"(
+
+${ GLSL_VERSION }$
+
+#define MAX_LIGHTS 10
+
+struct PointLightData {
+  vec3 position;
+  vec3 color;
+  bool enabled;
+};
+
+)";
 
 const char* shaderCommonSource = R"(
 
@@ -22,6 +35,25 @@ const vec3 RGB_DARKRED  = vec3( .2, .0, .0 );
 
 float LARGE_FLOAT() { return 1e25; }
 float length2(vec3 a) { return dot(a,a); }
+
+vec3 computePointLighting(PointLightData light, vec3 normal, vec3 fragPos, vec3 viewDir) {
+  // Compute ambient component
+  // TODO: property of material ?
+  float ambient = 0.1;
+
+  // Compute diffuse component
+  vec3 N = normalize(normal);
+  vec3 lightDir = normalize(light.position - fragPos);
+  float diffuse = max(dot(N, lightDir), 0.0);
+
+  // Compute specular component
+  float specStrength = 0.5; // TODO: should be a material property?
+  vec3 reflectDir = reflect(-lightDir, N);
+  float specular = pow(max(dot(viewDir, reflectDir), 0.0), 32) * specStrength;
+
+  // return (ambient + diffuse + specular) * light.color;
+  return (ambient + diffuse + specular) * vec3(1.0, 1.0, 1.0);
+}
 
 void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY) {
     basisX = vec3(1., 0., 0.);

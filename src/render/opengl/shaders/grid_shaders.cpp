@@ -27,7 +27,6 @@ const ShaderStageSpecification FLEX_GRIDCUBE_VERT_SHADER = {
 
     // source
 R"(
-        ${ GLSL_VERSION }$
 
         in vec3 a_cellPosition;
         in uvec3 a_cellInd;
@@ -66,7 +65,6 @@ const ShaderStageSpecification FLEX_GRIDCUBE_GEOM_SHADER = {
 
     // source
 R"(
-        ${ GLSL_VERSION }$
 
         layout(points) in;
         layout(triangle_strip, max_vertices=14) out;
@@ -158,7 +156,6 @@ const ShaderStageSpecification FLEX_GRIDCUBE_FRAG_SHADER = {
  
     // source
 R"(
-        ${ GLSL_VERSION }$
 
         layout(location = 0) out vec4 outputF;
 
@@ -220,7 +217,6 @@ const ShaderStageSpecification FLEX_GRIDCUBE_PLANE_VERT_SHADER = {
 
     // source
 R"(
-        ${ GLSL_VERSION }$
         
         uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
@@ -279,7 +275,6 @@ const ShaderStageSpecification FLEX_GRIDCUBE_PLANE_FRAG_SHADER = {
  
     // source
 R"(
-        ${ GLSL_VERSION }$
         
         in vec3 a_coordToFrag;
         in vec3 a_normalToFrag;

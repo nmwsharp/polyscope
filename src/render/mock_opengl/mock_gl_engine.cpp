@@ -1104,6 +1104,10 @@ void GLShaderProgram::setUniform(std::string name, glm::uvec4 val) {
   throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
+void GLShaderProgram::setLightUniform(std::string name) {
+  return;
+}
+
 bool GLShaderProgram::hasAttribute(std::string name) {
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {

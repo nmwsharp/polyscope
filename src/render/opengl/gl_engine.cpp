@@ -1061,8 +1061,8 @@ void GLCompiledProgram::compileGLProgram(const std::vector<ShaderStageSpecificat
   std::vector<ShaderHandle> handles;
   for (const ShaderStageSpecification& s : stages) {
     ShaderHandle h = glCreateShader(native(s.stage));
-    std::array<const char*, 2> srcs = {s.src.c_str(), shaderCommonSource};
-    glShaderSource(h, 2, &(srcs[0]), nullptr);
+    std::array<const char*, 3> srcs = {shaderCommonDefs.c_str(), s.src.c_str(), shaderCommonSource};
+    glShaderSource(h, 3, &(srcs[0]), nullptr);
     glCompileShader(h);
 
     // Catch the error here, so we can print shader source before re-throwing
@@ -1618,6 +1618,14 @@ void GLShaderProgram::setUniform(std::string name, glm::uvec4 val) {
   throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
+void GLShaderProgram::setLightUniform(std::string name) {
+  ProgramHandle progHandle = compiledProgram->getHandle(); 
+  unsigned int index = glGetUniformBlockIndex(progHandle, name.c_str());
+  if (index != GL_INVALID_INDEX) {
+    glUniformBlockBinding(progHandle, index, 0);
+  }
+}
+
 bool GLShaderProgram::hasAttribute(std::string name) {
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name && a.location != -1) {
@@ -2113,19 +2121,74 @@ void GLShaderProgram::draw() {
 // =============================================================
 
 GLLightManager::GLLightManager() {
-  std::cout << "hello from GLLightManager constructor" << std::endl;
+
+  // Create and bind UBO
+  glGenBuffers(1, &pointLightUBO);
+  glBindBuffer(GL_UNIFORM_BUFFER, pointLightUBO);
+
+  // Allocate memory for the UBO
+  int uboSize = sizeof(PointLightData) * MAX_LIGHTS + sizeof(int);
+  glBufferData(GL_UNIFORM_BUFFER, uboSize, NULL, GL_DYNAMIC_DRAW);
+
+  // Unbind the UBO
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+  bindUBO();
 }
 
-GLLightManager::~GLLightManager() {}
+GLLightManager::~GLLightManager() {
+  // Unmap and delete the UBO
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+  glDeleteBuffers(1, &pointLightUBO);
+}
 
-bool GLLightManager::registerLight(std::string name, glm::vec3 pos, glm::vec3 col) {
-  std::cout << "hello from GLLightManager::registerLight()" << std::endl;
+bool GLLightManager::registerLight(std::string name, glm::vec3 position, glm::vec3 color) {
+
+  if (pointLightDataMap.size() >= MAX_LIGHTS) {
+    // TODO: some error handling
+    return false;
+  }
+
+  pointLightDataMap[name] = {position, color, true}; 
+  updatePointLightUBO();
+
   return true;
 }
 
 // void GLLightManager::removeLight(std::string name) {}
 
-void GLLightManager::updateUBO() {}
+void GLLightManager::updatePointLightUBO() {
+  
+  // Copy map values to a vector
+  std::vector<PointLightData> pointLightDataVector;
+  for (const auto& pair : pointLightDataMap) {
+    pointLightDataVector.push_back(pair.second);
+  }
+
+  // Bind the UBO
+  glBindBuffer(GL_UNIFORM_BUFFER, pointLightUBO);
+
+  // Update array of point lights
+  glBufferSubData(GL_UNIFORM_BUFFER, 
+                  0, 
+                  sizeof(PointLightData) * pointLightDataVector.size(),
+                  pointLightDataVector.data());
+
+  // Update the number of lights
+  int numLights = pointLightDataVector.size();
+  std::cout << numLights << std::endl;
+  glBufferSubData(GL_UNIFORM_BUFFER,
+                  sizeof(PointLightData) * MAX_LIGHTS,
+                  sizeof(int), 
+                  &numLights);
+
+  // Unbind the UBO
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void GLLightManager::bindUBO() {
+  glBindBufferBase(GL_UNIFORM_BUFFER, 0, pointLightUBO);
+}
 
 // =============================================================
 // =====================  Engine ===============================

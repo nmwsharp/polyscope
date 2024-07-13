@@ -272,7 +272,6 @@ ShaderProgram::ShaderProgram(DrawMode dm) : drawMode(dm), uniqueID(render::engin
 
 
 LightManager::LightManager() {
-  std::cout << "hello from light manager constructor" << std::endl;
 } 
 
 LightManager::~LightManager() {}
@@ -575,6 +574,10 @@ void Engine::setCameraUniforms(ShaderProgram& program) {
     glm::vec3 camWorldPos = view::getCameraWorldPosition();
     program.setUniform("u_camWorldPos", glm::value_ptr(camWorldPos));
   }
+}
+
+void Engine::setLightUniforms(ShaderProgram& program) {
+  program.setLightUniform("ubo_pointLight");    
 }
 
 void Engine::renderBackground() {

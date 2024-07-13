@@ -1194,9 +1194,10 @@ bool registerLight(Light* light, bool replaceIfPresent) {
 
   // Update lighting information through the Light Manager
   render::engine->lightManager->registerLight(
-      light->getLightName(), 
-      light->getLightPosition(), 
-      light->getLightColor());
+        light->getLightName(), 
+        light->getLightPosition(), 
+        light->getLightColor()
+      );
 
   requestRedraw();
   return true;

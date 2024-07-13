@@ -28,7 +28,6 @@ const ShaderStageSpecification FLEX_CYLINDER_VERT_SHADER = {
 
     // source
 R"(
-        ${ GLSL_VERSION }$
 
         in vec3 a_position_tail;
         in vec3 a_position_tip;
@@ -65,7 +64,6 @@ const ShaderStageSpecification FLEX_CYLINDER_GEOM_SHADER = {
 
     // source
 R"(
-        ${ GLSL_VERSION }$
 
         layout(points) in;
         layout(triangle_strip, max_vertices=14) out;
@@ -153,7 +151,6 @@ const ShaderStageSpecification FLEX_CYLINDER_FRAG_SHADER = {
  
     // source
 R"(
-        ${ GLSL_VERSION }$
         uniform mat4 u_projMatrix; 
         uniform mat4 u_invProjMatrix;
         uniform vec4 u_viewport;

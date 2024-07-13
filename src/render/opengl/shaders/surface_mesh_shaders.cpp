@@ -31,7 +31,6 @@ const ShaderStageSpecification FLEX_MESH_VERT_SHADER = {
 
     // source
 R"(
-        ${ GLSL_VERSION }$
 
         uniform mat4 u_modelView;
         uniform mat4 u_modelMatrix;
@@ -77,16 +76,23 @@ const ShaderStageSpecification FLEX_MESH_FRAG_SHADER = {
  
     // source
 R"(
-        ${ GLSL_VERSION }$
         in vec3 a_vertexNormalToFrag;
         in vec3 a_barycoordToFrag;
         in vec3 a_fragPosToFrag;
 
         uniform vec3 u_camWorldPos;
 
+        layout (std140) uniform ubo_pointLight
+        {
+          PointLightData pointLightData[MAX_LIGHTS];
+          int numLights;
+        };
+
         layout(location = 0) out vec4 outputF;
 
         ${ FRAG_DECLARATIONS }$
+        
+        vec3 computePointLighting(PointLightData light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
         void main()
         {
@@ -135,7 +141,6 @@ const ShaderStageSpecification FLEX_MESH_TETRA_FRAG_SHADER = {
  
     // source
 R"(
-        ${ GLSL_VERSION }$
         in vec3 a_vertexNormalToFrag;
         in vec3 a_barycoordToFrag;
 
@@ -186,7 +191,6 @@ const ShaderStageSpecification SIMPLE_MESH_VERT_SHADER = {
 
     // source
 R"(
-        ${ GLSL_VERSION }$
 
         uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
@@ -220,8 +224,6 @@ const ShaderStageSpecification SIMPLE_MESH_FRAG_SHADER = {
  
     // source
 R"(
-        ${ GLSL_VERSION }$
-
         layout(location = 0) out vec4 outputF;
 
         ${ FRAG_DECLARATIONS }$

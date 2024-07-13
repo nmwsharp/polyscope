@@ -304,6 +304,7 @@ public:
   void setUniform(std::string name, glm::uvec2 val) override;
   void setUniform(std::string name, glm::uvec3 val) override;
   void setUniform(std::string name, glm::uvec4 val) override;
+  void setLightUniform(std::string name) override;
 
   // = Attributes
   // clang-format off
@@ -371,8 +372,14 @@ struct PointLightData {
   glm::vec3 color;
   bool enabled;
 
+  PointLightData()
+    : position(glm::vec3{0.0, 0.0, 0.0}),
+      color(glm::vec3{1.0, 1.0, 1.0}),
+      enabled(false) {}
+
   PointLightData(glm::vec3 pos, glm::vec3 col, bool val)
     : position(pos), color(col), enabled(val) {}
+
 }; // struct PointLightData
 
 class GLLightManager : public LightManager {
@@ -380,14 +387,16 @@ public:
   GLLightManager();
   virtual ~GLLightManager();
 
-  bool registerLight(std::string name, glm::vec3 pos, glm::vec3 col) override;
+  bool registerLight(std::string name, glm::vec3 position, glm::vec3 color) override;
   // void removeLight(std::string name) override;
+  void bindUBO();
 
 protected:
-  void updateUBO();
+  void updatePointLightUBO();
 
 private:
-  UBOHandle pointLightsUBO;
+  UBOHandle pointLightUBO;
+  std::map<std::string, PointLightData> pointLightDataMap;
   
 }; // GLLightManager
 

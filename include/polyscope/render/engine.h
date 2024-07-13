@@ -51,7 +51,8 @@ enum class RenderDataType {
   UInt,
   Vector2UInt,
   Vector3UInt,
-  Vector4UInt
+  Vector4UInt,
+  UniformBufferObject,
 };
 
 enum class DeviceBufferType { Attribute, Texture1d, Texture2d, Texture3d };
@@ -368,6 +369,7 @@ public:
   virtual void setUniform(std::string name, glm::uvec2 val) = 0;
   virtual void setUniform(std::string name, glm::uvec3 val) = 0;
   virtual void setUniform(std::string name, glm::uvec4 val) = 0;
+  virtual void setLightUniform(std::string name) = 0;
 
   // = Attributes
   // clang-format off
@@ -440,7 +442,7 @@ public:
   LightManager();
   virtual ~LightManager();
 
-  virtual bool registerLight(std::string name, glm::vec3 pos, glm::vec3 col) = 0;
+  virtual bool registerLight(std::string name, glm::vec3 position, glm::vec3 color) = 0;
   // virtual void removeLight(std::string name) = 0;
   
 protected:
@@ -501,6 +503,9 @@ public:
 
   // Set camera uniforms for shader programs
   void setCameraUniforms(ShaderProgram& program);
+
+  // Set light uniforms for shader programs
+  void setLightUniforms(ShaderProgram& program);
 
   // === Scene data and niceties
   GroundPlane groundPlane;
