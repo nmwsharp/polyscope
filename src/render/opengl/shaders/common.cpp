@@ -55,8 +55,7 @@ vec3 computePointLighting(PointLightData light, vec3 normal, vec3 fragPos, vec3 
   float specular = pow(max(dot(viewDir, reflectDir), 0.0), 32) * specStrength;
 
   vec3 lightCol = vec3(light.color_and_enabled);
-  // return (ambient + diffuse + specular) * lightCol;
-  return specular * lightCol;
+  return (ambient + diffuse + specular) * lightCol;
 }
 
 void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY) {

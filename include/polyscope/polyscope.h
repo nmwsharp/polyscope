@@ -143,6 +143,11 @@ void removeGroup(Group* group, bool errorIfAbsent = true);
 void removeGroup(std::string name, bool errorIfAbsent = true);
 void removeAllGroups();
 
+// Light management
+Light* getLight(std::string type, std::string name = "");
+bool hasLight(std::string type, std::string name = "");
+void removeLight(std::string type, std::string name, bool errorIfAbsent = false);
+
 // Essentially regenerates all state and programs within Polyscope, calling refresh() recurisvely on all structures and
 // quantities
 void refresh();

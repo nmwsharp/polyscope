@@ -15,9 +15,9 @@ public:
   Light(std::string name, glm::vec3 position, glm::vec3 color);
   virtual ~Light();
 
-  // virtual Light* setLightPosition(glm::vec3 newPos);
-  // virtual Light* setLightColor(glm::vec3 newCol);
-  // virtual Light* setEnabled(bool val);
+  virtual Light* setLightPosition(glm::vec3 newPos) = 0;
+  virtual Light* setLightColor(glm::vec3 newCol) = 0;
+  virtual Light* setEnabled(bool newVal) = 0;
   virtual std::string getTypeName() = 0;
 
   bool isEnabled();

@@ -46,10 +46,13 @@ bool hasExtension(std::string str, std::string ext) {
  */
 FILE* openVideoFile(std::string filename, int fps) {
   // Create the FFmpeg command
+  int w = view::bufferWidth;
+  int h = view::bufferHeight;
+
   std::string cmd = "ffmpeg -r " + std::to_string(fps) + " "
                     "-f rawvideo "    // expect raw video input
                     "-pix_fmt rgba "  // expect RGBA input
-                    "-s 2560x1440 "   // video dimensions (default polyscope window size)
+                    "-s " + std::to_string(w) + "x" + std::to_string(h) + " " // video dimensions
                     "-i - "           // FFMpeg will read input from stdin
                     "-threads 0 "     // use optimal number of threads
                     "-preset fast "   // use fast encoding preset
@@ -276,11 +279,6 @@ void rasterizeTetra(std::string filename) {
   int w = view::bufferWidth;
   int h = view::bufferHeight;
   std::vector<unsigned char> buff = render::engine->sceneBufferFinal->readBuffer();
-
-  // Debug
-  for (size_t i = 0; i < 4; i++) {
-    std::cout << static_cast<int>(buff[i]) << std::endl;
-  }
 
   // Save to file
   saveImage(filename, &(buff.front()), w, h, 4);

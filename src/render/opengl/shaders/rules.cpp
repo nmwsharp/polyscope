@@ -426,7 +426,7 @@ const ShaderReplacementRule COMPUTE_PHONG_SHADING (
         vec3 viewDir = normalize(u_camWorldPos - a_fragPosToFrag);
 
         // Point Light contributions
-        for (int i = 0; i < MAX_LIGHTS; i++) {
+        for (int i = 0; i < numLights; i++) {
           lighting += computePointLighting(pointLightData[i], a_vertexNormalToFrag, a_fragPosToFrag, viewDir);     
         }        
 

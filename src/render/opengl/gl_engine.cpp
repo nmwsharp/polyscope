@@ -2152,16 +2152,35 @@ bool GLLightManager::registerLight(std::string name, glm::vec3 pos, glm::vec3 co
   glm::vec4 position = glm::vec4(pos, 0.0f);
   glm::vec4 color_and_enabled = glm::vec4(col, 1.0f);
 
-  pointLightDataMap[name] = {position, color_and_enabled}; 
+  pointLightDataMap[name] = PointLightData( {position, color_and_enabled} );
   updatePointLightUBO();
 
   return true;
 }
 
-// void GLLightManager::removeLight(std::string name) {}
+void GLLightManager::removeLight(std::string name) {
+  pointLightDataMap.erase(name);
+  updatePointLightUBO();
+}
+
+
+void GLLightManager::setLightPosition(std::string name, glm::vec3 newPos) {
+  pointLightDataMap[name].position = glm::vec4(newPos, 0.0f);
+  updatePointLightUBO();
+}
+
+void GLLightManager::setLightColor(std::string name, glm::vec3 newCol) {
+  float enabled = pointLightDataMap[name].color_and_enabled.w;
+  pointLightDataMap[name].color_and_enabled = glm::vec4(newCol, enabled);
+  updatePointLightUBO();
+}
+
+void GLLightManager::setEnabled(std::string name, bool newVal) {
+  pointLightDataMap[name].color_and_enabled.w = static_cast<float>(newVal);
+  updatePointLightUBO();
+}
 
 void GLLightManager::updatePointLightUBO() {
-  
   // Copy map values to a vector
   std::vector<PointLightData> pointLightDataVector;
   for (const auto& pair : pointLightDataMap) {
@@ -2171,18 +2190,20 @@ void GLLightManager::updatePointLightUBO() {
   // Bind the UBO
   glBindBuffer(GL_UNIFORM_BUFFER, pointLightUBO);
 
-  // Update array of point lights
-  glBufferSubData(GL_UNIFORM_BUFFER, 
-                  0, 
-                  sizeof(PointLightData) * pointLightDataVector.size(),
-                  pointLightDataVector.data());
-
   // Update the number of lights
   int numLights = pointLightDataVector.size();
   glBufferSubData(GL_UNIFORM_BUFFER,
                   sizeof(PointLightData) * MAX_LIGHTS,
                   sizeof(int), 
                   &numLights);
+
+  // Update array of point lights
+  if (numLights > 0) {
+    glBufferSubData(GL_UNIFORM_BUFFER, 
+                    0, 
+                    sizeof(PointLightData) * pointLightDataVector.size(),
+                    pointLightDataVector.data());
+  }
 
   // Unbind the UBO
   glBindBuffer(GL_UNIFORM_BUFFER, 0);

@@ -6,6 +6,7 @@
 #include "polyscope/render/engine.h"
 #include "polyscope/utilities.h"
 
+#include <map>
 #include <unordered_map>
 
 // Note: DO NOT include this header throughout polyscope, and do not directly make openGL calls. This header should only
@@ -386,7 +387,11 @@ public:
   virtual ~GLLightManager();
 
   bool registerLight(std::string name, glm::vec3 position, glm::vec3 color) override;
-  // void removeLight(std::string name) override;
+  void removeLight(std::string name) override;
+  void setLightPosition(std::string name, glm::vec3 newPos) override;
+  void setLightColor(std::string name, glm::vec3 newCol) override;
+  void setEnabled(std::string name, bool newVal) override;
+
   void bindUBO();
 
 protected:

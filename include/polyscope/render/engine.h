@@ -52,7 +52,6 @@ enum class RenderDataType {
   Vector2UInt,
   Vector3UInt,
   Vector4UInt,
-  UniformBufferObject,
 };
 
 enum class DeviceBufferType { Attribute, Texture1d, Texture2d, Texture3d };
@@ -443,7 +442,10 @@ public:
   virtual ~LightManager();
 
   virtual bool registerLight(std::string name, glm::vec3 position, glm::vec3 color) = 0;
-  // virtual void removeLight(std::string name) = 0;
+  virtual void removeLight(std::string name) = 0;
+  virtual void setLightPosition(std::string name, glm::vec3 newPos) = 0;
+  virtual void setLightColor(std::string name, glm::vec3 newCol) = 0;
+  virtual void setEnabled(std::string name, bool newVal) = 0;
   
 protected:
   const size_t MAX_LIGHTS = 10;
