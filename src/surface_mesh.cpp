@@ -714,6 +714,8 @@ void SurfaceMesh::draw() {
     setSurfaceMeshUniforms(*program);
     program->setUniform("u_baseColor", getSurfaceColor());
     render::engine->setMaterialUniforms(*program, getMaterial());
+    render::engine->setCameraUniforms(*program);
+    render::engine->setLightUniforms(*program);
 
     program->draw();
   }
@@ -1504,7 +1506,6 @@ MeshShadeStyle SurfaceMesh::getShadeStyle() { return shadeStyle.get(); }
 
 // === Quantity adders
 
-
 SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantityImpl(std::string name,
                                                                     const std::vector<glm::vec3>& colors) {
   checkForQuantityWithNameAndDeleteOrError(name);
@@ -1513,10 +1514,26 @@ SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantityImpl(std::string 
   return q;
 }
 
+SurfaceVertexTetracolorQuantity* SurfaceMesh::addVertexTetracolorQuantityImpl(std::string name,
+                                                                              const std::vector<glm::vec4>& tetracolors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SurfaceVertexTetracolorQuantity* q = new SurfaceVertexTetracolorQuantity(name, *this, tetracolors);
+  addQuantity(q);
+  return q;
+}
+
 SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantityImpl(std::string name,
                                                                 const std::vector<glm::vec3>& colors) {
   checkForQuantityWithNameAndDeleteOrError(name);
   SurfaceFaceColorQuantity* q = new SurfaceFaceColorQuantity(name, *this, colors);
+  addQuantity(q);
+  return q;
+}
+
+SurfaceFaceTetracolorQuantity* SurfaceMesh::addFaceTetracolorQuantityImpl(std::string name,
+                                                                          const std::vector<glm::vec4>& tetracolors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SurfaceFaceTetracolorQuantity* q = new SurfaceFaceTetracolorQuantity(name, *this, tetracolors);
   addQuantity(q);
   return q;
 }

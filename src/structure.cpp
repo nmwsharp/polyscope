@@ -225,6 +225,8 @@ bool Structure::hasExtents() { return true; }
 
 glm::mat4 Structure::getModelView() { return view::getCameraViewMatrix() * objectTransform.get(); }
 
+glm::mat4 Structure::getModelMatrix() {return objectTransform.get(); }
+
 std::vector<std::string> Structure::addStructureRules(std::vector<std::string> initRules) {
   if (render::engine->slicePlanesEnabled()) {
     if (getCullWholeElements()) {
@@ -239,6 +241,11 @@ std::vector<std::string> Structure::addStructureRules(std::vector<std::string> i
 void Structure::setStructureUniforms(render::ShaderProgram& p) {
   glm::mat4 viewMat = getModelView();
   p.setUniform("u_modelView", glm::value_ptr(viewMat));
+
+  if (p.hasUniform("u_modelMatrix")) {
+    glm::mat4 modelMat = getModelMatrix();
+    p.setUniform("u_modelMatrix", glm::value_ptr(modelMat));
+  }
 
   if (p.hasUniform("u_projMatrix")) {
     glm::mat4 projMat = view::getCameraPerspectiveMatrix();

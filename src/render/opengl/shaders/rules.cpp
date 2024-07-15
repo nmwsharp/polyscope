@@ -67,6 +67,15 @@ const ShaderReplacementRule LIGHT_PASSTHRU (
     /* textures */ {}
 );
 
+const ShaderReplacementRule LIGHT_PASSTHRU_TETRA (
+  /* rule name */ "LIGHT_PASSTHRU_TETRA",
+  { /* replacement sources */
+    {"GENERATE_LIT_COLOR", "vec4 litTetracolor = albedoTetracolor;"}
+  },
+  /* uniforms */ {},
+  /* attributes */ {},
+  /* textures */ {}
+);
 
 // input: uniform
 // output: vec3 albedoColor
@@ -107,6 +116,18 @@ const ShaderReplacementRule SHADE_COLOR(
     /* rule name */ "SHADE_COLOR",
     { /* replacement sources */
       {"GENERATE_SHADE_COLOR", "vec3 albedoColor = shadeColor;"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+// input: vec4 shadeTetracolor 
+// output: vec4 albedoTetracolor
+const ShaderReplacementRule SHADE_TETRACOLOR(
+    /* rule name */ "SHADE_TETRACOLOR",
+    { /* replacement sources */
+      {"GENERATE_SHADE_COLOR", "vec4 albedoTetracolor = shadeTetracolor;"}
     },
     /* uniforms */ {},
     /* attributes */ {},
@@ -397,6 +418,26 @@ const ShaderReplacementRule PREMULTIPLY_LIT_COLOR(
     /* textures */ {}
 );
 
+const ShaderReplacementRule COMPUTE_PHONG_SHADING (
+    /* rule name */ "COMPUTE_PHONG_SHADING",
+    { /* replacement sources */
+      {"GENERATE_LIT_COLOR", R"(
+        vec3 lighting = vec3(0.0); // Accumulate lighting contributions
+        vec3 viewDir = normalize(u_camWorldPos - a_fragPosToFrag);
+
+        // Point Light contributions
+        for (int i = 0; i < numLights; i++) {
+          lighting += computePointLighting(pointLightData[i], a_vertexNormalToFrag, a_fragPosToFrag, viewDir);     
+        }        
+
+        // Use albedoColor for the object color
+        vec3 litColor = lighting * albedoColor;
+      )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
 
 // TODO delete me
 const ShaderReplacementRule CULL_POS_FROM_VIEW (
@@ -411,7 +452,6 @@ const ShaderReplacementRule CULL_POS_FROM_VIEW (
     /* attributes */ {},
     /* textures */ {}
 );
-
 
 ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix) {
 

@@ -271,6 +271,11 @@ ShaderProgram::ShaderProgram(DrawMode dm) : drawMode(dm), uniqueID(render::engin
 }
 
 
+LightManager::LightManager() {
+} 
+
+LightManager::~LightManager() {}
+
 Engine::Engine() {}
 Engine::~Engine() {}
 
@@ -562,6 +567,17 @@ void Engine::setMaterialUniforms(ShaderProgram& program, const std::string& mat)
   if (m.setUniforms) {
     m.setUniforms(program);
   }
+}
+
+void Engine::setCameraUniforms(ShaderProgram& program) {
+  if (program.hasUniform("u_camWorldPos")) {
+    glm::vec3 camWorldPos = view::getCameraWorldPosition();
+    program.setUniform("u_camWorldPos", camWorldPos); 
+  }
+}
+
+void Engine::setLightUniforms(ShaderProgram& program) {
+  program.setLightUniform("ubo_pointLight");    
 }
 
 void Engine::renderBackground() {
@@ -911,6 +927,10 @@ void Engine::loadDefaultMaterial(std::string name) {
     newMaterial->setUniforms = [&](ShaderProgram& p){ setTonemapUniforms(p); };
 
   }
+  else if (name == "flat_tetra") {
+    newMaterial->supportsRGB = true;
+    newMaterial->rules = {"LIGHT_PASSTHRU_TETRA"};
+  }
   else if(name == "mud") {
     newMaterial->supportsRGB = false;
     for(int i = 0; i < 4; i++) {buff[i] = &bindata_mud[0]; buffSize[i] = bindata_mud.size();}
@@ -926,7 +946,12 @@ void Engine::loadDefaultMaterial(std::string name) {
   else if(name == "normal") {
     newMaterial->supportsRGB = false;
     for(int i = 0; i < 4; i++) {buff[i] = &bindata_normal[0]; buffSize[i] = bindata_normal.size();}
-	} else {
+	} 
+  else if (name == "phong") {
+    newMaterial->supportsRGB = true;
+    newMaterial->rules = {"COMPUTE_PHONG_SHADING"};
+  }
+  else {
     exception("unrecognized default material name " + name);
   }
   // clang-format on
@@ -1020,10 +1045,12 @@ void Engine::loadDefaultMaterials() {
   loadDefaultMaterial("wax");
   loadDefaultMaterial("candy");
   loadDefaultMaterial("flat");
+  loadDefaultMaterial("flat_tetra");
   loadDefaultMaterial("mud");
   loadDefaultMaterial("ceramic");
   loadDefaultMaterial("jade");
   loadDefaultMaterial("normal");
+  loadDefaultMaterial("phong");
 }
 
 
@@ -1110,6 +1137,8 @@ void Engine::loadDefaultColorMap(std::string name) {
   const std::vector<glm::vec3>* buff = nullptr;
   if (name == "viridis") {
     buff = &CM_VIRIDIS;
+  } else if (name == "grayscale") {
+    buff = &CM_GRAYSCALE;
   } else if (name == "coolwarm") {
     buff = &CM_COOLWARM;
   } else if (name == "blues") {
@@ -1140,6 +1169,7 @@ void Engine::loadDefaultColorMap(std::string name) {
 
 void Engine::loadDefaultColorMaps() {
   loadDefaultColorMap("viridis");
+  loadDefaultColorMap("grayscale");
   loadDefaultColorMap("coolwarm");
   loadDefaultColorMap("blues");
   loadDefaultColorMap("reds");

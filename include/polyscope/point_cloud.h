@@ -4,6 +4,7 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
+#include "polyscope/colors.h"
 #include "polyscope/persistent_value.h"
 #include "polyscope/point_cloud_quantity.h"
 #include "polyscope/polyscope.h"
@@ -14,6 +15,7 @@
 #include "polyscope/structure.h"
 
 #include "polyscope/point_cloud_color_quantity.h"
+#include "polyscope/point_cloud_tetracolor_quantity.h"
 #include "polyscope/point_cloud_parameterization_quantity.h"
 #include "polyscope/point_cloud_scalar_quantity.h"
 #include "polyscope/point_cloud_vector_quantity.h"
@@ -27,6 +29,7 @@ class PointCloud;
 
 // Forward declare quantity types
 class PointCloudColorQuantity;
+class PointCloudTetracolorQuantity;
 class PointCloudScalarQuantity;
 class PointCloudParameterizationQuantity;
 class PointCloudVectorQuantity;
@@ -79,6 +82,9 @@ public:
   // Colors
   template <class T>
   PointCloudColorQuantity* addColorQuantity(std::string name, const T& values);
+
+  template <class T>
+  PointCloudTetracolorQuantity* addTetracolorQuantity(std::string name, const T& values);
 
   // Vectors
   template <class T>
@@ -169,6 +175,8 @@ private:
   PointCloudParameterizationQuantity*
   addLocalParameterizationQuantityImpl(std::string name, const std::vector<glm::vec2>& param, ParamCoordsType type);
   PointCloudColorQuantity* addColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
+  PointCloudColorQuantity* addColorQuantityImpl(std::string name, const std::vector<glm::vec4>& colors);
+  PointCloudTetracolorQuantity* addTetracolorQuantityImpl(std::string name, const std::vector<glm::vec4>& tetracolors);
   PointCloudVectorQuantity* addVectorQuantityImpl(std::string name, const std::vector<glm::vec3>& vectors,
                                                   VectorType vectorType);
 

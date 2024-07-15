@@ -16,6 +16,7 @@ const ShaderStageSpecification FLEX_MESH_VERT_SHADER = {
     // uniforms
     {
         {"u_modelView", RenderDataType::Matrix44Float},
+        {"u_modelMatrix", RenderDataType::Matrix44Float},
         {"u_projMatrix", RenderDataType::Matrix44Float},
     }, 
 
@@ -30,9 +31,9 @@ const ShaderStageSpecification FLEX_MESH_VERT_SHADER = {
 
     // source
 R"(
-        ${ GLSL_VERSION }$
 
         uniform mat4 u_modelView;
+        uniform mat4 u_modelMatrix;
         uniform mat4 u_projMatrix;
         
         in uint a_faceInds;
@@ -42,6 +43,7 @@ R"(
         in vec3 a_barycoord;
         out vec3 a_barycoordToFrag;
         out vec3 a_vertexNormalToFrag;
+        out vec3 a_fragPosToFrag;
         
         ${ VERT_DECLARATIONS }$
         
@@ -49,8 +51,9 @@ R"(
         {
             gl_Position = u_projMatrix * u_modelView * vec4(a_vertexPositions,1.);
             
-            a_vertexNormalToFrag = mat3(u_modelView) * a_vertexNormals;
+            a_vertexNormalToFrag = mat3(transpose(inverse(u_modelMatrix))) * a_vertexNormals;
             a_barycoordToFrag = a_barycoord;
+            a_fragPosToFrag = vec3(u_modelMatrix * vec4(a_vertexPositions, 1.0));
 
             ${ VERT_ASSIGNMENTS }$
         }
@@ -63,6 +66,7 @@ const ShaderStageSpecification FLEX_MESH_FRAG_SHADER = {
     
     // uniforms
     {
+      {"u_camWorldPos", RenderDataType::Vector3Float},
     }, 
 
     { }, // attributes
@@ -73,13 +77,23 @@ const ShaderStageSpecification FLEX_MESH_FRAG_SHADER = {
  
     // source
 R"(
-        ${ GLSL_VERSION }$
         in vec3 a_vertexNormalToFrag;
         in vec3 a_barycoordToFrag;
+        in vec3 a_fragPosToFrag;
+
+        uniform vec3 u_camWorldPos;
+
+        layout (std140) uniform ubo_pointLight
+        {
+          PointLightData pointLightData[MAX_LIGHTS];
+          int numLights;
+        };
 
         layout(location = 0) out vec4 outputF;
 
         ${ FRAG_DECLARATIONS }$
+        
+        vec3 computePointLighting(PointLightData light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
         void main()
         {
@@ -112,6 +126,53 @@ R"(
 )"
 };
 
+const ShaderStageSpecification FLEX_MESH_TETRA_FRAG_SHADER = {
+    
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    {
+    }, 
+
+    { }, // attributes
+    
+    // textures 
+    {
+    },
+ 
+    // source
+R"(
+        in vec3 a_vertexNormalToFrag;
+        in vec3 a_barycoordToFrag;
+
+        layout(location = 0) out vec4 outputF;
+
+        ${ FRAG_DECLARATIONS }$
+
+        void main()
+        {
+           float depth = gl_FragCoord.z;
+           ${ GLOBAL_FRAGMENT_FILTER_PREP }$
+           ${ GLOBAL_FRAGMENT_FILTER }$
+          
+           // Shading
+           vec3 shadeNormal = a_vertexNormalToFrag;
+           ${ GENERATE_SHADE_VALUE }$
+           ${ GENERATE_SHADE_COLOR }$
+           
+           // Handle the wireframe
+           ${ APPLY_WIREFRAME }$
+
+           // Lighting
+           ${ PERTURB_SHADE_NORMAL }$
+           ${ GENERATE_LIT_COLOR }$
+
+           // Write output
+           outputF = litTetracolor; 
+        }
+)"
+};
+
 const ShaderStageSpecification SIMPLE_MESH_VERT_SHADER = {
 
     ShaderStageType::Vertex,
@@ -131,7 +192,6 @@ const ShaderStageSpecification SIMPLE_MESH_VERT_SHADER = {
 
     // source
 R"(
-        ${ GLSL_VERSION }$
 
         uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
@@ -165,8 +225,6 @@ const ShaderStageSpecification SIMPLE_MESH_FRAG_SHADER = {
  
     // source
 R"(
-        ${ GLSL_VERSION }$
-
         layout(location = 0) out vec4 outputF;
 
         ${ FRAG_DECLARATIONS }$
@@ -330,6 +388,30 @@ const ShaderReplacementRule MESH_PROPAGATE_COLOR (
     /* uniforms */ {},
     /* attributes */ {
       {"a_color", RenderDataType::Vector3Float},
+    },
+    /* textures */ {}
+);
+
+const ShaderReplacementRule MESH_PROPAGATE_TETRACOLOR (
+    /* rule name */ "MESH_PROPAGATE_TETRACOLOR",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec4 a_tetracolor;
+          out vec4 a_tetracolorToFrag;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_tetracolorToFrag = a_tetracolor;
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec4 a_tetracolorToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          vec4 shadeTetracolor = a_tetracolorToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_tetracolor", RenderDataType::Vector4Float},
     },
     /* textures */ {}
 );

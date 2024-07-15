@@ -33,7 +33,6 @@
 
 #include "stb_image.h"
 
-
 bool endsWith(const std::string& str, const std::string& suffix) {
   return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
@@ -89,9 +88,28 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
   polyscope::getCurveNetwork(curveName)->setNodeRadiusQuantity("nXabs");
 }
 
+void rotate_teapot() {
+  std::string name = "teapot";
+  auto psMesh = polyscope::getSurfaceMesh(name);
+  
+  FILE* fd = polyscope::openVideoFile("teapot.mp4");
+
+  for (size_t i = 0; i < 60; i++) {
+    glm::mat4x4 currentTransform = psMesh->getTransform();
+    glm::mat4x4 nextTransform = glm::rotate(currentTransform, glm::radians(0.25f), glm::vec3(0.0, 1.0, 0.0));
+    psMesh->setTransform(nextTransform);
+
+    polyscope::writeVideoFrame(fd);
+    // polyscope::screenshot();
+  }
+  polyscope::closeVideoFile(fd);
+  exit(0);
+}
+
 void processFileOBJ(std::string filename) {
   // Get a nice name for the file
-  std::string niceName = polyscope::guessNiceNameFromPath(filename);
+  // std::string niceName = polyscope::guessNiceNameFromPath(filename);
+  std::string niceName = "teapot";
 
   // Load mesh and polygon soup data
   std::vector<std::array<double, 3>> vertexPositions;
@@ -102,6 +120,27 @@ void processFileOBJ(std::string filename) {
     vertexPositionsGLM.push_back(glm::vec3{p[0], p[1], p[2]});
   }
   auto psMesh = polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
+
+  // Add random color to each vertex
+  // std::vector<glm::vec3> vertexColors(vertexPositions.size());
+  // for (size_t i = 0; i < vertexPositions.size(); i++) {
+  //   vertexColors[i] = glm::vec3(polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit());
+  // }
+
+  // std::vector<polyscope::Tetracolor> vertexColors(vertexPositions.size());
+  // for (size_t i = 0; i < vertexPositions.size(); i++) {
+  //   vertexColors[i] = polyscope::Tetracolor(polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit());
+  // }
+  // psMesh->addVertexColorQuantity("random colors", vertexColors);
+
+  // Add random color to each face
+  std::vector<polyscope::Tetracolor> faceColors(faceIndices.size());
+  for (size_t i = 0; i < faceIndices.size(); i++) {
+    faceColors[i] = polyscope::Tetracolor(polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit());
+  }
+  psMesh->addFaceColorQuantity("random colors", faceColors);
+
+  return;
 
   auto psSimpleMesh = polyscope::registerSimpleTriangleMesh(niceName, vertexPositionsGLM, faceIndices);
 
@@ -696,6 +735,7 @@ void addDataToPointCloud(std::string pointCloudName, const std::vector<glm::vec3
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("unit 'normal' vector", centerNormalVec);
   polyscope::getPointCloud(pointCloudName)->addVectorQuantity("to zero", toZeroVec, polyscope::VectorType::AMBIENT);
 
+
   // loadFloatingImageData(polyscope::getPointCloud(pointCloudName));
 }
 
@@ -849,21 +889,88 @@ int main(int argc, char** argv) {
 
   // Initialize polyscope
   polyscope::init();
+  polyscope::options::groundPlaneMode = polyscope::GroundPlaneMode::None;
 
   for (std::string s : files) {
-    processFile(s);
+   processFile(s);
   }
+  
+  
 
   // Create a point cloud
   for (int j = 0; j < 1; j++) {
+    // Generate random point positions
     std::vector<glm::vec3> points;
-    for (size_t i = 0; i < 3000; i++) {
+    for (size_t i = 0; i < 100; i++) {
       points.push_back(
           glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5});
     }
-    polyscope::registerPointCloud("really great points" + std::to_string(j), points);
-    addDataToPointCloud("really great points" + std::to_string(j), points);
+    // auto point_cloud = polyscope::registerPointCloud("really great points" + std::to_string(j), points);
+    
+    std::vector<glm::vec3> onePoint(1);
+    onePoint[0] = glm::vec3(0, 0, 0);
+
+    auto point_cloud = polyscope::registerPointCloud("one point", onePoint);
+    point_cloud->setPointRadius(1);
+
+    std::vector<std::array<double, 3>> randColor(points.size());
+    for (size_t i = 0; i < points.size(); i++) {
+      randColor[i] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
+    }
+
+    // point_cloud->addColorQuantity("random colors", randColor);
+    
+    // std::vector<glm::vec4> randTetracolors(points.size());
+    // for (size_t i = 0; i < points.size(); i++) {
+    //   randTetracolors[i] = glm::vec4(polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit());
+    // }
+    std::vector<glm::vec4> RG1G2_randB(points.size());
+    for (size_t i = 0; i < points.size(); i++) {
+      RG1G2_randB[i] = glm::vec4(0.1, 0.5, 0.9, polyscope::randomUnit());
+    }
+
+    // Generate random Tricolors
+    std::vector<polyscope::Tricolor> randTricolors(points.size());
+    for (size_t i = 0; i < points.size(); i++) {
+      randTricolors[i] = polyscope::Tricolor(polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit());
+    }
+
+    std::vector<glm::vec4> oneColor;
+    oneColor.push_back(glm::vec4{0.9, 0.5, 0.1, 0.3});
+
+    std::vector<glm::vec3> oneTricolor;
+    oneTricolor.push_back(glm::vec3(0.5, 0.5, 0.5));
+
+    // Generate random Tetracolors
+    // std::vector<polyscope::Tetracolor> randTetracolors(points.size());
+    // for (size_t i = 0; i < points.size(); i++) {
+    //   randTetracolors[i] = polyscope::Tetracolor(polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit());
+    // }
+
+    // Debug Tetracolor white
+    // std::vector<polyscope::Tetracolor> tetraWhite(points.size());
+    // for (size_t i = 0; i < points.size(); i++) {
+    //   tetraWhite[i] = polyscope::Tetracolor(1.0, 1.0, 1.0, 1.0);
+    // }
+
+    // Visualize Tricolors
+    point_cloud->setMaterial("flat");
+    // polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random color", randTricolors);
+    // polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random tetracolors", randTetracolors);
+    // polyscope::getPointCloud("really great points" + std::to_string(j))->addColorQuantity("random tetracolors", tetraWhite);
+    // auto tetracolor_quantity = point_cloud->addTetracolorQuantity("random tetracolors", RG1G2_randB);
+    auto tetracolor_quantity = point_cloud->addTetracolorQuantity("one tetracolor", oneColor);
+    // auto color_quantity = point_cloud->addColorQuantity("one color", oneTricolor);
+    // auto tetracolor_quantity = polyscope::getPointCloud("really great points" + std::to_string(j))->addTetracolorQuantity("random tetracolors", randTetracolors);
+    // tetracolor_quantity->createPointProgram();
+
+    tetracolor_quantity->setEnabled(true);
+    // color_quantity->setEnabled(true);
   }
+  
+  
+  polyscope::rasterizeTetra();
+  // polyscope::screenshot();
 
   // loadFloatingImageData();
   // addVolumeGrid();
@@ -874,8 +981,12 @@ int main(int argc, char** argv) {
   // Show the gui
   polyscope::show();
 
+
+  // rotate_teapot();
+
   // main loop using manual frameTick() instead
   // while (true) {
+  //   rotateTeapot();
   //   polyscope::frameTick();
   // }
 

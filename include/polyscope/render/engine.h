@@ -51,7 +51,7 @@ enum class RenderDataType {
   UInt,
   Vector2UInt,
   Vector3UInt,
-  Vector4UInt
+  Vector4UInt,
 };
 
 enum class DeviceBufferType { Attribute, Texture1d, Texture2d, Texture3d };
@@ -368,6 +368,7 @@ public:
   virtual void setUniform(std::string name, glm::uvec2 val) = 0;
   virtual void setUniform(std::string name, glm::uvec3 val) = 0;
   virtual void setUniform(std::string name, glm::uvec4 val) = 0;
+  virtual void setLightUniform(std::string name) = 0;
 
   // = Attributes
   // clang-format off
@@ -435,6 +436,22 @@ protected:
   uint32_t instanceCount = INVALID_IND_32;
 };
 
+class LightManager {
+public:
+  LightManager();
+  virtual ~LightManager();
+
+  virtual bool registerLight(std::string name, glm::vec3 position, glm::vec3 color) = 0;
+  virtual void removeLight(std::string name) = 0;
+  virtual void setLightPosition(std::string name, glm::vec3 newPos) = 0;
+  virtual void setLightColor(std::string name, glm::vec3 newCol) = 0;
+  virtual void setEnabled(std::string name, bool newVal) = 0;
+  
+protected:
+  const size_t MAX_LIGHTS = 10;
+
+}; // class LightManager
+
 
 class Engine {
 
@@ -485,6 +502,12 @@ public:
   void setMaterial(ShaderProgram& program, const std::string& mat);
   std::vector<std::string> addMaterialRules(std::string materialName, std::vector<std::string> initRules);
   void setMaterialUniforms(ShaderProgram& program, const std::string& mat);
+
+  // Set camera uniforms for shader programs
+  void setCameraUniforms(ShaderProgram& program);
+
+  // Set light uniforms for shader programs
+  void setLightUniforms(ShaderProgram& program);
 
   // === Scene data and niceties
   GroundPlane groundPlane;
@@ -628,6 +651,9 @@ public:
   ImFont* monoFont = nullptr;
   FrameBuffer* currRenderFramebuffer = nullptr;
 
+  // Light Manager
+  LightManager* lightManager;
+
 protected:
   // TODO Manage a cache of compiled shaders?
 
@@ -662,6 +688,7 @@ protected:
   std::vector<std::string> defaultRules_sceneObject{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER"};
   std::vector<std::string> defaultRules_pick{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "SHADE_COLOR", "LIGHT_PASSTHRU"};
   std::vector<std::string> defaultRules_process{"GLSL_VERSION"};
+
 };
 
 
@@ -681,7 +708,6 @@ void initializeRenderEngine(std::string backend = "");
 
 // Get the backend name above
 inline std::string getRenderEngineBackendName() { return engineBackendName; }
-
 
 } // namespace render
 } // namespace polyscope

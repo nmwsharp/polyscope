@@ -75,6 +75,12 @@ PointCloudColorQuantity* PointCloud::addColorQuantity(std::string name, const T&
 }
 
 template <class T>
+PointCloudTetracolorQuantity* PointCloud::addTetracolorQuantity(std::string name, const T& values) {
+  validateSize(values, nPoints(), "point cloud tetracolor quantity " + name);
+  return addTetracolorQuantityImpl(name, standardizeVectorArray<glm::vec4, 4>(values));
+}
+
+template <class T>
 PointCloudScalarQuantity* PointCloud::addScalarQuantity(std::string name, const T& data, DataType type) {
   validateSize(data, nPoints(), "point cloud scalar quantity " + name);
   return addScalarQuantityImpl(name, standardizeArray<float, T>(data), type);

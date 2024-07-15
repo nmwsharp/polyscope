@@ -15,6 +15,7 @@
 #include "polyscope/internal.h"
 #include "polyscope/messages.h"
 #include "polyscope/options.h"
+#include "polyscope/light.h"
 #include "polyscope/screenshot.h"
 #include "polyscope/slice_plane.h"
 #include "polyscope/structure.h"
@@ -24,9 +25,6 @@
 #include "polyscope/widget.h"
 
 
-#include "polyscope/structure.h"
-
-
 namespace polyscope {
 
 // forward declarations
@@ -34,6 +32,7 @@ class Structure;
 class Group;
 class SlicePlane;
 class Widget;
+class Light;
 
 // Initialize polyscope, including windowing system and openGL. Should be called exactly once at the beginning of a
 // program. If initialization fails in any way, an exception will be thrown.
@@ -101,6 +100,9 @@ extern bool& doDefaultMouseInteraction;
 // a callback function used to render a "user" gui
 extern std::function<void()>& userCallback;
 
+// list of all lights in Polyscope
+extern std::map<std::string, std::map<std::string, std::unique_ptr<Light>>>& lights;
+
 // representative center for all registered structures
 glm::vec3 center();
 
@@ -140,6 +142,11 @@ Group* getGroup(std::string name);
 void removeGroup(Group* group, bool errorIfAbsent = true);
 void removeGroup(std::string name, bool errorIfAbsent = true);
 void removeAllGroups();
+
+// Light management
+Light* getLight(std::string type, std::string name = "");
+bool hasLight(std::string type, std::string name = "");
+void removeLight(std::string type, std::string name, bool errorIfAbsent = false);
 
 // Essentially regenerates all state and programs within Polyscope, calling refresh() recurisvely on all structures and
 // quantities

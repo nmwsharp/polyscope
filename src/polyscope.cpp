@@ -13,6 +13,7 @@
 #include "polyscope/pick.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/view.h"
+#include "polyscope/light.h"
 
 #include "stb_image.h"
 
@@ -128,6 +129,14 @@ std::map<std::string, std::unique_ptr<Structure>>& getStructureMapCreateIfNeeded
     state::structures[typeName] = std::map<std::string, std::unique_ptr<Structure>>();
   }
   return state::structures[typeName];
+}
+
+// Helper to get a light map
+std::map<std::string, std::unique_ptr<Light>>& getLightMapCreateIfNeeded(std::string typeName) {
+  if (state::lights.find(typeName) == state::lights.end()) {
+    state::lights[typeName] = std::map<std::string, std::unique_ptr<Light>>();
+  }
+  return state::lights[typeName];
 }
 
 } // namespace
@@ -1162,6 +1171,109 @@ void removeGroup(std::string name, bool errorIfAbsent) {
 void removeGroup(Group* group, bool errorIfAbsent) { removeGroup(group->name, errorIfAbsent); }
 
 void removeAllGroups() { state::groups.clear(); }
+
+bool registerLight(Light* light, bool replaceIfPresent) {
+  // Get the Light Map for this light's type (point, sun, directional)
+  std::string typeName = light->getTypeName();
+  std::map<std::string, std::unique_ptr<Light>>& lMap = getLightMapCreateIfNeeded(typeName);
+
+  // Check if the light name is in use
+  bool inUse = lMap.find(light->getLightName()) != lMap.end();
+  if (inUse) {
+    if (replaceIfPresent) {
+      // TODO: removeLight(light->name)
+    } else {
+      exception("Attempted to register light with name " + light->getLightName() + 
+                ", but a light with that name already exists");
+      return false;
+    }
+  }
+
+  // Add the new light
+  lMap[light->getLightName()] = std::unique_ptr<Light>(light); // take ownership with a unique pointer
+
+  // Update lighting information through the Light Manager
+  render::engine->lightManager->registerLight(
+                                  light->getLightName(), 
+                                  light->getLightPosition(), 
+                                  light->getLightColor()
+                                );
+
+  requestRedraw();
+  return true;
+}
+
+Light* getLight(std::string type, std::string name) {
+  if (type == "") return nullptr;
+
+  // If there are no lights of that type, it is an automatic fail
+  if (state::lights.find(type) == state::lights.end()) {
+    exception("No lights of type " + type + " registered");
+  }
+
+  std::map<std::string, std::unique_ptr<Light>>& lMap = state::lights[type];
+
+  // Special automatic case
+  if (name == "") {
+    if (lMap.size() != 1) {
+      exception("Cannot use automatic light get with empty name unless there is exactly one light of that type registered");
+      return nullptr;
+    }
+    return lMap.begin()->second.get();
+  }
+
+  // General case
+  if (lMap.find(name) == lMap.end()) {
+    exception("No light of type " + type + " with name " + name + " registered");
+    return nullptr;
+  }
+
+  return lMap[name].get();
+}
+
+bool hasLight(std::string type, std::string name) {
+  // If there are no lights of that type, it is an automatic fail
+  if (state::lights.find(type) == state::lights.end()) {
+    return false;
+  }
+  
+  std::map<std::string, std::unique_ptr<Light>>& lMap = state::lights[type];
+
+  // Special automatic case
+  if (name == "") {
+    if (lMap.size() != 1) {
+      exception("Cannot use automatic light check with empty name unless there is exactly one light of that type registered");
+    }
+    return true;
+  }
+  return lMap.find(name) != lMap.end();
+}
+
+void removeLight(std::string type, std::string name, bool errorIfAbsent) {
+  // If there are no lights of that type, it is an automatic fail
+  if (state::lights.find(type) == state::lights.end()) {
+    if (errorIfAbsent) {
+      exception("No lights of type " + type + " registered");
+    }
+    return;
+  }
+
+  std::map<std::string, std::unique_ptr<Light>>& lMap = state::lights[type];
+
+  // Check if light exists
+  if (lMap.find(name) == lMap.end()) {
+    if (errorIfAbsent) {
+      exception("No light of type " + type + " and name " + name + " registered");
+    }
+    return;
+  }
+
+  // Light exists, remove it
+  lMap.erase(name);
+  render::engine->lightManager->removeLight(name);
+  requestRedraw();
+  return;
+}
 
 void refresh() {
 

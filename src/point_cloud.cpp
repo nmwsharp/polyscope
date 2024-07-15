@@ -373,10 +373,16 @@ void PointCloudQuantity::buildInfoGUI(size_t pointInd) {}
 
 // === Quantity adders
 
-
 PointCloudColorQuantity* PointCloud::addColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors) {
   checkForQuantityWithNameAndDeleteOrError(name);
   PointCloudColorQuantity* q = new PointCloudColorQuantity(name, colors, *this);
+  addQuantity(q);
+  return q;
+}
+
+PointCloudTetracolorQuantity* PointCloud::addTetracolorQuantityImpl(std::string name, const std::vector<glm::vec4>& tetracolors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  PointCloudTetracolorQuantity* q = new PointCloudTetracolorQuantity(name, tetracolors, *this);
   addQuantity(q);
   return q;
 }

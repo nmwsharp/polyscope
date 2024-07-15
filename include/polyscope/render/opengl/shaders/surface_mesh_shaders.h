@@ -11,6 +11,7 @@ namespace backend_openGL3 {
 // High level pipeline
 extern const ShaderStageSpecification FLEX_MESH_VERT_SHADER;
 extern const ShaderStageSpecification FLEX_MESH_FRAG_SHADER;
+extern const ShaderStageSpecification FLEX_MESH_TETRA_FRAG_SHADER;
 
 // Minimal mesh renders
 extern const ShaderStageSpecification SIMPLE_MESH_VERT_SHADER;
@@ -29,6 +30,7 @@ extern const ShaderReplacementRule MESH_PROPAGATE_INT;
 extern const ShaderReplacementRule MESH_PROPAGATE_VALUE2;
 extern const ShaderReplacementRule MESH_PROPAGATE_TCOORD;
 extern const ShaderReplacementRule MESH_PROPAGATE_COLOR;
+extern const ShaderReplacementRule MESH_PROPAGATE_TETRACOLOR;
 extern const ShaderReplacementRule MESH_PROPAGATE_HALFEDGE_VALUE;
 extern const ShaderReplacementRule MESH_PROPAGATE_CULLPOS;
 extern const ShaderReplacementRule MESH_PROPAGATE_PICK;

@@ -8,6 +8,7 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
+#include "polyscope/colors.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/render/managed_buffer.h"
@@ -18,6 +19,7 @@
 
 // Alllll the quantities
 #include "polyscope/surface_color_quantity.h"
+#include "polyscope/surface_tetracolor_quantity.h"
 #include "polyscope/surface_parameterization_quantity.h"
 #include "polyscope/surface_scalar_quantity.h"
 #include "polyscope/surface_vector_quantity.h"
@@ -27,7 +29,9 @@ namespace polyscope {
 
 // Forward declarations for quantities
 class SurfaceVertexColorQuantity;
+class SurfaceVertexTetracolorQuantity;
 class SurfaceFaceColorQuantity;
+class SurfaceFaceTetracolorQuantity;
 class SurfaceTextureColorQuantity;
 class SurfaceVertexScalarQuantity;
 class SurfaceFaceScalarQuantity;
@@ -140,7 +144,11 @@ public:
 
   // = Colors (expect vec3 array)
   template <class T> SurfaceVertexColorQuantity* addVertexColorQuantity(std::string name, const T& data);
+  template <class T> SurfaceVertexTetracolorQuantity* addVertexTetracolorQuantity(std::string name, const T& data);
+
   template <class T> SurfaceFaceColorQuantity* addFaceColorQuantity(std::string name, const T& data);
+  template <class T> SurfaceFaceTetracolorQuantity* addFaceTetracolorQuantity(std::string name, const T& data);
+
   template <class T> SurfaceTextureColorQuantity* addTextureColorQuantity(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const T& colors, ImageOrigin imageOrigin);
   template <class T> SurfaceTextureColorQuantity* addTextureColorQuantity(std::string name, std::string paramName, size_t dimX, size_t dimY, const T& colors, ImageOrigin imageOrigin);
   
@@ -395,7 +403,9 @@ private:
   // === Quantity adders
 
   SurfaceVertexColorQuantity* addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
+  SurfaceVertexTetracolorQuantity* addVertexTetracolorQuantityImpl(std::string name, const std::vector<glm::vec4>& tetracolors);
   SurfaceFaceColorQuantity* addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
+  SurfaceFaceTetracolorQuantity* addFaceTetracolorQuantityImpl(std::string name, const std::vector<glm::vec4>& tetracolors);
   SurfaceTextureColorQuantity* addTextureColorQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX, size_t dimY, const std::vector<glm::vec3>& colors, ImageOrigin imageOrigin);
   SurfaceVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);
   SurfaceFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type);

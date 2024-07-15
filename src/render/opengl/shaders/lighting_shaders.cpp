@@ -35,7 +35,6 @@ const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER = {
     
     // source 
 R"(
-      ${ GLSL_VERSION }$
 
       in vec2 tCoord;
       uniform sampler2D t_image;

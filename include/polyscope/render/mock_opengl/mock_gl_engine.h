@@ -260,6 +260,7 @@ public:
   void setUniform(std::string name, glm::uvec2 val) override;
   void setUniform(std::string name, glm::uvec3 val) override;
   void setUniform(std::string name, glm::uvec4 val) override;
+  void setLightUniform(std::string name) override;
 
   // = Attributes
   // clang-format off

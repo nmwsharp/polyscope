@@ -1,12 +1,59 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
 #include "polyscope/render/shader_builder.h"
+#include "polyscope/render/opengl/shaders/common.h"
 
 #include "polyscope/messages.h"
 
 
 namespace polyscope {
 namespace render {
+
+std::string substituteReplacementRules(std::string progText,
+                                       std::map<std::string, std::string> replacements) {
+  bool debugPrint = false;
+  const auto npos = std::string::npos;
+  const std::string startTagToken = "${ ";
+  const std::string endTagToken = " }$";
+  std::string resultText = "";
+
+  while (!progText.empty()) {
+
+    if (debugPrint) std::cout << "searching " << progText << std::endl;
+
+    // Find the next tag in the program
+    auto tagStart = progText.find(startTagToken);
+    auto tagEnd = progText.find(endTagToken);
+
+    if (tagStart != npos && tagEnd == npos) exception("ShaderBuilder: no end tag matching start tag");
+    if (tagStart == npos && tagEnd != npos) exception("ShaderBuilder: no start tag matching end tag");
+
+    // no more tags, concatenate in the rest of the source finish looping
+    if (tagStart == npos && tagEnd == npos) {
+      resultText += progText;
+      progText = "";
+    } else {
+
+      if (debugPrint) std::cout << "FOUND TAG: " << tagStart << " " << tagEnd << std::endl;
+
+      std::string srcBefore = progText.substr(0, tagStart);
+      std::string tag = progText.substr(tagStart + startTagToken.size(), tagEnd - (tagStart + startTagToken.size()));
+      std::string srcAfter = progText.substr(tagEnd + endTagToken.size(), npos);
+
+      if (debugPrint) std::cout << "  TAG NAME: [" << tag << "]\n";
+
+      resultText += srcBefore + "\n// tag " + tag + " \n";
+      if (replacements.find(tag) != replacements.end()) {
+        resultText += replacements[tag];
+        // std::cout << "  ADDING REPLACEMENT: [" << replacements[tag] << "]\n";
+      }
+      // resultText += "// END ADDIITIONS FROM TAG ${ " + tag + " $}\n";
+      progText = srcAfter; // continue processing the remaining program text
+    }
+  }
+
+  return resultText;
+}
 
 std::vector<ShaderStageSpecification>
 applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
@@ -30,50 +77,53 @@ applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
     }
   }
 
-  const auto npos = std::string::npos;
-  const std::string startTagToken = "${ ";
-  const std::string endTagToken = " }$";
+
+  // == Apply the replacements to the shader common defs
+  // TODO: kind of hacky maybe this should not be here
+  backend_openGL3::shaderCommonDefs = substituteReplacementRules(backend_openGL3::shaderCommonDefs, replacements);
 
   // == Apply the replacements to the shader source
   std::vector<ShaderStageSpecification> replacedStages;
   for (ShaderStageSpecification stage : stages) { // iterate by value to modify
-    std::string progText = stage.src;
-    std::string resultText = "";
+    std::string resultText = substituteReplacementRules(stage.src, replacements);
 
-    while (!progText.empty()) {
+    // std::string progText = stage.src;
+    // std::string resultText = "";
 
-      if (debugPrint) std::cout << "searching " << progText << std::endl;
+    // while (!progText.empty()) {
 
-      // Find the next tag in the program
-      auto tagStart = progText.find(startTagToken);
-      auto tagEnd = progText.find(endTagToken);
+    //   if (debugPrint) std::cout << "searching " << progText << std::endl;
 
-      if (tagStart != npos && tagEnd == npos) exception("ShaderBuilder: no end tag matching start tag");
-      if (tagStart == npos && tagEnd != npos) exception("ShaderBuilder: no start tag matching end tag");
+    //   // Find the next tag in the program
+    //   auto tagStart = progText.find(startTagToken);
+    //   auto tagEnd = progText.find(endTagToken);
 
-      // no more tags, concatenate in the rest of the source finish looping
-      if (tagStart == npos && tagEnd == npos) {
-        resultText += progText;
-        progText = "";
-      } else {
+    //   if (tagStart != npos && tagEnd == npos) exception("ShaderBuilder: no end tag matching start tag");
+    //   if (tagStart == npos && tagEnd != npos) exception("ShaderBuilder: no start tag matching end tag");
 
-        if (debugPrint) std::cout << "FOUND TAG: " << tagStart << " " << tagEnd << std::endl;
+    //   // no more tags, concatenate in the rest of the source finish looping
+    //   if (tagStart == npos && tagEnd == npos) {
+    //     resultText += progText;
+    //     progText = "";
+    //   } else {
 
-        std::string srcBefore = progText.substr(0, tagStart);
-        std::string tag = progText.substr(tagStart + startTagToken.size(), tagEnd - (tagStart + startTagToken.size()));
-        std::string srcAfter = progText.substr(tagEnd + endTagToken.size(), npos);
+    //     if (debugPrint) std::cout << "FOUND TAG: " << tagStart << " " << tagEnd << std::endl;
 
-        if (debugPrint) std::cout << "  TAG NAME: [" << tag << "]\n";
+    //     std::string srcBefore = progText.substr(0, tagStart);
+    //     std::string tag = progText.substr(tagStart + startTagToken.size(), tagEnd - (tagStart + startTagToken.size()));
+    //     std::string srcAfter = progText.substr(tagEnd + endTagToken.size(), npos);
 
-        resultText += srcBefore + "\n// tag ${ " + tag + " }$\n";
-        if (replacements.find(tag) != replacements.end()) {
-          resultText += replacements[tag];
-          // std::cout << "  ADDING REPLACEMENT: [" << replacements[tag] << "]\n";
-        }
-        // resultText += "// END ADDIITIONS FROM TAG ${ " + tag + " $}\n";
-        progText = srcAfter; // continue processing the remaining program text
-      }
-    }
+    //     if (debugPrint) std::cout << "  TAG NAME: [" << tag << "]\n";
+
+    //     resultText += srcBefore + "\n// tag ${ " + tag + " }$\n";
+    //     if (replacements.find(tag) != replacements.end()) {
+    //       resultText += replacements[tag];
+    //       // std::cout << "  ADDING REPLACEMENT: [" << replacements[tag] << "]\n";
+    //     }
+    //     // resultText += "// END ADDIITIONS FROM TAG ${ " + tag + " $}\n";
+    //     progText = srcAfter; // continue processing the remaining program text
+    //   }
+    // }
 
     // For now, we put the uniform listings on the all stages, attributes on vertex shaders, and textures on fragment
     // shaders, since this is where they are mostly commonly used. These listings are only used internally by Polyscope
