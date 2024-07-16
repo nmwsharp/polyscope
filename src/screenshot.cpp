@@ -73,11 +73,11 @@ FILE* openVideoFile(std::string filename, int fps) {
  *            to openVideoFile.
  * @return: -1 if closeVideoFile fails, not -1 if successful.
  */
-int closeVideoFile(FILE* fd) {
+void closeVideoFile(FILE* fd) {
   if (!fd) {
-    return -1;
+    return;
   }
-  return pclose(fd);
+  pclose(fd);
 }
 
 
@@ -116,9 +116,9 @@ void saveImage(std::string filename, unsigned char* buffer, int w, int h, int ch
  * @param transparentBG: Whether or not transparency is enabled.
  * @return: -1 if writeVideoFrame fails, 0 on success.
  */
-int writeVideoFrame(FILE* fd, bool transparentBG) {
+void writeVideoFrame(FILE* fd, bool transparentBG) {
   if (!fd) {
-    return -1;
+    return;
   }
 
   render::engine->useAltDisplayBuffer = true;
@@ -153,12 +153,7 @@ int writeVideoFrame(FILE* fd, bool transparentBG) {
   }
 
   // Write to the FFmpeg pipe
-  size_t r = fwrite(&(buff.front()), sizeof(unsigned char) * w * h * 4, 1, fd);
-  if (r != 1) { // fwrite failed to write the full buffer
-    return -1;
-  }
-
-  return 0;
+  fwrite(&(buff.front()), sizeof(unsigned char) * w * h * 4, 1, fd);
 }
 
 

@@ -18,9 +18,9 @@ void resetScreenshotIndex();
 std::vector<unsigned char> screenshotToBuffer(bool transparentBG = true);
 
 // Write a video frame of the current view to .mp4 file.
-int writeVideoFrame(FILE* fd, bool transparentBG = true);
+void writeVideoFrame(FILE* fd, bool transparentBG = true);
 FILE* openVideoFile(std::string filename, int fps = 60);
-int closeVideoFile(FILE* fd);
+void closeVideoFile(FILE* fd);
 
 // Rasterize scene from the current view and write to file.
 void rasterizeTetra(std::string filename);
