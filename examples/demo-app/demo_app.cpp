@@ -808,6 +808,10 @@ void callback() {
     dropCameraView();
   }
 
+  if (ImGui::Button("unshow")) {
+    polyscope::unshow();
+  }
+
   if (ImGui::Button("load floating image data")) {
     loadFloatingImageData();
   }
@@ -875,9 +879,9 @@ int main(int argc, char** argv) {
   polyscope::show();
 
   // main loop using manual frameTick() instead
-  // while (true) {
-  //   polyscope::frameTick();
-  // }
+  while (!polyscope::windowRequestsClose()) {
+    polyscope::frameTick();
+  }
 
   std::cout << "!!!! shutdown time" << std::endl;
 
