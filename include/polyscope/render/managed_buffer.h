@@ -268,7 +268,7 @@ public:
   // checks for a managed buffer with the given name of any type
   // return value is (bool, type), the bool indicates whether the buffer was found, and if so the type indicates what
   // type it was
-  std::tuple<bool, ManagedBufferType> hasManagedBufferType(std::string name);
+  std::tuple<bool, BufferType> hasManagedBufferType(std::string name);
 
   template <typename T>
   void addManagedBuffer(ManagedBuffer<T>* buffer);
@@ -292,7 +292,11 @@ public:
 
 } // namespace render
 
-std::string typeName(ManagedBufferType type);
+std::string typeName(BufferType type);
+
+// convert a scalar type to BufferType (like float --> BufferType::Float)
+template<typename T>
+BufferType toBufferType();
 
 } // namespace polyscope
 

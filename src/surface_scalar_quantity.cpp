@@ -126,6 +126,7 @@ void SurfaceFaceScalarQuantity::createProgram() {
     );
   // clang-format on
 
+  // Note: duplicated in SurfaceCustomShaderQuantity
   program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(parent.triangleFaceInds));
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
@@ -171,7 +172,8 @@ void SurfaceEdgeScalarQuantity::createProgram() {
     );
   // clang-format on
 
-  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(parent.triangleAllEdgeInds));
+  // Note: duplicated in SurfaceCustomShaderQuantity
+  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(parent.triangleAllEdgeInds)); 
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());
@@ -213,6 +215,7 @@ void SurfaceHalfedgeScalarQuantity::createProgram() {
     );
   // clang-format on
 
+  // Note: duplicated in SurfaceCustomShaderQuantity
   program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(parent.triangleAllHalfedgeInds));
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
@@ -254,6 +257,7 @@ void SurfaceCornerScalarQuantity::createProgram() {
     );
   // clang-format on
 
+  // Note: duplicated in SurfaceCustomShaderQuantity
   program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());

@@ -187,6 +187,7 @@ SET(SRCS
   slice_plane.cpp
   weak_handle.cpp
   marching_cubes.cpp
+  custom_shader_quantity.cpp
 
   ## Structures
 
@@ -203,6 +204,7 @@ SET(SRCS
   surface_scalar_quantity.cpp
   surface_vector_quantity.cpp
   surface_parameterization_quantity.cpp
+  surface_custom_shader_quantity.cpp
 
   # Curve network
   curve_network.cpp
@@ -280,6 +282,8 @@ SET(HEADERS
   ${INCLUDE_ROOT}/curve_network_quantity.h
   ${INCLUDE_ROOT}/curve_network_scalar_quantity.h
   ${INCLUDE_ROOT}/curve_network_vector_quantity.h
+  ${INCLUDE_ROOT}/custom_shader_quantity.h
+  ${INCLUDE_ROOT}/custom_shader_quantity.ipp
   ${INCLUDE_ROOT}/disjoint_sets.h
   ${INCLUDE_ROOT}/depth_render_image_quantity.h
   ${INCLUDE_ROOT}/file_helpers.h
@@ -330,6 +334,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/structure.h
   ${INCLUDE_ROOT}/structure.ipp
   ${INCLUDE_ROOT}/surface_color_quantity.h
+  ${INCLUDE_ROOT}/surface_custom_shader_quantity.h
   ${INCLUDE_ROOT}/surface_mesh.h
   ${INCLUDE_ROOT}/surface_mesh.ipp
   ${INCLUDE_ROOT}/surface_mesh_quantity.h

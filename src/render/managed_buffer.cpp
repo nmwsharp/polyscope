@@ -499,31 +499,31 @@ void ManagedBuffer<T>::invokeBufferIndexCopyProgram() {
 
 // === Interact with the buffer registry
 
-std::tuple<bool, ManagedBufferType> ManagedBufferRegistry::hasManagedBufferType(std::string name) {
+std::tuple<bool, BufferType> ManagedBufferRegistry::hasManagedBufferType(std::string name) {
 
   // clang-format off
 
-  if (hasManagedBuffer<float>(name))  return std::make_tuple(true, ManagedBufferType::Float);
-  if (hasManagedBuffer<double>(name)) return std::make_tuple(true, ManagedBufferType::Double);
+  if (hasManagedBuffer<float>(name))  return std::make_tuple(true, BufferType::Float);
+  if (hasManagedBuffer<double>(name)) return std::make_tuple(true, BufferType::Double);
 
-  if (hasManagedBuffer<glm::vec2>(name)) return std::make_tuple(true, ManagedBufferType::Vec2);
-  if (hasManagedBuffer<glm::vec3>(name)) return std::make_tuple(true, ManagedBufferType::Vec3);
-  if (hasManagedBuffer<glm::vec4>(name)) return std::make_tuple(true, ManagedBufferType::Vec4);
+  if (hasManagedBuffer<glm::vec2>(name)) return std::make_tuple(true, BufferType::Vec2);
+  if (hasManagedBuffer<glm::vec3>(name)) return std::make_tuple(true, BufferType::Vec3);
+  if (hasManagedBuffer<glm::vec4>(name)) return std::make_tuple(true, BufferType::Vec4);
   
-  if (hasManagedBuffer<std::array<glm::vec3,2>>(name)) return std::make_tuple(true, ManagedBufferType::Arr2Vec3);
-  if (hasManagedBuffer<std::array<glm::vec3,3>>(name)) return std::make_tuple(true, ManagedBufferType::Arr3Vec3);
-  if (hasManagedBuffer<std::array<glm::vec3,4>>(name)) return std::make_tuple(true, ManagedBufferType::Arr4Vec3);
+  if (hasManagedBuffer<std::array<glm::vec3,2>>(name)) return std::make_tuple(true, BufferType::Arr2Vec3);
+  if (hasManagedBuffer<std::array<glm::vec3,3>>(name)) return std::make_tuple(true, BufferType::Arr3Vec3);
+  if (hasManagedBuffer<std::array<glm::vec3,4>>(name)) return std::make_tuple(true, BufferType::Arr4Vec3);
   
-  if (hasManagedBuffer<uint32_t>(name)) return std::make_tuple(true, ManagedBufferType::UInt32);
-  if (hasManagedBuffer<int32_t>(name))  return std::make_tuple(true, ManagedBufferType::Int32);
+  if (hasManagedBuffer<uint32_t>(name)) return std::make_tuple(true, BufferType::UInt32);
+  if (hasManagedBuffer<int32_t>(name))  return std::make_tuple(true, BufferType::Int32);
 
-  if (hasManagedBuffer<glm::uvec2>(name)) return std::make_tuple(true, ManagedBufferType::UVec2);
-  if (hasManagedBuffer<glm::uvec3>(name)) return std::make_tuple(true, ManagedBufferType::UVec3);
-  if (hasManagedBuffer<glm::uvec4>(name)) return std::make_tuple(true, ManagedBufferType::UVec4);
+  if (hasManagedBuffer<glm::uvec2>(name)) return std::make_tuple(true, BufferType::UVec2);
+  if (hasManagedBuffer<glm::uvec3>(name)) return std::make_tuple(true, BufferType::UVec3);
+  if (hasManagedBuffer<glm::uvec4>(name)) return std::make_tuple(true, BufferType::UVec4);
 
   // clang-format on
 
-  return std::make_tuple(false, ManagedBufferType::Float);
+  return std::make_tuple(false, BufferType::Float);
 }
 
 // === Explicit template instantiation for the supported types
@@ -589,26 +589,43 @@ template<> ManagedBufferMap<glm::uvec4>&               ManagedBufferMap<glm::uve
 
 } // namespace render
 
-std::string typeName(ManagedBufferType type) {
+std::string typeName(BufferType type) {
   switch (type) {
     // clang-format off
-    case ManagedBufferType::Float     : return "Float";    
-    case ManagedBufferType::Double    : return "Double";   
-    case ManagedBufferType::Vec2      : return "Vec2";     
-    case ManagedBufferType::Vec3      : return "Vec3";     
-    case ManagedBufferType::Vec4      : return "Vec4";     
-    case ManagedBufferType::Arr2Vec3  : return "Arr2Vec3"; 
-    case ManagedBufferType::Arr3Vec3  : return "Arr3Vec3"; 
-    case ManagedBufferType::Arr4Vec3  : return "Arr4Vec3"; 
-    case ManagedBufferType::UInt32    : return "UInt32";   
-    case ManagedBufferType::Int32     : return "Int32";    
-    case ManagedBufferType::UVec2     : return "UVec2";    
-    case ManagedBufferType::UVec3     : return "UVec3";    
-    case ManagedBufferType::UVec4     : return "UVec4";
+    case BufferType::Float     : return "Float";    
+    case BufferType::Double    : return "Double";   
+    case BufferType::Vec2      : return "Vec2";     
+    case BufferType::Vec3      : return "Vec3";     
+    case BufferType::Vec4      : return "Vec4";     
+    case BufferType::Arr2Vec3  : return "Arr2Vec3"; 
+    case BufferType::Arr3Vec3  : return "Arr3Vec3"; 
+    case BufferType::Arr4Vec3  : return "Arr4Vec3"; 
+    case BufferType::UInt32    : return "UInt32";   
+    case BufferType::Int32     : return "Int32";    
+    case BufferType::UVec2     : return "UVec2";    
+    case BufferType::UVec3     : return "UVec3";    
+    case BufferType::UVec4     : return "UVec4";
     // clang-format on
   }
   exception("bad enum");
   return 0;
 };
+
+// clang-format off
+template<> BufferType toBufferType<float>()                     { return BufferType::Float    ; }
+template<> BufferType toBufferType<double>()                    { return BufferType::Double   ; }
+template<> BufferType toBufferType<glm::vec2>()                 { return BufferType::Vec2     ; }
+template<> BufferType toBufferType<glm::vec3>()                 { return BufferType::Vec3     ; }
+template<> BufferType toBufferType<glm::vec4>()                 { return BufferType::Vec4     ; }
+template<> BufferType toBufferType<std::array<glm::vec3,2>>()   { return BufferType::Arr2Vec3 ; }
+template<> BufferType toBufferType<std::array<glm::vec3,3>>()   { return BufferType::Arr3Vec3 ; }
+template<> BufferType toBufferType<std::array<glm::vec3,4>>()   { return BufferType::Arr4Vec3 ; }
+template<> BufferType toBufferType<uint32_t>()                  { return BufferType::UInt32   ; }
+template<> BufferType toBufferType<int32_t>()                   { return BufferType::Int32    ; }
+template<> BufferType toBufferType<glm::uvec2>()                { return BufferType::UVec2    ; }
+template<> BufferType toBufferType<glm::uvec3>()                { return BufferType::UVec3    ; }
+template<> BufferType toBufferType<glm::uvec4>()                { return BufferType::UVec4    ; }
+// clang-format on
+
 
 } // namespace polyscope

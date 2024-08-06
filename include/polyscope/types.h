@@ -33,7 +33,7 @@ enum class ParamVizStyle {
   CHECKER_ISLANDS
 }; // TODO add "UV" with test UV map
 
-enum class ManagedBufferType {
+enum class BufferType {
   Float,
   Double,
   Vec2,

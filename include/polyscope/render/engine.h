@@ -403,9 +403,6 @@ public:
   // Indices
   virtual void setInstanceCount(uint32_t instanceCount) = 0;
 
-  // Call once to initialize GLSL code used by multiple shaders
-  static void initCommonShaders(); // TODO
-
   // Draw!
   virtual void draw() = 0;
 
