@@ -102,6 +102,13 @@ public:
   void setPointRadiusQuantity(std::string name, bool autoScale = true);
   void clearPointRadiusQuantity();
 
+  // === Set transparency alpha from a scalar quantity
+  // effect is multiplicative with other transparency values
+  // values are clamped to [0,1]
+  void setTransparencyQuantity(PointCloudScalarQuantity* quantity);
+  void setTransparencyQuantity(std::string name);
+  void clearTransparencyQuantity();
+
   // The points that make up this point cloud
   // Normally, the values are stored here. But if the render buffer
   // is being manually updated, they will live only in the render buffer
@@ -174,9 +181,16 @@ private:
 
   // Manage varying point size
   // which (scalar) quantity to set point size from
+  // TODO make these PersistentValue<>?
   std::string pointRadiusQuantityName = ""; // empty string means none
   bool pointRadiusQuantityAutoscale = true;
   PointCloudScalarQuantity& resolvePointRadiusQuantity(); // helper
+
+  // Manage per-element transparency
+  // which (scalar) quantity to set point size from
+  // TODO make these PersistentValue<>?
+  std::string transparencyQuantityName = "";               // empty string means none
+  PointCloudScalarQuantity& resolveTransparencyQuantity(); // helper
 };
 
 

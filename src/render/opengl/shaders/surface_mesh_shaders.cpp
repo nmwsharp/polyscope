@@ -256,6 +256,30 @@ const ShaderReplacementRule MESH_PROPAGATE_VALUE (
     /* textures */ {}
 );
 
+const ShaderReplacementRule MESH_PROPAGATE_VALUEALPHA (
+    /* rule name */ "MESH_PROPAGATE_VALUEALPHA",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in float a_valueAlpha;
+          out float a_valueAlphaToFrag;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_valueAlphaToFrag = a_valueAlpha;
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in float a_valueAlphaToFrag;
+        )"},
+      {"GENERATE_ALPHA", R"(
+          alphaOut *= clamp(a_valueAlphaToFrag, 0.f, 1.f);
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_valueAlpha", RenderDataType::Float},
+    },
+    /* textures */ {}
+);
+
 const ShaderReplacementRule MESH_PROPAGATE_FLAT_VALUE (
     /* rule name */ "MESH_PROPAGATE_FLAT_VALUE",
     { /* replacement sources */

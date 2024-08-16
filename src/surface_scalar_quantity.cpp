@@ -89,6 +89,9 @@ void SurfaceVertexScalarQuantity::createProgram() {
   program->setTextureFromColormap("t_colormap", cMap.get());
 }
 
+std::shared_ptr<render::AttributeBuffer> SurfaceVertexScalarQuantity::getAttributeBuffer() {
+  return values.getIndexedRenderAttributeBuffer(parent.triangleVertexInds);
+}
 
 void SurfaceVertexScalarQuantity::buildVertexInfoGUI(size_t vInd) {
   ImGui::TextUnformatted(name.c_str());
@@ -132,6 +135,10 @@ void SurfaceFaceScalarQuantity::createProgram() {
   program->setTextureFromColormap("t_colormap", cMap.get());
 }
 
+
+std::shared_ptr<render::AttributeBuffer> SurfaceFaceScalarQuantity::getAttributeBuffer() {
+  return values.getIndexedRenderAttributeBuffer(parent.triangleFaceInds);
+}
 
 void SurfaceFaceScalarQuantity::buildFaceInfoGUI(size_t fInd) {
   ImGui::TextUnformatted(name.c_str());
@@ -177,6 +184,9 @@ void SurfaceEdgeScalarQuantity::createProgram() {
   program->setTextureFromColormap("t_colormap", cMap.get());
 }
 
+std::shared_ptr<render::AttributeBuffer> SurfaceEdgeScalarQuantity::getAttributeBuffer() {
+  return values.getIndexedRenderAttributeBuffer(parent.triangleAllEdgeInds);
+}
 
 void SurfaceEdgeScalarQuantity::buildEdgeInfoGUI(size_t eInd) {
   ImGui::TextUnformatted(name.c_str());
@@ -219,6 +229,10 @@ void SurfaceHalfedgeScalarQuantity::createProgram() {
   program->setTextureFromColormap("t_colormap", cMap.get());
 }
 
+std::shared_ptr<render::AttributeBuffer> SurfaceHalfedgeScalarQuantity::getAttributeBuffer() {
+  return values.getIndexedRenderAttributeBuffer(parent.triangleAllHalfedgeInds);
+}
+
 void SurfaceHalfedgeScalarQuantity::buildHalfedgeInfoGUI(size_t heInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
@@ -258,6 +272,10 @@ void SurfaceCornerScalarQuantity::createProgram() {
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());
+}
+
+std::shared_ptr<render::AttributeBuffer> SurfaceCornerScalarQuantity::getAttributeBuffer() {
+  return values.getIndexedRenderAttributeBuffer(parent.triangleCornerInds);
 }
 
 void SurfaceCornerScalarQuantity::buildCornerInfoGUI(size_t cInd) {
@@ -319,5 +337,9 @@ void SurfaceTextureScalarQuantity::createProgram() {
   values.getRenderTextureBuffer()->setFilterMode(FilterMode::Linear);
 }
 
+std::shared_ptr<render::AttributeBuffer> SurfaceTextureScalarQuantity::getAttributeBuffer() {
+  exception("unsupported operation -- cannot get attribute buffer for texture scalar quantity [" + this->name + "]");
+  return std::shared_ptr<render::AttributeBuffer>(nullptr);
+}
 
 } // namespace polyscope
