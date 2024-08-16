@@ -31,7 +31,7 @@ std::string screenshotExtension = ".png";
 // Ground plane / shadows
 bool groundPlaneEnabled = true;
 GroundPlaneMode groundPlaneMode = GroundPlaneMode::TileReflection;
-GroundPlaneHeightMode groundPlaneHeightMode = GroundPlaneHeightMode::Relative;
+GroundPlaneHeightMode groundPlaneHeightMode = GroundPlaneHeightMode::Automatic;
 ScaledValue<float> groundPlaneHeightFactor = 0;
 float groundPlaneHeight = 0.;
 int shadowBlurIters = 2;

@@ -199,11 +199,11 @@ void GroundPlane::draw(bool isRedraw) {
 
   double groundHeight = -777;
   switch (options::groundPlaneHeightMode) {
-  case GroundPlaneHeightMode::Relative: {
+  case GroundPlaneHeightMode::Automatic: {
     groundHeight = bboxBottom - sign * (options::groundPlaneHeightFactor.asAbsolute() + heightEPS);
     break;
   }
-  case GroundPlaneHeightMode::Absolute: {
+  case GroundPlaneHeightMode::Manual: {
     groundHeight = options::groundPlaneHeight;
     break;
   }
@@ -400,10 +400,10 @@ void GroundPlane::buildGui() {
 
   auto heightModeName = [](const GroundPlaneHeightMode& m) -> std::string {
     switch (m) {
-    case GroundPlaneHeightMode::Relative:
-      return "Relative";
-    case GroundPlaneHeightMode::Absolute:
-      return "Absolute";
+    case GroundPlaneHeightMode::Automatic:
+      return "Automatic";
+    case GroundPlaneHeightMode::Manual:
+      return "Manual";
     }
     return "";
   };
@@ -428,11 +428,11 @@ void GroundPlane::buildGui() {
     // Height
     ImGui::PushItemWidth(80);
     switch (options::groundPlaneHeightMode) {
-    case GroundPlaneHeightMode::Relative:
+    case GroundPlaneHeightMode::Automatic:
       if (ImGui::SliderFloat("##HeightValue", options::groundPlaneHeightFactor.getValuePtr(), -1.0, 1.0))
         requestRedraw();
       break;
-    case GroundPlaneHeightMode::Absolute:
+    case GroundPlaneHeightMode::Manual:
       int iP;
       float sign;
       std::tie(iP, sign) = getGroundPlaneAxisAndSign();
@@ -448,7 +448,7 @@ void GroundPlane::buildGui() {
     ImGui::SameLine();
     ImGui::PushItemWidth(100);
     if (ImGui::BeginCombo("Height##Mode", heightModeName(options::groundPlaneHeightMode).c_str())) {
-      for (GroundPlaneHeightMode m : {GroundPlaneHeightMode::Relative, GroundPlaneHeightMode::Absolute}) {
+      for (GroundPlaneHeightMode m : {GroundPlaneHeightMode::Automatic, GroundPlaneHeightMode::Manual}) {
         std::string mName = heightModeName(m);
         if (ImGui::Selectable(mName.c_str(), options::groundPlaneHeightMode == m)) {
           options::groundPlaneHeightMode = m;

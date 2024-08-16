@@ -13,7 +13,7 @@ enum class BackgroundView { None = 0 };
 enum class ProjectionMode { Perspective = 0, Orthographic };
 enum class TransparencyMode { None = 0, Simple, Pretty };
 enum class GroundPlaneMode { None, Tile, TileReflection, ShadowOnly };
-enum class GroundPlaneHeightMode { Relative = 0, Absolute };
+enum class GroundPlaneHeightMode { Automatic = 0, Manual };
 enum class BackFacePolicy { Identical, Different, Custom, Cull };
 
 enum class PointRenderMode { Sphere = 0, Quad };
