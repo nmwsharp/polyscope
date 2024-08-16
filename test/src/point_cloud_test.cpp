@@ -181,3 +181,40 @@ TEST_F(PolyscopeTest, PointCloudScalarRadius) {
 
   polyscope::removeAllStructures();
 }
+
+TEST_F(PolyscopeTest, PointCloudScalarTransparency) {
+  auto psPoints = registerPointCloud();
+  std::vector<double> vScalar(psPoints->nPoints(), 7.);
+  std::vector<double> vScalar2(psPoints->nPoints(), 7.);
+  auto q1 = psPoints->addScalarQuantity("vScalar", vScalar);
+  auto q2 = psPoints->addScalarQuantity("vScalar2", vScalar2);
+  q1->setEnabled(true);
+
+  psPoints->setTransparencyQuantity(q1);
+  polyscope::show(3);
+
+  psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
+  polyscope::show(3);
+
+  psPoints->setTransparencyQuantity("vScalar2");
+  polyscope::show(3);
+
+  // Change transparency settings
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
+  polyscope::show(3);
+
+  q2->updateData(vScalar2);
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
+  polyscope::show(3);
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+
+  psPoints->clearPointRadiusQuantity();
+  polyscope::show(3);
+
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}

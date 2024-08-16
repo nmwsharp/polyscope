@@ -29,6 +29,7 @@ namespace polyscope {
 class SurfaceVertexColorQuantity;
 class SurfaceFaceColorQuantity;
 class SurfaceTextureColorQuantity;
+class SurfaceScalarQuantity;
 class SurfaceVertexScalarQuantity;
 class SurfaceFaceScalarQuantity;
 class SurfaceEdgeScalarQuantity;
@@ -175,6 +176,13 @@ public:
   void updateVertexPositions(const V& newPositions);
   template <class V>
   void updateVertexPositions2D(const V& newPositions2D);
+
+  // === Set transparency alpha from a scalar quantity
+  // effect is multiplicative with other transparency values
+  // values are clamped to [0,1]
+  void setTransparencyQuantity(SurfaceScalarQuantity* quantity);
+  void setTransparencyQuantity(std::string name);
+  void clearTransparencyQuantity();
 
 
   // === Indexing conventions
@@ -375,6 +383,13 @@ private:
   void buildEdgeInfoGui(size_t eInd);
   void buildHalfedgeInfoGui(size_t heInd);
   void buildCornerInfoGui(size_t cInd);
+
+  // Manage per-element transparency
+  // which (scalar) quantity to set point size from
+  // TODO make these PersistentValue<>?
+  std::string transparencyQuantityName = "";            // empty string means none
+  SurfaceScalarQuantity& resolveTransparencyQuantity(); // helper
+
 
   // ==== Gui implementation details
 

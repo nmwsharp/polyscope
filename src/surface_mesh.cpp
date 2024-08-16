@@ -826,6 +826,11 @@ void SurfaceMesh::setMeshGeometryAttributes(render::ShaderProgram& p) {
   if (wantsCullPosition()) {
     p.setAttribute("a_cullPos", faceCenters.getIndexedRenderAttributeBuffer(triangleFaceInds));
   }
+
+  if (transparencyQuantityName != "") {
+    SurfaceScalarQuantity& transparencyQ = resolveTransparencyQuantity();
+    p.setAttribute("a_valueAlpha", transparencyQ.getAttributeBuffer());
+  }
 }
 
 void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
@@ -1022,6 +1027,10 @@ std::vector<std::string> SurfaceMesh::addSurfaceMeshRules(std::vector<std::strin
 
     if (wantsCullPosition()) {
       initRules.push_back("MESH_PROPAGATE_CULLPOS");
+    }
+
+    if (transparencyQuantityName != "") {
+      initRules.push_back("MESH_PROPAGATE_VALUEALPHA");
     }
   }
   return initRules;
@@ -1300,6 +1309,26 @@ void SurfaceMesh::buildCustomOptionsUI() {
       setBackFacePolicy(BackFacePolicy::Cull);
     ImGui::EndMenu();
   }
+
+  // transparency quantity
+  if (ImGui::BeginMenu("Per-Element Transparency")) {
+
+    if (ImGui::MenuItem("none", nullptr, transparencyQuantityName == "")) clearTransparencyQuantity();
+    ImGui::Separator();
+
+    for (auto& q : quantities) {
+      SurfaceScalarQuantity* scalarQ = dynamic_cast<SurfaceScalarQuantity*>(q.second.get());
+      if (scalarQ != nullptr) {
+        if (scalarQ->definedOn == "vertex" || scalarQ->definedOn == "face" || scalarQ->definedOn == "corner") {
+
+          if (ImGui::MenuItem(scalarQ->name.c_str(), nullptr, transparencyQuantityName == scalarQ->name))
+            setTransparencyQuantity(scalarQ);
+        }
+      }
+    }
+
+    ImGui::EndMenu();
+  }
 }
 
 void SurfaceMesh::recomputeGeometryIfPopulated() {
@@ -1412,6 +1441,46 @@ long long int SurfaceMesh::selectVertex() {
   return returnVertInd;
 }
 
+void SurfaceMesh::setTransparencyQuantity(SurfaceScalarQuantity* quantity) { setTransparencyQuantity(quantity->name); }
+
+void SurfaceMesh::setTransparencyQuantity(std::string name) {
+  transparencyQuantityName = name;
+  resolveTransparencyQuantity(); // do it once, just so we fail fast if it doesn't exist
+
+  // if transparency is disabled, enable it
+  if (options::transparencyMode == TransparencyMode::None) {
+    options::transparencyMode = TransparencyMode::Pretty;
+  }
+
+  refresh();
+}
+
+void SurfaceMesh::clearTransparencyQuantity() {
+  transparencyQuantityName = "";
+  refresh();
+}
+
+SurfaceScalarQuantity& SurfaceMesh::resolveTransparencyQuantity() {
+  SurfaceScalarQuantity* transparencyScalarQ = nullptr;
+  SurfaceMeshQuantity* anyQ = getQuantity(transparencyQuantityName);
+  if (anyQ != nullptr) {
+    transparencyScalarQ = dynamic_cast<SurfaceScalarQuantity*>(anyQ);
+    if (transparencyScalarQ == nullptr) {
+      exception("Cannot populate per-element transparency from quantity [" + name + "], it is not a scalar quantity");
+    }
+
+    if (!(transparencyScalarQ->definedOn == "vertex" || transparencyScalarQ->definedOn == "face" ||
+          transparencyScalarQ->definedOn == "corner")) {
+      exception("Cannot populate per-element transparency from quantity [" + name +
+                "], only vertex, face, and corner quantities are supported");
+    }
+
+  } else {
+    exception("Cannot populate per-element transparency from quantity [" + name + "], it does not exist");
+  }
+
+  return *transparencyScalarQ;
+}
 
 void SurfaceMesh::markEdgesAsUsed() {
   if (edgesHaveBeenUsed) return;

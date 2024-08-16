@@ -185,6 +185,10 @@ void PointCloud::setPointProgramGeometryAttributes(render::ShaderProgram& p) {
     PointCloudScalarQuantity& radQ = resolvePointRadiusQuantity();
     p.setAttribute("a_pointRadius", radQ.values.getRenderAttributeBuffer());
   }
+  if (transparencyQuantityName != "") {
+    PointCloudScalarQuantity& transparencyQ = resolveTransparencyQuantity();
+    p.setAttribute("a_valueAlpha", transparencyQ.values.getRenderAttributeBuffer());
+  }
 }
 
 std::string PointCloud::getShaderNameForRenderMode() {
@@ -211,6 +215,9 @@ std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string>
         initRules.push_back("SPHERE_CULLPOS_FROM_CENTER");
       else if (getPointRenderMode() == PointRenderMode::Quad)
         initRules.push_back("SPHERE_CULLPOS_FROM_CENTER_QUAD");
+    }
+    if (transparencyQuantityName != "") {
+      initRules.push_back("SPHERE_PROPAGATE_VALUEALPHA");
     }
   }
   return initRules;
@@ -268,6 +275,11 @@ void PointCloud::buildCustomUI() {
 }
 
 void PointCloud::buildCustomOptionsUI() {
+  if (render::buildMaterialOptionsGui(material.get())) {
+    material.manuallyChanged();
+    setMaterial(material.get()); // trigger the other updates that happen on set()
+  }
+
   if (ImGui::BeginMenu("Point Render Mode")) {
 
     for (const PointRenderMode& m : {PointRenderMode::Sphere, PointRenderMode::Quad}) {
@@ -305,9 +317,21 @@ void PointCloud::buildCustomOptionsUI() {
     ImGui::EndMenu();
   }
 
-  if (render::buildMaterialOptionsGui(material.get())) {
-    material.manuallyChanged();
-    setMaterial(material.get()); // trigger the other updates that happen on set()
+  // transparency quantity
+  if (ImGui::BeginMenu("Per-Point Transparency")) {
+
+    if (ImGui::MenuItem("none", nullptr, transparencyQuantityName == "")) clearTransparencyQuantity();
+    ImGui::Separator();
+
+    for (auto& q : quantities) {
+      PointCloudScalarQuantity* scalarQ = dynamic_cast<PointCloudScalarQuantity*>(q.second.get());
+      if (scalarQ != nullptr) {
+        if (ImGui::MenuItem(scalarQ->name.c_str(), nullptr, transparencyQuantityName == scalarQ->name))
+          setTransparencyQuantity(scalarQ);
+      }
+    }
+
+    ImGui::EndMenu();
   }
 }
 
@@ -360,6 +384,42 @@ void PointCloud::setPointRadiusQuantity(std::string name, bool autoScale) {
 void PointCloud::clearPointRadiusQuantity() {
   pointRadiusQuantityName = "";
   refresh();
+}
+
+void PointCloud::setTransparencyQuantity(PointCloudScalarQuantity* quantity) {
+  setTransparencyQuantity(quantity->name);
+}
+
+void PointCloud::setTransparencyQuantity(std::string name) {
+  transparencyQuantityName = name;
+  resolveTransparencyQuantity(); // do it once, just so we fail fast if it doesn't exist
+
+  // if transparency is disabled, enable it
+  if (options::transparencyMode == TransparencyMode::None) {
+    options::transparencyMode = TransparencyMode::Pretty;
+  }
+
+  refresh();
+}
+
+void PointCloud::clearTransparencyQuantity() {
+  transparencyQuantityName = "";
+  refresh();
+}
+
+PointCloudScalarQuantity& PointCloud::resolveTransparencyQuantity() {
+  PointCloudScalarQuantity* transparencyScalarQ = nullptr;
+  PointCloudQuantity* anyQ = getQuantity(transparencyQuantityName);
+  if (anyQ != nullptr) {
+    transparencyScalarQ = dynamic_cast<PointCloudScalarQuantity*>(anyQ);
+    if (transparencyScalarQ == nullptr) {
+      exception("Cannot populate per-element transparency from quantity [" + name + "], it is not a scalar quantity");
+    }
+  } else {
+    exception("Cannot populate per-element transparency from quantity [" + name + "], it does not exist");
+  }
+
+  return *transparencyScalarQ;
 }
 
 // === Quantities

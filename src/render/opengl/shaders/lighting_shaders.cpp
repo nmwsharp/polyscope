@@ -238,7 +238,7 @@ const ShaderReplacementRule TRANSPARENCY_STRUCTURE (
           uniform float u_transparency;
         )"},
       {"GENERATE_ALPHA", R"(
-          alphaOut = u_transparency;
+          alphaOut *= u_transparency;
         )"},
     },
     /* uniforms */ {
@@ -257,7 +257,7 @@ const ShaderReplacementRule TRANSPARENCY_PEEL_STRUCTURE (
           uniform vec2 u_viewportDim;
         )"},
       {"GENERATE_ALPHA", R"(
-          alphaOut = u_transparency;
+          alphaOut *= u_transparency;
         )"},
       {"GLOBAL_FRAGMENT_FILTER", R"(
           // assumption: "float depth" must be already set 

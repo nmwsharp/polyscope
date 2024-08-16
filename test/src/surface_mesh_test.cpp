@@ -307,6 +307,46 @@ TEST_F(PolyscopeTest, SurfaceMeshScalarTexture) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, SurfaceMeshScalarTransparency) {
+
+  auto psMesh = registerTriangleMesh();
+
+  { // vertex quantity
+    std::vector<double> vScalar(psMesh->nVertices(), 7.);
+    auto qVert = psMesh->addVertexScalarQuantity("vScalar", vScalar);
+    psMesh->setTransparencyQuantity(qVert);
+    polyscope::show(3);
+  }
+
+  // make sure clear works
+  psMesh->clearTransparencyQuantity();
+  polyscope::show(3);
+
+  { // face quantity
+    std::vector<double> fScalar(psMesh->nFaces(), 8.);
+    auto qFace = psMesh->addFaceScalarQuantity("fScalar", fScalar);
+    psMesh->setTransparencyQuantity(qFace);
+    polyscope::show(3);
+  }
+
+  { // corner quantity
+    std::vector<double> cornerScalar(psMesh->nCorners(), 10.);
+    auto qCorner = psMesh->addCornerScalarQuantity("cornerScalar", cornerScalar);
+    psMesh->setTransparencyQuantity(qCorner);
+    polyscope::show(3);
+  }
+
+  // edges, halfedges, and textures are currently not supported
+
+  // Change transparency settings
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
+  polyscope::show(3);
+  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, SurfaceMeshDistance) {
   auto psMesh = registerTriangleMesh();
   std::vector<double> vScalar(psMesh->nVertices(), 7.);

@@ -28,8 +28,11 @@ public:
   virtual std::string niceName() override;
   virtual void refresh() override;
 
-protected:
+  virtual std::shared_ptr<render::AttributeBuffer> getAttributeBuffer() = 0;
+
   const std::string definedOn;
+
+protected:
   std::shared_ptr<render::ShaderProgram> program;
 
   // Helpers
@@ -47,6 +50,8 @@ public:
 
   virtual void createProgram() override;
 
+  virtual std::shared_ptr<render::AttributeBuffer> getAttributeBuffer() override;
+
   void buildVertexInfoGUI(size_t vInd) override;
 };
 
@@ -61,7 +66,7 @@ public:
                             DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
-
+  virtual std::shared_ptr<render::AttributeBuffer> getAttributeBuffer() override;
   void buildFaceInfoGUI(size_t fInd) override;
 };
 
@@ -76,7 +81,7 @@ public:
                             DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
-
+  virtual std::shared_ptr<render::AttributeBuffer> getAttributeBuffer() override;
   void buildEdgeInfoGUI(size_t edgeInd) override;
 };
 
@@ -90,7 +95,7 @@ public:
                                 DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
-
+  virtual std::shared_ptr<render::AttributeBuffer> getAttributeBuffer() override;
   void buildHalfedgeInfoGUI(size_t heInd) override;
 };
 
@@ -104,7 +109,7 @@ public:
                               DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
-
+  virtual std::shared_ptr<render::AttributeBuffer> getAttributeBuffer() override;
   void buildCornerInfoGUI(size_t heInd) override;
 };
 
@@ -119,6 +124,8 @@ public:
                                DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
+  virtual std::shared_ptr<render::AttributeBuffer> getAttributeBuffer() override;
+
 
 protected:
   SurfaceParameterizationQuantity& param;
