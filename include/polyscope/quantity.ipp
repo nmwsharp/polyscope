@@ -43,9 +43,7 @@ QuantityS<S>* QuantityS<S>::setEnabled(bool newEnabled) {
     }
   }
 
-  if (isEnabled()) {
-    requestRedraw();
-  }
+  requestRedraw();
 
   return this;
 }
