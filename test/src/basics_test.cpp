@@ -134,5 +134,12 @@ TEST_F(PolyscopeTest, GroundPlaneTest) {
   polyscope::refresh();
   polyscope::show(3);
 
+  polyscope::options::groundPlaneHeightMode = polyscope::GroundPlaneHeightMode::Absolute;
+  polyscope::options::groundPlaneHeight = -0.3;
+  polyscope::show(3);
+
+  polyscope::options::groundPlaneHeightMode = polyscope::GroundPlaneHeightMode::Relative;
+  polyscope::show(3);
+
   polyscope::removeAllStructures();
 }

@@ -64,8 +64,10 @@ extern bool hideWindowAfterShow;
 
 // Behavior of the ground plane
 extern GroundPlaneMode groundPlaneMode;
+extern GroundPlaneHeightMode groundPlaneHeightMode;
 extern bool groundPlaneEnabled; // deprecated, but kept and respected for compatability. use groundPlaneMode.
 extern ScaledValue<float> groundPlaneHeightFactor;
+extern float groundPlaneHeight;
 extern int shadowBlurIters;
 extern float shadowDarkness;
 
