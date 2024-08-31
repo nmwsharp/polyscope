@@ -26,7 +26,9 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
           ${SRCS}
           )
 
-  target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
+  target_include_directories(imgui PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/imgui>
+    $<INSTALL_INTERFACE:imgui>)
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glfw/include/")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/")
 
@@ -74,3 +76,6 @@ endif()
 target_compile_features(imgui PUBLIC cxx_std_11)
 
 set_target_properties(imgui PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+
+install(TARGETS imgui EXPORT ${EXPORTED_TARGETS_NAME} DESTINATION "${INSTALL_LIB_DIR}")
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/imgui/ DESTINATION "${INSTALL_INCLUDE_DIR}")
