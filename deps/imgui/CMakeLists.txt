@@ -28,7 +28,7 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 
   target_include_directories(imgui PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/imgui>
-    $<INSTALL_INTERFACE:imgui>)
+    $<INSTALL_INTERFACE:include>)
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glfw/include/")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/")
 
@@ -68,7 +68,9 @@ elseif("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
           ${SRCS}
           )
 
-  target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
+  target_include_directories(imgui PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/imgui>
+    $<INSTALL_INTERFACE:include>)
 
 endif()
 
