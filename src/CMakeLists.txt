@@ -371,7 +371,7 @@ add_definitions(-DNOMINMAX)
 # Include settings
 target_include_directories(polyscope PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-    $<INSTALL_INTERFACE:../include>)
+    $<INSTALL_INTERFACE:include>)
 
 # Link settings
 target_link_libraries(polyscope PUBLIC imgui glm::glm)
