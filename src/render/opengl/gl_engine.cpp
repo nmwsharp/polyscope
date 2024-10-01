@@ -264,7 +264,7 @@ void GLAttributeBuffer::setData_helper(const std::vector<T>& data) {
 
   // do the actual copy
   dataSize = data.size();
-  glBufferSubData(getTarget(), 0, dataSize * sizeof(T), &data[0]);
+  glBufferSubData(getTarget(), 0, dataSize * sizeof(T), data.data());
 
   checkGLError();
 }
