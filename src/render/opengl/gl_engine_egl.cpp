@@ -118,7 +118,8 @@ void initializeRenderEngine_egl() {
 
   glEngineEGL = new GLEngineEGL(); // create the new global engine object
 
-  engine = glEngineEGL; // we keep a few copies of this pointer with various types
+  // we keep a few copies of this pointer with various types
+  engine.reset(glEngineEGL); // owning
   glEngine = glEngineEGL;
 
   // initialize

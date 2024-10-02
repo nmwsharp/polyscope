@@ -162,17 +162,16 @@ void init(std::string backend) {
 
   view::invalidateView();
 
-  state::initialized = true;
   state::doDefaultMouseInteraction = true;
 }
 
 void checkInitialized() {
-  if (!state::initialized) {
+  if (!isInitialized()) {
     exception("Polyscope has not been initialized");
   }
 }
 
-bool isInitialized() { return state::initialized; }
+bool isInitialized() { return render::engine != nullptr; }
 
 void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
@@ -890,7 +889,7 @@ void mainLoopIteration() {
 
 void show(size_t forFrames) {
 
-  if (!state::initialized) {
+  if (!isInitialized()) {
     exception("must initialize Polyscope with polyscope::init() before calling polyscope::show().");
   }
   unshowRequested = false;
@@ -934,6 +933,8 @@ bool windowRequestsClose() {
   return false;
 }
 
+void resetLazy();
+
 void shutdown() {
 
   // TODO should we make an effort to destruct everything here?
@@ -941,7 +942,11 @@ void shutdown() {
     writePrefsFile();
   }
 
+  render::engine->hideWindow();
   render::engine->shutdownImGui();
+  render::engine.reset();
+  contextStack.clear();
+  resetLazy();
 }
 
 bool registerStructure(Structure* s, bool replaceIfPresent) {
@@ -1179,7 +1184,7 @@ void refresh() {
 }
 
 // Cached versions of lazy properties used for updates
-namespace lazy {
+struct Lazy {
 TransparencyMode transparencyMode = TransparencyMode::None;
 int transparencyRenderPasses = 8;
 int ssaaFactor = 1;
@@ -1187,8 +1192,10 @@ bool groundPlaneEnabled = true;
 GroundPlaneMode groundPlaneMode = GroundPlaneMode::TileReflection;
 ScaledValue<float> groundPlaneHeightFactor = 0;
 int shadowBlurIters = 2;
-float shadowDarkness = .4;
-} // namespace lazy
+float shadowDarkness = .4f;
+};
+static Lazy lazy{};
+
 
 void processLazyProperties() {
 
@@ -1203,48 +1210,52 @@ void processLazyProperties() {
 
 
   // transparency mode
-  if (lazy::transparencyMode != options::transparencyMode) {
-    lazy::transparencyMode = options::transparencyMode;
+  if (lazy.transparencyMode != options::transparencyMode) {
+    lazy.transparencyMode = options::transparencyMode;
     render::engine->setTransparencyMode(options::transparencyMode);
   }
 
   // transparency render passes
-  if (lazy::transparencyRenderPasses != options::transparencyRenderPasses) {
-    lazy::transparencyRenderPasses = options::transparencyRenderPasses;
+  if (lazy.transparencyRenderPasses != options::transparencyRenderPasses) {
+    lazy.transparencyRenderPasses = options::transparencyRenderPasses;
     requestRedraw();
   }
 
   // ssaa
-  if (lazy::ssaaFactor != options::ssaaFactor) {
-    lazy::ssaaFactor = options::ssaaFactor;
+  if (lazy.ssaaFactor != options::ssaaFactor) {
+    lazy.ssaaFactor = options::ssaaFactor;
     render::engine->setSSAAFactor(options::ssaaFactor);
   }
 
   // ground plane
-  if (lazy::groundPlaneEnabled != options::groundPlaneEnabled || lazy::groundPlaneMode != options::groundPlaneMode) {
-    lazy::groundPlaneEnabled = options::groundPlaneEnabled;
+  if (lazy.groundPlaneEnabled != options::groundPlaneEnabled || lazy.groundPlaneMode != options::groundPlaneMode) {
+    lazy.groundPlaneEnabled = options::groundPlaneEnabled;
     if (!options::groundPlaneEnabled) {
       // if the (depecated) groundPlaneEnabled = false, set mode to None, so we only have one variable to check
       options::groundPlaneMode = GroundPlaneMode::None;
     }
-    lazy::groundPlaneMode = options::groundPlaneMode;
+    lazy.groundPlaneMode = options::groundPlaneMode;
     render::engine->groundPlane.prepare();
     requestRedraw();
   }
-  if (lazy::groundPlaneHeightFactor.asAbsolute() != options::groundPlaneHeightFactor.asAbsolute() ||
-      lazy::groundPlaneHeightFactor.isRelative() != options::groundPlaneHeightFactor.isRelative()) {
-    lazy::groundPlaneHeightFactor = options::groundPlaneHeightFactor;
+  if (lazy.groundPlaneHeightFactor.asAbsolute() != options::groundPlaneHeightFactor.asAbsolute() ||
+      lazy.groundPlaneHeightFactor.isRelative() != options::groundPlaneHeightFactor.isRelative()) {
+    lazy.groundPlaneHeightFactor = options::groundPlaneHeightFactor;
     requestRedraw();
   }
-  if (lazy::shadowBlurIters != options::shadowBlurIters) {
-    lazy::shadowBlurIters = options::shadowBlurIters;
+  if (lazy.shadowBlurIters != options::shadowBlurIters) {
+    lazy.shadowBlurIters = options::shadowBlurIters;
     requestRedraw();
   }
-  if (lazy::shadowDarkness != options::shadowDarkness) {
-    lazy::shadowDarkness = options::shadowDarkness;
+  if (lazy.shadowDarkness != options::shadowDarkness) {
+    lazy.shadowDarkness = options::shadowDarkness;
     requestRedraw();
   }
 };
+
+void resetLazy() {
+  lazy = {};
+}
 
 void updateStructureExtents() {
 

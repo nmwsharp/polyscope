@@ -299,7 +299,7 @@ std::shared_ptr<render::AttributeBuffer> ManagedBuffer<T>::getRenderAttributeBuf
 
   if (!renderAttributeBuffer) {
     ensureHostBufferPopulated(); // warning: the order of these matters because of how hostBufferPopulated works
-    renderAttributeBuffer = generateAttributeBuffer<T>(render::engine);
+    renderAttributeBuffer = generateAttributeBuffer<T>(render::engine.get());
     renderAttributeBuffer->setData(data);
   }
   return renderAttributeBuffer;
@@ -312,7 +312,7 @@ std::shared_ptr<render::TextureBuffer> ManagedBuffer<T>::getRenderTextureBuffer(
   if (!renderTextureBuffer) {
     ensureHostBufferPopulated(); // warning: the order of these matters because of how hostBufferPopulated works
 
-    renderTextureBuffer = generateTextureBuffer<T>(deviceBufferType, render::engine);
+    renderTextureBuffer = generateTextureBuffer<T>(deviceBufferType, render::engine.get());
 
     // templatize this?
     switch (deviceBufferType) {
@@ -377,7 +377,7 @@ ManagedBuffer<T>::getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>& indic
 
   // We don't have it. Create a new one and return that.
   ensureHostBufferPopulated();
-  std::shared_ptr<render::AttributeBuffer> newBuffer = generateAttributeBuffer<T>(render::engine);
+  std::shared_ptr<render::AttributeBuffer> newBuffer = generateAttributeBuffer<T>(render::engine.get());
   indices.ensureHostBufferPopulated();
   std::vector<T> expandData = gather(data, indices.data);
   newBuffer->setData(expandData); // initially populate

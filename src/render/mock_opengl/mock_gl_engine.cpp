@@ -38,7 +38,7 @@ MockGLEngine* glEngine = nullptr; // alias for engine pointer
 
 void initializeRenderEngine() {
   glEngine = new MockGLEngine();
-  engine = glEngine;
+  engine.reset(glEngine);
   glEngine->initialize();
   engine->allocateGlobalBuffersAndPrograms();
 }
