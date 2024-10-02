@@ -122,3 +122,10 @@ add_subdirectory(../ "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
 
 # Catch the usage of obsolete functions in imgui
 target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+
+if(SPLIT_TESTS)
+  include(GoogleTest)
+  gtest_discover_tests(polyscope-test EXTRA_ARGS backend=openGL3_glfw)
+else()
+  add_test(NAME polyscope-test COMMAND $<TARGET_FILE:polyscope-test> backend=openGL3_glfw)
+endif()
