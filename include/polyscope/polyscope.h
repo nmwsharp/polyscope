@@ -69,9 +69,6 @@ bool windowRequestsClose();
 // === Global variables ===
 namespace state {
 
-// has polyscope::init() been called?
-extern bool& initialized;
-
 // what backend was set on initialization
 extern std::string& backend;
 

@@ -10,7 +10,6 @@ namespace state {
 Context globalContext;
 
 // Map all of the named global variables as references to the context struct
-bool& initialized = globalContext.initialized;
 std::string& backend = globalContext.backend;
 std::map<std::string, std::map<std::string, std::unique_ptr<Structure>>>& structures = globalContext.structures;
 std::map<std::string, std::unique_ptr<Group>>& groups = globalContext.groups;

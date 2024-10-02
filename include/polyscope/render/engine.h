@@ -670,7 +670,7 @@ protected:
 
 // The global render engine
 // Gets initialized by initializeRenderEngine() in polyscope::init();
-extern Engine* engine;
+extern std::unique_ptr<Engine> engine;
 
 // The backend type of the engine, as initialized above
 extern std::string engineBackendName;

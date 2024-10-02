@@ -10,7 +10,7 @@ namespace polyscope {
 namespace render {
 
 // Storage for the global engine pointer
-Engine* engine = nullptr;
+std::unique_ptr<Engine> engine;
 
 // Backend we initialized with; written once below
 std::string engineBackendName = "";

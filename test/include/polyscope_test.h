@@ -32,7 +32,6 @@ protected:
     polyscope::options::enableRenderErrorChecks = true;
     polyscope::options::errorsThrowExceptions = true;
     polyscope::options::hideWindowAfterShow = false;
-    polyscope::init(testBackend);
   }
 
   // Per-test-suite tear-down.
@@ -46,10 +45,14 @@ protected:
   */
 
   // You can define per-test set-up logic as usual.
-  // virtual void SetUp() { ... }
+  void SetUp() override {
+    polyscope::init(testBackend);
+  }
 
   // You can define per-test tear-down logic as usual.
-  // virtual void TearDown() { ... }
+  void TearDown() override {
+    polyscope::shutdown();
+  }
 
   // Some expensive resource shared by all tests.
   // static T* shared_resource_;

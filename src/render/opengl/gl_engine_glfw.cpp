@@ -22,9 +22,13 @@ extern GLEngine* glEngine;            // defined in gl_engine.h
 
 void initializeRenderEngine_glfw() {
 
+  if (engine) {
+    exception("ERROR: engine is already initialised");
+  }
   glEngineGLFW = new GLEngineGLFW(); // create the new global engine object
 
-  engine = glEngineGLFW; // we keep a few copies of this pointer with various types
+  // we keep a few copies of this pointer with various types
+  engine.reset(glEngineGLFW); // owning
   glEngine = glEngineGLFW;
 
   // initialize

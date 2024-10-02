@@ -51,7 +51,6 @@ struct Context {
   // === General globals from polyscope.h
   // ======================================================
 
-  bool initialized = false;
   std::string backend = "";
   std::map<std::string, std::map<std::string, std::unique_ptr<Structure>>> structures;
   std::map<std::string, std::unique_ptr<Group>> groups;
