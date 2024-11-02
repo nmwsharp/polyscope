@@ -121,6 +121,16 @@ std::string prettyPrintCount(size_t count) {
   }
 }
 
+void checkColorRanges(const std::vector<glm::vec3>& colors) {
+  for (glm::vec3 color : colors){
+    for (float c : color){
+      if(c<0.0 || c>1.0){
+        warning("Colors should be in range [0, 1], will be clamped");
+      }
+    }
+  }
+}
+
 void ImGuiHelperMarker(const char* text) {
   ImGui::TextDisabled("(?)");
   if (ImGui::IsItemHovered()) {

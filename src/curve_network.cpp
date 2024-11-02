@@ -513,6 +513,7 @@ void CurveNetworkQuantity::buildEdgeInfoGUI(size_t edgeInd) {}
 CurveNetworkNodeColorQuantity* CurveNetwork::addNodeColorQuantityImpl(std::string name,
                                                                       const std::vector<glm::vec3>& colors) {
   checkForQuantityWithNameAndDeleteOrError(name);
+  checkColorRanges(colors);
   CurveNetworkNodeColorQuantity* q = new CurveNetworkNodeColorQuantity(name, colors, *this);
   addQuantity(q);
   return q;
@@ -521,6 +522,7 @@ CurveNetworkNodeColorQuantity* CurveNetwork::addNodeColorQuantityImpl(std::strin
 CurveNetworkEdgeColorQuantity* CurveNetwork::addEdgeColorQuantityImpl(std::string name,
                                                                       const std::vector<glm::vec3>& colors) {
   checkForQuantityWithNameAndDeleteOrError(name);
+  checkColorRanges(colors);
   CurveNetworkEdgeColorQuantity* q = new CurveNetworkEdgeColorQuantity(name, colors, *this);
   addQuantity(q);
   return q;
