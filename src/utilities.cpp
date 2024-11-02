@@ -126,6 +126,7 @@ void checkColorRanges(const std::vector<glm::vec3>& colors) {
     for (float c : color){
       if(c<0.0 || c>1.0){
         warning("Colors should be in range [0, 1], will be clamped");
+        return;
       }
     }
   }
