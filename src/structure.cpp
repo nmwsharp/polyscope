@@ -215,7 +215,7 @@ void Structure::centerBoundingBox() {
 
 void Structure::rescaleToUnit() {
   double currScale = lengthScale();
-  float s = static_cast<float>(1.0 / currScale);
+  float s = static_cast<float>(1.0 / std::cbrt(currScale));
   glm::mat4x4 newTrans = glm::scale(glm::mat4x4(1.0), glm::vec3{s, s, s});
   objectTransform = newTrans * objectTransform.get();
   updateStructureExtents();
