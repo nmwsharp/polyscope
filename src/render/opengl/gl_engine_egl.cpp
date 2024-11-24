@@ -159,7 +159,7 @@ void GLEngineEGL::initialize() {
   info("EGL: Found " + std::to_string(nDevices) + " EGL devices.");
 
   if (options::eglDeviceIndex == -1) {
-    info("EGL: no device index specified, attempting to intialize with each device sequentially until success.")
+    info("EGL: no device index specified, attempting to intialize with each device sequentially until success.");
   } else {
     info("EGL: device index " + std::to_string(options::eglDeviceIndex) + " manually selected, using that device.");
 
