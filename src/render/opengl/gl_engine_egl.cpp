@@ -14,11 +14,24 @@
 #include <algorithm>
 #include <set>
 
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+
 namespace polyscope {
 namespace render {
 namespace backend_openGL3 {
 
 namespace { // anonymous helpers
+
+// Helper function to get an EGL (extension?) function and error-check that
+// we got it successfully
+void* getEGLProcAddressAndCheck(std::string name) {
+  void* procAddr = (void*)(eglGetProcAddress(name.c_str()));
+  if (!procAddr) {
+    error("EGL failed to get function pointer for " + name);
+  }
+  return procAddr;
+}
 
 void checkEGLError(bool fatal = true) {
 
@@ -129,21 +142,65 @@ void GLEngineEGL::initialize() {
 
   // === Initialize EGL
 
-  // Get the default display
-  eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-  if (eglDisplay == EGL_NO_DISPLAY) {
-    exception("ERROR: Failed to initialize EGL, could not get default display");
+  // Pre-load required extension functions
+  PFNEGLQUERYDEVICESEXTPROC eglQueryDevicesEXT =
+      (PFNEGLQUERYDEVICESEXTPROC)getEGLProcAddressAndCheck("eglQueryDevicesEXT");
+
+  // Query the available EGL devices
+  const int N_MAX_DEVICE = 256;
+  EGLDeviceEXT devices[N_MAX_DEVICE];
+  EGLint nDevices;
+  if (!eglQueryDevicesEXT(N_MAX_DEVICE, devices, &nDevices)) {
+    error("EGL: failed to query devices.");
+  }
+  if (nDevices == 0) {
+    error("EGL: no devices found.");
+  }
+  info("EGL: Found " + std::to_string(nDevices) + " EGL devices.");
+
+  if (options::eglDeviceIndex == -1) {
+    info("EGL: no device index specified, attempting to intialize with each device sequentially until success.")
+  } else {
+    info("EGL: device index " + std::to_string(options::eglDeviceIndex) + " manually selected, using that device.");
+
+    if (options::eglDeviceIndex >= nDevices) {
+      error("EGL: device index " + std::to_string(options::eglDeviceIndex) + " manually selected, but only " +
+            std::to_string(nDevices) + " devices available.");
+    }
   }
 
-  // Configure
+  bool successfulInit = false;
   EGLint majorVer, minorVer;
-  bool success = eglInitialize(eglDisplay, &majorVer, &minorVer);
-  if (!success) {
-    checkEGLError(false);
+  for (int32_t iDevice = 0; iDevice < nDevices; iDevice++) {
+
+    if (options::eglDeviceIndex != -1 && iDevice != options::eglDeviceIndex) {
+      // implement manualy selection by skipping the others
+      continue;
+    }
+
+    info("EGL: attempting initialization with device " + std::to_string(iDevice));
+
+    // Select the first device (custom logic can go here to pick a specific one)
+    EGLDeviceEXT device = devices[iDevice];
+
+    // Get an EGLDisplay for the device
+    // (use the -platform / EXT version because it is the only one that seems to work in headless environments)
+    eglDisplay = eglGetPlatformDisplay(EGL_PLATFORM_DEVICE_EXT, device, NULL);
+    if (eglDisplay == EGL_NO_DISPLAY) {
+      continue;
+    }
+
+    // Configure
+    successfulInit = eglInitialize(eglDisplay, &majorVer, &minorVer);
+    if (successfulInit) {
+      break;
+    }
+  }
+
+  if (!successfulInit) {
     exception("ERROR: Failed to initialize EGL");
   }
   checkEGLError();
-
 
   // this has something to do with the EGL configuration, I don't understand exactly what
   // clang-format off

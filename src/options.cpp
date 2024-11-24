@@ -55,6 +55,8 @@ bool openImGuiWindowForUserCallback = true;
 std::function<void()> configureImGuiStyleCallback = configureImGuiStyle;
 std::function<std::tuple<ImFontAtlas*, ImFont*, ImFont*>()> prepareImGuiFontsCallback = prepareImGuiFonts;
 
+// Backend and low-level options
+int eglDeviceIndex = -1; // means "try all of them"
 
 // enabled by default in debug mode
 #ifndef NDEBUG

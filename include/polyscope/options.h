@@ -119,6 +119,11 @@ extern std::function<void()> configureImGuiStyleCallback;
 // assign your own function to create custom styles. If this callback is null, default fonts will be used.
 extern std::function<std::tuple<ImFontAtlas*, ImFont*, ImFont*>()> prepareImGuiFontsCallback;
 
+// === Backend and low-level options
+
+// When using the EGL backend, which device to try to initialize with
+// (default is -1 which means try all of them)
+extern int eglDeviceIndex;
 
 // === Debug options
 
