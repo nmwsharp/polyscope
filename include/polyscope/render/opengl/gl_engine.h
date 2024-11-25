@@ -159,7 +159,7 @@ public:
   void setData(const std::vector<std::array<glm::vec3, 4>>& data) override;
 
   void setFilterMode(FilterMode newMode) override;
-  void* getNativeHandle() override;
+  ImTextureID getNativeHandle() override;
   uint32_t getNativeBufferID() override;
 
   std::vector<float> getDataScalar() override;

@@ -711,7 +711,7 @@ void GLTextureBuffer::setFilterMode(FilterMode newMode) {
   checkGLError();
 }
 
-void* GLTextureBuffer::getNativeHandle() { return reinterpret_cast<void*>(getHandle()); }
+ImTextureID GLTextureBuffer::getNativeHandle() { return getHandle(); }
 
 uint32_t GLTextureBuffer::getNativeBufferID() { return static_cast<uint32_t>(getHandle()); };
 

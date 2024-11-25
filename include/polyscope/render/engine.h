@@ -193,7 +193,7 @@ public:
   // bool withAlpha = true, bool useMipMap = false, bool repeat = false);
 
   // used to interop with external things, e.g. ImGui
-  virtual void* getNativeHandle() = 0;
+  virtual ImTextureID getNativeHandle() = 0;
   virtual uint32_t getNativeBufferID() = 0;
 
 protected:
