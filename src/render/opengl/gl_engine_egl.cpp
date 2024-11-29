@@ -12,7 +12,9 @@
 #include "stb_image.h"
 
 #include <algorithm>
+#include <cctype>
 #include <set>
+#include <string>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -165,7 +167,7 @@ void GLEngineEGL::initialize() {
 
     devicesToTry.resize(nDevices);
     std::iota(devicesToTry.begin(), devicesToTry.end(), 0);
-    sortDevicesByPreference(devicesToTry);
+    sortAvailableDevicesByPreference(devicesToTry);
 
   } else {
     info("EGL: Device index " + std::to_string(options::eglDeviceIndex) + " manually selected, using that device.");
@@ -180,7 +182,7 @@ void GLEngineEGL::initialize() {
 
   bool successfulInit = false;
   EGLint majorVer, minorVer;
-  for (int32_t iDevice : eglDeviceIndex) {
+  for (int32_t iDevice : devicesToTry) {
 
     info("EGL: Attempting initialization with device " + std::to_string(iDevice));
     EGLDeviceEXT device = devices[iDevice];
@@ -293,7 +295,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& devices
   for (int32_t iDevice : devices) {
     int score = 0;
 
-    std::string vendorStr = eglQueryDeviceStringEXT(devices[i], EGL_VENDOR);
+    std::string vendorStr = eglQueryDeviceStringEXT(devices[iDevice], EGL_VENDOR);
 
     // lower-case it for the steps below
     std::transform(vendorStr.begin(), vendorStr.end(), vendorStr.begin(), std::tolower);
