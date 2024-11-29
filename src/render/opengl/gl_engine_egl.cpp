@@ -307,19 +307,19 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
     int& score = std::get<0>(scoreDevices.back());
 
     {
-      EGLDisplay display = eglGetPlatformDisplayEXT(EGL_PLATFORM_DEVICE_EXT, device, NULL);
+      EGLDisplay display = eglGetPlatformDisplay(EGL_PLATFORM_DEVICE_EXT, device, NULL);
       if (display == EGL_NO_DISPLAY) {
-          fprintf(stderr, "Failed to get EGLDisplay for device %d.\n", i);
+          fprintf(stderr, "Failed to get EGLDisplay for device %d.\n", iDevice);
           continue;
       }
 
       if (!eglInitialize(display, NULL, NULL)) {
-          fprintf(stderr, "Failed to initialize EGLDisplay for device %d.\n", i);
+          fprintf(stderr, "Failed to initialize EGLDisplay for device %d.\n", iDevice);
           continue;
       }
 
       const char* vendor = eglQueryString(display, EGL_VENDOR);
-      printf("Device %d Vendor from Display: %s\n", i, vendor ? vendor : "Unknown");
+      printf("Device %d Vendor from Display: %s\n", iDevice, vendor ? vendor : "Unknown");
       eglTerminate(display);
     }
 
