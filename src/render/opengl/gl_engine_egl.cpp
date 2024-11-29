@@ -305,9 +305,9 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
     EGLDeviceEXT device = rawDevices[iDevice];
     int score = 0;
 
-    // Add the device index as a weak term, so we prefer the original order
-    score += (deviceInds.size() - iDevice - 1);
-
+    // Heuristic, non-software renderers seem to come last, so add a term to the score that prefers later-listed entries
+    // TODO find a way to test for software rsterization for real
+    score += iDevice;
 
     const char* vendorStrRaw = eglQueryDeviceStringEXT(device, EGL_VENDOR);
 
