@@ -77,7 +77,7 @@ protected:
   EGLContext eglContext;
 
   // helpers
-  void sortAvailableDevicesByPreference(std::vector<EGLDeviceEXT>& devices);
+  void sortAvailableDevicesByPreference(std::vector<int32_t>& deviceInds, EGLDeviceEXT rawDevices[]);
 };
 
 } // namespace backend_openGL3
