@@ -160,6 +160,30 @@ void GLEngineEGL::initialize() {
   }
   info("EGL: Found " + std::to_string(nDevices) + " EGL devices.");
 
+{
+  PFNEGLQUERYDEVICESEXTPROC eglQueryDevicesEXT = (PFNEGLQUERYDEVICESEXTPROC)eglGetProcAddress("eglQueryDevicesEXT");
+PFNEGLQUERYDEVICESTRINGEXTPROC eglQueryDeviceStringEXT = (PFNEGLQUERYDEVICESTRINGEXTPROC)eglGetProcAddress("eglQueryDeviceStringEXT");
+
+if (!eglQueryDevicesEXT || !eglQueryDeviceStringEXT) {
+    fprintf(stderr, "Required extension functions not available.\n");
+    return EXIT_FAILURE;
+}
+
+EGLDeviceEXT devices[10];
+EGLint num_devices;
+if (eglQueryDevicesEXT(10, devices, &num_devices)) {
+    for (int i = 0; i < num_devices; i++) {
+        const char* vendor = eglQueryDeviceStringEXT(devices[i], EGL_VENDOR);
+        printf("Device %d: Vendor: %s\n", i, vendor ? vendor : "Unknown");
+    }
+} else {
+    fprintf(stderr, "eglQueryDevicesEXT failed.\n");
+}
+
+}
+
+
+
   // Build an ordered list of which devices to try initializing with
   std::vector<int32_t> deviceIndsToTry;
   if (options::eglDeviceIndex == -1) {
