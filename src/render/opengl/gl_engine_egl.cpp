@@ -328,6 +328,12 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
     if (vendorStr.find("amd") != std::string::npos) score += 2;
     if (vendorStr.find("nvidia") != std::string::npos) score += 3;
 
+    // at high verbosity levels, log the priority
+    if (polyscope::options::verbosity > 5) {
+      std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << "  vendor: " << vendorStr
+                << "  priority score: " << score << std::endl;
+    }
+
     scoreDevices.emplace_back(score, iDevice);
   }
 
@@ -335,11 +341,6 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
   std::sort(scoreDevices.begin(), scoreDevices.end());
   std::reverse(scoreDevices.begin(), scoreDevices.end());
 
-  // at high verbosity levels, log the priority
-  if (polyscope::options::verbosity > 5) {
-    std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << "  vendor: " << vendorStr
-              << "  priority score: " << score << std::endl;
-  }
 
   // store them back in the given array
   for (size_t i = 0; i < deviceInds.size(); i++) {
