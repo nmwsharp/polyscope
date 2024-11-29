@@ -158,8 +158,15 @@ void GLEngineEGL::initialize() {
   }
   info("EGL: Found " + std::to_string(nDevices) + " EGL devices.");
 
+  // Build an ordered list of which devices to try initializing with
+  std::vector<int32_t> devicesToTry;
   if (options::eglDeviceIndex == -1) {
     info("EGL: No device index specified, attempting to intialize with each device sequentially until success.");
+
+    devicesToTry.resize(nDevices);
+    std::iota(devicesToTry.begin(), devicesToTry.end(), 0);
+    sortDevicesByPreference(devicesToTry);
+
   } else {
     info("EGL: Device index " + std::to_string(options::eglDeviceIndex) + " manually selected, using that device.");
 
@@ -167,21 +174,16 @@ void GLEngineEGL::initialize() {
       error("EGL: Device index " + std::to_string(options::eglDeviceIndex) + " manually selected, but only " +
             std::to_string(nDevices) + " devices available.");
     }
+
+    devicesToTry.push_back(options::eglDeviceIndex);
   }
 
   bool successfulInit = false;
   EGLint majorVer, minorVer;
-  for (int32_t iDevice = 0; iDevice < nDevices; iDevice++) {
-
-    if (options::eglDeviceIndex != -1 && iDevice != options::eglDeviceIndex) {
-      // implement manualy selection by skipping the others
-      continue;
-    }
+  for (int32_t iDevice : eglDeviceIndex) {
 
     info("EGL: Attempting initialization with device " + std::to_string(iDevice));
     EGLDeviceEXT device = devices[iDevice];
-
-    // TODO use eglQueryDeviceStringEXT to prefer hardware-accelerated devices
 
     // Get an EGLDisplay for the device
     // (use the -platform / EXT version because it is the only one that seems to work in headless environments)
@@ -278,6 +280,50 @@ void GLEngineEGL::initialize() {
 
   populateDefaultShadersAndRules();
   checkError();
+}
+
+void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& devices) {
+
+  // Pre-load required extension functions
+  PFNEGLQUERYDEVICESTRINGEXTPROC eglQueryDeviceStringEXT =
+      (PFNEGLQUERYDEVICESTRINGEXTPROC)getEGLProcAddressAndCheck("eglQueryDeviceStringEXT");
+
+  // Build a list of devices and assign a score to each
+  std::vector<std::tuple<int32_t, int32_t>> scoreDevices;
+  for (int32_t iDevice : devices) {
+    int score = 0;
+
+    std::string vendorStr = eglQueryDeviceStringEXT(devices[i], EGL_VENDOR);
+
+    // lower-case it for the steps below
+    std::transform(vendorStr.begin(), vendorStr.end(), vendorStr.begin(), std::tolower);
+
+    // Problem: we want to detect and prefer discrete graphics cars over integrated GPUs and
+    // software / VM renderers. However, I can't figure out how to get an "is integrated"
+    // property from the query device strings above. Even worse, 'AMD" and "Intel" are both
+    // ambiguous and could refer to the integrated GPU or a discrete GPU.
+    //
+    // As a workaround, we assign scores based on the vendor: nvidia is always discrete, amd could be either, intel is
+    // usually integrated, but still preferred over software renderers
+    //
+    // ONEDAY: figure out a better policy to detect discrete devices....
+
+    // assign scores based on vendors to prefer discrete gpus
+    if (vendorStr.find("intel") != std::string::npos) score += 1;
+    if (vendorStr.find("amd") != std::string::npos) score += 2;
+    if (vendorStr.find("nvidia") != std::string::npos) score += 3;
+
+    scoreDevices.emplace_back(score, iDevice);
+  }
+
+  // sort them by highest score
+  std::sort(scoreDevices.begin(), scoreDevices.end());
+  std::reverse(scoreDevices.begin(), scoreDevices.end());
+
+  // store them back in the given array
+  for (size_t i = 0; i < devices.size(); i++) {
+    devices[i] = std::get<1>(scoreDevices[i]);
+  }
 }
 
 

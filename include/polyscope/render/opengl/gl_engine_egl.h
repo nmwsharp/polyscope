@@ -74,6 +74,9 @@ protected:
   // Internal windowing and engine details
   EGLDisplay eglDisplay;
   EGLContext eglContext;
+
+  // helpers
+  void sortAvailableDevicesByPreference(std::vector<int32_t>& devices);
 };
 
 } // namespace backend_openGL3
