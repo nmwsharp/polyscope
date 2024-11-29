@@ -185,7 +185,7 @@ void GLEngineEGL::initialize() {
   for (int32_t iDevice : deviceIndsToTry) {
 
     EGLDeviceEXT device = rawDevices[iDevice];
-    info("EGL: Attempting initialization with device ind: " + std::to_string(iDevice) + " handle: " + std::to_string(device));
+    info("EGL: Attempting initialization with device ind: " + std::to_string(iDevice) + " handle: " + std::to_string((size_t)device));
 
     // Get an EGLDisplay for the device
     // (use the -platform / EXT version because it is the only one that seems to work in headless environments)
@@ -309,7 +309,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
 
     if (vendorStrRaw == nullptr) {
       if (polyscope::options::verbosity > 5) {
-        std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << " . device: " << device << "  vendor: " << "NULL"
+        std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << " . device: " << (size_t)device << "  vendor: " << "NULL"
                   << "  priority score: " << score << std::endl;
       }
       scoreDevices.emplace_back(score, iDevice);
