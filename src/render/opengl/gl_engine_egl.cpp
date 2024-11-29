@@ -284,21 +284,22 @@ void GLEngineEGL::initialize() {
   checkError();
 }
 
-void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& devices) {
+void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<EGLDevice>& devices) {
 
   // Pre-load required extension functions
   PFNEGLQUERYDEVICESTRINGEXTPROC eglQueryDeviceStringEXT =
       (PFNEGLQUERYDEVICESTRINGEXTPROC)getEGLProcAddressAndCheck("eglQueryDeviceStringEXT");
 
   // Build a list of devices and assign a score to each
-  std::vector<std::tuple<int32_t, int32_t>> scoreDevices;
-  for (int32_t iDevice : devices) {
+  std::vector<std::tuple<int32_t, EGLDevice>> scoreDevices;
+  for (EGLDevice device : devices) {
     int score = 0;
 
-    std::string vendorStr = eglQueryDeviceStringEXT(devices[iDevice], EGL_VENDOR);
+    std::string vendorStr = eglQueryDeviceStringEXT(device, EGL_VENDOR);
 
-    // lower-case it for the steps below
-    std::transform(vendorStr.begin(), vendorStr.end(), vendorStr.begin(), std::tolower);
+    // lower-case it for the checks below
+    std::transform(vendorStr.begin(), vendorStr.end(), vendorStr.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
 
     // Problem: we want to detect and prefer discrete graphics cars over integrated GPUs and
     // software / VM renderers. However, I can't figure out how to get an "is integrated"
@@ -315,7 +316,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& devices
     if (vendorStr.find("amd") != std::string::npos) score += 2;
     if (vendorStr.find("nvidia") != std::string::npos) score += 3;
 
-    scoreDevices.emplace_back(score, iDevice);
+    scoreDevices.emplace_back(score, device);
   }
 
   // sort them by highest score

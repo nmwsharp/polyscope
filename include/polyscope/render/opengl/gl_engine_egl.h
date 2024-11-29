@@ -76,7 +76,7 @@ protected:
   EGLContext eglContext;
 
   // helpers
-  void sortAvailableDevicesByPreference(std::vector<int32_t>& devices);
+  void sortAvailableDevicesByPreference(std::vector<EGLDevice>& devices);
 };
 
 } // namespace backend_openGL3
