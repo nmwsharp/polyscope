@@ -296,7 +296,18 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
     EGLDeviceEXT device = rawDevices[iDevice];
     int score = 0;
 
-    std::string vendorStr = eglQueryDeviceStringEXT(device, EGL_VENDOR);
+    const char* vendorStrRaw = eglQueryDeviceStringEXT(device, EGL_VENDOR);
+
+    if (vendorStrRaw == nullptr) {
+      if (polyscope::options::verbosity > 5) {
+        std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << "  vendor: " << "NULL"
+                  << "  priority score: " << score << std::endl;
+      }
+      scoreDevices.emplace_back(score, iDevice);
+      continue;
+    }
+
+    std::string vendorStr = vendorStrRaw;
 
     // lower-case it for the checks below
     std::transform(vendorStr.begin(), vendorStr.end(), vendorStr.begin(),
@@ -323,6 +334,12 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
   // sort them by highest score
   std::sort(scoreDevices.begin(), scoreDevices.end());
   std::reverse(scoreDevices.begin(), scoreDevices.end());
+
+  // at high verbosity levels, log the priority
+  if (polyscope::options::verbosity > 5) {
+    std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << "  vendor: " << vendorStr
+              << "  priority score: " << score << std::endl;
+  }
 
   // store them back in the given array
   for (size_t i = 0; i < deviceInds.size(); i++) {
