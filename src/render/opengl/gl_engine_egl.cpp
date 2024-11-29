@@ -151,20 +151,20 @@ void GLEngineEGL::initialize() {
   EGLDeviceEXT devices[N_MAX_DEVICE];
   EGLint nDevices;
   if (!eglQueryDevicesEXT(N_MAX_DEVICE, devices, &nDevices)) {
-    error("EGL: failed to query devices.");
+    error("EGL: Failed to query devices.");
   }
   if (nDevices == 0) {
-    error("EGL: no devices found.");
+    error("EGL: No devices found.");
   }
   info("EGL: Found " + std::to_string(nDevices) + " EGL devices.");
 
   if (options::eglDeviceIndex == -1) {
-    info("EGL: no device index specified, attempting to intialize with each device sequentially until success.");
+    info("EGL: No device index specified, attempting to intialize with each device sequentially until success.");
   } else {
-    info("EGL: device index " + std::to_string(options::eglDeviceIndex) + " manually selected, using that device.");
+    info("EGL: Device index " + std::to_string(options::eglDeviceIndex) + " manually selected, using that device.");
 
     if (options::eglDeviceIndex >= nDevices) {
-      error("EGL: device index " + std::to_string(options::eglDeviceIndex) + " manually selected, but only " +
+      error("EGL: Device index " + std::to_string(options::eglDeviceIndex) + " manually selected, but only " +
             std::to_string(nDevices) + " devices available.");
     }
   }
@@ -178,10 +178,10 @@ void GLEngineEGL::initialize() {
       continue;
     }
 
-    info("EGL: attempting initialization with device " + std::to_string(iDevice));
-
-    // Select the first device (custom logic can go here to pick a specific one)
+    info("EGL: Attempting initialization with device " + std::to_string(iDevice));
     EGLDeviceEXT device = devices[iDevice];
+
+    // TODO use eglQueryDeviceStringEXT to prefer hardware-accelerated devices
 
     // Get an EGLDisplay for the device
     // (use the -platform / EXT version because it is the only one that seems to work in headless environments)
@@ -201,6 +201,7 @@ void GLEngineEGL::initialize() {
     exception("ERROR: Failed to initialize EGL");
   }
   checkEGLError();
+  info("EGL: Initialization successful");
 
   // this has something to do with the EGL configuration, I don't understand exactly what
   // clang-format off
