@@ -284,15 +284,15 @@ void GLEngineEGL::initialize() {
   checkError();
 }
 
-void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<EGLDevice>& devices) {
+void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<EGLDeviceEXT>& devices) {
 
   // Pre-load required extension functions
   PFNEGLQUERYDEVICESTRINGEXTPROC eglQueryDeviceStringEXT =
       (PFNEGLQUERYDEVICESTRINGEXTPROC)getEGLProcAddressAndCheck("eglQueryDeviceStringEXT");
 
   // Build a list of devices and assign a score to each
-  std::vector<std::tuple<int32_t, EGLDevice>> scoreDevices;
-  for (EGLDevice device : devices) {
+  std::vector<std::tuple<int32_t, EGLDeviceEXT>> scoreDevices;
+  for (EGLDeviceEXT device : devices) {
     int score = 0;
 
     std::string vendorStr = eglQueryDeviceStringEXT(device, EGL_VENDOR);

@@ -12,6 +12,7 @@
 #include "glad/glad.h"
 // glad must come first
 #include <EGL/egl.h>
+#include <EGL/eglext.h>
 #endif
 
 
@@ -76,7 +77,7 @@ protected:
   EGLContext eglContext;
 
   // helpers
-  void sortAvailableDevicesByPreference(std::vector<EGLDevice>& devices);
+  void sortAvailableDevicesByPreference(std::vector<EGLDeviceEXT>& devices);
 };
 
 } // namespace backend_openGL3
