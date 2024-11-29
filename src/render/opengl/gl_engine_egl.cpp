@@ -291,7 +291,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
   if (extensions && std::string(extensions).find("EGL_EXT_device_query") != std::string::npos) {
       // good case, supported
   } else {
-      info("EGL: cannot sort devices by preference, EGL_EXT_device_query is not supported")
+      info("EGL: cannot sort devices by preference, EGL_EXT_device_query is not supported");
       return;
   }
 
