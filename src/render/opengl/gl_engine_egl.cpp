@@ -184,8 +184,8 @@ void GLEngineEGL::initialize() {
   EGLint majorVer, minorVer;
   for (int32_t iDevice : deviceIndsToTry) {
 
-    info("EGL: Attempting initialization with device " + std::to_string(iDevice));
     EGLDeviceEXT device = rawDevices[iDevice];
+    info("EGL: Attempting initialization with device ind: " + std::to_string(iDevice) + " handle: " + std::to_string(device));
 
     // Get an EGLDisplay for the device
     // (use the -platform / EXT version because it is the only one that seems to work in headless environments)
@@ -295,7 +295,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
       return;
   }
 
-  // Pre-load required extension functions
+  // Pre-load query extension functions
   PFNEGLQUERYDEVICESTRINGEXTPROC eglQueryDeviceStringEXT =
       (PFNEGLQUERYDEVICESTRINGEXTPROC)getEGLProcAddressAndCheck("eglQueryDeviceStringEXT");
 
@@ -309,7 +309,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
 
     if (vendorStrRaw == nullptr) {
       if (polyscope::options::verbosity > 5) {
-        std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << "  vendor: " << "NULL"
+        std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << " . device: " << device << "  vendor: " << "NULL"
                   << "  priority score: " << score << std::endl;
       }
       scoreDevices.emplace_back(score, iDevice);
