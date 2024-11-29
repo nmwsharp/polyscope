@@ -184,8 +184,8 @@ void GLEngineEGL::initialize() {
   EGLint majorVer, minorVer;
   for (int32_t iDevice : deviceIndsToTry) {
 
+    info("EGL: Attempting initialization with device " + std::to_string(iDevice));
     EGLDeviceEXT device = rawDevices[iDevice];
-    info("EGL: Attempting initialization with device ind: " + std::to_string(iDevice) + " handle: " + std::to_string((size_t)device));
 
     // Get an EGLDisplay for the device
     // (use the -platform / EXT version because it is the only one that seems to work in headless environments)
@@ -295,7 +295,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
       return;
   }
 
-  // Pre-load query extension functions
+  // Pre-load required extension functions
   PFNEGLQUERYDEVICESTRINGEXTPROC eglQueryDeviceStringEXT =
       (PFNEGLQUERYDEVICESTRINGEXTPROC)getEGLProcAddressAndCheck("eglQueryDeviceStringEXT");
 
@@ -303,32 +303,16 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
   std::vector<std::tuple<int32_t, int32_t>> scoreDevices;
   for (int32_t iDevice : deviceInds) {
     EGLDeviceEXT device = rawDevices[iDevice];
-    scoreDevices.emplace_back(0, iDevice);
-    int& score = std::get<0>(scoreDevices.back());
-
-    {
-      EGLDisplay display = eglGetPlatformDisplay(EGL_PLATFORM_DEVICE_EXT, device, NULL);
-      if (display == EGL_NO_DISPLAY) {
-          fprintf(stderr, "Failed to get EGLDisplay for device %d.\n", iDevice);
-          continue;
-      }
-
-      if (!eglInitialize(display, NULL, NULL)) {
-          fprintf(stderr, "Failed to initialize EGLDisplay for device %d.\n", iDevice);
-          continue;
-      }
-
-      const char* vendor = eglQueryString(display, EGL_VENDOR);
-      printf("Device %d Vendor from Display: %s\n", iDevice, vendor ? vendor : "Unknown");
-      eglTerminate(display);
-    }
+    int score = 0;
 
     const char* vendorStrRaw = eglQueryDeviceStringEXT(device, EGL_VENDOR);
+
     if (vendorStrRaw == nullptr) {
       if (polyscope::options::verbosity > 5) {
-        std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << " . device: " << (size_t)device << "  vendor: " << "NULL"
+        std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << "  vendor: " << "NULL"
                   << "  priority score: " << score << std::endl;
       }
+      scoreDevices.emplace_back(score, iDevice);
       continue;
     }
 
@@ -358,6 +342,8 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
       std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << "  vendor: " << vendorStr
                 << "  priority score: " << score << std::endl;
     }
+
+    scoreDevices.emplace_back(score, iDevice);
   }
 
   // sort them by highest score
