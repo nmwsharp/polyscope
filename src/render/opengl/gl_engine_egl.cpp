@@ -167,7 +167,7 @@ void GLEngineEGL::initialize() {
 
     deviceIndsToTry.resize(nDevices);
     std::iota(deviceIndsToTry.begin(), deviceIndsToTry.end(), 0);
-    sortAvailableDevicesByPreference(deviceIndsToTry);
+    sortAvailableDevicesByPreference(deviceIndsToTry, rawDevices);
 
   } else {
     info("EGL: Device index " + std::to_string(options::eglDeviceIndex) + " manually selected, using that device.");
@@ -325,7 +325,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
   std::reverse(scoreDevices.begin(), scoreDevices.end());
 
   // store them back in the given array
-  for (size_t i = 0; i < devices.size(); i++) {
+  for (size_t i = 0; i < deviceInds.size(); i++) {
     deviceInds[i] = std::get<1>(scoreDevices[i]);
   }
 }
