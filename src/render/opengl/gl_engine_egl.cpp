@@ -166,7 +166,7 @@ PFNEGLQUERYDEVICESTRINGEXTPROC eglQueryDeviceStringEXT = (PFNEGLQUERYDEVICESTRIN
 
 if (!eglQueryDevicesEXT || !eglQueryDeviceStringEXT) {
     fprintf(stderr, "Required extension functions not available.\n");
-    return EXIT_FAILURE;
+    // return EXIT_FAILURE;
 }
 
 EGLDeviceEXT devices[10];
