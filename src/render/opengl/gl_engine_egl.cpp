@@ -289,10 +289,10 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
   // check that we actually have the query extension
   const char* extensions = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
   if (extensions && std::string(extensions).find("EGL_EXT_device_query") != std::string::npos) {
-      // good case, supported
+    // good case, supported
   } else {
-      info("EGL: cannot sort devices by preference, EGL_EXT_device_query is not supported");
-      return;
+    info("EGL: cannot sort devices by preference, EGL_EXT_device_query is not supported");
+    return;
   }
 
   // Pre-load required extension functions
@@ -305,8 +305,14 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
     EGLDeviceEXT device = rawDevices[iDevice];
     int score = 0;
 
+    // Add the device index as a weak term, so we prefer the original order
+    score += (deviceInds.size() - iDevice - 1);
+
+
     const char* vendorStrRaw = eglQueryDeviceStringEXT(device, EGL_VENDOR);
 
+    // NOTE: on many machines (cloud VMs?) the query string above is nullptr, and this whole function does nothing
+    // useful
     if (vendorStrRaw == nullptr) {
       if (polyscope::options::verbosity > 5) {
         std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << "  vendor: " << "NULL"
@@ -333,9 +339,10 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
     // ONEDAY: figure out a better policy to detect discrete devices....
 
     // assign scores based on vendors to prefer discrete gpus
-    if (vendorStr.find("intel") != std::string::npos) score += 1;
-    if (vendorStr.find("amd") != std::string::npos) score += 2;
-    if (vendorStr.find("nvidia") != std::string::npos) score += 3;
+    const int32_t VENDOR_MULT = 100; // give this score entry a very high preference
+    if (vendorStr.find("intel") != std::string::npos) score += 1 * VENDOR_MULT;
+    if (vendorStr.find("amd") != std::string::npos) score += 2 * VENDOR_MULT;
+    if (vendorStr.find("nvidia") != std::string::npos) score += 3 * VENDOR_MULT;
 
     // at high verbosity levels, log the priority
     if (polyscope::options::verbosity > 5) {
