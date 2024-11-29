@@ -163,7 +163,8 @@ void GLEngineEGL::initialize() {
   // Build an ordered list of which devices to try initializing with
   std::vector<int32_t> deviceIndsToTry;
   if (options::eglDeviceIndex == -1) {
-    info("EGL: No device index specified, attempting to intialize with each device sequentially until success.");
+    info("EGL: No device index specified, attempting to intialize with each device in heuristic-guess order until "
+         "success.");
 
     deviceIndsToTry.resize(nDevices);
     std::iota(deviceIndsToTry.begin(), deviceIndsToTry.end(), 0);
