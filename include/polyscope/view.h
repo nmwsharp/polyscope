@@ -57,7 +57,7 @@ extern glm::mat4x4& viewMat;
 extern double& fov; // in the y direction
 extern ProjectionMode& projectionMode;
 
-// "Flying" view
+// "Flying" view members
 extern bool& midflight;
 extern float& flightStartTime;
 extern float& flightEndTime;
@@ -75,17 +75,88 @@ extern const double defaultFov;
 
 // === View methods
 
-void processTranslate(glm::vec2 delta);
-void processRotate(glm::vec2 startP, glm::vec2 endP);
-void processClipPlaneShift(double amount);
-void processZoom(double amount);
-void processKeyboardNavigation(ImGuiIO& io);
+// == Get/Set the current camera view in the user's window
 
+// Get various camera matrices and data for the current view
+CameraParameters getCameraParametersForCurrentView(); // contains all of this info
+// (these friendly helpers to get the same info as ^^^)
+glm::mat4 getCameraViewMatrix();
+void setCameraViewMatrix(glm::mat4 newMat);
+glm::mat4 getCameraPerspectiveMatrix();
+glm::vec3 getCameraWorldPosition();
+void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
+glm::vec3 getUpVec();
+glm::vec3 getFrontVec();
+
+// Set the camera extrinsics to look at a particular location
+void setViewToCamera(const CameraParameters& p);
+void lookAt(glm::vec3 cameraLocation, glm::vec3 target, bool flyTo = false);
+void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool flyTo = false);
+
+// The "home" view looks at the center of the scene's bounding box.
+glm::mat4 computeHomeView();
+void resetCameraToHomeView();
+void flyToHomeView();
+
+// Move the camera with a 'flight' where the camera's position is briefly animated
+void startFlightTo(const CameraParameters& p, float flightLengthInSeconds = .4);
+void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeconds = .4);
+void immediatelyEndFlight();
+
+
+// == Properties of the view/window
+
+// Set the size of the OS window
+// Set in logical pixels, which might be different from actual buffer pixels on
+// high-DPI screens
 void setWindowSize(int width, int height);
 std::tuple<int, int> getWindowSize();
 std::tuple<int, int> getBufferSize();
-void setViewToCamera(const CameraParameters& p);
-CameraParameters getCameraParametersForCurrentView();
+
+// UpDir is the canonical up-axis for the scene, effects how the home view is oriented,
+// and the axis about which navigations like the default turntable rotates.
+void setUpDir(UpDir newUpDir, bool animateFlight = false);
+UpDir getUpDir();
+
+// FrontDir is the canonical forward-axis for the scene, effects how the home view is oriented
+void setFrontDir(FrontDir newFrontDir, bool animateFlight = false);
+FrontDir getFrontDir();
+
+// What kind of navigation is used, such as Turntable, Free, etc.
+void setNavigateStyle(NavigateStyle newNavigateStyle, bool animateFlight = false);
+NavigateStyle getNavigateStyle();
+
+// Can the OS window be resized by the user?
+void setWindowResizable(bool isResizable);
+bool getWindowResizable();
+
+
+// == Utility functions related to the view
+
+// Get world geometry corresponding to a screen pixel (e.g. from a mouse click)
+glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords);
+glm::vec3 bufferCoordsToWorldRay(int xPos, int yPos);
+glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords); // queries the depth buffer to get full position
+
+// Get and set camera from json string
+std::string getViewAsJson();
+void setViewFromJson(std::string jsonData, bool flyTo);
+std::string getCameraJson(); // DEPRACTED: old names for avove
+void setCameraFromJson(std::string jsonData, bool flyTo);
+
+// Misc helpers
+std::string to_string(ProjectionMode mode);
+std::string to_string(NavigateStyle style);
+std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords);
+
+// == Internal helpers. Should probably not be called in user code.
+
+// Build view-related ImGUI UI
+void buildViewGui();
+
+// Update the current flight animation, if there is one
+// Note: uses wall-clock time, should be called exactly once at the beginning of each iteration
+void updateFlight();
 
 // Invalidating the view:
 // The view is invalid if the viewMat has NaN entries.
@@ -95,65 +166,13 @@ CameraParameters getCameraParametersForCurrentView();
 void invalidateView();
 void ensureViewValid();
 
-// The "home" view looks at the center of the scene's bounding box.
-glm::mat4 computeHomeView();
-void resetCameraToHomeView();
-void flyToHomeView();
+// Process user inputs which affect the view
+void processTranslate(glm::vec2 delta);
+void processRotate(glm::vec2 startP, glm::vec2 endP);
+void processClipPlaneShift(double amount);
+void processZoom(double amount);
+void processKeyboardNavigation(ImGuiIO& io);
 
-// Set the camera extrinsics to look at a particular location
-void lookAt(glm::vec3 cameraLocation, glm::vec3 target, bool flyTo = false);
-void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool flyTo = false);
-
-// Get various camera matrices and data for the current view
-glm::mat4 getCameraViewMatrix();
-void setCameraViewMatrix(glm::mat4 newMat);
-glm::mat4 getCameraPerspectiveMatrix();
-glm::vec3 getCameraWorldPosition();
-void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
-
-// Get world geometry corresponding to a screen pixel (e.g. from a mouse click)
-glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords);
-glm::vec3 bufferCoordsToWorldRay(int xPos, int yPos);
-glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords); // queries the depth buffer to get full position
-
-// Flight-related
-void startFlightTo(const CameraParameters& p, float flightLengthInSeconds = .4);
-void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeconds = .4);
-void immediatelyEndFlight();
-
-// Get and set camera from json string
-std::string getViewAsJson();
-void setViewFromJson(std::string jsonData, bool flyTo);
-// DEPRACTED: old names for avove
-std::string getCameraJson();
-void setCameraFromJson(std::string jsonData, bool flyTo);
-
-// Other helpers
-std::string to_string(ProjectionMode mode);
-std::string to_string(NavigateStyle style);
-std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords);
-
-// Internal helpers. Should probably not be called in user code.
-void buildViewGui();
-void updateFlight(); // Note: uses wall-clock time, so should generally be called exactly once at the beginning of each
-                     // iteration
-
-
-// == Setters, getters, etc
-
-void setUpDir(UpDir newUpDir, bool animateFlight = false);
-UpDir getUpDir();
-glm::vec3 getUpVec();
-
-void setFrontDir(FrontDir newFrontDir, bool animateFlight = false);
-FrontDir getFrontDir();
-glm::vec3 getFrontVec();
-
-void setNavigateStyle(NavigateStyle newNavigateStyle, bool animateFlight = false);
-NavigateStyle getNavigateStyle();
-
-void setWindowResizable(bool isResizable);
-bool getWindowResizable();
 
 } // namespace view
 } // namespace polyscope
