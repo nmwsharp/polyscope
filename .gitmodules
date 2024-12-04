@@ -2,13 +2,12 @@
 	path = deps/glfw
   url = https://github.com/glfw/glfw.git
 	branch = master
-[submodule "deps/imgui/imgui"]
-	path = deps/imgui/imgui
-	url = https://github.com/ocornut/imgui.git
-	branch = master
 [submodule "deps/happly"]
 	path = deps/happly
 	url = https://github.com/nmwsharp/happly.git
 [submodule "deps/glm"]
 	path = deps/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "deps/imgui/imgui"]
+	path = deps/imgui/imgui
+	url = https://github.com/thedmd/imgui.git
