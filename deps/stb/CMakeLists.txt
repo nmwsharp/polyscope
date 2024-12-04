@@ -1,6 +1,7 @@
 # Create a library for the viewer code
 add_library(
     stb
+    STATIC
     stb_impl.cpp
 )
 
