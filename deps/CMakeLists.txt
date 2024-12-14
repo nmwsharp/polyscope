@@ -2,6 +2,7 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
   # # Glad
   if(NOT TARGET glad)
     add_subdirectory(glad)
+    set_target_properties(glad PROPERTIES ${OUTPUT_DIR})
   endif()
 
   # # GLFW
@@ -37,6 +38,6 @@ if(NOT TARGET MarchingCube::MarchingCube)
 endif()
 
 # # stb
-if(NOT TARGET stb)
-  add_subdirectory(stb)
+if(NOT TARGET stb_image)
+  add_subdirectory(stb_image)
 endif()
