@@ -19,6 +19,7 @@ public:
                        const std::vector<glm::vec3>& colorValues);
 
   virtual void draw() override;
+  virtual void buildCustomUI() override;
   virtual std::string niceName() override;
   virtual void refresh() override;
 
@@ -40,6 +41,7 @@ public:
   SurfaceVertexColorQuantity(std::string name, SurfaceMesh& mesh_, std::vector<glm::vec3> values_);
 
   virtual void createProgram() override;
+  virtual void buildColorOptionsUI() override;
 
   void buildVertexInfoGUI(size_t vInd) override;
 };
@@ -53,6 +55,7 @@ public:
   SurfaceFaceColorQuantity(std::string name, SurfaceMesh& mesh_, std::vector<glm::vec3> values_);
 
   virtual void createProgram() override;
+  virtual void buildColorOptionsUI() override;
 
   void buildFaceInfoGUI(size_t fInd) override;
 };
@@ -68,11 +71,21 @@ public:
                               size_t dimX, size_t dimY, std::vector<glm::vec3> values_, ImageOrigin origin_);
 
   virtual void createProgram() override;
+  virtual void buildColorOptionsUI() override;
+
+  // === Get/set visualization parameters
+
+  // what kind of texture filtering is used
+  SurfaceTextureColorQuantity* setFilterMode(FilterMode newFilterMode);
+  FilterMode getFilterMode();
 
 protected:
   SurfaceParameterizationQuantity& param;
   size_t dimX, dimY;
   ImageOrigin imageOrigin;
+
+  // === Visualization parameters
+  PersistentValue<FilterMode> filterMode; // default is FilterMode::Linear
 };
 
 } // namespace polyscope

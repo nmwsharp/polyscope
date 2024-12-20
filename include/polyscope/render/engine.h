@@ -36,7 +36,6 @@ enum class DrawMode {
   TriangleStripInstanced,
 };
 
-enum class FilterMode { Nearest = 0, Linear };
 enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F, R16F, DEPTH24 };
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
 enum class DepthMode { Less, LEqual, LEqualReadOnly, Greater, Disable, PassReadOnly };
@@ -207,7 +206,7 @@ class RenderBuffer {
 public:
   // abstract class: use the factory methods from the Engine class
   RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_);
-  virtual ~RenderBuffer(){};
+  virtual ~RenderBuffer() {};
 
   virtual void resize(unsigned int newX, unsigned int newY);
 
@@ -228,7 +227,7 @@ class FrameBuffer {
 public:
   // abstract class: use the factory methods from the Engine class
   FrameBuffer();
-  virtual ~FrameBuffer(){};
+  virtual ~FrameBuffer() {};
 
   virtual void bind() = 0;
   // Bind to this framebuffer so subsequent draw calls will go to it
@@ -347,7 +346,7 @@ class ShaderProgram {
 
 public:
   ShaderProgram(DrawMode dm);
-  virtual ~ShaderProgram(){};
+  virtual ~ShaderProgram() {};
 
 
   // === Store data
