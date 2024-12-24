@@ -5,6 +5,7 @@
 #include "polyscope/color_quantity.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/texture_map_quantity.h"
 
 namespace polyscope {
 
@@ -65,7 +66,8 @@ public:
 // ==========          Texture Color             ==========
 // ========================================================
 
-class SurfaceTextureColorQuantity : public SurfaceColorQuantity {
+class SurfaceTextureColorQuantity : public SurfaceColorQuantity,
+                                    public TextureMapQuantity<SurfaceTextureColorQuantity> {
 public:
   SurfaceTextureColorQuantity(std::string name, SurfaceMesh& mesh_, SurfaceParameterizationQuantity& param_,
                               size_t dimX, size_t dimY, std::vector<glm::vec3> values_, ImageOrigin origin_);
@@ -73,19 +75,8 @@ public:
   virtual void createProgram() override;
   virtual void buildColorOptionsUI() override;
 
-  // === Get/set visualization parameters
-
-  // what kind of texture filtering is used
-  SurfaceTextureColorQuantity* setFilterMode(FilterMode newFilterMode);
-  FilterMode getFilterMode();
-
 protected:
   SurfaceParameterizationQuantity& param;
-  size_t dimX, dimY;
-  ImageOrigin imageOrigin;
-
-  // === Visualization parameters
-  PersistentValue<FilterMode> filterMode; // default is FilterMode::Linear
 };
 
 } // namespace polyscope

@@ -153,8 +153,8 @@ SurfaceTextureColorQuantity::SurfaceTextureColorQuantity(std::string name, Surfa
                                                          SurfaceParameterizationQuantity& param_, size_t dimX_,
                                                          size_t dimY_, std::vector<glm::vec3> colorValues_,
                                                          ImageOrigin origin_)
-    : SurfaceColorQuantity(name, mesh_, "texture", colorValues_), param(param_), dimX(dimX_), dimY(dimY_),
-      imageOrigin(origin_), filterMode(quantity.uniquePrefix() + "filterMode", FilterMode::Linear) {
+    : SurfaceColorQuantity(name, mesh_, "texture", colorValues_), TextureMapQuantity(*this, dimX_, dimY_, origin_),
+      param(param_) {
   colors.setTextureSize(dimX, dimY);
 }
 
@@ -195,23 +195,8 @@ void SurfaceTextureColorQuantity::createProgram() {
 
 void SurfaceTextureColorQuantity::buildColorOptionsUI() {
   ColorQuantity::buildColorOptionsUI();
-
-  if (ImGui::BeginMenu("Filter Mode")) {
-    if (ImGui::MenuItem("linear", NULL, filterMode.get() == FilterMode::Linear)) setFilterMode(FilterMode::Linear);
-    if (ImGui::MenuItem("nearest", NULL, filterMode.get() == FilterMode::Nearest)) setFilterMode(FilterMode::Nearest);
-    ImGui::EndMenu();
-  }
+  buildTextureMapOptionsUI();
 }
-
-SurfaceTextureColorQuantity* SurfaceTextureColorQuantity::setFilterMode(FilterMode newFilterMode) {
-  filterMode = newFilterMode;
-  if (program) {
-    colors.getRenderTextureBuffer()->setFilterMode(filterMode.get());
-  }
-  return this;
-}
-
-FilterMode SurfaceTextureColorQuantity::getFilterMode() { return filterMode.get(); }
 
 
 } // namespace polyscope
