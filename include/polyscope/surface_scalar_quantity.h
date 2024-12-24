@@ -10,6 +10,7 @@
 #include "polyscope/render/engine.h"
 #include "polyscope/scalar_quantity.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/texture_map_quantity.h"
 
 namespace polyscope {
 
@@ -25,6 +26,7 @@ public:
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
+  virtual void buildSurfaceScalarOptionsUI() {};
   virtual std::string niceName() override;
   virtual void refresh() override;
 
@@ -117,20 +119,20 @@ public:
 // ==========          Texture Scalar            ==========
 // ========================================================
 
-class SurfaceTextureScalarQuantity : public SurfaceScalarQuantity {
+class SurfaceTextureScalarQuantity : public SurfaceScalarQuantity,
+                                     public TextureMapQuantity<SurfaceTextureScalarQuantity> {
 public:
   SurfaceTextureScalarQuantity(std::string name, SurfaceMesh& mesh_, SurfaceParameterizationQuantity& param_,
                                size_t dimX, size_t dimY, const std::vector<float>& values_, ImageOrigin origin_,
                                DataType dataType_ = DataType::STANDARD);
 
   virtual void createProgram() override;
+  virtual void buildSurfaceScalarOptionsUI() override;
   virtual std::shared_ptr<render::AttributeBuffer> getAttributeBuffer() override;
 
 
 protected:
   SurfaceParameterizationQuantity& param;
-  size_t dimX, dimY;
-  ImageOrigin imageOrigin;
 };
 
 } // namespace polyscope
