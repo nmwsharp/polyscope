@@ -27,6 +27,24 @@ void SurfaceColorQuantity::draw() {
   program->draw();
 }
 
+void SurfaceColorQuantity::buildCustomUI() {
+  ImGui::SameLine();
+
+  // == Options popup
+  if (ImGui::Button("Options")) {
+    ImGui::OpenPopup("OptionsPopup");
+  }
+  if (ImGui::BeginPopup("OptionsPopup")) {
+
+    buildColorOptionsUI();
+
+    ImGui::EndPopup();
+  }
+
+  buildColorUI();
+}
+
+
 // ========================================================
 // ==========           Vertex Color            ==========
 // ========================================================
@@ -54,6 +72,11 @@ void SurfaceVertexColorQuantity::createProgram() {
   parent.setMeshGeometryAttributes(*program);
   program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
   render::engine->setMaterial(*program, parent.getMaterial());
+}
+
+void SurfaceVertexColorQuantity::buildColorOptionsUI() {
+  ColorQuantity::buildColorOptionsUI();
+  ImGui::TextUnformatted("(no options available)"); // remove once there is something in this menu
 }
 
 void SurfaceVertexColorQuantity::buildVertexInfoGUI(size_t vInd) {
@@ -104,6 +127,11 @@ void SurfaceFaceColorQuantity::createProgram() {
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
+void SurfaceFaceColorQuantity::buildColorOptionsUI() {
+  ColorQuantity::buildColorOptionsUI();
+  ImGui::TextUnformatted("(no options available)"); // remove once there is something in this menu
+}
+
 void SurfaceFaceColorQuantity::buildFaceInfoGUI(size_t fInd) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
@@ -125,8 +153,8 @@ SurfaceTextureColorQuantity::SurfaceTextureColorQuantity(std::string name, Surfa
                                                          SurfaceParameterizationQuantity& param_, size_t dimX_,
                                                          size_t dimY_, std::vector<glm::vec3> colorValues_,
                                                          ImageOrigin origin_)
-    : SurfaceColorQuantity(name, mesh_, "texture", colorValues_), param(param_), dimX(dimX_), dimY(dimY_),
-      imageOrigin(origin_) {
+    : SurfaceColorQuantity(name, mesh_, "texture", colorValues_), TextureMapQuantity(*this, dimX_, dimY_, origin_),
+      param(param_) {
   colors.setTextureSize(dimX, dimY);
 }
 
@@ -162,7 +190,12 @@ void SurfaceTextureColorQuantity::createProgram() {
   program->setTextureFromBuffer("t_color", colors.getRenderTextureBuffer().get());
   render::engine->setMaterial(*program, parent.getMaterial());
 
-  colors.getRenderTextureBuffer()->setFilterMode(FilterMode::Linear);
+  colors.getRenderTextureBuffer()->setFilterMode(filterMode.get());
+}
+
+void SurfaceTextureColorQuantity::buildColorOptionsUI() {
+  ColorQuantity::buildColorOptionsUI();
+  buildTextureMapOptionsUI();
 }
 
 

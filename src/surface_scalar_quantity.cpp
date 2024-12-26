@@ -41,6 +41,7 @@ void SurfaceScalarQuantity::buildCustomUI() {
   if (ImGui::BeginPopup("OptionsPopup")) {
 
     buildScalarOptionsUI();
+    buildSurfaceScalarOptionsUI();
 
     ImGui::EndPopup();
   }
@@ -293,8 +294,8 @@ SurfaceTextureScalarQuantity::SurfaceTextureScalarQuantity(std::string name, Sur
                                                            SurfaceParameterizationQuantity& param_, size_t dimX_,
                                                            size_t dimY_, const std::vector<float>& values_,
                                                            ImageOrigin origin_, DataType dataType_)
-    : SurfaceScalarQuantity(name, mesh_, "vertex", values_, dataType_), param(param_), dimX(dimX_), dimY(dimY_),
-      imageOrigin(origin_) {
+    : SurfaceScalarQuantity(name, mesh_, "vertex", values_, dataType_),
+      TextureMapQuantity(*this, dimX_, dimY_, origin_), param(param_) {
   values.setTextureSize(dimX, dimY);
   values.ensureHostBufferPopulated();
   hist.buildHistogram(values.data);
@@ -334,8 +335,10 @@ void SurfaceTextureScalarQuantity::createProgram() {
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());
 
-  values.getRenderTextureBuffer()->setFilterMode(FilterMode::Linear);
+  values.getRenderTextureBuffer()->setFilterMode(filterMode.get());
 }
+
+void SurfaceTextureScalarQuantity::buildSurfaceScalarOptionsUI() { buildTextureMapOptionsUI(); }
 
 std::shared_ptr<render::AttributeBuffer> SurfaceTextureScalarQuantity::getAttributeBuffer() {
   exception("unsupported operation -- cannot get attribute buffer for texture scalar quantity [" + this->name + "]");

@@ -24,6 +24,7 @@ enum class VolumeCellType { TET = 0, HEX };
 
 enum class ImplicitRenderMode { SphereMarch, FixedStep };
 enum class ImageOrigin { LowerLeft, UpperLeft };
+enum class FilterMode { Nearest = 0, Linear };
 
 enum class ParamCoordsType { UNIT = 0, WORLD }; // UNIT -> [0,1], WORLD -> length-valued
 enum class ParamVizStyle {

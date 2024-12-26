@@ -17,8 +17,9 @@ class ColorQuantity {
 public:
   ColorQuantity(QuantityT& parent, const std::vector<glm::vec3>& colors);
 
-  // Build the ImGUI UIs for scalars
+  // Build the ImGUI UIs for colors
   void buildColorUI();
+  virtual void buildColorOptionsUI(); // called inside of an options menu
 
   // Add rules to rendering programs for scalars
   std::vector<std::string> addColorRules(std::vector<std::string> rules);

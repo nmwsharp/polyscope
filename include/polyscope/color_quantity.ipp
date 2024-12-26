@@ -10,6 +10,9 @@ template <typename QuantityT>
 void ColorQuantity<QuantityT>::buildColorUI() {}
 
 template <typename QuantityT>
+void ColorQuantity<QuantityT>::buildColorOptionsUI() {}
+
+template <typename QuantityT>
 void ColorQuantity<QuantityT>::setColorUniforms(render::ShaderProgram& p) {}
 
 template <typename QuantityT>

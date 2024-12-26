@@ -5,6 +5,7 @@
 #include "polyscope/color_quantity.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/surface_mesh.h"
+#include "polyscope/texture_map_quantity.h"
 
 namespace polyscope {
 
@@ -19,6 +20,7 @@ public:
                        const std::vector<glm::vec3>& colorValues);
 
   virtual void draw() override;
+  virtual void buildCustomUI() override;
   virtual std::string niceName() override;
   virtual void refresh() override;
 
@@ -40,6 +42,7 @@ public:
   SurfaceVertexColorQuantity(std::string name, SurfaceMesh& mesh_, std::vector<glm::vec3> values_);
 
   virtual void createProgram() override;
+  virtual void buildColorOptionsUI() override;
 
   void buildVertexInfoGUI(size_t vInd) override;
 };
@@ -53,6 +56,7 @@ public:
   SurfaceFaceColorQuantity(std::string name, SurfaceMesh& mesh_, std::vector<glm::vec3> values_);
 
   virtual void createProgram() override;
+  virtual void buildColorOptionsUI() override;
 
   void buildFaceInfoGUI(size_t fInd) override;
 };
@@ -62,17 +66,17 @@ public:
 // ==========          Texture Color             ==========
 // ========================================================
 
-class SurfaceTextureColorQuantity : public SurfaceColorQuantity {
+class SurfaceTextureColorQuantity : public SurfaceColorQuantity,
+                                    public TextureMapQuantity<SurfaceTextureColorQuantity> {
 public:
   SurfaceTextureColorQuantity(std::string name, SurfaceMesh& mesh_, SurfaceParameterizationQuantity& param_,
                               size_t dimX, size_t dimY, std::vector<glm::vec3> values_, ImageOrigin origin_);
 
   virtual void createProgram() override;
+  virtual void buildColorOptionsUI() override;
 
 protected:
   SurfaceParameterizationQuantity& param;
-  size_t dimX, dimY;
-  ImageOrigin imageOrigin;
 };
 
 } // namespace polyscope

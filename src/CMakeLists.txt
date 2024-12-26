@@ -336,6 +336,8 @@ SET(HEADERS
   ${INCLUDE_ROOT}/surface_parameterization_quantity.h
   ${INCLUDE_ROOT}/surface_scalar_quantity.h
   ${INCLUDE_ROOT}/surface_vector_quantity.h
+  ${INCLUDE_ROOT}/texture_map_quantity.h
+  ${INCLUDE_ROOT}/texture_map_quantity.ipp
   ${INCLUDE_ROOT}/types.h
   ${INCLUDE_ROOT}/utilities.h
   ${INCLUDE_ROOT}/view.h
