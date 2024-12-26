@@ -202,6 +202,12 @@ TEST_F(PolyscopeTest, SurfaceMeshColorTexture) {
       psMesh->addTextureColorQuantity("tColor", *qParam, dimX, dimY, colorsTex, polyscope::ImageOrigin::UpperLeft);
   qColor->setEnabled(true);
 
+  polyscope::show(3);
+
+  // test options
+  qColor->setFilterMode(polyscope::FilterMode::Nearest);
+  polyscope::show(3);
+
   // make sure the by-name adder also works
   polyscope::SurfaceTextureColorQuantity* qColor2 =
       psMesh->addTextureColorQuantity("tColor2", "param", dimX, dimY, colorsTex, polyscope::ImageOrigin::UpperLeft);
@@ -298,6 +304,11 @@ TEST_F(PolyscopeTest, SurfaceMeshScalarTexture) {
   polyscope::SurfaceTextureScalarQuantity* qScalar =
       psMesh->addTextureScalarQuantity("tScalar", *qParam, dimX, dimY, valuesTex, polyscope::ImageOrigin::UpperLeft);
   qScalar->setEnabled(true);
+  polyscope::show(3);
+
+  // test options
+  qScalar->setFilterMode(polyscope::FilterMode::Nearest);
+  polyscope::show(3);
 
   // make sure the by-name adder also works
   polyscope::SurfaceTextureScalarQuantity* qScalar2 =
