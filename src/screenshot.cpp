@@ -119,6 +119,8 @@ void screenshot(bool transparentBG) {
   state::screenshotInd++;
 }
 
+void screenshot(const char* filename) { screenshot(std::string(filename), true); }
+
 void resetScreenshotIndex() { state::screenshotInd = 0; }
 
 
