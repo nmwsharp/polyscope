@@ -893,6 +893,14 @@ void show(size_t forFrames) {
   if (!state::initialized) {
     exception("must initialize Polyscope with polyscope::init() before calling polyscope::show().");
   }
+
+  if (isHeadless() && forFrames == 0) {
+    info("You called show() while in headless mode. In headless mode there is no display to create windows on. By "
+         "default, the show() call will block indefinitely. If you did not mean to run in headless mode, check the "
+         "initialization settings. Otherwise, be sure to set a callback to make something happen while polyscope is "
+         "showing the UI, or use functions like screenshot() to render directly without calling show().");
+  }
+
   unshowRequested = false;
 
   // the popContext() doesn't quit until _after_ the last frame, so we need to decrement by 1 to get the count right
@@ -931,6 +939,16 @@ bool windowRequestsClose() {
     return true;
   }
 
+  return false;
+}
+
+bool isHeadless() {
+  if (!isInitialized()) {
+    exception("must initialize Polyscope with init() before calling isHeadless().");
+  }
+  if (render::engine) {
+    return render::engine->isHeadless();
+  }
   return false;
 }
 

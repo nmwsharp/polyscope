@@ -46,6 +46,7 @@ void initializeRenderEngine(std::string backend) {
     // Attempt to automatically initialize by trynig
 
     bool initSucces = false;
+    std::string extraMessage = "";
 
 #ifdef POLYSCOPE_BACKEND_OPENGL3_GLFW_ENABLED
     // First try GLFW, if available
@@ -55,38 +56,47 @@ void initializeRenderEngine(std::string backend) {
       initSucces = true;
     } catch (const std::exception& e) {
       if (options::verbosity > 0) {
-        info("Attempting automatic initialization. Could not initialize backend [openGL3_glfw].");
+        info("Automatic initialization status: could not initialize backend [openGL3_glfw].");
       }
     }
     if (initSucces) return;
 #endif
 
 #ifdef POLYSCOPE_BACKEND_OPENGL3_EGL_ENABLED
-    // Then, try EGL if available
-    engineBackendName = "openGL3_egl";
-    try {
-      backend_openGL3::initializeRenderEngine_egl();
-      initSucces = true;
-    } catch (const std::exception& e) {
-      if (options::verbosity > 0) {
-        info("Attempting automatic initialization. Could not initialize backend [openGL3_egl].");
+
+    if (options::allowHeadlessBackends) {
+
+      // Then, try EGL if available
+      engineBackendName = "openGL3_egl";
+      try {
+        backend_openGL3::initializeRenderEngine_egl();
+        initSucces = true;
+      } catch (const std::exception& e) {
+        if (options::verbosity > 0) {
+          info("Automatic initialization status: could not initialize backend [openGL3_egl].");
+        }
       }
-    }
-    if (initSucces) {
-      if (options::verbosity > 0) {
-        info("Automatic initialization could not create an interactive backend, and created a headless backend "
-             "instead. This likely means no displays are available. With the headless backend, you can still run "
-             "Polyscope and even render, for instance to save images of visualizations. However no interactive "
-             "windows can be created.");
+      if (initSucces) {
+        if (options::verbosity > 0) {
+          info("Automatic initialization could not create an interactive backend, and created a headless backend "
+               "instead. This likely means no displays are available. With the headless backend, you can still run "
+               "Polyscope and even render, for instance to save images of visualizations. However no interactive "
+               "windows can be created.");
+        }
+        return;
       }
-      return;
+
+    } else {
+      extraMessage = " The headless EGL backend was available, but allowHeadlessBackends=false. Set it to true for "
+                     "headless initialization.";
     }
+
 #endif
 
     // Don't bother trying the 'mock' backend, it is unlikely to be what the user wants from the 'auto' option
 
     // Failure
-    exception("Automatic initialization: no Polyscope backends could be initialized successfully.");
+    exception("Automatic initialization: no Polyscope backends could be initialized successfully." + extraMessage);
 
   } else {
     exception("unrecognized Polyscope backend " + backend);

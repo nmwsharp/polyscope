@@ -13,7 +13,9 @@
 
 
 namespace polyscope {
-namespace options { // A general name to use when referring to the program in window headings.
+namespace options {
+
+// A general name to use when referring to the program in window headings.
 extern std::string programName;
 
 // How much should polyscope print to std::out?
@@ -27,6 +29,9 @@ extern std::string printPrefix;
 
 // Should errors throw exceptions, or just display? (default false)
 extern bool errorsThrowExceptions;
+
+// Allow initialization to create headless backends (default: false)
+extern bool allowHeadlessBackends; 
 
 // Don't let the main loop run at more than this speed. (-1 disables) (default: 60)
 extern int maxFPS;

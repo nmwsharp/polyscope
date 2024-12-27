@@ -42,6 +42,9 @@ public:
   virtual void shutdown() override;
   void swapDisplayBuffers() override;
   void checkError(bool fatal = false) override;
+  
+  // EGL backend is always headless
+  virtual bool isHeadless() override { return true; } 
 
   // === Windowing and framework things
 
