@@ -27,4 +27,5 @@ void exception(std::string message);
 
 // Process any warnings that have accumulated, showing them to the user and clearing the queue.
 void showDelayedWarnings();
+void clearMessages();
 } // namespace polyscope

@@ -880,6 +880,7 @@ int main(int argc, char** argv) {
   // }
 
   std::cout << "!!!! shutdown time" << std::endl;
+  polyscope::shutdown();
 
   return 0;
 }

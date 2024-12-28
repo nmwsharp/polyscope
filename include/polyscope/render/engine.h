@@ -442,6 +442,7 @@ public:
   virtual ~Engine();
 
   // High-level control
+  virtual void shutdown() {};
   virtual void checkError(bool fatal = false) = 0;
   void buildEngineGui();
 

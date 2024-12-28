@@ -84,6 +84,12 @@ TEST_F(PolyscopeTest, Unshow) {
   polyscope::state::userCallback = nullptr;
 }
 
+TEST_F(PolyscopeTest, ShutdownAndReinitialize) {
+  polyscope::shutdown();
+  SetUpTestSuite();
+  polyscope::show(3);
+}
+
 // Make sure that creating an empty buffer does not throw errors
 TEST_F(PolyscopeTest, EmptyBuffer) {
 

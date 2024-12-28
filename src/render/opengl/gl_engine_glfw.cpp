@@ -17,15 +17,11 @@ namespace polyscope {
 namespace render {
 namespace backend_openGL3 {
 
-GLEngineGLFW* glEngineGLFW = nullptr; // alias for global engine pointer
-extern GLEngine* glEngine;            // defined in gl_engine.h
-
 void initializeRenderEngine_glfw() {
 
-  glEngineGLFW = new GLEngineGLFW(); // create the new global engine object
+  GLEngineGLFW* glEngineGLFW = new GLEngineGLFW(); // create the new global engine object
 
   engine = glEngineGLFW; // we keep a few copies of this pointer with various types
-  glEngine = glEngineGLFW;
 
   // initialize
   glEngineGLFW->initialize();
@@ -118,6 +114,15 @@ void GLEngineGLFW::initializeImGui() {
 
   configureImGui();
 }
+
+
+void GLEngineGLFW::shutdown() {
+  checkError();
+  shutdownImGui();
+  glfwDestroyWindow(mainWindow);
+  glfwTerminate();
+}
+
 
 void GLEngineGLFW::shutdownImGui() {
   // ImGui shutdown things

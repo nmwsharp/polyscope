@@ -325,6 +325,7 @@ public:
 
   // High-level control
   void initialize();
+  virtual void shutdown() override;
   void checkError(bool fatal = false) override;
 
   void swapDisplayBuffers() override;

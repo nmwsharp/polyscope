@@ -38,8 +38,6 @@ namespace render {
 
 namespace backend_openGL3 {
 
-GLEngine* glEngine = nullptr; // alias for global engine pointer
-
 // == Map enums to native values
 
 // clang-format off
@@ -1345,7 +1343,7 @@ void GLShaderProgram::createBuffer(GLShaderAttribute& a) {
   if (a.location == -1) return;
 
   // generate the buffer if needed
-  std::shared_ptr<AttributeBuffer> newBuff = glEngine->generateAttributeBuffer(a.type, a.arrayCount);
+  std::shared_ptr<AttributeBuffer> newBuff = engine->generateAttributeBuffer(a.type, a.arrayCount);
   std::shared_ptr<GLAttributeBuffer> engineNewBuff = std::dynamic_pointer_cast<GLAttributeBuffer>(newBuff);
   if (!engineNewBuff) throw std::invalid_argument("buffer type cast failed");
   a.buff = engineNewBuff;

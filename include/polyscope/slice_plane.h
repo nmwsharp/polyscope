@@ -111,6 +111,7 @@ protected:
 
 SlicePlane* addSceneSlicePlane(bool initiallyVisible = false);
 void removeLastSceneSlicePlane();
+void removeAllSlicePlanes();
 void buildSlicePlaneGUI();
 
 // flag to open the slice plane menu after adding a slice plane
