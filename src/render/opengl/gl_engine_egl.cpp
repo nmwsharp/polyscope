@@ -316,7 +316,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
     // useful
     if (vendorStrRaw == nullptr) {
       if (polyscope::options::verbosity > 5) {
-        std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << "  vendor: " << "NULL"
+        std::cout << polyscope::options::printPrefix << "  EGLDevice " << iDevice << " -- vendor: " << "NULL"
                   << "  priority score: " << score << std::endl;
       }
       scoreDevices.emplace_back(score, iDevice);
@@ -347,7 +347,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceI
 
     // at high verbosity levels, log the priority
     if (polyscope::options::verbosity > 5) {
-      std::cout << polyscope::options::printPrefix << "  EGLDevice ind" << iDevice << "  vendor: " << vendorStr
+      std::cout << polyscope::options::printPrefix << "  EGLDevice " << iDevice << " -- vendor: " << vendorStr
                 << "  priority score: " << score << std::endl;
     }
 
