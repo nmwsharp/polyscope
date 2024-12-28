@@ -31,7 +31,10 @@ jobs:
       run: cd test/build && ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL_mock
     
     - name: run test egl backend
-      run: cd test/build && ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL3_egl
+      # We get memory leaks inside of EGL that I can't track down. With ASAN, this means the exit code is always nonzero,
+      # which is indistinguishable from tests failing. The ASAN_OPTIONS=detect_leaks=0 skips checking leaks for this test 
+      # as a workaround.
+      run: cd test/build && ASAN_OPTIONS=detect_leaks=0 ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL3_egl
   
   build_shared:
     strategy:
