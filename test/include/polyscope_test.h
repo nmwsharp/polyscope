@@ -38,12 +38,7 @@ protected:
   // Per-test-suite tear-down.
   // Called after the last test in this test suite.
   // Can be omitted if not needed.
-  /*
-  static void TearDownTestSuite() {
-    delete shared_resource_;
-    shared_resource_ = NULL;
-  }
-  */
+  static void TearDownTestSuite() { polyscope::shutdown(); }
 
   // You can define per-test set-up logic as usual.
   // virtual void SetUp() { ... }

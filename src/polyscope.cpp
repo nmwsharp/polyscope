@@ -894,7 +894,7 @@ void show(size_t forFrames) {
     exception("must initialize Polyscope with polyscope::init() before calling polyscope::show().");
   }
 
-  if (isHeadless() && forFrames == std::numeric_limits<size_t>::max()) {
+  if (isHeadless() && forFrames == 0) {
     info("You called show() while in headless mode. In headless mode there is no display to create windows on. By "
          "default, the show() call will block indefinitely. If you did not mean to run in headless mode, check the "
          "initialization settings. Otherwise, be sure to set a callback to make something happen while polyscope is "
@@ -973,6 +973,7 @@ void shutdown(bool allowMidFrameShutdown) {
   // Shut down the render engine
   render::engine->shutdown();
   delete render::engine;
+  contextStack.clear();
   render::engine = nullptr;
   state::backend = "";
   state::initialized = false;

@@ -88,6 +88,11 @@ TEST_F(PolyscopeTest, ShutdownAndReinitialize) {
   polyscope::shutdown();
   SetUpTestSuite();
   polyscope::show(3);
+
+  // do it twice -- we've had some bugs where the first shutdown doesn't clean up properly 
+  polyscope::shutdown();
+  SetUpTestSuite();
+  polyscope::show(3);
 }
 
 // Make sure that creating an empty buffer does not throw errors
