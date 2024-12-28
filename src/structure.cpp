@@ -21,7 +21,7 @@ Structure::Structure(std::string name_, std::string subtypeName)
   validateName(name);
 }
 
-Structure::~Structure(){};
+Structure::~Structure() {};
 
 Structure* Structure::setEnabled(bool newEnabled) {
   if (newEnabled == isEnabled()) return this;
@@ -173,7 +173,7 @@ std::tuple<glm::vec3, glm::vec3> Structure::boundingBox() {
 float Structure::lengthScale() {
   // compute the scaling caused by the object transform
   const glm::mat4x4& T = objectTransform.get();
-  float transScale = std::abs(glm::determinant(glm::mat3x3(T))) / T[3][3];
+  float transScale = std::cbrt(std::abs(glm::determinant(glm::mat3x3(T)))) / T[3][3];
   return transScale * objectSpaceLengthScale;
 }
 
