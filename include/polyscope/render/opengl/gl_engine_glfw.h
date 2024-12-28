@@ -48,6 +48,7 @@ public:
 
   // High-level control
   void initialize();
+  virtual void shutdown() override;
   void swapDisplayBuffers() override;
 
   // === Windowing and framework things

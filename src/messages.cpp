@@ -235,7 +235,7 @@ void terminatingError(std::string message) {
   pushContext(func, false);
 
   // Quit the program
-  shutdown();
+  shutdown(true);
   std::exit(-1);
 }
 
@@ -280,5 +280,7 @@ void showDelayedWarnings() {
     showingWarning = false;
   }
 }
+
+void clearMessages() { warningMessages.clear(); }
 
 } // namespace polyscope

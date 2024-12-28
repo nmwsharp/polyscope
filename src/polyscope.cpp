@@ -934,14 +934,30 @@ bool windowRequestsClose() {
   return false;
 }
 
-void shutdown() {
+void shutdown(bool allowMidFrameShutdown) {
 
-  // TODO should we make an effort to destruct everything here?
+  if (!allowMidFrameShutdown && contextStack.size() > 1) {
+    terminatingError("shutdown() was called mid-frame (e.g. in a per-frame callback, or UI element). This is not "
+                     "permitted, shutdown() may only be called when the main loop is not executing.");
+  }
+
   if (options::usePrefsFile) {
     writePrefsFile();
   }
 
-  render::engine->shutdownImGui();
+  // Clear out all structures and other scene objects
+  removeAllStructures();
+  removeAllGroups();
+  removeAllSlicePlanes();
+  clearMessages();
+  state::userCallback = nullptr;
+
+  // Shut down the render engine
+  render::engine->shutdown();
+  delete render::engine;
+  render::engine = nullptr;
+  state::backend = "";
+  state::initialized = false;
 }
 
 bool registerStructure(Structure* s, bool replaceIfPresent) {

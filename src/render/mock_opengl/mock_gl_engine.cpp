@@ -33,11 +33,8 @@ namespace polyscope {
 namespace render {
 namespace backend_openGL_mock {
 
-
-MockGLEngine* glEngine = nullptr; // alias for engine pointer
-
 void initializeRenderEngine() {
-  glEngine = new MockGLEngine();
+  MockGLEngine* glEngine = new MockGLEngine();
   engine = glEngine;
   glEngine->initialize();
   engine->allocateGlobalBuffersAndPrograms();
@@ -874,7 +871,7 @@ void GLShaderProgram::assignBufferToVAO(GLShaderAttribute& a) {
 void GLShaderProgram::createBuffer(GLShaderAttribute& a) {
 
   // generate the buffer if needed
-  std::shared_ptr<AttributeBuffer> newBuff = glEngine->generateAttributeBuffer(a.type, a.arrayCount);
+  std::shared_ptr<AttributeBuffer> newBuff = engine->generateAttributeBuffer(a.type, a.arrayCount);
   std::shared_ptr<GLAttributeBuffer> engineNewBuff = std::dynamic_pointer_cast<GLAttributeBuffer>(newBuff);
   if (!engineNewBuff) throw std::invalid_argument("buffer type cast failed");
   a.buff = engineNewBuff;
@@ -1579,6 +1576,11 @@ void MockGLEngine::initialize() {
 void MockGLEngine::initializeImGui() {
   ImGui::CreateContext(); // must call once at start
   configureImGui();
+}
+
+void MockGLEngine::shutdown() {
+  checkError();
+  shutdownImGui();
 }
 
 void MockGLEngine::shutdownImGui() { ImGui::DestroyContext(); }

@@ -18,9 +18,6 @@ namespace polyscope {
 namespace render {
 namespace backend_openGL3 {
 
-GLEngineEGL* glEngineEGL = nullptr; // alias for global engine pointer
-extern GLEngine* glEngine;          // defined in gl_engine.h
-
 namespace { // anonymous helpers
 
 void checkEGLError(bool fatal = true) {
@@ -116,10 +113,8 @@ void checkEGLError(bool fatal = true) {
 
 void initializeRenderEngine_egl() {
 
-  glEngineEGL = new GLEngineEGL(); // create the new global engine object
-
-  engine = glEngineEGL; // we keep a few copies of this pointer with various types
-  glEngine = glEngineEGL;
+  GLEngineEGL* glEngineEGL = new GLEngineEGL(); // create the new global engine object
+  engine = glEngineEGL;
 
   // initialize
   glEngineEGL->initialize();
@@ -128,9 +123,7 @@ void initializeRenderEngine_egl() {
 }
 
 GLEngineEGL::GLEngineEGL() {}
-GLEngineEGL::~GLEngineEGL() {
-  // eglTerminate(eglDisplay) // TODO handle termination
-}
+GLEngineEGL::~GLEngineEGL() {}
 
 void GLEngineEGL::initialize() {
 
@@ -237,6 +230,15 @@ void GLEngineEGL::initializeImGui() {
 
   ImGui::CreateContext();
   configureImGui();
+}
+
+void GLEngineEGL::shutdown() {
+  checkError();
+  shutdownImGui();
+
+  eglMakeCurrent(eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+  eglDestroyContext(eglDisplay, eglContext);
+  eglTerminate(eglDisplay);
 }
 
 void GLEngineEGL::shutdownImGui() { ImGui::DestroyContext(); }
