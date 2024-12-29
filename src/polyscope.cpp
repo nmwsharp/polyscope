@@ -319,18 +319,20 @@ void processInputEvents() {
   }
 
   bool widgetCapturedMouse = false;
-  for (WeakHandle<Widget> wHandle : state::widgets) {
-    if (wHandle.isValid()) {
-      Widget& w = wHandle.get();
-      widgetCapturedMouse = w.interact();
-      if (widgetCapturedMouse) {
-        break;
-      }
-    }
-  }
 
   // Handle scroll events for 3D view
   if (state::doDefaultMouseInteraction) {
+
+    for (WeakHandle<Widget> wHandle : state::widgets) {
+      if (wHandle.isValid()) {
+        Widget& w = wHandle.get();
+        widgetCapturedMouse = w.interact();
+        if (widgetCapturedMouse) {
+          break;
+        }
+      }
+    }
+
     if (!io.WantCaptureMouse && !widgetCapturedMouse) {
       double xoffset = io.MouseWheelH;
       double yoffset = io.MouseWheel;
