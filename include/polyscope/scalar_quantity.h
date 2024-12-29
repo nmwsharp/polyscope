@@ -46,6 +46,12 @@ public:
   QuantityT* setColorMap(std::string val);
   std::string getColorMap();
 
+  // Substitute colors for inf and nan
+  QuantityT* setInfColor(glm::vec3 val);
+  glm::vec3 getInfColor();
+  QuantityT* setNaNColor(glm::vec3 val);
+  glm::vec3 getNaNColor();
+
   // Data limits mapped in to colormap
   QuantityT* setMapRange(std::pair<double, double> val);
   std::pair<double, double> getMapRange();
@@ -74,6 +80,8 @@ protected:
 
   // Parameters
   PersistentValue<std::string> cMap;
+  PersistentValue<glm::vec3> infColor;
+  PersistentValue<glm::vec3> nanColor;
   PersistentValue<bool> isolinesEnabled;
   PersistentValue<ScaledValue<float>> isolineWidth;
   PersistentValue<float> isolineDarkness;

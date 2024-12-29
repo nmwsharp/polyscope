@@ -122,16 +122,27 @@ const ShaderReplacementRule SHADE_COLORMAP_VALUE(
           uniform float u_rangeHigh;
           uniform float u_rangeLow;
           uniform sampler1D t_colormap;
+          uniform vec3 u_infColor;
+          uniform vec3 u_nanColor;
         )"},
       {"GENERATE_SHADE_COLOR", R"(
-          float rangeTVal = (shadeValue - u_rangeLow) / (u_rangeHigh - u_rangeLow);
-          rangeTVal = clamp(rangeTVal, 0.f, 1.f);
-          vec3 albedoColor = texture(t_colormap, rangeTVal).rgb;
+          vec3 albedoColor = vec3(0., 0., 0.);
+          if (isnan(shadeValue)) {
+            albedoColor = u_nanColor;
+          } else if(isinf(shadeValue)) {
+            albedoColor = u_infColor;
+          } else {
+            float rangeTVal = (shadeValue - u_rangeLow) / (u_rangeHigh - u_rangeLow);
+            rangeTVal = clamp(rangeTVal, 0.f, 1.f);
+            albedoColor = texture(t_colormap, rangeTVal).rgb;
+          }
       )"}
     },
     /* uniforms */ {
         {"u_rangeLow", RenderDataType::Float},
         {"u_rangeHigh", RenderDataType::Float},
+        {"u_infColor", RenderDataType::Vector3Float},
+        {"u_nanColor", RenderDataType::Vector3Float},
     },
     /* attributes */ {},
     /* textures */ {
