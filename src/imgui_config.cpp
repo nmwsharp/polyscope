@@ -1,6 +1,7 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
 #include "polyscope/imgui_config.h"
+#include <polyscope/polyscope.h>
 
 namespace polyscope {
 
@@ -84,13 +85,13 @@ std::tuple<ImFontAtlas*, ImFont*, ImFont*> prepareImGuiFonts() {
   { // add regular font
     ImFontConfig config;
     regularFont = io.Fonts->AddFontFromMemoryCompressedTTF(render::getLatoRegularCompressedData(),
-                                                           render::getLatoRegularCompressedSize(), 18.0f, &config);
+                                                           render::getLatoRegularCompressedSize(), state::globalContext.dpiScale*18.0f, &config);
   }
 
   { // add mono font
     ImFontConfig config;
     monoFont = io.Fonts->AddFontFromMemoryCompressedTTF(render::getCousineRegularCompressedData(),
-                                                        render::getCousineRegularCompressedSize(), 16.0f, &config);
+                                                        render::getCousineRegularCompressedSize(), state::globalContext.dpiScale*16.0f, &config);
   }
 
   // io.Fonts->AddFontFromFileTTF("test-font-name.ttf", 16);
