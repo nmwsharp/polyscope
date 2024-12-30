@@ -13,6 +13,8 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
       vizRangeMin(quantity.uniquePrefix() + "vizRangeMin", -777.), // set later,
       vizRangeMax(quantity.uniquePrefix() + "vizRangeMax", -777.), // including clearing cache
       cMap(quantity.uniquePrefix() + "cmap", defaultColorMap(dataType)),
+      infColor(quantity.uniquePrefix() + "infColor", glm::vec3(1., 0., 1.)),
+      nanColor(quantity.uniquePrefix() + "nanColor", glm::vec3(1., 0., 0.)),
       isolinesEnabled(quantity.uniquePrefix() + "isolinesEnabled", false),
       isolineWidth(quantity.uniquePrefix() + "isolineWidth",
                    absoluteValue((dataRange.second - dataRange.first) * 0.02)),
@@ -169,6 +171,12 @@ template <typename QuantityT>
 void ScalarQuantity<QuantityT>::buildScalarOptionsUI() {
   if (ImGui::MenuItem("Reset colormap range")) resetMapRange();
   if (ImGui::MenuItem("Enable isolines", NULL, isolinesEnabled.get())) setIsolinesEnabled(!isolinesEnabled.get());
+  if (ImGui::ColorEdit3("Color for +-Inf values", &infColor.get()[0], ImGuiColorEditFlags_NoInputs)) {
+    setInfColor(getInfColor());
+  }
+  if (ImGui::ColorEdit3("Color for NaN values", &nanColor.get()[0], ImGuiColorEditFlags_NoInputs)) {
+    setNaNColor(getNaNColor());
+  }
 }
 
 template <typename QuantityT>
@@ -185,6 +193,8 @@ template <typename QuantityT>
 void ScalarQuantity<QuantityT>::setScalarUniforms(render::ShaderProgram& p) {
   p.setUniform("u_rangeLow", vizRangeMin.get());
   p.setUniform("u_rangeHigh", vizRangeMax.get());
+  p.setUniform("u_infColor", infColor.get());
+  p.setUniform("u_nanColor", nanColor.get());
 
   if (isolinesEnabled.get()) {
     p.setUniform("u_modLen", getIsolineWidth());
@@ -237,6 +247,28 @@ QuantityT* ScalarQuantity<QuantityT>::setColorMap(std::string val) {
 template <typename QuantityT>
 std::string ScalarQuantity<QuantityT>::getColorMap() {
   return cMap.get();
+}
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setInfColor(glm::vec3 val) {
+  infColor = val;
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+glm::vec3 ScalarQuantity<QuantityT>::getInfColor() {
+  return infColor.get();
+}
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setNaNColor(glm::vec3 val) {
+  nanColor = val;
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+glm::vec3 ScalarQuantity<QuantityT>::getNaNColor() {
+  return nanColor.get();
 }
 
 template <typename QuantityT>
