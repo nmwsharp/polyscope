@@ -9,12 +9,12 @@ namespace options {
 std::string programName = "Polyscope";
 int verbosity = 2;
 std::string printPrefix = "[polyscope] ";
-bool allowHeadlessBackends = false; 
+bool allowHeadlessBackends = false;
 bool errorsThrowExceptions = false;
 bool debugDrawPickBuffer = false;
 int maxFPS = 60;
 bool enableVSync = true;
-bool usePrefsFile = true;
+bool usePrefsFile = false;
 bool initializeWithDefaultStructures = true;
 bool alwaysRedraw = false;
 bool autocenterStructures = false;
