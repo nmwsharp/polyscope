@@ -30,8 +30,9 @@ extern std::string printPrefix;
 // Should errors throw exceptions, or just display? (default false)
 extern bool errorsThrowExceptions;
 
-// Allow initialization to create headless backends (default: false)
-extern bool allowHeadlessBackends; 
+// Allow initialization to create headless backends when selecting a backend automatically
+// (they can still created explicitly by name) (default: false)
+extern bool allowHeadlessBackends;
 
 // Don't let the main loop run at more than this speed. (-1 disables) (default: 60)
 extern int maxFPS;
