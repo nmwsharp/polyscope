@@ -126,6 +126,8 @@ TEST_F(PolyscopeTest, WindowProperties) {
   // resizable
   polyscope::view::setWindowResizable(false);
   EXPECT_FALSE(polyscope::view::getWindowResizable());
+
+  polyscope::show(3);
 }
 
 TEST_F(PolyscopeTest, Screenshot) { polyscope::screenshot("test_screeshot.png"); }
@@ -137,6 +139,36 @@ TEST_F(PolyscopeTest, ScreenshotBuffer) {
   std::vector<unsigned char> buff2 = polyscope::screenshotToBuffer(false);
   EXPECT_EQ(buff2.size(), polyscope::view::bufferWidth * polyscope::view::bufferHeight * 4);
 }
+
+// ============================================================
+// =============== View and navigation
+// ============================================================
+
+TEST_F(PolyscopeTest, NavigationMode) {
+
+  // Cycle through the navigation options
+
+  polyscope::view::setNavigateStyle(polyscope::NavigateStyle::Turntable);
+  polyscope::show(3);
+
+  polyscope::view::setNavigateStyle(polyscope::NavigateStyle::Free);
+  polyscope::show(3);
+
+  polyscope::view::setNavigateStyle(polyscope::NavigateStyle::Planar);
+  polyscope::show(3);
+
+  polyscope::view::setNavigateStyle(polyscope::NavigateStyle::Arcball);
+  polyscope::show(3);
+
+  polyscope::view::setNavigateStyle(polyscope::NavigateStyle::None);
+  polyscope::show(3);
+
+  polyscope::view::setNavigateStyle(polyscope::NavigateStyle::FirstPerson);
+  polyscope::show(3);
+
+  polyscope::view::setNavigateStyle(polyscope::NavigateStyle::Turntable); // set back to usual default
+}
+
 
 // ============================================================
 // =============== Ground plane tests
