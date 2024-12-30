@@ -2,6 +2,9 @@
 
 #include "polyscope/camera_parameters.h"
 
+#include "polyscope/numeric_helpers.h"
+#include "polyscope/options.h"
+
 #include <cmath>
 #include <iostream>
 
@@ -170,6 +173,19 @@ CameraParameters CameraParameters::createInvalid() {
   return CameraParameters(CameraIntrinsics::createInvalid(), CameraExtrinsics::createInvalid());
 }
 bool CameraParameters::isValid() const { return intrinsics.isValid() && extrinsics.isValid(); }
+
+bool CameraParameters::isfinite() const {
+  // confusing: two different notions of "valid". Here we mean "finite". There's another notion above which uses a flag
+  // to mark not-set-yet params.
+
+  bool isValid = true;
+
+  isValid = isValid && allComponentsFinite(intrinsics.getAspectRatioWidthOverHeight());
+  isValid = isValid && allComponentsFinite(intrinsics.getFoVVerticalDegrees());
+  isValid = isValid && allComponentsFinite(extrinsics.getE());
+
+  return isValid;
+}
 
 // == Forwarding getters for the camera class
 

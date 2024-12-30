@@ -5,6 +5,7 @@
 
 #include "polyscope/render/managed_buffer.h"
 
+#include "polyscope/check_invalid_values.h"
 #include "polyscope/internal.h"
 #include "polyscope/messages.h"
 #include "polyscope/polyscope.h"
@@ -38,6 +39,11 @@ ManagedBuffer<T>::ManagedBuffer(ManagedBufferRegistry* registry_, const std::str
 
 template <typename T>
 ManagedBuffer<T>::~ManagedBuffer() {}
+
+template <typename T>
+void ManagedBuffer<T>::checkInvalidValues() {
+  polyscope::checkInvalidValues(name, data);
+}
 
 template <typename T>
 void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_) {

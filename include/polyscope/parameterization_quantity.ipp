@@ -53,8 +53,9 @@ ParameterizationQuantity<QuantityT>::ParameterizationQuantity(QuantityT& quantit
       gridBackgroundColor(quantity.uniquePrefix() + "#gridBackgroundColor", render::RGB_PINK),
       altDarkness(quantity.uniquePrefix() + "#altDarkness", 0.5), cMap(quantity.uniquePrefix() + "#cMap", "phase")
 
-
-{}
+{
+  coords.checkInvalidValues();
+}
 
 
 template <typename QuantityT>

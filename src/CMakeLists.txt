@@ -266,6 +266,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/camera_parameters.ipp
   ${INCLUDE_ROOT}/camera_view.h
   ${INCLUDE_ROOT}/camera_view.ipp
+  ${INCLUDE_ROOT}/check_invalid_values.h
   ${INCLUDE_ROOT}/color_management.h
   ${INCLUDE_ROOT}/color_image_quantity.h
   ${INCLUDE_ROOT}/color_render_image_quantity.h
@@ -293,6 +294,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/implicit_helpers.h
   ${INCLUDE_ROOT}/implicit_helpers.ipp
   ${INCLUDE_ROOT}/messages.h
+  ${INCLUDE_ROOT}/numeric_helpers.h
   ${INCLUDE_ROOT}/options.h
   ${INCLUDE_ROOT}/parameterization_quantity.h
   ${INCLUDE_ROOT}/parameterization_quantity.ipp

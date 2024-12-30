@@ -87,6 +87,7 @@ public:
   // create/test 'invalid' params
   static CameraParameters createInvalid();
   bool isValid() const;
+  bool isfinite() const;
 
   // The intrinsic & extrinsics parameters that define the camera
   CameraIntrinsics intrinsics;

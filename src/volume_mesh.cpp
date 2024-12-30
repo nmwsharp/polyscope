@@ -135,6 +135,7 @@ edgeWidth(uniquePrefix() + "edgeWidth", 0.),
 activeLevelSetQuantity(nullptr) 
 {
   // clang-format on
+  vertexPositions.checkInvalidValues();
 
   cullWholeElements.setPassive(true);
 

@@ -1,6 +1,5 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
-
 #include "polyscope/standardize_data_array.h"
 
 namespace polyscope {
@@ -125,6 +124,7 @@ VectorQuantity<QuantityT>::VectorQuantity(QuantityT& quantity_, const std::vecto
     : VectorQuantityBase<QuantityT>(quantity_, vectorType_),
       vectors(&quantity_, quantity_.uniquePrefix() + "#values", vectorsData), vectorRoots(vectorRoots_),
       vectorsData(vectors_) {
+  vectors.checkInvalidValues();
   this->updateMaxLength();
 }
 
@@ -236,6 +236,9 @@ TangentVectorQuantity<QuantityT>::TangentVectorQuantity(QuantityT& quantity_,
       tangentBasisY(&quantity_, quantity_.uniquePrefix() + "#basisY", tangentBasisYData), vectorRoots(vectorRoots_),
       tangentVectorsData(tangentVectors_), tangentBasisXData(tangentBasisX_), tangentBasisYData(tangentBasisY_),
       nSym(nSym_) {
+  tangentVectors.checkInvalidValues();
+  tangentBasisX.checkInvalidValues();
+  tangentBasisY.checkInvalidValues();
   this->updateMaxLength();
 }
 
