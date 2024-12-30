@@ -106,8 +106,10 @@ void buildWarningUI(std::string warningBaseString, std::string warningDetailStri
       std::max(warningBaseTextSize.y, std::max(warningDetailTextSize.y, warningRepeatTextSize.y)));
   ImVec2 warningModalSize(
       std::max(view::windowWidth / 5.0f, std::min(warningMaxTextSize.x + 50, view::windowWidth / 2.0f)), 0);
+  ImVec2 warningModalPos((view::windowWidth - warningModalSize.x) / 2, view::windowHeight / 3);
 
   ImGui::SetNextWindowSize(warningModalSize);
+  ImGui::SetNextWindowPos(warningModalPos, ImGuiCond_Always);
   ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(190. / 255., 166. / 255., 0, 1.0));
   if (ImGui::BeginPopupModal("WARNING", NULL, ImGuiWindowFlags_NoMove)) {
 
