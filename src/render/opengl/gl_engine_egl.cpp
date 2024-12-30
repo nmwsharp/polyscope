@@ -466,11 +466,6 @@ bool GLEngineEGL::isKeyPressed(char c) {
   return false;
 }
 
-int GLEngineEGL::getKeyCode(char c) {
-  // not defined in headless mode
-  return -1;
-}
-
 std::string GLEngineEGL::getClipboardText() {
   // not defined in headless mode
   return "";

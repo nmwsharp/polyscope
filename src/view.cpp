@@ -297,12 +297,12 @@ void processKeyboardNavigation(ImGuiIO& io) {
 
     glm::vec3 delta{0.f, 0.f, 0.f};
 
-    if (ImGui::IsKeyDown(static_cast<ImGuiKey>(render::engine->getKeyCode('a')))) delta.x += 1.f;
-    if (ImGui::IsKeyDown(static_cast<ImGuiKey>(render::engine->getKeyCode('d')))) delta.x += -1.f;
-    if (ImGui::IsKeyDown(static_cast<ImGuiKey>(render::engine->getKeyCode('q')))) delta.y += 1.f;
-    if (ImGui::IsKeyDown(static_cast<ImGuiKey>(render::engine->getKeyCode('e')))) delta.y += -1.f;
-    if (ImGui::IsKeyDown(static_cast<ImGuiKey>(render::engine->getKeyCode('w')))) delta.z += 1.f;
-    if (ImGui::IsKeyDown(static_cast<ImGuiKey>(render::engine->getKeyCode('s')))) delta.z += -1.f;
+    if (ImGui::IsKeyDown(ImGuiKey_A)) delta.x += 1.f;
+    if (ImGui::IsKeyDown(ImGuiKey_D)) delta.x += -1.f;
+    if (ImGui::IsKeyDown(ImGuiKey_Q)) delta.y += 1.f;
+    if (ImGui::IsKeyDown(ImGuiKey_E)) delta.y += -1.f;
+    if (ImGui::IsKeyDown(ImGuiKey_W)) delta.z += 1.f;
+    if (ImGui::IsKeyDown(ImGuiKey_S)) delta.z += -1.f;
 
     if (glm::length(delta) > 0.) {
       hasMovement = true;

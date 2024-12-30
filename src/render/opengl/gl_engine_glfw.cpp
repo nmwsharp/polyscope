@@ -234,14 +234,6 @@ bool GLEngineGLFW::isKeyPressed(char c) {
   return false;
 }
 
-int GLEngineGLFW::getKeyCode(char c) {
-  if (c >= '0' && c <= '9') return static_cast<int>(ImGuiKey_0) + (c - '0');
-  if (c >= 'a' && c <= 'z') return static_cast<int>(ImGuiKey_A) + (c - 'a');
-  if (c >= 'A' && c <= 'Z') return static_cast<int>(ImGuiKey_A) + (c - 'A');
-  exception("getKeyCode only supports 0-9, a-z, A-Z");
-  return -1;
-}
-
 std::string GLEngineGLFW::getClipboardText() {
   std::string clipboardData = ImGui::GetClipboardText();
   return clipboardData;
