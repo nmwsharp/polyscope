@@ -846,6 +846,7 @@ int main(int argc, char** argv) {
   // polyscope::options::maxFPS = -1;
   polyscope::options::verbosity = 100;
   polyscope::options::enableRenderErrorChecks = true;
+  polyscope::options::allowHeadlessBackends = true;
 
   // Initialize polyscope
   polyscope::init();
@@ -871,9 +872,14 @@ int main(int argc, char** argv) {
   // Add a few gui elements
   polyscope::state::userCallback = callback;
 
-  // Show the gui
-  polyscope::show();
-
+  if (polyscope::isHeadless()) {
+    // save a screenshot to prove we initialized
+    std::cout << "Headless mode detected, saving screenshot" << std::endl;
+    polyscope::screenshot("headless_screenshot.png");
+  } else {
+    // Show the gui
+    polyscope::show();
+  }
   // main loop using manual frameTick() instead
   // while (true) {
   //   polyscope::frameTick();

@@ -66,6 +66,12 @@ void shutdown(bool allowMidFrameShutdown=false);
 // deciding when to exit your control loop when using frameTick()
 bool windowRequestsClose();
 
+// Is Polyscope running in 'headless' mode? Headless means there is no physical display to open windows on,
+// e.g. when running on a remote server. It is still possible to run Polyscope in such settings with a supported
+// backend (currently, the EGL backend only), and render to save screenshots or for other purposes.
+// Can only be called after initialization.
+bool isHeadless();
+
 // === Global variables ===
 namespace state {
 
