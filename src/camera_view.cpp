@@ -31,8 +31,8 @@ CameraView::CameraView(std::string name, const CameraParameters& params_)
 
   if (options::warnForInvalidValues) {
     if (!params.isfinite()) {
-      warning("Invalid +-inf or NaN values detected.\n(set warnForInvalidValues=false to disable this warning)",
-              "In camera view: " + name);
+      warning("Invalid +-inf or NaN values detected",
+              "in camera view parameters: " + name + "\n(set warnForInvalidValues=false to disable)");
     }
   }
 
