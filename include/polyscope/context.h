@@ -75,8 +75,8 @@ struct Context {
 
   int bufferWidth = -1;
   int bufferHeight = -1;
-  int windowWidth = 1280;
-  int windowHeight = 720;
+  int windowWidth = -1;  // on init(), get overwritten with defaultWindowWidth if -1
+  int windowHeight = -1; // ^^^ same
   int initWindowPosX = 20;
   int initWindowPosY = 20;
   bool windowResizable = true;

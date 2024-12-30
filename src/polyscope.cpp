@@ -66,11 +66,11 @@ void readPrefsFile() {
 
       // Set values
       // Do some basic validation on the sizes first to work around bugs with bogus values getting written to init file
-      if (prefsJSON.count("windowWidth") > 0) {
+      if (view::windowWidth == -1 && prefsJSON.count("windowWidth") > 0) { // only load if not already set
         int val = prefsJSON["windowWidth"];
         if (val >= 64 && val < 10000) view::windowWidth = val;
       }
-      if (prefsJSON.count("windowHeight") > 0) {
+      if (view::windowHeight == -1 && prefsJSON.count("windowHeight") > 0) { // only load if not already set
         int val = prefsJSON["windowHeight"];
         if (val >= 64 && val < 10000) view::windowHeight = val;
       }
@@ -148,6 +148,8 @@ void init(std::string backend) {
   if (options::usePrefsFile) {
     readPrefsFile();
   }
+  if (view::windowWidth == -1) view::windowWidth = view::defaultWindowWidth;
+  if (view::windowHeight == -1) view::windowHeight = view::defaultWindowHeight;
 
   // Initialize the rendering engine
   render::initializeRenderEngine(backend);
