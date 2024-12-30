@@ -24,6 +24,7 @@ bool invokeUserCallbackForNestedShow = false;
 bool giveFocusOnShow = false;
 bool hideWindowAfterShow = true;
 bool warnForInvalidValues = true;
+bool displayMessagePopups = true;
 
 bool screenshotTransparency = true;
 std::string screenshotExtension = ".png";

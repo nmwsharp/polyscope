@@ -69,6 +69,9 @@ extern bool hideWindowAfterShow;
 // Give warnings for inf/nan values
 extern bool warnForInvalidValues;
 
+// Show warnings/errors in popup modal dialogs
+extern bool displayMessagePopups;
+
 // === Scene options
 
 // Behavior of the ground plane

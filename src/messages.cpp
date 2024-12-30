@@ -234,7 +234,7 @@ void terminatingError(std::string message) {
   }
 
   // Enter a modal UI loop showing the warning
-  if (!isHeadless()) { // don't do it if running headless
+  if (options::displayMessagePopups && !isHeadless()) {
     auto func = std::bind(buildErrorUI, message, true);
     pushContext(func, false);
   }
@@ -279,7 +279,7 @@ void showDelayedWarnings() {
     WarningMessage& currMessage = warningMessages.front();
 
     // Enter a modal UI loop showing the warning
-    if (!isHeadless()) { // don't do it if running headless
+    if (options::displayMessagePopups && !isHeadless()) {
       auto func =
           std::bind(buildWarningUI, currMessage.baseMessage, currMessage.detailMessage, currMessage.repeatCount);
       pushContext(func, false);

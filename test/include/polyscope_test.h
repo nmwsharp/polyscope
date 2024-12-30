@@ -32,6 +32,7 @@ protected:
     polyscope::options::enableRenderErrorChecks = true;
     polyscope::options::errorsThrowExceptions = true;
     polyscope::options::hideWindowAfterShow = false;
+    polyscope::options::displayMessagePopups = false; // these make the tests block otherwise
     polyscope::init(testBackend);
   }
 
