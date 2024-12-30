@@ -33,6 +33,7 @@ PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
       material(uniquePrefix() + "material", "clay")
 // clang-format on
 {
+  points.checkInvalidValues();
   cullWholeElements.setPassive(true);
   updateObjectSpaceBounds();
 }

@@ -1,7 +1,9 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
 #include "imgui.h"
+#include "polyscope/check_invalid_values.h"
 #include "polyscope/utilities.h"
+
 namespace polyscope {
 
 template <typename QuantityT>
@@ -17,6 +19,7 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
       isolineDarkness(quantity.uniquePrefix() + "isolineDarkness", 0.7)
 
 {
+  values.checkInvalidValues();
   hist.updateColormap(cMap.get());
   hist.buildHistogram(values.data);
 

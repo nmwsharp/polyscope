@@ -29,6 +29,13 @@ CameraView::CameraView(std::string name, const CameraParameters& params_)
       widgetThickness(uniquePrefix() + "#widgetThickness", 0.02),
       widgetColor(uniquePrefix() + "#widgetColor", glm::vec3{0., 0., 0.}) {
 
+  if (options::warnForInvalidValues) {
+    if (!params.isfinite()) {
+      warning("Invalid +-inf or NaN values detected.\n(set warnForInvalidValues=false to disable this warning)",
+              "In camera view: " + name);
+    }
+  }
+
   updateObjectSpaceBounds();
 }
 

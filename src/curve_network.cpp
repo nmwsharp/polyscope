@@ -30,6 +30,7 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
       material(uniquePrefix() + "#material", "clay")
 // clang-format on
 {
+  nodePositions.checkInvalidValues();
 
   // Copy interleaved data in to tip and tails buffers below
   edgeTailIndsData.resize(edges_.size());

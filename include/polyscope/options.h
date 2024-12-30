@@ -66,6 +66,9 @@ extern bool giveFocusOnShow;
 // If true, hide the polyscope window when a show() command finishes (default: true)
 extern bool hideWindowAfterShow;
 
+// Give warnings for inf/nan values
+extern bool warnForInvalidValues;
+
 // === Scene options
 
 // Behavior of the ground plane

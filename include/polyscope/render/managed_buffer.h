@@ -89,6 +89,8 @@ public:
   bool dataGetsComputed;             // if true, the value gets computed on-demand by calling computeFunc()
   std::function<void()> computeFunc; // (optional) callback which populates the `data` buffer
 
+  // sanity check helper
+  void checkInvalidValues();
 
   // mark as texture, set size
   void setTextureSize(uint32_t sizeX);

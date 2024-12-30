@@ -23,6 +23,7 @@ bool automaticallyComputeSceneExtents = true;
 bool invokeUserCallbackForNestedShow = false;
 bool giveFocusOnShow = false;
 bool hideWindowAfterShow = true;
+bool warnForInvalidValues = true;
 
 bool screenshotTransparency = true;
 std::string screenshotExtension = ".png";

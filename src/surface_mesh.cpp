@@ -73,6 +73,7 @@ SurfaceMesh::SurfaceMesh(std::string name_, const std::vector<glm::vec3>& vertex
   faceIndsEntries = faceIndsEntries_;
   faceIndsStart = faceIndsStart_;
 
+  vertexPositions.checkInvalidValues();
   computeConnectivityData();
   updateObjectSpaceBounds();
 }
@@ -84,6 +85,7 @@ SurfaceMesh::SurfaceMesh(std::string name_, const std::vector<glm::vec3>& vertex
   vertexPositionsData = vertexPositions_;
   nestedFacesToFlat(facesIn);
 
+  vertexPositions.checkInvalidValues();
   computeConnectivityData();
   updateObjectSpaceBounds();
 }
