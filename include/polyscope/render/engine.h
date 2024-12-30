@@ -505,7 +505,6 @@ public:
   virtual bool windowRequestsClose() = 0;
   virtual void pollEvents() = 0;
   virtual bool isKeyPressed(char c) = 0; // for lowercase a-z and 0-9 only
-  virtual int getKeyCode(char c) = 0;    // for lowercase a-z and 0-9 only
   virtual std::string getClipboardText() = 0;
   virtual void setClipboardText(std::string text) = 0;
 

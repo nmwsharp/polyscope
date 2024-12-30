@@ -1649,8 +1649,6 @@ void MockGLEngine::pollEvents() {}
 
 bool MockGLEngine::isKeyPressed(char c) { return false; }
 
-int MockGLEngine::getKeyCode(char c) { return 77; }
-
 void MockGLEngine::ImGuiNewFrame() {
 
   // ImGUI seems to crash without a backend if we don't do this
