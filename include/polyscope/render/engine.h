@@ -445,6 +445,9 @@ public:
   virtual void shutdown() {};
   virtual void checkError(bool fatal = false) = 0;
   void buildEngineGui();
+  
+  // 'headless' means there is no physical display to actually render to, e.g. when running on a remote server
+  virtual bool isHeadless() { return false; } 
 
   virtual void clearDisplay();
   virtual void bindDisplay();

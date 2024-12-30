@@ -12,6 +12,7 @@
 #include "glad/glad.h"
 // glad must come first
 #include <EGL/egl.h>
+#include <EGL/eglext.h>
 #endif
 
 
@@ -41,6 +42,9 @@ public:
   virtual void shutdown() override;
   void swapDisplayBuffers() override;
   void checkError(bool fatal = false) override;
+  
+  // EGL backend is always headless
+  virtual bool isHeadless() override { return true; } 
 
   // === Windowing and framework things
 
@@ -74,6 +78,9 @@ protected:
   // Internal windowing and engine details
   EGLDisplay eglDisplay;
   EGLContext eglContext;
+
+  // helpers
+  void sortAvailableDevicesByPreference(std::vector<int32_t>& deviceInds, EGLDeviceEXT rawDevices[]);
 };
 
 } // namespace backend_openGL3

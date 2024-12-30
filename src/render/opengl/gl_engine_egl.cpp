@@ -12,13 +12,28 @@
 #include "stb_image.h"
 
 #include <algorithm>
+#include <cctype>
 #include <set>
+#include <string>
+
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
 
 namespace polyscope {
 namespace render {
 namespace backend_openGL3 {
 
 namespace { // anonymous helpers
+
+// Helper function to get an EGL (extension?) function and error-check that
+// we got it successfully
+void* getEGLProcAddressAndCheck(std::string name) {
+  void* procAddr = (void*)(eglGetProcAddress(name.c_str()));
+  if (!procAddr) {
+    error("EGL failed to get function pointer for " + name);
+  }
+  return procAddr;
+}
 
 void checkEGLError(bool fatal = true) {
 
@@ -129,21 +144,69 @@ void GLEngineEGL::initialize() {
 
   // === Initialize EGL
 
-  // Get the default display
-  eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-  if (eglDisplay == EGL_NO_DISPLAY) {
-    exception("ERROR: Failed to initialize EGL, could not get default display");
+  // Pre-load required extension functions
+  PFNEGLQUERYDEVICESEXTPROC eglQueryDevicesEXT =
+      (PFNEGLQUERYDEVICESEXTPROC)getEGLProcAddressAndCheck("eglQueryDevicesEXT");
+
+  // Query the available EGL devices
+  const int N_MAX_DEVICE = 256;
+  EGLDeviceEXT rawDevices[N_MAX_DEVICE];
+  EGLint nDevices;
+  if (!eglQueryDevicesEXT(N_MAX_DEVICE, rawDevices, &nDevices)) {
+    error("EGL: Failed to query devices.");
+  }
+  if (nDevices == 0) {
+    error("EGL: No devices found.");
+  }
+  info("EGL: Found " + std::to_string(nDevices) + " EGL devices.");
+
+  // Build an ordered list of which devices to try initializing with
+  std::vector<int32_t> deviceIndsToTry;
+  if (options::eglDeviceIndex == -1) {
+    info("EGL: No device index specified, attempting to intialize with each device in heuristic-guess order until "
+         "success.");
+
+    deviceIndsToTry.resize(nDevices);
+    std::iota(deviceIndsToTry.begin(), deviceIndsToTry.end(), 0);
+    sortAvailableDevicesByPreference(deviceIndsToTry, rawDevices);
+
+  } else {
+    info("EGL: Device index " + std::to_string(options::eglDeviceIndex) + " manually selected, using that device.");
+
+    if (options::eglDeviceIndex >= nDevices) {
+      error("EGL: Device index " + std::to_string(options::eglDeviceIndex) + " manually selected, but only " +
+            std::to_string(nDevices) + " devices available.");
+    }
+
+    deviceIndsToTry.push_back(options::eglDeviceIndex);
   }
 
-  // Configure
+  bool successfulInit = false;
   EGLint majorVer, minorVer;
-  bool success = eglInitialize(eglDisplay, &majorVer, &minorVer);
-  if (!success) {
-    checkEGLError(false);
+  for (int32_t iDevice : deviceIndsToTry) {
+
+    info("EGL: Attempting initialization with device " + std::to_string(iDevice));
+    EGLDeviceEXT device = rawDevices[iDevice];
+
+    // Get an EGLDisplay for the device
+    // (use the -platform / EXT version because it is the only one that seems to work in headless environments)
+    eglDisplay = eglGetPlatformDisplay(EGL_PLATFORM_DEVICE_EXT, device, NULL);
+    if (eglDisplay == EGL_NO_DISPLAY) {
+      continue;
+    }
+
+    // Configure
+    successfulInit = eglInitialize(eglDisplay, &majorVer, &minorVer);
+    if (successfulInit) {
+      break;
+    }
+  }
+
+  if (!successfulInit) {
     exception("ERROR: Failed to initialize EGL");
   }
   checkEGLError();
-
+  info("EGL: Initialization successful");
 
   // this has something to do with the EGL configuration, I don't understand exactly what
   // clang-format off
@@ -220,6 +283,86 @@ void GLEngineEGL::initialize() {
 
   populateDefaultShadersAndRules();
   checkError();
+}
+
+void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceInds, EGLDeviceEXT rawDevices[]) {
+
+  // check that we actually have the query extension
+  const char* extensions = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+  if (extensions && std::string(extensions).find("EGL_EXT_device_query") != std::string::npos) {
+    // good case, supported
+  } else {
+    info("EGL: cannot sort devices by preference, EGL_EXT_device_query is not supported");
+    return;
+  }
+
+  // Pre-load required extension functions
+  PFNEGLQUERYDEVICESTRINGEXTPROC eglQueryDeviceStringEXT =
+      (PFNEGLQUERYDEVICESTRINGEXTPROC)getEGLProcAddressAndCheck("eglQueryDeviceStringEXT");
+
+  // Build a list of devices and assign a score to each
+  std::vector<std::tuple<int32_t, int32_t>> scoreDevices;
+  for (int32_t iDevice : deviceInds) {
+    EGLDeviceEXT device = rawDevices[iDevice];
+    int score = 0;
+
+    // Heuristic, non-software renderers seem to come last, so add a term to the score that prefers later-listed entries
+    // TODO find a way to test for software rsterization for real
+    score += iDevice;
+
+    const char* vendorStrRaw = eglQueryDeviceStringEXT(device, EGL_VENDOR);
+
+    // NOTE: on many machines (cloud VMs?) the query string above is nullptr, and this whole function does nothing
+    // useful
+    if (vendorStrRaw == nullptr) {
+      if (polyscope::options::verbosity > 5) {
+        std::cout << polyscope::options::printPrefix << "  EGLDevice " << iDevice << " -- vendor: " << "NULL"
+                  << "  priority score: " << score << std::endl;
+      }
+      scoreDevices.emplace_back(score, iDevice);
+      continue;
+    }
+
+    std::string vendorStr = vendorStrRaw;
+
+    // lower-case it for the checks below
+    std::transform(vendorStr.begin(), vendorStr.end(), vendorStr.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+
+    // Problem: we want to detect and prefer discrete graphics cars over integrated GPUs and
+    // software / VM renderers. However, I can't figure out how to get an "is integrated"
+    // property from the query device strings above. Even worse, 'AMD" and "Intel" are both
+    // ambiguous and could refer to the integrated GPU or a discrete GPU.
+    //
+    // As a workaround, we assign scores based on the vendor: nvidia is always discrete, amd could be either, intel is
+    // usually integrated, but still preferred over software renderers
+    //
+    // ONEDAY: figure out a better policy to detect discrete devices....
+
+    // assign scores based on vendors to prefer discrete gpus
+    const int32_t VENDOR_MULT = 100; // give this score entry a very high preference
+    if (vendorStr.find("intel") != std::string::npos) score += 1 * VENDOR_MULT;
+    if (vendorStr.find("amd") != std::string::npos) score += 2 * VENDOR_MULT;
+    if (vendorStr.find("nvidia") != std::string::npos) score += 3 * VENDOR_MULT;
+
+    // at high verbosity levels, log the priority
+    if (polyscope::options::verbosity > 5) {
+      std::cout << polyscope::options::printPrefix << "  EGLDevice " << iDevice << " -- vendor: " << vendorStr
+                << "  priority score: " << score << std::endl;
+    }
+
+    scoreDevices.emplace_back(score, iDevice);
+  }
+
+  // sort them by highest score
+  std::sort(scoreDevices.begin(), scoreDevices.end());
+  std::reverse(scoreDevices.begin(), scoreDevices.end());
+
+
+  // store them back in the given array
+  for (size_t i = 0; i < deviceInds.size(); i++) {
+    deviceInds[i] = std::get<1>(scoreDevices[i]);
+  }
 }
 
 
