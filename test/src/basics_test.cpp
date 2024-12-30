@@ -113,11 +113,11 @@ TEST_F(PolyscopeTest, EmptyBuffer) {
 TEST_F(PolyscopeTest, WindowProperties) {
 
   // set/get window size
-  polyscope::view::setWindowSize(300, 1000);
+  polyscope::view::setWindowSize(300, 400);
   int32_t w, h;
   std::tie(w, h) = polyscope::view::getWindowSize();
   EXPECT_EQ(w, 300);
-  EXPECT_EQ(h, 1000);
+  EXPECT_EQ(h, 400);
 
   // get buffer size
   // (hard to say what this should be, given hi-dpi etc)
