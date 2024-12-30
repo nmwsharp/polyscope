@@ -233,8 +233,11 @@ void terminatingError(std::string message) {
     std::cout << options::printPrefix << "[ERROR] " << message << std::endl;
   }
 
-  auto func = std::bind(buildErrorUI, message, true);
-  pushContext(func, false);
+  // Enter a modal UI loop showing the warning
+  if (!isHeadless()) { // don't do it if running headless
+    auto func = std::bind(buildErrorUI, message, true);
+    pushContext(func, false);
+  }
 
   // Quit the program
   shutdown(true);
@@ -242,6 +245,13 @@ void terminatingError(std::string message) {
 }
 
 void warning(std::string baseMessage, std::string detailMessage) {
+
+  // print to stdout
+  if (options::verbosity > 0) {
+    std::cout << options::printPrefix << "[WARNING] " << baseMessage;
+    if (detailMessage != "") std::cout << " --- " << detailMessage;
+    std::cout << std ::endl;
+  }
 
   // Look for a message with the same name
   bool found = false;
@@ -268,15 +278,12 @@ void showDelayedWarnings() {
     showingWarning = true;
     WarningMessage& currMessage = warningMessages.front();
 
-    if (options::verbosity > 0) {
-      std::cout << options::printPrefix << "[WARNING] " << currMessage.baseMessage;
-      if (currMessage.detailMessage != "") std::cout << " --- " << currMessage.detailMessage;
-      if (currMessage.repeatCount > 0) std::cout << " (and " << currMessage.repeatCount << " similar messages).";
-      std::cout << std ::endl;
+    // Enter a modal UI loop showing the warning
+    if (!isHeadless()) { // don't do it if running headless
+      auto func =
+          std::bind(buildWarningUI, currMessage.baseMessage, currMessage.detailMessage, currMessage.repeatCount);
+      pushContext(func, false);
     }
-
-    auto func = std::bind(buildWarningUI, currMessage.baseMessage, currMessage.detailMessage, currMessage.repeatCount);
-    pushContext(func, false);
 
     warningMessages.pop_front();
     showingWarning = false;

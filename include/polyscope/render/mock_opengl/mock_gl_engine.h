@@ -328,6 +328,9 @@ public:
   virtual void shutdown() override;
   void checkError(bool fatal = false) override;
 
+  // mock backend is always headless
+  virtual bool isHeadless() override { return true; }
+
   void swapDisplayBuffers() override;
   std::vector<unsigned char> readDisplayBuffer() override;
 
