@@ -89,7 +89,7 @@ TEST_F(PolyscopeTest, ShutdownAndReinitialize) {
   SetUpTestSuite();
   polyscope::show(3);
 
-  // do it twice -- we've had some bugs where the first shutdown doesn't clean up properly 
+  // do it twice -- we've had some bugs where the first shutdown doesn't clean up properly
   polyscope::shutdown();
   SetUpTestSuite();
   polyscope::show(3);
@@ -108,6 +108,24 @@ TEST_F(PolyscopeTest, EmptyBuffer) {
   polyscope::show(3);
 
   polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, WindowProperties) {
+
+  // set/get window size
+  polyscope::view::setWindowSize(300, 1000);
+  int32_t w, h;
+  std::tie(w, h) = polyscope::view::getWindowSize();
+  EXPECT_EQ(w, 300);
+  EXPECT_EQ(h, 1000);
+
+  // get buffer size
+  // (hard to say what this should be, given hi-dpi etc)
+  std::tie(w, h) = polyscope::view::getBufferSize();
+
+  // resizable
+  polyscope::view::setWindowResizable(false);
+  EXPECT_FALSE(polyscope::view::getWindowResizable());
 }
 
 TEST_F(PolyscopeTest, Screenshot) { polyscope::screenshot("test_screeshot.png"); }
