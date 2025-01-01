@@ -139,6 +139,33 @@ const ShaderReplacementRule SHADE_COLORMAP_VALUE(
     }
 );
 
+const ShaderReplacementRule SHADE_CATEGORICAL_COLORMAP(
+    /* rule name */ "SHADE_CATEGORICAL_COLORMAP",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform sampler1D t_colormap;
+          float intToDistinctReal(float start, int index);
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+        // sample the categorical color
+        int shadeInt = int(round(shadeValue));
+        float startOffset = 0.;
+        if(shadeInt < 0) { // do something sane for negative values
+          shadeInt = -shadeInt;
+          startOffset = 1./3.; // arbitrary value to shift the negative ones a bit
+        }
+        float catVal = intToDistinctReal(startOffset, shadeInt);
+        vec3 albedoColor = texture(t_colormap, catVal).rgb;
+      )"}
+    },
+    /* uniforms */ {
+    },
+    /* attributes */ {},
+    /* textures */ {
+        {"t_colormap", 1}
+    }
+);
+
 // input: attribute vec2 shadeValue2
 // output: vec3 albedoColor
 const ShaderReplacementRule SHADE_COLORMAP_ANGULAR2(

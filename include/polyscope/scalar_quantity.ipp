@@ -21,7 +21,8 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
 {
   values.checkInvalidValues();
   hist.updateColormap(cMap.get());
-  hist.buildHistogram(values.data);
+  hist.buildHistogram(values.data, dataType);
+  // TODO: I think we might be building the histogram ^^^ twice for many quantities
 
   if (vizRangeMin.holdsDefaultValue()) { // min and max should always have same cache state
     // dynamically compute a viz range from the data min/max
@@ -59,16 +60,23 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
     extraText = "This quantity was added as **magnitude** scalar quantity, so only a "
                 "single symmetric range control can be adjusted, and it must be positive.";
   } break;
+  case DataType::CATEGORICAL: {
+    extraText = "This quantity was added as **categorical** scalar quantity, it is "
+                "interpreted as integer labels, each shaded with a distinct color. "
+                "Range controls are not used, vminmax are used only to set histogram limits, "
+                "if provided.";
+  } break;
   }
+  std::string mainText = "The window below shows the colormap used to visualize this scalar, "
+                         "and a histogram of the the data values. The text boxes below show the "
+                         "range limits for the color map.\n\n";
+  if (dataType != DataType::CATEGORICAL) {
+    mainText += "To adjust the limit range for the color map, click-and-drag on the text "
+                "box. Control-click to type a value, even one outside the visible range.";
+  }
+  mainText += extraText;
   ImGui::SameLine();
-  ImGuiHelperMarker(("The window below shows the colormap used to visualize this scalar, "
-                     "and a histogram of the the data values. The text boxes below show the "
-                     "range limits for the color map."
-                     "\n\n"
-                     "To adjust the limit range for the color map, click-and-drag on the text "
-                     "box. Control-click to type a value, even one outside the visible range." +
-                     extraText)
-                        .c_str());
+  ImGuiHelperMarker(mainText.c_str());
 
 
   // Draw the histogram of values
@@ -82,7 +90,7 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
   // valid reasons) links the resolution of the slider to the decimal width of the formatted number. When %g formats a
   // number with few decimal places, sliders can break. There is no way to set a minimum number of decimal places with
   // %g, unfortunately.
-  {
+  if (dataType != DataType::CATEGORICAL) {
 
     float imPad = ImGui::GetStyle().ItemSpacing.x;
     ImGui::PushItemWidth((histWidth - imPad) / 2);
@@ -92,11 +100,11 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
     switch (dataType) {
     case DataType::STANDARD: {
 
-      changed = changed || ImGui::DragFloat("##min", &vizRangeMin.get(), speed, dataRange.first, vizRangeMax.get(),
-                                            "%.5g", ImGuiSliderFlags_NoRoundToFormat);
+      changed = changed | ImGui::DragFloat("##min", &vizRangeMin.get(), speed, dataRange.first, vizRangeMax.get(),
+                                           "%.5g", ImGuiSliderFlags_NoRoundToFormat);
       ImGui::SameLine();
-      changed = changed || ImGui::DragFloat("##max", &vizRangeMax.get(), speed, vizRangeMin.get(), dataRange.second,
-                                            "%.5g", ImGuiSliderFlags_NoRoundToFormat);
+      changed = changed | ImGui::DragFloat("##max", &vizRangeMax.get(), speed, vizRangeMin.get(), dataRange.second,
+                                           "%.5g", ImGuiSliderFlags_NoRoundToFormat);
 
     } break;
     case DataType::SYMMETRIC: {
@@ -116,9 +124,12 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
 
     } break;
     case DataType::MAGNITUDE: {
-      changed = changed || ImGui::DragFloat("##max", &vizRangeMax.get(), speed, 0.f, dataRange.second, "%.5g",
-                                            ImGuiSliderFlags_NoRoundToFormat);
+      changed = changed | ImGui::DragFloat("##max", &vizRangeMax.get(), speed, 0.f, dataRange.second, "%.5g",
+                                           ImGuiSliderFlags_NoRoundToFormat);
 
+    } break;
+    case DataType::CATEGORICAL: {
+      // unused
     } break;
     }
 
@@ -168,12 +179,19 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
 template <typename QuantityT>
 void ScalarQuantity<QuantityT>::buildScalarOptionsUI() {
   if (ImGui::MenuItem("Reset colormap range")) resetMapRange();
-  if (ImGui::MenuItem("Enable isolines", NULL, isolinesEnabled.get())) setIsolinesEnabled(!isolinesEnabled.get());
+  if (dataType != DataType::CATEGORICAL) {
+    if (ImGui::MenuItem("Enable isolines", NULL, isolinesEnabled.get())) setIsolinesEnabled(!isolinesEnabled.get());
+  }
 }
 
 template <typename QuantityT>
 std::vector<std::string> ScalarQuantity<QuantityT>::addScalarRules(std::vector<std::string> rules) {
-  rules.push_back("SHADE_COLORMAP_VALUE");
+  if (dataType == DataType::CATEGORICAL) {
+    rules.push_back("SHADE_CATEGORICAL_COLORMAP");
+  } else {
+    // common case
+    rules.push_back("SHADE_COLORMAP_VALUE");
+  }
   if (isolinesEnabled.get()) {
     rules.push_back("ISOLINE_STRIPE_VALUECOLOR");
   }
@@ -183,8 +201,10 @@ std::vector<std::string> ScalarQuantity<QuantityT>::addScalarRules(std::vector<s
 
 template <typename QuantityT>
 void ScalarQuantity<QuantityT>::setScalarUniforms(render::ShaderProgram& p) {
-  p.setUniform("u_rangeLow", vizRangeMin.get());
-  p.setUniform("u_rangeHigh", vizRangeMax.get());
+  if (dataType != DataType::CATEGORICAL) {
+    p.setUniform("u_rangeLow", vizRangeMin.get());
+    p.setUniform("u_rangeHigh", vizRangeMax.get());
+  }
 
   if (isolinesEnabled.get()) {
     p.setUniform("u_modLen", getIsolineWidth());
@@ -196,6 +216,7 @@ template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::resetMapRange() {
   switch (dataType) {
   case DataType::STANDARD:
+  case DataType::CATEGORICAL:
     vizRangeMin = dataRange.first;
     vizRangeMax = dataRange.second;
     break;
@@ -285,6 +306,9 @@ double ScalarQuantity<QuantityT>::getIsolineDarkness() {
 
 template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::setIsolinesEnabled(bool newEnabled) {
+  if (dataType == DataType::CATEGORICAL) {
+    newEnabled = false; // no isolines allowed for categorical
+  }
   isolinesEnabled = newEnabled;
   quantity.refresh();
   requestRedraw();

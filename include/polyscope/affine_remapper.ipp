@@ -15,6 +15,8 @@ inline std::string defaultColorMap(DataType type) {
     return "coolwarm";
   case DataType::MAGNITUDE:
     return "blues";
+  case DataType::CATEGORICAL:
+    return "hsv";
     break;
   }
   return "viridis";

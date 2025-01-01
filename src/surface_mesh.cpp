@@ -35,6 +35,7 @@ vertexPositions(           this, uniquePrefix() + "vertexPositions",     vertexP
 triangleVertexInds(        this, uniquePrefix() + "triangleVertexInds",          triangleVertexIndsData),
 triangleFaceInds(          this, uniquePrefix() + "triangleFaceInds",            triangleFaceIndsData),
 triangleCornerInds(        this, uniquePrefix() + "triangleCornerInds",          triangleCornerIndsData,         std::bind(&SurfaceMesh::computeTriangleCornerInds, this)),
+triangleAllVertexInds(     this, uniquePrefix() + "triangleAllVertexInds",       triangleAllVertexIndsData,      std::bind(&SurfaceMesh::computeTriangleAllVertexInds, this)),
 triangleAllEdgeInds(       this, uniquePrefix() + "triangleAllEdgeInds",         triangleAllEdgeIndsData,        std::bind(&SurfaceMesh::computeTriangleAllEdgeInds, this)),
 triangleAllHalfedgeInds(   this, uniquePrefix() + "triangleHalfedgeInds",     triangleAllHalfedgeIndsData,    std::bind(&SurfaceMesh::computeTriangleAllHalfedgeInds, this)),
 triangleAllCornerInds(     this, uniquePrefix() + "triangleAllCornerInds",    triangleAllCornerIndsData,      std::bind(&SurfaceMesh::computeTriangleAllCornerInds, this)),
@@ -322,6 +323,35 @@ void SurfaceMesh::computeTriangleCornerInds() {
   }
 
   triangleCornerInds.markHostBufferUpdated();
+}
+
+void SurfaceMesh::computeTriangleAllVertexInds() {
+
+  triangleAllVertexInds.data.clear();
+  triangleAllVertexInds.data.reserve(3 * 3 * nFacesTriangulation());
+
+  size_t iTriFace = 0;
+  for (size_t iF = 0; iF < nFaces(); iF++) {
+    size_t iStart = faceIndsStart[iF];
+    size_t D = faceIndsStart[iF + 1] - iStart;
+    uint32_t vRoot = faceIndsEntries[iStart];
+
+    // implicitly triangulate from root
+    for (size_t j = 1; (j + 1) < D; j++) {
+      uint32_t vB = faceIndsEntries[iStart + j];
+      uint32_t vC = faceIndsEntries[iStart + ((j + 1) % D)];
+
+      // triangle vertex indices, all three values-each
+      for (size_t k = 0; k < 3; k++) {
+        triangleAllVertexInds.data.push_back(vRoot);
+        triangleAllVertexInds.data.push_back(vB);
+        triangleAllVertexInds.data.push_back(vC);
+      }
+      iTriFace++;
+    }
+  }
+
+  triangleAllVertexInds.markHostBufferUpdated();
 }
 
 void SurfaceMesh::computeTriangleAllHalfedgeInds() {

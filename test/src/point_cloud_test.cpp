@@ -112,6 +112,25 @@ TEST_F(PolyscopeTest, PointCloudScalar) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, PointCloudScalarCategorical) {
+  auto psPoints = registerPointCloud();
+
+  std::vector<double> vScalar(psPoints->nPoints(), 7.);
+  auto q1 = psPoints->addScalarQuantity("vScalar", vScalar, polyscope::DataType::CATEGORICAL);
+  q1->setEnabled(true);
+  polyscope::show(3);
+
+  psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
+  polyscope::show(3);
+
+  q1->updateData(vScalar);
+  polyscope::show(3);
+
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, PointCloudVector) {
   auto psPoints = registerPointCloud();
 

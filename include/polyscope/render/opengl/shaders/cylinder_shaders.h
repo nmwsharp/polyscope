@@ -16,6 +16,7 @@ extern const ShaderStageSpecification FLEX_CYLINDER_FRAG_SHADER;
 // Rules specific to cylinders
 extern const ShaderReplacementRule CYLINDER_PROPAGATE_VALUE;
 extern const ShaderReplacementRule CYLINDER_PROPAGATE_BLEND_VALUE;
+extern const ShaderReplacementRule CYLINDER_PROPAGATE_NEAREST_VALUE;
 extern const ShaderReplacementRule CYLINDER_PROPAGATE_COLOR;
 extern const ShaderReplacementRule CYLINDER_PROPAGATE_BLEND_COLOR;
 extern const ShaderReplacementRule CYLINDER_PROPAGATE_PICK;

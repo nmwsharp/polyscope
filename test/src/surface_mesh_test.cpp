@@ -225,10 +225,28 @@ TEST_F(PolyscopeTest, SurfaceMeshScalarVertex) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, SurfaceMeshScalarCategoricalVertex) {
+  auto psMesh = registerTriangleMesh();
+  std::vector<double> vScalar(psMesh->nVertices(), 7.);
+  auto q1 = psMesh->addVertexScalarQuantity("vScalar", vScalar, polyscope::DataType::CATEGORICAL);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, SurfaceMeshScalarFace) {
   auto psMesh = registerTriangleMesh();
   std::vector<double> fScalar(psMesh->nFaces(), 8.);
   auto q2 = psMesh->addFaceScalarQuantity("fScalar", fScalar);
+  q2->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SurfaceMeshScalarCategoricalFace) {
+  auto psMesh = registerTriangleMesh();
+  std::vector<double> fScalar(psMesh->nFaces(), 8.);
+  auto q2 = psMesh->addFaceScalarQuantity("fScalar", fScalar, polyscope::DataType::CATEGORICAL);
   q2->setEnabled(true);
   polyscope::show(3);
   polyscope::removeAllStructures();
@@ -246,10 +264,31 @@ TEST_F(PolyscopeTest, SurfaceMeshScalarEdge) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, SurfaceMeshScalarCategoricalEdge) {
+  auto psMesh = registerTriangleMesh();
+  size_t nEdges = 6;
+  std::vector<double> eScalar(nEdges, 9.);
+  std::vector<size_t> ePerm = {5, 3, 1, 2, 4, 0};
+  psMesh->setEdgePermutation(ePerm);
+  auto q3 = psMesh->addEdgeScalarQuantity("eScalar", eScalar, polyscope::DataType::CATEGORICAL);
+  q3->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, SurfaceMeshScalarHalfedge) {
   auto psMesh = registerTriangleMesh();
   std::vector<double> heScalar(psMesh->nHalfedges(), 10.);
   auto q4 = psMesh->addHalfedgeScalarQuantity("heScalar", heScalar);
+  q4->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SurfaceMeshScalarCategoricalHalfedge) {
+  auto psMesh = registerTriangleMesh();
+  std::vector<double> heScalar(psMesh->nHalfedges(), 10.);
+  auto q4 = psMesh->addHalfedgeScalarQuantity("heScalar", heScalar, polyscope::DataType::CATEGORICAL);
   q4->setEnabled(true);
   polyscope::show(3);
   polyscope::removeAllStructures();
@@ -273,6 +312,15 @@ TEST_F(PolyscopeTest, SurfaceMeshScalarCorner) {
   auto psMesh = registerTriangleMesh();
   std::vector<double> cornerScalar(psMesh->nCorners(), 10.);
   auto q4 = psMesh->addCornerScalarQuantity("cornerScalar", cornerScalar);
+  q4->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SurfaceMeshScalarCategoricalCorner) {
+  auto psMesh = registerTriangleMesh();
+  std::vector<double> cornerScalar(psMesh->nCorners(), 10.);
+  auto q4 = psMesh->addCornerScalarQuantity("cornerScalar", cornerScalar, polyscope::DataType::CATEGORICAL);
   q4->setEnabled(true);
   polyscope::show(3);
   polyscope::removeAllStructures();
@@ -315,6 +363,23 @@ TEST_F(PolyscopeTest, SurfaceMeshScalarTexture) {
       psMesh->addTextureScalarQuantity("tScalar2", "param", dimX, dimY, valuesTex, polyscope::ImageOrigin::UpperLeft);
 
   polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SurfaceMeshScalarCategoricalTexture) {
+  auto psMesh = registerTriangleMesh();
+
+  std::vector<glm::vec2> vals(psMesh->nCorners(), {1., 2.});
+  auto qParam = psMesh->addParameterizationQuantity("param", vals);
+
+  size_t dimX = 10;
+  size_t dimY = 15;
+  std::vector<float> valuesTex(dimX * dimY, 0.77);
+  polyscope::SurfaceTextureScalarQuantity* qScalar = psMesh->addTextureScalarQuantity(
+      "tScalar", *qParam, dimX, dimY, valuesTex, polyscope::ImageOrigin::UpperLeft, polyscope::DataType::CATEGORICAL);
+  qScalar->setEnabled(true);
+  polyscope::show(3);
+
   polyscope::removeAllStructures();
 }
 
