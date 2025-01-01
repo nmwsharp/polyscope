@@ -102,6 +102,7 @@ public:
   render::ManagedBuffer<uint32_t> triangleFaceInds;   // on triangulated mesh [3 * nTriFace]
   render::ManagedBuffer<uint32_t> triangleCornerInds; // on triangulated mesh [3 * nTriFace]
   // these next 3 use the ***perm if it has been set
+  render::ManagedBuffer<uint32_t> triangleAllVertexInds;   // on triangulated mesh, all 3 [3 * 3 * nTriFace]
   render::ManagedBuffer<uint32_t> triangleAllEdgeInds;     // on triangulated mesh, all 3 [3 * 3 * nTriFace]
   render::ManagedBuffer<uint32_t> triangleAllHalfedgeInds; // on triangulated mesh, all 3 [3 * 3 * nTriFace]
   render::ManagedBuffer<uint32_t> triangleAllCornerInds;   // on triangulated mesh, all 3 [3 * 3 * nTriFace]
@@ -315,6 +316,7 @@ private:
   std::vector<uint32_t> triangleVertexIndsData;      // index of the corresponding vertex
   std::vector<uint32_t> triangleFaceIndsData;        // index of the corresponding original face
   std::vector<uint32_t> triangleCornerIndsData;      // index of the corresponding original corner
+  std::vector<uint32_t> triangleAllVertexIndsData;   // index of the corresponding original vertex
   std::vector<uint32_t> triangleAllEdgeIndsData;     // index of the corresponding original edge
   std::vector<uint32_t> triangleAllHalfedgeIndsData; // index of the corresponding original halfedge
   std::vector<uint32_t> triangleAllCornerIndsData;   // index of the corresponding original corner
@@ -360,6 +362,7 @@ private:
 
   /// == Compute indices & geometry data
   void computeTriangleCornerInds();
+  void computeTriangleAllVertexInds();
   void computeTriangleAllEdgeInds();
   void computeTriangleAllHalfedgeInds();
   void computeTriangleAllCornerInds();

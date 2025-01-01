@@ -22,6 +22,7 @@ extern const ShaderReplacementRule SHADE_BASECOLOR;             // constant from
 extern const ShaderReplacementRule SHADE_COLOR;                 // from shadeColor
 extern const ShaderReplacementRule SHADECOLOR_FROM_UNIFORM;             
 extern const ShaderReplacementRule SHADE_COLORMAP_VALUE;        // colormapped from shadeValue
+extern const ShaderReplacementRule SHADE_CATEGORICAL_COLORMAP;  // use ints to sample distinct values from colormap
 extern const ShaderReplacementRule SHADE_COLORMAP_ANGULAR2;     // colormapped from angle of shadeValue2
 extern const ShaderReplacementRule SHADE_GRID_VALUE2;           // generate a two-color grid with lines from shadeValue2
 extern const ShaderReplacementRule SHADE_CHECKER_VALUE2;        // generate a two-color checker from shadeValue2

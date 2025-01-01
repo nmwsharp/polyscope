@@ -15,11 +15,12 @@ namespace polyscope {
 
 Histogram::Histogram() {}
 
-Histogram::Histogram(std::vector<float>& values) { buildHistogram(values); }
+Histogram::Histogram(std::vector<float>& values, DataType dataType) { buildHistogram(values, dataType); }
 
 Histogram::~Histogram() {}
 
-void Histogram::buildHistogram(const std::vector<float>& values) {
+void Histogram::buildHistogram(const std::vector<float>& values, DataType dataType_) {
+  dataType = dataType_;
 
   // Build arrays of values
   size_t N = values.size();
@@ -138,7 +139,15 @@ void Histogram::prepare() {
   framebuffer->addColorBuffer(texture);
 
   // Create the program
-  program = render::engine->requestShader("HISTOGRAM", {}, render::ShaderReplacementDefaults::Process);
+  if (dataType == DataType::CATEGORICAL) {
+    // for categorical data only
+    program = render::engine->requestShader("HISTOGRAM_CATEGORICAL", {"SHADE_CATEGORICAL_COLORMAP"},
+                                            render::ShaderReplacementDefaults::Process);
+  } else {
+    // common case
+    program = render::engine->requestShader("HISTOGRAM", {"SHADE_COLORMAP_VALUE"},
+                                            render::ShaderReplacementDefaults::Process);
+  }
 
   program->setTextureFromColormap("t_colormap", colormap, true);
 
@@ -160,10 +169,18 @@ void Histogram::renderToTexture() {
 
   // = Set uniforms
 
-  // Colormap range (remapped to the 0-1 coords we use)
-  program->setUniform("u_cmapRangeMin", (colormapRange.first - dataRange.first) / (dataRange.second - dataRange.first));
-  program->setUniform("u_cmapRangeMax",
-                      (colormapRange.second - dataRange.first) / (dataRange.second - dataRange.first));
+  if (dataType == DataType::CATEGORICAL) {
+    // Used to restore [0,1] tvals to the orininal data range for the categorical int remapping
+    program->setUniform("u_dataRangeLow", dataRange.first);
+    program->setUniform("u_dataRangeHigh", dataRange.second);
+  } else {
+    // Colormap range (remapped to the 0-1 coords we use)
+    float rangeLow = (colormapRange.first - dataRange.first) / (dataRange.second - dataRange.first);
+    float rangeHigh = (colormapRange.second - dataRange.first) / (dataRange.second - dataRange.first);
+    program->setUniform("u_rangeLow", rangeLow);
+    program->setUniform("u_rangeHigh", rangeHigh);
+  }
+
 
   // Draw
   program->draw();

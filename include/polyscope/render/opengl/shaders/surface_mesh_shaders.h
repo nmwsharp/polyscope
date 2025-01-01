@@ -26,6 +26,7 @@ extern const ShaderReplacementRule MESH_BACKFACE_DARKEN;
 extern const ShaderReplacementRule MESH_PROPAGATE_VALUE;
 extern const ShaderReplacementRule MESH_PROPAGATE_VALUEALPHA;
 extern const ShaderReplacementRule MESH_PROPAGATE_FLAT_VALUE;
+extern const ShaderReplacementRule MESH_PROPAGATE_VALUE_CORNER_NEAREST;
 extern const ShaderReplacementRule MESH_PROPAGATE_INT;
 extern const ShaderReplacementRule MESH_PROPAGATE_VALUE2;
 extern const ShaderReplacementRule MESH_PROPAGATE_TCOORD;

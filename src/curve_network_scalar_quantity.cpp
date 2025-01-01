@@ -91,7 +91,7 @@ void CurveNetworkNodeScalarQuantity::createProgram() {
       render::engine->addMaterialRules(parent.getMaterial(),
         addScalarRules(
           parent.addCurveNetworkEdgeRules(
-            {"CYLINDER_PROPAGATE_BLEND_VALUE"}
+            {dataType == DataType::CATEGORICAL ? "CYLINDER_PROPAGATE_NEAREST_VALUE" : "CYLINDER_PROPAGATE_BLEND_VALUE"}
           )
         )
       )
@@ -184,18 +184,57 @@ void CurveNetworkEdgeScalarQuantity::updateNodeAverageValues() {
   values.ensureHostBufferPopulated();
   nodeAverageValues.data.resize(parent.nNodes());
 
-  for (size_t iE = 0; iE < parent.nEdges(); iE++) {
-    size_t eTail = parent.edgeTailInds.data[iE];
-    size_t eTip = parent.edgeTipInds.data[iE];
+  if (dataType == DataType::CATEGORICAL) {
+    // uncommon case: take the mode of adjacent values
 
-    nodeAverageValues.data[eTail] += values.data[iE];
-    nodeAverageValues.data[eTip] += values.data[iE];
-  }
+    // count how many times each value occurs incident on the node
+    std::vector<std::unordered_map<float, int32_t>> valueCounts(parent.nNodes());
+    auto incrementValueCount = [&](size_t ind, float val) {
+      std::unordered_map<float, int32_t>& map = valueCounts[ind];
+      if (map.find(val) == map.end()) {
+        map[val] = 1;
+      } else {
+        map[val] += 1;
+      }
+    };
 
-  for (size_t iN = 0; iN < parent.nNodes(); iN++) {
-    nodeAverageValues.data[iN] /= parent.nodeDegrees[iN];
-    if (parent.nodeDegrees[iN] == 0) {
-      nodeAverageValues.data[iN] = 0.;
+    for (size_t iE = 0; iE < parent.nEdges(); iE++) {
+      size_t eTail = parent.edgeTailInds.data[iE];
+      size_t eTip = parent.edgeTipInds.data[iE];
+
+      incrementValueCount(eTail, values.data[iE]);
+      incrementValueCount(eTip, values.data[iE]);
+    }
+
+    for (size_t iN = 0; iN < parent.nNodes(); iN++) {
+      // find the value which occured most often in the counts
+      int32_t maxCount = 0;
+      float maxVal = 0.;
+      for (const auto& entry : valueCounts[iN]) {
+        if (entry.second > maxCount) {
+          maxCount = entry.second;
+          maxVal = entry.first;
+        }
+      }
+      nodeAverageValues.data[iN] = maxVal;
+    }
+  } else {
+    // common case: take the mean of adjacent values
+
+    // mean reduction
+    for (size_t iE = 0; iE < parent.nEdges(); iE++) {
+      size_t eTail = parent.edgeTailInds.data[iE];
+      size_t eTip = parent.edgeTipInds.data[iE];
+
+      nodeAverageValues.data[eTail] += values.data[iE];
+      nodeAverageValues.data[eTip] += values.data[iE];
+    }
+
+    for (size_t iN = 0; iN < parent.nNodes(); iN++) {
+      nodeAverageValues.data[iN] /= parent.nodeDegrees[iN];
+      if (parent.nodeDegrees[iN] == 0) {
+        nodeAverageValues.data[iN] = 0.;
+      }
     }
   }
 

@@ -87,7 +87,6 @@ void ScalarRenderImageQuantity::prepare() {
           getImageOriginRule(imageOrigin), 
           hasNormals ? "SHADE_NORMAL_FROM_TEXTURE" : "SHADE_NORMAL_FROM_VIEWPOS_VAR",
           "TEXTURE_PROPAGATE_VALUE", 
-          "SHADE_COLORMAP_VALUE"
         }
       )
     ),

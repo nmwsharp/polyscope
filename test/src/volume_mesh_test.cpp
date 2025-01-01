@@ -169,6 +169,19 @@ TEST_F(PolyscopeTest, VolumeMeshScalarVertex) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, VolumeMeshScalarCategoricalVertex) {
+  std::vector<glm::vec3> verts;
+  std::vector<std::array<int, 8>> cells;
+  std::tie(verts, cells) = getVolumeMeshData();
+  polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
+
+  std::vector<float> vals(verts.size(), 0.44);
+  auto q1 = psVol->addVertexScalarQuantity("vals", vals, polyscope::DataType::CATEGORICAL);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, VolumeMeshScalarCell) {
   std::vector<glm::vec3> verts;
   std::vector<std::array<int, 8>> cells;
@@ -177,6 +190,19 @@ TEST_F(PolyscopeTest, VolumeMeshScalarCell) {
 
   std::vector<float> vals(cells.size(), 0.44);
   auto q1 = psVol->addCellScalarQuantity("vals", vals);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, VolumeMeshScalarCategoricalCell) {
+  std::vector<glm::vec3> verts;
+  std::vector<std::array<int, 8>> cells;
+  std::tie(verts, cells) = getVolumeMeshData();
+  polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
+
+  std::vector<float> vals(cells.size(), 0.44);
+  auto q1 = psVol->addCellScalarQuantity("vals", vals, polyscope::DataType::CATEGORICAL);
   q1->setEnabled(true);
   polyscope::show(3);
   polyscope::removeAllStructures();
@@ -224,6 +250,12 @@ TEST_F(PolyscopeTest, VolumeMeshInspect) {
   auto q1 = psVol->addVertexScalarQuantity("vals", vals);
   q1->setEnabled(true);
   polyscope::show(3);
+
+  // with a categorical quantity
+  auto q1Cat = psVol->addVertexScalarQuantity("vals", vals, polyscope::DataType::CATEGORICAL);
+  q1Cat->setEnabled(true);
+  polyscope::show(3);
+
   polyscope::removeAllStructures();
 
   polyscope::removeLastSceneSlicePlane();

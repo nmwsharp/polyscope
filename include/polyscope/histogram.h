@@ -10,15 +10,17 @@
 
 namespace polyscope {
 
-// A histogram that shows up in ImGUI
+// A histogram that shows up in ImGUI window
+// ONEDAY: we could definitely make a better histogram widget for categorical data...
+
 class Histogram {
 public:
-  Histogram();                           // must call buildHistogram() with data after
-  Histogram(std::vector<float>& values); // internally calls buildHistogram()
+  Histogram();                                              // must call buildHistogram() with data after
+  Histogram(std::vector<float>& values, DataType datatype); // internally calls buildHistogram()
 
   ~Histogram();
 
-  void buildHistogram(const std::vector<float>& values);
+  void buildHistogram(const std::vector<float>& values, DataType datatype);
   void updateColormap(const std::string& newColormap);
 
   // Width = -1 means set automatically
@@ -33,6 +35,7 @@ private:
   void fillBuffers();
   size_t rawHistBinCount = 51;
 
+  DataType dataType = DataType::STANDARD;
   std::vector<float> rawHistCurveY;
   std::vector<std::array<float, 2>> rawHistCurveX;
   std::pair<double, double> dataRange;

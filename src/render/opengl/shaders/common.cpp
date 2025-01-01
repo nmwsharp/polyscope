@@ -113,6 +113,27 @@ vec2 sphericalTexCoords(vec3 v) {
   return uv;
 }
 
+// Take the component of values corresponding to the largest component of keys
+// If there is a tie for the max, you get an average
+float selectMax(vec3 keys, vec3 values) {
+  float maxVal = max(max(keys.x, keys.y), keys.z);
+  float outSum = 0;
+  float outCount = 0;
+  if(keys.x == maxVal) {
+    outSum += values.x;
+    outCount += 1.;
+  }
+  if(keys.y == maxVal) {
+    outSum += values.y;
+    outCount += 1.;
+  }
+  if(keys.z == maxVal) {
+    outSum += values.z;
+    outCount += 1.;
+  }
+  return outSum / outCount;
+}
+
 // Used to sample colors. Samples a series of most-distant values from a range [0,1]
 // offset from a starting value 'start' and wrapped around. index=0 returns start.
 // We only actually output distinct floats for the first 10 bits, then the pattern repeats.

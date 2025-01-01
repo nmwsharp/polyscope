@@ -66,10 +66,28 @@ TEST_F(PolyscopeTest, CurveNetworkScalarNode) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, CurveNetworkScalarCategoricalNode) {
+  auto psCurve = registerCurveNetwork();
+  std::vector<double> vScalar(psCurve->nNodes(), 7.);
+  auto q1 = psCurve->addNodeScalarQuantity("vScalar", vScalar, polyscope::DataType::CATEGORICAL);
+  q1->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, CurveNetworkScalarEdge) {
   auto psCurve = registerCurveNetwork();
   std::vector<double> eScalar(psCurve->nEdges(), 9.);
   auto q3 = psCurve->addEdgeScalarQuantity("eScalar", eScalar);
+  q3->setEnabled(true);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, CurveNetworkScalarCategoricalEdge) {
+  auto psCurve = registerCurveNetwork();
+  std::vector<double> eScalar(psCurve->nEdges(), 9.);
+  auto q3 = psCurve->addEdgeScalarQuantity("eScalar", eScalar, polyscope::DataType::CATEGORICAL);
   q3->setEnabled(true);
   polyscope::show(3);
   polyscope::removeAllStructures();
