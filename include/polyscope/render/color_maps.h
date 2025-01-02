@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include <vector>
@@ -17,8 +18,14 @@ bool buildColormapSelector(std::string& cm, std::string fieldname = "##colormap_
 
 
 // ColorMaps currently available below
-//    Sequential:
+//    Sequential & perceptually uniform:
 //      - viridis (CM_VIRIDIS)
+//      - magma (CM_MAGMA)
+//      - inferno (CM_INFERNO)
+//      - plasma (CM_PLASMA)
+//      - gray (CM_GRAY)
+//
+//    Sequential:
 //      - blues (CM_BLUES)
 //      - reds (CM_REDS)
 //
@@ -30,6 +37,7 @@ bool buildColormapSelector(std::string& cm, std::string fieldname = "##colormap_
 //      - spectral (CM_SPECTRAL)
 //      - rainbow (CM_RAINBOW)
 //      - jet (CM_JET)
+//      - turbo (CM_TURBO)
 //
 //    Cyclic:
 //      - phase (CM_PHASE)

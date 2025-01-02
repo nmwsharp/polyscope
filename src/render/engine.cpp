@@ -1,4 +1,6 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
+
 #include "polyscope/render/engine.h"
 
 #include "polyscope/polyscope.h"
@@ -25,7 +27,95 @@ int dimension(const TextureFormat& x) {
     case TextureFormat::DEPTH24:  return 1;
   }
   // clang-format on
-  throw std::runtime_error("bad enum");
+  exception("bad enum");
+  return 0;
+}
+
+int sizeInBytes(const TextureFormat& f) {
+  // clang-format off
+  switch (f) {
+    case TextureFormat::RGB8:     return 3*1;
+    case TextureFormat::RGBA8:    return 4*1;
+    case TextureFormat::RG16F:    return 2*2;
+    case TextureFormat::RGB16F:   return 3*2;
+    case TextureFormat::RGBA16F:  return 4*2;
+    case TextureFormat::R32F:     return 1*4;
+    case TextureFormat::R16F:     return 1*2;
+    case TextureFormat::RGB32F:   return 3*4;
+    case TextureFormat::RGBA32F:  return 4*4;
+    case TextureFormat::DEPTH24:  return 1*3;
+  }
+  // clang-format on
+  return -1;
+}
+
+std::string renderDataTypeName(const RenderDataType& r) {
+  switch (r) {
+  case RenderDataType::Vector2Float:
+    return "Vector2Float";
+  case RenderDataType::Vector3Float:
+    return "Vector3Float";
+  case RenderDataType::Vector4Float:
+    return "Vector4Float";
+  case RenderDataType::Matrix44Float:
+    return "Matrix44Float";
+  case RenderDataType::Float:
+    return "Float";
+  case RenderDataType::Int:
+    return "Int";
+  case RenderDataType::UInt:
+    return "UInt";
+  case RenderDataType::Vector2UInt:
+    return "Vector2UInt";
+  case RenderDataType::Vector3UInt:
+    return "Vector3UInt";
+  case RenderDataType::Vector4UInt:
+    return "Vector4UInt";
+  }
+  return "";
+}
+
+int sizeInBytes(const RenderDataType& r) {
+  switch (r) {
+  case RenderDataType::Vector2Float:
+    return 2 * 4;
+  case RenderDataType::Vector3Float:
+    return 3 * 4;
+  case RenderDataType::Vector4Float:
+    return 4 * 4;
+  case RenderDataType::Matrix44Float:
+    return 4 * 4 * 4;
+  case RenderDataType::Float:
+    return 4;
+  case RenderDataType::Int:
+    return 4;
+  case RenderDataType::UInt:
+    return 4;
+  case RenderDataType::Vector2UInt:
+    return 2 * 4;
+  case RenderDataType::Vector3UInt:
+    return 3 * 4;
+  case RenderDataType::Vector4UInt:
+    return 4 * 4;
+  }
+  return -1;
+}
+
+int renderDataTypeCountCompatbility(const RenderDataType r1, const RenderDataType r2) {
+
+  if (r1 == r2) return 1;
+
+  if (r1 == RenderDataType::Vector2Float && r2 == RenderDataType::Float) return 2;
+  if (r1 == RenderDataType::Vector3Float && r2 == RenderDataType::Float) return 3;
+  if (r1 == RenderDataType::Vector4Float && r2 == RenderDataType::Float) return 4;
+
+  if (r1 == RenderDataType::Vector2UInt && r2 == RenderDataType::UInt) return 2;
+  if (r1 == RenderDataType::Vector3UInt && r2 == RenderDataType::UInt) return 3;
+  if (r1 == RenderDataType::Vector4UInt && r2 == RenderDataType::UInt) return 4;
+
+  // there are other combinations of types which could be compatible, we don't handle them yet
+  //
+  return 0;
 }
 
 std::string modeName(const TransparencyMode& m) {
@@ -40,13 +130,45 @@ std::string modeName(const TransparencyMode& m) {
   return "";
 }
 
+std::string getImageOriginRule(ImageOrigin imageOrigin) {
+  switch (imageOrigin) {
+  case ImageOrigin::UpperLeft:
+    return "TEXTURE_ORIGIN_UPPERLEFT";
+    break;
+  case ImageOrigin::LowerLeft:
+    return "TEXTURE_ORIGIN_LOWERLEFT";
+    break;
+  }
+  return "";
+}
+
+std::string deviceBufferTypeName(const DeviceBufferType& d) {
+  switch (d) {
+  case DeviceBufferType::Attribute:
+    return "Attribute";
+  case DeviceBufferType::Texture1d:
+    return "Texture1d";
+  case DeviceBufferType::Texture2d:
+    return "Texture2d";
+  case DeviceBufferType::Texture3d:
+    return "Texture3d";
+  }
+  return "";
+}
 
 namespace render {
 
-TextureBuffer::TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_)
-    : dim(dim_), format(format_), sizeX(sizeX_), sizeY(sizeY_) {
-  if (sizeX > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
-  if (dim > 1 && sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid texture dimensions");
+AttributeBuffer::AttributeBuffer(RenderDataType dataType_, int arrayCount_)
+    : dataType(dataType_), arrayCount(arrayCount_), uniqueID(render::engine->getNextUniqueID()) {}
+
+AttributeBuffer::~AttributeBuffer() {}
+
+TextureBuffer::TextureBuffer(int dim_, TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_,
+                             unsigned int sizeZ_)
+    : dim(dim_), format(format_), sizeX(sizeX_), sizeY(sizeY_), sizeZ(sizeZ_),
+      uniqueID(render::engine->getNextUniqueID()) {
+  if (sizeX > (1 << 22)) exception("OpenGL error: invalid texture dimensions");
+  if (dim > 1 && sizeY > (1 << 22)) exception("OpenGL error: invalid texture dimensions");
 }
 
 TextureBuffer::~TextureBuffer() {}
@@ -58,6 +180,11 @@ void TextureBuffer::resize(unsigned int newX, unsigned int newY) {
   sizeX = newX;
   sizeY = newY;
 }
+void TextureBuffer::resize(unsigned int newX, unsigned int newY, unsigned int newZ) {
+  sizeX = newX;
+  sizeY = newY;
+  sizeZ = newZ;
+}
 
 unsigned int TextureBuffer::getTotalSize() const {
   switch (dim) {
@@ -66,15 +193,14 @@ unsigned int TextureBuffer::getTotalSize() const {
   case 2:
     return getSizeX() * getSizeY();
   case 3:
-    throw std::runtime_error("not implemented");
-    return -1;
+    return getSizeX() * getSizeY() * getSizeZ();
   }
   return -1;
 }
 
 RenderBuffer::RenderBuffer(RenderBufferType type_, unsigned int sizeX_, unsigned int sizeY_)
-    : type(type_), sizeX(sizeX_), sizeY(sizeY_) {
-  if (sizeX > (1 << 22) || sizeY > (1 << 22)) throw std::runtime_error("OpenGL error: invalid renderbuffer dimensions");
+    : type(type_), sizeX(sizeX_), sizeY(sizeY_), uniqueID(render::engine->getNextUniqueID()) {
+  if (sizeX > (1 << 22) || sizeY > (1 << 22)) exception("OpenGL error: invalid renderbuffer dimensions");
 }
 
 void RenderBuffer::resize(unsigned int newX, unsigned int newY) {
@@ -82,7 +208,7 @@ void RenderBuffer::resize(unsigned int newX, unsigned int newY) {
   sizeY = newY;
 }
 
-FrameBuffer::FrameBuffer() {}
+FrameBuffer::FrameBuffer() : uniqueID(render::engine->getNextUniqueID()) {}
 
 void FrameBuffer::setViewport(int startX, int startY, unsigned int sizeX, unsigned int sizeY) {
   viewportX = startX;
@@ -113,7 +239,7 @@ void FrameBuffer::resize(unsigned int newXSize, unsigned int newYSize) {
 void FrameBuffer::verifyBufferSizes() {
   for (auto& b : renderBuffersColor) {
     if (b->getSizeX() != getSizeX() || b->getSizeY() != getSizeY())
-      throw std::runtime_error("render buffer size does not match framebuffer size");
+      exception("render buffer size does not match framebuffer size");
   }
 }
 
@@ -131,7 +257,7 @@ ShaderReplacementRule::ShaderReplacementRule(std::string ruleName_,
     : ruleName(ruleName_), replacements(replacements_), uniforms(uniforms_), attributes(attributes_),
       textures(textures_) {}
 
-ShaderProgram::ShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm) : drawMode(dm) {
+ShaderProgram::ShaderProgram(DrawMode dm) : drawMode(dm), uniqueID(render::engine->getNextUniqueID()) {
 
   drawMode = dm;
   if (dm == DrawMode::IndexedLines || dm == DrawMode::IndexedLineStrip || dm == DrawMode::IndexedLineStripAdjacency ||
@@ -208,10 +334,12 @@ void Engine::buildEngineGui() {
 
     ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
     if (ImGui::TreeNode("Tone Mapping")) {
-      ImGui::SliderFloat("exposure", &exposure, 0.1, 2.0, "%.3f", 2.);
-      ImGui::SliderFloat("white level", &whiteLevel, 0.0, 2.0, "%.3f", 2.);
-      ImGui::SliderFloat("gamma", &gamma, 0.5, 3.0, "%.3f", 2.);
-
+      ImGui::SliderFloat("exposure", &exposure, 0.1, 2.0, "%.3f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+      ImGui::SliderFloat("white level", &whiteLevel, 0.0, 2.0, "%.3f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+      ImGui::SliderFloat("gamma", &gamma, 0.5, 3.0, "%.3f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
       ImGui::TreePop();
     }
 
@@ -288,13 +416,17 @@ void Engine::buildEngineGui() {
   }
 }
 
+FrameBuffer& Engine::getDisplayBuffer() { return useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer; }
+
+TextureBuffer& Engine::getFinalSceneColorTexture() { return *sceneColorFinal; }
+
 void Engine::setBackgroundColor(glm::vec3 c) {
-  FrameBuffer& targetBuffer = useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer;
+  FrameBuffer& targetBuffer = getDisplayBuffer();
   targetBuffer.clearColor = c;
 }
 
 void Engine::setBackgroundAlpha(float newAlpha) {
-  FrameBuffer& targetBuffer = useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer;
+  FrameBuffer& targetBuffer = getDisplayBuffer();
   targetBuffer.clearAlpha = newAlpha;
 }
 
@@ -304,13 +436,13 @@ void Engine::setCurrentPixelScaling(float val) { currPixelScale = val; }
 float Engine::getCurrentPixelScaling() { return currPixelScale; }
 
 void Engine::bindDisplay() {
-  FrameBuffer& targetBuffer = useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer;
+  FrameBuffer& targetBuffer = getDisplayBuffer();
   targetBuffer.bindForRendering();
 }
 
 
 void Engine::clearDisplay() {
-  FrameBuffer& targetBuffer = useAltDisplayBuffer ? *displayBufferAlt : *displayBuffer;
+  FrameBuffer& targetBuffer = getDisplayBuffer();
   targetBuffer.clear();
 }
 
@@ -357,15 +489,14 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
   // compute downsampling rate
   float sampleX = texture->getSizeX() / currV[2];
   float sampleY = texture->getSizeY() / currV[3];
-  if (sampleX != sampleY) throw std::runtime_error("lighting downsampling should have same aspect");
+  if (sampleX != sampleY) exception("lighting downsampling should have same aspect");
   int sampleLevel;
   if (sampleX < 1.) {
     sampleLevel = 1;
   } else {
-    if (sampleX != static_cast<int>(sampleX))
-      throw std::runtime_error("lighting downsampling should have integer ratio");
+    if (sampleX != static_cast<int>(sampleX)) exception("lighting downsampling should have integer ratio");
     sampleLevel = static_cast<int>(sampleX);
-    if (sampleLevel > 4) throw std::runtime_error("lighting downsampling only implemented up to 4x");
+    if (sampleLevel > 4) exception("lighting downsampling only implemented up to 4x");
   }
 
   // == Lazily regnerate the mapper if it doesn't match the current settings
@@ -395,29 +526,38 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
     currLightingTransparencyMode = transparencyMode;
   }
 
-  mapLight->setUniform("u_exposure", exposure);
-  mapLight->setUniform("u_whiteLevel", whiteLevel);
-  mapLight->setUniform("u_gamma", gamma);
+  mapLight->setUniform("u_bgColor", glm::vec3{view::bgColor[0], view::bgColor[1], view::bgColor[2]});
+  mapLight->setUniform("u_bgAlpha", view::bgColor[3]);
+  setTonemapUniforms(*mapLight);
   mapLight->setTextureFromBuffer("t_image", texture.get());
 
   glm::vec2 texelSize{1. / texture->getSizeX(), 1. / texture->getSizeY()};
   mapLight->setUniform("u_texelSize", texelSize);
 
-  if (lightCopy) {
-    setBlendMode(BlendMode::Disable);
-  } else {
-    setBlendMode(BlendMode::AlphaOver);
-  }
+  setBlendMode(BlendMode::Disable);
   render::engine->setDepthMode(DepthMode::Disable);
   mapLight->draw();
 }
 
+void Engine::setTonemapUniforms(ShaderProgram& p) {
+  p.setUniform("u_exposure", exposure);
+  p.setUniform("u_whiteLevel", whiteLevel);
+  p.setUniform("u_gamma", gamma);
+}
+
 void Engine::setMaterial(ShaderProgram& program, const std::string& mat) {
   const Material& m = getMaterial(mat);
-  program.setTextureFromBuffer("t_mat_r", m.textureBuffers[0].get());
-  program.setTextureFromBuffer("t_mat_g", m.textureBuffers[1].get());
-  program.setTextureFromBuffer("t_mat_b", m.textureBuffers[2].get());
-  program.setTextureFromBuffer("t_mat_k", m.textureBuffers[3].get());
+  if (m.textureBuffers[0]) program.setTextureFromBuffer("t_mat_r", m.textureBuffers[0].get());
+  if (m.textureBuffers[1]) program.setTextureFromBuffer("t_mat_g", m.textureBuffers[1].get());
+  if (m.textureBuffers[2]) program.setTextureFromBuffer("t_mat_b", m.textureBuffers[2].get());
+  if (m.textureBuffers[3]) program.setTextureFromBuffer("t_mat_k", m.textureBuffers[3].get());
+}
+
+void Engine::setMaterialUniforms(ShaderProgram& program, const std::string& mat) {
+  const Material& m = getMaterial(mat);
+  if (m.setUniforms) {
+    m.setUniforms(program);
+  }
 }
 
 void Engine::renderBackground() {
@@ -496,7 +636,7 @@ bool Engine::transparencyEnabled() {
 }
 
 void Engine::setSSAAFactor(int newVal) {
-  if (newVal < 1 || newVal > 4) throw std::runtime_error("ssaaFactor must be one of 1,2,3,4");
+  if (newVal < 1 || newVal > 4) exception("ssaaFactor must be one of 1,2,3,4");
   ssaaFactor = newVal;
   updateWindowSize(true);
 }
@@ -602,6 +742,25 @@ void Engine::allocateGlobalBuffersAndPrograms() {
   }
 }
 
+uint64_t Engine::getNextUniqueID() {
+  uint64_t thisID = uniqueID;
+  uniqueID++;
+  return thisID;
+}
+
+void Engine::pushBindFramebufferForRendering(FrameBuffer& f) {
+  if (currRenderFramebuffer == nullptr) exception("tried to push current framebuff on to stack, but it is null");
+  renderFramebufferStack.push_back(currRenderFramebuffer);
+  f.bindForRendering();
+}
+
+void Engine::popBindFramebufferForRendering() {
+  if (renderFramebufferStack.empty())
+    exception("called popBindFramebufferForRendering() on empty stack. Forgot to push?");
+  renderFramebufferStack.back()->bindForRendering();
+  renderFramebufferStack.pop_back();
+}
+
 void Engine::addSlicePlane(std::string uniquePostfix) {
 
   // NOTE: Unfortunately, the logic here and in slice_plane.cpp depends on the names constructed from the postfix being
@@ -611,7 +770,9 @@ void Engine::addSlicePlane(std::string uniquePostfix) {
   slicePlaneCount++;
 
   // Add rules
-  std::vector<std::string> newRules{"SLICE_PLANE_CULL_" + uniquePostfix};
+  std::vector<std::string> newRules{"SLICE_PLANE_CULL_" + uniquePostfix,
+                                    "SLICE_PLANE_VOLUMEGRID_CULL_" + uniquePostfix};
+
   defaultRules_sceneObject.insert(defaultRules_sceneObject.end(), newRules.begin(), newRules.end());
   defaultRules_pick.insert(defaultRules_pick.end(), newRules.begin(), newRules.end());
 
@@ -623,7 +784,8 @@ void Engine::removeSlicePlane(std::string uniquePostfix) {
 
   slicePlaneCount--;
   // Remove the (last occurence of the) rules we added
-  std::vector<std::string> newRules{"SLICE_PLANE_CULL_" + uniquePostfix};
+  std::vector<std::string> newRules{"SLICE_PLANE_CULL_" + uniquePostfix,
+                                    "SLICE_PLANE_VOLUMEGRID_CULL_" + uniquePostfix};
   auto deleteLast = [&](std::vector<std::string>& vec, std::string target) {
     for (size_t i = vec.size(); i > 0; i--) {
       if (vec[i - 1] == target) {
@@ -712,9 +874,10 @@ void Engine::loadDefaultMaterial(std::string name) {
 
   Material* newMaterial = new Material();
   newMaterial->name = name;
+  newMaterial->rules = {"LIGHT_MATCAP"};
 
-  std::array<unsigned char const*, 4> buff;
-  std::array<size_t, 4> buffSize;
+  std::array<unsigned char const*, 4> buff{nullptr, nullptr, nullptr, nullptr};
+  std::array<size_t, 4> buffSize{0, 0, 0, 0};
 
   // clang-format off
   if(name == "clay") {
@@ -740,10 +903,9 @@ void Engine::loadDefaultMaterial(std::string name) {
   }
   else if(name == "flat") {
     newMaterial->supportsRGB = true;
-    buff[0] = &bindata_flat_r[0]; buffSize[0] = bindata_flat_r.size();
-    buff[1] = &bindata_flat_g[0]; buffSize[1] = bindata_flat_g.size();
-    buff[2] = &bindata_flat_b[0]; buffSize[2] = bindata_flat_b.size();
-    buff[3] = &bindata_flat_k[0]; buffSize[3] = bindata_flat_k.size();
+    newMaterial->rules = {"LIGHT_PASSTHRU", "INVERSE_TONEMAP"};
+    newMaterial->setUniforms = [&](ShaderProgram& p){ setTonemapUniforms(p); };
+
   } 
   else if(name == "mud") {
     newMaterial->supportsRGB = false;
@@ -761,16 +923,18 @@ void Engine::loadDefaultMaterial(std::string name) {
     newMaterial->supportsRGB = false;
     for(int i = 0; i < 4; i++) {buff[i] = &bindata_normal[0]; buffSize[i] = bindata_normal.size();}
 	} else {
-    throw std::runtime_error("unrecognized default material name " + name);
+    exception("unrecognized default material name " + name);
   }
   // clang-format on
 
   for (int i = 0; i < 4; i++) {
-    int width, height, nComp;
-    float* data = stbi_loadf_from_memory(buff[i], buffSize[i], &width, &height, &nComp, 3);
-    if (!data) polyscope::error("failed to load material");
-    newMaterial->textureBuffers[i] = loadMaterialTexture(data, width, height);
-    stbi_image_free(data);
+    if (buff[i]) {
+      int width, height, nComp;
+      float* data = stbi_loadf_from_memory(buff[i], buffSize[i], &width, &height, &nComp, 3);
+      if (!data) exception("failed to load material");
+      newMaterial->textureBuffers[i] = loadMaterialTexture(data, width, height);
+      stbi_image_free(data);
+    }
   }
 
   materials.emplace_back(newMaterial);
@@ -788,6 +952,7 @@ void Engine::loadBlendableMaterial(std::string matName, std::array<std::string, 
   Material* newMaterial = new Material();
   newMaterial->name = matName;
   newMaterial->supportsRGB = true;
+  newMaterial->rules = {"LIGHT_MATCAP"};
   materials.emplace_back(newMaterial);
 
   // Load each of the four components
@@ -816,6 +981,7 @@ void Engine::loadStaticMaterial(std::string matName, std::string filename) {
   Material* newMaterial = new Material();
   newMaterial->name = matName;
   newMaterial->supportsRGB = false;
+  newMaterial->rules = {"LIGHT_MATCAP"};
   materials.emplace_back(newMaterial);
 
   // Load each of the four components
@@ -862,8 +1028,18 @@ Material& Engine::getMaterial(const std::string& name) {
     if (name == m->name) return *m;
   }
 
-  throw std::runtime_error("unrecognized material name: " + name);
+  exception("unrecognized material name: " + name);
   return *materials[0];
+}
+
+std::vector<std::string> Engine::addMaterialRules(std::string materialName, std::vector<std::string> initRules) {
+  Material& material = getMaterial(materialName);
+
+  for (const std::string& s : material.rules) {
+    initRules.push_back(s);
+  }
+
+  return initRules;
 }
 
 void Engine::loadColorMap(std::string cmapName, std::string filename) {
@@ -908,48 +1084,36 @@ const ValueColorMap& Engine::getColorMap(const std::string& name) {
     if (name == cmap->name) return *cmap;
   }
 
-  throw std::runtime_error("unrecognized colormap name: " + name);
+  exception("unrecognized colormap name: " + name);
   return *colorMaps[0];
 }
 
 
-// Forward declare compressed binary font functions
-unsigned int getCousineRegularCompressedSize();
-const unsigned int* getCousineRegularCompressedData();
-unsigned int getLatoRegularCompressedSize();
-const unsigned int* getLatoRegularCompressedData();
-
-
 void Engine::configureImGui() {
 
-  ImGuiIO& io = ImGui::GetIO();
-
-  { // add regular font
-    ImFontConfig config;
-    regularFont = io.Fonts->AddFontFromMemoryCompressedTTF(getLatoRegularCompressedData(),
-                                                           getLatoRegularCompressedSize(), 18.0f, &config);
+  if (options::prepareImGuiFontsCallback) {
+    std::tie(globalFontAtlas, regularFont, monoFont) = options::prepareImGuiFontsCallback();
   }
 
-  { // add mono font
-    ImFontConfig config;
-    monoFont = io.Fonts->AddFontFromMemoryCompressedTTF(getCousineRegularCompressedData(),
-                                                        getCousineRegularCompressedSize(), 16.0f, &config);
+
+  if (options::configureImGuiStyleCallback) {
+    options::configureImGuiStyleCallback();
   }
-
-  // io.Fonts->AddFontFromFileTTF("test-font-name.ttf", 16);
-
-  io.Fonts->Build();
-  globalFontAtlas = io.Fonts;
-
-
-  setImGuiStyle();
 }
 
 void Engine::loadDefaultColorMap(std::string name) {
 
   const std::vector<glm::vec3>* buff = nullptr;
-  if (name == "viridis") {
+  if (name == "gray") {
+    buff = &CM_GRAY;
+  } else if (name == "viridis") {
     buff = &CM_VIRIDIS;
+  } else if (name == "magma") {
+    buff = &CM_MAGMA;
+  } else if (name == "inferno") {
+    buff = &CM_INFERNO;
+  } else if (name == "plasma") {
+    buff = &CM_PLASMA;
   } else if (name == "coolwarm") {
     buff = &CM_COOLWARM;
   } else if (name == "blues") {
@@ -966,8 +1130,10 @@ void Engine::loadDefaultColorMap(std::string name) {
     buff = &CM_RAINBOW;
   } else if (name == "jet") {
     buff = &CM_JET;
+  } else if (name == "turbo") {
+    buff = &CM_TURBO;
   } else {
-    throw std::runtime_error("unrecognized default colormap " + name);
+    exception("unrecognized default colormap " + name);
   }
 
   ValueColorMap* newMap = new ValueColorMap();
@@ -977,7 +1143,11 @@ void Engine::loadDefaultColorMap(std::string name) {
 }
 
 void Engine::loadDefaultColorMaps() {
+  loadDefaultColorMap("gray");
   loadDefaultColorMap("viridis");
+  loadDefaultColorMap("plasma");
+  loadDefaultColorMap("inferno");
+  loadDefaultColorMap("magma");
   loadDefaultColorMap("coolwarm");
   loadDefaultColorMap("blues");
   loadDefaultColorMap("reds");
@@ -986,13 +1156,14 @@ void Engine::loadDefaultColorMaps() {
   loadDefaultColorMap("spectral");
   loadDefaultColorMap("rainbow");
   loadDefaultColorMap("jet");
+  loadDefaultColorMap("turbo");
 }
 
 
 void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer) {
   ImGui::Begin(windowName.c_str());
 
-  if (buffer->getDimension() != 2) error("only know how to show 2D textures");
+  if (buffer->getDimension() != 2) exception("only know how to show 2D textures");
 
   float w = ImGui::GetWindowWidth();
   float h = w * buffer->getSizeY() / buffer->getSizeX();
@@ -1001,64 +1172,6 @@ void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buf
   ImGui::Image(buffer->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
 
   ImGui::End();
-}
-
-void Engine::setImGuiStyle() {
-
-  // Style
-  ImGuiStyle* style = &ImGui::GetStyle();
-  style->WindowRounding = 1;
-  style->FrameRounding = 1;
-  style->FramePadding.y = 4;
-  style->ScrollbarRounding = 1;
-  style->ScrollbarSize = 20;
-
-
-  // Colors
-  ImVec4* colors = style->Colors;
-  colors[ImGuiCol_Text] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-  colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
-  colors[ImGuiCol_WindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.70f);
-  colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-  colors[ImGuiCol_PopupBg] = ImVec4(0.11f, 0.11f, 0.14f, 0.92f);
-  colors[ImGuiCol_Border] = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
-  colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-  colors[ImGuiCol_FrameBg] = ImVec4(0.63f, 0.63f, 0.63f, 0.39f);
-  colors[ImGuiCol_FrameBgHovered] = ImVec4(0.47f, 0.69f, 0.59f, 0.40f);
-  colors[ImGuiCol_FrameBgActive] = ImVec4(0.41f, 0.64f, 0.53f, 0.69f);
-  colors[ImGuiCol_TitleBg] = ImVec4(0.27f, 0.54f, 0.42f, 0.83f);
-  colors[ImGuiCol_TitleBgActive] = ImVec4(0.32f, 0.63f, 0.49f, 0.87f);
-  colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.27f, 0.54f, 0.42f, 0.83f);
-  colors[ImGuiCol_MenuBarBg] = ImVec4(0.40f, 0.55f, 0.48f, 0.80f);
-  colors[ImGuiCol_ScrollbarBg] = ImVec4(0.63f, 0.63f, 0.63f, 0.39f);
-  colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
-  colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.40f, 0.80f, 0.62f, 0.40f);
-  colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.39f, 0.80f, 0.61f, 0.60f);
-  colors[ImGuiCol_CheckMark] = ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
-  colors[ImGuiCol_SliderGrab] = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
-  colors[ImGuiCol_SliderGrabActive] = ImVec4(0.39f, 0.80f, 0.61f, 0.60f);
-  colors[ImGuiCol_Button] = ImVec4(0.35f, 0.61f, 0.49f, 0.62f);
-  colors[ImGuiCol_ButtonHovered] = ImVec4(0.40f, 0.71f, 0.57f, 0.79f);
-  colors[ImGuiCol_ButtonActive] = ImVec4(0.46f, 0.80f, 0.64f, 1.00f);
-  colors[ImGuiCol_Header] = ImVec4(0.40f, 0.90f, 0.67f, 0.45f);
-  colors[ImGuiCol_HeaderHovered] = ImVec4(0.45f, 0.90f, 0.69f, 0.80f);
-  colors[ImGuiCol_HeaderActive] = ImVec4(0.53f, 0.87f, 0.71f, 0.80f);
-  colors[ImGuiCol_Separator] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-  colors[ImGuiCol_SeparatorHovered] = ImVec4(0.60f, 0.70f, 0.66f, 1.00f);
-  colors[ImGuiCol_SeparatorActive] = ImVec4(0.70f, 0.90f, 0.81f, 1.00f);
-  colors[ImGuiCol_ResizeGrip] = ImVec4(1.00f, 1.00f, 1.00f, 0.16f);
-  colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.78f, 1.00f, 0.90f, 0.60f);
-  colors[ImGuiCol_ResizeGripActive] = ImVec4(0.78f, 1.00f, 0.90f, 0.90f);
-  colors[ImGuiCol_PlotLines] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-  colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-  colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-  colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
-  colors[ImGuiCol_TextSelectedBg] = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
-  colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
-  colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
-  colors[ImGuiCol_Tab] = ImVec4(0.27f, 0.54f, 0.42f, 0.83f);
-  colors[ImGuiCol_TabHovered] = ImVec4(0.34f, 0.68f, 0.53f, 0.83f);
-  colors[ImGuiCol_TabActive] = ImVec4(0.38f, 0.76f, 0.58f, 0.83f);
 }
 
 ImFontAtlas* Engine::getImGuiGlobalFontAtlas() { return globalFontAtlas; }
