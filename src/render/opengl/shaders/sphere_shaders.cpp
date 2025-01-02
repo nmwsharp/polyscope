@@ -1,11 +1,13 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/render/opengl/shaders/sphere_shaders.h"
 
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw { 
+namespace backend_openGL3 {
 
-  // clang-format off
+// clang-format off
 
 const ShaderStageSpecification FLEX_SPHERE_VERT_SHADER = {
 
@@ -13,12 +15,12 @@ const ShaderStageSpecification FLEX_SPHERE_VERT_SHADER = {
 
     // uniforms
     {
-        {"u_modelView", DataType::Matrix44Float},
+        {"u_modelView", RenderDataType::Matrix44Float},
     }, 
 
     // attributes
     {
-        {"a_position", DataType::Vector3Float},
+        {"a_position", RenderDataType::Vector3Float},
     },
 
     {}, // textures
@@ -47,8 +49,8 @@ const ShaderStageSpecification FLEX_SPHERE_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_pointRadius", DataType::Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_pointRadius", RenderDataType::Float},
     }, 
 
     // attributes
@@ -93,6 +95,7 @@ R"(
             vec4 p4 = center + dx + dy;
             
             // Other data to emit   
+            ${ GEOM_COMPUTE_BEFORE_EMIT }$
             vec3 sphereCenterViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
     
             // Emit the vertices as a triangle strip
@@ -108,17 +111,16 @@ R"(
 )"
 };
 
-
 const ShaderStageSpecification FLEX_SPHERE_FRAG_SHADER = {
     
     ShaderStageType::Fragment,
     
     // uniforms
     {
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_invProjMatrix", DataType::Matrix44Float},
-        {"u_viewport", DataType::Vector4Float},
-        {"u_pointRadius", DataType::Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_invProjMatrix", RenderDataType::Matrix44Float},
+        {"u_viewport", RenderDataType::Vector4Float},
+        {"u_pointRadius", RenderDataType::Float},
     }, 
 
     { }, // attributes
@@ -183,6 +185,168 @@ R"(
            ${ GENERATE_ALPHA }$
 
            // Write output
+           litColor *= alphaOut; // premultiplied alpha
+           outputF = vec4(litColor, alphaOut);
+        }
+)"
+};
+
+//  These POINTQUAD shaders render a quad at the location of the point. Technically, 
+//  they don't draw spheres, but we group them here because they share a lot of logic 
+//  with the spheres & accept the same rules.
+
+const ShaderStageSpecification FLEX_POINTQUAD_VERT_SHADER = {
+
+    ShaderStageType::Vertex,
+
+    // uniforms
+    {
+        {"u_modelView", RenderDataType::Matrix44Float},
+    }, 
+
+    // attributes
+    {
+        {"a_position", RenderDataType::Vector3Float},
+    },
+
+    {}, // textures
+
+    // source
+R"(
+        ${ GLSL_VERSION }$
+
+        in vec3 a_position;
+        uniform mat4 u_modelView;
+        
+        ${ VERT_DECLARATIONS }$
+        
+        void main()
+        {
+            gl_Position = u_modelView * vec4(a_position, 1.0);
+
+            ${ VERT_ASSIGNMENTS }$
+        }
+)"
+};
+
+const ShaderStageSpecification FLEX_POINTQUAD_GEOM_SHADER = {
+    
+    ShaderStageType::Geometry,
+    
+    // uniforms
+    {
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_pointRadius", RenderDataType::Float},
+    }, 
+
+    // attributes
+    {
+    },
+
+    {}, // textures
+
+    // source
+R"(
+        ${ GLSL_VERSION }$
+
+        layout(points) in;
+        layout(triangle_strip, max_vertices=4) out;
+        in vec4 position_tip[];
+        uniform mat4 u_projMatrix;
+        uniform float u_pointRadius;
+
+        ${ GEOM_DECLARATIONS }$
+
+        void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
+
+        void main() {
+           
+            float pointRadius = u_pointRadius;
+            ${ SPHERE_SET_POINT_RADIUS_GEOM }$
+            
+            // Construct the 4 corners of a billboard quad, facing the camera
+            vec3 dirToCam = normalize(-gl_in[0].gl_Position.xyz);
+            vec3 basisX;
+            vec3 basisY;
+            buildTangentBasis(dirToCam, basisX, basisY);
+            vec4 center = u_projMatrix * gl_in[0].gl_Position;
+            vec4 dx = u_projMatrix * (vec4(basisX, 0.) * pointRadius);
+            vec4 dy = u_projMatrix * (vec4(basisY, 0.) * pointRadius);
+            vec4 p1 = center - dx - dy;
+            vec4 p2 = center + dx - dy;
+            vec4 p3 = center - dx + dy;
+            vec4 p4 = center + dx + dy;
+            
+            ${ GEOM_COMPUTE_BEFORE_EMIT }$
+    
+            // Emit the vertices as a triangle strip
+            ${ GEOM_PER_EMIT }$ gl_Position = p1; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ gl_Position = p2; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ gl_Position = p3; EmitVertex(); 
+            ${ GEOM_PER_EMIT }$ gl_Position = p4; EmitVertex(); 
+    
+            EndPrimitive();
+
+        }
+
+)"
+};
+
+
+const ShaderStageSpecification FLEX_POINTQUAD_FRAG_SHADER = {
+    
+    ShaderStageType::Fragment,
+    
+    // uniforms
+    {
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_pointRadius", RenderDataType::Float},
+    }, 
+
+    { }, // attributes
+    
+    // textures 
+    {
+    },
+ 
+    // source
+R"(
+        ${ GLSL_VERSION }$
+        uniform mat4 u_projMatrix; 
+        uniform float u_pointRadius;
+        layout(location = 0) out vec4 outputF;
+
+        float LARGE_FLOAT();
+        vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
+        
+        ${ FRAG_DECLARATIONS }$
+
+        void main()
+        {
+           
+           float depth = gl_FragCoord.z;
+           ${ GLOBAL_FRAGMENT_FILTER_PREP }$
+           ${ GLOBAL_FRAGMENT_FILTER }$
+
+           // TODO (?) make it a disk rather than a quad by clipping points outside
+           // the radius.
+           float pointRadius = u_pointRadius;
+           ${ SPHERE_SET_POINT_RADIUS_FRAG }$
+          
+           // Shading
+           ${ GENERATE_SHADE_VALUE }$
+           ${ GENERATE_SHADE_COLOR }$
+
+           // Lighting
+           vec3 shadeNormal = vec3(0.0, 0.0, 1.0); // use a constant normal pointing towards the camera
+           ${ GENERATE_LIT_COLOR }$
+
+           // Set alpha
+           float alphaOut = 1.0;
+           ${ GENERATE_ALPHA }$
+
+           // Write output
+           litColor *= alphaOut; // premultiplied alpha
            outputF = vec4(litColor, alphaOut);
         }
 )"
@@ -217,7 +381,38 @@ const ShaderReplacementRule SPHERE_PROPAGATE_VALUE (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_value", DataType::Float},
+      {"a_value", RenderDataType::Float},
+    },
+    /* textures */ {}
+);
+
+const ShaderReplacementRule SPHERE_PROPAGATE_VALUEALPHA (
+    /* rule name */ "SPHERE_PROPAGATE_VALUEALPHA",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in float a_valueAlpha;
+          out float a_valueAlphaToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_valueAlphaToGeom = a_valueAlpha;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in float a_valueAlphaToGeom[];
+          out float a_valueAlphaToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_valueAlphaToFrag = a_valueAlphaToGeom[0]; 
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in float a_valueAlphaToFrag;
+        )"},
+      {"GENERATE_ALPHA", R"(
+          alphaOut *= clamp(a_valueAlphaToFrag, 0.f, 1.f);
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_valueAlpha", RenderDataType::Float},
     },
     /* textures */ {}
 );
@@ -248,7 +443,7 @@ const ShaderReplacementRule SPHERE_PROPAGATE_VALUE2 (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_value2", DataType::Vector2Float},
+      {"a_value2", RenderDataType::Vector2Float},
     },
     /* textures */ {}
 );
@@ -265,13 +460,13 @@ const ShaderReplacementRule SPHERE_PROPAGATE_COLOR (
         )"},
       {"GEOM_DECLARATIONS", R"(
           in vec3 a_colorToGeom[];
-          out vec3 a_colorToFrag;
+          flat out vec3 a_colorToFrag;
         )"},
       {"GEOM_PER_EMIT", R"(
           a_colorToFrag = a_colorToGeom[0]; 
         )"},
       {"FRAG_DECLARATIONS", R"(
-          in vec3 a_colorToFrag;
+          flat in vec3 a_colorToFrag;
         )"},
       {"GENERATE_SHADE_VALUE", R"(
           vec3 shadeColor = a_colorToFrag;
@@ -279,7 +474,7 @@ const ShaderReplacementRule SPHERE_PROPAGATE_COLOR (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_color", DataType::Vector3Float},
+      {"a_color", RenderDataType::Vector3Float},
     },
     /* textures */ {}
 );
@@ -287,6 +482,32 @@ const ShaderReplacementRule SPHERE_PROPAGATE_COLOR (
 const ShaderReplacementRule SPHERE_CULLPOS_FROM_CENTER(
     /* rule name */ "SPHERE_CULLPOS_FROM_CENTER",
     { /* replacement sources */
+      {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
+          vec3 cullPos = sphereCenterView;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+// use a separate version for the quads because they don't already pass the center, and we 
+// don't want to always pass it
+const ShaderReplacementRule SPHERE_CULLPOS_FROM_CENTER_QUAD(
+    /* rule name */ "SPHERE_CULLPOS_FROM_CENTER_QUAD",
+    { /* replacement sources */
+      {"GEOM_DECLARATIONS", R"(
+          out vec3 sphereCenterView;
+        )"},
+      {"GEOM_COMPUTE_BEFORE_EMIT", R"(
+          vec3 sphereCenterViewVal = gl_in[0].gl_Position.xyz / gl_in[0].gl_Position.w;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          sphereCenterView = sphereCenterViewVal;
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec3 sphereCenterView;
+        )"},
       {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
           vec3 cullPos = sphereCenterView;
         )"},
@@ -325,13 +546,13 @@ const ShaderReplacementRule SPHERE_VARIABLE_SIZE (
     },
     /* uniforms */ {},
     /* attributes */ {
-      {"a_pointRadius", DataType::Float},
+      {"a_pointRadius", RenderDataType::Float},
     },
     /* textures */ {}
 );
 
 // clang-format on
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

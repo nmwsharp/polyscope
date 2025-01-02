@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/messages.h"
 
 #include "imgui.h"
@@ -66,7 +67,7 @@ void buildErrorUI(std::string message, bool fatal) {
     }
 
     // Make a button
-    if (ImGui::Button("My bad.", ImVec2(buttonWidth, 0)) || ImGui::IsKeyPressed((int)' ')) {
+    if (ImGui::Button("My bad.", ImVec2(buttonWidth, 0)) || ImGui::IsKeyPressed(ImGuiKey_Space)) {
       popContext();
       ImGui::CloseCurrentPopup();
     }
@@ -105,8 +106,10 @@ void buildWarningUI(std::string warningBaseString, std::string warningDetailStri
       std::max(warningBaseTextSize.y, std::max(warningDetailTextSize.y, warningRepeatTextSize.y)));
   ImVec2 warningModalSize(
       std::max(view::windowWidth / 5.0f, std::min(warningMaxTextSize.x + 50, view::windowWidth / 2.0f)), 0);
+  ImVec2 warningModalPos((view::windowWidth - warningModalSize.x) / 2, view::windowHeight / 3);
 
   ImGui::SetNextWindowSize(warningModalSize);
+  ImGui::SetNextWindowPos(warningModalPos, ImGuiCond_Always);
   ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(190. / 255., 166. / 255., 0, 1.0));
   if (ImGui::BeginPopupModal("WARNING", NULL, ImGuiWindowFlags_NoMove)) {
 
@@ -178,7 +181,7 @@ void buildWarningUI(std::string warningBaseString, std::string warningDetailStri
     }
 
     // Make a button
-    if (ImGui::Button("This is fine.", ImVec2(buttonWidth, 0)) || ImGui::IsKeyPressed((int)' ')) {
+    if (ImGui::Button("This is fine.", ImVec2(buttonWidth, 0)) || ImGui::IsKeyPressed(ImGuiKey_Space)) {
       ImGui::CloseCurrentPopup();
       popContext();
     }
@@ -212,11 +215,17 @@ void error(std::string message) {
   if (options::errorsThrowExceptions) {
     throw std::logic_error(options::printPrefix + message);
   }
+}
 
-  auto func = std::bind(buildErrorUI, message, false);
-  
-  render::engine->showWindow();
-  pushContext(func, false);
+void exception(std::string message) {
+
+  message = options::printPrefix + " [EXCEPTION] " + message;
+
+  if (options::verbosity > 0) {
+    std::cout << message << std::endl;
+  }
+
+  throw std::runtime_error(message);
 }
 
 void terminatingError(std::string message) {
@@ -224,14 +233,25 @@ void terminatingError(std::string message) {
     std::cout << options::printPrefix << "[ERROR] " << message << std::endl;
   }
 
-  auto func = std::bind(buildErrorUI, message, true);
-  pushContext(func, false);
+  // Enter a modal UI loop showing the warning
+  if (options::displayMessagePopups && !isHeadless()) {
+    auto func = std::bind(buildErrorUI, message, true);
+    pushContext(func, false);
+  }
 
   // Quit the program
-  shutdown(-1);
+  shutdown(true);
+  std::exit(-1);
 }
 
 void warning(std::string baseMessage, std::string detailMessage) {
+
+  // print to stdout
+  if (options::verbosity > 0) {
+    std::cout << options::printPrefix << "[WARNING] " << baseMessage;
+    if (detailMessage != "") std::cout << " --- " << detailMessage;
+    std::cout << std ::endl;
+  }
 
   // Look for a message with the same name
   bool found = false;
@@ -258,19 +278,18 @@ void showDelayedWarnings() {
     showingWarning = true;
     WarningMessage& currMessage = warningMessages.front();
 
-    if (options::verbosity > 0) {
-      std::cout << options::printPrefix << "[WARNING] " << currMessage.baseMessage;
-      if (currMessage.detailMessage != "") std::cout << " --- " << currMessage.detailMessage;
-      if (currMessage.repeatCount > 0) std::cout << " (and " << currMessage.repeatCount << " similar messages).";
-      std::cout << std ::endl;
+    // Enter a modal UI loop showing the warning
+    if (options::displayMessagePopups && !isHeadless()) {
+      auto func =
+          std::bind(buildWarningUI, currMessage.baseMessage, currMessage.detailMessage, currMessage.repeatCount);
+      pushContext(func, false);
     }
-
-    auto func = std::bind(buildWarningUI, currMessage.baseMessage, currMessage.detailMessage, currMessage.repeatCount);
-    pushContext(func, false);
 
     warningMessages.pop_front();
     showingWarning = false;
   }
 }
+
+void clearMessages() { warningMessages.clear(); }
 
 } // namespace polyscope

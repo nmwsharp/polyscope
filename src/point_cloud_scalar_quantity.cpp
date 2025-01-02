@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/point_cloud_scalar_quantity.h"
 
 #include "polyscope/polyscope.h"
@@ -8,30 +9,23 @@
 namespace polyscope {
 
 
-PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::vector<double>& values_,
+PointCloudScalarQuantity::PointCloudScalarQuantity(std::string name, const std::vector<float>& values_,
                                                    PointCloud& pointCloud_, DataType dataType_)
-    : PointCloudQuantity(name, pointCloud_, true), ScalarQuantity(*this, values_, dataType_)
-
-{
-  if (values_.size() != parent.points.size()) {
-    polyscope::error("Point cloud scalar quantity " + name + " does not have same number of values (" +
-                     std::to_string(values_.size()) + ") as point cloud size (" + std::to_string(parent.points.size()) +
-                     ")");
-  }
-}
+    : PointCloudQuantity(name, pointCloud_, true), ScalarQuantity(*this, values_, dataType_) {}
 
 void PointCloudScalarQuantity::draw() {
   if (!isEnabled()) return;
 
   // Make the program if we don't have one already
   if (pointProgram == nullptr) {
-    createPointProgram();
+    createProgram();
   }
 
   // Set uniforms
   parent.setStructureUniforms(*pointProgram);
   parent.setPointCloudUniforms(*pointProgram);
   setScalarUniforms(*pointProgram);
+  render::engine->setMaterialUniforms(*pointProgram, parent.getMaterial());
 
   pointProgram->draw();
 }
@@ -55,19 +49,30 @@ void PointCloudScalarQuantity::buildCustomUI() {
 }
 
 
-void PointCloudScalarQuantity::createPointProgram() {
-  // Create the program to draw this quantity
+void PointCloudScalarQuantity::createProgram() {
 
-  pointProgram = render::engine->requestShader("RAYCAST_SPHERE",
-                                               parent.addPointCloudRules(addScalarRules({"SPHERE_PROPAGATE_VALUE"})));
+  // Create the program to draw this quantity
+  // clang-format off
+  pointProgram = render::engine->requestShader(
+      parent.getShaderNameForRenderMode(), 
+      parent.addPointCloudRules(
+        render::engine->addMaterialRules(parent.getMaterial(),
+          addScalarRules(
+            {"SPHERE_PROPAGATE_VALUE"}
+          )
+        )
+      )
+  );
+  // clang-format on
+
+  parent.setPointProgramGeometryAttributes(*pointProgram);
+  pointProgram->setAttribute("a_value", values.getRenderAttributeBuffer());
 
   // Fill buffers
-  parent.fillGeometryBuffers(*pointProgram);
-  pointProgram->setAttribute("a_value", values);
   pointProgram->setTextureFromColormap("t_colormap", cMap.get());
-
   render::engine->setMaterial(*pointProgram, parent.getMaterial());
 }
+
 
 void PointCloudScalarQuantity::refresh() {
   pointProgram.reset();
@@ -77,7 +82,7 @@ void PointCloudScalarQuantity::refresh() {
 void PointCloudScalarQuantity::buildPickUI(size_t ind) {
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("%g", values[ind]);
+  ImGui::Text("%g", values.getValue(ind));
   ImGui::NextColumn();
 }
 

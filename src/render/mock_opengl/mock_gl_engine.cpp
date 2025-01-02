@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #ifdef POLYSCOPE_BACKEND_OPENGL_MOCK_ENABLED
 #include "polyscope/render/mock_opengl/mock_gl_engine.h"
 
@@ -13,6 +14,7 @@
 #include "polyscope/render/opengl/shaders/common.h"
 #include "polyscope/render/opengl/shaders/cylinder_shaders.h"
 #include "polyscope/render/opengl/shaders/gizmo_shaders.h"
+#include "polyscope/render/opengl/shaders/grid_shaders.h"
 #include "polyscope/render/opengl/shaders/ground_plane_shaders.h"
 #include "polyscope/render/opengl/shaders/histogram_shaders.h"
 #include "polyscope/render/opengl/shaders/lighting_shaders.h"
@@ -22,6 +24,7 @@
 #include "polyscope/render/opengl/shaders/surface_mesh_shaders.h"
 #include "polyscope/render/opengl/shaders/texture_draw_shaders.h"
 #include "polyscope/render/opengl/shaders/vector_shaders.h"
+#include "polyscope/render/opengl/shaders/volume_mesh_shaders.h"
 
 
 #include "stb_image.h"
@@ -30,13 +33,10 @@ namespace polyscope {
 namespace render {
 namespace backend_openGL_mock {
 
-
-MockGLEngine* glEngine = nullptr; // alias for engine pointer
-
 void initializeRenderEngine() {
-  glEngine = new MockGLEngine();
-  glEngine->initialize();
+  MockGLEngine* glEngine = new MockGLEngine();
   engine = glEngine;
+  glEngine->initialize();
   engine->allocateGlobalBuffersAndPrograms();
 }
 
@@ -45,18 +45,248 @@ void initializeRenderEngine() {
 void checkGLError(bool fatal = true) {}
 
 // =============================================================
+// =================== Attribute buffer ========================
+// =============================================================
+
+GLAttributeBuffer::GLAttributeBuffer(RenderDataType dataType_, int arrayCount_)
+    : AttributeBuffer(dataType_, arrayCount_) {}
+
+GLAttributeBuffer::~GLAttributeBuffer() { bind(); }
+
+void GLAttributeBuffer::bind() {}
+
+void GLAttributeBuffer::checkType(RenderDataType targetType) {
+  if (dataType != targetType) {
+    throw std::invalid_argument("Tried to set GLAttributeBuffer with wrong type. Actual type: " +
+                                renderDataTypeName(dataType) + "  Attempted type: " + renderDataTypeName(targetType));
+  }
+}
+
+void GLAttributeBuffer::checkArray(int testArrayCount) {
+  if (testArrayCount != arrayCount) {
+    throw std::invalid_argument("Tried to set GLAttributeBuffer with wrong array count. Actual count: " +
+                                std::to_string(arrayCount) + "  Attempted count: " + std::to_string(testArrayCount));
+  }
+}
+
+
+template <typename T>
+void GLAttributeBuffer::setData_helper(const std::vector<T>& data) {
+  bind();
+
+  // allocate if needed
+  if (!isSet() || data.size() > bufferSize) {
+    setFlag = true;
+    uint64_t newSize = data.size();
+    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+    bufferSize = newSize;
+  }
+
+  // do the actual copy
+  dataSize = data.size();
+
+  checkGLError();
+}
+
+void GLAttributeBuffer::setData(const std::vector<glm::vec2>& data) {
+  checkType(RenderDataType::Vector2Float);
+  setData_helper(data);
+}
+
+void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data) {
+  checkType(RenderDataType::Vector3Float);
+  setData_helper(data);
+}
+
+void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data) {
+  checkType(RenderDataType::Vector3Float);
+  checkArray(2);
+  setData_helper(data);
+}
+
+void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data) {
+  checkType(RenderDataType::Vector3Float);
+  checkArray(3);
+  setData_helper(data);
+}
+
+void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data) {
+  checkType(RenderDataType::Vector3Float);
+  checkArray(4);
+  setData_helper(data);
+}
+
+void GLAttributeBuffer::setData(const std::vector<glm::vec4>& data) {
+  checkType(RenderDataType::Vector4Float);
+  setData_helper(data);
+}
+
+void GLAttributeBuffer::setData(const std::vector<float>& data) {
+  checkType(RenderDataType::Float);
+  setData_helper(data);
+}
+
+void GLAttributeBuffer::setData(const std::vector<double>& data) {
+  checkType(RenderDataType::Float);
+
+  // Convert input data to floats
+  std::vector<float> floatData(data.size());
+  for (unsigned int i = 0; i < data.size(); i++) {
+    floatData[i] = static_cast<float>(data[i]);
+  }
+
+  setData_helper(floatData);
+}
+
+void GLAttributeBuffer::setData(const std::vector<int32_t>& data) {
+  checkType(RenderDataType::Int);
+  setData_helper(data);
+}
+
+void GLAttributeBuffer::setData(const std::vector<uint32_t>& data) {
+  checkType(RenderDataType::UInt);
+  setData_helper(data);
+}
+
+void GLAttributeBuffer::setData(const std::vector<glm::uvec2>& data) {
+  checkType(RenderDataType::Vector2UInt);
+  setData_helper(data);
+}
+void GLAttributeBuffer::setData(const std::vector<glm::uvec3>& data) {
+  checkType(RenderDataType::Vector3UInt);
+  setData_helper(data);
+}
+
+void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data) {
+  checkType(RenderDataType::Vector4UInt);
+  setData_helper(data);
+}
+
+
+// === get single data values
+
+template <typename T>
+T GLAttributeBuffer::getData_helper(size_t ind) {
+  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
+  bind();
+  T readValue{};
+  return readValue;
+}
+
+float GLAttributeBuffer::getData_float(size_t ind) {
+  if (getType() != RenderDataType::Float) exception("bad getData type");
+  return getData_helper<float>(ind);
+}
+
+double GLAttributeBuffer::getData_double(size_t ind) { return getData_float(ind); }
+
+glm::vec2 GLAttributeBuffer::getData_vec2(size_t ind) {
+  if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
+  return getData_helper<glm::vec2>(ind);
+}
+glm::vec3 GLAttributeBuffer::getData_vec3(size_t ind) {
+  if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
+  return getData_helper<glm::vec3>(ind);
+}
+glm::vec4 GLAttributeBuffer::getData_vec4(size_t ind) {
+  if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
+  return getData_helper<glm::vec4>(ind);
+}
+int GLAttributeBuffer::getData_int(size_t ind) {
+  if (getType() != RenderDataType::Int) exception("bad getData type");
+  return getData_helper<int>(ind);
+}
+uint32_t GLAttributeBuffer::getData_uint32(size_t ind) {
+  if (getType() != RenderDataType::UInt) exception("bad getData type");
+  return getData_helper<uint32_t>(ind);
+}
+glm::uvec2 GLAttributeBuffer::getData_uvec2(size_t ind) {
+  if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
+  return getData_helper<glm::uvec2>(ind);
+}
+glm::uvec3 GLAttributeBuffer::getData_uvec3(size_t ind) {
+  if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
+  return getData_helper<glm::uvec3>(ind);
+}
+glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
+  if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
+  return getData_helper<glm::uvec4>(ind);
+}
+
+// === get ranges of values
+
+template <typename T>
+std::vector<T> GLAttributeBuffer::getDataRange_helper(size_t start, size_t count) {
+  if (!isSet() || start + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
+  bind();
+  std::vector<T> readValues(count);
+  return readValues;
+}
+
+std::vector<float> GLAttributeBuffer::getDataRange_float(size_t start, size_t count) {
+  if (getType() != RenderDataType::Float) exception("bad getData type");
+  return getDataRange_helper<float>(start, count);
+}
+
+std::vector<double> GLAttributeBuffer::getDataRange_double(size_t start, size_t count) {
+  std::vector<float> floatValues = getDataRange_float(start, count);
+  std::vector<double> values(count);
+  for (size_t i = 0; i < count; i++) {
+    values[i] = static_cast<double>(floatValues[i]);
+  }
+  return values;
+}
+
+std::vector<glm::vec2> GLAttributeBuffer::getDataRange_vec2(size_t start, size_t count) {
+  if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
+  return getDataRange_helper<glm::vec2>(start, count);
+}
+std::vector<glm::vec3> GLAttributeBuffer::getDataRange_vec3(size_t start, size_t count) {
+  if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
+  return getDataRange_helper<glm::vec3>(start, count);
+}
+std::vector<glm::vec4> GLAttributeBuffer::getDataRange_vec4(size_t start, size_t count) {
+  if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
+  return getDataRange_helper<glm::vec4>(start, count);
+}
+std::vector<int> GLAttributeBuffer::getDataRange_int(size_t start, size_t count) {
+  if (getType() != RenderDataType::Int) exception("bad getData type");
+  return getDataRange_helper<int>(start, count);
+}
+std::vector<uint32_t> GLAttributeBuffer::getDataRange_uint32(size_t start, size_t count) {
+  if (getType() != RenderDataType::UInt) exception("bad getData type");
+  return getDataRange_helper<uint32_t>(start, count);
+}
+std::vector<glm::uvec2> GLAttributeBuffer::getDataRange_uvec2(size_t start, size_t count) {
+  if (getType() != RenderDataType::Vector2UInt) exception("bad getData type");
+  return getDataRange_helper<glm::uvec2>(start, count);
+}
+std::vector<glm::uvec3> GLAttributeBuffer::getDataRange_uvec3(size_t start, size_t count) {
+  if (getType() != RenderDataType::Vector3UInt) exception("bad getData type");
+  return getDataRange_helper<glm::uvec3>(start, count);
+}
+std::vector<glm::uvec4> GLAttributeBuffer::getDataRange_uvec4(size_t start, size_t count) {
+  if (getType() != RenderDataType::Vector4UInt) exception("bad getData type");
+  bind();
+  return getDataRange_helper<glm::uvec4>(start, count);
+}
+
+
+uint32_t GLAttributeBuffer::getNativeBufferID() { return 777; }
+
+// =============================================================
 // ==================== Texture buffer =========================
 // =============================================================
 
 // create a 1D texture from data
-GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, unsigned char* data)
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, const unsigned char* data)
     : TextureBuffer(1, format_, size1D) {
 
   checkGLError();
 
   setFilterMode(FilterMode::Nearest);
 }
-GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, float* data)
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, const float* data)
     : TextureBuffer(1, format_, size1D) {
 
   checkGLError();
@@ -65,7 +295,8 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, flo
 }
 
 // create a 2D texture from data
-GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data)
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_,
+                                 const unsigned char* data)
     : TextureBuffer(2, format_, sizeX_, sizeY_) {
 
   checkGLError();
@@ -73,8 +304,27 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
   setFilterMode(FilterMode::Nearest);
 }
 
-GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, float* data)
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, const float* data)
     : TextureBuffer(2, format_, sizeX_, sizeY_) {
+
+  checkGLError();
+
+  setFilterMode(FilterMode::Nearest);
+}
+
+// create a 3D texture from data
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, unsigned int sizeZ_,
+                                 const unsigned char* data)
+    : TextureBuffer(3, format_, sizeX_, sizeY_, sizeZ_) {
+
+  checkGLError();
+
+  setFilterMode(FilterMode::Nearest);
+}
+
+GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, unsigned int sizeZ_,
+                                 const float* data)
+    : TextureBuffer(3, format_, sizeX_, sizeY_, sizeZ_) {
 
   checkGLError();
 
@@ -89,9 +339,8 @@ void GLTextureBuffer::resize(unsigned int newLen) {
 
   bind();
   if (dim == 1) {
-  }
-  if (dim == 2) {
-    throw std::runtime_error("OpenGL error: called 1D resize on 2D texture");
+  } else {
+    exception("OpenGL error: called 1D resize on not-1D texture");
   }
   checkGLError();
 }
@@ -101,13 +350,113 @@ void GLTextureBuffer::resize(unsigned int newX, unsigned int newY) {
   TextureBuffer::resize(newX, newY);
 
   bind();
-  if (dim == 1) {
-    throw std::runtime_error("OpenGL error: called 2D resize on 1D texture");
-  }
   if (dim == 2) {
+  } else {
+    exception("OpenGL error: called 2D resize on not-2D texture");
   }
   checkGLError();
 }
+
+void GLTextureBuffer::resize(unsigned int newX, unsigned int newY, unsigned int newZ) {
+
+  TextureBuffer::resize(newX, newY, newZ);
+
+  bind();
+  if (dim == 3) {
+  } else {
+    exception("OpenGL error: called 3D resize on not-3D texture");
+  }
+  checkGLError();
+}
+
+void GLTextureBuffer::setData(const std::vector<glm::vec2>& data) { exception("not implemented"); }
+
+
+void GLTextureBuffer::setData(const std::vector<glm::vec3>& data) {
+
+  bind();
+
+  if (data.size() != getTotalSize()) {
+    exception("OpenGL error: texture buffer data is not the right size.");
+  }
+
+  switch (dim) {
+  case 1:
+    break;
+  case 2:
+    break;
+  case 3:
+    break;
+  }
+
+  checkGLError();
+}
+
+void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
+
+  bind();
+
+  if (data.size() != getTotalSize()) {
+    exception("OpenGL error: texture buffer data is not the right size.");
+  }
+
+  switch (dim) {
+  case 1:
+    break;
+  case 2:
+    break;
+  case 3:
+    break;
+  }
+
+  checkGLError();
+}
+
+void GLTextureBuffer::setData(const std::vector<float>& data) {
+  bind();
+
+  if (data.size() != getTotalSize()) {
+    exception("OpenGL error: texture buffer data is not the right size.");
+  }
+
+  switch (dim) {
+  case 1:
+    break;
+  case 2:
+    break;
+  case 3:
+    break;
+  }
+
+  checkGLError();
+}
+
+void GLTextureBuffer::setData(const std::vector<double>& data) {
+  bind();
+
+  if (data.size() != getTotalSize()) {
+    exception("OpenGL error: texture buffer data is not the right size.");
+  }
+
+  switch (dim) {
+  case 1:
+    break;
+  case 2:
+    break;
+  case 3:
+    break;
+  }
+
+  checkGLError();
+};
+void GLTextureBuffer::setData(const std::vector<int32_t>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<uint32_t>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::uvec3>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::uvec4>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data) { exception("not implemented"); };
 
 void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 
@@ -134,10 +483,10 @@ void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 }
 
 void* GLTextureBuffer::getNativeHandle() { return nullptr; }
+uint32_t GLTextureBuffer::getNativeBufferID() { return 77; };
 
 std::vector<float> GLTextureBuffer::getDataScalar() {
-  if (dimension(format) != 1)
-    throw std::runtime_error("called getDataScalar on texture which does not have a 1 dimensional format");
+  if (dimension(format) != 1) exception("called getDataScalar on texture which does not have a 1 dimensional format");
   std::vector<float> outData;
   outData.resize(getSizeX() * getSizeY());
 
@@ -145,8 +494,7 @@ std::vector<float> GLTextureBuffer::getDataScalar() {
 }
 
 std::vector<glm::vec2> GLTextureBuffer::getDataVector2() {
-  if (dimension(format) != 2)
-    throw std::runtime_error("called getDataVector2 on texture which does not have a 2 dimensional format");
+  if (dimension(format) != 2) exception("called getDataVector2 on texture which does not have a 2 dimensional format");
 
   std::vector<glm::vec2> outData;
   outData.resize(getSizeX() * getSizeY());
@@ -155,9 +503,8 @@ std::vector<glm::vec2> GLTextureBuffer::getDataVector2() {
 }
 
 std::vector<glm::vec3> GLTextureBuffer::getDataVector3() {
-  if (dimension(format) != 3)
-    throw std::runtime_error("called getDataVector3 on texture which does not have a 3 dimensional format");
-  throw std::runtime_error("not implemented");
+  if (dimension(format) != 3) exception("called getDataVector3 on texture which does not have a 3 dimensional format");
+  exception("not implemented");
 
   std::vector<glm::vec3> outData;
   outData.resize(getSizeX() * getSizeY());
@@ -215,7 +562,7 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<RenderBuffer> renderBufferIn)
 
   // it _better_ be a GL buffer
   std::shared_ptr<GLRenderBuffer> renderBuffer = std::dynamic_pointer_cast<GLRenderBuffer>(renderBufferIn);
-  if (!renderBuffer) throw std::runtime_error("tried to bind to non-GL render buffer");
+  if (!renderBuffer) exception("tried to bind to non-GL render buffer");
 
   renderBuffer->bind();
   bind();
@@ -228,14 +575,14 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<RenderBuffer> renderBufferIn)
 void GLFrameBuffer::addDepthBuffer(std::shared_ptr<RenderBuffer> renderBufferIn) {
   // it _better_ be a GL buffer
   std::shared_ptr<GLRenderBuffer> renderBuffer = std::dynamic_pointer_cast<GLRenderBuffer>(renderBufferIn);
-  if (!renderBuffer) throw std::runtime_error("tried to bind to non-GL render buffer");
+  if (!renderBuffer) exception("tried to bind to non-GL render buffer");
 
   renderBuffer->bind();
   bind();
 
   // Sanity checks
-  // if (depthRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
-  // if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+  // if (depthRenderBuffer != nullptr) exception("OpenGL error: already bound to render buffer");
+  // if (depthTextureBuffer != nullptr) exception("OpenGL error: already bound to texture buffer");
 
   checkGLError();
   renderBuffersDepth.push_back(renderBuffer);
@@ -245,15 +592,15 @@ void GLFrameBuffer::addColorBuffer(std::shared_ptr<TextureBuffer> textureBufferI
 
   // it _better_ be a GL buffer
   std::shared_ptr<GLTextureBuffer> textureBuffer = std::dynamic_pointer_cast<GLTextureBuffer>(textureBufferIn);
-  if (!textureBuffer) throw std::runtime_error("tried to bind to non-GL texture buffer");
+  if (!textureBuffer) exception("tried to bind to non-GL texture buffer");
 
   textureBuffer->bind();
   bind();
   checkGLError();
 
   // Sanity checks
-  // if (colorRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
-  // if (colorTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+  // if (colorRenderBuffer != nullptr) exception("OpenGL error: already bound to render buffer");
+  // if (colorTextureBuffer != nullptr) exception("OpenGL error: already bound to texture buffer");
 
   checkGLError();
   textureBuffersColor.push_back(textureBuffer);
@@ -264,15 +611,15 @@ void GLFrameBuffer::addDepthBuffer(std::shared_ptr<TextureBuffer> textureBufferI
 
   // it _better_ be a GL buffer
   std::shared_ptr<GLTextureBuffer> textureBuffer = std::dynamic_pointer_cast<GLTextureBuffer>(textureBufferIn);
-  if (!textureBuffer) throw std::runtime_error("tried to bind to non-GL texture buffer");
+  if (!textureBuffer) exception("tried to bind to non-GL texture buffer");
 
   textureBuffer->bind();
   bind();
   checkGLError();
 
   // Sanity checks
-  // if (depthRenderBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to render buffer");
-  // if (depthTextureBuffer != nullptr) throw std::runtime_error("OpenGL error: already bound to texture buffer");
+  // if (depthRenderBuffer != nullptr) exception("OpenGL error: already bound to render buffer");
+  // if (depthTextureBuffer != nullptr) exception("OpenGL error: already bound to texture buffer");
 
   checkGLError();
   textureBuffersDepth.push_back(textureBuffer);
@@ -285,7 +632,8 @@ void GLFrameBuffer::setDrawBuffers() {
 
 bool GLFrameBuffer::bindForRendering() {
   bind();
-  render::engine->setCurrentViewport({0, 0, 400, 600});
+  render::engine->currRenderFramebuffer = this;
+  render::engine->setCurrentViewport({0, 0, view::bufferWidth, view::bufferHeight});
   checkGLError();
   return true;
 }
@@ -298,6 +646,12 @@ std::array<float, 4> GLFrameBuffer::readFloat4(int xPos, int yPos) {
   // Read from the buffer
   std::array<float, 4> result = {1., 2., 3., 4.};
 
+  return result;
+}
+
+float GLFrameBuffer::readDepth(int xPos, int yPos) {
+  // Read from the buffer
+  float result = 0.5;
   return result;
 }
 
@@ -318,20 +672,20 @@ void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
 
   // it _better_ be a GL buffer
   GLFrameBuffer* target = dynamic_cast<GLFrameBuffer*>(targetIn);
-  if (!target) throw std::runtime_error("tried to blitTo() non-GL framebuffer");
+  if (!target) exception("tried to blitTo() non-GL framebuffer");
 
   // target->bindForRendering();
   bindForRendering();
   checkGLError();
 }
 
+uint32_t GLFrameBuffer::getNativeBufferID() { return 0; }
+
 // =============================================================
 // ==================  Shader Program  =========================
 // =============================================================
 
-GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm)
-    : ShaderProgram(stages, dm) {
-
+GLCompiledProgram::GLCompiledProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm) : drawMode(dm) {
 
   // Collect attributes and uniforms from all of the shaders
   for (const ShaderStageSpecification& s : stages) {
@@ -350,107 +704,185 @@ GLShaderProgram::GLShaderProgram(const std::vector<ShaderStageSpecification>& st
     throw std::invalid_argument("Uh oh... GLProgram has no attributes");
   }
 
-
   // Perform setup tasks
   compileGLProgram(stages);
   setDataLocations();
-  createBuffers();
-  checkGLError();
 }
 
-GLShaderProgram::~GLShaderProgram() {}
+GLCompiledProgram::~GLCompiledProgram() {}
 
-void GLShaderProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
-  for (GLShaderAttribute& a : attributes) {
-    if (a.name == newAttribute.name && a.type == newAttribute.type) {
-      return;
-    }
-  }
-  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, -1, 777, 777});
-}
+void GLCompiledProgram::compileGLProgram(const std::vector<ShaderStageSpecification>& stages) {}
 
-void GLShaderProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
-  for (GLShaderUniform& u : uniforms) {
-    if (u.name == newUniform.name && u.type == newUniform.type) {
-      return;
-    }
-  }
-  uniforms.push_back(GLShaderUniform{newUniform.name, newUniform.type, false, 777});
-}
-
-void GLShaderProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
-  for (GLShaderTexture& t : textures) {
-    if (t.name == newTexture.name && t.dim == newTexture.dim) {
-      return;
-    }
-  }
-  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr, 777});
-}
-
-
-void GLShaderProgram::deleteAttributeBuffer(GLShaderAttribute& attribute) {}
-
-void GLShaderProgram::compileGLProgram(const std::vector<ShaderStageSpecification>& stages) { checkGLError(); }
-
-void GLShaderProgram::setDataLocations() {
-
+void GLCompiledProgram::setDataLocations() {
   // Uniforms
-  unsigned int iLoc = 0;
   for (GLShaderUniform& u : uniforms) {
-    u.location = iLoc++;
-    if (u.location == -1) throw std::runtime_error("failed to get location for uniform " + u.name);
   }
 
   // Attributes
   for (GLShaderAttribute& a : attributes) {
-    a.location = iLoc++;
-    if (a.location == -1) throw std::runtime_error("failed to get location for attribute " + a.name);
   }
 
   // Textures
   for (GLShaderTexture& t : textures) {
-    t.location = iLoc++;
-    if (t.location == -1) throw std::runtime_error("failed to get location for texture " + t.name);
   }
-
-  checkGLError();
 }
 
-void GLShaderProgram::createBuffers() {
-  // Create buffers for each attributes
+void GLCompiledProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
   for (GLShaderAttribute& a : attributes) {
+    if (a.name == newAttribute.name) {
 
-    // Choose the correct type for the buffer
-    for (int iArrInd = 0; iArrInd < a.arrayCount; iArrInd++) {
-      switch (a.type) {
-      case DataType::Float:
-        break;
-      case DataType::Int:
-        break;
-      case DataType::UInt:
-        break;
-      case DataType::Vector2Float:
-        break;
-      case DataType::Vector3Float:
-        break;
-      case DataType::Vector4Float:
-        break;
-      default:
-        throw std::invalid_argument("Unrecognized GLShaderAttribute type");
-        break;
-      }
+      // if it occurs twice, confirm that the occurences match
+      if (a.type != newAttribute.type)
+        exception("attribute " + a.name + " appears twice in program with different types");
+
+      return;
     }
+  }
+  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, nullptr});
+}
+
+void GLCompiledProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
+  for (GLShaderUniform& u : uniforms) {
+    if (u.name == newUniform.name) {
+
+      // if it occurs twice, confirm that the occurences match
+      if (u.type != newUniform.type) exception("uniform " + u.name + " appears twice in program with different types");
+
+      return;
+    }
+  }
+  uniforms.push_back(GLShaderUniform{newUniform.name, newUniform.type, false});
+}
+
+void GLCompiledProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
+  for (GLShaderTexture& t : textures) {
+    if (t.name == newTexture.name) {
+
+      // if it occurs twice, confirm that the occurences match
+      if (t.dim != newTexture.dim)
+        exception("texture " + t.name + " appears twice in program with different dimensions");
+
+      return;
+    }
+  }
+  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr});
+}
+
+
+GLShaderProgram::GLShaderProgram(const std::shared_ptr<GLCompiledProgram>& compiledProgram_)
+    : ShaderProgram(compiledProgram_->getDrawMode()), uniforms(compiledProgram_->getUniforms()),
+      attributes(compiledProgram_->getAttributes()), textures(compiledProgram_->getTextures()),
+      compiledProgram(compiledProgram_) {
+  createBuffers(); // only handles texture & index things, attributes are lazily created
+}
+
+
+GLShaderProgram::~GLShaderProgram() {}
+
+void GLShaderProgram::bindVAO() {}
+
+void GLShaderProgram::createBuffers() {
+  bindVAO();
+
+  // Create an index buffer, if we're using one
+  if (useIndex) {
   }
 
   // === Generate textures
 
   // Set indices sequentially
-  for (unsigned int iTexture = 0; iTexture < textures.size(); iTexture++) {
-    GLShaderTexture& t = textures[iTexture];
-    t.index = iTexture;
+  uint32_t iTexture = 0;
+  for (GLShaderTexture& t : textures) {
+    t.index = iTexture++;
+  }
+}
+
+void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) {
+  bindVAO();
+  checkGLError();
+
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name) {
+
+      // check that types match
+      int compatCount = renderDataTypeCountCompatbility(a.type, externalBuffer->getType());
+      if (compatCount == 0)
+        throw std::invalid_argument("Tried to set attribute " + name + " to incompatibile type. Attribute " +
+                                    renderDataTypeName(a.type) + " set with buffer of type " +
+                                    renderDataTypeName(externalBuffer->getType()));
+
+      // check multiple-set errors (duplicates in externalBuffers list?)
+      if (a.buff) throw std::invalid_argument("attribute " + name + " is already set");
+
+      // cast to the engine type (booooooo)
+      std::shared_ptr<GLAttributeBuffer> engineExtBuff = std::dynamic_pointer_cast<GLAttributeBuffer>(externalBuffer);
+      if (!engineExtBuff) throw std::invalid_argument("attribute " + name + " external buffer engine type cast failed");
+
+      a.buff = engineExtBuff;
+
+      a.buff->bind();
+
+      assignBufferToVAO(a);
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
+
+void GLShaderProgram::assignBufferToVAO(GLShaderAttribute& a) {
+
+  bindVAO();
+  a.buff->bind();
+  checkGLError();
+
+  // Choose the correct type for the buffer
+  for (int iArrInd = 0; iArrInd < a.arrayCount; iArrInd++) {
+
+    switch (a.type) {
+    case RenderDataType::Float:
+      break;
+    case RenderDataType::Int:
+      break;
+    case RenderDataType::UInt:
+      break;
+    case RenderDataType::Vector2Float:
+      break;
+    case RenderDataType::Vector3Float:
+      break;
+    case RenderDataType::Vector4Float:
+      break;
+    case RenderDataType::Vector2UInt:
+      break;
+    case RenderDataType::Vector3UInt:
+      break;
+    case RenderDataType::Vector4UInt:
+      break;
+    default:
+      throw std::invalid_argument("Unrecognized GLShaderAttribute type");
+      break;
+    }
   }
 
   checkGLError();
+}
+
+void GLShaderProgram::createBuffer(GLShaderAttribute& a) {
+
+  // generate the buffer if needed
+  std::shared_ptr<AttributeBuffer> newBuff = engine->generateAttributeBuffer(a.type, a.arrayCount);
+  std::shared_ptr<GLAttributeBuffer> engineNewBuff = std::dynamic_pointer_cast<GLAttributeBuffer>(newBuff);
+  if (!engineNewBuff) throw std::invalid_argument("buffer type cast failed");
+  a.buff = engineNewBuff;
+
+  assignBufferToVAO(a);
+}
+
+void GLShaderProgram::ensureBufferExists(GLShaderAttribute& a) {
+  if (!a.buff) {
+    createBuffer(a);
+  }
 }
 
 bool GLShaderProgram::hasUniform(std::string name) {
@@ -467,7 +899,7 @@ void GLShaderProgram::setUniform(std::string name, int val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Int) {
+      if (u.type == RenderDataType::Int) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -482,7 +914,7 @@ void GLShaderProgram::setUniform(std::string name, int val) {
 void GLShaderProgram::setUniform(std::string name, unsigned int val) {
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::UInt) {
+      if (u.type == RenderDataType::UInt) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -498,7 +930,7 @@ void GLShaderProgram::setUniform(std::string name, float val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Float) {
+      if (u.type == RenderDataType::Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -514,7 +946,7 @@ void GLShaderProgram::setUniform(std::string name, double val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Float) {
+      if (u.type == RenderDataType::Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -530,7 +962,7 @@ void GLShaderProgram::setUniform(std::string name, float* val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Matrix44Float) {
+      if (u.type == RenderDataType::Matrix44Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -546,7 +978,7 @@ void GLShaderProgram::setUniform(std::string name, glm::vec2 val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Vector2Float) {
+      if (u.type == RenderDataType::Vector2Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -562,7 +994,7 @@ void GLShaderProgram::setUniform(std::string name, glm::vec3 val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Vector3Float) {
+      if (u.type == RenderDataType::Vector3Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -578,7 +1010,7 @@ void GLShaderProgram::setUniform(std::string name, glm::vec4 val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Vector4Float) {
+      if (u.type == RenderDataType::Vector4Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -594,7 +1026,7 @@ void GLShaderProgram::setUniform(std::string name, std::array<float, 3> val) {
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Vector3Float) {
+      if (u.type == RenderDataType::Vector3Float) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -610,7 +1042,55 @@ void GLShaderProgram::setUniform(std::string name, float x, float y, float z, fl
 
   for (GLShaderUniform& u : uniforms) {
     if (u.name == name) {
-      if (u.type == DataType::Vector4Float) {
+      if (u.type == RenderDataType::Vector4Float) {
+        u.isSet = true;
+      } else {
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
+      }
+      return;
+    }
+  }
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
+}
+
+// Set a uint vector2 uniform
+void GLShaderProgram::setUniform(std::string name, glm::uvec2 val) {
+
+  for (GLShaderUniform& u : uniforms) {
+    if (u.name == name) {
+      if (u.type == RenderDataType::Vector2UInt) {
+        u.isSet = true;
+      } else {
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
+      }
+      return;
+    }
+  }
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
+}
+
+// Set a uint vector3 uniform
+void GLShaderProgram::setUniform(std::string name, glm::uvec3 val) {
+
+  for (GLShaderUniform& u : uniforms) {
+    if (u.name == name) {
+      if (u.type == RenderDataType::Vector3UInt) {
+        u.isSet = true;
+      } else {
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
+      }
+      return;
+    }
+  }
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
+}
+
+// Set a uint vector4 uniform
+void GLShaderProgram::setUniform(std::string name, glm::uvec4 val) {
+
+  for (GLShaderUniform& u : uniforms) {
+    if (u.name == name) {
+      if (u.type == RenderDataType::Vector4UInt) {
         u.isSet = true;
       } else {
         throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
@@ -633,41 +1113,30 @@ bool GLShaderProgram::hasAttribute(std::string name) {
 bool GLShaderProgram::attributeIsSet(std::string name) {
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      return a.dataSize != -1;
+      return a.buff->isSet();
     }
   }
   return false;
 }
 
-void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update, int offset,
-                                   int size) {
-  // Reshape the vector
-  // Right now, the data is probably laid out in this form already... but let's
-  // not be overly clever and just reshape it.
-  std::vector<float> rawData(2 * data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
-    rawData[2 * i + 0] = static_cast<float>(data[i].x);
-    rawData[2 * i + 1] = static_cast<float>(data[i].y);
-  }
-
+std::shared_ptr<AttributeBuffer> GLShaderProgram::getAttributeBuffer(std::string name) {
+  // WARNING: may be null if the attribute was optimized out
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      if (a.type == DataType::Vector2Float) {
-        if (update) {
-          // TODO: Allow modifications to non-contiguous memory
-          offset *= 2 * sizeof(float);
-          if (size == -1)
-            size = 2 * a.dataSize * sizeof(float);
-          else
-            size *= 2 * sizeof(float);
-        } else {
-          a.dataSize = data.size();
-        }
-      } else {
-        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(DataType::Vector2Float)));
-      }
+      return a.buff;
+    }
+  }
+  throw std::invalid_argument("No attribute with name " + name);
+  return nullptr;
+};
+
+void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2>& data) {
+
+  // pass-through to the buffer
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name) {
+      ensureBufferExists(a);
+      a.buff->setData(data);
       return;
     }
   }
@@ -675,37 +1144,13 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec2
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update, int offset,
-                                   int size) {
-  // Reshape the vector
-  // Right now, the data is probably laid out in this form already... but let's
-  // not be overly clever and just reshape it.
-  std::vector<float> rawData(3 * data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
-    rawData[3 * i + 0] = static_cast<float>(data[i].x);
-    rawData[3 * i + 1] = static_cast<float>(data[i].y);
-    rawData[3 * i + 2] = static_cast<float>(data[i].z);
-  }
+void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec3>& data) {
 
+  // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      if (a.type == DataType::Vector3Float) {
-        if (update) {
-          // TODO: Allow modifications to non-contiguous memory
-          offset *= 3 * sizeof(float);
-          if (size == -1)
-            size = 3 * a.dataSize * sizeof(float);
-          else
-            size *= 3 * sizeof(float);
-
-        } else {
-          a.dataSize = data.size();
-        }
-      } else {
-        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(DataType::Vector3Float)));
-      }
+      ensureBufferExists(a);
+      a.buff->setData(data);
       return;
     }
   }
@@ -713,38 +1158,13 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec3
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update, int offset,
-                                   int size) {
-  // Reshape the vector
-  // Right now, the data is probably laid out in this form already... but let's
-  // not be overly clever and just reshape it.
-  std::vector<float> rawData(4 * data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
-    rawData[4 * i + 0] = static_cast<float>(data[i].x);
-    rawData[4 * i + 1] = static_cast<float>(data[i].y);
-    rawData[4 * i + 2] = static_cast<float>(data[i].z);
-    rawData[4 * i + 3] = static_cast<float>(data[i].w);
-  }
+void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4>& data) {
 
+  // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      if (a.type == DataType::Vector4Float) {
-        if (update) {
-          // TODO: Allow modifications to non-contiguous memory
-          offset *= 4 * sizeof(float);
-          if (size == -1)
-            size = 4 * a.dataSize * sizeof(float);
-          else
-            size *= 4 * sizeof(float);
-
-        } else {
-          a.dataSize = data.size();
-        }
-      } else {
-        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(DataType::Vector4Float)));
-      }
+      ensureBufferExists(a);
+      a.buff->setData(data);
       return;
     }
   }
@@ -752,111 +1172,60 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<glm::vec4
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& data, bool update, int offset,
-                                   int size) {
-  // Convert input data to floats
-  std::vector<float> floatData(data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
-    floatData[i] = static_cast<float>(data[i]);
-  }
+void GLShaderProgram::setAttribute(std::string name, const std::vector<float>& data) {
 
+  // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      if (a.type == DataType::Float) {
-        if (update) {
-          // TODO: Allow modifications to non-contiguous memory
-          offset *= sizeof(float);
-          if (size == -1)
-            size = a.dataSize * sizeof(float);
-          else
-            size *= sizeof(float);
-
-        } else {
-          a.dataSize = data.size();
-        }
-      } else {
-        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<float>(DataType::Float)));
-      }
+      ensureBufferExists(a);
+      a.buff->setData(data);
       return;
     }
   }
 
-  throw std::invalid_argument("No attribute with name " + name);
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLShaderProgram::setAttribute(std::string name, const std::vector<int>& data, bool update, int offset, int size) {
-  // FIXME I've seen strange bugs when using int's in shaders. Need to figure
-  // out it it's my shaders or something wrong with this function
+void GLShaderProgram::setAttribute(std::string name, const std::vector<double>& data) {
 
-  // Convert data to GL_INT (probably does nothing)
-  std::vector<int> intData(data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
-    intData[i] = static_cast<int>(data[i]);
-  }
-
+  // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      if (a.type == DataType::Int) {
-        if (update) {
-          // TODO: Allow modifications to non-contiguous memory
-          offset *= sizeof(int);
-          if (size == -1)
-            size = a.dataSize * sizeof(int);
-          else
-            size *= sizeof(int);
-
-        } else {
-          a.dataSize = data.size();
-        }
-      } else {
-        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(DataType::Int)));
-      }
+      ensureBufferExists(a);
+      a.buff->setData(data);
       return;
     }
   }
 
-  throw std::invalid_argument("No attribute with name " + name);
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
-void GLShaderProgram::setAttribute(std::string name, const std::vector<uint32_t>& data, bool update, int offset,
-                                   int size) {
-  // FIXME I've seen strange bugs when using int's in shaders. Need to figure
-  // out it it's my shaders or something wrong with this function
+void GLShaderProgram::setAttribute(std::string name, const std::vector<int32_t>& data) {
 
-  // Convert data to GL_UINT (probably does nothing)
-  std::vector<unsigned int> intData(data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
-    intData[i] = static_cast<unsigned int>(data[i]);
-  }
-
+  // pass-through to the buffer
   for (GLShaderAttribute& a : attributes) {
     if (a.name == name) {
-      if (a.type == DataType::UInt) {
-        if (update) {
-          // TODO: Allow modifications to non-contiguous memory
-          offset *= sizeof(unsigned int);
-          if (size == -1)
-            size = a.dataSize * sizeof(unsigned int);
-          else
-            size *= sizeof(unsigned int);
-
-        } else {
-          a.dataSize = data.size();
-        }
-      } else {
-        throw std::invalid_argument("Tried to set GLShaderAttribute named " + name +
-                                    " with wrong type. Actual type: " + std::to_string(static_cast<int>(a.type)) +
-                                    "  Attempted type: " + std::to_string(static_cast<int>(DataType::UInt)));
-      }
+      ensureBufferExists(a);
+      a.buff->setData(data);
       return;
     }
   }
 
-  throw std::invalid_argument("No attribute with name " + name);
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
+void GLShaderProgram::setAttribute(std::string name, const std::vector<uint32_t>& data) {
+
+  // pass-through to the buffer
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name) {
+      ensureBufferExists(a);
+      a.buff->setData(data);
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
 bool GLShaderProgram::hasTexture(std::string name) {
@@ -1010,46 +1379,49 @@ void GLShaderProgram::setTextureFromColormap(std::string name, const std::string
   throw std::invalid_argument("No texture with name " + name);
 }
 
-void GLShaderProgram::setIndex(std::vector<std::array<unsigned int, 3>>& indices) {
+void GLShaderProgram::setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) {
   if (!useIndex) {
     throw std::invalid_argument("Tried to setIndex() when program drawMode does not use indexed "
                                 "drawing");
   }
 
-  // Reshape the vector
-  // Right now, the data is probably laid out in this form already... but let's
-  // not be overly clever and just reshape it.
-  unsigned int* rawData = new unsigned int[3 * indices.size()];
-  indexSize = 3 * indices.size();
-  for (unsigned int i = 0; i < indices.size(); i++) {
-    rawData[3 * i + 0] = static_cast<float>(indices[i][0]);
-    rawData[3 * i + 1] = static_cast<float>(indices[i][1]);
-    rawData[3 * i + 2] = static_cast<float>(indices[i][2]);
+  // cast to the engine type (booooooo)
+  std::shared_ptr<GLAttributeBuffer> engineExtBuff = std::dynamic_pointer_cast<GLAttributeBuffer>(externalBuffer);
+  if (!engineExtBuff) throw std::invalid_argument("index attribute external buffer engine type cast failed");
+
+  switch (engineExtBuff->getType()) {
+  case RenderDataType::Int:
+    // NOTE: the render pass expects these to be unsigned.... but negative
+    // values don't make sense anyway, so I think it's okay to just let it slide
+    indexSizeMult = 1;
+    break;
+  case RenderDataType::UInt:
+    indexSizeMult = 1;
+    break;
+  case RenderDataType::Vector2UInt:
+    indexSizeMult = 2;
+    break;
+  case RenderDataType::Vector3UInt:
+    indexSizeMult = 3;
+    break;
+  case RenderDataType::Vector4UInt:
+    indexSizeMult = 4;
+    break;
+  case RenderDataType::Float:
+  case RenderDataType::Vector2Float:
+  case RenderDataType::Vector3Float:
+  case RenderDataType::Vector4Float:
+  case RenderDataType::Matrix44Float:
+    throw std::invalid_argument("index buffer should be integer type");
+    break;
   }
 
-  delete[] rawData;
-}
+  indexBuffer = engineExtBuff;
 
-void GLShaderProgram::setIndex(std::vector<unsigned int>& indices) {
-  // (This version is typically used for indexed lines)
+  // bind it as the VAOs index buffer
+  bindVAO();
 
-  if (!useIndex) {
-    throw std::invalid_argument("Tried to setIndex() when program drawMode does not use indexed "
-                                "drawing");
-  }
-
-  // Catch some cases where we forget to specify the restart index.
-  // It would be nice to do a more complete check involving the data buffer, but this is simple
-  // and catches most mistakes.
-  if (usePrimitiveRestart && !primitiveRestartIndexSet) {
-    unsigned int bigThresh = 99999999;
-    for (unsigned int x : indices) {
-      if (x > bigThresh) {
-        throw std::invalid_argument("An unusual index was passed, but setPrimitiveRestartIndex() has not been called.");
-      }
-    }
-  }
-  indexSize = indices.size();
+  checkGLError();
 }
 
 // Check that uniforms and attributes are all set and of consistent size
@@ -1062,18 +1434,24 @@ void GLShaderProgram::validateData() {
   }
 
   // Check attributes
-  long int attributeSize = -1;
+  int64_t attributeSize = -1;
   for (GLShaderAttribute a : attributes) {
-    if (a.dataSize < 0) {
+    if (!a.buff) {
+      throw std::invalid_argument("Attribute " + a.name + " has no buffer attached");
+    }
+    if (a.buff->getDataSize() < 0) {
       throw std::invalid_argument("Attribute " + a.name + " has not been set");
     }
+
+    int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
+
     if (attributeSize == -1) { // first one we've seen
-      attributeSize = a.dataSize / a.arrayCount;
+      attributeSize = a.buff->getDataSize() / (compatCount);
     } else { // not the first one we've seen
-      if (a.dataSize / a.arrayCount != attributeSize) {
+      if (a.buff->getDataSize() / (compatCount) != attributeSize) {
         throw std::invalid_argument("Attributes have inconsistent size. One attribute has size " +
                                     std::to_string(attributeSize) + " and " + a.name + " has size " +
-                                    std::to_string(a.dataSize));
+                                    std::to_string(a.buff->getDataSize()));
       }
     }
   }
@@ -1087,21 +1465,34 @@ void GLShaderProgram::validateData() {
   }
 
   // Check index (if applicable)
+  if (useIndex && !indexBuffer) {
+    throw std::invalid_argument("Index buffer has not been filled");
+  }
+
+  // Set the size
   if (useIndex) {
-    if (indexSize == -1) {
-      throw std::invalid_argument("Index buffer has not been filled");
+    drawDataLength = static_cast<unsigned int>(indexSizeMult * indexBuffer->getDataSize());
+  } else {
+    drawDataLength = static_cast<unsigned int>(attributeSize);
+  }
+
+  // Check instanced (if applicable)
+  if (drawMode == DrawMode::TrianglesInstanced || drawMode == DrawMode::TriangleStripInstanced) {
+    if (instanceCount == INVALID_IND_32) {
+      throw std::invalid_argument("Must set instance count to use instanced drawing");
     }
-    drawDataLength = static_cast<unsigned int>(indexSize);
   }
 }
 
 void GLShaderProgram::setPrimitiveRestartIndex(unsigned int restartIndex_) {
   if (!usePrimitiveRestart) {
-    throw std::runtime_error("setPrimitiveRestartIndex() called, but draw mode does not support restart indices.");
+    exception("setPrimitiveRestartIndex() called, but draw mode does not support restart indices.");
   }
   restartIndex = restartIndex_;
   primitiveRestartIndexSet = true;
 }
+
+void GLShaderProgram::setInstanceCount(uint32_t instanceCount_) { instanceCount = instanceCount_; }
 
 void GLShaderProgram::activateTextures() {
   for (GLShaderTexture& t : textures) {
@@ -1148,6 +1539,10 @@ void GLShaderProgram::draw() {
     break;
   case DrawMode::IndexedTriangles:
     break;
+  case DrawMode::TrianglesInstanced:
+    break;
+  case DrawMode::TriangleStripInstanced:
+    break;
   }
 
   if (usePrimitiveRestart) {
@@ -1167,6 +1562,12 @@ void MockGLEngine::initialize() {
   GLFrameBuffer* glScreenBuffer = new GLFrameBuffer(view::bufferWidth, view::bufferHeight, true);
   displayBuffer.reset(glScreenBuffer);
 
+
+  // normally we get initial values for the buffer size from the window framework,
+  // with the mock backend we we need to manually set them to some sane value
+  view::bufferWidth = view::windowWidth;
+  view::bufferHeight = view::windowHeight;
+
   updateWindowSize();
 
   populateDefaultShadersAndRules();
@@ -1177,19 +1578,19 @@ void MockGLEngine::initializeImGui() {
   configureImGui();
 }
 
+void MockGLEngine::shutdown() {
+  checkError();
+  shutdownImGui();
+}
+
 void MockGLEngine::shutdownImGui() { ImGui::DestroyContext(); }
-
-void MockGLEngine::bindDisplay() {}
-
-
-void MockGLEngine::clearDisplay() { bindDisplay(); }
 
 void MockGLEngine::swapDisplayBuffers() {}
 
 std::vector<unsigned char> MockGLEngine::readDisplayBuffer() {
   // Get buffer size
-  int w = 400;
-  int h = 600;
+  int w = view::bufferWidth;
+  int h = view::bufferHeight;
 
   // Read from openGL
   size_t buffSize = w * h * 4;
@@ -1202,15 +1603,22 @@ void MockGLEngine::checkError(bool fatal) { checkGLError(fatal); }
 
 void MockGLEngine::makeContextCurrent() {}
 
+void MockGLEngine::focusWindow() {}
+
 void MockGLEngine::showWindow() {}
 
 void MockGLEngine::hideWindow() {}
 
 void MockGLEngine::updateWindowSize(bool force) {
-  int newBufferWidth = 400;
-  int newBufferHeight = 600;
-  int newWindowWidth = 400;
-  int newWindowHeight = 600;
+
+  // this silly code mimicks the gl backend version, but it is important that we preserve
+  // the view::bufferWidth, etc, otherwise it is impossible to manually set the window size
+  // in the mock backend (which appears in unit tests, etc)
+  int newBufferWidth = view::bufferWidth;
+  int newBufferHeight = view::bufferHeight;
+  int newWindowWidth = view::windowWidth;
+  int newWindowHeight = view::windowHeight;
+
   if (force || newBufferWidth != view::bufferWidth || newBufferHeight != view::bufferHeight ||
       newWindowHeight != view::windowHeight || newWindowWidth != view::windowWidth) {
     // Basically a resize callback
@@ -1221,6 +1629,13 @@ void MockGLEngine::updateWindowSize(bool force) {
     view::windowHeight = newWindowHeight;
   }
 }
+
+
+void MockGLEngine::applyWindowSize() { updateWindowSize(true); }
+
+void MockGLEngine::setWindowResizable(bool newVal) {}
+
+bool MockGLEngine::getWindowResizable() { return true; }
 
 std::tuple<int, int> MockGLEngine::getWindowPos() {
   int x = 20;
@@ -1261,26 +1676,52 @@ std::string MockGLEngine::getClipboardText() {
 
 void MockGLEngine::setClipboardText(std::string text) {}
 
+void MockGLEngine::applyTransparencySettings() {}
+
+void MockGLEngine::setFrontFaceCCW(bool newVal) {
+  if (newVal == frontFaceCCW) return;
+  frontFaceCCW = newVal;
+}
+
 // == Factories
+
+
+std::shared_ptr<AttributeBuffer> MockGLEngine::generateAttributeBuffer(RenderDataType dataType_, int arrayCount_) {
+  GLAttributeBuffer* newA = new GLAttributeBuffer(dataType_, arrayCount_);
+  return std::shared_ptr<AttributeBuffer>(newA);
+}
+
 std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat format, unsigned int size1D,
-                                                                   unsigned char* data) {
+                                                                   const unsigned char* data) {
   GLTextureBuffer* newT = new GLTextureBuffer(format, size1D, data);
   return std::shared_ptr<TextureBuffer>(newT);
 }
 
 std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat format, unsigned int size1D,
-                                                                   float* data) {
+                                                                   const float* data) {
   GLTextureBuffer* newT = new GLTextureBuffer(format, size1D, data);
   return std::shared_ptr<TextureBuffer>(newT);
 }
 std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
-                                                                   unsigned int sizeY_, unsigned char* data) {
+                                                                   unsigned int sizeY_, const unsigned char* data) {
   GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, data);
   return std::shared_ptr<TextureBuffer>(newT);
 }
 std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
-                                                                   unsigned int sizeY_, float* data) {
+                                                                   unsigned int sizeY_, const float* data) {
   GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, data);
+  return std::shared_ptr<TextureBuffer>(newT);
+}
+std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
+                                                                   unsigned int sizeY_, unsigned int sizeZ_,
+                                                                   const unsigned char* data) {
+  GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, sizeZ_, data);
+  return std::shared_ptr<TextureBuffer>(newT);
+}
+std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
+                                                                   unsigned int sizeY_, unsigned int sizeZ_,
+                                                                   const float* data) {
+  GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, sizeZ_, data);
   return std::shared_ptr<TextureBuffer>(newT);
 }
 
@@ -1296,36 +1737,40 @@ std::shared_ptr<FrameBuffer> MockGLEngine::generateFrameBuffer(unsigned int size
   return std::shared_ptr<FrameBuffer>(newF);
 }
 
-std::shared_ptr<ShaderProgram> MockGLEngine::generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                                   DrawMode dm) {
-  GLShaderProgram* newP = new GLShaderProgram(stages, dm);
-  return std::shared_ptr<ShaderProgram>(newP);
-}
+std::string MockGLEngine::programKeyFromRules(const std::string& programName, const std::vector<std::string>& rules,
+                                              ShaderReplacementDefaults defaults) {
 
-std::shared_ptr<ShaderProgram> MockGLEngine::requestShader(const std::string& programName,
-                                                           const std::vector<std::string>& customRules,
-                                                           ShaderReplacementDefaults defaults) {
+  std::stringstream builder;
 
-  // Get the program
-  if (registeredShaderPrograms.find(programName) == registeredShaderPrograms.end()) {
-    throw std::runtime_error("No shader program with name [" + programName + "] registered.");
-  }
-  const std::vector<ShaderStageSpecification>& stages = registeredShaderPrograms[programName].first;
-  DrawMode dm = registeredShaderPrograms[programName].second;
+  // program name comes first
+  builder << "$PROGRAMNAME: ";
+  builder << programName << "#";
 
-  // Add in the default rules
-  std::vector<std::string> fullCustomRules = customRules;
+  // then rules
+  builder << "  $RULES: ";
+  for (const std::string& s : rules) builder << s << "# ";
+
+  // then rules from the defaults
+  builder << "  $DEFAULTS: ";
   switch (defaults) {
   case ShaderReplacementDefaults::SceneObject: {
-    fullCustomRules.insert(fullCustomRules.begin(), defaultRules_sceneObject.begin(), defaultRules_sceneObject.end());
+    for (const std::string& s : defaultRules_sceneObject) builder << s << "# ";
+    break;
+  }
+  case ShaderReplacementDefaults::SceneObjectNoSlice: {
+    for (const std::string& s : defaultRules_sceneObject) {
+      if (s.rfind("SLICE_PLANE_", 0) != 0) {
+        builder << s << "# ";
+      }
+    }
     break;
   }
   case ShaderReplacementDefaults::Pick: {
-    fullCustomRules.insert(fullCustomRules.begin(), defaultRules_pick.begin(), defaultRules_pick.end());
+    for (const std::string& s : defaultRules_pick) builder << s << "# ";
     break;
   }
   case ShaderReplacementDefaults::Process: {
-    fullCustomRules.insert(fullCustomRules.begin(), defaultRules_process.begin(), defaultRules_process.end());
+    for (const std::string& s : defaultRules_process) builder << s << "# ";
     break;
   }
   case ShaderReplacementDefaults::None: {
@@ -1333,131 +1778,270 @@ std::shared_ptr<ShaderProgram> MockGLEngine::requestShader(const std::string& pr
   }
   }
 
-  // Get the rules
-  std::vector<ShaderReplacementRule> rules;
-  for (const std::string& ruleName : fullCustomRules) {
-    if (registeredShaderRules.find(ruleName) == registeredShaderRules.end()) {
-      throw std::runtime_error("No shader replacement rule with name [" + ruleName + "] registered.");
+  return builder.str();
+}
+
+
+std::shared_ptr<GLCompiledProgram> MockGLEngine::getCompiledProgram(const std::string& programName,
+                                                                    const std::vector<std::string>& customRules,
+                                                                    ShaderReplacementDefaults defaults) {
+
+  // Build a cache key for the program
+  std::string progKey = programKeyFromRules(programName, customRules, defaults);
+
+
+  // If the cache doesn't already contain the program, create it and add to cache
+  if (compiledProgamCache.find(progKey) == compiledProgamCache.end()) {
+
+    if (polyscope::options::verbosity > 3) polyscope::info("compiling shader program " + progKey);
+
+    // == Compile the program
+
+    // Get the list of shaders comprising the program from the global cache
+    if (registeredShaderPrograms.find(programName) == registeredShaderPrograms.end()) {
+      exception("No shader program with name [" + programName + "] registered.");
     }
-    ShaderReplacementRule& thisRule = registeredShaderRules[ruleName];
-    rules.push_back(thisRule);
+    const std::vector<ShaderStageSpecification>& stages = registeredShaderPrograms[programName].first;
+    DrawMode dm = registeredShaderPrograms[programName].second;
+
+    // Add in the default rules
+    std::vector<std::string> fullCustomRules = customRules;
+    switch (defaults) {
+    case ShaderReplacementDefaults::SceneObject: {
+      fullCustomRules.insert(fullCustomRules.end(), defaultRules_sceneObject.begin(), defaultRules_sceneObject.end());
+      break;
+    }
+    case ShaderReplacementDefaults::SceneObjectNoSlice: {
+      for (const std::string& rule : defaultRules_sceneObject) {
+        if (rule.rfind("SLICE_PLANE_", 0) != 0) {
+          fullCustomRules.insert(fullCustomRules.end(), rule);
+        }
+      }
+      break;
+    }
+    case ShaderReplacementDefaults::Pick: {
+      fullCustomRules.insert(fullCustomRules.end(), defaultRules_pick.begin(), defaultRules_pick.end());
+      break;
+    }
+    case ShaderReplacementDefaults::Process: {
+      fullCustomRules.insert(fullCustomRules.end(), defaultRules_process.begin(), defaultRules_process.end());
+      break;
+    }
+    case ShaderReplacementDefaults::None: {
+      break;
+    }
+    }
+
+    // Prepare rule substitutions
+    std::vector<ShaderReplacementRule> rules;
+    for (auto it = fullCustomRules.begin(); it < fullCustomRules.end(); it++) {
+      std::string& ruleName = *it;
+
+      // Empty rule is a no-op
+      if (ruleName == "") {
+        continue;
+      }
+
+      // Only process each rule the first time it is seen
+      if (std::find(fullCustomRules.begin(), it, ruleName) != it) {
+        continue;
+      }
+
+      if (registeredShaderRules.find(ruleName) == registeredShaderRules.end()) {
+        exception("No shader replacement rule with name [" + ruleName + "] registered.");
+      }
+      ShaderReplacementRule& thisRule = registeredShaderRules[ruleName];
+      rules.push_back(thisRule);
+    }
+
+    // Actually apply rule substitutions
+    std::vector<ShaderStageSpecification> updatedStages = applyShaderReplacements(stages, rules);
+
+    // Create a new compiled program (GL work happens in the constructor)
+    compiledProgamCache[progKey] = std::shared_ptr<GLCompiledProgram>(new GLCompiledProgram(updatedStages, dm));
   }
 
-  std::vector<ShaderStageSpecification> updatedStages = applyShaderReplacements(stages, rules);
-  return generateShaderProgram(updatedStages, dm);
+  // Now that the cache must contain the compiled program, just return it
+  return compiledProgamCache[progKey];
 }
 
-void MockGLEngine::applyTransparencySettings() {}
-
-void MockGLEngine::setFrontFaceCCW(bool newVal) {
-  if (newVal == frontFaceCCW) return;
-  frontFaceCCW = newVal;
+std::shared_ptr<ShaderProgram> MockGLEngine::requestShader(const std::string& programName,
+                                                           const std::vector<std::string>& customRules,
+                                                           ShaderReplacementDefaults defaults) {
+  GLShaderProgram* newP = new GLShaderProgram(getCompiledProgram(programName, customRules, defaults));
+  return std::shared_ptr<ShaderProgram>(newP);
 }
+
+void MockGLEngine::registerShaderProgram(const std::string& name, const std::vector<ShaderStageSpecification>& spec,
+                                         const DrawMode& dm) {
+  registeredShaderPrograms.insert({name, {spec, dm}});
+}
+
+void MockGLEngine::registerShaderRule(const std::string& name, const ShaderReplacementRule& rule) {
+  registeredShaderRules.insert({name, rule});
+}
+
 
 void MockGLEngine::populateDefaultShadersAndRules() {
-  using namespace backend_openGL3_glfw;
+  using namespace backend_openGL3;
 
   // WARNING: duplicated from gl_engine.cpp
 
   // clang-format off
 
   // == Load general base shaders
-  registeredShaderPrograms.insert({"MESH", {{FLEX_MESH_VERT_SHADER, FLEX_MESH_FRAG_SHADER}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"RAYCAST_SPHERE", {{FLEX_SPHERE_VERT_SHADER, FLEX_SPHERE_GEOM_SHADER, FLEX_SPHERE_FRAG_SHADER}, DrawMode::Points}});
-  registeredShaderPrograms.insert({"RAYCAST_VECTOR", {{FLEX_VECTOR_VERT_SHADER, FLEX_VECTOR_GEOM_SHADER, FLEX_VECTOR_FRAG_SHADER}, DrawMode::Points}});
-  registeredShaderPrograms.insert({"RAYCAST_CYLINDER", {{FLEX_CYLINDER_VERT_SHADER, FLEX_CYLINDER_GEOM_SHADER, FLEX_CYLINDER_FRAG_SHADER}, DrawMode::Points}});
-  registeredShaderPrograms.insert({"HISTOGRAM", {{HISTOGRAM_VERT_SHADER, HISTOGRAM_FRAG_SHADER}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"GROUND_PLANE_TILE", {{GROUND_PLANE_VERT_SHADER, GROUND_PLANE_TILE_FRAG_SHADER}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"GROUND_PLANE_TILE_REFLECT", {{GROUND_PLANE_VERT_SHADER, GROUND_PLANE_TILE_REFLECT_FRAG_SHADER}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"GROUND_PLANE_SHADOW", {{GROUND_PLANE_VERT_SHADER, GROUND_PLANE_SHADOW_FRAG_SHADER}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"MAP_LIGHT", {{TEXTURE_DRAW_VERT_SHADER, MAP_LIGHT_FRAG_SHADER}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"RIBBON", {{RIBBON_VERT_SHADER, RIBBON_GEOM_SHADER, RIBBON_FRAG_SHADER}, DrawMode::IndexedLineStripAdjacency}});
-  registeredShaderPrograms.insert({"SLICE_PLANE", {{SLICE_PLANE_VERT_SHADER, SLICE_PLANE_FRAG_SHADER}, DrawMode::Triangles}});
+  registerShaderProgram("MESH", {FLEX_MESH_VERT_SHADER, FLEX_MESH_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("INDEXED_MESH", {FLEX_MESH_VERT_SHADER, FLEX_MESH_FRAG_SHADER}, DrawMode::IndexedTriangles);
+  registerShaderProgram("SIMPLE_MESH", {SIMPLE_MESH_VERT_SHADER, SIMPLE_MESH_FRAG_SHADER}, DrawMode::IndexedTriangles);
+  registerShaderProgram("SLICE_TETS", {SLICE_TETS_VERT_SHADER, SLICE_TETS_GEOM_SHADER, SLICE_TETS_FRAG_SHADER}, DrawMode::Points);
+  registerShaderProgram("RAYCAST_SPHERE", {FLEX_SPHERE_VERT_SHADER, FLEX_SPHERE_GEOM_SHADER, FLEX_SPHERE_FRAG_SHADER}, DrawMode::Points);
+  registerShaderProgram("POINT_QUAD", {FLEX_POINTQUAD_VERT_SHADER, FLEX_POINTQUAD_GEOM_SHADER, FLEX_POINTQUAD_FRAG_SHADER}, DrawMode::Points);
+  registerShaderProgram("GRIDCUBE", {FLEX_GRIDCUBE_VERT_SHADER, FLEX_GRIDCUBE_GEOM_SHADER, FLEX_GRIDCUBE_FRAG_SHADER}, DrawMode::Points);
+  registerShaderProgram("GRIDCUBE_PLANE", {FLEX_GRIDCUBE_PLANE_VERT_SHADER, FLEX_GRIDCUBE_PLANE_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("RAYCAST_VECTOR", {FLEX_VECTOR_VERT_SHADER, FLEX_VECTOR_GEOM_SHADER, FLEX_VECTOR_FRAG_SHADER}, DrawMode::Points);
+  registerShaderProgram("RAYCAST_TANGENT_VECTOR", {FLEX_TANGENT_VECTOR_VERT_SHADER, FLEX_VECTOR_GEOM_SHADER, FLEX_VECTOR_FRAG_SHADER}, DrawMode::Points);
+  registerShaderProgram("RAYCAST_CYLINDER", {FLEX_CYLINDER_VERT_SHADER, FLEX_CYLINDER_GEOM_SHADER, FLEX_CYLINDER_FRAG_SHADER}, DrawMode::Points);
+  registerShaderProgram("HISTOGRAM", {HISTOGRAM_VERT_SHADER, HISTOGRAM_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("HISTOGRAM_CATEGORICAL", {HISTOGRAM_VERT_SHADER, HISTOGRAM_CATEGORICAL_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("GROUND_PLANE_TILE", {GROUND_PLANE_VERT_SHADER, GROUND_PLANE_TILE_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("GROUND_PLANE_TILE_REFLECT", {GROUND_PLANE_VERT_SHADER, GROUND_PLANE_TILE_REFLECT_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("GROUND_PLANE_SHADOW", {GROUND_PLANE_VERT_SHADER, GROUND_PLANE_SHADOW_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("MAP_LIGHT", {TEXTURE_DRAW_VERT_SHADER, MAP_LIGHT_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("RIBBON", {RIBBON_VERT_SHADER, RIBBON_GEOM_SHADER, RIBBON_FRAG_SHADER}, DrawMode::IndexedLineStripAdjacency);
+  registerShaderProgram("SLICE_PLANE", {SLICE_PLANE_VERT_SHADER, SLICE_PLANE_FRAG_SHADER}, DrawMode::Triangles);
 
-  registeredShaderPrograms.insert({"TEXTURE_DRAW_PLAIN", {{TEXTURE_DRAW_VERT_SHADER, PLAIN_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"TEXTURE_DRAW_DOT3", {{TEXTURE_DRAW_VERT_SHADER, DOT3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"TEXTURE_DRAW_MAP3", {{TEXTURE_DRAW_VERT_SHADER, MAP3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"TEXTURE_DRAW_SPHEREBG", {{SPHEREBG_DRAW_VERT_SHADER, SPHEREBG_DRAW_FRAG_SHADER}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"COMPOSITE_PEEL", {{TEXTURE_DRAW_VERT_SHADER, COMPOSITE_PEEL}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"DEPTH_COPY", {{TEXTURE_DRAW_VERT_SHADER, DEPTH_COPY}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"DEPTH_TO_MASK", {{TEXTURE_DRAW_VERT_SHADER, DEPTH_TO_MASK}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"SCALAR_TEXTURE_COLORMAP", {{TEXTURE_DRAW_VERT_SHADER, SCALAR_TEXTURE_COLORMAP}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"BLUR_RGB", {{TEXTURE_DRAW_VERT_SHADER, BLUR_RGB}, DrawMode::Triangles}});
-  registeredShaderPrograms.insert({"TRANSFORMATION_GIZMO_ROT", {{TRANSFORMATION_GIZMO_ROT_VERT, TRANSFORMATION_GIZMO_ROT_FRAG}, DrawMode::Triangles}});
-
+  registerShaderProgram("TEXTURE_DRAW_PLAIN", {TEXTURE_DRAW_VERT_SHADER, PLAIN_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("TEXTURE_DRAW_DOT3", {TEXTURE_DRAW_VERT_SHADER, DOT3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("TEXTURE_DRAW_MAP3", {TEXTURE_DRAW_VERT_SHADER, MAP3_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("TEXTURE_DRAW_SPHEREBG", {SPHEREBG_DRAW_VERT_SHADER, SPHEREBG_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("TEXTURE_DRAW_RENDERIMAGE_PLAIN", {TEXTURE_DRAW_VERT_SHADER, PLAIN_RENDERIMAGE_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("TEXTURE_DRAW_RAW_RENDERIMAGE_PLAIN", {TEXTURE_DRAW_VERT_SHADER, PLAIN_RAW_RENDERIMAGE_TEXTURE_DRAW_FRAG_SHADER}, DrawMode::Triangles);
+  registerShaderProgram("COMPOSITE_PEEL", {TEXTURE_DRAW_VERT_SHADER, COMPOSITE_PEEL}, DrawMode::Triangles);
+  registerShaderProgram("DEPTH_COPY", {TEXTURE_DRAW_VERT_SHADER, DEPTH_COPY}, DrawMode::Triangles);
+  registerShaderProgram("DEPTH_TO_MASK", {TEXTURE_DRAW_VERT_SHADER, DEPTH_TO_MASK}, DrawMode::Triangles);
+  registerShaderProgram("SCALAR_TEXTURE_COLORMAP", {TEXTURE_DRAW_VERT_SHADER, SCALAR_TEXTURE_COLORMAP}, DrawMode::Triangles);
+  registerShaderProgram("BLUR_RGB", {TEXTURE_DRAW_VERT_SHADER, BLUR_RGB}, DrawMode::Triangles);
+  registerShaderProgram("TRANSFORMATION_GIZMO_ROT", {TRANSFORMATION_GIZMO_ROT_VERT, TRANSFORMATION_GIZMO_ROT_FRAG}, DrawMode::Triangles);
 
   // === Load rules
 
-  // Utilitiy rules
-  registeredShaderRules.insert({"GLSL_VERSION", GLSL_VERSION});
-  registeredShaderRules.insert({"GLOBAL_FRAGMENT_FILTER", GLOBAL_FRAGMENT_FILTER});
-  registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_1", DOWNSAMPLE_RESOLVE_1});
-  registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_2", DOWNSAMPLE_RESOLVE_2});
-  registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_3", DOWNSAMPLE_RESOLVE_3});
-  registeredShaderRules.insert({"DOWNSAMPLE_RESOLVE_4", DOWNSAMPLE_RESOLVE_4});
+  // Utility rules
+  registerShaderRule("GLSL_VERSION", GLSL_VERSION);
+  registerShaderRule("GLOBAL_FRAGMENT_FILTER", GLOBAL_FRAGMENT_FILTER);
+  registerShaderRule("DOWNSAMPLE_RESOLVE_1", DOWNSAMPLE_RESOLVE_1);
+  registerShaderRule("DOWNSAMPLE_RESOLVE_2", DOWNSAMPLE_RESOLVE_2);
+  registerShaderRule("DOWNSAMPLE_RESOLVE_3", DOWNSAMPLE_RESOLVE_3);
+  registerShaderRule("DOWNSAMPLE_RESOLVE_4", DOWNSAMPLE_RESOLVE_4);
   
-  registeredShaderRules.insert({"TRANSPARENCY_STRUCTURE", TRANSPARENCY_STRUCTURE});
-  registeredShaderRules.insert({"TRANSPARENCY_RESOLVE_SIMPLE", TRANSPARENCY_RESOLVE_SIMPLE});
-  registeredShaderRules.insert({"TRANSPARENCY_PEEL_STRUCTURE", TRANSPARENCY_PEEL_STRUCTURE});
-  registeredShaderRules.insert({"TRANSPARENCY_PEEL_GROUND", TRANSPARENCY_PEEL_GROUND});
+  registerShaderRule("TRANSPARENCY_STRUCTURE", TRANSPARENCY_STRUCTURE);
+  registerShaderRule("TRANSPARENCY_RESOLVE_SIMPLE", TRANSPARENCY_RESOLVE_SIMPLE);
+  registerShaderRule("TRANSPARENCY_PEEL_STRUCTURE", TRANSPARENCY_PEEL_STRUCTURE);
+  registerShaderRule("TRANSPARENCY_PEEL_GROUND", TRANSPARENCY_PEEL_GROUND);
   
-  registeredShaderRules.insert({"GENERATE_VIEW_POS", GENERATE_VIEW_POS});
-  registeredShaderRules.insert({"CULL_POS_FROM_VIEW", CULL_POS_FROM_VIEW});
-  //registeredShaderRules.insert({"CULL_POS_FROM_ATTR", CULL_POS_FROM_ATTR});
+  registerShaderRule("GENERATE_VIEW_POS", GENERATE_VIEW_POS);
+  registerShaderRule("COMPUTE_SHADE_NORMAL_FROM_POSITION", COMPUTE_SHADE_NORMAL_FROM_POSITION);
+  registerShaderRule("PREMULTIPLY_LIT_COLOR", PREMULTIPLY_LIT_COLOR);
+  registerShaderRule("CULL_POS_FROM_VIEW", CULL_POS_FROM_VIEW);
+  registerShaderRule("PROJ_AND_INV_PROJ_MAT", PROJ_AND_INV_PROJ_MAT);
 
   // Lighting and shading things
-  registeredShaderRules.insert({"LIGHT_MATCAP", LIGHT_MATCAP});
-  registeredShaderRules.insert({"LIGHT_PASSTHRU", LIGHT_PASSTHRU});
-  registeredShaderRules.insert({"SHADE_BASECOLOR", SHADE_BASECOLOR});
-  registeredShaderRules.insert({"SHADE_COLOR", SHADE_COLOR});
-  registeredShaderRules.insert({"SHADE_COLORMAP_VALUE", SHADE_COLORMAP_VALUE});
-  registeredShaderRules.insert({"SHADE_COLORMAP_ANGULAR2", SHADE_COLORMAP_ANGULAR2});
-  registeredShaderRules.insert({"SHADE_GRID_VALUE2", SHADE_GRID_VALUE2});
-  registeredShaderRules.insert({"SHADE_CHECKER_VALUE2", SHADE_CHECKER_VALUE2});
-  registeredShaderRules.insert({"SHADEVALUE_MAG_VALUE2", SHADEVALUE_MAG_VALUE2});
-  registeredShaderRules.insert({"ISOLINE_STRIPE_VALUECOLOR", ISOLINE_STRIPE_VALUECOLOR});
-  registeredShaderRules.insert({"CONTOUR_VALUECOLOR", CONTOUR_VALUECOLOR});
-  registeredShaderRules.insert({"CHECKER_VALUE2COLOR", CHECKER_VALUE2COLOR});
-  
+  registerShaderRule("LIGHT_MATCAP", LIGHT_MATCAP);
+  registerShaderRule("LIGHT_PASSTHRU", LIGHT_PASSTHRU);
+  registerShaderRule("SHADE_BASECOLOR", SHADE_BASECOLOR);
+  registerShaderRule("SHADE_COLOR", SHADE_COLOR);
+  registerShaderRule("SHADE_CATEGORICAL_COLORMAP", SHADE_CATEGORICAL_COLORMAP);
+  registerShaderRule("SHADECOLOR_FROM_UNIFORM", SHADECOLOR_FROM_UNIFORM);
+  registerShaderRule("SHADE_COLORMAP_VALUE", SHADE_COLORMAP_VALUE);
+  registerShaderRule("SHADE_COLORMAP_ANGULAR2", SHADE_COLORMAP_ANGULAR2);
+  registerShaderRule("SHADE_GRID_VALUE2", SHADE_GRID_VALUE2);
+  registerShaderRule("SHADE_CHECKER_VALUE2", SHADE_CHECKER_VALUE2);
+  registerShaderRule("SHADE_CHECKER_CATEGORY", SHADE_CHECKER_CATEGORY);
+  registerShaderRule("SHADEVALUE_MAG_VALUE2", SHADEVALUE_MAG_VALUE2);
+  registerShaderRule("ISOLINE_STRIPE_VALUECOLOR", ISOLINE_STRIPE_VALUECOLOR);
+  registerShaderRule("CHECKER_VALUE2COLOR", CHECKER_VALUE2COLOR);
+  registerShaderRule("INVERSE_TONEMAP", INVERSE_TONEMAP);
+ 
+  // Texture and image things
+  registerShaderRule("TEXTURE_ORIGIN_UPPERLEFT", TEXTURE_ORIGIN_UPPERLEFT);
+  registerShaderRule("TEXTURE_ORIGIN_LOWERLEFT", TEXTURE_ORIGIN_LOWERLEFT);
+  registerShaderRule("TEXTURE_SET_TRANSPARENCY", TEXTURE_SET_TRANSPARENCY);
+  registerShaderRule("TEXTURE_SET_TRANSPARENCY_PREMULTIPLIED", TEXTURE_SET_TRANSPARENCY_PREMULTIPLIED);
+  registerShaderRule("TEXTURE_PREMULTIPLY_OUT", TEXTURE_PREMULTIPLY_OUT);
+  registerShaderRule("TEXTURE_SHADE_COLOR", TEXTURE_SHADE_COLOR);
+  registerShaderRule("TEXTURE_SHADE_COLORALPHA", TEXTURE_SHADE_COLORALPHA);
+  registerShaderRule("TEXTURE_PROPAGATE_VALUE", TEXTURE_PROPAGATE_VALUE);
+  registerShaderRule("TEXTURE_PROPAGATE_COLOR", TEXTURE_PROPAGATE_COLOR);
+  registerShaderRule("TEXTURE_BILLBOARD_FROM_UNIFORMS", TEXTURE_BILLBOARD_FROM_UNIFORMS);
+  registerShaderRule("SHADE_NORMAL_FROM_TEXTURE", SHADE_NORMAL_FROM_TEXTURE);
+  registerShaderRule("SHADE_NORMAL_FROM_VIEWPOS_VAR", SHADE_NORMAL_FROM_VIEWPOS_VAR);
+
   // mesh things
-  registeredShaderRules.insert({"MESH_WIREFRAME", MESH_WIREFRAME});
-  registeredShaderRules.insert({"MESH_BACKFACE_NORMAL_FLIP", MESH_BACKFACE_NORMAL_FLIP});
-  registeredShaderRules.insert({"MESH_BACKFACE_DARKEN", MESH_BACKFACE_DARKEN});
-  registeredShaderRules.insert({"MESH_PROPAGATE_VALUE", MESH_PROPAGATE_VALUE});
-  registeredShaderRules.insert({"MESH_PROPAGATE_VALUE2", MESH_PROPAGATE_VALUE2});
-  registeredShaderRules.insert({"MESH_PROPAGATE_COLOR", MESH_PROPAGATE_COLOR});
-  registeredShaderRules.insert({"MESH_PROPAGATE_HALFEDGE_VALUE", MESH_PROPAGATE_HALFEDGE_VALUE});
-  registeredShaderRules.insert({"MESH_PROPAGATE_CULLPOS", MESH_PROPAGATE_CULLPOS});
-  registeredShaderRules.insert({"MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE", MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE});
-  registeredShaderRules.insert({"MESH_PROPAGATE_PICK", MESH_PROPAGATE_PICK});
+  registerShaderRule("MESH_WIREFRAME", MESH_WIREFRAME);
+  registerShaderRule("MESH_WIREFRAME_FROM_BARY", MESH_WIREFRAME_FROM_BARY);
+  registerShaderRule("MESH_WIREFRAME_ONLY", MESH_WIREFRAME_ONLY);
+  registerShaderRule("MESH_BACKFACE_NORMAL_FLIP", MESH_BACKFACE_NORMAL_FLIP);
+  registerShaderRule("MESH_BACKFACE_DIFFERENT", MESH_BACKFACE_DIFFERENT);
+  registerShaderRule("MESH_BACKFACE_DARKEN", MESH_BACKFACE_DARKEN);
+  registerShaderRule("MESH_PROPAGATE_VALUE", MESH_PROPAGATE_VALUE);
+  registerShaderRule("MESH_PROPAGATE_VALUEALPHA", MESH_PROPAGATE_VALUEALPHA);
+  registerShaderRule("MESH_PROPAGATE_FLAT_VALUE", MESH_PROPAGATE_FLAT_VALUE);
+  registerShaderRule("MESH_PROPAGATE_VALUE_CORNER_NEAREST", MESH_PROPAGATE_VALUE_CORNER_NEAREST);
+  registerShaderRule("MESH_PROPAGATE_VALUE2", MESH_PROPAGATE_VALUE2);
+  registerShaderRule("MESH_PROPAGATE_TCOORD", MESH_PROPAGATE_TCOORD);
+  registerShaderRule("MESH_PROPAGATE_COLOR", MESH_PROPAGATE_COLOR);
+  registerShaderRule("MESH_PROPAGATE_HALFEDGE_VALUE", MESH_PROPAGATE_HALFEDGE_VALUE);
+  registerShaderRule("MESH_PROPAGATE_CULLPOS", MESH_PROPAGATE_CULLPOS);
+  registerShaderRule("MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE", MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE);
+  registerShaderRule("MESH_PROPAGATE_PICK", MESH_PROPAGATE_PICK);
+  registerShaderRule("MESH_PROPAGATE_PICK_SIMPLE", MESH_PROPAGATE_PICK_SIMPLE);
+  
+  // volume gridcube things
+  registerShaderRule("GRIDCUBE_PROPAGATE_NODE_VALUE", GRIDCUBE_PROPAGATE_NODE_VALUE);
+  registerShaderRule("GRIDCUBE_PROPAGATE_CELL_VALUE", GRIDCUBE_PROPAGATE_CELL_VALUE);
+  registerShaderRule("GRIDCUBE_WIREFRAME", GRIDCUBE_WIREFRAME);
+  registerShaderRule("GRIDCUBE_CONSTANT_PICK", GRIDCUBE_CONSTANT_PICK);
+  registerShaderRule("GRIDCUBE_CULLPOS_FROM_CENTER", GRIDCUBE_CULLPOS_FROM_CENTER);
 
   // sphere things
-  registeredShaderRules.insert({"SPHERE_PROPAGATE_VALUE", SPHERE_PROPAGATE_VALUE});
-  registeredShaderRules.insert({"SPHERE_PROPAGATE_VALUE2", SPHERE_PROPAGATE_VALUE2});
-  registeredShaderRules.insert({"SPHERE_PROPAGATE_COLOR", SPHERE_PROPAGATE_COLOR});
-  registeredShaderRules.insert({"SPHERE_CULLPOS_FROM_CENTER", SPHERE_CULLPOS_FROM_CENTER});
-  registeredShaderRules.insert({"SPHERE_VARIABLE_SIZE", SPHERE_VARIABLE_SIZE});
+  registerShaderRule("SPHERE_PROPAGATE_VALUE", SPHERE_PROPAGATE_VALUE);
+  registerShaderRule("SPHERE_PROPAGATE_VALUEALPHA", SPHERE_PROPAGATE_VALUEALPHA);
+  registerShaderRule("SPHERE_PROPAGATE_VALUE2", SPHERE_PROPAGATE_VALUE2);
+  registerShaderRule("SPHERE_PROPAGATE_COLOR", SPHERE_PROPAGATE_COLOR);
+  registerShaderRule("SPHERE_CULLPOS_FROM_CENTER", SPHERE_CULLPOS_FROM_CENTER);
+  registerShaderRule("SPHERE_CULLPOS_FROM_CENTER_QUAD", SPHERE_CULLPOS_FROM_CENTER_QUAD);
+  registerShaderRule("SPHERE_VARIABLE_SIZE", SPHERE_VARIABLE_SIZE);
 
   // vector things
-  registeredShaderRules.insert({"VECTOR_PROPAGATE_COLOR", VECTOR_PROPAGATE_COLOR});
-  registeredShaderRules.insert({"VECTOR_CULLPOS_FROM_TAIL", VECTOR_CULLPOS_FROM_TAIL});
-  registeredShaderRules.insert({"TRANSFORMATION_GIZMO_VEC", TRANSFORMATION_GIZMO_VEC});
+  registerShaderRule("VECTOR_PROPAGATE_COLOR", VECTOR_PROPAGATE_COLOR);
+  registerShaderRule("VECTOR_CULLPOS_FROM_TAIL", VECTOR_CULLPOS_FROM_TAIL);
+  registerShaderRule("TRANSFORMATION_GIZMO_VEC", TRANSFORMATION_GIZMO_VEC);
 
   // cylinder things
-  registeredShaderRules.insert({"CYLINDER_PROPAGATE_VALUE", CYLINDER_PROPAGATE_VALUE});
-  registeredShaderRules.insert({"CYLINDER_PROPAGATE_BLEND_VALUE", CYLINDER_PROPAGATE_BLEND_VALUE});
-  registeredShaderRules.insert({"CYLINDER_PROPAGATE_COLOR", CYLINDER_PROPAGATE_COLOR});
-  registeredShaderRules.insert({"CYLINDER_PROPAGATE_BLEND_COLOR", CYLINDER_PROPAGATE_BLEND_COLOR});
-  registeredShaderRules.insert({"CYLINDER_PROPAGATE_PICK", CYLINDER_PROPAGATE_PICK});
-  registeredShaderRules.insert({"CYLINDER_CULLPOS_FROM_MID", CYLINDER_CULLPOS_FROM_MID});
+  registerShaderRule("CYLINDER_PROPAGATE_VALUE", CYLINDER_PROPAGATE_VALUE);
+  registerShaderRule("CYLINDER_PROPAGATE_BLEND_VALUE", CYLINDER_PROPAGATE_BLEND_VALUE);
+  registerShaderRule("CYLINDER_PROPAGATE_NEAREST_VALUE", CYLINDER_PROPAGATE_NEAREST_VALUE);
+  registerShaderRule("CYLINDER_PROPAGATE_COLOR", CYLINDER_PROPAGATE_COLOR);
+  registerShaderRule("CYLINDER_PROPAGATE_BLEND_COLOR", CYLINDER_PROPAGATE_BLEND_COLOR);
+  registerShaderRule("CYLINDER_PROPAGATE_PICK", CYLINDER_PROPAGATE_PICK);
+  registerShaderRule("CYLINDER_CULLPOS_FROM_MID", CYLINDER_CULLPOS_FROM_MID);
+  registerShaderRule("CYLINDER_VARIABLE_SIZE", CYLINDER_VARIABLE_SIZE);
+
+  // marching tets things
+  registerShaderRule("SLICE_TETS_BASECOLOR_SHADE", SLICE_TETS_BASECOLOR_SHADE);
+  registerShaderRule("SLICE_TETS_PROPAGATE_VALUE", SLICE_TETS_PROPAGATE_VALUE);
+  registerShaderRule("SLICE_TETS_PROPAGATE_VECTOR", SLICE_TETS_PROPAGATE_VECTOR);
+  registerShaderRule("SLICE_TETS_VECTOR_COLOR", SLICE_TETS_VECTOR_COLOR);
+  registerShaderRule("SLICE_TETS_MESH_WIREFRAME", SLICE_TETS_MESH_WIREFRAME);
 
   // clang-format on
 };
 
 
 void MockGLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
-  using namespace backend_openGL3_glfw;
+  using namespace backend_openGL3;
   registeredShaderRules.insert({"SLICE_PLANE_CULL_" + uniquePostfix, generateSlicePlaneRule(uniquePostfix)});
+  registeredShaderRules.insert(
+      {"SLICE_PLANE_VOLUMEGRID_CULL_" + uniquePostfix, generateVolumeGridSlicePlaneRule(uniquePostfix)});
 }
 
 } // namespace backend_openGL_mock
@@ -1468,12 +2052,12 @@ void MockGLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
 
 #include <stdexcept>
 
+#include "polyscope/messages.h"
+
 namespace polyscope {
 namespace render {
 namespace backend_openGL_mock {
-void initializeRenderEngine() {
-  throw std::runtime_error("Polyscope was not compiled with support for backend: openGL_mock");
-}
+void initializeRenderEngine() { exception("Polyscope was not compiled with support for backend: openGL_mock"); }
 } // namespace backend_openGL_mock
 } // namespace render
 } // namespace polyscope

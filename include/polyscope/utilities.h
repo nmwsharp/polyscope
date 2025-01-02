@@ -1,8 +1,10 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include <algorithm>
 #include <complex>
+#include <cstdint>
 #include <cstdio>
 #include <iomanip>
 #include <iostream>
@@ -14,7 +16,6 @@
 
 
 #include <glm/glm.hpp>
-#include <glm/gtx/string_cast.hpp>
 
 
 namespace polyscope {
@@ -42,7 +43,7 @@ void safeDeleteArray(T*& x) {
 // Attempt to get a user-friendly name for a file from its base name
 std::string guessNiceNameFromPath(std::string fullname);
 
-// Ensure that a string satisfies polyscope requirements for structure and quantity names. 
+// Ensure that a string satisjies polyscope requirements for structure and quantity names.
 // Raises an error on failure.
 void validateName(const std::string& name);
 
@@ -69,7 +70,10 @@ inline glm::vec3 componentwiseMin(const glm::vec3& vA, const glm::vec3& vB) {
 inline glm::vec3 componentwiseMax(const glm::vec3& vA, const glm::vec3& vB) {
   return glm::vec3{std::max(vA.x, vB.x), std::max(vA.y, vB.y), std::max(vA.z, vB.z)};
 }
-
+inline glm::vec3 circularPermuteEntries(const glm::vec3& v) {
+  // (could be prettier with swizzel)
+  return glm::vec3{v.z, v.x, v.y};
+}
 
 // Transformation utilities
 void splitTransform(const glm::mat4& trans, glm::mat3x4& R, glm::vec3& T);
@@ -101,9 +105,25 @@ inline std::string to_string_short(const glm::vec3& v) { return str_printf("<%1.
 
 // === Index management
 const size_t INVALID_IND = std::numeric_limits<size_t>::max();
+const uint32_t INVALID_IND_32 = std::numeric_limits<uint32_t>::max();
+const uint64_t INVALID_IND_64 = std::numeric_limits<uint64_t>::max();
 
 template <typename T>
 std::vector<T> applyPermutation(const std::vector<T>& input, const std::vector<size_t>& perm) {
+  // TODO figure out if there's a copy to be avoided here
+  if (perm.size() == 0) {
+    return input;
+  }
+  std::vector<T> result(perm.size());
+  for (size_t i = 0; i < perm.size(); i++) {
+    result[i] = input[perm[i]];
+  }
+  return result;
+}
+
+// Same as applyPermutation() above, but on 32-bit indices, and we gave it a more accurate name
+template <typename T>
+std::vector<T> gather(const std::vector<T>& input, const std::vector<uint32_t>& perm) {
   // TODO figure out if there's a copy to be avoided here
   if (perm.size() == 0) {
     return input;
@@ -146,6 +166,10 @@ inline double randomNormal(double mean = 0.0, double stddev = 1.0) {
   return dist(util_mersenne_twister);
 }
 
+// === ImGui utilities
+
+// Displays a little helper icon which shows the text on hover
+void ImGuiHelperMarker(const char* text);
 
 // === Math utilities
 const double PI = 3.14159265358979323;

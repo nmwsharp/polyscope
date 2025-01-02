@@ -1,4 +1,8 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/render/shader_builder.h"
+
+#include "polyscope/messages.h"
 
 
 namespace polyscope {
@@ -44,8 +48,8 @@ applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
       auto tagStart = progText.find(startTagToken);
       auto tagEnd = progText.find(endTagToken);
 
-      if (tagStart != npos && tagEnd == npos) throw std::runtime_error("ShaderBuilder: no end tag matching start tag");
-      if (tagStart == npos && tagEnd != npos) throw std::runtime_error("ShaderBuilder: no start tag matching end tag");
+      if (tagStart != npos && tagEnd == npos) exception("ShaderBuilder: no end tag matching start tag");
+      if (tagStart == npos && tagEnd != npos) exception("ShaderBuilder: no start tag matching end tag");
 
       // no more tags, concatenate in the rest of the source finish looping
       if (tagStart == npos && tagEnd == npos) {

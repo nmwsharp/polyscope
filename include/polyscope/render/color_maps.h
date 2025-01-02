@@ -38,6 +38,7 @@ bool buildColormapSelector(std::string& cm, std::string fieldname = "##colormap_
 //      - rainbow (CM_RAINBOW)
 //      - jet (CM_JET)
 //      - turbo (CM_TURBO)
+//      - hsv (CM_HSV)
 //
 //    Cyclic:
 //      - phase (CM_PHASE)

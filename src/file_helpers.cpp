@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/file_helpers.h"
 
 #include "imgui.h"
@@ -39,9 +40,10 @@ std::string promptForFilename(std::string initName) {
   using namespace std::placeholders;
 
   // Register the callback which creates the UI and does the hard work
-  char* textBuff = new char[2048];
-  sprintf(textBuff, "%s", initName.c_str());
-  auto func = std::bind(filenamePromptCallback, textBuff, 2048);
+  const size_t BUFF_LEN = 2048;
+  char* textBuff = new char[BUFF_LEN];
+  snprintf(textBuff, BUFF_LEN, "%s", initName.c_str());
+  auto func = std::bind(filenamePromptCallback, textBuff, BUFF_LEN);
   pushContext(func);
 
   std::string stringOut(textBuff);

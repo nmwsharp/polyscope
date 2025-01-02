@@ -1,8 +1,10 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/render/opengl/shaders/gizmo_shaders.h"
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 // clang-format off
 
@@ -12,17 +14,17 @@ const ShaderStageSpecification TRANSFORMATION_GIZMO_ROT_VERT = {
 
     // uniforms
     {
-        {"u_modelView", DataType::Matrix44Float},
-        {"u_projMatrix", DataType::Matrix44Float},
+        {"u_modelView", RenderDataType::Matrix44Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
     }, 
 
     // attributes
     {
-        {"a_position", DataType::Vector3Float},
-        {"a_normal", DataType::Vector3Float},
-        {"a_color", DataType::Vector3Float},
-        {"a_texcoord", DataType::Vector2Float},
-        {"a_component", DataType::Vector3Float}, // holds 1 for which axis it is
+        {"a_position", RenderDataType::Vector3Float},
+        {"a_normal", RenderDataType::Vector3Float},
+        {"a_color", RenderDataType::Vector3Float},
+        {"a_texcoord", RenderDataType::Vector2Float},
+        {"a_component", RenderDataType::Vector3Float}, // holds 1 for which axis it is
     },
 
     {}, // textures
@@ -60,8 +62,8 @@ const ShaderStageSpecification TRANSFORMATION_GIZMO_ROT_FRAG = {
     
     // uniforms
     {
-        {"u_diskWidthRel", DataType::Float},
-        {"u_active", DataType::Vector3Float},
+        {"u_diskWidthRel", RenderDataType::Float},
+        {"u_active", RenderDataType::Vector3Float},
     }, 
 
     { }, // attributes
@@ -152,10 +154,10 @@ const ShaderReplacementRule TRANSFORMATION_GIZMO_VEC (
         )"},
     },
     /* uniforms */ {
-      {"u_active", DataType::Vector3Float},
+      {"u_active", RenderDataType::Vector3Float},
     },
     /* attributes */ {
-      {"a_component", DataType::Vector3Float}
+      {"a_component", RenderDataType::Vector3Float}
     },
     /* textures */ {}
 );
@@ -166,14 +168,14 @@ const ShaderStageSpecification SLICE_PLANE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", DataType::Matrix44Float},
-       {"u_projMatrix", DataType::Matrix44Float},
-       {"u_objectMatrix", DataType::Matrix44Float},
+       {"u_viewMatrix", RenderDataType::Matrix44Float},
+       {"u_projMatrix", RenderDataType::Matrix44Float},
+       {"u_objectMatrix", RenderDataType::Matrix44Float},
     },
 
     // attributes
     {
-        {"a_position", DataType::Vector4Float},
+        {"a_position", RenderDataType::Vector4Float},
     },
     
     {}, // textures
@@ -201,11 +203,12 @@ const ShaderStageSpecification SLICE_PLANE_FRAG_SHADER= {
     ShaderStageType::Fragment,
 
     { // uniforms
-      {"u_objectMatrix", DataType::Matrix44Float},
-      {"u_viewMatrix", DataType::Matrix44Float},
-      {"u_lengthScale", DataType::Float},
-      {"u_transparency", DataType::Float},
-      {"u_color", DataType::Vector3Float},
+      {"u_objectMatrix", RenderDataType::Matrix44Float},
+      {"u_viewMatrix", RenderDataType::Matrix44Float},
+      {"u_lengthScale", RenderDataType::Float},
+      {"u_transparency", RenderDataType::Float},
+      {"u_color", RenderDataType::Vector3Float},
+      {"u_gridLineColor", RenderDataType::Vector3Float},
     }, 
 
     // attributes
@@ -226,6 +229,7 @@ R"(
       uniform float u_cameraHeight;
       uniform float u_transparency;
       uniform vec3 u_color;
+      uniform vec3 u_gridLineColor;
       in vec4 PositionWorldHomog;
       layout(location = 0) out vec4 outputF;
         
@@ -251,8 +255,7 @@ R"(
         float modDist = min(min(mod(coord2D.x, 1.0), mod(coord2D.y, 1.0)), min(mod(-coord2D.x, 1.0), mod(-coord2D.y, 1.0)));
         float stripeBlendFac = smoothstep(0.005, .02, modDist);
         vec3 baseColor = u_color;
-        vec3 gridColor = vec3(0.97, 0.97, 0.97);
-        vec3 groundColor = mix(gridColor, baseColor, stripeBlendFac);
+        vec3 groundColor = mix(u_gridLineColor, baseColor, stripeBlendFac);
 
         // Lighting stuff
         vec4 posCameraSpace4 = u_viewMatrix * PositionWorldHomog;
@@ -277,6 +280,6 @@ R"(
 
 // clang-format on
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

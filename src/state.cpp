@@ -1,21 +1,25 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/polyscope.h"
 
 namespace polyscope {
 
 namespace state {
 
-bool initialized = false;
-std::string backend;
-double lengthScale = 1.0;
-std::tuple<glm::vec3, glm::vec3> boundingBox;
-glm::vec3 center{0, 0, 0};
-std::map<std::string, std::map<std::string, Structure*>> structures;
-std::function<void()> userCallback = nullptr;
 
-// Lists of things
-std::set<Widget*> widgets;
-std::vector<SlicePlane*> slicePlanes;
+Context globalContext;
+
+// Map all of the named global variables as references to the context struct
+bool& initialized = globalContext.initialized;
+std::string& backend = globalContext.backend;
+std::map<std::string, std::map<std::string, std::unique_ptr<Structure>>>& structures = globalContext.structures;
+std::map<std::string, std::unique_ptr<Group>>& groups = globalContext.groups;
+float& lengthScale = globalContext.lengthScale;
+std::tuple<glm::vec3, glm::vec3>& boundingBox = globalContext.boundingBox;
+std::vector<std::unique_ptr<SlicePlane>>& slicePlanes = globalContext.slicePlanes;
+std::vector<WeakHandle<Widget>>& widgets = globalContext.widgets;
+bool& doDefaultMouseInteraction = globalContext.doDefaultMouseInteraction;
+std::function<void()>& userCallback = globalContext.userCallback;
 
 } // namespace state
 } // namespace polyscope

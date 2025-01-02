@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include "polyscope/quantity.h"
@@ -10,10 +11,10 @@ namespace polyscope {
 class PointCloud;
 
 // Extend Quantity<PointCloud> to add a few extra functions
-class PointCloudQuantity : public Quantity<PointCloud> {
+class PointCloudQuantity : public QuantityS<PointCloud> {
 public:
   PointCloudQuantity(std::string name, PointCloud& parentStructure, bool dominates = false);
-  virtual ~PointCloudQuantity() {};
+  virtual ~PointCloudQuantity(){};
 
   // Build GUI info about a point
   virtual void buildInfoGUI(size_t pointInd);

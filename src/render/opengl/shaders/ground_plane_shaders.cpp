@@ -1,10 +1,11 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 
 #include "polyscope/render/opengl/shaders/ground_plane_shaders.h"
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 // clang-format off
 
@@ -14,15 +15,15 @@ const ShaderStageSpecification GROUND_PLANE_VERT_SHADER =  {
     
     // uniforms
     {
-       {"u_viewMatrix", DataType::Matrix44Float},
-       {"u_projMatrix", DataType::Matrix44Float},
-       {"u_groundHeight", DataType::Float},
-       {"u_basisZ", DataType::Vector3Float},
+       {"u_viewMatrix", RenderDataType::Matrix44Float},
+       {"u_projMatrix", RenderDataType::Matrix44Float},
+       {"u_groundHeight", RenderDataType::Float},
+       {"u_basisZ", RenderDataType::Vector3Float},
     },
 
     // attributes
     {
-        {"a_position", DataType::Vector4Float},
+        {"a_position", RenderDataType::Vector4Float},
     },
     
     {}, // textures
@@ -53,14 +54,14 @@ const ShaderStageSpecification GROUND_PLANE_TILE_FRAG_SHADER= {
     ShaderStageType::Fragment,
 
     { // uniforms
-      {"u_lengthScale", DataType::Float},
-      {"u_center", DataType::Vector3Float},
-      {"u_basisX", DataType::Vector3Float},
-      {"u_basisY", DataType::Vector3Float},
-      {"u_viewportDim", DataType::Vector2Float},
-      {"u_cameraHeight", DataType::Float},
-      {"u_groundHeight", DataType::Float},
-      {"u_upSign", DataType::Float}
+      {"u_lengthScale", RenderDataType::Float},
+      {"u_center", RenderDataType::Vector3Float},
+      {"u_basisX", RenderDataType::Vector3Float},
+      {"u_basisY", RenderDataType::Vector3Float},
+      {"u_viewportDim", RenderDataType::Vector2Float},
+      {"u_cameraHeight", RenderDataType::Float},
+      {"u_groundHeight", RenderDataType::Float},
+      {"u_upSign", RenderDataType::Float}
     }, 
 
     // attributes
@@ -133,8 +134,12 @@ R"(
         float coloredBrightness = 1.2 * orenNayarDiffuse(eyeDir, lightDir, normalCameraSpace, .05, 1.0) + .3;
         float whiteBrightness = .25 * specular(normalCameraSpace, lightDir, eyeDir, 12.);
 
-        vec4 lightColor = vec4(color.xyz * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness, color.w);
-        outputF = lightColor;
+        float alphaOut = color.w;
+        vec3 litColor = color.xyz * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness;
+
+        // Write output
+        litColor *= alphaOut; // premultiplied alpha
+        outputF = vec4(litColor, alphaOut);
       }
 
 )"
@@ -145,14 +150,14 @@ const ShaderStageSpecification GROUND_PLANE_TILE_REFLECT_FRAG_SHADER = {
     ShaderStageType::Fragment,
 
     { // uniforms
-      {"u_lengthScale", DataType::Float},
-      {"u_center", DataType::Vector3Float},
-      {"u_basisX", DataType::Vector3Float},
-      {"u_basisY", DataType::Vector3Float},
-      {"u_viewportDim", DataType::Vector2Float},
-      {"u_cameraHeight", DataType::Float},
-      {"u_groundHeight", DataType::Float},
-      {"u_upSign", DataType::Float}
+      {"u_lengthScale", RenderDataType::Float},
+      {"u_center", RenderDataType::Vector3Float},
+      {"u_basisX", RenderDataType::Vector3Float},
+      {"u_basisY", RenderDataType::Vector3Float},
+      {"u_viewportDim", RenderDataType::Vector2Float},
+      {"u_cameraHeight", RenderDataType::Float},
+      {"u_groundHeight", RenderDataType::Float},
+      {"u_upSign", RenderDataType::Float}
     }, 
 
     // attributes
@@ -238,8 +243,12 @@ R"(
         float coloredBrightness = 1.2 *orenNayarDiffuse(eyeDir, lightDir, normalCameraSpace, .05, 1.0) + .3;
         float whiteBrightness = .25 * specular(normalCameraSpace, lightDir, eyeDir, 12.);
 
-        vec4 lightColor = vec4(color.xyz * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness, color.w);
-        outputF = lightColor;
+        float alphaOut = color.w;
+        vec3 litColor = color.xyz * coloredBrightness + vec3(1., 1., 1.) * whiteBrightness;
+
+        // Write output
+        litColor *= alphaOut; // premultiplied alpha
+        outputF = vec4(litColor, alphaOut);
       }
 
 )"
@@ -250,12 +259,12 @@ const ShaderStageSpecification GROUND_PLANE_SHADOW_FRAG_SHADER = {
     ShaderStageType::Fragment,
 
     { // uniforms
-      {"u_lengthScale", DataType::Float},
-      {"u_viewportDim", DataType::Vector2Float},
-      {"u_shadowDarkness", DataType::Float},
-      {"u_cameraHeight", DataType::Float},
-      {"u_groundHeight", DataType::Float},
-      {"u_upSign", DataType::Float}
+      {"u_lengthScale", RenderDataType::Float},
+      {"u_viewportDim", RenderDataType::Vector2Float},
+      {"u_shadowDarkness", RenderDataType::Float},
+      {"u_cameraHeight", RenderDataType::Float},
+      {"u_groundHeight", RenderDataType::Float},
+      {"u_upSign", RenderDataType::Float}
     }, 
 
     // attributes
@@ -295,17 +304,18 @@ R"(
 
         float shadowMax = u_shadowDarkness + 0. * PositionWorldHomog.x;  // use PositionWorldHomog to prevent silly optimizing out
         vec3 groundColor = vec3(0., 0., 0.);
-        //vec3 groundColor = vec3(1., 0., 0.);
 
         // Fade off when viewed from below
         float viewFromBelowFadeFactor = smoothstep(0, .1, u_upSign * (u_cameraHeight - u_groundHeight) / u_lengthScale);
         float fadeFactor = viewFromBelowFadeFactor;
         if(fadeFactor <= 0.) discard;
 
-        outputF = vec4(groundColor, shadowMax*shadowVal*fadeFactor);
-        //outputF = vec4(groundColor, shadowMax*shadowVal);
-        //groundColor.r = shadowVal; 
-        //outputF = vec4(groundColor, 1.);
+        float alphaOut = shadowMax*shadowVal*fadeFactor;
+        vec3 litColor = groundColor;
+
+        // Write output
+        litColor *= alphaOut; // premultiplied alpha
+        outputF = vec4(litColor, alphaOut);
       }
 
 )"
@@ -313,6 +323,6 @@ R"(
 
 // clang-format on
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

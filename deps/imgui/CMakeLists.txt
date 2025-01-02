@@ -19,7 +19,7 @@ endif()
 
 if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 
-  set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp imgui/imgui_demo.cpp imgui/examples/imgui_impl_glfw.cpp imgui/examples/imgui_impl_opengl3.cpp)
+  set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/imgui_demo.cpp imgui/backends/imgui_impl_glfw.cpp imgui/backends/imgui_impl_opengl3.cpp)
 
   add_library(
           imgui
@@ -29,20 +29,19 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glfw/include/")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/")
-  
+
   target_link_libraries(imgui PRIVATE glfw)
-  
+
   if(APPLE)
       # On macOS, get openGL & friends from Frameworks; do not use GLAD at all
 
       add_definitions(-DGLFW_INCLUDE_GLCOREARB)
-      add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_CUSTOM=<GLFW/glfw3.h>)
 
       # NOTE: This code is essentially duplicated here and in polyscope/src/CMakeLists.txt
 
       # Apple is playing hardball and deprecating openGL... we'll cross that bridge when we come to it
       # Silence warnings about openGL deprecation
-      add_definitions(-DGL_SILENCE_DEPRECATION)  
+      add_definitions(-DGL_SILENCE_DEPRECATION)
       find_library(opengl_library OpenGL)
       target_link_libraries(imgui PRIVATE ${opengl_library})
   else()
@@ -59,8 +58,8 @@ elseif("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
   add_definitions(-DIMGUI_DISABLE_WIN32_FUNCTIONS)
   add_definitions(-DIMGUI_DISABLE_WIN32_DEFAULT_CLIPBOARD_FUNCTIONS)
   add_definitions(-DIMGUI_DISABLE_WIN32_DEFAULT_IME_FUNCTIONS)
-  
-  set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp)
+
+  set(SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/imgui_demo.cpp)
 
   add_library(
           imgui
@@ -72,5 +71,6 @@ elseif("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
 endif()
 
 
+target_compile_features(imgui PUBLIC cxx_std_11)
 
 set_target_properties(imgui PROPERTIES POSITION_INDEPENDENT_CODE TRUE)

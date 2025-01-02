@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include "polyscope/options.h"
@@ -13,15 +14,88 @@ namespace polyscope {
 namespace render {
 namespace backend_openGL_mock {
 
+class GLAttributeBuffer : public AttributeBuffer {
+public:
+  GLAttributeBuffer(RenderDataType dataType_, int arrayCount_);
+  virtual ~GLAttributeBuffer();
+
+  void bind();
+
+  void setData(const std::vector<glm::vec2>& data) override;
+  void setData(const std::vector<glm::vec3>& data) override;
+  void setData(const std::vector<glm::vec4>& data) override;
+  void setData(const std::vector<float>& data) override;
+  void setData(const std::vector<double>& data) override;
+  void setData(const std::vector<int32_t>& data) override;
+  void setData(const std::vector<uint32_t>& data) override;
+  void setData(const std::vector<glm::uvec2>& data) override;
+  void setData(const std::vector<glm::uvec3>& data) override;
+  void setData(const std::vector<glm::uvec4>& data) override;
+
+  // Array-valued attributes
+  // (adding these lazily as we need them)
+  // (sadly we cannot template the virtual function)
+  void setData(const std::vector<std::array<glm::vec3, 2>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 3>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 4>>& data) override;
+
+  // get data at a single index from the buffer
+  float getData_float(size_t ind) override;
+  double getData_double(size_t ind) override;
+  glm::vec2 getData_vec2(size_t ind) override;
+  glm::vec3 getData_vec3(size_t ind) override;
+  glm::vec4 getData_vec4(size_t ind) override;
+  int getData_int(size_t ind) override;
+  uint32_t getData_uint32(size_t ind) override;
+  glm::uvec2 getData_uvec2(size_t ind) override;
+  glm::uvec3 getData_uvec3(size_t ind) override;
+  glm::uvec4 getData_uvec4(size_t ind) override;
+
+  // get data at a range of indices from the buffer
+  std::vector<float> getDataRange_float(size_t ind, size_t count) override;
+  std::vector<double> getDataRange_double(size_t ind, size_t count) override;
+  std::vector<glm::vec2> getDataRange_vec2(size_t ind, size_t count) override;
+  std::vector<glm::vec3> getDataRange_vec3(size_t ind, size_t count) override;
+  std::vector<glm::vec4> getDataRange_vec4(size_t ind, size_t count) override;
+  std::vector<int> getDataRange_int(size_t ind, size_t count) override;
+  std::vector<uint32_t> getDataRange_uint32(size_t ind, size_t count) override;
+  std::vector<glm::uvec2> getDataRange_uvec2(size_t ind, size_t count) override;
+  std::vector<glm::uvec3> getDataRange_uvec3(size_t ind, size_t count) override;
+  std::vector<glm::uvec4> getDataRange_uvec4(size_t ind, size_t count) override;
+
+  uint32_t getNativeBufferID() override;
+
+protected:
+private:
+  void checkType(RenderDataType targetType);
+  void checkArray(int arrayCount);
+
+  // internal implementation helpers
+  template <typename T>
+  void setData_helper(const std::vector<T>& data);
+
+  template <typename T>
+  T getData_helper(size_t ind);
+
+  template <typename T>
+  std::vector<T> getDataRange_helper(size_t start, size_t count);
+};
+
 class GLTextureBuffer : public TextureBuffer {
 public:
   // create a 1D texture from data
-  GLTextureBuffer(TextureFormat format, unsigned int size1D, unsigned char* data = nullptr);
-  GLTextureBuffer(TextureFormat format, unsigned int size1D, float* data);
+  GLTextureBuffer(TextureFormat format, unsigned int size1D, const unsigned char* data = nullptr);
+  GLTextureBuffer(TextureFormat format, unsigned int size1D, const float* data);
 
   // create a 2D texture from data
-  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned char* data = nullptr);
-  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, float* data);
+  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, const unsigned char* data = nullptr);
+  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, const float* data);
+
+  // create a 3D texture from data
+  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned int sizeZ_,
+                  const unsigned char* data = nullptr);
+  GLTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_, unsigned int sizeZ_,
+                  const float* data);
 
   ~GLTextureBuffer() override;
 
@@ -29,9 +103,32 @@ public:
   // Resize the underlying buffer (contents are lost)
   void resize(unsigned int newLen) override;
   void resize(unsigned int newX, unsigned int newY) override;
+  void resize(unsigned int newX, unsigned int newY, unsigned int newZ) override;
+
+  // Fill with data
+  // NOTE: some of these are not implemented yet
+  void setData(const std::vector<glm::vec2>& data) override;
+  void setData(const std::vector<glm::vec3>& data) override;
+  void setData(const std::vector<glm::vec4>& data) override;
+  void setData(const std::vector<float>& data) override;
+  void setData(const std::vector<double>& data) override;
+  void setData(const std::vector<int32_t>& data) override;
+  void setData(const std::vector<uint32_t>& data) override;
+  void setData(const std::vector<glm::uvec2>& data) override;
+  void setData(const std::vector<glm::uvec3>& data) override;
+  void setData(const std::vector<glm::uvec4>& data) override;
+
+  // Array-valued
+  // NOTE: some of these are not implemented yet
+  // (adding these lazily as we need them)
+  // (sadly we cannot template the virtual function)
+  void setData(const std::vector<std::array<glm::vec3, 2>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 3>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 4>>& data) override;
 
   void setFilterMode(FilterMode newMode) override;
   void* getNativeHandle() override;
+  uint32_t getNativeBufferID() override;
 
   std::vector<float> getDataScalar() override;
   std::vector<glm::vec2> getDataVector2() override;
@@ -61,6 +158,8 @@ public:
   GLFrameBuffer(unsigned int sizeX_, unsigned int sizeY_, bool isDefault = false);
   ~GLFrameBuffer() override;
 
+  void bind() override;
+
   // Bind to this framebuffer so subsequent draw calls will go to it
   // If return is false, binding failed and the framebuffer should not be used.
   bool bindForRendering() override;
@@ -79,19 +178,68 @@ public:
   // Query pixels
   std::vector<unsigned char> readBuffer() override;
   std::array<float, 4> readFloat4(int xPos, int yPos) override;
+  float readDepth(int xPos, int yPos) override;
   void blitTo(FrameBuffer* other) override;
 
   // Getters
+  uint32_t getNativeBufferID() override;
 
 protected:
-  void bind() override;
 };
 
+// Classes to keep track of attributes and uniforms
+struct GLShaderUniform {
+  std::string name;
+  RenderDataType type;
+  bool isSet; // has a value been assigned to this uniform?
+};
+
+struct GLShaderAttribute {
+  std::string name;
+  RenderDataType type;
+  int arrayCount;
+  std::shared_ptr<GLAttributeBuffer> buff; // the buffer that we will actually use
+};
+
+struct GLShaderTexture {
+  std::string name;
+  int dim;
+  uint32_t index;
+  bool isSet;
+  GLTextureBuffer* textureBuffer;
+  std::shared_ptr<GLTextureBuffer> textureBufferOwned; // might be empty, if texture isn't owned
+};
+
+// A thin wrapper around a program handle.
+// This class takes ownership and handles program deletion in its destructor
+class GLCompiledProgram {
+public:
+  GLCompiledProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm);
+  ~GLCompiledProgram();
+
+  DrawMode getDrawMode() const { return drawMode; }
+  std::vector<GLShaderUniform> getUniforms() const { return uniforms; }
+  std::vector<GLShaderAttribute> getAttributes() const { return attributes; }
+  std::vector<GLShaderTexture> getTextures() const { return textures; }
+
+private:
+  DrawMode drawMode;
+  std::vector<GLShaderUniform> uniforms;
+  std::vector<GLShaderAttribute> attributes;
+  std::vector<GLShaderTexture> textures;
+
+  void compileGLProgram(const std::vector<ShaderStageSpecification>& stages);
+  void setDataLocations();
+
+  void addUniqueAttribute(ShaderSpecAttribute attribute);
+  void addUniqueUniform(ShaderSpecUniform uniform);
+  void addUniqueTexture(ShaderSpecTexture texture);
+};
 
 class GLShaderProgram : public ShaderProgram {
 
 public:
-  GLShaderProgram(const std::vector<ShaderStageSpecification>& stages, DrawMode dm);
+  GLShaderProgram(const std::shared_ptr<GLCompiledProgram>& compiledProgram);
   ~GLShaderProgram() override;
 
   // === Store data
@@ -109,30 +257,31 @@ public:
   void setUniform(std::string name, glm::vec4 val) override;
   void setUniform(std::string name, std::array<float, 3> val) override;
   void setUniform(std::string name, float x, float y, float z, float w) override;
+  void setUniform(std::string name, glm::uvec2 val) override;
+  void setUniform(std::string name, glm::uvec3 val) override;
+  void setUniform(std::string name, glm::uvec4 val) override;
 
   // = Attributes
   // clang-format off
   bool hasAttribute(std::string name) override;
   bool attributeIsSet(std::string name) override;
-  void setAttribute(std::string name, const std::vector<glm::vec2>& data, bool update = false, int offset = 0, int size = -1) override;
-  void setAttribute(std::string name, const std::vector<glm::vec3>& data, bool update = false, int offset = 0, int size = -1) override;
-  void setAttribute(std::string name, const std::vector<glm::vec4>& data, bool update = false, int offset = 0, int size = -1) override;
-  void setAttribute(std::string name, const std::vector<double>& data, bool update = false, int offset = 0, int size = -1) override;
-  void setAttribute(std::string name, const std::vector<int>& data, bool update = false, int offset = 0, int size = -1) override; 
-  void setAttribute(std::string name, const std::vector<uint32_t>& data, bool update = false, int offset = 0, int size = -1) override;
+  std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) override;
+  void setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) override; 
+  void setAttribute(std::string name, const std::vector<glm::vec2>& data) override;
+  void setAttribute(std::string name, const std::vector<glm::vec3>& data) override;
+  void setAttribute(std::string name, const std::vector<glm::vec4>& data) override;
+  void setAttribute(std::string name, const std::vector<float>& data) override;
+  void setAttribute(std::string name, const std::vector<double>& data) override;
+  void setAttribute(std::string name, const std::vector<int32_t>& data) override; 
+  void setAttribute(std::string name, const std::vector<uint32_t>& data) override;
   // clang-format on
 
-  // Convenience method to set an array-valued attrbute, such as 'in vec3 vertexVal[3]'. Applies interleaving then
-  // forwards to the usual setAttribute
-  template <typename T, unsigned int C>
-  void setAttribute(std::string name, const std::vector<std::array<T, C>>& data, bool update = false, int offset = 0,
-                    int size = -1);
-
+  // Indices
+  void setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) override;
+  void setPrimitiveRestartIndex(unsigned int restartIndex) override;
 
   // Indices
-  void setIndex(std::vector<std::array<unsigned int, 3>>& indices) override;
-  void setIndex(std::vector<unsigned int>& indices) override;
-  void setPrimitiveRestartIndex(unsigned int restartIndex) override;
+  void setInstanceCount(uint32_t instanceCount) override;
 
   // Textures
   bool hasTexture(std::string name) override;
@@ -148,52 +297,25 @@ public:
   void validateData() override;
 
 protected:
-  // Classes to keep track of attributes and uniforms
-  struct GLShaderUniform {
-    std::string name;
-    DataType type;
-    bool isSet; // has a value been assigned to this uniform?
-    int location;
-  };
-
-  struct GLShaderAttribute {
-    std::string name;
-    DataType type;
-    int arrayCount;
-    long int dataSize; // the size of the data currently stored in this attribute (-1 if nothing)
-    int location;
-    int VBOLoc;
-  };
-
-  struct GLShaderTexture {
-    std::string name;
-    int dim;
-    unsigned int index;
-    bool isSet;
-    GLTextureBuffer* textureBuffer;
-    std::shared_ptr<GLTextureBuffer> textureBufferOwned; // might be empty, if texture isn't owned
-    int location;
-  };
-
   // Lists of attributes and uniforms that need to be set
   std::vector<GLShaderUniform> uniforms;
   std::vector<GLShaderAttribute> attributes;
   std::vector<GLShaderTexture> textures;
 
-  void addUniqueAttribute(ShaderSpecAttribute attribute);
-  void addUniqueUniform(ShaderSpecUniform uniform);
-  void addUniqueTexture(ShaderSpecTexture texture);
-
 private:
   // Setup routines
   void compileGLProgram(const std::vector<ShaderStageSpecification>& stages);
   void setDataLocations();
+  void bindVAO();
   void createBuffers();
-
-  void deleteAttributeBuffer(GLShaderAttribute& attribute);
+  void ensureBufferExists(GLShaderAttribute& a);
+  void createBuffer(GLShaderAttribute& a);
+  void assignBufferToVAO(GLShaderAttribute& a);
 
   // Drawing related
   void activateTextures();
+
+  std::shared_ptr<GLCompiledProgram> compiledProgram;
 };
 
 
@@ -203,24 +325,30 @@ public:
 
   // High-level control
   void initialize();
+  virtual void shutdown() override;
   void checkError(bool fatal = false) override;
 
-  void clearDisplay() override;
-  void bindDisplay() override;
+  // mock backend is always headless
+  virtual bool isHeadless() override { return true; }
+
   void swapDisplayBuffers() override;
   std::vector<unsigned char> readDisplayBuffer() override;
 
   // Manage render state
-  void setDepthMode(DepthMode newMode = DepthMode::Less) override;
-  void setBlendMode(BlendMode newMode = BlendMode::Over) override;
+  void setDepthMode(DepthMode newMode) override;
+  void setBlendMode(BlendMode newMode) override;
   void setColorMask(std::array<bool, 4> mask = {true, true, true, true}) override;
   void setBackfaceCull(bool newVal) override;
 
   // === Windowing and framework things
   void makeContextCurrent() override;
+  void focusWindow() override;
   void showWindow() override;
   void hideWindow() override;
   void updateWindowSize(bool force = false) override;
+  void applyWindowSize() override;
+  void setWindowResizable(bool newVal) override;
+  bool getWindowResizable() override;
   std::tuple<int, int> getWindowPos() override;
   bool windowRequestsClose() override;
   void pollEvents() override;
@@ -236,15 +364,24 @@ public:
 
   // === Factory methods
 
+  // create attribute buffers
+  std::shared_ptr<AttributeBuffer> generateAttributeBuffer(RenderDataType dataType_, int arrayCount_) override;
+
   // create textures
   std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
-                                                       unsigned char* data = nullptr) override; // 1d
+                                                       const unsigned char* data = nullptr) override; // 1d
   std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int size1D,
-                                                       float* data) override; // 1d
+                                                       const float* data) override; // 1d
   std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
-                                                       unsigned char* data = nullptr) override; // 2d
+                                                       const unsigned char* data = nullptr) override; // 2d
   std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
-                                                       float* data) override; // 2d
+                                                       const float* data) override; // 2d
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+                                                       unsigned int sizeZ_,
+                                                       const unsigned char* data = nullptr) override; // 3d
+  std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
+                                                       unsigned int sizeZ_,
+                                                       const float* data) override; // 3d
 
   // create render buffers
   std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
@@ -252,18 +389,24 @@ public:
   // create frame buffers
   std::shared_ptr<FrameBuffer> generateFrameBuffer(unsigned int sizeX_, unsigned int sizeY_) override;
 
-  // create shader programs
+  // general flexible interface
   std::shared_ptr<ShaderProgram>
   requestShader(const std::string& programName, const std::vector<std::string>& customRules,
                 ShaderReplacementDefaults defaults = ShaderReplacementDefaults::SceneObject) override;
 
+  // === Implementation details
+
+  // Add a shader programs/rules so that they can be requested above
+  void registerShaderProgram(const std::string& name, const std::vector<ShaderStageSpecification>& spec,
+                             const DrawMode& dm);
+  void registerShaderRule(const std::string& name, const ShaderReplacementRule& rule);
+
   // Transparency
   virtual void applyTransparencySettings() override;
- 
+
   virtual void setFrontFaceCCW(bool newVal) override;
 
 protected:
-  
   // Helpers
   virtual void createSlicePlaneFliterRule(std::string name) override;
 
@@ -272,8 +415,12 @@ protected:
   std::unordered_map<std::string, ShaderReplacementRule> registeredShaderRules;
   void populateDefaultShadersAndRules();
 
-  std::shared_ptr<ShaderProgram> generateShaderProgram(const std::vector<ShaderStageSpecification>& stages,
-                                                       DrawMode dm) override;
+  std::unordered_map<std::string, std::shared_ptr<GLCompiledProgram>> compiledProgamCache;
+  std::string programKeyFromRules(const std::string& programName, const std::vector<std::string>& rules,
+                                  ShaderReplacementDefaults defaults);
+  std::shared_ptr<GLCompiledProgram> getCompiledProgram(const std::string& programName,
+                                                        const std::vector<std::string>& customRules,
+                                                        ShaderReplacementDefaults defaults);
 };
 
 } // namespace backend_openGL_mock

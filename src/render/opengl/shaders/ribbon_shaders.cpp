@@ -1,10 +1,11 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 
 #include "polyscope/render/opengl/shaders/ribbon_shaders.h"
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 // clang-format off
 
@@ -16,9 +17,9 @@ const ShaderStageSpecification RIBBON_VERT_SHADER = {
 
     // attributes
     {
-        {"a_position", DataType::Vector3Float},
-        {"a_color", DataType::Vector3Float},
-        {"a_normal", DataType::Vector3Float},
+        {"a_position", RenderDataType::Vector3Float},
+        {"a_color", RenderDataType::Vector3Float},
+        {"a_normal", RenderDataType::Vector3Float},
     },
     
     {}, // textures
@@ -48,10 +49,10 @@ const ShaderStageSpecification RIBBON_GEOM_SHADER = {
     
     // uniforms
     {
-        {"u_modelView", DataType::Matrix44Float},
-        {"u_projMatrix", DataType::Matrix44Float},
-        {"u_ribbonWidth", DataType::Float},
-        {"u_depthOffset", DataType::Float},
+        {"u_modelView", RenderDataType::Matrix44Float},
+        {"u_projMatrix", RenderDataType::Matrix44Float},
+        {"u_ribbonWidth", RenderDataType::Float},
+        {"u_depthOffset", RenderDataType::Float},
     }, 
 
     // attributes
@@ -195,6 +196,7 @@ R"(
            alphaOut *= fadeFactor;
 
            // Write output
+           litColor *= alphaOut; // premultiplied alpha
            outputF = vec4(litColor, alphaOut);
         }
 )"
@@ -202,6 +204,6 @@ R"(
 
 // clang-format on
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

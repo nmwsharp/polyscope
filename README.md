@@ -19,6 +19,7 @@ C++:
 
 ``` C++
 #include "polyscope/polyscope.h"
+#include "polyscope/point_cloud.h"
 #include "polyscope/surface_mesh.h"
 
 // Initialize polyscope
@@ -26,7 +27,7 @@ polyscope::init();
 
 // Register a point cloud
 // `points` is a Nx3 array-like container of points
-polyscope::registerPointCloud("my points", points)
+polyscope::registerPointCloud("my points", points);
 
 // Register a surface mesh structure
 // `meshVerts` is a Vx3 array-like container of vertex positions

@@ -1,14 +1,16 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/surface_parameterization_quantity.h"
 
+#include <map>
+#include <set>
+
+#include "polyscope/curve_network.h"
 #include "polyscope/file_helpers.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
 
 #include "imgui.h"
-
-using std::cout;
-using std::endl;
 
 namespace polyscope {
 
@@ -16,16 +18,19 @@ namespace polyscope {
 // ================  Base Parameterization  =====================
 // ==============================================================
 
-SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string name, ParamCoordsType type_,
-                                                                 ParamVizStyle style_, SurfaceMesh& mesh_)
-    : SurfaceMeshQuantity(name, mesh_, true), coordsType(type_), checkerSize(uniquePrefix() + "#checkerSize", 0.02),
-      vizStyle(uniquePrefix() + "#vizStyle", style_), checkColor1(uniquePrefix() + "#checkColor1", render::RGB_PINK),
-      checkColor2(uniquePrefix() + "#checkColor2", glm::vec3(.976, .856, .885)),
-      gridLineColor(uniquePrefix() + "#gridLineColor", render::RGB_WHITE),
-      gridBackgroundColor(uniquePrefix() + "#gridBackgroundColor", render::RGB_PINK),
-      altDarkness(uniquePrefix() + "#altDarkness", 0.5), cMap(uniquePrefix() + "#cMap", "phase")
+SurfaceParameterizationQuantity::SurfaceParameterizationQuantity(std::string name, SurfaceMesh& mesh_,
+                                                                 const std::vector<glm::vec2>& coords_,
+                                                                 MeshElement definedOn_, ParamCoordsType type_,
+                                                                 ParamVizStyle style_)
+    : SurfaceMeshQuantity(name, mesh_, true), ParameterizationQuantity(*this, coords_, type_, style_),
+      definedOn(definedOn_) {
 
-{}
+  // sanity check, this should basically never happen, but this guards against weird edge cases such
+  // as persistent values restoring the style, device updates, etc
+  if (getStyle() == ParamVizStyle::CHECKER_ISLANDS && !haveIslandLabels()) {
+    setStyle(ParamVizStyle::CHECKER);
+  }
+}
 
 void SurfaceParameterizationQuantity::draw() {
   if (!isEnabled()) return;
@@ -35,226 +40,169 @@ void SurfaceParameterizationQuantity::draw() {
   }
 
   // Set uniforms
-  setProgramUniforms(*program);
+  setParameterizationUniforms(*program);
   parent.setStructureUniforms(*program);
   parent.setSurfaceMeshUniforms(*program);
+  render::engine->setMaterialUniforms(*program, parent.getMaterial());
 
   program->draw();
 }
 
 void SurfaceParameterizationQuantity::createProgram() {
-  // Create the program to draw this quantity
 
-  switch (getStyle()) {
-  case ParamVizStyle::CHECKER:
-    // program = render::engine->generateShaderProgram(
-    //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program = render::engine->requestShader(
-        "MESH", parent.addSurfaceMeshRules({"MESH_PROPAGATE_VALUE2", "SHADE_CHECKER_VALUE2"}));
-    break;
-  case ParamVizStyle::GRID:
-    // program = render::engine->generateShaderProgram(
-    //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_GRID_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program = render::engine->requestShader("MESH",
-                                            parent.addSurfaceMeshRules({"MESH_PROPAGATE_VALUE2", "SHADE_GRID_VALUE2"}));
-    break;
-  case ParamVizStyle::LOCAL_CHECK:
-    // program = render::engine->generateShaderProgram(
-    //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_CHECKER_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program = render::engine->requestShader(
-        "MESH",
-        parent.addSurfaceMeshRules({"MESH_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "CHECKER_VALUE2COLOR"}));
-    program->setTextureFromColormap("t_colormap", cMap.get());
-    break;
-  case ParamVizStyle::LOCAL_RAD:
-    // program = render::engine->generateShaderProgram(
-    //{render::PARAM_SURFACE_VERT_SHADER, render::PARAM_LOCAL_RAD_SURFACE_FRAG_SHADER}, DrawMode::Triangles);
-    program = render::engine->requestShader(
-        "MESH", parent.addSurfaceMeshRules({"MESH_PROPAGATE_VALUE2", "SHADE_COLORMAP_ANGULAR2", "SHADEVALUE_MAG_VALUE2",
-                                            "ISOLINE_STRIPE_VALUECOLOR"}));
-    program->setTextureFromColormap("t_colormap", cMap.get());
-    break;
+  // sanity check, this should basically never happen, but this guards against weird edge cases such
+  // as persistent values restoring the style, device updates, etc
+  if (getStyle() == ParamVizStyle::CHECKER_ISLANDS && !haveIslandLabels()) {
+    setStyle(ParamVizStyle::CHECKER);
   }
 
-  // Fill color buffers
-  fillColorBuffers(*program);
-  parent.fillGeometryBuffers(*program);
+  // Create the program to draw this quantity
+  // clang-format off
+  program = render::engine->requestShader("MESH", 
+      render::engine->addMaterialRules(parent.getMaterial(),
+        parent.addSurfaceMeshRules(
+          addParameterizationRules({
+            "MESH_PROPAGATE_VALUE2",
+            getStyle() == ParamVizStyle::CHECKER_ISLANDS ? "MESH_PROPAGATE_FLAT_VALUE" : "",
+          })
+        )
+      )
+    );
+  //
+
+  // Fill buffers
+  fillCoordBuffers(*program);
+  fillParameterizationBuffers(*program);
+  parent.setMeshGeometryAttributes(*program);
+
+  if(getStyle() == ParamVizStyle::CHECKER_ISLANDS) {
+    program->setAttribute("a_value", islandLabels.getIndexedRenderAttributeBuffer(parent.triangleFaceInds));
+  }
 
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
-
-// Update range uniforms
-void SurfaceParameterizationQuantity::setProgramUniforms(render::ShaderProgram& program) {
-  // Interpretatin of modulo parameter depends on data type
-  switch (coordsType) {
-  case ParamCoordsType::UNIT:
-    program.setUniform("u_modLen", getCheckerSize());
-    break;
-  case ParamCoordsType::WORLD:
-    program.setUniform("u_modLen", getCheckerSize() * state::lengthScale);
-    break;
-  }
-
-  // Set other uniforms needed
-  switch (getStyle()) {
-  case ParamVizStyle::CHECKER:
-    program.setUniform("u_color1", getCheckerColors().first);
-    program.setUniform("u_color2", getCheckerColors().second);
-    break;
-  case ParamVizStyle::GRID:
-    program.setUniform("u_gridLineColor", getGridColors().first);
-    program.setUniform("u_gridBackgroundColor", getGridColors().second);
-    break;
-  case ParamVizStyle::LOCAL_CHECK:
-  case ParamVizStyle::LOCAL_RAD:
-    program.setUniform("u_angle", localRot);
-    program.setUniform("u_modDarkness", getAltDarkness());
-    break;
-  }
-}
-
-namespace {
-// Helper to name styles
-std::string styleName(ParamVizStyle v) {
-  switch (v) {
-  case ParamVizStyle::CHECKER:
-    return "checker";
-    break;
-  case ParamVizStyle::GRID:
-    return "grid";
-    break;
-  case ParamVizStyle::LOCAL_CHECK:
-    return "local grid";
-    break;
-  case ParamVizStyle::LOCAL_RAD:
-    return "local dist";
-    break;
-  }
-  throw std::runtime_error("broken");
-}
-
-} // namespace
-
 void SurfaceParameterizationQuantity::buildCustomUI() {
-  ImGui::PushItemWidth(100);
+  ImGui::SameLine();
 
-  ImGui::SameLine(); // put it next to enabled
+  // == Options popup
+  if (ImGui::Button("Options")) {
+    ImGui::OpenPopup("OptionsPopup");
+  }
+  if (ImGui::BeginPopup("OptionsPopup")) {
 
-  // Choose viz style
-  if (ImGui::BeginCombo("style", styleName(getStyle()).c_str())) {
-    for (ParamVizStyle s :
-         {ParamVizStyle::CHECKER, ParamVizStyle::GRID, ParamVizStyle::LOCAL_CHECK, ParamVizStyle::LOCAL_RAD}) {
-      if (ImGui::Selectable(styleName(s).c_str(), s == getStyle())) {
-        setStyle(s);
+    buildParameterizationOptionsUI();
+    
+    if (ImGui::MenuItem("Create curve network from seams")) createCurveNetworkFromSeams();
+
+    ImGui::EndPopup();
+  }
+
+  buildParameterizationUI();
+}
+
+CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::string structureName) {
+  
+  // set the name to default
+  if (structureName == "") {
+    structureName = parent.name + " - " + name + " - seams";
+  }
+
+  // Populate data on the host
+  coords.ensureHostBufferPopulated();
+  parent.triangleCornerInds.ensureHostBufferPopulated();
+  parent.triangleVertexInds.ensureHostBufferPopulated();
+  parent.edgeIsReal.ensureHostBufferPopulated();
+  parent.vertexPositions.ensureHostBufferPopulated();
+
+  // helper to canonicalize edge direction
+  auto canonicalizeEdge = [](std::pair<int32_t, int32_t>& inds, std::pair<glm::vec2, glm::vec2>& coords) 
+  {
+    if(inds.first > inds.second) {
+      std::swap(inds.first, inds.second);
+      std::swap(coords.first, coords.second);
+    }
+  };
+
+  // map to find matching & not-matching edges
+  // TODO set up combining hash to use unordered_map/set instead
+  std::map<std::pair<int32_t, int32_t>, std::pair<glm::vec2, glm::vec2>> edgeCoords;
+  std::map<std::pair<int32_t, int32_t>, int32_t> edgeCount;
+  std::set<std::pair<int32_t, int32_t>> seamEdges;
+
+  // loop over all edges
+  for(size_t iT = 0; iT <  parent.nFacesTriangulation(); iT++) {
+    for(size_t k = 0; k < 3; k++) {
+      if(parent.edgeIsReal.data[3*iT][k] == 0.) continue; // skip internal tesselation edges
+
+      // gather data for the edge
+      int32_t iV_tail = parent.triangleVertexInds.data[3*iT + (k+0)%3];
+      int32_t iV_tip = parent.triangleVertexInds.data[3*iT + (k+1)%3];
+      int32_t iC_tail = parent.triangleCornerInds.data[3*iT + (k+0)%3];
+      int32_t iC_tip = parent.triangleCornerInds.data[3*iT + (k+1)%3];
+      std::pair<int32_t, int32_t> eInd (iV_tail, iV_tip);
+      std::pair<glm::vec2, glm::vec2> eC (coords.data[iC_tail], coords.data[iC_tip]);
+      canonicalizeEdge(eInd, eC); // make sure ordering is consistent
+
+      // increment the count
+      if(edgeCount.find(eInd) == edgeCount.end())  {
+        edgeCount[eInd] = 1;
+      } else {
+        edgeCount[eInd] ++;
+      }
+
+      // check for a collision against a previously seen copy of this edge
+      if(edgeCoords.find(eInd) == edgeCoords.end()) { 
+        edgeCoords[eInd] = eC;
+      } else {
+        if( edgeCoords[eInd] != eC) {
+          // it's different! mark the seam
+          seamEdges.emplace(eInd);
+        }
       }
     }
-    ImGui::EndCombo();
   }
 
-
-  // Modulo stripey width
-  if (ImGui::DragFloat("period", &checkerSize.get(), .001, 0.0001, 1.0, "%.4f", 2.0)) {
-    setCheckerSize(getCheckerSize());
-  }
-
-
-  ImGui::PopItemWidth();
-
-  switch (getStyle()) {
-  case ParamVizStyle::CHECKER:
-    if (ImGui::ColorEdit3("##colors2", &checkColor1.get()[0], ImGuiColorEditFlags_NoInputs))
-      setCheckerColors(getCheckerColors());
-    ImGui::SameLine();
-    if (ImGui::ColorEdit3("colors", &checkColor2.get()[0], ImGuiColorEditFlags_NoInputs))
-      setCheckerColors(getCheckerColors());
-    break;
-  case ParamVizStyle::GRID:
-    if (ImGui::ColorEdit3("base", &gridBackgroundColor.get()[0], ImGuiColorEditFlags_NoInputs))
-      setGridColors(getGridColors());
-    ImGui::SameLine();
-    if (ImGui::ColorEdit3("line", &gridLineColor.get()[0], ImGuiColorEditFlags_NoInputs))
-      setGridColors(getGridColors());
-    break;
-  case ParamVizStyle::LOCAL_CHECK:
-  case ParamVizStyle::LOCAL_RAD: {
-    // Angle slider
-    ImGui::PushItemWidth(100);
-    ImGui::SliderAngle("angle shift", &localRot, -180,
-                       180); // displays in degrees, works in radians TODO refresh/update/persist
-    if (ImGui::DragFloat("alt darkness", &altDarkness.get(), 0.01, 0., 1.)) {
-      altDarkness.manuallyChanged();
-      requestRedraw();
-    }
-    ImGui::PopItemWidth();
-
-    // Set colormap
-    if (render::buildColormapSelector(cMap.get())) {
-      setColorMap(getColorMap());
+  // add all edges that appeared any number of times other than 2
+  // (boundaries and nonmanifold edges are always seams)
+  for(auto& entry : edgeCount)  {
+    if(entry.second != 2) {
+      seamEdges.emplace(entry.first);
     }
   }
 
-  break;
+  // densely enumerate the nodes of the seam curves
+  std::vector<std::array<int32_t, 2>> seamEdgeInds;
+  std::map<int32_t, int32_t> vertexIndToDense;
+  std::vector<glm::vec3> seamEdgeNodes;
+  for(const std::pair<int32_t, int32_t>& edge: seamEdges)  {
+    int32_t vA = edge.first;
+    int32_t vB = edge.second;
+ 
+    // get unique vertices for the edges
+    if(vertexIndToDense.find(vA) == vertexIndToDense.end()) {
+      vertexIndToDense[vA] = seamEdgeNodes.size();
+      seamEdgeNodes.push_back(parent.vertexPositions.data[vA]);
+    }
+    int32_t nA = vertexIndToDense[vA];
+    if(vertexIndToDense.find(vB) == vertexIndToDense.end()) {
+      vertexIndToDense[vB] = seamEdgeNodes.size();
+      seamEdgeNodes.push_back(parent.vertexPositions.data[vB]);
+    }
+    int32_t nB = vertexIndToDense[vB];
+
+    // add the edge
+    seamEdgeInds.push_back({nA, nB});
   }
+
+  // add the curve network
+
+  return registerCurveNetwork(structureName, seamEdgeNodes, seamEdgeInds);
 }
 
-
-SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setStyle(ParamVizStyle newStyle) {
-  vizStyle = newStyle;
-  program.reset();
-  requestRedraw();
-  return this;
+size_t SurfaceParameterizationQuantity::nFaces() {
+  return parent.nFaces();
 }
-
-ParamVizStyle SurfaceParameterizationQuantity::getStyle() { return vizStyle.get(); }
-
-SurfaceParameterizationQuantity*
-SurfaceParameterizationQuantity::setCheckerColors(std::pair<glm::vec3, glm::vec3> colors) {
-  checkColor1 = colors.first;
-  checkColor2 = colors.second;
-  requestRedraw();
-  return this;
-}
-
-std::pair<glm::vec3, glm::vec3> SurfaceParameterizationQuantity::getCheckerColors() {
-  return std::make_pair(checkColor1.get(), checkColor2.get());
-}
-
-SurfaceParameterizationQuantity*
-SurfaceParameterizationQuantity::setGridColors(std::pair<glm::vec3, glm::vec3> colors) {
-  gridLineColor = colors.first;
-  gridBackgroundColor = colors.second;
-  requestRedraw();
-  return this;
-}
-
-std::pair<glm::vec3, glm::vec3> SurfaceParameterizationQuantity::getGridColors() {
-  return std::make_pair(gridLineColor.get(), gridBackgroundColor.get());
-}
-
-SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setCheckerSize(double newVal) {
-  checkerSize = newVal;
-  requestRedraw();
-  return this;
-}
-
-double SurfaceParameterizationQuantity::getCheckerSize() { return checkerSize.get(); }
-
-SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setColorMap(std::string name) {
-  cMap = name;
-  program.reset();
-  requestRedraw();
-  return this;
-}
-std::string SurfaceParameterizationQuantity::getColorMap() { return cMap.get(); }
-
-SurfaceParameterizationQuantity* SurfaceParameterizationQuantity::setAltDarkness(double newVal) {
-  altDarkness = newVal;
-  requestRedraw();
-  return this;
-}
-
-double SurfaceParameterizationQuantity::getAltDarkness() { return altDarkness.get(); }
 
 void SurfaceParameterizationQuantity::refresh() {
   program.reset();
@@ -266,91 +214,53 @@ void SurfaceParameterizationQuantity::refresh() {
 // ==============================================================
 
 
-SurfaceCornerParameterizationQuantity::SurfaceCornerParameterizationQuantity(std::string name,
-                                                                             std::vector<glm::vec2> coords_,
+SurfaceCornerParameterizationQuantity::SurfaceCornerParameterizationQuantity(std::string name, SurfaceMesh& mesh_,
+                                                                             const std::vector<glm::vec2>& coords_,
                                                                              ParamCoordsType type_,
-                                                                             ParamVizStyle style_, SurfaceMesh& mesh_)
-    : SurfaceParameterizationQuantity(name, type_, style_, mesh_), coords(std::move(coords_)) {}
+                                                                             ParamVizStyle style_)
+    : SurfaceParameterizationQuantity(name, mesh_, coords_, MeshElement::CORNER, type_, style_) {}
 
 std::string SurfaceCornerParameterizationQuantity::niceName() { return name + " (corner parameterization)"; }
 
 
-void SurfaceCornerParameterizationQuantity::fillColorBuffers(render::ShaderProgram& p) {
-  std::vector<glm::vec2> coordVal;
-  coordVal.reserve(3 * parent.nFacesTriangulation());
-
-  size_t cornerCount = 0;
-  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
-    auto& face = parent.faces[iF];
-    size_t D = face.size();
-
-    // implicitly triangulate from root
-    size_t cRoot = cornerCount;
-    for (size_t j = 1; (j + 1) < D; j++) {
-      size_t cB = cornerCount + j;
-      size_t cC = cornerCount + ((j + 1) % D);
-
-      coordVal.push_back(coords[cRoot]);
-      coordVal.push_back(coords[cB]);
-      coordVal.push_back(coords[cC]);
-    }
-
-    cornerCount += D;
-  }
-
-  // Store data in buffers
-  p.setAttribute("a_value2", coordVal);
+void SurfaceCornerParameterizationQuantity::fillCoordBuffers(render::ShaderProgram& p) {
+  p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
 }
 
-void SurfaceCornerParameterizationQuantity::buildHalfedgeInfoGUI(size_t heInd) {
+void SurfaceCornerParameterizationQuantity::buildCornerInfoGUI(size_t cInd) {
+
+  glm::vec2 coord = coords.getValue(cInd);
+
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("<%g,%g>", coords[heInd].x, coords[heInd].y);
+  ImGui::Text("<%g,%g>", coord.x, coord.y);
   ImGui::NextColumn();
 }
-
 
 // ==============================================================
 // ===============  Vertex Parameterization  ====================
 // ==============================================================
 
 
-SurfaceVertexParameterizationQuantity::SurfaceVertexParameterizationQuantity(std::string name,
-                                                                             std::vector<glm::vec2> coords_,
+SurfaceVertexParameterizationQuantity::SurfaceVertexParameterizationQuantity(std::string name, SurfaceMesh& mesh_,
+                                                                             const std::vector<glm::vec2>& coords_,
                                                                              ParamCoordsType type_,
-                                                                             ParamVizStyle style_, SurfaceMesh& mesh_)
-    : SurfaceParameterizationQuantity(name, type_, style_, mesh_), coords(std::move(coords_)) {}
+                                                                             ParamVizStyle style_)
+    : SurfaceParameterizationQuantity(name, mesh_, coords_, MeshElement::VERTEX, type_, style_) {}
 
 std::string SurfaceVertexParameterizationQuantity::niceName() { return name + " (vertex parameterization)"; }
 
-void SurfaceVertexParameterizationQuantity::fillColorBuffers(render::ShaderProgram& p) {
-  std::vector<glm::vec2> coordVal;
-  coordVal.reserve(3 * parent.nFacesTriangulation());
-
-  for (size_t iF = 0; iF < parent.nFaces(); iF++) {
-    auto& face = parent.faces[iF];
-    size_t D = face.size();
-
-    // implicitly triangulate from root
-    size_t vRoot = face[0];
-    for (size_t j = 1; (j + 1) < D; j++) {
-      size_t vB = face[j];
-      size_t vC = face[(j + 1) % D];
-
-      coordVal.push_back(coords[vRoot]);
-      coordVal.push_back(coords[vB]);
-      coordVal.push_back(coords[vC]);
-    }
-  }
-
-  // Store data in buffers
-  p.setAttribute("a_value2", coordVal);
+void SurfaceVertexParameterizationQuantity::fillCoordBuffers(render::ShaderProgram& p) {
+  p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
 }
 
 void SurfaceVertexParameterizationQuantity::buildVertexInfoGUI(size_t vInd) {
+
+  glm::vec2 coord = coords.getValue(vInd);
+
   ImGui::TextUnformatted(name.c_str());
   ImGui::NextColumn();
-  ImGui::Text("<%g,%g>", coords[vInd].x, coords[vInd].y);
+  ImGui::Text("<%g,%g>", coord.x, coord.y);
   ImGui::NextColumn();
 }
 

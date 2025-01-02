@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/render/ground_plane.h"
 
 #include "polyscope/polyscope.h"
@@ -51,7 +52,7 @@ void GroundPlane::populateGroundPlaneGeometry() {
   glm::vec4 v2{0., 0., 0., 0.}; v2[(iP+1)%3] = sign * 1.;
   glm::vec4 v3{0., 0., 0., 0.}; v3[(iP+2)%3] = sign *-1.;
   glm::vec4 v4{0., 0., 0., 0.}; v4[(iP+1)%3] = sign *-1.;
-  
+
   std::vector<glm::vec4> positions = {
     cVert, v2, v1,
     cVert, v3, v2,
@@ -96,7 +97,7 @@ void GroundPlane::prepare() {
     unsigned char* image = nullptr;
     image = stbi_load_from_memory(reinterpret_cast<const unsigned char*>(&render::bindata_concrete[0]),
                                   render::bindata_concrete.size(), &w, &h, &comp, STBI_rgb);
-    if (image == nullptr) throw std::logic_error("Failed to load material image");
+    if (image == nullptr) exception("Failed to load material image");
     groundPlaneProgram->setTexture2D("t_ground", image, w, h, false, false, true);
     stbi_image_free(image);
   }
@@ -195,7 +196,18 @@ void GroundPlane::draw(bool isRedraw) {
   double bboxBottom = sign == 1.0 ? std::get<0>(state::boundingBox)[iP] : std::get<1>(state::boundingBox)[iP];
   double bboxHeight = std::get<1>(state::boundingBox)[iP] - std::get<0>(state::boundingBox)[iP];
   double heightEPS = state::lengthScale * 1e-4;
-  double groundHeight = bboxBottom - sign * (options::groundPlaneHeightFactor.asAbsolute() + heightEPS);
+
+  double groundHeight = -777;
+  switch (options::groundPlaneHeightMode) {
+  case GroundPlaneHeightMode::Automatic: {
+    groundHeight = bboxBottom - sign * (options::groundPlaneHeightFactor.asAbsolute() + heightEPS);
+    break;
+  }
+  case GroundPlaneHeightMode::Manual: {
+    groundHeight = options::groundPlaneHeight;
+    break;
+  }
+  }
 
   // Viewport
   glm::vec4 viewport = render::engine->getCurrentViewport();
@@ -212,7 +224,7 @@ void GroundPlane::draw(bool isRedraw) {
 
     if (options::groundPlaneMode == GroundPlaneMode::Tile ||
         options::groundPlaneMode == GroundPlaneMode::TileReflection) {
-      groundPlaneProgram->setUniform("u_center", state::center);
+      groundPlaneProgram->setUniform("u_center", state::center());
       groundPlaneProgram->setUniform("u_basisX", baseForward);
       groundPlaneProgram->setUniform("u_basisY", baseRight);
     }
@@ -221,8 +233,19 @@ void GroundPlane::draw(bool isRedraw) {
       groundPlaneProgram->setUniform("u_shadowDarkness", options::shadowDarkness);
     }
 
-    float camHeight = view::getCameraWorldPosition()[iP];
-    groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
+    switch (view::projectionMode) {
+    case ProjectionMode::Perspective: {
+      float camHeight = view::getCameraWorldPosition()[iP];
+      groundPlaneProgram->setUniform("u_cameraHeight", camHeight);
+      break;
+    }
+    case ProjectionMode::Orthographic: {
+      glm::vec4 lookDir = glm::vec4(0, 0, 1, 0) * viewMat;
+      groundPlaneProgram->setUniform("u_cameraHeight", (lookDir.y * state::lengthScale) + groundHeight);
+      break;
+    }
+    }
+
     groundPlaneProgram->setUniform("u_upSign", sign);
     groundPlaneProgram->setUniform("u_basisZ", baseUp);
     groundPlaneProgram->setUniform("u_groundHeight", groundHeight);
@@ -250,8 +273,8 @@ void GroundPlane::draw(bool isRedraw) {
 
     // Prepare the alternate scene buffers
     // (use a texture 1/4 the area of the view buffer, it's supposed to be blurry anyway and this saves perf)
-    render::engine->setBlendMode();
-    render::engine->setDepthMode();
+    render::engine->setBlendMode(BlendMode::AlphaOver);
+    render::engine->setDepthMode(DepthMode::Less);
     sceneAltFrameBuffer->resize(factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
     sceneAltFrameBuffer->setViewport(0, 0, factor * view::bufferWidth / 2, factor * view::bufferHeight / 2);
     render::engine->setCurrentPixelScaling(factor / 2.);
@@ -291,8 +314,8 @@ void GroundPlane::draw(bool isRedraw) {
   if (!isRedraw && options::groundPlaneMode == GroundPlaneMode::ShadowOnly) {
 
     // Prepare the alternate scene buffers
-    render::engine->setBlendMode();
-    render::engine->setDepthMode();
+    render::engine->setBlendMode(BlendMode::AlphaOver);
+    render::engine->setDepthMode(DepthMode::Less);
     sceneAltFrameBuffer->resize(factor * view::bufferWidth, factor * view::bufferHeight);
     sceneAltFrameBuffer->setViewport(0, 0, factor * view::bufferWidth, factor * view::bufferHeight);
 
@@ -318,7 +341,7 @@ void GroundPlane::draw(bool isRedraw) {
     view::viewMat = view::viewMat * projMat;
 
     // Draw everything
-    render::engine->setDepthMode();
+    render::engine->setDepthMode(DepthMode::Less);
     render::engine->setBlendMode(BlendMode::Disable);
     drawStructures();
 
@@ -354,9 +377,7 @@ void GroundPlane::draw(bool isRedraw) {
 
   // Render the ground plane
   render::engine->applyTransparencySettings();
-  if (options::transparencyMode != TransparencyMode::Simple) {
-    render::engine->setBlendMode(BlendMode::Disable);
-  }
+  render::engine->setDepthMode(DepthMode::Less);
   setUniforms();
   groundPlaneProgram->draw();
 }
@@ -377,7 +398,17 @@ void GroundPlane::buildGui() {
     return "";
   };
 
-  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  auto heightModeName = [](const GroundPlaneHeightMode& m) -> std::string {
+    switch (m) {
+    case GroundPlaneHeightMode::Automatic:
+      return "Automatic";
+    case GroundPlaneHeightMode::Manual:
+      return "Manual";
+    }
+    return "";
+  };
+
+  ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Ground Plane")) {
 
     ImGui::PushItemWidth(160);
@@ -394,7 +425,39 @@ void GroundPlane::buildGui() {
     }
     ImGui::PopItemWidth();
 
-    if (ImGui::SliderFloat("Height", options::groundPlaneHeightFactor.getValuePtr(), -1.0, 1.0)) requestRedraw();
+    // Height
+    ImGui::PushItemWidth(80);
+    switch (options::groundPlaneHeightMode) {
+    case GroundPlaneHeightMode::Automatic:
+      if (ImGui::SliderFloat("##HeightValue", options::groundPlaneHeightFactor.getValuePtr(), -1.0, 1.0))
+        requestRedraw();
+      break;
+    case GroundPlaneHeightMode::Manual:
+      int iP;
+      float sign;
+      std::tie(iP, sign) = getGroundPlaneAxisAndSign();
+      double bboxBottom = sign == 1.0 ? std::get<0>(state::boundingBox)[iP] : std::get<1>(state::boundingBox)[iP];
+      double bboxHeight = std::get<1>(state::boundingBox)[iP] - std::get<0>(state::boundingBox)[iP];
+      if (ImGui::SliderFloat("##HeightValue", &options::groundPlaneHeight, bboxBottom - 0.5 * bboxHeight,
+                             bboxBottom + bboxHeight)) {
+        requestRedraw();
+      }
+      break;
+    }
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+    ImGui::PushItemWidth(100);
+    if (ImGui::BeginCombo("Height##Mode", heightModeName(options::groundPlaneHeightMode).c_str())) {
+      for (GroundPlaneHeightMode m : {GroundPlaneHeightMode::Automatic, GroundPlaneHeightMode::Manual}) {
+        std::string mName = heightModeName(m);
+        if (ImGui::Selectable(mName.c_str(), options::groundPlaneHeightMode == m)) {
+          options::groundPlaneHeightMode = m;
+          requestRedraw();
+        }
+      }
+      ImGui::EndCombo();
+    }
+    ImGui::PopItemWidth();
 
     switch (options::groundPlaneMode) {
     case GroundPlaneMode::None:

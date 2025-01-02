@@ -1,3 +1,5 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include "polyscope/persistent_value.h"
@@ -45,6 +47,7 @@ protected:
   const float diskWidthObj = 0.1; // in object coordinates, before transformation
   const float vecLength = 1.5;
   const float sphereRad = 0.32;
+  const std::string material = "wax";
 
   // state
   int selectedDim = -1; // must be {0,1,2} if selectedType == Rotation/Translation

@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/histogram.h"
 
 #include "polyscope/affine_remapper.h"
@@ -8,49 +9,28 @@
 
 #include <algorithm>
 #include <limits>
-
-using std::cout;
-using std::endl;
+#include <stdexcept>
 
 namespace polyscope {
 
-// TODO make histograms lazy. There's no need to prepare here rather than on first draw.
+Histogram::Histogram() {}
 
-Histogram::Histogram() {
-  prepare();
-  fillBuffers();
-}
-
-Histogram::Histogram(std::vector<double>& values) {
-  prepare();
-  buildHistogram(values);
-}
-
-Histogram::Histogram(std::vector<double>& values, const std::vector<double>& weights) {
-  prepare();
-  buildHistogram(values, weights);
-}
+Histogram::Histogram(std::vector<float>& values, DataType dataType) { buildHistogram(values, dataType); }
 
 Histogram::~Histogram() {}
 
-void Histogram::buildHistogram(std::vector<double>& values, const std::vector<double>& weights) {
+void Histogram::buildHistogram(const std::vector<float>& values, DataType dataType_) {
+  dataType = dataType_;
 
-  hasWeighted = weights.size() > 0;
-  useWeighted = hasWeighted;
-
-  // Build weighed and unweighted arrays of values
+  // Build arrays of values
   size_t N = values.size();
-  if (weights.size() != 0 && weights.size() != N) {
-    throw std::logic_error("values and weights are not same size");
-  }
 
   // == Build histogram
   dataRange = robustMinMax(values);
   colormapRange = dataRange;
 
   // Helper to build the four histogram variants
-  auto buildCurve = [&](size_t binCount, bool weighted, bool smooth, std::vector<std::array<double, 2>>& curveX,
-                        std::vector<double>& curveY) {
+  auto buildCurve = [&](size_t binCount, std::vector<std::array<float, 2>>& curveX, std::vector<float>& curveY) {
     // linspace coords
     double range = dataRange.second - dataRange.first;
     double inc = range / binCount;
@@ -65,18 +45,14 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
       // NaN values and finite values near the bottom of float range lead to craziness, so only increment bins if we got
       // something reasonable
       if (iBin < binCount) {
-        if (weighted) {
-          sumBin[iBin] += weights[iData];
-        } else {
-          sumBin[iBin] += 1.0;
-        }
+        sumBin[iBin] += 1.0;
       }
     }
 
 
     // build histogram coords
-    curveX = std::vector<std::array<double, 2>>(binCount);
-    curveY = std::vector<double>(binCount);
+    curveX = std::vector<std::array<float, 2>>(binCount);
+    curveY = std::vector<float>(binCount);
     double prevSumU = 0.0;
     double prevSumW = 0.0;
     double prevXEnd = dataRange.first;
@@ -86,7 +62,7 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
 
       // x value
       double xEnd = prevXEnd + inc;
-      curveX[iBin] = {{prevXEnd, xEnd}};
+      curveX[iBin] = {{static_cast<float>(prevXEnd), static_cast<float>(xEnd)}};
       prevXEnd = xEnd;
     }
 
@@ -98,155 +74,91 @@ void Histogram::buildHistogram(std::vector<double>& values, const std::vector<do
         curveY[i] /= maxHeight;
       }
     }
-
-    if (smooth) {
-      smoothCurve(curveX, curveY);
-
-      { // Rescale again after smoothing
-        double maxHeight = *std::max_element(curveY.begin(), curveY.end());
-        for (size_t i = 0; i < binCount; i++) {
-          curveY[i] /= maxHeight;
-        }
-      }
-    }
   };
 
-  // Build the four variants of the curve
-  buildCurve(rawHistBinCount, false, false, rawHistCurveX, unweightedRawHistCurveY);
-  buildCurve(smoothedHistBinCount, false, true, smoothedHistCurveX, unweightedSmoothedHistCurveY);
-  if (hasWeighted) {
-    buildCurve(rawHistBinCount, true, false, rawHistCurveX, weightedRawHistCurveY);
-    buildCurve(smoothedHistBinCount, true, true, smoothedHistCurveX, weightedSmoothedHistCurveY);
-  }
-
-
-  fillBuffers();
+  buildCurve(rawHistBinCount, rawHistCurveX, rawHistCurveY);
 }
 
-void Histogram::smoothCurve(std::vector<std::array<double, 2>>& xVals, std::vector<double>& yVals) {
-
-  auto smoothFunc = [&](double x1, double x2) {
-    // Tent
-    // double radius = 0.1;
-    // double val = (radius - std::abs(x1 - x2)) / radius;
-    // return std::max(val, 0.0);
-
-    // Gaussian
-    double widthFactor = 1000;
-    double dist = (x1 - x2);
-    return std::exp(-dist * dist * widthFactor);
-
-    // None
-    // if(x1 == x2) return 1.0;
-    // return 0.0;
-  };
-
-  std::vector<double> smoothedVals(yVals.size());
-  for (size_t i = 0; i < yVals.size(); i++) {
-    double bucketCi = 0.5 * (xVals[i][0] + xVals[i][1]);
-    double sum = 0.0;
-    for (size_t j = 0; j < yVals.size(); j++) {
-      double bucketCj = 0.5 * (xVals[j][0] + xVals[j][1]);
-      double weight = smoothFunc(bucketCi, bucketCj);
-      sum += weight * yVals[j];
-    }
-    smoothedVals[i] = sum;
-  }
-
-  yVals = smoothedVals;
-}
 
 void Histogram::updateColormap(const std::string& newColormap) {
   colormap = newColormap;
-  fillBuffers();
+  if (program) {
+    program.reset();
+  }
 }
 
 void Histogram::fillBuffers() {
 
-  // Fill from proper curve depending on current settings
-  // (does unecessary copy as written)
-  std::vector<double> histCurveY;
-  std::vector<std::array<double, 2>> histCurveX;
-  bool smoothBins = false; // draw trapezoids rather than rectangles
-  if (useSmoothed) {
-    if (useWeighted) {
-      histCurveY = weightedSmoothedHistCurveY;
-    } else {
-      histCurveY = unweightedSmoothedHistCurveY;
-    }
-    histCurveX = smoothedHistCurveX;
-    smoothBins = true;
-  } else {
-    if (useWeighted) {
-      histCurveY = weightedRawHistCurveY;
-    } else {
-      histCurveY = unweightedRawHistCurveY;
-    }
-    histCurveX = rawHistCurveX;
+  if (rawHistCurveY.size() == 0) {
+    exception("histogram fillBuffers() called before buildHistogram");
   }
 
   // Push to buffer
   std::vector<glm::vec2> coords;
 
-  if (histCurveY.size() == 0) {
-    program->setAttribute("a_coord", coords);
-    return;
-  }
+  float histHeightStart = bottomBarHeight + bottomBarGap;
 
-  // Extra first triangle
-  for (size_t i = 0; i < histCurveX.size(); i++) {
+  for (size_t i = 0; i < rawHistCurveX.size(); i++) {
 
-    double leftX = histCurveX[i][0];
-    double rightX = histCurveX[i][1];
+    float leftX = rawHistCurveX[i][0];
+    float rightX = rawHistCurveX[i][1];
 
-    double leftY = histCurveY[i];
-    double rightY = histCurveY[i];
-    if (smoothBins) {
-      if (i > 0) {
-        leftY = 0.5 * (histCurveY[i - 1] + histCurveY[i]);
-      }
-      if (i < histCurveX.size() - 1) {
-        rightY = 0.5 * (histCurveY[i] + histCurveY[i + 1]);
-      }
-    }
+    float leftYTop = histHeightStart + (1. - histHeightStart) * rawHistCurveY[i];
+    float rightYTop = histHeightStart + (1. - histHeightStart) * rawHistCurveY[i];
+
+    float leftYBot = histHeightStart;
+    float rightYBot = histHeightStart;
 
     // = Lower triangle (lower left, lower right, upper left)
-    coords.push_back(glm::vec2{leftX, 0.0});
-    coords.push_back(glm::vec2{rightX, 0.0});
-    coords.push_back(glm::vec2{leftX, leftY});
+    coords.push_back(glm::vec2{leftX, leftYBot});
+    coords.push_back(glm::vec2{rightX, rightYBot});
+    coords.push_back(glm::vec2{leftX, leftYTop});
 
     // = Upper triangle (lower right, upper right, upper left)
-    coords.push_back(glm::vec2{rightX, 0.0});
-    coords.push_back(glm::vec2{rightX, rightY});
-    coords.push_back(glm::vec2{leftX, leftY});
+    coords.push_back(glm::vec2{rightX, rightYBot});
+    coords.push_back(glm::vec2{rightX, rightYTop});
+    coords.push_back(glm::vec2{leftX, leftYTop});
   }
 
-  program->setAttribute("a_coord", coords);
-  program->setTextureFromColormap("t_colormap", colormap, true);
+  // the long skinny bar along the bottom, which always shows regardless of histogram values
+  coords.push_back(glm::vec2{0., 0.});
+  coords.push_back(glm::vec2{1., 0.});
+  coords.push_back(glm::vec2{0., bottomBarHeight});
+  coords.push_back(glm::vec2{1., 0.});
+  coords.push_back(glm::vec2{1., bottomBarHeight});
+  coords.push_back(glm::vec2{0., bottomBarHeight});
 
-  // Update current buffer settings
-  currBufferWeighted = useWeighted;
-  currBufferSmoothed = useSmoothed;
+
+  program->setAttribute("a_coord", coords);
 }
 
 void Histogram::prepare() {
 
   framebuffer = render::engine->generateFrameBuffer(texDim, texDim);
-  texturebuffer = render::engine->generateTextureBuffer(TextureFormat::RGBA8, texDim, texDim);
-  framebuffer->addColorBuffer(texturebuffer);
+  texture = render::engine->generateTextureBuffer(TextureFormat::RGBA8, texDim, texDim);
+  framebuffer->addColorBuffer(texture);
 
   // Create the program
-  program = render::engine->requestShader("HISTOGRAM", {}, render::ShaderReplacementDefaults::Process);
+  if (dataType == DataType::CATEGORICAL) {
+    // for categorical data only
+    program = render::engine->requestShader("HISTOGRAM_CATEGORICAL", {"SHADE_CATEGORICAL_COLORMAP"},
+                                            render::ShaderReplacementDefaults::Process);
+  } else {
+    // common case
+    program = render::engine->requestShader("HISTOGRAM", {"SHADE_COLORMAP_VALUE"},
+                                            render::ShaderReplacementDefaults::Process);
+  }
 
-  prepared = true;
+  program->setTextureFromColormap("t_colormap", colormap, true);
+
+  fillBuffers();
 }
 
 
 void Histogram::renderToTexture() {
 
-  // Refill buffer if needed
-  if (currBufferWeighted != useWeighted || currBufferSmoothed != useSmoothed) {
-    fillBuffers();
+  if (!program) {
+    prepare();
   }
 
   framebuffer->clearColor = {0.0, 0.0, 0.0};
@@ -257,10 +169,18 @@ void Histogram::renderToTexture() {
 
   // = Set uniforms
 
-  // Colormap range (remapped to the 0-1 coords we use)
-  program->setUniform("u_cmapRangeMin", (colormapRange.first - dataRange.first) / (dataRange.second - dataRange.first));
-  program->setUniform("u_cmapRangeMax",
-                      (colormapRange.second - dataRange.first) / (dataRange.second - dataRange.first));
+  if (dataType == DataType::CATEGORICAL) {
+    // Used to restore [0,1] tvals to the orininal data range for the categorical int remapping
+    program->setUniform("u_dataRangeLow", dataRange.first);
+    program->setUniform("u_dataRangeHigh", dataRange.second);
+  } else {
+    // Colormap range (remapped to the 0-1 coords we use)
+    float rangeLow = (colormapRange.first - dataRange.first) / (dataRange.second - dataRange.first);
+    float rangeHigh = (colormapRange.second - dataRange.first) / (dataRange.second - dataRange.first);
+    program->setUniform("u_rangeLow", rangeLow);
+    program->setUniform("u_rangeHigh", rangeHigh);
+  }
+
 
   // Draw
   program->draw();
@@ -268,22 +188,28 @@ void Histogram::renderToTexture() {
 
 
 void Histogram::buildUI(float width) {
+
+  // NOTE: I'm surprised this works, since we're drawing in the middle of imgui's processing. Possible source of bugs?
   renderToTexture();
 
   // Compute size for image
-  float aspect = 3.0;
+  float aspect = 4.0;
   float w = width;
   if (w == -1.0) {
-    w = .8 * ImGui::GetWindowWidth();
+    w = .7 * ImGui::GetWindowWidth();
   }
   float h = w / aspect;
 
   // Render image
-  ImGui::Image(texturebuffer->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+  ImGui::Image(texture->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+
+  // Helpful info for drawing annotations below
+  ImU32 annoColor = ImGui::ColorConvertFloat4ToU32(ImVec4(254 / 255., 221 / 255., 66 / 255., 1.0));
+  ImU32 annoColorDark = ImGui::ColorConvertFloat4ToU32(ImVec4(5. / 255., 5. / 255., 5. / 255., 1.0));
+  ImVec2 imageLowerLeft(ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y);
 
   // Draw a cursor popup on mouseover
   if (ImGui::IsItemHovered()) {
-
     // Get mouse x coodinate within image
     float mouseX = ImGui::GetMousePos().x - ImGui::GetCursorScreenPos().x - ImGui::GetScrollX();
     double mouseT = mouseX / w;
@@ -292,21 +218,61 @@ void Histogram::buildUI(float width) {
     ImGui::SetTooltip("%g", val);
 
     // Draw line
-    ImVec2 imageUpperLeft(ImGui::GetCursorScreenPos().x, ImGui::GetCursorScreenPos().y);
-    ImVec2 lineStart(imageUpperLeft.x + mouseX, imageUpperLeft.y - h - 3);
-    ImVec2 lineEnd(imageUpperLeft.x + mouseX, imageUpperLeft.y - 4);
-    ImGui::GetWindowDrawList()->AddLine(lineStart, lineEnd,
-                                        ImGui::ColorConvertFloat4ToU32(ImVec4(254 / 255., 221 / 255., 66 / 255., 1.0)));
+    ImVec2 lineStart(imageLowerLeft.x + mouseX, imageLowerLeft.y - h - 3);
+    ImVec2 lineEnd(imageLowerLeft.x + mouseX, imageLowerLeft.y - 4);
+    ImGui::GetWindowDrawList()->AddLine(lineStart, lineEnd, annoColor);
   }
 
-  // Right-click combobox to select weighted/unweighted
-  if (ImGui::BeginPopupContextItem("select type")) {
-    if (hasWeighted) {
-      ImGui::Checkbox("Weighted", &useWeighted);
-    }
-    ImGui::Checkbox("Smoothed", &useSmoothed);
-    ImGui::EndPopup();
+
+  /* This is pretty neat, but ultimately I decided I don't like the look of it. It has
+   * some value as a more obvious user widget than dragging imgui's sliders, however.
+
+  { // Draw triangles that indicate where the colormap is
+
+    // clang-format off
+
+    float markerTriWidth = 0.05;
+    float imageLeft = imageLowerLeft.x;
+    float imageRight = imageLeft + w;
+    float imageTop = imageLowerLeft.y - 4;
+    float imageBot = imageTop + h;
+
+    float leftX = (colormapRange.first - dataRange.first) / (dataRange.second - dataRange.first);
+    float rightX = (colormapRange.second - dataRange.first) / (dataRange.second - dataRange.first);
+    float markerTriHeight = bottomBarHeight / 2;
+
+    // left triangle
+    ImGui::GetWindowDrawList()->AddTriangleFilled(
+        {imageLeft + w*(leftX - markerTriWidth) , imageTop},
+        {imageLeft + w*(leftX + markerTriWidth) , imageTop},
+        {imageLeft + w*leftX                    , imageTop - h*markerTriHeight},
+        annoColor
+      );
+    ImGui::GetWindowDrawList()->AddTriangle(
+        {imageLeft + w*(leftX - markerTriWidth) , imageTop},
+        {imageLeft + w*(leftX + markerTriWidth) , imageTop},
+        {imageLeft + w*leftX                    , imageTop - h*markerTriHeight},
+        annoColorDark
+      );
+
+    // right triangle
+    ImGui::GetWindowDrawList()->AddTriangleFilled(
+        {imageLeft + w*(rightX - markerTriWidth) , imageTop},
+        {imageLeft + w*(rightX + markerTriWidth) , imageTop},
+        {imageLeft + w*rightX                    , imageTop - h*markerTriHeight},
+        annoColor
+      );
+    ImGui::GetWindowDrawList()->AddTriangle(
+        {imageLeft + w*(rightX - markerTriWidth) , imageTop},
+        {imageLeft + w*(rightX + markerTriWidth) , imageTop},
+        {imageLeft + w*rightX                    , imageTop - h*markerTriHeight},
+        annoColorDark
+      );
+
+    // clang-format on
   }
+
+  */
 }
 
 

@@ -1,3 +1,5 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 namespace polyscope {
@@ -10,7 +12,7 @@ namespace polyscope {
 
 // forward declare
 namespace state {
-extern double lengthScale;
+extern float& lengthScale;
 }
 
 template <typename T>
@@ -36,12 +38,18 @@ public:
   bool isRelative() const { return relativeFlag; }
 
   // Explicit setters
-  void set(T value_, bool relativeFlag_= true) {
+  void set(T value_, bool relativeFlag_ = true) {
     value = value_;
     relativeFlag = relativeFlag_;
   }
   // implicit conversion from scalar creates relative by default
   ScaledValue(const T& relativeValue) : relativeFlag(true), value(relativeValue) {}
+
+  // Comparators etc
+  bool operator==(const ScaledValue<T>& rhs) const {
+    return (value == rhs.value) && (relativeFlag == rhs.relativeFlag);
+  }
+  bool operator!=(const ScaledValue<T>& rhs) const { return !operator==(rhs); }
 
   // Make all template variants friends, so conversion can access private members
   template <typename>

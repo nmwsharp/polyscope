@@ -1,3 +1,5 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/persistent_value.h"
 
 #include "polyscope/render/color_maps.h"
@@ -17,6 +19,8 @@ PersistentCache<ScaledValue<float>> persistentCache_scaledfloat;
 PersistentCache<std::vector<std::string>> persistentCache_vectorstring;
 PersistentCache<ParamVizStyle> persistentCache_paramVizStyle;
 PersistentCache<BackFacePolicy> persistentCache_BackFacePolicy;
+PersistentCache<MeshShadeStyle> persistentCache_MeshNormalType;
+PersistentCache<FilterMode> persistentCache_FilterMode;
 // clang-format on
 } // namespace detail
 } // namespace polyscope

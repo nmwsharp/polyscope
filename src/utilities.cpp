@@ -1,9 +1,14 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/utilities.h"
-#include "polyscope/messages.h"
+
 
 #include <cmath>
 #include <vector>
+
+#include "imgui.h"
+
+#include "polyscope/messages.h"
 
 
 namespace polyscope {
@@ -38,8 +43,8 @@ std::string guessNiceNameFromPath(std::string fullname) {
 }
 
 void validateName(const std::string& name) {
-  if(name == "") polyscope::error("name must not be the empty string");
-  if(name.find("#") != std::string::npos) polyscope::error("name must not contain '#' characters");
+  if (name == "") exception("name must not be the empty string");
+  if (name.find("#") != std::string::npos) exception("name must not contain '#' characters");
 }
 
 std::tuple<std::string, std::string> splitExt(std::string f) {
@@ -113,6 +118,17 @@ std::string prettyPrintCount(size_t count) {
   } else /*(nDigits == 3) */ {
     snprintf(buf, 50, "%2.0f%s", countD, postfix.c_str());
     return std::string(buf);
+  }
+}
+
+void ImGuiHelperMarker(const char* text) {
+  ImGui::TextDisabled("(?)");
+  if (ImGui::IsItemHovered()) {
+    ImGui::BeginTooltip();
+    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+    ImGui::TextUnformatted(text);
+    ImGui::PopTextWrapPos();
+    ImGui::EndTooltip();
   }
 }
 

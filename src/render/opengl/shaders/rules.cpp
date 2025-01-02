@@ -1,8 +1,10 @@
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/render/opengl/shaders/rules.h"
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 // clang-format off
 
@@ -77,12 +79,27 @@ const ShaderReplacementRule SHADE_BASECOLOR (
       {"GENERATE_SHADE_COLOR", "vec3 albedoColor = u_baseColor;"}
     },
     /* uniforms */ {
-      {"u_baseColor", DataType::Vector3Float},
+      {"u_baseColor", RenderDataType::Vector3Float},
     },
     /* attributes */ {},
     /* textures */ {}
 );
 
+// input: uniform output: vec3 shadeColor
+const ShaderReplacementRule SHADECOLOR_FROM_UNIFORM (
+    /* rule name */ "SHADECOLOR_FROM_UNIFORM",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform vec3 u_color;
+        )"},
+      {"GENERATE_SHADE_COLOR", "vec3 shadeColor = u_color;"}
+    },
+    /* uniforms */ {
+      {"u_color", RenderDataType::Vector3Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
 
 // input: vec3 shadeColor 
 // output: vec3 albedoColor
@@ -113,8 +130,35 @@ const ShaderReplacementRule SHADE_COLORMAP_VALUE(
       )"}
     },
     /* uniforms */ {
-        {"u_rangeLow", DataType::Float},
-        {"u_rangeHigh", DataType::Float},
+        {"u_rangeLow", RenderDataType::Float},
+        {"u_rangeHigh", RenderDataType::Float},
+    },
+    /* attributes */ {},
+    /* textures */ {
+        {"t_colormap", 1}
+    }
+);
+
+const ShaderReplacementRule SHADE_CATEGORICAL_COLORMAP(
+    /* rule name */ "SHADE_CATEGORICAL_COLORMAP",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform sampler1D t_colormap;
+          float intToDistinctReal(float start, int index);
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+        // sample the categorical color
+        int shadeInt = int(round(shadeValue));
+        float startOffset = 0.;
+        if(shadeInt < 0) { // do something sane for negative values
+          shadeInt = -shadeInt;
+          startOffset = 1./3.; // arbitrary value to shift the negative ones a bit
+        }
+        float catVal = intToDistinctReal(startOffset, shadeInt);
+        vec3 albedoColor = texture(t_colormap, catVal).rgb;
+      )"}
+    },
+    /* uniforms */ {
     },
     /* attributes */ {},
     /* textures */ {
@@ -139,7 +183,7 @@ const ShaderReplacementRule SHADE_COLORMAP_ANGULAR2(
       )"}
     },
     /* uniforms */ {
-        {"u_angle", DataType::Float},
+        {"u_angle", RenderDataType::Float},
     },
     /* attributes */ {},
     /* textures */ {
@@ -169,9 +213,9 @@ const ShaderReplacementRule SHADE_GRID_VALUE2 (
       )"}
     },
     /* uniforms */ {
-       {"u_modLen", DataType::Float},
-       {"u_gridLineColor", DataType::Vector3Float},
-       {"u_gridBackgroundColor", DataType::Vector3Float},
+       {"u_modLen", RenderDataType::Float},
+       {"u_gridLineColor", RenderDataType::Vector3Float},
+       {"u_gridBackgroundColor", RenderDataType::Vector3Float},
     },
     /* attributes */ {},
     /* textures */ {}
@@ -186,6 +230,7 @@ const ShaderReplacementRule SHADE_CHECKER_VALUE2 (
           uniform vec3 u_color2;
         )"},
       {"GENERATE_SHADE_COLOR", R"(
+        // NOTE checker math shared with other shaders
         float mX = mod(shadeValue2.x, 2.0 * u_modLen) / u_modLen - 1.f; // in [-1, 1]
         float mY = mod(shadeValue2.y, 2.0 * u_modLen) / u_modLen - 1.f;
         float minD = min( min(abs(mX), 1.0 - abs(mX)), min(abs(mY), 1.0 - abs(mY))) * 2.; // rect distace from flipping sign in [0,1]
@@ -199,12 +244,52 @@ const ShaderReplacementRule SHADE_CHECKER_VALUE2 (
       )"}
     },
     /* uniforms */ {
-       {"u_modLen", DataType::Float},
-       {"u_color1", DataType::Vector3Float},
-       {"u_color2", DataType::Vector3Float},
+       {"u_modLen", RenderDataType::Float},
+       {"u_color1", RenderDataType::Vector3Float},
+       {"u_color2", RenderDataType::Vector3Float},
     },
     /* attributes */ {},
     /* textures */ {}
+);
+
+const ShaderReplacementRule SHADE_CHECKER_CATEGORY(
+    /* rule name */ "SHADE_CHECKER_CATEGORY",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_modLen;
+          uniform float u_modDarkness;
+          uniform sampler1D t_colormap;
+
+          float intToDistinctReal(float start, int index);
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+        // sample the categorical color
+        float catVal = intToDistinctReal(0., int(shadeValue));
+        float scaleFac = 1.2f; // pump up the brightness a bit, so the modDarkness doesn't make it too dark
+        vec3 catColor = scaleFac * texture(t_colormap, catVal).rgb;
+        vec3 catColorDark = catColor * u_modDarkness;
+
+        // NOTE checker math shared with other shaders
+        float mX = mod(shadeValue2.x, 2.0 * u_modLen) / u_modLen - 1.f; // in [-1, 1]
+        float mY = mod(shadeValue2.y, 2.0 * u_modLen) / u_modLen - 1.f;
+        float minD = min( min(abs(mX), 1.0 - abs(mX)), min(abs(mY), 1.0 - abs(mY))) * 2.; // rect distace from flipping sign in [0,1]
+        float p = 6;
+        float minDSmooth = pow(minD, 1. / p);
+        // TODO do some clever screen space derivative thing to prevent aliasing
+        float v = (mX * mY); // in [-1, 1], color switches at 0
+        float adjV = sign(v) * minDSmooth;
+        float s = smoothstep(-1.f, 1.f, adjV);
+        vec3 albedoColor = mix(catColor, catColorDark, s);
+      )"}
+    },
+    /* uniforms */ {
+       {"u_modLen", RenderDataType::Float},
+       {"u_modDarkness", RenderDataType::Float},
+    },
+    /* attributes */ {},
+    /* textures */ {
+        {"t_colormap", 1}
+    }
 );
 
 // input vec2 shadeValue2
@@ -235,8 +320,8 @@ const ShaderReplacementRule ISOLINE_STRIPE_VALUECOLOR (
       )"}
     },
     /* uniforms */ {
-        {"u_modLen", DataType::Float},
-        {"u_modDarkness", DataType::Float},
+        {"u_modLen", RenderDataType::Float},
+        {"u_modDarkness", RenderDataType::Float},
     },
     /* attributes */ {},
     /* textures */ {}
@@ -289,8 +374,8 @@ const ShaderReplacementRule CHECKER_VALUE2COLOR (
       )"}
     },
     /* uniforms */ {
-       {"u_modLen", DataType::Float},
-       {"u_modDarkness", DataType::Float},
+       {"u_modLen", RenderDataType::Float},
+       {"u_modDarkness", RenderDataType::Float},
     },
     /* attributes */ {},
     /* textures */ {}
@@ -313,12 +398,58 @@ const ShaderReplacementRule GENERATE_VIEW_POS (
       )"}
     },
     /* uniforms */ {
-      {"u_invProjMatrix_viewPos", DataType::Matrix44Float},
-      {"u_viewport_viewPos", DataType::Vector4Float},
+      {"u_invProjMatrix_viewPos", RenderDataType::Matrix44Float},
+      {"u_viewport_viewPos", RenderDataType::Vector4Float},
     },
     /* attributes */ {},
     /* textures */ {}
 );
+
+const ShaderReplacementRule PROJ_AND_INV_PROJ_MAT (
+    /* rule name */ "PROJ_AND_INV_PROJ_MAT",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+        uniform mat4 u_invProjMatrix;
+        uniform vec4 u_viewport;
+        )"}
+    },
+    /* uniforms */ {
+        {"u_invProjMatrix", RenderDataType::Matrix44Float},
+        {"u_viewport", RenderDataType::Vector4Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule COMPUTE_SHADE_NORMAL_FROM_POSITION (
+    /* rule name */ "COMPUTE_SHADE_NORMAL_FROM_POSITION",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+        vec2 depthRange_fornormal = vec2(gl_DepthRange.near, gl_DepthRange.far);
+        vec3 viewPos_fornormal = fragmentViewPosition(u_viewport, depthRange_fornormal, u_invProjMatrix, gl_FragCoord);
+        shadeNormal = normalize(cross(dFdx(viewPos_fornormal),dFdy(viewPos_fornormal)));
+        )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule PREMULTIPLY_LIT_COLOR(
+    /* rule name */ "PREMULTIPLY_LIT_COLOR",
+    { /* replacement sources */
+      {"PERTURB_LIT_COLOR", R"(
+        litColor *= alphaOut; // premultiplied alpha
+      )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
 
 // TODO delete me
 const ShaderReplacementRule CULL_POS_FROM_VIEW (
@@ -326,9 +457,10 @@ const ShaderReplacementRule CULL_POS_FROM_VIEW (
     { /* replacement sources */
       {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
         vec3 cullPos = viewPos;
-      )"}
+      )"},
     },
-    /* uniforms */ {},
+    /* uniforms */ {
+    },
     /* attributes */ {},
     /* textures */ {}
 );
@@ -348,8 +480,34 @@ ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix) {
          "if(dot(cullPos, " + normalUniformName + ") < dot( " + centerUniformName + " , " + normalUniformName + ")) { discard; }"}
       },
       /* uniforms */ {
-        {centerUniformName, DataType::Vector3Float},
-        {normalUniformName, DataType::Vector3Float},
+        {centerUniformName, RenderDataType::Vector3Float},
+        {normalUniformName, RenderDataType::Vector3Float},
+      },
+      /* attributes */ {},
+      /* textures */ {}
+  );
+
+  return slicePlaneRule;
+}
+
+ShaderReplacementRule generateVolumeGridSlicePlaneRule(std::string uniquePostfix) {
+
+  std::string centerUniformName = "u_slicePlaneCenter_" + uniquePostfix;
+  std::string normalUniformName = "u_slicePlaneNormal_" + uniquePostfix;
+
+  // This takes what is otherwise a simple rule, and substitues uniquely named uniforms so that we can have multiple slice planes
+  ShaderReplacementRule slicePlaneRule (
+      /* rule name */ "SLICE_PLANE_VOLUMEGRID_CULL_" + uniquePostfix,
+      { /* replacement sources */
+        // skip the frag declarations, we will already have them from the other rule
+        // {"FRAG_DECLARATIONS", "uniform vec3 " + centerUniformName + "; uniform vec3 " + normalUniformName + ";"},
+        {"GRID_PLANE_NEIGHBOR_FILTER",
+         "if(dot(neighCullPos, " + normalUniformName + ") < dot( " + centerUniformName + " , " + normalUniformName + ")) { neighIsVisible = false; }"
+        }
+      },
+      /* uniforms */ {
+        {centerUniformName, RenderDataType::Vector3Float},
+        {normalUniformName, RenderDataType::Vector3Float},
       },
       /* attributes */ {},
       /* textures */ {}
@@ -360,6 +518,6 @@ ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix) {
 
 // clang-format on
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope

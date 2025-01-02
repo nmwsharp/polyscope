@@ -1,10 +1,13 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include <array>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace polyscope {
@@ -24,18 +27,20 @@ namespace render {
 
 // forward declare
 class TextureBuffer;
+class ShaderProgram;
 
 // Materials have _r, _g, _b, _k textures for blending with arbitrary surface colors.
 struct Material {
   std::string name;
   bool supportsRGB = false;
   std::array<std::shared_ptr<TextureBuffer>, 4> textureBuffers;
+  std::vector<std::string> rules;                  // substitution rules to add to shaders
+  std::function<void(ShaderProgram&)> setUniforms; // function to set uniforms for shaders
 };
 
 // Build an ImGui option picker in a dropdown ui
 // Returns true if modified.
 bool buildMaterialOptionsGui(std::string& mat);
-
 
 // Read pre-defined materials in to textures
 void loadDefaultMaterials();

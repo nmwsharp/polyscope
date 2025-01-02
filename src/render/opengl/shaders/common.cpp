@@ -1,10 +1,11 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 
 #include "polyscope/render/opengl/shaders/common.h"
 
 namespace polyscope {
 namespace render {
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 
 const char* shaderCommonSource = R"(
@@ -111,6 +112,57 @@ vec2 sphericalTexCoords(vec3 v) {
   uv += 0.5;
   return uv;
 }
+
+// Take the component of values corresponding to the largest component of keys
+// If there is a tie for the max, you get an average
+float selectMax(vec3 keys, vec3 values) {
+  float maxVal = max(max(keys.x, keys.y), keys.z);
+  float outSum = 0;
+  float outCount = 0;
+  if(keys.x == maxVal) {
+    outSum += values.x;
+    outCount += 1.;
+  }
+  if(keys.y == maxVal) {
+    outSum += values.y;
+    outCount += 1.;
+  }
+  if(keys.z == maxVal) {
+    outSum += values.z;
+    outCount += 1.;
+  }
+  return outSum / outCount;
+}
+
+// Used to sample colors. Samples a series of most-distant values from a range [0,1]
+// offset from a starting value 'start' and wrapped around. index=0 returns start.
+// We only actually output distinct floats for the first 10 bits, then the pattern repeats.
+//
+// (same logic appears in color_management.cpp)
+//
+// Example: if start = 0, emits f(0, i) = {0, 1/2, 1/4, 3/4, 1/8, 5/8, 3/8, 7/8, ...}
+float intToDistinctReal(float start, int index) {
+  const int NBitsUntilRepeat = 10;
+
+  if (index < 0) {
+    return 0.0f;
+  }
+
+  // Bit shifts to evaluate f()
+  float val = 0.f;
+  float p = 0.5f;
+  for(int iShift = 0; iShift < NBitsUntilRepeat; iShift++) { // unroll please
+    val += float((index % 2) == 1) * p;
+    index = index >> 1;
+    p /= 2.0;
+  }
+
+  // Apply modular offset
+  val = mod(val + start, 1.0);
+
+  return clamp(val, 0.f, 1.f);
+}
+
 
 // Two useful references:
 //   - https://stackoverflow.com/questions/38938498/how-do-i-convert-gl-fragcoord-to-a-world-space-point-in-a-fragment-shader
@@ -261,6 +313,84 @@ bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylT
     return tHit >= 0;
 }
 
+bool rayTaperedCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRadTail, float cylRadTip, out float tHit, out vec3 pHit, out vec3 nHit) {
+    
+    rayDir = normalize(rayDir);
+    float cylLen = max(length(cylTip - cylTail), 1e-6);
+    vec3 cylDir = (cylTip - cylTail) / cylLen;
+
+    // use notation from the blog post
+    vec3 p = rayStart;
+    vec3 r = rayDir;
+    vec3 c0 = cylTail;
+    vec3 c1 = cylTip;
+    float l0 = cylRadTail;
+    float l1 = cylRadTip;
+    vec3 cHat = cylDir;
+
+    vec3 alpha = p - c0 - cHat * dot(cHat, p - c0);
+    vec3 beta = r - cHat * dot(cHat, r);
+    float lcoef = (l1 - l0) / length(c1 - c0);
+    float gamma = l0 + lcoef * dot(cHat, p-c0);
+    float delta = lcoef * dot(cHat,r);
+
+    float a = dot(beta, beta) - delta*delta;
+    float b = 2 * dot(alpha, beta) - 2*gamma*delta;
+    float c = dot(alpha, alpha) - gamma*gamma;
+
+    float disc = b*b - 4*a*c;
+    if(disc < 0){
+      tHit = LARGE_FLOAT();
+      pHit = vec3(777, 777, 777);
+      nHit = vec3(777, 777, 777);
+      return false;
+    } 
+
+    // Compute intersection with infinite cylinder
+    tHit = (-b - sqrt(disc)) / (2.0*a);
+    if(tHit < 0) tHit = (-b + sqrt(disc)) / (2.0*a); // try second intersection
+    if(tHit < 0) {
+      tHit = LARGE_FLOAT();
+      pHit = vec3(777, 777, 777);
+      nHit = vec3(777, 777, 777);
+      return false;
+    }
+    pHit = rayStart + tHit * rayDir;
+    nHit = pHit - cylTail;
+    nHit = normalize(nHit - dot(cylDir, nHit)*cylDir); 
+    // (seems to look better without this, either it's wrong or there's some perceptual thing going no)
+    // nHit = normalize(nHit + lcoef * cylDir); // account for the slope of the cylinder due to different cap sizes
+
+    // Check if intersection was outside finite cylinder
+    if(dot(cylDir, pHit - cylTail) < 0 || dot(-cylDir, pHit - cylTip) < 0) {
+      tHit = LARGE_FLOAT();
+    }
+    
+    // Test start endcap
+    float tHitTail;
+    vec3 pHitTail;
+    vec3 nHitTail;
+    rayDiskIntersection(rayStart, rayDir, cylTail, -cylDir, cylRadTail, tHitTail, pHitTail, nHitTail);
+    if(tHitTail < tHit) {
+      tHit = tHitTail;
+      pHit = pHitTail;
+      nHit = nHitTail;
+    }
+
+    // Test end endcap
+    float tHitTip;
+    vec3 pHitTip;
+    vec3 nHitTip;
+    rayDiskIntersection(rayStart, rayDir, cylTip, cylDir, cylRadTip, tHitTip, pHitTip, nHitTip);
+    if(tHitTip < tHit) {
+      tHit = tHitTip;
+      pHit = pHitTip;
+      nHit = nHitTip;
+    }
+
+    return tHit >= 0;
+}
+
 
 bool rayConeIntersection(vec3 rayStart, vec3 rayDir, vec3 coneBase, vec3 coneTip, float coneRad, out float tHit, out vec3 pHit, out vec3 nHit) {
 
@@ -338,4 +468,3 @@ bool rayConeIntersection(vec3 rayStart, vec3 rayDir, vec3 coneBase, vec3 coneTip
 }
 } // namespace render
 } // namespace polyscope
-

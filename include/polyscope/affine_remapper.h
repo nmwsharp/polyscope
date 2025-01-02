@@ -1,7 +1,9 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #pragma once
 
 #include "polyscope/render/color_maps.h"
+#include "polyscope/types.h"
 #include "polyscope/utilities.h"
 
 #include <algorithm>
@@ -12,13 +14,6 @@
 
 namespace polyscope {
 
-
-// What is the meaningful range of these values?
-// Used to set meaningful colormaps
-// STANDARD: [-inf, inf], zero does not mean anything special (ie, position)
-// SYMMETRIC: [-inf, inf], zero is special (ie, net profit/loss)
-// MAGNITUDE: [0, inf], zero is special (ie, length of a vector)
-enum class DataType { STANDARD = 0, SYMMETRIC, MAGNITUDE };
 
 inline std::string defaultColorMap(DataType type);
 

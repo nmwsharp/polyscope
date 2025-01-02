@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 #include "polyscope/polyscope.h"
 
 #include <chrono>
@@ -8,15 +9,17 @@
 
 #include "imgui.h"
 
+#include "polyscope/options.h"
 #include "polyscope/pick.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/view.h"
 
 #include "stb_image.h"
 
-#include "json/json.hpp"
+#include "nlohmann/json.hpp"
 using json = nlohmann::json;
 
+#include "backends/imgui_impl_opengl3.h"
 
 namespace polyscope {
 
@@ -31,12 +34,14 @@ namespace {
 // initialization.
 struct ContextEntry {
   ImGuiContext* context;
-  std::function<void()> callback;
+  std ::function<void()> callback;
   bool drawDefaultUI;
 };
 std::vector<ContextEntry> contextStack;
+int frameTickStack = 0;
 
 bool redrawNextFrame = true;
+bool unshowRequested = false;
 
 // Some state about imgui windows to stack them
 float imguiStackMargin = 10;
@@ -45,6 +50,7 @@ float lastWindowHeightUser = 200;
 float leftWindowsWidth = 305;
 float rightWindowsWidth = 500;
 
+auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 
 const std::string prefsFilename = ".polyscope.ini";
 
@@ -59,24 +65,29 @@ void readPrefsFile() {
       inStream >> prefsJSON;
 
       // Set values
-      if (prefsJSON.count("windowWidth") > 0) {
-        view::windowWidth = prefsJSON["windowWidth"];
+      // Do some basic validation on the sizes first to work around bugs with bogus values getting written to init file
+      if (view::windowWidth == -1 && prefsJSON.count("windowWidth") > 0) { // only load if not already set
+        int val = prefsJSON["windowWidth"];
+        if (val >= 64 && val < 10000) view::windowWidth = val;
       }
-      if (prefsJSON.count("windowHeight") > 0) {
-        view::windowHeight = prefsJSON["windowHeight"];
+      if (view::windowHeight == -1 && prefsJSON.count("windowHeight") > 0) { // only load if not already set
+        int val = prefsJSON["windowHeight"];
+        if (val >= 64 && val < 10000) view::windowHeight = val;
       }
       if (prefsJSON.count("windowPosX") > 0) {
-        view::initWindowPosX = prefsJSON["windowPosX"];
+        int val = prefsJSON["windowPosX"];
+        if (val >= 0 && val < 10000) view::initWindowPosX = val;
       }
       if (prefsJSON.count("windowPosY") > 0) {
-        view::initWindowPosY = prefsJSON["windowPosY"];
+        int val = prefsJSON["windowPosY"];
+        if (val >= 0 && val < 10000) view::initWindowPosY = val;
       }
     }
 
   }
   // We never really care if something goes wrong while loading preferences, so eat all exceptions
   catch (...) {
-    polyscope::warning("Parsing of prefs file failed");
+    polyscope::warning("Parsing of prefs file .polyscope.ini failed");
   }
 }
 
@@ -85,11 +96,22 @@ void writePrefsFile() {
   // Update values as needed
   int posX, posY;
   std::tie(posX, posY) = render::engine->getWindowPos();
+  int windowWidth = view::windowWidth;
+  int windowHeight = view::windowHeight;
+
+  // Validate values. Don't write the prefs file if any of these values are obviously bogus (this seems to happen at
+  // least on Windows when the application is minimzed)
+  bool valuesValid = true;
+  valuesValid &= posX >= 0 && posX < 10000;
+  valuesValid &= posY >= 0 && posY < 10000;
+  valuesValid &= windowWidth >= 64 && windowWidth < 10000;
+  valuesValid &= windowHeight >= 64 && windowHeight < 10000;
+  if (!valuesValid) return;
 
   // Build json object
   json prefsJSON = {
-      {"windowWidth", view::windowWidth},
-      {"windowHeight", view::windowHeight},
+      {"windowWidth", windowWidth},
+      {"windowHeight", windowHeight},
       {"windowPosX", posX},
       {"windowPosY", posY},
   };
@@ -99,14 +121,23 @@ void writePrefsFile() {
   o << std::setw(4) << prefsJSON << std::endl;
 }
 
-}; // namespace
+// Helper to get a structure map
+
+std::map<std::string, std::unique_ptr<Structure>>& getStructureMapCreateIfNeeded(std::string typeName) {
+  if (state::structures.find(typeName) == state::structures.end()) {
+    state::structures[typeName] = std::map<std::string, std::unique_ptr<Structure>>();
+  }
+  return state::structures[typeName];
+}
+
+} // namespace
 
 // === Core global functions
 
 void init(std::string backend) {
-  if (state::initialized) {
+  if (isInitialized()) {
     if (backend != state::backend) {
-      throw std::runtime_error("re-initializing with different backend is not supported");
+      exception("re-initializing with different backend is not supported");
     }
     // otherwise silently allow multiple-init
     return;
@@ -117,6 +148,8 @@ void init(std::string backend) {
   if (options::usePrefsFile) {
     readPrefsFile();
   }
+  if (view::windowWidth == -1) view::windowWidth = view::defaultWindowWidth;
+  if (view::windowHeight == -1) view::windowHeight = view::defaultWindowHeight;
 
   // Initialize the rendering engine
   render::initializeRenderEngine(backend);
@@ -124,33 +157,51 @@ void init(std::string backend) {
   // Initialie ImGUI
   IMGUI_CHECKVERSION();
   render::engine->initializeImGui();
-  // push a fake context which will never be used (but dodges some invalidation issues)
-  contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr, false});
+
+  // Create an initial context based context. Note that calling show() never actually uses this context, because it
+  // pushes a new one each time. But using frameTick() may use this context.
+  contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr, true});
 
   view::invalidateView();
 
   state::initialized = true;
+  state::doDefaultMouseInteraction = true;
 }
+
+void checkInitialized() {
+  if (!state::initialized) {
+    exception("Polyscope has not been initialized");
+  }
+}
+
+bool isInitialized() { return state::initialized; }
 
 void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Create a new context and push it on to the stack
   ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
-  ImGuiIO& oldIO = ImGui::GetIO(); // used to copy below, see note
+  ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
+#ifdef IMGUI_HAS_DOCK
+  ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
+#endif
   ImGui::SetCurrentContext(newContext);
+#ifdef IMGUI_HAS_DOCK
+  // Propagate GLFW window handle to new context
+  ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
+#endif
+  ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
+  ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
 
-  render::engine->setImGuiStyle();
-  ImGui::GetIO() = oldIO; // Copy all of the old IO values to new. With ImGUI 1.76 (and some previous versions), this
-                          // was necessary to fix a bug where keys like delete, etc would break in subcontexts. The
-                          // problem was that the key mappings (e.g. GLFW_KEY_BACKSPACE --> ImGuiKey_Backspace) need to
-                          // be populated in io.KeyMap, and these entries would get lost on creating a new context.
+  if (options::configureImGuiStyleCallback) {
+    options::configureImGuiStyleCallback();
+  }
+
   contextStack.push_back(ContextEntry{newContext, callbackFunction, drawDefaultUI});
 
   if (contextStack.size() > 50) {
     // Catch bugs with nested show()
-    throw std::runtime_error(
-        "Uh oh, polyscope::show() was recusively MANY times (depth > 50), this is probably a bug. Perhaps "
-        "you are accidentally calling show every time polyscope::userCallback executes?");
+    exception("Uh oh, polyscope::show() was recusively MANY times (depth > 50), this is probably a bug. Perhaps "
+              "you are accidentally calling show every time polyscope::userCallback executes?");
   };
 
   // Make sure the window is visible
@@ -160,6 +211,19 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   size_t currentContextStackSize = contextStack.size();
   while (contextStack.size() >= currentContextStackSize) {
 
+    // The windowing system will let the main loop busy-loop on some platforms. Make sure that doesn't happen.
+    if (options::maxFPS != -1) {
+      auto currTime = std::chrono::steady_clock::now();
+      long microsecPerLoop = 1000000 / options::maxFPS;
+      microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
+      while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
+             microsecPerLoop) {
+        std::this_thread::yield();
+        currTime = std::chrono::steady_clock::now();
+      }
+    }
+    lastMainLoopIterTime = std::chrono::steady_clock::now();
+
     mainLoopIteration();
 
     // auto-exit if the window is closed
@@ -168,8 +232,11 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
     }
   }
 
-  oldIO = ImGui::GetIO(); // Copy new IO values to old. I haven't encountered anything that strictly requires this, but
-                          // it feels like we should mirror the behavior from pushing.
+  // Workaround overzealous ImGui assertion before destroying any inner context
+  // https://github.com/ocornut/imgui/pull/7175
+  ImGui::SetCurrentContext(newContext);
+  ImGui::GetIO().BackendPlatformUserData = nullptr;
+  ImGui::GetIO().BackendRendererUserData = nullptr;
 
   ImGui::DestroyContext(newContext);
 
@@ -182,10 +249,34 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
 void popContext() {
   if (contextStack.empty()) {
-    error("Called popContext() too many times");
+    exception("Called popContext() too many times");
     return;
   }
   contextStack.pop_back();
+}
+
+ImGuiContext* getCurrentContext() { return contextStack.empty() ? nullptr : contextStack.back().context; }
+
+void frameTick() {
+
+  // Do some sanity-checking around control flow and use of frameTick() / show()
+  if (contextStack.size() > 1) {
+    exception("Do not call frameTick() while show() is already looping the main loop.");
+  }
+  if (frameTickStack > 0) {
+    exception("You called frameTick() while a previous call was in the midst of executing. Do not re-enter frameTick() "
+              "or call it recursively.");
+  }
+  frameTickStack++;
+
+  // Make sure we're initialized and visible
+  checkInitialized();
+  render::engine->showWindow();
+
+  // All-imporant main loop iteration
+  mainLoopIteration();
+
+  frameTickStack--;
 }
 
 void requestRedraw() { redrawNextFrame = true; }
@@ -195,17 +286,27 @@ void drawStructures() {
 
   // Draw all off the structures registered with polyscope
 
-  for (auto catMap : state::structures) {
-    for (auto s : catMap.second) {
-      // make sure the right settings are active
-      // render::engine->setDepthMode();
-      // render::engine->applyTransparencySettings();
-
+  for (auto& catMap : state::structures) {
+    for (auto& s : catMap.second) {
       s.second->draw();
     }
   }
+
+  // Also render any slice plane geometry
+  for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
+    s->drawGeometry();
+  }
 }
 
+void drawStructuresDelayed() {
+  // "delayed" drawing allows structures to render things which should be rendered after most of the scene has been
+  // drawn
+  for (auto& catMap : state::structures) {
+    for (auto& s : catMap.second) {
+      s.second->drawDelayed();
+    }
+  }
+}
 
 namespace {
 
@@ -220,116 +321,113 @@ void processInputEvents() {
   }
 
   bool widgetCapturedMouse = false;
-  for (Widget* w : state::widgets) {
-    widgetCapturedMouse = w->interact();
-    if (widgetCapturedMouse) {
-      break;
-    }
-  }
 
   // Handle scroll events for 3D view
-  if (!io.WantCaptureMouse && !widgetCapturedMouse) {
-    double xoffset = io.MouseWheelH;
-    double yoffset = io.MouseWheel;
+  if (state::doDefaultMouseInteraction) {
 
-    if (xoffset != 0 || yoffset != 0) {
-      requestRedraw();
-
-      // On some setups, shift flips the scroll direction, so take the max
-      // scrolling in any direction
-      double maxScroll = xoffset;
-      if (std::abs(yoffset) > std::abs(xoffset)) {
-        maxScroll = yoffset;
-      }
-
-      // Pass camera commands to the camera
-      if (maxScroll != 0.0) {
-        bool scrollClipPlane = io.KeyShift;
-
-        if (scrollClipPlane) {
-          view::processClipPlaneShift(maxScroll);
-        } else {
-          view::processZoom(maxScroll);
+    for (WeakHandle<Widget> wHandle : state::widgets) {
+      if (wHandle.isValid()) {
+        Widget& w = wHandle.get();
+        widgetCapturedMouse = w.interact();
+        if (widgetCapturedMouse) {
+          break;
         }
       }
     }
-  }
 
-  // === Mouse inputs
-  if (!io.WantCaptureMouse && !widgetCapturedMouse) {
+    if (!io.WantCaptureMouse && !widgetCapturedMouse) {
+      double xoffset = io.MouseWheelH;
+      double yoffset = io.MouseWheel;
 
-    // Process drags
-    bool dragLeft = ImGui::IsMouseDragging(0);
-    bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
-    if (dragLeft || dragRight) {
+      if (xoffset != 0 || yoffset != 0) {
+        requestRedraw();
 
-      glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
-      dragDistSinceLastRelease += std::abs(dragDelta.x);
-      dragDistSinceLastRelease += std::abs(dragDelta.y);
+        // On some setups, shift flips the scroll direction, so take the max
+        // scrolling in any direction
+        double maxScroll = xoffset;
+        if (std::abs(yoffset) > std::abs(xoffset)) {
+          maxScroll = yoffset;
+        }
 
-      // exactly one of these will be true
-      bool isRotate = dragLeft && !io.KeyShift && !io.KeyCtrl;
-      bool isTranslate = (dragLeft && io.KeyShift && !io.KeyCtrl) || dragRight;
-      bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
+        // Pass camera commands to the camera
+        if (maxScroll != 0.0) {
+          bool scrollClipPlane = io.KeyShift;
 
-      if (isDragZoom) {
-        view::processZoom(dragDelta.y * 5);
-      }
-      if (isRotate) {
-        glm::vec2 currPos{io.MousePos.x / view::windowWidth, (view::windowHeight - io.MousePos.y) / view::windowHeight};
-        currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
-        if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
-          view::processRotate(currPos - 2.0f * dragDelta, currPos);
+          if (scrollClipPlane) {
+            view::processClipPlaneShift(maxScroll);
+          } else {
+            view::processZoom(maxScroll);
+          }
         }
       }
-      if (isTranslate) {
-        view::processTranslate(dragDelta);
-      }
     }
 
-    // Click picks
-    float dragIgnoreThreshold = 0.01;
-    if (ImGui::IsMouseReleased(0)) {
+    // === Mouse inputs
+    if (!io.WantCaptureMouse && !widgetCapturedMouse) {
 
-      // Don't pick at the end of a long drag
-      if (dragDistSinceLastRelease < dragIgnoreThreshold) {
-        ImVec2 p = ImGui::GetMousePos();
-        std::pair<Structure*, size_t> pickResult =
-            pick::evaluatePickQuery(io.DisplayFramebufferScale.x * p.x, io.DisplayFramebufferScale.y * p.y);
-        pick::setSelection(pickResult);
+      // Process drags
+      bool dragLeft = ImGui::IsMouseDragging(0);
+      bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
+      if (dragLeft || dragRight) {
+
+        glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
+        dragDistSinceLastRelease += std::abs(dragDelta.x);
+        dragDistSinceLastRelease += std::abs(dragDelta.y);
+
+        // exactly one of these will be true
+        bool isRotate = dragLeft && !io.KeyShift && !io.KeyCtrl;
+        bool isTranslate = (dragLeft && io.KeyShift && !io.KeyCtrl) || dragRight;
+        bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
+
+        if (isDragZoom) {
+          view::processZoom(dragDelta.y * 5);
+        }
+        if (isRotate) {
+          glm::vec2 currPos{io.MousePos.x / view::windowWidth,
+                            (view::windowHeight - io.MousePos.y) / view::windowHeight};
+          currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
+          if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
+            view::processRotate(currPos - 2.0f * dragDelta, currPos);
+          }
+        }
+        if (isTranslate) {
+          view::processTranslate(dragDelta);
+        }
       }
 
-      // Reset the drag distance after any release
-      dragDistSinceLastRelease = 0.0;
-    }
-    // Clear pick
-    if (ImGui::IsMouseReleased(1)) {
-      if (dragDistSinceLastRelease < dragIgnoreThreshold) {
-        pick::resetSelection();
+      // Click picks
+      float dragIgnoreThreshold = 0.01;
+      if (ImGui::IsMouseReleased(0)) {
+
+        // Don't pick at the end of a long drag
+        if (dragDistSinceLastRelease < dragIgnoreThreshold) {
+          ImVec2 p = ImGui::GetMousePos();
+          std::pair<Structure*, size_t> pickResult = pick::pickAtScreenCoords(glm::vec2{p.x, p.y});
+          pick::setSelection(pickResult);
+        }
+
+        // Reset the drag distance after any release
+        dragDistSinceLastRelease = 0.0;
       }
-      dragDistSinceLastRelease = 0.0;
+      // Clear pick
+      if (ImGui::IsMouseReleased(1)) {
+        if (dragDistSinceLastRelease < dragIgnoreThreshold) {
+          pick::resetSelection();
+        }
+        dragDistSinceLastRelease = 0.0;
+      }
     }
   }
 
   // === Key-press inputs
   if (!io.WantCaptureKeyboard) {
-
-    // ctrl-c
-    if (io.KeyCtrl && render::engine->isKeyPressed('c')) {
-      std::string outData = view::getCameraJson();
-      render::engine->setClipboardText(outData);
-    }
-
-    // ctrl-v
-    if (io.KeyCtrl && render::engine->isKeyPressed('v')) {
-      std::string clipboardData = render::engine->getClipboardText();
-      view::setCameraFromJson(clipboardData, true);
-    }
+    view::processKeyboardNavigation(io);
   }
 }
 
+
 void renderSlicePlanes() {
-  for (SlicePlane* s : state::slicePlanes) {
+  for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
     s->draw();
   }
 }
@@ -348,6 +446,8 @@ void renderScene() {
   // If a view has never been set, this will set it to the home view
   view::ensureViewValid();
 
+  if (!options::renderScene) return;
+
   if (render::engine->getTransparencyMode() == TransparencyMode::Pretty) {
     // Special depth peeling case: multiple render passes
     // We will perform several "peeled" rounds of rendering in to the usual scene buffer. After each, we will manually
@@ -360,7 +460,7 @@ void renderScene() {
     render::engine->sceneBufferFinal->clearAlpha = 0;
     render::engine->sceneBufferFinal->clear();
 
-    render::engine->setDepthMode(); // we need depth to be enabled for the clear below to do anything
+    render::engine->setDepthMode(DepthMode::Less); // we need depth to be enabled for the clear below to do anything
     render::engine->sceneDepthMinFrame->clear();
 
 
@@ -378,12 +478,14 @@ void renderScene() {
       if (!isRedraw) {
         // Only on first pass (kinda weird, but works out, and doesn't really matter)
         renderSlicePlanes();
+        render::engine->applyTransparencySettings();
+        drawStructuresDelayed();
       }
 
       // Composite the result of this pass in to the result buffer
       render::engine->sceneBufferFinal->bind();
       render::engine->setDepthMode(DepthMode::Disable);
-      render::engine->setBlendMode(BlendMode::Under);
+      render::engine->setBlendMode(BlendMode::AlphaUnder);
       render::engine->compositePeel->draw();
 
       // Update the minimum depth texture
@@ -393,16 +495,19 @@ void renderScene() {
 
   } else {
     // Normal case: single render pass
-    render::engine->applyTransparencySettings();
 
+    render::engine->applyTransparencySettings();
     drawStructures();
 
     render::engine->groundPlane.draw();
     renderSlicePlanes();
 
+    render::engine->applyTransparencySettings();
+    drawStructuresDelayed();
+
     render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
   }
-} // namespace
+}
 
 void renderSceneToScreen() {
   render::engine->bindDisplay();
@@ -414,6 +519,49 @@ void renderSceneToScreen() {
     render::engine->applyLightingTransform(render::engine->sceneColorFinal);
   }
 }
+
+void purgeWidgets() {
+  // remove any widget objects which are no longer defined
+  state::widgets.erase(std::remove_if(state::widgets.begin(), state::widgets.end(),
+                                      [](const WeakHandle<Widget>& w) { return !w.isValid(); }),
+                       state::widgets.end());
+}
+
+void userGuiBegin() {
+
+  ImVec2 userGuiLoc;
+  if (options::userGuiIsOnRightSide) {
+    // right side
+    userGuiLoc = ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin), imguiStackMargin);
+    ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
+  } else {
+    // left side
+    if (options::buildDefaultGuiPanels) {
+      userGuiLoc = ImVec2(leftWindowsWidth + 3 * imguiStackMargin, imguiStackMargin);
+    } else {
+      userGuiLoc = ImVec2(imguiStackMargin, imguiStackMargin);
+    }
+  }
+
+  ImGui::PushID("user_callback");
+  ImGui::SetNextWindowPos(userGuiLoc);
+
+  ImGui::Begin("##Command UI", nullptr);
+}
+
+void userGuiEnd() {
+
+  if (options::userGuiIsOnRightSide) {
+    rightWindowsWidth = ImGui::GetWindowWidth();
+    lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
+  } else {
+    lastWindowHeightUser = 0;
+  }
+  ImGui::End();
+  ImGui::PopID();
+}
+
+} // namespace
 
 void buildPolyscopeGui() {
 
@@ -462,18 +610,18 @@ void buildPolyscopeGui() {
 
     // clang-format off
 		ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar);
-		ImGui::TextUnformatted("View Navigation:");			
+		ImGui::TextUnformatted("View Navigation:");
 			ImGui::TextUnformatted("      Rotate: [left click drag]");
 			ImGui::TextUnformatted("   Translate: [shift] + [left click drag] OR [right click drag]");
 			ImGui::TextUnformatted("        Zoom: [scroll] OR [ctrl] + [shift] + [left click drag]");
 			ImGui::TextUnformatted("   Use [ctrl-c] and [ctrl-v] to save and restore camera poses");
 			ImGui::TextUnformatted("     via the clipboard.");
-		ImGui::TextUnformatted("\nMenu Navigation:");			
+		ImGui::TextUnformatted("\nMenu Navigation:");
 			ImGui::TextUnformatted("   Menu headers with a '>' can be clicked to collapse and expand.");
 			ImGui::TextUnformatted("   Use [ctrl] + [left click] to manually enter any numeric value");
 			ImGui::TextUnformatted("     via the keyboard.");
 			ImGui::TextUnformatted("   Press [space] to dismiss popup dialogs.");
-		ImGui::TextUnformatted("\nSelection:");			
+		ImGui::TextUnformatted("\nSelection:");
 			ImGui::TextUnformatted("   Select elements of a structure with [left click]. Data from");
 			ImGui::TextUnformatted("     that element will be shown on the right. Use [right click]");
 			ImGui::TextUnformatted("     to clear the selection.");
@@ -487,9 +635,31 @@ void buildPolyscopeGui() {
   // Appearance options tree
   render::engine->buildEngineGui();
 
-  // Debug options tree
-  ImGui::SetNextTreeNodeOpen(false, ImGuiCond_FirstUseEver);
+  // Render options tree
+  ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
+  if (ImGui::TreeNode("Render")) {
+
+    // fps
+    ImGui::Text("Rolling: %.1f ms/frame (%.1f fps)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::Text("Last: %.1f ms/frame (%.1f fps)", ImGui::GetIO().DeltaTime * 1000.f, 1.f / ImGui::GetIO().DeltaTime);
+
+    ImGui::PushItemWidth(40);
+    if (ImGui::InputInt("max fps", &options::maxFPS, 0)) {
+      if (options::maxFPS < 1 && options::maxFPS != -1) {
+        options::maxFPS = -1;
+      }
+    }
+
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+    ImGui::Checkbox("vsync", &options::enableVSync);
+
+    ImGui::TreePop();
+  }
+
+  ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Debug")) {
+
     if (ImGui::Button("Force refresh")) {
       refresh();
     }
@@ -505,8 +675,6 @@ void buildPolyscopeGui() {
     ImGui::TreePop();
   }
 
-  // fps
-  ImGui::Text("%.1f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
   lastWindowHeightPolyscope = imguiStackMargin + ImGui::GetWindowHeight();
   leftWindowsWidth = ImGui::GetWindowWidth();
@@ -521,29 +689,57 @@ void buildStructureGui() {
   ImGui::SetNextWindowPos(ImVec2(imguiStackMargin, lastWindowHeightPolyscope + 2 * imguiStackMargin));
   ImGui::SetNextWindowSize(
       ImVec2(leftWindowsWidth, view::windowHeight - lastWindowHeightPolyscope - 3 * imguiStackMargin));
-
   ImGui::Begin("Structures", &showStructureWindow);
 
-  for (auto catMapEntry : state::structures) {
+  // only show groups if there are any
+  if (state::groups.size() > 0) {
+    if (ImGui::CollapsingHeader("Groups", ImGuiTreeNodeFlags_DefaultOpen)) {
+      for (auto& x : state::groups) {
+        if (x.second->isRootGroup()) {
+          x.second->buildUI();
+        }
+      }
+    }
+  }
+
+  // groups have an option to hide structures from this list; assemble a list of structures to skip
+  std::unordered_set<Structure*> structuresToSkip;
+  for (auto& x : state::groups) {
+    x.second->appendStructuresToSkip(structuresToSkip);
+  }
+
+
+  for (auto& catMapEntry : state::structures) {
     std::string catName = catMapEntry.first;
 
-    std::map<std::string, Structure*>& structureMap = catMapEntry.second;
+    std::map<std::string, std::unique_ptr<Structure>>& structureMap = catMapEntry.second;
 
     ImGui::PushID(catName.c_str()); // ensure there are no conflicts with
                                     // identically-named labels
 
     // Build the structure's UI
-    ImGui::SetNextTreeNodeOpen(structureMap.size() > 0, ImGuiCond_FirstUseEver);
+    ImGui::SetNextItemOpen(structureMap.size() > 0, ImGuiCond_FirstUseEver);
     if (ImGui::CollapsingHeader((catName + " (" + std::to_string(structureMap.size()) + ")").c_str())) {
       // Draw shared GUI elements for all instances of the structure
       if (structureMap.size() > 0) {
         structureMap.begin()->second->buildSharedStructureUI();
       }
 
-      for (auto x : structureMap) {
-        ImGui::SetNextTreeNodeOpen(structureMap.size() <= 8,
-                                   ImGuiCond_FirstUseEver); // closed by default if more than 8
+      int32_t skipCount = 0;
+      for (auto& x : structureMap) {
+        ImGui::SetNextItemOpen(structureMap.size() <= 8,
+                               ImGuiCond_FirstUseEver); // closed by default if more than 8
+
+        if (structuresToSkip.find(x.second.get()) != structuresToSkip.end()) {
+          skipCount++;
+          continue;
+        }
+
         x.second->buildUI();
+      }
+
+      if (skipCount > 0) {
+        ImGui::Text("  (skipped %d hidden structures)", skipCount);
       }
     }
 
@@ -553,38 +749,6 @@ void buildStructureGui() {
   leftWindowsWidth = ImGui::GetWindowWidth();
 
   ImGui::End();
-}
-
-void buildUserGuiAndInvokeCallback() {
-
-  if (!options::invokeUserCallbackForNestedShow && contextStack.size() > 2) {
-    return;
-  }
-
-  if (state::userCallback) {
-    ImGui::PushID("user_callback");
-
-    if (options::openImGuiWindowForUserCallback) {
-      ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin), imguiStackMargin));
-      ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
-
-      ImGui::Begin("Command UI", nullptr);
-    }
-
-    state::userCallback();
-
-    if (options::openImGuiWindowForUserCallback) {
-      rightWindowsWidth = ImGui::GetWindowWidth();
-      lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
-      ImGui::End();
-    } else {
-      lastWindowHeightUser = imguiStackMargin;
-    }
-
-    ImGui::PopID();
-  } else {
-    lastWindowHeightUser = imguiStackMargin;
-  }
 }
 
 void buildPickGui() {
@@ -606,22 +770,49 @@ void buildPickGui() {
   }
 }
 
-auto lastMainLoopIterTime = std::chrono::steady_clock::now();
+void buildUserGuiAndInvokeCallback() {
 
-} // namespace
+  if (!options::invokeUserCallbackForNestedShow && (contextStack.size() + frameTickStack) > 2) {
+    return;
+  }
 
-void draw(bool withUI) {
+  if (state::userCallback) {
+
+    bool beganUserGUI = false;
+    if (options::buildGui && options::openImGuiWindowForUserCallback) {
+      userGuiBegin();
+      beganUserGUI = true;
+    }
+
+    state::userCallback();
+
+    if (beganUserGUI) {
+      userGuiEnd();
+    } else {
+      lastWindowHeightUser = imguiStackMargin;
+    }
+
+  } else {
+    lastWindowHeightUser = imguiStackMargin;
+  }
+}
+
+void draw(bool withUI, bool withContextCallback) {
   processLazyProperties();
 
   // Update buffer and context
   render::engine->makeContextCurrent();
   render::engine->bindDisplay();
-  render::engine->setBackgroundColor({view::bgColor[0], view::bgColor[1], view::bgColor[2]});
-  render::engine->setBackgroundAlpha(view::bgColor[3]);
+  render::engine->setBackgroundColor({0., 0., 0.});
+  render::engine->setBackgroundAlpha(0);
   render::engine->clearDisplay();
 
   if (withUI) {
     render::engine->ImGuiNewFrame();
+
+    processInputEvents();
+    view::updateFlight();
+    showDelayedWarnings();
   }
 
   // Build the GUI components
@@ -633,19 +824,27 @@ void draw(bool withUI) {
       // is necessary when ImGui::Render() happens below.
       buildUserGuiAndInvokeCallback();
 
-      buildPolyscopeGui();
-      buildStructureGui();
-      buildPickGui();
+      if (options::buildGui) {
+        if (options::buildDefaultGuiPanels) {
+          buildPolyscopeGui();
+          buildStructureGui();
+          buildPickGui();
+        }
 
-      for (Widget* w : state::widgets) {
-        w->buildGUI();
+        for (WeakHandle<Widget> wHandle : state::widgets) {
+          if (wHandle.isValid()) {
+            Widget& w = wHandle.get();
+            w.buildGUI();
+          }
+        }
       }
     }
   }
 
   // Execute the context callback, if there is one.
-  // This callback is Polyscope implementation detail, which is distinct from the userCallback (which gets called below)
-  if (contextStack.back().callback) {
+  // This callback is a Polyscope implementation detail, which is distinct from the userCallback (which gets called
+  // above)
+  if (withContextCallback && contextStack.back().callback) {
     (contextStack.back().callback)();
   }
 
@@ -662,8 +861,11 @@ void draw(bool withUI) {
   if (withUI) {
     // render widgets
     render::engine->bindDisplay();
-    for (Widget* w : state::widgets) {
-      w->draw();
+    for (WeakHandle<Widget> wHandle : state::widgets) {
+      if (wHandle.isValid()) {
+        Widget& w = wHandle.get();
+        w.draw();
+      }
     }
 
     render::engine->bindDisplay();
@@ -676,27 +878,14 @@ void mainLoopIteration() {
 
   processLazyProperties();
 
-  // The windowing system will let this busy-loop in some situations, unfortunately. Make sure that doesn't happen.
-  if (options::maxFPS != -1) {
-    auto currTime = std::chrono::steady_clock::now();
-    long microsecPerLoop = 1000000 / options::maxFPS;
-    microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
-    while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
-           microsecPerLoop) {
-      std::this_thread::yield();
-      currTime = std::chrono::steady_clock::now();
-    }
-  }
-  lastMainLoopIterTime = std::chrono::steady_clock::now();
-
   render::engine->makeContextCurrent();
   render::engine->updateWindowSize();
 
   // Process UI events
   render::engine->pollEvents();
-  processInputEvents();
-  view::updateFlight();
-  showDelayedWarnings();
+
+  // Housekeeping
+  purgeWidgets();
 
   // Rendering
   draw();
@@ -706,17 +895,33 @@ void mainLoopIteration() {
 void show(size_t forFrames) {
 
   if (!state::initialized) {
-    throw std::logic_error(options::printPrefix +
-                           "must initialize Polyscope with polyscope::init() before calling polyscope::show().");
+    exception("must initialize Polyscope with polyscope::init() before calling polyscope::show().");
   }
 
+  if (isHeadless() && forFrames == 0) {
+    info("You called show() while in headless mode. In headless mode there is no display to create windows on. By "
+         "default, the show() call will block indefinitely. If you did not mean to run in headless mode, check the "
+         "initialization settings. Otherwise, be sure to set a callback to make something happen while polyscope is "
+         "showing the UI, or use functions like screenshot() to render directly without calling show().");
+  }
+
+  unshowRequested = false;
+
+  // the popContext() doesn't quit until _after_ the last frame, so we need to decrement by 1 to get the count right
+  if (forFrames > 0) forFrames--;
+
   auto checkFrames = [&]() {
-    if (forFrames == 0) {
+    if (forFrames == 0 || unshowRequested) {
       popContext();
     } else {
       forFrames--;
     }
   };
+
+  if (options::giveFocusOnShow) {
+    render::engine->focusWindow();
+  }
+
   pushContext(checkFrames);
 
   if (options::usePrefsFile) {
@@ -725,30 +930,63 @@ void show(size_t forFrames) {
 
   // if this was the outermost show(), hide the window afterward
   if (contextStack.size() == 1) {
-    render::engine->hideWindow();
+    if (options::hideWindowAfterShow) {
+      render::engine->hideWindow();
+    }
   }
 }
 
-void shutdown(int exitCode) {
+void unshow() { unshowRequested = true; }
 
-  // TODO should we make an effort to destruct everything here?
+bool windowRequestsClose() {
+  if (render::engine && render::engine->windowRequestsClose()) {
+    return true;
+  }
+
+  return false;
+}
+
+bool isHeadless() {
+  if (!isInitialized()) {
+    exception("must initialize Polyscope with init() before calling isHeadless().");
+  }
+  if (render::engine) {
+    return render::engine->isHeadless();
+  }
+  return false;
+}
+
+void shutdown(bool allowMidFrameShutdown) {
+
+  if (!allowMidFrameShutdown && contextStack.size() > 1) {
+    terminatingError("shutdown() was called mid-frame (e.g. in a per-frame callback, or UI element). This is not "
+                     "permitted, shutdown() may only be called when the main loop is not executing.");
+  }
+
   if (options::usePrefsFile) {
     writePrefsFile();
   }
 
-  render::engine->shutdownImGui();
+  // Clear out all structures and other scene objects
+  removeAllStructures();
+  removeAllGroups();
+  removeAllSlicePlanes();
+  clearMessages();
+  state::userCallback = nullptr;
 
-  std::exit(exitCode);
+  // Shut down the render engine
+  render::engine->shutdown();
+  delete render::engine;
+  contextStack.clear();
+  render::engine = nullptr;
+  state::backend = "";
+  state::initialized = false;
 }
 
 bool registerStructure(Structure* s, bool replaceIfPresent) {
 
-  // Make sure a map for the type exists
   std::string typeName = s->typeName();
-  if (state::structures.find(typeName) == state::structures.end()) {
-    state::structures[typeName] = std::map<std::string, Structure*>();
-  }
-  std::map<std::string, Structure*>& sMap = state::structures[typeName];
+  std::map<std::string, std::unique_ptr<Structure>>& sMap = getStructureMapCreateIfNeeded(typeName);
 
   // Check if the structure name is in use
   bool inUse = sMap.find(s->name) != sMap.end();
@@ -756,8 +994,8 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
     if (replaceIfPresent) {
       removeStructure(s->name);
     } else {
-      polyscope::error("Attempted to register structure with name " + s->name +
-                       ", but a structure with that name already exists");
+      exception("Attempted to register structure with name " + s->name +
+                ", but a structure with that name already exists");
       return false;
     }
   }
@@ -771,7 +1009,7 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
   }
 
   // Add the new structure
-  sMap[s->name] = s;
+  sMap[s->name] = std::unique_ptr<Structure>(s); // take ownership with a unique pointer
   updateStructureExtents();
   requestRedraw();
 
@@ -780,29 +1018,31 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
 
 Structure* getStructure(std::string type, std::string name) {
 
+  if (type == "" || name == "") return nullptr;
+
   // If there are no structures of that type it is an automatic fail
   if (state::structures.find(type) == state::structures.end()) {
-    error("No structures of type " + type + " registered");
+    exception("No structures of type " + type + " registered");
     return nullptr;
   }
-  std::map<std::string, Structure*>& sMap = state::structures[type];
+  std::map<std::string, std::unique_ptr<Structure>>& sMap = state::structures[type];
 
   // Special automatic case, return any
   if (name == "") {
     if (sMap.size() != 1) {
-      error("Cannot use automatic structure get with empty name unless there is exactly one structure of that type "
-            "registered");
+      exception("Cannot use automatic structure get with empty name unless there is exactly one structure of that type "
+                "registered");
       return nullptr;
     }
-    return sMap.begin()->second;
+    return sMap.begin()->second.get();
   }
 
   // General case
   if (sMap.find(name) == sMap.end()) {
-    error("No structure of type " + type + " with name " + name + " registered");
+    exception("No structure of type " + type + " with name " + name + " registered");
     return nullptr;
   }
-  return sMap[name];
+  return sMap[name].get();
 }
 
 bool hasStructure(std::string type, std::string name) {
@@ -810,13 +1050,13 @@ bool hasStructure(std::string type, std::string name) {
   if (state::structures.find(type) == state::structures.end()) {
     return false;
   }
-  std::map<std::string, Structure*>& sMap = state::structures[type];
+  std::map<std::string, std::unique_ptr<Structure>>& sMap = state::structures[type];
 
   // Special automatic case, return any
   if (name == "") {
     if (sMap.size() != 1) {
-      error("Cannot use automatic structure get with empty name unless there is exactly one structure of that type "
-            "registered");
+      exception("Cannot use automatic structure get with empty name unless there is exactly one structure of that type "
+                "registered");
     }
     return true;
   }
@@ -829,25 +1069,31 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
   // If there are no structures of that type it is an automatic fail
   if (state::structures.find(type) == state::structures.end()) {
     if (errorIfAbsent) {
-      error("No structures of type " + type + " registered");
+      exception("No structures of type " + type + " registered");
     }
     return;
   }
-  std::map<std::string, Structure*>& sMap = state::structures[type];
+  std::map<std::string, std::unique_ptr<Structure>>& sMap = state::structures[type];
 
   // Check if structure exists
   if (sMap.find(name) == sMap.end()) {
     if (errorIfAbsent) {
-      error("No structure of type " + type + " and name " + name + " registered");
+      exception("No structure of type " + type + " and name " + name + " registered");
     }
     return;
   }
 
   // Structure exists, remove it
-  Structure* s = sMap[name];
+  Structure* s = sMap[name].get();
+  if (static_cast<void*>(s) == static_cast<void*>(internal::globalFloatingQuantityStructure)) {
+    internal::globalFloatingQuantityStructure = nullptr;
+  }
+  // remove it from all existing groups
+  for (auto& g : state::groups) {
+    g.second->removeChildStructure(*s);
+  }
   pick::resetSelectionIfStructure(s);
   sMap.erase(s->name);
-  delete s;
   updateStructureExtents();
   return;
 }
@@ -860,17 +1106,18 @@ void removeStructure(std::string name, bool errorIfAbsent) {
 
   // Check if we can find exactly one structure matching the name
   Structure* targetStruct = nullptr;
-  for (auto typeMap : state::structures) {
-    for (auto entry : typeMap.second) {
+  for (auto& typeMap : state::structures) {
+    for (auto& entry : typeMap.second) {
 
       // Found a matching structure
       if (entry.first == name) {
         if (targetStruct == nullptr) {
-          targetStruct = entry.second;
+          targetStruct = entry.second.get();
         } else {
-          error("Cannot use automatic structure remove with empty name unless there is exactly one structure of that "
-                "type registered. Found two structures of different types with that name: " +
-                targetStruct->typeName() + " and " + typeMap.first + ".");
+          exception(
+              "Cannot use automatic structure remove with empty name unless there is exactly one structure of that "
+              "type registered. Found two structures of different types with that name: " +
+              targetStruct->typeName() + " and " + typeMap.first + ".");
           return;
         }
       }
@@ -880,7 +1127,7 @@ void removeStructure(std::string name, bool errorIfAbsent) {
   // Error if none found.
   if (targetStruct == nullptr) {
     if (errorIfAbsent) {
-      error("No structure named: " + name + " to remove.");
+      exception("No structure named: " + name + " to remove.");
     }
     return;
   }
@@ -891,16 +1138,16 @@ void removeStructure(std::string name, bool errorIfAbsent) {
 
 void removeAllStructures() {
 
-  for (auto typeMap : state::structures) {
+  for (auto& typeMap : state::structures) {
 
     // dodge iterator invalidation
     std::vector<std::string> names;
-    for (auto entry : typeMap.second) {
+    for (auto& entry : typeMap.second) {
       names.push_back(entry.first);
     }
 
     // remove all
-    for (auto name : names) {
+    for (std::string name : names) {
       removeStructure(typeMap.first, name);
     }
   }
@@ -909,14 +1156,60 @@ void removeAllStructures() {
   pick::resetSelection();
 }
 
+
+Group* createGroup(std::string name) {
+  checkInitialized();
+
+  // check if group already exists
+  bool inUse = state::groups.find(name) != state::groups.end();
+  if (inUse) {
+    exception("Attempted to register group with name " + name + ", but a group with that name already exists");
+    return nullptr;
+  }
+
+  // add to the group map
+  state::groups[name] = std::unique_ptr<Group>(new Group(name));
+
+  return state::groups[name].get();
+}
+
+Group* getGroup(std::string groupName) {
+  // check if group exists
+  bool groupExists = state::groups.find(groupName) != state::groups.end();
+  if (!groupExists) {
+    exception("No group with name " + groupName + " exists");
+    return nullptr;
+  }
+
+  return state::groups.find(groupName)->second.get();
+}
+
+void removeGroup(std::string name, bool errorIfAbsent) {
+  // Check if group exists
+  if (state::groups.find(name) == state::groups.end()) {
+    if (errorIfAbsent) {
+      exception("No group with name " + name + " registered");
+    }
+    return;
+  }
+
+  // Group exists, remove it
+  state::groups.erase(name);
+  return;
+}
+
+void removeGroup(Group* group, bool errorIfAbsent) { removeGroup(group->name, errorIfAbsent); }
+
+void removeAllGroups() { state::groups.clear(); }
+
 void refresh() {
 
   // reset the ground plane
   render::engine->groundPlane.prepare();
 
   // reset all of the structures
-  for (auto cat : state::structures) {
-    for (auto x : cat.second) {
+  for (auto& cat : state::structures) {
+    for (auto& x : cat.second) {
       x.second->refresh();
     }
   }
@@ -993,13 +1286,24 @@ void processLazyProperties() {
 };
 
 void updateStructureExtents() {
+
+  if (!options::automaticallyComputeSceneExtents) {
+    return;
+  }
+
+  // Note: the cost multiple calls to this function scales only with the number of structures, not the size of the data
+  // in those structures, because structures internally cache the extents of their data.
+
   // Compute length scale and bbox as the max of all structures
   state::lengthScale = 0.0;
   glm::vec3 minBbox = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 maxBbox = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
 
-  for (auto cat : state::structures) {
-    for (auto x : cat.second) {
+  for (auto& cat : state::structures) {
+    for (auto& x : cat.second) {
+      if (!x.second->hasExtents()) {
+        continue;
+      }
       state::lengthScale = std::max(state::lengthScale, x.second->lengthScale());
       auto bbox = x.second->boundingBox();
       minBbox = componentwiseMin(minBbox, std::get<0>(bbox));
@@ -1007,10 +1311,20 @@ void updateStructureExtents() {
     }
   }
 
+  // If we got a non-finite bounding box, fix it
   if (!isFinite(minBbox) || !isFinite(maxBbox)) {
     minBbox = -glm::vec3{1, 1, 1};
     maxBbox = glm::vec3{1, 1, 1};
   }
+
+  // If we got a degenerate bounding box, perturb it slightly
+  if (minBbox == maxBbox) {
+    double offsetScale = (state::lengthScale == 0) ? 1e-5 : state::lengthScale * 1e-5;
+    glm::vec3 offset{offsetScale, offsetScale, offsetScale};
+    minBbox = minBbox - offset / 2.f;
+    maxBbox = maxBbox + offset / 2.f;
+  }
+
   std::get<0>(state::boundingBox) = minBbox;
   std::get<1>(state::boundingBox) = maxBbox;
 
@@ -1021,9 +1335,11 @@ void updateStructureExtents() {
     state::lengthScale = glm::length(maxBbox - minBbox);
   }
 
-  // Center is center of bounding box
-  state::center = 0.5f * (minBbox + maxBbox);
+  requestRedraw();
 }
 
+namespace state {
+glm::vec3 center() { return 0.5f * (std::get<0>(state::boundingBox) + std::get<1>(state::boundingBox)); }
+} // namespace state
 
 } // namespace polyscope

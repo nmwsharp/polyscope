@@ -1,4 +1,5 @@
-// Copyright 2017-2019, Nicholas Sharp and the Polyscope contributors. http://polyscope.run.
+// Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
+
 
 #include "polyscope/render/opengl/shaders/lighting_shaders.h"
 #include "polyscope/render/opengl/shaders/texture_draw_shaders.h"
@@ -7,7 +8,7 @@
 
 namespace polyscope {
 namespace render{
-namespace backend_openGL3_glfw {
+namespace backend_openGL3 {
 
 const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER = {
     
@@ -16,10 +17,12 @@ const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER = {
     
     // uniforms
     { 
-        {"u_exposure", DataType::Float},
-        {"u_gamma", DataType::Float},
-        {"u_whiteLevel", DataType::Float},
-        {"u_texelSize", DataType::Vector2Float},
+        {"u_bgColor", RenderDataType::Vector3Float},
+        {"u_bgAlpha", RenderDataType::Float},
+        {"u_exposure", RenderDataType::Float},
+        {"u_gamma", RenderDataType::Float},
+        {"u_whiteLevel", RenderDataType::Float},
+        {"u_texelSize", RenderDataType::Vector2Float},
     }, 
 
     // attributes
@@ -36,13 +39,15 @@ R"(
 
       in vec2 tCoord;
       uniform sampler2D t_image;
+      uniform vec3 u_bgColor;
+      uniform float u_bgAlpha;
       uniform float u_exposure;
       uniform float u_whiteLevel;
       uniform float u_gamma;
       uniform vec2 u_texelSize;
       layout (location = 0) out vec4 outputVal;
 
-      //vec2 texelSize = vec2(1.0 / textureWidth, 1.0 / textureHeight);
+      float luminance(vec3 v);
 
       vec4 sampleSingle(vec2 tCoord) {
           vec4 sampleVal = texture(t_image, tCoord);
@@ -65,20 +70,31 @@ R"(
 
       void main() {
 
+        // these are defined to be premultiplied
         vec4 color4 = imageSample();
         vec3 color = color4.rgb;
         float alpha = color4.a;
 
-        // "lighting"
-        color = color * u_exposure;
+        // the u_bgColor / u_bgAlpha are *not* premultiplied
+
+        // composite onto non-premultiplied value
+        // this computes the color as if the background had alpha=1, then
+        // computes alpha with alpha-over blending
+        // this obviously destroys the premultiplied-ness, but this is inevitable
+        // since we want to output non-premultiplied values
+        color = color + (1. - alpha) * u_bgColor;
+        alpha = alpha + (1. - alpha) * u_bgAlpha;
 
         // tonemapping (extended Reinhard)
-        vec3 num = color * (1.0f + (color / vec3(u_whiteLevel * u_whiteLevel)));
-        vec3 den = (1.0f + color);
-        color = num / den;
+        color = color * u_exposure;
+        float lum = luminance(color);
+        float num = lum * (1.0f + (lum / (u_whiteLevel * u_whiteLevel)));
+        float den = (1.0f + lum);
+        float new_lum = num / den;
+        color = color * (new_lum / lum);
         
         // gamma correction
-        color = pow(color, vec3(1.0/u_gamma));  
+        color = pow(color, vec3(1.0f/u_gamma));  
        
         outputVal = vec4(color, alpha);
     }  
@@ -158,13 +174,55 @@ const ShaderReplacementRule DOWNSAMPLE_RESOLVE_4 (
     /* textures */ {}
 );
 
+const ShaderReplacementRule INVERSE_TONEMAP (
+    /* rule name */ "INVERSE_TONEMAP",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_exposure;
+          uniform float u_whiteLevel;
+          uniform float u_gamma;
+          float luminance(vec3 v);
+        )"},
+      {"GENERATE_LIT_COLOR", R"(
+          // NOTE: code is lazily duplicated between this rule and below
+          vec3 litColorUngamma = pow(litColor, vec3(u_gamma));
+          float litColorLum = luminance(litColorUngamma);
+          float invtonemap_a = -1.f / (u_whiteLevel*u_whiteLevel);
+          float invtonemap_b = (litColorLum - 1.f);
+          float invtonemap_c = litColorLum;
+          float litColorOrigLum = (-invtonemap_b - sqrt(invtonemap_b * invtonemap_b - 4.f*invtonemap_a*invtonemap_c)) / (2.f * invtonemap_a);
+          litColor = litColorUngamma * (litColorOrigLum / litColorLum);
+          litColor = litColor / u_exposure;
+        )"},
+      {"TEXTURE_OUT_ADJUST", R"(
+          // NOTE: code is lazily duplicated between this rule and above
+          vec3 adj_textureOut3 = vec3(textureOut);
+          vec3 litColorUngamma = pow(adj_textureOut3, vec3(u_gamma));
+          float litColorLum = luminance(litColorUngamma);
+          float invtonemap_a = -1.f / (u_whiteLevel*u_whiteLevel);
+          float invtonemap_b = (litColorLum - 1.f);
+          float invtonemap_c = litColorLum;
+          float litColorOrigLum = (-invtonemap_b - sqrt(invtonemap_b * invtonemap_b - 4.f*invtonemap_a*invtonemap_c)) / (2.f * invtonemap_a);
+          adj_textureOut3 = litColorUngamma * (litColorOrigLum / litColorLum);
+          adj_textureOut3 = adj_textureOut3 / u_exposure;
+          textureOut.rgb = adj_textureOut3;
+        )"},
+    },
+    /* uniforms */ {
+      {"u_exposure", RenderDataType::Float},
+      {"u_whiteLevel", RenderDataType::Float},
+      {"u_gamma", RenderDataType::Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
 
 const ShaderReplacementRule TRANSPARENCY_RESOLVE_SIMPLE (
     /* rule name */ "TRANSPARENCY_RESOLVE_SIMPLE ",
     { /* replacement sources */
       {"SAMPLE_SINGLE", R"(
       sampleVal.xyz = sampleVal.xyz / (sampleVal.w + 1e-4);
-      //sampleVal.w = clamp(sampleVal.w - .5, 0., 1.); // subtract .5 corresponds to default background transparency
       sampleVal.w = clamp(sampleVal.w, 0., 1.);
         )"},
     },
@@ -180,11 +238,11 @@ const ShaderReplacementRule TRANSPARENCY_STRUCTURE (
           uniform float u_transparency;
         )"},
       {"GENERATE_ALPHA", R"(
-          alphaOut = u_transparency;
+          alphaOut *= u_transparency;
         )"},
     },
     /* uniforms */ {
-        {"u_transparency", DataType::Float},
+        {"u_transparency", RenderDataType::Float},
     },
     /* attributes */ {},
     /* textures */ {}
@@ -199,7 +257,7 @@ const ShaderReplacementRule TRANSPARENCY_PEEL_STRUCTURE (
           uniform vec2 u_viewportDim;
         )"},
       {"GENERATE_ALPHA", R"(
-          alphaOut = u_transparency;
+          alphaOut *= u_transparency;
         )"},
       {"GLOBAL_FRAGMENT_FILTER", R"(
           // assumption: "float depth" must be already set 
@@ -212,8 +270,8 @@ const ShaderReplacementRule TRANSPARENCY_PEEL_STRUCTURE (
         )"},
     },
     /* uniforms */ {
-        {"u_transparency", DataType::Float},
-        {"u_viewportDim", DataType::Vector2Float},
+        {"u_transparency", RenderDataType::Float},
+        {"u_viewportDim", RenderDataType::Vector2Float},
     },
     /* attributes */ {},
     /* textures */ {
@@ -246,6 +304,6 @@ const ShaderReplacementRule TRANSPARENCY_PEEL_GROUND (
 
 // clang-format on
 
-} // namespace backend_openGL3_glfw
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope
