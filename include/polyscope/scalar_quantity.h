@@ -77,6 +77,10 @@ protected:
   PersistentValue<bool> isolinesEnabled;
   PersistentValue<ScaledValue<float>> isolineWidth;
   PersistentValue<float> isolineDarkness;
+  PersistentValue<bool> contoursEnabled;
+  PersistentValue<ScaledValue<float>> contourFrequency;
+  PersistentValue<float> contourThickness;
+  PersistentValue<float> contourDarkness;
 };
 
 } // namespace polyscope

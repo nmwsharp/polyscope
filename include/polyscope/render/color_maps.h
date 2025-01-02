@@ -18,8 +18,14 @@ bool buildColormapSelector(std::string& cm, std::string fieldname = "##colormap_
 
 
 // ColorMaps currently available below
-//    Sequential:
+//    Sequential & perceptually uniform:
 //      - viridis (CM_VIRIDIS)
+//      - magma (CM_MAGMA)
+//      - inferno (CM_INFERNO)
+//      - plasma (CM_PLASMA)
+//      - gray (CM_GRAY)
+//
+//    Sequential:
 //      - blues (CM_BLUES)
 //      - reds (CM_REDS)
 //
@@ -32,7 +38,6 @@ bool buildColormapSelector(std::string& cm, std::string fieldname = "##colormap_
 //      - rainbow (CM_RAINBOW)
 //      - jet (CM_JET)
 //      - turbo (CM_TURBO)
-//      - hsv (CM_HSV)
 //
 //    Cyclic:
 //      - phase (CM_PHASE)
