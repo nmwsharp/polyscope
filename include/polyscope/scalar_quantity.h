@@ -58,9 +58,6 @@ public:
   bool getIsolinesEnabled();
   QuantityT* setIsolineStyle(IsolineStyle val);
   IsolineStyle getIsolineStyle();
-  // TODO rename and alias
-  // NOTE isolineWidth is poorly named, it should be "isolineSpacing" or "isolineFrequency" (leaving to avoid a breaking
-  // change)
   QuantityT* setIsolinePeriod(double size, bool isRelative);
   double getIsolinePeriod();
   QuantityT* setIsolineDarkness(double val);
