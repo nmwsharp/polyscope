@@ -330,7 +330,6 @@ void SurfaceMesh::computeTriangleAllVertexInds() {
   triangleAllVertexInds.data.clear();
   triangleAllVertexInds.data.reserve(3 * 3 * nFacesTriangulation());
 
-  size_t iTriFace = 0;
   for (size_t iF = 0; iF < nFaces(); iF++) {
     size_t iStart = faceIndsStart[iF];
     size_t D = faceIndsStart[iF + 1] - iStart;
@@ -347,7 +346,6 @@ void SurfaceMesh::computeTriangleAllVertexInds() {
         triangleAllVertexInds.data.push_back(vB);
         triangleAllVertexInds.data.push_back(vC);
       }
-      iTriFace++;
     }
   }
 
