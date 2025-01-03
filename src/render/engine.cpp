@@ -1149,11 +1149,11 @@ void Engine::loadDefaultColorMap(std::string name) {
 }
 
 void Engine::loadDefaultColorMaps() {
-  loadDefaultColorMap("gray");
   loadDefaultColorMap("viridis");
   loadDefaultColorMap("plasma");
   loadDefaultColorMap("inferno");
   loadDefaultColorMap("magma");
+  loadDefaultColorMap("gray");
   loadDefaultColorMap("coolwarm");
   loadDefaultColorMap("blues");
   loadDefaultColorMap("reds");
