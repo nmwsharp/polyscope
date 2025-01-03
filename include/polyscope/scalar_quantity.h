@@ -53,12 +53,19 @@ public:
   std::pair<double, double> getDataRange();
 
   // Isolines
+  // NOTE there's a name typo, errant `s` in isolinesEnabled (leaving to avoid breaking change)
   QuantityT* setIsolinesEnabled(bool newEnabled);
   bool getIsolinesEnabled();
+  QuantityT* setIsolineStyle(IsolineStyle val);
+  IsolineStyle getIsolineStyle();
+  // TODO rename and alias
+  // NOTE isolineWidth is poorly named, it should be "isolineSpacing" or "isolineFrequency" (leaving to avoid a breaking change)
   QuantityT* setIsolineWidth(double size, bool isRelative);
   double getIsolineWidth();
   QuantityT* setIsolineDarkness(double val);
   double getIsolineDarkness();
+  QuantityT* setIsolineContourThickness(double val);
+  double getIsolineContourThickness();
 
 protected:
   std::vector<float> valuesData;
@@ -75,12 +82,10 @@ protected:
   // Parameters
   PersistentValue<std::string> cMap;
   PersistentValue<bool> isolinesEnabled;
+  PersistentValue<IsolineStyle> isolineStyle;
   PersistentValue<ScaledValue<float>> isolineWidth;
   PersistentValue<float> isolineDarkness;
-  PersistentValue<bool> contoursEnabled;
-  PersistentValue<ScaledValue<float>> contourFrequency;
-  PersistentValue<float> contourThickness;
-  PersistentValue<float> contourDarkness;
+  PersistentValue<float> isolineContourThickness;
 };
 
 } // namespace polyscope
