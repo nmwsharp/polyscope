@@ -15,8 +15,8 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
       cMap(quantity.uniquePrefix() + "cmap", defaultColorMap(dataType)),
       isolinesEnabled(quantity.uniquePrefix() + "isolinesEnabled", false),
       isolineStyle(quantity.uniquePrefix() + "isolinesStyle", IsolineStyle::Stripe),
-      isolineWidth(quantity.uniquePrefix() + "isolineWidth",
-                   absoluteValue((dataRange.second - dataRange.first) * 0.02)),
+      isolinePeriod(quantity.uniquePrefix() + "isolinePeriod",
+                    absoluteValue((dataRange.second - dataRange.first) * 0.02)),
       isolineDarkness(quantity.uniquePrefix() + "isolineDarkness", 0.7),
       isolineContourThickness(quantity.uniquePrefix() + "isolineContourThickness", 0.3)
 
@@ -160,7 +160,7 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
       return "";
     };
 
-    ImGui::TextUnformatted("Isoline Style");
+    ImGui::TextUnformatted("Isoline style");
     ImGui::SameLine();
     if (ImGui::BeginCombo("##IsolineStyle", styleName(getIsolineStyle()).c_str())) {
       for (IsolineStyle s : {IsolineStyle::Stripe, IsolineStyle::Contour}) {
@@ -173,19 +173,19 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
     }
 
     // Isoline width
-    ImGui::TextUnformatted("Isoline width");
+    ImGui::TextUnformatted("Isoline period");
     ImGui::SameLine();
-    if (isolineWidth.get().isRelative()) {
-      if (ImGui::DragFloat("##Isoline width relative", isolineWidth.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f",
+    if (isolinePeriod.get().isRelative()) {
+      if (ImGui::DragFloat("##Isoline period relative", isolinePeriod.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f",
                            ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
-        isolineWidth.manuallyChanged();
+        isolinePeriod.manuallyChanged();
         requestRedraw();
       }
     } else {
       float scaleWidth = dataRange.second - dataRange.first;
-      if (ImGui::DragFloat("##Isoline width absolute", isolineWidth.get().getValuePtr(), scaleWidth / 1000, 0.,
+      if (ImGui::DragFloat("##Isoline period absolute", isolinePeriod.get().getValuePtr(), scaleWidth / 1000, 0.,
                            scaleWidth, "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
-        isolineWidth.manuallyChanged();
+        isolinePeriod.manuallyChanged();
         requestRedraw();
       }
     }
@@ -201,9 +201,9 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
 
     // Isoline Contour Thickness
     if (isolineStyle.get() == IsolineStyle::Contour) {
-      ImGui::TextUnformatted("Contour Thickness");
+      ImGui::TextUnformatted("Contour thickness");
       ImGui::SameLine();
-      if (ImGui::DragFloat("##Contour Thickness", &isolineContourThickness.get(), .001, 0.0001, 1.0, "%.4f",
+      if (ImGui::DragFloat("##Contour thickness", &isolineContourThickness.get(), .001, 0.0001, 1.0, "%.4f",
                            ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
         isolineContourThickness.manuallyChanged();
         requestRedraw();
@@ -256,11 +256,11 @@ void ScalarQuantity<QuantityT>::setScalarUniforms(render::ShaderProgram& p) {
   if (isolinesEnabled.get()) {
     switch (isolineStyle.get()) {
     case IsolineStyle::Stripe:
-      p.setUniform("u_modLen", getIsolineWidth());
+      p.setUniform("u_modLen", getIsolinePeriod());
       p.setUniform("u_modDarkness", getIsolineDarkness());
       break;
     case IsolineStyle::Contour:
-      p.setUniform("u_modLen", getIsolineWidth());
+      p.setUniform("u_modLen", getIsolinePeriod());
       p.setUniform("u_modThickness", getIsolineContourThickness());
       p.setUniform("u_modDarkness", getIsolineDarkness());
       break;
@@ -333,8 +333,8 @@ std::pair<double, double> ScalarQuantity<QuantityT>::getDataRange() {
 }
 
 template <typename QuantityT>
-QuantityT* ScalarQuantity<QuantityT>::setIsolineWidth(double size, bool isRelative) {
-  isolineWidth = ScaledValue<float>(size, isRelative);
+QuantityT* ScalarQuantity<QuantityT>::setIsolinePeriod(double size, bool isRelative) {
+  isolinePeriod = ScaledValue<float>(size, isRelative);
   if (!isolinesEnabled.get()) {
     setIsolinesEnabled(true);
   }
@@ -342,8 +342,17 @@ QuantityT* ScalarQuantity<QuantityT>::setIsolineWidth(double size, bool isRelati
   return &quantity;
 }
 template <typename QuantityT>
+double ScalarQuantity<QuantityT>::getIsolinePeriod() {
+  return isolinePeriod.get().asAbsolute();
+}
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setIsolineWidth(double size, bool isRelative) {
+  return setIsolinePeriod(size, isRelative);
+}
+template <typename QuantityT>
 double ScalarQuantity<QuantityT>::getIsolineWidth() {
-  return isolineWidth.get().asAbsolute();
+  return getIsolinePeriod();
 }
 
 template <typename QuantityT>

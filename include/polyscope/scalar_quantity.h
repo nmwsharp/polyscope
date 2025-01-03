@@ -59,13 +59,18 @@ public:
   QuantityT* setIsolineStyle(IsolineStyle val);
   IsolineStyle getIsolineStyle();
   // TODO rename and alias
-  // NOTE isolineWidth is poorly named, it should be "isolineSpacing" or "isolineFrequency" (leaving to avoid a breaking change)
-  QuantityT* setIsolineWidth(double size, bool isRelative);
-  double getIsolineWidth();
+  // NOTE isolineWidth is poorly named, it should be "isolineSpacing" or "isolineFrequency" (leaving to avoid a breaking
+  // change)
+  QuantityT* setIsolinePeriod(double size, bool isRelative);
+  double getIsolinePeriod();
   QuantityT* setIsolineDarkness(double val);
   double getIsolineDarkness();
   QuantityT* setIsolineContourThickness(double val);
   double getIsolineContourThickness();
+
+  // Old / depracted methods kept for compatability
+  QuantityT* setIsolineWidth(double size, bool isRelative);
+  double getIsolineWidth();
 
 protected:
   std::vector<float> valuesData;
@@ -83,7 +88,7 @@ protected:
   PersistentValue<std::string> cMap;
   PersistentValue<bool> isolinesEnabled;
   PersistentValue<IsolineStyle> isolineStyle;
-  PersistentValue<ScaledValue<float>> isolineWidth;
+  PersistentValue<ScaledValue<float>> isolinePeriod;
   PersistentValue<float> isolineDarkness;
   PersistentValue<float> isolineContourThickness;
 };
