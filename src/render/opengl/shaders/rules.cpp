@@ -327,6 +327,32 @@ const ShaderReplacementRule ISOLINE_STRIPE_VALUECOLOR (
     /* textures */ {}
 );
 
+
+const ShaderReplacementRule CONTOUR_VALUECOLOR (
+    /* rule name */ "CONTOUR_VALUECOLOR",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform float u_modLen;
+          uniform float u_modThickness;
+          uniform float u_modDarkness;
+        )"},
+      {"GENERATE_SHADE_COLOR", R"(
+        /* TODO: get rid of arbitrary constants */
+        vec2 gradF = vec2( dFdx(shadeValue), dFdy(shadeValue) );
+        float w = 1./( 10. / u_modLen * u_modThickness * length(gradF) );
+        float s = u_modDarkness * exp( -pow( w*(fract(abs(shadeValue/u_modLen))-0.5), 8.0 ));
+        albedoColor *= 1.-s;
+      )"}
+    },
+    /* uniforms */ {
+        {"u_modLen", RenderDataType::Float},
+        {"u_modThickness", RenderDataType::Float},
+        {"u_modDarkness", RenderDataType::Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
 const ShaderReplacementRule CHECKER_VALUE2COLOR (
     /* rule name */ "CHECKER_VALUE2COLOR",
     { /* replacement sources */

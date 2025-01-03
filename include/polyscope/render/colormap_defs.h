@@ -11,7 +11,11 @@ namespace render {
 // === the default colormaps themselves
 // (stored in color_maps.cpp)
 
+extern const std::vector<glm::vec3> CM_GRAY;
 extern const std::vector<glm::vec3> CM_VIRIDIS;
+extern const std::vector<glm::vec3> CM_PLASMA;
+extern const std::vector<glm::vec3> CM_INFERNO;
+extern const std::vector<glm::vec3> CM_MAGMA;
 extern const std::vector<glm::vec3> CM_COOLWARM;
 extern const std::vector<glm::vec3> CM_BLUES;
 extern const std::vector<glm::vec3> CM_PIYG;

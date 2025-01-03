@@ -24,6 +24,12 @@ TEST_F(PolyscopeTest, FloatingImageTest) {
     im->setShowFullscreen(true);
     polyscope::show(3);
 
+    // try some options
+    im->setIsolinesEnabled(true);
+    polyscope::show(3);
+    im->setIsolineStyle(polyscope::IsolineStyle::Contour);
+    polyscope::show(3);
+
     // categorical
     polyscope::ScalarImageQuantity* im2 = polyscope::addScalarImageQuantity(
         "im scalar cat", dimX, dimY, vals, polyscope::ImageOrigin::UpperLeft, polyscope::DataType::CATEGORICAL);

@@ -14,9 +14,11 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
       vizRangeMax(quantity.uniquePrefix() + "vizRangeMax", -777.), // including clearing cache
       cMap(quantity.uniquePrefix() + "cmap", defaultColorMap(dataType)),
       isolinesEnabled(quantity.uniquePrefix() + "isolinesEnabled", false),
-      isolineWidth(quantity.uniquePrefix() + "isolineWidth",
-                   absoluteValue((dataRange.second - dataRange.first) * 0.02)),
-      isolineDarkness(quantity.uniquePrefix() + "isolineDarkness", 0.7)
+      isolineStyle(quantity.uniquePrefix() + "isolinesStyle", IsolineStyle::Stripe),
+      isolinePeriod(quantity.uniquePrefix() + "isolinePeriod",
+                    absoluteValue((dataRange.second - dataRange.first) * 0.02)),
+      isolineDarkness(quantity.uniquePrefix() + "isolineDarkness", 0.7),
+      isolineContourThickness(quantity.uniquePrefix() + "isolineContourThickness", 0.3)
 
 {
   values.checkInvalidValues();
@@ -144,22 +146,46 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
 
   // Isolines
   if (isolinesEnabled.get()) {
+
     ImGui::PushItemWidth(100);
 
-    // Isoline width
-    ImGui::TextUnformatted("Isoline width");
+
+    auto styleName = [](const IsolineStyle& m) -> std::string {
+      switch (m) {
+      case IsolineStyle::Stripe:
+        return "Stripe";
+      case IsolineStyle::Contour:
+        return "Contour";
+      }
+      return "";
+    };
+
+    ImGui::TextUnformatted("Isoline style");
     ImGui::SameLine();
-    if (isolineWidth.get().isRelative()) {
-      if (ImGui::DragFloat("##Isoline width relative", isolineWidth.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f",
+    if (ImGui::BeginCombo("##IsolineStyle", styleName(getIsolineStyle()).c_str())) {
+      for (IsolineStyle s : {IsolineStyle::Stripe, IsolineStyle::Contour}) {
+        std::string sName = styleName(s);
+        if (ImGui::Selectable(sName.c_str(), getIsolineStyle() == s)) {
+          setIsolineStyle(s);
+        }
+      }
+      ImGui::EndCombo();
+    }
+
+    // Isoline width
+    ImGui::TextUnformatted("Isoline period");
+    ImGui::SameLine();
+    if (isolinePeriod.get().isRelative()) {
+      if (ImGui::DragFloat("##Isoline period relative", isolinePeriod.get().getValuePtr(), .001, 0.0001, 1.0, "%.4f",
                            ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
-        isolineWidth.manuallyChanged();
+        isolinePeriod.manuallyChanged();
         requestRedraw();
       }
     } else {
       float scaleWidth = dataRange.second - dataRange.first;
-      if (ImGui::DragFloat("##Isoline width absolute", isolineWidth.get().getValuePtr(), scaleWidth / 1000, 0.,
+      if (ImGui::DragFloat("##Isoline period absolute", isolinePeriod.get().getValuePtr(), scaleWidth / 1000, 0.,
                            scaleWidth, "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
-        isolineWidth.manuallyChanged();
+        isolinePeriod.manuallyChanged();
         requestRedraw();
       }
     }
@@ -170,6 +196,18 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
     if (ImGui::DragFloat("##Isoline darkness", &isolineDarkness.get(), 0.01, 0.)) {
       isolineDarkness.manuallyChanged();
       requestRedraw();
+    }
+
+
+    // Isoline Contour Thickness
+    if (isolineStyle.get() == IsolineStyle::Contour) {
+      ImGui::TextUnformatted("Contour thickness");
+      ImGui::SameLine();
+      if (ImGui::DragFloat("##Contour thickness", &isolineContourThickness.get(), .001, 0.0001, 1.0, "%.4f",
+                           ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
+        isolineContourThickness.manuallyChanged();
+        requestRedraw();
+      }
     }
 
     ImGui::PopItemWidth();
@@ -192,9 +230,18 @@ std::vector<std::string> ScalarQuantity<QuantityT>::addScalarRules(std::vector<s
     // common case
     rules.push_back("SHADE_COLORMAP_VALUE");
   }
+
   if (isolinesEnabled.get()) {
-    rules.push_back("ISOLINE_STRIPE_VALUECOLOR");
+    switch (isolineStyle.get()) {
+    case IsolineStyle::Stripe:
+      rules.push_back("ISOLINE_STRIPE_VALUECOLOR");
+      break;
+    case IsolineStyle::Contour:
+      rules.push_back("CONTOUR_VALUECOLOR");
+      break;
+    }
   }
+
   return rules;
 }
 
@@ -207,8 +254,17 @@ void ScalarQuantity<QuantityT>::setScalarUniforms(render::ShaderProgram& p) {
   }
 
   if (isolinesEnabled.get()) {
-    p.setUniform("u_modLen", getIsolineWidth());
-    p.setUniform("u_modDarkness", getIsolineDarkness());
+    switch (isolineStyle.get()) {
+    case IsolineStyle::Stripe:
+      p.setUniform("u_modLen", getIsolinePeriod());
+      p.setUniform("u_modDarkness", getIsolineDarkness());
+      break;
+    case IsolineStyle::Contour:
+      p.setUniform("u_modLen", getIsolinePeriod());
+      p.setUniform("u_modThickness", getIsolineContourThickness());
+      p.setUniform("u_modDarkness", getIsolineDarkness());
+      break;
+    }
   }
 }
 
@@ -277,8 +333,8 @@ std::pair<double, double> ScalarQuantity<QuantityT>::getDataRange() {
 }
 
 template <typename QuantityT>
-QuantityT* ScalarQuantity<QuantityT>::setIsolineWidth(double size, bool isRelative) {
-  isolineWidth = ScaledValue<float>(size, isRelative);
+QuantityT* ScalarQuantity<QuantityT>::setIsolinePeriod(double size, bool isRelative) {
+  isolinePeriod = ScaledValue<float>(size, isRelative);
   if (!isolinesEnabled.get()) {
     setIsolinesEnabled(true);
   }
@@ -286,8 +342,17 @@ QuantityT* ScalarQuantity<QuantityT>::setIsolineWidth(double size, bool isRelati
   return &quantity;
 }
 template <typename QuantityT>
+double ScalarQuantity<QuantityT>::getIsolinePeriod() {
+  return isolinePeriod.get().asAbsolute();
+}
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setIsolineWidth(double size, bool isRelative) {
+  return setIsolinePeriod(size, isRelative);
+}
+template <typename QuantityT>
 double ScalarQuantity<QuantityT>::getIsolineWidth() {
-  return isolineWidth.get().asAbsolute();
+  return getIsolinePeriod();
 }
 
 template <typename QuantityT>
@@ -317,6 +382,33 @@ QuantityT* ScalarQuantity<QuantityT>::setIsolinesEnabled(bool newEnabled) {
 template <typename QuantityT>
 bool ScalarQuantity<QuantityT>::getIsolinesEnabled() {
   return isolinesEnabled.get();
+}
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setIsolineStyle(IsolineStyle val) {
+  isolineStyle = val;
+  quantity.refresh();
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+IsolineStyle ScalarQuantity<QuantityT>::getIsolineStyle() {
+  return isolineStyle.get();
+}
+
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setIsolineContourThickness(double val) {
+  isolineContourThickness = val;
+  if (!isolinesEnabled.get()) {
+    setIsolinesEnabled(true);
+  }
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+double ScalarQuantity<QuantityT>::getIsolineContourThickness() {
+  return isolineContourThickness.get();
 }
 
 } // namespace polyscope
