@@ -103,6 +103,12 @@ TEST_F(PolyscopeTest, PointCloudScalar) {
 
   psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
+  
+  q1->setIsolinesEnabled(true);
+  polyscope::show(3);
+  
+  q1->setIsolineStyle(polyscope::IsolineStyle::Contour);
+  polyscope::show(3);
 
   q1->updateData(vScalar);
   polyscope::show(3);

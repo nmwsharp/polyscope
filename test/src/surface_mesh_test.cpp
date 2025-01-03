@@ -222,6 +222,13 @@ TEST_F(PolyscopeTest, SurfaceMeshScalarVertex) {
   auto q1 = psMesh->addVertexScalarQuantity("vScalar", vScalar);
   q1->setEnabled(true);
   polyscope::show(3);
+  
+  // try some options
+  q1->setIsolinesEnabled(true);
+  polyscope::show(3);
+  q1->setIsolineStyle(polyscope::IsolineStyle::Contour);
+  polyscope::show(3);
+
   polyscope::removeAllStructures();
 }
 
