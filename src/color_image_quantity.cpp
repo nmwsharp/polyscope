@@ -111,6 +111,7 @@ void ColorImageQuantity::showInImGuiWindow() {
   } else if (imageOrigin == ImageOrigin::UpperLeft) {
     ImGui::Image(colors.getRenderTextureBuffer()->getNativeHandle(), ImVec2(w, h));
   }
+  render::engine->preserveResourceUntilImguiFrameCompletes(colors.getRenderTextureBuffer());
 
   ImGui::End();
 }

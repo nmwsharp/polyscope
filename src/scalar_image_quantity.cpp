@@ -115,6 +115,7 @@ void ScalarImageQuantity::showInImGuiWindow() {
   // here we always use the same ImVec2 UV coords below, because the texture order is always openGL convention after the
   // intermediate render pass
   ImGui::Image(textureIntermediateRendered->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+  render::engine->preserveResourceUntilImguiFrameCompletes(textureIntermediateRendered);
 
 
   ImGui::End();
