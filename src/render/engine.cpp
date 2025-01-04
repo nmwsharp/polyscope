@@ -1183,5 +1183,11 @@ void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buf
 
 ImFontAtlas* Engine::getImGuiGlobalFontAtlas() { return globalFontAtlas; }
 
+void Engine::preserveResourceUntilImguiFrameCompletes(std::shared_ptr<TextureBuffer> texture) {
+  resourcesPreservedForImGuiFrame.push_back(texture);
+}
+
+void Engine::clearResourcesPreservedForImguiFrame() { resourcesPreservedForImGuiFrame.clear(); }
+
 } // namespace render
 } // namespace polyscope

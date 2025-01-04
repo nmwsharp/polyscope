@@ -445,9 +445,9 @@ public:
   virtual void shutdown() {};
   virtual void checkError(bool fatal = false) = 0;
   void buildEngineGui();
-  
+
   // 'headless' means there is no physical display to actually render to, e.g. when running on a remote server
-  virtual bool isHeadless() { return false; } 
+  virtual bool isHeadless() { return false; }
 
   virtual void clearDisplay();
   virtual void bindDisplay();
@@ -519,6 +519,10 @@ public:
 
   void setImGuiStyle();
   ImFontAtlas* getImGuiGlobalFontAtlas();
+
+  // Display an ImGui window showing a texture
+  // WARNING: you must ensure that the texture buffer pointer stays valid until after the ImGui frame is rendered, which
+  // is not until the end of a main loop iteration.
   virtual void showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer);
 
 
@@ -630,6 +634,11 @@ public:
   ImFont* monoFont = nullptr;
   FrameBuffer* currRenderFramebuffer = nullptr;
 
+  // Manage some resources that we need to preserve because ImGui will use them to render at the end of the frame
+  // This matters if we delete something mid-frame but have already passed a pointer to a texture for imgui to render,
+  // which happens at the end of the frame.
+  void preserveResourceUntilImguiFrameCompletes(std::shared_ptr<TextureBuffer> texture);
+
 protected:
   // TODO Manage a cache of compiled shaders?
 
@@ -664,6 +673,10 @@ protected:
   std::vector<std::string> defaultRules_sceneObject{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER"};
   std::vector<std::string> defaultRules_pick{"GLSL_VERSION", "GLOBAL_FRAGMENT_FILTER", "SHADE_COLOR", "LIGHT_PASSTHRU"};
   std::vector<std::string> defaultRules_process{"GLSL_VERSION"};
+
+  // Lists of points to support preserving resources until the end of an ImGUI frame (see note above)
+  void clearResourcesPreservedForImguiFrame();
+  std::vector<std::shared_ptr<TextureBuffer>> resourcesPreservedForImGuiFrame;
 };
 
 

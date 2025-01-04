@@ -396,7 +396,10 @@ void GLEngineEGL::ImGuiNewFrame() {
   ImGui::NewFrame();
 }
 
-void GLEngineEGL::ImGuiRender() { ImGui::Render(); }
+void GLEngineEGL::ImGuiRender() {
+  ImGui::Render();
+  clearResourcesPreservedForImguiFrame();
+}
 
 
 void GLEngineEGL::swapDisplayBuffers() {

@@ -1659,7 +1659,10 @@ void MockGLEngine::ImGuiNewFrame() {
   ImGui::NewFrame();
 }
 
-void MockGLEngine::ImGuiRender() { ImGui::Render(); }
+void MockGLEngine::ImGuiRender() {
+  ImGui::Render();
+  clearResourcesPreservedForImguiFrame();
+}
 
 void MockGLEngine::setDepthMode(DepthMode newMode) {}
 

@@ -140,6 +140,7 @@ void GLEngineGLFW::ImGuiNewFrame() {
 void GLEngineGLFW::ImGuiRender() {
   ImGui::Render();
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+  clearResourcesPreservedForImguiFrame();
 }
 
 
