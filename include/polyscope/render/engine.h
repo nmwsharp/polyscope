@@ -634,9 +634,9 @@ public:
   ImFont* monoFont = nullptr;
   FrameBuffer* currRenderFramebuffer = nullptr;
 
-  // Manage some resources that we need to preserve because ImGUI will use them to render at the end of the frame
-  // E.g., if we delete something mid-frame but have alrady passed points to a texture for imgui to render, which
-  // happens at the end of the frame.
+  // Manage some resources that we need to preserve because ImGui will use them to render at the end of the frame
+  // This matters if we delete something mid-frame but have already passed a pointer to a texture for imgui to render,
+  // which happens at the end of the frame.
   void preserveResourceUntilImguiFrameCompletes(std::shared_ptr<TextureBuffer> texture);
 
 protected:
