@@ -34,8 +34,10 @@ void buildErrorUI(std::string message, bool fatal) {
   ImVec2 errorTextSize = ImGui::CalcTextSize(message.c_str());
   ImVec2 errorModalSize(std::max(view::windowWidth / 5.0f, std::min(errorTextSize.x + 50, view::windowWidth / 2.0f)),
                         0);
+  ImVec2 errorModalPos((view::windowWidth - errorModalSize.x) / 2, view::windowHeight / 3);
 
   ImGui::SetNextWindowSize(errorModalSize);
+  ImGui::SetNextWindowPos(errorModalPos, ImGuiCond_Always);
   ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(170. / 255., 0, 0, 1.0));
   if (ImGui::BeginPopupModal(errorPopupString.c_str(), NULL, ImGuiWindowFlags_NoMove)) {
 
@@ -210,6 +212,12 @@ void info(std::string message) {
 void error(std::string message) {
   if (options::verbosity > 0) {
     std::cout << options::printPrefix << "[ERROR] " << message << std::endl;
+  }
+
+  // Enter a modal UI loop showing the error
+  if (options::displayMessagePopups && !isHeadless()) {
+    auto func = std::bind(buildErrorUI, message, false);
+    pushContext(func, false);
   }
 
   if (options::errorsThrowExceptions) {
