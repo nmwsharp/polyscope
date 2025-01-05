@@ -310,6 +310,14 @@ Structure* Structure::setCullWholeElements(bool newVal) {
 }
 bool Structure::getCullWholeElements() { return cullWholeElements.get(); }
 
+
+Structure* Structure::setTransformGizmoEnabled(bool newVal) {
+  transformGizmo.enabled = newVal;
+  requestRedraw();
+  return this;
+}
+bool Structure::getTransformGizmoEnabled() { return transformGizmo.enabled.get(); }
+
 Structure* Structure::setIgnoreSlicePlane(std::string name, bool newValue) {
 
   if (getIgnoreSlicePlane(name) == newValue) {

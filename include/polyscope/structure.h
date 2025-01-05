@@ -110,6 +110,9 @@ public:
   Structure* setIgnoreSlicePlane(std::string name, bool newValue);
   bool getIgnoreSlicePlane(std::string name);
 
+  Structure* setTransformGizmoEnabled(bool newVal);
+  bool getTransformGizmoEnabled();
+
 protected:
   // = State
   PersistentValue<bool> enabled;
