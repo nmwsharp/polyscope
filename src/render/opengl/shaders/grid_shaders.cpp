@@ -437,17 +437,18 @@ const ShaderReplacementRule GRIDCUBE_CULLPOS_FROM_CENTER(
           uniform vec3 u_boundMax;
         )"},
       {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
-          // NOTE: you would expect the constant below to be 0.5f, to cull from the center of the cell. 
-          // We intentionally use 0.667 instead and slightly shift it, to avoid common default causes 
+          // NOTE: you would expect the constant below to be 0.f, to cull from the center of the cell. 
+          // We intentionally use 0.167 instead and slightly shift it, to avoid common default causes 
           // where the plane slices right through the center of the cell, and you get random patterns 
           // of cull/not-cull based on floating point error.
-          vec3 cullPosRef = (0.667f + cellInd3f) * u_gridSpacingReference;
+          const float cull_shift = 0.167;
+          vec3 cullPosRef = (0.5f + cull_shift + cellInd3f) * u_gridSpacingReference;
           vec3 cullPosWorld = mix(u_boundMin, u_boundMax, cullPosRef);
           vec3 cullPos = (u_modelView * vec4(cullPosWorld, 1.f)).xyz;
          
           // compute the same data for the neighboring cell too
           // we need this due to the neighbor visibiilty filtering
-          vec3 neighCullPosRef = (0.5f + cellInd3f + a_refNormalToFrag) * u_gridSpacingReference;
+          vec3 neighCullPosRef = (0.5f + cull_shift + cellInd3f + a_refNormalToFrag) * u_gridSpacingReference;
           vec3 neighCullPosWorld = mix(u_boundMin, u_boundMax, neighCullPosRef);
           vec3 neighCullPos = (u_modelView * vec4(neighCullPosWorld, 1.f)).xyz;
         )"},
