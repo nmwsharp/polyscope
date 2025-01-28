@@ -290,11 +290,17 @@ void GLEngineEGL::resolveEGL() {
     std::cout << polyscope::options::printPrefix << "Attempting to dlopen libEGL.so" << std::endl;
   }
   void* handle = dlopen("libEGL.so", RTLD_LAZY);
-  if (!handle) {
-    error("EGL: Could not open libEGL.so.");
-  }
-  if (options::verbosity > 5) {
+  if (handle && options::verbosity > 5) {
     std::cout << polyscope::options::printPrefix << "  ...loaded libEGL.so" << std::endl;
+  }
+  if (!handle) {
+    handle = dlopen("libEGL.so.1", RTLD_LAZY); // try it while we're at it, happens on OSMesa without dev headers
+  }
+  if (handle && options::verbosity > 5) {
+    std::cout << polyscope::options::printPrefix << "  ...loaded libEGL.so.1" << std::endl;
+  }
+  if (!handle) {
+    error("EGL: Could not open libEGL.so");
   }
 
   // Get EGL functions
