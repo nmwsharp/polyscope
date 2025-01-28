@@ -75,7 +75,7 @@ public:
 
 protected:
   // Function pointers for dynamic loading of EGL and extensions
-  // (see exaplanation in resolveEGL)
+  // (see explanation in resolveEGL)
   void resolveEGL();
   typedef EGLint (*eglGetErrorT)(void);
   eglGetErrorT eglGetError = nullptr;
