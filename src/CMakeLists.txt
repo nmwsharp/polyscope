@@ -129,7 +129,10 @@ if("${POLYSCOPE_BACKEND_OPENGL3_EGL}")
       message(FATAL_ERROR "Compiling EGL backed on Windows is not supported. Set POLYSCOPE_BACKEND_OPENGL3_EGL=False")
     else() # linux
       # only linux is actually supported for EGL
-      list(APPEND BACKEND_LIBS EGL)
+
+      # We intentionally *do not* list this as a shared library dependency, it gets loaded optionally at runtime
+      # via dlopen(). See explanation in gl_engine_egl.cpp.
+      # list(APPEND BACKEND_LIBS EGL) 
     endif()
 
   endif()
