@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <dlfcn.h>
 #include <set>
 #include <string>
 
@@ -23,19 +24,21 @@ namespace polyscope {
 namespace render {
 namespace backend_openGL3 {
 
-namespace { // anonymous helpers
+void initializeRenderEngine_egl() {
 
-// Helper function to get an EGL (extension?) function and error-check that
-// we got it successfully
-void* getEGLProcAddressAndCheck(std::string name) {
-  void* procAddr = (void*)(eglGetProcAddress(name.c_str()));
-  if (!procAddr) {
-    error("EGL failed to get function pointer for " + name);
-  }
-  return procAddr;
+  GLEngineEGL* glEngineEGL = new GLEngineEGL(); // create the new global engine object
+  engine = glEngineEGL;
+
+  // initialize
+  glEngineEGL->initialize();
+  engine->allocateGlobalBuffersAndPrograms();
+  glEngineEGL->applyWindowSize();
 }
 
-void checkEGLError(bool fatal = true) {
+GLEngineEGL::GLEngineEGL() {}
+GLEngineEGL::~GLEngineEGL() {}
+
+void GLEngineEGL::checkEGLError(bool fatal) {
 
   if (!options::enableRenderErrorChecks) {
     return;
@@ -124,29 +127,15 @@ void checkEGLError(bool fatal = true) {
     exception("EGL error occurred. Text: " + errText);
   }
 }
-} // namespace
-
-void initializeRenderEngine_egl() {
-
-  GLEngineEGL* glEngineEGL = new GLEngineEGL(); // create the new global engine object
-  engine = glEngineEGL;
-
-  // initialize
-  glEngineEGL->initialize();
-  engine->allocateGlobalBuffersAndPrograms();
-  glEngineEGL->applyWindowSize();
-}
-
-GLEngineEGL::GLEngineEGL() {}
-GLEngineEGL::~GLEngineEGL() {}
 
 void GLEngineEGL::initialize() {
 
+
   // === Initialize EGL
 
-  // Pre-load required extension functions
-  PFNEGLQUERYDEVICESEXTPROC eglQueryDevicesEXT =
-      (PFNEGLQUERYDEVICESEXTPROC)getEGLProcAddressAndCheck("eglQueryDevicesEXT");
+  // Runtime-load shared library functions for EGL
+  // (see note inside for details)
+  resolveEGL();
 
   // Query the available EGL devices
   const int N_MAX_DEVICE = 256;
@@ -285,20 +274,93 @@ void GLEngineEGL::initialize() {
   checkError();
 }
 
-void GLEngineEGL::sortAvailableDevicesByPreference(std::vector<int32_t>& deviceInds, EGLDeviceEXT rawDevices[]) {
+void GLEngineEGL::resolveEGL() {
+
+  // This function does a bunch of gymnastics to avoid taking on libEGL.so as a dependency. This is a
+  // machine/driver-specific library, so we would have to dynamically load it on the end user's machine. However,
+  // simply specifying it as a shared library at build time would make it required for Polyscope, even for users
+  // who would not use EGL, and we don't want that. Instead, we manually dynamically load the functions below.
+  //
+  // Note that this is on top of the dynamic loading that always happens when you load exention functions from libEGL.
+  // We are furthermore loading `libEGL.so` dynamically in the middle of runtime, rather than at load time as via ldd
+  // etc. At the end of this function we also load EGL extensions in the usual way.
+
+
+  if (options::verbosity > 5) {
+    std::cout << polyscope::options::printPrefix << "Attempting to dlopen libEGL.so" << std::endl;
+  }
+  void* handle = dlopen("libEGL.so", RTLD_LAZY);
+  if (!handle) {
+    error("EGL: Could not open libEGL.so.");
+  }
+  if (options::verbosity > 5) {
+    std::cout << polyscope::options::printPrefix << "  ...loaded libEGL.so" << std::endl;
+  }
+
+  // Get EGL functions
+  if (options::verbosity > 5) {
+    std::cout << polyscope::options::printPrefix << "Attempting to dlsym resolve EGL functions" << std::endl;
+  }
+
+  eglGetError = (eglGetErrorT)dlsym(handle, "eglGetError");
+  eglGetPlatformDisplay = (eglGetPlatformDisplayT)dlsym(handle, "eglGetPlatformDisplay");
+  eglChooseConfig = (eglChooseConfigT)dlsym(handle, "eglChooseConfig");
+  eglInitialize = (eglInitializeT)dlsym(handle, "eglInitialize");
+  eglChooseConfig = (eglChooseConfigT)dlsym(handle, "eglChooseConfig");
+  eglBindAPI = (eglBindAPIT)dlsym(handle, "eglBindAPI");
+  eglCreateContext = (eglCreateContextT)dlsym(handle, "eglCreateContext");
+  eglMakeCurrent = (eglMakeCurrentT)dlsym(handle, "eglMakeCurrent");
+  eglDestroyContext = (eglDestroyContextT)dlsym(handle, "eglDestroyContext");
+  eglTerminate = (eglTerminateT)dlsym(handle, "eglTerminate");
+  eglGetProcAddress = (eglGetProcAddressT)dlsym(handle, "eglGetProcAddress");
+  eglQueryString = (eglQueryStringT)dlsym(handle, "eglQueryString");
+
+  if (!eglGetError || !eglGetPlatformDisplay || !eglChooseConfig || !eglInitialize || !eglChooseConfig || !eglBindAPI ||
+      !eglCreateContext || !eglMakeCurrent || !eglDestroyContext || !eglTerminate || !eglGetProcAddress ||
+      !eglQueryString) {
+    dlclose(handle);
+    const char* errTextPtr = dlerror();
+    std::string errText = "";
+    if (errTextPtr) {
+      errText = errTextPtr;
+    }
+    error("EGL: Error loading symbol " + errText);
+  }
+  if (options::verbosity > 5) {
+    std::cout << polyscope::options::printPrefix << "  ...resolved EGL functions" << std::endl;
+  }
+  // ... at this point, we have essentially loaded libEGL.so
+
+  // === Resolve EGL extension functions
+
+  // Helper function to get an EGL extension function and error-check that
+  // we got it successfully
+  auto getEGLExtensionProcAndCheck = [&](std::string name) {
+    void* procAddr = (void*)(eglGetProcAddress(name.c_str()));
+    if (!procAddr) {
+      error("EGL failed to get function pointer for " + name);
+    }
+    return procAddr;
+  };
+
+  // Pre-load required extension functions
+  eglQueryDevicesEXT = (PFNEGLQUERYDEVICESEXTPROC)getEGLExtensionProcAndCheck("eglQueryDevicesEXT");
+  const char* extensions = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+  if (extensions && std::string(extensions).find("EGL_EXT_device_query") != std::string::npos) {
+    eglQueryDeviceStringEXT = (PFNEGLQUERYDEVICESTRINGEXTPROC)getEGLExtensionProcAndCheck("eglQueryDeviceStringEXT");
+  }
+}
+
+void GLEngineEGL::sortAvailableDevicesByPreference(
+
+    std::vector<int32_t>& deviceInds, EGLDeviceEXT rawDevices[]) {
 
   // check that we actually have the query extension
   const char* extensions = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
-  if (extensions && std::string(extensions).find("EGL_EXT_device_query") != std::string::npos) {
-    // good case, supported
-  } else {
+  if (!eglQueryDeviceStringEXT) {
     info("EGL: cannot sort devices by preference, EGL_EXT_device_query is not supported");
     return;
   }
-
-  // Pre-load required extension functions
-  PFNEGLQUERYDEVICESTRINGEXTPROC eglQueryDeviceStringEXT =
-      (PFNEGLQUERYDEVICESTRINGEXTPROC)getEGLProcAddressAndCheck("eglQueryDeviceStringEXT");
 
   // Build a list of devices and assign a score to each
   std::vector<std::tuple<int32_t, int32_t>> scoreDevices;
