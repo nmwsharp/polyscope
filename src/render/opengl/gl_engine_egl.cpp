@@ -376,7 +376,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(
     // NOTE: on many machines (cloud VMs?) the query string above is nullptr, and this whole function does nothing
     // useful
     if (vendorStrRaw == nullptr) {
-      info(5, "EGLDevice " + std::to_string(iDevice) + " -- vendor: NULL  priority score: " std::to_string(score);
+      info(5, "EGLDevice " + std::to_string(iDevice) + " -- vendor: NULL  priority score: " + std::to_string(score);
       scoreDevices.emplace_back(score, iDevice);
       continue;
     }
@@ -405,7 +405,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(
 
     // at high verbosity levels, log the priority
     if (polyscope::options::verbosity > 5) {
-      info(5, "EGLDevice " + std::to_string(iDevice) + " -- vendor: " + vendorStr + "  priority score: " std::to_string(score);
+      info(5, "EGLDevice " + std::to_string(iDevice) + " -- vendor: " + vendorStr + "  priority score: " + std::to_string(score);
     }
 
     scoreDevices.emplace_back(score, iDevice);
