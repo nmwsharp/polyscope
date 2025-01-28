@@ -203,8 +203,9 @@ void buildWarningUI(std::string warningBaseString, std::string warningDetailStri
 } // namespace
 
 
-void info(std::string message) {
-  if (options::verbosity > 0) {
+void info(std::string message) { info(0, message); }
+void info(int verbosityLevel, std::string message) {
+  if (options::verbosity > verbosityLevel) {
     std::cout << options::printPrefix << message << std::endl;
   }
 }

@@ -285,28 +285,21 @@ void GLEngineEGL::resolveEGL() {
   // We are furthermore loading `libEGL.so` dynamically in the middle of runtime, rather than at load time as via ldd
   // etc. At the end of this function we also load EGL extensions in the usual way.
 
-
-  if (options::verbosity > 5) {
-    std::cout << polyscope::options::printPrefix << "Attempting to dlopen libEGL.so" << std::endl;
-  }
+  info(5, "Attempting to dlopen libEGL.so");
   void* handle = dlopen("libEGL.so", RTLD_LAZY);
-  if (handle && options::verbosity > 5) {
-    std::cout << polyscope::options::printPrefix << "  ...loaded libEGL.so" << std::endl;
-  }
+  if (handle) info(5, "  ...loaded libEGL.so");
   if (!handle) {
     handle = dlopen("libEGL.so.1", RTLD_LAZY); // try it while we're at it, happens on OSMesa without dev headers
   }
-  if (handle && options::verbosity > 5) {
-    std::cout << polyscope::options::printPrefix << "  ...loaded libEGL.so.1" << std::endl;
-  }
+  if (handle) info(5, "  ...loaded libEGL.so.1");
   if (!handle) {
-    error("EGL: Could not open libEGL.so");
+    error(
+        "EGL: Could not open libEGL.so. Ensure graphics drivers are installed, or fall back on (much slower!) software "
+        "rendering by installing OSMesa from your package manager.");
   }
 
   // Get EGL functions
-  if (options::verbosity > 5) {
-    std::cout << polyscope::options::printPrefix << "Attempting to dlsym resolve EGL functions" << std::endl;
-  }
+  info(5, "Attempting to dlsym resolve EGL functions");
 
   eglGetError = (eglGetErrorT)dlsym(handle, "eglGetError");
   eglGetPlatformDisplay = (eglGetPlatformDisplayT)dlsym(handle, "eglGetPlatformDisplay");
@@ -383,10 +376,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(
     // NOTE: on many machines (cloud VMs?) the query string above is nullptr, and this whole function does nothing
     // useful
     if (vendorStrRaw == nullptr) {
-      if (polyscope::options::verbosity > 5) {
-        std::cout << polyscope::options::printPrefix << "  EGLDevice " << iDevice << " -- vendor: " << "NULL"
-                  << "  priority score: " << score << std::endl;
-      }
+      info(5, "EGLDevice " + std::to_string(iDevice) + " -- vendor: NULL  priority score: " std::to_string(score);
       scoreDevices.emplace_back(score, iDevice);
       continue;
     }
@@ -415,8 +405,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(
 
     // at high verbosity levels, log the priority
     if (polyscope::options::verbosity > 5) {
-      std::cout << polyscope::options::printPrefix << "  EGLDevice " << iDevice << " -- vendor: " << vendorStr
-                << "  priority score: " << score << std::endl;
+      info(5, "EGLDevice " + std::to_string(iDevice) + " -- vendor: " + vendorStr + "  priority score: " std::to_string(score);
     }
 
     scoreDevices.emplace_back(score, iDevice);

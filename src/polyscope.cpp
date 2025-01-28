@@ -143,6 +143,8 @@ void init(std::string backend) {
     return;
   }
 
+  info(5, "Initializing Polyscope");
+
   state::backend = backend;
 
   if (options::usePrefsFile) {
