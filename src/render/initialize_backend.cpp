@@ -87,7 +87,8 @@ void initializeRenderEngine(std::string backend) {
       }
 
     } else {
-      extraMessage = " The headless EGL backend was available, but allowHeadlessBackends=false. Set it to true for "
+      extraMessage = "Polyscope was compiled with support for the headless EGL backend, but "
+                     "allowHeadlessBackends=false. Set it to true to attempt "
                      "headless initialization.";
     }
 
