@@ -9,19 +9,53 @@
 #include <unordered_map>
 
 namespace polyscope {
+
+PickQueryResult queryPickAtScreenCoords(glm::vec2 screenCoords) {
+  int xInd, yInd;
+  std::tie(xInd, yInd) = view::screenCoordsToBufferInds(screenCoords);
+  return queryPickAtBufferCoords(xInd, yInd);
+}
+PickQueryResult queryPickAtBufferCoords(int xPos, int yPos) {
+  PickQueryResult result;
+
+  // Query the render buffer
+  result.position = view::bufferCoordsToWorldPosition(xPos, yPos);
+  result.depth = glm::length(result.position - view::getCameraWorldPosition());
+
+  // Query the pick buffer
+  std::pair<Structure*, size_t> rawPickResult = pick::evaluatePickQuery(xPos, yPos);
+
+  // Transcribe result into return tuple
+  result.structure = rawPickResult.first;
+  if (rawPickResult.first == nullptr) {
+    result.isHit = false;
+    result.structureType = "";
+    result.structureName = "";
+  } else {
+    result.isHit = true;
+    std::tuple<std::string, std::string> lookupResult = lookUpStructure(rawPickResult.first);
+    result.structureType = std::get<0>(lookupResult);
+    result.structureName = std::get<1>(lookupResult);
+  }
+
+
+
+  return result;
+}
+
+
 namespace pick {
 
-size_t currLocalPickInd = 0;
-Structure* currPickStructure = nullptr;
-bool haveSelectionVal = false;
+size_t& currLocalPickInd = state::globalContext.currLocalPickInd;
+Structure*& currPickStructure = state::globalContext.currPickStructure;
+bool& haveSelectionVal = state::globalContext.haveSelectionVal;
 
 // The next pick index that a structure can use to identify its elements
 // (get it by calling request pickBufferRange())
-size_t nextPickBufferInd = 1; // 0 reserved for "none"
-                              //
+size_t& nextPickBufferInd = state::globalContext.nextPickBufferInd; // 0 reserved for "none"
+
 // Track which ranges have been allocated to which structures
-// std::vector<std::tuple<size_t, size_t, Structure*>> structureRanges;
-std::unordered_map<Structure*, std::tuple<size_t, size_t>> structureRanges;
+std::unordered_map<Structure*, std::tuple<size_t, size_t>> structureRanges = state::globalContext.structureRanges;
 
 
 // == Set up picking

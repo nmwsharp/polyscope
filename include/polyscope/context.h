@@ -97,6 +97,15 @@ struct Context {
   glm::vec3 flightTargetViewT, flightInitialViewT;
   float flightTargetFov, flightInitialFov;
 
+  // ======================================================
+  // === Picking globals from pick.h / pick.cpp
+  // ======================================================
+
+  size_t currLocalPickInd = 0;
+  Structure* currPickStructure = nullptr;
+  bool haveSelectionVal = false;
+  size_t nextPickBufferInd = 1;
+  std::unordered_map<Structure*, std::tuple<size_t, size_t>> structureRanges;
 
   // ======================================================
   // === Internal globals from internal.h
