@@ -780,7 +780,7 @@ void callback() {
   static int loadedMat = 1;
   static bool depthClick = false;
 
-  ImGui::PushItemWidth(100);
+  ImGui::PushItemWidth(100 * polyscope::state::globalContext.dpiScale);
 
   ImGui::InputInt("num points", &numPoints);
   ImGui::InputFloat("param value", &param);

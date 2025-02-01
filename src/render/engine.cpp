@@ -280,7 +280,7 @@ void Engine::buildEngineGui() {
   if (ImGui::TreeNode("Appearance")) {
 
     // == Display
-    ImGui::PushItemWidth(120);
+    ImGui::PushItemWidth(120 * state::globalContext.dpiScale);
     // ImGui::Text("Background");
     // ImGui::SameLine();
     static std::string displayBackgroundName = "None";

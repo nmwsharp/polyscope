@@ -147,7 +147,7 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
   // Isolines
   if (isolinesEnabled.get()) {
 
-    ImGui::PushItemWidth(100);
+    ImGui::PushItemWidth(100 * state::globalContext.dpiScale);
 
 
     auto styleName = [](const IsolineStyle& m) -> std::string {
