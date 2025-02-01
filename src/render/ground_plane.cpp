@@ -411,7 +411,7 @@ void GroundPlane::buildGui() {
   ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Ground Plane")) {
 
-    ImGui::PushItemWidth(160);
+    ImGui::PushItemWidth(160*state::globalContext.dpiScale);
     if (ImGui::BeginCombo("Mode", modeName(options::groundPlaneMode).c_str())) {
       for (GroundPlaneMode m : {GroundPlaneMode::None, GroundPlaneMode::Tile, GroundPlaneMode::TileReflection,
                                 GroundPlaneMode::ShadowOnly}) {
@@ -426,7 +426,7 @@ void GroundPlane::buildGui() {
     ImGui::PopItemWidth();
 
     // Height
-    ImGui::PushItemWidth(80);
+    ImGui::PushItemWidth(80 * state::globalContext.dpiScale);
     switch (options::groundPlaneHeightMode) {
     case GroundPlaneHeightMode::Automatic:
       if (ImGui::SliderFloat("##HeightValue", options::groundPlaneHeightFactor.getValuePtr(), -1.0, 1.0))
@@ -446,7 +446,7 @@ void GroundPlane::buildGui() {
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
-    ImGui::PushItemWidth(100);
+    ImGui::PushItemWidth(100*state::globalContext.dpiScale);
     if (ImGui::BeginCombo("Height##Mode", heightModeName(options::groundPlaneHeightMode).c_str())) {
       for (GroundPlaneHeightMode m : {GroundPlaneHeightMode::Automatic, GroundPlaneHeightMode::Manual}) {
         std::string mName = heightModeName(m);
