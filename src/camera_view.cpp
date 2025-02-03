@@ -125,6 +125,7 @@ void CameraView::drawPick() {
 
   // Set uniforms
   setStructureUniforms(*pickFrameProgram);
+  pickFrameProgram->setUniform("u_vertPickRadius", 0.);
 
   pickFrameProgram->draw();
 }
