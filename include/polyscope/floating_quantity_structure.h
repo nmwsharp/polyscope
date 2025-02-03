@@ -44,7 +44,7 @@ public:
   // Build the imgui display
   virtual void buildUI() override;
   virtual void buildCustomUI() override;
-  virtual void buildPickUI(size_t localPickID) override;
+  virtual void buildPickUI(const PickResult& result) override;
   virtual void buildCustomOptionsUI() override;
 
   // Standard structure overrides

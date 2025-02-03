@@ -342,15 +342,20 @@ void CurveNetwork::refresh() {
 
 void CurveNetwork::recomputeGeometryIfPopulated() { edgeCenters.recomputeIfPopulated(); }
 
-void CurveNetwork::buildPickUI(size_t localPickID) {
+void CurveNetwork::buildPickUI(const PickResult& rawResult) {
 
-  if (localPickID < nNodes()) {
-    buildNodePickUI(localPickID);
-  } else if (localPickID < nNodes() + nEdges()) {
-    buildEdgePickUI(localPickID - nNodes());
-  } else {
-    exception("Bad pick index in curve network");
+  CurveNetworkPickResult result = interpretPickResult(rawResult);
+
+  switch (result.elementType) {
+  case CurveNetworkElement::NODE: {
+    buildNodePickUI(result.index);
+    break;
   }
+  case CurveNetworkElement::EDGE: {
+    buildEdgePickUI(result.index);
+    break;
+  }
+  };
 }
 
 void CurveNetwork::buildNodePickUI(size_t nodeInd) {
@@ -455,6 +460,36 @@ void CurveNetwork::updateObjectSpaceBounds() {
     lengthScale = std::max(lengthScale, glm::length2(p - center));
   }
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);
+}
+
+CurveNetworkPickResult CurveNetwork::interpretPickResult(const PickResult& rawResult) {
+
+  if (rawResult.structure != this) {
+    // caller must ensure that the PickResult belongs to this structure
+    // by checking the structure pointer or name
+    exception("called interpretPickResult(), but the pick result is not from this structure");
+  }
+
+  CurveNetworkPickResult result;
+
+  if (rawResult.localIndex < nNodes()) {
+    result.elementType = CurveNetworkElement::NODE;
+    result.index = rawResult.localIndex;
+  } else if (rawResult.localIndex < nNodes() + nEdges()) {
+    result.elementType = CurveNetworkElement::EDGE;
+    result.index = rawResult.localIndex - nNodes();
+
+    // compute the t \in [0,1] along the edge
+    int32_t iStart = edgeTailInds.getValue(result.index);
+    int32_t iEnd= edgeTipInds.getValue(result.index);
+    glm::vec3 pStart = nodePositions.getValue(iStart);
+    glm::vec3 pEnd = nodePositions.getValue(iEnd);
+
+  } else {
+    exception("Bad pick index in curve network");
+  }
+
+  return result;
 }
 
 CurveNetwork* CurveNetwork::setColor(glm::vec3 newVal) {

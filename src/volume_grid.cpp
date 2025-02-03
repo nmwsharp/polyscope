@@ -427,18 +427,21 @@ void VolumeGrid::markNodesAsUsed() { nodesHaveBeenUsed = true; }
 
 void VolumeGrid::markCellsAsUsed() { cellsHaveBeenUsed = true; }
 
+VolumeGridPickResult VolumeGrid::interpretPickResult(const PickResult& rawResult) {
 
-void VolumeGrid::buildPickUI(size_t localPickID) {
+  if (rawResult.structure != this) {
+    // caller must ensure that the PickResult belongs to this structure
+    // by checking the structure pointer or name
+    exception("called interpretPickResult(), but the pick result is not from this structure");
+  }
 
-  // See note in ensurePickProgramPrepared().
+  VolumeGridPickResult result;
+
   // Picking for this structure works different, and identifies which element with a depth query CPU side.
 
   float nodePickRad = 0.8; // measured in a [-1,1] cube
 
-  ImGuiIO& io = ImGui::GetIO();
-  glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
-  glm::vec3 pickPos = view::screenCoordsToWorldPosition(screenCoords);
-  glm::vec3 localPickPos = (pickPos - boundMin) / (boundMax - boundMin);
+  glm::vec3 localPickPos = (rawResult.position - boundMin) / (boundMax - boundMin);
   localPickPos = clamp(localPickPos, glm::vec3(0.), glm::vec3(1.)); // on [0,1.]
 
   // NOTE: this logic is duplicated with shader
@@ -467,7 +470,8 @@ void VolumeGrid::buildPickUI(size_t localPickID) {
     glm::uvec3 nodeInd3{std::round(coordUnit.x), std::round(coordUnit.y), std::round(coordUnit.z)};
     uint64_t nodeInd = flattenNodeIndex(nodeInd3);
 
-    buildNodeInfoGUI(nodeInd);
+    result.elementType = VolumeGridElement::NODE;
+    result.index = nodeInd;
 
   } else {
     // Pick a cell
@@ -476,13 +480,33 @@ void VolumeGrid::buildPickUI(size_t localPickID) {
     cellInd3 = clamp(cellInd3, glm::uvec3(0), gridCellDim - 1u);
     uint64_t cellInd = flattenCellIndex(cellInd3);
 
-    buildCellInfoGUI(cellInd);
+    result.elementType = VolumeGridElement::CELL;
+    result.index = cellInd;
   }
+
+  return result;
+}
+
+void VolumeGrid::buildPickUI(const PickResult& rawResult) {
+
+  VolumeGridPickResult result = interpretPickResult(rawResult);
+
+  switch (result.elementType) {
+  case VolumeGridElement::NODE: {
+    buildNodeInfoGUI(result);
+    break;
+  }
+  case VolumeGridElement::CELL: {
+    buildCellInfoGUI(result);
+    break;
+  }
+  };
 }
 
 
-void VolumeGrid::buildNodeInfoGUI(size_t nInd) {
+void VolumeGrid::buildNodeInfoGUI(const VolumeGridPickResult& result) {
 
+  size_t nInd = result.index;
   size_t displayInd = nInd;
   glm::uvec3 nodeInd3 = unflattenNodeIndex(nInd);
 
@@ -511,8 +535,9 @@ void VolumeGrid::buildNodeInfoGUI(size_t nInd) {
   ImGui::Indent(-20.);
 }
 
-void VolumeGrid::buildCellInfoGUI(size_t cellInd) {
+void VolumeGrid::buildCellInfoGUI(const VolumeGridPickResult& result) {
 
+  size_t cellInd = result.index;
   size_t displayInd = cellInd;
   glm::uvec3 cellInd3 = unflattenCellIndex(cellInd);
 

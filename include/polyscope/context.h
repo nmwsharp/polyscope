@@ -4,7 +4,7 @@
 
 #include <polyscope/types.h>
 #include <polyscope/weak_handle.h>
-
+#include <polyscope/pick.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtx/dual_quaternion.hpp>
@@ -101,11 +101,10 @@ struct Context {
   // === Picking globals from pick.h / pick.cpp
   // ======================================================
 
-  size_t currLocalPickInd = 0;
-  Structure* currPickStructure = nullptr;
+  PickResult currSelectionPickResult;
   bool haveSelectionVal = false;
-  size_t nextPickBufferInd = 1;
-  std::unordered_map<Structure*, std::tuple<size_t, size_t>> structureRanges;
+  uint64_t nextPickBufferInd = 1;
+  std::unordered_map<Structure*, std::tuple<uint64_t, uint64_t>> structureRanges;
 
   // ======================================================
   // === Internal globals from internal.h

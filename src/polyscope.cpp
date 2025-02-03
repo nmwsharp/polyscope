@@ -12,6 +12,7 @@
 #include "polyscope/options.h"
 #include "polyscope/pick.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/utilities.h"
 #include "polyscope/view.h"
 
 #include "stb_image.h"
@@ -404,7 +405,7 @@ void processInputEvents() {
         // Don't pick at the end of a long drag
         if (dragDistSinceLastRelease < dragIgnoreThreshold) {
           ImVec2 p = ImGui::GetMousePos();
-          std::pair<Structure*, size_t> pickResult = pick::pickAtScreenCoords(glm::vec2{p.x, p.y});
+          PickResult pickResult = queryPickAtScreenCoords(glm::vec2{p.x, p.y});
           pick::setSelection(pickResult);
         }
 
@@ -761,11 +762,25 @@ void buildPickGui() {
     ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
 
     ImGui::Begin("Selection", nullptr);
-    std::pair<Structure*, size_t> selection = pick::getSelection();
+    PickResult selection = pick::getSelection();
 
-    ImGui::TextUnformatted((selection.first->typeName() + ": " + selection.first->name).c_str());
+
+    ImGui::Text("screen coordinates: (%.2f,%.2f)  depth: %g", selection.screenCoords.x, selection.screenCoords.y,
+                selection.depth);
+    ImGui::Text("world position: <%g, %g, %g>", selection.position.x, selection.position.y,
+                selection.position.z);
+    ImGui::NewLine();
+
+    ImGui::TextUnformatted((selection.structureType + ": " + selection.structureName).c_str());
     ImGui::Separator();
-    selection.first->buildPickUI(selection.second);
+
+    if (selection.structureHandle.isValid()) {
+      selection.structureHandle.get().buildPickUI(selection);
+    } else {
+      // this is a paranoid check, it _should_ never happen since we
+      // clear the selection when a structure is deleted
+      ImGui::TextUnformatted("ERROR: INVALID STRUCTURE");
+    }
 
     rightWindowsWidth = ImGui::GetWindowWidth();
     ImGui::End();

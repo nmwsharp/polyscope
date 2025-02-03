@@ -1083,32 +1083,51 @@ void SurfaceMesh::setSurfaceMeshUniforms(render::ShaderProgram& p) {
 }
 
 
-void SurfaceMesh::buildPickUI(size_t localPickID) {
+void SurfaceMesh::buildPickUI(const PickResult& rawResult) {
 
-  // Selection type
-  if (localPickID < facePickIndStart) {
-    buildVertexInfoGui(localPickID);
-  } else if (localPickID < edgePickIndStart) {
-    buildFaceInfoGui(localPickID - facePickIndStart);
-  } else if (localPickID < halfedgePickIndStart) {
-    buildEdgeInfoGui(localPickID - edgePickIndStart);
-  } else if (localPickID < cornerPickIndStart) {
-    buildHalfedgeInfoGui(localPickID - halfedgePickIndStart);
+  SurfaceMeshPickResult result = interpretPickResult(rawResult);
 
+  switch (result.elementType) {
+  case MeshElement::VERTEX: {
+    buildVertexInfoGui(result);
+    break;
+  }
+  case MeshElement::FACE: {
+    buildFaceInfoGui(result);
+    break;
+  }
+  case MeshElement::EDGE: {
+    buildEdgeInfoGui(result);
+    break;
+  }
+  case MeshElement::HALFEDGE: {
+    buildHalfedgeInfoGui(result);
+
+    // Also build the edge gui while we're here
     if (edgesHaveBeenUsed) {
-      // do the edge one too (see not in pick buffer filler)
-      uint32_t halfedgeInd = localPickID - halfedgePickIndStart;
+      // do the edge one too (see note in pick buffer filler)
+      uint32_t halfedgeInd = result.index;
       if (halfedgeInd >= halfedgeEdgeCorrespondence.size()) {
         exception("problem with halfedge edge indices");
       }
       uint32_t edgeInd = halfedgeEdgeCorrespondence[halfedgeInd];
 
+      // construct a pick result for the edge
+      SurfaceMeshPickResult edgePickResult = result;
+      edgePickResult.elementType = MeshElement::EDGE;
+      edgePickResult.index = edgeInd;
+
       ImGui::NewLine();
-      buildEdgeInfoGui(edgeInd);
+      buildEdgeInfoGui(edgePickResult);
     }
-  } else {
-    buildCornerInfoGui(localPickID - cornerPickIndStart);
+
+    break;
   }
+  case MeshElement::CORNER: {
+    buildCornerInfoGui(result);
+    break;
+  }
+  };
 }
 
 glm::vec2 SurfaceMesh::projectToScreenSpace(glm::vec3 coord) {
@@ -1121,8 +1140,8 @@ glm::vec2 SurfaceMesh::projectToScreenSpace(glm::vec3 coord) {
   return glm::vec2{screenPoint.x, screenPoint.y} / screenPoint.w;
 }
 
-void SurfaceMesh::buildVertexInfoGui(size_t vInd) {
-
+void SurfaceMesh::buildVertexInfoGui(const SurfaceMeshPickResult& result) {
+  size_t vInd = result.index;
   size_t displayInd = vInd;
   ImGui::TextUnformatted(("Vertex #" + std::to_string(displayInd)).c_str());
 
@@ -1146,7 +1165,8 @@ void SurfaceMesh::buildVertexInfoGui(size_t vInd) {
   ImGui::Columns(1);
 }
 
-void SurfaceMesh::buildFaceInfoGui(size_t fInd) {
+void SurfaceMesh::buildFaceInfoGui(const SurfaceMeshPickResult& result) {
+  size_t fInd = result.index;
   size_t displayInd = fInd;
   ImGui::TextUnformatted(("Face #" + std::to_string(displayInd)).c_str());
 
@@ -1166,7 +1186,8 @@ void SurfaceMesh::buildFaceInfoGui(size_t fInd) {
   ImGui::Columns(1);
 }
 
-void SurfaceMesh::buildEdgeInfoGui(size_t eInd) {
+void SurfaceMesh::buildEdgeInfoGui(const SurfaceMeshPickResult& result) {
+  size_t eInd = result.index;
   size_t displayInd = eInd;
   if (edgePerm.size() > 0) {
     displayInd = edgePerm[eInd];
@@ -1189,7 +1210,8 @@ void SurfaceMesh::buildEdgeInfoGui(size_t eInd) {
   ImGui::Columns(1);
 }
 
-void SurfaceMesh::buildHalfedgeInfoGui(size_t heInd) {
+void SurfaceMesh::buildHalfedgeInfoGui(const SurfaceMeshPickResult& result) {
+  size_t heInd = result.index;
   size_t displayInd = heInd;
   if (halfedgePerm.size() > 0) {
     displayInd = halfedgePerm[heInd];
@@ -1212,7 +1234,8 @@ void SurfaceMesh::buildHalfedgeInfoGui(size_t heInd) {
   ImGui::Columns(1);
 }
 
-void SurfaceMesh::buildCornerInfoGui(size_t cInd) {
+void SurfaceMesh::buildCornerInfoGui(const SurfaceMeshPickResult& result) {
+  size_t cInd = result.index;
   size_t displayInd = cInd;
   ImGui::TextUnformatted(("Corner #" + std::to_string(displayInd)).c_str());
 
@@ -1402,6 +1425,49 @@ void SurfaceMesh::updateObjectSpaceBounds() {
 }
 
 std::string SurfaceMesh::typeName() { return structureTypeName; }
+
+SurfaceMeshPickResult SurfaceMesh::interpretPickResult(const PickResult& rawResult) {
+
+  if (rawResult.structure != this) {
+    // caller must ensure that the PickResult belongs to this structure
+    // by checking the structure pointer or name
+    exception("called interpretPickResult(), but the pick result is not from this structure");
+  }
+
+  SurfaceMeshPickResult result;
+
+  if (rawResult.localIndex < facePickIndStart) {
+    // Vertex pick
+    result.elementType = MeshElement::VERTEX;
+    result.index = rawResult.localIndex;
+  } else if (rawResult.localIndex < edgePickIndStart) {
+    // Face pick
+    result.elementType = MeshElement::FACE;
+    result.index = rawResult.localIndex - facePickIndStart;
+
+    // TODO barycoords
+  } else if (rawResult.localIndex < halfedgePickIndStart) {
+    // Edge pick
+    result.elementType = MeshElement::EDGE;
+    result.index = rawResult.localIndex - edgePickIndStart;
+
+    // TODO tEdge
+  } else if (rawResult.localIndex < cornerPickIndStart) {
+    // Halfedge pick
+    result.elementType = MeshElement::HALFEDGE;
+    result.index = rawResult.localIndex - halfedgePickIndStart;
+
+    // TODO tEdge
+  } else if (rawResult.localIndex < cornerPickIndStart + nCorners()) {
+    // Corner pick
+    result.elementType = MeshElement::CORNER;
+    result.index = rawResult.localIndex - cornerPickIndStart;
+  } else {
+    exception("Bad pick index in curve network");
+  }
+
+  return result;
+}
 
 long long int SurfaceMesh::selectVertex() {
 

@@ -34,6 +34,10 @@ struct QuantityTypeHelper<VolumeMesh> {
   typedef VolumeMeshQuantity type;
 };
 
+struct VolumeMeshPickResult {
+  VolumeMeshElement elementType; // which kind of element did we click
+  int64_t index;                 // index of the clicked element
+};
 
 // === The grand volume mesh class
 
@@ -52,7 +56,7 @@ public:
   // Build the imgui display
   virtual void buildCustomUI() override;
   virtual void buildCustomOptionsUI() override;
-  virtual void buildPickUI(size_t localPickID) override;
+  virtual void buildPickUI(const PickResult& result) override;
 
   // Render the the structure on screen
   virtual void draw() override;
@@ -138,6 +142,9 @@ public:
   size_t nTets();
   void computeTets();    // fills tet buffer
   void ensureHaveTets(); //  ensure the tet buffer is filled (but don't rebuild if already done)
+
+  // get data related to picking/selection
+  VolumeMeshPickResult interpretPickResult(const PickResult& result);
 
   // === Member variables ===
   static const std::string structureTypeName;
