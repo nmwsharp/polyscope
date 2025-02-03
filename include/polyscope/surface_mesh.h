@@ -52,8 +52,9 @@ struct QuantityTypeHelper<SurfaceMesh> {
 };
 
 struct SurfaceMeshPickResult {
-  MeshElement elementType; // which kind of element did we click
-  int64_t index;           // index of the clicked element
+  MeshElement elementType;                        // which kind of element did we click
+  int64_t index;                                  // index of the clicked element
+  glm::vec3 baryCoords = glm::vec3{-1., -1., -1}; // coordinates in face, populated only for triangular face picks
 };
 
 // === The grand surface mesh class
