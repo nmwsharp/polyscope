@@ -187,6 +187,7 @@ SET(SRCS
   slice_plane.cpp
   weak_handle.cpp
   marching_cubes.cpp
+  elementary_geometry.cpp
 
   ## Structures
 
@@ -283,6 +284,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/curve_network_vector_quantity.h
   ${INCLUDE_ROOT}/disjoint_sets.h
   ${INCLUDE_ROOT}/depth_render_image_quantity.h
+  ${INCLUDE_ROOT}/elementary_geometry.h
   ${INCLUDE_ROOT}/file_helpers.h
   ${INCLUDE_ROOT}/floating_quantity_structure.h
   ${INCLUDE_ROOT}/floating_quantity.h
