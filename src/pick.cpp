@@ -10,35 +10,38 @@
 
 namespace polyscope {
 
-PickQueryResult queryPickAtScreenCoords(glm::vec2 screenCoords) {
+PickResult queryPickAtScreenCoords(glm::vec2 screenCoords) {
   int xInd, yInd;
   std::tie(xInd, yInd) = view::screenCoordsToBufferInds(screenCoords);
   return queryPickAtBufferCoords(xInd, yInd);
 }
-PickQueryResult queryPickAtBufferCoords(int xPos, int yPos) {
-  PickQueryResult result;
+PickResult queryPickAtBufferCoords(int xPos, int yPos) {
+  PickResult result;
 
   // Query the render buffer
   result.position = view::bufferCoordsToWorldPosition(xPos, yPos);
   result.depth = glm::length(result.position - view::getCameraWorldPosition());
 
   // Query the pick buffer
-  std::pair<Structure*, size_t> rawPickResult = pick::evaluatePickQuery(xPos, yPos);
+  std::pair<Structure*, size_t> rawPickResult = pick::pickAtBufferCoords(xPos, yPos);
 
   // Transcribe result into return tuple
   result.structure = rawPickResult.first;
+  result.bufferCoords = glm::ivec2(xPos, yPos);
+  result.screenCoords = view::bufferIndsToScreenCoords(xPos, yPos);
   if (rawPickResult.first == nullptr) {
     result.isHit = false;
     result.structureType = "";
     result.structureName = "";
+    result.localIndex = INVALID_IND_64;
   } else {
+    result.structureHandle = result.structure->getWeakHandle<Structure>();
     result.isHit = true;
     std::tuple<std::string, std::string> lookupResult = lookUpStructure(rawPickResult.first);
     result.structureType = std::get<0>(lookupResult);
     result.structureName = std::get<1>(lookupResult);
+    result.localIndex = rawPickResult.second;
   }
-
-
 
   return result;
 }
@@ -46,23 +49,22 @@ PickQueryResult queryPickAtBufferCoords(int xPos, int yPos) {
 
 namespace pick {
 
-size_t& currLocalPickInd = state::globalContext.currLocalPickInd;
-Structure*& currPickStructure = state::globalContext.currPickStructure;
+PickResult& currSelectionPickResult = state::globalContext.currSelectionPickResult;
 bool& haveSelectionVal = state::globalContext.haveSelectionVal;
 
 // The next pick index that a structure can use to identify its elements
 // (get it by calling request pickBufferRange())
-size_t& nextPickBufferInd = state::globalContext.nextPickBufferInd; // 0 reserved for "none"
+uint64_t& nextPickBufferInd = state::globalContext.nextPickBufferInd; // 0 reserved for "none"
 
 // Track which ranges have been allocated to which structures
-std::unordered_map<Structure*, std::tuple<size_t, size_t>> structureRanges = state::globalContext.structureRanges;
+std::unordered_map<Structure*, std::tuple<uint64_t, uint64_t>> structureRanges = state::globalContext.structureRanges;
 
 
 // == Set up picking
-size_t requestPickBufferRange(Structure* requestingStructure, size_t count) {
+uint64_t requestPickBufferRange(Structure* requestingStructure, uint64_t count) {
 
   // Check if we can satisfy the request
-  size_t maxPickInd = std::numeric_limits<size_t>::max();
+  uint64_t maxPickInd = std::numeric_limits<uint64_t>::max();
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshift-count-overflow"
   if (bitsForPickPacking < 22) {
@@ -78,7 +80,7 @@ size_t requestPickBufferRange(Structure* requestingStructure, size_t count) {
               "enumerating structure elements for pick buffer.)");
   }
 
-  size_t ret = nextPickBufferInd;
+  uint64_t ret = nextPickBufferInd;
   nextPickBufferInd += count;
   structureRanges[requestingStructure] = std::make_tuple(ret, nextPickBufferInd);
   return ret;
@@ -88,39 +90,31 @@ size_t requestPickBufferRange(Structure* requestingStructure, size_t count) {
 
 void resetSelection() {
   haveSelectionVal = false;
-  currLocalPickInd = 0;
-  currPickStructure = nullptr;
+  currSelectionPickResult = PickResult();
 }
 
 bool haveSelection() { return haveSelectionVal; }
 
 void resetSelectionIfStructure(Structure* s) {
-  if (haveSelectionVal && currPickStructure == s) {
+  if (haveSelectionVal && currSelectionPickResult.structure == s) {
     resetSelection();
   }
 }
 
-std::pair<Structure*, size_t> getSelection() {
-  if (haveSelectionVal) {
-    return {currPickStructure, currLocalPickInd};
-  } else {
-    return {nullptr, 0};
-  }
-}
+PickResult getSelection() { return currSelectionPickResult; }
 
-void setSelection(std::pair<Structure*, size_t> newPick) {
-  if (newPick.first == nullptr) {
+void setSelection(PickResult newPick) {
+  if (!newPick.isHit) {
     resetSelection();
   } else {
     haveSelectionVal = true;
-    currPickStructure = newPick.first;
-    currLocalPickInd = newPick.second;
+    currSelectionPickResult = newPick;
   }
 }
 
 // == Helpers
 
-std::pair<Structure*, size_t> globalIndexToLocal(size_t globalInd) {
+std::pair<Structure*, uint64_t> globalIndexToLocal(uint64_t globalInd) {
 
   // ONEDAY: this could be asymptotically better if we cared
 
@@ -128,8 +122,8 @@ std::pair<Structure*, size_t> globalIndexToLocal(size_t globalInd) {
   for (const auto& x : structureRanges) {
 
     Structure* structure = x.first;
-    size_t rangeStart = std::get<0>(x.second);
-    size_t rangeEnd = std::get<1>(x.second);
+    uint64_t rangeStart = std::get<0>(x.second);
+    uint64_t rangeEnd = std::get<1>(x.second);
 
     if (globalInd >= rangeStart && globalInd < rangeEnd) {
       return {structure, globalInd - rangeStart};
@@ -139,28 +133,28 @@ std::pair<Structure*, size_t> globalIndexToLocal(size_t globalInd) {
   return {nullptr, 0};
 }
 
-size_t localIndexToGlobal(std::pair<Structure*, size_t> localPick) {
+uint64_t localIndexToGlobal(std::pair<Structure*, uint64_t> localPick) {
   if (localPick.first == nullptr) return 0;
 
   if (structureRanges.find(localPick.first) == structureRanges.end()) {
     exception("structure does not match any allocated pick range");
   }
 
-  std::tuple<size_t, size_t> range = structureRanges[localPick.first];
-  size_t rangeStart = std::get<0>(range);
-  size_t rangeEnd = std::get<1>(range);
+  std::tuple<uint64_t, uint64_t> range = structureRanges[localPick.first];
+  uint64_t rangeStart = std::get<0>(range);
+  uint64_t rangeEnd = std::get<1>(range);
   return rangeStart + localPick.second;
 }
 
-std::pair<Structure*, size_t> pickAtScreenCoords(glm::vec2 screenCoords) {
+std::pair<Structure*, uint64_t> pickAtScreenCoords(glm::vec2 screenCoords) {
   int xInd, yInd;
   std::tie(xInd, yInd) = view::screenCoordsToBufferInds(screenCoords);
   return pickAtBufferCoords(xInd, yInd);
 }
 
-std::pair<Structure*, size_t> pickAtBufferCoords(int xPos, int yPos) { return evaluatePickQuery(xPos, yPos); }
+std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos) { return evaluatePickQuery(xPos, yPos); }
 
-std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
+std::pair<Structure*, uint64_t> evaluatePickQuery(int xPos, int yPos) {
 
   // NOTE: hack used for debugging: if xPos == yPos == -1 we do a pick render but do not query the value.
 
@@ -193,7 +187,7 @@ std::pair<Structure*, size_t> evaluatePickQuery(int xPos, int yPos) {
 
   // Read from the pick buffer
   std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, view::bufferHeight - yPos);
-  size_t globalInd = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
+  uint64_t globalInd = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
 
   return pick::globalIndexToLocal(globalInd);
 }
