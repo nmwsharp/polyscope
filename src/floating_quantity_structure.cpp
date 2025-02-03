@@ -66,7 +66,7 @@ void FloatingQuantityStructure::buildUI() {
 }
 
 
-void FloatingQuantityStructure::buildPickUI(size_t localPickID) {}
+void FloatingQuantityStructure::buildPickUI(const PickResult& result) {};
 
 // since hasExtents is false, the length scale and bbox value should never be used
 bool FloatingQuantityStructure::hasExtents() { return false; }

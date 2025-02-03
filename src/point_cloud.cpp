@@ -205,6 +205,25 @@ size_t PointCloud::nPoints() { return points.size(); }
 glm::vec3 PointCloud::getPointPosition(size_t iPt) { return points.getValue(iPt); }
 
 
+PointCloudPickResult PointCloud::interpretPickResult(const PickResult& rawResult) {
+  if (rawResult.structure != this) {
+    // caller must ensure that the PickResult belongs to this structure
+    // by checking the structure pointer or name
+    exception("called interpretPickResult(), but the pick result is not from this structure");
+  }
+
+  PointCloudPickResult result;
+
+  if (rawResult.localIndex < nPoints()) {
+    result.index = rawResult.localIndex;
+  } else {
+    exception("Bad pick index in point cloud");
+  }
+
+  return result;
+}
+
+
 std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud) {
   initRules = addStructureRules(initRules);
   if (withPointCloud) {
@@ -240,10 +259,13 @@ PointCloudScalarQuantity& PointCloud::resolvePointRadiusQuantity() {
   return *sizeScalarQ;
 }
 
-void PointCloud::buildPickUI(size_t localPickID) {
-  ImGui::TextUnformatted(("#" + std::to_string(localPickID) + "  ").c_str());
+void PointCloud::buildPickUI(const PickResult& rawResult) {
+
+  PointCloudPickResult result = interpretPickResult(rawResult);
+
+  ImGui::TextUnformatted(("point #" + std::to_string(result.index) + "  ").c_str());
   ImGui::SameLine();
-  ImGui::TextUnformatted(to_string(getPointPosition(localPickID)).c_str());
+  ImGui::TextUnformatted(to_string(getPointPosition(result.index)).c_str());
 
   ImGui::Spacing();
   ImGui::Spacing();
@@ -254,7 +276,7 @@ void PointCloud::buildPickUI(size_t localPickID) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildPickUI(localPickID);
+    x.second->buildPickUI(result.index);
   }
 
   ImGui::Indent(-20.);

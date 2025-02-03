@@ -76,9 +76,6 @@ void SimpleTriangleMesh::buildCustomOptionsUI() {
   }
 }
 
-void SimpleTriangleMesh::buildPickUI(size_t localPickID) {
-  // Do nothing for now, we just pick a single constant for the whole structure
-}
 
 void SimpleTriangleMesh::draw() {
   if (!isEnabled()) {
@@ -271,6 +268,28 @@ void SimpleTriangleMesh::updateObjectSpaceBounds() {
   }
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);
 }
+
+SimpleTriangleMeshPickResult SimpleTriangleMesh::interpretPickResult(const PickResult& rawResult) {
+
+  if (rawResult.structure != this) {
+    // caller must ensure that the PickResult belongs to this structure
+    // by checking the structure pointer or name
+    exception("called interpretPickResult(), but the pick result is not from this structure");
+  }
+
+  SimpleTriangleMeshPickResult result;
+
+  // currently nothing
+
+  return result;
+}
+
+void SimpleTriangleMesh::buildPickUI(const PickResult& rawResult) {
+  SimpleTriangleMeshPickResult result = interpretPickResult(rawResult);
+
+  // Do nothing for now, we just pick a single constant for the whole structure
+}
+
 
 std::string SimpleTriangleMesh::typeName() { return structureTypeName; }
 
