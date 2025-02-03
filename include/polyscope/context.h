@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include <polyscope/pick.h>
 #include <polyscope/types.h>
 #include <polyscope/weak_handle.h>
-#include <polyscope/pick.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtx/dual_quaternion.hpp>
@@ -15,6 +15,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
