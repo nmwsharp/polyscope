@@ -484,6 +484,7 @@ void VolumeMesh::drawPick() {
   // Set uniforms
   setVolumeMeshUniforms(*pickProgram);
   setStructureUniforms(*pickProgram);
+  pickProgram->setUniform("u_vertPickRadius", 0.2);
 
   pickProgram->draw();
 }
