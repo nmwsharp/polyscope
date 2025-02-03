@@ -61,7 +61,8 @@ edgeColor(              uniquePrefix() + "edgeColor",       glm::vec3{0., 0., 0.
 edgeWidth(              uniquePrefix() + "edgeWidth",       0.),
 backFacePolicy(         uniquePrefix() + "backFacePolicy",  BackFacePolicy::Different),
 backFaceColor(          uniquePrefix() + "backFaceColor",   glm::vec3(1.f - surfaceColor.get().r, 1.f - surfaceColor.get().g, 1.f - surfaceColor.get().b)),
-shadeStyle(             uniquePrefix() + "shadeStyle",      MeshShadeStyle::Flat)
+shadeStyle(             uniquePrefix() + "shadeStyle",      MeshShadeStyle::Flat),
+selectionMode(          uniquePrefix() + "selectionMode",   MeshSelectionMode::Auto)
 
 // clang-format on
 {}
@@ -734,8 +735,7 @@ void SurfaceMesh::draw() {
     if (program == nullptr) {
       prepare();
 
-      // do this now to reduce lag when picking later, etc
-      // FIXME
+      // do this now to reduce lag when picking later
       // preparePick();
     }
 
@@ -792,6 +792,22 @@ void SurfaceMesh::drawPick() {
   // Set uniforms
   setStructureUniforms(*pickProgram);
 
+  if (usingSimplePick) {
+    float radVal;
+    switch (selectionMode.get()) {
+    case MeshSelectionMode::Auto:
+      radVal = 0.2;
+      break;
+    case MeshSelectionMode::VerticesOnly:
+      radVal = 1.;
+      break;
+    case MeshSelectionMode::FacesOnly:
+      radVal = 0.;
+      break;
+    }
+    pickProgram->setUniform("u_vertPickRadius", radVal);
+  }
+
   pickProgram->draw();
 
   render::engine->setBackfaceCull(); // return to default setting
@@ -813,10 +829,19 @@ void SurfaceMesh::prepare() {
 
 void SurfaceMesh::preparePick() {
 
+  switch (selectionMode.get()) {
+  case MeshSelectionMode::Auto:
+    usingSimplePick = !(edgesHaveBeenUsed || halfedgesHaveBeenUsed || cornersHaveBeenUsed);
+    break;
+  case MeshSelectionMode::VerticesOnly:
+    usingSimplePick = true;
+    break;
+  case MeshSelectionMode::FacesOnly:
+    usingSimplePick = true;
+    break;
+  }
 
-  bool simplePick = !(edgesHaveBeenUsed || halfedgesHaveBeenUsed || cornersHaveBeenUsed);
-
-  if (simplePick) {
+  if (usingSimplePick) {
     pickProgram =
         render::engine->requestShader("MESH", addSurfaceMeshRules({"MESH_PROPAGATE_PICK_SIMPLE"}, true, false),
                                       render::ShaderReplacementDefaults::Pick);
@@ -870,7 +895,6 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
   // CPU-side processing. Maybe the solution is to directly render ints?
 
   // make sure we have the relevant indexing data
-  bool simplePick = !(edgesHaveBeenUsed || halfedgesHaveBeenUsed || cornersHaveBeenUsed);
   triangleVertexInds.ensureHostBufferPopulated();
   triangleFaceInds.ensureHostBufferPopulated();
   if (edgesHaveBeenUsed) triangleAllEdgeInds.ensureHostBufferPopulated();
@@ -905,7 +929,7 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
   // Reserve space
   vertexColors.reserve(3 * nFacesTriangulation());
   faceColor.reserve(3 * nFacesTriangulation());
-  if (!simplePick) {
+  if (!usingSimplePick) {
     halfedgeColors.reserve(3 * nFacesTriangulation());
     cornerColors.reserve(3 * nFacesTriangulation());
   }
@@ -936,7 +960,7 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
       }
 
       // Second half does halfedges/edges/corners, not used for simple mode
-      if (simplePick) {
+      if (usingSimplePick) {
         iFTri++;
         continue;
       }
@@ -948,42 +972,45 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
 
       // == Build edge index data, if needed
 
+      if (!usingSimplePick) {
+        if (edgesHaveBeenUsed || halfedgesHaveBeenUsed) {
 
-      if (edgesHaveBeenUsed || halfedgesHaveBeenUsed) {
+          const std::vector<uint32_t>& eDataVec =
+              (edgesHaveBeenUsed && !halfedgesHaveBeenUsed) ? triangleAllEdgeInds.data : triangleAllHalfedgeInds.data;
+          size_t offset =
+              (edgesHaveBeenUsed && !halfedgesHaveBeenUsed) ? edgeGlobalPickIndStart : halfedgeGlobalPickIndStart;
 
-        const std::vector<uint32_t>& eDataVec =
-            (edgesHaveBeenUsed && !halfedgesHaveBeenUsed) ? triangleAllEdgeInds.data : triangleAllHalfedgeInds.data;
-        size_t offset =
-            (edgesHaveBeenUsed && !halfedgesHaveBeenUsed) ? edgeGlobalPickIndStart : halfedgeGlobalPickIndStart;
-
-        // clang-format off
+          // clang-format off
         std::array<glm::vec3, 3> eColor = { 
           fColor, 
           pick::indToVec(eDataVec[9*iFTri + 1] + offset), 
           fColor
         };
-        // clang-format on
-        if (j == 1) eColor[0] = pick::indToVec(eDataVec[9 * iFTri + 0] + offset);
-        if (j + 2 == D) eColor[2] = pick::indToVec(eDataVec[9 * iFTri + 2] + offset);
+          // clang-format on
+          if (j == 1) eColor[0] = pick::indToVec(eDataVec[9 * iFTri + 0] + offset);
+          if (j + 2 == D) eColor[2] = pick::indToVec(eDataVec[9 * iFTri + 2] + offset);
 
-        for (int j = 0; j < 3; j++) halfedgeColors.push_back(eColor);
-      } else {
-        for (int j = 0; j < 3; j++) halfedgeColors.push_back({fColor, fColor, fColor});
+          for (int j = 0; j < 3; j++) halfedgeColors.push_back(eColor);
+        } else {
+          for (int j = 0; j < 3; j++) halfedgeColors.push_back({fColor, fColor, fColor});
+        }
       }
 
       // == Build corner index data, if needed
 
-      if (cornersHaveBeenUsed) {
-        // clang-format off
+      if (!usingSimplePick) {
+        if (cornersHaveBeenUsed) {
+          // clang-format off
         std::array<glm::vec3, 3> cColor = { 
           pick::indToVec(triangleCornerInds.data[3*iFTri + 0] + cornerGlobalPickIndStart), 
           pick::indToVec(triangleCornerInds.data[3*iFTri + 1] + cornerGlobalPickIndStart), 
           pick::indToVec(triangleCornerInds.data[3*iFTri + 2] + cornerGlobalPickIndStart), 
         };
-        // clang-format on
-        for (int j = 0; j < 3; j++) cornerColors.push_back(cColor);
-      } else {
-        for (int j = 0; j < 3; j++) cornerColors.push_back({vColor[0], vColor[1], vColor[2]});
+          // clang-format on
+          for (int j = 0; j < 3; j++) cornerColors.push_back(cColor);
+        } else {
+          for (int j = 0; j < 3; j++) cornerColors.push_back({vColor[0], vColor[1], vColor[2]});
+        }
       }
 
       iFTri++;
@@ -1002,7 +1029,7 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
   faceColorsBuff->setData(faceColor);
   pickProgram->setAttribute("a_faceColor", faceColorsBuff);
 
-  if (!simplePick) {
+  if (!usingSimplePick) {
 
     std::shared_ptr<render::AttributeBuffer> halfedgeColorsBuff =
         render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, 3);
@@ -1384,6 +1411,29 @@ void SurfaceMesh::buildCustomOptionsUI() {
         }
       }
     }
+    ImGui::EndMenu();
+  }
+
+  // Selection mode
+  if (ImGui::BeginMenu("Selection Mode")) {
+    if (ImGui::MenuItem("auto", NULL, selectionMode.get() == MeshSelectionMode::Auto))
+      setSelectionMode(MeshSelectionMode::Auto);
+    if (ImGui::MenuItem("vertices only", NULL, selectionMode.get() == MeshSelectionMode::VerticesOnly))
+      setSelectionMode(MeshSelectionMode::VerticesOnly);
+    if (ImGui::MenuItem("faces only", NULL, selectionMode.get() == MeshSelectionMode::FacesOnly))
+      setSelectionMode(MeshSelectionMode::FacesOnly);
+
+    ImGui::Separator();
+
+    if (ImGui::MenuItem("Mark edges as used (selectable)", NULL, edgesHaveBeenUsed)) {
+      markEdgesAsUsed();
+    }
+    if (ImGui::MenuItem("Mark halfedges as used (selectable)", NULL, halfedgesHaveBeenUsed)) {
+      markHalfedgesAsUsed();
+    }
+    if (ImGui::MenuItem("Mark corners as used (selectable)", NULL, cornersHaveBeenUsed)) {
+      markCornersAsUsed();
+    }
 
     ImGui::EndMenu();
   }
@@ -1693,6 +1743,14 @@ SurfaceMesh* SurfaceMesh::setShadeStyle(MeshShadeStyle newStyle) {
   return this;
 }
 MeshShadeStyle SurfaceMesh::getShadeStyle() { return shadeStyle.get(); }
+
+SurfaceMesh* SurfaceMesh::setSelectionMode(MeshSelectionMode newMode) {
+  selectionMode = newMode;
+  refresh();
+  requestRedraw();
+  return this;
+}
+MeshSelectionMode SurfaceMesh::getSelectionMode() { return selectionMode.get(); }
 
 // === Quantity adders
 

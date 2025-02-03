@@ -290,6 +290,10 @@ public:
   SurfaceMesh* setShadeStyle(MeshShadeStyle newStyle);
   MeshShadeStyle getShadeStyle();
 
+  // Selection mode
+  SurfaceMesh* setSelectionMode(MeshSelectionMode newMode);
+  MeshSelectionMode getSelectionMode();
+
   // == Rendering helpers used by quantities
 
   // void fillGeometryBuffers(render::ShaderProgram& p);
@@ -361,11 +365,11 @@ private:
   PersistentValue<BackFacePolicy> backFacePolicy;
   PersistentValue<glm::vec3> backFaceColor;
   PersistentValue<MeshShadeStyle> shadeStyle;
+  PersistentValue<MeshSelectionMode> selectionMode;
 
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
   void preparePick();
-
 
   /// == Compute indices & geometry data
   void computeTriangleCornerInds();
@@ -405,6 +409,7 @@ private:
 
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> pickProgram;
+  bool usingSimplePick = false;
 
 
   // === Helper functions
