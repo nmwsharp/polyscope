@@ -39,6 +39,7 @@ struct QuantityTypeHelper<CurveNetwork> {
 struct CurveNetworkPickResult {
   CurveNetworkElement elementType; // which kind of element did we click
   int64_t index;                   // index of the clicked element
+  float tEdge = -1;                // if the pick is an edge, the t-value in [0,1] along the edge
 };
 
 class CurveNetwork : public QuantityStructure<CurveNetwork> {
@@ -191,8 +192,8 @@ private:
   float computeRadiusMultiplierUniform();
 
   // Pick helpers
-  void buildNodePickUI(size_t nodeInd);
-  void buildEdgePickUI(size_t edgeInd);
+  void buildNodePickUI(const CurveNetworkPickResult& result);
+  void buildEdgePickUI(const CurveNetworkPickResult& result);
 
   // === Quantity adder implementations
   // clang-format off

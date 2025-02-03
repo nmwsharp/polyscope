@@ -2,6 +2,7 @@
 
 #include "polyscope/curve_network.h"
 
+#include "polyscope/elementary_geometry.h"
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
@@ -348,17 +349,18 @@ void CurveNetwork::buildPickUI(const PickResult& rawResult) {
 
   switch (result.elementType) {
   case CurveNetworkElement::NODE: {
-    buildNodePickUI(result.index);
+    buildNodePickUI(result);
     break;
   }
   case CurveNetworkElement::EDGE: {
-    buildEdgePickUI(result.index);
+    buildEdgePickUI(result);
     break;
   }
   };
 }
 
-void CurveNetwork::buildNodePickUI(size_t nodeInd) {
+void CurveNetwork::buildNodePickUI(const CurveNetworkPickResult& result) {
+  int32_t nodeInd = result.index;
 
   ImGui::TextUnformatted(("node #" + std::to_string(nodeInd) + "  ").c_str());
   ImGui::SameLine();
@@ -379,12 +381,14 @@ void CurveNetwork::buildNodePickUI(size_t nodeInd) {
   ImGui::Indent(-20.);
 }
 
-void CurveNetwork::buildEdgePickUI(size_t edgeInd) {
+void CurveNetwork::buildEdgePickUI(const CurveNetworkPickResult& result) {
+  int32_t edgeInd = result.index;
+
   ImGui::TextUnformatted(("edge #" + std::to_string(edgeInd) + "  ").c_str());
   ImGui::SameLine();
-  size_t n0 = edgeTailInds.getValue(edgeInd);
-  size_t n1 = edgeTipInds.getValue(edgeInd);
-  ImGui::TextUnformatted(("  " + std::to_string(n0) + " -- " + std::to_string(n1)).c_str());
+  int32_t n0 = edgeTailInds.getValue(edgeInd);
+  int32_t n1 = edgeTipInds.getValue(edgeInd);
+  ImGui::Text("  %d -- %d     t_select = %.4f", n0, n1, result.tEdge);
 
   ImGui::Spacing();
   ImGui::Spacing();
@@ -481,10 +485,10 @@ CurveNetworkPickResult CurveNetwork::interpretPickResult(const PickResult& rawRe
 
     // compute the t \in [0,1] along the edge
     int32_t iStart = edgeTailInds.getValue(result.index);
-    int32_t iEnd= edgeTipInds.getValue(result.index);
+    int32_t iEnd = edgeTipInds.getValue(result.index);
     glm::vec3 pStart = nodePositions.getValue(iStart);
     glm::vec3 pEnd = nodePositions.getValue(iEnd);
-
+    result.tEdge = computeTValAlongLine(rawResult.position, pStart, pEnd);
   } else {
     exception("Bad pick index in curve network");
   }
