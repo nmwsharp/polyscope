@@ -2,8 +2,8 @@
 
 #include "polyscope/surface_mesh.h"
 
-#include "glm/fwd.hpp"
 #include "polyscope/combining_hash_functions.h"
+#include "polyscope/elementary_geometry.h"
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
@@ -1170,6 +1170,11 @@ void SurfaceMesh::buildFaceInfoGui(const SurfaceMeshPickResult& result) {
   size_t displayInd = fInd;
   ImGui::TextUnformatted(("Face #" + std::to_string(displayInd)).c_str());
 
+  if (result.baryCoords != glm::vec3{-1., -1., -1.}) {
+    ImGui::Text("selected barycoords = <%.3f, %.3f, %.3f>", result.baryCoords.x, result.baryCoords.y,
+                result.baryCoords.z);
+  }
+
   ImGui::Spacing();
   ImGui::Spacing();
   ImGui::Spacing();
@@ -1446,18 +1451,40 @@ SurfaceMeshPickResult SurfaceMesh::interpretPickResult(const PickResult& rawResu
     result.index = rawResult.localIndex - facePickIndStart;
 
     // TODO barycoords
+    size_t D = faceIndsStart[result.index + 1] - faceIndsStart[result.index];
+    if (D == 3) {
+
+      // gather values and project onto plane
+      size_t iStart = faceIndsStart[result.index];
+      uint32_t vA = faceIndsEntries[iStart];
+      uint32_t vB = faceIndsEntries[iStart + 1];
+      uint32_t vC = faceIndsEntries[iStart + 2];
+      glm::vec3 pA = vertexPositions.getValue(vA);
+      glm::vec3 pB = vertexPositions.getValue(vB);
+      glm::vec3 pC = vertexPositions.getValue(vC);
+      glm::vec3 normal = glm::normalize(glm::cross(pB - pA, pC - pA));
+      glm::vec3 x = projectToPlane(rawResult.position, normal, pA);
+
+      // compute barycentric coordinates as ratio of signed areas
+      float areaABC = signedTriangleArea(normal, pA, pB, pC);
+      float areaXBC = signedTriangleArea(normal, x, pB, pC);
+      float areaXCA = signedTriangleArea(normal, x, pC, pA);
+      float areaXAB = signedTriangleArea(normal, x, pA, pB);
+      glm::vec3 barycoord{areaXBC / areaABC, areaXCA / areaABC, areaXAB / areaABC};
+      result.baryCoords = barycoord;
+    }
+
   } else if (rawResult.localIndex < halfedgePickIndStart) {
     // Edge pick
     result.elementType = MeshElement::EDGE;
     result.index = rawResult.localIndex - edgePickIndStart;
 
-    // TODO tEdge
+
   } else if (rawResult.localIndex < cornerPickIndStart) {
     // Halfedge pick
     result.elementType = MeshElement::HALFEDGE;
     result.index = rawResult.localIndex - halfedgePickIndStart;
 
-    // TODO tEdge
   } else if (rawResult.localIndex < cornerPickIndStart + nCorners()) {
     // Corner pick
     result.elementType = MeshElement::CORNER;
