@@ -174,7 +174,7 @@ void buildWarningUI(std::string warningBaseString, std::string warningDetailStri
     }
 
     // Nice button sizing
-    float buttonWidth = 120;
+    float buttonWidth = 120 * state::globalContext.dpiScale;
     float buttonOffset = (warningModalSize.x - buttonWidth) / 2.0;
     buttonOffset = std::max(buttonOffset, 0.0f);
     doIndent = buttonOffset > 0;
