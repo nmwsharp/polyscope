@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include <polyscope/pick.h>
 #include <polyscope/types.h>
 #include <polyscope/weak_handle.h>
-
 
 #include <glm/glm.hpp>
 #include <glm/gtx/dual_quaternion.hpp>
@@ -15,6 +15,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -97,6 +98,14 @@ struct Context {
   glm::vec3 flightTargetViewT, flightInitialViewT;
   float flightTargetFov, flightInitialFov;
 
+  // ======================================================
+  // === Picking globals from pick.h / pick.cpp
+  // ======================================================
+
+  PickResult currSelectionPickResult;
+  bool haveSelectionVal = false;
+  uint64_t nextPickBufferInd = 1;
+  std::unordered_map<Structure*, std::tuple<uint64_t, uint64_t>> structureRanges;
 
   // ======================================================
   // === Internal globals from internal.h

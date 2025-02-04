@@ -2,8 +2,8 @@
 
 #include "polyscope/surface_mesh.h"
 
-#include "glm/fwd.hpp"
 #include "polyscope/combining_hash_functions.h"
+#include "polyscope/elementary_geometry.h"
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
@@ -61,7 +61,8 @@ edgeColor(              uniquePrefix() + "edgeColor",       glm::vec3{0., 0., 0.
 edgeWidth(              uniquePrefix() + "edgeWidth",       0.),
 backFacePolicy(         uniquePrefix() + "backFacePolicy",  BackFacePolicy::Different),
 backFaceColor(          uniquePrefix() + "backFaceColor",   glm::vec3(1.f - surfaceColor.get().r, 1.f - surfaceColor.get().g, 1.f - surfaceColor.get().b)),
-shadeStyle(             uniquePrefix() + "shadeStyle",      MeshShadeStyle::Flat)
+shadeStyle(             uniquePrefix() + "shadeStyle",      MeshShadeStyle::Flat),
+selectionMode(          uniquePrefix() + "selectionMode",   MeshSelectionMode::Auto)
 
 // clang-format on
 {}
@@ -734,8 +735,7 @@ void SurfaceMesh::draw() {
     if (program == nullptr) {
       prepare();
 
-      // do this now to reduce lag when picking later, etc
-      // FIXME
+      // do this now to reduce lag when picking later
       // preparePick();
     }
 
@@ -792,6 +792,22 @@ void SurfaceMesh::drawPick() {
   // Set uniforms
   setStructureUniforms(*pickProgram);
 
+  if (usingSimplePick) {
+    float radVal;
+    switch (selectionMode.get()) {
+    case MeshSelectionMode::Auto:
+      radVal = 0.2;
+      break;
+    case MeshSelectionMode::VerticesOnly:
+      radVal = 1.;
+      break;
+    case MeshSelectionMode::FacesOnly:
+      radVal = 0.;
+      break;
+    }
+    pickProgram->setUniform("u_vertPickRadius", radVal);
+  }
+
   pickProgram->draw();
 
   render::engine->setBackfaceCull(); // return to default setting
@@ -813,10 +829,19 @@ void SurfaceMesh::prepare() {
 
 void SurfaceMesh::preparePick() {
 
+  switch (selectionMode.get()) {
+  case MeshSelectionMode::Auto:
+    usingSimplePick = !(edgesHaveBeenUsed || halfedgesHaveBeenUsed || cornersHaveBeenUsed);
+    break;
+  case MeshSelectionMode::VerticesOnly:
+    usingSimplePick = true;
+    break;
+  case MeshSelectionMode::FacesOnly:
+    usingSimplePick = true;
+    break;
+  }
 
-  bool simplePick = !(edgesHaveBeenUsed || halfedgesHaveBeenUsed || cornersHaveBeenUsed);
-
-  if (simplePick) {
+  if (usingSimplePick) {
     pickProgram =
         render::engine->requestShader("MESH", addSurfaceMeshRules({"MESH_PROPAGATE_PICK_SIMPLE"}, true, false),
                                       render::ShaderReplacementDefaults::Pick);
@@ -870,7 +895,6 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
   // CPU-side processing. Maybe the solution is to directly render ints?
 
   // make sure we have the relevant indexing data
-  bool simplePick = !(edgesHaveBeenUsed || halfedgesHaveBeenUsed || cornersHaveBeenUsed);
   triangleVertexInds.ensureHostBufferPopulated();
   triangleFaceInds.ensureHostBufferPopulated();
   if (edgesHaveBeenUsed) triangleAllEdgeInds.ensureHostBufferPopulated();
@@ -905,7 +929,7 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
   // Reserve space
   vertexColors.reserve(3 * nFacesTriangulation());
   faceColor.reserve(3 * nFacesTriangulation());
-  if (!simplePick) {
+  if (!usingSimplePick) {
     halfedgeColors.reserve(3 * nFacesTriangulation());
     cornerColors.reserve(3 * nFacesTriangulation());
   }
@@ -936,7 +960,7 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
       }
 
       // Second half does halfedges/edges/corners, not used for simple mode
-      if (simplePick) {
+      if (usingSimplePick) {
         iFTri++;
         continue;
       }
@@ -948,42 +972,45 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
 
       // == Build edge index data, if needed
 
+      if (!usingSimplePick) {
+        if (edgesHaveBeenUsed || halfedgesHaveBeenUsed) {
 
-      if (edgesHaveBeenUsed || halfedgesHaveBeenUsed) {
+          const std::vector<uint32_t>& eDataVec =
+              (edgesHaveBeenUsed && !halfedgesHaveBeenUsed) ? triangleAllEdgeInds.data : triangleAllHalfedgeInds.data;
+          size_t offset =
+              (edgesHaveBeenUsed && !halfedgesHaveBeenUsed) ? edgeGlobalPickIndStart : halfedgeGlobalPickIndStart;
 
-        const std::vector<uint32_t>& eDataVec =
-            (edgesHaveBeenUsed && !halfedgesHaveBeenUsed) ? triangleAllEdgeInds.data : triangleAllHalfedgeInds.data;
-        size_t offset =
-            (edgesHaveBeenUsed && !halfedgesHaveBeenUsed) ? edgeGlobalPickIndStart : halfedgeGlobalPickIndStart;
-
-        // clang-format off
+          // clang-format off
         std::array<glm::vec3, 3> eColor = { 
           fColor, 
           pick::indToVec(eDataVec[9*iFTri + 1] + offset), 
           fColor
         };
-        // clang-format on
-        if (j == 1) eColor[0] = pick::indToVec(eDataVec[9 * iFTri + 0] + offset);
-        if (j + 2 == D) eColor[2] = pick::indToVec(eDataVec[9 * iFTri + 2] + offset);
+          // clang-format on
+          if (j == 1) eColor[0] = pick::indToVec(eDataVec[9 * iFTri + 0] + offset);
+          if (j + 2 == D) eColor[2] = pick::indToVec(eDataVec[9 * iFTri + 2] + offset);
 
-        for (int j = 0; j < 3; j++) halfedgeColors.push_back(eColor);
-      } else {
-        for (int j = 0; j < 3; j++) halfedgeColors.push_back({fColor, fColor, fColor});
+          for (int j = 0; j < 3; j++) halfedgeColors.push_back(eColor);
+        } else {
+          for (int j = 0; j < 3; j++) halfedgeColors.push_back({fColor, fColor, fColor});
+        }
       }
 
       // == Build corner index data, if needed
 
-      if (cornersHaveBeenUsed) {
-        // clang-format off
+      if (!usingSimplePick) {
+        if (cornersHaveBeenUsed) {
+          // clang-format off
         std::array<glm::vec3, 3> cColor = { 
           pick::indToVec(triangleCornerInds.data[3*iFTri + 0] + cornerGlobalPickIndStart), 
           pick::indToVec(triangleCornerInds.data[3*iFTri + 1] + cornerGlobalPickIndStart), 
           pick::indToVec(triangleCornerInds.data[3*iFTri + 2] + cornerGlobalPickIndStart), 
         };
-        // clang-format on
-        for (int j = 0; j < 3; j++) cornerColors.push_back(cColor);
-      } else {
-        for (int j = 0; j < 3; j++) cornerColors.push_back({vColor[0], vColor[1], vColor[2]});
+          // clang-format on
+          for (int j = 0; j < 3; j++) cornerColors.push_back(cColor);
+        } else {
+          for (int j = 0; j < 3; j++) cornerColors.push_back({vColor[0], vColor[1], vColor[2]});
+        }
       }
 
       iFTri++;
@@ -1002,7 +1029,7 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
   faceColorsBuff->setData(faceColor);
   pickProgram->setAttribute("a_faceColor", faceColorsBuff);
 
-  if (!simplePick) {
+  if (!usingSimplePick) {
 
     std::shared_ptr<render::AttributeBuffer> halfedgeColorsBuff =
         render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, 3);
@@ -1083,32 +1110,51 @@ void SurfaceMesh::setSurfaceMeshUniforms(render::ShaderProgram& p) {
 }
 
 
-void SurfaceMesh::buildPickUI(size_t localPickID) {
+void SurfaceMesh::buildPickUI(const PickResult& rawResult) {
 
-  // Selection type
-  if (localPickID < facePickIndStart) {
-    buildVertexInfoGui(localPickID);
-  } else if (localPickID < edgePickIndStart) {
-    buildFaceInfoGui(localPickID - facePickIndStart);
-  } else if (localPickID < halfedgePickIndStart) {
-    buildEdgeInfoGui(localPickID - edgePickIndStart);
-  } else if (localPickID < cornerPickIndStart) {
-    buildHalfedgeInfoGui(localPickID - halfedgePickIndStart);
+  SurfaceMeshPickResult result = interpretPickResult(rawResult);
 
+  switch (result.elementType) {
+  case MeshElement::VERTEX: {
+    buildVertexInfoGui(result);
+    break;
+  }
+  case MeshElement::FACE: {
+    buildFaceInfoGui(result);
+    break;
+  }
+  case MeshElement::EDGE: {
+    buildEdgeInfoGui(result);
+    break;
+  }
+  case MeshElement::HALFEDGE: {
+    buildHalfedgeInfoGui(result);
+
+    // Also build the edge gui while we're here
     if (edgesHaveBeenUsed) {
-      // do the edge one too (see not in pick buffer filler)
-      uint32_t halfedgeInd = localPickID - halfedgePickIndStart;
+      // do the edge one too (see note in pick buffer filler)
+      uint32_t halfedgeInd = result.index;
       if (halfedgeInd >= halfedgeEdgeCorrespondence.size()) {
         exception("problem with halfedge edge indices");
       }
       uint32_t edgeInd = halfedgeEdgeCorrespondence[halfedgeInd];
 
+      // construct a pick result for the edge
+      SurfaceMeshPickResult edgePickResult = result;
+      edgePickResult.elementType = MeshElement::EDGE;
+      edgePickResult.index = edgeInd;
+
       ImGui::NewLine();
-      buildEdgeInfoGui(edgeInd);
+      buildEdgeInfoGui(edgePickResult);
     }
-  } else {
-    buildCornerInfoGui(localPickID - cornerPickIndStart);
+
+    break;
   }
+  case MeshElement::CORNER: {
+    buildCornerInfoGui(result);
+    break;
+  }
+  };
 }
 
 glm::vec2 SurfaceMesh::projectToScreenSpace(glm::vec3 coord) {
@@ -1121,8 +1167,8 @@ glm::vec2 SurfaceMesh::projectToScreenSpace(glm::vec3 coord) {
   return glm::vec2{screenPoint.x, screenPoint.y} / screenPoint.w;
 }
 
-void SurfaceMesh::buildVertexInfoGui(size_t vInd) {
-
+void SurfaceMesh::buildVertexInfoGui(const SurfaceMeshPickResult& result) {
+  size_t vInd = result.index;
   size_t displayInd = vInd;
   ImGui::TextUnformatted(("Vertex #" + std::to_string(displayInd)).c_str());
 
@@ -1146,9 +1192,15 @@ void SurfaceMesh::buildVertexInfoGui(size_t vInd) {
   ImGui::Columns(1);
 }
 
-void SurfaceMesh::buildFaceInfoGui(size_t fInd) {
+void SurfaceMesh::buildFaceInfoGui(const SurfaceMeshPickResult& result) {
+  size_t fInd = result.index;
   size_t displayInd = fInd;
   ImGui::TextUnformatted(("Face #" + std::to_string(displayInd)).c_str());
+
+  if (result.baryCoords != glm::vec3{-1., -1., -1.}) {
+    ImGui::Text("selected barycoords = <%.3f, %.3f, %.3f>", result.baryCoords.x, result.baryCoords.y,
+                result.baryCoords.z);
+  }
 
   ImGui::Spacing();
   ImGui::Spacing();
@@ -1166,7 +1218,8 @@ void SurfaceMesh::buildFaceInfoGui(size_t fInd) {
   ImGui::Columns(1);
 }
 
-void SurfaceMesh::buildEdgeInfoGui(size_t eInd) {
+void SurfaceMesh::buildEdgeInfoGui(const SurfaceMeshPickResult& result) {
+  size_t eInd = result.index;
   size_t displayInd = eInd;
   if (edgePerm.size() > 0) {
     displayInd = edgePerm[eInd];
@@ -1189,7 +1242,8 @@ void SurfaceMesh::buildEdgeInfoGui(size_t eInd) {
   ImGui::Columns(1);
 }
 
-void SurfaceMesh::buildHalfedgeInfoGui(size_t heInd) {
+void SurfaceMesh::buildHalfedgeInfoGui(const SurfaceMeshPickResult& result) {
+  size_t heInd = result.index;
   size_t displayInd = heInd;
   if (halfedgePerm.size() > 0) {
     displayInd = halfedgePerm[heInd];
@@ -1212,7 +1266,8 @@ void SurfaceMesh::buildHalfedgeInfoGui(size_t heInd) {
   ImGui::Columns(1);
 }
 
-void SurfaceMesh::buildCornerInfoGui(size_t cInd) {
+void SurfaceMesh::buildCornerInfoGui(const SurfaceMeshPickResult& result) {
+  size_t cInd = result.index;
   size_t displayInd = cInd;
   ImGui::TextUnformatted(("Corner #" + std::to_string(displayInd)).c_str());
 
@@ -1356,6 +1411,29 @@ void SurfaceMesh::buildCustomOptionsUI() {
         }
       }
     }
+    ImGui::EndMenu();
+  }
+
+  // Selection mode
+  if (ImGui::BeginMenu("Selection Mode")) {
+    if (ImGui::MenuItem("auto", NULL, selectionMode.get() == MeshSelectionMode::Auto))
+      setSelectionMode(MeshSelectionMode::Auto);
+    if (ImGui::MenuItem("vertices only", NULL, selectionMode.get() == MeshSelectionMode::VerticesOnly))
+      setSelectionMode(MeshSelectionMode::VerticesOnly);
+    if (ImGui::MenuItem("faces only", NULL, selectionMode.get() == MeshSelectionMode::FacesOnly))
+      setSelectionMode(MeshSelectionMode::FacesOnly);
+
+    ImGui::Separator();
+
+    if (ImGui::MenuItem("Mark edges as used (selectable)", NULL, edgesHaveBeenUsed)) {
+      markEdgesAsUsed();
+    }
+    if (ImGui::MenuItem("Mark halfedges as used (selectable)", NULL, halfedgesHaveBeenUsed)) {
+      markHalfedgesAsUsed();
+    }
+    if (ImGui::MenuItem("Mark corners as used (selectable)", NULL, cornersHaveBeenUsed)) {
+      markCornersAsUsed();
+    }
 
     ImGui::EndMenu();
   }
@@ -1402,6 +1480,71 @@ void SurfaceMesh::updateObjectSpaceBounds() {
 }
 
 std::string SurfaceMesh::typeName() { return structureTypeName; }
+
+SurfaceMeshPickResult SurfaceMesh::interpretPickResult(const PickResult& rawResult) {
+
+  if (rawResult.structure != this) {
+    // caller must ensure that the PickResult belongs to this structure
+    // by checking the structure pointer or name
+    exception("called interpretPickResult(), but the pick result is not from this structure");
+  }
+
+  SurfaceMeshPickResult result;
+
+  if (rawResult.localIndex < facePickIndStart) {
+    // Vertex pick
+    result.elementType = MeshElement::VERTEX;
+    result.index = rawResult.localIndex;
+  } else if (rawResult.localIndex < edgePickIndStart) {
+    // Face pick
+    result.elementType = MeshElement::FACE;
+    result.index = rawResult.localIndex - facePickIndStart;
+
+    // TODO barycoords
+    size_t D = faceIndsStart[result.index + 1] - faceIndsStart[result.index];
+    if (D == 3) {
+
+      // gather values and project onto plane
+      size_t iStart = faceIndsStart[result.index];
+      uint32_t vA = faceIndsEntries[iStart];
+      uint32_t vB = faceIndsEntries[iStart + 1];
+      uint32_t vC = faceIndsEntries[iStart + 2];
+      glm::vec3 pA = vertexPositions.getValue(vA);
+      glm::vec3 pB = vertexPositions.getValue(vB);
+      glm::vec3 pC = vertexPositions.getValue(vC);
+      glm::vec3 normal = glm::normalize(glm::cross(pB - pA, pC - pA));
+      glm::vec3 x = projectToPlane(rawResult.position, normal, pA);
+
+      // compute barycentric coordinates as ratio of signed areas
+      float areaABC = signedTriangleArea(normal, pA, pB, pC);
+      float areaXBC = signedTriangleArea(normal, x, pB, pC);
+      float areaXCA = signedTriangleArea(normal, x, pC, pA);
+      float areaXAB = signedTriangleArea(normal, x, pA, pB);
+      glm::vec3 barycoord{areaXBC / areaABC, areaXCA / areaABC, areaXAB / areaABC};
+      result.baryCoords = barycoord;
+    }
+
+  } else if (rawResult.localIndex < halfedgePickIndStart) {
+    // Edge pick
+    result.elementType = MeshElement::EDGE;
+    result.index = rawResult.localIndex - edgePickIndStart;
+
+
+  } else if (rawResult.localIndex < cornerPickIndStart) {
+    // Halfedge pick
+    result.elementType = MeshElement::HALFEDGE;
+    result.index = rawResult.localIndex - halfedgePickIndStart;
+
+  } else if (rawResult.localIndex < cornerPickIndStart + nCorners()) {
+    // Corner pick
+    result.elementType = MeshElement::CORNER;
+    result.index = rawResult.localIndex - cornerPickIndStart;
+  } else {
+    exception("Bad pick index in curve network");
+  }
+
+  return result;
+}
 
 long long int SurfaceMesh::selectVertex() {
 
@@ -1600,6 +1743,14 @@ SurfaceMesh* SurfaceMesh::setShadeStyle(MeshShadeStyle newStyle) {
   return this;
 }
 MeshShadeStyle SurfaceMesh::getShadeStyle() { return shadeStyle.get(); }
+
+SurfaceMesh* SurfaceMesh::setSelectionMode(MeshSelectionMode newMode) {
+  selectionMode = newMode;
+  refresh();
+  requestRedraw();
+  return this;
+}
+MeshSelectionMode SurfaceMesh::getSelectionMode() { return selectionMode.get(); }
 
 // === Quantity adders
 

@@ -102,6 +102,11 @@ std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords) {
   return std::tuple<int, int>(xPos, yPos);
 }
 
+glm::vec2 bufferIndsToScreenCoords(int xPos, int yPos) {
+  return glm::vec2{xPos * static_cast<float>(view::windowWidth) / view::bufferWidth,
+                   yPos * static_cast<float>(view::windowHeight) / view::bufferHeight};
+}
+
 void processRotate(glm::vec2 startP, glm::vec2 endP) {
 
   if (startP == endP) {
@@ -521,11 +526,15 @@ glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords) {
   return worldRayDir;
 }
 
-
 glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords) {
-
   int xInd, yInd;
   std::tie(xInd, yInd) = screenCoordsToBufferInds(screenCoords);
+  return bufferCoordsToWorldPosition(xInd, yInd);
+}
+
+glm::vec3 bufferCoordsToWorldPosition(int xInd, int yInd) {
+
+  glm::vec2 screenCoords = bufferIndsToScreenCoords(xInd, yInd);
 
   glm::mat4 view = getCameraViewMatrix();
   glm::mat4 viewInv = glm::inverse(view);

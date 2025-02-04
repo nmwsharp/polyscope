@@ -139,6 +139,7 @@ bool getWindowResizable();
 glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords);
 glm::vec3 bufferCoordsToWorldRay(int xPos, int yPos);
 glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords); // queries the depth buffer to get full position
+glm::vec3 bufferCoordsToWorldPosition(int xPos, int yPos); 
 
 // Get and set camera from json string
 std::string getViewAsJson();
@@ -150,6 +151,7 @@ void setCameraFromJson(std::string jsonData, bool flyTo);
 std::string to_string(ProjectionMode mode);
 std::string to_string(NavigateStyle style);
 std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords);
+glm::vec2 bufferIndsToScreenCoords(int xPos, int yPos);
 
 // == Internal helpers. Should probably not be called in user code.
 
