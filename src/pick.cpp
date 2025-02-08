@@ -27,7 +27,7 @@ PickResult queryPickAtBufferInds(glm::ivec2 bufferInds) {
 
   // Transcribe result into return tuple
   result.structure = rawPickResult.first;
-  result.bufferCoords = bufferInds;
+  result.bufferInds = bufferInds;
   result.screenCoords = view::bufferIndsToScreenCoords(bufferInds);
   if (rawPickResult.first == nullptr) {
     result.isHit = false;
