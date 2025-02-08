@@ -21,7 +21,7 @@ bool enableVSync = false;
 bool enableVSync = true;
 #endif
 
-bool usePrefsFile = false;
+bool usePrefsFile = true;
 bool initializeWithDefaultStructures = true;
 bool alwaysRedraw = false;
 bool autocenterStructures = false;
