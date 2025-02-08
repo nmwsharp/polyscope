@@ -30,7 +30,7 @@ struct PickResult {
   std::string structureType = "";
   std::string structureName = "";
   glm::vec2 screenCoords;
-  glm::ivec2 bufferCoords;
+  glm::ivec2 bufferInds;
   glm::vec3 position;
   float depth;
   uint64_t localIndex = INVALID_IND_64;
