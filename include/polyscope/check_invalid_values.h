@@ -17,8 +17,7 @@ void checkInvalidValues(std::string name, const std::vector<T>& data) {
   if (options::warnForInvalidValues) {
     for (const T& val : data) {
       if (!allComponentsFinite(val)) {
-        warning("Invalid +-inf or NaN values detected",
-                "in buffer: " + name + "\n(set warnForInvalidValues=false to disable)");
+        info("Invalid +-inf or NaN values detected in buffer: " + name);
         break;
       }
     }
