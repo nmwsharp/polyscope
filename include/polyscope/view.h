@@ -137,9 +137,9 @@ bool getWindowResizable();
 
 // Get world geometry corresponding to a screen pixel (e.g. from a mouse click)
 glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords);
-glm::vec3 bufferCoordsToWorldRay(int xPos, int yPos);
+glm::vec3 bufferIndsToWorldRay(glm::ivec2 bufferInds);
 glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords); // queries the depth buffer to get full position
-glm::vec3 bufferCoordsToWorldPosition(int xPos, int yPos); 
+glm::vec3 bufferIndsToWorldPosition(glm::ivec2 bufferInds);
 
 // Get and set camera from json string
 std::string getViewAsJson();
@@ -151,7 +151,9 @@ void setCameraFromJson(std::string jsonData, bool flyTo);
 std::string to_string(ProjectionMode mode);
 std::string to_string(NavigateStyle style);
 std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords);
+glm::ivec2 screenCoordsToBufferIndsVec(glm::vec2 screenCoords);
 glm::vec2 bufferIndsToScreenCoords(int xPos, int yPos);
+glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds);
 
 // == Internal helpers. Should probably not be called in user code.
 
@@ -176,6 +178,10 @@ void processRotate(glm::vec2 startP, glm::vec2 endP);
 void processClipPlaneShift(double amount);
 void processZoom(double amount);
 void processKeyboardNavigation(ImGuiIO& io);
+
+// deprecated, bad names, see variants above
+glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords);
+glm::vec3 bufferCoordsToWorldPosition(int xPos, int yPos);
 
 
 } // namespace view
