@@ -39,7 +39,7 @@ struct PickResult {
 // Query functions to evaluate a pick.
 // Internally, these do a render pass to populate relevant information, then query the resulting buffers.
 PickResult queryPickAtScreenCoords(glm::vec2 screenCoords); // takes screen coordinates
-PickResult queryPickAtBufferCoords(int xPos, int yPos);     // takes indices into render buffer
+PickResult queryPickAtBufferInds(glm::ivec2 bufferInds);     // takes indices into render buffer
 
 namespace pick {
 

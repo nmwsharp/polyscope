@@ -12,23 +12,23 @@ namespace polyscope {
 
 PickResult queryPickAtScreenCoords(glm::vec2 screenCoords) {
   int xInd, yInd;
-  std::tie(xInd, yInd) = view::screenCoordsToBufferInds(screenCoords);
-  return queryPickAtBufferCoords(xInd, yInd);
+  glm::ivec2 bufferInds = view::screenCoordsToBufferIndsVec(screenCoords);
+  return queryPickAtBufferInds(bufferInds);
 }
-PickResult queryPickAtBufferCoords(int xPos, int yPos) {
+PickResult queryPickAtBufferInds(glm::ivec2 bufferInds) {
   PickResult result;
 
   // Query the render buffer
-  result.position = view::bufferCoordsToWorldPosition(xPos, yPos);
+  result.position = view::bufferIndsToWorldPosition(bufferInds);
   result.depth = glm::length(result.position - view::getCameraWorldPosition());
 
   // Query the pick buffer
-  std::pair<Structure*, size_t> rawPickResult = pick::pickAtBufferCoords(xPos, yPos);
+  std::pair<Structure*, size_t> rawPickResult = pick::pickAtBufferCoords(bufferInds.x, bufferInds.y);
 
   // Transcribe result into return tuple
   result.structure = rawPickResult.first;
-  result.bufferCoords = glm::ivec2(xPos, yPos);
-  result.screenCoords = view::bufferIndsToScreenCoords(xPos, yPos);
+  result.bufferCoords = bufferInds;
+  result.screenCoords = view::bufferIndsToScreenCoords(bufferInds);
   if (rawPickResult.first == nullptr) {
     result.isHit = false;
     result.structureType = "";
