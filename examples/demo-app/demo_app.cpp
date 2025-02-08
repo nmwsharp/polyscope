@@ -808,7 +808,7 @@ void callback() {
 
       glm::vec3 worldRay = polyscope::view::screenCoordsToWorldRay(screenCoords);
       glm::vec3 worldPos = polyscope::view::screenCoordsToWorldPosition(screenCoords);
-      std::pair<polyscope::Structure*, size_t> pickPair = polyscope::pick::pickAtScreenCoords(screenCoords);
+      polyscope::PickResult pickResult = polyscope::queryPickAtScreenCoords(screenCoords);
 
       std::cout << "Polyscope scene test click " << std::endl;
       std::cout << "    io.MousePos.x: " << io.MousePos.x << " io.MousePos.y: " << io.MousePos.y << std::endl;
@@ -818,11 +818,12 @@ void callback() {
       polyscope::operator<<(std::cout, worldRay) << std::endl;
       std::cout << "    worldPos: ";
       polyscope::operator<<(std::cout, worldPos) << std::endl;
-      if (pickPair.first == nullptr) {
+      if (pickResult.isHit) {
+        std::cout << "    structure: " << pickResult.structureType << " " << pickResult.structureName
+                  << " local ind: " << pickResult.localIndex << std::endl;
+      } else {
         std::cout << "    structure: "
                   << "none" << std::endl;
-      } else {
-        std::cout << "    structure: " << pickPair.first << " element id: " << pickPair.second << std::endl;
       }
 
       // Construct point at click location
