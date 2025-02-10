@@ -13,7 +13,50 @@ namespace polyscope {
 // Base case: call the scalar version
 template <typename T>
 bool allComponentsFinite(const T& x) {
-  return std::isfinite(x);
+  // handle all other scalar types by converting to float, it's what we'll do anyway
+  return std::isfinite(static_cast<float>(x));
+}
+
+// avoid double-to-float rounding infs from the line above
+template <>
+inline bool allComponentsFinite<double>(const double& x) {
+  return true;
+}
+
+// if we fall through to std::isfinite() for integers, we get compile errors on windows
+// due to a name collision with a windows-specific header
+// https://github.com/nmwsharp/polyscope/issues/323
+template <>
+inline bool allComponentsFinite<uint8_t>(const uint8_t& x) {
+  return true;
+}
+template <>
+inline bool allComponentsFinite<int8_t>(const int8_t& x) {
+  return true;
+}
+template <>
+inline bool allComponentsFinite<uint16_t>(const uint16_t& x) {
+  return true;
+}
+template <>
+inline bool allComponentsFinite<int16_t>(const int16_t& x) {
+  return true;
+}
+template <>
+inline bool allComponentsFinite<uint32_t>(const uint32_t& x) {
+  return true;
+}
+template <>
+inline bool allComponentsFinite<int32_t>(const int32_t& x) {
+  return true;
+}
+template <>
+inline bool allComponentsFinite<uint64_t>(const uint64_t& x) {
+  return true;
+}
+template <>
+inline bool allComponentsFinite<int64_t>(const int64_t& x) {
+  return true;
 }
 
 template <>
