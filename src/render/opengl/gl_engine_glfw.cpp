@@ -116,9 +116,12 @@ void GLEngineGLFW::initializeImGui() {
   const char* glsl_version = "#version 150";
   ImGui_ImplOpenGL3_Init(glsl_version);
 
-  float xScale, yScale;
-  glfwGetWindowContentScale(mainWindow, &xScale, &yScale);
-  state::globalContext.dpiScale = std::min(xScale, yScale);
+  float xScale, dont_use_yScale;
+  glfwGetWindowContentScale(mainWindow, &xScale, &dont_use_yScale);
+  if (xScale == NULL) {
+    xScale = 1.0f;
+  }
+  state::globalContext.dpiScale = std::min(std::max(xScale, 1.0f), 10.0f);
 
   configureImGui();
 }
@@ -140,9 +143,12 @@ void GLEngineGLFW::shutdownImGui() {
 }
 
 void GLEngineGLFW::ImGuiNewFrame() {
-  float xScale, yScale;
-  glfwGetWindowContentScale(mainWindow, &xScale, &yScale);
-  state::globalContext.dpiScale = std::min(xScale, yScale);
+  float xScale, dont_use_yScale;
+  glfwGetWindowContentScale(mainWindow, &xScale, &dont_use_yScale);
+  if (xScale == NULL) {
+    xScale = 1.0f;
+  }
+  state::globalContext.dpiScale = std::min(std::max(xScale, 1.0f), 10.0f);
 
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
