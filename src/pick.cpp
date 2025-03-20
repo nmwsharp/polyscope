@@ -46,6 +46,32 @@ PickResult queryPickAtBufferInds(glm::ivec2 bufferInds) {
   return result;
 }
 
+// == Manage stateful picking
+
+void resetSelection() {
+  state::globalContext.haveSelectionVal = false;
+  state::globalContext.currSelectionPickResult = PickResult();
+}
+
+bool haveSelection() { return state::globalContext.haveSelectionVal; }
+
+void resetSelectionIfStructure(Structure* s) {
+  if (state::globalContext.haveSelectionVal && state::globalContext.currSelectionPickResult.structure == s) {
+    resetSelection();
+  }
+}
+
+PickResult getSelection() { return state::globalContext.currSelectionPickResult; }
+
+void setSelection(PickResult newPick) {
+  if (!newPick.isHit) {
+    resetSelection();
+  } else {
+    state::globalContext.haveSelectionVal = true;
+    state::globalContext.currSelectionPickResult = newPick;
+  }
+}
+
 
 namespace pick {
 
@@ -84,32 +110,6 @@ uint64_t requestPickBufferRange(Structure* requestingStructure, uint64_t count) 
   nextPickBufferInd += count;
   structureRanges[requestingStructure] = std::make_tuple(ret, nextPickBufferInd);
   return ret;
-}
-
-// == Manage stateful picking
-
-void resetSelection() {
-  haveSelectionVal = false;
-  currSelectionPickResult = PickResult();
-}
-
-bool haveSelection() { return haveSelectionVal; }
-
-void resetSelectionIfStructure(Structure* s) {
-  if (haveSelectionVal && currSelectionPickResult.structure == s) {
-    resetSelection();
-  }
-}
-
-PickResult getSelection() { return currSelectionPickResult; }
-
-void setSelection(PickResult newPick) {
-  if (!newPick.isHit) {
-    resetSelection();
-  } else {
-    haveSelectionVal = true;
-    currSelectionPickResult = newPick;
-  }
 }
 
 // == Helpers

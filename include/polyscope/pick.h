@@ -39,16 +39,8 @@ struct PickResult {
 // Query functions to evaluate a pick.
 // Internally, these do a render pass to populate relevant information, then query the resulting buffers.
 PickResult queryPickAtScreenCoords(glm::vec2 screenCoords); // takes screen coordinates
-PickResult queryPickAtBufferInds(glm::ivec2 bufferInds);     // takes indices into render buffer
+PickResult queryPickAtBufferInds(glm::ivec2 bufferInds);    // takes indices into render buffer
 
-namespace pick {
-
-// Old, deprecated picking API. Use the above functions instead.
-// Get the structure which was clicked on (nullptr if none), and the pick ID in local indices for that structure (such
-// that 0 is the first index as returned from requestPickBufferRange())
-std::pair<Structure*, uint64_t> pickAtScreenCoords(glm::vec2 screenCoords); // takes screen coordinates
-std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos);     // takes indices into the buffer
-std::pair<Structure*, uint64_t> evaluatePickQuery(int xPos, int yPos); // old, badly named. takes buffer coordinates.
 
 // == Stateful picking: track and update a current selection
 
@@ -59,6 +51,15 @@ void resetSelection();
 bool haveSelection();
 void resetSelectionIfStructure(Structure* s); // If something from this structure is selected, clear the selection
                                               // (useful if a structure is being deleted)
+
+namespace pick {
+
+// Old, deprecated picking API. Use the above functions instead.
+// Get the structure which was clicked on (nullptr if none), and the pick ID in local indices for that structure (such
+// that 0 is the first index as returned from requestPickBufferRange())
+std::pair<Structure*, uint64_t> pickAtScreenCoords(glm::vec2 screenCoords); // takes screen coordinates
+std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos);     // takes indices into the buffer
+std::pair<Structure*, uint64_t> evaluatePickQuery(int xPos, int yPos); // old, badly named. takes buffer coordinates.
 
 
 // == Helpers

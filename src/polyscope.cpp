@@ -406,7 +406,7 @@ void processInputEvents() {
         if (dragDistSinceLastRelease < dragIgnoreThreshold) {
           ImVec2 p = ImGui::GetMousePos();
           PickResult pickResult = queryPickAtScreenCoords(glm::vec2{p.x, p.y});
-          pick::setSelection(pickResult);
+          setSelection(pickResult);
         }
 
         // Reset the drag distance after any release
@@ -415,7 +415,7 @@ void processInputEvents() {
       // Clear pick
       if (ImGui::IsMouseReleased(1)) {
         if (dragDistSinceLastRelease < dragIgnoreThreshold) {
-          pick::resetSelection();
+          resetSelection();
         }
         dragDistSinceLastRelease = 0.0;
       }
@@ -755,20 +755,19 @@ void buildStructureGui() {
 }
 
 void buildPickGui() {
-  if (pick::haveSelection()) {
+  if (haveSelection()) {
 
     ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin),
                                    2 * imguiStackMargin + lastWindowHeightUser));
     ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
 
     ImGui::Begin("Selection", nullptr);
-    PickResult selection = pick::getSelection();
+    PickResult selection = getSelection();
 
 
     ImGui::Text("screen coordinates: (%.2f,%.2f)  depth: %g", selection.screenCoords.x, selection.screenCoords.y,
                 selection.depth);
-    ImGui::Text("world position: <%g, %g, %g>", selection.position.x, selection.position.y,
-                selection.position.z);
+    ImGui::Text("world position: <%g, %g, %g>", selection.position.x, selection.position.y, selection.position.z);
     ImGui::NewLine();
 
     ImGui::TextUnformatted((selection.structureType + ": " + selection.structureName).c_str());
@@ -1122,7 +1121,7 @@ void removeStructure(std::string type, std::string name, bool errorIfAbsent) {
   for (auto& g : state::groups) {
     g.second->removeChildStructure(*s);
   }
-  pick::resetSelectionIfStructure(s);
+  resetSelectionIfStructure(s);
   sMap.erase(s->name);
   updateStructureExtents();
   return;
@@ -1183,7 +1182,7 @@ void removeAllStructures() {
   }
 
   requestRedraw();
-  pick::resetSelection();
+  resetSelection();
 }
 
 
