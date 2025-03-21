@@ -405,7 +405,7 @@ void processInputEvents() {
         // Don't pick at the end of a long drag
         if (dragDistSinceLastRelease < dragIgnoreThreshold) {
           ImVec2 p = ImGui::GetMousePos();
-          PickResult pickResult = queryPickAtScreenCoords(glm::vec2{p.x, p.y});
+          PickResult pickResult = pickAtScreenCoords(glm::vec2{p.x, p.y});
           setSelection(pickResult);
         }
 

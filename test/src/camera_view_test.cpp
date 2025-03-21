@@ -75,7 +75,7 @@ TEST_F(PolyscopeTest, CameraViewPick) {
 
   // This probably doesn't actually click on anything, but it does populate the pick buffers and makes sure that nothing
   // crashes
-  polyscope::pick::pickAtScreenCoords(glm::vec2{0.3, 0.8});
+  polyscope::pickAtScreenCoords(glm::vec2{0.3, 0.8});
 
   polyscope::show(3);
 
