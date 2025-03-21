@@ -807,7 +807,6 @@ void callback() {
       std::tie(xInd, yInd) = polyscope::view::screenCoordsToBufferInds(screenCoords);
 
       glm::vec3 worldRay = polyscope::view::screenCoordsToWorldRay(screenCoords);
-      glm::vec3 worldPos = polyscope::view::screenCoordsToWorldPosition(screenCoords);
       polyscope::PickResult pickResult = polyscope::queryPickAtScreenCoords(screenCoords);
 
       std::cout << "Polyscope scene test click " << std::endl;
@@ -817,7 +816,7 @@ void callback() {
       std::cout << "    worldRay: ";
       polyscope::operator<<(std::cout, worldRay) << std::endl;
       std::cout << "    worldPos: ";
-      polyscope::operator<<(std::cout, worldPos) << std::endl;
+      polyscope::operator<<(std::cout, pickResult.position) << std::endl;
       if (pickResult.isHit) {
         std::cout << "    structure: " << pickResult.structureType << " " << pickResult.structureName
                   << " local ind: " << pickResult.localIndex << std::endl;
@@ -827,7 +826,7 @@ void callback() {
       }
 
       // Construct point at click location
-      polyscope::registerPointCloud("click point", std::vector<glm::vec3>({worldPos}));
+      polyscope::registerPointCloud("click point", std::vector<glm::vec3>({pickResult.position}));
 
       // Construct unit-length vector pointing in the direction of the click
       // (this depends only on the camera parameters, and does not require accessing the depth buffer)
