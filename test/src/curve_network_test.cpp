@@ -33,7 +33,7 @@ TEST_F(PolyscopeTest, CurveNetworkPick) {
   auto psCurve = registerCurveNetwork();
 
   // Don't bother trying to actually click on anything, but make sure this doesn't crash
-  polyscope::pick::evaluatePickQuery(77, 88);
+  polyscope::pickAtBufferInds(glm::ivec2(77, 88));
 
   polyscope::removeAllStructures();
 }

@@ -5,6 +5,7 @@
 #include "polyscope/affine_remapper.h"
 #include "polyscope/color_management.h"
 #include "polyscope/persistent_value.h"
+#include "polyscope/pick.h"
 #include "polyscope/point_cloud_quantity.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
@@ -37,6 +38,10 @@ struct QuantityTypeHelper<PointCloud> {
   typedef PointCloudQuantity type;
 };
 
+struct PointCloudPickResult {
+  int64_t index;
+};
+
 class PointCloud : public QuantityStructure<PointCloud> {
 public:
   // === Member functions ===
@@ -49,7 +54,7 @@ public:
   // Build the imgui display
   virtual void buildCustomUI() override;
   virtual void buildCustomOptionsUI() override;
-  virtual void buildPickUI(size_t localPickID) override;
+  virtual void buildPickUI(const PickResult& result) override;
 
   // Standard structure overrides
   virtual void draw() override;
@@ -115,6 +120,9 @@ public:
   // and this will be empty.
   size_t nPoints();
   glm::vec3 getPointPosition(size_t iPt);
+
+  // get data related to picking/selection
+  PointCloudPickResult interpretPickResult(const PickResult& result);
 
   // Misc data
   static const std::string structureTypeName;
@@ -192,7 +200,6 @@ private:
   std::string transparencyQuantityName = "";               // empty string means none
   PointCloudScalarQuantity& resolveTransparencyQuantity(); // helper
 };
-
 
 // Shorthand to add a point cloud to polyscope
 template <class T>

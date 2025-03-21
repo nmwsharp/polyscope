@@ -703,22 +703,26 @@ const ShaderReplacementRule MESH_PROPAGATE_PICK_SIMPLE ( // this one does faces 
       {"FRAG_DECLARATIONS", R"(
           flat in vec3 vertexColors[3];
           flat in vec3 faceColor;
+          uniform float u_vertPickRadius;
         )"},
       {"GENERATE_SHADE_VALUE", R"(
           // Parameters defining the pick shape (in barycentric 0-1 units)
-          float vertRadius = 0.2;
           
           vec3 shadeColor = faceColor;
 
           // Test vertices and corners
+          float nearestRad = 1.0-u_vertPickRadius;
           for(int i = 0; i < 3; i++) {
-              if(a_barycoordToFrag[i] > 1.0-vertRadius) {
+              if(a_barycoordToFrag[i] > nearestRad) {
+                nearestRad = a_barycoordToFrag[i];
                 shadeColor = vertexColors[i];
               }
           }
         )"},
     },
-    /* uniforms */ {},
+    /* uniforms */ {
+      {"u_vertPickRadius", RenderDataType::Float},
+    },
     /* attributes */ {
       {"a_vertexColors", RenderDataType::Vector3Float, 3},
       {"a_faceColor", RenderDataType::Vector3Float},

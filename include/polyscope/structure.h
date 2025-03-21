@@ -10,6 +10,7 @@
 #include "glm/glm.hpp"
 
 #include "polyscope/persistent_value.h"
+#include "polyscope/pick.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/transformation_gizmo.h"
 #include "polyscope/weak_handle.h"
@@ -54,7 +55,7 @@ public:
   virtual void buildStructureOptionsUI(); // overridden by structure quantities to add to the options menu
   virtual void buildQuantitiesUI();       // build quantities, if they exist. Overridden by QuantityStructure.
   virtual void buildSharedStructureUI();  // Draw any UI elements shared between all instances of the structure
-  virtual void buildPickUI(size_t localPickID) = 0; // Draw pick UI elements when index localPickID is selected
+  virtual void buildPickUI(const PickResult& result) = 0; // Draw pick UI elements based on a selection result
 
   // = Identifying data
   const std::string name; // should be unique amongst registered structures with this type
