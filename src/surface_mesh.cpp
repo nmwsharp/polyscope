@@ -1425,14 +1425,25 @@ void SurfaceMesh::buildCustomOptionsUI() {
 
     ImGui::Separator();
 
-    if (ImGui::MenuItem("Mark edges as used (selectable)", NULL, edgesHaveBeenUsed)) {
-      markEdgesAsUsed();
-    }
-    if (ImGui::MenuItem("Mark halfedges as used (selectable)", NULL, halfedgesHaveBeenUsed)) {
-      markHalfedgesAsUsed();
-    }
-    if (ImGui::MenuItem("Mark corners as used (selectable)", NULL, cornersHaveBeenUsed)) {
-      markCornersAsUsed();
+
+    if (ImGui::BeginMenu("Add to auto")) {
+
+      std::string edgeMsg = "edges";
+      bool edgeSelectionAllowed = !edgePerm.empty();
+      if (!edgeSelectionAllowed) {
+        edgeMsg += " [must set edge indices]";
+      }
+      if (ImGui::MenuItem(edgeMsg.c_str(), NULL, edgesHaveBeenUsed, edgeSelectionAllowed)) {
+        markEdgesAsUsed();
+      }
+      if (ImGui::MenuItem("halfedges", NULL, halfedgesHaveBeenUsed)) {
+        markHalfedgesAsUsed();
+      }
+      if (ImGui::MenuItem("corners", NULL, cornersHaveBeenUsed)) {
+        markCornersAsUsed();
+      }
+
+      ImGui::EndMenu();
     }
 
     ImGui::EndMenu();
