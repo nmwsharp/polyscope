@@ -10,12 +10,13 @@
 
 namespace polyscope {
 
-PickResult queryPickAtScreenCoords(glm::vec2 screenCoords) {
+PickResult pickAtScreenCoords(glm::vec2 screenCoords) {
   int xInd, yInd;
   glm::ivec2 bufferInds = view::screenCoordsToBufferIndsVec(screenCoords);
-  return queryPickAtBufferInds(bufferInds);
+  return pickAtBufferInds(bufferInds);
 }
-PickResult queryPickAtBufferInds(glm::ivec2 bufferInds) {
+
+PickResult pickAtBufferInds(glm::ivec2 bufferInds) {
   PickResult result;
 
   // Query the pick buffer

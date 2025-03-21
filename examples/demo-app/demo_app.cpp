@@ -807,7 +807,7 @@ void callback() {
       std::tie(xInd, yInd) = polyscope::view::screenCoordsToBufferInds(screenCoords);
 
       glm::vec3 worldRay = polyscope::view::screenCoordsToWorldRay(screenCoords);
-      polyscope::PickResult pickResult = polyscope::queryPickAtScreenCoords(screenCoords);
+      polyscope::PickResult pickResult = polyscope::pickAtScreenCoords(screenCoords);
 
       std::cout << "Polyscope scene test click " << std::endl;
       std::cout << "    io.MousePos.x: " << io.MousePos.x << " io.MousePos.y: " << io.MousePos.y << std::endl;
