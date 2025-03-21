@@ -18,17 +18,21 @@ PickResult queryPickAtScreenCoords(glm::vec2 screenCoords) {
 PickResult queryPickAtBufferInds(glm::ivec2 bufferInds) {
   PickResult result;
 
-  // Query the render buffer
-  result.position = view::bufferIndsToWorldPosition(bufferInds);
-  result.depth = glm::length(result.position - view::getCameraWorldPosition());
-
   // Query the pick buffer
+  // (this necessarily renders to pickFrameBuffer)
   std::pair<Structure*, size_t> rawPickResult = pick::pickAtBufferCoords(bufferInds.x, bufferInds.y);
+
+  // Query the depth buffer populated above
+  render::FrameBuffer* pickFramebuffer = render::engine->pickFramebuffer.get();
+  float clipDepth = pickFramebuffer->readDepth(bufferInds.x, view::bufferHeight - bufferInds.y);
 
   // Transcribe result into return tuple
   result.structure = rawPickResult.first;
   result.bufferInds = bufferInds;
   result.screenCoords = view::bufferIndsToScreenCoords(bufferInds);
+  result.position = view::screenCoordsAndDepthToWorldPosition(result.screenCoords, clipDepth);
+  result.depth = glm::length(result.position - view::getCameraWorldPosition());
+
   if (rawPickResult.first == nullptr) {
     result.isHit = false;
     result.structureType = "";

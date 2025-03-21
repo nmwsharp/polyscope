@@ -138,8 +138,7 @@ bool getWindowResizable();
 // Get world geometry corresponding to a screen pixel (e.g. from a mouse click)
 glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords);
 glm::vec3 bufferIndsToWorldRay(glm::ivec2 bufferInds);
-glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords); // queries the depth buffer to get full position
-glm::vec3 bufferIndsToWorldPosition(glm::ivec2 bufferInds);
+glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth);
 
 // Get and set camera from json string
 std::string getViewAsJson();
@@ -181,7 +180,6 @@ void processKeyboardNavigation(ImGuiIO& io);
 
 // deprecated, bad names, see variants above
 glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords);
-glm::vec3 bufferCoordsToWorldPosition(int xPos, int yPos);
 
 
 } // namespace view

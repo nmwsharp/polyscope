@@ -538,19 +538,15 @@ glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords) {
   return worldRayDir;
 }
 
-glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords) {
-  int xInd, yInd;
-  std::tie(xInd, yInd) = screenCoordsToBufferInds(screenCoords);
-  return bufferCoordsToWorldPosition(xInd, yInd);
-}
 
-glm::vec3 bufferIndsToWorldPosition(glm::ivec2 bufferInds) {
-  return bufferCoordsToWorldPosition(bufferInds.x, bufferInds.y);
-}
+glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth) {
 
-glm::vec3 bufferCoordsToWorldPosition(int xInd, int yInd) {
+  if (clipDepth == 1.) {
+    // if we didn't hit anything in the depth buffer, just return infinity
+    float inf = std::numeric_limits<float>::infinity();
+    return glm::vec3{inf, inf, inf};
+  }
 
-  glm::vec2 screenCoords = bufferIndsToScreenCoords(xInd, yInd);
 
   glm::mat4 view = getCameraViewMatrix();
   glm::mat4 viewInv = glm::inverse(view);
@@ -558,19 +554,10 @@ glm::vec3 bufferCoordsToWorldPosition(int xInd, int yInd) {
   glm::mat4 projInv = glm::inverse(proj);
   // glm::vec2 depthRange = {0., 1.}; // no support for nonstandard depth range, currently
 
-  // query the depth buffer to get depth
-  render::FrameBuffer* sceneFramebuffer = render::engine->sceneBuffer.get();
-  float depth = sceneFramebuffer->readDepth(xInd, view::bufferHeight - yInd);
-  if (depth == 1.) {
-    // if we didn't hit anything in the depth buffer, just return infinity
-    float inf = std::numeric_limits<float>::infinity();
-    return glm::vec3{inf, inf, inf};
-  }
-
   // convert depth to world units
   glm::vec2 screenPos{screenCoords.x / static_cast<float>(view::windowWidth),
                       1.f - screenCoords.y / static_cast<float>(view::windowHeight)};
-  float z = depth * 2.0f - 1.0f;
+  float z = clipDepth * 2.0f - 1.0f;
   glm::vec4 clipPos = glm::vec4(screenPos * 2.0f - 1.0f, z, 1.0f);
   glm::vec4 viewPos = projInv * clipPos;
   viewPos /= viewPos.w;
