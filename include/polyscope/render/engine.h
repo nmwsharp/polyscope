@@ -584,7 +584,7 @@ public:
   TransparencyMode getTransparencyMode();
   bool transparencyEnabled();
   virtual void applyTransparencySettings() = 0;
-  void addSlicePlane(std::string uniquePostfix);
+  void addSlicePlane(std::string uniquePostfix); // TODO move slice planes out of the engine
   void removeSlicePlane(std::string uniquePostfix);
   bool slicePlanesEnabled();                     // true if there is at least one slice plane in the scene
   virtual void setFrontFaceCCW(bool newVal) = 0; // true if CCW triangles are considered front-facing; false otherwise

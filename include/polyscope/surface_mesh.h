@@ -51,6 +51,11 @@ struct QuantityTypeHelper<SurfaceMesh> {
   typedef SurfaceMeshQuantity type;
 };
 
+struct SurfaceMeshPickResult {
+  MeshElement elementType;                        // which kind of element did we click
+  int64_t index;                                  // index of the clicked element
+  glm::vec3 baryCoords = glm::vec3{-1., -1., -1}; // coordinates in face, populated only for triangular face picks
+};
 
 // === The grand surface mesh class
 
@@ -75,7 +80,7 @@ public:
   // Build the imgui display
   virtual void buildCustomUI() override;
   virtual void buildCustomOptionsUI() override;
-  virtual void buildPickUI(size_t localPickID) override;
+  virtual void buildPickUI(const PickResult&) override;
 
   // Render the the structure on screen
   virtual void draw() override;
@@ -166,8 +171,10 @@ public:
   // special quantity-related methods
   SurfaceParameterizationQuantity* getParameterization(std::string name);
 
+  // get data related to picking/selection
+  SurfaceMeshPickResult interpretPickResult(const PickResult& result);
 
-  // === Make a one-time selection
+  // Make a one-time selection
   long long int selectVertex();
 
   // === Mutate
@@ -283,6 +290,10 @@ public:
   SurfaceMesh* setShadeStyle(MeshShadeStyle newStyle);
   MeshShadeStyle getShadeStyle();
 
+  // Selection mode
+  SurfaceMesh* setSelectionMode(MeshSelectionMode newMode);
+  MeshSelectionMode getSelectionMode();
+
   // == Rendering helpers used by quantities
 
   // void fillGeometryBuffers(render::ShaderProgram& p);
@@ -354,11 +365,11 @@ private:
   PersistentValue<BackFacePolicy> backFacePolicy;
   PersistentValue<glm::vec3> backFaceColor;
   PersistentValue<MeshShadeStyle> shadeStyle;
+  PersistentValue<MeshSelectionMode> selectionMode;
 
   // Do setup work related to drawing, including allocating openGL data
   void prepare();
   void preparePick();
-
 
   /// == Compute indices & geometry data
   void computeTriangleCornerInds();
@@ -381,11 +392,11 @@ private:
   // Within each set, uses the implicit ordering from the mesh data structure
   // These starts are LOCAL indices, indexing elements only with the mesh
   size_t facePickIndStart, edgePickIndStart, halfedgePickIndStart, cornerPickIndStart;
-  void buildVertexInfoGui(size_t vInd);
-  void buildFaceInfoGui(size_t fInd);
-  void buildEdgeInfoGui(size_t eInd);
-  void buildHalfedgeInfoGui(size_t heInd);
-  void buildCornerInfoGui(size_t cInd);
+  void buildVertexInfoGui(const SurfaceMeshPickResult& result);
+  void buildFaceInfoGui(const SurfaceMeshPickResult& result);
+  void buildEdgeInfoGui(const SurfaceMeshPickResult& result);
+  void buildHalfedgeInfoGui(const SurfaceMeshPickResult& result);
+  void buildCornerInfoGui(const SurfaceMeshPickResult& result);
 
   // Manage per-element transparency
   // which (scalar) quantity to set point size from
@@ -398,6 +409,7 @@ private:
 
   std::shared_ptr<render::ShaderProgram> program;
   std::shared_ptr<render::ShaderProgram> pickProgram;
+  bool usingSimplePick = false;
 
 
   // === Helper functions

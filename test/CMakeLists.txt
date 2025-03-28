@@ -12,13 +12,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 ### Configure the compiler
 
-# NOTE: Polyscope itself uses C++11, but the tests use C++14 because googletest requires it.
+# NOTE: Polyscope itself uses C++11, but the tests use C++17 because googletest requires it.
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
   # using Clang (linux or apple) or GCC
   message("Using clang/gcc compiler flags")
-  SET(BASE_CXX_FLAGS "-std=c++14 -Wall -Wextra -g3") # use C++14 for tests only
+  SET(BASE_CXX_FLAGS "-std=c++17 -Wall -Wextra -g3") # use C++17 for tests only
   SET(DISABLED_WARNINGS " -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-deprecated-declarations -Wno-missing-braces -Wno-unused-private-field")
   SET(TRACE_INCLUDES " -H -Wno-error=unused-command-line-argument")
 

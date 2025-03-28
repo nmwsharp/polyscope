@@ -977,7 +977,7 @@ float GLFrameBuffer::readDepth(int xPos, int yPos) {
   bind();
 
   // Read from the buffer
-  float result;
+  float result = 1.;
   glReadPixels(xPos, yPos, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &result);
 
   return result;

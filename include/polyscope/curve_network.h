@@ -36,6 +36,12 @@ struct QuantityTypeHelper<CurveNetwork> {
   typedef CurveNetworkQuantity type;
 };
 
+struct CurveNetworkPickResult {
+  CurveNetworkElement elementType; // which kind of element did we click
+  int64_t index;                   // index of the clicked element
+  float tEdge = -1;                // if the pick is an edge, the t-value in [0,1] along the edge
+};
+
 class CurveNetwork : public QuantityStructure<CurveNetwork> {
 public:
   // === Member functions ===
@@ -48,7 +54,7 @@ public:
   // Build the imgui display
   virtual void buildCustomUI() override;
   virtual void buildCustomOptionsUI() override;
-  virtual void buildPickUI(size_t localPickID) override;
+  virtual void buildPickUI(const PickResult&) override;
 
   virtual void draw() override;
   virtual void drawDelayed() override;
@@ -127,6 +133,9 @@ public:
   template <class V>
   void updateNodePositions2D(const V& newPositions);
 
+  // get data related to picking/selection
+  CurveNetworkPickResult interpretPickResult(const PickResult& result);
+
   // === Get/set visualization parameters
 
   // set the base color of the points
@@ -183,8 +192,8 @@ private:
   float computeRadiusMultiplierUniform();
 
   // Pick helpers
-  void buildNodePickUI(size_t nodeInd);
-  void buildEdgePickUI(size_t edgeInd);
+  void buildNodePickUI(const CurveNetworkPickResult& result);
+  void buildEdgePickUI(const CurveNetworkPickResult& result);
 
   // === Quantity adder implementations
   // clang-format off

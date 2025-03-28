@@ -25,6 +25,10 @@ struct QuantityTypeHelper<CameraView> {
 };
 */
 
+struct CameraViewPickResult {
+  // currently nothing, just following the same pattern as other structures
+};
+
 class CameraView : public QuantityStructure<CameraView> {
 public:
   // === Member functions ===
@@ -37,7 +41,7 @@ public:
   // Build the imgui display
   virtual void buildCustomUI() override;
   virtual void buildCustomOptionsUI() override;
-  virtual void buildPickUI(size_t localPickID) override;
+  virtual void buildPickUI(const PickResult& result) override;
 
   // Standard structure overrides
   virtual void draw() override;
@@ -70,6 +74,9 @@ public:
 
   // Update the current viewer to look through this camer
   void setViewToThisCamera(bool withFlight = false);
+
+  // get data related to picking/selection
+  CameraViewPickResult interpretPickResult(const PickResult& result);
 
   // === Get/set visualization parameters
 
