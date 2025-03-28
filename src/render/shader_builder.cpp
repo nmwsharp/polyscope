@@ -12,12 +12,9 @@ std::vector<ShaderStageSpecification>
 applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
                         const std::vector<ShaderReplacementRule>& replacementRules) {
 
-  bool debugPrint = false;
-
   // accumulate the text to be inserted at each tag from all of the rules
   std::map<std::string, std::string> replacements;
   for (const ShaderReplacementRule& rule : replacementRules) {
-    if (debugPrint) std::cout << "Replacement rule: " << rule.ruleName << std::endl;
 
     for (const std::pair<std::string, std::string>& r : rule.replacements) {
       std::string key = r.first;
@@ -42,8 +39,6 @@ applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
 
     while (!progText.empty()) {
 
-      if (debugPrint) std::cout << "searching " << progText << std::endl;
-
       // Find the next tag in the program
       auto tagStart = progText.find(startTagToken);
       auto tagEnd = progText.find(endTagToken);
@@ -57,20 +52,15 @@ applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
         progText = "";
       } else {
 
-        if (debugPrint) std::cout << "FOUND TAG: " << tagStart << " " << tagEnd << std::endl;
-
         std::string srcBefore = progText.substr(0, tagStart);
         std::string tag = progText.substr(tagStart + startTagToken.size(), tagEnd - (tagStart + startTagToken.size()));
         std::string srcAfter = progText.substr(tagEnd + endTagToken.size(), npos);
 
-        if (debugPrint) std::cout << "  TAG NAME: [" << tag << "]\n";
-
         resultText += srcBefore + "\n// tag ${ " + tag + " }$\n";
         if (replacements.find(tag) != replacements.end()) {
           resultText += replacements[tag];
-          // std::cout << "  ADDING REPLACEMENT: [" << replacements[tag] << "]\n";
         }
-        // resultText += "// END ADDIITIONS FROM TAG ${ " + tag + " $}\n";
+
         progText = srcAfter; // continue processing the remaining program text
       }
     }

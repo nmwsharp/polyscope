@@ -7,9 +7,6 @@
 
 #include "imgui.h"
 
-using std::cout;
-using std::endl;
-
 namespace polyscope {
 
 CurveNetworkScalarQuantity::CurveNetworkScalarQuantity(std::string name, CurveNetwork& network_, std::string definedOn_,

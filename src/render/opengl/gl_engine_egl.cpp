@@ -15,6 +15,7 @@
 #include <cctype>
 #include <dlfcn.h>
 #include <set>
+#include <sstream>
 #include <string>
 
 #include <EGL/egl.h>
@@ -120,9 +121,8 @@ void GLEngineEGL::checkEGLError(bool fatal) {
     break;
   }
 
-  if (polyscope::options::verbosity > 0) {
-    std::cout << polyscope::options::printPrefix << "EGL Error!  Type: " << errText << std::endl;
-  }
+  info(0, "EGL Error!  Type: " + errText);
+
   if (fatal) {
     exception("EGL error occurred. Text: " + errText);
   }
@@ -248,10 +248,13 @@ void GLEngineEGL::initialize() {
     exception(options::printPrefix + "ERROR: Failed to load openGL using GLAD");
   }
 #endif
-  if (options::verbosity > 0) {
-    std::cout << options::printPrefix << "Backend: openGL3_egl -- "
-              << "Loaded openGL version: " << glGetString(GL_VERSION) << " -- "
-              << "EGL version: " << majorVer << "." << minorVer << std::endl;
+
+  {
+    std::stringstring ss;
+    ss << "Backend: openGL3_egl -- "
+       << "Loaded openGL version: " << glGetString(GL_VERSION) << " -- "
+       << "EGL version: " << majorVer << "." << minorVer;
+    info(0, ss.str());
   }
 
   { // Manually create the screen frame buffer
@@ -325,9 +328,9 @@ void GLEngineEGL::resolveEGL() {
     }
     error("EGL: Error loading symbol " + errText);
   }
-  if (options::verbosity > 5) {
-    std::cout << polyscope::options::printPrefix << "  ...resolved EGL functions" << std::endl;
-  }
+
+  info(5, "...resolved EGL functions");
+
   // ... at this point, we have essentially loaded libEGL.so
 
   // === Resolve EGL extension functions
@@ -405,7 +408,8 @@ void GLEngineEGL::sortAvailableDevicesByPreference(
 
     // at high verbosity levels, log the priority
     if (polyscope::options::verbosity > 5) {
-      info(5, "EGLDevice " + std::to_string(iDevice) + " -- vendor: " + vendorStr + "  priority score: " + std::to_string(score));
+      info(5, "EGLDevice " + std::to_string(iDevice) + " -- vendor: " + vendorStr +
+                  "  priority score: " + std::to_string(score));
     }
 
     scoreDevices.emplace_back(score, iDevice);

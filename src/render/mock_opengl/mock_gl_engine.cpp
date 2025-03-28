@@ -1555,9 +1555,7 @@ MockGLEngine::MockGLEngine() {}
 
 void MockGLEngine::initialize() {
 
-  if (options::verbosity > 0) {
-    std::cout << options::printPrefix << "Backend: openGL_mock" << std::endl;
-  }
+  info(0, "Backend: openGL_mock");
 
   GLFrameBuffer* glScreenBuffer = new GLFrameBuffer(view::bufferWidth, view::bufferHeight, true);
   displayBuffer.reset(glScreenBuffer);

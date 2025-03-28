@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <set>
+#include <sstream>
 
 namespace polyscope {
 namespace render {
@@ -35,9 +36,7 @@ void GLEngineGLFW::initialize() {
 
   // Small callback function for GLFW errors
   auto error_print_callback = [](int error, const char* description) {
-    if (polyscope::options::verbosity > 0) {
-      std::cout << "GLFW emitted error: " << description << std::endl;
-    }
+    info(0, "GLFW emitted error: " + std::string(description));
   };
 
   // === Initialize glfw
@@ -79,9 +78,12 @@ void GLEngineGLFW::initialize() {
     exception("ERROR: Failed to load openGL using GLAD");
   }
 #endif
-  if (options::verbosity > 0) {
-    std::cout << options::printPrefix << "Backend: openGL3_glfw -- "
-              << "Loaded openGL version: " << glGetString(GL_VERSION) << std::endl;
+
+  {
+    std::stringstream ss;
+    ss << "Backend: openGL3_glfw -- "
+       << "Loaded openGL version: " << glGetString(GL_VERSION);
+    info(0, ss.str());
   }
 
 #ifdef __APPLE__
