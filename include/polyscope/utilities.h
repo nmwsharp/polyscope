@@ -103,6 +103,9 @@ inline std::string to_string(const glm::vec3& v) {
 }
 inline std::string to_string_short(const glm::vec3& v) { return str_printf("<%1.3f, %1.3f, %1.3f>", v[0], v[1], v[2]); }
 
+// Warn when provided color ranges are not [0, 1], so they will be clamped in shader
+void checkColorRanges(const std::vector<glm::vec3>& colors);
+
 // === Index management
 const size_t INVALID_IND = std::numeric_limits<size_t>::max();
 const uint32_t INVALID_IND_32 = std::numeric_limits<uint32_t>::max();
