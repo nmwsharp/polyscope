@@ -482,7 +482,7 @@ void GLTextureBuffer::setFilterMode(FilterMode newMode) {
   checkGLError();
 }
 
-void* GLTextureBuffer::getNativeHandle() { return nullptr; }
+ImTextureID GLTextureBuffer::getNativeHandle() { return 0; }
 uint32_t GLTextureBuffer::getNativeBufferID() { return 77; };
 
 std::vector<float> GLTextureBuffer::getDataScalar() {
