@@ -37,6 +37,7 @@ bool hasExtension(std::string str, std::string ext) {
 
 
 void saveImage(std::string name, unsigned char* buffer, int w, int h, int channels) {
+  checkInitialized();
 
   // our buffers are from openGL, so they are flipped
   stbi_flip_vertically_on_write(1);
@@ -64,6 +65,7 @@ void saveImage(std::string name, unsigned char* buffer, int w, int h, int channe
 }
 
 void screenshot(std::string filename, bool transparentBG) {
+  checkInitialized();
 
   render::engine->useAltDisplayBuffer = true;
   if (transparentBG) render::engine->lightCopy = true; // copy directly in to buffer without blending
@@ -125,6 +127,7 @@ void resetScreenshotIndex() { state::screenshotInd = 0; }
 
 
 std::vector<unsigned char> screenshotToBuffer(bool transparentBG) {
+  checkInitialized();
 
   render::engine->useAltDisplayBuffer = true;
   if (transparentBG) render::engine->lightCopy = true; // copy directly in to buffer without blending

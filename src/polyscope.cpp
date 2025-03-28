@@ -260,6 +260,7 @@ void popContext() {
 ImGuiContext* getCurrentContext() { return contextStack.empty() ? nullptr : contextStack.back().context; }
 
 void frameTick() {
+  checkInitialized();
 
   // Do some sanity-checking around control flow and use of frameTick() / show()
   if (contextStack.size() > 1) {
@@ -271,8 +272,7 @@ void frameTick() {
   }
   frameTickStack++;
 
-  // Make sure we're initialized and visible
-  checkInitialized();
+  // Make sure we're visible
   render::engine->showWindow();
 
   // All-imporant main loop iteration
