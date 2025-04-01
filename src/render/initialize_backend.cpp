@@ -78,10 +78,9 @@ void initializeRenderEngine(std::string backend) {
       }
       if (initSucces) {
         if (options::verbosity > 0) {
-          info("Automatic initialization could not create an interactive backend, and created a headless backend "
-               "instead. This likely means no displays are available. With the headless backend, you can still run "
-               "Polyscope and even render, for instance to save images of visualizations. However no interactive "
-               "windows can be created.");
+          info("Automatic initialization yielded a headless backend, likely because no display was found. Rendering is "
+               "supported, but no interactive windows can be "
+               "created. See polyscope.run/features/headless_rendering/");
         }
         return;
       }
