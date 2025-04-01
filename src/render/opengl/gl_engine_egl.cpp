@@ -250,7 +250,7 @@ void GLEngineEGL::initialize() {
 #endif
 
   {
-    std::stringstring ss;
+    std::stringstream ss;
     ss << "Backend: openGL3_egl -- "
        << "Loaded openGL version: " << glGetString(GL_VERSION) << " -- "
        << "EGL version: " << majorVer << "." << minorVer;
