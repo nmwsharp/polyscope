@@ -80,17 +80,6 @@ void setSelection(PickResult newPick) {
 
 namespace pick {
 
-PickResult& currSelectionPickResult = state::globalContext.currSelectionPickResult;
-bool& haveSelectionVal = state::globalContext.haveSelectionVal;
-
-// The next pick index that a structure can use to identify its elements
-// (get it by calling request pickBufferRange())
-uint64_t& nextPickBufferInd = state::globalContext.nextPickBufferInd; // 0 reserved for "none"
-
-// Track which ranges have been allocated to which structures
-std::unordered_map<Structure*, std::tuple<uint64_t, uint64_t>> structureRanges = state::globalContext.structureRanges;
-
-
 // == Set up picking
 uint64_t requestPickBufferRange(Structure* requestingStructure, uint64_t count) {
 
@@ -106,14 +95,15 @@ uint64_t requestPickBufferRange(Structure* requestingStructure, uint64_t count) 
   }
 #pragma GCC diagnostic pop
 
-  if (count > maxPickInd || maxPickInd - count < nextPickBufferInd) {
+  if (count > maxPickInd || maxPickInd - count < state::globalContext.nextPickBufferInd) {
     exception("Wow, you sure do have a lot of stuff, Polyscope can't even count it all. (Ran out of indices while "
               "enumerating structure elements for pick buffer.)");
   }
 
-  uint64_t ret = nextPickBufferInd;
-  nextPickBufferInd += count;
-  structureRanges[requestingStructure] = std::make_tuple(ret, nextPickBufferInd);
+  uint64_t ret = state::globalContext.nextPickBufferInd;
+  state::globalContext.nextPickBufferInd += count;
+  state::globalContext.structureRanges[requestingStructure] =
+      std::make_tuple(ret, state::globalContext.nextPickBufferInd);
   return ret;
 }
 
@@ -124,7 +114,7 @@ std::pair<Structure*, uint64_t> globalIndexToLocal(uint64_t globalInd) {
   // ONEDAY: this could be asymptotically better if we cared
 
   // Loop through the ranges that we have allocated to find the one correpsonding to this structure.
-  for (const auto& x : structureRanges) {
+  for (const auto& x : state::globalContext.structureRanges) {
 
     Structure* structure = x.first;
     uint64_t rangeStart = std::get<0>(x.second);
@@ -141,11 +131,11 @@ std::pair<Structure*, uint64_t> globalIndexToLocal(uint64_t globalInd) {
 uint64_t localIndexToGlobal(std::pair<Structure*, uint64_t> localPick) {
   if (localPick.first == nullptr) return 0;
 
-  if (structureRanges.find(localPick.first) == structureRanges.end()) {
+  if (state::globalContext.structureRanges.find(localPick.first) == state::globalContext.structureRanges.end()) {
     exception("structure does not match any allocated pick range");
   }
 
-  std::tuple<uint64_t, uint64_t> range = structureRanges[localPick.first];
+  std::tuple<uint64_t, uint64_t> range = state::globalContext.structureRanges[localPick.first];
   uint64_t rangeStart = std::get<0>(range);
   uint64_t rangeEnd = std::get<1>(range);
   return rangeStart + localPick.second;
@@ -198,6 +188,4 @@ std::pair<Structure*, uint64_t> evaluatePickQuery(int xPos, int yPos) {
 }
 
 } // namespace pick
-
-
 } // namespace polyscope
