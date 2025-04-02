@@ -459,6 +459,7 @@ void PointCloudQuantity::buildInfoGUI(size_t pointInd) {}
 
 PointCloudColorQuantity* PointCloud::addColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors) {
   checkForQuantityWithNameAndDeleteOrError(name);
+  checkColorRanges(colors);
   PointCloudColorQuantity* q = new PointCloudColorQuantity(name, colors, *this);
   addQuantity(q);
   return q;

@@ -1769,6 +1769,7 @@ MeshSelectionMode SurfaceMesh::getSelectionMode() { return selectionMode.get(); 
 SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantityImpl(std::string name,
                                                                     const std::vector<glm::vec3>& colors) {
   checkForQuantityWithNameAndDeleteOrError(name);
+  checkColorRanges(colors);
   SurfaceVertexColorQuantity* q = new SurfaceVertexColorQuantity(name, *this, colors);
   addQuantity(q);
   return q;
@@ -1777,6 +1778,7 @@ SurfaceVertexColorQuantity* SurfaceMesh::addVertexColorQuantityImpl(std::string 
 SurfaceFaceColorQuantity* SurfaceMesh::addFaceColorQuantityImpl(std::string name,
                                                                 const std::vector<glm::vec3>& colors) {
   checkForQuantityWithNameAndDeleteOrError(name);
+  checkColorRanges(colors);
   SurfaceFaceColorQuantity* q = new SurfaceFaceColorQuantity(name, *this, colors);
   addQuantity(q);
   return q;
@@ -1786,6 +1788,7 @@ SurfaceTextureColorQuantity*
 SurfaceMesh::addTextureColorQuantityImpl(std::string name, SurfaceParameterizationQuantity& param, size_t dimX,
                                          size_t dimY, const std::vector<glm::vec3>& colors, ImageOrigin imageOrigin) {
   checkForQuantityWithNameAndDeleteOrError(name);
+  checkColorRanges(colors);
   SurfaceTextureColorQuantity* q = new SurfaceTextureColorQuantity(name, *this, param, dimX, dimY, colors, imageOrigin);
   addQuantity(q);
   return q;

@@ -1054,6 +1054,7 @@ double VolumeMesh::getEdgeWidth() { return edgeWidth.get(); }
 VolumeMeshVertexColorQuantity* VolumeMesh::addVertexColorQuantityImpl(std::string name,
                                                                       const std::vector<glm::vec3>& colors) {
   checkForQuantityWithNameAndDeleteOrError(name);
+  checkColorRanges(colors);
   VolumeMeshVertexColorQuantity* q = new VolumeMeshVertexColorQuantity(name, *this, colors);
   addQuantity(q);
   return q;
@@ -1062,6 +1063,7 @@ VolumeMeshVertexColorQuantity* VolumeMesh::addVertexColorQuantityImpl(std::strin
 VolumeMeshCellColorQuantity* VolumeMesh::addCellColorQuantityImpl(std::string name,
                                                                   const std::vector<glm::vec3>& colors) {
   checkForQuantityWithNameAndDeleteOrError(name);
+  checkColorRanges(colors);
   VolumeMeshCellColorQuantity* q = new VolumeMeshCellColorQuantity(name, *this, colors);
   addQuantity(q);
   return q;
