@@ -237,12 +237,16 @@ bool GLEngineGLFW::isKeyPressed(char c) {
   return false;
 }
 
+
+// For some reason the ImGui::SetClipboardText() didn't work here, on linux
+// it would not actually write to system clipboard. Calling glfw directly seems to work.
+
 std::string GLEngineGLFW::getClipboardText() {
-  std::string clipboardData = ImGui::GetClipboardText();
+  std::string clipboardData = glfwGetClipboardString(nullptr);
   return clipboardData;
 }
 
-void GLEngineGLFW::setClipboardText(std::string text) { ImGui::SetClipboardText(text.c_str()); }
+void GLEngineGLFW::setClipboardText(std::string text) { glfwSetClipboardString(nullptr, text.c_str()); }
 
 } // namespace backend_openGL3
 } // namespace render
