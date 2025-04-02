@@ -48,8 +48,10 @@ bool unshowRequested = false;
 float imguiStackMargin = 10;
 float lastWindowHeightPolyscope = 200;
 float lastWindowHeightUser = 200;
-float leftWindowsWidth = 305;
-float rightWindowsWidth = 500;
+constexpr float LEFT_WINDOWS_WIDTH = 305;
+constexpr float RIGHT_WINDOWS_WIDTH = 500;
+float leftWindowsWidth = LEFT_WINDOWS_WIDTH;
+float rightWindowsWidth = RIGHT_WINDOWS_WIDTH;
 
 auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 
@@ -555,7 +557,7 @@ void userGuiBegin() {
 void userGuiEnd() {
 
   if (options::userGuiIsOnRightSide) {
-    rightWindowsWidth = ImGui::GetWindowWidth();
+    rightWindowsWidth = RIGHT_WINDOWS_WIDTH * state::globalContext.dpiScale;
     lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
   } else {
     lastWindowHeightUser = 0;
@@ -646,7 +648,7 @@ void buildPolyscopeGui() {
     ImGui::Text("Rolling: %.1f ms/frame (%.1f fps)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::Text("Last: %.1f ms/frame (%.1f fps)", ImGui::GetIO().DeltaTime * 1000.f, 1.f / ImGui::GetIO().DeltaTime);
 
-    ImGui::PushItemWidth(40);
+    ImGui::PushItemWidth(40 * state::globalContext.dpiScale);
     if (ImGui::InputInt("max fps", &options::maxFPS, 0)) {
       if (options::maxFPS < 1 && options::maxFPS != -1) {
         options::maxFPS = -1;
@@ -680,7 +682,7 @@ void buildPolyscopeGui() {
 
 
   lastWindowHeightPolyscope = imguiStackMargin + ImGui::GetWindowHeight();
-  leftWindowsWidth = ImGui::GetWindowWidth();
+  leftWindowsWidth = LEFT_WINDOWS_WIDTH * state::globalContext.dpiScale;
 
   ImGui::End();
 }
@@ -749,7 +751,7 @@ void buildStructureGui() {
     ImGui::PopID();
   }
 
-  leftWindowsWidth = ImGui::GetWindowWidth();
+  leftWindowsWidth = LEFT_WINDOWS_WIDTH * state::globalContext.dpiScale;
 
   ImGui::End();
 }
@@ -781,7 +783,7 @@ void buildPickGui() {
       ImGui::TextUnformatted("ERROR: INVALID STRUCTURE");
     }
 
-    rightWindowsWidth = ImGui::GetWindowWidth();
+    rightWindowsWidth = RIGHT_WINDOWS_WIDTH * state::globalContext.dpiScale;
     ImGui::End();
   }
 }
