@@ -18,4 +18,4 @@ glm::vec3 projectToPlane(glm::vec3 queryP, glm::vec3 planeNormal, glm::vec3 poin
 // Compute the signed area of triangle ABC which lies in the plane give by normal
 float signedTriangleArea(glm::vec3 normal, glm::vec3 pA, glm::vec3 pB, glm::vec3 pC);
 
-}
+} // namespace polyscope

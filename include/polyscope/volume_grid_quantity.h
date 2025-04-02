@@ -15,7 +15,7 @@ class VolumeGrid;
 class VolumeGridQuantity : public QuantityS<VolumeGrid> {
 public:
   VolumeGridQuantity(std::string name, VolumeGrid& parentStructure, bool dominates = false);
-  ~VolumeGridQuantity(){};
+  ~VolumeGridQuantity() {};
 
   virtual bool isDrawingGridcubes() = 0;
 

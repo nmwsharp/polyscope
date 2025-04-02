@@ -14,7 +14,7 @@ class PointCloud;
 class PointCloudQuantity : public QuantityS<PointCloud> {
 public:
   PointCloudQuantity(std::string name, PointCloud& parentStructure, bool dominates = false);
-  virtual ~PointCloudQuantity(){};
+  virtual ~PointCloudQuantity() {};
 
   // Build GUI info about a point
   virtual void buildInfoGUI(size_t pointInd);

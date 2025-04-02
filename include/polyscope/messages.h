@@ -9,7 +9,7 @@ namespace polyscope {
 // == Register various kinds of messages
 
 // General details, things you would print to stdout. For now, that's exactly what it does
-void info(std::string message); // default verbosityLevel = 0
+void info(std::string message);                     // default verbosityLevel = 0
 void info(int verbosityLevel, std::string message); // only printed if verbosity > vebosityLevel
 
 // Non-fatal warnings. Warnings with the same base message are batched together, so the UI doesn't get completely

@@ -15,7 +15,7 @@ class SurfaceMesh;
 class SurfaceMeshQuantity : public QuantityS<SurfaceMesh> {
 public:
   SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates = false);
-  ~SurfaceMeshQuantity(){};
+  ~SurfaceMeshQuantity() {};
 
 public:
   // Build GUI info about this element

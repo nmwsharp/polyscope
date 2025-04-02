@@ -22,7 +22,7 @@ class RenderBuffer;
 // There should probably only ever be one GroundPlane object, managed by the render::Engine.
 class GroundPlane {
 public:
-  GroundPlane(){};
+  GroundPlane() {};
 
   // Render the ground plane.
   // isRedraw allows for an optimization: for rendering modes where the ground gets drawn many times per-frame, we only

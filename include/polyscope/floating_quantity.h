@@ -11,7 +11,7 @@ namespace polyscope {
 class FloatingQuantity : public Quantity {
 public:
   FloatingQuantity(std::string name, Structure& parentStructure);
-  virtual ~FloatingQuantity(){};
+  virtual ~FloatingQuantity() {};
 
   virtual void buildUI() override;
 

@@ -38,7 +38,7 @@ void removeLastSceneSlicePlane() {
 }
 
 void removeAllSlicePlanes() {
-  while(!state::slicePlanes.empty()) {
+  while (!state::slicePlanes.empty()) {
     removeLastSceneSlicePlane();
   }
 }

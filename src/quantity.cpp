@@ -17,7 +17,7 @@ Quantity::Quantity(std::string name_, Structure& parentStructure_)
   validateName(name);
 }
 
-Quantity::~Quantity(){};
+Quantity::~Quantity() {};
 
 void Quantity::draw() {}
 

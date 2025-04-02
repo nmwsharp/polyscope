@@ -60,7 +60,7 @@ void unshow();
 void frameTick();
 
 // Do shutdown work and de-initialize Polyscope
-void shutdown(bool allowMidFrameShutdown=false);
+void shutdown(bool allowMidFrameShutdown = false);
 
 // Returns true if the user has tried to exit the window at the OS level, e.g clicking the close button. Useful for
 // deciding when to exit your control loop when using frameTick()

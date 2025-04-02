@@ -14,7 +14,7 @@ class CurveNetwork;
 class CurveNetworkQuantity : public QuantityS<CurveNetwork> {
 public:
   CurveNetworkQuantity(std::string name, CurveNetwork& parentStructure, bool dominates = false);
-  virtual ~CurveNetworkQuantity(){};
+  virtual ~CurveNetworkQuantity() {};
 
   // Build GUI info an element
   virtual void buildNodeInfoGUI(size_t vInd);

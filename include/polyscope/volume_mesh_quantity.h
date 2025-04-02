@@ -15,9 +15,9 @@ class VolumeMesh;
 class VolumeMeshQuantity : public QuantityS<VolumeMesh> {
 public:
   VolumeMeshQuantity(std::string name, VolumeMesh& parentStructure, bool dominates = false);
-  ~VolumeMeshQuantity(){};
+  ~VolumeMeshQuantity() {};
   virtual std::shared_ptr<render::ShaderProgram> createSliceProgram() { return nullptr; };
-  virtual void drawSlice(polyscope::SlicePlane* sp){};
+  virtual void drawSlice(polyscope::SlicePlane* sp) {};
 
 public:
   // Build GUI info about this element
