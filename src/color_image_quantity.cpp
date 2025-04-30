@@ -107,9 +107,10 @@ void ColorImageQuantity::showInImGuiWindow() {
 
   // since we are showing directly from the user's texture, we need to resposect the upper left ordering
   if (imageOrigin == ImageOrigin::LowerLeft) {
-    ImGui::Image(colors.getRenderTextureBuffer()->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+    ImGui::Image((ImTextureID)(intptr_t)colors.getRenderTextureBuffer()->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1),
+                 ImVec2(1, 0));
   } else if (imageOrigin == ImageOrigin::UpperLeft) {
-    ImGui::Image(colors.getRenderTextureBuffer()->getNativeHandle(), ImVec2(w, h));
+    ImGui::Image((ImTextureID)(intptr_t)colors.getRenderTextureBuffer()->getNativeHandle(), ImVec2(w, h));
   }
   render::engine->preserveResourceUntilImguiFrameCompletes(colors.getRenderTextureBuffer());
 

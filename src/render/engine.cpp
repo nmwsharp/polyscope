@@ -1176,7 +1176,7 @@ void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buf
   float h = w * buffer->getSizeY() / buffer->getSizeX();
 
   ImGui::Text("Dimensions: %dx%d", buffer->getSizeX(), buffer->getSizeY());
-  ImGui::Image(buffer->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+  ImGui::Image((ImTextureID)(intptr_t)buffer->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
 
   ImGui::End();
 }
