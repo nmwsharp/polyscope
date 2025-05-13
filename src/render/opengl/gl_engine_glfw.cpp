@@ -137,7 +137,8 @@ void GLEngineGLFW::configureImGui() {
     // (don't totally understand why, allegedly it may change in the future)
     ImGui_ImplOpenGL3_DestroyFontsTexture();
 
-    std::tie(globalFontAtlas, regularFont, monoFont) = options::prepareImGuiFontsCallback();
+    ImFontAtlas* _unused;
+    std::tie(_unused, regularFont, monoFont) = options::prepareImGuiFontsCallback();
     
     ImGui_ImplOpenGL3_CreateFontsTexture();
   }

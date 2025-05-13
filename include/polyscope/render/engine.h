@@ -518,7 +518,6 @@ public:
   virtual void ImGuiRender() = 0;
 
   void setImGuiStyle();
-  ImFontAtlas* getImGuiGlobalFontAtlas();
 
   // Display an ImGui window showing a texture
   // WARNING: you must ensure that the texture buffer pointer stays valid until after the ImGui frame is rendered, which
@@ -630,7 +629,6 @@ public:
 
   // Internal windowing and engine details
   virtual void configureImGui() {}; // generates font things
-  ImFontAtlas* globalFontAtlas = nullptr;
   ImFont* regularFont = nullptr;
   ImFont* monoFont = nullptr;
   FrameBuffer* currRenderFramebuffer = nullptr;

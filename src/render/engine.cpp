@@ -1175,9 +1175,6 @@ void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buf
   ImGui::End();
 }
 
-// TODO remove this, it's not global anymore, each context gets its own
-ImFontAtlas* Engine::getImGuiGlobalFontAtlas() { return globalFontAtlas; }
-
 void Engine::preserveResourceUntilImguiFrameCompletes(std::shared_ptr<TextureBuffer> texture) {
   resourcesPreservedForImGuiFrame.push_back(texture);
 }

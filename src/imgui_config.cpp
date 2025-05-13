@@ -78,7 +78,7 @@ std::tuple<ImFontAtlas*, ImFont*, ImFont*> prepareImGuiFonts() {
   ImGuiIO& io = ImGui::GetIO();
 
   // outputs
-  ImFontAtlas* globalFontAtlas;
+  ImFontAtlas* fontAtlas;
   ImFont* regularFont;
   ImFont* monoFont;
 
@@ -97,9 +97,8 @@ std::tuple<ImFontAtlas*, ImFont*, ImFont*> prepareImGuiFonts() {
   // io.Fonts->AddFontFromFileTTF("test-font-name.ttf", 16);
 
   io.Fonts->Build();
-  globalFontAtlas = io.Fonts;
 
-  return std::tuple<ImFontAtlas*, ImFont*, ImFont*>{globalFontAtlas, regularFont, monoFont};
+  return std::tuple<ImFontAtlas*, ImFont*, ImFont*>{fontAtlas, regularFont, monoFont};
 }
 
 } // namespace polyscope
