@@ -402,7 +402,7 @@ void CurveNetwork::buildCustomUI() {
     setColor(getColor());
   }
   ImGui::SameLine();
-  ImGui::PushItemWidth(100 * state::globalContext.dpiScale);
+  ImGui::PushItemWidth(100 * options::uiScale);
   if (ImGui::SliderFloat("Radius", radius.get().getValuePtr(), 0.0, .1, "%.5f",
                          ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     radius.manuallyChanged();

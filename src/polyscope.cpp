@@ -183,7 +183,7 @@ bool isInitialized() { return state::initialized; }
 void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Create a new context and push it on to the stack
-  ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
+  ImGuiContext* newContext = ImGui::CreateContext();
   ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
 #ifdef IMGUI_HAS_DOCK
   ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
@@ -196,9 +196,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
   ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
 
-  if (options::configureImGuiStyleCallback) {
-    options::configureImGuiStyleCallback();
-  }
+  render::engine->configureImGui();
 
   contextStack.push_back(ContextEntry{newContext, callbackFunction, drawDefaultUI});
 
@@ -437,7 +435,6 @@ void renderSlicePlanes() {
 }
 
 void renderScene() {
-  processLazyProperties();
 
   render::engine->applyTransparencySettings();
 
@@ -556,7 +553,7 @@ void userGuiBegin() {
 void userGuiEnd() {
 
   if (options::userGuiIsOnRightSide) {
-    rightWindowsWidth = RIGHT_WINDOWS_WIDTH * state::globalContext.dpiScale;
+    rightWindowsWidth = RIGHT_WINDOWS_WIDTH * options::uiScale;
     lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
   } else {
     lastWindowHeightUser = 0;
@@ -647,7 +644,7 @@ void buildPolyscopeGui() {
     ImGui::Text("Rolling: %.1f ms/frame (%.1f fps)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::Text("Last: %.1f ms/frame (%.1f fps)", ImGui::GetIO().DeltaTime * 1000.f, 1.f / ImGui::GetIO().DeltaTime);
 
-    ImGui::PushItemWidth(40 * state::globalContext.dpiScale);
+    ImGui::PushItemWidth(40 * options::uiScale);
     if (ImGui::InputInt("max fps", &options::maxFPS, 0)) {
       if (options::maxFPS < 1 && options::maxFPS != -1) {
         options::maxFPS = -1;
@@ -681,7 +678,7 @@ void buildPolyscopeGui() {
 
 
   lastWindowHeightPolyscope = imguiStackMargin + ImGui::GetWindowHeight();
-  leftWindowsWidth = LEFT_WINDOWS_WIDTH * state::globalContext.dpiScale;
+  leftWindowsWidth = LEFT_WINDOWS_WIDTH * options::uiScale;
 
   ImGui::End();
 }
@@ -750,7 +747,7 @@ void buildStructureGui() {
     ImGui::PopID();
   }
 
-  leftWindowsWidth = LEFT_WINDOWS_WIDTH * state::globalContext.dpiScale;
+  leftWindowsWidth = LEFT_WINDOWS_WIDTH * options::uiScale;
 
   ImGui::End();
 }
@@ -769,7 +766,7 @@ void buildPickGui() {
     ImGui::Separator();
     selection.first->buildPickUI(selection.second);
 
-    rightWindowsWidth = RIGHT_WINDOWS_WIDTH * state::globalContext.dpiScale;
+    rightWindowsWidth = RIGHT_WINDOWS_WIDTH * options::uiScale;
     ImGui::End();
   }
 }
@@ -802,7 +799,6 @@ void buildUserGuiAndInvokeCallback() {
 }
 
 void draw(bool withUI, bool withContextCallback) {
-  processLazyProperties();
 
   // Update buffer and context
   render::engine->makeContextCurrent();
@@ -851,8 +847,6 @@ void draw(bool withUI, bool withContextCallback) {
   if (withContextCallback && contextStack.back().callback) {
     (contextStack.back().callback)();
   }
-
-  processLazyProperties();
 
   // Draw structures in the scene
   if (redrawNextFrame || options::alwaysRedraw) {
@@ -1226,6 +1220,7 @@ namespace lazy {
 TransparencyMode transparencyMode = TransparencyMode::None;
 int transparencyRenderPasses = 8;
 int ssaaFactor = 1;
+float uiScale = 1;
 bool groundPlaneEnabled = true;
 GroundPlaneMode groundPlaneMode = GroundPlaneMode::TileReflection;
 ScaledValue<float> groundPlaneHeightFactor = 0;
@@ -1261,6 +1256,12 @@ void processLazyProperties() {
   if (lazy::ssaaFactor != options::ssaaFactor) {
     lazy::ssaaFactor = options::ssaaFactor;
     render::engine->setSSAAFactor(options::ssaaFactor);
+  }
+  
+  // uiScale
+  if (lazy::uiScale != options::uiScale) {
+    lazy::uiScale = options::uiScale;
+    render::engine->configureImGui();
   }
 
   // ground plane

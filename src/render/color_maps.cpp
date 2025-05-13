@@ -18,7 +18,7 @@ namespace render {
 bool buildColormapSelector(std::string& cm, std::string fieldName) {
   bool changed = false;
 
-  ImGui::PushItemWidth(125 * state::globalContext.dpiScale);
+  ImGui::PushItemWidth(125 * options::uiScale);
 
   if (ImGui::BeginCombo(fieldName.c_str(), cm.c_str())) {
     for (auto& c : render::engine->colorMaps) {

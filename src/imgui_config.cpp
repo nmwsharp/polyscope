@@ -18,11 +18,11 @@ void configureImGuiStyle() {
 
   // Style
   ImGuiStyle* style = &ImGui::GetStyle();
-  style->WindowRounding = 1;
-  style->FrameRounding = 1;
-  style->FramePadding.y = 4;
-  style->ScrollbarRounding = 1;
-  style->ScrollbarSize = 20;
+  style->WindowRounding = 1 * options::uiScale;
+  style->FrameRounding = 1 * options::uiScale;
+  style->FramePadding.y = 4 * options::uiScale;
+  style->ScrollbarRounding = 1 * options::uiScale;
+  style->ScrollbarSize = 20 * options::uiScale;
 
 
   // Colors
@@ -85,13 +85,13 @@ std::tuple<ImFontAtlas*, ImFont*, ImFont*> prepareImGuiFonts() {
   { // add regular font
     ImFontConfig config;
     regularFont = io.Fonts->AddFontFromMemoryCompressedTTF(render::getLatoRegularCompressedData(),
-                                                           render::getLatoRegularCompressedSize(), state::globalContext.dpiScale*18.0f, &config);
+                                                           render::getLatoRegularCompressedSize(), options::uiScale*18.0f, &config);
   }
 
   { // add mono font
     ImFontConfig config;
     monoFont = io.Fonts->AddFontFromMemoryCompressedTTF(render::getCousineRegularCompressedData(),
-                                                        render::getCousineRegularCompressedSize(), state::globalContext.dpiScale*16.0f, &config);
+                                                        render::getCousineRegularCompressedSize(), options::uiScale*16.0f, &config);
   }
 
   // io.Fonts->AddFontFromFileTTF("test-font-name.ttf", 16);

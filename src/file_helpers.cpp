@@ -14,7 +14,7 @@ void filenamePromptCallback(char* buff, size_t len) {
   static bool windowOpen = true;
   ImGui::Begin("Enter filename", &windowOpen, ImGuiWindowFlags_AlwaysAutoResize);
 
-  ImGui::PushItemWidth(500 * state::globalContext.dpiScale);
+  ImGui::PushItemWidth(500 * options::uiScale);
   ImGui::InputText("##filename", buff, len);
 
   if (ImGui::Button("Ok")) {

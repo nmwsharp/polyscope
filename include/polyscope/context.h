@@ -56,7 +56,6 @@ struct Context {
   std::map<std::string, std::map<std::string, std::unique_ptr<Structure>>> structures;
   std::map<std::string, std::unique_ptr<Group>> groups;
   float lengthScale = 1.;
-  float dpiScale = 1.;
   std::tuple<glm::vec3, glm::vec3> boundingBox =
       std::tuple<glm::vec3, glm::vec3>{glm::vec3{-1., -1., -1.}, glm::vec3{1., 1., 1.}};
   std::vector<std::unique_ptr<SlicePlane>> slicePlanes;

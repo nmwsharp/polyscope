@@ -93,6 +93,9 @@ extern std::string screenshotExtension; // sets the extension used for automatic
 // SSAA scaling in pixel multiples
 extern int ssaaFactor;
 
+// DPI scaling to scale the UI on high-resolutoin screens
+extern float uiScale;
+
 // Transparency settings for the renderer
 extern TransparencyMode transparencyMode;
 extern int transparencyRenderPasses;

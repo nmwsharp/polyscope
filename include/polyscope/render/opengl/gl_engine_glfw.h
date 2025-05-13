@@ -77,6 +77,7 @@ public:
   void shutdownImGui() override;
   void ImGuiNewFrame() override;
   void ImGuiRender() override;
+  void configureImGui() override;
 
 protected:
   // Internal windowing and engine details

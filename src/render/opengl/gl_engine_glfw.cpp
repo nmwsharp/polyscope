@@ -121,10 +121,33 @@ void GLEngineGLFW::initializeImGui() {
   if (xScale == NULL) {
     xScale = 1.0f;
   }
-  state::globalContext.dpiScale = std::min(std::max(xScale, 1.0f), 10.0f);
+  options::uiScale = std::min(std::max(xScale, 1.0f), 10.0f);
 
   configureImGui();
 }
+
+void GLEngineGLFW::configureImGui() {
+
+  if (options::prepareImGuiFontsCallback) {
+
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->Clear();
+
+    // these are necessary if different fonts are loaded in the callback
+    // (don't totally understand why, allegedly it may change in the future)
+    ImGui_ImplOpenGL3_DestroyFontsTexture();
+
+    std::tie(globalFontAtlas, regularFont, monoFont) = options::prepareImGuiFontsCallback();
+    
+    ImGui_ImplOpenGL3_CreateFontsTexture();
+  }
+
+
+  if (options::configureImGuiStyleCallback) {
+    options::configureImGuiStyleCallback();
+  }
+}
+
 
 
 void GLEngineGLFW::shutdown() {
@@ -143,12 +166,13 @@ void GLEngineGLFW::shutdownImGui() {
 }
 
 void GLEngineGLFW::ImGuiNewFrame() {
-  float xScale, dont_use_yScale;
-  glfwGetWindowContentScale(mainWindow, &xScale, &dont_use_yScale);
-  if (xScale == NULL) {
-    xScale = 1.0f;
-  }
-  state::globalContext.dpiScale = std::min(std::max(xScale, 1.0f), 10.0f);
+  // TODO
+  // float xScale, dont_use_yScale;
+  // glfwGetWindowContentScale(mainWindow, &xScale, &dont_use_yScale);
+  // if (xScale == NULL) {
+  //   xScale = 1.0f;
+  // }
+  // options::uiScale = std::min(std::max(xScale, 1.0f), 10.0f);
 
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();

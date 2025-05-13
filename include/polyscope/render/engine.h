@@ -629,6 +629,7 @@ public:
   bool useAltDisplayBuffer = false; // if true, push final render results offscreen to the alt buffer instead
 
   // Internal windowing and engine details
+  virtual void configureImGui() {}; // generates font things
   ImFontAtlas* globalFontAtlas = nullptr;
   ImFont* regularFont = nullptr;
   ImFont* monoFont = nullptr;
@@ -658,7 +659,6 @@ protected:
   TransparencyMode currLightingTransparencyMode = TransparencyMode::None;
 
   // Helpers
-  void configureImGui();
   void loadDefaultMaterials();
   void loadDefaultMaterial(std::string name);
   std::shared_ptr<TextureBuffer> loadMaterialTexture(float* data, int width, int height);

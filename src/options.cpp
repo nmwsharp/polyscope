@@ -42,6 +42,7 @@ float shadowDarkness = 0.25;
 
 // Rendering options
 
+float uiScale = 1.0;
 int ssaaFactor = 1;
 
 // Transparency
