@@ -1576,6 +1576,7 @@ void MockGLEngine::initialize() {
 
 void MockGLEngine::initializeImGui() {
   ImGui::CreateContext(); // must call once at start
+  ImPlot::CreateContext(); 
   configureImGui();
 }
 
