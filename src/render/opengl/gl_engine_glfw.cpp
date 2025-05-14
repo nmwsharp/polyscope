@@ -51,8 +51,13 @@ void GLEngineGLFW::initialize() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  // this is required to make sure the initial windows size is appropriate
-  glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
+  // This tells GLFW to scale window size/positioning/content based on the system-reported DPI scaling factor
+  // However, it can lead to some confusing behaviors, for instance, on linux with scaling=200%, if the user 
+  // sets view::windowWidth = 1280, they might get back a window with windowWidth == bufferWidth == 2560,
+  // which is quite confusing.
+  // For this reason we _do not_ set this hint. If desired, the user can specify a windowWidth = 1280*uiScale,
+  // or let the window size by loaded from .polyscope.ini after setting manually once.
+  // glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
 
 #if __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -73,6 +78,10 @@ void GLEngineGLFW::initialize() {
   view::bufferHeight = newBufferHeight;
   view::windowWidth = newWindowWidth;
   view::windowHeight = newWindowHeight;
+
+  std::cout << "created window with: \n";
+  std::cout << " bufferWidth: " << view::bufferWidth << "  bufferHeight: " << view::bufferHeight << "\n";
+  std::cout << " windowWidth: " << view::windowWidth << "  windowHeight: " << view::windowHeight << "\n";
 
   setWindowResizable(view::windowResizable);
 
