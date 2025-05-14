@@ -9,6 +9,7 @@
 #include <unordered_set>
 
 #include "imgui.h"
+#include "implot.h"
 
 #include "polyscope/context.h"
 #include "polyscope/group.h"

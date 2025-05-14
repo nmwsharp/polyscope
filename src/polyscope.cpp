@@ -8,6 +8,7 @@
 #include <thread>
 
 #include "imgui.h"
+#include "implot.h"
 
 #include "polyscope/options.h"
 #include "polyscope/pick.h"
@@ -35,6 +36,7 @@ namespace {
 // initialization.
 struct ContextEntry {
   ImGuiContext* context;
+  ImPlotContext* plotContext;
   std ::function<void()> callback;
   bool drawDefaultUI;
 };
@@ -172,7 +174,7 @@ void init(std::string backend) {
 
   // Create an initial context based context. Note that calling show() never actually uses this context, because it
   // pushes a new one each time. But using frameTick() may use this context.
-  contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), nullptr, true});
+  contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), ImPlot::GetCurrentContext(), nullptr, true});
 
   view::invalidateView();
 
@@ -206,7 +208,10 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   render::engine->configureImGui();
 
-  contextStack.push_back(ContextEntry{newContext, callbackFunction, drawDefaultUI});
+  // Implot context too
+  ImPlotContext* newPlotContext = ImPlot::CreateContext();
+
+  contextStack.push_back(ContextEntry{newContext, newPlotContext, callbackFunction, drawDefaultUI});
 
   if (contextStack.size() > 50) {
     // Catch bugs with nested show()
@@ -249,10 +254,12 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   ImGui::GetIO().BackendRendererUserData = nullptr;
 
   ImGui::DestroyContext(newContext);
+  ImPlot::DestroyContext(newPlotContext);
 
   // Restore the previous context, if there was one
   if (!contextStack.empty()) {
     ImGui::SetCurrentContext(contextStack.back().context);
+    ImPlot::SetCurrentContext(contextStack.back().plotContext);
   }
 }
 

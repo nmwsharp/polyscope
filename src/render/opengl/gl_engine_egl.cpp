@@ -437,6 +437,7 @@ void GLEngineEGL::initializeImGui() {
   // functions
 
   ImGui::CreateContext();
+  ImPlot::CreateContext(); 
   configureImGui();
 }
 

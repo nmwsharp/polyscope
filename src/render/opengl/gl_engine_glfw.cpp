@@ -135,6 +135,7 @@ void GLEngineGLFW::initializeImGui() {
   bindDisplay();
 
   ImGui::CreateContext(); // must call once at start
+  ImPlot::CreateContext(); 
 
   // Set up ImGUI glfw bindings
   ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
