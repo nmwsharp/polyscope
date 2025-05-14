@@ -254,6 +254,10 @@ void GLEngineEGL::initialize() {
               << "EGL version: " << majorVer << "." << minorVer << std::endl;
   }
 
+  if(options::uiScale < 0) { // only set from system if the value is -1, meaning not set yet
+    options::uiScale = 1.;
+  }
+
   { // Manually create the screen frame buffer
     // NOTE: important difference here, we manually create both the framebuffer and and its render buffer, since
     // headless EGL means we are not getting them from a window
