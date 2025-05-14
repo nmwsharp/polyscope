@@ -436,6 +436,19 @@ void GLEngineEGL::initializeImGui() {
   configureImGui();
 }
 
+void GLEngineEGL::configureImGui() {
+
+  // don't both calling the style callbacks, there is no UI
+
+  if (options::uiScale < 0) {
+    exception("uiScale is < 0. Perhaps it wasn't initialized?");
+  }
+
+  ImGuiIO& io = ImGui::GetIO();
+  io.Fonts->Clear();
+  io.Fonts->Build();
+}
+
 void GLEngineEGL::shutdown() {
   checkError();
   shutdownImGui();

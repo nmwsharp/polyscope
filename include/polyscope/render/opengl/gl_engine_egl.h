@@ -69,6 +69,7 @@ public:
   // === ImGui
 
   void initializeImGui() override;
+  void configureImGui() override;
   void shutdownImGui() override;
   void ImGuiNewFrame() override;
   void ImGuiRender() override;
