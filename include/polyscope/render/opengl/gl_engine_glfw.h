@@ -82,6 +82,8 @@ public:
 protected:
   // Internal windowing and engine details
   GLFWwindow* mainWindow = nullptr;
+
+  void setUIScaleFromSystemDPI();
 };
 
 } // namespace backend_openGL3

@@ -84,6 +84,10 @@ void readPrefsFile() {
         int val = prefsJSON["windowPosY"];
         if (val >= 0 && val < 10000) view::initWindowPosY = val;
       }
+      if (prefsJSON.count("uiScale") > 0) {
+        float val = prefsJSON["uiScale"];
+        if (val >= 0.25 && val <= 4.0) options::uiScale = val;
+      }
     }
 
   }
@@ -100,6 +104,7 @@ void writePrefsFile() {
   std::tie(posX, posY) = render::engine->getWindowPos();
   int windowWidth = view::windowWidth;
   int windowHeight = view::windowHeight;
+  float uiScale = options::uiScale;
 
   // Validate values. Don't write the prefs file if any of these values are obviously bogus (this seems to happen at
   // least on Windows when the application is minimzed)
@@ -108,6 +113,7 @@ void writePrefsFile() {
   valuesValid &= posY >= 0 && posY < 10000;
   valuesValid &= windowWidth >= 64 && windowWidth < 10000;
   valuesValid &= windowHeight >= 64 && windowHeight < 10000;
+  valuesValid &= uiScale >= 0.25 && uiScale <= 4.;
   if (!valuesValid) return;
 
   // Build json object
@@ -116,6 +122,7 @@ void writePrefsFile() {
       {"windowHeight", windowHeight},
       {"windowPosX", posX},
       {"windowPosY", posY},
+      {"uiScale", uiScale},
   };
 
   // Write out json object
@@ -1220,7 +1227,7 @@ namespace lazy {
 TransparencyMode transparencyMode = TransparencyMode::None;
 int transparencyRenderPasses = 8;
 int ssaaFactor = 1;
-float uiScale = 1;
+float uiScale = -1.;
 bool groundPlaneEnabled = true;
 GroundPlaneMode groundPlaneMode = GroundPlaneMode::TileReflection;
 ScaledValue<float> groundPlaneHeightFactor = 0;

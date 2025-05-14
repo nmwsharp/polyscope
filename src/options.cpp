@@ -42,7 +42,7 @@ float shadowDarkness = 0.25;
 
 // Rendering options
 
-float uiScale = 1.0;
+float uiScale = -1.0; // unset, must be set manually or during initialization
 int ssaaFactor = 1;
 
 // Transparency

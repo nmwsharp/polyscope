@@ -76,6 +76,14 @@ void GLEngineGLFW::initialize() {
 
   setWindowResizable(view::windowResizable);
 
+  // Set the UI scale to account for system-requested DPI scaling
+  // Currently we do *not* watch for changes of this value e.g. if a window moves between
+  // monitors with different DPI behaviors. We could, but it would require some logic to
+  // avoid overwriting values that a user might have set.
+  if(options::uiScale < 0) { // only set from system if the value is -1, meaning not set yet
+    setUIScaleFromSystemDPI();
+  }
+
 // === Initialize openGL
 // Load openGL functions (using GLAD)
 #ifndef __APPLE__
@@ -105,6 +113,16 @@ void GLEngineGLFW::initialize() {
   populateDefaultShadersAndRules();
 }
 
+void GLEngineGLFW::setUIScaleFromSystemDPI() {
+  
+  float xScale, dont_use_yScale;
+  glfwGetWindowContentScale(mainWindow, &xScale, &dont_use_yScale);
+
+  // clamp to values within [1x,4x] scaling
+  xScale = std::fmin(std::fmax(xScale, 1.0f), 4.0f);
+
+  options::uiScale = xScale;
+}
 
 void GLEngineGLFW::initializeImGui() {
   bindDisplay();
@@ -116,17 +134,14 @@ void GLEngineGLFW::initializeImGui() {
   const char* glsl_version = "#version 150";
   ImGui_ImplOpenGL3_Init(glsl_version);
 
-  float xScale, dont_use_yScale;
-  glfwGetWindowContentScale(mainWindow, &xScale, &dont_use_yScale);
-  if (xScale == NULL) {
-    xScale = 1.0f;
-  }
-  options::uiScale = std::min(std::max(xScale, 1.0f), 10.0f);
-
   configureImGui();
 }
 
 void GLEngineGLFW::configureImGui() {
+
+  if(options::uiScale < 0){
+    exception("uiScale is < 0. Perhaps it wasn't initialized?");
+  }
 
   if (options::prepareImGuiFontsCallback) {
 
