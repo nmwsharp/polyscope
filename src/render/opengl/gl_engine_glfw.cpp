@@ -79,10 +79,6 @@ void GLEngineGLFW::initialize() {
   view::windowWidth = newWindowWidth;
   view::windowHeight = newWindowHeight;
 
-  std::cout << "created window with: \n";
-  std::cout << " bufferWidth: " << view::bufferWidth << "  bufferHeight: " << view::bufferHeight << "\n";
-  std::cout << " windowWidth: " << view::windowWidth << "  windowHeight: " << view::windowHeight << "\n";
-
   setWindowResizable(view::windowResizable);
 
   // Set the UI scale to account for system-requested DPI scaling
