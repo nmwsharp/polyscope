@@ -114,7 +114,7 @@ void ImageQuantity::buildImageUI() {
 
   if (getShowFullscreen()) {
 
-    ImGui::PushItemWidth(100);
+    ImGui::PushItemWidth(100 * options::uiScale);
     if (ImGui::SliderFloat("transparency", &transparency.get(), 0.f, 1.f)) {
       transparency.manuallyChanged();
       requestRedraw();

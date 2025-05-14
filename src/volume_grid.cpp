@@ -52,7 +52,7 @@ void VolumeGrid::buildCustomUI() {
 
   { // Edge options
     ImGui::SameLine();
-    ImGui::PushItemWidth(100);
+    ImGui::PushItemWidth(100 * options::uiScale);
     if (edgeWidth.get() == 0.) {
       bool showEdges = false;
       if (ImGui::Checkbox("Edges", &showEdges)) {
@@ -65,14 +65,14 @@ void VolumeGrid::buildCustomUI() {
       }
 
       // Edge color
-      ImGui::PushItemWidth(100);
+      ImGui::PushItemWidth(100 * options::uiScale);
       if (ImGui::ColorEdit3("Edge Color", &edgeColor.get()[0], ImGuiColorEditFlags_NoInputs))
         setEdgeColor(edgeColor.get());
       ImGui::PopItemWidth();
 
       // Edge width
       ImGui::SameLine();
-      ImGui::PushItemWidth(75);
+      ImGui::PushItemWidth(75 * options::uiScale);
       if (ImGui::SliderFloat("Width", &edgeWidth.get(), 0.001, 2.)) {
         // NOTE: this intentionally circumvents the setEdgeWidth() setter to avoid repopulating the buffer as the
         // slider is dragged---otherwise we repopulate the buffer on every change, which mostly works fine. This is a

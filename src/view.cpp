@@ -740,7 +740,7 @@ void buildViewGui() {
 
     std::string viewStyleName = to_string(view::style);
 
-    ImGui::PushItemWidth(120);
+    ImGui::PushItemWidth(120 * options::uiScale);
     std::array<NavigateStyle, 5> styles{NavigateStyle::Turntable, NavigateStyle::Free, NavigateStyle::Planar,
                                         NavigateStyle::None, NavigateStyle::FirstPerson};
     if (ImGui::BeginCombo("##View Style", viewStyleName.c_str())) {
@@ -759,7 +759,7 @@ void buildViewGui() {
     ImGui::Text("Camera Style");
 
     { // == Up direction
-      ImGui::PushItemWidth(120);
+      ImGui::PushItemWidth(120 * options::uiScale);
       std::string upStyleName;
       switch (upDir) {
       case UpDir::XUp:
@@ -814,7 +814,7 @@ void buildViewGui() {
     }
 
     { // == Front direction
-      ImGui::PushItemWidth(120);
+      ImGui::PushItemWidth(120 * options::uiScale);
       std::string frontStyleName;
       switch (frontDir) {
       case FrontDir::XFront:
@@ -906,7 +906,7 @@ void buildViewGui() {
 
 
         ImGui::TextUnformatted("Bounding Box:");
-        ImGui::PushItemWidth(200);
+        ImGui::PushItemWidth(200 * options::uiScale);
         glm::vec3& bboxMin = std::get<0>(state::boundingBox);
         glm::vec3& bboxMax = std::get<1>(state::boundingBox);
         if (ImGui::InputFloat3("min", &bboxMin[0])) updateStructureExtents();
@@ -970,7 +970,7 @@ void buildViewGui() {
       {
         ImGui::TextUnformatted("Dim:");
         ImGui::SameLine();
-        ImGui::PushItemWidth(50);
+        ImGui::PushItemWidth(50 * options::uiScale);
         bool changed = false;
         int currWidth = view::windowWidth;
         int currHeight = view::windowHeight;

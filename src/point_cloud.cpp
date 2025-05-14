@@ -288,7 +288,7 @@ void PointCloud::buildCustomUI() {
     setPointColor(getPointColor());
   }
   ImGui::SameLine();
-  ImGui::PushItemWidth(70);
+  ImGui::PushItemWidth(70 * options::uiScale);
   if (ImGui::SliderFloat("Radius", pointRadius.get().getValuePtr(), 0.0, .1, "%.5f",
                          ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
     pointRadius.manuallyChanged();

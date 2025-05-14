@@ -280,7 +280,7 @@ void Engine::buildEngineGui() {
   if (ImGui::TreeNode("Appearance")) {
 
     // == Display
-    ImGui::PushItemWidth(120);
+    ImGui::PushItemWidth(120 * options::uiScale);
     // ImGui::Text("Background");
     // ImGui::SameLine();
     static std::string displayBackgroundName = "None";
@@ -349,11 +349,17 @@ void Engine::buildEngineGui() {
 
     // == Anti-aliasing
     ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
-    if (ImGui::TreeNode("Anti-Aliasing")) {
+    if (ImGui::TreeNode("Anti-Aliasing & DPI")) {
       if (ImGui::InputInt("SSAA (pretty)", &ssaaFactor, 1)) {
         ssaaFactor = std::min(ssaaFactor, 4);
         ssaaFactor = std::max(ssaaFactor, 1);
         options::ssaaFactor = ssaaFactor;
+        requestRedraw();
+      }
+      
+      if (ImGui::InputFloat("UI Scale", &options::uiScale, 0.25f)) {
+        options::uiScale = std::min(options::uiScale, 4.f);
+        options::uiScale = std::max(options::uiScale, 0.25f);
         requestRedraw();
       }
       ImGui::TreePop();
@@ -477,7 +483,7 @@ void Engine::setScreenBufferViewports() {
 }
 
 bool Engine::bindSceneBuffer() {
-  setCurrentPixelScaling(ssaaFactor);
+  setCurrentPixelScaling(ssaaFactor * options::uiScale);
   return sceneBuffer->bindForRendering();
 }
 
@@ -1093,18 +1099,6 @@ const ValueColorMap& Engine::getColorMap(const std::string& name) {
 }
 
 
-void Engine::configureImGui() {
-
-  if (options::prepareImGuiFontsCallback) {
-    std::tie(globalFontAtlas, regularFont, monoFont) = options::prepareImGuiFontsCallback();
-  }
-
-
-  if (options::configureImGuiStyleCallback) {
-    options::configureImGuiStyleCallback();
-  }
-}
-
 void Engine::loadDefaultColorMap(std::string name) {
 
   const std::vector<glm::vec3>* buff = nullptr;
@@ -1180,8 +1174,6 @@ void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buf
 
   ImGui::End();
 }
-
-ImFontAtlas* Engine::getImGuiGlobalFontAtlas() { return globalFontAtlas; }
 
 void Engine::preserveResourceUntilImguiFrameCompletes(std::shared_ptr<TextureBuffer> texture) {
   resourcesPreservedForImGuiFrame.push_back(texture);

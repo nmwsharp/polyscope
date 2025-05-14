@@ -257,6 +257,10 @@ void GLEngineEGL::initialize() {
     info(0, ss.str());
   }
 
+  if(options::uiScale < 0) { // only set from system if the value is -1, meaning not set yet
+    options::uiScale = 1.;
+  }
+
   { // Manually create the screen frame buffer
     // NOTE: important difference here, we manually create both the framebuffer and and its render buffer, since
     // headless EGL means we are not getting them from a window
@@ -434,6 +438,19 @@ void GLEngineEGL::initializeImGui() {
 
   ImGui::CreateContext();
   configureImGui();
+}
+
+void GLEngineEGL::configureImGui() {
+
+  // don't both calling the style callbacks, there is no UI
+
+  if (options::uiScale < 0) {
+    exception("uiScale is < 0. Perhaps it wasn't initialized?");
+  }
+
+  ImGuiIO& io = ImGui::GetIO();
+  io.Fonts->Clear();
+  io.Fonts->Build();
 }
 
 void GLEngineEGL::shutdown() {

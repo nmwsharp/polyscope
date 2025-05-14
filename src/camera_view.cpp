@@ -386,7 +386,7 @@ void CameraView::buildCustomUI() {
 
 void CameraView::buildCustomOptionsUI() {
 
-  ImGui::PushItemWidth(150);
+  ImGui::PushItemWidth(150 * options::uiScale);
 
   if (widgetFocalLengthUpper == -777) widgetFocalLengthUpper = 2. * (*widgetFocalLength.get().getValuePtr());
   if (ImGui::SliderFloat("widget focal length", widgetFocalLength.get().getValuePtr(), 0, widgetFocalLengthUpper,

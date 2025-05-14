@@ -77,10 +77,13 @@ public:
   void shutdownImGui() override;
   void ImGuiNewFrame() override;
   void ImGuiRender() override;
+  void configureImGui() override;
 
 protected:
   // Internal windowing and engine details
   GLFWwindow* mainWindow = nullptr;
+
+  void setUIScaleFromSystemDPI();
 };
 
 } // namespace backend_openGL3

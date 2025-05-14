@@ -1,6 +1,7 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
 #include "polyscope/imgui_config.h"
+#include <polyscope/polyscope.h>
 
 namespace polyscope {
 
@@ -17,11 +18,11 @@ void configureImGuiStyle() {
 
   // Style
   ImGuiStyle* style = &ImGui::GetStyle();
-  style->WindowRounding = 1;
-  style->FrameRounding = 1;
-  style->FramePadding.y = 4;
-  style->ScrollbarRounding = 1;
-  style->ScrollbarSize = 20;
+  style->WindowRounding = 1 * options::uiScale;
+  style->FrameRounding = 1 * options::uiScale;
+  style->FramePadding.y = 4 * options::uiScale;
+  style->ScrollbarRounding = 1 * options::uiScale;
+  style->ScrollbarSize = 20 * options::uiScale;
 
 
   // Colors
@@ -77,28 +78,27 @@ std::tuple<ImFontAtlas*, ImFont*, ImFont*> prepareImGuiFonts() {
   ImGuiIO& io = ImGui::GetIO();
 
   // outputs
-  ImFontAtlas* globalFontAtlas;
+  ImFontAtlas* fontAtlas;
   ImFont* regularFont;
   ImFont* monoFont;
 
   { // add regular font
     ImFontConfig config;
     regularFont = io.Fonts->AddFontFromMemoryCompressedTTF(render::getLatoRegularCompressedData(),
-                                                           render::getLatoRegularCompressedSize(), 18.0f, &config);
+                                                           render::getLatoRegularCompressedSize(), options::uiScale*18.0f, &config);
   }
 
   { // add mono font
     ImFontConfig config;
     monoFont = io.Fonts->AddFontFromMemoryCompressedTTF(render::getCousineRegularCompressedData(),
-                                                        render::getCousineRegularCompressedSize(), 16.0f, &config);
+                                                        render::getCousineRegularCompressedSize(), options::uiScale*16.0f, &config);
   }
 
   // io.Fonts->AddFontFromFileTTF("test-font-name.ttf", 16);
 
   io.Fonts->Build();
-  globalFontAtlas = io.Fonts;
 
-  return std::tuple<ImFontAtlas*, ImFont*, ImFont*>{globalFontAtlas, regularFont, monoFont};
+  return std::tuple<ImFontAtlas*, ImFont*, ImFont*>{fontAtlas, regularFont, monoFont};
 }
 
 } // namespace polyscope

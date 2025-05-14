@@ -1560,6 +1560,9 @@ void MockGLEngine::initialize() {
   GLFrameBuffer* glScreenBuffer = new GLFrameBuffer(view::bufferWidth, view::bufferHeight, true);
   displayBuffer.reset(glScreenBuffer);
 
+  if (options::uiScale < 0) { // only set from system if the value is -1, meaning not set yet
+    options::uiScale = 1.;
+  }
 
   // normally we get initial values for the buffer size from the window framework,
   // with the mock backend we we need to manually set them to some sane value
@@ -1574,6 +1577,19 @@ void MockGLEngine::initialize() {
 void MockGLEngine::initializeImGui() {
   ImGui::CreateContext(); // must call once at start
   configureImGui();
+}
+
+void MockGLEngine::configureImGui() {
+  
+  // don't both calling the style callbacks, there is no UI
+
+  if (options::uiScale < 0) {
+    exception("uiScale is < 0. Perhaps it wasn't initialized?");
+  }
+
+  ImGuiIO& io = ImGui::GetIO();
+  io.Fonts->Clear();
+  io.Fonts->Build();
 }
 
 void MockGLEngine::shutdown() {

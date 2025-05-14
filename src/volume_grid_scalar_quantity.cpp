@@ -70,7 +70,7 @@ void VolumeGridNodeScalarQuantity::buildCustomUI() {
     ImGui::SameLine();
 
     // Set isovalue
-    ImGui::PushItemWidth(120);
+    ImGui::PushItemWidth(120 * options::uiScale);
     if (ImGui::SliderFloat("##Radius", &isosurfaceLevel.get(), vizRangeMin.get(), vizRangeMax.get(), "%.4e")) {
       // Note: we intentionally do this rather than calling setIsosurfaceLevel(), because that function immediately
       // recomputes the levelset mesh, which is too expensive during user interaction

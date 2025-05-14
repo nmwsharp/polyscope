@@ -1304,7 +1304,7 @@ void SurfaceMesh::buildCustomUI() {
 
   { // Flat shading or smooth shading?
     ImGui::SameLine();
-    ImGui::PushItemWidth(85);
+    ImGui::PushItemWidth(85 * options::uiScale);
 
     auto styleName = [](const MeshShadeStyle& m) -> std::string {
       switch (m) {
@@ -1333,7 +1333,7 @@ void SurfaceMesh::buildCustomUI() {
 
   { // Edge options
     ImGui::SameLine();
-    ImGui::PushItemWidth(100);
+    ImGui::PushItemWidth(100 * options::uiScale);
     if (edgeWidth.get() == 0.) {
       bool showEdges = false;
       if (ImGui::Checkbox("Edges", &showEdges)) {
@@ -1346,14 +1346,14 @@ void SurfaceMesh::buildCustomUI() {
       }
 
       // Edge color
-      ImGui::PushItemWidth(100);
+      ImGui::PushItemWidth(100 * options::uiScale);
       if (ImGui::ColorEdit3("Edge Color", &edgeColor.get()[0], ImGuiColorEditFlags_NoInputs))
         setEdgeColor(edgeColor.get());
       ImGui::PopItemWidth();
 
       // Edge width
       ImGui::SameLine();
-      ImGui::PushItemWidth(75);
+      ImGui::PushItemWidth(75 * options::uiScale);
       if (ImGui::SliderFloat("Width", &edgeWidth.get(), 0.001, 2.)) {
         // NOTE: this intentionally circumvents the setEdgeWidth() setter to avoid repopulating the buffer as the
         // slider is dragged---otherwise we repopulate the buffer on every change, which mostly works fine. This is a
@@ -1573,12 +1573,12 @@ long long int SurfaceMesh::selectVertex() {
       ImGui::SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
       ImGui::Begin("Select vertex", &showWindow);
 
-      ImGui::PushItemWidth(300);
+      ImGui::PushItemWidth(300 * options::uiScale);
       ImGui::TextUnformatted("Hold ctrl and left-click to select a vertex");
       ImGui::Separator();
 
       // Choose by number
-      ImGui::PushItemWidth(300);
+      ImGui::PushItemWidth(300 * options::uiScale);
       static int iV = -1;
       ImGui::InputInt("index", &iV);
       if (ImGui::Button("Select by index")) {

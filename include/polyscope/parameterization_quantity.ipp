@@ -61,7 +61,7 @@ ParameterizationQuantity<QuantityT>::ParameterizationQuantity(QuantityT& quantit
 template <typename QuantityT>
 void ParameterizationQuantity<QuantityT>::buildParameterizationUI() {
 
-  ImGui::PushItemWidth(100);
+  ImGui::PushItemWidth(100 * options::uiScale);
 
   // Modulo stripey width
   if (ImGui::DragFloat("period", &checkerSize.get(), .001, 0.0001, 1.0, "%.4f",
@@ -82,7 +82,7 @@ void ParameterizationQuantity<QuantityT>::buildParameterizationUI() {
       setCheckerColors(getCheckerColors());
     break;
   case ParamVizStyle::CHECKER_ISLANDS:
-    ImGui::PushItemWidth(100);
+    ImGui::PushItemWidth(100 * options::uiScale);
     if (ImGui::DragFloat("alt darkness", &altDarkness.get(), 0.01, 0., 1.)) {
       altDarkness.manuallyChanged();
       requestRedraw();
@@ -103,7 +103,7 @@ void ParameterizationQuantity<QuantityT>::buildParameterizationUI() {
   case ParamVizStyle::LOCAL_CHECK:
   case ParamVizStyle::LOCAL_RAD: {
     // Angle slider
-    ImGui::PushItemWidth(100);
+    ImGui::PushItemWidth(100 * options::uiScale);
     ImGui::SliderAngle("angle shift", &localRot, -180,
                        180); // displays in degrees, works in radians TODO refresh/update/persist
     if (ImGui::DragFloat("alt darkness", &altDarkness.get(), 0.01, 0., 1.)) {

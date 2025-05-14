@@ -48,8 +48,10 @@ bool unshowRequested = false;
 float imguiStackMargin = 10;
 float lastWindowHeightPolyscope = 200;
 float lastWindowHeightUser = 200;
-float leftWindowsWidth = 305;
-float rightWindowsWidth = 500;
+constexpr float LEFT_WINDOWS_WIDTH = 305;
+constexpr float RIGHT_WINDOWS_WIDTH = 500;
+float leftWindowsWidth = LEFT_WINDOWS_WIDTH;
+float rightWindowsWidth = RIGHT_WINDOWS_WIDTH;
 
 auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 
@@ -83,6 +85,10 @@ void readPrefsFile() {
         int val = prefsJSON["windowPosY"];
         if (val >= 0 && val < 10000) view::initWindowPosY = val;
       }
+      if (prefsJSON.count("uiScale") > 0) {
+        float val = prefsJSON["uiScale"];
+        if (val >= 0.25 && val <= 4.0) options::uiScale = val;
+      }
     }
 
   }
@@ -99,6 +105,7 @@ void writePrefsFile() {
   std::tie(posX, posY) = render::engine->getWindowPos();
   int windowWidth = view::windowWidth;
   int windowHeight = view::windowHeight;
+  float uiScale = options::uiScale;
 
   // Validate values. Don't write the prefs file if any of these values are obviously bogus (this seems to happen at
   // least on Windows when the application is minimzed)
@@ -107,6 +114,7 @@ void writePrefsFile() {
   valuesValid &= posY >= 0 && posY < 10000;
   valuesValid &= windowWidth >= 64 && windowWidth < 10000;
   valuesValid &= windowHeight >= 64 && windowHeight < 10000;
+  valuesValid &= uiScale >= 0.25 && uiScale <= 4.;
   if (!valuesValid) return;
 
   // Build json object
@@ -115,6 +123,7 @@ void writePrefsFile() {
       {"windowHeight", windowHeight},
       {"windowPosX", posX},
       {"windowPosY", posY},
+      {"uiScale", uiScale},
   };
 
   // Write out json object
@@ -182,7 +191,7 @@ bool isInitialized() { return state::initialized; }
 void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Create a new context and push it on to the stack
-  ImGuiContext* newContext = ImGui::CreateContext(render::engine->getImGuiGlobalFontAtlas());
+  ImGuiContext* newContext = ImGui::CreateContext();
   ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
 #ifdef IMGUI_HAS_DOCK
   ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
@@ -195,9 +204,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
   ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
 
-  if (options::configureImGuiStyleCallback) {
-    options::configureImGuiStyleCallback();
-  }
+  render::engine->configureImGui();
 
   contextStack.push_back(ContextEntry{newContext, callbackFunction, drawDefaultUI});
 
@@ -436,7 +443,6 @@ void renderSlicePlanes() {
 }
 
 void renderScene() {
-  processLazyProperties();
 
   render::engine->applyTransparencySettings();
 
@@ -555,7 +561,7 @@ void userGuiBegin() {
 void userGuiEnd() {
 
   if (options::userGuiIsOnRightSide) {
-    rightWindowsWidth = ImGui::GetWindowWidth();
+    rightWindowsWidth = RIGHT_WINDOWS_WIDTH * options::uiScale;
     lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
   } else {
     lastWindowHeightUser = 0;
@@ -646,7 +652,7 @@ void buildPolyscopeGui() {
     ImGui::Text("Rolling: %.1f ms/frame (%.1f fps)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::Text("Last: %.1f ms/frame (%.1f fps)", ImGui::GetIO().DeltaTime * 1000.f, 1.f / ImGui::GetIO().DeltaTime);
 
-    ImGui::PushItemWidth(40);
+    ImGui::PushItemWidth(40 * options::uiScale);
     if (ImGui::InputInt("max fps", &options::maxFPS, 0)) {
       if (options::maxFPS < 1 && options::maxFPS != -1) {
         options::maxFPS = -1;
@@ -680,7 +686,7 @@ void buildPolyscopeGui() {
 
 
   lastWindowHeightPolyscope = imguiStackMargin + ImGui::GetWindowHeight();
-  leftWindowsWidth = ImGui::GetWindowWidth();
+  leftWindowsWidth = LEFT_WINDOWS_WIDTH * options::uiScale;
 
   ImGui::End();
 }
@@ -749,7 +755,7 @@ void buildStructureGui() {
     ImGui::PopID();
   }
 
-  leftWindowsWidth = ImGui::GetWindowWidth();
+  leftWindowsWidth = LEFT_WINDOWS_WIDTH * options::uiScale;
 
   ImGui::End();
 }
@@ -781,7 +787,7 @@ void buildPickGui() {
       ImGui::TextUnformatted("ERROR: INVALID STRUCTURE");
     }
 
-    rightWindowsWidth = ImGui::GetWindowWidth();
+    rightWindowsWidth = RIGHT_WINDOWS_WIDTH * options::uiScale;
     ImGui::End();
   }
 }
@@ -814,7 +820,6 @@ void buildUserGuiAndInvokeCallback() {
 }
 
 void draw(bool withUI, bool withContextCallback) {
-  processLazyProperties();
 
   // Update buffer and context
   render::engine->makeContextCurrent();
@@ -863,8 +868,6 @@ void draw(bool withUI, bool withContextCallback) {
   if (withContextCallback && contextStack.back().callback) {
     (contextStack.back().callback)();
   }
-
-  processLazyProperties();
 
   // Draw structures in the scene
   if (redrawNextFrame || options::alwaysRedraw) {
@@ -1251,6 +1254,7 @@ namespace lazy {
 TransparencyMode transparencyMode = TransparencyMode::None;
 int transparencyRenderPasses = 8;
 int ssaaFactor = 1;
+float uiScale = -1.;
 bool groundPlaneEnabled = true;
 GroundPlaneMode groundPlaneMode = GroundPlaneMode::TileReflection;
 ScaledValue<float> groundPlaneHeightFactor = 0;
@@ -1286,6 +1290,12 @@ void processLazyProperties() {
   if (lazy::ssaaFactor != options::ssaaFactor) {
     lazy::ssaaFactor = options::ssaaFactor;
     render::engine->setSSAAFactor(options::ssaaFactor);
+  }
+  
+  // uiScale
+  if (lazy::uiScale != options::uiScale) {
+    lazy::uiScale = options::uiScale;
+    render::engine->configureImGui();
   }
 
   // ground plane
