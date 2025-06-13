@@ -1299,11 +1299,11 @@ void GLShaderProgram::assignBufferToVAO(GLShaderAttribute& a) {
                             reinterpret_cast<void*>(sizeof(float) * 1 * iArrInd));
       break;
     case RenderDataType::Int:
-      glVertexAttribPointer(a.location + iArrInd, 1, GL_INT, GL_FALSE, sizeof(int) * 1 * a.arrayCount,
+      glVertexAttribIPointer(a.location + iArrInd, 1, GL_INT, sizeof(int) * 1 * a.arrayCount,
                             reinterpret_cast<void*>(sizeof(int) * 1 * iArrInd));
       break;
     case RenderDataType::UInt:
-      glVertexAttribPointer(a.location + iArrInd, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(uint32_t) * 1 * a.arrayCount,
+      glVertexAttribIPointer(a.location + iArrInd, 1, GL_UNSIGNED_INT, sizeof(uint32_t) * 1 * a.arrayCount,
                             reinterpret_cast<void*>(sizeof(uint32_t) * 1 * iArrInd));
       break;
     case RenderDataType::Vector2Float:
@@ -1319,15 +1319,15 @@ void GLShaderProgram::assignBufferToVAO(GLShaderAttribute& a) {
                             reinterpret_cast<void*>(sizeof(float) * 4 * iArrInd));
       break;
     case RenderDataType::Vector2UInt:
-      glVertexAttribPointer(a.location + iArrInd, 2, GL_UNSIGNED_INT, GL_FALSE, sizeof(uint32_t) * 2 * a.arrayCount,
+      glVertexAttribIPointer(a.location + iArrInd, 2, GL_UNSIGNED_INT, sizeof(uint32_t) * 2 * a.arrayCount,
                             reinterpret_cast<void*>(sizeof(uint32_t) * 2 * iArrInd));
       break;
     case RenderDataType::Vector3UInt:
-      glVertexAttribPointer(a.location + iArrInd, 3, GL_UNSIGNED_INT, GL_FALSE, sizeof(uint32_t) * 3 * a.arrayCount,
+      glVertexAttribIPointer(a.location + iArrInd, 3, GL_UNSIGNED_INT, sizeof(uint32_t) * 3 * a.arrayCount,
                             reinterpret_cast<void*>(sizeof(uint32_t) * 3 * iArrInd));
       break;
     case RenderDataType::Vector4UInt:
-      glVertexAttribPointer(a.location + iArrInd, 4, GL_UNSIGNED_INT, GL_FALSE, sizeof(uint32_t) * 4 * a.arrayCount,
+      glVertexAttribIPointer(a.location + iArrInd, 4, GL_UNSIGNED_INT, sizeof(uint32_t) * 4 * a.arrayCount,
                             reinterpret_cast<void*>(sizeof(uint32_t) * 4 * iArrInd));
       break;
     default:
