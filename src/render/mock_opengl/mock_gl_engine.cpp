@@ -1481,6 +1481,9 @@ void GLShaderProgram::validateData() {
     if (instanceCount == INVALID_IND_32) {
       throw std::invalid_argument("Must set instance count to use instanced drawing");
     }
+    if (instanceVertexCount == INVALID_IND_32) {
+      throw std::invalid_argument("Must set instance vertex count to use instanced drawing");
+    }
   }
 }
 
@@ -1493,6 +1496,7 @@ void GLShaderProgram::setPrimitiveRestartIndex(unsigned int restartIndex_) {
 }
 
 void GLShaderProgram::setInstanceCount(uint32_t instanceCount_) { instanceCount = instanceCount_; }
+void GLShaderProgram::setInstanceVertexCount(uint32_t instanceVertexCount_) { instanceVertexCount = instanceVertexCount_; }
 
 void GLShaderProgram::activateTextures() {
   for (GLShaderTexture& t : textures) {

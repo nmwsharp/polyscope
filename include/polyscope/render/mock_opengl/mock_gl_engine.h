@@ -280,8 +280,9 @@ public:
   void setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) override;
   void setPrimitiveRestartIndex(unsigned int restartIndex) override;
 
-  // Indices
+  // Instancing
   void setInstanceCount(uint32_t instanceCount) override;
+  void setInstanceVertexCount(uint32_t instanceVertexCount) override;
 
   // Textures
   bool hasTexture(std::string name) override;

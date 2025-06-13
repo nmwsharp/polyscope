@@ -326,6 +326,7 @@ public:
 
   // Instancing
   void setInstanceCount(uint32_t instanceCount) override;
+  void setInstanceVertexCount(uint32_t instanceVertexCount) override;
 
   // Textures
   bool hasTexture(std::string name) override;

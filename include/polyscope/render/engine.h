@@ -401,6 +401,7 @@ public:
 
   // Indices
   virtual void setInstanceCount(uint32_t instanceCount) = 0;
+  virtual void setInstanceVertexCount(uint32_t instanceVertexCount) = 0;
 
   // Call once to initialize GLSL code used by multiple shaders
   static void initCommonShaders(); // TODO
@@ -432,6 +433,7 @@ protected:
 
   // instancing
   uint32_t instanceCount = INVALID_IND_32;
+  uint32_t instanceVertexCount = INVALID_IND_32;
 };
 
 
