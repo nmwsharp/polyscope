@@ -291,12 +291,14 @@ struct ShaderSpecUniform {
   const RenderDataType type;
 };
 struct ShaderSpecAttribute {
-  ShaderSpecAttribute(std::string name_, RenderDataType type_) : name(name_), type(type_), arrayCount(1) {}
-  ShaderSpecAttribute(std::string name_, RenderDataType type_, int arrayCount_)
-      : name(name_), type(type_), arrayCount(arrayCount_) {}
+  ShaderSpecAttribute(std::string name_, RenderDataType type_, int attribDivisor = 0)
+      : name(name_), type(type_), arrayCount(1), attribDivisor(attribDivisor) {}
+  ShaderSpecAttribute(std::string name_, RenderDataType type_, int arrayCount_, int attribDivisor = 0)
+      : name(name_), type(type_), arrayCount(arrayCount_), attribDivisor(attribDivisor) {}
   const std::string name;
   const RenderDataType type;
   const int arrayCount; // number of times this element is repeated in an array
+  const int attribDivisor;
 };
 struct ShaderSpecTexture {
   const std::string name;

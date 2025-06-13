@@ -237,6 +237,7 @@ struct GLShaderAttribute {
   std::string name;
   RenderDataType type;
   int arrayCount;
+  int attribDivisor;
   AttributeLocation location;              // -1 means "no location", usually because it was optimized out
   std::shared_ptr<GLAttributeBuffer> buff; // the buffer that we will actually use
 };

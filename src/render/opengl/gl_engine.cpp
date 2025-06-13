@@ -1174,7 +1174,7 @@ void GLCompiledProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
       return;
     }
   }
-  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, -1, nullptr});
+  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, newAttribute.attribDivisor, -1, nullptr});
 }
 
 void GLCompiledProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
@@ -1334,6 +1334,11 @@ void GLShaderProgram::assignBufferToVAO(GLShaderAttribute& a) {
       throw std::invalid_argument("Unrecognized GLShaderAttribute type");
       break;
     }
+
+    if (a.attribDivisor > 0) {
+      glVertexAttribDivisor(a.location + iArrInd, a.attribDivisor);
+    }
+
   }
 
   checkGLError();
