@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "polyscope/render/color_maps.h"
@@ -291,10 +292,8 @@ struct ShaderSpecUniform {
   const RenderDataType type;
 };
 struct ShaderSpecAttribute {
-  ShaderSpecAttribute(std::string name_, RenderDataType type_, int attribDivisor = 0)
-      : name(name_), type(type_), arrayCount(1), attribDivisor(attribDivisor) {}
-  ShaderSpecAttribute(std::string name_, RenderDataType type_, int arrayCount_, int attribDivisor = 0)
-      : name(name_), type(type_), arrayCount(arrayCount_), attribDivisor(attribDivisor) {}
+  ShaderSpecAttribute(std::string name_, RenderDataType type_, int arrayCount_ = 1, int attribDivisor = 0)
+      : name(std::move(name_)), type(type_), arrayCount(arrayCount_), attribDivisor(attribDivisor) {}
   const std::string name;
   const RenderDataType type;
   const int arrayCount; // number of times this element is repeated in an array
