@@ -778,7 +778,7 @@ GLTextureBuffer GLTextureBuffer::createUnintializedTextureBuffer(TextureFormat f
 }
 
 // =============================================================
-// ===================== Storage Texture buffer =========================
+// =================== Storage Texture buffer ==================
 // =============================================================
 
 
@@ -788,9 +788,9 @@ GLStorageTextureBuffer::~GLStorageTextureBuffer() {
 }
 
 void GLStorageTextureBuffer::setData(const std::vector<float>& data) {
-    if (data.size() != getTotalSize()) {
-      exception("OpenGL error: texture buffer data is not the right size.");
-    }
+  if (data.size() != getTotalSize()) {
+    exception("OpenGL error: texture buffer data is not the right size.");
+  }
 
   glBindBuffer(GL_TEXTURE_BUFFER, bufferHandle);
   glBufferSubData(GL_TEXTURE_BUFFER, 0, getSizeInBytes(), &data.front());
@@ -2402,6 +2402,11 @@ std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat for
                                                                unsigned int sizeY_, unsigned int sizeZ_,
                                                                const float* data) {
   GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, sizeZ_, data);
+  return std::shared_ptr<TextureBuffer>(newT);
+}
+
+std::shared_ptr<TextureBuffer> GLEngine::generateStorageTextureBuffer(unsigned int size1D, float* data) {
+  GLStorageTextureBuffer* newT = new GLStorageTextureBuffer(size1D, data);
   return std::shared_ptr<TextureBuffer>(newT);
 }
 

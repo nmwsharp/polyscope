@@ -519,6 +519,115 @@ void GLTextureBuffer::bind() {
   checkGLError();
 }
 
+GLStorageTextureBuffer::~GLStorageTextureBuffer() {}
+
+void GLStorageTextureBuffer::resize(unsigned newLen) {
+  // intentionally skipping the logic of GLTextureBuffer::resize here
+  TextureBuffer::resize(newLen);  // NOLINT(bugprone-parent-virtual-call)
+
+  checkGLError();
+}
+
+void GLStorageTextureBuffer::resize(unsigned newX, unsigned newY) {
+  exception("buffer textures only support 1 dimension");
+}
+
+void GLStorageTextureBuffer::resize(unsigned newX, unsigned newY, unsigned newZ) {
+  exception("buffer textures only support 1 dimension");
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<glm::vec2>& data) {
+  exception("not implemented"); 
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<glm::vec3>& data) {
+  exception("not implemented"); 
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<glm::vec4>& data) {
+  exception("not implemented"); 
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<float>& data) {
+  if (data.size() != getTotalSize()) {
+    exception("OpenGL error: texture buffer data is not the right size.");
+  }
+
+  checkGLError();
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<double>& data) {
+  exception("not implemented"); 
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<int32_t>& data) {
+  exception("not implemented"); 
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<uint32_t>& data) {
+  exception("not implemented"); 
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<glm::uvec2>& data) {
+  exception("not implemented"); 
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<glm::uvec3>& data) {
+  exception("not implemented"); 
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<glm::uvec4>& data) {
+  exception("not implemented"); 
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data) {
+  exception("not implemented"); 
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data) {
+  exception("not implemented"); 
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data) {
+  exception("not implemented"); 
+}
+
+void GLStorageTextureBuffer::setFilterMode(FilterMode newMode) {
+  // no-op
+}
+
+void* GLStorageTextureBuffer::getNativeHandle() {
+  return GLTextureBuffer::getNativeHandle();
+}
+
+uint32_t GLStorageTextureBuffer::getNativeBufferID() {
+  return GLTextureBuffer::getNativeBufferID();
+}
+
+std::vector<float> GLStorageTextureBuffer::getDataScalar() {
+  std::vector<float> outData;
+  outData.resize(getTotalSize());
+
+  return outData;
+}
+
+std::vector<glm::vec2> GLStorageTextureBuffer::getDataVector2() {
+  std::vector<glm::vec2> outData;
+  outData.resize(getTotalSize());
+  exception("not implemented");
+  return outData;
+}
+
+std::vector<glm::vec3> GLStorageTextureBuffer::getDataVector3() {
+  std::vector<glm::vec3> outData;
+  outData.resize(getTotalSize());
+  exception("not implemented");
+  return outData;
+}
+
+GLStorageTextureBuffer::GLStorageTextureBuffer(unsigned int size1D, float* data): GLTextureBuffer{TextureFormat::R32F, size1D} {
+}
+
 // =============================================================
 // ===================== Render buffer =========================
 // =============================================================
@@ -1744,6 +1853,10 @@ std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat
                                                                    const float* data) {
   GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, sizeZ_, data);
   return std::shared_ptr<TextureBuffer>(newT);
+}
+
+std::shared_ptr<TextureBuffer> MockGLEngine::generateStorageTextureBuffer(unsigned int size1D, float* data) {
+  throw std::logic_error("Not implemented");
 }
 
 

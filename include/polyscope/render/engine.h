@@ -551,6 +551,9 @@ public:
                                                                unsigned int sizeY_, unsigned int sizeZ_,
                                                                const float* data) = 0; // 3d
 
+  // create buffer texture
+  virtual std::shared_ptr<TextureBuffer> generateStorageTextureBuffer(unsigned int size1D, float* data) = 0;
+
   // create render buffers
   virtual std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
                                                              unsigned int sizeY_) = 0;

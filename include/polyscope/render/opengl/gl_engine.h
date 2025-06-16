@@ -444,6 +444,9 @@ public:
                                                        unsigned int sizeZ_,
                                                        const float* data) override; // 3d
 
+  // create buffer texture
+  std::shared_ptr<TextureBuffer> generateStorageTextureBuffer(unsigned int size1D, float* data) override;
+
   // create render buffers
   std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
                                                      unsigned int sizeY_) override;
