@@ -770,6 +770,114 @@ void GLTextureBuffer::bind() {
   checkGLError();
 }
 
+GLTextureBuffer GLTextureBuffer::createUnintializedTextureBuffer(TextureFormat format, unsigned int size1D) {
+  GLTextureBuffer buffer = {};
+  buffer.format = format;
+  buffer.sizeX = size1D;
+  return buffer;
+}
+
+// =============================================================
+// ===================== Storage Texture buffer =========================
+// =============================================================
+
+
+
+GLStorageTextureBuffer::~GLStorageTextureBuffer() {
+  glDeleteBuffers(1, &bufferHandle);
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<float>& data) {
+    if (data.size() != getTotalSize()) {
+      exception("OpenGL error: texture buffer data is not the right size.");
+    }
+
+  glBindBuffer(GL_TEXTURE_BUFFER, bufferHandle);
+  glBufferSubData(GL_TEXTURE_BUFFER, 0, getSizeInBytes(), &data.front());
+  glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+  checkGLError();
+}
+
+void GLStorageTextureBuffer::resize(unsigned newLen) {
+
+  // intentionally skipping the logic of GLTextureBuffer::resize here
+  TextureBuffer::resize(newLen);  // NOLINT(bugprone-parent-virtual-call)
+
+  glDeleteBuffers(1, &bufferHandle);
+
+  glGenBuffers(1, &bufferHandle);
+  glBindBuffer(GL_TEXTURE_BUFFER, bufferHandle);
+  glBufferData(GL_TEXTURE_BUFFER, getSizeInBytes(), nullptr, GL_DYNAMIC_DRAW);
+
+  glBindTexture(GL_TEXTURE_BUFFER, handle);
+  glTexBuffer(GL_TEXTURE_BUFFER, internalFormat(format), bufferHandle);
+  glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+  checkGLError();
+}
+void GLStorageTextureBuffer::resize(unsigned newX, unsigned newY) { exception("buffer textures only support 1 dimension"); }
+void GLStorageTextureBuffer::resize(unsigned newX, unsigned newY, unsigned newZ) { exception("buffer textures only support 1 dimension"); }
+void GLStorageTextureBuffer::setData(const std::vector<glm::vec2>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<glm::vec3>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<glm::vec4>& data) { exception("not implemented"); }
+
+void GLStorageTextureBuffer::setData(const std::vector<double>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<int32_t>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<uint32_t>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<glm::uvec2>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<glm::uvec3>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<glm::uvec4>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data) { exception("not implemented"); }
+
+void GLStorageTextureBuffer::setFilterMode(FilterMode newMode) {
+  // no op - gsampleBuffer does not have a filter mode
+}
+
+void* GLStorageTextureBuffer::getNativeHandle() {
+  return GLTextureBuffer::getNativeHandle();
+}
+
+uint32_t GLStorageTextureBuffer::getNativeBufferID() {
+  return GLTextureBuffer::getNativeBufferID();
+}
+
+std::vector<float> GLStorageTextureBuffer::getDataScalar() {
+
+  std::vector<float> outData;
+  outData.resize(getTotalSize());
+  glBindBuffer(GL_TEXTURE_BUFFER, bufferHandle);
+  glGetBufferSubData(GL_TEXTURE_BUFFER, 0, getSizeInBytes(), &outData.front());
+  glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+  checkGLError();
+
+  return outData;
+}
+std::vector<glm::vec2> GLStorageTextureBuffer::getDataVector2() {
+  exception("not implemented");
+  return {};
+}
+std::vector<glm::vec3> GLStorageTextureBuffer::getDataVector3() {
+  exception("not implemented");
+  return {};
+}
+
+GLStorageTextureBuffer::GLStorageTextureBuffer(unsigned int size1D, float* data) : GLTextureBuffer{createUnintializedTextureBuffer(TextureFormat::R32F, size1D)}{
+  glGenBuffers(1, &bufferHandle);
+  glBindBuffer(GL_TEXTURE_BUFFER, bufferHandle);
+  glBufferData(GL_TEXTURE_BUFFER, getSizeInBytes(), data, GL_DYNAMIC_DRAW);
+
+  glGenTextures(1, &handle);
+  glBindTexture(GL_TEXTURE_BUFFER, handle);
+  glTexBuffer(GL_TEXTURE_BUFFER, internalFormat(format), bufferHandle);
+  glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+  checkGLError();
+}
+
 // =============================================================
 // ===================== Render buffer =========================
 // =============================================================
