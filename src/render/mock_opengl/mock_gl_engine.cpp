@@ -625,7 +625,8 @@ std::vector<glm::vec3> GLStorageTextureBuffer::getDataVector3() {
   return outData;
 }
 
-GLStorageTextureBuffer::GLStorageTextureBuffer(unsigned int size1D, float* data): GLTextureBuffer{TextureFormat::R32F, size1D} {
+GLStorageTextureBuffer::GLStorageTextureBuffer(TextureFormat format, unsigned int size1D, void* data): GLTextureBuffer{format, size1D} {
+  if (sizeInBytes(format) != 4 && dimension(format) != 1) exception("Unsupported format specified. Format with 1 dimesnion and 4 bytes expected.");
 }
 
 // =============================================================
@@ -1855,8 +1856,9 @@ std::shared_ptr<TextureBuffer> MockGLEngine::generateTextureBuffer(TextureFormat
   return std::shared_ptr<TextureBuffer>(newT);
 }
 
-std::shared_ptr<TextureBuffer> MockGLEngine::generateStorageTextureBuffer(unsigned int size1D, float* data) {
-  throw std::logic_error("Not implemented");
+std::shared_ptr<TextureBuffer> MockGLEngine::generateStorageTextureBuffer(TextureFormat format, unsigned int size1D, void* data) {
+  GLStorageTextureBuffer* newT = new GLStorageTextureBuffer(format, size1D, data);
+  return std::shared_ptr<TextureBuffer>(newT);
 }
 
 

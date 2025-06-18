@@ -54,6 +54,9 @@ inline GLenum internalFormat(const TextureFormat& x) {
     case TextureFormat::RGB32F:     return GL_RGBA32F;
     case TextureFormat::RGBA32F:    return GL_RGBA32F;
     case TextureFormat::DEPTH24:    return GL_DEPTH_COMPONENT24;
+    case TextureFormat::R32UI:      return GL_R32UI;
+    case TextureFormat::R32I:       return GL_R32I;
+    break;
   }
   exception("bad enum");
   return GL_RGB8;
@@ -71,6 +74,8 @@ inline GLenum formatF(const TextureFormat& x) {
     case TextureFormat::RGB32F:     return GL_RGB;
     case TextureFormat::RGBA32F:    return GL_RGBA;
     case TextureFormat::DEPTH24:    return GL_DEPTH_COMPONENT;
+    case TextureFormat::R32UI:      return GL_RED;
+    case TextureFormat::R32I:       return GL_RED;
   }
   exception("bad enum");
   return GL_RGB;
@@ -88,6 +93,8 @@ inline GLenum type(const TextureFormat& x) {
     case TextureFormat::RGB32F:     return GL_FLOAT;
     case TextureFormat::RGBA32F:    return GL_FLOAT;
     case TextureFormat::DEPTH24:    return GL_FLOAT;
+    case TextureFormat::R32UI:      return GL_UNSIGNED_INT;
+    case TextureFormat::R32I:       return GL_INT;
   }
   exception("bad enum");
   return GL_UNSIGNED_BYTE;
@@ -865,7 +872,10 @@ std::vector<glm::vec3> GLStorageTextureBuffer::getDataVector3() {
   return {};
 }
 
-GLStorageTextureBuffer::GLStorageTextureBuffer(unsigned int size1D, float* data) : GLTextureBuffer{createUnintializedTextureBuffer(TextureFormat::R32F, size1D)}{
+GLStorageTextureBuffer::GLStorageTextureBuffer(TextureFormat format, unsigned int size1D, void* data) : GLTextureBuffer{createUnintializedTextureBuffer(format, size1D)}{
+
+  if (sizeInBytes(format) != 4 && dimension(format) != 1) exception("Unsupported format specified. Format with 1 dimesnion and 4 bytes expected.");
+
   glGenBuffers(1, &bufferHandle);
   glBindBuffer(GL_TEXTURE_BUFFER, bufferHandle);
   glBufferData(GL_TEXTURE_BUFFER, getSizeInBytes(), data, GL_DYNAMIC_DRAW);
@@ -2405,8 +2415,8 @@ std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat for
   return std::shared_ptr<TextureBuffer>(newT);
 }
 
-std::shared_ptr<TextureBuffer> GLEngine::generateStorageTextureBuffer(unsigned int size1D, float* data) {
-  GLStorageTextureBuffer* newT = new GLStorageTextureBuffer(size1D, data);
+std::shared_ptr<TextureBuffer> GLEngine::generateStorageTextureBuffer(TextureFormat format, unsigned int size1D, void* data) {
+  GLStorageTextureBuffer* newT = new GLStorageTextureBuffer(format, size1D, data);
   return std::shared_ptr<TextureBuffer>(newT);
 }
 

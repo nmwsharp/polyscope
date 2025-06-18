@@ -36,7 +36,7 @@ enum class DrawMode {
   TriangleStripInstanced,
 };
 
-enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F, R16F, DEPTH24 };
+enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F, R16F, DEPTH24, R32UI, R32I };
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
 enum class DepthMode { Less, LEqual, LEqualReadOnly, Greater, Disable, PassReadOnly };
 enum class BlendMode { AlphaOver, OverNoWrite, AlphaUnder, Zero, WeightedAdd, Add, Source, Disable };
@@ -552,7 +552,7 @@ public:
                                                                const float* data) = 0; // 3d
 
   // create buffer texture
-  virtual std::shared_ptr<TextureBuffer> generateStorageTextureBuffer(unsigned int size1D, float* data) = 0;
+  virtual std::shared_ptr<TextureBuffer> generateStorageTextureBuffer(TextureFormat format, unsigned int size1D, void* data) = 0;
 
   // create render buffers
   virtual std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,

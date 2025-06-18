@@ -207,9 +207,9 @@ public:
   std::vector<glm::vec2> getDataVector2() override;
   std::vector<glm::vec3> getDataVector3() override;
 
-  // Note: underlying buffer uses R32F as the internal format
+  // Note: underlying buffer expects a type with 4 bytes and 1 dimension as the internal format
   // to support other formats here resizing, setData and getData need new logic
-  GLStorageTextureBuffer(unsigned int size1D, float* data);
+  GLStorageTextureBuffer(TextureFormat format, unsigned int size1D, void* data);
 protected:
   TextureStorageBufferHandle bufferHandle;
 };
@@ -445,7 +445,7 @@ public:
                                                        const float* data) override; // 3d
 
   // create buffer texture
-  std::shared_ptr<TextureBuffer> generateStorageTextureBuffer(unsigned int size1D, float* data) override;
+  std::shared_ptr<TextureBuffer> generateStorageTextureBuffer(TextureFormat format, unsigned int size1D, void* data) override;
 
   // create render buffers
   std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,

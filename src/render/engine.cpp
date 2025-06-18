@@ -25,6 +25,8 @@ int dimension(const TextureFormat& x) {
     case TextureFormat::RGB32F:   return 3;
     case TextureFormat::RGBA32F:  return 4;
     case TextureFormat::DEPTH24:  return 1;
+    case TextureFormat::R32UI:    return 1;
+    case TextureFormat::R32I:     return 1;
   }
   // clang-format on
   exception("bad enum");
@@ -44,6 +46,8 @@ int sizeInBytes(const TextureFormat& f) {
     case TextureFormat::RGB32F:   return 3*4;
     case TextureFormat::RGBA32F:  return 4*4;
     case TextureFormat::DEPTH24:  return 1*3;
+    case TextureFormat::R32UI:    return 1*4;
+    case TextureFormat::R32I:     return 1*4;
   }
   // clang-format on
   return -1;
