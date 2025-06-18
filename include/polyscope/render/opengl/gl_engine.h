@@ -168,7 +168,7 @@ public:
   std::vector<glm::vec3> getDataVector3() override;
 
   void bind();
-  GLenum textureType();
+  virtual GLenum textureType();
   TextureBufferHandle getHandle() const { return handle; }
 
 
@@ -206,6 +206,8 @@ public:
   std::vector<float> getDataScalar() override;
   std::vector<glm::vec2> getDataVector2() override;
   std::vector<glm::vec3> getDataVector3() override;
+
+  GLenum textureType() override;
 
   // Note: underlying buffer expects a type with 4 bytes and 1 dimension as the internal format
   // to support other formats here resizing, setData and getData need new logic

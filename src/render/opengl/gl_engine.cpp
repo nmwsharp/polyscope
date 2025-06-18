@@ -872,6 +872,10 @@ std::vector<glm::vec3> GLStorageTextureBuffer::getDataVector3() {
   return {};
 }
 
+GLenum GLStorageTextureBuffer::textureType() {
+  return GL_TEXTURE_BUFFER;
+}
+
 GLStorageTextureBuffer::GLStorageTextureBuffer(TextureFormat format, unsigned int size1D, void* data) : GLTextureBuffer{createUnintializedTextureBuffer(format, size1D)}{
 
   if (sizeInBytes(format) != 4 && dimension(format) != 1) exception("Unsupported format specified. Format with 1 dimesnion and 4 bytes expected.");
