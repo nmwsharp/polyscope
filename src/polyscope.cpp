@@ -1306,7 +1306,6 @@ void processLazyProperties() {
       options::groundPlaneMode = GroundPlaneMode::None;
     }
     lazy::groundPlaneMode = options::groundPlaneMode;
-    render::engine->groundPlane.prepare();
     requestRedraw();
   }
   if (lazy::groundPlaneHeightFactor.asAbsolute() != options::groundPlaneHeightFactor.asAbsolute() ||

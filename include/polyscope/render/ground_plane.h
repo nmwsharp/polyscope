@@ -30,19 +30,11 @@ public:
   void draw(bool isRedraw = false);
 
   void buildGui();
-  void prepare(); // does any and all setup work / allocations / etc. Should be called whenever the mode is changed.
+  void prepare(); // does any and all setup work / allocations / etc, called automatically when drawing after a change
 
 
   // == Appearance Parameters
-
   // These all now live in polyscope::options
-
-  // How far should the ground plane be from the bottom of the scene? Measured as a multiple of the vertical bounding
-  // box of the scene.
-  // float groundPlaneHeightFactor = 0;
-
-  // int blurIters = 4; // how much blurring to do for
-  // float shadowDarkness = 0.4; // how dark to make the shadows
 
 private:
   // note: these buffers/programs are only optionally populated based on the mode
@@ -59,7 +51,10 @@ private:
   std::shared_ptr<render::ShaderProgram> blurProgram, copyTexProgram;
 
   void populateGroundPlaneGeometry();
+
+  // track if the ground plane has been prepared, and if so in what style
   bool groundPlanePrepared = false;
+  GroundPlaneMode groundPlanePreparedMode = GroundPlaneMode::None;
   // which direction the ground plane faces
   view::UpDir groundPlaneViewCached = view::UpDir::XUp; // not actually valid, must populate first time
 };

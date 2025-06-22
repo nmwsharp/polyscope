@@ -66,7 +66,11 @@ void GroundPlane::populateGroundPlaneGeometry() {
 }
 
 void GroundPlane::prepare() {
+
   if (options::groundPlaneMode == GroundPlaneMode::None) {
+    // quick-out for the none case
+    groundPlanePrepared = true;
+    groundPlanePreparedMode = options::groundPlaneMode;
     return;
   }
 
@@ -163,6 +167,7 @@ void GroundPlane::prepare() {
   }
 
   groundPlanePrepared = true;
+  groundPlanePreparedMode = options::groundPlaneMode;
 }
 
 void GroundPlane::draw(bool isRedraw) {
@@ -173,7 +178,7 @@ void GroundPlane::draw(bool isRedraw) {
   // don't draw ground in planar mode
   if (view::style == view::NavigateStyle::Planar) return;
 
-  if (!groundPlanePrepared) {
+  if (!groundPlanePrepared || groundPlanePreparedMode != options::groundPlaneMode) {
     prepare();
   }
   if (view::upDir != groundPlaneViewCached) {
@@ -411,7 +416,7 @@ void GroundPlane::buildGui() {
   ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Ground Plane")) {
 
-    ImGui::PushItemWidth(160*options::uiScale);
+    ImGui::PushItemWidth(160 * options::uiScale);
     if (ImGui::BeginCombo("Mode", modeName(options::groundPlaneMode).c_str())) {
       for (GroundPlaneMode m : {GroundPlaneMode::None, GroundPlaneMode::Tile, GroundPlaneMode::TileReflection,
                                 GroundPlaneMode::ShadowOnly}) {
@@ -446,7 +451,7 @@ void GroundPlane::buildGui() {
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
-    ImGui::PushItemWidth(100*options::uiScale);
+    ImGui::PushItemWidth(100 * options::uiScale);
     if (ImGui::BeginCombo("Height##Mode", heightModeName(options::groundPlaneHeightMode).c_str())) {
       for (GroundPlaneHeightMode m : {GroundPlaneHeightMode::Automatic, GroundPlaneHeightMode::Manual}) {
         std::string mName = heightModeName(m);
