@@ -189,14 +189,6 @@ void GLEngineGLFW::shutdownImGui() {
 }
 
 void GLEngineGLFW::ImGuiNewFrame() {
-  // TODO
-  // float xScale, dont_use_yScale;
-  // glfwGetWindowContentScale(mainWindow, &xScale, &dont_use_yScale);
-  // if (xScale == NULL) {
-  //   xScale = 1.0f;
-  // }
-  // options::uiScale = std::min(std::max(xScale, 1.0f), 10.0f);
-
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
