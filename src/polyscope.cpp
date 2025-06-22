@@ -118,13 +118,15 @@ void writePrefsFile() {
   if (!valuesValid) return;
 
   // Build json object
+  // clang-format off
   json prefsJSON = {
-      {"windowWidth", windowWidth},
-      {"windowHeight", windowHeight},
+      {"windowWidth", windowWidth}, 
+      {"windowHeight", windowHeight}, 
       {"windowPosX", posX},
-      {"windowPosY", posY},
+      {"windowPosY", posY},         
       {"uiScale", uiScale},
   };
+  // clang-format on
 
   // Write out json object
   std::ofstream o(prefsFilename);
@@ -820,6 +822,7 @@ void buildUserGuiAndInvokeCallback() {
 }
 
 void draw(bool withUI, bool withContextCallback) {
+  processLazyProperties();
 
   // Update buffer and context
   render::engine->makeContextCurrent();
@@ -868,6 +871,8 @@ void draw(bool withUI, bool withContextCallback) {
   if (withContextCallback && contextStack.back().callback) {
     (contextStack.back().callback)();
   }
+
+  processLazyProperties();
 
   // Draw structures in the scene
   if (redrawNextFrame || options::alwaysRedraw) {
@@ -1291,7 +1296,7 @@ void processLazyProperties() {
     lazy::ssaaFactor = options::ssaaFactor;
     render::engine->setSSAAFactor(options::ssaaFactor);
   }
-  
+
   // uiScale
   if (lazy::uiScale != options::uiScale) {
     lazy::uiScale = options::uiScale;
