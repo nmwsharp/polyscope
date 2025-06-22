@@ -48,10 +48,10 @@ bool unshowRequested = false;
 float imguiStackMargin = 10;
 float lastWindowHeightPolyscope = 200;
 float lastWindowHeightUser = 200;
-constexpr float LEFT_WINDOWS_WIDTH = 305;
-constexpr float RIGHT_WINDOWS_WIDTH = 500;
-float leftWindowsWidth = LEFT_WINDOWS_WIDTH;
-float rightWindowsWidth = RIGHT_WINDOWS_WIDTH;
+constexpr float INITIAL_LEFT_WINDOWS_WIDTH = 305;
+constexpr float INITIAL_RIGHT_WINDOWS_WIDTH = 500;
+float leftWindowsWidth = -1.;
+float rightWindowsWidth = -1.;
 
 auto lastMainLoopIterTime = std::chrono::steady_clock::now();
 
@@ -131,6 +131,17 @@ void writePrefsFile() {
   // Write out json object
   std::ofstream o(prefsFilename);
   o << std::setw(4) << prefsJSON << std::endl;
+}
+
+void setInitialWindowWidths() {
+  leftWindowsWidth = INITIAL_LEFT_WINDOWS_WIDTH * options::uiScale;
+  rightWindowsWidth = INITIAL_RIGHT_WINDOWS_WIDTH * options::uiScale;
+}
+
+void ensureWindowWidthsSet() {
+  if (leftWindowsWidth <= 0. || rightWindowsWidth <= 0.) {
+    setInitialWindowWidths();
+  }
 }
 
 // Helper to get a structure map
@@ -539,6 +550,7 @@ void purgeWidgets() {
 }
 
 void userGuiBegin() {
+  ensureWindowWidthsSet();
 
   ImVec2 userGuiLoc;
   if (options::userGuiIsOnRightSide) {
@@ -563,7 +575,7 @@ void userGuiBegin() {
 void userGuiEnd() {
 
   if (options::userGuiIsOnRightSide) {
-    rightWindowsWidth = RIGHT_WINDOWS_WIDTH * options::uiScale;
+    rightWindowsWidth = INITIAL_RIGHT_WINDOWS_WIDTH * options::uiScale;
     lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
   } else {
     lastWindowHeightUser = 0;
@@ -575,6 +587,7 @@ void userGuiEnd() {
 } // namespace
 
 void buildPolyscopeGui() {
+  ensureWindowWidthsSet();
 
   // Create window
   static bool showPolyscopeWindow = true;
@@ -688,12 +701,14 @@ void buildPolyscopeGui() {
 
 
   lastWindowHeightPolyscope = imguiStackMargin + ImGui::GetWindowHeight();
-  leftWindowsWidth = LEFT_WINDOWS_WIDTH * options::uiScale;
+  leftWindowsWidth = ImGui::GetWindowWidth();
 
   ImGui::End();
 }
 
 void buildStructureGui() {
+  ensureWindowWidthsSet();
+
   // Create window
   static bool showStructureWindow = true;
 
@@ -757,12 +772,14 @@ void buildStructureGui() {
     ImGui::PopID();
   }
 
-  leftWindowsWidth = LEFT_WINDOWS_WIDTH * options::uiScale;
+  leftWindowsWidth = ImGui::GetWindowWidth();
 
   ImGui::End();
 }
 
 void buildPickGui() {
+  ensureWindowWidthsSet();
+
   if (haveSelection()) {
 
     ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin),
@@ -789,7 +806,7 @@ void buildPickGui() {
       ImGui::TextUnformatted("ERROR: INVALID STRUCTURE");
     }
 
-    rightWindowsWidth = RIGHT_WINDOWS_WIDTH * options::uiScale;
+    rightWindowsWidth = ImGui::GetWindowWidth();
     ImGui::End();
   }
 }
@@ -901,6 +918,7 @@ void draw(bool withUI, bool withContextCallback) {
 void mainLoopIteration() {
 
   processLazyProperties();
+  processLazyPropertiesOutsideOfImGui();
 
   render::engine->makeContextCurrent();
   render::engine->updateWindowSize();
@@ -1277,7 +1295,9 @@ void processLazyProperties() {
   //
   // This function is a workaround which polls for changes to options settings, and performs any necessary additional
   // work.
-
+  //
+  // There is a second function processLazyPropertiesOutsideOfImGui() which handles a few more that can only be set
+  // at limited times when an ImGui frame is not active.
 
   // transparency mode
   if (lazy::transparencyMode != options::transparencyMode) {
@@ -1295,12 +1315,6 @@ void processLazyProperties() {
   if (lazy::ssaaFactor != options::ssaaFactor) {
     lazy::ssaaFactor = options::ssaaFactor;
     render::engine->setSSAAFactor(options::ssaaFactor);
-  }
-
-  // uiScale
-  if (lazy::uiScale != options::uiScale) {
-    lazy::uiScale = options::uiScale;
-    render::engine->configureImGui();
   }
 
   // ground plane
@@ -1327,6 +1341,17 @@ void processLazyProperties() {
     requestRedraw();
   }
 };
+
+void processLazyPropertiesOutsideOfImGui() {
+  // Like processLazyProperties, but this one handles properties which cannot be changed mid-ImGui frame
+
+  // uiScale
+  if (lazy::uiScale != options::uiScale) {
+    lazy::uiScale = options::uiScale;
+    render::engine->configureImGui();
+    setInitialWindowWidths();
+  }
+}
 
 void updateStructureExtents() {
 

@@ -200,6 +200,7 @@ void drawStructuresDelayed();
 // Called to check any options that might have been changed and perform appropriate updates. Users generally should not
 // need to call this directly.
 void processLazyProperties();
+void processLazyPropertiesOutsideOfImGui();
 
 
 } // namespace polyscope
