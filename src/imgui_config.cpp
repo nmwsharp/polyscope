@@ -18,11 +18,12 @@ void configureImGuiStyle() {
 
   // Style
   ImGuiStyle* style = &ImGui::GetStyle();
-  style->WindowRounding = 1 * options::uiScale;
-  style->FrameRounding = 1 * options::uiScale;
-  style->FramePadding.y = 4 * options::uiScale;
-  style->ScrollbarRounding = 1 * options::uiScale;
-  style->ScrollbarSize = 20 * options::uiScale;
+  style->WindowRounding = 1;
+  style->FrameRounding = 1;
+  style->FramePadding.y = 4;
+  style->ScrollbarRounding = 1;
+  style->ScrollbarSize = 20;
+  style->ScaleAllSizes(options::uiScale);
 
 
   // Colors
@@ -76,20 +77,29 @@ void configureImGuiStyle() {
 std::tuple<ImFontAtlas*, ImFont*, ImFont*> prepareImGuiFonts() {
 
   ImGuiIO& io = ImGui::GetIO();
+  
+  ImVec2 windowSize{static_cast<float>(view::windowWidth), static_cast<float>(view::windowHeight)};
+  ImVec2 bufferSize{static_cast<float>(view::bufferWidth), static_cast<float>(view::bufferHeight)};
+  ImVec2 imguiCoordScale = {bufferSize.x / windowSize.x, bufferSize.y / windowSize.y};
 
   // outputs
   ImFontAtlas* fontAtlas;
   ImFont* regularFont;
   ImFont* monoFont;
 
+  float fontSize = 16.0 * options::uiScale;
+  fontSize = std::max(1.0f, std::roundf(fontSize));
+
   { // add regular font
     ImFontConfig config;
+    config.RasterizerDensity = std::max(imguiCoordScale.x, imguiCoordScale.y);
     regularFont = io.Fonts->AddFontFromMemoryCompressedTTF(render::getLatoRegularCompressedData(),
                                                            render::getLatoRegularCompressedSize(), options::uiScale*18.0f, &config);
   }
 
   { // add mono font
     ImFontConfig config;
+    config.RasterizerDensity = std::max(imguiCoordScale.x, imguiCoordScale.y);
     monoFont = io.Fonts->AddFontFromMemoryCompressedTTF(render::getCousineRegularCompressedData(),
                                                         render::getCousineRegularCompressedSize(), options::uiScale*16.0f, &config);
   }

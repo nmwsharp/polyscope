@@ -879,7 +879,7 @@ int main(int argc, char** argv) {
   // polyscope::view::windowWidth = 600;
   // polyscope::view::windowHeight = 800;
   // polyscope::options::maxFPS = -1;
-  polyscope::options::verbosity = 100;
+  polyscope::options::verbosity = 101;
   polyscope::options::enableRenderErrorChecks = true;
   polyscope::options::allowHeadlessBackends = true;
 
