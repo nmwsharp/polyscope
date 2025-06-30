@@ -1060,8 +1060,6 @@ bool registerStructure(Structure* s, bool replaceIfPresent) {
 
 Structure* getStructure(std::string type, std::string name) {
 
-  if (type == "" || name == "") return nullptr;
-
   // If there are no structures of that type it is an automatic fail
   if (state::structures.find(type) == state::structures.end()) {
     exception("No structures of type " + type + " registered");
@@ -1097,7 +1095,7 @@ bool hasStructure(std::string type, std::string name) {
   // Special automatic case, return any
   if (name == "") {
     if (sMap.size() != 1) {
-      exception("Cannot use automatic structure get with empty name unless there is exactly one structure of that type "
+      exception("Cannot use automatic has-structure test with empty name unless there is exactly one structure of that type "
                 "registered");
     }
     return true;

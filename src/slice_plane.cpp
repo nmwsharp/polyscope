@@ -125,12 +125,12 @@ void SlicePlane::setSliceGeomUniforms(render::ShaderProgram& p) {
 
 
 void SlicePlane::setVolumeMeshToInspect(std::string meshname) {
-  VolumeMesh* oldMeshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
+  VolumeMesh* oldMeshToInspect = inspectedMeshName == "" ? nullptr : polyscope::getVolumeMesh(inspectedMeshName);
   if (oldMeshToInspect != nullptr) {
     oldMeshToInspect->removeSlicePlaneListener(this);
   }
   inspectedMeshName = meshname;
-  VolumeMesh* meshToInspect = polyscope::getVolumeMesh(inspectedMeshName);
+  VolumeMesh* meshToInspect = inspectedMeshName == "" ? nullptr : polyscope::getVolumeMesh(inspectedMeshName);
   if (meshToInspect == nullptr) {
     inspectedMeshName = "";
     shouldInspectMesh = false;
@@ -153,7 +153,7 @@ void SlicePlane::ensureVolumeInspectValid() {
   // This method exists to save us in any cases where we might be inspecting a volume mesh when that mesh is deleted. We
   // can't just call setVolumeMeshToInspect(""), because that tries to look up the volume mesh.
 
-  if (!hasVolumeMesh(inspectedMeshName)) {
+  if (inspectedMeshName == "" || !hasVolumeMesh(inspectedMeshName)) {
     inspectedMeshName = "";
     shouldInspectMesh = false;
     volumeInspectProgram = nullptr;
@@ -210,7 +210,7 @@ void SlicePlane::drawGeometry() {
   ensureVolumeInspectValid();
 
   if (shouldInspectMesh) {
-    VolumeMesh* vMesh = polyscope::getVolumeMesh(inspectedMeshName);
+    VolumeMesh* vMesh = inspectedMeshName == "" ? nullptr : polyscope::getVolumeMesh(inspectedMeshName);
 
     // guard against situations where the volume mesh we are slicing has been deleted
     if (vMesh == nullptr) {

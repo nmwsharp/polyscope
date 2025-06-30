@@ -235,6 +235,10 @@ TEST_F(PolyscopeTest, VolumeMeshCellVector) {
 }
 
 TEST_F(PolyscopeTest, VolumeMeshInspect) {
+
+  // in another test below we repeat the same logic, but with a second mesh present
+  // to ensure the volume mesh lookup logic in the slice plane works right
+
   std::vector<glm::vec3> verts;
   std::vector<std::array<int, 8>> cells;
   std::tie(verts, cells) = getVolumeMeshData();
@@ -256,7 +260,45 @@ TEST_F(PolyscopeTest, VolumeMeshInspect) {
   q1Cat->setEnabled(true);
   polyscope::show(3);
 
-  polyscope::removeAllStructures();
+  // clear it out
+  p->setVolumeMeshToInspect("vol");
+  polyscope::show(3);
 
+  polyscope::removeAllStructures();
+  polyscope::removeLastSceneSlicePlane();
+}
+
+TEST_F(PolyscopeTest, VolumeMeshInspectWithExtra) {
+
+  // same as above, but with an additional mesh present
+  // to ensure the volume mesh lookup logic in the slice plane works right
+
+  std::vector<glm::vec3> verts;
+  std::vector<std::array<int, 8>> cells;
+  std::tie(verts, cells) = getVolumeMeshData();
+  polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("vol", verts, cells);
+  polyscope::VolumeMesh* psVolExtra = polyscope::registerVolumeMesh("vol extra", verts, cells);
+
+  // plain old inspecting
+  polyscope::SlicePlane* p = polyscope::addSceneSlicePlane();
+  p->setVolumeMeshToInspect("vol");
+  polyscope::show(3);
+
+  // with a scalar quantity
+  std::vector<float> vals(verts.size(), 0.44);
+  auto q1 = psVol->addVertexScalarQuantity("vals", vals);
+  q1->setEnabled(true);
+  polyscope::show(3);
+
+  // with a categorical quantity
+  auto q1Cat = psVol->addVertexScalarQuantity("vals", vals, polyscope::DataType::CATEGORICAL);
+  q1Cat->setEnabled(true);
+  polyscope::show(3);
+
+  // clear it out
+  p->setVolumeMeshToInspect("vol");
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
   polyscope::removeLastSceneSlicePlane();
 }
