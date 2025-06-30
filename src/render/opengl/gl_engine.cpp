@@ -1078,7 +1078,7 @@ void GLCompiledProgram::compileGLProgram(const std::vector<ShaderStageSpecificat
       if (options::verbosity > 2) {
         printShaderInfoLog(h);
       }
-      if (options::verbosity > 100) {
+      if (options::verbosity > 200) {
         std::cout << "Program text:" << std::endl;
         std::cout << s.src.c_str() << std::endl;
       }
