@@ -1562,26 +1562,40 @@ long long int SurfaceMesh::selectVertex() {
   // Make sure we can see edges
   float oldEdgeWidth = getEdgeWidth();
   setEdgeWidth(1.);
+
+  // Make sure we can see the mesh
   this->setEnabled(true);
 
+  // Allow picking vertices only
+  MeshSelectionMode oldSelectionMode = getSelectionMode();
+  setSelectionMode(MeshSelectionMode::VerticesOnly);
+
   long long int returnVertInd = -1;
+
+  // ImGui internally swaps cmd/ctrl on macOS
+#ifdef __APPLE__
+  std::string selectMessage = "Hold cmd and left-click on the mesh to select a vertex";
+#else
+  std::string selectMessage = "Hold ctrl and left-click on the mesh to select a vertex";
+#endif
 
   // Register the callback which creates the UI and does the hard work
   auto focusedPopupUI = [&]() {
     { // Create a window with instruction and a close button.
       static bool showWindow = true;
-      ImGui::SetNextWindowSize(ImVec2(300, 0), ImGuiCond_Once);
+      ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Once);
       ImGui::Begin("Select vertex", &showWindow);
 
       ImGui::PushItemWidth(300 * options::uiScale);
-      ImGui::TextUnformatted("Hold ctrl and left-click to select a vertex");
-      ImGui::Separator();
+      ImGui::TextUnformatted(selectMessage.c_str());
+      ImGui::NewLine();
 
       // Choose by number
-      ImGui::PushItemWidth(300 * options::uiScale);
+      ImGui::PushItemWidth(100 * options::uiScale);
+      ImGui::TextUnformatted("Or, select by index");
       static int iV = -1;
-      ImGui::InputInt("index", &iV);
-      if (ImGui::Button("Select by index")) {
+      ImGui::InputInt("vertex index", &iV, 0);
+      if (ImGui::Button("Select")) {
         if (iV >= 0 && (size_t)iV < nVertices()) {
           returnVertInd = iV;
           popContext();
@@ -1589,7 +1603,7 @@ long long int SurfaceMesh::selectVertex() {
       }
       ImGui::PopItemWidth();
 
-      ImGui::Separator();
+      ImGui::NewLine();
       if (ImGui::Button("Abort")) {
         popContext();
       }
@@ -1600,17 +1614,15 @@ long long int SurfaceMesh::selectVertex() {
     ImGuiIO& io = ImGui::GetIO();
     if (io.KeyCtrl && !io.WantCaptureMouse && ImGui::IsMouseClicked(0)) {
 
-      ImGuiIO& io = ImGui::GetIO();
-
-      // API is a giant mess..
-      size_t pickInd;
       ImVec2 p = ImGui::GetMousePos();
-      std::pair<Structure*, size_t> pickVal = pick::pickAtScreenCoords(glm::vec2{p.x, p.y});
+      PickResult pickResult = pickAtScreenCoords(glm::vec2{p.x, p.y});
 
-      if (pickVal.first == this) {
+      if (pickResult.structure == this) {
 
-        if (pickVal.second < nVertices()) {
-          returnVertInd = pickVal.second;
+        SurfaceMeshPickResult surfacePickResult = interpretPickResult(pickResult);
+
+        if (surfacePickResult.elementType == MeshElement::VERTEX) {
+          returnVertInd = surfacePickResult.index;
           popContext();
         }
       }
@@ -1620,7 +1632,9 @@ long long int SurfaceMesh::selectVertex() {
   // Pass control to the context we just created
   pushContext(focusedPopupUI);
 
-  setEdgeWidth(oldEdgeWidth); // restore edge setting
+  // Restore the old settings
+  setEdgeWidth(oldEdgeWidth);
+  setSelectionMode(oldSelectionMode);
 
   return returnVertInd;
 }
