@@ -20,8 +20,6 @@
 #include "nlohmann/json.hpp"
 using json = nlohmann::json;
 
-#include "backends/imgui_impl_opengl3.h"
-
 namespace polyscope {
 
 // Note: Storage for global members lives in state.cpp and options.cpp
