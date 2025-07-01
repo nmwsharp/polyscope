@@ -127,7 +127,7 @@ extern Context globalContext;
 Structure* getStructure(std::string type, std::string name = "");
 
 // True if such a structure exists
-bool hasStructure(std::string type, std::string name = "");
+bool hasStructure(std::string type, std::string name);
 
 // Look up the string type and name for a structure from its pointer
 // (performs a naive search over all structures for now, use sparingly)
