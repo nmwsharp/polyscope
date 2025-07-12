@@ -85,7 +85,9 @@ std::tuple<ImFontAtlas*, ImFont*, ImFont*> prepareImGuiFonts() {
   ImVec2 imguiCoordScale = {bufferSize.x / windowSize.x, bufferSize.y / windowSize.y};
 
   // outputs
-  ImFontAtlas* fontAtlas;
+  ImFontAtlas* fontAtlas = nullptr; // right now this is unused by the caller, but I don't want to change
+                                    // this callback signature until I'm more confident about how this
+                                    // should work. (And it might be changing in an upcoming imgui version)
   ImFont* regularFont;
   ImFont* monoFont;
 
