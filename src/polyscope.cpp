@@ -338,6 +338,9 @@ float dragDistSinceLastRelease = 0.0;
 void processInputEvents() {
   ImGuiIO& io = ImGui::GetIO();
 
+  // RECALL: in ImGUI language, on MacOS "ctrl" == "cmd", so all the options
+  // below referring to ctrl really mean cmd on MacOS.
+
   // If any mouse button is pressed, trigger a redraw
   if (ImGui::IsAnyMouseDown()) {
     requestRedraw();
@@ -358,88 +361,106 @@ void processInputEvents() {
       }
     }
 
-    if (!io.WantCaptureMouse && !widgetCapturedMouse) {
-      double xoffset = io.MouseWheelH;
-      double yoffset = io.MouseWheel;
-
-      if (xoffset != 0 || yoffset != 0) {
-        requestRedraw();
-
-        // On some setups, shift flips the scroll direction, so take the max
-        // scrolling in any direction
-        double maxScroll = xoffset;
-        if (std::abs(yoffset) > std::abs(xoffset)) {
-          maxScroll = yoffset;
-        }
-
-        // Pass camera commands to the camera
-        if (maxScroll != 0.0) {
-          bool scrollClipPlane = io.KeyShift;
-
-          if (scrollClipPlane) {
-            view::processClipPlaneShift(maxScroll);
-          } else {
-            view::processZoom(maxScroll);
-          }
-        }
-      }
-    }
-
     // === Mouse inputs
     if (!io.WantCaptureMouse && !widgetCapturedMouse) {
 
-      // Process drags
-      bool dragLeft = ImGui::IsMouseDragging(0);
-      bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
-      if (dragLeft || dragRight) {
+      { // Process scroll via "mouse wheel" (which might be a touchpad)
+        double xoffset = io.MouseWheelH;
+        double yoffset = io.MouseWheel;
 
-        glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
-        dragDistSinceLastRelease += std::abs(dragDelta.x);
-        dragDistSinceLastRelease += std::abs(dragDelta.y);
+        if (xoffset != 0 || yoffset != 0) {
+          requestRedraw();
 
-        // exactly one of these will be true
-        bool isRotate = dragLeft && !io.KeyShift && !io.KeyCtrl;
-        bool isTranslate = (dragLeft && io.KeyShift && !io.KeyCtrl) || dragRight;
-        bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
+          // On some setups, shift flips the scroll direction, so take the max
+          // scrolling in any direction
+          double maxScroll = xoffset;
+          if (std::abs(yoffset) > std::abs(xoffset)) {
+            maxScroll = yoffset;
+          }
 
-        if (isDragZoom) {
-          view::processZoom(dragDelta.y * 5);
-        }
-        if (isRotate) {
-          glm::vec2 currPos{io.MousePos.x / view::windowWidth,
-                            (view::windowHeight - io.MousePos.y) / view::windowHeight};
-          currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
-          if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
-            view::processRotate(currPos - 2.0f * dragDelta, currPos);
+          // Pass camera commands to the camera
+          if (maxScroll != 0.0) {
+            bool scrollClipPlane = io.KeyShift && !io.KeyCtrl;
+            bool relativeZoom = io.KeyShift && io.KeyCtrl;
+
+            if (scrollClipPlane) {
+              view::processClipPlaneShift(maxScroll);
+            } else {
+              view::processZoom(maxScroll, relativeZoom);
+            }
           }
         }
-        if (isTranslate) {
-          view::processTranslate(dragDelta);
+      }
+
+
+      { // Process drags
+        bool dragLeft = ImGui::IsMouseDragging(0);
+        bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
+        if (dragLeft || dragRight) {
+
+          glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
+          dragDistSinceLastRelease += std::abs(dragDelta.x);
+          dragDistSinceLastRelease += std::abs(dragDelta.y);
+
+          // exactly one of these will be true
+          bool isRotate = dragLeft && !io.KeyShift && !io.KeyCtrl;
+          bool isTranslate = (dragLeft && io.KeyShift && !io.KeyCtrl) || dragRight;
+          bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
+
+          if (isDragZoom) {
+            view::processZoom(dragDelta.y * 5, true);
+          }
+          if (isRotate) {
+            glm::vec2 currPos{io.MousePos.x / view::windowWidth,
+                              (view::windowHeight - io.MousePos.y) / view::windowHeight};
+            currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
+            if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
+              view::processRotate(currPos - 2.0f * dragDelta, currPos);
+            }
+          }
+          if (isTranslate) {
+            view::processTranslate(dragDelta);
+          }
         }
       }
 
-      // Click picks
-      float dragIgnoreThreshold = 0.01;
-      if (ImGui::IsMouseReleased(0)) {
+      { // Click picks
+        float dragIgnoreThreshold = 0.01;
+        bool anyModifierHeld = io.KeyShift || io.KeyCtrl || io.KeyAlt;
+        bool ctrlShiftHeld = io.KeyShift && io.KeyCtrl;
 
-        // Don't pick at the end of a long drag
-        if (dragDistSinceLastRelease < dragIgnoreThreshold) {
-          ImVec2 p = ImGui::GetMousePos();
-          PickResult pickResult = pickAtScreenCoords(glm::vec2{p.x, p.y});
-          setSelection(pickResult);
+        if (!anyModifierHeld && io.MouseReleased[0]) {
+
+          // Don't pick at the end of a long drag
+          if (dragDistSinceLastRelease < dragIgnoreThreshold) {
+            glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
+            PickResult pickResult = pickAtScreenCoords(screenCoords);
+            setSelection(pickResult);
+          }
         }
 
-        // Reset the drag distance after any release
-        dragDistSinceLastRelease = 0.0;
-      }
-      // Clear pick
-      if (ImGui::IsMouseReleased(1)) {
-        if (dragDistSinceLastRelease < dragIgnoreThreshold) {
-          resetSelection();
+        // Clear pick
+        if (!anyModifierHeld && io.MouseReleased[1]) {
+          if (dragDistSinceLastRelease < dragIgnoreThreshold) {
+            resetSelection();
+          }
+          dragDistSinceLastRelease = 0.0;
         }
-        dragDistSinceLastRelease = 0.0;
+
+        // Ctrl-shift left-click to set new center
+        if (ctrlShiftHeld && io.MouseReleased[0]) {
+          if (dragDistSinceLastRelease < dragIgnoreThreshold) {
+            glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
+            view::processSetCenter(screenCoords);
+          }
+        }
       }
     }
+  }
+
+  // Reset the drag distance after any release
+  if (io.MouseReleased[0]) {
+    dragDistSinceLastRelease = 0.0;
   }
 
   // === Key-press inputs
@@ -634,15 +655,18 @@ void buildPolyscopeGui() {
 
     // clang-format off
 		ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar);
-		ImGui::TextUnformatted("View Navigation:");
-			ImGui::TextUnformatted("      Rotate: [left click drag]");
-			ImGui::TextUnformatted("   Translate: [shift] + [left click drag] OR [right click drag]");
-			ImGui::TextUnformatted("        Zoom: [scroll] OR [ctrl] + [shift] + [left click drag]");
-			ImGui::TextUnformatted("   Use [ctrl-c] and [ctrl-v] to save and restore camera poses");
+    ImGui::TextUnformatted("View Navigation:");
+			ImGui::TextUnformatted("     Rotate: [left click drag]");
+			ImGui::TextUnformatted("     Translate: [shift] + [left click drag] OR [right click drag]");
+			ImGui::TextUnformatted("     Zoom: [scroll] OR [ctrl/cmd] + [shift] + [left click drag]");
+			ImGui::TextUnformatted("   Use [ctrl/cmd-c] and [ctrl/cmd-v] to save and restore camera poses");
 			ImGui::TextUnformatted("     via the clipboard.");
-		ImGui::TextUnformatted("\nMenu Navigation:");
+			ImGui::TextUnformatted("   Hold [ctrl/cmd] + [shift] and [left click] in the scene to set the");
+			ImGui::TextUnformatted("     orbit center.");
+			ImGui::TextUnformatted("   Hold [ctrl/cmd] + [shift] and scroll to zoom towards the center.");
+      ImGui::TextUnformatted("\nMenu Navigation:");
 			ImGui::TextUnformatted("   Menu headers with a '>' can be clicked to collapse and expand.");
-			ImGui::TextUnformatted("   Use [ctrl] + [left click] to manually enter any numeric value");
+			ImGui::TextUnformatted("   Use [ctrl/cmd] + [left click] to manually enter any numeric value");
 			ImGui::TextUnformatted("     via the keyboard.");
 			ImGui::TextUnformatted("   Press [space] to dismiss popup dialogs.");
 		ImGui::TextUnformatted("\nSelection:");
@@ -1095,8 +1119,9 @@ bool hasStructure(std::string type, std::string name) {
   // Special automatic case, return any
   if (name == "") {
     if (sMap.size() != 1) {
-      exception("Cannot use automatic has-structure test with empty name unless there is exactly one structure of that type "
-                "registered");
+      exception(
+          "Cannot use automatic has-structure test with empty name unless there is exactly one structure of that type "
+          "registered");
     }
     return true;
   }

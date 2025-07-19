@@ -183,8 +183,9 @@ void ensureViewValid();
 void processTranslate(glm::vec2 delta);
 void processRotate(glm::vec2 startP, glm::vec2 endP);
 void processClipPlaneShift(double amount);
-void processZoom(double amount);
+void processZoom(double amount, bool relativeToCenter = false);
 void processKeyboardNavigation(ImGuiIO& io);
+void processSetCenter(glm::vec2 screenCoords);
 
 // deprecated, bad names, see variants above
 glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords);

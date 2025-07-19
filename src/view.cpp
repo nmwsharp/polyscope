@@ -282,7 +282,7 @@ void processClipPlaneShift(double amount) {
   requestRedraw();
 }
 
-void processZoom(double amount) {
+void processZoom(double amount, bool relativeToCenter) {
   if (amount == 0.0) return;
   if (getNavigateStyle() == NavigateStyle::None || getNavigateStyle() == NavigateStyle::FirstPerson) {
     return;
@@ -292,7 +292,12 @@ void processZoom(double amount) {
 
   switch (projectionMode) {
   case ProjectionMode::Perspective: {
-    float movementScale = state::lengthScale * 0.1 * moveScale;
+    float movementScale;
+    if (relativeToCenter) {
+      movementScale = glm::length(view::viewCenter - view::getCameraWorldPosition()) * 0.3 * moveScale;
+    } else {
+      movementScale = state::lengthScale * 0.1 * moveScale;
+    }
     glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), glm::vec3(0., 0., movementScale * amount));
     viewMat = camSpaceT * viewMat;
     break;
@@ -356,6 +361,14 @@ void processKeyboardNavigation(ImGuiIO& io) {
   if (hasMovement) {
     immediatelyEndFlight();
     requestRedraw();
+  }
+}
+
+void processSetCenter(glm::vec2 screenCoords) {
+  PickResult pickResult = pickAtScreenCoords(screenCoords);
+
+  if (pickResult.isHit) {
+    setViewCenter(pickResult.position, true);
   }
 }
 
@@ -424,6 +437,7 @@ void flyToHomeView() {
 
   // WARNING: Duplicated here and in resetCameraToHomeView()
 
+  view::viewCenter = state::center();
   glm::mat4x4 T = computeHomeView();
 
   float Tfov = defaultFov;
@@ -881,8 +895,8 @@ void buildViewGui() {
     std::string viewStyleName = to_string(view::style);
 
     ImGui::PushItemWidth(120 * options::uiScale);
-    std::array<NavigateStyle, 5> styles{NavigateStyle::Turntable, NavigateStyle::Free, NavigateStyle::Planar,
-                                        NavigateStyle::None, NavigateStyle::FirstPerson};
+    std::array<NavigateStyle, 5> styles{NavigateStyle::Turntable, NavigateStyle::FirstPerson, NavigateStyle::Free,
+                                        NavigateStyle::Planar, NavigateStyle::None};
     if (ImGui::BeginCombo("##View Style", viewStyleName.c_str())) {
 
       for (NavigateStyle s : styles) {
