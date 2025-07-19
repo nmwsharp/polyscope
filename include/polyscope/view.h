@@ -56,6 +56,7 @@ extern std::array<float, 4>& bgColor;
 extern glm::mat4x4& viewMat;
 extern double& fov; // in the y direction
 extern ProjectionMode& projectionMode;
+extern glm::vec3& viewCenter; // center about which view transformations are performed
 
 // "Flying" view members
 extern bool& midflight;
@@ -99,6 +100,13 @@ void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool fl
 glm::mat4 computeHomeView();
 void resetCameraToHomeView();
 void flyToHomeView();
+void setViewCenter(glm::vec3 newCenter, bool flyTo = false);
+
+// These both set the new value, and project the current view as-needed to conform to the new setting
+void updateViewAndChangeNavigationStyle(NavigateStyle newStyle, bool flyTo = false);
+void updateViewAndChangeUpDir(UpDir newUpDir, bool flyTo = false);
+void updateViewAndChangeFrontDir(FrontDir newFrontDir, bool flyTo = false);
+void updateViewAndChangeCenter(glm::vec3 newCenter, bool flyTo = false);
 
 // Move the camera with a 'flight' where the camera's position is briefly animated
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds = .4);
