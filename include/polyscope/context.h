@@ -91,6 +91,7 @@ struct Context {
   glm::mat4x4 viewMat;
   double fov = view::defaultFov;
   ProjectionMode projectionMode = ProjectionMode::Perspective;
+  glm::vec3 viewCenter;
   bool midflight = false;
   float flightStartTime = -1;
   float flightEndTime = -1;
