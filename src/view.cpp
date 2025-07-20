@@ -561,6 +561,8 @@ void updateViewAndChangeCenter(glm::vec3 newCenter, bool flyTo) {
 
 void setViewCenter(glm::vec3 newCenter, bool flyTo) { updateViewAndChangeCenter(newCenter, flyTo); }
 
+glm::vec3 getViewCenter() { return view::viewCenter; }
+
 void lookAt(glm::vec3 cameraLocation, glm::vec3 target, bool flyTo) {
   lookAt(cameraLocation, target, getUpVec(), flyTo);
 }

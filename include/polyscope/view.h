@@ -101,6 +101,7 @@ glm::mat4 computeHomeView();
 void resetCameraToHomeView();
 void flyToHomeView();
 void setViewCenter(glm::vec3 newCenter, bool flyTo = false);
+glm::vec3 getViewCenter();
 
 // These both set the new value, and project the current view as-needed to conform to the new setting
 void updateViewAndChangeNavigationStyle(NavigateStyle newStyle, bool flyTo = false);
