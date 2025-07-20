@@ -93,7 +93,7 @@ TEST_F(PolyscopeTest, CurveNetworkScalarCategoricalEdge) {
   polyscope::removeAllStructures();
 }
 
-TEST_F(PolyscopeTest, CurveNetworkScalarRadius) {
+TEST_F(PolyscopeTest, CurveNetworkNodeScalarRadius) {
   auto psCurve = registerCurveNetwork();
 
   std::random_device rd;
@@ -119,6 +119,72 @@ TEST_F(PolyscopeTest, CurveNetworkScalarRadius) {
   polyscope::show(3);
 
   psCurve->clearNodeRadiusQuantity();
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, CurveNetworkEdgeScalarRadius) {
+  auto psCurve = registerCurveNetwork();
+
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> dis(1, 10);
+
+  std::vector<double> eScalar(psCurve->nEdges(), 0.1);
+  std::vector<double> eScalar2(psCurve->nEdges(), 0.1);
+  std::generate(eScalar.begin(), eScalar.end(), [&]() { return dis(gen); });
+  std::generate(eScalar2.begin(), eScalar2.end(), [&]() { return dis(gen); });
+
+  auto q1 = psCurve->addEdgeScalarQuantity("eScalar", eScalar);
+  auto q2 = psCurve->addEdgeScalarQuantity("eScalar2", eScalar2);
+  q1->setEnabled(true);
+
+  psCurve->setEdgeRadiusQuantity(q1);
+  polyscope::show(3);
+
+  psCurve->setEdgeRadiusQuantity("eScalar2");
+  polyscope::show(3);
+
+  psCurve->setEdgeRadiusQuantity("eScalar2", false); // no autoscaling
+  polyscope::show(3);
+
+  psCurve->clearEdgeRadiusQuantity();
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, CurveNetworkNodeAndEdgeScalarRadius) {
+  auto psCurve = registerCurveNetwork();
+
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> dis(1, 10);
+
+  std::vector<double> vScalar(psCurve->nNodes(), 0.1);
+  std::generate(vScalar.begin(), vScalar.end(), [&]() { return dis(gen); });
+  auto q1v = psCurve->addNodeScalarQuantity("vScalar", vScalar);
+  q1v->setEnabled(true);
+
+  std::vector<double> eScalar(psCurve->nEdges(), 0.1);
+  std::generate(eScalar.begin(), eScalar.end(), [&]() { return dis(gen); });
+  auto q1e = psCurve->addEdgeScalarQuantity("eScalar", eScalar);
+  q1e->setEnabled(true);
+
+  psCurve->setNodeRadiusQuantity(q1v);
+  psCurve->setEdgeRadiusQuantity(q1e);
+  polyscope::show(3);
+
+  psCurve->clearNodeRadiusQuantity();
+  polyscope::show(3);
+
+  psCurve->setNodeRadiusQuantity(q1v, true);
+  psCurve->setEdgeRadiusQuantity(q1e, true);
+  polyscope::show(3);
+
+  psCurve->setNodeRadiusQuantity(q1v);
+  psCurve->setEdgeRadiusQuantity(q1e, true);
   polyscope::show(3);
 
   polyscope::removeAllStructures();

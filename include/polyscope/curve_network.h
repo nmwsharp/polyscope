@@ -147,9 +147,14 @@ public:
   // effect is multiplicative with pointRadius
   // negative values are always clamped to 0
   // if autoScale==true, values are rescaled such that the largest has size pointRadius
+
   void setNodeRadiusQuantity(CurveNetworkNodeScalarQuantity* quantity, bool autoScale = true);
   void setNodeRadiusQuantity(std::string name, bool autoScale = true);
   void clearNodeRadiusQuantity();
+
+  void setEdgeRadiusQuantity(CurveNetworkEdgeScalarQuantity* quantity, bool autoScale = true);
+  void setEdgeRadiusQuantity(std::string name, bool autoScale = true);
+  void clearEdgeRadiusQuantity();
 
   // set the radius of the points
   CurveNetwork* setRadius(float newVal, bool isRelative = true);
@@ -189,7 +194,8 @@ private:
   void preparePick();
 
   void recomputeGeometryIfPopulated();
-  float computeRadiusMultiplierUniform();
+  float computeNodeRadiusMultiplierUniform();
+  float computeEdgeRadiusMultiplierUniform();
 
   // Pick helpers
   void buildNodePickUI(const CurveNetworkPickResult& result);
@@ -207,8 +213,11 @@ private:
 
   // Manage varying node, edge size
   std::string nodeRadiusQuantityName = ""; // empty string means none
+  std::string edgeRadiusQuantityName = ""; // empty string means none
   bool nodeRadiusQuantityAutoscale = true;
+  bool edgeRadiusQuantityAutoscale = true;
   CurveNetworkNodeScalarQuantity& resolveNodeRadiusQuantity(); // helper
+  CurveNetworkEdgeScalarQuantity& resolveEdgeRadiusQuantity(); // helper
 };
 
 
