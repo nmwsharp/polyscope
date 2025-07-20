@@ -169,6 +169,16 @@ TEST_F(PolyscopeTest, NavigationMode) {
   polyscope::view::setNavigateStyle(polyscope::NavigateStyle::Turntable); // set back to usual default
 }
 
+TEST_F(PolyscopeTest, UIScale) {
+
+  // this should trigger a reload of the font atlas
+
+  polyscope::options::uiScale = 1.25;
+  polyscope::show(3);
+
+  polyscope::options::uiScale = 1.;
+  polyscope::show(3);
+}
 
 // ============================================================
 // =============== Ground plane tests

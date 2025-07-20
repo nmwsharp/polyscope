@@ -193,6 +193,9 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
 
 TEST_F(PolyscopeTest, ImplicitSurfaceRenderImageQuantityTest) {
 
+  // disable for this test
+  polyscope::options::warnForInvalidValues = false;
+
   // sample sdf & color functions
   auto torusSDF = [](glm::vec3 p) {
     float scale = 0.5;
@@ -248,4 +251,5 @@ TEST_F(PolyscopeTest, ImplicitSurfaceRenderImageQuantityTest) {
   polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
 
   polyscope::removeAllStructures();
+  polyscope::options::warnForInvalidValues = true;
 }
