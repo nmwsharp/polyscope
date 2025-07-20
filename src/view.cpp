@@ -489,12 +489,13 @@ void updateViewAndChangeUpDir(UpDir newUpDir, bool flyTo) {
     case NavigateStyle::Arcball:
     case NavigateStyle::FirstPerson: {
       glm::vec3 lookDir = getCameraParametersForCurrentView().getLookDir();
-      if (std::fabs(dot(view::getUpVec(), lookDir) < 0.01)) {
+      if (std::fabs(dot(view::getUpVec(), lookDir)) < 0.01) {
         // if the new up direction is colinear with the direction we're currently looking
         lookDir = getFrontVec();
       }
 
-      lookAt(getCameraWorldPosition(), lookDir * state::lengthScale, flyTo);
+      glm::vec3 camPos = getCameraWorldPosition();
+      lookAt(camPos, camPos + lookDir * state::lengthScale, flyTo);
 
       break;
     }
