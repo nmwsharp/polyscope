@@ -176,6 +176,9 @@ void CurveNetworkEdgeScalarQuantity::createProgram() {
 }
 
 void CurveNetworkEdgeScalarQuantity::updateNodeAverageValues() {
+  // NOTE: we don't have any caching or dirty-marking on this, so it is likely getting recomputed more often than
+  // necessary
+
   parent.edgeTailInds.ensureHostBufferPopulated();
   parent.edgeTipInds.ensureHostBufferPopulated();
   values.ensureHostBufferPopulated();
