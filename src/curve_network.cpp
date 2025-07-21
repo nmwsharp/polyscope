@@ -122,7 +122,7 @@ void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) {
   glm::mat4 Pinv = glm::inverse(P);
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
-  p.setUniform("u_radius", computeNodeRadiusMultiplierUniform());
+  p.setUniform("u_radius", computeEdgeRadiusMultiplierUniform());
 }
 
 void CurveNetwork::draw() {

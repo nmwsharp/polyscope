@@ -76,17 +76,23 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
     std::vector<double> valEdgeCat(nEdges);
     std::vector<std::array<double, 3>> randColor(nEdges);
     std::vector<glm::vec3> randVec(nEdges);
+    std::vector<double> valYabs(nEdges);
     for (size_t iE = 0; iE < nEdges; iE++) {
       auto edge = edges[iE];
       size_t nA = std::get<0>(edge);
       size_t nB = std::get<1>(edge);
+      glm::vec3 posA = nodes[nA];
+      glm::vec3 posB = nodes[nB];
+      glm::vec3 midpointPos = 0.5f * (posA + posB);
 
       edgeLen[iE] = glm::length(nodes[nA] - nodes[nB]);
       valEdgeCat[iE] = iE * 5 / nEdges;
       randColor[iE] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
       randVec[iE] = glm::vec3{polyscope::randomUnit() - .5, polyscope::randomUnit() - .5, polyscope::randomUnit() - .5};
+      valYabs[iE] = std::fabs(midpointPos.y);
     }
     polyscope::getCurveNetwork(curveName)->addEdgeScalarQuantity("edge len", edgeLen, polyscope::DataType::MAGNITUDE);
+    polyscope::getCurveNetwork(curveName)->addEdgeScalarQuantity("edge valYabs", valYabs, polyscope::DataType::MAGNITUDE);
     polyscope::getCurveNetwork(curveName)->addEdgeScalarQuantity("edge categorical", valEdgeCat,
                                                                  polyscope::DataType::CATEGORICAL);
     polyscope::getCurveNetwork(curveName)->addEdgeColorQuantity("eColor", randColor);
@@ -95,6 +101,7 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
 
   // set a node radius quantity from above
   polyscope::getCurveNetwork(curveName)->setNodeRadiusQuantity("nXabs");
+  polyscope::getCurveNetwork(curveName)->setEdgeRadiusQuantity("edge valYabs");
 }
 
 void processFileOBJ(std::string filename) {
