@@ -85,6 +85,8 @@ extern float shadowDarkness;
 
 extern bool screenshotTransparency;     // controls whether screenshots taken by clicking the GUI button have a
                                         // transparent background
+extern bool screenshotWithImGuiUI;      // controls whether screenshots taken by clicking the GUI button have a
+                                        // transparent background
 extern std::string screenshotExtension; // sets the extension used for automatically-numbered screenshots (e.g. by
                                         // clicking the GUI button)
 

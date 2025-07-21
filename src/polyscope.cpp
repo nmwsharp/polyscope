@@ -201,6 +201,8 @@ bool isInitialized() { return state::initialized; }
 
 void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
+  // WARNING: code duplicated here and in screenshot.cpp
+
   // Create a new context and push it on to the stack
   ImGuiContext* newContext = ImGui::CreateContext();
   ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
@@ -222,7 +224,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   if (contextStack.size() > 50) {
     // Catch bugs with nested show()
     exception("Uh oh, polyscope::show() was recusively MANY times (depth > 50), this is probably a bug. Perhaps "
-              "you are accidentally calling show every time polyscope::userCallback executes?");
+              "you are accidentally calling show() every time polyscope::userCallback executes?");
   };
 
   // Make sure the window is visible
@@ -253,6 +255,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
     }
   }
 
+  // WARNING: code duplicated here and in screenshot.cpp
   // Workaround overzealous ImGui assertion before destroying any inner context
   // https://github.com/ocornut/imgui/pull/7175
   ImGui::SetCurrentContext(newContext);
@@ -621,7 +624,10 @@ void buildPolyscopeGui() {
   ImGui::SameLine();
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 0.0f));
   if (ImGui::Button("Screenshot")) {
-    screenshot(options::screenshotTransparency);
+    ScreenshotOptions options;
+    options.transparentBackground = options::screenshotTransparency;
+    options.includeUI = options::screenshotWithImGuiUI;
+    screenshot(options);
   }
   ImGui::SameLine();
   if (ImGui::ArrowButton("##Option", ImGuiDir_Down)) {
@@ -631,6 +637,7 @@ void buildPolyscopeGui() {
   if (ImGui::BeginPopup("ScreenshotOptionsPopup")) {
 
     ImGui::Checkbox("with transparency", &options::screenshotTransparency);
+    ImGui::Checkbox("with UI", &options::screenshotWithImGuiUI);
 
     if (ImGui::BeginMenu("file format")) {
       if (ImGui::MenuItem(".png", NULL, options::screenshotExtension == ".png")) options::screenshotExtension = ".png";

@@ -33,6 +33,88 @@ bool hasExtension(std::string str, std::string ext) {
   }
 }
 
+// Helper to actually do the render pass and return the result in a buffer
+std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = {}) {
+  checkInitialized();
+
+  render::engine->useAltDisplayBuffer = true;
+  if (options.transparentBackground) render::engine->lightCopy = true; // copy directly in to buffer without blending
+
+  // == Make sure we render first
+  processLazyProperties();
+
+  // save the redraw requested bit and restore it below
+  bool requestedAlready = redrawRequested();
+  requestRedraw();
+
+  // Create a new context and push it on to the stack
+  ImGuiContext* oldContext;
+  ImGuiContext* newContext;
+  if (options.includeUI) {
+    // WARNING: code duplicated here and in pushContext()
+    oldContext = ImGui::GetCurrentContext();
+    newContext = ImGui::CreateContext();
+    ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
+#ifdef IMGUI_HAS_DOCK
+    ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
+#endif
+    ImGui::SetCurrentContext(newContext);
+#ifdef IMGUI_HAS_DOCK
+    // Propagate GLFW window handle to new context
+    ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
+#endif
+    ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
+    ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
+
+    render::engine->configureImGui();
+
+    // render a few times, to let imgui shake itself out
+    for (int i = 0; i < 3; i++) {
+      draw(options.includeUI, false);
+    }
+  }
+
+  draw(options.includeUI, false);
+
+  if (options.includeUI) {
+    // WARNING: code duplicated here and in pushContext()
+    // Workaround overzealous ImGui assertion before destroying any inner context
+    // https://github.com/ocornut/imgui/pull/7175
+    ImGui::SetCurrentContext(newContext);
+    ImGui::GetIO().BackendPlatformUserData = nullptr;
+    ImGui::GetIO().BackendRendererUserData = nullptr;
+
+    ImGui::DestroyContext(newContext);
+    ImGui::SetCurrentContext(oldContext);
+  }
+
+
+  if (requestedAlready) {
+    requestRedraw();
+  }
+
+  // these _should_ always be accurate
+  int w = view::bufferWidth;
+  int h = view::bufferHeight;
+  std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
+
+  // Set alpha to 1
+  if (!options.transparentBackground) {
+    for (int j = 0; j < h; j++) {
+      for (int i = 0; i < w; i++) {
+        int ind = i + j * w;
+        buff[4 * ind + 3] = std::numeric_limits<unsigned char>::max();
+      }
+    }
+  }
+
+  render::engine->useAltDisplayBuffer = false;
+  if (options.transparentBackground) render::engine->lightCopy = false;
+
+  return buff;
+}
+
+
 } // namespace
 
 
@@ -59,66 +141,49 @@ void saveImage(std::string name, unsigned char* buffer, int w, int h, int channe
     */
 
   } else {
-    // Fall back on png
-    stbi_write_png(name.c_str(), w, h, channels, buffer, channels * w);
+    error("unrecognized file extension, should be one of '.png', '.jpg', '.jpeg'. Got filename: " + name);
   }
 }
 
-void screenshot(std::string filename, bool transparentBG) {
+void screenshot(std::string filename, const ScreenshotOptions& options) {
   checkInitialized();
+  ScreenshotOptions thisOptions = options; // we may modify it below
 
-  render::engine->useAltDisplayBuffer = true;
-  if (transparentBG) render::engine->lightCopy = true; // copy directly in to buffer without blending
-
-  // == Make sure we render first
-  processLazyProperties();
-
-  // save the redraw requested bit and restore it below
-  bool requestedAlready = redrawRequested();
-  requestRedraw();
-
-  draw(false, false);
-
-  if (requestedAlready) {
-    requestRedraw();
+  // only pngs can be written with transparency
+  if (!hasExtension(filename, ".png")) {
+    thisOptions.transparentBackground = false;
   }
 
-  // these _should_ always be accurate
+  std::vector<unsigned char> buff = getRenderInBuffer(thisOptions);
   int w = view::bufferWidth;
   int h = view::bufferHeight;
-  std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
-
-  // Set alpha to 1
-  if (!transparentBG) {
-    for (int j = 0; j < h; j++) {
-      for (int i = 0; i < w; i++) {
-        int ind = i + j * w;
-        buff[4 * ind + 3] = std::numeric_limits<unsigned char>::max();
-      }
-    }
-  }
 
   // Save to file
   saveImage(filename, &(buff.front()), w, h, 4);
-
-  render::engine->useAltDisplayBuffer = false;
-  if (transparentBG) render::engine->lightCopy = false;
 }
 
-void screenshot(bool transparentBG) {
+void screenshot(std::string filename, bool transparentBG) {
+  ScreenshotOptions options;
+  options.transparentBackground = transparentBG;
+  screenshot(filename, options);
+}
 
+void screenshot(const ScreenshotOptions& options) {
+
+  // construct the filename for the output
   char buff[50];
   snprintf(buff, 50, "screenshot_%06zu%s", state::screenshotInd, options::screenshotExtension.c_str());
   std::string defaultName(buff);
 
-  // only pngs can be written with transparency
-  if (!hasExtension(options::screenshotExtension, ".png")) {
-    transparentBG = false;
-  }
-
-  screenshot(defaultName, transparentBG);
+  screenshot(defaultName, options);
 
   state::screenshotInd++;
+}
+
+void screenshot(bool transparentBG) {
+  ScreenshotOptions options;
+  options.transparentBackground = transparentBG;
+  screenshot(options);
 }
 
 void screenshot(const char* filename) { screenshot(std::string(filename), true); }
@@ -126,44 +191,12 @@ void screenshot(const char* filename) { screenshot(std::string(filename), true);
 void resetScreenshotIndex() { state::screenshotInd = 0; }
 
 
+std::vector<unsigned char> screenshotToBuffer(const ScreenshotOptions& options) { return getRenderInBuffer(options); }
+
 std::vector<unsigned char> screenshotToBuffer(bool transparentBG) {
-  checkInitialized();
-
-  render::engine->useAltDisplayBuffer = true;
-  if (transparentBG) render::engine->lightCopy = true; // copy directly in to buffer without blending
-
-  // == Make sure we render first
-  processLazyProperties();
-
-  // save the redraw requested bit and restore it below
-  bool requestedAlready = redrawRequested();
-  requestRedraw();
-
-  draw(false, false);
-
-  if (requestedAlready) {
-    requestRedraw();
-  }
-
-  // these _should_ always be accurate
-  int w = view::bufferWidth;
-  int h = view::bufferHeight;
-  std::vector<unsigned char> buff = render::engine->displayBufferAlt->readBuffer();
-
-  // Set alpha to 1
-  if (!transparentBG) {
-    for (int j = 0; j < h; j++) {
-      for (int i = 0; i < w; i++) {
-        int ind = i + j * w;
-        buff[4 * ind + 3] = std::numeric_limits<unsigned char>::max();
-      }
-    }
-  }
-
-  render::engine->useAltDisplayBuffer = false;
-  if (transparentBG) render::engine->lightCopy = false;
-
-  return buff;
+  ScreenshotOptions options;
+  options.transparentBackground = transparentBG;
+  return screenshotToBuffer(options);
 }
 
 } // namespace polyscope

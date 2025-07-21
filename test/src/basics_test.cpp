@@ -130,7 +130,15 @@ TEST_F(PolyscopeTest, WindowProperties) {
   polyscope::show(3);
 }
 
-TEST_F(PolyscopeTest, Screenshot) { polyscope::screenshot("test_screeshot.png"); }
+TEST_F(PolyscopeTest, Screenshot) {
+  polyscope::screenshot("test_screeshot.png");
+  polyscope::screenshot();
+
+  polyscope::ScreenshotOptions opts;
+  opts.includeUI = true;
+  opts.transparentBackground = false;
+  polyscope::screenshot(opts);
+}
 
 TEST_F(PolyscopeTest, ScreenshotBuffer) {
   std::vector<unsigned char> buff = polyscope::screenshotToBuffer();

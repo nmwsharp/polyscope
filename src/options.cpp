@@ -34,6 +34,7 @@ bool warnForInvalidValues = true;
 bool displayMessagePopups = true;
 
 bool screenshotTransparency = true;
+bool screenshotWithImGuiUI = false;
 std::string screenshotExtension = ".png";
 
 // == Scene options
