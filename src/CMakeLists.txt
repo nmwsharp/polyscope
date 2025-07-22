@@ -365,9 +365,10 @@ SET(HEADERS
 
 # Create a single library for the project
 add_library(polyscope ${SRCS} ${BACKEND_SRCS} ${HEADERS} ${BACKEND_HEADERS})
+add_library(polyscope::polyscope ALIAS polyscope)
 
 # Mark the library target and its headers as installable
-install(TARGETS polyscope)
+install(TARGETS polyscope EXPORT ${EXPORTED_TARGETS_NAME} DESTINATION "${INSTALL_LIB_DIR}")
 install(DIRECTORY ${INCLUDE_ROOT}/ DESTINATION "${CMAKE_INSTALL_PREFIX}/include/polyscope")
 
 # Required compiler settings
@@ -377,8 +378,12 @@ set_target_properties(polyscope PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 add_definitions(-DNOMINMAX)
 
 # Include settings
-target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+target_include_directories(polyscope PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+    $<INSTALL_INTERFACE:include>)
 
 # Link settings
 target_link_libraries(polyscope PUBLIC imgui glm::glm)
 target_link_libraries(polyscope PRIVATE "${BACKEND_LIBS}" stb nlohmann_json::nlohmann_json MarchingCube::MarchingCube)
+
+package()

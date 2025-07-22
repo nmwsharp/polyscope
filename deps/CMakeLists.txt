@@ -12,6 +12,7 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
     add_subdirectory(glfw)
+    install(TARGETS glfw EXPORT ${EXPORTED_TARGETS_NAME} DESTINATION "${INSTALL_LIB_DIR}")
   endif()
 endif()
 
@@ -20,6 +21,10 @@ if(NOT TARGET glm::glm)
   add_subdirectory(glm)
   target_compile_definitions(glm INTERFACE GLM_ENABLE_EXPERIMENTAL)
   set_target_properties(glm PROPERTIES LINKER_LANGUAGE CXX)
+
+  install(TARGETS glm EXPORT ${EXPORTED_TARGETS_NAME} DESTINATION "${INSTALL_LIB_DIR}")
+  install(TARGETS glm-header-only EXPORT ${EXPORTED_TARGETS_NAME} DESTINATION "${INSTALL_LIB_DIR}")
+  install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/glm/glm DESTINATION "${INSTALL_INCLUDE_DIR}")
 endif()
 
 ## Imgui
