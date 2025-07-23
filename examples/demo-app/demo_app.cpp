@@ -92,7 +92,8 @@ void constructDemoCurveNetwork(std::string curveName, std::vector<glm::vec3> nod
       valYabs[iE] = std::fabs(midpointPos.y);
     }
     polyscope::getCurveNetwork(curveName)->addEdgeScalarQuantity("edge len", edgeLen, polyscope::DataType::MAGNITUDE);
-    polyscope::getCurveNetwork(curveName)->addEdgeScalarQuantity("edge valYabs", valYabs, polyscope::DataType::MAGNITUDE);
+    polyscope::getCurveNetwork(curveName)->addEdgeScalarQuantity("edge valYabs", valYabs,
+                                                                 polyscope::DataType::MAGNITUDE);
     polyscope::getCurveNetwork(curveName)->addEdgeScalarQuantity("edge categorical", valEdgeCat,
                                                                  polyscope::DataType::CATEGORICAL);
     polyscope::getCurveNetwork(curveName)->addEdgeColorQuantity("eColor", randColor);
@@ -845,6 +846,9 @@ void callback() {
     }
   }
 
+  if (ImGui::Button("nested show")) {
+    polyscope::show();
+  }
 
   if (ImGui::Button("drop camera view here")) {
     dropCameraView();
@@ -858,8 +862,27 @@ void callback() {
     addVolumeGrid();
   }
 
+  // ImPlot
+  // dummy data
+  if (ImGui::TreeNode("ImPlot")) {
+
+    std::vector<float> plotVals;
+    for (float t = 0; t < 10.; t += 0.01) {
+      plotVals.push_back(std::cosf(t + ImGui::GetTime()));
+    }
+
+    // sample plot
+    if (ImPlot::BeginPlot("test plot")) {
+      ImPlot::PlotLine("sample_val", &plotVals.front(), plotVals.size());
+      ImPlot::EndPlot();
+    }
+
+    ImGui::TreePop();
+  }
+
   ImGui::PopItemWidth();
 }
+
 
 int main(int argc, char** argv) {
   // Configure the argument parser
