@@ -49,6 +49,10 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
 
   // There's a ton of junk needed here to handle the includeUI case...
   // Create a new context and push it on to the stack
+  // FIXME this solution doesn't really work, it forgets UI state like which nodes were open, scrolled setting, etc.
+  // I'm not sure if it's possible to do this like we want in ImGui. The alternate solution would be to save the render
+  // from the previous render pass, but I think that comes with other problems on the Polyscope side. I'm not sure what
+  // the answer is.
   ImGuiContext* oldContext;
   ImGuiContext* newContext;
   ImPlotContext* oldPlotContext;
