@@ -47,6 +47,7 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
   bool requestedAlready = redrawRequested();
   requestRedraw();
 
+  // There's a ton of junk needed here to handle the includeUI case...
   // Create a new context and push it on to the stack
   ImGuiContext* oldContext;
   ImGuiContext* newContext;
@@ -64,6 +65,7 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
 #endif
     ImGui::SetCurrentContext(newContext);
     ImPlot::SetCurrentContext(newPlotContext);
+
 #ifdef IMGUI_HAS_DOCK
     // Propagate GLFW window handle to new context
     ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
@@ -90,8 +92,8 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
     ImGui::GetIO().BackendPlatformUserData = nullptr;
     ImGui::GetIO().BackendRendererUserData = nullptr;
 
-    ImGui::DestroyContext(newContext);
     ImPlot::DestroyContext(newPlotContext);
+    ImGui::DestroyContext(newContext);
 
     ImGui::SetCurrentContext(oldContext);
     ImPlot::SetCurrentContext(oldPlotContext);

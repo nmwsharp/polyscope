@@ -268,8 +268,8 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   ImGui::GetIO().BackendPlatformUserData = nullptr;
   ImGui::GetIO().BackendRendererUserData = nullptr;
 
-  ImGui::DestroyContext(newContext);
   ImPlot::DestroyContext(newPlotContext);
+  ImGui::DestroyContext(newContext);
 
   // Restore the previous context, if there was one
   if (!contextStack.empty()) {

@@ -1598,7 +1598,10 @@ void MockGLEngine::shutdown() {
   shutdownImGui();
 }
 
-void MockGLEngine::shutdownImGui() { ImGui::DestroyContext(); }
+void MockGLEngine::shutdownImGui() { 
+  ImPlot::DestroyContext(); 
+  ImGui::DestroyContext(); 
+}
 
 void MockGLEngine::swapDisplayBuffers() {}
 
