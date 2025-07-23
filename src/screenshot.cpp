@@ -47,18 +47,29 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
   bool requestedAlready = redrawRequested();
   requestRedraw();
 
+  // There's a ton of junk needed here to handle the includeUI case...
   // Create a new context and push it on to the stack
+  // FIXME this solution doesn't really work, it forgets UI state like which nodes were open, scrolled setting, etc.
+  // I'm not sure if it's possible to do this like we want in ImGui. The alternate solution would be to save the render
+  // from the previous render pass, but I think that comes with other problems on the Polyscope side. I'm not sure what
+  // the answer is.
   ImGuiContext* oldContext;
   ImGuiContext* newContext;
+  ImPlotContext* oldPlotContext;
+  ImPlotContext* newPlotContext;
   if (options.includeUI) {
     // WARNING: code duplicated here and in pushContext()
     oldContext = ImGui::GetCurrentContext();
     newContext = ImGui::CreateContext();
+    oldPlotContext = ImPlot::GetCurrentContext();
+    newPlotContext = ImPlot::CreateContext();
     ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
 #ifdef IMGUI_HAS_DOCK
     ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
 #endif
     ImGui::SetCurrentContext(newContext);
+    ImPlot::SetCurrentContext(newPlotContext);
+
 #ifdef IMGUI_HAS_DOCK
     // Propagate GLFW window handle to new context
     ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
@@ -81,11 +92,15 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
     // Workaround overzealous ImGui assertion before destroying any inner context
     // https://github.com/ocornut/imgui/pull/7175
     ImGui::SetCurrentContext(newContext);
+    ImPlot::SetCurrentContext(newPlotContext);
     ImGui::GetIO().BackendPlatformUserData = nullptr;
     ImGui::GetIO().BackendRendererUserData = nullptr;
 
+    ImPlot::DestroyContext(newPlotContext);
     ImGui::DestroyContext(newContext);
+
     ImGui::SetCurrentContext(oldContext);
+    ImPlot::SetCurrentContext(oldPlotContext);
   }
 
 

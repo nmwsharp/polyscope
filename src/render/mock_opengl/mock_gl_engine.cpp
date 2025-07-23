@@ -1576,6 +1576,7 @@ void MockGLEngine::initialize() {
 
 void MockGLEngine::initializeImGui() {
   ImGui::CreateContext(); // must call once at start
+  ImPlot::CreateContext(); 
   configureImGui();
 }
 
@@ -1597,7 +1598,10 @@ void MockGLEngine::shutdown() {
   shutdownImGui();
 }
 
-void MockGLEngine::shutdownImGui() { ImGui::DestroyContext(); }
+void MockGLEngine::shutdownImGui() { 
+  ImPlot::DestroyContext(); 
+  ImGui::DestroyContext(); 
+}
 
 void MockGLEngine::swapDisplayBuffers() {}
 

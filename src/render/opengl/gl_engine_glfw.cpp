@@ -148,6 +148,7 @@ void GLEngineGLFW::initializeImGui() {
   bindDisplay();
 
   ImGui::CreateContext(); // must call once at start
+  ImPlot::CreateContext(); 
 
   // Set up ImGUI glfw bindings
   ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
@@ -197,6 +198,7 @@ void GLEngineGLFW::shutdownImGui() {
   // ImGui shutdown things
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
+  ImPlot::DestroyContext();
   ImGui::DestroyContext();
 }
 
