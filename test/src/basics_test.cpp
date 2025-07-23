@@ -45,6 +45,7 @@ TEST_F(PolyscopeTest, FrameTickWithImgui) {
   polyscope::state::userCallback = nullptr;
 }
 
+
 // We should be able to nest calls to show() via the callback. ImGUI causes headaches here
 TEST_F(PolyscopeTest, NestedShow) {
 
@@ -146,6 +147,55 @@ TEST_F(PolyscopeTest, ScreenshotBuffer) {
 
   std::vector<unsigned char> buff2 = polyscope::screenshotToBuffer(false);
   EXPECT_EQ(buff2.size(), polyscope::view::bufferWidth * polyscope::view::bufferHeight * 4);
+}
+
+TEST_F(PolyscopeTest, ImPlotBasic) {
+
+  std::vector<float> xvals = {0., 2., 4., 8.};
+
+  auto showCallback = [&]() { 
+    ImGui::Button("do something"); 
+    if(ImPlot::BeginPlot("test plot")) {
+      ImPlot::PlotLine("test line", &xvals.front(), xvals.size());
+      ImPlot::EndPlot();
+    }
+  };
+  polyscope::state::userCallback = showCallback;
+
+  polyscope::show(3);
+  
+  for (int i = 0; i < 3; i++) {
+    polyscope::frameTick();
+  }
+
+  polyscope::state::userCallback = nullptr;
+}
+
+
+TEST_F(PolyscopeTest, ImPlotScreenshot) {
+  // test this because there is some context logic duplicated there
+
+  std::vector<float> xvals = {0., 2., 4., 8.};
+
+  auto showCallback = [&]() { 
+    ImGui::Button("do something"); 
+    if(ImPlot::BeginPlot("test plot")) {
+      ImPlot::PlotLine("test line", &xvals.front(), xvals.size());
+      ImPlot::EndPlot();
+    }
+  };
+  polyscope::state::userCallback = showCallback;
+
+  polyscope::show(3);
+  
+  polyscope::ScreenshotOptions opts;
+  opts.includeUI = true;
+  opts.transparentBackground = false;
+  polyscope::screenshot(opts);
+  
+  polyscope::show(3);
+  
+  polyscope::state::userCallback = nullptr;
 }
 
 // ============================================================

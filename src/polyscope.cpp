@@ -207,11 +207,13 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Create a new context and push it on to the stack
   ImGuiContext* newContext = ImGui::CreateContext();
+  ImPlotContext* newPlotContext = ImPlot::CreateContext();
   ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
 #ifdef IMGUI_HAS_DOCK
   ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
 #endif
   ImGui::SetCurrentContext(newContext);
+  ImPlot::SetCurrentContext(newPlotContext);
 #ifdef IMGUI_HAS_DOCK
   // Propagate GLFW window handle to new context
   ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
@@ -221,8 +223,6 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   render::engine->configureImGui();
 
-  // Implot context too
-  ImPlotContext* newPlotContext = ImPlot::CreateContext();
 
   contextStack.push_back(ContextEntry{newContext, newPlotContext, callbackFunction, drawDefaultUI});
 
@@ -264,6 +264,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   // Workaround overzealous ImGui assertion before destroying any inner context
   // https://github.com/ocornut/imgui/pull/7175
   ImGui::SetCurrentContext(newContext);
+  ImPlot::SetCurrentContext(newPlotContext);
   ImGui::GetIO().BackendPlatformUserData = nullptr;
   ImGui::GetIO().BackendRendererUserData = nullptr;
 

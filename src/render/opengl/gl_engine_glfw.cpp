@@ -199,6 +199,7 @@ void GLEngineGLFW::shutdownImGui() {
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
+  ImPlot::DestroyContext();
 }
 
 void GLEngineGLFW::ImGuiNewFrame() {
