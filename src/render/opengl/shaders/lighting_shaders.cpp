@@ -185,6 +185,8 @@ const ShaderReplacementRule INVERSE_TONEMAP (
         )"},
       {"GENERATE_LIT_COLOR", R"(
           // NOTE: code is lazily duplicated between this rule and below
+          float INVERSE_TONEMAP_EPS = 0.001; // inversion does bad things on 0 or 1, so clamp slightly away
+          litColor = clamp(litColor, INVERSE_TONEMAP_EPS, 1.0 - INVERSE_TONEMAP_EPS); 
           vec3 litColorUngamma = pow(litColor, vec3(u_gamma));
           float litColorLum = luminance(litColorUngamma);
           float invtonemap_a = -1.f / (u_whiteLevel*u_whiteLevel);
@@ -196,6 +198,8 @@ const ShaderReplacementRule INVERSE_TONEMAP (
         )"},
       {"TEXTURE_OUT_ADJUST", R"(
           // NOTE: code is lazily duplicated between this rule and above
+          float INVERSE_TONEMAP_EPS = 0.001; // inversion does bad things on 0 or 1, so clamp slightly away
+          textureOut = clamp(textureOut, INVERSE_TONEMAP_EPS, 1.0 - INVERSE_TONEMAP_EPS); 
           vec3 adj_textureOut3 = vec3(textureOut);
           vec3 litColorUngamma = pow(adj_textureOut3, vec3(u_gamma));
           float litColorLum = luminance(litColorUngamma);
