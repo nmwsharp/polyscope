@@ -177,6 +177,7 @@ void updateFlight();
 // It is set to invalid initially, but we call ensureViewValid() before any renders.
 // This ensures we never try to render with an invalid view, but also allows the user to
 // set custom views if they wish, without them getting overwritten.
+bool viewIsValid();
 void invalidateView();
 void ensureViewValid();
 

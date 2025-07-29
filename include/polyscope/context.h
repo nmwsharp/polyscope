@@ -88,7 +88,7 @@ struct Context {
   double nearClipRatio = view::defaultNearClipRatio;
   double farClipRatio = view::defaultFarClipRatio;
   std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 0.0}};
-  glm::mat4x4 viewMat;
+  glm::mat4x4 viewMat{std::numeric_limits<float>::quiet_NaN()};
   double fov = view::defaultFov;
   ProjectionMode projectionMode = ProjectionMode::Perspective;
   glm::vec3 viewCenter;
