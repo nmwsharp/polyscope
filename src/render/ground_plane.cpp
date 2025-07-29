@@ -178,6 +178,12 @@ void GroundPlane::draw(bool isRedraw) {
   // don't draw ground in planar mode
   if (view::style == view::NavigateStyle::Planar) return;
 
+  // don't draw the ground in Simple transparency mode
+  // (there's not really any way to do so that doesn't look weird at the horizon boundary)
+  if (render::engine->getTransparencyMode() == TransparencyMode::Simple) {
+    return;
+  }
+
   if (!groundPlanePrepared || groundPlanePreparedMode != options::groundPlaneMode) {
     prepare();
   }
@@ -382,7 +388,6 @@ void GroundPlane::draw(bool isRedraw) {
 
   // Render the ground plane
   render::engine->applyTransparencySettings();
-  render::engine->setDepthMode(DepthMode::Less);
   setUniforms();
   groundPlaneProgram->draw();
 }
