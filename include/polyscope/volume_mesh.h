@@ -262,6 +262,8 @@ private:
   // clang-format off
   static const std::vector<std::vector<std::array<size_t, 3>>> stencilTet;
   static const std::vector<std::vector<std::array<size_t, 3>>> stencilHex;
+  static const std::vector<std::vector<std::array<size_t, 3>>> stencilPrism;
+  static const std::vector<std::vector<std::array<size_t, 3>>> stencilPyramid;
   static const std::array<std::array<size_t, 8>, 8> rotationMap;
   static const std::array<std::array<std::array<size_t, 4>, 6>, 4> diagonalMap;
 

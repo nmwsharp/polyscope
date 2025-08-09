@@ -93,7 +93,86 @@ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilHex =
    {{6,2,3}, {6,3,7}}, 
    {{7,4,5}, {7,5,6}}, 
  };
+
+ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilPrism = 
+ {
+   {{0,2,1}}, 
+   {{0,1,4}, {0,4,3}}, 
+   {{1,5,4}, {1,2,5}}, 
+   {{0,3,5}, {0,5,2}}, 
+   {{3,4,5}}, 
+ };
+
+ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilPyramid = 
+ {
+   {{0,3,2}, {0,2,1}}, 
+   {{0,1,4}}, 
+   {{1,2,4}}, 
+   {{2,3,4}}, 
+   {{3,0,4}}, 
+ };
 // clang-format on
+
+
+namespace detail {
+using Tet = std::array<uint32_t, 4>;
+using Prism = std::array<uint32_t, 6>;
+using Pyramid = std::array<uint32_t, 5>;
+using Cell = std::array<uint32_t, 8>;
+using Tets = std::vector<Tet>;
+
+Prism rotatePrism(const Prism& p, int rot) {
+  static constexpr int bottomRot[3][3] = {
+      {0, 1, 2}, // identity
+      {1, 2, 0}, // rot1
+      {2, 0, 1}  // rot2
+  };
+  static constexpr int topRot[3][3] = {{3, 4, 5}, {4, 5, 3}, {5, 3, 4}};
+  Prism r;
+  for (int i = 0; i < 3; ++i) r[i] = p[bottomRot[rot][i]];
+  for (int i = 0; i < 3; ++i) r[i + 3] = p[topRot[rot][i]];
+  return r;
+}
+Tets decomposePrism(const Cell& cell) {
+  Prism p = {cell[0], cell[1], cell[2], cell[3], cell[4], cell[5]};
+  int minIdx = std::min_element(p.begin(), p.end()) - p.begin();
+  int rot = 0;
+  // If smallest vertex is in bottom triangle
+  if (minIdx < 3) {
+    // rotate bottom triangle so min vertex is V0
+    int bPos = (minIdx == 0 ? 0 : (minIdx == 1 ? 2 : 1)); // mapping from input idx to rot
+    rot = bPos;
+  } else {
+    // smallest vertex in top triangle, reflect wedge
+    int topPos = minIdx - 3;
+    rot = (topPos == 0 ? 0 : (topPos == 1 ? 2 : 1));
+    // swap top/bottom
+    std::swap(p[0], p[3]);
+    std::swap(p[1], p[4]);
+    std::swap(p[2], p[5]);
+  }
+  // Rotate prism to have V0 in bottom left corner
+  p = rotatePrism(p, rot);
+  // Now, decide how to split the quad opposite V0
+  if (std::min(p[2], p[4]) < std::min(p[1], p[5])) {
+    // Split along diagonal 2-4
+    return {{p[0], p[5], p[4], p[3]}, {p[0], p[4], p[5], p[2]}, {p[0], p[4], p[2], p[1]}};
+  } else {
+    // Split along diagonal 1-5
+    return {{p[0], p[5], p[4], p[3]}, {p[0], p[1], p[5], p[2]}, {p[0], p[5], p[1], p[4]}};
+  }
+}
+Tets decomposePyramid(const Cell& cell) {
+  Pyramid p = {cell[0], cell[1], cell[2], cell[3], cell[4]};
+  if (std::min(p[0], p[2]) < std::min(p[1], p[3])) {
+    // Split along diagonal 0-2
+    return {{p[0], p[2], p[4], p[1]}, {p[0], p[4], p[2], p[3]}};
+  } else {
+    // Split along diagonal 1-3
+    return {{p[1], p[3], p[4], p[2]}, {p[1], p[4], p[3], p[0]}};
+  }
+}
+} // namespace detail
 
 VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPositions_,
                        const std::vector<std::array<uint32_t, 8>>& cellIndices_)
@@ -264,14 +343,26 @@ void VolumeMesh::computeTets() {
     case VolumeCellType::TET:
       tetCount += 1;
       break;
+    case VolumeCellType::PRISM:
+      tetCount += 3;
+      break;
+    case VolumeCellType::PYRAMID:
+      tetCount += 2;
+      break;
     }
   }
-  // Mark each edge as real or not (in the original mesh)
-  std::vector<std::array<bool, 6>> realEdges;
+
   // Each hex can make up to 6 tets
   tets.resize(tetCount);
-  realEdges.resize(tetCount);
   size_t tetIdx = 0;
+  auto addTets = [&](const detail::Tets& newTets) {
+    for (const auto& tet : newTets) {
+      for (size_t i = 0; i < 4; i++) {
+        tets[tetIdx][i] = tet[i];
+      }
+      tetIdx++;
+    }
+  };
   for (size_t iC = 0; iC < nCells(); iC++) {
     switch (cellType(iC)) {
     case VolumeCellType::HEX: {
@@ -335,11 +426,18 @@ void VolumeMesh::computeTets() {
       }
       break;
     }
-    case VolumeCellType::TET:
+    case VolumeCellType::TET: {
       for (size_t i = 0; i < 4; i++) {
         tets[tetIdx][i] = cells[iC][i];
       }
       tetIdx++;
+      break;
+    }
+    case VolumeCellType::PRISM:
+      addTets(detail::decomposePrism(cells[iC]));
+      break;
+    case VolumeCellType::PYRAMID:
+      addTets(detail::decomposePyramid(cells[iC]));
       break;
     }
   }
