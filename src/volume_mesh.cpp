@@ -96,16 +96,16 @@ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilHex =
 
  const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilPrism = 
  {
-   {{0,2,1}}, 
-   {{0,1,4}, {0,4,3}}, 
-   {{1,5,4}, {1,2,5}}, 
-   {{0,3,5}, {0,5,2}}, 
-   {{3,4,5}}, 
+   {{0,1,2}}, 
+   {{0,2,3}, {3,2,5}}, 
+   {{5,2,1}, {5,1,4}}, 
+   {{4,1,3}, {3,1,0}}, 
+   {{5,4,3}}, 
  };
 
  const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilPyramid = 
  {
-   {{0,3,2}, {0,2,1}}, 
+   {{0,3,1}, {1,3,2}}, 
    {{0,1,4}}, 
    {{1,2,4}}, 
    {{2,3,4}}, 
@@ -833,6 +833,10 @@ const std::vector<std::vector<std::array<size_t, 3>>>& VolumeMesh::cellStencil(V
     return stencilTet;
   case VolumeCellType::HEX:
     return stencilHex;
+  case VolumeCellType::PRISM:
+    return stencilPrism;
+  case VolumeCellType::PYRAMID:
+    return stencilPyramid;
   }
 
   // unreachable
@@ -1073,11 +1077,18 @@ void VolumeMesh::recomputeGeometryIfPopulated() {
 }
 
 VolumeCellType VolumeMesh::cellType(size_t i) const {
-  bool isHex = cells[i][4] < INVALID_IND_32;
-  if (isHex) {
+  auto sentinelIndices = std::count(cells[i].begin(), cells[i].end(), INVALID_IND_32);
+  switch (sentinelIndices) {
+  case 0: // no sentinel indices, must be a hex
     return VolumeCellType::HEX;
-  } else {
+  case 2: // two sentinel indices, must be a prism
+    return VolumeCellType::PRISM;
+  case 3: // three sentinel indices, must be a pyramid
+    return VolumeCellType::PYRAMID;
+  case 4: // four sentinel indices, must be a tet
     return VolumeCellType::TET;
+  default:
+    throw std::runtime_error("VolumeMesh::cellType: Invalid number of sentinel indices in cell");
   }
 };
 
