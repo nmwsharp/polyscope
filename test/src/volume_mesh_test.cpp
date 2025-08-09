@@ -97,8 +97,8 @@ TEST_F(PolyscopeTest, ShowVolumeMeshHexWedgePyramidTet) {
       // Tet Connecting side and top prisms
       {5, 11, 6, 9, -1, -1, -1, -1},
   };
-  polyscope::registerVolumeMesh("hex wedge pyramid tet", vertices, cells);
-  polyscope::show();
+  polyscope::registerVolumeMesh("hex prism pyramid tet", vertices, cells);
+  polyscope::show(3);
   polyscope::removeAllStructures();
 }
 
