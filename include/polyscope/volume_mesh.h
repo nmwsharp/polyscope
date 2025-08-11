@@ -180,7 +180,7 @@ public:
   void fillGeometryBuffers(render::ShaderProgram& p);
   void fillSliceGeometryBuffers(render::ShaderProgram& p);
   static const std::vector<std::vector<std::array<size_t, 3>>>& cellStencil(VolumeCellType type);
-
+  static const std::vector<std::vector<size_t>>& cellFaces(VolumeCellType type);
   // Slice plane listeners
   std::vector<polyscope::SlicePlane*> volumeSlicePlaneListeners;
   void addSlicePlaneListener(polyscope::SlicePlane* sp);
@@ -264,6 +264,11 @@ private:
   static const std::vector<std::vector<std::array<size_t, 3>>> stencilHex;
   static const std::vector<std::vector<std::array<size_t, 3>>> stencilPrism;
   static const std::vector<std::vector<std::array<size_t, 3>>> stencilPyramid;
+  static const std::vector<std::vector<size_t>> facesTet;
+  static const std::vector<std::vector<size_t>> facesHex;
+  static const std::vector<std::vector<size_t>> facesPrism;
+  static const std::vector<std::vector<size_t>> facesPyramid;
+  
   static const std::array<std::array<size_t, 8>, 8> rotationMap;
   static const std::array<std::array<std::array<size_t, 4>, 6>, 4> diagonalMap;
 

@@ -30,7 +30,13 @@ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilTet =
    {{0,3,2}}, 
    {{1,2,3}},
  };
-
+const std::vector<std::vector<size_t>> VolumeMesh::facesTet =
+{
+  {0,2,1},
+  {0,1,3},
+  {0,3,2},
+  {1,2,3}
+};
 // Indirection to place vertex 0 always in the bottom left corner
 const std::array<std::array<size_t, 8>, 8> VolumeMesh::rotationMap = 
  {{
@@ -94,22 +100,50 @@ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilHex =
    {{7,4,5}, {7,5,6}}, 
  };
 
+ const std::vector<std::vector<size_t>> VolumeMesh::facesHex =
+ {
+  {2,1,0,3},
+  {4,0,1,5},
+  {5,1,2,6},
+  {7,3,0,4},
+  {6,2,3,7},
+  {7,4,5,6}
+ };
+
  const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilPrism = 
  {
    {{0,1,2}}, 
-   {{0,2,3}, {3,2,5}}, 
-   {{5,2,1}, {5,1,4}}, 
-   {{4,1,3}, {3,1,0}}, 
-   {{5,4,3}}, 
+   {{0,4,1}, {0,3,4}}, 
+   {{1,5,4}, {1,2,5}}, 
+   {{3,0,5}, {0,2,5}}, 
+   {{3,5,4}}, 
+ };
+
+ const std::vector<std::vector<size_t>> VolumeMesh::facesPrism =
+ {
+  {0,1,2},
+  {0,3,4,1},
+  {1,4,5,2},
+  {0,2,5,3},
+  {3,5,4}
  };
 
  const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilPyramid = 
  {
-   {{0,3,1}, {1,3,2}}, 
+   {{0,3,2}, {0,2,1}}, 
    {{0,1,4}}, 
    {{1,2,4}}, 
    {{2,3,4}}, 
    {{3,0,4}}, 
+ };
+
+ const std::vector<std::vector<size_t>> VolumeMesh::facesPyramid =
+ {
+  {0,1,2,3},
+  {0,1,4},
+  {1,2,4},
+  {2,3,4},
+  {3,0,4}
  };
 // clang-format on
 
@@ -745,7 +779,6 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
 }
 
 void VolumeMesh::computeConnectivityData() {
-
   // NOTE: If we were to fill buffers naively via a loop over cells, we get pretty bad z-fighting artifacts where
   // interior edges ever-so-slightly show through the exterior boundary (more generally, any place 3 faces meet at an
   // edge, which happens everywhere in a tet mesh).
@@ -753,14 +786,16 @@ void VolumeMesh::computeConnectivityData() {
   // To mitigate this issue, we fill the buffer such that all exterior faces come first, then all interior faces, so
   // that exterior faces always win depth ties. This doesn't totally eliminate the problem, but greatly improves the
   // most egregious cases.
+  auto makeEdgeKey = [](uint32_t a, uint32_t b) -> std::pair<uint32_t, uint32_t> {
+    if (a > b) std::swap(a, b);
+    return {a, b};
+  };
 
   // == Allocate buffers
   triangleVertexInds.data.clear();
   triangleVertexInds.data.resize(3 * nFacesTriangulation());
   triangleFaceInds.data.clear();
   triangleFaceInds.data.resize(3 * nFacesTriangulation());
-  triangleCellInds.data.clear();
-  triangleCellInds.data.resize(3 * nFacesTriangulation());
   triangleCellInds.data.clear();
   triangleCellInds.data.resize(3 * nFacesTriangulation());
   baryCoord.data.clear();
@@ -770,57 +805,76 @@ void VolumeMesh::computeConnectivityData() {
   faceType.data.clear();
   faceType.data.resize(nFaces());
 
-  size_t iF = 0;
+  size_t iF = 0; // face counter
   size_t iFront = 0;
   size_t iBack = nFacesTriangulation() - 1;
+
+  // Loop over all cells
   for (size_t iC = 0; iC < nCells(); iC++) {
     const std::array<uint32_t, 8>& cell = cells[iC];
     VolumeCellType cellT = cellType(iC);
 
+    const auto& faceTris = cellStencil(cellT); // triangulated faces
+    const auto& faceVerts = cellFaces(cellT);  // original polygon faces
+
     // Loop over all faces of the cell
-    for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
+    for (size_t f = 0; f < faceTris.size(); f++) {
 
-      // Loop over the face's triangulation
-      for (size_t j = 0; j < face.size(); j++) {
-        const std::array<size_t, 3>& tri = face[j];
+      const auto& triList = faceTris[f];
+      const auto& poly = faceVerts[f];
 
-        // Enumerate exterior faces in the front of the draw buffer, and interior faces in the back.
-        // (see note above)
+      // Build a set of "real" edges from the polygon
+      std::set<std::pair<uint32_t, uint32_t>> realEdges;
+      for (size_t p = 0; p < poly.size(); p++) {
+        realEdges.insert(makeEdgeKey(cell[poly[p]], cell[poly[(p + 1) % poly.size()]]));
+      }
+
+      // Loop over triangles in the triangulation of this face
+      for (size_t j = 0; j < triList.size(); j++) {
+        const auto& tri = triList[j];
+
+        // Decide where to store (front for exterior, back for interior)
         size_t iData;
         if (faceIsInterior[iF]) {
-          iData = iBack;
-          iBack--;
+          iData = iBack--;
         } else {
-          iData = iFront;
-          iFront++;
+          iData = iFront++;
         }
 
+        // Store triangle vertices
         for (size_t k = 0; k < 3; k++) {
           triangleVertexInds.data[3 * iData + k] = cell[tri[k]];
         }
+
+        // Face & cell indices
         for (size_t k = 0; k < 3; k++) triangleFaceInds.data[3 * iData + k] = iF;
         for (size_t k = 0; k < 3; k++) triangleCellInds.data[3 * iData + k] = iC;
 
+        // Barycentric coords
         baryCoord.data[3 * iData + 0] = glm::vec3{1., 0., 0.};
         baryCoord.data[3 * iData + 1] = glm::vec3{0., 1., 0.};
         baryCoord.data[3 * iData + 2] = glm::vec3{0., 0., 1.};
 
-        glm::vec3 edgeRealV{0., 1., 0.};
-        if (j == 0) edgeRealV.x = 1.;
-        if (j + 1 == face.size()) edgeRealV.z = 1.;
-        for (int k = 0; k < 3; k++) edgeIsReal.data[3 * iData + k] = edgeRealV;
+        // Mark edges as real or not
+        glm::vec3 realFlag(0.0f);
+        for (size_t k = 0; k < 3; k++) {
+          bool isReal = realEdges.count(makeEdgeKey(cell[tri[k]], cell[tri[(k + 1) % 3]])) > 0;
+          realFlag[k] = isReal ? 1.0f : 0.0f;
+          edgeIsReal.data[3 * iData + k] = realFlag;
+        }
+        for (int k = 0; k < 3; k++) edgeIsReal.data[3 * iData + k] = realFlag;
       }
 
-      float faceTypeFloat = faceIsInterior[iF] ? 1. : 0.;
-      for (int k = 0; k < 3; k++) faceType.data[iF] = faceTypeFloat;
+      // Face type: 1 for interior, 0 for exterior
+      faceType.data[iF] = faceIsInterior[iF] ? 1.f : 0.f;
 
       iF++;
     }
   }
 
+  // Mark buffers updated
   triangleVertexInds.markHostBufferUpdated();
   triangleFaceInds.markHostBufferUpdated();
-  triangleCellInds.markHostBufferUpdated();
   triangleCellInds.markHostBufferUpdated();
   baryCoord.markHostBufferUpdated();
   edgeIsReal.markHostBufferUpdated();
@@ -838,9 +892,23 @@ const std::vector<std::vector<std::array<size_t, 3>>>& VolumeMesh::cellStencil(V
   case VolumeCellType::PYRAMID:
     return stencilPyramid;
   }
-
   // unreachable
   return stencilTet;
+}
+
+const std::vector<std::vector<size_t>>& VolumeMesh::cellFaces(VolumeCellType type) {
+  switch (type) {
+  case VolumeCellType::TET:
+    return facesTet;
+  case VolumeCellType::HEX:
+    return facesHex;
+  case VolumeCellType::PRISM:
+    return facesPrism;
+  case VolumeCellType::PYRAMID:
+    return facesPyramid;
+  }
+  // unreachable
+  return facesTet;
 }
 
 
