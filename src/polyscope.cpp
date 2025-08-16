@@ -153,6 +153,22 @@ std::map<std::string, std::unique_ptr<Structure>>& getStructureMapCreateIfNeeded
   return state::structures[typeName];
 }
 
+void sleepForFramerate() {
+  // If needed, block the program execution to hit the intended framerate
+  // (if not used, the render loop may busy-run maxed out at 1000+ fps and waste resources)
+  if (options::maxFPS != -1) {
+    auto currTime = std::chrono::steady_clock::now();
+    long microsecPerLoop = 1000000 / options::maxFPS;
+    microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
+    while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
+           microsecPerLoop) {
+      std::this_thread::yield();
+      currTime = std::chrono::steady_clock::now();
+    }
+  }
+  lastMainLoopIterTime = std::chrono::steady_clock::now();
+}
+
 } // namespace
 
 // === Core global functions
@@ -239,19 +255,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   size_t currentContextStackSize = contextStack.size();
   while (contextStack.size() >= currentContextStackSize) {
 
-    // The windowing system will let the main loop busy-loop on some platforms. Make sure that doesn't happen.
-    if (options::maxFPS != -1) {
-      auto currTime = std::chrono::steady_clock::now();
-      long microsecPerLoop = 1000000 / options::maxFPS;
-      microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
-      while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
-             microsecPerLoop) {
-        std::this_thread::yield();
-        currTime = std::chrono::steady_clock::now();
-      }
-    }
-    lastMainLoopIterTime = std::chrono::steady_clock::now();
-
+    sleepForFramerate();
     mainLoopIteration();
 
     // auto-exit if the window is closed
@@ -305,8 +309,28 @@ void frameTick() {
   // Make sure we're visible
   render::engine->showWindow();
 
-  // All-imporant main loop iteration
+  bool savedVsyncValue = false; // see below
+  bool needToRestoreVSyncValue =
+      false; // we need this as a saved bool, because the setting could change during mainLoopIteration()
+  if (options::frameTickLimitFPS) {
+    sleepForFramerate();
+  } else {
+    // Ugly workaround to preserve the API:
+    // We want vsync to be disabled unless frameTick(limitFPS=True), so that we don't slow down user's application.
+    // But it's currently a bool read in the render call and I don't want to change that API. So we temporarily set
+    // it to false and restore the value after.
+    // ONEDAY: when we have a major version update, change the API on the vsync setting to make this unecessary
+    savedVsyncValue = options::enableVSync;
+    options::enableVSync = false;
+    needToRestoreVSyncValue = true;
+  }
+
   mainLoopIteration();
+
+  if (needToRestoreVSyncValue) {
+    // restore saved value, see note above
+    options::enableVSync = savedVsyncValue;
+  }
 
   frameTickStack--;
 }
@@ -705,6 +729,15 @@ void buildPolyscopeGui() {
     ImGui::Text("Last: %.1f ms/frame (%.1f fps)", ImGui::GetIO().DeltaTime * 1000.f, 1.f / ImGui::GetIO().DeltaTime);
 
     ImGui::PushItemWidth(40 * options::uiScale);
+
+    bool isFrameTickShow = frameTickStack > 0;
+    if (isFrameTickShow) {
+      ImGui::Checkbox("limit fps", &options::frameTickLimitFPS);
+      ImGui::SameLine();
+    }
+
+    ImGui::BeginDisabled(isFrameTickShow && !options::frameTickLimitFPS);
+
     if (ImGui::InputInt("max fps", &options::maxFPS, 0)) {
       if (options::maxFPS < 1 && options::maxFPS != -1) {
         options::maxFPS = -1;
@@ -714,6 +747,8 @@ void buildPolyscopeGui() {
     ImGui::PopItemWidth();
     ImGui::SameLine();
     ImGui::Checkbox("vsync", &options::enableVSync);
+
+    ImGui::EndDisabled();
 
     ImGui::TreePop();
   }

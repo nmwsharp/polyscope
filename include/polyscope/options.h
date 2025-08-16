@@ -41,6 +41,10 @@ extern int maxFPS;
 // NOTE: some platforms may ignore the setting.
 extern bool enableVSync;
 
+// When using the alternate `frameTick()` control flow instead of `show()`, should framerate-limiting maxFPS/vsync
+// features be respected? (which might caues the program to block on the call to frameTick()). (default: false)
+extern bool frameTickLimitFPS;
+
 // Read preferences (window size, etc) from startup file, write to same file on exit (default: true)
 extern bool usePrefsFile;
 

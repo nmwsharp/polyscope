@@ -944,11 +944,12 @@ int main(int argc, char** argv) {
   } else {
     // Show the gui
     polyscope::show();
+
+    // main loop using manual frameTick() instead
+    // while (!polyscope::windowRequestsClose()) {
+    //   polyscope::frameTick();
+    // }
   }
-  // main loop using manual frameTick() instead
-  // while (true) {
-  //   polyscope::frameTick();
-  // }
 
   std::cout << "!!!! shutdown time" << std::endl;
   polyscope::shutdown();

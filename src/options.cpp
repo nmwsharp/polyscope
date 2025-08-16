@@ -13,13 +13,13 @@ bool allowHeadlessBackends = false;
 bool errorsThrowExceptions = false;
 bool debugDrawPickBuffer = false;
 int maxFPS = 60;
-
 #ifdef _WIN32
 // set the default vsync to false on windows, to workaround an glfw errors from an alleged driver bug
 bool enableVSync = false;
 #else
 bool enableVSync = true;
 #endif
+bool frameTickLimitFPS = false;
 
 bool usePrefsFile = true;
 bool initializeWithDefaultStructures = true;
