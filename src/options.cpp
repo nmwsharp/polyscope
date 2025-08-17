@@ -19,7 +19,7 @@ bool enableVSync = false;
 #else
 bool enableVSync = true;
 #endif
-bool frameTickLimitFPS = false;
+LimitFPSMode frameTickLimitFPSMode = LimitFPSMode::SkipFramesToHitTarget;
 
 bool usePrefsFile = true;
 bool initializeWithDefaultStructures = true;
