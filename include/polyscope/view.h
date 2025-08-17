@@ -90,11 +90,13 @@ glm::vec3 getCameraWorldPosition();
 void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
 glm::vec3 getUpVec();
 glm::vec3 getFrontVec();
+float getVerticalFieldOfViewDegrees();
 
 // Set the camera extrinsics to look at a particular location
 void setViewToCamera(const CameraParameters& p);
 void lookAt(glm::vec3 cameraLocation, glm::vec3 target, bool flyTo = false);
 void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool flyTo = false);
+void setVerticalFieldOfViewDegrees(float newVal);
 
 // The "home" view looks at the center of the scene's bounding box.
 glm::mat4 computeHomeView();

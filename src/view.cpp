@@ -626,6 +626,13 @@ void setCameraViewMatrix(glm::mat4 mat) { viewMat = mat; }
 
 glm::mat4 getCameraViewMatrix() { return viewMat; }
 
+void setVerticalFieldOfViewDegrees(float newVal) {
+  view::fov = newVal;
+  requestRedraw();
+}
+
+float getVerticalFieldOfViewDegrees() { return view::fov; }
+
 glm::mat4 getCameraPerspectiveMatrix() {
   double farClip = farClipRatio * state::lengthScale;
   double nearClip = nearClipRatio * state::lengthScale;
