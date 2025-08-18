@@ -8,8 +8,8 @@
 
 namespace polyscope {
 
-Structure::Structure(std::string name_, std::string subtypeName)
-    : name(name_), enabled(subtypeName + "#" + name + "#enabled", true),
+Structure::Structure(std::string name_, std::string subtypeName_)
+    : name(name_), subtypeName(subtypeName_), enabled(subtypeName + "#" + name + "#enabled", true),
       objectTransform(subtypeName + "#" + name + "#object_transform", glm::mat4(1.0)),
       transparency(subtypeName + "#" + name + "#transparency", 1.0),
       transformGizmo(subtypeName + "#" + name + "#transform_gizmo", objectTransform.get(), &objectTransform),

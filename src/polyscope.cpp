@@ -943,6 +943,9 @@ void buildPickGui() {
     ImGui::NewLine();
 
     ImGui::TextUnformatted((selection.structureType + ": " + selection.structureName).c_str());
+    if (selection.quantityName != "") {
+      ImGui::TextUnformatted(("Quantity: " + selection.quantityName).c_str());
+    }
     ImGui::Separator();
 
     if (selection.structureHandle.isValid()) {
@@ -1250,20 +1253,6 @@ bool hasStructure(std::string type, std::string name) {
     return true;
   }
   return sMap.find(name) != sMap.end();
-}
-
-std::tuple<std::string, std::string> lookUpStructure(Structure* structure) {
-
-  for (auto& typeMap : state::structures) {
-    for (auto& entry : typeMap.second) {
-      if (entry.second.get() == structure) {
-        return std::tuple<std::string, std::string>(typeMap.first, entry.first);
-      }
-    }
-  }
-
-  // not found
-  return std::tuple<std::string, std::string>("", "");
 }
 
 void removeStructure(std::string type, std::string name, bool errorIfAbsent) {

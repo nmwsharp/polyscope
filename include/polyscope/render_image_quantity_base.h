@@ -26,8 +26,7 @@ public:
                           const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData,
                           ImageOrigin imageOrigin);
 
-  // virtual void draw() override;
-  // virtual void drawDelayed() override;
+  virtual void drawPickDelayed() override;
 
   virtual void refresh() override;
 
@@ -73,9 +72,14 @@ protected:
   PersistentValue<float> transparency;
   PersistentValue<bool> allowFullscreenCompositing;
 
+  // Picking is the same for all
+  std::shared_ptr<render::ShaderProgram> pickProgram;
+  glm::vec3 pickColor;
+
   // Helpers
   void prepareGeometryBuffers();
   void addOptionsPopupEntries();
+  void preparePick();
 };
 
 

@@ -128,6 +128,27 @@ void CameraView::drawPick() {
   pickFrameProgram->setUniform("u_vertPickRadius", 0.);
 
   pickFrameProgram->draw();
+
+  for (auto& x : quantities) {
+    x.second->drawPick();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawPick();
+  }
+}
+
+
+void CameraView::drawPickDelayed() {
+  if (!isEnabled()) {
+    return;
+  }
+
+  for (auto& x : quantities) {
+    x.second->drawPickDelayed();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawPickDelayed();
+  }
 }
 
 void CameraView::prepare() {

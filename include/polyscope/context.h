@@ -107,6 +107,7 @@ struct Context {
   bool haveSelectionVal = false;
   uint64_t nextPickBufferInd = 1;
   std::unordered_map<Structure*, std::tuple<uint64_t, uint64_t>> structureRanges;
+  std::unordered_map<Quantity*, std::tuple<uint64_t, uint64_t>> quantityRanges;
 
   // ======================================================
   // === Internal globals from internal.h

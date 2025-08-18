@@ -30,6 +30,10 @@ public:
   virtual void draw();
   virtual void drawDelayed(); // drawing that should happen after the main phase
 
+  // Draw pick buffers for the quantity
+  virtual void drawPick();
+  virtual void drawPickDelayed(); // drawing that should happen after the main phase
+
   // Draw the ImGUI ui elements
   virtual void buildUI();       // draws the tree node and enabled checkbox common to almost all quantities, and calls
                                 // drawCustomUI() below. Can still be overidden in case something else is wanted.

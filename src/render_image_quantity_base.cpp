@@ -64,7 +64,53 @@ void RenderImageQuantityBase::updateBaseBuffers(const std::vector<float>& newDep
   requestRedraw();
 }
 
-void RenderImageQuantityBase::refresh() { Quantity::refresh(); }
+
+void RenderImageQuantityBase::drawPickDelayed() {
+  if (!isEnabled()) return;
+
+  if (!pickProgram) preparePick();
+
+  // set uniforms
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+
+  pickProgram->setUniform("u_projMatrix", glm::value_ptr(P));
+  pickProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  pickProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
+  pickProgram->setUniform("u_transparency", 1.0);
+  pickProgram->setUniform("u_color", pickColor);
+
+  // draw
+  pickProgram->draw();
+}
+
+void RenderImageQuantityBase::refresh() {
+  pickProgram = nullptr;
+  Quantity::refresh();
+}
+
+
+void RenderImageQuantityBase::preparePick() {
+
+  // Request pick indices
+  size_t pickCount = 1;
+  size_t pickStart = pick::requestPickBufferRange(this, pickCount);
+  pickColor = pick::indToVec(pickStart);
+
+  // Create the sourceProgram
+  // clang-format off
+  pickProgram = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
+    {
+      getImageOriginRule(imageOrigin), 
+      "SHADECOLOR_FROM_UNIFORM",
+    },
+    render::ShaderReplacementDefaults::Pick
+  );
+  // clang-format on
+
+  pickProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
+  pickProgram->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
+}
 
 void RenderImageQuantityBase::disableFullscreenDrawing() {
   if (isEnabled()) {
