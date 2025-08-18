@@ -142,23 +142,29 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
       std::cout << "  processing edge " << iT << " " << k << std::endl;
 
       if(parent.edgeIsReal.data[3*iT][k] == 0.) continue; // skip internal tesselation edges
+      
+      std::cout << "  is real passed" << std::endl;
 
       // gather data for the edge
       int32_t iV_tail = parent.triangleVertexInds.data[3*iT + (k+0)%3];
       int32_t iV_tip = parent.triangleVertexInds.data[3*iT + (k+1)%3];
       int32_t iC_tail = parent.triangleCornerInds.data[3*iT + (k+0)%3];
       int32_t iC_tip = parent.triangleCornerInds.data[3*iT + (k+1)%3];
-      std::pair<int32_t, int32_t> eInd (iV_tail, iV_tip);
-      std::pair<glm::vec2, glm::vec2> eC (coords.data[iC_tail], coords.data[iC_tip]);
-      canonicalizeEdge(eInd, eC); // make sure ordering is consistent
-
       std::cout << "  iV_tail: " << iV_tail << " iV_tip: " << iV_tip << std::endl;
       std::cout << "  iC_tail: " << iC_tail << " iC_tip: " << iC_tip << std::endl;
+      std::pair<int32_t, int32_t> eInd (iV_tail, iV_tip);
+      std::pair<glm::vec2, glm::vec2> eC (coords.data[iC_tail], coords.data[iC_tip]);
+      std::cout << "  eC: " << eC.first << " -- " << eC.second << std::endl;
+      canonicalizeEdge(eInd, eC); // make sure ordering is consistent
+      std::cout << " canonicalized "<< std::endl;
+
 
       // increment the count
       if(edgeCount.find(eInd) == edgeCount.end())  {
+        std::cout << " new!"<< std::endl;
         edgeCount[eInd] = 1;
       } else {
+        std::cout << " increment!"<< std::endl;
         edgeCount[eInd] ++;
       }
 
