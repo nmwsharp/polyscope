@@ -178,6 +178,12 @@ public:
   // same view will be returned repeatedly at no additional cost.
   std::shared_ptr<render::AttributeBuffer> getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>& indices);
 
+  // Get a copy of the data viewed through an index, such that view[i] = data[indices[i]].
+  //
+  // This follows the same logic as above, but rather than returning a render buffer it simply returns a host-side 
+  // copy (which is not cached).
+  std::vector<T> getIndexedView(ManagedBuffer<uint32_t>& indices);
+
   // ========================================================================
   // == Direct access to the GPU (device-side) render texture buffer
   // ========================================================================

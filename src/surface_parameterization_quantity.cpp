@@ -102,8 +102,6 @@ void SurfaceParameterizationQuantity::buildCustomUI() {
 }
 
 CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::string structureName) {
-
-  std::cout << "createCurveNetworkFromSeams: " << structureName << std::endl;
   
   // set the name to default
   if (structureName == "") {
@@ -111,14 +109,13 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
   }
 
   // Populate data on the host
-  coords.ensureHostBufferPopulated();
   parent.triangleCornerInds.ensureHostBufferPopulated();
   parent.triangleVertexInds.ensureHostBufferPopulated();
   parent.edgeIsReal.ensureHostBufferPopulated();
   parent.vertexPositions.ensureHostBufferPopulated();
 
-
-  std::cout << "populated" << std::endl;
+  // expand out the coords buffer based on how the quantity is indexed
+  std::vector<glm::vec2> cornerCoords = getCornerCoords();
 
   // helper to canonicalize edge direction
   auto canonicalizeEdge = [](std::pair<int32_t, int32_t>& inds, std::pair<glm::vec2, glm::vec2>& coords) 
@@ -139,37 +136,23 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
   for(size_t iT = 0; iT <  parent.nFacesTriangulation(); iT++) {
     for(size_t k = 0; k < 3; k++) {
 
-      std::cout << "  processing edge " << iT << " " << k << std::endl;
-
       if(parent.edgeIsReal.data[3*iT][k] == 0.) continue; // skip internal tesselation edges
-      
-      std::cout << "  is real passed" << std::endl;
 
       // gather data for the edge
       int32_t iV_tail = parent.triangleVertexInds.data[3*iT + (k+0)%3];
       int32_t iV_tip = parent.triangleVertexInds.data[3*iT + (k+1)%3];
       int32_t iC_tail = parent.triangleCornerInds.data[3*iT + (k+0)%3];
       int32_t iC_tip = parent.triangleCornerInds.data[3*iT + (k+1)%3];
-      std::cout << "  iV_tail: " << iV_tail << " iV_tip: " << iV_tip << std::endl;
-      std::cout << "  iC_tail: " << iC_tail << " iC_tip: " << iC_tip << std::endl;
       std::pair<int32_t, int32_t> eInd (iV_tail, iV_tip);
-      std::cout << "  coords.data.size() = " << coords.data.size() << std::endl;
-      std::pair<glm::vec2, glm::vec2> eC (coords.data[iC_tail], coords.data[iC_tip]);
-      std::cout << "  eC: " << eC.first << " -- " << eC.second << std::endl;
+      std::pair<glm::vec2, glm::vec2> eC (cornerCoords[iC_tail], cornerCoords[iC_tip]);
       canonicalizeEdge(eInd, eC); // make sure ordering is consistent
-      std::cout << " canonicalized "<< std::endl;
-
 
       // increment the count
       if(edgeCount.find(eInd) == edgeCount.end())  {
-        std::cout << " new!"<< std::endl;
         edgeCount[eInd] = 1;
       } else {
-        std::cout << " increment!"<< std::endl;
         edgeCount[eInd] ++;
       }
-
-      std::cout << "  incremented" << std::endl;
 
       // check for a collision against a previously seen copy of this edge
       if(edgeCoords.find(eInd) == edgeCoords.end()) { 
@@ -181,22 +164,16 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
         }
       }
 
-      std::cout << "  placed" << std::endl;
-
     }
   }
 
   // add all edges that appeared any number of times other than 2
   // (boundaries and nonmanifold edges are always seams)
-  std::cout << "placing seam edges" << std::endl;
   for(auto& entry : edgeCount)  {
     if(entry.second != 2) {
-      std::cout << "  emplacing " << entry.second << std::endl;
       seamEdges.emplace(entry.first);
     }
   }
-      
-  std::cout << "done placing seam edges" << std::endl;
 
   // densely enumerate the nodes of the seam curves
   std::vector<std::array<int32_t, 2>> seamEdgeInds;
@@ -206,31 +183,23 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
     int32_t vA = edge.first;
     int32_t vB = edge.second;
 
-
-    std::cout << "  processing edge " << vA << " " << vB << std::endl;
- 
     // get unique vertices for the edges
-    std::cout << "    part 1" << std::endl;
     if(vertexIndToDense.find(vA) == vertexIndToDense.end()) {
       vertexIndToDense[vA] = seamEdgeNodes.size();
       seamEdgeNodes.push_back(parent.vertexPositions.data[vA]);
     }
-    std::cout << "    part 2" << std::endl;
     int32_t nA = vertexIndToDense[vA];
     if(vertexIndToDense.find(vB) == vertexIndToDense.end()) {
       vertexIndToDense[vB] = seamEdgeNodes.size();
       seamEdgeNodes.push_back(parent.vertexPositions.data[vB]);
     }
     int32_t nB = vertexIndToDense[vB];
-    std::cout << "    part 3" << std::endl;
 
     // add the edge
     seamEdgeInds.push_back({nA, nB});
   }
 
   // add the curve network
-  std::cout << "    adding!" << std::endl;
-
   return registerCurveNetwork(structureName, seamEdgeNodes, seamEdgeInds);
 }
 
@@ -261,6 +230,11 @@ void SurfaceCornerParameterizationQuantity::fillCoordBuffers(render::ShaderProgr
   p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
 }
 
+
+std::vector<glm::vec2> SurfaceCornerParameterizationQuantity::getCornerCoords() {
+  return coords.getIndexedView(parent.triangleCornerInds);
+}
+
 void SurfaceCornerParameterizationQuantity::buildCornerInfoGUI(size_t cInd) {
 
   glm::vec2 coord = coords.getValue(cInd);
@@ -286,6 +260,10 @@ std::string SurfaceVertexParameterizationQuantity::niceName() { return name + " 
 
 void SurfaceVertexParameterizationQuantity::fillCoordBuffers(render::ShaderProgram& p) {
   p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
+}
+
+std::vector<glm::vec2> SurfaceVertexParameterizationQuantity::getCornerCoords() {
+  return coords.getIndexedView(parent.triangleVertexInds);
 }
 
 void SurfaceVertexParameterizationQuantity::buildVertexInfoGUI(size_t vInd) {
