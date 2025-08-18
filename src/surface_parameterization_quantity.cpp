@@ -153,6 +153,7 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
       std::cout << "  iV_tail: " << iV_tail << " iV_tip: " << iV_tip << std::endl;
       std::cout << "  iC_tail: " << iC_tail << " iC_tip: " << iC_tip << std::endl;
       std::pair<int32_t, int32_t> eInd (iV_tail, iV_tip);
+      std::cout << "  coords.data.size() = " << coords.data.size() << std::endl;
       std::pair<glm::vec2, glm::vec2> eC (coords.data[iC_tail], coords.data[iC_tip]);
       std::cout << "  eC: " << eC.first << " -- " << eC.second << std::endl;
       canonicalizeEdge(eInd, eC); // make sure ordering is consistent
