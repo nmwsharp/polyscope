@@ -821,6 +821,7 @@ void callback() {
       std::cout << "    io.MousePos.x: " << io.MousePos.x << " io.MousePos.y: " << io.MousePos.y << std::endl;
       std::cout << "    screenCoords.x: " << screenCoords.x << " screenCoords.y: " << screenCoords.y << std::endl;
       std::cout << "    bufferInd.x: " << xInd << " bufferInd.y: " << yInd << std::endl;
+      std::cout << "    depth: " << pickResult.depth << std::endl;
       std::cout << "    worldRay: ";
       polyscope::operator<<(std::cout, worldRay) << std::endl;
       std::cout << "    worldPos: ";
