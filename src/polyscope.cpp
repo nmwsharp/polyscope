@@ -943,6 +943,9 @@ void buildPickGui() {
     ImGui::NewLine();
 
     ImGui::TextUnformatted((selection.structureType + ": " + selection.structureName).c_str());
+    if (selection.quantityName != "") {
+      ImGui::TextUnformatted(("Quantity: " + selection.quantityName).c_str());
+    }
     ImGui::Separator();
 
     if (selection.structureHandle.isValid()) {

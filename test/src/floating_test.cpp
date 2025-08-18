@@ -103,6 +103,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->updateBuffers(depthVals, normalVals);
     im->setEnabled(true);
     polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
   }
   { // with no normals
     polyscope::DepthRenderImageQuantity* im = polyscope::addDepthRenderImageQuantity(
@@ -110,6 +111,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->updateBuffers(depthVals, normalValsEmpty);
     im->setEnabled(true);
     polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
   }
 
   { // ColorImageQuantity
@@ -118,6 +120,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->updateBuffers(depthVals, normalVals, colorVals);
     im->setEnabled(true);
     polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
   }
   { // with no normals
     polyscope::ColorRenderImageQuantity* im = polyscope::addColorRenderImageQuantity(
@@ -125,6 +128,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->updateBuffers(depthVals, normalValsEmpty, colorVals);
     im->setEnabled(true);
     polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
   }
 
   { // ScalarRenderImageQuantity
@@ -133,6 +137,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->updateBuffers(depthVals, normalVals, scalarVals);
     im->setEnabled(true);
     polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
   }
   { // with no normals
     polyscope::ScalarRenderImageQuantity* im = polyscope::addScalarRenderImageQuantity(
@@ -140,6 +145,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->updateBuffers(depthVals, normalValsEmpty, scalarVals);
     im->setEnabled(true);
     polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
   }
   { // categorical
     polyscope::ScalarRenderImageQuantity* im =
@@ -148,6 +154,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->updateBuffers(depthVals, normalVals, scalarVals);
     im->setEnabled(true);
     polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
   }
 
   { // RawColorImageQuantity
@@ -156,6 +163,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->updateBuffers(depthVals, colorVals);
     im->setEnabled(true);
     polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
   }
 
   { // RawColorAlphaImageQuantity
@@ -166,6 +174,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     polyscope::show(3);
     im->setIsPremultiplied(true);
     polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
   }
 
   // make sure it doesn't blow up with transparancy
