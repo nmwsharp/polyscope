@@ -135,7 +135,6 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
   // loop over all edges
   for(size_t iT = 0; iT <  parent.nFacesTriangulation(); iT++) {
     for(size_t k = 0; k < 3; k++) {
-
       if(parent.edgeIsReal.data[3*iT][k] == 0.) continue; // skip internal tesselation edges
 
       // gather data for the edge
@@ -163,7 +162,6 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
           seamEdges.emplace(eInd);
         }
       }
-
     }
   }
 
