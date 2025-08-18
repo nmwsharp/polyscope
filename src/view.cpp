@@ -633,6 +633,8 @@ void setVerticalFieldOfViewDegrees(float newVal) {
 
 float getVerticalFieldOfViewDegrees() { return view::fov; }
 
+float getAspectRatioWidthOverHeight() { return (float)bufferWidth / bufferHeight; }
+
 glm::mat4 getCameraPerspectiveMatrix() {
   double farClip = farClipRatio * state::lengthScale;
   double nearClip = nearClipRatio * state::lengthScale;
