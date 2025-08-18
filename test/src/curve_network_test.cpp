@@ -18,6 +18,14 @@ TEST_F(PolyscopeTest, ShowCurveNetwork) {
   EXPECT_FALSE(polyscope::hasCurveNetwork("test1"));
 }
 
+TEST_F(PolyscopeTest, EmptyCurveNetwork) {
+  std::vector<glm::vec3> points;
+  std::vector<std::array<size_t, 2>> edges;
+  polyscope::registerCurveNetwork("empty", points, edges);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, CurveNetworkAppearance) {
   auto psCurve = registerCurveNetwork();
 

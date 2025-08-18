@@ -393,6 +393,14 @@ ManagedBuffer<T>::getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>& indic
 }
 
 template <typename T>
+std::vector<T> ManagedBuffer<T>::getIndexedView(ManagedBuffer<uint32_t>& indices) {
+  checkDeviceBufferTypeIs(DeviceBufferType::Attribute);
+  ensureHostBufferPopulated();
+  indices.ensureHostBufferPopulated();
+  return gather(data, indices.data);
+}
+
+template <typename T>
 void ManagedBuffer<T>::updateIndexedViews() {
   checkDeviceBufferTypeIs(DeviceBufferType::Attribute);
 

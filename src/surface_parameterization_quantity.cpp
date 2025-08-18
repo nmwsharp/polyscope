@@ -109,11 +109,13 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
   }
 
   // Populate data on the host
-  coords.ensureHostBufferPopulated();
   parent.triangleCornerInds.ensureHostBufferPopulated();
   parent.triangleVertexInds.ensureHostBufferPopulated();
   parent.edgeIsReal.ensureHostBufferPopulated();
   parent.vertexPositions.ensureHostBufferPopulated();
+
+  // expand out the coords buffer based on how the quantity is indexed
+  std::vector<glm::vec2> cornerCoords = getCornerCoords();
 
   // helper to canonicalize edge direction
   auto canonicalizeEdge = [](std::pair<int32_t, int32_t>& inds, std::pair<glm::vec2, glm::vec2>& coords) 
@@ -141,7 +143,7 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
       int32_t iC_tail = parent.triangleCornerInds.data[3*iT + (k+0)%3];
       int32_t iC_tip = parent.triangleCornerInds.data[3*iT + (k+1)%3];
       std::pair<int32_t, int32_t> eInd (iV_tail, iV_tip);
-      std::pair<glm::vec2, glm::vec2> eC (coords.data[iC_tail], coords.data[iC_tip]);
+      std::pair<glm::vec2, glm::vec2> eC (cornerCoords[iC_tail], cornerCoords[iC_tip]);
       canonicalizeEdge(eInd, eC); // make sure ordering is consistent
 
       // increment the count
@@ -178,7 +180,7 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
   for(const std::pair<int32_t, int32_t>& edge: seamEdges)  {
     int32_t vA = edge.first;
     int32_t vB = edge.second;
- 
+
     // get unique vertices for the edges
     if(vertexIndToDense.find(vA) == vertexIndToDense.end()) {
       vertexIndToDense[vA] = seamEdgeNodes.size();
@@ -196,7 +198,6 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
   }
 
   // add the curve network
-
   return registerCurveNetwork(structureName, seamEdgeNodes, seamEdgeInds);
 }
 
@@ -227,6 +228,11 @@ void SurfaceCornerParameterizationQuantity::fillCoordBuffers(render::ShaderProgr
   p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
 }
 
+
+std::vector<glm::vec2> SurfaceCornerParameterizationQuantity::getCornerCoords() {
+  return coords.getIndexedView(parent.triangleCornerInds);
+}
+
 void SurfaceCornerParameterizationQuantity::buildCornerInfoGUI(size_t cInd) {
 
   glm::vec2 coord = coords.getValue(cInd);
@@ -252,6 +258,10 @@ std::string SurfaceVertexParameterizationQuantity::niceName() { return name + " 
 
 void SurfaceVertexParameterizationQuantity::fillCoordBuffers(render::ShaderProgram& p) {
   p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
+}
+
+std::vector<glm::vec2> SurfaceVertexParameterizationQuantity::getCornerCoords() {
+  return coords.getIndexedView(parent.triangleVertexInds);
 }
 
 void SurfaceVertexParameterizationQuantity::buildVertexInfoGUI(size_t vInd) {
