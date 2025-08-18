@@ -810,7 +810,28 @@ void SurfaceMesh::drawPick() {
 
   pickProgram->draw();
 
+  for (auto& x : quantities) {
+    x.second->drawPick();
+  }
+
   render::engine->setBackfaceCull(); // return to default setting
+
+  for (auto& x : floatingQuantities) {
+    x.second->drawPick();
+  }
+}
+
+void SurfaceMesh::drawPickDelayed() {
+  if (!isEnabled()) {
+    return;
+  }
+
+  for (auto& x : quantities) {
+    x.second->drawPickDelayed();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawPickDelayed();
+  }
 }
 
 void SurfaceMesh::prepare() {

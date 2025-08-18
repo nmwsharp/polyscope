@@ -23,6 +23,10 @@ void Quantity::draw() {}
 
 void Quantity::drawDelayed() {}
 
+void Quantity::drawPick() {}
+
+void Quantity::drawPickDelayed() {}
+
 void Quantity::buildUI() {}
 
 void Quantity::buildCustomUI() {}

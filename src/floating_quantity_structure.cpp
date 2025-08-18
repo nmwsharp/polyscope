@@ -49,7 +49,27 @@ void FloatingQuantityStructure::drawDelayed() {
   }
 }
 
-void FloatingQuantityStructure::drawPick() {}
+void FloatingQuantityStructure::drawPick() {
+  if (!isEnabled()) return;
+
+  for (auto& qp : quantities) {
+    qp.second->drawPick();
+  }
+  for (auto& qp : floatingQuantities) {
+    qp.second->drawPick();
+  }
+}
+
+void FloatingQuantityStructure::drawPickDelayed() {
+  if (!isEnabled()) return;
+
+  for (auto& qp : quantities) {
+    qp.second->drawPickDelayed();
+  }
+  for (auto& qp : floatingQuantities) {
+    qp.second->drawPickDelayed();
+  }
+}
 
 // override the structure UI, since this one is a bit different
 void FloatingQuantityStructure::buildUI() {

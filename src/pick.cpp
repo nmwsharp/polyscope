@@ -175,7 +175,14 @@ std::pair<Structure*, uint64_t> evaluatePickQuery(int xPos, int yPos) {
       x.second->drawPick();
     }
   }
+  for (auto& catMap : state::structures) {
+    for (auto& s : catMap.second) {
+      s.second->drawPickDelayed();
+    }
+  }
 
+
+  
   if (xPos == -1 || yPos == -1) {
     return {nullptr, 0};
   }

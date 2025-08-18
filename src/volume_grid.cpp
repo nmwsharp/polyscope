@@ -170,6 +170,26 @@ void VolumeGrid::drawPick() {
   // Draw the actual grid
   render::engine->setBackfaceCull(true);
   pickProgram->draw();
+  
+  for (auto& x : quantities) {
+    x.second->drawPick();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawPick();
+  }
+}
+
+void VolumeGrid::drawPickDelayed() {
+  if (!isEnabled()) {
+    return;
+  }
+
+  for (auto& x : quantities) {
+    x.second->drawPickDelayed();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawPickDelayed();
+  }
 }
 
 std::vector<std::string> VolumeGrid::addGridCubeRules(std::vector<std::string> initRules, bool withShade) {

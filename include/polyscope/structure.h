@@ -42,8 +42,9 @@ public:
 
   // == Render the the structure on screen
   virtual void draw() = 0;
-  virtual void drawDelayed() = 0;
   virtual void drawPick() = 0;
+  virtual void drawDelayed() = 0;     // a second render pass
+  virtual void drawPickDelayed() = 0;
 
   // == Add rendering rules
   std::vector<std::string> addStructureRules(std::vector<std::string> initRules);

@@ -26,9 +26,6 @@ public:
                           const std::vector<float>& depthData, const std::vector<glm::vec3>& normalData,
                           ImageOrigin imageOrigin);
 
-  // virtual void draw() override;
-  // virtual void drawDelayed() override;
-
   virtual void refresh() override;
 
   size_t nPix();
