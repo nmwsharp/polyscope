@@ -3,6 +3,7 @@
 #pragma once
 
 #include <functional>
+#include <list>
 #include <map>
 #include <memory>
 #include <set>
@@ -107,6 +108,8 @@ extern bool& doDefaultMouseInteraction;
 
 // a callback function used to render a "user" gui
 extern std::function<void()>& userCallback;
+
+extern std::list<std::function<void(PickResult)>>& pickCallbacks;
 
 // representative center for all registered structures
 glm::vec3 center();

@@ -82,6 +82,12 @@ public:
   virtual void buildCustomOptionsUI() override;
   virtual void buildPickUI(const PickResult&) override;
 
+  void registerVertexPickCallback(const std::function<void(size_t)>& f);
+  void registerEdgePickCallback(const std::function<void(size_t)>& f);
+  void registerHalfedgePickCallback(const std::function<void(size_t)>& f);
+  void registerFacePickCallback(const std::function<void(size_t)>& f);
+  void registerCornerPickCallback(const std::function<void(size_t)>& f);
+
   // Render the the structure on screen
   virtual void draw() override;
   virtual void drawDelayed() override;
@@ -397,6 +403,15 @@ private:
   void buildEdgeInfoGui(const SurfaceMeshPickResult& result);
   void buildHalfedgeInfoGui(const SurfaceMeshPickResult& result);
   void buildCornerInfoGui(const SurfaceMeshPickResult& result);
+
+  std::list<std::function<void(size_t)>> vertexPickCallbacks;
+  std::list<std::function<void(size_t)>> edgePickCallbacks;
+  std::list<std::function<void(size_t)>> halfedgePickCallbacks;
+  std::list<std::function<void(size_t)>> facePickCallbacks;
+  std::list<std::function<void(size_t)>> cornerPickCallbacks;
+  std::list<std::function<void(PickResult)>>::iterator pickCallbackHandle;
+  bool hasPickCallback = false;
+  void handlePick(PickResult result);
 
   // Manage per-element transparency
   // which (scalar) quantity to set point size from

@@ -473,7 +473,7 @@ void VolumeMesh::drawDelayed() {
 }
 
 void VolumeMesh::drawPick() {
-  if (!isEnabled()) {
+  if (!isEnabled() || !getPickable()) {
     return;
   }
 

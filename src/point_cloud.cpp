@@ -118,7 +118,7 @@ void PointCloud::drawDelayed() {
 }
 
 void PointCloud::drawPick() {
-  if (!isEnabled()) {
+  if (!isEnabled() || !getPickable()) {
     return;
   }
 

@@ -15,13 +15,14 @@ Structure::Structure(std::string name_, std::string subtypeName_)
       transformGizmo(subtypeName + "#" + name + "#transform_gizmo", objectTransform.get(), &objectTransform),
       cullWholeElements(subtypeName + "#" + name + "#cullWholeElements", false),
       ignoredSlicePlaneNames(subtypeName + "#" + name + "#ignored_slice_planes", {}),
+      pickable(subtypeName + "#" + name + "#pickable", true),
       objectSpaceBoundingBox(
           std::tuple<glm::vec3, glm::vec3>{glm::vec3{-777, -777, -777}, glm::vec3{-777, -777, -777}}),
       objectSpaceLengthScale(-777) {
   validateName(name);
 }
 
-Structure::~Structure() {};
+Structure::~Structure(){};
 
 Structure* Structure::setEnabled(bool newEnabled) {
   if (newEnabled == isEnabled()) return this;
@@ -317,6 +318,13 @@ Structure* Structure::setTransformGizmoEnabled(bool newVal) {
   return this;
 }
 bool Structure::getTransformGizmoEnabled() { return transformGizmo.enabled.get(); }
+
+Structure* Structure::setPickable(bool newPickable) {
+  pickable = newPickable;
+  requestRedraw();
+  return this;
+}
+bool Structure::getPickable() { return pickable.get(); }
 
 Structure* Structure::setIgnoreSlicePlane(std::string name, bool newValue) {
 

@@ -784,7 +784,7 @@ void SurfaceMesh::drawDelayed() {
 }
 
 void SurfaceMesh::drawPick() {
-  if (!isEnabled()) {
+  if (!isEnabled() || !getPickable()) {
     return;
   }
 
@@ -827,7 +827,7 @@ void SurfaceMesh::drawPick() {
 }
 
 void SurfaceMesh::drawPickDelayed() {
-  if (!isEnabled()) {
+  if (!isEnabled() || !getPickable()) {
     return;
   }
 
@@ -1191,6 +1191,81 @@ glm::vec2 SurfaceMesh::projectToScreenSpace(glm::vec3 coord) {
   glm::vec4 screenPoint = projMat * viewMat * coord4;
 
   return glm::vec2{screenPoint.x, screenPoint.y} / screenPoint.w;
+}
+
+void SurfaceMesh::registerVertexPickCallback(const std::function<void(size_t)>& f) {
+  if (!hasPickCallback) {
+    pickCallbackHandle = registerPickCallback([&](PickResult result) { handlePick(result); });
+    hasPickCallback = true;
+  }
+  vertexPickCallbacks.insert(vertexPickCallbacks.end(), f);
+}
+void SurfaceMesh::registerEdgePickCallback(const std::function<void(size_t)>& f) {
+  if (!hasPickCallback) {
+    pickCallbackHandle = registerPickCallback([&](PickResult result) { handlePick(result); });
+    hasPickCallback = true;
+  }
+  edgePickCallbacks.insert(edgePickCallbacks.end(), f);
+}
+void SurfaceMesh::registerHalfedgePickCallback(const std::function<void(size_t)>& f) {
+  if (!hasPickCallback) {
+    pickCallbackHandle = registerPickCallback([&](PickResult result) { handlePick(result); });
+    hasPickCallback = true;
+  }
+  halfedgePickCallbacks.insert(halfedgePickCallbacks.end(), f);
+}
+void SurfaceMesh::registerFacePickCallback(const std::function<void(size_t)>& f) {
+  if (!hasPickCallback) {
+    pickCallbackHandle = registerPickCallback([&](PickResult result) { handlePick(result); });
+    hasPickCallback = true;
+  }
+  facePickCallbacks.insert(facePickCallbacks.end(), f);
+}
+void SurfaceMesh::registerCornerPickCallback(const std::function<void(size_t)>& f) {
+  if (!hasPickCallback) {
+    pickCallbackHandle = registerPickCallback([&](PickResult result) { handlePick(result); });
+    hasPickCallback = true;
+  }
+  cornerPickCallbacks.insert(cornerPickCallbacks.end(), f);
+}
+void SurfaceMesh::handlePick(PickResult rawResult) {
+  if (!rawResult.isHit || rawResult.structureName != name) return;
+  SurfaceMeshPickResult result = interpretPickResult(rawResult);
+
+  switch (result.elementType) {
+  case MeshElement::VERTEX: {
+    for (const std::function<void(size_t)>& f : vertexPickCallbacks) f(result.index);
+    break;
+  }
+  case MeshElement::FACE: {
+    for (const std::function<void(size_t)>& f : facePickCallbacks) f(result.index);
+    break;
+  }
+  case MeshElement::EDGE: {
+    for (const std::function<void(size_t)>& f : edgePickCallbacks) f(result.index);
+    break;
+  }
+  case MeshElement::HALFEDGE: {
+    for (const std::function<void(size_t)>& f : halfedgePickCallbacks) f(result.index);
+
+    // Also call edge pick callbacks while we're here
+    if (edgesHaveBeenUsed) {
+      // do the edge one too (see note in pick buffer filler)
+      uint32_t halfedgeInd = result.index;
+      if (halfedgeInd >= halfedgeEdgeCorrespondence.size()) {
+        exception("problem with halfedge edge indices");
+      }
+      uint32_t edgeInd = halfedgeEdgeCorrespondence[halfedgeInd];
+      for (const std::function<void(size_t)>& f : edgePickCallbacks) f(edgeInd);
+    }
+
+    break;
+  }
+  case MeshElement::CORNER: {
+    for (const std::function<void(size_t)>& f : cornerPickCallbacks) f(result.index);
+    break;
+  }
+  };
 }
 
 void SurfaceMesh::buildVertexInfoGui(const SurfaceMeshPickResult& result) {

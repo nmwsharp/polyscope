@@ -179,7 +179,7 @@ void CurveNetwork::drawDelayed() {
 }
 
 void CurveNetwork::drawPick() {
-  if (!isEnabled()) {
+  if (!isEnabled() || !getPickable()) {
     return;
   }
 

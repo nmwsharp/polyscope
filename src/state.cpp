@@ -20,6 +20,7 @@ std::vector<std::unique_ptr<SlicePlane>>& slicePlanes = globalContext.slicePlane
 std::vector<WeakHandle<Widget>>& widgets = globalContext.widgets;
 bool& doDefaultMouseInteraction = globalContext.doDefaultMouseInteraction;
 std::function<void()>& userCallback = globalContext.userCallback;
+std::list<std::function<void(PickResult)>>& pickCallbacks = globalContext.pickCallbacks;
 
 } // namespace state
 } // namespace polyscope

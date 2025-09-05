@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cstdint>
+#include <list>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -55,6 +56,9 @@ void resetSelection();
 bool haveSelection();
 void resetSelectionIfStructure(Structure* s); // If something from this structure is selected, clear the selection
                                               // (useful if a structure is being deleted)
+
+std::list<std::function<void(PickResult)>>::iterator registerPickCallback(const std::function<void(PickResult)>& f);
+void removePickCallback(std::list<std::function<void(PickResult)>>::iterator callback);
 
 namespace pick {
 

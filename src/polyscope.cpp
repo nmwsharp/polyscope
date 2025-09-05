@@ -521,6 +521,9 @@ void processInputEvents() {
             glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
             PickResult pickResult = pickAtScreenCoords(screenCoords);
             setSelection(pickResult);
+            for (std::function<void(PickResult)>& callback : state::globalContext.pickCallbacks) {
+              callback(pickResult);
+            }
           }
         }
 

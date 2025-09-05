@@ -116,6 +116,9 @@ public:
   Structure* setTransformGizmoEnabled(bool newVal);
   bool getTransformGizmoEnabled();
 
+  Structure* setPickable(bool pickable);
+  bool getPickable();
+
 protected:
   // = State
   PersistentValue<bool> enabled;
@@ -130,6 +133,7 @@ protected:
   PersistentValue<bool> cullWholeElements;
 
   PersistentValue<std::vector<std::string>> ignoredSlicePlaneNames;
+  PersistentValue<bool> pickable;
 
   // Manage the bounding box & length scale
   // (this is defined _before_ the object transform is applied. To get the scale/bounding box after transforms, use the

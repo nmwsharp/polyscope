@@ -148,7 +148,7 @@ void VolumeGrid::drawDelayed() {
 }
 
 void VolumeGrid::drawPick() {
-  if (!isEnabled()) {
+  if (!isEnabled() || !getPickable()) {
     return;
   }
 
@@ -170,7 +170,7 @@ void VolumeGrid::drawPick() {
   // Draw the actual grid
   render::engine->setBackfaceCull(true);
   pickProgram->draw();
-  
+
   for (auto& x : quantities) {
     x.second->drawPick();
   }

@@ -87,6 +87,14 @@ void setSelection(PickResult newPick) {
   }
 }
 
+std::list<std::function<void(PickResult)>>::iterator registerPickCallback(const std::function<void(PickResult)>& f) {
+  return state::globalContext.pickCallbacks.insert(state::globalContext.pickCallbacks.end(), f);
+}
+
+void removePickCallback(std::list<std::function<void(PickResult)>>::iterator callback) {
+  state::globalContext.pickCallbacks.erase(callback);
+}
+
 
 namespace pick {
 
