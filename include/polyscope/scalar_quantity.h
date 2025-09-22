@@ -3,7 +3,7 @@
 #pragma once
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/histogram.h"
+#include "polyscope/color_bar.h"
 #include "polyscope/persistent_value.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
@@ -79,7 +79,7 @@ protected:
   std::pair<double, double> dataRange;
   PersistentValue<float> vizRangeMin;
   PersistentValue<float> vizRangeMax;
-  Histogram hist;
+  ColorBar hist;
 
   // Parameters
   PersistentValue<std::string> cMap;

@@ -13,12 +13,12 @@ namespace polyscope {
 // A histogram that shows up in ImGUI window
 // ONEDAY: we could definitely make a better histogram widget for categorical data...
 
-class Histogram {
+class ColorBar {
 public:
-  Histogram();                                              // must call buildHistogram() with data after
-  Histogram(std::vector<float>& values, DataType datatype); // internally calls buildHistogram()
+  ColorBar();                                              // must call buildHistogram() with data after
+  ColorBar(std::vector<float>& values, DataType datatype); // internally calls buildHistogram()
 
-  ~Histogram();
+  ~ColorBar();
 
   void buildHistogram(const std::vector<float>& values, DataType datatype);
   void updateColormap(const std::string& newColormap);
@@ -29,30 +29,33 @@ public:
   std::pair<double, double> colormapRange; // in DATA values, not [0,1]
 
 private:
-  // = Helpers
-
-  // Manage the actual histogram
-  void fillBuffers();
-  size_t rawHistBinCount = 51;
-
+  //
   DataType dataType = DataType::STANDARD;
-  std::vector<float> rawHistCurveY;
-  std::vector<std::array<float, 2>> rawHistCurveX;
   std::pair<double, double> dataRange;
 
-  // Render to texture
-  void renderToTexture();
-  void prepare();
+  // == The inline horizontal histogram visualization in the structures bar
 
+  // Manage histogram counts for 
+  void fillHistogramBuffers();
+  size_t rawHistBinCount = 51;
+  std::vector<float> rawHistCurveY;
+  std::vector<std::array<float, 2>> rawHistCurveX;
+
+  // Render to a texture for the inline histogram visualization in the structures bar
+  void renderInlineHistogramToTexture();
+  void prepareInlineHistogram();
   unsigned int texDim = 600;
-  std::shared_ptr<render::TextureBuffer> texture = nullptr;
-  std::shared_ptr<render::FrameBuffer> framebuffer = nullptr;
-  std::shared_ptr<render::ShaderProgram> program = nullptr;
+  std::shared_ptr<render::TextureBuffer> inlineHistogramTexture = nullptr;
+  std::shared_ptr<render::FrameBuffer> inlineHistogramFramebuffer = nullptr;
+  std::shared_ptr<render::ShaderProgram> inlineHistogramProgram = nullptr;
   std::string colormap = "viridis";
 
   // A few parameters which control appearance
   float bottomBarHeight = 0.35;
   float bottomBarGap = 0.1;
+  
+  // == The optional vertical colorbar which floats ont he main display
+  
 };
 
 

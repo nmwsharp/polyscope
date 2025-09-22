@@ -183,7 +183,7 @@ SET(SRCS
   disjoint_sets.cpp
   file_helpers.cpp
   camera_parameters.cpp
-  histogram.cpp
+  color_bar.cpp
   persistent_value.cpp
   color_management.cpp
   transformation_gizmo.cpp
@@ -271,6 +271,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/camera_view.h
   ${INCLUDE_ROOT}/camera_view.ipp
   ${INCLUDE_ROOT}/check_invalid_values.h
+  ${INCLUDE_ROOT}/color_bar.h
   ${INCLUDE_ROOT}/color_management.h
   ${INCLUDE_ROOT}/color_image_quantity.h
   ${INCLUDE_ROOT}/color_render_image_quantity.h
@@ -293,7 +294,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/floating_quantity.h
   ${INCLUDE_ROOT}/floating_quantities.h
   ${INCLUDE_ROOT}/group.h
-  ${INCLUDE_ROOT}/histogram.h
   ${INCLUDE_ROOT}/image_quantity.h
   ${INCLUDE_ROOT}/imgui_config.h
   ${INCLUDE_ROOT}/implicit_helpers.h

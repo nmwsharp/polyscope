@@ -1,6 +1,6 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
-#include "polyscope/histogram.h"
+#include "polyscope/color_bar.h"
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/polyscope.h"
@@ -13,13 +13,13 @@
 
 namespace polyscope {
 
-Histogram::Histogram() {}
+ColorBar::ColorBar() {}
 
-Histogram::Histogram(std::vector<float>& values, DataType dataType) { buildHistogram(values, dataType); }
+ColorBar::ColorBar(std::vector<float>& values, DataType dataType) { buildHistogram(values, dataType); }
 
-Histogram::~Histogram() {}
+ColorBar::~ColorBar() {}
 
-void Histogram::buildHistogram(const std::vector<float>& values, DataType dataType_) {
+void ColorBar::buildHistogram(const std::vector<float>& values, DataType dataType_) {
   dataType = dataType_;
 
   // Build arrays of values
@@ -80,14 +80,14 @@ void Histogram::buildHistogram(const std::vector<float>& values, DataType dataTy
 }
 
 
-void Histogram::updateColormap(const std::string& newColormap) {
+void ColorBar::updateColormap(const std::string& newColormap) {
   colormap = newColormap;
-  if (program) {
-    program.reset();
+  if (inlineHistogramProgram) {
+    inlineHistogramProgram.reset();
   }
 }
 
-void Histogram::fillBuffers() {
+void ColorBar::fillHistogramBuffers() {
 
   if (rawHistCurveY.size() == 0) {
     exception("histogram fillBuffers() called before buildHistogram");
@@ -129,65 +129,65 @@ void Histogram::fillBuffers() {
   coords.push_back(glm::vec2{0., bottomBarHeight});
 
 
-  program->setAttribute("a_coord", coords);
+  inlineHistogramProgram->setAttribute("a_coord", coords);
 }
 
-void Histogram::prepare() {
+void ColorBar::prepareInlineHistogram() {
 
-  framebuffer = render::engine->generateFrameBuffer(texDim, texDim);
-  texture = render::engine->generateTextureBuffer(TextureFormat::RGBA8, texDim, texDim);
-  framebuffer->addColorBuffer(texture);
+  inlineHistogramFramebuffer = render::engine->generateFrameBuffer(texDim, texDim);
+  inlineHistogramTexture = render::engine->generateTextureBuffer(TextureFormat::RGBA8, texDim, texDim);
+  inlineHistogramFramebuffer->addColorBuffer(inlineHistogramTexture);
 
-  // Create the program
+  // Create the inlineHistogramProgram
   if (dataType == DataType::CATEGORICAL) {
     // for categorical data only
-    program = render::engine->requestShader("HISTOGRAM_CATEGORICAL", {"SHADE_CATEGORICAL_COLORMAP"},
-                                            render::ShaderReplacementDefaults::Process);
+    inlineHistogramProgram = render::engine->requestShader("HISTOGRAM_CATEGORICAL", {"SHADE_CATEGORICAL_COLORMAP"},
+                                                           render::ShaderReplacementDefaults::Process);
   } else {
     // common case
-    program = render::engine->requestShader("HISTOGRAM", {"SHADE_COLORMAP_VALUE"},
-                                            render::ShaderReplacementDefaults::Process);
+    inlineHistogramProgram = render::engine->requestShader("HISTOGRAM", {"SHADE_COLORMAP_VALUE"},
+                                                           render::ShaderReplacementDefaults::Process);
   }
 
-  program->setTextureFromColormap("t_colormap", colormap, true);
+  inlineHistogramProgram->setTextureFromColormap("t_colormap", colormap, true);
 
   fillBuffers();
 }
 
 
-void Histogram::renderToTexture() {
+void ColorBar::renderInlineHistogramToTexture() {
 
-  if (!program) {
-    prepare();
+  if (!inlineHistogramProgram) {
+    prepareInlineHistogram();
   }
 
-  framebuffer->clearColor = {0.0, 0.0, 0.0};
-  framebuffer->clearAlpha = 0.2;
-  framebuffer->setViewport(0, 0, texDim, texDim);
-  framebuffer->bindForRendering();
-  framebuffer->clear();
+  inlineHistogramFramebuffer->clearColor = {0.0, 0.0, 0.0};
+  inlineHistogramFramebuffer->clearAlpha = 0.2;
+  inlineHistogramFramebuffer->setViewport(0, 0, texDim, texDim);
+  inlineHistogramFramebuffer->bindForRendering();
+  inlineHistogramFramebuffer->clear();
 
   // = Set uniforms
 
   if (dataType == DataType::CATEGORICAL) {
     // Used to restore [0,1] tvals to the orininal data range for the categorical int remapping
-    program->setUniform("u_dataRangeLow", dataRange.first);
-    program->setUniform("u_dataRangeHigh", dataRange.second);
+    inlineHistogramProgram->setUniform("u_dataRangeLow", dataRange.first);
+    inlineHistogramProgram->setUniform("u_dataRangeHigh", dataRange.second);
   } else {
     // Colormap range (remapped to the 0-1 coords we use)
     float rangeLow = (colormapRange.first - dataRange.first) / (dataRange.second - dataRange.first);
     float rangeHigh = (colormapRange.second - dataRange.first) / (dataRange.second - dataRange.first);
-    program->setUniform("u_rangeLow", rangeLow);
-    program->setUniform("u_rangeHigh", rangeHigh);
+    inlineHistogramProgram->setUniform("u_rangeLow", rangeLow);
+    inlineHistogramProgram->setUniform("u_rangeHigh", rangeHigh);
   }
 
 
   // Draw
-  program->draw();
+  inlineHistogramProgram->draw();
 }
 
 
-void Histogram::buildUI(float width) {
+void ColorBar::buildUI(float width) {
 
   // NOTE: I'm surprised this works, since we're drawing in the middle of imgui's processing. Possible source of bugs?
   renderToTexture();
@@ -201,8 +201,9 @@ void Histogram::buildUI(float width) {
   float h = w / aspect;
 
   // Render image
-  ImGui::Image((ImTextureID)(intptr_t)texture->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
-  render::engine->preserveResourceUntilImguiFrameCompletes(texture);
+  ImGui::Image((ImTextureID)(intptr_t)inlineHistogramTexture->getNativeHandle(), ImVec2(w, h), ImVec2(0, 1),
+               ImVec2(1, 0));
+  render::engine->preserveResourceUntilImguiFrameCompletes(inlineHistogramTexture);
 
   // Helpful info for drawing annotations below
   ImU32 annoColor = ImGui::ColorConvertFloat4ToU32(ImVec4(254 / 255., 221 / 255., 66 / 255., 1.0));

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/histogram.h"
 #include "polyscope/parameterization_quantity.h"
 #include "polyscope/render/color_maps.h"
 #include "polyscope/render/engine.h"

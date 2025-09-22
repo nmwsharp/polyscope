@@ -5,7 +5,6 @@
 #include "polyscope/polyscope.h"
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/histogram.h"
 #include "polyscope/render/color_maps.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/scalar_quantity.h"
