@@ -606,9 +606,10 @@ void renderScene() {
       if (!isRedraw) {
         // Only on first pass (kinda weird, but works out, and doesn't really matter)
         renderSlicePlanes();
-        render::engine->applyTransparencySettings();
-        drawStructuresDelayed();
       }
+
+      render::engine->applyTransparencySettings();
+      drawStructuresDelayed();
 
       // Composite the result of this pass in to the result buffer
       render::engine->sceneBufferFinal->bind();

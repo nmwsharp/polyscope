@@ -27,15 +27,7 @@ void ScalarRenderImageQuantity::drawDelayed() {
 
   if (!program) prepare();
 
-  // set uniforms
-  glm::mat4 P = view::getCameraPerspectiveMatrix();
-  glm::mat4 Pinv = glm::inverse(P);
-
-  program->setUniform("u_projMatrix", glm::value_ptr(P));
-  program->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
-  program->setUniform("u_viewport", render::engine->getCurrentViewport());
-  program->setUniform("u_transparency", transparency.get());
-
+  setRenderImageUniforms(*program);
   setScalarUniforms(*program);
   render::engine->setMaterialUniforms(*program, material.get());
 
@@ -83,14 +75,14 @@ void ScalarRenderImageQuantity::prepare() {
   program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
     render::engine->addMaterialRules(material.get(),
       addScalarRules(
-        {
+        parent.addStructureRules({
           getImageOriginRule(imageOrigin), 
           hasNormals ? "SHADE_NORMAL_FROM_TEXTURE" : "SHADE_NORMAL_FROM_VIEWPOS_VAR",
           "TEXTURE_PROPAGATE_VALUE", 
-        }
+        })
       )
     ),
-    render::ShaderReplacementDefaults::Process);
+    render::ShaderReplacementDefaults::SceneObjectNoSlice);
   // clang-format on
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());

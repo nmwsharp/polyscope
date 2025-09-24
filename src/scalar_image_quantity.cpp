@@ -77,7 +77,7 @@ void ScalarImageQuantity::showFullscreen() {
 
   // Set uniforms
   this->setScalarUniforms(*fullscreenProgram);
-  fullscreenProgram->setUniform("u_transparency", getTransparency());
+  fullscreenProgram->setUniform("u_textureTransparency", getTransparency());
 
   fullscreenProgram->draw();
 
@@ -90,7 +90,7 @@ void ScalarImageQuantity::renderIntermediate() {
 
   // Set uniforms
   this->setScalarUniforms(*fullscreenProgram);
-  fullscreenProgram->setUniform("u_transparency", getTransparency());
+  fullscreenProgram->setUniform("u_textureTransparency", getTransparency());
 
   // render to the intermediate texture
   render::engine->pushBindFramebufferForRendering(*framebufferIntermediate);
@@ -133,7 +133,7 @@ void ScalarImageQuantity::showInBillboard(glm::vec3 center, glm::vec3 upVec, glm
 
   // set uniforms
   parent.setStructureUniforms(*billboardProgram);
-  billboardProgram->setUniform("u_transparency", getTransparency());
+  billboardProgram->setUniform("u_textureTransparency", getTransparency());
   billboardProgram->setUniform("u_billboardCenter", center);
   billboardProgram->setUniform("u_billboardUp", upVec);
   billboardProgram->setUniform("u_billboardRight", rightVec);
