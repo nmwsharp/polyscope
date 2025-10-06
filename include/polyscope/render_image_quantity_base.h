@@ -80,6 +80,7 @@ protected:
   void prepareGeometryBuffers();
   void addOptionsPopupEntries();
   void preparePick();
+  void setRenderImageUniforms(render::ShaderProgram& program, bool withTonemap = false);
 };
 
 

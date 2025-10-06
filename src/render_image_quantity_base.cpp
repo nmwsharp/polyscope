@@ -64,6 +64,24 @@ void RenderImageQuantityBase::updateBaseBuffers(const std::vector<float>& newDep
   requestRedraw();
 }
 
+void RenderImageQuantityBase::setRenderImageUniforms(render::ShaderProgram& program, bool withTonemap) {
+  parent.setStructureUniforms(program);
+
+  glm::mat4 P = view::getCameraPerspectiveMatrix();
+  glm::mat4 Pinv = glm::inverse(P);
+
+  program.setUniform("u_projMatrix", glm::value_ptr(P));
+  program.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
+  program.setUniform("u_viewport", render::engine->getCurrentViewport());
+  program.setUniform("u_textureTransparency", transparency.get());
+  if (program.hasUniform("u_transparency")) {
+    program.setUniform("u_transparency", 1.0f);
+  }
+
+  if (withTonemap) {
+    render::engine->setTonemapUniforms(program);
+  }
+}
 
 void RenderImageQuantityBase::drawPickDelayed() {
   if (!isEnabled()) return;
@@ -77,18 +95,12 @@ void RenderImageQuantityBase::drawPickDelayed() {
   pickProgram->setUniform("u_projMatrix", glm::value_ptr(P));
   pickProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   pickProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
-  pickProgram->setUniform("u_transparency", 1.0);
+  pickProgram->setUniform("u_textureTransparency", 1.0);
   pickProgram->setUniform("u_color", pickColor);
 
   // draw
   pickProgram->draw();
 }
-
-void RenderImageQuantityBase::refresh() {
-  pickProgram = nullptr;
-  Quantity::refresh();
-}
-
 
 void RenderImageQuantityBase::preparePick() {
 
@@ -100,16 +112,21 @@ void RenderImageQuantityBase::preparePick() {
   // Create the sourceProgram
   // clang-format off
   pickProgram = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-    {
+    parent.addStructureRules({
       getImageOriginRule(imageOrigin), 
       "SHADECOLOR_FROM_UNIFORM",
-    },
+    }),
     render::ShaderReplacementDefaults::Pick
   );
   // clang-format on
 
   pickProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
   pickProgram->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
+}
+
+void RenderImageQuantityBase::refresh() {
+  pickProgram = nullptr;
+  Quantity::refresh();
 }
 
 void RenderImageQuantityBase::disableFullscreenDrawing() {

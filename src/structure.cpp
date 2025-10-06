@@ -237,8 +237,10 @@ std::vector<std::string> Structure::addStructureRules(std::vector<std::string> i
 }
 
 void Structure::setStructureUniforms(render::ShaderProgram& p) {
-  glm::mat4 viewMat = getModelView();
-  p.setUniform("u_modelView", glm::value_ptr(viewMat));
+  if (p.hasUniform("u_modelView")) {
+    glm::mat4 viewMat = getModelView();
+    p.setUniform("u_modelView", glm::value_ptr(viewMat));
+  }
 
   if (p.hasUniform("u_projMatrix")) {
     glm::mat4 projMat = view::getCameraPerspectiveMatrix();
