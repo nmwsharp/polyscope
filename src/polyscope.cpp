@@ -53,7 +53,10 @@ constexpr float INITIAL_RIGHT_WINDOWS_WIDTH = 500;
 float leftWindowsWidth = -1.;
 float rightWindowsWidth = -1.;
 
-auto lastMainLoopIterTime = std::chrono::steady_clock::now();
+auto prevMainLoopTime = std::chrono::steady_clock::now();
+float rollingMainLoopDurationMicrosec = 0.;
+float rollingMainLoopEMA = 0.05;
+float lastMainLoopDurationMicrosec = 0.;
 
 const std::string prefsFilename = ".polyscope.ini";
 
@@ -153,6 +156,62 @@ std::map<std::string, std::unique_ptr<Structure>>& getStructureMapCreateIfNeeded
   return state::structures[typeName];
 }
 
+void sleepForFramerate() {
+  // If needed, block the program execution to hit the intended framerate
+  // (if not used, the render loop may busy-run maxed out at 1000+ fps and waste resources)
+
+  // WARNING:  similar logic duplicated in this function and in shouldSkipFrameForFramerate()
+
+  if (options::maxFPS != -1) {
+    auto currTime = std::chrono::steady_clock::now();
+    long microsecPerLoop = 1000000 / options::maxFPS;
+    microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
+    while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - prevMainLoopTime).count() <
+           microsecPerLoop) {
+      std::this_thread::yield();
+      currTime = std::chrono::steady_clock::now();
+    }
+  }
+}
+
+bool shouldSkipFrameForFramerate() {
+  // Returns true if the current frame should be skipped to maintain the framerate
+
+  // NOTE: right now this logic is pretty simplistic, it just allows the frame to happen if 95% of the frametime has
+  // already passed. This might lead to choppiness in application loops which run at e.g. 150% of the target FPS, or
+  // miss opporunities for better timing if frameTick() is called in extremely tight loops.
+  //
+  // In the future we could write a fancier version of this function implementing smarter policies using
+  // rollingMainLoopDurationMicrosec
+
+  // WARNING: similar logic duplicated in this function and in sleepForFramerate()
+
+  if (options::maxFPS <= 0) return false;
+
+  auto currTime = std::chrono::steady_clock::now();
+  float microsecPerLoop = 1000000 / options::maxFPS;
+  microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
+  // NOTE: we could incorporate rollingMainLoopDurationMicrosec here, but since the loop time is recorded at the
+  // beginning of each frame, the previous frame's time is _already_ incorporated into the timing.
+  auto nextLoopStartTimeToHitTarget =
+      prevMainLoopTime + std::chrono::microseconds(static_cast<int64_t>(std::round(microsecPerLoop)));
+
+  return currTime < nextLoopStartTimeToHitTarget;
+}
+
+void markLastFrameTime() {
+  auto currTime = std::chrono::steady_clock::now();
+
+  // update the prev & rolling average frame time
+  lastMainLoopDurationMicrosec =
+      std::chrono::duration_cast<std::chrono::microseconds>(currTime - prevMainLoopTime).count();
+  rollingMainLoopDurationMicrosec =
+      (1. - rollingMainLoopEMA) * rollingMainLoopDurationMicrosec + rollingMainLoopEMA * lastMainLoopDurationMicrosec;
+
+  // mark the time of this frame
+  prevMainLoopTime = currTime;
+}
+
 } // namespace
 
 // === Core global functions
@@ -239,19 +298,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   size_t currentContextStackSize = contextStack.size();
   while (contextStack.size() >= currentContextStackSize) {
 
-    // The windowing system will let the main loop busy-loop on some platforms. Make sure that doesn't happen.
-    if (options::maxFPS != -1) {
-      auto currTime = std::chrono::steady_clock::now();
-      long microsecPerLoop = 1000000 / options::maxFPS;
-      microsecPerLoop = (95 * microsecPerLoop) / 100; // give a little slack so we actually hit target fps
-      while (std::chrono::duration_cast<std::chrono::microseconds>(currTime - lastMainLoopIterTime).count() <
-             microsecPerLoop) {
-        std::this_thread::yield();
-        currTime = std::chrono::steady_clock::now();
-      }
-    }
-    lastMainLoopIterTime = std::chrono::steady_clock::now();
-
+    sleepForFramerate();
     mainLoopIteration();
 
     // auto-exit if the window is closed
@@ -300,13 +347,42 @@ void frameTick() {
     exception("You called frameTick() while a previous call was in the midst of executing. Do not re-enter frameTick() "
               "or call it recursively.");
   }
-  frameTickStack++;
 
-  // Make sure we're visible
+
+  // == Logic for frame tick FPS limits
+  bool savedVsyncValue = false;         // see below
+  bool needToRestoreVSyncValue = false; // need to save this, the setting could change during mainLoopIteration()
+  switch (options::frameTickLimitFPSMode) {
+  case LimitFPSMode::IgnoreLimits:
+    // Ugly workaround to preserve the API:
+    // We want vsync to be disabled if we're ignoring fps limits (otherwise the platform will potentially block on
+    // render swap to match the displays refresh rate). But it's currently a bool read in the render call and I don't
+    // want to change that API. So we temporarily set it to false and restore the value after. ONEDAY: when we have a
+    // major version update, change the API on the vsync setting to make this unecessary
+    savedVsyncValue = options::enableVSync;
+    options::enableVSync = false;
+    needToRestoreVSyncValue = true;
+    break;
+  case LimitFPSMode::BlockToHitTarget:
+    sleepForFramerate();
+    break;
+  case LimitFPSMode::SkipFramesToHitTarget:
+    if (shouldSkipFrameForFramerate()) {
+      return;
+    }
+    break;
+  }
+
+
+  frameTickStack++;
   render::engine->showWindow();
 
-  // All-imporant main loop iteration
   mainLoopIteration();
+
+  if (needToRestoreVSyncValue) {
+    // restore saved value, see note above
+    options::enableVSync = savedVsyncValue;
+  }
 
   frameTickStack--;
 }
@@ -530,9 +606,10 @@ void renderScene() {
       if (!isRedraw) {
         // Only on first pass (kinda weird, but works out, and doesn't really matter)
         renderSlicePlanes();
-        render::engine->applyTransparencySettings();
-        drawStructuresDelayed();
       }
+
+      render::engine->applyTransparencySettings();
+      drawStructuresDelayed();
 
       // Composite the result of this pass in to the result buffer
       render::engine->sceneBufferFinal->bind();
@@ -700,11 +777,43 @@ void buildPolyscopeGui() {
   ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
   if (ImGui::TreeNode("Render")) {
 
-    // fps
-    ImGui::Text("Rolling: %.1f ms/frame (%.1f fps)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-    ImGui::Text("Last: %.1f ms/frame (%.1f fps)", ImGui::GetIO().DeltaTime * 1000.f, 1.f / ImGui::GetIO().DeltaTime);
+    // fps display
+    ImGui::Text("Rolling: %.1f ms/frame (%.1f fps)", 1e-3f * rollingMainLoopDurationMicrosec,
+                1.e6f / rollingMainLoopDurationMicrosec);
+    ImGui::Text("Last: %.1f ms/frame (%.1f fps)", 1e-3f * lastMainLoopDurationMicrosec,
+                1.e6f / lastMainLoopDurationMicrosec);
+
+    bool isFrameTickShow = frameTickStack > 0;
+    if (isFrameTickShow) {
+      // build a little combo box to pick fps mode
+      constexpr std::array<LimitFPSMode, 3> limitFPSModeVals = {
+          LimitFPSMode::IgnoreLimits, LimitFPSMode::BlockToHitTarget, LimitFPSMode::SkipFramesToHitTarget};
+      auto to_string = [](LimitFPSMode x) -> std::string {
+        switch (x) {
+        case LimitFPSMode::IgnoreLimits:
+          return "ignore limits";
+        case LimitFPSMode::BlockToHitTarget:
+          return "block to hit target";
+        case LimitFPSMode::SkipFramesToHitTarget:
+          return "skip frames to hit target";
+        }
+        return ""; // unreachable
+      };
+      if (ImGui::BeginCombo("fps mode##frame tick limit fps mode", to_string(options::frameTickLimitFPSMode).c_str())) {
+        for (LimitFPSMode x : limitFPSModeVals) {
+          if (ImGui::Selectable(to_string(x).c_str(), options::frameTickLimitFPSMode == x)) {
+            options::frameTickLimitFPSMode = x;
+            ImGui::SetItemDefaultFocus();
+          }
+        }
+        ImGui::EndCombo();
+      }
+    }
+
+    ImGui::BeginDisabled(isFrameTickShow && options::frameTickLimitFPSMode == LimitFPSMode::IgnoreLimits);
 
     ImGui::PushItemWidth(40 * options::uiScale);
+
     if (ImGui::InputInt("max fps", &options::maxFPS, 0)) {
       if (options::maxFPS < 1 && options::maxFPS != -1) {
         options::maxFPS = -1;
@@ -714,6 +823,8 @@ void buildPolyscopeGui() {
     ImGui::PopItemWidth();
     ImGui::SameLine();
     ImGui::Checkbox("vsync", &options::enableVSync);
+
+    ImGui::EndDisabled();
 
     ImGui::TreePop();
   }
@@ -833,6 +944,9 @@ void buildPickGui() {
     ImGui::NewLine();
 
     ImGui::TextUnformatted((selection.structureType + ": " + selection.structureName).c_str());
+    if (selection.quantityName != "") {
+      ImGui::TextUnformatted(("Quantity: " + selection.quantityName).c_str());
+    }
     ImGui::Separator();
 
     if (selection.structureHandle.isValid()) {
@@ -953,6 +1067,7 @@ void draw(bool withUI, bool withContextCallback) {
 
 
 void mainLoopIteration() {
+  markLastFrameTime();
 
   processLazyProperties();
   processLazyPropertiesOutsideOfImGui();
@@ -1139,20 +1254,6 @@ bool hasStructure(std::string type, std::string name) {
     return true;
   }
   return sMap.find(name) != sMap.end();
-}
-
-std::tuple<std::string, std::string> lookUpStructure(Structure* structure) {
-
-  for (auto& typeMap : state::structures) {
-    for (auto& entry : typeMap.second) {
-      if (entry.second.get() == structure) {
-        return std::tuple<std::string, std::string>(typeMap.first, entry.first);
-      }
-    }
-  }
-
-  // not found
-  return std::tuple<std::string, std::string>("", "");
 }
 
 void removeStructure(std::string type, std::string name, bool errorIfAbsent) {

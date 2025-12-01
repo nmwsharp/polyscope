@@ -23,15 +23,8 @@ void DepthRenderImageQuantity::drawDelayed() {
 
   if (!program) prepare();
 
-  // set uniforms
-  glm::mat4 P = view::getCameraPerspectiveMatrix();
-  glm::mat4 Pinv = glm::inverse(P);
-
-  program->setUniform("u_projMatrix", glm::value_ptr(P));
-  program->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
-  program->setUniform("u_viewport", render::engine->getCurrentViewport());
+  setRenderImageUniforms(*program);
   program->setUniform("u_baseColor", color.get());
-  program->setUniform("u_transparency", transparency.get());
   render::engine->setMaterialUniforms(*program, material.get());
 
   // draw
@@ -73,13 +66,13 @@ void DepthRenderImageQuantity::prepare() {
   // clang-format off
   program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
     render::engine->addMaterialRules(material.get(),
-      {
+      parent.addStructureRules({
         getImageOriginRule(imageOrigin), 
         hasNormals ? "SHADE_NORMAL_FROM_TEXTURE" : "SHADE_NORMAL_FROM_VIEWPOS_VAR",
         "SHADE_BASECOLOR",
-      }
+      })
     ), 
-    render::ShaderReplacementDefaults::Process);
+    render::ShaderReplacementDefaults::SceneObjectNoSlice);
   // clang-format on
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());

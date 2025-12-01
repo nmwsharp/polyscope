@@ -497,6 +497,10 @@ TEST_F(PolyscopeTest, SurfaceMeshVertexParam) {
   q1->setStyle(polyscope::ParamVizStyle::LOCAL_RAD);
   polyscope::show(3);
 
+  // create the curve network
+  q1->createCurveNetworkFromSeams();
+  polyscope::show(3);
+
   polyscope::removeAllStructures();
 }
 

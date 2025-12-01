@@ -42,8 +42,9 @@ public:
 
   // == Render the the structure on screen
   virtual void draw() = 0;
-  virtual void drawDelayed() = 0;
   virtual void drawPick() = 0;
+  virtual void drawDelayed() = 0; // a second render pass
+  virtual void drawPickDelayed() = 0;
 
   // == Add rendering rules
   std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
@@ -58,7 +59,8 @@ public:
   virtual void buildPickUI(const PickResult& result) = 0; // Draw pick UI elements based on a selection result
 
   // = Identifying data
-  const std::string name; // should be unique amongst registered structures with this type
+  const std::string name;        // should be unique amongst registered structures with this type
+  const std::string subtypeName; // specific type name, like "Point Cloud"
   std::string uniquePrefix();
 
   std::string getName() { return name; }; // used by pybind to access the name property

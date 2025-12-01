@@ -140,6 +140,26 @@ void SimpleTriangleMesh::drawPick() {
   setPickUniforms(*pickProgram);
 
   pickProgram->draw();
+
+  for (auto& x : quantities) {
+    x.second->drawPick();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawPick();
+  }
+}
+
+void SimpleTriangleMesh::drawPickDelayed() {
+  if (!isEnabled()) {
+    return;
+  }
+
+  for (auto& x : quantities) {
+    x.second->drawPickDelayed();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->drawPickDelayed();
+  }
 }
 
 void SimpleTriangleMesh::setSimpleTriangleMeshUniforms(render::ShaderProgram& p, bool withSurfaceShade) {

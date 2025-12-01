@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <string>
+#include <tuple>
 #include <utility>
 
 #include "polyscope/utilities.h"
@@ -13,6 +14,7 @@ namespace polyscope {
 
 // Forward decls
 class Structure;
+class Quantity;
 
 // == Main query
 
@@ -26,9 +28,11 @@ class Structure;
 struct PickResult {
   bool isHit = false;
   Structure* structure = nullptr;
+  Quantity* quantity = nullptr;
   WeakHandle<Structure> structureHandle; // same as .structure, but with lifetime tracking
   std::string structureType = "";
   std::string structureName = "";
+  std::string quantityName = "";
   glm::vec2 screenCoords;
   glm::ivec2 bufferInds;
   glm::vec3 position;
@@ -60,18 +64,21 @@ namespace pick {
 std::pair<Structure*, uint64_t> pickAtScreenCoords(glm::vec2 screenCoords); // takes screen coordinates
 std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos);     // takes indices into the buffer
 std::pair<Structure*, uint64_t> evaluatePickQuery(int xPos, int yPos); // old, badly named. takes buffer coordinates.
+std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFull(int xPos,
+                                                                  int yPos); // badly named. takes buffer coordinates.
 
 
 // == Helpers
 
 // Set up picking (internal)
-// Called by a structure to figure out what data it should render to the pick buffer.
+// Called by a structure/quantity to figure out what data it should render to the pick buffer.
 // Request 'count' contiguous indices for drawing a pick buffer. The return value is the start of the range.
 uint64_t requestPickBufferRange(Structure* requestingStructure, uint64_t count);
+uint64_t requestPickBufferRange(Quantity* requestingQuantity, uint64_t count);
 
 // Convert between global pick indexing for the whole program, and local per-structure pick indexing
-std::pair<Structure*, uint64_t> globalIndexToLocal(uint64_t globalInd);
-uint64_t localIndexToGlobal(std::pair<Structure*, uint64_t> localPick);
+std::tuple<Structure*, Quantity*, uint64_t> globalIndexToLocal(uint64_t globalInd);
+uint64_t localIndexToGlobal(std::tuple<Structure*, Quantity*, uint64_t> localPick);
 
 // Convert indices to float3 color and back
 // Structures will want to use these to fill their pick buffers
