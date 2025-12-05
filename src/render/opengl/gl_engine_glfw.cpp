@@ -80,8 +80,21 @@ void GLEngineGLFW::initialize() {
 
   setWindowResizable(view::windowResizable);
 
-// === Initialize openGL
-// Load openGL functions (using GLAD)
+  // Drag & drop support
+  glfwSetDropCallback(mainWindow, [](GLFWwindow* window, int path_count, const char* paths[]) {
+    if (!options::filesDroppedCallback)
+      return;
+
+    std::vector<std::string> pathsVec(path_count);
+    for (int i = 0; i < path_count; i++) {
+      pathsVec[i] = paths[i];
+    }
+    options::filesDroppedCallback(pathsVec);
+  });
+
+
+  // === Initialize openGL
+  // Load openGL functions (using GLAD)
 #ifndef __APPLE__
   if (!gladLoadGL()) {
     exception("ERROR: Failed to load openGL using GLAD");

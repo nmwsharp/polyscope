@@ -5,6 +5,7 @@
 #include <functional>
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include "imgui.h"
 
@@ -140,6 +141,9 @@ extern std::function<void()> configureImGuiStyleCallback;
 // and a mono font. By default, this is set to invoke prepareImGuiFonts() from Polyscope's imgui_config.cpp, but you may
 // assign your own function to create custom styles. If this callback is null, default fonts will be used.
 extern std::function<std::tuple<ImFontAtlas*, ImFont*, ImFont*>()> prepareImGuiFontsCallback;
+
+// A callback function which will be invoked when a file is dropped on the Polyscope window. No action is taken by default.
+extern std::function<void(const std::vector<std::string>&)> filesDroppedCallback;
 
 // === Backend and low-level options
 
