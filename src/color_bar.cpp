@@ -151,7 +151,7 @@ void ColorBar::prepareInlineHistogram() {
 
   inlineHistogramProgram->setTextureFromColormap("t_colormap", colormap, true);
 
-  fillBuffers();
+  fillHistogramBuffers();
 }
 
 
@@ -189,8 +189,7 @@ void ColorBar::renderInlineHistogramToTexture() {
 
 void ColorBar::buildUI(float width) {
 
-  // NOTE: I'm surprised this works, since we're drawing in the middle of imgui's processing. Possible source of bugs?
-  renderToTexture();
+  renderInlineHistogramToTexture();
 
   // Compute size for image
   float aspect = 4.0;
