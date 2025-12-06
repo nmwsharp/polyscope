@@ -66,7 +66,7 @@ SurfaceVertexScalarQuantity::SurfaceVertexScalarQuantity(std::string name, const
 
 {
   values.ensureHostBufferPopulated();
-  hist.buildHistogram(values.data, dataType);
+  colorBar.buildHistogram(values.data, dataType);
 }
 
 void SurfaceVertexScalarQuantity::createProgram() {
@@ -135,7 +135,7 @@ SurfaceFaceScalarQuantity::SurfaceFaceScalarQuantity(std::string name, const std
 {
   values.ensureHostBufferPopulated();
   parent.faceAreas.ensureHostBufferPopulated();
-  hist.buildHistogram(values.data, dataType);
+  colorBar.buildHistogram(values.data, dataType);
 }
 
 void SurfaceFaceScalarQuantity::createProgram() {
@@ -184,7 +184,7 @@ SurfaceEdgeScalarQuantity::SurfaceEdgeScalarQuantity(std::string name, const std
 
 {
   values.ensureHostBufferPopulated();
-  hist.buildHistogram(values.data, dataType);
+  colorBar.buildHistogram(values.data, dataType);
 }
 
 void SurfaceEdgeScalarQuantity::createProgram() {
@@ -229,7 +229,7 @@ SurfaceHalfedgeScalarQuantity::SurfaceHalfedgeScalarQuantity(std::string name, c
 
 {
   values.ensureHostBufferPopulated();
-  hist.buildHistogram(values.data, dataType);
+  colorBar.buildHistogram(values.data, dataType);
 }
 
 void SurfaceHalfedgeScalarQuantity::createProgram() {
@@ -274,7 +274,7 @@ SurfaceCornerScalarQuantity::SurfaceCornerScalarQuantity(std::string name, const
 
 {
   values.ensureHostBufferPopulated();
-  hist.buildHistogram(values.data, dataType);
+  colorBar.buildHistogram(values.data, dataType);
 }
 
 void SurfaceCornerScalarQuantity::createProgram() {
@@ -343,7 +343,7 @@ SurfaceTextureScalarQuantity::SurfaceTextureScalarQuantity(std::string name, Sur
       TextureMapQuantity(*this, dimX_, dimY_, origin_), param(param_) {
   values.setTextureSize(dimX, dimY);
   values.ensureHostBufferPopulated();
-  hist.buildHistogram(values.data, dataType);
+  colorBar.buildHistogram(values.data, dataType);
 
   if (dataType == DataType::CATEGORICAL) {
     // default to nearest filtering for categorical data, it's probably what the user wants

@@ -12,7 +12,7 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
       dataType(dataType_), dataRange(robustMinMax(values.data, 1e-5)),
       vizRangeMin(quantity.uniquePrefix() + "vizRangeMin", -777.), // set later,
       vizRangeMax(quantity.uniquePrefix() + "vizRangeMax", -777.), // including clearing cache
-      cMap(quantity.uniquePrefix() + "cmap", defaultColorMap(dataType)),
+      colorBar(quantity), cMap(quantity.uniquePrefix() + "cmap", defaultColorMap(dataType)),
       isolinesEnabled(quantity.uniquePrefix() + "isolinesEnabled", false),
       isolineStyle(quantity.uniquePrefix() + "isolinesStyle", IsolineStyle::Stripe),
       isolinePeriod(quantity.uniquePrefix() + "isolinePeriod",
@@ -22,8 +22,8 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
 
 {
   values.checkInvalidValues();
-  hist.updateColormap(cMap.get());
-  hist.buildHistogram(values.data, dataType);
+  colorBar.updateColormap(cMap.get());
+  colorBar.buildHistogram(values.data, dataType);
   // TODO: I think we might be building the histogram ^^^ twice for many quantities
 
   if (vizRangeMin.holdsDefaultValue()) { // min and max should always have same cache state
@@ -38,7 +38,7 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
 
   if (render::buildColormapSelector(cMap.get())) {
     quantity.refresh();
-    hist.updateColormap(cMap.get());
+    colorBar.updateColormap(cMap.get());
     setColorMap(getColorMap());
   }
 
@@ -82,10 +82,10 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
 
 
   // Draw the histogram of values
-  hist.colormapRange = std::pair<float, float>(vizRangeMin.get(), vizRangeMax.get());
+  colorBar.colormapRange = std::pair<float, float>(vizRangeMin.get(), vizRangeMax.get());
   float windowWidth = ImGui::GetWindowWidth();
   float histWidth = 0.75 * windowWidth;
-  hist.buildUI(histWidth);
+  colorBar.buildUI(histWidth);
 
   // Data range
   // Note: %g specifiers are generally nicer than %e, but here we don't acutally have a choice. ImGui (for somewhat
@@ -220,6 +220,9 @@ void ScalarQuantity<QuantityT>::buildScalarOptionsUI() {
   if (dataType != DataType::CATEGORICAL) {
     if (ImGui::MenuItem("Enable isolines", NULL, isolinesEnabled.get())) setIsolinesEnabled(!isolinesEnabled.get());
   }
+  if (ImGui::MenuItem("Onscreen Colormap", NULL, colorBar.getOnscreenColorbarEnabled())) {
+    colorBar.setOnscreenColorbarEnabled(!colorBar.getOnscreenColorbarEnabled());
+  }
 }
 
 template <typename QuantityT>
@@ -306,7 +309,7 @@ void ScalarQuantity<QuantityT>::updateData(const V& newValues) {
 template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::setColorMap(std::string val) {
   cMap = val;
-  hist.updateColormap(cMap.get());
+  colorBar.updateColormap(cMap.get());
   quantity.refresh();
   requestRedraw();
   return &quantity;

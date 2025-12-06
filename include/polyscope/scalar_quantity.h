@@ -79,7 +79,8 @@ protected:
   std::pair<double, double> dataRange;
   PersistentValue<float> vizRangeMin;
   PersistentValue<float> vizRangeMax;
-  ColorBar hist;
+  
+  ColorBar colorBar;
 
   // Parameters
   PersistentValue<std::string> cMap;

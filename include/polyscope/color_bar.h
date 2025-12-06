@@ -2,8 +2,10 @@
 
 #pragma once
 
+#include "polyscope/quantity.h"
 #include "polyscope/render/color_maps.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/widget.h"
 
 #include <vector>
 
@@ -15,9 +17,8 @@ namespace polyscope {
 
 class ColorBar {
 public:
-  ColorBar();                                              // must call buildHistogram() with data after
-  ColorBar(std::vector<float>& values, DataType datatype); // internally calls buildHistogram()
-
+  ColorBar(Quantity& parent_); // must call buildHistogram() with data after
+  ColorBar(Quantity& parent_, std::vector<float>& values, DataType datatype); // internally calls buildHistogram()
   ~ColorBar();
 
   void buildHistogram(const std::vector<float>& values, DataType datatype);
@@ -26,16 +27,23 @@ public:
   // Width = -1 means set automatically
   void buildUI(float width = -1.0);
 
+  Quantity& parent;
   std::pair<double, double> colormapRange; // in DATA values, not [0,1]
 
+
+  // Getters and setters
+
+  void setOnscreenColorbarEnabled(bool newEnabled);
+  bool getOnscreenColorbarEnabled();
+
 private:
-  //
+  // Basic data defining the color map
   DataType dataType = DataType::STANDARD;
   std::pair<double, double> dataRange;
 
   // == The inline horizontal histogram visualization in the structures bar
 
-  // Manage histogram counts for 
+  // Manage histogram counts
   void fillHistogramBuffers();
   size_t rawHistBinCount = 51;
   std::vector<float> rawHistCurveY;
@@ -53,10 +61,21 @@ private:
   // A few parameters which control appearance
   float bottomBarHeight = 0.35;
   float bottomBarGap = 0.1;
-  
+
   // == The optional vertical colorbar which floats ont he main display
-  
+  PersistentValue<bool> onscreenColorbarEnabled;
+  void prepareOnscreenColorBar();
+  std::unique_ptr<Widget> onscreenColorBarWidget = nullptr;
+};
+
+class OnscreenColorBarWidget : public Widget {
+public:
+  OnscreenColorBarWidget(ColorBar& parent_);
+  virtual void draw() override;
+
+private:
+  ColorBar& parent;
 };
 
 
-}; // namespace polyscope
+} // namespace polyscope

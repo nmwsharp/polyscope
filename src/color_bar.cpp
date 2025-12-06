@@ -13,9 +13,14 @@
 
 namespace polyscope {
 
-ColorBar::ColorBar() {}
+ColorBar::ColorBar(Quantity& parent_)
+    : parent(parent_), onscreenColorbarEnabled(parent.uniquePrefix() + "onscreenColorbarEnabled", false) {
+  prepareOnscreenColorBar();
+}
 
-ColorBar::ColorBar(std::vector<float>& values, DataType dataType) { buildHistogram(values, dataType); }
+ColorBar::ColorBar(Quantity& parent_, std::vector<float>& values, DataType dataType) : ColorBar(parent_) {
+  buildHistogram(values, dataType);
+}
 
 ColorBar::~ColorBar() {}
 
@@ -180,10 +185,30 @@ void ColorBar::renderInlineHistogramToTexture() {
     inlineHistogramProgram->setUniform("u_rangeLow", rangeLow);
     inlineHistogramProgram->setUniform("u_rangeHigh", rangeHigh);
   }
+}
 
+void ColorBar::setOnscreenColorbarEnabled(bool newEnabled) {
+  onscreenColorbarEnabled.set(newEnabled);
+  if (newEnabled) {
+    prepareOnscreenColorBar();
+  }
+}
+bool ColorBar::getOnscreenColorbarEnabled() { return onscreenColorbarEnabled.get(); }
 
-  // Draw
-  inlineHistogramProgram->draw();
+void ColorBar::prepareOnscreenColorBar() {
+  if (onscreenColorBarWidget) {
+    // Already created, nothing to do
+    return;
+  }
+  onscreenColorBarWidget = std::unique_ptr<OnscreenColorBarWidget>(new OnscreenColorBarWidget(*this));
+}
+
+OnscreenColorBarWidget::OnscreenColorBarWidget(ColorBar& parent_) : parent(parent_) {}
+
+void OnscreenColorBarWidget::draw() {
+  if (parent.getOnscreenColorbarEnabled()) {
+    std::cout << "drawing color bar" << std::endl;
+  }
 }
 
 
@@ -274,6 +299,11 @@ void ColorBar::buildUI(float width) {
   }
 
   */
+
+
+  // NOTE: the onscreen colorbar gets drawn in the draw() command, rather than with
+  // the rest of the UI stuff here, because we need it to happen even if this UI
+  // panel is collapsed.
 }
 
 
