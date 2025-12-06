@@ -14,13 +14,7 @@
 namespace polyscope {
 
 ColorBar::ColorBar(Quantity& parent_)
-    : parent(parent_), onscreenColorbarEnabled(parent.uniquePrefix() + "onscreenColorbarEnabled", false) {
-  prepareOnscreenColorBar();
-}
-
-ColorBar::ColorBar(Quantity& parent_, std::vector<float>& values, DataType dataType) : ColorBar(parent_) {
-  buildHistogram(values, dataType);
-}
+    : parent(parent_), onscreenColorbarEnabled(parent.uniquePrefix() + "onscreenColorbarEnabled", false) {}
 
 ColorBar::~ColorBar() {}
 
@@ -185,6 +179,8 @@ void ColorBar::renderInlineHistogramToTexture() {
     inlineHistogramProgram->setUniform("u_rangeLow", rangeLow);
     inlineHistogramProgram->setUniform("u_rangeHigh", rangeHigh);
   }
+
+  inlineHistogramProgram->draw();
 }
 
 void ColorBar::setOnscreenColorbarEnabled(bool newEnabled) {

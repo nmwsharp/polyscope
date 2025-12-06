@@ -18,7 +18,6 @@ namespace polyscope {
 class ColorBar {
 public:
   ColorBar(Quantity& parent_); // must call buildHistogram() with data after
-  ColorBar(Quantity& parent_, std::vector<float>& values, DataType datatype); // internally calls buildHistogram()
   ~ColorBar();
 
   void buildHistogram(const std::vector<float>& values, DataType datatype);

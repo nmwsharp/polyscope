@@ -64,10 +64,7 @@ SurfaceVertexScalarQuantity::SurfaceVertexScalarQuantity(std::string name, const
                                                          SurfaceMesh& mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "vertex", values_, dataType_)
 
-{
-  values.ensureHostBufferPopulated();
-  colorBar.buildHistogram(values.data, dataType);
-}
+{}
 
 void SurfaceVertexScalarQuantity::createProgram() {
   // Create the program to draw this quantity
@@ -132,11 +129,7 @@ SurfaceFaceScalarQuantity::SurfaceFaceScalarQuantity(std::string name, const std
                                                      SurfaceMesh& mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "face", values_, dataType_)
 
-{
-  values.ensureHostBufferPopulated();
-  parent.faceAreas.ensureHostBufferPopulated();
-  colorBar.buildHistogram(values.data, dataType);
-}
+{}
 
 void SurfaceFaceScalarQuantity::createProgram() {
   // Create the program to draw this quantity
@@ -182,10 +175,7 @@ SurfaceEdgeScalarQuantity::SurfaceEdgeScalarQuantity(std::string name, const std
                                                      SurfaceMesh& mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "edge", values_, dataType_)
 
-{
-  values.ensureHostBufferPopulated();
-  colorBar.buildHistogram(values.data, dataType);
-}
+{}
 
 void SurfaceEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
@@ -227,10 +217,7 @@ SurfaceHalfedgeScalarQuantity::SurfaceHalfedgeScalarQuantity(std::string name, c
                                                              SurfaceMesh& mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "halfedge", values_, dataType_)
 
-{
-  values.ensureHostBufferPopulated();
-  colorBar.buildHistogram(values.data, dataType);
-}
+{}
 
 void SurfaceHalfedgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
@@ -272,10 +259,7 @@ SurfaceCornerScalarQuantity::SurfaceCornerScalarQuantity(std::string name, const
                                                          SurfaceMesh& mesh_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "corner", values_, dataType_)
 
-{
-  values.ensureHostBufferPopulated();
-  colorBar.buildHistogram(values.data, dataType);
-}
+{}
 
 void SurfaceCornerScalarQuantity::createProgram() {
   // Create the program to draw this quantity
@@ -342,8 +326,6 @@ SurfaceTextureScalarQuantity::SurfaceTextureScalarQuantity(std::string name, Sur
     : SurfaceScalarQuantity(name, mesh_, "vertex", values_, dataType_),
       TextureMapQuantity(*this, dimX_, dimY_, origin_), param(param_) {
   values.setTextureSize(dimX, dimY);
-  values.ensureHostBufferPopulated();
-  colorBar.buildHistogram(values.data, dataType);
 
   if (dataType == DataType::CATEGORICAL) {
     // default to nearest filtering for categorical data, it's probably what the user wants
