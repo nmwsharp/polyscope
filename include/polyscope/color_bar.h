@@ -15,8 +15,11 @@ namespace polyscope {
 // A histogram that shows up in ImGUI window
 // ONEDAY: we could definitely make a better histogram widget for categorical data...
 
+class OncreenColorBarWidget;
+
 class ColorBar {
 public:
+  friend class OnscreenColorBarWidget;
   ColorBar(Quantity& parent_); // must call buildHistogram() with data after
   ~ColorBar();
 
@@ -63,6 +66,7 @@ private:
 
   // == The optional vertical colorbar which floats ont he main display
   PersistentValue<bool> onscreenColorbarEnabled;
+  std::shared_ptr<render::TextureBuffer> cmapTexture; // this is just the plain colormap rgb
   void prepareOnscreenColorBar();
   std::unique_ptr<Widget> onscreenColorBarWidget = nullptr;
 };

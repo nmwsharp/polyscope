@@ -81,9 +81,8 @@ void ColorBar::buildHistogram(const std::vector<float>& values, DataType dataTyp
 
 void ColorBar::updateColormap(const std::string& newColormap) {
   colormap = newColormap;
-  if (inlineHistogramProgram) {
-    inlineHistogramProgram.reset();
-  }
+  inlineHistogramProgram.reset();
+  cmapTexture.reset();
 }
 
 void ColorBar::fillHistogramBuffers() {
@@ -202,9 +201,60 @@ void ColorBar::prepareOnscreenColorBar() {
 OnscreenColorBarWidget::OnscreenColorBarWidget(ColorBar& parent_) : parent(parent_) {}
 
 void OnscreenColorBarWidget::draw() {
-  if (parent.getOnscreenColorbarEnabled()) {
-    std::cout << "drawing color bar" << std::endl;
+  if (!parent.parent.isEnabled()) return;
+  if (!parent.getOnscreenColorbarEnabled()) return;
+
+  if (!parent.cmapTexture) {
+    parent.cmapTexture = render::engine->getColorMapTexture2d(parent.colormap);
   }
+
+  // Draw the color bar
+
+  // NOTE: right nwo the size of the colorbar is scaled by uiScale, but the positioning/margins are not. This is
+  // consistent with the other positioning/marching logic in the main gui panels. (Maybe they should all be scaled?)
+  float barRegionWidth = 30.0f * options::uiScale;
+  float tickRegionWidth = 80.0f * options::uiScale;
+  float marginWidth = 10.0f * options::uiScale;
+  float barRegionHeight = 300.0f * options::uiScale;
+  float borderWidth = 2.0f * options::uiScale;
+  ImVec2 barTopLeft(internal::lastRightSideFreeX - barRegionWidth - tickRegionWidth - marginWidth,
+                    internal::lastRightSideFreeY + marginWidth);
+
+  ImDrawList* dl = ImGui::GetBackgroundDrawList();
+
+  // Add a semi-transparent background
+  dl->AddRectFilled(ImVec2(barTopLeft.x - marginWidth, barTopLeft.y - marginWidth),
+                    ImVec2(barTopLeft.x + barRegionWidth + tickRegionWidth + marginWidth,
+                           barTopLeft.y + barRegionHeight + marginWidth),
+                    IM_COL32(255, 255, 255, 200));
+
+  render::engine->preserveResourceUntilImguiFrameCompletes(parent.cmapTexture);
+  dl->AddImage((ImTextureID)(intptr_t)parent.cmapTexture->getNativeHandle(), ImVec2(barTopLeft.x, barTopLeft.y),
+               ImVec2(barTopLeft.x + barRegionWidth, barTopLeft.y + barRegionHeight), ImVec2(0, 1), ImVec2(1, 0));
+
+  dl->AddRect(barTopLeft, ImVec2(barTopLeft.x + barRegionWidth, barTopLeft.y + barRegionHeight), IM_COL32(0, 0, 0, 255),
+              0.f, ImDrawFlags_None, borderWidth);
+
+  // draw text ticks
+  int nTicks = 5;
+  for (int i = 0; i < nTicks; i++) {
+    float t = (float)i / (float)(nTicks - 1);
+    float yPos = barTopLeft.y + t * (barRegionHeight - 0.5 * borderWidth);
+    double val = parent.colormapRange.second - t * (parent.colormapRange.second - parent.colormapRange.first);
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "%.3g", val);
+
+    // Make a little tick mark
+    dl->AddLine(ImVec2(barTopLeft.x + barRegionWidth - borderWidth, yPos),
+                ImVec2(barTopLeft.x + barRegionWidth + 5.0f, yPos), IM_COL32(0, 0, 0, 255), borderWidth);
+
+    // Draw the actual text
+    ImVec2 textSize = ImGui::CalcTextSize(buffer);
+    dl->AddText(ImVec2(barTopLeft.x + barRegionWidth + 10.0f, yPos - textSize.y / 2), IM_COL32(0, 0, 0, 255), buffer);
+  }
+
+  internal::lastRightSideFreeX -=
+      (barRegionWidth + tickRegionWidth + 2 * marginWidth + 10.0f) + 0.5 * barRegionWidth; // last bit is some padding
 }
 
 
