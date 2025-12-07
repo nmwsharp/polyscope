@@ -682,11 +682,11 @@ void userGuiEnd() {
     internal::lastWindowHeightUser =
         internal::imguiStackMargin + ImGui::GetWindowHeight(); // TODO using deprecated function
     internal::lastRightSideFreeX = view::windowWidth - internal::imguiStackMargin;
-    internal::lastRightSideFreeY = internal::lastWindowHeightUser + internal::imguiStackMargin;
+    internal::lastRightSideFreeY = internal::lastWindowHeightUser;
   } else {
     internal::lastWindowHeightUser = 0;
     internal::lastRightSideFreeX = view::windowWidth - internal::imguiStackMargin;
-    internal::lastRightSideFreeY = internal::imguiStackMargin;
+    internal::lastRightSideFreeY = 0;
   }
   ImGui::End();
   ImGui::PopID();
@@ -850,7 +850,7 @@ void buildPolyscopeGui() {
   }
 
 
-  internal::lastWindowHeightPolyscope = internal::imguiStackMargin + ImGui::GetWindowHeight();
+  internal::lastWindowHeightPolyscope = ImGui::GetWindowHeight();
   internal::leftWindowsWidth = ImGui::GetWindowWidth();
 
   ImGui::End();
@@ -961,7 +961,7 @@ void buildPickGui() {
     }
 
     internal::rightWindowsWidth = ImGui::GetWindowWidth();
-    internal::lastRightSideFreeY += 2 * internal::imguiStackMargin + ImGui::GetWindowHeight();
+    internal::lastRightSideFreeY += internal::imguiStackMargin + ImGui::GetWindowHeight();
     ImGui::End();
   }
 }
