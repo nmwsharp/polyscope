@@ -614,6 +614,7 @@ public:
   std::vector<std::unique_ptr<ValueColorMap>> colorMaps;
   const ValueColorMap& getColorMap(const std::string& name);
   void loadColorMap(std::string cmapName, std::string filename);
+  std::shared_ptr<TextureBuffer> getColorMapTexture2d(const std::string& cmapName);
 
   // Helpers
   std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen
