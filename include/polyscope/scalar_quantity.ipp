@@ -319,6 +319,18 @@ std::string ScalarQuantity<QuantityT>::getColorMap() {
   return cMap.get();
 }
 
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setOnscreenColorbarEnabled(bool newEnabled) {
+  colorBar.setOnscreenColorbarEnabled(newEnabled);
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+bool ScalarQuantity<QuantityT>::getOnscreenColorbarEnabled() {
+  return colorBar.getOnscreenColorbarEnabled();
+}
+
 template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::setMapRange(std::pair<double, double> val) {
   vizRangeMin = val.first;

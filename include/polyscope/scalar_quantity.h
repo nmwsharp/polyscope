@@ -45,6 +45,8 @@ public:
   // The color map
   QuantityT* setColorMap(std::string val);
   std::string getColorMap();
+  QuantityT* setOnscreenColorbarEnabled(bool newEnabled);
+  bool getOnscreenColorbarEnabled();
 
   // Data limits mapped in to colormap
   QuantityT* setMapRange(std::pair<double, double> val);
