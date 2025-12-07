@@ -223,6 +223,11 @@ void ScalarQuantity<QuantityT>::buildScalarOptionsUI() {
   if (ImGui::MenuItem("Onscreen Colormap", NULL, colorBar.getOnscreenColorbarEnabled())) {
     colorBar.setOnscreenColorbarEnabled(!colorBar.getOnscreenColorbarEnabled());
   }
+  if (ImGui::MenuItem("Export Colormap", NULL, colorBar.getOnscreenColorbarEnabled())) {
+    std::string filename = quantity.parent.name + "_" + quantity.name + "_colorbar.svg";
+    colorBar.exportColorbarToSVG(filename);
+    polyscope::info("Exported colormap to " + filename);
+  }
 }
 
 template <typename QuantityT>
@@ -295,6 +300,12 @@ QuantityT* ScalarQuantity<QuantityT>::resetMapRange() {
 
   requestRedraw();
   return &quantity;
+}
+
+
+template <typename QuantityT>
+void ScalarQuantity<QuantityT>::exportColorbarToSVG(const std::string& filename) {
+  colorBar.exportColorbarToSVG(filename);
 }
 
 template <typename QuantityT>

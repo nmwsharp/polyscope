@@ -8,6 +8,7 @@
 #include "imgui.h"
 
 #include <algorithm>
+#include <fstream>
 #include <limits>
 #include <stdexcept>
 
@@ -261,6 +262,71 @@ void OnscreenColorBarWidget::draw() {
       (barRegionWidth + tickRegionWidth + marginWidth + 2.f * tickWidth) + internal::imguiStackMargin;
 }
 
+void ColorBar::exportColorbarToSVG(const std::string& filename) {
+  std::ofstream svgFile(filename);
+  if (!svgFile.is_open()) {
+    polyscope::warning("Failed to open file for SVG export: " + filename);
+    return;
+  }
+
+  const render::ValueColorMap& valueColormap = render::engine->getColorMap(colormap);
+
+  // SVG dimensions
+  float svgWidth = 100.0f;
+  float svgHeight = 400.0f;
+  float barWidth = 30.0f;
+  float tickLength = 10.0f;
+  float textOffset = 15.0f;
+  int nTicks = 5;
+
+  // SVG header
+  svgFile << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+  svgFile << "<svg width=\"" << (svgWidth + 80) << "\" height=\"" << svgHeight
+          << "\" xmlns=\"http://www.w3.org/2000/svg\">\n";
+
+  // Gradient definition
+  svgFile << "  <defs>\n";
+  svgFile << "    <linearGradient id=\"colorbarGradient\" x1=\"0%\" y1=\"100%\" x2=\"0%\" y2=\"0%\">\n";
+
+  // Sample colormap at multiple points
+  int nSamples = 50;
+  for (int i = 0; i <= nSamples; i++) {
+    float t = (float)i / (float)nSamples;
+    glm::vec3 color = valueColormap.getValue(t);
+    int r = static_cast<int>(color.x * 255);
+    int g = static_cast<int>(color.y * 255);
+    int b = static_cast<int>(color.z * 255);
+    svgFile << "      <stop offset=\"" << (t * 100) << "%\" style=\"stop-color:rgb(" << r << "," << g << "," << b
+            << ");stop-opacity:1\" />\n";
+  }
+
+  svgFile << "    </linearGradient>\n";
+  svgFile << "  </defs>\n";
+
+  // Draw the colorbar rectangle
+  svgFile << "  <rect x=\"10\" y=\"10\" width=\"" << barWidth << "\" height=\"" << (svgHeight - 20)
+          << "\" fill=\"url(#colorbarGradient)\" stroke=\"black\" stroke-width=\"2\"/>\n";
+
+  // Ticks and labels
+  for (int i = 0; i < nTicks; i++) {
+    float t = (float)i / (float)(nTicks - 1);
+    float yPos = 10 + t * (svgHeight - 20);
+    double val = colormapRange.second - t * (colormapRange.second - colormapRange.first);
+
+    // tick mark
+    svgFile << "  <line x1=\"" << (10 + barWidth) << "\" y1=\"" << yPos << "\" x2=\"" << (10 + barWidth + tickLength)
+            << "\" y2=\"" << yPos << "\" stroke=\"black\" stroke-width=\"2\"/>\n";
+
+    // text label
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "%.4g", val);
+    svgFile << "  <text x=\"" << (10 + barWidth + textOffset) << "\" y=\"" << (yPos + 5)
+            << "\" font-family=\"Arial\" font-size=\"14\" fill=\"black\">" << buffer << "</text>\n";
+  }
+
+  svgFile << "</svg>\n";
+  svgFile.close();
+}
 
 void ColorBar::buildUI(float width) {
 

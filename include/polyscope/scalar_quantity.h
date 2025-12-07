@@ -33,6 +33,9 @@ public:
   template <class V>
   void updateData(const V& newValues);
 
+  // Export the current colorbar as an SVG file
+  void exportColorbarToSVG(const std::string& filename); 
+
   // === Members
   QuantityT& quantity;
 
