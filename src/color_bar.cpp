@@ -213,7 +213,7 @@ void OnscreenColorBarWidget::draw() {
   // NOTE: right nwo the size of the colorbar is scaled by uiScale, but the positioning/margins are not. This is
   // consistent with the other positioning/marching logic in the main gui panels. (Maybe they should all be scaled?)
   float barRegionWidth = 30.0f * options::uiScale;
-  float tickRegionWidth = 80.0f * options::uiScale;
+  float tickRegionWidth = 90.0f * options::uiScale;
   float marginWidth = 10.0f * options::uiScale;
   float barRegionHeight = 300.0f * options::uiScale;
   float borderWidth = 2.0f * options::uiScale;
@@ -221,17 +221,20 @@ void OnscreenColorBarWidget::draw() {
                     internal::lastRightSideFreeY + marginWidth);
 
   ImDrawList* dl = ImGui::GetBackgroundDrawList();
+  ImU32 backgroundColor = IM_COL32(255, 255, 255, 180);
 
-  // Add a semi-transparent background
+  // dd a semi-transparent background
   dl->AddRectFilled(ImVec2(barTopLeft.x - marginWidth, barTopLeft.y - marginWidth),
                     ImVec2(barTopLeft.x + barRegionWidth + tickRegionWidth + marginWidth,
                            barTopLeft.y + barRegionHeight + marginWidth),
-                    IM_COL32(255, 255, 255, 200));
+                    backgroundColor);
 
+  // draw the actual colormap gradient rectangle
   render::engine->preserveResourceUntilImguiFrameCompletes(parent.cmapTexture);
   dl->AddImage((ImTextureID)(intptr_t)parent.cmapTexture->getNativeHandle(), ImVec2(barTopLeft.x, barTopLeft.y),
                ImVec2(barTopLeft.x + barRegionWidth, barTopLeft.y + barRegionHeight), ImVec2(0, 1), ImVec2(1, 0));
 
+  // draw the border around the map
   dl->AddRect(barTopLeft, ImVec2(barTopLeft.x + barRegionWidth, barTopLeft.y + barRegionHeight), IM_COL32(0, 0, 0, 255),
               0.f, ImDrawFlags_None, borderWidth);
 
@@ -242,15 +245,15 @@ void OnscreenColorBarWidget::draw() {
     float yPos = barTopLeft.y + t * (barRegionHeight - 0.5 * borderWidth);
     double val = parent.colormapRange.second - t * (parent.colormapRange.second - parent.colormapRange.first);
     char buffer[64];
-    snprintf(buffer, sizeof(buffer), "%.3g", val);
+    snprintf(buffer, sizeof(buffer), "%.4g", val);
 
     // Make a little tick mark
     dl->AddLine(ImVec2(barTopLeft.x + barRegionWidth - borderWidth, yPos),
-                ImVec2(barTopLeft.x + barRegionWidth + 5.0f, yPos), IM_COL32(0, 0, 0, 255), borderWidth);
+                ImVec2(barTopLeft.x + barRegionWidth + 5.0f, yPos), IM_COL32_BLACK, borderWidth);
 
     // Draw the actual text
     ImVec2 textSize = ImGui::CalcTextSize(buffer);
-    dl->AddText(ImVec2(barTopLeft.x + barRegionWidth + 10.0f, yPos - textSize.y / 2), IM_COL32(0, 0, 0, 255), buffer);
+    dl->AddText(ImVec2(barTopLeft.x + barRegionWidth + 10.0f, yPos - textSize.y / 2), IM_COL32_BLACK, buffer);
   }
 
   internal::lastRightSideFreeX -=
