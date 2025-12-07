@@ -217,8 +217,9 @@ void OnscreenColorBarWidget::draw() {
   float marginWidth = 10.0f * options::uiScale;
   float barRegionHeight = 300.0f * options::uiScale;
   float borderWidth = 2.0f * options::uiScale;
+  float tickWidth = 5.0f * options::uiScale;
   ImVec2 barTopLeft(internal::lastRightSideFreeX - barRegionWidth - tickRegionWidth - marginWidth,
-                    internal::lastRightSideFreeY + marginWidth);
+                    internal::lastRightSideFreeY + marginWidth + internal::imguiStackMargin);
 
   ImDrawList* dl = ImGui::GetBackgroundDrawList();
   ImU32 backgroundColor = IM_COL32(255, 255, 255, 180);
@@ -249,15 +250,15 @@ void OnscreenColorBarWidget::draw() {
 
     // Make a little tick mark
     dl->AddLine(ImVec2(barTopLeft.x + barRegionWidth - borderWidth, yPos),
-                ImVec2(barTopLeft.x + barRegionWidth + 5.0f, yPos), IM_COL32_BLACK, borderWidth);
+                ImVec2(barTopLeft.x + barRegionWidth + tickWidth, yPos), IM_COL32_BLACK, borderWidth);
 
     // Draw the actual text
     ImVec2 textSize = ImGui::CalcTextSize(buffer);
-    dl->AddText(ImVec2(barTopLeft.x + barRegionWidth + 10.0f, yPos - textSize.y / 2), IM_COL32_BLACK, buffer);
+    dl->AddText(ImVec2(barTopLeft.x + barRegionWidth + 2.f * tickWidth, yPos - textSize.y / 2), IM_COL32_BLACK, buffer);
   }
 
   internal::lastRightSideFreeX -=
-      (barRegionWidth + tickRegionWidth + 2 * marginWidth + 10.0f) + 0.5 * barRegionWidth; // last bit is some padding
+      (barRegionWidth + tickRegionWidth + marginWidth + 2.f * tickWidth) + internal::imguiStackMargin;
 }
 
 
