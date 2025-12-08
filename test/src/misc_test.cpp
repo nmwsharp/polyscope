@@ -21,7 +21,32 @@ TEST_F(PolyscopeTest, TestScalarQuantity) {
   q1->setMapRange(newRange);
   EXPECT_EQ(newRange, q1->getMapRange());
 
+  polyscope::show(3);
 
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, TestScalarColormapQuantity) {
+  auto psPoints = registerPointCloud();
+
+  std::vector<double> vScalar(psPoints->nPoints(), 7.);
+  auto q1 = psPoints->addScalarQuantity("vScalar", vScalar);
+  q1->setEnabled(true);
+  polyscope::show(3);
+
+  // set colormap by name
+  q1->setColorMap("plasma");
+  EXPECT_EQ("plasma", q1->getColorMap());
+  polyscope::show(3);
+
+  // enable the onscreen colormap
+  q1->setOnscreenColorbarEnabled(true);
+  EXPECT_TRUE(q1->getOnscreenColorbarEnabled());
+  polyscope::show(3);
+  
+  // set its location manually
+  q1->setOnscreenColorbarLocation(glm::vec2(500.f, 500.f));
+  EXPECT_EQ(glm::vec2(500.f, 500.f), q1->getOnscreenColorbarLocation());
   polyscope::show(3);
 
   polyscope::removeAllStructures();

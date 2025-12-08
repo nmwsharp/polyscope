@@ -45,13 +45,8 @@ bool redrawNextFrame = true;
 bool unshowRequested = false;
 
 // Some state about imgui windows to stack them
-float imguiStackMargin = 10;
-float lastWindowHeightPolyscope = 200;
-float lastWindowHeightUser = 200;
 constexpr float INITIAL_LEFT_WINDOWS_WIDTH = 305;
 constexpr float INITIAL_RIGHT_WINDOWS_WIDTH = 500;
-float leftWindowsWidth = -1.;
-float rightWindowsWidth = -1.;
 
 auto prevMainLoopTime = std::chrono::steady_clock::now();
 float rollingMainLoopDurationMicrosec = 0.;
@@ -137,12 +132,12 @@ void writePrefsFile() {
 }
 
 void setInitialWindowWidths() {
-  leftWindowsWidth = INITIAL_LEFT_WINDOWS_WIDTH * options::uiScale;
-  rightWindowsWidth = INITIAL_RIGHT_WINDOWS_WIDTH * options::uiScale;
+  internal::leftWindowsWidth = INITIAL_LEFT_WINDOWS_WIDTH * options::uiScale;
+  internal::rightWindowsWidth = INITIAL_RIGHT_WINDOWS_WIDTH * options::uiScale;
 }
 
 void ensureWindowWidthsSet() {
-  if (leftWindowsWidth <= 0. || rightWindowsWidth <= 0.) {
+  if (internal::leftWindowsWidth <= 0. || internal::rightWindowsWidth <= 0.) {
     setInitialWindowWidths();
   }
 }
@@ -662,14 +657,15 @@ void userGuiBegin() {
   ImVec2 userGuiLoc;
   if (options::userGuiIsOnRightSide) {
     // right side
-    userGuiLoc = ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin), imguiStackMargin);
-    ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
+    userGuiLoc = ImVec2(view::windowWidth - (internal::rightWindowsWidth + internal::imguiStackMargin),
+                        internal::imguiStackMargin);
+    ImGui::SetNextWindowSize(ImVec2(internal::rightWindowsWidth, 0.));
   } else {
     // left side
     if (options::buildDefaultGuiPanels) {
-      userGuiLoc = ImVec2(leftWindowsWidth + 3 * imguiStackMargin, imguiStackMargin);
+      userGuiLoc = ImVec2(internal::leftWindowsWidth + 3 * internal::imguiStackMargin, internal::imguiStackMargin);
     } else {
-      userGuiLoc = ImVec2(imguiStackMargin, imguiStackMargin);
+      userGuiLoc = ImVec2(internal::imguiStackMargin, internal::imguiStackMargin);
     }
   }
 
@@ -682,10 +678,15 @@ void userGuiBegin() {
 void userGuiEnd() {
 
   if (options::userGuiIsOnRightSide) {
-    rightWindowsWidth = INITIAL_RIGHT_WINDOWS_WIDTH * options::uiScale;
-    lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
+    internal::rightWindowsWidth = INITIAL_RIGHT_WINDOWS_WIDTH * options::uiScale;
+    internal::lastWindowHeightUser =
+        internal::imguiStackMargin + ImGui::GetWindowHeight(); // TODO using deprecated function
+    internal::lastRightSideFreeX = view::windowWidth - internal::imguiStackMargin;
+    internal::lastRightSideFreeY = internal::lastWindowHeightUser;
   } else {
-    lastWindowHeightUser = 0;
+    internal::lastWindowHeightUser = 0;
+    internal::lastRightSideFreeX = view::windowWidth - internal::imguiStackMargin;
+    internal::lastRightSideFreeY = 0;
   }
   ImGui::End();
   ImGui::PopID();
@@ -698,8 +699,8 @@ void buildPolyscopeGui() {
 
   // Create window
   static bool showPolyscopeWindow = true;
-  ImGui::SetNextWindowPos(ImVec2(imguiStackMargin, imguiStackMargin));
-  ImGui::SetNextWindowSize(ImVec2(leftWindowsWidth, 0.));
+  ImGui::SetNextWindowPos(ImVec2(internal::imguiStackMargin, internal::imguiStackMargin));
+  ImGui::SetNextWindowSize(ImVec2(internal::leftWindowsWidth, 0.));
 
   ImGui::Begin("Polyscope", &showPolyscopeWindow);
 
@@ -740,7 +741,8 @@ void buildPolyscopeGui() {
   }
   if (ImGui::IsItemHovered()) {
 
-    ImGui::SetNextWindowPos(ImVec2(2 * imguiStackMargin + leftWindowsWidth, imguiStackMargin));
+    ImGui::SetNextWindowPos(
+        ImVec2(2 * internal::imguiStackMargin + internal::leftWindowsWidth, internal::imguiStackMargin));
     ImGui::SetNextWindowSize(ImVec2(0., 0.));
 
     // clang-format off
@@ -848,8 +850,8 @@ void buildPolyscopeGui() {
   }
 
 
-  lastWindowHeightPolyscope = imguiStackMargin + ImGui::GetWindowHeight();
-  leftWindowsWidth = ImGui::GetWindowWidth();
+  internal::lastWindowHeightPolyscope = ImGui::GetWindowHeight();
+  internal::leftWindowsWidth = ImGui::GetWindowWidth();
 
   ImGui::End();
 }
@@ -860,9 +862,10 @@ void buildStructureGui() {
   // Create window
   static bool showStructureWindow = true;
 
-  ImGui::SetNextWindowPos(ImVec2(imguiStackMargin, lastWindowHeightPolyscope + 2 * imguiStackMargin));
-  ImGui::SetNextWindowSize(
-      ImVec2(leftWindowsWidth, view::windowHeight - lastWindowHeightPolyscope - 3 * imguiStackMargin));
+  ImGui::SetNextWindowPos(
+      ImVec2(internal::imguiStackMargin, internal::lastWindowHeightPolyscope + 2 * internal::imguiStackMargin));
+  ImGui::SetNextWindowSize(ImVec2(internal::leftWindowsWidth, view::windowHeight - internal::lastWindowHeightPolyscope -
+                                                                  3 * internal::imguiStackMargin));
   ImGui::Begin("Structures", &showStructureWindow);
 
   // only show groups if there are any
@@ -920,7 +923,7 @@ void buildStructureGui() {
     ImGui::PopID();
   }
 
-  leftWindowsWidth = ImGui::GetWindowWidth();
+  internal::leftWindowsWidth = ImGui::GetWindowWidth();
 
   ImGui::End();
 }
@@ -930,9 +933,9 @@ void buildPickGui() {
 
   if (haveSelection()) {
 
-    ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin),
-                                   2 * imguiStackMargin + lastWindowHeightUser));
-    ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
+    ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (internal::rightWindowsWidth + internal::imguiStackMargin),
+                                   internal::lastRightSideFreeY + internal::imguiStackMargin));
+    ImGui::SetNextWindowSize(ImVec2(internal::rightWindowsWidth, 0.));
 
     ImGui::Begin("Selection", nullptr);
     PickResult selection = getSelection();
@@ -957,7 +960,8 @@ void buildPickGui() {
       ImGui::TextUnformatted("ERROR: INVALID STRUCTURE");
     }
 
-    rightWindowsWidth = ImGui::GetWindowWidth();
+    internal::rightWindowsWidth = ImGui::GetWindowWidth();
+    internal::lastRightSideFreeY += internal::imguiStackMargin + ImGui::GetWindowHeight();
     ImGui::End();
   }
 }
@@ -981,11 +985,15 @@ void buildUserGuiAndInvokeCallback() {
     if (beganUserGUI) {
       userGuiEnd();
     } else {
-      lastWindowHeightUser = imguiStackMargin;
+      internal::lastWindowHeightUser = internal::imguiStackMargin;
+      internal::lastRightSideFreeX = view::windowWidth - internal::imguiStackMargin;
+      internal::lastRightSideFreeY = internal::imguiStackMargin;
     }
 
   } else {
-    lastWindowHeightUser = imguiStackMargin;
+    internal::lastWindowHeightUser = internal::imguiStackMargin;
+    internal::lastRightSideFreeX = view::windowWidth - internal::imguiStackMargin;
+    internal::lastRightSideFreeY = internal::imguiStackMargin;
   }
 }
 

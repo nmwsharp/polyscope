@@ -12,7 +12,7 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
       dataType(dataType_), dataRange(robustMinMax(values.data, 1e-5)),
       vizRangeMin(quantity.uniquePrefix() + "vizRangeMin", -777.), // set later,
       vizRangeMax(quantity.uniquePrefix() + "vizRangeMax", -777.), // including clearing cache
-      cMap(quantity.uniquePrefix() + "cmap", defaultColorMap(dataType)),
+      colorBar(quantity), cMap(quantity.uniquePrefix() + "cmap", defaultColorMap(dataType)),
       isolinesEnabled(quantity.uniquePrefix() + "isolinesEnabled", false),
       isolineStyle(quantity.uniquePrefix() + "isolinesStyle", IsolineStyle::Stripe),
       isolinePeriod(quantity.uniquePrefix() + "isolinePeriod",
@@ -22,8 +22,8 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
 
 {
   values.checkInvalidValues();
-  hist.updateColormap(cMap.get());
-  hist.buildHistogram(values.data, dataType);
+  colorBar.updateColormap(cMap.get());
+  colorBar.buildHistogram(values.data, dataType);
   // TODO: I think we might be building the histogram ^^^ twice for many quantities
 
   if (vizRangeMin.holdsDefaultValue()) { // min and max should always have same cache state
@@ -38,7 +38,7 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
 
   if (render::buildColormapSelector(cMap.get())) {
     quantity.refresh();
-    hist.updateColormap(cMap.get());
+    colorBar.updateColormap(cMap.get());
     setColorMap(getColorMap());
   }
 
@@ -82,10 +82,10 @@ void ScalarQuantity<QuantityT>::buildScalarUI() {
 
 
   // Draw the histogram of values
-  hist.colormapRange = std::pair<float, float>(vizRangeMin.get(), vizRangeMax.get());
+  colorBar.colormapRange = std::pair<float, float>(vizRangeMin.get(), vizRangeMax.get());
   float windowWidth = ImGui::GetWindowWidth();
   float histWidth = 0.75 * windowWidth;
-  hist.buildUI(histWidth);
+  colorBar.buildUI(histWidth);
 
   // Data range
   // Note: %g specifiers are generally nicer than %e, but here we don't acutally have a choice. ImGui (for somewhat
@@ -220,6 +220,14 @@ void ScalarQuantity<QuantityT>::buildScalarOptionsUI() {
   if (dataType != DataType::CATEGORICAL) {
     if (ImGui::MenuItem("Enable isolines", NULL, isolinesEnabled.get())) setIsolinesEnabled(!isolinesEnabled.get());
   }
+  if (ImGui::MenuItem("Onscreen Colorbar", NULL, colorBar.getOnscreenColorbarEnabled())) {
+    colorBar.setOnscreenColorbarEnabled(!colorBar.getOnscreenColorbarEnabled());
+  }
+  if (ImGui::MenuItem("Export Colorbar")) {
+    std::string filename = quantity.parent.name + "_" + quantity.name + "_colorbar.svg";
+    colorBar.exportColorbarToSVG(filename);
+    polyscope::info("Exported colorbar to " + filename);
+  }
 }
 
 template <typename QuantityT>
@@ -294,6 +302,12 @@ QuantityT* ScalarQuantity<QuantityT>::resetMapRange() {
   return &quantity;
 }
 
+
+template <typename QuantityT>
+void ScalarQuantity<QuantityT>::exportColorbarToSVG(const std::string& filename) {
+  colorBar.exportColorbarToSVG(filename);
+}
+
 template <typename QuantityT>
 template <class V>
 void ScalarQuantity<QuantityT>::updateData(const V& newValues) {
@@ -306,7 +320,7 @@ void ScalarQuantity<QuantityT>::updateData(const V& newValues) {
 template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::setColorMap(std::string val) {
   cMap = val;
-  hist.updateColormap(cMap.get());
+  colorBar.updateColormap(cMap.get());
   quantity.refresh();
   requestRedraw();
   return &quantity;
@@ -314,6 +328,29 @@ QuantityT* ScalarQuantity<QuantityT>::setColorMap(std::string val) {
 template <typename QuantityT>
 std::string ScalarQuantity<QuantityT>::getColorMap() {
   return cMap.get();
+}
+
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setOnscreenColorbarEnabled(bool newEnabled) {
+  colorBar.setOnscreenColorbarEnabled(newEnabled);
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+bool ScalarQuantity<QuantityT>::getOnscreenColorbarEnabled() {
+  return colorBar.getOnscreenColorbarEnabled();
+}
+
+template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setOnscreenColorbarLocation(glm::vec2 newScreenCoords) {
+  colorBar.setOnscreenColorbarLocation(newScreenCoords);
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+glm::vec2 ScalarQuantity<QuantityT>::getOnscreenColorbarLocation() {
+  return colorBar.getOnscreenColorbarLocation();
 }
 
 template <typename QuantityT>

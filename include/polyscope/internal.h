@@ -26,5 +26,15 @@ extern bool& pointCloudEfficiencyWarningReported;
 // global members
 extern FloatingQuantityStructure*& globalFloatingQuantityStructure;
 
+
+// == UI and layout related
+extern float imguiStackMargin;
+extern float lastWindowHeightPolyscope;
+extern float lastWindowHeightUser;
+extern float lastRightSideFreeX;
+extern float lastRightSideFreeY;
+extern float leftWindowsWidth;
+extern float rightWindowsWidth;
+
 } // namespace internal
 } // namespace polyscope

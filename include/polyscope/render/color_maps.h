@@ -81,8 +81,11 @@ struct ValueColorMap {
     double scaledVal = val * (values.size() - 1);
     double lowerVal = std::floor(scaledVal);
     double upperBlendVal = scaledVal - lowerVal;
-    unsigned int lowerInd = static_cast<unsigned int>(lowerVal);
-    unsigned int upperInd = lowerInd + 1;
+    int lowerInd = static_cast<unsigned int>(lowerVal);
+    int upperInd = lowerInd + 1;
+
+    lowerInd = std::min(std::max(0, lowerInd), (int)values.size() - 1);
+    upperInd = std::min(std::max(0, upperInd), (int)values.size() - 1);
 
     return (float)(1.0 - upperBlendVal) * values[lowerInd] + (float)upperBlendVal * values[upperInd];
   }

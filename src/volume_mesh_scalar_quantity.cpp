@@ -217,8 +217,8 @@ void VolumeMeshVertexScalarQuantity::buildCustomUI() {
   VolumeMeshScalarQuantity::buildCustomUI();
 
   if (isDrawingLevelSet) {
-    ImGui::DragFloat("##value", &levelSetValue, 0.01f, (float)hist.colormapRange.first,
-                     (float)hist.colormapRange.second);
+    ImGui::DragFloat("##value", &levelSetValue, 0.01f, (float)colorBar.colormapRange.first,
+                     (float)colorBar.colormapRange.second);
     if (ImGui::BeginMenu("Show Quantity")) {
       std::map<std::string, std::unique_ptr<polyscope::VolumeMeshQuantity>>::iterator it;
       for (it = parent.quantities.begin(); it != parent.quantities.end(); it++) {

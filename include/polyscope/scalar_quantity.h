@@ -3,7 +3,7 @@
 #pragma once
 
 #include "polyscope/affine_remapper.h"
-#include "polyscope/histogram.h"
+#include "polyscope/color_bar.h"
 #include "polyscope/persistent_value.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
@@ -33,6 +33,9 @@ public:
   template <class V>
   void updateData(const V& newValues);
 
+  // Export the current colorbar as an SVG file
+  void exportColorbarToSVG(const std::string& filename); 
+
   // === Members
   QuantityT& quantity;
 
@@ -51,6 +54,15 @@ public:
   std::pair<double, double> getMapRange();
   QuantityT* resetMapRange(); // reset to full range
   std::pair<double, double> getDataRange();
+  
+  // Color bar options (it is always displayed inline in the structures panel)
+  QuantityT* setOnscreenColorbarEnabled(bool newEnabled);
+  bool getOnscreenColorbarEnabled();
+
+  // Location in screen coords. (-1,-1), means "place automatically" (default)
+  QuantityT* setOnscreenColorbarLocation(glm::vec2 newScreenCoords);
+  glm::vec2 getOnscreenColorbarLocation();
+
 
   // Isolines
   // NOTE there's a name typo, errant `s` in isolinesEnabled (leaving to avoid breaking change)
@@ -79,7 +91,8 @@ protected:
   std::pair<double, double> dataRange;
   PersistentValue<float> vizRangeMin;
   PersistentValue<float> vizRangeMax;
-  Histogram hist;
+  
+  ColorBar colorBar;
 
   // Parameters
   PersistentValue<std::string> cMap;

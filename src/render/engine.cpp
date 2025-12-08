@@ -356,7 +356,7 @@ void Engine::buildEngineGui() {
         options::ssaaFactor = ssaaFactor;
         requestRedraw();
       }
-      
+
       if (ImGui::InputFloat("UI Scale", &options::uiScale, 0.25f)) {
         options::uiScale = std::min(options::uiScale, 4.f);
         options::uiScale = std::max(options::uiScale, 0.25f);
@@ -1160,6 +1160,25 @@ void Engine::loadDefaultColorMaps() {
   loadDefaultColorMap("hsv");
 }
 
+std::shared_ptr<TextureBuffer> Engine::getColorMapTexture2d(const std::string& cmapName) {
+  const ValueColorMap& colormap = render::engine->getColorMap(cmapName);
+
+  // Fill a buffer with the data
+  unsigned int dataLength = colormap.values.size() * 3;
+  std::vector<float> colorBuffer(dataLength);
+  for (unsigned int i = 0; i < colormap.values.size(); i++) {
+    colorBuffer[3 * i + 0] = static_cast<float>(colormap.values[i][0]);
+    colorBuffer[3 * i + 1] = static_cast<float>(colormap.values[i][1]);
+    colorBuffer[3 * i + 2] = static_cast<float>(colormap.values[i][2]);
+  }
+
+  std::shared_ptr<TextureBuffer> textureBuffer =
+      engine->generateTextureBuffer(TextureFormat::RGB32F, 1, colormap.values.size(), &(colorBuffer[0]));
+
+  textureBuffer->setFilterMode(FilterMode::Linear);
+
+  return textureBuffer;
+}
 
 void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer) {
   ImGui::Begin(windowName.c_str());
