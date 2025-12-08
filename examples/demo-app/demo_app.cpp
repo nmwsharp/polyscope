@@ -143,7 +143,8 @@ void processFileOBJ(std::string filename) {
     randColor[iV] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
   }
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cX_really_really_stupid_long_name_how_dumb", valX);
-  polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cY", valY);
+  auto q = polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cY", valY);
+  q->setOnscreenColorbarEnabled(true); // set the onscreen colormap for this one
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cZ", valZ);
   polyscope::getSurfaceMesh(niceName)->addVertexColorQuantity("vColor", randColor);
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cY_sym", valY, polyscope::DataType::SYMMETRIC);
