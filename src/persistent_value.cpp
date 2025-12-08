@@ -12,6 +12,7 @@ PersistentCache<double> persistentCache_double;
 PersistentCache<float> persistentCache_float;
 PersistentCache<bool> persistentCache_bool;
 PersistentCache<std::string> persistentCache_string;
+PersistentCache<glm::vec2> persistentCache_glmvec2;
 PersistentCache<glm::vec3> persistentCache_glmvec3;
 PersistentCache<glm::mat4> persistentCache_glmmat4;
 PersistentCache<ScaledValue<double>> persistentCache_scaleddouble;
