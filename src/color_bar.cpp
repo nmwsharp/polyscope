@@ -15,7 +15,8 @@
 namespace polyscope {
 
 ColorBar::ColorBar(Quantity& parent_)
-    : parent(parent_), onscreenColorbarEnabled(parent.uniquePrefix() + "onscreenColorbarEnabled", false) {}
+    : parent(parent_), onscreenColorbarEnabled(parent.uniquePrefix() + "onscreenColorbarEnabled", false),
+      onscreenColorbarLocation(parent.uniquePrefix() + "onscreenColorbarLocation", glm::vec2(-1., -1.)) {}
 
 ColorBar::~ColorBar() {}
 
@@ -191,6 +192,9 @@ void ColorBar::setOnscreenColorbarEnabled(bool newEnabled) {
 }
 bool ColorBar::getOnscreenColorbarEnabled() { return onscreenColorbarEnabled.get(); }
 
+void ColorBar::setOnscreenColorbarLocation(glm::vec2 newScreenCoords) { onscreenColorbarLocation.set(newScreenCoords); }
+glm::vec2 ColorBar::getOnscreenColorbarLocation() { return onscreenColorbarLocation.get(); }
+
 void ColorBar::prepareOnscreenColorBar() {
   if (onscreenColorBarWidget) {
     // Already created, nothing to do
@@ -209,6 +213,9 @@ void OnscreenColorBarWidget::draw() {
     parent.cmapTexture = render::engine->getColorMapTexture2d(parent.colormap);
   }
 
+  bool placeAutomatically =
+      (parent.onscreenColorbarLocation.get().x == -1.f && parent.onscreenColorbarLocation.get().y == -1.f);
+
   // Draw the color bar
 
   // NOTE: right nwo the size of the colorbar is scaled by uiScale, but the positioning/margins are not. This is
@@ -219,8 +226,15 @@ void OnscreenColorBarWidget::draw() {
   float barRegionHeight = 300.0f * options::uiScale;
   float borderWidth = 2.0f * options::uiScale;
   float tickWidth = 5.0f * options::uiScale;
-  ImVec2 barTopLeft(internal::lastRightSideFreeX - barRegionWidth - tickRegionWidth - marginWidth,
-                    internal::lastRightSideFreeY + marginWidth + internal::imguiStackMargin);
+
+
+  ImVec2 barTopLeft;
+  if (placeAutomatically) {
+    barTopLeft = ImVec2(internal::lastRightSideFreeX - barRegionWidth - tickRegionWidth - marginWidth,
+                        internal::lastRightSideFreeY + marginWidth + internal::imguiStackMargin);
+  } else {
+    barTopLeft = ImVec2(parent.onscreenColorbarLocation.get().x, parent.onscreenColorbarLocation.get().y);
+  }
 
   ImDrawList* dl = ImGui::GetBackgroundDrawList();
   ImU32 backgroundColor = IM_COL32(255, 255, 255, 180);
@@ -258,8 +272,10 @@ void OnscreenColorBarWidget::draw() {
     dl->AddText(ImVec2(barTopLeft.x + barRegionWidth + 2.f * tickWidth, yPos - textSize.y / 2), IM_COL32_BLACK, buffer);
   }
 
-  internal::lastRightSideFreeX -=
-      (barRegionWidth + tickRegionWidth + marginWidth + 2.f * tickWidth) + internal::imguiStackMargin;
+  if (placeAutomatically) {
+    internal::lastRightSideFreeX -=
+        (barRegionWidth + tickRegionWidth + marginWidth + 2.f * tickWidth) + internal::imguiStackMargin;
+  }
 }
 
 void ColorBar::exportColorbarToSVG(const std::string& filename) {

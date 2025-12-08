@@ -343,6 +343,17 @@ bool ScalarQuantity<QuantityT>::getOnscreenColorbarEnabled() {
 }
 
 template <typename QuantityT>
+QuantityT* ScalarQuantity<QuantityT>::setOnscreenColorbarLocation(glm::vec2 newScreenCoords) {
+  colorBar.setOnscreenColorbarLocation(newScreenCoords);
+  requestRedraw();
+  return &quantity;
+}
+template <typename QuantityT>
+glm::vec2 ScalarQuantity<QuantityT>::getOnscreenColorbarLocation() {
+  return colorBar.getOnscreenColorbarLocation();
+}
+
+template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::setMapRange(std::pair<double, double> val) {
   vizRangeMin = val.first;
   vizRangeMax = val.second;

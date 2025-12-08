@@ -48,14 +48,21 @@ public:
   // The color map
   QuantityT* setColorMap(std::string val);
   std::string getColorMap();
-  QuantityT* setOnscreenColorbarEnabled(bool newEnabled);
-  bool getOnscreenColorbarEnabled();
 
   // Data limits mapped in to colormap
   QuantityT* setMapRange(std::pair<double, double> val);
   std::pair<double, double> getMapRange();
   QuantityT* resetMapRange(); // reset to full range
   std::pair<double, double> getDataRange();
+  
+  // Color bar options (it is always displayed inline in the structures panel)
+  QuantityT* setOnscreenColorbarEnabled(bool newEnabled);
+  bool getOnscreenColorbarEnabled();
+
+  // Location in screen coords. (-1,-1), means "place automatically" (default)
+  QuantityT* setOnscreenColorbarLocation(glm::vec2 newScreenCoords);
+  glm::vec2 getOnscreenColorbarLocation();
+
 
   // Isolines
   // NOTE there's a name typo, errant `s` in isolinesEnabled (leaving to avoid breaking change)

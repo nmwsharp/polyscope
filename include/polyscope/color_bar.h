@@ -38,6 +38,10 @@ public:
 
   void setOnscreenColorbarEnabled(bool newEnabled);
   bool getOnscreenColorbarEnabled();
+ 
+  // Location in screen coords. (-1,-1), means "place automatically" (default)
+  void setOnscreenColorbarLocation(glm::vec2 newScreenCoords);
+  glm::vec2 getOnscreenColorbarLocation();
 
 private:
   // Basic data defining the color map
@@ -67,6 +71,7 @@ private:
 
   // == The optional vertical colorbar which floats ont he main display
   PersistentValue<bool> onscreenColorbarEnabled;
+  PersistentValue<glm::vec2> onscreenColorbarLocation;
   std::shared_ptr<render::TextureBuffer> cmapTexture; // this is just the plain colormap rgb
   void prepareOnscreenColorBar();
   std::unique_ptr<Widget> onscreenColorBarWidget = nullptr;
