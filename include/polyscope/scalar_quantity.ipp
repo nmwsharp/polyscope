@@ -220,13 +220,13 @@ void ScalarQuantity<QuantityT>::buildScalarOptionsUI() {
   if (dataType != DataType::CATEGORICAL) {
     if (ImGui::MenuItem("Enable isolines", NULL, isolinesEnabled.get())) setIsolinesEnabled(!isolinesEnabled.get());
   }
-  if (ImGui::MenuItem("Onscreen Colormap", NULL, colorBar.getOnscreenColorbarEnabled())) {
+  if (ImGui::MenuItem("Onscreen Colorbar", NULL, colorBar.getOnscreenColorbarEnabled())) {
     colorBar.setOnscreenColorbarEnabled(!colorBar.getOnscreenColorbarEnabled());
   }
-  if (ImGui::MenuItem("Export Colormap", NULL, colorBar.getOnscreenColorbarEnabled())) {
+  if (ImGui::MenuItem("Export Colorbar")) {
     std::string filename = quantity.parent.name + "_" + quantity.name + "_colorbar.svg";
     colorBar.exportColorbarToSVG(filename);
-    polyscope::info("Exported colormap to " + filename);
+    polyscope::info("Exported colorbar to " + filename);
   }
 }
 
