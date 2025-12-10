@@ -514,7 +514,7 @@ void updateViewAndChangeFrontDir(FrontDir newFrontDir, bool flyTo) {
 
   if (std::fabs(dot(view::getUpVec(), view::getFrontVec())) > 0.1) {
     // if the user has foolishly set upDir and frontDir to be along the same axis, fix it
-    view::upDir = defaultOrthogonalUpDir(view::frontDir);
+    setUpDir(defaultOrthogonalUpDir(view::frontDir), flyTo);
   }
 
   if (viewIsValid()) {
