@@ -173,6 +173,12 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
 
     // Undo centering
     viewMat = glm::translate(viewMat, -view::viewCenter);
+
+    // Enforce that the view indeed looks towards the center, as it always should with Turntable mode.
+    // Mostly this will have no effect, but it can prevent gradual numerical drift where the center shifts relvative to
+    // the view matrix.
+    lookAt(view::getCameraWorldPosition(), view::viewCenter, view::getUpVec(), false);
+
     break;
   }
   case NavigateStyle::Free: {
@@ -266,10 +272,20 @@ void processTranslate(glm::vec2 delta) {
   if (glm::length(delta) == 0) {
     return;
   }
+
   // Process a translation
   float movementScale = state::lengthScale * 0.6 * moveScale;
   glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), movementScale * glm::vec3(delta.x, delta.y, 0.0));
   viewMat = camSpaceT * viewMat;
+
+  if (getNavigateStyle() == NavigateStyle::Turntable) {
+    // also translate the turntable center according to the same motion
+    glm::vec3 oldCenter = view::viewCenter;
+    glm::vec3 worldspaceT =
+        glm::transpose(glm::mat3(viewMat)) * glm::vec3(-movementScale * delta.x, -movementScale * delta.y, 0.0);
+    glm::vec3 newCenter = oldCenter + worldspaceT;
+    setViewCenter(newCenter, false);
+  }
 
   requestRedraw();
   immediatelyEndFlight();
