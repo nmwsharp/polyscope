@@ -49,6 +49,8 @@ public:
   void setPose(glm::vec3 planePosition, glm::vec3 planeNormal);
 
   // == Some getters and setters
+  glm::vec3 getCenter();
+  glm::vec3 getNormal();
 
   bool getActive();
   void setActive(bool newVal);
@@ -104,8 +106,6 @@ protected:
   void setSliceAttributes(render::ShaderProgram& p);
   void createVolumeSliceProgram();
   void prepare();
-  glm::vec3 getCenter();
-  glm::vec3 getNormal();
   void updateWidgetEnabled();
 };
 
