@@ -239,8 +239,8 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
   }
   case NavigateStyle::FirstPerson: {
     glm::vec2 dragDelta = endP - startP;
-    float delTheta = 2.0 * dragDelta.x * moveScale;
-    float delPhi = 2.0 * dragDelta.y * moveScale;
+    float delTheta = 2.0 * dragDelta.x;
+    float delPhi = 2.0 * dragDelta.y;
 
     // Rotation about the vertical axis
     glm::vec3 rotAx = glm::mat3(viewMat) * getUpVec();
