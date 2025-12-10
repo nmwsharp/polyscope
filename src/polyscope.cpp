@@ -527,8 +527,8 @@ void processInputEvents() {
           dragDistSinceLastRelease = 0.0;
         }
 
-        // Ctrl-shift left-click to set new center
-        if (ctrlShiftHeld && io.MouseReleased[0]) {
+        // Double-click or Ctrl-shift left-click to set new center
+        if (io.MouseDoubleClicked[0] || (ctrlShiftHeld && io.MouseReleased[0])) {
           if (dragDistSinceLastRelease < dragIgnoreThreshold) {
             glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
             view::processSetCenter(screenCoords);
@@ -748,14 +748,14 @@ void buildPolyscopeGui() {
     // clang-format off
 		ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar);
     ImGui::TextUnformatted("View Navigation:");
-			ImGui::TextUnformatted("     Rotate: [left click drag]");
-			ImGui::TextUnformatted("     Translate: [shift] + [left click drag] OR [right click drag]");
-			ImGui::TextUnformatted("     Zoom: [scroll] OR [ctrl/cmd] + [shift] + [left click drag]");
-			ImGui::TextUnformatted("   Use [ctrl/cmd-c] and [ctrl/cmd-v] to save and restore camera poses");
-			ImGui::TextUnformatted("     via the clipboard.");
-			ImGui::TextUnformatted("   Hold [ctrl/cmd] + [shift] and [left click] in the scene to set the");
-			ImGui::TextUnformatted("     orbit center.");
-			ImGui::TextUnformatted("   Hold [ctrl/cmd] + [shift] and scroll to zoom towards the center.");
+			ImGui::TextUnformatted("   Rotate: [left click drag]");
+			ImGui::TextUnformatted("   Translate: [shift] + [left click drag] OR [right click drag]");
+			ImGui::TextUnformatted("   Zoom: [scroll] OR [ctrl/cmd] + [shift] + [left click drag]");
+			ImGui::TextUnformatted("   To set the view orbit center, double-click OR hold");
+			ImGui::TextUnformatted("     [ctrl/cmd] + [shift] and [left click] in the scene.");
+			ImGui::TextUnformatted("   To zoom towards the center, hold [ctrl/cmd] + [shift] and scroll.");
+			ImGui::TextUnformatted("   Save and restore camera poses via the system clipboard with");
+			ImGui::TextUnformatted("     [ctrl/cmd-c] and [ctrl/cmd-v].");
       ImGui::TextUnformatted("\nMenu Navigation:");
 			ImGui::TextUnformatted("   Menu headers with a '>' can be clicked to collapse and expand.");
 			ImGui::TextUnformatted("   Use [ctrl/cmd] + [left click] to manually enter any numeric value");
