@@ -92,6 +92,7 @@ void RenderImageQuantityBase::drawPickDelayed() {
   glm::mat4 P = view::getCameraPerspectiveMatrix();
   glm::mat4 Pinv = glm::inverse(P);
 
+  parent.setStructureUniforms(*pickProgram);
   pickProgram->setUniform("u_projMatrix", glm::value_ptr(P));
   pickProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   pickProgram->setUniform("u_viewport", render::engine->getCurrentViewport());

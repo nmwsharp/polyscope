@@ -181,8 +181,8 @@ R"(
     vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
     vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
     viewRay = normalize(viewRay);
-    vec3 viewPos =  viewRay * (-1./viewRay.z*depth);
-    float fragdepth = fragDepthFromView(u_projMatrix, depthRange, viewPos);
+    vec3 renderImageTextureDraw_viewPos = viewRay * (-1./viewRay.z*depth);
+    float fragdepth = fragDepthFromView(u_projMatrix, depthRange, renderImageTextureDraw_viewPos);
     gl_FragDepth = fragdepth;
 
     
@@ -263,8 +263,8 @@ R"(
     vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
     vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
     viewRay = normalize(viewRay);
-    vec3 viewPos =  viewRay * (-1./viewRay.z*depth);
-    float fragdepth = fragDepthFromView(u_projMatrix, depthRange, viewPos);
+    vec3 plainRawRenderImageTextureDraw_viewPos = viewRay * (-1./viewRay.z*depth);
+    float fragdepth = fragDepthFromView(u_projMatrix, depthRange, plainRawRenderImageTextureDraw_viewPos);
     gl_FragDepth = fragdepth;
 
     
