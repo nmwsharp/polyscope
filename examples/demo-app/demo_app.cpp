@@ -870,7 +870,7 @@ void callback() {
 
     std::vector<float> plotVals;
     for (float t = 0; t < 10.; t += 0.01) {
-      plotVals.push_back(std::cosf(t + ImGui::GetTime()));
+      plotVals.push_back(std::cos(t + ImGui::GetTime()));
     }
 
     // sample plot
