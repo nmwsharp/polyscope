@@ -59,16 +59,17 @@ void ColorRenderImageQuantity::prepare() {
 
   // Create the sourceProgram
   // clang-format off
-  program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-    render::engine->addMaterialRules(material.get(),
+
+  std::vector<std::string> rules = render::engine->addMaterialRules(material.get(),
       parent.addStructureRules({
         getImageOriginRule(imageOrigin), 
         hasNormals ? "SHADE_NORMAL_FROM_TEXTURE" : "SHADE_NORMAL_FROM_VIEWPOS_VAR",
         "TEXTURE_SHADE_COLOR"
       })
-    ), 
-    render::ShaderReplacementDefaults::SceneObjectNoSlice);
-  // clang-format on
+  );
+  rules = removeRule(rules, "GENERATE_VIEW_POS");
+
+  program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN", rules);
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
   program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());

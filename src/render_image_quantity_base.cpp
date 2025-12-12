@@ -89,6 +89,7 @@ void RenderImageQuantityBase::drawPickDelayed() {
   if (!pickProgram) preparePick();
 
   // set uniforms
+  parent.setStructureUniforms(*pickProgram);
   glm::mat4 P = view::getCameraPerspectiveMatrix();
   glm::mat4 Pinv = glm::inverse(P);
 
@@ -111,11 +112,14 @@ void RenderImageQuantityBase::preparePick() {
 
   // Create the sourceProgram
   // clang-format off
-  pickProgram = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-    parent.addStructureRules({
+  std::vector<std::string> rules = parent.addStructureRules({
       getImageOriginRule(imageOrigin), 
       "SHADECOLOR_FROM_UNIFORM",
-    }),
+    });
+  rules = removeRule(rules, "GENERATE_VIEW_POS");
+
+  pickProgram = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN", 
+    rules,
     render::ShaderReplacementDefaults::Pick
   );
   // clang-format on

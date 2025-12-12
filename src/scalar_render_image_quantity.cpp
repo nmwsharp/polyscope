@@ -72,8 +72,7 @@ void ScalarRenderImageQuantity::prepare() {
 
   // Create the sourceProgram
   // clang-format off
-  program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-    render::engine->addMaterialRules(material.get(),
+  std::vector<std::string> rules = render::engine->addMaterialRules(material.get(),
       addScalarRules(
         parent.addStructureRules({
           getImageOriginRule(imageOrigin), 
@@ -81,8 +80,10 @@ void ScalarRenderImageQuantity::prepare() {
           "TEXTURE_PROPAGATE_VALUE", 
         })
       )
-    ),
-    render::ShaderReplacementDefaults::SceneObjectNoSlice);
+  );
+  rules = removeRule(rules, "GENERATE_VIEW_POS");
+
+  program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN", rules);
   // clang-format on
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());

@@ -698,4 +698,8 @@ inline std::string getRenderEngineBackendName() { return engineBackendName; }
 
 
 } // namespace render
+
+// === Small free helpers
+std::vector<std::string> removeRule(std::vector<std::string> initRules, std::string ruleName);
+
 } // namespace polyscope
