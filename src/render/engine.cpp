@@ -1200,5 +1200,14 @@ void Engine::preserveResourceUntilImguiFrameCompletes(std::shared_ptr<TextureBuf
 
 void Engine::clearResourcesPreservedForImguiFrame() { resourcesPreservedForImGuiFrame.clear(); }
 
+
 } // namespace render
+
+// === Small free helpers
+
+std::vector<std::string> removeRule(std::vector<std::string> initRules, std::string ruleName) {
+  initRules.erase(std::remove(initRules.begin(), initRules.end(), ruleName), initRules.end());
+  return initRules;
+}
+
 } // namespace polyscope

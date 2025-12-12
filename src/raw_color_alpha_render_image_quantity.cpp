@@ -63,11 +63,16 @@ void RawColorAlphaRenderImageQuantity::prepare() {
   // applied after compositing.
 
   // Create the sourceProgram
-  program = render::engine->requestShader(
-      "TEXTURE_DRAW_RAW_RENDERIMAGE_PLAIN",
-      parent.addStructureRules({getImageOriginRule(imageOrigin), "TEXTURE_SHADE_COLORALPHA", "INVERSE_TONEMAP",
-                                getIsPremultiplied() ? "" : "TEXTURE_PREMULTIPLY_OUT"}),
-      render::ShaderReplacementDefaults::SceneObjectNoSlice);
+  // clang-format off
+  std::vector<std::string> rules = parent.addStructureRules({
+    getImageOriginRule(imageOrigin), 
+    "TEXTURE_SHADE_COLORALPHA", "INVERSE_TONEMAP",
+    getIsPremultiplied() ? "" : "TEXTURE_PREMULTIPLY_OUT"
+  });
+  rules = removeRule(rules, "GENERATE_VIEW_POS");
+
+  program = render::engine->requestShader("TEXTURE_DRAW_RAW_RENDERIMAGE_PLAIN", rules);
+  // clang-format on
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
   program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());

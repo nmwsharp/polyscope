@@ -167,14 +167,10 @@ R"(
 
     // Fetch values from texture
     float depth = texture(t_depth, tCoord).r;
-           
-    ${ GLOBAL_FRAGMENT_FILTER_PREP }$
-    ${ GLOBAL_FRAGMENT_FILTER }$
-
     if(depth > LARGE_FLOAT()) {
       discard;
     }
-
+           
     // Set the depth of the fragment from the stored texture data
     // TODO: this a wasteful way to convert ray depth to gl_FragDepth, I am sure it can be done with much less arithmetic... figure it out 
     // WARNING this code is duplicated in other shaders
@@ -185,6 +181,8 @@ R"(
     float fragdepth = fragDepthFromView(u_projMatrix, depthRange, viewPos);
     gl_FragDepth = fragdepth;
 
+    ${ GLOBAL_FRAGMENT_FILTER_PREP }$
+    ${ GLOBAL_FRAGMENT_FILTER }$
     
     // Shading
     vec3 shadeNormal = vec3(0.f, 0.f, 0.f);
@@ -252,7 +250,6 @@ R"(
 
     // Fetch values from texture
     float depth = texture(t_depth, tCoord).r;
-
     if(depth > LARGE_FLOAT()) {
       discard;
     }
@@ -267,6 +264,8 @@ R"(
     float fragdepth = fragDepthFromView(u_projMatrix, depthRange, viewPos);
     gl_FragDepth = fragdepth;
 
+    ${ GLOBAL_FRAGMENT_FILTER_PREP }$
+    ${ GLOBAL_FRAGMENT_FILTER }$
     
     // Shading
     ${ GENERATE_SHADE_VALUE }$
