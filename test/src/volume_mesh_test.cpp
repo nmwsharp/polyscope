@@ -12,12 +12,12 @@ TEST_F(PolyscopeTest, ShowVolumeMesh) {
   // Tets only
   std::vector<glm::vec3> tet_verts = {
     {0, 0, 0},
-    {0, 0, 1},
+    {1, 0, 0},
     {0, 1, 0},
-    {0, 1, 1},
+    {0, 0, 1},
   };
   std::vector<std::array<size_t, 4>> tet_cells = {
-    {0,1,2,4}
+    {0,1,2,3}
   };
   polyscope::registerTetMesh("tet", tet_verts, tet_cells);
 
@@ -25,13 +25,13 @@ TEST_F(PolyscopeTest, ShowVolumeMesh) {
   // Hexes only
   std::vector<glm::vec3> hex_verts = {
     {0, 0, 0},
-    {0, 0, 1},
-    {0, 1, 0},
-    {0, 1, 1},
     {1, 0, 0},
-    {1, 0, 1},
     {1, 1, 0},
+    {0, 1, 0},
+    {0, 0, 1},
+    {1, 0, 1},
     {1, 1, 1},
+    {0, 1, 1},
   };
   std::vector<std::array<size_t, 8>> hex_cells = {
     {0,1,2,3,4,5,6,7},
@@ -55,11 +55,50 @@ TEST_F(PolyscopeTest, ShowVolumeMesh) {
 
   // Mixed elements, shared array
   std::vector<std::array<int, 8>> combined_cells = {
-      {0, 1, 3, 4, -1, -1, -1, -1},
+      {0, 1, 2, 3, -1, -1, -1, -1},
       {4, 5, 6, 7, 8, 9, 10, 11},
   };
   polyscope::registerVolumeMesh("tet hex mix combined", combined_verts, combined_cells);
 
+  polyscope::removeAllStructures();
+}
+
+
+TEST_F(PolyscopeTest, ShowVolumeMeshHexWedgePyramidTet) {
+  // clang-format off
+  std::vector<glm::vec3> vertices = {// Base hex vertices
+                                     {0, 0, 0},          // V0
+                                     {1, 0, 0},          // V1
+                                     {1, 1, 0},          // V2
+                                     {0, 1, 0},          // V3
+                                     {0, 0, 1},          // V4
+                                     {1, 0, 1},          // V5
+                                     {1, 1, 1},          // V6
+                                     {0, 1, 1},          // V7
+                                     // Top Prism Vertices
+                                     {0.0, 0.5, 1.5},   // V8
+                                     {1.0, 0.5, 1.5},   // V9
+                                     // Side Prism Vertices
+                                     {1.5, 0.5, 0.0},   // V10
+                                     {1.5, 0.5, 1.0},   // V11
+                                     // Bottom Pyramid Vertex
+                                     {0.5, 0.5, -0.5}   // V12
+                                    };
+  // clang-format on
+  std::vector<std::array<int, 8>> cells = {
+      // Base Hex cell
+      {0, 1, 2, 3, 4, 5, 6, 7},
+      // Top Prism cell
+      {4, 7, 8, 5, 6, 9, -1, -1},
+      // Side Prism cell
+      {1, 10, 2, 5, 11, 6, -1, -1},
+      // Bottom Pyramid cell
+      {0, 3, 2, 1, 12, -1, -1, -1},
+      // Tet Connecting side and top prisms
+      {5, 11, 6, 9, -1, -1, -1, -1},
+  };
+  polyscope::registerVolumeMesh("hex prism pyramid tet", vertices, cells);
+  polyscope::show(3);
   polyscope::removeAllStructures();
 }
 
