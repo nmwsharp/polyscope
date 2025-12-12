@@ -10,6 +10,7 @@
 #include "imgui.h"
 #include "implot.h"
 
+#include "polyscope/imgui_config.h"
 #include "polyscope/options.h"
 #include "polyscope/pick.h"
 #include "polyscope/render/engine.h"
@@ -1175,8 +1176,8 @@ void shutdown(bool allowMidFrameShutdown) {
   removeAllSlicePlanes();
   clearMessages();
   state::userCallback = nullptr;
-  options::configureImGuiStyleCallback = nullptr;
-  options::prepareImGuiFontsCallback = nullptr;
+  options::configureImGuiStyleCallback = configureImGuiStyle; // restore defaults
+  options::prepareImGuiFontsCallback = prepareImGuiFonts;
   options::filesDroppedCallback = nullptr;
 
   // Shut down the render engine
