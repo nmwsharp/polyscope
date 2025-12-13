@@ -42,6 +42,10 @@ public:
   const std::string postfix;
   std::string uniquePrefix();
 
+  // Remove the slice plane from the scene
+  // (destroys this object, pointer is now invalid)
+  void remove();
+
   // Set the position and orientation of the plane
   // planePosition is any 3D position which the plane touches (the center of the plane)
   // planeNormal is a vector giving the normal direction of the plane, objects
@@ -109,10 +113,34 @@ protected:
   void updateWidgetEnabled();
 };
 
+// Manually specify a name for the slice plane
+SlicePlane* addSlicePlane(std::string name);
+
+// Automatically generates a name for the plane like
+// "Scene Slice Plane 0", "Scene Slice Plane 1", etc.
+SlicePlane* addSlicePlane();
+
+// DEPRECATED: there's on reason to offer this variant, it could be set manually
 SlicePlane* addSceneSlicePlane(bool initiallyVisible = false);
+
+// Get a slice plane by name
+SlicePlane* getSlicePlane(std::string name);
+
+// Remove a slice plane by name or pointer
+void removeSlicePlane(std::string name);
+void removeSlicePlane(SlicePlane* plane);
+
+// Remove the last-added slice plane
 void removeLastSceneSlicePlane();
+
+// Remove all slice planes
 void removeAllSlicePlanes();
+
+
+// === Internal helpers
+
 void buildSlicePlaneGUI();
+void notifySlicePlanesChanged(); // call after adding/remove any slice plane
 
 // flag to open the slice plane menu after adding a slice plane
 extern bool openSlicePlaneMenu;

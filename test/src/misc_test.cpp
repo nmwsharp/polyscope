@@ -66,3 +66,65 @@ TEST_F(PolyscopeTest, FlatMaterialTest) {
 
   polyscope::removeAllStructures();
 }
+
+
+// ============================================================
+// =============== Slice Plane Tests
+// ============================================================
+
+// We test these on a point cloud because it is convenient, but really we are testing the scalar quantity
+
+TEST_F(PolyscopeTest, TestSlicePlane) {
+
+  auto psPoints = registerPointCloud(); // add some structure to the scene
+
+  // Basic add
+  polyscope::SlicePlane* sp1 = polyscope::addSlicePlane();
+  polyscope::show(3);
+
+  // Set properties
+  sp1->setColor(glm::vec3(1.0, 0.0, 0.0));
+  EXPECT_EQ(sp1->getColor(), glm::vec3(1.0, 0.0, 0.0));
+
+  sp1->setTransparency(0.5);
+  EXPECT_EQ(sp1->getTransparency(), 0.5);
+  
+  sp1->setGridLineColor(glm::vec3(0.5, 0.5, 0.5));
+  EXPECT_EQ(sp1->getGridLineColor(), glm::vec3(0.5, 0.5, 0.5));
+
+  polyscope::show(3);
+
+  // Transform stuff
+  glm::mat4 transform = glm::mat4(1.0);
+  transform[3][0] = 1.0;
+  sp1->setTransform(transform);
+  EXPECT_EQ(sp1->getTransform(), transform);
+
+  glm::vec3 center = sp1->getCenter();
+  glm::vec3 normal = sp1->getNormal();
+
+  // Enable/disable drawing styles
+  sp1->setDrawPlane(false);
+  sp1->setDrawWidget(false);
+  polyscope::show(3);
+
+  // Add/remove with custom names
+  polyscope::SlicePlane* sp2 = polyscope::addSlicePlane("custom_name");
+  EXPECT_EQ(sp2->name, "custom_name");
+  polyscope::SlicePlane* sp3 = polyscope::addSlicePlane();
+  polyscope::show(3);
+  polyscope::removeSlicePlane("custom_name");
+  polyscope::show(3);
+  polyscope::removeLastSceneSlicePlane();
+  polyscope::show(3);
+  polyscope::removeSlicePlane(sp1);
+  polyscope::show(3);
+  polyscope::SlicePlane* sp4 = polyscope::addSlicePlane();
+  sp4->remove();
+  // for now, still test that the the old deprecated function works
+  polyscope::SlicePlane* sp5 = polyscope::addSceneSlicePlane();
+  polyscope::show(3);
+
+  polyscope::removeAllSlicePlanes();
+  polyscope::removeAllStructures();
+}
