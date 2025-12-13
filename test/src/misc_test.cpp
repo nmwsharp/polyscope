@@ -80,7 +80,12 @@ TEST_F(PolyscopeTest, TestSlicePlane) {
 
   // Basic add
   polyscope::SlicePlane* sp1 = polyscope::addSlicePlane();
+  EXPECT_TRUE(sp1->getEnabled());
   polyscope::show(3);
+  sp1->setEnabled(false);
+  EXPECT_FALSE(sp1->getEnabled());
+  polyscope::show(3);
+  sp1->setEnabled(true);
 
   // Set properties
   sp1->setColor(glm::vec3(1.0, 0.0, 0.0));

@@ -111,7 +111,7 @@ void buildSlicePlaneGUI() {
 
 
 SlicePlane::SlicePlane(std::string name_)
-    : name(name_), postfix(std::to_string(state::slicePlanes.size())), active(uniquePrefix() + "#active", true),
+    : name(name_), postfix(std::to_string(state::slicePlanes.size())), enabled(uniquePrefix() + "#enabled", true),
       drawPlane(uniquePrefix() + "#drawPlane", true), drawWidget(uniquePrefix() + "#drawWidget", true),
       objectTransform(uniquePrefix() + "#object_transform", glm::mat4(1.0)),
       color(uniquePrefix() + "#color", getNextUniqueColor()),
@@ -253,7 +253,7 @@ void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
 }
 
 void SlicePlane::drawGeometry() {
-  if (!active.get()) return;
+  if (!enabled.get()) return;
 
   ensureVolumeInspectValid();
 
@@ -292,7 +292,7 @@ void SlicePlane::drawGeometry() {
 
 
 void SlicePlane::draw() {
-  if (!active.get()) return;
+  if (!enabled.get()) return;
 
   if (drawPlane.get()) {
     // Set uniforms
@@ -320,8 +320,8 @@ void SlicePlane::draw() {
 void SlicePlane::buildGUI() {
   ImGui::PushID(name.c_str());
 
-  if (ImGui::Checkbox(name.c_str(), &active.get())) {
-    setActive(getActive());
+  if (ImGui::Checkbox(name.c_str(), &enabled.get())) {
+    setEnabled(getEnabled());
   }
 
   ImGui::SameLine();
@@ -403,7 +403,7 @@ void SlicePlane::setSceneObjectUniforms(render::ShaderProgram& p, bool alwaysPas
 }
 
 glm::vec3 SlicePlane::getCenter() {
-  if (active.get()) {
+  if (enabled.get()) {
     glm::vec3 center{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
     return center;
   } else {
@@ -413,7 +413,7 @@ glm::vec3 SlicePlane::getCenter() {
 }
 
 glm::vec3 SlicePlane::getNormal() {
-  if (active.get()) {
+  if (enabled.get()) {
     glm::vec3 normal{objectTransform.get()[0][0], objectTransform.get()[0][1], objectTransform.get()[0][2]};
     normal = glm::normalize(normal);
     return normal;
@@ -424,7 +424,7 @@ glm::vec3 SlicePlane::getNormal() {
 }
 
 void SlicePlane::updateWidgetEnabled() {
-  bool enabled = getActive() && getDrawWidget();
+  bool enabled = getEnabled() && getDrawWidget();
   transformGizmo.enabled = enabled;
 }
 
@@ -455,12 +455,15 @@ void SlicePlane::setPose(glm::vec3 planePosition, glm::vec3 planeNormal) {
   polyscope::requestRedraw();
 }
 
-bool SlicePlane::getActive() { return active.get(); }
-void SlicePlane::setActive(bool newVal) {
-  active = newVal;
+bool SlicePlane::getEnabled() { return enabled.get(); }
+void SlicePlane::setEnabled(bool newVal) {
+  enabled = newVal;
   updateWidgetEnabled();
   polyscope::requestRedraw();
 }
+
+bool SlicePlane::getActive() { return getEnabled(); }
+void SlicePlane::setActive(bool newVal) { return setEnabled(newVal); }
 
 bool SlicePlane::getDrawPlane() { return drawPlane.get(); }
 void SlicePlane::setDrawPlane(bool newVal) {

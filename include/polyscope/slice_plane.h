@@ -56,6 +56,10 @@ public:
   glm::vec3 getCenter();
   glm::vec3 getNormal();
 
+  bool getEnabled();
+  void setEnabled(bool newVal);
+
+  // deprecated, should have been called 'enabled'
   bool getActive();
   void setActive(bool newVal);
 
@@ -82,7 +86,7 @@ public:
 
 protected:
   // = State
-  PersistentValue<bool> active;     // is it actually slicing?
+  PersistentValue<bool> enabled;     // is it actually slicing?
   PersistentValue<bool> drawPlane;  // do we draw the plane onscreen?
   PersistentValue<bool> drawWidget; // do we draw the widget onscreen?
   PersistentValue<glm::mat4> objectTransform;
@@ -121,7 +125,7 @@ SlicePlane* addSlicePlane(std::string name);
 SlicePlane* addSlicePlane();
 
 // DEPRECATED: there's on reason to offer this variant, it could be set manually
-SlicePlane* addSceneSlicePlane(bool initiallyVisible = false);
+SlicePlane* addSceneSlicePlane(bool initiallyVisible=false);
 
 // Get a slice plane by name
 SlicePlane* getSlicePlane(std::string name);
