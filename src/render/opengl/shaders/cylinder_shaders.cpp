@@ -164,6 +164,7 @@ R"(
 
         float LARGE_FLOAT();
         vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
+        void buildRayForFragment(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord, out vec3 rayStart, out vec3 rayDir);
         bool rayTaperedCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRadTail, float cylRadTip, out float tHit, out vec3 pHit, out vec3 nHit);
         float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
         
@@ -173,7 +174,8 @@ R"(
         {
            // Build a ray corresponding to this fragment
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
-           vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
+           vec3 rayStart, rayDir;
+           buildRayForFragment(u_viewport, depthRange, u_projMatrix, u_invProjMatrix, gl_FragCoord, rayStart, rayDir);
 
            
            float tipRadius = u_radius;
@@ -184,7 +186,7 @@ R"(
            float tHit;
            vec3 pHit;
            vec3 nHit;
-           rayTaperedCylinderIntersection(vec3(0., 0., 0), viewRay, tailView, tipView, tailRadius, tipRadius, tHit, pHit, nHit);
+           rayTaperedCylinderIntersection(rayStart, rayDir, tailView, tipView, tailRadius, tipRadius, tHit, pHit, nHit);
            if(tHit >= LARGE_FLOAT()) {
               discard;
            }
