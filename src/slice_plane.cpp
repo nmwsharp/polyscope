@@ -13,33 +13,76 @@ namespace polyscope {
 // Storage for global options
 bool openSlicePlaneMenu = false;
 
-SlicePlane* addSceneSlicePlane(bool initiallyVisible) {
+SlicePlane* addSlicePlane(std::string name) {
+  // check if the name is unique, throw an error if not
+  for (const std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
+    if (s->name == name) {
+      error("Slice plane with name " + name + " already exists");
+      return nullptr;
+    }
+  }
+
+  state::slicePlanes.emplace_back(std::unique_ptr<SlicePlane>(new SlicePlane(name)));
+  SlicePlane* newPlane = state::slicePlanes.back().get();
+  notifySlicePlanesChanged();
+  return newPlane;
+}
+
+SlicePlane* addSlicePlane() {
   size_t nPlanes = state::slicePlanes.size();
   std::string newName = "Scene Slice Plane " + std::to_string(nPlanes);
-  state::slicePlanes.emplace_back(std::unique_ptr<SlicePlane>(new SlicePlane(newName)));
-  nPlanes++;
-  SlicePlane* newPlane = state::slicePlanes.back().get();
+  return addSlicePlane(newName);
+}
+
+// DEPRECATED: there's on reason to offer this variant, it could be set manually
+SlicePlane* addSceneSlicePlane(bool initiallyVisible) {
+  SlicePlane* newPlane = addSlicePlane();
   if (!initiallyVisible) {
     newPlane->setDrawPlane(false);
     newPlane->setDrawWidget(false);
   }
-  for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
-    s->resetVolumeSliceProgram();
-  }
   return newPlane;
 }
+
+SlicePlane* getSlicePlane(std::string name) {
+  for (const std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
+    if (s->name == name) {
+      return s.get();
+    }
+  }
+  error("No slice plane with name " + name + " exists");
+  return nullptr;
+}
+
+void removeSlicePlane(std::string name) {
+  for (auto it = state::slicePlanes.begin(); it != state::slicePlanes.end(); it++) {
+    if ((*it)->name == name) {
+      state::slicePlanes.erase(it);
+      notifySlicePlanesChanged();
+      return;
+    }
+  }
+  warning("No slice plane with name " + name + " exists, cannot remove");
+}
+
+void removeSlicePlane(SlicePlane* plane) { removeSlicePlane(plane->name); }
 
 void removeLastSceneSlicePlane() {
   if (state::slicePlanes.empty()) return;
   state::slicePlanes.pop_back();
-  for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
-    s->resetVolumeSliceProgram();
-  }
+  notifySlicePlanesChanged();
 }
 
 void removeAllSlicePlanes() {
   while (!state::slicePlanes.empty()) {
     removeLastSceneSlicePlane();
+  }
+}
+
+void notifySlicePlanesChanged() {
+  // NSHARP: I've forgotten why this is needed. Perhaps it is not?
+  for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
+    s->resetVolumeSliceProgram();
   }
 }
 
@@ -53,7 +96,7 @@ void buildSlicePlaneGUI() {
   }
   if (ImGui::TreeNode("Slice Planes")) {
     if (ImGui::Button("Add plane")) {
-      addSceneSlicePlane(true);
+      addSlicePlane();
     }
     ImGui::SameLine();
     if (ImGui::Button("Remove plane")) {
@@ -68,7 +111,7 @@ void buildSlicePlaneGUI() {
 
 
 SlicePlane::SlicePlane(std::string name_)
-    : name(name_), postfix(std::to_string(state::slicePlanes.size())), active(uniquePrefix() + "#active", true),
+    : name(name_), postfix(std::to_string(state::slicePlanes.size())), enabled(uniquePrefix() + "#enabled", true),
       drawPlane(uniquePrefix() + "#drawPlane", true), drawWidget(uniquePrefix() + "#drawWidget", true),
       objectTransform(uniquePrefix() + "#object_transform", glm::mat4(1.0)),
       color(uniquePrefix() + "#color", getNextUniqueColor()),
@@ -93,6 +136,11 @@ SlicePlane::~SlicePlane() {
 }
 
 std::string SlicePlane::uniquePrefix() { return "SlicePlane#" + name + "#"; }
+
+void SlicePlane::remove() {
+  removeSlicePlane(name);
+  // now invalid! can't do anything else
+}
 
 void SlicePlane::prepare() {
 
@@ -205,7 +253,7 @@ void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
 }
 
 void SlicePlane::drawGeometry() {
-  if (!active.get()) return;
+  if (!enabled.get()) return;
 
   ensureVolumeInspectValid();
 
@@ -244,7 +292,7 @@ void SlicePlane::drawGeometry() {
 
 
 void SlicePlane::draw() {
-  if (!active.get()) return;
+  if (!enabled.get()) return;
 
   if (drawPlane.get()) {
     // Set uniforms
@@ -272,8 +320,8 @@ void SlicePlane::draw() {
 void SlicePlane::buildGUI() {
   ImGui::PushID(name.c_str());
 
-  if (ImGui::Checkbox(name.c_str(), &active.get())) {
-    setActive(getActive());
+  if (ImGui::Checkbox(name.c_str(), &enabled.get())) {
+    setEnabled(getEnabled());
   }
 
   ImGui::SameLine();
@@ -355,7 +403,7 @@ void SlicePlane::setSceneObjectUniforms(render::ShaderProgram& p, bool alwaysPas
 }
 
 glm::vec3 SlicePlane::getCenter() {
-  if (active.get()) {
+  if (enabled.get()) {
     glm::vec3 center{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
     return center;
   } else {
@@ -365,7 +413,7 @@ glm::vec3 SlicePlane::getCenter() {
 }
 
 glm::vec3 SlicePlane::getNormal() {
-  if (active.get()) {
+  if (enabled.get()) {
     glm::vec3 normal{objectTransform.get()[0][0], objectTransform.get()[0][1], objectTransform.get()[0][2]};
     normal = glm::normalize(normal);
     return normal;
@@ -376,9 +424,10 @@ glm::vec3 SlicePlane::getNormal() {
 }
 
 void SlicePlane::updateWidgetEnabled() {
-  bool enabled = getActive() && getDrawWidget();
+  bool enabled = getEnabled() && getDrawWidget();
   transformGizmo.enabled = enabled;
 }
+
 
 void SlicePlane::setPose(glm::vec3 planePosition, glm::vec3 planeNormal) {
 
@@ -406,12 +455,15 @@ void SlicePlane::setPose(glm::vec3 planePosition, glm::vec3 planeNormal) {
   polyscope::requestRedraw();
 }
 
-bool SlicePlane::getActive() { return active.get(); }
-void SlicePlane::setActive(bool newVal) {
-  active = newVal;
+bool SlicePlane::getEnabled() { return enabled.get(); }
+void SlicePlane::setEnabled(bool newVal) {
+  enabled = newVal;
   updateWidgetEnabled();
   polyscope::requestRedraw();
 }
+
+bool SlicePlane::getActive() { return getEnabled(); }
+void SlicePlane::setActive(bool newVal) { return setEnabled(newVal); }
 
 bool SlicePlane::getDrawPlane() { return drawPlane.get(); }
 void SlicePlane::setDrawPlane(bool newVal) {

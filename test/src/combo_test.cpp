@@ -111,7 +111,7 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
   polyscope::show(3);
 
   // render with one slice plane
-  polyscope::addSceneSlicePlane();
+  polyscope::addSlicePlane();
   polyscope::show(3);
 
   // try a few variations of point cloud settings
@@ -126,7 +126,7 @@ TEST_F(PolyscopeTest, SlicePlaneTest) {
   polyscope::show(3);
 
   // add another and rotate it
-  polyscope::SlicePlane* p = polyscope::addSceneSlicePlane();
+  polyscope::SlicePlane* p = polyscope::addSlicePlane();
   p->setTransform(glm::translate(p->getTransform(), glm::vec3{-1., 0., 0.}));
   polyscope::show(3);
 
