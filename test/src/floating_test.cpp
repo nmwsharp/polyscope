@@ -106,7 +106,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
 
     // add a slice plane
-    polyscope::addSceneSlicePlane();
+    polyscope::addSlicePlane();
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
     polyscope::removeLastSceneSlicePlane();
@@ -120,7 +120,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
 
     // add a slice plane
-    polyscope::addSceneSlicePlane();
+    polyscope::addSlicePlane();
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
     polyscope::removeLastSceneSlicePlane();
@@ -135,7 +135,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
 
     // add a slice plane
-    polyscope::addSceneSlicePlane();
+    polyscope::addSlicePlane();
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
     polyscope::removeLastSceneSlicePlane();
@@ -149,7 +149,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
 
     // add a slice plane
-    polyscope::addSceneSlicePlane();
+    polyscope::addSlicePlane();
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
     polyscope::removeLastSceneSlicePlane();
@@ -164,7 +164,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
 
     // add a slice plane
-    polyscope::addSceneSlicePlane();
+    polyscope::addSlicePlane();
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
     polyscope::removeLastSceneSlicePlane();
@@ -178,7 +178,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
 
     // add a slice plane
-    polyscope::addSceneSlicePlane();
+    polyscope::addSlicePlane();
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
     polyscope::removeLastSceneSlicePlane();
@@ -194,7 +194,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
 
     // add a slice plane
-    polyscope::addSceneSlicePlane();
+    polyscope::addSlicePlane();
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
     polyscope::removeLastSceneSlicePlane();
@@ -209,7 +209,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
 
     // add a slice plane
-    polyscope::addSceneSlicePlane();
+    polyscope::addSlicePlane();
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
     polyscope::removeLastSceneSlicePlane();
@@ -226,7 +226,7 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
 
     // add a slice plane
-    polyscope::addSceneSlicePlane();
+    polyscope::addSlicePlane();
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
 

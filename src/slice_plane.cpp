@@ -13,33 +13,76 @@ namespace polyscope {
 // Storage for global options
 bool openSlicePlaneMenu = false;
 
-SlicePlane* addSceneSlicePlane(bool initiallyVisible) {
+SlicePlane* addSlicePlane(std::string name) {
+  // check if the name is unique, throw an error if not
+  for (const std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
+    if (s->name == name) {
+      error("Slice plane with name " + name + " already exists");
+      return nullptr;
+    }
+  }
+
+  state::slicePlanes.emplace_back(std::unique_ptr<SlicePlane>(new SlicePlane(name)));
+  SlicePlane* newPlane = state::slicePlanes.back().get();
+  notifySlicePlanesChanged();
+  return newPlane;
+}
+
+SlicePlane* addSlicePlane() {
   size_t nPlanes = state::slicePlanes.size();
   std::string newName = "Scene Slice Plane " + std::to_string(nPlanes);
-  state::slicePlanes.emplace_back(std::unique_ptr<SlicePlane>(new SlicePlane(newName)));
-  nPlanes++;
-  SlicePlane* newPlane = state::slicePlanes.back().get();
+  return addSlicePlane(newName);
+}
+
+// DEPRECATED: there's on reason to offer this variant, it could be set manually
+SlicePlane* addSceneSlicePlane(bool initiallyVisible) {
+  SlicePlane* newPlane = addSlicePlane();
   if (!initiallyVisible) {
     newPlane->setDrawPlane(false);
     newPlane->setDrawWidget(false);
   }
-  for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
-    s->resetVolumeSliceProgram();
-  }
   return newPlane;
 }
+
+SlicePlane* getSlicePlane(std::string name) {
+  for (const std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
+    if (s->name == name) {
+      return s.get();
+    }
+  }
+  error("No slice plane with name " + name + " exists");
+  return nullptr;
+}
+
+void removeSlicePlane(std::string name) {
+  for (auto it = state::slicePlanes.begin(); it != state::slicePlanes.end(); it++) {
+    if ((*it)->name == name) {
+      state::slicePlanes.erase(it);
+      notifySlicePlanesChanged();
+      return;
+    }
+  }
+  warning("No slice plane with name " + name + " exists, cannot remove");
+}
+
+void removeSlicePlane(SlicePlane* plane) { removeSlicePlane(plane->name); }
 
 void removeLastSceneSlicePlane() {
   if (state::slicePlanes.empty()) return;
   state::slicePlanes.pop_back();
-  for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
-    s->resetVolumeSliceProgram();
-  }
+  notifySlicePlanesChanged();
 }
 
 void removeAllSlicePlanes() {
   while (!state::slicePlanes.empty()) {
     removeLastSceneSlicePlane();
+  }
+}
+
+void notifySlicePlanesChanged() {
+  // NSHARP: I've forgotten why this is needed. Perhaps it is not?
+  for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
+    s->resetVolumeSliceProgram();
   }
 }
 
@@ -53,7 +96,7 @@ void buildSlicePlaneGUI() {
   }
   if (ImGui::TreeNode("Slice Planes")) {
     if (ImGui::Button("Add plane")) {
-      addSceneSlicePlane(true);
+      addSlicePlane();
     }
     ImGui::SameLine();
     if (ImGui::Button("Remove plane")) {
@@ -93,6 +136,11 @@ SlicePlane::~SlicePlane() {
 }
 
 std::string SlicePlane::uniquePrefix() { return "SlicePlane#" + name + "#"; }
+
+void SlicePlane::remove() {
+  removeSlicePlane(name);
+  // now invalid! can't do anything else
+}
 
 void SlicePlane::prepare() {
 
@@ -379,6 +427,7 @@ void SlicePlane::updateWidgetEnabled() {
   bool enabled = getActive() && getDrawWidget();
   transformGizmo.enabled = enabled;
 }
+
 
 void SlicePlane::setPose(glm::vec3 planePosition, glm::vec3 planeNormal) {
 

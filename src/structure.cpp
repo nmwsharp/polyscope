@@ -93,7 +93,7 @@ void Structure::buildUI() {
           // if there are none, show a helpful message
           if (ImGui::Button("Add slice plane")) {
             openSlicePlaneMenu = true;
-            addSceneSlicePlane(true);
+            addSlicePlane();
           }
         } else {
           // otherwise, show toggles for each
