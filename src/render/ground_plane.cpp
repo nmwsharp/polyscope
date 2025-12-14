@@ -252,7 +252,7 @@ void GroundPlane::draw(bool isRedraw) {
     }
     case ProjectionMode::Orthographic: {
       glm::vec4 lookDir = glm::vec4(0, 0, 1, 0) * viewMat;
-      groundPlaneProgram->setUniform("u_cameraHeight", (lookDir.y * state::lengthScale) + groundHeight);
+      groundPlaneProgram->setUniform("u_cameraHeight", (lookDir[iP] * state::lengthScale) + groundHeight);
       break;
     }
     }
