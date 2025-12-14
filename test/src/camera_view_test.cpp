@@ -66,6 +66,20 @@ TEST_F(PolyscopeTest, CameraViewUpdate) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, CameraViewOrthographicRendering) {
+
+  polyscope::CameraView* cam1 = polyscope::registerCameraView(
+      "cam1", polyscope::CameraParameters(polyscope::CameraIntrinsics::fromFoVDegVerticalAndAspect(60, 2.),
+                                          polyscope::CameraExtrinsics::fromVectors(
+                                              glm::vec3{2., 2., 2.}, glm::vec3{-1., -1., -1.}, glm::vec3{0., 1., 0.})));
+
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::show(3);
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
+
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, CameraViewPick) {
 
   polyscope::CameraView* cam1 = polyscope::registerCameraView(
@@ -78,6 +92,11 @@ TEST_F(PolyscopeTest, CameraViewPick) {
   polyscope::pickAtScreenCoords(glm::vec2{0.3, 0.8});
 
   polyscope::show(3);
+
+  // make sure it works in orthographic mode
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::show(3);
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
 
   polyscope::removeAllStructures();
 }

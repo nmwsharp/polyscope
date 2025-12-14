@@ -26,6 +26,7 @@ TEST_F(PolyscopeTest, ShowVolumeGrid) {
   EXPECT_FALSE(polyscope::hasVolumeGrid("test grid"));
 }
 
+
 TEST_F(PolyscopeTest, VolumeGridBasicOptions) {
   
   // these are node dim
@@ -54,6 +55,23 @@ TEST_F(PolyscopeTest, VolumeGridBasicOptions) {
   polyscope::show(3);
 
   polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, VolumeGridOrthographicRendering) {
+  // clang-format off
+  uint32_t dimX = 8;
+  uint32_t dimY = 10;
+  uint32_t dimZ = 12;
+  glm::vec3 bound_low{-3., -3., -3.};
+  glm::vec3 bound_high{3., 3., 3.};
+
+  polyscope::VolumeGrid* psGrid = polyscope::registerVolumeGrid("test grid", {dimX, dimY, dimZ}, bound_low, bound_high);
+  
+  // try orthographic rendering
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::show(3);
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
+  polyscope::show(3);
 }
 
 TEST_F(PolyscopeTest, VolumeGridSlicePlane) {

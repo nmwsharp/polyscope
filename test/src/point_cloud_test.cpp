@@ -62,6 +62,21 @@ TEST_F(PolyscopeTest, PointCloudAppearance) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, PointCloudSphereOrthographicRendering) {
+  auto psPoints = registerPointCloud();
+
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::show(3);
+
+  psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
+  polyscope::show(3);
+  
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
+
+  polyscope::removeAllStructures();
+}
+
+
 TEST_F(PolyscopeTest, PointCloudPick) {
   auto psPoints = registerPointCloud();
 
@@ -70,6 +85,11 @@ TEST_F(PolyscopeTest, PointCloudPick) {
 
   psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::pickAtBufferInds(glm::ivec2(77, 88));
+  
+  // make sure it works in orthographic mode
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::pickAtBufferInds(glm::ivec2(77, 88));
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
 
   polyscope::removeAllStructures();
 }
@@ -147,6 +167,12 @@ TEST_F(PolyscopeTest, PointCloudVector) {
 
   q1->updateData(vals);
   polyscope::show(3);
+
+  // make sure vectors work in orthographic mode
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::show(3);
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
+
 
   polyscope::removeAllStructures();
 }

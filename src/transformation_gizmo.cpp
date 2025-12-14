@@ -50,6 +50,7 @@ void TransformationGizmo::prepare() {
     arrowProgram = render::engine->requestShader("RAYCAST_VECTOR",       
       render::engine->addMaterialRules(material,
         {
+          view::getCurrentProjectionModeRaycastRule(),
           "VECTOR_PROPAGATE_COLOR", 
           "TRANSFORMATION_GIZMO_VEC", 
           "SHADE_COLOR", 
@@ -77,6 +78,7 @@ void TransformationGizmo::prepare() {
     sphereProgram = render::engine->requestShader("RAYCAST_SPHERE", 
         render::engine->addMaterialRules(material,
           {
+            view::getCurrentProjectionModeRaycastRule(),
             "SHADE_BASECOLOR", 
             "LIGHT_MATCAP"
           }

@@ -85,6 +85,8 @@ CameraParameters getCameraParametersForCurrentView(); // contains all of this in
 // (these friendly helpers to get the same info as ^^^)
 glm::mat4 getCameraViewMatrix();
 void setCameraViewMatrix(glm::mat4 newMat);
+ProjectionMode getProjectionMode();
+void setProjectionMode(ProjectionMode newMode);
 glm::mat4 getCameraPerspectiveMatrix();
 glm::vec3 getCameraWorldPosition();
 void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
@@ -165,6 +167,7 @@ std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords);
 glm::ivec2 screenCoordsToBufferIndsVec(glm::vec2 screenCoords);
 glm::vec2 bufferIndsToScreenCoords(int xPos, int yPos);
 glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds);
+std::string getCurrentProjectionModeRaycastRule();
 
 // == Internal helpers. Should probably not be called in user code.
 

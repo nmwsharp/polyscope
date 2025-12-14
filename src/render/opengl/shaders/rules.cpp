@@ -465,6 +465,41 @@ const ShaderReplacementRule CULL_POS_FROM_VIEW (
     /* textures */ {}
 );
 
+const ShaderReplacementRule BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE(
+    /* rule name */ "BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+        void buildRayForFragmentPerspective(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord, out vec3 rayStart, out vec3 rayDir);
+      )"},
+      {"BUILD_RAY_FOR_FRAGMENT", R"(
+        buildRayForFragmentPerspective(u_viewport, vec2(gl_DepthRange.near, gl_DepthRange.far), u_projMatrix, u_invProjMatrix, gl_FragCoord, rayStart, rayDir);
+      )"},
+      {"GEOM_CONSTRUCT_VECTOR_TO_CAMERA_IN_VIEW_SPACE", R"(
+          vec3 dirToCam = normalize(-gl_in[0].gl_Position.xyz);
+      )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC(
+    /* rule name */ "BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+        void buildRayForFragmentOrthographic(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord, out vec3 rayStart, out vec3 rayDir);
+      )"},
+      {"BUILD_RAY_FOR_FRAGMENT", R"(
+        buildRayForFragmentOrthographic(u_viewport, vec2(gl_DepthRange.near, gl_DepthRange.far), u_projMatrix, u_invProjMatrix, gl_FragCoord, rayStart, rayDir);
+      )"},
+      {"GEOM_CONSTRUCT_VECTOR_TO_CAMERA_IN_VIEW_SPACE", R"(
+        vec3 dirToCam = vec3(0.0, 0.0, 1.0);
+      )"}
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
 
 ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix) {
 

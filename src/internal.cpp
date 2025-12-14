@@ -22,5 +22,21 @@ float lastRightSideFreeY = 10;
 float leftWindowsWidth = -1.;
 float rightWindowsWidth = -1.;
 
+
+namespace lazy {
+
+TransparencyMode transparencyMode = TransparencyMode::None;
+ProjectionMode projectionMode = ProjectionMode::Perspective;
+int transparencyRenderPasses = 8;
+int ssaaFactor = 1;
+float uiScale = -1.;
+bool groundPlaneEnabled = true;
+GroundPlaneMode groundPlaneMode = GroundPlaneMode::TileReflection;
+ScaledValue<float> groundPlaneHeightFactor = 0;
+int shadowBlurIters = 2;
+float shadowDarkness = .4;
+
+} // namespace lazy
+
 } // namespace internal
 } // namespace polyscope
