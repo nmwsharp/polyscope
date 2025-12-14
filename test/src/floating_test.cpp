@@ -36,6 +36,12 @@ TEST_F(PolyscopeTest, FloatingImageTest) {
     polyscope::show(3);
     im2->setShowFullscreen(true);
     polyscope::show(3);
+
+    // try orthographic rendering
+    // (I think there are some bugs related to raycasting and depth projection, but at least make sure it doen't crash
+    polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+    polyscope::show(3);
+    polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
   }
 
   { // ColorImageQuantity

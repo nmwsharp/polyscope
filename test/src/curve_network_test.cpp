@@ -37,11 +37,26 @@ TEST_F(PolyscopeTest, CurveNetworkAppearance) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, CurveNetworkOrthographicRendering) {
+  auto psCurve = registerCurveNetwork();
+
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::show(3);
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
+
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, CurveNetworkPick) {
   auto psCurve = registerCurveNetwork();
 
   // Don't bother trying to actually click on anything, but make sure this doesn't crash
   polyscope::pickAtBufferInds(glm::ivec2(77, 88));
+
+  // make sure it works in orthographic mode
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::pickAtBufferInds(glm::ivec2(77, 88));
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
 
   polyscope::removeAllStructures();
 }
