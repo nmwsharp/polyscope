@@ -2500,6 +2500,8 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("PREMULTIPLY_LIT_COLOR", PREMULTIPLY_LIT_COLOR);
   registerShaderRule("CULL_POS_FROM_VIEW", CULL_POS_FROM_VIEW);
   registerShaderRule("PROJ_AND_INV_PROJ_MAT", PROJ_AND_INV_PROJ_MAT);
+  registerShaderRule("BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE", BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE);
+  registerShaderRule("BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC", BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC);
 
   // Lighting and shading things
   registerShaderRule("LIGHT_MATCAP", LIGHT_MATCAP);

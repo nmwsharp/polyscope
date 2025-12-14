@@ -221,6 +221,8 @@ void CurveNetwork::drawPickDelayed() {
 
 std::vector<std::string> CurveNetwork::addCurveNetworkNodeRules(std::vector<std::string> initRules) {
   initRules = addStructureRules(initRules);
+  
+  initRules.push_back(view::getCurrentProjectionModeRaycastRule());
 
   if (nodeRadiusQuantityName != "" || edgeRadiusQuantityName != "") {
     initRules.push_back("SPHERE_VARIABLE_SIZE");
@@ -232,6 +234,8 @@ std::vector<std::string> CurveNetwork::addCurveNetworkNodeRules(std::vector<std:
 }
 std::vector<std::string> CurveNetwork::addCurveNetworkEdgeRules(std::vector<std::string> initRules) {
   initRules = addStructureRules(initRules);
+
+  initRules.push_back(view::getCurrentProjectionModeRaycastRule());
 
   // use node radius to blend cylinder radius
   if (nodeRadiusQuantityName != "" || edgeRadiusQuantityName != "") {
@@ -292,9 +296,10 @@ void CurveNetwork::preparePick() {
   size_t pickStart = pick::requestPickBufferRange(this, totalPickElements);
 
   { // Set up node picking program
-    nodePickProgram =
-        render::engine->requestShader("RAYCAST_SPHERE", addCurveNetworkNodeRules({"SPHERE_PROPAGATE_COLOR"}),
-                                      render::ShaderReplacementDefaults::Pick);
+    nodePickProgram = render::engine->requestShader(
+        "RAYCAST_SPHERE",
+        addCurveNetworkNodeRules({"SPHERE_PROPAGATE_COLOR"}),
+        render::ShaderReplacementDefaults::Pick);
 
     // Fill color buffer with packed point indices
     std::vector<glm::vec3> pickColors;

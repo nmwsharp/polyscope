@@ -217,8 +217,6 @@ R"(
         layout(location = 0) out vec4 outputF;
 
         float LARGE_FLOAT();
-        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
-        void buildRayForFragment(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord, out vec3 rayStart, out vec3 rayDir);
         bool rayCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, vec3 cylTip, float cylRad, out float tHit, out vec3 pHit, out vec3 nHit);
         bool rayConeIntersection(vec3 rayStart, vec3 rayDir, vec3 coneBase, vec3 coneTip, float coneRad, out float tHit, out vec3 pHit, out vec3 nHit);
         float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
@@ -230,7 +228,7 @@ R"(
            // Build a ray corresponding to this fragment
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
            vec3 rayStart, rayDir;
-           buildRayForFragment(u_viewport, depthRange, u_projMatrix, u_invProjMatrix, gl_FragCoord, rayStart, rayDir);
+           ${ BUILD_RAY_FOR_FRAGMENT }$
            
            // geometric shape of hte vector
            float tipLengthFrac = 0.2;

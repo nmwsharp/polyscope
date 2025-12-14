@@ -40,6 +40,8 @@ extern const ShaderReplacementRule PROJ_AND_INV_PROJ_MAT;
 extern const ShaderReplacementRule COMPUTE_SHADE_NORMAL_FROM_POSITION;
 extern const ShaderReplacementRule PREMULTIPLY_LIT_COLOR;
 extern const ShaderReplacementRule CULL_POS_FROM_VIEW;
+extern const ShaderReplacementRule BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE;
+extern const ShaderReplacementRule BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC;
 
 ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix);
 ShaderReplacementRule generateVolumeGridSlicePlaneRule(std::string uniquePostfix);

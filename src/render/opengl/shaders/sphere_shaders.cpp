@@ -73,7 +73,6 @@ R"(
         ${ GEOM_DECLARATIONS }$
 
         void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
-        bool isOrthoProjection(mat4 projMat);
 
         void main() {
            
@@ -83,14 +82,9 @@ R"(
             // Construct the 4 corners of a billboard quad, facing the camera
             // Quad is shifted pointRadius toward the camera, otherwise it doesn't actually necessarily
             // cover the full sphere due to perspective.
-            vec3 dirToCam;
-            if (isOrthoProjection(u_projMatrix)) {
-                // Orthographic: camera direction is constant +Z in view space
-                dirToCam = vec3(0.0, 0.0, 1.0);
-            } else {
-                // Perspective: camera is at origin, direction varies per point
-                dirToCam = normalize(-gl_in[0].gl_Position.xyz);
-            }
+            // (this logic is different depending on perspective vs orthographic projection)
+            ${ GEOM_CONSTRUCT_VECTOR_TO_CAMERA_IN_VIEW_SPACE }$
+
             vec3 basisX;
             vec3 basisY;
             buildTangentBasis(dirToCam, basisX, basisY);
@@ -149,8 +143,6 @@ R"(
 
         float LARGE_FLOAT();
         vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
-        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
-        void buildRayForFragment(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord, out vec3 rayStart, out vec3 rayDir);
         bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
         float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
         
@@ -161,7 +153,7 @@ R"(
            // Build a ray corresponding to this fragment
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
            vec3 rayStart, rayDir;
-           buildRayForFragment(u_viewport, depthRange, u_projMatrix, u_invProjMatrix, gl_FragCoord, rayStart, rayDir);
+           ${ BUILD_RAY_FOR_FRAGMENT }$
 
            float pointRadius = u_pointRadius;
            ${ SPHERE_SET_POINT_RADIUS_FRAG }$
@@ -268,7 +260,6 @@ R"(
         ${ GEOM_DECLARATIONS }$
 
         void buildTangentBasis(vec3 unitNormal, out vec3 basisX, out vec3 basisY);
-        bool isOrthoProjection(mat4 projMat);
 
         void main() {
            
@@ -276,14 +267,9 @@ R"(
             ${ SPHERE_SET_POINT_RADIUS_GEOM }$
             
             // Construct the 4 corners of a billboard quad, facing the camera
-            vec3 dirToCam;
-            if (isOrthoProjection(u_projMatrix)) {
-                // Orthographic: camera direction is constant +Z in view space
-                dirToCam = vec3(0.0, 0.0, 1.0);
-            } else {
-                // Perspective: camera is at origin, direction varies per point
-                dirToCam = normalize(-gl_in[0].gl_Position.xyz);
-            }
+            // (this logic is different depending on perspective vs orthographic projection)
+            ${ GEOM_CONSTRUCT_VECTOR_TO_CAMERA_IN_VIEW_SPACE }$
+
             vec3 basisX;
             vec3 basisY;
             buildTangentBasis(dirToCam, basisX, basisY);

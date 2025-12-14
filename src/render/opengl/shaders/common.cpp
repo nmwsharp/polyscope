@@ -179,43 +179,37 @@ vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 
   return eyePos.xyz / eyePos.w;
 }
 
-// Detect if the projection matrix is orthographic.
-// In an orthographic projection matrix, projMat[3][3] == 1.0 and projMat[2][3] == 0.0.
-// In a perspective projection matrix, projMat[3][3] == 0.0 and projMat[2][3] == -1.0.
-bool isOrthoProjection(mat4 projMat) {
-  return abs(projMat[3][3] - 1.0) < 0.001;
+// Build ray start and ray direction for fragment-based raycasting.
+// For perspective projection: rays originate from the camera (origin) and point towards the fragment view position.
+void buildRayForFragmentPerspective(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord,
+                         out vec3 rayStart, out vec3 rayDir) {
+  vec3 viewPos = fragmentViewPosition(viewport, depthRange, invProjMat, fragCoord);
+  rayStart = vec3(0.0, 0.0, 0.0);
+  rayDir = normalize(viewPos);
 }
 
 // Build ray start and ray direction for fragment-based raycasting.
-// For perspective projection: rays originate from the camera (origin) and point towards the fragment view position.
 // For orthographic projection: rays are parallel, all pointing in -Z direction in view space,
 //                              starting from the fragment's XY position.
-void buildRayForFragment(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord,
+void buildRayForFragmentOrthographic(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord,
                          out vec3 rayStart, out vec3 rayDir) {
   
-  if (isOrthoProjection(projMat)) {
-    // Orthographic: parallel rays pointing in -Z direction
-    // Convert fragment screen position to NDC
-    vec2 ndcXY = ((2.0 * fragCoord.xy) - (2.0 * viewport.xy)) / (viewport.zw) - 1.0;
-    
-    // Unproject to view space at near plane (NDC z = -1) and far plane (NDC z = 1)
-    // For orthographic, we just need the XY in view space
-    vec4 ndcNear = vec4(ndcXY, -1.0, 1.0);
-    vec4 viewNear = invProjMat * ndcNear;
-    viewNear /= viewNear.w;
-    
-    vec4 ndcFar = vec4(ndcXY, 1.0, 1.0);
-    vec4 viewFar = invProjMat * ndcFar;
-    viewFar /= viewFar.w;
-    
-    rayStart = viewNear.xyz;
-    rayDir = normalize(viewFar.xyz - viewNear.xyz);
-  } else {
-    // Perspective: rays from origin through fragment position
-    vec3 viewPos = fragmentViewPosition(viewport, depthRange, invProjMat, fragCoord);
-    rayStart = vec3(0.0, 0.0, 0.0);
-    rayDir = viewPos;
-  }
+  // Orthographic: parallel rays pointing in -Z direction
+  // Convert fragment screen position to NDC
+  vec2 ndcXY = ((2.0 * fragCoord.xy) - (2.0 * viewport.xy)) / (viewport.zw) - 1.0;
+  
+  // Unproject to view space at near plane (NDC z = -1) and far plane (NDC z = 1)
+  // For orthographic, we just need the XY in view space
+  vec4 ndcNear = vec4(ndcXY, -1.0, 1.0);
+  vec4 viewNear = invProjMat * ndcNear;
+  viewNear /= viewNear.w;
+  
+  vec4 ndcFar = vec4(ndcXY, 1.0, 1.0);
+  vec4 viewFar = invProjMat * ndcFar;
+  viewFar /= viewFar.w;
+  
+  rayStart = viewNear.xyz;
+  rayDir = normalize(viewFar.xyz - viewNear.xyz);
 }
 
 float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint) {

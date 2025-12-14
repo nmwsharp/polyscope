@@ -247,6 +247,9 @@ PointCloudPickResult PointCloud::interpretPickResult(const PickResult& rawResult
 std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string> initRules, bool withPointCloud) {
   initRules = addStructureRules(initRules);
   if (withPointCloud) {
+
+    initRules.push_back(view::getCurrentProjectionModeRaycastRule());
+
     if (pointRadiusQuantityName != "") {
       initRules.push_back("SPHERE_VARIABLE_SIZE");
     }
