@@ -699,11 +699,10 @@ void buildPolyscopeGui() {
   ensureWindowWidthsSet();
 
   // Create window
-  static bool showPolyscopeWindow = true;
   ImGui::SetNextWindowPos(ImVec2(internal::imguiStackMargin, internal::imguiStackMargin));
   ImGui::SetNextWindowSize(ImVec2(internal::leftWindowsWidth, 0.));
 
-  ImGui::Begin("Polyscope", &showPolyscopeWindow);
+  ImGui::Begin("Polyscope", nullptr);
 
   if (ImGui::Button("Reset View")) {
     view::flyToHomeView();
@@ -861,13 +860,11 @@ void buildStructureGui() {
   ensureWindowWidthsSet();
 
   // Create window
-  static bool showStructureWindow = true;
-
   ImGui::SetNextWindowPos(
       ImVec2(internal::imguiStackMargin, internal::lastWindowHeightPolyscope + 2 * internal::imguiStackMargin));
   ImGui::SetNextWindowSize(ImVec2(internal::leftWindowsWidth, view::windowHeight - internal::lastWindowHeightPolyscope -
                                                                   3 * internal::imguiStackMargin));
-  ImGui::Begin("Structures", &showStructureWindow);
+  ImGui::Begin("Structures", nullptr);
 
   // only show groups if there are any
   if (state::groups.size() > 0) {
