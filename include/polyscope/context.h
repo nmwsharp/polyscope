@@ -63,6 +63,7 @@ struct Context {
   std::vector<WeakHandle<Widget>> widgets;
   bool doDefaultMouseInteraction = true;
   std::function<void()> userCallback = nullptr;
+  std::function<void(const std::vector<std::string>&)> filesDroppedCallback = nullptr;
 
 
   // ======================================================

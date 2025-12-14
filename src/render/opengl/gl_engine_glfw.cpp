@@ -82,14 +82,15 @@ void GLEngineGLFW::initialize() {
 
   // Drag & drop support
   glfwSetDropCallback(mainWindow, [](GLFWwindow* window, int path_count, const char* paths[]) {
-    if (!options::filesDroppedCallback)
+    if (!state::filesDroppedCallback)
       return;
 
     std::vector<std::string> pathsVec(path_count);
     for (int i = 0; i < path_count; i++) {
       pathsVec[i] = paths[i];
     }
-    options::filesDroppedCallback(pathsVec);
+
+    state::filesDroppedCallback(pathsVec);
   });
 
 

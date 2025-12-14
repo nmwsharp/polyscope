@@ -95,6 +95,9 @@ extern float& lengthScale;
 // axis-aligned bounding box for all registered structures
 extern std::tuple<glm::vec3, glm::vec3>& boundingBox;
 
+// representative center for all registered structures
+glm::vec3 center();
+
 // list of all slice planes in the scene
 extern std::vector<std::unique_ptr<SlicePlane>>& slicePlanes;
 
@@ -108,8 +111,12 @@ extern bool& doDefaultMouseInteraction;
 // a callback function used to render a "user" gui
 extern std::function<void()>& userCallback;
 
-// representative center for all registered structures
-glm::vec3 center();
+// == Other callback functions
+
+// invoked when files are dropped onto the window, nothing by default
+extern std::function<void(const std::vector<std::string>&)> filesDroppedCallback; 
+
+// === Implementation details
 
 // The global context, all of the variables above are secretly references to members of this context.
 // This is useful because it means the lists get destructed in a predictable order on shutdown, rather than the

@@ -1176,9 +1176,9 @@ void shutdown(bool allowMidFrameShutdown) {
   removeAllSlicePlanes();
   clearMessages();
   state::userCallback = nullptr;
+  state::filesDroppedCallback = nullptr;
   options::configureImGuiStyleCallback = configureImGuiStyle; // restore defaults
   options::prepareImGuiFontsCallback = prepareImGuiFonts;
-  options::filesDroppedCallback = nullptr;
 
   // Shut down the render engine
   render::engine->shutdown();

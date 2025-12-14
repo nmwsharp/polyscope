@@ -66,7 +66,6 @@ bool renderScene = true;
 bool openImGuiWindowForUserCallback = true;
 std::function<void()> configureImGuiStyleCallback = configureImGuiStyle;
 std::function<std::tuple<ImFontAtlas*, ImFont*, ImFont*>()> prepareImGuiFontsCallback = prepareImGuiFonts;
-std::function<void(const std::vector<std::string>&)> filesDroppedCallback = nullptr;
 
 // Backend and low-level options
 int eglDeviceIndex = -1; // means "try all of them"
