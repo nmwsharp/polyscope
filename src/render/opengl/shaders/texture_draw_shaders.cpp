@@ -174,6 +174,7 @@ R"(
     // Set the depth of the fragment from the stored texture data
     // TODO: this a wasteful way to convert ray depth to gl_FragDepth, I am sure it can be done with much less arithmetic... figure it out 
     // WARNING this code is duplicated in other shaders
+    // WARNING this almost certainly does not work right for orthographic projections
     vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
     vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
     viewRay = normalize(viewRay);

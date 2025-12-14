@@ -179,6 +179,39 @@ vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 
   return eyePos.xyz / eyePos.w;
 }
 
+// Build ray start and ray direction for fragment-based raycasting.
+// For perspective projection: rays originate from the camera (origin) and point towards the fragment view position.
+void buildRayForFragmentPerspective(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord,
+                         out vec3 rayStart, out vec3 rayDir) {
+  vec3 viewPos = fragmentViewPosition(viewport, depthRange, invProjMat, fragCoord);
+  rayStart = vec3(0.0, 0.0, 0.0);
+  rayDir = normalize(viewPos);
+}
+
+// Build ray start and ray direction for fragment-based raycasting.
+// For orthographic projection: rays are parallel, all pointing in -Z direction in view space,
+//                              starting from the fragment's XY position.
+void buildRayForFragmentOrthographic(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord,
+                         out vec3 rayStart, out vec3 rayDir) {
+  
+  // Orthographic: parallel rays pointing in -Z direction
+  // Convert fragment screen position to NDC
+  vec2 ndcXY = ((2.0 * fragCoord.xy) - (2.0 * viewport.xy)) / (viewport.zw) - 1.0;
+  
+  // Unproject to view space at near plane (NDC z = -1) and far plane (NDC z = 1)
+  // For orthographic, we just need the XY in view space
+  vec4 ndcNear = vec4(ndcXY, -1.0, 1.0);
+  vec4 viewNear = invProjMat * ndcNear;
+  viewNear /= viewNear.w;
+  
+  vec4 ndcFar = vec4(ndcXY, 1.0, 1.0);
+  vec4 viewFar = invProjMat * ndcFar;
+  viewFar /= viewFar.w;
+  
+  rayStart = viewNear.xyz;
+  rayDir = normalize(viewFar.xyz - viewNear.xyz);
+}
+
 float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint) {
   vec4 clipPos = projMat * vec4(viewPoint, 1.); // only actually need one element of this result, could save work
   float z_ndc = clipPos.z / clipPos.w;
@@ -205,6 +238,10 @@ bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float 
       return true;
     }
 }
+
+)"
+// Split the raw string literal to avoid compiler string length limits
+R"(
 
 bool rayPlaneIntersection(vec3 rayStart, vec3 rayDir, vec3 planePos, vec3 planeDir, out float tHit, out vec3 pHit, out vec3 nHit) {
   

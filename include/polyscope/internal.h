@@ -5,6 +5,9 @@
 #include <cstdint>
 #include <string>
 
+#include "polyscope/scaled_value.h"
+#include "polyscope/types.h"
+
 
 namespace polyscope {
 
@@ -35,6 +38,21 @@ extern float lastRightSideFreeX;
 extern float lastRightSideFreeY;
 extern float leftWindowsWidth;
 extern float rightWindowsWidth;
+
+// Cached versions of lazy properties used for updates
+namespace lazy {
+extern TransparencyMode transparencyMode;
+extern ProjectionMode projectionMode;
+extern int transparencyRenderPasses;
+extern int ssaaFactor;
+extern float uiScale;
+extern bool groundPlaneEnabled;
+extern GroundPlaneMode groundPlaneMode;
+extern ScaledValue<float> groundPlaneHeightFactor;
+extern int shadowBlurIters;
+extern float shadowDarkness;
+} // namespace lazy
+
 
 } // namespace internal
 } // namespace polyscope

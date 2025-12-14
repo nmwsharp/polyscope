@@ -258,6 +258,11 @@ TEST_F(PolyscopeTest, VolumeMeshInspect) {
   // with a categorical quantity
   auto q1Cat = psVol->addVertexScalarQuantity("vals", vals, polyscope::DataType::CATEGORICAL);
   q1Cat->setEnabled(true);
+
+  // try orthographic rendering
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::show(3);
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
   polyscope::show(3);
 
   // clear it out

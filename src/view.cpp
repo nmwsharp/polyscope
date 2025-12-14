@@ -142,6 +142,20 @@ glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds) {
   return bufferIndsToScreenCoords(bufferInds.x, bufferInds.y);
 }
 
+std::string getCurrentProjectionModeRaycastRule() {
+  // This is related to the render engine, it returns the name of the
+  // shader rule which constructs rays for raycasting-based rendering.
+  // See rules.h
+
+  switch (view::projectionMode) {
+  case ProjectionMode::Perspective:
+    return "BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE";
+  case ProjectionMode::Orthographic:
+    return "BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC";
+  }
+  return "";
+}
+
 void processRotate(glm::vec2 startP, glm::vec2 endP) {
 
   if (startP == endP) {
@@ -647,6 +661,15 @@ void setVerticalFieldOfViewDegrees(float newVal) {
   requestRedraw();
 }
 
+ProjectionMode getProjectionMode() { return projectionMode; }
+
+void setProjectionMode(ProjectionMode newMode) {
+  projectionMode = newMode;
+  internal::lazy::projectionMode = newMode; // update the lazy property right now, so we don't pay for a refresh twice
+  refresh();
+  requestRedraw();
+}
+
 float getVerticalFieldOfViewDegrees() { return view::fov; }
 
 float getAspectRatioWidthOverHeight() { return (float)bufferWidth / bufferHeight; }
@@ -1129,13 +1152,11 @@ void buildViewGui() {
       std::string projectionModeStr = to_string(view::projectionMode);
       if (ImGui::BeginCombo("##ProjectionMode", projectionModeStr.c_str())) {
         if (ImGui::Selectable("Perspective", view::projectionMode == ProjectionMode::Perspective)) {
-          view::projectionMode = ProjectionMode::Perspective;
-          requestRedraw();
+          setProjectionMode(ProjectionMode::Perspective);
           ImGui::SetItemDefaultFocus();
         }
         if (ImGui::Selectable("Orthographic", view::projectionMode == ProjectionMode::Orthographic)) {
-          view::projectionMode = ProjectionMode::Orthographic;
-          requestRedraw();
+          setProjectionMode(ProjectionMode::Orthographic);
           ImGui::SetItemDefaultFocus();
         }
         ImGui::EndCombo();
