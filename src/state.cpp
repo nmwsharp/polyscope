@@ -18,9 +18,12 @@ float& lengthScale = globalContext.lengthScale;
 std::tuple<glm::vec3, glm::vec3>& boundingBox = globalContext.boundingBox;
 std::vector<std::unique_ptr<SlicePlane>>& slicePlanes = globalContext.slicePlanes;
 std::vector<WeakHandle<Widget>>& widgets = globalContext.widgets;
-bool& doDefaultMouseInteraction = globalContext.doDefaultMouseInteraction;
 std::function<void()>& userCallback = globalContext.userCallback;
-std::function<void(const std::vector<std::string>&)> filesDroppedCallback = nullptr;
+std::function<void(const std::vector<std::string>&)> filesDroppedCallback = globalContext.filesDroppedCallback;
+
+
+// deprecated, reference the new name in options
+bool& doDefaultMouseInteraction = options::doDefaultMouseInteraction;
 
 } // namespace state
 } // namespace polyscope

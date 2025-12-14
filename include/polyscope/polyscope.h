@@ -104,10 +104,6 @@ extern std::vector<std::unique_ptr<SlicePlane>>& slicePlanes;
 // list of all widgets in the scene (the memory is NOT owned here, they're just refs)
 extern std::vector<WeakHandle<Widget>>& widgets;
 
-// should we allow default trackball mouse camera interaction?
-// Needs more interactions on when to turn this on/off
-extern bool& doDefaultMouseInteraction;
-
 // a callback function used to render a "user" gui
 extern std::function<void()>& userCallback;
 
@@ -124,6 +120,10 @@ extern std::function<void(const std::vector<std::string>&)> filesDroppedCallback
 // One day we may refactor Polyscope to explicitly track contexts and allow the use of multiple contexts. For now there
 // is always exactly one global context object.
 extern Context globalContext;
+
+
+// deprecated
+extern bool& doDefaultMouseInteraction; // use options::doDefaultMouseInteraction instead
 
 } // namespace state
 

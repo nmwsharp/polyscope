@@ -61,7 +61,6 @@ struct Context {
       std::tuple<glm::vec3, glm::vec3>{glm::vec3{-1., -1., -1.}, glm::vec3{1., 1., 1.}};
   std::vector<std::unique_ptr<SlicePlane>> slicePlanes;
   std::vector<WeakHandle<Widget>> widgets;
-  bool doDefaultMouseInteraction = true;
   std::function<void()> userCallback = nullptr;
   std::function<void(const std::vector<std::string>&)> filesDroppedCallback = nullptr;
 
