@@ -1421,19 +1421,6 @@ void refresh() {
   requestRedraw();
 }
 
-// Cached versions of lazy properties used for updates
-namespace lazy {
-TransparencyMode transparencyMode = TransparencyMode::None;
-int transparencyRenderPasses = 8;
-int ssaaFactor = 1;
-float uiScale = -1.;
-bool groundPlaneEnabled = true;
-GroundPlaneMode groundPlaneMode = GroundPlaneMode::TileReflection;
-ScaledValue<float> groundPlaneHeightFactor = 0;
-int shadowBlurIters = 2;
-float shadowDarkness = .4;
-} // namespace lazy
-
 void processLazyProperties() {
 
   // Note: This function essentially represents lazy software design, and it's an ugly and error-prone part of the
@@ -1448,45 +1435,52 @@ void processLazyProperties() {
   // There is a second function processLazyPropertiesOutsideOfImGui() which handles a few more that can only be set
   // at limited times when an ImGui frame is not active.
 
+  // projection mode
+  if (internal::lazy::projectionMode != view::projectionMode) {
+    internal::lazy::projectionMode = view::projectionMode;
+    view::setProjectionMode(view::projectionMode);
+  }
+
   // transparency mode
-  if (lazy::transparencyMode != options::transparencyMode) {
-    lazy::transparencyMode = options::transparencyMode;
+  if (internal::lazy::transparencyMode != options::transparencyMode) {
+    internal::lazy::transparencyMode = options::transparencyMode;
     render::engine->setTransparencyMode(options::transparencyMode);
   }
 
   // transparency render passes
-  if (lazy::transparencyRenderPasses != options::transparencyRenderPasses) {
-    lazy::transparencyRenderPasses = options::transparencyRenderPasses;
+  if (internal::lazy::transparencyRenderPasses != options::transparencyRenderPasses) {
+    internal::lazy::transparencyRenderPasses = options::transparencyRenderPasses;
     requestRedraw();
   }
 
   // ssaa
-  if (lazy::ssaaFactor != options::ssaaFactor) {
-    lazy::ssaaFactor = options::ssaaFactor;
+  if (internal::lazy::ssaaFactor != options::ssaaFactor) {
+    internal::lazy::ssaaFactor = options::ssaaFactor;
     render::engine->setSSAAFactor(options::ssaaFactor);
   }
 
   // ground plane
-  if (lazy::groundPlaneEnabled != options::groundPlaneEnabled || lazy::groundPlaneMode != options::groundPlaneMode) {
-    lazy::groundPlaneEnabled = options::groundPlaneEnabled;
+  if (internal::lazy::groundPlaneEnabled != options::groundPlaneEnabled ||
+      internal::lazy::groundPlaneMode != options::groundPlaneMode) {
+    internal::lazy::groundPlaneEnabled = options::groundPlaneEnabled;
     if (!options::groundPlaneEnabled) {
       // if the (depecated) groundPlaneEnabled = false, set mode to None, so we only have one variable to check
       options::groundPlaneMode = GroundPlaneMode::None;
     }
-    lazy::groundPlaneMode = options::groundPlaneMode;
+    internal::lazy::groundPlaneMode = options::groundPlaneMode;
     requestRedraw();
   }
-  if (lazy::groundPlaneHeightFactor.asAbsolute() != options::groundPlaneHeightFactor.asAbsolute() ||
-      lazy::groundPlaneHeightFactor.isRelative() != options::groundPlaneHeightFactor.isRelative()) {
-    lazy::groundPlaneHeightFactor = options::groundPlaneHeightFactor;
+  if (internal::lazy::groundPlaneHeightFactor.asAbsolute() != options::groundPlaneHeightFactor.asAbsolute() ||
+      internal::lazy::groundPlaneHeightFactor.isRelative() != options::groundPlaneHeightFactor.isRelative()) {
+    internal::lazy::groundPlaneHeightFactor = options::groundPlaneHeightFactor;
     requestRedraw();
   }
-  if (lazy::shadowBlurIters != options::shadowBlurIters) {
-    lazy::shadowBlurIters = options::shadowBlurIters;
+  if (internal::lazy::shadowBlurIters != options::shadowBlurIters) {
+    internal::lazy::shadowBlurIters = options::shadowBlurIters;
     requestRedraw();
   }
-  if (lazy::shadowDarkness != options::shadowDarkness) {
-    lazy::shadowDarkness = options::shadowDarkness;
+  if (internal::lazy::shadowDarkness != options::shadowDarkness) {
+    internal::lazy::shadowDarkness = options::shadowDarkness;
     requestRedraw();
   }
 };
@@ -1495,8 +1489,8 @@ void processLazyPropertiesOutsideOfImGui() {
   // Like processLazyProperties, but this one handles properties which cannot be changed mid-ImGui frame
 
   // uiScale
-  if (lazy::uiScale != options::uiScale) {
-    lazy::uiScale = options::uiScale;
+  if (internal::lazy::uiScale != options::uiScale) {
+    internal::lazy::uiScale = options::uiScale;
     render::engine->configureImGui();
     setInitialWindowWidths();
   }
