@@ -90,8 +90,8 @@ void setProjectionMode(ProjectionMode newMode);
 glm::mat4 getCameraPerspectiveMatrix();
 glm::vec3 getCameraWorldPosition();
 void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
-glm::vec3 getUpVec();
-glm::vec3 getFrontVec();
+glm::vec3 getUpVec();    // vector giving the "up" direction for the scene (unrelated to current camera view)
+glm::vec3 getFrontVec(); // vector giving the "front" direction for the scene (unrelated to current camera view)
 float getVerticalFieldOfViewDegrees();
 float getAspectRatioWidthOverHeight();
 
