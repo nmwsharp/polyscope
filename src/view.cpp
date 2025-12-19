@@ -173,6 +173,16 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
     float delTheta = 2.0 * dragDelta.x * moveScale;
     float delPhi = 2.0 * dragDelta.y * moveScale;
 
+    // Disallow rotations that would almost align the vertical axis
+    glm::vec3 verticalAxis = getUpVec();
+    float lim = 0.01f; // controls how close to vertical the view can get
+    if (glm::dot(frameLookDir, verticalAxis) > 1.0 - lim) {
+      delPhi = std::min(delPhi, 0.0f);
+    }
+    if (glm::dot(frameLookDir, verticalAxis) < -1.0 + lim) {
+      delPhi = std::max(delPhi, 0.0f);
+    }
+
     // Translate to center
     viewMat = glm::translate(viewMat, view::viewCenter);
 
