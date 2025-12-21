@@ -239,6 +239,7 @@ TransformationGizmo* getTransformationGizmo(std::string name) {
     }
   }
 
+  error("No Transformation Gizmo exists with name " + name);
   return nullptr;
 }
 
