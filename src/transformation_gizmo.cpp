@@ -170,6 +170,12 @@ void TransformationGizmo::setTransform(glm::mat4 newT) {
   markUpdated();
 };
 
+glm::vec3 TransformationGizmo::getPosition() { return glm::vec3(Tref[3]); }
+void TransformationGizmo::setPosition(glm::vec3 newPos) {
+  Tref[3] = glm::vec4(newPos, 1.0);
+  markUpdated();
+}
+
 bool TransformationGizmo::getEnabled() { return enabled.get(); }
 void TransformationGizmo::setEnabled(bool newVal) { enabled = newVal; }
 

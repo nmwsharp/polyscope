@@ -43,6 +43,10 @@ public:
   glm::mat4 getTransform();
   void setTransform(glm::mat4 newT);
 
+  // the are helpers which access/update only the position component of the transform
+  glm::vec3 getPosition();
+  void setPosition(glm::vec3 newPos);
+
   bool getEnabled();
   void setEnabled(bool newVal);
 

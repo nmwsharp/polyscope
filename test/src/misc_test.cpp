@@ -116,6 +116,12 @@ TEST_F(PolyscopeTest, TransformationGizmoStandaloneTest) {
   polyscope::TransformationGizmo* gizmo5 = polyscope::addTransformationGizmo("my_gizmo_3", &externalT);
   EXPECT_EQ(gizmo5->getTransform(), externalT);
 
+  glm::mat4 T = gizmo5->getTransform();
+  glm::vec3 pos = gizmo5->getPosition();
+  pos.z += 4.0;
+  gizmo5->setPosition(pos);
+  polyscope::show(3);
+
   polyscope::removeAllTransformationGizmos();
 }
 
