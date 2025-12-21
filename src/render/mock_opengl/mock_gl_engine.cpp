@@ -1576,12 +1576,12 @@ void MockGLEngine::initialize() {
 
 void MockGLEngine::initializeImGui() {
   ImGui::CreateContext(); // must call once at start
-  ImPlot::CreateContext(); 
+  ImPlot::CreateContext();
   configureImGui();
 }
 
 void MockGLEngine::configureImGui() {
-  
+
   // don't both calling the style callbacks, there is no UI
 
   if (options::uiScale < 0) {
@@ -1598,9 +1598,9 @@ void MockGLEngine::shutdown() {
   shutdownImGui();
 }
 
-void MockGLEngine::shutdownImGui() { 
-  ImPlot::DestroyContext(); 
-  ImGui::DestroyContext(); 
+void MockGLEngine::shutdownImGui() {
+  ImPlot::DestroyContext();
+  ImGui::DestroyContext();
 }
 
 void MockGLEngine::swapDisplayBuffers() {}
@@ -1675,6 +1675,7 @@ void MockGLEngine::ImGuiNewFrame() {
   io.DisplaySize.y = view::bufferHeight;
 
   ImGui::NewFrame();
+  ImGuizmo::BeginFrame();
 }
 
 void MockGLEngine::ImGuiRender() {

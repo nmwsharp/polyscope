@@ -20,12 +20,25 @@ endif()
 if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 
   # imgui sources
-  list(APPEND SRCS imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/imgui_demo.cpp imgui/backends/imgui_impl_glfw.cpp imgui/backends/imgui_impl_opengl3.cpp)
+  list(APPEND SRCS 
+          imgui/imgui.cpp 
+          imgui/imgui_draw.cpp 
+          imgui/imgui_tables.cpp 
+          imgui/imgui_widgets.cpp 
+          imgui/imgui_demo.cpp 
+          imgui/backends/imgui_impl_glfw.cpp 
+          imgui/backends/imgui_impl_opengl3.cpp
+  )
 
   # implot sources
   list(APPEND SRCS 
           implot/implot.cpp
           implot/implot_items.cpp
+      )
+  
+  # imguizmosources
+  list(APPEND SRCS 
+          ImGuizmo/ImGuizmo.cpp
       )
 
   add_library(
@@ -35,7 +48,7 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/implot/")
-  target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glfw/include/")
+  target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/")
 
   target_link_libraries(imgui PRIVATE glfw)

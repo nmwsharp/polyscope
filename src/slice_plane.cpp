@@ -117,7 +117,7 @@ SlicePlane::SlicePlane(std::string name_)
       color(uniquePrefix() + "#color", getNextUniqueColor()),
       gridLineColor(uniquePrefix() + "#gridLineColor", glm::vec3{.97, .97, .97}),
       transparency(uniquePrefix() + "#transparency", 0.5), shouldInspectMesh(false), inspectedMeshName(""),
-      transformGizmo(uniquePrefix() + "#transformGizmo", objectTransform.get(), &objectTransform),
+      transformGizmo(uniquePrefix() + "#transformGizmo", &objectTransform.get(), &objectTransform),
       sliceBufferArr{{{nullptr, uniquePrefix() + "#slice1", sliceBufferDataArr[0]},
                       {nullptr, uniquePrefix() + "#slice2", sliceBufferDataArr[1]},
                       {nullptr, uniquePrefix() + "#slice3", sliceBufferDataArr[2]},
@@ -125,7 +125,8 @@ SlicePlane::SlicePlane(std::string name_)
 
 {
   render::engine->addSlicePlane(postfix);
-  transformGizmo.enabled = true;
+  transformGizmo.setEnabled(true);
+  transformGizmo.setInteractInLocalSpace(true);
   prepare();
 }
 
@@ -425,7 +426,7 @@ glm::vec3 SlicePlane::getNormal() {
 
 void SlicePlane::updateWidgetEnabled() {
   bool enabled = getEnabled() && getDrawWidget();
-  transformGizmo.enabled = enabled;
+  transformGizmo.setEnabled(enabled);
 }
 
 

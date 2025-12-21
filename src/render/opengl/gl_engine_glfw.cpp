@@ -10,6 +10,8 @@
 
 #include "stb_image.h"
 
+#include "ImGuizmo.h"
+
 #include <algorithm>
 #include <set>
 #include <sstream>
@@ -82,8 +84,7 @@ void GLEngineGLFW::initialize() {
 
   // Drag & drop support
   glfwSetDropCallback(mainWindow, [](GLFWwindow* window, int path_count, const char* paths[]) {
-    if (!state::filesDroppedCallback)
-      return;
+    if (!state::filesDroppedCallback) return;
 
     std::vector<std::string> pathsVec(path_count);
     for (int i = 0; i < path_count; i++) {
@@ -162,7 +163,7 @@ void GLEngineGLFW::initializeImGui() {
   bindDisplay();
 
   ImGui::CreateContext(); // must call once at start
-  ImPlot::CreateContext(); 
+  ImPlot::CreateContext();
 
   // Set up ImGUI glfw bindings
   ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
@@ -220,6 +221,7 @@ void GLEngineGLFW::ImGuiNewFrame() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
+  ImGuizmo::BeginFrame();
 }
 
 void GLEngineGLFW::ImGuiRender() {

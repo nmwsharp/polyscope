@@ -28,6 +28,7 @@ class Structure;
 class Group;
 class SlicePlane;
 class Widget;
+class TransformationGizmo;
 class FloatingQuantityStructure;
 namespace view {
 extern const double defaultNearClipRatio;
@@ -115,6 +116,16 @@ struct Context {
 
   bool pointCloudEfficiencyWarningReported = false;
   FloatingQuantityStructure* globalFloatingQuantityStructure = nullptr;
+
+  // ======================================================
+  // === Other various global lists
+  // ======================================================
+
+  // Transformation gizmos that were created by hte user for the secne
+  // Note: this does _not_ include all gizmos, such as the one which exists
+  // for each structure. This is just storage for gizmos explicitly created
+  // like with addTransformationGizmo()
+  std::vector<std::unique_ptr<TransformationGizmo>> createdTransformationGizmos;
 };
 
 

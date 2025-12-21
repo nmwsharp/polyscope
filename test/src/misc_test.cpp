@@ -43,7 +43,7 @@ TEST_F(PolyscopeTest, TestScalarColormapQuantity) {
   q1->setOnscreenColorbarEnabled(true);
   EXPECT_TRUE(q1->getOnscreenColorbarEnabled());
   polyscope::show(3);
-  
+
   // set its location manually
   q1->setOnscreenColorbarLocation(glm::vec2(500.f, 500.f));
   EXPECT_EQ(glm::vec2(500.f, 500.f), q1->getOnscreenColorbarLocation());
@@ -67,6 +67,57 @@ TEST_F(PolyscopeTest, FlatMaterialTest) {
   polyscope::removeAllStructures();
 }
 
+// ============================================================
+// =============== Transformation Gizmo Tests
+// ============================================================
+
+TEST_F(PolyscopeTest, TransformationGizmoTest) {
+  auto psMesh = registerTriangleMesh();
+
+  // try a bunch of options for the gizmo on a structure
+  psMesh->setTransformGizmoEnabled(true);
+  polyscope::show(3);
+  polyscope::TransformationGizmo& gizmo = psMesh->getTransformGizmo();
+  gizmo.setAllowTranslation(true);
+  gizmo.setAllowRotation(true);
+  gizmo.setAllowScaling(true);
+  gizmo.setInteractInLocalSpace(false);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, TransformationGizmoStandaloneTest) {
+
+  polyscope::TransformationGizmo* gizmo1 = polyscope::addTransformationGizmo();
+  polyscope::show(3);
+  gizmo1->setAllowTranslation(true);
+  gizmo1->setAllowRotation(true);
+  gizmo1->setAllowScaling(true);
+  gizmo1->setInteractInLocalSpace(false);
+  gizmo1->setGizmoSize(0.5f);
+  glm::mat4 T1 = gizmo1->getTransform();
+  polyscope::show(3);
+  polyscope::removeTransformationGizmo(gizmo1);
+
+  // create by name
+  polyscope::TransformationGizmo* gizmo2 = polyscope::addTransformationGizmo("my_gizmo");
+  polyscope::show(3);
+  polyscope::removeTransformationGizmo("my_gizmo");
+
+  // create multiple
+  polyscope::TransformationGizmo* gizmo3 = polyscope::addTransformationGizmo();
+  polyscope::TransformationGizmo* gizmo4 = polyscope::addTransformationGizmo();
+  polyscope::show(3);
+
+  // non-owned transform
+  glm::mat4 externalT = glm::mat4(1.0);
+  externalT[0][3] = 2.0;
+  polyscope::TransformationGizmo* gizmo5 = polyscope::addTransformationGizmo("my_gizmo_3", &externalT);
+  EXPECT_EQ(gizmo5->getTransform(), externalT);
+
+  polyscope::removeAllTransformationGizmos();
+}
 
 // ============================================================
 // =============== Slice Plane Tests
@@ -93,7 +144,7 @@ TEST_F(PolyscopeTest, TestSlicePlane) {
 
   sp1->setTransparency(0.5);
   EXPECT_EQ(sp1->getTransparency(), 0.5);
-  
+
   sp1->setGridLineColor(glm::vec3(0.5, 0.5, 0.5));
   EXPECT_EQ(sp1->getGridLineColor(), glm::vec3(0.5, 0.5, 0.5));
 

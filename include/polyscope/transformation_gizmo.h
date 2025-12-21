@@ -7,6 +7,8 @@
 #include "polyscope/utilities.h"
 #include "polyscope/widget.h"
 
+#include "ImGuizmo.h"
+
 namespace polyscope {
 
 // A visual widget with handles for translations/rotations
@@ -16,7 +18,14 @@ class TransformationGizmo : public Widget {
 public:
   // == Constructors
 
-  TransformationGizmo(std::string name, glm::mat4& T, PersistentValue<glm::mat4>* Tpers = nullptr);
+  // Construct a gizmo.
+  //
+  // If T is null, this gizmo owns its transform matrix which can be accessed via set/getTransform().
+  // If T is non-null, the gizmo will manipulate that external transform.  Optionally, a pointer can also be passed to a
+  // PersistentValue<glm::mat4>, which will be updated as the transform is changed.
+  //
+  // Users creating additional gizmos should not call this, use addTransformationGizmo() instead.
+  TransformationGizmo(std::string name, glm::mat4* T = nullptr, PersistentValue<glm::mat4>* Tpers = nullptr);
 
 
   // == Key members
@@ -24,68 +33,82 @@ public:
   // a unique name
   const std::string name;
 
-  // the main transform encoded by the gizmo
-  PersistentValue<bool> enabled;
 
-  // the main transform encoded by the gizmo
-  // note that this is a reference set on construction; the gizmo wraps a transform defined somewhere else
-  glm::mat4& T;
-  PersistentValue<glm::mat4>* Tpers; // optional, a persistent value defined elsewhere that goes with T
+  // == Getters and setters
+
+  glm::mat4 getTransform();
+  void setTransform(glm::mat4 newT);
+
+  bool getEnabled();
+  void setEnabled(bool newVal);
+
+  bool getAllowTranslation();
+  void setAllowTranslation(bool newVal);
+
+  bool getAllowRotation();
+  void setAllowRotation(bool newVal);
+
+  bool getAllowScaling();
+  void setAllowScaling(bool newVal);
+
+  // sadly this is not really supported by ImGuizmo
+  // bool getUniformScaling();
+  // void setUniformScaling(bool newVal);
+
+  bool getInteractInLocalSpace();
+  void setInteractInLocalSpace(bool newVal);
+
+  // Size is relative, with 1.0 as the default size
+  float getGizmoSize();
+  void setGizmoSize(float newVal);
 
   // == Member functions
 
-  void prepare();
+  std::string uniquePrefix() override;
   void draw() override;
   bool interact() override;
-
-protected:
-  enum class TransformHandle { None, Rotation, Translation, Scale };
-
-
-  // parameters
-  const float gizmoSizeRel = 0.08;
-  const float diskWidthObj = 0.1; // in object coordinates, before transformation
-  const float vecLength = 1.5;
-  const float sphereRad = 0.32;
-  const std::string material = "wax";
-
-  // state
-  int selectedDim = -1; // must be {0,1,2} if selectedType == Rotation/Translation
-  TransformHandle selectedType = TransformHandle::None;
-  bool currentlyDragging = false;
-  glm::vec3 dragPrevVec{1., 0.,
-                        0.}; // the normal vector from the previous frame of the drag OR previous translation center
-
-  std::array<glm::vec3, 3> niceRGB = {{glm::vec3{211 / 255., 45 / 255., 62 / 255.},
-                                       glm::vec3{65 / 255., 121 / 255., 225 / 255.},
-                                       glm::vec3{95 / 255., 175 / 255., 35 / 255.}}};
-
+  void buildUI() override;
+  void buildInlineTransformUI();
+  void buildMenuItems();
   void markUpdated();
 
-  // Render stuff
-  std::shared_ptr<render::ShaderProgram> ringProgram;
-  std::shared_ptr<render::ShaderProgram> arrowProgram;
-  std::shared_ptr<render::ShaderProgram> sphereProgram;
+protected:
+  // The main transform encoded by the gizmo
+  // This can be either a reference to an external wrapped transform, or the internal storage below
+  glm::mat4& Tref;
 
-  // Geometry helpers used to test hits
+  // Optional, a persistent value defined elsewhere that goes with T, which
+  // will be marked as updated when the gizmo changes the transform.
+  PersistentValue<glm::mat4>* Tpers;
 
-  // returns <tRay, distNearest, nearestPoint>
-  std::tuple<float, float, glm::vec3> circleTest(glm::vec3 raySource, glm::vec3 rayDir, glm::vec3 center,
-                                                 glm::vec3 normal, float radius);
-  std::tuple<float, float, glm::vec3> lineTest(glm::vec3 raySource, glm::vec3 rayDir, glm::vec3 center,
-                                               glm::vec3 tangent, float length);
-  std::tuple<float, float, glm::vec3> sphereTest(glm::vec3 raySource, glm::vec3 rayDir, glm::vec3 center, float radius,
-                                                 bool allowHitSurface = true);
+  // Local stoarage for a transformation.
+  // This may or may not be used; based on the constructor args this class may wrap an external transform, or simply use
+  // this one.
+  glm::mat4 Towned = glm::mat4(1.0);
 
+  // options
+  PersistentValue<bool> enabled;
+  PersistentValue<bool> allowTranslation;
+  PersistentValue<bool> allowRotation;
+  PersistentValue<bool> allowScaling;
+  // PersistentValue<bool> uniformScaling; // not really supported by the ImGuizmo
+  PersistentValue<bool> interactInLocalSpace;
+  PersistentValue<bool> showUIWindow;
+  PersistentValue<float> gizmoSize;
 
-  std::tuple<std::vector<glm::vec3>, std::vector<glm::vec3>, std::vector<glm::vec3>, std::vector<glm::vec2>,
-             std::vector<glm::vec3>>
-  triplePlaneCoords();
-
-  std::tuple<std::vector<glm::vec3>, std::vector<glm::vec3>, std::vector<glm::vec3>, std::vector<glm::vec3>>
-  tripleArrowCoords();
-
-  // std::tuple<std::vector<glm::vec3>, std::vector<glm::vec3>> unitCubeCoords();
+  // internal
+  bool lastInteractResult = false;
 };
+
+// Create a user-defined transformation gizmo in the scene.
+// By default, the gizmo maintains its own transformation matrix which
+// can be accessed by by .getTransform(). Optionally, it can instead wrap
+// and existin transform passed as transformToWrap.
+TransformationGizmo* addTransformationGizmo(std::string name = "", glm::mat4* transformToWrap = nullptr);
+
+// Remove a user-created transformation gizmo
+void removeTransformationGizmo(TransformationGizmo* gizmo);
+void removeTransformationGizmo(std::string name);
+void removeAllTransformationGizmos();
 
 } // namespace polyscope

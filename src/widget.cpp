@@ -12,6 +12,6 @@ Widget::~Widget() {}
 
 void Widget::draw() {}
 bool Widget::interact() { return false; }
-void Widget::buildGUI() {}
+void Widget::buildUI() {}
 
 } // namespace polyscope
