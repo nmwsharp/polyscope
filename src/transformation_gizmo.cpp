@@ -162,6 +162,8 @@ void TransformationGizmo::buildInlineTransformUI() {
   ImGui::PopID();
 }
 
+void TransformationGizmo::remove() { removeTransformationGizmo(this); }
+
 glm::mat4 TransformationGizmo::getTransform() { return Tref; }
 void TransformationGizmo::setTransform(glm::mat4 newT) {
   Tref = newT;
@@ -183,6 +185,8 @@ void TransformationGizmo::setAllowScaling(bool newVal) { allowScaling = newVal; 
 bool TransformationGizmo::getInteractInLocalSpace() { return interactInLocalSpace.get(); }
 void TransformationGizmo::setInteractInLocalSpace(bool newVal) { interactInLocalSpace = newVal; }
 
+float TransformationGizmo::getGizmoSize() { return gizmoSize.get(); }
+void TransformationGizmo::setGizmoSize(float newVal) { gizmoSize = newVal; }
 
 TransformationGizmo* addTransformationGizmo(std::string name, glm::mat4* transformToWrap) {
 
@@ -224,6 +228,18 @@ TransformationGizmo* addTransformationGizmo(std::string name, glm::mat4* transfo
   newGizmo->setEnabled(true);
 
   return newGizmo;
+}
+
+TransformationGizmo* getTransformationGizmo(std::string name) {
+  std::vector<std::unique_ptr<TransformationGizmo>>& gizmoList = state::globalContext.createdTransformationGizmos;
+
+  for (auto& gizmo : gizmoList) {
+    if (gizmo->name == name) {
+      return gizmo.get();
+    }
+  }
+
+  return nullptr;
 }
 
 void removeTransformationGizmo(TransformationGizmo* gizmo) {

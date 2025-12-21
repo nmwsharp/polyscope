@@ -33,6 +33,10 @@ public:
   // a unique name
   const std::string name;
 
+  // NOTE: this is only meaningful to call on use-created gizmos from addTransformationGizmo(),
+  // it will have no effect on gizmos created other ways
+  // After removing, the object is destructed
+  void remove();
 
   // == Getters and setters
 
@@ -105,6 +109,9 @@ protected:
 // can be accessed by by .getTransform(). Optionally, it can instead wrap
 // and existin transform passed as transformToWrap.
 TransformationGizmo* addTransformationGizmo(std::string name = "", glm::mat4* transformToWrap = nullptr);
+
+// Get a user-created transformation gizmo by name
+TransformationGizmo* getTransformationGizmo(std::string name);
 
 // Remove a user-created transformation gizmo
 void removeTransformationGizmo(TransformationGizmo* gizmo);
