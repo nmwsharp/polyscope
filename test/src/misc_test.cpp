@@ -81,6 +81,7 @@ TEST_F(PolyscopeTest, TransformationGizmoTest) {
   gizmo.setAllowTranslation(true);
   gizmo.setAllowRotation(true);
   gizmo.setAllowScaling(true);
+  gizmo.setAllowNonUniformScaling(true);
   gizmo.setInteractInLocalSpace(false);
   polyscope::show(3);
 
@@ -102,6 +103,8 @@ TEST_F(PolyscopeTest, TransformationGizmoStandaloneTest) {
 
   // create by name
   polyscope::TransformationGizmo* gizmo2 = polyscope::addTransformationGizmo("my_gizmo");
+  gizmo2->setEnabled(true);
+  gizmo2->setAllowScaling(true);
   polyscope::show(3);
   polyscope::removeTransformationGizmo("my_gizmo");
 
@@ -122,6 +125,22 @@ TEST_F(PolyscopeTest, TransformationGizmoStandaloneTest) {
   gizmo5->setPosition(pos);
   polyscope::show(3);
 
+  polyscope::removeAllTransformationGizmos();
+}
+
+TEST_F(PolyscopeTest, TransformationGizmoNestedShowTest) {
+  
+  polyscope::TransformationGizmo* gizmo1 = polyscope::addTransformationGizmo();
+  gizmo1->setEnabled(true);
+  polyscope::show(3);
+
+  auto showCallback = [&]() { 
+    polyscope::show(3); 
+  };
+  polyscope::state::userCallback = showCallback;
+  polyscope::show(3);
+
+  polyscope::state::userCallback = nullptr;
   polyscope::removeAllTransformationGizmos();
 }
 

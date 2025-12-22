@@ -6,6 +6,10 @@
 
 #include "stb_image_write.h"
 
+#include "imgui.h"
+#include "implot.h"
+#include "ImGuizmo.h"
+
 #include <algorithm>
 #include <string>
 
@@ -69,6 +73,7 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
 #endif
     ImGui::SetCurrentContext(newContext);
     ImPlot::SetCurrentContext(newPlotContext);
+    ImGuizmo::PushContext();
 
 #ifdef IMGUI_HAS_DOCK
     // Propagate GLFW window handle to new context
@@ -101,6 +106,7 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
 
     ImGui::SetCurrentContext(oldContext);
     ImPlot::SetCurrentContext(oldPlotContext);
+    ImGuizmo::PopContext();
   }
 
 

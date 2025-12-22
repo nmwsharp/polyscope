@@ -17,4 +17,4 @@
 	url = https://github.com/epezent/implot
 [submodule "deps/imgui/ImGuizmo"]
 	path = deps/imgui/ImGuizmo
-	url = https://github.com/CedricGuillemet/ImGuizmo.git
+	url = https://github.com/nmwsharp/ImGuizmo.git

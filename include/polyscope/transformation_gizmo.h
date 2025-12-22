@@ -59,9 +59,8 @@ public:
   bool getAllowScaling();
   void setAllowScaling(bool newVal);
 
-  // sadly this is not really supported by ImGuizmo
-  // bool getUniformScaling();
-  // void setUniformScaling(bool newVal);
+  bool getAllowNonUniformScaling();
+  void setAllowNonUniformScaling(bool newVal); // must also set allowScaling to true
 
   bool getInteractInLocalSpace();
   void setInteractInLocalSpace(bool newVal);
@@ -99,7 +98,7 @@ protected:
   PersistentValue<bool> allowTranslation;
   PersistentValue<bool> allowRotation;
   PersistentValue<bool> allowScaling;
-  // PersistentValue<bool> uniformScaling; // not really supported by the ImGuizmo
+  PersistentValue<bool> allowNonUniformScaling;
   PersistentValue<bool> interactInLocalSpace;
   PersistentValue<bool> showUIWindow;
   PersistentValue<float> gizmoSize;
