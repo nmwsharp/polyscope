@@ -7,6 +7,7 @@
 #include <iostream>
 #include <thread>
 
+#include "ImGuizmo.h"
 #include "imgui.h"
 #include "implot.h"
 
@@ -269,6 +270,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 #endif
   ImGui::SetCurrentContext(newContext);
   ImPlot::SetCurrentContext(newPlotContext);
+  ImGuizmo::PushContext();
 #ifdef IMGUI_HAS_DOCK
   // Propagate GLFW window handle to new context
   ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
@@ -318,6 +320,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   if (!contextStack.empty()) {
     ImGui::SetCurrentContext(contextStack.back().context);
     ImPlot::SetCurrentContext(contextStack.back().plotContext);
+    ImGuizmo::PopContext();
   }
 }
 
