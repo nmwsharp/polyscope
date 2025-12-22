@@ -84,6 +84,7 @@ public:
   void translate(glm::vec3 vec);   // *adds* vec to the position
   glm::mat4x4 getTransform();
   glm::vec3 getPosition();
+  TransformationGizmo& getTransformGizmo();
 
   void setStructureUniforms(render::ShaderProgram& p);
   bool wantsCullPosition();

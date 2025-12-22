@@ -81,6 +81,7 @@ class OnscreenColorBarWidget : public Widget {
 public:
   OnscreenColorBarWidget(ColorBar& parent_);
   virtual void draw() override;
+  std::string uniquePrefix() override;
 
 private:
   ColorBar& parent;

@@ -205,6 +205,10 @@ void ColorBar::prepareOnscreenColorBar() {
 
 OnscreenColorBarWidget::OnscreenColorBarWidget(ColorBar& parent_) : parent(parent_) {}
 
+std::string OnscreenColorBarWidget::uniquePrefix() {
+  return "#widget#OnscreenColorBarWidget#" + parent.parent.uniquePrefix();
+}
+
 void OnscreenColorBarWidget::draw() {
   if (!parent.parent.isEnabled()) return;
   if (!parent.getOnscreenColorbarEnabled()) return;

@@ -473,6 +473,7 @@ void GLEngineEGL::ImGuiNewFrame() {
   io.DisplaySize.y = view::bufferHeight;
 
   ImGui::NewFrame();
+  ImGuizmo::BeginFrame();
 }
 
 void GLEngineEGL::ImGuiRender() {

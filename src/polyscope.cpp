@@ -1032,7 +1032,7 @@ void draw(bool withUI, bool withContextCallback) {
         for (WeakHandle<Widget> wHandle : state::widgets) {
           if (wHandle.isValid()) {
             Widget& w = wHandle.get();
-            w.buildGUI();
+            w.buildUI();
           }
         }
       }
@@ -1171,6 +1171,7 @@ void shutdown(bool allowMidFrameShutdown) {
   removeAllStructures();
   removeAllGroups();
   removeAllSlicePlanes();
+  removeAllTransformationGizmos();
   clearMessages();
   state::userCallback = nullptr;
   state::filesDroppedCallback = nullptr;

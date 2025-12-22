@@ -12,7 +12,7 @@ Structure::Structure(std::string name_, std::string subtypeName_)
     : name(name_), subtypeName(subtypeName_), enabled(subtypeName + "#" + name + "#enabled", true),
       objectTransform(subtypeName + "#" + name + "#object_transform", glm::mat4(1.0)),
       transparency(subtypeName + "#" + name + "#transparency", 1.0),
-      transformGizmo(subtypeName + "#" + name + "#transform_gizmo", objectTransform.get(), &objectTransform),
+      transformGizmo(subtypeName + "#" + name + "#transform_gizmo", &objectTransform.get(), &objectTransform),
       cullWholeElements(subtypeName + "#" + name + "#cullWholeElements", false),
       ignoredSlicePlaneNames(subtypeName + "#" + name + "#ignored_slice_planes", {}),
       objectSpaceBoundingBox(
@@ -72,8 +72,7 @@ void Structure::buildUI() {
         if (ImGui::MenuItem("Center")) centerBoundingBox();
         if (ImGui::MenuItem("Unit Scale")) rescaleToUnit();
         if (ImGui::MenuItem("Reset")) resetTransform();
-        if (ImGui::MenuItem("Show Gizmo", NULL, &transformGizmo.enabled.get()))
-          transformGizmo.enabled.manuallyChanged();
+        transformGizmo.buildMenuItems();
         ImGui::EndMenu();
       }
 
@@ -200,6 +199,8 @@ glm::vec3 Structure::getPosition() {
   return glm::vec3{objectTransform.get()[3][0], objectTransform.get()[3][1], objectTransform.get()[3][2]};
 }
 
+TransformationGizmo& Structure::getTransformGizmo() { return transformGizmo; }
+
 void Structure::resetTransform() {
   objectTransform = glm::mat4(1.0);
   updateStructureExtents();
@@ -314,11 +315,10 @@ bool Structure::getCullWholeElements() { return cullWholeElements.get(); }
 
 
 Structure* Structure::setTransformGizmoEnabled(bool newVal) {
-  transformGizmo.enabled = newVal;
-  requestRedraw();
+  transformGizmo.setEnabled(newVal);
   return this;
 }
-bool Structure::getTransformGizmoEnabled() { return transformGizmo.enabled.get(); }
+bool Structure::getTransformGizmoEnabled() { return transformGizmo.getEnabled(); }
 
 Structure* Structure::setIgnoreSlicePlane(std::string name, bool newValue) {
 
