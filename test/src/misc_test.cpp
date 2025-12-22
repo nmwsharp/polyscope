@@ -125,6 +125,22 @@ TEST_F(PolyscopeTest, TransformationGizmoStandaloneTest) {
   polyscope::removeAllTransformationGizmos();
 }
 
+TEST_F(PolyscopeTest, TransformationGizmoNestedShowTest) {
+  
+  polyscope::TransformationGizmo* gizmo1 = polyscope::addTransformationGizmo();
+  gizmo1->setEnabled(true);
+  polyscope::show(3);
+
+  auto showCallback = [&]() { 
+    polyscope::show(3); 
+  };
+  polyscope::state::userCallback = showCallback;
+  polyscope::show(3);
+
+  polyscope::state::userCallback = nullptr;
+  polyscope::removeAllTransformationGizmos();
+}
+
 // ============================================================
 // =============== Slice Plane Tests
 // ============================================================
