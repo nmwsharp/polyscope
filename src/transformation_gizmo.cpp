@@ -20,7 +20,7 @@ TransformationGizmo::TransformationGizmo(std::string name_, glm::mat4* externalT
     allowTranslation(name + "#allowTranslation", true),
     allowRotation(name + "#allowRotation", true),
     allowScaling(name + "#allowScaling", false),
-    // uniformScaling(name + "#uniformScaling", true),
+    allowNonUniformScaling(name + "#allowNonUniformScaling", false),
     interactInLocalSpace(name + "#interactInLocalSpace", false),
     showUIWindow(name + "#showUIWindow", false),
     gizmoSize(name + "#gizmoSize", 1.0)
@@ -62,12 +62,8 @@ void TransformationGizmo::draw() {
   if (allowRotation.get()) gizmoOpModeInt |= ImGuizmo::ROTATE;
   if (allowScaling.get()) {
     gizmoOpModeInt |= ImGuizmo::SCALEU;
-    // if(uniformScaling.get()) {
-    //   gizmoOpModeInt |= ImGuizmo::SCALEU;
-    // } else {
-    //   gizmoOpModeInt |= ImGuizmo::SCALE;
-    // }
   }
+  ImGuizmo::SetAllowNonUniformScaling(allowNonUniformScaling.get());
   ImGuizmo::OPERATION gizmoOpMode = static_cast<ImGuizmo::OPERATION>(gizmoOpModeInt);
 
   ImGuizmo::MODE gizmoCoordSpace = interactInLocalSpace.get() ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
@@ -94,7 +90,7 @@ void TransformationGizmo::buildMenuItems() {
   ImGui::MenuItem("Allow Translation", NULL, &allowTranslation.get());
   ImGui::MenuItem("Allow Rotation", NULL, &allowRotation.get());
   ImGui::MenuItem("Allow Scaling", NULL, &allowScaling.get());
-  // ImGui::MenuItem("Uniform Scaling", NULL, &uniformScaling.get());
+  ImGui::MenuItem("Allow Non-Uniform Scaling", NULL, &allowNonUniformScaling.get());
 }
 
 bool TransformationGizmo::interact() {
@@ -134,9 +130,9 @@ void TransformationGizmo::buildInlineTransformUI() {
   ImGui::SameLine();
   ImGui::Checkbox("Scaling", &allowScaling.get());
 
-  // if (allowScaling.get()) {
-  //   ImGui::Checkbox("Uniform Scaling", &uniformScaling.get());
-  // }
+  if (allowScaling.get()) {
+    ImGui::Checkbox("Allow Non-Uniform Scaling", &allowNonUniformScaling.get());
+  }
 
   static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::ROTATE);
   static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
@@ -187,6 +183,9 @@ void TransformationGizmo::setAllowRotation(bool newVal) { allowRotation = newVal
 
 bool TransformationGizmo::getAllowScaling() { return allowScaling.get(); }
 void TransformationGizmo::setAllowScaling(bool newVal) { allowScaling = newVal; }
+
+bool TransformationGizmo::getAllowNonUniformScaling() { return allowNonUniformScaling.get(); }
+void TransformationGizmo::setAllowNonUniformScaling(bool newVal) { allowNonUniformScaling = newVal; }
 
 bool TransformationGizmo::getInteractInLocalSpace() { return interactInLocalSpace.get(); }
 void TransformationGizmo::setInteractInLocalSpace(bool newVal) { interactInLocalSpace = newVal; }
