@@ -9,7 +9,6 @@
 // ============================================================
 
 TEST_F(PolyscopeTest, ShowVolumeGrid) {
-  // clang-format off
   uint32_t dimX = 8;
   uint32_t dimY = 10;
   uint32_t dimZ = 12;
@@ -19,7 +18,7 @@ TEST_F(PolyscopeTest, ShowVolumeGrid) {
   polyscope::VolumeGrid* psGrid = polyscope::registerVolumeGrid("test grid", {dimX, dimY, dimZ}, bound_low, bound_high);
 
   polyscope::show(3);
-  
+
   EXPECT_TRUE(polyscope::hasVolumeGrid("test grid"));
   EXPECT_FALSE(polyscope::hasVolumeGrid("other grid"));
   polyscope::removeAllStructures();
@@ -28,7 +27,7 @@ TEST_F(PolyscopeTest, ShowVolumeGrid) {
 
 
 TEST_F(PolyscopeTest, VolumeGridBasicOptions) {
-  
+
   // these are node dim
   uint32_t dimX = 8;
   uint32_t dimY = 10;
@@ -38,8 +37,8 @@ TEST_F(PolyscopeTest, VolumeGridBasicOptions) {
 
   polyscope::VolumeGrid* psGrid = polyscope::registerVolumeGrid("test grid", {dimX, dimY, dimZ}, bound_low, bound_high);
 
-  EXPECT_EQ(psGrid->nNodes(), dimX*dimY*dimZ);
-  EXPECT_EQ(psGrid->nCells(), (dimX-1)*(dimY-1)*(dimZ-1));
+  EXPECT_EQ(psGrid->nNodes(), dimX * dimY * dimZ);
+  EXPECT_EQ(psGrid->nCells(), (dimX - 1) * (dimY - 1) * (dimZ - 1));
 
   // Material
   psGrid->setMaterial("flat");
@@ -49,7 +48,7 @@ TEST_F(PolyscopeTest, VolumeGridBasicOptions) {
   // Edge width
   psGrid->setEdgeWidth(0.5);
   polyscope::show(3);
-  
+
   // Grid size factor
   psGrid->setCubeSizeFactor(0.5);
   polyscope::show(3);
@@ -58,7 +57,6 @@ TEST_F(PolyscopeTest, VolumeGridBasicOptions) {
 }
 
 TEST_F(PolyscopeTest, VolumeGridOrthographicRendering) {
-  // clang-format off
   uint32_t dimX = 8;
   uint32_t dimY = 10;
   uint32_t dimZ = 12;
@@ -66,7 +64,7 @@ TEST_F(PolyscopeTest, VolumeGridOrthographicRendering) {
   glm::vec3 bound_high{3., 3., 3.};
 
   polyscope::VolumeGrid* psGrid = polyscope::registerVolumeGrid("test grid", {dimX, dimY, dimZ}, bound_low, bound_high);
-  
+
   // try orthographic rendering
   polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
   polyscope::show(3);
@@ -75,7 +73,7 @@ TEST_F(PolyscopeTest, VolumeGridOrthographicRendering) {
 }
 
 TEST_F(PolyscopeTest, VolumeGridSlicePlane) {
-  
+
   // these are node dim
   uint32_t dimX = 8;
   uint32_t dimY = 10;
@@ -87,12 +85,13 @@ TEST_F(PolyscopeTest, VolumeGridSlicePlane) {
 
   // plain old inspecting
   polyscope::SlicePlane* p = polyscope::addSceneSlicePlane();
-  psGrid->setCullWholeElements(true); 
+  psGrid->setCullWholeElements(true);
   polyscope::show(3);
-  
+
   // cull whole elements
-  // we don't actually support rendering like this yet, so right now this is 'handled' by automatically unsetting it internally
-  psGrid->setCullWholeElements(false); 
+  // we don't actually support rendering like this yet, so right now this is 'handled' by automatically unsetting it
+  // internally
+  psGrid->setCullWholeElements(false);
   polyscope::show(3);
 
   polyscope::removeLastSceneSlicePlane();
@@ -100,7 +99,7 @@ TEST_F(PolyscopeTest, VolumeGridSlicePlane) {
 }
 
 TEST_F(PolyscopeTest, VolumeGridScalar) {
-  
+
   // these are node dim
   uint32_t dimX = 8;
   uint32_t dimY = 10;
@@ -126,19 +125,19 @@ TEST_F(PolyscopeTest, VolumeGridScalar) {
     psGrid->addNodeScalarQuantity("node scalar1", nodeScalar)->setEnabled(true);
     polyscope::show(3);
   }
-  
+
   { // node scalar from callable
     // internally this bootstraps off the batch version, so we're kinda testing it too
     psGrid->addNodeScalarQuantityFromCallable("node scalar2", torusSDF)->setEnabled(true);
     polyscope::show(3);
   }
-  
+
   { // cell scalar from array
     std::vector<double> cellScalar(psGrid->nCells(), 3.0f);
     psGrid->addCellScalarQuantity("cell scalar1", cellScalar)->setEnabled(true);
     polyscope::show(3);
   }
-  
+
   { // cell scalar from callable
     // internally this bootstraps off the batch version, so we're kinda testing it too
     psGrid->addCellScalarQuantityFromCallable("cell scalar2", torusSDF)->setEnabled(true);
@@ -149,7 +148,7 @@ TEST_F(PolyscopeTest, VolumeGridScalar) {
 }
 
 TEST_F(PolyscopeTest, VolumeGridScalarIsosurfaceAndOpts) {
-  
+
   // these are node dim
   uint32_t dimX = 8;
   uint32_t dimY = 10;
@@ -177,14 +176,14 @@ TEST_F(PolyscopeTest, VolumeGridScalarIsosurfaceAndOpts) {
 
   q->setGridcubeVizEnabled(false);
   polyscope::show(3);
-  
+
   q->setIsosurfaceVizEnabled(true); // extracts the isosurface
   polyscope::show(3);
-  
+
   polyscope::SlicePlane* p = polyscope::addSceneSlicePlane();
   polyscope::show(3);
 
-  q->setSlicePlanesAffectIsosurface(true); 
+  q->setSlicePlanesAffectIsosurface(true);
   polyscope::show(3);
 
   q->registerIsosurfaceAsMesh();
@@ -197,4 +196,53 @@ TEST_F(PolyscopeTest, VolumeGridScalarIsosurfaceAndOpts) {
 
   polyscope::removeLastSceneSlicePlane();
   polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, VolumeGridScalarIsosurfaceIndexing) {
+
+  std::vector<std::array<int32_t, 3>> perms{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}};
+
+  std::array<uint32_t, 3> dims = {5, 8, 20};
+
+  // these are node dim
+  glm::vec3 bound_low{-10., -2., -5.};
+  glm::vec3 bound_high{20., 3., 6.};
+
+  for (auto& perm : perms) {
+    uint32_t dimX = dims[perm[0]];
+    uint32_t dimY = dims[perm[1]];
+    uint32_t dimZ = dims[perm[2]];
+
+    polyscope::VolumeGrid* psGrid =
+        polyscope::registerVolumeGrid("test grid", {dimX, dimY, dimZ}, bound_low, bound_high);
+
+    std::vector<float> vals(dimX * dimY * dimZ, 0.f);
+    for (uint32_t iX = 0; iX < dimX; iX++) {
+      for (uint32_t iY = 0; iY < dimY; iY++) {
+        for (uint32_t iZ = 0; iZ < dimZ; iZ++) {
+          vals[iX * (dimY * dimZ) + iY * dimZ + iZ] = ((iX + iY + iZ) % 2) - 0.5; // checkerboard function
+        }
+      }
+    }
+
+    polyscope::VolumeGridNodeScalarQuantity* q = psGrid->addNodeScalarQuantity("node scalar", vals);
+    q->setIsosurfaceVizEnabled(true); // extracts the isosurface
+    q->registerIsosurfaceAsMesh("iso test");
+
+    // get the vertices from the is surface
+    polyscope::SurfaceMesh* isoTest = polyscope::getSurfaceMesh("iso test");
+    isoTest->vertexPositions.ensureHostBufferPopulated();
+    std::vector<glm::vec3> isoverts = isoTest->vertexPositions.data;
+
+    // test that all vertices are within the bounds
+    float EPS = 0.0001;
+    for (glm::vec3 p : isoverts) {
+      for (int i = 0; i < 3; i++) {
+        EXPECT_GE(p[i], bound_low[i] - EPS);
+        EXPECT_LT(p[i], bound_high[i] + EPS);
+      }
+    }
+
+    polyscope::removeAllStructures();
+  }
 }
