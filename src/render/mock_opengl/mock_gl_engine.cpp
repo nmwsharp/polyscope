@@ -1228,6 +1228,51 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<uint32_t>
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
+void GLShaderProgram::setAttribute(std::string name, const std::vector<std::array<glm::vec3, 2>>& data) {
+
+  // pass-through to the buffer
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name) {
+      if (a.arrayCount != 2) throw std::invalid_argument("Tried to set attribute " + name + " with wrong array count");
+      ensureBufferExists(a);
+      a.buff->setData(data);
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
+void GLShaderProgram::setAttribute(std::string name, const std::vector<std::array<glm::vec3, 3>>& data) {
+
+  // pass-through to the buffer
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name) {
+      if (a.arrayCount != 3) throw std::invalid_argument("Tried to set attribute " + name + " with wrong array count");
+      ensureBufferExists(a);
+      a.buff->setData(data);
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
+void GLShaderProgram::setAttribute(std::string name, const std::vector<std::array<glm::vec3, 4>>& data) {
+
+  // pass-through to the buffer
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name) {
+      if (a.arrayCount != 4) throw std::invalid_argument("Tried to set attribute " + name + " with wrong array count");
+      ensureBufferExists(a);
+      a.buff->setData(data);
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
 bool GLShaderProgram::hasTexture(std::string name) {
   for (GLShaderTexture& t : textures) {
     if (t.name == name) {
