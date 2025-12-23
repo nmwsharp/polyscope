@@ -599,12 +599,7 @@ void VolumeMesh::preparePick() {
   }
 
   // === Store data in buffers
-
-  std::shared_ptr<render::AttributeBuffer> vertexColorsBuff =
-      render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, 3);
-  vertexColorsBuff->setData(vertexColors);
-
-  pickProgram->setAttribute("a_vertexColors", vertexColorsBuff);
+  pickProgram->setAttribute("a_vertexColors", vertexColors);
   pickProgram->setAttribute("a_faceColor", faceColor);
 }
 

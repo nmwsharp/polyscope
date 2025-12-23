@@ -381,6 +381,10 @@ public:
   virtual void setAttribute(std::string name, const std::vector<double>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<int32_t>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<uint32_t>& data) = 0;
+  
+  virtual void setAttribute(std::string name, const std::vector<std::array<glm::vec3, 2>>& data) = 0;
+  virtual void setAttribute(std::string name, const std::vector<std::array<glm::vec3, 3>>& data) = 0;
+  virtual void setAttribute(std::string name, const std::vector<std::array<glm::vec3, 4>>& data) = 0;
   // clang-format on
 
 

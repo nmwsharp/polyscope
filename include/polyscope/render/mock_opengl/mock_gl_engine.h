@@ -274,6 +274,10 @@ public:
   void setAttribute(std::string name, const std::vector<double>& data) override;
   void setAttribute(std::string name, const std::vector<int32_t>& data) override; 
   void setAttribute(std::string name, const std::vector<uint32_t>& data) override;
+
+  void setAttribute(std::string name, const std::vector<std::array<glm::vec3, 2>>& data) override;
+  void setAttribute(std::string name, const std::vector<std::array<glm::vec3, 3>>& data) override;
+  void setAttribute(std::string name, const std::vector<std::array<glm::vec3, 4>>& data) override;
   // clang-format on
 
   // Indices
