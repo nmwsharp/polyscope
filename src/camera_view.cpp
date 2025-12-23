@@ -317,11 +317,7 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
                                                        std::array<glm::vec3, 3>{pickColor, pickColor, pickColor});
 
 
-    std::shared_ptr<render::AttributeBuffer> tripleColorsBuff =
-        render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, 3);
-    tripleColorsBuff->setData(tripleColors);
-
-    pickFrameProgram->setAttribute("a_vertexColors", tripleColorsBuff);
+    pickFrameProgram->setAttribute("a_vertexColors", tripleColors);
     pickFrameProgram->setAttribute("a_faceColor", faceColor);
     if (wantsCullPosition()) {
       pickFrameProgram->setAttribute("a_cullPos", cullPos);
