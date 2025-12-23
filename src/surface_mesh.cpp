@@ -1040,27 +1040,11 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
 
   // == Store data in buffers
 
-  std::shared_ptr<render::AttributeBuffer> vertexColorsBuff =
-      render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, 3);
-  vertexColorsBuff->setData(vertexColors);
-  pickProgram->setAttribute("a_vertexColors", vertexColorsBuff);
-
-  std::shared_ptr<render::AttributeBuffer> faceColorsBuff =
-      render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
-  faceColorsBuff->setData(faceColor);
-  pickProgram->setAttribute("a_faceColor", faceColorsBuff);
-
+  pickProgram->setAttribute("a_vertexColors", vertexColors);
+  pickProgram->setAttribute("a_faceColor", faceColor);
   if (!usingSimplePick) {
-
-    std::shared_ptr<render::AttributeBuffer> halfedgeColorsBuff =
-        render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, 3);
-    halfedgeColorsBuff->setData(halfedgeColors);
-    pickProgram->setAttribute("a_halfedgeColors", halfedgeColorsBuff);
-
-    std::shared_ptr<render::AttributeBuffer> cornerColorsBuff =
-        render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, 3);
-    cornerColorsBuff->setData(cornerColors);
-    pickProgram->setAttribute("a_cornerColors", cornerColorsBuff);
+    pickProgram->setAttribute("a_halfedgeColors", halfedgeColors);
+    pickProgram->setAttribute("a_cornerColors", cornerColors);
   }
 }
 
