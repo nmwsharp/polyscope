@@ -279,7 +279,8 @@ void TangentVectorQuantity<QuantityT>::drawVectors() {
 template <typename QuantityT>
 void TangentVectorQuantity<QuantityT>::createProgram() {
 
-  std::vector<std::string> rules = this->quantity.parent.addStructureRules({"SHADE_BASECOLOR"});
+  std::vector<std::string> rules =
+      this->quantity.parent.addStructureRules({view::getCurrentProjectionModeRaycastRule(), "SHADE_BASECOLOR"});
   if (this->quantity.parent.wantsCullPosition()) {
     rules.push_back("VECTOR_CULLPOS_FROM_TAIL");
   }
