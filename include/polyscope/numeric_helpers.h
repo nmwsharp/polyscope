@@ -3,6 +3,9 @@
 #pragma once
 
 #include <cmath>
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#define GLM_ENABLE_EXPERIMENTAL
+#endif
 #include <glm/glm.hpp>
 #include <glm/gtx/compatibility.hpp>
 #include <type_traits>
