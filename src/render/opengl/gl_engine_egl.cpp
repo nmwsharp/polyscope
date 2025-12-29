@@ -257,7 +257,7 @@ void GLEngineEGL::initialize() {
     info(0, ss.str());
   }
 
-  if(options::uiScale < 0) { // only set from system if the value is -1, meaning not set yet
+  if (options::uiScale < 0) { // only set from system if the value is -1, meaning not set yet
     options::uiScale = 1.;
   }
 
@@ -437,7 +437,7 @@ void GLEngineEGL::initializeImGui() {
   // functions
 
   ImGui::CreateContext();
-  ImPlot::CreateContext(); 
+  ImPlot::CreateContext();
   configureImGui();
 }
 
@@ -450,6 +450,12 @@ void GLEngineEGL::configureImGui() {
   }
 
   ImGuiIO& io = ImGui::GetIO();
+
+  // if polyscope's prefs file is disabled, disable imgui's ini file too
+  if (!options::usePrefsFile) {
+    io.IniFilename = nullptr;
+  }
+
   io.Fonts->Clear();
   io.Fonts->Build();
 }

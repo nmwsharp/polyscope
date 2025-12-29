@@ -179,9 +179,15 @@ void GLEngineGLFW::configureImGui() {
     exception("uiScale is < 0. Perhaps it wasn't initialized?");
   }
 
+  ImGuiIO& io = ImGui::GetIO();
+
+  // if polyscope's prefs file is disabled, disable imgui's ini file too
+  if (!options::usePrefsFile) {
+    io.IniFilename = nullptr;
+  }
+
   if (options::prepareImGuiFontsCallback) {
 
-    ImGuiIO& io = ImGui::GetIO();
     io.Fonts->Clear();
 
     // these are necessary if different fonts are loaded in the callback

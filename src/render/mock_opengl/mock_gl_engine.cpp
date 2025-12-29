@@ -1634,6 +1634,12 @@ void MockGLEngine::configureImGui() {
   }
 
   ImGuiIO& io = ImGui::GetIO();
+
+  // if polyscope's prefs file is disabled, disable imgui's ini file too
+  if (!options::usePrefsFile) {
+    io.IniFilename = nullptr;
+  }
+
   io.Fonts->Clear();
   io.Fonts->Build();
 }
