@@ -30,7 +30,13 @@ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilTet =
    {{0,3,2}}, 
    {{1,2,3}},
  };
-
+const std::vector<std::vector<size_t>> VolumeMesh::facesTet =
+{
+  {0,2,1},
+  {0,1,3},
+  {0,3,2},
+  {1,2,3}
+};
 // Indirection to place vertex 0 always in the bottom left corner
 const std::array<std::array<size_t, 8>, 8> VolumeMesh::rotationMap = 
  {{
@@ -93,7 +99,114 @@ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilHex =
    {{6,2,3}, {6,3,7}}, 
    {{7,4,5}, {7,5,6}}, 
  };
+
+ const std::vector<std::vector<size_t>> VolumeMesh::facesHex =
+ {
+  {2,1,0,3},
+  {4,0,1,5},
+  {5,1,2,6},
+  {7,3,0,4},
+  {6,2,3,7},
+  {7,4,5,6}
+ };
+
+ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilPrism = 
+ {
+   {{0,1,2}}, 
+   {{0,4,1}, {0,3,4}}, 
+   {{1,5,4}, {1,2,5}}, 
+   {{3,0,5}, {0,2,5}}, 
+   {{3,5,4}}, 
+ };
+
+ const std::vector<std::vector<size_t>> VolumeMesh::facesPrism =
+ {
+  {0,1,2},
+  {0,3,4,1},
+  {1,4,5,2},
+  {0,2,5,3},
+  {3,5,4}
+ };
+
+ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilPyramid = 
+ {
+   {{0,3,2}, {0,2,1}}, 
+   {{0,1,4}}, 
+   {{1,2,4}}, 
+   {{2,3,4}}, 
+   {{3,0,4}}, 
+ };
+
+ const std::vector<std::vector<size_t>> VolumeMesh::facesPyramid =
+ {
+  {0,1,2,3},
+  {0,1,4},
+  {1,2,4},
+  {2,3,4},
+  {3,0,4}
+ };
 // clang-format on
+
+
+namespace detail {
+using Tet = std::array<uint32_t, 4>;
+using Prism = std::array<uint32_t, 6>;
+using Pyramid = std::array<uint32_t, 5>;
+using Cell = std::array<uint32_t, 8>;
+using Tets = std::vector<Tet>;
+
+Prism rotatePrism(const Prism& p, int rot) {
+  static constexpr int bottomRot[3][3] = {
+      {0, 1, 2}, // identity
+      {1, 2, 0}, // rot1
+      {2, 0, 1}  // rot2
+  };
+  static constexpr int topRot[3][3] = {{3, 4, 5}, {4, 5, 3}, {5, 3, 4}};
+  Prism r;
+  for (int i = 0; i < 3; ++i) r[i] = p[bottomRot[rot][i]];
+  for (int i = 0; i < 3; ++i) r[i + 3] = p[topRot[rot][i]];
+  return r;
+}
+Tets decomposePrism(const Cell& cell) {
+  Prism p = {cell[0], cell[1], cell[2], cell[3], cell[4], cell[5]};
+  int minIdx = std::min_element(p.begin(), p.end()) - p.begin();
+  int rot = 0;
+  // If smallest vertex is in bottom triangle
+  if (minIdx < 3) {
+    // rotate bottom triangle so min vertex is V0
+    int bPos = (minIdx == 0 ? 0 : (minIdx == 1 ? 2 : 1)); // mapping from input idx to rot
+    rot = bPos;
+  } else {
+    // smallest vertex in top triangle, reflect wedge
+    int topPos = minIdx - 3;
+    rot = (topPos == 0 ? 0 : (topPos == 1 ? 2 : 1));
+    // swap top/bottom
+    std::swap(p[0], p[3]);
+    std::swap(p[1], p[4]);
+    std::swap(p[2], p[5]);
+  }
+  // Rotate prism to have V0 in bottom left corner
+  p = rotatePrism(p, rot);
+  // Now, decide how to split the quad opposite V0
+  if (std::min(p[2], p[4]) < std::min(p[1], p[5])) {
+    // Split along diagonal 2-4
+    return {{p[0], p[5], p[4], p[3]}, {p[0], p[4], p[5], p[2]}, {p[0], p[4], p[2], p[1]}};
+  } else {
+    // Split along diagonal 1-5
+    return {{p[0], p[5], p[4], p[3]}, {p[0], p[1], p[5], p[2]}, {p[0], p[5], p[1], p[4]}};
+  }
+}
+Tets decomposePyramid(const Cell& cell) {
+  Pyramid p = {cell[0], cell[1], cell[2], cell[3], cell[4]};
+  if (std::min(p[0], p[2]) < std::min(p[1], p[3])) {
+    // Split along diagonal 0-2
+    return {{p[0], p[2], p[4], p[1]}, {p[0], p[4], p[2], p[3]}};
+  } else {
+    // Split along diagonal 1-3
+    return {{p[1], p[3], p[4], p[2]}, {p[1], p[4], p[3], p[0]}};
+  }
+}
+} // namespace detail
 
 VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPositions_,
                        const std::vector<std::array<uint32_t, 8>>& cellIndices_)
@@ -264,14 +377,26 @@ void VolumeMesh::computeTets() {
     case VolumeCellType::TET:
       tetCount += 1;
       break;
+    case VolumeCellType::PRISM:
+      tetCount += 3;
+      break;
+    case VolumeCellType::PYRAMID:
+      tetCount += 2;
+      break;
     }
   }
-  // Mark each edge as real or not (in the original mesh)
-  std::vector<std::array<bool, 6>> realEdges;
+
   // Each hex can make up to 6 tets
   tets.resize(tetCount);
-  realEdges.resize(tetCount);
   size_t tetIdx = 0;
+  auto addTets = [&](const detail::Tets& newTets) {
+    for (const auto& tet : newTets) {
+      for (size_t i = 0; i < 4; i++) {
+        tets[tetIdx][i] = tet[i];
+      }
+      tetIdx++;
+    }
+  };
   for (size_t iC = 0; iC < nCells(); iC++) {
     switch (cellType(iC)) {
     case VolumeCellType::HEX: {
@@ -335,11 +460,18 @@ void VolumeMesh::computeTets() {
       }
       break;
     }
-    case VolumeCellType::TET:
+    case VolumeCellType::TET: {
       for (size_t i = 0; i < 4; i++) {
         tets[tetIdx][i] = cells[iC][i];
       }
       tetIdx++;
+      break;
+    }
+    case VolumeCellType::PRISM:
+      addTets(detail::decomposePrism(cells[iC]));
+      break;
+    case VolumeCellType::PYRAMID:
+      addTets(detail::decomposePyramid(cells[iC]));
       break;
     }
   }
@@ -662,7 +794,6 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
 }
 
 void VolumeMesh::computeConnectivityData() {
-
   // NOTE: If we were to fill buffers naively via a loop over cells, we get pretty bad z-fighting artifacts where
   // interior edges ever-so-slightly show through the exterior boundary (more generally, any place 3 faces meet at an
   // edge, which happens everywhere in a tet mesh).
@@ -670,14 +801,16 @@ void VolumeMesh::computeConnectivityData() {
   // To mitigate this issue, we fill the buffer such that all exterior faces come first, then all interior faces, so
   // that exterior faces always win depth ties. This doesn't totally eliminate the problem, but greatly improves the
   // most egregious cases.
+  auto makeEdgeKey = [](uint32_t a, uint32_t b) -> std::pair<uint32_t, uint32_t> {
+    if (a > b) std::swap(a, b);
+    return {a, b};
+  };
 
   // == Allocate buffers
   triangleVertexInds.data.clear();
   triangleVertexInds.data.resize(3 * nFacesTriangulation());
   triangleFaceInds.data.clear();
   triangleFaceInds.data.resize(3 * nFacesTriangulation());
-  triangleCellInds.data.clear();
-  triangleCellInds.data.resize(3 * nFacesTriangulation());
   triangleCellInds.data.clear();
   triangleCellInds.data.resize(3 * nFacesTriangulation());
   baryCoord.data.clear();
@@ -687,57 +820,76 @@ void VolumeMesh::computeConnectivityData() {
   faceType.data.clear();
   faceType.data.resize(nFaces());
 
-  size_t iF = 0;
+  size_t iF = 0; // face counter
   size_t iFront = 0;
   size_t iBack = nFacesTriangulation() - 1;
+
+  // Loop over all cells
   for (size_t iC = 0; iC < nCells(); iC++) {
     const std::array<uint32_t, 8>& cell = cells[iC];
     VolumeCellType cellT = cellType(iC);
 
+    const auto& faceTris = cellStencil(cellT); // triangulated faces
+    const auto& faceVerts = cellFaces(cellT);  // original polygon faces
+
     // Loop over all faces of the cell
-    for (const std::vector<std::array<size_t, 3>>& face : cellStencil(cellT)) {
+    for (size_t f = 0; f < faceTris.size(); f++) {
 
-      // Loop over the face's triangulation
-      for (size_t j = 0; j < face.size(); j++) {
-        const std::array<size_t, 3>& tri = face[j];
+      const auto& triList = faceTris[f];
+      const auto& poly = faceVerts[f];
 
-        // Enumerate exterior faces in the front of the draw buffer, and interior faces in the back.
-        // (see note above)
+      // Build a set of "real" edges from the polygon
+      std::set<std::pair<uint32_t, uint32_t>> realEdges;
+      for (size_t p = 0; p < poly.size(); p++) {
+        realEdges.insert(makeEdgeKey(cell[poly[p]], cell[poly[(p + 1) % poly.size()]]));
+      }
+
+      // Loop over triangles in the triangulation of this face
+      for (size_t j = 0; j < triList.size(); j++) {
+        const auto& tri = triList[j];
+
+        // Decide where to store (front for exterior, back for interior)
         size_t iData;
         if (faceIsInterior[iF]) {
-          iData = iBack;
-          iBack--;
+          iData = iBack--;
         } else {
-          iData = iFront;
-          iFront++;
+          iData = iFront++;
         }
 
+        // Store triangle vertices
         for (size_t k = 0; k < 3; k++) {
           triangleVertexInds.data[3 * iData + k] = cell[tri[k]];
         }
+
+        // Face & cell indices
         for (size_t k = 0; k < 3; k++) triangleFaceInds.data[3 * iData + k] = iF;
         for (size_t k = 0; k < 3; k++) triangleCellInds.data[3 * iData + k] = iC;
 
+        // Barycentric coords
         baryCoord.data[3 * iData + 0] = glm::vec3{1., 0., 0.};
         baryCoord.data[3 * iData + 1] = glm::vec3{0., 1., 0.};
         baryCoord.data[3 * iData + 2] = glm::vec3{0., 0., 1.};
 
-        glm::vec3 edgeRealV{0., 1., 0.};
-        if (j == 0) edgeRealV.x = 1.;
-        if (j + 1 == face.size()) edgeRealV.z = 1.;
-        for (int k = 0; k < 3; k++) edgeIsReal.data[3 * iData + k] = edgeRealV;
+        // Mark edges as real or not
+        glm::vec3 realFlag(0.0f);
+        for (size_t k = 0; k < 3; k++) {
+          bool isReal = realEdges.count(makeEdgeKey(cell[tri[k]], cell[tri[(k + 1) % 3]])) > 0;
+          realFlag[k] = isReal ? 1.0f : 0.0f;
+          edgeIsReal.data[3 * iData + k] = realFlag;
+        }
+        for (int k = 0; k < 3; k++) edgeIsReal.data[3 * iData + k] = realFlag;
       }
 
-      float faceTypeFloat = faceIsInterior[iF] ? 1. : 0.;
-      for (int k = 0; k < 3; k++) faceType.data[iF] = faceTypeFloat;
+      // Face type: 1 for interior, 0 for exterior
+      faceType.data[iF] = faceIsInterior[iF] ? 1.f : 0.f;
 
       iF++;
     }
   }
 
+  // Mark buffers updated
   triangleVertexInds.markHostBufferUpdated();
   triangleFaceInds.markHostBufferUpdated();
-  triangleCellInds.markHostBufferUpdated();
   triangleCellInds.markHostBufferUpdated();
   baryCoord.markHostBufferUpdated();
   edgeIsReal.markHostBufferUpdated();
@@ -750,10 +902,28 @@ const std::vector<std::vector<std::array<size_t, 3>>>& VolumeMesh::cellStencil(V
     return stencilTet;
   case VolumeCellType::HEX:
     return stencilHex;
+  case VolumeCellType::PRISM:
+    return stencilPrism;
+  case VolumeCellType::PYRAMID:
+    return stencilPyramid;
   }
-
   // unreachable
   return stencilTet;
+}
+
+const std::vector<std::vector<size_t>>& VolumeMesh::cellFaces(VolumeCellType type) {
+  switch (type) {
+  case VolumeCellType::TET:
+    return facesTet;
+  case VolumeCellType::HEX:
+    return facesHex;
+  case VolumeCellType::PRISM:
+    return facesPrism;
+  case VolumeCellType::PYRAMID:
+    return facesPyramid;
+  }
+  // unreachable
+  return facesTet;
 }
 
 
@@ -990,11 +1160,18 @@ void VolumeMesh::recomputeGeometryIfPopulated() {
 }
 
 VolumeCellType VolumeMesh::cellType(size_t i) const {
-  bool isHex = cells[i][4] < INVALID_IND_32;
-  if (isHex) {
+  auto sentinelIndices = std::count(cells[i].begin(), cells[i].end(), INVALID_IND_32);
+  switch (sentinelIndices) {
+  case 0: // no sentinel indices, must be a hex
     return VolumeCellType::HEX;
-  } else {
+  case 2: // two sentinel indices, must be a prism
+    return VolumeCellType::PRISM;
+  case 3: // three sentinel indices, must be a pyramid
+    return VolumeCellType::PYRAMID;
+  case 4: // four sentinel indices, must be a tet
     return VolumeCellType::TET;
+  default:
+    throw std::runtime_error("VolumeMesh::cellType: Invalid number of sentinel indices in cell");
   }
 };
 

@@ -23,7 +23,7 @@ enum class MeshShadeStyle { Smooth = 0, Flat, TriFlat };
 enum class MeshSelectionMode { Auto = 0, VerticesOnly, FacesOnly };
 enum class CurveNetworkElement { NODE = 0, EDGE };
 enum class VolumeMeshElement { VERTEX = 0, EDGE, FACE, CELL };
-enum class VolumeCellType { TET = 0, HEX };
+enum class VolumeCellType { TET = 0, HEX, PRISM, PYRAMID };
 enum class VolumeGridElement { NODE = 0, CELL };
 enum class IsolineStyle { Stripe = 0, Contour };
 
