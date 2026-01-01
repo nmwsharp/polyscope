@@ -3,6 +3,7 @@
 #ifdef POLYSCOPE_BACKEND_OPENGL_MOCK_ENABLED
 #include "polyscope/render/mock_opengl/mock_gl_engine.h"
 
+#include "polyscope/imgui_config.h"
 #include "polyscope/messages.h"
 #include "polyscope/options.h"
 #include "polyscope/polyscope.h"
@@ -1619,29 +1620,63 @@ void MockGLEngine::initialize() {
   populateDefaultShadersAndRules();
 }
 
-void MockGLEngine::initializeImGui() {
-  ImGui::CreateContext(); // must call once at start
-  ImPlot::CreateContext();
+void MockGLEngine::createNewImGuiContext() {
+  bindDisplay();
+
+  ImGuiContext* newContext = ImGui::CreateContext(imguiInitialized ? sharedFontAtlas : nullptr);
+  ImGui::SetCurrentContext(newContext);
+
+  if (!imguiInitialized) {
+    // the font atlas from the base context is used by all others
+    sharedFontAtlas = ImGui::GetIO().Fonts;
+
+    if (options::prepareImGuiFontsCallback) {
+      std::tie(regularFont, monoFont) = options::prepareImGuiFontsCallback(sharedFontAtlas);
+    }
+  }
+
+  ImPlotContext* newPlotContext = ImPlot::CreateContext();
+  ImPlot::SetCurrentContext(newPlotContext);
+
   configureImGui();
+  
+  if (!imguiInitialized) {
+    // Immediately open and close a frame, this forces imgui to populate its fonts and other data
+    //
+    // Otherwise, we get errors on show(), because we create a new context sharing the same atlas,
+    // when that context tries to render it errors out because its atlas is not populated. (Observed
+    // in ImGui 1.92.5)
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize.x = 1000;
+    io.DisplaySize.y = 1000;
+    ImGui::NewFrame();
+    ImGui::EndFrame();
+
+    imguiInitialized = true;
+  }
+}
+
+void MockGLEngine::updateImGuiContext(ImGuiContext* newContext) {
+  // pass
 }
 
 void MockGLEngine::configureImGui() {
-
-  // don't both calling the style callbacks, there is no UI
 
   if (options::uiScale < 0) {
     exception("uiScale is < 0. Perhaps it wasn't initialized?");
   }
 
   ImGuiIO& io = ImGui::GetIO();
+  ImGui::GetStyle().FontScaleDpi = options::uiScale;
 
   // if polyscope's prefs file is disabled, disable imgui's ini file too
   if (!options::usePrefsFile) {
     io.IniFilename = nullptr;
   }
 
-  io.Fonts->Clear();
-  io.Fonts->Build();
+  if (options::configureImGuiStyleCallback) {
+    options::configureImGuiStyleCallback();
+  }
 }
 
 void MockGLEngine::shutdown() {
@@ -1652,6 +1687,10 @@ void MockGLEngine::shutdown() {
 void MockGLEngine::shutdownImGui() {
   ImPlot::DestroyContext();
   ImGui::DestroyContext();
+  imguiInitialized = false;
+  sharedFontAtlas = nullptr;
+  regularFont = nullptr;
+  monoFont = nullptr;
 }
 
 void MockGLEngine::swapDisplayBuffers() {}

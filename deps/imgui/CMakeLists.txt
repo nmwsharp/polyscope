@@ -26,9 +26,14 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
           imgui/imgui_tables.cpp 
           imgui/imgui_widgets.cpp 
           imgui/imgui_demo.cpp 
-          imgui/backends/imgui_impl_glfw.cpp 
+          # imgui/backends/imgui_impl_glfw.cpp   # we use a custom backend below
           imgui/backends/imgui_impl_opengl3.cpp
   )
+  
+  # custom backends 
+  list(APPEND SRCS 
+          custom_backends/backends/imgui_impl_glfw_polyscope.cpp
+      )
 
   # implot sources
   list(APPEND SRCS 
@@ -36,7 +41,7 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
           implot/implot_items.cpp
       )
   
-  # imguizmosources
+  # imguizmo sources
   list(APPEND SRCS 
           ImGuizmo/ImGuizmo.cpp
       )
@@ -47,6 +52,7 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
           )
 
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
+  target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/custom_backends/")
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/implot/")
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/")
@@ -72,6 +78,44 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
       target_link_libraries(imgui PRIVATE glad)
   endif()
 
+elseif("${POLYSCOPE_BACKEND_OPENGL3_EGL}")
+  # this backend supports linux only
+
+  # imgui sources
+  list(APPEND SRCS 
+          imgui/imgui.cpp 
+          imgui/imgui_draw.cpp 
+          imgui/imgui_tables.cpp 
+          imgui/imgui_widgets.cpp 
+          imgui/imgui_demo.cpp 
+          imgui/backends/imgui_impl_opengl3.cpp
+  )
+  
+  # implot sources
+  list(APPEND SRCS 
+          implot/implot.cpp
+          implot/implot_items.cpp
+      )
+  
+  # imguizmo sources
+  list(APPEND SRCS 
+          ImGuizmo/ImGuizmo.cpp
+      )
+
+  add_library(
+          imgui
+          ${SRCS}
+          )
+
+  target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
+  target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/implot/")
+  target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/")
+  target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/")
+
+  # linux only
+  add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
+  target_link_libraries(imgui PRIVATE glad)
+
 elseif("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
 
   # Disable every platform-specific thing I can find in imgui
@@ -88,6 +132,7 @@ elseif("${POLYSCOPE_BACKEND_OPENGL_MOCK}")
           )
 
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
+  target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/custom_backends/")
 
 endif()
 

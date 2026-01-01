@@ -357,9 +357,9 @@ void Engine::buildEngineGui() {
         requestRedraw();
       }
 
-      if (ImGui::InputFloat("UI Scale", &options::uiScale, 0.25f)) {
+      if (ImGui::InputFloat("UI Scale", &options::uiScale, 0.1f)) {
         options::uiScale = std::min(options::uiScale, 4.f);
-        options::uiScale = std::max(options::uiScale, 0.25f);
+        options::uiScale = std::max(options::uiScale, 0.2f);
         requestRedraw();
       }
       ImGui::TreePop();
@@ -1193,6 +1193,8 @@ void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buf
 
   ImGui::End();
 }
+
+ImFontAtlas* Engine::getSharedFontAtlas() { return sharedFontAtlas; }
 
 void Engine::preserveResourceUntilImguiFrameCompletes(std::shared_ptr<TextureBuffer> texture) {
   resourcesPreservedForImGuiFrame.push_back(texture);

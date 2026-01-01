@@ -4,7 +4,9 @@
 
 #include "polyscope/render/opengl/gl_engine_glfw.h"
 
+#include "backends/imgui_impl_glfw_polyscope.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "polyscope/imgui_config.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
 
@@ -137,40 +139,59 @@ void GLEngineGLFW::initialize() {
 
 void GLEngineGLFW::setUIScaleFromSystemDPI() {
 
-  // logic adapted from a helpful imgui issue here: https://github.com/ocornut/imgui/issues/6967#issuecomment-2833882081
+  // the ImGui backend has built-in logic for detecting scale via GLFW, including (allegedly) handling
+  // macOS & Windows idiosyncrasies correctly
+  options::uiScale = ImGui_ImplGlfw_GetContentScaleForWindow(mainWindow);
 
-  ImVec2 windowSize{static_cast<float>(view::windowWidth), static_cast<float>(view::windowHeight)};
-  ImVec2 bufferSize{static_cast<float>(view::bufferWidth), static_cast<float>(view::bufferHeight)};
-  ImVec2 imguiCoordScale = {bufferSize.x / windowSize.x, bufferSize.y / windowSize.y};
-
-  ImVec2 contentScale;
-  glfwGetWindowContentScale(mainWindow, &contentScale.x, &contentScale.y);
-
-  float sx = contentScale.x / imguiCoordScale.x;
-  float sy = contentScale.y / imguiCoordScale.y;
-  options::uiScale = std::max(sx, sy);
   // clamp to values within [0.5x,4x] scaling
   options::uiScale = std::fmin(std::fmax(options::uiScale, 0.5f), 4.0f);
 
-  info(100, "window size: " + std::to_string(view::windowWidth) + "," + std::to_string(view::windowHeight));
-  info(100, "buffer size: " + std::to_string(view::bufferWidth) + "," + std::to_string(view::bufferHeight));
-  info(100, "imguiCoordScale: " + std::to_string(imguiCoordScale.x) + "," + std::to_string(imguiCoordScale.y));
-  info(100, "contentScale: " + std::to_string(contentScale.x) + "," + std::to_string(contentScale.y));
   info(100, "computed uiScale: " + std::to_string(options::uiScale));
 }
 
-void GLEngineGLFW::initializeImGui() {
+void GLEngineGLFW::createNewImGuiContext() {
   bindDisplay();
 
-  ImGui::CreateContext(); // must call once at start
-  ImPlot::CreateContext();
+  ImGuiContext* newContext = ImGui::CreateContext(imguiInitialized ? sharedFontAtlas : nullptr);
+  ImGui::SetCurrentContext(newContext);
 
   // Set up ImGUI glfw bindings
-  ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
+  ImGui_ImplGlfw_InitForOpenGL(mainWindow, !imguiInitialized);
   const char* glsl_version = "#version 150";
   ImGui_ImplOpenGL3_Init(glsl_version);
 
+  if (!imguiInitialized) {
+    // the font atlas from the base context is used by all others
+    sharedFontAtlas = ImGui::GetIO().Fonts;
+
+    if (options::prepareImGuiFontsCallback) {
+      std::tie(regularFont, monoFont) = options::prepareImGuiFontsCallback(sharedFontAtlas);
+    }
+  }
+
+  ImPlotContext* newPlotContext = ImPlot::CreateContext();
+  ImPlot::SetCurrentContext(newPlotContext);
+
   configureImGui();
+
+  if (!imguiInitialized) {
+    // Immediately open and close a frame, this forces imgui to populate its fonts and other data
+    //
+    // Otherwise, we get errors on show(), because we create a new context sharing the same atlas,
+    // when that context tries to render it errors out because its atlas is not populated. (Observed
+    // in ImGui 1.92.5)
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize.x = 1000;
+    io.DisplaySize.y = 1000;
+    ImGui::NewFrame();
+    ImGui::EndFrame();
+
+    imguiInitialized = true;
+  }
+}
+
+void GLEngineGLFW::updateImGuiContext(ImGuiContext* newContext) {
+  ImGui_ImplGlfw_ContextMap_UpdateIfPresent(mainWindow, newContext);
 }
 
 void GLEngineGLFW::configureImGui() {
@@ -181,25 +202,18 @@ void GLEngineGLFW::configureImGui() {
 
   ImGuiIO& io = ImGui::GetIO();
 
+  // TODO these seem to be documented but don't actually exist in ImGui 1.92.5
+  // It would be good to use ImGui's built-in scaling behavior, but for now Polyscope 
+  // has lots of built-in window size logic that requires the window size to match the 
+  // font size to look reasonable, so we can't just let the font size get changed 
+  // automatically.
+  // io.ConfigDpiScaleFonts = false; 
+  // io.ConfigDpiScaleViewports = false;
+
   // if polyscope's prefs file is disabled, disable imgui's ini file too
   if (!options::usePrefsFile) {
     io.IniFilename = nullptr;
   }
-
-  if (options::prepareImGuiFontsCallback) {
-
-    io.Fonts->Clear();
-
-    // these are necessary if different fonts are loaded in the callback
-    // (don't totally understand why, allegedly it may change in the future)
-    ImGui_ImplOpenGL3_DestroyFontsTexture();
-
-    ImFontAtlas* _unused;
-    std::tie(_unused, regularFont, monoFont) = options::prepareImGuiFontsCallback();
-
-    ImGui_ImplOpenGL3_CreateFontsTexture();
-  }
-
 
   if (options::configureImGuiStyleCallback) {
     options::configureImGuiStyleCallback();
@@ -216,11 +230,15 @@ void GLEngineGLFW::shutdown() {
 
 
 void GLEngineGLFW::shutdownImGui() {
-  // ImGui shutdown things
+  ImGui_ImplGlfw_RestoreCallbacks(mainWindow);
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImPlot::DestroyContext();
   ImGui::DestroyContext();
+  imguiInitialized = false;
+  sharedFontAtlas = nullptr;
+  regularFont = nullptr;
+  monoFont = nullptr;
 }
 
 void GLEngineGLFW::ImGuiNewFrame() {

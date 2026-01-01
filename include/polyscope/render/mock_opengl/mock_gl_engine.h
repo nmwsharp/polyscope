@@ -361,7 +361,8 @@ public:
   void setClipboardText(std::string text) override;
 
   // ImGui
-  void initializeImGui() override;
+  void createNewImGuiContext() override;
+  void updateImGuiContext(ImGuiContext* newContext) override;
   void configureImGui() override;
   void shutdownImGui() override;
   void ImGuiNewFrame() override;

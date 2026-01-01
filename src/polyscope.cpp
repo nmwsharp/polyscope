@@ -237,7 +237,7 @@ void init(std::string backend) {
 
   // Initialie ImGUI
   IMGUI_CHECKVERSION();
-  render::engine->initializeImGui();
+  render::engine->createNewImGuiContext();
 
   // Create an initial context based context. Note that calling show() never actually uses this context, because it
   // pushes a new one each time. But using frameTick() may use this context.
@@ -261,25 +261,35 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // WARNING: code duplicated here and in screenshot.cpp
 
+
+  // Here, we create a new ImGui context sharing the same window and render
+  // with it, al in the midst of an existing ImGui frame. This is a fairly hacky
+  // thing to do within ImGui that only barely works, especially with v1.92 changes
+  // around contexts, dynamic fonts, and the GLFW ImGui backend. Currently, it requires
+  // some slight customization of the backend to even be possible.
+  //
+  // Useful resources:
+  //  -  https://github.com/ocornut/imgui/issues/8680 (and linked PR)
+
   // Create a new context and push it on to the stack
-  ImGuiContext* newContext = ImGui::CreateContext();
-  ImPlotContext* newPlotContext = ImPlot::CreateContext();
   ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
+  ImGuiContext* oldContext = ImGui::GetCurrentContext();
 #ifdef IMGUI_HAS_DOCK
+  // WARNING this code may not currently work, recent versions of imgui have changed this functionality,
+  // and we do not regularly test with the docking branch.
   ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
 #endif
-  ImGui::SetCurrentContext(newContext);
-  ImPlot::SetCurrentContext(newPlotContext);
-  ImGuizmo::PushContext();
+  render::engine->createNewImGuiContext();
+  ImGuiContext* newContext = ImGui::GetCurrentContext();
+  ImPlotContext* newPlotContext = ImPlot::GetCurrentContext();
+  ImGui::GetIO().ConfigFlags = oldIO.ConfigFlags;
+  ImGui::GetIO().BackendFlags = oldIO.BackendFlags;
+  render::engine->updateImGuiContext(newContext);
 #ifdef IMGUI_HAS_DOCK
-  // Propagate GLFW window handle to new context
+  // see warning above
   ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
 #endif
-  ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
-  ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
-
-  render::engine->configureImGui();
-
+  ImGuizmo::PushContext();
 
   contextStack.push_back(ContextEntry{newContext, newPlotContext, callbackFunction, drawDefaultUI});
 
@@ -320,6 +330,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   if (!contextStack.empty()) {
     ImGui::SetCurrentContext(contextStack.back().context);
     ImPlot::SetCurrentContext(contextStack.back().plotContext);
+    render::engine->updateImGuiContext(contextStack.back().context);
     ImGuizmo::PopContext();
   }
 }
@@ -1179,7 +1190,7 @@ void shutdown(bool allowMidFrameShutdown) {
   state::userCallback = nullptr;
   state::filesDroppedCallback = nullptr;
   options::configureImGuiStyleCallback = configureImGuiStyle; // restore defaults
-  options::prepareImGuiFontsCallback = prepareImGuiFonts;
+  options::prepareImGuiFontsCallback = loadBaseFonts;
 
   // Shut down the render engine
   render::engine->shutdown();
