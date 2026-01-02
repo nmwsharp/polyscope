@@ -6,9 +6,9 @@
 
 #include "stb_image_write.h"
 
+#include "ImGuizmo.h"
 #include "imgui.h"
 #include "implot.h"
-#include "ImGuizmo.h"
 
 #include <algorithm>
 #include <string>
@@ -57,32 +57,35 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
   // I'm not sure if it's possible to do this like we want in ImGui. The alternate solution would be to save the render
   // from the previous render pass, but I think that comes with other problems on the Polyscope side. I'm not sure what
   // the answer is.
+
+
   ImGuiContext* oldContext;
   ImGuiContext* newContext;
   ImPlotContext* oldPlotContext;
   ImPlotContext* newPlotContext;
   if (options.includeUI) {
-    // WARNING: code duplicated here and in pushContext()
-    oldContext = ImGui::GetCurrentContext();
-    newContext = ImGui::CreateContext();
-    oldPlotContext = ImPlot::GetCurrentContext();
-    newPlotContext = ImPlot::CreateContext();
+
+
+    // Create a new context and push it on to the stack
     ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
+    oldContext = ImGui::GetCurrentContext();
+    oldPlotContext = ImPlot::GetCurrentContext();
 #ifdef IMGUI_HAS_DOCK
+    // WARNING this code may not currently work, recent versions of imgui have changed this functionality,
+    // and we do not regularly test with the docking branch.
     ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
 #endif
-    ImGui::SetCurrentContext(newContext);
-    ImPlot::SetCurrentContext(newPlotContext);
-    ImGuizmo::PushContext();
-
+    render::engine->createNewImGuiContext();
+    newContext = ImGui::GetCurrentContext();
+    newPlotContext = ImPlot::GetCurrentContext();
+    ImGui::GetIO().ConfigFlags = oldIO.ConfigFlags;
+    ImGui::GetIO().BackendFlags = oldIO.BackendFlags;
+    render::engine->updateImGuiContext(newContext);
 #ifdef IMGUI_HAS_DOCK
-    // Propagate GLFW window handle to new context
+    // see warning above
     ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
 #endif
-    ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
-    ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
-
-    render::engine->configureImGui();
+    ImGuizmo::PushContext();
 
     // render a few times, to let imgui shake itself out
     for (int i = 0; i < 3; i++) {
@@ -106,6 +109,7 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
 
     ImGui::SetCurrentContext(oldContext);
     ImPlot::SetCurrentContext(oldPlotContext);
+    render::engine->updateImGuiContext(oldContext);
     ImGuizmo::PopContext();
   }
 
