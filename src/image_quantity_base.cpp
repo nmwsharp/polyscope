@@ -24,6 +24,8 @@ ImageQuantity::ImageQuantity(Structure& parent_, std::string name_, size_t dimX_
     isShowingCameraBillboard.setPassive(true);
     isShowingImGuiWindow.setPassive(false);
   }
+
+  requestRedraw();
 }
 
 void ImageQuantity::draw() {

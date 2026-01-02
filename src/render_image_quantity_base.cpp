@@ -21,6 +21,8 @@ RenderImageQuantityBase::RenderImageQuantityBase(Structure& parent_, std::string
   if (hasNormals) {
     normals.setTextureSize(dimX, dimY);
   }
+
+  requestRedraw();
 }
 
 size_t RenderImageQuantityBase::nPix() { return dimX * dimY; }
