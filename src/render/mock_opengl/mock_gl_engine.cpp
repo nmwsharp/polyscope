@@ -11,6 +11,8 @@
 
 #include "polyscope/render/shader_builder.h"
 
+#include "backends/imgui_impl_null.h"
+
 // all the shaders
 #include "polyscope/render/opengl/shaders/common.h"
 #include "polyscope/render/opengl/shaders/cylinder_shaders.h"
@@ -1626,6 +1628,8 @@ void MockGLEngine::createNewImGuiContext() {
   ImGuiContext* newContext = ImGui::CreateContext(imguiInitialized ? sharedFontAtlas : nullptr);
   ImGui::SetCurrentContext(newContext);
 
+  ImGui_ImplNull_Init();
+
   if (!imguiInitialized) {
     // the font atlas from the base context is used by all others
     sharedFontAtlas = ImGui::GetIO().Fonts;
@@ -1639,7 +1643,7 @@ void MockGLEngine::createNewImGuiContext() {
   ImPlot::SetCurrentContext(newPlotContext);
 
   configureImGui();
-  
+
   if (!imguiInitialized) {
     // Immediately open and close a frame, this forces imgui to populate its fonts and other data
     //
@@ -1685,6 +1689,7 @@ void MockGLEngine::shutdown() {
 }
 
 void MockGLEngine::shutdownImGui() {
+  ImGui_ImplNull_Shutdown();
   ImPlot::DestroyContext();
   ImGui::DestroyContext();
   imguiInitialized = false;
@@ -1759,6 +1764,8 @@ bool MockGLEngine::isKeyPressed(char c) { return false; }
 
 void MockGLEngine::ImGuiNewFrame() {
 
+  ImGui_ImplNull_NewFrame();
+
   // ImGUI seems to crash without a backend if we don't do this
   ImGuiIO& io = ImGui::GetIO();
   io.DisplaySize.x = view::bufferWidth;
@@ -1770,6 +1777,7 @@ void MockGLEngine::ImGuiNewFrame() {
 
 void MockGLEngine::ImGuiRender() {
   ImGui::Render();
+  ImGui_ImplNullRender_RenderDrawData(ImGui::GetDrawData());
   clearResourcesPreservedForImguiFrame();
 }
 
