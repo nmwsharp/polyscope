@@ -6,10 +6,11 @@
 
 #include "polyscope/render/opengl/gl_engine_egl.h"
 
-#include "backends/imgui_impl_glfw_polyscope.h"
-#include "backends/imgui_impl_opengl3.h"
 #include "polyscope/imgui_config.h"
 #include "polyscope/render/engine.h"
+
+#include "backends/imgui_impl_null.h"
+#include "backends/imgui_impl_opengl3.h"
 
 #include "stb_image.h"
 
@@ -443,7 +444,7 @@ void GLEngineEGL::createNewImGuiContext() {
   ImGui::SetCurrentContext(newContext);
 
   // Set up ImGUI glfw bindings
-  // ImGui_ImplGlfw_InitForOpenGL(mainWindow, !imguiInitialized);
+  ImGui_ImplNullPlatform_Init();
   const char* glsl_version = "#version 150";
   ImGui_ImplOpenGL3_Init(glsl_version);
 
@@ -512,9 +513,8 @@ void GLEngineEGL::shutdown() {
 }
 
 void GLEngineEGL::shutdownImGui() {
-  // ImGui_ImplGlfw_RestoreCallbacks(mainWindow);
   ImGui_ImplOpenGL3_Shutdown();
-  // ImGui_ImplGlfw_Shutdown();
+  ImGui_ImplNullPlatform_Shutdown();
   ImPlot::DestroyContext();
   ImGui::DestroyContext();
   imguiInitialized = false;
@@ -526,7 +526,7 @@ void GLEngineEGL::shutdownImGui() {
 void GLEngineEGL::ImGuiNewFrame() {
 
   ImGui_ImplOpenGL3_NewFrame();
-  // ImGui_ImplGlfw_NewFrame();
+  ImGui_ImplNullPlatform_NewFrame();
 
   // ImGUI has an error check which fires unless we do this
   ImGuiIO& io = ImGui::GetIO();
