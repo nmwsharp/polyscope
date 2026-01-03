@@ -12,6 +12,8 @@ unsigned int getCousineRegularCompressedSize();
 const unsigned int* getCousineRegularCompressedData();
 unsigned int getLatoRegularCompressedSize();
 const unsigned int* getLatoRegularCompressedData();
+unsigned int getLucideIconsCompressedSize();
+const unsigned char* getLucideIconsCompressedData();
 } // namespace render
 
 void configureImGuiStyle() {
@@ -84,15 +86,31 @@ std::tuple<ImFont*, ImFont*> loadBaseFonts(ImFontAtlas* fontAtlas) {
 
   float fontSize = 18.0;
 
-  { // add regular font
-    regularFont = fontAtlas->AddFontFromMemoryCompressedTTF(render::getLatoRegularCompressedData(),
-                                                            render::getLatoRegularCompressedSize(), fontSize);
+  // add regular font
+  regularFont = fontAtlas->AddFontFromMemoryCompressedTTF(render::getLatoRegularCompressedData(),
+                                                          render::getLatoRegularCompressedSize(), fontSize);
+
+  // append icons to regular font
+  {
+    ImFontConfig config;
+    config.MergeMode = true;
+    config.GlyphMinAdvanceX = fontSize; // make the icon monospaced
+
+    // this uses a tip from a helpful github issue to get teh alignment mostly right
+    // https://github.com/ocornut/imgui/issues/4127#issuecomment-2814162680
+
+    // Align vertically; the coefficients are specific to the particular icon font we're using.
+    float font_size_pixels = fontSize; // Or whatever you'd like.
+    float icon_scaling = 1.0f;         // Or whatever you'd like.
+    config.GlyphOffset = {0.0f, font_size_pixels * (0.5f * icon_scaling - 0.3f)};
+
+    fontAtlas->AddFontFromMemoryCompressedTTF(render::getLucideIconsCompressedData(),
+                                              render::getLucideIconsCompressedSize(), fontSize, &config);
   }
 
-  { // add mono font
-    monoFont = fontAtlas->AddFontFromMemoryCompressedTTF(render::getCousineRegularCompressedData(),
-                                                         render::getCousineRegularCompressedSize(), fontSize);
-  }
+  // add mono font
+  monoFont = fontAtlas->AddFontFromMemoryCompressedTTF(render::getCousineRegularCompressedData(),
+                                                       render::getCousineRegularCompressedSize(), fontSize);
 
   return std::tuple<ImFont*, ImFont*>(regularFont, monoFont);
 }

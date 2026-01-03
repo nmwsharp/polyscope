@@ -250,6 +250,7 @@ SET(SRCS
   ## Embedded binary data
   render/bindata/bindata_font_lato_regular.cpp
   render/bindata/bindata_font_cousine_regular.cpp
+  render/bindata/bindata_font_lucide_icons.cpp
   render/bindata/concrete_seamless.cpp
   render/bindata/bindata_clay.cpp
   render/bindata/bindata_wax.cpp
@@ -382,3 +383,6 @@ target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../incl
 # Link settings
 target_link_libraries(polyscope PUBLIC imgui glm::glm)
 target_link_libraries(polyscope PRIVATE "${BACKEND_LIBS}" stb nlohmann_json::nlohmann_json MarchingCube::MarchingCube)
+
+# For now, make this private, until we are sure we want to commit to it. We may expose it as public in the future.
+target_link_libraries(polyscope PRIVATE IconFontCppHeaders) 

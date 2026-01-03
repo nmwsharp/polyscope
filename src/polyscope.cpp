@@ -23,6 +23,8 @@
 #include "nlohmann/json.hpp"
 using json = nlohmann::json;
 
+#include "IconFontCppHeaders/IconsLucide.h"
+
 namespace polyscope {
 
 // Note: Storage for global members lives in state.cpp and options.cpp
@@ -712,9 +714,9 @@ void buildPolyscopeGui() {
   ImGui::SetNextWindowPos(ImVec2(internal::imguiStackMargin, internal::imguiStackMargin));
   ImGui::SetNextWindowSize(ImVec2(internal::leftWindowsWidth, 0.));
 
-  ImGui::Begin("Polyscope", nullptr);
+  ImGui::Begin("Polyscope ", nullptr);
 
-  if (ImGui::Button("Reset View")) {
+  if (ImGui::Button(ICON_LC_HOUSE " Reset View")) {
     view::flyToHomeView();
   }
   ImGui::SameLine();
@@ -746,7 +748,7 @@ void buildPolyscopeGui() {
 
 
   ImGui::SameLine();
-  if (ImGui::Button("Controls")) {
+  if (ImGui::Button(ICON_LC_CIRCLE_QUESTION_MARK)) {
     // do nothing, just want hover state
   }
   if (ImGui::IsItemHovered()) {
