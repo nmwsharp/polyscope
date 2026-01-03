@@ -878,6 +878,32 @@ void Engine::updateMinDepthTexture() {
   copyDepth->draw();
 }
 
+void Engine::freeAllOwnedResources() {
+
+  displayBuffer.reset();
+  displayBufferAlt.reset();
+  sceneBuffer.reset();
+  sceneBufferFinal.reset();
+  pickFramebuffer.reset();
+  sceneDepthMinFrame.reset();
+  sceneColor.reset();
+  sceneColorFinal.reset();
+  sceneDepth.reset();
+  sceneDepthMin.reset();
+  pickColorBuffer.reset();
+  pickDepthBuffer.reset();
+  renderTexturePlain.reset();
+  renderTextureDot3.reset();
+  renderTextureMap3.reset();
+  renderTextureSphereBG.reset();
+  compositePeel.reset();
+  mapLight.reset();
+  copyDepth.reset();
+
+  groundPlane.freeAllOwnedResources();
+  materials.clear();
+  resourcesPreservedForImGuiFrame.clear();
+}
 
 // Helper (TODO rework to load custom materials)
 void Engine::loadDefaultMaterial(std::string name) {

@@ -671,6 +671,7 @@ protected:
   ImFontAtlas* sharedFontAtlas;
 
   // Helpers
+  virtual void freeAllOwnedResources(); // child callers should call parent
   void loadDefaultMaterials();
   void loadDefaultMaterial(std::string name);
   std::shared_ptr<TextureBuffer> loadMaterialTexture(float* data, int width, int height);

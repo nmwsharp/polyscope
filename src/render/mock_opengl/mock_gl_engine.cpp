@@ -2159,6 +2159,14 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   // clang-format on
 };
 
+void MockGLEngine::freeAllOwnedResources() {
+
+  registeredShaderPrograms.clear();
+  registeredShaderRules.clear();
+  compiledProgamCache.clear();
+
+  Engine::freeAllOwnedResources();
+}
 
 void MockGLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
   using namespace backend_openGL3;

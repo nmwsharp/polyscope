@@ -222,9 +222,12 @@ void GLEngineGLFW::configureImGui() {
 
 
 void GLEngineGLFW::shutdown() {
+  freeAllOwnedResources();
   checkError();
   shutdownImGui();
+  checkError();
   glfwDestroyWindow(mainWindow);
+  // no checkError() after this, openGL has been unloaded
   glfwTerminate();
 }
 
