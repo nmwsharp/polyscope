@@ -8,8 +8,19 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
     if: "! contains(toJSON(github.event.commits.*.message), '[ci skip]')"
+    
+    name: Build and Test (Windows) - ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            arch: x64
+          - os: windows-11-arm
+            arch: arm64
+
     steps:
     - uses: actions/checkout@v1
       with:
@@ -19,25 +30,36 @@ jobs:
       run: cd test && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND_OPENGL3_GLFW=ON -DPOLYSCOPE_BACKEND_OPENGL_MOCK=ON ..
 
     - name: build
-      run: cd test/build && cmake --build "."
+      run: cd test/build && cmake --build "." --parallel
 
     - name: run test
       run: cd test/build && ./bin/Debug/polyscope-test.exe --gtest_catch_exceptions=0 backend=openGL_mock
 
   # windows shared builds: disabled for now
-  #build_shared:
-    #runs-on: windows-latest
-    #if: "! contains(toJSON(github.event.commits.*.message), '[ci skip]')"
-    #steps:
-    #- uses: actions/checkout@v1
-      #with:
-        #submodules: true
+  build_shared:
+    if: "! contains(toJSON(github.event.commits.*.message), '[ci skip]')"
+    
+    name: Build Shared and Test (Windows) - ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            arch: x64
+          - os: windows-11-arm
+            arch: arm64
 
-    #- name: configure
-      #run: cd test && mkdir build && cd build && cmake -DBUILD_SHARED_LIBS=TRUE -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND_OPENGL3_GLFW=ON -DPOLYSCOPE_BACKEND_OPENGL_MOCK=ON ..
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
 
-    #- name: build
-      #run: cd test/build && cmake --build "."
+    - name: configure
+      run: cd test && mkdir build && cd build && cmake -DBUILD_SHARED_LIBS=TRUE -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND_OPENGL3_GLFW=ON -DPOLYSCOPE_BACKEND_OPENGL_MOCK=ON ..
 
-    #- name: run test
-      #run: cd test/build && ./bin/Debug/polyscope-test.exe --gtest_catch_exceptions=0 backend=openGL_mock
+    - name: build
+      run: cd test/build && cmake --build "." --parallel
+
+    - name: run test
+      run: cd test/build && ./bin/Debug/polyscope-test.exe --gtest_catch_exceptions=0 backend=openGL_mock
