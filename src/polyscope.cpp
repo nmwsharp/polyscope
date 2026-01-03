@@ -522,7 +522,13 @@ void processInputEvents() {
         bool anyModifierHeld = io.KeyShift || io.KeyCtrl || io.KeyAlt;
         bool ctrlShiftHeld = io.KeyShift && io.KeyCtrl;
 
-        if (!anyModifierHeld && io.MouseReleased[0]) {
+        // NOTE: there is annoyance here that we use single click for picking, and double click
+        // to recenter the view. However, there's no way to distingish which is happening
+        // after the first click without waiting. After trying several solutions, it feels
+        // best to let the first click always do a pick, but clear the selection if a
+        // double click comes in.
+
+        if (!anyModifierHeld && (io.MouseReleased[0] && io.MouseClickedLastCount[0] == 1)) {
 
           // Don't pick at the end of a long drag
           if (dragDistSinceLastRelease < dragIgnoreThreshold) {
@@ -541,10 +547,12 @@ void processInputEvents() {
         }
 
         // Double-click or Ctrl-shift left-click to set new center
-        if (io.MouseDoubleClicked[0] || (ctrlShiftHeld && io.MouseReleased[0])) {
+        if ((io.MouseReleased[0] && io.MouseClickedLastCount[0] == 2) || (io.MouseReleased[0] && ctrlShiftHeld)) {
           if (dragDistSinceLastRelease < dragIgnoreThreshold) {
             glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
             view::processSetCenter(screenCoords);
+            resetSelection(); // the single-click creates a selection, this clears it. unfortunately that leads to a
+                              // flicker, but its unavoidable without introducing a lag
           }
         }
       }
