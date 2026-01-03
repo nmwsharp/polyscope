@@ -42,7 +42,7 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
 
   list(APPEND SRCS 
         imgui/backends/imgui_impl_opengl3.cpp
-        custom_backends/backends/imgui_impl_glfw_polyscope.cpp
+        imgui/backends/imgui_impl_glfw.cpp
       )
 endif()
 if("${POLYSCOPE_BACKEND_OPENGL3_EGL}")

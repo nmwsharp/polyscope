@@ -4,8 +4,6 @@
 
 #include "polyscope/render/opengl/gl_engine_glfw.h"
 
-#include "backends/imgui_impl_glfw_polyscope.h"
-#include "backends/imgui_impl_opengl3.h"
 #include "polyscope/imgui_config.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
@@ -13,6 +11,9 @@
 #include "stb_image.h"
 
 #include "ImGuizmo.h"
+
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
 
 #include <algorithm>
 #include <set>
@@ -126,14 +127,6 @@ void GLEngineGLFW::initialize() {
     // glClearDepth(1.);
   }
 
-  // Set the UI scale to account for system-requested DPI scaling
-  // Currently we do *not* watch for changes of this value e.g. if a window moves between
-  // monitors with different DPI behaviors. We could, but it would require some logic to
-  // avoid overwriting values that a user might have set.
-  if (options::uiScale < 0) { // only set from system if the value is -1, meaning not set yet
-    setUIScaleFromSystemDPI();
-  }
-
   populateDefaultShadersAndRules();
 }
 
@@ -160,6 +153,15 @@ void GLEngineGLFW::createNewImGuiContext() {
     ImGui_ImplGlfw_InitForOpenGL(mainWindow, !imguiInitialized);
     const char* glsl_version = "#version 150";
     ImGui_ImplOpenGL3_Init(glsl_version);
+
+
+    // Set the UI scale to account for system-requested DPI scaling
+    // Currently we do *not* watch for changes of this value e.g. if a window moves between
+    // monitors with different DPI behaviors. We could, but it would require some logic to
+    // avoid overwriting values that a user might have set.
+    if (options::uiScale < 0) { // only set from system if the value is -1, meaning not set yet
+      setUIScaleFromSystemDPI();
+    }
 
     // the font atlas from the base context is used by all others
     sharedFontAtlas = ImGui::GetIO().Fonts;
@@ -200,8 +202,29 @@ void GLEngineGLFW::updateImGuiContext(ImGuiContext* oldContext, ImGuiIO* oldIO, 
     newIO->BackendPlatformUserData = oldIO->BackendPlatformUserData;
     newIO->BackendRendererUserData = oldIO->BackendRendererUserData;
     newIO->BackendLanguageUserData = oldIO->BackendLanguageUserData;
+
+
+    // This is a necessary workaround for multi-context support with the ImGui-provided glfw backend,
+    // particularly for our (somewhat strange) case where we manage a stack of contexts for a single
+    // window.
+    //
+    // The first element of this struct (defined in imgui_impl_glfw.cpp) is an ImGuiContext pointer,
+    // which is meant to point back to the owning context, and is where glfw+ImGui will dispatch
+    // IO events. We have to update that pointer, but there is no officially-supported way to do so,
+    // so we forcibly overwrite it.
+    //
+    // This is obviously potentially memory-unsafe, although it's a void* anyway so we gave up on typing
+    // long ago. If the struct changes in future versions of ImGui this will do bad things. Written and
+    // tested in Jan 2026 by nsharp.
+    if (newIO->BackendPlatformUserData != nullptr) {
+      // ^^^ should always be non-null, just being defensive before atrocious pointer bashing
+
+      // assign the pointer to the next context as the first element of the struct
+      *static_cast<ImGuiContext**>(newIO->BackendPlatformUserData) = newContext;
+    }
   }
-  ImGui_ImplGlfw_ContextMap_UpdateIfPresent(mainWindow, newContext);
+
+  // ImGui_ImplGlfw_ContextMap_UpdateIfPresent(mainWindow, newContext);
 }
 
 void GLEngineGLFW::configureImGui() {
@@ -212,7 +235,7 @@ void GLEngineGLFW::configureImGui() {
 
   ImGuiIO& io = ImGui::GetIO();
 
-  // TODO these seem to be documented but don't actually exist in ImGui 1.92.5
+  // These seem to be documented but don't actually exist in ImGui 1.92.5
   // It would be good to use ImGui's built-in scaling behavior, but for now Polyscope
   // has lots of built-in window size logic that requires the window size to match the
   // font size to look reasonable, so we can't just let the font size get changed
