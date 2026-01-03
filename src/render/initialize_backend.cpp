@@ -4,6 +4,7 @@
 #include "polyscope/options.h"
 #include "polyscope/render/engine.h"
 
+#include <numeric>
 #include <string>
 
 namespace polyscope {
