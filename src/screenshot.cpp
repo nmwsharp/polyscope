@@ -41,6 +41,11 @@ bool hasExtension(std::string str, std::string ext) {
 std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = {}) {
   checkInitialized();
 
+  if (options.includeUI && internal::contextStackSize > 1) {
+    error("Screenshot with includeUI=true is not supported within show(). See docs for details and workarounds.");
+    return std::vector<unsigned char>();
+  }
+
   render::engine->useAltDisplayBuffer = true;
   if (options.transparentBackground) render::engine->lightCopy = true; // copy directly in to buffer without blending
 
@@ -67,6 +72,7 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
   ImGuiIO* newIO;
   if (options.includeUI) {
 
+    // NOTE: error check above ensure internal::contextStackSize == 1 (cannot be called during show())
 
     // Create a new context and push it on to the stack
     oldIO = &ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object

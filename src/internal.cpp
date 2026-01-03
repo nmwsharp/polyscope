@@ -11,6 +11,8 @@ uint64_t uniqueID = 42;
 
 uint64_t getNextUniqueID() { return uniqueID++; }
 
+int contextStackSize = 0;
+
 bool& pointCloudEfficiencyWarningReported = state::globalContext.pointCloudEfficiencyWarningReported;
 FloatingQuantityStructure*& globalFloatingQuantityStructure = state::globalContext.globalFloatingQuantityStructure;
 

@@ -244,6 +244,7 @@ void init(std::string backend) {
   // Create an initial context based context. Note that calling show() never actually uses this context, because it
   // pushes a new one each time. But using frameTick() may use this context.
   contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), ImPlot::GetCurrentContext(), nullptr, true});
+  internal::contextStackSize++;
 
   view::invalidateView();
 
@@ -293,6 +294,7 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
   ImGuizmo::PushContext();
 
   contextStack.push_back(ContextEntry{newContext, newPlotContext, callbackFunction, drawDefaultUI});
+  internal::contextStackSize++;
 
   if (contextStack.size() > 50) {
     // Catch bugs with nested show()
@@ -340,6 +342,7 @@ void popContext() {
     return;
   }
   contextStack.pop_back();
+  internal::contextStackSize--;
 }
 
 ImGuiContext* getCurrentContext() { return contextStack.empty() ? nullptr : contextStack.back().context; }
@@ -743,7 +746,7 @@ void buildPolyscopeGui() {
   if (ImGui::BeginPopup("ScreenshotOptionsPopup")) {
 
     ImGui::Checkbox("with transparency", &options::screenshotTransparency);
-    ImGui::Checkbox("with UI", &options::screenshotWithImGuiUI);
+    // ImGui::Checkbox("with UI", &options::screenshotWithImGuiUI); // temporarily disabled while broken
 
     if (ImGui::BeginMenu("file format")) {
       if (ImGui::MenuItem(".png", NULL, options::screenshotExtension == ".png")) options::screenshotExtension = ".png";
@@ -1201,6 +1204,7 @@ void shutdown(bool allowMidFrameShutdown) {
   render::engine->shutdown();
   delete render::engine;
   contextStack.clear();
+  internal::contextStackSize = 0;
   render::engine = nullptr;
   state::backend = "";
   state::initialized = false;
