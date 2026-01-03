@@ -281,10 +281,9 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 #endif
   render::engine->createNewImGuiContext();
   ImGuiContext* newContext = ImGui::GetCurrentContext();
+  ImGuiIO& newIO = ImGui::GetIO();
   ImPlotContext* newPlotContext = ImPlot::GetCurrentContext();
-  ImGui::GetIO().ConfigFlags = oldIO.ConfigFlags;
-  ImGui::GetIO().BackendFlags = oldIO.BackendFlags;
-  render::engine->updateImGuiContext(newContext);
+  render::engine->updateImGuiContext(oldContext, &oldIO, newContext, &newIO);
 #ifdef IMGUI_HAS_DOCK
   // see warning above
   ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
@@ -315,24 +314,21 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
     }
   }
 
-  // WARNING: code duplicated here and in screenshot.cpp
-  // Workaround overzealous ImGui assertion before destroying any inner context
-  // https://github.com/ocornut/imgui/pull/7175
-  ImGui::SetCurrentContext(newContext);
-  ImPlot::SetCurrentContext(newPlotContext);
-  ImGui::GetIO().BackendPlatformUserData = nullptr;
-  ImGui::GetIO().BackendRendererUserData = nullptr;
-
-  ImPlot::DestroyContext(newPlotContext);
-  ImGui::DestroyContext(newContext);
-
   // Restore the previous context, if there was one
   if (!contextStack.empty()) {
     ImGui::SetCurrentContext(contextStack.back().context);
     ImPlot::SetCurrentContext(contextStack.back().plotContext);
-    render::engine->updateImGuiContext(contextStack.back().context);
+    render::engine->updateImGuiContext(newContext, &newIO, oldContext, &oldIO);
     ImGuizmo::PopContext();
   }
+
+  // WARNING: code duplicated here and in screenshot.cpp
+  // Workaround overzealous ImGui assertion before destroying any inner context
+  // https://github.com/ocornut/imgui/pull/7175
+  newIO.BackendPlatformUserData = nullptr;
+  newIO.BackendRendererUserData = nullptr;
+  ImPlot::DestroyContext(newPlotContext);
+  ImGui::DestroyContext(newContext);
 }
 
 

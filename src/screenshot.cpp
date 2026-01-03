@@ -63,11 +63,13 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
   ImGuiContext* newContext;
   ImPlotContext* oldPlotContext;
   ImPlotContext* newPlotContext;
+  ImGuiIO* oldIO;
+  ImGuiIO* newIO;
   if (options.includeUI) {
 
 
     // Create a new context and push it on to the stack
-    ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
+    oldIO = &ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
     oldContext = ImGui::GetCurrentContext();
     oldPlotContext = ImPlot::GetCurrentContext();
 #ifdef IMGUI_HAS_DOCK
@@ -77,10 +79,9 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
 #endif
     render::engine->createNewImGuiContext();
     newContext = ImGui::GetCurrentContext();
+    newIO = &ImGui::GetIO();
     newPlotContext = ImPlot::GetCurrentContext();
-    ImGui::GetIO().ConfigFlags = oldIO.ConfigFlags;
-    ImGui::GetIO().BackendFlags = oldIO.BackendFlags;
-    render::engine->updateImGuiContext(newContext);
+    render::engine->updateImGuiContext(oldContext, oldIO, newContext, newIO);
 #ifdef IMGUI_HAS_DOCK
     // see warning above
     ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
@@ -96,21 +97,18 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
   draw(options.includeUI, false);
 
   if (options.includeUI) {
-    // WARNING: code duplicated here and in pushContext()
-    // Workaround overzealous ImGui assertion before destroying any inner context
-    // https://github.com/ocornut/imgui/pull/7175
-    ImGui::SetCurrentContext(newContext);
-    ImPlot::SetCurrentContext(newPlotContext);
-    ImGui::GetIO().BackendPlatformUserData = nullptr;
-    ImGui::GetIO().BackendRendererUserData = nullptr;
-
-    ImPlot::DestroyContext(newPlotContext);
-    ImGui::DestroyContext(newContext);
-
     ImGui::SetCurrentContext(oldContext);
     ImPlot::SetCurrentContext(oldPlotContext);
-    render::engine->updateImGuiContext(oldContext);
+    render::engine->updateImGuiContext(newContext, newIO, oldContext, oldIO);
     ImGuizmo::PopContext();
+
+    // WARNING: code duplicated here and in screenshot.cpp
+    // Workaround overzealous ImGui assertion before destroying any inner context
+    // https://github.com/ocornut/imgui/pull/7175
+    newIO->BackendPlatformUserData = nullptr;
+    newIO->BackendRendererUserData = nullptr;
+    ImPlot::DestroyContext(newPlotContext);
+    ImGui::DestroyContext(newContext);
   }
 
 

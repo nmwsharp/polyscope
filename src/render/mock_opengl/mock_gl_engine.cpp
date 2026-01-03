@@ -1660,8 +1660,17 @@ void MockGLEngine::createNewImGuiContext() {
   }
 }
 
-void MockGLEngine::updateImGuiContext(ImGuiContext* newContext) {
-  // pass
+void MockGLEngine::updateImGuiContext(ImGuiContext* oldContext, ImGuiIO* oldIO, ImGuiContext* newContext,
+                                      ImGuiIO* newIO) {
+  if (oldContext != nullptr) {
+    newIO->ConfigFlags = oldIO->ConfigFlags;
+    newIO->BackendFlags = oldIO->BackendFlags;
+    newIO->BackendPlatformName = oldIO->BackendPlatformName;
+    newIO->BackendRendererName = oldIO->BackendRendererName;
+    newIO->BackendPlatformUserData = oldIO->BackendPlatformUserData;
+    newIO->BackendRendererUserData = oldIO->BackendRendererUserData;
+    newIO->BackendLanguageUserData = oldIO->BackendLanguageUserData;
+  }
 }
 
 void MockGLEngine::configureImGui() {

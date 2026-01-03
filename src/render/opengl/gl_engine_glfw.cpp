@@ -156,11 +156,11 @@ void GLEngineGLFW::createNewImGuiContext() {
   ImGui::SetCurrentContext(newContext);
 
   // Set up ImGUI glfw bindings
-  ImGui_ImplGlfw_InitForOpenGL(mainWindow, !imguiInitialized);
-  const char* glsl_version = "#version 150";
-  ImGui_ImplOpenGL3_Init(glsl_version);
-
   if (!imguiInitialized) {
+    ImGui_ImplGlfw_InitForOpenGL(mainWindow, !imguiInitialized);
+    const char* glsl_version = "#version 150";
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
     // the font atlas from the base context is used by all others
     sharedFontAtlas = ImGui::GetIO().Fonts;
 
@@ -190,7 +190,17 @@ void GLEngineGLFW::createNewImGuiContext() {
   }
 }
 
-void GLEngineGLFW::updateImGuiContext(ImGuiContext* newContext) {
+void GLEngineGLFW::updateImGuiContext(ImGuiContext* oldContext, ImGuiIO* oldIO, ImGuiContext* newContext,
+                                      ImGuiIO* newIO) {
+  if (oldContext != nullptr) {
+    newIO->ConfigFlags = oldIO->ConfigFlags;
+    newIO->BackendFlags = oldIO->BackendFlags;
+    newIO->BackendPlatformName = oldIO->BackendPlatformName;
+    newIO->BackendRendererName = oldIO->BackendRendererName;
+    newIO->BackendPlatformUserData = oldIO->BackendPlatformUserData;
+    newIO->BackendRendererUserData = oldIO->BackendRendererUserData;
+    newIO->BackendLanguageUserData = oldIO->BackendLanguageUserData;
+  }
   ImGui_ImplGlfw_ContextMap_UpdateIfPresent(mainWindow, newContext);
 }
 
@@ -203,11 +213,11 @@ void GLEngineGLFW::configureImGui() {
   ImGuiIO& io = ImGui::GetIO();
 
   // TODO these seem to be documented but don't actually exist in ImGui 1.92.5
-  // It would be good to use ImGui's built-in scaling behavior, but for now Polyscope 
-  // has lots of built-in window size logic that requires the window size to match the 
-  // font size to look reasonable, so we can't just let the font size get changed 
+  // It would be good to use ImGui's built-in scaling behavior, but for now Polyscope
+  // has lots of built-in window size logic that requires the window size to match the
+  // font size to look reasonable, so we can't just let the font size get changed
   // automatically.
-  // io.ConfigDpiScaleFonts = false; 
+  // io.ConfigDpiScaleFonts = false;
   // io.ConfigDpiScaleViewports = false;
 
   // if polyscope's prefs file is disabled, disable imgui's ini file too

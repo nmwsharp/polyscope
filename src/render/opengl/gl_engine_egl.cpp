@@ -444,11 +444,11 @@ void GLEngineEGL::createNewImGuiContext() {
   ImGui::SetCurrentContext(newContext);
 
   // Set up ImGUI glfw bindings
-  ImGui_ImplNullPlatform_Init();
-  const char* glsl_version = "#version 150";
-  ImGui_ImplOpenGL3_Init(glsl_version);
-
   if (!imguiInitialized) {
+    ImGui_ImplNullPlatform_Init();
+    const char* glsl_version = "#version 150";
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
     // the font atlas from the base context is used by all others
     sharedFontAtlas = ImGui::GetIO().Fonts;
 
@@ -461,7 +461,7 @@ void GLEngineEGL::createNewImGuiContext() {
   ImPlot::SetCurrentContext(newPlotContext);
 
   configureImGui();
-  
+
   if (!imguiInitialized) {
     // Immediately open and close a frame, this forces imgui to populate its fonts and other data
     //
@@ -478,9 +478,17 @@ void GLEngineEGL::createNewImGuiContext() {
   }
 }
 
-void GLEngineEGL::updateImGuiContext(ImGuiContext* newContext) {
-  // this is only needed on other engines for the platform backend management
-  // ImGui_ImplGlfw_ContextMap_UpdateIfPresent(mainWindow, newContext);
+void GLEngineEGL::updateImGuiContext(ImGuiContext* oldContext, ImGuiIO* oldIO, ImGuiContext* newContext,
+                                     ImGuiIO* newIO) {
+  if (oldContext != nullptr) {
+    newIO->ConfigFlags = oldIO->ConfigFlags;
+    newIO->BackendFlags = oldIO->BackendFlags;
+    newIO->BackendPlatformName = oldIO->BackendPlatformName;
+    newIO->BackendRendererName = oldIO->BackendRendererName;
+    newIO->BackendPlatformUserData = oldIO->BackendPlatformUserData;
+    newIO->BackendRendererUserData = oldIO->BackendRendererUserData;
+    newIO->BackendLanguageUserData = oldIO->BackendLanguageUserData;
+  }
 }
 
 

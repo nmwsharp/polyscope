@@ -517,7 +517,7 @@ public:
   // NOTE: the imgui backend depends on the window manager (e.g. GLFW), so these must be implemented by the lowest-level
   // concrete engine implementation
   virtual void createNewImGuiContext() = 0;
-  virtual void updateImGuiContext(ImGuiContext* newContext) {};
+  virtual void updateImGuiContext(ImGuiContext* oldContext, ImGuiIO* oldIO, ImGuiContext* newContext, ImGuiIO* newIO) {}
   virtual void shutdownImGui() = 0;
   virtual void ImGuiNewFrame() = 0;
   virtual void ImGuiRender() = 0;
