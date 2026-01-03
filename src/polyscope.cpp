@@ -1171,6 +1171,7 @@ bool isHeadless() {
 }
 
 void shutdown(bool allowMidFrameShutdown) {
+  checkInitialized();
 
   if (!allowMidFrameShutdown && contextStack.size() > 1) {
     terminatingError("shutdown() was called mid-frame (e.g. in a per-frame callback, or UI element). This is not "
