@@ -1114,9 +1114,7 @@ void mainLoopIteration() {
 
 void show(size_t forFrames) {
 
-  if (!state::initialized) {
-    exception("must initialize Polyscope with polyscope::init() before calling polyscope::show().");
-  }
+  checkInitialized();
 
   if (isHeadless() && forFrames == 0) {
     info("You called show() while in headless mode. In headless mode there is no display to create windows on. By "
