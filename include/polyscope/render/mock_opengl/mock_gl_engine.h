@@ -361,7 +361,8 @@ public:
   void setClipboardText(std::string text) override;
 
   // ImGui
-  void initializeImGui() override;
+  void createNewImGuiContext() override;
+  void updateImGuiContext(ImGuiContext* oldContext, ImGuiIO* oldIO, ImGuiContext* newContext, ImGuiIO* newIO) override;
   void configureImGui() override;
   void shutdownImGui() override;
   void ImGuiNewFrame() override;
@@ -413,6 +414,7 @@ public:
 
 protected:
   // Helpers
+  virtual void freeAllOwnedResources() override;
   virtual void createSlicePlaneFliterRule(std::string name) override;
 
   // Shader program & rule caches

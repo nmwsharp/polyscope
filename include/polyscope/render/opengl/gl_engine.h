@@ -432,6 +432,7 @@ public:
 
 protected:
   // Helpers
+  virtual void freeAllOwnedResources() override;
   virtual void createSlicePlaneFliterRule(std::string name) override;
 
   // Shader program & rule caches

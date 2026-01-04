@@ -23,6 +23,8 @@
 #include "nlohmann/json.hpp"
 using json = nlohmann::json;
 
+#include "IconFontCppHeaders/IconsLucide.h"
+
 namespace polyscope {
 
 // Note: Storage for global members lives in state.cpp and options.cpp
@@ -237,11 +239,12 @@ void init(std::string backend) {
 
   // Initialie ImGUI
   IMGUI_CHECKVERSION();
-  render::engine->initializeImGui();
+  render::engine->createNewImGuiContext();
 
   // Create an initial context based context. Note that calling show() never actually uses this context, because it
   // pushes a new one each time. But using frameTick() may use this context.
   contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), ImPlot::GetCurrentContext(), nullptr, true});
+  internal::contextStackSize++;
 
   view::invalidateView();
 
@@ -261,27 +264,37 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // WARNING: code duplicated here and in screenshot.cpp
 
+
+  // Here, we create a new ImGui context sharing the same window and render
+  // with it, al in the midst of an existing ImGui frame. This is a fairly hacky
+  // thing to do within ImGui that only barely works, especially with v1.92 changes
+  // around contexts, dynamic fonts, and the GLFW ImGui backend. Currently, it requires
+  // some slight customization of the backend to even be possible.
+  //
+  // Useful resources:
+  //  -  https://github.com/ocornut/imgui/issues/8680 (and linked PR)
+
   // Create a new context and push it on to the stack
-  ImGuiContext* newContext = ImGui::CreateContext();
-  ImPlotContext* newPlotContext = ImPlot::CreateContext();
   ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
+  ImGuiContext* oldContext = ImGui::GetCurrentContext();
 #ifdef IMGUI_HAS_DOCK
+  // WARNING this code may not currently work, recent versions of imgui have changed this functionality,
+  // and we do not regularly test with the docking branch.
   ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
 #endif
-  ImGui::SetCurrentContext(newContext);
-  ImPlot::SetCurrentContext(newPlotContext);
-  ImGuizmo::PushContext();
+  render::engine->createNewImGuiContext();
+  ImGuiContext* newContext = ImGui::GetCurrentContext();
+  ImGuiIO& newIO = ImGui::GetIO();
+  ImPlotContext* newPlotContext = ImPlot::GetCurrentContext();
+  render::engine->updateImGuiContext(oldContext, &oldIO, newContext, &newIO);
 #ifdef IMGUI_HAS_DOCK
-  // Propagate GLFW window handle to new context
+  // see warning above
   ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
 #endif
-  ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
-  ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
-
-  render::engine->configureImGui();
-
+  ImGuizmo::PushContext();
 
   contextStack.push_back(ContextEntry{newContext, newPlotContext, callbackFunction, drawDefaultUI});
+  internal::contextStackSize++;
 
   if (contextStack.size() > 50) {
     // Catch bugs with nested show()
@@ -305,23 +318,21 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
     }
   }
 
-  // WARNING: code duplicated here and in screenshot.cpp
-  // Workaround overzealous ImGui assertion before destroying any inner context
-  // https://github.com/ocornut/imgui/pull/7175
-  ImGui::SetCurrentContext(newContext);
-  ImPlot::SetCurrentContext(newPlotContext);
-  ImGui::GetIO().BackendPlatformUserData = nullptr;
-  ImGui::GetIO().BackendRendererUserData = nullptr;
-
-  ImPlot::DestroyContext(newPlotContext);
-  ImGui::DestroyContext(newContext);
-
   // Restore the previous context, if there was one
   if (!contextStack.empty()) {
     ImGui::SetCurrentContext(contextStack.back().context);
     ImPlot::SetCurrentContext(contextStack.back().plotContext);
+    render::engine->updateImGuiContext(newContext, &newIO, oldContext, &oldIO);
     ImGuizmo::PopContext();
   }
+
+  // WARNING: code duplicated here and in screenshot.cpp
+  // Workaround overzealous ImGui assertion before destroying any inner context
+  // https://github.com/ocornut/imgui/pull/7175
+  newIO.BackendPlatformUserData = nullptr;
+  newIO.BackendRendererUserData = nullptr;
+  ImPlot::DestroyContext(newPlotContext);
+  ImGui::DestroyContext(newContext);
 }
 
 
@@ -331,6 +342,7 @@ void popContext() {
     return;
   }
   contextStack.pop_back();
+  internal::contextStackSize--;
 }
 
 ImGuiContext* getCurrentContext() { return contextStack.empty() ? nullptr : contextStack.back().context; }
@@ -513,7 +525,13 @@ void processInputEvents() {
         bool anyModifierHeld = io.KeyShift || io.KeyCtrl || io.KeyAlt;
         bool ctrlShiftHeld = io.KeyShift && io.KeyCtrl;
 
-        if (!anyModifierHeld && io.MouseReleased[0]) {
+        // NOTE: there is annoyance here that we use single click for picking, and double click
+        // to recenter the view. However, there's no way to distingish which is happening
+        // after the first click without waiting. After trying several solutions, it feels
+        // best to let the first click always do a pick, but clear the selection if a
+        // double click comes in.
+
+        if (!anyModifierHeld && (io.MouseReleased[0] && io.MouseClickedLastCount[0] == 1)) {
 
           // Don't pick at the end of a long drag
           if (dragDistSinceLastRelease < dragIgnoreThreshold) {
@@ -532,10 +550,12 @@ void processInputEvents() {
         }
 
         // Double-click or Ctrl-shift left-click to set new center
-        if (io.MouseDoubleClicked[0] || (ctrlShiftHeld && io.MouseReleased[0])) {
+        if ((io.MouseReleased[0] && io.MouseClickedLastCount[0] == 2) || (io.MouseReleased[0] && ctrlShiftHeld)) {
           if (dragDistSinceLastRelease < dragIgnoreThreshold) {
             glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
             view::processSetCenter(screenCoords);
+            resetSelection(); // the single-click creates a selection, this clears it. unfortunately that leads to a
+                              // flicker, but its unavoidable without introducing a lag
           }
         }
       }
@@ -705,9 +725,9 @@ void buildPolyscopeGui() {
   ImGui::SetNextWindowPos(ImVec2(internal::imguiStackMargin, internal::imguiStackMargin));
   ImGui::SetNextWindowSize(ImVec2(internal::leftWindowsWidth, 0.));
 
-  ImGui::Begin("Polyscope", nullptr);
+  ImGui::Begin("Polyscope ", nullptr);
 
-  if (ImGui::Button("Reset View")) {
+  if (ImGui::Button(ICON_LC_HOUSE " Reset View")) {
     view::flyToHomeView();
   }
   ImGui::SameLine();
@@ -726,7 +746,7 @@ void buildPolyscopeGui() {
   if (ImGui::BeginPopup("ScreenshotOptionsPopup")) {
 
     ImGui::Checkbox("with transparency", &options::screenshotTransparency);
-    ImGui::Checkbox("with UI", &options::screenshotWithImGuiUI);
+    // ImGui::Checkbox("with UI", &options::screenshotWithImGuiUI); // temporarily disabled while broken
 
     if (ImGui::BeginMenu("file format")) {
       if (ImGui::MenuItem(".png", NULL, options::screenshotExtension == ".png")) options::screenshotExtension = ".png";
@@ -739,7 +759,7 @@ void buildPolyscopeGui() {
 
 
   ImGui::SameLine();
-  if (ImGui::Button("Controls")) {
+  if (ImGui::Button(ICON_LC_CIRCLE_QUESTION_MARK)) {
     // do nothing, just want hover state
   }
   if (ImGui::IsItemHovered()) {
@@ -1097,9 +1117,7 @@ void mainLoopIteration() {
 
 void show(size_t forFrames) {
 
-  if (!state::initialized) {
-    exception("must initialize Polyscope with polyscope::init() before calling polyscope::show().");
-  }
+  checkInitialized();
 
   if (isHeadless() && forFrames == 0) {
     info("You called show() while in headless mode. In headless mode there is no display to create windows on. By "
@@ -1160,6 +1178,7 @@ bool isHeadless() {
 }
 
 void shutdown(bool allowMidFrameShutdown) {
+  checkInitialized();
 
   if (!allowMidFrameShutdown && contextStack.size() > 1) {
     terminatingError("shutdown() was called mid-frame (e.g. in a per-frame callback, or UI element). This is not "
@@ -1179,12 +1198,13 @@ void shutdown(bool allowMidFrameShutdown) {
   state::userCallback = nullptr;
   state::filesDroppedCallback = nullptr;
   options::configureImGuiStyleCallback = configureImGuiStyle; // restore defaults
-  options::prepareImGuiFontsCallback = prepareImGuiFonts;
+  options::prepareImGuiFontsCallback = loadBaseFonts;
 
   // Shut down the render engine
   render::engine->shutdown();
   delete render::engine;
   contextStack.clear();
+  internal::contextStackSize = 0;
   render::engine = nullptr;
   state::backend = "";
   state::initialized = false;

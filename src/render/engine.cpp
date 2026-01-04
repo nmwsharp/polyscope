@@ -357,9 +357,9 @@ void Engine::buildEngineGui() {
         requestRedraw();
       }
 
-      if (ImGui::InputFloat("UI Scale", &options::uiScale, 0.25f)) {
+      if (ImGui::InputFloat("UI Scale", &options::uiScale, 0.1f)) {
         options::uiScale = std::min(options::uiScale, 4.f);
-        options::uiScale = std::max(options::uiScale, 0.25f);
+        options::uiScale = std::max(options::uiScale, 0.2f);
         requestRedraw();
       }
       ImGui::TreePop();
@@ -878,6 +878,32 @@ void Engine::updateMinDepthTexture() {
   copyDepth->draw();
 }
 
+void Engine::freeAllOwnedResources() {
+
+  displayBuffer.reset();
+  displayBufferAlt.reset();
+  sceneBuffer.reset();
+  sceneBufferFinal.reset();
+  pickFramebuffer.reset();
+  sceneDepthMinFrame.reset();
+  sceneColor.reset();
+  sceneColorFinal.reset();
+  sceneDepth.reset();
+  sceneDepthMin.reset();
+  pickColorBuffer.reset();
+  pickDepthBuffer.reset();
+  renderTexturePlain.reset();
+  renderTextureDot3.reset();
+  renderTextureMap3.reset();
+  renderTextureSphereBG.reset();
+  compositePeel.reset();
+  mapLight.reset();
+  copyDepth.reset();
+
+  groundPlane.freeAllOwnedResources();
+  materials.clear();
+  resourcesPreservedForImGuiFrame.clear();
+}
 
 // Helper (TODO rework to load custom materials)
 void Engine::loadDefaultMaterial(std::string name) {
@@ -1193,6 +1219,8 @@ void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buf
 
   ImGui::End();
 }
+
+ImFontAtlas* Engine::getSharedFontAtlas() { return sharedFontAtlas; }
 
 void Engine::preserveResourceUntilImguiFrameCompletes(std::shared_ptr<TextureBuffer> texture) {
   resourcesPreservedForImGuiFrame.push_back(texture);

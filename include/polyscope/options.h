@@ -142,11 +142,11 @@ extern bool doDefaultMouseInteraction;
 // may assign your own function to create custom styles. If this callback is null, the default ImGui style will be used.
 extern std::function<void()> configureImGuiStyleCallback;
 
-// A callback function which will be invoked exactly once during initialization to construct a font atlas for ImGui to
-// use. The callback should return a tuple of three pointers: a newly created global shared font atlas, a regular font,
-// and a mono font. By default, this is set to invoke prepareImGuiFonts() from Polyscope's imgui_config.cpp, but you may
-// assign your own function to create custom styles. If this callback is null, default fonts will be used.
-extern std::function<std::tuple<ImFontAtlas*, ImFont*, ImFont*>()> prepareImGuiFontsCallback;
+// A callback function which will be invoked exactly once during initialization to add fonts to a font atlas for ImGui
+// to use. The callback should return two pointers: a regular font and a mono font. By default, this is set to invoke
+// loadBaseFonts() from Polyscope's imgui_config.cpp, but you may assign your own function to create custom styles. If
+// this callback is null, default fonts will be used.
+extern std::function<std::tuple<ImFont*, ImFont*>(ImFontAtlas*)> prepareImGuiFontsCallback;
 
 // === Backend and low-level options
 

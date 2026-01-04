@@ -73,7 +73,8 @@ public:
 
   // === ImGui
 
-  void initializeImGui() override;
+  void createNewImGuiContext() override;
+  void updateImGuiContext(ImGuiContext* oldContext, ImGuiIO* oldIO, ImGuiContext* newContext, ImGuiIO* newIO) override;
   void shutdownImGui() override;
   void ImGuiNewFrame() override;
   void ImGuiRender() override;

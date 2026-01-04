@@ -11,6 +11,6 @@ namespace polyscope {
 
 // Default implementations of callbacks to set ImGui style / fonts
 void configureImGuiStyle();
-std::tuple<ImFontAtlas*, ImFont*, ImFont*> prepareImGuiFonts();
+std::tuple<ImFont*, ImFont*> loadBaseFonts(ImFontAtlas* fontAtlas);
 
 } // namespace polyscope

@@ -6,9 +6,9 @@
 
 #include "stb_image_write.h"
 
+#include "ImGuizmo.h"
 #include "imgui.h"
 #include "implot.h"
-#include "ImGuizmo.h"
 
 #include <algorithm>
 #include <string>
@@ -41,6 +41,11 @@ bool hasExtension(std::string str, std::string ext) {
 std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = {}) {
   checkInitialized();
 
+  if (options.includeUI && internal::contextStackSize > 1) {
+    error("Screenshot with includeUI=true is not supported within show(). See docs for details and workarounds.");
+    return std::vector<unsigned char>();
+  }
+
   render::engine->useAltDisplayBuffer = true;
   if (options.transparentBackground) render::engine->lightCopy = true; // copy directly in to buffer without blending
 
@@ -57,32 +62,37 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
   // I'm not sure if it's possible to do this like we want in ImGui. The alternate solution would be to save the render
   // from the previous render pass, but I think that comes with other problems on the Polyscope side. I'm not sure what
   // the answer is.
+
+
   ImGuiContext* oldContext;
   ImGuiContext* newContext;
   ImPlotContext* oldPlotContext;
   ImPlotContext* newPlotContext;
+  ImGuiIO* oldIO;
+  ImGuiIO* newIO;
   if (options.includeUI) {
-    // WARNING: code duplicated here and in pushContext()
+
+    // NOTE: error check above ensure internal::contextStackSize == 1 (cannot be called during show())
+
+    // Create a new context and push it on to the stack
+    oldIO = &ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
     oldContext = ImGui::GetCurrentContext();
-    newContext = ImGui::CreateContext();
     oldPlotContext = ImPlot::GetCurrentContext();
-    newPlotContext = ImPlot::CreateContext();
-    ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
 #ifdef IMGUI_HAS_DOCK
+    // WARNING this code may not currently work, recent versions of imgui have changed this functionality,
+    // and we do not regularly test with the docking branch.
     ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
 #endif
-    ImGui::SetCurrentContext(newContext);
-    ImPlot::SetCurrentContext(newPlotContext);
-    ImGuizmo::PushContext();
-
+    render::engine->createNewImGuiContext();
+    newContext = ImGui::GetCurrentContext();
+    newIO = &ImGui::GetIO();
+    newPlotContext = ImPlot::GetCurrentContext();
+    render::engine->updateImGuiContext(oldContext, oldIO, newContext, newIO);
 #ifdef IMGUI_HAS_DOCK
-    // Propagate GLFW window handle to new context
+    // see warning above
     ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
 #endif
-    ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
-    ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
-
-    render::engine->configureImGui();
+    ImGuizmo::PushContext();
 
     // render a few times, to let imgui shake itself out
     for (int i = 0; i < 3; i++) {
@@ -93,20 +103,18 @@ std::vector<unsigned char> getRenderInBuffer(const ScreenshotOptions& options = 
   draw(options.includeUI, false);
 
   if (options.includeUI) {
-    // WARNING: code duplicated here and in pushContext()
-    // Workaround overzealous ImGui assertion before destroying any inner context
-    // https://github.com/ocornut/imgui/pull/7175
-    ImGui::SetCurrentContext(newContext);
-    ImPlot::SetCurrentContext(newPlotContext);
-    ImGui::GetIO().BackendPlatformUserData = nullptr;
-    ImGui::GetIO().BackendRendererUserData = nullptr;
-
-    ImPlot::DestroyContext(newPlotContext);
-    ImGui::DestroyContext(newContext);
-
     ImGui::SetCurrentContext(oldContext);
     ImPlot::SetCurrentContext(oldPlotContext);
+    render::engine->updateImGuiContext(newContext, newIO, oldContext, oldIO);
     ImGuizmo::PopContext();
+
+    // WARNING: code duplicated here and in screenshot.cpp
+    // Workaround overzealous ImGui assertion before destroying any inner context
+    // https://github.com/ocornut/imgui/pull/7175
+    newIO->BackendPlatformUserData = nullptr;
+    newIO->BackendRendererUserData = nullptr;
+    ImPlot::DestroyContext(newPlotContext);
+    ImGui::DestroyContext(newContext);
   }
 
 

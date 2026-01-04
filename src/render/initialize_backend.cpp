@@ -4,6 +4,7 @@
 #include "polyscope/options.h"
 #include "polyscope/render/engine.h"
 
+#include <numeric>
 #include <string>
 
 namespace polyscope {
@@ -30,6 +31,15 @@ void initializeRenderEngine(std::string backend) {
   // Handle default backends
   if (backend == "") {
     backend = "auto"; // treat "" as "auto"
+  }
+  
+  // Quick check to print a nice error for a bad name
+  std::vector<std::string> knownBackendNames = {"openGL3_glfw", "openGL3_egl", "openGL_mock", "auto"};
+  if (std::find(knownBackendNames.begin(), knownBackendNames.end(), backend) == knownBackendNames.end()) {
+    std::string namesConcat =
+        std::accumulate(std::next(knownBackendNames.begin()), knownBackendNames.end(), knownBackendNames[0],
+                        [](std::string s0, std::string const& s1) { return s0 + "," + s1; });
+    exception("unrecognized Polyscope backend " + backend + ". Known backend names are: " + namesConcat);
   }
 
   engineBackendName = backend;

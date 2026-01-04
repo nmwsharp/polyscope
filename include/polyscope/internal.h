@@ -23,6 +23,9 @@ namespace internal {
 // Get a unique identifier
 uint64_t getNextUniqueID();
 
+// How many layers deep in the polyscope context stack are we
+extern int contextStackSize;
+
 // track various fire-once warnings
 extern bool& pointCloudEfficiencyWarningReported;
 

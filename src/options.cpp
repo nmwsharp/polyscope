@@ -66,7 +66,7 @@ bool renderScene = true;
 bool openImGuiWindowForUserCallback = true;
 bool doDefaultMouseInteraction = true;
 std::function<void()> configureImGuiStyleCallback = configureImGuiStyle;
-std::function<std::tuple<ImFontAtlas*, ImFont*, ImFont*>()> prepareImGuiFontsCallback = prepareImGuiFonts;
+std::function<std::tuple<ImFont*, ImFont*>(ImFontAtlas*)> prepareImGuiFontsCallback = loadBaseFonts;
 
 // Backend and low-level options
 int eglDeviceIndex = -1; // means "try all of them"

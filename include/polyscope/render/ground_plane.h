@@ -31,7 +31,7 @@ public:
 
   void buildGui();
   void prepare(); // does any and all setup work / allocations / etc, called automatically when drawing after a change
-
+  void freeAllOwnedResources();
 
   // == Appearance Parameters
   // These all now live in polyscope::options

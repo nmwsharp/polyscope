@@ -516,7 +516,8 @@ public:
 
   // NOTE: the imgui backend depends on the window manager (e.g. GLFW), so these must be implemented by the lowest-level
   // concrete engine implementation
-  virtual void initializeImGui() = 0;
+  virtual void createNewImGuiContext() = 0;
+  virtual void updateImGuiContext(ImGuiContext* oldContext, ImGuiIO* oldIO, ImGuiContext* newContext, ImGuiIO* newIO) {}
   virtual void shutdownImGui() = 0;
   virtual void ImGuiNewFrame() = 0;
   virtual void ImGuiRender() = 0;
@@ -633,10 +634,14 @@ public:
   bool useAltDisplayBuffer = false; // if true, push final render results offscreen to the alt buffer instead
 
   // Internal windowing and engine details
+  FrameBuffer* currRenderFramebuffer = nullptr;
+
+  // ImGui and Fonts
   virtual void configureImGui() {}; // generates font things
+  ImFontAtlas* getSharedFontAtlas();
   ImFont* regularFont = nullptr;
   ImFont* monoFont = nullptr;
-  FrameBuffer* currRenderFramebuffer = nullptr;
+
 
   // Manage some resources that we need to preserve because ImGui will use them to render at the end of the frame
   // This matters if we delete something mid-frame but have already passed a pointer to a texture for imgui to render,
@@ -661,7 +666,12 @@ protected:
   int currLightingSampleLevel = -1;
   TransparencyMode currLightingTransparencyMode = TransparencyMode::None;
 
+  // ImGui/fonts
+  bool imguiInitialized = false;
+  ImFontAtlas* sharedFontAtlas;
+
   // Helpers
+  virtual void freeAllOwnedResources(); // child callers should call parent
   void loadDefaultMaterials();
   void loadDefaultMaterial(std::string name);
   std::shared_ptr<TextureBuffer> loadMaterialTexture(float* data, int width, int height);

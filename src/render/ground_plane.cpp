@@ -170,6 +170,20 @@ void GroundPlane::prepare() {
   groundPlanePreparedMode = options::groundPlaneMode;
 }
 
+void GroundPlane::freeAllOwnedResources() {
+  groundPlaneProgram.reset();
+  sceneAltColorTexture.reset();
+  sceneAltDepthTexture.reset();
+  sceneAltFrameBuffer.reset();
+  blurProgram.reset();
+  copyTexProgram.reset();
+
+  for(int i = 0; i < 2; i++) {
+    blurColorTextures[i].reset();
+    blurFrameBuffers[i].reset();
+  }
+}
+
 void GroundPlane::draw(bool isRedraw) {
   if (options::groundPlaneMode == GroundPlaneMode::None) {
     return;
