@@ -36,7 +36,7 @@ enum class DrawMode {
   TriangleStripInstanced,
 };
 
-enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F, R16F, DEPTH24 };
+enum class TextureFormat { RGB8 = 0, RGBA8, RG16F, RGB16F, RGBA16F, RGBA32F, RGB32F, R32F, R16F, DEPTH24, R32UI, R32I };
 enum class RenderBufferType { Color, ColorAlpha, Depth, Float4 };
 enum class DepthMode { Less, LEqual, LEqualReadOnly, Greater, Disable, PassReadOnly };
 enum class BlendMode { AlphaOver, OverNoWrite, AlphaUnder, Zero, WeightedAdd, Add, Source, Disable };
@@ -291,12 +291,12 @@ struct ShaderSpecUniform {
   const RenderDataType type;
 };
 struct ShaderSpecAttribute {
-  ShaderSpecAttribute(std::string name_, RenderDataType type_) : name(name_), type(type_), arrayCount(1) {}
-  ShaderSpecAttribute(std::string name_, RenderDataType type_, int arrayCount_)
-      : name(name_), type(type_), arrayCount(arrayCount_) {}
+  ShaderSpecAttribute(std::string name_, RenderDataType type_, int arrayCount_ = 1, int attribDivisor = 0)
+      : name(name_), type(type_), arrayCount(arrayCount_), attribDivisor(attribDivisor) {}
   const std::string name;
   const RenderDataType type;
   const int arrayCount; // number of times this element is repeated in an array
+  const int attribDivisor;
 };
 struct ShaderSpecTexture {
   const std::string name;
@@ -405,6 +405,7 @@ public:
 
   // Indices
   virtual void setInstanceCount(uint32_t instanceCount) = 0;
+  virtual void setInstanceVertexCount(uint32_t instanceVertexCount) = 0;
 
   // Call once to initialize GLSL code used by multiple shaders
   static void initCommonShaders(); // TODO
@@ -436,6 +437,7 @@ protected:
 
   // instancing
   uint32_t instanceCount = INVALID_IND_32;
+  uint32_t instanceVertexCount = INVALID_IND_32;
 };
 
 
@@ -553,6 +555,9 @@ public:
   virtual std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_,
                                                                unsigned int sizeY_, unsigned int sizeZ_,
                                                                const float* data) = 0; // 3d
+
+  // create buffer texture
+  virtual std::shared_ptr<TextureBuffer> generateStorageTextureBuffer(TextureFormat format, unsigned int size1D, void* data) = 0;
 
   // create render buffers
   virtual std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,

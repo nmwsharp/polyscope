@@ -54,6 +54,9 @@ inline GLenum internalFormat(const TextureFormat& x) {
     case TextureFormat::RGB32F:     return GL_RGBA32F;
     case TextureFormat::RGBA32F:    return GL_RGBA32F;
     case TextureFormat::DEPTH24:    return GL_DEPTH_COMPONENT24;
+    case TextureFormat::R32UI:      return GL_R32UI;
+    case TextureFormat::R32I:       return GL_R32I;
+    break;
   }
   exception("bad enum");
   return GL_RGB8;
@@ -71,6 +74,8 @@ inline GLenum formatF(const TextureFormat& x) {
     case TextureFormat::RGB32F:     return GL_RGB;
     case TextureFormat::RGBA32F:    return GL_RGBA;
     case TextureFormat::DEPTH24:    return GL_DEPTH_COMPONENT;
+    case TextureFormat::R32UI:      return GL_RED;
+    case TextureFormat::R32I:       return GL_RED;
   }
   exception("bad enum");
   return GL_RGB;
@@ -88,6 +93,8 @@ inline GLenum type(const TextureFormat& x) {
     case TextureFormat::RGB32F:     return GL_FLOAT;
     case TextureFormat::RGBA32F:    return GL_FLOAT;
     case TextureFormat::DEPTH24:    return GL_FLOAT;
+    case TextureFormat::R32UI:      return GL_UNSIGNED_INT;
+    case TextureFormat::R32I:       return GL_INT;
   }
   exception("bad enum");
   return GL_UNSIGNED_BYTE;
@@ -770,6 +777,121 @@ void GLTextureBuffer::bind() {
   checkGLError();
 }
 
+GLTextureBuffer GLTextureBuffer::createUnintializedTextureBuffer(TextureFormat format, unsigned int size1D) {
+  GLTextureBuffer buffer = {};
+  buffer.format = format;
+  buffer.sizeX = size1D;
+  return buffer;
+}
+
+// =============================================================
+// =================== Storage Texture buffer ==================
+// =============================================================
+
+
+
+GLStorageTextureBuffer::~GLStorageTextureBuffer() {
+  glDeleteBuffers(1, &bufferHandle);
+}
+
+void GLStorageTextureBuffer::setData(const std::vector<float>& data) {
+  if (data.size() != getTotalSize()) {
+    exception("OpenGL error: texture buffer data is not the right size.");
+  }
+
+  glBindBuffer(GL_TEXTURE_BUFFER, bufferHandle);
+  glBufferSubData(GL_TEXTURE_BUFFER, 0, getSizeInBytes(), &data.front());
+  glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+  checkGLError();
+}
+
+void GLStorageTextureBuffer::resize(unsigned newLen) {
+
+  // intentionally skipping the logic of GLTextureBuffer::resize here
+  TextureBuffer::resize(newLen);  // NOLINT(bugprone-parent-virtual-call)
+
+  glDeleteBuffers(1, &bufferHandle);
+
+  glGenBuffers(1, &bufferHandle);
+  glBindBuffer(GL_TEXTURE_BUFFER, bufferHandle);
+  glBufferData(GL_TEXTURE_BUFFER, getSizeInBytes(), nullptr, GL_DYNAMIC_DRAW);
+
+  glBindTexture(GL_TEXTURE_BUFFER, handle);
+  glTexBuffer(GL_TEXTURE_BUFFER, internalFormat(format), bufferHandle);
+  glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+  checkGLError();
+}
+void GLStorageTextureBuffer::resize(unsigned newX, unsigned newY) { exception("buffer textures only support 1 dimension"); }
+void GLStorageTextureBuffer::resize(unsigned newX, unsigned newY, unsigned newZ) { exception("buffer textures only support 1 dimension"); }
+void GLStorageTextureBuffer::setData(const std::vector<glm::vec2>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<glm::vec3>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<glm::vec4>& data) { exception("not implemented"); }
+
+void GLStorageTextureBuffer::setData(const std::vector<double>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<int32_t>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<uint32_t>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<glm::uvec2>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<glm::uvec3>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<glm::uvec4>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data) { exception("not implemented"); }
+void GLStorageTextureBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data) { exception("not implemented"); }
+
+void GLStorageTextureBuffer::setFilterMode(FilterMode newMode) {
+  // no op - gsampleBuffer does not have a filter mode
+}
+
+void* GLStorageTextureBuffer::getNativeHandle() {
+  return GLTextureBuffer::getNativeHandle();
+}
+
+uint32_t GLStorageTextureBuffer::getNativeBufferID() {
+  return GLTextureBuffer::getNativeBufferID();
+}
+
+std::vector<float> GLStorageTextureBuffer::getDataScalar() {
+
+  std::vector<float> outData;
+  outData.resize(getTotalSize());
+  glBindBuffer(GL_TEXTURE_BUFFER, bufferHandle);
+  glGetBufferSubData(GL_TEXTURE_BUFFER, 0, getSizeInBytes(), &outData.front());
+  glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+  checkGLError();
+
+  return outData;
+}
+std::vector<glm::vec2> GLStorageTextureBuffer::getDataVector2() {
+  exception("not implemented");
+  return {};
+}
+std::vector<glm::vec3> GLStorageTextureBuffer::getDataVector3() {
+  exception("not implemented");
+  return {};
+}
+
+GLenum GLStorageTextureBuffer::textureType() {
+  return GL_TEXTURE_BUFFER;
+}
+
+GLStorageTextureBuffer::GLStorageTextureBuffer(TextureFormat format, unsigned int size1D, void* data) : GLTextureBuffer{createUnintializedTextureBuffer(format, size1D)}{
+
+  if (sizeInBytes(format) != 4 && dimension(format) != 1) exception("Unsupported format specified. Format with 1 dimesnion and 4 bytes expected.");
+
+  glGenBuffers(1, &bufferHandle);
+  glBindBuffer(GL_TEXTURE_BUFFER, bufferHandle);
+  glBufferData(GL_TEXTURE_BUFFER, getSizeInBytes(), data, GL_DYNAMIC_DRAW);
+
+  glGenTextures(1, &handle);
+  glBindTexture(GL_TEXTURE_BUFFER, handle);
+  glTexBuffer(GL_TEXTURE_BUFFER, internalFormat(format), bufferHandle);
+  glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+  checkGLError();
+}
+
 // =============================================================
 // ===================== Render buffer =========================
 // =============================================================
@@ -1174,7 +1296,7 @@ void GLCompiledProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
       return;
     }
   }
-  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, -1, nullptr});
+  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, newAttribute.attribDivisor, -1, nullptr});
 }
 
 void GLCompiledProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
@@ -1299,11 +1421,11 @@ void GLShaderProgram::assignBufferToVAO(GLShaderAttribute& a) {
                             reinterpret_cast<void*>(sizeof(float) * 1 * iArrInd));
       break;
     case RenderDataType::Int:
-      glVertexAttribPointer(a.location + iArrInd, 1, GL_INT, GL_FALSE, sizeof(int) * 1 * a.arrayCount,
+      glVertexAttribIPointer(a.location + iArrInd, 1, GL_INT, sizeof(int) * 1 * a.arrayCount,
                             reinterpret_cast<void*>(sizeof(int) * 1 * iArrInd));
       break;
     case RenderDataType::UInt:
-      glVertexAttribPointer(a.location + iArrInd, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(uint32_t) * 1 * a.arrayCount,
+      glVertexAttribIPointer(a.location + iArrInd, 1, GL_UNSIGNED_INT, sizeof(uint32_t) * 1 * a.arrayCount,
                             reinterpret_cast<void*>(sizeof(uint32_t) * 1 * iArrInd));
       break;
     case RenderDataType::Vector2Float:
@@ -1319,21 +1441,26 @@ void GLShaderProgram::assignBufferToVAO(GLShaderAttribute& a) {
                             reinterpret_cast<void*>(sizeof(float) * 4 * iArrInd));
       break;
     case RenderDataType::Vector2UInt:
-      glVertexAttribPointer(a.location + iArrInd, 2, GL_UNSIGNED_INT, GL_FALSE, sizeof(uint32_t) * 2 * a.arrayCount,
+      glVertexAttribIPointer(a.location + iArrInd, 2, GL_UNSIGNED_INT, sizeof(uint32_t) * 2 * a.arrayCount,
                             reinterpret_cast<void*>(sizeof(uint32_t) * 2 * iArrInd));
       break;
     case RenderDataType::Vector3UInt:
-      glVertexAttribPointer(a.location + iArrInd, 3, GL_UNSIGNED_INT, GL_FALSE, sizeof(uint32_t) * 3 * a.arrayCount,
+      glVertexAttribIPointer(a.location + iArrInd, 3, GL_UNSIGNED_INT, sizeof(uint32_t) * 3 * a.arrayCount,
                             reinterpret_cast<void*>(sizeof(uint32_t) * 3 * iArrInd));
       break;
     case RenderDataType::Vector4UInt:
-      glVertexAttribPointer(a.location + iArrInd, 4, GL_UNSIGNED_INT, GL_FALSE, sizeof(uint32_t) * 4 * a.arrayCount,
+      glVertexAttribIPointer(a.location + iArrInd, 4, GL_UNSIGNED_INT, sizeof(uint32_t) * 4 * a.arrayCount,
                             reinterpret_cast<void*>(sizeof(uint32_t) * 4 * iArrInd));
       break;
     default:
       throw std::invalid_argument("Unrecognized GLShaderAttribute type");
       break;
     }
+
+    if (a.attribDivisor > 0) {
+      glVertexAttribDivisor(a.location + iArrInd, a.attribDivisor);
+    }
+
   }
 
   checkGLError();
@@ -2067,6 +2194,9 @@ void GLShaderProgram::validateData() {
     if (instanceCount == INVALID_IND_32) {
       throw std::invalid_argument("Must set instance count to use instanced drawing");
     }
+    if (instanceVertexCount == INVALID_IND_32) {
+      throw std::invalid_argument("Must set instance vertex count to use instanced drawing");
+    }
   }
 }
 
@@ -2079,6 +2209,7 @@ void GLShaderProgram::setPrimitiveRestartIndex(unsigned int restartIndex_) {
 }
 
 void GLShaderProgram::setInstanceCount(uint32_t instanceCount_) { instanceCount = instanceCount_; }
+void GLShaderProgram::setInstanceVertexCount(uint32_t instanceVertexCount_) { instanceVertexCount = instanceVertexCount_; }
 
 void GLShaderProgram::activateTextures() {
   for (GLShaderTexture& t : textures) {
@@ -2140,10 +2271,10 @@ void GLShaderProgram::draw() {
     glDrawElements(GL_TRIANGLES, drawDataLength, GL_UNSIGNED_INT, 0);
     break;
   case DrawMode::TrianglesInstanced:
-    glDrawArraysInstanced(GL_TRIANGLES, 0, drawDataLength, instanceCount);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, instanceVertexCount, instanceCount);
     break;
   case DrawMode::TriangleStripInstanced:
-    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, drawDataLength, instanceCount);
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, instanceVertexCount, instanceCount);
     break;
   }
 
@@ -2333,6 +2464,11 @@ std::shared_ptr<TextureBuffer> GLEngine::generateTextureBuffer(TextureFormat for
                                                                unsigned int sizeY_, unsigned int sizeZ_,
                                                                const float* data) {
   GLTextureBuffer* newT = new GLTextureBuffer(format, sizeX_, sizeY_, sizeZ_, data);
+  return std::shared_ptr<TextureBuffer>(newT);
+}
+
+std::shared_ptr<TextureBuffer> GLEngine::generateStorageTextureBuffer(TextureFormat format, unsigned int size1D, void* data) {
+  GLStorageTextureBuffer* newT = new GLStorageTextureBuffer(format, size1D, data);
   return std::shared_ptr<TextureBuffer>(newT);
 }
 
