@@ -19,17 +19,11 @@ class SimpleTriangleMesh;
 
 // Forward declare quantity types
 
-// template <> // Specialize the quantity type
-// struct QuantityTypeHelper<SimpleTriangleMesh> {
-//   typedef SimpleTriangleMeshQuantity type;
-// };
-
-
 struct SimpleTriangleMeshPickResult {
   // this does nothing for now, just matching pattern from other structures
 };
 
-class SimpleTriangleMesh : public QuantityStructure<SimpleTriangleMesh> {
+class SimpleTriangleMesh : public Structure {
 public:
   // === Member functions ===
 

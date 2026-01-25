@@ -175,7 +175,7 @@ void VolumeMeshVertexScalarQuantity::setLevelSetVisibleQuantity(std::string name
   if (pair == parent.quantities.end()) {
     return;
   }
-  VolumeMeshQuantity* vmq = pair->second.get();
+  Quantity* vmq = pair->second.get();
   VolumeMeshVertexScalarQuantity* q = dynamic_cast<VolumeMeshVertexScalarQuantity*>(vmq);
   if (q == nullptr) {
     return;
@@ -220,10 +220,10 @@ void VolumeMeshVertexScalarQuantity::buildCustomUI() {
     ImGui::DragFloat("##value", &levelSetValue, 0.01f, (float)colorBar.colormapRange.first,
                      (float)colorBar.colormapRange.second);
     if (ImGui::BeginMenu("Show Quantity")) {
-      std::map<std::string, std::unique_ptr<polyscope::VolumeMeshQuantity>>::iterator it;
+      std::map<std::string, std::unique_ptr<polyscope::Quantity>>::iterator it;
       for (it = parent.quantities.begin(); it != parent.quantities.end(); it++) {
         std::string quantityName = it->first;
-        VolumeMeshQuantity* vmq = it->second.get();
+        Quantity* vmq = it->second.get();
         VolumeMeshVertexScalarQuantity* vmvsq = dynamic_cast<VolumeMeshVertexScalarQuantity*>(vmq);
         if (vmvsq != nullptr && ImGui::MenuItem(quantityName.c_str(), NULL, showQuantity == it->second.get())) {
           setLevelSetVisibleQuantity(quantityName);

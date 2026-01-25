@@ -70,7 +70,7 @@ TEST_F(PolyscopeTest, PointCloudSphereOrthographicRendering) {
 
   psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::show(3);
-  
+
   polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
 
   polyscope::removeAllStructures();
@@ -85,7 +85,7 @@ TEST_F(PolyscopeTest, PointCloudPick) {
 
   psPoints->setPointRenderMode(polyscope::PointRenderMode::Quad);
   polyscope::pickAtBufferInds(glm::ivec2(77, 88));
-  
+
   // make sure it works in orthographic mode
   polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
   polyscope::pickAtBufferInds(glm::ivec2(77, 88));

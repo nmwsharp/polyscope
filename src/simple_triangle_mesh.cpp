@@ -20,7 +20,7 @@ const std::string SimpleTriangleMesh::structureTypeName = "Simple Triangle Mesh"
 SimpleTriangleMesh::SimpleTriangleMesh(std::string name, std::vector<glm::vec3> vertices_,
                                        std::vector<glm::uvec3> faces_)
     : // clang-format off
-      QuantityStructure<SimpleTriangleMesh>(name, structureTypeName),
+      Structure(name, structureTypeName),
       vertices(this, uniquePrefix() + "vertices", verticesData), 
       faces(this, uniquePrefix() + "faces", facesData), 
       verticesData(std::move(vertices_)),
@@ -264,7 +264,7 @@ void SimpleTriangleMesh::refresh() {
   program.reset();
   pickProgram.reset();
   requestRedraw();
-  QuantityStructure<SimpleTriangleMesh>::refresh(); // call base class version, which refreshes quantities
+  Structure::refresh(); // call base class version, which refreshes quantities
 }
 
 void SimpleTriangleMesh::updateObjectSpaceBounds() {

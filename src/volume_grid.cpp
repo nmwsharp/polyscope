@@ -12,7 +12,7 @@ namespace polyscope {
 const std::string VolumeGrid::structureTypeName = "Volume Grid";
 
 VolumeGrid::VolumeGrid(std::string name, glm::uvec3 gridNodeDim_, glm::vec3 boundMin_, glm::vec3 boundMax_)
-    : QuantityStructure<VolumeGrid>(name, typeName()),
+    : Structure(name, typeName()),
 
       // clang-format off
       // == managed quantities
@@ -170,7 +170,7 @@ void VolumeGrid::drawPick() {
   // Draw the actual grid
   render::engine->setBackfaceCull(true);
   pickProgram->draw();
-  
+
   for (auto& x : quantities) {
     x.second->drawPick();
   }
@@ -293,7 +293,7 @@ void VolumeGrid::updateObjectSpaceBounds() {
 std::string VolumeGrid::typeName() { return structureTypeName; }
 
 void VolumeGrid::refresh() {
-  QuantityStructure<VolumeGrid>::refresh(); // call base class version, which refreshes quantities
+  Structure::refresh(); // call base class version, which refreshes quantities
 
   program.reset();
   pickProgram.reset();
@@ -419,8 +419,8 @@ double VolumeGrid::getCubeSizeFactor() { return cubeSizeFactor.get(); }
 // === Register functions
 
 
-VolumeGridQuantity::VolumeGridQuantity(std::string name_, VolumeGrid& curveNetwork_, bool dominates_)
-    : QuantityS<VolumeGrid>(name_, curveNetwork_, dominates_) {}
+VolumeGridQuantity::VolumeGridQuantity(std::string name_, VolumeGrid& volumeGrid_, bool dominates_)
+    : Quantity(name_, volumeGrid_, dominates_), parent(volumeGrid_) {}
 
 
 VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityImpl(std::string name, const std::vector<float>& data,
@@ -549,7 +549,8 @@ void VolumeGrid::buildNodeInfoGUI(const VolumeGridPickResult& result) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildNodeInfoGUI(nInd);
+    VolumeGridQuantity* q = static_cast<VolumeGridQuantity*>(x.second.get());
+    q->buildNodeInfoGUI(nInd);
   }
 
   ImGui::Indent(-20.);
@@ -575,7 +576,8 @@ void VolumeGrid::buildCellInfoGUI(const VolumeGridPickResult& result) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildCellInfoGUI(cellInd);
+    VolumeGridQuantity* q = static_cast<VolumeGridQuantity*>(x.second.get());
+    q->buildCellInfoGUI(cellInd);
   }
 
   ImGui::Indent(-20.);

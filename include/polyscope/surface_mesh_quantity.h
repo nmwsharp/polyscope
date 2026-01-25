@@ -8,14 +8,14 @@
 
 namespace polyscope {
 
-// Forward delcare surface mesh
 class SurfaceMesh;
 
-// Extend Quantity<SurfaceMesh> to add a few extra functions
-class SurfaceMeshQuantity : public QuantityS<SurfaceMesh> {
+class SurfaceMeshQuantity : public Quantity {
 public:
   SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates = false);
   ~SurfaceMeshQuantity() {};
+
+  SurfaceMesh& parent; // shadows and hides the generic member in Quantity
 
 public:
   // Build GUI info about this element

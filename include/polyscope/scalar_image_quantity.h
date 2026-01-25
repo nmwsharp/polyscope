@@ -25,7 +25,7 @@ public:
 
   // == Setters and getters
 
-  virtual ScalarImageQuantity* setEnabled(bool newEnabled) override;
+  virtual void setEnabled(bool newEnabled) override;
 
 protected:
   // rendering internals

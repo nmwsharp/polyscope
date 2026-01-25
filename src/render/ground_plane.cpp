@@ -178,7 +178,7 @@ void GroundPlane::freeAllOwnedResources() {
   blurProgram.reset();
   copyTexProgram.reset();
 
-  for(int i = 0; i < 2; i++) {
+  for (int i = 0; i < 2; i++) {
     blurColorTextures[i].reset();
     blurFrameBuffers[i].reset();
   }

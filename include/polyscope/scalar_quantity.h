@@ -34,7 +34,7 @@ public:
   void updateData(const V& newValues);
 
   // Export the current colorbar as an SVG file
-  void exportColorbarToSVG(const std::string& filename); 
+  void exportColorbarToSVG(const std::string& filename);
 
   // === Members
   QuantityT& quantity;
@@ -54,7 +54,7 @@ public:
   std::pair<double, double> getMapRange();
   QuantityT* resetMapRange(); // reset to full range
   std::pair<double, double> getDataRange();
-  
+
   // Color bar options (it is always displayed inline in the structures panel)
   QuantityT* setOnscreenColorbarEnabled(bool newEnabled);
   bool getOnscreenColorbarEnabled();
@@ -91,7 +91,7 @@ protected:
   std::pair<double, double> dataRange;
   PersistentValue<float> vizRangeMin;
   PersistentValue<float> vizRangeMax;
-  
+
   ColorBar colorBar;
 
   // Parameters

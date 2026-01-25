@@ -41,7 +41,7 @@ public:
 
   // == Setters and getters
 
-  virtual RenderImageQuantityBase* setEnabled(bool newEnabled) override;
+  virtual void setEnabled(bool newEnabled) override;
 
   // Material
   RenderImageQuantityBase* setMaterial(std::string name);

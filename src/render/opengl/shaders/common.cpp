@@ -240,8 +240,8 @@ bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float 
 }
 
 )"
-// Split the raw string literal to avoid compiler string length limits
-R"(
+                                 // Split the raw string literal to avoid compiler string length limits
+                                 R"(
 
 bool rayPlaneIntersection(vec3 rayStart, vec3 rayDir, vec3 planePos, vec3 planeDir, out float tHit, out vec3 pHit, out vec3 nHit) {
   

@@ -150,15 +150,14 @@ void ColorImageQuantity::refresh() {
 }
 
 
-ColorImageQuantity* ColorImageQuantity::setEnabled(bool newEnabled) {
-  if (newEnabled == isEnabled()) return this;
+void ColorImageQuantity::setEnabled(bool newEnabled) {
+  if (newEnabled == isEnabled()) return;
   if (newEnabled == true && getShowFullscreen()) {
     // if drawing fullscreen, disable anything else which was already drawing fullscreen
     disableAllFullscreenArtists();
   }
   enabled = newEnabled;
   requestRedraw();
-  return this;
 }
 
 ColorImageQuantity* ColorImageQuantity::setIsPremultiplied(bool val) {

@@ -2,7 +2,11 @@
 
 #include "polyscope/structure.h"
 
+#include "polyscope/floating_quantity.h"
 #include "polyscope/polyscope.h"
+#include "polyscope/quantity.h"
+
+#include "polyscope/floating_quantities.h"
 
 #include "imgui.h"
 
@@ -138,7 +142,7 @@ void Structure::buildUI() {
     // Do any structure-specific stuff here
     this->buildCustomUI();
 
-    // Build quantities list, in the common case of a QuantityStructure
+    // Build quantities list, in the common case of a Structure
     this->buildQuantitiesUI();
 
     ImGui::TreePop();
@@ -147,15 +151,38 @@ void Structure::buildUI() {
 }
 
 
-void Structure::buildQuantitiesUI() {}
+void Structure::buildQuantitiesUI() {
+  // Build the quantities
+  for (auto& x : quantities) {
+    x.second->buildUI();
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->buildUI();
+  }
+}
+
+
+void Structure::buildStructureOptionsUI() {
+  if (ImGui::BeginMenu("Quantity Selection")) {
+    if (ImGui::MenuItem("Enable all")) setAllQuantitiesEnabled(true);
+    if (ImGui::MenuItem("Disable all")) setAllQuantitiesEnabled(false);
+    ImGui::EndMenu();
+  }
+}
 
 void Structure::buildSharedStructureUI() {}
-
-void Structure::buildStructureOptionsUI() {}
 
 void Structure::buildCustomOptionsUI() {}
 
 void Structure::refresh() {
+
+  for (auto& qp : quantities) {
+    qp.second->refresh();
+  }
+  for (auto& qp : floatingQuantities) {
+    qp.second->refresh();
+  }
+
   updateObjectSpaceBounds();
   requestRedraw();
 }
@@ -348,6 +375,252 @@ bool Structure::getIgnoreSlicePlane(std::string name) {
   std::vector<std::string>& names = ignoredSlicePlaneNames.get();
   bool ignoreThisPlane = (std::find(names.begin(), names.end(), name) != names.end());
   return ignoreThisPlane;
+}
+
+void Structure::addQuantity(Quantity* q, bool allowReplacement) {
+
+  // Check if a quantity with this name exists, remove it or throw and error if so
+  checkForQuantityWithNameAndDeleteOrError(q->name, allowReplacement);
+
+  // Add the new quantity and take ownership
+  quantities[q->name] = std::unique_ptr<Quantity>(q);
+}
+
+
+void Structure::addQuantity(FloatingQuantity* q, bool allowReplacement) {
+
+  // Check if a quantity with this name exists, remove it or throw and error if so
+  checkForQuantityWithNameAndDeleteOrError(q->name, allowReplacement);
+
+  // Add the new quantity
+  floatingQuantities[q->name] = std::unique_ptr<FloatingQuantity>(q);
+}
+
+
+Quantity* Structure::getQuantity(std::string name) {
+  if (quantities.find(name) == quantities.end()) {
+    return nullptr;
+  }
+  return quantities[name].get();
+}
+
+
+FloatingQuantity* Structure::getFloatingQuantity(std::string name) {
+  if (floatingQuantities.find(name) == floatingQuantities.end()) {
+    return nullptr;
+  }
+  return floatingQuantities[name].get();
+}
+
+
+void Structure::removeQuantity(std::string name, bool errorIfAbsent) {
+
+  // Look for an existing quantity with this name
+  bool quantityExists = quantities.find(name) != quantities.end();
+  bool floatingQuantityExists = floatingQuantities.find(name) != floatingQuantities.end();
+
+  if (errorIfAbsent && !(quantityExists || floatingQuantityExists)) {
+    exception("No quantity named " + name + " added to structure " + name);
+    return;
+  }
+
+  // delete standard quantities
+  if (quantityExists) {
+    // If this is the active quantity, clear it
+    Quantity& q = *quantities[name];
+    if (dominantQuantity == &q) {
+      clearDominantQuantity();
+    }
+
+    // Delete the quantity
+    quantities.erase(name);
+  }
+
+  // delete floating quantities
+  if (floatingQuantityExists) {
+    floatingQuantities.erase(name);
+  }
+}
+
+
+void Structure::removeAllQuantities() {
+  while (quantities.size() > 0) {
+    removeQuantity(quantities.begin()->first);
+  }
+  while (floatingQuantities.size() > 0) {
+    removeQuantity(floatingQuantities.begin()->first);
+  }
+}
+
+
+void Structure::setDominantQuantity(Quantity* q) {
+  if (!q->dominates) {
+    exception("tried to set dominant quantity with quantity that has dominates=false");
+    return;
+  }
+
+  // Dominant quantity must be enabled
+  q->setEnabled(true);
+
+  // All other dominating quantities will be disabled
+  for (auto& qp : quantities) {
+    Quantity* qOther = qp.second.get();
+    if (qOther->dominates && qOther->isEnabled() && qOther != q) {
+      qOther->setEnabled(false);
+    }
+  }
+
+  dominantQuantity = q;
+}
+
+
+void Structure::clearDominantQuantity() { dominantQuantity = nullptr; }
+
+
+void Structure::setAllQuantitiesEnabled(bool newEnabled) {
+  for (auto& x : quantities) {
+    x.second->setEnabled(newEnabled);
+  }
+  for (auto& x : floatingQuantities) {
+    x.second->setEnabled(newEnabled);
+  }
+}
+
+void Structure::checkForQuantityWithNameAndDeleteOrError(std::string name, bool allowReplacement) {
+
+  // Look for an existing quantity with this name
+  bool quantityExists = quantities.find(name) != quantities.end();
+  bool floatingQuantityExists = floatingQuantities.find(name) != floatingQuantities.end();
+
+  // if it already exists and we cannot replace, throw an error
+  if (!allowReplacement && (quantityExists || floatingQuantityExists)) {
+    exception("Tried to add quantity with name: [" + name +
+              "], but a quantity with that name already exists on the structure [" + name +
+              "]. Use the allowReplacement option like addQuantity(..., true) to replace.");
+  }
+
+  // Remove the old quantity
+  if (quantityExists || floatingQuantityExists) {
+    removeQuantity(name);
+  }
+}
+
+// === Floating Quantity Impls ===
+
+// Forward declare helper functions, which wrap the constructors for the floating quantities below.
+// Otherwise, we would have to include their respective headers here, and create some really gnarly header dependency
+// chains.
+ScalarImageQuantity* createScalarImageQuantity(Structure& parent, std::string name, size_t dimX, size_t dimY,
+                                               const std::vector<float>& data, ImageOrigin imageOrigin,
+                                               DataType dataType);
+ColorImageQuantity* createColorImageQuantity(Structure& parent, std::string name, size_t dimX, size_t dimY,
+                                             const std::vector<glm::vec4>& data, ImageOrigin imageOrigin);
+DepthRenderImageQuantity* createDepthRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
+                                                 const std::vector<float>& depthData,
+                                                 const std::vector<glm::vec3>& normalData, ImageOrigin imageOrigin);
+
+ColorRenderImageQuantity* createColorRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
+                                                 const std::vector<float>& depthData,
+                                                 const std::vector<glm::vec3>& normalData,
+                                                 const std::vector<glm::vec3>& colorData, ImageOrigin imageOrigin);
+
+
+RawColorRenderImageQuantity* createRawColorRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
+                                                       const std::vector<float>& depthData,
+                                                       const std::vector<glm::vec3>& colorData,
+                                                       ImageOrigin imageOrigin);
+
+RawColorAlphaRenderImageQuantity* createRawColorAlphaRenderImage(Structure& parent, std::string name, size_t dimX,
+                                                                 size_t dimY, const std::vector<float>& depthData,
+                                                                 const std::vector<glm::vec4>& colorData,
+                                                                 ImageOrigin imageOrigin);
+
+
+ScalarRenderImageQuantity* createScalarRenderImage(Structure& parent, std::string name, size_t dimX, size_t dimY,
+                                                   const std::vector<float>& depthData,
+                                                   const std::vector<glm::vec3>& normalData,
+                                                   const std::vector<float>& scalarData, ImageOrigin imageOrigin,
+                                                   DataType type);
+
+
+ScalarImageQuantity* Structure::addScalarImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
+                                                           const std::vector<float>& values, ImageOrigin imageOrigin,
+                                                           DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  ScalarImageQuantity* q = createScalarImageQuantity(*this, name, dimX, dimY, values, imageOrigin, type);
+  addQuantity(q);
+  return q;
+}
+
+
+ColorImageQuantity* Structure::addColorImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
+                                                         const std::vector<glm::vec4>& values,
+                                                         ImageOrigin imageOrigin) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  ColorImageQuantity* q = createColorImageQuantity(*this, name, dimX, dimY, values, imageOrigin);
+  addQuantity(q);
+  return q;
+}
+
+
+DepthRenderImageQuantity* Structure::addDepthRenderImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
+                                                                     const std::vector<float>& depthData,
+                                                                     const std::vector<glm::vec3>& normalData,
+                                                                     ImageOrigin imageOrigin) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  DepthRenderImageQuantity* q = createDepthRenderImage(*this, name, dimX, dimY, depthData, normalData, imageOrigin);
+  addQuantity(q);
+  return q;
+}
+
+
+ColorRenderImageQuantity* Structure::addColorRenderImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
+                                                                     const std::vector<float>& depthData,
+                                                                     const std::vector<glm::vec3>& normalData,
+                                                                     const std::vector<glm::vec3>& colorData,
+                                                                     ImageOrigin imageOrigin) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  ColorRenderImageQuantity* q =
+      createColorRenderImage(*this, name, dimX, dimY, depthData, normalData, colorData, imageOrigin);
+  addQuantity(q);
+  return q;
+}
+
+
+ScalarRenderImageQuantity* Structure::addScalarRenderImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
+                                                                       const std::vector<float>& depthData,
+                                                                       const std::vector<glm::vec3>& normalData,
+                                                                       const std::vector<float>& scalarData,
+                                                                       ImageOrigin imageOrigin, DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  ScalarRenderImageQuantity* q =
+      createScalarRenderImage(*this, name, dimX, dimY, depthData, normalData, scalarData, imageOrigin, type);
+  addQuantity(q);
+  return q;
+}
+
+
+RawColorRenderImageQuantity* Structure::addRawColorRenderImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
+                                                                           const std::vector<float>& depthData,
+                                                                           const std::vector<glm::vec3>& colorData,
+                                                                           ImageOrigin imageOrigin) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  RawColorRenderImageQuantity* q =
+      createRawColorRenderImage(*this, name, dimX, dimY, depthData, colorData, imageOrigin);
+  addQuantity(q);
+  return q;
+}
+
+
+RawColorAlphaRenderImageQuantity*
+Structure::addRawColorAlphaRenderImageQuantityImpl(std::string name, size_t dimX, size_t dimY,
+                                                   const std::vector<float>& depthData,
+                                                   const std::vector<glm::vec4>& colorData, ImageOrigin imageOrigin) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  RawColorAlphaRenderImageQuantity* q =
+      createRawColorAlphaRenderImage(*this, name, dimX, dimY, depthData, colorData, imageOrigin);
+  addQuantity(q);
+  return q;
 }
 
 } // namespace polyscope

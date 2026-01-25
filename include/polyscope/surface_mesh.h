@@ -46,11 +46,6 @@ class SurfaceFaceTangentVectorQuantity;
 class SurfaceOneFormTangentVectorQuantity;
 
 
-template <> // Specialize the quantity type
-struct QuantityTypeHelper<SurfaceMesh> {
-  typedef SurfaceMeshQuantity type;
-};
-
 struct SurfaceMeshPickResult {
   MeshElement elementType;                        // which kind of element did we click
   int64_t index;                                  // index of the clicked element
@@ -59,10 +54,8 @@ struct SurfaceMeshPickResult {
 
 // === The grand surface mesh class
 
-class SurfaceMesh : public QuantityStructure<SurfaceMesh> {
+class SurfaceMesh : public Structure {
 public:
-  typedef SurfaceMeshQuantity QuantityType;
-
   // == Constructors
 
   // initializes members

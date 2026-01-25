@@ -153,6 +153,7 @@ endif()
 
 
 SET(SRCS
+  
 
   # Core functionality
   polyscope.cpp
@@ -310,13 +311,11 @@ SET(HEADERS
   ${INCLUDE_ROOT}/point_cloud.h
   ${INCLUDE_ROOT}/point_cloud.ipp
   ${INCLUDE_ROOT}/point_cloud_color_quantity.h
-  ${INCLUDE_ROOT}/point_cloud_quantity.h
   ${INCLUDE_ROOT}/point_cloud_scalar_quantity.h
   ${INCLUDE_ROOT}/point_cloud_parameterization_quantity.h
   ${INCLUDE_ROOT}/point_cloud_vector_quantity.h
   ${INCLUDE_ROOT}/polyscope.h
   ${INCLUDE_ROOT}/quantity.h
-  ${INCLUDE_ROOT}/quantity.ipp
   ${INCLUDE_ROOT}/raw_color_render_image_quantity.h
   ${INCLUDE_ROOT}/render/color_maps.h
   ${INCLUDE_ROOT}/render/engine.h
@@ -336,7 +335,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/slice_plane.h
   ${INCLUDE_ROOT}/standardize_data_array.h
   ${INCLUDE_ROOT}/structure.h
-  ${INCLUDE_ROOT}/structure.ipp
   ${INCLUDE_ROOT}/surface_color_quantity.h
   ${INCLUDE_ROOT}/surface_mesh.h
   ${INCLUDE_ROOT}/surface_mesh.ipp

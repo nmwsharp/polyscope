@@ -110,7 +110,7 @@ extern std::function<void()>& userCallback;
 // == Other callback functions
 
 // invoked when files are dropped onto the window, nothing by default
-extern std::function<void(const std::vector<std::string>&)> filesDroppedCallback; 
+extern std::function<void(const std::vector<std::string>&)> filesDroppedCallback;
 
 // === Implementation details
 
