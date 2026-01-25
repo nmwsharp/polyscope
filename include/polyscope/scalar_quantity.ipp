@@ -357,6 +357,7 @@ template <typename QuantityT>
 QuantityT* ScalarQuantity<QuantityT>::setMapRange(std::pair<double, double> val) {
   vizRangeMin = val.first;
   vizRangeMax = val.second;
+  colorBar.colormapRange = std::pair<float, float>(vizRangeMin.get(), vizRangeMax.get());
   requestRedraw();
   return &quantity;
 }
