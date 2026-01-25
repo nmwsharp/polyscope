@@ -24,7 +24,7 @@ const std::string CameraView::structureTypeName = "Camera View";
 
 // Constructor
 CameraView::CameraView(std::string name, const CameraParameters& params_)
-    : QuantityStructure<CameraView>(name, structureTypeName), params(params_),
+    : Structure(name, structureTypeName), params(params_),
       widgetFocalLength(uniquePrefix() + "#widgetFocalLength", relativeValue(0.05)),
       widgetThickness(uniquePrefix() + "#widgetThickness", 0.02),
       widgetColor(uniquePrefix() + "#widgetColor", glm::vec3{0., 0., 0.}) {
@@ -340,7 +340,7 @@ void CameraView::geometryChanged() {
   }
 
   requestRedraw();
-  QuantityStructure<CameraView>::refresh();
+  Structure::refresh();
 }
 
 CameraViewPickResult CameraView::interpretPickResult(const PickResult& rawResult) {
@@ -447,7 +447,7 @@ void CameraView::refresh() {
   nodeProgram.reset();
   edgeProgram.reset();
   pickFrameProgram.reset();
-  QuantityStructure<CameraView>::refresh(); // call base class version, which refreshes quantities
+  Structure::refresh(); // call base class version, which refreshes quantities
 }
 
 void CameraView::setViewToThisCamera(bool withFlight) {

@@ -286,7 +286,8 @@ void SlicePlane::drawGeometry() {
 
     for (auto it = vMesh->quantities.begin(); it != vMesh->quantities.end(); it++) {
       if (!it->second->isEnabled()) continue;
-      it->second->drawSlice(this);
+      VolumeMeshQuantity* vq = static_cast<VolumeMeshQuantity*>(it->second.get());
+      vq->drawSlice(this);
     }
   }
 }

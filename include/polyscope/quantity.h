@@ -23,7 +23,7 @@ class Structure;
 class Quantity : public render::ManagedBufferRegistry {
 
 public:
-  Quantity(std::string name, Structure& parentStructure);
+  Quantity(std::string name, Structure& parentStructure, bool dominates = false);
   virtual ~Quantity();
 
   // Draw the quantity.
@@ -42,7 +42,9 @@ public:
 
   // Enable and disable the quantity
   bool isEnabled();
-  // there is no setEnabled() here, only in subclasses, because subclasses have different return types
+
+  // this function is defined by subclasses instead so they can return themselves for backward compatibility
+  virtual void setEnabled(bool newVal);
 
   // = Utility
 
@@ -60,22 +62,6 @@ public:
 
   // Is this quantity currently being displayed?
   PersistentValue<bool> enabled; // should be set by setEnabled()
-};
-
-// === Structure-specific Quantities
-
-template <typename S>
-class QuantityS : public Quantity {
-public:
-  QuantityS(std::string name, S& parentStructure, bool dominates = false);
-  virtual ~QuantityS();
-
-  // Enable and disable the quantity
-  virtual QuantityS<S>* setEnabled(bool newEnabled);
-
-  virtual void buildUI() override;
-
-  S& parent; // note: this HIDES the more general member of the same name in the parent class
 
   // Track dominating quantities
   bool dominates = false;
@@ -83,6 +69,3 @@ public:
 
 
 } // namespace polyscope
-
-
-#include "polyscope/quantity.ipp"

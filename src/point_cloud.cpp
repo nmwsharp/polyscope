@@ -24,7 +24,7 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 // Constructor
 PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
     : // clang-format off
-    QuantityStructure<PointCloud>(name, structureTypeName), 
+    Structure(name, structureTypeName), 
       points(this, uniquePrefix() + "points", pointsData),
       pointsData(std::move(points_)), 
       pointRenderMode(uniquePrefix() + "pointRenderMode", "sphere"),
@@ -269,7 +269,7 @@ std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string>
 // helper
 PointCloudScalarQuantity& PointCloud::resolvePointRadiusQuantity() {
   PointCloudScalarQuantity* sizeScalarQ = nullptr;
-  PointCloudQuantity* sizeQ = getQuantity(pointRadiusQuantityName);
+  PointCloudQuantity* sizeQ = getStructureQuantity<PointCloudQuantity>(pointRadiusQuantityName);
   if (sizeQ != nullptr) {
     sizeScalarQ = dynamic_cast<PointCloudScalarQuantity*>(sizeQ);
     if (sizeScalarQ == nullptr) {
@@ -409,7 +409,7 @@ std::string PointCloud::typeName() { return structureTypeName; }
 void PointCloud::refresh() {
   program.reset();
   pickProgram.reset();
-  QuantityStructure<PointCloud>::refresh(); // call base class version, which refreshes quantities
+  Structure::refresh(); // call base class version, which refreshes quantities
 }
 
 
@@ -455,7 +455,7 @@ void PointCloud::clearTransparencyQuantity() {
 
 PointCloudScalarQuantity& PointCloud::resolveTransparencyQuantity() {
   PointCloudScalarQuantity* transparencyScalarQ = nullptr;
-  PointCloudQuantity* anyQ = getQuantity(transparencyQuantityName);
+  PointCloudQuantity* anyQ = getStructureQuantity<PointCloudQuantity>(transparencyQuantityName);
   if (anyQ != nullptr) {
     transparencyScalarQ = dynamic_cast<PointCloudScalarQuantity*>(anyQ);
     if (transparencyScalarQ == nullptr) {
@@ -472,7 +472,7 @@ PointCloudScalarQuantity& PointCloud::resolveTransparencyQuantity() {
 
 // Quantity default methods
 PointCloudQuantity::PointCloudQuantity(std::string name_, PointCloud& pointCloud_, bool dominates_)
-    : QuantityS<PointCloud>(name_, pointCloud_, dominates_) {}
+    : Quantity(name_, pointCloud_, dominates_), parent(pointCloud_) {}
 
 
 void PointCloudQuantity::buildInfoGUI(size_t pointInd) {}

@@ -17,19 +17,11 @@ namespace polyscope {
 // Forward declare structure
 class CameraView;
 
-/*
-// Forward declare quantity types (currently there are none)
-template <> // Specialize the quantity type
-struct QuantityTypeHelper<CameraView> {
-  typedef CameraViewQuantity type;
-};
-*/
-
 struct CameraViewPickResult {
   // currently nothing, just following the same pattern as other structures
 };
 
-class CameraView : public QuantityStructure<CameraView> {
+class CameraView : public Structure {
 public:
   // === Member functions ===
 

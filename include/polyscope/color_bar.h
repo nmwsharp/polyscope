@@ -32,13 +32,13 @@ public:
   Quantity& parent;
   std::pair<double, double> colormapRange; // in DATA values, not [0,1]
 
-  void exportColorbarToSVG(const std::string& filename); 
+  void exportColorbarToSVG(const std::string& filename);
 
   // Getters and setters
 
   void setOnscreenColorbarEnabled(bool newEnabled);
   bool getOnscreenColorbarEnabled();
- 
+
   // Location in screen coords. (-1,-1), means "place automatically" (default)
   void setOnscreenColorbarLocation(glm::vec2 newScreenCoords);
   glm::vec2 getOnscreenColorbarLocation();

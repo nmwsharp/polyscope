@@ -32,7 +32,7 @@ void initializeRenderEngine(std::string backend) {
   if (backend == "") {
     backend = "auto"; // treat "" as "auto"
   }
-  
+
   // Quick check to print a nice error for a bad name
   std::vector<std::string> knownBackendNames = {"openGL3_glfw", "openGL3_egl", "openGL_mock", "auto"};
   if (std::find(knownBackendNames.begin(), knownBackendNames.end(), backend) == knownBackendNames.end()) {

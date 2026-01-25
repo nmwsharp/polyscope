@@ -9,16 +9,31 @@
 
 #include "glm/glm.hpp"
 
+#include "polyscope/floating_quantity.h"
 #include "polyscope/persistent_value.h"
 #include "polyscope/pick.h"
+#include "polyscope/quantity.h"
 #include "polyscope/render/engine.h"
 #include "polyscope/transformation_gizmo.h"
 #include "polyscope/weak_handle.h"
 
 #include "polyscope/render/managed_buffer.h"
 
-
 namespace polyscope {
+
+// forward declarations
+class Quantity;
+
+// Floating quantity things
+class FloatingQuantity;
+class ScalarImageQuantity;
+class ColorImageQuantity;
+class DepthRenderImageQuantity;
+class ColorRenderImageQuantity;
+class ScalarRenderImageQuantity;
+class RawColorRenderImageQuantity;
+class RawColorAlphaRenderImageQuantity;
+
 
 // forward declarations
 class Group;
@@ -40,41 +55,53 @@ public:
   Structure(std::string name, std::string subtypeName);
   virtual ~Structure() = 0;
 
-  // == Render the the structure on screen
-  virtual void draw() = 0;
-  virtual void drawPick() = 0;
-  virtual void drawDelayed() = 0; // a second render pass
-  virtual void drawPickDelayed() = 0;
-
-  // == Add rendering rules
-  std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
-
-  // == Build the ImGUI ui elements
-  virtual void buildUI();
-  virtual void buildCustomUI() = 0;       // overridden by childen to add custom UI data
-  virtual void buildCustomOptionsUI();    // overridden by childen to add to the options menu
-  virtual void buildStructureOptionsUI(); // overridden by structure quantities to add to the options menu
-  virtual void buildQuantitiesUI();       // build quantities, if they exist. Overridden by QuantityStructure.
-  virtual void buildSharedStructureUI();  // Draw any UI elements shared between all instances of the structure
-  virtual void buildPickUI(const PickResult& result) = 0; // Draw pick UI elements based on a selection result
+  // ====================================================================
+  // ==== Basic Meta-Management =========================================
+  // ====================================================================
 
   // = Identifying data
   const std::string name;        // should be unique amongst registered structures with this type
   const std::string subtypeName; // specific type name, like "Point Cloud"
   std::string uniquePrefix();
-
   std::string getName() { return name; }; // used by pybind to access the name property
-
-  // = Length and bounding box
-  // (returned in world coordinates, after the object transform is applied)
-  std::tuple<glm::vec3, glm::vec3> boundingBox(); // get axis-aligned bounding box
-  float lengthScale();                            // get characteristic length
-  virtual bool hasExtents();                      // bounding box and length scale are only meaningful if true
-
-  // = Basic state
   virtual std::string typeName() = 0;
 
-  // = Scene transform
+  // Re-perform any setup work, including refreshing all quantities
+  virtual void refresh();
+
+  // Get rid of it (invalidates the object and all pointers, etc!)
+  void remove();
+
+  // ====================================================================
+  // ==== Rendering =====================================================
+  // ====================================================================
+
+  virtual void draw() = 0;
+  virtual void drawPick() = 0;
+  virtual void drawDelayed() = 0; // a second render pass
+  virtual void drawPickDelayed() = 0;
+
+  // Helpers to add rendering rules
+  std::vector<std::string> addStructureRules(std::vector<std::string> initRules);
+
+  // ====================================================================
+  // ==== ImGui UI elements =============================================
+  // ====================================================================
+
+  virtual void buildUI();
+  virtual void buildCustomUI() = 0;       // overridden by childen to add custom UI data
+  virtual void buildCustomOptionsUI();    // overridden by childen to add to the options menu
+  virtual void buildStructureOptionsUI(); // overridden by structure quantities to add to the options menu
+  virtual void buildQuantitiesUI();       // build quantities, if they exist.
+  virtual void buildSharedStructureUI();  // Draw any UI elements shared between all instances of the structure
+  virtual void buildPickUI(const PickResult& result) = 0; // Draw pick UI elements based on a selection result
+
+
+  // ====================================================================
+  // ==== Transform to position in the scene ============================
+  // ====================================================================
+
+  // Transform management
   glm::mat4 getModelView();
   void centerBoundingBox();
   void rescaleToUnit();
@@ -86,14 +113,15 @@ public:
   glm::vec3 getPosition();
   TransformationGizmo& getTransformGizmo();
 
-  void setStructureUniforms(render::ShaderProgram& p);
-  bool wantsCullPosition();
+  // = Length and bounding box
+  // (returned in world coordinates, after the object transform is applied)
+  std::tuple<glm::vec3, glm::vec3> boundingBox(); // get axis-aligned bounding box
+  float lengthScale();                            // get characteristic length
+  virtual bool hasExtents();                      // bounding box and length scale are only meaningful if true
 
-  // Re-perform any setup work, including refreshing all quantities
-  virtual void refresh();
-
-  // Get rid of it (invalidates the object and all pointers, etc!)
-  void remove();
+  // ====================================================================
+  // ==== Enabling, Selection, and Groups ===============================
+  // ====================================================================
 
   // Selection tools
   virtual Structure* setEnabled(bool newEnabled);
@@ -103,8 +131,10 @@ public:
   void addToGroup(std::string groupName);
   void addToGroup(Group& group);
 
+  // ====================================================================
+  // ==== Options =======================================================
+  // ====================================================================
 
-  // Options
   Structure* setTransparency(float newVal); // also enables transparency if <1 and transparency is not enabled
   float getTransparency();
 
@@ -117,103 +147,43 @@ public:
   Structure* setTransformGizmoEnabled(bool newVal);
   bool getTransformGizmoEnabled();
 
-protected:
-  // = State
-  PersistentValue<bool> enabled;
-  PersistentValue<glm::mat4> objectTransform; // rigid transform
 
-  // 0 for transparent, 1 for opaque, only has effect if engine transparency is set
-  PersistentValue<float> transparency;
+  // ====================================================================
+  // ==== Manage quantities =============================================
+  // ====================================================================
 
-  // Widget that wraps the transform
-  TransformationGizmo transformGizmo;
-
-  PersistentValue<bool> cullWholeElements;
-
-  PersistentValue<std::vector<std::string>> ignoredSlicePlaneNames;
-
-  // Manage the bounding box & length scale
-  // (this is defined _before_ the object transform is applied. To get the scale/bounding box after transforms, use the
-  // boundingBox() and lengthScale() member function)
-  // The STRUCTURE is responsible for making sure updateObjectSpaceBounds() gets called any time the geometry changes
-  std::tuple<glm::vec3, glm::vec3> objectSpaceBoundingBox;
-  float objectSpaceLengthScale;
-  virtual void updateObjectSpaceBounds() = 0;
-};
-
-
-// Register a structure with polyscope
-// Structure name must be a globally unique identifier for the structure.
-bool registerStructure(Structure* structure, bool replaceIfPresent = true);
-
-// Can also manage quantities
-
-
-// forward declarations
-class Quantity;
-template <typename S>
-class QuantityS;
-
-// Floating quantity things
-class FloatingQuantity;
-class ScalarImageQuantity;
-class ColorImageQuantity;
-class DepthRenderImageQuantity;
-class ColorRenderImageQuantity;
-class ScalarRenderImageQuantity;
-class RawColorRenderImageQuantity;
-class RawColorAlphaRenderImageQuantity;
-
-// Helper used to define quantity types
-template <typename T>
-struct QuantityTypeHelper {
-  typedef QuantityS<T> type; // default values
-};
-
-template <typename S> // template on the derived type
-class QuantityStructure : public Structure {
-public:
-  // Nicer name for the quantity type of this structure
-  typedef typename QuantityTypeHelper<S>::type QuantityType;
-
-  // === Member functions ===
-
-  // Base constructor which sets the name
-  QuantityStructure(std::string name, std::string subtypeName);
-  virtual ~QuantityStructure() = 0;
-
-  virtual void buildQuantitiesUI() override;
-  virtual void buildStructureOptionsUI() override;
-
-  // Re-perform any setup work, including refreshing all quantities
-  virtual void refresh() override;
-
-  // = Manage quantities
+  // Primary storage to hold quantities
+  // Note that floating quantities are tracked separately throughout
+  std::map<std::string, std::unique_ptr<Quantity>> quantities;
+  std::map<std::string, std::unique_ptr<FloatingQuantity>> floatingQuantities;
 
   // Note: takes ownership of pointer after it is passed in
-  void addQuantity(QuantityType* q, bool allowReplacement = true);
+  void addQuantity(Quantity* q, bool allowReplacement = true);
   void addQuantity(FloatingQuantity* q, bool allowReplacement = true);
 
-  QuantityType*
-  getQuantity(std::string name); // NOTE: will _not_ return floating quantities, must use other version below
-  FloatingQuantity* getFloatingQuantity(std::string name);
+  // Get a quantity by name
+  Quantity* getQuantity(std::string name); // NOTE: will _not_ return floating quantities, must use other version below
+  template <class S>
+  S* getStructureQuantity(std::string name);               // Cast to a structure-specific version
+  FloatingQuantity* getFloatingQuantity(std::string name); // Get general floating quantities
+
+  // Meta quantity management
   void checkForQuantityWithNameAndDeleteOrError(std::string name, bool allowReplacement = true);
   void removeQuantity(std::string name, bool errorIfAbsent = false);
   void removeAllQuantities();
-
-  void setDominantQuantity(QuantityS<S>* q);
-  void clearDominantQuantity();
-
   void setAllQuantitiesEnabled(bool newEnabled);
 
-  // = Quantities
-  std::map<std::string, std::unique_ptr<QuantityType>> quantities;
-  QuantityS<S>* dominantQuantity = nullptr; // If non-null, a special quantity of which only one can be drawn for
-                                            // the structure. Handles common case of a surface color, e.g. color of
-                                            // a mesh or point cloud. The dominant quantity must always be enabled.
+  // Maintain a _dominant_ quantity
+  // If non-null, a special quantity of which only one can be drawn for the structure. Handles common case of a surface
+  // color, e.g. color of a mesh or point cloud. The dominant quantity must always be enabled.
+  Quantity* dominantQuantity = nullptr;
+  void setDominantQuantity(Quantity* q);
+  void clearDominantQuantity();
 
-  // floating quantities are tracked separately from normal quantities, though names should still be unique etc
-  std::map<std::string, std::unique_ptr<FloatingQuantity>> floatingQuantities;
+  // Helpers for quantities
+  void setStructureUniforms(render::ShaderProgram& p);
+  bool wantsCullPosition();
+
 
   // === Floating Quantities
   template <class T>
@@ -291,8 +261,42 @@ public:
                                                                             ImageOrigin imageOrigin);
 
 protected:
+  // = State
+  PersistentValue<bool> enabled;
+  PersistentValue<glm::mat4> objectTransform; // rigid transform
+
+  // 0 for transparent, 1 for opaque, only has effect if engine transparency is set
+  PersistentValue<float> transparency;
+
+  // Widget that wraps the transform
+  TransformationGizmo transformGizmo;
+
+  PersistentValue<bool> cullWholeElements;
+
+  PersistentValue<std::vector<std::string>> ignoredSlicePlaneNames;
+
+  // Manage the bounding box & length scale
+  // (this is defined _before_ the object transform is applied. To get the scale/bounding box after transforms, use the
+  // boundingBox() and lengthScale() member function)
+  // The STRUCTURE is responsible for making sure updateObjectSpaceBounds() gets called any time the geometry changes
+  std::tuple<glm::vec3, glm::vec3> objectSpaceBoundingBox;
+  float objectSpaceLengthScale;
+  virtual void updateObjectSpaceBounds() = 0;
 };
 
+
+// Register a structure with polyscope
+// Structure name must be a globally unique identifier for the structure.
+bool registerStructure(Structure* structure, bool replaceIfPresent = true);
+
+
+// A few template implementations
+
+template <class S>
+S* Structure::getStructureQuantity(std::string name) {
+  Quantity* q = getQuantity(name);
+  return static_cast<S*>(q);
+}
 
 } // namespace polyscope
 

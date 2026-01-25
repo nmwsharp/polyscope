@@ -17,8 +17,7 @@ namespace polyscope {
 const std::string FloatingQuantityStructure::structureTypeName = "Floating Quantities";
 
 // Constructor
-FloatingQuantityStructure::FloatingQuantityStructure(std::string name)
-    : QuantityStructure<FloatingQuantityStructure>(name, structureTypeName) {}
+FloatingQuantityStructure::FloatingQuantityStructure(std::string name) : Structure(name, structureTypeName) {}
 
 FloatingQuantityStructure::~FloatingQuantityStructure() {}
 
@@ -79,7 +78,7 @@ void FloatingQuantityStructure::buildUI() {
   // Do any structure-specific stuff here
   this->buildCustomUI();
 
-  // Build quantities list, in the common case of a QuantityStructure
+  // Build quantities list
   this->buildQuantitiesUI();
 
   ImGui::PopID();

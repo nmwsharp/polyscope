@@ -3,19 +3,21 @@
 #pragma once
 
 #include "polyscope/quantity.h"
+#include "polyscope/slice_plane.h"
 #include "polyscope/structure.h"
 
 
 namespace polyscope {
 
-// Forward declare volume mesh
 class VolumeMesh;
 
-// Extend Quantity<VolumeMesh> to add a few extra functions
-class VolumeMeshQuantity : public QuantityS<VolumeMesh> {
+class VolumeMeshQuantity : public Quantity {
 public:
   VolumeMeshQuantity(std::string name, VolumeMesh& parentStructure, bool dominates = false);
   ~VolumeMeshQuantity() {};
+
+  VolumeMesh& parent; // shadows and hides the generic member in Quantity
+
   virtual std::shared_ptr<render::ShaderProgram> createSliceProgram() { return nullptr; };
   virtual void drawSlice(polyscope::SlicePlane* sp) {};
 

@@ -141,15 +141,14 @@ void RenderImageQuantityBase::disableFullscreenDrawing() {
   }
 }
 
-RenderImageQuantityBase* RenderImageQuantityBase::setEnabled(bool newEnabled) {
-  if (newEnabled == isEnabled()) return this;
+void RenderImageQuantityBase::setEnabled(bool newEnabled) {
+  if (newEnabled == isEnabled()) return;
   if (newEnabled == true && !allowFullscreenCompositing.get()) {
     // if drawing fullscreen, disable anything else which was already drawing fullscreen
     disableAllFullscreenArtists();
   }
   enabled = newEnabled;
   requestRedraw();
-  return this;
 }
 
 RenderImageQuantityBase* RenderImageQuantityBase::setMaterial(std::string m) {

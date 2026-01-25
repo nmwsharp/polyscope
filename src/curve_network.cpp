@@ -20,7 +20,7 @@ const std::string CurveNetwork::structureTypeName = "Curve Network";
 // Constructor
 CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std::vector<std::array<size_t, 2>> edges_)
     : // clang-format off
-      QuantityStructure<CurveNetwork>(name, typeName()), 
+      Structure(name, typeName()), 
       nodePositions(this, uniquePrefix() + "nodePositions", nodePositionsData),
       edgeTailInds(this, uniquePrefix() + "edgeTailInds", edgeTailIndsData),
       edgeTipInds(this, uniquePrefix() + "edgeTipInds", edgeTipIndsData),
@@ -221,7 +221,7 @@ void CurveNetwork::drawPickDelayed() {
 
 std::vector<std::string> CurveNetwork::addCurveNetworkNodeRules(std::vector<std::string> initRules) {
   initRules = addStructureRules(initRules);
-  
+
   initRules.push_back(view::getCurrentProjectionModeRaycastRule());
 
   if (nodeRadiusQuantityName != "" || edgeRadiusQuantityName != "") {
@@ -296,10 +296,9 @@ void CurveNetwork::preparePick() {
   size_t pickStart = pick::requestPickBufferRange(this, totalPickElements);
 
   { // Set up node picking program
-    nodePickProgram = render::engine->requestShader(
-        "RAYCAST_SPHERE",
-        addCurveNetworkNodeRules({"SPHERE_PROPAGATE_COLOR"}),
-        render::ShaderReplacementDefaults::Pick);
+    nodePickProgram =
+        render::engine->requestShader("RAYCAST_SPHERE", addCurveNetworkNodeRules({"SPHERE_PROPAGATE_COLOR"}),
+                                      render::ShaderReplacementDefaults::Pick);
 
     // Fill color buffer with packed point indices
     std::vector<glm::vec3> pickColors;
@@ -408,7 +407,7 @@ void CurveNetwork::refresh() {
   nodePickProgram.reset();
   edgePickProgram.reset();
   requestRedraw();
-  QuantityStructure<CurveNetwork>::refresh(); // call base class version, which refreshes quantities
+  Structure::refresh(); // call base class version, which refreshes quantities
 }
 
 void CurveNetwork::recomputeGeometryIfPopulated() { edgeCenters.recomputeIfPopulated(); }
@@ -445,7 +444,8 @@ void CurveNetwork::buildNodePickUI(const CurveNetworkPickResult& result) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildNodeInfoGUI(nodeInd);
+    CurveNetworkQuantity* q = static_cast<CurveNetworkQuantity*>(x.second.get());
+    q->buildNodeInfoGUI(nodeInd);
   }
 
   ImGui::Indent(-20.);
@@ -469,7 +469,8 @@ void CurveNetwork::buildEdgePickUI(const CurveNetworkPickResult& result) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildEdgeInfoGUI(edgeInd);
+    CurveNetworkQuantity* q = static_cast<CurveNetworkQuantity*>(x.second.get());
+    q->buildEdgeInfoGUI(edgeInd);
   }
 
   ImGui::Indent(-20.);
@@ -644,7 +645,7 @@ std::string CurveNetwork::typeName() { return structureTypeName; }
 // === Quantities
 
 CurveNetworkQuantity::CurveNetworkQuantity(std::string name_, CurveNetwork& curveNetwork_, bool dominates_)
-    : QuantityS<CurveNetwork>(name_, curveNetwork_, dominates_) {}
+    : Quantity(name_, curveNetwork_, dominates_), parent(curveNetwork_) {}
 
 
 void CurveNetworkQuantity::buildNodeInfoGUI(size_t nodeInd) {}
@@ -706,7 +707,7 @@ CurveNetworkEdgeVectorQuantity* CurveNetwork::addEdgeVectorQuantityImpl(std::str
 
 CurveNetworkNodeScalarQuantity& CurveNetwork::resolveNodeRadiusQuantity() {
   CurveNetworkNodeScalarQuantity* sizeScalarQ = nullptr;
-  CurveNetworkQuantity* sizeQ = getQuantity(nodeRadiusQuantityName);
+  CurveNetworkQuantity* sizeQ = getStructureQuantity<CurveNetworkQuantity>(nodeRadiusQuantityName);
   if (sizeQ != nullptr) {
     sizeScalarQ = dynamic_cast<CurveNetworkNodeScalarQuantity*>(sizeQ);
     if (sizeScalarQ == nullptr) {
@@ -722,7 +723,7 @@ CurveNetworkNodeScalarQuantity& CurveNetwork::resolveNodeRadiusQuantity() {
 
 CurveNetworkEdgeScalarQuantity& CurveNetwork::resolveEdgeRadiusQuantity() {
   CurveNetworkEdgeScalarQuantity* sizeScalarQ = nullptr;
-  CurveNetworkQuantity* sizeQ = getQuantity(edgeRadiusQuantityName);
+  CurveNetworkQuantity* sizeQ = getStructureQuantity<CurveNetworkQuantity>(edgeRadiusQuantityName);
   if (sizeQ != nullptr) {
     sizeScalarQ = dynamic_cast<CurveNetworkEdgeScalarQuantity*>(sizeQ);
     if (sizeScalarQ == nullptr) {

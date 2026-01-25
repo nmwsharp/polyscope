@@ -180,7 +180,7 @@ public:
 
   // Get a copy of the data viewed through an index, such that view[i] = data[indices[i]].
   //
-  // This follows the same logic as above, but rather than returning a render buffer it simply returns a host-side 
+  // This follows the same logic as above, but rather than returning a render buffer it simply returns a host-side
   // copy (which is not cached).
   std::vector<T> getIndexedView(ManagedBuffer<uint32_t>& indices);
 

@@ -153,9 +153,9 @@ TEST_F(PolyscopeTest, ImPlotBasic) {
 
   std::vector<float> xvals = {0., 2., 4., 8.};
 
-  auto showCallback = [&]() { 
-    ImGui::Button("do something"); 
-    if(ImPlot::BeginPlot("test plot")) {
+  auto showCallback = [&]() {
+    ImGui::Button("do something");
+    if (ImPlot::BeginPlot("test plot")) {
       ImPlot::PlotLine("test line", &xvals.front(), xvals.size());
       ImPlot::EndPlot();
     }
@@ -163,7 +163,7 @@ TEST_F(PolyscopeTest, ImPlotBasic) {
   polyscope::state::userCallback = showCallback;
 
   polyscope::show(3);
-  
+
   for (int i = 0; i < 3; i++) {
     polyscope::frameTick();
   }
@@ -177,9 +177,9 @@ TEST_F(PolyscopeTest, ImPlotScreenshot) {
 
   std::vector<float> xvals = {0., 2., 4., 8.};
 
-  auto showCallback = [&]() { 
-    ImGui::Button("do something"); 
-    if(ImPlot::BeginPlot("test plot")) {
+  auto showCallback = [&]() {
+    ImGui::Button("do something");
+    if (ImPlot::BeginPlot("test plot")) {
       ImPlot::PlotLine("test line", &xvals.front(), xvals.size());
       ImPlot::EndPlot();
     }
@@ -187,14 +187,14 @@ TEST_F(PolyscopeTest, ImPlotScreenshot) {
   polyscope::state::userCallback = showCallback;
 
   polyscope::show(3);
-  
+
   polyscope::ScreenshotOptions opts;
   opts.includeUI = true;
   opts.transparentBackground = false;
   polyscope::screenshot(opts);
-  
+
   polyscope::show(3);
-  
+
   polyscope::state::userCallback = nullptr;
 }
 
