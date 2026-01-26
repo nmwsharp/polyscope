@@ -55,44 +55,8 @@ const float minFov = 5.;   // for UI
 const float maxFov = 160.; // for UI
 
 // Small helpers
-std::string to_string(ProjectionMode mode) {
-  switch (mode) {
-  case ProjectionMode::Perspective:
-    return "Perspective";
-  case ProjectionMode::Orthographic:
-    return "Orthographic";
-  }
-  return ""; // unreachable
-}
-
-std::string to_string(NavigateStyle style) {
-
-  switch (style) {
-  case NavigateStyle::Turntable:
-    return "Turntable";
-    break;
-  case NavigateStyle::Free:
-    return "Free";
-    break;
-  case NavigateStyle::Planar:
-    return "Planar";
-    break;
-  case NavigateStyle::Arcball:
-    return "Arcball";
-    break;
-  case NavigateStyle::None:
-    return "None";
-    break;
-  case NavigateStyle::FirstPerson:
-    return "First Person";
-    break;
-  }
-
-  return ""; // unreachable
-}
 
 namespace { // anonymous helpers
-
 
 // A default pairing of <up,front> directions to fall back on when something goes wrong.
 const std::vector<std::pair<UpDir, FrontDir>> defaultUpFrontPairs{
@@ -931,7 +895,7 @@ std::string getViewAsJson() {
       {"farClip", farClip},
       {"windowWidth", view::windowWidth},
       {"windowHeight", view::windowHeight},
-      {"projectionMode", to_string(view::projectionMode)},
+      {"projectionMode", enum_to_string(view::projectionMode)},
   };
 
   std::string outString = j.dump();
@@ -986,11 +950,7 @@ void setViewFromJson(std::string jsonData, bool flyTo) {
 
     if (j.find("projectionMode") != j.end()) {
       std::string projectionModeStr = j["projectionMode"];
-      if (projectionModeStr == to_string(ProjectionMode::Perspective)) {
-        view::projectionMode = ProjectionMode::Perspective;
-      } else if (projectionModeStr == to_string(ProjectionMode::Orthographic)) {
-        view::projectionMode = ProjectionMode::Orthographic;
-      }
+      try_enum_from_string(projectionModeStr, view::projectionMode); // fail silently if unrecognized
     }
 
   } catch (...) {
@@ -1026,7 +986,7 @@ void buildViewGui() {
 
     // == Camera style
 
-    std::string viewStyleName = to_string(view::style);
+    std::string viewStyleName = enum_to_string(view::style);
 
     ImGui::PushItemWidth(120 * options::uiScale);
     std::array<NavigateStyle, 5> styles{NavigateStyle::Turntable, NavigateStyle::FirstPerson, NavigateStyle::Free,
@@ -1034,7 +994,7 @@ void buildViewGui() {
     if (ImGui::BeginCombo("##View Style", viewStyleName.c_str())) {
 
       for (NavigateStyle s : styles) {
-        if (ImGui::Selectable(to_string(s).c_str(), view::style == s)) {
+        if (ImGui::Selectable(enum_to_string(s).c_str(), view::style == s)) {
           setNavigateStyle(s, true);
           ImGui::SetItemDefaultFocus();
         }
@@ -1231,7 +1191,7 @@ void buildViewGui() {
         requestRedraw();
       };
 
-      std::string projectionModeStr = to_string(view::projectionMode);
+      std::string projectionModeStr = enum_to_string(view::projectionMode);
       if (ImGui::BeginCombo("##ProjectionMode", projectionModeStr.c_str())) {
         if (ImGui::Selectable("Perspective", view::projectionMode == ProjectionMode::Perspective)) {
           setProjectionMode(ProjectionMode::Perspective);
