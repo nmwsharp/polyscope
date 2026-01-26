@@ -887,7 +887,6 @@ std::string getViewAsJson() {
   }
 
   // Build the json object
-  // TODO add clip mode, center here, view mode
   json j = {
       {"fov", fov},
       {"viewMat", viewMatFlat},
@@ -896,6 +895,11 @@ std::string getViewAsJson() {
       {"windowWidth", view::windowWidth},
       {"windowHeight", view::windowHeight},
       {"projectionMode", enum_to_string(view::projectionMode)},
+      {"navigateStyle", enum_to_string(view::style)},
+      {"upDir", enum_to_string(view::upDir)},
+      {"frontDir", enum_to_string(view::frontDir)},
+      {"viewRelativeMode", enum_to_string(view::viewRelativeMode)},
+      {"viewCenter", {view::viewCenter.x, view::viewCenter.y, view::viewCenter.z}},
   };
 
   std::string outString = j.dump();
@@ -905,10 +909,10 @@ std::string getCameraJson() { return getViewAsJson(); }
 
 void setViewFromJson(std::string jsonData, bool flyTo) {
   // Values will go here
-  glm::mat4 newViewMat;
-  float newFov = -777;
-  float newNearClipRatio = -777;
-  float newFarClipRatio = -777;
+  glm::mat4 newViewMat = viewMat;
+  float newFov = fov;
+  float newNearClipRatio = nearClip;
+  float newFarClipRatio = farClip;
 
   int windowWidth = view::windowWidth;
   int windowHeight = view::windowHeight;
@@ -921,58 +925,120 @@ void setViewFromJson(std::string jsonData, bool flyTo) {
     s >> j;
 
     // Read out the data
-    auto matData = j["viewMat"];
-    if (matData.size() != 16) return; // check size
-    auto it = matData.begin();
-    for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 4; j++) {
-        newViewMat[j][i] = *it;
-        it++;
-      }
-    }
-    newFov = j["fov"];
 
     // Get the clip ratios, but only if present
+    bool clipChanged = false;
     if (j.find("nearClip") != j.end()) {
       newNearClipRatio = j["nearClip"];
+      clipChanged = true;
     }
     if (j.find("farClip") != j.end()) {
       newFarClipRatio = j["farClip"];
+      clipChanged = true;
+    }
+    if (clipChanged) {
+      setClipPlanes(newNearClipRatio, newFarClipRatio);
     }
 
     // Get the window sizes, if present
+    bool windowSizeChanged = false;
     if (j.find("windowWidth") != j.end()) {
       windowWidth = j["windowWidth"];
+      windowSizeChanged = true;
     }
     if (j.find("windowHeight") != j.end()) {
       windowHeight = j["windowHeight"];
+      windowSizeChanged = true;
+    }
+    if (windowSizeChanged) {
+      view::setWindowSize(windowWidth, windowHeight);
     }
 
     if (j.find("projectionMode") != j.end()) {
       std::string projectionModeStr = j["projectionMode"];
-      try_enum_from_string(projectionModeStr, view::projectionMode); // fail silently if unrecognized
+      ProjectionMode newProjectionMode;
+      try_enum_from_string(projectionModeStr, newProjectionMode); // fail silently if unrecognized
+      setProjectionMode(newProjectionMode);
+    }
+
+    if (j.find("navigateStyle") != j.end()) {
+      std::string navigateStyleStr = j["navigateStyle"];
+      NavigateStyle newStyle;
+      if (try_enum_from_string(navigateStyleStr, newStyle)) {
+        setNavigateStyle(newStyle, flyTo);
+      }
+    }
+
+    if (j.find("upDir") != j.end()) {
+      std::string upDirStr = j["upDir"];
+      UpDir newUpDir;
+      if (try_enum_from_string(upDirStr, newUpDir)) {
+        updateViewAndChangeUpDir(newUpDir, flyTo);
+      }
+    }
+
+    if (j.find("frontDir") != j.end()) {
+      std::string frontDirStr = j["frontDir"];
+      FrontDir newFrontDir;
+      if (try_enum_from_string(frontDirStr, newFrontDir)) {
+        updateViewAndChangeFrontDir(newFrontDir, flyTo);
+      }
+    }
+
+    if (j.find("viewRelativeMode") != j.end()) {
+      std::string viewRelativeModeStr = j["viewRelativeMode"];
+      ViewRelativeMode newViewRelativeMode;
+      if (try_enum_from_string(viewRelativeModeStr, newViewRelativeMode)) {
+        setViewRelativeMode(newViewRelativeMode);
+      }
+    }
+
+    if (j.find("viewCenter") != j.end()) {
+      auto centerData = j["viewCenter"];
+      if (centerData.size() == 3) {
+        glm::vec3 newCenter;
+        newCenter.x = centerData[0];
+        newCenter.y = centerData[1];
+        newCenter.z = centerData[2];
+        setViewCenter(newCenter, flyTo);
+      }
+    }
+   
+    // NOTE: it's important that we do this after the mode/dir settings, as this
+    // lets us do our flight
+    bool viewChanged = false;
+    if (j.find("fov") == j.end()) {
+      newFov = j["fov"];
+      viewChanged = true;
+    }
+    if (j.find("viewMat") != j.end()) {
+      auto matData = j["viewMat"];
+      if (matData.size() != 16) return; // check size
+      auto it = matData.begin();
+      for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+          newViewMat[j][i] = *it;
+          it++;
+        }
+      }
+      viewChanged = true;
+    }
+    if (viewChanged) {
+      if (flyTo) {
+        startFlightTo(newViewMat, fov);
+      } else {
+        viewMat = newViewMat;
+        fov = newFov;
+        requestRedraw();
+      }
     }
 
   } catch (...) {
     // If anything goes wrong parsing, just give up
     return;
   }
-
-  // === Assign the new values
-
-  view::setWindowSize(windowWidth, windowHeight);
-
-  if (newNearClipRatio > 0) nearClip = newNearClipRatio;
-  if (newFarClipRatio > 0) farClip = newFarClipRatio;
-
-  if (flyTo) {
-    startFlightTo(newViewMat, fov);
-  } else {
-    viewMat = newViewMat;
-    fov = newFov;
-    requestRedraw();
-  }
 }
+
 void setCameraFromJson(std::string jsonData, bool flyTo) { setViewFromJson(jsonData, flyTo); }
 
 void buildViewGui() {
