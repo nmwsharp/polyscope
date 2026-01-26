@@ -461,29 +461,27 @@ void processInputEvents() {
     if (!io.WantCaptureMouse && !widgetCapturedMouse) {
 
       { // Process scroll via "mouse wheel" (which might be a touchpad)
-        double xoffset = io.MouseWheelH;
-        double yoffset = io.MouseWheel;
+        float xoffset = io.MouseWheelH;
+        float yoffset = io.MouseWheel;
+        float scrollOffset = yoffset;
 
-        if (xoffset != 0 || yoffset != 0) {
+        // NOTE: here we used to scroll according the to the larger of the two offsets (x or y)
+        // (there was a comment about 'shift swaps scroll on some platforms'). However, on many
+        // common machines (e.g. macs with touchpads),  two finger scrolling produces both x and y
+        // offsets simultaneously, leading to jumpy zooms when an x was greater than a y.
+        // So now we just use the y offset always.
+
+        if (scrollOffset != 0.0f) {
           requestRedraw();
 
-          // On some setups, shift flips the scroll direction, so take the max
-          // scrolling in any direction
-          double maxScroll = xoffset;
-          if (std::abs(yoffset) > std::abs(xoffset)) {
-            maxScroll = yoffset;
-          }
-
           // Pass camera commands to the camera
-          if (maxScroll != 0.0) {
-            bool scrollClipPlane = io.KeyShift && !io.KeyCtrl;
-            bool relativeZoom = io.KeyShift && io.KeyCtrl;
+          bool scrollClipPlane = io.KeyShift && !io.KeyCtrl;
 
-            if (scrollClipPlane) {
-              view::processClipPlaneShift(maxScroll);
-            } else {
-              view::processZoom(maxScroll, relativeZoom);
-            }
+          if (scrollClipPlane) {
+            view::processClipPlaneShift(scrollOffset);
+          } else {
+            // always relative
+            view::processZoom(scrollOffset, true);
           }
         }
       }

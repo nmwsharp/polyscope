@@ -11,6 +11,7 @@ enum class UpDir { XUp = 0, YUp, ZUp, NegXUp, NegYUp, NegZUp };
 enum class FrontDir { XFront = 0, YFront, ZFront, NegXFront, NegYFront, NegZFront };
 enum class BackgroundView { None = 0 };
 enum class ProjectionMode { Perspective = 0, Orthographic };
+enum class ViewRelativeMode { CenterRelative = 0, LengthRelative };
 enum class TransparencyMode { None = 0, Simple, Pretty };
 enum class GroundPlaneMode { None, Tile, TileReflection, ShadowOnly };
 enum class GroundPlaneHeightMode { Automatic = 0, Manual };

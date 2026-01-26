@@ -45,16 +45,17 @@ extern bool& windowResizable;
 extern NavigateStyle& style;
 extern UpDir& upDir;
 extern FrontDir& frontDir;
-extern double& moveScale;
-extern double& nearClipRatio;
-extern double& farClipRatio;
+extern float& moveScale;
+extern ViewRelativeMode& viewRelativeMode;
+extern float& nearClip;
+extern float& farClip;
 extern std::array<float, 4>& bgColor;
 
 // Current view camera parameters
 // TODO deprecate these one day, and just use a CameraParameters member instead. But this would break existing code, so
 // for now we leave these as-is and wrap inputs/outputs to a CameraParameters
 extern glm::mat4x4& viewMat;
-extern double& fov; // in the y direction
+extern float& fov; // in the y direction
 extern ProjectionMode& projectionMode;
 extern glm::vec3& viewCenter; // center about which view transformations are performed
 
@@ -72,9 +73,9 @@ extern float& flightInitialFov;
 // Default values
 extern const int defaultWindowWidth;
 extern const int defaultWindowHeight;
-extern const double defaultNearClipRatio;
-extern const double defaultFarClipRatio;
-extern const double defaultFov;
+extern const float defaultNearClipRatio;
+extern const float defaultFarClipRatio;
+extern const float defaultFov;
 
 // === View methods
 
@@ -90,10 +91,17 @@ void setProjectionMode(ProjectionMode newMode);
 glm::mat4 getCameraPerspectiveMatrix();
 glm::vec3 getCameraWorldPosition();
 void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir);
+glm::vec3 getLookVec();  // vector giving the "look" direction of the camera frame
 glm::vec3 getUpVec();    // vector giving the "up" direction for the scene (unrelated to current camera view)
 glm::vec3 getFrontVec(); // vector giving the "front" direction for the scene (unrelated to current camera view)
 float getVerticalFieldOfViewDegrees();
 float getAspectRatioWidthOverHeight();
+ViewRelativeMode getViewRelativeMode();
+void setViewRelativeMode(ViewRelativeMode newMode);
+
+// Clip planes
+void setClipPlanes(float newNearClip, float newFarClip);
+std::tuple<float, float> getClipPlanes();
 
 // Set the camera extrinsics to look at a particular location
 void setViewToCamera(const CameraParameters& p);
@@ -187,13 +195,17 @@ bool viewIsValid();
 void invalidateView();
 void ensureViewValid();
 
+float computeRelativeMotionScale();
+
 // Process user inputs which affect the view
 void processTranslate(glm::vec2 delta);
 void processRotate(glm::vec2 startP, glm::vec2 endP);
-void processClipPlaneShift(double amount);
-void processZoom(double amount, bool relativeToCenter = false);
+void processClipPlaneShift(float amount);
+void processZoom(float amount, bool relativeToCenter = false);
 void processKeyboardNavigation(ImGuiIO& io);
 void processSetCenter(glm::vec2 screenCoords);
+
+std::tuple<float, float> computeClipPlanes();
 
 // deprecated, bad names, see variants above
 glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords);
