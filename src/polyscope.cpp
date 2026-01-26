@@ -775,7 +775,6 @@ void buildPolyscopeGui() {
 			ImGui::TextUnformatted("   Zoom: [scroll] OR [ctrl/cmd] + [shift] + [left click drag]");
 			ImGui::TextUnformatted("   To set the view orbit center, double-click OR hold");
 			ImGui::TextUnformatted("     [ctrl/cmd] + [shift] and [left click] in the scene.");
-			ImGui::TextUnformatted("   To zoom towards the center, hold [ctrl/cmd] + [shift] and scroll.");
 			ImGui::TextUnformatted("   Save and restore camera poses via the system clipboard with");
 			ImGui::TextUnformatted("     [ctrl/cmd-c] and [ctrl/cmd-v].");
       ImGui::TextUnformatted("\nMenu Navigation:");
