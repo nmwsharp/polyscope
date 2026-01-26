@@ -14,7 +14,6 @@
 #include <string>
 #include <tuple>
 
-
 #include <glm/glm.hpp>
 
 
@@ -165,6 +164,84 @@ inline double randomNormal(double mean = 0.0, double stddev = 1.0) {
   std::normal_distribution<double> dist{mean, stddev};
   return dist(util_mersenne_twister);
 }
+
+// === Helpers for enum to/from string
+template <typename E>
+struct EnumMapping {
+  E value;
+  const char* name;
+};
+
+// Forward declaration
+template <typename E>
+struct EnumTraits;
+
+// Convert enum to string
+template <typename E>
+std::string enum_to_string(E value) {
+  const EnumMapping<E>* mappings = EnumTraits<E>::get_mappings();
+  size_t count = EnumTraits<E>::get_count();
+
+  for (size_t i = 0; i < count; i++) {
+    if (mappings[i].value == value) {
+      return mappings[i].name;
+    }
+  }
+
+  throw std::invalid_argument("Unknown enum value");
+}
+
+// Convert string to enum
+template <typename E>
+E from_string(const std::string& str) {
+  const EnumMapping<E>* mappings = EnumTraits<E>::get_mappings();
+  size_t count = EnumTraits<E>::get_count();
+
+  for (size_t i = 0; i < count; i++) {
+    if (mappings[i].name == str) {
+      return mappings[i].value;
+    }
+  }
+
+  std::stringstream ss;
+  ss << "Unknown enum string: " << str << ". Valid options are: ";
+  for (size_t i = 0; i < count; i++) {
+    ss << mappings[i].name;
+    if (i < count - 1) {
+      ss << ", ";
+    }
+  }
+  throw std::invalid_argument(ss.str());
+}
+
+// Safe conversion - returns true if successful
+template <typename E>
+bool try_enum_from_string(const std::string& str, E& out) {
+  const EnumMapping<E>* mappings = EnumTraits<E>::get_mappings();
+  size_t count = EnumTraits<E>::get_count();
+  for (size_t i = 0; i < count; i++) {
+    if (mappings[i].name == str) {
+      out = mappings[i].value;
+      return true;
+    }
+  }
+  return false;
+}
+
+// Macro to define enum traits - use inside namespace
+#define POLYSCOPE_DEFINE_ENUM_NAMES(EnumType, ...)                                                                     \
+  template <>                                                                                                          \
+  struct EnumTraits<EnumType> {                                                                                        \
+    static const EnumMapping<EnumType>* get_mappings() {                                                               \
+      static const EnumMapping<EnumType> mappings[] = {__VA_ARGS__};                                                   \
+      return mappings;                                                                                                 \
+    }                                                                                                                  \
+    static size_t get_count() {                                                                                        \
+      static const EnumMapping<EnumType> mappings[] = {__VA_ARGS__};                                                   \
+      return sizeof(mappings) / sizeof(mappings[0]);                                                                   \
+    }                                                                                                                  \
+  };
+
 
 // === ImGui utilities
 
