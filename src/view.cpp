@@ -855,10 +855,14 @@ void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeco
   flightStartTime = ImGui::GetTime();
   flightEndTime = ImGui::GetTime() + flightLengthInSeconds;
 
+  // NOTE: we interpolate the _inverse_ view matrix (then invert back), because it looks better
+  // when far from the origin
+
   // Initial parameters
   glm::mat3x4 Rstart;
   glm::vec3 Tstart;
-  splitTransform(getCameraViewMatrix(), Rstart, Tstart);
+  glm::mat4 viewInv = glm::inverse(getCameraViewMatrix());
+  splitTransform(viewInv, Rstart, Tstart);
   flightInitialViewR = glm::dualquat_cast(Rstart);
   flightInitialViewT = Tstart;
   flightInitialFov = fov;
@@ -866,7 +870,8 @@ void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeco
   // Final parameters
   glm::mat3x4 Rend;
   glm::vec3 Tend;
-  splitTransform(T, Rend, Tend);
+  glm::mat4 Tinv = glm::inverse(T);
+  splitTransform(Tinv, Rend, Tend);
   flightTargetViewR = glm::dualquat_cast(Rend);
   flightTargetViewT = Tend;
   flightTargetFov = targetFov;
@@ -877,11 +882,15 @@ void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeco
 void immediatelyEndFlight() { midflight = false; }
 
 void updateFlight() {
+
+  // NOTE: we interpolate the _inverse_ view matrix (then invert back), because it looks better
+  // when far from the origin
+
   if (midflight) {
     if (ImGui::GetTime() > flightEndTime) {
       // Flight is over, ensure we end exactly at target location
       midflight = false;
-      viewMat = buildTransform(glm::mat3x4_cast(flightTargetViewR), flightTargetViewT);
+      viewMat = glm::inverse(buildTransform(glm::mat3x4_cast(flightTargetViewR), flightTargetViewT));
       fov = flightTargetFov;
     } else {
       // normalized time for spline on [0,1]
@@ -891,10 +900,9 @@ void updateFlight() {
 
       // linear spline
       glm::dualquat interpR = glm::lerp(flightInitialViewR, flightTargetViewR, tSmooth);
-
       glm::vec3 interpT = glm::mix(flightInitialViewT, flightTargetViewT, tSmooth);
 
-      viewMat = buildTransform(glm::mat3x4_cast(interpR), interpT);
+      viewMat = glm::inverse(buildTransform(glm::mat3x4_cast(interpR), interpT));
 
       // linear spline
       fov = (1.0f - t) * flightInitialFov + t * flightTargetFov;
@@ -1187,25 +1195,25 @@ void buildViewGui() {
       ImGui::BeginDisabled(options::automaticallyComputeSceneExtents);
 
 
-        static float lengthScaleUpper = -777;
-        if (lengthScaleUpper == -777) lengthScaleUpper = 2. * state::lengthScale;
-        if (ImGui::SliderFloat("Length Scale", &state::lengthScale, 0, lengthScaleUpper, "%.5f")) {
-          requestRedraw();
-        }
-        if (ImGui::IsItemDeactivatedAfterEdit()) {
-          // the upper bound for the slider is dynamically adjust to be a bit bigger than the lower bound, but only
-          // does so on release of the widget (so it doesn't scaleo off to infinity), and only ever gets larger (so
-          // you don't get stuck at 0)
-          lengthScaleUpper = std::fmax(2. * state::lengthScale, lengthScaleUpper);
-        }
+      static float lengthScaleUpper = -777;
+      if (lengthScaleUpper == -777) lengthScaleUpper = 2. * state::lengthScale;
+      if (ImGui::SliderFloat("Length Scale", &state::lengthScale, 0, lengthScaleUpper, "%.5f")) {
+        requestRedraw();
+      }
+      if (ImGui::IsItemDeactivatedAfterEdit()) {
+        // the upper bound for the slider is dynamically adjust to be a bit bigger than the lower bound, but only
+        // does so on release of the widget (so it doesn't scaleo off to infinity), and only ever gets larger (so
+        // you don't get stuck at 0)
+        lengthScaleUpper = std::fmax(2. * state::lengthScale, lengthScaleUpper);
+      }
 
-        ImGui::TextUnformatted("Bounding Box:");
-        ImGui::PushItemWidth(200 * options::uiScale);
-        glm::vec3& bboxMin = std::get<0>(state::boundingBox);
-        glm::vec3& bboxMax = std::get<1>(state::boundingBox);
-        if (ImGui::InputFloat3("min", &bboxMin[0])) updateStructureExtents();
-        if (ImGui::InputFloat3("max", &bboxMax[0])) updateStructureExtents();
-        ImGui::PopItemWidth();
+      ImGui::TextUnformatted("Bounding Box:");
+      ImGui::PushItemWidth(200 * options::uiScale);
+      glm::vec3& bboxMin = std::get<0>(state::boundingBox);
+      glm::vec3& bboxMax = std::get<1>(state::boundingBox);
+      if (ImGui::InputFloat3("min", &bboxMin[0])) updateStructureExtents();
+      if (ImGui::InputFloat3("max", &bboxMax[0])) updateStructureExtents();
+      ImGui::PopItemWidth();
 
       ImGui::EndDisabled();
 
