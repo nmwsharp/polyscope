@@ -113,14 +113,15 @@ void setVerticalFieldOfViewDegrees(float newVal);
 glm::mat4 computeHomeView();
 void resetCameraToHomeView();
 void flyToHomeView();
-void setViewCenter(glm::vec3 newCenter, bool flyTo = false);
+void setViewCenterAndLookAt(glm::vec3 newCenter, bool flyTo = false);
+void setViewCenterAndProject(glm::vec3 newCenter);
+void setViewCenterRaw(glm::vec3 newCenter);
 glm::vec3 getViewCenter();
 
 // These both set the new value, and project the current view as-needed to conform to the new setting
 void updateViewAndChangeNavigationStyle(NavigateStyle newStyle, bool flyTo = false);
 void updateViewAndChangeUpDir(UpDir newUpDir, bool flyTo = false);
 void updateViewAndChangeFrontDir(FrontDir newFrontDir, bool flyTo = false);
-void updateViewAndChangeCenter(glm::vec3 newCenter, bool flyTo = false);
 
 // Move the camera with a 'flight' where the camera's position is briefly animated
 void startFlightTo(const CameraParameters& p, float flightLengthInSeconds = .4);
@@ -169,8 +170,6 @@ std::string getCameraJson(); // DEPRACTED: old names for avove
 void setCameraFromJson(std::string jsonData, bool flyTo);
 
 // Misc helpers
-std::string to_string(ProjectionMode mode);
-std::string to_string(NavigateStyle style);
 std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords);
 glm::ivec2 screenCoordsToBufferIndsVec(glm::vec2 screenCoords);
 glm::vec2 bufferIndsToScreenCoords(int xPos, int yPos);
@@ -197,11 +196,15 @@ void ensureViewValid();
 
 float computeRelativeMotionScale();
 
+// For some navigation modes, the view and center must be compatible (e.g.) with turntable the view
+// must point at the center along the up axis. This function modifies the center as-needed to ensure compatibility.
+void projectCenterToBeValidForView();
+
 // Process user inputs which affect the view
 void processTranslate(glm::vec2 delta);
 void processRotate(glm::vec2 startP, glm::vec2 endP);
 void processClipPlaneShift(float amount);
-void processZoom(float amount, bool relativeToCenter = false);
+void processZoom(float amount);
 void processKeyboardNavigation(ImGuiIO& io);
 void processSetCenter(glm::vec2 screenCoords);
 

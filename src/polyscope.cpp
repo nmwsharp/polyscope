@@ -464,25 +464,23 @@ void processInputEvents() {
         float xoffset = io.MouseWheelH;
         float yoffset = io.MouseWheel;
         float scrollOffset = yoffset;
+        float clipPlaneOffset = std::abs(xoffset) > std::abs(yoffset) ? xoffset : yoffset;
 
         // NOTE: here we used to scroll according the to the larger of the two offsets (x or y)
         // (there was a comment about 'shift swaps scroll on some platforms'). However, on many
         // common machines (e.g. macs with touchpads),  two finger scrolling produces both x and y
         // offsets simultaneously, leading to jumpy zooms when an x was greater than a y.
-        // So now we just use the y offset always.
+        // So now we just use the y offset always for zooming. (But still use either for clip plane shifting,
+        // which might involve intentionally holding shift)
 
-        if (scrollOffset != 0.0f) {
+        bool scrollClipPlane = io.KeyShift && !io.KeyCtrl;
+        if (scrollClipPlane && clipPlaneOffset != 0.0f) {
+          view::processClipPlaneShift(clipPlaneOffset);
           requestRedraw();
-
-          // Pass camera commands to the camera
-          bool scrollClipPlane = io.KeyShift && !io.KeyCtrl;
-
-          if (scrollClipPlane) {
-            view::processClipPlaneShift(scrollOffset);
-          } else {
-            // always relative
-            view::processZoom(scrollOffset, true);
-          }
+        }
+        if (!scrollClipPlane && scrollOffset != 0.0f) {
+          view::processZoom(0.5 * scrollOffset);
+          requestRedraw();
         }
       }
 
@@ -502,7 +500,7 @@ void processInputEvents() {
           bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
 
           if (isDragZoom) {
-            view::processZoom(dragDelta.y * 5, true);
+            view::processZoom(dragDelta.y * 5);
           }
           if (isRotate) {
             glm::vec2 currPos{io.MousePos.x / view::windowWidth,

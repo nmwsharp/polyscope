@@ -48,8 +48,8 @@ float& flightInitialFov = state::globalContext.flightInitialFov;
 // Default values
 const int defaultWindowWidth = 1280;
 const int defaultWindowHeight = 720;
-const float defaultNearClipRatio = 1e-2;
-const float defaultFarClipRatio = 1e2;
+const float defaultNearClipRatio = 0.005f;
+const float defaultFarClipRatio = 20.f;
 const float defaultFov = 45.;
 const float minFov = 5.;   // for UI
 const float maxFov = 160.; // for UI
@@ -274,8 +274,10 @@ void processTranslate(glm::vec2 delta) {
     glm::vec3 worldspaceT =
         glm::transpose(glm::mat3(viewMat)) * glm::vec3(-movementScale * delta.x, -movementScale * delta.y, 0.0);
     glm::vec3 newCenter = oldCenter + worldspaceT;
-    setViewCenter(newCenter, false);
+    setViewCenterRaw(newCenter);
   }
+
+  projectCenterToBeValidForView();
 
   requestRedraw();
   immediatelyEndFlight();
@@ -288,7 +290,7 @@ void processClipPlaneShift(float amount) {
   requestRedraw();
 }
 
-void processZoom(float amount, bool relativeToCenter) {
+void processZoom(float amount) {
   if (amount == 0.0) return;
   if (getNavigateStyle() == NavigateStyle::None || getNavigateStyle() == NavigateStyle::FirstPerson) {
     return;
@@ -381,7 +383,7 @@ void processSetCenter(glm::vec2 screenCoords) {
   PickResult pickResult = pickAtScreenCoords(screenCoords);
 
   if (pickResult.isHit) {
-    setViewCenter(pickResult.position, true);
+    setViewCenterAndLookAt(pickResult.position, true);
   }
 }
 
@@ -421,6 +423,36 @@ float computeRelativeMotionScale() {
   case ViewRelativeMode::LengthRelative: {
     return state::lengthScale;
   }
+  }
+}
+
+void projectCenterToBeValidForView() {
+  // If necessary, move the view center to be one that is compatible with the current view matrix and navigation style.
+
+  switch (style) {
+  case NavigateStyle::Turntable: {
+
+    // Center must lie exactly along the camera look direction
+
+    glm::vec3 camPos = getCameraWorldPosition();
+    glm::vec3 camLookDir, camUpDir, camRightDir;
+    getCameraFrame(camLookDir, camUpDir, camRightDir);
+    glm::vec3 sceneUpDir = getUpVec();
+    glm::vec3 vecToCenter = viewCenter - camPos;
+    float distToCenter = glm::length(vecToCenter);
+    glm::vec3 newCenter = camPos + camLookDir * distToCenter;
+
+    setViewCenterRaw(newCenter);
+
+    break;
+  }
+  case NavigateStyle::Planar:
+  case NavigateStyle::Free:
+  case NavigateStyle::Arcball:
+  case NavigateStyle::None:
+  case NavigateStyle::FirstPerson:
+    // No constraints
+    break;
   }
 }
 
@@ -558,7 +590,7 @@ void updateViewAndChangeFrontDir(FrontDir newFrontDir, bool flyTo) {
   }
 }
 
-void updateViewAndChangeCenter(glm::vec3 newCenter, bool flyTo) {
+void setViewCenterAndLookAt(glm::vec3 newCenter, bool flyTo) {
 
   view::viewCenter = newCenter;
 
@@ -594,7 +626,12 @@ void updateViewAndChangeCenter(glm::vec3 newCenter, bool flyTo) {
   }
 }
 
-void setViewCenter(glm::vec3 newCenter, bool flyTo) { updateViewAndChangeCenter(newCenter, flyTo); }
+void setViewCenterAndProject(glm::vec3 newCenter) {
+  view::viewCenter = newCenter;
+  projectCenterToBeValidForView();
+}
+
+void setViewCenterRaw(glm::vec3 newCenter) { view::viewCenter = newCenter; }
 
 glm::vec3 getViewCenter() { return view::viewCenter; }
 
@@ -621,10 +658,12 @@ void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool fl
     // just continue after; our view handling will take care of the NaN and set it to the default view
   }
 
+
   if (flyTo) {
     startFlightTo(targetView, fov);
   } else {
     viewMat = targetView;
+    projectCenterToBeValidForView();
     requestRedraw();
   }
 }
@@ -646,6 +685,7 @@ void setViewToCamera(const CameraParameters& p) {
   fov = p.getFoVVerticalDegrees();
   // aspectRatio = p.focalLengths.x / p.focalLengths.y; // TODO should be
   // flipped?
+  projectCenterToBeValidForView();
 }
 
 CameraParameters getCameraParametersForCurrentView() {
@@ -656,7 +696,11 @@ CameraParameters getCameraParametersForCurrentView() {
                           CameraExtrinsics::fromMatrix(viewMat));
 }
 
-void setCameraViewMatrix(glm::mat4 mat) { viewMat = mat; }
+void setCameraViewMatrix(glm::mat4 mat) {
+  viewMat = mat;
+  projectCenterToBeValidForView();
+  requestRedraw();
+}
 
 glm::mat4 getCameraViewMatrix() { return viewMat; }
 
@@ -778,7 +822,14 @@ glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords) {
 std::tuple<float, float> computeClipPlanes() {
   float s = computeRelativeMotionScale();
   float absFarClip = farClip * s;
-  float absNearClip = nearClip * s;
+
+  // it's tempting to compute both near and far clip planes from the scale,
+  // but computing the near clip plane this way gives flickering very quickly when zooming in on surface details
+  // float absNearClip = nearClip * s;
+
+  // instead, always use the length scale for the near clip plane
+  float absNearClip = nearClip * state::lengthScale;
+
   return std::make_tuple(absNearClip, absFarClip);
 }
 
@@ -1000,10 +1051,10 @@ void setViewFromJson(std::string jsonData, bool flyTo) {
         newCenter.x = centerData[0];
         newCenter.y = centerData[1];
         newCenter.z = centerData[2];
-        setViewCenter(newCenter, flyTo);
+        setViewCenterRaw(newCenter);
       }
     }
-   
+
     // NOTE: it's important that we do this after the mode/dir settings, as this
     // lets us do our flight
     bool viewChanged = false;
@@ -1027,7 +1078,7 @@ void setViewFromJson(std::string jsonData, bool flyTo) {
       if (flyTo) {
         startFlightTo(newViewMat, fov);
       } else {
-        viewMat = newViewMat;
+        setCameraViewMatrix(newViewMat);
         fov = newFov;
         requestRedraw();
       }
