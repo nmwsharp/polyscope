@@ -6,6 +6,9 @@
 #include <polyscope/types.h>
 #include <polyscope/weak_handle.h>
 
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#define GLM_ENABLE_EXPERIMENTAL
+#endif
 #include <glm/glm.hpp>
 #include <glm/gtx/dual_quaternion.hpp>
 #include <glm/gtx/norm.hpp>
