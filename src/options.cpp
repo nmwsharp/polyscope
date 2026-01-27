@@ -62,6 +62,7 @@ int transparencyRenderPasses = 8;
 bool buildGui = true;
 bool userGuiIsOnRightSide = true;
 bool buildDefaultGuiPanels = true;
+int rightGuiPaneWidth = 500;
 bool renderScene = true;
 bool openImGuiWindowForUserCallback = true;
 bool doDefaultMouseInteraction = true;

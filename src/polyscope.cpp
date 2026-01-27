@@ -50,7 +50,6 @@ bool unshowRequested = false;
 
 // Some state about imgui windows to stack them
 constexpr float INITIAL_LEFT_WINDOWS_WIDTH = 305;
-constexpr float INITIAL_RIGHT_WINDOWS_WIDTH = 500;
 
 auto prevMainLoopTime = std::chrono::steady_clock::now();
 float rollingMainLoopDurationMicrosec = 0.;
@@ -137,13 +136,14 @@ void writePrefsFile() {
 
 void setInitialWindowWidths() {
   internal::leftWindowsWidth = INITIAL_LEFT_WINDOWS_WIDTH * options::uiScale;
-  internal::rightWindowsWidth = INITIAL_RIGHT_WINDOWS_WIDTH * options::uiScale;
+  internal::rightWindowsWidth = options::rightGuiPaneWidth * options::uiScale;
 }
 
 void ensureWindowWidthsSet() {
   if (internal::leftWindowsWidth <= 0. || internal::rightWindowsWidth <= 0.) {
     setInitialWindowWidths();
   }
+  internal::rightWindowsWidth = options::rightGuiPaneWidth * options::uiScale;
 }
 
 // Helper to get a structure map
@@ -683,15 +683,17 @@ void userGuiBegin() {
     // right side
     userGuiLoc = ImVec2(view::windowWidth - (internal::rightWindowsWidth + internal::imguiStackMargin),
                         internal::imguiStackMargin);
+
     ImGui::SetNextWindowSize(ImVec2(internal::rightWindowsWidth, 0.));
   } else {
     // left side
     if (options::buildDefaultGuiPanels) {
-      userGuiLoc = ImVec2(internal::leftWindowsWidth + 3 * internal::imguiStackMargin, internal::imguiStackMargin);
+      userGuiLoc = ImVec2(internal::leftWindowsWidth + 2 * internal::imguiStackMargin, internal::imguiStackMargin);
     } else {
       userGuiLoc = ImVec2(internal::imguiStackMargin, internal::imguiStackMargin);
     }
   }
+
 
   ImGui::PushID("user_callback");
   ImGui::SetNextWindowPos(userGuiLoc);
@@ -702,7 +704,6 @@ void userGuiBegin() {
 void userGuiEnd() {
 
   if (options::userGuiIsOnRightSide) {
-    internal::rightWindowsWidth = INITIAL_RIGHT_WINDOWS_WIDTH * options::uiScale;
     internal::lastWindowHeightUser =
         internal::imguiStackMargin + ImGui::GetWindowHeight(); // TODO using deprecated function
     internal::lastRightSideFreeX = view::windowWidth - internal::imguiStackMargin;
