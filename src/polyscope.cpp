@@ -461,30 +461,26 @@ void processInputEvents() {
     if (!io.WantCaptureMouse && !widgetCapturedMouse) {
 
       { // Process scroll via "mouse wheel" (which might be a touchpad)
-        double xoffset = io.MouseWheelH;
-        double yoffset = io.MouseWheel;
+        float xoffset = io.MouseWheelH;
+        float yoffset = io.MouseWheel;
+        float scrollOffset = yoffset;
+        float clipPlaneOffset = std::abs(xoffset) > std::abs(yoffset) ? xoffset : yoffset;
 
-        if (xoffset != 0 || yoffset != 0) {
+        // NOTE: here we used to scroll according the to the larger of the two offsets (x or y)
+        // (there was a comment about 'shift swaps scroll on some platforms'). However, on many
+        // common machines (e.g. macs with touchpads),  two finger scrolling produces both x and y
+        // offsets simultaneously, leading to jumpy zooms when an x was greater than a y.
+        // So now we just use the y offset always for zooming. (But still use either for clip plane shifting,
+        // which might involve intentionally holding shift)
+
+        bool scrollClipPlane = io.KeyShift && !io.KeyCtrl;
+        if (scrollClipPlane && clipPlaneOffset != 0.0f) {
+          view::processClipPlaneShift(clipPlaneOffset);
           requestRedraw();
-
-          // On some setups, shift flips the scroll direction, so take the max
-          // scrolling in any direction
-          double maxScroll = xoffset;
-          if (std::abs(yoffset) > std::abs(xoffset)) {
-            maxScroll = yoffset;
-          }
-
-          // Pass camera commands to the camera
-          if (maxScroll != 0.0) {
-            bool scrollClipPlane = io.KeyShift && !io.KeyCtrl;
-            bool relativeZoom = io.KeyShift && io.KeyCtrl;
-
-            if (scrollClipPlane) {
-              view::processClipPlaneShift(maxScroll);
-            } else {
-              view::processZoom(maxScroll, relativeZoom);
-            }
-          }
+        }
+        if (!scrollClipPlane && scrollOffset != 0.0f) {
+          view::processZoom(0.5 * scrollOffset);
+          requestRedraw();
         }
       }
 
@@ -504,7 +500,7 @@ void processInputEvents() {
           bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
 
           if (isDragZoom) {
-            view::processZoom(dragDelta.y * 5, true);
+            view::processZoom(dragDelta.y * 5);
           }
           if (isRotate) {
             glm::vec2 currPos{io.MousePos.x / view::windowWidth,
@@ -776,7 +772,6 @@ void buildPolyscopeGui() {
 			ImGui::TextUnformatted("   Zoom: [scroll] OR [ctrl/cmd] + [shift] + [left click drag]");
 			ImGui::TextUnformatted("   To set the view orbit center, double-click OR hold");
 			ImGui::TextUnformatted("     [ctrl/cmd] + [shift] and [left click] in the scene.");
-			ImGui::TextUnformatted("   To zoom towards the center, hold [ctrl/cmd] + [shift] and scroll.");
 			ImGui::TextUnformatted("   Save and restore camera poses via the system clipboard with");
 			ImGui::TextUnformatted("     [ctrl/cmd-c] and [ctrl/cmd-v].");
       ImGui::TextUnformatted("\nMenu Navigation:");

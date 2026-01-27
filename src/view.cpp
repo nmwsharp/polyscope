@@ -25,12 +25,13 @@ bool& windowResizable = state::globalContext.windowResizable;
 NavigateStyle& style = state::globalContext.navigateStyle;
 UpDir& upDir = state::globalContext.upDir;
 FrontDir& frontDir = state::globalContext.frontDir;
-double& moveScale = state::globalContext.moveScale;
-double& nearClipRatio = state::globalContext.nearClipRatio;
-double& farClipRatio = state::globalContext.farClipRatio;
+float& moveScale = state::globalContext.moveScale;
+ViewRelativeMode& viewRelativeMode = state::globalContext.viewRelativeMode;
+float& nearClip = state::globalContext.nearClip;
+float& farClip = state::globalContext.farClip;
 std::array<float, 4>& bgColor = state::globalContext.bgColor;
 glm::mat4x4& viewMat = state::globalContext.viewMat;
-double& fov = state::globalContext.fov;
+float& fov = state::globalContext.fov;
 ProjectionMode& projectionMode = state::globalContext.projectionMode;
 glm::vec3& viewCenter = state::globalContext.viewCenter;
 bool& midflight = state::globalContext.midflight;
@@ -47,51 +48,15 @@ float& flightInitialFov = state::globalContext.flightInitialFov;
 // Default values
 const int defaultWindowWidth = 1280;
 const int defaultWindowHeight = 720;
-const double defaultNearClipRatio = 0.005;
-const double defaultFarClipRatio = 20.0;
-const double defaultFov = 45.;
-const double minFov = 5.;   // for UI
-const double maxFov = 160.; // for UI
+const float defaultNearClipRatio = 0.005f;
+const float defaultFarClipRatio = 20.f;
+const float defaultFov = 45.;
+const float minFov = 5.;   // for UI
+const float maxFov = 160.; // for UI
 
 // Small helpers
-std::string to_string(ProjectionMode mode) {
-  switch (mode) {
-  case ProjectionMode::Perspective:
-    return "Perspective";
-  case ProjectionMode::Orthographic:
-    return "Orthographic";
-  }
-  return ""; // unreachable
-}
-
-std::string to_string(NavigateStyle style) {
-
-  switch (style) {
-  case NavigateStyle::Turntable:
-    return "Turntable";
-    break;
-  case NavigateStyle::Free:
-    return "Free";
-    break;
-  case NavigateStyle::Planar:
-    return "Planar";
-    break;
-  case NavigateStyle::Arcball:
-    return "Arcball";
-    break;
-  case NavigateStyle::None:
-    return "None";
-    break;
-  case NavigateStyle::FirstPerson:
-    return "First Person";
-    break;
-  }
-
-  return ""; // unreachable
-}
 
 namespace { // anonymous helpers
-
 
 // A default pairing of <up,front> directions to fall back on when something goes wrong.
 const std::vector<std::pair<UpDir, FrontDir>> defaultUpFrontPairs{
@@ -232,9 +197,9 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
   case NavigateStyle::Arcball: {
     // Map inputs to unit sphere
     auto toSphere = [](glm::vec2 v) {
-      double x = glm::clamp(v.x, -1.0f, 1.0f);
-      double y = glm::clamp(v.y, -1.0f, 1.0f);
-      double mag = x * x + y * y;
+      float x = glm::clamp(v.x, -1.0f, 1.0f);
+      float y = glm::clamp(v.y, -1.0f, 1.0f);
+      float mag = x * x + y * y;
       if (mag <= 1.0) {
         return glm::vec3{x, y, -std::sqrt(1.0 - mag)};
       } else {
@@ -245,7 +210,7 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
     glm::vec3 sphereEnd = toSphere(endP);
 
     glm::vec3 rotAxis = -cross(sphereStart, sphereEnd);
-    double rotMag = std::acos(glm::clamp(dot(sphereStart, sphereEnd), -1.0f, 1.0f) * moveScale);
+    float rotMag = std::acos(glm::clamp(dot(sphereStart, sphereEnd), -1.0f, 1.0f) * moveScale);
 
     glm::mat4 cameraRotate = glm::rotate(glm::mat4x4(1.0), (float)rotMag, glm::vec3(rotAxis.x, rotAxis.y, rotAxis.z));
 
@@ -298,7 +263,8 @@ void processTranslate(glm::vec2 delta) {
   }
 
   // Process a translation
-  float movementScale = state::lengthScale * 0.6 * moveScale;
+  float s = computeRelativeMotionScale();
+  float movementScale = 0.6f * s * moveScale;
   glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), movementScale * glm::vec3(delta.x, delta.y, 0.0));
   viewMat = camSpaceT * viewMat;
 
@@ -308,21 +274,23 @@ void processTranslate(glm::vec2 delta) {
     glm::vec3 worldspaceT =
         glm::transpose(glm::mat3(viewMat)) * glm::vec3(-movementScale * delta.x, -movementScale * delta.y, 0.0);
     glm::vec3 newCenter = oldCenter + worldspaceT;
-    setViewCenter(newCenter, false);
+    setViewCenterRaw(newCenter);
   }
+
+  projectCenterToBeValidForView();
 
   requestRedraw();
   immediatelyEndFlight();
 }
 
-void processClipPlaneShift(double amount) {
+void processClipPlaneShift(float amount) {
   if (amount == 0.0) return;
   // Adjust the near clipping plane
-  nearClipRatio += .03 * amount * nearClipRatio;
+  nearClip += .03 * amount * nearClip;
   requestRedraw();
 }
 
-void processZoom(double amount, bool relativeToCenter) {
+void processZoom(float amount) {
   if (amount == 0.0) return;
   if (getNavigateStyle() == NavigateStyle::None || getNavigateStyle() == NavigateStyle::FirstPerson) {
     return;
@@ -332,18 +300,24 @@ void processZoom(double amount, bool relativeToCenter) {
 
   switch (projectionMode) {
   case ProjectionMode::Perspective: {
-    float movementScale;
-    if (relativeToCenter) {
-      movementScale = glm::length(view::viewCenter - view::getCameraWorldPosition()) * 0.3 * moveScale;
-    } else {
-      movementScale = state::lengthScale * 0.1 * moveScale;
+    float s = computeRelativeMotionScale();
+    float totalZoom = 0.15f * s * amount;
+
+    // Disallow zooming that would cross the center point
+    if (getNavigateStyle() == NavigateStyle::Turntable) {
+      float currSignedDistToCenter = glm::dot(getLookVec(), view::viewCenter - view::getCameraWorldPosition());
+      float minDistToCenter = computeRelativeMotionScale() * 1e-5;
+      float maxAllowedZoom = currSignedDistToCenter - minDistToCenter;
+      totalZoom = glm::min(totalZoom, maxAllowedZoom);
     }
-    glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), glm::vec3(0., 0., movementScale * amount));
+
+    glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), glm::vec3(0., 0., totalZoom));
     viewMat = camSpaceT * viewMat;
+
     break;
   }
   case ProjectionMode::Orthographic: {
-    double fovScale = std::min(fov - minFov, maxFov - fov) / (maxFov - minFov);
+    float fovScale = std::min(fov - minFov, maxFov - fov) / (maxFov - minFov);
     fov += -fovScale * amount;
     fov = glm::clamp(fov, minFov, maxFov);
     break;
@@ -393,8 +367,9 @@ void processKeyboardNavigation(ImGuiIO& io) {
       hasMovement = true;
     }
 
-    float movementScale = state::lengthScale * ImGui::GetIO().DeltaTime * moveScale;
-    glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), movementScale * delta);
+    float s = computeRelativeMotionScale();
+    float movementMult = s * ImGui::GetIO().DeltaTime * moveScale;
+    glm::mat4x4 camSpaceT = glm::translate(glm::mat4x4(1.0), movementMult * delta);
     viewMat = camSpaceT * viewMat;
   }
 
@@ -408,7 +383,7 @@ void processSetCenter(glm::vec2 screenCoords) {
   PickResult pickResult = pickAtScreenCoords(screenCoords);
 
   if (pickResult.isHit) {
-    setViewCenter(pickResult.position, true);
+    setViewCenterAndLookAt(pickResult.position, true);
   }
 }
 
@@ -436,6 +411,48 @@ void ensureViewValid() {
       }
     }
     resetCameraToHomeView();
+  }
+}
+
+float computeRelativeMotionScale() {
+  switch (viewRelativeMode) {
+  case ViewRelativeMode::CenterRelative: {
+    float distToCenter = glm::length(view::viewCenter - view::getCameraWorldPosition());
+    return distToCenter;
+  }
+  case ViewRelativeMode::LengthRelative: {
+    return state::lengthScale;
+  }
+  }
+}
+
+void projectCenterToBeValidForView() {
+  // If necessary, move the view center to be one that is compatible with the current view matrix and navigation style.
+
+  switch (style) {
+  case NavigateStyle::Turntable: {
+
+    // Center must lie exactly along the camera look direction
+
+    glm::vec3 camPos = getCameraWorldPosition();
+    glm::vec3 camLookDir, camUpDir, camRightDir;
+    getCameraFrame(camLookDir, camUpDir, camRightDir);
+    glm::vec3 sceneUpDir = getUpVec();
+    glm::vec3 vecToCenter = viewCenter - camPos;
+    float distToCenter = glm::length(vecToCenter);
+    glm::vec3 newCenter = camPos + camLookDir * distToCenter;
+
+    setViewCenterRaw(newCenter);
+
+    break;
+  }
+  case NavigateStyle::Planar:
+  case NavigateStyle::Free:
+  case NavigateStyle::Arcball:
+  case NavigateStyle::None:
+  case NavigateStyle::FirstPerson:
+    // No constraints
+    break;
   }
 }
 
@@ -467,8 +484,8 @@ void resetCameraToHomeView() {
   viewMat = computeHomeView();
 
   fov = defaultFov;
-  nearClipRatio = defaultNearClipRatio;
-  farClipRatio = defaultFarClipRatio;
+  nearClip = defaultNearClipRatio;
+  farClip = defaultFarClipRatio;
 
   requestRedraw();
 }
@@ -481,8 +498,8 @@ void flyToHomeView() {
   glm::mat4x4 T = computeHomeView();
 
   float Tfov = defaultFov;
-  nearClipRatio = defaultNearClipRatio;
-  farClipRatio = defaultFarClipRatio;
+  nearClip = defaultNearClipRatio;
+  farClip = defaultFarClipRatio;
 
   startFlightTo(T, Tfov);
 }
@@ -573,7 +590,7 @@ void updateViewAndChangeFrontDir(FrontDir newFrontDir, bool flyTo) {
   }
 }
 
-void updateViewAndChangeCenter(glm::vec3 newCenter, bool flyTo) {
+void setViewCenterAndLookAt(glm::vec3 newCenter, bool flyTo) {
 
   view::viewCenter = newCenter;
 
@@ -583,14 +600,23 @@ void updateViewAndChangeCenter(glm::vec3 newCenter, bool flyTo) {
     // to the center.
     switch (style) {
     case NavigateStyle::Turntable:
-    case NavigateStyle::Planar:
     case NavigateStyle::Arcball:
+    case NavigateStyle::Free:
+    case NavigateStyle::FirstPerson:
       // this is a decent baseliny policy that always does _something_ sane
       // might want nicer policies for certain cameras
       lookAt(getCameraWorldPosition(), view::viewCenter, flyTo);
       break;
-    case NavigateStyle::Free:
-    case NavigateStyle::FirstPerson:
+    case NavigateStyle::Planar: {
+      // move the camera within the planar constraint
+      glm::vec3 lookDir = getCameraParametersForCurrentView().getLookDir();
+      glm::vec3 camPos = getCameraWorldPosition();
+      glm::vec3 targetVec = newCenter - camPos;
+      glm::vec3 planarDir = getFrontVec();
+      glm::vec3 newCamPos = newCenter - planarDir * glm::dot(planarDir, targetVec);
+      lookAt(newCamPos, view::viewCenter, flyTo);
+      break;
+    }
     case NavigateStyle::None:
       // no change needed
       break;
@@ -600,7 +626,12 @@ void updateViewAndChangeCenter(glm::vec3 newCenter, bool flyTo) {
   }
 }
 
-void setViewCenter(glm::vec3 newCenter, bool flyTo) { updateViewAndChangeCenter(newCenter, flyTo); }
+void setViewCenterAndProject(glm::vec3 newCenter) {
+  view::viewCenter = newCenter;
+  projectCenterToBeValidForView();
+}
+
+void setViewCenterRaw(glm::vec3 newCenter) { view::viewCenter = newCenter; }
 
 glm::vec3 getViewCenter() { return view::viewCenter; }
 
@@ -627,10 +658,12 @@ void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool fl
     // just continue after; our view handling will take care of the NaN and set it to the default view
   }
 
+
   if (flyTo) {
     startFlightTo(targetView, fov);
   } else {
     viewMat = targetView;
+    projectCenterToBeValidForView();
     requestRedraw();
   }
 }
@@ -652,17 +685,22 @@ void setViewToCamera(const CameraParameters& p) {
   fov = p.getFoVVerticalDegrees();
   // aspectRatio = p.focalLengths.x / p.focalLengths.y; // TODO should be
   // flipped?
+  projectCenterToBeValidForView();
 }
 
 CameraParameters getCameraParametersForCurrentView() {
   ensureViewValid();
 
-  double aspectRatio = (float)bufferWidth / bufferHeight;
+  float aspectRatio = (float)bufferWidth / bufferHeight;
   return CameraParameters(CameraIntrinsics::fromFoVDegVerticalAndAspect(fov, aspectRatio),
                           CameraExtrinsics::fromMatrix(viewMat));
 }
 
-void setCameraViewMatrix(glm::mat4 mat) { viewMat = mat; }
+void setCameraViewMatrix(glm::mat4 mat) {
+  viewMat = mat;
+  projectCenterToBeValidForView();
+  requestRedraw();
+}
 
 glm::mat4 getCameraViewMatrix() { return viewMat; }
 
@@ -680,24 +718,40 @@ void setProjectionMode(ProjectionMode newMode) {
   requestRedraw();
 }
 
+
+ViewRelativeMode getViewRelativeMode() { return viewRelativeMode; }
+void setViewRelativeMode(ViewRelativeMode newMode) {
+  viewRelativeMode = newMode;
+  requestRedraw();
+}
+void setClipPlanes(float newNearClip, float newFarClip) {
+  nearClip = newNearClip;
+  farClip = newFarClip;
+  requestRedraw();
+}
+std::tuple<float, float> getClipPlanes() { return std::tuple<float, float>(nearClip, farClip); }
+
 float getVerticalFieldOfViewDegrees() { return view::fov; }
 
 float getAspectRatioWidthOverHeight() { return (float)bufferWidth / bufferHeight; }
 
 glm::mat4 getCameraPerspectiveMatrix() {
-  double farClip = farClipRatio * state::lengthScale;
-  double nearClip = nearClipRatio * state::lengthScale;
-  double fovRad = glm::radians(fov);
-  double aspectRatio = (float)bufferWidth / bufferHeight;
+
+  // Set the clip plane
+  float absNearClip, absFarClip;
+  std::tie(absNearClip, absFarClip) = computeClipPlanes();
+
+  float fovRad = glm::radians(fov);
+  float aspectRatio = (float)bufferWidth / bufferHeight;
   switch (projectionMode) {
   case ProjectionMode::Perspective: {
-    return glm::perspective(fovRad, aspectRatio, nearClip, farClip);
+    return glm::perspective(fovRad, aspectRatio, absNearClip, absFarClip);
     break;
   }
   case ProjectionMode::Orthographic: {
-    double vert = tan(fovRad / 2.) * state::lengthScale * 2.;
-    double horiz = vert * aspectRatio;
-    return glm::ortho(-horiz, horiz, -vert, vert, nearClip, farClip);
+    float vert = tan(fovRad / 2.) * state::lengthScale * 2.;
+    float horiz = vert * aspectRatio;
+    return glm::ortho(-horiz, horiz, -vert, vert, absNearClip, absFarClip);
     break;
   }
   }
@@ -723,6 +777,18 @@ void getCameraFrame(glm::vec3& lookDir, glm::vec3& upDir, glm::vec3& rightDir) {
   lookDir = Rt * glm::vec3(0.0, 0.0, -1.0);
   upDir = Rt * glm::vec3(0.0, 1.0, 0.0);
   rightDir = Rt * glm::vec3(1.0, 0.0, 0.0);
+}
+
+glm::vec3 getLookVec() {
+  glm::mat3x3 R;
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      R[i][j] = viewMat[i][j];
+    }
+  }
+  glm::mat3x3 Rt = glm::transpose(R);
+
+  return Rt * glm::vec3(0.0, 0.0, -1.0);
 }
 
 glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords) {
@@ -753,6 +819,19 @@ glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords) {
   return worldRayDir;
 }
 
+std::tuple<float, float> computeClipPlanes() {
+  float s = computeRelativeMotionScale();
+  float absFarClip = farClip * s;
+
+  // it's tempting to compute both near and far clip planes from the scale,
+  // but computing the near clip plane this way gives flickering very quickly when zooming in on surface details
+  // float absNearClip = nearClip * s;
+
+  // instead, always use the length scale for the near clip plane
+  float absNearClip = nearClip * state::lengthScale;
+
+  return std::make_tuple(absNearClip, absFarClip);
+}
 
 glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth) {
 
@@ -791,10 +870,14 @@ void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeco
   flightStartTime = ImGui::GetTime();
   flightEndTime = ImGui::GetTime() + flightLengthInSeconds;
 
+  // NOTE: we interpolate the _inverse_ view matrix (then invert back), because it looks better
+  // when far from the origin
+
   // Initial parameters
   glm::mat3x4 Rstart;
   glm::vec3 Tstart;
-  splitTransform(getCameraViewMatrix(), Rstart, Tstart);
+  glm::mat4 viewInv = glm::inverse(getCameraViewMatrix());
+  splitTransform(viewInv, Rstart, Tstart);
   flightInitialViewR = glm::dualquat_cast(Rstart);
   flightInitialViewT = Tstart;
   flightInitialFov = fov;
@@ -802,7 +885,8 @@ void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeco
   // Final parameters
   glm::mat3x4 Rend;
   glm::vec3 Tend;
-  splitTransform(T, Rend, Tend);
+  glm::mat4 Tinv = glm::inverse(T);
+  splitTransform(Tinv, Rend, Tend);
   flightTargetViewR = glm::dualquat_cast(Rend);
   flightTargetViewT = Tend;
   flightTargetFov = targetFov;
@@ -813,11 +897,15 @@ void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeco
 void immediatelyEndFlight() { midflight = false; }
 
 void updateFlight() {
+
+  // NOTE: we interpolate the _inverse_ view matrix (then invert back), because it looks better
+  // when far from the origin
+
   if (midflight) {
     if (ImGui::GetTime() > flightEndTime) {
       // Flight is over, ensure we end exactly at target location
       midflight = false;
-      viewMat = buildTransform(glm::mat3x4_cast(flightTargetViewR), flightTargetViewT);
+      viewMat = glm::inverse(buildTransform(glm::mat3x4_cast(flightTargetViewR), flightTargetViewT));
       fov = flightTargetFov;
     } else {
       // normalized time for spline on [0,1]
@@ -827,10 +915,9 @@ void updateFlight() {
 
       // linear spline
       glm::dualquat interpR = glm::lerp(flightInitialViewR, flightTargetViewR, tSmooth);
-
       glm::vec3 interpT = glm::mix(flightInitialViewT, flightTargetViewT, tSmooth);
 
-      viewMat = buildTransform(glm::mat3x4_cast(interpR), interpT);
+      viewMat = glm::inverse(buildTransform(glm::mat3x4_cast(interpR), interpT));
 
       // linear spline
       fov = (1.0f - t) * flightInitialFov + t * flightTargetFov;
@@ -843,7 +930,7 @@ std::string getViewAsJson() {
 
   // Get the view matrix (note weird glm indexing, glm is [col][row])
   glm::mat4 viewMat = getCameraViewMatrix();
-  std::array<double, 16> viewMatFlat;
+  std::array<float, 16> viewMatFlat;
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       viewMatFlat[4 * i + j] = viewMat[j][i];
@@ -854,11 +941,16 @@ std::string getViewAsJson() {
   json j = {
       {"fov", fov},
       {"viewMat", viewMatFlat},
-      {"nearClipRatio", nearClipRatio},
-      {"farClipRatio", farClipRatio},
+      {"nearClip", nearClip},
+      {"farClip", farClip},
       {"windowWidth", view::windowWidth},
       {"windowHeight", view::windowHeight},
-      {"projectionMode", to_string(view::projectionMode)},
+      {"projectionMode", enum_to_string(view::projectionMode)},
+      {"navigateStyle", enum_to_string(view::style)},
+      {"upDir", enum_to_string(view::upDir)},
+      {"frontDir", enum_to_string(view::frontDir)},
+      {"viewRelativeMode", enum_to_string(view::viewRelativeMode)},
+      {"viewCenter", {view::viewCenter.x, view::viewCenter.y, view::viewCenter.z}},
   };
 
   std::string outString = j.dump();
@@ -868,10 +960,10 @@ std::string getCameraJson() { return getViewAsJson(); }
 
 void setViewFromJson(std::string jsonData, bool flyTo) {
   // Values will go here
-  glm::mat4 newViewMat;
-  double newFov = -777;
-  double newNearClipRatio = -777;
-  double newFarClipRatio = -777;
+  glm::mat4 newViewMat = viewMat;
+  float newFov = fov;
+  float newNearClipRatio = nearClip;
+  float newFarClipRatio = farClip;
 
   int windowWidth = view::windowWidth;
   int windowHeight = view::windowHeight;
@@ -884,39 +976,111 @@ void setViewFromJson(std::string jsonData, bool flyTo) {
     s >> j;
 
     // Read out the data
-    auto matData = j["viewMat"];
-    if (matData.size() != 16) return; // check size
-    auto it = matData.begin();
-    for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 4; j++) {
-        newViewMat[j][i] = *it;
-        it++;
-      }
-    }
-    newFov = j["fov"];
 
     // Get the clip ratios, but only if present
-    if (j.find("nearClipRatio") != j.end()) {
-      newNearClipRatio = j["nearClipRatio"];
+    bool clipChanged = false;
+    if (j.find("nearClip") != j.end()) {
+      newNearClipRatio = j["nearClip"];
+      clipChanged = true;
     }
-    if (j.find("farClipRatio") != j.end()) {
-      newFarClipRatio = j["farClipRatio"];
+    if (j.find("farClip") != j.end()) {
+      newFarClipRatio = j["farClip"];
+      clipChanged = true;
+    }
+    if (clipChanged) {
+      setClipPlanes(newNearClipRatio, newFarClipRatio);
     }
 
     // Get the window sizes, if present
+    bool windowSizeChanged = false;
     if (j.find("windowWidth") != j.end()) {
       windowWidth = j["windowWidth"];
+      windowSizeChanged = true;
     }
     if (j.find("windowHeight") != j.end()) {
       windowHeight = j["windowHeight"];
+      windowSizeChanged = true;
+    }
+    if (windowSizeChanged) {
+      view::setWindowSize(windowWidth, windowHeight);
     }
 
     if (j.find("projectionMode") != j.end()) {
       std::string projectionModeStr = j["projectionMode"];
-      if (projectionModeStr == to_string(ProjectionMode::Perspective)) {
-        view::projectionMode = ProjectionMode::Perspective;
-      } else if (projectionModeStr == to_string(ProjectionMode::Orthographic)) {
-        view::projectionMode = ProjectionMode::Orthographic;
+      ProjectionMode newProjectionMode;
+      try_enum_from_string(projectionModeStr, newProjectionMode); // fail silently if unrecognized
+      setProjectionMode(newProjectionMode);
+    }
+
+    if (j.find("navigateStyle") != j.end()) {
+      std::string navigateStyleStr = j["navigateStyle"];
+      NavigateStyle newStyle;
+      if (try_enum_from_string(navigateStyleStr, newStyle)) {
+        setNavigateStyle(newStyle, flyTo);
+      }
+    }
+
+    if (j.find("upDir") != j.end()) {
+      std::string upDirStr = j["upDir"];
+      UpDir newUpDir;
+      if (try_enum_from_string(upDirStr, newUpDir)) {
+        updateViewAndChangeUpDir(newUpDir, flyTo);
+      }
+    }
+
+    if (j.find("frontDir") != j.end()) {
+      std::string frontDirStr = j["frontDir"];
+      FrontDir newFrontDir;
+      if (try_enum_from_string(frontDirStr, newFrontDir)) {
+        updateViewAndChangeFrontDir(newFrontDir, flyTo);
+      }
+    }
+
+    if (j.find("viewRelativeMode") != j.end()) {
+      std::string viewRelativeModeStr = j["viewRelativeMode"];
+      ViewRelativeMode newViewRelativeMode;
+      if (try_enum_from_string(viewRelativeModeStr, newViewRelativeMode)) {
+        setViewRelativeMode(newViewRelativeMode);
+      }
+    }
+
+    if (j.find("viewCenter") != j.end()) {
+      auto centerData = j["viewCenter"];
+      if (centerData.size() == 3) {
+        glm::vec3 newCenter;
+        newCenter.x = centerData[0];
+        newCenter.y = centerData[1];
+        newCenter.z = centerData[2];
+        setViewCenterRaw(newCenter);
+      }
+    }
+
+    // NOTE: it's important that we do this after the mode/dir settings, as this
+    // lets us do our flight
+    bool viewChanged = false;
+    if (j.find("fov") == j.end()) {
+      newFov = j["fov"];
+      viewChanged = true;
+    }
+    if (j.find("viewMat") != j.end()) {
+      auto matData = j["viewMat"];
+      if (matData.size() != 16) return; // check size
+      auto it = matData.begin();
+      for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+          newViewMat[j][i] = *it;
+          it++;
+        }
+      }
+      viewChanged = true;
+    }
+    if (viewChanged) {
+      if (flyTo) {
+        startFlightTo(newViewMat, fov);
+      } else {
+        setCameraViewMatrix(newViewMat);
+        fov = newFov;
+        requestRedraw();
       }
     }
 
@@ -924,22 +1088,8 @@ void setViewFromJson(std::string jsonData, bool flyTo) {
     // If anything goes wrong parsing, just give up
     return;
   }
-
-  // === Assign the new values
-
-  view::setWindowSize(windowWidth, windowHeight);
-
-  if (newNearClipRatio > 0) nearClipRatio = newNearClipRatio;
-  if (newFarClipRatio > 0) farClipRatio = newFarClipRatio;
-
-  if (flyTo) {
-    startFlightTo(newViewMat, fov);
-  } else {
-    viewMat = newViewMat;
-    fov = newFov;
-    requestRedraw();
-  }
 }
+
 void setCameraFromJson(std::string jsonData, bool flyTo) { setViewFromJson(jsonData, flyTo); }
 
 void buildViewGui() {
@@ -953,7 +1103,7 @@ void buildViewGui() {
 
     // == Camera style
 
-    std::string viewStyleName = to_string(view::style);
+    std::string viewStyleName = enum_to_string(view::style);
 
     ImGui::PushItemWidth(120 * options::uiScale);
     std::array<NavigateStyle, 5> styles{NavigateStyle::Turntable, NavigateStyle::FirstPerson, NavigateStyle::Free,
@@ -961,7 +1111,7 @@ void buildViewGui() {
     if (ImGui::BeginCombo("##View Style", viewStyleName.c_str())) {
 
       for (NavigateStyle s : styles) {
-        if (ImGui::Selectable(to_string(s).c_str(), view::style == s)) {
+        if (ImGui::Selectable(enum_to_string(s).c_str(), view::style == s)) {
           setNavigateStyle(s, true);
           ImGui::SetItemDefaultFocus();
         }
@@ -1098,6 +1248,20 @@ void buildViewGui() {
                        ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
     view::moveScale = moveScaleF;
 
+    // Relative movement
+    int viewRelativeModeInt = static_cast<int>(viewRelativeMode);
+    if (ImGui::RadioButton("center relative##relMode", &viewRelativeModeInt,
+                           static_cast<int>(ViewRelativeMode::CenterRelative))) {
+      setViewRelativeMode(ViewRelativeMode::CenterRelative);
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("length relative##relMode", &viewRelativeModeInt,
+                           static_cast<int>(ViewRelativeMode::LengthRelative))) {
+      setViewRelativeMode(ViewRelativeMode::LengthRelative);
+    }
+
+    // Show the center
+    ImGui::Text("Center: <%.3g, %.3g, %.3g>", view::viewCenter.x, view::viewCenter.y, view::viewCenter.z);
 
     if (ImGui::TreeNode("Scene Extents")) {
 
@@ -1105,34 +1269,34 @@ void buildViewGui() {
         updateStructureExtents();
       }
 
-      if (!options::automaticallyComputeSceneExtents) {
-
-        static float lengthScaleUpper = -777;
-        if (lengthScaleUpper == -777) lengthScaleUpper = 2. * state::lengthScale;
-        if (ImGui::SliderFloat("Length Scale", &state::lengthScale, 0, lengthScaleUpper, "%.5f")) {
-          requestRedraw();
-        }
-        if (ImGui::IsItemDeactivatedAfterEdit()) {
-          // the upper bound for the slider is dynamically adjust to be a bit bigger than the lower bound, but only
-          // does so on release of the widget (so it doesn't scaleo off to infinity), and only ever gets larger (so
-          // you don't get stuck at 0)
-          lengthScaleUpper = std::fmax(2. * state::lengthScale, lengthScaleUpper);
-        }
+      ImGui::BeginDisabled(options::automaticallyComputeSceneExtents);
 
 
-        ImGui::TextUnformatted("Bounding Box:");
-        ImGui::PushItemWidth(200 * options::uiScale);
-        glm::vec3& bboxMin = std::get<0>(state::boundingBox);
-        glm::vec3& bboxMax = std::get<1>(state::boundingBox);
-        if (ImGui::InputFloat3("min", &bboxMin[0])) updateStructureExtents();
-        if (ImGui::InputFloat3("max", &bboxMax[0])) updateStructureExtents();
-        ImGui::PopItemWidth();
+      static float lengthScaleUpper = -777;
+      if (lengthScaleUpper == -777) lengthScaleUpper = 2. * state::lengthScale;
+      if (ImGui::SliderFloat("Length Scale", &state::lengthScale, 0, lengthScaleUpper, "%.5f")) {
+        requestRedraw();
       }
+      if (ImGui::IsItemDeactivatedAfterEdit()) {
+        // the upper bound for the slider is dynamically adjust to be a bit bigger than the lower bound, but only
+        // does so on release of the widget (so it doesn't scaleo off to infinity), and only ever gets larger (so
+        // you don't get stuck at 0)
+        lengthScaleUpper = std::fmax(2. * state::lengthScale, lengthScaleUpper);
+      }
+
+      ImGui::TextUnformatted("Bounding Box:");
+      ImGui::PushItemWidth(200 * options::uiScale);
+      glm::vec3& bboxMin = std::get<0>(state::boundingBox);
+      glm::vec3& bboxMax = std::get<1>(state::boundingBox);
+      if (ImGui::InputFloat3("min", &bboxMin[0])) updateStructureExtents();
+      if (ImGui::InputFloat3("max", &bboxMax[0])) updateStructureExtents();
+      ImGui::PopItemWidth();
+
+      ImGui::EndDisabled();
 
 
       ImGui::TreePop();
     }
-
 
     ImGui::SetNextItemOpen(false, ImGuiCond_FirstUseEver);
     if (ImGui::TreeNode("Camera Parameters")) {
@@ -1144,22 +1308,7 @@ void buildViewGui() {
         requestRedraw();
       };
 
-      // Clip planes
-      float nearClipRatioF = nearClipRatio;
-      float farClipRatioF = farClipRatio;
-      if (ImGui::SliderFloat(" Clip Near", &nearClipRatioF, 0., 10., "%.5f",
-                             ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
-        nearClipRatio = nearClipRatioF;
-        requestRedraw();
-      }
-      if (ImGui::SliderFloat(" Clip Far", &farClipRatioF, 1., 1000., "%.2f",
-                             ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
-        farClipRatio = farClipRatioF;
-        requestRedraw();
-      }
-
-
-      std::string projectionModeStr = to_string(view::projectionMode);
+      std::string projectionModeStr = enum_to_string(view::projectionMode);
       if (ImGui::BeginCombo("##ProjectionMode", projectionModeStr.c_str())) {
         if (ImGui::Selectable("Perspective", view::projectionMode == ProjectionMode::Perspective)) {
           setProjectionMode(ProjectionMode::Perspective);
@@ -1174,6 +1323,23 @@ void buildViewGui() {
       ImGui::SameLine();
       ImGui::Text("Projection");
 
+      if (ImGui::TreeNode("Clip Planes")) {
+        if (ImGui::SliderFloat("Near", &nearClip, 0., 10., "%.5f",
+                               ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
+          requestRedraw();
+        }
+        if (ImGui::SliderFloat("Far", &farClip, 1., 10000., "%.2f",
+                               ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
+          requestRedraw();
+        }
+        float absNearClip, absFarClip;
+        std::tie(absNearClip, absFarClip) = computeClipPlanes();
+        ImGui::TextUnformatted("Computed:");
+        ImGui::Text("  near: %g", absNearClip);
+        ImGui::Text("  far: %g", absFarClip);
+
+        ImGui::TreePop();
+      }
 
       ImGui::TreePop();
     }
