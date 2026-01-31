@@ -1733,11 +1733,12 @@ void MockGLEngine::hideWindow() {}
 
 void MockGLEngine::updateWindowSize(bool force) {
 
-  // this silly code mimicks the gl backend version, but it is important that we preserve
+  // This silly code mimicks the gl backend version, but it is important that we preserve
   // the view::bufferWidth, etc, otherwise it is impossible to manually set the window size
-  // in the mock backend (which appears in unit tests, etc)
-  int newBufferWidth = view::bufferWidth;
-  int newBufferHeight = view::bufferHeight;
+  // in the mock backend (which appears in unit tests, etc).
+  // In this case, we just let the buffer size follow the window size 1:1
+  int newBufferWidth = view::windowWidth;
+  int newBufferHeight = view::windowHeight;
   int newWindowWidth = view::windowWidth;
   int newWindowHeight = view::windowHeight;
 
@@ -1745,10 +1746,18 @@ void MockGLEngine::updateWindowSize(bool force) {
       newWindowHeight != view::windowHeight || newWindowWidth != view::windowWidth) {
     // Basically a resize callback
     requestRedraw();
+    
+    // prevent any division by zero for e.g. aspect ratio calcs
+    if (newBufferHeight == 0) newBufferHeight = 1;
+    if (newWindowHeight == 0) newWindowHeight = 1;
+
     view::bufferWidth = newBufferWidth;
     view::bufferHeight = newBufferHeight;
     view::windowWidth = newWindowWidth;
     view::windowHeight = newWindowHeight;
+
+    render::engine->resizeScreenBuffers();
+    render::engine->setScreenBufferViewports();
   }
 }
 
