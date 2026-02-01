@@ -431,6 +431,11 @@ namespace {
 
 float dragDistSinceLastRelease = 0.0;
 
+// State for delayed pick selection
+bool pendingPickActive = false;
+PickResult pendingPickResult;
+float pendingPickTime = 0.0f;
+
 void processInputEvents() {
   ImGuiIO& io = ImGui::GetIO();
 
@@ -516,24 +521,36 @@ void processInputEvents() {
         }
       }
 
-      { // Click picks
+      { // Click picks to select content onscreen
         float dragIgnoreThreshold = 0.01;
         bool anyModifierHeld = io.KeyShift || io.KeyCtrl || io.KeyAlt;
         bool ctrlShiftHeld = io.KeyShift && io.KeyCtrl;
 
-        // NOTE: there is annoyance here that we use single click for picking, and double click
-        // to recenter the view. However, there's no way to distingish which is happening
-        // after the first click without waiting. After trying several solutions, it feels
-        // best to let the first click always do a pick, but clear the selection if a
-        // double click comes in.
+        // NOTE: there is some extra 'pending' logic here, because we use double clicks to recenter the view, but we
+        // don't want a pick to trigger after the first click of a double click.  To handle this, we delay applying
+        // picks until enough time has passed that a double click would have been registered.
+
+        // Check if enough time has passed for a pending pick to be applied
+        if (pendingPickActive) {
+          float elapsedSec = ImGui::GetTime() - pendingPickTime;
+          float pickDelaySec = ImGui::GetIO().MouseDoubleClickTime + 0.05f; // 50ms margin for safety
+          if (haveSelection() || elapsedSec >= pickDelaySec) {
+            // enough time has passed, apply the pending pick
+            setSelection(pendingPickResult);
+            pendingPickActive = false;
+          }
+        }
 
         if (!anyModifierHeld && (io.MouseReleased[0] && io.MouseClickedLastCount[0] == 1)) {
 
-          // Don't pick at the end of a long drag
+          // don't pick at the end of a long drag
           if (dragDistSinceLastRelease < dragIgnoreThreshold) {
             glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
             PickResult pickResult = pickAtScreenCoords(screenCoords);
-            setSelection(pickResult);
+            // queue the pick for delayed application
+            pendingPickResult = pickResult;
+            pendingPickTime = ImGui::GetTime();
+            pendingPickActive = true;
           }
         }
 
@@ -543,6 +560,7 @@ void processInputEvents() {
             resetSelection();
           }
           dragDistSinceLastRelease = 0.0;
+          pendingPickActive = false;
         }
 
         // Double-click or Ctrl-shift left-click to set new center
@@ -550,8 +568,7 @@ void processInputEvents() {
           if (dragDistSinceLastRelease < dragIgnoreThreshold) {
             glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
             view::processSetCenter(screenCoords);
-            resetSelection(); // the single-click creates a selection, this clears it. unfortunately that leads to a
-                              // flicker, but its unavoidable without introducing a lag
+            pendingPickActive = false; // cancel any pending pick from the first click
           }
         }
       }
@@ -974,7 +991,10 @@ void buildPickGui() {
     } else {
       // this is a paranoid check, it _should_ never happen since we
       // clear the selection when a structure is deleted
+      // NOTE: it might be possible to hit this due to the way we set delayed picks, if the structure is deleted during
+      // the delay
       ImGui::TextUnformatted("ERROR: INVALID STRUCTURE");
+      resetSelection();
     }
 
     internal::rightWindowsWidth = ImGui::GetWindowWidth();
