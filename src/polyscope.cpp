@@ -307,32 +307,47 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Re-enter main loop until the context has been popped
   size_t currentContextStackSize = contextStack.size();
-  while (contextStack.size() >= currentContextStackSize) {
 
-    sleepForFramerate();
-    mainLoopIteration();
-
-    // auto-exit if the window is closed
-    if (render::engine->windowRequestsClose()) {
-      popContext();
+  // Helper lambda to perform cleanup of the context
+  auto cleanupContext = [&]() {
+    // Restore the previous context, if there was one
+    if (!contextStack.empty()) {
+      ImGui::SetCurrentContext(contextStack.back().context);
+      ImPlot::SetCurrentContext(contextStack.back().plotContext);
+      render::engine->updateImGuiContext(newContext, &newIO, oldContext, &oldIO);
+      ImGuizmo::PopContext();
     }
+
+    // WARNING: code duplicated here and in screenshot.cpp
+    // Workaround overzealous ImGui assertion before destroying any inner context
+    // https://github.com/ocornut/imgui/pull/7175
+    newIO.BackendPlatformUserData = nullptr;
+    newIO.BackendRendererUserData = nullptr;
+    ImPlot::DestroyContext(newPlotContext);
+    ImGui::DestroyContext(newContext);
+  };
+
+  try {
+    while (contextStack.size() >= currentContextStackSize) {
+
+      sleepForFramerate();
+      mainLoopIteration();
+
+      // auto-exit if the window is closed
+      if (render::engine->windowRequestsClose()) {
+        popContext();
+      }
+    }
+  } catch (...) {
+    // Ensure cleanup happens even if an exception is thrown
+    // NOTE: we don't really guarantee exception safety in general, it's likely that things are broken if an excpetion
+    // was thrown. But this handles a few of the worst and most confusing cases.
+    popContext();
+    cleanupContext();
+    throw; // re-throw the exception after cleanup
   }
 
-  // Restore the previous context, if there was one
-  if (!contextStack.empty()) {
-    ImGui::SetCurrentContext(contextStack.back().context);
-    ImPlot::SetCurrentContext(contextStack.back().plotContext);
-    render::engine->updateImGuiContext(newContext, &newIO, oldContext, &oldIO);
-    ImGuizmo::PopContext();
-  }
-
-  // WARNING: code duplicated here and in screenshot.cpp
-  // Workaround overzealous ImGui assertion before destroying any inner context
-  // https://github.com/ocornut/imgui/pull/7175
-  newIO.BackendPlatformUserData = nullptr;
-  newIO.BackendRendererUserData = nullptr;
-  ImPlot::DestroyContext(newPlotContext);
-  ImGui::DestroyContext(newContext);
+  cleanupContext();
 }
 
 
