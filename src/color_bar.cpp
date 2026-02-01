@@ -222,12 +222,13 @@ void OnscreenColorBarWidget::draw() {
 
   // Draw the color bar
 
-  // NOTE: right nwo the size of the colorbar is scaled by uiScale, but the positioning/margins are not. This is
+  // NOTE: right now the size of the colorbar is scaled by uiScale, but the positioning/margins are not. This is
   // consistent with the other positioning/marching logic in the main gui panels. (Maybe they should all be scaled?)
+  float titleHeight = 20.0f * options::uiScale;
   float barRegionWidth = 30.0f * options::uiScale;
   float tickRegionWidth = 90.0f * options::uiScale;
   float marginWidth = 10.0f * options::uiScale;
-  float barRegionHeight = 300.0f * options::uiScale;
+  float barRegionHeight = 250.0f * options::uiScale;
   float borderWidth = 2.0f * options::uiScale;
   float tickWidth = 5.0f * options::uiScale;
 
@@ -235,16 +236,19 @@ void OnscreenColorBarWidget::draw() {
   ImVec2 barTopLeft;
   if (placeAutomatically) {
     barTopLeft = ImVec2(internal::lastRightSideFreeX - barRegionWidth - tickRegionWidth - marginWidth,
-                        internal::lastRightSideFreeY + marginWidth + internal::imguiStackMargin);
+                        internal::lastRightSideFreeY + titleHeight + marginWidth + internal::imguiStackMargin);
   } else {
-    barTopLeft = ImVec2(parent.onscreenColorbarLocation.get().x, parent.onscreenColorbarLocation.get().y);
+    barTopLeft = ImVec2(parent.onscreenColorbarLocation.get().x, parent.onscreenColorbarLocation.get().y + titleHeight);
   }
 
   ImDrawList* dl = ImGui::GetBackgroundDrawList();
+  // ImU32 backgroundColor = ImGui::ColorConvertFloat4ToU32(ImGui::GetStyle().Colors[ImGuiCol_WindowBg]);
+  // ImU32 foregroundColor = IM_COL32_WHITE;
   ImU32 backgroundColor = IM_COL32(255, 255, 255, 180);
+  ImU32 foregroundColor = IM_COL32_BLACK;
 
   // dd a semi-transparent background
-  dl->AddRectFilled(ImVec2(barTopLeft.x - marginWidth, barTopLeft.y - marginWidth),
+  dl->AddRectFilled(ImVec2(barTopLeft.x - marginWidth, barTopLeft.y - marginWidth - titleHeight),
                     ImVec2(barTopLeft.x + barRegionWidth + tickRegionWidth + marginWidth,
                            barTopLeft.y + barRegionHeight + marginWidth),
                     backgroundColor);
@@ -255,8 +259,12 @@ void OnscreenColorBarWidget::draw() {
                ImVec2(barTopLeft.x + barRegionWidth, barTopLeft.y + barRegionHeight), ImVec2(0, 1), ImVec2(1, 0));
 
   // draw the border around the map
-  dl->AddRect(barTopLeft, ImVec2(barTopLeft.x + barRegionWidth, barTopLeft.y + barRegionHeight), IM_COL32(0, 0, 0, 255),
-              0.f, ImDrawFlags_None, borderWidth);
+  dl->AddRect(barTopLeft, ImVec2(barTopLeft.x + barRegionWidth, barTopLeft.y + barRegionHeight), foregroundColor, 0.f,
+              ImDrawFlags_None, borderWidth);
+
+  // title text
+  dl->AddText(ImVec2(barTopLeft.x + 0.5 * borderWidth, barTopLeft.y - 1.3 * titleHeight), foregroundColor,
+              parent.parent.name.c_str());
 
   // draw text ticks
   int nTicks = 5;
@@ -269,11 +277,12 @@ void OnscreenColorBarWidget::draw() {
 
     // Make a little tick mark
     dl->AddLine(ImVec2(barTopLeft.x + barRegionWidth - borderWidth, yPos),
-                ImVec2(barTopLeft.x + barRegionWidth + tickWidth, yPos), IM_COL32_BLACK, borderWidth);
+                ImVec2(barTopLeft.x + barRegionWidth + tickWidth, yPos), foregroundColor, borderWidth);
 
     // Draw the actual text
     ImVec2 textSize = ImGui::CalcTextSize(buffer);
-    dl->AddText(ImVec2(barTopLeft.x + barRegionWidth + 2.f * tickWidth, yPos - textSize.y / 2), IM_COL32_BLACK, buffer);
+    dl->AddText(ImVec2(barTopLeft.x + barRegionWidth + 2.f * tickWidth, yPos - textSize.y / 2), foregroundColor,
+                buffer);
   }
 
   if (placeAutomatically) {
