@@ -30,6 +30,7 @@ namespace backend_openGL3 {
 
 // Some very nice typdefs
 typedef GLuint TextureBufferHandle;
+typedef GLuint TextureStorageBufferHandle;
 typedef GLuint RenderBufferHandle;
 typedef GLuint FrameBufferHandle;
 typedef GLuint ShaderHandle;
@@ -167,12 +168,52 @@ public:
   std::vector<glm::vec3> getDataVector3() override;
 
   void bind();
-  GLenum textureType();
+  virtual GLenum textureType();
   TextureBufferHandle getHandle() const { return handle; }
 
 
 protected:
   TextureBufferHandle handle;
+
+  static GLTextureBuffer createUnintializedTextureBuffer(TextureFormat format, unsigned int size1D);
+
+private:
+  GLTextureBuffer(): TextureBuffer(1, TextureFormat::RGB8, 0), handle{0} {}
+};
+
+class GLStorageTextureBuffer : public GLTextureBuffer {
+public:
+  ~GLStorageTextureBuffer() override;
+  void resize(unsigned newLen) override;
+  void resize(unsigned newX, unsigned newY) override;
+  void resize(unsigned newX, unsigned newY, unsigned newZ) override;
+  void setData(const std::vector<glm::vec2>& data) override;
+  void setData(const std::vector<glm::vec3>& data) override;
+  void setData(const std::vector<glm::vec4>& data) override;
+  void setData(const std::vector<float>& data) override;
+  void setData(const std::vector<double>& data) override;
+  void setData(const std::vector<int32_t>& data) override;
+  void setData(const std::vector<uint32_t>& data) override;
+  void setData(const std::vector<glm::uvec2>& data) override;
+  void setData(const std::vector<glm::uvec3>& data) override;
+  void setData(const std::vector<glm::uvec4>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 2>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 3>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 4>>& data) override;
+  void setFilterMode(FilterMode newMode) override;
+  void* getNativeHandle() override;
+  uint32_t getNativeBufferID() override;
+  std::vector<float> getDataScalar() override;
+  std::vector<glm::vec2> getDataVector2() override;
+  std::vector<glm::vec3> getDataVector3() override;
+
+  GLenum textureType() override;
+
+  // Note: underlying buffer expects a type with 4 bytes and 1 dimension as the internal format
+  // to support other formats here resizing, setData and getData need new logic
+  GLStorageTextureBuffer(TextureFormat format, unsigned int size1D, void* data);
+protected:
+  TextureStorageBufferHandle bufferHandle;
 };
 
 class GLRenderBuffer : public RenderBuffer {
@@ -237,6 +278,7 @@ struct GLShaderAttribute {
   std::string name;
   RenderDataType type;
   int arrayCount;
+  int attribDivisor;
   AttributeLocation location;              // -1 means "no location", usually because it was optimized out
   std::shared_ptr<GLAttributeBuffer> buff; // the buffer that we will actually use
 };
@@ -330,6 +372,7 @@ public:
 
   // Instancing
   void setInstanceCount(uint32_t instanceCount) override;
+  void setInstanceVertexCount(uint32_t instanceVertexCount) override;
 
   // Textures
   bool hasTexture(std::string name) override;
@@ -406,6 +449,9 @@ public:
   std::shared_ptr<TextureBuffer> generateTextureBuffer(TextureFormat format, unsigned int sizeX_, unsigned int sizeY_,
                                                        unsigned int sizeZ_,
                                                        const float* data) override; // 3d
+
+  // create buffer texture
+  std::shared_ptr<TextureBuffer> generateStorageTextureBuffer(TextureFormat format, unsigned int size1D, void* data) override;
 
   // create render buffers
   std::shared_ptr<RenderBuffer> generateRenderBuffer(RenderBufferType type, unsigned int sizeX_,
