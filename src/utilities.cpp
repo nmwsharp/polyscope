@@ -14,8 +14,10 @@
 namespace polyscope {
 
 // Globals for random utilities
-std::random_device util_random_device;
-std::mt19937 util_mersenne_twister(util_random_device());
+namespace {
+std::seed_seq rng_seed_seq{123456789, 777777777, 987654321};
+}
+std::mt19937 util_mersenne_twister(rng_seed_seq); // deterministically seeded on startup
 
 std::string guessNiceNameFromPath(std::string fullname) {
   size_t startInd = 0;

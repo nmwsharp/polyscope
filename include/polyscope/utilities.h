@@ -136,30 +136,37 @@ std::vector<T> gather(const std::vector<T>& input, const std::vector<uint32_t>& 
 
 
 // === Random number generation
-extern std::random_device util_random_device;
-extern std::mt19937 util_mersenne_twister;
+extern std::mt19937 util_mersenne_twister; // deterministically seeded on startup
 
+// Generates a random double in the range [0, 1].
+// It is seeded deterministically on startup, so every run of the program will produce the same sequence.
 inline double randomUnit() {
   std::uniform_real_distribution<double> dist(0., 1.);
   return dist(util_mersenne_twister);
 }
 
+// Generates a random double in the range [minVal, maxVal].
+// It is seeded deterministically on startup, so every run of the program will produce the same sequence.
 inline double randomReal(double minVal, double maxVal) {
   std::uniform_real_distribution<double> dist(minVal, maxVal);
   return dist(util_mersenne_twister);
 }
 
 // Generate a random int in the INCLUSIVE range [lower,upper]
+// It is seeded deterministically on startup, so every run of the program will produce the same sequence.
 inline int randomInt(int lower, int upper) {
   std::uniform_int_distribution<int> dist(lower, upper);
   return dist(util_mersenne_twister);
 }
 // Generate a random size_t in the range [0, N)
+// It is seeded deterministically on startup, so every run of the program will produce the same sequence.
 inline size_t randomIndex(size_t size) {
   std::uniform_int_distribution<size_t> dist(0, size - 1);
   return dist(util_mersenne_twister);
 }
 
+// Generates a random number from a normal (Gaussian) distribution with given mean and standard deviation.
+// It is seeded deterministically on startup, so every run of the program will produce the same sequence.
 inline double randomNormal(double mean = 0.0, double stddev = 1.0) {
   std::normal_distribution<double> dist{mean, stddev};
   return dist(util_mersenne_twister);
