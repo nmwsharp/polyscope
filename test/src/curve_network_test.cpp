@@ -119,8 +119,7 @@ TEST_F(PolyscopeTest, CurveNetworkScalarCategoricalEdge) {
 TEST_F(PolyscopeTest, CurveNetworkNodeScalarRadius) {
   auto psCurve = registerCurveNetwork();
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
+  std::mt19937 gen(12345);
   std::uniform_int_distribution<> dis(1, 10);
 
   std::vector<double> vScalar(psCurve->nNodes(), 0.1);
@@ -150,8 +149,7 @@ TEST_F(PolyscopeTest, CurveNetworkNodeScalarRadius) {
 TEST_F(PolyscopeTest, CurveNetworkEdgeScalarRadius) {
   auto psCurve = registerCurveNetwork();
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
+  std::mt19937 gen(12345);
   std::uniform_int_distribution<> dis(1, 10);
 
   std::vector<double> eScalar(psCurve->nEdges(), 0.1);
@@ -181,8 +179,7 @@ TEST_F(PolyscopeTest, CurveNetworkEdgeScalarRadius) {
 TEST_F(PolyscopeTest, CurveNetworkNodeAndEdgeScalarRadius) {
   auto psCurve = registerCurveNetwork();
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
+  std::mt19937 gen(12345);
   std::uniform_int_distribution<> dis(1, 10);
 
   std::vector<double> vScalar(psCurve->nNodes(), 0.1);
