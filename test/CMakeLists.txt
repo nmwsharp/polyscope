@@ -104,6 +104,7 @@ set(TEST_SRCS
   src/surface_mesh_test.cpp
   src/volume_mesh_test.cpp
   src/volume_grid_test.cpp
+  src/sparse_volume_grid_test.cpp
   src/camera_view_test.cpp
   src/group_test.cpp
   src/floating_test.cpp
