@@ -339,13 +339,13 @@ void GLEngineGLFW::updateWindowSize(bool force) {
 void GLEngineGLFW::applyWindowSize() {
   glfwSetWindowSize(mainWindow, view::windowWidth, view::windowHeight);
 
-  // on some platform size changes are asynchonous, need to ensure it completes
-  // we don't want to just retry until the resize has happened, because it could be impossible
-  // TODO it seems like on X11 sometimes even this isn't enough?
-  // glfwWaitEvents();
-  // NSHARP: disabling this ^^^, on macOS it is causing the window to block until it gets focus,
-  // and some googling makes me thing the underlying buffers should be resized immediately, which is
-  // all we really care about
+  // On some platform size changes are asynchonous, waiting for events helps to ensure the window size change actually
+  // happens. Even this is not guaranteed to always be sufficient, but it seems to help. However, on macOS it causes the
+  // window to block until it gets focus, which we don't want, so do it only on Windows. I'm not sure about the Windows
+  // behavior.
+#if defined(__linux__)
+  glfwWaitEvents();
+#endif
 
   updateWindowSize(true);
 }
