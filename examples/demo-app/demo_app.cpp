@@ -16,9 +16,11 @@
 #include "polyscope/types.h"
 #include "polyscope/view.h"
 #include "polyscope/volume_grid.h"
+#include "polyscope/sparse_volume_grid.h"
 #include "polyscope/volume_mesh.h"
 
 #include <iostream>
+#include <set>
 #include <unordered_set>
 #include <utility>
 
@@ -544,6 +546,98 @@ void addVolumeGrid() {
 }
 
 
+void addSparseVolumeGrid() {
+  glm::vec3 origin{-5., -5., -5.};
+  glm::vec3 cellWidth{0.5, 0.5, 0.5};
+
+  // Build a spherical shell of occupied cells
+  std::vector<glm::ivec3> occupiedCells;
+  for (int i = -10; i <= 10; i++) {
+    for (int j = -10; j <= 10; j++) {
+      for (int k = -10; k <= 10; k++) {
+        glm::vec3 cellCenter = origin + (glm::vec3(i, j, k) + 0.5f) * cellWidth;
+        float dist = glm::length(cellCenter - origin);
+        if (dist >= 2.0f && dist <= 4.0f) {
+          occupiedCells.push_back({i, j, k});
+        }
+      }
+    }
+  }
+
+  polyscope::SparseVolumeGrid* psGrid =
+      polyscope::registerSparseVolumeGrid("sparse grid", origin, cellWidth, occupiedCells);
+
+  // Cell scalar: distance from origin
+  {
+    std::vector<float> cellDist(occupiedCells.size());
+    for (size_t i = 0; i < occupiedCells.size(); i++) {
+      glm::vec3 cellCenter = origin + (glm::vec3(occupiedCells[i]) + 0.5f) * cellWidth;
+      cellDist[i] = glm::length(cellCenter - origin);
+    }
+    psGrid->addCellScalarQuantity("cell distance", cellDist)->setEnabled(true);
+  }
+
+  // Node scalar: x-coordinate at node positions
+  {
+    // Gather all unique nodes for the occupied cells
+    // Node (ci+dx-1, cj+dy-1, ck+dz-1) for dx,dy,dz in {0,1}
+    std::set<std::tuple<int, int, int>> nodeSet;
+    for (const auto& ci : occupiedCells) {
+      for (int dx = 0; dx < 2; dx++) {
+        for (int dy = 0; dy < 2; dy++) {
+          for (int dz = 0; dz < 2; dz++) {
+            nodeSet.insert({ci.x + dx - 1, ci.y + dy - 1, ci.z + dz - 1});
+          }
+        }
+      }
+    }
+
+    std::vector<glm::ivec3> nodeIndices;
+    std::vector<float> nodeValues;
+    for (const auto& [ni, nj, nk] : nodeSet) {
+      nodeIndices.push_back({ni, nj, nk});
+      glm::vec3 nodePos = origin + glm::vec3(ni, nj, nk) * cellWidth;
+      nodeValues.push_back(nodePos.x);
+    }
+    psGrid->addNodeScalarQuantity("node x-coord", nodeIndices, nodeValues);
+  }
+
+  // Cell color: RGB from normalized position
+  {
+    std::vector<glm::vec3> cellColors(occupiedCells.size());
+    for (size_t i = 0; i < occupiedCells.size(); i++) {
+      glm::vec3 cellCenter = origin + (glm::vec3(occupiedCells[i]) + 0.5f) * cellWidth;
+      // Map to [0,1] range
+      cellColors[i] = glm::clamp((cellCenter - origin) / 10.f + 0.5f, 0.f, 1.f);
+    }
+    psGrid->addCellColorQuantity("cell color", cellColors);
+  }
+
+  // Node color: RGB from normalized node position
+  {
+    std::set<std::tuple<int, int, int>> nodeSet;
+    for (const auto& ci : occupiedCells) {
+      for (int dx = 0; dx < 2; dx++) {
+        for (int dy = 0; dy < 2; dy++) {
+          for (int dz = 0; dz < 2; dz++) {
+            nodeSet.insert({ci.x + dx - 1, ci.y + dy - 1, ci.z + dz - 1});
+          }
+        }
+      }
+    }
+
+    std::vector<glm::ivec3> nodeIndices;
+    std::vector<glm::vec3> nodeColors;
+    for (const auto& [ni, nj, nk] : nodeSet) {
+      nodeIndices.push_back({ni, nj, nk});
+      glm::vec3 nodePos = origin + glm::vec3(ni, nj, nk) * cellWidth;
+      nodeColors.push_back(glm::clamp((nodePos - origin) / 10.f + 0.5f, 0.f, 1.f));
+    }
+    psGrid->addNodeColorQuantity("node color", nodeIndices, nodeColors);
+  }
+}
+
+
 void loadFloatingImageData(polyscope::CameraView* targetView = nullptr) {
 
   // load an image from disk as example data
@@ -862,6 +956,10 @@ void callback() {
 
   if (ImGui::Button("add volume grid")) {
     addVolumeGrid();
+  }
+
+  if (ImGui::Button("add sparse volume grid")) {
+    addSparseVolumeGrid();
   }
 
   // ImPlot

@@ -227,6 +227,8 @@ SET(SRCS
 
   # Sparse volume grid
   sparse_volume_grid.cpp
+  sparse_volume_grid_scalar_quantity.cpp
+  sparse_volume_grid_color_quantity.cpp
 
   # Camera view
   camera_view.cpp
@@ -364,6 +366,9 @@ SET(HEADERS
   ${INCLUDE_ROOT}/volume_grid_scalar_quantity.h
   ${INCLUDE_ROOT}/sparse_volume_grid.h
   ${INCLUDE_ROOT}/sparse_volume_grid.ipp
+  ${INCLUDE_ROOT}/sparse_volume_grid_quantity.h
+  ${INCLUDE_ROOT}/sparse_volume_grid_scalar_quantity.h
+  ${INCLUDE_ROOT}/sparse_volume_grid_color_quantity.h
   ${INCLUDE_ROOT}/weak_handle.h
 )
 

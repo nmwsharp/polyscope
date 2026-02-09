@@ -1,6 +1,8 @@
 // Copyright 2017-2023, Nicholas Sharp and the Polyscope contributors. https://polyscope.run
 
 #include "polyscope/sparse_volume_grid.h"
+#include "polyscope/sparse_volume_grid_color_quantity.h"
+#include "polyscope/sparse_volume_grid_scalar_quantity.h"
 
 #include "polyscope/pick.h"
 
@@ -259,5 +261,56 @@ SparseVolumeGrid* registerSparseVolumeGrid(std::string name, glm::vec3 origin, g
 
   return s;
 }
+
+// === Quantity base class
+
+SparseVolumeGridQuantity::SparseVolumeGridQuantity(std::string name_, SparseVolumeGrid& grid_, bool dominates_)
+    : Quantity(name_, grid_, dominates_), parent(grid_) {}
+
+
+// === Set cell geometry attributes helper
+
+void SparseVolumeGrid::setCellGeometryAttributes(render::ShaderProgram& p) {
+  p.setAttribute("a_cellPosition", cellPositions.getRenderAttributeBuffer());
+  p.setAttribute("a_cellInd", cellIndices.getRenderAttributeBuffer());
+}
+
+
+// === Quantity adders
+
+SparseVolumeGridScalarQuantity* SparseVolumeGrid::addCellScalarQuantityImpl(std::string name,
+                                                                            const std::vector<float>& data,
+                                                                            DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SparseVolumeGridScalarQuantity* q = new SparseVolumeGridScalarQuantity(name, *this, data, type);
+  addQuantity(q);
+  return q;
+}
+
+SparseVolumeGridScalarQuantity* SparseVolumeGrid::addNodeScalarQuantityImpl(
+    std::string name, const std::vector<glm::ivec3>& nodeIndices, const std::vector<float>& nodeValues,
+    DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SparseVolumeGridScalarQuantity* q = new SparseVolumeGridScalarQuantity(name, *this, nodeIndices, nodeValues, type);
+  addQuantity(q);
+  return q;
+}
+
+SparseVolumeGridColorQuantity* SparseVolumeGrid::addCellColorQuantityImpl(std::string name,
+                                                                          const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SparseVolumeGridColorQuantity* q = new SparseVolumeGridColorQuantity(name, *this, colors);
+  addQuantity(q);
+  return q;
+}
+
+SparseVolumeGridColorQuantity* SparseVolumeGrid::addNodeColorQuantityImpl(
+    std::string name, const std::vector<glm::ivec3>& nodeIndices, const std::vector<glm::vec3>& nodeColors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SparseVolumeGridColorQuantity* q = new SparseVolumeGridColorQuantity(name, *this, nodeIndices, nodeColors);
+  addQuantity(q);
+  return q;
+}
+
 
 } // namespace polyscope

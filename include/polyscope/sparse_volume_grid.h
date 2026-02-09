@@ -8,12 +8,18 @@
 #include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
 
+#include "polyscope/sparse_volume_grid_color_quantity.h"
+#include "polyscope/sparse_volume_grid_quantity.h"
+#include "polyscope/sparse_volume_grid_scalar_quantity.h"
+
 #include <cstdint>
 #include <vector>
 
 namespace polyscope {
 
 class SparseVolumeGrid;
+class SparseVolumeGridScalarQuantity;
+class SparseVolumeGridColorQuantity;
 
 class SparseVolumeGrid : public Structure {
 public:
@@ -48,6 +54,30 @@ public:
   uint64_t nCells() const;
   glm::vec3 getOrigin() const;
   glm::vec3 getGridCellWidth() const;
+  const std::vector<glm::ivec3>& getOccupiedCells() const;
+
+  // === Quantities
+
+  // Cell scalar
+  template <class T>
+  SparseVolumeGridScalarQuantity* addCellScalarQuantity(std::string name, const T& values,
+                                                        DataType type = DataType::STANDARD);
+
+  // Node scalar
+  template <class TI, class TV>
+  SparseVolumeGridScalarQuantity* addNodeScalarQuantity(std::string name, const TI& nodeIndices,
+                                                        const TV& nodeValues, DataType type = DataType::STANDARD);
+
+  // Cell color
+  template <class T>
+  SparseVolumeGridColorQuantity* addCellColorQuantity(std::string name, const T& colors);
+
+  // Node color
+  template <class TI, class TC>
+  SparseVolumeGridColorQuantity* addNodeColorQuantity(std::string name, const TI& nodeIndices, const TC& nodeColors);
+
+  // Set cell geometry attributes on a shader program
+  void setCellGeometryAttributes(render::ShaderProgram& p);
 
   // === Getters and setters for visualization settings
 
@@ -94,6 +124,17 @@ private:
   // === Helpers
   void ensureRenderProgramPrepared();
   void ensurePickProgramPrepared();
+
+  // Quantity impl methods
+  SparseVolumeGridScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<float>& data,
+                                                            DataType type);
+  SparseVolumeGridScalarQuantity* addNodeScalarQuantityImpl(std::string name,
+                                                            const std::vector<glm::ivec3>& nodeIndices,
+                                                            const std::vector<float>& nodeValues, DataType type);
+  SparseVolumeGridColorQuantity* addCellColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
+  SparseVolumeGridColorQuantity* addNodeColorQuantityImpl(std::string name,
+                                                          const std::vector<glm::ivec3>& nodeIndices,
+                                                          const std::vector<glm::vec3>& nodeColors);
 };
 
 

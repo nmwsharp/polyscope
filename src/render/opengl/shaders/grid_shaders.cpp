@@ -462,6 +462,171 @@ const ShaderReplacementRule GRIDCUBE_CULLPOS_FROM_CENTER(
     /* textures */ {}
 );
 
+// == Attribute-based rules for sparse volume grid quantities ==
+
+const ShaderReplacementRule GRIDCUBE_PROPAGATE_ATTR_CELL_SCALAR (
+    /* rule name */ "GRIDCUBE_PROPAGATE_ATTR_CELL_SCALAR",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in float a_value;
+          out float a_valueToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_valueToGeom = a_value;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in float a_valueToGeom[];
+          out float a_valueToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_valueToFrag = a_valueToGeom[0];
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in float a_valueToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float shadeValue = a_valueToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_value", RenderDataType::Float},
+    },
+    /* textures */ {}
+);
+
+const ShaderReplacementRule GRIDCUBE_PROPAGATE_ATTR_CELL_COLOR (
+    /* rule name */ "GRIDCUBE_PROPAGATE_ATTR_CELL_COLOR",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec3 a_color;
+          out vec3 a_colorToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_colorToGeom = a_color;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in vec3 a_colorToGeom[];
+          flat out vec3 a_colorToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          a_colorToFrag = a_colorToGeom[0];
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          flat in vec3 a_colorToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          vec3 shadeColor = a_colorToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_color", RenderDataType::Vector3Float},
+    },
+    /* textures */ {}
+);
+
+const ShaderReplacementRule GRIDCUBE_PROPAGATE_ATTR_NODE_SCALAR (
+    /* rule name */ "GRIDCUBE_PROPAGATE_ATTR_NODE_SCALAR",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec4 a_nodeValues04;
+          in vec4 a_nodeValues47;
+          out vec4 a_nodeValues04ToGeom;
+          out vec4 a_nodeValues47ToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_nodeValues04ToGeom = a_nodeValues04;
+          a_nodeValues47ToGeom = a_nodeValues47;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in vec4 a_nodeValues04ToGeom[];
+          in vec4 a_nodeValues47ToGeom[];
+          out float a_valueToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          {
+            uint cornerIdx = (nodeInd.x - cellInd.x) * 4u + (nodeInd.y - cellInd.y) * 2u + (nodeInd.z - cellInd.z);
+            a_valueToFrag = (cornerIdx < 4u) ? a_nodeValues04ToGeom[0][cornerIdx] : a_nodeValues47ToGeom[0][cornerIdx - 4u];
+          }
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in float a_valueToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float shadeValue = a_valueToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_nodeValues04", RenderDataType::Vector4Float},
+      {"a_nodeValues47", RenderDataType::Vector4Float},
+    },
+    /* textures */ {}
+);
+
+const ShaderReplacementRule GRIDCUBE_PROPAGATE_ATTR_NODE_COLOR (
+    /* rule name */ "GRIDCUBE_PROPAGATE_ATTR_NODE_COLOR",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          in vec4 a_nodeR04;
+          in vec4 a_nodeR47;
+          in vec4 a_nodeG04;
+          in vec4 a_nodeG47;
+          in vec4 a_nodeB04;
+          in vec4 a_nodeB47;
+          out vec4 a_nodeR04ToGeom;
+          out vec4 a_nodeR47ToGeom;
+          out vec4 a_nodeG04ToGeom;
+          out vec4 a_nodeG47ToGeom;
+          out vec4 a_nodeB04ToGeom;
+          out vec4 a_nodeB47ToGeom;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_nodeR04ToGeom = a_nodeR04;
+          a_nodeR47ToGeom = a_nodeR47;
+          a_nodeG04ToGeom = a_nodeG04;
+          a_nodeG47ToGeom = a_nodeG47;
+          a_nodeB04ToGeom = a_nodeB04;
+          a_nodeB47ToGeom = a_nodeB47;
+        )"},
+      {"GEOM_DECLARATIONS", R"(
+          in vec4 a_nodeR04ToGeom[];
+          in vec4 a_nodeR47ToGeom[];
+          in vec4 a_nodeG04ToGeom[];
+          in vec4 a_nodeG47ToGeom[];
+          in vec4 a_nodeB04ToGeom[];
+          in vec4 a_nodeB47ToGeom[];
+          out vec3 a_colorToFrag;
+        )"},
+      {"GEOM_PER_EMIT", R"(
+          {
+            uint cornerIdx = (nodeInd.x - cellInd.x) * 4u + (nodeInd.y - cellInd.y) * 2u + (nodeInd.z - cellInd.z);
+            float r = (cornerIdx < 4u) ? a_nodeR04ToGeom[0][cornerIdx] : a_nodeR47ToGeom[0][cornerIdx - 4u];
+            float g = (cornerIdx < 4u) ? a_nodeG04ToGeom[0][cornerIdx] : a_nodeG47ToGeom[0][cornerIdx - 4u];
+            float b = (cornerIdx < 4u) ? a_nodeB04ToGeom[0][cornerIdx] : a_nodeB47ToGeom[0][cornerIdx - 4u];
+            a_colorToFrag = vec3(r, g, b);
+          }
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec3 a_colorToFrag;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          vec3 shadeColor = a_colorToFrag;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {
+      {"a_nodeR04", RenderDataType::Vector4Float},
+      {"a_nodeR47", RenderDataType::Vector4Float},
+      {"a_nodeG04", RenderDataType::Vector4Float},
+      {"a_nodeG47", RenderDataType::Vector4Float},
+      {"a_nodeB04", RenderDataType::Vector4Float},
+      {"a_nodeB47", RenderDataType::Vector4Float},
+    },
+    /* textures */ {}
+);
+
 }
 }
 }
