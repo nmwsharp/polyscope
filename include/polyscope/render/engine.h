@@ -47,6 +47,9 @@ enum class RenderDataType {
   Matrix44Float,
   Float,
   Int,
+  Vector2Int,
+  Vector3Int,
+  Vector4Int,
   UInt,
   Vector2UInt,
   Vector3UInt,
@@ -78,6 +81,9 @@ public:
   virtual void setData(const std::vector<float>& data) = 0;
   virtual void setData(const std::vector<double>& data) = 0;
   virtual void setData(const std::vector<int32_t>& data) = 0;
+  virtual void setData(const std::vector<glm::ivec2>& data) = 0;
+  virtual void setData(const std::vector<glm::ivec3>& data) = 0;
+  virtual void setData(const std::vector<glm::ivec4>& data) = 0;
   virtual void setData(const std::vector<uint32_t>& data) = 0;
   virtual void setData(const std::vector<glm::uvec2>& data) = 0;
   virtual void setData(const std::vector<glm::uvec3>& data) = 0;
@@ -107,6 +113,9 @@ public:
   virtual glm::vec3 getData_vec3(size_t ind) = 0;
   virtual glm::vec4 getData_vec4(size_t ind) = 0;
   virtual int getData_int(size_t ind) = 0;
+  virtual glm::ivec2 getData_ivec2(size_t ind) = 0;
+  virtual glm::ivec3 getData_ivec3(size_t ind) = 0;
+  virtual glm::ivec4 getData_ivec4(size_t ind) = 0;
   virtual uint32_t getData_uint32(size_t ind) = 0;
   virtual glm::uvec2 getData_uvec2(size_t ind) = 0;
   virtual glm::uvec3 getData_uvec3(size_t ind) = 0;
@@ -119,6 +128,9 @@ public:
   virtual std::vector<glm::vec3> getDataRange_vec3(size_t ind, size_t count) = 0;
   virtual std::vector<glm::vec4> getDataRange_vec4(size_t ind, size_t count) = 0;
   virtual std::vector<int> getDataRange_int(size_t ind, size_t count) = 0;
+  virtual std::vector<glm::ivec2> getDataRange_ivec2(size_t ind, size_t count) = 0;
+  virtual std::vector<glm::ivec3> getDataRange_ivec3(size_t ind, size_t count) = 0;
+  virtual std::vector<glm::ivec4> getDataRange_ivec4(size_t ind, size_t count) = 0;
   virtual std::vector<uint32_t> getDataRange_uint32(size_t ind, size_t count) = 0;
   virtual std::vector<glm::uvec2> getDataRange_uvec2(size_t ind, size_t count) = 0;
   virtual std::vector<glm::uvec3> getDataRange_uvec3(size_t ind, size_t count) = 0;
@@ -364,6 +376,9 @@ public:
   virtual void setUniform(std::string name, glm::vec4 val) = 0;
   virtual void setUniform(std::string name, std::array<float, 3> val) = 0;
   virtual void setUniform(std::string name, float x, float y, float z, float w) = 0;
+  virtual void setUniform(std::string name, glm::ivec2 val) = 0;
+  virtual void setUniform(std::string name, glm::ivec3 val) = 0;
+  virtual void setUniform(std::string name, glm::ivec4 val) = 0;
   virtual void setUniform(std::string name, glm::uvec2 val) = 0;
   virtual void setUniform(std::string name, glm::uvec3 val) = 0;
   virtual void setUniform(std::string name, glm::uvec4 val) = 0;

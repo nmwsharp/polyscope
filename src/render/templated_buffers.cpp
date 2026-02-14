@@ -56,6 +56,26 @@ std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::vec4>(Engine* engi
 }
 
 template <>
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<int32_t>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Int);
+}
+
+template <>
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::ivec2>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Vector2Int);
+}
+
+template <>
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::ivec3>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Vector3Int);
+}
+
+template <>
+std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::ivec4>(Engine* engine) {
+  return engine->generateAttributeBuffer(RenderDataType::Vector4Int);
+}
+
+template <>
 std::shared_ptr<AttributeBuffer> generateAttributeBuffer<uint64_t>(Engine* engine) {
   return engine->generateAttributeBuffer(RenderDataType::UInt);
 }
@@ -63,11 +83,6 @@ std::shared_ptr<AttributeBuffer> generateAttributeBuffer<uint64_t>(Engine* engin
 template <>
 std::shared_ptr<AttributeBuffer> generateAttributeBuffer<uint32_t>(Engine* engine) {
   return engine->generateAttributeBuffer(RenderDataType::UInt);
-}
-
-template <>
-std::shared_ptr<AttributeBuffer> generateAttributeBuffer<int32_t>(Engine* engine) {
-  return engine->generateAttributeBuffer(RenderDataType::Int);
 }
 
 template <>
@@ -84,6 +99,7 @@ template <>
 std::shared_ptr<AttributeBuffer> generateAttributeBuffer<glm::uvec4>(Engine* engine) {
   return engine->generateAttributeBuffer(RenderDataType::Vector4UInt);
 }
+
 
 // == Get buffer data at a single location
 
@@ -243,13 +259,28 @@ std::vector<uint64_t> getAttributeBufferDataRange<uint64_t>(AttributeBuffer& buf
 }
 
 template <>
-std::vector<uint32_t> getAttributeBufferDataRange<uint32_t>(AttributeBuffer& buff, size_t ind, size_t count) {
-  return buff.getDataRange_uint32(ind, count);
+std::vector<int32_t> getAttributeBufferDataRange<int32_t>(AttributeBuffer& buff, size_t ind, size_t count) {
+  return buff.getDataRange_int(ind, count);
 }
 
 template <>
-std::vector<int32_t> getAttributeBufferDataRange<int32_t>(AttributeBuffer& buff, size_t ind, size_t count) {
-  return buff.getDataRange_int(ind, count);
+std::vector<glm::ivec2> getAttributeBufferDataRange<glm::ivec2>(AttributeBuffer& buff, size_t ind, size_t count) {
+  return buff.getDataRange_ivec2(ind, count);
+}
+
+template <>
+std::vector<glm::ivec3> getAttributeBufferDataRange<glm::ivec3>(AttributeBuffer& buff, size_t ind, size_t count) {
+  return buff.getDataRange_ivec3(ind, count);
+}
+
+template <>
+std::vector<glm::ivec4> getAttributeBufferDataRange<glm::ivec4>(AttributeBuffer& buff, size_t ind, size_t count) {
+  return buff.getDataRange_ivec4(ind, count);
+}
+
+template <>
+std::vector<uint32_t> getAttributeBufferDataRange<uint32_t>(AttributeBuffer& buff, size_t ind, size_t count) {
+  return buff.getDataRange_uint32(ind, count);
 }
 
 template <>

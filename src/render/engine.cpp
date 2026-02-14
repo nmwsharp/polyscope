@@ -63,6 +63,12 @@ std::string renderDataTypeName(const RenderDataType& r) {
     return "Float";
   case RenderDataType::Int:
     return "Int";
+  case RenderDataType::Vector2Int:
+    return "Vector2Int";
+  case RenderDataType::Vector3Int:
+    return "Vector3Int";
+  case RenderDataType::Vector4Int:
+    return "Vector4Int";
   case RenderDataType::UInt:
     return "UInt";
   case RenderDataType::Vector2UInt:
@@ -89,6 +95,12 @@ int sizeInBytes(const RenderDataType& r) {
     return 4;
   case RenderDataType::Int:
     return 4;
+  case RenderDataType::Vector2Int:
+    return 2 * 4;
+  case RenderDataType::Vector3Int:
+    return 3 * 4;
+  case RenderDataType::Vector4Int:
+    return 4 * 4;
   case RenderDataType::UInt:
     return 4;
   case RenderDataType::Vector2UInt:
@@ -108,6 +120,10 @@ int renderDataTypeCountCompatbility(const RenderDataType r1, const RenderDataTyp
   if (r1 == RenderDataType::Vector2Float && r2 == RenderDataType::Float) return 2;
   if (r1 == RenderDataType::Vector3Float && r2 == RenderDataType::Float) return 3;
   if (r1 == RenderDataType::Vector4Float && r2 == RenderDataType::Float) return 4;
+  
+  if (r1 == RenderDataType::Vector2Int && r2 == RenderDataType::Int) return 2;
+  if (r1 == RenderDataType::Vector3Int && r2 == RenderDataType::Int) return 3;
+  if (r1 == RenderDataType::Vector4Int && r2 == RenderDataType::Int) return 4;
 
   if (r1 == RenderDataType::Vector2UInt && r2 == RenderDataType::UInt) return 2;
   if (r1 == RenderDataType::Vector3UInt && r2 == RenderDataType::UInt) return 3;
