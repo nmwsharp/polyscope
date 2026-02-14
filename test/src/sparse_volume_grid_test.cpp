@@ -124,7 +124,8 @@ TEST_F(PolyscopeTest, SparseVolumeGridCellScalar) {
   polyscope::SparseVolumeGrid* psGrid =
       polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
 
-  psGrid->addCellScalarQuantity("cell scalar", d.cellScalars);
+  polyscope::SparseVolumeGridScalarQuantity* q = psGrid->addCellScalarQuantity("cell scalar", d.cellScalars);
+  q->setEnabled(true);
 
   polyscope::show(3);
 
@@ -138,7 +139,10 @@ TEST_F(PolyscopeTest, SparseVolumeGridNodeScalar) {
   polyscope::SparseVolumeGrid* psGrid =
       polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
 
-  psGrid->addNodeScalarQuantity("node scalar", d.nodeIndices, d.nodeScalars);
+  polyscope::SparseVolumeGridScalarQuantity* q =
+      psGrid->addNodeScalarQuantity("node scalar", d.nodeIndices, d.nodeScalars);
+  q->setEnabled(true);
+
 
   polyscope::show(3);
 
@@ -152,7 +156,8 @@ TEST_F(PolyscopeTest, SparseVolumeGridCellColor) {
   polyscope::SparseVolumeGrid* psGrid =
       polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
 
-  psGrid->addCellColorQuantity("cell color", d.cellColors);
+  polyscope::SparseVolumeGridColorQuantity* q = psGrid->addCellColorQuantity("cell color", d.cellColors);
+  q->setEnabled(true);
 
   polyscope::show(3);
 
@@ -166,7 +171,8 @@ TEST_F(PolyscopeTest, SparseVolumeGridNodeColor) {
   polyscope::SparseVolumeGrid* psGrid =
       polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
 
-  psGrid->addNodeColorQuantity("node color", d.nodeIndices, d.nodeColors);
+  polyscope::SparseVolumeGridColorQuantity* q = psGrid->addNodeColorQuantity("node color", d.nodeIndices, d.nodeColors);
+  q->setEnabled(true);
 
   polyscope::show(3);
 

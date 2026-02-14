@@ -113,38 +113,38 @@ R"(
             vec4 p7 = T * vec4(center + c7 * dvec, 1.f);
 
             // node corner indices
-            ivec3 iCenter = a_cellIndToGeom[0];
-            ivec3 i0 = iCenter + ivec3(0, 0, 0);
-            ivec3 i1 = iCenter + ivec3(0, 0, 1);
-            ivec3 i2 = iCenter + ivec3(0, 1, 0);
-            ivec3 i3 = iCenter + ivec3(0, 1, 1);
-            ivec3 i4 = iCenter + ivec3(1, 0, 0);
-            ivec3 i5 = iCenter + ivec3(1, 0, 1);
-            ivec3 i6 = iCenter + ivec3(1, 1, 0);
-            ivec3 i7 = iCenter + ivec3(1, 1, 1);
+            ivec3 cellInd = a_cellIndToGeom[0];
+            ivec3 i0 = cellInd + ivec3(0, 0, 0);
+            ivec3 i1 = cellInd + ivec3(0, 0, 1);
+            ivec3 i2 = cellInd + ivec3(0, 1, 0);
+            ivec3 i3 = cellInd + ivec3(0, 1, 1);
+            ivec3 i4 = cellInd + ivec3(1, 0, 0);
+            ivec3 i5 = cellInd + ivec3(1, 0, 1);
+            ivec3 i6 = cellInd + ivec3(1, 1, 0);
+            ivec3 i7 = cellInd + ivec3(1, 1, 1);
             
             ${ GEOM_COMPUTE_BEFORE_EMIT }$
 
             vec4 nodePos;
             ivec3 nodeInd;
             
-            // this is the order to emit veritces to get a cube triangle strip
+            // this is the order to emit vertices to get a cube triangle strip
             // 3, 7, 1, 5, 4, 7, 6, 3, 2, 1, 0, 4, 2, 6,
 
-            /* 7 */ nodePos = p7; nodeInd = i7; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c7; EmitVertex(); 
-            /* 3 */ nodePos = p3; nodeInd = i3; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c3; EmitVertex(); 
-            /* 5 */ nodePos = p5; nodeInd = i5; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c5; EmitVertex(); 
-            /* 1 */ nodePos = p1; nodeInd = i1; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c1; EmitVertex(); 
-            /* 0 */ nodePos = p0; nodeInd = i0; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c0; EmitVertex(); 
-            /* 3 */ nodePos = p3; nodeInd = i3; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c3; EmitVertex(); 
-            /* 2 */ nodePos = p2; nodeInd = i2; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c2; EmitVertex(); 
-            /* 7 */ nodePos = p7; nodeInd = i7; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c7; EmitVertex(); 
-            /* 6 */ nodePos = p6; nodeInd = i6; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c6; EmitVertex(); 
-            /* 5 */ nodePos = p5; nodeInd = i5; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c5; EmitVertex(); 
-            /* 4 */ nodePos = p4; nodeInd = i4; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c4; EmitVertex(); 
-            /* 0 */ nodePos = p0; nodeInd = i0; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c0; EmitVertex(); 
-            /* 6 */ nodePos = p6; nodeInd = i6; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c6; EmitVertex(); 
-            /* 2 */ nodePos = p2; nodeInd = i2; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c2; EmitVertex(); 
+            /* 7 */ nodePos = p7; nodeInd = i7; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c7; EmitVertex(); 
+            /* 3 */ nodePos = p3; nodeInd = i3; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c3; EmitVertex(); 
+            /* 5 */ nodePos = p5; nodeInd = i5; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c5; EmitVertex(); 
+            /* 1 */ nodePos = p1; nodeInd = i1; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c1; EmitVertex(); 
+            /* 0 */ nodePos = p0; nodeInd = i0; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c0; EmitVertex(); 
+            /* 3 */ nodePos = p3; nodeInd = i3; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c3; EmitVertex(); 
+            /* 2 */ nodePos = p2; nodeInd = i2; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c2; EmitVertex(); 
+            /* 7 */ nodePos = p7; nodeInd = i7; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c7; EmitVertex(); 
+            /* 6 */ nodePos = p6; nodeInd = i6; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c6; EmitVertex(); 
+            /* 5 */ nodePos = p5; nodeInd = i5; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c5; EmitVertex(); 
+            /* 4 */ nodePos = p4; nodeInd = i4; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c4; EmitVertex(); 
+            /* 0 */ nodePos = p0; nodeInd = i0; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c0; EmitVertex(); 
+            /* 6 */ nodePos = p6; nodeInd = i6; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c6; EmitVertex(); 
+            /* 2 */ nodePos = p2; nodeInd = i2; centerToFrag = center; cellIndToFrag = cellInd; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c2; EmitVertex(); 
 
             EndPrimitive();
 
@@ -608,8 +608,8 @@ const ShaderReplacementRule GRIDCUBE_PROPAGATE_ATTR_NODE_SCALAR (
         )"},
       {"GEOM_PER_EMIT", R"(
           {
-            uint cornerIdx = (nodeInd.x - cellInd.x) * 4u + (nodeInd.y - cellInd.y) * 2u + (nodeInd.z - cellInd.z);
-            a_valueToFrag = (cornerIdx < 4u) ? a_nodeValues04ToGeom[0][cornerIdx] : a_nodeValues47ToGeom[0][cornerIdx - 4u];
+            int cornerIdx = (nodeInd.x - cellInd.x) * 4 + (nodeInd.y - cellInd.y) * 2 + (nodeInd.z - cellInd.z);
+            a_valueToFrag = (cornerIdx < 4) ? a_nodeValues04ToGeom[0][cornerIdx] : a_nodeValues47ToGeom[0][cornerIdx - 4];
           }
         )"},
       {"FRAG_DECLARATIONS", R"(
@@ -663,10 +663,10 @@ const ShaderReplacementRule GRIDCUBE_PROPAGATE_ATTR_NODE_COLOR (
         )"},
       {"GEOM_PER_EMIT", R"(
           {
-            uint cornerIdx = (nodeInd.x - cellInd.x) * 4u + (nodeInd.y - cellInd.y) * 2u + (nodeInd.z - cellInd.z);
-            float r = (cornerIdx < 4u) ? a_nodeR04ToGeom[0][cornerIdx] : a_nodeR47ToGeom[0][cornerIdx - 4u];
-            float g = (cornerIdx < 4u) ? a_nodeG04ToGeom[0][cornerIdx] : a_nodeG47ToGeom[0][cornerIdx - 4u];
-            float b = (cornerIdx < 4u) ? a_nodeB04ToGeom[0][cornerIdx] : a_nodeB47ToGeom[0][cornerIdx - 4u];
+            int cornerIdx = (nodeInd.x - cellInd.x) * 4 + (nodeInd.y - cellInd.y) * 2 + (nodeInd.z - cellInd.z);
+            float r = (cornerIdx < 4) ? a_nodeR04ToGeom[0][cornerIdx] : a_nodeR47ToGeom[0][cornerIdx - 4];
+            float g = (cornerIdx < 4) ? a_nodeG04ToGeom[0][cornerIdx] : a_nodeG47ToGeom[0][cornerIdx - 4];
+            float b = (cornerIdx < 4) ? a_nodeB04ToGeom[0][cornerIdx] : a_nodeB47ToGeom[0][cornerIdx - 4];
             a_colorToFrag = vec3(r, g, b);
           }
         )"},
