@@ -32,6 +32,31 @@ TEST_F(PolyscopeTest, SparseVolumeGridShow) {
   EXPECT_FALSE(polyscope::hasSparseVolumeGrid("test sparse grid"));
 }
 
+TEST_F(PolyscopeTest, SparseVolumeGridEdges) {
+  glm::vec3 origin{-3., -3., -3.};
+  glm::vec3 cellWidth{0.5, 0.5, 0.5};
+
+  // Create some occupied cells
+  std::vector<glm::ivec3> occupiedCells;
+  for (uint32_t i = 0; i < 8; i += 2) {
+    for (uint32_t j = 0; j < 10; j += 2) {
+      for (uint32_t k = 0; k < 12; k += 2) {
+        occupiedCells.push_back({i, j, k});
+      }
+    }
+  }
+
+  polyscope::SparseVolumeGrid* psGrid =
+      polyscope::registerSparseVolumeGrid("test sparse grid", origin, cellWidth, occupiedCells);
+
+  psGrid->setEdgeWidth(1.f);
+  psGrid->setEdgeColor({1.f, 0.f, 0.f});
+
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
 
 TEST_F(PolyscopeTest, SparseVolumeGridCellScalar) {
   glm::vec3 origin{-3., -3., -3.};
