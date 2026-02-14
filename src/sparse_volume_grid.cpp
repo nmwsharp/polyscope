@@ -108,10 +108,12 @@ void SparseVolumeGrid::buildCustomOptionsUI() {
   }
 
   // Shrinky effect
+  ImGui::PushItemWidth(150 * options::uiScale);
   if (ImGui::SliderFloat("Cell Shrink", &cubeSizeFactor.get(), 0.0, 1., "%.3f", ImGuiSliderFlags_Logarithmic)) {
     cubeSizeFactor.manuallyChanged();
     requestRedraw();
   }
+  ImGui::PopItemWidth();
 }
 
 
