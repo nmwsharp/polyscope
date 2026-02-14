@@ -206,7 +206,7 @@ std::vector<std::string> VolumeGrid::addGridCubeRules(std::vector<std::string> i
   }
 
   if (wantsCullPosition()) {
-    initRules.push_back("GRIDCUBE_CULLPOS_FROM_CENTER");
+    initRules.push_back("GRIDCUBE_PLANE_CULLPOS_FROM_CENTER");
   }
 
   return initRules;

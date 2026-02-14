@@ -2,27 +2,85 @@
 
 #include "polyscope_test.h"
 
+#include <set>
+#include <tuple>
 
 // ============================================================
 // =============== Sparse volume grid tests
 // ============================================================
 
-TEST_F(PolyscopeTest, SparseVolumeGridShow) {
+// Helper: create a block of occupied cells from [-N, N)^3, ensuring negative indices are tested.
+// Also produces matching node indices/values covering all corners of occupied cells.
+struct SparseGridTestData {
   glm::vec3 origin{-3., -3., -3.};
   glm::vec3 cellWidth{0.5, 0.5, 0.5};
-
-  // Create some occupied cells
   std::vector<glm::ivec3> occupiedCells;
-  for (uint32_t i = 0; i < 8; i += 2) {
-    for (uint32_t j = 0; j < 10; j += 2) {
-      for (uint32_t k = 0; k < 12; k += 2) {
-        occupiedCells.push_back({i, j, k});
+  std::vector<glm::ivec3> nodeIndices;
+
+  // Per-cell scalar: linear index
+  std::vector<float> cellScalars;
+  // Per-cell color
+  std::vector<glm::vec3> cellColors;
+  // Per-node scalar: sum of node coords
+  std::vector<float> nodeScalars;
+  // Per-node color
+  std::vector<glm::vec3> nodeColors;
+};
+
+SparseGridTestData buildSparseGridTestData(int N = 3) {
+  SparseGridTestData d;
+
+  // Cells from [-N, N)
+  for (int i = -N; i < N; i++) {
+    for (int j = -N; j < N; j++) {
+      for (int k = -N; k < N; k++) {
+        d.occupiedCells.push_back({i, j, k});
       }
     }
   }
 
+  // Per-cell quantities
+  d.cellScalars.resize(d.occupiedCells.size());
+  d.cellColors.resize(d.occupiedCells.size());
+  for (size_t i = 0; i < d.occupiedCells.size(); i++) {
+    d.cellScalars[i] = static_cast<float>(i);
+    glm::ivec3 ci = d.occupiedCells[i];
+    d.cellColors[i] = glm::vec3((ci.x + N) / (2.f * N), (ci.y + N) / (2.f * N), (ci.z + N) / (2.f * N));
+  }
+
+  // Gather all unique node indices
+  // Node (ci+dx-1, cj+dy-1, ck+dz-1) for dx,dy,dz in {0,1}
+  std::set<std::tuple<int, int, int>> nodeSet;
+  for (const auto& ci : d.occupiedCells) {
+    for (int dx = 0; dx < 2; dx++) {
+      for (int dy = 0; dy < 2; dy++) {
+        for (int dz = 0; dz < 2; dz++) {
+          nodeSet.insert({ci.x + dx - 1, ci.y + dy - 1, ci.z + dz - 1});
+        }
+      }
+    }
+  }
+
+  d.nodeScalars.reserve(nodeSet.size());
+  d.nodeColors.reserve(nodeSet.size());
+  for (const auto& n : nodeSet) {
+    int ni, nj, nk;
+    std::tie(ni, nj, nk) = n;
+    d.nodeIndices.push_back({ni, nj, nk});
+    d.nodeScalars.push_back(static_cast<float>(ni + nj + nk));
+    d.nodeColors.push_back(
+        glm::vec3((ni + N) / (2.f * N + 1.f), (nj + N) / (2.f * N + 1.f), (nk + N) / (2.f * N + 1.f)));
+  }
+
+  return d;
+}
+
+
+TEST_F(PolyscopeTest, SparseVolumeGridShow) {
+  auto d = buildSparseGridTestData();
+
   polyscope::SparseVolumeGrid* psGrid =
-      polyscope::registerSparseVolumeGrid("test sparse grid", origin, cellWidth, occupiedCells);
+      polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
 
   polyscope::show(3);
 
@@ -33,21 +91,10 @@ TEST_F(PolyscopeTest, SparseVolumeGridShow) {
 }
 
 TEST_F(PolyscopeTest, SparseVolumeGridEdges) {
-  glm::vec3 origin{-3., -3., -3.};
-  glm::vec3 cellWidth{0.5, 0.5, 0.5};
-
-  // Create some occupied cells
-  std::vector<glm::ivec3> occupiedCells;
-  for (uint32_t i = 0; i < 8; i += 2) {
-    for (uint32_t j = 0; j < 10; j += 2) {
-      for (uint32_t k = 0; k < 12; k += 2) {
-        occupiedCells.push_back({i, j, k});
-      }
-    }
-  }
+  auto d = buildSparseGridTestData();
 
   polyscope::SparseVolumeGrid* psGrid =
-      polyscope::registerSparseVolumeGrid("test sparse grid", origin, cellWidth, occupiedCells);
+      polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
 
   psGrid->setEdgeWidth(1.f);
   psGrid->setEdgeColor({1.f, 0.f, 0.f});
@@ -57,28 +104,27 @@ TEST_F(PolyscopeTest, SparseVolumeGridEdges) {
   polyscope::removeAllStructures();
 }
 
-
-TEST_F(PolyscopeTest, SparseVolumeGridCellScalar) {
-  glm::vec3 origin{-3., -3., -3.};
-  glm::vec3 cellWidth{0.5, 0.5, 0.5};
-
-  std::vector<glm::ivec3> occupiedCells;
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 4; j++) {
-      for (int k = 0; k < 4; k++) {
-        occupiedCells.push_back({i, j, k});
-      }
-    }
-  }
+TEST_F(PolyscopeTest, SparseVolumeGridSlicePlane) {
+  auto d = buildSparseGridTestData();
 
   polyscope::SparseVolumeGrid* psGrid =
-      polyscope::registerSparseVolumeGrid("test sparse grid", origin, cellWidth, occupiedCells);
+      polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
 
-  std::vector<float> scalarVals(occupiedCells.size());
-  for (size_t i = 0; i < scalarVals.size(); i++) {
-    scalarVals[i] = static_cast<float>(i);
-  }
-  psGrid->addCellScalarQuantity("cell scalar", scalarVals);
+  polyscope::addSlicePlane();
+
+  polyscope::show(3);
+
+  polyscope::removeAllSlicePlanes();
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SparseVolumeGridCellScalar) {
+  auto d = buildSparseGridTestData();
+
+  polyscope::SparseVolumeGrid* psGrid =
+      polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
+
+  psGrid->addCellScalarQuantity("cell scalar", d.cellScalars);
 
   polyscope::show(3);
 
@@ -87,34 +133,12 @@ TEST_F(PolyscopeTest, SparseVolumeGridCellScalar) {
 
 
 TEST_F(PolyscopeTest, SparseVolumeGridNodeScalar) {
-  glm::vec3 origin{-3., -3., -3.};
-  glm::vec3 cellWidth{0.5, 0.5, 0.5};
-
-  std::vector<glm::ivec3> occupiedCells;
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 4; j++) {
-      for (int k = 0; k < 4; k++) {
-        occupiedCells.push_back({i, j, k});
-      }
-    }
-  }
+  auto d = buildSparseGridTestData();
 
   polyscope::SparseVolumeGrid* psGrid =
-      polyscope::registerSparseVolumeGrid("test sparse grid", origin, cellWidth, occupiedCells);
+      polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
 
-  // Node indices: corners of each cell are at (ci+dx-1, cj+dy-1, ck+dz-1) for dx,dy,dz in {0,1}
-  // For cells (0..3)^3, nodes range from -1..3
-  std::vector<glm::ivec3> nodeIndices;
-  std::vector<float> nodeValues;
-  for (int i = -1; i <= 3; i++) {
-    for (int j = -1; j <= 3; j++) {
-      for (int k = -1; k <= 3; k++) {
-        nodeIndices.push_back({i, j, k});
-        nodeValues.push_back(static_cast<float>(i + j + k));
-      }
-    }
-  }
-  psGrid->addNodeScalarQuantity("node scalar", nodeIndices, nodeValues);
+  psGrid->addNodeScalarQuantity("node scalar", d.nodeIndices, d.nodeScalars);
 
   polyscope::show(3);
 
@@ -123,26 +147,12 @@ TEST_F(PolyscopeTest, SparseVolumeGridNodeScalar) {
 
 
 TEST_F(PolyscopeTest, SparseVolumeGridCellColor) {
-  glm::vec3 origin{-3., -3., -3.};
-  glm::vec3 cellWidth{0.5, 0.5, 0.5};
-
-  std::vector<glm::ivec3> occupiedCells;
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 4; j++) {
-      for (int k = 0; k < 4; k++) {
-        occupiedCells.push_back({i, j, k});
-      }
-    }
-  }
+  auto d = buildSparseGridTestData();
 
   polyscope::SparseVolumeGrid* psGrid =
-      polyscope::registerSparseVolumeGrid("test sparse grid", origin, cellWidth, occupiedCells);
+      polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
 
-  std::vector<glm::vec3> colorVals(occupiedCells.size());
-  for (size_t i = 0; i < colorVals.size(); i++) {
-    colorVals[i] = glm::vec3(static_cast<float>(i) / colorVals.size(), 0.5f, 0.3f);
-  }
-  psGrid->addCellColorQuantity("cell color", colorVals);
+  psGrid->addCellColorQuantity("cell color", d.cellColors);
 
   polyscope::show(3);
 
@@ -151,33 +161,12 @@ TEST_F(PolyscopeTest, SparseVolumeGridCellColor) {
 
 
 TEST_F(PolyscopeTest, SparseVolumeGridNodeColor) {
-  glm::vec3 origin{-3., -3., -3.};
-  glm::vec3 cellWidth{0.5, 0.5, 0.5};
-
-  std::vector<glm::ivec3> occupiedCells;
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 4; j++) {
-      for (int k = 0; k < 4; k++) {
-        occupiedCells.push_back({i, j, k});
-      }
-    }
-  }
+  auto d = buildSparseGridTestData();
 
   polyscope::SparseVolumeGrid* psGrid =
-      polyscope::registerSparseVolumeGrid("test sparse grid", origin, cellWidth, occupiedCells);
+      polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
 
-  // Node indices: corners of each cell are at (ci+dx-1, cj+dy-1, ck+dz-1) for dx,dy,dz in {0,1}
-  std::vector<glm::ivec3> nodeIndices;
-  std::vector<glm::vec3> nodeColors;
-  for (int i = -1; i <= 3; i++) {
-    for (int j = -1; j <= 3; j++) {
-      for (int k = -1; k <= 3; k++) {
-        nodeIndices.push_back({i, j, k});
-        nodeColors.push_back(glm::vec3((i + 1) / 4.f, (j + 1) / 4.f, (k + 1) / 4.f));
-      }
-    }
-  }
-  psGrid->addNodeColorQuantity("node color", nodeIndices, nodeColors);
+  psGrid->addNodeColorQuantity("node color", d.nodeIndices, d.nodeColors);
 
   polyscope::show(3);
 
@@ -186,22 +175,12 @@ TEST_F(PolyscopeTest, SparseVolumeGridNodeColor) {
 
 
 TEST_F(PolyscopeTest, SparseVolumeGridBasicOptions) {
-  glm::vec3 origin{-3., -3., -3.};
-  glm::vec3 cellWidth{0.5, 0.5, 0.5};
-
-  std::vector<glm::ivec3> occupiedCells;
-  for (uint32_t i = 0; i < 8; i += 2) {
-    for (uint32_t j = 0; j < 10; j += 2) {
-      for (uint32_t k = 0; k < 12; k += 2) {
-        occupiedCells.push_back({i, j, k});
-      }
-    }
-  }
+  auto d = buildSparseGridTestData();
 
   polyscope::SparseVolumeGrid* psGrid =
-      polyscope::registerSparseVolumeGrid("test sparse grid", origin, cellWidth, occupiedCells);
+      polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
 
-  EXPECT_EQ(psGrid->nCells(), occupiedCells.size());
+  EXPECT_EQ(psGrid->nCells(), d.occupiedCells.size());
 
   // Material
   psGrid->setMaterial("flat");

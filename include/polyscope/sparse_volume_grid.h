@@ -47,7 +47,7 @@ public:
 
   // === Geometry members
   render::ManagedBuffer<glm::vec3> cellPositions;
-  render::ManagedBuffer<glm::uvec3> cellIndices; // uvec3 for GPU; derived from signed occupiedCells
+  render::ManagedBuffer<glm::ivec3> cellIndices;
 
   // === Grid info
   uint64_t nCells() const;
@@ -110,7 +110,7 @@ private:
 
   // === Storage for managed quantities
   std::vector<glm::vec3> cellPositionsData;
-  std::vector<glm::uvec3> cellIndicesData; // uvec3 for GPU attribute
+  std::vector<glm::ivec3> cellIndicesData;
 
   // User-facing occupied cell indices (signed)
   std::vector<glm::ivec3> occupiedCellsData;

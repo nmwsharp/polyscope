@@ -20,7 +20,7 @@ const ShaderStageSpecification FLEX_GRIDCUBE_VERT_SHADER = {
     // attributes
     {
         {"a_cellPosition", RenderDataType::Vector3Float},
-        {"a_cellInd", RenderDataType::Vector3UInt},
+        {"a_cellInd", RenderDataType::Vector3Int},
     },
 
     {}, // textures
@@ -30,9 +30,9 @@ R"(
         ${ GLSL_VERSION }$
 
         in vec3 a_cellPosition;
-        in uvec3 a_cellInd;
+        in ivec3 a_cellInd;
         
-        out uvec3 a_cellIndToGeom;
+        out ivec3 a_cellIndToGeom;
         
         ${ VERT_DECLARATIONS }$
         
@@ -71,7 +71,7 @@ R"(
         layout(points) in;
         layout(triangle_strip, max_vertices=14) out;
 
-        in uvec3 a_cellIndToGeom[];
+        in ivec3 a_cellIndToGeom[];
         
         uniform mat4 u_modelView;
         uniform mat4 u_projMatrix;
@@ -79,7 +79,9 @@ R"(
         uniform vec3 u_gridSpacing;
         uniform float u_cubeSizeFactor;
 
-        out vec3 a_gridCoordToFrag; // TODO working here
+        out vec3 a_gridCoordToFrag;
+        flat out ivec3 cellIndToFrag;
+        out vec3 centerToFrag;
 
         ${ GEOM_DECLARATIONS }$
 
@@ -111,39 +113,38 @@ R"(
             vec4 p7 = T * vec4(center + c7 * dvec, 1.f);
 
             // node corner indices
-            uvec3 iCenter = a_cellIndToGeom[0];
-            uvec3 i0 = iCenter + uvec3(0, 0, 0);
-            uvec3 i1 = iCenter + uvec3(0, 0, 1);
-            uvec3 i2 = iCenter + uvec3(0, 1, 0);
-            uvec3 i3 = iCenter + uvec3(0, 1, 1);
-            uvec3 i4 = iCenter + uvec3(1, 0, 0);
-            uvec3 i5 = iCenter + uvec3(1, 0, 1);
-            uvec3 i6 = iCenter + uvec3(1, 1, 0);
-            uvec3 i7 = iCenter + uvec3(1, 1, 1);
+            ivec3 iCenter = a_cellIndToGeom[0];
+            ivec3 i0 = iCenter + ivec3(0, 0, 0);
+            ivec3 i1 = iCenter + ivec3(0, 0, 1);
+            ivec3 i2 = iCenter + ivec3(0, 1, 0);
+            ivec3 i3 = iCenter + ivec3(0, 1, 1);
+            ivec3 i4 = iCenter + ivec3(1, 0, 0);
+            ivec3 i5 = iCenter + ivec3(1, 0, 1);
+            ivec3 i6 = iCenter + ivec3(1, 1, 0);
+            ivec3 i7 = iCenter + ivec3(1, 1, 1);
             
             ${ GEOM_COMPUTE_BEFORE_EMIT }$
 
             vec4 nodePos;
-            uvec3 nodeInd;
-            uvec3 cellInd;
+            ivec3 nodeInd;
             
             // this is the order to emit veritces to get a cube triangle strip
             // 3, 7, 1, 5, 4, 7, 6, 3, 2, 1, 0, 4, 2, 6,
 
-            /* 7 */ nodePos = p7; nodeInd = i7; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c7; EmitVertex(); 
-            /* 3 */ nodePos = p3; nodeInd = i3; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c3; EmitVertex(); 
-            /* 5 */ nodePos = p5; nodeInd = i5; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c5; EmitVertex(); 
-            /* 1 */ nodePos = p1; nodeInd = i1; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c1; EmitVertex(); 
-            /* 0 */ nodePos = p0; nodeInd = i0; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c0; EmitVertex(); 
-            /* 3 */ nodePos = p3; nodeInd = i3; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c3; EmitVertex(); 
-            /* 2 */ nodePos = p2; nodeInd = i2; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c2; EmitVertex(); 
-            /* 7 */ nodePos = p7; nodeInd = i7; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c7; EmitVertex(); 
-            /* 6 */ nodePos = p6; nodeInd = i6; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c6; EmitVertex(); 
-            /* 5 */ nodePos = p5; nodeInd = i5; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c5; EmitVertex(); 
-            /* 4 */ nodePos = p4; nodeInd = i4; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c4; EmitVertex(); 
-            /* 0 */ nodePos = p0; nodeInd = i0; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c0; EmitVertex(); 
-            /* 6 */ nodePos = p6; nodeInd = i6; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c6; EmitVertex(); 
-            /* 2 */ nodePos = p2; nodeInd = i2; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c2; EmitVertex(); 
+            /* 7 */ nodePos = p7; nodeInd = i7; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c7; EmitVertex(); 
+            /* 3 */ nodePos = p3; nodeInd = i3; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c3; EmitVertex(); 
+            /* 5 */ nodePos = p5; nodeInd = i5; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c5; EmitVertex(); 
+            /* 1 */ nodePos = p1; nodeInd = i1; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c1; EmitVertex(); 
+            /* 0 */ nodePos = p0; nodeInd = i0; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c0; EmitVertex(); 
+            /* 3 */ nodePos = p3; nodeInd = i3; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c3; EmitVertex(); 
+            /* 2 */ nodePos = p2; nodeInd = i2; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c2; EmitVertex(); 
+            /* 7 */ nodePos = p7; nodeInd = i7; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c7; EmitVertex(); 
+            /* 6 */ nodePos = p6; nodeInd = i6; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c6; EmitVertex(); 
+            /* 5 */ nodePos = p5; nodeInd = i5; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c5; EmitVertex(); 
+            /* 4 */ nodePos = p4; nodeInd = i4; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c4; EmitVertex(); 
+            /* 0 */ nodePos = p0; nodeInd = i0; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c0; EmitVertex(); 
+            /* 6 */ nodePos = p6; nodeInd = i6; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c6; EmitVertex(); 
+            /* 2 */ nodePos = p2; nodeInd = i2; centerToFrag = center; cellIndToFrag = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c2; EmitVertex(); 
 
             EndPrimitive();
 
@@ -172,6 +173,8 @@ R"(
         ${ GLSL_VERSION }$
 
         in vec3 a_gridCoordToFrag;
+        flat in ivec3 cellIndToFrag;
+        in vec3 centerToFrag;
         uniform mat4 u_modelView;
         layout(location = 0) out vec4 outputF;
 
@@ -187,6 +190,7 @@ R"(
 
            vec3 coordLocalAbs = abs(a_gridCoordToFrag);
            float maxCoord = max(max(coordLocalAbs.x, coordLocalAbs.y), coordLocalAbs.z);
+           vec3 cellInd3f = vec3(cellIndToFrag);
           
            // compute a normal vector from the coord
            vec3 shadeNormal = sharpenToAxis(a_gridCoordToFrag, 8.0f);
@@ -465,6 +469,29 @@ const ShaderReplacementRule GRIDCUBE_CONSTANT_PICK(
 
 const ShaderReplacementRule GRIDCUBE_CULLPOS_FROM_CENTER(
     /* rule name */ "GRIDCUBE_CULLPOS_FROM_CENTER",
+    { /* replacement sources */
+
+      {"FRAG_DECLARATIONS", R"(
+          uniform vec3 u_gridSpacing;
+        )"},
+      {"GLOBAL_FRAGMENT_FILTER_PREP", R"(
+          // NOTE: you would expect the constant below to be 0.f, to cull from the center of the cell. 
+          // We intentionally use 0.167 instead and slightly shift it, to avoid common default causes 
+          // where the plane slices right through the center of the cell, and you get random patterns 
+          // of cull/not-cull based on floating point error.
+          const float cull_shift = 0.167;
+          vec3 cullPos = (u_modelView * vec4(centerToFrag + cull_shift * u_gridSpacing, 1.f)).xyz;
+        )"},
+    },
+    /* uniforms */ {
+      {"u_gridSpacing", RenderDataType::Vector3Float},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule GRIDCUBE_PLANE_CULLPOS_FROM_CENTER(
+    /* rule name */ "GRIDCUBE_PLANE_CULLPOS_FROM_CENTER",
     { /* replacement sources */
       {"FRAG_DECLARATIONS", R"(
           uniform mat4 u_modelView;

@@ -49,7 +49,7 @@ void SparseVolumeGrid::computeCellPositions() {
   for (size_t i = 0; i < n; i++) {
     glm::ivec3 ijk = occupiedCellsData[i];
     cellPositionsData[i] = origin + (glm::vec3(ijk) + 0.5f) * gridCellWidth;
-    cellIndicesData[i] = glm::uvec3(ijk); // cast to unsigned for GPU attribute
+    cellIndicesData[i] = ijk;
   }
 
   cellPositions.markHostBufferUpdated();
@@ -326,12 +326,16 @@ void SparseVolumeGrid::setCellGeometryAttributes(render::ShaderProgram& p) {
 
 std::vector<std::string> SparseVolumeGrid::addSparseGridShaderRules(std::vector<std::string> initRules, bool pickOnly) {
   if (!pickOnly) {
-
     if (getEdgeWidth() > 0) {
       initRules.push_back("GRIDCUBE_WIREFRAME");
       initRules.push_back("MESH_WIREFRAME");
     }
   }
+
+  if (wantsCullPosition()) {
+    initRules.push_back("GRIDCUBE_CULLPOS_FROM_CENTER");
+  }
+
   return addStructureRules(initRules);
 }
 

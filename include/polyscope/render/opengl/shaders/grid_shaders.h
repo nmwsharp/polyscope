@@ -23,6 +23,7 @@ extern const ShaderReplacementRule GRIDCUBE_WIREFRAME;
 extern const ShaderReplacementRule GRIDCUBE_PLANE_WIREFRAME;
 extern const ShaderReplacementRule GRIDCUBE_CONSTANT_PICK;
 extern const ShaderReplacementRule GRIDCUBE_CULLPOS_FROM_CENTER;
+extern const ShaderReplacementRule GRIDCUBE_PLANE_CULLPOS_FROM_CENTER;
 
 // Attribute-based rules for sparse volume grid quantities
 extern const ShaderReplacementRule GRIDCUBE_PROPAGATE_ATTR_CELL_SCALAR;
