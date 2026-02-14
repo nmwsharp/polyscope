@@ -485,6 +485,9 @@ void GLTextureBuffer::setData(const std::vector<double>& data) {
   checkGLError();
 };
 void GLTextureBuffer::setData(const std::vector<int32_t>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::ivec2>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::ivec3>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::ivec4>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<uint32_t>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<glm::uvec3>& data) { exception("not implemented"); };

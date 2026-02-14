@@ -167,6 +167,9 @@ public:
   virtual void setData(const std::vector<float>& data) = 0;
   virtual void setData(const std::vector<double>& data) = 0;
   virtual void setData(const std::vector<int32_t>& data) = 0;
+  virtual void setData(const std::vector<glm::ivec2>& data) = 0;
+  virtual void setData(const std::vector<glm::ivec3>& data) = 0;
+  virtual void setData(const std::vector<glm::ivec4>& data) = 0;
   virtual void setData(const std::vector<uint32_t>& data) = 0;
   virtual void setData(const std::vector<glm::uvec2>& data) = 0;
   virtual void setData(const std::vector<glm::uvec3>& data) = 0;

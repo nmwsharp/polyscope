@@ -7,9 +7,9 @@
 // Various types / enums / forward declarations which are broadly useful
 
 // The string templates allow to/from string like:
-//   to_string(ProjectionMode::Perspective)
-//   from_string<ProjectionMode>("Perspective")
-//   bool success = try_from_string<ProjectionMode>("Perspective", val_out);
+//   enum_to_string(ProjectionMode::Perspective)
+//   enum_from_string<ProjectionMode>("Perspective")
+//   bool success = try_enum_from_string<ProjectionMode>("Perspective", val_out);
 // see utilities.h for implementation
 
 // clang-format off
@@ -212,8 +212,11 @@ enum class ManagedBufferType {
   Arr2Vec3,
   Arr3Vec3,
   Arr4Vec3,
-  UInt32,
   Int32,
+  IVec2,
+  IVec3,
+  IVec4,
+  UInt32,
   UVec2,
   UVec3,
   UVec4
@@ -227,8 +230,11 @@ POLYSCOPE_DEFINE_ENUM_NAMES(ManagedBufferType,
     {ManagedBufferType::Arr2Vec3, "Arr2Vec3"},
     {ManagedBufferType::Arr3Vec3, "Arr3Vec3"},
     {ManagedBufferType::Arr4Vec3, "Arr4Vec3"},
-    {ManagedBufferType::UInt32, "UInt32"},
     {ManagedBufferType::Int32, "Int32"},
+    {ManagedBufferType::IVec2, "IVec2"},
+    {ManagedBufferType::IVec3, "IVec3"},
+    {ManagedBufferType::IVec4, "IVec4"},
+    {ManagedBufferType::UInt32, "UInt32"},
     {ManagedBufferType::UVec2, "UVec2"},
     {ManagedBufferType::UVec3, "UVec3"},
     {ManagedBufferType::UVec4, "UVec4"}

@@ -158,13 +158,28 @@ uint64_t getAttributeBufferData<uint64_t>(AttributeBuffer& buff, size_t ind) {
 }
 
 template <>
-uint32_t getAttributeBufferData<uint32_t>(AttributeBuffer& buff, size_t ind) {
-  return buff.getData_uint32(ind);
+int32_t getAttributeBufferData<int32_t>(AttributeBuffer& buff, size_t ind) {
+  return buff.getData_int(ind);
 }
 
 template <>
-int32_t getAttributeBufferData<int32_t>(AttributeBuffer& buff, size_t ind) {
-  return buff.getData_int(ind);
+glm::ivec2 getAttributeBufferData<glm::ivec2>(AttributeBuffer& buff, size_t ind) {
+  return buff.getData_ivec2(ind);
+}
+
+template <>
+glm::ivec3 getAttributeBufferData<glm::ivec3>(AttributeBuffer& buff, size_t ind) {
+  return buff.getData_ivec3(ind);
+}
+
+template <>
+glm::ivec4 getAttributeBufferData<glm::ivec4>(AttributeBuffer& buff, size_t ind) {
+  return buff.getData_ivec4(ind);
+}
+
+template <>
+uint32_t getAttributeBufferData<uint32_t>(AttributeBuffer& buff, size_t ind) {
+  return buff.getData_uint32(ind);
 }
 
 template <>
@@ -395,6 +410,10 @@ template std::shared_ptr<TextureBuffer> generateTextureBuffer<uint32_t  >(Device
 template std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::vec2>(DeviceBufferType D, Engine* engine);
 template std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::vec3>(DeviceBufferType D, Engine* engine);
 template std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::vec4>(DeviceBufferType D, Engine* engine);
+
+template std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::ivec2>(DeviceBufferType D, Engine* engine);
+template std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::ivec3>(DeviceBufferType D, Engine* engine);
+template std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::ivec4>(DeviceBufferType D, Engine* engine);
 
 template std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::uvec2>(DeviceBufferType D, Engine* engine);
 template std::shared_ptr<TextureBuffer> generateTextureBuffer<glm::uvec3>(DeviceBufferType D, Engine* engine);

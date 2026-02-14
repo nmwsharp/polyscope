@@ -154,6 +154,9 @@ public:
   void setData(const std::vector<float>& data) override;
   void setData(const std::vector<double>& data) override;
   void setData(const std::vector<int32_t>& data) override;
+  void setData(const std::vector<glm::ivec2>& data) override;
+  void setData(const std::vector<glm::ivec3>& data) override;
+  void setData(const std::vector<glm::ivec4>& data) override;
   void setData(const std::vector<uint32_t>& data) override;
   void setData(const std::vector<glm::uvec2>& data) override;
   void setData(const std::vector<glm::uvec3>& data) override;

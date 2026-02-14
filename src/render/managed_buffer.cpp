@@ -528,9 +528,12 @@ std::tuple<bool, ManagedBufferType> ManagedBufferRegistry::hasManagedBufferType(
   if (hasManagedBuffer<std::array<glm::vec3,3>>(name)) return std::make_tuple(true, ManagedBufferType::Arr3Vec3);
   if (hasManagedBuffer<std::array<glm::vec3,4>>(name)) return std::make_tuple(true, ManagedBufferType::Arr4Vec3);
   
-  if (hasManagedBuffer<uint32_t>(name)) return std::make_tuple(true, ManagedBufferType::UInt32);
   if (hasManagedBuffer<int32_t>(name))  return std::make_tuple(true, ManagedBufferType::Int32);
+  if (hasManagedBuffer<glm::ivec2>(name)) return std::make_tuple(true, ManagedBufferType::IVec2);
+  if (hasManagedBuffer<glm::ivec3>(name)) return std::make_tuple(true, ManagedBufferType::IVec3);
+  if (hasManagedBuffer<glm::ivec4>(name)) return std::make_tuple(true, ManagedBufferType::IVec4);
 
+  if (hasManagedBuffer<uint32_t>(name)) return std::make_tuple(true, ManagedBufferType::UInt32);
   if (hasManagedBuffer<glm::uvec2>(name)) return std::make_tuple(true, ManagedBufferType::UVec2);
   if (hasManagedBuffer<glm::uvec3>(name)) return std::make_tuple(true, ManagedBufferType::UVec3);
   if (hasManagedBuffer<glm::uvec4>(name)) return std::make_tuple(true, ManagedBufferType::UVec4);
@@ -555,9 +558,12 @@ template class ManagedBuffer<std::array<glm::vec3, 2>>;
 template class ManagedBuffer<std::array<glm::vec3, 3>>;
 template class ManagedBuffer<std::array<glm::vec3, 4>>;
 
-template class ManagedBuffer<uint32_t>;
 template class ManagedBuffer<int32_t>;
+template class ManagedBuffer<glm::ivec2>;
+template class ManagedBuffer<glm::ivec3>;
+template class ManagedBuffer<glm::ivec4>;
 
+template class ManagedBuffer<uint32_t>;
 template class ManagedBuffer<glm::uvec2>;
 template class ManagedBuffer<glm::uvec3>;
 template class ManagedBuffer<glm::uvec4>;
@@ -575,9 +581,12 @@ template struct ManagedBufferMap<std::array<glm::vec3, 2>>;
 template struct ManagedBufferMap<std::array<glm::vec3, 3>>;
 template struct ManagedBufferMap<std::array<glm::vec3, 4>>;
 
-template struct ManagedBufferMap<uint32_t>;
 template struct ManagedBufferMap<int32_t>;
+template struct ManagedBufferMap<glm::ivec2>;
+template struct ManagedBufferMap<glm::ivec3>;
+template struct ManagedBufferMap<glm::ivec4>;
 
+template struct ManagedBufferMap<uint32_t>;
 template struct ManagedBufferMap<glm::uvec2>;
 template struct ManagedBufferMap<glm::uvec3>;
 template struct ManagedBufferMap<glm::uvec4>;
@@ -593,8 +602,11 @@ template<> ManagedBufferMap<glm::vec4>&                ManagedBufferMap<glm::vec
 template<> ManagedBufferMap<std::array<glm::vec3,2>>&  ManagedBufferMap<std::array<glm::vec3,2>>::getManagedBufferMapRef (ManagedBufferRegistry* r) { return r->managedBufferMap_arr2vec3; }
 template<> ManagedBufferMap<std::array<glm::vec3,3>>&  ManagedBufferMap<std::array<glm::vec3,3>>::getManagedBufferMapRef (ManagedBufferRegistry* r) { return r->managedBufferMap_arr3vec3; }
 template<> ManagedBufferMap<std::array<glm::vec3,4>>&  ManagedBufferMap<std::array<glm::vec3,4>>::getManagedBufferMapRef (ManagedBufferRegistry* r) { return r->managedBufferMap_arr4vec3; }
-template<> ManagedBufferMap<uint32_t>&                 ManagedBufferMap<uint32_t>::getManagedBufferMapRef                (ManagedBufferRegistry* r) { return r->managedBufferMap_uint32; }
 template<> ManagedBufferMap<int32_t>&                  ManagedBufferMap<int32_t>::getManagedBufferMapRef                 (ManagedBufferRegistry* r) { return r->managedBufferMap_int32; }
+template<> ManagedBufferMap<glm::ivec2>&               ManagedBufferMap<glm::ivec2>::getManagedBufferMapRef              (ManagedBufferRegistry* r) { return r->managedBufferMap_ivec2; }
+template<> ManagedBufferMap<glm::ivec3>&               ManagedBufferMap<glm::ivec3>::getManagedBufferMapRef              (ManagedBufferRegistry* r) { return r->managedBufferMap_ivec3; }
+template<> ManagedBufferMap<glm::ivec4>&               ManagedBufferMap<glm::ivec4>::getManagedBufferMapRef              (ManagedBufferRegistry* r) { return r->managedBufferMap_ivec4; }
+template<> ManagedBufferMap<uint32_t>&                 ManagedBufferMap<uint32_t>::getManagedBufferMapRef                (ManagedBufferRegistry* r) { return r->managedBufferMap_uint32; }
 template<> ManagedBufferMap<glm::uvec2>&               ManagedBufferMap<glm::uvec2>::getManagedBufferMapRef              (ManagedBufferRegistry* r) { return r->managedBufferMap_uvec2; }
 template<> ManagedBufferMap<glm::uvec3>&               ManagedBufferMap<glm::uvec3>::getManagedBufferMapRef              (ManagedBufferRegistry* r) { return r->managedBufferMap_uvec3; }
 template<> ManagedBufferMap<glm::uvec4>&               ManagedBufferMap<glm::uvec4>::getManagedBufferMapRef              (ManagedBufferRegistry* r) { return r->managedBufferMap_uvec4; }
@@ -604,25 +616,7 @@ template<> ManagedBufferMap<glm::uvec4>&               ManagedBufferMap<glm::uve
 } // namespace render
 
 std::string typeName(ManagedBufferType type) {
-  switch (type) {
-    // clang-format off
-    case ManagedBufferType::Float     : return "Float";    
-    case ManagedBufferType::Double    : return "Double";   
-    case ManagedBufferType::Vec2      : return "Vec2";     
-    case ManagedBufferType::Vec3      : return "Vec3";     
-    case ManagedBufferType::Vec4      : return "Vec4";     
-    case ManagedBufferType::Arr2Vec3  : return "Arr2Vec3"; 
-    case ManagedBufferType::Arr3Vec3  : return "Arr3Vec3"; 
-    case ManagedBufferType::Arr4Vec3  : return "Arr4Vec3"; 
-    case ManagedBufferType::UInt32    : return "UInt32";   
-    case ManagedBufferType::Int32     : return "Int32";    
-    case ManagedBufferType::UVec2     : return "UVec2";    
-    case ManagedBufferType::UVec3     : return "UVec3";    
-    case ManagedBufferType::UVec4     : return "UVec4";
-    // clang-format on
-  }
-  exception("bad enum");
-  return 0;
+  return enum_to_string(type);
 };
 
 } // namespace polyscope
