@@ -24,8 +24,7 @@ class SparseVolumeGridColorQuantity;
 class SparseVolumeGrid : public Structure {
 public:
   // Construct a new sparse volume grid structure
-  SparseVolumeGrid(std::string name, glm::vec3 origin, glm::vec3 gridCellWidth,
-                   std::vector<glm::ivec3> occupiedCells);
+  SparseVolumeGrid(std::string name, glm::vec3 origin, glm::vec3 gridCellWidth, std::vector<glm::ivec3> occupiedCells);
 
   // === Overloads
 
@@ -65,8 +64,8 @@ public:
 
   // Node scalar
   template <class TI, class TV>
-  SparseVolumeGridScalarQuantity* addNodeScalarQuantity(std::string name, const TI& nodeIndices,
-                                                        const TV& nodeValues, DataType type = DataType::STANDARD);
+  SparseVolumeGridScalarQuantity* addNodeScalarQuantity(std::string name, const TI& nodeIndices, const TV& nodeValues,
+                                                        DataType type = DataType::STANDARD);
 
   // Cell color
   template <class T>
@@ -76,14 +75,25 @@ public:
   template <class TI, class TC>
   SparseVolumeGridColorQuantity* addNodeColorQuantity(std::string name, const TI& nodeIndices, const TC& nodeColors);
 
-  // Set cell geometry attributes on a shader program
+  // Rendering related helpers
   void setCellGeometryAttributes(render::ShaderProgram& p);
+  std::vector<std::string> addSparseGridShaderRules(std::vector<std::string> initRules, bool pickOnly = false);
+  void setSparseVolumeGridUniforms(render::ShaderProgram& p, bool pickOnly = false);
 
   // === Getters and setters for visualization settings
 
   // Color of the grid cubes
   SparseVolumeGrid* setColor(glm::vec3 val);
   glm::vec3 getColor();
+
+  // Width of the edges. Scaled such that 1 is a reasonable weight for visible edges, but values  1 can be used for
+  // bigger edges. Use 0. to disable.
+  SparseVolumeGrid* setEdgeWidth(double newVal);
+  double getEdgeWidth();
+
+  // Color of edges
+  SparseVolumeGrid* setEdgeColor(glm::vec3 val);
+  glm::vec3 getEdgeColor();
 
   // Material
   SparseVolumeGrid* setMaterial(std::string name);
@@ -107,6 +117,8 @@ private:
 
   // === Visualization parameters
   PersistentValue<glm::vec3> color;
+  PersistentValue<float> edgeWidth;
+  PersistentValue<glm::vec3> edgeColor;
   PersistentValue<std::string> material;
   PersistentValue<float> cubeSizeFactor;
 
@@ -132,8 +144,7 @@ private:
                                                             const std::vector<glm::ivec3>& nodeIndices,
                                                             const std::vector<float>& nodeValues, DataType type);
   SparseVolumeGridColorQuantity* addCellColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
-  SparseVolumeGridColorQuantity* addNodeColorQuantityImpl(std::string name,
-                                                          const std::vector<glm::ivec3>& nodeIndices,
+  SparseVolumeGridColorQuantity* addNodeColorQuantityImpl(std::string name, const std::vector<glm::ivec3>& nodeIndices,
                                                           const std::vector<glm::vec3>& nodeColors);
 };
 

@@ -12,11 +12,11 @@
 #include "polyscope/point_cloud.h"
 #include "polyscope/render/managed_buffer.h"
 #include "polyscope/simple_triangle_mesh.h"
+#include "polyscope/sparse_volume_grid.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/types.h"
 #include "polyscope/view.h"
 #include "polyscope/volume_grid.h"
-#include "polyscope/sparse_volume_grid.h"
 #include "polyscope/volume_mesh.h"
 
 #include <iostream>
@@ -547,17 +547,18 @@ void addVolumeGrid() {
 
 
 void addSparseVolumeGrid() {
-  glm::vec3 origin{-5., -5., -5.};
-  glm::vec3 cellWidth{0.5, 0.5, 0.5};
+  glm::vec3 origin{-1., -1., -1.};
+  int32_t N = 20;
+  glm::vec3 cellWidth{1.0f / N, 1.0f / N, 1.0f / N};
 
   // Build a spherical shell of occupied cells
   std::vector<glm::ivec3> occupiedCells;
-  for (int i = -10; i <= 10; i++) {
-    for (int j = -10; j <= 10; j++) {
-      for (int k = -10; k <= 10; k++) {
+  for (int i = -N; i <= N; i++) {
+    for (int j = -N; j <= N; j++) {
+      for (int k = -N; k <= N; k++) {
         glm::vec3 cellCenter = origin + (glm::vec3(i, j, k) + 0.5f) * cellWidth;
         float dist = glm::length(cellCenter - origin);
-        if (dist >= 2.0f && dist <= 4.0f) {
+        if (dist >= 0.35f && dist <= 1.0f) {
           occupiedCells.push_back({i, j, k});
         }
       }
@@ -574,7 +575,7 @@ void addSparseVolumeGrid() {
       glm::vec3 cellCenter = origin + (glm::vec3(occupiedCells[i]) + 0.5f) * cellWidth;
       cellDist[i] = glm::length(cellCenter - origin);
     }
-    psGrid->addCellScalarQuantity("cell distance", cellDist)->setEnabled(true);
+    psGrid->addCellScalarQuantity("cell distance", cellDist);
   }
 
   // Node scalar: x-coordinate at node positions
@@ -594,7 +595,9 @@ void addSparseVolumeGrid() {
 
     std::vector<glm::ivec3> nodeIndices;
     std::vector<float> nodeValues;
-    for (const auto& [ni, nj, nk] : nodeSet) {
+    for (const auto& nodeInds : nodeSet) {
+      int32_t ni, nj, nk;
+      std::tie(ni, nj, nk) = nodeInds;
       nodeIndices.push_back({ni, nj, nk});
       glm::vec3 nodePos = origin + glm::vec3(ni, nj, nk) * cellWidth;
       nodeValues.push_back(nodePos.x);
@@ -628,7 +631,9 @@ void addSparseVolumeGrid() {
 
     std::vector<glm::ivec3> nodeIndices;
     std::vector<glm::vec3> nodeColors;
-    for (const auto& [ni, nj, nk] : nodeSet) {
+    for (const auto& nodeInds : nodeSet) {
+      int32_t ni, nj, nk;
+      std::tie(ni, nj, nk) = nodeInds;
       nodeIndices.push_back({ni, nj, nk});
       glm::vec3 nodePos = origin + glm::vec3(ni, nj, nk) * cellWidth;
       nodeColors.push_back(glm::clamp((nodePos - origin) / 10.f + 0.5f, 0.f, 1.f));
@@ -1009,7 +1014,7 @@ int main(int argc, char** argv) {
   // polyscope::view::windowWidth = 600;
   // polyscope::view::windowHeight = 800;
   // polyscope::options::maxFPS = -1;
-  polyscope::options::verbosity = 101;
+  polyscope::options::verbosity = 200;
   polyscope::options::enableRenderErrorChecks = true;
   polyscope::options::allowHeadlessBackends = true;
 

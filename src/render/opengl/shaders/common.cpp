@@ -134,6 +134,14 @@ float selectMax(vec3 keys, vec3 values) {
   return outSum / outCount;
 }
 
+vec3 sharpenToAxis(vec3 v, float sharpness) {
+    vec3 s = sign(v);
+    vec3 absV = abs(v);
+    vec3 sharpened = pow(absV, vec3(sharpness));
+    sharpened = normalize(sharpened);
+    return s * sharpened;
+}
+
 // Used to sample colors. Samples a series of most-distant values from a range [0,1]
 // offset from a starting value 'start' and wrapped around. index=0 returns start.
 // We only actually output distinct floats for the first 10 bits, then the pattern repeats.

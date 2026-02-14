@@ -42,11 +42,8 @@ void SparseVolumeGridScalarQuantity::draw() {
   if (!program) createProgram();
 
   // Set uniforms
-  parent.setStructureUniforms(*program);
-  program->setUniform("u_gridSpacing", parent.getGridCellWidth());
-  program->setUniform("u_cubeSizeFactor", 1.f - static_cast<float>(parent.getCubeSizeFactor()));
+  parent.setSparseVolumeGridUniforms(*program);
   setScalarUniforms(*program);
-  render::engine->setMaterialUniforms(*program, parent.getMaterial());
 
   render::engine->setBackfaceCull(true);
   program->draw();
@@ -74,7 +71,7 @@ void SparseVolumeGridScalarQuantity::createProgram() {
   program = render::engine->requestShader("GRIDCUBE",
       render::engine->addMaterialRules(parent.getMaterial(),
         addScalarRules(
-          parent.addStructureRules({
+          parent.addSparseGridShaderRules({
             isNodeQuantity ? "GRIDCUBE_PROPAGATE_ATTR_NODE_SCALAR" : "GRIDCUBE_PROPAGATE_ATTR_CELL_SCALAR"
           })
         )

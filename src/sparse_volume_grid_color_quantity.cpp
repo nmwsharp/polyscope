@@ -41,11 +41,8 @@ void SparseVolumeGridColorQuantity::draw() {
   if (!program) createProgram();
 
   // Set uniforms
-  parent.setStructureUniforms(*program);
-  program->setUniform("u_gridSpacing", parent.getGridCellWidth());
-  program->setUniform("u_cubeSizeFactor", 1.f - static_cast<float>(parent.getCubeSizeFactor()));
+  parent.setSparseVolumeGridUniforms(*program);
   setColorUniforms(*program);
-  render::engine->setMaterialUniforms(*program, parent.getMaterial());
 
   render::engine->setBackfaceCull(true);
   program->draw();
@@ -58,7 +55,7 @@ void SparseVolumeGridColorQuantity::createProgram() {
   program = render::engine->requestShader("GRIDCUBE",
       render::engine->addMaterialRules(parent.getMaterial(),
         addColorRules(
-          parent.addStructureRules({
+          parent.addSparseGridShaderRules({
             isNodeQuantity ? "GRIDCUBE_PROPAGATE_ATTR_NODE_COLOR" : "GRIDCUBE_PROPAGATE_ATTR_CELL_COLOR",
             "SHADE_COLOR"
           })
@@ -121,8 +118,8 @@ void SparseVolumeGridColorQuantity::packNodeColors(const std::vector<glm::ivec3>
           auto it = nodeMap.find(nodeIjk);
           if (it == nodeMap.end()) {
             exception("SparseVolumeGridColorQuantity [" + name + "]: missing node color at (" +
-                      std::to_string(nodeIjk.x) + "," + std::to_string(nodeIjk.y) + "," +
-                      std::to_string(nodeIjk.z) + ")");
+                      std::to_string(nodeIjk.x) + "," + std::to_string(nodeIjk.y) + "," + std::to_string(nodeIjk.z) +
+                      ")");
           }
           cornerColors[cornerIdx] = it->second;
         }

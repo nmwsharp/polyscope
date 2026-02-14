@@ -79,7 +79,7 @@ R"(
         uniform vec3 u_gridSpacing;
         uniform float u_cubeSizeFactor;
 
-        out vec3 sphereCenterView;
+        out vec3 a_gridCoordToFrag; // TODO working here
 
         ${ GEOM_DECLARATIONS }$
 
@@ -90,15 +90,25 @@ R"(
 
             mat4 T = u_projMatrix * u_modelView;
           
+            // node corner logical +1/-1 offsets
+            vec3 c0 = vec3(-1.f, -1.f, -1.f);
+            vec3 c1 = vec3(-1.f, -1.f,  1.f);
+            vec3 c2 = vec3(-1.f,  1.f, -1.f);
+            vec3 c3 = vec3(-1.f,  1.f,  1.f);
+            vec3 c4 = vec3( 1.f, -1.f, -1.f);
+            vec3 c5 = vec3( 1.f, -1.f,  1.f);
+            vec3 c6 = vec3( 1.f,  1.f, -1.f);
+            vec3 c7 = vec3( 1.f,  1.f,  1.f);
+
             // node corner positions
-            vec4 p0 = T * vec4(center + vec3(-1.f, -1.f, -1.f)*dvec, 1.f);
-            vec4 p1 = T * vec4(center + vec3(-1.f, -1.f,  1.f)*dvec, 1.f);
-            vec4 p2 = T * vec4(center + vec3(-1.f,  1.f, -1.f)*dvec, 1.f);
-            vec4 p3 = T * vec4(center + vec3(-1.f,  1.f,  1.f)*dvec, 1.f);
-            vec4 p4 = T * vec4(center + vec3( 1.f, -1.f, -1.f)*dvec, 1.f);
-            vec4 p5 = T * vec4(center + vec3( 1.f, -1.f,  1.f)*dvec, 1.f);
-            vec4 p6 = T * vec4(center + vec3( 1.f,  1.f, -1.f)*dvec, 1.f);
-            vec4 p7 = T * vec4(center + vec3( 1.f,  1.f,  1.f)*dvec, 1.f);
+            vec4 p0 = T * vec4(center + c0 * dvec, 1.f);
+            vec4 p1 = T * vec4(center + c1 * dvec, 1.f);
+            vec4 p2 = T * vec4(center + c2 * dvec, 1.f);
+            vec4 p3 = T * vec4(center + c3 * dvec, 1.f);
+            vec4 p4 = T * vec4(center + c4 * dvec, 1.f);
+            vec4 p5 = T * vec4(center + c5 * dvec, 1.f);
+            vec4 p6 = T * vec4(center + c6 * dvec, 1.f);
+            vec4 p7 = T * vec4(center + c7 * dvec, 1.f);
 
             // node corner indices
             uvec3 iCenter = a_cellIndToGeom[0];
@@ -120,20 +130,20 @@ R"(
             // this is the order to emit veritces to get a cube triangle strip
             // 3, 7, 1, 5, 4, 7, 6, 3, 2, 1, 0, 4, 2, 6,
 
-            /* 7 */ nodePos = p7; nodeInd = i7; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
-            /* 3 */ nodePos = p3; nodeInd = i3; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
-            /* 5 */ nodePos = p5; nodeInd = i5; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
-            /* 1 */ nodePos = p1; nodeInd = i1; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
-            /* 0 */ nodePos = p0; nodeInd = i0; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
-            /* 3 */ nodePos = p3; nodeInd = i3; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
-            /* 2 */ nodePos = p2; nodeInd = i2; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
-            /* 7 */ nodePos = p7; nodeInd = i7; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
-            /* 6 */ nodePos = p6; nodeInd = i6; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
-            /* 5 */ nodePos = p5; nodeInd = i5; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
-            /* 4 */ nodePos = p4; nodeInd = i4; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
-            /* 0 */ nodePos = p0; nodeInd = i0; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
-            /* 6 */ nodePos = p6; nodeInd = i6; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
-            /* 2 */ nodePos = p2; nodeInd = i2; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; EmitVertex(); 
+            /* 7 */ nodePos = p7; nodeInd = i7; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c7; EmitVertex(); 
+            /* 3 */ nodePos = p3; nodeInd = i3; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c3; EmitVertex(); 
+            /* 5 */ nodePos = p5; nodeInd = i5; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c5; EmitVertex(); 
+            /* 1 */ nodePos = p1; nodeInd = i1; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c1; EmitVertex(); 
+            /* 0 */ nodePos = p0; nodeInd = i0; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c0; EmitVertex(); 
+            /* 3 */ nodePos = p3; nodeInd = i3; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c3; EmitVertex(); 
+            /* 2 */ nodePos = p2; nodeInd = i2; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c2; EmitVertex(); 
+            /* 7 */ nodePos = p7; nodeInd = i7; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c7; EmitVertex(); 
+            /* 6 */ nodePos = p6; nodeInd = i6; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c6; EmitVertex(); 
+            /* 5 */ nodePos = p5; nodeInd = i5; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c5; EmitVertex(); 
+            /* 4 */ nodePos = p4; nodeInd = i4; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c4; EmitVertex(); 
+            /* 0 */ nodePos = p0; nodeInd = i0; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c0; EmitVertex(); 
+            /* 6 */ nodePos = p6; nodeInd = i6; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c6; EmitVertex(); 
+            /* 2 */ nodePos = p2; nodeInd = i2; cellInd = iCenter; ${ GEOM_PER_EMIT }$ gl_Position = nodePos; a_gridCoordToFrag = c2; EmitVertex(); 
 
             EndPrimitive();
 
@@ -148,6 +158,7 @@ const ShaderStageSpecification FLEX_GRIDCUBE_FRAG_SHADER = {
     
     // uniforms
     {
+        {"u_modelView", RenderDataType::Matrix44Float},
     }, 
 
     { }, // attributes
@@ -160,15 +171,26 @@ const ShaderStageSpecification FLEX_GRIDCUBE_FRAG_SHADER = {
 R"(
         ${ GLSL_VERSION }$
 
+        in vec3 a_gridCoordToFrag;
+        uniform mat4 u_modelView;
         layout(location = 0) out vec4 outputF;
 
         ${ FRAG_DECLARATIONS }$
+
+        vec3 sharpenToAxis(vec3 v, float sharpness);
 
         void main()
         {
            float depth = gl_FragCoord.z;
            ${ GLOBAL_FRAGMENT_FILTER_PREP }$
            ${ GLOBAL_FRAGMENT_FILTER }$
+
+           vec3 coordLocalAbs = abs(a_gridCoordToFrag);
+           float maxCoord = max(max(coordLocalAbs.x, coordLocalAbs.y), coordLocalAbs.z);
+          
+           // compute a normal vector from the coord
+           vec3 shadeNormal = sharpenToAxis(a_gridCoordToFrag, 8.0f);
+           shadeNormal = normalize(mat3(u_modelView) * shadeNormal); // transform to view space
           
            // Shading
            ${ GENERATE_SHADE_VALUE }$
@@ -178,7 +200,6 @@ R"(
            ${ APPLY_WIREFRAME }$
 
            // Lighting
-           vec3 shadeNormal = vec3(0.f, 0.f, 0.f); // use the COMPUTE_SHADE_NORMAL_FROM_POSITION rule
            ${ PERTURB_SHADE_NORMAL }$
            ${ GENERATE_LIT_COLOR }$
 
@@ -398,6 +419,20 @@ const ShaderReplacementRule GRIDCUBE_PROPAGATE_CELL_VALUE (
 
 const ShaderReplacementRule GRIDCUBE_WIREFRAME (
     /* rule name */ "GRIDCUBE_WIREFRAME",
+    {
+        /* replacement sources */
+        {"APPLY_WIREFRAME", R"(
+           vec3 wireframe_UVW = 1.f - coordLocalAbs;
+           vec3 wireframe_mask = vec3(notEqual(abs(a_gridCoordToFrag), vec3(1.f, 1.f, 1.f))).zxy;
+      )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
+const ShaderReplacementRule GRIDCUBE_PLANE_WIREFRAME (
+    /* rule name */ "GRIDCUBE_PLANE_WIREFRAME",
     {
         /* replacement sources */
         {"APPLY_WIREFRAME", R"(
