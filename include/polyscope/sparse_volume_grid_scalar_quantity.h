@@ -29,16 +29,13 @@ public:
 
   virtual std::string niceName() override;
 
+  bool getNodeIndicesAreCanonical() const { return nodeIndicesAreCanonical; }
+
 private:
   bool isNodeQuantity = false;
+  bool nodeIndicesAreCanonical; // true if user-provided indices matched canonical order exactly (set by constructor)
   void createProgram();
   std::shared_ptr<render::ShaderProgram> program;
-
-  // Node-mode packed data (8 corner values per cell, packed into 2 vec4)
-  std::vector<glm::vec4> nodeValues04Data, nodeValues47Data;
-  std::unique_ptr<render::ManagedBuffer<glm::vec4>> nodeValues04, nodeValues47;
-
-  void packNodeValues(const std::vector<glm::ivec3>& nodeIndices, const std::vector<float>& nodeValues);
 };
 
 

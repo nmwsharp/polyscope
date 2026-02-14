@@ -55,23 +55,48 @@ public:
   glm::vec3 getGridCellWidth() const;
   const std::vector<glm::ivec3>& getOccupiedCells() const;
 
+  // === Node-valued data helpers
+  // All lazily computed on first access.
+
+  // Corner-to-node index buffers (one per corner, indexed by cell)
+  // Corner c = dx*4 + dy*2 + dz maps cell[i] -> index in canonical node order
+  render::ManagedBuffer<uint32_t> cornerNodeInds[8];
+
+  uint64_t nNodes();
+  const std::vector<glm::ivec3>& getCanonicalNodeInds();
+  void ensureHaveCornerNodeIndices();
+
+  // Helper for quantities. Given node-valued data with any order, re-orders and takes subsets to exactly match the node
+  // data layout. The input may contain extra/repeated entries, and be in any order, so long as all required node values
+  // are there. If entries are missing, an error is thrown. If the data was already in canonical order which is the
+  // output, the out param nodeIndicesAreCanonical is set to true, and no reordering is done.
+  template <typename T>
+  std::vector<T> canonicalizeNodeValueArray(const std::string& quantityName, const std::vector<glm::ivec3>& nodeIndices,
+                                            const std::vector<T>& nodeValues, bool& nodeIndicesAreCanonical);
+
   // === Quantities
 
-  // Cell scalar
+  // Cell scalar. Values array must be passed in the same order as initial input cell list.
   template <class T>
   SparseVolumeGridScalarQuantity* addCellScalarQuantity(std::string name, const T& values,
                                                         DataType type = DataType::STANDARD);
 
-  // Node scalar
+  // Node scalar. Indices are _node_ indices; the nodes are a shifted sparse grid offset from the cell enumeration. For
+  // a cell with indices ijk, its corrners are the nodes with indices (i k j, i+1 j k, ..., i+1 j+1, k+1). Node values
+  // are passed via a paired set of arrays, giving the node index and node value for each. Node values may be passed in
+  // any order, and having extra entries is fine too, as long as all required nodes values are present.
   template <class TI, class TV>
   SparseVolumeGridScalarQuantity* addNodeScalarQuantity(std::string name, const TI& nodeIndices, const TV& nodeValues,
                                                         DataType type = DataType::STANDARD);
 
-  // Cell color
+  // Cell color. Values array must be passed in the same order as initial input cell list.
   template <class T>
   SparseVolumeGridColorQuantity* addCellColorQuantity(std::string name, const T& colors);
 
-  // Node color
+  // Node color. Indices are _node_ indices; the nodes are a shifted sparse grid offset from the cell enumeration. For
+  // a cell with indices ijk, its corrners are the nodes with indices (i k j, i+1 j k, ..., i+1 j+1, k+1). Node values
+  // are passed via a paired set of arrays, giving the node index and node value for each. Node values may be passed in
+  // any order, and having extra entries is fine too, as long as all required nodes values are present.
   template <class TI, class TC>
   SparseVolumeGridColorQuantity* addNodeColorQuantity(std::string name, const TI& nodeIndices, const TC& nodeColors);
 
@@ -115,6 +140,11 @@ private:
   // User-facing occupied cell indices (signed)
   std::vector<glm::ivec3> occupiedCellsData;
 
+  // Canonical sorted node indices and corner index buffers (lazily computed)
+  bool haveCornerNodeIndices = false;
+  std::vector<glm::ivec3> canonicalNodeIndsData;
+  std::vector<uint32_t> cornerNodeIndsData[8];
+
   // === Visualization parameters
   PersistentValue<glm::vec3> color;
   PersistentValue<float> edgeWidth;
@@ -125,6 +155,9 @@ private:
   // Compute cell positions and GPU indices from occupiedCellsData
   void computeCellPositions();
 
+  // Compute canonical node indices and corner index buffers from occupiedCellsData
+  void computeCornerNodeIndices();
+
   // Picking-related
   size_t globalPickConstant = INVALID_IND_64;
   glm::vec3 pickColor;
@@ -134,6 +167,7 @@ private:
   std::shared_ptr<render::ShaderProgram> pickProgram;
 
   // === Helpers
+  void checkForDuplicateCells();
   void ensureRenderProgramPrepared();
   void ensurePickProgramPrepared();
 

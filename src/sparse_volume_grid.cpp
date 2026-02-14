@@ -8,6 +8,9 @@
 
 #include "imgui.h"
 
+#include <algorithm>
+#include <numeric>
+
 namespace polyscope {
 
 // Initialize statics
@@ -20,6 +23,16 @@ SparseVolumeGrid::SparseVolumeGrid(std::string name, glm::vec3 origin_, glm::vec
       // == managed quantities
       cellPositions(this, uniquePrefix() + "#cellPositions", cellPositionsData, std::bind(&SparseVolumeGrid::computeCellPositions, this)),
       cellIndices(this, uniquePrefix() + "#cellIndices", cellIndicesData, [](){/* do nothing, gets handled by computeCellPositions */}),
+      cornerNodeInds{
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds0", cornerNodeIndsData[0]),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds1", cornerNodeIndsData[1]),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds2", cornerNodeIndsData[2]),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds3", cornerNodeIndsData[3]),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds4", cornerNodeIndsData[4]),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds5", cornerNodeIndsData[5]),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds6", cornerNodeIndsData[6]),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds7", cornerNodeIndsData[7]),
+      },
 
       origin(origin_), gridCellWidth(gridCellWidth_),
 
@@ -33,12 +46,29 @@ SparseVolumeGrid::SparseVolumeGrid(std::string name, glm::vec3 origin_, glm::vec
   // clang-format on
   occupiedCellsData = std::move(occupiedCells);
 
+  checkForDuplicateCells();
   computeCellPositions();
 
   cullWholeElements.setPassive(true);
   updateObjectSpaceBounds();
 }
 
+void SparseVolumeGrid::checkForDuplicateCells() {
+
+  // sort occupied cells and check for duplicates
+  std::vector<glm::ivec3> sortedCells = occupiedCellsData;
+  std::sort(sortedCells.begin(), sortedCells.end(), [](const glm::ivec3& a, const glm::ivec3& b) {
+    if (a.x != b.x) return a.x < b.x;
+    if (a.y != b.y) return a.y < b.y;
+    return a.z < b.z;
+  });
+  for (size_t i = 1; i < sortedCells.size(); i++) {
+    if (sortedCells[i] == sortedCells[i - 1]) {
+      error("[Polyscope] sparse volume grid " + name + " has repeated cell (" + std::to_string(sortedCells[i].x) + "," +
+            std::to_string(sortedCells[i].y) + "," + std::to_string(sortedCells[i].z) + ")");
+    }
+  }
+}
 
 void SparseVolumeGrid::computeCellPositions() {
   size_t n = occupiedCellsData.size();
@@ -54,6 +84,61 @@ void SparseVolumeGrid::computeCellPositions() {
 
   cellPositions.markHostBufferUpdated();
   cellIndices.markHostBufferUpdated();
+}
+
+
+void SparseVolumeGrid::ensureHaveCornerNodeIndices() {
+  if (haveCornerNodeIndices) return;
+  computeCornerNodeIndices();
+  haveCornerNodeIndices = true;
+}
+
+void SparseVolumeGrid::computeCornerNodeIndices() {
+  size_t n = occupiedCellsData.size();
+
+  auto ivec3Less = [](const glm::ivec3& a, const glm::ivec3& b) {
+    if (a.x != b.x) return a.x < b.x;
+    if (a.y != b.y) return a.y < b.y;
+    return a.z < b.z;
+  };
+
+  // Collect all node ivec3 from all cells
+  std::vector<glm::ivec3> allNodes;
+  allNodes.reserve(n * 8);
+  for (size_t i = 0; i < n; i++) {
+    glm::ivec3 ci = occupiedCellsData[i];
+    for (int dx = 0; dx < 2; dx++)
+      for (int dy = 0; dy < 2; dy++)
+        for (int dz = 0; dz < 2; dz++) allNodes.push_back(glm::ivec3(ci.x + dx - 1, ci.y + dy - 1, ci.z + dz - 1));
+  }
+
+  // Sort and deduplicate to get canonical order
+  std::sort(allNodes.begin(), allNodes.end(), ivec3Less);
+  allNodes.erase(std::unique(allNodes.begin(), allNodes.end()), allNodes.end());
+  canonicalNodeIndsData = std::move(allNodes);
+
+  // Build corner index buffers using binary search
+  for (int c = 0; c < 8; c++) {
+    cornerNodeIndsData[c].resize(n);
+  }
+
+  for (size_t i = 0; i < n; i++) {
+    glm::ivec3 ci = occupiedCellsData[i];
+    for (int dx = 0; dx < 2; dx++) {
+      for (int dy = 0; dy < 2; dy++) {
+        for (int dz = 0; dz < 2; dz++) {
+          int c = dx * 4 + dy * 2 + dz;
+          glm::ivec3 nodeIjk(ci.x + dx - 1, ci.y + dy - 1, ci.z + dz - 1);
+          auto it = std::lower_bound(canonicalNodeIndsData.begin(), canonicalNodeIndsData.end(), nodeIjk, ivec3Less);
+          cornerNodeIndsData[c][i] = static_cast<uint32_t>(it - canonicalNodeIndsData.begin());
+        }
+      }
+    }
+  }
+
+  for (int c = 0; c < 8; c++) {
+    cornerNodeInds[c].markHostBufferUpdated();
+  }
 }
 
 

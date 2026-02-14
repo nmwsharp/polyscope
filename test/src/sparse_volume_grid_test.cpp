@@ -180,6 +180,92 @@ TEST_F(PolyscopeTest, SparseVolumeGridNodeColor) {
 }
 
 
+TEST_F(PolyscopeTest, SparseVolumeGridDuplicateCellsThrows) {
+  auto d = buildSparseGridTestData();
+
+  // Add a duplicate cell
+  std::vector<glm::ivec3> cellsWithDup = d.occupiedCells;
+  cellsWithDup.push_back(d.occupiedCells[0]);
+
+  EXPECT_THROW(polyscope::registerSparseVolumeGrid("dup grid", d.origin, d.cellWidth, cellsWithDup),
+               std::logic_error);
+
+  polyscope::removeAllStructures();
+}
+
+
+TEST_F(PolyscopeTest, SparseVolumeGridNodeMissingValuesThrows) {
+  auto d = buildSparseGridTestData();
+
+  polyscope::SparseVolumeGrid* psGrid =
+      polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
+
+  // Drop the last node to create a missing entry
+  std::vector<glm::ivec3> partialIndices(d.nodeIndices.begin(), d.nodeIndices.end() - 1);
+  std::vector<float> partialScalars(d.nodeScalars.begin(), d.nodeScalars.end() - 1);
+  std::vector<glm::vec3> partialColors(d.nodeColors.begin(), d.nodeColors.end() - 1);
+
+  EXPECT_THROW(psGrid->addNodeScalarQuantity("missing scalar", partialIndices, partialScalars), std::runtime_error);
+  EXPECT_THROW(psGrid->addNodeColorQuantity("missing color", partialIndices, partialColors), std::runtime_error);
+
+  polyscope::removeAllStructures();
+}
+
+
+TEST_F(PolyscopeTest, SparseVolumeGridNodeExtraValuesOk) {
+  auto d = buildSparseGridTestData();
+
+  polyscope::SparseVolumeGrid* psGrid =
+      polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
+
+  // Add extra node entries not present in the grid
+  std::vector<glm::ivec3> extraIndices = d.nodeIndices;
+  std::vector<float> extraScalars = d.nodeScalars;
+  std::vector<glm::vec3> extraColors = d.nodeColors;
+  extraIndices.push_back({999, 999, 999});
+  extraScalars.push_back(0.f);
+  extraColors.push_back({0.f, 0.f, 0.f});
+
+  // Should not throw
+  EXPECT_NO_THROW(psGrid->addNodeScalarQuantity("extra scalar", extraIndices, extraScalars));
+  EXPECT_NO_THROW(psGrid->addNodeColorQuantity("extra color", extraIndices, extraColors));
+
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+
+TEST_F(PolyscopeTest, SparseVolumeGridNodeCanonicalFlag) {
+  auto d = buildSparseGridTestData();
+
+  polyscope::SparseVolumeGrid* psGrid =
+      polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
+
+  // The test data's nodeIndices come from std::set iteration, which is sorted — should match canonical order
+  auto* qScalar = psGrid->addNodeScalarQuantity("canonical scalar", d.nodeIndices, d.nodeScalars);
+  EXPECT_TRUE(qScalar->getNodeIndicesAreCanonical());
+
+  auto* qColor = psGrid->addNodeColorQuantity("canonical color", d.nodeIndices, d.nodeColors);
+  EXPECT_TRUE(qColor->getNodeIndicesAreCanonical());
+
+  // Now provide the same data in reversed order — should NOT be canonical
+  std::vector<glm::ivec3> reversedIndices(d.nodeIndices.rbegin(), d.nodeIndices.rend());
+  std::vector<float> reversedScalars(d.nodeScalars.rbegin(), d.nodeScalars.rend());
+  std::vector<glm::vec3> reversedColors(d.nodeColors.rbegin(), d.nodeColors.rend());
+
+  auto* qScalar2 = psGrid->addNodeScalarQuantity("reversed scalar", reversedIndices, reversedScalars);
+  EXPECT_FALSE(qScalar2->getNodeIndicesAreCanonical());
+
+  auto* qColor2 = psGrid->addNodeColorQuantity("reversed color", reversedIndices, reversedColors);
+  EXPECT_FALSE(qColor2->getNodeIndicesAreCanonical());
+
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+
 TEST_F(PolyscopeTest, SparseVolumeGridBasicOptions) {
   auto d = buildSparseGridTestData();
 
