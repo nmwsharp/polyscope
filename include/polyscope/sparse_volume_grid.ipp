@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "polyscope/utilities.h"
-
 namespace polyscope {
 
 inline uint64_t SparseVolumeGrid::nCells() const { return occupiedCellsData.size(); }

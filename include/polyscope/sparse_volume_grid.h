@@ -13,6 +13,7 @@
 #include "polyscope/sparse_volume_grid_scalar_quantity.h"
 
 #include <cstdint>
+#include <numeric>
 #include <vector>
 
 namespace polyscope {
