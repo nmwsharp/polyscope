@@ -50,8 +50,8 @@ public:
 class SparseVolumeGridNodeScalarQuantity : public SparseVolumeGridScalarQuantity {
 public:
   SparseVolumeGridNodeScalarQuantity(std::string name, SparseVolumeGrid& grid,
-                                     const std::vector<glm::ivec3>& nodeIndices,
-                                     const std::vector<float>& nodeValues, DataType dataType);
+                                     const std::vector<glm::ivec3>& nodeIndices, const std::vector<float>& nodeValues,
+                                     DataType dataType);
 
   virtual void createProgram() override;
   virtual void buildNodeInfoGUI(size_t nodeInd) override;

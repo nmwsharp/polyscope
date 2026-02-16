@@ -615,8 +615,6 @@ template<> ManagedBufferMap<glm::uvec4>&               ManagedBufferMap<glm::uve
 
 } // namespace render
 
-std::string typeName(ManagedBufferType type) {
-  return enum_to_string(type);
-};
+std::string typeName(ManagedBufferType type) { return enum_to_string(type); };
 
 } // namespace polyscope

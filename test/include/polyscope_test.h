@@ -14,10 +14,10 @@
 #include "polyscope/point_cloud.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/simple_triangle_mesh.h"
+#include "polyscope/sparse_volume_grid.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/types.h"
 #include "polyscope/volume_grid.h"
-#include "polyscope/sparse_volume_grid.h"
 #include "polyscope/volume_mesh.h"
 
 // Which polyscope backend to use for testing
