@@ -118,6 +118,18 @@ TEST_F(PolyscopeTest, SparseVolumeGridSlicePlane) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, SparseVolumeGridPick) {
+  auto d = buildSparseGridTestData();
+
+  polyscope::SparseVolumeGrid* psGrid =
+      polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
+
+  // Don't bother trying to actually click on anything, but make sure this doesn't crash
+  polyscope::pickAtBufferInds(glm::ivec2(77, 88));
+
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, SparseVolumeGridCellScalar) {
   auto d = buildSparseGridTestData();
 
@@ -156,7 +168,7 @@ TEST_F(PolyscopeTest, SparseVolumeGridCellColor) {
   polyscope::SparseVolumeGrid* psGrid =
       polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
 
-  polyscope::SparseVolumeGridColorQuantity* q = psGrid->addCellColorQuantity("cell color", d.cellColors);
+  polyscope::SparseVolumeGridCellColorQuantity* q = psGrid->addCellColorQuantity("cell color", d.cellColors);
   q->setEnabled(true);
 
   polyscope::show(3);
@@ -171,7 +183,8 @@ TEST_F(PolyscopeTest, SparseVolumeGridNodeColor) {
   polyscope::SparseVolumeGrid* psGrid =
       polyscope::registerSparseVolumeGrid("test sparse grid", d.origin, d.cellWidth, d.occupiedCells);
 
-  polyscope::SparseVolumeGridColorQuantity* q = psGrid->addNodeColorQuantity("node color", d.nodeIndices, d.nodeColors);
+  polyscope::SparseVolumeGridNodeColorQuantity* q =
+      psGrid->addNodeColorQuantity("node color", d.nodeIndices, d.nodeColors);
   q->setEnabled(true);
 
   polyscope::show(3);
@@ -187,8 +200,7 @@ TEST_F(PolyscopeTest, SparseVolumeGridDuplicateCellsThrows) {
   std::vector<glm::ivec3> cellsWithDup = d.occupiedCells;
   cellsWithDup.push_back(d.occupiedCells[0]);
 
-  EXPECT_THROW(polyscope::registerSparseVolumeGrid("dup grid", d.origin, d.cellWidth, cellsWithDup),
-               std::logic_error);
+  EXPECT_THROW(polyscope::registerSparseVolumeGrid("dup grid", d.origin, d.cellWidth, cellsWithDup), std::logic_error);
 
   polyscope::removeAllStructures();
 }
