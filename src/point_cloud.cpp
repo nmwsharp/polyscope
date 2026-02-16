@@ -190,10 +190,9 @@ void PointCloud::ensurePickProgramPrepared() {
   setPointProgramGeometryAttributes(*pickProgram);
 
   // Fill color buffer with packed point indices
-  std::vector<glm::vec3> pickColors;
-  for (size_t i = pickStart; i < pickStart + pickCount; i++) {
-    glm::vec3 val = pick::indToVec(i);
-    pickColors.push_back(pick::indToVec(i));
+  std::vector<glm::vec3> pickColors(pickCount);
+  for (size_t i = 0; i < pickCount; i++) {
+    pickColors[i] = pick::indToVec(i + pickStart);
   }
 
   // Store data in buffers
