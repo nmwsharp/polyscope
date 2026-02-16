@@ -605,18 +605,16 @@ void addSparseVolumeGrid() {
     psGrid->addNodeScalarQuantity("node x-coord", nodeIndices, nodeValues);
   }
 
-  // Cell color: RGB from normalized position
+  // Cell color: random colors
   {
     std::vector<glm::vec3> cellColors(occupiedCells.size());
     for (size_t i = 0; i < occupiedCells.size(); i++) {
-      glm::vec3 cellCenter = origin + (glm::vec3(occupiedCells[i]) + 0.5f) * cellWidth;
-      // Map to [0,1] range
-      cellColors[i] = glm::clamp((cellCenter - origin) / 10.f + 0.5f, 0.f, 1.f);
+      cellColors[i] = glm::vec3{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()};
     }
     psGrid->addCellColorQuantity("cell color", cellColors);
   }
 
-  // Node color: RGB from normalized node position
+  // Node color: random colors
   {
     std::set<std::tuple<int, int, int>> nodeSet;
     for (const auto& ci : occupiedCells) {
@@ -635,8 +633,7 @@ void addSparseVolumeGrid() {
       int32_t ni, nj, nk;
       std::tie(ni, nj, nk) = nodeInds;
       nodeIndices.push_back({ni, nj, nk});
-      glm::vec3 nodePos = origin + glm::vec3(ni, nj, nk) * cellWidth;
-      nodeColors.push_back(glm::clamp((nodePos - origin) / 10.f + 0.5f, 0.f, 1.f));
+      nodeColors.push_back(glm::vec3{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()});
     }
     psGrid->addNodeColorQuantity("node color", nodeIndices, nodeColors);
   }
