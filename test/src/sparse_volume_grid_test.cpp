@@ -49,13 +49,13 @@ SparseGridTestData buildSparseGridTestData(int N = 3) {
   }
 
   // Gather all unique node indices
-  // Node (ci+dx-1, cj+dy-1, ck+dz-1) for dx,dy,dz in {0,1}
+  // Node (ci+dx, cj+dy, ck+dz) for dx,dy,dz in {0,1}
   std::set<std::tuple<int, int, int>> nodeSet;
   for (const auto& ci : d.occupiedCells) {
     for (int dx = 0; dx < 2; dx++) {
       for (int dy = 0; dy < 2; dy++) {
         for (int dz = 0; dz < 2; dz++) {
-          nodeSet.insert({ci.x + dx - 1, ci.y + dy - 1, ci.z + dz - 1});
+          nodeSet.insert({ci.x + dx, ci.y + dy, ci.z + dz});
         }
       }
     }
@@ -126,6 +126,32 @@ TEST_F(PolyscopeTest, SparseVolumeGridPick) {
 
   // Don't bother trying to actually click on anything, but make sure this doesn't crash
   polyscope::pickAtBufferInds(glm::ivec2(77, 88));
+
+  polyscope::removeAllStructures();
+}
+
+
+TEST_F(PolyscopeTest, SparseVolumeGridNodeIndexingConvention) {
+  // Verify that cell (i,j,k) has corner nodes at (i+dx, j+dy, k+dz) for dx,dy,dz in {0,1}.
+  // We register a single cell at (0,0,0), then provide node values at exactly those 8 corners
+  // in canonical (sorted) order. If the indexing convention is correct, getNodeIndicesAreCanonical()
+  // should return true.
+
+  std::vector<glm::ivec3> cells = {{0, 0, 0}};
+  glm::vec3 origin{0.f, 0.f, 0.f};
+  glm::vec3 cellWidth{1.f, 1.f, 1.f};
+
+  polyscope::SparseVolumeGrid* psGrid =
+      polyscope::registerSparseVolumeGrid("index test grid", origin, cellWidth, cells);
+
+  // The 8 corner nodes of cell (0,0,0) should be (0,0,0) through (1,1,1), in lexicographic order
+  std::vector<glm::ivec3> nodeIndices = {
+      {0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1}, {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1},
+  };
+  std::vector<float> nodeScalars(8, 1.f);
+
+  auto* q = psGrid->addNodeScalarQuantity("index check", nodeIndices, nodeScalars);
+  EXPECT_TRUE(q->getNodeIndicesAreCanonical());
 
   polyscope::removeAllStructures();
 }

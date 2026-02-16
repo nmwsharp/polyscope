@@ -564,7 +564,20 @@ void addSparseVolumeGrid() {
       }
     }
   }
+  // Gather all unique nodes for the occupied cells
+  // Node (ci+dx, cj+dy, ck+dz) for dx,dy,dz in {0,1}
+  std::set<std::tuple<int, int, int>> nodeSet;
+  for (const auto& ci : occupiedCells) {
+    for (int dx = 0; dx < 2; dx++) {
+      for (int dy = 0; dy < 2; dy++) {
+        for (int dz = 0; dz < 2; dz++) {
+          nodeSet.insert({ci.x + dx, ci.y + dy, ci.z + dz});
+        }
+      }
+    }
+  }
 
+  std::cout << "adding sparse volume grid with " << occupiedCells.size() << " cells" << std::endl;
   polyscope::SparseVolumeGrid* psGrid =
       polyscope::registerSparseVolumeGrid("sparse grid", origin, cellWidth, occupiedCells);
 
@@ -580,18 +593,6 @@ void addSparseVolumeGrid() {
 
   // Node scalar: x-coordinate at node positions
   {
-    // Gather all unique nodes for the occupied cells
-    // Node (ci+dx-1, cj+dy-1, ck+dz-1) for dx,dy,dz in {0,1}
-    std::set<std::tuple<int, int, int>> nodeSet;
-    for (const auto& ci : occupiedCells) {
-      for (int dx = 0; dx < 2; dx++) {
-        for (int dy = 0; dy < 2; dy++) {
-          for (int dz = 0; dz < 2; dz++) {
-            nodeSet.insert({ci.x + dx - 1, ci.y + dy - 1, ci.z + dz - 1});
-          }
-        }
-      }
-    }
 
     std::vector<glm::ivec3> nodeIndices;
     std::vector<float> nodeValues;
@@ -616,17 +617,6 @@ void addSparseVolumeGrid() {
 
   // Node color: random colors
   {
-    std::set<std::tuple<int, int, int>> nodeSet;
-    for (const auto& ci : occupiedCells) {
-      for (int dx = 0; dx < 2; dx++) {
-        for (int dy = 0; dy < 2; dy++) {
-          for (int dz = 0; dz < 2; dz++) {
-            nodeSet.insert({ci.x + dx - 1, ci.y + dy - 1, ci.z + dz - 1});
-          }
-        }
-      }
-    }
-
     std::vector<glm::ivec3> nodeIndices;
     std::vector<glm::vec3> nodeColors;
     for (const auto& nodeInds : nodeSet) {

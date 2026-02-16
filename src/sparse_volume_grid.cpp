@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <unordered_map>
 
 namespace polyscope {
 
@@ -113,7 +114,7 @@ void SparseVolumeGrid::computeCornerNodeIndices() {
     glm::ivec3 ci = occupiedCellsData[i];
     for (int dx = 0; dx < 2; dx++)
       for (int dy = 0; dy < 2; dy++)
-        for (int dz = 0; dz < 2; dz++) allNodes.push_back(glm::ivec3(ci.x + dx - 1, ci.y + dy - 1, ci.z + dz - 1));
+        for (int dz = 0; dz < 2; dz++) allNodes.push_back(glm::ivec3(ci.x + dx, ci.y + dy, ci.z + dz));
   }
 
   // Sort and deduplicate to get canonical order
@@ -121,7 +122,21 @@ void SparseVolumeGrid::computeCornerNodeIndices() {
   allNodes.erase(std::unique(allNodes.begin(), allNodes.end()), allNodes.end());
   canonicalNodeIndsData = std::move(allNodes);
 
-  // Build corner index buffers using binary search
+  // Build a hashmap from node ivec3 to canonical index
+  auto ivec3Hash = [](const glm::ivec3& v) {
+    size_t h = std::hash<int>()(v.x);
+    h ^= std::hash<int>()(v.y) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<int>()(v.z) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    return h;
+  };
+  auto ivec3Equal = [](const glm::ivec3& a, const glm::ivec3& b) { return a == b; };
+  std::unordered_map<glm::ivec3, uint32_t, decltype(ivec3Hash), decltype(ivec3Equal)> nodeToIndex(
+      canonicalNodeIndsData.size(), ivec3Hash, ivec3Equal);
+  for (size_t i = 0; i < canonicalNodeIndsData.size(); i++) {
+    nodeToIndex[canonicalNodeIndsData[i]] = static_cast<uint32_t>(i);
+  }
+
+  // Build corner index buffers using hashmap lookup
   for (int c = 0; c < 8; c++) {
     cornerNodeIndsData[c].resize(n);
   }
@@ -132,9 +147,8 @@ void SparseVolumeGrid::computeCornerNodeIndices() {
       for (int dy = 0; dy < 2; dy++) {
         for (int dz = 0; dz < 2; dz++) {
           int c = dx * 4 + dy * 2 + dz;
-          glm::ivec3 nodeIjk(ci.x + dx - 1, ci.y + dy - 1, ci.z + dz - 1);
-          auto it = std::lower_bound(canonicalNodeIndsData.begin(), canonicalNodeIndsData.end(), nodeIjk, ivec3Less);
-          cornerNodeIndsData[c][i] = static_cast<uint32_t>(it - canonicalNodeIndsData.begin());
+          glm::ivec3 nodeIjk(ci.x + dx, ci.y + dy, ci.z + dz);
+          cornerNodeIndsData[c][i] = nodeToIndex[nodeIjk];
         }
       }
     }
