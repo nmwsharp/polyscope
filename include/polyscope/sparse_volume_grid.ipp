@@ -115,15 +115,15 @@ std::vector<T> SparseVolumeGrid::canonicalizeNodeValueArray(const std::string& q
 // =====================================================
 
 template <class T>
-SparseVolumeGridScalarQuantity* SparseVolumeGrid::addCellScalarQuantity(std::string name, const T& values,
-                                                                        DataType type) {
+SparseVolumeGridCellScalarQuantity* SparseVolumeGrid::addCellScalarQuantity(std::string name, const T& values,
+                                                                            DataType type) {
   validateSize(values, nCells(), "sparse volume grid cell scalar quantity " + name);
   return addCellScalarQuantityImpl(name, standardizeArray<float, T>(values), type);
 }
 
 template <class TI, class TV>
-SparseVolumeGridScalarQuantity* SparseVolumeGrid::addNodeScalarQuantity(std::string name, const TI& nodeIndices,
-                                                                        const TV& nodeValues, DataType type) {
+SparseVolumeGridNodeScalarQuantity* SparseVolumeGrid::addNodeScalarQuantity(std::string name, const TI& nodeIndices,
+                                                                            const TV& nodeValues, DataType type) {
   if (adaptorF_size(nodeIndices) != adaptorF_size(nodeValues)) {
     exception("SparseVolumeGrid::addNodeScalarQuantity: nodeIndices and nodeValues must have the same size");
   }
@@ -132,14 +132,14 @@ SparseVolumeGridScalarQuantity* SparseVolumeGrid::addNodeScalarQuantity(std::str
 }
 
 template <class T>
-SparseVolumeGridColorQuantity* SparseVolumeGrid::addCellColorQuantity(std::string name, const T& colors) {
+SparseVolumeGridCellColorQuantity* SparseVolumeGrid::addCellColorQuantity(std::string name, const T& colors) {
   validateSize(colors, nCells(), "sparse volume grid cell color quantity " + name);
   return addCellColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(colors));
 }
 
 template <class TI, class TC>
-SparseVolumeGridColorQuantity* SparseVolumeGrid::addNodeColorQuantity(std::string name, const TI& nodeIndices,
-                                                                      const TC& nodeColors) {
+SparseVolumeGridNodeColorQuantity* SparseVolumeGrid::addNodeColorQuantity(std::string name, const TI& nodeIndices,
+                                                                          const TC& nodeColors) {
   if (adaptorF_size(nodeIndices) != adaptorF_size(nodeColors)) {
     exception("SparseVolumeGrid::addNodeColorQuantity: nodeIndices and nodeColors must have the same size");
   }

@@ -8,7 +8,12 @@
 
 namespace polyscope {
 
-// === SparseVolumeGridScalarQuantity
+// === Sparse volume grid scalar quantity
+
+SparseVolumeGridScalarQuantity::SparseVolumeGridScalarQuantity(std::string name, SparseVolumeGrid& grid,
+                                                               const std::string& definedOn_,
+                                                               const std::vector<float>& values_, DataType dataType_)
+    : SparseVolumeGridQuantity(name, grid, true), ScalarQuantity(*this, values_, dataType_), definedOn(definedOn_) {}
 
 void SparseVolumeGridScalarQuantity::draw() {
   if (!isEnabled()) return;
@@ -39,14 +44,31 @@ void SparseVolumeGridScalarQuantity::buildCustomUI() {
 }
 
 
-void SparseVolumeGridScalarQuantity::createProgram() {
+void SparseVolumeGridScalarQuantity::refresh() {
+  program.reset();
+  Quantity::refresh();
+}
+
+std::string SparseVolumeGridScalarQuantity::niceName() { return name + " (" + definedOn + " scalar)"; }
+
+
+// ========================================================
+// ==========            Cell Scalar             ==========
+// ========================================================
+
+SparseVolumeGridCellScalarQuantity::SparseVolumeGridCellScalarQuantity(std::string name, SparseVolumeGrid& grid,
+                                                                       const std::vector<float>& cellValues,
+                                                                       DataType dataType_)
+    : SparseVolumeGridScalarQuantity(name, grid, "cell", cellValues, dataType_) {}
+
+void SparseVolumeGridCellScalarQuantity::createProgram() {
 
   // clang-format off
   program = render::engine->requestShader("GRIDCUBE",
       render::engine->addMaterialRules(parent.getMaterial(),
         addScalarRules(
           parent.addSparseGridShaderRules({
-            isNodeQuantity ? "GRIDCUBE_PROPAGATE_ATTR_NODE_SCALAR" : "GRIDCUBE_PROPAGATE_ATTR_CELL_SCALAR"
+            "GRIDCUBE_PROPAGATE_ATTR_CELL_SCALAR"
           })
         )
       )
@@ -54,46 +76,58 @@ void SparseVolumeGridScalarQuantity::createProgram() {
   // clang-format on
 
   parent.setCellGeometryAttributes(*program);
-
-  if (isNodeQuantity) {
-    for (int c = 0; c < 8; c++) {
-      program->setAttribute("a_nodeValue" + std::to_string(c),
-                            values.getIndexedRenderAttributeBuffer(parent.cornerNodeInds[c]));
-    }
-  } else {
-    program->setAttribute("a_value", values.getRenderAttributeBuffer());
-  }
-
+  program->setAttribute("a_value", values.getRenderAttributeBuffer());
   program->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
 
-void SparseVolumeGridScalarQuantity::refresh() {
-  program.reset();
-  Quantity::refresh();
+void SparseVolumeGridCellScalarQuantity::buildCellInfoGUI(size_t cellInd) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  ImGui::Text("%g", values.getValue(cellInd));
+  ImGui::NextColumn();
 }
 
-std::string SparseVolumeGridScalarQuantity::niceName() { return name + " (scalar)"; }
+// ========================================================
+// ==========            Node Scalar             ==========
+// ========================================================
 
+SparseVolumeGridNodeScalarQuantity::SparseVolumeGridNodeScalarQuantity(std::string name, SparseVolumeGrid& grid,
+                                                                       const std::vector<glm::ivec3>& nodeIndices,
+                                                                       const std::vector<float>& nodeValues,
+                                                                       DataType dataType_)
+    : SparseVolumeGridScalarQuantity(
+          name, grid, "node", grid.canonicalizeNodeValueArray(name, nodeIndices, nodeValues, nodeIndicesAreCanonical),
+          dataType_) {}
 
-// === Cell scalar quantity
+void SparseVolumeGridNodeScalarQuantity::createProgram() {
 
-SparseVolumeGridScalarQuantity::SparseVolumeGridScalarQuantity(std::string name, SparseVolumeGrid& grid,
-                                                               const std::vector<float>& values_, DataType dataType_)
-    : SparseVolumeGridQuantity(name, grid, true), ScalarQuantity(*this, values_, dataType_), isNodeQuantity(false),
-      nodeIndicesAreCanonical(true) {}
+  // clang-format off
+  program = render::engine->requestShader("GRIDCUBE",
+      render::engine->addMaterialRules(parent.getMaterial(),
+        addScalarRules(
+          parent.addSparseGridShaderRules({
+            "GRIDCUBE_PROPAGATE_ATTR_NODE_SCALAR"
+          })
+        )
+      )
+  );
+  // clang-format on
 
+  parent.setCellGeometryAttributes(*program);
+  for (int c = 0; c < 8; c++) {
+    program->setAttribute("a_nodeValue" + std::to_string(c),
+                          values.getIndexedRenderAttributeBuffer(parent.cornerNodeInds[c]));
+  }
+  program->setTextureFromColormap("t_colormap", cMap.get());
+  render::engine->setMaterial(*program, parent.getMaterial());
+}
 
-// === Node scalar quantity
-
-SparseVolumeGridScalarQuantity::SparseVolumeGridScalarQuantity(std::string name, SparseVolumeGrid& grid,
-                                                               const std::vector<glm::ivec3>& nodeIndices,
-                                                               const std::vector<float>& nodeValues, DataType dataType_)
-    : SparseVolumeGridQuantity(name, grid, true),
-      ScalarQuantity(*this, parent.canonicalizeNodeValueArray(name, nodeIndices, nodeValues, nodeIndicesAreCanonical),
-                     dataType_),
-      isNodeQuantity(true) {}
-
-
+void SparseVolumeGridNodeScalarQuantity::buildNodeInfoGUI(size_t nodeInd) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  ImGui::Text("%g", values.getValue(nodeInd));
+  ImGui::NextColumn();
+}
 } // namespace polyscope

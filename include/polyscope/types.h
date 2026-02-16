@@ -158,6 +158,12 @@ POLYSCOPE_DEFINE_ENUM_NAMES(VolumeGridElement,
     {VolumeGridElement::CELL, "Cell"}
 );
 
+enum class SparseVolumeGridElement { CELL = 0, NODE };
+POLYSCOPE_DEFINE_ENUM_NAMES(SparseVolumeGridElement,
+    {SparseVolumeGridElement::CELL, "Cell"},
+    {SparseVolumeGridElement::NODE, "Node"}
+);
+
 enum class IsolineStyle { Stripe = 0, Contour };
 POLYSCOPE_DEFINE_ENUM_NAMES(IsolineStyle,
     {IsolineStyle::Stripe, "Stripe"},

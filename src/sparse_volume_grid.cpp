@@ -16,6 +16,16 @@ namespace polyscope {
 // Initialize statics
 const std::string SparseVolumeGrid::structureTypeName = "Sparse Volume Grid";
 
+namespace {
+
+// comparator for sorting int3 vecs
+bool ivec3Less(const glm::ivec3& a, const glm::ivec3& b) {
+  if (a.x != b.x) return a.x < b.x;
+  if (a.y != b.y) return a.y < b.y;
+  return a.z < b.z;
+};
+} // namespace
+
 SparseVolumeGrid::SparseVolumeGrid(std::string name, glm::vec3 origin_, glm::vec3 gridCellWidth_,
                                    std::vector<glm::ivec3> occupiedCells)
     : Structure(name, typeName()),
@@ -95,12 +105,6 @@ void SparseVolumeGrid::ensureHaveCornerNodeIndices() {
 
 void SparseVolumeGrid::computeCornerNodeIndices() {
   size_t n = occupiedCellsData.size();
-
-  auto ivec3Less = [](const glm::ivec3& a, const glm::ivec3& b) {
-    if (a.x != b.x) return a.x < b.x;
-    if (a.y != b.y) return a.y < b.y;
-    return a.z < b.z;
-  };
 
   // Collect all node ivec3 from all cells
   std::vector<glm::ivec3> allNodes;
@@ -251,7 +255,6 @@ void SparseVolumeGrid::drawPick() {
 
   // Set program uniforms
   setSparseVolumeGridUniforms(*pickProgram, true);
-  pickProgram->setUniform("u_pickColor", pickColor);
 
   // Draw the actual grid
   render::engine->setBackfaceCull(true);
@@ -285,21 +288,28 @@ void SparseVolumeGrid::ensureRenderProgramPrepared() {
 void SparseVolumeGrid::ensurePickProgramPrepared() {
   if (pickProgram) return;
 
+  // Request pick indices
+  size_t pickCount = nCells();
+  size_t pickStart = pick::requestPickBufferRange(this, pickCount);
+
   // clang-format off
   pickProgram = render::engine->requestShader(
       "GRIDCUBE",
-      addSparseGridShaderRules({"GRIDCUBE_CONSTANT_PICK"}, true),
+      addSparseGridShaderRules({"GRIDCUBE_PROPAGATE_ATTR_CELL_COLOR"}, true),
       render::ShaderReplacementDefaults::Pick
   );
   // clang-format on
 
+  // Fill color buffer with packed point indices
+  std::vector<glm::vec3> pickColors(pickCount);
+  for (size_t i = 0; i < pickCount; i++) {
+    pickColors[i] = pick::indToVec(i + pickStart);
+  }
+  pickProgram->setAttribute("a_color", pickColors);
+
+
   pickProgram->setAttribute("a_cellPosition", cellPositions.getRenderAttributeBuffer());
   pickProgram->setAttribute("a_cellInd", cellIndices.getRenderAttributeBuffer());
-
-  if (globalPickConstant == INVALID_IND_64) {
-    globalPickConstant = pick::requestPickBufferRange(this, 1);
-    pickColor = pick::indToVec(static_cast<size_t>(globalPickConstant));
-  }
 }
 
 
@@ -340,24 +350,184 @@ void SparseVolumeGrid::refresh() {
 }
 
 
-void SparseVolumeGrid::buildPickUI(const PickResult& rawResult) {
+SparseVolumeGridPickResult SparseVolumeGrid::interpretPickResult(const PickResult& rawResult) {
+  const float nodePickRad = 0.8; // threshold to click node, measured in a [-1,1] cube
 
-  // Determine which cell was clicked, CPU-side
+  if (rawResult.structure != this) {
+    exception("called interpretPickResult(), but the pick result is not from this structure");
+  }
+
+  SparseVolumeGridPickResult result;
+  result.cellIndex = glm::vec3{0, 0, 0};
+  result.cellFlatIndex = INVALID_IND_64;
+  result.nodeIndex = glm::vec3{0, 0, 0};
+
   glm::vec3 localPos = (rawResult.position - origin) / gridCellWidth;
 
   // Find the cell index
-  glm::ivec3 cellInd3{static_cast<int>(std::floor(localPos.x)), static_cast<int>(std::floor(localPos.y)),
-                      static_cast<int>(std::floor(localPos.z))};
+  glm::ivec3 cellInd3 = cellIndicesData[rawResult.localIndex];
+
+  // Fractional position within cell [0,1]
+  glm::vec3 fractional = localPos - glm::vec3(cellInd3);
+
+  // Local coordinates in [-1,1] within the scaled cell
+  glm::vec3 coordModShift = 2.f * fractional - 1.f;
+  float csf = cubeSizeFactor.get();
+  glm::vec3 coordLocal = (csf < 1.f) ? (coordModShift / (1.f - csf)) : coordModShift;
+  float distFromCorner = glm::length(1.f - glm::abs(coordLocal));
+
+  bool doPickNodes;
+  if (nodesHaveBeenUsed) {
+    doPickNodes = distFromCorner < nodePickRad;
+  } else {
+    doPickNodes = false;
+  }
+
+  if (doPickNodes) {
+    // return a node pick
+
+    ensureHaveCornerNodeIndices();
+
+    // find the nearest corner
+    int cornerDx = fractional.x > 0.5f ? 1 : 0;
+    int cornerDy = fractional.y > 0.5f ? 1 : 0;
+    int cornerDz = fractional.z > 0.5f ? 1 : 0;
+    glm::ivec3 nodeInd3(cellInd3.x + cornerDx - 1, cellInd3.y + cornerDy - 1, cellInd3.z + cornerDz - 1);
+
+    result.elementType = SparseVolumeGridElement::NODE;
+    result.nodeIndex = nodeInd3;
+
+  } else {
+    // return a cell pick
+
+    result.elementType = SparseVolumeGridElement::CELL;
+    result.cellIndex = cellInd3;
+    result.cellFlatIndex = rawResult.localIndex;
+  }
+
+  return result;
+}
+
+
+void SparseVolumeGrid::buildPickUI(const PickResult& rawResult) {
+
+  SparseVolumeGridPickResult result = interpretPickResult(rawResult);
+
+  switch (result.elementType) {
+  case SparseVolumeGridElement::NODE: {
+    buildNodeInfoGUI(result);
+    break;
+  }
+  case SparseVolumeGridElement::CELL: {
+    buildCellInfoGUI(result);
+    break;
+  }
+  };
+}
+
+
+void SparseVolumeGrid::buildCellInfoGUI(const SparseVolumeGridPickResult& result) {
+
+  glm::ivec3 cellInd3 = result.cellIndex;
+  size_t flatInd = result.cellFlatIndex;
 
   ImGui::TextUnformatted(("Cell index: (" + std::to_string(cellInd3.x) + "," + std::to_string(cellInd3.y) + "," +
                           std::to_string(cellInd3.z) + ")")
                              .c_str());
+  if (flatInd != INVALID_IND_64) {
+    ImGui::TextUnformatted(("Cell #" + std::to_string(flatInd)).c_str());
+  }
 
   glm::vec3 cellCenter = origin + (glm::vec3(cellInd3) + 0.5f) * gridCellWidth;
   std::stringstream buffer;
   buffer << cellCenter;
   ImGui::TextUnformatted(("Position: " + buffer.str()).c_str());
+
+  if (flatInd != INVALID_IND_64) {
+    ImGui::Spacing();
+    ImGui::Spacing();
+    ImGui::Spacing();
+    ImGui::Indent(20.);
+
+    // Build GUI to show the quantities
+    ImGui::Columns(2);
+    ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
+    for (auto& x : quantities) {
+      SparseVolumeGridQuantity* q = static_cast<SparseVolumeGridQuantity*>(x.second.get());
+      q->buildCellInfoGUI(flatInd);
+    }
+
+    ImGui::Indent(-20.);
+  }
 }
+
+
+void SparseVolumeGrid::buildNodeInfoGUI(const SparseVolumeGridPickResult& result) {
+
+  glm::ivec3 nodeInd3 = result.nodeIndex;
+
+  ImGui::TextUnformatted(("Node index: (" + std::to_string(nodeInd3.x) + "," + std::to_string(nodeInd3.y) + "," +
+                          std::to_string(nodeInd3.z) + ")")
+                             .c_str());
+
+  // Find canonical node index
+  ensureHaveCornerNodeIndices();
+  auto it = std::lower_bound(canonicalNodeIndsData.begin(), canonicalNodeIndsData.end(), nodeInd3, ivec3Less);
+  size_t canonicalInd = INVALID_IND_64;
+  if (it != canonicalNodeIndsData.end() && *it == nodeInd3) {
+    canonicalInd = static_cast<size_t>(it - canonicalNodeIndsData.begin());
+    ImGui::TextUnformatted(("Node #" + std::to_string(canonicalInd)).c_str());
+  }
+
+  glm::vec3 nodePos = origin + glm::vec3(nodeInd3 + 1) * gridCellWidth;
+  std::stringstream buffer;
+  buffer << nodePos;
+  ImGui::TextUnformatted(("Position: " + buffer.str()).c_str());
+
+  if (canonicalInd != INVALID_IND_64) {
+    ImGui::Spacing();
+    ImGui::Spacing();
+    ImGui::Spacing();
+    ImGui::Indent(20.);
+
+    // Build GUI to show the quantities
+    ImGui::Columns(2);
+    ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
+    for (auto& x : quantities) {
+      SparseVolumeGridQuantity* q = static_cast<SparseVolumeGridQuantity*>(x.second.get());
+      q->buildNodeInfoGUI(canonicalInd);
+    }
+
+    ImGui::Indent(-20.);
+  }
+}
+
+
+size_t SparseVolumeGrid::findCellFlatIndex(glm::ivec3 cellInd3) {
+  for (size_t i = 0; i < occupiedCellsData.size(); i++) {
+    if (occupiedCellsData[i] == cellInd3) return i;
+  }
+  return INVALID_IND_64;
+}
+
+size_t SparseVolumeGrid::findNodeFlatIndex(glm::ivec3 nodeInd3) {
+
+  if (!haveCornerNodeIndices) {
+    error("findFlatNodeIndex requires that node indices have been prepared");
+    return INVALID_IND_64;
+  }
+
+  // binary search
+  auto it = std::lower_bound(canonicalNodeIndsData.begin(), canonicalNodeIndsData.end(), nodeInd3, ivec3Less);
+  size_t canonicalInd = INVALID_IND_64;
+  if (it != canonicalNodeIndsData.end() && *it == nodeInd3) {
+    return static_cast<size_t>(it - canonicalNodeIndsData.begin());
+  }
+
+  return INVALID_IND_64;
+}
+
+void SparseVolumeGrid::markNodesAsUsed() { nodesHaveBeenUsed = true; }
 
 
 // === Option getters and setters
@@ -460,40 +630,46 @@ SparseVolumeGrid* registerSparseVolumeGrid(std::string name, glm::vec3 origin, g
 SparseVolumeGridQuantity::SparseVolumeGridQuantity(std::string name_, SparseVolumeGrid& grid_, bool dominates_)
     : Quantity(name_, grid_, dominates_), parent(grid_) {}
 
+// Default implementations
+void SparseVolumeGridQuantity::buildCellInfoGUI(size_t cellInd) {}
+void SparseVolumeGridQuantity::buildNodeInfoGUI(size_t nodeInd) {}
+
 // === Quantity adders
 
-SparseVolumeGridScalarQuantity*
+SparseVolumeGridCellScalarQuantity*
 SparseVolumeGrid::addCellScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type) {
   checkForQuantityWithNameAndDeleteOrError(name);
-  SparseVolumeGridScalarQuantity* q = new SparseVolumeGridScalarQuantity(name, *this, data, type);
+  SparseVolumeGridCellScalarQuantity* q = new SparseVolumeGridCellScalarQuantity(name, *this, data, type);
   addQuantity(q);
   return q;
 }
 
-SparseVolumeGridScalarQuantity* SparseVolumeGrid::addNodeScalarQuantityImpl(std::string name,
-                                                                            const std::vector<glm::ivec3>& nodeIndices,
-                                                                            const std::vector<float>& nodeValues,
-                                                                            DataType type) {
+SparseVolumeGridNodeScalarQuantity*
+SparseVolumeGrid::addNodeScalarQuantityImpl(std::string name, const std::vector<glm::ivec3>& nodeIndices,
+                                            const std::vector<float>& nodeValues, DataType type) {
   checkForQuantityWithNameAndDeleteOrError(name);
-  SparseVolumeGridScalarQuantity* q = new SparseVolumeGridScalarQuantity(name, *this, nodeIndices, nodeValues, type);
+  SparseVolumeGridNodeScalarQuantity* q =
+      new SparseVolumeGridNodeScalarQuantity(name, *this, nodeIndices, nodeValues, type);
+  addQuantity(q);
+  markNodesAsUsed();
+  return q;
+}
+
+SparseVolumeGridCellColorQuantity* SparseVolumeGrid::addCellColorQuantityImpl(std::string name,
+                                                                              const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SparseVolumeGridCellColorQuantity* q = new SparseVolumeGridCellColorQuantity(name, *this, colors);
   addQuantity(q);
   return q;
 }
 
-SparseVolumeGridColorQuantity* SparseVolumeGrid::addCellColorQuantityImpl(std::string name,
-                                                                          const std::vector<glm::vec3>& colors) {
+SparseVolumeGridNodeColorQuantity*
+SparseVolumeGrid::addNodeColorQuantityImpl(std::string name, const std::vector<glm::ivec3>& nodeIndices,
+                                           const std::vector<glm::vec3>& nodeColors) {
   checkForQuantityWithNameAndDeleteOrError(name);
-  SparseVolumeGridColorQuantity* q = new SparseVolumeGridColorQuantity(name, *this, colors);
+  SparseVolumeGridNodeColorQuantity* q = new SparseVolumeGridNodeColorQuantity(name, *this, nodeIndices, nodeColors);
   addQuantity(q);
-  return q;
-}
-
-SparseVolumeGridColorQuantity* SparseVolumeGrid::addNodeColorQuantityImpl(std::string name,
-                                                                          const std::vector<glm::ivec3>& nodeIndices,
-                                                                          const std::vector<glm::vec3>& nodeColors) {
-  checkForQuantityWithNameAndDeleteOrError(name);
-  SparseVolumeGridColorQuantity* q = new SparseVolumeGridColorQuantity(name, *this, nodeIndices, nodeColors);
-  addQuantity(q);
+  markNodesAsUsed();
   return q;
 }
 

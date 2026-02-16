@@ -18,12 +18,24 @@
 namespace polyscope {
 
 class SparseVolumeGrid;
-class SparseVolumeGridScalarQuantity;
-class SparseVolumeGridColorQuantity;
+class SparseVolumeGridCellScalarQuantity;
+class SparseVolumeGridNodeScalarQuantity;
+class SparseVolumeGridCellColorQuantity;
+class SparseVolumeGridNodeColorQuantity;
+
+struct SparseVolumeGridPickResult {
+  SparseVolumeGridElement elementType;
+  glm::ivec3 cellIndex;   // only populated if cell
+  uint64_t cellFlatIndex; // only populated if cell
+  glm::ivec3 nodeIndex;   // only populated if node
+};
 
 class SparseVolumeGrid : public Structure {
 public:
   // Construct a new sparse volume grid structure
+  // The origin is the NODE/CORNER orgin. That is, the cell 0,0,0, will have its lower-left corner sitting at this
+  // origin. If you wish to specify the CENTER of the the 0,0,0 cell, you should pass (cellOrigin - 0.5 *
+  // gridCellWidth).
   SparseVolumeGrid(std::string name, glm::vec3 origin, glm::vec3 gridCellWidth, std::vector<glm::ivec3> occupiedCells);
 
   // === Overloads
@@ -78,27 +90,34 @@ public:
 
   // Cell scalar. Values array must be passed in the same order as initial input cell list.
   template <class T>
-  SparseVolumeGridScalarQuantity* addCellScalarQuantity(std::string name, const T& values,
-                                                        DataType type = DataType::STANDARD);
+  SparseVolumeGridCellScalarQuantity* addCellScalarQuantity(std::string name, const T& values,
+                                                            DataType type = DataType::STANDARD);
 
   // Node scalar. Indices are _node_ indices; the nodes are a shifted sparse grid offset from the cell enumeration. For
   // a cell with indices ijk, its corrners are the nodes with indices (i k j, i+1 j k, ..., i+1 j+1, k+1). Node values
   // are passed via a paired set of arrays, giving the node index and node value for each. Node values may be passed in
   // any order, and having extra entries is fine too, as long as all required nodes values are present.
   template <class TI, class TV>
-  SparseVolumeGridScalarQuantity* addNodeScalarQuantity(std::string name, const TI& nodeIndices, const TV& nodeValues,
-                                                        DataType type = DataType::STANDARD);
+  SparseVolumeGridNodeScalarQuantity* addNodeScalarQuantity(std::string name, const TI& nodeIndices,
+                                                            const TV& nodeValues, DataType type = DataType::STANDARD);
 
   // Cell color. Values array must be passed in the same order as initial input cell list.
   template <class T>
-  SparseVolumeGridColorQuantity* addCellColorQuantity(std::string name, const T& colors);
+  SparseVolumeGridCellColorQuantity* addCellColorQuantity(std::string name, const T& colors);
 
   // Node color. Indices are _node_ indices; the nodes are a shifted sparse grid offset from the cell enumeration. For
   // a cell with indices ijk, its corrners are the nodes with indices (i k j, i+1 j k, ..., i+1 j+1, k+1). Node values
   // are passed via a paired set of arrays, giving the node index and node value for each. Node values may be passed in
   // any order, and having extra entries is fine too, as long as all required nodes values are present.
   template <class TI, class TC>
-  SparseVolumeGridColorQuantity* addNodeColorQuantity(std::string name, const TI& nodeIndices, const TC& nodeColors);
+  SparseVolumeGridNodeColorQuantity* addNodeColorQuantity(std::string name, const TI& nodeIndices,
+                                                          const TC& nodeColors);
+
+  // Force the grid to act as if nodes are in use (enable them for picking)
+  void markNodesAsUsed();
+
+  // Get data related to picking/selection
+  SparseVolumeGridPickResult interpretPickResult(const PickResult& result);
 
   // Rendering related helpers
   void setCellGeometryAttributes(render::ShaderProgram& p);
@@ -159,8 +178,9 @@ private:
   void computeCornerNodeIndices();
 
   // Picking-related
-  size_t globalPickConstant = INVALID_IND_64;
-  glm::vec3 pickColor;
+  bool nodesHaveBeenUsed = false;
+  void buildCellInfoGUI(const SparseVolumeGridPickResult& result);
+  void buildNodeInfoGUI(const SparseVolumeGridPickResult& result);
 
   // Drawing related things
   std::shared_ptr<render::ShaderProgram> program;
@@ -168,27 +188,36 @@ private:
 
   // === Helpers
   void checkForDuplicateCells();
+  size_t findCellFlatIndex(glm::ivec3 cellInd3);
+  size_t findNodeFlatIndex(glm::ivec3 nodeInd3);
   void ensureRenderProgramPrepared();
   void ensurePickProgramPrepared();
 
   // Quantity impl methods
-  SparseVolumeGridScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<float>& data,
-                                                            DataType type);
-  SparseVolumeGridScalarQuantity* addNodeScalarQuantityImpl(std::string name,
-                                                            const std::vector<glm::ivec3>& nodeIndices,
-                                                            const std::vector<float>& nodeValues, DataType type);
-  SparseVolumeGridColorQuantity* addCellColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
-  SparseVolumeGridColorQuantity* addNodeColorQuantityImpl(std::string name, const std::vector<glm::ivec3>& nodeIndices,
-                                                          const std::vector<glm::vec3>& nodeColors);
+  SparseVolumeGridCellScalarQuantity* addCellScalarQuantityImpl(std::string name, const std::vector<float>& data,
+                                                                DataType type);
+  SparseVolumeGridNodeScalarQuantity* addNodeScalarQuantityImpl(std::string name,
+                                                                const std::vector<glm::ivec3>& nodeIndices,
+                                                                const std::vector<float>& nodeValues, DataType type);
+  SparseVolumeGridCellColorQuantity* addCellColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
+  SparseVolumeGridNodeColorQuantity* addNodeColorQuantityImpl(std::string name,
+                                                              const std::vector<glm::ivec3>& nodeIndices,
+                                                              const std::vector<glm::vec3>& nodeColors);
 };
 
 
 // Register a sparse volume grid
+// The origin is the NODE/CORNER orgin. That is, the cell 0,0,0, will have its lower-left corner sitting at this
+// origin. If you wish to specify the CENTER of the the 0,0,0 cell, you should pass (cellOrigin - 0.5 *
+// gridCellWidth).
 template <class T>
 SparseVolumeGrid* registerSparseVolumeGrid(std::string name, glm::vec3 origin, glm::vec3 gridCellWidth,
                                            const T& occupiedCells);
 
-// Non-template overloads
+// Register a sparse volume grid (non-templated overload)
+// The origin is the NODE/CORNER orgin. That is, the cell 0,0,0, will have its lower-left corner sitting at this
+// origin. If you wish to specify the CENTER of the the 0,0,0 cell, you should pass (cellOrigin - 0.5 *
+// gridCellWidth).
 SparseVolumeGrid* registerSparseVolumeGrid(std::string name, glm::vec3 origin, glm::vec3 gridCellWidth,
                                            const std::vector<glm::ivec3>& occupiedCells);
 

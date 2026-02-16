@@ -13,15 +13,9 @@ namespace polyscope {
 
 class SparseVolumeGridScalarQuantity : public SparseVolumeGridQuantity,
                                        public ScalarQuantity<SparseVolumeGridScalarQuantity> {
-
 public:
-  // Cell scalar constructor
-  SparseVolumeGridScalarQuantity(std::string name, SparseVolumeGrid& grid, const std::vector<float>& values,
-                                 DataType dataType);
-
-  // Node scalar constructor
-  SparseVolumeGridScalarQuantity(std::string name, SparseVolumeGrid& grid, const std::vector<glm::ivec3>& nodeIndices,
-                                 const std::vector<float>& nodeValues, DataType dataType);
+  SparseVolumeGridScalarQuantity(std::string name, SparseVolumeGrid& grid, const std::string& definedOn_,
+                                 const std::vector<float>& values_, DataType dataType_);
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
@@ -29,14 +23,42 @@ public:
 
   virtual std::string niceName() override;
 
-  bool getNodeIndicesAreCanonical() const { return nodeIndicesAreCanonical; }
-
-private:
-  bool isNodeQuantity = false;
-  bool nodeIndicesAreCanonical; // true if user-provided indices matched canonical order exactly (set by constructor)
-  void createProgram();
+protected:
+  const std::string definedOn;
   std::shared_ptr<render::ShaderProgram> program;
+  virtual void createProgram() = 0;
 };
 
+// ========================================================
+// ==========            Cell Scalar             ==========
+// ========================================================
+
+class SparseVolumeGridCellScalarQuantity : public SparseVolumeGridScalarQuantity {
+public:
+  SparseVolumeGridCellScalarQuantity(std::string name, SparseVolumeGrid& grid, const std::vector<float>& cellValues,
+                                     DataType dataType);
+
+  virtual void createProgram() override;
+  virtual void buildCellInfoGUI(size_t cellInd) override;
+};
+
+
+// ========================================================
+// ==========            Node Scalar             ==========
+// ========================================================
+
+class SparseVolumeGridNodeScalarQuantity : public SparseVolumeGridScalarQuantity {
+public:
+  SparseVolumeGridNodeScalarQuantity(std::string name, SparseVolumeGrid& grid,
+                                     const std::vector<glm::ivec3>& nodeIndices,
+                                     const std::vector<float>& nodeValues, DataType dataType);
+
+  virtual void createProgram() override;
+  virtual void buildNodeInfoGUI(size_t nodeInd) override;
+  bool getNodeIndicesAreCanonical() const { return nodeIndicesAreCanonical; }
+
+protected:
+  bool nodeIndicesAreCanonical; // true if user-provided indices matched canonical order exactly (set by constructor)
+};
 
 } // namespace polyscope

@@ -13,26 +13,50 @@ namespace polyscope {
 class SparseVolumeGridColorQuantity : public SparseVolumeGridQuantity,
                                       public ColorQuantity<SparseVolumeGridColorQuantity> {
 public:
-  // Cell color constructor
-  SparseVolumeGridColorQuantity(std::string name, SparseVolumeGrid& grid, const std::vector<glm::vec3>& colors);
-
   // Node color constructor
-  SparseVolumeGridColorQuantity(std::string name, SparseVolumeGrid& grid, const std::vector<glm::ivec3>& nodeIndices,
-                                const std::vector<glm::vec3>& nodeColors);
+  SparseVolumeGridColorQuantity(std::string name, SparseVolumeGrid& grid, const std::string& definedOn_,
+                                const std::vector<glm::vec3>& colors_);
 
   virtual void draw() override;
   virtual void refresh() override;
 
   virtual std::string niceName() override;
 
-  bool getNodeIndicesAreCanonical() const { return nodeIndicesAreCanonical; }
-
-private:
-  bool isNodeQuantity = false;
-  bool nodeIndicesAreCanonical; // true if user-provided indices matched canonical order exactly (set by constructor)
-  void createProgram();
+protected:
+  const std::string definedOn;
   std::shared_ptr<render::ShaderProgram> program;
+  virtual void createProgram() = 0;
 };
 
+// ========================================================
+// ==========            Cell Color              ==========
+// ========================================================
+
+class SparseVolumeGridCellColorQuantity : public SparseVolumeGridColorQuantity {
+public:
+  SparseVolumeGridCellColorQuantity(std::string name, SparseVolumeGrid& grid, const std::vector<glm::vec3>& cellColors);
+
+  virtual void createProgram() override;
+  virtual void buildCellInfoGUI(size_t cellInd) override;
+};
+
+
+// ========================================================
+// ==========            Node Color              ==========
+// ========================================================
+
+class SparseVolumeGridNodeColorQuantity : public SparseVolumeGridColorQuantity {
+public:
+  SparseVolumeGridNodeColorQuantity(std::string name, SparseVolumeGrid& grid,
+                                    const std::vector<glm::ivec3>& nodeIndices,
+                                    const std::vector<glm::vec3>& nodeColors);
+
+  virtual void createProgram() override;
+  virtual void buildNodeInfoGUI(size_t nodeInd) override;
+  bool getNodeIndicesAreCanonical() const { return nodeIndicesAreCanonical; }
+
+protected:
+  bool nodeIndicesAreCanonical; // true if user-provided indices matched canonical order exactly (set by constructor)
+};
 
 } // namespace polyscope
