@@ -95,9 +95,9 @@ public:
                                                             DataType type = DataType::STANDARD);
 
   // Node scalar. Indices are _node_ indices; the nodes are a shifted sparse grid offset from the cell enumeration. For
-  // a cell with indices ijk, its corrners are the nodes with indices (i k j, i+1 j k, ..., i+1 j+1, k+1). Node values
-  // are passed via a paired set of arrays, giving the node index and node value for each. Node values may be passed in
-  // any order, and having extra entries is fine too, as long as all required nodes values are present.
+  // a cell with indices ijk, its corrners are the nodes with indices [(i,j,k), (i,j,k+1), ..., (i+1,j+1,k+1)]. Node
+  // values are passed via a paired set of arrays, giving the node index and node value for each. Node values may be
+  // passed in any order, and having extra entries is fine too, as long as all required nodes values are present.
   template <class TI, class TV>
   SparseVolumeGridNodeScalarQuantity* addNodeScalarQuantity(std::string name, const TI& nodeIndices,
                                                             const TV& nodeValues, DataType type = DataType::STANDARD);
@@ -107,9 +107,9 @@ public:
   SparseVolumeGridCellColorQuantity* addCellColorQuantity(std::string name, const T& colors);
 
   // Node color. Indices are _node_ indices; the nodes are a shifted sparse grid offset from the cell enumeration. For
-  // a cell with indices ijk, its corrners are the nodes with indices (i k j, i+1 j k, ..., i+1 j+1, k+1). Node values
-  // are passed via a paired set of arrays, giving the node index and node value for each. Node values may be passed in
-  // any order, and having extra entries is fine too, as long as all required nodes values are present.
+  // a cell with indices ijk, its corrners are the nodes with indices [(i,j,k), (i,j,k+1), ..., (i+1,j+1,k+1)]. Node
+  // values are passed via a paired set of arrays, giving the node index and node value for each. Node values may be
+  // passed in any order, and having extra entries is fine too, as long as all required nodes values are present.
   template <class TI, class TC>
   SparseVolumeGridNodeColorQuantity* addNodeColorQuantity(std::string name, const TI& nodeIndices,
                                                           const TC& nodeColors);
@@ -125,14 +125,14 @@ public:
   std::vector<std::string> addSparseGridShaderRules(std::vector<std::string> initRules, bool pickOnly = false);
   void setSparseVolumeGridUniforms(render::ShaderProgram& p, bool pickOnly = false);
 
-  // === Getters and setters for visualization settings
+  // === Getters and setters
 
   // Color of the grid cubes
   SparseVolumeGrid* setColor(glm::vec3 val);
   glm::vec3 getColor();
 
-  // Width of the edges. Scaled such that 1 is a reasonable weight for visible edges, but values  1 can be used for
-  // bigger edges. Use 0. to disable.
+  // Width of the edges. Scaled such that 1 is a reasonable weight for visible edges, but values >1 can be used for
+  // bigger edges. Use 0. to disable edges.
   SparseVolumeGrid* setEdgeWidth(double newVal);
   double getEdgeWidth();
 
