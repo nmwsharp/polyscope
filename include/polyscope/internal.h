@@ -26,6 +26,10 @@ uint64_t getNextUniqueID();
 // How many layers deep in the polyscope context stack are we
 extern int contextStackSize;
 
+// Usually false in normal rendering. For certain situations like transparency where we render multiple times from the
+// same view, this is set to true for passes after the first, so we can skip repeated work that would not change.
+extern bool& renderPassIsRedraw;
+
 // track various fire-once warnings
 extern bool& pointCloudEfficiencyWarningReported;
 

@@ -115,6 +115,7 @@ struct Context {
   // === Internal globals from internal.h
   // ======================================================
 
+  bool renderPassIsRedraw = false;
   bool pointCloudEfficiencyWarningReported = false;
   FloatingQuantityStructure* globalFloatingQuantityStructure = nullptr;
 

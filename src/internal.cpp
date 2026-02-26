@@ -13,6 +13,7 @@ uint64_t getNextUniqueID() { return uniqueID++; }
 
 int contextStackSize = 0;
 
+bool& renderPassIsRedraw = state::globalContext.renderPassIsRedraw;
 bool& pointCloudEfficiencyWarningReported = state::globalContext.pointCloudEfficiencyWarningReported;
 FloatingQuantityStructure*& globalFloatingQuantityStructure = state::globalContext.globalFloatingQuantityStructure;
 

@@ -640,6 +640,8 @@ void renderScene() {
 
 
     for (int iPass = 0; iPass < options::transparencyRenderPasses; iPass++) {
+      bool isRedraw = iPass > 0;
+      internal::renderPassIsRedraw = isRedraw;
 
       render::engine->bindSceneBuffer();
       render::engine->clearSceneBuffer();
@@ -648,7 +650,6 @@ void renderScene() {
       drawStructures();
 
       // Draw ground plane, slicers, etc
-      bool isRedraw = iPass > 0;
       render::engine->groundPlane.draw(isRedraw);
       if (!isRedraw) {
         // Only on first pass (kinda weird, but works out, and doesn't really matter)
@@ -667,10 +668,12 @@ void renderScene() {
       // Update the minimum depth texture
       render::engine->updateMinDepthTexture();
     }
+    internal::renderPassIsRedraw = false; // reset to usual value
 
 
   } else {
     // Normal case: single render pass
+    internal::renderPassIsRedraw = false;
 
     render::engine->applyTransparencySettings();
     drawStructures();
