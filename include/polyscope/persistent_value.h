@@ -130,6 +130,8 @@ protected:
 
 // clang-format off
 namespace detail {
+
+extern PersistentCache<int32_t> persistentCache_int32_t;
 extern PersistentCache<double> persistentCache_double;
 extern PersistentCache<float> persistentCache_float;
 extern PersistentCache<bool> persistentCache_bool;
@@ -148,6 +150,7 @@ extern PersistentCache<IsolineStyle>   persistentCache_IsolineStyle;
 extern PersistentCache<MeshSelectionMode>   persistentCache_MeshSelectionMode;
 extern PersistentCache<SparseVolumeGridRenderMode> persistentCache_SparseVolumeGridRenderMode;
 
+template<> inline PersistentCache<int32_t>&                  getPersistentCacheRef<int32_t>()                  { return persistentCache_int32_t; }
 template<> inline PersistentCache<double>&                   getPersistentCacheRef<double>()                   { return persistentCache_double; }
 template<> inline PersistentCache<float>&                    getPersistentCacheRef<float>()                    { return persistentCache_float; }
 template<> inline PersistentCache<bool>&                     getPersistentCacheRef<bool>()                     { return persistentCache_bool; }
