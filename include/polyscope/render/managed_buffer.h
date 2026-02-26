@@ -247,6 +247,7 @@ template <typename T>
 struct ManagedBufferMap {
 public:
   void addManagedBuffer(ManagedBuffer<T>* buffer);
+  void removeManagedBuffer(ManagedBuffer<T>* buffer);
 
   ManagedBuffer<T>& getManagedBuffer(std::string name);
   bool hasManagedBuffer(std::string name);
@@ -280,6 +281,9 @@ public:
 
   template <typename T>
   void addManagedBuffer(ManagedBuffer<T>* buffer);
+
+  template <typename T>
+  void removeManagedBuffer(ManagedBuffer<T>* buffer);
 
   // clang-format off
   ManagedBufferMap<float>        managedBufferMap_float;

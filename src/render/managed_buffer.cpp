@@ -38,7 +38,11 @@ ManagedBuffer<T>::ManagedBuffer(ManagedBufferRegistry* registry_, const std::str
 }
 
 template <typename T>
-ManagedBuffer<T>::~ManagedBuffer() {}
+ManagedBuffer<T>::~ManagedBuffer() {
+  if (registry) {
+    registry->removeManagedBuffer<T>(this);
+  }
+}
 
 template <typename T>
 void ManagedBuffer<T>::checkInvalidValues() {
@@ -47,7 +51,8 @@ void ManagedBuffer<T>::checkInvalidValues() {
 
 template <typename T>
 void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_) {
-  if (deviceBufferType != DeviceBufferType::Attribute) exception("managed buffer can only be set as texture once");
+  if (deviceBufferType != DeviceBufferType::Attribute)
+    exception("managed buffer cannot be resized, texture size can only be set once");
 
   deviceBufferType = DeviceBufferType::Texture1d;
   sizeX = sizeX_;
@@ -55,7 +60,8 @@ void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_) {
 
 template <typename T>
 void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_, uint32_t sizeY_) {
-  if (deviceBufferType != DeviceBufferType::Attribute) exception("managed buffer can only be set as texture once");
+  if (deviceBufferType != DeviceBufferType::Attribute)
+    exception("managed buffer cannot be resized, texture size can only be set once");
 
   deviceBufferType = DeviceBufferType::Texture2d;
   sizeX = sizeX_;
@@ -64,7 +70,8 @@ void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_, uint32_t sizeY_) {
 
 template <typename T>
 void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_, uint32_t sizeY_, uint32_t sizeZ_) {
-  if (deviceBufferType != DeviceBufferType::Attribute) exception("managed buffer can only be set as texture once");
+  if (deviceBufferType != DeviceBufferType::Attribute)
+    exception("managed buffer cannot be resized, texture size can only be set once");
 
   deviceBufferType = DeviceBufferType::Texture3d;
   sizeX = sizeX_;
