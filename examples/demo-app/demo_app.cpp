@@ -16,6 +16,7 @@
 #include "polyscope/surface_mesh.h"
 #include "polyscope/types.h"
 #include "polyscope/view.h"
+#include "polyscope/viewport.h"
 #include "polyscope/volume_grid.h"
 #include "polyscope/volume_mesh.h"
 
@@ -952,6 +953,23 @@ void callback() {
 
   if (ImGui::Button("add sparse volume grid")) {
     addSparseVolumeGrid();
+  }
+
+  // Split viewport controls (per-viewport settings are in the built-in View panel)
+  if (ImGui::Button("Single")) {
+    polyscope::setSingleViewport();
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("V-Split")) {
+    polyscope::setVerticalSplitViewport();
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("H-Split")) {
+    polyscope::setHorizontalSplitViewport();
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Quad")) {
+    polyscope::setQuadViewport();
   }
 
   // ImPlot

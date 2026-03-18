@@ -4,6 +4,7 @@
 
 #include <polyscope/pick.h>
 #include <polyscope/types.h>
+#include <polyscope/viewport.h>
 #include <polyscope/weak_handle.h>
 
 #include <glm/glm.hpp>
@@ -118,6 +119,16 @@ struct Context {
   bool renderPassIsRedraw = false;
   bool pointCloudEfficiencyWarningReported = false;
   FloatingQuantityStructure* globalFloatingQuantityStructure = nullptr;
+
+  // ======================================================
+  // === Viewport grid
+  // ======================================================
+
+  int viewportGridRows = 1;
+  int viewportGridCols = 1;
+  std::vector<std::unique_ptr<Viewport>> viewports;
+  Viewport* activeViewport = nullptr;     // the viewport currently receiving mouse input (null when no button held)
+  Viewport* lastActiveViewport = nullptr; // the most recently interacted viewport (persists after mouse release)
 
   // ======================================================
   // === Other various global lists
