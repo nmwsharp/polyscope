@@ -98,7 +98,7 @@ void Structure::buildUI() {
         }
         if (ImGui::Button("...for this structure only")) {
           openSlicePlaneMenu = true;
-          SlicePlane* plane = addSlicePlane(std::string("Slice plane of ") + this->name);
+          SlicePlane* plane = addSlicePlane();
           /* Set all structures to ignore this plane, except for this one in particular! */
           for (auto const& supermap: state::structures) {
             for (auto const& map: supermap.second) {
