@@ -40,6 +40,24 @@ void SimpleTriangleMesh::update(const V& newPositions, const F& newFaces) {
   faces.markHostBufferUpdated();
 }
 
+// =====================================================
+// ============== Quantities
+// =====================================================
+
+template <class T>
+SimpleTriangleMeshScalarQuantity* SimpleTriangleMesh::addVertexScalarQuantity(std::string name, const T& values,
+                                                                              DataType type) {
+  validateSize(values, nVertices(), "vertex scalar quantity " + name);
+  return addVertexScalarQuantityImpl(name, standardizeArray<float, T>(values), type);
+}
+
+template <class T>
+SimpleTriangleMeshColorQuantity* SimpleTriangleMesh::addVertexColorQuantity(std::string name, const T& values) {
+  validateSize(values, nVertices(), "vertex color quantity " + name);
+  return addVertexColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(values));
+}
+
+
 // Shorthand to get a mesh from polyscope
 inline SimpleTriangleMesh* getSimpleTriangleMesh(std::string name) {
   return dynamic_cast<SimpleTriangleMesh*>(getStructure(SimpleTriangleMesh::structureTypeName, name));

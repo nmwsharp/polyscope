@@ -8,7 +8,12 @@
 #include "polyscope/render/engine.h"
 #include "polyscope/render/managed_buffer.h"
 #include "polyscope/scaled_value.h"
+#include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
+
+#include "polyscope/simple_triangle_mesh_color_quantity.h"
+#include "polyscope/simple_triangle_mesh_quantity.h"
+#include "polyscope/simple_triangle_mesh_scalar_quantity.h"
 
 #include <vector>
 
@@ -18,6 +23,8 @@ namespace polyscope {
 class SimpleTriangleMesh;
 
 // Forward declare quantity types
+class SimpleTriangleMeshScalarQuantity;
+class SimpleTriangleMeshColorQuantity;
 
 struct SimpleTriangleMeshPickResult {
   // this does nothing for now, just matching pattern from other structures
@@ -50,7 +57,19 @@ public:
   render::ManagedBuffer<glm::vec3> vertices;
   render::ManagedBuffer<glm::uvec3> faces;
 
+  size_t nVertices() { return vertices.size(); }
+  size_t nFaces() { return faces.size(); }
+
   // === Quantities
+
+  // Scalars
+  template <class T>
+  SimpleTriangleMeshScalarQuantity* addVertexScalarQuantity(std::string name, const T& values,
+                                                            DataType type = DataType::STANDARD);
+
+  // Colors
+  template <class T>
+  SimpleTriangleMeshColorQuantity* addVertexColorQuantity(std::string name, const T& values);
 
   // === Mutate
 
@@ -115,6 +134,10 @@ private:
   void setPickUniforms(render::ShaderProgram& p);
 
   // === Quantity adder implementations
+  SimpleTriangleMeshScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<float>& data,
+                                                                DataType type);
+  SimpleTriangleMeshColorQuantity* addVertexColorQuantityImpl(std::string name,
+                                                              const std::vector<glm::vec3>& colors);
 
   // == Picking related things
   size_t pickStart;

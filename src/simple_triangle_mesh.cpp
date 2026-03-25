@@ -5,6 +5,8 @@
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/simple_triangle_mesh_color_quantity.h"
+#include "polyscope/simple_triangle_mesh_scalar_quantity.h"
 
 #include "imgui.h"
 
@@ -346,6 +348,26 @@ SimpleTriangleMesh* SimpleTriangleMesh::setBackFaceColor(glm::vec3 val) {
 }
 
 glm::vec3 SimpleTriangleMesh::getBackFaceColor() { return backFaceColor.get(); }
+
+
+// === Quantity adder implementations
+
+SimpleTriangleMeshScalarQuantity* SimpleTriangleMesh::addVertexScalarQuantityImpl(std::string name,
+                                                                                   const std::vector<float>& data,
+                                                                                   DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SimpleTriangleMeshScalarQuantity* q = new SimpleTriangleMeshScalarQuantity(name, data, "vertex", *this, type);
+  addQuantity(q);
+  return q;
+}
+
+SimpleTriangleMeshColorQuantity* SimpleTriangleMesh::addVertexColorQuantityImpl(std::string name,
+                                                                                 const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SimpleTriangleMeshColorQuantity* q = new SimpleTriangleMeshColorQuantity(name, colors, "vertex", *this);
+  addQuantity(q);
+  return q;
+}
 
 
 } // namespace polyscope
