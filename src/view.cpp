@@ -1088,7 +1088,7 @@ void setViewFromJson(std::string jsonData, bool flyTo) {
     }
     if (viewChanged) {
       if (flyTo) {
-        startFlightTo(newViewMat, fov);
+        startFlightTo(newViewMat, newFov);
       } else {
         setCameraViewMatrix(newViewMat);
         fov = newFov;
