@@ -189,7 +189,7 @@ void SimpleTriangleMesh::ensureRenderProgramPrepared() {
     render::engine->addMaterialRules(getMaterial(),
       addSimpleTriangleMeshRules(
         {
-          "SHADE_BASECOLOR", "COMPUTE_SHADE_NORMAL_FROM_POSITION", "PROJ_AND_INV_PROJ_MAT"
+          "SHADE_BASECOLOR"
         }
       )
     )
@@ -210,7 +210,7 @@ void SimpleTriangleMesh::ensurePickProgramPrepared() {
   pickProgram = render::engine->requestShader("SIMPLE_MESH", 
     addSimpleTriangleMeshRules(
       {
-        "SHADECOLOR_FROM_UNIFORM", "COMPUTE_SHADE_NORMAL_FROM_POSITION", "PROJ_AND_INV_PROJ_MAT"
+        "SHADECOLOR_FROM_UNIFORM"
       }
     , false), render::ShaderReplacementDefaults::Pick
   );
@@ -229,6 +229,9 @@ std::vector<std::string> SimpleTriangleMesh::addSimpleTriangleMeshRules(std::vec
                                                                         bool withSurfaceShade) {
 
   initRules = addStructureRules(initRules);
+
+  initRules.push_back("COMPUTE_SHADE_NORMAL_FROM_POSITION");
+  initRules.push_back("PROJ_AND_INV_PROJ_MAT");
 
   if (withSurfaceShade) {
     // rules that only get used when we're shading the surface of the mesh
