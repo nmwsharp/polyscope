@@ -235,6 +235,9 @@ SET(SRCS
 
   # Simple triangle mesh
   simple_triangle_mesh.cpp
+  simple_triangle_mesh_quantity.cpp
+  simple_triangle_mesh_scalar_quantity.cpp
+  simple_triangle_mesh_color_quantity.cpp
 
   # Floating quantities
   floating_quantity_structure.cpp
@@ -337,6 +340,9 @@ SET(HEADERS
   ${INCLUDE_ROOT}/screenshot.h
   ${INCLUDE_ROOT}/simple_triangle_mesh.h
   ${INCLUDE_ROOT}/simple_triangle_mesh.ipp
+  ${INCLUDE_ROOT}/simple_triangle_mesh_quantity.h
+  ${INCLUDE_ROOT}/simple_triangle_mesh_scalar_quantity.h
+  ${INCLUDE_ROOT}/simple_triangle_mesh_color_quantity.h
   ${INCLUDE_ROOT}/slice_plane.h
   ${INCLUDE_ROOT}/standardize_data_array.h
   ${INCLUDE_ROOT}/structure.h

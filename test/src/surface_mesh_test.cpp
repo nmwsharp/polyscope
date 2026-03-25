@@ -665,3 +665,39 @@ TEST_F(PolyscopeTest, SimpleTriangleMesUpdate) {
 
   polyscope::removeAllStructures();
 }
+
+TEST_F(PolyscopeTest, SimpleTriangleMeshVertexScalar) {
+  auto psMesh = registerSimpleTriangleMesh();
+  std::vector<double> vScalar(psMesh->nVertices(), 7.);
+  auto q1 = psMesh->addVertexScalarQuantity("vScalar", vScalar);
+  q1->setEnabled(true);
+  polyscope::show(3);
+
+  q1->updateData(vScalar);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SimpleTriangleMeshVertexScalarCategorical) {
+  auto psMesh = registerSimpleTriangleMesh();
+  std::vector<double> vScalar(psMesh->nVertices(), 2.);
+  auto q1 = psMesh->addVertexScalarQuantity("vScalar", vScalar, polyscope::DataType::CATEGORICAL);
+  q1->setEnabled(true);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SimpleTriangleMeshVertexColor) {
+  auto psMesh = registerSimpleTriangleMesh();
+  std::vector<glm::vec3> vColors(psMesh->nVertices(), glm::vec3{.2, .3, .4});
+  auto q1 = psMesh->addVertexColorQuantity("vColor", vColors);
+  q1->setEnabled(true);
+  polyscope::show(3);
+
+  q1->updateData(vColors);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
