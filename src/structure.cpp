@@ -102,7 +102,7 @@ void Structure::buildUI() {
           /* Set all structures to ignore this plane, except for this one in particular! */
           for (auto const& supermap: state::structures) {
             for (auto const& map: supermap.second) {
-              map.second->setIgnoreSlicePlane(plane->name, supermap.first != this->typeName() or map.first != this->name);
+              map.second->setIgnoreSlicePlane(plane->name, (supermap.first != this->typeName() || map.first != this->name));
             }
           }
         }
