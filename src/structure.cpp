@@ -92,22 +92,34 @@ void Structure::buildUI() {
 
       // Toggle whether slice planes apply
       if (ImGui::BeginMenu("Slice planes")) {
+        if (ImGui::Button("Add slice plane")) {
+          openSlicePlaneMenu = true;
+          addSlicePlane();
+        }
+        if (ImGui::Button("...for this structure only")) {
+          openSlicePlaneMenu = true;
+          SlicePlane* plane = addSlicePlane(std::string("Slice plane of ") + this->name);
+          /* Set all structures to ignore this plane, except for this one in particular! */
+          for (auto const& supermap: state::structures) {
+            for (auto const& map: supermap.second) {
+              map.second->setIgnoreSlicePlane(plane->name, supermap.first != this->typeName() or map.first != this->name);
+            }
+          }
+        }
+        ImGui::Separator();
+        ImGui::TextUnformatted("Applies to this structure:");
+        ImGui::Indent(20);
         if (state::slicePlanes.empty()) {
           // if there are none, show a helpful message
-          if (ImGui::Button("Add slice plane")) {
-            openSlicePlaneMenu = true;
-            addSlicePlane();
-          }
+          ImGui::TextWrapped("< none >");
         } else {
           // otherwise, show toggles for each
-          ImGui::TextUnformatted("Applies to this structure:");
-          ImGui::Indent(20);
           for (std::unique_ptr<SlicePlane>& s : state::slicePlanes) {
             bool ignorePlane = getIgnoreSlicePlane(s->name);
             if (ImGui::MenuItem(s->name.c_str(), NULL, !ignorePlane)) setIgnoreSlicePlane(s->name, !ignorePlane);
           }
-          ImGui::Indent(-20);
         }
+        ImGui::Indent(-20);
         ImGui::TextUnformatted("");
         ImGui::Separator();
         ImGui::TextUnformatted("Note: Manage slice planes in");
