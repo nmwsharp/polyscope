@@ -46,7 +46,7 @@ void SimpleTriangleMeshColorQuantity::createProgram() {
     render::engine->addMaterialRules(parent.getMaterial(),
       addColorRules(
         parent.addSimpleTriangleMeshRules(
-          {"MESH_PROPAGATE_COLOR", "SHADE_COLOR", "COMPUTE_SHADE_NORMAL_FROM_POSITION", "PROJ_AND_INV_PROJ_MAT"}
+          {"MESH_PROPAGATE_COLOR", "SHADE_COLOR"}
         )
       )
     )
