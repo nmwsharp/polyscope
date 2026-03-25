@@ -46,7 +46,7 @@ void SimpleTriangleMeshScalarQuantity::createProgram() {
     render::engine->addMaterialRules(parent.getMaterial(),
       parent.addSimpleTriangleMeshRules(
         addScalarRules(
-          {"MESH_PROPAGATE_VALUE", "COMPUTE_SHADE_NORMAL_FROM_POSITION", "PROJ_AND_INV_PROJ_MAT"}
+          {"MESH_PROPAGATE_VALUE"}
         )
       )
     )
