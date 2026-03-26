@@ -92,6 +92,8 @@ void Structure::buildUI() {
 
       // Toggle whether slice planes apply
       if (ImGui::BeginMenu("Slice planes")) {
+        /* We want to keep the menu open, as we might toggle on/off many slice planes at once. */
+        ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
         if (ImGui::Button("Add slice plane")) {
           openSlicePlaneMenu = true;
           addSlicePlane();
@@ -125,6 +127,7 @@ void Structure::buildUI() {
         ImGui::TextUnformatted("Note: Manage slice planes in");
         ImGui::TextUnformatted("      View --> Slice Planes.");
 
+        ImGui::PopItemFlag();
         ImGui::EndMenu();
       }
 
