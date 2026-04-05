@@ -24,7 +24,11 @@ class SimpleTriangleMesh;
 
 // Forward declare quantity types
 class SimpleTriangleMeshScalarQuantity;
+class SimpleTriangleMeshVertexScalarQuantity;
+class SimpleTriangleMeshFaceScalarQuantity;
 class SimpleTriangleMeshColorQuantity;
+class SimpleTriangleMeshVertexColorQuantity;
+class SimpleTriangleMeshFaceColorQuantity;
 
 struct SimpleTriangleMeshPickResult {
   // this does nothing for now, just matching pattern from other structures
@@ -64,12 +68,19 @@ public:
 
   // Scalars
   template <class T>
-  SimpleTriangleMeshScalarQuantity* addVertexScalarQuantity(std::string name, const T& values,
-                                                            DataType type = DataType::STANDARD);
+  SimpleTriangleMeshVertexScalarQuantity* addVertexScalarQuantity(std::string name, const T& values,
+                                                                  DataType type = DataType::STANDARD);
+
+  template <class T>
+  SimpleTriangleMeshFaceScalarQuantity* addFaceScalarQuantity(std::string name, const T& values,
+                                                              DataType type = DataType::STANDARD);
 
   // Colors
   template <class T>
-  SimpleTriangleMeshColorQuantity* addVertexColorQuantity(std::string name, const T& values);
+  SimpleTriangleMeshVertexColorQuantity* addVertexColorQuantity(std::string name, const T& values);
+
+  template <class T>
+  SimpleTriangleMeshFaceColorQuantity* addFaceColorQuantity(std::string name, const T& values);
 
   // === Mutate
 
@@ -134,10 +145,13 @@ private:
   void setPickUniforms(render::ShaderProgram& p);
 
   // === Quantity adder implementations
-  SimpleTriangleMeshScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<float>& data,
-                                                                DataType type);
-  SimpleTriangleMeshColorQuantity* addVertexColorQuantityImpl(std::string name,
-                                                              const std::vector<glm::vec3>& colors);
+  SimpleTriangleMeshVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<float>& data,
+                                                                      DataType type);
+  SimpleTriangleMeshFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<float>& data,
+                                                                  DataType type);
+  SimpleTriangleMeshVertexColorQuantity* addVertexColorQuantityImpl(std::string name,
+                                                                    const std::vector<glm::vec3>& colors);
+  SimpleTriangleMeshFaceColorQuantity* addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
 
   // == Picking related things
   size_t pickStart;

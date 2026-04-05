@@ -190,6 +190,9 @@ void processFileOBJ(std::string filename) {
   polyscope::getSurfaceMesh(niceName)->addFaceScalarQuantity("categorical face", fCat,
                                                              polyscope::DataType::CATEGORICAL);
 
+  psSimpleMesh->addFaceScalarQuantity("face area", fArea, polyscope::DataType::MAGNITUDE);
+  psSimpleMesh->addFaceColorQuantity("fColor", fColor);
+
 
   // size_t nEdges = psMesh->nEdges();
 

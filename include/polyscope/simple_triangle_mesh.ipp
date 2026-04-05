@@ -45,16 +45,29 @@ void SimpleTriangleMesh::update(const V& newPositions, const F& newFaces) {
 // =====================================================
 
 template <class T>
-SimpleTriangleMeshScalarQuantity* SimpleTriangleMesh::addVertexScalarQuantity(std::string name, const T& values,
-                                                                              DataType type) {
+SimpleTriangleMeshVertexScalarQuantity* SimpleTriangleMesh::addVertexScalarQuantity(std::string name, const T& values,
+                                                                                    DataType type) {
   validateSize(values, nVertices(), "vertex scalar quantity " + name);
   return addVertexScalarQuantityImpl(name, standardizeArray<float, T>(values), type);
 }
 
 template <class T>
-SimpleTriangleMeshColorQuantity* SimpleTriangleMesh::addVertexColorQuantity(std::string name, const T& values) {
+SimpleTriangleMeshFaceScalarQuantity* SimpleTriangleMesh::addFaceScalarQuantity(std::string name, const T& values,
+                                                                                DataType type) {
+  validateSize(values, nFaces(), "face scalar quantity " + name);
+  return addFaceScalarQuantityImpl(name, standardizeArray<float, T>(values), type);
+}
+
+template <class T>
+SimpleTriangleMeshVertexColorQuantity* SimpleTriangleMesh::addVertexColorQuantity(std::string name, const T& values) {
   validateSize(values, nVertices(), "vertex color quantity " + name);
   return addVertexColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(values));
+}
+
+template <class T>
+SimpleTriangleMeshFaceColorQuantity* SimpleTriangleMesh::addFaceColorQuantity(std::string name, const T& values) {
+  validateSize(values, nFaces(), "face color quantity " + name);
+  return addFaceColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(values));
 }
 
 
