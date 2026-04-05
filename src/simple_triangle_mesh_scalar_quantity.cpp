@@ -9,11 +9,14 @@
 
 namespace polyscope {
 
+// ========================================================
+// ==========         Scalar Quantity Base       ==========
+// ========================================================
+
 SimpleTriangleMeshScalarQuantity::SimpleTriangleMeshScalarQuantity(std::string name, const std::vector<float>& values_,
-                                                                   std::string definedOn_,
-                                                                   SimpleTriangleMesh& mesh_, DataType dataType_)
-    : SimpleTriangleMeshQuantity(name, mesh_, true), ScalarQuantity(*this, values_, dataType_),
-      definedOn(definedOn_) {}
+                                                                   std::string definedOn_, SimpleTriangleMesh& mesh_,
+                                                                   DataType dataType_)
+    : SimpleTriangleMeshQuantity(name, mesh_, true), ScalarQuantity(*this, values_, dataType_), definedOn(definedOn_) {}
 
 void SimpleTriangleMeshScalarQuantity::draw() {
   if (!isEnabled()) return;
@@ -40,7 +43,25 @@ void SimpleTriangleMeshScalarQuantity::buildCustomUI() {
   buildScalarUI();
 }
 
-void SimpleTriangleMeshScalarQuantity::createProgram() {
+void SimpleTriangleMeshScalarQuantity::refresh() {
+  program.reset();
+  Quantity::refresh();
+}
+
+std::string SimpleTriangleMeshScalarQuantity::niceName() { return name + " (" + definedOn + " scalar)"; }
+
+
+// ========================================================
+// ==========          Vertex Scalar             ==========
+// ========================================================
+
+SimpleTriangleMeshVertexScalarQuantity::SimpleTriangleMeshVertexScalarQuantity(std::string name,
+                                                                               const std::vector<float>& values_,
+                                                                               SimpleTriangleMesh& mesh_,
+                                                                               DataType dataType_)
+    : SimpleTriangleMeshScalarQuantity(name, values_, "vertex", mesh_, dataType_) {}
+
+void SimpleTriangleMeshVertexScalarQuantity::createProgram() {
   // clang-format off
   program = render::engine->requestShader("SIMPLE_MESH",
     render::engine->addMaterialRules(parent.getMaterial(),
@@ -59,11 +80,36 @@ void SimpleTriangleMeshScalarQuantity::createProgram() {
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
-void SimpleTriangleMeshScalarQuantity::refresh() {
-  program.reset();
-  Quantity::refresh();
+
+// ========================================================
+// ==========           Face Scalar              ==========
+// ========================================================
+
+SimpleTriangleMeshFaceScalarQuantity::SimpleTriangleMeshFaceScalarQuantity(std::string name,
+                                                                           const std::vector<float>& values_,
+                                                                           SimpleTriangleMesh& mesh_,
+                                                                           DataType dataType_)
+    : SimpleTriangleMeshScalarQuantity(name, values_, "face", mesh_, dataType_) {
+  values.setTextureSize(parent.nFaces());
 }
 
-std::string SimpleTriangleMeshScalarQuantity::niceName() { return name + " (" + definedOn + " scalar)"; }
+void SimpleTriangleMeshFaceScalarQuantity::createProgram() {
+  // clang-format off
+  program = render::engine->requestShader("SIMPLE_MESH",
+    render::engine->addMaterialRules(parent.getMaterial(),
+      parent.addSimpleTriangleMeshRules(
+        addScalarRules(
+          {"SIMPLE_MESH_PROPAGATE_FACE_VALUE"}
+        )
+      )
+    )
+  );
+  // clang-format on
+
+  parent.setSimpleTriangleMeshProgramGeometryAttributes(*program);
+  program->setTextureFromBuffer("t_faceValues", values.getRenderTextureBuffer().get());
+  program->setTextureFromColormap("t_colormap", cMap.get());
+  render::engine->setMaterial(*program, parent.getMaterial());
+}
 
 } // namespace polyscope

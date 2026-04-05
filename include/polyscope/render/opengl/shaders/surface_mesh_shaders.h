@@ -36,6 +36,8 @@ extern const ShaderReplacementRule MESH_PROPAGATE_CULLPOS;
 extern const ShaderReplacementRule MESH_PROPAGATE_PICK;
 extern const ShaderReplacementRule MESH_PROPAGATE_PICK_SIMPLE;
 extern const ShaderReplacementRule MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE;
+extern const ShaderReplacementRule SIMPLE_MESH_PROPAGATE_FACE_VALUE;
+extern const ShaderReplacementRule SIMPLE_MESH_PROPAGATE_FACE_COLOR;
 
 
 } // namespace backend_openGL3

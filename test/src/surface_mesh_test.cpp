@@ -701,3 +701,29 @@ TEST_F(PolyscopeTest, SimpleTriangleMeshVertexColor) {
 
   polyscope::removeAllStructures();
 }
+
+TEST_F(PolyscopeTest, SimpleTriangleMeshFaceScalar) {
+  auto psMesh = registerSimpleTriangleMesh();
+  std::vector<double> fScalar(psMesh->nFaces(), 7.);
+  auto q1 = psMesh->addFaceScalarQuantity("fScalar", fScalar);
+  q1->setEnabled(true);
+  polyscope::show(3);
+
+  q1->updateData(fScalar);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SimpleTriangleMeshFaceColor) {
+  auto psMesh = registerSimpleTriangleMesh();
+  std::vector<glm::vec3> fColors(psMesh->nFaces(), glm::vec3{.2, .3, .4});
+  auto q1 = psMesh->addFaceColorQuantity("fColor", fColors);
+  q1->setEnabled(true);
+  polyscope::show(3);
+
+  q1->updateData(fColors);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}

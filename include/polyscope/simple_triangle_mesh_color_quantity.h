@@ -20,11 +20,39 @@ public:
   virtual void refresh() override;
   virtual std::string niceName() override;
 
-  std::string definedOn;
+  const std::string definedOn;
 
 protected:
-  void createProgram();
   std::shared_ptr<render::ShaderProgram> program;
+
+  virtual void createProgram() = 0;
 };
+
+
+// ========================================================
+// ==========          Vertex Color              ==========
+// ========================================================
+
+class SimpleTriangleMeshVertexColorQuantity : public SimpleTriangleMeshColorQuantity {
+public:
+  SimpleTriangleMeshVertexColorQuantity(std::string name, const std::vector<glm::vec3>& colors,
+                                        SimpleTriangleMesh& mesh);
+
+  virtual void createProgram() override;
+};
+
+
+// ========================================================
+// ==========           Face Color               ==========
+// ========================================================
+
+class SimpleTriangleMeshFaceColorQuantity : public SimpleTriangleMeshColorQuantity {
+public:
+  SimpleTriangleMeshFaceColorQuantity(std::string name, const std::vector<glm::vec3>& colors,
+                                      SimpleTriangleMesh& mesh);
+
+  virtual void createProgram() override;
+};
+
 
 } // namespace polyscope

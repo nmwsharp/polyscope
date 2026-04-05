@@ -22,12 +22,39 @@ public:
   virtual void refresh() override;
   virtual std::string niceName() override;
 
+  const std::string definedOn;
 
 protected:
-  std::string definedOn;
   std::shared_ptr<render::ShaderProgram> program;
 
-  void createProgram();
+  virtual void createProgram() = 0;
 };
+
+
+// ========================================================
+// ==========          Vertex Scalar             ==========
+// ========================================================
+
+class SimpleTriangleMeshVertexScalarQuantity : public SimpleTriangleMeshScalarQuantity {
+public:
+  SimpleTriangleMeshVertexScalarQuantity(std::string name, const std::vector<float>& values, SimpleTriangleMesh& mesh,
+                                         DataType dataType = DataType::STANDARD);
+
+  virtual void createProgram() override;
+};
+
+
+// ========================================================
+// ==========           Face Scalar              ==========
+// ========================================================
+
+class SimpleTriangleMeshFaceScalarQuantity : public SimpleTriangleMeshScalarQuantity {
+public:
+  SimpleTriangleMeshFaceScalarQuantity(std::string name, const std::vector<float>& values, SimpleTriangleMesh& mesh,
+                                       DataType dataType = DataType::STANDARD);
+
+  virtual void createProgram() override;
+};
+
 
 } // namespace polyscope
