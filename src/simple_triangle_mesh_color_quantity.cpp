@@ -9,6 +9,10 @@
 
 namespace polyscope {
 
+// ========================================================
+// ==========         Color Quantity Base        ==========
+// ========================================================
+
 SimpleTriangleMeshColorQuantity::SimpleTriangleMeshColorQuantity(std::string name,
                                                                  const std::vector<glm::vec3>& colors_,
                                                                  std::string definedOn_,
@@ -40,7 +44,24 @@ void SimpleTriangleMeshColorQuantity::buildCustomUI() {
   buildColorUI();
 }
 
-void SimpleTriangleMeshColorQuantity::createProgram() {
+void SimpleTriangleMeshColorQuantity::refresh() {
+  program.reset();
+  Quantity::refresh();
+}
+
+std::string SimpleTriangleMeshColorQuantity::niceName() { return name + " (" + definedOn + " color)"; }
+
+
+// ========================================================
+// ==========          Vertex Color              ==========
+// ========================================================
+
+SimpleTriangleMeshVertexColorQuantity::SimpleTriangleMeshVertexColorQuantity(std::string name,
+                                                                             const std::vector<glm::vec3>& colors_,
+                                                                             SimpleTriangleMesh& mesh_)
+    : SimpleTriangleMeshColorQuantity(name, colors_, "vertex", mesh_) {}
+
+void SimpleTriangleMeshVertexColorQuantity::createProgram() {
   // clang-format off
   program = render::engine->requestShader("SIMPLE_MESH",
     render::engine->addMaterialRules(parent.getMaterial(),
@@ -58,11 +79,34 @@ void SimpleTriangleMeshColorQuantity::createProgram() {
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
-void SimpleTriangleMeshColorQuantity::refresh() {
-  program.reset();
-  Quantity::refresh();
+
+// ========================================================
+// ==========           Face Color               ==========
+// ========================================================
+
+SimpleTriangleMeshFaceColorQuantity::SimpleTriangleMeshFaceColorQuantity(std::string name,
+                                                                         const std::vector<glm::vec3>& colors_,
+                                                                         SimpleTriangleMesh& mesh_)
+    : SimpleTriangleMeshColorQuantity(name, colors_, "face", mesh_) {
+  colors.setTextureSize(parent.nFaces());
 }
 
-std::string SimpleTriangleMeshColorQuantity::niceName() { return name + " (" + definedOn + " color)"; }
+void SimpleTriangleMeshFaceColorQuantity::createProgram() {
+  // clang-format off
+  program = render::engine->requestShader("SIMPLE_MESH",
+    render::engine->addMaterialRules(parent.getMaterial(),
+      addColorRules(
+        parent.addSimpleTriangleMeshRules(
+          {"SIMPLE_MESH_PROPAGATE_FACE_COLOR", "SHADE_COLOR"}
+        )
+      )
+    )
+  );
+  // clang-format on
+
+  parent.setSimpleTriangleMeshProgramGeometryAttributes(*program);
+  program->setTextureFromBuffer("t_faceColors", colors.getRenderTextureBuffer().get());
+  render::engine->setMaterial(*program, parent.getMaterial());
+}
 
 } // namespace polyscope
