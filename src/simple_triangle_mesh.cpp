@@ -355,19 +355,34 @@ glm::vec3 SimpleTriangleMesh::getBackFaceColor() { return backFaceColor.get(); }
 
 // === Quantity adder implementations
 
-SimpleTriangleMeshScalarQuantity* SimpleTriangleMesh::addVertexScalarQuantityImpl(std::string name,
-                                                                                   const std::vector<float>& data,
-                                                                                   DataType type) {
+SimpleTriangleMeshVertexScalarQuantity*
+SimpleTriangleMesh::addVertexScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type) {
   checkForQuantityWithNameAndDeleteOrError(name);
-  SimpleTriangleMeshScalarQuantity* q = new SimpleTriangleMeshScalarQuantity(name, data, "vertex", *this, type);
+  SimpleTriangleMeshVertexScalarQuantity* q = new SimpleTriangleMeshVertexScalarQuantity(name, data, *this, type);
   addQuantity(q);
   return q;
 }
 
-SimpleTriangleMeshColorQuantity* SimpleTriangleMesh::addVertexColorQuantityImpl(std::string name,
-                                                                                 const std::vector<glm::vec3>& colors) {
+SimpleTriangleMeshFaceScalarQuantity*
+SimpleTriangleMesh::addFaceScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type) {
   checkForQuantityWithNameAndDeleteOrError(name);
-  SimpleTriangleMeshColorQuantity* q = new SimpleTriangleMeshColorQuantity(name, colors, "vertex", *this);
+  SimpleTriangleMeshFaceScalarQuantity* q = new SimpleTriangleMeshFaceScalarQuantity(name, data, *this, type);
+  addQuantity(q);
+  return q;
+}
+
+SimpleTriangleMeshVertexColorQuantity*
+SimpleTriangleMesh::addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SimpleTriangleMeshVertexColorQuantity* q = new SimpleTriangleMeshVertexColorQuantity(name, colors, *this);
+  addQuantity(q);
+  return q;
+}
+
+SimpleTriangleMeshFaceColorQuantity*
+SimpleTriangleMesh::addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SimpleTriangleMeshFaceColorQuantity* q = new SimpleTriangleMeshFaceColorQuantity(name, colors, *this);
   addQuantity(q);
   return q;
 }
