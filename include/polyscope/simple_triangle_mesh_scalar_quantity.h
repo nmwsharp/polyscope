@@ -41,6 +41,7 @@ public:
                                          DataType dataType = DataType::STANDARD);
 
   virtual void createProgram() override;
+  virtual void buildVertexInfoGUI(size_t vInd) override;
 };
 
 
@@ -54,6 +55,7 @@ public:
                                        DataType dataType = DataType::STANDARD);
 
   virtual void createProgram() override;
+  virtual void buildFaceInfoGUI(size_t fInd) override;
 };
 
 

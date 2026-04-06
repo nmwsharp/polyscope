@@ -61,6 +61,13 @@ SimpleTriangleMeshVertexScalarQuantity::SimpleTriangleMeshVertexScalarQuantity(s
                                                                                DataType dataType_)
     : SimpleTriangleMeshScalarQuantity(name, values_, "vertex", mesh_, dataType_) {}
 
+void SimpleTriangleMeshVertexScalarQuantity::buildVertexInfoGUI(size_t vInd) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  ImGui::Text("%g", values.getValue(vInd));
+  ImGui::NextColumn();
+}
+
 void SimpleTriangleMeshVertexScalarQuantity::createProgram() {
   // clang-format off
   program = render::engine->requestShader("SIMPLE_MESH",
@@ -91,6 +98,13 @@ SimpleTriangleMeshFaceScalarQuantity::SimpleTriangleMeshFaceScalarQuantity(std::
                                                                            DataType dataType_)
     : SimpleTriangleMeshScalarQuantity(name, values_, "face", mesh_, dataType_) {
   values.setTextureSize(parent.nFaces());
+}
+
+void SimpleTriangleMeshFaceScalarQuantity::buildFaceInfoGUI(size_t fInd) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  ImGui::Text("%g", values.getValue(fInd));
+  ImGui::NextColumn();
 }
 
 void SimpleTriangleMeshFaceScalarQuantity::createProgram() {
