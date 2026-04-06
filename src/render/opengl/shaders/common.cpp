@@ -3,6 +3,8 @@
 
 #include "polyscope/render/opengl/shaders/common.h"
 
+#include "polyscope/pick.h" // for POLYSCOPE_PICK_INDEX_TO_COLOR_GLSL
+
 namespace polyscope {
 namespace render {
 namespace backend_openGL3 {
@@ -437,6 +439,15 @@ bool rayTaperedCylinderIntersection(vec3 rayStart, vec3 rayDir, vec3 cylTail, ve
 }
 
 
+)"
+// Define GLSL type names so POLYSCOPE_PICK_INDEX_COLOR_BODY stringifies as GLSL (see pick.ipp).
+#define POLYSCOPE_PICK_UINT uint
+#define POLYSCOPE_PICK_VEC3 vec3
+    POLYSCOPE_PICK_INDEX_TO_COLOR_GLSL
+#undef POLYSCOPE_PICK_UINT
+#undef POLYSCOPE_PICK_VEC3
+                                 R"(
+
 bool rayConeIntersection(vec3 rayStart, vec3 rayDir, vec3 coneBase, vec3 coneTip, float coneRad, out float tHit, out vec3 pHit, out vec3 nHit) {
 
     rayDir = normalize(rayDir);
@@ -510,6 +521,6 @@ bool rayConeIntersection(vec3 rayStart, vec3 rayDir, vec3 coneBase, vec3 coneTip
 
 )";
 
-}
+} // namespace backend_openGL3
 } // namespace render
 } // namespace polyscope
