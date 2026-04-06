@@ -17,6 +17,7 @@ public:
 
   virtual void draw() override;
   virtual void buildCustomUI() override;
+  virtual void buildColorOptionsUI() override;
   virtual void refresh() override;
   virtual std::string niceName() override;
 
@@ -39,6 +40,7 @@ public:
                                         SimpleTriangleMesh& mesh);
 
   virtual void createProgram() override;
+  virtual void buildVertexInfoGUI(size_t vInd) override;
 };
 
 
@@ -52,6 +54,7 @@ public:
                                       SimpleTriangleMesh& mesh);
 
   virtual void createProgram() override;
+  virtual void buildFaceInfoGUI(size_t fInd) override;
 };
 
 

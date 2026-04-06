@@ -207,3 +207,40 @@ TEST_F(PolyscopeTest, TestSlicePlane) {
   polyscope::removeAllSlicePlanes();
   polyscope::removeAllStructures();
 }
+
+
+// ============================================================
+// =============== Pick index encoding
+// ============================================================
+
+TEST_F(PolyscopeTest, PickIndexEncoding) {
+  // See the note in pick.ipp. We have multiple implementations of the pick index decoding logic,
+  // and this verifies they produce identical output.
+
+  // indToVec takes size_t; cast explicitly to avoid linker issues on platforms where
+  // size_t and uint64_t have different mangled names (e.g. arm64: ulong vs ulonglong).
+  auto check = [](uint64_t pickStart, uint32_t primID) {
+    glm::vec3 expected = polyscope::pick::indToVec(static_cast<size_t>(pickStart + primID));
+    glm::vec3 actual = polyscope::pick::pickIndexToColor(pickStart, primID);
+    EXPECT_FLOAT_EQ(actual.x, expected.x);
+    EXPECT_FLOAT_EQ(actual.y, expected.y);
+    EXPECT_FLOAT_EQ(actual.z, expected.z);
+  };
+
+  check(0, 0);
+  check(0, 1);
+  check(0, 42);
+  check(0, (1u << 22) - 1u);          // max value in low22 word
+  check(0, (1u << 22));               // overflows into med22
+  check(5'000'000, 0);                // pickStart > 2^22
+  check(0x0000'00FF'FF00'0000ull, 0); // high bits set
+
+  // --- Carry cases: pickStartLow + primID overflows uint32 ---
+  // Carry from low32 into high32 (the `carry` variable in the body):
+  check(0xFFFF0000u, 0x10000u);    // low: 0xFFFF0000 + 0x10000 wraps -> carry=1
+  check(0xFFFFFFFFu, 1u);          // extreme: low wraps to 0 exactly -> carry=1
+  check(0xFFFFFFFFu, 0xFFFFFFFFu); // both max -> low=0xFFFFFFFE, carry=1
+  // Carry with non-zero pickStartHigh (tests idxHigh = pickStartHigh + carry):
+  check(0x1'0000'0000ull, 0xFFFFFFFFu); // high=1, low wraps -> idxHigh = 1 + 1 = 2
+  check(0x1'FFFF'0000ull, 0x10000u);    // high=1 + carry from low wrap
+}

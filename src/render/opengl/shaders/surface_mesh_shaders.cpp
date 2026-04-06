@@ -765,6 +765,28 @@ const ShaderReplacementRule SIMPLE_MESH_PROPAGATE_FACE_COLOR(
     /* textures */ {{"t_faceColors", 1}}
 );
 
+// Encodes the pick color for each face directly from gl_PrimitiveID + pickStart, with no texture lookup.
+// Delegates encoding to pickIndexToColor() in common.cpp (see there for the bit layout).
+const ShaderReplacementRule SIMPLE_MESH_PROPAGATE_FACE_PICK(
+    /* rule name */ "SIMPLE_MESH_PROPAGATE_FACE_PICK",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform uint u_pickStartLow;   // lower 32 bits of the global pick index for face 0
+          uniform uint u_pickStartHigh;  // upper 32 bits of the global pick index for face 0
+          vec3 pickIndexToColor(uint pickStartLow, uint pickStartHigh, uint primID); // defined in common.cpp
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          vec3 shadeColor = pickIndexToColor(u_pickStartLow, u_pickStartHigh, uint(gl_PrimitiveID));
+        )"},
+    },
+    /* uniforms */ {
+      {"u_pickStartLow",  RenderDataType::UInt},
+      {"u_pickStartHigh", RenderDataType::UInt},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
 // clang-format on
 
 } // namespace backend_openGL3

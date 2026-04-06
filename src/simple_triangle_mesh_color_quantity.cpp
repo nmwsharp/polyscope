@@ -15,8 +15,7 @@ namespace polyscope {
 
 SimpleTriangleMeshColorQuantity::SimpleTriangleMeshColorQuantity(std::string name,
                                                                  const std::vector<glm::vec3>& colors_,
-                                                                 std::string definedOn_,
-                                                                 SimpleTriangleMesh& mesh_)
+                                                                 std::string definedOn_, SimpleTriangleMesh& mesh_)
     : SimpleTriangleMeshQuantity(name, mesh_, true), ColorQuantity(*this, colors_), definedOn(definedOn_) {}
 
 void SimpleTriangleMeshColorQuantity::draw() {
@@ -30,6 +29,11 @@ void SimpleTriangleMeshColorQuantity::draw() {
   render::engine->setMaterialUniforms(*program, parent.getMaterial());
 
   program->draw();
+}
+
+void SimpleTriangleMeshColorQuantity::buildColorOptionsUI() {
+  ColorQuantity::buildColorOptionsUI();
+  ImGui::TextUnformatted("(no options available)");
 }
 
 void SimpleTriangleMeshColorQuantity::buildCustomUI() {
@@ -61,6 +65,16 @@ SimpleTriangleMeshVertexColorQuantity::SimpleTriangleMeshVertexColorQuantity(std
                                                                              SimpleTriangleMesh& mesh_)
     : SimpleTriangleMeshColorQuantity(name, colors_, "vertex", mesh_) {}
 
+void SimpleTriangleMeshVertexColorQuantity::buildVertexInfoGUI(size_t vInd) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  glm::vec3 val = colors.getValue(vInd);
+  ImGui::ColorEdit3("", &val[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
+  ImGui::SameLine();
+  ImGui::Text("%.3f, %.3f, %.3f", val.r, val.g, val.b);
+  ImGui::NextColumn();
+}
+
 void SimpleTriangleMeshVertexColorQuantity::createProgram() {
   // clang-format off
   program = render::engine->requestShader("SIMPLE_MESH",
@@ -89,6 +103,16 @@ SimpleTriangleMeshFaceColorQuantity::SimpleTriangleMeshFaceColorQuantity(std::st
                                                                          SimpleTriangleMesh& mesh_)
     : SimpleTriangleMeshColorQuantity(name, colors_, "face", mesh_) {
   colors.setTextureSize(parent.nFaces());
+}
+
+void SimpleTriangleMeshFaceColorQuantity::buildFaceInfoGUI(size_t fInd) {
+  ImGui::TextUnformatted(name.c_str());
+  ImGui::NextColumn();
+  glm::vec3 val = colors.getValue(fInd);
+  ImGui::ColorEdit3("", &val[0], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoPicker);
+  ImGui::SameLine();
+  ImGui::Text("%.3f, %.3f, %.3f", val.r, val.g, val.b);
+  ImGui::NextColumn();
 }
 
 void SimpleTriangleMeshFaceColorQuantity::createProgram() {
