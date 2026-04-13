@@ -354,7 +354,7 @@ glm::vec2 ScalarQuantity<QuantityT>::getOnscreenColorbarLocation() {
 }
 
 template <typename QuantityT>
-QuantityT* ScalarQuantity<QuantityT>::setMapRange(std::pair<double, double> val) {
+QuantityT* ScalarQuantity<QuantityT>::setMapRange(ScalarRange val) {
   vizRangeMin = val.first;
   vizRangeMax = val.second;
   colorBar.colormapRange = std::pair<float, float>(vizRangeMin.get(), vizRangeMax.get());
@@ -362,11 +362,11 @@ QuantityT* ScalarQuantity<QuantityT>::setMapRange(std::pair<double, double> val)
   return &quantity;
 }
 template <typename QuantityT>
-std::pair<double, double> ScalarQuantity<QuantityT>::getMapRange() {
-  return std::pair<float, float>(vizRangeMin.get(), vizRangeMax.get());
+typename ScalarQuantity<QuantityT>::ScalarRange ScalarQuantity<QuantityT>::getMapRange() {
+  return ScalarRange(vizRangeMin.get(), vizRangeMax.get());
 }
 template <typename QuantityT>
-std::pair<double, double> ScalarQuantity<QuantityT>::getDataRange() {
+typename ScalarQuantity<QuantityT>::ScalarRange ScalarQuantity<QuantityT>::getDataRange() {
   return dataRange;
 }
 
