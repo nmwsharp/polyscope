@@ -1070,7 +1070,7 @@ void setViewFromJson(std::string jsonData, bool flyTo) {
     // NOTE: it's important that we do this after the mode/dir settings, as this
     // lets us do our flight
     bool viewChanged = false;
-    if (j.find("fov") == j.end()) {
+    if (j.find("fov") != j.end()) {
       newFov = j["fov"];
       viewChanged = true;
     }
@@ -1088,7 +1088,7 @@ void setViewFromJson(std::string jsonData, bool flyTo) {
     }
     if (viewChanged) {
       if (flyTo) {
-        startFlightTo(newViewMat, fov);
+        startFlightTo(newViewMat, newFov);
       } else {
         setCameraViewMatrix(newViewMat);
         fov = newFov;
