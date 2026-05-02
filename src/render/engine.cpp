@@ -63,6 +63,12 @@ std::string renderDataTypeName(const RenderDataType& r) {
     return "Float";
   case RenderDataType::Int:
     return "Int";
+  case RenderDataType::Vector2Int:
+    return "Vector2Int";
+  case RenderDataType::Vector3Int:
+    return "Vector3Int";
+  case RenderDataType::Vector4Int:
+    return "Vector4Int";
   case RenderDataType::UInt:
     return "UInt";
   case RenderDataType::Vector2UInt:
@@ -89,6 +95,12 @@ int sizeInBytes(const RenderDataType& r) {
     return 4;
   case RenderDataType::Int:
     return 4;
+  case RenderDataType::Vector2Int:
+    return 2 * 4;
+  case RenderDataType::Vector3Int:
+    return 3 * 4;
+  case RenderDataType::Vector4Int:
+    return 4 * 4;
   case RenderDataType::UInt:
     return 4;
   case RenderDataType::Vector2UInt:
@@ -108,6 +120,10 @@ int renderDataTypeCountCompatbility(const RenderDataType r1, const RenderDataTyp
   if (r1 == RenderDataType::Vector2Float && r2 == RenderDataType::Float) return 2;
   if (r1 == RenderDataType::Vector3Float && r2 == RenderDataType::Float) return 3;
   if (r1 == RenderDataType::Vector4Float && r2 == RenderDataType::Float) return 4;
+  
+  if (r1 == RenderDataType::Vector2Int && r2 == RenderDataType::Int) return 2;
+  if (r1 == RenderDataType::Vector3Int && r2 == RenderDataType::Int) return 3;
+  if (r1 == RenderDataType::Vector4Int && r2 == RenderDataType::Int) return 4;
 
   if (r1 == RenderDataType::Vector2UInt && r2 == RenderDataType::UInt) return 2;
   if (r1 == RenderDataType::Vector3UInt && r2 == RenderDataType::UInt) return 3;
@@ -356,10 +372,10 @@ void Engine::buildEngineGui() {
         options::ssaaFactor = ssaaFactor;
         requestRedraw();
       }
-      
-      if (ImGui::InputFloat("UI Scale", &options::uiScale, 0.25f)) {
+
+      if (ImGui::InputFloat("UI Scale", &options::uiScale, 0.1f)) {
         options::uiScale = std::min(options::uiScale, 4.f);
-        options::uiScale = std::max(options::uiScale, 0.25f);
+        options::uiScale = std::max(options::uiScale, 0.2f);
         requestRedraw();
       }
       ImGui::TreePop();
@@ -878,6 +894,32 @@ void Engine::updateMinDepthTexture() {
   copyDepth->draw();
 }
 
+void Engine::freeAllOwnedResources() {
+
+  displayBuffer.reset();
+  displayBufferAlt.reset();
+  sceneBuffer.reset();
+  sceneBufferFinal.reset();
+  pickFramebuffer.reset();
+  sceneDepthMinFrame.reset();
+  sceneColor.reset();
+  sceneColorFinal.reset();
+  sceneDepth.reset();
+  sceneDepthMin.reset();
+  pickColorBuffer.reset();
+  pickDepthBuffer.reset();
+  renderTexturePlain.reset();
+  renderTextureDot3.reset();
+  renderTextureMap3.reset();
+  renderTextureSphereBG.reset();
+  compositePeel.reset();
+  mapLight.reset();
+  copyDepth.reset();
+
+  groundPlane.freeAllOwnedResources();
+  materials.clear();
+  resourcesPreservedForImGuiFrame.clear();
+}
 
 // Helper (TODO rework to load custom materials)
 void Engine::loadDefaultMaterial(std::string name) {
@@ -1160,6 +1202,25 @@ void Engine::loadDefaultColorMaps() {
   loadDefaultColorMap("hsv");
 }
 
+std::shared_ptr<TextureBuffer> Engine::getColorMapTexture2d(const std::string& cmapName) {
+  const ValueColorMap& colormap = render::engine->getColorMap(cmapName);
+
+  // Fill a buffer with the data
+  unsigned int dataLength = colormap.values.size() * 3;
+  std::vector<float> colorBuffer(dataLength);
+  for (unsigned int i = 0; i < colormap.values.size(); i++) {
+    colorBuffer[3 * i + 0] = static_cast<float>(colormap.values[i][0]);
+    colorBuffer[3 * i + 1] = static_cast<float>(colormap.values[i][1]);
+    colorBuffer[3 * i + 2] = static_cast<float>(colormap.values[i][2]);
+  }
+
+  std::shared_ptr<TextureBuffer> textureBuffer =
+      engine->generateTextureBuffer(TextureFormat::RGB32F, 1, colormap.values.size(), &(colorBuffer[0]));
+
+  textureBuffer->setFilterMode(FilterMode::Linear);
+
+  return textureBuffer;
+}
 
 void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buffer) {
   ImGui::Begin(windowName.c_str());
@@ -1175,11 +1236,22 @@ void Engine::showTextureInImGuiWindow(std::string windowName, TextureBuffer* buf
   ImGui::End();
 }
 
+ImFontAtlas* Engine::getSharedFontAtlas() { return sharedFontAtlas; }
+
 void Engine::preserveResourceUntilImguiFrameCompletes(std::shared_ptr<TextureBuffer> texture) {
   resourcesPreservedForImGuiFrame.push_back(texture);
 }
 
 void Engine::clearResourcesPreservedForImguiFrame() { resourcesPreservedForImGuiFrame.clear(); }
 
+
 } // namespace render
+
+// === Small free helpers
+
+std::vector<std::string> removeRule(std::vector<std::string> initRules, std::string ruleName) {
+  initRules.erase(std::remove(initRules.begin(), initRules.end(), ruleName), initRules.end());
+  return initRules;
+}
+
 } // namespace polyscope

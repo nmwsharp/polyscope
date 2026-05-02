@@ -14,8 +14,6 @@ public:
   virtual ~FloatingQuantity() {};
 
   virtual void buildUI() override;
-
-  virtual FloatingQuantity* setEnabled(bool newEnabled) = 0;
 };
 
 

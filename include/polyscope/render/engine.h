@@ -47,6 +47,9 @@ enum class RenderDataType {
   Matrix44Float,
   Float,
   Int,
+  Vector2Int,
+  Vector3Int,
+  Vector4Int,
   UInt,
   Vector2UInt,
   Vector3UInt,
@@ -78,6 +81,9 @@ public:
   virtual void setData(const std::vector<float>& data) = 0;
   virtual void setData(const std::vector<double>& data) = 0;
   virtual void setData(const std::vector<int32_t>& data) = 0;
+  virtual void setData(const std::vector<glm::ivec2>& data) = 0;
+  virtual void setData(const std::vector<glm::ivec3>& data) = 0;
+  virtual void setData(const std::vector<glm::ivec4>& data) = 0;
   virtual void setData(const std::vector<uint32_t>& data) = 0;
   virtual void setData(const std::vector<glm::uvec2>& data) = 0;
   virtual void setData(const std::vector<glm::uvec3>& data) = 0;
@@ -107,6 +113,9 @@ public:
   virtual glm::vec3 getData_vec3(size_t ind) = 0;
   virtual glm::vec4 getData_vec4(size_t ind) = 0;
   virtual int getData_int(size_t ind) = 0;
+  virtual glm::ivec2 getData_ivec2(size_t ind) = 0;
+  virtual glm::ivec3 getData_ivec3(size_t ind) = 0;
+  virtual glm::ivec4 getData_ivec4(size_t ind) = 0;
   virtual uint32_t getData_uint32(size_t ind) = 0;
   virtual glm::uvec2 getData_uvec2(size_t ind) = 0;
   virtual glm::uvec3 getData_uvec3(size_t ind) = 0;
@@ -119,6 +128,9 @@ public:
   virtual std::vector<glm::vec3> getDataRange_vec3(size_t ind, size_t count) = 0;
   virtual std::vector<glm::vec4> getDataRange_vec4(size_t ind, size_t count) = 0;
   virtual std::vector<int> getDataRange_int(size_t ind, size_t count) = 0;
+  virtual std::vector<glm::ivec2> getDataRange_ivec2(size_t ind, size_t count) = 0;
+  virtual std::vector<glm::ivec3> getDataRange_ivec3(size_t ind, size_t count) = 0;
+  virtual std::vector<glm::ivec4> getDataRange_ivec4(size_t ind, size_t count) = 0;
   virtual std::vector<uint32_t> getDataRange_uint32(size_t ind, size_t count) = 0;
   virtual std::vector<glm::uvec2> getDataRange_uvec2(size_t ind, size_t count) = 0;
   virtual std::vector<glm::uvec3> getDataRange_uvec3(size_t ind, size_t count) = 0;
@@ -155,6 +167,9 @@ public:
   virtual void setData(const std::vector<float>& data) = 0;
   virtual void setData(const std::vector<double>& data) = 0;
   virtual void setData(const std::vector<int32_t>& data) = 0;
+  virtual void setData(const std::vector<glm::ivec2>& data) = 0;
+  virtual void setData(const std::vector<glm::ivec3>& data) = 0;
+  virtual void setData(const std::vector<glm::ivec4>& data) = 0;
   virtual void setData(const std::vector<uint32_t>& data) = 0;
   virtual void setData(const std::vector<glm::uvec2>& data) = 0;
   virtual void setData(const std::vector<glm::uvec3>& data) = 0;
@@ -364,6 +379,9 @@ public:
   virtual void setUniform(std::string name, glm::vec4 val) = 0;
   virtual void setUniform(std::string name, std::array<float, 3> val) = 0;
   virtual void setUniform(std::string name, float x, float y, float z, float w) = 0;
+  virtual void setUniform(std::string name, glm::ivec2 val) = 0;
+  virtual void setUniform(std::string name, glm::ivec3 val) = 0;
+  virtual void setUniform(std::string name, glm::ivec4 val) = 0;
   virtual void setUniform(std::string name, glm::uvec2 val) = 0;
   virtual void setUniform(std::string name, glm::uvec3 val) = 0;
   virtual void setUniform(std::string name, glm::uvec4 val) = 0;
@@ -381,6 +399,10 @@ public:
   virtual void setAttribute(std::string name, const std::vector<double>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<int32_t>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<uint32_t>& data) = 0;
+  
+  virtual void setAttribute(std::string name, const std::vector<std::array<glm::vec3, 2>>& data) = 0;
+  virtual void setAttribute(std::string name, const std::vector<std::array<glm::vec3, 3>>& data) = 0;
+  virtual void setAttribute(std::string name, const std::vector<std::array<glm::vec3, 4>>& data) = 0;
   // clang-format on
 
 
@@ -512,7 +534,8 @@ public:
 
   // NOTE: the imgui backend depends on the window manager (e.g. GLFW), so these must be implemented by the lowest-level
   // concrete engine implementation
-  virtual void initializeImGui() = 0;
+  virtual void createNewImGuiContext() = 0;
+  virtual void updateImGuiContext(ImGuiContext* oldContext, ImGuiIO* oldIO, ImGuiContext* newContext, ImGuiIO* newIO) {}
   virtual void shutdownImGui() = 0;
   virtual void ImGuiNewFrame() = 0;
   virtual void ImGuiRender() = 0;
@@ -614,6 +637,7 @@ public:
   std::vector<std::unique_ptr<ValueColorMap>> colorMaps;
   const ValueColorMap& getColorMap(const std::string& name);
   void loadColorMap(std::string cmapName, std::string filename);
+  std::shared_ptr<TextureBuffer> getColorMapTexture2d(const std::string& cmapName);
 
   // Helpers
   std::vector<glm::vec3> screenTrianglesCoords(); // two triangles which cover the screen
@@ -628,10 +652,14 @@ public:
   bool useAltDisplayBuffer = false; // if true, push final render results offscreen to the alt buffer instead
 
   // Internal windowing and engine details
+  FrameBuffer* currRenderFramebuffer = nullptr;
+
+  // ImGui and Fonts
   virtual void configureImGui() {}; // generates font things
+  ImFontAtlas* getSharedFontAtlas();
   ImFont* regularFont = nullptr;
   ImFont* monoFont = nullptr;
-  FrameBuffer* currRenderFramebuffer = nullptr;
+
 
   // Manage some resources that we need to preserve because ImGui will use them to render at the end of the frame
   // This matters if we delete something mid-frame but have already passed a pointer to a texture for imgui to render,
@@ -656,7 +684,12 @@ protected:
   int currLightingSampleLevel = -1;
   TransparencyMode currLightingTransparencyMode = TransparencyMode::None;
 
+  // ImGui/fonts
+  bool imguiInitialized = false;
+  ImFontAtlas* sharedFontAtlas;
+
   // Helpers
+  virtual void freeAllOwnedResources(); // child callers should call parent
   void loadDefaultMaterials();
   void loadDefaultMaterial(std::string name);
   std::shared_ptr<TextureBuffer> loadMaterialTexture(float* data, int width, int height);
@@ -697,4 +730,8 @@ inline std::string getRenderEngineBackendName() { return engineBackendName; }
 
 
 } // namespace render
+
+// === Small free helpers
+std::vector<std::string> removeRule(std::vector<std::string> initRules, std::string ruleName);
+
 } // namespace polyscope

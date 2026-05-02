@@ -210,7 +210,7 @@ Tets decomposePyramid(const Cell& cell) {
 
 VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPositions_,
                        const std::vector<std::array<uint32_t, 8>>& cellIndices_)
-    : QuantityStructure<VolumeMesh>(name, typeName()),
+    : Structure(name, typeName()),
       // clang-format off
 
 // == managed quantities
@@ -731,12 +731,7 @@ void VolumeMesh::preparePick() {
   }
 
   // === Store data in buffers
-
-  std::shared_ptr<render::AttributeBuffer> vertexColorsBuff =
-      render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, 3);
-  vertexColorsBuff->setData(vertexColors);
-
-  pickProgram->setAttribute("a_vertexColors", vertexColorsBuff);
+  pickProgram->setAttribute("a_vertexColors", vertexColors);
   pickProgram->setAttribute("a_faceColor", faceColor);
 }
 
@@ -1053,7 +1048,8 @@ void VolumeMesh::buildVertexInfoGui(size_t vInd) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildVertexInfoGUI(vInd);
+    VolumeMeshQuantity* q = static_cast<VolumeMeshQuantity*>(x.second.get());
+    q->buildVertexInfoGUI(vInd);
   }
 
   ImGui::Indent(-20.);
@@ -1072,7 +1068,8 @@ void VolumeMesh::buildCellInfoGUI(size_t cellInd) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildCellInfoGUI(cellInd);
+    VolumeMeshQuantity* q = static_cast<VolumeMeshQuantity*>(x.second.get());
+    q->buildCellInfoGUI(cellInd);
   }
 
   ImGui::Indent(-20.);
@@ -1150,13 +1147,13 @@ void VolumeMesh::refresh() {
   pickProgram.reset();
   refreshVolumeMeshListeners();
   requestRedraw();
-  QuantityStructure<VolumeMesh>::refresh(); // call base class version, which refreshes quantities
+  Structure::refresh(); // call base class version, which refreshes quantities
 }
 
 void VolumeMesh::geometryChanged() {
   recomputeGeometryIfPopulated();
   requestRedraw();
-  QuantityStructure<VolumeMesh>::refresh(); // TODO fixme unneeded, right?
+  Structure::refresh(); // TODO fixme unneeded, right?
 }
 
 void VolumeMesh::recomputeGeometryIfPopulated() {
@@ -1300,7 +1297,7 @@ VolumeMesh::addCellVectorQuantityImpl(std::string name, const std::vector<glm::v
 
 
 VolumeMeshQuantity::VolumeMeshQuantity(std::string name, VolumeMesh& parentStructure, bool dominates)
-    : QuantityS<VolumeMesh>(name, parentStructure, dominates) {}
+    : Quantity(name, parentStructure, dominates), parent(parentStructure) {}
 void VolumeMeshQuantity::buildVertexInfoGUI(size_t vInd) {}
 void VolumeMeshQuantity::buildFaceInfoGUI(size_t fInd) {}
 void VolumeMeshQuantity::buildEdgeInfoGUI(size_t eInd) {}

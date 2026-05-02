@@ -153,6 +153,7 @@ endif()
 
 
 SET(SRCS
+  
 
   # Core functionality
   polyscope.cpp
@@ -183,7 +184,7 @@ SET(SRCS
   disjoint_sets.cpp
   file_helpers.cpp
   camera_parameters.cpp
-  histogram.cpp
+  color_bar.cpp
   persistent_value.cpp
   color_management.cpp
   transformation_gizmo.cpp
@@ -224,6 +225,11 @@ SET(SRCS
   volume_grid.cpp
   volume_grid_scalar_quantity.cpp
 
+  # Sparse volume grid
+  sparse_volume_grid.cpp
+  sparse_volume_grid_scalar_quantity.cpp
+  sparse_volume_grid_color_quantity.cpp
+
   # Camera view
   camera_view.cpp
 
@@ -250,6 +256,7 @@ SET(SRCS
   ## Embedded binary data
   render/bindata/bindata_font_lato_regular.cpp
   render/bindata/bindata_font_cousine_regular.cpp
+  render/bindata/bindata_font_lucide_icons.cpp
   render/bindata/concrete_seamless.cpp
   render/bindata/bindata_clay.cpp
   render/bindata/bindata_wax.cpp
@@ -271,6 +278,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/camera_view.h
   ${INCLUDE_ROOT}/camera_view.ipp
   ${INCLUDE_ROOT}/check_invalid_values.h
+  ${INCLUDE_ROOT}/color_bar.h
   ${INCLUDE_ROOT}/color_management.h
   ${INCLUDE_ROOT}/color_image_quantity.h
   ${INCLUDE_ROOT}/color_render_image_quantity.h
@@ -293,7 +301,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/floating_quantity.h
   ${INCLUDE_ROOT}/floating_quantities.h
   ${INCLUDE_ROOT}/group.h
-  ${INCLUDE_ROOT}/histogram.h
   ${INCLUDE_ROOT}/image_quantity.h
   ${INCLUDE_ROOT}/imgui_config.h
   ${INCLUDE_ROOT}/implicit_helpers.h
@@ -309,13 +316,11 @@ SET(HEADERS
   ${INCLUDE_ROOT}/point_cloud.h
   ${INCLUDE_ROOT}/point_cloud.ipp
   ${INCLUDE_ROOT}/point_cloud_color_quantity.h
-  ${INCLUDE_ROOT}/point_cloud_quantity.h
   ${INCLUDE_ROOT}/point_cloud_scalar_quantity.h
   ${INCLUDE_ROOT}/point_cloud_parameterization_quantity.h
   ${INCLUDE_ROOT}/point_cloud_vector_quantity.h
   ${INCLUDE_ROOT}/polyscope.h
   ${INCLUDE_ROOT}/quantity.h
-  ${INCLUDE_ROOT}/quantity.ipp
   ${INCLUDE_ROOT}/raw_color_render_image_quantity.h
   ${INCLUDE_ROOT}/render/color_maps.h
   ${INCLUDE_ROOT}/render/engine.h
@@ -335,7 +340,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/slice_plane.h
   ${INCLUDE_ROOT}/standardize_data_array.h
   ${INCLUDE_ROOT}/structure.h
-  ${INCLUDE_ROOT}/structure.ipp
   ${INCLUDE_ROOT}/surface_color_quantity.h
   ${INCLUDE_ROOT}/surface_mesh.h
   ${INCLUDE_ROOT}/surface_mesh.ipp
@@ -360,6 +364,11 @@ SET(HEADERS
   ${INCLUDE_ROOT}/volume_grid.ipp
   ${INCLUDE_ROOT}/volume_grid_quantity.h
   ${INCLUDE_ROOT}/volume_grid_scalar_quantity.h
+  ${INCLUDE_ROOT}/sparse_volume_grid.h
+  ${INCLUDE_ROOT}/sparse_volume_grid.ipp
+  ${INCLUDE_ROOT}/sparse_volume_grid_quantity.h
+  ${INCLUDE_ROOT}/sparse_volume_grid_scalar_quantity.h
+  ${INCLUDE_ROOT}/sparse_volume_grid_color_quantity.h
   ${INCLUDE_ROOT}/weak_handle.h
 )
 
@@ -382,3 +391,6 @@ target_include_directories(polyscope PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../incl
 # Link settings
 target_link_libraries(polyscope PUBLIC imgui glm::glm)
 target_link_libraries(polyscope PRIVATE "${BACKEND_LIBS}" stb nlohmann_json::nlohmann_json MarchingCube::MarchingCube)
+
+# For now, make this private, until we are sure we want to commit to it. We may expose it as public in the future.
+target_link_libraries(polyscope PRIVATE IconFontCppHeaders) 

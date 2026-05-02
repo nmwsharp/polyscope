@@ -7,14 +7,14 @@
 
 namespace polyscope {
 
-// Forward declare
 class CurveNetwork;
 
-// Extend Quantity<CurveNetwork>
-class CurveNetworkQuantity : public QuantityS<CurveNetwork> {
+class CurveNetworkQuantity : public Quantity {
 public:
   CurveNetworkQuantity(std::string name, CurveNetwork& parentStructure, bool dominates = false);
   virtual ~CurveNetworkQuantity() {};
+
+  CurveNetwork& parent; // shadows and hides the generic member in Quantity
 
   // Build GUI info an element
   virtual void buildNodeInfoGUI(size_t vInd);

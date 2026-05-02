@@ -321,12 +321,23 @@ void GLAttributeBuffer::setData(const std::vector<int32_t>& data) {
   checkType(RenderDataType::Int);
   setData_helper(data);
 }
+void GLAttributeBuffer::setData(const std::vector<glm::ivec2>& data) {
+  checkType(RenderDataType::Vector2Int);
+  setData_helper(data);
+}
+void GLAttributeBuffer::setData(const std::vector<glm::ivec3>& data) {
+  checkType(RenderDataType::Vector3Int);
+  setData_helper(data);
+}
+void GLAttributeBuffer::setData(const std::vector<glm::ivec4>& data) {
+  checkType(RenderDataType::Vector4Int);
+  setData_helper(data);
+}
 
 void GLAttributeBuffer::setData(const std::vector<uint32_t>& data) {
   checkType(RenderDataType::UInt);
   setData_helper(data);
 }
-
 void GLAttributeBuffer::setData(const std::vector<glm::uvec2>& data) {
   checkType(RenderDataType::Vector2UInt);
   setData_helper(data);
@@ -335,7 +346,6 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec3>& data) {
   checkType(RenderDataType::Vector3UInt);
   setData_helper(data);
 }
-
 void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data) {
   checkType(RenderDataType::Vector4UInt);
   setData_helper(data);
@@ -375,20 +385,32 @@ int GLAttributeBuffer::getData_int(size_t ind) {
   if (getType() != RenderDataType::Int) exception("bad getData type");
   return getData_helper<int>(ind);
 }
+glm::ivec2 GLAttributeBuffer::getData_ivec2(size_t ind) {
+  if (getType() != RenderDataType::Vector2Int) exception("bad getData type");
+  return getData_helper<glm::ivec2>(ind);
+}
+glm::ivec3 GLAttributeBuffer::getData_ivec3(size_t ind) {
+  if (getType() != RenderDataType::Vector3Int) exception("bad getData type");
+  return getData_helper<glm::ivec3>(ind);
+}
+glm::ivec4 GLAttributeBuffer::getData_ivec4(size_t ind) {
+  if (getType() != RenderDataType::Vector4Int) exception("bad getData type");
+  return getData_helper<glm::ivec4>(ind);
+}
 uint32_t GLAttributeBuffer::getData_uint32(size_t ind) {
   if (getType() != RenderDataType::UInt) exception("bad getData type");
   return getData_helper<uint32_t>(ind);
 }
 glm::uvec2 GLAttributeBuffer::getData_uvec2(size_t ind) {
-  if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
+  if (getType() != RenderDataType::Vector2UInt) exception("bad getData type");
   return getData_helper<glm::uvec2>(ind);
 }
 glm::uvec3 GLAttributeBuffer::getData_uvec3(size_t ind) {
-  if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
+  if (getType() != RenderDataType::Vector3UInt) exception("bad getData type");
   return getData_helper<glm::uvec3>(ind);
 }
 glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
-  if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
+  if (getType() != RenderDataType::Vector4UInt) exception("bad getData type");
   return getData_helper<glm::uvec4>(ind);
 }
 
@@ -433,6 +455,18 @@ std::vector<int> GLAttributeBuffer::getDataRange_int(size_t start, size_t count)
   if (getType() != RenderDataType::Int) exception("bad getData type");
   return getDataRange_helper<int>(start, count);
 }
+std::vector<glm::ivec2> GLAttributeBuffer::getDataRange_ivec2(size_t start, size_t count) {
+  if (getType() != RenderDataType::Vector2Int) exception("bad getData type");
+  return getDataRange_helper<glm::ivec2>(start, count);
+}
+std::vector<glm::ivec3> GLAttributeBuffer::getDataRange_ivec3(size_t start, size_t count) {
+  if (getType() != RenderDataType::Vector3Int) exception("bad getData type");
+  return getDataRange_helper<glm::ivec3>(start, count);
+}
+std::vector<glm::ivec4> GLAttributeBuffer::getDataRange_ivec4(size_t start, size_t count) {
+  if (getType() != RenderDataType::Vector4Int) exception("bad getData type");
+  return getDataRange_helper<glm::ivec4>(start, count);
+}
 std::vector<uint32_t> GLAttributeBuffer::getDataRange_uint32(size_t start, size_t count) {
   if (getType() != RenderDataType::UInt) exception("bad getData type");
   return getDataRange_helper<uint32_t>(start, count);
@@ -447,7 +481,6 @@ std::vector<glm::uvec3> GLAttributeBuffer::getDataRange_uvec3(size_t start, size
 }
 std::vector<glm::uvec4> GLAttributeBuffer::getDataRange_uvec4(size_t start, size_t count) {
   if (getType() != RenderDataType::Vector4UInt) exception("bad getData type");
-  bind();
   return getDataRange_helper<glm::uvec4>(start, count);
 }
 
@@ -675,6 +708,9 @@ void GLTextureBuffer::setData(const std::vector<double>& data) {
   checkGLError();
 };
 void GLTextureBuffer::setData(const std::vector<int32_t>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::ivec2>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::ivec3>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::ivec4>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<uint32_t>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<glm::uvec3>& data) { exception("not implemented"); };
@@ -1318,6 +1354,18 @@ void GLShaderProgram::assignBufferToVAO(GLShaderAttribute& a) {
       glVertexAttribPointer(a.location + iArrInd, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * a.arrayCount,
                             reinterpret_cast<void*>(sizeof(float) * 4 * iArrInd));
       break;
+    case RenderDataType::Vector2Int:
+      glVertexAttribPointer(a.location + iArrInd, 2, GL_INT, GL_FALSE, sizeof(int32_t) * 2 * a.arrayCount,
+                            reinterpret_cast<void*>(sizeof(int32_t) * 2 * iArrInd));
+      break;
+    case RenderDataType::Vector3Int:
+      glVertexAttribPointer(a.location + iArrInd, 3, GL_INT, GL_FALSE, sizeof(int32_t) * 3 * a.arrayCount,
+                            reinterpret_cast<void*>(sizeof(int32_t) * 3 * iArrInd));
+      break;
+    case RenderDataType::Vector4Int:
+      glVertexAttribPointer(a.location + iArrInd, 4, GL_INT, GL_FALSE, sizeof(int32_t) * 4 * a.arrayCount,
+                            reinterpret_cast<void*>(sizeof(int32_t) * 4 * iArrInd));
+      break;
     case RenderDataType::Vector2UInt:
       glVertexAttribPointer(a.location + iArrInd, 2, GL_UNSIGNED_INT, GL_FALSE, sizeof(uint32_t) * 2 * a.arrayCount,
                             reinterpret_cast<void*>(sizeof(uint32_t) * 2 * iArrInd));
@@ -1559,6 +1607,63 @@ void GLShaderProgram::setUniform(std::string name, float x, float y, float z, fl
   throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
+// Set a int vector2 uniform
+void GLShaderProgram::setUniform(std::string name, glm::ivec2 val) {
+  glUseProgram(compiledProgram->getHandle());
+
+  for (GLShaderUniform& u : uniforms) {
+    if (u.name == name) {
+      if (u.location == -1) return;
+      if (u.type == RenderDataType::Vector2Int) {
+        glUniform2i(u.location, val.x, val.y);
+        u.isSet = true;
+      } else {
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
+      }
+      return;
+    }
+  }
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
+}
+
+// Set a int vector3 uniform
+void GLShaderProgram::setUniform(std::string name, glm::ivec3 val) {
+  glUseProgram(compiledProgram->getHandle());
+
+  for (GLShaderUniform& u : uniforms) {
+    if (u.name == name) {
+      if (u.location == -1) return;
+      if (u.type == RenderDataType::Vector3Int) {
+        glUniform3i(u.location, val.x, val.y, val.z);
+        u.isSet = true;
+      } else {
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
+      }
+      return;
+    }
+  }
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
+}
+
+// Set a int vector4 uniform
+void GLShaderProgram::setUniform(std::string name, glm::ivec4 val) {
+  glUseProgram(compiledProgram->getHandle());
+
+  for (GLShaderUniform& u : uniforms) {
+    if (u.name == name) {
+      if (u.location == -1) return;
+      if (u.type == RenderDataType::Vector4Int) {
+        glUniform4i(u.location, val.x, val.y, val.z, val.w);
+        u.isSet = true;
+      } else {
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
+      }
+      return;
+    }
+  }
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
+}
+
 // Set a uint vector2 uniform
 void GLShaderProgram::setUniform(std::string name, glm::uvec2 val) {
   glUseProgram(compiledProgram->getHandle());
@@ -1751,6 +1856,54 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<uint32_t>
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
+void GLShaderProgram::setAttribute(std::string name, const std::vector<std::array<glm::vec3, 2>>& data) {
+  glBindVertexArray(vaoHandle);
+
+  // pass-through to the buffer
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name && a.location != -1) {
+      if (a.arrayCount != 2) throw std::invalid_argument("Tried to set attribute " + name + " with wrong array count");
+      ensureBufferExists(a);
+      a.buff->setData(data);
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
+void GLShaderProgram::setAttribute(std::string name, const std::vector<std::array<glm::vec3, 3>>& data) {
+  glBindVertexArray(vaoHandle);
+
+  // pass-through to the buffer
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name && a.location != -1) {
+      if (a.arrayCount != 3) throw std::invalid_argument("Tried to set attribute " + name + " with wrong array count");
+      ensureBufferExists(a);
+      a.buff->setData(data);
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
+void GLShaderProgram::setAttribute(std::string name, const std::vector<std::array<glm::vec3, 4>>& data) {
+  glBindVertexArray(vaoHandle);
+
+  // pass-through to the buffer
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name && a.location != -1) {
+      if (a.arrayCount != 4) throw std::invalid_argument("Tried to set attribute " + name + " with wrong array count");
+      ensureBufferExists(a);
+      a.buff->setData(data);
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
 bool GLShaderProgram::hasTexture(std::string name) {
   for (GLShaderTexture& t : textures) {
     if (t.name == name && t.location != -1) {
@@ -1926,6 +2079,15 @@ void GLShaderProgram::setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) 
     // NOTE: the render pass expects these to be unsigned.... but negative
     // values don't make sense anyway, so I think it's okay to just let it slide
     indexSizeMult = 1;
+    break;
+  case RenderDataType::Vector2Int:
+    indexSizeMult = 2;
+    break;
+  case RenderDataType::Vector3Int:
+    indexSizeMult = 3;
+    break;
+  case RenderDataType::Vector4Int:
+    indexSizeMult = 4;
     break;
   case RenderDataType::UInt:
     indexSizeMult = 1;
@@ -2500,6 +2662,8 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("PREMULTIPLY_LIT_COLOR", PREMULTIPLY_LIT_COLOR);
   registerShaderRule("CULL_POS_FROM_VIEW", CULL_POS_FROM_VIEW);
   registerShaderRule("PROJ_AND_INV_PROJ_MAT", PROJ_AND_INV_PROJ_MAT);
+  registerShaderRule("BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE", BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE);
+  registerShaderRule("BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC", BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC);
 
   // Lighting and shading things
   registerShaderRule("LIGHT_MATCAP", LIGHT_MATCAP);
@@ -2557,8 +2721,14 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("GRIDCUBE_PROPAGATE_NODE_VALUE", GRIDCUBE_PROPAGATE_NODE_VALUE);
   registerShaderRule("GRIDCUBE_PROPAGATE_CELL_VALUE", GRIDCUBE_PROPAGATE_CELL_VALUE);
   registerShaderRule("GRIDCUBE_WIREFRAME", GRIDCUBE_WIREFRAME);
+  registerShaderRule("GRIDCUBE_PLANE_WIREFRAME", GRIDCUBE_PLANE_WIREFRAME);
   registerShaderRule("GRIDCUBE_CONSTANT_PICK", GRIDCUBE_CONSTANT_PICK);
   registerShaderRule("GRIDCUBE_CULLPOS_FROM_CENTER", GRIDCUBE_CULLPOS_FROM_CENTER);
+  registerShaderRule("GRIDCUBE_PLANE_CULLPOS_FROM_CENTER", GRIDCUBE_PLANE_CULLPOS_FROM_CENTER);
+  registerShaderRule("GRIDCUBE_PROPAGATE_ATTR_CELL_SCALAR", GRIDCUBE_PROPAGATE_ATTR_CELL_SCALAR);
+  registerShaderRule("GRIDCUBE_PROPAGATE_ATTR_CELL_COLOR", GRIDCUBE_PROPAGATE_ATTR_CELL_COLOR);
+  registerShaderRule("GRIDCUBE_PROPAGATE_ATTR_NODE_SCALAR", GRIDCUBE_PROPAGATE_ATTR_NODE_SCALAR);
+  registerShaderRule("GRIDCUBE_PROPAGATE_ATTR_NODE_COLOR", GRIDCUBE_PROPAGATE_ATTR_NODE_COLOR);
 
   // sphere things
   registerShaderRule("SPHERE_PROPAGATE_VALUE", SPHERE_PROPAGATE_VALUE);
@@ -2593,6 +2763,16 @@ void GLEngine::populateDefaultShadersAndRules() {
 
   // clang-format on
 };
+
+
+void GLEngine::freeAllOwnedResources() {
+
+  registeredShaderPrograms.clear();
+  registeredShaderRules.clear();
+  compiledProgamCache.clear();
+
+  Engine::freeAllOwnedResources();
+}
 
 void GLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
   registeredShaderRules.insert({"SLICE_PLANE_CULL_" + uniquePostfix, generateSlicePlaneRule(uniquePostfix)});

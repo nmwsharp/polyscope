@@ -12,6 +12,8 @@ unsigned int getCousineRegularCompressedSize();
 const unsigned int* getCousineRegularCompressedData();
 unsigned int getLatoRegularCompressedSize();
 const unsigned int* getLatoRegularCompressedData();
+unsigned int getLucideIconsCompressedSize();
+const unsigned char* getLucideIconsCompressedData();
 } // namespace render
 
 void configureImGuiStyle() {
@@ -27,6 +29,7 @@ void configureImGuiStyle() {
   style->ScrollbarSize = 20;
   style->ScaleAllSizes(options::uiScale);
 
+  style->FontScaleMain = options::uiScale;
 
   // Colors
   ImVec4* colors = style->Colors;
@@ -76,45 +79,40 @@ void configureImGuiStyle() {
 }
 
 
-std::tuple<ImFontAtlas*, ImFont*, ImFont*> prepareImGuiFonts() {
+std::tuple<ImFont*, ImFont*> loadBaseFonts(ImFontAtlas* fontAtlas) {
 
-  ImGuiIO& io = ImGui::GetIO();
-
-  ImVec2 windowSize{static_cast<float>(view::windowWidth), static_cast<float>(view::windowHeight)};
-  ImVec2 bufferSize{static_cast<float>(view::bufferWidth), static_cast<float>(view::bufferHeight)};
-  ImVec2 imguiCoordScale = {bufferSize.x / windowSize.x, bufferSize.y / windowSize.y};
-
-  // outputs
-  ImFontAtlas* fontAtlas = nullptr; // right now this is unused by the caller, but I don't want to change
-                                    // this callback signature until I'm more confident about how this
-                                    // should work. (And it might be changing in an upcoming imgui version)
   ImFont* regularFont;
   ImFont* monoFont;
 
-  float fontSize = 16.0 * options::uiScale;
-  fontSize = std::max(1.0f, std::roundf(fontSize));
+  float fontSize = 18.0;
 
-  { // add regular font
+  // add regular font
+  regularFont = fontAtlas->AddFontFromMemoryCompressedTTF(render::getLatoRegularCompressedData(),
+                                                          render::getLatoRegularCompressedSize(), fontSize);
+
+  // append icons to regular font
+  {
     ImFontConfig config;
-    config.RasterizerDensity = std::max(imguiCoordScale.x, imguiCoordScale.y);
-    regularFont = io.Fonts->AddFontFromMemoryCompressedTTF(render::getLatoRegularCompressedData(),
-                                                           render::getLatoRegularCompressedSize(),
-                                                           options::uiScale * 18.0f, &config);
+    config.MergeMode = true;
+    config.GlyphMinAdvanceX = fontSize; // make the icon monospaced
+
+    // this uses a tip from a helpful github issue to get teh alignment mostly right
+    // https://github.com/ocornut/imgui/issues/4127#issuecomment-2814162680
+
+    // Align vertically; the coefficients are specific to the particular icon font we're using.
+    float font_size_pixels = fontSize; // Or whatever you'd like.
+    float icon_scaling = 1.0f;         // Or whatever you'd like.
+    config.GlyphOffset = {0.0f, font_size_pixels * (0.5f * icon_scaling - 0.3f)};
+
+    fontAtlas->AddFontFromMemoryCompressedTTF(render::getLucideIconsCompressedData(),
+                                              render::getLucideIconsCompressedSize(), fontSize, &config);
   }
 
-  { // add mono font
-    ImFontConfig config;
-    config.RasterizerDensity = std::max(imguiCoordScale.x, imguiCoordScale.y);
-    monoFont = io.Fonts->AddFontFromMemoryCompressedTTF(render::getCousineRegularCompressedData(),
-                                                        render::getCousineRegularCompressedSize(),
-                                                        options::uiScale * 16.0f, &config);
-  }
+  // add mono font
+  monoFont = fontAtlas->AddFontFromMemoryCompressedTTF(render::getCousineRegularCompressedData(),
+                                                       render::getCousineRegularCompressedSize(), fontSize);
 
-  // io.Fonts->AddFontFromFileTTF("test-font-name.ttf", 16);
-
-  io.Fonts->Build();
-
-  return std::tuple<ImFontAtlas*, ImFont*, ImFont*>{fontAtlas, regularFont, monoFont};
+  return std::tuple<ImFont*, ImFont*>(regularFont, monoFont);
 }
 
 } // namespace polyscope

@@ -21,6 +21,8 @@ RenderImageQuantityBase::RenderImageQuantityBase(Structure& parent_, std::string
   if (hasNormals) {
     normals.setTextureSize(dimX, dimY);
   }
+
+  requestRedraw();
 }
 
 size_t RenderImageQuantityBase::nPix() { return dimX * dimY; }
@@ -89,6 +91,7 @@ void RenderImageQuantityBase::drawPickDelayed() {
   if (!pickProgram) preparePick();
 
   // set uniforms
+  parent.setStructureUniforms(*pickProgram);
   glm::mat4 P = view::getCameraPerspectiveMatrix();
   glm::mat4 Pinv = glm::inverse(P);
 
@@ -111,11 +114,14 @@ void RenderImageQuantityBase::preparePick() {
 
   // Create the sourceProgram
   // clang-format off
-  pickProgram = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-    parent.addStructureRules({
+  std::vector<std::string> rules = parent.addStructureRules({
       getImageOriginRule(imageOrigin), 
       "SHADECOLOR_FROM_UNIFORM",
-    }),
+    });
+  rules = removeRule(rules, "GENERATE_VIEW_POS");
+
+  pickProgram = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN", 
+    rules,
     render::ShaderReplacementDefaults::Pick
   );
   // clang-format on
@@ -135,15 +141,14 @@ void RenderImageQuantityBase::disableFullscreenDrawing() {
   }
 }
 
-RenderImageQuantityBase* RenderImageQuantityBase::setEnabled(bool newEnabled) {
-  if (newEnabled == isEnabled()) return this;
+void RenderImageQuantityBase::setEnabled(bool newEnabled) {
+  if (newEnabled == isEnabled()) return;
   if (newEnabled == true && !allowFullscreenCompositing.get()) {
     // if drawing fullscreen, disable anything else which was already drawing fullscreen
     disableAllFullscreenArtists();
   }
   enabled = newEnabled;
   requestRedraw();
-  return this;
 }
 
 RenderImageQuantityBase* RenderImageQuantityBase::setMaterial(std::string m) {

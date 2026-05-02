@@ -73,6 +73,19 @@ inline bool allComponentsFinite<glm::vec4>(const glm::vec4& x) {
 }
 
 template <>
+inline bool allComponentsFinite<glm::ivec2>(const glm::ivec2& x) {
+  return true;
+}
+template <>
+inline bool allComponentsFinite<glm::ivec3>(const glm::ivec3& x) {
+  return true;
+}
+template <>
+inline bool allComponentsFinite<glm::ivec4>(const glm::ivec4& x) {
+  return true;
+}
+
+template <>
 inline bool allComponentsFinite<glm::uvec2>(const glm::uvec2& x) {
   return true;
 }

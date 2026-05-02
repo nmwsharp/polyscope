@@ -31,7 +31,7 @@ class ScalarImageQuantity;
 class ColorImageQuantity;
 
 
-class FloatingQuantityStructure : public QuantityStructure<FloatingQuantityStructure> {
+class FloatingQuantityStructure : public Structure {
 public:
   // === Member functions ===
 

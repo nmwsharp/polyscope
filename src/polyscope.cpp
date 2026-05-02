@@ -7,9 +7,11 @@
 #include <iostream>
 #include <thread>
 
+#include "ImGuizmo.h"
 #include "imgui.h"
 #include "implot.h"
 
+#include "polyscope/imgui_config.h"
 #include "polyscope/options.h"
 #include "polyscope/pick.h"
 #include "polyscope/render/engine.h"
@@ -20,6 +22,8 @@
 
 #include "nlohmann/json.hpp"
 using json = nlohmann::json;
+
+#include "IconFontCppHeaders/IconsLucide.h"
 
 namespace polyscope {
 
@@ -45,13 +49,7 @@ bool redrawNextFrame = true;
 bool unshowRequested = false;
 
 // Some state about imgui windows to stack them
-float imguiStackMargin = 10;
-float lastWindowHeightPolyscope = 200;
-float lastWindowHeightUser = 200;
 constexpr float INITIAL_LEFT_WINDOWS_WIDTH = 305;
-constexpr float INITIAL_RIGHT_WINDOWS_WIDTH = 500;
-float leftWindowsWidth = -1.;
-float rightWindowsWidth = -1.;
 
 auto prevMainLoopTime = std::chrono::steady_clock::now();
 float rollingMainLoopDurationMicrosec = 0.;
@@ -137,14 +135,15 @@ void writePrefsFile() {
 }
 
 void setInitialWindowWidths() {
-  leftWindowsWidth = INITIAL_LEFT_WINDOWS_WIDTH * options::uiScale;
-  rightWindowsWidth = INITIAL_RIGHT_WINDOWS_WIDTH * options::uiScale;
+  internal::leftWindowsWidth = INITIAL_LEFT_WINDOWS_WIDTH * options::uiScale;
+  internal::rightWindowsWidth = options::rightGuiPaneWidth * options::uiScale;
 }
 
 void ensureWindowWidthsSet() {
-  if (leftWindowsWidth <= 0. || rightWindowsWidth <= 0.) {
+  if (internal::leftWindowsWidth <= 0. || internal::rightWindowsWidth <= 0.) {
     setInitialWindowWidths();
   }
+  internal::rightWindowsWidth = options::rightGuiPaneWidth * options::uiScale;
 }
 
 // Helper to get a structure map
@@ -240,11 +239,12 @@ void init(std::string backend) {
 
   // Initialie ImGUI
   IMGUI_CHECKVERSION();
-  render::engine->initializeImGui();
+  render::engine->createNewImGuiContext();
 
   // Create an initial context based context. Note that calling show() never actually uses this context, because it
   // pushes a new one each time. But using frameTick() may use this context.
   contextStack.push_back(ContextEntry{ImGui::GetCurrentContext(), ImPlot::GetCurrentContext(), nullptr, true});
+  internal::contextStackSize++;
 
   view::invalidateView();
 
@@ -264,26 +264,37 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // WARNING: code duplicated here and in screenshot.cpp
 
+
+  // Here, we create a new ImGui context sharing the same window and render
+  // with it, al in the midst of an existing ImGui frame. This is a fairly hacky
+  // thing to do within ImGui that only barely works, especially with v1.92 changes
+  // around contexts, dynamic fonts, and the GLFW ImGui backend. Currently, it requires
+  // some slight customization of the backend to even be possible.
+  //
+  // Useful resources:
+  //  -  https://github.com/ocornut/imgui/issues/8680 (and linked PR)
+
   // Create a new context and push it on to the stack
-  ImGuiContext* newContext = ImGui::CreateContext();
-  ImPlotContext* newPlotContext = ImPlot::CreateContext();
   ImGuiIO& oldIO = ImGui::GetIO(); // used to GLFW + OpenGL data to the new IO object
+  ImGuiContext* oldContext = ImGui::GetCurrentContext();
 #ifdef IMGUI_HAS_DOCK
+  // WARNING this code may not currently work, recent versions of imgui have changed this functionality,
+  // and we do not regularly test with the docking branch.
   ImGuiPlatformIO& oldPlatformIO = ImGui::GetPlatformIO();
 #endif
-  ImGui::SetCurrentContext(newContext);
-  ImPlot::SetCurrentContext(newPlotContext);
+  render::engine->createNewImGuiContext();
+  ImGuiContext* newContext = ImGui::GetCurrentContext();
+  ImGuiIO& newIO = ImGui::GetIO();
+  ImPlotContext* newPlotContext = ImPlot::GetCurrentContext();
+  render::engine->updateImGuiContext(oldContext, &oldIO, newContext, &newIO);
 #ifdef IMGUI_HAS_DOCK
-  // Propagate GLFW window handle to new context
+  // see warning above
   ImGui::GetMainViewport()->PlatformHandle = oldPlatformIO.Viewports[0]->PlatformHandle;
 #endif
-  ImGui::GetIO().BackendPlatformUserData = oldIO.BackendPlatformUserData;
-  ImGui::GetIO().BackendRendererUserData = oldIO.BackendRendererUserData;
-
-  render::engine->configureImGui();
-
+  ImGuizmo::PushContext();
 
   contextStack.push_back(ContextEntry{newContext, newPlotContext, callbackFunction, drawDefaultUI});
+  internal::contextStackSize++;
 
   if (contextStack.size() > 50) {
     // Catch bugs with nested show()
@@ -296,33 +307,47 @@ void pushContext(std::function<void()> callbackFunction, bool drawDefaultUI) {
 
   // Re-enter main loop until the context has been popped
   size_t currentContextStackSize = contextStack.size();
-  while (contextStack.size() >= currentContextStackSize) {
 
-    sleepForFramerate();
-    mainLoopIteration();
-
-    // auto-exit if the window is closed
-    if (render::engine->windowRequestsClose()) {
-      popContext();
+  // Helper lambda to perform cleanup of the context
+  auto cleanupContext = [&]() {
+    // Restore the previous context, if there was one
+    if (!contextStack.empty()) {
+      ImGui::SetCurrentContext(contextStack.back().context);
+      ImPlot::SetCurrentContext(contextStack.back().plotContext);
+      render::engine->updateImGuiContext(newContext, &newIO, oldContext, &oldIO);
+      ImGuizmo::PopContext();
     }
+
+    // WARNING: code duplicated here and in screenshot.cpp
+    // Workaround overzealous ImGui assertion before destroying any inner context
+    // https://github.com/ocornut/imgui/pull/7175
+    newIO.BackendPlatformUserData = nullptr;
+    newIO.BackendRendererUserData = nullptr;
+    ImPlot::DestroyContext(newPlotContext);
+    ImGui::DestroyContext(newContext);
+  };
+
+  try {
+    while (contextStack.size() >= currentContextStackSize) {
+
+      sleepForFramerate();
+      mainLoopIteration();
+
+      // auto-exit if the window is closed
+      if (render::engine->windowRequestsClose()) {
+        popContext();
+      }
+    }
+  } catch (...) {
+    // Ensure cleanup happens even if an exception is thrown
+    // NOTE: we don't really guarantee exception safety in general, it's likely that things are broken if an excpetion
+    // was thrown. But this handles a few of the worst and most confusing cases.
+    popContext();
+    cleanupContext();
+    throw; // re-throw the exception after cleanup
   }
 
-  // WARNING: code duplicated here and in screenshot.cpp
-  // Workaround overzealous ImGui assertion before destroying any inner context
-  // https://github.com/ocornut/imgui/pull/7175
-  ImGui::SetCurrentContext(newContext);
-  ImPlot::SetCurrentContext(newPlotContext);
-  ImGui::GetIO().BackendPlatformUserData = nullptr;
-  ImGui::GetIO().BackendRendererUserData = nullptr;
-
-  ImPlot::DestroyContext(newPlotContext);
-  ImGui::DestroyContext(newContext);
-
-  // Restore the previous context, if there was one
-  if (!contextStack.empty()) {
-    ImGui::SetCurrentContext(contextStack.back().context);
-    ImPlot::SetCurrentContext(contextStack.back().plotContext);
-  }
+  cleanupContext();
 }
 
 
@@ -332,6 +357,7 @@ void popContext() {
     return;
   }
   contextStack.pop_back();
+  internal::contextStackSize--;
 }
 
 ImGuiContext* getCurrentContext() { return contextStack.empty() ? nullptr : contextStack.back().context; }
@@ -420,6 +446,11 @@ namespace {
 
 float dragDistSinceLastRelease = 0.0;
 
+// State for delayed pick selection
+bool pendingPickActive = false;
+PickResult pendingPickResult;
+float pendingPickTime = 0.0f;
+
 void processInputEvents() {
   ImGuiIO& io = ImGui::GetIO();
 
@@ -450,30 +481,26 @@ void processInputEvents() {
     if (!io.WantCaptureMouse && !widgetCapturedMouse) {
 
       { // Process scroll via "mouse wheel" (which might be a touchpad)
-        double xoffset = io.MouseWheelH;
-        double yoffset = io.MouseWheel;
+        float xoffset = io.MouseWheelH;
+        float yoffset = io.MouseWheel;
+        float scrollOffset = yoffset;
+        float clipPlaneOffset = std::abs(xoffset) > std::abs(yoffset) ? xoffset : yoffset;
 
-        if (xoffset != 0 || yoffset != 0) {
+        // NOTE: here we used to scroll according the to the larger of the two offsets (x or y)
+        // (there was a comment about 'shift swaps scroll on some platforms'). However, on many
+        // common machines (e.g. macs with touchpads),  two finger scrolling produces both x and y
+        // offsets simultaneously, leading to jumpy zooms when an x was greater than a y.
+        // So now we just use the y offset always for zooming. (But still use either for clip plane shifting,
+        // which might involve intentionally holding shift)
+
+        bool scrollClipPlane = io.KeyShift && !io.KeyCtrl;
+        if (scrollClipPlane && clipPlaneOffset != 0.0f) {
+          view::processClipPlaneShift(clipPlaneOffset);
           requestRedraw();
-
-          // On some setups, shift flips the scroll direction, so take the max
-          // scrolling in any direction
-          double maxScroll = xoffset;
-          if (std::abs(yoffset) > std::abs(xoffset)) {
-            maxScroll = yoffset;
-          }
-
-          // Pass camera commands to the camera
-          if (maxScroll != 0.0) {
-            bool scrollClipPlane = io.KeyShift && !io.KeyCtrl;
-            bool relativeZoom = io.KeyShift && io.KeyCtrl;
-
-            if (scrollClipPlane) {
-              view::processClipPlaneShift(maxScroll);
-            } else {
-              view::processZoom(maxScroll, relativeZoom);
-            }
-          }
+        }
+        if (!scrollClipPlane && scrollOffset != 0.0f) {
+          view::processZoom(0.5 * scrollOffset);
+          requestRedraw();
         }
       }
 
@@ -493,7 +520,7 @@ void processInputEvents() {
           bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
 
           if (isDragZoom) {
-            view::processZoom(dragDelta.y * 5, true);
+            view::processZoom(dragDelta.y * 5);
           }
           if (isRotate) {
             glm::vec2 currPos{io.MousePos.x / view::windowWidth,
@@ -509,18 +536,36 @@ void processInputEvents() {
         }
       }
 
-      { // Click picks
+      { // Click picks to select content onscreen
         float dragIgnoreThreshold = 0.01;
         bool anyModifierHeld = io.KeyShift || io.KeyCtrl || io.KeyAlt;
         bool ctrlShiftHeld = io.KeyShift && io.KeyCtrl;
 
-        if (!anyModifierHeld && io.MouseReleased[0]) {
+        // NOTE: there is some extra 'pending' logic here, because we use double clicks to recenter the view, but we
+        // don't want a pick to trigger after the first click of a double click.  To handle this, we delay applying
+        // picks until enough time has passed that a double click would have been registered.
 
-          // Don't pick at the end of a long drag
+        // Check if enough time has passed for a pending pick to be applied
+        if (pendingPickActive) {
+          float elapsedSec = ImGui::GetTime() - pendingPickTime;
+          float pickDelaySec = ImGui::GetIO().MouseDoubleClickTime + 0.05f; // 50ms margin for safety
+          if (haveSelection() || elapsedSec >= pickDelaySec) {
+            // enough time has passed, apply the pending pick
+            setSelection(pendingPickResult);
+            pendingPickActive = false;
+          }
+        }
+
+        if (!anyModifierHeld && (io.MouseReleased[0] && io.MouseClickedLastCount[0] == 1)) {
+
+          // don't pick at the end of a long drag
           if (dragDistSinceLastRelease < dragIgnoreThreshold) {
             glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
             PickResult pickResult = pickAtScreenCoords(screenCoords);
-            setSelection(pickResult);
+            // queue the pick for delayed application
+            pendingPickResult = pickResult;
+            pendingPickTime = ImGui::GetTime();
+            pendingPickActive = true;
           }
         }
 
@@ -530,13 +575,15 @@ void processInputEvents() {
             resetSelection();
           }
           dragDistSinceLastRelease = 0.0;
+          pendingPickActive = false;
         }
 
-        // Ctrl-shift left-click to set new center
-        if (ctrlShiftHeld && io.MouseReleased[0]) {
+        // Double-click or Ctrl-shift left-click to set new center
+        if ((io.MouseReleased[0] && io.MouseClickedLastCount[0] == 2) || (io.MouseReleased[0] && ctrlShiftHeld)) {
           if (dragDistSinceLastRelease < dragIgnoreThreshold) {
             glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
             view::processSetCenter(screenCoords);
+            pendingPickActive = false; // cancel any pending pick from the first click
           }
         }
       }
@@ -593,6 +640,8 @@ void renderScene() {
 
 
     for (int iPass = 0; iPass < options::transparencyRenderPasses; iPass++) {
+      bool isRedraw = iPass > 0;
+      internal::renderPassIsRedraw = isRedraw;
 
       render::engine->bindSceneBuffer();
       render::engine->clearSceneBuffer();
@@ -601,7 +650,6 @@ void renderScene() {
       drawStructures();
 
       // Draw ground plane, slicers, etc
-      bool isRedraw = iPass > 0;
       render::engine->groundPlane.draw(isRedraw);
       if (!isRedraw) {
         // Only on first pass (kinda weird, but works out, and doesn't really matter)
@@ -620,10 +668,12 @@ void renderScene() {
       // Update the minimum depth texture
       render::engine->updateMinDepthTexture();
     }
+    internal::renderPassIsRedraw = false; // reset to usual value
 
 
   } else {
     // Normal case: single render pass
+    internal::renderPassIsRedraw = false;
 
     render::engine->applyTransparencySettings();
     drawStructures();
@@ -662,16 +712,19 @@ void userGuiBegin() {
   ImVec2 userGuiLoc;
   if (options::userGuiIsOnRightSide) {
     // right side
-    userGuiLoc = ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin), imguiStackMargin);
-    ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
+    userGuiLoc = ImVec2(view::windowWidth - (internal::rightWindowsWidth + internal::imguiStackMargin),
+                        internal::imguiStackMargin);
+
+    ImGui::SetNextWindowSize(ImVec2(internal::rightWindowsWidth, 0.));
   } else {
     // left side
     if (options::buildDefaultGuiPanels) {
-      userGuiLoc = ImVec2(leftWindowsWidth + 3 * imguiStackMargin, imguiStackMargin);
+      userGuiLoc = ImVec2(internal::leftWindowsWidth + 2 * internal::imguiStackMargin, internal::imguiStackMargin);
     } else {
-      userGuiLoc = ImVec2(imguiStackMargin, imguiStackMargin);
+      userGuiLoc = ImVec2(internal::imguiStackMargin, internal::imguiStackMargin);
     }
   }
+
 
   ImGui::PushID("user_callback");
   ImGui::SetNextWindowPos(userGuiLoc);
@@ -682,10 +735,14 @@ void userGuiBegin() {
 void userGuiEnd() {
 
   if (options::userGuiIsOnRightSide) {
-    rightWindowsWidth = INITIAL_RIGHT_WINDOWS_WIDTH * options::uiScale;
-    lastWindowHeightUser = imguiStackMargin + ImGui::GetWindowHeight();
+    internal::lastWindowHeightUser =
+        internal::imguiStackMargin + ImGui::GetWindowHeight(); // TODO using deprecated function
+    internal::lastRightSideFreeX = view::windowWidth - internal::imguiStackMargin;
+    internal::lastRightSideFreeY = internal::lastWindowHeightUser;
   } else {
-    lastWindowHeightUser = 0;
+    internal::lastWindowHeightUser = 0;
+    internal::lastRightSideFreeX = view::windowWidth - internal::imguiStackMargin;
+    internal::lastRightSideFreeY = 0;
   }
   ImGui::End();
   ImGui::PopID();
@@ -697,13 +754,12 @@ void buildPolyscopeGui() {
   ensureWindowWidthsSet();
 
   // Create window
-  static bool showPolyscopeWindow = true;
-  ImGui::SetNextWindowPos(ImVec2(imguiStackMargin, imguiStackMargin));
-  ImGui::SetNextWindowSize(ImVec2(leftWindowsWidth, 0.));
+  ImGui::SetNextWindowPos(ImVec2(internal::imguiStackMargin, internal::imguiStackMargin));
+  ImGui::SetNextWindowSize(ImVec2(internal::leftWindowsWidth, 0.));
 
-  ImGui::Begin("Polyscope", &showPolyscopeWindow);
+  ImGui::Begin("Polyscope ", nullptr);
 
-  if (ImGui::Button("Reset View")) {
+  if (ImGui::Button(ICON_LC_HOUSE " Reset View")) {
     view::flyToHomeView();
   }
   ImGui::SameLine();
@@ -722,7 +778,7 @@ void buildPolyscopeGui() {
   if (ImGui::BeginPopup("ScreenshotOptionsPopup")) {
 
     ImGui::Checkbox("with transparency", &options::screenshotTransparency);
-    ImGui::Checkbox("with UI", &options::screenshotWithImGuiUI);
+    // ImGui::Checkbox("with UI", &options::screenshotWithImGuiUI); // temporarily disabled while broken
 
     if (ImGui::BeginMenu("file format")) {
       if (ImGui::MenuItem(".png", NULL, options::screenshotExtension == ".png")) options::screenshotExtension = ".png";
@@ -735,25 +791,25 @@ void buildPolyscopeGui() {
 
 
   ImGui::SameLine();
-  if (ImGui::Button("Controls")) {
+  if (ImGui::Button(ICON_LC_CIRCLE_QUESTION_MARK)) {
     // do nothing, just want hover state
   }
   if (ImGui::IsItemHovered()) {
 
-    ImGui::SetNextWindowPos(ImVec2(2 * imguiStackMargin + leftWindowsWidth, imguiStackMargin));
+    ImGui::SetNextWindowPos(
+        ImVec2(2 * internal::imguiStackMargin + internal::leftWindowsWidth, internal::imguiStackMargin));
     ImGui::SetNextWindowSize(ImVec2(0., 0.));
 
     // clang-format off
 		ImGui::Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar);
     ImGui::TextUnformatted("View Navigation:");
-			ImGui::TextUnformatted("     Rotate: [left click drag]");
-			ImGui::TextUnformatted("     Translate: [shift] + [left click drag] OR [right click drag]");
-			ImGui::TextUnformatted("     Zoom: [scroll] OR [ctrl/cmd] + [shift] + [left click drag]");
-			ImGui::TextUnformatted("   Use [ctrl/cmd-c] and [ctrl/cmd-v] to save and restore camera poses");
-			ImGui::TextUnformatted("     via the clipboard.");
-			ImGui::TextUnformatted("   Hold [ctrl/cmd] + [shift] and [left click] in the scene to set the");
-			ImGui::TextUnformatted("     orbit center.");
-			ImGui::TextUnformatted("   Hold [ctrl/cmd] + [shift] and scroll to zoom towards the center.");
+			ImGui::TextUnformatted("   Rotate: [left click drag]");
+			ImGui::TextUnformatted("   Translate: [shift] + [left click drag] OR [right click drag]");
+			ImGui::TextUnformatted("   Zoom: [scroll] OR [ctrl/cmd] + [shift] + [left click drag]");
+			ImGui::TextUnformatted("   To set the view orbit center, double-click OR hold");
+			ImGui::TextUnformatted("     [ctrl/cmd] + [shift] and [left click] in the scene.");
+			ImGui::TextUnformatted("   Save and restore camera poses via the system clipboard with");
+			ImGui::TextUnformatted("     [ctrl/cmd-c] and [ctrl/cmd-v].");
       ImGui::TextUnformatted("\nMenu Navigation:");
 			ImGui::TextUnformatted("   Menu headers with a '>' can be clicked to collapse and expand.");
 			ImGui::TextUnformatted("   Use [ctrl/cmd] + [left click] to manually enter any numeric value");
@@ -848,8 +904,8 @@ void buildPolyscopeGui() {
   }
 
 
-  lastWindowHeightPolyscope = imguiStackMargin + ImGui::GetWindowHeight();
-  leftWindowsWidth = ImGui::GetWindowWidth();
+  internal::lastWindowHeightPolyscope = ImGui::GetWindowHeight();
+  internal::leftWindowsWidth = ImGui::GetWindowWidth();
 
   ImGui::End();
 }
@@ -858,12 +914,11 @@ void buildStructureGui() {
   ensureWindowWidthsSet();
 
   // Create window
-  static bool showStructureWindow = true;
-
-  ImGui::SetNextWindowPos(ImVec2(imguiStackMargin, lastWindowHeightPolyscope + 2 * imguiStackMargin));
-  ImGui::SetNextWindowSize(
-      ImVec2(leftWindowsWidth, view::windowHeight - lastWindowHeightPolyscope - 3 * imguiStackMargin));
-  ImGui::Begin("Structures", &showStructureWindow);
+  ImGui::SetNextWindowPos(
+      ImVec2(internal::imguiStackMargin, internal::lastWindowHeightPolyscope + 2 * internal::imguiStackMargin));
+  ImGui::SetNextWindowSize(ImVec2(internal::leftWindowsWidth, view::windowHeight - internal::lastWindowHeightPolyscope -
+                                                                  3 * internal::imguiStackMargin));
+  ImGui::Begin("Structures", nullptr);
 
   // only show groups if there are any
   if (state::groups.size() > 0) {
@@ -920,7 +975,7 @@ void buildStructureGui() {
     ImGui::PopID();
   }
 
-  leftWindowsWidth = ImGui::GetWindowWidth();
+  internal::leftWindowsWidth = ImGui::GetWindowWidth();
 
   ImGui::End();
 }
@@ -930,9 +985,9 @@ void buildPickGui() {
 
   if (haveSelection()) {
 
-    ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (rightWindowsWidth + imguiStackMargin),
-                                   2 * imguiStackMargin + lastWindowHeightUser));
-    ImGui::SetNextWindowSize(ImVec2(rightWindowsWidth, 0.));
+    ImGui::SetNextWindowPos(ImVec2(view::windowWidth - (internal::rightWindowsWidth + internal::imguiStackMargin),
+                                   internal::lastRightSideFreeY + internal::imguiStackMargin));
+    ImGui::SetNextWindowSize(ImVec2(internal::rightWindowsWidth, 0.));
 
     ImGui::Begin("Selection", nullptr);
     PickResult selection = getSelection();
@@ -954,10 +1009,14 @@ void buildPickGui() {
     } else {
       // this is a paranoid check, it _should_ never happen since we
       // clear the selection when a structure is deleted
+      // NOTE: it might be possible to hit this due to the way we set delayed picks, if the structure is deleted during
+      // the delay
       ImGui::TextUnformatted("ERROR: INVALID STRUCTURE");
+      resetSelection();
     }
 
-    rightWindowsWidth = ImGui::GetWindowWidth();
+    internal::rightWindowsWidth = ImGui::GetWindowWidth();
+    internal::lastRightSideFreeY += internal::imguiStackMargin + ImGui::GetWindowHeight();
     ImGui::End();
   }
 }
@@ -981,11 +1040,15 @@ void buildUserGuiAndInvokeCallback() {
     if (beganUserGUI) {
       userGuiEnd();
     } else {
-      lastWindowHeightUser = imguiStackMargin;
+      internal::lastWindowHeightUser = internal::imguiStackMargin;
+      internal::lastRightSideFreeX = view::windowWidth - internal::imguiStackMargin;
+      internal::lastRightSideFreeY = internal::imguiStackMargin;
     }
 
   } else {
-    lastWindowHeightUser = imguiStackMargin;
+    internal::lastWindowHeightUser = internal::imguiStackMargin;
+    internal::lastRightSideFreeX = view::windowWidth - internal::imguiStackMargin;
+    internal::lastRightSideFreeY = internal::imguiStackMargin;
   }
 }
 
@@ -1026,7 +1089,7 @@ void draw(bool withUI, bool withContextCallback) {
         for (WeakHandle<Widget> wHandle : state::widgets) {
           if (wHandle.isValid()) {
             Widget& w = wHandle.get();
-            w.buildGUI();
+            w.buildUI();
           }
         }
       }
@@ -1088,9 +1151,7 @@ void mainLoopIteration() {
 
 void show(size_t forFrames) {
 
-  if (!state::initialized) {
-    exception("must initialize Polyscope with polyscope::init() before calling polyscope::show().");
-  }
+  checkInitialized();
 
   if (isHeadless() && forFrames == 0) {
     info("You called show() while in headless mode. In headless mode there is no display to create windows on. By "
@@ -1150,7 +1211,20 @@ bool isHeadless() {
   return false;
 }
 
+void removeEverything() {
+  removeAllStructures();
+  removeAllGroups();
+  removeAllSlicePlanes();
+  removeAllTransformationGizmos();
+  clearMessages();
+  state::userCallback = nullptr;
+  state::filesDroppedCallback = nullptr;
+  options::configureImGuiStyleCallback = configureImGuiStyle; // restore defaults
+  options::prepareImGuiFontsCallback = loadBaseFonts;
+}
+
 void shutdown(bool allowMidFrameShutdown) {
+  checkInitialized();
 
   if (!allowMidFrameShutdown && contextStack.size() > 1) {
     terminatingError("shutdown() was called mid-frame (e.g. in a per-frame callback, or UI element). This is not "
@@ -1161,17 +1235,13 @@ void shutdown(bool allowMidFrameShutdown) {
     writePrefsFile();
   }
 
-  // Clear out all structures and other scene objects
-  removeAllStructures();
-  removeAllGroups();
-  removeAllSlicePlanes();
-  clearMessages();
-  state::userCallback = nullptr;
+  removeEverything();
 
   // Shut down the render engine
   render::engine->shutdown();
   delete render::engine;
   contextStack.clear();
+  internal::contextStackSize = 0;
   render::engine = nullptr;
   state::backend = "";
   state::initialized = false;
@@ -1409,19 +1479,6 @@ void refresh() {
   requestRedraw();
 }
 
-// Cached versions of lazy properties used for updates
-namespace lazy {
-TransparencyMode transparencyMode = TransparencyMode::None;
-int transparencyRenderPasses = 8;
-int ssaaFactor = 1;
-float uiScale = -1.;
-bool groundPlaneEnabled = true;
-GroundPlaneMode groundPlaneMode = GroundPlaneMode::TileReflection;
-ScaledValue<float> groundPlaneHeightFactor = 0;
-int shadowBlurIters = 2;
-float shadowDarkness = .4;
-} // namespace lazy
-
 void processLazyProperties() {
 
   // Note: This function essentially represents lazy software design, and it's an ugly and error-prone part of the
@@ -1436,45 +1493,52 @@ void processLazyProperties() {
   // There is a second function processLazyPropertiesOutsideOfImGui() which handles a few more that can only be set
   // at limited times when an ImGui frame is not active.
 
+  // projection mode
+  if (internal::lazy::projectionMode != view::projectionMode) {
+    internal::lazy::projectionMode = view::projectionMode;
+    view::setProjectionMode(view::projectionMode);
+  }
+
   // transparency mode
-  if (lazy::transparencyMode != options::transparencyMode) {
-    lazy::transparencyMode = options::transparencyMode;
+  if (internal::lazy::transparencyMode != options::transparencyMode) {
+    internal::lazy::transparencyMode = options::transparencyMode;
     render::engine->setTransparencyMode(options::transparencyMode);
   }
 
   // transparency render passes
-  if (lazy::transparencyRenderPasses != options::transparencyRenderPasses) {
-    lazy::transparencyRenderPasses = options::transparencyRenderPasses;
+  if (internal::lazy::transparencyRenderPasses != options::transparencyRenderPasses) {
+    internal::lazy::transparencyRenderPasses = options::transparencyRenderPasses;
     requestRedraw();
   }
 
   // ssaa
-  if (lazy::ssaaFactor != options::ssaaFactor) {
-    lazy::ssaaFactor = options::ssaaFactor;
+  if (internal::lazy::ssaaFactor != options::ssaaFactor) {
+    internal::lazy::ssaaFactor = options::ssaaFactor;
     render::engine->setSSAAFactor(options::ssaaFactor);
   }
 
   // ground plane
-  if (lazy::groundPlaneEnabled != options::groundPlaneEnabled || lazy::groundPlaneMode != options::groundPlaneMode) {
-    lazy::groundPlaneEnabled = options::groundPlaneEnabled;
+  if (internal::lazy::groundPlaneEnabled != options::groundPlaneEnabled ||
+      internal::lazy::groundPlaneMode != options::groundPlaneMode) {
+    internal::lazy::groundPlaneEnabled = options::groundPlaneEnabled;
     if (!options::groundPlaneEnabled) {
       // if the (depecated) groundPlaneEnabled = false, set mode to None, so we only have one variable to check
       options::groundPlaneMode = GroundPlaneMode::None;
     }
-    lazy::groundPlaneMode = options::groundPlaneMode;
+    internal::lazy::groundPlaneMode = options::groundPlaneMode;
     requestRedraw();
   }
-  if (lazy::groundPlaneHeightFactor.asAbsolute() != options::groundPlaneHeightFactor.asAbsolute() ||
-      lazy::groundPlaneHeightFactor.isRelative() != options::groundPlaneHeightFactor.isRelative()) {
-    lazy::groundPlaneHeightFactor = options::groundPlaneHeightFactor;
+  if (internal::lazy::groundPlaneHeightFactor.asAbsolute() != options::groundPlaneHeightFactor.asAbsolute() ||
+      internal::lazy::groundPlaneHeightFactor.isRelative() != options::groundPlaneHeightFactor.isRelative()) {
+    internal::lazy::groundPlaneHeightFactor = options::groundPlaneHeightFactor;
     requestRedraw();
   }
-  if (lazy::shadowBlurIters != options::shadowBlurIters) {
-    lazy::shadowBlurIters = options::shadowBlurIters;
+  if (internal::lazy::shadowBlurIters != options::shadowBlurIters) {
+    internal::lazy::shadowBlurIters = options::shadowBlurIters;
     requestRedraw();
   }
-  if (lazy::shadowDarkness != options::shadowDarkness) {
-    lazy::shadowDarkness = options::shadowDarkness;
+  if (internal::lazy::shadowDarkness != options::shadowDarkness) {
+    internal::lazy::shadowDarkness = options::shadowDarkness;
     requestRedraw();
   }
 };
@@ -1483,8 +1547,8 @@ void processLazyPropertiesOutsideOfImGui() {
   // Like processLazyProperties, but this one handles properties which cannot be changed mid-ImGui frame
 
   // uiScale
-  if (lazy::uiScale != options::uiScale) {
-    lazy::uiScale = options::uiScale;
+  if (internal::lazy::uiScale != options::uiScale) {
+    internal::lazy::uiScale = options::uiScale;
     render::engine->configureImGui();
     setInitialWindowWidths();
   }
@@ -1524,7 +1588,7 @@ void updateStructureExtents() {
 
   // If we got a degenerate bounding box, perturb it slightly
   if (minBbox == maxBbox) {
-    double offsetScale = (state::lengthScale == 0) ? 1e-5 : state::lengthScale * 1e-5;
+    double offsetScale = (state::lengthScale == 0) ? 1e-3 : state::lengthScale * 1e-3;
     glm::vec3 offset{offsetScale, offsetScale, offsetScale};
     minBbox = minBbox - offset / 2.f;
     maxBbox = maxBbox + offset / 2.f;

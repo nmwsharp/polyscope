@@ -114,15 +114,25 @@ TEST_F(PolyscopeTest, EmptyBuffer) {
 TEST_F(PolyscopeTest, WindowProperties) {
 
   // set/get window size
-  polyscope::view::setWindowSize(300, 400);
+  int32_t target_w = 500;
+  int32_t target_h = 300;
+  polyscope::view::setWindowSize(target_w, target_h);
   int32_t w, h;
   std::tie(w, h) = polyscope::view::getWindowSize();
-  EXPECT_EQ(w, 300);
-  EXPECT_EQ(h, 400);
+  EXPECT_EQ(w, target_w);
+  EXPECT_EQ(h, target_h);
+
+  polyscope::show(3);
 
   // get buffer size
   // (hard to say what this should be, given hi-dpi etc)
-  std::tie(w, h) = polyscope::view::getBufferSize();
+  int32_t buffer_w, buffer_h;
+  std::tie(buffer_w, buffer_h) = polyscope::view::getBufferSize();
+
+  float target_aspect = target_w / static_cast<float>(target_h);
+  float buffer_aspect = buffer_w / static_cast<float>(buffer_h);
+  EXPECT_NEAR(target_aspect, buffer_aspect, 0.01);
+
 
   // resizable
   polyscope::view::setWindowResizable(false);
@@ -153,9 +163,9 @@ TEST_F(PolyscopeTest, ImPlotBasic) {
 
   std::vector<float> xvals = {0., 2., 4., 8.};
 
-  auto showCallback = [&]() { 
-    ImGui::Button("do something"); 
-    if(ImPlot::BeginPlot("test plot")) {
+  auto showCallback = [&]() {
+    ImGui::Button("do something");
+    if (ImPlot::BeginPlot("test plot")) {
       ImPlot::PlotLine("test line", &xvals.front(), xvals.size());
       ImPlot::EndPlot();
     }
@@ -163,7 +173,7 @@ TEST_F(PolyscopeTest, ImPlotBasic) {
   polyscope::state::userCallback = showCallback;
 
   polyscope::show(3);
-  
+
   for (int i = 0; i < 3; i++) {
     polyscope::frameTick();
   }
@@ -177,9 +187,9 @@ TEST_F(PolyscopeTest, ImPlotScreenshot) {
 
   std::vector<float> xvals = {0., 2., 4., 8.};
 
-  auto showCallback = [&]() { 
-    ImGui::Button("do something"); 
-    if(ImPlot::BeginPlot("test plot")) {
+  auto showCallback = [&]() {
+    ImGui::Button("do something");
+    if (ImPlot::BeginPlot("test plot")) {
       ImPlot::PlotLine("test line", &xvals.front(), xvals.size());
       ImPlot::EndPlot();
     }
@@ -187,14 +197,14 @@ TEST_F(PolyscopeTest, ImPlotScreenshot) {
   polyscope::state::userCallback = showCallback;
 
   polyscope::show(3);
-  
+
   polyscope::ScreenshotOptions opts;
   opts.includeUI = true;
   opts.transparentBackground = false;
   polyscope::screenshot(opts);
-  
+
   polyscope::show(3);
-  
+
   polyscope::state::userCallback = nullptr;
 }
 

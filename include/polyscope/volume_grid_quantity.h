@@ -8,14 +8,14 @@
 
 namespace polyscope {
 
-// Forward declare structure
 class VolumeGrid;
 
-// Extend Quantity<VolumeGrid> to add a few extra functions
-class VolumeGridQuantity : public QuantityS<VolumeGrid> {
+class VolumeGridQuantity : public Quantity {
 public:
   VolumeGridQuantity(std::string name, VolumeGrid& parentStructure, bool dominates = false);
   ~VolumeGridQuantity() {};
+
+  VolumeGrid& parent; // shadows and hides the generic member in Quantity
 
   virtual bool isDrawingGridcubes() = 0;
 

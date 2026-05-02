@@ -20,7 +20,8 @@ public:
 
   virtual void draw();
   virtual bool interact(); // returns true if the mouse input was consumed
-  virtual void buildGUI();
+  virtual void buildUI();
+  virtual std::string uniquePrefix() = 0;
 
 }; // namespace polyscope
 } // namespace polyscope

@@ -82,7 +82,9 @@ R"(
             // Construct the 4 corners of a billboard quad, facing the camera
             // Quad is shifted pointRadius toward the camera, otherwise it doesn't actually necessarily
             // cover the full sphere due to perspective.
-            vec3 dirToCam = normalize(-gl_in[0].gl_Position.xyz);
+            // (this logic is different depending on perspective vs orthographic projection)
+            ${ GEOM_CONSTRUCT_VECTOR_TO_CAMERA_IN_VIEW_SPACE }$
+
             vec3 basisX;
             vec3 basisY;
             buildTangentBasis(dirToCam, basisX, basisY);
@@ -141,7 +143,6 @@ R"(
 
         float LARGE_FLOAT();
         vec3 lightSurfaceMat(vec3 normal, vec3 color, sampler2D t_mat_r, sampler2D t_mat_g, sampler2D t_mat_b, sampler2D t_mat_k);
-        vec3 fragmentViewPosition(vec4 viewport, vec2 depthRange, mat4 invProjMat, vec4 fragCoord);
         bool raySphereIntersection(vec3 rayStart, vec3 rayDir, vec3 sphereCenter, float sphereRad, out float tHit, out vec3 pHit, out vec3 nHit);
         float fragDepthFromView(mat4 projMat, vec2 depthRange, vec3 viewPoint);
         
@@ -151,7 +152,8 @@ R"(
         {
            // Build a ray corresponding to this fragment
            vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
-           vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
+           vec3 rayStart, rayDir;
+           ${ BUILD_RAY_FOR_FRAGMENT }$
 
            float pointRadius = u_pointRadius;
            ${ SPHERE_SET_POINT_RADIUS_FRAG }$
@@ -160,7 +162,7 @@ R"(
            float tHit;
            vec3 pHit;
            vec3 nHit;
-           bool hit = raySphereIntersection(vec3(0., 0., 0), viewRay, sphereCenterView, pointRadius, tHit, pHit, nHit);
+           bool hit = raySphereIntersection(rayStart, rayDir, sphereCenterView, pointRadius, tHit, pHit, nHit);
            if(tHit >= LARGE_FLOAT()) {
               discard;
            }
@@ -265,7 +267,9 @@ R"(
             ${ SPHERE_SET_POINT_RADIUS_GEOM }$
             
             // Construct the 4 corners of a billboard quad, facing the camera
-            vec3 dirToCam = normalize(-gl_in[0].gl_Position.xyz);
+            // (this logic is different depending on perspective vs orthographic projection)
+            ${ GEOM_CONSTRUCT_VECTOR_TO_CAMERA_IN_VIEW_SPACE }$
+
             vec3 basisX;
             vec3 basisY;
             buildTangentBasis(dirToCam, basisX, basisY);

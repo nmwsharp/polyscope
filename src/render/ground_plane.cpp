@@ -170,6 +170,20 @@ void GroundPlane::prepare() {
   groundPlanePreparedMode = options::groundPlaneMode;
 }
 
+void GroundPlane::freeAllOwnedResources() {
+  groundPlaneProgram.reset();
+  sceneAltColorTexture.reset();
+  sceneAltDepthTexture.reset();
+  sceneAltFrameBuffer.reset();
+  blurProgram.reset();
+  copyTexProgram.reset();
+
+  for (int i = 0; i < 2; i++) {
+    blurColorTextures[i].reset();
+    blurFrameBuffers[i].reset();
+  }
+}
+
 void GroundPlane::draw(bool isRedraw) {
   if (options::groundPlaneMode == GroundPlaneMode::None) {
     return;
@@ -252,7 +266,7 @@ void GroundPlane::draw(bool isRedraw) {
     }
     case ProjectionMode::Orthographic: {
       glm::vec4 lookDir = glm::vec4(0, 0, 1, 0) * viewMat;
-      groundPlaneProgram->setUniform("u_cameraHeight", (lookDir.y * state::lengthScale) + groundHeight);
+      groundPlaneProgram->setUniform("u_cameraHeight", (lookDir[iP] * state::lengthScale) + groundHeight);
       break;
     }
     }
@@ -350,6 +364,9 @@ void GroundPlane::draw(bool isRedraw) {
     projMat[iP][iP] = 0.;
     projMat[3][iP] = groundHeight;
     view::viewMat = view::viewMat * projMat;
+    view::overrideClipPlanes = true; // set the clip planes manually
+    view::overrideNearClipRelative = view::defaultNearClipRatio;
+    view::overrideFarClipRelative = view::defaultFarClipRatio;
 
     // Draw everything
     render::engine->setDepthMode(DepthMode::Less);
@@ -382,6 +399,7 @@ void GroundPlane::draw(bool isRedraw) {
 
     // Restore original view matrix
     view::viewMat = origViewMat;
+    view::overrideClipPlanes = false;
   }
 
   render::engine->bindSceneBuffer();

@@ -27,7 +27,7 @@ public:
 
   // == Setters and getters
 
-  ColorImageQuantity* setEnabled(bool newEnabled) override;
+  void setEnabled(bool newEnabled) override;
 
   ColorImageQuantity* setIsPremultiplied(bool val);
   bool getIsPremultiplied();

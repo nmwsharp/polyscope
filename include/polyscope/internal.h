@@ -5,6 +5,9 @@
 #include <cstdint>
 #include <string>
 
+#include "polyscope/scaled_value.h"
+#include "polyscope/types.h"
+
 
 namespace polyscope {
 
@@ -20,11 +23,43 @@ namespace internal {
 // Get a unique identifier
 uint64_t getNextUniqueID();
 
+// How many layers deep in the polyscope context stack are we
+extern int contextStackSize;
+
+// Usually false in normal rendering. For certain situations like transparency where we render multiple times from the
+// same view, this is set to true for passes after the first, so we can skip repeated work that would not change.
+extern bool& renderPassIsRedraw;
+
 // track various fire-once warnings
 extern bool& pointCloudEfficiencyWarningReported;
 
 // global members
 extern FloatingQuantityStructure*& globalFloatingQuantityStructure;
+
+
+// == UI and layout related
+extern float imguiStackMargin;
+extern float lastWindowHeightPolyscope;
+extern float lastWindowHeightUser;
+extern float lastRightSideFreeX;
+extern float lastRightSideFreeY;
+extern float leftWindowsWidth;
+extern float rightWindowsWidth;
+
+// Cached versions of lazy properties used for updates
+namespace lazy {
+extern TransparencyMode transparencyMode;
+extern ProjectionMode projectionMode;
+extern int transparencyRenderPasses;
+extern int ssaaFactor;
+extern float uiScale;
+extern bool groundPlaneEnabled;
+extern GroundPlaneMode groundPlaneMode;
+extern ScaledValue<float> groundPlaneHeightFactor;
+extern int shadowBlurIters;
+extern float shadowDarkness;
+} // namespace lazy
+
 
 } // namespace internal
 } // namespace polyscope

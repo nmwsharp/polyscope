@@ -8,11 +8,20 @@ on:
 
 jobs:
   build:
+    if: "! contains(toJSON(github.event.commits.*.message), '[ci skip]')"
+
+    name: Build and Test (linux) - ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
-    if: "! contains(toJSON(github.event.commits.*.message), '[ci skip]')"
+        include:
+          - os: ubuntu-latest
+            arch: x64
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+
+
     steps:
     - uses: actions/checkout@v1
       with:
@@ -25,7 +34,7 @@ jobs:
       run: cd test && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND_OPENGL3_GLFW=ON -DPOLYSCOPE_BACKEND_OPENGL_MOCK=ON ..
 
     - name: build
-      run: cd test/build && make
+      run: cd test/build && cmake --build "." --parallel
 
     - name: run test mock backend
       run: cd test/build && ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL_mock
@@ -37,11 +46,19 @@ jobs:
       run: cd test/build && ASAN_OPTIONS=detect_leaks=0 ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL3_egl
   
   build_shared:
+    if: "! contains(toJSON(github.event.commits.*.message), '[ci skip]')"
+    
+    name: Build Shared and Test (linux) - ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
-    if: "! contains(toJSON(github.event.commits.*.message), '[ci skip]')"
+        include:
+          - os: ubuntu-latest
+            arch: x64
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+
     steps:
     - uses: actions/checkout@v1
       with:
@@ -54,7 +71,7 @@ jobs:
       run: cd test && mkdir build && cd build && cmake -DBUILD_SHARED_LIBS=TRUE -DCMAKE_BUILD_TYPE=Debug -DPOLYSCOPE_BACKEND_OPENGL3_GLFW=ON -DPOLYSCOPE_BACKEND_OPENGL_MOCK=ON -DPOLYSCOPE_BACKEND_OPENGL3_EGL=ON ..
 
     - name: build
-      run: cd test/build && make
+      run: cd test/build && cmake --build "." --parallel
 
     - name: run test mock backend
       run: cd test/build && ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL_mock
@@ -63,4 +80,5 @@ jobs:
       # We get memory leaks inside of EGL that I can't track down. With ASAN, this means the exit code is always nonzero,
       # which is indistinguishable from tests failing. The ASAN_OPTIONS=detect_leaks=0 skips checking leaks for this test 
       # as a workaround.
-      run: cd test/build && ASAN_OPTIONS=detect_leaks=0 ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL3_egl
+      # run: cd test/build && ASAN_OPTIONS=detect_leaks=0 ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL3_egl
+      run: cd test/build && ./bin/polyscope-test --gtest_catch_exceptions=0 backend=openGL3_egl

@@ -6,8 +6,11 @@
 
 #include "polyscope/render/opengl/gl_engine_egl.h"
 
-#include "backends/imgui_impl_opengl3.h"
+#include "polyscope/imgui_config.h"
 #include "polyscope/render/engine.h"
+
+#include "backends/imgui_impl_null.h"
+#include "backends/imgui_impl_opengl3.h"
 
 #include "stb_image.h"
 
@@ -257,7 +260,7 @@ void GLEngineEGL::initialize() {
     info(0, ss.str());
   }
 
-  if(options::uiScale < 0) { // only set from system if the value is -1, meaning not set yet
+  if (options::uiScale < 0) { // only set from system if the value is -1, meaning not set yet
     options::uiScale = 1.;
   }
 
@@ -374,7 +377,7 @@ void GLEngineEGL::sortAvailableDevicesByPreference(
     EGLDeviceEXT device = rawDevices[iDevice];
     int score = 0;
 
-    // Heuristic, non-software renderers seem to come last, so add a term to the score that prefers later-listed entries
+    // Heuristic: non-software renderers seem to come last, so add a term to the score that prefers later-listed entries
     // TODO find a way to test for software rsterization for real
     score += iDevice;
 
@@ -431,27 +434,81 @@ void GLEngineEGL::sortAvailableDevicesByPreference(
 }
 
 
-void GLEngineEGL::initializeImGui() {
+void GLEngineEGL::createNewImGuiContext() {
+  // headless mode uses no "platform backend", so no inputs are processed by imgui, and we must manually
+  // tell imgui the display size etc.
 
-  // headless mode uses the "null" imgui backed, which essentially does nothing and just passes-through inputs to all
-  // functions
+  bindDisplay();
 
-  ImGui::CreateContext();
-  ImPlot::CreateContext(); 
+  ImGuiContext* newContext = ImGui::CreateContext(imguiInitialized ? sharedFontAtlas : nullptr);
+  ImGui::SetCurrentContext(newContext);
+
+  // Set up ImGUI glfw bindings
+  if (!imguiInitialized) {
+    ImGui_ImplNullPlatform_Init();
+    const char* glsl_version = "#version 150";
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
+    // the font atlas from the base context is used by all others
+    sharedFontAtlas = ImGui::GetIO().Fonts;
+
+    if (options::prepareImGuiFontsCallback) {
+      std::tie(regularFont, monoFont) = options::prepareImGuiFontsCallback(sharedFontAtlas);
+    }
+  }
+
+  ImPlotContext* newPlotContext = ImPlot::CreateContext();
+  ImPlot::SetCurrentContext(newPlotContext);
+
   configureImGui();
+
+  if (!imguiInitialized) {
+    // Immediately open and close a frame, this forces imgui to populate its fonts and other data
+    //
+    // Otherwise, we get errors on show(), because we create a new context sharing the same atlas,
+    // when that context tries to render it errors out because its atlas is not populated. (Observed
+    // in ImGui 1.92.5)
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize.x = 1000;
+    io.DisplaySize.y = 1000;
+    ImGui::NewFrame();
+    ImGui::EndFrame();
+
+    imguiInitialized = true;
+  }
 }
 
-void GLEngineEGL::configureImGui() {
+void GLEngineEGL::updateImGuiContext(ImGuiContext* oldContext, ImGuiIO* oldIO, ImGuiContext* newContext,
+                                     ImGuiIO* newIO) {
+  if (oldContext != nullptr) {
+    newIO->ConfigFlags = oldIO->ConfigFlags;
+    newIO->BackendFlags = oldIO->BackendFlags;
+    newIO->BackendPlatformName = oldIO->BackendPlatformName;
+    newIO->BackendRendererName = oldIO->BackendRendererName;
+    newIO->BackendPlatformUserData = oldIO->BackendPlatformUserData;
+    newIO->BackendRendererUserData = oldIO->BackendRendererUserData;
+    newIO->BackendLanguageUserData = oldIO->BackendLanguageUserData;
+  }
+}
 
-  // don't both calling the style callbacks, there is no UI
+
+void GLEngineEGL::configureImGui() {
 
   if (options::uiScale < 0) {
     exception("uiScale is < 0. Perhaps it wasn't initialized?");
   }
 
   ImGuiIO& io = ImGui::GetIO();
-  io.Fonts->Clear();
-  io.Fonts->Build();
+  ImGui::GetStyle().FontScaleDpi = options::uiScale;
+
+  // if polyscope's prefs file is disabled, disable imgui's ini file too
+  if (!options::usePrefsFile) {
+    io.IniFilename = nullptr;
+  }
+
+  if (options::configureImGuiStyleCallback) {
+    options::configureImGuiStyleCallback();
+  }
 }
 
 void GLEngineEGL::shutdown() {
@@ -463,9 +520,21 @@ void GLEngineEGL::shutdown() {
   eglTerminate(eglDisplay);
 }
 
-void GLEngineEGL::shutdownImGui() { ImGui::DestroyContext(); }
+void GLEngineEGL::shutdownImGui() {
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplNullPlatform_Shutdown();
+  ImPlot::DestroyContext();
+  ImGui::DestroyContext();
+  imguiInitialized = false;
+  sharedFontAtlas = nullptr;
+  regularFont = nullptr;
+  monoFont = nullptr;
+}
 
 void GLEngineEGL::ImGuiNewFrame() {
+
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplNullPlatform_NewFrame();
 
   // ImGUI has an error check which fires unless we do this
   ImGuiIO& io = ImGui::GetIO();
@@ -473,10 +542,12 @@ void GLEngineEGL::ImGuiNewFrame() {
   io.DisplaySize.y = view::bufferHeight;
 
   ImGui::NewFrame();
+  ImGuizmo::BeginFrame();
 }
 
 void GLEngineEGL::ImGuiRender() {
   ImGui::Render();
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
   clearResourcesPreservedForImguiFrame();
 }
 

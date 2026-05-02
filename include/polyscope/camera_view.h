@@ -17,19 +17,11 @@ namespace polyscope {
 // Forward declare structure
 class CameraView;
 
-/*
-// Forward declare quantity types (currently there are none)
-template <> // Specialize the quantity type
-struct QuantityTypeHelper<CameraView> {
-  typedef CameraViewQuantity type;
-};
-*/
-
 struct CameraViewPickResult {
   // currently nothing, just following the same pattern as other structures
 };
 
-class CameraView : public QuantityStructure<CameraView> {
+class CameraView : public Structure {
 public:
   // === Member functions ===
 
@@ -97,7 +89,6 @@ public:
   // Rendering helpers used by quantities
   void setCameraViewUniforms(render::ShaderProgram& p);
   std::vector<std::string> addCameraViewRules(std::vector<std::string> initRules, bool withCameraView = true);
-  std::string getShaderNameForRenderMode();
 
   // Get info related to how the frame is drawn (billboard center vector, center-to-top vector, center-to-right vector)
   std::tuple<glm::vec3, glm::vec3, glm::vec3> getFrameBillboardGeometry();

@@ -4,11 +4,16 @@
 
 #include "polyscope/render/opengl/gl_engine_glfw.h"
 
-#include "backends/imgui_impl_opengl3.h"
+#include "polyscope/imgui_config.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
 
 #include "stb_image.h"
+
+#include "ImGuizmo.h"
+
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
 
 #include <algorithm>
 #include <set>
@@ -80,8 +85,21 @@ void GLEngineGLFW::initialize() {
 
   setWindowResizable(view::windowResizable);
 
-// === Initialize openGL
-// Load openGL functions (using GLAD)
+  // Drag & drop support
+  glfwSetDropCallback(mainWindow, [](GLFWwindow* window, int path_count, const char* paths[]) {
+    if (!state::filesDroppedCallback) return;
+
+    std::vector<std::string> pathsVec(path_count);
+    for (int i = 0; i < path_count; i++) {
+      pathsVec[i] = paths[i];
+    }
+
+    state::filesDroppedCallback(pathsVec);
+  });
+
+
+  // === Initialize openGL
+  // Load openGL functions (using GLAD)
 #ifndef __APPLE__
   if (!gladLoadGL()) {
     exception("ERROR: Failed to load openGL using GLAD");
@@ -109,53 +127,104 @@ void GLEngineGLFW::initialize() {
     // glClearDepth(1.);
   }
 
-  // Set the UI scale to account for system-requested DPI scaling
-  // Currently we do *not* watch for changes of this value e.g. if a window moves between
-  // monitors with different DPI behaviors. We could, but it would require some logic to
-  // avoid overwriting values that a user might have set.
-  if (options::uiScale < 0) { // only set from system if the value is -1, meaning not set yet
-    setUIScaleFromSystemDPI();
-  }
-
   populateDefaultShadersAndRules();
 }
 
 void GLEngineGLFW::setUIScaleFromSystemDPI() {
 
-  // logic adapted from a helpful imgui issue here: https://github.com/ocornut/imgui/issues/6967#issuecomment-2833882081
+  // the ImGui backend has built-in logic for detecting scale via GLFW, including (allegedly) handling
+  // macOS & Windows idiosyncrasies correctly
+  options::uiScale = ImGui_ImplGlfw_GetContentScaleForWindow(mainWindow);
 
-  ImVec2 windowSize{static_cast<float>(view::windowWidth), static_cast<float>(view::windowHeight)};
-  ImVec2 bufferSize{static_cast<float>(view::bufferWidth), static_cast<float>(view::bufferHeight)};
-  ImVec2 imguiCoordScale = {bufferSize.x / windowSize.x, bufferSize.y / windowSize.y};
-
-  ImVec2 contentScale;
-  glfwGetWindowContentScale(mainWindow, &contentScale.x, &contentScale.y);
-
-  float sx = contentScale.x / imguiCoordScale.x;
-  float sy = contentScale.y / imguiCoordScale.y;
-  options::uiScale = std::max(sx, sy);
   // clamp to values within [0.5x,4x] scaling
   options::uiScale = std::fmin(std::fmax(options::uiScale, 0.5f), 4.0f);
 
-  info(100, "window size: " + std::to_string(view::windowWidth) + "," + std::to_string(view::windowHeight));
-  info(100, "buffer size: " + std::to_string(view::bufferWidth) + "," + std::to_string(view::bufferHeight));
-  info(100, "imguiCoordScale: " + std::to_string(imguiCoordScale.x) + "," + std::to_string(imguiCoordScale.y));
-  info(100, "contentScale: " + std::to_string(contentScale.x) + "," + std::to_string(contentScale.y));
   info(100, "computed uiScale: " + std::to_string(options::uiScale));
 }
 
-void GLEngineGLFW::initializeImGui() {
+void GLEngineGLFW::createNewImGuiContext() {
   bindDisplay();
 
-  ImGui::CreateContext(); // must call once at start
-  ImPlot::CreateContext(); 
+  ImGuiContext* newContext = ImGui::CreateContext(imguiInitialized ? sharedFontAtlas : nullptr);
+  ImGui::SetCurrentContext(newContext);
 
   // Set up ImGUI glfw bindings
-  ImGui_ImplGlfw_InitForOpenGL(mainWindow, true);
-  const char* glsl_version = "#version 150";
-  ImGui_ImplOpenGL3_Init(glsl_version);
+  if (!imguiInitialized) {
+    ImGui_ImplGlfw_InitForOpenGL(mainWindow, !imguiInitialized);
+    const char* glsl_version = "#version 150";
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
+
+    // Set the UI scale to account for system-requested DPI scaling
+    // Currently we do *not* watch for changes of this value e.g. if a window moves between
+    // monitors with different DPI behaviors. We could, but it would require some logic to
+    // avoid overwriting values that a user might have set.
+    if (options::uiScale < 0) { // only set from system if the value is -1, meaning not set yet
+      setUIScaleFromSystemDPI();
+    }
+
+    // the font atlas from the base context is used by all others
+    sharedFontAtlas = ImGui::GetIO().Fonts;
+
+    if (options::prepareImGuiFontsCallback) {
+      std::tie(regularFont, monoFont) = options::prepareImGuiFontsCallback(sharedFontAtlas);
+    }
+  }
+
+  ImPlotContext* newPlotContext = ImPlot::CreateContext();
+  ImPlot::SetCurrentContext(newPlotContext);
 
   configureImGui();
+
+  if (!imguiInitialized) {
+    // Immediately open and close a frame, this forces imgui to populate its fonts and other data
+    //
+    // Otherwise, we get errors on show(), because we create a new context sharing the same atlas,
+    // when that context tries to render it errors out because its atlas is not populated. (Observed
+    // in ImGui 1.92.5)
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize.x = 1000;
+    io.DisplaySize.y = 1000;
+    ImGui::NewFrame();
+    ImGui::EndFrame();
+
+    imguiInitialized = true;
+  }
+}
+
+void GLEngineGLFW::updateImGuiContext(ImGuiContext* oldContext, ImGuiIO* oldIO, ImGuiContext* newContext,
+                                      ImGuiIO* newIO) {
+  if (oldContext != nullptr) {
+    newIO->ConfigFlags = oldIO->ConfigFlags;
+    newIO->BackendFlags = oldIO->BackendFlags;
+    newIO->BackendPlatformName = oldIO->BackendPlatformName;
+    newIO->BackendRendererName = oldIO->BackendRendererName;
+    newIO->BackendPlatformUserData = oldIO->BackendPlatformUserData;
+    newIO->BackendRendererUserData = oldIO->BackendRendererUserData;
+    newIO->BackendLanguageUserData = oldIO->BackendLanguageUserData;
+
+
+    // This is a necessary workaround for multi-context support with the ImGui-provided glfw backend,
+    // particularly for our (somewhat strange) case where we manage a stack of contexts for a single
+    // window.
+    //
+    // The first element of this struct (defined in imgui_impl_glfw.cpp) is an ImGuiContext pointer,
+    // which is meant to point back to the owning context, and is where glfw+ImGui will dispatch
+    // IO events. We have to update that pointer, but there is no officially-supported way to do so,
+    // so we forcibly overwrite it.
+    //
+    // This is obviously potentially memory-unsafe, although it's a void* anyway so we gave up on typing
+    // long ago. If the struct changes in future versions of ImGui this will do bad things. Written and
+    // tested in Jan 2026 by nsharp.
+    if (newIO->BackendPlatformUserData != nullptr) {
+      // ^^^ should always be non-null, just being defensive before atrocious pointer bashing
+
+      // assign the pointer to the next context as the first element of the struct
+      *static_cast<ImGuiContext**>(newIO->BackendPlatformUserData) = newContext;
+    }
+  }
+
+  // ImGui_ImplGlfw_ContextMap_UpdateIfPresent(mainWindow, newContext);
 }
 
 void GLEngineGLFW::configureImGui() {
@@ -164,21 +233,20 @@ void GLEngineGLFW::configureImGui() {
     exception("uiScale is < 0. Perhaps it wasn't initialized?");
   }
 
-  if (options::prepareImGuiFontsCallback) {
+  ImGuiIO& io = ImGui::GetIO();
 
-    ImGuiIO& io = ImGui::GetIO();
-    io.Fonts->Clear();
+  // These seem to be documented but don't actually exist in ImGui 1.92.5
+  // It would be good to use ImGui's built-in scaling behavior, but for now Polyscope
+  // has lots of built-in window size logic that requires the window size to match the
+  // font size to look reasonable, so we can't just let the font size get changed
+  // automatically.
+  // io.ConfigDpiScaleFonts = false;
+  // io.ConfigDpiScaleViewports = false;
 
-    // these are necessary if different fonts are loaded in the callback
-    // (don't totally understand why, allegedly it may change in the future)
-    ImGui_ImplOpenGL3_DestroyFontsTexture();
-
-    ImFontAtlas* _unused;
-    std::tie(_unused, regularFont, monoFont) = options::prepareImGuiFontsCallback();
-
-    ImGui_ImplOpenGL3_CreateFontsTexture();
+  // if polyscope's prefs file is disabled, disable imgui's ini file too
+  if (!options::usePrefsFile) {
+    io.IniFilename = nullptr;
   }
-
 
   if (options::configureImGuiStyleCallback) {
     options::configureImGuiStyleCallback();
@@ -187,25 +255,33 @@ void GLEngineGLFW::configureImGui() {
 
 
 void GLEngineGLFW::shutdown() {
+  freeAllOwnedResources();
   checkError();
   shutdownImGui();
+  checkError();
   glfwDestroyWindow(mainWindow);
+  // no checkError() after this, openGL has been unloaded
   glfwTerminate();
 }
 
 
 void GLEngineGLFW::shutdownImGui() {
-  // ImGui shutdown things
+  ImGui_ImplGlfw_RestoreCallbacks(mainWindow);
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImPlot::DestroyContext();
   ImGui::DestroyContext();
+  imguiInitialized = false;
+  sharedFontAtlas = nullptr;
+  regularFont = nullptr;
+  monoFont = nullptr;
 }
 
 void GLEngineGLFW::ImGuiNewFrame() {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
+  ImGuizmo::BeginFrame();
 }
 
 void GLEngineGLFW::ImGuiRender() {
@@ -263,13 +339,13 @@ void GLEngineGLFW::updateWindowSize(bool force) {
 void GLEngineGLFW::applyWindowSize() {
   glfwSetWindowSize(mainWindow, view::windowWidth, view::windowHeight);
 
-  // on some platform size changes are asynchonous, need to ensure it completes
-  // we don't want to just retry until the resize has happened, because it could be impossible
-  // TODO it seems like on X11 sometimes even this isn't enough?
-  // glfwWaitEvents();
-  // NSHARP: disabling this ^^^, on macOS it is causing the window to block until it gets focus,
-  // and some googling makes me thing the underlying buffers should be resized immediately, which is
-  // all we really care about
+  // On some platform size changes are asynchonous, waiting for events helps to ensure the window size change actually
+  // happens. Even this is not guaranteed to always be sufficient, but it seems to help. However, on macOS it causes the
+  // window to block until it gets focus, which we don't want, so do it only on Windows. I'm not sure about the Windows
+  // behavior.
+#if defined(__linux__)
+  glfwWaitEvents();
+#endif
 
   updateWindowSize(true);
 }

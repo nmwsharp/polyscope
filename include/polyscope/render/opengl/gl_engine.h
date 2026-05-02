@@ -55,6 +55,9 @@ public:
   void setData(const std::vector<float>& data) override;
   void setData(const std::vector<double>& data) override;
   void setData(const std::vector<int32_t>& data) override;
+  void setData(const std::vector<glm::ivec2>& data) override;
+  void setData(const std::vector<glm::ivec3>& data) override;
+  void setData(const std::vector<glm::ivec4>& data) override;
   void setData(const std::vector<uint32_t>& data) override;
   void setData(const std::vector<glm::uvec2>& data) override;
   void setData(const std::vector<glm::uvec3>& data) override;
@@ -74,6 +77,9 @@ public:
   glm::vec3 getData_vec3(size_t ind) override;
   glm::vec4 getData_vec4(size_t ind) override;
   int getData_int(size_t ind) override;
+  glm::ivec2 getData_ivec2(size_t ind) override;
+  glm::ivec3 getData_ivec3(size_t ind) override;
+  glm::ivec4 getData_ivec4(size_t ind) override;
   uint32_t getData_uint32(size_t ind) override;
   glm::uvec2 getData_uvec2(size_t ind) override;
   glm::uvec3 getData_uvec3(size_t ind) override;
@@ -86,6 +92,9 @@ public:
   std::vector<glm::vec3> getDataRange_vec3(size_t ind, size_t count) override;
   std::vector<glm::vec4> getDataRange_vec4(size_t ind, size_t count) override;
   std::vector<int> getDataRange_int(size_t ind, size_t count) override;
+  std::vector<glm::ivec2> getDataRange_ivec2(size_t ind, size_t count) override;
+  std::vector<glm::ivec3> getDataRange_ivec3(size_t ind, size_t count) override;
+  std::vector<glm::ivec4> getDataRange_ivec4(size_t ind, size_t count) override;
   std::vector<uint32_t> getDataRange_uint32(size_t ind, size_t count) override;
   std::vector<glm::uvec2> getDataRange_uvec2(size_t ind, size_t count) override;
   std::vector<glm::uvec3> getDataRange_uvec3(size_t ind, size_t count) override;
@@ -145,6 +154,9 @@ public:
   void setData(const std::vector<float>& data) override;
   void setData(const std::vector<double>& data) override;
   void setData(const std::vector<int32_t>& data) override;
+  void setData(const std::vector<glm::ivec2>& data) override;
+  void setData(const std::vector<glm::ivec3>& data) override;
+  void setData(const std::vector<glm::ivec4>& data) override;
   void setData(const std::vector<uint32_t>& data) override;
   void setData(const std::vector<glm::uvec2>& data) override;
   void setData(const std::vector<glm::uvec3>& data) override;
@@ -300,6 +312,9 @@ public:
   void setUniform(std::string name, glm::vec4 val) override;
   void setUniform(std::string name, std::array<float, 3> val) override;
   void setUniform(std::string name, float x, float y, float z, float w) override;
+  void setUniform(std::string name, glm::ivec2 val) override;
+  void setUniform(std::string name, glm::ivec3 val) override;
+  void setUniform(std::string name, glm::ivec4 val) override;
   void setUniform(std::string name, glm::uvec2 val) override;
   void setUniform(std::string name, glm::uvec3 val) override;
   void setUniform(std::string name, glm::uvec4 val) override;
@@ -317,6 +332,10 @@ public:
   void setAttribute(std::string name, const std::vector<double>& data) override;
   void setAttribute(std::string name, const std::vector<int32_t>& data) override;
   void setAttribute(std::string name, const std::vector<uint32_t>& data) override;
+  
+  void setAttribute(std::string name, const std::vector<std::array<glm::vec3, 2>>& data) override;
+  void setAttribute(std::string name, const std::vector<std::array<glm::vec3, 3>>& data) override;
+  void setAttribute(std::string name, const std::vector<std::array<glm::vec3, 4>>& data) override;
   // clang-format on
 
 
@@ -428,6 +447,7 @@ public:
 
 protected:
   // Helpers
+  virtual void freeAllOwnedResources() override;
   virtual void createSlicePlaneFliterRule(std::string name) override;
 
   // Shader program & rule caches

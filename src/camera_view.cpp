@@ -24,7 +24,7 @@ const std::string CameraView::structureTypeName = "Camera View";
 
 // Constructor
 CameraView::CameraView(std::string name, const CameraParameters& params_)
-    : QuantityStructure<CameraView>(name, structureTypeName), params(params_),
+    : Structure(name, structureTypeName), params(params_),
       widgetFocalLength(uniquePrefix() + "#widgetFocalLength", relativeValue(0.05)),
       widgetThickness(uniquePrefix() + "#widgetThickness", 0.02),
       widgetColor(uniquePrefix() + "#widgetColor", glm::vec3{0., 0., 0.}) {
@@ -154,14 +154,16 @@ void CameraView::drawPickDelayed() {
 void CameraView::prepare() {
 
   {
-    std::vector<std::string> rules = addStructureRules({"SHADE_BASECOLOR"});
+    std::vector<std::string> rules =
+        addStructureRules({view::getCurrentProjectionModeRaycastRule(), "SHADE_BASECOLOR"});
     if (wantsCullPosition()) rules.push_back("SPHERE_CULLPOS_FROM_CENTER");
     rules = render::engine->addMaterialRules(material, rules);
     nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", rules);
   }
 
   {
-    std::vector<std::string> rules = addStructureRules({"SHADE_BASECOLOR"});
+    std::vector<std::string> rules =
+        addStructureRules({view::getCurrentProjectionModeRaycastRule(), "SHADE_BASECOLOR"});
     if (wantsCullPosition()) rules.push_back("CYLINDER_CULLPOS_FROM_MID");
     rules = render::engine->addMaterialRules(material, rules);
     edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", rules);
@@ -315,11 +317,7 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
                                                        std::array<glm::vec3, 3>{pickColor, pickColor, pickColor});
 
 
-    std::shared_ptr<render::AttributeBuffer> tripleColorsBuff =
-        render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, 3);
-    tripleColorsBuff->setData(tripleColors);
-
-    pickFrameProgram->setAttribute("a_vertexColors", tripleColorsBuff);
+    pickFrameProgram->setAttribute("a_vertexColors", tripleColors);
     pickFrameProgram->setAttribute("a_faceColor", faceColor);
     if (wantsCullPosition()) {
       pickFrameProgram->setAttribute("a_cullPos", cullPos);
@@ -342,7 +340,7 @@ void CameraView::geometryChanged() {
   }
 
   requestRedraw();
-  QuantityStructure<CameraView>::refresh();
+  Structure::refresh();
 }
 
 CameraViewPickResult CameraView::interpretPickResult(const PickResult& rawResult) {
@@ -449,7 +447,7 @@ void CameraView::refresh() {
   nodeProgram.reset();
   edgeProgram.reset();
   pickFrameProgram.reset();
-  QuantityStructure<CameraView>::refresh(); // call base class version, which refreshes quantities
+  Structure::refresh(); // call base class version, which refreshes quantities
 }
 
 void CameraView::setViewToThisCamera(bool withFlight) {

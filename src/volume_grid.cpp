@@ -12,7 +12,7 @@ namespace polyscope {
 const std::string VolumeGrid::structureTypeName = "Volume Grid";
 
 VolumeGrid::VolumeGrid(std::string name, glm::uvec3 gridNodeDim_, glm::vec3 boundMin_, glm::vec3 boundMax_)
-    : QuantityStructure<VolumeGrid>(name, typeName()),
+    : Structure(name, typeName()),
 
       // clang-format off
       // == managed quantities
@@ -75,8 +75,8 @@ void VolumeGrid::buildCustomUI() {
       ImGui::PushItemWidth(75 * options::uiScale);
       if (ImGui::SliderFloat("Width", &edgeWidth.get(), 0.001, 2.)) {
         // NOTE: this intentionally circumvents the setEdgeWidth() setter to avoid repopulating the buffer as the
-        // slider is dragged---otherwise we repopulate the buffer on every change, which mostly works fine. This is a
-        // lazy solution instead of better state/buffer management. setEdgeWidth(getEdgeWidth());
+        // slider is dragged---otherwise we repopulate the buffer on every change. This is a
+        // lazy solution instead of better state/buffer management.
         edgeWidth.manuallyChanged();
         requestRedraw();
       }
@@ -94,10 +94,12 @@ void VolumeGrid::buildCustomOptionsUI() {
   }
 
   // Shrinky effect
+  ImGui::PushItemWidth(150 * options::uiScale);
   if (ImGui::SliderFloat("Cell Shrink", &cubeSizeFactor.get(), 0.0, 1., "%.3f", ImGuiSliderFlags_Logarithmic)) {
     cubeSizeFactor.manuallyChanged();
     requestRedraw();
   }
+  ImGui::PopItemWidth();
 }
 
 void VolumeGrid::draw() {
@@ -170,7 +172,7 @@ void VolumeGrid::drawPick() {
   // Draw the actual grid
   render::engine->setBackfaceCull(true);
   pickProgram->draw();
-  
+
   for (auto& x : quantities) {
     x.second->drawPick();
   }
@@ -197,14 +199,14 @@ std::vector<std::string> VolumeGrid::addGridCubeRules(std::vector<std::string> i
 
   if (withShade) {
     if (getEdgeWidth() > 0) {
-      initRules.push_back("GRIDCUBE_WIREFRAME");
+      initRules.push_back("GRIDCUBE_PLANE_WIREFRAME");
       // initRules.push_back("WIREFRAME_SIMPLE");
       initRules.push_back("MESH_WIREFRAME");
     }
   }
 
   if (wantsCullPosition()) {
-    initRules.push_back("GRIDCUBE_CULLPOS_FROM_CENTER");
+    initRules.push_back("GRIDCUBE_PLANE_CULLPOS_FROM_CENTER");
   }
 
   return initRules;
@@ -293,7 +295,7 @@ void VolumeGrid::updateObjectSpaceBounds() {
 std::string VolumeGrid::typeName() { return structureTypeName; }
 
 void VolumeGrid::refresh() {
-  QuantityStructure<VolumeGrid>::refresh(); // call base class version, which refreshes quantities
+  Structure::refresh(); // call base class version, which refreshes quantities
 
   program.reset();
   pickProgram.reset();
@@ -402,8 +404,12 @@ VolumeGrid* VolumeGrid::setMaterial(std::string m) {
 std::string VolumeGrid::getMaterial() { return material.get(); }
 
 VolumeGrid* VolumeGrid::setEdgeWidth(double newVal) {
+  double oldEdgeWidth = edgeWidth.get();
   edgeWidth = newVal;
-  refresh();
+  if ((oldEdgeWidth != 0) != (newVal != 0)) {
+    // if it changed to/from zero, we disabled/enabled edgges, and need a new program
+    refresh();
+  }
   requestRedraw();
   return this;
 }
@@ -419,8 +425,8 @@ double VolumeGrid::getCubeSizeFactor() { return cubeSizeFactor.get(); }
 // === Register functions
 
 
-VolumeGridQuantity::VolumeGridQuantity(std::string name_, VolumeGrid& curveNetwork_, bool dominates_)
-    : QuantityS<VolumeGrid>(name_, curveNetwork_, dominates_) {}
+VolumeGridQuantity::VolumeGridQuantity(std::string name_, VolumeGrid& volumeGrid_, bool dominates_)
+    : Quantity(name_, volumeGrid_, dominates_), parent(volumeGrid_) {}
 
 
 VolumeGridNodeScalarQuantity* VolumeGrid::addNodeScalarQuantityImpl(std::string name, const std::vector<float>& data,
@@ -549,7 +555,8 @@ void VolumeGrid::buildNodeInfoGUI(const VolumeGridPickResult& result) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildNodeInfoGUI(nInd);
+    VolumeGridQuantity* q = static_cast<VolumeGridQuantity*>(x.second.get());
+    q->buildNodeInfoGUI(nInd);
   }
 
   ImGui::Indent(-20.);
@@ -575,7 +582,8 @@ void VolumeGrid::buildCellInfoGUI(const VolumeGridPickResult& result) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildCellInfoGUI(cellInd);
+    VolumeGridQuantity* q = static_cast<VolumeGridQuantity*>(x.second.get());
+    q->buildCellInfoGUI(cellInd);
   }
 
   ImGui::Indent(-20.);

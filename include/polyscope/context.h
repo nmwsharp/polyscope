@@ -28,11 +28,12 @@ class Structure;
 class Group;
 class SlicePlane;
 class Widget;
+class TransformationGizmo;
 class FloatingQuantityStructure;
 namespace view {
-extern const double defaultNearClipRatio;
-extern const double defaultFarClipRatio;
-extern const double defaultFov;
+extern const float defaultNearClipRatio;
+extern const float defaultFarClipRatio;
+extern const float defaultFov;
 } // namespace view
 
 // A context object wrapping all global state used by Polyscope.
@@ -61,8 +62,8 @@ struct Context {
       std::tuple<glm::vec3, glm::vec3>{glm::vec3{-1., -1., -1.}, glm::vec3{1., 1., 1.}};
   std::vector<std::unique_ptr<SlicePlane>> slicePlanes;
   std::vector<WeakHandle<Widget>> widgets;
-  bool doDefaultMouseInteraction = true;
   std::function<void()> userCallback = nullptr;
+  std::function<void(const std::vector<std::string>&)> filesDroppedCallback = nullptr;
 
 
   // ======================================================
@@ -84,12 +85,13 @@ struct Context {
   NavigateStyle navigateStyle = NavigateStyle::Turntable;
   UpDir upDir = UpDir::YUp;
   FrontDir frontDir = FrontDir::ZFront;
-  double moveScale = 1.0;
-  double nearClipRatio = view::defaultNearClipRatio;
-  double farClipRatio = view::defaultFarClipRatio;
+  float moveScale = 1.0;
+  ViewRelativeMode viewRelativeMode = ViewRelativeMode::CenterRelative;
+  float nearClip = view::defaultNearClipRatio;
+  float farClip = view::defaultFarClipRatio;
   std::array<float, 4> bgColor{{1.0, 1.0, 1.0, 0.0}};
   glm::mat4x4 viewMat{std::numeric_limits<float>::quiet_NaN()};
-  double fov = view::defaultFov;
+  float fov = view::defaultFov;
   ProjectionMode projectionMode = ProjectionMode::Perspective;
   glm::vec3 viewCenter;
   bool midflight = false;
@@ -113,8 +115,19 @@ struct Context {
   // === Internal globals from internal.h
   // ======================================================
 
+  bool renderPassIsRedraw = false;
   bool pointCloudEfficiencyWarningReported = false;
   FloatingQuantityStructure* globalFloatingQuantityStructure = nullptr;
+
+  // ======================================================
+  // === Other various global lists
+  // ======================================================
+
+  // Transformation gizmos that were created by hte user for the secne
+  // Note: this does _not_ include all gizmos, such as the one which exists
+  // for each structure. This is just storage for gizmos explicitly created
+  // like with addTransformationGizmo()
+  std::vector<std::unique_ptr<TransformationGizmo>> createdTransformationGizmos;
 };
 
 

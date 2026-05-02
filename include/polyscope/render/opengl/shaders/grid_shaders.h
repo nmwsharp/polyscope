@@ -20,8 +20,16 @@ extern const ShaderStageSpecification FLEX_GRIDCUBE_PLANE_FRAG_SHADER;
 extern const ShaderReplacementRule GRIDCUBE_PROPAGATE_NODE_VALUE;
 extern const ShaderReplacementRule GRIDCUBE_PROPAGATE_CELL_VALUE;
 extern const ShaderReplacementRule GRIDCUBE_WIREFRAME;
+extern const ShaderReplacementRule GRIDCUBE_PLANE_WIREFRAME;
 extern const ShaderReplacementRule GRIDCUBE_CONSTANT_PICK;
 extern const ShaderReplacementRule GRIDCUBE_CULLPOS_FROM_CENTER;
+extern const ShaderReplacementRule GRIDCUBE_PLANE_CULLPOS_FROM_CENTER;
+
+// Attribute-based rules for sparse volume grid quantities
+extern const ShaderReplacementRule GRIDCUBE_PROPAGATE_ATTR_CELL_SCALAR;
+extern const ShaderReplacementRule GRIDCUBE_PROPAGATE_ATTR_CELL_COLOR;
+extern const ShaderReplacementRule GRIDCUBE_PROPAGATE_ATTR_NODE_SCALAR;
+extern const ShaderReplacementRule GRIDCUBE_PROPAGATE_ATTR_NODE_COLOR;
 
 
 } // namespace backend_openGL3

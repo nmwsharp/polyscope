@@ -3,12 +3,15 @@
 #ifdef POLYSCOPE_BACKEND_OPENGL_MOCK_ENABLED
 #include "polyscope/render/mock_opengl/mock_gl_engine.h"
 
+#include "polyscope/imgui_config.h"
 #include "polyscope/messages.h"
 #include "polyscope/options.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/utilities.h"
 
 #include "polyscope/render/shader_builder.h"
+
+#include "backends/imgui_impl_null.h"
 
 // all the shaders
 #include "polyscope/render/opengl/shaders/common.h"
@@ -142,12 +145,22 @@ void GLAttributeBuffer::setData(const std::vector<int32_t>& data) {
   checkType(RenderDataType::Int);
   setData_helper(data);
 }
-
+void GLAttributeBuffer::setData(const std::vector<glm::ivec2>& data) {
+  checkType(RenderDataType::Vector2Int);
+  setData_helper(data);
+}
+void GLAttributeBuffer::setData(const std::vector<glm::ivec3>& data) {
+  checkType(RenderDataType::Vector3Int);
+  setData_helper(data);
+}
+void GLAttributeBuffer::setData(const std::vector<glm::ivec4>& data) {
+  checkType(RenderDataType::Vector4Int);
+  setData_helper(data);
+}
 void GLAttributeBuffer::setData(const std::vector<uint32_t>& data) {
   checkType(RenderDataType::UInt);
   setData_helper(data);
 }
-
 void GLAttributeBuffer::setData(const std::vector<glm::uvec2>& data) {
   checkType(RenderDataType::Vector2UInt);
   setData_helper(data);
@@ -156,7 +169,6 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec3>& data) {
   checkType(RenderDataType::Vector3UInt);
   setData_helper(data);
 }
-
 void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data) {
   checkType(RenderDataType::Vector4UInt);
   setData_helper(data);
@@ -196,20 +208,32 @@ int GLAttributeBuffer::getData_int(size_t ind) {
   if (getType() != RenderDataType::Int) exception("bad getData type");
   return getData_helper<int>(ind);
 }
+glm::ivec2 GLAttributeBuffer::getData_ivec2(size_t ind) {
+  if (getType() != RenderDataType::Vector2Int) exception("bad getData type");
+  return getData_helper<glm::ivec2>(ind);
+}
+glm::ivec3 GLAttributeBuffer::getData_ivec3(size_t ind) {
+  if (getType() != RenderDataType::Vector3Int) exception("bad getData type");
+  return getData_helper<glm::ivec3>(ind);
+}
+glm::ivec4 GLAttributeBuffer::getData_ivec4(size_t ind) {
+  if (getType() != RenderDataType::Vector4Int) exception("bad getData type");
+  return getData_helper<glm::ivec4>(ind);
+}
 uint32_t GLAttributeBuffer::getData_uint32(size_t ind) {
   if (getType() != RenderDataType::UInt) exception("bad getData type");
   return getData_helper<uint32_t>(ind);
 }
 glm::uvec2 GLAttributeBuffer::getData_uvec2(size_t ind) {
-  if (getType() != RenderDataType::Vector2Float) exception("bad getData type");
+  if (getType() != RenderDataType::Vector2UInt) exception("bad getData type");
   return getData_helper<glm::uvec2>(ind);
 }
 glm::uvec3 GLAttributeBuffer::getData_uvec3(size_t ind) {
-  if (getType() != RenderDataType::Vector3Float) exception("bad getData type");
+  if (getType() != RenderDataType::Vector3UInt) exception("bad getData type");
   return getData_helper<glm::uvec3>(ind);
 }
 glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
-  if (getType() != RenderDataType::Vector4Float) exception("bad getData type");
+  if (getType() != RenderDataType::Vector4UInt) exception("bad getData type");
   return getData_helper<glm::uvec4>(ind);
 }
 
@@ -253,6 +277,18 @@ std::vector<int> GLAttributeBuffer::getDataRange_int(size_t start, size_t count)
   if (getType() != RenderDataType::Int) exception("bad getData type");
   return getDataRange_helper<int>(start, count);
 }
+std::vector<glm::ivec2> GLAttributeBuffer::getDataRange_ivec2(size_t start, size_t count) {
+  if (getType() != RenderDataType::Vector2Int) exception("bad getData type");
+  return getDataRange_helper<glm::ivec2>(start, count);
+}
+std::vector<glm::ivec3> GLAttributeBuffer::getDataRange_ivec3(size_t start, size_t count) {
+  if (getType() != RenderDataType::Vector3Int) exception("bad getData type");
+  return getDataRange_helper<glm::ivec3>(start, count);
+}
+std::vector<glm::ivec4> GLAttributeBuffer::getDataRange_ivec4(size_t start, size_t count) {
+  if (getType() != RenderDataType::Vector4Int) exception("bad getData type");
+  return getDataRange_helper<glm::ivec4>(start, count);
+}
 std::vector<uint32_t> GLAttributeBuffer::getDataRange_uint32(size_t start, size_t count) {
   if (getType() != RenderDataType::UInt) exception("bad getData type");
   return getDataRange_helper<uint32_t>(start, count);
@@ -267,7 +303,6 @@ std::vector<glm::uvec3> GLAttributeBuffer::getDataRange_uvec3(size_t start, size
 }
 std::vector<glm::uvec4> GLAttributeBuffer::getDataRange_uvec4(size_t start, size_t count) {
   if (getType() != RenderDataType::Vector4UInt) exception("bad getData type");
-  bind();
   return getDataRange_helper<glm::uvec4>(start, count);
 }
 
@@ -450,6 +485,9 @@ void GLTextureBuffer::setData(const std::vector<double>& data) {
   checkGLError();
 };
 void GLTextureBuffer::setData(const std::vector<int32_t>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::ivec2>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::ivec3>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::ivec4>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<uint32_t>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data) { exception("not implemented"); };
 void GLTextureBuffer::setData(const std::vector<glm::uvec3>& data) { exception("not implemented"); };
@@ -843,15 +881,21 @@ void GLShaderProgram::assignBufferToVAO(GLShaderAttribute& a) {
     switch (a.type) {
     case RenderDataType::Float:
       break;
-    case RenderDataType::Int:
-      break;
-    case RenderDataType::UInt:
-      break;
     case RenderDataType::Vector2Float:
       break;
     case RenderDataType::Vector3Float:
       break;
     case RenderDataType::Vector4Float:
+      break;
+    case RenderDataType::Int:
+      break;
+    case RenderDataType::Vector2Int:
+      break;
+    case RenderDataType::Vector3Int:
+      break;
+    case RenderDataType::Vector4Int:
+      break;
+    case RenderDataType::UInt:
       break;
     case RenderDataType::Vector2UInt:
       break;
@@ -1053,6 +1097,54 @@ void GLShaderProgram::setUniform(std::string name, float x, float y, float z, fl
   throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
 }
 
+// Set a int vector2 uniform
+void GLShaderProgram::setUniform(std::string name, glm::ivec2 val) {
+
+  for (GLShaderUniform& u : uniforms) {
+    if (u.name == name) {
+      if (u.type == RenderDataType::Vector2Int) {
+        u.isSet = true;
+      } else {
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
+      }
+      return;
+    }
+  }
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
+}
+
+// Set a int vector3 uniform
+void GLShaderProgram::setUniform(std::string name, glm::ivec3 val) {
+
+  for (GLShaderUniform& u : uniforms) {
+    if (u.name == name) {
+      if (u.type == RenderDataType::Vector3Int) {
+        u.isSet = true;
+      } else {
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
+      }
+      return;
+    }
+  }
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
+}
+
+// Set a int vector4 uniform
+void GLShaderProgram::setUniform(std::string name, glm::ivec4 val) {
+
+  for (GLShaderUniform& u : uniforms) {
+    if (u.name == name) {
+      if (u.type == RenderDataType::Vector4Int) {
+        u.isSet = true;
+      } else {
+        throw std::invalid_argument("Tried to set GLShaderUniform with wrong type");
+      }
+      return;
+    }
+  }
+  throw std::invalid_argument("Tried to set nonexistent uniform with name " + name);
+}
+
 // Set a uint vector2 uniform
 void GLShaderProgram::setUniform(std::string name, glm::uvec2 val) {
 
@@ -1228,6 +1320,51 @@ void GLShaderProgram::setAttribute(std::string name, const std::vector<uint32_t>
   throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
 }
 
+void GLShaderProgram::setAttribute(std::string name, const std::vector<std::array<glm::vec3, 2>>& data) {
+
+  // pass-through to the buffer
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name) {
+      if (a.arrayCount != 2) throw std::invalid_argument("Tried to set attribute " + name + " with wrong array count");
+      ensureBufferExists(a);
+      a.buff->setData(data);
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
+void GLShaderProgram::setAttribute(std::string name, const std::vector<std::array<glm::vec3, 3>>& data) {
+
+  // pass-through to the buffer
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name) {
+      if (a.arrayCount != 3) throw std::invalid_argument("Tried to set attribute " + name + " with wrong array count");
+      ensureBufferExists(a);
+      a.buff->setData(data);
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
+void GLShaderProgram::setAttribute(std::string name, const std::vector<std::array<glm::vec3, 4>>& data) {
+
+  // pass-through to the buffer
+  for (GLShaderAttribute& a : attributes) {
+    if (a.name == name) {
+      if (a.arrayCount != 4) throw std::invalid_argument("Tried to set attribute " + name + " with wrong array count");
+      ensureBufferExists(a);
+      a.buff->setData(data);
+      return;
+    }
+  }
+
+  throw std::invalid_argument("Tried to set nonexistent attribute with name " + name);
+}
+
 bool GLShaderProgram::hasTexture(std::string name) {
   for (GLShaderTexture& t : textures) {
     if (t.name == name) {
@@ -1394,6 +1531,15 @@ void GLShaderProgram::setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) 
     // NOTE: the render pass expects these to be unsigned.... but negative
     // values don't make sense anyway, so I think it's okay to just let it slide
     indexSizeMult = 1;
+    break;
+  case RenderDataType::Vector2Int:
+    indexSizeMult = 2;
+    break;
+  case RenderDataType::Vector3Int:
+    indexSizeMult = 3;
+    break;
+  case RenderDataType::Vector4Int:
+    indexSizeMult = 4;
     break;
   case RenderDataType::UInt:
     indexSizeMult = 1;
@@ -1574,23 +1720,74 @@ void MockGLEngine::initialize() {
   populateDefaultShadersAndRules();
 }
 
-void MockGLEngine::initializeImGui() {
-  ImGui::CreateContext(); // must call once at start
-  ImPlot::CreateContext(); 
+void MockGLEngine::createNewImGuiContext() {
+  bindDisplay();
+
+  ImGuiContext* newContext = ImGui::CreateContext(imguiInitialized ? sharedFontAtlas : nullptr);
+  ImGui::SetCurrentContext(newContext);
+
+  ImGui_ImplNull_Init();
+
+  if (!imguiInitialized) {
+    // the font atlas from the base context is used by all others
+    sharedFontAtlas = ImGui::GetIO().Fonts;
+
+    if (options::prepareImGuiFontsCallback) {
+      std::tie(regularFont, monoFont) = options::prepareImGuiFontsCallback(sharedFontAtlas);
+    }
+  }
+
+  ImPlotContext* newPlotContext = ImPlot::CreateContext();
+  ImPlot::SetCurrentContext(newPlotContext);
+
   configureImGui();
+
+  if (!imguiInitialized) {
+    // Immediately open and close a frame, this forces imgui to populate its fonts and other data
+    //
+    // Otherwise, we get errors on show(), because we create a new context sharing the same atlas,
+    // when that context tries to render it errors out because its atlas is not populated. (Observed
+    // in ImGui 1.92.5)
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize.x = 1000;
+    io.DisplaySize.y = 1000;
+    ImGui::NewFrame();
+    ImGui::EndFrame();
+
+    imguiInitialized = true;
+  }
+}
+
+void MockGLEngine::updateImGuiContext(ImGuiContext* oldContext, ImGuiIO* oldIO, ImGuiContext* newContext,
+                                      ImGuiIO* newIO) {
+  if (oldContext != nullptr) {
+    newIO->ConfigFlags = oldIO->ConfigFlags;
+    newIO->BackendFlags = oldIO->BackendFlags;
+    newIO->BackendPlatformName = oldIO->BackendPlatformName;
+    newIO->BackendRendererName = oldIO->BackendRendererName;
+    newIO->BackendPlatformUserData = oldIO->BackendPlatformUserData;
+    newIO->BackendRendererUserData = oldIO->BackendRendererUserData;
+    newIO->BackendLanguageUserData = oldIO->BackendLanguageUserData;
+  }
 }
 
 void MockGLEngine::configureImGui() {
-  
-  // don't both calling the style callbacks, there is no UI
 
   if (options::uiScale < 0) {
     exception("uiScale is < 0. Perhaps it wasn't initialized?");
   }
 
   ImGuiIO& io = ImGui::GetIO();
-  io.Fonts->Clear();
-  io.Fonts->Build();
+  ImGui::GetStyle().FontScaleDpi = options::uiScale;
+
+  // if polyscope's prefs file is disabled, disable imgui's ini file too
+  if (!options::usePrefsFile) {
+    io.IniFilename = nullptr;
+  }
+
+  if (options::configureImGuiStyleCallback) {
+    options::configureImGuiStyleCallback();
+  }
 }
 
 void MockGLEngine::shutdown() {
@@ -1598,9 +1795,14 @@ void MockGLEngine::shutdown() {
   shutdownImGui();
 }
 
-void MockGLEngine::shutdownImGui() { 
-  ImPlot::DestroyContext(); 
-  ImGui::DestroyContext(); 
+void MockGLEngine::shutdownImGui() {
+  ImGui_ImplNull_Shutdown();
+  ImPlot::DestroyContext();
+  ImGui::DestroyContext();
+  imguiInitialized = false;
+  sharedFontAtlas = nullptr;
+  regularFont = nullptr;
+  monoFont = nullptr;
 }
 
 void MockGLEngine::swapDisplayBuffers() {}
@@ -1629,11 +1831,12 @@ void MockGLEngine::hideWindow() {}
 
 void MockGLEngine::updateWindowSize(bool force) {
 
-  // this silly code mimicks the gl backend version, but it is important that we preserve
+  // This silly code mimicks the gl backend version, but it is important that we preserve
   // the view::bufferWidth, etc, otherwise it is impossible to manually set the window size
-  // in the mock backend (which appears in unit tests, etc)
-  int newBufferWidth = view::bufferWidth;
-  int newBufferHeight = view::bufferHeight;
+  // in the mock backend (which appears in unit tests, etc).
+  // In this case, we just let the buffer size follow the window size 1:1
+  int newBufferWidth = view::windowWidth;
+  int newBufferHeight = view::windowHeight;
   int newWindowWidth = view::windowWidth;
   int newWindowHeight = view::windowHeight;
 
@@ -1641,10 +1844,18 @@ void MockGLEngine::updateWindowSize(bool force) {
       newWindowHeight != view::windowHeight || newWindowWidth != view::windowWidth) {
     // Basically a resize callback
     requestRedraw();
+    
+    // prevent any division by zero for e.g. aspect ratio calcs
+    if (newBufferHeight == 0) newBufferHeight = 1;
+    if (newWindowHeight == 0) newWindowHeight = 1;
+
     view::bufferWidth = newBufferWidth;
     view::bufferHeight = newBufferHeight;
     view::windowWidth = newWindowWidth;
     view::windowHeight = newWindowHeight;
+
+    render::engine->resizeScreenBuffers();
+    render::engine->setScreenBufferViewports();
   }
 }
 
@@ -1669,16 +1880,20 @@ bool MockGLEngine::isKeyPressed(char c) { return false; }
 
 void MockGLEngine::ImGuiNewFrame() {
 
+  ImGui_ImplNull_NewFrame();
+
   // ImGUI seems to crash without a backend if we don't do this
   ImGuiIO& io = ImGui::GetIO();
   io.DisplaySize.x = view::bufferWidth;
   io.DisplaySize.y = view::bufferHeight;
 
   ImGui::NewFrame();
+  ImGuizmo::BeginFrame();
 }
 
 void MockGLEngine::ImGuiRender() {
   ImGui::Render();
+  ImGui_ImplNullRender_RenderDrawData(ImGui::GetDrawData());
   clearResourcesPreservedForImguiFrame();
 }
 
@@ -1964,6 +2179,8 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("PREMULTIPLY_LIT_COLOR", PREMULTIPLY_LIT_COLOR);
   registerShaderRule("CULL_POS_FROM_VIEW", CULL_POS_FROM_VIEW);
   registerShaderRule("PROJ_AND_INV_PROJ_MAT", PROJ_AND_INV_PROJ_MAT);
+  registerShaderRule("BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE", BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE);
+  registerShaderRule("BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC", BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC);
 
   // Lighting and shading things
   registerShaderRule("LIGHT_MATCAP", LIGHT_MATCAP);
@@ -2021,8 +2238,14 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("GRIDCUBE_PROPAGATE_NODE_VALUE", GRIDCUBE_PROPAGATE_NODE_VALUE);
   registerShaderRule("GRIDCUBE_PROPAGATE_CELL_VALUE", GRIDCUBE_PROPAGATE_CELL_VALUE);
   registerShaderRule("GRIDCUBE_WIREFRAME", GRIDCUBE_WIREFRAME);
+  registerShaderRule("GRIDCUBE_PLANE_WIREFRAME", GRIDCUBE_PLANE_WIREFRAME);
   registerShaderRule("GRIDCUBE_CONSTANT_PICK", GRIDCUBE_CONSTANT_PICK);
   registerShaderRule("GRIDCUBE_CULLPOS_FROM_CENTER", GRIDCUBE_CULLPOS_FROM_CENTER);
+  registerShaderRule("GRIDCUBE_PLANE_CULLPOS_FROM_CENTER", GRIDCUBE_PLANE_CULLPOS_FROM_CENTER);
+  registerShaderRule("GRIDCUBE_PROPAGATE_ATTR_CELL_SCALAR", GRIDCUBE_PROPAGATE_ATTR_CELL_SCALAR);
+  registerShaderRule("GRIDCUBE_PROPAGATE_ATTR_CELL_COLOR", GRIDCUBE_PROPAGATE_ATTR_CELL_COLOR);
+  registerShaderRule("GRIDCUBE_PROPAGATE_ATTR_NODE_SCALAR", GRIDCUBE_PROPAGATE_ATTR_NODE_SCALAR);
+  registerShaderRule("GRIDCUBE_PROPAGATE_ATTR_NODE_COLOR", GRIDCUBE_PROPAGATE_ATTR_NODE_COLOR);
 
   // sphere things
   registerShaderRule("SPHERE_PROPAGATE_VALUE", SPHERE_PROPAGATE_VALUE);
@@ -2058,6 +2281,14 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   // clang-format on
 };
 
+void MockGLEngine::freeAllOwnedResources() {
+
+  registeredShaderPrograms.clear();
+  registeredShaderRules.clear();
+  compiledProgamCache.clear();
+
+  Engine::freeAllOwnedResources();
+}
 
 void MockGLEngine::createSlicePlaneFliterRule(std::string uniquePostfix) {
   using namespace backend_openGL3;

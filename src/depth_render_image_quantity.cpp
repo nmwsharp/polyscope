@@ -64,15 +64,18 @@ void DepthRenderImageQuantity::prepare() {
 
   // Create the sourceProgram
   // clang-format off
-  program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN",
-    render::engine->addMaterialRules(material.get(),
+
+  std::vector<std::string> rules = render::engine->addMaterialRules(material.get(),
       parent.addStructureRules({
         getImageOriginRule(imageOrigin), 
         hasNormals ? "SHADE_NORMAL_FROM_TEXTURE" : "SHADE_NORMAL_FROM_VIEWPOS_VAR",
         "SHADE_BASECOLOR",
       })
-    ), 
-    render::ShaderReplacementDefaults::SceneObjectNoSlice);
+  );
+  rules = removeRule(rules, "GENERATE_VIEW_POS");
+
+  program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN", rules);
+
   // clang-format on
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());

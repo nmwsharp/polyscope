@@ -4,7 +4,6 @@
 
 #include "polyscope/affine_remapper.h"
 #include "polyscope/curve_network.h"
-#include "polyscope/histogram.h"
 #include "polyscope/render/color_maps.h"
 #include "polyscope/scalar_quantity.h"
 

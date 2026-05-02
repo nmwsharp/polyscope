@@ -12,7 +12,7 @@ namespace polyscope {
 
 void FloatingQuantity::buildUI() {
 
-  // NOTE: duplicated here and in the QuantityS<S> version
+  // NOTE: duplicated here and in the Quantity version
 
   if (ImGui::TreeNode(niceName().c_str())) {
 

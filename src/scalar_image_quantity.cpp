@@ -152,15 +152,14 @@ void ScalarImageQuantity::refresh() {
 
 std::string ScalarImageQuantity::niceName() { return name + " (scalar image)"; }
 
-ScalarImageQuantity* ScalarImageQuantity::setEnabled(bool newEnabled) {
-  if (newEnabled == isEnabled()) return this;
+void ScalarImageQuantity::setEnabled(bool newEnabled) {
+  if (newEnabled == isEnabled()) return;
   if (newEnabled == true && getShowFullscreen()) {
     // if drawing fullscreen, disable anything else which was already drawing fullscreen
     disableAllFullscreenArtists();
   }
   enabled = newEnabled;
   requestRedraw();
-  return this;
 }
 
 

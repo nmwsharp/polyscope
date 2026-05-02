@@ -37,11 +37,26 @@ TEST_F(PolyscopeTest, CurveNetworkAppearance) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, CurveNetworkOrthographicRendering) {
+  auto psCurve = registerCurveNetwork();
+
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::show(3);
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
+
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, CurveNetworkPick) {
   auto psCurve = registerCurveNetwork();
 
   // Don't bother trying to actually click on anything, but make sure this doesn't crash
   polyscope::pickAtBufferInds(glm::ivec2(77, 88));
+
+  // make sure it works in orthographic mode
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::pickAtBufferInds(glm::ivec2(77, 88));
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
 
   polyscope::removeAllStructures();
 }
@@ -104,8 +119,7 @@ TEST_F(PolyscopeTest, CurveNetworkScalarCategoricalEdge) {
 TEST_F(PolyscopeTest, CurveNetworkNodeScalarRadius) {
   auto psCurve = registerCurveNetwork();
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
+  std::mt19937 gen(12345);
   std::uniform_int_distribution<> dis(1, 10);
 
   std::vector<double> vScalar(psCurve->nNodes(), 0.1);
@@ -135,8 +149,7 @@ TEST_F(PolyscopeTest, CurveNetworkNodeScalarRadius) {
 TEST_F(PolyscopeTest, CurveNetworkEdgeScalarRadius) {
   auto psCurve = registerCurveNetwork();
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
+  std::mt19937 gen(12345);
   std::uniform_int_distribution<> dis(1, 10);
 
   std::vector<double> eScalar(psCurve->nEdges(), 0.1);
@@ -166,8 +179,7 @@ TEST_F(PolyscopeTest, CurveNetworkEdgeScalarRadius) {
 TEST_F(PolyscopeTest, CurveNetworkNodeAndEdgeScalarRadius) {
   auto psCurve = registerCurveNetwork();
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
+  std::mt19937 gen(12345);
   std::uniform_int_distribution<> dis(1, 10);
 
   std::vector<double> vScalar(psCurve->nNodes(), 0.1);

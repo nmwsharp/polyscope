@@ -130,10 +130,13 @@ protected:
 
 // clang-format off
 namespace detail {
+
+extern PersistentCache<int32_t> persistentCache_int32_t;
 extern PersistentCache<double> persistentCache_double;
 extern PersistentCache<float> persistentCache_float;
 extern PersistentCache<bool> persistentCache_bool;
 extern PersistentCache<std::string> persistentCache_string;
+extern PersistentCache<glm::vec2> persistentCache_glmvec2;
 extern PersistentCache<glm::vec3> persistentCache_glmvec3;
 extern PersistentCache<glm::mat4> persistentCache_glmmat4;
 extern PersistentCache<ScaledValue<double>> persistentCache_scaleddouble;
@@ -145,11 +148,14 @@ extern PersistentCache<MeshShadeStyle> persistentCache_MeshNormalType;
 extern PersistentCache<FilterMode>     persistentCache_FilterMode;
 extern PersistentCache<IsolineStyle>   persistentCache_IsolineStyle;
 extern PersistentCache<MeshSelectionMode>   persistentCache_MeshSelectionMode;
+extern PersistentCache<SparseVolumeGridRenderMode> persistentCache_SparseVolumeGridRenderMode;
 
+template<> inline PersistentCache<int32_t>&                  getPersistentCacheRef<int32_t>()                  { return persistentCache_int32_t; }
 template<> inline PersistentCache<double>&                   getPersistentCacheRef<double>()                   { return persistentCache_double; }
 template<> inline PersistentCache<float>&                    getPersistentCacheRef<float>()                    { return persistentCache_float; }
 template<> inline PersistentCache<bool>&                     getPersistentCacheRef<bool>()                     { return persistentCache_bool; }
 template<> inline PersistentCache<std::string>&              getPersistentCacheRef<std::string>()              { return persistentCache_string; }
+template<> inline PersistentCache<glm::vec2>&                getPersistentCacheRef<glm::vec2>()                { return persistentCache_glmvec2; }
 template<> inline PersistentCache<glm::vec3>&                getPersistentCacheRef<glm::vec3>()                { return persistentCache_glmvec3; }
 template<> inline PersistentCache<glm::mat4>&                getPersistentCacheRef<glm::mat4>()                { return persistentCache_glmmat4; }
 template<> inline PersistentCache<ScaledValue<double>>&      getPersistentCacheRef<ScaledValue<double>>()      { return persistentCache_scaleddouble; }
@@ -161,6 +167,7 @@ template<> inline PersistentCache<MeshShadeStyle>&           getPersistentCacheR
 template<> inline PersistentCache<FilterMode>&               getPersistentCacheRef<FilterMode>()               { return persistentCache_FilterMode; }
 template<> inline PersistentCache<IsolineStyle>&             getPersistentCacheRef<IsolineStyle>()             { return persistentCache_IsolineStyle; }
 template<> inline PersistentCache<MeshSelectionMode>&        getPersistentCacheRef<MeshSelectionMode>()        { return persistentCache_MeshSelectionMode; }
+template<> inline PersistentCache<SparseVolumeGridRenderMode>& getPersistentCacheRef<SparseVolumeGridRenderMode>() { return persistentCache_SparseVolumeGridRenderMode; }
 }
 // clang-format on
 

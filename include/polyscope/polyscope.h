@@ -63,6 +63,10 @@ void frameTick();
 // Do shutdown work and de-initialize Polyscope
 void shutdown(bool allowMidFrameShutdown = false);
 
+// Remove all structures / quantities / groups / slice planes / callbacks / etc, as if Polyscope was just initialized.
+// (But does _not_ reset option & config settings, nor de-initialize the render engine)
+void removeEverything();
+
 // Returns true if the user has tried to exit the window at the OS level, e.g clicking the close button. Useful for
 // deciding when to exit your control loop when using frameTick()
 bool windowRequestsClose();
@@ -95,21 +99,24 @@ extern float& lengthScale;
 // axis-aligned bounding box for all registered structures
 extern std::tuple<glm::vec3, glm::vec3>& boundingBox;
 
+// representative center for all registered structures
+glm::vec3 center();
+
 // list of all slice planes in the scene
 extern std::vector<std::unique_ptr<SlicePlane>>& slicePlanes;
 
 // list of all widgets in the scene (the memory is NOT owned here, they're just refs)
 extern std::vector<WeakHandle<Widget>>& widgets;
 
-// should we allow default trackball mouse camera interaction?
-// Needs more interactions on when to turn this on/off
-extern bool& doDefaultMouseInteraction;
-
 // a callback function used to render a "user" gui
 extern std::function<void()>& userCallback;
 
-// representative center for all registered structures
-glm::vec3 center();
+// == Other callback functions
+
+// invoked when files are dropped onto the window, nothing by default
+extern std::function<void(const std::vector<std::string>&)> filesDroppedCallback;
+
+// === Implementation details
 
 // The global context, all of the variables above are secretly references to members of this context.
 // This is useful because it means the lists get destructed in a predictable order on shutdown, rather than the
@@ -117,6 +124,10 @@ glm::vec3 center();
 // One day we may refactor Polyscope to explicitly track contexts and allow the use of multiple contexts. For now there
 // is always exactly one global context object.
 extern Context globalContext;
+
+
+// deprecated
+extern bool& doDefaultMouseInteraction; // use options::doDefaultMouseInteraction instead
 
 } // namespace state
 

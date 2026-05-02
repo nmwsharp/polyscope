@@ -32,6 +32,23 @@ void ManagedBufferMap<T>::addManagedBuffer(ManagedBuffer<T>* buffer) {
 
 
 template <typename T>
+void ManagedBufferRegistry::removeManagedBuffer(ManagedBuffer<T>* buffer) {
+  ManagedBufferMap<T>::getManagedBufferMapRef(this).removeManagedBuffer(buffer);
+}
+
+template <typename T>
+void ManagedBufferMap<T>::removeManagedBuffer(ManagedBuffer<T>* buffer) {
+  for (auto it = allBuffers.begin(); it != allBuffers.end(); ++it) {
+    if ((*it)->name == buffer->name) {
+      allBuffers.erase(it);
+      return;
+    }
+  }
+
+  // if it is not present, this will silently do nothing
+}
+
+template <typename T>
 ManagedBuffer<T>& ManagedBufferMap<T>::getManagedBuffer(std::string name) {
 
   // WARNING: this logic is duplicated between has- and get- functions

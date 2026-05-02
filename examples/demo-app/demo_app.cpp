@@ -12,6 +12,7 @@
 #include "polyscope/point_cloud.h"
 #include "polyscope/render/managed_buffer.h"
 #include "polyscope/simple_triangle_mesh.h"
+#include "polyscope/sparse_volume_grid.h"
 #include "polyscope/surface_mesh.h"
 #include "polyscope/types.h"
 #include "polyscope/view.h"
@@ -19,6 +20,7 @@
 #include "polyscope/volume_mesh.h"
 
 #include <iostream>
+#include <set>
 #include <unordered_set>
 #include <utility>
 
@@ -143,7 +145,8 @@ void processFileOBJ(std::string filename) {
     randColor[iV] = {{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()}};
   }
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cX_really_really_stupid_long_name_how_dumb", valX);
-  polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cY", valY);
+  auto q = polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cY", valY);
+  q->setOnscreenColorbarEnabled(true); // set the onscreen colormap for this one
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cZ", valZ);
   polyscope::getSurfaceMesh(niceName)->addVertexColorQuantity("vColor", randColor);
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("cY_sym", valY, polyscope::DataType::SYMMETRIC);
@@ -543,6 +546,90 @@ void addVolumeGrid() {
 }
 
 
+void addSparseVolumeGrid() {
+  glm::vec3 origin{-1., -1., -1.};
+  int32_t N = 20;
+  glm::vec3 cellWidth{1.0f / N, 1.0f / N, 1.0f / N};
+
+  // Build a spherical shell of occupied cells
+  std::vector<glm::ivec3> occupiedCells;
+  for (int i = -N; i <= N; i++) {
+    for (int j = -N; j <= N; j++) {
+      for (int k = -N; k <= N; k++) {
+        glm::vec3 cellCenter = origin + (glm::vec3(i, j, k) + 0.5f) * cellWidth;
+        float dist = glm::length(cellCenter - origin);
+        if (dist >= 0.35f && dist <= 1.0f) {
+          occupiedCells.push_back({i, j, k});
+        }
+      }
+    }
+  }
+  // Gather all unique nodes for the occupied cells
+  // Node (ci+dx, cj+dy, ck+dz) for dx,dy,dz in {0,1}
+  std::set<std::tuple<int, int, int>> nodeSet;
+  for (const auto& ci : occupiedCells) {
+    for (int dx = 0; dx < 2; dx++) {
+      for (int dy = 0; dy < 2; dy++) {
+        for (int dz = 0; dz < 2; dz++) {
+          nodeSet.insert({ci.x + dx, ci.y + dy, ci.z + dz});
+        }
+      }
+    }
+  }
+
+  std::cout << "adding sparse volume grid with " << occupiedCells.size() << " cells" << std::endl;
+  polyscope::SparseVolumeGrid* psGrid =
+      polyscope::registerSparseVolumeGrid("sparse grid", origin, cellWidth, occupiedCells);
+
+  // Cell scalar: distance from origin
+  {
+    std::vector<float> cellDist(occupiedCells.size());
+    for (size_t i = 0; i < occupiedCells.size(); i++) {
+      glm::vec3 cellCenter = origin + (glm::vec3(occupiedCells[i]) + 0.5f) * cellWidth;
+      cellDist[i] = glm::length(cellCenter - origin);
+    }
+    psGrid->addCellScalarQuantity("cell distance", cellDist);
+  }
+
+  // Node scalar: x-coordinate at node positions
+  {
+
+    std::vector<glm::ivec3> nodeIndices;
+    std::vector<float> nodeValues;
+    for (const auto& nodeInds : nodeSet) {
+      int32_t ni, nj, nk;
+      std::tie(ni, nj, nk) = nodeInds;
+      nodeIndices.push_back({ni, nj, nk});
+      glm::vec3 nodePos = origin + glm::vec3(ni, nj, nk) * cellWidth;
+      nodeValues.push_back(nodePos.x);
+    }
+    psGrid->addNodeScalarQuantity("node x-coord", nodeIndices, nodeValues);
+  }
+
+  // Cell color: random colors
+  {
+    std::vector<glm::vec3> cellColors(occupiedCells.size());
+    for (size_t i = 0; i < occupiedCells.size(); i++) {
+      cellColors[i] = glm::vec3{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()};
+    }
+    psGrid->addCellColorQuantity("cell color", cellColors);
+  }
+
+  // Node color: random colors
+  {
+    std::vector<glm::ivec3> nodeIndices;
+    std::vector<glm::vec3> nodeColors;
+    for (const auto& nodeInds : nodeSet) {
+      int32_t ni, nj, nk;
+      std::tie(ni, nj, nk) = nodeInds;
+      nodeIndices.push_back({ni, nj, nk});
+      nodeColors.push_back(glm::vec3{polyscope::randomUnit(), polyscope::randomUnit(), polyscope::randomUnit()});
+    }
+    psGrid->addNodeColorQuantity("node color", nodeIndices, nodeColors);
+  }
+}
+
+
 void loadFloatingImageData(polyscope::CameraView* targetView = nullptr) {
 
   // load an image from disk as example data
@@ -863,13 +950,17 @@ void callback() {
     addVolumeGrid();
   }
 
+  if (ImGui::Button("add sparse volume grid")) {
+    addSparseVolumeGrid();
+  }
+
   // ImPlot
   // dummy data
   if (ImGui::TreeNode("ImPlot")) {
 
     std::vector<float> plotVals;
     for (float t = 0; t < 10.; t += 0.01) {
-      plotVals.push_back(std::cosf(t + ImGui::GetTime()));
+      plotVals.push_back(std::cos(t + ImGui::GetTime()));
     }
 
     // sample plot
@@ -910,7 +1001,7 @@ int main(int argc, char** argv) {
   // polyscope::view::windowWidth = 600;
   // polyscope::view::windowHeight = 800;
   // polyscope::options::maxFPS = -1;
-  polyscope::options::verbosity = 101;
+  polyscope::options::verbosity = 200;
   polyscope::options::enableRenderErrorChecks = true;
   polyscope::options::allowHeadlessBackends = true;
 

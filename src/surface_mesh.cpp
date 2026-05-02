@@ -22,7 +22,7 @@ const std::string SurfaceMesh::structureTypeName = "Surface Mesh";
 
 
 SurfaceMesh::SurfaceMesh(std::string name_)
-    : QuantityStructure<SurfaceMesh>(name_, typeName()),
+    : Structure(name_, typeName()),
       // clang-format off
 
 // == managed quantities
@@ -1040,27 +1040,11 @@ void SurfaceMesh::setMeshPickAttributes(render::ShaderProgram& p) {
 
   // == Store data in buffers
 
-  std::shared_ptr<render::AttributeBuffer> vertexColorsBuff =
-      render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, 3);
-  vertexColorsBuff->setData(vertexColors);
-  pickProgram->setAttribute("a_vertexColors", vertexColorsBuff);
-
-  std::shared_ptr<render::AttributeBuffer> faceColorsBuff =
-      render::engine->generateAttributeBuffer(RenderDataType::Vector3Float);
-  faceColorsBuff->setData(faceColor);
-  pickProgram->setAttribute("a_faceColor", faceColorsBuff);
-
+  pickProgram->setAttribute("a_vertexColors", vertexColors);
+  pickProgram->setAttribute("a_faceColor", faceColor);
   if (!usingSimplePick) {
-
-    std::shared_ptr<render::AttributeBuffer> halfedgeColorsBuff =
-        render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, 3);
-    halfedgeColorsBuff->setData(halfedgeColors);
-    pickProgram->setAttribute("a_halfedgeColors", halfedgeColorsBuff);
-
-    std::shared_ptr<render::AttributeBuffer> cornerColorsBuff =
-        render::engine->generateAttributeBuffer(RenderDataType::Vector3Float, 3);
-    cornerColorsBuff->setData(cornerColors);
-    pickProgram->setAttribute("a_cornerColors", cornerColorsBuff);
+    pickProgram->setAttribute("a_halfedgeColors", halfedgeColors);
+    pickProgram->setAttribute("a_cornerColors", cornerColors);
   }
 }
 
@@ -1206,7 +1190,8 @@ void SurfaceMesh::buildVertexInfoGui(const SurfaceMeshPickResult& result) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildVertexInfoGUI(vInd);
+    SurfaceMeshQuantity* q = static_cast<SurfaceMeshQuantity*>(x.second.get());
+    q->buildVertexInfoGUI(vInd);
   }
 
   ImGui::Indent(-20.);
@@ -1232,7 +1217,8 @@ void SurfaceMesh::buildFaceInfoGui(const SurfaceMeshPickResult& result) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildFaceInfoGUI(fInd);
+    SurfaceMeshQuantity* q = static_cast<SurfaceMeshQuantity*>(x.second.get());
+    q->buildFaceInfoGUI(fInd);
   }
 
   ImGui::Indent(-20.);
@@ -1256,7 +1242,8 @@ void SurfaceMesh::buildEdgeInfoGui(const SurfaceMeshPickResult& result) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildEdgeInfoGUI(eInd);
+    SurfaceMeshQuantity* q = static_cast<SurfaceMeshQuantity*>(x.second.get());
+    q->buildEdgeInfoGUI(eInd);
   }
 
   ImGui::Indent(-20.);
@@ -1280,7 +1267,8 @@ void SurfaceMesh::buildHalfedgeInfoGui(const SurfaceMeshPickResult& result) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildHalfedgeInfoGUI(heInd);
+    SurfaceMeshQuantity* q = static_cast<SurfaceMeshQuantity*>(x.second.get());
+    q->buildHalfedgeInfoGUI(heInd);
   }
 
   ImGui::Indent(-20.);
@@ -1301,7 +1289,8 @@ void SurfaceMesh::buildCornerInfoGui(const SurfaceMeshPickResult& result) {
   ImGui::Columns(2);
   ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
   for (auto& x : quantities) {
-    x.second->buildCornerInfoGUI(cInd);
+    SurfaceMeshQuantity* q = static_cast<SurfaceMeshQuantity*>(x.second.get());
+    q->buildCornerInfoGUI(cInd);
   }
 
   ImGui::Indent(-20.);
@@ -1486,7 +1475,7 @@ void SurfaceMesh::refresh() {
   program.reset();
   pickProgram.reset();
   requestRedraw();
-  QuantityStructure<SurfaceMesh>::refresh(); // call base class version, which refreshes quantities
+  Structure::refresh(); // call base class version, which refreshes quantities
 }
 
 void SurfaceMesh::updateObjectSpaceBounds() {
@@ -1681,7 +1670,7 @@ void SurfaceMesh::clearTransparencyQuantity() {
 
 SurfaceScalarQuantity& SurfaceMesh::resolveTransparencyQuantity() {
   SurfaceScalarQuantity* transparencyScalarQ = nullptr;
-  SurfaceMeshQuantity* anyQ = getQuantity(transparencyQuantityName);
+  SurfaceMeshQuantity* anyQ = getStructureQuantity<SurfaceMeshQuantity>(transparencyQuantityName);
   if (anyQ != nullptr) {
     transparencyScalarQ = dynamic_cast<SurfaceScalarQuantity*>(anyQ);
     if (transparencyScalarQ == nullptr) {
@@ -1996,14 +1985,17 @@ SurfaceMesh::addOneFormTangentVectorQuantityImpl(std::string name, const std::ve
 }
 
 SurfaceParameterizationQuantity* SurfaceMesh::getParameterization(std::string name) {
-  SurfaceMeshQuantity* newQ = this->getQuantity(name);
+  Quantity* newQ = this->getQuantity(name);
   SurfaceParameterizationQuantity* param = dynamic_cast<SurfaceParameterizationQuantity*>(newQ);
+  if (param == nullptr) {
+    exception("No parameterization quantity named " + name + " found on surface mesh " + this->getName());
+  }
   return param;
 }
 
 
 SurfaceMeshQuantity::SurfaceMeshQuantity(std::string name, SurfaceMesh& parentStructure, bool dominates)
-    : QuantityS<SurfaceMesh>(name, parentStructure, dominates) {}
+    : Quantity(name, parentStructure, dominates), parent(parentStructure) {}
 void SurfaceMeshQuantity::buildVertexInfoGUI(size_t vInd) {}
 void SurfaceMeshQuantity::buildFaceInfoGUI(size_t fInd) {}
 void SurfaceMeshQuantity::buildEdgeInfoGUI(size_t eInd) {}

@@ -21,17 +21,12 @@ class VolumeGrid;
 class VolumeGridNodeScalarQuantity;
 class VolumeGridCellScalarQuantity;
 
-template <> // Specialize the quantity type
-struct QuantityTypeHelper<VolumeGrid> {
-  typedef VolumeGridQuantity type;
-};
-
 struct VolumeGridPickResult {
   VolumeGridElement elementType; // which kind of element did we click
   int64_t index;                 // index of the clicked element
 };
 
-class VolumeGrid : public QuantityStructure<VolumeGrid> {
+class VolumeGrid : public Structure {
 public:
   // Construct a new volume grid structure
   VolumeGrid(std::string name, glm::uvec3 gridNodeDim_, glm::vec3 boundMin_, glm::vec3 boundMax_);

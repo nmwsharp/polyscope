@@ -180,7 +180,7 @@ public:
 
   // Get a copy of the data viewed through an index, such that view[i] = data[indices[i]].
   //
-  // This follows the same logic as above, but rather than returning a render buffer it simply returns a host-side 
+  // This follows the same logic as above, but rather than returning a render buffer it simply returns a host-side
   // copy (which is not cached).
   std::vector<T> getIndexedView(ManagedBuffer<uint32_t>& indices);
 
@@ -247,6 +247,7 @@ template <typename T>
 struct ManagedBufferMap {
 public:
   void addManagedBuffer(ManagedBuffer<T>* buffer);
+  void removeManagedBuffer(ManagedBuffer<T>* buffer);
 
   ManagedBuffer<T>& getManagedBuffer(std::string name);
   bool hasManagedBuffer(std::string name);
@@ -281,6 +282,9 @@ public:
   template <typename T>
   void addManagedBuffer(ManagedBuffer<T>* buffer);
 
+  template <typename T>
+  void removeManagedBuffer(ManagedBuffer<T>* buffer);
+
   // clang-format off
   ManagedBufferMap<float>        managedBufferMap_float;
   ManagedBufferMap<double>       managedBufferMap_double;
@@ -290,8 +294,11 @@ public:
   ManagedBufferMap<std::array<glm::vec3,2>> managedBufferMap_arr2vec3;
   ManagedBufferMap<std::array<glm::vec3,3>> managedBufferMap_arr3vec3;
   ManagedBufferMap<std::array<glm::vec3,4>> managedBufferMap_arr4vec3;
-  ManagedBufferMap<uint32_t>     managedBufferMap_uint32;
   ManagedBufferMap<int32_t>      managedBufferMap_int32;
+  ManagedBufferMap<glm::ivec2>   managedBufferMap_ivec2;
+  ManagedBufferMap<glm::ivec3>   managedBufferMap_ivec3;
+  ManagedBufferMap<glm::ivec4>   managedBufferMap_ivec4;
+  ManagedBufferMap<uint32_t>     managedBufferMap_uint32;
   ManagedBufferMap<glm::uvec2>   managedBufferMap_uvec2;
   ManagedBufferMap<glm::uvec3>   managedBufferMap_uvec3;
   ManagedBufferMap<glm::uvec4>   managedBufferMap_uvec4;

@@ -29,11 +29,6 @@ class VolumeMeshVertexVectorQuantity;
 class VolumeMeshCellVectorQuantity;
 
 
-template <> // Specialize the quantity type
-struct QuantityTypeHelper<VolumeMesh> {
-  typedef VolumeMeshQuantity type;
-};
-
 struct VolumeMeshPickResult {
   VolumeMeshElement elementType; // which kind of element did we click
   int64_t index;                 // index of the clicked element
@@ -41,10 +36,8 @@ struct VolumeMeshPickResult {
 
 // === The grand volume mesh class
 
-class VolumeMesh : public QuantityStructure<VolumeMesh> {
+class VolumeMesh : public Structure {
 public:
-  typedef VolumeMeshQuantity QuantityType;
-
   // === Member functions ===
 
   // Construct a new volume mesh structure

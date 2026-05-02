@@ -8,10 +8,12 @@ namespace polyscope {
 namespace detail {
 // storage for persistent value global caches
 // clang-format off
+PersistentCache<int32_t> persistentCache_int32_t;
 PersistentCache<double> persistentCache_double;
 PersistentCache<float> persistentCache_float;
 PersistentCache<bool> persistentCache_bool;
 PersistentCache<std::string> persistentCache_string;
+PersistentCache<glm::vec2> persistentCache_glmvec2;
 PersistentCache<glm::vec3> persistentCache_glmvec3;
 PersistentCache<glm::mat4> persistentCache_glmmat4;
 PersistentCache<ScaledValue<double>> persistentCache_scaleddouble;
@@ -23,6 +25,7 @@ PersistentCache<MeshShadeStyle> persistentCache_MeshNormalType;
 PersistentCache<FilterMode> persistentCache_FilterMode;
 PersistentCache<IsolineStyle> persistentCache_IsolineStyle;
 PersistentCache<MeshSelectionMode> persistentCache_MeshSelectionMode;
+PersistentCache<SparseVolumeGridRenderMode> persistentCache_SparseVolumeGridRenderMode;
 // clang-format on
 } // namespace detail
 } // namespace polyscope

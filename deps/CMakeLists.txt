@@ -41,3 +41,8 @@ endif()
 if(NOT TARGET stb)
   add_subdirectory(stb)
 endif()
+
+## IconFontCppHeaders
+if(NOT TARGET IconFontCppHeaders)
+  add_subdirectory(IconFontCppHeaders)
+endif()

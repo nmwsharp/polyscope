@@ -36,6 +36,12 @@ TEST_F(PolyscopeTest, FloatingImageTest) {
     polyscope::show(3);
     im2->setShowFullscreen(true);
     polyscope::show(3);
+
+    // try orthographic rendering
+    // (I think there are some bugs related to raycasting and depth projection, but at least make sure it doen't crash
+    polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+    polyscope::show(3);
+    polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
   }
 
   { // ColorImageQuantity
@@ -104,6 +110,12 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->setEnabled(true);
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+
+    // add a slice plane
+    polyscope::addSlicePlane();
+    polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+    polyscope::removeLastSceneSlicePlane();
   }
   { // with no normals
     polyscope::DepthRenderImageQuantity* im = polyscope::addDepthRenderImageQuantity(
@@ -112,6 +124,12 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->setEnabled(true);
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+
+    // add a slice plane
+    polyscope::addSlicePlane();
+    polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+    polyscope::removeLastSceneSlicePlane();
   }
 
   { // ColorImageQuantity
@@ -121,6 +139,12 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->setEnabled(true);
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+
+    // add a slice plane
+    polyscope::addSlicePlane();
+    polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+    polyscope::removeLastSceneSlicePlane();
   }
   { // with no normals
     polyscope::ColorRenderImageQuantity* im = polyscope::addColorRenderImageQuantity(
@@ -129,6 +153,12 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->setEnabled(true);
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+
+    // add a slice plane
+    polyscope::addSlicePlane();
+    polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+    polyscope::removeLastSceneSlicePlane();
   }
 
   { // ScalarRenderImageQuantity
@@ -138,6 +168,12 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->setEnabled(true);
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+
+    // add a slice plane
+    polyscope::addSlicePlane();
+    polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+    polyscope::removeLastSceneSlicePlane();
   }
   { // with no normals
     polyscope::ScalarRenderImageQuantity* im = polyscope::addScalarRenderImageQuantity(
@@ -146,7 +182,14 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->setEnabled(true);
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+
+    // add a slice plane
+    polyscope::addSlicePlane();
+    polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+    polyscope::removeLastSceneSlicePlane();
   }
+
   { // categorical
     polyscope::ScalarRenderImageQuantity* im =
         polyscope::addScalarRenderImageQuantity("render im scalar", dimX, dimY, depthVals, normalVals, scalarVals,
@@ -155,6 +198,12 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->setEnabled(true);
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+
+    // add a slice plane
+    polyscope::addSlicePlane();
+    polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+    polyscope::removeLastSceneSlicePlane();
   }
 
   { // RawColorImageQuantity
@@ -164,6 +213,12 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->setEnabled(true);
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+
+    // add a slice plane
+    polyscope::addSlicePlane();
+    polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+    polyscope::removeLastSceneSlicePlane();
   }
 
   { // RawColorAlphaImageQuantity
@@ -175,16 +230,23 @@ TEST_F(PolyscopeTest, FloatingRenderImageTest) {
     im->setIsPremultiplied(true);
     polyscope::show(3);
     polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+
+    // add a slice plane
+    polyscope::addSlicePlane();
+    polyscope::show(3);
+    polyscope::pickAtScreenCoords(glm::vec2(0.3, 0.8));
+
+    // make sure it doesn't blow up with transparancy
+    polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
+    polyscope::show(3);
+
+    polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
+    polyscope::show(3);
+
+    polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
+
+    polyscope::removeLastSceneSlicePlane();
   }
-
-  // make sure it doesn't blow up with transparancy
-  polyscope::options::transparencyMode = polyscope::TransparencyMode::Simple;
-  polyscope::show(3);
-
-  polyscope::options::transparencyMode = polyscope::TransparencyMode::Pretty;
-  polyscope::show(3);
-
-  polyscope::options::transparencyMode = polyscope::TransparencyMode::None;
 
   // make sure removing works
   polyscope::removeFloatingQuantity("render im depth", true);

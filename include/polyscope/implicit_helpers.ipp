@@ -15,7 +15,7 @@
 namespace polyscope {
 
 template <class S>
-void resolveImplicitRenderOpts(QuantityStructure<S>* parent, ImplicitRenderOpts& opts) {
+void resolveImplicitRenderOpts(S* parent, ImplicitRenderOpts& opts) {
 
   // see comment in the ImplicitRenderOpts struct for the logic that this function implements
 
@@ -249,8 +249,8 @@ DepthRenderImageQuantity* renderImplicitSurfaceBatch(std::string name, Func&& fu
 }
 
 template <class Func, class S>
-DepthRenderImageQuantity* renderImplicitSurface(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                                ImplicitRenderMode mode, ImplicitRenderOpts opts) {
+DepthRenderImageQuantity* renderImplicitSurface(S* parent, std::string name, Func&& func, ImplicitRenderMode mode,
+                                                ImplicitRenderOpts opts) {
 
   // Bootstrap on the batch version
   auto batchFunc = [&](const float* pos_ptr, float* result_ptr, size_t size) {
@@ -269,8 +269,8 @@ DepthRenderImageQuantity* renderImplicitSurface(QuantityStructure<S>* parent, st
 
 
 template <class Func, class S>
-DepthRenderImageQuantity* renderImplicitSurfaceBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                                     ImplicitRenderMode mode, ImplicitRenderOpts opts) {
+DepthRenderImageQuantity* renderImplicitSurfaceBatch(S* parent, std::string name, Func&& func, ImplicitRenderMode mode,
+                                                     ImplicitRenderOpts opts) {
 
   resolveImplicitRenderOpts(parent, opts);
 
@@ -307,9 +307,8 @@ ColorRenderImageQuantity* renderImplicitSurfaceColorBatch(std::string name, Func
 
 
 template <class Func, class FuncColor, class S>
-ColorRenderImageQuantity* renderImplicitSurfaceColor(QuantityStructure<S>* parent, std::string name, Func&& func,
-                                                     FuncColor&& funcColor, ImplicitRenderMode mode,
-                                                     ImplicitRenderOpts opts) {
+ColorRenderImageQuantity* renderImplicitSurfaceColor(S* parent, std::string name, Func&& func, FuncColor&& funcColor,
+                                                     ImplicitRenderMode mode, ImplicitRenderOpts opts) {
 
   // Bootstrap on the batch version
   auto batchFunc = [&](const float* pos_ptr, float* result_ptr, size_t size) {
@@ -344,7 +343,7 @@ ColorRenderImageQuantity* renderImplicitSurfaceColor(QuantityStructure<S>* paren
 
 
 template <class Func, class FuncColor, class S>
-ColorRenderImageQuantity* renderImplicitSurfaceColorBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
+ColorRenderImageQuantity* renderImplicitSurfaceColorBatch(S* parent, std::string name, Func&& func,
                                                           FuncColor&& funcColor, ImplicitRenderMode mode,
                                                           ImplicitRenderOpts opts) {
 
@@ -399,7 +398,7 @@ ScalarRenderImageQuantity* renderImplicitSurfaceScalarBatch(std::string name, Fu
 }
 
 template <class Func, class FuncScalar, class S>
-ScalarRenderImageQuantity* renderImplicitSurfaceScalar(QuantityStructure<S>* parent, std::string name, Func&& func,
+ScalarRenderImageQuantity* renderImplicitSurfaceScalar(S* parent, std::string name, Func&& func,
                                                        FuncScalar&& funcScalar, ImplicitRenderMode mode,
                                                        ImplicitRenderOpts opts, DataType dataType) {
 
@@ -430,7 +429,7 @@ ScalarRenderImageQuantity* renderImplicitSurfaceScalar(QuantityStructure<S>* par
 }
 
 template <class Func, class FuncScalar, class S>
-ScalarRenderImageQuantity* renderImplicitSurfaceScalarBatch(QuantityStructure<S>* parent, std::string name, Func&& func,
+ScalarRenderImageQuantity* renderImplicitSurfaceScalarBatch(S* parent, std::string name, Func&& func,
                                                             FuncScalar&& funcScalar, ImplicitRenderMode mode,
                                                             ImplicitRenderOpts opts, DataType dataType) {
 
@@ -483,7 +482,7 @@ RawColorRenderImageQuantity* renderImplicitSurfaceRawColorBatch(std::string name
 
 
 template <class Func, class FuncColor, class S>
-RawColorRenderImageQuantity* renderImplicitSurfaceRawColor(QuantityStructure<S>* parent, std::string name, Func&& func,
+RawColorRenderImageQuantity* renderImplicitSurfaceRawColor(S* parent, std::string name, Func&& func,
                                                            FuncColor&& funcColor, ImplicitRenderMode mode,
                                                            ImplicitRenderOpts opts) {
 
@@ -520,9 +519,9 @@ RawColorRenderImageQuantity* renderImplicitSurfaceRawColor(QuantityStructure<S>*
 
 
 template <class Func, class FuncColor, class S>
-RawColorRenderImageQuantity* renderImplicitSurfaceRawColorBatch(QuantityStructure<S>* parent, std::string name,
-                                                                Func&& func, FuncColor&& funcColor,
-                                                                ImplicitRenderMode mode, ImplicitRenderOpts opts) {
+RawColorRenderImageQuantity* renderImplicitSurfaceRawColorBatch(S* parent, std::string name, Func&& func,
+                                                                FuncColor&& funcColor, ImplicitRenderMode mode,
+                                                                ImplicitRenderOpts opts) {
 
   resolveImplicitRenderOpts(parent, opts);
 
