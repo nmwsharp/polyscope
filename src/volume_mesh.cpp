@@ -63,20 +63,20 @@ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilHex =
 
  const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilPrism = 
  {
-   {{0,1,2}}, 
-   {{0,4,1}, {0,3,4}}, 
-   {{1,5,4}, {1,2,5}}, 
-   {{3,0,5}, {0,2,5}}, 
-   {{3,5,4}}, 
+   {{0,2,1}},
+   {{0,5,2}, {0,3,5}},
+   {{2,4,5}, {2,1,4}},
+   {{3,0,4}, {0,1,4}},
+   {{3,4,5}},
  };
 
  const std::vector<std::vector<size_t>> VolumeMesh::facesPrism =
  {
-  {0,1,2},
-  {0,3,4,1},
-  {1,4,5,2},
-  {0,2,5,3},
-  {3,5,4}
+  {0,2,1},
+  {0,3,5,2},
+  {2,5,4,1},
+  {0,1,4,3},
+  {3,4,5}
  };
 
  const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilPyramid = 

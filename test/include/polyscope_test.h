@@ -186,8 +186,8 @@ inline std::tuple<std::vector<glm::vec3>, std::vector<std::array<int, 8>>> getHe
   };
   std::vector<std::array<int, 8>> cells = {
     {0, 1, 2, 3, 4, 5, 6, 7},    // hex
-    {4, 7, 8, 5, 6, 9, -1, -1},  // top prism
-    {1, 10, 2, 5, 11, 6, -1, -1},// side prism
+    {4, 8, 7, 5, 9, 6, -1, -1},   // top prism
+    {1, 2, 10, 5, 6, 11, -1, -1}, // side prism
     {0, 3, 2, 1, 12, -1, -1, -1},// pyramid
     {5, 11, 6, 9, -1, -1, -1, -1},// tet
   };
