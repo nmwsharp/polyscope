@@ -111,6 +111,7 @@ set(TEST_SRCS
   src/combo_test.cpp
   src/misc_test.cpp
   src/interop_and_serialization_test.cpp
+  src/viewport_test.cpp
 )
 
 add_executable(polyscope-test "${TEST_SRCS}")
