@@ -152,6 +152,7 @@ void VolumeMeshVertexScalarQuantity::setEnabledLevelSet(bool v) {
     isDrawingLevelSet = false;
     parent.setLevelSetQuantity(nullptr);
   }
+  requestRedraw();
 }
 
 void VolumeMeshVertexScalarQuantity::drawSlice(polyscope::SlicePlane* sp) {
@@ -198,6 +199,7 @@ void VolumeMeshVertexScalarQuantity::setLevelSetVisibleQuantity(std::string name
   render::engine->setMaterial(*levelSetProgram, parent.getMaterial());
   fillLevelSetData(*levelSetProgram);
   setLevelSetUniforms(*levelSetProgram);
+  requestRedraw();
   showQuantity = q;
 }
 

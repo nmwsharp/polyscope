@@ -43,11 +43,11 @@ VolumeMesh* registerHexMesh(std::string name, const V& vertexPositions, const F&
 }
 
 template <class V, class F>
-VolumeMesh* registerVolumeMesh(std::string name, const V& vertexPositions, const F& faceIndices) {
+VolumeMesh* registerVolumeMesh(std::string name, const V& vertexPositions, const F& cellIndices) {
   checkInitialized();
 
   VolumeMesh* s = new VolumeMesh(name, standardizeVectorArray<glm::vec3, 3>(vertexPositions),
-                                 standardizeVectorArray<std::array<uint32_t, 8>, 8>(faceIndices));
+                                 standardizeVectorArray<std::array<uint32_t, 8>, 8>(cellIndices));
 
   bool success = registerStructure(s);
   if (!success) {

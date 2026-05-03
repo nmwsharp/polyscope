@@ -146,10 +146,12 @@ POLYSCOPE_DEFINE_ENUM_NAMES(VolumeMeshElement,
     {VolumeMeshElement::CELL, "Cell"}
 );
 
-enum class VolumeCellType { TET = 0, HEX };
+enum class VolumeCellType { TET = 0, HEX, PRISM, PYRAMID};
 POLYSCOPE_DEFINE_ENUM_NAMES(VolumeCellType,
     {VolumeCellType::TET, "Tet"},
-    {VolumeCellType::HEX, "Hex"}
+    {VolumeCellType::HEX, "Hex"},
+    {VolumeCellType::PRISM, "Prism"},
+    {VolumeCellType::PYRAMID, "Pyramid"}
 );
 
 enum class VolumeGridElement { NODE = 0, CELL };

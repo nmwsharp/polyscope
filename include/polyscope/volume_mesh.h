@@ -174,7 +174,10 @@ public:
   void fillGeometryBuffers(render::ShaderProgram& p);
   void fillSliceGeometryBuffers(render::ShaderProgram& p);
   static const std::vector<std::vector<std::array<size_t, 3>>>& cellStencil(VolumeCellType type);
-
+  static const std::vector<std::vector<size_t>>& cellFaces(VolumeCellType type);
+  // For each (face, triangle, edge-within-triangle), whether that edge is a real polygon boundary edge.
+  // Indexed as [face][tri][k], paralleling cellStencil().
+  static const std::vector<std::vector<std::array<bool, 3>>>& cellRealEdgeStencil(VolumeCellType type);
   // Slice plane listeners
   std::vector<polyscope::SlicePlane*> volumeSlicePlaneListeners;
   void addSlicePlaneListener(polyscope::SlicePlane* sp);
@@ -256,8 +259,24 @@ private:
   // clang-format off
   static const std::vector<std::vector<std::array<size_t, 3>>> stencilTet;
   static const std::vector<std::vector<std::array<size_t, 3>>> stencilHex;
+  static const std::vector<std::vector<std::array<size_t, 3>>> stencilPrism;
+  static const std::vector<std::vector<std::array<size_t, 3>>> stencilPyramid;
+  static const std::vector<std::vector<size_t>> facesTet;
+  static const std::vector<std::vector<size_t>> facesHex;
+  static const std::vector<std::vector<size_t>> facesPrism;
+  static const std::vector<std::vector<size_t>> facesPyramid;
+  
   static const std::array<std::array<size_t, 8>, 8> rotationMap;
   static const std::array<std::array<std::array<size_t, 4>, 6>, 4> diagonalMap;
+
+  // precomputed real-edge flags: [face][tri][k] = is edge k of that triangle a polygon boundary edge?
+  static std::vector<std::vector<std::array<bool, 3>>> realEdgeStencilTet;
+  static std::vector<std::vector<std::array<bool, 3>>> realEdgeStencilHex;
+  static std::vector<std::vector<std::array<bool, 3>>> realEdgeStencilPrism;
+  static std::vector<std::vector<std::array<bool, 3>>> realEdgeStencilPyramid;
+
+  static bool constantDataInitialized;
+  static void initializeConstantData();
 
   // clang-format off
 
@@ -278,12 +297,22 @@ private:
 };
 
 // Register functions
+
+// Register a volume mesh with all tetrahedral cells. tetIndices has shape (nTets, 4).
 template <class V, class C>
 VolumeMesh* registerTetMesh(std::string name, const V& vertexPositions, const C& tetIndices);
+
+// Register a volume mesh with all hexahedral cells. hexIndices has shape (nHexes, 8).
 template <class V, class C>
 VolumeMesh* registerHexMesh(std::string name, const V& vertexPositions, const C& hexIndices);
+
+// Register a volume mesh with general mixed cell types (tet, hex, prism, pyramid). cellIndices has shape (nCells, 8);
+// cells with fewer than 8 vertices are right-padded with negative indices to indicate unused slots.
 template <class V, class C>
-VolumeMesh* registerVolumeMesh(std::string name, const V& vertexPositions, const C& hexIndices);
+VolumeMesh* registerVolumeMesh(std::string name, const V& vertexPositions, const C& cellIndices);
+
+// Register a volume mesh from separate tet and hex index arrays.
+// Cells are ordered with all tets first, then all hexes. Note that pyrams and prisms are also supported, but not from this function.
 template <class V, class Ct, class Ch>
 VolumeMesh* registerTetHexMesh(std::string name, const V& vertexPositions, const Ct& tetIndices, const Ch& hexIndices);
 

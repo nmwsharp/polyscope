@@ -12,12 +12,12 @@ TEST_F(PolyscopeTest, ShowVolumeMesh) {
   // Tets only
   std::vector<glm::vec3> tet_verts = {
     {0, 0, 0},
-    {0, 0, 1},
+    {1, 0, 0},
     {0, 1, 0},
-    {0, 1, 1},
+    {0, 0, 1},
   };
   std::vector<std::array<size_t, 4>> tet_cells = {
-    {0,1,2,4}
+    {0,1,2,3}
   };
   polyscope::registerTetMesh("tet", tet_verts, tet_cells);
 
@@ -25,13 +25,13 @@ TEST_F(PolyscopeTest, ShowVolumeMesh) {
   // Hexes only
   std::vector<glm::vec3> hex_verts = {
     {0, 0, 0},
-    {0, 0, 1},
-    {0, 1, 0},
-    {0, 1, 1},
     {1, 0, 0},
-    {1, 0, 1},
     {1, 1, 0},
+    {0, 1, 0},
+    {0, 0, 1},
+    {1, 0, 1},
     {1, 1, 1},
+    {0, 1, 1},
   };
   std::vector<std::array<size_t, 8>> hex_cells = {
     {0,1,2,3,4,5,6,7},
@@ -55,12 +55,53 @@ TEST_F(PolyscopeTest, ShowVolumeMesh) {
 
   // Mixed elements, shared array
   std::vector<std::array<int, 8>> combined_cells = {
-      {0, 1, 3, 4, -1, -1, -1, -1},
+      {0, 1, 2, 3, -1, -1, -1, -1},
       {4, 5, 6, 7, 8, 9, 10, 11},
   };
   polyscope::registerVolumeMesh("tet hex mix combined", combined_verts, combined_cells);
 
   polyscope::removeAllStructures();
+}
+
+
+TEST_F(PolyscopeTest, ShowVolumeMeshHexWedgePyramidTet) {
+  std::vector<glm::vec3> vertices;
+  std::vector<std::array<int, 8>> cells;
+  std::tie(vertices, cells) = getHexWedgePyramidTetMeshData();
+  polyscope::registerVolumeMesh("hex prism pyramid tet", vertices, cells);
+  polyscope::show(3);
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, VolumeMeshInspectHexWedgePyramidTet) {
+  std::vector<glm::vec3> vertices;
+  std::vector<std::array<int, 8>> cells;
+  std::tie(vertices, cells) = getHexWedgePyramidTetMeshData();
+  polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("hex prism pyramid tet", vertices, cells);
+
+  polyscope::SlicePlane* p = polyscope::addSlicePlane();
+  p->setVolumeMeshToInspect("hex prism pyramid tet");
+  polyscope::show(3);
+
+  // with a scalar quantity
+  std::vector<float> vals(vertices.size(), 0.44);
+  auto q1 = psVol->addVertexScalarQuantity("vals", vals);
+  q1->setEnabled(true);
+  polyscope::show(3);
+
+  // with a categorical quantity
+  auto q1Cat = psVol->addVertexScalarQuantity("vals cat", vals, polyscope::DataType::CATEGORICAL);
+  q1Cat->setEnabled(true);
+  polyscope::show(3);
+
+  // try orthographic rendering
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::show(3);
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+  polyscope::removeLastSceneSlicePlane();
 }
 
 TEST_F(PolyscopeTest, VolumeMeshUpdatePositions) {
