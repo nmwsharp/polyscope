@@ -144,27 +144,32 @@ void VolumeMesh::initializeConstantData() {
   constantDataInitialized = true;
 }
 
+// some internal helpers for connectivity management
+namespace {
 
-namespace detail {
 using Tet = std::array<uint32_t, 4>;
 using Prism = std::array<uint32_t, 6>;
 using Pyramid = std::array<uint32_t, 5>;
 using Cell = std::array<uint32_t, 8>;
 using Tets = std::vector<Tet>;
 
-Prism rotatePrism(const Prism& p, int rot) {
-  static constexpr int bottomRot[3][3] = {
-      {0, 1, 2}, // identity
-      {1, 2, 0}, // rot1
-      {2, 0, 1}  // rot2
-  };
-  static constexpr int topRot[3][3] = {{3, 4, 5}, {4, 5, 3}, {5, 3, 4}};
-  Prism r;
-  for (int i = 0; i < 3; ++i) r[i] = p[bottomRot[rot][i]];
-  for (int i = 0; i < 3; ++i) r[i + 3] = p[topRot[rot][i]];
-  return r;
-}
 Tets decomposePrism(const Cell& cell) {
+  // A helper to decompose a prism cell into tets.
+  //
+  // The challenge is to make sure we tet-decompse adjacent cells in a consistent way, so there are not little gaps
+  // between mismatched tetrahedralizations for non-planar cell faces.
+  //
+  // WARNING: I'm not sure if we handle all mixed-element cases correctly
+
+  auto rotatePrism = [](const Prism& p, int rot) -> Prism {
+    static constexpr int bottomRot[3][3] = {{0, 1, 2}, {1, 2, 0}, {2, 0, 1}};
+    static constexpr int topRot[3][3] = {{3, 4, 5}, {4, 5, 3}, {5, 3, 4}};
+    Prism r;
+    for (int i = 0; i < 3; ++i) r[i] = p[bottomRot[rot][i]];
+    for (int i = 0; i < 3; ++i) r[i + 3] = p[topRot[rot][i]];
+    return r;
+  };
+
   Prism p = {cell[0], cell[1], cell[2], cell[3], cell[4], cell[5]};
   int minIdx = std::min_element(p.begin(), p.end()) - p.begin();
   int rot = 0;
@@ -194,6 +199,13 @@ Tets decomposePrism(const Cell& cell) {
   }
 }
 Tets decomposePyramid(const Cell& cell) {
+  // A helper to decompose a pyramid cell into tets.
+  //
+  // The challenge is to make sure we tet-decompse adjacent cells in a consistent way, so there are not little gaps
+  // between mismatched tetrahedralizations for non-planar cell faces.
+  //
+  // WARNING: I'm not sure if we handle all mixed-element cases correctly
+
   Pyramid p = {cell[0], cell[1], cell[2], cell[3], cell[4]};
   if (std::min(p[0], p[2]) < std::min(p[1], p[3])) {
     // Split along diagonal 0-2
@@ -204,8 +216,15 @@ Tets decomposePyramid(const Cell& cell) {
   }
 }
 Tets decomposeHex(const Cell& cell) {
+  // A helper to decompose a hex cell into tets.
+  //
   // The challenge is to make sure we tet-decompse adjacent cells in a consistent way, so there are not little gaps
-  // between mismatched tetrahedralizations, for non-planar faces. This approach is adapted from
+  // between mismatched tetrahedralizations for non-planar cell faces. This implements a strategy that gets it right, at
+  // least for pure hex meshes.
+  //
+  // WARNING: I'm not sure if we handle all mixed-element cases correctly
+  //
+  // This approach is adapted from
   // https://www.researchgate.net/profile/Julien-Dompierre/publication/221561839_How_to_Subdivide_Pyramids_Prisms_and_Hexahedra_into_Tetrahedra/links/0912f509c0b7294059000000/How-to-Subdivide-Pyramids-Prisms-and-Hexahedra-into-Tetrahedra.pdf?origin=publication_detail
   // It's a bit hard to look at but it works.
   // The resulting tet counts are either 5 or 6 per hex. Like the rest of this class, this function only really works
@@ -318,7 +337,7 @@ Tets decomposeHex(const Cell& cell) {
   }
   return result;
 }
-} // namespace detail
+} // namespace
 
 VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPositions_,
                        const std::vector<std::array<uint32_t, 8>>& cellIndices_)
@@ -454,22 +473,22 @@ void VolumeMesh::computeCounts() {
 
 void VolumeMesh::computeTets() {
   tets.clear();
-  auto addTets = [&](const detail::Tets& newTets) {
+  auto addTets = [&](const Tets& newTets) {
     for (const auto& tet : newTets) tets.push_back(tet);
   };
   for (size_t iC = 0; iC < nCells(); iC++) {
     switch (cellType(iC)) {
     case VolumeCellType::HEX:
-      addTets(detail::decomposeHex(cells[iC]));
+      addTets(decomposeHex(cells[iC]));
       break;
     case VolumeCellType::TET:
       tets.push_back({cells[iC][0], cells[iC][1], cells[iC][2], cells[iC][3]});
       break;
     case VolumeCellType::PRISM:
-      addTets(detail::decomposePrism(cells[iC]));
+      addTets(decomposePrism(cells[iC]));
       break;
     case VolumeCellType::PYRAMID:
-      addTets(detail::decomposePyramid(cells[iC]));
+      addTets(decomposePyramid(cells[iC]));
       break;
     }
   }
