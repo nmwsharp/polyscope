@@ -1151,6 +1151,23 @@ void VolumeMesh::buildCustomOptionsUI() {
     material.manuallyChanged();
     setMaterial(material.get()); // trigger the other updates that happen on set()
   }
+
+  if (ImGui::BeginMenu("Inspect with slice plane")) {
+    if (state::slicePlanes.empty()) {
+      if (ImGui::Button("Add slice plane")) {
+        SlicePlane* sp = addSlicePlane();
+        sp->setVolumeMeshToInspect(getName());
+      }
+    } else {
+      for (auto& sp : state::slicePlanes) {
+        bool isInspecting = sp->getVolumeMeshToInspect() == getName();
+        if (ImGui::MenuItem(sp->name.c_str(), NULL, isInspecting)) {
+          sp->setVolumeMeshToInspect(isInspecting ? "" : getName());
+        }
+      }
+    }
+    ImGui::EndMenu();
+  }
 }
 
 
