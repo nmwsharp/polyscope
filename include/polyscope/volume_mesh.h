@@ -175,6 +175,9 @@ public:
   void fillSliceGeometryBuffers(render::ShaderProgram& p);
   static const std::vector<std::vector<std::array<size_t, 3>>>& cellStencil(VolumeCellType type);
   static const std::vector<std::vector<size_t>>& cellFaces(VolumeCellType type);
+  // For each (face, triangle, edge-within-triangle), whether that edge is a real polygon boundary edge.
+  // Indexed as [face][tri][k], paralleling cellStencil().
+  static const std::vector<std::vector<std::array<bool, 3>>>& cellRealEdgeStencil(VolumeCellType type);
   // Slice plane listeners
   std::vector<polyscope::SlicePlane*> volumeSlicePlaneListeners;
   void addSlicePlaneListener(polyscope::SlicePlane* sp);
@@ -265,6 +268,15 @@ private:
   
   static const std::array<std::array<size_t, 8>, 8> rotationMap;
   static const std::array<std::array<std::array<size_t, 4>, 6>, 4> diagonalMap;
+
+  // precomputed real-edge flags: [face][tri][k] = is edge k of that triangle a polygon boundary edge?
+  static std::vector<std::vector<std::array<bool, 3>>> realEdgeStencilTet;
+  static std::vector<std::vector<std::array<bool, 3>>> realEdgeStencilHex;
+  static std::vector<std::vector<std::array<bool, 3>>> realEdgeStencilPrism;
+  static std::vector<std::vector<std::array<bool, 3>>> realEdgeStencilPyramid;
+
+  static bool constantDataInitialized;
+  static void initializeConstantData();
 
   // clang-format off
 

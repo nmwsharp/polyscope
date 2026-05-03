@@ -98,6 +98,52 @@ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilHex =
  };
 // clang-format on
 
+namespace {
+// Computes, for each face/tri/edge in a stencil, whether that triangle edge lies on the polygon boundary.
+std::vector<std::vector<std::array<bool, 3>>>
+buildRealEdgeStencil(const std::vector<std::vector<std::array<size_t, 3>>>& stencil,
+                     const std::vector<std::vector<size_t>>& faces) {
+  std::vector<std::vector<std::array<bool, 3>>> result;
+  result.reserve(stencil.size());
+  for (size_t f = 0; f < stencil.size(); f++) {
+    const auto& poly = faces[f];
+    std::set<std::pair<size_t, size_t>> realEdges;
+    for (size_t p = 0; p < poly.size(); p++) {
+      size_t a = poly[p], b = poly[(p + 1) % poly.size()];
+      if (a > b) std::swap(a, b);
+      realEdges.insert({a, b});
+    }
+    std::vector<std::array<bool, 3>> faceResult;
+    faceResult.reserve(stencil[f].size());
+    for (const auto& tri : stencil[f]) {
+      std::array<bool, 3> edgeReal;
+      for (size_t k = 0; k < 3; k++) {
+        size_t a = tri[k], b = tri[(k + 1) % 3];
+        if (a > b) std::swap(a, b);
+        edgeReal[k] = realEdges.count({a, b}) > 0;
+      }
+      faceResult.push_back(edgeReal);
+    }
+    result.push_back(std::move(faceResult));
+  }
+  return result;
+}
+} // namespace
+
+std::vector<std::vector<std::array<bool, 3>>> VolumeMesh::realEdgeStencilTet;
+std::vector<std::vector<std::array<bool, 3>>> VolumeMesh::realEdgeStencilHex;
+std::vector<std::vector<std::array<bool, 3>>> VolumeMesh::realEdgeStencilPrism;
+std::vector<std::vector<std::array<bool, 3>>> VolumeMesh::realEdgeStencilPyramid;
+bool VolumeMesh::constantDataInitialized = false;
+
+void VolumeMesh::initializeConstantData() {
+  realEdgeStencilTet = buildRealEdgeStencil(stencilTet, facesTet);
+  realEdgeStencilHex = buildRealEdgeStencil(stencilHex, facesHex);
+  realEdgeStencilPrism = buildRealEdgeStencil(stencilPrism, facesPrism);
+  realEdgeStencilPyramid = buildRealEdgeStencil(stencilPyramid, facesPyramid);
+  constantDataInitialized = true;
+}
+
 
 namespace detail {
 using Tet = std::array<uint32_t, 4>;
@@ -312,8 +358,14 @@ edgeWidth(uniquePrefix() + "edgeWidth", 0.),
 
 // == misc values
 activeLevelSetQuantity(nullptr) 
+
 {
   // clang-format on
+
+  if (!constantDataInitialized) {
+    initializeConstantData();
+  }
+
   vertexPositions.checkInvalidValues();
 
   cullWholeElements.setPassive(true);
@@ -747,11 +799,6 @@ void VolumeMesh::computeConnectivityData() {
   // To mitigate this issue, we fill the buffer such that all exterior faces come first, then all interior faces, so
   // that exterior faces always win depth ties. This doesn't totally eliminate the problem, but greatly improves the
   // most egregious cases.
-  auto makeEdgeKey = [](uint32_t a, uint32_t b) -> std::pair<uint32_t, uint32_t> {
-    if (a > b) std::swap(a, b);
-    return {a, b};
-  };
-
   // == Allocate buffers
   triangleVertexInds.data.clear();
   triangleVertexInds.data.resize(3 * nFacesTriangulation());
@@ -775,20 +822,13 @@ void VolumeMesh::computeConnectivityData() {
     const std::array<uint32_t, 8>& cell = cells[iC];
     VolumeCellType cellT = cellType(iC);
 
-    const auto& faceTris = cellStencil(cellT); // triangulated faces
-    const auto& faceVerts = cellFaces(cellT);  // original polygon faces
+    const auto& faceTris = cellStencil(cellT);              // triangulated faces
+    const auto& faceRealEdges = cellRealEdgeStencil(cellT); // real-edge flags per face/tri/edge
 
     // Loop over all faces of the cell
     for (size_t f = 0; f < faceTris.size(); f++) {
 
       const auto& triList = faceTris[f];
-      const auto& poly = faceVerts[f];
-
-      // Build a set of "real" edges from the polygon
-      std::set<std::pair<uint32_t, uint32_t>> realEdges;
-      for (size_t p = 0; p < poly.size(); p++) {
-        realEdges.insert(makeEdgeKey(cell[poly[p]], cell[poly[(p + 1) % poly.size()]]));
-      }
 
       // Loop over triangles in the triangulation of this face
       for (size_t j = 0; j < triList.size(); j++) {
@@ -817,13 +857,11 @@ void VolumeMesh::computeConnectivityData() {
         baryCoord.data[3 * iData + 2] = glm::vec3{0., 0., 1.};
 
         // Mark edges as real or not
-        glm::vec3 realFlag(0.0f);
-        for (size_t k = 0; k < 3; k++) {
-          bool isReal = realEdges.count(makeEdgeKey(cell[tri[k]], cell[tri[(k + 1) % 3]])) > 0;
-          realFlag[k] = isReal ? 1.0f : 0.0f;
-          edgeIsReal.data[3 * iData + k] = realFlag;
+        for (int k = 0; k < 3; k++) {
+          for (int c = 0; c < 3; c++) {
+            edgeIsReal.data[3 * iData + k][c] = faceRealEdges[f][j][c] ? 1.0f : 0.0f;
+          }
         }
-        for (int k = 0; k < 3; k++) edgeIsReal.data[3 * iData + k] = realFlag;
       }
 
       // Face type: 1 for interior, 0 for exterior
@@ -870,6 +908,21 @@ const std::vector<std::vector<size_t>>& VolumeMesh::cellFaces(VolumeCellType typ
   }
   // unreachable
   return facesTet;
+}
+
+const std::vector<std::vector<std::array<bool, 3>>>& VolumeMesh::cellRealEdgeStencil(VolumeCellType type) {
+  switch (type) {
+  case VolumeCellType::TET:
+    return realEdgeStencilTet;
+  case VolumeCellType::HEX:
+    return realEdgeStencilHex;
+  case VolumeCellType::PRISM:
+    return realEdgeStencilPrism;
+  case VolumeCellType::PYRAMID:
+    return realEdgeStencilPyramid;
+  }
+  // unreachable
+  return realEdgeStencilTet;
 }
 
 
