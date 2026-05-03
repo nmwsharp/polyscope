@@ -174,6 +174,7 @@ void SlicePlane::setSliceGeomUniforms(render::ShaderProgram& p) {
 
 
 void SlicePlane::setVolumeMeshToInspect(std::string meshname) {
+  requestRedraw();
   VolumeMesh* oldMeshToInspect = inspectedMeshName == "" ? nullptr : polyscope::getVolumeMesh(inspectedMeshName);
   if (oldMeshToInspect != nullptr) {
     oldMeshToInspect->removeSlicePlaneListener(this);

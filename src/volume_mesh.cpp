@@ -61,7 +61,7 @@ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilHex =
   {7,4,5,6}
  };
 
- const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilPrism = 
+ const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilPrism =
  {
    {{0,2,1}},
    {{0,5,2}, {0,3,5}},
