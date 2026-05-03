@@ -37,55 +37,6 @@ const std::vector<std::vector<size_t>> VolumeMesh::facesTet =
   {0,3,2},
   {1,2,3}
 };
-// Indirection to place vertex 0 always in the bottom left corner
-const std::array<std::array<size_t, 8>, 8> VolumeMesh::rotationMap = 
- {{
-   {0, 1, 2, 3, 4, 5, 7, 6}, 
-   {1, 0, 4, 5, 2, 3, 6, 7}, 
-   {2, 1, 5, 6, 3, 0, 7, 4}, 
-   {3, 0, 1, 2, 7, 4, 6, 5}, 
-   {4, 0, 3, 7, 5, 1, 6, 2}, 
-   {5, 1, 0, 4, 7, 2, 6, 3}, 
-   {7, 3, 2, 6, 4, 0, 5, 1},
-   {6, 2, 1, 5, 7, 3, 4, 0} 
- }};
-
-// Map indirected cube to tets
-const std::array<std::array<std::array<size_t, 4>, 6>, 4> VolumeMesh::diagonalMap = 
- {{
-    {{
-      {0, 1, 2, 5},
-      {0, 2, 6, 5},
-      {0, 2, 3, 6},
-      {0, 5, 6, 4},
-      {2, 6, 5, 7},
-      {0, 0, 0, 0}
-    }},
-    {{
-      {0, 5, 6, 4},
-      {0, 1, 6, 5},
-      {1, 7, 6, 5},
-      {0, 6, 2, 3},
-      {0, 6, 1, 2},
-      {1, 6, 7, 2}
-    }},
-    {{
-      {0, 4, 5, 7},
-      {0, 3, 6, 7},
-      {0, 6, 4, 7},
-      {0, 1, 2, 5},
-      {0, 3, 7, 2},
-      {0, 7, 5, 2}
-    }},
-    {{
-      {0, 2, 3, 7},
-      {0, 3, 6, 7},
-      {0, 6, 4, 7},
-      {0, 5, 7, 4},
-      {1, 5, 7, 0},
-      {1, 7, 2, 0}
-    }}
- }};
 
 
 const std::vector<std::vector<std::array<size_t, 3>>> VolumeMesh::stencilHex = 
@@ -205,6 +156,121 @@ Tets decomposePyramid(const Cell& cell) {
     // Split along diagonal 1-3
     return {{p[1], p[3], p[4], p[2]}, {p[1], p[4], p[3], p[0]}};
   }
+}
+Tets decomposeHex(const Cell& cell) {
+  // The challenge is to make sure we tet-decompse adjacent cells in a consistent way, so there are not little gaps
+  // between mismatched tetrahedralizations, for non-planar faces. This approach is adapted from
+  // https://www.researchgate.net/profile/Julien-Dompierre/publication/221561839_How_to_Subdivide_Pyramids_Prisms_and_Hexahedra_into_Tetrahedra/links/0912f509c0b7294059000000/How-to-Subdivide-Pyramids-Prisms-and-Hexahedra-into-Tetrahedra.pdf?origin=publication_detail
+  // It's a bit hard to look at but it works.
+  // The resulting tet counts are either 5 or 6 per hex. Like the rest of this class, this function only really works
+  // for convex cells, there is no attempt to handle the nonconvex case.
+
+  // clang-format off
+
+  // Indirection to place vertex 0 always in the bottom left corner
+  const std::array<std::array<size_t, 8>, 8> rotationMap = {{{0, 1, 2, 3, 4, 5, 7, 6},
+                                                             {1, 0, 4, 5, 2, 3, 6, 7},
+                                                             {2, 1, 5, 6, 3, 0, 7, 4},
+                                                             {3, 0, 1, 2, 7, 4, 6, 5},
+                                                             {4, 0, 3, 7, 5, 1, 6, 2},
+                                                             {5, 1, 0, 4, 7, 2, 6, 3},
+                                                             {7, 3, 2, 6, 4, 0, 5, 1},
+                                                             {6, 2, 1, 5, 7, 3, 4, 0}}};
+
+
+  // Map indirected cube to tets 
+  const std::array<std::array<std::array<size_t, 4>, 6>, 4> diagonalMap = 
+  {{
+    {{
+      {0, 1, 2, 5},
+      {0, 2, 6, 5},
+      {0, 2, 3, 6},
+      {0, 5, 6, 4},
+      {2, 6, 5, 7},
+      {0, 0, 0, 0}
+    }},
+    {{
+      {0, 5, 6, 4},
+      {0, 1, 6, 5},
+      {1, 7, 6, 5},
+      {0, 6, 2, 3},
+      {0, 6, 1, 2},
+      {1, 6, 7, 2}
+    }},
+    {{
+      {0, 4, 5, 7},
+      {0, 3, 6, 7},
+      {0, 6, 4, 7},
+      {0, 1, 2, 5},
+      {0, 3, 7, 2},
+      {0, 7, 5, 2}
+    }},
+    {{
+      {0, 2, 3, 7},
+      {0, 3, 6, 7},
+      {0, 6, 4, 7},
+      {0, 5, 7, 4},
+      {1, 5, 7, 0},
+      {1, 7, 2, 0}
+    }}
+  }};
+  // clang-format on
+
+
+  std::array<size_t, 8> sortedNumbering;
+  std::iota(sortedNumbering.begin(), sortedNumbering.end(), 0);
+  std::sort(sortedNumbering.begin(), sortedNumbering.end(),
+            [&cell](size_t a, size_t b) -> bool { return cell[a] < cell[b]; });
+  std::array<size_t, 8> rotatedNumbering;
+  std::copy(rotationMap[sortedNumbering[0]].begin(), rotationMap[sortedNumbering[0]].end(), rotatedNumbering.begin());
+  size_t n = 0;
+  size_t diagCount = 0;
+  auto checkDiagonal = [&cell, &rotatedNumbering](size_t a1, size_t a2, size_t b1, size_t b2) {
+    return (cell[rotatedNumbering[a1]] < cell[rotatedNumbering[b1]] &&
+            cell[rotatedNumbering[a1]] < cell[rotatedNumbering[b2]]) ||
+           (cell[rotatedNumbering[a2]] < cell[rotatedNumbering[b1]] &&
+            cell[rotatedNumbering[a2]] < cell[rotatedNumbering[b2]]);
+  };
+  if (checkDiagonal(1, 7, 2, 5)) {
+    n += 4;
+    diagCount++;
+  }
+  if (checkDiagonal(3, 7, 2, 6)) {
+    n += 2;
+    diagCount++;
+  }
+  if (checkDiagonal(4, 7, 5, 6)) {
+    n += 1;
+    diagCount++;
+  }
+  if (n == 1 || n == 6) {
+    size_t temp = rotatedNumbering[1];
+    rotatedNumbering[1] = rotatedNumbering[4];
+    rotatedNumbering[4] = rotatedNumbering[3];
+    rotatedNumbering[3] = temp;
+    temp = rotatedNumbering[5];
+    rotatedNumbering[5] = rotatedNumbering[6];
+    rotatedNumbering[6] = rotatedNumbering[2];
+    rotatedNumbering[2] = temp;
+  } else if (n == 2 || n == 5) {
+    size_t temp = rotatedNumbering[1];
+    rotatedNumbering[1] = rotatedNumbering[3];
+    rotatedNumbering[3] = rotatedNumbering[4];
+    rotatedNumbering[4] = temp;
+    temp = rotatedNumbering[5];
+    rotatedNumbering[5] = rotatedNumbering[2];
+    rotatedNumbering[2] = rotatedNumbering[6];
+    rotatedNumbering[6] = temp;
+  }
+  size_t tetCount = (diagCount == 0 ? 5 : 6);
+  std::array<std::array<size_t, 4>, 6> tetMap = diagonalMap[diagCount];
+  Tets result(tetCount);
+  for (size_t k = 0; k < tetCount; k++) {
+    for (size_t i = 0; i < 4; i++) {
+      result[k][i] = cell[rotatedNumbering[tetMap[k][i]]];
+    }
+  }
+  return result;
 }
 } // namespace detail
 
@@ -335,138 +401,18 @@ void VolumeMesh::computeCounts() {
 
 
 void VolumeMesh::computeTets() {
-  // Algorithm from
-  // https://www.researchgate.net/profile/Julien-Dompierre/publication/221561839_How_to_Subdivide_Pyramids_Prisms_and_Hexahedra_into_Tetrahedra/links/0912f509c0b7294059000000/How-to-Subdivide-Pyramids-Prisms-and-Hexahedra-into-Tetrahedra.pdf?origin=publication_detail
-  // It's a bit hard to look at but it works
-  // Uses vertex numberings to ensure consistent diagonals between faces, and keeps tet counts to 5 or 6 per hex
-  size_t tetCount = 0;
-  // Get number of tets first
-  for (size_t iC = 0; iC < nCells(); iC++) {
-    switch (cellType(iC)) {
-    case VolumeCellType::HEX: {
-      std::array<size_t, 8> sortedNumbering;
-      std::iota(sortedNumbering.begin(), sortedNumbering.end(), 0);
-      std::sort(sortedNumbering.begin(), sortedNumbering.end(),
-                [this, iC](size_t a, size_t b) -> bool { return cells[iC][a] < cells[iC][b]; });
-      std::array<size_t, 8> rotatedNumbering;
-      std::copy(rotationMap[sortedNumbering[0]].begin(), rotationMap[sortedNumbering[0]].end(),
-                rotatedNumbering.begin());
-      size_t diagCount = 0;
-      auto checkDiagonal = [this, rotatedNumbering, iC](size_t a1, size_t a2, size_t b1, size_t b2) {
-        return (cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b1]] &&
-                cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b2]]) ||
-               (cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b1]] &&
-                cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b2]]);
-      };
-      if (checkDiagonal(1, 7, 2, 5)) {
-        diagCount++;
-      }
-      if (checkDiagonal(3, 7, 2, 6)) {
-        diagCount++;
-      }
-      if (checkDiagonal(4, 7, 5, 6)) {
-        diagCount++;
-      }
-      if (diagCount == 0) {
-        tetCount += 5;
-      } else {
-        tetCount += 6;
-      }
-      break;
-    }
-    case VolumeCellType::TET:
-      tetCount += 1;
-      break;
-    case VolumeCellType::PRISM:
-      tetCount += 3;
-      break;
-    case VolumeCellType::PYRAMID:
-      tetCount += 2;
-      break;
-    }
-  }
-
-  // Each hex can make up to 6 tets
-  tets.resize(tetCount);
-  size_t tetIdx = 0;
+  tets.clear();
   auto addTets = [&](const detail::Tets& newTets) {
-    for (const auto& tet : newTets) {
-      for (size_t i = 0; i < 4; i++) {
-        tets[tetIdx][i] = tet[i];
-      }
-      tetIdx++;
-    }
+    for (const auto& tet : newTets) tets.push_back(tet);
   };
   for (size_t iC = 0; iC < nCells(); iC++) {
     switch (cellType(iC)) {
-    case VolumeCellType::HEX: {
-      std::array<size_t, 8> sortedNumbering;
-      std::iota(sortedNumbering.begin(), sortedNumbering.end(), 0);
-      std::sort(sortedNumbering.begin(), sortedNumbering.end(),
-                [this, iC](size_t a, size_t b) -> bool { return cells[iC][a] < cells[iC][b]; });
-      std::array<size_t, 8> rotatedNumbering;
-      std::copy(rotationMap[sortedNumbering[0]].begin(), rotationMap[sortedNumbering[0]].end(),
-                rotatedNumbering.begin());
-      size_t n = 0;
-      size_t diagCount = 0;
-      // Diagonal exists on the pair of vertices which contain the minimum vertex number
-      auto checkDiagonal = [this, rotatedNumbering, iC](size_t a1, size_t a2, size_t b1, size_t b2) {
-        return (cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b1]] &&
-                cells[iC][rotatedNumbering[a1]] < cells[iC][rotatedNumbering[b2]]) ||
-               (cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b1]] &&
-                cells[iC][rotatedNumbering[a2]] < cells[iC][rotatedNumbering[b2]]);
-      };
-      // Minimum vertex will always have 3 diagonals, check other three faces
-      if (checkDiagonal(1, 7, 2, 5)) {
-        n += 4;
-        diagCount++;
-      }
-      if (checkDiagonal(3, 7, 2, 6)) {
-        n += 2;
-        diagCount++;
-      }
-      if (checkDiagonal(4, 7, 5, 6)) {
-        n += 1;
-        diagCount++;
-      }
-      // Rotate by 120 or 240 degrees depending on diagonal positions
-      if (n == 1 || n == 6) {
-        size_t temp = rotatedNumbering[1];
-        rotatedNumbering[1] = rotatedNumbering[4];
-        rotatedNumbering[4] = rotatedNumbering[3];
-        rotatedNumbering[3] = temp;
-        temp = rotatedNumbering[5];
-        rotatedNumbering[5] = rotatedNumbering[6];
-        rotatedNumbering[6] = rotatedNumbering[2];
-        rotatedNumbering[2] = temp;
-      } else if (n == 2 || n == 5) {
-        size_t temp = rotatedNumbering[1];
-        rotatedNumbering[1] = rotatedNumbering[3];
-        rotatedNumbering[3] = rotatedNumbering[4];
-        rotatedNumbering[4] = temp;
-        temp = rotatedNumbering[5];
-        rotatedNumbering[5] = rotatedNumbering[2];
-        rotatedNumbering[2] = rotatedNumbering[6];
-        rotatedNumbering[6] = temp;
-      }
-
-      // Map final tets according to diagonalMap and the number of diagonals not incident to V_0
-      std::array<std::array<size_t, 4>, 6> tetMap = diagonalMap[diagCount];
-      for (size_t k = 0; k < (diagCount == 0 ? 5 : 6); k++) {
-        for (size_t i = 0; i < 4; i++) {
-          tets[tetIdx][i] = cells[iC][rotatedNumbering[tetMap[k][i]]];
-        }
-        tetIdx++;
-      }
+    case VolumeCellType::HEX:
+      addTets(detail::decomposeHex(cells[iC]));
       break;
-    }
-    case VolumeCellType::TET: {
-      for (size_t i = 0; i < 4; i++) {
-        tets[tetIdx][i] = cells[iC][i];
-      }
-      tetIdx++;
+    case VolumeCellType::TET:
+      tets.push_back({cells[iC][0], cells[iC][1], cells[iC][2], cells[iC][3]});
       break;
-    }
     case VolumeCellType::PRISM:
       addTets(detail::decomposePrism(cells[iC]));
       break;
