@@ -297,12 +297,22 @@ private:
 };
 
 // Register functions
+
+// Register a volume mesh with all tetrahedral cells. tetIndices has shape (nTets, 4).
 template <class V, class C>
 VolumeMesh* registerTetMesh(std::string name, const V& vertexPositions, const C& tetIndices);
+
+// Register a volume mesh with all hexahedral cells. hexIndices has shape (nHexes, 8).
 template <class V, class C>
 VolumeMesh* registerHexMesh(std::string name, const V& vertexPositions, const C& hexIndices);
+
+// Register a volume mesh with general mixed cell types (tet, hex, prism, pyramid). cellIndices has shape (nCells, 8);
+// cells with fewer than 8 vertices are right-padded with negative indices to indicate unused slots.
 template <class V, class C>
-VolumeMesh* registerVolumeMesh(std::string name, const V& vertexPositions, const C& hexIndices);
+VolumeMesh* registerVolumeMesh(std::string name, const V& vertexPositions, const C& cellIndices);
+
+// Register a volume mesh from separate tet and hex index arrays.
+// Cells are ordered with all tets first, then all hexes. Note that pyrams and prisms are also supported, but not from this function.
 template <class V, class Ct, class Ch>
 VolumeMesh* registerTetHexMesh(std::string name, const V& vertexPositions, const Ct& tetIndices, const Ch& hexIndices);
 
