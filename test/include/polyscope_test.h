@@ -166,3 +166,31 @@ inline std::tuple<std::vector<glm::vec3>, std::vector<std::array<int, 8>>> getVo
 
   return std::make_tuple(combined_verts, combined_cells);
 };
+
+inline std::tuple<std::vector<glm::vec3>, std::vector<std::array<int, 8>>> getHexWedgePyramidTetMeshData() {
+  // clang-format off
+  std::vector<glm::vec3> vertices = {
+    {0, 0, 0},          // V0  (base hex)
+    {1, 0, 0},          // V1
+    {1, 1, 0},          // V2
+    {0, 1, 0},          // V3
+    {0, 0, 1},          // V4
+    {1, 0, 1},          // V5
+    {1, 1, 1},          // V6
+    {0, 1, 1},          // V7
+    {0.0, 0.5, 1.5},    // V8  (top prism)
+    {1.0, 0.5, 1.5},    // V9
+    {1.5, 0.5, 0.0},    // V10 (side prism)
+    {1.5, 0.5, 1.0},    // V11
+    {0.5, 0.5, -0.5},   // V12 (pyramid apex)
+  };
+  std::vector<std::array<int, 8>> cells = {
+    {0, 1, 2, 3, 4, 5, 6, 7},    // hex
+    {4, 7, 8, 5, 6, 9, -1, -1},  // top prism
+    {1, 10, 2, 5, 11, 6, -1, -1},// side prism
+    {0, 3, 2, 1, 12, -1, -1, -1},// pyramid
+    {5, 11, 6, 9, -1, -1, -1, -1},// tet
+  };
+  // clang-format on
+  return std::make_tuple(vertices, cells);
+};

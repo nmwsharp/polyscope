@@ -65,41 +65,43 @@ TEST_F(PolyscopeTest, ShowVolumeMesh) {
 
 
 TEST_F(PolyscopeTest, ShowVolumeMeshHexWedgePyramidTet) {
-  // clang-format off
-  std::vector<glm::vec3> vertices = {// Base hex vertices
-                                     {0, 0, 0},          // V0
-                                     {1, 0, 0},          // V1
-                                     {1, 1, 0},          // V2
-                                     {0, 1, 0},          // V3
-                                     {0, 0, 1},          // V4
-                                     {1, 0, 1},          // V5
-                                     {1, 1, 1},          // V6
-                                     {0, 1, 1},          // V7
-                                     // Top Prism Vertices
-                                     {0.0, 0.5, 1.5},   // V8
-                                     {1.0, 0.5, 1.5},   // V9
-                                     // Side Prism Vertices
-                                     {1.5, 0.5, 0.0},   // V10
-                                     {1.5, 0.5, 1.0},   // V11
-                                     // Bottom Pyramid Vertex
-                                     {0.5, 0.5, -0.5}   // V12
-                                    };
-  // clang-format on
-  std::vector<std::array<int, 8>> cells = {
-      // Base Hex cell
-      {0, 1, 2, 3, 4, 5, 6, 7},
-      // Top Prism cell
-      {4, 7, 8, 5, 6, 9, -1, -1},
-      // Side Prism cell
-      {1, 10, 2, 5, 11, 6, -1, -1},
-      // Bottom Pyramid cell
-      {0, 3, 2, 1, 12, -1, -1, -1},
-      // Tet Connecting side and top prisms
-      {5, 11, 6, 9, -1, -1, -1, -1},
-  };
+  std::vector<glm::vec3> vertices;
+  std::vector<std::array<int, 8>> cells;
+  std::tie(vertices, cells) = getHexWedgePyramidTetMeshData();
   polyscope::registerVolumeMesh("hex prism pyramid tet", vertices, cells);
   polyscope::show(3);
   polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, VolumeMeshInspectHexWedgePyramidTet) {
+  std::vector<glm::vec3> vertices;
+  std::vector<std::array<int, 8>> cells;
+  std::tie(vertices, cells) = getHexWedgePyramidTetMeshData();
+  polyscope::VolumeMesh* psVol = polyscope::registerVolumeMesh("hex prism pyramid tet", vertices, cells);
+
+  polyscope::SlicePlane* p = polyscope::addSlicePlane();
+  p->setVolumeMeshToInspect("hex prism pyramid tet");
+  polyscope::show(3);
+
+  // with a scalar quantity
+  std::vector<float> vals(vertices.size(), 0.44);
+  auto q1 = psVol->addVertexScalarQuantity("vals", vals);
+  q1->setEnabled(true);
+  polyscope::show(3);
+
+  // with a categorical quantity
+  auto q1Cat = psVol->addVertexScalarQuantity("vals cat", vals, polyscope::DataType::CATEGORICAL);
+  q1Cat->setEnabled(true);
+  polyscope::show(3);
+
+  // try orthographic rendering
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::show(3);
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+  polyscope::removeLastSceneSlicePlane();
 }
 
 TEST_F(PolyscopeTest, VolumeMeshUpdatePositions) {
