@@ -92,6 +92,19 @@ public:
   template <class V, class F>
   void update(const V& newVertices, const F& newFaces);
 
+  // CPU-side update functions.
+
+  // update only positions (vertex count must stay the same).
+  template <class V>
+  void updateVertexPositions(const V& newPositions);
+
+  // update both vertices and faces; vertex/face counts may change
+  template <class V, class F>
+  void updateMesh(const V& newVertices, const F& newFaces);
+  
+  // optionally pre-allocates capacity to avoid reallocations on future updateMesh() calls.
+  void reserve(size_t nVerts, size_t nFaces);
+
   // Misc data
   static const std::string structureTypeName;
 

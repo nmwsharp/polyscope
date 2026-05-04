@@ -18,8 +18,18 @@ SimpleTriangleMeshScalarQuantity::SimpleTriangleMeshScalarQuantity(std::string n
                                                                    DataType dataType_)
     : SimpleTriangleMeshQuantity(name, mesh_, true), ScalarQuantity(*this, values_, dataType_), definedOn(definedOn_) {}
 
+void SimpleTriangleMeshScalarQuantity::checkQuantitySizeMatchesParentStructure() {
+  size_t expected = (definedOn == "vertex") ? parent.nVertices() : parent.nFaces();
+  if (values.size() != expected) {
+    exception("SimpleTriangleMesh scalar quantity '" + name + "' has " + std::to_string(values.size()) +
+              " values but parent mesh has " + std::to_string(expected) + " " + definedOn + "s");
+  }
+}
+
 void SimpleTriangleMeshScalarQuantity::draw() {
   if (!isEnabled()) return;
+
+  checkQuantitySizeMatchesParentStructure();
 
   if (program == nullptr) createProgram();
 

@@ -308,6 +308,11 @@ void SimpleTriangleMesh::updateObjectSpaceBounds() {
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);
 }
 
+void SimpleTriangleMesh::reserve(size_t nVerts, size_t nFaces) {
+  verticesData.reserve(nVerts);
+  facesData.reserve(nFaces);
+}
+
 SimpleTriangleMeshPickResult SimpleTriangleMesh::interpretPickResult(const PickResult& rawResult) {
 
   if (rawResult.structure != this) {

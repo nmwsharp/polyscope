@@ -40,6 +40,34 @@ void SimpleTriangleMesh::update(const V& newPositions, const F& newFaces) {
   faces.markHostBufferUpdated();
 }
 
+template <class V>
+void SimpleTriangleMesh::updateVertexPositions(const V& newPositions) {
+  validateSize(newPositions, nVertices(), "newPositions");
+  verticesData = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  vertices.markHostBufferUpdated();
+  updateObjectSpaceBounds();
+}
+
+template <class V, class F>
+void SimpleTriangleMesh::updateMesh(const V& newVerts, const F& newFaces) {
+  std::vector<glm::vec3> vertsStd = standardizeVectorArray<glm::vec3, 3>(newVerts);
+  if (vertsStd.size() > verticesData.capacity()) {
+    // amortized doubling on the CPU-side backing vectors.
+    verticesData.reserve(std::max(vertsStd.size(), 2 * verticesData.capacity()));
+  }
+  verticesData = std::move(vertsStd);
+  vertices.markHostBufferUpdated();
+
+  std::vector<glm::uvec3> facesStd = standardizeVectorArray<glm::uvec3, 3>(newFaces);
+  if (facesStd.size() > facesData.capacity()) {
+    facesData.reserve(std::max(facesStd.size(), 2 * facesData.capacity()));
+  }
+  facesData = std::move(facesStd);
+  faces.markHostBufferUpdated();
+
+  updateObjectSpaceBounds();
+}
+
 // =====================================================
 // ============== Quantities
 // =====================================================
