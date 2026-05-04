@@ -21,6 +21,8 @@ SimpleTriangleMeshColorQuantity::SimpleTriangleMeshColorQuantity(std::string nam
 void SimpleTriangleMeshColorQuantity::draw() {
   if (!isEnabled()) return;
 
+  checkQuantitySizeMatchesParentStructure();
+
   if (program == nullptr) createProgram();
 
   parent.setStructureUniforms(*program);
@@ -29,6 +31,14 @@ void SimpleTriangleMeshColorQuantity::draw() {
   render::engine->setMaterialUniforms(*program, parent.getMaterial());
 
   program->draw();
+}
+
+void SimpleTriangleMeshColorQuantity::checkQuantitySizeMatchesParentStructure() {
+  size_t expected = (definedOn == "vertex") ? parent.nVertices() : parent.nFaces();
+  if (colors.size() != expected) {
+    exception("SimpleTriangleMesh color quantity '" + name + "' has " + std::to_string(colors.size()) +
+              " colors but parent mesh has " + std::to_string(expected) + " " + definedOn + "s");
+  }
 }
 
 void SimpleTriangleMeshColorQuantity::buildColorOptionsUI() {

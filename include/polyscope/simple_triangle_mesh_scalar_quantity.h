@@ -6,6 +6,7 @@
 #include "polyscope/render/color_maps.h"
 #include "polyscope/scalar_quantity.h"
 #include "polyscope/simple_triangle_mesh_quantity.h"
+#include "polyscope/standardize_data_array.h"
 
 #include <vector>
 
@@ -21,6 +22,19 @@ public:
   virtual void buildCustomUI() override;
   virtual void refresh() override;
   virtual std::string niceName() override;
+
+  // Throws if the quantity buffer size doesn't match the parent mesh's vertex/face count.
+  void checkQuantitySizeMatchesParentStructure();
+
+  // Update the scalar values, allowing the count to change (e.g. after updateMesh()).
+  // For same-size updates, prefer ScalarQuantity::updateData() which validates the size.
+  template <class V>
+  void updateData(const V& newValues) {
+    std::vector<float> newData = standardizeArray<float, V>(newValues);
+    values.resize(newData.size());
+    values.data.assign(newData.begin(), newData.end());
+    values.markHostBufferUpdated();
+  }
 
   const std::string definedOn;
 

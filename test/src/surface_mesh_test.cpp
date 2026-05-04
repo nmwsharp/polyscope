@@ -727,3 +727,65 @@ TEST_F(PolyscopeTest, SimpleTriangleMeshFaceColor) {
 
   polyscope::removeAllStructures();
 }
+
+TEST_F(PolyscopeTest, SimpleTriangleMeshUpdateFunctions) {
+  auto psMesh = registerSimpleTriangleMesh();
+  size_t nV = psMesh->nVertices();
+  size_t nF = psMesh->nFaces();
+
+  // updateVertexPositions: same count, renders fine
+  psMesh->updateVertexPositions(std::vector<glm::vec3>(nV, glm::vec3{0.f, 0.f, 0.f}));
+  EXPECT_EQ(psMesh->nVertices(), nV);
+  EXPECT_EQ(psMesh->nFaces(), nF);
+  polyscope::show(3);
+
+  // updateMesh: shrink
+  psMesh->updateMesh(std::vector<glm::vec3>{{0,0,0},{1,0,0},{0,1,0}},
+                     std::vector<glm::uvec3>{{0,1,2}});
+  EXPECT_EQ(psMesh->nVertices(), 3u);
+  EXPECT_EQ(psMesh->nFaces(), 1u);
+  polyscope::show(3);
+
+  // updateMesh: grow beyond original size
+  std::vector<glm::vec3> bigVerts = {{0,0,0},{1,0,0},{0,1,0},{0,0,1},{1,1,0}};
+  std::vector<glm::uvec3> bigFaces = {{0,1,2},{1,3,4},{2,3,0}};
+  psMesh->updateMesh(bigVerts, bigFaces);
+  EXPECT_EQ(psMesh->nVertices(), 5u);
+  EXPECT_EQ(psMesh->nFaces(), 3u);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
+
+TEST_F(PolyscopeTest, SimpleTriangleMeshQuantityUpdateAfterResize) {
+  auto psMesh = registerSimpleTriangleMesh();
+
+  // Add quantities at original size and enable them
+  auto qVS = psMesh->addVertexScalarQuantity("vScalar", std::vector<float>(psMesh->nVertices(), 1.f));
+  auto qFS = psMesh->addFaceScalarQuantity("fScalar", std::vector<float>(psMesh->nFaces(), 2.f));
+  auto qVC = psMesh->addVertexColorQuantity("vColor", std::vector<glm::vec3>(psMesh->nVertices(), glm::vec3{1,0,0}));
+  auto qFC = psMesh->addFaceColorQuantity("fColor", std::vector<glm::vec3>(psMesh->nFaces(), glm::vec3{0,1,0}));
+  qVS->setEnabled(true);
+  polyscope::show(3);
+
+  // Resize the mesh
+  std::vector<glm::vec3> newVerts = {{0,0,0},{1,0,0},{0,1,0},{0,0,1},{1,1,0}};
+  std::vector<glm::uvec3> newFaces = {{0,1,2},{1,3,4},{2,3,0}};
+  psMesh->updateMesh(newVerts, newFaces);
+
+  // Update all quantities to match new counts
+  qVS->updateData(std::vector<float>(psMesh->nVertices(), 3.f));
+  qFS->updateData(std::vector<float>(psMesh->nFaces(), 4.f));
+  qVC->updateData(std::vector<glm::vec3>(psMesh->nVertices(), glm::vec3{0,0,1}));
+  qFC->updateData(std::vector<glm::vec3>(psMesh->nFaces(), glm::vec3{1,1,0}));
+
+  EXPECT_EQ(qVS->values.size(), psMesh->nVertices());
+  EXPECT_EQ(qFS->values.size(), psMesh->nFaces());
+  EXPECT_EQ(qVC->colors.size(), psMesh->nVertices());
+  EXPECT_EQ(qFC->colors.size(), psMesh->nFaces());
+
+  qFS->setEnabled(true);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
