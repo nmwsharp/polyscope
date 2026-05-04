@@ -73,6 +73,7 @@ public:
   std::vector<glm::uvec4> getDataRange_uvec4(size_t ind, size_t count) override;
 
   uint32_t getNativeBufferID() override;
+  void reserveCapacity(size_t n) override;
 
 protected:
 private:

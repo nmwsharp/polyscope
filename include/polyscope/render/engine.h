@@ -96,6 +96,10 @@ public:
   virtual void setData(const std::vector<std::array<glm::vec3, 3>>& data) = 0;
   virtual void setData(const std::vector<std::array<glm::vec3, 4>>& data) = 0;
 
+  // Pre-allocate GPU memory for n elements without uploading any data. Subsequent setData()
+  // calls with size <= n will not need to reallocate the underlying buffer.
+  virtual void reserveCapacity(size_t n) = 0;
+
   virtual uint32_t getNativeBufferID() = 0; // used to interop with external things, e.g. ImGui
 
   // == Getters
