@@ -13,8 +13,9 @@ namespace polyscope {
 
 ColorImageQuantity::ColorImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                                        const std::vector<glm::vec4>& data_, ImageOrigin imageOrigin_)
-    : ImageQuantity(parent_, name, dimX, dimY, imageOrigin_), colors(this, uniquePrefix() + "colors", colorsData),
-      colorsData(data_), isPremultiplied(uniquePrefix() + "isPremultiplied", false) {
+    : ImageQuantity(parent_, name, dimX, dimY, imageOrigin_),
+      colors(this, uniquePrefix() + "colors", std::vector<glm::vec4>(data_)),
+      isPremultiplied(uniquePrefix() + "isPremultiplied", false) {
   colors.setTextureSize(dimX, dimY);
 }
 

@@ -16,9 +16,11 @@ namespace polyscope {
 namespace render {
 
 template <typename T>
-ManagedBuffer<T>::ManagedBuffer(ManagedBufferRegistry* registry_, const std::string& name_, std::vector<T>& data_)
-    : name(name_), uniqueID(internal::getNextUniqueID()), registry(registry_), data(data_), dataGetsComputed(false),
-      hostBufferIsPopulated(true), managedCapacity(data_.size()) {
+ManagedBuffer<T>::ManagedBuffer(ManagedBufferRegistry* registry_, const std::string& name_, std::vector<T> data_)
+    : name(name_), uniqueID(internal::getNextUniqueID()), registry(registry_), data(std::move(data_)),
+      dataGetsComputed(false), hostBufferIsPopulated(true) {
+
+  managedCapacity = data.size();
 
   if (registry) {
     registry->addManagedBuffer<T>(this);
@@ -27,9 +29,9 @@ ManagedBuffer<T>::ManagedBuffer(ManagedBufferRegistry* registry_, const std::str
 
 
 template <typename T>
-ManagedBuffer<T>::ManagedBuffer(ManagedBufferRegistry* registry_, const std::string& name_, std::vector<T>& data_,
+ManagedBuffer<T>::ManagedBuffer(ManagedBufferRegistry* registry_, const std::string& name_,
                                 std::function<void()> computeFunc_)
-    : name(name_), uniqueID(internal::getNextUniqueID()), registry(registry_), data(data_), dataGetsComputed(true),
+    : name(name_), uniqueID(internal::getNextUniqueID()), registry(registry_), dataGetsComputed(true),
       computeFunc(computeFunc_), hostBufferIsPopulated(false), managedCapacity(0) {
 
   if (registry) {

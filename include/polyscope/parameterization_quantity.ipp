@@ -40,9 +40,8 @@ ParameterizationQuantity<QuantityT>::ParameterizationQuantity(QuantityT& quantit
     : quantity(quantity_),
 
       // buffers
-      coords(&quantity, quantity.uniquePrefix() + "#coords", coordsData),
-      islandLabels(&quantity, quantity.uniquePrefix() + "#islandLabels", islandLabelsData), coordsType(type_),
-      coordsData(coords_),
+      coords(&quantity, quantity.uniquePrefix() + "#coords", std::vector<glm::vec2>(coords_)),
+      islandLabels(&quantity, quantity.uniquePrefix() + "#islandLabels", std::vector<float>{}), coordsType(type_),
 
       // options
       checkerSize(quantity.uniquePrefix() + "#checkerSize", 0.02),

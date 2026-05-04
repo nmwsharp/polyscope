@@ -16,7 +16,7 @@ RawColorAlphaRenderImageQuantity::RawColorAlphaRenderImageQuantity(Structure& pa
                                                                    const std::vector<glm::vec4>& colorsData_,
                                                                    ImageOrigin imageOrigin)
     : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, std::vector<glm::vec3>(), imageOrigin),
-      colors(this, uniquePrefix() + "colors", colorsData), colorsData(colorsData_),
+      colors(this, uniquePrefix() + "colors", std::vector<glm::vec4>(colorsData_)),
       isPremultiplied(uniquePrefix() + "isPremultiplied", false) {
   colors.setTextureSize(dimX, dimY);
 }

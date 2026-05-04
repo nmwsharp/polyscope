@@ -154,8 +154,6 @@ public:
 
 
 private:
-  // Storage for the managed buffers above. You should generally interact with this directly through them.
-  std::vector<glm::vec3> pointsData;
 
   // === Visualization parameters
   PersistentValue<std::string> pointRenderMode;

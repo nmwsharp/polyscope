@@ -24,9 +24,8 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 // Constructor
 PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
     : // clang-format off
-    Structure(name, structureTypeName), 
-      points(this, uniquePrefix() + "points", pointsData),
-      pointsData(std::move(points_)), 
+    Structure(name, structureTypeName),
+      points(this, uniquePrefix() + "points", std::move(points_)),
       pointRenderMode(uniquePrefix() + "pointRenderMode", "sphere"),
       pointColor(uniquePrefix() + "pointColor", getNextUniqueColor()),
       pointRadius(uniquePrefix() + "pointRadius", relativeValue(0.005)),

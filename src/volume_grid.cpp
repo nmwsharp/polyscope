@@ -16,9 +16,9 @@ VolumeGrid::VolumeGrid(std::string name, glm::uvec3 gridNodeDim_, glm::vec3 boun
 
       // clang-format off
       // == managed quantities
-      gridPlaneReferencePositions(this, uniquePrefix() +  "#gridPlaneReferencePositions",     gridPlaneReferencePositionsData,    std::bind(&VolumeGrid::computeGridPlaneReferenceGeometry, this)),
-      gridPlaneReferenceNormals(this, uniquePrefix() +    "#gridPlaneReferenceNormals",       gridPlaneReferenceNormalsData,      [](){/* do nothing, gets handled by position func */} ),
-      gridPlaneAxisInds(this, uniquePrefix() +            "#gridPlaneAxisInds",               gridPlaneAxisIndsData,              [](){/* do nothing, gets handled by position func */} ),
+      gridPlaneReferencePositions(this, uniquePrefix() +  "#gridPlaneReferencePositions",     std::bind(&VolumeGrid::computeGridPlaneReferenceGeometry, this)),
+      gridPlaneReferenceNormals(this, uniquePrefix() +    "#gridPlaneReferenceNormals",       [](){/* do nothing, gets handled by position func */} ),
+      gridPlaneAxisInds(this, uniquePrefix() +            "#gridPlaneAxisInds",               [](){/* do nothing, gets handled by position func */} ),
 
        gridNodeDim(gridNodeDim_), gridCellDim(gridNodeDim_ - 1u), boundMin(boundMin_), boundMax(boundMax_),
 

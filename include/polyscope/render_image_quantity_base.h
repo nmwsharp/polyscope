@@ -63,10 +63,6 @@ protected:
   const bool hasNormals;
   ImageOrigin imageOrigin;
 
-  // Store the raw data
-  std::vector<float> depthsData;
-  std::vector<glm::vec3> normalsData;
-
   // === Visualization parameters
   PersistentValue<std::string> material;
   PersistentValue<float> transparency;

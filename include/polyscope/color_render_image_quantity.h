@@ -37,9 +37,6 @@ public:
 protected:
   // === Visualization parameters
 
-  // Store the raw data
-  std::vector<glm::vec3> colorsData;
-
   // === Render data
   std::shared_ptr<render::ShaderProgram> program;
 
