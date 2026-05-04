@@ -98,6 +98,56 @@ public:
   void setTextureSize(uint32_t sizeX, uint32_t sizeY, uint32_t sizeZ);
   std::array<uint32_t, 3> getTextureSize() const;
 
+  // == Resize / capacity API
+
+  // The .size() of the buffer is the number of data elements it holds.
+  //
+  // The .capacity() of the buffer is the number of data elements it has capacity for without needing to reallocate
+  // (similar to std::vector).
+  //
+  // In a simple flow where we put data in a buffer once, the capacity is the same as the size and neither ever changes.
+  // But in settings where we e.g. incrementally add elements or change the number of data elements on each frame, we
+  // may want to allocate a larger capacity to avoid expensive re-allocation each time.
+
+  // Resize the buffer to newSize elements.
+  //
+  // If newSize <= capacity(), this is a cheap constant-time operation which just updates metadata.
+  //
+  // If newSize > capacity(), this triggers a full reallocation. The new capacity is set to at least
+  // 2*oldCapacity (amortized doubling). Any data that was GPU-resident is first copied back to the
+  // host, then the GPU buffer is reallocated in-place (same buffer object, new backing memory).
+  // ShaderPrograms holding a reference to the GPU buffer remain valid.
+  //
+  // Returns true if a reallocation occurred, false if the resize stayed within capacity.
+  //
+  // Valid for attributes and 1D textures only; call the 2D/3D variants below for multidimensional
+  // textures.
+  bool resize(size_t newSize);
+  
+  // Resize a 2D texture. No-op (returns false) if dimensions are unchanged. Otherwise always
+  // triggers a reallocation (2D/3D textures have no capacity slack — capacity always equals size),
+  // reallocates the GPU buffer in-place, and returns true.
+  bool resizeTexture2D(uint32_t newSizeX, uint32_t newSizeY);
+
+  // Resize a 3D texture. No-op (returns false) if dimensions are unchanged. Otherwise always
+  // triggers a reallocation (2D/3D textures have no capacity slack — capacity always equals size),
+  // reallocates the GPU buffer in-place, and returns true.
+  bool resizeTexture3D(uint32_t newSizeX, uint32_t newSizeY, uint32_t newSizeZ);
+
+  // The maximum size the buffer can be resized to without triggering a reallocation. Always >= size().
+  size_t capacity();
+
+  // Set the managed capacity to newCapacity. Unlike resize(), which grows capacity via amortized
+  // doubling, this sets the logical capacity to a precise value. Error if newCapacity < size().
+  // Reallocates the GPU buffer in-place (same buffer object, new backing memory) if one exists.
+  //
+  // Note: data.capacity() is guaranteed to be >= managedCapacity, but may remain larger than
+  // newCapacity if the underlying vector already had more space allocated.
+  //
+  // Valid for attributes and 1D textures only; multidimensional textures always have capacity
+  // equal to their size, so use the 2D/3D resize() variants instead.
+  void setCapacity(size_t newCapacity);
+
 
   // == Members for indexed data
 
@@ -199,6 +249,11 @@ protected:
   // == Internal members
 
   bool hostBufferIsPopulated; // true if the host buffer contains currently-valid data
+
+  // The buffer has capacity for at least this many elements. It is distinct from .size(), which is the actual number of
+  // elements currently stored in the buffer and may be smaller than the capacity.
+  // Any resize() operations that stay within the capacity are cheap, and do not trigger a full reallocation and copy.
+  size_t managedCapacity = 0;
 
   std::shared_ptr<render::AttributeBuffer> renderAttributeBuffer;
   std::shared_ptr<render::TextureBuffer> renderTextureBuffer;

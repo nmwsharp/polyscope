@@ -246,21 +246,26 @@ void GLAttributeBuffer::checkArray(int testArrayCount) {
 
 GLenum GLAttributeBuffer::getTarget() { return GL_ARRAY_BUFFER; }
 
+void GLAttributeBuffer::reserveCapacity(size_t n) {
+  if (n <= bufferSize) return;
+  bind();
+  glBufferData(getTarget(), n * sizeInBytes(dataType) * getArrayCount(), NULL, GL_STATIC_DRAW);
+  bufferSize = static_cast<uint64_t>(n);
+  setFlag = true;
+  checkGLError();
+}
 
 template <typename T>
 void GLAttributeBuffer::setData_helper(const std::vector<T>& data) {
   bind();
 
-  // allocate if needed
   if (!isSet() || data.size() > bufferSize) {
     setFlag = true;
-    uint64_t newSize = data.size();
-    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+    uint64_t newSize = static_cast<uint64_t>(data.size());
     glBufferData(getTarget(), newSize * sizeof(T), NULL, GL_STATIC_DRAW);
     bufferSize = newSize;
   }
 
-  // do the actual copy
   dataSize = data.size();
   glBufferSubData(getTarget(), 0, dataSize * sizeof(T), data.data());
 
@@ -614,13 +619,15 @@ void GLTextureBuffer::setData(const std::vector<glm::vec3>& data) {
 
   bind();
 
-  if (data.size() != getTotalSize()) {
+  // For 1D textures, data.size() may be <= sizeX (partial upload into a capacity-allocated texture).
+  // For 2D/3D textures, capacity always equals size so the check is effectively ==.
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
   switch (dim) {
   case 1:
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sizeX, formatF(format), type(format), &data.front().x);
+    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, static_cast<GLsizei>(data.size()), formatF(format), type(format), &data.front().x);
     break;
   case 2:
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizeX, sizeY, formatF(format), type(format), &data.front().x);
@@ -637,13 +644,13 @@ void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
 
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
   switch (dim) {
   case 1:
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sizeX, formatF(format), type(format), &data.front().x);
+    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, static_cast<GLsizei>(data.size()), formatF(format), type(format), &data.front().x);
     break;
   case 2:
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizeX, sizeY, formatF(format), type(format), &data.front().x);
@@ -659,13 +666,13 @@ void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
 void GLTextureBuffer::setData(const std::vector<float>& data) {
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
   switch (dim) {
   case 1:
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sizeX, formatF(format), type(format), &data.front());
+    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, static_cast<GLsizei>(data.size()), formatF(format), type(format), &data.front());
     break;
   case 2:
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizeX, sizeY, formatF(format), type(format), &data.front());
@@ -689,13 +696,13 @@ void GLTextureBuffer::setData(const std::vector<double>& data) {
 
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
   switch (dim) {
   case 1:
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sizeX, formatF(format), type(format), &dataFloat.front());
+    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, static_cast<GLsizei>(data.size()), formatF(format), type(format), &dataFloat.front());
     break;
   case 2:
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizeX, sizeY, formatF(format), type(format), &dataFloat.front());
