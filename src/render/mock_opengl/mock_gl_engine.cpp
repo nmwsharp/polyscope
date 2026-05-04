@@ -73,19 +73,22 @@ void GLAttributeBuffer::checkArray(int testArrayCount) {
 }
 
 
+void GLAttributeBuffer::reserveCapacity(size_t n) {
+  if (n <= bufferSize) return;
+  bufferSize = static_cast<uint64_t>(n);
+  setFlag = true;
+}
+
 template <typename T>
 void GLAttributeBuffer::setData_helper(const std::vector<T>& data) {
   bind();
 
-  // allocate if needed
   if (!isSet() || data.size() > bufferSize) {
     setFlag = true;
-    uint64_t newSize = data.size();
-    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+    uint64_t newSize = static_cast<uint64_t>(data.size());
     bufferSize = newSize;
   }
 
-  // do the actual copy
   dataSize = data.size();
 
   checkGLError();
@@ -411,7 +414,7 @@ void GLTextureBuffer::setData(const std::vector<glm::vec3>& data) {
 
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
@@ -431,7 +434,7 @@ void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
 
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
@@ -450,7 +453,7 @@ void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
 void GLTextureBuffer::setData(const std::vector<float>& data) {
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
@@ -469,7 +472,7 @@ void GLTextureBuffer::setData(const std::vector<float>& data) {
 void GLTextureBuffer::setData(const std::vector<double>& data) {
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
@@ -2233,7 +2236,10 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE", MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE);
   registerShaderRule("MESH_PROPAGATE_PICK", MESH_PROPAGATE_PICK);
   registerShaderRule("MESH_PROPAGATE_PICK_SIMPLE", MESH_PROPAGATE_PICK_SIMPLE);
-  
+  registerShaderRule("SIMPLE_MESH_PROPAGATE_FACE_VALUE", SIMPLE_MESH_PROPAGATE_FACE_VALUE);
+  registerShaderRule("SIMPLE_MESH_PROPAGATE_FACE_COLOR", SIMPLE_MESH_PROPAGATE_FACE_COLOR);
+  registerShaderRule("SIMPLE_MESH_PROPAGATE_FACE_PICK", SIMPLE_MESH_PROPAGATE_FACE_PICK);
+
   // volume gridcube things
   registerShaderRule("GRIDCUBE_PROPAGATE_NODE_VALUE", GRIDCUBE_PROPAGATE_NODE_VALUE);
   registerShaderRule("GRIDCUBE_PROPAGATE_CELL_VALUE", GRIDCUBE_PROPAGATE_CELL_VALUE);

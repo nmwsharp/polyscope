@@ -8,7 +8,13 @@
 #include "polyscope/render/engine.h"
 #include "polyscope/render/managed_buffer.h"
 #include "polyscope/scaled_value.h"
+#include "polyscope/standardize_data_array.h"
 #include "polyscope/structure.h"
+#include "polyscope/types.h"
+
+#include "polyscope/simple_triangle_mesh_color_quantity.h"
+#include "polyscope/simple_triangle_mesh_quantity.h"
+#include "polyscope/simple_triangle_mesh_scalar_quantity.h"
 
 #include <vector>
 
@@ -18,9 +24,16 @@ namespace polyscope {
 class SimpleTriangleMesh;
 
 // Forward declare quantity types
+class SimpleTriangleMeshScalarQuantity;
+class SimpleTriangleMeshVertexScalarQuantity;
+class SimpleTriangleMeshFaceScalarQuantity;
+class SimpleTriangleMeshColorQuantity;
+class SimpleTriangleMeshVertexColorQuantity;
+class SimpleTriangleMeshFaceColorQuantity;
 
 struct SimpleTriangleMeshPickResult {
-  // this does nothing for now, just matching pattern from other structures
+  MeshElement elementType = MeshElement::FACE; // which kind of element was clicked
+  int64_t index = -1;                          // index of the clicked element (vertex or face)
 };
 
 class SimpleTriangleMesh : public Structure {
@@ -50,7 +63,26 @@ public:
   render::ManagedBuffer<glm::vec3> vertices;
   render::ManagedBuffer<glm::uvec3> faces;
 
+  size_t nVertices() { return vertices.size(); }
+  size_t nFaces() { return faces.size(); }
+
   // === Quantities
+
+  // Scalars
+  template <class T>
+  SimpleTriangleMeshVertexScalarQuantity* addVertexScalarQuantity(std::string name, const T& values,
+                                                                  DataType type = DataType::STANDARD);
+
+  template <class T>
+  SimpleTriangleMeshFaceScalarQuantity* addFaceScalarQuantity(std::string name, const T& values,
+                                                              DataType type = DataType::STANDARD);
+
+  // Colors
+  template <class T>
+  SimpleTriangleMeshVertexColorQuantity* addVertexColorQuantity(std::string name, const T& values);
+
+  template <class T>
+  SimpleTriangleMeshFaceColorQuantity* addFaceColorQuantity(std::string name, const T& values);
 
   // === Mutate
 
@@ -59,6 +91,19 @@ public:
 
   template <class V, class F>
   void update(const V& newVertices, const F& newFaces);
+
+  // CPU-side update functions.
+
+  // update only positions (vertex count must stay the same).
+  template <class V>
+  void updateVertexPositions(const V& newPositions);
+
+  // update both vertices and faces; vertex/face counts may change
+  template <class V, class F>
+  void updateMesh(const V& newVertices, const F& newFaces);
+  
+  // optionally pre-allocates capacity to avoid reallocations on future updateMesh() calls.
+  void reserve(size_t nVerts, size_t nFaces);
 
   // Misc data
   static const std::string structureTypeName;
@@ -84,6 +129,10 @@ public:
   SimpleTriangleMesh* setBackFacePolicy(BackFacePolicy newPolicy);
   BackFacePolicy getBackFacePolicy();
 
+  // Selection mode (controls vertex vs face pick threshold)
+  SimpleTriangleMesh* setSelectionMode(MeshSelectionMode newMode);
+  MeshSelectionMode getSelectionMode();
+
   // Rendering helpers used by quantities
   void setSimpleTriangleMeshUniforms(render::ShaderProgram& p, bool withSurfaceShade = true);
   void setSimpleTriangleMeshProgramGeometryAttributes(render::ShaderProgram& p);
@@ -102,6 +151,7 @@ private:
   PersistentValue<std::string> material;
   PersistentValue<BackFacePolicy> backFacePolicy;
   PersistentValue<glm::vec3> backFaceColor;
+  PersistentValue<MeshSelectionMode> selectionMode;
 
   // Drawing related things
   // if nullptr, prepare() (resp. preparePick()) needs to be called
@@ -112,13 +162,19 @@ private:
   // Do setup work related to drawing, including allocating openGL data
   void ensureRenderProgramPrepared();
   void ensurePickProgramPrepared();
-  void setPickUniforms(render::ShaderProgram& p);
+  void setPickUniforms(render::ShaderProgram& p); // sets u_pickStartLow/High for SIMPLE_MESH_PROPAGATE_FACE_PICK
 
   // === Quantity adder implementations
+  SimpleTriangleMeshVertexScalarQuantity* addVertexScalarQuantityImpl(std::string name, const std::vector<float>& data,
+                                                                      DataType type);
+  SimpleTriangleMeshFaceScalarQuantity* addFaceScalarQuantityImpl(std::string name, const std::vector<float>& data,
+                                                                  DataType type);
+  SimpleTriangleMeshVertexColorQuantity* addVertexColorQuantityImpl(std::string name,
+                                                                    const std::vector<glm::vec3>& colors);
+  SimpleTriangleMeshFaceColorQuantity* addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors);
 
   // == Picking related things
-  size_t pickStart;
-  glm::vec3 pickColor;
+  size_t pickStart = 0;
 };
 
 

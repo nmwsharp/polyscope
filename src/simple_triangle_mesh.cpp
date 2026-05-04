@@ -5,6 +5,9 @@
 #include "polyscope/pick.h"
 #include "polyscope/polyscope.h"
 #include "polyscope/render/engine.h"
+#include "polyscope/simple_triangle_mesh_color_quantity.h"
+#include "polyscope/simple_triangle_mesh_scalar_quantity.h"
+#include "polyscope/view.h"
 
 #include "imgui.h"
 
@@ -28,7 +31,8 @@ SimpleTriangleMesh::SimpleTriangleMesh(std::string name, std::vector<glm::vec3> 
       surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
       material(uniquePrefix() + "material", "clay"),
       backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different),
-      backFaceColor(uniquePrefix() + "backFaceColor", glm::vec3(1.f - surfaceColor.get().r, 1.f - surfaceColor.get().g, 1.f - surfaceColor.get().b))
+      backFaceColor(uniquePrefix() + "backFaceColor", glm::vec3(1.f - surfaceColor.get().r, 1.f - surfaceColor.get().g, 1.f - surfaceColor.get().b)),
+      selectionMode(uniquePrefix() + "selectionMode", MeshSelectionMode::Auto)
 // clang-format on
 {
   cullWholeElements.setPassive(false);
@@ -72,6 +76,17 @@ void SimpleTriangleMesh::buildCustomOptionsUI() {
       setBackFacePolicy(BackFacePolicy::Custom);
     if (ImGui::MenuItem("cull", NULL, backFacePolicy.get() == BackFacePolicy::Cull))
       setBackFacePolicy(BackFacePolicy::Cull);
+    ImGui::EndMenu();
+  }
+
+  // Selection mode
+  if (ImGui::BeginMenu("Selection Mode")) {
+    if (ImGui::MenuItem("auto", NULL, selectionMode.get() == MeshSelectionMode::Auto))
+      setSelectionMode(MeshSelectionMode::Auto);
+    if (ImGui::MenuItem("vertices only", NULL, selectionMode.get() == MeshSelectionMode::VerticesOnly))
+      setSelectionMode(MeshSelectionMode::VerticesOnly);
+    if (ImGui::MenuItem("faces only", NULL, selectionMode.get() == MeshSelectionMode::FacesOnly))
+      setSelectionMode(MeshSelectionMode::FacesOnly);
     ImGui::EndMenu();
   }
 }
@@ -187,7 +202,7 @@ void SimpleTriangleMesh::ensureRenderProgramPrepared() {
     render::engine->addMaterialRules(getMaterial(),
       addSimpleTriangleMeshRules(
         {
-          "SHADE_BASECOLOR", "COMPUTE_SHADE_NORMAL_FROM_POSITION", "PROJ_AND_INV_PROJ_MAT"
+          "SHADE_BASECOLOR"
         }
       )
     )
@@ -205,28 +220,32 @@ void SimpleTriangleMesh::ensurePickProgramPrepared() {
   if (pickProgram) return;
 
   // clang-format off
-  pickProgram = render::engine->requestShader("SIMPLE_MESH", 
-    addSimpleTriangleMeshRules(
-      {
-        "SHADECOLOR_FROM_UNIFORM", "COMPUTE_SHADE_NORMAL_FROM_POSITION", "PROJ_AND_INV_PROJ_MAT"
-      }
-    , false), render::ShaderReplacementDefaults::Pick
-  );
+  pickProgram = render::engine->requestShader("SIMPLE_MESH",
+    addSimpleTriangleMeshRules({"SIMPLE_MESH_PROPAGATE_FACE_PICK"}, false),
+    render::ShaderReplacementDefaults::Pick);
   // clang-format on
 
   setSimpleTriangleMeshProgramGeometryAttributes(*pickProgram);
 
-  // Request pick indices
-  pickStart = pick::requestPickBufferRange(this, 1);
-  pickColor = pick::indToVec(pickStart);
+  // Allocate one pick index per face
+  pickStart = pick::requestPickBufferRange(this, nFaces());
 }
 
-void SimpleTriangleMesh::setPickUniforms(render::ShaderProgram& p) { p.setUniform("u_color", pickColor); }
+void SimpleTriangleMesh::setPickUniforms(render::ShaderProgram& p) {
+  // Encode pickStart as two uint uniforms for the shader's 64-bit index arithmetic.
+  // NOTE: must stay in sync with SIMPLE_MESH_PROPAGATE_FACE_PICK in surface_mesh_shaders.cpp
+  // and with pick::indToVec() / pick::bitsForPickPacking in pick.ipp.
+  p.setUniform("u_pickStartLow", static_cast<uint32_t>(pickStart & 0xFFFFFFFFull));
+  p.setUniform("u_pickStartHigh", static_cast<uint32_t>(pickStart >> 32));
+}
 
 std::vector<std::string> SimpleTriangleMesh::addSimpleTriangleMeshRules(std::vector<std::string> initRules,
                                                                         bool withSurfaceShade) {
 
   initRules = addStructureRules(initRules);
+
+  initRules.push_back("COMPUTE_SHADE_NORMAL_FROM_POSITION");
+  initRules.push_back("PROJ_AND_INV_PROJ_MAT");
 
   if (withSurfaceShade) {
     // rules that only get used when we're shading the surface of the mesh
@@ -289,17 +308,94 @@ void SimpleTriangleMesh::updateObjectSpaceBounds() {
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);
 }
 
+void SimpleTriangleMesh::reserve(size_t nVerts, size_t nFaces) {
+  verticesData.reserve(nVerts);
+  facesData.reserve(nFaces);
+}
+
 SimpleTriangleMeshPickResult SimpleTriangleMesh::interpretPickResult(const PickResult& rawResult) {
 
   if (rawResult.structure != this) {
-    // caller must ensure that the PickResult belongs to this structure
-    // by checking the structure pointer or name
     exception("called interpretPickResult(), but the pick result is not from this structure");
   }
 
   SimpleTriangleMeshPickResult result;
 
-  // currently nothing
+  size_t localInd = rawResult.localIndex;
+  if (localInd >= nFaces()) {
+    // Shouldn't happen, but guard against stale pick data
+    return result;
+  }
+
+  // Recover the 3 vertex positions of the clicked face
+  glm::uvec3 triInds = faces.getValue(localInd);
+  glm::vec3 pA = vertices.getValue(triInds[0]);
+  glm::vec3 pB = vertices.getValue(triInds[1]);
+  glm::vec3 pC = vertices.getValue(triInds[2]);
+
+  // Compute barycentric coordinates of the pick via sub-triangle areas.
+  // Each lambda_i is the area of the sub-triangle formed by the other two vertices and the click point P,
+  // divided by the total.  Clamp each area to be nonneg and finite, then normalise. If the total is zero, fall back to
+  // (1/3, 1/3, 1/3).
+  glm::vec3 P = rawResult.position;
+
+  auto subArea = [](glm::vec3 u, glm::vec3 v, glm::vec3 w) -> float {
+    float a = glm::length(glm::cross(v - u, w - u));
+    return (std::isfinite(a) && a >= 0.f) ? a : 0.f;
+  };
+
+  float aA = subArea(P, pB, pC);
+  float aB = subArea(pA, P, pC);
+  float aC = subArea(pA, pB, P);
+  float total = aA + aB + aC;
+
+  float lambdaA, lambdaB, lambdaC;
+  if (total == 0.f) {
+    lambdaA = lambdaB = lambdaC = 1.f / 3.f;
+  } else {
+    lambdaA = aA / total;
+    lambdaB = aB / total;
+    lambdaC = aC / total;
+  }
+
+  // Find the dominant vertex
+  size_t nearestLocalIdx = 0;
+  float maxLambda = lambdaA;
+  if (lambdaB > maxLambda) {
+    maxLambda = lambdaB;
+    nearestLocalIdx = 1;
+  }
+  if (lambdaC > maxLambda) {
+    maxLambda = lambdaC;
+    nearestLocalIdx = 2;
+  }
+  size_t nearestVertexIdx = triInds[nearestLocalIdx];
+
+  // Threshold: lambda must exceed this to count as a vertex click.
+  // Matches SurfaceMesh: Auto uses 1 - 0.2 = 0.8, VerticesOnly always picks vertex, FacesOnly never does.
+  float vertexPickThreshold;
+  switch (selectionMode.get()) {
+  case MeshSelectionMode::Auto:
+    vertexPickThreshold = 0.8f;
+    break;
+  case MeshSelectionMode::VerticesOnly:
+    vertexPickThreshold = 0.0f;
+    break;
+  case MeshSelectionMode::FacesOnly:
+    vertexPickThreshold = 2.0f;
+    break;
+  default:
+    vertexPickThreshold = 0.8f;
+    break;
+  }
+
+  if (maxLambda > vertexPickThreshold) {
+    result.elementType = MeshElement::VERTEX;
+    result.index = static_cast<int64_t>(nearestVertexIdx);
+  } else {
+    result.elementType = MeshElement::FACE;
+    result.index = static_cast<int64_t>(localInd);
+  }
 
   return result;
 }
@@ -307,7 +403,35 @@ SimpleTriangleMeshPickResult SimpleTriangleMesh::interpretPickResult(const PickR
 void SimpleTriangleMesh::buildPickUI(const PickResult& rawResult) {
   SimpleTriangleMeshPickResult result = interpretPickResult(rawResult);
 
-  // Do nothing for now, we just pick a single constant for the whole structure
+  if (result.index < 0) return;
+
+  if (result.elementType == MeshElement::VERTEX) {
+    ImGui::TextUnformatted(("Vertex #" + std::to_string(result.index)).c_str());
+
+    ImGui::Spacing();
+    ImGui::Indent(20.f);
+    ImGui::Columns(2);
+    ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
+    for (auto& x : quantities) {
+      SimpleTriangleMeshQuantity* q = static_cast<SimpleTriangleMeshQuantity*>(x.second.get());
+      q->buildVertexInfoGUI(static_cast<size_t>(result.index));
+    }
+    ImGui::Columns(1);
+    ImGui::Indent(-20.f);
+  } else {
+    ImGui::TextUnformatted(("Face #" + std::to_string(result.index)).c_str());
+
+    ImGui::Spacing();
+    ImGui::Indent(20.f);
+    ImGui::Columns(2);
+    ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 3);
+    for (auto& x : quantities) {
+      SimpleTriangleMeshQuantity* q = static_cast<SimpleTriangleMeshQuantity*>(x.second.get());
+      q->buildFaceInfoGUI(static_cast<size_t>(result.index));
+    }
+    ImGui::Columns(1);
+    ImGui::Indent(-20.f);
+  }
 }
 
 
@@ -346,6 +470,48 @@ SimpleTriangleMesh* SimpleTriangleMesh::setBackFaceColor(glm::vec3 val) {
 }
 
 glm::vec3 SimpleTriangleMesh::getBackFaceColor() { return backFaceColor.get(); }
+
+SimpleTriangleMesh* SimpleTriangleMesh::setSelectionMode(MeshSelectionMode newMode) {
+  selectionMode = newMode;
+  requestRedraw();
+  return this;
+}
+MeshSelectionMode SimpleTriangleMesh::getSelectionMode() { return selectionMode.get(); }
+
+
+// === Quantity adder implementations
+
+SimpleTriangleMeshVertexScalarQuantity*
+SimpleTriangleMesh::addVertexScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SimpleTriangleMeshVertexScalarQuantity* q = new SimpleTriangleMeshVertexScalarQuantity(name, data, *this, type);
+  addQuantity(q);
+  return q;
+}
+
+SimpleTriangleMeshFaceScalarQuantity*
+SimpleTriangleMesh::addFaceScalarQuantityImpl(std::string name, const std::vector<float>& data, DataType type) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SimpleTriangleMeshFaceScalarQuantity* q = new SimpleTriangleMeshFaceScalarQuantity(name, data, *this, type);
+  addQuantity(q);
+  return q;
+}
+
+SimpleTriangleMeshVertexColorQuantity*
+SimpleTriangleMesh::addVertexColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SimpleTriangleMeshVertexColorQuantity* q = new SimpleTriangleMeshVertexColorQuantity(name, colors, *this);
+  addQuantity(q);
+  return q;
+}
+
+SimpleTriangleMeshFaceColorQuantity*
+SimpleTriangleMesh::addFaceColorQuantityImpl(std::string name, const std::vector<glm::vec3>& colors) {
+  checkForQuantityWithNameAndDeleteOrError(name);
+  SimpleTriangleMeshFaceColorQuantity* q = new SimpleTriangleMeshFaceColorQuantity(name, colors, *this);
+  addQuantity(q);
+  return q;
+}
 
 
 } // namespace polyscope
