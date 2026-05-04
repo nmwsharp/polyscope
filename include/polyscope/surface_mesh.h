@@ -308,41 +308,6 @@ public:
 
 
 private:
-  // == Mesh geometry buffers
-  // Storage for the managed buffers above. You should generally interact with these through the managed buffers, not
-  // these members.
-
-  // = positions
-  std::vector<glm::vec3> vertexPositionsData;
-
-  // = connectivity / indices
-
-  // other derived indices, all defined per corner of the triangulated mesh
-  std::vector<uint32_t> triangleVertexIndsData;      // index of the corresponding vertex
-  std::vector<uint32_t> triangleFaceIndsData;        // index of the corresponding original face
-  std::vector<uint32_t> triangleCornerIndsData;      // index of the corresponding original corner
-  std::vector<uint32_t> triangleAllVertexIndsData;   // index of the corresponding original vertex
-  std::vector<uint32_t> triangleAllEdgeIndsData;     // index of the corresponding original edge
-  std::vector<uint32_t> triangleAllHalfedgeIndsData; // index of the corresponding original halfedge
-  std::vector<uint32_t> triangleAllCornerIndsData;   // index of the corresponding original corner
-
-  // internal triangle data for rendering, defined per corner of the triangulated mesh
-  std::vector<glm::vec3> baryCoordData;  // always triangulated
-  std::vector<glm::vec3> edgeIsRealData; // always triangulated
-
-  // other internally-computed geometry
-  std::vector<glm::vec3> faceNormalsData;
-  std::vector<glm::vec3> faceCentersData;
-  std::vector<float> faceAreasData;
-  std::vector<glm::vec3> vertexNormalsData;
-  std::vector<float> vertexAreasData;
-  // std::vector<double> edgeLengthsData;
-
-  // tangent spaces
-  std::vector<glm::vec3> defaultFaceTangentBasisXData;
-  std::vector<glm::vec3> defaultFaceTangentBasisYData;
-
-
   // Derived connectivity quantities
   bool halfedgesHaveBeenUsed = false;
   bool cornersHaveBeenUsed = false;

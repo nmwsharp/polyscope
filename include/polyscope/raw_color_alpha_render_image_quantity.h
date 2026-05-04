@@ -35,9 +35,6 @@ public:
   bool getIsPremultiplied();
 
 protected:
-  // Store the raw data
-  std::vector<glm::vec4> colorsData;
-
   // === Visualization parameters
   PersistentValue<bool> isPremultiplied;
 

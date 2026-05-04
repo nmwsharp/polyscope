@@ -347,26 +347,25 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
 // == managed quantities
 
 // positions
-vertexPositions(        this, uniquePrefix() + "vertexPositions",     vertexPositionsData),
+vertexPositions(        this, uniquePrefix() + "vertexPositions",     std::vector<glm::vec3>(vertexPositions_)),
 
 // connectivity / indices
-triangleVertexInds(     this, uniquePrefix() + "triangleVertexInds",  triangleVertexIndsData),
-triangleFaceInds(       this, uniquePrefix() + "triangleFaceInds",    triangleFaceIndsData),
-triangleCellInds(       this, uniquePrefix() + "triangleCellInds",    triangleCellIndsData),
+triangleVertexInds(     this, uniquePrefix() + "triangleVertexInds",  std::vector<uint32_t>{}),
+triangleFaceInds(       this, uniquePrefix() + "triangleFaceInds",    std::vector<uint32_t>{}),
+triangleCellInds(       this, uniquePrefix() + "triangleCellInds",    std::vector<uint32_t>{}),
 
 // internal triangle data for rendering
-baryCoord(              this, uniquePrefix() + "baryCoord",           baryCoordData),
-edgeIsReal(             this, uniquePrefix() + "edgeIsReal",          edgeIsRealData),
-faceType(               this, uniquePrefix() + "faceType",            faceTypeData),
+baryCoord(              this, uniquePrefix() + "baryCoord",           std::vector<glm::vec3>{}),
+edgeIsReal(             this, uniquePrefix() + "edgeIsReal",          std::vector<glm::vec3>{}),
+faceType(               this, uniquePrefix() + "faceType",            std::vector<float>{}),
 
 // other internally-computed geometry
-faceNormals(            this, uniquePrefix() + "faceNormals",         faceNormalsData,        std::bind(&VolumeMesh::computeFaceNormals, this)),
-cellCenters(            this, uniquePrefix() + "cellCenters",         cellCentersData,        std::bind(&VolumeMesh::computeCellCenters, this)),         
+faceNormals(            this, uniquePrefix() + "faceNormals",         std::bind(&VolumeMesh::computeFaceNormals, this)),
+cellCenters(            this, uniquePrefix() + "cellCenters",         std::bind(&VolumeMesh::computeCellCenters, this)),
 
 
 // == core input data
 cells(cellIndices_),
-vertexPositionsData(vertexPositions_), 
 
 // == persistent options
 color(uniquePrefix() + "color", getNextUniqueColor()),

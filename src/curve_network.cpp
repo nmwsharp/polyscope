@@ -20,13 +20,12 @@ const std::string CurveNetwork::structureTypeName = "Curve Network";
 // Constructor
 CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std::vector<std::array<size_t, 2>> edges_)
     : // clang-format off
-      Structure(name, typeName()), 
-      nodePositions(this, uniquePrefix() + "nodePositions", nodePositionsData),
-      edgeTailInds(this, uniquePrefix() + "edgeTailInds", edgeTailIndsData),
-      edgeTipInds(this, uniquePrefix() + "edgeTipInds", edgeTipIndsData),
-      edgeCenters(this, uniquePrefix() + "edgeCenters", edgeCentersData, std::bind(&CurveNetwork::computeEdgeCenters, this)),         
-      nodePositionsData(std::move(nodes_)), 
-      color(uniquePrefix() + "#color", getNextUniqueColor()), 
+      Structure(name, typeName()),
+      nodePositions(this, uniquePrefix() + "nodePositions", std::move(nodes_)),
+      edgeTailInds(this, uniquePrefix() + "edgeTailInds", std::vector<uint32_t>{}),
+      edgeTipInds(this, uniquePrefix() + "edgeTipInds", std::vector<uint32_t>{}),
+      edgeCenters(this, uniquePrefix() + "edgeCenters", std::bind(&CurveNetwork::computeEdgeCenters, this)),
+      color(uniquePrefix() + "#color", getNextUniqueColor()),
       radius(uniquePrefix() + "#radius", relativeValue(0.005)),
       material(uniquePrefix() + "#material", "clay")
 // clang-format on
@@ -34,8 +33,8 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
   nodePositions.checkInvalidValues();
 
   // Copy interleaved data in to tip and tails buffers below
-  edgeTailIndsData.resize(edges_.size());
-  edgeTipIndsData.resize(edges_.size());
+  edgeTailInds.data.resize(edges_.size());
+  edgeTipInds.data.resize(edges_.size());
 
   // Compute node degrees; some quantities want them for visualizations
   nodeDegrees = std::vector<size_t>(nNodes(), 0);
@@ -46,8 +45,8 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
     size_t nA = std::get<0>(edge);
     size_t nB = std::get<1>(edge);
 
-    edgeTailIndsData[iE] = nA;
-    edgeTipIndsData[iE] = nB;
+    edgeTailInds.data[iE] = nA;
+    edgeTipInds.data[iE] = nB;
 
     // Make sure there are no out of bounds indices
     if (nA >= maxInd || nB >= maxInd) {
@@ -60,6 +59,9 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
     nodeDegrees[nA]++;
     nodeDegrees[nB]++;
   }
+
+  edgeTailInds.markHostBufferUpdated();
+  edgeTipInds.markHostBufferUpdated();
 
   updateObjectSpaceBounds();
 }

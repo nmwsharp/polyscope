@@ -33,17 +33,17 @@ SparseVolumeGrid::SparseVolumeGrid(std::string name, glm::vec3 origin_, glm::vec
     : Structure(name, typeName()),
       // clang-format off
       // == managed quantities
-      cellPositions(this, uniquePrefix() + "#cellPositions", cellPositionsData, std::bind(&SparseVolumeGrid::computeCellPositions, this)),
-      cellIndices(this, uniquePrefix() + "#cellIndices", cellIndicesData, [](){/* do nothing, gets handled by computeCellPositions */}),
+      cellPositions(this, uniquePrefix() + "#cellPositions", std::bind(&SparseVolumeGrid::computeCellPositions, this)),
+      cellIndices(this, uniquePrefix() + "#cellIndices", [](){/* do nothing, gets handled by computeCellPositions */}),
       cornerNodeInds{
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds0", cornerNodeIndsData[0]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds1", cornerNodeIndsData[1]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds2", cornerNodeIndsData[2]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds3", cornerNodeIndsData[3]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds4", cornerNodeIndsData[4]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds5", cornerNodeIndsData[5]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds6", cornerNodeIndsData[6]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds7", cornerNodeIndsData[7]),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds0", std::vector<uint32_t>{}),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds1", std::vector<uint32_t>{}),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds2", std::vector<uint32_t>{}),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds3", std::vector<uint32_t>{}),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds4", std::vector<uint32_t>{}),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds5", std::vector<uint32_t>{}),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds6", std::vector<uint32_t>{}),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds7", std::vector<uint32_t>{}),
       },
 
       origin(origin_), gridCellWidth(gridCellWidth_),
@@ -88,13 +88,13 @@ void SparseVolumeGrid::checkForDuplicateCells() {
 void SparseVolumeGrid::computeCellPositions() {
   size_t n = occupiedCellsData.size();
 
-  cellPositionsData.resize(n);
-  cellIndicesData.resize(n);
+  cellPositions.data.resize(n);
+  cellIndices.data.resize(n);
 
   for (size_t i = 0; i < n; i++) {
     glm::ivec3 ijk = occupiedCellsData[i];
-    cellPositionsData[i] = origin + (glm::vec3(ijk) + 0.5f) * gridCellWidth;
-    cellIndicesData[i] = ijk;
+    cellPositions.data[i] = origin + (glm::vec3(ijk) + 0.5f) * gridCellWidth;
+    cellIndices.data[i] = ijk;
   }
 
   cellPositions.markHostBufferUpdated();
@@ -142,7 +142,7 @@ void SparseVolumeGrid::computeCornerNodeIndices() {
 
   // Build corner index buffers using hashmap lookup
   for (int c = 0; c < 8; c++) {
-    cornerNodeIndsData[c].resize(n);
+    cornerNodeInds[c].data.resize(n);
   }
 
   for (size_t i = 0; i < n; i++) {
@@ -152,7 +152,7 @@ void SparseVolumeGrid::computeCornerNodeIndices() {
         for (int dz = 0; dz < 2; dz++) {
           int c = dx * 4 + dy * 2 + dz;
           glm::ivec3 nodeIjk(ci.x + dx, ci.y + dy, ci.z + dz);
-          cornerNodeIndsData[c][i] = nodeToIndex[nodeIjk];
+          cornerNodeInds[c].data[i] = nodeToIndex[nodeIjk];
         }
       }
     }
@@ -505,16 +505,16 @@ void SparseVolumeGrid::ensurePickProgramPrepared() {
 
 void SparseVolumeGrid::updateObjectSpaceBounds() {
 
-  if (cellPositionsData.empty()) {
+  if (cellPositions.data.empty()) {
     // no cells, degenerate bounds at origin
     objectSpaceBoundingBox = std::make_tuple(origin, origin);
     objectSpaceLengthScale = glm::length(gridCellWidth);
     return;
   }
 
-  glm::vec3 bboxMin = cellPositionsData[0];
-  glm::vec3 bboxMax = cellPositionsData[0];
-  for (const glm::vec3& p : cellPositionsData) {
+  glm::vec3 bboxMin = cellPositions.data[0];
+  glm::vec3 bboxMax = cellPositions.data[0];
+  for (const glm::vec3& p : cellPositions.data) {
     bboxMin = glm::min(bboxMin, p);
     bboxMax = glm::max(bboxMax, p);
   }
@@ -557,7 +557,7 @@ SparseVolumeGridPickResult SparseVolumeGrid::interpretPickResult(const PickResul
   glm::vec3 localPos = (rawResult.position - origin) / gridCellWidth;
 
   // Find the cell index
-  glm::ivec3 cellInd3 = cellIndicesData[rawResult.localIndex];
+  glm::ivec3 cellInd3 = cellIndices.data[rawResult.localIndex];
 
   // Fractional position within cell [0,1]
   glm::vec3 fractional = localPos - glm::vec3(cellInd3);

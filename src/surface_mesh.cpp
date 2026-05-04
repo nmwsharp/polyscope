@@ -28,32 +28,32 @@ SurfaceMesh::SurfaceMesh(std::string name_)
 // == managed quantities
 
 // positions
-vertexPositions(           this, uniquePrefix() + "vertexPositions",     vertexPositionsData),
+vertexPositions(           this, uniquePrefix() + "vertexPositions",     std::vector<glm::vec3>{}),
 
 // connectivity / indices
 // (triangle and face inds are always computed initially when we triangulate the mesh)
-triangleVertexInds(        this, uniquePrefix() + "triangleVertexInds",          triangleVertexIndsData),
-triangleFaceInds(          this, uniquePrefix() + "triangleFaceInds",            triangleFaceIndsData),
-triangleCornerInds(        this, uniquePrefix() + "triangleCornerInds",          triangleCornerIndsData,         std::bind(&SurfaceMesh::computeTriangleCornerInds, this)),
-triangleAllVertexInds(     this, uniquePrefix() + "triangleAllVertexInds",       triangleAllVertexIndsData,      std::bind(&SurfaceMesh::computeTriangleAllVertexInds, this)),
-triangleAllEdgeInds(       this, uniquePrefix() + "triangleAllEdgeInds",         triangleAllEdgeIndsData,        std::bind(&SurfaceMesh::computeTriangleAllEdgeInds, this)),
-triangleAllHalfedgeInds(   this, uniquePrefix() + "triangleHalfedgeInds",     triangleAllHalfedgeIndsData,    std::bind(&SurfaceMesh::computeTriangleAllHalfedgeInds, this)),
-triangleAllCornerInds(     this, uniquePrefix() + "triangleAllCornerInds",    triangleAllCornerIndsData,      std::bind(&SurfaceMesh::computeTriangleAllCornerInds, this)),
+triangleVertexInds(        this, uniquePrefix() + "triangleVertexInds",          std::vector<uint32_t>{}),
+triangleFaceInds(          this, uniquePrefix() + "triangleFaceInds",            std::vector<uint32_t>{}),
+triangleCornerInds(        this, uniquePrefix() + "triangleCornerInds",          std::bind(&SurfaceMesh::computeTriangleCornerInds, this)),
+triangleAllVertexInds(     this, uniquePrefix() + "triangleAllVertexInds",       std::bind(&SurfaceMesh::computeTriangleAllVertexInds, this)),
+triangleAllEdgeInds(       this, uniquePrefix() + "triangleAllEdgeInds",         std::bind(&SurfaceMesh::computeTriangleAllEdgeInds, this)),
+triangleAllHalfedgeInds(   this, uniquePrefix() + "triangleHalfedgeInds",        std::bind(&SurfaceMesh::computeTriangleAllHalfedgeInds, this)),
+triangleAllCornerInds(     this, uniquePrefix() + "triangleAllCornerInds",       std::bind(&SurfaceMesh::computeTriangleAllCornerInds, this)),
 
 // internal triangle data for rendering
-baryCoord(              this, uniquePrefix() + "baryCoord",           baryCoordData),
-edgeIsReal(             this, uniquePrefix() + "edgeIsReal",          edgeIsRealData),
+baryCoord(              this, uniquePrefix() + "baryCoord",           std::vector<glm::vec3>{}),
+edgeIsReal(             this, uniquePrefix() + "edgeIsReal",          std::vector<glm::vec3>{}),
 
 // other internally-computed geometry
-faceNormals(            this, uniquePrefix() + "faceNormals",         faceNormalsData,        std::bind(&SurfaceMesh::computeFaceNormals, this)),
-faceCenters(            this, uniquePrefix() + "faceCenters",         faceCentersData,        std::bind(&SurfaceMesh::computeFaceCenters, this)),         
-faceAreas(              this, uniquePrefix() + "faceAreas",           faceAreasData,          std::bind(&SurfaceMesh::computeFaceAreas, this)),
-vertexNormals(          this, uniquePrefix() + "vertexNormals",       vertexNormalsData,      std::bind(&SurfaceMesh::computeVertexNormals, this)),
-vertexAreas(            this, uniquePrefix() + "vertexAreas",         vertexAreasData,        std::bind(&SurfaceMesh::computeVertexAreas, this)),
+faceNormals(            this, uniquePrefix() + "faceNormals",         std::bind(&SurfaceMesh::computeFaceNormals, this)),
+faceCenters(            this, uniquePrefix() + "faceCenters",         std::bind(&SurfaceMesh::computeFaceCenters, this)),
+faceAreas(              this, uniquePrefix() + "faceAreas",           std::bind(&SurfaceMesh::computeFaceAreas, this)),
+vertexNormals(          this, uniquePrefix() + "vertexNormals",       std::bind(&SurfaceMesh::computeVertexNormals, this)),
+vertexAreas(            this, uniquePrefix() + "vertexAreas",         std::bind(&SurfaceMesh::computeVertexAreas, this)),
 
 // tangent spaces
-defaultFaceTangentBasisX(   this, uniquePrefix() + "defaultFaceTangentBasisX",  defaultFaceTangentBasisXData,  std::bind(&SurfaceMesh::computeDefaultFaceTangentBasisX, this)),
-defaultFaceTangentBasisY(   this, uniquePrefix() + "defaultFaceTangentBasisY",  defaultFaceTangentBasisYData,  std::bind(&SurfaceMesh::computeDefaultFaceTangentBasisY, this)),
+defaultFaceTangentBasisX(   this, uniquePrefix() + "defaultFaceTangentBasisX",  std::bind(&SurfaceMesh::computeDefaultFaceTangentBasisX, this)),
+defaultFaceTangentBasisY(   this, uniquePrefix() + "defaultFaceTangentBasisY",  std::bind(&SurfaceMesh::computeDefaultFaceTangentBasisY, this)),
 
 // == persistent options
 surfaceColor(           uniquePrefix() + "surfaceColor",    getNextUniqueColor()),
@@ -71,7 +71,7 @@ SurfaceMesh::SurfaceMesh(std::string name_, const std::vector<glm::vec3>& vertex
                          const std::vector<uint32_t>& faceIndsEntries_, const std::vector<uint32_t>& faceIndsStart_)
     : SurfaceMesh(name_) {
 
-  vertexPositionsData = vertexPositions_;
+  vertexPositions.data = vertexPositions_;
   faceIndsEntries = faceIndsEntries_;
   faceIndsStart = faceIndsStart_;
 
@@ -84,7 +84,7 @@ SurfaceMesh::SurfaceMesh(std::string name_, const std::vector<glm::vec3>& vertex
                          const std::vector<std::vector<size_t>>& facesIn)
     : SurfaceMesh(name_) {
 
-  vertexPositionsData = vertexPositions_;
+  vertexPositions.data = vertexPositions_;
   nestedFacesToFlat(facesIn);
 
   vertexPositions.checkInvalidValues();
@@ -114,14 +114,14 @@ void SurfaceMesh::computeConnectivityData() {
   nFacesTriangulationCount = nCornersCount - 2 * numFaces;
 
   // fill out these buffers as we construct the triangulation
-  triangleVertexIndsData.clear();
-  triangleVertexIndsData.resize(3 * nFacesTriangulationCount);
-  triangleFaceIndsData.clear();
-  triangleFaceIndsData.resize(3 * nFacesTriangulationCount);
-  baryCoordData.clear();
-  baryCoordData.resize(3 * nFacesTriangulationCount);
-  edgeIsRealData.clear();
-  edgeIsRealData.resize(3 * nFacesTriangulationCount);
+  triangleVertexInds.data.clear();
+  triangleVertexInds.data.resize(3 * nFacesTriangulationCount);
+  triangleFaceInds.data.clear();
+  triangleFaceInds.data.resize(3 * nFacesTriangulationCount);
+  baryCoord.data.clear();
+  baryCoord.data.resize(3 * nFacesTriangulationCount);
+  edgeIsReal.data.clear();
+  edgeIsReal.data.resize(3 * nFacesTriangulationCount);
 
   // validate the face-vertex indices
   for (size_t iV : faceIndsEntries) {
@@ -144,17 +144,17 @@ void SurfaceMesh::computeConnectivityData() {
       uint32_t vC = faceIndsEntries[iStart + ((j + 1) % D)];
 
       // triangle vertex indices
-      triangleVertexIndsData[3 * iTriFace + 0] = vRoot;
-      triangleVertexIndsData[3 * iTriFace + 1] = vB;
-      triangleVertexIndsData[3 * iTriFace + 2] = vC;
+      triangleVertexInds.data[3 * iTriFace + 0] = vRoot;
+      triangleVertexInds.data[3 * iTriFace + 1] = vB;
+      triangleVertexInds.data[3 * iTriFace + 2] = vC;
 
       // triangle face indices
-      for (size_t k = 0; k < 3; k++) triangleFaceIndsData[3 * iTriFace + k] = iF;
+      for (size_t k = 0; k < 3; k++) triangleFaceInds.data[3 * iTriFace + k] = iF;
 
       // barycentric coordinates
-      baryCoordData[3 * iTriFace + 0] = glm::vec3{1., 0., 0.};
-      baryCoordData[3 * iTriFace + 1] = glm::vec3{0., 1., 0.};
-      baryCoordData[3 * iTriFace + 2] = glm::vec3{0., 0., 1.};
+      baryCoord.data[3 * iTriFace + 0] = glm::vec3{1., 0., 0.};
+      baryCoord.data[3 * iTriFace + 1] = glm::vec3{0., 1., 0.};
+      baryCoord.data[3 * iTriFace + 2] = glm::vec3{0., 0., 1.};
 
       // internal edges for triangulated polygons
       glm::vec3 edgeRealV{0., 1., 0.};
@@ -164,7 +164,7 @@ void SurfaceMesh::computeConnectivityData() {
       if (j + 2 == D) {
         edgeRealV.z = 1.;
       }
-      for (size_t k = 0; k < 3; k++) edgeIsRealData[3 * iTriFace + k] = edgeRealV;
+      for (size_t k = 0; k < 3; k++) edgeIsReal.data[3 * iTriFace + k] = edgeRealV;
 
       iTriFace++;
     }

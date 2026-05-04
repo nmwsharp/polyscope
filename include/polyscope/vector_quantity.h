@@ -114,8 +114,6 @@ protected:
   // helpers
   void createProgram();
   void updateMaxLength();
-
-  std::vector<glm::vec3> vectorsData;
 };
 
 
@@ -158,9 +156,6 @@ protected:
   void createProgram();
   void updateMaxLength();
 
-  std::vector<glm::vec2> tangentVectorsData;
-  std::vector<glm::vec3> tangentBasisXData;
-  std::vector<glm::vec3> tangentBasisYData;
   int nSym;
 };
 

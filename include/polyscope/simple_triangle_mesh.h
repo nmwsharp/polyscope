@@ -93,10 +93,6 @@ public:
 
 
 private:
-  // Storage for the managed buffers above. You should generally interact with this directly through them.
-  std::vector<glm::vec3> verticesData;
-  std::vector<glm::uvec3> facesData;
-
   // === Visualization parameters
   PersistentValue<glm::vec3> surfaceColor;
   PersistentValue<std::string> material;

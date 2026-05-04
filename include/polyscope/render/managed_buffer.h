@@ -40,11 +40,11 @@ public:
   // (second variants are advanced versions which allow creation of multi-dimensional texture values)
 
   // Manage a buffer of data which is explicitly set externally.
-  ManagedBuffer(ManagedBufferRegistry* registry, const std::string& name, std::vector<T>& data);
+  ManagedBuffer(ManagedBufferRegistry* registry, const std::string& name, std::vector<T> data);
 
 
   // Manage a buffer of data which gets computed lazily
-  ManagedBuffer(ManagedBufferRegistry* registry, const std::string& name, std::vector<T>& data,
+  ManagedBuffer(ManagedBufferRegistry* registry, const std::string& name,
                 std::function<void()> computeFunc);
 
 
@@ -63,8 +63,7 @@ public:
   ManagedBufferRegistry* registry;
 
 
-  // The raw underlying buffer which this class wraps that holds the data.
-  // It is assumed that it never changes length (although this class may clear it to empty).
+  // The raw underlying buffer which this class owns and holds the data.
   //
   // It is possible that data.size() == 0 if the data is lazily computed and has not been computed yet, or if this
   // host-side buffer is invalidated because it is being updated externally directly on the render device.
@@ -75,7 +74,7 @@ public:
   //    buff.markHostBufferUpdated();
   //
   //
-  std::vector<T>& data;
+  std::vector<T> data;
 
   // == Members for computed data
 

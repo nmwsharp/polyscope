@@ -21,10 +21,8 @@ SimpleTriangleMesh::SimpleTriangleMesh(std::string name, std::vector<glm::vec3> 
                                        std::vector<glm::uvec3> faces_)
     : // clang-format off
       Structure(name, structureTypeName),
-      vertices(this, uniquePrefix() + "vertices", verticesData), 
-      faces(this, uniquePrefix() + "faces", facesData), 
-      verticesData(std::move(vertices_)),
-      facesData(std::move(faces_)),
+      vertices(this, uniquePrefix() + "vertices", std::move(vertices_)),
+      faces(this, uniquePrefix() + "faces", std::move(faces_)),
       surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
       material(uniquePrefix() + "material", "clay"),
       backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different),

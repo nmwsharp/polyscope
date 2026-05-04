@@ -151,11 +151,6 @@ private:
   glm::uvec3 gridCellDim;
   glm::vec3 boundMin, boundMax;
  
-  // === Storage for managed quantities
-  std::vector<glm::vec3> gridPlaneReferencePositionsData;
-  std::vector<glm::vec3> gridPlaneReferenceNormalsData;
-  std::vector<int32_t> gridPlaneAxisIndsData;
-
   // === Visualization parameters
   PersistentValue<glm::vec3> color;
   PersistentValue<glm::vec3> edgeColor;

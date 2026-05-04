@@ -8,7 +8,7 @@ namespace polyscope {
 
 template <typename QuantityT>
 ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vector<float>& values_, DataType dataType_)
-    : quantity(quantity_), values(&quantity, quantity.uniquePrefix() + "values", valuesData), valuesData(values_),
+    : quantity(quantity_), values(&quantity, quantity.uniquePrefix() + "values", std::vector<float>(values_)),
       dataType(dataType_), dataRange(robustMinMax(values.data, 1e-5)),
       vizRangeMin(quantity.uniquePrefix() + "vizRangeMin", -777.), // set later,
       vizRangeMax(quantity.uniquePrefix() + "vizRangeMax", -777.), // including clearing cache

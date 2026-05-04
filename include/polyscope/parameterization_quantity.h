@@ -70,9 +70,6 @@ public:
   void setParameterizationUniforms(render::ShaderProgram& p);
 
 protected:
-  // Raw storage for the data. You should only interact with this via the managed buffer above
-  std::vector<glm::vec2> coordsData;
-  std::vector<float> islandLabelsData;
   bool islandLabelsPopulated = false;
 
   // === Visualization parameters

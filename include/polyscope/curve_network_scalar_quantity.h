@@ -59,9 +59,6 @@ public:
 
   render::ManagedBuffer<float> nodeAverageValues;
   void updateNodeAverageValues();
-
-private:
-  std::vector<float> nodeAverageValuesData;
 };
 
 

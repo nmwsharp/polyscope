@@ -34,8 +34,6 @@ public:
 
 
 protected:
-  std::vector<glm::vec4> colorsData;
-
   PersistentValue<bool> isPremultiplied;
 
   // rendering internals
