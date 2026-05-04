@@ -4,6 +4,7 @@
 
 #include "polyscope/color_quantity.h"
 #include "polyscope/simple_triangle_mesh_quantity.h"
+#include "polyscope/standardize_data_array.h"
 
 #include <vector>
 
@@ -20,6 +21,19 @@ public:
   virtual void buildColorOptionsUI() override;
   virtual void refresh() override;
   virtual std::string niceName() override;
+
+  // Throws if the quantity buffer size doesn't match the parent mesh's vertex/face count.
+  void checkQuantitySizeMatchesParentStructure();
+
+  // Update the color values, allowing the count to change (e.g. after updateMesh()).
+  // For same-size updates, prefer ColorQuantity::updateData() which validates the size.
+  template <class V>
+  void updateData(const V& newColors) {
+    std::vector<glm::vec3> newData = standardizeVectorArray<glm::vec3, 3>(newColors);
+    colors.resize(newData.size());
+    colors.data.assign(newData.begin(), newData.end());
+    colors.markHostBufferUpdated();
+  }
 
   const std::string definedOn;
 
