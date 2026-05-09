@@ -380,10 +380,6 @@ void VolumeGrid::computeGridPlaneReferenceGeometry() {
   gridPlaneReferenceNormals.setDataHost(normalsVec);
   gridPlaneAxisInds.resize(axisIndsVec.size());
   gridPlaneAxisInds.setDataHost(axisIndsVec);
-  // gridPlaneReferencePositions.markHostBufferUpdated() is called by recomputeIfPopulated() after this callback.
-  // The side-effect buffers must be marked updated explicitly since they are not the primary compute target.
-  gridPlaneReferenceNormals.markHostBufferUpdated();
-  gridPlaneAxisInds.markHostBufferUpdated();
 }
 
 // === Option getters and setters
