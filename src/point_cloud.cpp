@@ -24,9 +24,8 @@ const std::string PointCloud::structureTypeName = "Point Cloud";
 // Constructor
 PointCloud::PointCloud(std::string name, std::vector<glm::vec3> points_)
     : // clang-format off
-    Structure(name, structureTypeName), 
-      points(this, uniquePrefix() + "points", pointsData),
-      pointsData(std::move(points_)), 
+    Structure(name, structureTypeName),
+      points(this, uniquePrefix() + "points", std::move(points_)),
       pointRenderMode(uniquePrefix() + "pointRenderMode", "sphere"),
       pointColor(uniquePrefix() + "pointColor", getNextUniqueColor()),
       pointRadius(uniquePrefix() + "pointRadius", relativeValue(0.005)),
@@ -200,14 +199,14 @@ void PointCloud::ensurePickProgramPrepared() {
 }
 
 void PointCloud::setPointProgramGeometryAttributes(render::ShaderProgram& p) {
-  p.setAttribute("a_position", points.getRenderAttributeBuffer());
+  p.setAttribute("a_position", points);
   if (pointRadiusQuantityName != "") {
     PointCloudScalarQuantity& radQ = resolvePointRadiusQuantity();
-    p.setAttribute("a_pointRadius", radQ.values.getRenderAttributeBuffer());
+    p.setAttribute("a_pointRadius", radQ.values);
   }
   if (transparencyQuantityName != "") {
     PointCloudScalarQuantity& transparencyQ = resolveTransparencyQuantity();
-    p.setAttribute("a_valueAlpha", transparencyQ.values.getRenderAttributeBuffer());
+    p.setAttribute("a_valueAlpha", transparencyQ.values);
   }
 }
 
@@ -386,7 +385,7 @@ void PointCloud::updateObjectSpaceBounds() {
   // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
-  for (const glm::vec3& p : points.data) {
+  for (const glm::vec3& p : points) {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
@@ -395,7 +394,7 @@ void PointCloud::updateObjectSpaceBounds() {
   // length scale, as twice the radius from the center of the bounding box
   glm::vec3 center = 0.5f * (min + max);
   float lengthScale = 0.0;
-  for (const glm::vec3& p : points.data) {
+  for (const glm::vec3& p : points) {
     lengthScale = std::max(lengthScale, glm::length2(p - center));
   }
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);

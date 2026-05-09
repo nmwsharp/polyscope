@@ -21,10 +21,8 @@ SimpleTriangleMesh::SimpleTriangleMesh(std::string name, std::vector<glm::vec3> 
                                        std::vector<glm::uvec3> faces_)
     : // clang-format off
       Structure(name, structureTypeName),
-      vertices(this, uniquePrefix() + "vertices", verticesData), 
-      faces(this, uniquePrefix() + "faces", facesData), 
-      verticesData(std::move(vertices_)),
-      facesData(std::move(faces_)),
+      vertices(this, uniquePrefix() + "vertices", std::move(vertices_)),
+      faces(this, uniquePrefix() + "faces", std::move(faces_)),
       surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
       material(uniquePrefix() + "material", "clay"),
       backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different),
@@ -255,7 +253,7 @@ std::vector<std::string> SimpleTriangleMesh::addSimpleTriangleMeshRules(std::vec
 }
 
 void SimpleTriangleMesh::setSimpleTriangleMeshProgramGeometryAttributes(render::ShaderProgram& p) {
-  p.setAttribute("a_vertexPositions", vertices.getRenderAttributeBuffer());
+  p.setAttribute("a_vertexPositions", vertices);
   p.setIndex(faces.getRenderAttributeBuffer());
 }
 
@@ -274,7 +272,7 @@ void SimpleTriangleMesh::updateObjectSpaceBounds() {
   // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
-  for (const glm::vec3& p : vertices.data) {
+  for (const glm::vec3& p : vertices) {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
@@ -283,7 +281,7 @@ void SimpleTriangleMesh::updateObjectSpaceBounds() {
   // length scale, as twice the radius from the center of the bounding box
   glm::vec3 center = 0.5f * (min + max);
   float lengthScale = 0.0;
-  for (const glm::vec3& p : vertices.data) {
+  for (const glm::vec3& p : vertices) {
     lengthScale = std::max(lengthScale, glm::length2(p - center));
   }
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);

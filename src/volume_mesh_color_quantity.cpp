@@ -92,11 +92,12 @@ void VolumeMeshVertexColorQuantity::fillSliceColorBuffers(render::ShaderProgram&
   colorval_3.resize(tetCount);
   colorval_4.resize(tetCount);
 
+  colors.ensureHostBufferPopulated();
   for (size_t iT = 0; iT < parent.tets.size(); iT++) {
-    colorval_1[iT] = colors.data[parent.tets[iT][0]];
-    colorval_2[iT] = colors.data[parent.tets[iT][1]];
-    colorval_3[iT] = colors.data[parent.tets[iT][2]];
-    colorval_4[iT] = colors.data[parent.tets[iT][3]];
+    colorval_1[iT] = colors.getHostValue(parent.tets[iT][0]);
+    colorval_2[iT] = colors.getHostValue(parent.tets[iT][1]);
+    colorval_3[iT] = colors.getHostValue(parent.tets[iT][2]);
+    colorval_4[iT] = colors.getHostValue(parent.tets[iT][3]);
   }
 
   // Store data in buffers
@@ -122,7 +123,7 @@ void VolumeMeshVertexColorQuantity::createProgram() {
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
-  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
+  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(parent.triangleVertexInds), &colors);
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
@@ -175,7 +176,7 @@ void VolumeMeshCellColorQuantity::createProgram() {
 
   // Fill color buffers
   parent.fillGeometryBuffers(*program);
-  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(parent.triangleCellInds));
+  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(parent.triangleCellInds), &colors);
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 

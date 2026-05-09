@@ -58,9 +58,6 @@ public:
 
   render::ManagedBuffer<glm::vec3> nodeAverageColors;
   void updateNodeAverageColors();
-
-private:
-  std::vector<glm::vec3> nodeAverageColorsData;
 };
 
 } // namespace polyscope

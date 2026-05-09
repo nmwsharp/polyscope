@@ -17,6 +17,12 @@
 
 namespace polyscope {
 
+// Forward declarations for ManagedBuffer integration
+namespace render {
+  class ManagedBufferBase;
+  template <typename T> class ManagedBuffer;
+} // namespace render
+
 // == A few enums that control behavior
 // public enums are in the outer namespace to keep the typing burden down
 
@@ -95,6 +101,10 @@ public:
   virtual void setData(const std::vector<std::array<glm::vec3, 2>>& data) = 0;
   virtual void setData(const std::vector<std::array<glm::vec3, 3>>& data) = 0;
   virtual void setData(const std::vector<std::array<glm::vec3, 4>>& data) = 0;
+
+  // Pre-allocate GPU memory for n elements without uploading any data. Subsequent setData()
+  // calls with size <= n will not need to reallocate the underlying buffer.
+  virtual void reserveCapacity(size_t n) = 0;
 
   virtual uint32_t getNativeBufferID() = 0; // used to interop with external things, e.g. ImGui
 
@@ -391,7 +401,7 @@ public:
   virtual bool hasAttribute(std::string name) = 0;
   virtual bool attributeIsSet(std::string name) = 0;
   virtual std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) = 0;
-  virtual void setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) = 0; 
+  virtual void setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer, ManagedBufferBase* source = nullptr) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec2>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec3>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec4>& data) = 0;
@@ -414,8 +424,13 @@ public:
                             bool withAlpha = true, bool useMipMap = false, bool repeat = false) = 0;
   virtual void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) = 0;
   // TODO make this one take a shared pointer and have the same semantics as the attribute version
-  virtual void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) = 0;
+  virtual void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer, ManagedBufferBase* source = nullptr) = 0;
 
+
+  // Convenience overloads for ManagedBuffer — set the buffer AND record the source for lazy sync.
+  // Defined in managed_buffer.h after ManagedBuffer<T> is fully declared.
+  template <typename T> void setAttribute(std::string name, ManagedBuffer<T>& buf);
+  template <typename T> void setTextureFromBuffer(std::string name, ManagedBuffer<T>& buf);
 
   // Indices
   virtual void setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) = 0;

@@ -53,7 +53,7 @@ void ScalarRenderImageQuantity::updateBuffers(const T1& depthData, const T2& nor
   std::vector<glm::vec3> standardNormal(standardizeVectorArray<glm::vec3, 3>(normalData));
   std::vector<float> standardScalar(standardizeArray<float>(scalarData));
 
-  values.data = standardScalar;
+  values.setDataHost(standardScalar);
   values.markHostBufferUpdated();
 
   updateBaseBuffers(standardDepth, standardNormal);
