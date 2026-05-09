@@ -19,6 +19,7 @@ VolumeGridNodeScalarQuantity::VolumeGridNodeScalarQuantity(std::string name, Vol
       isosurfaceColor(uniquePrefix() + "isosurfaceColor", getNextUniqueColor()),
       slicePlanesAffectIsosurface(uniquePrefix() + "slicePlanesAffectIsosurface", false) {
 
+  values.setAsType(DeviceBufferType::Texture3d);
   values.setTextureSize(parent.getGridNodeDim().x, parent.getGridNodeDim().y, parent.getGridNodeDim().z);
 }
 
@@ -283,6 +284,7 @@ VolumeGridCellScalarQuantity::VolumeGridCellScalarQuantity(std::string name, Vol
     : VolumeGridQuantity(name, grid_, true), ScalarQuantity(*this, values_, dataType_),
       gridcubeVizEnabled(parent.uniquePrefix() + "#" + name + "#gridcubeVizEnabled", true) {
 
+  values.setAsType(DeviceBufferType::Texture3d);
   values.setTextureSize(parent.getGridCellDim().x, parent.getGridCellDim().y, parent.getGridCellDim().z);
 }
 

@@ -251,6 +251,7 @@ void SurfaceMesh::computeTriangleAllEdgeInds() {
     }
   }
 
+  triangleAllEdgeInds.markHostBufferUpdated();
   nEdgesCount = psEdgeInd;
 }
 
@@ -322,6 +323,7 @@ void SurfaceMesh::computeTriangleCornerInds() {
     }
   }
 
+  triangleCornerInds.markHostBufferUpdated();
 }
 
 void SurfaceMesh::computeTriangleAllVertexInds() {
@@ -349,6 +351,7 @@ void SurfaceMesh::computeTriangleAllVertexInds() {
     }
   }
 
+  triangleAllVertexInds.markHostBufferUpdated();
 }
 
 void SurfaceMesh::computeTriangleAllHalfedgeInds() {
@@ -390,6 +393,7 @@ void SurfaceMesh::computeTriangleAllHalfedgeInds() {
     }
   }
 
+  triangleAllHalfedgeInds.markHostBufferUpdated();
 }
 
 void SurfaceMesh::computeTriangleAllCornerInds() {
@@ -424,6 +428,7 @@ void SurfaceMesh::computeTriangleAllCornerInds() {
     }
   }
 
+  triangleAllCornerInds.markHostBufferUpdated();
 }
 
 
@@ -462,6 +467,7 @@ void SurfaceMesh::computeFaceNormals() {
     faceNormals.setHostValue(iF, fN);
   }
 
+  faceNormals.markHostBufferUpdated();
 }
 
 void SurfaceMesh::computeFaceCenters() {
@@ -482,6 +488,7 @@ void SurfaceMesh::computeFaceCenters() {
     faceCenters.setHostValue(iF, faceCenter);
   }
 
+  faceCenters.markHostBufferUpdated();
 }
 
 void SurfaceMesh::computeFaceAreas() {
@@ -516,6 +523,7 @@ void SurfaceMesh::computeFaceAreas() {
     faceAreas.setHostValue(iF, fA);
   }
 
+  faceAreas.markHostBufferUpdated();
 }
 
 
@@ -546,6 +554,7 @@ void SurfaceMesh::computeVertexNormals() {
     vertexNormals.setHostValue(iV, glm::normalize(vertexNormals.getHostValue(iV)));
   }
 
+  vertexNormals.markHostBufferUpdated();
 }
 
 void SurfaceMesh::computeVertexAreas() {
@@ -567,6 +576,7 @@ void SurfaceMesh::computeVertexAreas() {
     }
   }
 
+  vertexAreas.markHostBufferUpdated();
 }
 
 void SurfaceMesh::computeDefaultFaceTangentBasisX() {
@@ -597,6 +607,7 @@ void SurfaceMesh::computeDefaultFaceTangentBasisX() {
     defaultFaceTangentBasisX.setHostValue(iF, basisX);
   }
 
+  defaultFaceTangentBasisX.markHostBufferUpdated();
 }
 
 void SurfaceMesh::computeDefaultFaceTangentBasisY() {
@@ -627,6 +638,7 @@ void SurfaceMesh::computeDefaultFaceTangentBasisY() {
     defaultFaceTangentBasisY.setHostValue(iF, basisY);
   }
 
+  defaultFaceTangentBasisY.markHostBufferUpdated();
 }
 
 // === Edge Lengths ===

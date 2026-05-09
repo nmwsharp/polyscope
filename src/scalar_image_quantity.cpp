@@ -13,6 +13,7 @@ namespace polyscope {
 ScalarImageQuantity::ScalarImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                                          const std::vector<float>& data_, ImageOrigin imageOrigin_, DataType dataType_)
     : ImageQuantity(parent_, name, dimX, dimY, imageOrigin_), ScalarQuantity(*this, data_, dataType_) {
+  values.setAsType(DeviceBufferType::Texture2d);
   values.setTextureSize(dimX, dimY);
 }
 

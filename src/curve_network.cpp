@@ -398,6 +398,7 @@ void CurveNetwork::computeEdgeCenters() {
     edgeCenters.setHostValue(iE, p);
   }
 
+  edgeCenters.markHostBufferUpdated();
 }
 
 void CurveNetwork::refresh() {

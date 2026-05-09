@@ -17,6 +17,7 @@ ScalarRenderImageQuantity::ScalarRenderImageQuantity(Structure& parent_, std::st
                                                      DataType dataType_)
     : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData, imageOrigin),
       ScalarQuantity(*this, scalarData_, dataType_) {
+  values.setAsType(DeviceBufferType::Texture2d);
   values.setTextureSize(dimX, dimY);
 }
 

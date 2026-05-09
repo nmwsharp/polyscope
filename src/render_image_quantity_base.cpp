@@ -18,8 +18,10 @@ RenderImageQuantityBase::RenderImageQuantityBase(Structure& parent_, std::string
       hasNormals(normalData_.size() > 0), imageOrigin(imageOrigin_),
       material(uniquePrefix() + "material", "clay"), transparency(uniquePrefix() + "transparency", 1.0),
       allowFullscreenCompositing(uniquePrefix() + "allowFullscreenCompositing", false) {
+  depths.setAsType(DeviceBufferType::Texture2d);
   depths.setTextureSize(dimX, dimY);
   if (hasNormals) {
+    normals.setAsType(DeviceBufferType::Texture2d);
     normals.setTextureSize(dimX, dimY);
   }
 
