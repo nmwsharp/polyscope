@@ -869,10 +869,11 @@ void VolumeMesh::computeConnectivityData() {
         baryCoord.setHostValue(3 * iData + 2, glm::vec3{0., 0., 1.});
 
         // Mark edges as real or not
+        glm::vec3 eReal{faceRealEdges[f][j][0] ? 1.0f : 0.0f,
+                        faceRealEdges[f][j][1] ? 1.0f : 0.0f,
+                        faceRealEdges[f][j][2] ? 1.0f : 0.0f};
         for (int k = 0; k < 3; k++) {
-          for (int c = 0; c < 3; c++) {
-            edgeIsReal.setHostValue(3 * iData + k, c, faceRealEdges[f][j][c] ? 1.0f : 0.0f);
-          }
+          edgeIsReal.setHostValue(3 * iData + k, eReal);
         }
       }
 
