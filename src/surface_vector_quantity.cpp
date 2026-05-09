@@ -214,15 +214,6 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
   mesh.triangleAllEdgeInds.ensureHostBufferPopulated();
   mesh.triangleVertexInds.ensureHostBufferPopulated();
 
-  // TODO why is this duplicated?!
-  mesh.vertexPositions.ensureHostBufferPopulated();
-  mesh.faceAreas.ensureHostBufferPopulated();
-  mesh.faceNormals.ensureHostBufferPopulated();
-  mesh.defaultFaceTangentBasisX.ensureHostBufferPopulated();
-  mesh.defaultFaceTangentBasisY.ensureHostBufferPopulated();
-  mesh.triangleAllEdgeInds.ensureHostBufferPopulated();
-  mesh.triangleVertexInds.ensureHostBufferPopulated();
-
   std::vector<glm::vec2> mappedVectorField(mesh.nFaces());
 
   for (size_t iF = 0; iF < mesh.nFaces(); iF++) {
