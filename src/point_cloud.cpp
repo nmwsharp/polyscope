@@ -385,7 +385,7 @@ void PointCloud::updateObjectSpaceBounds() {
   // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
-  for (const glm::vec3& p : points.data) {
+  for (const glm::vec3& p : points) {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
@@ -394,7 +394,7 @@ void PointCloud::updateObjectSpaceBounds() {
   // length scale, as twice the radius from the center of the bounding box
   glm::vec3 center = 0.5f * (min + max);
   float lengthScale = 0.0;
-  for (const glm::vec3& p : points.data) {
+  for (const glm::vec3& p : points) {
     lengthScale = std::max(lengthScale, glm::length2(p - center));
   }
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);

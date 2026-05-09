@@ -91,15 +91,17 @@ void VolumeMeshVertexScalarQuantity::fillLevelSetData(render::ShaderProgram& p) 
   point2.resize(tetCount);
   point3.resize(tetCount);
   point4.resize(tetCount);
+  parent.vertexPositions.ensureHostBufferPopulated();
+  values.ensureHostBufferPopulated();
   for (size_t i = 0; i < parent.nTets(); i++) {
-    point1[i] = parent.vertexPositions.data[parent.tets[i][0]];
-    point2[i] = parent.vertexPositions.data[parent.tets[i][1]];
-    point3[i] = parent.vertexPositions.data[parent.tets[i][2]];
-    point4[i] = parent.vertexPositions.data[parent.tets[i][3]];
-    slice1[i] = glm::vec3(values.data[parent.tets[i][0]], 0, 0);
-    slice2[i] = glm::vec3(values.data[parent.tets[i][1]], 0, 0);
-    slice3[i] = glm::vec3(values.data[parent.tets[i][2]], 0, 0);
-    slice4[i] = glm::vec3(values.data[parent.tets[i][3]], 0, 0);
+    point1[i] = parent.vertexPositions.getHostValue(parent.tets[i][0]);
+    point2[i] = parent.vertexPositions.getHostValue(parent.tets[i][1]);
+    point3[i] = parent.vertexPositions.getHostValue(parent.tets[i][2]);
+    point4[i] = parent.vertexPositions.getHostValue(parent.tets[i][3]);
+    slice1[i] = glm::vec3(values.getHostValue(parent.tets[i][0]), 0, 0);
+    slice2[i] = glm::vec3(values.getHostValue(parent.tets[i][1]), 0, 0);
+    slice3[i] = glm::vec3(values.getHostValue(parent.tets[i][2]), 0, 0);
+    slice4[i] = glm::vec3(values.getHostValue(parent.tets[i][3]), 0, 0);
   }
   p.setAttribute("a_point_1", point1);
   p.setAttribute("a_point_2", point2);
@@ -299,11 +301,12 @@ void VolumeMeshVertexScalarQuantity::fillSliceColorBuffers(render::ShaderProgram
   colorval_3.resize(tetCount);
   colorval_4.resize(tetCount);
 
+  values.ensureHostBufferPopulated();
   for (size_t iT = 0; iT < parent.tets.size(); iT++) {
-    colorval_1[iT] = values.data[parent.tets[iT][0]];
-    colorval_2[iT] = values.data[parent.tets[iT][1]];
-    colorval_3[iT] = values.data[parent.tets[iT][2]];
-    colorval_4[iT] = values.data[parent.tets[iT][3]];
+    colorval_1[iT] = values.getHostValue(parent.tets[iT][0]);
+    colorval_2[iT] = values.getHostValue(parent.tets[iT][1]);
+    colorval_3[iT] = values.getHostValue(parent.tets[iT][2]);
+    colorval_4[iT] = values.getHostValue(parent.tets[iT][3]);
   }
 
   // Store data in buffers

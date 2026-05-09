@@ -165,7 +165,7 @@ void VolumeGridNodeScalarQuantity::createIsosurfaceProgram() {
 
   // Extract the isosurface from the level set of the scalar field
   MC::mcMesh isosurfaceMesh;
-  MC::marching_cube(&values.data.front(), isosurfaceLevel.get(), parent.getGridNodeDim().z, parent.getGridNodeDim().y,
+  MC::marching_cube(const_cast<float*>(values.begin()), isosurfaceLevel.get(), parent.getGridNodeDim().z, parent.getGridNodeDim().y,
                     parent.getGridNodeDim().x, isosurfaceMesh);
 
   // Transform the result to be aligned with our volume's spatial layout
@@ -215,7 +215,8 @@ SurfaceMesh* VolumeGridNodeScalarQuantity::registerIsosurfaceAsMesh(std::string 
 
   // extract the mesh
   MC::mcMesh isosurfaceMesh;
-  MC::marching_cube(&values.data.front(), isosurfaceLevel.get(), parent.getGridNodeDim().z, parent.getGridNodeDim().y,
+  values.ensureHostBufferPopulated();
+  MC::marching_cube(const_cast<float*>(values.begin()), isosurfaceLevel.get(), parent.getGridNodeDim().z, parent.getGridNodeDim().y,
                     parent.getGridNodeDim().x, isosurfaceMesh);
   glm::vec3 scale = parent.gridSpacing();
   for (auto& p : isosurfaceMesh.vertices) {

@@ -312,28 +312,28 @@ void VolumeGrid::computeGridPlaneReferenceGeometry() {
 
   // Geometry is defined in the reference [0,1] cube
 
-  gridPlaneReferencePositions.data.clear();
-  gridPlaneReferenceNormals.data.clear();
-  gridPlaneAxisInds.data.clear();
+  std::vector<glm::vec3> positionsVec;
+  std::vector<glm::vec3> normalsVec;
+  std::vector<int32_t> axisIndsVec;
 
   auto addPlane = [&](std::array<glm::vec3, 4> corners, glm::vec3 normal, uint32_t axInd) {
     // first triangle
-    gridPlaneReferencePositions.data.push_back(corners[0]);
-    gridPlaneReferencePositions.data.push_back(corners[1]);
-    gridPlaneReferencePositions.data.push_back(corners[2]);
-    for (int32_t j = 0; j < 3; j++) gridPlaneReferenceNormals.data.push_back(normal);
-    for (int32_t j = 0; j < 3; j++) gridPlaneAxisInds.data.push_back(axInd);
+    positionsVec.push_back(corners[0]);
+    positionsVec.push_back(corners[1]);
+    positionsVec.push_back(corners[2]);
+    for (int32_t j = 0; j < 3; j++) normalsVec.push_back(normal);
+    for (int32_t j = 0; j < 3; j++) axisIndsVec.push_back((int32_t)axInd);
 
     // second triangle
-    gridPlaneReferencePositions.data.push_back(corners[1]);
-    gridPlaneReferencePositions.data.push_back(corners[3]);
-    gridPlaneReferencePositions.data.push_back(corners[2]);
-    for (int32_t j = 0; j < 3; j++) gridPlaneReferenceNormals.data.push_back(normal);
-    for (int32_t j = 0; j < 3; j++) gridPlaneAxisInds.data.push_back(axInd);
+    positionsVec.push_back(corners[1]);
+    positionsVec.push_back(corners[3]);
+    positionsVec.push_back(corners[2]);
+    for (int32_t j = 0; j < 3; j++) normalsVec.push_back(normal);
+    for (int32_t j = 0; j < 3; j++) axisIndsVec.push_back((int32_t)axInd);
   };
 
   // The planes are intentionally added in order such that the outermost planes come first, and we don't massively
-  // overshade from back to front. Note that fthe first look runs backwards.
+  // overshade from back to front. Note that the first loop runs backwards.
 
   // Forward facing planes
   for (uint32_t d = 0; d < 3; d++) { // x/y/z dimension (plane is perpendicular)
@@ -374,7 +374,14 @@ void VolumeGrid::computeGridPlaneReferenceGeometry() {
   }
 
 
-  gridPlaneReferencePositions.markHostBufferUpdated();
+  gridPlaneReferencePositions.resize(positionsVec.size());
+  gridPlaneReferencePositions.setDataHost(positionsVec);
+  gridPlaneReferenceNormals.resize(normalsVec.size());
+  gridPlaneReferenceNormals.setDataHost(normalsVec);
+  gridPlaneAxisInds.resize(axisIndsVec.size());
+  gridPlaneAxisInds.setDataHost(axisIndsVec);
+  // gridPlaneReferencePositions.markHostBufferUpdated() is called by recomputeIfPopulated() after this callback.
+  // The side-effect buffers must be marked updated explicitly since they are not the primary compute target.
   gridPlaneReferenceNormals.markHostBufferUpdated();
   gridPlaneAxisInds.markHostBufferUpdated();
 }

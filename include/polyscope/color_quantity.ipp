@@ -27,7 +27,9 @@ template <typename QuantityT>
 template <class V>
 void ColorQuantity<QuantityT>::updateData(const V& newColors) {
   validateSize(newColors, colors.size(), "color quantity");
-  colors.data = standardizeVectorArray<glm::vec3, 3>(newColors);
+  auto d = standardizeVectorArray<glm::vec3, 3>(newColors);
+  colors.resize(d.size());
+  colors.setDataHost(d);
   colors.markHostBufferUpdated();
 }
 

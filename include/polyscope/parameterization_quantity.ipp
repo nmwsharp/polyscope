@@ -226,7 +226,9 @@ template <typename QuantityT>
 template <class V>
 void ParameterizationQuantity<QuantityT>::updateCoords(const V& newCoords) {
   validateSize(newCoords, coords.size(), "parameterization quantity " + quantity.name);
-  coords.data = standardizeVectorArray<glm::vec2, 2>(newCoords);
+  auto d = standardizeVectorArray<glm::vec2, 2>(newCoords);
+  coords.resize(d.size());
+  coords.setDataHost(d);
   coords.markHostBufferUpdated();
 }
 

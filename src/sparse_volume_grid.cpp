@@ -88,16 +88,17 @@ void SparseVolumeGrid::checkForDuplicateCells() {
 void SparseVolumeGrid::computeCellPositions() {
   size_t n = occupiedCellsData.size();
 
-  cellPositions.data.resize(n);
-  cellIndices.data.resize(n);
+  cellPositions.resize(n);
+  cellIndices.resize(n);
 
   for (size_t i = 0; i < n; i++) {
     glm::ivec3 ijk = occupiedCellsData[i];
-    cellPositions.data[i] = origin + (glm::vec3(ijk) + 0.5f) * gridCellWidth;
-    cellIndices.data[i] = ijk;
+    cellPositions.setHostValue(i, origin + (glm::vec3(ijk) + 0.5f) * gridCellWidth);
+    cellIndices.setHostValue(i, ijk);
   }
 
-  cellPositions.markHostBufferUpdated();
+  // cellPositions.markHostBufferUpdated() is called by recomputeIfPopulated() after this callback.
+  // cellIndices is a side-effect buffer, so mark it updated explicitly.
   cellIndices.markHostBufferUpdated();
 }
 
@@ -142,7 +143,7 @@ void SparseVolumeGrid::computeCornerNodeIndices() {
 
   // Build corner index buffers using hashmap lookup
   for (int c = 0; c < 8; c++) {
-    cornerNodeInds[c].data.resize(n);
+    cornerNodeInds[c].resize(n);
   }
 
   for (size_t i = 0; i < n; i++) {
@@ -152,7 +153,7 @@ void SparseVolumeGrid::computeCornerNodeIndices() {
         for (int dz = 0; dz < 2; dz++) {
           int c = dx * 4 + dy * 2 + dz;
           glm::ivec3 nodeIjk(ci.x + dx, ci.y + dy, ci.z + dz);
-          cornerNodeInds[c].data[i] = nodeToIndex[nodeIjk];
+          cornerNodeInds[c].setHostValue(i, nodeToIndex[nodeIjk]);
         }
       }
     }
@@ -505,16 +506,17 @@ void SparseVolumeGrid::ensurePickProgramPrepared() {
 
 void SparseVolumeGrid::updateObjectSpaceBounds() {
 
-  if (cellPositions.data.empty()) {
+  if (cellPositions.size() == 0) {
     // no cells, degenerate bounds at origin
     objectSpaceBoundingBox = std::make_tuple(origin, origin);
     objectSpaceLengthScale = glm::length(gridCellWidth);
     return;
   }
 
-  glm::vec3 bboxMin = cellPositions.data[0];
-  glm::vec3 bboxMax = cellPositions.data[0];
-  for (const glm::vec3& p : cellPositions.data) {
+  cellPositions.ensureHostBufferPopulated();
+  glm::vec3 bboxMin = cellPositions.getHostValue(0);
+  glm::vec3 bboxMax = cellPositions.getHostValue(0);
+  for (const glm::vec3& p : cellPositions) {
     bboxMin = glm::min(bboxMin, p);
     bboxMax = glm::max(bboxMax, p);
   }
@@ -557,7 +559,8 @@ SparseVolumeGridPickResult SparseVolumeGrid::interpretPickResult(const PickResul
   glm::vec3 localPos = (rawResult.position - origin) / gridCellWidth;
 
   // Find the cell index
-  glm::ivec3 cellInd3 = cellIndices.data[rawResult.localIndex];
+  cellIndices.ensureHostBufferPopulated();
+  glm::ivec3 cellInd3 = cellIndices.getHostValue(rawResult.localIndex);
 
   // Fractional position within cell [0,1]
   glm::vec3 fractional = localPos - glm::vec3(cellInd3);

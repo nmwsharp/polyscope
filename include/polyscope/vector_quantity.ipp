@@ -187,7 +187,7 @@ void VectorQuantity<QuantityT>::updateMaxLength() {
 
   vectors.ensureHostBufferPopulated();
   float maxLength = 0.;
-  for (const glm::vec3& vec : vectors.data) {
+  for (const glm::vec3& vec : vectors) {
     maxLength = std::max(maxLength, glm::length(vec));
   }
   this->vectorLengthRange = maxLength;
@@ -202,7 +202,9 @@ template <typename QuantityT>
 template <class T>
 void VectorQuantity<QuantityT>::updateData(const T& newVectors) {
   validateSize(newVectors, this->vectors.size(), "vector quantity " + this->quantity.name);
-  this->vectors.data = standardizeVectorArray<glm::vec3, 3>(newVectors);
+  auto d = standardizeVectorArray<glm::vec3, 3>(newVectors);
+  this->vectors.resize(d.size());
+  this->vectors.setDataHost(d);
   this->vectors.markHostBufferUpdated();
   this->updateMaxLength();
 }
@@ -211,10 +213,12 @@ template <typename QuantityT>
 template <class T>
 void VectorQuantity<QuantityT>::updateData2D(const T& newVectors) {
   validateSize(newVectors, this->vectors.size(), "vector quantity " + this->quantity.name);
-  this->vectors.data = standardizeVectorArray<glm::vec3, 2>(newVectors);
-  for (auto& v : this->vectors.data) {
+  auto vectors3D = standardizeVectorArray<glm::vec3, 2>(newVectors);
+  for (auto& v : vectors3D) {
     v.z = 0.;
   }
+  this->vectors.resize(vectors3D.size());
+  this->vectors.setDataHost(vectors3D);
   this->vectors.markHostBufferUpdated();
   this->updateMaxLength();
 }
@@ -309,7 +313,7 @@ void TangentVectorQuantity<QuantityT>::updateMaxLength() {
 
   tangentVectors.ensureHostBufferPopulated();
   float maxLength = 0.;
-  for (const glm::vec2& vec : tangentVectors.data) {
+  for (const glm::vec2& vec : tangentVectors) {
     maxLength = std::max(maxLength, glm::length(vec));
   }
   this->vectorLengthRange = maxLength;
@@ -324,7 +328,9 @@ template <typename QuantityT>
 template <class T>
 void TangentVectorQuantity<QuantityT>::updateData(const T& newVectors) {
   validateSize(newVectors, this->tangentVectors.size(), "tangent vector quantity " + this->quantity.name);
-  this->tangentVectors.data = standardizeVectorArray<glm::vec2, 2>(newVectors);
+  auto d = standardizeVectorArray<glm::vec2, 2>(newVectors);
+  this->tangentVectors.resize(d.size());
+  this->tangentVectors.setDataHost(d);
   this->tangentVectors.markHostBufferUpdated();
   this->updateMaxLength();
 }

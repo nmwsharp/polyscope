@@ -65,9 +65,9 @@ void ScalarRenderImageQuantity::prepare() {
 
   // push the color data to the buffer
   values.ensureHostBufferPopulated();
-  std::vector<float> floatData(values.data.size());
-  for (size_t i = 0; i < values.data.size(); i++) {
-    floatData[i] = static_cast<float>(values.data[i]);
+  std::vector<float> floatData(values.size());
+  for (size_t i = 0; i < values.size(); i++) {
+    floatData[i] = static_cast<float>(values.getHostValue(i));
   }
 
   // Create the sourceProgram
