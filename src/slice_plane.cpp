@@ -245,6 +245,8 @@ void SlicePlane::setSliceAttributes(render::ShaderProgram& p) {
   }
 
   for (int i = 0; i < 4; i++) {
+    sliceBufferArr[i].resize(sliceBufferDataArr[i].size());
+    sliceBufferArr[i].setDataHost(sliceBufferDataArr[i]);
     sliceBufferArr[i].markHostBufferUpdated();
   }
 

@@ -157,20 +157,24 @@ void CurveNetworkEdgeColorQuantity::updateNodeAverageColors() {
   parent.edgeTailInds.ensureHostBufferPopulated();
   parent.edgeTipInds.ensureHostBufferPopulated();
   colors.ensureHostBufferPopulated();
-  nodeAverageColors.data.resize(parent.nNodes());
+  nodeAverageColors.resize(parent.nNodes());
+  nodeAverageColors.ensureHostBufferPopulated();
+
+  // initialize to zero before accumulation
+  for (size_t iN = 0; iN < parent.nNodes(); iN++) nodeAverageColors.setHostValue(iN, glm::vec3{0., 0., 0.});
 
   for (size_t iE = 0; iE < parent.nEdges(); iE++) {
-    size_t eTail = parent.edgeTailInds.data[iE];
-    size_t eTip = parent.edgeTipInds.data[iE];
+    size_t eTail = parent.edgeTailInds.getHostValue(iE);
+    size_t eTip = parent.edgeTipInds.getHostValue(iE);
 
-    nodeAverageColors.data[eTail] += colors.data[iE];
-    nodeAverageColors.data[eTip] += colors.data[iE];
+    nodeAverageColors.setHostValue(eTail, nodeAverageColors.getHostValue(eTail) + colors.getHostValue(iE));
+    nodeAverageColors.setHostValue(eTip, nodeAverageColors.getHostValue(eTip) + colors.getHostValue(iE));
   }
 
   for (size_t iN = 0; iN < parent.nNodes(); iN++) {
-    nodeAverageColors.data[iN] /= parent.nodeDegrees[iN];
+    nodeAverageColors.setHostValue(iN, nodeAverageColors.getHostValue(iN) / (float)parent.nodeDegrees[iN]);
     if (parent.nodeDegrees[iN] == 0) {
-      nodeAverageColors.data[iN] = glm::vec3{0., 0., 0.};
+      nodeAverageColors.setHostValue(iN, glm::vec3{0., 0., 0.});
     }
   }
 

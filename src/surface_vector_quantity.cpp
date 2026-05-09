@@ -212,6 +212,16 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
   mesh.defaultFaceTangentBasisX.ensureHostBufferPopulated();
   mesh.defaultFaceTangentBasisY.ensureHostBufferPopulated();
   mesh.triangleAllEdgeInds.ensureHostBufferPopulated();
+  mesh.triangleVertexInds.ensureHostBufferPopulated();
+
+  // TODO why is this duplicated?!
+  mesh.vertexPositions.ensureHostBufferPopulated();
+  mesh.faceAreas.ensureHostBufferPopulated();
+  mesh.faceNormals.ensureHostBufferPopulated();
+  mesh.defaultFaceTangentBasisX.ensureHostBufferPopulated();
+  mesh.defaultFaceTangentBasisY.ensureHostBufferPopulated();
+  mesh.triangleAllEdgeInds.ensureHostBufferPopulated();
+  mesh.triangleVertexInds.ensureHostBufferPopulated();
 
   std::vector<glm::vec2> mappedVectorField(mesh.nFaces());
 
@@ -220,17 +230,17 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
     std::array<float, 3> formValues;
     std::array<glm::vec3, 3> vecValues;
     for (size_t j = 0; j < 3; j++) {
-      size_t vA = mesh.triangleVertexInds.data[3 * iF + j];
-      size_t vB = mesh.triangleVertexInds.data[3 * iF + ((j + 1) % 3)];
-      size_t iE = mesh.triangleAllEdgeInds.data[9 * iF + j];
+      size_t vA = mesh.triangleVertexInds.getHostValue(3 * iF + j);
+      size_t vB = mesh.triangleVertexInds.getHostValue(3 * iF + ((j + 1) % 3));
+      size_t iE = mesh.triangleAllEdgeInds.getHostValue(9 * iF + j);
 
       bool isCanonicalOriented = (vB > vA) != (canonicalOrientation[iE]); // TODO double check convention
       float orientationSign = isCanonicalOriented ? 1.f : -1.f;
 
       formValues[j] = orientationSign * oneForm[iE];
 
-      glm::vec3 heVec = mesh.vertexPositions.data[vB] - mesh.vertexPositions.data[vA];
-      vecValues[j] = glm::cross(heVec, mesh.faceNormals.data[iF]);
+      glm::vec3 heVec = mesh.vertexPositions.getHostValue(vB) - mesh.vertexPositions.getHostValue(vA);
+      vecValues[j] = glm::cross(heVec, mesh.faceNormals.getHostValue(iF));
     }
 
     // Whitney interpolation at center
@@ -238,10 +248,10 @@ std::vector<glm::vec2> oneFormToFaceTangentVectors(SurfaceMesh& mesh, const std:
     for (int j = 0; j < 3; j++) {
       result += (formValues[(j + 1) % 3] - formValues[(j + 2) % 3]) * vecValues[j];
     }
-    result /= static_cast<float>(6. * mesh.faceAreas.data[iF]);
+    result /= static_cast<float>(6. * mesh.faceAreas.getHostValue(iF));
 
-    glm::vec2 approxVec{glm::dot(result, mesh.defaultFaceTangentBasisX.data[iF]),
-                        glm::dot(result, mesh.defaultFaceTangentBasisY.data[iF])};
+    glm::vec2 approxVec{glm::dot(result, mesh.defaultFaceTangentBasisX.getHostValue(iF)),
+                        glm::dot(result, mesh.defaultFaceTangentBasisY.getHostValue(iF))};
     mappedVectorField[iF] = approxVec;
   }
 
@@ -256,8 +266,9 @@ SurfaceOneFormTangentVectorQuantity::SurfaceOneFormTangentVectorQuantity(std::st
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE),
       TangentVectorQuantity<SurfaceOneFormTangentVectorQuantity>(
           *this, oneFormToFaceTangentVectors(mesh_, oneForm_, canonicalOrientation_),
-          mesh_.defaultFaceTangentBasisX.getPopulatedHostBufferRef(),
-          mesh_.defaultFaceTangentBasisY.getPopulatedHostBufferRef(), parent.faceCenters, 1, VectorType::STANDARD),
+          std::vector<glm::vec3>(mesh_.defaultFaceTangentBasisX.begin(), mesh_.defaultFaceTangentBasisX.end()),
+          std::vector<glm::vec3>(mesh_.defaultFaceTangentBasisY.begin(), mesh_.defaultFaceTangentBasisY.end()),
+          parent.faceCenters, 1, VectorType::STANDARD),
       oneForm(oneForm_), canonicalOrientation(canonicalOrientation_) {}
 
 void SurfaceOneFormTangentVectorQuantity::refresh() {

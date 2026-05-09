@@ -133,15 +133,18 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
   std::set<std::pair<int32_t, int32_t>> seamEdges;
 
   // loop over all edges
+  parent.edgeIsReal.ensureHostBufferPopulated();
+  parent.triangleVertexInds.ensureHostBufferPopulated();
+  parent.triangleCornerInds.ensureHostBufferPopulated();
   for(size_t iT = 0; iT <  parent.nFacesTriangulation(); iT++) {
     for(size_t k = 0; k < 3; k++) {
-      if(parent.edgeIsReal.data[3*iT][k] == 0.) continue; // skip internal tesselation edges
+      if(parent.edgeIsReal.getHostValue(3*iT)[k] == 0.) continue; // skip internal tesselation edges
 
       // gather data for the edge
-      int32_t iV_tail = parent.triangleVertexInds.data[3*iT + (k+0)%3];
-      int32_t iV_tip = parent.triangleVertexInds.data[3*iT + (k+1)%3];
-      int32_t iC_tail = parent.triangleCornerInds.data[3*iT + (k+0)%3];
-      int32_t iC_tip = parent.triangleCornerInds.data[3*iT + (k+1)%3];
+      int32_t iV_tail = parent.triangleVertexInds.getHostValue(3*iT + (k+0)%3);
+      int32_t iV_tip = parent.triangleVertexInds.getHostValue(3*iT + (k+1)%3);
+      int32_t iC_tail = parent.triangleCornerInds.getHostValue(3*iT + (k+0)%3);
+      int32_t iC_tip = parent.triangleCornerInds.getHostValue(3*iT + (k+1)%3);
       std::pair<int32_t, int32_t> eInd (iV_tail, iV_tip);
       std::pair<glm::vec2, glm::vec2> eC (cornerCoords[iC_tail], cornerCoords[iC_tip]);
       canonicalizeEdge(eInd, eC); // make sure ordering is consistent
@@ -184,12 +187,12 @@ CurveNetwork* SurfaceParameterizationQuantity::createCurveNetworkFromSeams(std::
     // get unique vertices for the edges
     if(vertexIndToDense.find(vA) == vertexIndToDense.end()) {
       vertexIndToDense[vA] = seamEdgeNodes.size();
-      seamEdgeNodes.push_back(parent.vertexPositions.data[vA]);
+      seamEdgeNodes.push_back(parent.vertexPositions.getHostValue(vA));
     }
     int32_t nA = vertexIndToDense[vA];
     if(vertexIndToDense.find(vB) == vertexIndToDense.end()) {
       vertexIndToDense[vB] = seamEdgeNodes.size();
-      seamEdgeNodes.push_back(parent.vertexPositions.data[vB]);
+      seamEdgeNodes.push_back(parent.vertexPositions.getHostValue(vB));
     }
     int32_t nB = vertexIndToDense[vB];
 

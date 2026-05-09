@@ -53,7 +53,7 @@ void RawColorRenderImageQuantity::updateBuffers(const T1& depthData, const T2& c
   std::vector<glm::vec3> standardNormal;
   std::vector<glm::vec3> standardColor(standardizeVectorArray<glm::vec3, 3>(colorsData));
 
-  colors.data = standardColor;
+  colors.setDataHost(standardColor);
   colors.markHostBufferUpdated();
 
   updateBaseBuffers(standardDepth, standardNormal);

@@ -105,7 +105,12 @@ bool ManagedBuffer<T>::resize(size_t newSize) {
     // Copy device-side data back to host BEFORE modifying data or invalidating the GPU buffer.
     // ensureHostBufferPopulated() reads from renderAttributeBuffer into data; if we resize data
     // first it would overwrite the resize with the old GPU contents.
-    ensureHostBufferPopulated();
+    // Only copy existing data to host if there is data to preserve.
+    // If state is NeedsCompute, there is no existing data — calling ensureHostBufferPopulated()
+    // would recursively invoke the compute function that is currently running.
+    if (currentCanonicalDataSource() != CanonicalDataSource::NeedsCompute) {
+      ensureHostBufferPopulated();
+    }
 
     // Reallocation needed: use amortized doubling
     size_t newCapacity = std::max(newSize, 2 * managedCapacity);
@@ -131,6 +136,7 @@ bool ManagedBuffer<T>::resize(size_t newSize) {
   } else {
     // No reallocation: just update size metadata
     data.resize(newSize);
+    hostBufferIsPopulated = true;
 
     if (deviceBufferType == DeviceBufferType::Texture1d) {
       sizeX = static_cast<uint32_t>(newSize);
@@ -151,7 +157,10 @@ void ManagedBuffer<T>::setCapacity(size_t newCapacity) {
   if (newCapacity == managedCapacity) return; // no-op
 
   // Before invalidating the GPU buffer, copy any device-side changes back to the host.
-  ensureHostBufferPopulated();
+  // Skip if state is NeedsCompute — there's no existing data to preserve.
+  if (currentCanonicalDataSource() != CanonicalDataSource::NeedsCompute) {
+    ensureHostBufferPopulated();
+  }
 
   data.reserve(newCapacity);
   managedCapacity = newCapacity;
@@ -247,31 +256,115 @@ void ManagedBuffer<T>::ensureHostBufferPopulated() {
 }
 
 template <typename T>
-void ManagedBuffer<T>::ensureHostBufferAllocated() {
-  data.resize(size());
+const T* ManagedBuffer<T>::begin() const {
+#ifndef NDEBUG
+  if (!hostBufferIsPopulated)
+    exception("ManagedBuffer " + name + " begin() called without ensureHostBufferPopulated()");
+#endif
+  return data.data();
 }
 
 template <typename T>
-std::vector<T>& ManagedBuffer<T>::getPopulatedHostBufferRef() {
-  ensureHostBufferPopulated();
-  return data;
+const T* ManagedBuffer<T>::end() const {
+#ifndef NDEBUG
+  if (!hostBufferIsPopulated)
+    exception("ManagedBuffer " + name + " end() called without ensureHostBufferPopulated()");
+#endif
+  return data.data() + data.size();
+}
+
+template <typename T>
+void ManagedBuffer<T>::setDataHost(const std::vector<T>& newData) {
+  if (newData.size() > managedCapacity)
+    exception("ManagedBuffer " + name + " setDataHost() called with data that exceeds capacity (" +
+              std::to_string(newData.size()) + " > " + std::to_string(managedCapacity) + "). Call resize() or setCapacity() first.");
+  data.assign(newData.begin(), newData.end());
+  hostBufferIsPopulated = true;
+
+  // Sync to any already-allocated device buffers and update indexed views.
+  if (renderAttributeBuffer) {
+    renderAttributeBuffer->setData(data);
+    requestRedraw();
+  }
+  if (renderTextureBuffer) {
+    renderTextureBuffer->setData(data);
+    requestRedraw();
+  }
+  if (deviceBufferType == DeviceBufferType::Attribute) {
+    updateIndexedViews();
+    requestRedraw();
+  }
+}
+
+template <typename T>
+T ManagedBuffer<T>::getHostValue(size_t ind) const {
+#ifndef NDEBUG
+  if (!hostBufferIsPopulated)
+    exception("ManagedBuffer " + name + " getHostValue() called without ensureHostBufferPopulated()");
+#endif
+  return data[ind];
+}
+
+template <typename T>
+T ManagedBuffer<T>::getHostValue(size_t indX, size_t indY) const {
+  checkDeviceBufferTypeIs(DeviceBufferType::Texture2d);
+  return getHostValue(sizeY * indX + indY);
+}
+
+template <typename T>
+T ManagedBuffer<T>::getHostValue(size_t indX, size_t indY, size_t indZ) const {
+  checkDeviceBufferTypeIs(DeviceBufferType::Texture3d);
+  return getHostValue(sizeZ * sizeY * indX + sizeZ * indY + indZ);
+}
+
+template <typename T>
+void ManagedBuffer<T>::setHostValue(size_t ind, T val) {
+#ifndef NDEBUG
+  if (!hostBufferIsPopulated)
+    exception("ManagedBuffer " + name + " setHostValue() called without ensureHostBufferPopulated()");
+#endif
+  data[ind] = val;
+
+  // Sync to any already-allocated device buffers. Note: this re-uploads the entire buffer; for
+  // bulk writes, prefer setDataHost() to avoid repeated GPU uploads.
+  if (renderAttributeBuffer) {
+    renderAttributeBuffer->setData(data);
+    requestRedraw();
+  }
+  if (renderTextureBuffer) {
+    renderTextureBuffer->setData(data);
+    requestRedraw();
+  }
+  if (deviceBufferType == DeviceBufferType::Attribute) {
+    updateIndexedViews();
+    requestRedraw();
+  }
+}
+
+template <typename T>
+void ManagedBuffer<T>::setHostValue(size_t indX, size_t indY, T val) {
+  checkDeviceBufferTypeIs(DeviceBufferType::Texture2d);
+  setHostValue(sizeY * indX + indY, val);
+}
+
+template <typename T>
+void ManagedBuffer<T>::setHostValue(size_t indX, size_t indY, size_t indZ, T val) {
+  checkDeviceBufferTypeIs(DeviceBufferType::Texture3d);
+  setHostValue(sizeZ * sizeY * indX + sizeZ * indY + indZ, val);
 }
 
 template <typename T>
 void ManagedBuffer<T>::markHostBufferUpdated() {
   hostBufferIsPopulated = true;
 
-  // If the data is stored in the device-side buffers, update it as needed
   if (renderAttributeBuffer) {
     renderAttributeBuffer->setData(data);
     requestRedraw();
   }
-
   if (renderTextureBuffer) {
     renderTextureBuffer->setData(data);
     requestRedraw();
   }
-
   if (deviceBufferType == DeviceBufferType::Attribute) {
     updateIndexedViews();
     requestRedraw();
@@ -291,14 +384,12 @@ T ManagedBuffer<T>::getValue(size_t ind) {
     if (ind >= data.size())
       exception("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
     return data[ind];
-    break;
 
   case CanonicalDataSource::NeedsCompute:
     computeFunc();
     if (ind >= data.size())
       exception("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
     return data[ind];
-    break;
 
   case CanonicalDataSource::RenderBuffer:
 
@@ -309,9 +400,7 @@ T ManagedBuffer<T>::getValue(size_t ind) {
     if (static_cast<int64_t>(ind) >= renderAttributeBuffer->getDataSize())
       exception("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
 
-    T val = getAttributeBufferData<T>(*renderAttributeBuffer, ind);
-    return val;
-    break;
+    return getAttributeBufferData<T>(*renderAttributeBuffer, ind);
   };
 
   return T(); // dummy return
@@ -563,8 +652,8 @@ void ManagedBuffer<T>::updateIndexedViews() {
     std::vector<T> expandData = gather(data, indices.data);
     viewBuffer.setData(expandData);
 
-    // TODO fornow, only CPU-side updating is supported. Add direct GPU-side support using the bufferIndexCopyProgram
-    // below.
+    // TODO: add direct GPU-side indexed copy support (without round-tripping through the host) using a
+    // transform-feedback/compute shader program, to avoid the CPU gather cost for GPU-resident buffers.
   }
 
   requestRedraw();
@@ -591,13 +680,13 @@ void ManagedBuffer<T>::invalidateHostBuffer() {
 }
 
 template <typename T>
-bool ManagedBuffer<T>::deviceBufferTypeIsTexture() {
+bool ManagedBuffer<T>::deviceBufferTypeIsTexture() const {
   return ((deviceBufferType == DeviceBufferType::Texture1d) || (deviceBufferType == DeviceBufferType::Texture2d) ||
           (deviceBufferType == DeviceBufferType::Texture3d));
 }
 
 template <typename T>
-void ManagedBuffer<T>::checkDeviceBufferTypeIs(DeviceBufferType targetType) {
+void ManagedBuffer<T>::checkDeviceBufferTypeIs(DeviceBufferType targetType) const {
   if (targetType != deviceBufferType) {
     exception("ManagedBuffer " + name + " has wrong type for this operation. Expected " +
               deviceBufferTypeName(targetType) + " but is " + deviceBufferTypeName(deviceBufferType));
@@ -605,7 +694,7 @@ void ManagedBuffer<T>::checkDeviceBufferTypeIs(DeviceBufferType targetType) {
 }
 
 template <typename T>
-void ManagedBuffer<T>::checkDeviceBufferTypeIsTexture() {
+void ManagedBuffer<T>::checkDeviceBufferTypeIsTexture() const {
   if (!deviceBufferTypeIsTexture()) {
     exception("ManagedBuffer " + name + " has wrong type for this operation. Expected a Texture1d/2d/3d but is " +
               deviceBufferTypeName(deviceBufferType));
@@ -635,22 +724,6 @@ typename ManagedBuffer<T>::CanonicalDataSource ManagedBuffer<T>::currentCanonica
   return CanonicalDataSource::HostData; // dummy return
 }
 
-
-template <typename T>
-void ManagedBuffer<T>::ensureHaveBufferIndexCopyProgram() {
-  if (bufferIndexCopyProgram) return;
-
-  // sanity check
-  if (!renderAttributeBuffer) exception("ManagedBuffer " + name + " asked to copy indices, but has no buffers");
-
-  // TODO allocate the transform feedback program
-}
-
-template <typename T>
-void ManagedBuffer<T>::invokeBufferIndexCopyProgram() {
-  ensureHaveBufferIndexCopyProgram();
-  bufferIndexCopyProgram->draw();
-}
 
 // === Interact with the buffer registry
 

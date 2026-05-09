@@ -232,7 +232,7 @@ TEST_F(PolyscopeTest, VolumeGridScalarIsosurfaceIndexing) {
     // get the vertices from the is surface
     polyscope::SurfaceMesh* isoTest = polyscope::getSurfaceMesh("iso test");
     isoTest->vertexPositions.ensureHostBufferPopulated();
-    std::vector<glm::vec3> isoverts = isoTest->vertexPositions.data;
+    std::vector<glm::vec3> isoverts(isoTest->vertexPositions.begin(), isoTest->vertexPositions.end());
 
     // test that all vertices are within the bounds
     float EPS = 0.0001;

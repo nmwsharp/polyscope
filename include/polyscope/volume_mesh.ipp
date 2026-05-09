@@ -87,7 +87,9 @@ VolumeMesh* registerTetHexMesh(std::string name, const V& vertexPositions, const
 template <class V>
 void VolumeMesh::updateVertexPositions(const V& newPositions) {
   validateSize(newPositions, nVertices(), "newPositions");
-  vertexPositions.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  auto d = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  vertexPositions.resize(d.size());
+  vertexPositions.setDataHost(d);
   vertexPositions.markHostBufferUpdated();
   geometryChanged();
 }

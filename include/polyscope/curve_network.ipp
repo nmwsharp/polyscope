@@ -170,7 +170,9 @@ CurveNetwork* registerCurveNetworkLoop2D(std::string name, const P& nodes) {
 template <class V>
 void CurveNetwork::updateNodePositions(const V& newPositions) {
   validateSize(newPositions, nNodes(), "newPositions");
-  nodePositions.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  auto d = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  nodePositions.resize(d.size());
+  nodePositions.setDataHost(d);
   nodePositions.markHostBufferUpdated();
   recomputeGeometryIfPopulated();
 }

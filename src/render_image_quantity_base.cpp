@@ -53,14 +53,12 @@ void RenderImageQuantityBase::addOptionsPopupEntries() {
 void RenderImageQuantityBase::updateBaseBuffers(const std::vector<float>& newDepthData,
                                                 const std::vector<glm::vec3>& newNormalData) {
   if (!newDepthData.empty()) {
-    depths.ensureHostBufferAllocated();
-    depths.data = newDepthData;
+    depths.setDataHost(newDepthData);
     depths.markHostBufferUpdated();
   }
 
   if (!newNormalData.empty()) {
-    normals.ensureHostBufferAllocated();
-    normals.data = newNormalData;
+    normals.setDataHost(newNormalData);
     normals.markHostBufferUpdated();
   }
 

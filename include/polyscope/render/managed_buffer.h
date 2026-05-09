@@ -18,20 +18,18 @@ namespace render {
 class ManagedBufferRegistry;
 
 /*
- * This class is a wrapper which sits on top of data buffers in Polyscope, and handles common data-management concerns
- * of:
+ * This class owns and manages a typed data buffer in Polyscope, handling common data-management concerns of:
  *
  *      (a) mirroring the buffer to the GPU/rendering framework
  *      (b) allowing external users to update data either on the CPU- or GPU-side, and updating mirrored copies
  * appropriately
- *      (c) managed _indexed_ data, which gts expanded according to some index set for access at rendering time.
+ *      (c) managing _indexed_ data, which gets expanded according to some index set for access at rendering time.
  *
- * Most often this class is used to wrap structure/quantity data passed in by the user, such as a scalar quantity, but
- * it is also sometimes wraps automatically-computed values within Polyscope, such as a vertex normal buffer for
+ * Most often this class is used to hold structure/quantity data passed in by the user, such as a scalar quantity, but
+ * it also sometimes holds automatically-computed values within Polyscope, such as a vertex normal buffer for
  * rendering.
  *
- * This class offers functions and accessors which can (and generally, MUST) be used to interact with the underlying
- * data buffer.
+ * Use the public accessor API (getHostValue, setHostValue, setDataHost, begin/end, etc.) to interact with the buffer.
  */
 template <typename T>
 class ManagedBuffer : public virtual WeakReferrable {
@@ -63,31 +61,6 @@ public:
   ManagedBufferRegistry* registry;
 
 
-  // The raw underlying buffer which this class owns and holds the data.
-  //
-  // It is possible that data.size() == 0 if the data is lazily computed and has not been computed yet, or if this
-  // host-side buffer is invalidated because it is being updated externally directly on the render device.
-  //
-  // External users can write directly for this buffer. The required order of operations for writing to this buffer is:
-  //    buff.ensureHostBufferAllocated();
-  //    buff.data = // fill .data with your values
-  //    buff.markHostBufferUpdated();
-  //
-  //
-  std::vector<T> data;
-
-  // == Members for computed data
-
-  // This class somewhat weirdly tracks data from two separate sources:
-  //    A) Values directly stored in `data` by an external source
-  //    B) Values that get computed lazily by some function when needed
-  //
-  // When `dataGetsComputed = true`, we are in Case B, and computeFunc() must be set to a callback that does the
-  // lazy computing.
-
-  bool dataGetsComputed;             // if true, the value gets computed on-demand by calling computeFunc()
-  std::function<void()> computeFunc; // (optional) callback which populates the `data` buffer
-
   // sanity check helper
   void checkInvalidValues();
 
@@ -108,7 +81,7 @@ public:
   // But in settings where we e.g. incrementally add elements or change the number of data elements on each frame, we
   // may want to allocate a larger capacity to avoid expensive re-allocation each time.
 
-  // Resize the buffer to newSize elements.
+  // Resize the buffer to newSize elements. Sets hostBufferIsPopulated = true.
   //
   // If newSize <= capacity(), this is a cheap constant-time operation which just updates metadata.
   //
@@ -140,33 +113,46 @@ public:
   // doubling, this sets the logical capacity to a precise value. Error if newCapacity < size().
   // Reallocates the GPU buffer in-place (same buffer object, new backing memory) if one exists.
   //
-  // Note: data.capacity() is guaranteed to be >= managedCapacity, but may remain larger than
-  // newCapacity if the underlying vector already had more space allocated.
-  //
   // Valid for attributes and 1D textures only; multidimensional textures always have capacity
   // equal to their size, so use the 2D/3D resize() variants instead.
   void setCapacity(size_t newCapacity);
 
 
-  // == Members for indexed data
-
   // == Basic interactions
 
-  // Ensure that the `data` member vector reference is populated with the current values. In the common-case where
-  // the user sets data and it never changes, then this function will do nothing. However, if e.g. the value is
-  // being updated directly from GPU memory, this will mirror the updates to the cpu-side vector. Also, if the value
-  // is lazily computed by computeFunc(), it ensures that that function has been called.
+  // Ensure that the host buffer is populated with the current values. In the common case where the user sets data
+  // and it never changes, this does nothing. However, if the value is being updated directly from GPU memory, this
+  // mirrors the updates to the host-side buffer. Also, if the value is lazily computed by computeFunc(), it ensures
+  // that function has been called.
   void ensureHostBufferPopulated();
 
-  // Ensure that the `data` member has the proper size. This does _not_ populate the buffer with any particular data,
-  // just ensures it is allocated. It is useful for when an external wants to fill the buffer with data.
-  void ensureHostBufferAllocated();
+  // Copy newData into the host buffer. Errors if newData.size() > capacity() — call resize() or
+  // setCapacity() first if needed. Does not change capacity. Automatically syncs to any allocated
+  // device buffers and triggers a redraw. Prefer this over setHostValue() for bulk writes.
+  void setDataHost(const std::vector<T>& newData);
 
-  // Combines calling ensureHostBufferPopulated() and returning a reference to the `data` member
-  std::vector<T>& getPopulatedHostBufferRef();
+  // Iterator support. Caller must call ensureHostBufferPopulated() before using these.
+  // A debug-mode check will fire if this precondition is violated.
+  const T* begin() const;
+  const T* end() const;
 
-  // If the contents of `data` are updated, this function MUST be called. It internally handles concerns like
-  // reflecting updates to the render buffer.
+  // Single-element read. Caller MUST call ensureHostBufferPopulated() before calling this
+  // (especially in loops — call it once before the loop, not per element).
+  // A debug-mode check will fire if this precondition is violated.
+  T getHostValue(size_t ind) const;
+  T getHostValue(size_t indX, size_t indY) const;              // only valid for 2d texture data
+  T getHostValue(size_t indX, size_t indY, size_t indZ) const; // only valid for 3d texture data
+
+  // Single-element write. Caller MUST call ensureHostBufferPopulated() (or resize()) before
+  // calling this. Automatically syncs to any allocated device buffers and triggers a redraw.
+  // For bulk writes, prefer setDataHost() to avoid redundant GPU uploads.
+  // A debug-mode check will fire if the precondition is violated.
+  void setHostValue(size_t ind, T val);
+  void setHostValue(size_t indX, size_t indY, T val);              // only valid for 2d texture data
+  void setHostValue(size_t indX, size_t indY, size_t indZ, T val); // only valid for 3d texture data
+
+  // If the contents of the host buffer have been updated externally, this function MUST be called.
+  // It internally handles concerns like reflecting updates to the render buffer.
   void markHostBufferUpdated();
 
   // Get the value at index `i`. It may be dynamically fetched from either the cpu-side `data` member or the render
@@ -247,6 +233,17 @@ public:
 protected:
   // == Internal members
 
+  // This class tracks data from two separate sources:
+  //    A) Values directly stored in the buffer by an external source (dataGetsComputed == false)
+  //    B) Values that get computed lazily by some function when needed (dataGetsComputed == true)
+  //
+  // When dataGetsComputed is true, computeFunc() must be set to a callback that populates the buffer.
+  // The callback should call resize() then setHostValue() to populate the buffer.
+  // The callback does NOT need to call markHostBufferUpdated() — that is handled by the ManagedBuffer
+  // infrastructure after the callback returns.
+  bool dataGetsComputed;             // if true, the value gets computed on-demand by calling computeFunc()
+  std::function<void()> computeFunc; // (optional) callback which populates the buffer
+
   bool hostBufferIsPopulated; // true if the host buffer contains currently-valid data
 
   // The buffer has capacity for at least this many elements. It is distinct from .size(), which is the actual number of
@@ -278,17 +275,27 @@ protected:
   // == Internal helper functions
 
   void invalidateHostBuffer();
-  bool deviceBufferTypeIsTexture();
-  void checkDeviceBufferTypeIs(DeviceBufferType targetType);
-  void checkDeviceBufferTypeIsTexture();
+  bool deviceBufferTypeIsTexture() const;
+  void checkDeviceBufferTypeIs(DeviceBufferType targetType) const;
+  void checkDeviceBufferTypeIsTexture() const;
 
   enum class CanonicalDataSource { HostData = 0, NeedsCompute, RenderBuffer };
   CanonicalDataSource currentCanonicalDataSource();
 
-  // Manage the program which copies indexed data from the renderBuffer to the indexed views
-  void ensureHaveBufferIndexCopyProgram();
-  void invokeBufferIndexCopyProgram();
+  // TODO: add direct GPU-side indexed copy support using a transform-feedback/compute shader program.
   std::shared_ptr<render::ShaderProgram> bufferIndexCopyProgram;
+
+private:
+  template <typename U> friend class ManagedBuffer;
+
+  // The raw underlying buffer which this class owns and holds the data.
+  //
+  // It is possible that data.size() == 0 if the data is lazily computed and has not been computed yet, or if this
+  // host-side buffer is invalidated because it is being updated externally directly on the render device.
+  //
+  // Use the accessor API (getHostValue, setHostValue, setDataHost, begin/end) to interact
+  // with this buffer rather than accessing it directly.
+  std::vector<T> data;
 };
 
 
