@@ -148,15 +148,15 @@ void VolumeGridNodeScalarQuantity::createGridcubeProgram() {
     );
   // clang-format on
 
-  gridcubeProgram->setAttribute("a_referencePosition", parent.gridPlaneReferencePositions.getRenderAttributeBuffer());
-  gridcubeProgram->setAttribute("a_referenceNormal", parent.gridPlaneReferenceNormals.getRenderAttributeBuffer());
-  gridcubeProgram->setAttribute("a_axisInd", parent.gridPlaneAxisInds.getRenderAttributeBuffer());
+  gridcubeProgram->setAttribute("a_referencePosition", parent.gridPlaneReferencePositions);
+  gridcubeProgram->setAttribute("a_referenceNormal", parent.gridPlaneReferenceNormals);
+  gridcubeProgram->setAttribute("a_axisInd", parent.gridPlaneAxisInds);
 
   gridcubeProgram->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*gridcubeProgram, parent.getMaterial());
 
-  gridcubeProgram->setTextureFromBuffer("t_value", values.getRenderTextureBuffer().get());
-  values.getRenderTextureBuffer().get()->setFilterMode(FilterMode::Linear);
+  gridcubeProgram->setTextureFromBuffer("t_value", values);
+  values.getRenderTextureBuffer()->setFilterMode(FilterMode::Linear);
 }
 
 void VolumeGridNodeScalarQuantity::createIsosurfaceProgram() {
@@ -360,15 +360,15 @@ void VolumeGridCellScalarQuantity::createGridcubeProgram() {
   );
   // clang-format on
 
-  gridcubeProgram->setAttribute("a_referencePosition", parent.gridPlaneReferencePositions.getRenderAttributeBuffer());
-  gridcubeProgram->setAttribute("a_referenceNormal", parent.gridPlaneReferenceNormals.getRenderAttributeBuffer());
-  gridcubeProgram->setAttribute("a_axisInd", parent.gridPlaneAxisInds.getRenderAttributeBuffer());
+  gridcubeProgram->setAttribute("a_referencePosition", parent.gridPlaneReferencePositions);
+  gridcubeProgram->setAttribute("a_referenceNormal", parent.gridPlaneReferenceNormals);
+  gridcubeProgram->setAttribute("a_axisInd", parent.gridPlaneAxisInds);
 
   gridcubeProgram->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*gridcubeProgram, parent.getMaterial());
 
-  gridcubeProgram->setTextureFromBuffer("t_value", values.getRenderTextureBuffer().get());
-  values.getRenderTextureBuffer().get()->setFilterMode(FilterMode::Linear);
+  gridcubeProgram->setTextureFromBuffer("t_value", values);
+  values.getRenderTextureBuffer()->setFilterMode(FilterMode::Linear);
 }
 
 void VolumeGridCellScalarQuantity::buildCellInfoGUI(size_t ind) {

@@ -350,14 +350,14 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
 vertexPositions(        this, uniquePrefix() + "vertexPositions",     std::vector<glm::vec3>(vertexPositions_)),
 
 // connectivity / indices
-triangleVertexInds(     this, uniquePrefix() + "triangleVertexInds",  std::vector<uint32_t>{}),
-triangleFaceInds(       this, uniquePrefix() + "triangleFaceInds",    std::vector<uint32_t>{}),
-triangleCellInds(       this, uniquePrefix() + "triangleCellInds",    std::vector<uint32_t>{}),
+triangleVertexInds(     this, uniquePrefix() + "triangleVertexInds"),
+triangleFaceInds(       this, uniquePrefix() + "triangleFaceInds"),
+triangleCellInds(       this, uniquePrefix() + "triangleCellInds"),
 
 // internal triangle data for rendering
-baryCoord(              this, uniquePrefix() + "baryCoord",           std::vector<glm::vec3>{}),
-edgeIsReal(             this, uniquePrefix() + "edgeIsReal",          std::vector<glm::vec3>{}),
-faceType(               this, uniquePrefix() + "faceType",            std::vector<float>{}),
+baryCoord(              this, uniquePrefix() + "baryCoord"),
+edgeIsReal(             this, uniquePrefix() + "edgeIsReal"),
+faceType(               this, uniquePrefix() + "faceType"),
 
 // other internally-computed geometry
 faceNormals(            this, uniquePrefix() + "faceNormals",         std::bind(&VolumeMesh::computeFaceNormals, this)),
@@ -787,9 +787,9 @@ void VolumeMesh::setVolumeMeshUniforms(render::ShaderProgram& p) {
 
 void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
 
-  p.setAttribute("a_vertexPositions", vertexPositions.getIndexedRenderAttributeBuffer(triangleVertexInds));
+  p.setAttribute("a_vertexPositions", vertexPositions.getIndexedRenderAttributeBuffer(triangleVertexInds), &vertexPositions);
 
-  p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(triangleFaceInds));
+  p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(triangleFaceInds), &faceNormals);
 
   bool wantsBary = p.hasAttribute("a_barycoord");
   bool wantsEdge = (getEdgeWidth() > 0);
@@ -797,16 +797,16 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   bool wantsFaceType = p.hasAttribute("a_faceColorType");
 
   if (wantsBary) {
-    p.setAttribute("a_barycoord", baryCoord.getRenderAttributeBuffer());
+    p.setAttribute("a_barycoord", baryCoord);
   }
   if (wantsEdge) {
-    p.setAttribute("a_edgeIsReal", edgeIsReal.getRenderAttributeBuffer());
+    p.setAttribute("a_edgeIsReal", edgeIsReal);
   }
   if (wantsAttrCullPosition) {
-    p.setAttribute("a_cullPos", cellCenters.getIndexedRenderAttributeBuffer(triangleCellInds));
+    p.setAttribute("a_cullPos", cellCenters.getIndexedRenderAttributeBuffer(triangleCellInds), &cellCenters);
   }
   if (wantsFaceType) {
-    p.setAttribute("a_faceColorType", faceType.getIndexedRenderAttributeBuffer(triangleFaceInds));
+    p.setAttribute("a_faceColorType", faceType.getIndexedRenderAttributeBuffer(triangleFaceInds), &faceType);
   }
 }
 

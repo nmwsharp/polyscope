@@ -266,8 +266,8 @@ SurfaceOneFormTangentVectorQuantity::SurfaceOneFormTangentVectorQuantity(std::st
     : SurfaceVectorQuantity(name, mesh_, MeshElement::FACE),
       TangentVectorQuantity<SurfaceOneFormTangentVectorQuantity>(
           *this, oneFormToFaceTangentVectors(mesh_, oneForm_, canonicalOrientation_),
-          std::vector<glm::vec3>(mesh_.defaultFaceTangentBasisX.begin(), mesh_.defaultFaceTangentBasisX.end()),
-          std::vector<glm::vec3>(mesh_.defaultFaceTangentBasisY.begin(), mesh_.defaultFaceTangentBasisY.end()),
+          mesh_.defaultFaceTangentBasisX.getDataCopy(),
+          mesh_.defaultFaceTangentBasisY.getDataCopy(),
           parent.faceCenters, 1, VectorType::STANDARD),
       oneForm(oneForm_), canonicalOrientation(canonicalOrientation_) {}
 

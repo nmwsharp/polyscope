@@ -76,7 +76,7 @@ void SurfaceParameterizationQuantity::createProgram() {
   parent.setMeshGeometryAttributes(*program);
 
   if(getStyle() == ParamVizStyle::CHECKER_ISLANDS) {
-    program->setAttribute("a_value", islandLabels.getIndexedRenderAttributeBuffer(parent.triangleFaceInds));
+    program->setAttribute("a_value", islandLabels.getIndexedRenderAttributeBuffer(parent.triangleFaceInds), &islandLabels);
   }
 
   render::engine->setMaterial(*program, parent.getMaterial());
@@ -228,7 +228,7 @@ std::string SurfaceCornerParameterizationQuantity::niceName() { return name + " 
 
 
 void SurfaceCornerParameterizationQuantity::fillCoordBuffers(render::ShaderProgram& p) {
-  p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
+  p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds), &coords);
 }
 
 
@@ -260,7 +260,7 @@ SurfaceVertexParameterizationQuantity::SurfaceVertexParameterizationQuantity(std
 std::string SurfaceVertexParameterizationQuantity::niceName() { return name + " (vertex parameterization)"; }
 
 void SurfaceVertexParameterizationQuantity::fillCoordBuffers(render::ShaderProgram& p) {
-  p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
+  p.setAttribute("a_value2", coords.getIndexedRenderAttributeBuffer(parent.triangleVertexInds), &coords);
 }
 
 std::vector<glm::vec2> SurfaceVertexParameterizationQuantity::getCornerCoords() {

@@ -126,7 +126,7 @@ void RenderImageQuantityBase::preparePick() {
   // clang-format on
 
   pickProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  pickProgram->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
+  pickProgram->setTextureFromBuffer("t_depth", depths);
 }
 
 void RenderImageQuantityBase::refresh() {

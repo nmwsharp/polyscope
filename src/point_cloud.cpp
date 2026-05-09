@@ -199,14 +199,14 @@ void PointCloud::ensurePickProgramPrepared() {
 }
 
 void PointCloud::setPointProgramGeometryAttributes(render::ShaderProgram& p) {
-  p.setAttribute("a_position", points.getRenderAttributeBuffer());
+  p.setAttribute("a_position", points);
   if (pointRadiusQuantityName != "") {
     PointCloudScalarQuantity& radQ = resolvePointRadiusQuantity();
-    p.setAttribute("a_pointRadius", radQ.values.getRenderAttributeBuffer());
+    p.setAttribute("a_pointRadius", radQ.values);
   }
   if (transparencyQuantityName != "") {
     PointCloudScalarQuantity& transparencyQ = resolveTransparencyQuantity();
-    p.setAttribute("a_valueAlpha", transparencyQ.values.getRenderAttributeBuffer());
+    p.setAttribute("a_valueAlpha", transparencyQ.values);
   }
 }
 

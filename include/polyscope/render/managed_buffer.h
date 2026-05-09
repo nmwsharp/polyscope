@@ -18,6 +18,69 @@ namespace render {
 class ManagedBufferRegistry;
 
 /*
+ * Non-templated base class for ManagedBuffer<T>.
+ * Contains all type-independent members and provides the syncToDeviceIfNeeded() virtual interface
+ * used by ShaderProgram::draw() to lazily push host data to the GPU before issuing a draw call.
+ */
+class ManagedBufferBase {
+public:
+  virtual ~ManagedBufferBase() = default;
+
+  // Called by ShaderProgram::draw() before issuing the GPU draw call.
+  // Pushes host data to device if deviceBufferValid is false and hostBufferValid is true.
+  virtual void syncToDeviceIfNeeded() = 0;
+
+  const std::string name;
+  const uint64_t uniqueID;
+
+protected:
+  // protected constructors — only ManagedBuffer<T> should construct this
+  ManagedBufferBase(ManagedBufferRegistry* registry_, const std::string& name_, bool dataGetsComputed_,
+                    bool hostBufferValid_);
+
+  // Internal helpers that don't depend on T
+  void invalidateHostBuffer();
+  bool deviceBufferTypeIsTexture() const;
+  void checkDeviceBufferTypeIs(DeviceBufferType targetType) const;
+  void checkDeviceBufferTypeIsTexture() const;
+
+  // True when the buffer has no valid data on host or device and is waiting to be computed.
+  bool isInNeedsComputeState() const { return !hostBufferValid && !deviceBufferValid && dataGetsComputed; }
+
+  ManagedBufferRegistry* registry;
+
+  bool dataGetsComputed;             // if true, the value gets computed on-demand by calling computeFunc()
+  std::function<void()> computeFunc; // (optional) callback which populates the buffer
+
+  bool hostBufferValid;   // true if host-side data is current
+  bool deviceBufferValid; // true if device-side buffer matches current host data
+
+  // True if all registered indexed views are consistent with the current source data.
+  // Set to false by markRenderAttributeBufferUpdated() when the GPU source is written externally
+  // and host data is no longer available to re-gather from. Will be set back to true once
+  // updateIndexedViews() runs successfully (which requires hostBufferValid).
+  // Future work: an on-device gather pass will be able to update indexed views even when
+  // !hostBufferValid, at which point this flag drives that path.
+  bool indexedViewsValid = true;
+
+  // Explicit size and capacity.
+  // Invariant: when hostBufferValid, data.size() == managedCapacity (the vector is always kept at full
+  // capacity — data.capacity() (std::vector internal) is never relied on for anything).
+  // currentSize <= managedCapacity is the number of logically valid elements.
+  size_t managedCapacity = 0;
+  size_t currentSize = 0;
+
+  std::shared_ptr<render::AttributeBuffer> renderAttributeBuffer;
+  std::shared_ptr<render::TextureBuffer> renderTextureBuffer;
+
+  DeviceBufferType deviceBufferType = DeviceBufferType::Attribute;
+  uint32_t sizeX = 0;
+  uint32_t sizeY = 0;
+  uint32_t sizeZ = 0;
+};
+
+
+/*
  * This class owns and manages a typed data buffer in Polyscope, handling common data-management concerns of:
  *
  *      (a) mirroring the buffer to the GPU/rendering framework
@@ -32,14 +95,15 @@ class ManagedBufferRegistry;
  * Use the public accessor API (getHostValue, setHostValue, setDataHost, begin/end, etc.) to interact with the buffer.
  */
 template <typename T>
-class ManagedBuffer : public virtual WeakReferrable {
+class ManagedBuffer : public ManagedBufferBase, public virtual WeakReferrable {
 public:
   // === Constructors
-  // (second variants are advanced versions which allow creation of multi-dimensional texture values)
+
+  // Create an empty buffer with no data. Use resize()+setHostValue() or setDataHost() to populate.
+  ManagedBuffer(ManagedBufferRegistry* registry, const std::string& name);
 
   // Manage a buffer of data which is explicitly set externally.
   ManagedBuffer(ManagedBufferRegistry* registry, const std::string& name, std::vector<T> data);
-
 
   // Manage a buffer of data which gets computed lazily
   ManagedBuffer(ManagedBufferRegistry* registry, const std::string& name,
@@ -49,16 +113,7 @@ public:
   ~ManagedBuffer();
 
 
-  // === Core members
-
-  // A meaningful name for the buffer
-  std::string name;
-
-  // A globally-unique ID
-  const uint64_t uniqueID;
-
-  // The registry in which it is tracked (can be null)
-  ManagedBufferRegistry* registry;
+  // === Core members (note: name, uniqueID, registry, dataGetsComputed, computeFunc live in ManagedBufferBase)
 
 
   // sanity check helper
@@ -81,7 +136,7 @@ public:
   // But in settings where we e.g. incrementally add elements or change the number of data elements on each frame, we
   // may want to allocate a larger capacity to avoid expensive re-allocation each time.
 
-  // Resize the buffer to newSize elements. Sets hostBufferIsPopulated = true.
+  // Resize the buffer to newSize elements. Sets hostBufferValid = true.
   //
   // If newSize <= capacity(), this is a cheap constant-time operation which just updates metadata.
   //
@@ -131,7 +186,10 @@ public:
   // device buffers and triggers a redraw. Prefer this over setHostValue() for bulk writes.
   void setDataHost(const std::vector<T>& newData);
 
-  // Iterator support. Caller must call ensureHostBufferPopulated() before using these.
+  // Returns a full copy of the host data, populating it from device if needed.
+  std::vector<T> getDataCopy();
+
+  // Raw pointer iteration support. Caller must call ensureHostBufferPopulated() before using these.
   // A debug-mode check will fire if this precondition is violated.
   const T* begin() const;
   const T* end() const;
@@ -182,8 +240,10 @@ public:
   // NOTE: this is only for attribute-accessed buffers (DeviceBufferType::Attribute). See the variants below for
   // textures.
 
-  // NOTE: This class follows the policy that once the render buffer is allocated, it is always immediately kept
-  // updated to reflect any external changes.
+  // NOTE: This class follows a lazy-sync policy: once the render buffer is allocated, it is kept up to date
+  // with host-side changes lazily — the actual GPU upload happens in syncToDeviceIfNeeded(), which is called
+  // by ShaderProgram::draw() just before the draw call. External writes to the GPU buffer (via
+  // markRenderAttributeBufferUpdated()) invalidate the host copy until ensureHostBufferPopulated() is called.
 
   // Get a reference to the underlying GPU-side attribute buffer
   // Once this reference is created, it will always be immediately updated to reflect any external changes to the
@@ -230,38 +290,16 @@ public:
   void markRenderTextureBufferUpdated();
 
 
+  // Sync host data to the device buffer if needed. Called by ShaderProgram::draw() before drawing.
+  void syncToDeviceIfNeeded() override;
+
 protected:
   // == Internal members
+  // Note: dataGetsComputed, computeFunc, hostBufferValid, deviceBufferValid, managedCapacity,
+  //       renderAttributeBuffer, renderTextureBuffer, deviceBufferType, sizeX/Y/Z all live in ManagedBufferBase.
 
-  // This class tracks data from two separate sources:
-  //    A) Values directly stored in the buffer by an external source (dataGetsComputed == false)
-  //    B) Values that get computed lazily by some function when needed (dataGetsComputed == true)
-  //
-  // When dataGetsComputed is true, computeFunc() must be set to a callback that populates the buffer.
-  // The callback should call resize() then setHostValue() to populate the buffer.
-  // The callback does NOT need to call markHostBufferUpdated() — that is handled by the ManagedBuffer
-  // infrastructure after the callback returns.
-  bool dataGetsComputed;             // if true, the value gets computed on-demand by calling computeFunc()
-  std::function<void()> computeFunc; // (optional) callback which populates the buffer
-
-  bool hostBufferIsPopulated; // true if the host buffer contains currently-valid data
-
-  // The buffer has capacity for at least this many elements. It is distinct from .size(), which is the actual number of
-  // elements currently stored in the buffer and may be smaller than the capacity.
-  // Any resize() operations that stay within the capacity are cheap, and do not trigger a full reallocation and copy.
-  size_t managedCapacity = 0;
-
-  std::shared_ptr<render::AttributeBuffer> renderAttributeBuffer;
-  std::shared_ptr<render::TextureBuffer> renderTextureBuffer;
-
-  // For storing as textures
-
-  // For data that can be interpreted as a 1/2/3 dimensional texture
-  DeviceBufferType deviceBufferType = DeviceBufferType::Attribute; // this gets set when you call setTextureSize
-  uint32_t sizeX = 0;
-  uint32_t sizeY = 0; // holds 0 if texture dim < 2
-  uint32_t sizeZ = 0; // holds 0 if texture dim < 3
-
+  // Override invalidateHostBuffer to also clear the typed data vector.
+  void invalidateHostBuffer();
 
   // == Internal representation of indexed views
   // NOTE: this seems like a problem, we are storing pointers as keys in a cache. Here, it works out because if the
@@ -271,13 +309,7 @@ protected:
       existingIndexedViews;
   void updateIndexedViews();
   void removeDeletedIndexedViews();
-
-  // == Internal helper functions
-
-  void invalidateHostBuffer();
-  bool deviceBufferTypeIsTexture() const;
-  void checkDeviceBufferTypeIs(DeviceBufferType targetType) const;
-  void checkDeviceBufferTypeIsTexture() const;
+  void invalidateIndexedViews();
 
   enum class CanonicalDataSource { HostData = 0, NeedsCompute, RenderBuffer };
   CanonicalDataSource currentCanonicalDataSource();
@@ -373,3 +405,21 @@ std::string typeName(ManagedBufferType type);
 } // namespace polyscope
 
 #include "polyscope/render/managed_buffer.ipp"
+
+// Implementations of ShaderProgram's ManagedBuffer convenience overloads
+// (defined here because they need the full ManagedBuffer<T> definition)
+namespace polyscope {
+namespace render {
+
+template <typename T>
+void ShaderProgram::setAttribute(std::string name, ManagedBuffer<T>& buf) {
+  setAttribute(name, buf.getRenderAttributeBuffer(), &buf);
+}
+
+template <typename T>
+void ShaderProgram::setTextureFromBuffer(std::string name, ManagedBuffer<T>& buf) {
+  setTextureFromBuffer(name, buf.getRenderTextureBuffer().get(), &buf);
+}
+
+} // namespace render
+} // namespace polyscope

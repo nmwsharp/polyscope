@@ -87,11 +87,11 @@ void ScalarRenderImageQuantity::prepare() {
   // clang-format on
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_depth", depths);
   if (hasNormals) {
-    program->setTextureFromBuffer("t_normal", normals.getRenderTextureBuffer().get());
+    program->setTextureFromBuffer("t_normal", normals);
   }
-  program->setTextureFromBuffer("t_scalar", values.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_scalar", values);
   render::engine->setMaterial(*program, material.get());
   program->setTextureFromColormap("t_colormap", cMap.get());
 }
