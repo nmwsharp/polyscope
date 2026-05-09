@@ -16,6 +16,7 @@ ColorImageQuantity::ColorImageQuantity(Structure& parent_, std::string name, siz
     : ImageQuantity(parent_, name, dimX, dimY, imageOrigin_),
       colors(this, uniquePrefix() + "colors", std::vector<glm::vec4>(data_)),
       isPremultiplied(uniquePrefix() + "isPremultiplied", false) {
+  colors.setAsType(DeviceBufferType::Texture2d);
   colors.setTextureSize(dimX, dimY);
 }
 

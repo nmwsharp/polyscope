@@ -155,6 +155,7 @@ SurfaceTextureColorQuantity::SurfaceTextureColorQuantity(std::string name, Surfa
                                                          ImageOrigin origin_)
     : SurfaceColorQuantity(name, mesh_, "texture", colorValues_), TextureMapQuantity(*this, dimX_, dimY_, origin_),
       param(param_) {
+  colors.setAsType(DeviceBufferType::Texture2d);
   colors.setTextureSize(dimX, dimY);
 }
 

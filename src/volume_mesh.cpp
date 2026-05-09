@@ -967,6 +967,7 @@ void VolumeMesh::computeFaceNormals() {
     }
   }
 
+  faceNormals.markHostBufferUpdated();
 }
 
 
@@ -993,6 +994,7 @@ void VolumeMesh::computeCellCenters() {
     cellCenters.setHostValue(iC, center);
   }
 
+  cellCenters.markHostBufferUpdated();
 }
 
 

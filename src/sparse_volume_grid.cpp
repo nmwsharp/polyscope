@@ -97,8 +97,7 @@ void SparseVolumeGrid::computeCellPositions() {
     cellIndices.setHostValue(i, ijk);
   }
 
-  // cellPositions.markHostBufferUpdated() is called by recomputeIfPopulated() after this callback.
-  // cellIndices is a side-effect buffer, so mark it updated explicitly.
+  cellPositions.markHostBufferUpdated();
   cellIndices.markHostBufferUpdated();
 }
 

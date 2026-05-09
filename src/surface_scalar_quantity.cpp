@@ -325,6 +325,7 @@ SurfaceTextureScalarQuantity::SurfaceTextureScalarQuantity(std::string name, Sur
                                                            ImageOrigin origin_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "vertex", values_, dataType_),
       TextureMapQuantity(*this, dimX_, dimY_, origin_), param(param_) {
+  values.setAsType(DeviceBufferType::Texture2d);
   values.setTextureSize(dimX, dimY);
 
   if (dataType == DataType::CATEGORICAL) {

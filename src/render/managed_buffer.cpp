@@ -104,31 +104,50 @@ void ManagedBuffer<T>::checkInvalidValues() {
 }
 
 template <typename T>
-void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_) {
+void ManagedBuffer<T>::setAsType(DeviceBufferType type) {
   if (deviceBufferType != DeviceBufferType::Attribute)
-    exception("managed buffer cannot be resized, texture size can only be set once");
+    exception("ManagedBuffer " + name + " setAsType(): type has already been set");
+  deviceBufferType = type;
+}
 
-  deviceBufferType = DeviceBufferType::Texture1d;
-  sizeX = sizeX_;
-  // managedCapacity and currentSize are set correctly from construction; no fixup needed.
+template <typename T>
+void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_) {
+  checkDeviceBufferTypeIs(DeviceBufferType::Texture1d);
+  resize(static_cast<size_t>(sizeX_));
 }
 
 template <typename T>
 void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_, uint32_t sizeY_) {
-  if (deviceBufferType != DeviceBufferType::Attribute)
-    exception("managed buffer cannot be resized, texture size can only be set once");
-
-  deviceBufferType = DeviceBufferType::Texture2d;
+  checkDeviceBufferTypeIs(DeviceBufferType::Texture2d);
+  if (sizeX_ == sizeX && sizeY_ == sizeY) return; // no-op
+  if (managedCapacity > 0) {
+    // Resize: copy device-side data back to host before touching dimensions or the GPU buffer.
+    ensureHostBufferPopulated();
+    managedCapacity = static_cast<size_t>(sizeX_) * sizeY_;
+    currentSize = managedCapacity;
+    data.resize(managedCapacity);
+    if (renderTextureBuffer) renderTextureBuffer->resize(sizeX_, sizeY_);
+    hostBufferValid = true;
+    deviceBufferValid = false;
+  }
   sizeX = sizeX_;
   sizeY = sizeY_;
 }
 
 template <typename T>
 void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_, uint32_t sizeY_, uint32_t sizeZ_) {
-  if (deviceBufferType != DeviceBufferType::Attribute)
-    exception("managed buffer cannot be resized, texture size can only be set once");
-
-  deviceBufferType = DeviceBufferType::Texture3d;
+  checkDeviceBufferTypeIs(DeviceBufferType::Texture3d);
+  if (sizeX_ == sizeX && sizeY_ == sizeY && sizeZ_ == sizeZ) return; // no-op
+  if (managedCapacity > 0) {
+    // Resize: copy device-side data back to host before touching dimensions or the GPU buffer.
+    ensureHostBufferPopulated();
+    managedCapacity = static_cast<size_t>(sizeX_) * sizeY_ * sizeZ_;
+    currentSize = managedCapacity;
+    data.resize(managedCapacity);
+    if (renderTextureBuffer) renderTextureBuffer->resize(sizeX_, sizeY_, sizeZ_);
+    hostBufferValid = true;
+    deviceBufferValid = false;
+  }
   sizeX = sizeX_;
   sizeY = sizeY_;
   sizeZ = sizeZ_;
@@ -141,14 +160,14 @@ std::array<uint32_t, 3> ManagedBuffer<T>::getTextureSize() const {
 }
 
 template <typename T>
-size_t ManagedBuffer<T>::capacity() {
+size_t ManagedBuffer<T>::capacity() const {
   return managedCapacity;
 }
 
 template <typename T>
 bool ManagedBuffer<T>::resize(size_t newSize) {
   if (deviceBufferType == DeviceBufferType::Texture2d || deviceBufferType == DeviceBufferType::Texture3d)
-    exception("resize() is not valid for 2D/3D texture buffers; use resizeTexture2D() or resizeTexture3D()");
+    exception("resize() is not valid for 2D/3D texture buffers; use setTextureSize() instead");
 
   if (newSize > managedCapacity) {
     // Copy device-side data back to host BEFORE modifying data or invalidating the GPU buffer.
@@ -218,54 +237,6 @@ void ManagedBuffer<T>::setCapacity(size_t newCapacity) {
   deviceBufferValid = false;
 }
 
-template <typename T>
-bool ManagedBuffer<T>::resizeTexture2D(uint32_t newSizeX, uint32_t newSizeY) {
-  checkDeviceBufferTypeIs(DeviceBufferType::Texture2d);
-
-  if (newSizeX == sizeX && newSizeY == sizeY) return false; // no-op
-
-  // Before invalidating the GPU buffer, copy any device-side changes back to the host.
-  ensureHostBufferPopulated();
-
-  sizeX = newSizeX;
-  sizeY = newSizeY;
-  managedCapacity = static_cast<size_t>(sizeX) * sizeY;
-  currentSize = managedCapacity;
-  data.resize(managedCapacity);
-
-  if (renderTextureBuffer) {
-    renderTextureBuffer->resize(sizeX, sizeY);
-  }
-  hostBufferValid = true;
-  deviceBufferValid = false;
-
-  return true;
-}
-
-template <typename T>
-bool ManagedBuffer<T>::resizeTexture3D(uint32_t newSizeX, uint32_t newSizeY, uint32_t newSizeZ) {
-  checkDeviceBufferTypeIs(DeviceBufferType::Texture3d);
-
-  if (newSizeX == sizeX && newSizeY == sizeY && newSizeZ == sizeZ) return false; // no-op
-
-  // Before invalidating the GPU buffer, copy any device-side changes back to the host.
-  ensureHostBufferPopulated();
-
-  sizeX = newSizeX;
-  sizeY = newSizeY;
-  sizeZ = newSizeZ;
-  managedCapacity = static_cast<size_t>(sizeX) * sizeY * sizeZ;
-  currentSize = managedCapacity;
-  data.resize(managedCapacity);
-
-  if (renderTextureBuffer) {
-    renderTextureBuffer->resize(sizeX, sizeY, sizeZ);
-  }
-  hostBufferValid = true;
-  deviceBufferValid = false;
-
-  return true;
-}
 
 template <typename T>
 void ManagedBuffer<T>::ensureHostBufferPopulated() {
@@ -352,45 +323,53 @@ const T* ManagedBuffer<T>::end() const {
 template <typename T>
 T ManagedBuffer<T>::getHostValue(size_t ind) const {
 #ifndef NDEBUG
-  if (!hostBufferValid)
-    exception("ManagedBuffer " + name + " getHostValue() called without ensureHostBufferPopulated()");
+  if (!hostBufferValid) exception("ManagedBuffer " + name + " getHostValue() called without ensureHostBufferPopulated()");
 #endif
   return data[ind];
 }
 
 template <typename T>
 T ManagedBuffer<T>::getHostValue(size_t indX, size_t indY) const {
+#ifndef NDEBUG
+  if (!hostBufferValid) exception("ManagedBuffer " + name + " getHostValue() called without ensureHostBufferPopulated()");
   checkDeviceBufferTypeIs(DeviceBufferType::Texture2d);
+#endif
   return getHostValue(sizeY * indX + indY);
 }
 
 template <typename T>
 T ManagedBuffer<T>::getHostValue(size_t indX, size_t indY, size_t indZ) const {
+#ifndef NDEBUG
+  if (!hostBufferValid) exception("ManagedBuffer " + name + " getHostValue() called without ensureHostBufferPopulated()");
   checkDeviceBufferTypeIs(DeviceBufferType::Texture3d);
+#endif
   return getHostValue(sizeZ * sizeY * indX + sizeZ * indY + indZ);
 }
 
 template <typename T>
 void ManagedBuffer<T>::setHostValue(size_t ind, T val) {
 #ifndef NDEBUG
-  if (!hostBufferValid)
-    exception("ManagedBuffer " + name + " setHostValue() called without ensureHostBufferPopulated()");
+  if (!hostBufferValid) exception("ManagedBuffer " + name + " setHostValue() called without ensureHostBufferPopulated()");
 #endif
   data[ind] = val;
-  deviceBufferValid = false;
-  invalidateIndexedViews();
-  requestRedraw();
+  // NOTE: intentionally no side-effects here. Caller must call markHostBufferUpdated() after all writes are done.
 }
 
 template <typename T>
 void ManagedBuffer<T>::setHostValue(size_t indX, size_t indY, T val) {
+#ifndef NDEBUG
+  if (!hostBufferValid) exception("ManagedBuffer " + name + " setHostValue() called without ensureHostBufferPopulated()");
   checkDeviceBufferTypeIs(DeviceBufferType::Texture2d);
+#endif
   setHostValue(sizeY * indX + indY, val);
 }
 
 template <typename T>
 void ManagedBuffer<T>::setHostValue(size_t indX, size_t indY, size_t indZ, T val) {
+#ifndef NDEBUG
+  if (!hostBufferValid) exception("ManagedBuffer " + name + " setHostValue() called without ensureHostBufferPopulated()");
   checkDeviceBufferTypeIs(DeviceBufferType::Texture3d);
+#endif
   setHostValue(sizeZ * sizeY * indX + sizeZ * indY + indZ, val);
 }
 
@@ -492,25 +471,17 @@ T ManagedBuffer<T>::getValue(size_t indX, size_t indY, size_t indZ) {
 }
 
 template <typename T>
-size_t ManagedBuffer<T>::size() {
+size_t ManagedBuffer<T>::size() const {
   return currentSize;
 }
 
 template <typename T>
-bool ManagedBuffer<T>::hasData() {
-
-  if (hostBufferValid) return true;
-  if (deviceBufferValid) return true;
-  return false;
-}
-
-template <typename T>
-DeviceBufferType ManagedBuffer<T>::getDeviceBufferType() {
+DeviceBufferType ManagedBuffer<T>::getDeviceBufferType() const {
   return deviceBufferType;
 }
 
 template <typename T>
-std::string ManagedBuffer<T>::summaryString() {
+std::string ManagedBuffer<T>::summaryString() const {
 
   std::string str = "";
 

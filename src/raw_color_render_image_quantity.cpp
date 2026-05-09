@@ -17,6 +17,7 @@ RawColorRenderImageQuantity::RawColorRenderImageQuantity(Structure& parent_, std
                                                          ImageOrigin imageOrigin)
     : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, std::vector<glm::vec3>(), imageOrigin),
       colors(this, uniquePrefix() + "colors", std::vector<glm::vec3>(colorsData_)) {
+  colors.setAsType(DeviceBufferType::Texture2d);
   colors.setTextureSize(dimX, dimY);
 }
 
