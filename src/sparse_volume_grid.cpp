@@ -36,14 +36,14 @@ SparseVolumeGrid::SparseVolumeGrid(std::string name, glm::vec3 origin_, glm::vec
       cellPositions(this, uniquePrefix() + "#cellPositions", std::bind(&SparseVolumeGrid::computeCellPositions, this)),
       cellIndices(this, uniquePrefix() + "#cellIndices", [](){/* do nothing, gets handled by computeCellPositions */}),
       cornerNodeInds{
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds0", std::vector<uint32_t>{}),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds1", std::vector<uint32_t>{}),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds2", std::vector<uint32_t>{}),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds3", std::vector<uint32_t>{}),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds4", std::vector<uint32_t>{}),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds5", std::vector<uint32_t>{}),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds6", std::vector<uint32_t>{}),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds7", std::vector<uint32_t>{}),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds0"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds1"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds2"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds3"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds4"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds5"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds6"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds7"),
       },
 
       origin(origin_), gridCellWidth(gridCellWidth_),
@@ -367,8 +367,8 @@ void SparseVolumeGrid::ensureRenderProgramPrepared() {
   );
   // clang-format on
 
-  program->setAttribute("a_cellPosition", cellPositions.getRenderAttributeBuffer());
-  program->setAttribute("a_cellInd", cellIndices.getRenderAttributeBuffer());
+  program->setAttribute("a_cellPosition", cellPositions);
+  program->setAttribute("a_cellInd", cellIndices);
 
   render::engine->setMaterial(*program, material.get());
 }
@@ -499,8 +499,8 @@ void SparseVolumeGrid::ensurePickProgramPrepared() {
   pickProgram->setAttribute("a_color", pickColors);
 
 
-  pickProgram->setAttribute("a_cellPosition", cellPositions.getRenderAttributeBuffer());
-  pickProgram->setAttribute("a_cellInd", cellIndices.getRenderAttributeBuffer());
+  pickProgram->setAttribute("a_cellPosition", cellPositions);
+  pickProgram->setAttribute("a_cellInd", cellIndices);
 }
 
 
@@ -792,8 +792,8 @@ glm::vec3 SparseVolumeGrid::getWireframeColor() { return wireframeColor.get(); }
 
 
 void SparseVolumeGrid::setCellGeometryAttributes(render::ShaderProgram& p) {
-  p.setAttribute("a_cellPosition", cellPositions.getRenderAttributeBuffer());
-  p.setAttribute("a_cellInd", cellIndices.getRenderAttributeBuffer());
+  p.setAttribute("a_cellPosition", cellPositions);
+  p.setAttribute("a_cellInd", cellIndices);
 }
 
 std::vector<std::string> SparseVolumeGrid::addSparseGridShaderRules(std::vector<std::string> initRules, bool pickOnly) {

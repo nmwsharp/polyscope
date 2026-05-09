@@ -212,6 +212,7 @@ struct GLShaderAttribute {
   RenderDataType type;
   int arrayCount;
   std::shared_ptr<GLAttributeBuffer> buff; // the buffer that we will actually use
+  ManagedBufferBase* sourceManagedBuffer; // might be empty if not from a managed buffer. for indexed views, it's the original data source
 };
 
 struct GLShaderTexture {
@@ -221,6 +222,7 @@ struct GLShaderTexture {
   bool isSet;
   GLTextureBuffer* textureBuffer;
   std::shared_ptr<GLTextureBuffer> textureBufferOwned; // might be empty, if texture isn't owned
+  ManagedBufferBase* sourceManagedBuffer; // might be empty if not from a managed buffer. for indexed views, it's the original data source
 };
 
 // A thin wrapper around a program handle.
@@ -282,7 +284,7 @@ public:
   bool hasAttribute(std::string name) override;
   bool attributeIsSet(std::string name) override;
   std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) override;
-  void setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) override; 
+  void setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer, ManagedBufferBase* source = nullptr) override;
   void setAttribute(std::string name, const std::vector<glm::vec2>& data) override;
   void setAttribute(std::string name, const std::vector<glm::vec3>& data) override;
   void setAttribute(std::string name, const std::vector<glm::vec4>& data) override;
@@ -310,11 +312,14 @@ public:
   void setTexture2D(std::string name, unsigned char* texData, unsigned int width, unsigned int height,
                     bool withAlpha = true, bool useMipMap = false, bool repeat = false) override;
   void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) override;
-  void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) override;
+  void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer, ManagedBufferBase* source = nullptr) override;
+
+  // ManagedBuffer source registration
 
   // Draw!
   void draw() override;
   void validateData() override;
+  void syncBuffersToDeviceIfNeeded();
 
 protected:
   // Lists of attributes and uniforms that need to be set

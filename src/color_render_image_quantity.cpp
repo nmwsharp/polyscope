@@ -72,11 +72,11 @@ void ColorRenderImageQuantity::prepare() {
   program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN", rules);
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_depth", depths);
   if (hasNormals) {
-    program->setTextureFromBuffer("t_normal", normals.getRenderTextureBuffer().get());
+    program->setTextureFromBuffer("t_normal", normals);
   }
-  program->setTextureFromBuffer("t_color", colors.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_color", colors);
   render::engine->setMaterial(*program, material.get());
 }
 

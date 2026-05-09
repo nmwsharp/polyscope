@@ -242,9 +242,9 @@ void VolumeGrid::ensureGridCubeRenderProgramPrepared() {
   );
   // clang-format on
 
-  program->setAttribute("a_referencePosition", gridPlaneReferencePositions.getRenderAttributeBuffer());
-  program->setAttribute("a_referenceNormal", gridPlaneReferenceNormals.getRenderAttributeBuffer());
-  program->setAttribute("a_axisInd", gridPlaneAxisInds.getRenderAttributeBuffer());
+  program->setAttribute("a_referencePosition", gridPlaneReferencePositions);
+  program->setAttribute("a_referenceNormal", gridPlaneReferenceNormals);
+  program->setAttribute("a_axisInd", gridPlaneAxisInds);
 
   render::engine->setMaterial(*program, material.get());
 }
@@ -256,16 +256,16 @@ void VolumeGrid::ensureGridCubePickProgramPrepared() {
 
   // clang-format off
   pickProgram = render::engine->requestShader(
-      "GRIDCUBE_PLANE", 
-      addGridCubeRules({"GRIDCUBE_CONSTANT_PICK"}, false), 
+      "GRIDCUBE_PLANE",
+      addGridCubeRules({"GRIDCUBE_CONSTANT_PICK"}, false),
       render::ShaderReplacementDefaults::Pick
   );
   // clang-format on
 
 
-  pickProgram->setAttribute("a_referencePosition", gridPlaneReferencePositions.getRenderAttributeBuffer());
-  pickProgram->setAttribute("a_referenceNormal", gridPlaneReferenceNormals.getRenderAttributeBuffer());
-  pickProgram->setAttribute("a_axisInd", gridPlaneAxisInds.getRenderAttributeBuffer());
+  pickProgram->setAttribute("a_referencePosition", gridPlaneReferencePositions);
+  pickProgram->setAttribute("a_referenceNormal", gridPlaneReferenceNormals);
+  pickProgram->setAttribute("a_axisInd", gridPlaneAxisInds);
 
 
   if (globalPickConstant == INVALID_IND_64) {

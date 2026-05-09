@@ -22,8 +22,8 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
     : // clang-format off
       Structure(name, typeName()),
       nodePositions(this, uniquePrefix() + "nodePositions", std::move(nodes_)),
-      edgeTailInds(this, uniquePrefix() + "edgeTailInds", std::vector<uint32_t>{}),
-      edgeTipInds(this, uniquePrefix() + "edgeTipInds", std::vector<uint32_t>{}),
+      edgeTailInds(this, uniquePrefix() + "edgeTailInds"),
+      edgeTipInds(this, uniquePrefix() + "edgeTipInds"),
       edgeCenters(this, uniquePrefix() + "edgeCenters", std::bind(&CurveNetwork::computeEdgeCenters, this)),
       color(uniquePrefix() + "#color", getNextUniqueColor()),
       radius(uniquePrefix() + "#radius", relativeValue(0.005)),
@@ -347,7 +347,7 @@ void CurveNetwork::preparePick() {
 }
 
 void CurveNetwork::fillNodeGeometryBuffers(render::ShaderProgram& program) {
-  program.setAttribute("a_position", nodePositions.getRenderAttributeBuffer());
+  program.setAttribute("a_position", nodePositions);
 
   bool haveNodeRadiusQuantity = (nodeRadiusQuantityName != "");
   bool haveEdgeRadiusQuantity = (edgeRadiusQuantityName != "");
@@ -355,18 +355,18 @@ void CurveNetwork::fillNodeGeometryBuffers(render::ShaderProgram& program) {
   if (haveNodeRadiusQuantity) {
     // have just node, or have both
     CurveNetworkNodeScalarQuantity& nodeRadQ = resolveNodeRadiusQuantity();
-    program.setAttribute("a_pointRadius", nodeRadQ.values.getRenderAttributeBuffer());
+    program.setAttribute("a_pointRadius", nodeRadQ.values);
   } else if (haveEdgeRadiusQuantity) {
     // have just edge
     CurveNetworkEdgeScalarQuantity& edgeRadQ = resolveEdgeRadiusQuantity();
     edgeRadQ.updateNodeAverageValues();
-    program.setAttribute("a_pointRadius", edgeRadQ.nodeAverageValues.getRenderAttributeBuffer());
+    program.setAttribute("a_pointRadius", edgeRadQ.nodeAverageValues);
   }
 }
 
 void CurveNetwork::fillEdgeGeometryBuffers(render::ShaderProgram& program) {
-  program.setAttribute("a_position_tail", nodePositions.getIndexedRenderAttributeBuffer(edgeTailInds));
-  program.setAttribute("a_position_tip", nodePositions.getIndexedRenderAttributeBuffer(edgeTipInds));
+  program.setAttribute("a_position_tail", nodePositions.getIndexedRenderAttributeBuffer(edgeTailInds), &nodePositions);
+  program.setAttribute("a_position_tip", nodePositions.getIndexedRenderAttributeBuffer(edgeTipInds), &nodePositions);
 
   bool haveNodeRadiusQuantity = (nodeRadiusQuantityName != "");
   bool haveEdgeRadiusQuantity = (edgeRadiusQuantityName != "");
@@ -374,13 +374,13 @@ void CurveNetwork::fillEdgeGeometryBuffers(render::ShaderProgram& program) {
   if (haveEdgeRadiusQuantity) {
     // have just edge or have both
     CurveNetworkEdgeScalarQuantity& edgeRadQ = resolveEdgeRadiusQuantity();
-    program.setAttribute("a_tailRadius", edgeRadQ.values.getRenderAttributeBuffer());
-    program.setAttribute("a_tipRadius", edgeRadQ.values.getRenderAttributeBuffer());
+    program.setAttribute("a_tailRadius", edgeRadQ.values);
+    program.setAttribute("a_tipRadius", edgeRadQ.values);
   } else if (haveNodeRadiusQuantity) {
     // have just node
     CurveNetworkNodeScalarQuantity& nodeRadQ = resolveNodeRadiusQuantity();
-    program.setAttribute("a_tailRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTailInds));
-    program.setAttribute("a_tipRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTipInds));
+    program.setAttribute("a_tailRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTailInds), &nodeRadQ.values);
+    program.setAttribute("a_tipRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTipInds), &nodeRadQ.values);
   }
 }
 

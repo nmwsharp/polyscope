@@ -76,7 +76,7 @@ void SparseVolumeGridCellScalarQuantity::createProgram() {
   // clang-format on
 
   parent.setCellGeometryAttributes(*program);
-  program->setAttribute("a_value", values.getRenderAttributeBuffer());
+  program->setAttribute("a_value", values);
   program->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*program, parent.getMaterial());
 }
@@ -121,7 +121,7 @@ void SparseVolumeGridNodeScalarQuantity::createProgram() {
   parent.setCellGeometryAttributes(*program);
   for (int c = 0; c < 8; c++) {
     program->setAttribute("a_nodeValue" + std::to_string(c),
-                          values.getIndexedRenderAttributeBuffer(parent.cornerNodeInds[c]));
+                          values.getIndexedRenderAttributeBuffer(parent.cornerNodeInds[c]), &values);
   }
   program->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*program, parent.getMaterial());

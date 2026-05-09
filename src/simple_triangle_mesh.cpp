@@ -253,7 +253,7 @@ std::vector<std::string> SimpleTriangleMesh::addSimpleTriangleMeshRules(std::vec
 }
 
 void SimpleTriangleMesh::setSimpleTriangleMeshProgramGeometryAttributes(render::ShaderProgram& p) {
-  p.setAttribute("a_vertexPositions", vertices.getRenderAttributeBuffer());
+  p.setAttribute("a_vertexPositions", vertices);
   p.setIndex(faces.getRenderAttributeBuffer());
 }
 

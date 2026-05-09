@@ -56,7 +56,7 @@ void PointCloudParameterizationQuantity::createProgram() {
 }
 
 void PointCloudParameterizationQuantity::fillCoordBuffers(render::ShaderProgram& p) {
-  p.setAttribute("a_value2", coords.getRenderAttributeBuffer());
+  p.setAttribute("a_value2", coords);
 }
 
 void PointCloudParameterizationQuantity::buildCustomUI() {

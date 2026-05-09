@@ -175,8 +175,8 @@ void VectorQuantity<QuantityT>::createProgram() {
   );
   // clang-format on
 
-  this->vectorProgram->setAttribute("a_vector", vectors.getRenderAttributeBuffer());
-  this->vectorProgram->setAttribute("a_position", vectorRoots.getRenderAttributeBuffer());
+  this->vectorProgram->setAttribute("a_vector", vectors);
+  this->vectorProgram->setAttribute("a_position", vectorRoots);
 
   render::engine->setMaterial(*(this->vectorProgram), this->material.get());
 }
@@ -299,10 +299,10 @@ void TangentVectorQuantity<QuantityT>::createProgram() {
   );
   // clang-format on
 
-  this->vectorProgram->setAttribute("a_tangentVector", tangentVectors.getRenderAttributeBuffer());
-  this->vectorProgram->setAttribute("a_basisVectorX", tangentBasisX.getRenderAttributeBuffer());
-  this->vectorProgram->setAttribute("a_basisVectorY", tangentBasisY.getRenderAttributeBuffer());
-  this->vectorProgram->setAttribute("a_position", vectorRoots.getRenderAttributeBuffer());
+  this->vectorProgram->setAttribute("a_tangentVector", tangentVectors);
+  this->vectorProgram->setAttribute("a_basisVectorX", tangentBasisX);
+  this->vectorProgram->setAttribute("a_basisVectorY", tangentBasisY);
+  this->vectorProgram->setAttribute("a_position", vectorRoots);
 
   render::engine->setMaterial(*(this->vectorProgram), this->material.get());
 }

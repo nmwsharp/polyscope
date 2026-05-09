@@ -2,6 +2,7 @@
 
 #ifdef POLYSCOPE_BACKEND_OPENGL_MOCK_ENABLED
 #include "polyscope/render/mock_opengl/mock_gl_engine.h"
+#include "polyscope/render/managed_buffer.h"
 
 #include "polyscope/imgui_config.h"
 #include "polyscope/messages.h"
@@ -779,7 +780,7 @@ void GLCompiledProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
       return;
     }
   }
-  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, nullptr});
+  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, nullptr, nullptr});
 }
 
 void GLCompiledProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
@@ -806,7 +807,7 @@ void GLCompiledProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
       return;
     }
   }
-  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr});
+  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr, nullptr});
 }
 
 
@@ -838,7 +839,7 @@ void GLShaderProgram::createBuffers() {
   }
 }
 
-void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) {
+void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer, ManagedBufferBase* source) {
   bindVAO();
   checkGLError();
 
@@ -860,6 +861,7 @@ void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBu
       if (!engineExtBuff) throw std::invalid_argument("attribute " + name + " external buffer engine type cast failed");
 
       a.buff = engineExtBuff;
+      a.sourceManagedBuffer = source;
 
       a.buff->bind();
 
@@ -1459,7 +1461,7 @@ void GLShaderProgram::setTexture2D(std::string name, unsigned char* texData, uns
   throw std::invalid_argument("No texture with name " + name);
 }
 
-void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) {
+void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer, ManagedBufferBase* source) {
 
   // Find the right texture
   for (GLShaderTexture& t : textures) {
@@ -1474,6 +1476,7 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
       throw std::invalid_argument("Bad texture in setTextureFromBuffer()");
     }
 
+    t.sourceManagedBuffer = source;
     t.isSet = true;
     return;
   }
@@ -1659,8 +1662,18 @@ void GLShaderProgram::activateTextures() {
   }
 }
 
+void GLShaderProgram::syncBuffersToDeviceIfNeeded() {
+  for (auto& attr : attributes) {
+    if (attr.sourceManagedBuffer) attr.sourceManagedBuffer->syncToDeviceIfNeeded();
+  }
+  for (auto& tex : textures) {
+    if (tex.sourceManagedBuffer) tex.sourceManagedBuffer->syncToDeviceIfNeeded();
+  }
+}
+
 void GLShaderProgram::draw() {
   validateData();
+  syncBuffersToDeviceIfNeeded();
 
   if (usePrimitiveRestart) {
   }

@@ -100,12 +100,12 @@ void CurveNetworkNodeScalarQuantity::createProgram() {
   parent.fillEdgeGeometryBuffers(*edgeProgram);
 
   { // Fill node color buffers
-    nodeProgram->setAttribute("a_value", values.getRenderAttributeBuffer());
+    nodeProgram->setAttribute("a_value", values);
   }
 
   { // Fill edge color buffers
-    edgeProgram->setAttribute("a_value_tail", values.getIndexedRenderAttributeBuffer(parent.edgeTailInds));
-    edgeProgram->setAttribute("a_value_tip", values.getIndexedRenderAttributeBuffer(parent.edgeTipInds));
+    edgeProgram->setAttribute("a_value_tail", values.getIndexedRenderAttributeBuffer(parent.edgeTailInds), &values);
+    edgeProgram->setAttribute("a_value_tip", values.getIndexedRenderAttributeBuffer(parent.edgeTipInds), &values);
   }
 
   edgeProgram->setTextureFromColormap("t_colormap", cMap.get());
@@ -130,7 +130,7 @@ void CurveNetworkNodeScalarQuantity::buildNodeInfoGUI(size_t nInd) {
 CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name, const std::vector<float>& values_,
                                                                CurveNetwork& network_, DataType dataType_)
     : CurveNetworkScalarQuantity(name, network_, "edge", values_, dataType_),
-      nodeAverageValues(this, uniquePrefix() + "#nodeAverageValues", std::vector<float>{}) {}
+      nodeAverageValues(this, uniquePrefix() + "#nodeAverageValues") {}
 
 void CurveNetworkEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
@@ -162,11 +162,11 @@ void CurveNetworkEdgeScalarQuantity::createProgram() {
 
   { // Fill node color buffers
     updateNodeAverageValues();
-    nodeProgram->setAttribute("a_value", nodeAverageValues.getRenderAttributeBuffer());
+    nodeProgram->setAttribute("a_value", nodeAverageValues);
   }
 
   { // Fill edge color buffers
-    edgeProgram->setAttribute("a_value", values.getRenderAttributeBuffer());
+    edgeProgram->setAttribute("a_value", values);
   }
 
   edgeProgram->setTextureFromColormap("t_colormap", cMap.get());

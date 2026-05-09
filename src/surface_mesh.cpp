@@ -28,12 +28,12 @@ SurfaceMesh::SurfaceMesh(std::string name_)
 // == managed quantities
 
 // positions
-vertexPositions(           this, uniquePrefix() + "vertexPositions",     std::vector<glm::vec3>{}),
+vertexPositions(           this, uniquePrefix() + "vertexPositions"),
 
 // connectivity / indices
 // (triangle and face inds are always computed initially when we triangulate the mesh)
-triangleVertexInds(        this, uniquePrefix() + "triangleVertexInds",          std::vector<uint32_t>{}),
-triangleFaceInds(          this, uniquePrefix() + "triangleFaceInds",            std::vector<uint32_t>{}),
+triangleVertexInds(        this, uniquePrefix() + "triangleVertexInds"),
+triangleFaceInds(          this, uniquePrefix() + "triangleFaceInds"),
 triangleCornerInds(        this, uniquePrefix() + "triangleCornerInds",          std::bind(&SurfaceMesh::computeTriangleCornerInds, this)),
 triangleAllVertexInds(     this, uniquePrefix() + "triangleAllVertexInds",       std::bind(&SurfaceMesh::computeTriangleAllVertexInds, this)),
 triangleAllEdgeInds(       this, uniquePrefix() + "triangleAllEdgeInds",         std::bind(&SurfaceMesh::computeTriangleAllEdgeInds, this)),
@@ -41,8 +41,8 @@ triangleAllHalfedgeInds(   this, uniquePrefix() + "triangleHalfedgeInds",       
 triangleAllCornerInds(     this, uniquePrefix() + "triangleAllCornerInds",       std::bind(&SurfaceMesh::computeTriangleAllCornerInds, this)),
 
 // internal triangle data for rendering
-baryCoord(              this, uniquePrefix() + "baryCoord",           std::vector<glm::vec3>{}),
-edgeIsReal(             this, uniquePrefix() + "edgeIsReal",          std::vector<glm::vec3>{}),
+baryCoord(              this, uniquePrefix() + "baryCoord"),
+edgeIsReal(             this, uniquePrefix() + "edgeIsReal"),
 
 // other internally-computed geometry
 faceNormals(            this, uniquePrefix() + "faceNormals",         std::bind(&SurfaceMesh::computeFaceNormals, this)),
@@ -872,29 +872,29 @@ void SurfaceMesh::preparePick() {
 
 void SurfaceMesh::setMeshGeometryAttributes(render::ShaderProgram& p) {
   if (p.hasAttribute("a_vertexPositions")) {
-    p.setAttribute("a_vertexPositions", vertexPositions.getIndexedRenderAttributeBuffer(triangleVertexInds));
+    p.setAttribute("a_vertexPositions", vertexPositions.getIndexedRenderAttributeBuffer(triangleVertexInds), &vertexPositions);
   }
   if (p.hasAttribute("a_vertexNormals")) {
 
     if (getShadeStyle() == MeshShadeStyle::Smooth) {
-      p.setAttribute("a_vertexNormals", vertexNormals.getIndexedRenderAttributeBuffer(triangleVertexInds));
+      p.setAttribute("a_vertexNormals", vertexNormals.getIndexedRenderAttributeBuffer(triangleVertexInds), &vertexNormals);
     } else {
       // these aren't actually used in in the automatically-generated case, but the shader is set up in a lazy way so
       // it is still needed
-      p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(triangleFaceInds));
+      p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(triangleFaceInds), &faceNormals);
     }
   }
   if (p.hasAttribute("a_normal")) {
-    p.setAttribute("a_normal", faceNormals.getIndexedRenderAttributeBuffer(triangleFaceInds));
+    p.setAttribute("a_normal", faceNormals.getIndexedRenderAttributeBuffer(triangleFaceInds), &faceNormals);
   }
   if (p.hasAttribute("a_barycoord")) {
-    p.setAttribute("a_barycoord", baryCoord.getRenderAttributeBuffer());
+    p.setAttribute("a_barycoord", baryCoord);
   }
   if (p.hasAttribute("a_edgeIsReal")) {
-    p.setAttribute("a_edgeIsReal", edgeIsReal.getRenderAttributeBuffer());
+    p.setAttribute("a_edgeIsReal", edgeIsReal);
   }
   if (wantsCullPosition()) {
-    p.setAttribute("a_cullPos", faceCenters.getIndexedRenderAttributeBuffer(triangleFaceInds));
+    p.setAttribute("a_cullPos", faceCenters.getIndexedRenderAttributeBuffer(triangleFaceInds), &faceCenters);
   }
 
   if (transparencyQuantityName != "") {
