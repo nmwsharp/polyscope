@@ -170,27 +170,11 @@ bool ManagedBuffer<T>::resize(size_t newSize) {
     exception("resize() is not valid for 2D/3D texture buffers; use setTextureSize() instead");
 
   if (newSize > managedCapacity) {
-    // Copy device-side data back to host BEFORE modifying data or invalidating the GPU buffer.
-    // ensureHostBufferPopulated() reads from renderAttributeBuffer into data; if we resize data
-    // first it would overwrite the resize with the old GPU contents.
-    // Only copy existing data to host if there is data to preserve.
-    if (isInNeedsComputeState()) {
-      // If state is NeedsCompute, there is no existing data — calling ensureHostBufferPopulated()
-      // would recursively invoke the compute function that is currently running.
-    } else {
-      // Common case
-      ensureHostBufferPopulated();
-    }
-
-    // Reallocation needed: use amortized doubling.
-    // data is always kept at data.size() == managedCapacity (the invariant), so we resize (not reserve).
+    // Reallocation needed: use amortized doubling for the new capacity.
     size_t newCapacity = std::max(newSize, 2 * managedCapacity);
-    data.resize(newCapacity);
-    managedCapacity = newCapacity;
-    currentSize = newSize;
+    setCapacity(newCapacity); // handles host/device sync, data.resize, validity flags
 
-    hostBufferValid = true;
-    deviceBufferValid = false;
+    currentSize = newSize;
 
     if (deviceBufferType == DeviceBufferType::Texture1d) {
       sizeX = static_cast<uint32_t>(newSize);
@@ -393,8 +377,8 @@ void ManagedBuffer<T>::syncToDeviceIfNeeded() {
     exception("ManagedBuffer " + name + " has no valid data on host or device at draw time");
   }
 
-  // Host data is valid. Upload to device if not already current.
-  if (!deviceBufferValid) {
+  // Host data is valid. Copy to device.
+  if (!deviceBufferValid) { // must be hostBufferValid == true
     if (renderAttributeBuffer) {
       renderAttributeBuffer->setData(data);
     }
@@ -403,9 +387,8 @@ void ManagedBuffer<T>::syncToDeviceIfNeeded() {
     }
     deviceBufferValid = true;
   }
-  
-  
-  // Update indexed views 
+
+  // Update indexed views
   if (!indexedViewsValid) {
 
     if(deviceBufferValid) { // always true now at this point

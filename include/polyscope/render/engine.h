@@ -431,6 +431,7 @@ public:
   // Defined in managed_buffer.h after ManagedBuffer<T> is fully declared.
   template <typename T> void setAttribute(std::string name, ManagedBuffer<T>& buf);
   template <typename T> void setTextureFromBuffer(std::string name, ManagedBuffer<T>& buf);
+  template <typename T> void setIndex(ManagedBuffer<T>& buf);
 
   // Indices
   virtual void setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) = 0;
@@ -466,6 +467,7 @@ protected:
   uint64_t uniqueID;
 
   std::shared_ptr<AttributeBuffer> indexBuffer;
+  ManagedBufferBase* indexSourceManagedBuffer = nullptr;
 
   // instancing
   uint32_t instanceCount = INVALID_IND_32;

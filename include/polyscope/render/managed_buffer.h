@@ -425,5 +425,11 @@ void ShaderProgram::setTextureFromBuffer(std::string name, ManagedBuffer<T>& buf
   setTextureFromBuffer(name, buf.getRenderTextureBuffer().get(), &buf);
 }
 
+template <typename T>
+void ShaderProgram::setIndex(ManagedBuffer<T>& buf) {
+  indexSourceManagedBuffer = &buf;
+  setIndex(buf.getRenderAttributeBuffer());
+}
+
 } // namespace render
 } // namespace polyscope
