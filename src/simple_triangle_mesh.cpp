@@ -307,8 +307,8 @@ void SimpleTriangleMesh::updateObjectSpaceBounds() {
 }
 
 void SimpleTriangleMesh::reserve(size_t nVerts, size_t nFaces) {
-  verticesData.reserve(nVerts);
-  facesData.reserve(nFaces);
+  vertices.setCapacity(nVerts);
+  faces.setCapacity(nFaces);
 }
 
 SimpleTriangleMeshPickResult SimpleTriangleMesh::interpretPickResult(const PickResult& rawResult) {

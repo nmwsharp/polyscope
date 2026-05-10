@@ -112,6 +112,7 @@ SimpleTriangleMeshFaceColorQuantity::SimpleTriangleMeshFaceColorQuantity(std::st
                                                                          const std::vector<glm::vec3>& colors_,
                                                                          SimpleTriangleMesh& mesh_)
     : SimpleTriangleMeshColorQuantity(name, colors_, "face", mesh_) {
+  colors.setAsType(DeviceBufferType::Texture1d);
   colors.setTextureSize(parent.nFaces());
 }
 

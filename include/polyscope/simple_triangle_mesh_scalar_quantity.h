@@ -30,10 +30,9 @@ public:
   // For same-size updates, prefer ScalarQuantity::updateData() which validates the size.
   template <class V>
   void updateData(const V& newValues) {
-    std::vector<float> newData = standardizeArray<float, V>(newValues);
-    values.resize(newData.size());
-    values.data.assign(newData.begin(), newData.end());
-    values.markHostBufferUpdated();
+    auto newData = standardizeArray<float, V>(newValues);
+    values.resize(newData.size()); // amortized doubling handled by ManagedBuffer
+    values.setDataHost(newData);
   }
 
   const std::string definedOn;
