@@ -118,6 +118,8 @@ public:
   std::tuple<glm::vec3, glm::vec3> boundingBox(); // get axis-aligned bounding box
   float lengthScale();                            // get characteristic length
   virtual bool hasExtents();                      // bounding box and length scale are only meaningful if true
+  virtual void updateObjectSpaceBounds() = 0;     // force an update of bbox and length scale, only rarely needs to be
+                                                  // called if certain kinds of updates are performed
 
   // ====================================================================
   // ==== Enabling, Selection, and Groups ===============================
@@ -281,7 +283,6 @@ protected:
   // The STRUCTURE is responsible for making sure updateObjectSpaceBounds() gets called any time the geometry changes
   std::tuple<glm::vec3, glm::vec3> objectSpaceBoundingBox;
   float objectSpaceLengthScale;
-  virtual void updateObjectSpaceBounds() = 0;
 };
 
 
