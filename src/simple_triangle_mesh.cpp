@@ -306,7 +306,7 @@ void SimpleTriangleMesh::updateObjectSpaceBounds() {
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);
 }
 
-void SimpleTriangleMesh::reserve(size_t nVerts, size_t nFaces) {
+void SimpleTriangleMesh::reserveMeshCapacity(size_t nVerts, size_t nFaces) {
   vertices.setCapacity(nVerts);
   faces.setCapacity(nFaces);
 }

@@ -95,7 +95,7 @@ public:
   void updateMesh(const V& newVertices, const F& newFaces);
   
   // optionally pre-allocates capacity to avoid reallocations on future updateMesh() calls.
-  void reserve(size_t nVerts, size_t nFaces);
+  void reserveMeshCapacity(size_t nVerts, size_t nFaces);
 
   // Misc data
   static const std::string structureTypeName;
