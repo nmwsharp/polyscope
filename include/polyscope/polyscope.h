@@ -209,6 +209,7 @@ void drawStructuresDelayed();
 // need to call this directly.
 void processLazyProperties();
 void processLazyPropertiesOutsideOfImGui();
+void forceRecomputeAllStructureBounds();
 
 
 } // namespace polyscope
