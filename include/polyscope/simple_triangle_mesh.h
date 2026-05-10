@@ -86,14 +86,6 @@ public:
 
   // === Mutate
 
-  template <class V>
-  void updateVertices(const V& newPositions);
-
-  template <class V, class F>
-  void update(const V& newVertices, const F& newFaces);
-
-  // CPU-side update functions.
-
   // update only positions (vertex count must stay the same).
   template <class V>
   void updateVertexPositions(const V& newPositions);

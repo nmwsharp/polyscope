@@ -24,27 +24,9 @@ SimpleTriangleMesh* registerSimpleTriangleMesh(std::string name, const V& vertex
 
 
 template <class V>
-void SimpleTriangleMesh::updateVertices(const V& newPositions) {
-  validateSize(newPositions, vertices.size(), "newPositions");
-  vertices.setDataHost(standardizeVectorArray<glm::vec3, 3>(newPositions));
-}
-
-template <class V, class F>
-void SimpleTriangleMesh::update(const V& newPositions, const F& newFaces) {
-  auto vertsStd = standardizeVectorArray<glm::vec3, 3>(newPositions);
-  vertices.resize(vertsStd.size()); // ManagedBuffer internally does amortized doubling to make this efficient
-  vertices.setDataHost(vertsStd);
-
-  auto facesStd = standardizeVectorArray<glm::uvec3, 3>(newFaces);
-  faces.resize(facesStd.size());
-  faces.setDataHost(facesStd);
-}
-
-template <class V>
 void SimpleTriangleMesh::updateVertexPositions(const V& newPositions) {
   validateSize(newPositions, nVertices(), "newPositions");
   vertices.setDataHost(standardizeVectorArray<glm::vec3, 3>(newPositions));
-  updateObjectSpaceBounds();
 }
 
 template <class V, class F>
@@ -56,8 +38,6 @@ void SimpleTriangleMesh::updateMesh(const V& newVerts, const F& newFaces) {
   auto facesStd = standardizeVectorArray<glm::uvec3, 3>(newFaces);
   faces.resize(facesStd.size());
   faces.setDataHost(facesStd);
-
-  updateObjectSpaceBounds();
 }
 
 // =====================================================
