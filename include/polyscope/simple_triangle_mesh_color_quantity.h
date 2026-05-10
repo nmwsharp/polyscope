@@ -29,10 +29,9 @@ public:
   // For same-size updates, prefer ColorQuantity::updateData() which validates the size.
   template <class V>
   void updateData(const V& newColors) {
-    std::vector<glm::vec3> newData = standardizeVectorArray<glm::vec3, 3>(newColors);
-    colors.resize(newData.size());
-    colors.data.assign(newData.begin(), newData.end());
-    colors.markHostBufferUpdated();
+    auto newData = standardizeVectorArray<glm::vec3, 3>(newColors);
+    colors.resize(newData.size()); // amortized doubling handled by ManagedBuffer
+    colors.setDataHost(newData);
   }
 
   const std::string definedOn;

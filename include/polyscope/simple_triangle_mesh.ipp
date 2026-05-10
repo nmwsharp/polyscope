@@ -26,53 +26,36 @@ SimpleTriangleMesh* registerSimpleTriangleMesh(std::string name, const V& vertex
 template <class V>
 void SimpleTriangleMesh::updateVertices(const V& newPositions) {
   validateSize(newPositions, vertices.size(), "newPositions");
-  auto d = standardizeVectorArray<glm::vec3, 3>(newPositions);
-  vertices.resize(d.size());
-  vertices.setDataHost(d);
-  vertices.markHostBufferUpdated();
+  vertices.setDataHost(standardizeVectorArray<glm::vec3, 3>(newPositions));
 }
 
 template <class V, class F>
 void SimpleTriangleMesh::update(const V& newPositions, const F& newFaces) {
-  {
-    auto d = standardizeVectorArray<glm::vec3, 3>(newPositions);
-    vertices.resize(d.size());
-    vertices.setDataHost(d);
-  }
-  vertices.markHostBufferUpdated();
+  auto vertsStd = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  vertices.resize(vertsStd.size()); // ManagedBuffer internally does amortized doubling to make this efficient
+  vertices.setDataHost(vertsStd);
 
-  {
-    auto d = standardizeVectorArray<glm::uvec3, 3>(newFaces);
-    faces.resize(d.size());
-    faces.setDataHost(d);
-  }
-  faces.markHostBufferUpdated();
+  auto facesStd = standardizeVectorArray<glm::uvec3, 3>(newFaces);
+  faces.resize(facesStd.size());
+  faces.setDataHost(facesStd);
 }
 
 template <class V>
 void SimpleTriangleMesh::updateVertexPositions(const V& newPositions) {
   validateSize(newPositions, nVertices(), "newPositions");
-  verticesData = standardizeVectorArray<glm::vec3, 3>(newPositions);
-  vertices.markHostBufferUpdated();
+  vertices.setDataHost(standardizeVectorArray<glm::vec3, 3>(newPositions));
   updateObjectSpaceBounds();
 }
 
 template <class V, class F>
 void SimpleTriangleMesh::updateMesh(const V& newVerts, const F& newFaces) {
-  std::vector<glm::vec3> vertsStd = standardizeVectorArray<glm::vec3, 3>(newVerts);
-  if (vertsStd.size() > verticesData.capacity()) {
-    // amortized doubling on the CPU-side backing vectors.
-    verticesData.reserve(std::max(vertsStd.size(), 2 * verticesData.capacity()));
-  }
-  verticesData = std::move(vertsStd);
-  vertices.markHostBufferUpdated();
+  auto vertsStd = standardizeVectorArray<glm::vec3, 3>(newVerts);
+  vertices.resize(vertsStd.size()); // amortized doubling handled by ManagedBuffer
+  vertices.setDataHost(vertsStd);
 
-  std::vector<glm::uvec3> facesStd = standardizeVectorArray<glm::uvec3, 3>(newFaces);
-  if (facesStd.size() > facesData.capacity()) {
-    facesData.reserve(std::max(facesStd.size(), 2 * facesData.capacity()));
-  }
-  facesData = std::move(facesStd);
-  faces.markHostBufferUpdated();
+  auto facesStd = standardizeVectorArray<glm::uvec3, 3>(newFaces);
+  faces.resize(facesStd.size());
+  faces.setDataHost(facesStd);
 
   updateObjectSpaceBounds();
 }
