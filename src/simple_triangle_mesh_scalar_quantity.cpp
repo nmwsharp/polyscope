@@ -107,6 +107,7 @@ SimpleTriangleMeshFaceScalarQuantity::SimpleTriangleMeshFaceScalarQuantity(std::
                                                                            SimpleTriangleMesh& mesh_,
                                                                            DataType dataType_)
     : SimpleTriangleMeshScalarQuantity(name, values_, "face", mesh_, dataType_) {
+  values.setAsType(DeviceBufferType::Texture1d);
   values.setTextureSize(parent.nFaces());
 }
 
