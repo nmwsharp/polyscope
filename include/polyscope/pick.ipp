@@ -13,6 +13,8 @@ const uint64_t bitsForPickPacking = 22;
 
 inline glm::vec3 indToVec(size_t globalInd) {
 
+  // NOTE: there is a duplicate version of this logic in a macro below, which must be kept in sync.
+
   // Can comfortably fit a 22 bit integer exactly in a single precision float
   uint64_t factor = 1 << bitsForPickPacking;
   uint64_t mask = factor - 1;
@@ -47,6 +49,54 @@ inline uint64_t vecToInd(glm::vec3 vec) {
   uint64_t ind = (high << (2 * bitsForPickPacking)) + (med << bitsForPickPacking) + low;
   return ind;
 }
+
+
+// == Weird alternate implementation of indToVec()
+// This is here because sometimes we want to evaluate the indToVec() bit-bashing logic in a shader, and get exactly
+// the same result as the C++ version above. A GLSL implementation is not too bad, but it's hard to test to ensure
+// it really matches.
+//
+// The solution here is a funky macro'd implementation, that compiles as C++ or GLSL. We compile it as C++ in the tests
+// and verify it matches the usual indToVec() implementation, then compile it as GLSL in shaders.
+//
+// All of the macro stuff you see below is just boilerplate to make that possible.
+
+#define POLYSCOPE_PICK_STR_H(...) #__VA_ARGS__
+#define POLYSCOPE_PICK_STR(...) POLYSCOPE_PICK_STR_H(__VA_ARGS__)
+
+// See note above. This is logic that is meant to be identical to indToVec().
+// clang-format off
+#define POLYSCOPE_PICK_INDEX_COLOR_BODY                                                    \
+  POLYSCOPE_PICK_UINT idxLow  = pickStartLow + primID;                                     \
+  POLYSCOPE_PICK_UINT carry   = (idxLow < pickStartLow) ? 1u : 0u;                         \
+  POLYSCOPE_PICK_UINT idxHigh = pickStartHigh + carry;                                     \
+  POLYSCOPE_PICK_UINT low22  = idxLow & 0x3FFFFFu;                                         \
+  POLYSCOPE_PICK_UINT med22  = ((idxLow >> 22u) | (idxHigh << 10u)) & 0x3FFFFFu;           \
+  POLYSCOPE_PICK_UINT high22 = (idxHigh >> 12u) & 0x3FFFFFu;                               \
+  return POLYSCOPE_PICK_VEC3(float(low22), float(med22), float(high22)) / 4194304.0f;
+// clang-format on
+
+// C++ version: compile the body with C++ types.
+#define POLYSCOPE_PICK_UINT uint32_t
+#define POLYSCOPE_PICK_VEC3 glm::vec3
+inline glm::vec3 pickIndexToColorImpl(uint32_t pickStartLow, uint32_t pickStartHigh, uint32_t primID) {
+  POLYSCOPE_PICK_INDEX_COLOR_BODY
+}
+#undef POLYSCOPE_PICK_UINT
+#undef POLYSCOPE_PICK_VEC3
+
+// Convenience wrapper for C++ callers that have a combined uint64_t pickStart.
+inline glm::vec3 pickIndexToColor(uint64_t pickStart, uint32_t primID) {
+  return pickIndexToColorImpl(static_cast<uint32_t>(pickStart & 0xFFFFFFFFull), static_cast<uint32_t>(pickStart >> 32),
+                              primID);
+}
+
+// GLSL string macro.  Stringifies POLYSCOPE_PICK_INDEX_COLOR_BODY using GLSL type names.
+// REQUIRES: POLYSCOPE_PICK_UINT must equal "uint" and POLYSCOPE_PICK_VEC3 must equal "vec3"
+// at the point of expansion (see common.cpp for the usage pattern).
+#define POLYSCOPE_PICK_INDEX_TO_COLOR_GLSL                                                                             \
+  "vec3 pickIndexToColor(uint pickStartLow, uint pickStartHigh, uint primID) { " POLYSCOPE_PICK_STR(                   \
+      POLYSCOPE_PICK_INDEX_COLOR_BODY) " }"
 
 } // namespace pick
 } // namespace polyscope

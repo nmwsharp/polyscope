@@ -12,13 +12,16 @@ namespace polyscope {
 RenderImageQuantityBase::RenderImageQuantityBase(Structure& parent_, std::string name, size_t dimX_, size_t dimY_,
                                                  const std::vector<float>& depthData_,
                                                  const std::vector<glm::vec3>& normalData_, ImageOrigin imageOrigin_)
-    : FloatingQuantity(name, parent_), depths(this, uniquePrefix() + "depths", depthsData),
-      normals(this, uniquePrefix() + "normals", normalsData), dimX(dimX_), dimY(dimY_),
-      hasNormals(normalData_.size() > 0), imageOrigin(imageOrigin_), depthsData(depthData_), normalsData(normalData_),
+    : FloatingQuantity(name, parent_),
+      depths(this, uniquePrefix() + "depths", std::vector<float>(depthData_)),
+      normals(this, uniquePrefix() + "normals", std::vector<glm::vec3>(normalData_)), dimX(dimX_), dimY(dimY_),
+      hasNormals(normalData_.size() > 0), imageOrigin(imageOrigin_),
       material(uniquePrefix() + "material", "clay"), transparency(uniquePrefix() + "transparency", 1.0),
       allowFullscreenCompositing(uniquePrefix() + "allowFullscreenCompositing", false) {
+  depths.setAsType(DeviceBufferType::Texture2d);
   depths.setTextureSize(dimX, dimY);
   if (hasNormals) {
+    normals.setAsType(DeviceBufferType::Texture2d);
     normals.setTextureSize(dimX, dimY);
   }
 
@@ -52,14 +55,12 @@ void RenderImageQuantityBase::addOptionsPopupEntries() {
 void RenderImageQuantityBase::updateBaseBuffers(const std::vector<float>& newDepthData,
                                                 const std::vector<glm::vec3>& newNormalData) {
   if (!newDepthData.empty()) {
-    depths.ensureHostBufferAllocated();
-    depths.data = newDepthData;
+    depths.setDataHost(newDepthData);
     depths.markHostBufferUpdated();
   }
 
   if (!newNormalData.empty()) {
-    normals.ensureHostBufferAllocated();
-    normals.data = newNormalData;
+    normals.setDataHost(newNormalData);
     normals.markHostBufferUpdated();
   }
 
@@ -127,7 +128,7 @@ void RenderImageQuantityBase::preparePick() {
   // clang-format on
 
   pickProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  pickProgram->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
+  pickProgram->setTextureFromBuffer("t_depth", depths);
 }
 
 void RenderImageQuantityBase::refresh() {

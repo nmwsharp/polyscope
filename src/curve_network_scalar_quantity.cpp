@@ -100,12 +100,12 @@ void CurveNetworkNodeScalarQuantity::createProgram() {
   parent.fillEdgeGeometryBuffers(*edgeProgram);
 
   { // Fill node color buffers
-    nodeProgram->setAttribute("a_value", values.getRenderAttributeBuffer());
+    nodeProgram->setAttribute("a_value", values);
   }
 
   { // Fill edge color buffers
-    edgeProgram->setAttribute("a_value_tail", values.getIndexedRenderAttributeBuffer(parent.edgeTailInds));
-    edgeProgram->setAttribute("a_value_tip", values.getIndexedRenderAttributeBuffer(parent.edgeTipInds));
+    edgeProgram->setAttribute("a_value_tail", values.getIndexedRenderAttributeBuffer(parent.edgeTailInds), &values);
+    edgeProgram->setAttribute("a_value_tip", values.getIndexedRenderAttributeBuffer(parent.edgeTipInds), &values);
   }
 
   edgeProgram->setTextureFromColormap("t_colormap", cMap.get());
@@ -130,7 +130,7 @@ void CurveNetworkNodeScalarQuantity::buildNodeInfoGUI(size_t nInd) {
 CurveNetworkEdgeScalarQuantity::CurveNetworkEdgeScalarQuantity(std::string name, const std::vector<float>& values_,
                                                                CurveNetwork& network_, DataType dataType_)
     : CurveNetworkScalarQuantity(name, network_, "edge", values_, dataType_),
-      nodeAverageValues(this, uniquePrefix() + "#nodeAverageValues", nodeAverageValuesData) {}
+      nodeAverageValues(this, uniquePrefix() + "#nodeAverageValues") {}
 
 void CurveNetworkEdgeScalarQuantity::createProgram() {
   // Create the program to draw this quantity
@@ -162,11 +162,11 @@ void CurveNetworkEdgeScalarQuantity::createProgram() {
 
   { // Fill node color buffers
     updateNodeAverageValues();
-    nodeProgram->setAttribute("a_value", nodeAverageValues.getRenderAttributeBuffer());
+    nodeProgram->setAttribute("a_value", nodeAverageValues);
   }
 
   { // Fill edge color buffers
-    edgeProgram->setAttribute("a_value", values.getRenderAttributeBuffer());
+    edgeProgram->setAttribute("a_value", values);
   }
 
   edgeProgram->setTextureFromColormap("t_colormap", cMap.get());
@@ -182,7 +182,8 @@ void CurveNetworkEdgeScalarQuantity::updateNodeAverageValues() {
   parent.edgeTailInds.ensureHostBufferPopulated();
   parent.edgeTipInds.ensureHostBufferPopulated();
   values.ensureHostBufferPopulated();
-  nodeAverageValues.data.resize(parent.nNodes());
+  nodeAverageValues.resize(parent.nNodes());
+  nodeAverageValues.ensureHostBufferPopulated();
 
   if (dataType == DataType::CATEGORICAL) {
     // uncommon case: take the mode of adjacent values
@@ -199,11 +200,11 @@ void CurveNetworkEdgeScalarQuantity::updateNodeAverageValues() {
     };
 
     for (size_t iE = 0; iE < parent.nEdges(); iE++) {
-      size_t eTail = parent.edgeTailInds.data[iE];
-      size_t eTip = parent.edgeTipInds.data[iE];
+      size_t eTail = parent.edgeTailInds.getHostValue(iE);
+      size_t eTip = parent.edgeTipInds.getHostValue(iE);
 
-      incrementValueCount(eTail, values.data[iE]);
-      incrementValueCount(eTip, values.data[iE]);
+      incrementValueCount(eTail, values.getHostValue(iE));
+      incrementValueCount(eTip, values.getHostValue(iE));
     }
 
     for (size_t iN = 0; iN < parent.nNodes(); iN++) {
@@ -216,24 +217,27 @@ void CurveNetworkEdgeScalarQuantity::updateNodeAverageValues() {
           maxVal = entry.first;
         }
       }
-      nodeAverageValues.data[iN] = maxVal;
+      nodeAverageValues.setHostValue(iN, maxVal);
     }
   } else {
     // common case: take the mean of adjacent values
 
+    // initialize to zero before accumulation
+    for (size_t iN = 0; iN < parent.nNodes(); iN++) nodeAverageValues.setHostValue(iN, 0.f);
+
     // mean reduction
     for (size_t iE = 0; iE < parent.nEdges(); iE++) {
-      size_t eTail = parent.edgeTailInds.data[iE];
-      size_t eTip = parent.edgeTipInds.data[iE];
+      size_t eTail = parent.edgeTailInds.getHostValue(iE);
+      size_t eTip = parent.edgeTipInds.getHostValue(iE);
 
-      nodeAverageValues.data[eTail] += values.data[iE];
-      nodeAverageValues.data[eTip] += values.data[iE];
+      nodeAverageValues.setHostValue(eTail, nodeAverageValues.getHostValue(eTail) + values.getHostValue(iE));
+      nodeAverageValues.setHostValue(eTip, nodeAverageValues.getHostValue(eTip) + values.getHostValue(iE));
     }
 
     for (size_t iN = 0; iN < parent.nNodes(); iN++) {
-      nodeAverageValues.data[iN] /= parent.nodeDegrees[iN];
+      nodeAverageValues.setHostValue(iN, nodeAverageValues.getHostValue(iN) / parent.nodeDegrees[iN]);
       if (parent.nodeDegrees[iN] == 0) {
-        nodeAverageValues.data[iN] = 0.;
+        nodeAverageValues.setHostValue(iN, 0.f);
       }
     }
   }

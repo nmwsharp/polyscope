@@ -33,17 +33,17 @@ SparseVolumeGrid::SparseVolumeGrid(std::string name, glm::vec3 origin_, glm::vec
     : Structure(name, typeName()),
       // clang-format off
       // == managed quantities
-      cellPositions(this, uniquePrefix() + "#cellPositions", cellPositionsData, std::bind(&SparseVolumeGrid::computeCellPositions, this)),
-      cellIndices(this, uniquePrefix() + "#cellIndices", cellIndicesData, [](){/* do nothing, gets handled by computeCellPositions */}),
+      cellPositions(this, uniquePrefix() + "#cellPositions", std::bind(&SparseVolumeGrid::computeCellPositions, this)),
+      cellIndices(this, uniquePrefix() + "#cellIndices", [](){/* do nothing, gets handled by computeCellPositions */}),
       cornerNodeInds{
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds0", cornerNodeIndsData[0]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds1", cornerNodeIndsData[1]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds2", cornerNodeIndsData[2]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds3", cornerNodeIndsData[3]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds4", cornerNodeIndsData[4]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds5", cornerNodeIndsData[5]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds6", cornerNodeIndsData[6]),
-        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds7", cornerNodeIndsData[7]),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds0"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds1"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds2"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds3"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds4"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds5"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds6"),
+        render::ManagedBuffer<uint32_t>(this, uniquePrefix() + "#cornerNodeInds7"),
       },
 
       origin(origin_), gridCellWidth(gridCellWidth_),
@@ -88,13 +88,13 @@ void SparseVolumeGrid::checkForDuplicateCells() {
 void SparseVolumeGrid::computeCellPositions() {
   size_t n = occupiedCellsData.size();
 
-  cellPositionsData.resize(n);
-  cellIndicesData.resize(n);
+  cellPositions.resize(n);
+  cellIndices.resize(n);
 
   for (size_t i = 0; i < n; i++) {
     glm::ivec3 ijk = occupiedCellsData[i];
-    cellPositionsData[i] = origin + (glm::vec3(ijk) + 0.5f) * gridCellWidth;
-    cellIndicesData[i] = ijk;
+    cellPositions.setHostValue(i, origin + (glm::vec3(ijk) + 0.5f) * gridCellWidth);
+    cellIndices.setHostValue(i, ijk);
   }
 
   cellPositions.markHostBufferUpdated();
@@ -142,7 +142,7 @@ void SparseVolumeGrid::computeCornerNodeIndices() {
 
   // Build corner index buffers using hashmap lookup
   for (int c = 0; c < 8; c++) {
-    cornerNodeIndsData[c].resize(n);
+    cornerNodeInds[c].resize(n);
   }
 
   for (size_t i = 0; i < n; i++) {
@@ -152,7 +152,7 @@ void SparseVolumeGrid::computeCornerNodeIndices() {
         for (int dz = 0; dz < 2; dz++) {
           int c = dx * 4 + dy * 2 + dz;
           glm::ivec3 nodeIjk(ci.x + dx, ci.y + dy, ci.z + dz);
-          cornerNodeIndsData[c][i] = nodeToIndex[nodeIjk];
+          cornerNodeInds[c].setHostValue(i, nodeToIndex[nodeIjk]);
         }
       }
     }
@@ -366,8 +366,8 @@ void SparseVolumeGrid::ensureRenderProgramPrepared() {
   );
   // clang-format on
 
-  program->setAttribute("a_cellPosition", cellPositions.getRenderAttributeBuffer());
-  program->setAttribute("a_cellInd", cellIndices.getRenderAttributeBuffer());
+  program->setAttribute("a_cellPosition", cellPositions);
+  program->setAttribute("a_cellInd", cellIndices);
 
   render::engine->setMaterial(*program, material.get());
 }
@@ -498,23 +498,24 @@ void SparseVolumeGrid::ensurePickProgramPrepared() {
   pickProgram->setAttribute("a_color", pickColors);
 
 
-  pickProgram->setAttribute("a_cellPosition", cellPositions.getRenderAttributeBuffer());
-  pickProgram->setAttribute("a_cellInd", cellIndices.getRenderAttributeBuffer());
+  pickProgram->setAttribute("a_cellPosition", cellPositions);
+  pickProgram->setAttribute("a_cellInd", cellIndices);
 }
 
 
 void SparseVolumeGrid::updateObjectSpaceBounds() {
 
-  if (cellPositionsData.empty()) {
+  if (cellPositions.size() == 0) {
     // no cells, degenerate bounds at origin
     objectSpaceBoundingBox = std::make_tuple(origin, origin);
     objectSpaceLengthScale = glm::length(gridCellWidth);
     return;
   }
 
-  glm::vec3 bboxMin = cellPositionsData[0];
-  glm::vec3 bboxMax = cellPositionsData[0];
-  for (const glm::vec3& p : cellPositionsData) {
+  cellPositions.ensureHostBufferPopulated();
+  glm::vec3 bboxMin = cellPositions.getHostValue(0);
+  glm::vec3 bboxMax = cellPositions.getHostValue(0);
+  for (const glm::vec3& p : cellPositions) {
     bboxMin = glm::min(bboxMin, p);
     bboxMax = glm::max(bboxMax, p);
   }
@@ -557,7 +558,8 @@ SparseVolumeGridPickResult SparseVolumeGrid::interpretPickResult(const PickResul
   glm::vec3 localPos = (rawResult.position - origin) / gridCellWidth;
 
   // Find the cell index
-  glm::ivec3 cellInd3 = cellIndicesData[rawResult.localIndex];
+  cellIndices.ensureHostBufferPopulated();
+  glm::ivec3 cellInd3 = cellIndices.getHostValue(rawResult.localIndex);
 
   // Fractional position within cell [0,1]
   glm::vec3 fractional = localPos - glm::vec3(cellInd3);
@@ -789,8 +791,8 @@ glm::vec3 SparseVolumeGrid::getWireframeColor() { return wireframeColor.get(); }
 
 
 void SparseVolumeGrid::setCellGeometryAttributes(render::ShaderProgram& p) {
-  p.setAttribute("a_cellPosition", cellPositions.getRenderAttributeBuffer());
-  p.setAttribute("a_cellInd", cellIndices.getRenderAttributeBuffer());
+  p.setAttribute("a_cellPosition", cellPositions);
+  p.setAttribute("a_cellInd", cellIndices);
 }
 
 std::vector<std::string> SparseVolumeGrid::addSparseGridShaderRules(std::vector<std::string> initRules, bool pickOnly) {

@@ -17,6 +17,7 @@ ScalarRenderImageQuantity::ScalarRenderImageQuantity(Structure& parent_, std::st
                                                      DataType dataType_)
     : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData, imageOrigin),
       ScalarQuantity(*this, scalarData_, dataType_) {
+  values.setAsType(DeviceBufferType::Texture2d);
   values.setTextureSize(dimX, dimY);
 }
 
@@ -65,9 +66,9 @@ void ScalarRenderImageQuantity::prepare() {
 
   // push the color data to the buffer
   values.ensureHostBufferPopulated();
-  std::vector<float> floatData(values.data.size());
-  for (size_t i = 0; i < values.data.size(); i++) {
-    floatData[i] = static_cast<float>(values.data[i]);
+  std::vector<float> floatData(values.size());
+  for (size_t i = 0; i < values.size(); i++) {
+    floatData[i] = static_cast<float>(values.getHostValue(i));
   }
 
   // Create the sourceProgram
@@ -87,11 +88,11 @@ void ScalarRenderImageQuantity::prepare() {
   // clang-format on
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_depth", depths);
   if (hasNormals) {
-    program->setTextureFromBuffer("t_normal", normals.getRenderTextureBuffer().get());
+    program->setTextureFromBuffer("t_normal", normals);
   }
-  program->setTextureFromBuffer("t_scalar", values.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_scalar", values);
   render::engine->setMaterial(*program, material.get());
   program->setTextureFromColormap("t_colormap", cMap.get());
 }

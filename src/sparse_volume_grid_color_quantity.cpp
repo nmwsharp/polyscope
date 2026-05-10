@@ -61,7 +61,7 @@ void SparseVolumeGridCellColorQuantity::createProgram() {
   // clang-format on
 
   parent.setCellGeometryAttributes(*program);
-  program->setAttribute("a_color", colors.getRenderAttributeBuffer());
+  program->setAttribute("a_color", colors);
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
@@ -108,7 +108,7 @@ void SparseVolumeGridNodeColorQuantity::createProgram() {
   parent.setCellGeometryAttributes(*program);
   for (int c = 0; c < 8; c++) {
     program->setAttribute("a_nodeColor" + std::to_string(c),
-                          colors.getIndexedRenderAttributeBuffer(parent.cornerNodeInds[c]));
+                          colors.getIndexedRenderAttributeBuffer(parent.cornerNodeInds[c]), &colors);
   }
   render::engine->setMaterial(*program, parent.getMaterial());
 }

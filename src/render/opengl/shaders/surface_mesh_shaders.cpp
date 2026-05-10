@@ -731,6 +731,62 @@ const ShaderReplacementRule MESH_PROPAGATE_PICK_SIMPLE ( // this one does faces 
 );
 
 
+// Uses gl_PrimitiveID to look up per-face scalar data from a 1D texture.
+// Requires indexed triangle drawing (DrawMode::IndexedTriangles) where primitive index == face index.
+const ShaderReplacementRule SIMPLE_MESH_PROPAGATE_FACE_VALUE(
+    /* rule name */ "SIMPLE_MESH_PROPAGATE_FACE_VALUE",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform sampler1D t_faceValues;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          float shadeValue = texelFetch(t_faceValues, gl_PrimitiveID, 0).r;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {{"t_faceValues", 1}}
+);
+
+// Uses gl_PrimitiveID to look up per-face color data from a 1D texture.
+// Requires indexed triangle drawing (DrawMode::IndexedTriangles) where primitive index == face index.
+const ShaderReplacementRule SIMPLE_MESH_PROPAGATE_FACE_COLOR(
+    /* rule name */ "SIMPLE_MESH_PROPAGATE_FACE_COLOR",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform sampler1D t_faceColors;
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          vec3 shadeColor = texelFetch(t_faceColors, gl_PrimitiveID, 0).rgb;
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {{"t_faceColors", 1}}
+);
+
+// Encodes the pick color for each face directly from gl_PrimitiveID + pickStart, with no texture lookup.
+// Delegates encoding to pickIndexToColor() in common.cpp (see there for the bit layout).
+const ShaderReplacementRule SIMPLE_MESH_PROPAGATE_FACE_PICK(
+    /* rule name */ "SIMPLE_MESH_PROPAGATE_FACE_PICK",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+          uniform uint u_pickStartLow;   // lower 32 bits of the global pick index for face 0
+          uniform uint u_pickStartHigh;  // upper 32 bits of the global pick index for face 0
+          vec3 pickIndexToColor(uint pickStartLow, uint pickStartHigh, uint primID); // defined in common.cpp
+        )"},
+      {"GENERATE_SHADE_VALUE", R"(
+          vec3 shadeColor = pickIndexToColor(u_pickStartLow, u_pickStartHigh, uint(gl_PrimitiveID));
+        )"},
+    },
+    /* uniforms */ {
+      {"u_pickStartLow",  RenderDataType::UInt},
+      {"u_pickStartHigh", RenderDataType::UInt},
+    },
+    /* attributes */ {},
+    /* textures */ {}
+);
+
 // clang-format on
 
 } // namespace backend_openGL3
