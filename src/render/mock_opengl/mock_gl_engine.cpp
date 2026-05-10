@@ -1669,6 +1669,7 @@ void GLShaderProgram::syncBuffersToDeviceIfNeeded() {
   for (auto& tex : textures) {
     if (tex.sourceManagedBuffer) tex.sourceManagedBuffer->syncToDeviceIfNeeded();
   }
+  if (indexSourceManagedBuffer) indexSourceManagedBuffer->syncToDeviceIfNeeded();
 }
 
 void GLShaderProgram::draw() {
