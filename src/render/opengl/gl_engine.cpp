@@ -267,8 +267,7 @@ void GLAttributeBuffer::setData_helper(const std::vector<T>& data) {
     bufferSize = newSize;
   }
 
-  dataSize = data.size();
-  glBufferSubData(getTarget(), 0, dataSize * sizeof(T), data.data());
+  glBufferSubData(getTarget(), 0, data.size() * sizeof(T), data.data());
 
   checkGLError();
 }
@@ -361,7 +360,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data) {
 
 template <typename T>
 T GLAttributeBuffer::getData_helper(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
+  if (!isSet() || ind >= bufferSize * static_cast<uint64_t>(getArrayCount())) exception("bad getData");
   bind();
   T readValue;
   glGetBufferSubData(getTarget(), ind * sizeof(T), sizeof(T), &readValue);
@@ -424,7 +423,7 @@ glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
 
 template <typename T>
 std::vector<T> GLAttributeBuffer::getDataRange_helper(size_t start, size_t count) {
-  if (!isSet() || start + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
+  if (!isSet() || start + count > bufferSize * static_cast<uint64_t>(getArrayCount())) exception("bad getData");
   bind();
   std::vector<T> readValues(count);
   glGetBufferSubData(getTarget(), start * sizeof(T), count * sizeof(T), &readValues.front());
@@ -2143,26 +2142,13 @@ void GLShaderProgram::validateData() {
   }
 
   // Check attributes
-  int64_t attributeSize = -1;
   for (GLShaderAttribute a : attributes) {
     if (a.location == -1) continue;
     if (!a.buff) {
       throw std::invalid_argument("Attribute " + a.name + " has no buffer attached");
     }
-    if (a.buff->getDataSize() < 0) {
+    if (!a.buff->isSet()) {
       throw std::invalid_argument("Attribute " + a.name + " has not been set");
-    }
-
-    int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
-
-    if (attributeSize == -1) { // first one we've seen
-      attributeSize = a.buff->getDataSize() / (compatCount);
-    } else { // not the first one we've seen
-      if (a.buff->getDataSize() / (compatCount) != attributeSize) {
-        throw std::invalid_argument("Attributes have inconsistent size. One attribute has size " +
-                                    std::to_string(attributeSize) + " and " + a.name + " has size " +
-                                    std::to_string(a.buff->getDataSize()));
-      }
     }
   }
 
@@ -2179,13 +2165,24 @@ void GLShaderProgram::validateData() {
     throw std::invalid_argument("Index buffer has not been filled");
   }
 
-  // Set the size
-  if (useIndex) {
-    drawDataLength = static_cast<unsigned int>(indexSizeMult * indexBuffer->getDataSize());
-  } else {
-    drawDataLength = static_cast<unsigned int>(attributeSize);
+  // Validate drawCount.
+  if (drawCount == INVALID_IND_32) {
+    throw std::invalid_argument( "drawCount has not been set; call setDrawCount() before drawing");
   }
-
+  if (useIndex) {
+    if (indexBuffer->getBufferSize() < static_cast<uint64_t>(drawCount))
+      throw std::invalid_argument("Index buffer has fewer entries (" + std::to_string(indexBuffer->getBufferSize()) +
+                                  ") than drawCount (" + std::to_string(drawCount) + ")");
+  } else {
+    for (GLShaderAttribute a : attributes) {
+      if (a.location == -1) continue;
+      int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
+      if (a.buff->getBufferSize() / static_cast<uint64_t>(compatCount) < static_cast<uint64_t>(drawCount))
+        throw std::invalid_argument("Attribute " + a.name + " buffer has fewer entries (" + std::to_string(a.buff->getBufferSize()) +
+                                    ") than drawCount (" + std::to_string(drawCount) + ") [size ratio is " + std::to_string(compatCount) + "]");
+    }
+  }
+  
   // Check instanced (if applicable)
   if (drawMode == DrawMode::TrianglesInstanced || drawMode == DrawMode::TriangleStripInstanced) {
     if (instanceCount == INVALID_IND_32) {
@@ -2225,8 +2222,8 @@ void GLShaderProgram::syncBuffersToDeviceIfNeeded() {
 }
 
 void GLShaderProgram::draw() {
-  validateData();
   syncBuffersToDeviceIfNeeded();
+  validateData();
 
   glUseProgram(compiledProgram->getHandle());
   glBindVertexArray(vaoHandle);
@@ -2240,45 +2237,40 @@ void GLShaderProgram::draw() {
 
   switch (drawMode) {
   case DrawMode::Points:
-    glDrawArrays(GL_POINTS, 0, drawDataLength);
+    glDrawArrays(GL_POINTS, 0, drawCount);
     break;
   case DrawMode::Triangles:
-    glDrawArrays(GL_TRIANGLES, 0, drawDataLength);
+    glDrawArrays(GL_TRIANGLES, 0, drawCount);
     break;
   case DrawMode::Lines:
-    glDrawArrays(GL_LINES, 0, drawDataLength);
+    glDrawArrays(GL_LINES, 0, drawCount);
     break;
   case DrawMode::TrianglesAdjacency:
-    glDrawArrays(GL_TRIANGLES_ADJACENCY, 0, drawDataLength);
+    glDrawArrays(GL_TRIANGLES_ADJACENCY, 0, drawCount);
     break;
   case DrawMode::LinesAdjacency:
-    glDrawArrays(GL_LINES_ADJACENCY, 0, drawDataLength);
+    glDrawArrays(GL_LINES_ADJACENCY, 0, drawCount);
     break;
   case DrawMode::IndexedLines:
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO); // TODO delete these
-    glDrawElements(GL_LINES, drawDataLength, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_LINES, indexSizeMult * drawCount, GL_UNSIGNED_INT, 0);
     break;
   case DrawMode::IndexedLineStrip:
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-    glDrawElements(GL_LINE_STRIP, drawDataLength, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_LINE_STRIP, indexSizeMult * drawCount, GL_UNSIGNED_INT, 0);
     break;
   case DrawMode::IndexedLinesAdjacency:
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-    glDrawElements(GL_LINES_ADJACENCY, drawDataLength, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_LINES_ADJACENCY, indexSizeMult * drawCount, GL_UNSIGNED_INT, 0);
     break;
   case DrawMode::IndexedLineStripAdjacency:
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-    glDrawElements(GL_LINE_STRIP_ADJACENCY, drawDataLength, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_LINE_STRIP_ADJACENCY, indexSizeMult * drawCount, GL_UNSIGNED_INT, 0);
     break;
   case DrawMode::IndexedTriangles:
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-    glDrawElements(GL_TRIANGLES, drawDataLength, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, indexSizeMult * drawCount, GL_UNSIGNED_INT, 0);
     break;
   case DrawMode::TrianglesInstanced:
-    glDrawArraysInstanced(GL_TRIANGLES, 0, drawDataLength, instanceCount);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, drawCount, instanceCount);
     break;
   case DrawMode::TriangleStripInstanced:
-    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, drawDataLength, instanceCount);
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, drawCount, instanceCount);
     break;
   }
 

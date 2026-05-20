@@ -548,6 +548,7 @@ void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
 
     mapLight = render::engine->requestShader("MAP_LIGHT", resolveRules, render::ShaderReplacementDefaults::Process);
     mapLight->setAttribute("a_position", screenTrianglesCoords());
+    mapLight->setDrawCount(screenTrianglesCoords().size());
     currLightingSampleLevel = sampleLevel;
     currLightingTransparencyMode = transparencyMode;
   }
@@ -742,22 +743,27 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     // clang-format off
     renderTexturePlain = render::engine->requestShader("TEXTURE_DRAW_PLAIN", {}, render::ShaderReplacementDefaults::Process);
     renderTexturePlain->setAttribute("a_position", screenTrianglesCoords());
+    renderTexturePlain->setDrawCount(screenTrianglesCoords().size());
 
     renderTextureDot3 = render::engine->requestShader("TEXTURE_DRAW_DOT3", {}, render::ShaderReplacementDefaults::Process);
     renderTextureDot3->setAttribute("a_position", screenTrianglesCoords());
+    renderTextureDot3->setDrawCount(screenTrianglesCoords().size());
 
     renderTextureMap3 = render::engine->requestShader("TEXTURE_DRAW_MAP3", {}, render::ShaderReplacementDefaults::Process);
     renderTextureMap3->setAttribute("a_position", screenTrianglesCoords());
+    renderTextureMap3->setDrawCount(screenTrianglesCoords().size());
 
     renderTextureSphereBG = render::engine->requestShader("TEXTURE_DRAW_SPHEREBG", {}, render::ShaderReplacementDefaults::Process);
     renderTextureSphereBG->setAttribute("a_position", distantCubeCoords());
 
     compositePeel = render::engine->requestShader("COMPOSITE_PEEL", {}, render::ShaderReplacementDefaults::Process);
     compositePeel->setAttribute("a_position", screenTrianglesCoords());
+    compositePeel->setDrawCount(screenTrianglesCoords().size());
     compositePeel->setTextureFromBuffer("t_image", sceneColor.get());
 
     copyDepth = render::engine->requestShader("DEPTH_COPY", {}, render::ShaderReplacementDefaults::Process);
     copyDepth->setAttribute("a_position", screenTrianglesCoords());
+    copyDepth->setDrawCount(screenTrianglesCoords().size());
     copyDepth->setTextureFromBuffer("t_depth", sceneDepth.get());
     // clang-format on
   }

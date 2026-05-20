@@ -549,6 +549,8 @@ void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
   program.setAttribute("a_slice_2", point2);
   program.setAttribute("a_slice_3", point3);
   program.setAttribute("a_slice_4", point4);
+
+  program.setDrawCount(tetCount);
 }
 
 
@@ -808,6 +810,8 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   if (wantsFaceType) {
     p.setAttribute("a_faceColorType", faceType.getIndexedRenderAttributeBuffer(triangleFaceInds), &faceType);
   }
+
+  p.setDrawCount(3 * nFacesTriangulation());
 }
 
 void VolumeMesh::computeConnectivityData() {

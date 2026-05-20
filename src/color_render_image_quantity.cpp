@@ -73,6 +73,7 @@ void ColorRenderImageQuantity::prepare() {
   program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN", rules);
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
+  program->setDrawCount(render::engine->screenTrianglesCoords().size());
   program->setTextureFromBuffer("t_depth", depths);
   if (hasNormals) {
     program->setTextureFromBuffer("t_normal", normals);

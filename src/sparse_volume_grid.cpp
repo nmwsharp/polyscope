@@ -451,6 +451,7 @@ void SparseVolumeGrid::ensureWireframeProgramsPrepared() {
       );
     // clang-format on
     wireframeNodeProgram->setAttribute("a_position", nodePositionsVec);
+    wireframeNodeProgram->setDrawCount(nodePositionsVec.size());
     render::engine->setMaterial(*wireframeNodeProgram, material.get());
   }
 
@@ -471,6 +472,7 @@ void SparseVolumeGrid::ensureWireframeProgramsPrepared() {
 
     wireframeEdgeProgram->setAttribute("a_position_tail", edgeTailPositions);
     wireframeEdgeProgram->setAttribute("a_position_tip", edgeTipPositions);
+    wireframeEdgeProgram->setDrawCount(edgeTailPositions.size());
     render::engine->setMaterial(*wireframeEdgeProgram, material.get());
   }
 }
@@ -500,6 +502,8 @@ void SparseVolumeGrid::ensurePickProgramPrepared() {
 
   pickProgram->setAttribute("a_cellPosition", cellPositions);
   pickProgram->setAttribute("a_cellInd", cellIndices);
+
+  pickProgram->setDrawCount(nCells());
 }
 
 
@@ -823,6 +827,8 @@ void SparseVolumeGrid::setSparseVolumeGridUniforms(render::ShaderProgram& p, boo
 
     render::engine->setMaterialUniforms(p, material.get());
   }
+
+  p.setDrawCount(nCells());
 }
 
 // === Register functions (non-template overload)

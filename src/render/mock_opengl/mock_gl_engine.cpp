@@ -90,8 +90,6 @@ void GLAttributeBuffer::setData_helper(const std::vector<T>& data) {
     bufferSize = newSize;
   }
 
-  dataSize = data.size();
-
   checkGLError();
 }
 
@@ -183,7 +181,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data) {
 
 template <typename T>
 T GLAttributeBuffer::getData_helper(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
+  if (!isSet() || ind >= bufferSize * static_cast<uint64_t>(getArrayCount())) exception("bad getData");
   bind();
   T readValue{};
   return readValue;
@@ -245,7 +243,7 @@ glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
 
 template <typename T>
 std::vector<T> GLAttributeBuffer::getDataRange_helper(size_t start, size_t count) {
-  if (!isSet() || start + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
+  if (!isSet() || start + count > bufferSize * static_cast<uint64_t>(getArrayCount())) exception("bad getData");
   bind();
   std::vector<T> readValues(count);
   return readValues;
@@ -1586,28 +1584,14 @@ void GLShaderProgram::validateData() {
   }
 
   // Check attributes
-  int64_t attributeSize = -1;
   for (GLShaderAttribute a : attributes) {
     if (!a.buff) {
       throw std::invalid_argument("Attribute " + a.name + " has no buffer attached");
     }
-    if (a.buff->getDataSize() < 0) {
+    if (!a.buff->isSet()) {
       throw std::invalid_argument("Attribute " + a.name + " has not been set");
     }
-
-    int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
-
-    if (attributeSize == -1) { // first one we've seen
-      attributeSize = a.buff->getDataSize() / (compatCount);
-    } else { // not the first one we've seen
-      if (a.buff->getDataSize() / (compatCount) != attributeSize) {
-        throw std::invalid_argument("Attributes have inconsistent size. One attribute has size " +
-                                    std::to_string(attributeSize) + " and " + a.name + " has size " +
-                                    std::to_string(a.buff->getDataSize()));
-      }
-    }
   }
-  drawDataLength = static_cast<unsigned int>(attributeSize);
 
   // Check textures
   for (GLShaderTexture& t : textures) {
@@ -1621,11 +1605,21 @@ void GLShaderProgram::validateData() {
     throw std::invalid_argument("Index buffer has not been filled");
   }
 
-  // Set the size
+  // Validate drawCount.
+  if (drawCount == INVALID_IND_32) {
+    throw std::invalid_argument("drawCount has not been set; call setDrawCount() before drawing");
+  }
   if (useIndex) {
-    drawDataLength = static_cast<unsigned int>(indexSizeMult * indexBuffer->getDataSize());
+    if (indexBuffer->getBufferSize() < static_cast<uint64_t>(drawCount))
+      throw std::invalid_argument("Index buffer has fewer entries (" + std::to_string(indexBuffer->getBufferSize()) +
+                                  ") than drawCount (" + std::to_string(drawCount) + ")");
   } else {
-    drawDataLength = static_cast<unsigned int>(attributeSize);
+    for (GLShaderAttribute a : attributes) {
+      int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
+      if (a.buff->getBufferSize() / static_cast<uint64_t>(compatCount) < static_cast<uint64_t>(drawCount))
+        throw std::invalid_argument("Attribute " + a.name + " buffer has fewer entries (" + std::to_string(a.buff->getBufferSize()) +
+                                    ") than drawCount (" + std::to_string(drawCount) + ") [size ratio is " + std::to_string(compatCount) + "]");
+    }
   }
 
   // Check instanced (if applicable)

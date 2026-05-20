@@ -117,6 +117,7 @@ void CurveNetwork::setCurveNetworkNodeUniforms(render::ShaderProgram& p) {
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
   p.setUniform("u_pointRadius", computeNodeRadiusMultiplierUniform());
+  p.setDrawCount(nNodes());
 }
 
 void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) {
@@ -125,6 +126,7 @@ void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) {
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
   p.setUniform("u_radius", computeEdgeRadiusMultiplierUniform());
+  p.setDrawCount(nEdges());
 }
 
 void CurveNetwork::draw() {

@@ -94,8 +94,8 @@ void SimpleTriangleMesh::draw() {
     setSimpleTriangleMeshUniforms(*program);
     render::engine->setMaterialUniforms(*program, material.get());
     program->setUniform("u_baseColor", surfaceColor.get());
+    program->setDrawCount(static_cast<uint32_t>(faces.size()));
 
-    // Draw the actual point cloud
     program->draw();
   }
 
@@ -136,6 +136,7 @@ void SimpleTriangleMesh::drawPick() {
   setStructureUniforms(*pickProgram);
   setSimpleTriangleMeshUniforms(*pickProgram, false);
   setPickUniforms(*pickProgram);
+  pickProgram->setDrawCount(static_cast<uint32_t>(faces.size()));
 
   pickProgram->draw();
 
@@ -174,6 +175,8 @@ void SimpleTriangleMesh::setSimpleTriangleMeshUniforms(render::ShaderProgram& p,
       p.setUniform("u_backfaceColor", getBackFaceColor());
     }
   }
+
+  p.setDrawCount(faces.size() * 3);
 }
 
 void SimpleTriangleMesh::ensureRenderProgramPrepared() {
@@ -254,7 +257,7 @@ std::vector<std::string> SimpleTriangleMesh::addSimpleTriangleMeshRules(std::vec
 
 void SimpleTriangleMesh::setSimpleTriangleMeshProgramGeometryAttributes(render::ShaderProgram& p) {
   p.setAttribute("a_vertexPositions", vertices);
-  p.setIndex(faces.getRenderAttributeBuffer());
+  p.setIndex(faces);
 }
 
 

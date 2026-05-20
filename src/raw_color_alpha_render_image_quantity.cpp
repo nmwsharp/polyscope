@@ -76,6 +76,7 @@ void RawColorAlphaRenderImageQuantity::prepare() {
   // clang-format on
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
+  program->setDrawCount(render::engine->screenTrianglesCoords().size());
   program->setTextureFromBuffer("t_depth", depths);
   program->setTextureFromBuffer("t_color", colors);
 }
