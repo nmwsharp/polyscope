@@ -55,6 +55,7 @@ void ColorImageQuantity::prepareFullscreen() {
                                     render::ShaderReplacementDefaults::Process);
   // clang-format on
   fullscreenProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
+  fullscreenProgram->setDrawCount(render::engine->screenTrianglesCoords().size());
   // TODO throughout polyscope we discard the shared pointer when adding textures/attributes to programs... should we
   // just track the shared pointer?
   fullscreenProgram->setTextureFromBuffer("t_image", colors);
@@ -76,6 +77,7 @@ void ColorImageQuantity::prepareBillboard() {
                                  render::ShaderReplacementDefaults::Process);
   // clang-format on
   billboardProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
+  billboardProgram->setDrawCount(render::engine->screenTrianglesCoords().size());
   billboardProgram->setTextureFromBuffer("t_image", colors);
 }
 

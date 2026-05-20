@@ -813,6 +813,7 @@ void SurfaceMesh::drawPick() {
     }
     pickProgram->setUniform("u_vertPickRadius", radVal);
   }
+  pickProgram->setDrawCount(nFacesTriangulation() * 3);
 
   pickProgram->draw();
 
@@ -1120,6 +1121,7 @@ void SurfaceMesh::setSurfaceMeshUniforms(render::ShaderProgram& p) {
     p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
     p.setUniform("u_viewport", render::engine->getCurrentViewport());
   }
+  p.setDrawCount(nFacesTriangulation() * 3);
 }
 
 

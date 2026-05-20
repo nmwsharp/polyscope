@@ -428,7 +428,7 @@ T ManagedBuffer<T>::getValue(size_t ind) {
     // In the texture case, we cannot get a single pixel from the backend anyway, so we always
     // call ensureHostBufferPopulated() above and do the host access.
 
-    if (static_cast<int64_t>(ind) >= renderAttributeBuffer->getDataSize())
+    if (ind >= currentSize)
       exception("out of bounds access in ManagedBuffer " + name + " getValue(" + std::to_string(ind) + ")");
 
     return getAttributeBufferData<T>(*renderAttributeBuffer, ind);

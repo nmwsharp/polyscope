@@ -111,8 +111,7 @@ public:
   // == Getters
   RenderDataType getType() const { return dataType; }
   int getArrayCount() const { return arrayCount; }
-  int64_t getDataSize() const { return dataSize; }
-  int64_t getDataSizeInBytes() const { return dataSize * sizeInBytes(dataType) * getArrayCount(); }
+  uint64_t getBufferSize() const { return bufferSize; }
   uint64_t getUniqueID() const { return uniqueID; }
   bool isSet() const { return setFlag; }
 
@@ -150,9 +149,7 @@ protected:
   RenderDataType dataType;
   int arrayCount;
   bool setFlag = false;
-  int64_t dataSize = -1;   // the size of the data currently stored in this attribute (-1 if nothing)
-                           // this counts # elements of the specified type, s.t. array'd mulitpliers are still just one
-  uint64_t bufferSize = 0; // the size of the allocated buffer (which might be larger than the data sixze)
+  uint64_t bufferSize = 0; // size of the allocated GPU buffer in elements of this buffer's type
   uint64_t uniqueID;
 };
 
@@ -437,6 +434,13 @@ public:
   virtual void setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) = 0;
   virtual void setPrimitiveRestartIndex(unsigned int restartIndex) = 0;
 
+  // Set the number of primitives to draw in the draw call. Must be called before drawing.
+  // For non-indexed modes: number of vertices (e.g. points, line endpoints, triangle corners).
+  // For indexed modes: number of index-buffer entries (e.g. uvec3 faces for IndexedTriangles),
+  //   the engine multiplies by indexSizeMult internally to get the total index count passed to GL.
+  // For instanced modes: number of vertices per instance (instanceCount sets the instance count separately).
+  void setDrawCount(uint32_t count) { drawCount = count; }
+
   // Indices
   virtual void setInstanceCount(uint32_t instanceCount) = 0;
 
@@ -454,8 +458,6 @@ protected:
   // What mode does this program draw in?
   DrawMode drawMode;
 
-  // How much data is there to draw
-  uint32_t drawDataLength;
 
   // Indexed drawing
   bool useIndex = false;
@@ -468,6 +470,8 @@ protected:
 
   std::shared_ptr<AttributeBuffer> indexBuffer;
   ManagedBufferBase* indexSourceManagedBuffer = nullptr;
+
+  uint32_t drawCount = INVALID_IND_32;
 
   // instancing
   uint32_t instanceCount = INVALID_IND_32;

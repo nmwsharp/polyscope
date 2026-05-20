@@ -130,6 +130,7 @@ void ColorBar::fillHistogramBuffers() {
 
 
   inlineHistogramProgram->setAttribute("a_coord", coords);
+  inlineHistogramProgram->setDrawCount(coords.size());
 }
 
 void ColorBar::prepareInlineHistogram() {

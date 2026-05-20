@@ -228,6 +228,7 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
     std::vector<glm::vec3> allPos{root,        frameUpperLeft, frameUpperRight, frameLowerLeft, frameLowerRight,
                                   triangleTop, triangleLeft,   triangleRight};
     nodeProgram->setAttribute("a_position", allPos);
+    nodeProgram->setDrawCount(allPos.size());
     preparedLengthScale = state::lengthScale;
   }
 
@@ -254,6 +255,7 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
 
     edgeProgram->setAttribute("a_position_tail", posTail);
     edgeProgram->setAttribute("a_position_tip", posTip);
+    edgeProgram->setDrawCount(posTail.size());
   }
 
   if (pickFrameProgram) {
@@ -322,6 +324,7 @@ void CameraView::fillCameraWidgetGeometry(render::ShaderProgram* nodeProgram, re
     if (wantsCullPosition()) {
       pickFrameProgram->setAttribute("a_cullPos", cullPos);
     }
+    pickFrameProgram->setDrawCount(positions.size());
   }
 }
 

@@ -164,6 +164,7 @@ void SlicePlane::prepare() {
   // clang-format on
 
   planeProgram->setAttribute("a_position", positions);
+  planeProgram->setDrawCount(positions.size());
 }
 
 void SlicePlane::setSliceGeomUniforms(render::ShaderProgram& p) {

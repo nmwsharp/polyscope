@@ -152,6 +152,8 @@ void VectorQuantity<QuantityT>::drawVectors() {
   this->vectorProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   this->vectorProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
 
+  this->vectorProgram->setDrawCount(vectors.size());
+
   this->vectorProgram->draw();
 }
 
@@ -275,6 +277,7 @@ void TangentVectorQuantity<QuantityT>::drawVectors() {
     glm::mat4 Pinv = glm::inverse(P);
     this->vectorProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
     this->vectorProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
+    this->vectorProgram->setDrawCount(tangentVectors.size());
 
     this->vectorProgram->draw();
   }

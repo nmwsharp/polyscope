@@ -202,7 +202,7 @@ void VolumeGridNodeScalarQuantity::createIsosurfaceProgram() {
   std::shared_ptr<render::AttributeBuffer> indexBuff = render::engine->generateAttributeBuffer(RenderDataType::UInt);
   indexBuff->setData(isosurfaceMesh.indices);
   isosurfaceProgram->setIndex(indexBuff);
-
+  isosurfaceProgram->setDrawCount(isosurfaceMesh.indices.size());
 
   render::engine->setMaterial(*isosurfaceProgram, parent.getMaterial());
 }

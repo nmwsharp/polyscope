@@ -61,6 +61,8 @@ void PointCloud::setPointCloudUniforms(render::ShaderProgram& p) {
 
     p.setUniform("u_pointRadius", pointRadius.get().asAbsolute() / scalarQScale);
   }
+
+  p.setDrawCount(nPoints());
 }
 
 void PointCloud::draw() {

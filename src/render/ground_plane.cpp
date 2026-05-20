@@ -62,6 +62,7 @@ void GroundPlane::populateGroundPlaneGeometry() {
   // clang-format on
 
   groundPlaneProgram->setAttribute("a_position", positions);
+  groundPlaneProgram->setDrawCount(4*3);
   groundPlaneViewCached = view::upDir;
 }
 
@@ -154,8 +155,10 @@ void GroundPlane::prepare() {
 
     blurProgram = render::engine->requestShader("BLUR_RGB", {}, render::ShaderReplacementDefaults::Process);
     blurProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
+    blurProgram->setDrawCount(render::engine->screenTrianglesCoords().size());
     copyTexProgram = render::engine->requestShader("DEPTH_TO_MASK", {}, render::ShaderReplacementDefaults::Process);
     copyTexProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
+    copyTexProgram->setDrawCount(render::engine->screenTrianglesCoords().size());
     copyTexProgram->setTextureFromBuffer("t_depth", sceneAltDepthTexture.get());
 
     groundPlaneProgram->setTextureFromBuffer("t_shadow", blurColorTextures[0].get());

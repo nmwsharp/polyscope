@@ -226,6 +226,8 @@ void VolumeGrid::setGridCubeUniforms(render::ShaderProgram& p, bool withShade) {
       p.setUniform("u_edgeColor", getEdgeColor());
     }
   }
+
+  p.setDrawCount(gridPlaneReferencePositions.size());
 }
 
 void VolumeGrid::ensureGridCubeRenderProgramPrepared() {
@@ -267,7 +269,6 @@ void VolumeGrid::ensureGridCubePickProgramPrepared() {
   pickProgram->setAttribute("a_referenceNormal", gridPlaneReferenceNormals);
   pickProgram->setAttribute("a_axisInd", gridPlaneAxisInds);
 
-
   if (globalPickConstant == INVALID_IND_64) {
     // request a pick range
 
@@ -284,6 +285,8 @@ void VolumeGrid::ensureGridCubePickProgramPrepared() {
     size_t cellGlobalPickIndStart = globalPickConstant + nNodes();
     pickColor = pick::indToVec(static_cast<size_t>(globalPickConstant));
   }
+  
+  pickProgram->setDrawCount(gridPlaneReferencePositions.size());
 }
 
 
