@@ -260,7 +260,7 @@ void OnscreenColorBarWidget::draw() {
 
   // draw the border around the map
   dl->AddRect(barTopLeft, ImVec2(barTopLeft.x + barRegionWidth, barTopLeft.y + barRegionHeight), foregroundColor, 0.f,
-              ImDrawFlags_None, borderWidth);
+              borderWidth, ImDrawFlags_None);
 
   // title text
   dl->AddText(ImVec2(barTopLeft.x + 0.5 * borderWidth, barTopLeft.y - 1.3 * titleHeight), foregroundColor,

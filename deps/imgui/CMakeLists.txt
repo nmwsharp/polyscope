@@ -32,8 +32,8 @@ list(APPEND SRCS
     )
 
 # imguizmo sources
-list(APPEND SRCS 
-        ImGuizmo/ImGuizmo.cpp
+list(APPEND SRCS
+        ImGuizmo/src/ImGuizmo.cpp
     )
 
 
@@ -70,7 +70,7 @@ if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/custom_backends/")
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/implot/")
-  target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/")
+  target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/src/")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/")
   target_link_libraries(imgui PRIVATE glfw)
 
@@ -99,7 +99,7 @@ if("${POLYSCOPE_BACKEND_OPENGL3_EGL}")
 
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui/")
   target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/implot/")
-  target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/")
+  target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo/src/")
   target_include_directories(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../glad/include/")
 
   # linux only
