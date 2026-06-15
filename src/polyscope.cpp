@@ -696,6 +696,7 @@ void renderScene() {
     for (int iSubView = 0; iSubView < view::getNumSubviews(); iSubView++) {
       view::activateSubview(iSubView);
       view::ensureViewValid();
+      view::updateFlight();
       render::engine->setActiveSceneTarget(iSubView); // sets sceneBuffer (etc) to the current target subview buffer
 
       render::engine->sceneBuffer->clearColor = {0., 0., 0.};
@@ -932,10 +933,11 @@ void buildPolyscopeGui() {
     static bool showDebugTextures = false;
     ImGui::Checkbox("Show debug textures", &showDebugTextures);
     if (showDebugTextures) {
-      for(int32_t i = 0; i < view::getNumSubviews(); i++) {
-        render::engine->showTextureInImGuiWindow("Subview " + std::to_string(i), render::engine->sceneColorTargets[i].get());
+      for (int32_t i = 0; i < view::getNumSubviews(); i++) {
+        render::engine->showTextureInImGuiWindow("Subview " + std::to_string(i),
+                                                 render::engine->sceneColorTargets[i].get());
       }
-      
+
       render::engine->showTextureInImGuiWindow("Scene Final", render::engine->sceneColorFinal.get());
     }
     ImGui::TreePop();
@@ -1104,7 +1106,6 @@ void draw(bool withUI, bool withContextCallback) {
     render::engine->ImGuiNewFrame();
 
     processInputEvents();
-    view::updateFlight();
     showDelayedWarnings();
   }
 
@@ -1145,8 +1146,8 @@ void draw(bool withUI, bool withContextCallback) {
 
   // Draw structures in the scene
   if (redrawNextFrame || options::alwaysRedraw) {
-    renderScene();
     redrawNextFrame = false;
+    renderScene();
   }
   renderSceneToScreen();
 

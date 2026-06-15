@@ -208,6 +208,7 @@ void createInitialSubview();
 void clearSubviews();
 void validateSubviews();
 void updateSubviewDimensions();
+void propagateViewUpdatesToSubviews();
 ViewParameters getSubviewParameters(int subviewInd); // read-only
 
 // == Internal helpers. Should probably not be called in user code.

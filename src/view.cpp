@@ -258,8 +258,9 @@ void processRotate(glm::vec2 startP, glm::vec2 endP) {
   }
   }
 
-  requestRedraw();
   immediatelyEndFlight();
+  propagateViewUpdatesToSubviews();
+  requestRedraw();
 }
 
 void processTranslate(glm::vec2 delta) {
@@ -287,14 +288,16 @@ void processTranslate(glm::vec2 delta) {
 
   projectCenterToBeValidForView();
 
-  requestRedraw();
   immediatelyEndFlight();
+  propagateViewUpdatesToSubviews();
+  requestRedraw();
 }
 
 void processClipPlaneShift(float amount) {
   if (amount == 0.0) return;
   // Adjust the near clipping plane
   nearClip += .03 * amount * nearClip;
+  propagateViewUpdatesToSubviews();
   requestRedraw();
 }
 
@@ -334,6 +337,7 @@ void processZoom(float amount) {
 
 
   immediatelyEndFlight();
+  propagateViewUpdatesToSubviews();
   requestRedraw();
 }
 
@@ -383,6 +387,7 @@ void processKeyboardNavigation(ImGuiIO& io) {
 
   if (hasMovement) {
     immediatelyEndFlight();
+    propagateViewUpdatesToSubviews();
     requestRedraw();
   }
 }
@@ -538,6 +543,8 @@ void updateViewAndChangeNavigationStyle(NavigateStyle newStyle, bool flyTo) {
 
     requestRedraw();
   }
+
+  propagateViewUpdatesToSubviews();
 }
 
 void updateViewAndChangeUpDir(UpDir newUpDir, bool flyTo) {
@@ -573,6 +580,8 @@ void updateViewAndChangeUpDir(UpDir newUpDir, bool flyTo) {
 
     requestRedraw();
   }
+
+  propagateViewUpdatesToSubviews();
 }
 
 void updateViewAndChangeFrontDir(FrontDir newFrontDir, bool flyTo) {
@@ -597,6 +606,8 @@ void updateViewAndChangeFrontDir(FrontDir newFrontDir, bool flyTo) {
 
     requestRedraw();
   }
+
+  propagateViewUpdatesToSubviews();
 }
 
 void setViewCenterAndLookAt(glm::vec3 newCenter, bool flyTo) {
@@ -633,6 +644,8 @@ void setViewCenterAndLookAt(glm::vec3 newCenter, bool flyTo) {
 
     requestRedraw();
   }
+
+  propagateViewUpdatesToSubviews();
 }
 
 void setViewCenterAndProject(glm::vec3 newCenter) {
@@ -669,10 +682,12 @@ void lookAt(glm::vec3 cameraLocation, glm::vec3 target, glm::vec3 upDir, bool fl
 
 
   if (flyTo) {
+    propagateViewUpdatesToSubviews();
     startFlightTo(targetView, fov);
   } else {
     viewMat = targetView;
     projectCenterToBeValidForView();
+    propagateViewUpdatesToSubviews();
     requestRedraw();
   }
 }
@@ -695,6 +710,8 @@ void setViewToCamera(const CameraParameters& p) {
   // aspectRatio = p.focalLengths.x / p.focalLengths.y; // TODO should be
   // flipped?
   projectCenterToBeValidForView();
+  propagateViewUpdatesToSubviews();
+  requestRedraw();
 }
 
 CameraParameters getCameraParametersForCurrentView() {
@@ -708,6 +725,7 @@ CameraParameters getCameraParametersForCurrentView() {
 void setCameraViewMatrix(glm::mat4 mat) {
   viewMat = mat;
   projectCenterToBeValidForView();
+  propagateViewUpdatesToSubviews();
   requestRedraw();
 }
 
@@ -715,6 +733,7 @@ glm::mat4 getCameraViewMatrix() { return viewMat; }
 
 void setVerticalFieldOfViewDegrees(float newVal) {
   view::fov = newVal;
+  propagateViewUpdatesToSubviews();
   requestRedraw();
 }
 
@@ -724,6 +743,7 @@ void setProjectionMode(ProjectionMode newMode) {
   projectionMode = newMode;
   internal::lazy::projectionMode = newMode; // update the lazy property right now, so we don't pay for a refresh twice
   refresh();
+  propagateViewUpdatesToSubviews();
   requestRedraw();
 }
 
@@ -731,11 +751,13 @@ void setProjectionMode(ProjectionMode newMode) {
 ViewRelativeMode getViewRelativeMode() { return viewRelativeMode; }
 void setViewRelativeMode(ViewRelativeMode newMode) {
   viewRelativeMode = newMode;
+  propagateViewUpdatesToSubviews();
   requestRedraw();
 }
 void setClipPlanes(float newNearClip, float newFarClip) {
   nearClip = newNearClip;
   farClip = newFarClip;
+  propagateViewUpdatesToSubviews();
   requestRedraw();
 }
 std::tuple<float, float> getClipPlanes() { return std::tuple<float, float>(nearClip, farClip); }
@@ -906,9 +928,16 @@ void startFlightTo(const glm::mat4& T, float targetFov, float flightLengthInSeco
   flightTargetFov = targetFov;
 
   midflight = true;
+
+  propagateViewUpdatesToSubviews();
+  requestRedraw();
 }
 
-void immediatelyEndFlight() { midflight = false; }
+void immediatelyEndFlight() {
+  midflight = false;
+  propagateViewUpdatesToSubviews();
+  requestRedraw();
+}
 
 void updateFlight() {
 
@@ -1098,8 +1127,11 @@ void setViewFromJson(std::string jsonData, bool flyTo) {
       }
     }
 
+    propagateViewUpdatesToSubviews();
+
   } catch (...) {
     // If anything goes wrong parsing, just give up
+    propagateViewUpdatesToSubviews();
     return;
   }
 }
@@ -1319,6 +1351,7 @@ void buildViewGui() {
       float fovF = fov;
       if (ImGui::SliderFloat(" Field of View", &fovF, minFov, maxFov, "%.2f deg")) {
         fov = fovF;
+        propagateViewUpdatesToSubviews();
         requestRedraw();
       };
 
@@ -1340,10 +1373,12 @@ void buildViewGui() {
       if (ImGui::TreeNode("Clip Planes")) {
         if (ImGui::SliderFloat("Near", &nearClip, 0., 10., "%.5f",
                                ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
+          propagateViewUpdatesToSubviews();
           requestRedraw();
         }
         if (ImGui::SliderFloat("Far", &farClip, 1., 10000., "%.2f",
                                ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
+          propagateViewUpdatesToSubviews();
           requestRedraw();
         }
         float absNearClip, absFarClip;
@@ -1582,6 +1617,14 @@ void setActiveSubviewSize(float width, float height) {
   requestRedraw();
 }
 
+bool getSubviewsShareNavigation() { return state::globalContext.subviewsShareNavigation; }
+
+void setSubviewsShareNavigation(bool shareNavigation) {
+  state::globalContext.subviewsShareNavigation = shareNavigation;
+  propagateViewUpdatesToSubviews();
+  requestRedraw();
+}
+
 void createSubviewGrid(int gridWidth, int gridHeight) {
   // make sure the dimensions are reasonable
   if (gridWidth <= 0 || gridHeight <= 0) {
@@ -1648,6 +1691,35 @@ void updateSubviewDimensions() {
     vp.subviewPosYPix = view::bufferHeight * vp.subviewPosY;
   }
   unpackCurrentSubviewParametersFromActive();
+}
+
+void propagateViewUpdatesToSubviews() {
+  if (!getSubviewsShareNavigation()) return;
+
+  for (int32_t iV = 0; iV < getNumSubviews(); iV++) {
+    ViewParameters& vp = state::globalContext.subviewParameters[iV];
+    vp.style = style;
+    vp.upDir = upDir;
+    vp.frontDir = frontDir;
+    vp.moveScale = moveScale;
+    vp.viewRelativeMode = viewRelativeMode;
+    vp.nearClip = nearClip;
+    vp.farClip = farClip;
+    vp.bgColor = bgColor;
+    vp.viewMat = viewMat;
+    vp.fov = fov;
+    vp.projectionMode = projectionMode;
+    vp.viewCenter = viewCenter;
+    vp.midflight = midflight;
+    vp.flightStartTime = flightStartTime;
+    vp.flightEndTime = flightEndTime;
+    vp.flightTargetViewR = flightTargetViewR;
+    vp.flightInitialViewR = flightInitialViewR;
+    vp.flightTargetViewT = flightTargetViewT;
+    vp.flightInitialViewT = flightInitialViewT;
+    vp.flightTargetFov = flightTargetFov;
+    vp.flightInitialFov = flightInitialFov;
+  }
 }
 
 ViewParameters getSubviewParameters(int subviewInd) {
