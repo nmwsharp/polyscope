@@ -319,7 +319,7 @@ public:
   // Query pixel
   virtual std::array<float, 4> readFloat4(int xPos, int yPos) = 0;
   virtual float readDepth(int xPos, int yPos) = 0;
-  virtual void blitTo(FrameBuffer* other) = 0;
+  virtual void blitTo(FrameBuffer* other, int targetPosX = 0, int targetPosY = 0) = 0;
   virtual std::vector<unsigned char> readBuffer() = 0;
 
   virtual uint32_t getNativeBufferID() = 0;
@@ -545,8 +545,7 @@ public:
 
   virtual void clearSceneBuffer();
   virtual bool bindSceneBuffer();
-  virtual void resizeScreenBuffers(); // applies to all buffers tied to display size
-  virtual void setScreenBufferViewports();
+  virtual void resizeScreenBuffersAndSetViewports(); // applies to all buffers tied to display size
   virtual void
   applyLightingTransform(std::shared_ptr<TextureBuffer>& texture); // tonemap and gamma correct, render to active buffer
   void updateMinDepthTexture();
@@ -650,18 +649,24 @@ public:
   // === The frame buffers used in the rendering pipeline
   // The size of these buffers is always kept in sync with the screen size
   std::shared_ptr<FrameBuffer> displayBuffer, displayBufferAlt;
-  std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal;
+  std::shared_ptr<FrameBuffer> sceneBuffer, sceneBufferFinal; // TODO rename the 'final' one
+  std::vector<std::shared_ptr<FrameBuffer>> sceneBufferTargets;
   std::shared_ptr<FrameBuffer> pickFramebuffer;
   std::shared_ptr<FrameBuffer> sceneDepthMinFrame;
   FrameBuffer& getDisplayBuffer();
 
-  // Main buffers for rendering
-  // sceneDepthMin is an optional texture copy of the depth buffe used for some effects
-  std::shared_ptr<TextureBuffer> sceneColor, sceneColorFinal, sceneDepth, sceneDepthMin;
+  // Main buffers for rendering.
+  // sceneColor, sceneDepth, and sceneDepthMin are per-subview (one entry per subview).
+  // sceneColorFinal holds the composited result and remains a single texture.
+  // sceneDepthMin is an optional texture copy of the depth buffer used for some effects.
+  std::shared_ptr<TextureBuffer> sceneColorFinal;
+  std::shared_ptr<TextureBuffer> sceneColor, sceneDepth, sceneDepthMin;
+  std::vector<std::shared_ptr<TextureBuffer>> sceneColorTargets, sceneDepthTargets, sceneDepthMinTargets;
   std::shared_ptr<RenderBuffer> pickColorBuffer, pickDepthBuffer;
   TextureBuffer& getFinalSceneColorTexture();
 
   // General-use programs used by the engine
+  // TODO some of these seem to be unused; remove them
   std::shared_ptr<ShaderProgram> renderTexturePlain, renderTextureDot3, renderTextureMap3, renderTextureSphereBG;
   std::shared_ptr<ShaderProgram> compositePeel, mapLight, copyDepth;
 
@@ -675,6 +680,10 @@ public:
   bool slicePlanesEnabled();                     // true if there is at least one slice plane in the scene
   virtual void setFrontFaceCCW(bool newVal) = 0; // true if CCW triangles are considered front-facing; false otherwise
   bool getFrontFaceCCW();
+  
+  // A few subview related helpers
+  void setActiveSceneTarget(int activeSceneTargets);
+  void ensureSceneTargetsAllocated(int sceneTargetsCount);
 
   // == Options
   BackgroundView background = BackgroundView::None;

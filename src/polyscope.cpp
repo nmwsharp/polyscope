@@ -247,9 +247,10 @@ void init(std::string backend) {
   internal::contextStackSize++;
 
   view::invalidateView();
+  view::createInitialSubview();
 
   state::initialized = true;
-  state::doDefaultMouseInteraction = true;
+  state::doDefaultMouseInteraction = true; // NSHARP: why is this here?
 }
 
 void checkInitialized() {
@@ -612,15 +613,6 @@ void renderScene() {
 
   render::engine->applyTransparencySettings();
 
-  render::engine->sceneBuffer->clearColor = {0., 0., 0.};
-  render::engine->sceneBuffer->clearAlpha = 0.;
-  render::engine->sceneBuffer->clear();
-
-  if (!render::engine->bindSceneBuffer()) return;
-
-  // If a view has never been set, this will set it to the home view
-  view::ensureViewValid();
-
   if (!options::renderScene) return;
 
   if (render::engine->getTransparencyMode() == TransparencyMode::Pretty) {
@@ -628,6 +620,17 @@ void renderScene() {
     // We will perform several "peeled" rounds of rendering in to the usual scene buffer. After each, we will manually
     // composite in to the final scene buffer.
 
+    // If a view has never been set, this will set it to the home view
+    view::ensureViewValid();
+
+    render::engine->sceneBuffer->clearColor = {0., 0., 0.};
+    render::engine->sceneBuffer->clearAlpha = 0.;
+    render::engine->sceneBuffer->clear();
+
+    if (!render::engine->bindSceneBuffer()) {
+      // sometimes bind fails during normal flow, e.g. for minimized windows, we just skip the draw
+      return;
+    }
 
     // Clear the final buffer explicitly since we will gradually composite in to it rather than just blitting directly
     // as in normal rendering.
@@ -639,52 +642,82 @@ void renderScene() {
     render::engine->sceneDepthMinFrame->clear();
 
 
-    for (int iPass = 0; iPass < options::transparencyRenderPasses; iPass++) {
-      bool isRedraw = iPass > 0;
-      internal::renderPassIsRedraw = isRedraw;
+    if (view::getNumSubviews() > 1) {
+      exception("TODO: update transparency path for multi-subview rendering");
+    }
 
-      render::engine->bindSceneBuffer();
-      render::engine->clearSceneBuffer();
+    for (int iSubView = 0; iSubView < view::getNumSubviews(); iSubView++) {
+      view::activateSubview(iSubView);
+      render::engine->setActiveSceneTarget(iSubView);
+
+      for (int iPass = 0; iPass < options::transparencyRenderPasses; iPass++) {
+        bool isRedraw = iPass > 0;
+        internal::renderPassIsRedraw = isRedraw;
+
+        render::engine->bindSceneBuffer();
+        render::engine->clearSceneBuffer();
+
+        render::engine->applyTransparencySettings();
+        drawStructures();
+
+        // Draw ground plane, slicers, etc
+        render::engine->groundPlane.draw(isRedraw);
+        if (!isRedraw) {
+          // Only on first pass (kinda weird, but works out, and doesn't really matter)
+          renderSlicePlanes();
+        }
+
+        render::engine->applyTransparencySettings();
+        drawStructuresDelayed();
+
+        // Composite the result of this pass in to the result buffer
+        render::engine->sceneBufferFinal->bind();
+        render::engine->setDepthMode(DepthMode::Disable);
+        render::engine->setBlendMode(BlendMode::AlphaUnder);
+        render::engine->compositePeel->draw();
+
+        // Update the minimum depth texture
+        render::engine->updateMinDepthTexture();
+      }
+
+      internal::renderPassIsRedraw = false; // reset to usual value
+    }
+
+  } else {
+    // Normal case: single render pass
+
+
+    internal::renderPassIsRedraw = false;
+
+    if (view::getNumSubviews() == 0) {
+      error("there are no subviews");
+    }
+
+    for (int iSubView = 0; iSubView < view::getNumSubviews(); iSubView++) {
+      view::activateSubview(iSubView);
+      view::ensureViewValid();
+      render::engine->setActiveSceneTarget(iSubView); // sets sceneBuffer (etc) to the current target subview buffer
+
+      render::engine->sceneBuffer->clearColor = {0., 0., 0.};
+      render::engine->sceneBuffer->clearAlpha = 0.;
+      render::engine->sceneBuffer->clear();
+      if (!render::engine->bindSceneBuffer()) {
+        // sometimes bind fails during normal flow, e.g. for minimized windows, we just skip the draw
+        return;
+      }
 
       render::engine->applyTransparencySettings();
       drawStructures();
 
-      // Draw ground plane, slicers, etc
-      render::engine->groundPlane.draw(isRedraw);
-      if (!isRedraw) {
-        // Only on first pass (kinda weird, but works out, and doesn't really matter)
-        renderSlicePlanes();
-      }
+      render::engine->groundPlane.draw();
+      renderSlicePlanes();
 
       render::engine->applyTransparencySettings();
       drawStructuresDelayed();
 
-      // Composite the result of this pass in to the result buffer
-      render::engine->sceneBufferFinal->bind();
-      render::engine->setDepthMode(DepthMode::Disable);
-      render::engine->setBlendMode(BlendMode::AlphaUnder);
-      render::engine->compositePeel->draw();
-
-      // Update the minimum depth texture
-      render::engine->updateMinDepthTexture();
+      view::ViewParameters vp = view::getSubviewParameters(iSubView);
+      render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get(), vp.subviewPosXPix, vp.subviewPosYPix);
     }
-    internal::renderPassIsRedraw = false; // reset to usual value
-
-
-  } else {
-    // Normal case: single render pass
-    internal::renderPassIsRedraw = false;
-
-    render::engine->applyTransparencySettings();
-    drawStructures();
-
-    render::engine->groundPlane.draw();
-    renderSlicePlanes();
-
-    render::engine->applyTransparencySettings();
-    drawStructuresDelayed();
-
-    render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get());
   }
 }
 
@@ -899,7 +932,10 @@ void buildPolyscopeGui() {
     static bool showDebugTextures = false;
     ImGui::Checkbox("Show debug textures", &showDebugTextures);
     if (showDebugTextures) {
-      render::engine->showTextureInImGuiWindow("Scene", render::engine->sceneColor.get());
+      for(int32_t i = 0; i < view::getNumSubviews(); i++) {
+        render::engine->showTextureInImGuiWindow("Subview " + std::to_string(i), render::engine->sceneColorTargets[i].get());
+      }
+      
       render::engine->showTextureInImGuiWindow("Scene Final", render::engine->sceneColorFinal.get());
     }
     ImGui::TreePop();
@@ -1154,6 +1190,7 @@ void mainLoopIteration() {
 void show(size_t forFrames) {
 
   checkInitialized();
+  view::validateSubviews();
 
   if (isHeadless() && forFrames == 0) {
     info("You called show() while in headless mode. In headless mode there is no display to create windows on. By "
@@ -1238,6 +1275,7 @@ void shutdown(bool allowMidFrameShutdown) {
   }
 
   removeEverything();
+  view::clearSubviews();
 
   // Shut down the render engine
   render::engine->shutdown();

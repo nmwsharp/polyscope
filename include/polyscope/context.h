@@ -4,6 +4,7 @@
 
 #include <polyscope/pick.h>
 #include <polyscope/types.h>
+#include <polyscope/view_parameters.h>
 #include <polyscope/weak_handle.h>
 
 #include <glm/glm.hpp>
@@ -100,6 +101,11 @@ struct Context {
   glm::dualquat flightTargetViewR, flightInitialViewR;
   glm::vec3 flightTargetViewT, flightInitialViewT;
   float flightTargetFov, flightInitialFov;
+
+  // Subviews
+  std::vector<view::ViewParameters> subviewParameters;
+  int activeSubviewIndex = -1;
+  bool subviewsShareNavigation = true;
 
   // ======================================================
   // === Picking globals from pick.h / pick.cpp

@@ -588,9 +588,7 @@ void GLEngineEGL::updateWindowSize(bool force) {
 void GLEngineEGL::applyWindowSize() {
   view::bufferWidth = view::windowWidth;
   view::bufferHeight = view::windowHeight;
-
-  render::engine->resizeScreenBuffers();
-  render::engine->setScreenBufferViewports();
+  render::engine->resizeScreenBuffersAndSetViewports();
 }
 
 

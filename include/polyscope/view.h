@@ -8,6 +8,7 @@
 
 #include "polyscope/camera_parameters.h"
 #include "polyscope/types.h"
+#include "polyscope/view_parameters.h"
 // #include "polyscope/gl/gl_utils.h"
 
 #include "imgui.h"
@@ -78,6 +79,7 @@ extern const float defaultFarClipRatio;
 extern const float defaultFov;
 
 // Internal details
+extern int& activeSubviewIndex;
 extern bool overrideClipPlanes; // used for temporary state changes in render passes, internal use only!
 extern float overrideNearClipRelative;
 extern float overrideFarClipRelative;
@@ -180,6 +182,33 @@ glm::ivec2 screenCoordsToBufferIndsVec(glm::vec2 screenCoords);
 glm::vec2 bufferIndsToScreenCoords(int xPos, int yPos);
 glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds);
 std::string getCurrentProjectionModeRaycastRule();
+
+
+// == Subview helpers
+
+// Set the active subview
+void activateSubview(int subviewInd);
+int getActiveSubviewIndex();
+
+// High-level helper to create a grid of subviews and arrange them in a grid
+void createSubviewGrid(int gridWidth, int gridHeight);
+
+// Manually create subviews and arrange them
+void setNumSubviews(int count);
+void setActiveSubviewLocation(float posX, float posY);
+void setActiveSubviewSize(float width, float height); // measured in logical units like windowSize, not pixels on hi-DPI
+
+int getNumSubviews();
+
+bool getSubviewsShareNavigation();
+void setSubviewsShareNavigation(bool shareNavigation);
+
+// subview internal helpers
+void createInitialSubview();
+void clearSubviews();
+void validateSubviews();
+void updateSubviewDimensions();
+ViewParameters getSubviewParameters(int subviewInd); // read-only
 
 // == Internal helpers. Should probably not be called in user code.
 

@@ -43,6 +43,7 @@ glm::vec3& flightTargetViewT = state::globalContext.flightTargetViewT;
 glm::vec3& flightInitialViewT = state::globalContext.flightInitialViewT;
 float& flightTargetFov = state::globalContext.flightTargetFov;
 float& flightInitialFov = state::globalContext.flightInitialFov;
+int& activeSubviewIndex = state::globalContext.activeSubviewIndex;
 
 
 // Default values
@@ -63,6 +64,7 @@ float overrideFarClipRelative = defaultFarClipRatio;
 // Small helpers
 
 namespace { // anonymous helpers
+
 
 // A default pairing of <up,front> directions to fall back on when something goes wrong.
 const std::vector<std::pair<UpDir, FrontDir>> defaultUpFrontPairs{
@@ -1462,6 +1464,202 @@ void setWindowResizable(bool isResizable) {
 
 bool getWindowResizable() { return windowResizable; }
 
+
+// == Subview helpers
+
+namespace {
+void packCurrentSubviewParametersToIndex(int idx) {
+  if (idx < 0) return;
+
+  ViewParameters& vp = state::globalContext.subviewParameters[idx];
+  vp.style = style;
+  vp.upDir = upDir;
+  vp.frontDir = frontDir;
+  vp.moveScale = moveScale;
+  vp.viewRelativeMode = viewRelativeMode;
+  vp.nearClip = nearClip;
+  vp.farClip = farClip;
+  vp.bgColor = bgColor;
+  vp.viewMat = viewMat;
+  vp.fov = fov;
+  vp.projectionMode = projectionMode;
+  vp.viewCenter = viewCenter;
+  vp.midflight = midflight;
+  vp.flightStartTime = flightStartTime;
+  vp.flightEndTime = flightEndTime;
+  vp.flightTargetViewR = flightTargetViewR;
+  vp.flightInitialViewR = flightInitialViewR;
+  vp.flightTargetViewT = flightTargetViewT;
+  vp.flightInitialViewT = flightInitialViewT;
+  vp.flightTargetFov = flightTargetFov;
+  vp.flightInitialFov = flightInitialFov;
+}
+
+void unpackCurrentSubviewParametersFromActive() {
+  if (activeSubviewIndex < 0) return;
+
+  const ViewParameters& vp = state::globalContext.subviewParameters[activeSubviewIndex];
+  style = vp.style;
+  upDir = vp.upDir;
+  frontDir = vp.frontDir;
+  moveScale = vp.moveScale;
+  viewRelativeMode = vp.viewRelativeMode;
+  nearClip = vp.nearClip;
+  farClip = vp.farClip;
+  bgColor = vp.bgColor;
+  viewMat = vp.viewMat;
+  fov = vp.fov;
+  projectionMode = vp.projectionMode;
+  viewCenter = vp.viewCenter;
+  midflight = vp.midflight;
+  flightStartTime = vp.flightStartTime;
+  flightEndTime = vp.flightEndTime;
+  flightTargetViewR = vp.flightTargetViewR;
+  flightInitialViewR = vp.flightInitialViewR;
+  flightTargetViewT = vp.flightTargetViewT;
+  flightInitialViewT = vp.flightInitialViewT;
+  flightTargetFov = vp.flightTargetFov;
+  flightInitialFov = vp.flightInitialFov;
+}
+
+} // namespace
+
+
+int getActiveSubviewIndex() { return activeSubviewIndex; }
+
+void activateSubview(int subviewInd) {
+  if (subviewInd < 0 || subviewInd >= getNumSubviews()) {
+    error("Invalid subview index " + std::to_string(subviewInd));
+  }
+  packCurrentSubviewParametersToIndex(activeSubviewIndex);
+  activeSubviewIndex = subviewInd;
+  unpackCurrentSubviewParametersFromActive();
+}
+
+int getNumSubviews() { return state::globalContext.subviewParameters.size(); }
+
+void setNumSubviews(int count) {
+  checkInitialized();
+  if (count <= 0) error("Invalid subview count " + std::to_string(count));
+  if (count > 64) error("At most 64 subviews are supported.");
+
+
+  // save current parameters
+  if (getNumSubviews() > 0) {
+    packCurrentSubviewParametersToIndex(activeSubviewIndex);
+  }
+
+  int oldCount = getNumSubviews();
+  state::globalContext.subviewParameters.resize(count);
+
+  // Copy the current active view parameters into all new views to initialize them
+  for (int i = oldCount; i < count; i++) packCurrentSubviewParametersToIndex(i);
+
+  render::engine->ensureSceneTargetsAllocated(count);
+
+  requestRedraw();
+}
+
+void setActiveSubviewLocation(float posX, float posY) {
+  checkInitialized();
+  if (posX < 0 || posX > 1 || posY < 0 || posY > 1) {
+    error("Invalid subview location " + std::to_string(posX) + " x " + std::to_string(posY));
+  }
+  state::globalContext.subviewParameters[activeSubviewIndex].subviewPosX = posX;
+  state::globalContext.subviewParameters[activeSubviewIndex].subviewPosY = posY;
+  render::engine->resizeScreenBuffersAndSetViewports();
+  requestRedraw();
+}
+
+void setActiveSubviewSize(float width, float height) {
+  checkInitialized();
+  if (width < 0 || width > 1 || height < 0 || height > 1) {
+    error("Invalid subview size " + std::to_string(width) + " x " + std::to_string(height));
+  }
+  state::globalContext.subviewParameters[activeSubviewIndex].subviewWidthRelative = width;
+  state::globalContext.subviewParameters[activeSubviewIndex].subviewHeightRelative = height;
+  render::engine->resizeScreenBuffersAndSetViewports();
+  requestRedraw();
+}
+
+void createSubviewGrid(int gridWidth, int gridHeight) {
+  // make sure the dimensions are reasonable
+  if (gridWidth <= 0 || gridHeight <= 0) {
+    error("Invalid subview grid dimensions " + std::to_string(gridWidth) + " x " + std::to_string(gridHeight));
+  }
+
+  setNumSubviews(gridWidth * gridHeight);
+
+  // initialize all subviews to the same parameters as the current active view, so they start in a known state
+  for (int i = 0; i < getNumSubviews(); i++) {
+    packCurrentSubviewParametersToIndex(i);
+  }
+
+  float cellW = 1.0f / gridWidth;
+  float cellH = 1.0f / gridHeight;
+  for (int i = 0; i < gridHeight; i++) {
+    for (int j = 0; j < gridWidth; j++) {
+      int ind = i * gridWidth + j;
+      activateSubview(ind);
+      // note: this intentionally puts the first grid subiew in the upper-left, matching convention from other software
+      setActiveSubviewLocation(static_cast<float>(j) / gridWidth, static_cast<float>(gridHeight - i - 1) / gridHeight);
+      setActiveSubviewSize(cellW, cellH);
+    }
+  }
+
+  activateSubview(0);
+  render::engine->resizeScreenBuffersAndSetViewports();
+  requestRedraw();
+}
+
+void createInitialSubview() {
+  state::globalContext.subviewParameters.resize(1);
+  packCurrentSubviewParametersToIndex(0);
+  activeSubviewIndex = 0;
+  state::globalContext.subviewParameters[0].subviewPosX = 0.0;
+  state::globalContext.subviewParameters[0].subviewPosY = 0.0;
+  state::globalContext.subviewParameters[0].subviewWidthRelative = 1.0;
+  state::globalContext.subviewParameters[0].subviewHeightRelative = 1.0;
+  if (!render::engine) error("Render engine not initialized. You called an internal function at the wrong time.");
+  render::engine->ensureSceneTargetsAllocated(1);
+}
+
+void clearSubviews() {
+  state::globalContext.subviewParameters.clear();
+  activeSubviewIndex = -1;
+}
+
+void validateSubviews() {
+  if (getNumSubviews() == 0)
+    error("No subviews of the scene exist. Either subviews were configured wrong, program flow has been called in the "
+          "wrong order.");
+}
+
+void updateSubviewDimensions() {
+  packCurrentSubviewParametersToIndex(activeSubviewIndex); // active values are duplicated
+  for (int32_t iV = 0; iV < getNumSubviews(); iV++) {
+    ViewParameters& vp = state::globalContext.subviewParameters[iV];
+
+    // TODO need to be sure this logic never leaves off-by-one cracks when subviews are touching
+    // in float coords like [a,b] [b,c]
+    vp.subviewHeightPix = view::bufferHeight * vp.subviewHeightRelative;
+    vp.subviewWidthPix = view::bufferWidth * vp.subviewWidthRelative;
+    vp.subviewPosXPix = view::bufferWidth * vp.subviewPosX;
+    vp.subviewPosYPix = view::bufferHeight * vp.subviewPosY;
+  }
+  unpackCurrentSubviewParametersFromActive();
+}
+
+ViewParameters getSubviewParameters(int subviewInd) {
+  if (subviewInd < 0 || subviewInd >= getNumSubviews()) {
+    error("Invalid subview index " + std::to_string(subviewInd));
+  }
+  if (subviewInd == activeSubviewIndex) {
+    // write them to the structure in case they have been changed since it was activated
+    packCurrentSubviewParametersToIndex(activeSubviewIndex);
+  }
+  return state::globalContext.subviewParameters[subviewInd];
+}
 
 } // namespace view
 } // namespace polyscope

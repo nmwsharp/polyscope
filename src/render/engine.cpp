@@ -134,7 +134,7 @@ int renderDataTypeCountCompatbility(const RenderDataType r1, const RenderDataTyp
   if (r1 == RenderDataType::Vector2Float && r2 == RenderDataType::Float) return 2;
   if (r1 == RenderDataType::Vector3Float && r2 == RenderDataType::Float) return 3;
   if (r1 == RenderDataType::Vector4Float && r2 == RenderDataType::Float) return 4;
-  
+
   if (r1 == RenderDataType::Vector2Int && r2 == RenderDataType::Int) return 2;
   if (r1 == RenderDataType::Vector3Int && r2 == RenderDataType::Int) return 3;
   if (r1 == RenderDataType::Vector4Int && r2 == RenderDataType::Int) return 4;
@@ -489,32 +489,75 @@ void Engine::clearDisplay() {
 
 void Engine::clearSceneBuffer() { sceneBuffer->clear(); }
 
-void Engine::resizeScreenBuffers() {
+void Engine::resizeScreenBuffersAndSetViewports() {
+  view::updateSubviewDimensions();
   unsigned int width = view::bufferWidth;
   unsigned int height = view::bufferHeight;
   displayBuffer->resize(width, height);
   displayBufferAlt->resize(width, height);
-  sceneBuffer->resize(ssaaFactor * width, ssaaFactor * height);
   sceneBufferFinal->resize(ssaaFactor * width, ssaaFactor * height);
   sceneDepthMinFrame->resize(ssaaFactor * width, ssaaFactor * height);
-}
 
-void Engine::setScreenBufferViewports() {
-  unsigned int xStart = 0;
-  unsigned int yStart = 0;
-  unsigned int sizeX = view::bufferWidth;
-  unsigned int sizeY = view::bufferHeight;
+  displayBuffer->setViewport(0, 0, width, height);
+  displayBufferAlt->setViewport(0, 0, width, height);
+  sceneBufferFinal->setViewport(0, 0, ssaaFactor * width, ssaaFactor * height);
+  sceneDepthMinFrame->setViewport(0, 0, ssaaFactor * width, ssaaFactor * height);
 
-  displayBuffer->setViewport(xStart, yStart, sizeX, sizeY);
-  displayBufferAlt->setViewport(xStart, yStart, sizeX, sizeY);
-  sceneBuffer->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
-  sceneBufferFinal->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
-  sceneDepthMinFrame->setViewport(ssaaFactor * xStart, ssaaFactor * yStart, ssaaFactor * sizeX, ssaaFactor * sizeY);
+  for (size_t i = 0; i < sceneBufferTargets.size(); i++) {
+    view::ViewParameters vp = view::getSubviewParameters(i);
+
+    sceneBufferTargets[i]->resize(ssaaFactor * vp.subviewWidthPix, ssaaFactor * vp.subviewHeightPix);
+    sceneDepthMinTargets[i]->resize(ssaaFactor * vp.subviewWidthPix, ssaaFactor * vp.subviewHeightPix);
+
+    sceneBufferTargets[i]->setViewport(0, 0, ssaaFactor * vp.subviewWidthPix, ssaaFactor * vp.subviewHeightPix);
+  }
 }
 
 bool Engine::bindSceneBuffer() {
   setCurrentPixelScaling(ssaaFactor * options::uiScale);
   return sceneBuffer->bindForRendering();
+}
+
+void Engine::setActiveSceneTarget(int i) {
+  if (i >= (int)sceneBufferTargets.size()) exception("invalid scene target index");
+  sceneBuffer = sceneBufferTargets[i];
+  sceneColor = sceneColorTargets[i];
+  sceneDepth = sceneDepthTargets[i];
+  sceneDepthMin = sceneDepthMinTargets[i];
+}
+
+void Engine::ensureSceneTargetsAllocated(int count) {
+  int currentCount = (int)sceneColorTargets.size();
+  if (currentCount == count) return;
+
+  sceneColorTargets.resize(count);
+  sceneDepthTargets.resize(count);
+  sceneBufferTargets.resize(count);
+  sceneDepthMinTargets.resize(count);
+
+  // initialize any new targets/buffers
+  for (int i = currentCount; i < count; i++) {
+
+    // we always initialize at the arbitray size of 128x128, then resize below to avoid duplicating logic
+    unsigned int w = 128;
+    unsigned int h = 128;
+
+    auto color = generateTextureBuffer(TextureFormat::RGBA16F, w, h);
+    auto depth = generateTextureBuffer(TextureFormat::DEPTH24, w, h);
+    auto fb = generateFrameBuffer(w, h);
+    fb->addColorBuffer(color);
+    fb->addDepthBuffer(depth);
+    fb->setDrawBuffers();
+    fb->clearColor = glm::vec3{1., 1., 1.};
+    fb->clearAlpha = 0.0;
+
+    sceneColorTargets[i] = color;
+    sceneDepthTargets[i] = depth;
+    sceneBufferTargets[i] = fb;
+    sceneDepthMinTargets[i] = generateTextureBuffer(TextureFormat::DEPTH24, w, h);
+  }
+
+  resizeScreenBuffersAndSetViewports();
 }
 
 void Engine::applyLightingTransform(std::shared_ptr<TextureBuffer>& texture) {
@@ -689,6 +732,8 @@ int Engine::getSSAAFactor() { return ssaaFactor; }
 void Engine::allocateGlobalBuffersAndPrograms() {
 
   // Note: The display frame buffer should be manually wrapped by child classes
+
+  // TODO check any of these that are no longer needed now that these are just pointers to subviews
 
   { // Scene buffer
 
@@ -919,6 +964,7 @@ void Engine::freeAllOwnedResources() {
   displayBuffer.reset();
   displayBufferAlt.reset();
   sceneBuffer.reset();
+  sceneBufferTargets.clear();
   sceneBufferFinal.reset();
   pickFramebuffer.reset();
   sceneDepthMinFrame.reset();
@@ -926,6 +972,9 @@ void Engine::freeAllOwnedResources() {
   sceneColorFinal.reset();
   sceneDepth.reset();
   sceneDepthMin.reset();
+  sceneColorTargets.clear();
+  sceneDepthTargets.clear();
+  sceneDepthMinTargets.clear();
   pickColorBuffer.reset();
   pickDepthBuffer.reset();
   renderTexturePlain.reset();

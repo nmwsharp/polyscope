@@ -264,7 +264,7 @@ public:
   std::vector<unsigned char> readBuffer() override;
   std::array<float, 4> readFloat4(int xPos, int yPos) override;
   float readDepth(int xPos, int yPos) override;
-  void blitTo(FrameBuffer* other) override;
+  void blitTo(FrameBuffer* other, int targetPosX = 0, int targetPosY = 0) override;
 
   // Getters
   FrameBufferHandle getHandle() const { return handle; }

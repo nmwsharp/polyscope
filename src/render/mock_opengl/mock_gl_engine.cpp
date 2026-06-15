@@ -730,7 +730,7 @@ std::vector<unsigned char> GLFrameBuffer::readBuffer() {
   return buff;
 }
 
-void GLFrameBuffer::blitTo(FrameBuffer* targetIn) {
+void GLFrameBuffer::blitTo(FrameBuffer* targetIn, int targetPosX, int targetPosY) {
 
   // it _better_ be a GL buffer
   GLFrameBuffer* target = dynamic_cast<GLFrameBuffer*>(targetIn);
@@ -1916,9 +1916,7 @@ void MockGLEngine::updateWindowSize(bool force) {
     view::bufferHeight = newBufferHeight;
     view::windowWidth = newWindowWidth;
     view::windowHeight = newWindowHeight;
-
-    render::engine->resizeScreenBuffers();
-    render::engine->setScreenBufferViewports();
+    render::engine->resizeScreenBuffersAndSetViewports();
   }
 }
 
