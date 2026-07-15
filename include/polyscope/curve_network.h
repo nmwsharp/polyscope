@@ -154,7 +154,10 @@ public:
 
   // set the radius of the points
   CurveNetwork* setRadius(float newVal, bool isRelative = true);
-  float getRadius();
+  CurveNetwork* setEdgeRadius(float newVal, bool isRelative = true);
+  CurveNetwork* setNodeRadius(float newVal, bool isRelative = true);
+  float getEdgeRadius();
+  float getNodeRadius();
 
   // Material
   CurveNetwork* setMaterial(std::string name);
@@ -173,7 +176,8 @@ private:
 
   // === Visualization parameters
   PersistentValue<glm::vec3> color;
-  PersistentValue<ScaledValue<float>> radius;
+  PersistentValue<ScaledValue<float>> edge_radius;
+  PersistentValue<ScaledValue<float>> node_radius;
   PersistentValue<std::string> material;
 
   // Drawing related things

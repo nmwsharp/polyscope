@@ -20,14 +20,15 @@ const std::string CurveNetwork::structureTypeName = "Curve Network";
 // Constructor
 CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std::vector<std::array<size_t, 2>> edges_)
     : // clang-format off
-      Structure(name, typeName()), 
+      Structure(name, typeName()),
       nodePositions(this, uniquePrefix() + "nodePositions", nodePositionsData),
       edgeTailInds(this, uniquePrefix() + "edgeTailInds", edgeTailIndsData),
       edgeTipInds(this, uniquePrefix() + "edgeTipInds", edgeTipIndsData),
-      edgeCenters(this, uniquePrefix() + "edgeCenters", edgeCentersData, std::bind(&CurveNetwork::computeEdgeCenters, this)),         
-      nodePositionsData(std::move(nodes_)), 
-      color(uniquePrefix() + "#color", getNextUniqueColor()), 
-      radius(uniquePrefix() + "#radius", relativeValue(0.005)),
+      edgeCenters(this, uniquePrefix() + "edgeCenters", edgeCentersData, std::bind(&CurveNetwork::computeEdgeCenters, this)),
+      nodePositionsData(std::move(nodes_)),
+      color(uniquePrefix() + "#color", getNextUniqueColor()),
+      edge_radius(uniquePrefix() + "#edge_radius", relativeValue(0.005)),
+      node_radius(uniquePrefix() + "#node_radius", relativeValue(0.005)),
       material(uniquePrefix() + "#material", "clay")
 // clang-format on
 {
@@ -83,7 +84,7 @@ float CurveNetwork::computeNodeRadiusMultiplierUniform() {
     scalarQScale = std::max(0., radQ.getDataRange().second);
   }
 
-  return getRadius() / scalarQScale;
+  return getNodeRadius() / scalarQScale;
 }
 
 float CurveNetwork::computeEdgeRadiusMultiplierUniform() {
@@ -105,7 +106,7 @@ float CurveNetwork::computeEdgeRadiusMultiplierUniform() {
     scalarQScale = std::max(0., radQ.getDataRange().second);
   }
 
-  return getRadius() / scalarQScale;
+  return getEdgeRadius() / scalarQScale;
 }
 
 // Helper to set uniforms
@@ -256,7 +257,7 @@ void CurveNetwork::prepare() {
   // It no quantity is coloring the network, draw with a default color
 
   // clang-format off
-  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE",  
+  nodeProgram = render::engine->requestShader("RAYCAST_SPHERE",
       render::engine->addMaterialRules(getMaterial(),
         addCurveNetworkNodeRules(
           {"SHADE_BASECOLOR"}
@@ -265,7 +266,7 @@ void CurveNetwork::prepare() {
     );
 
 
-  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", 
+  edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER",
       render::engine->addMaterialRules(getMaterial(),
         addCurveNetworkEdgeRules(
           {"SHADE_BASECOLOR"}
@@ -483,9 +484,14 @@ void CurveNetwork::buildCustomUI() {
   }
   ImGui::SameLine();
   ImGui::PushItemWidth(100 * options::uiScale);
-  if (ImGui::SliderFloat("Radius", radius.get().getValuePtr(), 0.0, .1, "%.5f",
+  if (ImGui::SliderFloat("Edge Radius", edge_radius.get().getValuePtr(), 0.0, .1, "%.5f",
                          ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
-    radius.manuallyChanged();
+    edge_radius.manuallyChanged();
+    requestRedraw();
+  }
+  if (ImGui::SliderFloat("Node Radius", node_radius.get().getValuePtr(), 0.0, .1, "%.5f",
+                         ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat)) {
+    node_radius.manuallyChanged();
     requestRedraw();
   }
   ImGui::PopItemWidth();
@@ -626,11 +632,26 @@ void CurveNetwork::clearEdgeRadiusQuantity() {
 };
 
 CurveNetwork* CurveNetwork::setRadius(float newVal, bool isRelative) {
-  radius = ScaledValue<float>(newVal, isRelative);
+  edge_radius = ScaledValue<float>(newVal, isRelative);
+  node_radius = ScaledValue<float>(newVal, isRelative);
   polyscope::requestRedraw();
   return this;
 }
-float CurveNetwork::getRadius() { return radius.get().asAbsolute(); }
+
+CurveNetwork* CurveNetwork::setEdgeRadius(float newVal, bool isRelative) {
+  edge_radius = ScaledValue<float>(newVal, isRelative);
+  polyscope::requestRedraw();
+  return this;
+}
+
+CurveNetwork* CurveNetwork::setNodeRadius(float newVal, bool isRelative) {
+  node_radius = ScaledValue<float>(newVal, isRelative);
+  polyscope::requestRedraw();
+  return this;
+}
+
+float CurveNetwork::getEdgeRadius() { return edge_radius.get().asAbsolute(); }
+float CurveNetwork::getNodeRadius() { return node_radius.get().asAbsolute(); }
 
 CurveNetwork* CurveNetwork::setMaterial(std::string m) {
   material = m;
