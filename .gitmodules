@@ -18,3 +18,6 @@
 [submodule "deps/imgui/ImGuizmo"]
 	path = deps/imgui/ImGuizmo
 	url = https://github.com/nmwsharp/ImGuizmo.git
+[submodule "deps/imgui/ImGuiFileDialog"]
+	path = deps/imgui/ImGuiFileDialog
+	url = https://github.com/aiekick/ImGuiFileDialog.git
