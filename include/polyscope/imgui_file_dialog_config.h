@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ImGuiFileDialogConfig.h"
 #include "IconFontCppHeaders/IconsLucide.h"
+#include "ImGuiFileDialogConfig.h"
 
 #define USE_PLACES_FEATURE
 #define PLACES_PANE_DEFAULT_SHOWN false

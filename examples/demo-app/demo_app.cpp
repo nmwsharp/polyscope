@@ -19,8 +19,8 @@
 #include "polyscope/volume_grid.h"
 #include "polyscope/volume_mesh.h"
 
-#include "ImGuiFileDialog.h"
 #include "IconFontCppHeaders/IconsLucide.h"
+#include "ImGuiFileDialog.h"
 
 #include <cstdio>
 #include <iostream>
@@ -921,7 +921,8 @@ void callback() {
     const ImVec2 viewportSize = ImGui::GetMainViewport()->WorkSize;
     const ImVec2 minDialogSize(viewportSize.x * 0.5f, viewportSize.y * 0.5f);
     const ImVec2 maxDialogSize(viewportSize.x * 0.9f, viewportSize.y * 0.9f);
-    if (ImGuiFileDialog::Instance()->Display("DemoFileDialog", ImGuiWindowFlags_NoCollapse, minDialogSize, maxDialogSize)) {
+    if (ImGuiFileDialog::Instance()->Display("DemoFileDialog", ImGuiWindowFlags_NoCollapse, minDialogSize,
+                                             maxDialogSize)) {
       if (ImGuiFileDialog::Instance()->IsOk()) {
         if (demoFileDialogAction == DemoFileDialogAction::OpenMesh) {
           const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
