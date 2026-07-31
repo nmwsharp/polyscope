@@ -22,6 +22,11 @@ if(NOT TARGET glm::glm)
   set_target_properties(glm PROPERTIES LINKER_LANGUAGE CXX)
 endif()
 
+## IconFontCppHeaders
+if(NOT TARGET IconFontCppHeaders)
+  add_subdirectory(IconFontCppHeaders)
+endif()
+
 ## Imgui
 if(NOT TARGET imgui)
   add_subdirectory(imgui)
@@ -40,9 +45,4 @@ endif()
 ## stb
 if(NOT TARGET stb)
   add_subdirectory(stb)
-endif()
-
-## IconFontCppHeaders
-if(NOT TARGET IconFontCppHeaders)
-  add_subdirectory(IconFontCppHeaders)
 endif()

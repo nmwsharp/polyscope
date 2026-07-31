@@ -36,6 +36,11 @@ list(APPEND SRCS
         ImGuizmo/ImGuizmo.cpp
     )
 
+# ImGuiFileDialog sources
+list(APPEND SRCS
+        ImGuiFileDialog/ImGuiFileDialog.cpp
+    )
+
 
 # Add per-backend sources
 if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
@@ -63,6 +68,10 @@ endif()
 add_library(imgui ${SRCS})
 target_compile_features(imgui PUBLIC cxx_std_11)
 set_target_properties(imgui PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/config")
+target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ImGuiFileDialog/")
+target_link_libraries(imgui PUBLIC IconFontCppHeaders)
+target_compile_definitions(imgui PUBLIC CUSTOM_IMGUIFILEDIALOG_CONFIG="polyscope_imgui_file_dialog_config.h")
 
 # Per-backend settings
 if("${POLYSCOPE_BACKEND_OPENGL3_GLFW}")
