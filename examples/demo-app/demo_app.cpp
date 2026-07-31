@@ -22,6 +22,7 @@
 #include "ImGuiFileDialog.h"
 #include "IconFontCppHeaders/IconsLucide.h"
 
+#include <cstdio>
 #include <iostream>
 #include <set>
 #include <unordered_set>
@@ -871,10 +872,14 @@ void processFile(std::string filename) {
   }
 }
 
-enum class DemoFileDialogAction { None, OpenOne, OpenMany, Save, Directory };
+enum class DemoFileDialogAction { None, OpenMesh, Save };
 
-IGFD::FileDialog demoFileDialog;
 DemoFileDialogAction demoFileDialogAction = DemoFileDialogAction::None;
+char demoSelectedFileDialogPath[4096] = "";
+
+void setDemoSelectedFileDialogPath(const std::string& path) {
+  std::snprintf(demoSelectedFileDialogPath, sizeof(demoSelectedFileDialogPath), "%s", path.c_str());
+}
 
 
 void callback() {
@@ -890,41 +895,24 @@ void callback() {
 
   ImGui::SetNextItemOpen(true, ImGuiCond_Once);
   if (ImGui::TreeNode("File dialogs")) {
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    ImGui::InputText("Selected path", demoSelectedFileDialogPath, sizeof(demoSelectedFileDialogPath),
+                     ImGuiInputTextFlags_ReadOnly);
+
     if (ImGui::Button(ICON_LC_FOLDER_OPEN " Open mesh file")) {
       IGFD::FileDialogConfig config;
-      config.path = ".";
-      config.flags = ImGuiFileDialogFlags_Modal | ImGuiFileDialogFlags_DisableThumbnailMode;
-      demoFileDialog.OpenDialog("DemoFileDialog", ICON_LC_FOLDER_OPEN " Open a mesh",
-                                "Mesh files{.obj,.ply,.mesh},All files{.*}", config);
-      demoFileDialogAction = DemoFileDialogAction::OpenOne;
+      config.flags = ImGuiFileDialogFlags_Modal;
+      ImGuiFileDialog::Instance()->OpenDialog("DemoFileDialog", ICON_LC_FOLDER_OPEN " Open a mesh",
+                                              "Mesh files{.obj,.ply,.mesh},All files{.*}", config);
+      demoFileDialogAction = DemoFileDialogAction::OpenMesh;
     }
 
-    if (ImGui::Button(ICON_LC_FILES " Open multiple files")) {
+    if (ImGui::Button(ICON_LC_SAVE " Save file")) {
       IGFD::FileDialogConfig config;
-      config.path = ".";
-      config.countSelectionMax = 0;
-      config.flags = ImGuiFileDialogFlags_Modal | ImGuiFileDialogFlags_DisableThumbnailMode |
-                     ImGuiFileDialogFlags_DontShowHiddenFiles | ImGuiFileDialogFlags_CaseInsensitiveExtentionFiltering;
-      demoFileDialog.OpenDialog("DemoFileDialog", ICON_LC_FILES " Open mesh files", ".obj,.ply,.mesh", config);
-      demoFileDialogAction = DemoFileDialogAction::OpenMany;
-    }
-
-    if (ImGui::Button(ICON_LC_SAVE " Choose output file")) {
-      IGFD::FileDialogConfig config;
-      config.path = ".";
       config.fileName = "output.obj";
-      config.flags = ImGuiFileDialogFlags_Modal | ImGuiFileDialogFlags_DisableThumbnailMode |
-                     ImGuiFileDialogFlags_ConfirmOverwrite;
-      demoFileDialog.OpenDialog("DemoFileDialog", ICON_LC_SAVE " Choose an output file", ".obj", config);
+      config.flags = ImGuiFileDialogFlags_Modal | ImGuiFileDialogFlags_ConfirmOverwrite;
+      ImGuiFileDialog::Instance()->OpenDialog("DemoFileDialog", ICON_LC_SAVE " Choose an output file", ".obj", config);
       demoFileDialogAction = DemoFileDialogAction::Save;
-    }
-
-    if (ImGui::Button(ICON_LC_FOLDER " Choose directory")) {
-      IGFD::FileDialogConfig config;
-      config.path = ".";
-      config.flags = ImGuiFileDialogFlags_Modal | ImGuiFileDialogFlags_DisableThumbnailMode;
-      demoFileDialog.OpenDialog("DemoFileDialog", ICON_LC_FOLDER " Choose a directory", nullptr, config);
-      demoFileDialogAction = DemoFileDialogAction::Directory;
     }
     ImGui::TreePop();
   }
@@ -933,20 +921,19 @@ void callback() {
     const ImVec2 viewportSize = ImGui::GetMainViewport()->WorkSize;
     const ImVec2 minDialogSize(viewportSize.x * 0.5f, viewportSize.y * 0.5f);
     const ImVec2 maxDialogSize(viewportSize.x * 0.9f, viewportSize.y * 0.9f);
-    if (demoFileDialog.Display("DemoFileDialog", ImGuiWindowFlags_NoCollapse, minDialogSize, maxDialogSize)) {
-      if (demoFileDialog.IsOk()) {
-        if (demoFileDialogAction == DemoFileDialogAction::OpenOne ||
-            demoFileDialogAction == DemoFileDialogAction::OpenMany) {
-          for (const auto& entry : demoFileDialog.GetSelection()) {
-            processFile(entry.second);
-          }
-        } else if (demoFileDialogAction == DemoFileDialogAction::Save) {
-          std::cout << "Selected output file: " << demoFileDialog.GetFilePathName() << std::endl;
+    if (ImGuiFileDialog::Instance()->Display("DemoFileDialog", ImGuiWindowFlags_NoCollapse, minDialogSize, maxDialogSize)) {
+      if (ImGuiFileDialog::Instance()->IsOk()) {
+        if (demoFileDialogAction == DemoFileDialogAction::OpenMesh) {
+          const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
+          setDemoSelectedFileDialogPath(path);
+          processFile(path);
         } else {
-          std::cout << "Selected directory: " << demoFileDialog.GetCurrentPath() << std::endl;
+          const std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
+          setDemoSelectedFileDialogPath(path);
+          std::cout << "Selected output file: " << path << std::endl;
         }
       }
-      demoFileDialog.Close();
+      ImGuiFileDialog::Instance()->Close();
       demoFileDialogAction = DemoFileDialogAction::None;
     }
   }
