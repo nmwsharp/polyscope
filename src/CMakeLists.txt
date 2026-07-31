@@ -303,7 +303,6 @@ SET(HEADERS
   ${INCLUDE_ROOT}/group.h
   ${INCLUDE_ROOT}/image_quantity.h
   ${INCLUDE_ROOT}/imgui_config.h
-  ${INCLUDE_ROOT}/imgui_file_dialog_config.h
   ${INCLUDE_ROOT}/implicit_helpers.h
   ${INCLUDE_ROOT}/implicit_helpers.ipp
   ${INCLUDE_ROOT}/messages.h
