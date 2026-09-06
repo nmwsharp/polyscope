@@ -1,20 +1,26 @@
 [submodule "deps/glfw"]
 	path = deps/glfw
-  url = https://github.com/glfw/glfw.git
+	url = https://github.com/glfw/glfw.git
 	branch = master
+	shallow = true
 [submodule "deps/imgui/imgui"]
 	path = deps/imgui/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = master
+	shallow = true
 [submodule "deps/happly"]
 	path = deps/happly
 	url = https://github.com/nmwsharp/happly.git
+	shallow = true
 [submodule "deps/glm"]
 	path = deps/glm
 	url = https://github.com/g-truc/glm.git
+	shallow = true
 [submodule "deps/imgui/implot"]
 	path = deps/imgui/implot
 	url = https://github.com/epezent/implot
+	shallow = true
 [submodule "deps/imgui/ImGuizmo"]
 	path = deps/imgui/ImGuizmo
 	url = https://github.com/nmwsharp/ImGuizmo.git
+	shallow = true
