@@ -1113,6 +1113,17 @@ void buildViewGui() {
   }
   if (ImGui::TreeNode("View")) {
 
+    // Show which viewport is being edited in multi-viewport mode
+    if (getViewportGridRows() > 1 || getViewportGridCols() > 1) {
+      Viewport* active = state::globalContext.lastActiveViewport;
+      if (active) {
+        ImGui::Text("Editing viewport [%d,%d]", active->gridRow, active->gridCol);
+      } else {
+        ImGui::TextUnformatted("Click a viewport to edit it");
+      }
+      ImGui::Separator();
+    }
+
     // == Camera style
 
     std::string viewStyleName = enum_to_string(view::style);

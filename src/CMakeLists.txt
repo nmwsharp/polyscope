@@ -165,6 +165,7 @@ SET(SRCS
   group.cpp
   utilities.cpp
   view.cpp
+  viewport.cpp
   screenshot.cpp
   messages.cpp
   pick.cpp
@@ -352,6 +353,7 @@ SET(HEADERS
   ${INCLUDE_ROOT}/types.h
   ${INCLUDE_ROOT}/utilities.h
   ${INCLUDE_ROOT}/view.h
+  ${INCLUDE_ROOT}/viewport.h
   ${INCLUDE_ROOT}/vector_quantity.h
   ${INCLUDE_ROOT}/vector_quantity.ipp
   ${INCLUDE_ROOT}/volume_mesh.h

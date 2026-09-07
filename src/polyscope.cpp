@@ -17,6 +17,7 @@
 #include "polyscope/render/engine.h"
 #include "polyscope/utilities.h"
 #include "polyscope/view.h"
+#include "polyscope/viewport.h"
 
 #include "stb_image.h"
 
@@ -451,8 +452,19 @@ bool pendingPickActive = false;
 PickResult pendingPickResult;
 float pendingPickTime = 0.0f;
 
+// Helper: find the viewport under the given screen coordinates
+Viewport* findViewportAtScreenCoords(float x, float y) {
+  Context& ctx = state::globalContext;
+  for (auto& vp : ctx.viewports) {
+    if (vp->containsScreenCoords(x, y)) return vp.get();
+  }
+  return nullptr;
+}
+
+
 void processInputEvents() {
   ImGuiIO& io = ImGui::GetIO();
+  Context& ctx = state::globalContext;
 
   // RECALL: in ImGUI language, on MacOS "ctrl" == "cmd", so all the options
   // below referring to ctrl really mean cmd on MacOS.
@@ -460,6 +472,34 @@ void processInputEvents() {
   // If any mouse button is pressed, trigger a redraw
   if (ImGui::IsAnyMouseDown()) {
     requestRedraw();
+  }
+
+  // === Multi-viewport: determine active viewport on mouse press
+  if (!ctx.viewports.empty()) {
+    if (ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1)) {
+      // Only set active/last-active when clicking on the scene, not on ImGui panels
+      if (!io.WantCaptureMouse) {
+        Viewport* clicked = findViewportAtScreenCoords(io.MousePos.x, io.MousePos.y);
+        ctx.activeViewport = clicked;
+        if (clicked) {
+          ctx.lastActiveViewport = clicked;
+        }
+      }
+    }
+    if (!ImGui::IsAnyMouseDown()) {
+      ctx.activeViewport = nullptr;
+    }
+  }
+
+  // If we have an active viewport, push its state into globals for input processing.
+  // Capture the pointer now — activeViewport can be cleared later in this function
+  // if the mouse button is released on the same frame.
+  ViewStateSnapshot savedState;
+  Viewport* pushedViewport = nullptr;
+  if (ctx.activeViewport) {
+    savedState = saveViewState();
+    ctx.activeViewport->pushViewState();
+    pushedViewport = ctx.activeViewport;
   }
 
   bool widgetCapturedMouse = false;
@@ -479,6 +519,24 @@ void processInputEvents() {
 
     // === Mouse inputs
     if (!io.WantCaptureMouse && !widgetCapturedMouse) {
+
+      // For multi-viewport: if no viewport is active (e.g. scroll without click), find the hovered one.
+      // Push camera state but preserve full window dimensions so scroll handlers behave consistently.
+      Viewport* hoveredViewport = nullptr;
+      if (!ctx.viewports.empty() && !ctx.activeViewport) {
+        hoveredViewport = findViewportAtScreenCoords(io.MousePos.x, io.MousePos.y);
+        if (hoveredViewport) {
+          if (!pushedViewport) {
+            savedState = saveViewState();
+          }
+          hoveredViewport->pushViewState();
+          // Restore full window dimensions so scroll handlers see consistent sizes
+          view::bufferWidth = savedState.bufferWidth;
+          view::bufferHeight = savedState.bufferHeight;
+          view::windowWidth = savedState.windowWidth;
+          view::windowHeight = savedState.windowHeight;
+        }
+      }
 
       { // Process scroll via "mouse wheel" (which might be a touchpad)
         float xoffset = io.MouseWheelH;
@@ -504,6 +562,14 @@ void processInputEvents() {
         }
       }
 
+      // If we pushed a hovered viewport for scroll, pull state back
+      if (hoveredViewport) {
+        hoveredViewport->pullViewState();
+        if (!pushedViewport) {
+          restoreViewState(savedState);
+        }
+      }
+
 
       { // Process drags
         bool dragLeft = ImGui::IsMouseDragging(0);
@@ -519,12 +585,21 @@ void processInputEvents() {
           bool isTranslate = (dragLeft && io.KeyShift && !io.KeyCtrl) || dragRight;
           bool isDragZoom = dragLeft && io.KeyShift && io.KeyCtrl;
 
+          // Compute viewport-local mouse position for rotation.
+          // When a viewport is active, view::windowWidth/Height are the viewport's dimensions,
+          // so io.MousePos (in full-window coords) must be offset to the viewport's origin.
+          float localMouseX = io.MousePos.x;
+          float localMouseY = io.MousePos.y;
+          if (ctx.activeViewport) {
+            localMouseX -= ctx.activeViewport->windowX;
+            localMouseY -= ctx.activeViewport->windowY;
+          }
+
           if (isDragZoom) {
             view::processZoom(dragDelta.y * 5);
           }
           if (isRotate) {
-            glm::vec2 currPos{io.MousePos.x / view::windowWidth,
-                              (view::windowHeight - io.MousePos.y) / view::windowHeight};
+            glm::vec2 currPos{localMouseX / view::windowWidth, (view::windowHeight - localMouseY) / view::windowHeight};
             currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
             if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
               view::processRotate(currPos - 2.0f * dragDelta, currPos);
@@ -556,12 +631,32 @@ void processInputEvents() {
           }
         }
 
+        // For pick/recenter: on the mouse-release frame, activeViewport is already null (cleared
+        // above when !IsAnyMouseDown). Use lastActiveViewport to push the correct camera state so
+        // the pick render uses the right projection, and convert screen coords to viewport-local.
+        // The push/pull is scoped to this block only.
+        ViewStateSnapshot pickSavedState;
+        bool didPushForPick = false;
+        Viewport* pickViewport = ctx.lastActiveViewport;
+        if (pickViewport && !pushedViewport) {
+          pickSavedState = saveViewState();
+          pickViewport->pushViewState();
+          didPushForPick = true;
+        }
+
+        // Compute viewport-local screen coords for pick/recenter
+        glm::vec2 pickScreenCoords{io.MousePos.x, io.MousePos.y};
+        Viewport* coordViewport = pushedViewport ? pushedViewport : pickViewport;
+        if (coordViewport) {
+          pickScreenCoords.x -= coordViewport->windowX;
+          pickScreenCoords.y -= coordViewport->windowY;
+        }
+
         if (!anyModifierHeld && (io.MouseReleased[0] && io.MouseClickedLastCount[0] == 1)) {
 
           // don't pick at the end of a long drag
           if (dragDistSinceLastRelease < dragIgnoreThreshold) {
-            glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
-            PickResult pickResult = pickAtScreenCoords(screenCoords);
+            PickResult pickResult = pickAtScreenCoords(pickScreenCoords);
             // queue the pick for delayed application
             pendingPickResult = pickResult;
             pendingPickTime = ImGui::GetTime();
@@ -581,13 +676,24 @@ void processInputEvents() {
         // Double-click or Ctrl-shift left-click to set new center
         if ((io.MouseReleased[0] && io.MouseClickedLastCount[0] == 2) || (io.MouseReleased[0] && ctrlShiftHeld)) {
           if (dragDistSinceLastRelease < dragIgnoreThreshold) {
-            glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
-            view::processSetCenter(screenCoords);
+            view::processSetCenter(pickScreenCoords);
             pendingPickActive = false; // cancel any pending pick from the first click
           }
         }
+
+        if (didPushForPick) {
+          pickViewport->pullViewState();
+          restoreViewState(pickSavedState);
+        }
       }
     }
+  }
+
+  // Pull state back to the viewport that was pushed (use captured pointer,
+  // not ctx.activeViewport, which may have been cleared if mouse was released this frame)
+  if (pushedViewport) {
+    pushedViewport->pullViewState();
+    restoreViewState(savedState);
   }
 
   // Reset the drag distance after any release
@@ -608,7 +714,9 @@ void renderSlicePlanes() {
   }
 }
 
-void renderScene() {
+// Render the scene into the engine's current sceneBuffer/sceneBufferFinal.
+// This function is called once per viewport in multi-viewport mode.
+void renderSceneSingleView() {
 
   render::engine->applyTransparencySettings();
 
@@ -688,15 +796,108 @@ void renderScene() {
   }
 }
 
+
+// Helper: swap engine's scene buffers with a viewport's buffers
+void swapEngineBuffersWithViewport(Viewport& vp) {
+  std::swap(render::engine->sceneBuffer, vp.sceneBuffer);
+  std::swap(render::engine->sceneBufferFinal, vp.sceneBufferFinal);
+  std::swap(render::engine->sceneDepthMinFrame, vp.sceneDepthMinFrame);
+  std::swap(render::engine->sceneColor, vp.sceneColor);
+  std::swap(render::engine->sceneColorFinal, vp.sceneColorFinal);
+  std::swap(render::engine->sceneDepth, vp.sceneDepth);
+  std::swap(render::engine->sceneDepthMin, vp.sceneDepthMin);
+  std::swap(render::engine->compositePeel, vp.compositePeel);
+}
+
+
+void renderScene() {
+  Context& ctx = state::globalContext;
+
+  if (ctx.viewports.empty()) {
+    // Legacy single-viewport path
+    renderSceneSingleView();
+    return;
+  }
+
+  // Multi-viewport path
+  ViewStateSnapshot globalState = saveViewState();
+
+  for (auto& vp : ctx.viewports) {
+    // Push this viewport's camera into the globals
+    vp->pushViewState();
+
+    // Swap engine buffers with viewport buffers
+    swapEngineBuffersWithViewport(*vp);
+
+    // Update the compositePeel texture binding to point at the (now-swapped) sceneColor
+    render::engine->compositePeel->setTextureFromBuffer("t_image", render::engine->sceneColor.get());
+
+    // Update the copyDepth texture binding
+    render::engine->copyDepth->setTextureFromBuffer("t_depth", render::engine->sceneDepth.get());
+
+    // Render the scene for this viewport
+    renderSceneSingleView();
+
+    // Pull any state changes back (e.g., flight animation updates)
+    vp->pullViewState();
+
+    // Swap buffers back
+    swapEngineBuffersWithViewport(*vp);
+  }
+
+  // Restore global state
+  restoreViewState(globalState);
+
+  // Restore engine shader texture bindings back to the engine's own buffers.
+  // The swap restores the shared_ptr ownership, but setTextureFromBuffer stores raw
+  // pointers that still reference the viewport's textures (which will be freed if
+  // the viewport layout changes). Rebind to the engine's own textures.
+  render::engine->compositePeel->setTextureFromBuffer("t_image", render::engine->sceneColor.get());
+  render::engine->copyDepth->setTextureFromBuffer("t_depth", render::engine->sceneDepth.get());
+}
+
 void renderSceneToScreen() {
+  Context& ctx = state::globalContext;
+
   render::engine->bindDisplay();
+
   if (options::debugDrawPickBuffer) {
     // special debug draw
     pick::evaluatePickQuery(-1, -1); // populate the buffer
     render::engine->pickFramebuffer->blitTo(render::engine->displayBuffer.get());
-  } else {
-    render::engine->applyLightingTransform(render::engine->sceneColorFinal);
+    return;
   }
+
+  if (ctx.viewports.empty()) {
+    // Legacy single-viewport path
+    render::engine->applyLightingTransform(render::engine->sceneColorFinal);
+    return;
+  }
+
+  // Multi-viewport path: composite each viewport's result into its region of the display
+  ViewStateSnapshot globalState = saveViewState();
+
+  render::FrameBuffer& displayBuf = render::engine->getDisplayBuffer();
+
+  for (auto& vp : ctx.viewports) {
+    // Push viewport state so bgColor etc. are correct for lighting transform.
+    // No pullViewState() needed — applyLightingTransform is read-only w.r.t. view state.
+    vp->pushViewState();
+
+    // Set the display buffer's viewport to this viewport's pixel region, then re-bind
+    // to issue the actual glViewport call. OpenGL viewport origin is bottom-left,
+    // but our pixelY is from top.
+    int glY = globalState.bufferHeight - vp->pixelY - vp->pixelHeight;
+    displayBuf.setViewport(vp->pixelX, glY, vp->pixelWidth, vp->pixelHeight);
+    render::engine->bindDisplay();
+
+    render::engine->applyLightingTransform(vp->sceneColorFinal);
+  }
+
+  // Restore display buffer viewport to full window and global view state
+  displayBuf.setViewport(0, 0, globalState.bufferWidth, globalState.bufferHeight);
+  render::engine->bindDisplay();
+  restoreViewState(globalState);
 }
 
 void purgeWidgets() {
@@ -1066,7 +1267,20 @@ void draw(bool withUI, bool withContextCallback) {
     render::engine->ImGuiNewFrame();
 
     processInputEvents();
-    view::updateFlight();
+
+    // Update flight animations (per-viewport if multi-viewport)
+    if (state::globalContext.viewports.empty()) {
+      view::updateFlight();
+    } else {
+      ViewStateSnapshot flightSaved = saveViewState();
+      for (auto& vp : state::globalContext.viewports) {
+        vp->pushViewState();
+        view::updateFlight();
+        vp->pullViewState();
+      }
+      restoreViewState(flightSaved);
+    }
+
     showDelayedWarnings();
   }
 
@@ -1081,9 +1295,33 @@ void draw(bool withUI, bool withContextCallback) {
 
       if (options::buildGui) {
         if (options::buildDefaultGuiPanels) {
+
+          // In multi-viewport mode, push the last-active viewport's camera state into globals
+          // so that the built-in polyscope View panel (Camera Style, Up Dir, FOV, etc.) reads/writes
+          // the correct viewport's settings. We preserve window/buffer dimensions so ImGui layout
+          // is not affected.
+          ViewStateSnapshot guiSavedState;
+          bool didPushForGui = false;
+          if (state::globalContext.lastActiveViewport) {
+            guiSavedState = saveViewState();
+            state::globalContext.lastActiveViewport->pushViewState();
+            // Restore full window dimensions so GUI layout is unaffected
+            view::bufferWidth = guiSavedState.bufferWidth;
+            view::bufferHeight = guiSavedState.bufferHeight;
+            view::windowWidth = guiSavedState.windowWidth;
+            view::windowHeight = guiSavedState.windowHeight;
+            didPushForGui = true;
+          }
+
           buildPolyscopeGui();
           buildStructureGui();
           buildPickGui();
+
+          // Pull any GUI-modified state back into the viewport and restore globals
+          if (didPushForGui) {
+            state::globalContext.lastActiveViewport->pullViewState();
+            restoreViewState(guiSavedState);
+          }
         }
 
         for (WeakHandle<Widget> wHandle : state::widgets) {
@@ -1103,7 +1341,24 @@ void draw(bool withUI, bool withContextCallback) {
     (contextStack.back().callback)();
   }
 
-  processLazyProperties();
+  // Process lazy properties (projection mode, transparency mode, etc.)
+  // In multi-viewport mode, push the last-active viewport's state so the lazy diff detects
+  // any GUI-driven changes (e.g. projection mode). Only one call is needed since the lazy
+  // shadow variables are global singletons.
+  if (state::globalContext.lastActiveViewport) {
+    ViewStateSnapshot lazySaved = saveViewState();
+    state::globalContext.lastActiveViewport->pushViewState();
+    processLazyProperties();
+    state::globalContext.lastActiveViewport->pullViewState();
+    restoreViewState(lazySaved);
+  } else {
+    processLazyProperties();
+  }
+
+  // Update viewport layouts (handles window resize)
+  if (!state::globalContext.viewports.empty()) {
+    updateViewportLayouts();
+  }
 
   // Draw structures in the scene
   if (redrawNextFrame || options::alwaysRedraw) {
@@ -1221,6 +1476,7 @@ void removeEverything() {
   state::filesDroppedCallback = nullptr;
   options::configureImGuiStyleCallback = configureImGuiStyle; // restore defaults
   options::prepareImGuiFontsCallback = loadBaseFonts;
+  setSingleViewport();
 }
 
 void shutdown(bool allowMidFrameShutdown) {
@@ -1610,5 +1866,87 @@ void updateStructureExtents() {
 namespace state {
 glm::vec3 center() { return 0.5f * (std::get<0>(state::boundingBox) + std::get<1>(state::boundingBox)); }
 } // namespace state
+
+// === Viewport management ===
+
+void setViewportGridLayout(int rows, int cols) {
+  if (rows < 1 || cols < 1) {
+    exception("Viewport grid layout must have at least 1 row and 1 column");
+    return;
+  }
+
+  Context& ctx = state::globalContext;
+  ctx.viewportGridRows = rows;
+  ctx.viewportGridCols = cols;
+
+  // Save the current global view state so new viewports can inherit it
+  ViewStateSnapshot currentState = saveViewState();
+
+  // Null raw pointers before clearing the vector to avoid any dangling pointer window
+  ctx.activeViewport = nullptr;
+  ctx.lastActiveViewport = nullptr;
+  ctx.viewports.clear();
+
+  if (rows == 1 && cols == 1) {
+    // Single viewport mode: don't create any viewport objects, use legacy path
+    return;
+  }
+
+  // Ensure globals match the saved state so pullViewState reads consistent values
+  restoreViewState(currentState);
+
+  for (int r = 0; r < rows; r++) {
+    for (int c = 0; c < cols; c++) {
+      std::string name = "viewport_" + std::to_string(r) + "_" + std::to_string(c);
+      std::unique_ptr<Viewport> vp(new Viewport(name, r, c));
+
+      // Initialize from current global state
+      vp->pullViewState();
+
+      ctx.viewports.push_back(std::move(vp));
+    }
+  }
+
+  // Default last-active to the first viewport so the built-in GUI works immediately
+  ctx.lastActiveViewport = ctx.viewports[0].get();
+
+  // Update layouts and allocate buffers
+  updateViewportLayouts();
+
+  // Reset each viewport's camera to home view
+  for (auto& vp : ctx.viewports) {
+    vp->resetCameraToHomeView();
+  }
+
+  requestRedraw();
+}
+
+int getViewportGridRows() { return state::globalContext.viewportGridRows; }
+int getViewportGridCols() { return state::globalContext.viewportGridCols; }
+
+void setSingleViewport() { setViewportGridLayout(1, 1); }
+void setVerticalSplitViewport() { setViewportGridLayout(1, 2); }
+void setHorizontalSplitViewport() { setViewportGridLayout(2, 1); }
+void setQuadViewport() { setViewportGridLayout(2, 2); }
+
+Viewport* getViewport(int row, int col) {
+  Context& ctx = state::globalContext;
+  for (auto& vp : ctx.viewports) {
+    if (vp->gridRow == row && vp->gridCol == col) return vp.get();
+  }
+  return nullptr;
+}
+
+Viewport* getActiveViewport() { return state::globalContext.activeViewport; }
+
+void updateViewportLayouts() {
+  Context& ctx = state::globalContext;
+  for (auto& vp : ctx.viewports) {
+    vp->updateLayout(view::bufferWidth, view::bufferHeight, view::windowWidth, view::windowHeight, ctx.viewportGridRows,
+                     ctx.viewportGridCols);
+    vp->ensureBuffersAllocated();
+    vp->resizeBuffers();
+  }
+}
 
 } // namespace polyscope

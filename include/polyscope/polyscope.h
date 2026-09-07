@@ -21,6 +21,7 @@
 #include "polyscope/structure.h"
 #include "polyscope/transformation_gizmo.h"
 #include "polyscope/utilities.h"
+#include "polyscope/viewport.h"
 #include "polyscope/weak_handle.h"
 #include "polyscope/widget.h"
 
@@ -195,6 +196,26 @@ void buildStructureGui();
 void buildPickGui();
 void buildUserGuiAndInvokeCallback();
 
+
+// === Viewport management
+
+// Set the viewport grid layout (e.g. 1x1, 1x2, 2x1, 2x2)
+void setViewportGridLayout(int rows, int cols);
+int getViewportGridRows();
+int getViewportGridCols();
+
+// Convenience presets
+void setSingleViewport();
+void setVerticalSplitViewport();   // 1 row, 2 columns (left | right)
+void setHorizontalSplitViewport(); // 2 rows, 1 column (top / bottom)
+void setQuadViewport();            // 2 rows, 2 columns
+
+// Get a specific viewport (nullptr if out of range)
+Viewport* getViewport(int row, int col);
+Viewport* getActiveViewport();
+
+// Internal: update viewport layouts after window resize
+void updateViewportLayouts();
 
 // === Utility
 
