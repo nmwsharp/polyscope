@@ -8,8 +8,8 @@ namespace polyscope {
 
 template <typename QuantityT>
 ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vector<float>& values_, DataType dataType_)
-    : quantity(quantity_), values(&quantity, quantity.uniquePrefix() + "values", valuesData), valuesData(values_),
-      dataType(dataType_), dataRange(robustMinMax(values.data, 1e-5)),
+    : quantity(quantity_), values(&quantity, quantity.uniquePrefix() + "values", std::vector<float>(values_)),
+      dataType(dataType_), dataRange(robustMinMax(values_, 1e-5)),
       vizRangeMin(quantity.uniquePrefix() + "vizRangeMin", -777.), // set later,
       vizRangeMax(quantity.uniquePrefix() + "vizRangeMax", -777.), // including clearing cache
       colorBar(quantity), cMap(quantity.uniquePrefix() + "cmap", defaultColorMap(dataType)),
@@ -23,7 +23,7 @@ ScalarQuantity<QuantityT>::ScalarQuantity(QuantityT& quantity_, const std::vecto
 {
   values.checkInvalidValues();
   colorBar.updateColormap(cMap.get());
-  colorBar.buildHistogram(values.data, dataType);
+  colorBar.buildHistogram(values_, dataType);
   // TODO: I think we might be building the histogram ^^^ twice for many quantities
 
   if (vizRangeMin.holdsDefaultValue()) { // min and max should always have same cache state
@@ -312,7 +312,9 @@ template <typename QuantityT>
 template <class V>
 void ScalarQuantity<QuantityT>::updateData(const V& newValues) {
   validateSize(newValues, values.size(), "scalar quantity " + quantity.name);
-  values.data = standardizeArray<float, V>(newValues);
+  auto d = standardizeArray<float, V>(newValues);
+  values.resize(d.size());
+  values.setDataHost(d);
   values.markHostBufferUpdated();
 }
 

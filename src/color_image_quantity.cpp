@@ -13,8 +13,10 @@ namespace polyscope {
 
 ColorImageQuantity::ColorImageQuantity(Structure& parent_, std::string name, size_t dimX, size_t dimY,
                                        const std::vector<glm::vec4>& data_, ImageOrigin imageOrigin_)
-    : ImageQuantity(parent_, name, dimX, dimY, imageOrigin_), colors(this, uniquePrefix() + "colors", colorsData),
-      colorsData(data_), isPremultiplied(uniquePrefix() + "isPremultiplied", false) {
+    : ImageQuantity(parent_, name, dimX, dimY, imageOrigin_),
+      colors(this, uniquePrefix() + "colors", std::vector<glm::vec4>(data_)),
+      isPremultiplied(uniquePrefix() + "isPremultiplied", false) {
+  colors.setAsType(DeviceBufferType::Texture2d);
   colors.setTextureSize(dimX, dimY);
 }
 
@@ -53,9 +55,10 @@ void ColorImageQuantity::prepareFullscreen() {
                                     render::ShaderReplacementDefaults::Process);
   // clang-format on
   fullscreenProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
+  fullscreenProgram->setDrawCount(render::engine->screenTrianglesCoords().size());
   // TODO throughout polyscope we discard the shared pointer when adding textures/attributes to programs... should we
   // just track the shared pointer?
-  fullscreenProgram->setTextureFromBuffer("t_image", colors.getRenderTextureBuffer().get());
+  fullscreenProgram->setTextureFromBuffer("t_image", colors);
 }
 
 void ColorImageQuantity::prepareBillboard() {
@@ -74,7 +77,8 @@ void ColorImageQuantity::prepareBillboard() {
                                  render::ShaderReplacementDefaults::Process);
   // clang-format on
   billboardProgram->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  billboardProgram->setTextureFromBuffer("t_image", colors.getRenderTextureBuffer().get());
+  billboardProgram->setDrawCount(render::engine->screenTrianglesCoords().size());
+  billboardProgram->setTextureFromBuffer("t_image", colors);
 }
 
 void ColorImageQuantity::showFullscreen() {

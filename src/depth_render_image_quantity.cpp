@@ -79,9 +79,10 @@ void DepthRenderImageQuantity::prepare() {
   // clang-format on
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
+  program->setDrawCount(render::engine->screenTrianglesCoords().size());
+  program->setTextureFromBuffer("t_depth", depths);
   if (hasNormals) {
-    program->setTextureFromBuffer("t_normal", normals.getRenderTextureBuffer().get());
+    program->setTextureFromBuffer("t_normal", normals);
   }
   render::engine->setMaterial(*program, material.get());
 }

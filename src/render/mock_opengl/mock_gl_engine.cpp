@@ -2,6 +2,7 @@
 
 #ifdef POLYSCOPE_BACKEND_OPENGL_MOCK_ENABLED
 #include "polyscope/render/mock_opengl/mock_gl_engine.h"
+#include "polyscope/render/managed_buffer.h"
 
 #include "polyscope/imgui_config.h"
 #include "polyscope/messages.h"
@@ -73,20 +74,21 @@ void GLAttributeBuffer::checkArray(int testArrayCount) {
 }
 
 
+void GLAttributeBuffer::reserveCapacity(size_t n) {
+  if (n <= bufferSize) return;
+  bufferSize = static_cast<uint64_t>(n);
+  setFlag = true;
+}
+
 template <typename T>
 void GLAttributeBuffer::setData_helper(const std::vector<T>& data) {
   bind();
 
-  // allocate if needed
   if (!isSet() || data.size() > bufferSize) {
     setFlag = true;
-    uint64_t newSize = data.size();
-    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+    uint64_t newSize = static_cast<uint64_t>(data.size());
     bufferSize = newSize;
   }
-
-  // do the actual copy
-  dataSize = data.size();
 
   checkGLError();
 }
@@ -179,7 +181,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data) {
 
 template <typename T>
 T GLAttributeBuffer::getData_helper(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
+  if (!isSet() || ind >= bufferSize * static_cast<uint64_t>(getArrayCount())) exception("bad getData");
   bind();
   T readValue{};
   return readValue;
@@ -241,7 +243,7 @@ glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
 
 template <typename T>
 std::vector<T> GLAttributeBuffer::getDataRange_helper(size_t start, size_t count) {
-  if (!isSet() || start + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
+  if (!isSet() || start + count > bufferSize * static_cast<uint64_t>(getArrayCount())) exception("bad getData");
   bind();
   std::vector<T> readValues(count);
   return readValues;
@@ -411,7 +413,7 @@ void GLTextureBuffer::setData(const std::vector<glm::vec3>& data) {
 
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
@@ -431,7 +433,7 @@ void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
 
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
@@ -450,7 +452,7 @@ void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
 void GLTextureBuffer::setData(const std::vector<float>& data) {
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
@@ -469,7 +471,7 @@ void GLTextureBuffer::setData(const std::vector<float>& data) {
 void GLTextureBuffer::setData(const std::vector<double>& data) {
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
@@ -776,7 +778,7 @@ void GLCompiledProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
       return;
     }
   }
-  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, nullptr});
+  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, nullptr, nullptr});
 }
 
 void GLCompiledProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
@@ -803,7 +805,7 @@ void GLCompiledProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
       return;
     }
   }
-  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr});
+  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr, nullptr});
 }
 
 
@@ -835,7 +837,7 @@ void GLShaderProgram::createBuffers() {
   }
 }
 
-void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) {
+void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer, ManagedBufferBase* source) {
   bindVAO();
   checkGLError();
 
@@ -857,6 +859,7 @@ void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBu
       if (!engineExtBuff) throw std::invalid_argument("attribute " + name + " external buffer engine type cast failed");
 
       a.buff = engineExtBuff;
+      a.sourceManagedBuffer = source;
 
       a.buff->bind();
 
@@ -1456,7 +1459,7 @@ void GLShaderProgram::setTexture2D(std::string name, unsigned char* texData, uns
   throw std::invalid_argument("No texture with name " + name);
 }
 
-void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) {
+void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer, ManagedBufferBase* source) {
 
   // Find the right texture
   for (GLShaderTexture& t : textures) {
@@ -1471,6 +1474,7 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
       throw std::invalid_argument("Bad texture in setTextureFromBuffer()");
     }
 
+    t.sourceManagedBuffer = source;
     t.isSet = true;
     return;
   }
@@ -1580,28 +1584,14 @@ void GLShaderProgram::validateData() {
   }
 
   // Check attributes
-  int64_t attributeSize = -1;
   for (GLShaderAttribute a : attributes) {
     if (!a.buff) {
       throw std::invalid_argument("Attribute " + a.name + " has no buffer attached");
     }
-    if (a.buff->getDataSize() < 0) {
+    if (!a.buff->isSet()) {
       throw std::invalid_argument("Attribute " + a.name + " has not been set");
     }
-
-    int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
-
-    if (attributeSize == -1) { // first one we've seen
-      attributeSize = a.buff->getDataSize() / (compatCount);
-    } else { // not the first one we've seen
-      if (a.buff->getDataSize() / (compatCount) != attributeSize) {
-        throw std::invalid_argument("Attributes have inconsistent size. One attribute has size " +
-                                    std::to_string(attributeSize) + " and " + a.name + " has size " +
-                                    std::to_string(a.buff->getDataSize()));
-      }
-    }
   }
-  drawDataLength = static_cast<unsigned int>(attributeSize);
 
   // Check textures
   for (GLShaderTexture& t : textures) {
@@ -1615,11 +1605,21 @@ void GLShaderProgram::validateData() {
     throw std::invalid_argument("Index buffer has not been filled");
   }
 
-  // Set the size
+  // Validate drawCount.
+  if (drawCount == INVALID_IND_32) {
+    throw std::invalid_argument("drawCount has not been set; call setDrawCount() before drawing");
+  }
   if (useIndex) {
-    drawDataLength = static_cast<unsigned int>(indexSizeMult * indexBuffer->getDataSize());
+    if (indexBuffer->getBufferSize() < static_cast<uint64_t>(drawCount))
+      throw std::invalid_argument("Index buffer has fewer entries (" + std::to_string(indexBuffer->getBufferSize()) +
+                                  ") than drawCount (" + std::to_string(drawCount) + ")");
   } else {
-    drawDataLength = static_cast<unsigned int>(attributeSize);
+    for (GLShaderAttribute a : attributes) {
+      int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
+      if (a.buff->getBufferSize() / static_cast<uint64_t>(compatCount) < static_cast<uint64_t>(drawCount))
+        throw std::invalid_argument("Attribute " + a.name + " buffer has fewer entries (" + std::to_string(a.buff->getBufferSize()) +
+                                    ") than drawCount (" + std::to_string(drawCount) + ") [size ratio is " + std::to_string(compatCount) + "]");
+    }
   }
 
   // Check instanced (if applicable)
@@ -1656,8 +1656,19 @@ void GLShaderProgram::activateTextures() {
   }
 }
 
+void GLShaderProgram::syncBuffersToDeviceIfNeeded() {
+  for (auto& attr : attributes) {
+    if (attr.sourceManagedBuffer) attr.sourceManagedBuffer->syncToDeviceIfNeeded();
+  }
+  for (auto& tex : textures) {
+    if (tex.sourceManagedBuffer) tex.sourceManagedBuffer->syncToDeviceIfNeeded();
+  }
+  if (indexSourceManagedBuffer) indexSourceManagedBuffer->syncToDeviceIfNeeded();
+}
+
 void GLShaderProgram::draw() {
   validateData();
+  syncBuffersToDeviceIfNeeded();
 
   if (usePrimitiveRestart) {
   }

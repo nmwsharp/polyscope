@@ -122,8 +122,8 @@ template <typename QuantityT>
 VectorQuantity<QuantityT>::VectorQuantity(QuantityT& quantity_, const std::vector<glm::vec3>& vectors_,
                                           render::ManagedBuffer<glm::vec3>& vectorRoots_, VectorType vectorType_)
     : VectorQuantityBase<QuantityT>(quantity_, vectorType_),
-      vectors(&quantity_, quantity_.uniquePrefix() + "#values", vectorsData), vectorRoots(vectorRoots_),
-      vectorsData(vectors_) {
+      vectors(&quantity_, quantity_.uniquePrefix() + "#values", std::vector<glm::vec3>(vectors_)),
+      vectorRoots(vectorRoots_) {
   vectors.checkInvalidValues();
   this->updateMaxLength();
 }
@@ -152,6 +152,8 @@ void VectorQuantity<QuantityT>::drawVectors() {
   this->vectorProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   this->vectorProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
 
+  this->vectorProgram->setDrawCount(vectors.size());
+
   this->vectorProgram->draw();
 }
 
@@ -175,8 +177,8 @@ void VectorQuantity<QuantityT>::createProgram() {
   );
   // clang-format on
 
-  this->vectorProgram->setAttribute("a_vector", vectors.getRenderAttributeBuffer());
-  this->vectorProgram->setAttribute("a_position", vectorRoots.getRenderAttributeBuffer());
+  this->vectorProgram->setAttribute("a_vector", vectors);
+  this->vectorProgram->setAttribute("a_position", vectorRoots);
 
   render::engine->setMaterial(*(this->vectorProgram), this->material.get());
 }
@@ -187,7 +189,7 @@ void VectorQuantity<QuantityT>::updateMaxLength() {
 
   vectors.ensureHostBufferPopulated();
   float maxLength = 0.;
-  for (const glm::vec3& vec : vectors.data) {
+  for (const glm::vec3& vec : vectors) {
     maxLength = std::max(maxLength, glm::length(vec));
   }
   this->vectorLengthRange = maxLength;
@@ -202,7 +204,9 @@ template <typename QuantityT>
 template <class T>
 void VectorQuantity<QuantityT>::updateData(const T& newVectors) {
   validateSize(newVectors, this->vectors.size(), "vector quantity " + this->quantity.name);
-  this->vectors.data = standardizeVectorArray<glm::vec3, 3>(newVectors);
+  auto d = standardizeVectorArray<glm::vec3, 3>(newVectors);
+  this->vectors.resize(d.size());
+  this->vectors.setDataHost(d);
   this->vectors.markHostBufferUpdated();
   this->updateMaxLength();
 }
@@ -211,10 +215,12 @@ template <typename QuantityT>
 template <class T>
 void VectorQuantity<QuantityT>::updateData2D(const T& newVectors) {
   validateSize(newVectors, this->vectors.size(), "vector quantity " + this->quantity.name);
-  this->vectors.data = standardizeVectorArray<glm::vec3, 2>(newVectors);
-  for (auto& v : this->vectors.data) {
+  auto vectors3D = standardizeVectorArray<glm::vec3, 2>(newVectors);
+  for (auto& v : vectors3D) {
     v.z = 0.;
   }
+  this->vectors.resize(vectors3D.size());
+  this->vectors.setDataHost(vectors3D);
   this->vectors.markHostBufferUpdated();
   this->updateMaxLength();
 }
@@ -232,10 +238,10 @@ TangentVectorQuantity<QuantityT>::TangentVectorQuantity(QuantityT& quantity_,
                                                         VectorType vectorType_)
 
     : VectorQuantityBase<QuantityT>(quantity_, vectorType_),
-      tangentVectors(&quantity_, quantity_.uniquePrefix() + "#values", tangentVectorsData),
-      tangentBasisX(&quantity_, quantity_.uniquePrefix() + "#basisX", tangentBasisXData),
-      tangentBasisY(&quantity_, quantity_.uniquePrefix() + "#basisY", tangentBasisYData), vectorRoots(vectorRoots_),
-      tangentVectorsData(tangentVectors_), tangentBasisXData(tangentBasisX_), tangentBasisYData(tangentBasisY_),
+      tangentVectors(&quantity_, quantity_.uniquePrefix() + "#values", std::vector<glm::vec2>(tangentVectors_)),
+      tangentBasisX(&quantity_, quantity_.uniquePrefix() + "#basisX", std::vector<glm::vec3>(tangentBasisX_)),
+      tangentBasisY(&quantity_, quantity_.uniquePrefix() + "#basisY", std::vector<glm::vec3>(tangentBasisY_)),
+      vectorRoots(vectorRoots_),
       nSym(nSym_) {
   tangentVectors.checkInvalidValues();
   tangentBasisX.checkInvalidValues();
@@ -271,6 +277,7 @@ void TangentVectorQuantity<QuantityT>::drawVectors() {
     glm::mat4 Pinv = glm::inverse(P);
     this->vectorProgram->setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
     this->vectorProgram->setUniform("u_viewport", render::engine->getCurrentViewport());
+    this->vectorProgram->setDrawCount(tangentVectors.size());
 
     this->vectorProgram->draw();
   }
@@ -295,10 +302,10 @@ void TangentVectorQuantity<QuantityT>::createProgram() {
   );
   // clang-format on
 
-  this->vectorProgram->setAttribute("a_tangentVector", tangentVectors.getRenderAttributeBuffer());
-  this->vectorProgram->setAttribute("a_basisVectorX", tangentBasisX.getRenderAttributeBuffer());
-  this->vectorProgram->setAttribute("a_basisVectorY", tangentBasisY.getRenderAttributeBuffer());
-  this->vectorProgram->setAttribute("a_position", vectorRoots.getRenderAttributeBuffer());
+  this->vectorProgram->setAttribute("a_tangentVector", tangentVectors);
+  this->vectorProgram->setAttribute("a_basisVectorX", tangentBasisX);
+  this->vectorProgram->setAttribute("a_basisVectorY", tangentBasisY);
+  this->vectorProgram->setAttribute("a_position", vectorRoots);
 
   render::engine->setMaterial(*(this->vectorProgram), this->material.get());
 }
@@ -309,7 +316,7 @@ void TangentVectorQuantity<QuantityT>::updateMaxLength() {
 
   tangentVectors.ensureHostBufferPopulated();
   float maxLength = 0.;
-  for (const glm::vec2& vec : tangentVectors.data) {
+  for (const glm::vec2& vec : tangentVectors) {
     maxLength = std::max(maxLength, glm::length(vec));
   }
   this->vectorLengthRange = maxLength;
@@ -324,7 +331,9 @@ template <typename QuantityT>
 template <class T>
 void TangentVectorQuantity<QuantityT>::updateData(const T& newVectors) {
   validateSize(newVectors, this->tangentVectors.size(), "tangent vector quantity " + this->quantity.name);
-  this->tangentVectors.data = standardizeVectorArray<glm::vec2, 2>(newVectors);
+  auto d = standardizeVectorArray<glm::vec2, 2>(newVectors);
+  this->tangentVectors.resize(d.size());
+  this->tangentVectors.setDataHost(d);
   this->tangentVectors.markHostBufferUpdated();
   this->updateMaxLength();
 }

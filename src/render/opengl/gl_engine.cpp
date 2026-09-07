@@ -4,6 +4,7 @@
 
 #ifdef POLYSCOPE_BACKEND_OPENGL3_ENABLED
 #include "polyscope/render/opengl/gl_engine.h"
+#include "polyscope/render/managed_buffer.h"
 
 #include "polyscope/messages.h"
 #include "polyscope/options.h"
@@ -246,23 +247,27 @@ void GLAttributeBuffer::checkArray(int testArrayCount) {
 
 GLenum GLAttributeBuffer::getTarget() { return GL_ARRAY_BUFFER; }
 
+void GLAttributeBuffer::reserveCapacity(size_t n) {
+  if (n <= bufferSize) return;
+  bind();
+  glBufferData(getTarget(), n * sizeInBytes(dataType) * getArrayCount(), NULL, GL_STATIC_DRAW);
+  bufferSize = static_cast<uint64_t>(n);
+  setFlag = true;
+  checkGLError();
+}
 
 template <typename T>
 void GLAttributeBuffer::setData_helper(const std::vector<T>& data) {
   bind();
 
-  // allocate if needed
   if (!isSet() || data.size() > bufferSize) {
     setFlag = true;
-    uint64_t newSize = data.size();
-    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+    uint64_t newSize = static_cast<uint64_t>(data.size());
     glBufferData(getTarget(), newSize * sizeof(T), NULL, GL_STATIC_DRAW);
     bufferSize = newSize;
   }
 
-  // do the actual copy
-  dataSize = data.size();
-  glBufferSubData(getTarget(), 0, dataSize * sizeof(T), data.data());
+  glBufferSubData(getTarget(), 0, data.size() * sizeof(T), data.data());
 
   checkGLError();
 }
@@ -355,7 +360,7 @@ void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data) {
 
 template <typename T>
 T GLAttributeBuffer::getData_helper(size_t ind) {
-  if (!isSet() || ind >= static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
+  if (!isSet() || ind >= bufferSize * static_cast<uint64_t>(getArrayCount())) exception("bad getData");
   bind();
   T readValue;
   glGetBufferSubData(getTarget(), ind * sizeof(T), sizeof(T), &readValue);
@@ -418,7 +423,7 @@ glm::uvec4 GLAttributeBuffer::getData_uvec4(size_t ind) {
 
 template <typename T>
 std::vector<T> GLAttributeBuffer::getDataRange_helper(size_t start, size_t count) {
-  if (!isSet() || start + count > static_cast<size_t>(getDataSize() * getArrayCount())) exception("bad getData");
+  if (!isSet() || start + count > bufferSize * static_cast<uint64_t>(getArrayCount())) exception("bad getData");
   bind();
   std::vector<T> readValues(count);
   glGetBufferSubData(getTarget(), start * sizeof(T), count * sizeof(T), &readValues.front());
@@ -614,13 +619,15 @@ void GLTextureBuffer::setData(const std::vector<glm::vec3>& data) {
 
   bind();
 
-  if (data.size() != getTotalSize()) {
+  // For 1D textures, data.size() may be <= sizeX (partial upload into a capacity-allocated texture).
+  // For 2D/3D textures, capacity always equals size so the check is effectively ==.
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
   switch (dim) {
   case 1:
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sizeX, formatF(format), type(format), &data.front().x);
+    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, static_cast<GLsizei>(data.size()), formatF(format), type(format), &data.front().x);
     break;
   case 2:
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizeX, sizeY, formatF(format), type(format), &data.front().x);
@@ -637,13 +644,13 @@ void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
 
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
   switch (dim) {
   case 1:
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sizeX, formatF(format), type(format), &data.front().x);
+    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, static_cast<GLsizei>(data.size()), formatF(format), type(format), &data.front().x);
     break;
   case 2:
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizeX, sizeY, formatF(format), type(format), &data.front().x);
@@ -659,13 +666,13 @@ void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
 void GLTextureBuffer::setData(const std::vector<float>& data) {
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
   switch (dim) {
   case 1:
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sizeX, formatF(format), type(format), &data.front());
+    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, static_cast<GLsizei>(data.size()), formatF(format), type(format), &data.front());
     break;
   case 2:
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizeX, sizeY, formatF(format), type(format), &data.front());
@@ -689,13 +696,13 @@ void GLTextureBuffer::setData(const std::vector<double>& data) {
 
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
   switch (dim) {
   case 1:
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sizeX, formatF(format), type(format), &dataFloat.front());
+    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, static_cast<GLsizei>(data.size()), formatF(format), type(format), &dataFloat.front());
     break;
   case 2:
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizeX, sizeY, formatF(format), type(format), &dataFloat.front());
@@ -1210,7 +1217,7 @@ void GLCompiledProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
       return;
     }
   }
-  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, -1, nullptr});
+  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, -1, nullptr, nullptr});
 }
 
 void GLCompiledProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
@@ -1237,7 +1244,7 @@ void GLCompiledProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
       return;
     }
   }
-  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr, 777});
+  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr, 777, nullptr});
 }
 
 
@@ -1281,7 +1288,7 @@ void GLShaderProgram::createBuffers() {
   checkGLError();
 }
 
-void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) {
+void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer, ManagedBufferBase* source) {
   bindVAO();
   checkGLError();
 
@@ -1305,6 +1312,7 @@ void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBu
       if (!engineExtBuff) throw std::invalid_argument("attribute " + name + " external buffer engine type cast failed");
 
       a.buff = engineExtBuff;
+      a.sourceManagedBuffer = source;
       checkGLError();
 
       a.buff->bind();
@@ -2001,7 +2009,7 @@ void GLShaderProgram::setTexture2D(std::string name, unsigned char* texData, uns
   throw std::invalid_argument("No texture with name " + name);
 }
 
-void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) {
+void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer, ManagedBufferBase* source) {
   glUseProgram(compiledProgram->getHandle());
 
   // Find the right texture
@@ -2017,6 +2025,7 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
       throw std::invalid_argument("Bad texture in setTextureFromBuffer()");
     }
 
+    t.sourceManagedBuffer = source;
     t.isSet = true;
     return;
   }
@@ -2133,26 +2142,13 @@ void GLShaderProgram::validateData() {
   }
 
   // Check attributes
-  int64_t attributeSize = -1;
   for (GLShaderAttribute a : attributes) {
     if (a.location == -1) continue;
     if (!a.buff) {
       throw std::invalid_argument("Attribute " + a.name + " has no buffer attached");
     }
-    if (a.buff->getDataSize() < 0) {
+    if (!a.buff->isSet()) {
       throw std::invalid_argument("Attribute " + a.name + " has not been set");
-    }
-
-    int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
-
-    if (attributeSize == -1) { // first one we've seen
-      attributeSize = a.buff->getDataSize() / (compatCount);
-    } else { // not the first one we've seen
-      if (a.buff->getDataSize() / (compatCount) != attributeSize) {
-        throw std::invalid_argument("Attributes have inconsistent size. One attribute has size " +
-                                    std::to_string(attributeSize) + " and " + a.name + " has size " +
-                                    std::to_string(a.buff->getDataSize()));
-      }
     }
   }
 
@@ -2169,13 +2165,24 @@ void GLShaderProgram::validateData() {
     throw std::invalid_argument("Index buffer has not been filled");
   }
 
-  // Set the size
-  if (useIndex) {
-    drawDataLength = static_cast<unsigned int>(indexSizeMult * indexBuffer->getDataSize());
-  } else {
-    drawDataLength = static_cast<unsigned int>(attributeSize);
+  // Validate drawCount.
+  if (drawCount == INVALID_IND_32) {
+    throw std::invalid_argument( "drawCount has not been set; call setDrawCount() before drawing");
   }
-
+  if (useIndex) {
+    if (indexBuffer->getBufferSize() < static_cast<uint64_t>(drawCount))
+      throw std::invalid_argument("Index buffer has fewer entries (" + std::to_string(indexBuffer->getBufferSize()) +
+                                  ") than drawCount (" + std::to_string(drawCount) + ")");
+  } else {
+    for (GLShaderAttribute a : attributes) {
+      if (a.location == -1) continue;
+      int compatCount = renderDataTypeCountCompatbility(a.type, a.buff->getType());
+      if (a.buff->getBufferSize() / static_cast<uint64_t>(compatCount) < static_cast<uint64_t>(drawCount))
+        throw std::invalid_argument("Attribute " + a.name + " buffer has fewer entries (" + std::to_string(a.buff->getBufferSize()) +
+                                    ") than drawCount (" + std::to_string(drawCount) + ") [size ratio is " + std::to_string(compatCount) + "]");
+    }
+  }
+  
   // Check instanced (if applicable)
   if (drawMode == DrawMode::TrianglesInstanced || drawMode == DrawMode::TriangleStripInstanced) {
     if (instanceCount == INVALID_IND_32) {
@@ -2204,7 +2211,18 @@ void GLShaderProgram::activateTextures() {
   }
 }
 
+void GLShaderProgram::syncBuffersToDeviceIfNeeded() {
+  for (auto& attr : attributes) {
+    if (attr.sourceManagedBuffer) attr.sourceManagedBuffer->syncToDeviceIfNeeded();
+  }
+  for (auto& tex : textures) {
+    if (tex.sourceManagedBuffer) tex.sourceManagedBuffer->syncToDeviceIfNeeded();
+  }
+  if (indexSourceManagedBuffer) indexSourceManagedBuffer->syncToDeviceIfNeeded();
+}
+
 void GLShaderProgram::draw() {
+  syncBuffersToDeviceIfNeeded();
   validateData();
 
   glUseProgram(compiledProgram->getHandle());
@@ -2219,45 +2237,40 @@ void GLShaderProgram::draw() {
 
   switch (drawMode) {
   case DrawMode::Points:
-    glDrawArrays(GL_POINTS, 0, drawDataLength);
+    glDrawArrays(GL_POINTS, 0, drawCount);
     break;
   case DrawMode::Triangles:
-    glDrawArrays(GL_TRIANGLES, 0, drawDataLength);
+    glDrawArrays(GL_TRIANGLES, 0, drawCount);
     break;
   case DrawMode::Lines:
-    glDrawArrays(GL_LINES, 0, drawDataLength);
+    glDrawArrays(GL_LINES, 0, drawCount);
     break;
   case DrawMode::TrianglesAdjacency:
-    glDrawArrays(GL_TRIANGLES_ADJACENCY, 0, drawDataLength);
+    glDrawArrays(GL_TRIANGLES_ADJACENCY, 0, drawCount);
     break;
   case DrawMode::LinesAdjacency:
-    glDrawArrays(GL_LINES_ADJACENCY, 0, drawDataLength);
+    glDrawArrays(GL_LINES_ADJACENCY, 0, drawCount);
     break;
   case DrawMode::IndexedLines:
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO); // TODO delete these
-    glDrawElements(GL_LINES, drawDataLength, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_LINES, indexSizeMult * drawCount, GL_UNSIGNED_INT, 0);
     break;
   case DrawMode::IndexedLineStrip:
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-    glDrawElements(GL_LINE_STRIP, drawDataLength, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_LINE_STRIP, indexSizeMult * drawCount, GL_UNSIGNED_INT, 0);
     break;
   case DrawMode::IndexedLinesAdjacency:
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-    glDrawElements(GL_LINES_ADJACENCY, drawDataLength, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_LINES_ADJACENCY, indexSizeMult * drawCount, GL_UNSIGNED_INT, 0);
     break;
   case DrawMode::IndexedLineStripAdjacency:
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-    glDrawElements(GL_LINE_STRIP_ADJACENCY, drawDataLength, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_LINE_STRIP_ADJACENCY, indexSizeMult * drawCount, GL_UNSIGNED_INT, 0);
     break;
   case DrawMode::IndexedTriangles:
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-    glDrawElements(GL_TRIANGLES, drawDataLength, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, indexSizeMult * drawCount, GL_UNSIGNED_INT, 0);
     break;
   case DrawMode::TrianglesInstanced:
-    glDrawArraysInstanced(GL_TRIANGLES, 0, drawDataLength, instanceCount);
+    glDrawArraysInstanced(GL_TRIANGLES, 0, drawCount, instanceCount);
     break;
   case DrawMode::TriangleStripInstanced:
-    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, drawDataLength, instanceCount);
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, drawCount, instanceCount);
     break;
   }
 

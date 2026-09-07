@@ -37,9 +37,6 @@ public:
 protected:
   // === Visualization parameters
 
-  // Store the raw data
-  std::vector<glm::vec3> colorsData;
-
   // === Render data
   std::shared_ptr<render::ShaderProgram> program;
 
@@ -60,7 +57,7 @@ void ColorRenderImageQuantity::updateBuffers(const T1& depthData, const T2& norm
   std::vector<glm::vec3> standardNormal(standardizeVectorArray<glm::vec3, 3>(normalData));
   std::vector<glm::vec3> standardColor(standardizeVectorArray<glm::vec3, 3>(colorsData));
 
-  colors.data = standardColor;
+  colors.setDataHost(standardColor);
   colors.markHostBufferUpdated();
 
   updateBaseBuffers(standardDepth, standardNormal);

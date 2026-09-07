@@ -94,7 +94,8 @@ protected:
 template <typename V>
 void SurfaceParameterizationQuantity::setIslandLabels(const V& newIslandLabels) {
   validateSize(newIslandLabels, this->nFaces(), "scalar quantity " + quantity.name);
-  islandLabels.data = standardizeArray<float, V>(newIslandLabels);
+  islandLabels.resize(this->nFaces());
+  islandLabels.setDataHost(standardizeArray<float, V>(newIslandLabels));
   islandLabels.markHostBufferUpdated();
   islandLabelsPopulated = true;
 }

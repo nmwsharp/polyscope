@@ -20,13 +20,12 @@ const std::string CurveNetwork::structureTypeName = "Curve Network";
 // Constructor
 CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std::vector<std::array<size_t, 2>> edges_)
     : // clang-format off
-      Structure(name, typeName()), 
-      nodePositions(this, uniquePrefix() + "nodePositions", nodePositionsData),
-      edgeTailInds(this, uniquePrefix() + "edgeTailInds", edgeTailIndsData),
-      edgeTipInds(this, uniquePrefix() + "edgeTipInds", edgeTipIndsData),
-      edgeCenters(this, uniquePrefix() + "edgeCenters", edgeCentersData, std::bind(&CurveNetwork::computeEdgeCenters, this)),         
-      nodePositionsData(std::move(nodes_)), 
-      color(uniquePrefix() + "#color", getNextUniqueColor()), 
+      Structure(name, typeName()),
+      nodePositions(this, uniquePrefix() + "nodePositions", std::move(nodes_)),
+      edgeTailInds(this, uniquePrefix() + "edgeTailInds"),
+      edgeTipInds(this, uniquePrefix() + "edgeTipInds"),
+      edgeCenters(this, uniquePrefix() + "edgeCenters", std::bind(&CurveNetwork::computeEdgeCenters, this)),
+      color(uniquePrefix() + "#color", getNextUniqueColor()),
       radius(uniquePrefix() + "#radius", relativeValue(0.005)),
       material(uniquePrefix() + "#material", "clay")
 // clang-format on
@@ -34,8 +33,8 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
   nodePositions.checkInvalidValues();
 
   // Copy interleaved data in to tip and tails buffers below
-  edgeTailIndsData.resize(edges_.size());
-  edgeTipIndsData.resize(edges_.size());
+  edgeTailInds.resize(edges_.size());
+  edgeTipInds.resize(edges_.size());
 
   // Compute node degrees; some quantities want them for visualizations
   nodeDegrees = std::vector<size_t>(nNodes(), 0);
@@ -46,8 +45,8 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
     size_t nA = std::get<0>(edge);
     size_t nB = std::get<1>(edge);
 
-    edgeTailIndsData[iE] = nA;
-    edgeTipIndsData[iE] = nB;
+    edgeTailInds.setHostValue(iE, nA);
+    edgeTipInds.setHostValue(iE, nB);
 
     // Make sure there are no out of bounds indices
     if (nA >= maxInd || nB >= maxInd) {
@@ -60,6 +59,9 @@ CurveNetwork::CurveNetwork(std::string name, std::vector<glm::vec3> nodes_, std:
     nodeDegrees[nA]++;
     nodeDegrees[nB]++;
   }
+
+  edgeTailInds.markHostBufferUpdated();
+  edgeTipInds.markHostBufferUpdated();
 
   updateObjectSpaceBounds();
 }
@@ -115,6 +117,7 @@ void CurveNetwork::setCurveNetworkNodeUniforms(render::ShaderProgram& p) {
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
   p.setUniform("u_pointRadius", computeNodeRadiusMultiplierUniform());
+  p.setDrawCount(nNodes());
 }
 
 void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) {
@@ -123,6 +126,7 @@ void CurveNetwork::setCurveNetworkEdgeUniforms(render::ShaderProgram& p) {
   p.setUniform("u_invProjMatrix", glm::value_ptr(Pinv));
   p.setUniform("u_viewport", render::engine->getCurrentViewport());
   p.setUniform("u_radius", computeEdgeRadiusMultiplierUniform());
+  p.setDrawCount(nEdges());
 }
 
 void CurveNetwork::draw() {
@@ -326,8 +330,8 @@ void CurveNetwork::preparePick() {
 
     // Fill posiiton and pick index buffers
     for (size_t iE = 0; iE < nEdges(); iE++) {
-      size_t eTail = edgeTailInds.data[iE];
-      size_t eTip = edgeTipInds.data[iE];
+      size_t eTail = edgeTailInds.getHostValue(iE);
+      size_t eTip = edgeTipInds.getHostValue(iE);
 
       glm::vec3 colorValTail = pick::indToVec(pickStart + eTail);
       glm::vec3 colorValTip = pick::indToVec(pickStart + eTip);
@@ -345,7 +349,7 @@ void CurveNetwork::preparePick() {
 }
 
 void CurveNetwork::fillNodeGeometryBuffers(render::ShaderProgram& program) {
-  program.setAttribute("a_position", nodePositions.getRenderAttributeBuffer());
+  program.setAttribute("a_position", nodePositions);
 
   bool haveNodeRadiusQuantity = (nodeRadiusQuantityName != "");
   bool haveEdgeRadiusQuantity = (edgeRadiusQuantityName != "");
@@ -353,18 +357,18 @@ void CurveNetwork::fillNodeGeometryBuffers(render::ShaderProgram& program) {
   if (haveNodeRadiusQuantity) {
     // have just node, or have both
     CurveNetworkNodeScalarQuantity& nodeRadQ = resolveNodeRadiusQuantity();
-    program.setAttribute("a_pointRadius", nodeRadQ.values.getRenderAttributeBuffer());
+    program.setAttribute("a_pointRadius", nodeRadQ.values);
   } else if (haveEdgeRadiusQuantity) {
     // have just edge
     CurveNetworkEdgeScalarQuantity& edgeRadQ = resolveEdgeRadiusQuantity();
     edgeRadQ.updateNodeAverageValues();
-    program.setAttribute("a_pointRadius", edgeRadQ.nodeAverageValues.getRenderAttributeBuffer());
+    program.setAttribute("a_pointRadius", edgeRadQ.nodeAverageValues);
   }
 }
 
 void CurveNetwork::fillEdgeGeometryBuffers(render::ShaderProgram& program) {
-  program.setAttribute("a_position_tail", nodePositions.getIndexedRenderAttributeBuffer(edgeTailInds));
-  program.setAttribute("a_position_tip", nodePositions.getIndexedRenderAttributeBuffer(edgeTipInds));
+  program.setAttribute("a_position_tail", nodePositions.getIndexedRenderAttributeBuffer(edgeTailInds), &nodePositions);
+  program.setAttribute("a_position_tip", nodePositions.getIndexedRenderAttributeBuffer(edgeTipInds), &nodePositions);
 
   bool haveNodeRadiusQuantity = (nodeRadiusQuantityName != "");
   bool haveEdgeRadiusQuantity = (edgeRadiusQuantityName != "");
@@ -372,13 +376,13 @@ void CurveNetwork::fillEdgeGeometryBuffers(render::ShaderProgram& program) {
   if (haveEdgeRadiusQuantity) {
     // have just edge or have both
     CurveNetworkEdgeScalarQuantity& edgeRadQ = resolveEdgeRadiusQuantity();
-    program.setAttribute("a_tailRadius", edgeRadQ.values.getRenderAttributeBuffer());
-    program.setAttribute("a_tipRadius", edgeRadQ.values.getRenderAttributeBuffer());
+    program.setAttribute("a_tailRadius", edgeRadQ.values);
+    program.setAttribute("a_tipRadius", edgeRadQ.values);
   } else if (haveNodeRadiusQuantity) {
     // have just node
     CurveNetworkNodeScalarQuantity& nodeRadQ = resolveNodeRadiusQuantity();
-    program.setAttribute("a_tailRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTailInds));
-    program.setAttribute("a_tipRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTipInds));
+    program.setAttribute("a_tailRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTailInds), &nodeRadQ.values);
+    program.setAttribute("a_tipRadius", nodeRadQ.values.getIndexedRenderAttributeBuffer(edgeTipInds), &nodeRadQ.values);
   }
 }
 
@@ -387,13 +391,13 @@ void CurveNetwork::computeEdgeCenters() {
   edgeTailInds.ensureHostBufferPopulated();
   edgeTipInds.ensureHostBufferPopulated();
 
-  edgeCenters.data.resize(nEdges());
+  edgeCenters.resize(nEdges());
 
   for (size_t iE = 0; iE < nEdges(); iE++) {
-    size_t eTail = edgeTailInds.data[iE];
-    size_t eTip = edgeTipInds.data[iE];
-    glm::vec3 p = 0.5f * (nodePositions.data[eTail] + nodePositions.data[eTip]);
-    edgeCenters.data[iE] = p;
+    size_t eTail = edgeTailInds.getHostValue(iE);
+    size_t eTip = edgeTipInds.getHostValue(iE);
+    glm::vec3 p = 0.5f * (nodePositions.getHostValue(eTail) + nodePositions.getHostValue(eTip));
+    edgeCenters.setHostValue(iE, p);
   }
 
   edgeCenters.markHostBufferUpdated();
@@ -537,7 +541,7 @@ void CurveNetwork::updateObjectSpaceBounds() {
   // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
-  for (const glm::vec3& p : nodePositions.data) {
+  for (const glm::vec3& p : nodePositions) {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
@@ -546,7 +550,7 @@ void CurveNetwork::updateObjectSpaceBounds() {
   // length scale, as twice the radius from the center of the bounding box
   glm::vec3 center = 0.5f * (min + max);
   float lengthScale = 0.0;
-  for (const glm::vec3& p : nodePositions.data) {
+  for (const glm::vec3& p : nodePositions) {
     lengthScale = std::max(lengthScale, glm::length2(p - center));
   }
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);

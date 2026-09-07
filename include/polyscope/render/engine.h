@@ -17,6 +17,12 @@
 
 namespace polyscope {
 
+// Forward declarations for ManagedBuffer integration
+namespace render {
+  class ManagedBufferBase;
+  template <typename T> class ManagedBuffer;
+} // namespace render
+
 // == A few enums that control behavior
 // public enums are in the outer namespace to keep the typing burden down
 
@@ -96,13 +102,16 @@ public:
   virtual void setData(const std::vector<std::array<glm::vec3, 3>>& data) = 0;
   virtual void setData(const std::vector<std::array<glm::vec3, 4>>& data) = 0;
 
+  // Pre-allocate GPU memory for n elements without uploading any data. Subsequent setData()
+  // calls with size <= n will not need to reallocate the underlying buffer.
+  virtual void reserveCapacity(size_t n) = 0;
+
   virtual uint32_t getNativeBufferID() = 0; // used to interop with external things, e.g. ImGui
 
   // == Getters
   RenderDataType getType() const { return dataType; }
   int getArrayCount() const { return arrayCount; }
-  int64_t getDataSize() const { return dataSize; }
-  int64_t getDataSizeInBytes() const { return dataSize * sizeInBytes(dataType) * getArrayCount(); }
+  uint64_t getBufferSize() const { return bufferSize; }
   uint64_t getUniqueID() const { return uniqueID; }
   bool isSet() const { return setFlag; }
 
@@ -140,9 +149,7 @@ protected:
   RenderDataType dataType;
   int arrayCount;
   bool setFlag = false;
-  int64_t dataSize = -1;   // the size of the data currently stored in this attribute (-1 if nothing)
-                           // this counts # elements of the specified type, s.t. array'd mulitpliers are still just one
-  uint64_t bufferSize = 0; // the size of the allocated buffer (which might be larger than the data sixze)
+  uint64_t bufferSize = 0; // size of the allocated GPU buffer in elements of this buffer's type
   uint64_t uniqueID;
 };
 
@@ -391,7 +398,7 @@ public:
   virtual bool hasAttribute(std::string name) = 0;
   virtual bool attributeIsSet(std::string name) = 0;
   virtual std::shared_ptr<AttributeBuffer> getAttributeBuffer(std::string name) = 0;
-  virtual void setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) = 0; 
+  virtual void setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer, ManagedBufferBase* source = nullptr) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec2>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec3>& data) = 0;
   virtual void setAttribute(std::string name, const std::vector<glm::vec4>& data) = 0;
@@ -414,12 +421,25 @@ public:
                             bool withAlpha = true, bool useMipMap = false, bool repeat = false) = 0;
   virtual void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) = 0;
   // TODO make this one take a shared pointer and have the same semantics as the attribute version
-  virtual void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) = 0;
+  virtual void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer, ManagedBufferBase* source = nullptr) = 0;
 
+
+  // Convenience overloads for ManagedBuffer — set the buffer AND record the source for lazy sync.
+  // Defined in managed_buffer.h after ManagedBuffer<T> is fully declared.
+  template <typename T> void setAttribute(std::string name, ManagedBuffer<T>& buf);
+  template <typename T> void setTextureFromBuffer(std::string name, ManagedBuffer<T>& buf);
+  template <typename T> void setIndex(ManagedBuffer<T>& buf);
 
   // Indices
   virtual void setIndex(std::shared_ptr<AttributeBuffer> externalBuffer) = 0;
   virtual void setPrimitiveRestartIndex(unsigned int restartIndex) = 0;
+
+  // Set the number of primitives to draw in the draw call. Must be called before drawing.
+  // For non-indexed modes: number of vertices (e.g. points, line endpoints, triangle corners).
+  // For indexed modes: number of index-buffer entries (e.g. uvec3 faces for IndexedTriangles),
+  //   the engine multiplies by indexSizeMult internally to get the total index count passed to GL.
+  // For instanced modes: number of vertices per instance (instanceCount sets the instance count separately).
+  void setDrawCount(uint32_t count) { drawCount = count; }
 
   // Indices
   virtual void setInstanceCount(uint32_t instanceCount) = 0;
@@ -438,8 +458,6 @@ protected:
   // What mode does this program draw in?
   DrawMode drawMode;
 
-  // How much data is there to draw
-  uint32_t drawDataLength;
 
   // Indexed drawing
   bool useIndex = false;
@@ -451,6 +469,9 @@ protected:
   uint64_t uniqueID;
 
   std::shared_ptr<AttributeBuffer> indexBuffer;
+  ManagedBufferBase* indexSourceManagedBuffer = nullptr;
+
+  uint32_t drawCount = INVALID_IND_32;
 
   // instancing
   uint32_t instanceCount = INVALID_IND_32;

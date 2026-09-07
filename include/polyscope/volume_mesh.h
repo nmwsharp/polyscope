@@ -186,27 +186,6 @@ public:
 
 
 private:
-  // == Mesh geometry buffers
-  // Storage for the managed buffers above. You should generally interact with these through the managed buffers, not
-  // these members.
-
-  // positions
-  std::vector<glm::vec3> vertexPositionsData;
-
-  // connectivity / indices
-  std::vector<uint32_t> triangleVertexIndsData; // to the split, triangulated mesh
-  std::vector<uint32_t> triangleFaceIndsData;   // to the split, triangulated mesh
-  std::vector<uint32_t> triangleCellIndsData;   // to the split, triangulated mesh
-
-  // internal triangle data for rendering
-  std::vector<glm::vec3> baryCoordData;
-  std::vector<glm::vec3> edgeIsRealData;
-  std::vector<float> faceTypeData;
-
-  // other internally-computed geometry
-  std::vector<glm::vec3> faceNormalsData;
-  std::vector<glm::vec3> cellCentersData;
-
   // Visualization settings
   PersistentValue<glm::vec3> color;
   PersistentValue<glm::vec3> interiorColor;

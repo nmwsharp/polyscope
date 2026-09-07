@@ -63,7 +63,9 @@ SurfaceMesh* registerSurfaceMesh(std::string name, const V& vertexPositions, con
 template <class V>
 void SurfaceMesh::updateVertexPositions(const V& newPositions) {
   validateSize(newPositions, vertexDataSize, "newPositions");
-  vertexPositions.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  auto d = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  vertexPositions.resize(d.size());
+  vertexPositions.setDataHost(d);
   vertexPositions.markHostBufferUpdated();
   recomputeGeometryIfPopulated();
 }

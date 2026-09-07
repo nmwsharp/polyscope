@@ -66,7 +66,7 @@ void PointCloudScalarQuantity::createProgram() {
   // clang-format on
 
   parent.setPointProgramGeometryAttributes(*pointProgram);
-  pointProgram->setAttribute("a_value", values.getRenderAttributeBuffer());
+  pointProgram->setAttribute("a_value", values);
 
   // Fill buffers
   pointProgram->setTextureFromColormap("t_colormap", cMap.get());

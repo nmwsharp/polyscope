@@ -26,17 +26,26 @@ SimpleTriangleMesh* registerSimpleTriangleMesh(std::string name, const V& vertex
 template <class V>
 void SimpleTriangleMesh::updateVertices(const V& newPositions) {
   validateSize(newPositions, vertices.size(), "newPositions");
-  vertices.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  auto d = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  vertices.resize(d.size());
+  vertices.setDataHost(d);
   vertices.markHostBufferUpdated();
 }
 
 template <class V, class F>
 void SimpleTriangleMesh::update(const V& newPositions, const F& newFaces) {
-
-  vertices.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
+  {
+    auto d = standardizeVectorArray<glm::vec3, 3>(newPositions);
+    vertices.resize(d.size());
+    vertices.setDataHost(d);
+  }
   vertices.markHostBufferUpdated();
 
-  faces.data = standardizeVectorArray<glm::uvec3, 3>(newFaces);
+  {
+    auto d = standardizeVectorArray<glm::uvec3, 3>(newFaces);
+    faces.resize(d.size());
+    faces.setDataHost(d);
+  }
   faces.markHostBufferUpdated();
 }
 
