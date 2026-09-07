@@ -347,26 +347,25 @@ VolumeMesh::VolumeMesh(std::string name, const std::vector<glm::vec3>& vertexPos
 // == managed quantities
 
 // positions
-vertexPositions(        this, uniquePrefix() + "vertexPositions",     vertexPositionsData),
+vertexPositions(        this, uniquePrefix() + "vertexPositions",     std::vector<glm::vec3>(vertexPositions_)),
 
 // connectivity / indices
-triangleVertexInds(     this, uniquePrefix() + "triangleVertexInds",  triangleVertexIndsData),
-triangleFaceInds(       this, uniquePrefix() + "triangleFaceInds",    triangleFaceIndsData),
-triangleCellInds(       this, uniquePrefix() + "triangleCellInds",    triangleCellIndsData),
+triangleVertexInds(     this, uniquePrefix() + "triangleVertexInds"),
+triangleFaceInds(       this, uniquePrefix() + "triangleFaceInds"),
+triangleCellInds(       this, uniquePrefix() + "triangleCellInds"),
 
 // internal triangle data for rendering
-baryCoord(              this, uniquePrefix() + "baryCoord",           baryCoordData),
-edgeIsReal(             this, uniquePrefix() + "edgeIsReal",          edgeIsRealData),
-faceType(               this, uniquePrefix() + "faceType",            faceTypeData),
+baryCoord(              this, uniquePrefix() + "baryCoord"),
+edgeIsReal(             this, uniquePrefix() + "edgeIsReal"),
+faceType(               this, uniquePrefix() + "faceType"),
 
 // other internally-computed geometry
-faceNormals(            this, uniquePrefix() + "faceNormals",         faceNormalsData,        std::bind(&VolumeMesh::computeFaceNormals, this)),
-cellCenters(            this, uniquePrefix() + "cellCenters",         cellCentersData,        std::bind(&VolumeMesh::computeCellCenters, this)),         
+faceNormals(            this, uniquePrefix() + "faceNormals",         std::bind(&VolumeMesh::computeFaceNormals, this)),
+cellCenters(            this, uniquePrefix() + "cellCenters",         std::bind(&VolumeMesh::computeCellCenters, this)),
 
 
 // == core input data
 cells(cellIndices_),
-vertexPositionsData(vertexPositions_), 
 
 // == persistent options
 color(uniquePrefix() + "color", getNextUniqueColor()),
@@ -534,11 +533,12 @@ void VolumeMesh::fillSliceGeometryBuffers(render::ShaderProgram& program) {
   point2.resize(tetCount);
   point3.resize(tetCount);
   point4.resize(tetCount);
+  vertexPositions.ensureHostBufferPopulated();
   for (size_t tetIdx = 0; tetIdx < tets.size(); tetIdx++) {
-    point1[tetIdx] = vertexPositions.data[tets[tetIdx][0]];
-    point2[tetIdx] = vertexPositions.data[tets[tetIdx][1]];
-    point3[tetIdx] = vertexPositions.data[tets[tetIdx][2]];
-    point4[tetIdx] = vertexPositions.data[tets[tetIdx][3]];
+    point1[tetIdx] = vertexPositions.getHostValue(tets[tetIdx][0]);
+    point2[tetIdx] = vertexPositions.getHostValue(tets[tetIdx][1]);
+    point3[tetIdx] = vertexPositions.getHostValue(tets[tetIdx][2]);
+    point4[tetIdx] = vertexPositions.getHostValue(tets[tetIdx][3]);
   }
 
   program.setAttribute("a_point_1", point1);
@@ -787,9 +787,9 @@ void VolumeMesh::setVolumeMeshUniforms(render::ShaderProgram& p) {
 
 void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
 
-  p.setAttribute("a_vertexPositions", vertexPositions.getIndexedRenderAttributeBuffer(triangleVertexInds));
+  p.setAttribute("a_vertexPositions", vertexPositions.getIndexedRenderAttributeBuffer(triangleVertexInds), &vertexPositions);
 
-  p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(triangleFaceInds));
+  p.setAttribute("a_vertexNormals", faceNormals.getIndexedRenderAttributeBuffer(triangleFaceInds), &faceNormals);
 
   bool wantsBary = p.hasAttribute("a_barycoord");
   bool wantsEdge = (getEdgeWidth() > 0);
@@ -797,16 +797,16 @@ void VolumeMesh::fillGeometryBuffers(render::ShaderProgram& p) {
   bool wantsFaceType = p.hasAttribute("a_faceColorType");
 
   if (wantsBary) {
-    p.setAttribute("a_barycoord", baryCoord.getRenderAttributeBuffer());
+    p.setAttribute("a_barycoord", baryCoord);
   }
   if (wantsEdge) {
-    p.setAttribute("a_edgeIsReal", edgeIsReal.getRenderAttributeBuffer());
+    p.setAttribute("a_edgeIsReal", edgeIsReal);
   }
   if (wantsAttrCullPosition) {
-    p.setAttribute("a_cullPos", cellCenters.getIndexedRenderAttributeBuffer(triangleCellInds));
+    p.setAttribute("a_cullPos", cellCenters.getIndexedRenderAttributeBuffer(triangleCellInds), &cellCenters);
   }
   if (wantsFaceType) {
-    p.setAttribute("a_faceColorType", faceType.getIndexedRenderAttributeBuffer(triangleFaceInds));
+    p.setAttribute("a_faceColorType", faceType.getIndexedRenderAttributeBuffer(triangleFaceInds), &faceType);
   }
 }
 
@@ -819,18 +819,12 @@ void VolumeMesh::computeConnectivityData() {
   // that exterior faces always win depth ties. This doesn't totally eliminate the problem, but greatly improves the
   // most egregious cases.
   // == Allocate buffers
-  triangleVertexInds.data.clear();
-  triangleVertexInds.data.resize(3 * nFacesTriangulation());
-  triangleFaceInds.data.clear();
-  triangleFaceInds.data.resize(3 * nFacesTriangulation());
-  triangleCellInds.data.clear();
-  triangleCellInds.data.resize(3 * nFacesTriangulation());
-  baryCoord.data.clear();
-  baryCoord.data.resize(3 * nFacesTriangulation());
-  edgeIsReal.data.clear();
-  edgeIsReal.data.resize(3 * nFacesTriangulation());
-  faceType.data.clear();
-  faceType.data.resize(nFaces());
+  triangleVertexInds.resize(3 * nFacesTriangulation());
+  triangleFaceInds.resize(3 * nFacesTriangulation());
+  triangleCellInds.resize(3 * nFacesTriangulation());
+  baryCoord.resize(3 * nFacesTriangulation());
+  edgeIsReal.resize(3 * nFacesTriangulation());
+  faceType.resize(nFaces());
 
   size_t iF = 0; // face counter
   size_t iFront = 0;
@@ -863,28 +857,28 @@ void VolumeMesh::computeConnectivityData() {
 
         // Store triangle vertices
         for (size_t k = 0; k < 3; k++) {
-          triangleVertexInds.data[3 * iData + k] = cell[tri[k]];
+          triangleVertexInds.setHostValue(3 * iData + k, cell[tri[k]]);
         }
-
         // Face & cell indices
-        for (size_t k = 0; k < 3; k++) triangleFaceInds.data[3 * iData + k] = iF;
-        for (size_t k = 0; k < 3; k++) triangleCellInds.data[3 * iData + k] = iC;
+        for (size_t k = 0; k < 3; k++) triangleFaceInds.setHostValue(3 * iData + k, (uint32_t)iF);
+        for (size_t k = 0; k < 3; k++) triangleCellInds.setHostValue(3 * iData + k, (uint32_t)iC);
 
         // Barycentric coords
-        baryCoord.data[3 * iData + 0] = glm::vec3{1., 0., 0.};
-        baryCoord.data[3 * iData + 1] = glm::vec3{0., 1., 0.};
-        baryCoord.data[3 * iData + 2] = glm::vec3{0., 0., 1.};
+        baryCoord.setHostValue(3 * iData + 0, glm::vec3{1., 0., 0.});
+        baryCoord.setHostValue(3 * iData + 1, glm::vec3{0., 1., 0.});
+        baryCoord.setHostValue(3 * iData + 2, glm::vec3{0., 0., 1.});
 
         // Mark edges as real or not
+        glm::vec3 eReal{faceRealEdges[f][j][0] ? 1.0f : 0.0f,
+                        faceRealEdges[f][j][1] ? 1.0f : 0.0f,
+                        faceRealEdges[f][j][2] ? 1.0f : 0.0f};
         for (int k = 0; k < 3; k++) {
-          for (int c = 0; c < 3; c++) {
-            edgeIsReal.data[3 * iData + k][c] = faceRealEdges[f][j][c] ? 1.0f : 0.0f;
-          }
+          edgeIsReal.setHostValue(3 * iData + k, eReal);
         }
       }
 
       // Face type: 1 for interior, 0 for exterior
-      faceType.data[iF] = faceIsInterior[iF] ? 1.f : 0.f;
+      faceType.setHostValue(iF, faceIsInterior[iF] ? 1.f : 0.f);
 
       iF++;
     }
@@ -949,7 +943,7 @@ void VolumeMesh::computeFaceNormals() {
 
   vertexPositions.ensureHostBufferPopulated();
 
-  faceNormals.data.resize(nFaces());
+  faceNormals.resize(nFaces());
 
   size_t iF = 0;
   for (size_t iC = 0; iC < nCells(); iC++) {
@@ -961,14 +955,14 @@ void VolumeMesh::computeFaceNormals() {
       // Do a first pass to compute a normal
       glm::vec3 normal{0., 0., 0.};
       for (const std::array<size_t, 3>& tri : face) {
-        glm::vec3 pA = vertexPositions.data[cell[tri[0]]];
-        glm::vec3 pB = vertexPositions.data[cell[tri[1]]];
-        glm::vec3 pC = vertexPositions.data[cell[tri[2]]];
+        glm::vec3 pA = vertexPositions.getHostValue(cell[tri[0]]);
+        glm::vec3 pB = vertexPositions.getHostValue(cell[tri[1]]);
+        glm::vec3 pC = vertexPositions.getHostValue(cell[tri[2]]);
         normal += glm::cross(pC - pB, pA - pB);
       }
       normal = glm::normalize(normal);
 
-      faceNormals.data[iF] = normal;
+      faceNormals.setHostValue(iF, normal);
       iF++;
     }
   }
@@ -981,7 +975,7 @@ void VolumeMesh::computeCellCenters() {
 
   vertexPositions.ensureHostBufferPopulated();
 
-  cellCenters.data.resize(nCells());
+  cellCenters.resize(nCells());
 
   for (size_t iC = 0; iC < nCells(); iC++) {
 
@@ -991,13 +985,13 @@ void VolumeMesh::computeCellCenters() {
     const std::array<uint32_t, 8>& cell = cells[iC];
     for (int j = 0; j < 8; j++) {
       if (cell[j] < INVALID_IND_32) {
-        center += vertexPositions.data[cell[j]];
+        center += vertexPositions.getHostValue(cell[j]);
         count++;
       }
     }
     center /= count;
 
-    cellCenters.data[iC] = center;
+    cellCenters.setHostValue(iC, center);
   }
 
   cellCenters.markHostBufferUpdated();
@@ -1219,7 +1213,7 @@ void VolumeMesh::updateObjectSpaceBounds() {
   // bounding box
   glm::vec3 min = glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
   glm::vec3 max = -glm::vec3{1, 1, 1} * std::numeric_limits<float>::infinity();
-  for (const glm::vec3& p : vertexPositions.data) {
+  for (const glm::vec3& p : vertexPositions) {
     min = componentwiseMin(min, p);
     max = componentwiseMax(max, p);
   }
@@ -1228,7 +1222,7 @@ void VolumeMesh::updateObjectSpaceBounds() {
   // length scale, as twice the radius from the center of the bounding box
   glm::vec3 center = 0.5f * (min + max);
   float lengthScale = 0.0;
-  for (const glm::vec3& p : vertexPositions.data) {
+  for (const glm::vec3& p : vertexPositions) {
     lengthScale = std::max(lengthScale, glm::length2(p - center));
   }
   objectSpaceLengthScale = 2 * std::sqrt(lengthScale);

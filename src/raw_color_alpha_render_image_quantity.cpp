@@ -16,8 +16,9 @@ RawColorAlphaRenderImageQuantity::RawColorAlphaRenderImageQuantity(Structure& pa
                                                                    const std::vector<glm::vec4>& colorsData_,
                                                                    ImageOrigin imageOrigin)
     : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, std::vector<glm::vec3>(), imageOrigin),
-      colors(this, uniquePrefix() + "colors", colorsData), colorsData(colorsData_),
+      colors(this, uniquePrefix() + "colors", std::vector<glm::vec4>(colorsData_)),
       isPremultiplied(uniquePrefix() + "isPremultiplied", false) {
+  colors.setAsType(DeviceBufferType::Texture2d);
   colors.setTextureSize(dimX, dimY);
 }
 
@@ -75,8 +76,8 @@ void RawColorAlphaRenderImageQuantity::prepare() {
   // clang-format on
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
-  program->setTextureFromBuffer("t_color", colors.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_depth", depths);
+  program->setTextureFromBuffer("t_color", colors);
 }
 
 

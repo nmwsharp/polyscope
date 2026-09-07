@@ -165,17 +165,12 @@ private:
   glm::vec3 origin;
   glm::vec3 gridCellWidth;
 
-  // === Storage for managed quantities
-  std::vector<glm::vec3> cellPositionsData;
-  std::vector<glm::ivec3> cellIndicesData;
-
   // User-facing occupied cell indices (signed)
   std::vector<glm::ivec3> occupiedCellsData;
 
   // Canonical sorted node indices and corner index buffers (lazily computed)
   bool haveCornerNodeIndices = false;
   std::vector<glm::ivec3> canonicalNodeIndsData;
-  std::vector<uint32_t> cornerNodeIndsData[8];
 
   // === Visualization parameters
   PersistentValue<glm::vec3> color;

@@ -70,7 +70,7 @@ void SurfaceVertexColorQuantity::createProgram() {
   // clang-format on
 
   parent.setMeshGeometryAttributes(*program);
-  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
+  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(parent.triangleVertexInds), &colors);
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
@@ -123,7 +123,7 @@ void SurfaceFaceColorQuantity::createProgram() {
   // clang-format on
 
   parent.setMeshGeometryAttributes(*program);
-  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(parent.triangleFaceInds));
+  program->setAttribute("a_color", colors.getIndexedRenderAttributeBuffer(parent.triangleFaceInds), &colors);
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
@@ -155,6 +155,7 @@ SurfaceTextureColorQuantity::SurfaceTextureColorQuantity(std::string name, Surfa
                                                          ImageOrigin origin_)
     : SurfaceColorQuantity(name, mesh_, "texture", colorValues_), TextureMapQuantity(*this, dimX_, dimY_, origin_),
       param(param_) {
+  colors.setAsType(DeviceBufferType::Texture2d);
   colors.setTextureSize(dimX, dimY);
 }
 
@@ -177,17 +178,17 @@ void SurfaceTextureColorQuantity::createProgram() {
   // the indexing into the parameterization varies based on whether it is a corner or vertex quantity
   switch (param.definedOn) {
   case MeshElement::VERTEX:
-    program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
+    program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleVertexInds), &param.coords);
     break;
   case MeshElement::CORNER:
-    program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
+    program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds), &param.coords);
     break;
   default:
     // nothing
     break;
   }
 
-  program->setTextureFromBuffer("t_color", colors.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_color", colors);
   render::engine->setMaterial(*program, parent.getMaterial());
 
   colors.getRenderTextureBuffer()->setFilterMode(filterMode.get());

@@ -85,7 +85,7 @@ void SurfaceVertexScalarQuantity::createProgram() {
       );
     // clang-format on
 
-    program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(parent.triangleAllVertexInds));
+    program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(parent.triangleAllVertexInds), &values);
 
   } else {
     // common case: linear interpolation within each triangle
@@ -102,7 +102,7 @@ void SurfaceVertexScalarQuantity::createProgram() {
       );
     // clang-format on
 
-    program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
+    program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(parent.triangleVertexInds), &values);
   }
 
   parent.setMeshGeometryAttributes(*program);
@@ -146,7 +146,7 @@ void SurfaceFaceScalarQuantity::createProgram() {
     );
   // clang-format on
 
-  program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(parent.triangleFaceInds));
+  program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(parent.triangleFaceInds), &values);
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());
@@ -192,7 +192,7 @@ void SurfaceEdgeScalarQuantity::createProgram() {
     );
   // clang-format on
 
-  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(parent.triangleAllEdgeInds));
+  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(parent.triangleAllEdgeInds), &values);
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());
@@ -234,7 +234,7 @@ void SurfaceHalfedgeScalarQuantity::createProgram() {
     );
   // clang-format on
 
-  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(parent.triangleAllHalfedgeInds));
+  program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(parent.triangleAllHalfedgeInds), &values);
   parent.setMeshGeometryAttributes(*program);
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());
@@ -280,7 +280,7 @@ void SurfaceCornerScalarQuantity::createProgram() {
       );
     // clang-format on
 
-    program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(parent.triangleAllCornerInds));
+    program->setAttribute("a_value3", values.getIndexedRenderAttributeBuffer(parent.triangleAllCornerInds), &values);
 
   } else {
 
@@ -296,7 +296,7 @@ void SurfaceCornerScalarQuantity::createProgram() {
     );
     // clang-format on
 
-    program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
+    program->setAttribute("a_value", values.getIndexedRenderAttributeBuffer(parent.triangleCornerInds), &values);
   }
 
   parent.setMeshGeometryAttributes(*program);
@@ -325,6 +325,7 @@ SurfaceTextureScalarQuantity::SurfaceTextureScalarQuantity(std::string name, Sur
                                                            ImageOrigin origin_, DataType dataType_)
     : SurfaceScalarQuantity(name, mesh_, "vertex", values_, dataType_),
       TextureMapQuantity(*this, dimX_, dimY_, origin_), param(param_) {
+  values.setAsType(DeviceBufferType::Texture2d);
   values.setTextureSize(dimX, dimY);
 
   if (dataType == DataType::CATEGORICAL) {
@@ -353,17 +354,17 @@ void SurfaceTextureScalarQuantity::createProgram() {
   // the indexing into the parameterization varies based on whether it is a corner or vertex quantity
   switch (param.definedOn) {
   case MeshElement::VERTEX:
-    program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleVertexInds));
+    program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleVertexInds), &param.coords);
     break;
   case MeshElement::CORNER:
-    program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds));
+    program->setAttribute("a_tCoord", param.coords.getIndexedRenderAttributeBuffer(parent.triangleCornerInds), &param.coords);
     break;
   default:
     // nothing
     break;
   }
 
-  program->setTextureFromBuffer("t_scalar", values.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_scalar", values);
   render::engine->setMaterial(*program, parent.getMaterial());
   program->setTextureFromColormap("t_colormap", cMap.get());
 

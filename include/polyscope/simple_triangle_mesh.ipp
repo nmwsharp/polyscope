@@ -24,21 +24,52 @@ SimpleTriangleMesh* registerSimpleTriangleMesh(std::string name, const V& vertex
 
 
 template <class V>
-void SimpleTriangleMesh::updateVertices(const V& newPositions) {
-  validateSize(newPositions, vertices.size(), "newPositions");
-  vertices.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
-  vertices.markHostBufferUpdated();
+void SimpleTriangleMesh::updateVertexPositions(const V& newPositions) {
+  validateSize(newPositions, nVertices(), "newPositions");
+  vertices.setDataHost(standardizeVectorArray<glm::vec3, 3>(newPositions));
 }
 
 template <class V, class F>
-void SimpleTriangleMesh::update(const V& newPositions, const F& newFaces) {
+void SimpleTriangleMesh::updateMesh(const V& newVerts, const F& newFaces) {
+  auto vertsStd = standardizeVectorArray<glm::vec3, 3>(newVerts);
+  vertices.resize(vertsStd.size()); // amortized doubling handled by ManagedBuffer
+  vertices.setDataHost(vertsStd);
 
-  vertices.data = standardizeVectorArray<glm::vec3, 3>(newPositions);
-  vertices.markHostBufferUpdated();
-
-  faces.data = standardizeVectorArray<glm::uvec3, 3>(newFaces);
-  faces.markHostBufferUpdated();
+  auto facesStd = standardizeVectorArray<glm::uvec3, 3>(newFaces);
+  faces.resize(facesStd.size());
+  faces.setDataHost(facesStd);
 }
+
+// =====================================================
+// ============== Quantities
+// =====================================================
+
+template <class T>
+SimpleTriangleMeshVertexScalarQuantity* SimpleTriangleMesh::addVertexScalarQuantity(std::string name, const T& values,
+                                                                                    DataType type) {
+  validateSize(values, nVertices(), "vertex scalar quantity " + name);
+  return addVertexScalarQuantityImpl(name, standardizeArray<float, T>(values), type);
+}
+
+template <class T>
+SimpleTriangleMeshFaceScalarQuantity* SimpleTriangleMesh::addFaceScalarQuantity(std::string name, const T& values,
+                                                                                DataType type) {
+  validateSize(values, nFaces(), "face scalar quantity " + name);
+  return addFaceScalarQuantityImpl(name, standardizeArray<float, T>(values), type);
+}
+
+template <class T>
+SimpleTriangleMeshVertexColorQuantity* SimpleTriangleMesh::addVertexColorQuantity(std::string name, const T& values) {
+  validateSize(values, nVertices(), "vertex color quantity " + name);
+  return addVertexColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(values));
+}
+
+template <class T>
+SimpleTriangleMeshFaceColorQuantity* SimpleTriangleMesh::addFaceColorQuantity(std::string name, const T& values) {
+  validateSize(values, nFaces(), "face color quantity " + name);
+  return addFaceColorQuantityImpl(name, standardizeVectorArray<glm::vec3, 3>(values));
+}
+
 
 // Shorthand to get a mesh from polyscope
 inline SimpleTriangleMesh* getSimpleTriangleMesh(std::string name) {

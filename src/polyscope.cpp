@@ -760,6 +760,8 @@ void buildPolyscopeGui() {
   ImGui::Begin("Polyscope ", nullptr);
 
   if (ImGui::Button(ICON_LC_HOUSE " Reset View")) {
+    forceRecomputeAllStructureBounds();
+    updateStructureExtents();
     view::flyToHomeView();
   }
   ImGui::SameLine();
@@ -1605,6 +1607,14 @@ void updateStructureExtents() {
   }
 
   requestRedraw();
+}
+
+void forceRecomputeAllStructureBounds() {
+  for (auto& cat : state::structures) {
+    for (auto& x : cat.second) {
+      x.second->updateObjectSpaceBounds();
+    }
+  }
 }
 
 namespace state {

@@ -4,6 +4,7 @@
 
 #ifdef POLYSCOPE_BACKEND_OPENGL3_ENABLED
 #include "polyscope/render/opengl/gl_engine.h"
+#include "polyscope/render/managed_buffer.h"
 
 #include "polyscope/messages.h"
 #include "polyscope/options.h"
@@ -246,21 +247,26 @@ void GLAttributeBuffer::checkArray(int testArrayCount) {
 
 GLenum GLAttributeBuffer::getTarget() { return GL_ARRAY_BUFFER; }
 
+void GLAttributeBuffer::reserveCapacity(size_t n) {
+  if (n <= bufferSize) return;
+  bind();
+  glBufferData(getTarget(), n * sizeInBytes(dataType) * getArrayCount(), NULL, GL_STATIC_DRAW);
+  bufferSize = static_cast<uint64_t>(n);
+  setFlag = true;
+  checkGLError();
+}
 
 template <typename T>
 void GLAttributeBuffer::setData_helper(const std::vector<T>& data) {
   bind();
 
-  // allocate if needed
   if (!isSet() || data.size() > bufferSize) {
     setFlag = true;
-    uint64_t newSize = data.size();
-    newSize = std::max(newSize, 2 * bufferSize); // if we're expanding, at-least double
+    uint64_t newSize = static_cast<uint64_t>(data.size());
     glBufferData(getTarget(), newSize * sizeof(T), NULL, GL_STATIC_DRAW);
     bufferSize = newSize;
   }
 
-  // do the actual copy
   dataSize = data.size();
   glBufferSubData(getTarget(), 0, dataSize * sizeof(T), data.data());
 
@@ -614,13 +620,15 @@ void GLTextureBuffer::setData(const std::vector<glm::vec3>& data) {
 
   bind();
 
-  if (data.size() != getTotalSize()) {
+  // For 1D textures, data.size() may be <= sizeX (partial upload into a capacity-allocated texture).
+  // For 2D/3D textures, capacity always equals size so the check is effectively ==.
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
   switch (dim) {
   case 1:
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sizeX, formatF(format), type(format), &data.front().x);
+    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, static_cast<GLsizei>(data.size()), formatF(format), type(format), &data.front().x);
     break;
   case 2:
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizeX, sizeY, formatF(format), type(format), &data.front().x);
@@ -637,13 +645,13 @@ void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
 
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
   switch (dim) {
   case 1:
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sizeX, formatF(format), type(format), &data.front().x);
+    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, static_cast<GLsizei>(data.size()), formatF(format), type(format), &data.front().x);
     break;
   case 2:
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizeX, sizeY, formatF(format), type(format), &data.front().x);
@@ -659,13 +667,13 @@ void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
 void GLTextureBuffer::setData(const std::vector<float>& data) {
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
   switch (dim) {
   case 1:
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sizeX, formatF(format), type(format), &data.front());
+    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, static_cast<GLsizei>(data.size()), formatF(format), type(format), &data.front());
     break;
   case 2:
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizeX, sizeY, formatF(format), type(format), &data.front());
@@ -689,13 +697,13 @@ void GLTextureBuffer::setData(const std::vector<double>& data) {
 
   bind();
 
-  if (data.size() != getTotalSize()) {
+  if (data.size() > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
   switch (dim) {
   case 1:
-    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, sizeX, formatF(format), type(format), &dataFloat.front());
+    glTexSubImage1D(GL_TEXTURE_1D, 0, 0, static_cast<GLsizei>(data.size()), formatF(format), type(format), &dataFloat.front());
     break;
   case 2:
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, sizeX, sizeY, formatF(format), type(format), &dataFloat.front());
@@ -1210,7 +1218,7 @@ void GLCompiledProgram::addUniqueAttribute(ShaderSpecAttribute newAttribute) {
       return;
     }
   }
-  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, -1, nullptr});
+  attributes.push_back(GLShaderAttribute{newAttribute.name, newAttribute.type, newAttribute.arrayCount, -1, nullptr, nullptr});
 }
 
 void GLCompiledProgram::addUniqueUniform(ShaderSpecUniform newUniform) {
@@ -1237,7 +1245,7 @@ void GLCompiledProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
       return;
     }
   }
-  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr, 777});
+  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr, 777, nullptr});
 }
 
 
@@ -1281,7 +1289,7 @@ void GLShaderProgram::createBuffers() {
   checkGLError();
 }
 
-void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer) {
+void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer, ManagedBufferBase* source) {
   bindVAO();
   checkGLError();
 
@@ -1305,6 +1313,7 @@ void GLShaderProgram::setAttribute(std::string name, std::shared_ptr<AttributeBu
       if (!engineExtBuff) throw std::invalid_argument("attribute " + name + " external buffer engine type cast failed");
 
       a.buff = engineExtBuff;
+      a.sourceManagedBuffer = source;
       checkGLError();
 
       a.buff->bind();
@@ -2001,7 +2010,7 @@ void GLShaderProgram::setTexture2D(std::string name, unsigned char* texData, uns
   throw std::invalid_argument("No texture with name " + name);
 }
 
-void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer) {
+void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer, ManagedBufferBase* source) {
   glUseProgram(compiledProgram->getHandle());
 
   // Find the right texture
@@ -2017,6 +2026,7 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
       throw std::invalid_argument("Bad texture in setTextureFromBuffer()");
     }
 
+    t.sourceManagedBuffer = source;
     t.isSet = true;
     return;
   }
@@ -2204,8 +2214,18 @@ void GLShaderProgram::activateTextures() {
   }
 }
 
+void GLShaderProgram::syncBuffersToDeviceIfNeeded() {
+  for (auto& attr : attributes) {
+    if (attr.sourceManagedBuffer) attr.sourceManagedBuffer->syncToDeviceIfNeeded();
+  }
+  for (auto& tex : textures) {
+    if (tex.sourceManagedBuffer) tex.sourceManagedBuffer->syncToDeviceIfNeeded();
+  }
+}
+
 void GLShaderProgram::draw() {
   validateData();
+  syncBuffersToDeviceIfNeeded();
 
   glUseProgram(compiledProgram->getHandle());
   glBindVertexArray(vaoHandle);
@@ -2716,6 +2736,9 @@ void GLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE", MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE);
   registerShaderRule("MESH_PROPAGATE_PICK", MESH_PROPAGATE_PICK);
   registerShaderRule("MESH_PROPAGATE_PICK_SIMPLE", MESH_PROPAGATE_PICK_SIMPLE);
+  registerShaderRule("SIMPLE_MESH_PROPAGATE_FACE_VALUE", SIMPLE_MESH_PROPAGATE_FACE_VALUE);
+  registerShaderRule("SIMPLE_MESH_PROPAGATE_FACE_COLOR", SIMPLE_MESH_PROPAGATE_FACE_COLOR);
+  registerShaderRule("SIMPLE_MESH_PROPAGATE_FACE_PICK", SIMPLE_MESH_PROPAGATE_FACE_PICK);
 
   // volume gridcube things
   registerShaderRule("GRIDCUBE_PROPAGATE_NODE_VALUE", GRIDCUBE_PROPAGATE_NODE_VALUE);

@@ -85,7 +85,6 @@ public:
   double getIsolineWidth();
 
 protected:
-  std::vector<float> valuesData;
   const DataType dataType;
 
   // === Visualization parameters

@@ -121,7 +121,7 @@ void processFileOBJ(std::string filename) {
   }
   auto psMesh = polyscope::registerSurfaceMesh(niceName, vertexPositionsGLM, faceIndices);
 
-  auto psSimpleMesh = polyscope::registerSimpleTriangleMesh(niceName, vertexPositionsGLM, faceIndices);
+  auto psSimpleMesh = polyscope::registerSimpleTriangleMesh(niceName + " (simple)", vertexPositionsGLM, faceIndices);
   psSimpleMesh->setEnabled(false);
 
   // Useful data
@@ -154,6 +154,10 @@ void processFileOBJ(std::string filename) {
   polyscope::getSurfaceMesh(niceName)->addVertexScalarQuantity("categorical vert", valCat,
                                                                polyscope::DataType::CATEGORICAL);
 
+  // Simple triangle mesh quantities
+  psSimpleMesh->addVertexScalarQuantity("cY", valY);
+  psSimpleMesh->addVertexColorQuantity("vColor", randColor);
+
   polyscope::getSurfaceMesh(niceName)->addVertexDistanceQuantity("cY_dist", valY);
   polyscope::getSurfaceMesh(niceName)->addVertexSignedDistanceQuantity("cY_signeddist", valY);
 
@@ -185,6 +189,9 @@ void processFileOBJ(std::string filename) {
   polyscope::getSurfaceMesh(niceName)->addFaceColorQuantity("fColor", fColor);
   polyscope::getSurfaceMesh(niceName)->addFaceScalarQuantity("categorical face", fCat,
                                                              polyscope::DataType::CATEGORICAL);
+
+  psSimpleMesh->addFaceScalarQuantity("face area", fArea, polyscope::DataType::MAGNITUDE);
+  psSimpleMesh->addFaceColorQuantity("fColor", fColor);
 
 
   // size_t nEdges = psMesh->nEdges();

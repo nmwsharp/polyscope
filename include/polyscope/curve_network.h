@@ -162,13 +162,6 @@ public:
 
 
 private:
-  // Storage for the managed buffers above. You should generally interact with these through the managed buffers, not
-  // these members.
-  std::vector<glm::vec3> nodePositionsData;
-  std::vector<uint32_t> edgeTailIndsData;
-  std::vector<uint32_t> edgeTipIndsData;
-  std::vector<glm::vec3> edgeCentersData;
-
   void computeEdgeCenters();
 
   // === Visualization parameters

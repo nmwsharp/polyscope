@@ -4,7 +4,7 @@ namespace polyscope {
 
 template <typename QuantityT>
 ColorQuantity<QuantityT>::ColorQuantity(QuantityT& quantity_, const std::vector<glm::vec3>& colors_)
-    : quantity(quantity_), colors(&quantity, quantity.uniquePrefix() + "colors", colorsData), colorsData(colors_) {
+    : quantity(quantity_), colors(&quantity, quantity.uniquePrefix() + "colors", std::vector<glm::vec3>(colors_)) {
   colors.checkInvalidValues();
 }
 
@@ -27,7 +27,9 @@ template <typename QuantityT>
 template <class V>
 void ColorQuantity<QuantityT>::updateData(const V& newColors) {
   validateSize(newColors, colors.size(), "color quantity");
-  colors.data = standardizeVectorArray<glm::vec3, 3>(newColors);
+  auto d = standardizeVectorArray<glm::vec3, 3>(newColors);
+  colors.resize(d.size());
+  colors.setDataHost(d);
   colors.markHostBufferUpdated();
 }
 

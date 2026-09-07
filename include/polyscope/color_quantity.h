@@ -39,8 +39,6 @@ public:
   // === ~DANGER~ experimental/unsupported functions
 
 protected:
-  std::vector<glm::vec3> colorsData;
-
   // === Visualization parameters
 
   // Parameters

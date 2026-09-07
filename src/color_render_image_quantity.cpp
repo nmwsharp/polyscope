@@ -16,7 +16,8 @@ ColorRenderImageQuantity::ColorRenderImageQuantity(Structure& parent_, std::stri
                                                    const std::vector<glm::vec3>& normalData,
                                                    const std::vector<glm::vec3>& colorsData_, ImageOrigin imageOrigin)
     : RenderImageQuantityBase(parent_, name, dimX, dimY, depthData, normalData, imageOrigin),
-      colors(this, uniquePrefix() + "colors", colorsData), colorsData(colorsData_) {
+      colors(this, uniquePrefix() + "colors", std::vector<glm::vec3>(colorsData_)) {
+  colors.setAsType(DeviceBufferType::Texture2d);
   colors.setTextureSize(dimX, dimY);
 }
 
@@ -72,11 +73,11 @@ void ColorRenderImageQuantity::prepare() {
   program = render::engine->requestShader("TEXTURE_DRAW_RENDERIMAGE_PLAIN", rules);
 
   program->setAttribute("a_position", render::engine->screenTrianglesCoords());
-  program->setTextureFromBuffer("t_depth", depths.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_depth", depths);
   if (hasNormals) {
-    program->setTextureFromBuffer("t_normal", normals.getRenderTextureBuffer().get());
+    program->setTextureFromBuffer("t_normal", normals);
   }
-  program->setTextureFromBuffer("t_color", colors.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_color", colors);
   render::engine->setMaterial(*program, material.get());
 }
 
