@@ -496,20 +496,19 @@ void Engine::resizeScreenBuffersAndSetViewports() {
   displayBuffer->resize(width, height);
   displayBufferAlt->resize(width, height);
   sceneBufferFinal->resize(ssaaFactor * width, ssaaFactor * height);
-  sceneDepthMinFrame->resize(ssaaFactor * width, ssaaFactor * height);
 
   displayBuffer->setViewport(0, 0, width, height);
   displayBufferAlt->setViewport(0, 0, width, height);
   sceneBufferFinal->setViewport(0, 0, ssaaFactor * width, ssaaFactor * height);
-  sceneDepthMinFrame->setViewport(0, 0, ssaaFactor * width, ssaaFactor * height);
 
   for (size_t i = 0; i < sceneBufferTargets.size(); i++) {
     view::ViewParameters vp = view::getSubviewParameters(i);
 
     sceneBufferTargets[i]->resize(ssaaFactor * vp.subviewBufferWidth, ssaaFactor * vp.subviewBufferHeight);
-    sceneDepthMinTargets[i]->resize(ssaaFactor * vp.subviewBufferWidth, ssaaFactor * vp.subviewBufferHeight);
+    sceneDepthMinFrameTargets[i]->resize(ssaaFactor * vp.subviewBufferWidth, ssaaFactor * vp.subviewBufferHeight);
 
     sceneBufferTargets[i]->setViewport(0, 0, ssaaFactor * vp.subviewBufferWidth, ssaaFactor * vp.subviewBufferHeight);
+    sceneDepthMinFrameTargets[i]->setViewport(0, 0, ssaaFactor * vp.subviewBufferWidth, ssaaFactor * vp.subviewBufferHeight);
   }
 }
 
@@ -524,6 +523,7 @@ void Engine::setActiveSceneTarget(int i) {
   sceneColor = sceneColorTargets[i];
   sceneDepth = sceneDepthTargets[i];
   sceneDepthMin = sceneDepthMinTargets[i];
+  sceneDepthMinFrame = sceneDepthMinFrameTargets[i];
 }
 
 void Engine::ensureSceneTargetsAllocated(int count) {
@@ -534,6 +534,7 @@ void Engine::ensureSceneTargetsAllocated(int count) {
   sceneDepthTargets.resize(count);
   sceneBufferTargets.resize(count);
   sceneDepthMinTargets.resize(count);
+  sceneDepthMinFrameTargets.resize(count);
 
   // initialize any new targets/buffers
   for (int i = currentCount; i < count; i++) {
@@ -542,19 +543,25 @@ void Engine::ensureSceneTargetsAllocated(int count) {
     unsigned int w = 128;
     unsigned int h = 128;
 
-    auto color = generateTextureBuffer(TextureFormat::RGBA16F, w, h);
-    auto depth = generateTextureBuffer(TextureFormat::DEPTH24, w, h);
-    auto fb = generateFrameBuffer(w, h);
+    std::shared_ptr<TextureBuffer> color = generateTextureBuffer(TextureFormat::RGBA16F, w, h);
+    std::shared_ptr<TextureBuffer> depth = generateTextureBuffer(TextureFormat::DEPTH24, w, h);
+    std::shared_ptr<FrameBuffer> fb = generateFrameBuffer(w, h);
     fb->addColorBuffer(color);
     fb->addDepthBuffer(depth);
     fb->setDrawBuffers();
     fb->clearColor = glm::vec3{1., 1., 1.};
     fb->clearAlpha = 0.0;
 
+    std::shared_ptr<TextureBuffer> depthMin = generateTextureBuffer(TextureFormat::DEPTH24, w, h);
+    std::shared_ptr<FrameBuffer> depthMinFrame = generateFrameBuffer(w, h);
+    depthMinFrame->addDepthBuffer(depthMin);
+    depthMinFrame->clearDepth = 0.0;
+
     sceneColorTargets[i] = color;
     sceneDepthTargets[i] = depth;
     sceneBufferTargets[i] = fb;
-    sceneDepthMinTargets[i] = generateTextureBuffer(TextureFormat::DEPTH24, w, h);
+    sceneDepthMinTargets[i] = depthMin;
+    sceneDepthMinFrameTargets[i] = depthMinFrame;
   }
 
   resizeScreenBuffersAndSetViewports();
@@ -733,32 +740,6 @@ void Engine::allocateGlobalBuffersAndPrograms() {
 
   // Note: The display frame buffer should be manually wrapped by child classes
 
-  // TODO check any of these that are no longer needed now that these are just pointers to subviews
-
-  { // Scene buffer
-
-    // Note that this is basically duplicated in ground_plane.cpp, changes here should probably be reflected there
-    sceneColor = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
-    // sceneDepth = generateRenderBuffer(RenderBufferType::Depth, view::bufferWidth, view::bufferHeight);
-    sceneDepth = generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
-
-    sceneBuffer = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
-    sceneBuffer->addColorBuffer(sceneColor);
-    sceneBuffer->addDepthBuffer(sceneDepth);
-    sceneBuffer->setDrawBuffers();
-
-    sceneBuffer->clearColor = glm::vec3{1., 1., 1.};
-    sceneBuffer->clearAlpha = 0.0;
-  }
-
-  { // Alternate depth texture used for some effects
-    sceneDepthMin = generateTextureBuffer(TextureFormat::DEPTH24, view::bufferWidth, view::bufferHeight);
-
-    sceneDepthMinFrame = generateFrameBuffer(view::bufferWidth, view::bufferHeight);
-    sceneDepthMinFrame->addDepthBuffer(sceneDepthMin);
-    sceneDepthMinFrame->clearDepth = 0.0;
-  }
-
   { // "Final" scene buffer (after resolving)
     sceneColorFinal = generateTextureBuffer(TextureFormat::RGBA16F, view::bufferWidth, view::bufferHeight);
 
@@ -818,12 +799,10 @@ void Engine::allocateGlobalBuffersAndPrograms() {
     compositePeel = render::engine->requestShader("COMPOSITE_PEEL", {}, render::ShaderReplacementDefaults::Process);
     compositePeel->setAttribute("a_position", screenTrianglesCoords());
     compositePeel->setDrawCount(screenTrianglesCoords().size());
-    compositePeel->setTextureFromBuffer("t_image", sceneColor.get());
 
     copyDepth = render::engine->requestShader("DEPTH_COPY", {}, render::ShaderReplacementDefaults::Process);
     copyDepth->setAttribute("a_position", screenTrianglesCoords());
     copyDepth->setDrawCount(screenTrianglesCoords().size());
-    copyDepth->setTextureFromBuffer("t_depth", sceneDepth.get());
     // clang-format on
   }
 
@@ -954,8 +933,9 @@ std::vector<glm::vec4> Engine::distantCubeCoords() {
 }
 
 void Engine::updateMinDepthTexture() {
+  sceneDepthMinFrame->bindForRendering();
   setDepthMode(DepthMode::Greater);
-  sceneDepthMinFrame->bind();
+  copyDepth->setTextureFromBuffer("t_depth", sceneDepth.get());
   copyDepth->draw();
 }
 
@@ -968,6 +948,7 @@ void Engine::freeAllOwnedResources() {
   sceneBufferFinal.reset();
   pickFramebuffer.reset();
   sceneDepthMinFrame.reset();
+  sceneDepthMinFrameTargets.clear();
   sceneColor.reset();
   sceneColorFinal.reset();
   sceneDepth.reset();

@@ -1647,6 +1647,9 @@ void setNumSubviews(int count) {
   int oldCount = getNumSubviews();
   state::globalContext.subviewParameters.resize(count);
 
+  // Clamp active index to valid range after shrinking
+  if (activeSubviewIndex >= count) activeSubviewIndex = count - 1;
+
   // Copy the current active view parameters into all new views to initialize them
   for (int i = oldCount; i < count; i++) packCurrentSubviewParametersToIndex(i);
 
@@ -1726,6 +1729,7 @@ void createInitialSubview() {
   state::globalContext.subviewParameters[0].subviewRelativeHeight = 1.0;
   if (!render::engine) error("Render engine not initialized. You called an internal function at the wrong time.");
   render::engine->ensureSceneTargetsAllocated(1);
+  render::engine->setActiveSceneTarget(0);
 }
 
 void clearSubviews() {

@@ -39,7 +39,7 @@ namespace {
 struct ContextEntry {
   ImGuiContext* context;
   ImPlotContext* plotContext;
-  std ::function<void()> callback;
+  std::function<void()> callback;
   bool drawDefaultUI;
 };
 std::vector<ContextEntry> contextStack;
@@ -625,38 +625,30 @@ void renderScene() {
     // If a view has never been set, this will set it to the home view
     view::ensureViewValid();
 
-    render::engine->sceneBuffer->clearColor = {0., 0., 0.};
-    render::engine->sceneBuffer->clearAlpha = 0.;
-    render::engine->sceneBuffer->clear();
-
-    if (!render::engine->bindSceneBuffer()) {
-      // sometimes bind fails during normal flow, e.g. for minimized windows, we just skip the draw
-      return;
-    }
-
     // Clear the final buffer explicitly since we will gradually composite in to it rather than just blitting directly
     // as in normal rendering.
     render::engine->sceneBufferFinal->clearColor = glm::vec3{0., 0., 0.};
     render::engine->sceneBufferFinal->clearAlpha = 0;
     render::engine->sceneBufferFinal->clear();
 
-    render::engine->setDepthMode(DepthMode::Less); // we need depth to be enabled for the clear below to do anything
-    render::engine->sceneDepthMinFrame->clear();
-
-
-    if (view::getNumSubviews() > 1) {
-      exception("TODO: update transparency path for multi-subview rendering");
-    }
-
     for (int iSubView = 0; iSubView < view::getNumSubviews(); iSubView++) {
       view::activateSubview(iSubView);
       render::engine->setActiveSceneTarget(iSubView);
+
+      view::ViewParameters vp = view::getSubviewParameters(iSubView);
+      int ssaa = render::engine->getSSAAFactor();
+
+      render::engine->setDepthMode(DepthMode::Less); // we need depth to be enabled for the clear below to do anything
+      render::engine->sceneDepthMinFrame->clear();
 
       for (int iPass = 0; iPass < options::transparencyRenderPasses; iPass++) {
         bool isRedraw = iPass > 0;
         internal::renderPassIsRedraw = isRedraw;
 
-        render::engine->bindSceneBuffer();
+        if (!render::engine->bindSceneBuffer()) {
+          // sometimes bind fails during normal flow, e.g. for minimized windows, we just skip the draw
+          return;
+        }
         render::engine->clearSceneBuffer();
 
         render::engine->applyTransparencySettings();
@@ -672,10 +664,15 @@ void renderScene() {
         render::engine->applyTransparencySettings();
         drawStructuresDelayed();
 
-        // Composite the result of this pass in to the result buffer
-        render::engine->sceneBufferFinal->bind();
+        // Composite the result of this pass in to the result buffer.
+        // Set the viewport to the subview's region in sceneBufferFinal so the fullscreen quad composites
+        // only into the correct portion of the final buffer.
+        render::engine->sceneBufferFinal->setViewport(ssaa * vp.subviewPosX, ssaa * vp.subviewPosY,
+                                                      ssaa * vp.subviewBufferWidth, ssaa * vp.subviewBufferHeight);
+        render::engine->sceneBufferFinal->bindForRendering();
         render::engine->setDepthMode(DepthMode::Disable);
         render::engine->setBlendMode(BlendMode::AlphaUnder);
+        render::engine->compositePeel->setTextureFromBuffer("t_image", render::engine->sceneColor.get());
         render::engine->compositePeel->draw();
 
         // Update the minimum depth texture
@@ -684,6 +681,10 @@ void renderScene() {
 
       internal::renderPassIsRedraw = false; // reset to usual value
     }
+
+    // Restore sceneBufferFinal viewport to cover the full buffer
+    int ssaaFactor = render::engine->getSSAAFactor();
+    render::engine->sceneBufferFinal->setViewport(0, 0, ssaaFactor * view::bufferWidth, ssaaFactor * view::bufferHeight);
 
   } else {
     // Normal case: single render pass

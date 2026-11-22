@@ -286,10 +286,8 @@ void Structure::setStructureUniforms(render::ShaderProgram& p) {
       p.setUniform("u_viewportDim", viewportDim);
     }
 
-    // Attach the min depth texture, if needed
-    // (note that this design is somewhat lazy wrt to the name of the function: it sets a texture, not a uniform, and
-    // only actually does anything once on initialization)
-    if (render::engine->transparencyEnabled() && p.hasTexture("t_minDepth") && !p.textureIsSet("t_minDepth")) {
+    // Attach the min depth texture, if needed (rebind each draw since sceneDepthMin changes per-subview)
+    if (render::engine->transparencyEnabled() && p.hasTexture("t_minDepth")) {
       p.setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());
     }
   }

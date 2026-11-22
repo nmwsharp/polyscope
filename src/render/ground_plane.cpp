@@ -410,6 +410,9 @@ void GroundPlane::draw(bool isRedraw) {
   // Render the ground plane
   render::engine->applyTransparencySettings();
   setUniforms();
+  if (options::transparencyMode == TransparencyMode::Pretty) {
+    groundPlaneProgram->setTextureFromBuffer("t_minDepth", render::engine->sceneDepthMin.get());
+  }
   groundPlaneProgram->draw();
 }
 
