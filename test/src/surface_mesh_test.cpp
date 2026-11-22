@@ -15,6 +15,12 @@ TEST_F(PolyscopeTest, ShowSurfaceMesh) {
   polyscope::show(3);
   EXPECT_TRUE(polyscope::hasSurfaceMesh("test1"));
   EXPECT_FALSE(polyscope::hasSurfaceMesh("test2"));
+
+  // render with subviews
+  polyscope::view::createSubviewGrid(2, 1);
+  polyscope::show(3);
+  polyscope::view::createSubviewGrid(1, 1);
+
   polyscope::removeAllStructures();
   EXPECT_FALSE(polyscope::hasSurfaceMesh("test1"));
 }

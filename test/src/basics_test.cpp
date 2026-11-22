@@ -237,6 +237,43 @@ TEST_F(PolyscopeTest, NavigationMode) {
   polyscope::view::setNavigateStyle(polyscope::NavigateStyle::Turntable); // set back to usual default
 }
 
+TEST_F(PolyscopeTest, SubviewManagement) {
+  auto psMesh = registerTriangleMesh();
+
+  // 2x1 grid
+  polyscope::view::createSubviewGrid(2, 1);
+  EXPECT_EQ(polyscope::view::getNumSubviews(), 2);
+  polyscope::show(3);
+
+  // activateSubview / getActiveSubviewIndex
+  polyscope::view::activateSubview(1);
+  EXPECT_EQ(polyscope::view::getActiveSubviewIndex(), 1);
+  polyscope::view::activateSubview(0);
+  EXPECT_EQ(polyscope::view::getActiveSubviewIndex(), 0);
+
+  // shared navigation
+  polyscope::view::setSubviewsShareNavigation(true);
+  EXPECT_TRUE(polyscope::view::getSubviewsShareNavigation());
+  polyscope::show(3);
+
+  polyscope::view::setSubviewsShareNavigation(false);
+  EXPECT_FALSE(polyscope::view::getSubviewsShareNavigation());
+  polyscope::show(3);
+
+  // 2x2 grid
+  polyscope::view::createSubviewGrid(2, 2);
+  EXPECT_EQ(polyscope::view::getNumSubviews(), 4);
+  polyscope::show(3);
+
+  // back to single subview
+  polyscope::view::createSubviewGrid(1, 1);
+  EXPECT_EQ(polyscope::view::getNumSubviews(), 1);
+  polyscope::show(3);
+
+  polyscope::view::setSubviewsShareNavigation(true); // restore default
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, UIScale) {
 
   // this should trigger a reload of the font atlas
@@ -279,6 +316,11 @@ TEST_F(PolyscopeTest, GroundPlaneTest) {
 
   polyscope::options::groundPlaneHeightMode = polyscope::GroundPlaneHeightMode::Automatic;
   polyscope::show(3);
+
+  // render with subviews
+  polyscope::view::createSubviewGrid(2, 1);
+  polyscope::show(3);
+  polyscope::view::createSubviewGrid(1, 1);
 
   polyscope::removeAllStructures();
 }
