@@ -42,11 +42,17 @@ void TransformationGizmo::draw() {
 
   ImGuizmo::PushID(uniquePrefix().c_str());
 
-  ImGuiIO& io = ImGui::GetIO();
-  ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+  glm::vec4 svRect = view::getSubviewImGuiRect();
+  ImGuizmo::SetRect(svRect.x, svRect.y, svRect.z, svRect.w);
 
-  // styling options
-  ImGuizmo::SetGizmoSizeClipSpace(gizmoSize.get() * 0.08f * options::uiScale);
+  // Scale up to compensate for the subview being smaller than the full window.
+  // ImGuizmo maps clip-space size independently by viewport width and height, so a single scalar
+  // can't match both axes when the subview aspect ratio differs from the full window. The geometric
+  // mean minimizes the asymmetry between X and Y.
+  float fullArea = (float)view::windowWidth * (float)view::windowHeight;
+  float svArea = svRect.z * svRect.w;
+  float sizeScale = std::sqrt(fullArea / svArea);
+  ImGuizmo::SetGizmoSizeClipSpace(gizmoSize.get() * 0.08f * options::uiScale * sizeScale);
 
   ImGuizmo::Style& style = ImGuizmo::GetStyle();
   style.HatchedAxisLineThickness = 0.; // disable the hatching affect along the negative axis

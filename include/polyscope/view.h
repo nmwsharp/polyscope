@@ -178,21 +178,30 @@ void setCameraFromJson(std::string jsonData, bool flyTo);
 
 // == Misc helpers
 
-// Buffer inds are integer indices into the actual buffer array.
-// Screen coords are floating point logical pixel coordinates.
-// On many machines they will be 1-to-1, but some high-DPI machines (incl. macOS retina) there will be a scale factor
-// e.g. each 1.0 screencoord spans 2 buffer inds. These versions always operate on the full global window, _not_ subview
-// coordinates (if using subviews).
+// === Coordinate system conventions ===
+//
+// Two coordinate systems are used throughout, and MUST NOT be mixed:
+//
+//   Screen coords  (glm::vec2, float)   — logical pixels, y=0 at TOP,    y increases downward.
+//                                         Used by ImGui (io.MousePos), window/widget layout.
+//
+//   Buffer indices (glm::ivec2, int)    — physical pixels, y=0 at BOTTOM, y increases upward.
+//                                         Used by OpenGL framebuffers, ViewParameters::subviewPosY.
+//
+// High-DPI (e.g. MacOS Retina) machines have a scale factor >1: each 1.0 screen-coord unit spans multiple buffer
+// pixels. ViewParameters::subviewRelativePosY and subviewPosY are in BUFFER (y-from-bottom) convention. All functions
+// below state which convention their arguments and return values use.
 
-// Convert between buffer indices and screen coordinates (for the full window, ignoring subviews if present).
-glm::vec2 bufferIndsToScreenCoords(int xPos, int yPos);
+// Convert between buffer indices and screen coords (see definition above) for the full window.
+// When using subviews, these operate on global window coordinates, not subview-local coordinates.
+glm::vec2 bufferIndsToScreenCoords(int xPos, int yPos); // buffer → screen
 glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds);
-glm::ivec2 screenCoordsToBufferIndsVec(glm::vec2 screenCoords);
+glm::ivec2 screenCoordsToBufferIndsVec(glm::vec2 screenCoords); // screen → buffer
 std::tuple<int, int> screenCoordsToBufferInds(glm::vec2 screenCoords);
 
-// Local per-subview equivalents of the above conversions from buffer indices to screen coordinates. These perform the
-// same conversion, but for coordinates which are local to a particular subview. The requested subivew index should be
-// passed as the last argument, or if -1 the current active subview will be used.
+// Subview-local versions of the above. Buffer indices and screen coords here are relative to the
+// subview's own origin (not the global window). Pass iView=-1 to use the current active subview.
+// See note above for definition: buffer indices and screen coordinates have differnt scales and origins.
 glm::vec2 bufferIndsToScreenCoordsSubview(int xPos, int yPos, int32_t iView = -1);
 glm::vec2 bufferIndsToScreenCoordsSubview(glm::ivec2 bufferInds, int32_t iView = -1);
 glm::ivec2 screenCoordsToBufferIndsVecSubview(glm::vec2 screenCoords, int32_t iView = -1);
@@ -235,10 +244,17 @@ int getActiveSubviewIndex();
 int getActiveSubviewBufferWidth();
 int getActiveSubviewBufferHeight();
 
+// Returns {x, y, width, height} of a subview in screen coordinates (see definition above).
+// Pass subviewInd=-1 to use the active subview.
+glm::vec4 getSubviewImGuiRect(int32_t subviewInd = -1);
+
+// Get a reference to the view parameters for a specific subview, -1 means the active subview.
+const view::ViewParameters& getSubviewParameters(int32_t iSubview = -1);
+
+// If true, all subviews share the same camera and rotation/translation/zoom etc applies
+// to all views simultaneously. If false, each subview has its own independent camera and navigation state.
 bool getSubviewsShareNavigation();
 void setSubviewsShareNavigation(bool shareNavigation);
-
-const view::ViewParameters& getSubviewParameters(int32_t iSubview);
 
 // subview internal helpers
 void createInitialSubview();

@@ -119,8 +119,11 @@ std::tuple<int, int> screenCoordsToBufferIndsSubview(glm::vec2 screenCoords, int
   if (iView < 0) iView = getActiveSubviewIndex();
   const ViewParameters& vp = getSubviewParameters(iView);
   glm::ivec2 globalInds = screenCoordsToBufferIndsVec(screenCoords);
+  // globalInds.y is y-from-top (screenCoordsToBufferIndsVec just scales without flipping).
+  // subviewPosY is y-from-bottom. Compute the subview's top in y-from-top buffer coords first.
+  int svTopFromTopBuf = bufferHeight - vp.subviewPosY - vp.subviewBufferHeight;
   int localX = std::max(std::min(globalInds.x - vp.subviewPosX, vp.subviewBufferWidth - 1), 0);
-  int localY = std::max(std::min(globalInds.y - vp.subviewPosY, vp.subviewBufferHeight - 1), 0);
+  int localY = std::max(std::min(globalInds.y - svTopFromTopBuf, vp.subviewBufferHeight - 1), 0);
   return std::tuple<int, int>(localX, localY);
 }
 
@@ -133,7 +136,10 @@ glm::ivec2 screenCoordsToBufferIndsVecSubview(glm::vec2 screenCoords, int32_t iV
 glm::vec2 bufferIndsToScreenCoordsSubview(int xPos, int yPos, int32_t iView) {
   if (iView < 0) iView = getActiveSubviewIndex();
   const ViewParameters& vp = getSubviewParameters(iView);
-  return bufferIndsToScreenCoords(vp.subviewPosX + xPos, vp.subviewPosY + yPos);
+  // xPos/yPos are local coords within the subview (y-from-top).
+  // subviewPosY is y-from-bottom. Compute the subview's top in y-from-top buffer coords.
+  int svTopFromTopBuf = bufferHeight - vp.subviewPosY - vp.subviewBufferHeight;
+  return bufferIndsToScreenCoords(vp.subviewPosX + xPos, svTopFromTopBuf + yPos);
 }
 
 glm::vec2 bufferIndsToScreenCoordsSubview(glm::ivec2 bufferInds, int32_t iView) {
@@ -872,16 +878,19 @@ glm::vec3 getLookVec() {
 }
 
 glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords, int32_t iView) {
-  if (iView < 0) iView = getActiveSubviewIndex();
+  if (iView < 0) iView = screenCoordsToSubviewInd(screenCoords);
   const ViewParameters& vp = getSubviewParameters(iView);
 
   glm::mat4 viewMat = getCameraViewMatrix();
   glm::mat4 proj = getCameraPerspectiveMatrix();
   glm::vec4 viewport = {0., 0., vp.subviewWindowWidth, vp.subviewWindowHeight};
 
-  // Convert global screen coords to subview-local before unprojecting
+  // Convert global screen coords (y-from-top) to subview-local.
+  // subviewRelativePosY is y-from-bottom, so the top of the subview in y-from-top is:
+  // (1 - posY - height) * windowHeight
   float localX = screenCoords.x - windowWidth * vp.subviewRelativePosX;
-  float localY = screenCoords.y - windowHeight * vp.subviewRelativePosY;
+  float svTopFromTop = (1.f - vp.subviewRelativePosY - vp.subviewRelativeHeight) * windowHeight;
+  float localY = screenCoords.y - svTopFromTop;
 
   glm::vec3 screenPos3{localX, vp.subviewWindowHeight - localY, 0.};
   glm::vec3 worldPos = glm::unProject(screenPos3, viewMat, proj, viewport);
@@ -931,7 +940,7 @@ glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clip
     return glm::vec3{inf, inf, inf};
   }
 
-  if (iView < 0) iView = getActiveSubviewIndex();
+  if (iView < 0) iView = screenCoordsToSubviewInd(screenCoords);
   const ViewParameters& vp = getSubviewParameters(iView);
 
   glm::mat4 view = getCameraViewMatrix();
@@ -940,9 +949,12 @@ glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clip
   glm::mat4 projInv = glm::inverse(proj);
   // glm::vec2 depthRange = {0., 1.}; // no support for nonstandard depth range, currently
 
-  // Convert global screen coords to subview-local, then normalize to [0,1]
+  // Convert global screen coords (y-from-top) to subview-local, then normalize to [0,1].
+  // subviewRelativePosY is y-from-bottom, so the top of the subview in y-from-top is:
+  // (1 - posY - height) * windowHeight
   float localX = screenCoords.x - windowWidth * vp.subviewRelativePosX;
-  float localY = screenCoords.y - windowHeight * vp.subviewRelativePosY;
+  float svTopFromTop = (1.f - vp.subviewRelativePosY - vp.subviewRelativeHeight) * windowHeight;
+  float localY = screenCoords.y - svTopFromTop;
   glm::vec2 screenPos{localX / static_cast<float>(vp.subviewWindowWidth),
                       1.f - localY / static_cast<float>(vp.subviewWindowHeight)};
   float z = clipDepth * 2.0f - 1.0f;
@@ -1626,6 +1638,14 @@ int getActiveSubviewBufferHeight() {
   return state::globalContext.subviewParameters[activeSubviewIndex].subviewBufferHeight;
 }
 
+glm::vec4 getSubviewImGuiRect(int32_t subviewInd) {
+  if (subviewInd < 0) subviewInd = activeSubviewIndex;
+  const ViewParameters& vp = getSubviewParameters(subviewInd);
+  float x = vp.subviewRelativePosX * windowWidth;
+  float y = (1.f - vp.subviewRelativePosY - vp.subviewRelativeHeight) * windowHeight;
+  return glm::vec4(x, y, vp.subviewWindowWidth, vp.subviewWindowHeight);
+}
+
 void activateSubview(int subviewInd) {
   if (subviewInd < 0 || subviewInd >= getNumSubviews()) {
     error("Invalid subview index " + std::to_string(subviewInd));
@@ -1797,7 +1817,8 @@ void propagateViewUpdatesToSubviews() {
 }
 
 const ViewParameters& getSubviewParameters(int subviewInd) {
-  if (subviewInd < 0 || subviewInd >= getNumSubviews()) {
+  if (subviewInd < 0) subviewInd = activeSubviewIndex;
+  if (subviewInd >= getNumSubviews()) {
     error("Invalid subview index " + std::to_string(subviewInd));
   }
   if (subviewInd == activeSubviewIndex) {

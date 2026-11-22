@@ -472,7 +472,6 @@ void processInputEvents() {
     for (WeakHandle<Widget> wHandle : state::widgets) {
       if (wHandle.isValid()) {
         Widget& w = wHandle.get();
-        // TODO subview handling here
         widgetCapturedMouse = w.interact();
         if (widgetCapturedMouse) {
           break;
@@ -483,8 +482,8 @@ void processInputEvents() {
     // === Mouse inputs
     if (!io.WantCaptureMouse && !widgetCapturedMouse) {
 
-      // Activate the subview under the mouse on click (when not sharing navigation)
-      if (!view::getSubviewsShareNavigation() && (ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1))) {
+      // Activate the subview under the mouse on click (affects widget placement etc, regardless of nav sharing)
+      if (ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1)) {
         int clickedSubview = view::screenCoordsToSubviewInd({io.MousePos.x, io.MousePos.y});
         if (clickedSubview != view::getActiveSubviewIndex()) {
           view::activateSubview(clickedSubview);
@@ -521,8 +520,8 @@ void processInputEvents() {
         bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
         if (dragLeft || dragRight) {
 
-          // Activate the subview under the initial click (when navigation is not shared)
-          if (!view::getSubviewsShareNavigation()) {
+          // Activate the subview under the initial click
+          {
             ImVec2 clickPos = dragLeft ? io.MouseClickedPos[0] : io.MouseClickedPos[1];
             int clickedSubview = view::screenCoordsToSubviewInd({clickPos.x, clickPos.y});
             if (clickedSubview != view::getActiveSubviewIndex()) {
