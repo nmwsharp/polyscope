@@ -744,7 +744,9 @@ void renderScene() {
       drawStructuresDelayed();
 
       view::ViewParameters vp = view::getSubviewParameters(iSubView);
-      render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get(), vp.subviewPosX, vp.subviewPosY);
+      int ssaaFactor = render::engine->getSSAAFactor();
+      render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get(), ssaaFactor * vp.subviewPosX,
+                                          ssaaFactor * vp.subviewPosY);
     }
   }
 
