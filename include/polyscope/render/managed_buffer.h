@@ -268,7 +268,7 @@ public:
   //
   // This follows the same logic as above, but rather than returning a render buffer it simply returns a host-side
   // copy (which is not cached).
-  std::vector<T> getIndexedView(ManagedBuffer<uint32_t>& indices);
+  std::vector<T> getIndexedDataCopy(ManagedBuffer<uint32_t>& indices);
 
 
   // ========================================================================

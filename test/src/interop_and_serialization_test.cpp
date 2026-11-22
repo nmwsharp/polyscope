@@ -136,7 +136,7 @@ TEST_F(PolyscopeTest, ManagedBufferIndexedViews) {
   polyscope::render::ManagedBuffer<float> src(nullptr, "idx_src", std::vector<float>{10.f, 20.f, 30.f, 40.f});
   polyscope::render::ManagedBuffer<uint32_t> indices(nullptr, "idx_ind", std::vector<uint32_t>{3, 1, 0, 1});
 
-  EXPECT_EQ(src.getIndexedView(indices), (std::vector<float>{40.f, 20.f, 10.f, 20.f}));
+  EXPECT_EQ(src.getIndexedDataCopy(indices), (std::vector<float>{40.f, 20.f, 10.f, 20.f}));
 
   // Indexed render buffer is cached and updated lazily on sync
   auto viewBuf = src.getIndexedRenderAttributeBuffer(indices);
@@ -144,11 +144,11 @@ TEST_F(PolyscopeTest, ManagedBufferIndexedViews) {
 
   src.setDataHost({1.f, 2.f, 3.f, 4.f});
   src.syncToDeviceIfNeeded();
-  EXPECT_EQ(src.getIndexedView(indices), (std::vector<float>{4.f, 2.f, 1.f, 2.f}));
+  EXPECT_EQ(src.getIndexedDataCopy(indices), (std::vector<float>{4.f, 2.f, 1.f, 2.f}));
 
   // Shrinking indices within capacity should only gather up to indices.size()
   EXPECT_FALSE(indices.resize(2));
-  EXPECT_EQ(src.getIndexedView(indices), (std::vector<float>{4.f, 2.f}));
+  EXPECT_EQ(src.getIndexedDataCopy(indices), (std::vector<float>{4.f, 2.f}));
 }
 
 TEST_F(PolyscopeTest, ManagedBufferTextures) {

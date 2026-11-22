@@ -600,10 +600,8 @@ ManagedBuffer<T>::getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>& indic
   }
 
   // We don't have it. Create a new one and return that.
-  ensureHostBufferPopulated();
   std::shared_ptr<render::AttributeBuffer> newBuffer = generateAttributeBuffer<T>(render::engine);
-  indices.ensureHostBufferPopulated();
-  std::vector<T> expandData = gather(data, indices.data);
+  std::vector<T> expandData = getIndexedDataCopy(indices);
   newBuffer->setData(expandData); // initially populate
   existingIndexedViews.emplace_back(&indices, newBuffer);
 
@@ -611,11 +609,16 @@ ManagedBuffer<T>::getIndexedRenderAttributeBuffer(ManagedBuffer<uint32_t>& indic
 }
 
 template <typename T>
-std::vector<T> ManagedBuffer<T>::getIndexedView(ManagedBuffer<uint32_t>& indices) {
+std::vector<T> ManagedBuffer<T>::getIndexedDataCopy(ManagedBuffer<uint32_t>& indices) {
   checkDeviceBufferTypeIs(DeviceBufferType::Attribute);
   ensureHostBufferPopulated();
   indices.ensureHostBufferPopulated();
-  return gather(data, indices.data);
+  size_t nInds = indices.size();
+  std::vector<T> result(nInds);
+  for (size_t i = 0; i < nInds; i++) {
+    result[i] = data[indices.data[i]];
+  }
+  return result;
 }
 
 template <typename T>
@@ -636,8 +639,7 @@ void ManagedBuffer<T>::updateIndexedViews() {
     render::AttributeBuffer& viewBuffer = *viewBufferPtr;
 
     // apply the indexing and set the data
-    indices.ensureHostBufferPopulated();
-    std::vector<T> expandData = gather(data, indices.data);
+    std::vector<T> expandData = getIndexedDataCopy(indices);
     viewBuffer.setData(expandData);
 
     // NOTE: this updates ALL registered indexed views of this buffer, even if only one of them is

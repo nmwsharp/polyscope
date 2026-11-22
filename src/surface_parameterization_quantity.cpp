@@ -233,7 +233,7 @@ void SurfaceCornerParameterizationQuantity::fillCoordBuffers(render::ShaderProgr
 
 
 std::vector<glm::vec2> SurfaceCornerParameterizationQuantity::getCornerCoords() {
-  return coords.getIndexedView(parent.triangleCornerInds);
+  return coords.getIndexedDataCopy(parent.triangleCornerInds);
 }
 
 void SurfaceCornerParameterizationQuantity::buildCornerInfoGUI(size_t cInd) {
@@ -264,7 +264,7 @@ void SurfaceVertexParameterizationQuantity::fillCoordBuffers(render::ShaderProgr
 }
 
 std::vector<glm::vec2> SurfaceVertexParameterizationQuantity::getCornerCoords() {
-  return coords.getIndexedView(parent.triangleVertexInds);
+  return coords.getIndexedDataCopy(parent.triangleVertexInds);
 }
 
 void SurfaceVertexParameterizationQuantity::buildVertexInfoGUI(size_t vInd) {
