@@ -483,6 +483,14 @@ void processInputEvents() {
     // === Mouse inputs
     if (!io.WantCaptureMouse && !widgetCapturedMouse) {
 
+      // Activate the subview under the mouse on click (when not sharing navigation)
+      if (!view::getSubviewsShareNavigation() && (ImGui::IsMouseClicked(0) || ImGui::IsMouseClicked(1))) {
+        int clickedSubview = view::screenCoordsToSubviewInd({io.MousePos.x, io.MousePos.y});
+        if (clickedSubview != view::getActiveSubviewIndex()) {
+          view::activateSubview(clickedSubview);
+        }
+      }
+
       { // Process scroll via "mouse wheel" (which might be a touchpad)
         float xoffset = io.MouseWheelH;
         float yoffset = io.MouseWheel;
@@ -513,6 +521,15 @@ void processInputEvents() {
         bool dragRight = !dragLeft && ImGui::IsMouseDragging(1); // left takes priority, so only one can be true
         if (dragLeft || dragRight) {
 
+          // Activate the subview under the initial click (when navigation is not shared)
+          if (!view::getSubviewsShareNavigation()) {
+            ImVec2 clickPos = dragLeft ? io.MouseClickedPos[0] : io.MouseClickedPos[1];
+            int clickedSubview = view::screenCoordsToSubviewInd({clickPos.x, clickPos.y});
+            if (clickedSubview != view::getActiveSubviewIndex()) {
+              view::activateSubview(clickedSubview);
+            }
+          }
+
           glm::vec2 dragDelta{io.MouseDelta.x / view::windowWidth, -io.MouseDelta.y / view::windowHeight};
           dragDistSinceLastRelease += std::abs(dragDelta.x);
           dragDistSinceLastRelease += std::abs(dragDelta.y);
@@ -526,12 +543,15 @@ void processInputEvents() {
             view::processZoom(dragDelta.y * 5);
           }
           if (isRotate) {
-            glm::vec2 currPos{io.MousePos.x / view::windowWidth,
-                              (view::windowHeight - io.MousePos.y) / view::windowHeight};
+            // Normalize mouse position relative to the active subview for arc-based rotation.
+            // subviewRelativePosY is y-from-bottom (OpenGL); convert to screen y-from-top for svTop.
+            view::ViewParameters svp = view::getSubviewParameters(view::getActiveSubviewIndex());
+            float svLeft = svp.subviewRelativePosX * view::windowWidth;
+            float svTop = (1.0f - svp.subviewRelativePosY - svp.subviewRelativeHeight) * view::windowHeight;
+            glm::vec2 currPos{(io.MousePos.x - svLeft) / svp.subviewWindowWidth,
+                              (svp.subviewWindowHeight - (io.MousePos.y - svTop)) / svp.subviewWindowHeight};
             currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
-            if (std::abs(currPos.x) <= 1.0 && std::abs(currPos.y) <= 1.0) {
-              view::processRotate(currPos - 2.0f * dragDelta, currPos);
-            }
+            view::processRotate(currPos - 2.0f * dragDelta, currPos);
           }
           if (isTranslate) {
             view::processTranslate(dragDelta);
@@ -617,6 +637,9 @@ void renderScene() {
 
   if (!options::renderScene) return;
 
+  // We internally change the active subview to render; save it here so we can restore at the end
+  int savedActiveSubview = view::getActiveSubviewIndex();
+
   if (render::engine->getTransparencyMode() == TransparencyMode::Pretty) {
     // Special depth peeling case: multiple render passes
     // We will perform several "peeled" rounds of rendering in to the usual scene buffer. After each, we will manually
@@ -684,7 +707,8 @@ void renderScene() {
 
     // Restore sceneBufferFinal viewport to cover the full buffer
     int ssaaFactor = render::engine->getSSAAFactor();
-    render::engine->sceneBufferFinal->setViewport(0, 0, ssaaFactor * view::bufferWidth, ssaaFactor * view::bufferHeight);
+    render::engine->sceneBufferFinal->setViewport(0, 0, ssaaFactor * view::bufferWidth,
+                                                  ssaaFactor * view::bufferHeight);
 
   } else {
     // Normal case: single render pass
@@ -723,6 +747,9 @@ void renderScene() {
       render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get(), vp.subviewPosX, vp.subviewPosY);
     }
   }
+
+  // restore the active subview as it was before the render call
+  view::activateSubview(savedActiveSubview);
 }
 
 void renderSceneToScreen() {
@@ -930,6 +957,9 @@ void buildPolyscopeGui() {
     if (ImGui::Button("Force refresh")) {
       refresh();
     }
+
+    ImGui::Text("Active subview: %d / %d", view::getActiveSubviewIndex(), view::getNumSubviews());
+
     ImGui::Checkbox("Show pick buffer", &options::debugDrawPickBuffer);
     ImGui::Checkbox("Always redraw", &options::alwaysRedraw);
 

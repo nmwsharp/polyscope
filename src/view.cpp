@@ -154,7 +154,9 @@ int32_t bufferIndsToSubviewInd(glm::ivec2 bufferInds) {
 }
 
 int32_t screenCoordsToSubviewInd(glm::vec2 screenCoords) {
-  return bufferIndsToSubviewInd(screenCoordsToBufferIndsVec(screenCoords));
+  // screenCoords.y is from the top (ImGui etc convention); subviewPosY is from the bottom (OpenGL convention)
+  glm::vec2 flipped{screenCoords.x, windowHeight - screenCoords.y};
+  return bufferIndsToSubviewInd(screenCoordsToBufferIndsVec(flipped));
 }
 
 std::string getCurrentProjectionModeRaycastRule() {
@@ -888,7 +890,9 @@ glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords, int32_t iView) {
   return worldRayDir;
 }
 
-glm::vec3 bufferIndsToWorldRay(glm::vec2 bufferInds, int32_t iView) { return bufferCoordsToWorldRay(bufferInds, iView); }
+glm::vec3 bufferIndsToWorldRay(glm::vec2 bufferInds, int32_t iView) {
+  return bufferCoordsToWorldRay(bufferInds, iView);
+}
 
 glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords, int32_t iView) {
   if (iView < 0) iView = getActiveSubviewIndex();
@@ -1741,7 +1745,6 @@ void validateSubviews() {
   if (getNumSubviews() == 0)
     error("No subviews of the scene exist. Either subviews were configured wrong, program flow has been called in the "
           "wrong order.");
-
 }
 
 void updateSubviewDimensions() {
@@ -1751,12 +1754,16 @@ void updateSubviewDimensions() {
 
     // Compute pos and size by rounding both edges independently, so that adjacent subviews sharing
     // a boundary always snap to the same integer pixel (no cracks or overlaps).
-    vp.subviewPosX        = (int)std::round(view::bufferWidth  * vp.subviewRelativePosX);
-    vp.subviewPosY        = (int)std::round(view::bufferHeight * vp.subviewRelativePosY);
-    vp.subviewBufferWidth  = (int)std::round(view::bufferWidth  * (vp.subviewRelativePosX + vp.subviewRelativeWidth))  - vp.subviewPosX;
-    vp.subviewBufferHeight = (int)std::round(view::bufferHeight * (vp.subviewRelativePosY + vp.subviewRelativeHeight)) - vp.subviewPosY;
-    vp.subviewWindowWidth  = (int)std::round(view::windowWidth  * (vp.subviewRelativePosX + vp.subviewRelativeWidth))  - (int)std::round(view::windowWidth  * vp.subviewRelativePosX);
-    vp.subviewWindowHeight = (int)std::round(view::windowHeight * (vp.subviewRelativePosY + vp.subviewRelativeHeight)) - (int)std::round(view::windowHeight * vp.subviewRelativePosY);
+    vp.subviewPosX = (int)std::round(view::bufferWidth * vp.subviewRelativePosX);
+    vp.subviewPosY = (int)std::round(view::bufferHeight * vp.subviewRelativePosY);
+    vp.subviewBufferWidth =
+        (int)std::round(view::bufferWidth * (vp.subviewRelativePosX + vp.subviewRelativeWidth)) - vp.subviewPosX;
+    vp.subviewBufferHeight =
+        (int)std::round(view::bufferHeight * (vp.subviewRelativePosY + vp.subviewRelativeHeight)) - vp.subviewPosY;
+    vp.subviewWindowWidth = (int)std::round(view::windowWidth * (vp.subviewRelativePosX + vp.subviewRelativeWidth)) -
+                            (int)std::round(view::windowWidth * vp.subviewRelativePosX);
+    vp.subviewWindowHeight = (int)std::round(view::windowHeight * (vp.subviewRelativePosY + vp.subviewRelativeHeight)) -
+                             (int)std::round(view::windowHeight * vp.subviewRelativePosY);
   }
   unpackCurrentSubviewParametersFromActive();
 }
