@@ -115,6 +115,48 @@ glm::vec2 bufferIndsToScreenCoords(glm::ivec2 bufferInds) {
   return bufferIndsToScreenCoords(bufferInds.x, bufferInds.y);
 }
 
+std::tuple<int, int> screenCoordsToBufferIndsSubview(glm::vec2 screenCoords, int32_t iView) {
+  if (iView < 0) iView = getActiveSubviewIndex();
+  const ViewParameters& vp = getSubviewParameters(iView);
+  glm::ivec2 globalInds = screenCoordsToBufferIndsVec(screenCoords);
+  int localX = std::max(std::min(globalInds.x - vp.subviewPosX, vp.subviewBufferWidth - 1), 0);
+  int localY = std::max(std::min(globalInds.y - vp.subviewPosY, vp.subviewBufferHeight - 1), 0);
+  return std::tuple<int, int>(localX, localY);
+}
+
+glm::ivec2 screenCoordsToBufferIndsVecSubview(glm::vec2 screenCoords, int32_t iView) {
+  glm::ivec2 out;
+  std::tie(out.x, out.y) = screenCoordsToBufferIndsSubview(screenCoords, iView);
+  return out;
+}
+
+glm::vec2 bufferIndsToScreenCoordsSubview(int xPos, int yPos, int32_t iView) {
+  if (iView < 0) iView = getActiveSubviewIndex();
+  const ViewParameters& vp = getSubviewParameters(iView);
+  return bufferIndsToScreenCoords(vp.subviewPosX + xPos, vp.subviewPosY + yPos);
+}
+
+glm::vec2 bufferIndsToScreenCoordsSubview(glm::ivec2 bufferInds, int32_t iView) {
+  return bufferIndsToScreenCoordsSubview(bufferInds.x, bufferInds.y, iView);
+}
+
+int32_t bufferIndsToSubviewInd(glm::ivec2 bufferInds) {
+  for (int32_t i = getNumSubviews() - 1; i >= 0; i--) {
+    // go back-to-front, so we report the topmost matching subview
+    const ViewParameters& vp = getSubviewParameters(i);
+    if (bufferInds.x >= vp.subviewPosX && bufferInds.x < vp.subviewPosX + vp.subviewBufferWidth &&
+        bufferInds.y >= vp.subviewPosY && bufferInds.y < vp.subviewPosY + vp.subviewBufferHeight) {
+      return i;
+    }
+  }
+
+  return 0; // returning 0 is the least evil option if we miss somehow due to cracks or invalid input
+}
+
+int32_t screenCoordsToSubviewInd(glm::vec2 screenCoords) {
+  return bufferIndsToSubviewInd(screenCoordsToBufferIndsVec(screenCoords));
+}
+
 std::string getCurrentProjectionModeRaycastRule() {
   // This is related to the render engine, it returns the name of the
   // shader rule which constructs rays for raycasting-based rendering.
@@ -717,7 +759,7 @@ void setViewToCamera(const CameraParameters& p) {
 CameraParameters getCameraParametersForCurrentView() {
   ensureViewValid();
 
-  float aspectRatio = (float)bufferWidth / bufferHeight;
+  float aspectRatio = getAspectRatioWidthOverHeight();
   return CameraParameters(CameraIntrinsics::fromFoVDegVerticalAndAspect(fov, aspectRatio),
                           CameraExtrinsics::fromMatrix(viewMat));
 }
@@ -764,7 +806,7 @@ std::tuple<float, float> getClipPlanes() { return std::tuple<float, float>(nearC
 
 float getVerticalFieldOfViewDegrees() { return view::fov; }
 
-float getAspectRatioWidthOverHeight() { return (float)bufferWidth / bufferHeight; }
+float getAspectRatioWidthOverHeight() { return (float)getActiveSubviewBufferWidth() / getActiveSubviewBufferHeight(); }
 
 glm::mat4 getCameraPerspectiveMatrix() {
 
@@ -778,7 +820,7 @@ glm::mat4 getCameraPerspectiveMatrix() {
   }
 
   float fovRad = glm::radians(fov);
-  float aspectRatio = (float)bufferWidth / bufferHeight;
+  float aspectRatio = getAspectRatioWidthOverHeight();
   switch (projectionMode) {
   case ProjectionMode::Perspective: {
     return glm::perspective(fovRad, aspectRatio, absNearClip, absFarClip);
@@ -827,28 +869,36 @@ glm::vec3 getLookVec() {
   return Rt * glm::vec3(0.0, 0.0, -1.0);
 }
 
-glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords) {
+glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords, int32_t iView) {
+  if (iView < 0) iView = getActiveSubviewIndex();
+  const ViewParameters& vp = getSubviewParameters(iView);
 
-  glm::mat4 view = getCameraViewMatrix();
+  glm::mat4 viewMat = getCameraViewMatrix();
   glm::mat4 proj = getCameraPerspectiveMatrix();
-  glm::vec4 viewport = {0., 0., view::windowWidth, view::windowHeight};
+  glm::vec4 viewport = {0., 0., vp.subviewWindowWidth, vp.subviewWindowHeight};
 
-  glm::vec3 screenPos3{screenCoords.x, view::windowHeight - screenCoords.y, 0.};
-  glm::vec3 worldPos = glm::unProject(screenPos3, view, proj, viewport);
+  // Convert global screen coords to subview-local before unprojecting
+  float localX = screenCoords.x - windowWidth * vp.subviewRelativePosX;
+  float localY = screenCoords.y - windowHeight * vp.subviewRelativePosY;
+
+  glm::vec3 screenPos3{localX, vp.subviewWindowHeight - localY, 0.};
+  glm::vec3 worldPos = glm::unProject(screenPos3, viewMat, proj, viewport);
   glm::vec3 worldRayDir = glm::normalize(glm::vec3(worldPos) - getCameraWorldPosition());
 
   return worldRayDir;
 }
 
-glm::vec3 bufferIndsToWorldRay(glm::vec2 bufferInds) { return bufferCoordsToWorldRay(bufferInds); }
+glm::vec3 bufferIndsToWorldRay(glm::vec2 bufferInds, int32_t iView) { return bufferCoordsToWorldRay(bufferInds, iView); }
 
-glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords) {
+glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords, int32_t iView) {
+  if (iView < 0) iView = getActiveSubviewIndex();
+  const ViewParameters& vp = getSubviewParameters(iView);
 
   glm::mat4 view = getCameraViewMatrix();
   glm::mat4 proj = getCameraPerspectiveMatrix();
-  glm::vec4 viewport = {0., 0., view::bufferWidth, view::bufferHeight};
+  glm::vec4 viewport = {0., 0., vp.subviewBufferWidth, vp.subviewBufferHeight};
 
-  glm::vec3 screenPos3{bufferCoords.x, view::bufferHeight - bufferCoords.y, 0.};
+  glm::vec3 screenPos3{bufferCoords.x, vp.subviewBufferHeight - bufferCoords.y, 0.};
   glm::vec3 worldPos = glm::unProject(screenPos3, view, proj, viewport);
   glm::vec3 worldRayDir = glm::normalize(glm::vec3(worldPos) - getCameraWorldPosition());
 
@@ -869,7 +919,7 @@ std::tuple<float, float> computeClipPlanes() {
   return std::make_tuple(absNearClip, absFarClip);
 }
 
-glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth) {
+glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clipDepth, int32_t iView) {
 
   if (clipDepth == 1.) {
     // if we didn't hit anything in the depth buffer, just return infinity
@@ -877,6 +927,8 @@ glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clip
     return glm::vec3{inf, inf, inf};
   }
 
+  if (iView < 0) iView = getActiveSubviewIndex();
+  const ViewParameters& vp = getSubviewParameters(iView);
 
   glm::mat4 view = getCameraViewMatrix();
   glm::mat4 viewInv = glm::inverse(view);
@@ -884,9 +936,11 @@ glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clip
   glm::mat4 projInv = glm::inverse(proj);
   // glm::vec2 depthRange = {0., 1.}; // no support for nonstandard depth range, currently
 
-  // convert depth to world units
-  glm::vec2 screenPos{screenCoords.x / static_cast<float>(view::windowWidth),
-                      1.f - screenCoords.y / static_cast<float>(view::windowHeight)};
+  // Convert global screen coords to subview-local, then normalize to [0,1]
+  float localX = screenCoords.x - windowWidth * vp.subviewRelativePosX;
+  float localY = screenCoords.y - windowHeight * vp.subviewRelativePosY;
+  glm::vec2 screenPos{localX / static_cast<float>(vp.subviewWindowWidth),
+                      1.f - localY / static_cast<float>(vp.subviewWindowHeight)};
   float z = clipDepth * 2.0f - 1.0f;
   glm::vec4 clipPos = glm::vec4(screenPos * 2.0f - 1.0f, z, 1.0f);
   glm::vec4 viewPos = projInv * clipPos;
@@ -1517,7 +1571,6 @@ void packCurrentSubviewParametersToIndex(int idx) {
   vp.bgColor = bgColor;
   vp.viewMat = viewMat;
   vp.fov = fov;
-  vp.projectionMode = projectionMode;
   vp.viewCenter = viewCenter;
   vp.midflight = midflight;
   vp.flightStartTime = flightStartTime;
@@ -1544,7 +1597,6 @@ void unpackCurrentSubviewParametersFromActive() {
   bgColor = vp.bgColor;
   viewMat = vp.viewMat;
   fov = vp.fov;
-  projectionMode = vp.projectionMode;
   viewCenter = vp.viewCenter;
   midflight = vp.midflight;
   flightStartTime = vp.flightStartTime;
@@ -1561,6 +1613,14 @@ void unpackCurrentSubviewParametersFromActive() {
 
 
 int getActiveSubviewIndex() { return activeSubviewIndex; }
+
+int getActiveSubviewBufferWidth() {
+  return state::globalContext.subviewParameters[activeSubviewIndex].subviewBufferWidth;
+}
+
+int getActiveSubviewBufferHeight() {
+  return state::globalContext.subviewParameters[activeSubviewIndex].subviewBufferHeight;
+}
 
 void activateSubview(int subviewInd) {
   if (subviewInd < 0 || subviewInd >= getNumSubviews()) {
@@ -1595,24 +1655,24 @@ void setNumSubviews(int count) {
   requestRedraw();
 }
 
-void setActiveSubviewLocation(float posX, float posY) {
+void setActiveSubviewRelativeLocation(float posX, float posY) {
   checkInitialized();
   if (posX < 0 || posX > 1 || posY < 0 || posY > 1) {
     error("Invalid subview location " + std::to_string(posX) + " x " + std::to_string(posY));
   }
-  state::globalContext.subviewParameters[activeSubviewIndex].subviewPosX = posX;
-  state::globalContext.subviewParameters[activeSubviewIndex].subviewPosY = posY;
+  state::globalContext.subviewParameters[activeSubviewIndex].subviewRelativePosX = posX;
+  state::globalContext.subviewParameters[activeSubviewIndex].subviewRelativePosY = posY;
   render::engine->resizeScreenBuffersAndSetViewports();
   requestRedraw();
 }
 
-void setActiveSubviewSize(float width, float height) {
+void setActiveSubviewRelativeSize(float width, float height) {
   checkInitialized();
   if (width < 0 || width > 1 || height < 0 || height > 1) {
     error("Invalid subview size " + std::to_string(width) + " x " + std::to_string(height));
   }
-  state::globalContext.subviewParameters[activeSubviewIndex].subviewWidthRelative = width;
-  state::globalContext.subviewParameters[activeSubviewIndex].subviewHeightRelative = height;
+  state::globalContext.subviewParameters[activeSubviewIndex].subviewRelativeWidth = width;
+  state::globalContext.subviewParameters[activeSubviewIndex].subviewRelativeHeight = height;
   render::engine->resizeScreenBuffersAndSetViewports();
   requestRedraw();
 }
@@ -1645,8 +1705,9 @@ void createSubviewGrid(int gridWidth, int gridHeight) {
       int ind = i * gridWidth + j;
       activateSubview(ind);
       // note: this intentionally puts the first grid subiew in the upper-left, matching convention from other software
-      setActiveSubviewLocation(static_cast<float>(j) / gridWidth, static_cast<float>(gridHeight - i - 1) / gridHeight);
-      setActiveSubviewSize(cellW, cellH);
+      setActiveSubviewRelativeLocation(static_cast<float>(j) / gridWidth,
+                                       static_cast<float>(gridHeight - i - 1) / gridHeight);
+      setActiveSubviewRelativeSize(cellW, cellH);
     }
   }
 
@@ -1659,10 +1720,10 @@ void createInitialSubview() {
   state::globalContext.subviewParameters.resize(1);
   packCurrentSubviewParametersToIndex(0);
   activeSubviewIndex = 0;
-  state::globalContext.subviewParameters[0].subviewPosX = 0.0;
-  state::globalContext.subviewParameters[0].subviewPosY = 0.0;
-  state::globalContext.subviewParameters[0].subviewWidthRelative = 1.0;
-  state::globalContext.subviewParameters[0].subviewHeightRelative = 1.0;
+  state::globalContext.subviewParameters[0].subviewRelativePosX = 0.0;
+  state::globalContext.subviewParameters[0].subviewRelativePosY = 0.0;
+  state::globalContext.subviewParameters[0].subviewRelativeWidth = 1.0;
+  state::globalContext.subviewParameters[0].subviewRelativeHeight = 1.0;
   if (!render::engine) error("Render engine not initialized. You called an internal function at the wrong time.");
   render::engine->ensureSceneTargetsAllocated(1);
 }
@@ -1676,6 +1737,7 @@ void validateSubviews() {
   if (getNumSubviews() == 0)
     error("No subviews of the scene exist. Either subviews were configured wrong, program flow has been called in the "
           "wrong order.");
+
 }
 
 void updateSubviewDimensions() {
@@ -1683,12 +1745,14 @@ void updateSubviewDimensions() {
   for (int32_t iV = 0; iV < getNumSubviews(); iV++) {
     ViewParameters& vp = state::globalContext.subviewParameters[iV];
 
-    // TODO need to be sure this logic never leaves off-by-one cracks when subviews are touching
-    // in float coords like [a,b] [b,c]
-    vp.subviewHeightPix = view::bufferHeight * vp.subviewHeightRelative;
-    vp.subviewWidthPix = view::bufferWidth * vp.subviewWidthRelative;
-    vp.subviewPosXPix = view::bufferWidth * vp.subviewPosX;
-    vp.subviewPosYPix = view::bufferHeight * vp.subviewPosY;
+    // Compute pos and size by rounding both edges independently, so that adjacent subviews sharing
+    // a boundary always snap to the same integer pixel (no cracks or overlaps).
+    vp.subviewPosX        = (int)std::round(view::bufferWidth  * vp.subviewRelativePosX);
+    vp.subviewPosY        = (int)std::round(view::bufferHeight * vp.subviewRelativePosY);
+    vp.subviewBufferWidth  = (int)std::round(view::bufferWidth  * (vp.subviewRelativePosX + vp.subviewRelativeWidth))  - vp.subviewPosX;
+    vp.subviewBufferHeight = (int)std::round(view::bufferHeight * (vp.subviewRelativePosY + vp.subviewRelativeHeight)) - vp.subviewPosY;
+    vp.subviewWindowWidth  = (int)std::round(view::windowWidth  * (vp.subviewRelativePosX + vp.subviewRelativeWidth))  - (int)std::round(view::windowWidth  * vp.subviewRelativePosX);
+    vp.subviewWindowHeight = (int)std::round(view::windowHeight * (vp.subviewRelativePosY + vp.subviewRelativeHeight)) - (int)std::round(view::windowHeight * vp.subviewRelativePosY);
   }
   unpackCurrentSubviewParametersFromActive();
 }
@@ -1708,7 +1772,6 @@ void propagateViewUpdatesToSubviews() {
     vp.bgColor = bgColor;
     vp.viewMat = viewMat;
     vp.fov = fov;
-    vp.projectionMode = projectionMode;
     vp.viewCenter = viewCenter;
     vp.midflight = midflight;
     vp.flightStartTime = flightStartTime;
@@ -1722,7 +1785,7 @@ void propagateViewUpdatesToSubviews() {
   }
 }
 
-ViewParameters getSubviewParameters(int subviewInd) {
+const ViewParameters& getSubviewParameters(int subviewInd) {
   if (subviewInd < 0 || subviewInd >= getNumSubviews()) {
     error("Invalid subview index " + std::to_string(subviewInd));
   }

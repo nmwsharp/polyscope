@@ -29,9 +29,10 @@ struct ViewParameters {
   // TODO deprecate these one day, and just use a CameraParameters member instead. But this would break existing code,
   // so for now we leave these as-is and wrap inputs/outputs to a CameraParameters
   glm::mat4x4 viewMat;
-  float fov; // in the y direction
-  ProjectionMode projectionMode;
+  float fov;            // in the y direction
   glm::vec3 viewCenter; // center about which view transformations are performed
+  // NOTE: ProjectionMode projectionMode; _should_ be an option here as well, but we some rendering functionality
+  // requires different shaders based on mode, so it is stuck as a global setting for now.
 
   // "Flying" view members
   bool midflight;
@@ -45,16 +46,18 @@ struct ViewParameters {
   float flightInitialFov;
 
   // Subview position and size within the full screen buffer (in relative [0,1] coords)
-  float subviewPosX;
-  float subviewPosY;
-  float subviewWidthRelative;
-  float subviewHeightRelative;
+  float subviewRelativePosX;
+  float subviewRelativePosY;
+  float subviewRelativeWidth;
+  float subviewRelativeHeight;
 
   // Computed subview values
-  int subviewPosXPix;
-  int subviewPosYPix;
-  int subviewWidthPix;
-  int subviewHeightPix;
+  int subviewPosX; // in buffer units
+  int subviewPosY; // in buffer units
+  int subviewBufferWidth;
+  int subviewBufferHeight;
+  int subviewWindowWidth;
+  int subviewWindowHeight;
 };
 
 } // namespace view

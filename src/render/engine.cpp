@@ -506,10 +506,10 @@ void Engine::resizeScreenBuffersAndSetViewports() {
   for (size_t i = 0; i < sceneBufferTargets.size(); i++) {
     view::ViewParameters vp = view::getSubviewParameters(i);
 
-    sceneBufferTargets[i]->resize(ssaaFactor * vp.subviewWidthPix, ssaaFactor * vp.subviewHeightPix);
-    sceneDepthMinTargets[i]->resize(ssaaFactor * vp.subviewWidthPix, ssaaFactor * vp.subviewHeightPix);
+    sceneBufferTargets[i]->resize(ssaaFactor * vp.subviewBufferWidth, ssaaFactor * vp.subviewBufferHeight);
+    sceneDepthMinTargets[i]->resize(ssaaFactor * vp.subviewBufferWidth, ssaaFactor * vp.subviewBufferHeight);
 
-    sceneBufferTargets[i]->setViewport(0, 0, ssaaFactor * vp.subviewWidthPix, ssaaFactor * vp.subviewHeightPix);
+    sceneBufferTargets[i]->setViewport(0, 0, ssaaFactor * vp.subviewBufferWidth, ssaaFactor * vp.subviewBufferHeight);
   }
 }
 

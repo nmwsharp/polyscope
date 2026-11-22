@@ -445,6 +445,7 @@ void drawStructuresDelayed() {
 
 namespace {
 
+int interactionSubview = 0;
 float dragDistSinceLastRelease = 0.0;
 
 // State for delayed pick selection
@@ -471,6 +472,7 @@ void processInputEvents() {
     for (WeakHandle<Widget> wHandle : state::widgets) {
       if (wHandle.isValid()) {
         Widget& w = wHandle.get();
+        // TODO subview handling here
         widgetCapturedMouse = w.interact();
         if (widgetCapturedMouse) {
           break;
@@ -717,7 +719,7 @@ void renderScene() {
       drawStructuresDelayed();
 
       view::ViewParameters vp = view::getSubviewParameters(iSubView);
-      render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get(), vp.subviewPosXPix, vp.subviewPosYPix);
+      render::engine->sceneBuffer->blitTo(render::engine->sceneBufferFinal.get(), vp.subviewPosX, vp.subviewPosY);
     }
   }
 }

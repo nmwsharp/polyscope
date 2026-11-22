@@ -11,12 +11,34 @@
 namespace polyscope {
 
 PickResult pickAtScreenCoords(glm::vec2 screenCoords) {
-  int xInd, yInd;
-  glm::ivec2 bufferInds = view::screenCoordsToBufferIndsVec(screenCoords);
-  return pickAtBufferInds(bufferInds);
+  int32_t iSubview = view::screenCoordsToSubviewInd(screenCoords);
+  int32_t prevSubview = view::getActiveSubviewIndex();
+  view::activateSubview(iSubview);
+  glm::ivec2 localBufferInds = view::screenCoordsToBufferIndsVecSubview(screenCoords, iSubview);
+  PickResult result = pickAtBufferInds(localBufferInds);
+  view::activateSubview(prevSubview);
+  return result;
+}
+
+PickResult pickSubviewAtScreenCoords(glm::vec2 screenCoords, int32_t iSubView) {
+  int32_t prevSubview = view::getActiveSubviewIndex();
+  view::activateSubview(iSubView);
+  glm::ivec2 localBufferInds = view::screenCoordsToBufferIndsVec(screenCoords);
+  PickResult result = pickAtBufferInds(localBufferInds);
+  view::activateSubview(prevSubview);
+  return result;
+}
+
+PickResult pickSubviewAtBufferInds(glm::ivec2 bufferInds, int32_t iSubView) {
+  int32_t prevSubview = view::getActiveSubviewIndex();
+  view::activateSubview(iSubView);
+  PickResult result = pickAtBufferInds(bufferInds); // no need to convert inds: already local to the subview
+  view::activateSubview(prevSubview);
+  return result;
 }
 
 PickResult pickAtBufferInds(glm::ivec2 bufferInds) {
+  // bufferInds are local to the active subview
   PickResult result;
 
   // Query the pick buffer
@@ -25,13 +47,14 @@ PickResult pickAtBufferInds(glm::ivec2 bufferInds) {
 
   // Query the depth buffer populated above
   render::FrameBuffer* pickFramebuffer = render::engine->pickFramebuffer.get();
-  float clipDepth = pickFramebuffer->readDepth(bufferInds.x, view::bufferHeight - bufferInds.y);
+  int subviewH = view::getActiveSubviewBufferHeight();
+  float clipDepth = pickFramebuffer->readDepth(bufferInds.x, subviewH - bufferInds.y);
 
   // Transcribe result into return tuple
   result.structure = std::get<0>(rawPickResult);
   result.quantity = std::get<1>(rawPickResult);
   result.bufferInds = bufferInds;
-  result.screenCoords = view::bufferIndsToScreenCoords(bufferInds);
+  result.screenCoords = view::bufferIndsToScreenCoordsSubview(bufferInds);
   result.position = view::screenCoordsAndDepthToWorldPosition(result.screenCoords, clipDepth);
   result.depth = glm::length(result.position - view::getCameraWorldPosition());
 
@@ -210,14 +233,19 @@ std::pair<Structure*, uint64_t> pickAtScreenCoords(glm::vec2 screenCoords) {
   return pickAtBufferCoords(xInd, yInd);
 }
 
-std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos) { return evaluatePickQuery(xPos, yPos); }
+std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos, int iView) {
+  return evaluatePickQuery(xPos, yPos, iView);
+}
 
-std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFull(int xPos, int yPos) {
+std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFull(int xPos, int yPos, int32_t iView) {
 
   // NOTE: hack used for debugging: if xPos == yPos == -1 we do a pick render but do not query the value.
 
+  int subviewW = view::getActiveSubviewBufferWidth();
+  int subviewH = view::getActiveSubviewBufferHeight();
+
   // Be sure not to pick outside of buffer
-  if (xPos < -1 || xPos >= view::bufferWidth || yPos < -1 || yPos >= view::bufferHeight) {
+  if (xPos < -1 || xPos >= subviewW || yPos < -1 || yPos >= subviewH) {
     return {nullptr, nullptr, 0};
   }
 
@@ -226,8 +254,8 @@ std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFull(int xPos, int 
   render::engine->setDepthMode(DepthMode::Less);
   render::engine->setBlendMode(BlendMode::Disable);
 
-  pickFramebuffer->resize(view::bufferWidth, view::bufferHeight);
-  pickFramebuffer->setViewport(0, 0, view::bufferWidth, view::bufferHeight);
+  pickFramebuffer->resize(subviewW, subviewH);
+  pickFramebuffer->setViewport(0, 0, subviewW, subviewH);
   pickFramebuffer->clearColor = glm::vec3{0., 0., 0.};
   if (!pickFramebuffer->bindForRendering()) return {nullptr, nullptr, 0};
   pickFramebuffer->clear();
@@ -250,14 +278,14 @@ std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFull(int xPos, int 
   }
 
   // Read from the pick buffer
-  std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, view::bufferHeight - yPos);
+  std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, subviewH - yPos);
   uint64_t globalInd = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
 
   return pick::globalIndexToLocal(globalInd);
 }
 
-std::pair<Structure*, uint64_t> evaluatePickQuery(int xPos, int yPos) {
-  std::tuple<Structure*, Quantity*, uint64_t> t = evaluatePickQueryFull(xPos, yPos);
+std::pair<Structure*, uint64_t> evaluatePickQuery(int xPos, int yPos, int32_t iView) {
+  std::tuple<Structure*, Quantity*, uint64_t> t = evaluatePickQueryFull(xPos, yPos, iView);
   return std::pair<Structure*, uint64_t>(std::get<0>(t), std::get<2>(t));
 }
 

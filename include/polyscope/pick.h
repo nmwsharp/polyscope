@@ -42,9 +42,14 @@ struct PickResult {
 
 // Query functions to evaluate a pick.
 // Internally, these do a render pass to populate relevant information, then query the resulting buffers.
+// If using subviews, these assume inputs are on the full screen coordinates of the whole window, and internally
+// route to the appropriate subview.
 PickResult pickAtScreenCoords(glm::vec2 screenCoords); // takes screen coordinates
 PickResult pickAtBufferInds(glm::ivec2 bufferInds);    // takes indices into render buffer
 
+// Subview-explicit pick variants: coordinates are local to the given subview (origin at subview top-left).
+PickResult pickSubviewAtScreenCoords(glm::vec2 screenCoords, int32_t iSubView);
+PickResult pickSubviewAtBufferInds(glm::ivec2 bufferInds, int32_t iSubView);
 
 // == Stateful picking: track and update a current selection
 
@@ -61,11 +66,13 @@ namespace pick {
 // Old, deprecated picking API. Use the above functions instead.
 // Get the structure which was clicked on (nullptr if none), and the pick ID in local indices for that structure (such
 // that 0 is the first index as returned from requestPickBufferRange())
-std::pair<Structure*, uint64_t> pickAtScreenCoords(glm::vec2 screenCoords); // takes screen coordinates
-std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos);     // takes indices into the buffer
-std::pair<Structure*, uint64_t> evaluatePickQuery(int xPos, int yPos); // old, badly named. takes buffer coordinates.
-std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFull(int xPos,
-                                                                  int yPos); // badly named. takes buffer coordinates.
+std::pair<Structure*, uint64_t> pickAtScreenCoords(glm::vec2 screenCoords,
+                                                   int32_t iView = -1); // takes screen coordinates
+std::pair<Structure*, uint64_t> pickAtBufferCoords(int xPos, int yPos,
+                                                   int32_t iView = -1); // takes indices into the buffer
+std::pair<Structure*, uint64_t> evaluatePickQuery(int xPos, int yPos, int32_t iView = -1);
+std::tuple<Structure*, Quantity*, uint64_t>
+evaluatePickQueryFull(int xPos, int yPos, int32_t iView = -1); // badly named. takes buffer coordinates.
 
 
 // == Helpers
