@@ -44,19 +44,21 @@ struct ViewParameters {
   float flightTargetFov;
   float flightInitialFov;
 
-  // Subview position and size within the full screen buffer (in relative [0,1] coords)
+  // Subview position and size as fractions of the full window, in [0,1].
+  // posX/posY is the bottom-left corner (y=0 at bottom, i.e. openGL convention).
   float subviewRelativePosX;
   float subviewRelativePosY;
   float subviewRelativeWidth;
   float subviewRelativeHeight;
 
-  // Computed subview values
-  int subviewPosX; // in buffer units
-  int subviewPosY; // in buffer units
-  int subviewBufferWidth;
-  int subviewBufferHeight;
-  int subviewWindowWidth;
-  int subviewWindowHeight;
+  // Computed subview geometry derived from the relative values above.
+  // See note in view.h for the distinction of bufferIndices vs screenCoords.
+  int subviewPosX;         // bottom-left corner of the subview in buffer inds (integer pixel inds)
+  int subviewPosY;         // bottom-left corner of the subview in buffer inds (integer pixel inds, y-from-bottom)
+  int subviewBufferWidth;  // subview dimensions in buffer inds (integer buffer pixels)
+  int subviewBufferHeight; // subview dimensions in buffer inds (integer buffer pixels)
+  int subviewWindowWidth;  // subview dimensions in screenCoords (floats, as in ImGui etc)
+  int subviewWindowHeight; // subview dimensions in screenCoords (floats, as in ImGui etc)
 };
 
 } // namespace view
