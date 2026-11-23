@@ -506,10 +506,40 @@ uint32_t GLAttributeBuffer::getNativeBufferID() { return static_cast<uint32_t>(V
 // =============================================================
 
 
+namespace {
+void checkTextureSize1D(unsigned int sizeX) {
+  GLint maxTexSize = 0;
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+  if (maxTexSize > 0 && sizeX > static_cast<unsigned int>(maxTexSize)) {
+    exception("OpenGL error: 1D texture size (" + std::to_string(sizeX) + ") exceeds GL_MAX_TEXTURE_SIZE (" +
+              std::to_string(maxTexSize) +
+              "). 1D textures cannot hold large arrays; use an AttributeBuffer / buffer texture instead.");
+  }
+}
+void checkTextureSize2D(unsigned int sizeX, unsigned int sizeY) {
+  GLint maxTexSize = 0;
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+  if (maxTexSize > 0 && (sizeX > static_cast<unsigned int>(maxTexSize) || sizeY > static_cast<unsigned int>(maxTexSize))) {
+    exception("OpenGL error: 2D texture size (" + std::to_string(sizeX) + " x " + std::to_string(sizeY) +
+              ") exceeds GL_MAX_TEXTURE_SIZE (" + std::to_string(maxTexSize) + ").");
+  }
+}
+void checkTextureSize3D(unsigned int sizeX, unsigned int sizeY, unsigned int sizeZ) {
+  GLint maxTexSize = 0;
+  glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &maxTexSize);
+  if (maxTexSize > 0 && (sizeX > static_cast<unsigned int>(maxTexSize) || sizeY > static_cast<unsigned int>(maxTexSize) ||
+                         sizeZ > static_cast<unsigned int>(maxTexSize))) {
+    exception("OpenGL error: 3D texture size (" + std::to_string(sizeX) + " x " + std::to_string(sizeY) + " x " +
+              std::to_string(sizeZ) + ") exceeds GL_MAX_3D_TEXTURE_SIZE (" + std::to_string(maxTexSize) + ").");
+  }
+}
+} // namespace
+
 // create a 1D texture from data
 GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, const unsigned char* data)
     : TextureBuffer(1, format_, size1D) {
 
+  checkTextureSize1D(size1D);
   glEnable(GL_TEXTURE_1D);
 
   glGenTextures(1, &handle);
@@ -523,6 +553,7 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, con
 GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int size1D, const float* data)
     : TextureBuffer(1, format_, size1D) {
 
+  checkTextureSize1D(size1D);
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_1D, handle);
   glTexImage1D(GL_TEXTURE_1D, 0, internalFormat(format), size1D, 0, formatF(format), GL_FLOAT, data);
@@ -536,6 +567,7 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
                                  const unsigned char* data)
     : TextureBuffer(2, format_, sizeX_, sizeY_) {
 
+  checkTextureSize2D(sizeX, sizeY);
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_2D, handle);
   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat(format), sizeX, sizeY, 0, formatF(format), GL_UNSIGNED_BYTE, data);
@@ -547,6 +579,7 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
 GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, unsigned int sizeY_, const float* data)
     : TextureBuffer(2, format_, sizeX_, sizeY_) {
 
+  checkTextureSize2D(sizeX, sizeY);
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_2D, handle);
   glTexImage2D(GL_TEXTURE_2D, 0, internalFormat(format), sizeX, sizeY, 0, formatF(format), GL_FLOAT, data);
@@ -560,6 +593,7 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
                                  const unsigned char* data)
     : TextureBuffer(3, format_, sizeX_, sizeY_, sizeZ_) {
 
+  checkTextureSize3D(sizeX, sizeY, sizeZ);
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_3D, handle);
   glTexImage3D(GL_TEXTURE_3D, 0, internalFormat(format), sizeX, sizeY, sizeZ, 0, formatF(format), GL_UNSIGNED_BYTE,
@@ -573,6 +607,7 @@ GLTextureBuffer::GLTextureBuffer(TextureFormat format_, unsigned int sizeX_, uns
                                  const float* data)
     : TextureBuffer(3, format_, sizeX_, sizeY_, sizeZ_) {
 
+  checkTextureSize3D(sizeX, sizeY, sizeZ);
   glGenTextures(1, &handle);
   glBindTexture(GL_TEXTURE_3D, handle);
   glTexImage3D(GL_TEXTURE_3D, 0, internalFormat(format), sizeX, sizeY, sizeZ, 0, formatF(format), GL_FLOAT, data);
@@ -589,6 +624,7 @@ void GLTextureBuffer::resize(unsigned int newLen) {
 
   bind();
   if (dim == 1) {
+    checkTextureSize1D(sizeX);
     glTexImage1D(GL_TEXTURE_1D, 0, internalFormat(format), sizeX, 0, formatF(format), type(format), nullptr);
   } else {
     exception("OpenGL error: called 1D resize on not-1D texture");
@@ -602,6 +638,7 @@ void GLTextureBuffer::resize(unsigned int newX, unsigned int newY) {
 
   bind();
   if (dim == 2) {
+    checkTextureSize2D(sizeX, sizeY);
     glTexImage2D(GL_TEXTURE_2D, 0, internalFormat(format), sizeX, sizeY, 0, formatF(format), type(format), nullptr);
   } else {
     exception("OpenGL error: called 2D resize on not-2D texture");
@@ -615,6 +652,7 @@ void GLTextureBuffer::resize(unsigned int newX, unsigned int newY, unsigned int 
 
   bind();
   if (dim == 3) {
+    checkTextureSize3D(sizeX, sizeY, sizeZ);
     glTexImage3D(GL_TEXTURE_3D, 0, internalFormat(format), sizeX, sizeY, sizeZ, 0, formatF(format), type(format),
                  nullptr);
   } else {
