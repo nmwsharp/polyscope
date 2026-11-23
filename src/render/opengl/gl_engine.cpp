@@ -247,8 +247,8 @@ void GLAttributeBuffer::checkArray(int testArrayCount) {
 
 GLenum GLAttributeBuffer::getTarget() { return GL_ARRAY_BUFFER; }
 
-void GLAttributeBuffer::reserveCapacity(size_t n) {
-  if (n <= bufferSize) return;
+void GLAttributeBuffer::setBufferSize(size_t n) {
+  if (isSet() && n == bufferSize) return;
   bind();
   glBufferData(getTarget(), n * sizeInBytes(dataType) * getArrayCount(), NULL, GL_STATIC_DRAW);
   bufferSize = static_cast<uint64_t>(n);
