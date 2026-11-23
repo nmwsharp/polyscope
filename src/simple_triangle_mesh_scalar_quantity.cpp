@@ -92,7 +92,7 @@ void SimpleTriangleMeshVertexScalarQuantity::createProgram() {
   // clang-format on
 
   parent.setSimpleTriangleMeshProgramGeometryAttributes(*program);
-  program->setAttribute("a_value", values.getRenderAttributeBuffer());
+  program->setAttribute("a_value", values);
   program->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*program, parent.getMaterial());
 }
@@ -132,7 +132,7 @@ void SimpleTriangleMeshFaceScalarQuantity::createProgram() {
   // clang-format on
 
   parent.setSimpleTriangleMeshProgramGeometryAttributes(*program);
-  program->setTextureFromBuffer("t_faceValues", values.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_faceValues", values);
   program->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*program, parent.getMaterial());
 }

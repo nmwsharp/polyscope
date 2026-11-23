@@ -109,7 +109,6 @@ void SimpleTriangleMesh::draw() {
     setSimpleTriangleMeshUniforms(*program);
     render::engine->setMaterialUniforms(*program, material.get());
     program->setUniform("u_baseColor", surfaceColor.get());
-    program->setDrawCount(static_cast<uint32_t>(faces.size()));
 
     program->draw();
   }
@@ -151,7 +150,6 @@ void SimpleTriangleMesh::drawPick() {
   setStructureUniforms(*pickProgram);
   setSimpleTriangleMeshUniforms(*pickProgram, false);
   setPickUniforms(*pickProgram);
-  pickProgram->setDrawCount(static_cast<uint32_t>(faces.size()));
 
   pickProgram->draw();
 
@@ -191,7 +189,7 @@ void SimpleTriangleMesh::setSimpleTriangleMeshUniforms(render::ShaderProgram& p,
     }
   }
 
-  p.setDrawCount(faces.size() * 3);
+  p.setDrawCount(static_cast<uint32_t>(faces.size())); // this is indexed draw, so no x3 needed
 }
 
 void SimpleTriangleMesh::ensureRenderProgramPrepared() {
@@ -217,19 +215,21 @@ void SimpleTriangleMesh::ensureRenderProgramPrepared() {
 
 void SimpleTriangleMesh::ensurePickProgramPrepared() {
 
-  // If already prepared, do nothing
-  if (pickProgram) return;
+  if (!pickProgram) {
+    // clang-format off
+    pickProgram = render::engine->requestShader("SIMPLE_MESH",
+      addSimpleTriangleMeshRules({"SIMPLE_MESH_PROPAGATE_FACE_PICK"}, false),
+      render::ShaderReplacementDefaults::Pick);
+    // clang-format on
 
-  // clang-format off
-  pickProgram = render::engine->requestShader("SIMPLE_MESH",
-    addSimpleTriangleMeshRules({"SIMPLE_MESH_PROPAGATE_FACE_PICK"}, false),
-    render::ShaderReplacementDefaults::Pick);
-  // clang-format on
+    setSimpleTriangleMeshProgramGeometryAttributes(*pickProgram);
+  }
 
-  setSimpleTriangleMeshProgramGeometryAttributes(*pickProgram);
-
-  // Allocate one pick index per face
-  pickStart = pick::requestPickBufferRange(this, nFaces());
+  // Ensure pick index range covers all faces (allocate for capacity so amortized doubling avoids frequent reallocs)
+  if (nFaces() > pickRangeSize) {
+    pickRangeSize = faces.capacity();
+    pickStart = pick::requestPickBufferRange(this, pickRangeSize);
+  }
 }
 
 void SimpleTriangleMesh::setPickUniforms(render::ShaderProgram& p) {
