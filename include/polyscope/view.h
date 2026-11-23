@@ -184,6 +184,7 @@ std::string getViewAsJson();
 void setViewFromJson(std::string jsonData, bool flyTo);
 std::string getCameraJson(); // DEPRACTED: old names for avove
 void setCameraFromJson(std::string jsonData, bool flyTo);
+// TODO add functions to serialize all subviews at once
 
 // == Misc helpers
 
@@ -231,7 +232,6 @@ glm::ivec2 bufferIndsSubviewToGlobal(glm::ivec2 bufferInds, int32_t iSubview);
 
 
 // == Subview helpers
-
 
 // High-level helper to create a grid of subviews and arrange them in a grid
 void createSubviewGrid(int gridWidth, int gridHeight);
