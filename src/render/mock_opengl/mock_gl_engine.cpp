@@ -74,8 +74,8 @@ void GLAttributeBuffer::checkArray(int testArrayCount) {
 }
 
 
-void GLAttributeBuffer::reserveCapacity(size_t n) {
-  if (n <= bufferSize) return;
+void GLAttributeBuffer::setBufferSize(size_t n) {
+  if (isSet() && n == bufferSize) return;
   bufferSize = static_cast<uint64_t>(n);
   setFlag = true;
 }

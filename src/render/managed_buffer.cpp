@@ -119,38 +119,32 @@ void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_) {
 template <typename T>
 void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_, uint32_t sizeY_) {
   checkDeviceBufferTypeIs(DeviceBufferType::Texture2d);
-  if (sizeX_ == sizeX && sizeY_ == sizeY) return; // no-op
-  if (managedCapacity > 0) {
-    // Resize: copy device-side data back to host before touching dimensions or the GPU buffer.
-    ensureHostBufferPopulated();
-    managedCapacity = static_cast<size_t>(sizeX_) * sizeY_;
-    currentSize = managedCapacity;
-    data.resize(managedCapacity);
-    if (renderTextureBuffer) renderTextureBuffer->resize(sizeX_, sizeY_);
-    hostBufferValid = true;
-    deviceBufferValid = false;
-  }
+  bool dimsChanged = (sizeX_ != sizeX || sizeY_ != sizeY);
+  if (!dimsChanged && (hostBufferValid || deviceBufferValid)) return; // no-op
   sizeX = sizeX_;
   sizeY = sizeY_;
+  managedCapacity = static_cast<size_t>(sizeX_) * sizeY_;
+  currentSize = managedCapacity;
+  if (data.size() != managedCapacity) data.resize(managedCapacity);
+  if (dimsChanged && renderTextureBuffer) renderTextureBuffer->resize(sizeX_, sizeY_);
+  hostBufferValid = true;
+  deviceBufferValid = false;
 }
 
 template <typename T>
 void ManagedBuffer<T>::setTextureSize(uint32_t sizeX_, uint32_t sizeY_, uint32_t sizeZ_) {
   checkDeviceBufferTypeIs(DeviceBufferType::Texture3d);
-  if (sizeX_ == sizeX && sizeY_ == sizeY && sizeZ_ == sizeZ) return; // no-op
-  if (managedCapacity > 0) {
-    // Resize: copy device-side data back to host before touching dimensions or the GPU buffer.
-    ensureHostBufferPopulated();
-    managedCapacity = static_cast<size_t>(sizeX_) * sizeY_ * sizeZ_;
-    currentSize = managedCapacity;
-    data.resize(managedCapacity);
-    if (renderTextureBuffer) renderTextureBuffer->resize(sizeX_, sizeY_, sizeZ_);
-    hostBufferValid = true;
-    deviceBufferValid = false;
-  }
+  bool dimsChanged = (sizeX_ != sizeX || sizeY_ != sizeY || sizeZ_ != sizeZ);
+  if (!dimsChanged && (hostBufferValid || deviceBufferValid)) return; // no-op
   sizeX = sizeX_;
   sizeY = sizeY_;
   sizeZ = sizeZ_;
+  managedCapacity = static_cast<size_t>(sizeX_) * sizeY_ * sizeZ_;
+  currentSize = managedCapacity;
+  if (data.size() != managedCapacity) data.resize(managedCapacity);
+  if (dimsChanged && renderTextureBuffer) renderTextureBuffer->resize(sizeX_, sizeY_, sizeZ_);
+  hostBufferValid = true;
+  deviceBufferValid = false;
 }
 
 template <typename T>
@@ -183,11 +177,15 @@ bool ManagedBuffer<T>::resize(size_t newSize) {
     return true;
   } else {
     // No reallocation: just update currentSize.
-    // data is already at managedCapacity; restore it if it was cleared by invalidateHostBuffer().
-    if (data.size() != managedCapacity) data.resize(managedCapacity);
     currentSize = newSize;
-    hostBufferValid = true;
-    deviceBufferValid = false;
+
+    // If data lives exclusively on the device, keep it device-canonical rather than clobbering it
+    // with empty host data. Otherwise ensure data is allocated at managedCapacity.
+    if (hostBufferValid || !deviceBufferValid) {
+      if (data.size() != managedCapacity) data.resize(managedCapacity);
+      hostBufferValid = true;
+      deviceBufferValid = false;
+    }
 
     if (deviceBufferType == DeviceBufferType::Texture1d) {
       sizeX = static_cast<uint32_t>(newSize);
@@ -216,6 +214,10 @@ void ManagedBuffer<T>::setCapacity(size_t newCapacity) {
   // Resize data to the new capacity (maintaining the invariant data.size() == managedCapacity).
   data.resize(newCapacity);
   managedCapacity = newCapacity;
+
+  // Reallocate any existing GPU buffer in-place to accommodate the new capacity.
+  if (renderAttributeBuffer) renderAttributeBuffer->setBufferSize(newCapacity);
+  if (renderTextureBuffer) renderTextureBuffer->resize(static_cast<uint32_t>(newCapacity));
 
   hostBufferValid = true;
   deviceBufferValid = false;
@@ -506,6 +508,7 @@ void ManagedBuffer<T>::recomputeIfPopulated() {
   }
 
   invalidateHostBuffer();
+  deviceBufferValid = false;
   computeFunc();
   markHostBufferUpdated();
 }
@@ -517,7 +520,7 @@ std::shared_ptr<render::AttributeBuffer> ManagedBuffer<T>::getRenderAttributeBuf
   if (!renderAttributeBuffer) {
     ensureHostBufferPopulated();
     renderAttributeBuffer = generateAttributeBuffer<T>(render::engine);
-    renderAttributeBuffer->reserveCapacity(managedCapacity);
+    renderAttributeBuffer->setBufferSize(managedCapacity);
     renderAttributeBuffer->setData(data);
     deviceBufferValid = true;
   }

@@ -145,9 +145,10 @@ public:
   // Is it an attribute, texture1d, texture2d, etc?
   DeviceBufferType getDeviceBufferType() const;
 
-  // Set or update the texture dimensions. On first call (managedCapacity == 0): just stores the
-  // dimensions. On subsequent calls: no-op if unchanged; otherwise copies any device-side data
-  // back to host and reallocates the GPU buffer in-place.
+  // Set or update the texture dimensions (no-op if unchanged). Updates size() and capacity() to
+  // the new element count and reallocates any existing GPU texture in-place. Existing data is not
+  // preserved when dimensions change (except on the initial call when constructed with
+  // matching-size data); repopulate the buffer after resizing.
   // Requires setAsType() to have been called first with the matching texture type.
   // For 1D textures, resize() may be used instead.
   void setTextureSize(uint32_t sizeX);
@@ -156,9 +157,10 @@ public:
   std::array<uint32_t, 3> getTextureSize() const;
 
 
-  // Resize the buffer to newSize elements. Sets hostBufferValid = true.
+  // Resize the buffer to newSize elements.
   //
-  // If newSize <= capacity(), this is a cheap constant-time operation which just updates metadata.
+  // If newSize <= capacity(), this is a cheap constant-time operation which just updates metadata,
+  // leaving data residency unchanged (or allocating the host buffer if not yet populated).
   //
   // If newSize > capacity(), this triggers a full reallocation. The new capacity is set to at least
   // 2*oldCapacity (amortized doubling). Any data that was GPU-resident is first copied back to the

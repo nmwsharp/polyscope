@@ -75,6 +75,11 @@ TEST_F(PolyscopeTest, ManagedBufferCapacity) {
   mb.syncToDeviceIfNeeded();
   EXPECT_EQ(mb.getRenderAttributeBuffer(), gpuBuf);
   EXPECT_EQ(gpuBuf->getBufferSize(), mb.capacity());
+
+  // Shrinking capacity also resizes the underlying GPU buffer to match
+  mb.setCapacity(12);
+  EXPECT_EQ(mb.capacity(), 12u);
+  EXPECT_EQ(gpuBuf->getBufferSize(), 12u);
 }
 
 TEST_F(PolyscopeTest, ManagedBufferDeviceSync) {
@@ -95,6 +100,17 @@ TEST_F(PolyscopeTest, ManagedBufferDeviceSync) {
     EXPECT_FLOAT_EQ(v2, 30.f);
     EXPECT_EQ(hostCopy, (std::vector<float>{10.f, 20.f, 30.f, 40.f}));
   }
+
+  // Within-capacity resize while device-canonical should not clobber GPU data
+  gpuVals[1] = 77.f;
+  gpuBuf->setData(gpuVals);
+  mb.markRenderAttributeBufferUpdated();
+  EXPECT_FALSE(mb.resize(2));
+  EXPECT_EQ(mb.size(), 2u);
+  if (testBackend != "openGL_mock") {
+    EXPECT_FLOAT_EQ(mb.getValue(1), 77.f);
+  }
+  EXPECT_FALSE(mb.resize(4));
 
   // Growing while device-canonical should read back valid elements before reallocating
   gpuVals[0] = 99.f;
