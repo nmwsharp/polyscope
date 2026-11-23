@@ -99,7 +99,7 @@ void SimpleTriangleMeshVertexColorQuantity::createProgram() {
   // clang-format on
 
   parent.setSimpleTriangleMeshProgramGeometryAttributes(*program);
-  program->setAttribute("a_color", colors.getRenderAttributeBuffer());
+  program->setAttribute("a_color", colors);
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 
@@ -140,7 +140,7 @@ void SimpleTriangleMeshFaceColorQuantity::createProgram() {
   // clang-format on
 
   parent.setSimpleTriangleMeshProgramGeometryAttributes(*program);
-  program->setTextureFromBuffer("t_faceColors", colors.getRenderTextureBuffer().get());
+  program->setTextureFromBuffer("t_faceColors", colors);
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 

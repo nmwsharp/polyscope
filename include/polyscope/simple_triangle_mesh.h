@@ -163,6 +163,7 @@ private:
 
   // == Picking related things
   size_t pickStart = 0;
+  size_t pickRangeSize = 0;
 };
 
 
