@@ -81,26 +81,43 @@ public:
 
   virtual ~AttributeBuffer();
 
-  virtual void setData(const std::vector<glm::vec2>& data) = 0;
-  virtual void setData(const std::vector<glm::vec3>& data) = 0;
-  virtual void setData(const std::vector<glm::vec4>& data) = 0;
-  virtual void setData(const std::vector<float>& data) = 0;
-  virtual void setData(const std::vector<double>& data) = 0;
-  virtual void setData(const std::vector<int32_t>& data) = 0;
-  virtual void setData(const std::vector<glm::ivec2>& data) = 0;
-  virtual void setData(const std::vector<glm::ivec3>& data) = 0;
-  virtual void setData(const std::vector<glm::ivec4>& data) = 0;
-  virtual void setData(const std::vector<uint32_t>& data) = 0;
-  virtual void setData(const std::vector<glm::uvec2>& data) = 0;
-  virtual void setData(const std::vector<glm::uvec3>& data) = 0;
-  virtual void setData(const std::vector<glm::uvec4>& data) = 0;
+  // Upload up to `count` elements from `data` starting at GPU element `offset` (defaults to full `data` at 0).
+  virtual void setData(const std::vector<glm::vec2>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::vec3>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::vec4>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<float>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<double>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<int32_t>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::ivec2>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::ivec3>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::ivec4>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<uint32_t>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::uvec2>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::uvec3>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::uvec4>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
 
   // Array-valued attributes
   // (adding these lazily as we need them)
   // (sadly we cannot template the virtual function)
-  virtual void setData(const std::vector<std::array<glm::vec3, 2>>& data) = 0;
-  virtual void setData(const std::vector<std::array<glm::vec3, 3>>& data) = 0;
-  virtual void setData(const std::vector<std::array<glm::vec3, 4>>& data) = 0;
+  virtual void setData(const std::vector<std::array<glm::vec3, 2>>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<std::array<glm::vec3, 3>>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<std::array<glm::vec3, 4>>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
 
   // Allocate GPU memory for exactly n elements without uploading any data (no-op if already set to n).
   virtual void setBufferSize(size_t n) = 0;
@@ -165,29 +182,45 @@ public:
   virtual void resize(unsigned int newX, unsigned int newY);
   virtual void resize(unsigned int newX, unsigned int newY, unsigned int newZ);
 
-  // Fill with data
+  // Fill with data (uploads up to `count` elements at `offset`; non-zero offset is only valid for 1D textures)
   // NOTE: some of these are not implemented yet
-  virtual void setData(const std::vector<glm::vec2>& data) = 0;
-  virtual void setData(const std::vector<glm::vec3>& data) = 0;
-  virtual void setData(const std::vector<glm::vec4>& data) = 0;
-  virtual void setData(const std::vector<float>& data) = 0;
-  virtual void setData(const std::vector<double>& data) = 0;
-  virtual void setData(const std::vector<int32_t>& data) = 0;
-  virtual void setData(const std::vector<glm::ivec2>& data) = 0;
-  virtual void setData(const std::vector<glm::ivec3>& data) = 0;
-  virtual void setData(const std::vector<glm::ivec4>& data) = 0;
-  virtual void setData(const std::vector<uint32_t>& data) = 0;
-  virtual void setData(const std::vector<glm::uvec2>& data) = 0;
-  virtual void setData(const std::vector<glm::uvec3>& data) = 0;
-  virtual void setData(const std::vector<glm::uvec4>& data) = 0;
+  virtual void setData(const std::vector<glm::vec2>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::vec3>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::vec4>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<float>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<double>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<int32_t>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::ivec2>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::ivec3>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::ivec4>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<uint32_t>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::uvec2>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::uvec3>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<glm::uvec4>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
 
   // Array-valued
   // NOTE: some of these are not implemented yet
   // (adding these lazily as we need them)
   // (sadly we cannot template the virtual function)
-  virtual void setData(const std::vector<std::array<glm::vec3, 2>>& data) = 0;
-  virtual void setData(const std::vector<std::array<glm::vec3, 3>>& data) = 0;
-  virtual void setData(const std::vector<std::array<glm::vec3, 4>>& data) = 0;
+  virtual void setData(const std::vector<std::array<glm::vec3, 2>>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<std::array<glm::vec3, 3>>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
+  virtual void setData(const std::vector<std::array<glm::vec3, 4>>& data, size_t offset = 0,
+                       size_t count = std::numeric_limits<size_t>::max()) = 0;
 
   unsigned int getSizeX() const { return sizeX; }
   unsigned int getSizeY() const { return sizeY; }

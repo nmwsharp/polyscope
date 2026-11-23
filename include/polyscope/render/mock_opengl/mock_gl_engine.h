@@ -21,26 +21,42 @@ public:
 
   void bind();
 
-  void setData(const std::vector<glm::vec2>& data) override;
-  void setData(const std::vector<glm::vec3>& data) override;
-  void setData(const std::vector<glm::vec4>& data) override;
-  void setData(const std::vector<float>& data) override;
-  void setData(const std::vector<double>& data) override;
-  void setData(const std::vector<int32_t>& data) override;
-  void setData(const std::vector<glm::ivec2>& data) override;
-  void setData(const std::vector<glm::ivec3>& data) override;
-  void setData(const std::vector<glm::ivec4>& data) override;
-  void setData(const std::vector<uint32_t>& data) override;
-  void setData(const std::vector<glm::uvec2>& data) override;
-  void setData(const std::vector<glm::uvec3>& data) override;
-  void setData(const std::vector<glm::uvec4>& data) override;
+  void setData(const std::vector<glm::vec2>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::vec3>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::vec4>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<float>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<double>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<int32_t>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::ivec2>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::ivec3>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::ivec4>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<uint32_t>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::uvec2>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::uvec3>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::uvec4>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
 
   // Array-valued attributes
   // (adding these lazily as we need them)
   // (sadly we cannot template the virtual function)
-  void setData(const std::vector<std::array<glm::vec3, 2>>& data) override;
-  void setData(const std::vector<std::array<glm::vec3, 3>>& data) override;
-  void setData(const std::vector<std::array<glm::vec3, 4>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 2>>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<std::array<glm::vec3, 3>>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<std::array<glm::vec3, 4>>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
 
   // get data at a single index from the buffer
   float getData_float(size_t ind) override;
@@ -82,7 +98,7 @@ private:
 
   // internal implementation helpers
   template <typename T>
-  void setData_helper(const std::vector<T>& data);
+  void setData_helper(const std::vector<T>& data, size_t offset, size_t count);
 
   template <typename T>
   T getData_helper(size_t ind);
@@ -117,27 +133,43 @@ public:
 
   // Fill with data
   // NOTE: some of these are not implemented yet
-  void setData(const std::vector<glm::vec2>& data) override;
-  void setData(const std::vector<glm::vec3>& data) override;
-  void setData(const std::vector<glm::vec4>& data) override;
-  void setData(const std::vector<float>& data) override;
-  void setData(const std::vector<double>& data) override;
-  void setData(const std::vector<int32_t>& data) override;
-  void setData(const std::vector<glm::ivec2>& data) override;
-  void setData(const std::vector<glm::ivec3>& data) override;
-  void setData(const std::vector<glm::ivec4>& data) override;
-  void setData(const std::vector<uint32_t>& data) override;
-  void setData(const std::vector<glm::uvec2>& data) override;
-  void setData(const std::vector<glm::uvec3>& data) override;
-  void setData(const std::vector<glm::uvec4>& data) override;
+  void setData(const std::vector<glm::vec2>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::vec3>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::vec4>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<float>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<double>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<int32_t>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::ivec2>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::ivec3>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::ivec4>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<uint32_t>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::uvec2>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::uvec3>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<glm::uvec4>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
 
   // Array-valued
   // NOTE: some of these are not implemented yet
   // (adding these lazily as we need them)
   // (sadly we cannot template the virtual function)
-  void setData(const std::vector<std::array<glm::vec3, 2>>& data) override;
-  void setData(const std::vector<std::array<glm::vec3, 3>>& data) override;
-  void setData(const std::vector<std::array<glm::vec3, 4>>& data) override;
+  void setData(const std::vector<std::array<glm::vec3, 2>>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<std::array<glm::vec3, 3>>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
+  void setData(const std::vector<std::array<glm::vec3, 4>>& data, size_t offset = 0,
+               size_t count = std::numeric_limits<size_t>::max()) override;
 
   void setFilterMode(FilterMode newMode) override;
   void* getNativeHandle() override;

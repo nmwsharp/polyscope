@@ -102,13 +102,14 @@ TEST_F(PolyscopeTest, ManagedBufferDeviceSync) {
   }
 
   // Within-capacity resize while device-canonical should not clobber GPU data
-  gpuVals[1] = 77.f;
-  gpuBuf->setData(gpuVals);
+  gpuBuf->setData(std::vector<float>{77.f, 88.f}, /*offset=*/1, /*count=*/2);
   mb.markRenderAttributeBufferUpdated();
-  EXPECT_FALSE(mb.resize(2));
-  EXPECT_EQ(mb.size(), 2u);
+  EXPECT_FALSE(mb.resize(3));
+  EXPECT_EQ(mb.size(), 3u);
   if (testBackend != "openGL_mock") {
+    EXPECT_FLOAT_EQ(mb.getValue(0), 10.f);
     EXPECT_FLOAT_EQ(mb.getValue(1), 77.f);
+    EXPECT_FLOAT_EQ(mb.getValue(2), 88.f);
   }
   EXPECT_FALSE(mb.resize(4));
 
@@ -133,7 +134,8 @@ TEST_F(PolyscopeTest, ManagedBufferLazyCompute) {
     mb.setDataHost({static_cast<float>(computeCount), 2.f, 3.f});
   });
 
-  // Should not compute before first access
+  // Should not compute before first access, even after pre-reserving capacity
+  mb.setCapacity(8);
   mb.recomputeIfPopulated();
   EXPECT_EQ(computeCount, 0);
 
@@ -173,6 +175,7 @@ TEST_F(PolyscopeTest, ManagedBufferTextures) {
   tex1d.setAsType(polyscope::DeviceBufferType::Texture1d);
   tex1d.setCapacity(4);
   tex1d.setDataHost({1.f, 2.f, 3.f, 4.f});
+  EXPECT_EQ(tex1d.getTextureSize()[0], 4u);
   auto gpuTex1d = tex1d.getRenderTextureBuffer();
   EXPECT_TRUE(tex1d.resize(8));
   tex1d.setDataHost(std::vector<float>(8, 5.f));
@@ -183,6 +186,7 @@ TEST_F(PolyscopeTest, ManagedBufferTextures) {
   polyscope::render::ManagedBuffer<float> tex2d(nullptr, "tex2d_test");
   tex2d.setAsType(polyscope::DeviceBufferType::Texture2d);
   tex2d.setTextureSize(2, 3);
+  EXPECT_THROW(tex2d.setDataHost(std::vector<float>(3, 1.f)), std::exception);
   tex2d.setDataHost(std::vector<float>(6, 1.f));
   auto gpuTex2d = tex2d.getRenderTextureBuffer();
   tex2d.setTextureSize(4, 2);
