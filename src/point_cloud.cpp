@@ -248,7 +248,7 @@ std::vector<std::string> PointCloud::addPointCloudRules(std::vector<std::string>
   initRules = addStructureRules(initRules);
   if (withPointCloud) {
 
-    initRules.push_back(view::getCurrentProjectionModeRaycastRule());
+    initRules.push_back("BUILD_RAY_FOR_FRAGMENT_DYNAMIC");
 
     if (pointRadiusQuantityName != "") {
       initRules.push_back("SPHERE_VARIABLE_SIZE");

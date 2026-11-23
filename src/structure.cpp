@@ -316,6 +316,11 @@ void Structure::setStructureUniforms(render::ShaderProgram& p) {
     p.setUniform("u_projMatrix", glm::value_ptr(projMat));
   }
 
+  if (p.hasUniform("u_isPerspective")) {
+    int isPerspective = (view::projectionMode == ProjectionMode::Perspective) ? 1 : 0;
+    p.setUniform("u_isPerspective", isPerspective);
+  }
+
   if (render::engine->transparencyEnabled()) {
     if (p.hasUniform("u_transparency")) {
       p.setUniform("u_transparency", transparency.get());

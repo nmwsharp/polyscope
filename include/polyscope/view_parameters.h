@@ -31,8 +31,7 @@ struct ViewParameters {
   glm::mat4x4 viewMat;
   float fov;            // in the y direction
   glm::vec3 viewCenter; // center about which view transformations are performed
-  // NOTE: ProjectionMode projectionMode; _should_ be an option here as well, but we some rendering functionality
-  // requires different shaders based on mode, so it is stuck as a global setting for now.
+  ProjectionMode projectionMode;
 
   // "Flying" view members
   bool midflight;

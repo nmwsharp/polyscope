@@ -792,10 +792,10 @@ ProjectionMode getProjectionMode() { return projectionMode; }
 void setProjectionMode(ProjectionMode newMode) {
   projectionMode = newMode;
   internal::lazy::projectionMode = newMode; // update the lazy property right now, so we don't pay for a refresh twice
-  refresh();
   propagateViewUpdatesToSubviews();
   requestRedraw();
 }
+
 
 
 ViewRelativeMode getViewRelativeMode() { return viewRelativeMode; }
@@ -830,6 +830,35 @@ glm::mat4 getCameraPerspectiveMatrix() {
   float fovRad = glm::radians(fov);
   float aspectRatio = getAspectRatioWidthOverHeight();
   switch (projectionMode) {
+  case ProjectionMode::Perspective: {
+    return glm::perspective(fovRad, aspectRatio, absNearClip, absFarClip);
+    break;
+  }
+  case ProjectionMode::Orthographic: {
+    float vert = tan(fovRad / 2.) * state::lengthScale * 2.;
+    float horiz = vert * aspectRatio;
+    return glm::ortho(-horiz, horiz, -vert, vert, absNearClip, absFarClip);
+    break;
+  }
+  }
+  return glm::mat4(1.0f); // unreachable
+}
+
+// Build a perspective matrix for a specific subview (may differ from the active subview).
+// Reads projectionMode and fov directly from the subview parameters.
+static glm::mat4 getCameraPerspectiveMatrixForSubview(int32_t iView) {
+  float absNearClip, absFarClip;
+  if (overrideClipPlanes) {
+    absNearClip = overrideNearClipRelative * state::lengthScale;
+    absFarClip = overrideFarClipRelative * state::lengthScale;
+  } else {
+    std::tie(absNearClip, absFarClip) = computeClipPlanes();
+  }
+
+  const ViewParameters& vp = state::globalContext.subviewParameters[iView];
+  float fovRad = glm::radians(vp.fov);
+  float aspectRatio = (float)vp.subviewBufferWidth / vp.subviewBufferHeight;
+  switch (vp.projectionMode) {
   case ProjectionMode::Perspective: {
     return glm::perspective(fovRad, aspectRatio, absNearClip, absFarClip);
     break;
@@ -882,7 +911,7 @@ glm::vec3 screenCoordsToWorldRay(glm::vec2 screenCoords, int32_t iView) {
   const ViewParameters& vp = getSubviewParameters(iView);
 
   glm::mat4 viewMat = getCameraViewMatrix();
-  glm::mat4 proj = getCameraPerspectiveMatrix();
+  glm::mat4 proj = getCameraPerspectiveMatrixForSubview(iView);
   glm::vec4 viewport = {0., 0., vp.subviewWindowWidth, vp.subviewWindowHeight};
 
   // Convert global screen coords (y-from-top) to subview-local.
@@ -908,7 +937,7 @@ glm::vec3 bufferCoordsToWorldRay(glm::vec2 bufferCoords, int32_t iView) {
   const ViewParameters& vp = getSubviewParameters(iView);
 
   glm::mat4 view = getCameraViewMatrix();
-  glm::mat4 proj = getCameraPerspectiveMatrix();
+  glm::mat4 proj = getCameraPerspectiveMatrixForSubview(iView);
   glm::vec4 viewport = {0., 0., vp.subviewBufferWidth, vp.subviewBufferHeight};
 
   glm::vec3 screenPos3{bufferCoords.x, vp.subviewBufferHeight - bufferCoords.y, 0.};
@@ -945,7 +974,7 @@ glm::vec3 screenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, float clip
 
   glm::mat4 view = getCameraViewMatrix();
   glm::mat4 viewInv = glm::inverse(view);
-  glm::mat4 proj = getCameraPerspectiveMatrix();
+  glm::mat4 proj = getCameraPerspectiveMatrixForSubview(iView);
   glm::mat4 projInv = glm::inverse(proj);
   // glm::vec2 depthRange = {0., 1.}; // no support for nonstandard depth range, currently
 
@@ -1588,6 +1617,7 @@ void packCurrentSubviewParametersToIndex(int idx) {
   vp.viewMat = viewMat;
   vp.fov = fov;
   vp.viewCenter = viewCenter;
+  vp.projectionMode = projectionMode;
   vp.midflight = midflight;
   vp.flightStartTime = flightStartTime;
   vp.flightEndTime = flightEndTime;
@@ -1614,6 +1644,7 @@ void unpackCurrentSubviewParametersFromActive() {
   viewMat = vp.viewMat;
   fov = vp.fov;
   viewCenter = vp.viewCenter;
+  projectionMode = vp.projectionMode;
   midflight = vp.midflight;
   flightStartTime = vp.flightStartTime;
   flightEndTime = vp.flightEndTime;
@@ -1804,6 +1835,7 @@ void propagateViewUpdatesToSubviews() {
     vp.viewMat = viewMat;
     vp.fov = fov;
     vp.viewCenter = viewCenter;
+    vp.projectionMode = projectionMode;
     vp.midflight = midflight;
     vp.flightStartTime = flightStartTime;
     vp.flightEndTime = flightEndTime;

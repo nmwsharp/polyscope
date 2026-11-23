@@ -155,7 +155,7 @@ void CameraView::prepare() {
 
   {
     std::vector<std::string> rules =
-        addStructureRules({view::getCurrentProjectionModeRaycastRule(), "SHADE_BASECOLOR"});
+        addStructureRules({"BUILD_RAY_FOR_FRAGMENT_DYNAMIC", "SHADE_BASECOLOR"});
     if (wantsCullPosition()) rules.push_back("SPHERE_CULLPOS_FROM_CENTER");
     rules = render::engine->addMaterialRules(material, rules);
     nodeProgram = render::engine->requestShader("RAYCAST_SPHERE", rules);
@@ -163,7 +163,7 @@ void CameraView::prepare() {
 
   {
     std::vector<std::string> rules =
-        addStructureRules({view::getCurrentProjectionModeRaycastRule(), "SHADE_BASECOLOR"});
+        addStructureRules({"BUILD_RAY_FOR_FRAGMENT_DYNAMIC", "SHADE_BASECOLOR"});
     if (wantsCullPosition()) rules.push_back("CYLINDER_CULLPOS_FROM_MID");
     rules = render::engine->addMaterialRules(material, rules);
     edgeProgram = render::engine->requestShader("RAYCAST_CYLINDER", rules);

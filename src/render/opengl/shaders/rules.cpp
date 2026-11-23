@@ -501,6 +501,36 @@ const ShaderReplacementRule BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC(
     /* textures */ {}
 );
 
+// A combined rule that uses a uniform u_isPerspective to select between perspective and orthographic ray building at
+// runtime. Use this instead of BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE or BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC when the
+// projection mode may vary per-subview.
+const ShaderReplacementRule BUILD_RAY_FOR_FRAGMENT_DYNAMIC(
+    /* rule name */ "BUILD_RAY_FOR_FRAGMENT_DYNAMIC",
+    { /* replacement sources */
+      {"FRAG_DECLARATIONS", R"(
+        uniform int u_isPerspective;
+        void buildRayForFragmentPerspective(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord, out vec3 rayStart, out vec3 rayDir);
+        void buildRayForFragmentOrthographic(vec4 viewport, vec2 depthRange, mat4 projMat, mat4 invProjMat, vec4 fragCoord, out vec3 rayStart, out vec3 rayDir);
+      )"},
+      {"BUILD_RAY_FOR_FRAGMENT", R"(
+        if (u_isPerspective != 0) {
+          buildRayForFragmentPerspective(u_viewport, vec2(gl_DepthRange.near, gl_DepthRange.far), u_projMatrix, u_invProjMatrix, gl_FragCoord, rayStart, rayDir);
+        } else {
+          buildRayForFragmentOrthographic(u_viewport, vec2(gl_DepthRange.near, gl_DepthRange.far), u_projMatrix, u_invProjMatrix, gl_FragCoord, rayStart, rayDir);
+        }
+      )"},
+      {"GEOM_DECLARATIONS", R"(
+        uniform int u_isPerspective;
+      )"},
+      {"GEOM_CONSTRUCT_VECTOR_TO_CAMERA_IN_VIEW_SPACE", R"(
+          vec3 dirToCam = (u_isPerspective != 0) ? normalize(-gl_in[0].gl_Position.xyz) : vec3(0.0, 0.0, 1.0);
+      )"}
+    },
+    /* uniforms */ {{"u_isPerspective", RenderDataType::Int}},
+    /* attributes */ {},
+    /* textures */ {}
+);
+
 ShaderReplacementRule generateSlicePlaneRule(std::string uniquePostfix) {
 
   std::string centerUniformName = "u_slicePlaneCenter_" + uniquePostfix;

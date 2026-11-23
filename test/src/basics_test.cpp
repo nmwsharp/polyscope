@@ -316,6 +316,37 @@ TEST_F(PolyscopeTest, SubviewVisibility) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, SubviewProjectionMode) {
+  auto psMesh = registerTriangleMesh();
+  auto psCloud = polyscope::registerPointCloud("cloud", std::vector<glm::vec3>{{0, 0, 0}, {1, 0, 0}});
+
+  polyscope::view::createSubviewGrid(2, 1); // 2 subviews
+  polyscope::view::setSubviewsShareNavigation(false); // allow independent projection modes
+
+  // default: all subviews start with same projection mode (Perspective)
+  polyscope::view::activateSubview(0);
+  EXPECT_EQ(polyscope::view::getProjectionMode(), polyscope::ProjectionMode::Perspective);
+  polyscope::view::activateSubview(1);
+  EXPECT_EQ(polyscope::view::getProjectionMode(), polyscope::ProjectionMode::Perspective);
+
+  // set subview 1 to orthographic (stateful: set on the active subview)
+  polyscope::view::activateSubview(1);
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Orthographic);
+  polyscope::view::activateSubview(0);
+  EXPECT_EQ(polyscope::view::getProjectionMode(), polyscope::ProjectionMode::Perspective);
+  polyscope::view::activateSubview(1);
+  EXPECT_EQ(polyscope::view::getProjectionMode(), polyscope::ProjectionMode::Orthographic);
+
+  // render with mixed projection modes
+  polyscope::show(3);
+
+  // restore
+  polyscope::view::setSubviewsShareNavigation(true);
+  polyscope::view::setProjectionMode(polyscope::ProjectionMode::Perspective);
+  polyscope::view::createSubviewGrid(1, 1);
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, UIScale) {
 
   // this should trigger a reload of the font atlas

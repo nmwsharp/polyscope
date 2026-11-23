@@ -2242,6 +2242,7 @@ void MockGLEngine::populateDefaultShadersAndRules() {
   registerShaderRule("PROJ_AND_INV_PROJ_MAT", PROJ_AND_INV_PROJ_MAT);
   registerShaderRule("BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE", BUILD_RAY_FOR_FRAGMENT_PERSPECTIVE);
   registerShaderRule("BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC", BUILD_RAY_FOR_FRAGMENT_ORTHOGRAPHIC);
+  registerShaderRule("BUILD_RAY_FOR_FRAGMENT_DYNAMIC", BUILD_RAY_FOR_FRAGMENT_DYNAMIC);
 
   // Lighting and shading things
   registerShaderRule("LIGHT_MATCAP", LIGHT_MATCAP);
