@@ -1572,12 +1572,6 @@ void processLazyProperties() {
   // There is a second function processLazyPropertiesOutsideOfImGui() which handles a few more that can only be set
   // at limited times when an ImGui frame is not active.
 
-  // projection mode
-  if (internal::lazy::projectionMode != view::projectionMode) {
-    internal::lazy::projectionMode = view::projectionMode;
-    view::setProjectionMode(view::projectionMode);
-  }
-
   // transparency mode
   if (internal::lazy::transparencyMode != options::transparencyMode) {
     internal::lazy::transparencyMode = options::transparencyMode;
