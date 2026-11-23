@@ -139,7 +139,9 @@ public:
   void setCapacity(size_t newCapacity);
 
   // Set the device buffer type. Call once at construction time before setTextureSize().
-  // All buffers are Attribute by default, and can be switch to texture exactly once.
+  // All buffers are Attribute by default, and can be switched to texture exactly once.
+  // NOTE: Texture1d is limited to OpenGL's GL_MAX_TEXTURE_SIZE (typically 16k-32k elements);
+  // for large 1D arrays, keep the default Attribute type (perhaps binding as a buffer texture if needed).
   void setAsType(DeviceBufferType type);
 
   // Is it an attribute, texture1d, texture2d, etc?
