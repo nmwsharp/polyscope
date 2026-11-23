@@ -274,6 +274,48 @@ TEST_F(PolyscopeTest, SubviewManagement) {
   polyscope::removeAllStructures();
 }
 
+TEST_F(PolyscopeTest, SubviewVisibility) {
+  auto psMesh = registerTriangleMesh();
+
+  polyscope::view::createSubviewGrid(2, 2); // 4 subviews
+
+  // default: visible in all subviews
+  for (int i = 0; i < 4; i++) EXPECT_TRUE(psMesh->getSubviewVisibility(i));
+
+  // hide in one subview
+  psMesh->setSubviewVisibility(2, false);
+  EXPECT_TRUE(psMesh->getSubviewVisibility(0));
+  EXPECT_TRUE(psMesh->getSubviewVisibility(1));
+  EXPECT_FALSE(psMesh->getSubviewVisibility(2));
+  EXPECT_TRUE(psMesh->getSubviewVisibility(3));
+
+  // hide all
+  psMesh->setSubviewVisibilityAll(false);
+  for (int i = 0; i < 4; i++) EXPECT_FALSE(psMesh->getSubviewVisibility(i));
+
+  // show all
+  psMesh->setSubviewVisibilityAll(true);
+  for (int i = 0; i < 4; i++) EXPECT_TRUE(psMesh->getSubviewVisibility(i));
+
+  // exclusive: only visible in subview 1
+  psMesh->setSubviewVisibilityExclusive(1);
+  EXPECT_FALSE(psMesh->getSubviewVisibility(0));
+  EXPECT_TRUE(psMesh->getSubviewVisibility(1));
+  EXPECT_FALSE(psMesh->getSubviewVisibility(2));
+  EXPECT_FALSE(psMesh->getSubviewVisibility(3));
+
+  // getSubviewVisibility(-1) uses active subview
+  polyscope::view::activateSubview(1);
+  EXPECT_TRUE(psMesh->getSubviewVisibility(-1));
+  polyscope::view::activateSubview(0);
+  EXPECT_FALSE(psMesh->getSubviewVisibility(-1));
+
+  polyscope::show(3);
+
+  polyscope::view::createSubviewGrid(1, 1); // restore
+  polyscope::removeAllStructures();
+}
+
 TEST_F(PolyscopeTest, UIScale) {
 
   // this should trigger a reload of the font atlas

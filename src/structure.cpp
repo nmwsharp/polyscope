@@ -14,6 +14,7 @@ namespace polyscope {
 
 Structure::Structure(std::string name_, std::string subtypeName_)
     : name(name_), subtypeName(subtypeName_), enabled(subtypeName + "#" + name + "#enabled", true),
+      subviewVisibilityMask(subtypeName + "#" + name + "#subviewVisibilityMask", ~uint64_t(0)),
       objectTransform(subtypeName + "#" + name + "#object_transform", glm::mat4(1.0)),
       transparency(subtypeName + "#" + name + "#transparency", 1.0),
       transformGizmo(subtypeName + "#" + name + "#transform_gizmo", &objectTransform.get(), &objectTransform),
@@ -52,6 +53,33 @@ void Structure::setEnabledAllOfType(bool newEnabled) {
 void Structure::addToGroup(std::string groupName) { addToGroup(*getGroup(groupName)); }
 
 void Structure::addToGroup(Group& group) { group.addChildStructure(*this); }
+
+void Structure::setSubviewVisibility(int32_t iSubview, bool visible) {
+  uint64_t mask = subviewVisibilityMask.get();
+  if (visible) {
+    mask |= (uint64_t(1) << iSubview);
+  } else {
+    mask &= ~(uint64_t(1) << iSubview);
+  }
+  subviewVisibilityMask = mask;
+  requestRedraw();
+}
+
+void Structure::setSubviewVisibilityAll(bool visible) {
+  subviewVisibilityMask = visible ? ~uint64_t(0) : uint64_t(0);
+  requestRedraw();
+}
+
+void Structure::setSubviewVisibilityExclusive(int32_t iSubview) {
+  subviewVisibilityMask = uint64_t(1) << iSubview;
+  requestRedraw();
+}
+
+bool Structure::getSubviewVisibility(int32_t iSubview) {
+  if (iSubview < 0) iSubview = view::getActiveSubviewIndex();
+  return (subviewVisibilityMask.get() >> iSubview) & uint64_t(1);
+}
+
 
 void Structure::buildUI() {
   ImGui::PushID(name.c_str()); // ensure there are no conflicts with
@@ -128,6 +156,19 @@ void Structure::buildUI() {
         if (ImGui::MenuItem("Enable all of type")) setEnabledAllOfType(true);
         if (ImGui::MenuItem("Disable all of type")) setEnabledAllOfType(false);
         if (ImGui::MenuItem("Isolate")) enableIsolate();
+        ImGui::EndMenu();
+      }
+
+      // Subview visibility (only shown when multiple subviews exist)
+      int nSubviews = view::getNumSubviews();
+      if (nSubviews > 1 && ImGui::BeginMenu("Subview Visibility")) {
+        if (ImGui::MenuItem("Show in all")) setSubviewVisibilityAll(true);
+        if (ImGui::MenuItem("Hide in all")) setSubviewVisibilityAll(false);
+        ImGui::Separator();
+        for (int i = 0; i < nSubviews; i++) {
+          bool vis = getSubviewVisibility(i);
+          if (ImGui::MenuItem(("Subview " + std::to_string(i)).c_str(), NULL, vis)) setSubviewVisibility(i, !vis);
+        }
         ImGui::EndMenu();
       }
 

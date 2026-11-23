@@ -133,6 +133,14 @@ public:
   void addToGroup(std::string groupName);
   void addToGroup(Group& group);
 
+  // Subview visibility
+  // If true, the structure (and any of its quantities) are visible on the i'th subview
+  void setSubviewVisibility(int32_t iSubview, bool assigned);
+  void setSubviewVisibilityAll(bool assigned);          // set visibility true/false for all subviews
+  void setSubviewVisibilityExclusive(int32_t iSubview); // only visible in the i'th subview
+  bool getSubviewVisibility(int32_t iSubview = -1);     // test visibility for the i'th subview,
+                                                        // -1 means currently active subview
+
   // ====================================================================
   // ==== Options =======================================================
   // ====================================================================
@@ -264,7 +272,12 @@ public:
 
 protected:
   // = State
+
   PersistentValue<bool> enabled;
+
+  // Used to implement subview visibility
+  PersistentValue<uint64_t> subviewVisibilityMask;
+
   PersistentValue<glm::mat4> objectTransform; // rigid transform
 
   // 0 for transparent, 1 for opaque, only has effect if engine transparency is set
