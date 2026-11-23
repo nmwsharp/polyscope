@@ -99,6 +99,7 @@ ManagedBuffer<T>::~ManagedBuffer() {
 
 template <typename T>
 void ManagedBuffer<T>::checkInvalidValues() {
+  ensureHostBufferPopulated();
   // Only check the logically-valid elements; slack in [currentSize, managedCapacity) is uninitialized.
   polyscope::checkInvalidValues(name, std::vector<T>(data.begin(), data.begin() + currentSize));
 }
@@ -166,9 +167,12 @@ bool ManagedBuffer<T>::resize(size_t newSize) {
   if (newSize > managedCapacity) {
     // Reallocation needed: use amortized doubling for the new capacity.
     size_t newCapacity = std::max(newSize, 2 * managedCapacity);
-    setCapacity(newCapacity); // handles host/device sync, data.resize, validity flags
+    setCapacity(newCapacity); // handles host/device sync and GPU buffer resize
 
+    if (data.size() != managedCapacity) data.resize(managedCapacity);
     currentSize = newSize;
+    hostBufferValid = true;
+    deviceBufferValid = false;
 
     if (deviceBufferType == DeviceBufferType::Texture1d) {
       sizeX = static_cast<uint32_t>(newSize);
@@ -205,11 +209,17 @@ void ManagedBuffer<T>::setCapacity(size_t newCapacity) {
 
   if (newCapacity == managedCapacity) return; // no-op
 
-  // Before invalidating the GPU buffer, copy any device-side changes back to the host.
-  // Skip if state is NeedsCompute — there's no existing data to preserve.
-  if (!isInNeedsComputeState()) {
-    ensureHostBufferPopulated();
+  if (isInNeedsComputeState()) {
+    // Stay in NeedsCompute state — record the capacity (and resize any existing GPU buffer)
+    // without marking host data valid or prematurely allocating the host vector.
+    managedCapacity = newCapacity;
+    if (renderAttributeBuffer) renderAttributeBuffer->setBufferSize(newCapacity);
+    if (renderTextureBuffer) renderTextureBuffer->resize(static_cast<uint32_t>(newCapacity));
+    return;
   }
+
+  // Before invalidating the GPU buffer, copy any device-side changes back to the host.
+  ensureHostBufferPopulated();
 
   // Resize data to the new capacity (maintaining the invariant data.size() == managedCapacity).
   data.resize(newCapacity);
@@ -269,14 +279,23 @@ void ManagedBuffer<T>::ensureHostBufferPopulated() {
 
 template <typename T>
 void ManagedBuffer<T>::setDataHost(const std::vector<T>& newData) {
-  if (newData.size() > managedCapacity)
+  if (deviceBufferType == DeviceBufferType::Texture2d || deviceBufferType == DeviceBufferType::Texture3d) {
+    if (newData.size() != managedCapacity)
+      exception("ManagedBuffer " + name + " setDataHost() called with data size (" + std::to_string(newData.size()) +
+                ") that does not match texture size (" + std::to_string(managedCapacity) +
+                "). Call setTextureSize() first.");
+  } else if (newData.size() > managedCapacity) {
     exception("ManagedBuffer " + name + " setDataHost() called with data that exceeds capacity (" +
               std::to_string(newData.size()) + " > " + std::to_string(managedCapacity) +
               "). Call resize() or setCapacity() first.");
+  }
   // Restore the invariant (data may have been cleared by invalidateHostBuffer()).
   if (data.size() != managedCapacity) data.resize(managedCapacity);
   std::copy(newData.begin(), newData.end(), data.begin());
   currentSize = newData.size();
+  if (deviceBufferType == DeviceBufferType::Texture1d) {
+    sizeX = static_cast<uint32_t>(newData.size());
+  }
   hostBufferValid = true;
   deviceBufferValid = false;
   invalidateIndexedViews();
@@ -369,8 +388,10 @@ void ManagedBuffer<T>::markHostBufferUpdated() {
 
 template <typename T>
 void ManagedBuffer<T>::syncToDeviceIfNeeded() {
-  // Quick exit: device data is current and all indexed views are up to date.
-  if (deviceBufferValid && indexedViewsValid) return;
+  bool hasDeviceBuffer = (renderAttributeBuffer || renderTextureBuffer);
+
+  // Quick exit: any existing device buffer is current and all indexed views are up to date.
+  if ((!hasDeviceBuffer || deviceBufferValid) && indexedViewsValid) return;
 
   if (!deviceBufferValid && !hostBufferValid) {
     // Neither host nor device has valid data at draw time. This is a bug: either the buffer was
@@ -379,28 +400,24 @@ void ManagedBuffer<T>::syncToDeviceIfNeeded() {
     exception("ManagedBuffer " + name + " has no valid data on host or device at draw time");
   }
 
-  // Host data is valid. Copy to device.
-  if (!deviceBufferValid) { // must be hostBufferValid == true
+  // Host data is valid. Copy only the logically-valid elements [0, currentSize) to device.
+  if (hasDeviceBuffer && !deviceBufferValid) { // must be hostBufferValid == true
     if (renderAttributeBuffer) {
-      renderAttributeBuffer->setData(data);
+      renderAttributeBuffer->setData(data, 0, currentSize);
     }
     if (renderTextureBuffer) {
-      renderTextureBuffer->setData(data);
+      renderTextureBuffer->setData(data, 0, currentSize);
     }
     deviceBufferValid = true;
   }
 
   // Update indexed views
   if (!indexedViewsValid) {
+    // TODO do an on-device update of indexed views
 
-    if(deviceBufferValid) { // always true now at this point
-
-      // TODO do an on-device update of indexed views
-
-      // On-device update not implemented yet, copy it to host and do the update from the host
-      ensureHostBufferPopulated();
-      updateIndexedViews(); // sets indexedViewsValid = true
-    }
+    // On-device update not implemented yet, copy it to host and do the update from the host
+    ensureHostBufferPopulated();
+    updateIndexedViews(); // sets indexedViewsValid = true
   }
 }
 
@@ -521,7 +538,7 @@ std::shared_ptr<render::AttributeBuffer> ManagedBuffer<T>::getRenderAttributeBuf
     ensureHostBufferPopulated();
     renderAttributeBuffer = generateAttributeBuffer<T>(render::engine);
     renderAttributeBuffer->setBufferSize(managedCapacity);
-    renderAttributeBuffer->setData(data);
+    renderAttributeBuffer->setData(data, 0, currentSize);
     deviceBufferValid = true;
   }
   return renderAttributeBuffer;
@@ -542,7 +559,7 @@ std::shared_ptr<render::TextureBuffer> ManagedBuffer<T>::getRenderTextureBuffer(
       break;
     case DeviceBufferType::Texture1d:
       // Allocate GPU texture at the full managed capacity so future within-capacity resizes
-      // don't require a new GPU buffer. setData() below uploads only data.size() elements.
+      // don't require a new GPU buffer. setData() below uploads only currentSize elements.
       renderTextureBuffer->resize(static_cast<uint32_t>(managedCapacity));
       break;
     case DeviceBufferType::Texture2d:
@@ -553,7 +570,7 @@ std::shared_ptr<render::TextureBuffer> ManagedBuffer<T>::getRenderTextureBuffer(
       break;
     }
 
-    renderTextureBuffer->setData(data);
+    renderTextureBuffer->setData(data, 0, currentSize);
     deviceBufferValid = true;
   }
   return renderTextureBuffer;

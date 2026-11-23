@@ -81,99 +81,105 @@ void GLAttributeBuffer::setBufferSize(size_t n) {
 }
 
 template <typename T>
-void GLAttributeBuffer::setData_helper(const std::vector<T>& data) {
+void GLAttributeBuffer::setData_helper(const std::vector<T>& data, size_t offset, size_t count) {
+  size_t n = std::min(count, data.size());
   bind();
 
-  if (!isSet() || data.size() > bufferSize) {
+  if (offset > 0) {
+    if (!isSet() || offset + n > bufferSize) {
+      exception("OpenGL error: setData() with non-zero offset exceeds allocated buffer size.");
+    }
+  } else if (!isSet() || n > bufferSize) {
     setFlag = true;
-    uint64_t newSize = static_cast<uint64_t>(data.size());
+    uint64_t newSize = static_cast<uint64_t>(n);
     bufferSize = newSize;
   }
 
   checkGLError();
 }
 
-void GLAttributeBuffer::setData(const std::vector<glm::vec2>& data) {
+void GLAttributeBuffer::setData(const std::vector<glm::vec2>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Vector2Float);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
 
-void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data) {
+void GLAttributeBuffer::setData(const std::vector<glm::vec3>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Vector3Float);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
 
-void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data) {
+void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Vector3Float);
   checkArray(2);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
 
-void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data) {
+void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Vector3Float);
   checkArray(3);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
 
-void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data) {
+void GLAttributeBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Vector3Float);
   checkArray(4);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
 
-void GLAttributeBuffer::setData(const std::vector<glm::vec4>& data) {
+void GLAttributeBuffer::setData(const std::vector<glm::vec4>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Vector4Float);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
 
-void GLAttributeBuffer::setData(const std::vector<float>& data) {
+void GLAttributeBuffer::setData(const std::vector<float>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Float);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
 
-void GLAttributeBuffer::setData(const std::vector<double>& data) {
+void GLAttributeBuffer::setData(const std::vector<double>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Float);
 
   // Convert input data to floats
-  std::vector<float> floatData(data.size());
-  for (unsigned int i = 0; i < data.size(); i++) {
+  size_t n = std::min(count, data.size());
+  std::vector<float> floatData(n);
+  for (size_t i = 0; i < n; i++) {
     floatData[i] = static_cast<float>(data[i]);
   }
 
-  setData_helper(floatData);
+  setData_helper(floatData, offset, n);
 }
 
-void GLAttributeBuffer::setData(const std::vector<int32_t>& data) {
+void GLAttributeBuffer::setData(const std::vector<int32_t>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Int);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
-void GLAttributeBuffer::setData(const std::vector<glm::ivec2>& data) {
+void GLAttributeBuffer::setData(const std::vector<glm::ivec2>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Vector2Int);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
-void GLAttributeBuffer::setData(const std::vector<glm::ivec3>& data) {
+void GLAttributeBuffer::setData(const std::vector<glm::ivec3>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Vector3Int);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
-void GLAttributeBuffer::setData(const std::vector<glm::ivec4>& data) {
+void GLAttributeBuffer::setData(const std::vector<glm::ivec4>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Vector4Int);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
-void GLAttributeBuffer::setData(const std::vector<uint32_t>& data) {
+void GLAttributeBuffer::setData(const std::vector<uint32_t>& data, size_t offset, size_t count) {
   checkType(RenderDataType::UInt);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
-void GLAttributeBuffer::setData(const std::vector<glm::uvec2>& data) {
+void GLAttributeBuffer::setData(const std::vector<glm::uvec2>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Vector2UInt);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
-void GLAttributeBuffer::setData(const std::vector<glm::uvec3>& data) {
+void GLAttributeBuffer::setData(const std::vector<glm::uvec3>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Vector3UInt);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
-void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data) {
+void GLAttributeBuffer::setData(const std::vector<glm::uvec4>& data, size_t offset, size_t count) {
   checkType(RenderDataType::Vector4UInt);
-  setData_helper(data);
+  setData_helper(data, offset, count);
 }
 
 
@@ -406,14 +412,18 @@ void GLTextureBuffer::resize(unsigned int newX, unsigned int newY, unsigned int 
   checkGLError();
 }
 
-void GLTextureBuffer::setData(const std::vector<glm::vec2>& data) { exception("not implemented"); }
+void GLTextureBuffer::setData(const std::vector<glm::vec2>& data, size_t offset, size_t count) { exception("not implemented"); }
 
 
-void GLTextureBuffer::setData(const std::vector<glm::vec3>& data) {
+void GLTextureBuffer::setData(const std::vector<glm::vec3>& data, size_t offset, size_t count) {
 
+  size_t n = std::min(count, data.size());
   bind();
 
-  if (data.size() > getTotalSize()) {
+  if (dim >= 2 && offset != 0) {
+    exception("OpenGL error: non-zero offset in setData() is only supported for 1D textures.");
+  }
+  if (offset + n > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
@@ -429,11 +439,15 @@ void GLTextureBuffer::setData(const std::vector<glm::vec3>& data) {
   checkGLError();
 }
 
-void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
+void GLTextureBuffer::setData(const std::vector<glm::vec4>& data, size_t offset, size_t count) {
 
+  size_t n = std::min(count, data.size());
   bind();
 
-  if (data.size() > getTotalSize()) {
+  if (dim >= 2 && offset != 0) {
+    exception("OpenGL error: non-zero offset in setData() is only supported for 1D textures.");
+  }
+  if (offset + n > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
@@ -449,10 +463,14 @@ void GLTextureBuffer::setData(const std::vector<glm::vec4>& data) {
   checkGLError();
 }
 
-void GLTextureBuffer::setData(const std::vector<float>& data) {
+void GLTextureBuffer::setData(const std::vector<float>& data, size_t offset, size_t count) {
+  size_t n = std::min(count, data.size());
   bind();
 
-  if (data.size() > getTotalSize()) {
+  if (dim >= 2 && offset != 0) {
+    exception("OpenGL error: non-zero offset in setData() is only supported for 1D textures.");
+  }
+  if (offset + n > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
@@ -468,10 +486,14 @@ void GLTextureBuffer::setData(const std::vector<float>& data) {
   checkGLError();
 }
 
-void GLTextureBuffer::setData(const std::vector<double>& data) {
+void GLTextureBuffer::setData(const std::vector<double>& data, size_t offset, size_t count) {
+  size_t n = std::min(count, data.size());
   bind();
 
-  if (data.size() > getTotalSize()) {
+  if (dim >= 2 && offset != 0) {
+    exception("OpenGL error: non-zero offset in setData() is only supported for 1D textures.");
+  }
+  if (offset + n > getTotalSize()) {
     exception("OpenGL error: texture buffer data is not the right size.");
   }
 
@@ -486,17 +508,17 @@ void GLTextureBuffer::setData(const std::vector<double>& data) {
 
   checkGLError();
 };
-void GLTextureBuffer::setData(const std::vector<int32_t>& data) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::ivec2>& data) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::ivec3>& data) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::ivec4>& data) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<uint32_t>& data) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::uvec3>& data) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<glm::uvec4>& data) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data) { exception("not implemented"); };
-void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<int32_t>& data, size_t offset, size_t count) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::ivec2>& data, size_t offset, size_t count) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::ivec3>& data, size_t offset, size_t count) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::ivec4>& data, size_t offset, size_t count) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<uint32_t>& data, size_t offset, size_t count) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::uvec2>& data, size_t offset, size_t count) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::uvec3>& data, size_t offset, size_t count) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<glm::uvec4>& data, size_t offset, size_t count) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 2>>& data, size_t offset, size_t count) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 3>>& data, size_t offset, size_t count) { exception("not implemented"); };
+void GLTextureBuffer::setData(const std::vector<std::array<glm::vec3, 4>>& data, size_t offset, size_t count) { exception("not implemented"); };
 
 void GLTextureBuffer::setFilterMode(FilterMode newMode) {
 
@@ -1667,8 +1689,8 @@ void GLShaderProgram::syncBuffersToDeviceIfNeeded() {
 }
 
 void GLShaderProgram::draw() {
-  validateData();
   syncBuffersToDeviceIfNeeded();
+  validateData();
 
   if (usePrimitiveRestart) {
   }
