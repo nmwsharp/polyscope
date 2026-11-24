@@ -821,13 +821,13 @@ void GLCompiledProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
     if (t.name == newTexture.name) {
 
       // if it occurs twice, confirm that the occurences match
-      if (t.dim != newTexture.dim)
-        exception("texture " + t.name + " appears twice in program with different dimensions");
+      if (t.type != newTexture.type)
+        exception("texture " + t.name + " appears twice in program with different types");
 
       return;
     }
   }
-  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr, nullptr});
+  textures.push_back(GLShaderTexture{newTexture.name, newTexture.type, 777, false, nullptr, nullptr, nullptr, nullptr});
 }
 
 
@@ -1419,8 +1419,9 @@ void GLShaderProgram::setTexture1D(std::string name, unsigned char* texData, uns
       throw std::invalid_argument("Attempted to set texture twice");
     }
 
-    if (t.dim != 1) {
-      throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
+    if (t.type != ShaderTextureType::Texture1D) {
+      throw std::invalid_argument("Tried to use texture " + name + " with mismatched type " +
+                                  shaderTextureTypeName(t.type) + " (expected Texture1D)");
     }
 
     // Create a new texture object
@@ -1452,8 +1453,9 @@ void GLShaderProgram::setTexture2D(std::string name, unsigned char* texData, uns
       throw std::invalid_argument("Attempted to set texture twice");
     }
 
-    if (t.dim != 2) {
-      throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
+    if (t.type != ShaderTextureType::Texture2D) {
+      throw std::invalid_argument("Tried to use texture " + name + " with mismatched type " +
+                                  shaderTextureTypeName(t.type) + " (expected Texture2D)");
     }
 
     if (withAlpha) {
@@ -1487,8 +1489,13 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
   for (GLShaderTexture& t : textures) {
     if (t.name != name) continue;
 
-    if (t.dim != (int)textureBuffer->getDimension()) {
-      throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
+    unsigned int bufDim = textureBuffer->getDimension();
+    bool typeMatches = (bufDim == 1 && t.type == ShaderTextureType::Texture1D) ||
+                       (bufDim == 2 && t.type == ShaderTextureType::Texture2D) ||
+                       (bufDim == 3 && t.type == ShaderTextureType::Texture3D);
+    if (!typeMatches) {
+      throw std::invalid_argument("Tried to use texture " + name + " with mismatched type " +
+                                  shaderTextureTypeName(t.type) + " for " + std::to_string(bufDim) + "D texture buffer");
     }
 
     t.textureBuffer = dynamic_cast<GLTextureBuffer*>(textureBuffer);
@@ -1496,6 +1503,30 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
       throw std::invalid_argument("Bad texture in setTextureFromBuffer()");
     }
 
+    t.sourceManagedBuffer = source;
+    t.isSet = true;
+    return;
+  }
+
+  throw std::invalid_argument("No texture with name " + name);
+}
+
+void GLShaderProgram::setTextureFromAttributeBuffer(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer,
+                                                    ManagedBufferBase* source) {
+  std::shared_ptr<GLAttributeBuffer> engineExtBuff = std::dynamic_pointer_cast<GLAttributeBuffer>(externalBuffer);
+  if (!engineExtBuff) {
+    throw std::invalid_argument("Bad attribute buffer in setTextureFromAttributeBuffer()");
+  }
+
+  for (GLShaderTexture& t : textures) {
+    if (t.name != name) continue;
+
+    if (t.type != ShaderTextureType::TextureBuffer) {
+      throw std::invalid_argument("Tried to bind attribute buffer to texture " + name + " of type " +
+                                  shaderTextureTypeName(t.type) + " (expected TextureBuffer)");
+    }
+
+    t.attrBuffer = engineExtBuff;
     t.sourceManagedBuffer = source;
     t.isSet = true;
     return;
@@ -1515,8 +1546,9 @@ void GLShaderProgram::setTextureFromColormap(std::string name, const std::string
       throw std::invalid_argument("Attempted to set texture twice");
     }
 
-    if (t.dim != 1) {
-      throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
+    if (t.type != ShaderTextureType::Texture1D) {
+      throw std::invalid_argument("Tried to use texture " + name + " with mismatched type " +
+                                  shaderTextureTypeName(t.type) + " (expected Texture1D)");
     }
 
     // Fill a buffer with the data
@@ -1620,6 +1652,9 @@ void GLShaderProgram::validateData() {
     if (!t.isSet) {
       throw std::invalid_argument("Texture " + t.name + " has not been set");
     }
+    if (t.type == ShaderTextureType::TextureBuffer && (!t.attrBuffer || !t.attrBuffer->isSet())) {
+      throw std::invalid_argument("Buffer texture " + t.name + " has no data set");
+    }
   }
 
   // Check index (if applicable)
@@ -1667,14 +1702,9 @@ void GLShaderProgram::activateTextures() {
     // Point the uniform at this texture
 
     // Bind to the texture buffer
-    switch (t.dim) {
-    case 1:
-      break;
-    case 2:
-      break;
+    if (t.type != ShaderTextureType::TextureBuffer) {
+      t.textureBuffer->bind();
     }
-
-    t.textureBuffer->bind();
   }
 }
 

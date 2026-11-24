@@ -70,7 +70,7 @@ const ShaderStageSpecification GROUND_PLANE_TILE_FRAG_SHADER= {
     
     // textures 
     {
-        {"t_ground", 2},
+        {"t_ground", ShaderTextureType::Texture2D},
     },
     
     // source 
@@ -166,8 +166,8 @@ const ShaderStageSpecification GROUND_PLANE_TILE_REFLECT_FRAG_SHADER = {
     
     // textures 
     {
-        {"t_ground", 2},
-        {"t_mirrorImage", 2},
+        {"t_ground", ShaderTextureType::Texture2D},
+        {"t_mirrorImage", ShaderTextureType::Texture2D},
     },
     
     // source 
@@ -273,7 +273,7 @@ const ShaderStageSpecification GROUND_PLANE_SHADOW_FRAG_SHADER = {
     
     // textures 
     {
-        {"t_shadow", 2},
+        {"t_shadow", ShaderTextureType::Texture2D},
     },
     
     // source 

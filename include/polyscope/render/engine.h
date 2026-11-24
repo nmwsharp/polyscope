@@ -63,6 +63,7 @@ enum class RenderDataType {
 };
 
 enum class DeviceBufferType { Attribute, Texture1d, Texture2d, Texture3d };
+enum class ShaderTextureType { Texture1D, Texture2D, Texture3D, TextureBuffer };
 
 int dimension(const TextureFormat& x);
 int sizeInBytes(const TextureFormat& f);
@@ -72,6 +73,7 @@ int sizeInBytes(const RenderDataType& r);
 int renderDataTypeCountCompatbility(const RenderDataType r1, const RenderDataType r2);
 std::string getImageOriginRule(ImageOrigin imageOrigin);
 std::string deviceBufferTypeName(const DeviceBufferType& d);
+std::string shaderTextureTypeName(const ShaderTextureType& t);
 
 namespace render {
 
@@ -354,7 +356,7 @@ struct ShaderSpecAttribute {
 };
 struct ShaderSpecTexture {
   const std::string name;
-  const int dim;
+  const ShaderTextureType type;
 };
 
 
@@ -454,12 +456,21 @@ public:
   virtual void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) = 0;
   // TODO make this one take a shared pointer and have the same semantics as the attribute version
   virtual void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer, ManagedBufferBase* source = nullptr) = 0;
+  // Bind an AttributeBuffer (VBO) as a buffer texture (samplerBuffer / GL_TEXTURE_BUFFER, ShaderTextureType::TextureBuffer).
+  // Note: the buffer is always exposed to shaders as a flattened 1-component scalar stream (GL_R32F / GL_R32I / GL_R32UI),
+  // even for vector/matrix types (e.g., fetch a vec3 at index i via texelFetch at 3*i + {0, 1, 2}). This is done because
+  // OpenGL 3.3 core does not support 3-component buffer texture formats (GL_RGB32F requires GL 4.0).
+  virtual void setTextureFromAttributeBuffer(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer,
+                                             ManagedBufferBase* source = nullptr) = 0;
 
 
   // Convenience overloads for ManagedBuffer — set the buffer AND record the source for lazy sync.
   // Defined in managed_buffer.h after ManagedBuffer<T> is fully declared.
   template <typename T> void setAttribute(std::string name, ManagedBuffer<T>& buf);
+  // Binds a texture-backed ManagedBuffer (DeviceBufferType::Texture1d/2d/3d) to a sampler1D/2D/3D.
   template <typename T> void setTextureFromBuffer(std::string name, ManagedBuffer<T>& buf);
+  // Binds an attribute-backed ManagedBuffer (DeviceBufferType::Attribute) as a buffer texture (samplerBuffer / TextureBuffer).
+  template <typename T> void setTextureFromAttributeBuffer(std::string name, ManagedBuffer<T>& buf);
   template <typename T> void setIndex(ManagedBuffer<T>& buf);
 
   // Indices

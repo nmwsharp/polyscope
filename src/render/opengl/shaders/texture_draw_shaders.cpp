@@ -100,7 +100,7 @@ const ShaderStageSpecification PLAIN_TEXTURE_DRAW_FRAG_SHADER = {
     { },
     
     // textures 
-    { {"t_image", 2} },
+    { {"t_image", ShaderTextureType::Texture2D} },
     
     // source 
 R"(
@@ -141,7 +141,7 @@ const ShaderStageSpecification PLAIN_RENDERIMAGE_TEXTURE_DRAW_FRAG_SHADER = {
     
     // textures 
     { 
-      {"t_depth", 2},
+      {"t_depth", ShaderTextureType::Texture2D},
     },
     
     // source 
@@ -225,7 +225,7 @@ const ShaderStageSpecification PLAIN_RAW_RENDERIMAGE_TEXTURE_DRAW_FRAG_SHADER = 
     
     // textures 
     { 
-      {"t_depth", 2},
+      {"t_depth", ShaderTextureType::Texture2D},
     },
     
     // source 
@@ -304,7 +304,7 @@ const ShaderStageSpecification DOT3_TEXTURE_DRAW_FRAG_SHADER = {
     { },
     
     // textures 
-    { {"t_image", 2} },
+    { {"t_image", ShaderTextureType::Texture2D} },
     
     // source 
 R"(
@@ -338,7 +338,7 @@ const ShaderStageSpecification MAP3_TEXTURE_DRAW_FRAG_SHADER = {
     { },
     
     // textures 
-    { {"t_image", 2} },
+    { {"t_image", ShaderTextureType::Texture2D} },
     
     // source 
 R"(
@@ -371,7 +371,7 @@ const ShaderStageSpecification SPHEREBG_DRAW_FRAG_SHADER = {
     { },
     
     // textures 
-    { {"t_image", 2} },
+    { {"t_image", ShaderTextureType::Texture2D} },
     
     // source 
 R"(
@@ -407,7 +407,7 @@ const ShaderStageSpecification COMPOSITE_PEEL = {
     { },
     
     // textures 
-    { {"t_image", 2} },
+    { {"t_image", ShaderTextureType::Texture2D} },
     
     // source 
 R"(
@@ -437,7 +437,7 @@ const ShaderStageSpecification DEPTH_COPY = {
     { },
     
     // textures 
-    { {"t_depth", 2} },
+    { {"t_depth", ShaderTextureType::Texture2D} },
     
     // source 
 R"(
@@ -469,7 +469,7 @@ const ShaderStageSpecification DEPTH_TO_MASK = {
     { },
     
     // textures 
-    { {"t_depth", 2} },
+    { {"t_depth", ShaderTextureType::Texture2D} },
     
     // source 
 R"(
@@ -504,7 +504,7 @@ const ShaderStageSpecification SCALAR_TEXTURE_COLORMAP = {
     
     // textures 
     { 
-      {"t_scalar", 2},
+      {"t_scalar", ShaderTextureType::Texture2D},
     },
     
     // source 
@@ -549,7 +549,7 @@ const ShaderStageSpecification BLUR_RGB = {
     
     // textures 
     { 
-      {"t_image", 2},
+      {"t_image", ShaderTextureType::Texture2D},
     },
     
     // source 
@@ -670,7 +670,7 @@ const ShaderReplacementRule TEXTURE_SHADE_COLOR(
     /* uniforms */ {},
     /* attributes */ {},
     /* textures */ {
-      {"t_color", 2},
+      {"t_color", ShaderTextureType::Texture2D},
     }
 );
 
@@ -693,7 +693,7 @@ const ShaderReplacementRule TEXTURE_SHADE_COLORALPHA(
     /* uniforms */ {},
     /* attributes */ {},
     /* textures */ {
-      {"t_color", 2},
+      {"t_color", ShaderTextureType::Texture2D},
     }
 );
 
@@ -712,7 +712,7 @@ const ShaderReplacementRule TEXTURE_PROPAGATE_VALUE(
     /* uniforms */ {},
     /* attributes */ {},
     /* textures */ {
-      {"t_scalar", 2},
+      {"t_scalar", ShaderTextureType::Texture2D},
     }
 );
 
@@ -731,7 +731,7 @@ const ShaderReplacementRule TEXTURE_PROPAGATE_COLOR(
     /* uniforms */ {},
     /* attributes */ {},
     /* textures */ {
-      {"t_color", 2},
+      {"t_color", ShaderTextureType::Texture2D},
     }
 );
 
@@ -774,7 +774,7 @@ const ShaderReplacementRule SHADE_NORMAL_FROM_TEXTURE (
     /* uniforms */ {},
     /* attributes */ {},
     /* textures */ {
-      {"t_normal", 2},
+      {"t_normal", ShaderTextureType::Texture2D},
     }
 );
 
