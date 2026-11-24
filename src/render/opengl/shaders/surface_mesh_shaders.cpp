@@ -182,6 +182,9 @@ R"(
            ${ GENERATE_SHADE_VALUE }$
            ${ GENERATE_SHADE_COLOR }$
 
+           // Handle the wireframe
+           ${ APPLY_WIREFRAME }$
+
            // Lighting
            ${ PERTURB_SHADE_NORMAL }$
            ${ GENERATE_LIT_COLOR }$
@@ -791,6 +794,60 @@ const ShaderReplacementRule SIMPLE_MESH_PROPAGATE_FACE_PICK(
     },
     /* attributes */ {},
     /* textures */ {}
+);
+
+// Computes per-fragment barycentric coordinates for an indexed triangle mesh by looking up the current
+// triangle's 3 vertices from TBOs (t_faces / t_vertices) using gl_PrimitiveID and the interpolated
+// object-space position. Feeds wireframe_UVW / wireframe_mask into MESH_WIREFRAME with no extra buffers.
+const ShaderReplacementRule SIMPLE_MESH_WIREFRAME_FROM_BUFFERS(
+    /* rule name */ "SIMPLE_MESH_WIREFRAME_FROM_BUFFERS",
+    { /* replacement sources */
+      {"VERT_DECLARATIONS", R"(
+          out vec3 a_objectPosToFrag;
+        )"},
+      {"VERT_ASSIGNMENTS", R"(
+          a_objectPosToFrag = a_vertexPositions;
+        )"},
+      {"FRAG_DECLARATIONS", R"(
+          in vec3 a_objectPosToFrag;
+          uniform samplerBuffer t_vertices;
+          uniform usamplerBuffer t_faces;
+        )"},
+      {"APPLY_WIREFRAME", R"(
+          int wfFaceBase = 3 * gl_PrimitiveID;
+          int wfV0 = int(texelFetch(t_faces, wfFaceBase).r);
+          int wfV1 = int(texelFetch(t_faces, wfFaceBase + 1).r);
+          int wfV2 = int(texelFetch(t_faces, wfFaceBase + 2).r);
+          vec3 wfP0 = vec3(texelFetch(t_vertices, 3 * wfV0).r,
+                           texelFetch(t_vertices, 3 * wfV0 + 1).r,
+                           texelFetch(t_vertices, 3 * wfV0 + 2).r);
+          vec3 wfP1 = vec3(texelFetch(t_vertices, 3 * wfV1).r,
+                           texelFetch(t_vertices, 3 * wfV1 + 1).r,
+                           texelFetch(t_vertices, 3 * wfV1 + 2).r);
+          vec3 wfP2 = vec3(texelFetch(t_vertices, 3 * wfV2).r,
+                           texelFetch(t_vertices, 3 * wfV2 + 1).r,
+                           texelFetch(t_vertices, 3 * wfV2 + 2).r);
+          vec3 wfE0 = wfP1 - wfP0;
+          vec3 wfE1 = wfP2 - wfP0;
+          vec3 wfD = a_objectPosToFrag - wfP0;
+          float wfScale = max(max(length(wfE0), length(wfE1)), 1e-30);
+          vec3 wfE0s = wfE0 / wfScale;
+          vec3 wfE1s = wfE1 / wfScale;
+          vec3 wfDs = wfD / wfScale;
+          vec3 wfN = cross(wfE0s, wfE1s);
+          vec3 wfNOverArea2 = wfN / max(dot(wfN, wfN), 1e-30);
+          float wfV = dot(cross(wfDs, wfE1s), wfNOverArea2);
+          float wfW = dot(cross(wfE0s, wfDs), wfNOverArea2);
+          vec3 wireframe_UVW = vec3(1.0 - wfV - wfW, wfV, wfW);
+          vec3 wireframe_mask = vec3(1.0, 1.0, 1.0);
+        )"},
+    },
+    /* uniforms */ {},
+    /* attributes */ {},
+    /* textures */ {
+      {"t_vertices", ShaderTextureType::TextureBuffer},
+      {"t_faces", ShaderTextureType::TextureBuffer},
+    }
 );
 
 // clang-format on

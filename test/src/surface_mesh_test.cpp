@@ -869,3 +869,37 @@ TEST_F(PolyscopeTest, SimpleTriangleMeshLargeFaceQuantities) {
   polyscope::removeAllStructures();
   polyscope::view::resetCameraToHomeView();
 }
+
+TEST_F(PolyscopeTest, SimpleTriangleMeshWireframe) {
+  auto psMesh = registerSimpleTriangleMesh();
+
+  psMesh->setEdgeWidth(1.5);
+  EXPECT_DOUBLE_EQ(psMesh->getEdgeWidth(), 1.5);
+  psMesh->setEdgeColor(glm::vec3(1.f, 0.f, 0.f));
+  EXPECT_EQ(psMesh->getEdgeColor(), glm::vec3(1.f, 0.f, 0.f));
+  polyscope::show(3);
+
+  // With vertex and face quantities enabled
+  auto qVS = psMesh->addVertexScalarQuantity("vScalar", std::vector<float>(psMesh->nVertices(), 1.f));
+  qVS->setEnabled(true);
+  polyscope::show(3);
+
+  auto qFS = psMesh->addFaceScalarQuantity("fScalar", std::vector<float>(psMesh->nFaces(), 1.f));
+  qFS->setEnabled(true);
+  polyscope::show(3);
+
+  auto qFC = psMesh->addFaceColorQuantity("fColor", std::vector<glm::vec3>(psMesh->nFaces(), glm::vec3{0.f, 1.f, 0.f}));
+  qFC->setEnabled(true);
+  polyscope::show(3);
+
+  // After resizing the mesh while wireframe is enabled
+  psMesh->updateMesh(std::vector<glm::vec3>(20), std::vector<glm::uvec3>(20, glm::uvec3{0, 1, 2}));
+  qFC->updateData(std::vector<glm::vec3>(20, glm::vec3{0.f, 1.f, 0.f}));
+  polyscope::show(3);
+
+  psMesh->setEdgeWidth(0.);
+  EXPECT_DOUBLE_EQ(psMesh->getEdgeWidth(), 0.);
+  polyscope::show(3);
+
+  polyscope::removeAllStructures();
+}
