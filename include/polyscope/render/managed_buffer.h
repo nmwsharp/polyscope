@@ -430,6 +430,11 @@ void ShaderProgram::setTextureFromBuffer(std::string name, ManagedBuffer<T>& buf
 }
 
 template <typename T>
+void ShaderProgram::setTextureFromAttributeBuffer(std::string name, ManagedBuffer<T>& buf) {
+  setTextureFromAttributeBuffer(name, buf.getRenderAttributeBuffer(), &buf);
+}
+
+template <typename T>
 void ShaderProgram::setIndex(ManagedBuffer<T>& buf) {
   indexSourceManagedBuffer = &buf;
   setIndex(buf.getRenderAttributeBuffer());

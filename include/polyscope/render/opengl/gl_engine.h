@@ -140,6 +140,9 @@ private:
 };
 
 class GLTextureBuffer : public TextureBuffer {
+// NOTE: very confusing name, this is unrelated to the openGL "TextureBuffer" concept as used in ShaderTextureType::TextureBuffer
+// this is just a texture that happens to hold buffer data
+
 public:
   // create a 1D texture from data
   GLTextureBuffer(TextureFormat format, unsigned int size1D, const unsigned char* data = nullptr);
@@ -289,13 +292,19 @@ struct GLShaderAttribute {
 
 struct GLShaderTexture {
   std::string name;
-  int dim;
+  ShaderTextureType type;
   uint32_t index;
   bool isSet;
-  GLTextureBuffer* textureBuffer;
+  GLTextureBuffer* textureBuffer; // NOTE: very confusing name, unrelated to the openGL "TextureBuffer" concept as used below
   std::shared_ptr<GLTextureBuffer> textureBufferOwned; // might be empty, if texture isn't owned
   TextureLocation location;                            // -1 means "no location", usually because it was optimized out
   ManagedBufferBase* sourceManagedBuffer; // might be empty if not from a managed buffer. for indexed views, it's the original data source
+
+  // these are used only for ShaderTextureType::TextureBuffer
+  std::shared_ptr<GLAttributeBuffer> attrBuffer;
+  TextureBufferHandle bufferTexHandle; // GL_TEXTURE_BUFFER handle owned by GLShaderProgram
+  GLenum bufferTexFormat;              // GL_R32F / GL_R32I / GL_R32UI
+  uint64_t bufferTexBoundSize;         // tracks attrBuffer->getBufferSize() across reallocations
 };
 
 // A thin wrapper around a program handle.
@@ -389,6 +398,8 @@ public:
                     bool withAlpha = true, bool useMipMap = false, bool repeat = false) override;
   void setTextureFromColormap(std::string name, const std::string& colorMap, bool allowUpdate = false) override;
   void setTextureFromBuffer(std::string name, TextureBuffer* textureBuffer, ManagedBufferBase* source = nullptr) override;
+  void setTextureFromAttributeBuffer(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer,
+                                     ManagedBufferBase* source = nullptr) override;
 
   // ManagedBuffer source registration
 

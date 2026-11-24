@@ -49,6 +49,20 @@ int sizeInBytes(const TextureFormat& f) {
   return -1;
 }
 
+std::string shaderTextureTypeName(const ShaderTextureType& t) {
+  switch (t) {
+  case ShaderTextureType::Texture1D:
+    return "Texture1D";
+  case ShaderTextureType::Texture2D:
+    return "Texture2D";
+  case ShaderTextureType::Texture3D:
+    return "Texture3D";
+  case ShaderTextureType::TextureBuffer:
+    return "TextureBuffer";
+  }
+  return "";
+}
+
 std::string renderDataTypeName(const RenderDataType& r) {
   switch (r) {
   case RenderDataType::Vector2Float:

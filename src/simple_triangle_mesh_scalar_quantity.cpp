@@ -106,10 +106,7 @@ SimpleTriangleMeshFaceScalarQuantity::SimpleTriangleMeshFaceScalarQuantity(std::
                                                                            const std::vector<float>& values_,
                                                                            SimpleTriangleMesh& mesh_,
                                                                            DataType dataType_)
-    : SimpleTriangleMeshScalarQuantity(name, values_, "face", mesh_, dataType_) {
-  values.setAsType(DeviceBufferType::Texture1d);
-  values.setTextureSize(parent.nFaces());
-}
+    : SimpleTriangleMeshScalarQuantity(name, values_, "face", mesh_, dataType_) {}
 
 void SimpleTriangleMeshFaceScalarQuantity::buildFaceInfoGUI(size_t fInd) {
   ImGui::TextUnformatted(name.c_str());
@@ -132,7 +129,7 @@ void SimpleTriangleMeshFaceScalarQuantity::createProgram() {
   // clang-format on
 
   parent.setSimpleTriangleMeshProgramGeometryAttributes(*program);
-  program->setTextureFromBuffer("t_faceValues", values);
+  program->setTextureFromAttributeBuffer("t_faceValues", values);
   program->setTextureFromColormap("t_colormap", cMap.get());
   render::engine->setMaterial(*program, parent.getMaterial());
 }

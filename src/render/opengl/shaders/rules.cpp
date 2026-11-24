@@ -47,10 +47,10 @@ const ShaderReplacementRule LIGHT_MATCAP (
     /* uniforms */ {},
     /* attributes */ {},
     /* textures */ {
-      {"t_mat_r", 2},
-      {"t_mat_g", 2},
-      {"t_mat_b", 2},
-      {"t_mat_k", 2},
+      {"t_mat_r", ShaderTextureType::Texture2D},
+      {"t_mat_g", ShaderTextureType::Texture2D},
+      {"t_mat_b", ShaderTextureType::Texture2D},
+      {"t_mat_k", ShaderTextureType::Texture2D},
     }
 );
 
@@ -135,7 +135,7 @@ const ShaderReplacementRule SHADE_COLORMAP_VALUE(
     },
     /* attributes */ {},
     /* textures */ {
-        {"t_colormap", 1}
+        {"t_colormap", ShaderTextureType::Texture1D}
     }
 );
 
@@ -162,7 +162,7 @@ const ShaderReplacementRule SHADE_CATEGORICAL_COLORMAP(
     },
     /* attributes */ {},
     /* textures */ {
-        {"t_colormap", 1}
+        {"t_colormap", ShaderTextureType::Texture1D}
     }
 );
 
@@ -187,7 +187,7 @@ const ShaderReplacementRule SHADE_COLORMAP_ANGULAR2(
     },
     /* attributes */ {},
     /* textures */ {
-        {"t_colormap", 1}
+        {"t_colormap", ShaderTextureType::Texture1D}
     }
 );
 
@@ -288,7 +288,7 @@ const ShaderReplacementRule SHADE_CHECKER_CATEGORY(
     },
     /* attributes */ {},
     /* textures */ {
-        {"t_colormap", 1}
+        {"t_colormap", ShaderTextureType::Texture1D}
     }
 );
 

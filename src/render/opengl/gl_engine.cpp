@@ -1309,13 +1309,14 @@ void GLCompiledProgram::addUniqueTexture(ShaderSpecTexture newTexture) {
     if (t.name == newTexture.name) {
 
       // if it occurs twice, confirm that the occurences match
-      if (t.dim != newTexture.dim)
-        exception("texture " + t.name + " appears twice in program with different dimensions");
+      if (t.type != newTexture.type)
+        exception("texture " + t.name + " appears twice in program with different types");
 
       return;
     }
   }
-  textures.push_back(GLShaderTexture{newTexture.name, newTexture.dim, 777, false, nullptr, nullptr, 777, nullptr});
+  textures.push_back(
+      GLShaderTexture{newTexture.name, newTexture.type, 777, false, nullptr, nullptr, 777, nullptr, nullptr, 0, 0, 0});
 }
 
 
@@ -1332,7 +1333,14 @@ GLShaderProgram::GLShaderProgram(const std::shared_ptr<GLCompiledProgram>& compi
   checkGLError();
 }
 
-GLShaderProgram::~GLShaderProgram() { glDeleteVertexArrays(1, &vaoHandle); }
+GLShaderProgram::~GLShaderProgram() {
+  for (GLShaderTexture& t : textures) {
+    if (t.bufferTexHandle != 0) {
+      glDeleteTextures(1, &t.bufferTexHandle);
+    }
+  }
+  glDeleteVertexArrays(1, &vaoHandle);
+}
 
 void GLShaderProgram::bindVAO() { glBindVertexArray(vaoHandle); }
 
@@ -2012,8 +2020,9 @@ void GLShaderProgram::setTexture1D(std::string name, unsigned char* texData, uns
       throw std::invalid_argument("Attempted to set texture twice");
     }
 
-    if (t.dim != 1) {
-      throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
+    if (t.type != ShaderTextureType::Texture1D) {
+      throw std::invalid_argument("Tried to use texture " + name + " with mismatched type " +
+                                  shaderTextureTypeName(t.type) + " (expected Texture1D)");
     }
 
     // Create a new texture object
@@ -2043,8 +2052,9 @@ void GLShaderProgram::setTexture2D(std::string name, unsigned char* texData, uns
       throw std::invalid_argument("Attempted to set texture twice");
     }
 
-    if (t.dim != 2) {
-      throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
+    if (t.type != ShaderTextureType::Texture2D) {
+      throw std::invalid_argument("Tried to use texture " + name + " with mismatched type " +
+                                  shaderTextureTypeName(t.type) + " (expected Texture2D)");
     }
 
     if (withAlpha) {
@@ -2087,8 +2097,13 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
   for (GLShaderTexture& t : textures) {
     if (t.name != name || t.location == -1) continue;
 
-    if (t.dim != (int)textureBuffer->getDimension()) {
-      throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
+    unsigned int bufDim = textureBuffer->getDimension();
+    bool typeMatches = (bufDim == 1 && t.type == ShaderTextureType::Texture1D) ||
+                       (bufDim == 2 && t.type == ShaderTextureType::Texture2D) ||
+                       (bufDim == 3 && t.type == ShaderTextureType::Texture3D);
+    if (!typeMatches) {
+      throw std::invalid_argument("Tried to use texture " + name + " with mismatched type " +
+                                  shaderTextureTypeName(t.type) + " for " + std::to_string(bufDim) + "D texture buffer");
     }
 
     t.textureBuffer = dynamic_cast<GLTextureBuffer*>(textureBuffer);
@@ -2096,6 +2111,65 @@ void GLShaderProgram::setTextureFromBuffer(std::string name, TextureBuffer* text
       throw std::invalid_argument("Bad texture in setTextureFromBuffer()");
     }
 
+    t.sourceManagedBuffer = source;
+    t.isSet = true;
+    return;
+  }
+
+  throw std::invalid_argument("No texture with name " + name);
+}
+
+void GLShaderProgram::setTextureFromAttributeBuffer(std::string name, std::shared_ptr<AttributeBuffer> externalBuffer,
+                                                    ManagedBufferBase* source) {
+  glUseProgram(compiledProgram->getHandle());
+
+  std::shared_ptr<GLAttributeBuffer> engineExtBuff = std::dynamic_pointer_cast<GLAttributeBuffer>(externalBuffer);
+  if (!engineExtBuff) {
+    throw std::invalid_argument("Bad attribute buffer in setTextureFromAttributeBuffer()");
+  }
+
+  // Use 1-component 32-bit formats (strictly OpenGL 3.3 core everywhere, GL_RGB32F TBOs require GL 4.0).
+  GLenum texFormat = GL_R32F;
+  switch (engineExtBuff->getType()) {
+  case RenderDataType::Float:
+  case RenderDataType::Vector2Float:
+  case RenderDataType::Vector3Float:
+  case RenderDataType::Vector4Float:
+  case RenderDataType::Matrix44Float:
+    texFormat = GL_R32F;
+    break;
+  case RenderDataType::Int:
+  case RenderDataType::Vector2Int:
+  case RenderDataType::Vector3Int:
+  case RenderDataType::Vector4Int:
+    texFormat = GL_R32I;
+    break;
+  case RenderDataType::UInt:
+  case RenderDataType::Vector2UInt:
+  case RenderDataType::Vector3UInt:
+  case RenderDataType::Vector4UInt:
+    texFormat = GL_R32UI;
+    break;
+  }
+
+  for (GLShaderTexture& t : textures) {
+    if (t.name != name || t.location == -1) continue;
+
+    if (t.type != ShaderTextureType::TextureBuffer) {
+      throw std::invalid_argument("Tried to bind attribute buffer to texture " + name + " of type " +
+                                  shaderTextureTypeName(t.type) + " (expected TextureBuffer)");
+    }
+
+    if (t.bufferTexHandle == 0) {
+      glGenTextures(1, &t.bufferTexHandle);
+    }
+    glBindTexture(GL_TEXTURE_BUFFER, t.bufferTexHandle);
+    glTexBuffer(GL_TEXTURE_BUFFER, texFormat, engineExtBuff->getHandle());
+    checkGLError();
+
+    t.attrBuffer = engineExtBuff;
+    t.bufferTexFormat = texFormat;
+    t.bufferTexBoundSize = engineExtBuff->getBufferSize();
     t.sourceManagedBuffer = source;
     t.isSet = true;
     return;
@@ -2117,8 +2191,9 @@ void GLShaderProgram::setTextureFromColormap(std::string name, const std::string
       throw std::invalid_argument("Attempted to set texture twice");
     }
 
-    if (t.dim != 1) {
-      throw std::invalid_argument("Tried to use texture with mismatched dimension " + std::to_string(t.dim));
+    if (t.type != ShaderTextureType::Texture1D) {
+      throw std::invalid_argument("Tried to use texture " + name + " with mismatched type " +
+                                  shaderTextureTypeName(t.type) + " (expected Texture1D)");
     }
 
     // Fill a buffer with the data
@@ -2229,6 +2304,9 @@ void GLShaderProgram::validateData() {
     if (!t.isSet) {
       throw std::invalid_argument("Texture " + t.name + " has not been set");
     }
+    if (t.type == ShaderTextureType::TextureBuffer && (!t.attrBuffer || !t.attrBuffer->isSet())) {
+      throw std::invalid_argument("Buffer texture " + t.name + " has no data set");
+    }
   }
 
   // Check index (if applicable)
@@ -2277,7 +2355,17 @@ void GLShaderProgram::activateTextures() {
     if (t.location == -1) continue;
 
     glActiveTexture(GL_TEXTURE0 + t.index);
-    t.textureBuffer->bind();
+    if (t.type == ShaderTextureType::TextureBuffer) {
+      glBindTexture(GL_TEXTURE_BUFFER, t.bufferTexHandle);
+      // Re-attach if the underlying VBO was reallocated (guards against driver quirks where
+      // glTexBuffer caches the old backing storage across glBufferData).
+      if (t.attrBuffer->getBufferSize() != t.bufferTexBoundSize) {
+        glTexBuffer(GL_TEXTURE_BUFFER, t.bufferTexFormat, t.attrBuffer->getHandle());
+        t.bufferTexBoundSize = t.attrBuffer->getBufferSize();
+      }
+    } else {
+      t.textureBuffer->bind();
+    }
     glUniform1i(t.location, t.index);
   }
 }

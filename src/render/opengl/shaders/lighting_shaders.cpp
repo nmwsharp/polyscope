@@ -30,7 +30,7 @@ const ShaderStageSpecification MAP_LIGHT_FRAG_SHADER = {
     
     // textures 
     { 
-      {"t_image", 2},
+      {"t_image", ShaderTextureType::Texture2D},
     },
     
     // source 
@@ -279,7 +279,7 @@ const ShaderReplacementRule TRANSPARENCY_PEEL_STRUCTURE (
     },
     /* attributes */ {},
     /* textures */ {
-        {"t_minDepth", 2},
+        {"t_minDepth", ShaderTextureType::Texture2D},
     }
 );
 
@@ -302,7 +302,7 @@ const ShaderReplacementRule TRANSPARENCY_PEEL_GROUND (
     /* uniforms */ {},
     /* attributes */ {},
     /* textures */ {
-        {"t_minDepth", 2},
+        {"t_minDepth", ShaderTextureType::Texture2D},
     }
 );
 

@@ -111,10 +111,7 @@ void SimpleTriangleMeshVertexColorQuantity::createProgram() {
 SimpleTriangleMeshFaceColorQuantity::SimpleTriangleMeshFaceColorQuantity(std::string name,
                                                                          const std::vector<glm::vec3>& colors_,
                                                                          SimpleTriangleMesh& mesh_)
-    : SimpleTriangleMeshColorQuantity(name, colors_, "face", mesh_) {
-  colors.setAsType(DeviceBufferType::Texture1d);
-  colors.setTextureSize(parent.nFaces());
-}
+    : SimpleTriangleMeshColorQuantity(name, colors_, "face", mesh_) {}
 
 void SimpleTriangleMeshFaceColorQuantity::buildFaceInfoGUI(size_t fInd) {
   ImGui::TextUnformatted(name.c_str());
@@ -140,7 +137,7 @@ void SimpleTriangleMeshFaceColorQuantity::createProgram() {
   // clang-format on
 
   parent.setSimpleTriangleMeshProgramGeometryAttributes(*program);
-  program->setTextureFromBuffer("t_faceColors", colors);
+  program->setTextureFromAttributeBuffer("t_faceColors", colors);
   render::engine->setMaterial(*program, parent.getMaterial());
 }
 

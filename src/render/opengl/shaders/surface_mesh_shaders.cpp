@@ -731,38 +731,44 @@ const ShaderReplacementRule MESH_PROPAGATE_PICK_SIMPLE ( // this one does faces 
 );
 
 
-// Uses gl_PrimitiveID to look up per-face scalar data from a 1D texture.
+// Uses gl_PrimitiveID to look up per-face scalar data from a buffer texture (GL_TEXTURE_BUFFER / GL_R32F).
 // Requires indexed triangle drawing (DrawMode::IndexedTriangles) where primitive index == face index.
 const ShaderReplacementRule SIMPLE_MESH_PROPAGATE_FACE_VALUE(
     /* rule name */ "SIMPLE_MESH_PROPAGATE_FACE_VALUE",
     { /* replacement sources */
       {"FRAG_DECLARATIONS", R"(
-          uniform sampler1D t_faceValues;
+          uniform samplerBuffer t_faceValues;
         )"},
       {"GENERATE_SHADE_VALUE", R"(
-          float shadeValue = texelFetch(t_faceValues, gl_PrimitiveID, 0).r;
+          float shadeValue = texelFetch(t_faceValues, gl_PrimitiveID).r;
         )"},
     },
     /* uniforms */ {},
     /* attributes */ {},
-    /* textures */ {{"t_faceValues", 1}}
+    /* textures */ {{"t_faceValues", ShaderTextureType::TextureBuffer}}
 );
 
-// Uses gl_PrimitiveID to look up per-face color data from a 1D texture.
+// Uses gl_PrimitiveID to look up per-face color data from a buffer texture (GL_TEXTURE_BUFFER / GL_R32F).
+// Fetches 3 floats per face so this stays valid in strict OpenGL 3.3 core (GL_RGB32F TBOs require GL 4.0).
 // Requires indexed triangle drawing (DrawMode::IndexedTriangles) where primitive index == face index.
 const ShaderReplacementRule SIMPLE_MESH_PROPAGATE_FACE_COLOR(
     /* rule name */ "SIMPLE_MESH_PROPAGATE_FACE_COLOR",
     { /* replacement sources */
       {"FRAG_DECLARATIONS", R"(
-          uniform sampler1D t_faceColors;
+          uniform samplerBuffer t_faceColors;
         )"},
       {"GENERATE_SHADE_VALUE", R"(
-          vec3 shadeColor = texelFetch(t_faceColors, gl_PrimitiveID, 0).rgb;
+          int faceColorBase = 3 * gl_PrimitiveID;
+          vec3 shadeColor = vec3(
+            texelFetch(t_faceColors, faceColorBase).r,
+            texelFetch(t_faceColors, faceColorBase + 1).r,
+            texelFetch(t_faceColors, faceColorBase + 2).r
+          );
         )"},
     },
     /* uniforms */ {},
     /* attributes */ {},
-    /* textures */ {{"t_faceColors", 1}}
+    /* textures */ {{"t_faceColors", ShaderTextureType::TextureBuffer}}
 );
 
 // Encodes the pick color for each face directly from gl_PrimitiveID + pickStart, with no texture lookup.

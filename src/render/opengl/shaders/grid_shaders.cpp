@@ -400,7 +400,7 @@ const ShaderReplacementRule GRIDCUBE_PROPAGATE_NODE_VALUE (
     /* uniforms */ {},
     /* attributes */ { },
     /* textures */ {
-      {"t_value", 3},
+      {"t_value", ShaderTextureType::Texture3D},
     }
 );
 
@@ -417,7 +417,7 @@ const ShaderReplacementRule GRIDCUBE_PROPAGATE_CELL_VALUE (
     /* uniforms */ {},
     /* attributes */ { },
     /* textures */ {
-      {"t_value", 3},
+      {"t_value", ShaderTextureType::Texture3D},
     }
 );
 

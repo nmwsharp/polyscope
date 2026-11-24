@@ -139,9 +139,9 @@ applyShaderReplacements(const std::vector<ShaderStageSpecification>& stages,
           for (ShaderSpecTexture existingT : replacedTextures) {
             if (existingT.name == newT.name) {
               // check for conflics
-              if (existingT.dim != newT.dim) {
+              if (existingT.type != newT.type) {
                 throw std::runtime_error("ShaderBuilder: rule texture [" + newT.name +
-                                         "] conflicts with existing texture of different dim");
+                                         "] conflicts with existing texture of different type");
               }
               existingFound = true;
               break; // no need to continue, it already exists

@@ -789,3 +789,83 @@ TEST_F(PolyscopeTest, SimpleTriangleMeshQuantityUpdateAfterResize) {
 
   polyscope::removeAllStructures();
 }
+
+TEST_F(PolyscopeTest, SimpleTriangleMeshLargeFaceQuantities) {
+
+  // This primarily serves to test the GL Texture Buffers and using attributes to set texture buffers within the ManagedBuffer and Engine classes.
+  // Currently, SimpleTriangleMesh face quantities are the only users of this, and there's a fair bit of special-purpose code just to support that.
+
+  // Exceeds typical 16k/32k GL_MAX_TEXTURE_SIZE for 1D textures; verifies TBO-backed face quantities
+  // render the expected data at high gl_PrimitiveID across initial upload, updateData(), and growth via updateMesh().
+  std::vector<glm::vec3> verts = {{-2.f, -2.f, 0.f}, {2.f, -2.f, 0.f}, {0.f, 2.f, 0.f}};
+  // Only the final face is non-degenerate, so center-pixel rendering directly tests gl_PrimitiveID == nFaces - 1.
+  std::vector<glm::uvec3> faces(40000, glm::uvec3{0, 0, 0});
+  faces.back() = glm::uvec3{0, 1, 2};
+  auto psMesh = polyscope::registerSimpleTriangleMesh("large_stm", verts, faces);
+  psMesh->setMaterial("flat");
+  polyscope::view::lookAt(glm::vec3{0.f, 0.f, 2.f}, glm::vec3{0.f, 0.f, 0.f});
+
+  auto sampleCenterPixel = []() -> std::array<unsigned char, 3> {
+    std::vector<unsigned char> buf = polyscope::screenshotToBuffer(false);
+    size_t cx = static_cast<size_t>(polyscope::view::bufferWidth / 2);
+    size_t cy = static_cast<size_t>(polyscope::view::bufferHeight / 2);
+    size_t idx = 4 * (cy * static_cast<size_t>(polyscope::view::bufferWidth) + cx);
+    return {buf[idx], buf[idx + 1], buf[idx + 2]};
+  };
+
+  std::vector<float> scalarInit(faces.size(), 0.f);
+  scalarInit.back() = 0.f;
+  std::vector<glm::vec3> colorInit(faces.size(), glm::vec3{0.f, 0.f, 1.f});
+  colorInit.back() = glm::vec3{1.f, 0.f, 0.f};
+
+  auto qFS = psMesh->addFaceScalarQuantity("fScalar", scalarInit);
+  qFS->setMapRange({0., 1.});
+  auto qFC = psMesh->addFaceColorQuantity("fColor", colorInit);
+
+  qFS->setEnabled(true);
+  polyscope::show(3);
+  auto scalarLowPx = sampleCenterPixel();
+
+  qFC->setEnabled(true);
+  polyscope::show(3);
+  auto colorInitPx = sampleCenterPixel();
+  if (testBackend != "openGL_mock") {
+    EXPECT_GT(colorInitPx[0], 200);
+    EXPECT_LT(colorInitPx[1], 30);
+    EXPECT_LT(colorInitPx[2], 30);
+  }
+
+  // Grow beyond initial capacity so VBO reallocates in-place and TBO re-attaches
+  std::vector<glm::uvec3> biggerFaces(50000, glm::uvec3{0, 0, 0});
+  biggerFaces.back() = glm::uvec3{0, 1, 2};
+  psMesh->updateMesh(verts, biggerFaces);
+
+  std::vector<float> scalarGrown(biggerFaces.size(), 0.f);
+  scalarGrown.back() = 1.f;
+  std::vector<glm::vec3> colorGrown(biggerFaces.size(), glm::vec3{0.f, 0.f, 1.f});
+  colorGrown.back() = glm::vec3{0.f, 1.f, 0.f};
+  qFS->updateData(scalarGrown);
+  qFC->updateData(colorGrown);
+
+  qFS->setEnabled(true);
+  polyscope::show(3);
+  auto scalarHighPx = sampleCenterPixel();
+  if (testBackend != "openGL_mock") {
+    int diff = std::abs(int(scalarHighPx[0]) - int(scalarLowPx[0])) +
+               std::abs(int(scalarHighPx[1]) - int(scalarLowPx[1])) +
+               std::abs(int(scalarHighPx[2]) - int(scalarLowPx[2]));
+    EXPECT_GT(diff, 150);
+  }
+
+  qFC->setEnabled(true);
+  polyscope::show(3);
+  auto colorGrownPx = sampleCenterPixel();
+  if (testBackend != "openGL_mock") {
+    EXPECT_LT(colorGrownPx[0], 30);
+    EXPECT_GT(colorGrownPx[1], 200);
+    EXPECT_LT(colorGrownPx[2], 30);
+  }
+
+  polyscope::removeAllStructures();
+  polyscope::view::resetCameraToHomeView();
+}
