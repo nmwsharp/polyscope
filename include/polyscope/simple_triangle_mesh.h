@@ -109,9 +109,18 @@ public:
   SimpleTriangleMesh* setSurfaceColor(glm::vec3 newVal);
   glm::vec3 getSurfaceColor();
 
+  // set the color of the edges
+  SimpleTriangleMesh* setEdgeColor(glm::vec3 newVal);
+  glm::vec3 getEdgeColor();
+
   // Material
   SimpleTriangleMesh* setMaterial(std::string name);
   std::string getMaterial();
+
+  // Width of the edges. Scaled such that 1 is a reasonable weight for visible edges, but values >1 can be used for
+  // bigger edges. Use 0. to disable.
+  SimpleTriangleMesh* setEdgeWidth(double newVal);
+  double getEdgeWidth();
 
   // Backface color
   SimpleTriangleMesh* setBackFaceColor(glm::vec3 val);
@@ -136,7 +145,9 @@ public:
 private:
   // === Visualization parameters
   PersistentValue<glm::vec3> surfaceColor;
+  PersistentValue<glm::vec3> edgeColor;
   PersistentValue<std::string> material;
+  PersistentValue<float> edgeWidth;
   PersistentValue<BackFacePolicy> backFacePolicy;
   PersistentValue<glm::vec3> backFaceColor;
   PersistentValue<MeshSelectionMode> selectionMode;

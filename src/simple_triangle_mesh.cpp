@@ -27,7 +27,9 @@ SimpleTriangleMesh::SimpleTriangleMesh(std::string name, std::vector<glm::vec3> 
       vertices(this, uniquePrefix() + "vertices", std::move(vertices_)),
       faces(this, uniquePrefix() + "faces", std::move(faces_)),
       surfaceColor(uniquePrefix() + "surfaceColor", getNextUniqueColor()),
+      edgeColor(uniquePrefix() + "edgeColor", glm::vec3{0., 0., 0.}),
       material(uniquePrefix() + "material", "clay"),
+      edgeWidth(uniquePrefix() + "edgeWidth", 0.),
       backFacePolicy(uniquePrefix() + "backFacePolicy", BackFacePolicy::Different),
       backFaceColor(uniquePrefix() + "backFaceColor", glm::vec3(1.f - surfaceColor.get().r, 1.f - surfaceColor.get().g, 1.f - surfaceColor.get().b)),
       selectionMode(uniquePrefix() + "selectionMode", MeshSelectionMode::Auto)
@@ -47,6 +49,38 @@ void SimpleTriangleMesh::buildCustomUI() {
   { // Colors
     if (ImGui::ColorEdit3("Color", &surfaceColor.get()[0], ImGuiColorEditFlags_NoInputs))
       setSurfaceColor(surfaceColor.get());
+  }
+
+  { // Edge options
+    ImGui::SameLine();
+    ImGui::PushItemWidth(100 * options::uiScale);
+    if (edgeWidth.get() == 0.) {
+      bool showEdges = false;
+      if (ImGui::Checkbox("Edges", &showEdges)) {
+        setEdgeWidth(1.);
+      }
+    } else {
+      bool showEdges = true;
+      if (ImGui::Checkbox("Edges", &showEdges)) {
+        setEdgeWidth(0.);
+      }
+
+      // Edge color
+      ImGui::PushItemWidth(100 * options::uiScale);
+      if (ImGui::ColorEdit3("Edge Color", &edgeColor.get()[0], ImGuiColorEditFlags_NoInputs))
+        setEdgeColor(edgeColor.get());
+      ImGui::PopItemWidth();
+
+      // Edge width
+      ImGui::SameLine();
+      ImGui::PushItemWidth(75 * options::uiScale);
+      if (ImGui::SliderFloat("Width", &edgeWidth.get(), 0.001, 2.)) {
+        edgeWidth.manuallyChanged();
+        requestRedraw();
+      }
+      ImGui::PopItemWidth();
+    }
+    ImGui::PopItemWidth();
   }
 
   { // Backface color (only visible if policy is selected)
@@ -184,6 +218,11 @@ void SimpleTriangleMesh::setSimpleTriangleMeshUniforms(render::ShaderProgram& p,
 
   if (withSurfaceShade) {
 
+    if (getEdgeWidth() > 0) {
+      p.setUniform("u_edgeWidth", getEdgeWidth() * render::engine->getCurrentPixelScaling());
+      p.setUniform("u_edgeColor", getEdgeColor());
+    }
+
     if (backFacePolicy.get() == BackFacePolicy::Custom) {
       p.setUniform("u_backfaceColor", getBackFaceColor());
     }
@@ -250,6 +289,10 @@ std::vector<std::string> SimpleTriangleMesh::addSimpleTriangleMeshRules(std::vec
 
   if (withSurfaceShade) {
     // rules that only get used when we're shading the surface of the mesh
+    if (getEdgeWidth() > 0) {
+      initRules.push_back("SIMPLE_MESH_WIREFRAME_FROM_BUFFERS");
+      initRules.push_back("MESH_WIREFRAME");
+    }
 
     if (backFacePolicy.get() == BackFacePolicy::Different) {
       initRules.push_back("MESH_BACKFACE_DARKEN");
@@ -277,6 +320,8 @@ std::vector<std::string> SimpleTriangleMesh::addSimpleTriangleMeshRules(std::vec
 void SimpleTriangleMesh::setSimpleTriangleMeshProgramGeometryAttributes(render::ShaderProgram& p) {
   p.setAttribute("a_vertexPositions", vertices);
   p.setIndex(faces);
+  if (p.hasTexture("t_vertices")) p.setTextureFromAttributeBuffer("t_vertices", vertices);
+  if (p.hasTexture("t_faces")) p.setTextureFromAttributeBuffer("t_faces", faces);
 }
 
 
@@ -447,6 +492,22 @@ SimpleTriangleMesh* SimpleTriangleMesh::setSurfaceColor(glm::vec3 val) {
   return this;
 }
 glm::vec3 SimpleTriangleMesh::getSurfaceColor() { return surfaceColor.get(); }
+
+SimpleTriangleMesh* SimpleTriangleMesh::setEdgeColor(glm::vec3 val) {
+  edgeColor = val;
+  requestRedraw();
+  return this;
+}
+glm::vec3 SimpleTriangleMesh::getEdgeColor() { return edgeColor.get(); }
+
+SimpleTriangleMesh* SimpleTriangleMesh::setEdgeWidth(double newVal) {
+  bool toggled = (edgeWidth.get() == 0.) != (newVal == 0.);
+  edgeWidth = newVal;
+  if (toggled) refresh();
+  requestRedraw();
+  return this;
+}
+double SimpleTriangleMesh::getEdgeWidth() { return edgeWidth.get(); }
 
 SimpleTriangleMesh* SimpleTriangleMesh::setMaterial(std::string m) {
   material = m;

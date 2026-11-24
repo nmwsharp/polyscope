@@ -39,6 +39,7 @@ extern const ShaderReplacementRule MESH_PROPAGATE_TYPE_AND_BASECOLOR2_SHADE;
 extern const ShaderReplacementRule SIMPLE_MESH_PROPAGATE_FACE_VALUE;
 extern const ShaderReplacementRule SIMPLE_MESH_PROPAGATE_FACE_COLOR;
 extern const ShaderReplacementRule SIMPLE_MESH_PROPAGATE_FACE_PICK;
+extern const ShaderReplacementRule SIMPLE_MESH_WIREFRAME_FROM_BUFFERS;
 
 
 } // namespace backend_openGL3
