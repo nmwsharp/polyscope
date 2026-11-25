@@ -62,8 +62,9 @@ PickResult pickAtScreenCoords(glm::vec2 screenCoords); // takes screen coordinat
 PickResult pickAtBufferInds(glm::ivec2 bufferInds);    // takes indices into render buffer
 
 // Viewport-explicit pick variants: coordinates are LOCAL to the given viewport (origin at viewport top-left).
-PickResult pickViewportAtScreenCoords(glm::vec2 screenCoords, int32_t viewportInd);
-PickResult pickViewportAtBufferInds(glm::ivec2 bufferInds, int32_t viewportInd);
+// Pass viewportInd=-1 to use the current active viewport.
+PickResult pickViewportAtScreenCoords(glm::vec2 screenCoords, int32_t viewportInd = -1);
+PickResult pickViewportAtBufferInds(glm::ivec2 bufferInds, int32_t viewportInd = -1);
 
 // == Stateful picking: track and update a current selection
 

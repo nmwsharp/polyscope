@@ -71,12 +71,13 @@ extern glm::vec3& flightInitialViewT;
 extern float& flightTargetFov;
 extern float& flightInitialFov;
 
-// Default values
+// Default values / limits
 extern const int defaultWindowWidth;
 extern const int defaultWindowHeight;
 extern const float defaultNearClipRatio;
 extern const float defaultFarClipRatio;
 extern const float defaultFov;
+constexpr int maxNumViewports = 64; // bounded by 64-bit viewportVisibilityMask on Structure
 
 // Internal details
 extern int& activeViewportIndex;
@@ -244,8 +245,8 @@ std::tuple<glm::ivec2, int32_t> bufferIndsGlobalToViewport(glm::ivec2 bufferInds
 
 // Given LOCAL screen coordinates / buffer inds within a viewport, return the corresponding GLOBAL coordinates.
 // Pass viewportInd=-1 to use the current active viewport.
-glm::vec2 screenCoordsViewportToGlobal(glm::vec2 screenCoords, int32_t viewportInd);
-glm::ivec2 bufferIndsViewportToGlobal(glm::ivec2 bufferInds, int32_t viewportInd);
+glm::vec2 screenCoordsViewportToGlobal(glm::vec2 screenCoords, int32_t viewportInd = -1);
+glm::ivec2 bufferIndsViewportToGlobal(glm::ivec2 bufferInds, int32_t viewportInd = -1);
 
 
 // == Viewport helpers

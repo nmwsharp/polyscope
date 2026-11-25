@@ -555,6 +555,10 @@ TEST_F(PolyscopeTest, ViewportPickHitsStructure) {
   // asking for viewport 0 at the same point as the inset hits "A", the structure underneath the inset
   EXPECT_EQ(polyscope::pickViewportAtScreenCoords(insetSc, 0).structureName, "A");
 
+  // top-row pick (y=0) must not read out-of-bounds
+  polyscope::PickResult topRowPick = polyscope::pickViewportAtBufferInds(glm::ivec2{10, 0}, 0);
+  EXPECT_EQ(topRowPick.structureName, "A");
+
   polyscope::view::createViewportGrid(1, 1); // restore
   polyscope::removeAllStructures();
 }

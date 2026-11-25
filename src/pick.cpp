@@ -32,18 +32,20 @@ PickResult pickAtBufferInds(glm::ivec2 bufferInds) {
 
 PickResult pickViewportAtScreenCoords(glm::vec2 screenCoords, int32_t viewportInd) {
   int32_t prevViewport = view::getActiveViewportIndex();
-  view::activateViewport(viewportInd);
+  if (viewportInd < 0) viewportInd = prevViewport;
+  if (viewportInd != prevViewport) view::activateViewport(viewportInd);
   glm::ivec2 localBufferInds = view::screenCoordsToBufferIndsVecViewport(screenCoords, viewportInd);
   PickResult result = pickAtActiveViewportBufferInds(localBufferInds);
-  view::activateViewport(prevViewport);
+  if (viewportInd != prevViewport) view::activateViewport(prevViewport);
   return result;
 }
 
 PickResult pickViewportAtBufferInds(glm::ivec2 bufferInds, int32_t viewportInd) {
   int32_t prevViewport = view::getActiveViewportIndex();
-  view::activateViewport(viewportInd);
+  if (viewportInd < 0) viewportInd = prevViewport;
+  if (viewportInd != prevViewport) view::activateViewport(viewportInd);
   PickResult result = pickAtActiveViewportBufferInds(bufferInds); // already local to the viewport, no conversion
-  view::activateViewport(prevViewport);
+  if (viewportInd != prevViewport) view::activateViewport(prevViewport);
   return result;
 }
 
@@ -57,8 +59,12 @@ static PickResult pickAtActiveViewportBufferInds(glm::ivec2 bufferInds) {
 
   // Query the depth buffer populated above
   render::FrameBuffer* pickFramebuffer = render::engine->pickFramebuffer.get();
+  int viewportW = view::getActiveViewportBufferWidth();
   int viewportH = view::getActiveViewportBufferHeight();
-  float clipDepth = pickFramebuffer->readDepth(bufferInds.x, viewportH - bufferInds.y);
+  float clipDepth = 1.0f;
+  if (bufferInds.x >= 0 && bufferInds.x < viewportW && bufferInds.y >= 0 && bufferInds.y < viewportH) {
+    clipDepth = pickFramebuffer->readDepth(bufferInds.x, viewportH - 1 - bufferInds.y);
+  }
 
   // Transcribe result into return tuple
   result.structure = std::get<0>(rawPickResult);
@@ -315,7 +321,7 @@ static std::tuple<Structure*, Quantity*, uint64_t> evaluatePickQueryFullInActive
   }
 
   // Read from the pick buffer
-  std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, viewportH - yPos);
+  std::array<float, 4> result = pickFramebuffer->readFloat4(xPos, viewportH - 1 - yPos);
   uint64_t globalInd = pick::vecToInd(glm::vec3{result[0], result[1], result[2]});
 
   return pick::globalIndexToLocal(globalInd);

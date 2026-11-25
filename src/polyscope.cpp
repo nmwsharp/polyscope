@@ -250,7 +250,7 @@ void init(std::string backend) {
   view::createInitialViewport();
 
   state::initialized = true;
-  state::doDefaultMouseInteraction = true; // NSHARP: why is this here?
+  state::doDefaultMouseInteraction = true;
 }
 
 void checkInitialized() {
@@ -449,7 +449,6 @@ void drawStructuresDelayed() {
 
 namespace {
 
-int interactionViewport = 0;
 float dragDistSinceLastRelease = 0.0;
 
 // State for delayed pick selection
@@ -508,12 +507,19 @@ void processInputEvents() {
         // which might involve intentionally holding shift)
 
         bool scrollClipPlane = io.KeyShift && !io.KeyCtrl;
-        if (scrollClipPlane && clipPlaneOffset != 0.0f) {
-          view::processClipPlaneShift(clipPlaneOffset);
-          requestRedraw();
-        }
-        if (!scrollClipPlane && scrollOffset != 0.0f) {
-          view::processZoom(0.5 * scrollOffset);
+        bool doClipScroll = scrollClipPlane && clipPlaneOffset != 0.0f;
+        bool doZoomScroll = !scrollClipPlane && scrollOffset != 0.0f;
+        if (doClipScroll || doZoomScroll) {
+          int hoveredViewport = view::screenCoordsToViewportInd({io.MousePos.x, io.MousePos.y});
+          if (hoveredViewport != view::getActiveViewportIndex()) {
+            view::activateViewport(hoveredViewport);
+          }
+          if (doClipScroll) {
+            view::processClipPlaneShift(clipPlaneOffset);
+          }
+          if (doZoomScroll) {
+            view::processZoom(0.5 * scrollOffset);
+          }
           requestRedraw();
         }
       }
@@ -546,14 +552,17 @@ void processInputEvents() {
             view::processZoom(dragDelta.y * 5);
           }
           if (isRotate) {
-            // Normalize mouse position relative to the active viewport for arc-based rotation.
-            view::ViewParameters svp = view::getViewportParameters(view::getActiveViewportIndex());
-            float svLeft = svp.viewportRelativePosX * view::windowWidth;
-            float svTop = svp.viewportRelativePosY * view::windowHeight;
-            glm::vec2 currPos{(io.MousePos.x - svLeft) / svp.viewportWindowWidth,
-                              (svp.viewportWindowHeight - (io.MousePos.y - svTop)) / svp.viewportWindowHeight};
-            currPos = (currPos * 2.0f) - glm::vec2{1.0, 1.0};
-            view::processRotate(currPos - 2.0f * dragDelta, currPos);
+            // Normalize current and previous mouse positions relative to the active viewport for arc-based rotation.
+            glm::vec4 svRect = view::getViewportImGuiRect();
+            if (svRect.z > 0.0f && svRect.w > 0.0f) {
+              glm::vec2 currPos{(io.MousePos.x - svRect.x) / svRect.z,
+                                (svRect.w - (io.MousePos.y - svRect.y)) / svRect.w};
+              currPos = (currPos * 2.0f) - glm::vec2{1.0f, 1.0f};
+              glm::vec2 prevPos{((io.MousePos.x - io.MouseDelta.x) - svRect.x) / svRect.z,
+                                (svRect.w - ((io.MousePos.y - io.MouseDelta.y) - svRect.y)) / svRect.w};
+              prevPos = (prevPos * 2.0f) - glm::vec2{1.0f, 1.0f};
+              view::processRotate(prevPos, currPos);
+            }
           }
           if (isTranslate) {
             view::processTranslate(dragDelta);
@@ -639,6 +648,10 @@ void renderScene() {
 
   if (!options::renderScene) return;
 
+  if (view::getNumViewports() == 0) {
+    error("there are no viewports");
+  }
+
   // We internally change the active viewport to render; save it here so we can restore at the end
   int savedActiveViewport = view::getActiveViewportIndex();
 
@@ -646,9 +659,6 @@ void renderScene() {
     // Special depth peeling case: multiple render passes
     // We will perform several "peeled" rounds of rendering in to the usual scene buffer. After each, we will manually
     // composite in to the final scene buffer.
-
-    // If a view has never been set, this will set it to the home view
-    view::ensureViewValid();
 
     // Clear the final buffer explicitly since we will gradually composite in to it rather than just blitting directly
     // as in normal rendering.
@@ -658,6 +668,8 @@ void renderScene() {
 
     for (int viewportInd = 0; viewportInd < view::getNumViewports(); viewportInd++) {
       view::activateViewport(viewportInd);
+      view::ensureViewValid();
+      view::updateFlight();
       render::engine->setActiveSceneTarget(viewportInd);
 
       view::ViewParameters vp = view::getViewportParameters(viewportInd);
@@ -672,7 +684,7 @@ void renderScene() {
 
         if (!render::engine->bindSceneBuffer()) {
           // sometimes bind fails during normal flow, e.g. for minimized windows, we just skip the draw
-          return;
+          break;
         }
         render::engine->clearSceneBuffer();
 
@@ -720,10 +732,6 @@ void renderScene() {
 
     internal::renderPassIsRedraw = false;
 
-    if (view::getNumViewports() == 0) {
-      error("there are no viewports");
-    }
-
     for (int viewportInd = 0; viewportInd < view::getNumViewports(); viewportInd++) {
       view::activateViewport(viewportInd);
       view::ensureViewValid();
@@ -735,7 +743,7 @@ void renderScene() {
       render::engine->sceneBuffer->clear();
       if (!render::engine->bindSceneBuffer()) {
         // sometimes bind fails during normal flow, e.g. for minimized windows, we just skip the draw
-        return;
+        continue;
       }
 
       render::engine->applyTransparencySettings();
@@ -758,14 +766,26 @@ void renderScene() {
 
   // restore the active viewport as it was before the render call
   view::activateViewport(savedActiveViewport);
+  render::engine->setActiveSceneTarget(savedActiveViewport);
 }
 
 void renderSceneToScreen() {
   render::engine->bindDisplay();
   if (options::debugDrawPickBuffer) {
-    // special debug draw
-    pick::evaluatePickQuery(-1, -1); // populate the buffer
-    render::engine->pickFramebuffer->blitTo(render::engine->displayBuffer.get());
+    // special debug draw: render and blit each viewport's pick buffer into its region of displayBuffer
+    render::engine->displayBuffer->clearColor = {0., 0., 0.};
+    render::engine->displayBuffer->clearAlpha = 1.;
+    render::engine->displayBuffer->clear();
+    int savedActiveViewport = view::getActiveViewportIndex();
+    for (int viewportInd = 0; viewportInd < view::getNumViewports(); viewportInd++) {
+      view::activateViewport(viewportInd);
+      pick::evaluatePickQuery(-1, -1); // populate the buffer for this viewport
+      view::ViewParameters vp = view::getViewportParameters(viewportInd);
+      int viewportPosYFromBottom = view::bufferHeight - vp.viewportPosY - vp.viewportBufferHeight;
+      render::engine->pickFramebuffer->blitTo(render::engine->displayBuffer.get(), vp.viewportPosX,
+                                              viewportPosYFromBottom);
+    }
+    view::activateViewport(savedActiveViewport);
   } else {
     render::engine->applyLightingTransform(render::engine->sceneColorFinal);
   }

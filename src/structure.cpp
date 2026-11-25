@@ -55,6 +55,9 @@ void Structure::addToGroup(std::string groupName) { addToGroup(*getGroup(groupNa
 void Structure::addToGroup(Group& group) { group.addChildStructure(*this); }
 
 void Structure::setViewportVisibility(int32_t viewportInd, bool visible) {
+  if (viewportInd < 0 || viewportInd >= view::maxNumViewports) {
+    error("Invalid viewport index " + std::to_string(viewportInd));
+  }
   uint64_t mask = viewportVisibilityMask.get();
   if (visible) {
     mask |= (uint64_t(1) << viewportInd);
@@ -71,12 +74,18 @@ void Structure::setViewportVisibilityAll(bool visible) {
 }
 
 void Structure::setViewportVisibilityExclusive(int32_t viewportInd) {
+  if (viewportInd < 0 || viewportInd >= view::maxNumViewports) {
+    error("Invalid viewport index " + std::to_string(viewportInd));
+  }
   viewportVisibilityMask = uint64_t(1) << viewportInd;
   requestRedraw();
 }
 
 bool Structure::getViewportVisibility(int32_t viewportInd) {
   if (viewportInd < 0) viewportInd = view::getActiveViewportIndex();
+  if (viewportInd < 0 || viewportInd >= view::maxNumViewports) {
+    error("Invalid viewport index " + std::to_string(viewportInd));
+  }
   return (viewportVisibilityMask.get() >> viewportInd) & uint64_t(1);
 }
 

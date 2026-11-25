@@ -837,7 +837,10 @@ std::tuple<float, float> getClipPlanes() { return std::tuple<float, float>(nearC
 
 float getVerticalFieldOfViewDegrees() { return view::fov; }
 
-float getAspectRatioWidthOverHeight() { return (float)getActiveViewportBufferWidth() / getActiveViewportBufferHeight(); }
+float getAspectRatioWidthOverHeight() {
+  int h = getActiveViewportBufferHeight();
+  return (h > 0) ? (float)getActiveViewportBufferWidth() / h : 1.0f;
+}
 
 glm::mat4 getCameraPerspectiveMatrix() {
 
@@ -866,36 +869,6 @@ glm::mat4 getCameraPerspectiveMatrix() {
   }
   return glm::mat4(1.0f); // unreachable
 }
-
-// Build a perspective matrix for a specific viewport (may differ from the active viewport).
-// Reads projectionMode and fov directly from the viewport parameters.
-static glm::mat4 getCameraPerspectiveMatrixForViewport(int32_t viewportInd) {
-  float absNearClip, absFarClip;
-  if (overrideClipPlanes) {
-    absNearClip = overrideNearClipRelative * state::lengthScale;
-    absFarClip = overrideFarClipRelative * state::lengthScale;
-  } else {
-    std::tie(absNearClip, absFarClip) = computeClipPlanes();
-  }
-
-  const ViewParameters& vp = state::globalContext.viewportParameters[viewportInd];
-  float fovRad = glm::radians(vp.fov);
-  float aspectRatio = (float)vp.viewportBufferWidth / vp.viewportBufferHeight;
-  switch (vp.projectionMode) {
-  case ProjectionMode::Perspective: {
-    return glm::perspective(fovRad, aspectRatio, absNearClip, absFarClip);
-    break;
-  }
-  case ProjectionMode::Orthographic: {
-    float vert = tan(fovRad / 2.) * state::lengthScale * 2.;
-    float horiz = vert * aspectRatio;
-    return glm::ortho(-horiz, horiz, -vert, vert, absNearClip, absFarClip);
-    break;
-  }
-  }
-  return glm::mat4(1.0f); // unreachable
-}
-
 
 glm::vec3 getCameraWorldPosition() {
   // This will work no matter how the view matrix is constructed...
@@ -936,11 +909,6 @@ glm::vec3 getLookVec() {
 //    camera of that viewport, which might not be the active one.
 
 namespace {
-glm::vec3 cameraWorldPositionFromViewMat(const glm::mat4& viewMat) {
-  glm::mat4 invViewMat = glm::inverse(viewMat);
-  return glm::vec3{invViewMat[3][0], invViewMat[3][1], invViewMat[3][2]};
-}
-
 // Find the viewport that contains some global screen coords, and the coords in that viewport's local frame.
 // Unlike screenCoordsGlobalToViewport(), the local coords are NOT clamped to the viewport. The plain ray functions
 // don't clamp, so points outside the window still give a ray, like they always did when using a single viewport.
@@ -959,31 +927,39 @@ std::tuple<glm::vec2, int32_t> globalBufferCoordsToLocalUnclamped(glm::vec2 buff
 
 // The workhorse for rays from buffer coords
 glm::vec3 localBufferCoordsToWorldRay(glm::vec2 bufferCoords, int32_t viewportInd) {
-  if (viewportInd < 0) viewportInd = getActiveViewportIndex();
-  const ViewParameters& vp = getViewportParameters(viewportInd);
+  int32_t prevViewport = getActiveViewportIndex();
+  bool switched = (viewportInd >= 0 && viewportInd != prevViewport);
+  if (switched) activateViewport(viewportInd);
 
-  glm::mat4 proj = getCameraPerspectiveMatrixForViewport(viewportInd);
+  const ViewParameters& vp = getViewportParameters();
+  glm::mat4 view = getCameraViewMatrix();
+  glm::mat4 proj = getCameraPerspectiveMatrix();
   glm::vec4 viewport = {0., 0., vp.viewportBufferWidth, vp.viewportBufferHeight};
 
   glm::vec3 screenPos3{bufferCoords.x, vp.viewportBufferHeight - bufferCoords.y, 0.};
-  glm::vec3 worldPos = glm::unProject(screenPos3, vp.viewMat, proj, viewport);
-  glm::vec3 worldRayDir = glm::normalize(worldPos - cameraWorldPositionFromViewMat(vp.viewMat));
+  glm::vec3 worldPos = glm::unProject(screenPos3, view, proj, viewport);
+  glm::vec3 worldRayDir = glm::normalize(worldPos - getCameraWorldPosition());
 
+  if (switched) activateViewport(prevViewport);
   return worldRayDir;
 }
 }; // namespace
 
 glm::vec3 viewportScreenCoordsToWorldRay(glm::vec2 screenCoords, int32_t viewportInd) {
-  if (viewportInd < 0) viewportInd = getActiveViewportIndex();
-  const ViewParameters& vp = getViewportParameters(viewportInd);
+  int32_t prevViewport = getActiveViewportIndex();
+  bool switched = (viewportInd >= 0 && viewportInd != prevViewport);
+  if (switched) activateViewport(viewportInd);
 
-  glm::mat4 proj = getCameraPerspectiveMatrixForViewport(viewportInd);
+  const ViewParameters& vp = getViewportParameters();
+  glm::mat4 view = getCameraViewMatrix();
+  glm::mat4 proj = getCameraPerspectiveMatrix();
   glm::vec4 viewport = {0., 0., vp.viewportWindowWidth, vp.viewportWindowHeight};
 
   glm::vec3 screenPos3{screenCoords.x, vp.viewportWindowHeight - screenCoords.y, 0.};
-  glm::vec3 worldPos = glm::unProject(screenPos3, vp.viewMat, proj, viewport);
-  glm::vec3 worldRayDir = glm::normalize(worldPos - cameraWorldPositionFromViewMat(vp.viewMat));
+  glm::vec3 worldPos = glm::unProject(screenPos3, view, proj, viewport);
+  glm::vec3 worldRayDir = glm::normalize(worldPos - getCameraWorldPosition());
 
+  if (switched) activateViewport(prevViewport);
   return worldRayDir;
 }
 
@@ -1036,17 +1012,18 @@ glm::vec3 viewportScreenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, fl
     return glm::vec3{inf, inf, inf};
   }
 
-  if (viewportInd < 0) viewportInd = getActiveViewportIndex();
-  const ViewParameters& vp = getViewportParameters(viewportInd);
+  int32_t prevViewport = getActiveViewportIndex();
+  bool switched = (viewportInd >= 0 && viewportInd != prevViewport);
+  if (switched) activateViewport(viewportInd);
 
-  glm::mat4 viewInv = glm::inverse(vp.viewMat);
-  glm::mat4 proj = getCameraPerspectiveMatrixForViewport(viewportInd);
+  const ViewParameters& vp = getViewportParameters();
+  glm::mat4 viewInv = glm::inverse(getCameraViewMatrix());
+  glm::mat4 proj = getCameraPerspectiveMatrix();
   glm::mat4 projInv = glm::inverse(proj);
   // glm::vec2 depthRange = {0., 1.}; // no support for nonstandard depth range, currently
 
   // Normalize the local screen coords (y-from-top) to [0,1], with y flipped to be y-from-bottom as in clip space
-  glm::vec2 screenPos{screenCoords.x / static_cast<float>(vp.viewportWindowWidth),
-                      1.f - screenCoords.y / static_cast<float>(vp.viewportWindowHeight)};
+  glm::vec2 screenPos{screenCoords.x / vp.viewportWindowWidth, 1.f - screenCoords.y / vp.viewportWindowHeight};
   float z = clipDepth * 2.0f - 1.0f;
   glm::vec4 clipPos = glm::vec4(screenPos * 2.0f - 1.0f, z, 1.0f);
   glm::vec4 viewPos = projInv * clipPos;
@@ -1055,6 +1032,7 @@ glm::vec3 viewportScreenCoordsAndDepthToWorldPosition(glm::vec2 screenCoords, fl
   glm::vec4 worldPos = viewInv * viewPos;
   worldPos /= worldPos.w;
 
+  if (switched) activateViewport(prevViewport);
   return glm::vec3(worldPos);
 }
 
@@ -1733,9 +1711,8 @@ int getActiveViewportBufferHeight() {
 glm::vec4 getViewportImGuiRect(int32_t viewportInd) {
   if (viewportInd < 0) viewportInd = activeViewportIndex;
   const ViewParameters& vp = getViewportParameters(viewportInd);
-  float x = vp.viewportRelativePosX * windowWidth;
-  float y = vp.viewportRelativePosY * windowHeight;
-  return glm::vec4(x, y, vp.viewportWindowWidth, vp.viewportWindowHeight);
+  glm::vec2 origin = bufferIndsToScreenCoords(vp.viewportPosX, vp.viewportPosY);
+  return glm::vec4(origin.x, origin.y, vp.viewportWindowWidth, vp.viewportWindowHeight);
 }
 
 void activateViewport(int viewportInd) {
@@ -1752,7 +1729,7 @@ int getNumViewports() { return state::globalContext.viewportParameters.size(); }
 void setNumViewports(int count) {
   checkInitialized();
   if (count <= 0) error("Invalid viewport count " + std::to_string(count));
-  if (count > 64) error("At most 64 viewports are supported.");
+  if (count > maxNumViewports) error("At most " + std::to_string(maxNumViewports) + " viewports are supported.");
 
 
   // save current parameters
@@ -1763,13 +1740,26 @@ void setNumViewports(int count) {
   int oldCount = getNumViewports();
   state::globalContext.viewportParameters.resize(count);
 
-  // Clamp active index to valid range after shrinking
-  if (activeViewportIndex >= count) activeViewportIndex = count - 1;
+  // Copy the current active view parameters into all new views to initialize them.
+  // Newly added viewports start at zero size until positioned via setActiveViewportRelativeSize()
+  // so allocating many small viewports never transiently allocates full-window buffers for each.
+  for (int i = oldCount; i < count; i++) {
+    packCurrentViewportParametersToIndex(i);
+    state::globalContext.viewportParameters[i].viewportRelativePosX = 0.0f;
+    state::globalContext.viewportParameters[i].viewportRelativePosY = 0.0f;
+    state::globalContext.viewportParameters[i].viewportRelativeWidth = 0.0f;
+    state::globalContext.viewportParameters[i].viewportRelativeHeight = 0.0f;
+  }
 
-  // Copy the current active view parameters into all new views to initialize them
-  for (int i = oldCount; i < count; i++) packCurrentViewportParametersToIndex(i);
+  // Clamp active index to valid range after shrinking, and unpack BEFORE resizing buffers
+  // (which packs the active viewport).
+  if (activeViewportIndex >= count) {
+    activeViewportIndex = count - 1;
+    unpackCurrentViewportParametersFromActive();
+  }
 
   render::engine->ensureSceneTargetsAllocated(count);
+  render::engine->setActiveSceneTarget(activeViewportIndex);
 
   requestRedraw();
 }
@@ -1822,10 +1812,12 @@ void createViewportGrid(int gridWidth, int gridHeight) {
   for (int i = 0; i < gridHeight; i++) {
     for (int j = 0; j < gridWidth; j++) {
       int ind = i * gridWidth + j;
-      activateViewport(ind);
+      ViewParameters& vp = state::globalContext.viewportParameters[ind];
       // note: this intentionally puts the first grid viewport in the upper-left, matching convention from other software
-      setActiveViewportRelativeLocation(static_cast<float>(j) / gridWidth, static_cast<float>(i) / gridHeight);
-      setActiveViewportRelativeSize(cellW, cellH);
+      vp.viewportRelativePosX = static_cast<float>(j) / gridWidth;
+      vp.viewportRelativePosY = static_cast<float>(i) / gridHeight;
+      vp.viewportRelativeWidth = cellW;
+      vp.viewportRelativeHeight = cellH;
     }
   }
 
@@ -1863,18 +1855,19 @@ void updateViewportDimensions() {
   for (int32_t iV = 0; iV < getNumViewports(); iV++) {
     ViewParameters& vp = state::globalContext.viewportParameters[iV];
 
-    // Compute pos and size by rounding both edges independently, so that adjacent viewports sharing
-    // a boundary always snap to the same integer pixel (no cracks or overlaps).
+    // Compute pos and size by rounding both edges independently in buffer space, so that adjacent viewports sharing
+    // a boundary always snap to the same integer pixel (no cracks or overlaps), and derive screen-coord dimensions
+    // by the DPI scale factor so screen-coord and buffer-ind frames agree exactly.
     vp.viewportPosX = (int)std::round(view::bufferWidth * vp.viewportRelativePosX);
     vp.viewportPosY = (int)std::round(view::bufferHeight * vp.viewportRelativePosY);
     vp.viewportBufferWidth =
         (int)std::round(view::bufferWidth * (vp.viewportRelativePosX + vp.viewportRelativeWidth)) - vp.viewportPosX;
     vp.viewportBufferHeight =
         (int)std::round(view::bufferHeight * (vp.viewportRelativePosY + vp.viewportRelativeHeight)) - vp.viewportPosY;
-    vp.viewportWindowWidth = (int)std::round(view::windowWidth * (vp.viewportRelativePosX + vp.viewportRelativeWidth)) -
-                            (int)std::round(view::windowWidth * vp.viewportRelativePosX);
-    vp.viewportWindowHeight = (int)std::round(view::windowHeight * (vp.viewportRelativePosY + vp.viewportRelativeHeight)) -
-                             (int)std::round(view::windowHeight * vp.viewportRelativePosY);
+    float scaleX = (view::bufferWidth > 0) ? static_cast<float>(view::windowWidth) / view::bufferWidth : 1.0f;
+    float scaleY = (view::bufferHeight > 0) ? static_cast<float>(view::windowHeight) / view::bufferHeight : 1.0f;
+    vp.viewportWindowWidth = vp.viewportBufferWidth * scaleX;
+    vp.viewportWindowHeight = vp.viewportBufferHeight * scaleY;
   }
   unpackCurrentViewportParametersFromActive();
 }
@@ -1908,9 +1901,9 @@ void propagateViewUpdatesToViewports() {
   }
 }
 
-const ViewParameters& getViewportParameters(int viewportInd) {
+const ViewParameters& getViewportParameters(int32_t viewportInd) {
   if (viewportInd < 0) viewportInd = activeViewportIndex;
-  if (viewportInd >= getNumViewports()) {
+  if (viewportInd < 0 || viewportInd >= getNumViewports()) {
     error("Invalid viewport index " + std::to_string(viewportInd));
   }
   if (viewportInd == activeViewportIndex) {
