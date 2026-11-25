@@ -128,11 +128,13 @@ TEST_F(PolyscopeTest, ManagedBufferDeviceSync) {
 
 TEST_F(PolyscopeTest, ManagedBufferLazyCompute) {
   int computeCount = 0;
-  polyscope::render::ManagedBuffer<float> mb(nullptr, "lazy_test", [&]() {
+  std::unique_ptr<polyscope::render::ManagedBuffer<float>> mbPtr;
+  mbPtr = std::make_unique<polyscope::render::ManagedBuffer<float>>(nullptr, "lazy_test", [&]() {
     computeCount++;
-    mb.resize(3);
-    mb.setDataHost({static_cast<float>(computeCount), 2.f, 3.f});
+    mbPtr->resize(3);
+    mbPtr->setDataHost({static_cast<float>(computeCount), 2.f, 3.f});
   });
+  auto& mb = *mbPtr;
 
   // Should not compute before first access, even after pre-reserving capacity
   mb.setCapacity(8);
