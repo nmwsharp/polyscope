@@ -166,8 +166,8 @@ R"(
   void main() {
 
     // Fetch values from texture
-    float depth = texture(t_depth, tCoord).r;
-    if(depth > LARGE_FLOAT()) {
+    float rayDepth = texture(t_depth, tCoord).r;
+    if(rayDepth <= 0.0 || rayDepth > LARGE_FLOAT()) {
       discard;
     }
            
@@ -178,9 +178,9 @@ R"(
     vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
     vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
     viewRay = normalize(viewRay);
-    vec3 viewPos =  viewRay * (-1./viewRay.z*depth);
-    float fragdepth = fragDepthFromView(u_projMatrix, depthRange, viewPos);
-    gl_FragDepth = fragdepth;
+    vec3 viewPos =  viewRay * (-1./viewRay.z*rayDepth);
+    float depth = fragDepthFromView(u_projMatrix, depthRange, viewPos);
+    gl_FragDepth = depth;
 
     ${ GLOBAL_FRAGMENT_FILTER_PREP }$
     ${ GLOBAL_FRAGMENT_FILTER }$
@@ -250,8 +250,8 @@ R"(
   void main() {
 
     // Fetch values from texture
-    float depth = texture(t_depth, tCoord).r;
-    if(depth > LARGE_FLOAT()) {
+    float rayDepth = texture(t_depth, tCoord).r;
+    if(rayDepth <= 0.0 || rayDepth > LARGE_FLOAT()) {
       discard;
     }
 
@@ -261,9 +261,9 @@ R"(
     vec2 depthRange = vec2(gl_DepthRange.near, gl_DepthRange.far);
     vec3 viewRay = fragmentViewPosition(u_viewport, depthRange, u_invProjMatrix, gl_FragCoord);
     viewRay = normalize(viewRay);
-    vec3 viewPos =  viewRay * (-1./viewRay.z*depth);
-    float fragdepth = fragDepthFromView(u_projMatrix, depthRange, viewPos);
-    gl_FragDepth = fragdepth;
+    vec3 viewPos =  viewRay * (-1./viewRay.z*rayDepth);
+    float depth = fragDepthFromView(u_projMatrix, depthRange, viewPos);
+    gl_FragDepth = depth;
 
     ${ GLOBAL_FRAGMENT_FILTER_PREP }$
     ${ GLOBAL_FRAGMENT_FILTER }$
