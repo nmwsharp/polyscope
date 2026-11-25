@@ -373,14 +373,14 @@ TEST_F(PolyscopeTest, ViewportCoordinates) {
 
   // --- globalToViewport / viewportToGlobal are inverses (screen coords) ---
   glm::vec2 globalSc = polyscope::view::bufferIndsToScreenCoords(bi);
-  auto [localSc2, iViewport] = polyscope::view::screenCoordsGlobalToViewport(globalSc);
-  glm::vec2 recoveredSc = polyscope::view::screenCoordsViewportToGlobal(localSc2, iViewport);
+  auto [localSc2, viewportInd] = polyscope::view::screenCoordsGlobalToViewport(globalSc);
+  glm::vec2 recoveredSc = polyscope::view::screenCoordsViewportToGlobal(localSc2, viewportInd);
   EXPECT_NEAR(recoveredSc.x, globalSc.x, 1e-4f);
   EXPECT_NEAR(recoveredSc.y, globalSc.y, 1e-4f);
 
   // --- globalToViewport / viewportToGlobal are inverses (buffer inds) ---
-  auto [localBi2, iViewport2] = polyscope::view::bufferIndsGlobalToViewport(bi);
-  glm::ivec2 recoveredBi = polyscope::view::bufferIndsViewportToGlobal(localBi2, iViewport2);
+  auto [localBi2, viewportInd2] = polyscope::view::bufferIndsGlobalToViewport(bi);
+  glm::ivec2 recoveredBi = polyscope::view::bufferIndsViewportToGlobal(localBi2, viewportInd2);
   EXPECT_EQ(recoveredBi.x, bi.x);
   EXPECT_EQ(recoveredBi.y, bi.y);
 
@@ -397,6 +397,54 @@ TEST_F(PolyscopeTest, ViewportCoordinates) {
   EXPECT_EQ(polyscope::view::bufferIndsToViewportInd(rightBi), 1);
 
   polyscope::view::createViewportGrid(1, 1); // restore
+}
+
+// The mock backend can't return real pick hits, so this just tests that picks are routed to the right viewport, and
+// that coordinates are converted correctly (including for an inset viewport that overlaps viewport 0).
+TEST_F(PolyscopeTest, ViewportPickRouting) {
+  polyscope::view::setWindowSize(800, 600);
+  polyscope::registerPointCloud("cloud", std::vector<glm::vec3>{{0, 0, 0}, {1, 0, 0}});
+
+  // full-window main viewport, with an inset in the lower-right corner
+  polyscope::view::setNumViewports(2);
+  polyscope::view::activateViewport(0);
+  polyscope::view::setActiveViewportRelativeLocation(0.f, 0.f);
+  polyscope::view::setActiveViewportRelativeSize(1.f, 1.f);
+  polyscope::view::activateViewport(1);
+  polyscope::view::setActiveViewportRelativeLocation(0.7f, 0.f);
+  polyscope::view::setActiveViewportRelativeSize(0.3f, 0.3f);
+  polyscope::view::activateViewport(0);
+  polyscope::show(3);
+
+  float winW = polyscope::view::windowWidth;
+  float winH = polyscope::view::windowHeight;
+  const polyscope::view::ViewParameters& inset = polyscope::view::getViewportParameters(1);
+
+  // a click in the middle of the inset goes to the inset, at the center of its local buffer
+  glm::vec2 insetCenterGlobal{0.85f * winW, 0.85f * winH};
+  EXPECT_EQ(polyscope::view::screenCoordsToViewportInd(insetCenterGlobal), 1);
+  polyscope::PickResult insetPick = polyscope::pickAtScreenCoords(insetCenterGlobal);
+  EXPECT_NEAR(insetPick.bufferInds.x, inset.viewportBufferWidth / 2, 1);
+  EXPECT_NEAR(insetPick.bufferInds.y, inset.viewportBufferHeight / 2, 1);
+
+  // the explicit-viewport variant agrees, given the same point in the inset's local screen coords
+  polyscope::PickResult insetPickLocal = polyscope::pickViewportAtScreenCoords(glm::vec2{0.15f * winW, 0.15f * winH}, 1);
+  EXPECT_NEAR(insetPickLocal.bufferInds.x, insetPick.bufferInds.x, 1);
+  EXPECT_NEAR(insetPickLocal.bufferInds.y, insetPick.bufferInds.y, 1);
+
+  // a click outside the inset goes to viewport 0, where local and global coordinates coincide
+  glm::vec2 mainGlobal{0.3f * winW, 0.3f * winH};
+  EXPECT_EQ(polyscope::view::screenCoordsToViewportInd(mainGlobal), 0);
+  polyscope::PickResult mainPick = polyscope::pickAtScreenCoords(mainGlobal);
+  glm::ivec2 mainExpected = polyscope::view::screenCoordsToBufferIndsVec(mainGlobal);
+  EXPECT_NEAR(mainPick.bufferInds.x, mainExpected.x, 1);
+  EXPECT_NEAR(mainPick.bufferInds.y, mainExpected.y, 1);
+
+  // picking must not change which viewport is active
+  EXPECT_EQ(polyscope::view::getActiveViewportIndex(), 0);
+
+  polyscope::view::createViewportGrid(1, 1); // restore
+  polyscope::removeAllStructures();
 }
 
 TEST_F(PolyscopeTest, UIScale) {
